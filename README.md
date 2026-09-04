@@ -1,4 +1,4 @@
-# Material-Dependent Surface State Dynamics Engine
+# Material-Dependent Surface State Engine
 
 A Vulkan-based engine for material-dependent surface state dynamics, developed as a 9-credit individual project at Konkuk University under the supervision of Prof. Hyungseok Kim.
 
