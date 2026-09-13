@@ -66,9 +66,9 @@ BinPackParameters: false
 AlignAfterOpenBracket: Align
 AlignOperands: Align
 
-# Do not vertically align unrelated declarations/assignments.
+# Align consecutive declarations within a block; keep assignments unaligned.
 AlignConsecutiveAssignments: None
-AlignConsecutiveDeclarations: None
+AlignConsecutiveDeclarations: Consecutive
 
 # -----------------------------------------------------------------------------
 # Spacing
