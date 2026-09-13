@@ -23,6 +23,21 @@ endif()
 
 find_package(Vulkan REQUIRED)
 
+find_package(glm CONFIG QUIET)
+
+if(NOT glm_FOUND)
+    include(FetchContent)
+
+    FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        GIT_TAG 1.0.1
+        GIT_SHALLOW TRUE
+    )
+
+    FetchContent_MakeAvailable(glm)
+endif()
+
 option(MDSS_USE_SYSTEM_GLFW
     "Use an already installed GLFW package instead of FetchContent"
     OFF
@@ -55,7 +70,7 @@ file(GLOB_RECURSE MDSS_SOURCES CONFIGURE_DEPENDS
 add_executable(MDSS ${MDSS_SOURCES})
 
 target_include_directories(MDSS PRIVATE Source)
-target_link_libraries(MDSS PRIVATE glfw Vulkan::Vulkan)
+target_link_libraries(MDSS PRIVATE glfw Vulkan::Vulkan glm::glm)
 
 file(GLOB_RECURSE MDSS_SHADER_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
@@ -104,6 +119,8 @@ add_dependencies(MDSS MDSS_Shaders)
 target_compile_definitions(MDSS PRIVATE
     MDSSP_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
     MDSSP_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
+    GLM_FORCE_RADIANS
+    GLM_FORCE_DEPTH_ZERO_TO_ONE
 )
 
 if(MSVC)
