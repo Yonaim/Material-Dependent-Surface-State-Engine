@@ -5,6 +5,8 @@ project(MDSS_Engine
     LANGUAGES CXX
 )
 
+option(MDSS_ENABLE_VALIDATION "Enable Vulkan validation layers" ON)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -101,6 +103,7 @@ add_dependencies(MDSS MDSS_Shaders)
 
 target_compile_definitions(MDSS PRIVATE
     MDSSP_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+    MDSSP_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
 )
 
 if(MSVC)
