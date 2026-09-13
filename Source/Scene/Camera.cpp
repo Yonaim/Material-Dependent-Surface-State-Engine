@@ -2,6 +2,9 @@
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/trigonometric.hpp>
+#include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 namespace MDSS
@@ -57,6 +60,25 @@ namespace MDSS
         Target = NewTarget;
     }
 
+    void Camera::SetRotationDegrees(glm::vec2 RotationDegrees) noexcept
+    {
+        const float PitchDegrees = std::clamp(RotationDegrees.x, -89.0F, 89.0F);
+        const float YawDegrees = RotationDegrees.y;
+
+        const float Pitch = glm::radians(PitchDegrees);
+        const float Yaw = glm::radians(YawDegrees);
+
+        const glm::vec3 Forward{std::cos(Pitch) * std::cos(Yaw),
+                                std::sin(Pitch),
+                                std::cos(Pitch) * std::sin(Yaw)};
+        Target = Position + glm::normalize(Forward);
+    }
+
+    void Camera::SetVerticalFieldOfViewDegrees(float FieldOfViewDegrees) noexcept
+    {
+        VerticalFieldOfViewDegrees = std::clamp(FieldOfViewDegrees, 1.0F, 179.0F);
+    }
+
     const glm::vec3& Camera::GetPosition() const noexcept
     {
         return Position;
@@ -65,5 +87,18 @@ namespace MDSS
     const glm::vec3& Camera::GetTarget() const noexcept
     {
         return Target;
+    }
+
+    glm::vec2 Camera::GetRotationDegrees() const noexcept
+    {
+        const glm::vec3 Direction = glm::normalize(Target - Position);
+        const float Pitch = std::asin(std::clamp(Direction.y, -1.0F, 1.0F));
+        const float Yaw = std::atan2(Direction.z, Direction.x);
+        return {glm::degrees(Pitch), glm::degrees(Yaw)};
+    }
+
+    float Camera::GetVerticalFieldOfViewDegrees() const noexcept
+    {
+        return VerticalFieldOfViewDegrees;
     }
 } // namespace MDSS

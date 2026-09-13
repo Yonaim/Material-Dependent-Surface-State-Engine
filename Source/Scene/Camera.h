@@ -20,9 +20,13 @@ namespace MDSS
 
         void SetPosition(glm::vec3 Position) noexcept;
         void SetTarget(glm::vec3 Target) noexcept;
+        void SetRotationDegrees(glm::vec2 RotationDegrees) noexcept;
+        void SetVerticalFieldOfViewDegrees(float FieldOfViewDegrees) noexcept;
 
         [[nodiscard]] const glm::vec3& GetPosition() const noexcept;
         [[nodiscard]] const glm::vec3& GetTarget() const noexcept;
+        [[nodiscard]] glm::vec2        GetRotationDegrees() const noexcept;
+        [[nodiscard]] float            GetVerticalFieldOfViewDegrees() const noexcept;
 
     private:
         glm::vec3 Position{0.0F, 0.0F, 3.0F};
