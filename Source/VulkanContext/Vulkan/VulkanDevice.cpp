@@ -1,11 +1,12 @@
 #include "VulkanContext/Vulkan/VulkanDevice.h"
 
+#include "Logger/Logger.h"
+
 #include "VulkanContext/Vulkan/VulkanQueue.h"
 
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <set>
 #include <stdexcept>
 #include <vector>
@@ -29,6 +30,7 @@ namespace MDSS
 
         std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDeviceCount);
         vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data());
+        Logger::Debug("Vulkan", "Enumerated " + std::to_string(PhysicalDeviceCount) + " physical device(s).");
 
         const auto Selected =
             std::find_if(PhysicalDevices.begin(),
@@ -85,9 +87,15 @@ namespace MDSS
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
 
-        std::cout << "[Vulkan] Physical device: " << Properties.deviceName << '\n';
-        std::cout << "[Vulkan] Logical device created.\n";
-        std::cout << "[Vulkan] Geometry shader support: " << (bGeometryShaderSupported ? "yes" : "no") << '\n';
+        Logger::Info("Vulkan", std::string("Physical device selected: ") + Properties.deviceName + ".");
+        Logger::Debug("Vulkan", "GPU Vulkan API version=" +
+                                    std::to_string(VK_API_VERSION_MAJOR(Properties.apiVersion)) + "." +
+                                    std::to_string(VK_API_VERSION_MINOR(Properties.apiVersion)) + "." +
+                                    std::to_string(VK_API_VERSION_PATCH(Properties.apiVersion)) + ".");
+        Logger::Info("Vulkan", "Logical device created with " + std::to_string(DeviceExtensions.size()) +
+                                   " required device extension(s).");
+        Logger::Info("Vulkan", std::string("Geometry shader support: ") +
+                                   (bGeometryShaderSupported ? "yes." : "no (optional stage will require fallback)."));
     }
 
     VulkanDevice::~VulkanDevice()

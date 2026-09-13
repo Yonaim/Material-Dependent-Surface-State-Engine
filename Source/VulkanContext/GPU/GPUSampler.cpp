@@ -1,5 +1,7 @@
 #include "VulkanContext/GPU/GPUSampler.h"
 
+#include "Logger/Logger.h"
+
 #include <stdexcept>
 
 namespace MDSS
@@ -26,6 +28,7 @@ namespace MDSS
         {
             throw std::runtime_error("Failed to create Vulkan sampler.");
         }
+        Logger::Verbose("Vulkan", "GPUSampler created (linear filtering, repeat addressing).");
     }
 
     GPUSampler::~GPUSampler()

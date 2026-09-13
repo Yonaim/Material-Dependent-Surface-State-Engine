@@ -1,5 +1,7 @@
 #include "VulkanContext/Vulkan/VulkanQueue.h"
 
+#include "Logger/Logger.h"
+
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
@@ -16,6 +18,7 @@ namespace MDSS
 
         vkGetDeviceQueue(Device, FamilyIndices.GraphicsFamily.value(), 0, &GraphicsQueue);
         vkGetDeviceQueue(Device, FamilyIndices.PresentFamily.value(), 0, &PresentQueue);
+        Logger::Debug("Vulkan", "Queue handles acquired from logical device.");
     }
 
     VkQueue VulkanQueue::GetGraphics() const noexcept

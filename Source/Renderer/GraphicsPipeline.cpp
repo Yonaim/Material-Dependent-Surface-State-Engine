@@ -1,5 +1,7 @@
 #include "Renderer/GraphicsPipeline.h"
 
+#include "Logger/Logger.h"
+
 #include <array>
 #include <cstdint>
 #include <fstream>
@@ -60,6 +62,8 @@ namespace MDSS
                     throw std::invalid_argument("Graphics pipeline shader stage path/entry point must not be empty.");
                 }
 
+                Logger::Debug("Renderer", "Loading shader stage " + std::to_string(static_cast<int>(StageConfig.Stage)) +
+                                          ": " + StageConfig.ShaderPath);
                 const VkShaderModule Module = CreateShaderModule(Device, StageConfig.ShaderPath.c_str());
                 ShaderModules.push_back(Module);
 
@@ -169,6 +173,9 @@ namespace MDSS
             {
                 throw std::runtime_error("Failed to create Vulkan graphics pipeline.");
             }
+
+            Logger::Info("Renderer", "Graphics pipeline created with " +
+                                      std::to_string(ShaderStageInfos.size()) + " shader stage(s).");
         }
         catch (...)
         {

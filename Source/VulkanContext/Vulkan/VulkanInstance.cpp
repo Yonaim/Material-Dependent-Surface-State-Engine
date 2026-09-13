@@ -1,10 +1,11 @@
 #include "VulkanContext/Vulkan/VulkanInstance.h"
 
+#include "Logger/Logger.h"
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
 
 namespace MDSS
@@ -14,12 +15,26 @@ namespace MDSS
     {
         constexpr const char* ValidationLayer = "VK_LAYER_KHRONOS_validation";
 
-        VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
+        VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT Severity,
                                                      VkDebugUtilsMessageTypeFlagsEXT,
                                                      const VkDebugUtilsMessengerCallbackDataEXT* CallbackData,
                                                      void*)
         {
-            std::cerr << "[Vulkan Validation] " << CallbackData->pMessage << '\n';
+            const std::string_view Message =
+                CallbackData != nullptr && CallbackData->pMessage != nullptr ? CallbackData->pMessage : "Unknown validation message.";
+
+            if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0)
+            {
+                Logger::Error("Vulkan Validation", Message);
+            }
+            else if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0)
+            {
+                Logger::Warning("Vulkan Validation", Message);
+            }
+            else
+            {
+                Logger::Debug("Vulkan Validation", Message);
+            }
             return VK_FALSE;
         }
 
@@ -98,9 +113,10 @@ namespace MDSS
         }
 #endif
 
-        std::cout << "[Vulkan] Instance created (API 1.2).\n";
+        Logger::Info("Vulkan", "Instance created (API 1.2).");
+        Logger::Debug("Vulkan", "Enabled instance extension count=" + std::to_string(Extensions.size()) + ".");
 #if MDSS_ENABLE_VALIDATION
-        std::cout << "[Vulkan] Validation enabled (core, synchronization, best practices).\n";
+        Logger::Info("Vulkan", "Validation enabled (core, synchronization, best practices).");
 #endif
     }
 

@@ -1,6 +1,7 @@
 #include "AssetManager/MeshAsset.h"
 
 #include "VulkanContext/VulkanContext.h"
+#include "Logger/Logger.h"
 
 #include <stdexcept>
 #include <utility>
@@ -40,6 +41,10 @@ namespace MDSS
 
         VertexBuffer->Upload(this->Vertices.data(), VertexBytes);
         IndexBuffer->Upload(this->Indices.data(), IndexBytes);
+
+        Logger::Debug("AssetManager", "Uploaded MeshAsset '" + GetName() + "' to GPU (vertex bytes=" +
+                                        std::to_string(VertexBytes) + ", index bytes=" +
+                                        std::to_string(IndexBytes) + ").");
     }
 
     const std::vector<Vertex>& MeshAsset::GetVertices() const noexcept

@@ -1,5 +1,7 @@
 #include "VulkanContext/Vulkan/VulkanCommand.h"
 
+#include "Logger/Logger.h"
+
 #include <stdexcept>
 
 namespace MDSS
@@ -15,6 +17,8 @@ namespace MDSS
         {
             throw std::runtime_error("Failed to create Vulkan command pool.");
         }
+        Logger::Debug("Vulkan", "Command pool created for graphics queue family " +
+                                   std::to_string(GraphicsQueueFamily) + ".");
     }
 
     VulkanCommand::~VulkanCommand()
@@ -46,6 +50,7 @@ namespace MDSS
             throw std::runtime_error("Failed to allocate Vulkan command buffers.");
         }
 
+        Logger::Verbose("Vulkan", "Allocated " + std::to_string(Count) + " primary command buffer(s).");
         return CommandBuffers;
     }
 

@@ -1,6 +1,7 @@
 #include "Renderer/RenderContext.h"
 
 #include "VulkanContext/VulkanContext.h"
+#include "Logger/Logger.h"
 
 #include <limits>
 #include <stdexcept>
@@ -46,6 +47,9 @@ namespace MDSS
                 throw std::runtime_error("Failed to create Vulkan frame synchronization objects.");
             }
         }
+
+        Logger::Info("Renderer", "Frame synchronization initialized with " +
+                                   std::to_string(MaxFramesInFlight) + " frames in flight.");
     }
 
     RenderContext::~RenderContext()

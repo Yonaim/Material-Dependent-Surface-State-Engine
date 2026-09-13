@@ -1,5 +1,7 @@
 #include "VulkanContext/GPU/GPUBuffer.h"
 
+#include "Logger/Logger.h"
+
 #include <cstring>
 #include <stdexcept>
 
@@ -63,6 +65,9 @@ namespace MDSS
             }
             throw;
         }
+
+        Logger::Verbose("Vulkan", "GPUBuffer created (size=" + std::to_string(Size) +
+                                   ", usage=" + std::to_string(Usage) + ").");
     }
 
     GPUBuffer::~GPUBuffer()

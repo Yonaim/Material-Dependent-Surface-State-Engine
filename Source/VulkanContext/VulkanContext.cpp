@@ -1,12 +1,12 @@
 #include "VulkanContext/VulkanContext.h"
 
 #include "Application/Window.h"
+#include "Logger/Logger.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <cstdint>
-#include <iostream>
 #include <stdexcept>
 
 namespace MDSS
@@ -16,8 +16,11 @@ namespace MDSS
           Device(Instance.GetHandle(), Surface), Queues(Device.GetPhysicalHandle(), Device.GetHandle(), Surface),
           Commands(Device.GetHandle(), Queues.GetFamilyIndices().GraphicsFamily.value())
     {
-        std::cout << "[Vulkan] Graphics and present queues acquired.\n";
-        std::cout << "[Vulkan] Command pool created.\n";
+        const auto& Families = Queues.GetFamilyIndices();
+        Logger::Info("Vulkan", "Graphics/present queues acquired (graphics family=" +
+                                   std::to_string(Families.GraphicsFamily.value()) + ", present family=" +
+                                   std::to_string(Families.PresentFamily.value()) + ").");
+        Logger::Info("Vulkan", "Graphics command pool created.");
     }
 
     VulkanContext::~VulkanContext()
@@ -80,6 +83,7 @@ namespace MDSS
             throw std::runtime_error("GLFW did not provide the required Vulkan instance extensions.");
         }
 
+        Logger::Debug("Vulkan", "GLFW requested " + std::to_string(ExtensionCount) + " Vulkan instance extensions.");
         return {Extensions, Extensions + ExtensionCount};
     }
 
@@ -92,7 +96,7 @@ namespace MDSS
             throw std::runtime_error("Failed to create Vulkan window surface.");
         }
 
-        std::cout << "[Vulkan] Window surface created.\n";
+        Logger::Info("Vulkan", "Window surface created.");
         return Surface;
     }
 } // namespace MDSS

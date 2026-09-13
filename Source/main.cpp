@@ -1,7 +1,7 @@
 #include "Application/Application.h"
+#include "Logger/Logger.h"
 
 #include <exception>
-#include <iostream>
 
 int main()
 {
@@ -12,7 +12,7 @@ int main()
     }
     catch (const std::exception& Exception)
     {
-        std::cerr << "Fatal error: " << Exception.what() << '\n';
+        MDSS::Logger::Error("Application", std::string("Fatal error: ") + Exception.what());
         return 1;
     }
 

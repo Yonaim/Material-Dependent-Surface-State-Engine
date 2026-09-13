@@ -1,5 +1,7 @@
 #include "AssetManager/Loader/TextureLoader.h"
 
+#include "Logger/Logger.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <stdexcept>
@@ -28,6 +30,9 @@ namespace MDSS
         Data.Pixels.assign(Pixels, Pixels + ByteCount);
 
         stbi_image_free(Pixels);
+        Logger::Debug("TextureLoader", "Decoded '" + Path.filename().string() + "' as RGBA8 (" +
+                                          std::to_string(Data.Width) + "x" + std::to_string(Data.Height) +
+                                          ", source channels=" + std::to_string(Channels) + ").");
         return Data;
     }
 } // namespace MDSS

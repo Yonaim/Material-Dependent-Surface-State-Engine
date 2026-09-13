@@ -1,5 +1,7 @@
 #include "AssetManager/Loader/MTLLoader.h"
 
+#include "Logger/Logger.h"
+
 #include <tiny_obj_loader.h>
 
 namespace MDSS
@@ -36,6 +38,13 @@ namespace MDSS
         const std::string& NormalTextureName =
             !Material.normal_texname.empty() ? Material.normal_texname : Material.bump_texname;
         Result.NormalTexturePath = ResolveTexturePath(TextureBaseDirectory, NormalTextureName);
+
+        Logger::Debug("MTLLoader", "Material '" + Result.Name + "': base texture=" +
+                                      (Result.BaseColorTexturePath.empty() ? std::string("<default>")
+                                                                          : Result.BaseColorTexturePath.filename().string()) +
+                                      ", normal texture=" +
+                                      (Result.NormalTexturePath.empty() ? std::string("<flat default>")
+                                                                        : Result.NormalTexturePath.filename().string()) + ".");
         return Result;
     }
 } // namespace MDSS

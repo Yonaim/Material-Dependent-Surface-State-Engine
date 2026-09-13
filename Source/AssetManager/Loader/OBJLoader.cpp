@@ -1,10 +1,11 @@
 #include "AssetManager/Loader/OBJLoader.h"
 
+#include "Logger/Logger.h"
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <cmath>
 #include <cstddef>
 #include <glm/geometric.hpp>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <tiny_obj_loader.h>
@@ -96,8 +97,12 @@ namespace MDSS
 
         if (!Warning.empty())
         {
-            std::cerr << "[OBJLoader] " << Warning << '\n';
+            Logger::Warning("OBJLoader", Warning);
         }
+
+        Logger::Debug("OBJLoader", "Parsed '" + Path.filename().string() + "': shapes=" +
+                                      std::to_string(Shapes.size()) + ", materials=" +
+                                      std::to_string(Materials.size()) + ".");
 
         OBJLoadResult Result{};
         Result.Materials.reserve(Materials.size());
@@ -203,6 +208,9 @@ namespace MDSS
             Result.Sections.push_back({0, static_cast<std::uint32_t>(Result.Indices.size()), -1});
         }
 
+        Logger::Info("OBJLoader", "Generated mesh data: vertices=" + std::to_string(Result.Vertices.size()) +
+                                     ", indices=" + std::to_string(Result.Indices.size()) +
+                                     ", sections=" + std::to_string(Result.Sections.size()) + ".");
         return Result;
     }
 
