@@ -76,3 +76,6 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# exceptionally allowed
+!/Assets/Meshes/*.obj
