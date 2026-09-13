@@ -13,9 +13,11 @@ namespace MDSS
 {
     VulkanContext::VulkanContext(const Window& Window)
         : Instance("MDSSP Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), Window)),
-          Device(Instance.GetHandle(), Surface), Queues(Device.GetPhysicalHandle(), Device.GetHandle(), Surface)
+          Device(Instance.GetHandle(), Surface), Queues(Device.GetPhysicalHandle(), Device.GetHandle(), Surface),
+          Commands(Device.GetHandle(), Queues.GetFamilyIndices().GraphicsFamily.value())
     {
         std::cout << "[Vulkan] Graphics and present queues acquired.\n";
+        std::cout << "[Vulkan] Command pool created.\n";
     }
 
     VulkanContext::~VulkanContext()
@@ -50,6 +52,11 @@ namespace MDSS
     const VulkanQueue& VulkanContext::GetQueues() const noexcept
     {
         return Queues;
+    }
+
+    const VulkanCommand& VulkanContext::GetCommands() const noexcept
+    {
+        return Commands;
     }
 
     std::vector<const char*> VulkanContext::RequiredInstanceExtensions()

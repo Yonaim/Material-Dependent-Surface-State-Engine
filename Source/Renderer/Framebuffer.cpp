@@ -1,1 +1,68 @@
-// dummy
+#include "Renderer/Framebuffer.h"
+
+#include <array>
+#include <cstdint>
+#include <stdexcept>
+
+namespace MDSS
+{
+    Framebuffer::Framebuffer(VkDevice                        Device,
+                             VkRenderPass                    RenderPass,
+                             VkExtent2D                      Extent,
+                             const std::vector<VkImageView>& ColorImageViews)
+        : Device(Device)
+    {
+        Handles.resize(ColorImageViews.size(), VK_NULL_HANDLE);
+
+        for (std::size_t Index = 0; Index < ColorImageViews.size(); ++Index)
+        {
+            const std::array<VkImageView, 1> Attachments = {ColorImageViews[Index]};
+
+            VkFramebufferCreateInfo CreateInfo{};
+            CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            CreateInfo.renderPass = RenderPass;
+            CreateInfo.attachmentCount = static_cast<std::uint32_t>(Attachments.size());
+            CreateInfo.pAttachments = Attachments.data();
+            CreateInfo.width = Extent.width;
+            CreateInfo.height = Extent.height;
+            CreateInfo.layers = 1;
+
+            if (vkCreateFramebuffer(Device, &CreateInfo, nullptr, &Handles[Index]) != VK_SUCCESS)
+            {
+                for (std::size_t Created = 0; Created < Index; ++Created)
+                {
+                    vkDestroyFramebuffer(Device, Handles[Created], nullptr);
+                }
+                Handles.clear();
+                throw std::runtime_error("Failed to create Vulkan framebuffer.");
+            }
+        }
+    }
+
+    Framebuffer::~Framebuffer()
+    {
+        for (VkFramebuffer Handle : Handles)
+        {
+            if (Handle != VK_NULL_HANDLE)
+            {
+                vkDestroyFramebuffer(Device, Handle, nullptr);
+            }
+        }
+        Handles.clear();
+    }
+
+    VkFramebuffer Framebuffer::Get(std::size_t Index) const
+    {
+        if (Index >= Handles.size())
+        {
+            throw std::out_of_range("Framebuffer index is out of range.");
+        }
+
+        return Handles[Index];
+    }
+
+    std::size_t Framebuffer::GetCount() const noexcept
+    {
+        return Handles.size();
+    }
+} // namespace MDSS

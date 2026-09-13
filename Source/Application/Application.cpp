@@ -17,10 +17,9 @@ namespace MDSS
         while (!MainWindow.ShouldClose())
         {
             MainWindow.PollEvents();
+            FrameRenderer.RenderFrame();
         }
 
-        // Renderer work will be submitted asynchronously in the next milestone.
-        // Keeping this here now also guarantees a clean shutdown once that begins.
         vkDeviceWaitIdle(Context.GetDevice());
     }
 } // namespace MDSS

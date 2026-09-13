@@ -55,6 +55,54 @@ add_executable(MDSS ${MDSS_SOURCES})
 target_include_directories(MDSS PRIVATE Source)
 target_link_libraries(MDSS PRIVATE glfw Vulkan::Vulkan)
 
+file(GLOB_RECURSE MDSS_SHADER_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.comp"
+)
+
+# Reconfigure when a placeholder shader receives its first implementation.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MDSS_SHADER_SOURCES})
+
+set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders")
+set(MDSS_SHADER_BINARIES)
+
+foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
+    file(STRINGS "${ShaderSource}" ShaderVersionLine
+        LIMIT_COUNT 1
+        REGEX "^[ \t]*#version"
+    )
+    if(NOT ShaderVersionLine)
+        message(STATUS "Skipping placeholder shader: ${ShaderSource}")
+        continue()
+    endif()
+
+    file(RELATIVE_PATH ShaderRelativePath
+        "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
+        "${ShaderSource}"
+    )
+    set(ShaderBinary "${MDSS_SHADER_OUTPUT_DIR}/${ShaderRelativePath}.spv")
+    get_filename_component(ShaderOutputDirectory "${ShaderBinary}" DIRECTORY)
+
+    add_custom_command(
+        OUTPUT "${ShaderBinary}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${ShaderOutputDirectory}"
+        COMMAND "${Vulkan_GLSLC_EXECUTABLE}" "${ShaderSource}" -o "${ShaderBinary}"
+        DEPENDS "${ShaderSource}"
+        COMMENT "Compiling shader ${ShaderRelativePath}"
+        VERBATIM
+    )
+
+    list(APPEND MDSS_SHADER_BINARIES "${ShaderBinary}")
+endforeach()
+
+add_custom_target(MDSS_Shaders DEPENDS ${MDSS_SHADER_BINARIES})
+add_dependencies(MDSS MDSS_Shaders)
+
+target_compile_definitions(MDSS PRIVATE
+    MDSSP_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+)
+
 if(MSVC)
     target_compile_options(MDSS PRIVATE /W4 /permissive-)
 else()

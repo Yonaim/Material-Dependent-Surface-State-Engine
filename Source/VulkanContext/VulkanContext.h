@@ -1,5 +1,6 @@
 #pragma once
 
+#include "VulkanContext/Vulkan/VulkanCommand.h"
 #include "VulkanContext/Vulkan/VulkanDevice.h"
 #include "VulkanContext/Vulkan/VulkanInstance.h"
 #include "VulkanContext/Vulkan/VulkanQueue.h"
@@ -23,11 +24,12 @@ namespace MDSS
         VulkanContext(VulkanContext&&) = delete;
         VulkanContext& operator=(VulkanContext&&) = delete;
 
-        [[nodiscard]] VkInstance         GetInstance() const noexcept;
-        [[nodiscard]] VkSurfaceKHR       GetSurface() const noexcept;
-        [[nodiscard]] VkPhysicalDevice   GetPhysicalDevice() const noexcept;
-        [[nodiscard]] VkDevice           GetDevice() const noexcept;
-        [[nodiscard]] const VulkanQueue& GetQueues() const noexcept;
+        [[nodiscard]] VkInstance           GetInstance() const noexcept;
+        [[nodiscard]] VkSurfaceKHR         GetSurface() const noexcept;
+        [[nodiscard]] VkPhysicalDevice     GetPhysicalDevice() const noexcept;
+        [[nodiscard]] VkDevice             GetDevice() const noexcept;
+        [[nodiscard]] const VulkanQueue&   GetQueues() const noexcept;
+        [[nodiscard]] const VulkanCommand& GetCommands() const noexcept;
 
     private:
         static std::vector<const char*> RequiredInstanceExtensions();
@@ -37,5 +39,6 @@ namespace MDSS
         VkSurfaceKHR   Surface = VK_NULL_HANDLE;
         VulkanDevice   Device;
         VulkanQueue    Queues;
+        VulkanCommand  Commands;
     };
 } // namespace MDSS
