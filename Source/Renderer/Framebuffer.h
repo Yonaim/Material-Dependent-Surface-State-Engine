@@ -22,10 +22,21 @@ namespace MDSS
         Framebuffer(Framebuffer&&) = delete;
         Framebuffer& operator=(Framebuffer&&) = delete;
 
+        void Recreate(VkRenderPass                    RenderPass,
+                      VkExtent2D                      Extent,
+                      const std::vector<VkImageView>& ColorImageViews,
+                      VkImageView                     DepthImageView);
+        void Reset();
+
         [[nodiscard]] VkFramebuffer Get(std::size_t Index) const;
         [[nodiscard]] std::size_t   GetCount() const noexcept;
 
     private:
+        void Create(VkRenderPass                    RenderPass,
+                    VkExtent2D                      Extent,
+                    const std::vector<VkImageView>& ColorImageViews,
+                    VkImageView                     DepthImageView);
+
         VkDevice                   Device = VK_NULL_HANDLE;
         std::vector<VkFramebuffer> Handles;
     };

@@ -1,5 +1,7 @@
 #include "Renderer/Framebuffer.h"
 
+#include "Logger/Logger.h"
+
 #include <array>
 #include <cstdint>
 #include <stdexcept>
@@ -12,6 +14,40 @@ namespace MDSS
                              const std::vector<VkImageView>& ColorImageViews,
                              VkImageView                     DepthImageView)
         : Device(Device)
+    {
+        Create(RenderPass, Extent, ColorImageViews, DepthImageView);
+    }
+
+    Framebuffer::~Framebuffer()
+    {
+        Reset();
+    }
+
+    void Framebuffer::Recreate(VkRenderPass                    RenderPass,
+                               VkExtent2D                      Extent,
+                               const std::vector<VkImageView>& ColorImageViews,
+                               VkImageView                     DepthImageView)
+    {
+        Reset();
+        Create(RenderPass, Extent, ColorImageViews, DepthImageView);
+    }
+
+    void Framebuffer::Reset()
+    {
+        for (VkFramebuffer Handle : Handles)
+        {
+            if (Handle != VK_NULL_HANDLE)
+            {
+                vkDestroyFramebuffer(Device, Handle, nullptr);
+            }
+        }
+        Handles.clear();
+    }
+
+    void Framebuffer::Create(VkRenderPass                    RenderPass,
+                             VkExtent2D                      Extent,
+                             const std::vector<VkImageView>& ColorImageViews,
+                             VkImageView                     DepthImageView)
     {
         Handles.resize(ColorImageViews.size(), VK_NULL_HANDLE);
 
@@ -38,18 +74,10 @@ namespace MDSS
                 throw std::runtime_error("Failed to create Vulkan framebuffer.");
             }
         }
-    }
 
-    Framebuffer::~Framebuffer()
-    {
-        for (VkFramebuffer Handle : Handles)
-        {
-            if (Handle != VK_NULL_HANDLE)
-            {
-                vkDestroyFramebuffer(Device, Handle, nullptr);
-            }
-        }
-        Handles.clear();
+        Logger::Debug("Renderer",
+                      "Framebuffers created: " + std::to_string(Handles.size()) + " at " +
+                          std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ".");
     }
 
     VkFramebuffer Framebuffer::Get(std::size_t Index) const

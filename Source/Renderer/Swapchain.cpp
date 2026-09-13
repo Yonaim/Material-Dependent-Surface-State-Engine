@@ -1,6 +1,7 @@
 #include "Renderer/Swapchain.h"
 
 #include "Application/Window.h"
+#include "Logger/Logger.h"
 #include "VulkanContext/VulkanContext.h"
 
 #define GLFW_INCLUDE_NONE
@@ -9,13 +10,29 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <stdexcept>
 
 namespace MDSS
 {
     Swapchain::Swapchain(const VulkanContext& Context, const Window& Window) : Device(Context.GetDevice())
+    {
+        Create(Context, Window);
+    }
+
+    Swapchain::~Swapchain()
+    {
+        Destroy();
+    }
+
+    void Swapchain::Recreate(const VulkanContext& Context, const Window& Window)
+    {
+        Destroy();
+        Device = Context.GetDevice();
+        Create(Context, Window);
+    }
+
+    void Swapchain::Create(const VulkanContext& Context, const Window& Window)
     {
         const SwapchainSupportDetails Support = QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
 
@@ -88,23 +105,34 @@ namespace MDSS
             throw;
         }
 
-        std::cout << "[Renderer] Swapchain created: " << Extent.width << 'x' << Extent.height << ", " << Images.size()
-                  << " images.\n";
+        Logger::Info("Renderer",
+                     "Swapchain created: " + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ", " +
+                         std::to_string(Images.size()) + " images.");
+        Logger::Debug("Renderer",
+                      "Swapchain format=" + std::to_string(static_cast<int>(ImageFormat)) +
+                          ", present mode=" + std::to_string(static_cast<int>(PresentMode)) + ".");
     }
 
-    Swapchain::~Swapchain()
+    void Swapchain::Destroy()
     {
         for (VkImageView ImageView : ImageViews)
         {
-            vkDestroyImageView(Device, ImageView, nullptr);
+            if (ImageView != VK_NULL_HANDLE)
+            {
+                vkDestroyImageView(Device, ImageView, nullptr);
+            }
         }
         ImageViews.clear();
+        Images.clear();
 
         if (SwapchainData != VK_NULL_HANDLE)
         {
             vkDestroySwapchainKHR(Device, SwapchainData, nullptr);
             SwapchainData = VK_NULL_HANDLE;
         }
+
+        ImageFormat = VK_FORMAT_UNDEFINED;
+        Extent = {};
     }
 
     VkSwapchainKHR Swapchain::GetHandle() const noexcept

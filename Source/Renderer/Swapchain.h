@@ -27,6 +27,8 @@ namespace MDSS
         Swapchain(Swapchain&&) = delete;
         Swapchain& operator=(Swapchain&&) = delete;
 
+        void Recreate(const VulkanContext& Context, const Window& Window);
+
         [[nodiscard]] VkSwapchainKHR                  GetHandle() const noexcept;
         [[nodiscard]] VkFormat                        GetImageFormat() const noexcept;
         [[nodiscard]] VkExtent2D                      GetExtent() const noexcept;
@@ -42,6 +44,8 @@ namespace MDSS
         static VkExtent2D         ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const Window& Window);
         static VkCompositeAlphaFlagBitsKHR ChooseCompositeAlpha(const VkSurfaceCapabilitiesKHR& Capabilities);
 
+        void Create(const VulkanContext& Context, const Window& Window);
+        void Destroy();
         void CreateImageViews();
 
         VkDevice                 Device = VK_NULL_HANDLE;

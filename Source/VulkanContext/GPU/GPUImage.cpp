@@ -1,5 +1,7 @@
 #include "VulkanContext/GPU/GPUImage.h"
 
+#include "Logger/Logger.h"
+
 #include <stdexcept>
 
 namespace MDSS
@@ -11,12 +13,59 @@ namespace MDSS
                        VkImageTiling         Tiling,
                        VkImageUsageFlags     Usage,
                        VkMemoryPropertyFlags MemoryProperties)
-        : Device(Device), Format(Format), Extent(Extent)
+        : Device(Device)
     {
-        if (Extent.width == 0 || Extent.height == 0)
+        Create(PhysicalDevice, Extent, Format, Tiling, Usage, MemoryProperties);
+    }
+
+    GPUImage::~GPUImage()
+    {
+        Reset();
+    }
+
+    void GPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
+                            VkExtent2D            NewExtent,
+                            VkFormat              NewFormat,
+                            VkImageTiling         Tiling,
+                            VkImageUsageFlags     Usage,
+                            VkMemoryPropertyFlags MemoryProperties)
+    {
+        Reset();
+        Create(PhysicalDevice, NewExtent, NewFormat, Tiling, Usage, MemoryProperties);
+    }
+
+    void GPUImage::Reset()
+    {
+        if (Handle != VK_NULL_HANDLE)
+        {
+            vkDestroyImage(Device, Handle, nullptr);
+            Handle = VK_NULL_HANDLE;
+        }
+
+        if (Memory != VK_NULL_HANDLE)
+        {
+            vkFreeMemory(Device, Memory, nullptr);
+            Memory = VK_NULL_HANDLE;
+        }
+
+        Format = VK_FORMAT_UNDEFINED;
+        Extent = {};
+    }
+
+    void GPUImage::Create(VkPhysicalDevice      PhysicalDevice,
+                          VkExtent2D            NewExtent,
+                          VkFormat              NewFormat,
+                          VkImageTiling         Tiling,
+                          VkImageUsageFlags     Usage,
+                          VkMemoryPropertyFlags MemoryProperties)
+    {
+        if (NewExtent.width == 0 || NewExtent.height == 0)
         {
             throw std::invalid_argument("GPU image extent must be non-zero.");
         }
+
+        Format = NewFormat;
+        Extent = NewExtent;
 
         VkImageCreateInfo ImageInfo{};
         ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -62,21 +111,10 @@ namespace MDSS
             Handle = VK_NULL_HANDLE;
             throw std::runtime_error("Failed to bind Vulkan image memory.");
         }
-    }
 
-    GPUImage::~GPUImage()
-    {
-        if (Handle != VK_NULL_HANDLE)
-        {
-            vkDestroyImage(Device, Handle, nullptr);
-            Handle = VK_NULL_HANDLE;
-        }
-
-        if (Memory != VK_NULL_HANDLE)
-        {
-            vkFreeMemory(Device, Memory, nullptr);
-            Memory = VK_NULL_HANDLE;
-        }
+        Logger::Verbose("Vulkan",
+                        "GPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
+                            ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
     VkImage GPUImage::GetHandle() const noexcept

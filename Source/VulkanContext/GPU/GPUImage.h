@@ -23,6 +23,14 @@ namespace MDSS
         GPUImage(GPUImage&&) = delete;
         GPUImage& operator=(GPUImage&&) = delete;
 
+        void Recreate(VkPhysicalDevice      PhysicalDevice,
+                      VkExtent2D            Extent,
+                      VkFormat              Format,
+                      VkImageTiling         Tiling,
+                      VkImageUsageFlags     Usage,
+                      VkMemoryPropertyFlags MemoryProperties);
+        void Reset();
+
         [[nodiscard]] VkImage    GetHandle() const noexcept;
         [[nodiscard]] VkFormat   GetFormat() const noexcept;
         [[nodiscard]] VkExtent2D GetExtent() const noexcept;
@@ -31,6 +39,12 @@ namespace MDSS
         static std::uint32_t FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,
                                             VkMemoryPropertyFlags RequiredProperties);
+        void                 Create(VkPhysicalDevice      PhysicalDevice,
+                                    VkExtent2D            Extent,
+                                    VkFormat              Format,
+                                    VkImageTiling         Tiling,
+                                    VkImageUsageFlags     Usage,
+                                    VkMemoryPropertyFlags MemoryProperties);
 
         VkDevice       Device = VK_NULL_HANDLE;
         VkImage        Handle = VK_NULL_HANDLE;
