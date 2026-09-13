@@ -3,96 +3,91 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <cstdint>
 #include <mutex>
 #include <stdexcept>
-#include <utility>
 
-namespace
+namespace MDSS
 {
-std::mutex g_glfwMutex;
-std::uint32_t g_windowCount = 0;
-} // namespace
-
-namespace mdssp
-{
-Window::Window(std::uint32_t width, std::uint32_t height, std::string title)
-{
-    initializeGLFW();
-
-    // Do not create an OpenGL/OpenGL ES context.
-    // The same GLFW window can later be used to create a Vulkan surface.
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-    handle_ = glfwCreateWindow(
-        static_cast<int>(width),
-        static_cast<int>(height),
-        title.c_str(),
-        nullptr,
-        nullptr);
-
-    if (handle_ == nullptr)
+    namespace
     {
-        terminateGLFW();
-        throw std::runtime_error("Failed to create GLFW window.");
-    }
-}
+        std::mutex    GLFWMutex;
+        std::uint32_t WindowCount = 0;
+    } // namespace
 
-Window::~Window()
-{
-    if (handle_ != nullptr)
+    Window::Window(std::uint32_t Width, std::uint32_t Height, std::string Title)
     {
-        glfwDestroyWindow(handle_);
-        handle_ = nullptr;
-    }
+        InitializeGLFW();
 
-    terminateGLFW();
-}
+        // Do not create an OpenGL/OpenGL ES context.
+        // The same GLFW window can later be used to create a Vulkan surface.
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-bool Window::shouldClose() const
-{
-    return glfwWindowShouldClose(handle_) == GLFW_TRUE;
-}
+        Handle = glfwCreateWindow(static_cast<int>(Width), static_cast<int>(Height), Title.c_str(), nullptr, nullptr);
 
-void Window::pollEvents() const
-{
-    glfwPollEvents();
-}
-
-GLFWwindow* Window::nativeHandle() const noexcept
-{
-    return handle_;
-}
-
-void Window::initializeGLFW()
-{
-    std::scoped_lock lock(g_glfwMutex);
-
-    if (g_windowCount == 0)
-    {
-        if (glfwInit() != GLFW_TRUE)
+        if (Handle == nullptr)
         {
-            throw std::runtime_error("Failed to initialize GLFW.");
+            TerminateGLFW();
+            throw std::runtime_error("Failed to create GLFW window.");
         }
     }
 
-    ++g_windowCount;
-}
-
-void Window::terminateGLFW()
-{
-    std::scoped_lock lock(g_glfwMutex);
-
-    if (g_windowCount == 0)
+    Window::~Window()
     {
-        return;
+        if (Handle != nullptr)
+        {
+            glfwDestroyWindow(Handle);
+            Handle = nullptr;
+        }
+
+        TerminateGLFW();
     }
 
-    --g_windowCount;
-
-    if (g_windowCount == 0)
+    bool Window::ShouldClose() const
     {
-        glfwTerminate();
+        return glfwWindowShouldClose(Handle) == GLFW_TRUE;
     }
-}
-} // namespace mdssp
+
+    void Window::PollEvents() const
+    {
+        glfwPollEvents();
+    }
+
+    GLFWwindow* Window::GetNativeHandle() const noexcept
+    {
+        return Handle;
+    }
+
+    void Window::InitializeGLFW()
+    {
+        std::scoped_lock Lock(GLFWMutex);
+
+        if (WindowCount == 0)
+        {
+            if (glfwInit() != GLFW_TRUE)
+            {
+                throw std::runtime_error("Failed to initialize GLFW.");
+            }
+        }
+
+        ++WindowCount;
+    }
+
+    void Window::TerminateGLFW()
+    {
+        std::scoped_lock Lock(GLFWMutex);
+
+        if (WindowCount == 0)
+        {
+            return;
+        }
+
+        --WindowCount;
+
+        if (WindowCount == 0)
+        {
+            glfwTerminate();
+        }
+    }
+} // namespace MDSS

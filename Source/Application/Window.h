@@ -5,28 +5,28 @@
 
 struct GLFWwindow;
 
-namespace mdssp
+namespace MDSS
 {
-class Window
-{
-public:
-    Window(std::uint32_t width, std::uint32_t height, std::string title);
-    ~Window();
+    class Window
+    {
+    public:
+        Window(std::uint32_t Width, std::uint32_t Height, std::string Title);
+        ~Window();
 
-    Window(const Window&) = delete;
-    Window& operator=(const Window&) = delete;
-    Window(Window&&) = delete;
-    Window& operator=(Window&&) = delete;
+        Window(const Window&) = delete;
+        Window& operator=(const Window&) = delete;
+        Window(Window&&) = delete;
+        Window& operator=(Window&&) = delete;
 
-    [[nodiscard]] bool shouldClose() const;
-    void pollEvents() const;
+        [[nodiscard]] bool ShouldClose() const;
+        void               PollEvents() const;
 
-    [[nodiscard]] GLFWwindow* nativeHandle() const noexcept;
+        [[nodiscard]] GLFWwindow* GetNativeHandle() const noexcept;
 
-private:
-    static void initializeGLFW();
-    static void terminateGLFW();
+    private:
+        static void InitializeGLFW();
+        static void TerminateGLFW();
 
-    GLFWwindow* handle_ = nullptr;
-};
-} // namespace mdssp
+        GLFWwindow* Handle = nullptr;
+    };
+} // namespace MDSS

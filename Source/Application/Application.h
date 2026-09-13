@@ -1,19 +1,24 @@
 #pragma once
 
 #include "Application/Window.h"
+#include "Renderer/Renderer.h"
+#include "VulkanContext/VulkanContext.h"
 
-namespace mdssp
+namespace MDSS
 {
-class Application
-{
-public:
-    Application();
+    class Application
+    {
+    public:
+        Application();
 
-    void run();
+        void Run();
 
-private:
-    void mainLoop();
+    private:
+        void MainLoop();
 
-    Window window_;
-};
-} // namespace mdssp
+        // Declaration order is intentional: resources are destroyed in reverse order.
+        Window        MainWindow;
+        VulkanContext Context;
+        Renderer      FrameRenderer;
+    };
+} // namespace MDSS

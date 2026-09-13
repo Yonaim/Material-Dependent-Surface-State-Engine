@@ -7,12 +7,12 @@ int main()
 {
     try
     {
-        mdssp::Application application;
-        application.run();
+        MDSS::Application Application;
+        Application.Run();
     }
-    catch (const std::exception &exception)
+    catch (const std::exception& Exception)
     {
-        std::cerr << "Fatal error: " << exception.what() << '\n';
+        std::cerr << "Fatal error: " << Exception.what() << '\n';
         return 1;
     }
 
