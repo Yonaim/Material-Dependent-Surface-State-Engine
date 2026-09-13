@@ -18,7 +18,17 @@
 
 namespace MDSS
 {
+    enum class RenderViewMode : std::uint32_t
+    {
+        Lit = 0,
+        Unlit,
+        VertexNormalWS,
+        NormalTextureTS,
+        MappedNormalWS
+    };
+
     class AssetManager;
+    class DebugUI;
     class Scene;
     class VulkanContext;
     class Window;
@@ -26,7 +36,7 @@ namespace MDSS
     class Renderer
     {
     public:
-        Renderer(const VulkanContext& Context, const Window& Window, const AssetManager& Assets);
+        Renderer(const VulkanContext& Context, Window& Window, const AssetManager& Assets);
         ~Renderer();
 
         Renderer(const Renderer&) = delete;
@@ -34,9 +44,22 @@ namespace MDSS
         Renderer(Renderer&&) = delete;
         Renderer& operator=(Renderer&&) = delete;
 
-        void RenderFrame(const Scene& SceneData);
+        void RenderFrame(const Scene& SceneData, DebugUI& DebugInterface);
 
         [[nodiscard]] const Swapchain& GetSwapchain() const noexcept;
+        [[nodiscard]] VkRenderPass     GetRenderPassHandle() const noexcept;
+
+        [[nodiscard]] RenderViewMode GetRenderViewMode() const noexcept;
+        void                         SetRenderViewMode(RenderViewMode Mode);
+
+        [[nodiscard]] bool GetFlipNormalY() const noexcept;
+        void               SetFlipNormalY(bool bEnabled);
+
+        [[nodiscard]] float GetNormalStrength() const noexcept;
+        void                SetNormalStrength(float Strength);
+
+        [[nodiscard]] float GetAmbientLight() const noexcept;
+        void                SetAmbientLight(float Intensity);
 
     private:
         struct MaterialRenderResource
@@ -54,9 +77,15 @@ namespace MDSS
         static VkDescriptorSetLayout CreateMaterialDescriptorSetLayout(VkDevice Device);
 
         void CreateMaterialDescriptorResources();
-        void RecordCommandBuffer(VkCommandBuffer CommandBuffer, std::uint32_t ImageIndex, const Scene& SceneData) const;
+        void UpdateMaterialUniforms();
+        void RecreateSwapchain(DebugUI& DebugInterface);
+        void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
+                                 std::uint32_t   ImageIndex,
+                                 const Scene&    SceneData,
+                                 const DebugUI&  DebugInterface) const;
 
         const VulkanContext&                Context;
+        Window&                             TargetWindow;
         const AssetManager&                 Assets;
         Swapchain                           SwapchainData;
         VkFormat                            DepthFormat = VK_FORMAT_UNDEFINED;
@@ -69,5 +98,9 @@ namespace MDSS
         RenderContext                       FrameContext;
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
         std::vector<MaterialRenderResource> MaterialResources;
+        RenderViewMode                      ViewMode = RenderViewMode::Lit;
+        bool                                bFlipNormalY = true;
+        float                               NormalStrength = 1.0F;
+        float                               AmbientLight = 0.25F;
     };
 } // namespace MDSS

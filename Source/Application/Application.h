@@ -9,6 +9,7 @@
 
 namespace MDSS
 {
+    class DebugUI;
     class Renderer;
 
     class Application
@@ -28,5 +29,6 @@ namespace MDSS
         AssetManager              Assets;
         Scene                     MainScene;
         std::unique_ptr<Renderer> FrameRenderer;
+        std::unique_ptr<DebugUI>  DebugInterface;
     };
 } // namespace MDSS

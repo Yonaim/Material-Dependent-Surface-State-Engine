@@ -5,15 +5,17 @@
 #include "AssetManager/MaterialAsset.h"
 #include "AssetManager/MeshAsset.h"
 #include "AssetManager/TextureAsset.h"
+#include "DebugUI/DebugUI.h"
+#include "Logger/Logger.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
 #include "VulkanContext/VulkanContext.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -34,11 +36,34 @@ namespace MDSS
 
         struct alignas(16) MaterialUniform
         {
-            glm::vec4 BaseColor{1.0F};
+            glm::vec4     BaseColor{1.0F};
+            std::uint32_t RenderMode = 0;
+            std::uint32_t FlipNormalY = 1;
+            float         NormalStrength = 1.0F;
+            float         AmbientLight = 0.25F;
         };
+
+        const char* GetRenderViewModeName(RenderViewMode Mode)
+        {
+            switch (Mode)
+            {
+                case RenderViewMode::Lit:
+                    return "Lit";
+                case RenderViewMode::Unlit:
+                    return "Unlit";
+                case RenderViewMode::VertexNormalWS:
+                    return "Vertex Normal (World Space)";
+                case RenderViewMode::NormalTextureTS:
+                    return "Normal Texture (Tangent Space)";
+                case RenderViewMode::MappedNormalWS:
+                    return "Mapped Normal (World Space)";
+            }
+            return "Unknown";
+        }
 
         static_assert(sizeof(StaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
+        static_assert(sizeof(MaterialUniform) == 32, "MaterialUniform must match the std140 shader block layout.");
 
         GraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -87,8 +112,8 @@ namespace MDSS
         }
     } // namespace
 
-    Renderer::Renderer(const VulkanContext& Context, const Window& Window, const AssetManager& Assets)
-        : Context(Context), Assets(Assets), SwapchainData(Context, Window),
+    Renderer::Renderer(const VulkanContext& Context, Window& Window, const AssetManager& Assets)
+        : Context(Context), TargetWindow(Window), Assets(Assets), SwapchainData(Context, Window),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
           DepthImage(Context.GetPhysicalDevice(),
                      Context.GetDevice(),
@@ -111,8 +136,10 @@ namespace MDSS
           FrameContext(Context)
     {
         CreateMaterialDescriptorResources();
-        std::cout
-            << "[Renderer] Static mesh pipeline now renders AssetManager meshes with MTL textures and normal maps.\n";
+        Logger::Info("Renderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
+        Logger::Debug("Renderer",
+                      "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
+                          ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
     }
 
     Renderer::~Renderer()
@@ -135,9 +162,15 @@ namespace MDSS
         }
     }
 
-    void Renderer::RenderFrame(const Scene& SceneData)
+    void Renderer::RenderFrame(const Scene& SceneData, DebugUI& DebugInterface)
     {
         FrameContext.WaitForCurrentFrame();
+
+        if (TargetWindow.WasFramebufferResized())
+        {
+            RecreateSwapchain(DebugInterface);
+            return;
+        }
 
         std::uint32_t  ImageIndex = 0;
         const VkResult AcquireResult = vkAcquireNextImageKHR(Context.GetDevice(),
@@ -149,6 +182,8 @@ namespace MDSS
 
         if (AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
+            Logger::Debug("Renderer", "Swapchain became out of date while acquiring; recreating it.");
+            RecreateSwapchain(DebugInterface);
             return;
         }
         if (AcquireResult != VK_SUCCESS && AcquireResult != VK_SUBOPTIMAL_KHR)
@@ -164,7 +199,7 @@ namespace MDSS
             throw std::runtime_error("Failed to reset Vulkan command buffer.");
         }
 
-        RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData);
+        RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface);
 
         const VkSemaphore          WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
         const VkSemaphore          SignalSemaphore = FrameContext.GetRenderFinishedSemaphore();
@@ -196,6 +231,10 @@ namespace MDSS
         PresentInfo.pImageIndices = &ImageIndex;
 
         const VkResult PresentResult = vkQueuePresentKHR(Context.GetQueues().GetPresent(), &PresentInfo);
+        const bool     bSwapchainNeedsRecreation =
+            AcquireResult == VK_SUBOPTIMAL_KHR || PresentResult == VK_ERROR_OUT_OF_DATE_KHR ||
+            PresentResult == VK_SUBOPTIMAL_KHR || TargetWindow.WasFramebufferResized();
+
         if (PresentResult != VK_SUCCESS && PresentResult != VK_SUBOPTIMAL_KHR &&
             PresentResult != VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -203,11 +242,135 @@ namespace MDSS
         }
 
         FrameContext.AdvanceFrame();
+
+        if (bSwapchainNeedsRecreation)
+        {
+            Logger::Debug("Renderer", "Presentation requires swapchain recreation.");
+            RecreateSwapchain(DebugInterface);
+        }
+    }
+
+    void Renderer::RecreateSwapchain(DebugUI& DebugInterface)
+    {
+        TargetWindow.WaitForNonZeroFramebuffer();
+        if (TargetWindow.ShouldClose())
+        {
+            return;
+        }
+
+        std::uint32_t FramebufferWidth = 0;
+        std::uint32_t FramebufferHeight = 0;
+        TargetWindow.GetFramebufferSize(FramebufferWidth, FramebufferHeight);
+
+        Logger::Info("Renderer",
+                     "Recreating swapchain for framebuffer " + std::to_string(FramebufferWidth) + "x" +
+                         std::to_string(FramebufferHeight) + ".");
+
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for Vulkan device before swapchain recreation.");
+        }
+
+        // Framebuffers reference both swapchain image views and the depth image view,
+        // so they must be destroyed before either dependency is recreated.
+        MainFramebuffers.Reset();
+        DepthImageView.Reset();
+        DepthImage.Reset();
+
+        const VkFormat PreviousColorFormat = SwapchainData.GetImageFormat();
+        SwapchainData.Recreate(Context, TargetWindow);
+
+        if (PreviousColorFormat != SwapchainData.GetImageFormat())
+        {
+            throw std::runtime_error(
+                "Swapchain color format changed during resize. RenderPass/Pipeline recreation is required.");
+        }
+
+        DepthImage.Recreate(Context.GetPhysicalDevice(),
+                            SwapchainData.GetExtent(),
+                            DepthFormat,
+                            VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        DepthImageView.Recreate(DepthImage.GetHandle(), DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        MainFramebuffers.Recreate(MainRenderPass.GetHandle(),
+                                  SwapchainData.GetExtent(),
+                                  SwapchainData.GetImageViews(),
+                                  DepthImageView.GetHandle());
+
+        TargetWindow.ResetFramebufferResized();
+        DebugInterface.OnSwapchainRecreated(Context, *this);
+
+        const VkExtent2D NewExtent = SwapchainData.GetExtent();
+        Logger::Info("Renderer",
+                     "Swapchain recreation complete: " + std::to_string(NewExtent.width) + "x" +
+                         std::to_string(NewExtent.height) + ".");
     }
 
     const Swapchain& Renderer::GetSwapchain() const noexcept
     {
         return SwapchainData;
+    }
+
+    VkRenderPass Renderer::GetRenderPassHandle() const noexcept
+    {
+        return MainRenderPass.GetHandle();
+    }
+
+    RenderViewMode Renderer::GetRenderViewMode() const noexcept
+    {
+        return ViewMode;
+    }
+
+    void Renderer::SetRenderViewMode(RenderViewMode Mode)
+    {
+        if (ViewMode == Mode)
+        {
+            return;
+        }
+
+        ViewMode = Mode;
+        UpdateMaterialUniforms();
+        Logger::Info("Renderer", std::string("Render view mode changed to ") + GetRenderViewModeName(ViewMode) + ".");
+    }
+
+    bool Renderer::GetFlipNormalY() const noexcept
+    {
+        return bFlipNormalY;
+    }
+
+    void Renderer::SetFlipNormalY(bool bEnabled)
+    {
+        if (bFlipNormalY == bEnabled)
+        {
+            return;
+        }
+
+        bFlipNormalY = bEnabled;
+        UpdateMaterialUniforms();
+        Logger::Info("Renderer", std::string("Normal-map Y flip ") + (bFlipNormalY ? "enabled." : "disabled."));
+    }
+
+    float Renderer::GetNormalStrength() const noexcept
+    {
+        return NormalStrength;
+    }
+
+    void Renderer::SetNormalStrength(float Strength)
+    {
+        NormalStrength = std::clamp(Strength, 0.0F, 4.0F);
+        UpdateMaterialUniforms();
+    }
+
+    float Renderer::GetAmbientLight() const noexcept
+    {
+        return AmbientLight;
+    }
+
+    void Renderer::SetAmbientLight(float Intensity)
+    {
+        AmbientLight = std::clamp(Intensity, 0.0F, 1.0F);
+        UpdateMaterialUniforms();
     }
 
     VkDescriptorSetLayout Renderer::CreateMaterialDescriptorSetLayout(VkDevice Device)
@@ -247,8 +410,12 @@ namespace MDSS
         const std::size_t MaterialCount = Assets.GetMaterialCount();
         if (MaterialCount == 0)
         {
+            Logger::Warning("Renderer", "No materials are registered; material descriptor resources were not created.");
             return;
         }
+
+        Logger::Debug("Renderer",
+                      "Creating descriptor resources for " + std::to_string(MaterialCount) + " material(s).");
 
         std::array<VkDescriptorPoolSize, 2> PoolSizes{};
         PoolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -297,7 +464,11 @@ namespace MDSS
                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             MaterialResources[Index].DescriptorSet = Sets[Index];
 
-            const MaterialUniform Uniform{Material.GetBaseColor()};
+            const MaterialUniform Uniform{Material.GetBaseColor(),
+                                          static_cast<std::uint32_t>(ViewMode),
+                                          bFlipNormalY ? 1U : 0U,
+                                          NormalStrength,
+                                          AmbientLight};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
             VkDescriptorImageInfo BaseImage{};
@@ -335,10 +506,34 @@ namespace MDSS
             vkUpdateDescriptorSets(
                 Context.GetDevice(), static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
         }
+
+        Logger::Info("Renderer", "Material descriptor sets created: " + std::to_string(MaterialResources.size()) + ".");
     }
 
-    void
-    Renderer::RecordCommandBuffer(VkCommandBuffer CommandBuffer, std::uint32_t ImageIndex, const Scene& SceneData) const
+    void Renderer::UpdateMaterialUniforms()
+    {
+        const std::size_t MaterialCount = std::min(Assets.GetMaterialCount(), MaterialResources.size());
+        for (std::size_t Index = 0; Index < MaterialCount; ++Index)
+        {
+            if (!MaterialResources[Index].UniformBuffer)
+            {
+                continue;
+            }
+
+            const MaterialAsset&  Material = Assets.GetMaterial(static_cast<MaterialAssetHandle>(Index));
+            const MaterialUniform Uniform{Material.GetBaseColor(),
+                                          static_cast<std::uint32_t>(ViewMode),
+                                          bFlipNormalY ? 1U : 0U,
+                                          NormalStrength,
+                                          AmbientLight};
+            MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
+        }
+    }
+
+    void Renderer::RecordCommandBuffer(VkCommandBuffer CommandBuffer,
+                                       std::uint32_t   ImageIndex,
+                                       const Scene&    SceneData,
+                                       const DebugUI&  DebugInterface) const
     {
         VkCommandBufferBeginInfo BeginInfo{};
         BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -423,6 +618,8 @@ namespace MDSS
                 vkCmdDrawIndexed(CommandBuffer, Section.IndexCount, 1, Section.FirstIndex, 0, 0);
             }
         }
+
+        DebugInterface.Render(CommandBuffer);
 
         vkCmdEndRenderPass(CommandBuffer);
         if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
