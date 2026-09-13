@@ -1,8 +1,11 @@
 #include "Application/Window.h"
 
+#include "Logger/Logger.h"
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <mutex>
 #include <stdexcept>
@@ -19,8 +22,6 @@ namespace MDSS
     {
         InitializeGLFW();
 
-        // Do not create an OpenGL/OpenGL ES context.
-        // The same GLFW window can later be used to create a Vulkan surface.
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
@@ -31,6 +32,12 @@ namespace MDSS
             TerminateGLFW();
             throw std::runtime_error("Failed to create GLFW window.");
         }
+
+        glfwSetWindowUserPointer(Handle, this);
+        glfwSetFramebufferSizeCallback(Handle, FramebufferSizeCallback);
+
+        Logger::Info("Application",
+                     "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
     }
 
     Window::~Window()
@@ -59,6 +66,53 @@ namespace MDSS
         return Handle;
     }
 
+    bool Window::WasFramebufferResized() const noexcept
+    {
+        return bFramebufferResized;
+    }
+
+    void Window::ResetFramebufferResized() noexcept
+    {
+        bFramebufferResized = false;
+    }
+
+    void Window::GetFramebufferSize(std::uint32_t& Width, std::uint32_t& Height) const noexcept
+    {
+        int FramebufferWidth = 0;
+        int FramebufferHeight = 0;
+        glfwGetFramebufferSize(Handle, &FramebufferWidth, &FramebufferHeight);
+
+        Width = static_cast<std::uint32_t>(std::max(FramebufferWidth, 0));
+        Height = static_cast<std::uint32_t>(std::max(FramebufferHeight, 0));
+    }
+
+    void Window::WaitForNonZeroFramebuffer() const
+    {
+        std::uint32_t Width = 0;
+        std::uint32_t Height = 0;
+        GetFramebufferSize(Width, Height);
+
+        while ((Width == 0 || Height == 0) && !ShouldClose())
+        {
+            glfwWaitEvents();
+            GetFramebufferSize(Width, Height);
+        }
+    }
+
+    void Window::FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height)
+    {
+        auto* WindowInstance = static_cast<Window*>(glfwGetWindowUserPointer(WindowHandle));
+        if (WindowInstance == nullptr)
+        {
+            return;
+        }
+
+        WindowInstance->bFramebufferResized = true;
+        Logger::Debug("Application",
+                      "Framebuffer resize requested: " + std::to_string(std::max(Width, 0)) + "x" +
+                          std::to_string(std::max(Height, 0)) + ".");
+    }
+
     void Window::InitializeGLFW()
     {
         std::scoped_lock Lock(GLFWMutex);
@@ -69,6 +123,7 @@ namespace MDSS
             {
                 throw std::runtime_error("Failed to initialize GLFW.");
             }
+            Logger::Debug("Application", "GLFW initialized.");
         }
 
         ++WindowCount;
@@ -88,6 +143,7 @@ namespace MDSS
         if (WindowCount == 0)
         {
             glfwTerminate();
+            Logger::Verbose("Application", "GLFW terminated.");
         }
     }
 } // namespace MDSS
