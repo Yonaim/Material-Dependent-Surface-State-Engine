@@ -23,12 +23,12 @@ namespace MDSS
     private:
         static std::vector<const char*> BuildExtensionList(const std::vector<const char*>& RequiredExtensions);
         static void                     ValidateExtensions(const std::vector<const char*>& Extensions);
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         static void ValidateLayers();
 #endif
 
         VkInstance Instance = VK_NULL_HANDLE;
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE;
 #endif
     };

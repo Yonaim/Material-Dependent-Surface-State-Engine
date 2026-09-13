@@ -2,14 +2,21 @@
 
 #include <vulkan/vulkan.h>
 
+#include <string>
 #include <vector>
 
 namespace MDSS
 {
+    struct ShaderStageConfig
+    {
+        VkShaderStageFlagBits Stage = VK_SHADER_STAGE_VERTEX_BIT;
+        std::string           ShaderPath;
+        std::string           EntryPoint = "main";
+    };
+
     struct GraphicsPipelineConfig
     {
-        const char* VertexShaderPath = nullptr;
-        const char* FragmentShaderPath = nullptr;
+        std::vector<ShaderStageConfig> ShaderStages;
 
         VkPrimitiveTopology                            Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         std::vector<VkVertexInputBindingDescription>   VertexBindings;

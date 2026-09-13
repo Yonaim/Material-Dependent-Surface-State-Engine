@@ -4,8 +4,8 @@
 
 namespace MDSS
 {
-    StaticMeshInstance::StaticMeshInstance(Transform InstanceTransform)
-        : InstanceTransform(std::move(InstanceTransform))
+    StaticMeshInstance::StaticMeshInstance(MeshAssetHandle Mesh, Transform InstanceTransform)
+        : Mesh(Mesh), InstanceTransform(std::move(InstanceTransform))
     {
     }
 
@@ -17,5 +17,10 @@ namespace MDSS
     const Transform& StaticMeshInstance::GetTransform() const noexcept
     {
         return InstanceTransform;
+    }
+
+    MeshAssetHandle StaticMeshInstance::GetMesh() const noexcept
+    {
+        return Mesh;
     }
 } // namespace MDSS

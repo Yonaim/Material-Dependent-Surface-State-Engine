@@ -12,7 +12,7 @@
 namespace MDSS
 {
     VulkanContext::VulkanContext(const Window& Window)
-        : Instance("MDSSP Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), Window)),
+        : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), Window)),
           Device(Instance.GetHandle(), Surface), Queues(Device.GetPhysicalHandle(), Device.GetHandle(), Surface),
           Commands(Device.GetHandle(), Queues.GetFamilyIndices().GraphicsFamily.value())
     {
@@ -47,6 +47,11 @@ namespace MDSS
     VkDevice VulkanContext::GetDevice() const noexcept
     {
         return Device.GetHandle();
+    }
+
+    bool VulkanContext::SupportsGeometryShader() const noexcept
+    {
+        return Device.SupportsGeometryShader();
     }
 
     const VulkanQueue& VulkanContext::GetQueues() const noexcept

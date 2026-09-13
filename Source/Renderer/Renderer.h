@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AssetManager/Asset.h"
 #include "Renderer/Framebuffer.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/RenderContext.h"
@@ -12,9 +13,12 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace MDSS
 {
+    class AssetManager;
     class Scene;
     class VulkanContext;
     class Window;
@@ -22,7 +26,7 @@ namespace MDSS
     class Renderer
     {
     public:
-        Renderer(const VulkanContext& Context, const Window& Window);
+        Renderer(const VulkanContext& Context, const Window& Window, const AssetManager& Assets);
         ~Renderer();
 
         Renderer(const Renderer&) = delete;
@@ -35,26 +39,35 @@ namespace MDSS
         [[nodiscard]] const Swapchain& GetSwapchain() const noexcept;
 
     private:
-        static VkFormat FindDepthFormat(VkPhysicalDevice PhysicalDevice);
-        static VkFormat FindSupportedFormat(VkPhysicalDevice     PhysicalDevice,
-                                            const VkFormat*      Candidates,
-                                            std::uint32_t        CandidateCount,
-                                            VkImageTiling        Tiling,
-                                            VkFormatFeatureFlags Features);
+        struct MaterialRenderResource
+        {
+            std::unique_ptr<GPUBuffer> UniformBuffer;
+            VkDescriptorSet            DescriptorSet = VK_NULL_HANDLE;
+        };
 
+        static VkFormat              FindDepthFormat(VkPhysicalDevice PhysicalDevice);
+        static VkFormat              FindSupportedFormat(VkPhysicalDevice     PhysicalDevice,
+                                                         const VkFormat*      Candidates,
+                                                         std::uint32_t        CandidateCount,
+                                                         VkImageTiling        Tiling,
+                                                         VkFormatFeatureFlags Features);
+        static VkDescriptorSetLayout CreateMaterialDescriptorSetLayout(VkDevice Device);
+
+        void CreateMaterialDescriptorResources();
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer, std::uint32_t ImageIndex, const Scene& SceneData) const;
 
-        const VulkanContext& Context;
-        Swapchain            SwapchainData;
-        VkFormat             DepthFormat = VK_FORMAT_UNDEFINED;
-        GPUImage             DepthImage;
-        GPUImageView         DepthImageView;
-        RenderPass           MainRenderPass;
-        GraphicsPipeline     StaticMeshPipeline;
-        Framebuffer          MainFramebuffers;
-        RenderContext        FrameContext;
-        GPUBuffer            CubeVertexBuffer;
-        GPUBuffer            CubeIndexBuffer;
-        std::uint32_t        CubeIndexCount = 0;
+        const VulkanContext&                Context;
+        const AssetManager&                 Assets;
+        Swapchain                           SwapchainData;
+        VkFormat                            DepthFormat = VK_FORMAT_UNDEFINED;
+        GPUImage                            DepthImage;
+        GPUImageView                        DepthImageView;
+        RenderPass                          MainRenderPass;
+        VkDescriptorSetLayout               MaterialDescriptorSetLayout = VK_NULL_HANDLE;
+        GraphicsPipeline                    StaticMeshPipeline;
+        Framebuffer                         MainFramebuffers;
+        RenderContext                       FrameContext;
+        VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
+        std::vector<MaterialRenderResource> MaterialResources;
     };
 } // namespace MDSS

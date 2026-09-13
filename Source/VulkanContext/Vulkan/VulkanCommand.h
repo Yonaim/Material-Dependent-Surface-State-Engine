@@ -20,6 +20,8 @@ namespace MDSS
 
         [[nodiscard]] VkCommandPool                GetPool() const noexcept;
         [[nodiscard]] std::vector<VkCommandBuffer> AllocatePrimary(std::uint32_t Count) const;
+        [[nodiscard]] VkCommandBuffer              BeginSingleTime() const;
+        void                                       EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const;
 
     private:
         VkDevice      Device = VK_NULL_HANDLE;

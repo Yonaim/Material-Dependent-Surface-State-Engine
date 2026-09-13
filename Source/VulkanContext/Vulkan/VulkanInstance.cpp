@@ -9,7 +9,7 @@
 
 namespace MDSS
 {
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
     namespace
     {
         constexpr const char* ValidationLayer = "VK_LAYER_KHRONOS_validation";
@@ -42,7 +42,7 @@ namespace MDSS
     {
         const std::vector<const char*> Extensions = BuildExtensionList(RequiredExtensions);
         ValidateExtensions(Extensions);
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         ValidateLayers();
 #endif
 
@@ -50,7 +50,7 @@ namespace MDSS
         ApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         ApplicationInfo.pApplicationName = ApplicationName.c_str();
         ApplicationInfo.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
-        ApplicationInfo.pEngineName = "MDSSP Engine";
+        ApplicationInfo.pEngineName = "MDSS Engine";
         ApplicationInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
         ApplicationInfo.apiVersion = VK_API_VERSION_1_2;
 
@@ -60,7 +60,7 @@ namespace MDSS
         CreateInfo.enabledExtensionCount = static_cast<std::uint32_t>(Extensions.size());
         CreateInfo.ppEnabledExtensionNames = Extensions.data();
 
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         const VkDebugUtilsMessengerCreateInfoEXT MessengerInfo = DebugMessengerCreateInfo();
         constexpr std::array                     EnabledFeatures = {VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
                                                                     VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
@@ -86,7 +86,7 @@ namespace MDSS
                                      std::to_string(static_cast<std::int32_t>(Result)) + ").");
         }
 
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         const auto CreateDebugMessenger = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
             vkGetInstanceProcAddr(Instance, "vkCreateDebugUtilsMessengerEXT"));
         if (CreateDebugMessenger == nullptr ||
@@ -99,14 +99,14 @@ namespace MDSS
 #endif
 
         std::cout << "[Vulkan] Instance created (API 1.2).\n";
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         std::cout << "[Vulkan] Validation enabled (core, synchronization, best practices).\n";
 #endif
     }
 
     VulkanInstance::~VulkanInstance()
     {
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         if (DebugMessenger != VK_NULL_HANDLE)
         {
             const auto DestroyDebugMessenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
@@ -135,7 +135,7 @@ namespace MDSS
     {
         std::vector<const char*> Extensions = RequiredExtensions;
 
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
         Extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
@@ -178,7 +178,7 @@ namespace MDSS
         }
     }
 
-#if MDSSP_ENABLE_VALIDATION
+#if MDSS_ENABLE_VALIDATION
     void VulkanInstance::ValidateLayers()
     {
         std::uint32_t LayerCount = 0;

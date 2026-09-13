@@ -62,7 +62,12 @@ namespace MDSS
 
         const std::vector<const char*> DeviceExtensions = BuildDeviceExtensions(PhysicalDevice);
 
+        VkPhysicalDeviceFeatures SupportedFeatures{};
+        vkGetPhysicalDeviceFeatures(PhysicalDevice, &SupportedFeatures);
+
         VkPhysicalDeviceFeatures Features{};
+        Features.geometryShader = SupportedFeatures.geometryShader;
+        bGeometryShaderSupported = SupportedFeatures.geometryShader == VK_TRUE;
 
         VkDeviceCreateInfo CreateInfo{};
         CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -82,6 +87,7 @@ namespace MDSS
 
         std::cout << "[Vulkan] Physical device: " << Properties.deviceName << '\n';
         std::cout << "[Vulkan] Logical device created.\n";
+        std::cout << "[Vulkan] Geometry shader support: " << (bGeometryShaderSupported ? "yes" : "no") << '\n';
     }
 
     VulkanDevice::~VulkanDevice()
@@ -101,6 +107,11 @@ namespace MDSS
     VkDevice VulkanDevice::GetHandle() const noexcept
     {
         return Device;
+    }
+
+    bool VulkanDevice::SupportsGeometryShader() const noexcept
+    {
+        return bGeometryShaderSupported;
     }
 
     bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)

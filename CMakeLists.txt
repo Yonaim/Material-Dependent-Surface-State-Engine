@@ -23,18 +23,16 @@ endif()
 
 find_package(Vulkan REQUIRED)
 
+include(FetchContent)
+
 find_package(glm CONFIG QUIET)
-
 if(NOT glm_FOUND)
-    include(FetchContent)
-
     FetchContent_Declare(
         glm
         GIT_REPOSITORY https://github.com/g-truc/glm.git
         GIT_TAG 1.0.1
         GIT_SHALLOW TRUE
     )
-
     FetchContent_MakeAvailable(glm)
 endif()
 
@@ -46,8 +44,6 @@ option(MDSS_USE_SYSTEM_GLFW
 if(MDSS_USE_SYSTEM_GLFW)
     find_package(glfw3 CONFIG REQUIRED)
 else()
-    include(FetchContent)
-
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -59,9 +55,27 @@ else()
         GIT_TAG 3.4
         GIT_SHALLOW TRUE
     )
-
     FetchContent_MakeAvailable(glfw)
 endif()
+
+# OBJ/MTL parser. We include the single header directly and compile the
+# implementation in OBJLoader.cpp so tinyobjloader types stay inside Loader/.
+FetchContent_Declare(
+    tinyobjloader
+    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+    GIT_TAG release
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(tinyobjloader)
+
+# Image decoder used by TextureLoader (PNG/JPG/etc.).
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(stb)
 
 file(GLOB_RECURSE MDSS_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp"
@@ -69,12 +83,19 @@ file(GLOB_RECURSE MDSS_SOURCES CONFIGURE_DEPENDS
 
 add_executable(MDSS ${MDSS_SOURCES})
 
-target_include_directories(MDSS PRIVATE Source)
+target_include_directories(MDSS PRIVATE
+    Source
+    "${tinyobjloader_SOURCE_DIR}"
+    "${stb_SOURCE_DIR}"
+)
 target_link_libraries(MDSS PRIVATE glfw Vulkan::Vulkan glm::glm)
 
 file(GLOB_RECURSE MDSS_SHADER_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.geom"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.tesc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.tese"
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.comp"
 )
 
@@ -117,8 +138,9 @@ add_custom_target(MDSS_Shaders DEPENDS ${MDSS_SHADER_BINARIES})
 add_dependencies(MDSS MDSS_Shaders)
 
 target_compile_definitions(MDSS PRIVATE
-    MDSSP_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
-    MDSSP_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
+    MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+    MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+    MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
     GLM_FORCE_RADIANS
     GLM_FORCE_DEPTH_ZERO_TO_ONE
 )

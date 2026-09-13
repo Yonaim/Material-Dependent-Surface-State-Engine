@@ -41,32 +41,35 @@ namespace MDSS
     GraphicsPipeline::GraphicsPipeline(VkDevice Device, VkRenderPass RenderPass, const GraphicsPipelineConfig& Config)
         : Device(Device)
     {
-        if (Config.VertexShaderPath == nullptr || Config.FragmentShaderPath == nullptr)
+        if (Config.ShaderStages.empty())
         {
-            throw std::invalid_argument("Graphics pipeline shader paths must not be null.");
+            throw std::invalid_argument("Graphics pipeline requires at least one shader stage.");
         }
 
-        VkShaderModule VertexShader = VK_NULL_HANDLE;
-        VkShaderModule FragmentShader = VK_NULL_HANDLE;
+        std::vector<VkShaderModule>                  ShaderModules;
+        std::vector<VkPipelineShaderStageCreateInfo> ShaderStageInfos;
+        ShaderModules.reserve(Config.ShaderStages.size());
+        ShaderStageInfos.reserve(Config.ShaderStages.size());
 
         try
         {
-            VertexShader = CreateShaderModule(Device, Config.VertexShaderPath);
-            FragmentShader = CreateShaderModule(Device, Config.FragmentShaderPath);
+            for (const ShaderStageConfig& StageConfig : Config.ShaderStages)
+            {
+                if (StageConfig.ShaderPath.empty() || StageConfig.EntryPoint.empty())
+                {
+                    throw std::invalid_argument("Graphics pipeline shader stage path/entry point must not be empty.");
+                }
 
-            VkPipelineShaderStageCreateInfo VertexStage{};
-            VertexStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            VertexStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
-            VertexStage.module = VertexShader;
-            VertexStage.pName = "main";
+                const VkShaderModule Module = CreateShaderModule(Device, StageConfig.ShaderPath.c_str());
+                ShaderModules.push_back(Module);
 
-            VkPipelineShaderStageCreateInfo FragmentStage{};
-            FragmentStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            FragmentStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-            FragmentStage.module = FragmentShader;
-            FragmentStage.pName = "main";
-
-            const std::array<VkPipelineShaderStageCreateInfo, 2> ShaderStages = {VertexStage, FragmentStage};
+                VkPipelineShaderStageCreateInfo StageInfo{};
+                StageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                StageInfo.stage = StageConfig.Stage;
+                StageInfo.module = Module;
+                StageInfo.pName = StageConfig.EntryPoint.c_str();
+                ShaderStageInfos.push_back(StageInfo);
+            }
 
             VkPipelineVertexInputStateCreateInfo VertexInput{};
             VertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -148,8 +151,8 @@ namespace MDSS
 
             VkGraphicsPipelineCreateInfo PipelineInfo{};
             PipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            PipelineInfo.stageCount = static_cast<std::uint32_t>(ShaderStages.size());
-            PipelineInfo.pStages = ShaderStages.data();
+            PipelineInfo.stageCount = static_cast<std::uint32_t>(ShaderStageInfos.size());
+            PipelineInfo.pStages = ShaderStageInfos.data();
             PipelineInfo.pVertexInputState = &VertexInput;
             PipelineInfo.pInputAssemblyState = &InputAssembly;
             PipelineInfo.pViewportState = &ViewportState;
@@ -169,29 +172,22 @@ namespace MDSS
         }
         catch (...)
         {
-            if (Pipeline != VK_NULL_HANDLE)
+            for (VkShaderModule Module : ShaderModules)
             {
-                vkDestroyPipeline(Device, Pipeline, nullptr);
-                Pipeline = VK_NULL_HANDLE;
+                vkDestroyShaderModule(Device, Module, nullptr);
             }
             if (PipelineLayout != VK_NULL_HANDLE)
             {
                 vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
                 PipelineLayout = VK_NULL_HANDLE;
             }
-            if (FragmentShader != VK_NULL_HANDLE)
-            {
-                vkDestroyShaderModule(Device, FragmentShader, nullptr);
-            }
-            if (VertexShader != VK_NULL_HANDLE)
-            {
-                vkDestroyShaderModule(Device, VertexShader, nullptr);
-            }
             throw;
         }
 
-        vkDestroyShaderModule(Device, FragmentShader, nullptr);
-        vkDestroyShaderModule(Device, VertexShader, nullptr);
+        for (VkShaderModule Module : ShaderModules)
+        {
+            vkDestroyShaderModule(Device, Module, nullptr);
+        }
     }
 
     GraphicsPipeline::~GraphicsPipeline()
@@ -201,7 +197,6 @@ namespace MDSS
             vkDestroyPipeline(Device, Pipeline, nullptr);
             Pipeline = VK_NULL_HANDLE;
         }
-
         if (PipelineLayout != VK_NULL_HANDLE)
         {
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
@@ -233,7 +228,6 @@ namespace MDSS
         {
             throw std::runtime_error(std::string("Failed to create shader module: ") + Path);
         }
-
         return Module;
     }
 } // namespace MDSS

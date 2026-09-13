@@ -28,6 +28,7 @@ namespace MDSS
         [[nodiscard]] VkSurfaceKHR         GetSurface() const noexcept;
         [[nodiscard]] VkPhysicalDevice     GetPhysicalDevice() const noexcept;
         [[nodiscard]] VkDevice             GetDevice() const noexcept;
+        [[nodiscard]] bool                 SupportsGeometryShader() const noexcept;
         [[nodiscard]] const VulkanQueue&   GetQueues() const noexcept;
         [[nodiscard]] const VulkanCommand& GetCommands() const noexcept;
 

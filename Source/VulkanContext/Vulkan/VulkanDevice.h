@@ -19,6 +19,7 @@ namespace MDSS
 
         [[nodiscard]] VkPhysicalDevice GetPhysicalHandle() const noexcept;
         [[nodiscard]] VkDevice         GetHandle() const noexcept;
+        [[nodiscard]] bool             SupportsGeometryShader() const noexcept;
 
     private:
         static bool IsDeviceSuitable(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
@@ -30,5 +31,6 @@ namespace MDSS
 
         VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
         VkDevice         Device = VK_NULL_HANDLE;
+        bool             bGeometryShaderSupported = false;
     };
 } // namespace MDSS

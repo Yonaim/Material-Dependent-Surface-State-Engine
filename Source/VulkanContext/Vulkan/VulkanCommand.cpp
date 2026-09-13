@@ -48,4 +48,59 @@ namespace MDSS
 
         return CommandBuffers;
     }
+
+    VkCommandBuffer VulkanCommand::BeginSingleTime() const
+    {
+        VkCommandBuffer             CommandBuffer = VK_NULL_HANDLE;
+        VkCommandBufferAllocateInfo AllocateInfo{};
+        AllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        AllocateInfo.commandPool = CommandPool;
+        AllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        AllocateInfo.commandBufferCount = 1;
+
+        if (vkAllocateCommandBuffers(Device, &AllocateInfo, &CommandBuffer) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to allocate one-time Vulkan command buffer.");
+        }
+
+        VkCommandBufferBeginInfo BeginInfo{};
+        BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        if (vkBeginCommandBuffer(CommandBuffer, &BeginInfo) != VK_SUCCESS)
+        {
+            vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+            throw std::runtime_error("Failed to begin one-time Vulkan command buffer.");
+        }
+
+        return CommandBuffer;
+    }
+
+    void VulkanCommand::EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const
+    {
+        if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
+        {
+            vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+            throw std::runtime_error("Failed to end one-time Vulkan command buffer.");
+        }
+
+        VkSubmitInfo SubmitInfo{};
+        SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        SubmitInfo.commandBufferCount = 1;
+        SubmitInfo.pCommandBuffers = &CommandBuffer;
+
+        if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
+        {
+            vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+            throw std::runtime_error("Failed to submit one-time Vulkan command buffer.");
+        }
+
+        if (vkQueueWaitIdle(Queue) != VK_SUCCESS)
+        {
+            vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+            throw std::runtime_error("Failed while waiting for one-time Vulkan command buffer.");
+        }
+
+        vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+    }
 } // namespace MDSS
