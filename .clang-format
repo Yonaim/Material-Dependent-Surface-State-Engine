@@ -1,0 +1,113 @@
+# MDSS Engine clang-format configuration
+#
+# Naming rules such as PascalCase, bBoolean, and MDSS namespace naming are
+# documented in Docs/CodingConventions.md and are not enforced by clang-format.
+
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+
+# -----------------------------------------------------------------------------
+# Indentation
+# -----------------------------------------------------------------------------
+
+UseTab: Never
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+
+# Match the current MDSS style:
+#
+# class Renderer
+# {
+# public:
+#     void RenderFrame();
+#
+# private:
+#     bool bInitialized = false;
+# };
+AccessModifierOffset: -4
+
+NamespaceIndentation: All
+IndentCaseLabels: true
+IndentPPDirectives: None
+
+# -----------------------------------------------------------------------------
+# Braces
+# -----------------------------------------------------------------------------
+
+# Unreal-style / Allman-style braces.
+BreakBeforeBraces: Allman
+
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+
+# -----------------------------------------------------------------------------
+# Pointers / References
+# -----------------------------------------------------------------------------
+
+# GLFWwindow* Window;
+# const Scene& Scene;
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# -----------------------------------------------------------------------------
+# Line wrapping
+# -----------------------------------------------------------------------------
+
+ColumnLimit: 120
+
+BinPackArguments: false
+BinPackParameters: false
+
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+
+# Do not vertically align unrelated declarations/assignments.
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+
+# -----------------------------------------------------------------------------
+# Spacing
+# -----------------------------------------------------------------------------
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
+Cpp11BracedListStyle: true
+
+# -----------------------------------------------------------------------------
+# Includes
+# -----------------------------------------------------------------------------
+
+# Intended order:
+#   1. Matching header for the current .cpp
+#   2. MDSS project headers
+#   3. External libraries (Vulkan / GLFW)
+#   4. Standard library
+#
+# clang-format recognizes the matching header separately and keeps it first.
+SortIncludes: true
+IncludeBlocks: Regroup
+
+IncludeCategories:
+  - Regex: '^"'
+    Priority: 2
+  - Regex: '^<(vulkan|GLFW)/'
+    Priority: 3
+  - Regex: '^<'
+    Priority: 4
+
+# -----------------------------------------------------------------------------
+# Misc.
+# -----------------------------------------------------------------------------
+
+CompactNamespaces: false
+FixNamespaceComments: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+ReflowComments: true
