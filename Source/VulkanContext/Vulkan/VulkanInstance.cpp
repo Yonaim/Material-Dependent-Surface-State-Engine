@@ -20,8 +20,9 @@ namespace MDSS
                                                      const VkDebugUtilsMessengerCallbackDataEXT* CallbackData,
                                                      void*)
         {
-            const std::string_view Message =
-                CallbackData != nullptr && CallbackData->pMessage != nullptr ? CallbackData->pMessage : "Unknown validation message.";
+            const std::string_view Message = CallbackData != nullptr && CallbackData->pMessage != nullptr
+                                                 ? CallbackData->pMessage
+                                                 : "Unknown validation message.";
 
             if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0)
             {

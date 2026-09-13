@@ -1,8 +1,8 @@
 #include "AssetManager/TextureAsset.h"
 
+#include "Logger/Logger.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
 #include "VulkanContext/VulkanContext.h"
-#include "Logger/Logger.h"
 
 #include <stdexcept>
 #include <utility>
@@ -51,9 +51,9 @@ namespace MDSS
         ImageView =
             std::make_unique<GPUImageView>(Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
         Sampler = std::make_unique<GPUSampler>(Context.GetDevice());
-        Logger::Debug("AssetManager", "Uploaded TextureAsset '" + GetName() + "' to GPU (" +
-                                        std::to_string(Width) + "x" + std::to_string(Height) +
-                                        ", format=" + std::to_string(static_cast<int>(Format)) + ").");
+        Logger::Debug("AssetManager",
+                      "Uploaded TextureAsset '" + GetName() + "' to GPU (" + std::to_string(Width) + "x" +
+                          std::to_string(Height) + ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
     std::uint32_t TextureAsset::GetWidth() const noexcept

@@ -58,10 +58,10 @@ namespace MDSS
         }
 
         const MeshAssetHandle Handle = static_cast<MeshAssetHandle>(Meshes.size());
-        const std::size_t VertexCount = Loaded.Vertices.size();
-        const std::size_t IndexCount = Loaded.Indices.size();
-        const std::size_t SectionCount = Sections.size();
-        const std::size_t MaterialCount = MaterialRemap.size();
+        const std::size_t     VertexCount = Loaded.Vertices.size();
+        const std::size_t     IndexCount = Loaded.Indices.size();
+        const std::size_t     SectionCount = Sections.size();
+        const std::size_t     MaterialCount = MaterialRemap.size();
 
         Meshes.push_back(std::make_unique<MeshAsset>(Handle,
                                                      Path.stem().string(),
@@ -70,11 +70,11 @@ namespace MDSS
                                                      std::move(Loaded.Vertices),
                                                      std::move(Loaded.Indices),
                                                      std::move(Sections)));
-        Logger::Info("AssetManager", "OBJ registered as MeshAsset handle=" + std::to_string(Handle) +
-                                        " (vertices=" + std::to_string(VertexCount) +
-                                        ", indices=" + std::to_string(IndexCount) +
-                                        ", sections=" + std::to_string(SectionCount) +
-                                        ", imported materials=" + std::to_string(MaterialCount) + ").");
+        Logger::Info("AssetManager",
+                     "OBJ registered as MeshAsset handle=" + std::to_string(Handle) +
+                         " (vertices=" + std::to_string(VertexCount) + ", indices=" + std::to_string(IndexCount) +
+                         ", sections=" + std::to_string(SectionCount) +
+                         ", imported materials=" + std::to_string(MaterialCount) + ").");
         return Handle;
     }
 
@@ -124,8 +124,8 @@ namespace MDSS
             return Found->second;
         }
 
-        Logger::Debug("AssetManager", "Loading " + std::string(bSRGB ? "sRGB" : "linear") +
-                                        " texture: " + Path.string());
+        Logger::Debug("AssetManager",
+                      "Loading " + std::string(bSRGB ? "sRGB" : "linear") + " texture: " + Path.string());
 
         const TextureData        Data = TextureLoader::LoadRGBA8(Path);
         const TextureAssetHandle Handle = static_cast<TextureAssetHandle>(Textures.size());
@@ -134,9 +134,9 @@ namespace MDSS
         Textures.push_back(std::make_unique<TextureAsset>(
             Handle, Path.stem().string(), Path, Context, Data.Width, Data.Height, Data.Pixels, Format));
         TextureCache.emplace(CacheKey, Handle);
-        Logger::Info("AssetManager", "Texture registered: " + Path.filename().string() +
-                                        " (handle=" + std::to_string(Handle) +
-                                        ", " + std::to_string(Data.Width) + "x" + std::to_string(Data.Height) + ").");
+        Logger::Info("AssetManager",
+                     "Texture registered: " + Path.filename().string() + " (handle=" + std::to_string(Handle) + ", " +
+                         std::to_string(Data.Width) + "x" + std::to_string(Data.Height) + ").");
         return Handle;
     }
 
@@ -150,11 +150,11 @@ namespace MDSS
 
         const TextureAssetHandle Handle = static_cast<TextureAssetHandle>(Textures.size());
         const VkFormat           Format = bSRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
-        const std::string LogName = Name;
+        const std::string        LogName = Name;
         Textures.push_back(std::make_unique<TextureAsset>(
             Handle, std::move(Name), std::filesystem::path{}, Context, 1, 1, RGBA, Format));
-        Logger::Verbose("AssetManager", "Created solid fallback texture '" + LogName +
-                                          "' (handle=" + std::to_string(Handle) + ").");
+        Logger::Verbose("AssetManager",
+                        "Created solid fallback texture '" + LogName + "' (handle=" + std::to_string(Handle) + ").");
         return Handle;
     }
 
@@ -165,13 +165,13 @@ namespace MDSS
                                                      TextureAssetHandle           NormalTexture)
     {
         const MaterialAssetHandle Handle = static_cast<MaterialAssetHandle>(Materials.size());
-        const std::string LogName = Name;
+        const std::string         LogName = Name;
         Materials.push_back(std::make_unique<MaterialAsset>(
             Handle, std::move(Name), SourcePath, BaseColor, BaseColorTexture, NormalTexture));
-        Logger::Debug("AssetManager", "Material registered: '" + LogName + "' (handle=" +
-                                        std::to_string(Handle) + ", base texture=" +
-                                        std::to_string(BaseColorTexture) + ", normal texture=" +
-                                        std::to_string(NormalTexture) + ").");
+        Logger::Debug("AssetManager",
+                      "Material registered: '" + LogName + "' (handle=" + std::to_string(Handle) +
+                          ", base texture=" + std::to_string(BaseColorTexture) +
+                          ", normal texture=" + std::to_string(NormalTexture) + ").");
         return Handle;
     }
 } // namespace MDSS

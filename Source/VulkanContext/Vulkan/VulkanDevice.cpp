@@ -1,7 +1,6 @@
 #include "VulkanContext/Vulkan/VulkanDevice.h"
 
 #include "Logger/Logger.h"
-
 #include "VulkanContext/Vulkan/VulkanQueue.h"
 
 #include <algorithm>
@@ -88,14 +87,16 @@ namespace MDSS
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
 
         Logger::Info("Vulkan", std::string("Physical device selected: ") + Properties.deviceName + ".");
-        Logger::Debug("Vulkan", "GPU Vulkan API version=" +
-                                    std::to_string(VK_API_VERSION_MAJOR(Properties.apiVersion)) + "." +
-                                    std::to_string(VK_API_VERSION_MINOR(Properties.apiVersion)) + "." +
-                                    std::to_string(VK_API_VERSION_PATCH(Properties.apiVersion)) + ".");
-        Logger::Info("Vulkan", "Logical device created with " + std::to_string(DeviceExtensions.size()) +
-                                   " required device extension(s).");
-        Logger::Info("Vulkan", std::string("Geometry shader support: ") +
-                                   (bGeometryShaderSupported ? "yes." : "no (optional stage will require fallback)."));
+        Logger::Debug("Vulkan",
+                      "GPU Vulkan API version=" + std::to_string(VK_API_VERSION_MAJOR(Properties.apiVersion)) + "." +
+                          std::to_string(VK_API_VERSION_MINOR(Properties.apiVersion)) + "." +
+                          std::to_string(VK_API_VERSION_PATCH(Properties.apiVersion)) + ".");
+        Logger::Info("Vulkan",
+                     "Logical device created with " + std::to_string(DeviceExtensions.size()) +
+                         " required device extension(s).");
+        Logger::Info("Vulkan",
+                     std::string("Geometry shader support: ") +
+                         (bGeometryShaderSupported ? "yes." : "no (optional stage will require fallback)."));
     }
 
     VulkanDevice::~VulkanDevice()

@@ -39,12 +39,14 @@ namespace MDSS
             !Material.normal_texname.empty() ? Material.normal_texname : Material.bump_texname;
         Result.NormalTexturePath = ResolveTexturePath(TextureBaseDirectory, NormalTextureName);
 
-        Logger::Debug("MTLLoader", "Material '" + Result.Name + "': base texture=" +
-                                      (Result.BaseColorTexturePath.empty() ? std::string("<default>")
-                                                                          : Result.BaseColorTexturePath.filename().string()) +
-                                      ", normal texture=" +
-                                      (Result.NormalTexturePath.empty() ? std::string("<flat default>")
-                                                                        : Result.NormalTexturePath.filename().string()) + ".");
+        Logger::Debug("MTLLoader",
+                      "Material '" + Result.Name + "': base texture=" +
+                          (Result.BaseColorTexturePath.empty() ? std::string("<default>")
+                                                               : Result.BaseColorTexturePath.filename().string()) +
+                          ", normal texture=" +
+                          (Result.NormalTexturePath.empty() ? std::string("<flat default>")
+                                                            : Result.NormalTexturePath.filename().string()) +
+                          ".");
         return Result;
     }
 } // namespace MDSS

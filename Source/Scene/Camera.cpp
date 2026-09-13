@@ -1,10 +1,10 @@
 #include "Scene/Camera.h"
 
+#include <algorithm>
+#include <cmath>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
-#include <algorithm>
-#include <cmath>
 #include <stdexcept>
 
 namespace MDSS
@@ -68,9 +68,7 @@ namespace MDSS
         const float Pitch = glm::radians(PitchDegrees);
         const float Yaw = glm::radians(YawDegrees);
 
-        const glm::vec3 Forward{std::cos(Pitch) * std::cos(Yaw),
-                                std::sin(Pitch),
-                                std::cos(Pitch) * std::sin(Yaw)};
+        const glm::vec3 Forward{std::cos(Pitch) * std::cos(Yaw), std::sin(Pitch), std::cos(Pitch) * std::sin(Yaw)};
         Target = Position + glm::normalize(Forward);
     }
 
@@ -92,8 +90,8 @@ namespace MDSS
     glm::vec2 Camera::GetRotationDegrees() const noexcept
     {
         const glm::vec3 Direction = glm::normalize(Target - Position);
-        const float Pitch = std::asin(std::clamp(Direction.y, -1.0F, 1.0F));
-        const float Yaw = std::atan2(Direction.z, Direction.x);
+        const float     Pitch = std::asin(std::clamp(Direction.y, -1.0F, 1.0F));
+        const float     Yaw = std::atan2(Direction.z, Direction.x);
         return {glm::degrees(Pitch), glm::degrees(Yaw)};
     }
 

@@ -24,8 +24,9 @@ namespace MDSS
     void Scene::AddStaticMeshInstance(StaticMeshInstance Instance)
     {
         StaticMeshInstances.push_back(std::move(Instance));
-        Logger::Debug("Scene", "Static mesh instance added. Scene instance count=" +
-                                  std::to_string(StaticMeshInstances.size()) + ".");
+        Logger::Debug("Scene",
+                      "Static mesh instance added. Scene instance count=" + std::to_string(StaticMeshInstances.size()) +
+                          ".");
     }
 
     std::vector<StaticMeshInstance>& Scene::GetStaticMeshInstances() noexcept

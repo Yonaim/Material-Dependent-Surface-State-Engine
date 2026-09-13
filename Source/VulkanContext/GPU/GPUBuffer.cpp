@@ -66,8 +66,8 @@ namespace MDSS
             throw;
         }
 
-        Logger::Verbose("Vulkan", "GPUBuffer created (size=" + std::to_string(Size) +
-                                   ", usage=" + std::to_string(Usage) + ").");
+        Logger::Verbose("Vulkan",
+                        "GPUBuffer created (size=" + std::to_string(Size) + ", usage=" + std::to_string(Usage) + ").");
     }
 
     GPUBuffer::~GPUBuffer()
