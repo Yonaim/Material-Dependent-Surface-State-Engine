@@ -7,7 +7,7 @@ namespace MDSS
     class RenderPass
     {
     public:
-        RenderPass(VkDevice Device, VkFormat ColorFormat);
+        RenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat);
         ~RenderPass();
 
         RenderPass(const RenderPass&) = delete;

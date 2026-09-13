@@ -27,7 +27,7 @@ namespace MDSS
         static void ValidateLayers();
 #endif
 
-        VkInstance               Instance = VK_NULL_HANDLE;
+        VkInstance Instance = VK_NULL_HANDLE;
 #if MDSSP_ENABLE_VALIDATION
         VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE;
 #endif

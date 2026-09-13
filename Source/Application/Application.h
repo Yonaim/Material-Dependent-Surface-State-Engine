@@ -2,6 +2,7 @@
 
 #include "Application/Window.h"
 #include "Renderer/Renderer.h"
+#include "Scene/Scene.h"
 #include "VulkanContext/VulkanContext.h"
 
 namespace MDSS
@@ -19,6 +20,7 @@ namespace MDSS
         // Declaration order is intentional: resources are destroyed in reverse order.
         Window        MainWindow;
         VulkanContext Context;
+        Scene         MainScene;
         Renderer      FrameRenderer;
     };
 } // namespace MDSS

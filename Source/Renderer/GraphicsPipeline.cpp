@@ -7,10 +7,6 @@
 #include <string>
 #include <vector>
 
-#ifndef MDSSP_SHADER_DIR
-#define MDSSP_SHADER_DIR "Shaders"
-#endif
-
 namespace MDSS
 {
     namespace
@@ -42,18 +38,21 @@ namespace MDSS
         }
     } // namespace
 
-    GraphicsPipeline::GraphicsPipeline(VkDevice Device, VkRenderPass RenderPass) : Device(Device)
+    GraphicsPipeline::GraphicsPipeline(VkDevice Device, VkRenderPass RenderPass, const GraphicsPipelineConfig& Config)
+        : Device(Device)
     {
-        const std::string VertexPath = std::string(MDSSP_SHADER_DIR) + "/Triangle.vert.spv";
-        const std::string FragmentPath = std::string(MDSSP_SHADER_DIR) + "/Triangle.frag.spv";
+        if (Config.VertexShaderPath == nullptr || Config.FragmentShaderPath == nullptr)
+        {
+            throw std::invalid_argument("Graphics pipeline shader paths must not be null.");
+        }
 
         VkShaderModule VertexShader = VK_NULL_HANDLE;
         VkShaderModule FragmentShader = VK_NULL_HANDLE;
 
         try
         {
-            VertexShader = CreateShaderModule(Device, VertexPath.c_str());
-            FragmentShader = CreateShaderModule(Device, FragmentPath.c_str());
+            VertexShader = CreateShaderModule(Device, Config.VertexShaderPath);
+            FragmentShader = CreateShaderModule(Device, Config.FragmentShaderPath);
 
             VkPipelineShaderStageCreateInfo VertexStage{};
             VertexStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -71,10 +70,16 @@ namespace MDSS
 
             VkPipelineVertexInputStateCreateInfo VertexInput{};
             VertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            VertexInput.vertexBindingDescriptionCount = static_cast<std::uint32_t>(Config.VertexBindings.size());
+            VertexInput.pVertexBindingDescriptions =
+                Config.VertexBindings.empty() ? nullptr : Config.VertexBindings.data();
+            VertexInput.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(Config.VertexAttributes.size());
+            VertexInput.pVertexAttributeDescriptions =
+                Config.VertexAttributes.empty() ? nullptr : Config.VertexAttributes.data();
 
             VkPipelineInputAssemblyStateCreateInfo InputAssembly{};
             InputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-            InputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            InputAssembly.topology = Config.Topology;
             InputAssembly.primitiveRestartEnable = VK_FALSE;
 
             VkPipelineViewportStateCreateInfo ViewportState{};
@@ -86,21 +91,35 @@ namespace MDSS
             Rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
             Rasterizer.depthClampEnable = VK_FALSE;
             Rasterizer.rasterizerDiscardEnable = VK_FALSE;
-            Rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-            Rasterizer.cullMode = VK_CULL_MODE_NONE;
-            Rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+            Rasterizer.polygonMode = Config.PolygonMode;
+            Rasterizer.cullMode = Config.CullMode;
+            Rasterizer.frontFace = Config.FrontFace;
             Rasterizer.depthBiasEnable = VK_FALSE;
             Rasterizer.lineWidth = 1.0F;
 
             VkPipelineMultisampleStateCreateInfo Multisampling{};
             Multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-            Multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+            Multisampling.rasterizationSamples = Config.RasterizationSamples;
             Multisampling.sampleShadingEnable = VK_FALSE;
+
+            VkPipelineDepthStencilStateCreateInfo DepthStencil{};
+            DepthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+            DepthStencil.depthTestEnable = Config.bDepthTestEnabled ? VK_TRUE : VK_FALSE;
+            DepthStencil.depthWriteEnable = Config.bDepthWriteEnabled ? VK_TRUE : VK_FALSE;
+            DepthStencil.depthCompareOp = Config.DepthCompareOp;
+            DepthStencil.depthBoundsTestEnable = VK_FALSE;
+            DepthStencil.stencilTestEnable = VK_FALSE;
 
             VkPipelineColorBlendAttachmentState ColorBlendAttachment{};
             ColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                                   VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            ColorBlendAttachment.blendEnable = VK_FALSE;
+            ColorBlendAttachment.blendEnable = Config.bBlendingEnabled ? VK_TRUE : VK_FALSE;
+            ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+            ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
             VkPipelineColorBlendStateCreateInfo ColorBlending{};
             ColorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -116,6 +135,11 @@ namespace MDSS
 
             VkPipelineLayoutCreateInfo LayoutInfo{};
             LayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            LayoutInfo.setLayoutCount = static_cast<std::uint32_t>(Config.DescriptorSetLayouts.size());
+            LayoutInfo.pSetLayouts = Config.DescriptorSetLayouts.empty() ? nullptr : Config.DescriptorSetLayouts.data();
+            LayoutInfo.pushConstantRangeCount = static_cast<std::uint32_t>(Config.PushConstantRanges.size());
+            LayoutInfo.pPushConstantRanges =
+                Config.PushConstantRanges.empty() ? nullptr : Config.PushConstantRanges.data();
 
             if (vkCreatePipelineLayout(Device, &LayoutInfo, nullptr, &PipelineLayout) != VK_SUCCESS)
             {
@@ -131,7 +155,7 @@ namespace MDSS
             PipelineInfo.pViewportState = &ViewportState;
             PipelineInfo.pRasterizationState = &Rasterizer;
             PipelineInfo.pMultisampleState = &Multisampling;
-            PipelineInfo.pDepthStencilState = nullptr;
+            PipelineInfo.pDepthStencilState = &DepthStencil;
             PipelineInfo.pColorBlendState = &ColorBlending;
             PipelineInfo.pDynamicState = &DynamicState;
             PipelineInfo.layout = PipelineLayout;

@@ -13,7 +13,8 @@ namespace MDSS
         Framebuffer(VkDevice                        Device,
                     VkRenderPass                    RenderPass,
                     VkExtent2D                      Extent,
-                    const std::vector<VkImageView>& ColorImageViews);
+                    const std::vector<VkImageView>& ColorImageViews,
+                    VkImageView                     DepthImageView);
         ~Framebuffer();
 
         Framebuffer(const Framebuffer&) = delete;

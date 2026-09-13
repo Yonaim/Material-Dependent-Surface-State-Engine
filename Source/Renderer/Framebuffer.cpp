@@ -9,14 +9,15 @@ namespace MDSS
     Framebuffer::Framebuffer(VkDevice                        Device,
                              VkRenderPass                    RenderPass,
                              VkExtent2D                      Extent,
-                             const std::vector<VkImageView>& ColorImageViews)
+                             const std::vector<VkImageView>& ColorImageViews,
+                             VkImageView                     DepthImageView)
         : Device(Device)
     {
         Handles.resize(ColorImageViews.size(), VK_NULL_HANDLE);
 
         for (std::size_t Index = 0; Index < ColorImageViews.size(); ++Index)
         {
-            const std::array<VkImageView, 1> Attachments = {ColorImageViews[Index]};
+            const std::array<VkImageView, 2> Attachments = {ColorImageViews[Index], DepthImageView};
 
             VkFramebufferCreateInfo CreateInfo{};
             CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

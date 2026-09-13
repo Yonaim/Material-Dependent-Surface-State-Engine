@@ -3,7 +3,7 @@
 namespace MDSS
 {
     Application::Application()
-        : MainWindow(1280, 720, "MDSSP Engine"), Context(MainWindow), FrameRenderer(Context, MainWindow)
+        : MainWindow(1280, 720, "MDSSP Engine"), Context(MainWindow), MainScene(), FrameRenderer(Context, MainWindow)
     {
     }
 
@@ -17,7 +17,7 @@ namespace MDSS
         while (!MainWindow.ShouldClose())
         {
             MainWindow.PollEvents();
-            FrameRenderer.RenderFrame();
+            FrameRenderer.RenderFrame(MainScene);
         }
 
         vkDeviceWaitIdle(Context.GetDevice());
