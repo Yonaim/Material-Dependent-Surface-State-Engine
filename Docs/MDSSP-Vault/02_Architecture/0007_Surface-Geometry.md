@@ -1,6 +1,6 @@
 # 형상 정보 반영
 
-상태: **형상 의미와 반영 범위 확정 / 전처리 알고리즘 일부 검증 필요** · 근거: [[05_Assets/Documents/Geometry-Integration.pdf|형상 정보 반영]], [[05_Assets/Documents/Surface-System-Data.pdf|시스템 데이터 구조]]
+상태: **형상 의미와 반영 범위 확정 / 전처리 알고리즘 일부 검증 필요** · 근거: [[05_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[05_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
 
 ## 반영하는 형상 정보
 
@@ -9,7 +9,7 @@
 3. Height
 4. Curvature / Concavity
 
-Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 영향을 주고, Decay에는 오목함에 따른 잔류 효과를 반영한다. 실제 Solver 수식은 [[02_Architecture/Propagation-Solver|Propagation Solver]]가 기준이다.
+Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 영향을 주고, Decay에는 오목함에 따른 잔류 효과를 반영한다. 실제 Solver 수식은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]가 기준이다.
 
 ## 계산 및 사용 시점
 
@@ -43,7 +43,7 @@ Normal Map은 실제 Mesh를 바꾸지는 않지만 Simulation에서는 Meso-Str
 | Height | `Macro_Height + Meso_Virtual_Height` |
 | Curvature | `Macro_Curvature + Meso_Curvature` |
 
-모든 Normal Map이 integrable하지는 않다. 적분 불가한 경우에는 정규화된 가상 Height / Curvature와 별도 스케일 계수를 사용하는 근사안이 있으며, 실제 알고리즘은 검증이 필요하다. [[04_Development/Experiments/Normal-Map-Integration|Normal Map 적분 실험]]
+모든 Normal Map이 integrable하지는 않다. 적분 불가한 경우에는 정규화된 가상 Height / Curvature와 별도 스케일 계수를 사용하는 근사안이 있으며, 실제 알고리즘은 검증이 필요하다. [[04_Development/Experiments/0001_Normal-Map-Integration|Normal Map 적분 실험]]
 
 ## Meso Virtual Height
 
@@ -95,4 +95,4 @@ Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space�
 
 적층으로 Height가 변하면 Normal / Distance / Curvature도 함께 달라지고 **후속 Simulation에 다시 반영**한다. 이 동적 형상 데이터의 실제 Instance별 GPU 저장 구조는 아직 별도 설계 전이다.
 
-Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 이 문서에서 확정하지 않는다. [[TODO|TODO]]의 후속 `Surface Simulation Mapping` 설계에서 다룬다.
+Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. Shared Geometry의 GPU 배치는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.

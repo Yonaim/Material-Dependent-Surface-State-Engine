@@ -1,6 +1,6 @@
 # Contact Input
 
-상태: **데이터 구조 및 기본 가중치 흐름 확정** · 근거: [[05_Assets/Documents/Contact-Input.pdf|Contact Input]], [[05_Assets/Documents/Next-State-Calculation.pdf|Next State 계산]]
+상태: **데이터 구조 및 기본 가중치 흐름 확정** · 근거: [[05_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[05_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
 외부 접촉은 `SurfaceContactInput`으로 Surface State System에 전달한다.
 
@@ -51,4 +51,4 @@ Distance / Radius
 
 `worldDirection`은 입력 방향 정보를 제공하며, 입사각 감쇠를 ContactWeight에 추가할지는 아직 필수 규칙으로 정하지 않았다.
 
-Input 항의 전체 계산은 [[02_Architecture/Propagation-Solver|Propagation Solver]]를 본다.
+Input 항의 전체 계산은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]를 본다.

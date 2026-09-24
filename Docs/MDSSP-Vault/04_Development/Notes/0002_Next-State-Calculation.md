@@ -1,8 +1,8 @@
 # Next State 계산 메모
 
-상태: **2-Pass 기본안 / GPU Resource 상세 미정** · 근거: [[05_Assets/Documents/Next-State-Calculation.pdf|Next State 계산]]
+상태: **2-Pass 기본안 / GPU Resource 기본안 작성됨** · 근거: [[05_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
-Architecture 수준의 수식은 [[02_Architecture/Propagation-Solver|Propagation Solver]]가 기준이다. 이 문서는 Compute Shader 계산 순서만 기록한다.
+Architecture 수준의 수식은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]가 기준이다. 이 문서는 Compute Shader 계산 순서만 기록한다.
 
 ## Gather 방식
 
@@ -37,4 +37,4 @@ texel i
 
 1-Pass에서 이웃의 `alpha[j]`를 재계산하면 각 이웃마다 다시 주변 8개 flux를 계산해야 해서 중복 계산이 커진다. 현재 기본안은 `2-Pass + alpha 저장`이다.
 
-실제 State A / State B / TempState 리소스 타입, descriptor, barrier는 후속 `Surface State GPU Resource` 설계에서 확정한다.
+State A / State B / TempAlpha 리소스 타입, descriptor, barrier는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 따른다.

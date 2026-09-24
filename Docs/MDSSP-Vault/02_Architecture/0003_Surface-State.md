@@ -1,6 +1,6 @@
 # 표면 상태와 데이터 구조
 
-상태: **핵심 의미 확정** · 근거: [[05_Assets/Documents/Surface-System-Data.pdf|시스템 데이터 구조]]
+상태: **핵심 의미 확정** · 근거: [[05_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
 
 ## 전체 데이터 분류
 
@@ -50,7 +50,7 @@ $$
 
 ## Surface Response Profile
 
-`.srprofile`의 직렬화 형식은 [[02_Architecture/Assets-and-Profiles|에셋과 프로필]]에서 다룬다. 파라미터의 **의미와 범위는 이 문서가 기준**이다.
+`.srprofile`의 직렬화 형식은 [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]에서 다룬다. 파라미터의 **의미와 범위는 이 문서가 기준**이다.
 
 ### State Parameters
 
@@ -74,7 +74,7 @@ $$
 | `threshold` | 전이가 시작되는 `source`의 Saturation 임계값 | `[0,1]` |
 | `transitionRate` | 조건 만족 후 target State가 증가하는 단위 시간당 기본 속도 | `[0,n]` |
 
-상태 전이의 사용 예는 [[02_Architecture/State-Transitions|State Transition]]을 본다.
+상태 전이의 사용 예는 [[02_Architecture/0009_State-Transitions|State Transition]]을 본다.
 
 ## Surface Instance State Data
 
@@ -83,8 +83,8 @@ State별로 현재 상태와 Solver 계산 과정의 임시값을 각각 스칼�
 | 항목 | 저장 단위 | 범위 | 의미 |
 |---|---|---|---|
 | `State` | Texel별 | `[0, stateCapacity]` | 현재 표면에 반영된 상태량 |
-| `TempState` | Texel별 | 계산 목적에 따라 결정 | Solver 중간 계산 또는 State 갱신용 임시값 |
+| `TempState` | Texel별 | `[0,1]` | 4주차 2-Pass Solver의 상태별 `alpha` 임시값 |
 
 `TempState`는 Capacity를 초과한 상태량을 보관하지 않는다. **Capacity 초과량은 별도로 저장하지 않는다.**
 
-GPU에서 Current/Next State를 어떻게 ping-pong하고 `TempState`를 어떤 리소스로 둘지는 아직 별도 GPU Resource 설계에서 확정한다.
+4주차 GPU 구현에서 Current/Next State는 A/B buffer로 ping-pong하고, `TempState`는 Pass 1의 상태별 `alpha`를 저장하는 `TempAlphaBuffer`로 사용한다. 자세한 배치는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.

@@ -1,6 +1,6 @@
 # Propagation Solver
 
-상태: **핵심 수식 확정 / GPU 리소스 상세 설계 전** · 근거: [[05_Assets/Documents/Next-State-Calculation.pdf|Next State 계산]]
+상태: **핵심 수식 확정 / GPU 리소스 기본안 작성됨** · 근거: [[05_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
 ## 파라미터 접미사 네이밍 규칙
 
@@ -39,7 +39,7 @@ $$
 Input_i = Strength \times ContactWeight_i \times InputFactor_i
 $$
 
-`ContactWeight` 계산은 [[02_Architecture/Contact-Input|Contact Input]]을 본다.
+`ContactWeight` 계산은 [[02_Architecture/0005_Contact-Input|Contact Input]]을 본다.
 
 ## 2. Transport
 
@@ -110,7 +110,7 @@ $$
 | `CurvatureWeight` | 홈·요철에 의해 State가 붙잡히거나 이동이 억제되는 정도 | Curvature / Concavity |
 | `ProfileBoundaryWeight` | 서로 다른 SRProfile 영역 사이의 전달 정도. 동일 Profile 사이에서는 기본 `1.0` | SRProfile Boundary |
 
-UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 전달 가중치를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**해야 한다. 이 mapping 방식은 후속 설계에서 정한다.
+UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 전달 가중치를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**한다. 생성 방식은 [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 따른다.
 
 ### 보유량 제한과 alpha
 
@@ -132,7 +132,7 @@ $$
 Flux_{i\rightarrow j} = \alpha_i \cdot RawFlux_{i\rightarrow j}
 $$
 
-2-Pass + `alpha` 저장의 GPU 계산 순서는 [[04_Development/Notes/Next-State-Calculation|Next State 계산 메모]]를 본다.
+2-Pass + `alpha` 저장의 GPU 계산 순서는 [[04_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]를 본다.
 
 ## 3. Decay
 
@@ -149,4 +149,4 @@ $$
 Decay_i = min(Decay_i, State_i)
 $$
 
-`ConcavityWeight`는 현재 texel이 얼마나 오목한지를 나타내는 `[0,1]` 값이다. Curvature를 직접 런타임에 사용할지, 전처리된 ConcavityWeight만 저장할지는 [[02_Architecture/Surface-Geometry|형상 정보]]에서 정리한다.
+`ConcavityWeight`는 현재 texel이 얼마나 오목한지를 나타내는 `[0,1]` 값이다. Curvature를 직접 런타임에 사용할지, 전처리된 ConcavityWeight만 저장할지는 [[02_Architecture/0007_Surface-Geometry|형상 정보]]에서 정리한다.

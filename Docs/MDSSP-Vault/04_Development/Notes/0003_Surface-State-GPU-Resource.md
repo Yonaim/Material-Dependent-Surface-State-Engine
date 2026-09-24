@@ -1,0 +1,262 @@
+# Surface State GPU Resource
+
+상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[02_Architecture/0003_Surface-State|표면 상태]], [[02_Architecture/0006_Propagation-Solver|Propagation Solver]], [[04_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+
+이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다. 상태 갱신 수식의 기준은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]다.
+
+## 핵심 결정
+
+| 항목 | 결정 |
+|---|---|
+| 기본 resource | seam 때문에 불규칙한 index 접근이 필요하므로 Storage Buffer를 사용한다. |
+| State 형식 | 기본 네 채널 `Wetness`, `Heat`, `Burn`, `Mud`를 texel당 `vec4`로 저장한다. |
+| ping-pong | instance마다 State A/B를 만들고 solver step마다 Current/Next 역할을 교환한다. |
+| TempState | Pass 1의 채널별 `alpha`를 저장하는 `vec4 TempAlpha`로 정의한다. 영구 State가 아니다. |
+| Input | discrete event를 `InputDelta`에 모아 Pass 2에서 한 번 반영한다. `DeltaTime`을 곱하지 않는다. |
+| Profile 연결 | Surface별 Profile index table을 두며 하나의 Surface는 하나의 Profile만 사용한다. |
+| 인덱스 | Neighbor는 공유 Geometry 내부 local texel index를 저장한다. instance State 접근 시 `stateBaseIndex`를 더한다. |
+
+Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 처리하려면 별도 index가 필요하다. 4주차에는 SSBO를 기준 데이터로 두고, 렌더링에 필터링 가능한 texture가 필요하면 파생 resource를 만든다.
+
+## 데이터 소유권
+
+```mermaid
+flowchart LR
+  Mapping[Mapping Cache] --> Shared[Shared Geometry Buffers]
+  Profile[SRProfile Assets] --> Profiles[Profile Buffer]
+  Shared --> Solver[2-Pass Solver]
+  Profiles --> Solver
+  Instance[Instance State A/B + TempAlpha] --> Solver
+  Solver --> Instance
+```
+
+| 데이터 | 공유 단위 | 갱신 |
+|---|---|---|
+| mapping, base geometry, neighbor | 같은 Mesh + 전처리 cache | Asset 변경 시 |
+| Profile parameter | 같은 `.srprofile` | Profile reload 시 |
+| Surface→Profile index | instance | Scene 연결 변경 시 |
+| State A/B, TempAlpha, InputDelta | instance | solver step마다 |
+
+## 인덱스 구조
+
+공유 Geometry의 texel index는 `0 .. geometryTexelCount-1` local 범위다. 이웃도 이 local index를 저장하므로 같은 Geometry를 여러 instance가 공유할 수 있다.
+
+```cpp
+struct SurfaceRangeGPU {
+    uint firstLocalTexel;
+    uint texelCount;
+    uint width;
+    uint height;
+};
+
+struct SurfaceInstanceGPU {
+    uint geometryIndex;
+    uint stateBaseIndex;
+    uint surfaceProfileBaseIndex;
+    uint flags;
+};
+```
+
+State 접근은 다음과 같다.
+
+```text
+stateIndex = instance.stateBaseIndex + localTexelIndex
+profileIndex = SurfaceProfileIndex[
+  instance.surfaceProfileBaseIndex + TexelSurfaceIndex[localTexelIndex]
+]
+```
+
+`TexelSurfaceIndex`는 mapping cache의 local Surface ID다. `SurfaceProfileIndex`는 각 instance의 Surface가 사용할 `SurfaceResponseProfileDataGPU` index다.
+
+## Shared Surface Geometry Buffer
+
+자료 성격별 SoA buffer를 사용한다.
+
+| Buffer | texel당 형식 | 용도 |
+|---|---|---|
+| `ValidMaskBuffer` | `uint` | invalid texel 조기 종료 |
+| `TexelSurfaceIndexBuffer` | `uint` | Surface/Profile 조회 |
+| `SurfacePositionBuffer` | `vec4` | `xyz`: Mesh local position |
+| `SurfaceNormalBuffer` | `vec4` | `xyz`: Mesh local normal |
+| `GeometryScalarBuffer` | `vec4` | `x`: MesoVirtualHeight, `y`: ConcavityWeight, 나머지 예약 |
+| `NeighborIndexBuffer` | `uvec4[2]` | 최대 8개 local neighbor index |
+| `NeighborDistanceBuffer` | `vec4[2]` | 각 이웃까지의 surface distance |
+
+`vec3` 대신 `vec4`를 사용해 CPU 구조체와 GLSL `std430` 정렬 차이를 피한다. CPU 업로드 구조체에는 size와 offset에 대한 `static_assert`를 둔다.
+
+`TriangleID`와 `Barycentric`은 Solver 필수 입력이 아니므로 CPU cache에 둔다. GPU 디버그 시각화가 필요할 때만 별도 read-only buffer로 올린다.
+
+Accumulation으로 변하는 instance별 Position/Normal/Distance/Curvature는 base geometry와 분리된 dynamic geometry resource가 필요하다. 4주차 첫 구현은 정적 base geometry를 사용하고, 동적 overlay의 정확한 배치는 후속 단계에서 확정한다.
+
+## Surface Instance State Buffer
+
+```glsl
+layout(std430) buffer StateBuffer      { vec4 state[];      };
+layout(std430) buffer TempAlphaBuffer  { vec4 alpha[];      };
+layout(std430) buffer InputDeltaBuffer { vec4 inputDelta[]; };
+```
+
+채널 순서는 다음과 같이 고정한다.
+
+```text
+x = Wetness      // 재질 내부에 흡수된 수분
+y = Heat
+z = Burn
+w = Mud
+```
+
+`SurfaceWater`는 Wetness의 별칭이 아니다. 추가할 때는 채널 확장 또는 별도 state layer로 설계한다.
+
+### State A/B ping-pong
+
+```text
+Step N:     A = Current, B = Next
+Step N + 1: B = Current, A = Next
+```
+
+- Current는 step 동안 read-only다.
+- 각 invocation은 자기 `NextState[i]`만 쓴다.
+- Barrier가 끝나기 전에 역할을 바꾸지 않는다.
+- `A→B`, `B→A` descriptor set을 미리 만들어 교대로 사용한다.
+
+### TempState
+
+`TempState`의 4주차 실제 resource 이름은 `TempAlphaBuffer`다.
+
+```text
+TempAlpha[i].channel = alpha[i].channel
+```
+
+Pass 1은 raw outgoing 합으로 `alpha`를 계산해 저장한다. Pass 2는 이웃의 `alpha`를 읽고 `j → i` raw flux를 재계산한다. 8방향 raw flux를 별도 저장하지 않아 메모리를 줄이는 대신 계산량이 증가하므로 [[04_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]에서 측정한다.
+
+### InputDelta
+
+4주차에는 CPU가 같은 frame의 contact event를 texel별 `InputDelta`로 합산해 upload한다.
+
+- Input은 event 양이므로 `DeltaTime`을 곱하지 않는다.
+- Pass 1의 Transport와 Decay는 Current State를 기준으로 계산한다.
+- Pass 2에서 `Current + InputDelta + Incoming - Outgoing - Decay`를 Next에 기록한다.
+- 소비한 `InputDelta`는 Pass 2 이후 0으로 clear한다.
+
+따라서 이번 frame에 들어온 Input은 같은 step의 outgoing에 즉시 사용되지 않고 다음 step부터 Transport에 참여한다. 이는 현재 [[02_Architecture/0006_Propagation-Solver|Solver 수식]]의 처리 순서를 따른다.
+
+## SRProfile GPU Representation
+
+상태별 parameter는 State 채널 순서와 같은 `vec4`다.
+
+```cpp
+struct SurfaceResponseProfileDataGPU {
+    vec4 stateCapacity;
+    vec4 inputFactor;
+    vec4 saturationTransferRate;
+    vec4 geometryTransferRate;
+    vec4 decayRate;
+    vec4 cavityRetentionFactor;
+    vec4 accumulationFactor;
+    vec4 cavityFillFactor;
+};
+```
+
+- `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다.
+- CPU Asset loader가 모든 `stateCapacity > 0`을 검증한 뒤 upload한다.
+- JSON을 GPU 구조체 메모리에 직접 역직렬화하지 않고 명시적으로 변환한다.
+- 동일 Profile 사이의 `ProfileBoundaryWeight`는 `1.0`이다. 서로 다른 Profile의 결합식은 Solver 설계의 미결 사항이다.
+
+## Descriptor 기준안
+
+binding 번호는 구현 시작점이며 Renderer 전역 규칙과 충돌하면 조정할 수 있다.
+
+| Binding | Resource | 접근 |
+|---:|---|---|
+| 0 | Instance / Surface Range | read-only |
+| 1 | ValidMask / TexelSurfaceIndex | read-only |
+| 2 | Position / Normal | read-only |
+| 3 | Geometry Scalar | read-only |
+| 4 | Neighbor Index / Distance | read-only |
+| 5 | Profile Buffer | read-only |
+| 6 | Surface Profile Index | read-only |
+| 7 | Current State | read-only |
+| 8 | Next State | write-only |
+| 9 | TempAlpha | Pass 1 write / Pass 2 read |
+| 10 | InputDelta | read-only, 이후 clear |
+
+실제 구현에서는 관련 buffer를 하나의 큰 allocation에 pack할 수 있다. 논리적 binding과 byte offset을 분리해 문서의 데이터 소유권을 유지한다.
+
+Push constant에는 자주 변하는 작은 값만 둔다.
+
+```cpp
+struct SolverPushConstants {
+    float deltaTime;
+    uint instanceIndex;
+    uint localTexelCount;
+    uint flags;
+    vec4 gravityLocal;
+};
+```
+
+CPU는 instance transform을 사용해 World Gravity를 Mesh local space로 변환한다. Position과 Normal이 local space에 있으므로 Shader는 `gravityLocal`로 `DirectionDrive`를 계산한다.
+
+## Solver 실행과 동기화
+
+```mermaid
+flowchart LR
+  Input[InputDelta Upload] --> P1[Pass 1: Decay + RawOutgoing + alpha]
+  P1 --> B1[Compute Barrier]
+  B1 --> P2[Pass 2: Incoming/Outgoing + Next]
+  P2 --> B2[Compute/Render Barrier]
+  B2 --> Swap[A/B 역할 교환]
+  Swap --> Clear[InputDelta clear]
+```
+
+### Pass 1 → Pass 2
+
+`TempAlphaBuffer`에 다음 dependency를 둔다.
+
+```text
+srcStage  = COMPUTE_SHADER
+srcAccess = SHADER_STORAGE_WRITE
+dstStage  = COMPUTE_SHADER
+dstAccess = SHADER_STORAGE_READ
+```
+
+### Pass 2 → 다음 사용
+
+- 다음 solver step: `COMPUTE_SHADER / SHADER_STORAGE_WRITE → COMPUTE_SHADER / SHADER_STORAGE_READ`
+- 렌더링이 읽는 경우: 목적 Shader stage와 `SHADER_STORAGE_READ`를 포함한다.
+- SSBO 기준안에는 image layout transition이 없다.
+
+`vkCmdFillBuffer`로 InputDelta를 clear하면 `TRANSFER_WRITE`가 다음 compute read보다 먼저 보이도록 barrier를 둔다.
+
+## 메모리 기준
+
+기본 네 채널의 instance별 동적 resource는 texel당 다음과 같다.
+
+```text
+State A       16 bytes
+State B       16 bytes
+TempAlpha     16 bytes
+InputDelta    16 bytes
+합계          64 bytes / texel
+```
+
+공유 Geometry, allocator 정렬, frame-in-flight 복제는 별도다. 해상도와 instance 수를 정할 때 함께 측정한다.
+
+## 검증 항목
+
+- A/B 역할을 교환해도 같은 초기조건에서 결과가 반복된다.
+- instance 사이 State와 Surface→Profile mapping이 섞이지 않는다.
+- invalid texel은 항상 0이고 dispatch에서 계산을 건너뛴다.
+- seam 이웃은 일반 이웃과 같은 Shader 경로를 사용한다.
+- `stateCapacity > 0` 검증으로 NaN/Inf가 발생하지 않는다.
+- 실제 outgoing 합이 Decay 이후 가용 State를 넘지 않는다.
+- Pass 사이 Vulkan validation 경고가 없다.
+- 렌더링이 최신 ping-pong buffer를 읽는다.
+
+## 미결 사항
+
+- 다른 Profile 경계의 `ProfileBoundaryWeight` 결합식
+- 동적 Accumulation geometry의 instance overlay 배치
+- GPU에서 contact event가 겹칠 때의 reduce/atomic 방식
+- 네 채널을 넘는 State 확장 시 AoS/SoA 재검토
+- raw flux 재계산과 임시 flux buffer의 성능 비교
+- 최종 descriptor set 번호와 frame-in-flight별 resource 수

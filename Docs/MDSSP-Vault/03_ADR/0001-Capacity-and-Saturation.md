@@ -19,4 +19,4 @@
 
 ## Consequences
 
-Transport의 상태 차이는 raw State가 아니라 Saturation을 사용할 수 있다. Accumulation은 `(State + Overflow)`가 아니라 `State`에서 계산한다. [[02_Architecture/Surface-State|표면 상태]], [[02_Architecture/Accumulation|적층]].
+Transport의 상태 차이는 raw State가 아니라 Saturation을 사용할 수 있다. Accumulation은 `(State + Overflow)`가 아니라 `State`에서 계산한다. [[02_Architecture/0003_Surface-State|표면 상태]], [[02_Architecture/0008_Accumulation|적층]].

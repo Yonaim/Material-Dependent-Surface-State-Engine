@@ -8,7 +8,7 @@
 - **설계 기본안**: 구현 방향은 정했지만 성능·세부 구현 검증이 남은 내용.
 - **검토 필요**: 알고리즘, 저장 방식, 수치 범위 등이 아직 확정되지 않은 내용.
 
-실제 구현 완료 여부는 코드와 실험 결과를 확인한 뒤 [[TODO|TODO]]에 반영한다.
+실제 구현 완료 여부는 코드와 실험 결과를 확인한 뒤 [[0000_TODO|TODO]]에 반영한다.
 
 ## 문서 책임
 
@@ -18,7 +18,14 @@
 - `04_Development/`: 구현 순서, GPU 패스, 실험·디버깅 등 구현 세부.
 - `05_Assets/Documents/`: 설계의 근거가 된 원본 PDF.
 
-같은 내용을 여러 문서에 복제하지 않는다. 예를 들어 **SRProfile 파라미터의 의미와 범위는 [[02_Architecture/Surface-State|표면 상태와 데이터 구조]]에서만 정의**하고, [[02_Architecture/Assets-and-Profiles|에셋과 프로필]]에서는 파일 직렬화와 연결 관계만 다룬다.
+같은 내용을 여러 문서에 복제하지 않는다. 예를 들어 **SRProfile 파라미터의 의미와 범위는 [[02_Architecture/0003_Surface-State|표면 상태와 데이터 구조]]에서만 정의**하고, [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]에서는 파일 직렬화와 연결 관계만 다룬다.
+
+## 파일명 규칙
+
+- 문서 파일은 디렉터리별로 `0000_이름.md` 형식의 네 자리 번호를 붙인다.
+- Overview, Guide, Index처럼 폴더의 시작점은 `0000`이다.
+- ADR은 문서 ID를 보존하기 위해 `0001-이름.md` 형식을 사용한다.
+- 번호는 권장 읽기·구현 순서를 나타내며 문서 제목에는 포함하지 않는다.
 
 ## 출처와 최신성
 
@@ -31,4 +38,4 @@
 - 적층량은 `State × accumulationFactor`에서 계산.
 - 표면 위 물(`SurfaceWater`)과 내부 흡수 수분(`Wetness`)의 의미를 구분.
 
-원본 자료 목록은 [[05_Assets/Documents/Source-Index|Source Index]]에서 확인한다.
+원본 자료 목록은 [[05_Assets/Documents/0000_Source-Index|Source Index]]에서 확인한다.

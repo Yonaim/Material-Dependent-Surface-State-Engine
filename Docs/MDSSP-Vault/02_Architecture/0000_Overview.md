@@ -1,6 +1,6 @@
 # 전체 엔진 구조
 
-상태: **설계** · 근거: [[05_Assets/Documents/Overall-Engine-Structure.pdf|전체 엔진 구조]]
+상태: **설계** · 근거: [[05_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조]]
 
 MDSSP Engine은 C++/Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** 시뮬레이션을 추가한다. 현재 구현 범위는 **Static Mesh**다.
 
@@ -32,10 +32,10 @@ flowchart TD
 
 ## 읽는 순서
 
-1. [[02_Architecture/Modules|모듈과 책임]] → [[02_Architecture/Data-Flow|데이터 흐름]]
-2. [[02_Architecture/Surface-State|표면 상태와 데이터 구조]] → [[02_Architecture/Assets-and-Profiles|에셋과 프로필]]
-3. [[02_Architecture/Contact-Input|Contact Input]] → [[02_Architecture/Propagation-Solver|Propagation Solver]]
-4. [[02_Architecture/Surface-Geometry|형상 정보]] → [[02_Architecture/Accumulation|적층]] → [[02_Architecture/Rendering|렌더링]]
-5. [[02_Architecture/Demos|목표 데모]] → [[TODO|TODO]]
+1. [[02_Architecture/0001_Modules|모듈과 책임]] → [[02_Architecture/0002_Data-Flow|데이터 흐름]]
+2. [[02_Architecture/0003_Surface-State|표면 상태와 데이터 구조]] → [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]
+3. [[02_Architecture/0005_Contact-Input|Contact Input]] → [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]
+4. [[02_Architecture/0007_Surface-Geometry|형상 정보]] → [[02_Architecture/0008_Accumulation|적층]] → [[02_Architecture/0010_Rendering|렌더링]]
+5. [[02_Architecture/0011_Demos|목표 데모]] → [[0000_TODO|TODO]]
 
-Simulation UV의 생성·Mesh→Texel mapping·UV seam 연결과 실제 GPU Resource Layout은 **다음 설계 문서에서 별도로 확정할 예정**이며 현재 볼트에는 결론을 만들지 않는다.
+Simulation UV의 생성·Mesh→Texel mapping·UV seam 연결은 [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], 실제 Vulkan resource와 2-Pass 동기화는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 기준으로 한다.

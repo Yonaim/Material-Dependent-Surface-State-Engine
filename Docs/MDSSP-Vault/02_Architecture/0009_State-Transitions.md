@@ -1,6 +1,6 @@
 # State Transition
 
-상태: **파라미터 구조 확정 / Solver 통합 시점 미정** · 근거: [[05_Assets/Documents/Surface-System-Data.pdf|시스템 데이터 구조]], [[05_Assets/Documents/Asset-Structure.pdf|에셋 구조]]
+상태: **파라미터 구조 확정 / Solver 통합 시점 미정** · 근거: [[05_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]], [[05_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 State Transition은 한 State가 조건을 만족했을 때 다른 State를 증가시키는 규칙이다.
 

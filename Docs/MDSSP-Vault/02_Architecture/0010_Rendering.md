@@ -1,6 +1,6 @@
 # Surface State Rendering
 
-상태: **방향 설계** · 근거: [[05_Assets/Documents/Geometry-Integration.pdf|형상 정보 반영]], [[05_Assets/Documents/Target-Demos.pdf|목표 데모]]
+상태: **방향 설계** · 근거: [[05_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[05_Assets/Documents/0007_Target-Demos.pdf|목표 데모]]
 
 Rendering은 State에 따른 **외관 변화**와 Accumulation에 따른 **형상 높이 변화**를 구분한다.
 
@@ -38,4 +38,4 @@ Mud·Snow처럼 실제 두께 변화가 중요한 적층은 Geometry Displacemen
 - `Mud`: 외관 변화 + `AccumulationHeight`.
 - `SurfaceWater`(확장 예정): 표면 물기 / 고임 + 적층 높이 가능.
 
-적층 계산은 [[02_Architecture/Accumulation|적층과 Accumulation Height]]을 본다.
+적층 계산은 [[02_Architecture/0008_Accumulation|적층과 Accumulation Height]]을 본다.

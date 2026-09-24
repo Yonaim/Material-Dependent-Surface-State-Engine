@@ -1,6 +1,6 @@
 # 적층과 Accumulation Height
 
-상태: **수식 확정** · 근거: [[05_Assets/Documents/Geometry-Integration.pdf|형상 정보 반영]]
+상태: **수식 확정** · 근거: [[05_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]]
 
 적층은 State를 직접 변경하는 Solver 항이 아니라, 계산된 State를 **형상상의 높이 변화**로 변환하는 후속 Geometry 계산이다.
 
