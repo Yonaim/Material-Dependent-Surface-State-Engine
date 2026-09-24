@@ -1,0 +1,97 @@
+{
+  "biggerIcons": "mobile",
+  "clickableIcons": "desktop",
+  "showAllFileIcons": false,
+  "showAllFolderIcons": false,
+  "minimalFolderIcons": true,
+  "showMarkdownTabIcons": true,
+  "showTitleIcons": true,
+  "showTagPillIcons": true,
+  "showMenuActions": true,
+  "showSuggestionIcons": true,
+  "showQuickSwitcherIcons": true,
+  "showMoveFileIcons": true,
+  "showItemName": "desktop",
+  "biggerSearchResults": "mobile",
+  "maxSearchResults": 50,
+  "colorPicker1": "list",
+  "colorPicker2": "rgb",
+  "uncolorHover": false,
+  "uncolorDrag": false,
+  "uncolorSelect": false,
+  "uncolorQuick": false,
+  "rememberDeletedItems": false,
+  "dialogState": {
+    "iconMode": true,
+    "emojiMode": false,
+    "rulePage": "file"
+  },
+  "appIcons": {},
+  "tabIcons": {},
+  "fileIcons": {
+    "00_Start": {
+      "icon": "lucide-home",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "01_Project-Policy": {
+      "icon": "lucide-flag-triangle-left",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "02_Architecture": {
+      "icon": "lucide-badge",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "03_ADR": {
+      "icon": "lucide-train-front-tunnel",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "04_Development": {
+      "icon": "lucide-shovel",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "04_Development/Debugging": {
+      "icon": "lucide-bug",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "04_Development/Experiments": {
+      "icon": "lucide-flask-conical",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "04_Development/Notes": {
+      "icon": "lucide-sticky-note",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "05_Assets": {
+      "icon": "lucide-boxes",
+      "unsynced": [
+        "cbda2c37e432a588"
+      ]
+    },
+    "TODO.md": {
+      "icon": "lucide-check-circle",
+      "color": "gray"
+    }
+  },
+  "bookmarkIcons": {},
+  "tagIcons": {},
+  "propertyIcons": {},
+  "ribbonIcons": {},
+  "fileRules": [],
+  "folderRules": []
+}
