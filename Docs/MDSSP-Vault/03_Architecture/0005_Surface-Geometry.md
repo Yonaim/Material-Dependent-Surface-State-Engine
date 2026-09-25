@@ -130,7 +130,7 @@ $$
 Surface\_Amount = Accumulation\_Amount \times (1-Cavity\_Fill\_Factor)
 $$
 
-`Cavity_Fill_Factor ∈ [0,1]`이며 SRProfile에서 결정한다.
+`Cavity_Fill_Factor ∈ [0,1]`이며 SRProfile에서 결정한다. `Cavity_Amount`는 전체 cavity 깊이를 100% 채우는 양을 `1`로 둔 정규화 비율이다. 따라서 `0.4`는 깊이의 40%를 채우며, `1`을 넘는 초과분은 cavity를 더 채우지 않고 Surface Following으로 넘긴다.
 
 ### 실제 높이와 Cavity 상한
 
