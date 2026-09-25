@@ -36,7 +36,7 @@ main
 |---|---|---|
 | Profile Distribution 입력 및 로더 | `feat/shared-geometry-build` | Surface/Material 할당마다 Profile 하나를 파싱·검증하고, 그 Surface의 valid texel에 `ProfileIndex`를 확장. Surface 내부의 Profile 영역 분할은 후속 기능 |
 | Runtime Surface preprocessing end-to-end 연결 | `feat/shared-geometry-build` | Asset/Scene load에서 입력을 수집하고 고유 Mesh/Profile Distribution 조합마다 Mapping→Build를 실행해 메모리 Asset으로 등록·공유. Persistent `.Surface` cache는 사용하지 않음 |
-| Registry 크기를 State instance와 GPU 리소스에 전달 | `feat/surface-gpu-resources` | Registry 수명/참조와 channel count를 instance 생성 및 resource 크기에 연결하고 dynamic layout 결정 |
+| Registry 크기를 State instance와 GPU 리소스에 전달 | `feat/surface-gpu-resources` | Registry 참조와 channel count를 instance 생성 및 resource 크기에 연결하고 ADR 0010 layout을 구현·검증 |
 | 임의 개수 State를 처리하는 Solver | `feat/surface-solver-2pass` | 하드코딩된 State 이름·개수 제거, Registry channel count로 처리 및 테스트 |
 | Profile에 정의되지 않은 Registry State의 처리 규칙 | `feat/surface-solver-2pass` 및 `feat/surface-input-integration` | 지원 여부 표현은 Branch 4가 제공하고, Solver/Contact에서의 동작을 각각 정해 테스트 |
 | Contact 입력의 State 선택 및 UI | `feat/surface-input-integration` | `TStateId`를 `ChannelIndex`로 해석해 입력을 기록하고 UI를 Registry에서 구성 |
@@ -46,7 +46,7 @@ main
 
 - 뒤 브랜치를 미리 만들지 않는다. 앞 브랜치를 `main`에 병합한 뒤 다음 브랜치를 만든다.
 - 브랜치 하나는 독립적으로 빌드되고, 최소 하나의 확인 가능한 결과를 남겨야 한다.
-- 자료구조 계약은 Registry 기반 dynamic State를 기준으로 한다. GPU의 구체적인 channel memory layout은 4번 브랜치에서 결정하며, 이후 변경 시 ADR와 영향 문서를 갱신한다.
+- 자료구조 계약은 Registry 기반 dynamic State를 기준으로 한다. GPU channel memory layout은 ADR 0010에서 결정했으며 4번 브랜치에서 구현·검증한다. 변경 시 ADR와 영향 문서를 갱신한다.
 - GPU 단계 전까지 CPU 결과를 충분히 검증한다. GPU에서 mapping 오류와 solver 오류를 동시에 디버깅하지 않는다.
 - 자동 UV unwrap, 완전한 Normal Map 적분, 동적 Accumulation geometry는 4주차 최소 완료 조건에서 제외한다.
 
@@ -58,7 +58,7 @@ main
 OBJ UV
 → Mesh-to-Texel Mapping
 → Shared Geometry
-→ State A/B + TempAlpha
+→ State A/B + OutgoingFluxScale
 → 2-Pass Solver
 → Contact Input
 → Debug Visualization

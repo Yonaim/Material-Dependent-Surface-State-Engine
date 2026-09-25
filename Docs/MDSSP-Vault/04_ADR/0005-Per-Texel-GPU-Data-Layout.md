@@ -1,6 +1,6 @@
 # ADR 0005 — Per-Texel GPU Data Layout과 Dense InputDelta
 
-- 상태: **Partially Superseded by [[0006-Dynamic-State-Registry]] and [[0009-Texel-Profile-Index-Map]]**
+- 상태: **Partially Superseded by [[0006-Dynamic-State-Registry]], [[0009-Texel-Profile-Index-Map]], and [[0010-Dynamic-State-GPU-Buffer-Layout]]**
 - 날짜: 2026-09-25
 
 ## Context
@@ -12,12 +12,12 @@
 ## Decision
 
 > [!warning] 대체 범위
-> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, 두 float `GeometryScalar`, dense `InputDelta` 재사용 결정은 유지한다. State channel은 Registry 크기에 따라 동적으로 배치한다. Texel별 Profile index map도 dense로 둔다 ([[0009-Texel-Profile-Index-Map]]). 물리적인 State buffer layout과 channel stride는 `feat/surface-gpu-resources`에서 결정한다.
+> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, 두 float `GeometryScalar`, dense `InputDelta` 재사용 결정은 유지한다. State channel은 Registry 크기에 따라 동적으로 배치한다. Texel별 Profile index map도 dense로 둔다 ([[0009-Texel-Profile-Index-Map]]). 물리적인 State/Profile buffer layout은 [[0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]]에서 결정했으며, 세부 구현 검증은 `feat/surface-gpu-resources`에서 수행한다.
 
 - GPU의 invalid texel 판정은 별도 `ValidMaskBuffer` 대신 `TexelSurfaceIndexBuffer`의 예약값 `InvalidSurfaceID = 0xFFFFFFFF`로 표현한다. 이 값은 유효 Surface ID로 사용할 수 없다. CPU Runtime mapping은 필요하면 별도 validity 정보를 유지할 수 있다.
 - 이웃 Distance는 CPU Runtime mapping 및 GPU buffer 어느 쪽에도 저장하지 않는다. Solver가 `SurfacePosition[j] - SurfacePosition[i]`에서 거리와 방향을 필요할 때 계산한다. CPU 검증 코드도 필요하면 같은 위치에서 임시 계산한다.
 - GPU `GeometryScalar`는 texel마다 실제 사용하는 `MesoVirtualHeight`와 `ConcavityWeight` 두 float만 저장한다. `vec4`로 올리거나 예약 component를 두지 않는다.
-- State 종류는 고정하지 않으며 `.SRProfile`에서 수집한 Registry channel count에 따른다. 기본 demo Profile의 `Wetness`, `Heat`, `Burn`, `Mud`는 예시 workload다. texel별 State와 TempAlpha/InputDelta의 buffer layout은 임의 channel count를 지원해야 한다.
+- State 종류는 고정하지 않으며 `.SRProfile`에서 수집한 Registry channel count에 따른다. 기본 demo Profile의 `Wetness`, `Heat`, `Burn`, `Mud`는 예시 workload다. texel별 State와 OutgoingFluxScale/InputDelta의 buffer layout은 임의 channel count를 지원해야 한다.
 - `InputDelta`는 texel별 dense buffer로 유지하고 State Registry의 channel count를 반영한다. GPU buffer는 instance resource 생성 시 한 번 할당해 재사용하고, 이벤트 입력이 없거나 소비된 뒤 값을 clear한다. 매 frame buffer를 새로 할당하지 않는다.
 - sparse InputDelta는 이 ADR에서 채택하지 않는다. 실제 입력 밀도와 성능을 측정한 뒤 별도 ADR 또는 변경으로 판단한다.
 
@@ -57,12 +57,12 @@ NeighborIndex     32 B  // uint32 8개
 합계              80 B/texel
 ```
 
-각 instance는 State A/B, TempAlpha, InputDelta 네 버퍼를 가진다. Registry channel 수가 `C`이고 32-bit scalar를 padding 없이 저장한다면 각 buffer는 texel당 `4C` bytes, 합계는 `16C` bytes다. `C = 4`인 demo workload에서만 64 bytes/texel이 된다. 실제 allocation은 GPU layout과 alignment에 따라 달라질 수 있다.
+각 instance는 State A/B, OutgoingFluxScale, InputDelta 네 버퍼를 가진다. Registry channel 수가 `C`이고 32-bit scalar를 padding 없이 저장한다면 각 buffer는 texel당 `4C` bytes, 합계는 `16C` bytes다. `C = 4`인 demo workload에서만 64 bytes/texel이 된다. 실제 allocation은 GPU layout과 alignment에 따라 달라질 수 있다.
 
 ```text
 State A       4C B
 State B       4C B
-TempAlpha     4C B
+OutgoingFluxScale     4C B
 InputDelta    4C B
 합계          16C B/texel
 ```

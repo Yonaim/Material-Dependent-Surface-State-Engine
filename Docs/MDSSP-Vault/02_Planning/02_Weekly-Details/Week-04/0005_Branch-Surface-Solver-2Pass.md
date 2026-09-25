@@ -30,7 +30,7 @@ if (localIndex >= localTexelCount) return;
 
 초기 workgroup size는 `local_size_x = 64`를 권장한다. 성능 최적값으로 간주하지 말고 추후 측정한다.
 
-invalid texel은 조기에 종료하되 Pass 1의 TempAlpha와 Pass 2의 NextState를 0으로 명시한다.
+invalid texel은 조기에 종료하되 Pass 1의 OutgoingFluxScale와 Pass 2의 NextState를 0으로 명시한다.
 
 각 texel에는 Registry가 정한 수만큼의 State channel이 있다. GPU의 실제 layout은 Branch 4에서 확정하지만 Solver는 이름이나 채널 개수를 하드코딩하지 않고 `stateChannelCount`와 `ChannelIndex`를 사용한다. Invocation은 texel 하나를 담당하며 등록된 모든 channel을 처리한다.
 
@@ -57,7 +57,7 @@ Profile이 어떤 Registry State를 정의하지 않은 경우의 동작은 아�
 
 출력:
 
-- `TempAlpha[i]`
+- `OutgoingFluxScale[i]`
 
 채널별 처리:
 
@@ -72,7 +72,7 @@ Profile이 어떤 Registry State를 정의하지 않은 경우의 동작은 아�
 
 ## Barrier 1
 
-TempAlpha write가 Pass 2 read에 보이도록 `vkCmdPipelineBarrier2`를 사용한다.
+OutgoingFluxScale write가 Pass 2 read에 보이도록 `vkCmdPipelineBarrier2`를 사용한다.
 
 ```text
 srcStage  = COMPUTE_SHADER
@@ -81,7 +81,7 @@ dstStage  = COMPUTE_SHADER
 dstAccess = SHADER_STORAGE_READ
 ```
 
-barrier 대상 buffer range를 TempAlpha로 제한한다.
+barrier 대상 buffer range를 OutgoingFluxScale로 제한한다.
 
 ## Pass 2
 
@@ -182,7 +182,7 @@ Registry channel count가 1, 4, 6 이상인 경우 각 State가 올바른 channe
 확인할 값:
 
 - Current/Next
-- TempAlpha
+- OutgoingFluxScale
 - texel별 Incoming/Outgoing 디버그 합
 - NaN/Inf 존재 여부
 

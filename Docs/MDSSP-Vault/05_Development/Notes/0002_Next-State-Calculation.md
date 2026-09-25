@@ -37,7 +37,7 @@ texel i
 
 1-Pass에서 이웃의 `alpha[j]`를 재계산하면 각 이웃마다 다시 주변 8개 flux를 계산해야 해서 중복 계산이 커진다. 현재 기본안은 `2-Pass + alpha 저장`이다.
 
-State A / State B / TempAlpha 리소스 타입, descriptor, barrier는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 따른다.
+State A / State B / OutgoingFluxScale 리소스 타입, descriptor, barrier는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 따른다.
 
 ## 구현 시 결정할 항목
 

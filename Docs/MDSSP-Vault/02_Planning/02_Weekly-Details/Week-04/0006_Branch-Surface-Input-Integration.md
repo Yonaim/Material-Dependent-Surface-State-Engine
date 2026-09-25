@@ -85,7 +85,8 @@ InputDelta[channel]
 Input event의 State 이름/ID는 `TSurfaceStateRegistry`를 통해 `ChannelIndex`로 해석한다. 해당 texel과 channel의 `InputDelta`에 `Strength * ContactWeight * Profile.inputFactor[channelIndex]`를 누적한다. `InputDelta`의 GPU 위치는 Branch 4에서 정한 dynamic layout helper를 사용하며, 특정 이름이나 고정 channel 순서에 의존하지 않는다.
 대상 texel의 Profile이 입력 State를 지원하지 않으면 그 입력은 거부하거나 no-op 처리하고 진단 정보를 남긴다. 이 동작은 입력 테스트에서 고정한다.
 
-- discrete event이므로 `DeltaTime`을 곱하지 않는다.
+- 접촉은 discrete event(발생 시점에 한 번 기록되는 접촉 사건)이므로 `DeltaTime`을 곱하지 않는다. 누적한 InputDelta는 다음 실행 Solver update에서 한 번 적용하고 clear한다.
+- 지속 입력은 이 이벤트 입력과 구분하며, 필요할 때 별도 rate 입력으로 설계하고 `DeltaTime`을 반영한다.
 - 같은 frame에 여러 event가 겹치면 합산한다.
 - 4주차에는 CPU vector에 합산한 뒤 한 번 upload한다.
 - 음수 입력이 필요하지 않으면 Strength를 `>= 0`으로 검증한다.
@@ -133,7 +134,7 @@ InputDelta clear가 다음 upload보다 먼저 끝나는지 확인한다. host-v
 - NeighborCount
 - seam texel
 - State A/B의 선택 채널
-- TempAlpha
+- OutgoingFluxScale
 
 렌더링용 색은 디버그 표현이며 실제 Material 표현과 분리한다.
 

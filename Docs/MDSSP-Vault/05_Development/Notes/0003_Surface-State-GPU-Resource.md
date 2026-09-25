@@ -9,7 +9,7 @@
 | 항목 | 결정 |
 |---|---|
 | 기본 resource | seam 때문에 불규칙한 index 접근이 필요하므로 Storage Buffer를 사용한다. |
-| State 형식 | `.SRProfile`에서 구성한 Registry의 `ChannelCount`만큼 동적으로 저장한다. 실제 GPU AoS/SoA layout과 stride는 GPU Resource 구현에서 결정한다. |
+| State 형식 | `.SRProfile` Registry의 `ChannelCount`에 따라 동적으로 저장한다. ADR 0010의 texel-major AoS와 packed `float32` 배열을 구현한다. |
 | ping-pong | instance마다 State A/B를 만들고 solver step마다 Current/Next 역할을 교환한다. |
 | TempState | Pass 1에서 각 texel의 Registry channel별 `alpha`를 저장한다. State와 마찬가지로 channel count 기반 layout을 사용하며 영구 State가 아니다. |
 | Input | discrete event를 `InputDelta`에 모아 Pass 2에서 한 번 반영한다. `DeltaTime`을 곱하지 않는다. |
@@ -26,7 +26,7 @@ flowchart LR
   Profile[SRProfile Assets] --> Profiles[Profile Buffer]
   Shared --> Solver[2-Pass Solver]
   Profiles --> Solver
-  Instance[Instance State A/B + TempAlpha] --> Solver
+  Instance[Instance State A/B + OutgoingFluxScale] --> Solver
   Solver --> Instance
 ```
 
@@ -35,7 +35,7 @@ flowchart LR
 | mapping, base geometry, neighbor | 같은 Mesh와 Profile Distribution 조합의 Runtime 결과 | Runtime Asset 변경 시 재생성 |
 | Profile parameter | 같은 `.SRProfile` | Profile reload 시 |
 | Texel→Profile index map | 같은 Geometry/Profile Distribution 조합의 Runtime Geometry | 전처리 입력 변경 시 재생성 |
-| State A/B, TempAlpha, InputDelta | instance | solver step마다 |
+| State A/B, OutgoingFluxScale, InputDelta | instance | solver step마다 |
 
 ## 인덱스 구조
 
@@ -63,7 +63,7 @@ stateIndex = getStateIndex(instance, localTexelIndex, channelIndex)
 profileIndex = TexelProfileIndex[localTexelIndex]
 ```
 
-`getStateIndex`의 물리적인 산식은 선택한 AoS/SoA layout에 따라 다르며, 이웃 texel에서도 같은 helper를 사용한다.
+`getStateIndex`는 ADR 0010의 `texelIndex * channelCount + channelIndex` 산식을 사용하며, 이웃 texel에서도 같은 helper를 사용한다.
 
 `TexelSurfaceIndex`는 Runtime mapping의 local Surface ID이며 invalid texel 판정에 사용한다. `TexelProfileIndex`는 각 texel이 사용하는 Profile 테이블의 index를 직접 저장한다. 같은 Profile을 쓰는 인접 texel도 index를 따로 보유한다. 이 dense lookup 기본안은 [[../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다.
 
@@ -97,11 +97,11 @@ Accumulation으로 변하는 instance별 Position/Normal/Curvature는 base geome
 
 ```glsl
 layout(std430) buffer StateBuffer      { float state[];      };
-layout(std430) buffer TempAlphaBuffer  { float alpha[];      };
+layout(std430) buffer OutgoingFluxScaleBuffer { float outgoingFluxScale[]; };
 layout(std430) buffer InputDeltaBuffer { float inputDelta[]; };
 ```
 
-위 선언은 Registry 기반 scalar channel을 표현하는 논리 예시이며 최종 AoS/SoA 선택은 GPU Resource 구현 시 확정한다. `ChannelIndex`는 Registry에서 얻고, State와 Profile parameter lookup에 동일하게 적용한다.
+위 선언은 Registry 기반 scalar channel을 표현하는 논리 예시다. State 계열 buffer는 ADR 0010의 texel-major AoS 규칙을 따른다. `ChannelIndex`는 Registry에서 얻고, State와 Profile parameter lookup에 동일하게 적용한다.
 
 `Wetness`, `Heat`, `Burn`, `Mud`는 기본 demo Profile에 선언될 수 있는 State 이름이다. Solver, Buffer와 Profile layout은 이 이름들을 하드코딩하지 않는다.
 
@@ -119,30 +119,30 @@ Step N + 1: B = Current, A = Next
 - Barrier가 끝나기 전에 역할을 바꾸지 않는다.
 - `A→B`, `B→A` descriptor set을 미리 만들어 교대로 사용한다.
 
-### TempState
+### OutgoingFluxScale
 
-`TempState`의 4주차 실제 resource 이름은 `TempAlphaBuffer`다.
+`OutgoingFluxScaleBuffer`는 각 texel/channel의 outgoing flux 제한 비율을 저장한다.
 
 ```text
-TempAlpha[i].channel = alpha[i].channel
+OutgoingFluxScale[i].channel = alpha[i].channel
 ```
 
-Pass 1은 raw outgoing 합으로 `alpha`를 계산해 저장한다. Pass 2는 이웃의 `alpha`를 읽고 `j → i` raw flux를 재계산한다. 8방향 raw flux를 별도 저장하지 않아 메모리를 줄이는 대신 계산량이 증가하므로 [[05_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]에서 측정한다.
+Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. Pass 2는 이웃의 `OutgoingFluxScale`을 읽고 `j → i` raw flux를 재계산한다. 8방향 raw flux를 별도 저장하지 않아 메모리를 줄이는 대신 계산량이 증가하므로 [[05_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]에서 측정한다.
 
 ### InputDelta
 
-4주차에는 CPU가 같은 frame의 contact event를 texel별 dense `InputDelta`로 합산해 upload한다. Buffer는 instance resource 생성 시 할당해 재사용하며, 매 frame 새로 할당하지 않는다.
+접촉은 discrete event(발생 시점에 한 번 기록되는 접촉 사건) 입력으로 취급한다. CPU는 같은 frame에 발생한 이벤트 양을 texel별 dense `InputDelta`로 합산해 upload한다. 이벤트 뒤 처음 실행되는 solver update에서 한 번 반영하고, 그 update 뒤 clear한다. Buffer는 instance resource 생성 시 할당해 재사용하며, 매 frame 새로 할당하지 않는다. 지속 시간 동안 계속 작용하는 입력은 `InputDelta`와 구분되는 별도 rate 입력으로 정의한다.
 
 - Input은 event 양이므로 `DeltaTime`을 곱하지 않는다.
 - Pass 1의 Transport와 Decay는 Current State를 기준으로 계산한다.
 - Pass 2에서 `Current + InputDelta + Incoming - Outgoing - Decay`를 Next에 기록한다.
 - 소비한 `InputDelta`는 Pass 2 이후 0으로 clear한다.
 
-따라서 이번 frame에 들어온 Input은 같은 step의 outgoing에 즉시 사용되지 않고 다음 step부터 Transport에 참여한다. 이는 현재 [[03_Architecture/0004_Surface-State-Update|Solver 수식]]의 처리 순서를 따른다.
+InputDelta는 discrete event(발생 시점에 한 번 기록되는 접촉 사건) 입력 뒤 처음 실행되는 solver update의 Pass 2에서 Next State에 한 번 더하고, 그 update 뒤 0으로 clear한다. 따라서 접촉 입력은 해당 update 결과에 바로 반영된다. 다만 Pass 1의 outgoing 계산은 InputDelta를 더하기 전 Current State를 기준으로 하므로, 접촉으로 추가된 양의 neighbor transport는 다음 solver update부터 시작한다. 이는 discrete event를 한 번 반영하는 현재 계획의 정책이며, GPU가 강제하는 제약은 아니다.
 
 ## SRProfile GPU Representation
 
-Profile parameter는 Registry channel index로 조회한다. 논리적으로 각 parameter는 `(ProfileIndex, ChannelIndex)` 쌍에 대응한다. Registry 크기를 지원하는 물리적인 SSBO 배열, stride와 AoS/SoA layout은 GPU Resource 구현에서 선택하고 검증한다.
+Profile parameter는 `(ProfileIndex, ChannelIndex)` 조합을 사용하며, ADR 0010의 Profile-major record 배치와 index 산식을 따른다.
 
 - `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다.
 - CPU Asset loader가 모든 `stateCapacity > 0`을 검증한 뒤 upload한다.
@@ -164,7 +164,7 @@ binding 번호는 구현 시작점이며 Renderer 전역 규칙과 충돌하면 
 | 6 | Surface Profile Index | read-only |
 | 7 | Current State | read-only |
 | 8 | Next State | write-only |
-| 9 | TempAlpha | Pass 1 write / Pass 2 read |
+| 9 | OutgoingFluxScale | Pass 1 write / Pass 2 read |
 | 10 | InputDelta | read-only, 이후 clear |
 
 실제 구현에서는 관련 buffer를 하나의 큰 allocation에 pack할 수 있다. 논리적 binding과 바이트 오프셋을 분리해 문서의 데이터 소유권을 유지한다.
@@ -197,7 +197,7 @@ flowchart LR
 
 ### Pass 1 → Pass 2
 
-`TempAlphaBuffer`에 다음 dependency를 둔다.
+`OutgoingFluxScaleBuffer`에 다음 dependency를 둔다.
 
 ```text
 srcStage  = COMPUTE_SHADER
@@ -216,12 +216,12 @@ dstAccess = SHADER_STORAGE_READ
 
 ## 메모리 기준
 
-Registry State channel 수를 `C`라 할 때, padding이 없는 32-bit scalar layout의 State A/B, TempAlpha, InputDelta는 각각 texel당 `4C` bytes이며 네 버퍼 합계는 `16C` bytes다. 예를 들어 demo Profile이 4개 State를 등록하면 64 bytes/texel이지만, 이는 고정 layout 크기가 아니다. 실제 allocation은 선택한 GPU layout과 alignment에 따라 달라질 수 있다.
+Registry State channel 수를 `C`라 할 때, padding이 없는 32-bit scalar layout의 State A/B, OutgoingFluxScale, InputDelta는 각각 texel당 `4C` bytes이며 네 버퍼 합계는 `16C` bytes다. 예를 들어 demo Profile이 4개 State를 등록하면 64 bytes/texel이지만, 이는 고정 layout 크기가 아니다. 실제 allocation은 선택한 GPU layout과 alignment에 따라 달라질 수 있다.
 
 ```text
 State A       4C B
 State B       4C B
-TempAlpha     4C B
+OutgoingFluxScale     4C B
 InputDelta    4C B
 합계          16C B/texel
 ```
@@ -244,6 +244,6 @@ InputDelta    4C B
 - 다른 Profile 경계의 `ProfileBoundaryWeight` 결합식
 - 동적 Accumulation geometry의 instance overlay 배치
 - GPU에서 contact event가 겹칠 때의 reduce/atomic 방식
-- Registry channel 수에 맞는 AoS/SoA, alignment 및 성능 검증
+- Registry channel 수에 맞는 AoS 인덱싱, alignment 및 성능 검증
 - raw flux 재계산과 임시 flux buffer의 성능 비교
 - 최종 descriptor set 번호와 frame-in-flight별 resource 수

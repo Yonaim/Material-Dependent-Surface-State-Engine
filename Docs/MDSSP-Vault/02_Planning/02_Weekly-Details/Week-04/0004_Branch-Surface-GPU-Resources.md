@@ -6,9 +6,9 @@
 
 ## 목표
 
-CPU에서 검증한 Mapping/Geometry/Profile 데이터를 Vulkan Storage Buffer로 올리고, instance별 State A/B와 TempAlpha/InputDelta를 생성한다. 이 브랜치에서는 compute shader가 실제 수식을 실행하지 않아도 된다.
+CPU에서 검증한 Mapping/Geometry/Profile 데이터를 Vulkan Storage Buffer로 올리고, instance별 State A/B와 OutgoingFluxScale/InputDelta를 생성한다. 이 브랜치에서는 compute shader가 실제 수식을 실행하지 않아도 된다.
 
-State와 Profile parameter의 GPU 배치는 `.SRProfile`에서 생성된 `TSurfaceStateRegistry::ChannelCount`를 지원해야 한다. texel별 dense ProfileIndex map 기본안은 [[../../../../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다. 임의 개수 채널을 위한 AoS/SoA 및 buffer stride/indexing은 이 브랜치에서 결정·검증하고, 고정 4채널 `vec4` layout을 계약으로 사용하지 않는다.
+State와 Profile parameter의 GPU 배치는 `.SRProfile`에서 생성된 `TSurfaceStateRegistry::ChannelCount`를 지원한다. texel별 dense ProfileIndex map은 [[../../../../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다. State channel layout, Profile parameter layout, scalar stride/indexing은 [[../../../../04_ADR/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]]에서 정한 계약을 구현·검증한다. 고정 4채널 `vec4` layout은 사용하지 않는다.
 
 ## 현재 기반에서 주의할 점
 
@@ -42,7 +42,7 @@ invalid texel은 `TexelSurfaceIndex == InvalidSurfaceID`로 판정한다. 거리
 
 ```text
 Logical lookup: (ProfileIndex, ChannelIndex) → per-State profile parameters
-Physical buffer layout, stride, and AoS/SoA choice: decide and validate in this branch.
+Physical buffer layout and stride follow ADR 0010; implement and validate them in this branch.
 ```
 
 CPU/GPU serialization layout과 stride를 확정한 뒤 크기·offset·channel index 대응을 검증한다. Registry channel index는 Profile parameter 조회와 State buffer 접근에서 동일해야 한다.
@@ -54,7 +54,7 @@ Profile이 특정 Registry State를 정의하지 않은 경우를 구분할 수 
 SurfaceInstanceStateGPU
 ├─ State A          texelCount × stateChannelCount scalar values
 ├─ State B          texelCount × stateChannelCount scalar values
-├─ TempAlpha        texelCount × stateChannelCount scalar values
+├─ OutgoingFluxScale        texelCount × stateChannelCount scalar values
 └─ InputDelta       texelCount × stateChannelCount scalar values
 ```
 
@@ -71,7 +71,7 @@ neighborStateIndex = getStateIndex(
     instance, NeighborIndex[localTexelIndex][slot], channelIndex)
 ```
 
-`getStateIndex`는 이 브랜치에서 선택하는 layout-specific helper다. AoS/SoA 선택에 따라 산식을 달리할 수 있으나 자기 texel과 이웃 texel에서 같은 `ChannelIndex`를 사용해야 한다.
+`getStateIndex`는 ADR 0010의 AoS 산식을 감추는 helper다. 자기 texel과 이웃 texel에서 같은 `ChannelIndex` 규칙을 사용해야 한다.
 
 이 규칙을 지켜야 하나의 Geometry를 여러 instance가 공유할 수 있다.
 
@@ -105,7 +105,7 @@ Profile Table
 Texel→Profile Index Map
 Current State
 Next State
-TempAlpha
+OutgoingFluxScale
 InputDelta
 ```
 
@@ -126,7 +126,7 @@ Descriptor BA: Current=B, Next=A
 2. CPU Geometry를 vec4/uvec4와 2-float scalar 구조체 upload 배열로 변환. State/Profile arrays는 Registry channel count에 맞춘 선택 layout으로 변환한다. ValidMask/NeighborDistance는 GPU buffer로 만들지 않는다.
 3. Shared Geometry buffer 생성과 upload
 4. Profile buffer 생성과 upload
-5. instance State A/B, TempAlpha, InputDelta 생성 및 clear
+5. instance State A/B, OutgoingFluxScale, InputDelta 생성 및 clear
 6. Shared Geometry의 texel별 ProfileIndex map upload
 7. descriptor set layout 생성
 8. AB/BA descriptor set 생성
@@ -143,7 +143,7 @@ Descriptor BA: Current=B, Next=A
 - Position 차이에서 이웃 거리/방향이 올바르게 계산됨
 - 8 neighbor가 두 `uvec4`에 올바른 순서로 pack됨
 - 1개, 4개, 6개 이상의 Registry State에서 State와 Profile parameter의 index/stride mapping이 일치하는지 확인
-- Channel count가 달라도 State A/B, TempAlpha, dense InputDelta의 경계와 크기가 맞는지 확인
+- Channel count가 달라도 State A/B, OutgoingFluxScale, dense InputDelta의 경계와 크기가 맞는지 확인
 
 ### Vulkan 검증
 
@@ -158,13 +158,14 @@ Descriptor BA: Current=B, Next=A
 
 ## 메모리 확인
 
-각 instance의 State A/B, TempAlpha, InputDelta 버퍼는 각각 texel당 16바이트를 사용한다. 네 버퍼의 합계는 texel당 64바이트다.
+각 State channel scalar가 32-bit일 때 instance별 State A/B, OutgoingFluxScale, InputDelta는 각각 texel당 `4C` bytes이며, 네 버퍼의 합은 texel당 `16C` bytes다. 여기서 `C`는 Registry channel 수다. 예를 들어 `C=4`일 때에만 각 버퍼가 16 bytes, 네 버퍼 합계가 64 bytes다.
 
 ```text
-State A    16 B
-State B    16 B
-TempAlpha  16 B
-InputDelta 16 B
+State A    4C B
+State B    4C B
+OutgoingFluxScale  4C B
+InputDelta 4C B
+합계       16C B/texel
 ```
 
 DebugUI에 instance 수, texel 수, 공유 Geometry 크기, instance별 State resource 크기를 바이트 단위로 표시할 수 있도록 통계를 제공한다.
@@ -181,7 +182,7 @@ DebugUI에 instance 수, texel 수, 공유 Geometry 크기, instance별 State re
 
 - GPU resource 생성과 파괴가 안정적이다.
 - Shared/Instance 소유권이 실제 handle 수준에서 분리된다.
-- A/B/TempAlpha/InputDelta가 모두 명시적으로 초기화된다.
+- A/B/OutgoingFluxScale/InputDelta가 모두 명시적으로 초기화된다.
 - Solver가 사용할 descriptor set과 push constant 계약이 준비된다.
 
 ## 제외 범위

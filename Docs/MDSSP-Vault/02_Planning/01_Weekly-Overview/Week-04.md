@@ -11,7 +11,7 @@
 1. **Surface Data Contract** — Registry 기반 State 식별, CPU data type, ID, Profile과 Surface의 소유권·검증 계약을 만든다.
 2. **Simulation Mapping** — UV를 검증하고 Triangle rasterization / barycentric mapping, valid texel, 8-neighbor와 seam 연결을 구현한다.
 3. **Shared Geometry Build** — mapping 결과로 texel Position·Normal·Neighbor와 기본 Geometry field를 생성한다.
-4. **Surface GPU Resources** — Shared Geometry, Profile, instance State A/B, TempAlpha와 dense InputDelta를 업로드하고 descriptor를 준비한다.
+4. **Surface GPU Resources** — Shared Geometry, Profile, instance State A/B, OutgoingFluxScale와 dense InputDelta를 업로드하고 descriptor를 준비한다.
 5. **Surface Solver 2-Pass** — Pass 1의 alpha, Pass 2의 Next State 계산, barrier와 ping-pong을 연결한다.
 6. **Surface Input Integration** — Raycast / ContactWeight로 dense InputDelta를 만들고 Solver와 debug view에 연결한다.
 
@@ -28,7 +28,7 @@
 OBJ + prepared UV
 → Mesh-to-Texel Mapping
 → Shared Geometry
-→ GPU State A/B + TempAlpha
+→ GPU State A/B + OutgoingFluxScale
 → 2-Pass Solver
 → Contact Input
 → Debug View

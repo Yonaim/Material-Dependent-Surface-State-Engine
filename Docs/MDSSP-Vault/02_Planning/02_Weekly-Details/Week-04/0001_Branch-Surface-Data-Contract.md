@@ -110,7 +110,7 @@ TSharedSurfaceGeometryData         같은 전처리 결과를 쓰는 instance가
 
 TSurfaceInstanceStateData          instance별 소유
 ├─ State A/B
-├─ TempAlpha
+├─ OutgoingFluxScale
 ├─ InputDelta
 └─ Texel→ProfileIndex dense map in TSharedSurfaceGeometryData
 ```
