@@ -1,0 +1,8 @@
+{
+  "type": "SurfaceProfileMap",
+  "version": 1,
+  "profiles": ["../Valid.SRProfile"],
+  "surfaces": [
+    {"surfaceId": 1, "profileIndex": 0}
+  ]
+}

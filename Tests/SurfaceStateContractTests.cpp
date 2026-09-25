@@ -228,6 +228,28 @@ namespace
             SurfaceCacheMetadata Stale = Asset.Metadata;
             ++Stale.UVSet;
             CheckThrows([&] { (void)SurfaceCache::Load(CachePath, Stale); }, "stale", "stale cache input metadata");
+
+            SurfaceMappingData SmallerMapping;
+            SmallerMapping.Surfaces.push_back({0, {1, 1}, 0, 1});
+            SmallerMapping.Texels.resize(1);
+            SmallerMapping.Texels[0].Surface = 0;
+            SmallerMapping.Texels[0].Triangle = 2;
+            SmallerMapping.Texels[0].Chart = 0;
+            SmallerMapping.Texels[0].Normal = {0.0F, 0.0F, 1.0F};
+            const SurfaceCacheMetadata SmallerMetadata = SurfacePreprocessor::CreateMetadata(
+                GetFixturePath("Valid.SRProfile"), {}, {0}, {{1, 1}}, 0, 1, 1);
+            const SurfacePreprocessedAsset SmallerAsset =
+                SurfacePreprocessor::Build(SmallerMapping, {0}, 1, SmallerMetadata);
+            SurfaceCache::Save(CachePath, SmallerAsset);
+            const SurfacePreprocessedAsset Replaced = SurfaceCache::Load(CachePath, SmallerMetadata);
+            Check(Replaced.Geometry.GetTexelCount() == 1 && Replaced.Geometry.GetSurfaces()[0].Resolution ==
+                                                                   SurfaceResolution{1, 1},
+                  "saving a new resolution to the stable cache path should replace the previous variant");
+            const SurfaceCacheMetadata SourceFingerprint = SurfacePreprocessor::CreateSourceMetadata(
+                GetFixturePath("Valid.SRProfile"), {}, {{1, 1}}, 0, 1, 1);
+            const SurfacePreprocessedAsset FingerprintHit = SurfaceCache::Load(CachePath, SourceFingerprint);
+            Check(FingerprintHit.Metadata.ProfileMapHash == SmallerMetadata.ProfileMapHash,
+                  "source-only cache lookup should accept and retain the verified serialized Profile map hash");
         }
         catch (const std::exception& Exception)
         {
