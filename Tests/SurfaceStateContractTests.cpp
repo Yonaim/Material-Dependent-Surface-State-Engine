@@ -1,17 +1,16 @@
 /**
  * @file SurfaceStateContractTests.cpp
- * @brief Dynamic State Registry, Profile, shared Surface and cache contracts.
+ * @brief Dynamic State Registry, Profile, shared Surface and Runtime preprocessing contracts.
  */
 
 #include "AssetManager/Assets/SRProfileAsset.h"
 #include "AssetManager/Loaders/SRProfileLoader.h"
 #include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
-#include "SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.h"
+#include "SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.h"
 #include "SurfaceStateSystem/State/SurfaceInput.h"
 #include "SurfaceStateSystem/State/SurfaceInstanceStateData.h"
 #include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
 
-#include <chrono>
 #include <filesystem>
 #include <functional>
 #include <iostream>
@@ -190,7 +189,7 @@ namespace
         Check(Input.Falloff == 1.0F, "contact input should have a stable default falloff");
     }
 
-    void TestSurfaceCache()
+    void TestRuntimePreprocessing()
     {
         using namespace MDSS;
 
@@ -203,72 +202,25 @@ namespace
         Mapping.Texels[0].Position = {1.0F, 2.0F, 3.0F};
         Mapping.Texels[0].Normal = {0.0F, 0.0F, 1.0F};
 
-        const SurfaceCacheMetadata Metadata = SurfacePreprocessor::CreateMetadata(
-            GetFixturePath("Valid.SRProfile"), {}, {7, InvalidSurfaceProfileIndex}, {{2, 1}}, 0, 1, 8);
-        const SurfacePreprocessedAsset Asset =
-            SurfacePreprocessor::Build(Mapping, {7, InvalidSurfaceProfileIndex}, 8, Metadata);
-        Check(Asset.Geometry.GetProfileIndex(0) == 7, "valid texel should retain its Profile index");
-        Check(Asset.Geometry.GetProfileIndex(1) == InvalidSurfaceProfileIndex,
+        const SurfaceRuntimeData Data = SurfacePreprocessor::Build(Mapping, {7, InvalidSurfaceProfileIndex}, 8);
+        Check(Data.Geometry->GetProfileIndex(0) == 7, "valid texel should retain its Profile index");
+        Check(Data.Geometry->GetProfileIndex(1) == InvalidSurfaceProfileIndex,
               "invalid texel should use reserved Profile sentinel");
-        Check(Asset.Metadata.ProfileMapHash == SurfacePreprocessor::HashProfileMap({7, InvalidSurfaceProfileIndex}),
-              "metadata should fingerprint Profile map contents");
 
-        const auto Timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-        const auto CachePath =
-            std::filesystem::temp_directory_path() / ("mdssp_surface_cache_" + std::to_string(Timestamp) + ".Surface");
-        try
-        {
-            SurfaceCache::Save(CachePath, Asset);
-            const SurfacePreprocessedAsset Loaded = SurfaceCache::Load(CachePath, Asset.Metadata);
-            Check(Loaded.Geometry.GetTexelCount() == 2, "cache round trip should retain texel count");
-            Check(Loaded.Geometry.GetTexels()[0].Position == glm::vec3(1.0F, 2.0F, 3.0F),
-                  "cache round trip should retain geometry data");
-            Check(Loaded.Geometry.GetProfileIndex(0) == 7, "cache round trip should retain Profile map");
+        const SurfaceRuntimeData Rebuilt = SurfacePreprocessor::Build(Mapping, {7, InvalidSurfaceProfileIndex}, 8);
+        Check(Rebuilt.Geometry->GetTexelCount() == Data.Geometry->GetTexelCount(),
+              "Runtime preprocessing should be repeatable without a disk cache");
+        Check(Rebuilt.Geometry->GetProfileMap() == Data.Geometry->GetProfileMap(),
+              "identical Runtime inputs should reproduce the same texel Profile map");
+        Check(Rebuilt.Geometry->GetTexels()[0].Position == Data.Geometry->GetTexels()[0].Position,
+              "identical Runtime inputs should reproduce geometry values");
 
-            SurfaceCacheMetadata Stale = Asset.Metadata;
-            ++Stale.UVSet;
-            CheckThrows([&] { (void)SurfaceCache::Load(CachePath, Stale); }, "stale", "stale cache input metadata");
-
-            SurfaceMappingData SmallerMapping;
-            SmallerMapping.Surfaces.push_back({0, {1, 1}, 0, 1});
-            SmallerMapping.Texels.resize(1);
-            SmallerMapping.Texels[0].Surface = 0;
-            SmallerMapping.Texels[0].Triangle = 2;
-            SmallerMapping.Texels[0].Chart = 0;
-            SmallerMapping.Texels[0].Normal = {0.0F, 0.0F, 1.0F};
-            const SurfaceCacheMetadata SmallerMetadata = SurfacePreprocessor::CreateMetadata(
-                GetFixturePath("Valid.SRProfile"), {}, {0}, {{1, 1}}, 0, 1, 1);
-            const SurfacePreprocessedAsset SmallerAsset =
-                SurfacePreprocessor::Build(SmallerMapping, {0}, 1, SmallerMetadata);
-            SurfaceCache::Save(CachePath, SmallerAsset);
-            const SurfacePreprocessedAsset Replaced = SurfaceCache::Load(CachePath, SmallerMetadata);
-            Check(Replaced.Geometry.GetTexelCount() == 1 && Replaced.Geometry.GetSurfaces()[0].Resolution ==
-                                                                   SurfaceResolution{1, 1},
-                  "saving a new resolution to the stable cache path should replace the previous variant");
-            const SurfaceCacheMetadata SourceFingerprint = SurfacePreprocessor::CreateSourceMetadata(
-                GetFixturePath("Valid.SRProfile"), {}, {{1, 1}}, 0, 1, 1);
-            const SurfacePreprocessedAsset FingerprintHit = SurfaceCache::Load(CachePath, SourceFingerprint);
-            Check(FingerprintHit.Metadata.ProfileMapHash == SmallerMetadata.ProfileMapHash,
-                  "source-only cache lookup should accept and retain the verified serialized Profile map hash");
-        }
-        catch (const std::exception& Exception)
-        {
-            Check(false, std::string("Surface cache round trip failed: ") + Exception.what());
-        }
-        std::error_code RemoveError;
-        std::filesystem::remove(CachePath, RemoveError);
-        Check(!RemoveError, "temporary Surface cache should be cleaned up");
-
-        CheckThrows([&] { (void)SurfacePreprocessor::Build(Mapping, {7}, 8, Metadata); },
+        CheckThrows([&] { (void)SurfacePreprocessor::Build(Mapping, {7}, 8); },
                     "exactly one entry per mapping texel",
                     "profile map with wrong texel count");
-        SurfaceCacheMetadata InvalidRangeMetadata;
-        InvalidRangeMetadata.MeshHash = "mesh-hash";
-        CheckThrows(
-            [&]
-            { (void)SurfacePreprocessor::Build(Mapping, {8, InvalidSurfaceProfileIndex}, 8, InvalidRangeMetadata); },
-            "outside the loaded Profile range",
-            "profile map index outside registered profile range");
+        CheckThrows([&] { (void)SurfacePreprocessor::Build(Mapping, {8, InvalidSurfaceProfileIndex}, 8); },
+                    "outside the loaded Profile range",
+                    "profile map index outside registered profile range");
     }
 } // namespace
 
@@ -277,7 +229,7 @@ int main()
     TestProfileAndRegistry();
     TestGeometryAndInstanceData();
     TestContactInputType();
-    TestSurfaceCache();
+    TestRuntimePreprocessing();
 
     if (FailureCount != 0)
     {
