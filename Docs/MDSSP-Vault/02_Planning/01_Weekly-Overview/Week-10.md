@@ -22,4 +22,4 @@ Heat Saturation 조건을 만족할 때 Burn이 증가하고, Heat 냉각 뒤에
 
 - [[03_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]
 - [[03_Architecture/0006_Rendering|Rendering]]
-- [[03_Architecture/0007_Demos|목표 데모]]
+- [[../00_Project-Overview/0002_Demo|목표 데모]]

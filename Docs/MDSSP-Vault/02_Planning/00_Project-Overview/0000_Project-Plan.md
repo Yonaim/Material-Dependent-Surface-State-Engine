@@ -6,7 +6,7 @@
 
 C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** 시뮬레이션을 추가한다. Mesh 표면을 Simulation texel graph로 표현하고, Surface별 Profile과 Instance별 상태를 이용해 입력·전파·감쇠를 계산한다. 상태 변화는 렌더링 표현과 필요한 경우의 형상 적층으로 연결한다.
 
-초기 구현은 Static Mesh를 대상으로 한다. 프로젝트가 지향하는 최종 데모는 [[03_Architecture/0007_Demos|목표 데모]]에 정리한다.
+초기 구현은 Static Mesh를 대상으로 한다. 프로젝트가 지향하는 최종 데모는 [[0002_Demo|목표 데모]]에 정리한다.
 
 ## 범위와 결과
 

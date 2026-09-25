@@ -23,4 +23,4 @@ Mud의 전파·잔류·적층을 Wetness와 결합해 중간 시연 가능한 �
 
 - [[03_Architecture/0005_Surface-Geometry|형상 정보와 적층]]
 - [[03_Architecture/0006_Rendering|Rendering]]
-- [[03_Architecture/0007_Demos|목표 데모]]
+- [[../00_Project-Overview/0002_Demo|목표 데모]]

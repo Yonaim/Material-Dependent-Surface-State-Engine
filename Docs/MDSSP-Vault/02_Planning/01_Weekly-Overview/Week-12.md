@@ -24,4 +24,4 @@
 
 - [[03_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]
 - [[03_Architecture/0004_Surface-State-Update|Surface State Update]]
-- [[03_Architecture/0007_Demos|목표 데모]]
+- [[../00_Project-Overview/0002_Demo|목표 데모]]

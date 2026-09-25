@@ -37,6 +37,6 @@ flowchart TD
 2. [[03_Architecture/0002_Surface-State|표면 상태와 전이]] → [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
 3. [[03_Architecture/0004_Surface-State-Update|Surface State 입력과 갱신]]
 4. [[03_Architecture/0005_Surface-Geometry|형상과 적층]] → [[03_Architecture/0006_Rendering|렌더링]]
-5. [[03_Architecture/0007_Demos|목표 데모]] → [[TODO|TODO]]
+5. [[../02_Planning/00_Project-Overview/0002_Demo|목표 데모]] → [[TODO|TODO]]
 
 Simulation UV의 생성·Mesh→Texel mapping·UV seam 연결은 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], 실제 Vulkan resource와 2-Pass 동기화는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 기준으로 한다.
