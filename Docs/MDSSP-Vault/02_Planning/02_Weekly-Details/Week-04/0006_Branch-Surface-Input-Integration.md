@@ -140,7 +140,7 @@ InputDelta clear가 다음 upload보다 먼저 끝나는지 확인한다. host-v
 
 - `Source/InputSystem/Raycaster.h/.cpp`
 - `Source/InputSystem/InputSystem.h/.cpp`
-- `Source/SurfaceStateSystem/SurfaceInput.h`
+- `Source/SurfaceStateSystem/State/SurfaceInput.h`
 - `Source/SurfaceStateSystem/SurfaceStateSystem.h/.cpp`
 - `Source/DebugUI/DebugUI.h/.cpp`
 - `Shaders/SurfaceDebug.frag`
@@ -202,12 +202,12 @@ InputDelta clear가 다음 upload보다 먼저 끝나는지 확인한다. host-v
 
 ## 권장 커밋 분할
 
-1. `Feat: raycast static mesh triangles for surface input`
-2. `Feat: map ray hits to simulation texels`
-3. `Feat: accumulate contact events into input delta`
-4. `Feat: integrate surface solver into frame update`
-5. `Feat: visualize surface state debug channels`
-6. `Test: add end-to-end surface input scenarios`
+1. `Feat: Surface Input용 Static Mesh Triangle Raycast 추가`
+2. `Feat: Ray Hit를 Simulation Texel로 Mapping`
+3. `Feat: Contact Event를 Input Delta에 누적`
+4. `Feat: Surface Solver를 Frame Update에 통합`
+5. `Feat: Surface State 디버그 채널 시각화`
+6. `Test: Surface Input End-to-End 시나리오 추가`
 
 ## 완료 조건
 

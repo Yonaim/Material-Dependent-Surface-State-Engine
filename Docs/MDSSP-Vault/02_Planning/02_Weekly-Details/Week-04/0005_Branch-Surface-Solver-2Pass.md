@@ -10,7 +10,7 @@ synthetic State와 Profile을 사용해 GPU에서 Pass 1/Pass 2를 실행하고 
 
 ## 구현 대상
 
-- `Source/SurfaceStateSystem/SurfaceStateSolver.h/.cpp`
+- `Source/SurfaceStateSystem/State/SurfaceStateSolver.h/.cpp`
 - `Shaders/SurfaceNextState.comp`를 Pass별 파일로 분리 권장
   - `Shaders/SurfaceSolverPass1.comp`
   - `Shaders/SurfaceSolverPass2.comp`
@@ -189,11 +189,11 @@ Incoming/Outgoing debug buffer는 Debug build에서만 둘 수 있다.
 
 ## 권장 커밋 분할
 
-1. `Feat: create surface solver compute pipelines`
-2. `Feat: compute outgoing alpha in solver pass one`
-3. `Feat: gather next state in solver pass two`
-4. `Feat: add solver barriers and state ping-pong`
-5. `Test: validate two-pass solver invariants`
+1. `Feat: Surface Solver Compute Pipeline 생성`
+2. `Feat: Solver Pass 1에서 Outgoing Alpha 계산`
+3. `Feat: Solver Pass 2에서 Next State 수집`
+4. `Feat: Solver Barrier와 State Ping-Pong 추가`
+5. `Test: 2-Pass Solver 불변 조건 검증`
 
 ## 완료 조건
 

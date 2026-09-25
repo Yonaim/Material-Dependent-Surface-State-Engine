@@ -32,4 +32,4 @@ JSON parser의 파일 처리 자체를 확인하는 사례에는 fixture를 쓴�
 
 GPU resource가 아직 존재하지 않는 단계에서 GPU 배치 검증을 완료로 표시하지 않는다.
 
-세부 사례: [[0001_Surface-Data-Contract-Tests|Surface Data Contract 테스트 사례]].
+세부 사례는 같은 디렉터리의 번호별 테스트 문서에서 관리한다.

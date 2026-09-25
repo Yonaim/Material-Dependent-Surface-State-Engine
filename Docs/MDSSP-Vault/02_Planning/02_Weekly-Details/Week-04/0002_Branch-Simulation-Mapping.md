@@ -19,7 +19,8 @@ struct MeshTriangleSource
 {
     std::array<std::uint32_t, 3> RenderVertexIndices;
     std::array<std::int32_t, 3> OriginalPositionIndices;
-    SurfaceLocalID SurfaceID;
+    std::array<std::int32_t, 3> OriginalUVIndices;
+    SurfaceLocalID Surface;
 };
 ```
 
@@ -28,24 +29,26 @@ seam edge key는 `OriginalPositionIndices`로 만들고, rasterization 속성은
 ## 출력 자료
 
 ```cpp
-struct TexelMapping
+struct SurfaceMappingTexel
 {
-    std::uint32_t TriangleID = InvalidTexelIndex;
-    glm::vec2 Barycentric{0.0F}; // b0, b1; b2 = 1-b0-b1
-    SurfaceLocalID SurfaceID = 0;
-    bool Valid = false;
+    SurfaceLocalID Surface = InvalidSurfaceID;
+    std::uint32_t Triangle = InvalidTriangleID;
+    std::uint32_t Chart = InvalidChartID;
+    glm::vec3 Barycentric{0.0F};
+    glm::vec3 Position{0.0F};
+    glm::vec3 Normal{0.0F, 1.0F, 0.0F};
+    std::array<LocalTexelIndex, 8> Neighbors;
 };
 
 struct SurfaceMappingData
 {
-    std::uint32_t Width = 0;
-    std::uint32_t Height = 0;
-    std::vector<TexelMapping> Texels;
-    std::vector<std::array<LocalTexelIndex, 8>> Neighbors;
+    std::vector<SurfaceTexelRange> Surfaces;
+    std::vector<SurfaceMappingTexel> Texels;
+    std::vector<std::string> Warnings;
 };
 ```
 
-CPU mapping 결과는 `Valid`를 보존한다. GPU upload 시 별도 ValidMask buffer를 만들지 않고 invalid texel의 `TexelSurfaceIndex`에 `InvalidSurfaceID`를 기록한다.
+별도의 `Valid` 필드를 두지 않는다. `Surface`, `Triangle`, `Chart`의 sentinel로 유효성을 판단하며, GPU upload 시에도 별도 ValidMask buffer 대신 invalid texel의 Surface index에 `InvalidSurfaceID`를 기록한다.
 
 ## 구현 구성
 
@@ -58,9 +61,9 @@ CPU mapping 결과는 `Valid`를 보존한다. GPU upload 시 별도 ValidMask b
 
 수정 대상:
 
-- `Source/AssetManager/Loader/OBJLoader.h/.cpp`
-- `Source/AssetManager/MeshAsset.h/.cpp`
-- `Source/SurfaceStateSystem/SharedSurfaceGeometryData.h`
+- `Source/AssetManager/Loaders/OBJLoader.h/.cpp`
+- `Source/AssetManager/Assets/MeshAsset.h/.cpp`
+- `Source/AssetManager/Core/AssetManager.cpp`
 
 ## 단계 1 — 입력 검증
 
@@ -131,6 +134,8 @@ GPU DebugUI까지 기다리지 말고 CPU 결과를 PPM 또는 단순 RGBA 이�
 
 ## 테스트 Mesh
 
+구체적인 fixture, 검증 함수와 실행 결과는 [[06_Testing/0002_Surface-Mapping-Tests|Surface Mapping 테스트 사례]]에서 관리한다.
+
 최소 네 가지 fixture를 둔다.
 
 1. 단일 triangle
@@ -147,11 +152,11 @@ GPU DebugUI까지 기다리지 말고 CPU 결과를 PPM 또는 단순 RGBA 이�
 
 ## 권장 커밋 분할
 
-1. `Feat: preserve OBJ topology indices for simulation mapping`
-2. `Feat: rasterize mesh triangles into simulation texels`
-3. `Feat: build regular texel neighbors`
-4. `Feat: stitch UV seam neighbors`
-5. `Test: validate simulation mapping invariants`
+1. `Feat: Simulation Mapping용 OBJ Topology Index 보존`
+2. `Feat: Mesh Triangle을 Simulation Texel로 Rasterization`
+3. `Feat: Regular Texel 이웃 생성`
+4. `Feat: UV Seam 이웃 연결`
+5. `Test: Simulation Mapping 불변 조건 검증`
 
 ## 완료 조건
 
@@ -159,6 +164,8 @@ GPU DebugUI까지 기다리지 말고 CPU 결과를 PPM 또는 단순 RGBA 이�
 - seam 유무와 관계없이 실제 topology 이웃이 연결된다.
 - Mapping 결과를 파일로 저장하지 않아도 재생성 가능하다.
 - GPU/Vulkan 없이 모든 test가 통과한다.
+
+현재 구현은 별도의 CPU test target으로 위 조건을 검증하며 Vulkan device 초기화가 필요하지 않다.
 
 ## 제외 범위
 

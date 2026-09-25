@@ -174,11 +174,11 @@ DebugUI에 instance 수, texel 수, 공유 Geometry 크기, instance별 State re
 
 ## 권장 커밋 분할
 
-1. `Feat: define surface GPU buffer layouts`
-2. `Feat: upload shared surface geometry buffers`
-3. `Feat: allocate instance state ping-pong buffers`
-4. `Feat: create surface solver descriptor sets`
-5. `Test: validate surface GPU resource initialization`
+1. `Feat: Surface GPU Buffer Layout 정의`
+2. `Feat: Shared Surface Geometry Buffer 업로드`
+3. `Feat: Instance State Ping-Pong Buffer 할당`
+4. `Feat: Surface Solver Descriptor Set 생성`
+5. `Test: Surface GPU Resource 초기화 검증`
 
 ## 완료 조건
 

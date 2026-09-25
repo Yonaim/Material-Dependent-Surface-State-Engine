@@ -110,9 +110,9 @@ disk serialization은 자료형이 안정된 뒤 추가한다. version 없는 bi
 
 ## 구현 대상
 
-- `Source/SurfaceStateSystem/SharedSurfaceGeometryData.h/.cpp`
+- `Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h/.cpp`
 - `Source/SurfaceStateSystem/Mapping/SurfaceGeometryBuilder.h/.cpp`
-- 필요 시 `Source/AssetManager/MeshAsset.h/.cpp`
+- 필요 시 `Source/AssetManager/Assets/MeshAsset.h/.cpp`
 - `Tests/SharedSurfaceGeometryTests.cpp`
 
 ## 작업 순서
@@ -147,9 +147,9 @@ disk serialization은 자료형이 안정된 뒤 추가한다. version 없는 bi
 
 ## 권장 커밋 분할
 
-1. `Feat: reconstruct per-texel surface geometry`
-2. `Feat: compute neighbor surface distances`
-3. `Test: validate shared surface geometry fields`
+1. `Feat: Texel별 Surface Geometry 복원`
+2. `Feat: 이웃 Surface Distance 계산`
+3. `Test: Shared Surface Geometry 필드 검증`
 
 ## 완료 조건
 

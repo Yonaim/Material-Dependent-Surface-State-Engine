@@ -128,17 +128,17 @@ CPU 구조체는 GPU handle을 필수로 가지지 않는다. CPU 결과와 GPU 
 
 ### 수정
 
-- `Source/SurfaceStateSystem/SharedSurfaceGeometryData.h/.cpp`
-- `Source/SurfaceStateSystem/SurfaceInstanceStateData.h/.cpp`
-- `Source/SurfaceStateSystem/SurfaceInput.h`
-- `Source/AssetManager/SRProfileAsset.h/.cpp`
-- `Source/AssetManager/Loader/SRProfileLoader.h/.cpp`
-- 필요 시 `Source/AssetManager/Asset.h`
+- `Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h/.cpp`
+- `Source/SurfaceStateSystem/State/SurfaceInstanceStateData.h/.cpp`
+- `Source/SurfaceStateSystem/State/SurfaceInput.h`
+- `Source/AssetManager/Assets/SRProfileAsset.h/.cpp`
+- `Source/AssetManager/Loaders/SRProfileLoader.h/.cpp`
+- 필요 시 `Source/AssetManager/Core/Asset.h`
 
 ### 추가 권장
 
-- `Source/SurfaceStateSystem/SurfaceStateTypes.h`
-- `Source/SurfaceStateSystem/SurfaceMappingTypes.h`
+- `Source/SurfaceStateSystem/Types/SurfaceStateTypes.h`
+- `Source/SurfaceStateSystem/Types/SurfaceMappingTypes.h`
 - `Tests/SurfaceStateTypesTests.cpp`
 
 여러 모듈이 사용하는 enum, index, CPU data struct는 `SurfaceStateTypes.h`처럼 의존성이 작은 파일에 둔다.
@@ -216,10 +216,10 @@ JSON exception은 그대로 외부에 노출하지 않고 Asset 경로와 JSON k
 
 ## 권장 커밋 분할
 
-1. `Build: add nlohmann json dependency`
-2. `Feat: define four-channel surface state data types`
-3. `Feat: parse and validate SRProfile assets`
-4. `Test: add surface data contract and JSON tests`
+1. `Build: nlohmann/json 의존성 추가`
+2. `Feat: 4채널 Surface State 데이터 타입 정의`
+3. `Feat: SRProfile Asset 파싱 및 검증`
+4. `Test: Surface Data Contract와 JSON 테스트 추가`
 
 ## 완료 조건
 
