@@ -200,7 +200,10 @@ if(BUILD_TESTING)
         Source/AssetManager/Assets/SRProfileAsset.cpp
         Source/AssetManager/Loaders/SRProfileLoader.cpp
         Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.cpp
         Source/SurfaceStateSystem/State/SurfaceInstanceStateData.cpp
+        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
         Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
     )
     target_include_directories(MDSS_SurfaceStateTests PRIVATE Source)

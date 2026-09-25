@@ -5,11 +5,12 @@
 
 #pragma once
 
-#include "AssetManager/Core/Asset.h"
 #include "AssetManager/Assets/MaterialAsset.h"
 #include "AssetManager/Assets/MeshAsset.h"
 #include "AssetManager/Assets/SRProfileAsset.h"
 #include "AssetManager/Assets/TextureAsset.h"
+#include "AssetManager/Core/Asset.h"
+#include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
 
 #include <filesystem>
 #include <memory>
@@ -39,6 +40,8 @@ namespace MDSS
         [[nodiscard]] const TextureAsset& GetTexture(TextureAssetHandle Handle) const;
         /** @throws std::out_of_range Handle이 현재 등록된 Profile 범위를 벗어난 경우. */
         [[nodiscard]] const SRProfileAsset& GetSRProfile(SRProfileAssetHandle Handle) const;
+        /** @brief Build/cache the deterministic State registry from all currently loaded Profiles. */
+        [[nodiscard]] const SurfaceStateRegistry& GetSurfaceStateRegistry() const;
 
         [[nodiscard]] std::size_t         GetMaterialCount() const noexcept;
         [[nodiscard]] std::size_t         GetSRProfileCount() const noexcept;
@@ -60,6 +63,7 @@ namespace MDSS
         std::vector<std::unique_ptr<SRProfileAsset>>        SRProfiles;
         std::vector<std::unique_ptr<TextureAsset>>          Textures;
         std::unordered_map<std::string, TextureAssetHandle> TextureCache;
+        mutable std::unique_ptr<SurfaceStateRegistry>       StateRegistry;
 
         TextureAssetHandle  DefaultBaseColorTexture = InvalidAssetHandle;
         TextureAssetHandle  DefaultNormalTexture = InvalidAssetHandle;

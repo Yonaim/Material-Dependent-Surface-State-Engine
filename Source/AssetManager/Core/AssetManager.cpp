@@ -97,6 +97,7 @@ namespace MDSS
         Logger::Info("AssetManager",
                      "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
         SRProfiles.push_back(std::move(Profile));
+        StateRegistry.reset();
         return Handle;
     }
 
@@ -134,6 +135,21 @@ namespace MDSS
             throw std::out_of_range("Invalid SRProfileAssetHandle.");
         }
         return *SRProfiles[Handle];
+    }
+
+    const SurfaceStateRegistry& AssetManager::GetSurfaceStateRegistry() const
+    {
+        if (!StateRegistry)
+        {
+            std::vector<SurfaceResponseProfileData> Profiles;
+            Profiles.reserve(SRProfiles.size());
+            for (const std::unique_ptr<SRProfileAsset>& Profile : SRProfiles)
+            {
+                Profiles.push_back(Profile->GetData());
+            }
+            StateRegistry = std::make_unique<SurfaceStateRegistry>(Profiles);
+        }
+        return *StateRegistry;
     }
 
     std::size_t AssetManager::GetMaterialCount() const noexcept

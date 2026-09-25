@@ -27,6 +27,8 @@ namespace MDSS
         std::uint32_t Width = 0;
         std::uint32_t Height = 0;
 
+        [[nodiscard]] bool operator==(const SurfaceResolution&) const = default;
+
         /**
          * @brief 해상도의 총 texel 수를 계산한다.
          * @throws std::invalid_argument 너비 또는 높이가 0인 경우.

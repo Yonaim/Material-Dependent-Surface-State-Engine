@@ -68,11 +68,9 @@ namespace MDSS
             return Result;
         }
 
-        SurfaceStateParameters ReadStateParameters(const Json& States, SurfaceStateChannel Channel)
+        SurfaceStateParameters ReadStateParameters(const Json& State, const std::string& StateName)
         {
-            const std::string_view ChannelName = GetSurfaceStateChannelName(Channel);
-            const Json&            State = RequireMember(States, ChannelName, "states");
-            const std::string      JsonPath = "states." + std::string(ChannelName);
+            const std::string JsonPath = "states." + StateName;
 
             return {
                 ReadFloat(State, "stateCapacity", JsonPath),
@@ -86,7 +84,7 @@ namespace MDSS
             };
         }
 
-        /** @brief Profile JSON schema와 네 채널 순서를 검사해 domain data로 변환한다. */
+        /** @brief Profile JSON schema를 동적 State domain data로 변환한다. */
         SurfaceResponseProfileData ParseProfile(const Json& Root, std::string& Name)
         {
             if (!Root.is_object())
@@ -119,16 +117,25 @@ namespace MDSS
             {
                 throw std::invalid_argument("$.states must be an object.");
             }
-            if (States.size() != SurfaceStateChannelCount)
-            {
-                throw std::invalid_argument("$.states must define exactly wetness, heat, burn, and mud.");
-            }
-
             SurfaceResponseProfileData Data;
-            for (std::size_t Index = 0; Index < SurfaceStateChannelCount; ++Index)
+            for (auto Iterator = States.begin(); Iterator != States.end(); ++Iterator)
             {
-                const SurfaceStateChannel Channel = static_cast<SurfaceStateChannel>(Index);
-                Data.States[Index] = ReadStateParameters(States, Channel);
+                if (!Iterator.value().is_object())
+                {
+                    throw std::invalid_argument("$.states." + Iterator.key() + " must be an object.");
+                }
+
+                const std::string CanonicalName = NormalizeSurfaceStateName(Iterator.key());
+                if (CanonicalName.empty())
+                {
+                    throw std::invalid_argument("$.states contains an empty State name after normalization.");
+                }
+                if (Data.States.contains(CanonicalName))
+                {
+                    throw std::invalid_argument("$.states contains duplicate State name after normalization: '" +
+                                                CanonicalName + "'.");
+                }
+                Data.States.emplace(CanonicalName, ReadStateParameters(Iterator.value(), CanonicalName));
             }
 
             const Json& Transitions = RequireMember(Root, "transitions", "$");
@@ -142,30 +149,15 @@ namespace MDSS
             {
                 const Json&       Transition = Transitions[Index];
                 const std::string JsonPath = "transitions[" + std::to_string(Index) + "]";
-                const std::string SourceName = ReadString(Transition, "source", JsonPath);
-                const std::string TargetName = ReadString(Transition, "target", JsonPath);
-
-                SurfaceStateChannel Source;
-                SurfaceStateChannel Target;
-                try
+                const std::string SourceName = NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
+                const std::string TargetName = NormalizeSurfaceStateName(ReadString(Transition, "target", JsonPath));
+                if (SourceName.empty() || TargetName.empty())
                 {
-                    Source = ParseSurfaceStateChannel(SourceName);
-                }
-                catch (const std::invalid_argument&)
-                {
-                    throw std::invalid_argument(JsonPath + ".source has unknown channel '" + SourceName + "'.");
-                }
-                try
-                {
-                    Target = ParseSurfaceStateChannel(TargetName);
-                }
-                catch (const std::invalid_argument&)
-                {
-                    throw std::invalid_argument(JsonPath + ".target has unknown channel '" + TargetName + "'.");
+                    throw std::invalid_argument(JsonPath + " source and target must not be empty.");
                 }
 
-                Data.Transitions.push_back({Source,
-                                            Target,
+                Data.Transitions.push_back({SourceName,
+                                            TargetName,
                                             ReadFloat(Transition, "threshold", JsonPath),
                                             ReadFloat(Transition, "transitionRate", JsonPath)});
             }

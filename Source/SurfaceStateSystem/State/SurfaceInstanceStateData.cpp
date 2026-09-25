@@ -6,7 +6,6 @@
 #include "SurfaceStateSystem/State/SurfaceInstanceStateData.h"
 
 #include <algorithm>
-#include <ranges>
 #include <stdexcept>
 #include <utility>
 
@@ -14,8 +13,8 @@ namespace MDSS
 {
     SurfaceInstanceStateData::SurfaceInstanceStateData(SurfaceInstanceID                                ID,
                                                        std::shared_ptr<const SharedSurfaceGeometryData> Geometry,
-                                                       std::vector<SurfaceProfileIndex> SurfaceProfileIndices)
-        : ID(ID), Geometry(std::move(Geometry)), SurfaceProfileIndices(std::move(SurfaceProfileIndices))
+                                                       std::size_t                                      StateCount)
+        : ID(ID), Geometry(std::move(Geometry))
     {
         if (ID == InvalidSurfaceInstanceID)
         {
@@ -25,17 +24,7 @@ namespace MDSS
         {
             throw std::invalid_argument("SurfaceInstanceStateData requires SharedSurfaceGeometryData.");
         }
-        if (this->SurfaceProfileIndices.size() != this->Geometry->GetSurfaces().size())
-        {
-            throw std::invalid_argument("Every Surface must have exactly one SRProfile index.");
-        }
-        if (std::ranges::find(this->SurfaceProfileIndices, InvalidSurfaceProfileIndex) !=
-            this->SurfaceProfileIndices.end())
-        {
-            throw std::invalid_argument("InvalidSurfaceProfileIndex is reserved.");
-        }
-
-        States.resize(this->Geometry->GetTexelCount());
+        States.resize(this->Geometry->GetTexelCount(), SurfaceStateValues(StateCount, 0.0F));
     }
 
     SurfaceInstanceID SurfaceInstanceStateData::GetID() const noexcept
@@ -48,9 +37,9 @@ namespace MDSS
         return *Geometry;
     }
 
-    const std::vector<SurfaceProfileIndex>& SurfaceInstanceStateData::GetSurfaceProfileIndices() const noexcept
+    std::size_t SurfaceInstanceStateData::GetStateCount() const noexcept
     {
-        return SurfaceProfileIndices;
+        return States.empty() ? 0 : States.front().size();
     }
 
     const std::vector<SurfaceStateValues>& SurfaceInstanceStateData::GetStates() const noexcept
@@ -63,16 +52,8 @@ namespace MDSS
         return States;
     }
 
-    SurfaceProfileIndex SurfaceInstanceStateData::GetProfileIndex(SurfaceLocalID Surface) const
+    SurfaceProfileIndex SurfaceInstanceStateData::GetProfileIndex(LocalTexelIndex Texel) const
     {
-        const std::vector<SurfaceTexelRange>& Surfaces = Geometry->GetSurfaces();
-        const auto                            Found = std::ranges::find(Surfaces, Surface, &SurfaceTexelRange::Surface);
-        if (Found == Surfaces.end())
-        {
-            throw std::out_of_range("SurfaceLocalID is not present in SurfaceInstanceStateData.");
-        }
-
-        const std::size_t SurfaceIndex = static_cast<std::size_t>(std::distance(Surfaces.begin(), Found));
-        return SurfaceProfileIndices[SurfaceIndex];
+        return Geometry->GetProfileIndex(Texel);
     }
 } // namespace MDSS

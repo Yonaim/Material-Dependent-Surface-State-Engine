@@ -17,12 +17,12 @@ namespace MDSS
      */
     struct SurfaceContactInput
     {
-        SurfaceInstanceID   TargetInstance = InvalidSurfaceInstanceID;
-        SurfaceStateChannel StateChannel = SurfaceStateChannel::Wetness;
-        glm::vec3           WorldPosition{0.0F};
-        glm::vec3           WorldDirection{0.0F};
-        float               Radius = 0.0F;
-        float               Strength = 0.0F;
-        float               Falloff = 1.0F;
+        SurfaceInstanceID TargetInstance = InvalidSurfaceInstanceID;
+        StateId           State = InvalidStateId;
+        glm::vec3         WorldPosition{0.0F};
+        glm::vec3         WorldDirection{0.0F};
+        float             Radius = 0.0F;
+        float             Strength = 0.0F;
+        float             Falloff = 1.0F;
     };
 } // namespace MDSS

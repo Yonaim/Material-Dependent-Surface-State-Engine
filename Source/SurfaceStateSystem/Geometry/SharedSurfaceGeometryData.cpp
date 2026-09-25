@@ -7,6 +7,7 @@
 
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
 namespace MDSS
 {
@@ -64,6 +65,14 @@ namespace MDSS
         }
 
         Texels.resize(static_cast<std::size_t>(FirstTexel));
+        ProfileMap.resize(Texels.size(), InvalidSurfaceProfileIndex);
+    }
+
+    SharedSurfaceGeometryData::SharedSurfaceGeometryData(std::vector<SurfaceDefinition>   SurfaceDefinitions,
+                                                         std::vector<SurfaceProfileIndex> ProfileIndices)
+        : SharedSurfaceGeometryData(std::move(SurfaceDefinitions))
+    {
+        SetProfileMap(std::move(ProfileIndices));
     }
 
     const std::vector<SurfaceTexelRange>& SharedSurfaceGeometryData::GetSurfaces() const noexcept
@@ -79,6 +88,39 @@ namespace MDSS
     std::vector<SurfaceTexelGeometry>& SharedSurfaceGeometryData::GetTexels() noexcept
     {
         return Texels;
+    }
+
+    const std::vector<SurfaceProfileIndex>& SharedSurfaceGeometryData::GetProfileMap() const noexcept
+    {
+        return ProfileMap;
+    }
+
+    void SharedSurfaceGeometryData::SetProfileMap(std::vector<SurfaceProfileIndex> NewProfileMap)
+    {
+        if (NewProfileMap.size() != Texels.size())
+        {
+            throw std::invalid_argument("SurfaceProfileMap must contain one entry per texel.");
+        }
+        for (std::size_t Index = 0; Index < Texels.size(); ++Index)
+        {
+            const bool bValidTexel = Texels[Index].IsValid();
+            const bool bHasProfile = NewProfileMap[Index] != InvalidSurfaceProfileIndex;
+            if (bValidTexel != bHasProfile)
+            {
+                throw std::invalid_argument(bValidTexel ? "Valid texels require a Profile index."
+                                                        : "Invalid texels must use InvalidSurfaceProfileIndex.");
+            }
+        }
+        ProfileMap = std::move(NewProfileMap);
+    }
+
+    SurfaceProfileIndex SharedSurfaceGeometryData::GetProfileIndex(LocalTexelIndex Texel) const
+    {
+        if (Texel >= ProfileMap.size())
+        {
+            throw std::out_of_range("Texel index is not present in SurfaceProfileMap.");
+        }
+        return ProfileMap[Texel];
     }
 
     std::size_t SharedSurfaceGeometryData::GetTexelCount() const noexcept

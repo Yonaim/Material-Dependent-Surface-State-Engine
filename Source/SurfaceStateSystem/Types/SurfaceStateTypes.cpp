@@ -1,33 +1,18 @@
 /**
  * @file SurfaceStateTypes.cpp
- * @brief 상태 채널, profile parameter, transition과 검증 계약.
+ * @brief Data-driven state profile validation and name normalization.
  */
 
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
-#include <array>
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
-#include <string>
 
 namespace MDSS
 {
     namespace
     {
-        struct SurfaceStateChannelName
-        {
-            SurfaceStateChannel Channel;
-            std::string_view    Name;
-        };
-
-        constexpr std::array<SurfaceStateChannelName, SurfaceStateChannelCount> SurfaceStateChannelNames = {{
-            {SurfaceStateChannel::Wetness, "wetness"},
-            {SurfaceStateChannel::Heat, "heat"},
-            {SurfaceStateChannel::Burn, "burn"},
-            {SurfaceStateChannel::Mud, "mud"},
-        }};
-
-        /** @brief finite이고 0 이상이어야 하는 Profile parameter를 검사한다. */
         void ValidateFiniteNonNegative(float Value, std::string_view FieldName)
         {
             if (!std::isfinite(Value) || Value < 0.0F)
@@ -36,7 +21,6 @@ namespace MDSS
             }
         }
 
-        /** @brief finite한 [0, 1] 구간이어야 하는 Profile parameter를 검사한다. */
         void ValidateUnitInterval(float Value, std::string_view FieldName)
         {
             if (!std::isfinite(Value) || Value < 0.0F || Value > 1.0F)
@@ -46,50 +30,43 @@ namespace MDSS
         }
     } // namespace
 
-    std::string_view GetSurfaceStateChannelName(SurfaceStateChannel Channel)
+    std::string NormalizeSurfaceStateName(std::string_view Name)
     {
-        for (const SurfaceStateChannelName& Entry : SurfaceStateChannelNames)
+        const auto IsAsciiWhitespace = [](unsigned char Character)
+        { return Character == ' ' || (Character >= '\t' && Character <= '\r'); };
+        std::size_t First = 0;
+        while (First < Name.size() && IsAsciiWhitespace(static_cast<unsigned char>(Name[First])))
         {
-            if (Entry.Channel == Channel)
+            ++First;
+        }
+
+        std::size_t Last = Name.size();
+        while (Last > First && IsAsciiWhitespace(static_cast<unsigned char>(Name[Last - 1])))
+        {
+            --Last;
+        }
+
+        std::string Result(Name.substr(First, Last - First));
+        for (char& Character : Result)
+        {
+            if (Character >= 'A' && Character <= 'Z')
             {
-                return Entry.Name;
+                Character = static_cast<char>(Character - 'A' + 'a');
             }
         }
-
-        throw std::invalid_argument("SurfaceStateChannel is not a valid state channel.");
-    }
-
-    SurfaceStateChannel ParseSurfaceStateChannel(std::string_view Name)
-    {
-        for (const SurfaceStateChannelName& Entry : SurfaceStateChannelNames)
-        {
-            if (Entry.Name == Name)
-            {
-                return Entry.Channel;
-            }
-        }
-
-        throw std::invalid_argument("Unknown SurfaceStateChannel name: " + std::string(Name));
-    }
-
-    std::size_t GetSurfaceStateChannelIndex(SurfaceStateChannel Channel)
-    {
-        const std::uint32_t Index = static_cast<std::uint32_t>(Channel);
-        if (Index >= SurfaceStateChannelCount)
-        {
-            throw std::invalid_argument("SurfaceStateChannel is not a valid state channel.");
-        }
-
-        return static_cast<std::size_t>(Index);
+        return Result;
     }
 
     void ValidateSurfaceResponseProfileData(const SurfaceResponseProfileData& Data)
     {
-        for (std::size_t Index = 0; Index < Data.States.size(); ++Index)
+        for (const auto& [Name, State] : Data.States)
         {
-            const SurfaceStateParameters& State = Data.States[Index];
-            const std::string             Prefix = "states." + std::string(SurfaceStateChannelNames[Index].Name) + ".";
+            if (Name.empty() || NormalizeSurfaceStateName(Name) != Name)
+            {
+                throw std::invalid_argument("State names must be non-empty and normalized.");
+            }
 
+            const std::string Prefix = "states." + Name + ".";
             if (!std::isfinite(State.StateCapacity) || State.StateCapacity <= 0.0F)
             {
                 throw std::invalid_argument(Prefix + "stateCapacity must be finite and greater than zero.");
@@ -108,12 +85,17 @@ namespace MDSS
         {
             const SurfaceStateTransition& Transition = Data.Transitions[Index];
             const std::string             Prefix = "transitions[" + std::to_string(Index) + "].";
-
-            (void)GetSurfaceStateChannelName(Transition.Source);
-            (void)GetSurfaceStateChannelName(Transition.Target);
+            if (Transition.Source.empty() || NormalizeSurfaceStateName(Transition.Source) != Transition.Source)
+            {
+                throw std::invalid_argument(Prefix + "source must be non-empty and normalized.");
+            }
+            if (Transition.Target.empty() || NormalizeSurfaceStateName(Transition.Target) != Transition.Target)
+            {
+                throw std::invalid_argument(Prefix + "target must be non-empty and normalized.");
+            }
             if (Transition.Source == Transition.Target)
             {
-                throw std::invalid_argument(Prefix + "source and target must be different channels.");
+                throw std::invalid_argument(Prefix + "source and target must be different states.");
             }
 
             ValidateUnitInterval(Transition.Threshold, Prefix + "threshold");
