@@ -21,6 +21,7 @@ namespace MDSS
     inline constexpr LocalTexelIndex InvalidTexelIndex = std::numeric_limits<LocalTexelIndex>::max();
     inline constexpr std::uint32_t   InvalidTriangleID = std::numeric_limits<std::uint32_t>::max();
     inline constexpr std::size_t     SurfaceNeighborCount = 8;
+    inline constexpr std::uint32_t   SurfaceSimulationResolution = 512;
 
     struct SurfaceResolution
     {
@@ -36,6 +37,9 @@ namespace MDSS
          */
         [[nodiscard]] std::size_t GetTexelCount() const;
     };
+
+    inline constexpr SurfaceResolution DefaultSurfaceResolution{SurfaceSimulationResolution,
+                                                                 SurfaceSimulationResolution};
 
     /** @brief 하나의 Surface ID와 해당 Surface의 simulation grid 해상도. */
     struct SurfaceDefinition
@@ -81,7 +85,6 @@ namespace MDSS
             InvalidTexelIndex,
             InvalidTexelIndex,
         };
-        std::array<float, SurfaceNeighborCount> NeighborDistances{};
 
         /** @brief Surface와 triangle sentinel이 모두 유효한지 확인한다. */
         [[nodiscard]] bool IsValid() const noexcept;

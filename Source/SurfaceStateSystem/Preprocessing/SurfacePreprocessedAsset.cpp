@@ -5,6 +5,7 @@
 
 #include "SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.h"
 
+#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingValidation.h"
 
 #include <algorithm>
@@ -16,6 +17,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <system_error>
 #include <utility>
 
 namespace MDSS
@@ -204,14 +206,15 @@ namespace MDSS
                         throw std::invalid_argument("Surface cache neighbor relation is not bidirectional.");
                     }
                 }
-                for (const float Distance : Texel.NeighborDistances)
-                {
-                    if (!std::isfinite(Distance) || Distance < 0.0F)
-                    {
-                        throw std::invalid_argument("Surface cache contains an invalid neighbor distance.");
-                    }
-                }
             }
+        }
+
+        bool MatchesExpectedMetadata(const SurfaceCacheMetadata& Actual, const SurfaceCacheMetadata& Expected)
+        {
+            return Actual.MeshHash == Expected.MeshHash && Actual.NormalMapHash == Expected.NormalMapHash &&
+                   (Expected.ProfileMapHash.empty() || Actual.ProfileMapHash == Expected.ProfileMapHash) &&
+                   Actual.UVSet == Expected.UVSet && Actual.PreprocessVersion == Expected.PreprocessVersion &&
+                   Actual.ProfileCount == Expected.ProfileCount && Actual.GridResolutions == Expected.GridResolutions;
         }
 
         void WriteMetadata(std::ostream& Output, const SurfaceCacheMetadata& Metadata)
@@ -272,6 +275,24 @@ namespace MDSS
                                                              std::uint32_t                           PreprocessVersion,
                                                              std::uint32_t                           ProfileCount)
     {
+        std::vector<std::filesystem::path> NormalMapPaths;
+        if (!NormalMapPath.empty())
+        {
+            NormalMapPaths.push_back(NormalMapPath);
+        }
+        return CreateMetadataForNormalMaps(
+            MeshPath, NormalMapPaths, ProfileMap, GridResolutions, UVSet, PreprocessVersion, ProfileCount);
+    }
+
+    SurfaceCacheMetadata SurfacePreprocessor::CreateMetadataForNormalMaps(
+        const std::filesystem::path&               MeshPath,
+        const std::vector<std::filesystem::path>& NormalMapPaths,
+        const std::vector<SurfaceProfileIndex>&   ProfileMap,
+        const std::vector<SurfaceResolution>&     GridResolutions,
+        std::uint32_t                             UVSet,
+        std::uint32_t                             PreprocessVersion,
+        std::uint32_t                             ProfileCount)
+    {
         if (PreprocessVersion == 0)
         {
             throw std::invalid_argument("PreprocessVersion must be greater than zero.");
@@ -294,12 +315,38 @@ namespace MDSS
 
         SurfaceCacheMetadata Metadata;
         Metadata.MeshHash = HashFile(MeshPath);
-        Metadata.NormalMapHash = HashFile(NormalMapPath);
+        std::uint64_t NormalMapSetHash = FNVOffset;
+        bool          HasNormalMap = false;
+        for (const std::filesystem::path& NormalMapPath : NormalMapPaths)
+        {
+            const std::string FileHash = HashFile(NormalMapPath);
+            for (const unsigned char Byte : FileHash)
+            {
+                HashByte(NormalMapSetHash, Byte);
+            }
+            HashByte(NormalMapSetHash, 0U);
+            HasNormalMap = HasNormalMap || !FileHash.empty();
+        }
+        Metadata.NormalMapHash = HasNormalMap ? FormatHash(NormalMapSetHash) : std::string{};
         Metadata.ProfileMapHash = HashProfileMap(ProfileMap);
         Metadata.UVSet = UVSet;
         Metadata.PreprocessVersion = PreprocessVersion;
         Metadata.ProfileCount = ProfileCount;
         Metadata.GridResolutions = GridResolutions;
+        return Metadata;
+    }
+
+    SurfaceCacheMetadata SurfacePreprocessor::CreateSourceMetadata(
+        const std::filesystem::path&               MeshPath,
+        const std::vector<std::filesystem::path>& NormalMapPaths,
+        const std::vector<SurfaceResolution>&     GridResolutions,
+        std::uint32_t                             UVSet,
+        std::uint32_t                             PreprocessVersion,
+        std::uint32_t                             ProfileCount)
+    {
+        SurfaceCacheMetadata Metadata = CreateMetadataForNormalMaps(
+            MeshPath, NormalMapPaths, {}, GridResolutions, UVSet, PreprocessVersion, ProfileCount);
+        Metadata.ProfileMapHash.clear();
         return Metadata;
     }
 
@@ -325,13 +372,10 @@ namespace MDSS
         }
         Metadata.ProfileMapHash = ComputedProfileHash;
 
-        std::vector<SurfaceDefinition> Definitions;
-        Definitions.reserve(Mapping.Surfaces.size());
         std::vector<SurfaceResolution> Resolutions;
         Resolutions.reserve(Mapping.Surfaces.size());
         for (const SurfaceTexelRange& Surface : Mapping.Surfaces)
         {
-            Definitions.push_back({Surface.Surface, Surface.Resolution});
             Resolutions.push_back(Surface.Resolution);
         }
         if (!Metadata.GridResolutions.empty() && Metadata.GridResolutions != Resolutions)
@@ -340,30 +384,32 @@ namespace MDSS
         }
         Metadata.GridResolutions = std::move(Resolutions);
 
-        SharedSurfaceGeometryData Geometry(std::move(Definitions));
-        auto&                     GeometryTexels = Geometry.GetTexels();
-        for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
-        {
-            const SurfaceMappingTexel& Source = Mapping.Texels[Index];
-            SurfaceTexelGeometry&      Target = GeometryTexels[Index];
-            Target.Surface = Source.Surface;
-            Target.Triangle = Source.Triangle;
-            Target.Barycentric = Source.Barycentric;
-            Target.Position = Source.Position;
-            Target.Normal = Source.Normal;
-            Target.NeighborIndices = Source.Neighbors;
-            for (std::size_t NeighborIndex = 0; NeighborIndex < Source.Neighbors.size(); ++NeighborIndex)
-            {
-                const LocalTexelIndex Neighbor = Source.Neighbors[NeighborIndex];
-                if (Neighbor != InvalidTexelIndex)
-                {
-                    Target.NeighborDistances[NeighborIndex] =
-                        glm::length(Source.Position - Mapping.Texels.at(Neighbor).Position);
-                }
-            }
-        }
-        Geometry.SetProfileMap(std::move(ProfileMap));
+        SharedSurfaceGeometryData Geometry =
+            SurfaceGeometryBuilder::Build(Mapping, std::move(ProfileMap), ProfileCount);
         return SurfacePreprocessedAsset(std::move(Metadata), std::move(Geometry));
+    }
+
+    std::filesystem::path SurfaceCache::GetPath(const std::filesystem::path& MeshPath,
+                                                const std::filesystem::path& ProjectRoot,
+                                                const std::filesystem::path& CacheRoot)
+    {
+        if (MeshPath.empty() || ProjectRoot.empty() || CacheRoot.empty())
+        {
+            throw std::invalid_argument("MeshPath, ProjectRoot, and CacheRoot are required for a Surface cache path.");
+        }
+
+        const std::filesystem::path AbsoluteMesh = std::filesystem::absolute(MeshPath).lexically_normal();
+        const std::filesystem::path AbsoluteRoot = std::filesystem::absolute(ProjectRoot).lexically_normal();
+        const std::filesystem::path RelativeMesh = AbsoluteMesh.lexically_relative(AbsoluteRoot);
+        if (RelativeMesh.empty() || RelativeMesh.is_absolute() ||
+            (!RelativeMesh.empty() && *RelativeMesh.begin() == ".."))
+        {
+            throw std::invalid_argument("Mesh path must be inside the project root to create a stable Surface cache path.");
+        }
+
+        std::filesystem::path CacheRelative = RelativeMesh;
+        CacheRelative.replace_extension(".Surface");
+        return (CacheRoot / CacheRelative).lexically_normal();
     }
 
     std::string SurfacePreprocessor::HashFile(const std::filesystem::path& Path)
@@ -447,10 +493,6 @@ namespace MDSS
             {
                 WriteU32(Output, Neighbor);
             }
-            for (const float Distance : Texel.NeighborDistances)
-            {
-                WriteFloat(Output, Distance);
-            }
             WriteU32(Output, Asset.Geometry.GetProfileMap()[Index]);
         }
 
@@ -481,7 +523,7 @@ namespace MDSS
         }
 
         SurfaceCacheMetadata Metadata = ReadMetadata(Input);
-        if (Metadata != ExpectedMetadata)
+        if (!MatchesExpectedMetadata(Metadata, ExpectedMetadata))
         {
             throw std::runtime_error("Surface cache is stale: source metadata does not match.");
         }
@@ -520,10 +562,6 @@ namespace MDSS
             for (LocalTexelIndex& Neighbor : Texel.NeighborIndices)
             {
                 Neighbor = ReadU32(Input);
-            }
-            for (float& Distance : Texel.NeighborDistances)
-            {
-                Distance = ReadFloat(Input);
             }
             ProfileMap[Index] = ReadU32(Input);
         }
