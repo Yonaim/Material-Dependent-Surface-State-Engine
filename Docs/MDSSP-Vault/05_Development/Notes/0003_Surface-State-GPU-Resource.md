@@ -161,7 +161,7 @@ binding 번호는 구현 시작점이며 Renderer 전역 규칙과 충돌하면 
 | 1 | TexelSurfaceIndex / InvalidSurfaceID 검사 | read-only |
 | 2 | Position / Normal | read-only |
 | 3 | Geometry Scalar | read-only |
-| 4 | Neighbor Index / Distance | read-only |
+| 4 | Neighbor Index | read-only |
 | 5 | Profile Buffer | read-only |
 | 6 | Surface Profile Index | read-only |
 | 7 | Current State | read-only |

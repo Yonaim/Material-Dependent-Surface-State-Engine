@@ -80,7 +80,7 @@ Profile Distribution ───────┘                         └─ Tex
                                       (Registry-sized dynamic State / Overflow per instance)
 ```
 
-`.Surface`는 생성 가능한 캐시다. 현재 binary format version 1과 Mesh/Normal Map/Profile map hash, Profile count, per-Surface grid resolution, UV set, preprocess version 비교를 구현했다. Profile Distribution authoring 형식/loader와 cache miss 시 자동 Mapping→Build→Save orchestration은 `feat/shared-geometry-build`에 배정했다. State와 Overflow는 `.Surface`에 직렬화하지 않는다. 설계 세부사항은 [[04_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]와 [[04_ADR/0007-Surface-Preprocessed-Asset|ADR 0007 — 정적 Surface 전처리 에셋]]을 따른다.
+`.Surface`는 생성 가능한 캐시다. 현재 binary format version 2와 Mesh/Normal Map/Profile map hash, Profile count, per-Surface grid resolution, UV set, preprocess version 비교를 구현했다. Version 2는 Neighbor Distance를 직렬화하지 않는다. Profile Distribution authoring 형식/loader와 cache miss 시 자동 Mapping→Build→Save orchestration은 `feat/shared-geometry-build`에 배정했다. State와 Overflow는 `.Surface`에 직렬화하지 않는다. 설계 세부사항은 [[04_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]와 [[04_ADR/0007-Surface-Preprocessed-Asset|ADR 0007 — 정적 Surface 전처리 에셋]]을 따른다.
 
 ## 1. OBJ와 MTL 파싱
 
@@ -171,7 +171,9 @@ File read
 | Profile Distribution | Texel별 Profile 배치 | Profile Map content hash |
 | Grid / preprocess 설정 | Texel 해상도와 생성 결과 | Resolution, preprocess version |
 
-입력 중 하나라도 바뀌거나 cache version이 맞지 않으면 `SurfaceCache::Load`가 stale 오류를 반환한다. 현재 `SurfacePreprocessor::Build`는 Mapping 결과와 호출자가 제공한 texel Profile index 배열을 정적 geometry/cache payload로 변환하고, `SurfaceCache::Save/Load`가 versioned binary serialization과 metadata 검사를 수행한다. Profile Distribution reader 및 cache miss 자동 재생성은 `feat/shared-geometry-build`에서 연결한다. Normal Map 기반 Meso/Curvature algorithm은 Week-08 experiment에서 후보를 비교한 뒤, 결과에 따라 별도 implementation branch를 계획한다.
+4주차에는 `.Surface` 출력 경로를 Mesh의 안정적인 Asset ID로 결정한다. 아직 Asset ID가 없으면 cache root 아래에서 프로젝트 상대 Mesh 경로를 유지하고 확장자만 `.Surface`로 바꾼다. 예: `Assets/Models/cloth.obj` → `Cache/Surface/Assets/Models/cloth.Surface`. 해상도와 content hash는 파일명에 넣지 않는다.
+
+입력 중 하나라도 바뀌거나 cache version이 맞지 않으면 `SurfaceCache::Load`가 stale 오류를 반환한다. `AssetManager`는 동일한 Mesh 경로의 `.Surface`를 재생성해 덮어쓰며, 다른 해상도의 결과를 별도 파일로 보존하지 않는다. 인접한 `.SurfaceProfileMap`에서 Profile table과 Surface별 배정을 읽은 뒤 source fingerprint로 cache를 먼저 검사한다. 캐시의 Profile map이 현재 배정과 맞으면 Mapping rasterization을 건너뛰며, cache miss/stale 또는 배정 불일치일 때만 Mapping과 shared geometry를 만들고 저장한다. `SurfacePreprocessor::Build`는 Mapping 결과와 texel별 Profile index를 정적 geometry/cache payload로 변환하고, `SurfaceCache::Save/Load`가 versioned binary serialization과 metadata 검사를 수행한다. Normal Map 기반 Meso/Curvature algorithm은 Week-08 experiment에서 후보를 비교한 뒤, 결과에 따라 별도 implementation branch를 계획한다.
 
 ## 6. Mesh 원본 topology 보존
 

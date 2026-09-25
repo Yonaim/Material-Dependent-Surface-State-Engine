@@ -31,7 +31,7 @@ State 종류를 고정 C++ enum이나 별도 `SurfaceStateSchema`로 정의하�
 | 전처리 입력 | Mesh, Normal Map, Profile Distribution 입력의 경계와 검증 책임을 정한다. Profile Distribution의 authoring 형식은 미결 항목으로 명시하고 임의의 파일 형식을 확정하지 않는다. |
 | 캐시 metadata | Mesh/Normal Map/Profile Map fingerprint, grid resolution, UV set, preprocess version, Profile count 비교 구현됨. |
 | 동적 데이터 제외 | State, Overflow, SRProfile 반응 파라미터는 `.Surface`에 넣지 않는다. |
-| 파일 경계 | `.Surface` binary format version 1 Save/Load 구현됨. GPU resource 배치는 후속 설계 범위다. |
+| 파일 경계 | `.Surface` binary format version 2 Save/Load 구현됨. Version 2는 Neighbor Distance를 직렬화하지 않는다. GPU resource 배치는 후속 설계 범위다. |
 
 ## 구현 상태
 
@@ -233,5 +233,5 @@ Registry/Profile 연결 테스트도 이번 브랜치 문서 범위에 포함한
 - 보수적 rasterization
 - geodesic distance
 - GPU buffer upload
-- `.Surface` binary v1 serialization 자체는 구현 완료. End-to-end Asset Build orchestration은 Branch 3 담당
+- `.Surface` binary v2 serialization 자체는 구현 완료. End-to-end Asset Build orchestration은 Branch 3 담당
 - Normal Map 기반 Meso geometry 값의 최종 생성 알고리즘 및 품질 조정

@@ -117,7 +117,6 @@ UV Texel
       "name": "TestClothes",
       "mesh": "Assets/Models/clothes.obj",
       "surface": {
-        "stateResolution": [512, 512],
         "materialProfiles": {
           "Silk": "Assets/SurfaceProfiles/silk.SRProfile",
           "Steel": "Assets/SurfaceProfiles/steel.SRProfile",
@@ -128,5 +127,7 @@ UV Texel
   ]
 }
 ```
+
+현재 4주차 구현에서는 Simulation grid 해상도를 사용자가 `.Scene`에서 지정하지 않는다. 모든 Surface에 `512 × 512`를 적용하며, 이 값은 전처리 코드의 한 곳에서 관리한다.
 
 Simulation UV는 렌더링 UV와 논리적으로 분리한다. UV 생성·검증과 현재 구현 범위는 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 본다.

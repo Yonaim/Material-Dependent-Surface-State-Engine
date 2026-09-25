@@ -15,7 +15,7 @@
 > `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, 두 float `GeometryScalar`, dense `InputDelta` 재사용 결정은 유지한다. State channel은 Registry 크기에 따라 동적으로 배치한다. 물리적인 buffer layout과 channel stride는 `feat/surface-gpu-resources`에서 결정한다.
 
 - GPU의 invalid texel 판정은 별도 `ValidMaskBuffer` 대신 `TexelSurfaceIndexBuffer`의 예약값 `InvalidSurfaceID = 0xFFFFFFFF`로 표현한다. 이 값은 유효 Surface ID로 사용할 수 없다. CPU mapping/cache는 필요하면 별도 validity 정보를 유지할 수 있다.
-- `NeighborDistanceBuffer`는 GPU에 두지 않는다. Solver가 `SurfacePosition[j] - SurfacePosition[i]`에서 거리와 방향을 계산한다. CPU mapping 단계의 거리 캐시는 GPU upload 대상으로 삼지 않는다.
+- 이웃 Distance는 CPU mapping/cache와 GPU buffer 어느 쪽에도 저장하지 않는다. Solver가 `SurfacePosition[j] - SurfacePosition[i]`에서 거리와 방향을 필요할 때 계산한다. CPU 검증 코드도 필요하면 같은 위치에서 임시 계산한다.
 - GPU `GeometryScalar`는 texel마다 실제 사용하는 `MesoVirtualHeight`와 `ConcavityWeight` 두 float만 저장한다. `vec4`로 올리거나 예약 component를 두지 않는다.
 - State 종류는 고정하지 않으며 `.SRProfile`에서 수집한 Registry channel count에 따른다. 기본 demo Profile의 `Wetness`, `Heat`, `Burn`, `Mud`는 예시 workload다. texel별 State와 TempAlpha/InputDelta의 buffer layout은 임의 channel count를 지원해야 한다.
 - `InputDelta`는 texel별 dense buffer로 유지하고 State Registry의 channel count를 반영한다. GPU buffer는 instance resource 생성 시 한 번 할당해 재사용하고, 이벤트 입력이 없거나 소비된 뒤 값을 clear한다. 매 frame buffer를 새로 할당하지 않는다.

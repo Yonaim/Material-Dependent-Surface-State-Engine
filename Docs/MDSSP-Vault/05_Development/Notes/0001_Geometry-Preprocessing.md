@@ -7,11 +7,12 @@
 ```text
 Mesh Geometry + Normal / Height Detail
 → Normal
-→ Distance
 → Meso Virtual Height
 → Curvature / ConcavityWeight
 → SharedSurfaceGeometryData
 ```
+
+모든 Surface는 현재 `512 × 512` 해상도를 사용한다. 이웃 간 Distance는 Shared Geometry에 저장하지 않고 Solver가 위치와 이웃 인덱스로부터 계산한다.
 
 Normal Map의 모든 경우가 integrable하지는 않으므로 Meso Virtual Height 복원 알고리즘과 Non-Integrable fallback을 검증해야 한다. [[05_Development/Experiments/0001_Normal-Map-Integration|실험]]
 

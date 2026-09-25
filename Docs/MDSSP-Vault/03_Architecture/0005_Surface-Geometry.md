@@ -66,7 +66,8 @@ Non-integrable fallback에서는 정규화 높이를 `[-1,1]`로 두고 대표 H
 | 항목 | 저장 단위 | 의미 |
 |---|---|---|
 | `Normal` | Texel별 | Macro + Meso를 반영한 표면 방향 |
-| `Distance` | Texel × 인접 방향별 | 해당 texel과 실제 이웃 texel 사이의 표면 거리 |
+| `NeighborIndex` | Texel × 최대 8개 | seam을 포함한 실제 이웃 texel 인덱스 |
+| Neighbor Distance | 저장하지 않음 | Solver가 이웃 Position 간 차이에서 필요할 때 계산 |
 | `Meso_Virtual_Height` | Texel별 | Macro 기준 Normal Map에서 복원한 상대 높이 |
 | `Curvature / ConcavityWeight` | Texel별 | 국소 곡률 또는 Solver가 읽는 오목함 파생값 |
 
@@ -93,7 +94,7 @@ Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space�
 
 ## 동적 형상
 
-적층으로 Height가 변하면 Normal / Distance / Curvature도 함께 달라지고 **후속 Simulation에 다시 반영**한다. 현재는 동적 형상 갱신의 의미를 정의하며, Instance별 저장 구조는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|GPU resource 설계]]에서 다룬다.
+적층으로 Height가 변하면 Normal / Curvature가 달라져 **후속 Simulation에 다시 반영**된다. Neighbor Distance는 저장하지 않으며 갱신된 Position에서 매번 계산한다. 현재는 동적 형상 갱신의 의미를 정의하며, Instance별 저장 구조는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|GPU resource 설계]]에서 다룬다.
 
 Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. Shared Geometry의 GPU 배치는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 
@@ -148,6 +149,6 @@ $$
 DynamicFinalHeight = MacroHeight + MesoVirtualHeight + AccumulationHeight
 $$
 
-Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Distance / Height / Curvature에도 다시 반영한다. [[04_ADR/0003-Dynamic-Accumulation-Geometry|ADR 0003]]
+Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Height / Curvature에도 다시 반영한다. Neighbor Distance는 Position 기반으로 필요할 때 계산한다. [[04_ADR/0003-Dynamic-Accumulation-Geometry|ADR 0003]]
 
 예를 들어 Wetness / Heat / Burn은 형상 적층이 없도록 `accumulationFactor = 0`을 사용할 수 있고, Mud는 적층을 표현할 수 있다. State 종류는 고정 목록이 아니며, SurfaceWater / Snow 등 다른 State의 적층 동작도 해당 Profile 파라미터로 정의한다.
