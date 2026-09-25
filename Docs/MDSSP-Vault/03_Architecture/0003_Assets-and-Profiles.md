@@ -17,9 +17,9 @@
 
 ## Surface와 Profile의 관계
 
-Render Material과 Surface Response Profile은 서로 다른 책임이다. Render Material은 외관을 정의하고, `.SRProfile`은 State에 대한 반응 파라미터와 Transition을 정의한다. 하나의 Render Material 영역이 반드시 하나의 SRProfile만 사용한다고 가정하지 않는다.
+Render Material과 Surface Response Profile은 서로 다른 책임이다. Render Material은 외관을 정의하고, `.SRProfile`은 State에 대한 반응 파라미터와 Transition을 정의한다. 현재 입력 계약에서는 각 Surface/Material 할당에 SRProfile 하나를 지정하며, 그 Surface의 모든 valid texel이 해당 Profile을 사용한다.
 
-Runtime 전처리 결과는 유효한 각 UV texel에 `ProfileIndex` 하나를 저장하는 dense Profile Map을 포함한다. 각 texel은 별도 Profile 테이블의 반응 파라미터를 이 인덱스로 조회한다. 인접 texel이 같은 Profile을 쓰더라도 기본안에서는 인덱스를 texel마다 저장해 직접 조회를 단순하고 빠르게 한다. 이로써 동일한 Render Material 내부에서도 위치별로 서로 다른 SRProfile을 사용할 수 있다. Profile Distribution은 전처리 입력이며, 구체적인 authoring 형식과 `.Scene` 연결 규칙은 별도 결정으로 정한다. Profile Map은 실행 중 메모리에만 두고 `.Surface` 파일로 저장하지 않는다. [[../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
+Runtime 전처리 결과는 유효한 각 UV texel에 `ProfileIndex` 하나를 저장하는 dense Profile Map을 포함한다. 각 texel은 별도 Profile 테이블의 반응 파라미터를 이 인덱스로 조회한다. 현재는 Surface/Material 할당 하나에 Profile 하나를 연결한 뒤 해당 Surface의 texel마다 같은 인덱스를 확장한다. dense map은 조회 표현이며, Surface 내부를 여러 Profile 영역으로 나누는 authoring 기능까지 의미하지 않는다. 그 세분화는 후속 기능으로 남긴다. Profile Map은 실행 중 메모리에만 두고 `.Surface` 파일로 저장하지 않는다. [[../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
 
 ```text
 UV Texel

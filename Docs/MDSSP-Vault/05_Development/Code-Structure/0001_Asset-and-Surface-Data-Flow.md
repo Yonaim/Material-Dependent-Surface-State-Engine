@@ -59,8 +59,8 @@ flowchart LR
 | `.mtl` | OBJ가 참조하는 Render Material 및 Texture 경로 | 외부 제작·편집 도구에서 생성 | OBJ 파싱 중 `TMTLLoader`가 변환 |
 | Texture (`.png`, `.jpg` 등) | Albedo, Normal 등의 이미지 입력 | 외부 제작 도구에서 생성 | `TextureAsset`으로 로드·GPU 업로드 |
 | `.SRProfile` | State별 반응 파라미터와 Transition | 사용자가 작성·편집 | JSON Loader는 임의 State 이름을 파싱. AssetManager의 Registry 생성 API 구현됨 |
-| Profile Distribution | UV 영역 또는 Texel별 SRProfile 배치 입력 | authoring 방식 미확정 | 입력 형식 및 로더 미구현. `feat/shared-geometry-build` 담당 |
-| Runtime Surface Data | 전처리된 정적 Geometry/texel 관계와 `Texel → ProfileIndex` map | Runtime의 Asset/Scene load에서 고유 입력 조합별로 생성하고 세션 동안 공유 | Runtime Build와 상위 연결 구현 대상. 기존 binary cache API는 이전 결정의 잔여 구현 |
+| Profile Distribution | Surface/Material 할당별 SRProfile 지정 입력 | `.SurfaceProfileMap`에서 파싱해 각 valid texel의 index로 확장 | Loader와 `LoadOBJ` 전처리 연결 구현. Surface 내부 texel별 Profile authoring은 후속 기능 |
+| Runtime Surface Data | 전처리된 정적 Geometry/texel 관계와 `Texel → ProfileIndex` map | Runtime의 Asset/Scene load에서 생성하고 같은 Mesh asset의 instance가 공유 | `LoadOBJ` 경로의 Runtime Build 구현. `.Scene` 로더 연결은 후속 작업이며 binary cache를 사용하지 않음 |
 | `TSurfaceInstanceStateData` | Instance별 동적 State (`stateCapacity` 이내) | Runtime에서 초기화·갱신 | 동적 channel 자료형 구현. Registry channel count/GPU layout 연결은 `feat/surface-gpu-resources`, Solver 순회는 `feat/surface-solver-2pass`, 입력은 `feat/surface-input-integration` 담당 |
 
 파일 흐름의 목표 형태는 다음과 같다.
@@ -269,7 +269,7 @@ classDiagram
 | `.Scene` → Mesh/Material/SRProfile 연결 | `SceneLoader` placeholder |
 | `TSurfaceMappingData` → `TSharedSurfaceGeometryData` | Build 변환 API 구현. Mesh/Scene load에서 Runtime 호출·등록 연결 필요 |
 | Runtime 전처리 결과 수명 | load 시 생성하고 메모리에서 같은 입력의 instance 간 공유. persistent cache 저장·로드는 하지 않음 |
-| Profile Distribution → texel `SurfaceProfileMap` | authoring 형식과 loader 구현 미완료. Branch 3 담당 |
+| `.SurfaceProfileMap` → texel `ProfileIndex` map | Surface별 Profile 파싱, 검증 및 valid texel로의 확장 구현 완료. Surface 내부의 세밀한 Profile authoring은 후속 기능 |
 | Profile collection → `TSurfaceStateRegistry` | Registry와 AssetManager 지연 생성 구현. Instance/GPU 연결은 Branch 4, Solver 소비는 Branch 5, 입력은 Branch 6 담당 |
 | texel `ProfileIndex` → `TSRProfileAssetHandle` | 상위 등록·해석 정책 미구현 |
 | Instance State/Profile → Solver | `TSurfaceStateSolver` placeholder. Dynamic channel iteration and unsupported Profile-state handling are assigned to Branch 5 |

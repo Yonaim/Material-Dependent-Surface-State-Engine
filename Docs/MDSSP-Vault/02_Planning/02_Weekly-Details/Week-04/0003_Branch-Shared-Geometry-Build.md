@@ -105,9 +105,10 @@ Shared Geometry는 texel별 Profile index를 직접 저장한다. `TexelSurfaceI
 
 ## Profile Distribution 입력 계약
 
-- Profile Distribution의 구체적인 authoring 형식과 `.Scene` 연결 계약은 아직 확정하지 않는다.
+- Profile Distribution 입력은 `.SurfaceProfileMap` v1 sidecar를 사용하며, 각 Surface ID에 Profile table의 항목 하나를 지정한다. `.Scene`에서의 연결 규칙은 별도 후속 작업이다.
 - Runtime 전처리 출력은 valid texel마다 `uint32 ProfileIndex`를 가진 dense map이다. Profile response table은 별도로 유지한다.
-- 각 valid texel의 Profile index 범위와 참조 Profile을 검증한다. 같은 Surface 안에서도 서로 다른 Profile 영역을 표현할 수 있어야 한다.
+- 현재 Profile Distribution은 각 Surface/Material 할당에 SRProfile 하나를 지정한다. 해당 Surface의 valid texel에는 그 Profile index를 반복해 dense map을 만든다.
+- 같은 Surface 내부를 여러 Profile 영역으로 나누는 authoring 및 전처리는 후속 기능이며 이번 브랜치 완료 조건에 포함하지 않는다.
 - 입력 표현에서 Runtime dense map으로 변환한 canonical Profile Distribution을 반환한다. Persistent cache용 hash는 만들지 않는다.
 - 같은 입력 조합을 Runtime에서 중복 build하지 않도록 생성된 결과를 Asset/Scene 수명 동안 공유한다.
 
@@ -118,7 +119,7 @@ ProfileTable[profileIndex] → SRProfile response data
 TexelProfileIndex[localTexelIndex] → profileIndex
 ```
 
-각 valid texel은 자신의 `ProfileIndex`를 직접 가진다. Profile Distribution의 원본 표현은 별도 계약으로 정한다.
+각 valid texel은 자신의 `ProfileIndex`를 직접 가진다. 현재 원본 입력은 Surface 단위 Profile 할당이며, dense texel map은 이를 확장한 Runtime 표현이다. texel 단위로 서로 다른 Profile을 authoring하는 기능은 후속 개발에서 다룬다.
 
 ## 구현 대상
 
