@@ -41,43 +41,43 @@
         "cbda2c37e432a588"
       ]
     },
-    "02_Architecture": {
+    "03_Architecture": {
       "icon": "lucide-badge",
       "unsynced": [
         "cbda2c37e432a588"
       ]
     },
-    "03_ADR": {
+    "04_ADR": {
       "icon": "lucide-train-front-tunnel",
       "unsynced": [
         "cbda2c37e432a588"
       ]
     },
-    "04_Development": {
+    "05_Development": {
       "icon": "lucide-shovel",
       "unsynced": [
         "cbda2c37e432a588"
       ]
     },
-    "04_Development/Debugging": {
+    "05_Development/Debugging": {
       "icon": "lucide-bug",
       "unsynced": [
         "cbda2c37e432a588"
       ]
     },
-    "04_Development/Experiments": {
+    "05_Development/Experiments": {
       "icon": "lucide-flask-conical",
       "unsynced": [
         "cbda2c37e432a588"
       ]
     },
-    "04_Development/Notes": {
+    "05_Development/Notes": {
       "icon": "lucide-sticky-note",
       "unsynced": [
         "cbda2c37e432a588"
       ]
     },
-    "05_Assets": {
+    "06_Assets": {
       "icon": "lucide-boxes",
       "unsynced": [
         "cbda2c37e432a588"

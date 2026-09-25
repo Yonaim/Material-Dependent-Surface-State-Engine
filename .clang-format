@@ -1,7 +1,8 @@
 # MDSS Engine clang-format configuration
 #
 # Naming rules such as PascalCase, bBoolean, and MDSS namespace naming are
-# documented in Docs/CodingConventions.md and are not enforced by clang-format.
+# documented in the Code Style policy and are not enforced by clang-format.
+# See Docs/MDSSP-Vault/01_Project-Policy/0002_Code_Style.md.
 
 BasedOnStyle: LLVM
 Language: Cpp
