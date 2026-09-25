@@ -26,7 +26,7 @@ TransferWeight
 
 ## Consequences
 
-Height / Direction과 Curvature의 역할이 겹치지 않는다. UV Seam은 Profile Boundary가 아니므로 가중치가 아니라 Neighbor 연결 문제로 처리한다. [[02_Architecture/0006_Propagation-Solver|Propagation Solver]].
+Height / Direction과 Curvature의 역할이 겹치지 않는다. UV Seam은 Profile Boundary가 아니므로 가중치가 아니라 Neighbor 연결 문제로 처리한다. [[02_Architecture/0004_Surface-State-Update|Propagation Solver]].
 
 ## Alternatives Considered
 

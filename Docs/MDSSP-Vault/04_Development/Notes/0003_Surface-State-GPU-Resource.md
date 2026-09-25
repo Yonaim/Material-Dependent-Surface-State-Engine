@@ -1,8 +1,8 @@
 # Surface State GPU Resource
 
-상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[03_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]], [[02_Architecture/0003_Surface-State|표면 상태]], [[02_Architecture/0006_Propagation-Solver|Propagation Solver]], [[04_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[03_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]], [[02_Architecture/0002_Surface-State|표면 상태]], [[02_Architecture/0004_Surface-State-Update|Propagation Solver]], [[04_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
 
-이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다. 상태 갱신 수식의 기준은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]다.
+이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다. 상태 갱신 수식의 기준은 [[02_Architecture/0004_Surface-State-Update|Propagation Solver]]다.
 
 ## 핵심 결정
 
@@ -86,6 +86,13 @@ invalid 여부는 `TexelSurfaceIndexBuffer[index] == InvalidSurfaceID`로 판정
 
 Accumulation으로 변하는 instance별 Position/Normal/Curvature는 base geometry와 분리된 dynamic geometry resource가 필요하다. 이웃 거리도 갱신된 Position 차이에서 계산한다. 4주차 첫 구현은 정적 base geometry를 사용하고, 동적 overlay의 정확한 배치는 후속 단계에서 확정한다.
 
+### 저장 항목 검증
+
+- Solver 입력에 Raw Curvature가 필요한지, `ConcavityWeight` 등 파생값만 저장하면 되는지 확인한다.
+- Dynamic Geometry overlay에 Position / Normal / Curvature 중 어떤 값을 포함할지와 Instance별 저장 구조를 정한다.
+
+현재 4주차 기본안은 정적 Shared Geometry를 사용한다. 동적 적층 형상을 후속 Simulation에 반영하는 구체적인 저장 구조는 요구사항과 메모리·성능 측정을 바탕으로 확정한다.
+
 ## Surface Instance State Buffer
 
 ```glsl
@@ -136,7 +143,7 @@ Pass 1은 raw outgoing 합으로 `alpha`를 계산해 저장한다. Pass 2는 �
 - Pass 2에서 `Current + InputDelta + Incoming - Outgoing - Decay`를 Next에 기록한다.
 - 소비한 `InputDelta`는 Pass 2 이후 0으로 clear한다.
 
-따라서 이번 frame에 들어온 Input은 같은 step의 outgoing에 즉시 사용되지 않고 다음 step부터 Transport에 참여한다. 이는 현재 [[02_Architecture/0006_Propagation-Solver|Solver 수식]]의 처리 순서를 따른다.
+따라서 이번 frame에 들어온 Input은 같은 step의 outgoing에 즉시 사용되지 않고 다음 step부터 Transport에 참여한다. 이는 현재 [[02_Architecture/0004_Surface-State-Update|Solver 수식]]의 처리 순서를 따른다.
 
 ## SRProfile GPU Representation
 

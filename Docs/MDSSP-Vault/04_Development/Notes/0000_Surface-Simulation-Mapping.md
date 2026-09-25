@@ -1,6 +1,6 @@
 # Surface Simulation Mapping
 
-상태: **4주차 구현 기본안 / 자동 UV 생성과 복잡 경계 검증 필요** · 관련 문서: [[02_Architecture/0007_Surface-Geometry|형상 정보]], [[04_Development/Notes/0001_Geometry-Preprocessing|형상 정보 전처리]], [[04_Development/Notes/0003_Surface-State-GPU-Resource|GPU Resource]]
+상태: **4주차 구현 기본안 / 자동 UV 생성과 복잡 경계 검증 필요** · 관련 문서: [[02_Architecture/0005_Surface-Geometry|형상 정보]], [[04_Development/Notes/0001_Geometry-Preprocessing|형상 정보 전처리]], [[04_Development/Notes/0003_Surface-State-GPU-Resource|GPU Resource]]
 
 이 문서는 Mesh의 연속 표면을 Solver가 처리할 **texel graph**로 변환하는 방법을 정의한다. 출력은 `SharedSurfaceGeometryData` 생성의 입력이다.
 
@@ -150,7 +150,7 @@ UV seam은 UV에서는 분리됐지만 Mesh topology에서는 같은 edge를 공
 
 최종 GPU 데이터에는 seam을 별도로 표시하지 않는다. 일반 이웃과 동일한 `NeighborIndex[8]`와 `Distance[8]`로 병합한다.
 
-서로 다른 Surface가 실제 Mesh edge를 공유할 때도 topology 연결은 유지할 수 있다. 이때 전달량은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]의 `ProfileBoundaryWeight`가 조절한다.
+서로 다른 Surface가 실제 Mesh edge를 공유할 때도 topology 연결은 유지할 수 있다. 이때 전달량은 [[02_Architecture/0004_Surface-State-Update|Propagation Solver]]의 `ProfileBoundaryWeight`가 조절한다.
 
 ## 불변조건
 

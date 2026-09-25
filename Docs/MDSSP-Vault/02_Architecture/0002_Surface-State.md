@@ -50,7 +50,7 @@ $$
 
 ## Surface Response Profile
 
-`.SRProfile`의 직렬화 형식은 [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]에서 다룬다. 파라미터의 **의미와 범위는 이 문서가 기준**이다.
+`.SRProfile`의 직렬화 형식은 [[02_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]에서 다룬다. 파라미터의 **의미와 범위는 이 문서가 기준**이다.
 
 ### State Parameters
 
@@ -65,16 +65,9 @@ $$
 | `accumulationFactor` | State를 형상상의 적층량으로 변환하는 정도 | `[0,n]` | `0.0` |
 | `cavityFillFactor` | 적층량 중 Cavity를 채우는 데 우선 배분할 비율 | `[0,1]` | `0.0` |
 
-### Transition Parameters
+상태 전이 규칙과 전이 파라미터의 의미는 [[02_Architecture/0002_Surface-State|State Transition]]에서 정의한다.
 
-| Parameter | 의미 | 범위 |
-|---|---|---|
-| `source` | 상태 전이의 원인이 되는 State 채널 | State Channel |
-| `target` | 전이 결과 증가하는 State 채널 | State Channel |
-| `threshold` | 전이가 시작되는 `source`의 Saturation 임계값 | `[0,1]` |
-| `transitionRate` | 조건 만족 후 target State가 증가하는 단위 시간당 기본 속도 | `[0,n]` |
-
-상태 전이의 사용 예는 [[02_Architecture/0009_State-Transitions|State Transition]]을 본다.
+상태 전이의 사용 예는 [[02_Architecture/0002_Surface-State|State Transition]]을 본다.
 
 ## Surface Instance State Data
 
@@ -83,8 +76,25 @@ State별로 현재 상태와 Solver 계산 과정의 임시값을 각각 스칼�
 | 항목 | 저장 단위 | 범위 | 의미 |
 |---|---|---|---|
 | `State` | Texel별 | `[0, stateCapacity]` | 현재 표면에 반영된 상태량 |
-| `TempState` | Texel별 | `[0,1]` | 4주차 2-Pass Solver의 상태별 `alpha` 임시값 |
+| `TempState` | Texel별 | Solver에 따라 다름 | Solver 계산 중 필요한 임시 상태값 |
 
-`TempState`는 Capacity를 초과한 상태량을 보관하지 않는다. **Capacity 초과량은 별도로 저장하지 않는다.**
+`TempState`는 영구 상태 채널이 아니라 Solver 계산 중 사용하는 임시 데이터다. 현재 설계에서는 Capacity 초과량을 별도로 저장하지 않는다. 구체적인 임시값과 GPU 배치는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 
-4주차 GPU 구현에서 Current/Next State는 A/B buffer로 ping-pong하고, `TempState`는 Pass 1의 상태별 `alpha`를 저장하는 `TempAlphaBuffer`로 사용한다. 자세한 배치는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
+## State Transitions
+
+State Transition은 한 State가 조건을 만족했을 때 다른 State를 증가시키는 규칙이다.
+
+예:
+
+```text
+Heat → Burn
+```
+
+| Parameter | 의미 |
+|---|---|
+| `source` | 전이의 원인이 되는 State |
+| `target` | 전이 결과 증가하는 State |
+| `threshold` | source Saturation의 임계값 |
+| `transitionRate` | 조건 만족 후 target State의 단위 시간당 증가 속도 |
+
+예를 들어 `threshold = 0.7`이면 source의 Saturation이 `0.7` 이상일 때 전이 조건을 만족한다. Transition의 실행 순서와 Solver 패스 배치는 [[04_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]에서 다룬다.

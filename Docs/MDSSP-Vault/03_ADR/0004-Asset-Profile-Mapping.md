@@ -16,7 +16,7 @@ OBJ Surface는 `.mtl`을 통해 Render Material을 이미 알고 있으며, Stat
 
 ## Consequences
 
-Surface 내 모든 texel은 동일한 Profile을 사용한다. `ProfileBoundaryWeight`는 서로 다른 Profile을 사용하는 Surface 경계에서 의미가 있다. Simulation UV와 Surface 간 Neighbor 연결 방식은 별도 설계에서 다룬다. [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]].
+Surface 내 모든 texel은 동일한 Profile을 사용한다. `ProfileBoundaryWeight`는 서로 다른 Profile을 사용하는 Surface 경계에서 의미가 있다. Simulation UV와 Surface 간 Neighbor 연결 방식은 별도 설계에서 다룬다. [[02_Architecture/0003_Assets-and-Profiles|에셋과 프로필]].
 
 ## Alternatives Considered
 

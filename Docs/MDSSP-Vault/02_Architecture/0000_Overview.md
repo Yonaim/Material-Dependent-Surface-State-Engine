@@ -32,10 +32,10 @@ flowchart TD
 
 ## 읽는 순서
 
-1. [[02_Architecture/0001_Modules|모듈과 책임]] → [[02_Architecture/0002_Data-Flow|데이터 흐름]]
-2. [[02_Architecture/0003_Surface-State|표면 상태와 데이터 구조]] → [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]
-3. [[02_Architecture/0005_Contact-Input|Contact Input]] → [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]
-4. [[02_Architecture/0007_Surface-Geometry|형상 정보]] → [[02_Architecture/0008_Accumulation|적층]] → [[02_Architecture/0010_Rendering|렌더링]]
-5. [[02_Architecture/0011_Demos|목표 데모]] → [[0000_TODO|TODO]]
+1. [[02_Architecture/0001_Engine-Structure|엔진 모듈과 데이터 흐름]]
+2. [[02_Architecture/0002_Surface-State|표면 상태와 전이]] → [[02_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+3. [[02_Architecture/0004_Surface-State-Update|Surface State 입력과 갱신]]
+4. [[02_Architecture/0005_Surface-Geometry|형상과 적층]] → [[02_Architecture/0006_Rendering|렌더링]]
+5. [[02_Architecture/0007_Demos|목표 데모]] → [[0000_TODO|TODO]]
 
 Simulation UV의 생성·Mesh→Texel mapping·UV seam 연결은 [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], 실제 Vulkan resource와 2-Pass 동기화는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 기준으로 한다.

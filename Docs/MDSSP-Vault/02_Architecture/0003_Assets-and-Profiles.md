@@ -2,7 +2,7 @@
 
 상태: **파일 구조 설계** · 근거: [[05_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
-이 문서는 데이터의 **파일 직렬화와 Asset 연결 관계**만 정의한다. SRProfile 파라미터의 의미와 범위는 [[02_Architecture/0003_Surface-State|표면 상태와 데이터 구조]]를 기준으로 한다.
+이 문서는 데이터의 **파일 직렬화와 Asset 연결 관계**만 정의한다. SRProfile 파라미터의 의미와 범위는 [[02_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]를 기준으로 한다.
 
 ## 파일 형식
 
@@ -116,4 +116,4 @@ Surface
 }
 ```
 
-Simulation UV는 렌더링 UV와 논리적으로 분리한다. 4주차에는 조건을 만족하도록 준비한 OBJ의 기존 `vt`를 Simulation UV로 임시 사용하며, 별도 채널 또는 전처리 cache로 보존할 최종 Asset 형식은 후속 설계로 남긴다. [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 본다.
+Simulation UV는 렌더링 UV와 논리적으로 분리한다. UV 생성·검증과 현재 구현 범위는 [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 본다.

@@ -2,7 +2,7 @@
 
 상태: **2-Pass 기본안 / GPU Resource 기본안 작성됨** · 근거: [[05_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
-Architecture 수준의 수식은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]가 기준이다. 이 문서는 Compute Shader 계산 순서만 기록한다.
+Architecture 수준의 수식은 [[02_Architecture/0004_Surface-State-Update|Propagation Solver]]가 기준이다. 이 문서는 Compute Shader 계산 순서만 기록한다.
 
 ## Gather 방식
 
@@ -38,3 +38,10 @@ texel i
 1-Pass에서 이웃의 `alpha[j]`를 재계산하면 각 이웃마다 다시 주변 8개 flux를 계산해야 해서 중복 계산이 커진다. 현재 기본안은 `2-Pass + alpha 저장`이다.
 
 State A / State B / TempAlpha 리소스 타입, descriptor, barrier는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 따른다.
+
+## 구현 시 결정할 항목
+
+- `ContactInput.falloff`가 제어하는 거리 감쇠 함수의 구체적인 형태.
+- 상태 전이(예: Heat → Burn)를 Solver에 적용하는 순서와 같은 패스/별도 패스 여부.
+
+위 항목은 Architecture에서 정의한 입력·전이의 의미를 바꾸지 않고, 구현과 검증 과정에서 정한다.

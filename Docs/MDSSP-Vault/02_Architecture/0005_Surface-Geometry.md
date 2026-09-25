@@ -1,4 +1,4 @@
-# 형상 정보 반영
+# 형상 정보와 적층
 
 상태: **형상 의미와 반영 범위 확정 / 전처리 알고리즘 일부 검증 필요** · 근거: [[05_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[05_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
 
@@ -9,7 +9,7 @@
 3. Height
 4. Curvature / Concavity
 
-Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 영향을 주고, Decay에는 오목함에 따른 잔류 효과를 반영한다. 실제 Solver 수식은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]가 기준이다.
+Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 영향을 주고, Decay에는 오목함에 따른 잔류 효과를 반영한다. 실제 Solver 수식은 [[02_Architecture/0004_Surface-State-Update|Surface State Update]]가 기준이다.
 
 ## 계산 및 사용 시점
 
@@ -70,7 +70,7 @@ Non-integrable fallback에서는 정규화 높이를 `[-1,1]`로 두고 대표 H
 | `Meso_Virtual_Height` | Texel별 | Macro 기준 Normal Map에서 복원한 상대 높이 |
 | `Curvature / ConcavityWeight` | Texel별 | 국소 곡률 또는 Solver가 읽는 오목함 파생값 |
 
-현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. `CurvatureWeight` 역시 Curvature/Concavity 정보에서 계산한다. Raw Curvature를 저장할지 파생 Weight만 저장할지는 GPU Resource 설계에서 확정한다.
+현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. `CurvatureWeight` 역시 Curvature/Concavity 정보에서 계산한다. GPU에서 어떤 형상 값을 저장할지는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.
 
 ### Geometry Common Parameters
 
@@ -93,6 +93,61 @@ Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space�
 
 ## 동적 형상
 
-적층으로 Height가 변하면 Normal / Distance / Curvature도 함께 달라지고 **후속 Simulation에 다시 반영**한다. 이 동적 형상 데이터의 실제 Instance별 GPU 저장 구조는 아직 별도 설계 전이다.
+적층으로 Height가 변하면 Normal / Distance / Curvature도 함께 달라지고 **후속 Simulation에 다시 반영**한다. 현재는 동적 형상 갱신의 의미를 정의하며, Instance별 저장 구조는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|GPU resource 설계]]에서 다룬다.
 
 Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. Shared Geometry의 GPU 배치는 [[04_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
+
+## Accumulation Height
+
+적층은 State를 직접 변경하는 Solver 항이 아니라, 계산된 State를 **형상상의 높이 변화**로 변환하는 후속 Geometry 계산이다.
+
+$$
+Accumulation\_Height = Cavity\_Filling\_Height + Surface\_Following\_Height
+$$
+
+- **Cavity Filling**: Macro Surface 기준 아래쪽의 Meso cavity를 메운다.
+- **Surface Following**: 기존 Meso 요철을 따라 표면 바깥쪽으로 쌓인다.
+
+### 전체 적층량과 배분
+
+$$
+Accumulation\_Amount = State \times Accumulation\_Factor
+$$
+
+- `State ∈ [0, stateCapacity]`
+- `Accumulation_Factor ∈ [0,n]`
+- `Accumulation_Factor = 0`이면 State가 있어도 형상 적층을 만들지 않는다.
+
+$$
+Cavity\_Amount = Accumulation\_Amount \times Cavity\_Fill\_Factor
+$$
+
+$$
+Surface\_Amount = Accumulation\_Amount \times (1-Cavity\_Fill\_Factor)
+$$
+
+`Cavity_Fill_Factor ∈ [0,1]`이며 SRProfile에서 결정한다.
+
+### 실제 높이와 Cavity 상한
+
+```text
+Cavity_Depth = max(-Meso_Virtual_Height, 0)
+Cavity_Fill = min(Cavity_Amount, 1)
+Cavity_Excess = max(Cavity_Amount - 1, 0)
+Cavity_Filling_Height = Cavity_Fill × Cavity_Depth
+Surface_Following_Height = (Surface_Amount + Cavity_Excess)
+                           × Meso_Height_Reference
+Accumulation_Height = Cavity_Filling_Height + Surface_Following_Height
+```
+
+Cavity는 최대 100%까지만 채우며, 초과 적층량은 버리지 않고 Surface Following으로 넘긴다.
+
+### 최종 높이
+
+$$
+DynamicFinalHeight = MacroHeight + MesoVirtualHeight + AccumulationHeight
+$$
+
+Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Distance / Height / Curvature에도 다시 반영한다. [[03_ADR/0003-Dynamic-Accumulation-Geometry|ADR 0003]]
+
+현재 기본 State 중 Wetness / Heat / Burn은 형상 적층이 없도록 `accumulationFactor = 0`을 사용할 수 있고, Mud는 적층을 표현한다. SurfaceWater / Snow의 적층은 해당 State가 추가될 때 프로필로 정의한다.

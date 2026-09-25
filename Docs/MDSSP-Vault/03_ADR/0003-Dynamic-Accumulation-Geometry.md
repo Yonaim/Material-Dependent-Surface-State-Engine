@@ -15,7 +15,7 @@ Mud·Snow·SurfaceWater처럼 적층이 생기면 보이는 형상뿐 아니라 
 
 ## Consequences
 
-Instance마다 State가 다르므로 동적 형상 데이터의 실제 GPU 소유·저장 방식이 필요하다. 이 부분은 후속 GPU Resource 설계에서 정한다. [[02_Architecture/0008_Accumulation|적층]], [[02_Architecture/0007_Surface-Geometry|형상 정보]].
+Instance마다 State가 다르므로 동적 형상 데이터의 실제 GPU 소유·저장 방식이 필요하다. 이 부분은 후속 GPU Resource 설계에서 정한다. [[02_Architecture/0005_Surface-Geometry|적층]], [[02_Architecture/0005_Surface-Geometry|형상 정보]].
 
 ## Alternatives Considered
 
