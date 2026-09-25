@@ -46,6 +46,7 @@ Profile 데이터에 등장하는 State를 자동으로 등록하고 런타임�
 - Profile에서 발견된 문자열 이름과 런타임 채널 ID 사이의 매핑을 관리해야 한다.
 - State ID는 Profile load order와 무관한 canonical 이름 정렬 순서로 결정된다. Profile 집합 자체가 달라지면 ID 집합과 index가 달라질 수 있으므로 Registry를 참조하는 runtime data는 같은 Registry와 함께 사용해야 한다.
 - State 배열의 크기와 GPU 레이아웃은 Registry의 State 수와 연결된다. 고정 네 채널을 전제로 한 기존 GPU 배치 결정은 더 이상 유효하지 않으며, 실제 GPU 표현은 별도 구현 설계에서 정한다.
+- Registry channel count 전달과 GPU storage layout은 `feat/surface-gpu-resources`, Solver의 동적 channel 순회는 `feat/surface-solver-2pass`, Contact 입력의 StateId 변환은 `feat/surface-input-integration`에서 구현한다. `Wetness`, `Heat`, `Burn`, `Mud`는 기본 데모에서 쓰는 대표 이름이지 허용 목록이 아니다.
 - 정규화 결과 이름 충돌, 알 수 없는 Transition State, Profile 간 State 결합 규칙을 로딩 검증에서 다뤄야 한다.
 
 ## Related

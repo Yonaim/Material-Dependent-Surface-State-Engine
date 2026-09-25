@@ -8,7 +8,7 @@
 
 ## 작업
 
-- 기본 State 채널과 SRProfile parameter, Shared Geometry와 Instance State data를 정의한다.
+- SRProfile에서 구성하는 State Registry와 parameter, Shared Geometry 및 Instance State data의 계약을 정의한다.
 - `stateCapacity`, `Saturation`, `TempState`의 역할을 구분한다.
 - Input / Transport / Decay의 식과 discrete/continuous 시간 처리를 정리한다.
 - SaturationDrive, GeometryDrive, TransferWeight와 alpha 제한을 설계한다.
