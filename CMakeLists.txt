@@ -177,8 +177,6 @@ add_dependencies(MDSS MDSS_Shaders)
 target_compile_definitions(MDSS PRIVATE
     MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
     MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
-    MDSS_PROJECT_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
-    MDSS_CACHE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Cache/Surface"
     MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
     GLM_FORCE_RADIANS
     GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -204,7 +202,7 @@ if(BUILD_TESTING)
         Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
         Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
         Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.cpp
+        Source/SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.cpp
         Source/SurfaceStateSystem/State/SurfaceInstanceStateData.cpp
         Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
         Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
@@ -253,7 +251,7 @@ if(BUILD_TESTING)
         Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
         Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
         Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.cpp
+        Source/SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.cpp
     )
     target_include_directories(MDSS_SharedSurfaceGeometryTests PRIVATE Source)
     target_include_directories(MDSS_SharedSurfaceGeometryTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")

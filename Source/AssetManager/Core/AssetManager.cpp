@@ -1,6 +1,6 @@
 /**
  * @file AssetManager.cpp
- * @brief 에셋 로딩, 소유권 관리와 캐시 조회.
+ * @brief 에셋 로딩, Runtime 데이터 소유권 관리와 조회.
  */
 
 #include "AssetManager/Core/AssetManager.h"
@@ -10,7 +10,6 @@
 #include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "AssetManager/Loaders/TextureLoader.h"
 #include "Logger/Logger.h"
-#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "VulkanContext/VulkanContext.h"
 
@@ -21,14 +20,6 @@
 #include <limits>
 #include <stdexcept>
 #include <utility>
-
-#ifndef MDSS_PROJECT_ROOT
-#define MDSS_PROJECT_ROOT "."
-#endif
-
-#ifndef MDSS_CACHE_DIR
-#define MDSS_CACHE_DIR "Cache/Surface"
-#endif
 
 namespace MDSS
 {
@@ -44,6 +35,22 @@ namespace MDSS
 
     MeshAssetHandle AssetManager::LoadOBJ(const std::filesystem::path& Path)
     {
+        const std::string MeshPathKey = std::filesystem::absolute(Path).lexically_normal().generic_string();
+        if (const auto Found = MeshAssetsByPath.find(MeshPathKey); Found != MeshAssetsByPath.end())
+        {
+            const MeshAssetHandle Handle = Found->second;
+            if (!HasSurfaceData(Handle))
+            {
+                std::filesystem::path DistributionPath = Path;
+                DistributionPath.replace_extension(".SurfaceProfileMap");
+                if (std::filesystem::exists(DistributionPath))
+                {
+                    LoadSurfaceData(Handle, DistributionPath);
+                }
+            }
+            return Handle;
+        }
+
         Logger::Info("AssetManager", "Loading OBJ asset: " + Path.string());
         OBJLoadResult Loaded = OBJLoader::Load(Path);
 
@@ -91,8 +98,9 @@ namespace MDSS
                                                      std::move(Loaded.Indices),
                                                      std::move(Sections),
                                                      std::move(Loaded.Triangles)));
-        SurfaceAssets.emplace_back();
+        SurfaceData.emplace_back();
         SurfaceProfileTables.emplace_back();
+        MeshAssetsByPath.emplace(MeshPathKey, Handle);
         Logger::Info("AssetManager",
                      "OBJ registered as MeshAsset handle=" + std::to_string(Handle) +
                          " (vertices=" + std::to_string(VertexCount) + ", indices=" + std::to_string(IndexCount) +
@@ -103,7 +111,7 @@ namespace MDSS
         DistributionPath.replace_extension(".SurfaceProfileMap");
         if (std::filesystem::exists(DistributionPath))
         {
-            LoadSurfaceAsset(Handle, DistributionPath);
+            LoadSurfaceData(Handle, DistributionPath);
         }
         return Handle;
     }
@@ -130,13 +138,14 @@ namespace MDSS
         return Handle;
     }
 
-    void AssetManager::LoadSurfaceAsset(MeshAssetHandle MeshHandle, const std::filesystem::path& RequestedDistributionPath)
+    void AssetManager::LoadSurfaceData(MeshAssetHandle              MeshHandle,
+                                       const std::filesystem::path& RequestedDistributionPath)
     {
         if (MeshHandle >= Meshes.size())
         {
             throw std::out_of_range("Invalid MeshAssetHandle for Surface preprocessing.");
         }
-        const MeshAsset& Mesh = *Meshes[MeshHandle];
+        const MeshAsset&      Mesh = *Meshes[MeshHandle];
         std::filesystem::path DistributionPath = RequestedDistributionPath;
         if (DistributionPath.empty())
         {
@@ -172,7 +181,6 @@ namespace MDSS
 
         std::vector<SurfaceDefinition> SurfaceDefinitions;
         SurfaceDefinitions.reserve(SurfaceCount);
-        std::vector<SurfaceResolution> Resolutions(SurfaceCount, DefaultSurfaceResolution);
         for (SurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
         {
             SurfaceDefinitions.push_back({Surface, DefaultSurfaceResolution});
@@ -182,7 +190,7 @@ namespace MDSS
         std::vector<bool>                  HasMaterial(SurfaceCount, false);
         for (const MeshSection& Section : Mesh.GetSections())
         {
-            const MaterialAsset& Material = GetMaterial(Section.Material);
+            const MaterialAsset&        Material = GetMaterial(Section.Material);
             const std::filesystem::path NormalPath = GetTexture(Material.GetNormalTexture()).GetSourcePath();
             if (HasMaterial[Section.Surface] && NormalMapPaths[Section.Surface] != NormalPath)
             {
@@ -196,63 +204,14 @@ namespace MDSS
             throw std::runtime_error("Mesh Surface IDs must be dense and have a material section.");
         }
 
-        SurfaceCacheMetadata Metadata = SurfacePreprocessor::CreateSourceMetadata(
-            Mesh.GetSourcePath(),
-            NormalMapPaths,
-            Resolutions,
-            0,
-            1,
-            static_cast<std::uint32_t>(ProfileTable.size()));
-
-        const std::filesystem::path CachePath = SurfaceCache::GetPath(Mesh.GetSourcePath(),
-                                                                       MDSS_PROJECT_ROOT,
-                                                                       MDSS_CACHE_DIR);
-        std::unique_ptr<SurfacePreprocessedAsset> LoadedAsset;
-        if (std::filesystem::exists(CachePath))
-        {
-            try
-            {
-                LoadedAsset = std::make_unique<SurfacePreprocessedAsset>(SurfaceCache::Load(CachePath, Metadata));
-                const SharedSurfaceGeometryData& CachedGeometry = LoadedAsset->Geometry;
-                for (std::size_t Index = 0; Index < CachedGeometry.GetTexelCount(); ++Index)
-                {
-                    const SurfaceTexelGeometry& Texel = CachedGeometry.GetTexels()[Index];
-                    const SurfaceProfileIndex ExpectedProfile =
-                        Texel.IsValid() && Texel.Surface < Distribution.ProfileIndicesBySurface.size()
-                            ? Distribution.ProfileIndicesBySurface[Texel.Surface]
-                            : InvalidSurfaceProfileIndex;
-                    if (CachedGeometry.GetProfileIndex(static_cast<LocalTexelIndex>(Index)) != ExpectedProfile)
-                    {
-                        throw std::runtime_error("cached Surface Profile map does not match the current distribution");
-                    }
-                }
-                Logger::Info("AssetManager", "Surface cache hit: " + CachePath.string());
-            }
-            catch (const std::exception& Exception)
-            {
-                LoadedAsset.reset();
-                Logger::Warning("AssetManager",
-                                "Surface cache miss/stale; rebuilding '" + CachePath.string() + "': " + Exception.what());
-            }
-        }
-
-        if (!LoadedAsset)
-        {
-            const SurfaceMappingData Mapping =
-                SurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
-            std::vector<SurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
-            Metadata.ProfileMapHash = SurfacePreprocessor::HashProfileMap(ProfileMap);
-            SurfacePreprocessedAsset Built =
-                SurfacePreprocessor::Build(Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size()),
-                                            std::move(Metadata));
-            std::filesystem::create_directories(CachePath.parent_path());
-            SurfaceCache::Save(CachePath, Built);
-            LoadedAsset = std::make_unique<SurfacePreprocessedAsset>(std::move(Built));
-            Logger::Info("AssetManager", "Built and saved Surface cache: " + CachePath.string());
-        }
-
-        SurfaceAssets[MeshHandle] = std::move(LoadedAsset);
+        const SurfaceMappingData Mapping =
+            SurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
+        std::vector<SurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+        SurfaceRuntimeData               Built =
+            SurfacePreprocessor::Build(Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size()));
+        SurfaceData[MeshHandle] = std::make_shared<const SurfaceRuntimeData>(std::move(Built));
         SurfaceProfileTables[MeshHandle] = std::move(ProfileTable);
+        Logger::Info("AssetManager", "Built Runtime Surface data for Mesh: " + Mesh.GetSourcePath().string());
     }
 
     const MeshAsset& AssetManager::GetMesh(MeshAssetHandle Handle) const
@@ -291,23 +250,23 @@ namespace MDSS
         return *SRProfiles[Handle];
     }
 
-    bool AssetManager::HasSurfaceAsset(MeshAssetHandle Handle) const noexcept
+    bool AssetManager::HasSurfaceData(MeshAssetHandle Handle) const noexcept
     {
-        return Handle < SurfaceAssets.size() && static_cast<bool>(SurfaceAssets[Handle]);
+        return Handle < SurfaceData.size() && static_cast<bool>(SurfaceData[Handle]);
     }
 
-    const SurfacePreprocessedAsset& AssetManager::GetSurfaceAsset(MeshAssetHandle Handle) const
+    const SurfaceRuntimeData& AssetManager::GetSurfaceData(MeshAssetHandle Handle) const
     {
-        if (!HasSurfaceAsset(Handle))
+        if (!HasSurfaceData(Handle))
         {
-            throw std::out_of_range("Mesh has no loaded Surface preprocessed asset.");
+            throw std::out_of_range("Mesh has no Runtime Surface data.");
         }
-        return *SurfaceAssets[Handle];
+        return *SurfaceData[Handle];
     }
 
     const std::vector<SRProfileAssetHandle>& AssetManager::GetSurfaceProfileTable(MeshAssetHandle Handle) const
     {
-        if (!HasSurfaceAsset(Handle))
+        if (!HasSurfaceData(Handle))
         {
             throw std::out_of_range("Mesh has no loaded Surface Profile table.");
         }
