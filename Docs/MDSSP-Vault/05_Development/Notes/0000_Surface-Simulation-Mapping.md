@@ -32,6 +32,8 @@
 
 하나의 Surface는 하나의 Render Material과 하나의 SRProfile을 사용한다. 여러 Surface가 같은 Material 또는 Profile을 공유할 수 있다.
 
+`SurfaceLocalID`는 Mesh 안에서 Surface 순서대로 `0`부터 부여하는 dense index다. `0xFFFFFFFF`는 `InvalidSurfaceID`로 예약한다. 각 Surface의 texel grid는 Shared Geometry 안에서 연속된 mesh-local range를 차지하며, texel의 `SurfaceID`로 instance별 Surface→Profile table을 조회한다.
+
 ### 출력
 
 | 데이터 | 단위 | 용도 |

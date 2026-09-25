@@ -17,15 +17,17 @@ Surface State System Data
 ## 기본 State 채널
 
 ```cpp
-enum class SurfaceStateType : uint8_t {
-    Wetness,
+enum class SurfaceStateChannel : std::uint32_t
+{
+    Wetness = 0,
     Heat,
     Burn,
-    Mud
+    Mud,
+    Count
 };
 ```
 
-`Snow`, `SurfaceWater`는 목표 데모에서 필요하지만 현재 기본 enum에는 없는 확장 대상이다.
+기본 채널 순서는 `Wetness`, `Heat`, `Burn`, `Mud`로 고정하며 CPU `std::array`와 Shader 채널 순서가 일치해야 한다. `Count`는 배열 크기를 구하는 용도이며 State 채널로 사용할 수 없다. `Snow`, `SurfaceWater`는 목표 데모에서 필요하지만 현재 기본 enum에는 없는 확장 대상이다.
 
 ## State / Capacity / Saturation
 
@@ -79,6 +81,8 @@ State별로 현재 상태와 Solver 계산 과정의 임시값을 각각 스칼�
 | `TempState` | Texel별 | Solver에 따라 다름 | Solver 계산 중 필요한 임시 상태값 |
 
 `TempState`는 영구 상태 채널이 아니라 Solver 계산 중 사용하는 임시 데이터다. 현재 설계에서는 Capacity 초과량을 별도로 저장하지 않는다. 구체적인 임시값과 GPU 배치는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
+
+CPU 자료형은 상태 채널을 `std::array<float, SurfaceStateChannelCount>`로 표현한다. 이 자료형은 CPU 도메인 표현이며 GPU `vec4` 배치와 메모리 ABI를 공유하는 구조체가 아니다.
 
 ## State Transitions
 

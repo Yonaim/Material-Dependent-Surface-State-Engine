@@ -5,7 +5,7 @@
 ## 시작하기
 
 1. 프로젝트의 볼트 폴더를 Obsidian에서 **Open folder as vault**로 연다.
-2. `02_Planning/0000_Project-Plan.md`와 `02_Planning/0001_Roadmap.md`에서 프로젝트 범위와 주차별 계획을 확인한다.
+2. `02_Planning/00_Project-Overview/0000_Project-Plan.md`와 `02_Planning/00_Project-Overview/0001_Roadmap.md`에서 프로젝트 범위와 주차별 계획을 확인한다.
 3. `03_Architecture/0000_Overview.md`에서 시스템 전체 구성을 파악한다.
 4. 공식 용어·문서 규칙은 `01_Project-Policy/`, 설계 결정 근거는 `04_ADR/`에서 확인한다.
 5. 진행할 작업과 완료 여부는 볼트 루트의 `TODO.md`에서 확인한다.
@@ -20,7 +20,12 @@
 │   └── Templates/
 ├── 01_Project-Policy/          프로젝트 규칙, 공식 용어, 수식 표기 규칙
 ├── 02_Planning/                전체 계획, 로드맵, 주차별 목표
-│   └── Weekly/
+│   ├── 00_Project-Overview/
+│   │   ├── 0000_Project-Plan.md
+│   │   └── 0001_Roadmap.md
+│   ├── 03_Weekly-Overview/     전체 주차별 목표 요약
+│   └── 04_Weekly-Details/
+│       └── Week-XX/            주차별 상세 구현 계획
 ├── 03_Architecture/            전체 구조, 기능별 설계, 시스템 정의 수식
 ├── 04_ADR/                     설계 결정과 근거
 ├── 05_Development/
@@ -32,7 +37,7 @@
     └── Documents/              원본 자료와 참고 문서
 ```
 
-`01_Project-Policy/`에는 프로젝트에서 지킬 규칙과 용어의 공식 의미를 둔다. 수식의 기호·단위 같은 표기 규칙도 여기에 둔다. 프로젝트 범위와 일정은 `02_Planning/`, 시스템을 정의하는 수식은 `03_Architecture/`, 실제 계산 순서와 최적화는 `05_Development/Notes/`에 기록한다.
+`01_Project-Policy/`에는 프로젝트에서 지킬 규칙과 용어의 공식 의미를 둔다. 수식의 기호·단위 같은 표기 규칙도 여기에 둔다. 프로젝트 범위와 로드맵은 `02_Planning/00_Project-Overview/0000_Project-Plan.md`와 `0001_Roadmap.md`, 주차별 목표 요약은 `03_Weekly-Overview/`, 주차별 상세 구현은 `04_Weekly-Details/`에 기록한다. 시스템을 정의하는 수식은 `03_Architecture/`, 실제 계산 순서와 최적화는 `05_Development/Notes/`에 기록한다.
 
 ## 문서 작성
 
