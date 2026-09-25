@@ -1,0 +1,11 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 1,
+  "name": "BrokenProfile",
+  "states": {
+    "wetness": {},
+    "heat": {},
+    "burn": {}
+  },
+  "transitions": []
+}
