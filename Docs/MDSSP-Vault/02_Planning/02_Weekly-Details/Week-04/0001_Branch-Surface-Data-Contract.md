@@ -210,22 +210,7 @@ JSON exception은 그대로 외부에 노출하지 않고 Asset 경로와 JSON k
 
 ## 테스트
 
-| 검증 대상 | 입력·조건 | 기대 결과 | 테스트 방식 |
-|---|---|---|---|
-| 기본 Profile | 네 채널에 유효한 기본 파라미터 사용 | Domain validation 통과 | C++ 객체 직접 검증 |
-| State Capacity | `stateCapacity == 0` | 예외 발생, 해당 key 경로 포함 | C++ 객체 직접 검증 |
-| Rate 하한 | Rate에 `-0.1F` 입력 | 음수 값 거부 | C++ 객체 직접 검증 |
-| Factor 경계 | `0.0F`, `1.0F` 및 범위 밖 값 입력 | 경계값은 통과하고 범위 밖 값은 거부 | C++ 객체 직접 검증 |
-| State 채널 계약 | 채널 수와 enum 순서 확인 | `Wetness`, `Heat`, `Burn`, `Mud` 순서 유지 | C++ 상수·변환 함수 검증 |
-| State 문자열 변환 | `wetness`, `heat`, `burn`, `mud` 입력 | 대응하는 enum 반환 | C++ 변환 함수 검증 |
-| State Transition | `Heat → Burn` JSON 입력 | Source, Target과 파라미터를 정상 변환 | 정상 `.SRProfile` fixture 로드 |
-| 알 수 없는 State | `source: "snow"` 등 입력 | Asset 경로와 JSON key 경로를 포함한 오류 | 오류 `.SRProfile` fixture 로드 |
-| JSON 자료형 | 숫자 필드에 문자열 입력 | Field type 오류 | 오류 `.SRProfile` fixture 로드 |
-| 필수 key | State 또는 필수 파라미터 생략 | 누락된 key 경로를 포함한 오류 | 오류 `.SRProfile` fixture 로드 |
-| 빈 Surface | 빈 Surface 목록으로 Geometry 생성 | 생성 거부 | C++ 생성자 검증 |
-| 해상도 | Width 또는 Height가 `0` | 생성 거부 | C++ 생성자 검증 |
-| Sentinel 예약값 | `InvalidSurfaceID`를 실제 Surface ID로 사용 | 유효 ID로 사용하지 못하도록 거부 | C++ 생성자 검증 |
-| Profile 연결 | Surface 수와 Profile index 수 불일치 | Instance State 생성 거부 | C++ 생성자 검증 |
+구체적인 입력, 기대 결과, fixture와 테스트 함수 목록은 [[06_Testing/0001_Surface-Data-Contract-Tests|Surface Data Contract 테스트 사례]]에서 관리한다.
 
 이 브랜치에서는 CPU의 채널 순서까지만 검증한다. 네 채널을 GPU `vec4`의 `x/y/z/w`에 pack하는 검증은 실제 upload 구조체와 Shader 계약을 정의하는 [[02_Planning/02_Weekly-Details/Week-04/0004_Branch-Surface-GPU-Resources|Branch 4 — Surface GPU Resources]]에서 수행한다.
 

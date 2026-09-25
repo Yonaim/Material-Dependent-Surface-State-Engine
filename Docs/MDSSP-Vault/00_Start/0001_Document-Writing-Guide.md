@@ -49,23 +49,7 @@
 
 ## 테스트 문서 형식
 
-반복 적용할 테스트 원칙과 구성 기준은 `06_Testing/`에 둔다. 주차나 브랜치에 한정된 완료 기준은 해당 계획 문서에 기록하고 공통 규칙을 복제하지 않는다. 테스트 계획은 가능하면 다음 형식을 사용한다.
-
-| 검증 대상 | 입력·조건 | 기대 결과 | 테스트 방식 |
-|---|---|---|---|
-| 예: Rate 하한 | `DecayRate = -0.1F` | Validation 오류 | C++ 객체 직접 검증 |
-| 예: JSON 자료형 | 숫자 필드에 문자열 입력 | Key 경로를 포함한 type 오류 | 오류 fixture 로드 |
-
-테스트 문서 템플릿은 [[00_Start/Templates/0005_Test-Plan|Test Plan 템플릿]]을 사용한다. 공통 테스트 구성 기준은 [[06_Testing/0000_Testing-Guide|Testing Guide]]를 따른다.
-
-테스트 구현 위치도 구분한다.
-
-| 테스트 종류 | 위치 |
-|---|---|
-| 값의 범위와 불변조건 | C++ test에서 domain 객체를 직접 생성 |
-| JSON 구조와 자료형 | `Tests/Fixtures/`의 입력 파일을 실제 loader로 읽음 |
-| CPU/GPU memory layout | GPU resource 브랜치의 pack 및 `static_assert` test |
-| Vulkan binding과 lifetime | Validation layer를 켠 통합 test |
+테스트 문서에는 대상, 입력 조건, 기대 결과와 테스트 방식을 기록한다. 공통 원칙은 [[06_Testing/0000_Testing-Guide|Testing Guide]]에, 구체적인 사례는 주제별 테스트 문서에 둔다. 새 테스트 문서는 [[00_Start/Templates/0005_Test-Plan|Test Plan 템플릿]]을 사용한다.
 
 ## 문서 구조
 
