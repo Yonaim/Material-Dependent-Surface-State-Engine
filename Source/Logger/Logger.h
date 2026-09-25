@@ -12,7 +12,7 @@
 
 namespace MDSS
 {
-    enum class LogLevel : std::uint8_t
+    enum class TLogLevel : std::uint8_t
     {
         Verbose = 0,
         Debug,
@@ -22,19 +22,19 @@ namespace MDSS
         Count
     };
 
-    struct LogEntry
+    struct TLogEntry
     {
         std::uint64_t Sequence = 0;
-        LogLevel      Level = LogLevel::Info;
+        TLogLevel      Level = TLogLevel::Info;
         std::string   Module;
         std::string   Message;
         std::string   Formatted;
     };
 
     // Process-wide development logger.
-    // Every entry is written to the terminal immediately and retained so DebugUI
+    // Every entry is written to the terminal immediately and retained so TDebugUI
     // can present the same log stream without coupling engine modules to ImGui.
-    class Logger final
+    class TLogger final
     {
     public:
         static void Verbose(std::string_view Module, std::string_view Message);
@@ -44,18 +44,18 @@ namespace MDSS
         static void Error(std::string_view Module, std::string_view Message);
 
         /** @brief 로그 항목을 콘솔에 기록하고 thread-safe history에 보관한다. */
-        static void Write(LogLevel Level, std::string_view Module, std::string_view Message);
+        static void Write(TLogLevel Level, std::string_view Module, std::string_view Message);
 
         /** @brief 현재 로그 history의 thread-safe 복사본을 반환한다. */
-        static std::vector<LogEntry> GetEntries();
+        static std::vector<TLogEntry> GetEntries();
         /** @brief 로그가 추가되거나 지워질 때 증가하는 revision을 반환한다. */
         static std::uint64_t GetRevision();
         /** @brief 콘솔에는 영향을 주지 않고 보관 중인 로그 history를 비운다. */
         static void Clear();
 
-        static const char* GetLevelName(LogLevel Level) noexcept;
+        static const char* GetLevelName(TLogLevel Level) noexcept;
 
     private:
-        Logger() = delete;
+        TLogger() = delete;
     };
 } // namespace MDSS

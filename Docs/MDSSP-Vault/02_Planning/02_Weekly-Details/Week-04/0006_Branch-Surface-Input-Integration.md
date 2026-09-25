@@ -10,8 +10,8 @@
 
 ```text
 Mouse
-→ Camera Ray
-→ StaticMeshInstance hit
+→ TCamera Ray
+→ TStaticMeshInstance hit
 → Triangle + Barycentric
 → Surface Position / Simulation UV
 → ContactWeight
@@ -25,7 +25,7 @@ Mouse
 현재 `Raycaster`가 dummy이므로 최소 결과 구조를 정의한다.
 
 ```cpp
-struct SurfaceRayHit
+struct TSurfaceRayHit
 {
     bool Hit = false;
     std::uint32_t InstanceIndex = 0;
@@ -82,7 +82,7 @@ InputDelta[channel]
 += Strength * ContactWeight * Profile.inputFactor[channel]
 ```
 
-Input event의 State 이름/ID는 `SurfaceStateRegistry`를 통해 `ChannelIndex`로 해석한다. 해당 texel과 channel의 `InputDelta`에 `Strength * ContactWeight * Profile.inputFactor[channelIndex]`를 누적한다. `InputDelta`의 GPU 위치는 Branch 4에서 정한 dynamic layout helper를 사용하며, 특정 이름이나 고정 channel 순서에 의존하지 않는다.
+Input event의 State 이름/ID는 `TSurfaceStateRegistry`를 통해 `ChannelIndex`로 해석한다. 해당 texel과 channel의 `InputDelta`에 `Strength * ContactWeight * Profile.inputFactor[channelIndex]`를 누적한다. `InputDelta`의 GPU 위치는 Branch 4에서 정한 dynamic layout helper를 사용하며, 특정 이름이나 고정 channel 순서에 의존하지 않는다.
 대상 texel의 Profile이 입력 State를 지원하지 않으면 그 입력은 거부하거나 no-op 처리하고 진단 정보를 남긴다. 이 동작은 입력 테스트에서 고정한다.
 
 - discrete event이므로 `DeltaTime`을 곱하지 않는다.
@@ -145,7 +145,7 @@ InputDelta clear가 다음 upload보다 먼저 끝나는지 확인한다. host-v
 - `Source/SurfaceStateSystem/SurfaceStateSystem.h/.cpp`
 - `Source/DebugUI/DebugUI.h/.cpp`
 - `Shaders/SurfaceDebug.frag`
-- 필요 시 `StaticMeshInstance`에 SurfaceState handle 추가
+- 필요 시 `TStaticMeshInstance`에 SurfaceState handle 추가
 
 ## 통합 테스트 시나리오
 

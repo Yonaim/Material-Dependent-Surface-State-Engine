@@ -15,10 +15,10 @@ namespace MDSS
      * @brief 한 Surface instance와 채널에 대한 discrete contact event.
      * @note 위치·방향·반경을 texel-space InputDelta로 변환하는 것은 solver의 책임이다.
      */
-    struct SurfaceContactInput
+    struct TSurfaceContactInput
     {
-        SurfaceInstanceID TargetInstance = InvalidSurfaceInstanceID;
-        StateId           State = InvalidStateId;
+        TSurfaceInstanceID TargetInstance = InvalidSurfaceInstanceID;
+        TStateId           State = InvalidStateId;
         glm::vec3         WorldPosition{0.0F};
         glm::vec3         WorldDirection{0.0F};
         float             Radius = 0.0F;

@@ -14,7 +14,7 @@ Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 �
 ## 계산 및 사용 시점
 
 ```text
-Runtime Asset/Scene Load
+Runtime TAsset/TScene Load
 Mesh + Simulation UV + Normal Map + Profile Distribution
 → Mapping 및 정적 형상 정보 전처리
 → Runtime 메모리에 생성하고 같은 입력의 Instance 간 공유

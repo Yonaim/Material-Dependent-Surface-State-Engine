@@ -7,7 +7,7 @@
 | [[07_Assets/Documents/0001_Overall-Engine-Structure.pdf\|Overall-Engine-Structure.pdf]] | 엔진 모듈 구조 |
 | [[07_Assets/Documents/0002_Surface-System-Data.pdf\|Surface-System-Data.pdf]] | SRProfile 파라미터, State / TempState, Shared Geometry Data |
 | [[07_Assets/Documents/0003_Asset-Structure.pdf\|Asset-Structure.pdf]] | OBJ / MTL / scene / srprofile 직렬화와 연결 |
-| [[07_Assets/Documents/0004_Contact-Input.pdf\|Contact-Input.pdf]] | `SurfaceContactInput` 구조 |
+| [[07_Assets/Documents/0004_Contact-Input.pdf\|Contact-Input.pdf]] | `TSurfaceContactInput` 구조 |
 | [[07_Assets/Documents/0005_Next-State-Calculation.pdf\|Next-State-Calculation.pdf]] | Input / Transport / Decay, ContactWeight, Flux, TransferWeight, 2-Pass |
 | [[07_Assets/Documents/0006_Geometry-Integration.pdf\|Geometry-Integration.pdf]] | Macro / Meso Geometry, Normal Map, Accumulation Height, Rendering |
 | [[07_Assets/Documents/0007_Target-Demos.pdf\|Target-Demos.pdf]] | 목표 데모 네 가지 |

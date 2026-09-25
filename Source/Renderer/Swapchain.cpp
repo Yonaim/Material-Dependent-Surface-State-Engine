@@ -20,35 +20,35 @@
 
 namespace MDSS
 {
-    Swapchain::Swapchain(const VulkanContext& Context, const Window& Window) : Device(Context.GetDevice())
+    TSwapchain::TSwapchain(const TVulkanContext& Context, const TWindow& TWindow) : Device(Context.GetDevice())
     {
-        Create(Context, Window);
+        Create(Context, TWindow);
     }
 
-    Swapchain::~Swapchain()
+    TSwapchain::~TSwapchain()
     {
         Destroy();
     }
 
-    void Swapchain::Recreate(const VulkanContext& Context, const Window& Window)
+    void TSwapchain::Recreate(const TVulkanContext& Context, const TWindow& TWindow)
     {
         Destroy();
         Device = Context.GetDevice();
-        Create(Context, Window);
+        Create(Context, TWindow);
     }
 
-    void Swapchain::Create(const VulkanContext& Context, const Window& Window)
+    void TSwapchain::Create(const TVulkanContext& Context, const TWindow& TWindow)
     {
-        const SwapchainSupportDetails Support = QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const TSwapchainSupportDetails Support = QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
 
         if (Support.Formats.empty() || Support.PresentModes.empty())
         {
-            throw std::runtime_error("Swapchain support is incomplete for the selected GPU.");
+            throw std::runtime_error("TSwapchain support is incomplete for the selected GPU.");
         }
 
         const VkSurfaceFormatKHR SurfaceFormat = ChooseSurfaceFormat(Support.Formats);
         const VkPresentModeKHR   PresentMode = ChoosePresentMode(Support.PresentModes);
-        const VkExtent2D         SelectedExtent = ChooseExtent(Support.Capabilities, Window);
+        const VkExtent2D         SelectedExtent = ChooseExtent(Support.Capabilities, TWindow);
 
         std::uint32_t ImageCount = Support.Capabilities.minImageCount + 1;
         if (Support.Capabilities.maxImageCount > 0 && ImageCount > Support.Capabilities.maxImageCount)
@@ -67,14 +67,14 @@ namespace MDSS
         CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         const auto&                        QueueFamilies = Context.GetQueues().GetFamilyIndices();
-        const std::array<std::uint32_t, 2> QueueFamilyIndices = {QueueFamilies.GraphicsFamily.value(),
+        const std::array<std::uint32_t, 2> TQueueFamilyIndices = {QueueFamilies.GraphicsFamily.value(),
                                                                  QueueFamilies.PresentFamily.value()};
 
-        if (QueueFamilyIndices[0] != QueueFamilyIndices[1])
+        if (TQueueFamilyIndices[0] != TQueueFamilyIndices[1])
         {
             CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            CreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(QueueFamilyIndices.size());
-            CreateInfo.pQueueFamilyIndices = QueueFamilyIndices.data();
+            CreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(TQueueFamilyIndices.size());
+            CreateInfo.pQueueFamilyIndices = TQueueFamilyIndices.data();
         }
         else
         {
@@ -110,15 +110,15 @@ namespace MDSS
             throw;
         }
 
-        Logger::Info("Renderer",
-                     "Swapchain created: " + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ", " +
+        TLogger::Info("TRenderer",
+                     "TSwapchain created: " + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ", " +
                          std::to_string(Images.size()) + " images.");
-        Logger::Debug("Renderer",
-                      "Swapchain format=" + std::to_string(static_cast<int>(ImageFormat)) +
+        TLogger::Debug("TRenderer",
+                      "TSwapchain format=" + std::to_string(static_cast<int>(ImageFormat)) +
                           ", present mode=" + std::to_string(static_cast<int>(PresentMode)) + ".");
     }
 
-    void Swapchain::Destroy()
+    void TSwapchain::Destroy()
     {
         for (VkImageView ImageView : ImageViews)
         {
@@ -140,34 +140,34 @@ namespace MDSS
         Extent = {};
     }
 
-    VkSwapchainKHR Swapchain::GetHandle() const noexcept
+    VkSwapchainKHR TSwapchain::GetHandle() const noexcept
     {
         return SwapchainData;
     }
 
-    VkFormat Swapchain::GetImageFormat() const noexcept
+    VkFormat TSwapchain::GetImageFormat() const noexcept
     {
         return ImageFormat;
     }
 
-    VkExtent2D Swapchain::GetExtent() const noexcept
+    VkExtent2D TSwapchain::GetExtent() const noexcept
     {
         return Extent;
     }
 
-    const std::vector<VkImage>& Swapchain::GetImages() const noexcept
+    const std::vector<VkImage>& TSwapchain::GetImages() const noexcept
     {
         return Images;
     }
 
-    const std::vector<VkImageView>& Swapchain::GetImageViews() const noexcept
+    const std::vector<VkImageView>& TSwapchain::GetImageViews() const noexcept
     {
         return ImageViews;
     }
 
-    SwapchainSupportDetails Swapchain::QuerySupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    TSwapchainSupportDetails TSwapchain::QuerySupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
-        SwapchainSupportDetails Details;
+        TSwapchainSupportDetails Details;
 
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, &Details.Capabilities);
 
@@ -191,7 +191,7 @@ namespace MDSS
         return Details;
     }
 
-    VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& Formats)
+    VkSurfaceFormatKHR TSwapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& Formats)
     {
         const auto Preferred = std::find_if(Formats.begin(),
                                             Formats.end(),
@@ -204,14 +204,14 @@ namespace MDSS
         return Preferred != Formats.end() ? *Preferred : Formats.front();
     }
 
-    VkPresentModeKHR Swapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& PresentModes)
+    VkPresentModeKHR TSwapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& PresentModes)
     {
         const auto Mailbox = std::find(PresentModes.begin(), PresentModes.end(), VK_PRESENT_MODE_MAILBOX_KHR);
 
         return Mailbox != PresentModes.end() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D Swapchain::ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const Window& Window)
+    VkExtent2D TSwapchain::ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const TWindow& TWindow)
     {
         if (Capabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max())
         {
@@ -220,7 +220,7 @@ namespace MDSS
 
         std::int32_t Width = 0;
         std::int32_t Height = 0;
-        glfwGetFramebufferSize(Window.GetNativeHandle(), &Width, &Height);
+        glfwGetFramebufferSize(TWindow.GetNativeHandle(), &Width, &Height);
 
         VkExtent2D Extent = {static_cast<std::uint32_t>(std::max(Width, 1)),
                              static_cast<std::uint32_t>(std::max(Height, 1))};
@@ -232,7 +232,7 @@ namespace MDSS
         return Extent;
     }
 
-    VkCompositeAlphaFlagBitsKHR Swapchain::ChooseCompositeAlpha(const VkSurfaceCapabilitiesKHR& Capabilities)
+    VkCompositeAlphaFlagBitsKHR TSwapchain::ChooseCompositeAlpha(const VkSurfaceCapabilitiesKHR& Capabilities)
     {
         constexpr std::array<VkCompositeAlphaFlagBitsKHR, 4> Candidates = {VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
                                                                            VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
@@ -250,7 +250,7 @@ namespace MDSS
         throw std::runtime_error("No supported Vulkan swapchain composite alpha mode was found.");
     }
 
-    void Swapchain::CreateImageViews()
+    void TSwapchain::CreateImageViews()
     {
         ImageViews.resize(Images.size());
 

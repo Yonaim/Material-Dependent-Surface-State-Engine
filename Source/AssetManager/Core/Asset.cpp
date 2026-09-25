@@ -9,22 +9,22 @@
 
 namespace MDSS
 {
-    Asset::Asset(AssetID ID, std::string Name, std::filesystem::path SourcePath)
+    TAsset::TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath)
         : ID(ID), Name(std::move(Name)), SourcePath(std::move(SourcePath))
     {
     }
 
-    AssetID Asset::GetID() const noexcept
+    TAssetID TAsset::GetID() const noexcept
     {
         return ID;
     }
 
-    const std::string& Asset::GetName() const noexcept
+    const std::string& TAsset::GetName() const noexcept
     {
         return Name;
     }
 
-    const std::filesystem::path& Asset::GetSourcePath() const noexcept
+    const std::filesystem::path& TAsset::GetSourcePath() const noexcept
     {
         return SourcePath;
     }

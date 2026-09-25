@@ -1,6 +1,6 @@
 # ADR 0004 — Surface / Material / SRProfile 연결
 
-- 상태: **Partially Superseded by [[0007-Surface-Preprocessed-Asset]] and [[0008-Runtime-Surface-Preprocessing]]**
+- 상태: **Partially Superseded by [[0007-Surface-Preprocessed-Asset]], [[0008-Runtime-Surface-Preprocessing]], and [[0009-Texel-Profile-Index-Map]]**
 - 근거: [[07_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 ## Context
@@ -10,12 +10,16 @@ OBJ Surface는 `.mtl`을 통해 Render Material을 이미 알고 있으며, Stat
 ## Decision
 
 > [!warning] 대체 범위
-> Render Material과 SRProfile이 서로 다른 책임이라는 결정은 유지한다. Surface당 하나의 SRProfile만 지정하고 texel별 Profile map을 두지 않는 기존 결정은 [[0007-Surface-Preprocessed-Asset]]에 의해 대체되어, texel별 Profile map을 사용한다. 그 map을 `.Surface` persistent cache에 저장하는 방식은 [[0008-Runtime-Surface-Preprocessing]]에 의해 Runtime 메모리 데이터로 대체되었다.
+> Render Material과 SRProfile이 서로 다른 책임이라는 결정은 유지한다. Surface당 하나의 SRProfile만 지정하고 texel별 Profile map을 두지 않는 결정은 [[0007-Surface-Preprocessed-Asset]]에서 대체되어 texel별 Profile map을 채택했다. 그 map의 `.Surface` persistent cache 저장은 [[0008-Runtime-Surface-Preprocessing]]에서 Runtime 메모리 전처리로 대체됐다. Texel마다 dense `ProfileIndex`를 저장하는 기본 표현은 [[0009-Texel-Profile-Index-Map]]에서 정한다.
+
+### 이전 결정 기록 — 대체됨
 
 - 하나의 Surface는 하나의 Render Material과 하나의 SRProfile을 사용한다.
 - `.Scene`의 `materialProfiles`에서 MTL Material 이름을 키로 `.SRProfile`을 연결한다.
 - 서로 다른 Surface가 같은 Material / SRProfile을 공유할 수 있다.
-- 현재 설계에서는 Texel별 Profile ID Map을 두지 않는다.
+- Texel별 Profile ID Map을 두지 않는다.
+
+위 항목은 이 ADR 작성 당시의 결정 이력이며 현재 Profile 배치 규칙으로 사용하지 않는다.
 
 ## Consequences
 

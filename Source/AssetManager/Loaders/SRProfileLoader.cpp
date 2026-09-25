@@ -19,10 +19,10 @@ namespace MDSS
 {
     namespace
     {
-        using Json = nlohmann::json;
+        using TJson = nlohmann::json;
 
         /** @brief JSON object에서 필수 key를 찾고 오류 경로를 포함해 실패를 보고한다. */
-        const Json& RequireMember(const Json& Object, std::string_view Key, std::string_view JsonPath)
+        const TJson& RequireMember(const TJson& Object, std::string_view Key, std::string_view JsonPath)
         {
             if (!Object.is_object())
             {
@@ -38,9 +38,9 @@ namespace MDSS
             return *Found;
         }
 
-        std::string ReadString(const Json& Object, std::string_view Key, std::string_view JsonPath)
+        std::string ReadString(const TJson& Object, std::string_view Key, std::string_view JsonPath)
         {
-            const Json& Value = RequireMember(Object, Key, JsonPath);
+            const TJson& Value = RequireMember(Object, Key, JsonPath);
             if (!Value.is_string())
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " must be a string.");
@@ -50,9 +50,9 @@ namespace MDSS
         }
 
         /** @brief 필수 numeric field를 float으로 읽고 자료형과 유한성을 확인한다. */
-        float ReadFloat(const Json& Object, std::string_view Key, std::string_view JsonPath)
+        float ReadFloat(const TJson& Object, std::string_view Key, std::string_view JsonPath)
         {
-            const Json& Value = RequireMember(Object, Key, JsonPath);
+            const TJson& Value = RequireMember(Object, Key, JsonPath);
             if (!Value.is_number())
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " must be a number.");
@@ -68,7 +68,7 @@ namespace MDSS
             return Result;
         }
 
-        SurfaceStateParameters ReadStateParameters(const Json& State, const std::string& StateName)
+        TSurfaceStateParameters ReadStateParameters(const TJson& State, const std::string& StateName)
         {
             const std::string JsonPath = "states." + StateName;
 
@@ -85,7 +85,7 @@ namespace MDSS
         }
 
         /** @brief Profile JSON schema를 동적 State domain data로 변환한다. */
-        SurfaceResponseProfileData ParseProfile(const Json& Root, std::string& Name)
+        TSurfaceResponseProfileData ParseProfile(const TJson& Root, std::string& Name)
         {
             if (!Root.is_object())
             {
@@ -96,7 +96,7 @@ namespace MDSS
                 throw std::invalid_argument("$.type must be 'SurfaceResponseProfile'.");
             }
 
-            const Json& Version = RequireMember(Root, "version", "$");
+            const TJson& Version = RequireMember(Root, "version", "$");
             if (!Version.is_number_unsigned() && !Version.is_number_integer())
             {
                 throw std::invalid_argument("$.version must be an integer.");
@@ -112,12 +112,12 @@ namespace MDSS
                 throw std::invalid_argument("$.name must not be empty.");
             }
 
-            const Json& States = RequireMember(Root, "states", "$");
+            const TJson& States = RequireMember(Root, "states", "$");
             if (!States.is_object())
             {
                 throw std::invalid_argument("$.states must be an object.");
             }
-            SurfaceResponseProfileData Data;
+            TSurfaceResponseProfileData Data;
             for (auto Iterator = States.begin(); Iterator != States.end(); ++Iterator)
             {
                 if (!Iterator.value().is_object())
@@ -138,7 +138,7 @@ namespace MDSS
                 Data.States.emplace(CanonicalName, ReadStateParameters(Iterator.value(), CanonicalName));
             }
 
-            const Json& Transitions = RequireMember(Root, "transitions", "$");
+            const TJson& Transitions = RequireMember(Root, "transitions", "$");
             if (!Transitions.is_array())
             {
                 throw std::invalid_argument("$.transitions must be an array.");
@@ -147,7 +147,7 @@ namespace MDSS
             Data.Transitions.reserve(Transitions.size());
             for (std::size_t Index = 0; Index < Transitions.size(); ++Index)
             {
-                const Json&       Transition = Transitions[Index];
+                const TJson&       Transition = Transitions[Index];
                 const std::string JsonPath = "transitions[" + std::to_string(Index) + "]";
                 const std::string SourceName = NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
                 const std::string TargetName = NormalizeSurfaceStateName(ReadString(Transition, "target", JsonPath));
@@ -167,7 +167,7 @@ namespace MDSS
         }
     } // namespace
 
-    std::unique_ptr<SRProfileAsset> SRProfileLoader::Load(AssetID ID, const std::filesystem::path& Path)
+    std::unique_ptr<TSRProfileAsset> TSRProfileLoader::Load(TAssetID ID, const std::filesystem::path& Path)
     {
         std::ifstream File(Path);
         if (!File)
@@ -177,10 +177,10 @@ namespace MDSS
 
         try
         {
-            const Json                 Root = Json::parse(File);
+            const TJson                 Root = TJson::parse(File);
             std::string                Name;
-            SurfaceResponseProfileData Data = ParseProfile(Root, Name);
-            return std::make_unique<SRProfileAsset>(ID, std::move(Name), Path, std::move(Data));
+            TSurfaceResponseProfileData Data = ParseProfile(Root, Name);
+            return std::make_unique<TSRProfileAsset>(ID, std::move(Name), Path, std::move(Data));
         }
         catch (const std::exception& Exception)
         {

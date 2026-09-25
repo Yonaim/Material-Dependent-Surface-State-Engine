@@ -2,7 +2,7 @@
 
 상태: **4주차 구현 기본안 / 자동 UV 생성과 복잡 경계 검증 필요** · 관련 문서: [[03_Architecture/0005_Surface-Geometry|형상 정보]], [[05_Development/Notes/0001_Geometry-Preprocessing|형상 정보 전처리]], [[05_Development/Notes/0003_Surface-State-GPU-Resource|GPU Resource]]
 
-이 문서는 Mesh의 연속 표면을 Solver가 처리할 **texel graph**로 변환하는 방법을 정의한다. 출력은 `SharedSurfaceGeometryData` 생성의 입력이다.
+이 문서는 Mesh의 연속 표면을 Solver가 처리할 **texel graph**로 변환하는 방법을 정의한다. 출력은 `TSharedSurfaceGeometryData` 생성의 입력이다.
 
 ## 핵심 결정
 
@@ -30,9 +30,13 @@
 - 고정 해상도 `512 × 512`
 - 선택적으로 Normal / Height detail
 
-하나의 Surface는 하나의 Render Material과 하나의 SRProfile을 사용한다. 여러 Surface가 같은 Material 또는 Profile을 공유할 수 있다.
+### 현재 Material 단위 처리와 후속 확장
 
-`SurfaceLocalID`는 Mesh 안에서 Surface 순서대로 `0`부터 부여하는 dense index다. `0xFFFFFFFF`는 `InvalidSurfaceID`로 예약한다. 각 Surface의 texel grid는 Shared Geometry 안에서 연속된 mesh-local range를 차지하며, texel의 `SurfaceID`로 instance별 Surface→Profile table을 조회한다.
+현재 개발 범위에서는 `TSurfaceLocalID`를 MTL Material별 시뮬레이션 영역으로 사용한다. OBJ 로더는 각기 다른 MTL Material index에 서로 다른 ID를 부여하고, 같은 Material을 사용하는 삼각형에는 같은 ID를 부여한다. 삼각형의 기하학적 인접성은 ID 배정에 관여하지 않으므로, 떨어진 면도 같은 Material이면 같은 ID를 공유한다. 이는 구현을 진행하기 위한 현재 단순화다.
+
+후속 Profile Distribution 구현에서는 같은 MTL Material 안에서도 서로 다른 SRProfile을 배치할 수 있어야 한다. 따라서 MTL 기준 `TSurfaceLocalID`만으로 Profile 경계를 표현하지 않는다. texel별 `SurfaceProfileMap`/`ProfileIndex`가 Profile 배치를 나타내며, 같은 Material 안에서 Profile이 달라지는 경우에도 해당 경계를 유지해야 한다. 당장 Surface ID 체계를 재설계하지 않고 현재 MTL 단위 처리를 유지하며, Profile Distribution 연결 단계에서 필요한 세분화를 구현한다.
+
+`TSurfaceLocalID`는 Mesh 안에서 dense index로 `0`부터 부여한다. `0xFFFFFFFF`는 `InvalidSurfaceID`로 예약한다. 현재 각 ID의 texel grid는 Shared Geometry 안에서 연속된 mesh-local range를 차지한다. Profile 연결은 이 Surface ID를 MTL과 SRProfile이 항상 일대일이라는 가정으로 해석하지 않고, texel별 Profile Map을 기준으로 한다.
 
 ### 출력
 
@@ -61,7 +65,7 @@ flowchart LR
   Topology --> Seam[Seam Pair]
   Grid --> Stitch[Seam Neighbor 재연결]
   Seam --> Stitch
-  Stitch --> Result[Runtime SurfaceMappingData]
+  Stitch --> Result[Runtime TSurfaceMappingData]
 ```
 
 Runtime 전처리는 Mesh topology와 UV, 필요한 Normal Map 데이터, Profile Distribution 및 현재 grid 설정을 입력으로 받는다. 같은 입력 조합의 전처리 결과는 Runtime 메모리에서 공유하고, 입력이 교체되면 다시 생성한다. 디스크 cache 경로, fingerprint, version 및 stale 판정은 사용하지 않는다. 전처리 연결은 [[02_Planning/02_Weekly-Details/Week-04/0003_Branch-Shared-Geometry-Build|Branch 3 계획]]을 따른다.

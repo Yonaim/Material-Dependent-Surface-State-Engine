@@ -11,7 +11,7 @@
 
 namespace MDSS
 {
-    RenderPass::RenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
+    TRenderPass::TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
     {
         VkAttachmentDescription ColorAttachment{};
         ColorAttachment.format = ColorFormat;
@@ -76,7 +76,7 @@ namespace MDSS
         }
     }
 
-    RenderPass::~RenderPass()
+    TRenderPass::~TRenderPass()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -85,7 +85,7 @@ namespace MDSS
         }
     }
 
-    VkRenderPass RenderPass::GetHandle() const noexcept
+    VkRenderPass TRenderPass::GetHandle() const noexcept
     {
         return Handle;
     }

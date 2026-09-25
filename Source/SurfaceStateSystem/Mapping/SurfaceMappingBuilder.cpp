@@ -28,38 +28,38 @@ namespace MDSS
         constexpr float RasterEdgeEpsilon = 1.0e-4F;
         constexpr float EdgeCandidateDistance = 0.8F;
 
-        struct EdgeKey
+        struct TEdgeKey
         {
             std::int32_t A = -1;
             std::int32_t B = -1;
 
-            bool operator==(const EdgeKey&) const noexcept = default;
+            bool operator==(const TEdgeKey&) const noexcept = default;
         };
 
-        struct EdgeKeyHash
+        struct TEdgeKeyHash
         {
-            std::size_t operator()(const EdgeKey& Key) const noexcept
+            std::size_t operator()(const TEdgeKey& Key) const noexcept
             {
                 return (static_cast<std::size_t>(static_cast<std::uint32_t>(Key.A)) << 32U) ^
                        static_cast<std::uint32_t>(Key.B);
             }
         };
 
-        struct EdgeIncident
+        struct TEdgeIncident
         {
             std::uint32_t Triangle = InvalidTriangleID;
         };
 
-        struct EdgeRecord
+        struct TEdgeRecord
         {
-            EdgeKey                   Key;
-            std::vector<EdgeIncident> Incidents;
+            TEdgeKey                   Key;
+            std::vector<TEdgeIncident> Incidents;
         };
 
-        class DisjointSet
+        class TDisjointSet
         {
         public:
-            explicit DisjointSet(std::size_t Count) : Parents(Count)
+            explicit TDisjointSet(std::size_t Count) : Parents(Count)
             {
                 for (std::size_t Index = 0; Index < Count; ++Index)
                 {
@@ -125,7 +125,7 @@ namespace MDSS
             return true;
         }
 
-        std::array<glm::vec2, 3> GetTriangleUVs(const std::vector<Vertex>& Vertices, const MeshTriangleSource& Triangle)
+        std::array<glm::vec2, 3> GetTriangleUVs(const std::vector<TVertex>& Vertices, const TMeshTriangleSource& Triangle)
         {
             return {
                 Vertices[Triangle.RenderVertexIndices[0]].UV,
@@ -134,8 +134,8 @@ namespace MDSS
             };
         }
 
-        glm::vec2 GetUVForOriginalPosition(const std::vector<Vertex>& Vertices,
-                                           const MeshTriangleSource&  Triangle,
+        glm::vec2 GetUVForOriginalPosition(const std::vector<TVertex>& Vertices,
+                                           const TMeshTriangleSource&  Triangle,
                                            std::int32_t               OriginalPosition)
         {
             for (std::size_t Corner = 0; Corner < 3; ++Corner)
@@ -153,29 +153,29 @@ namespace MDSS
             return std::abs(A.x - B.x) <= UVEpsilon && std::abs(A.y - B.y) <= UVEpsilon;
         }
 
-        bool HasMatchingUVEdge(const std::vector<Vertex>&             Vertices,
-                               const std::vector<MeshTriangleSource>& Triangles,
-                               const EdgeRecord&                      Edge)
+        bool HasMatchingUVEdge(const std::vector<TVertex>&             Vertices,
+                               const std::vector<TMeshTriangleSource>& Triangles,
+                               const TEdgeRecord&                      Edge)
         {
-            const MeshTriangleSource& First = Triangles[Edge.Incidents[0].Triangle];
-            const MeshTriangleSource& Second = Triangles[Edge.Incidents[1].Triangle];
+            const TMeshTriangleSource& First = Triangles[Edge.Incidents[0].Triangle];
+            const TMeshTriangleSource& Second = Triangles[Edge.Incidents[1].Triangle];
             return NearlyEqual(GetUVForOriginalPosition(Vertices, First, Edge.Key.A),
                                GetUVForOriginalPosition(Vertices, Second, Edge.Key.A)) &&
                    NearlyEqual(GetUVForOriginalPosition(Vertices, First, Edge.Key.B),
                                GetUVForOriginalPosition(Vertices, Second, Edge.Key.B));
         }
 
-        void AddNeighbor(SurfaceMappingData& Mapping, LocalTexelIndex Source, LocalTexelIndex Target)
+        void AddNeighbor(TSurfaceMappingData& Mapping, TLocalTexelIndex Source, TLocalTexelIndex Target)
         {
-            SurfaceMappingTexel& Texel = Mapping.Texels[Source];
-            for (const LocalTexelIndex Existing : Texel.Neighbors)
+            TSurfaceMappingTexel& Texel = Mapping.Texels[Source];
+            for (const TLocalTexelIndex Existing : Texel.Neighbors)
             {
                 if (Existing == Target)
                 {
                     return;
                 }
             }
-            for (LocalTexelIndex& Slot : Texel.Neighbors)
+            for (TLocalTexelIndex& Slot : Texel.Neighbors)
             {
                 if (Slot == InvalidTexelIndex)
                 {
@@ -186,7 +186,7 @@ namespace MDSS
             throw std::runtime_error("Surface mapping texel exceeds the eight-neighbor limit.");
         }
 
-        void AddBidirectionalNeighbor(SurfaceMappingData& Mapping, LocalTexelIndex A, LocalTexelIndex B)
+        void AddBidirectionalNeighbor(TSurfaceMappingData& Mapping, TLocalTexelIndex A, TLocalTexelIndex B)
         {
             if (A == B)
             {
@@ -196,7 +196,7 @@ namespace MDSS
             AddNeighbor(Mapping, B, A);
         }
 
-        const SurfaceTexelRange& GetSurfaceRange(const SurfaceMappingData& Mapping, SurfaceLocalID Surface)
+        const TSurfaceTexelRange& GetSurfaceRange(const TSurfaceMappingData& Mapping, TSurfaceLocalID Surface)
         {
             if (Surface >= Mapping.Surfaces.size() || Mapping.Surfaces[Surface].Surface != Surface)
             {
@@ -205,19 +205,19 @@ namespace MDSS
             return Mapping.Surfaces[Surface];
         }
 
-        struct SeamCandidate
+        struct TSeamCandidate
         {
-            LocalTexelIndex Texel = InvalidTexelIndex;
+            TLocalTexelIndex Texel = InvalidTexelIndex;
             float           Parameter = 0.0F;
         };
 
-        std::vector<SeamCandidate> GatherSeamCandidates(const SurfaceMappingData&  Mapping,
-                                                        const std::vector<Vertex>& Vertices,
-                                                        const MeshTriangleSource&  Triangle,
+        std::vector<TSeamCandidate> GatherSeamCandidates(const TSurfaceMappingData&  Mapping,
+                                                        const std::vector<TVertex>& Vertices,
+                                                        const TMeshTriangleSource&  Triangle,
                                                         std::uint32_t              TriangleIndex,
-                                                        const EdgeKey&             Edge)
+                                                        const TEdgeKey&             Edge)
         {
-            const SurfaceTexelRange& Range = GetSurfaceRange(Mapping, Triangle.Surface);
+            const TSurfaceTexelRange& Range = GetSurfaceRange(Mapping, Triangle.Surface);
             const glm::vec2          EdgeStartUV = GetUVForOriginalPosition(Vertices, Triangle, Edge.A);
             const glm::vec2          EdgeEndUV = GetUVForOriginalPosition(Vertices, Triangle, Edge.B);
             const glm::vec2          Scale(static_cast<float>(Range.Resolution.Width),
@@ -231,12 +231,12 @@ namespace MDSS
                 throw std::invalid_argument("UV seam edge has zero length.");
             }
 
-            std::vector<SeamCandidate> Result;
+            std::vector<TSeamCandidate> Result;
             for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
             {
                 for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
                 {
-                    const LocalTexelIndex Index = Range.FirstTexel + Y * Range.Resolution.Width + X;
+                    const TLocalTexelIndex Index = Range.FirstTexel + Y * Range.Resolution.Width + X;
                     if (Mapping.Texels[Index].Triangle != TriangleIndex)
                     {
                         continue;
@@ -252,54 +252,54 @@ namespace MDSS
                     }
                 }
             }
-            std::ranges::sort(Result, {}, &SeamCandidate::Parameter);
+            std::ranges::sort(Result, {}, &TSeamCandidate::Parameter);
             return Result;
         }
 
-        const SeamCandidate& FindClosestCandidate(const std::vector<SeamCandidate>& Candidates, float Parameter)
+        const TSeamCandidate& FindClosestCandidate(const std::vector<TSeamCandidate>& Candidates, float Parameter)
         {
             return *std::ranges::min_element(Candidates,
                                              {},
-                                             [&](const SeamCandidate& Candidate)
+                                             [&](const TSeamCandidate& Candidate)
                                              { return std::abs(Candidate.Parameter - Parameter); });
         }
     } // namespace
 
-    SurfaceMappingData SurfaceMappingBuilder::Build(const std::vector<Vertex>&             Vertices,
-                                                    const std::vector<MeshTriangleSource>& Triangles,
-                                                    const std::vector<SurfaceDefinition>&  Surfaces)
+    TSurfaceMappingData TSurfaceMappingBuilder::Build(const std::vector<TVertex>&             Vertices,
+                                                    const std::vector<TMeshTriangleSource>& Triangles,
+                                                    const std::vector<TSurfaceDefinition>&  Surfaces)
     {
         if (Vertices.empty() || Triangles.empty() || Surfaces.empty())
         {
             throw std::invalid_argument("Surface mapping requires vertices, triangles, and Surfaces.");
         }
 
-        SurfaceMappingData Mapping;
+        TSurfaceMappingData Mapping;
         std::uint64_t      FirstTexel = 0;
         for (std::size_t SurfaceIndex = 0; SurfaceIndex < Surfaces.size(); ++SurfaceIndex)
         {
-            const SurfaceDefinition& Surface = Surfaces[SurfaceIndex];
+            const TSurfaceDefinition& Surface = Surfaces[SurfaceIndex];
             if (Surface.ID != SurfaceIndex || Surface.ID == InvalidSurfaceID)
             {
                 throw std::invalid_argument("Surface IDs must be dense and ordered from zero.");
             }
             const std::size_t TexelCount = Surface.Resolution.GetTexelCount();
             FirstTexel += TexelCount;
-            if (FirstTexel > std::numeric_limits<LocalTexelIndex>::max())
+            if (FirstTexel > std::numeric_limits<TLocalTexelIndex>::max())
             {
                 throw std::overflow_error("Surface mapping exceeds the local texel index range.");
             }
             Mapping.Surfaces.push_back({Surface.ID,
                                         Surface.Resolution,
-                                        static_cast<LocalTexelIndex>(FirstTexel - TexelCount),
-                                        static_cast<LocalTexelIndex>(TexelCount)});
+                                        static_cast<TLocalTexelIndex>(FirstTexel - TexelCount),
+                                        static_cast<TLocalTexelIndex>(TexelCount)});
         }
         Mapping.Texels.resize(static_cast<std::size_t>(FirstTexel));
 
-        std::unordered_map<EdgeKey, std::vector<EdgeIncident>, EdgeKeyHash> EdgeIncidents;
+        std::unordered_map<TEdgeKey, std::vector<TEdgeIncident>, TEdgeKeyHash> EdgeIncidents;
         for (std::size_t TriangleIndex = 0; TriangleIndex < Triangles.size(); ++TriangleIndex)
         {
-            const MeshTriangleSource& Triangle = Triangles[TriangleIndex];
+            const TMeshTriangleSource& Triangle = Triangles[TriangleIndex];
             (void)GetSurfaceRange(Mapping, Triangle.Surface);
 
             for (std::size_t Corner = 0; Corner < 3; ++Corner)
@@ -343,7 +343,7 @@ namespace MDSS
                 {
                     std::swap(A, B);
                 }
-                std::vector<EdgeIncident>& Incidents = EdgeIncidents[{A, B}];
+                std::vector<TEdgeIncident>& Incidents = EdgeIncidents[{A, B}];
                 Incidents.push_back({static_cast<std::uint32_t>(TriangleIndex)});
                 if (Incidents.size() > 2)
                 {
@@ -352,15 +352,15 @@ namespace MDSS
             }
         }
 
-        DisjointSet             Charts(Triangles.size());
-        std::vector<EdgeRecord> SeamEdges;
+        TDisjointSet             Charts(Triangles.size());
+        std::vector<TEdgeRecord> SeamEdges;
         for (const auto& [Key, Incidents] : EdgeIncidents)
         {
             if (Incidents.size() != 2)
             {
                 continue;
             }
-            EdgeRecord Edge{Key, Incidents};
+            TEdgeRecord Edge{Key, Incidents};
             if (HasMatchingUVEdge(Vertices, Triangles, Edge))
             {
                 Charts.Merge(Incidents[0].Triangle, Incidents[1].Triangle);
@@ -371,7 +371,7 @@ namespace MDSS
             }
         }
         std::ranges::sort(SeamEdges,
-                          [](const EdgeRecord& A, const EdgeRecord& B)
+                          [](const TEdgeRecord& A, const TEdgeRecord& B)
                           { return A.Key.A != B.Key.A ? A.Key.A < B.Key.A : A.Key.B < B.Key.B; });
 
         std::unordered_map<std::size_t, std::uint32_t> ChartIDs;
@@ -386,8 +386,8 @@ namespace MDSS
 
         for (std::size_t TriangleIndex = 0; TriangleIndex < Triangles.size(); ++TriangleIndex)
         {
-            const MeshTriangleSource&      Triangle = Triangles[TriangleIndex];
-            const SurfaceTexelRange&       Range = GetSurfaceRange(Mapping, Triangle.Surface);
+            const TMeshTriangleSource&      Triangle = Triangles[TriangleIndex];
+            const TSurfaceTexelRange&       Range = GetSurfaceRange(Mapping, Triangle.Surface);
             const std::array<glm::vec2, 3> UVs = GetTriangleUVs(Vertices, Triangle);
             const glm::vec2                Scale(static_cast<float>(Range.Resolution.Width),
                                   static_cast<float>(Range.Resolution.Height));
@@ -416,10 +416,10 @@ namespace MDSS
                         continue;
                     }
 
-                    const LocalTexelIndex MappingIndex = Range.FirstTexel +
-                                                         static_cast<LocalTexelIndex>(Y) * Range.Resolution.Width +
-                                                         static_cast<LocalTexelIndex>(X);
-                    SurfaceMappingTexel& Texel = Mapping.Texels[MappingIndex];
+                    const TLocalTexelIndex MappingIndex = Range.FirstTexel +
+                                                         static_cast<TLocalTexelIndex>(Y) * Range.Resolution.Width +
+                                                         static_cast<TLocalTexelIndex>(X);
+                    TSurfaceMappingTexel& Texel = Mapping.Texels[MappingIndex];
                     if (Texel.IsValid())
                     {
                         throw std::runtime_error("UV overlap at Surface " + std::to_string(Triangle.Surface) +
@@ -437,9 +437,9 @@ namespace MDSS
                     const float BarycentricSum = Barycentric.x + Barycentric.y + Barycentric.z;
                     Barycentric /= BarycentricSum;
 
-                    const Vertex&   V0 = Vertices[Triangle.RenderVertexIndices[0]];
-                    const Vertex&   V1 = Vertices[Triangle.RenderVertexIndices[1]];
-                    const Vertex&   V2 = Vertices[Triangle.RenderVertexIndices[2]];
+                    const TVertex&   V0 = Vertices[Triangle.RenderVertexIndices[0]];
+                    const TVertex&   V1 = Vertices[Triangle.RenderVertexIndices[1]];
+                    const TVertex&   V2 = Vertices[Triangle.RenderVertexIndices[2]];
                     const glm::vec3 Normal =
                         Barycentric.x * V0.Normal + Barycentric.y * V1.Normal + Barycentric.z * V2.Normal;
 
@@ -472,14 +472,14 @@ namespace MDSS
             {{0, 1}},
             {{1, 1}},
         }};
-        for (const SurfaceTexelRange& Range : Mapping.Surfaces)
+        for (const TSurfaceTexelRange& Range : Mapping.Surfaces)
         {
             for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
             {
                 for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
                 {
-                    const LocalTexelIndex Index = Range.FirstTexel + Y * Range.Resolution.Width + X;
-                    SurfaceMappingTexel&  Texel = Mapping.Texels[Index];
+                    const TLocalTexelIndex Index = Range.FirstTexel + Y * Range.Resolution.Width + X;
+                    TSurfaceMappingTexel&  Texel = Mapping.Texels[Index];
                     if (!Texel.IsValid())
                     {
                         continue;
@@ -494,9 +494,9 @@ namespace MDSS
                         {
                             continue;
                         }
-                        const LocalTexelIndex Neighbor =
-                            Range.FirstTexel + static_cast<LocalTexelIndex>(NeighborY) * Range.Resolution.Width +
-                            static_cast<LocalTexelIndex>(NeighborX);
+                        const TLocalTexelIndex Neighbor =
+                            Range.FirstTexel + static_cast<TLocalTexelIndex>(NeighborY) * Range.Resolution.Width +
+                            static_cast<TLocalTexelIndex>(NeighborX);
                         if (Mapping.Texels[Neighbor].IsValid() && Mapping.Texels[Neighbor].Chart == Texel.Chart)
                         {
                             AddNeighbor(Mapping, Index, Neighbor);
@@ -506,13 +506,13 @@ namespace MDSS
             }
         }
 
-        for (const EdgeRecord& Seam : SeamEdges)
+        for (const TEdgeRecord& Seam : SeamEdges)
         {
             const std::uint32_t              FirstTriangle = Seam.Incidents[0].Triangle;
             const std::uint32_t              SecondTriangle = Seam.Incidents[1].Triangle;
-            const std::vector<SeamCandidate> FirstCandidates =
+            const std::vector<TSeamCandidate> FirstCandidates =
                 GatherSeamCandidates(Mapping, Vertices, Triangles[FirstTriangle], FirstTriangle, Seam.Key);
-            const std::vector<SeamCandidate> SecondCandidates =
+            const std::vector<TSeamCandidate> SecondCandidates =
                 GatherSeamCandidates(Mapping, Vertices, Triangles[SecondTriangle], SecondTriangle, Seam.Key);
             if (FirstCandidates.empty() || SecondCandidates.empty())
             {
@@ -521,12 +521,12 @@ namespace MDSS
                 continue;
             }
 
-            for (const SeamCandidate& Candidate : FirstCandidates)
+            for (const TSeamCandidate& Candidate : FirstCandidates)
             {
                 AddBidirectionalNeighbor(
                     Mapping, Candidate.Texel, FindClosestCandidate(SecondCandidates, Candidate.Parameter).Texel);
             }
-            for (const SeamCandidate& Candidate : SecondCandidates)
+            for (const TSeamCandidate& Candidate : SecondCandidates)
             {
                 AddBidirectionalNeighbor(
                     Mapping, Candidate.Texel, FindClosestCandidate(FirstCandidates, Candidate.Parameter).Texel);

@@ -12,7 +12,7 @@
 
 namespace MDSS
 {
-    GPUBuffer::GPUBuffer(VkPhysicalDevice      PhysicalDevice,
+    TGPUBuffer::TGPUBuffer(VkPhysicalDevice      PhysicalDevice,
                          VkDevice              Device,
                          VkDeviceSize          Size,
                          VkBufferUsageFlags    Usage,
@@ -71,11 +71,11 @@ namespace MDSS
             throw;
         }
 
-        Logger::Verbose("Vulkan",
-                        "GPUBuffer created (size=" + std::to_string(Size) + ", usage=" + std::to_string(Usage) + ").");
+        TLogger::Verbose("Vulkan",
+                        "TGPUBuffer created (size=" + std::to_string(Size) + ", usage=" + std::to_string(Usage) + ").");
     }
 
-    GPUBuffer::~GPUBuffer()
+    TGPUBuffer::~TGPUBuffer()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -90,7 +90,7 @@ namespace MDSS
         }
     }
 
-    void GPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
+    void TGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
         if (Data == nullptr)
         {
@@ -104,7 +104,7 @@ namespace MDSS
 
         if ((MemoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
         {
-            throw std::runtime_error("GPUBuffer::Upload currently requires host-coherent memory.");
+            throw std::runtime_error("TGPUBuffer::Upload currently requires host-coherent memory.");
         }
 
         if (Offset > Size || DataSize > (Size - Offset))
@@ -122,17 +122,17 @@ namespace MDSS
         vkUnmapMemory(Device, Memory);
     }
 
-    VkBuffer GPUBuffer::GetHandle() const noexcept
+    VkBuffer TGPUBuffer::GetHandle() const noexcept
     {
         return Handle;
     }
 
-    VkDeviceSize GPUBuffer::GetSize() const noexcept
+    VkDeviceSize TGPUBuffer::GetSize() const noexcept
     {
         return Size;
     }
 
-    std::uint32_t GPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
+    std::uint32_t TGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,
                                             VkMemoryPropertyFlags RequiredProperties)
     {

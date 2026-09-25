@@ -9,7 +9,7 @@ Mesh Geometry + Normal / Height Detail
 → Normal
 → Meso Virtual Height
 → Curvature / ConcavityWeight
-→ SharedSurfaceGeometryData
+→ TSharedSurfaceGeometryData
 ```
 
 모든 Surface는 현재 `512 × 512` 해상도를 사용한다. 이웃 간 Distance는 Shared Geometry에 저장하지 않고 Solver가 위치와 이웃 인덱스로부터 계산한다.

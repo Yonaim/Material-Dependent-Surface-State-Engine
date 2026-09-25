@@ -8,7 +8,7 @@
 
 Mapping, GPU resource, Solver가 공통으로 사용할 **CPU 자료형과 소유권 계약**을 먼저 확정한다. 이 브랜치에서는 실제 UV rasterization이나 Vulkan compute dispatch를 구현하지 않는다.
 
-현재 `SharedSurfaceGeometryData`, `SurfaceInstanceStateData`, `SurfaceStateSolver`, `SRProfileLoader`, `SceneLoader`가 dummy이므로 뒤 단계가 이 파일들을 동시에 수정하지 않게 기반을 만든다.
+현재 `TSharedSurfaceGeometryData`, `TSurfaceInstanceStateData`, `TSurfaceStateSolver`, `TSRProfileLoader`, `SceneLoader`가 dummy이므로 뒤 단계가 이 파일들을 동시에 수정하지 않게 기반을 만든다.
 
 ## 완료 결과
 
@@ -22,7 +22,7 @@ Mapping, GPU resource, Solver가 공통으로 사용할 **CPU 자료형과 소�
 
 ### 상태 채널
 
-State 종류는 enum이나 컴파일 시점의 고정 개수로 정의하지 않는다. 로드된 `.SRProfile`의 `states` key 전체에서 `SurfaceStateRegistry`를 구성한다. Registry가 이름을 `StateId`와 런타임 `ChannelIndex`에 연결한다. `Wetness`, `Heat`, `Burn`, `Mud`는 대표 데모 State일 뿐 고정 목록이 아니며, `SurfaceWater`, `Snow`를 포함한 새 State도 Profile에서 선언할 수 있다.
+State 종류는 enum이나 컴파일 시점의 고정 개수로 정의하지 않는다. 로드된 `.SRProfile`의 `states` key 전체에서 `TSurfaceStateRegistry`를 구성한다. Registry가 이름을 `TStateId`와 런타임 `ChannelIndex`에 연결한다. `Wetness`, `Heat`, `Burn`, `Mud`는 대표 데모 State일 뿐 고정 목록이 아니며, `SurfaceWater`, `Snow`를 포함한 새 State도 Profile에서 선언할 수 있다.
 
 Branch 1의 CPU 계약은 Profile 데이터가 State key와 parameter의 연관을 보존하도록 한다. 실제 deterministic ID/Transition 변환은 Registry가 소유하며, 구체적 결정은 [[04_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 따른다.
 
@@ -38,7 +38,7 @@ Registry 크기에 종속되는 State parameter 목록은 고정 길이 `std::ar
 ### Profile parameter
 
 ```cpp
-struct SurfaceStateParameters
+struct TSurfaceStateParameters
 {
     float StateCapacity = 1.0F;
     float InputFactor = 1.0F;
@@ -50,20 +50,20 @@ struct SurfaceStateParameters
     float CavityFillFactor = 0.0F;
 };
 
-using StateId = std::uint32_t;
+using TStateId = std::uint32_t;
 
-struct SurfaceStateTransition
+struct TSurfaceStateTransition
 {
-    StateId Source;
-    StateId Target;
+    TStateId Source;
+    TStateId Target;
     float Threshold = 0.0F;
     float TransitionRate = 0.0F;
 };
 
-struct SurfaceResponseProfileData
+struct TSurfaceResponseProfileData
 {
-    std::unordered_map<StateId, SurfaceStateParameters> States;
-    std::vector<SurfaceStateTransition> Transitions;
+    std::unordered_map<TStateId, TSurfaceStateParameters> States;
+    std::vector<TSurfaceStateTransition> Transitions;
 };
 ```
 
@@ -84,12 +84,12 @@ Profile 등록 후 Registry를 구성할 때 문자열 key와 Transition endpoin
 서로 다른 의미의 index를 같은 typedef로 섞지 않는다.
 
 ```cpp
-using SurfaceLocalID = std::uint32_t;
-using LocalTexelIndex = std::uint32_t;
-using SurfaceProfileIndex = std::uint32_t;
+using TSurfaceLocalID = std::uint32_t;
+using TLocalTexelIndex = std::uint32_t;
+using TSurfaceProfileIndex = std::uint32_t;
 
-inline constexpr LocalTexelIndex InvalidTexelIndex = 0xFFFFFFFFU;
-inline constexpr SurfaceLocalID InvalidSurfaceID = 0xFFFFFFFFU;
+inline constexpr TLocalTexelIndex InvalidTexelIndex = 0xFFFFFFFFU;
+inline constexpr TSurfaceLocalID InvalidSurfaceID = 0xFFFFFFFFU;
 ```
 
 초기 구현에서 강한 타입 wrapper까지 만들 필요는 없지만, 필드명에 `Local`, `Global`, `Base`를 명시한다.
@@ -98,20 +98,21 @@ GPU upload에서는 별도 ValidMask를 만들지 않고 invalid texel의 `Texel
 ### 데이터 소유권
 
 ```text
-MeshAsset
+TMeshAsset
 └─ SurfaceRange[]                  Mesh의 Surface 구간
 
-SharedSurfaceGeometryData         같은 전처리 결과를 쓰는 instance가 공유
+TSharedSurfaceGeometryData         같은 전처리 결과를 쓰는 instance가 공유
 ├─ Mapping metadata
 ├─ ValidMask
 ├─ NeighborIndex
+├─ TexelProfileIndex
 └─ 정적 Geometry field
 
-SurfaceInstanceStateData          instance별 소유
+TSurfaceInstanceStateData          instance별 소유
 ├─ State A/B
 ├─ TempAlpha
 ├─ InputDelta
-└─ Surface→Profile index
+└─ Texel→ProfileIndex dense map in TSharedSurfaceGeometryData
 ```
 
 CPU 구조체는 GPU handle을 필수로 가지지 않는다. CPU 결과와 GPU resource wrapper를 분리해 CPU test가 Vulkan device 없이 실행되게 한다.
@@ -140,9 +141,9 @@ CPU 구조체는 GPU handle을 필수로 가지지 않는다. CPU 결과와 GPU 
 1. State channel과 index type 정의
 2. Profile CPU 구조체와 기본값 정의
 3. Profile validation 함수 작성
-4. `SRProfileAsset`이 검증된 Profile data를 소유하도록 구현
-5. `SharedSurfaceGeometryData`의 CPU container 골격 구현
-6. `SurfaceInstanceStateData`의 CPU 초기 상태와 Profile mapping 골격 구현
+4. `TSRProfileAsset`이 검증된 Profile data를 소유하도록 구현
+5. `TSharedSurfaceGeometryData`의 CPU container 골격 구현
+6. `TSurfaceInstanceStateData`의 CPU 초기 상태와 Profile mapping 골격 구현
 7. CTest 또는 작은 CPU test executable 추가
 8. dummy 주석 제거 및 include dependency 정리
 
@@ -187,15 +188,15 @@ target_link_libraries(MDSS PRIVATE nlohmann_json::nlohmann_json)
 
 ### Parser 책임 분리
 
-`SRProfileLoader`는 JSON 문법과 필드 변환만 담당하고, 값의 의미 검증은 별도 함수가 담당한다.
+`TSRProfileLoader`는 JSON 문법과 필드 변환만 담당하고, 값의 의미 검증은 별도 함수가 담당한다.
 
 ```text
 File read
 → JSON parse
 → JSON field/type validation
-→ SurfaceResponseProfileData 변환
+→ TSurfaceResponseProfileData 변환
 → domain validation
-→ SRProfileAsset 생성
+→ TSRProfileAsset 생성
 ```
 
 JSON exception은 그대로 외부에 노출하지 않고 Asset 경로와 JSON key path를 포함한 프로젝트 오류로 변환한다.
@@ -210,7 +211,7 @@ JSON exception은 그대로 외부에 노출하지 않고 Asset 경로와 JSON k
 
 1. `Build: nlohmann/json 의존성 추가`
 2. `Feat: Registry 기반 Surface State 데이터 타입 정의`
-3. `Feat: SRProfile Asset 파싱 및 검증`
+3. `Feat: SRProfile TAsset 파싱 및 검증`
 4. `Test: Surface Data Contract와 JSON 테스트 추가`
 
 ## 완료 조건
@@ -220,7 +221,7 @@ JSON exception은 그대로 외부에 노출하지 않고 Asset 경로와 JSON k
 - 임의 State 이름과 `Heat → Burn` 같은 전이를 `.SRProfile`로 표현할 수 있다.
 - JSON parse 오류가 파일 경로와 key path를 포함한다.
 - dummy였던 핵심 데이터 파일에 명확한 소유권과 초기값이 존재한다.
-- 다음 브랜치가 추가 설계 없이 `SurfaceMappingData`를 채울 수 있다.
+- 다음 브랜치가 추가 설계 없이 `TSurfaceMappingData`를 채울 수 있다.
 
 ## 제외 범위
 

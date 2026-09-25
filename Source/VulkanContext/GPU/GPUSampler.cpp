@@ -11,7 +11,7 @@
 
 namespace MDSS
 {
-    GPUSampler::GPUSampler(VkDevice Device) : Device(Device)
+    TGPUSampler::TGPUSampler(VkDevice Device) : Device(Device)
     {
         VkSamplerCreateInfo Info{};
         Info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -33,10 +33,10 @@ namespace MDSS
         {
             throw std::runtime_error("Failed to create Vulkan sampler.");
         }
-        Logger::Verbose("Vulkan", "GPUSampler created (linear filtering, repeat addressing).");
+        TLogger::Verbose("Vulkan", "TGPUSampler created (linear filtering, repeat addressing).");
     }
 
-    GPUSampler::~GPUSampler()
+    TGPUSampler::~TGPUSampler()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -45,7 +45,7 @@ namespace MDSS
         }
     }
 
-    VkSampler GPUSampler::GetHandle() const noexcept
+    VkSampler TGPUSampler::GetHandle() const noexcept
     {
         return Handle;
     }

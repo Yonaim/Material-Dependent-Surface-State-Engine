@@ -10,7 +10,7 @@ OBJ의 준비된 UV를 Simulation UV로 사용해 Mesh 표면을 texel graph로 
 
 ## 추가 설계 결정 — State Registry
 
-State 종류를 고정 C++ enum이나 별도 `SurfaceStateSchema`로 정의하지 않는다. 로드한 `.SRProfile`의 `states` key를 모아 `SurfaceStateRegistry`를 구성하며, Profile은 소재별 State 반응 파라미터와 Transition을 소유한다. 런타임에서는 문자열 대신 `StateId` 또는 `ChannelIndex`를 사용한다.
+State 종류를 고정 C++ enum이나 별도 `SurfaceStateSchema`로 정의하지 않는다. 로드한 `.SRProfile`의 `states` key를 모아 `TSurfaceStateRegistry`를 구성하며, Profile은 소재별 State 반응 파라미터와 Transition을 소유한다. 런타임에서는 문자열 대신 `TStateId` 또는 `ChannelIndex`를 사용한다.
 
 | 작업 | 구현·검증 내용 |
 |---|---|
@@ -36,25 +36,25 @@ State 종류를 고정 C++ enum이나 별도 `SurfaceStateSchema`로 정의하�
 
 | 결정 | 현재 상태 | 남은 연결 작업 |
 |---|---|---|
-| Dynamic State Registry | 이름 정규화, Profile State union, deterministic ID, Transition ID 변환 및 AssetManager lazy registry 구현·테스트 완료 | Registry 크기를 Branch 4의 instance/GPU resource 생성에 전달하고, Branch 5 Solver가 channel count를 순회하며, Branch 6 Input이 `StateId`를 해석하도록 후속 브랜치에 배정 |
-| Dynamic Instance State | texel별 동적 vector channel과 `SurfaceContactInput::StateId` 적용 | Branch 4에서 Registry channel count를 instance state/GPU resource에 연결 |
+| Dynamic State Registry | 이름 정규화, Profile State union, deterministic ID, Transition ID 변환 및 AssetManager lazy registry 구현·테스트 완료 | Registry 크기를 Branch 4의 instance/GPU resource 생성에 전달하고, Branch 5 Solver가 channel count를 순회하며, Branch 6 Input이 `TStateId`를 해석하도록 후속 브랜치에 배정 |
+| Dynamic Instance State | texel별 동적 vector channel과 `TSurfaceContactInput::TStateId` 적용 | Branch 4에서 Registry channel count를 instance state/GPU resource에 연결 |
 | Runtime Surface payload | Mapping → shared geometry/texel Profile map 변환, sentinel·범위 검증 완료 | Profile Distribution 입력 형식·loader와 Runtime Asset/Scene 호출 연결을 Branch 3에 배정 |
 | 이전 binary cache API | serializer 및 metadata API가 구현돼 있음 | 새 결정에서는 목표 경로에서 제거하거나 비활성화. Cache lookup/save는 Branch 3 범위에서 제외 |
 | Normal Map 전처리 | Normal Map은 Runtime builder 입력으로 예정 | CPU texel sample로 Meso/Curvature를 생성하는 알고리즘 미정·미구현 |
 
 ## 가장 먼저 해결할 기존 코드 문제
 
-현재 `OBJLoader`는 `(position index, normal index, UV index)` 조합으로 render vertex를 만든다. UV seam에서는 같은 position이 서로 다른 render vertex로 분리되므로, render vertex index만으로는 seam 반대편 triangle을 찾을 수 없다.
+현재 `TOBJLoader`는 `(position index, normal index, UV index)` 조합으로 render vertex를 만든다. UV seam에서는 같은 position이 서로 다른 render vertex로 분리되므로, render vertex index만으로는 seam 반대편 triangle을 찾을 수 없다.
 
 따라서 loader 결과에 최소한 다음 정보를 보존해야 한다.
 
 ```cpp
-struct MeshTriangleSource
+struct TMeshTriangleSource
 {
     std::array<std::uint32_t, 3> RenderVertexIndices;
     std::array<std::int32_t, 3> OriginalPositionIndices;
     std::array<std::int32_t, 3> OriginalUVIndices;
-    SurfaceLocalID Surface;
+    TSurfaceLocalID Surface;
 };
 ```
 
@@ -63,21 +63,21 @@ seam edge key는 `OriginalPositionIndices`로 만들고, rasterization 속성은
 ## 출력 자료
 
 ```cpp
-struct SurfaceMappingTexel
+struct TSurfaceMappingTexel
 {
-    SurfaceLocalID Surface = InvalidSurfaceID;
+    TSurfaceLocalID Surface = InvalidSurfaceID;
     std::uint32_t Triangle = InvalidTriangleID;
     std::uint32_t Chart = InvalidChartID;
     glm::vec3 Barycentric{0.0F};
     glm::vec3 Position{0.0F};
     glm::vec3 Normal{0.0F, 1.0F, 0.0F};
-    std::array<LocalTexelIndex, 8> Neighbors;
+    std::array<TLocalTexelIndex, 8> Neighbors;
 };
 
-struct SurfaceMappingData
+struct TSurfaceMappingData
 {
-    std::vector<SurfaceTexelRange> Surfaces;
-    std::vector<SurfaceMappingTexel> Texels;
+    std::vector<TSurfaceTexelRange> Surfaces;
+    std::vector<TSurfaceMappingTexel> Texels;
     std::vector<std::string> Warnings;
 };
 ```
@@ -131,7 +131,7 @@ UV에서 edge를 실제로 공유하는 triangle끼리 flood fill하여 `ChartID
 ## 단계 4 — Mesh Adjacency와 Seam
 
 ```text
-EdgeKey = sort(originalPositionIndexA, originalPositionIndexB)
+TEdgeKey = sort(originalPositionIndexA, originalPositionIndexB)
 ```
 
 - incident triangle 1개: 실제 open boundary
@@ -156,7 +156,7 @@ seam 양쪽 boundary texel을 edge parameter `t`로 대응시킨다. 상대 texe
 
 ## 추가 단계 — Registry 및 Profile Map 연결
 
-1. Profile 집합에서 정규화된 State key를 수집해 재현 가능한 `SurfaceStateRegistry`를 생성한다.
+1. Profile 집합에서 정규화된 State key를 수집해 재현 가능한 `TSurfaceStateRegistry`를 생성한다.
 2. 각 Profile의 Transition source/target을 Registry ID로 해석하고 미등록 참조를 거부한다.
 3. Profile Distribution 입력으로 texel별 `ProfileIndex`를 만들고 유효 texel에 대해 범위와 참조 유효성을 검증한다.
 4. Render Material 식별자와 Profile index를 혼동하지 않도록 mapping 결과에 두 책임을 분리해 보존한다.

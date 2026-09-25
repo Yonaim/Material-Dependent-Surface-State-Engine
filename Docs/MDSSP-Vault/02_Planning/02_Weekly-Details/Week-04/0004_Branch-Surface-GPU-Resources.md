@@ -8,11 +8,11 @@
 
 CPU에서 검증한 Mapping/Geometry/Profile 데이터를 Vulkan Storage Buffer로 올리고, instance별 State A/B와 TempAlpha/InputDelta를 생성한다. 이 브랜치에서는 compute shader가 실제 수식을 실행하지 않아도 된다.
 
-State와 Profile parameter의 GPU 배치는 `.SRProfile`에서 생성된 `SurfaceStateRegistry::ChannelCount`를 지원해야 한다. 임의 개수 채널을 위한 AoS/SoA 및 buffer stride/indexing은 이 브랜치에서 결정·검증하고, 고정 4채널 `vec4` layout을 계약으로 사용하지 않는다.
+State와 Profile parameter의 GPU 배치는 `.SRProfile`에서 생성된 `TSurfaceStateRegistry::ChannelCount`를 지원해야 한다. texel별 dense ProfileIndex map 기본안은 [[../../../../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다. 임의 개수 채널을 위한 AoS/SoA 및 buffer stride/indexing은 이 브랜치에서 결정·검증하고, 고정 4채널 `vec4` layout을 계약으로 사용하지 않는다.
 
 ## 현재 기반에서 주의할 점
 
-현재 `GPUBuffer`는 다음 특성을 가진다.
+현재 `TGPUBuffer`는 다음 특성을 가진다.
 
 - 생성 시 memory type을 직접 지정
 - host-visible + host-coherent buffer만 `Upload` 가능
@@ -30,6 +30,7 @@ Mesh 전처리 결과 단위로 한 번 생성하고 여러 instance가 공유�
 | Buffer | GPU 형식 |
 |---|---|
 | TexelSurfaceIndex | `uint[]`, invalid texel은 `InvalidSurfaceID = 0xFFFFFFFF` |
+| TexelProfileIndex | `uint[]`, 유효 texel마다 Profile index 하나 |
 | Position | `vec4[]` |
 | Normal | `vec4[]` |
 | GeometryScalar | texel당 2 float (`MesoVirtualHeight`, `ConcavityWeight`) |
@@ -54,8 +55,7 @@ SurfaceInstanceStateGPU
 ├─ State A          texelCount × stateChannelCount scalar values
 ├─ State B          texelCount × stateChannelCount scalar values
 ├─ TempAlpha        texelCount × stateChannelCount scalar values
-├─ InputDelta       texelCount × stateChannelCount scalar values
-└─ SurfaceProfileIndex uint × surfaceCount
+└─ InputDelta       texelCount × stateChannelCount scalar values
 ```
 
 모든 resource를 0으로 초기화한다. 초기화되지 않은 GPU memory를 State로 사용하지 않는다.
@@ -77,8 +77,8 @@ neighborStateIndex = getStateIndex(
 
 ## 클래스 구성 권장
 
-- `SharedSurfaceGeometryData`: CPU field와 GPU buffer 소유 또는 GPU wrapper 참조
-- `SurfaceInstanceStateData`: instance별 State resource 소유
+- `TSharedSurfaceGeometryData`: CPU field와 GPU buffer 소유 또는 GPU wrapper 참조
+- `TSurfaceInstanceStateData`: instance별 State resource 소유
 - `SurfaceGPUResourceLayout.h`: CPU↔GLSL pack 구조
 - `SurfaceDescriptorSet`: descriptor pool/layout/set 관리
 
@@ -102,7 +102,7 @@ MVP에서 host-visible State를 사용하더라도 API 이름이 host-visible �
 ```text
 Shared Geometry
 Profile Table
-Surface→Profile Table
+Texel→Profile Index Map
 Current State
 Next State
 TempAlpha
@@ -127,7 +127,7 @@ Descriptor BA: Current=B, Next=A
 3. Shared Geometry buffer 생성과 upload
 4. Profile buffer 생성과 upload
 5. instance State A/B, TempAlpha, InputDelta 생성 및 clear
-6. Surface→Profile index upload
+6. Shared Geometry의 texel별 ProfileIndex map upload
 7. descriptor set layout 생성
 8. AB/BA descriptor set 생성
 9. 생성·해제 로그와 validation 실행

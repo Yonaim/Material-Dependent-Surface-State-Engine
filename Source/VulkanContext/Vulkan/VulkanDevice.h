@@ -11,20 +11,20 @@
 
 namespace MDSS
 {
-    class VulkanDevice
+    class TVulkanDevice
     {
     public:
         /**
          * @brief surface 지원과 필수 기능을 만족하는 physical device를 고르고 logical device를 만든다.
          * @throws std::runtime_error 사용할 수 있는 장치가 없거나 device 생성이 실패한 경우.
          */
-        VulkanDevice(VkInstance Instance, VkSurfaceKHR Surface);
-        ~VulkanDevice();
+        TVulkanDevice(VkInstance Instance, VkSurfaceKHR Surface);
+        ~TVulkanDevice();
 
-        VulkanDevice(const VulkanDevice&) = delete;
-        VulkanDevice& operator=(const VulkanDevice&) = delete;
-        VulkanDevice(VulkanDevice&&) = delete;
-        VulkanDevice& operator=(VulkanDevice&&) = delete;
+        TVulkanDevice(const TVulkanDevice&) = delete;
+        TVulkanDevice& operator=(const TVulkanDevice&) = delete;
+        TVulkanDevice(TVulkanDevice&&) = delete;
+        TVulkanDevice& operator=(TVulkanDevice&&) = delete;
 
         [[nodiscard]] VkPhysicalDevice GetPhysicalHandle() const noexcept;
         [[nodiscard]] VkDevice         GetHandle() const noexcept;

@@ -31,45 +31,45 @@ namespace MDSS
 {
     namespace
     {
-        ImVec4 GetLogColor(LogLevel Level)
+        ImVec4 GetLogColor(TLogLevel Level)
         {
             switch (Level)
             {
-                case LogLevel::Verbose:
+                case TLogLevel::Verbose:
                     return {0.55F, 0.55F, 0.55F, 1.0F}; // gray
-                case LogLevel::Debug:
+                case TLogLevel::Debug:
                     return {1.00F, 1.00F, 1.00F, 1.0F}; // white
-                case LogLevel::Info:
+                case TLogLevel::Info:
                     return {0.45F, 0.78F, 1.00F, 1.0F}; // light blue
-                case LogLevel::Warning:
+                case TLogLevel::Warning:
                     return {1.00F, 0.84F, 0.25F, 1.0F}; // yellow
-                case LogLevel::Error:
+                case TLogLevel::Error:
                     return {1.00F, 0.30F, 0.30F, 1.0F}; // red
-                case LogLevel::Count:
+                case TLogLevel::Count:
                     break;
             }
             return {1.0F, 1.0F, 1.0F, 1.0F};
         }
 
-        constexpr std::array<LogLevel, 5> DisplayedLevels = {
-            LogLevel::Verbose,
-            LogLevel::Debug,
-            LogLevel::Info,
-            LogLevel::Warning,
-            LogLevel::Error,
+        constexpr std::array<TLogLevel, 5> DisplayedLevels = {
+            TLogLevel::Verbose,
+            TLogLevel::Debug,
+            TLogLevel::Info,
+            TLogLevel::Warning,
+            TLogLevel::Error,
         };
 
         constexpr std::array<const char*, 5> RenderViewModeNames = {
             "Lit",
             "Unlit",
-            "Vertex Normal (World Space)",
+            "TVertex Normal (World Space)",
             "Normal Texture (Tangent Space)",
             "Mapped Normal (World Space)",
         };
     } // namespace
 
-    DebugUI::DebugUI(const VulkanContext& Context, const Window& Window, Renderer& Renderer)
-        : Device(Context.GetDevice()), NativeWindow(Window.GetNativeHandle()), FrameRenderer(&Renderer)
+    TDebugUI::TDebugUI(const TVulkanContext& Context, const TWindow& TWindow, TRenderer& TRenderer)
+        : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&TRenderer)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -80,15 +80,15 @@ namespace MDSS
 
         ImGui::StyleColorsDark();
 
-        if (!ImGui_ImplGlfw_InitForVulkan(Window.GetNativeHandle(), true))
+        if (!ImGui_ImplGlfw_InitForVulkan(TWindow.GetNativeHandle(), true))
         {
             ImGui::DestroyContext();
             throw std::runtime_error("Failed to initialize Dear ImGui GLFW backend.");
         }
 
-        const std::uint32_t ImageCount = static_cast<std::uint32_t>(Renderer.GetSwapchain().GetImages().size());
-        const SwapchainSupportDetails Support =
-            Swapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const std::uint32_t ImageCount = static_cast<std::uint32_t>(TRenderer.GetSwapchain().GetImages().size());
+        const TSwapchainSupportDetails Support =
+            TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
         const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
 
         ImGui_ImplVulkan_InitInfo InitInfo{};
@@ -103,7 +103,7 @@ namespace MDSS
         InitInfo.MinImageCount = MinImageCount;
         InitInfo.ImageCount = ImageCount;
         InitInfo.PipelineCache = VK_NULL_HANDLE;
-        InitInfo.PipelineInfoMain.RenderPass = Renderer.GetRenderPassHandle();
+        InitInfo.PipelineInfoMain.TRenderPass = TRenderer.GetRenderPassHandle();
         InitInfo.PipelineInfoMain.Subpass = 0;
         InitInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         InitInfo.UseDynamicRendering = false;
@@ -118,14 +118,14 @@ namespace MDSS
             throw std::runtime_error("Failed to initialize Dear ImGui Vulkan backend.");
         }
 
-        Logger::Info("DebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
-        Logger::Debug("DebugUI",
-                      "Camera, render options, normal debug views, and five-level log filtering are active.");
-        CachedLogEntries = Logger::GetEntries();
-        LastSeenLogRevision = Logger::GetRevision();
+        TLogger::Info("TDebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
+        TLogger::Debug("TDebugUI",
+                      "TCamera, render options, normal debug views, and five-level log filtering are active.");
+        CachedLogEntries = TLogger::GetEntries();
+        LastSeenLogRevision = TLogger::GetRevision();
     }
 
-    DebugUI::~DebugUI()
+    TDebugUI::~TDebugUI()
     {
         if (NativeWindow != nullptr && bRotatingCamera)
         {
@@ -137,13 +137,13 @@ namespace MDSS
             vkDeviceWaitIdle(Device);
         }
 
-        Logger::Verbose("DebugUI", "Shutting down Dear ImGui backends.");
+        TLogger::Verbose("TDebugUI", "Shutting down Dear ImGui backends.");
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }
 
-    void DebugUI::BeginFrame(Scene& SceneData)
+    void TDebugUI::BeginFrame(TScene& SceneData)
     {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -157,7 +157,7 @@ namespace MDSS
         ImGui::Render();
     }
 
-    void DebugUI::Render(VkCommandBuffer CommandBuffer) const
+    void TDebugUI::Render(VkCommandBuffer CommandBuffer) const
     {
         ImDrawData* DrawData = ImGui::GetDrawData();
         if (DrawData != nullptr && DrawData->CmdListsCount > 0)
@@ -166,22 +166,22 @@ namespace MDSS
         }
     }
 
-    void DebugUI::OnSwapchainRecreated(const VulkanContext& Context, const Renderer& Renderer)
+    void TDebugUI::OnSwapchainRecreated(const TVulkanContext& Context, const TRenderer& TRenderer)
     {
-        const SwapchainSupportDetails Support =
-            Swapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const TSwapchainSupportDetails Support =
+            TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
         const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
         ImGui_ImplVulkan_SetMinImageCount(MinImageCount);
 
-        Logger::Debug("DebugUI",
+        TLogger::Debug("TDebugUI",
                       "ImGui Vulkan backend updated after swapchain recreation (images=" +
-                          std::to_string(Renderer.GetSwapchain().GetImages().size()) + ").");
+                          std::to_string(TRenderer.GetSwapchain().GetImages().size()) + ").");
     }
 
-    void DebugUI::ProcessCameraInput(Scene& SceneData)
+    void TDebugUI::ProcessCameraInput(TScene& SceneData)
     {
         ImGuiIO& IO = ImGui::GetIO();
-        Camera&  CameraData = SceneData.GetMainCamera();
+        TCamera&  CameraData = SceneData.GetMainCamera();
 
         const bool bRightMouseDown = ImGui::IsMouseDown(ImGuiMouseButton_Right);
         if (!bRotatingCamera && bRightMouseDown && !IO.WantCaptureMouse)
@@ -268,7 +268,7 @@ namespace MDSS
         CameraData.SetTarget(CameraData.GetTarget() + Delta);
     }
 
-    void DebugUI::DrawCameraWindow(Scene& SceneData)
+    void TDebugUI::DrawCameraWindow(TScene& SceneData)
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         const float    AvailableWidth = std::max(Viewport->WorkSize.x, 1.0F);
@@ -283,9 +283,9 @@ namespace MDSS
         constexpr ImGuiWindowFlags Flags =
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 
-        if (ImGui::Begin("Camera", nullptr, Flags))
+        if (ImGui::Begin("TCamera", nullptr, Flags))
         {
-            Camera& CameraData = SceneData.GetMainCamera();
+            TCamera& CameraData = SceneData.GetMainCamera();
 
             glm::vec3 Position = CameraData.GetPosition();
             if (ImGui::DragFloat3("Position", &Position.x, 0.05F))
@@ -315,7 +315,7 @@ namespace MDSS
         ImGui::End();
     }
 
-    void DebugUI::DrawRenderOptionsWindow()
+    void TDebugUI::DrawRenderOptionsWindow()
     {
         if (FrameRenderer == nullptr)
         {
@@ -343,7 +343,7 @@ namespace MDSS
                              RenderViewModeNames.data(),
                              static_cast<int>(RenderViewModeNames.size())))
             {
-                FrameRenderer->SetRenderViewMode(static_cast<RenderViewMode>(SelectedMode));
+                FrameRenderer->SetRenderViewMode(static_cast<TRenderViewMode>(SelectedMode));
             }
 
             bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
@@ -384,7 +384,7 @@ namespace MDSS
         ImGui::End();
     }
 
-    void DebugUI::DrawLogWindow()
+    void TDebugUI::DrawLogWindow()
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         const float    MaxLogHeight = std::max(120.0F, Viewport->WorkSize.y * 0.80F);
@@ -425,17 +425,17 @@ namespace MDSS
                 LogWindowHeight = std::clamp(LogWindowHeight - ImGui::GetIO().MouseDelta.y, 120.0F, MaxLogHeight);
             }
 
-            const std::uint64_t CurrentRevision = Logger::GetRevision();
+            const std::uint64_t CurrentRevision = TLogger::GetRevision();
             if (CurrentRevision != LastSeenLogRevision)
             {
-                CachedLogEntries = Logger::GetEntries();
+                CachedLogEntries = TLogger::GetEntries();
                 bScrollLogToBottom = true;
                 LastSeenLogRevision = CurrentRevision;
             }
 
             if (ImGui::Button("Clear"))
             {
-                Logger::Clear();
+                TLogger::Clear();
                 bScrollLogToBottom = true;
             }
 
@@ -443,7 +443,7 @@ namespace MDSS
             if (ImGui::Button("Copy Visible"))
             {
                 std::string ClipboardText;
-                for (const LogEntry& Entry : CachedLogEntries)
+                for (const TLogEntry& Entry : CachedLogEntries)
                 {
                     const std::size_t Index = static_cast<std::size_t>(Entry.Level);
                     if (Index < LogLevelFilters.size() && LogLevelFilters[Index])
@@ -469,12 +469,12 @@ namespace MDSS
             ImGui::SameLine();
             ImGui::TextUnformatted("Filter:");
 
-            for (const LogLevel Level : DisplayedLevels)
+            for (const TLogLevel Level : DisplayedLevels)
             {
                 ImGui::SameLine();
                 const std::size_t Index = static_cast<std::size_t>(Level);
                 ImGui::PushStyleColor(ImGuiCol_Text, GetLogColor(Level));
-                ImGui::Checkbox(Logger::GetLevelName(Level), &LogLevelFilters[Index]);
+                ImGui::Checkbox(TLogger::GetLevelName(Level), &LogLevelFilters[Index]);
                 ImGui::PopStyleColor();
             }
 
@@ -482,7 +482,7 @@ namespace MDSS
 
             ImGui::BeginChild(
                 "LogMessages", ImVec2(0.0F, 0.0F), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
-            for (const LogEntry& Entry : CachedLogEntries)
+            for (const TLogEntry& Entry : CachedLogEntries)
             {
                 const std::size_t Index = static_cast<std::size_t>(Entry.Level);
                 if (Index >= LogLevelFilters.size() || !LogLevelFilters[Index])

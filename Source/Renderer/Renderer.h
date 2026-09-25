@@ -23,7 +23,7 @@
 
 namespace MDSS
 {
-    enum class RenderViewMode : std::uint32_t
+    enum class TRenderViewMode : std::uint32_t
     {
         Lit = 0,
         Unlit,
@@ -32,31 +32,31 @@ namespace MDSS
         MappedNormalWS
     };
 
-    class AssetManager;
-    class DebugUI;
-    class Scene;
-    class VulkanContext;
-    class Window;
+    class TAssetManager;
+    class TDebugUI;
+    class TScene;
+    class TVulkanContext;
+    class TWindow;
 
-    class Renderer
+    class TRenderer
     {
     public:
-        Renderer(const VulkanContext& Context, Window& Window, const AssetManager& Assets);
-        ~Renderer();
+        TRenderer(const TVulkanContext& Context, TWindow& TWindow, const TAssetManager& Assets);
+        ~TRenderer();
 
-        Renderer(const Renderer&) = delete;
-        Renderer& operator=(const Renderer&) = delete;
-        Renderer(Renderer&&) = delete;
-        Renderer& operator=(Renderer&&) = delete;
+        TRenderer(const TRenderer&) = delete;
+        TRenderer& operator=(const TRenderer&) = delete;
+        TRenderer(TRenderer&&) = delete;
+        TRenderer& operator=(TRenderer&&) = delete;
 
         /** @brief 한 프레임을 acquire, record, submit, present 순서로 렌더링한다. */
-        void RenderFrame(const Scene& SceneData, DebugUI& DebugInterface);
+        void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface);
 
-        [[nodiscard]] const Swapchain& GetSwapchain() const noexcept;
+        [[nodiscard]] const TSwapchain& GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass     GetRenderPassHandle() const noexcept;
 
-        [[nodiscard]] RenderViewMode GetRenderViewMode() const noexcept;
-        void                         SetRenderViewMode(RenderViewMode Mode);
+        [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
+        void                         SetRenderViewMode(TRenderViewMode Mode);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);
@@ -68,9 +68,9 @@ namespace MDSS
         void                SetAmbientLight(float Intensity);
 
     private:
-        struct MaterialRenderResource
+        struct TMaterialRenderResource
         {
-            std::unique_ptr<GPUBuffer> UniformBuffer;
+            std::unique_ptr<TGPUBuffer> UniformBuffer;
             VkDescriptorSet            DescriptorSet = VK_NULL_HANDLE;
         };
 
@@ -84,27 +84,27 @@ namespace MDSS
 
         void CreateMaterialDescriptorResources();
         void UpdateMaterialUniforms();
-        void RecreateSwapchain(DebugUI& DebugInterface);
+        void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
                                  std::uint32_t   ImageIndex,
-                                 const Scene&    SceneData,
-                                 const DebugUI&  DebugInterface) const;
+                                 const TScene&    SceneData,
+                                 const TDebugUI&  DebugInterface) const;
 
-        const VulkanContext&                Context;
-        Window&                             TargetWindow;
-        const AssetManager&                 Assets;
-        Swapchain                           SwapchainData;
+        const TVulkanContext&                Context;
+        TWindow&                             TargetWindow;
+        const TAssetManager&                 Assets;
+        TSwapchain                           SwapchainData;
         VkFormat                            DepthFormat = VK_FORMAT_UNDEFINED;
-        GPUImage                            DepthImage;
-        GPUImageView                        DepthImageView;
-        RenderPass                          MainRenderPass;
+        TGPUImage                            DepthImage;
+        TGPUImageView                        DepthImageView;
+        TRenderPass                          MainRenderPass;
         VkDescriptorSetLayout               MaterialDescriptorSetLayout = VK_NULL_HANDLE;
-        GraphicsPipeline                    StaticMeshPipeline;
-        Framebuffer                         MainFramebuffers;
-        RenderContext                       FrameContext;
+        TGraphicsPipeline                    StaticMeshPipeline;
+        TFramebuffer                         MainFramebuffers;
+        TRenderContext                       FrameContext;
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
-        std::vector<MaterialRenderResource> MaterialResources;
-        RenderViewMode                      ViewMode = RenderViewMode::Lit;
+        std::vector<TMaterialRenderResource> MaterialResources;
+        TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;

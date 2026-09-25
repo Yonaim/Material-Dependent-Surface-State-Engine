@@ -14,14 +14,14 @@
 
 namespace MDSS
 {
-    class DebugUI;
-    class Renderer;
+    class TDebugUI;
+    class TRenderer;
 
-    class Application
+    class TApplication
     {
     public:
-        Application();
-        ~Application();
+        TApplication();
+        ~TApplication();
 
         /** @brief 엔진 main loop를 시작하고 종료 시 정상 정리를 수행한다. */
         void Run();
@@ -31,11 +31,11 @@ namespace MDSS
         void MainLoop();
 
         // Declaration order is intentional: resources are destroyed in reverse order.
-        Window                    MainWindow;
-        VulkanContext             Context;
-        AssetManager              Assets;
-        Scene                     MainScene;
-        std::unique_ptr<Renderer> FrameRenderer;
-        std::unique_ptr<DebugUI>  DebugInterface;
+        TWindow                    MainWindow;
+        TVulkanContext             Context;
+        TAssetManager              Assets;
+        TScene                     MainScene;
+        std::unique_ptr<TRenderer> FrameRenderer;
+        std::unique_ptr<TDebugUI>  DebugInterface;
     };
 } // namespace MDSS

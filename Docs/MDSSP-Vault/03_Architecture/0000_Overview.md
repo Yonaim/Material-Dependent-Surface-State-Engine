@@ -6,20 +6,20 @@ MDSSP Engine은 C++/Vulkan 기반 렌더링 엔진에 **Material-Dependent Surfa
 
 ```mermaid
 flowchart TD
-  App[Application] --> VK[VulkanContext]
-  App --> Renderer
-  App --> Scene
-  App --> Assets[AssetManager]
+  App[TApplication] --> VK[TVulkanContext]
+  App --> TRenderer
+  App --> TScene
+  App --> Assets[TAssetManager]
   App --> Input[InputSystem]
-  App --> Debug[DebugUI]
-  App --> SSS[SurfaceStateSystem]
-  Scene --> Inst[StaticMeshInstance]
-  Inst --> Mesh[MeshAssetHandle]
+  App --> Debug[TDebugUI]
+  App --> SSS[TSurfaceStateSystem]
+  TScene --> Inst[TStaticMeshInstance]
+  Inst --> Mesh[TMeshAssetHandle]
   Inst --> State[SurfaceStateHandle]
-  SSS --> Shared[SharedSurfaceGeometryData]
-  SSS --> Dynamic[SurfaceInstanceStateData]
+  SSS --> Shared[TSharedSurfaceGeometryData]
+  SSS --> Dynamic[TSurfaceInstanceStateData]
   SSS --> Contact[SurfaceInput]
-  SSS --> Solver[SurfaceStateSolver]
+  SSS --> Solver[TSurfaceStateSolver]
   SSS --> GeoUpdate[SurfaceGeometryUpdate]
 ```
 
@@ -29,7 +29,7 @@ flowchart TD
 - **Surface Response Profile**: State 종류를 고정하는 목록이 아니라, 각 State에 대한 소재별 반응 파라미터와 Transition.
 - **SurfaceStateRegistry**: 로드한 Profile에서 State 이름을 모아 런타임 ID/index로 연결.
 - **Runtime Surface Data**: Mesh·Normal Map·Profile Distribution에서 매 실행 시 전처리해 메모리에 생성하는 정적 Geometry/texel 관계 및 texel별 Profile map. 디스크에 `.Surface` 캐시를 저장하지 않는다.
-- **Surface Instance State Data**: Registry 채널에 대응하는 instance별 동적 State와 Overflow.
+- **Surface Instance State Data**: Registry 채널에 대응하는 instance별 동적 State. 각 State는 `stateCapacity` 범위로 제한한다.
 
 ## 읽는 순서
 

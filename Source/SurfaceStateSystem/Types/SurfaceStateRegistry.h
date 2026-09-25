@@ -15,33 +15,33 @@
 
 namespace MDSS
 {
-    struct RegisteredSurfaceStateTransition
+    struct TRegisteredSurfaceStateTransition
     {
-        StateId Source = InvalidStateId;
-        StateId Target = InvalidStateId;
+        TStateId Source = InvalidStateId;
+        TStateId Target = InvalidStateId;
         float   Threshold = 0.0F;
         float   TransitionRate = 0.0F;
     };
 
-    struct RegisteredSurfaceResponseProfileData
+    struct TRegisteredSurfaceResponseProfileData
     {
-        std::vector<std::optional<SurfaceStateParameters>> States;
-        std::vector<RegisteredSurfaceStateTransition>      Transitions;
+        std::vector<std::optional<TSurfaceStateParameters>> States;
+        std::vector<TRegisteredSurfaceStateTransition>      Transitions;
     };
 
-    class SurfaceStateRegistry final
+    class TSurfaceStateRegistry final
     {
     public:
-        explicit SurfaceStateRegistry(const std::vector<SurfaceResponseProfileData>& Profiles);
+        explicit TSurfaceStateRegistry(const std::vector<TSurfaceResponseProfileData>& Profiles);
 
         [[nodiscard]] std::size_t        GetStateCount() const noexcept;
-        [[nodiscard]] StateId            GetStateId(std::string_view Name) const;
-        [[nodiscard]] const std::string& GetStateName(StateId ID) const;
-        [[nodiscard]] RegisteredSurfaceResponseProfileData
-        ResolveProfile(const SurfaceResponseProfileData& Profile) const;
+        [[nodiscard]] TStateId            GetStateId(std::string_view Name) const;
+        [[nodiscard]] const std::string& GetStateName(TStateId ID) const;
+        [[nodiscard]] TRegisteredSurfaceResponseProfileData
+        ResolveProfile(const TSurfaceResponseProfileData& Profile) const;
 
     private:
         std::vector<std::string>                 Names;
-        std::unordered_map<std::string, StateId> IDs;
+        std::unordered_map<std::string, TStateId> IDs;
     };
 } // namespace MDSS

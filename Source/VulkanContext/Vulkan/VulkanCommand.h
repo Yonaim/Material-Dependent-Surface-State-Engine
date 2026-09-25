@@ -12,16 +12,16 @@
 
 namespace MDSS
 {
-    class VulkanCommand
+    class TVulkanCommand
     {
     public:
-        VulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily);
-        ~VulkanCommand();
+        TVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily);
+        ~TVulkanCommand();
 
-        VulkanCommand(const VulkanCommand&) = delete;
-        VulkanCommand& operator=(const VulkanCommand&) = delete;
-        VulkanCommand(VulkanCommand&&) = delete;
-        VulkanCommand& operator=(VulkanCommand&&) = delete;
+        TVulkanCommand(const TVulkanCommand&) = delete;
+        TVulkanCommand& operator=(const TVulkanCommand&) = delete;
+        TVulkanCommand(TVulkanCommand&&) = delete;
+        TVulkanCommand& operator=(TVulkanCommand&&) = delete;
 
         [[nodiscard]] VkCommandPool GetPool() const noexcept;
         /** @brief graphics command pool에서 primary command buffer를 할당한다. */

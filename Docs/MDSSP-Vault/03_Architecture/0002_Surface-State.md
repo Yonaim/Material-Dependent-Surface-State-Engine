@@ -8,15 +8,15 @@
 Surface State System Data
 ├── SurfaceResponseProfile        [Instance 간 공유]
 └── SurfaceData
-    ├── SharedSurfaceGeometryData [Static / Instance 간 공유]
-    └── SurfaceInstanceStateData  [Dynamic / Instance별]
+    ├── TSharedSurfaceGeometryData [Static / Instance 간 공유]
+    └── TSurfaceInstanceStateData  [Dynamic / Instance별]
 ```
 
 `SurfaceResponseProfile`은 여러 Instance가 공유 가능한 소재 반응 데이터이고, `SurfaceData`는 시뮬레이션에 필요한 형상·상태 데이터다.
 
 ## State 식별과 런타임 채널
 
-State 종류는 C++ enum에 고정하지 않는다. 로드된 `.SRProfile`의 `states` key를 모아 `SurfaceStateRegistry`를 만들며, Registry가 문자열 State 이름을 런타임 `StateId` 또는 `ChannelIndex`에 연결한다. 별도의 `SurfaceStateSchema` 파일은 두지 않는다.
+State 종류는 C++ enum에 고정하지 않는다. 로드된 `.SRProfile`의 `states` key를 모아 `TSurfaceStateRegistry`를 만들며, Registry가 문자열 State 이름을 런타임 `TStateId` 또는 `ChannelIndex`에 연결한다. 별도의 `SurfaceStateSchema` 파일은 두지 않는다.
 
 State 이름은 앞뒤 whitespace를 제거하고 lowercase로 정규화하며, 그 외 문자와 내부 공백·구두점은 그대로 보존한다. 예를 들어 `" Wetness "`와 `"WETNESS"`는 `wetness`로 합쳐지지만 `surface_heat`, `surface-heat`, `surface heat`는 서로 다른 이름이다. Transition의 source와 target에도 같은 규칙을 적용한다.
 

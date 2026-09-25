@@ -9,28 +9,28 @@
 
 namespace MDSS
 {
-    MaterialAsset::MaterialAsset(AssetID               ID,
+    TMaterialAsset::TMaterialAsset(TAssetID               ID,
                                  std::string           Name,
                                  std::filesystem::path SourcePath,
                                  glm::vec4             BaseColor,
                                  TextureAssetHandle    BaseColorTexture,
                                  TextureAssetHandle    NormalTexture)
-        : Asset(ID, std::move(Name), std::move(SourcePath)), BaseColor(BaseColor), BaseColorTexture(BaseColorTexture),
+        : TAsset(ID, std::move(Name), std::move(SourcePath)), BaseColor(BaseColor), BaseColorTexture(BaseColorTexture),
           NormalTexture(NormalTexture)
     {
     }
 
-    const glm::vec4& MaterialAsset::GetBaseColor() const noexcept
+    const glm::vec4& TMaterialAsset::GetBaseColor() const noexcept
     {
         return BaseColor;
     }
 
-    TextureAssetHandle MaterialAsset::GetBaseColorTexture() const noexcept
+    TextureAssetHandle TMaterialAsset::GetBaseColorTexture() const noexcept
     {
         return BaseColorTexture;
     }
 
-    TextureAssetHandle MaterialAsset::GetNormalTexture() const noexcept
+    TextureAssetHandle TMaterialAsset::GetNormalTexture() const noexcept
     {
         return NormalTexture;
     }

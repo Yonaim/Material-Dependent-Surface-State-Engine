@@ -45,7 +45,7 @@ namespace MDSS
         }
     } // namespace
 
-    GraphicsPipeline::GraphicsPipeline(VkDevice Device, VkRenderPass RenderPass, const GraphicsPipelineConfig& Config)
+    TGraphicsPipeline::TGraphicsPipeline(VkDevice Device, VkRenderPass TRenderPass, const TGraphicsPipelineConfig& Config)
         : Device(Device)
     {
         if (Config.ShaderStages.empty())
@@ -60,14 +60,14 @@ namespace MDSS
 
         try
         {
-            for (const ShaderStageConfig& StageConfig : Config.ShaderStages)
+            for (const TShaderStageConfig& StageConfig : Config.ShaderStages)
             {
                 if (StageConfig.ShaderPath.empty() || StageConfig.EntryPoint.empty())
                 {
                     throw std::invalid_argument("Graphics pipeline shader stage path/entry point must not be empty.");
                 }
 
-                Logger::Debug("Renderer",
+                TLogger::Debug("TRenderer",
                               "Loading shader stage " + std::to_string(static_cast<int>(StageConfig.Stage)) + ": " +
                                   StageConfig.ShaderPath);
                 const VkShaderModule Module = CreateShaderModule(Device, StageConfig.ShaderPath.c_str());
@@ -172,7 +172,7 @@ namespace MDSS
             PipelineInfo.pColorBlendState = &ColorBlending;
             PipelineInfo.pDynamicState = &DynamicState;
             PipelineInfo.layout = PipelineLayout;
-            PipelineInfo.renderPass = RenderPass;
+            PipelineInfo.renderPass = TRenderPass;
             PipelineInfo.subpass = 0;
 
             if (vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
@@ -180,7 +180,7 @@ namespace MDSS
                 throw std::runtime_error("Failed to create Vulkan graphics pipeline.");
             }
 
-            Logger::Info("Renderer",
+            TLogger::Info("TRenderer",
                          "Graphics pipeline created with " + std::to_string(ShaderStageInfos.size()) +
                              " shader stage(s).");
         }
@@ -204,7 +204,7 @@ namespace MDSS
         }
     }
 
-    GraphicsPipeline::~GraphicsPipeline()
+    TGraphicsPipeline::~TGraphicsPipeline()
     {
         if (Pipeline != VK_NULL_HANDLE)
         {
@@ -218,17 +218,17 @@ namespace MDSS
         }
     }
 
-    VkPipeline GraphicsPipeline::GetHandle() const noexcept
+    VkPipeline TGraphicsPipeline::GetHandle() const noexcept
     {
         return Pipeline;
     }
 
-    VkPipelineLayout GraphicsPipeline::GetLayout() const noexcept
+    VkPipelineLayout TGraphicsPipeline::GetLayout() const noexcept
     {
         return PipelineLayout;
     }
 
-    VkShaderModule GraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
+    VkShaderModule TGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
     {
         const std::vector<std::uint32_t> Code = ReadSpirvFile(Path);
 

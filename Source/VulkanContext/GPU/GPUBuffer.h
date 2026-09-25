@@ -11,24 +11,24 @@
 
 namespace MDSS
 {
-    class GPUBuffer
+    class TGPUBuffer
     {
     public:
         /**
          * @brief 지정한 usage와 memory property로 Vulkan buffer와 memory를 생성한다.
          * @throws std::runtime_error buffer 또는 memory 생성에 실패한 경우.
          */
-        GPUBuffer(VkPhysicalDevice      PhysicalDevice,
+        TGPUBuffer(VkPhysicalDevice      PhysicalDevice,
                   VkDevice              Device,
                   VkDeviceSize          Size,
                   VkBufferUsageFlags    Usage,
                   VkMemoryPropertyFlags MemoryProperties);
-        ~GPUBuffer();
+        ~TGPUBuffer();
 
-        GPUBuffer(const GPUBuffer&) = delete;
-        GPUBuffer& operator=(const GPUBuffer&) = delete;
-        GPUBuffer(GPUBuffer&&) = delete;
-        GPUBuffer& operator=(GPUBuffer&&) = delete;
+        TGPUBuffer(const TGPUBuffer&) = delete;
+        TGPUBuffer& operator=(const TGPUBuffer&) = delete;
+        TGPUBuffer(TGPUBuffer&&) = delete;
+        TGPUBuffer& operator=(TGPUBuffer&&) = delete;
 
         /**
          * @brief host-visible buffer memory에 바이트 범위를 복사한다.

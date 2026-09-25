@@ -13,9 +13,9 @@ namespace MDSS
 {
     namespace
     {
-        bool ContainsNeighbor(const SurfaceMappingTexel& Texel, LocalTexelIndex Neighbor)
+        bool ContainsNeighbor(const TSurfaceMappingTexel& Texel, TLocalTexelIndex Neighbor)
         {
-            for (const LocalTexelIndex Candidate : Texel.Neighbors)
+            for (const TLocalTexelIndex Candidate : Texel.Neighbors)
             {
                 if (Candidate == Neighbor)
                 {
@@ -26,12 +26,12 @@ namespace MDSS
         }
     } // namespace
 
-    void ValidateSurfaceMapping(const SurfaceMappingData& Mapping)
+    void ValidateSurfaceMapping(const TSurfaceMappingData& Mapping)
     {
         std::size_t ExpectedFirstTexel = 0;
         for (std::size_t SurfaceIndex = 0; SurfaceIndex < Mapping.Surfaces.size(); ++SurfaceIndex)
         {
-            const SurfaceTexelRange& Surface = Mapping.Surfaces[SurfaceIndex];
+            const TSurfaceTexelRange& Surface = Mapping.Surfaces[SurfaceIndex];
             if (Surface.Surface != SurfaceIndex || Surface.FirstTexel != ExpectedFirstTexel ||
                 Surface.TexelCount != Surface.Resolution.GetTexelCount())
             {
@@ -46,11 +46,11 @@ namespace MDSS
 
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
-            const SurfaceMappingTexel&                        Texel = Mapping.Texels[Index];
-            std::array<LocalTexelIndex, SurfaceNeighborCount> Seen{};
+            const TSurfaceMappingTexel&                        Texel = Mapping.Texels[Index];
+            std::array<TLocalTexelIndex, SurfaceNeighborCount> Seen{};
             std::size_t                                       SeenCount = 0;
 
-            for (const LocalTexelIndex Neighbor : Texel.Neighbors)
+            for (const TLocalTexelIndex Neighbor : Texel.Neighbors)
             {
                 if (Neighbor == InvalidTexelIndex)
                 {
@@ -81,7 +81,7 @@ namespace MDSS
                 }
                 Seen[SeenCount++] = Neighbor;
 
-                if (!ContainsNeighbor(Mapping.Texels[Neighbor], static_cast<LocalTexelIndex>(Index)))
+                if (!ContainsNeighbor(Mapping.Texels[Neighbor], static_cast<TLocalTexelIndex>(Index)))
                 {
                     throw std::invalid_argument("Surface mapping neighbor relationships must be bidirectional.");
                 }

@@ -12,20 +12,20 @@
 
 namespace MDSS
 {
-    class VulkanInstance
+    class TVulkanInstance
     {
     public:
         /**
          * @brief Vulkan instance를 만들고 요청 extension 및 빌드 설정에 따른 validation을 적용한다.
          * @throws std::runtime_error 필수 extension/layer가 없거나 instance 생성이 실패한 경우.
          */
-        VulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions);
-        ~VulkanInstance();
+        TVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions);
+        ~TVulkanInstance();
 
-        VulkanInstance(const VulkanInstance&) = delete;
-        VulkanInstance& operator=(const VulkanInstance&) = delete;
-        VulkanInstance(VulkanInstance&&) = delete;
-        VulkanInstance& operator=(VulkanInstance&&) = delete;
+        TVulkanInstance(const TVulkanInstance&) = delete;
+        TVulkanInstance& operator=(const TVulkanInstance&) = delete;
+        TVulkanInstance(TVulkanInstance&&) = delete;
+        TVulkanInstance& operator=(TVulkanInstance&&) = delete;
 
         [[nodiscard]] VkInstance GetHandle() const noexcept;
 

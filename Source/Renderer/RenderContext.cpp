@@ -13,7 +13,7 @@
 
 namespace MDSS
 {
-    RenderContext::RenderContext(const VulkanContext& Context)
+    TRenderContext::TRenderContext(const TVulkanContext& Context)
         : Device(Context.GetDevice()), CommandPool(Context.GetCommands().GetPool()),
           CommandBuffers(Context.GetCommands().AllocatePrimary(static_cast<std::uint32_t>(MaxFramesInFlight)))
     {
@@ -53,12 +53,12 @@ namespace MDSS
             }
         }
 
-        Logger::Info("Renderer",
+        TLogger::Info("TRenderer",
                      "Frame synchronization initialized with " + std::to_string(MaxFramesInFlight) +
                          " frames in flight.");
     }
 
-    RenderContext::~RenderContext()
+    TRenderContext::~TRenderContext()
     {
         for (std::size_t Index = 0; Index < MaxFramesInFlight; ++Index)
         {
@@ -84,7 +84,7 @@ namespace MDSS
         }
     }
 
-    void RenderContext::WaitForCurrentFrame() const
+    void TRenderContext::WaitForCurrentFrame() const
     {
         if (vkWaitForFences(
                 Device, 1, &InFlightFences[CurrentFrame], VK_TRUE, std::numeric_limits<std::uint64_t>::max()) !=
@@ -94,7 +94,7 @@ namespace MDSS
         }
     }
 
-    void RenderContext::ResetCurrentFence() const
+    void TRenderContext::ResetCurrentFence() const
     {
         if (vkResetFences(Device, 1, &InFlightFences[CurrentFrame]) != VK_SUCCESS)
         {
@@ -102,32 +102,32 @@ namespace MDSS
         }
     }
 
-    void RenderContext::AdvanceFrame() noexcept
+    void TRenderContext::AdvanceFrame() noexcept
     {
         CurrentFrame = (CurrentFrame + 1) % static_cast<std::uint32_t>(MaxFramesInFlight);
     }
 
-    std::uint32_t RenderContext::GetCurrentFrameIndex() const noexcept
+    std::uint32_t TRenderContext::GetCurrentFrameIndex() const noexcept
     {
         return CurrentFrame;
     }
 
-    VkCommandBuffer RenderContext::GetCurrentCommandBuffer() const noexcept
+    VkCommandBuffer TRenderContext::GetCurrentCommandBuffer() const noexcept
     {
         return CommandBuffers[CurrentFrame];
     }
 
-    VkSemaphore RenderContext::GetImageAvailableSemaphore() const noexcept
+    VkSemaphore TRenderContext::GetImageAvailableSemaphore() const noexcept
     {
         return ImageAvailableSemaphores[CurrentFrame];
     }
 
-    VkSemaphore RenderContext::GetRenderFinishedSemaphore() const noexcept
+    VkSemaphore TRenderContext::GetRenderFinishedSemaphore() const noexcept
     {
         return RenderFinishedSemaphores[CurrentFrame];
     }
 
-    VkFence RenderContext::GetInFlightFence() const noexcept
+    VkFence TRenderContext::GetInFlightFence() const noexcept
     {
         return InFlightFences[CurrentFrame];
     }

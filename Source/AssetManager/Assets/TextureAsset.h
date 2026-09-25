@@ -20,19 +20,19 @@
 
 namespace MDSS
 {
-    class VulkanContext;
+    class TVulkanContext;
 
-    class TextureAsset final : public Asset
+    class TextureAsset final : public TAsset
     {
     public:
         /**
          * @brief RGBA8 픽셀을 Vulkan image에 업로드하고 view와 sampler를 생성한다.
          * @throws std::runtime_error 이미지 자원 생성, layout 전환 또는 upload가 실패한 경우.
          */
-        TextureAsset(AssetID                          ID,
+        TextureAsset(TAssetID                          ID,
                      std::string                      Name,
                      std::filesystem::path            SourcePath,
-                     const VulkanContext&             Context,
+                     const TVulkanContext&             Context,
                      std::uint32_t                    Width,
                      std::uint32_t                    Height,
                      const std::vector<std::uint8_t>& RGBA8Pixels,
@@ -46,19 +46,19 @@ namespace MDSS
 
     private:
         /** @brief one-time command buffer로 지정된 image layout 전환을 실행한다. */
-        static void TransitionImageLayout(const VulkanContext& Context,
+        static void TransitionImageLayout(const TVulkanContext& Context,
                                           VkImage              Image,
                                           VkImageLayout        OldLayout,
                                           VkImageLayout        NewLayout);
         /** @brief staging buffer의 pixel data를 image의 color subresource로 복사한다. */
         static void CopyBufferToImage(
-            const VulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height);
+            const TVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height);
 
         std::uint32_t                 Width = 0;
         std::uint32_t                 Height = 0;
         VkFormat                      Format = VK_FORMAT_UNDEFINED;
-        std::unique_ptr<GPUImage>     Image;
-        std::unique_ptr<GPUImageView> ImageView;
-        std::unique_ptr<GPUSampler>   Sampler;
+        std::unique_ptr<TGPUImage>     Image;
+        std::unique_ptr<TGPUImageView> ImageView;
+        std::unique_ptr<TGPUSampler>   Sampler;
     };
 } // namespace MDSS

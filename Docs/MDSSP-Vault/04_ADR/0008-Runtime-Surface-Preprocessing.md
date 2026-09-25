@@ -14,18 +14,18 @@ Surface simulation에는 Mesh의 Simulation UV를 texel graph로 변환한 Mappi
 
 - `.Surface` 파일을 생성하거나 읽지 않는다. Persistent binary cache, cache path, input fingerprint와 cache invalidation을 사용하지 않는다.
 - Asset/Scene 로딩 중 각 고유 Mesh와 Profile Distribution 조합에 대해 CPU 전처리를 수행한다. 결과는 해당 Runtime 세션 동안 메모리에서 유지한다.
-- 전처리 입력은 Mesh topology/Simulation UV, 필요한 Normal Map 데이터, Profile Distribution이다. 출력은 texel Mapping 및 `SharedSurfaceGeometryData`와 texel별 Profile 연결 데이터다.
-- 같은 입력을 사용하는 Mesh instance들은 하나의 Runtime 전처리 결과를 공유한다. Instance별 State와 Overflow는 별도의 `SurfaceInstanceStateData`에 둔다.
+- 전처리 입력은 Mesh topology/Simulation UV, 필요한 Normal Map 데이터, Profile Distribution이다. 출력은 texel Mapping 및 `TSharedSurfaceGeometryData`와 texel별 Profile 연결 데이터다.
+- 같은 입력을 사용하는 Mesh instance들은 하나의 Runtime 전처리 결과를 공유한다. Instance별 State는 별도의 `TSurfaceInstanceStateData`에 둔다. State는 `stateCapacity`를 넘지 않으며 초과량은 저장하지 않는다. Solver 임시값은 `TempState`이며 초과량 저장소가 아니다.
 - 전처리는 Asset/Scene load 시점에만 실행한다. 매 frame 또는 instance마다 반복하지 않는다. 입력 Asset이 Runtime 중 교체되면 해당 조합의 결과를 다시 만든다.
 - Profile Distribution은 원본 authoring 입력으로 유지할 수 있지만, 전처리 결과를 `.Surface` 파일로 저장하지 않는다. 그 입력 형식과 Scene 연결 규칙은 별도 계약을 따른다.
 - 전처리 결과에 대한 disk serialization 및 사전 Asset Build 단계는 이번 설계에서 다루지 않는다.
 
 | 데이터 | 소유 위치 | 수명 및 범위 |
 |---|---|---|
-| Mapping 및 texel 관계 | Runtime `SurfaceMappingData` | 고유 Mesh의 전처리/geometry build 동안 또는 필요 기간 |
-| Geometry와 Texel → Profile 연결 | Runtime `SharedSurfaceGeometryData` | 같은 입력을 사용하는 instance 간 공유 |
+| Mapping 및 texel 관계 | Runtime `TSurfaceMappingData` | 고유 Mesh의 전처리/geometry build 동안 또는 필요 기간 |
+| Geometry와 Texel → Profile 연결 | Runtime `TSharedSurfaceGeometryData` | 같은 입력을 사용하는 instance 간 공유 |
 | State 반응 파라미터와 Transition | `.SRProfile` | Profile별 설정 |
-| State와 Overflow | `SurfaceInstanceStateData` | 시간에 따라 변하는 instance별 데이터 |
+| State | `TSurfaceInstanceStateData` | 시간에 따라 변하는 instance별 데이터. `stateCapacity`로 제한 |
 
 ## Alternatives Considered
 

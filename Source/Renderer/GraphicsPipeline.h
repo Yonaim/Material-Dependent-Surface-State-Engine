@@ -12,16 +12,16 @@
 
 namespace MDSS
 {
-    struct ShaderStageConfig
+    struct TShaderStageConfig
     {
         VkShaderStageFlagBits Stage = VK_SHADER_STAGE_VERTEX_BIT;
         std::string           ShaderPath;
         std::string           EntryPoint = "main";
     };
 
-    struct GraphicsPipelineConfig
+    struct TGraphicsPipelineConfig
     {
-        std::vector<ShaderStageConfig> ShaderStages;
+        std::vector<TShaderStageConfig> ShaderStages;
 
         VkPrimitiveTopology                            Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         std::vector<VkVertexInputBindingDescription>   VertexBindings;
@@ -41,20 +41,20 @@ namespace MDSS
         std::vector<VkPushConstantRange>   PushConstantRanges;
     };
 
-    class GraphicsPipeline
+    class TGraphicsPipeline
     {
     public:
         /**
          * @brief 설정에 지정된 shader와 fixed-function state로 pipeline을 생성한다.
          * @throws std::runtime_error shader 파일 또는 Vulkan pipeline 생성이 실패한 경우.
          */
-        GraphicsPipeline(VkDevice Device, VkRenderPass RenderPass, const GraphicsPipelineConfig& Config);
-        ~GraphicsPipeline();
+        TGraphicsPipeline(VkDevice Device, VkRenderPass TRenderPass, const TGraphicsPipelineConfig& Config);
+        ~TGraphicsPipeline();
 
-        GraphicsPipeline(const GraphicsPipeline&) = delete;
-        GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
-        GraphicsPipeline(GraphicsPipeline&&) = delete;
-        GraphicsPipeline& operator=(GraphicsPipeline&&) = delete;
+        TGraphicsPipeline(const TGraphicsPipeline&) = delete;
+        TGraphicsPipeline& operator=(const TGraphicsPipeline&) = delete;
+        TGraphicsPipeline(TGraphicsPipeline&&) = delete;
+        TGraphicsPipeline& operator=(TGraphicsPipeline&&) = delete;
 
         [[nodiscard]] VkPipeline       GetHandle() const noexcept;
         [[nodiscard]] VkPipelineLayout GetLayout() const noexcept;

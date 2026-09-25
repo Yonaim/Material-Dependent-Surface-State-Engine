@@ -22,7 +22,7 @@ namespace MDSS
         constexpr const char* PortabilitySubsetExtension = "VK_KHR_portability_subset";
     }
 
-    VulkanDevice::VulkanDevice(VkInstance Instance, VkSurfaceKHR Surface)
+    TVulkanDevice::TVulkanDevice(VkInstance Instance, VkSurfaceKHR Surface)
     {
         std::uint32_t PhysicalDeviceCount = 0;
         vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, nullptr);
@@ -34,7 +34,7 @@ namespace MDSS
 
         std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDeviceCount);
         vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data());
-        Logger::Debug("Vulkan", "Enumerated " + std::to_string(PhysicalDeviceCount) + " physical device(s).");
+        TLogger::Debug("Vulkan", "Enumerated " + std::to_string(PhysicalDeviceCount) + " physical device(s).");
 
         const auto Selected =
             std::find_if(PhysicalDevices.begin(),
@@ -48,7 +48,7 @@ namespace MDSS
 
         PhysicalDevice = *Selected;
 
-        const QueueFamilyIndices QueueFamilies = VulkanQueue::FindFamilies(PhysicalDevice, Surface);
+        const TQueueFamilyIndices QueueFamilies = TVulkanQueue::FindFamilies(PhysicalDevice, Surface);
         std::set<std::uint32_t>  UniqueQueueFamilies = {QueueFamilies.GraphicsFamily.value(),
                                                         QueueFamilies.PresentFamily.value()};
 
@@ -91,20 +91,20 @@ namespace MDSS
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
 
-        Logger::Info("Vulkan", std::string("Physical device selected: ") + Properties.deviceName + ".");
-        Logger::Debug("Vulkan",
+        TLogger::Info("Vulkan", std::string("Physical device selected: ") + Properties.deviceName + ".");
+        TLogger::Debug("Vulkan",
                       "GPU Vulkan API version=" + std::to_string(VK_API_VERSION_MAJOR(Properties.apiVersion)) + "." +
                           std::to_string(VK_API_VERSION_MINOR(Properties.apiVersion)) + "." +
                           std::to_string(VK_API_VERSION_PATCH(Properties.apiVersion)) + ".");
-        Logger::Info("Vulkan",
+        TLogger::Info("Vulkan",
                      "Logical device created with " + std::to_string(DeviceExtensions.size()) +
                          " required device extension(s).");
-        Logger::Info("Vulkan",
+        TLogger::Info("Vulkan",
                      std::string("Geometry shader support: ") +
                          (bGeometryShaderSupported ? "yes." : "no (optional stage will require fallback)."));
     }
 
-    VulkanDevice::~VulkanDevice()
+    TVulkanDevice::~TVulkanDevice()
     {
         if (Device != VK_NULL_HANDLE)
         {
@@ -113,22 +113,22 @@ namespace MDSS
         }
     }
 
-    VkPhysicalDevice VulkanDevice::GetPhysicalHandle() const noexcept
+    VkPhysicalDevice TVulkanDevice::GetPhysicalHandle() const noexcept
     {
         return PhysicalDevice;
     }
 
-    VkDevice VulkanDevice::GetHandle() const noexcept
+    VkDevice TVulkanDevice::GetHandle() const noexcept
     {
         return Device;
     }
 
-    bool VulkanDevice::SupportsGeometryShader() const noexcept
+    bool TVulkanDevice::SupportsGeometryShader() const noexcept
     {
         return bGeometryShaderSupported;
     }
 
-    bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    bool TVulkanDevice::IsDeviceSuitable(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
@@ -139,18 +139,18 @@ namespace MDSS
             return false;
         }
 
-        const QueueFamilyIndices QueueFamilies = VulkanQueue::FindFamilies(PhysicalDevice, Surface);
+        const TQueueFamilyIndices QueueFamilies = TVulkanQueue::FindFamilies(PhysicalDevice, Surface);
 
         return QueueFamilies.Complete() && SupportsRequiredExtensions(PhysicalDevice) &&
                HasAdequateSwapchainSupport(PhysicalDevice, Surface);
     }
 
-    bool VulkanDevice::SupportsRequiredExtensions(VkPhysicalDevice PhysicalDevice)
+    bool TVulkanDevice::SupportsRequiredExtensions(VkPhysicalDevice PhysicalDevice)
     {
         return HasDeviceExtension(PhysicalDevice, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
 
-    bool VulkanDevice::HasAdequateSwapchainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    bool TVulkanDevice::HasAdequateSwapchainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
         std::uint32_t FormatCount = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &FormatCount, nullptr);
@@ -161,7 +161,7 @@ namespace MDSS
         return FormatCount > 0 && PresentModeCount > 0;
     }
 
-    bool VulkanDevice::HasDeviceExtension(VkPhysicalDevice PhysicalDevice, const char* ExtensionName)
+    bool TVulkanDevice::HasDeviceExtension(VkPhysicalDevice PhysicalDevice, const char* ExtensionName)
     {
         std::uint32_t ExtensionCount = 0;
         vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, nullptr);
@@ -175,7 +175,7 @@ namespace MDSS
                            { return std::strcmp(Extension.extensionName, ExtensionName) == 0; });
     }
 
-    std::vector<const char*> VulkanDevice::BuildDeviceExtensions(VkPhysicalDevice PhysicalDevice)
+    std::vector<const char*> TVulkanDevice::BuildDeviceExtensions(VkPhysicalDevice PhysicalDevice)
     {
         std::vector<const char*> Extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 

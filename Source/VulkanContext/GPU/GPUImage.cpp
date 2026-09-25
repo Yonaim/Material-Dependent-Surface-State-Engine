@@ -11,7 +11,7 @@
 
 namespace MDSS
 {
-    GPUImage::GPUImage(VkPhysicalDevice      PhysicalDevice,
+    TGPUImage::TGPUImage(VkPhysicalDevice      PhysicalDevice,
                        VkDevice              Device,
                        VkExtent2D            Extent,
                        VkFormat              Format,
@@ -23,12 +23,12 @@ namespace MDSS
         Create(PhysicalDevice, Extent, Format, Tiling, Usage, MemoryProperties);
     }
 
-    GPUImage::~GPUImage()
+    TGPUImage::~TGPUImage()
     {
         Reset();
     }
 
-    void GPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
+    void TGPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
                             VkExtent2D            NewExtent,
                             VkFormat              NewFormat,
                             VkImageTiling         Tiling,
@@ -39,7 +39,7 @@ namespace MDSS
         Create(PhysicalDevice, NewExtent, NewFormat, Tiling, Usage, MemoryProperties);
     }
 
-    void GPUImage::Reset()
+    void TGPUImage::Reset()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -57,7 +57,7 @@ namespace MDSS
         Extent = {};
     }
 
-    void GPUImage::Create(VkPhysicalDevice      PhysicalDevice,
+    void TGPUImage::Create(VkPhysicalDevice      PhysicalDevice,
                           VkExtent2D            NewExtent,
                           VkFormat              NewFormat,
                           VkImageTiling         Tiling,
@@ -117,27 +117,27 @@ namespace MDSS
             throw std::runtime_error("Failed to bind Vulkan image memory.");
         }
 
-        Logger::Verbose("Vulkan",
-                        "GPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
+        TLogger::Verbose("Vulkan",
+                        "TGPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
                             ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
-    VkImage GPUImage::GetHandle() const noexcept
+    VkImage TGPUImage::GetHandle() const noexcept
     {
         return Handle;
     }
 
-    VkFormat GPUImage::GetFormat() const noexcept
+    VkFormat TGPUImage::GetFormat() const noexcept
     {
         return Format;
     }
 
-    VkExtent2D GPUImage::GetExtent() const noexcept
+    VkExtent2D TGPUImage::GetExtent() const noexcept
     {
         return Extent;
     }
 
-    std::uint32_t GPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
+    std::uint32_t TGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                            std::uint32_t         TypeFilter,
                                            VkMemoryPropertyFlags RequiredProperties)
     {

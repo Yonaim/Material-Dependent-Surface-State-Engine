@@ -19,7 +19,7 @@
 
 Render Material과 Surface Response Profile은 서로 다른 책임이다. Render Material은 외관을 정의하고, `.SRProfile`은 State에 대한 반응 파라미터와 Transition을 정의한다. 하나의 Render Material 영역이 반드시 하나의 SRProfile만 사용한다고 가정하지 않는다.
 
-Runtime 전처리 결과는 UV texel별 Profile 연결을 포함해 각 위치의 `ProfileIndex`를 지정한다. 이로써 동일한 Render Material 내부에서도 위치별로 서로 다른 SRProfile을 사용할 수 있다. Profile Distribution은 전처리의 입력이며, 구체적인 authoring 형식과 `.Scene` 연결 규칙은 별도 결정으로 정한다. 결과는 실행 중 메모리에만 두고 `.Surface` 파일로 저장하지 않는다.
+Runtime 전처리 결과는 유효한 각 UV texel에 `ProfileIndex` 하나를 저장하는 dense Profile Map을 포함한다. 각 texel은 별도 Profile 테이블의 반응 파라미터를 이 인덱스로 조회한다. 인접 texel이 같은 Profile을 쓰더라도 기본안에서는 인덱스를 texel마다 저장해 직접 조회를 단순하고 빠르게 한다. 이로써 동일한 Render Material 내부에서도 위치별로 서로 다른 SRProfile을 사용할 수 있다. Profile Distribution은 전처리 입력이며, 구체적인 authoring 형식과 `.Scene` 연결 규칙은 별도 결정으로 정한다. Profile Map은 실행 중 메모리에만 두고 `.Surface` 파일로 저장하지 않는다. [[../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
 
 ```text
 UV Texel
@@ -32,7 +32,7 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset
 
 | Runtime Surface Data에 포함 | Runtime Surface Data에 포함하지 않음 |
 |---|---|
-| 유효성, Normal, Meso Virtual Height, Curvature/Concavity 등 정적 Geometry 값 | 시간에 따라 변하는 State와 Overflow |
+| 유효성, Normal, Meso Virtual Height, Curvature/Concavity 등 정적 Geometry 값 | 시간에 따라 변하는 instance별 State |
 | Neighbor, Distance, Height Difference, Boundary, UV seam 연결 등 texel 관계 | `.SRProfile`의 반응 파라미터와 Transition |
 | Texel → `ProfileIndex` map | Instance별 `SurfaceInstanceStateData` |
 
@@ -40,7 +40,7 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset
 
 ## State Registry
 
-`.SRProfile`의 `states` key가 프로젝트에서 사용하는 State 이름을 제공한다. Profile을 로드하면서 이 이름들을 모아 `SurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 `StateId`/`ChannelIndex`로 변환한다. 이름 정규화 규칙과 Solver의 데이터 주도 처리 원칙은 [[../04_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
+`.SRProfile`의 `states` key가 프로젝트에서 사용하는 State 이름을 제공한다. Profile을 로드하면서 이 이름들을 모아 `TSurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 `TStateId`/`ChannelIndex`로 변환한다. 이름 정규화 규칙과 Solver의 데이터 주도 처리 원칙은 [[../04_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
 
 ## `.SRProfile` 예시
 
@@ -110,7 +110,7 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset
 
 ```json
 {
-  "type": "Scene",
+  "type": "TScene",
   "version": 1,
   "objects": [
     {

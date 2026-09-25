@@ -13,7 +13,7 @@
 
 namespace MDSS
 {
-    VulkanQueue::VulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
+    TVulkanQueue::TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
         : FamilyIndices(FindFamilies(PhysicalDevice, Surface))
     {
         if (!FamilyIndices.Complete())
@@ -23,27 +23,27 @@ namespace MDSS
 
         vkGetDeviceQueue(Device, FamilyIndices.GraphicsFamily.value(), 0, &GraphicsQueue);
         vkGetDeviceQueue(Device, FamilyIndices.PresentFamily.value(), 0, &PresentQueue);
-        Logger::Debug("Vulkan", "Queue handles acquired from logical device.");
+        TLogger::Debug("Vulkan", "Queue handles acquired from logical device.");
     }
 
-    VkQueue VulkanQueue::GetGraphics() const noexcept
+    VkQueue TVulkanQueue::GetGraphics() const noexcept
     {
         return GraphicsQueue;
     }
 
-    VkQueue VulkanQueue::GetPresent() const noexcept
+    VkQueue TVulkanQueue::GetPresent() const noexcept
     {
         return PresentQueue;
     }
 
-    const QueueFamilyIndices& VulkanQueue::GetFamilyIndices() const noexcept
+    const TQueueFamilyIndices& TVulkanQueue::GetFamilyIndices() const noexcept
     {
         return FamilyIndices;
     }
 
-    QueueFamilyIndices VulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    TQueueFamilyIndices TVulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
-        QueueFamilyIndices Indices;
+        TQueueFamilyIndices Indices;
 
         std::uint32_t QueueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, nullptr);

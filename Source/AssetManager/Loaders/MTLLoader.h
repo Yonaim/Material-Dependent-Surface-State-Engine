@@ -16,7 +16,7 @@ namespace tinyobj
 
 namespace MDSS
 {
-    struct MaterialSourceData
+    struct TMaterialSourceData
     {
         std::string           Name;
         glm::vec4             BaseColor{1.0F};
@@ -24,11 +24,11 @@ namespace MDSS
         std::filesystem::path NormalTexturePath;
     };
 
-    class MTLLoader
+    class TMTLLoader
     {
     public:
         /** @brief tinyobj material을 엔진 값과 OBJ 기준 texture 경로로 변환한다. */
-        [[nodiscard]] static MaterialSourceData Convert(const tinyobj::material_t&   Material,
+        [[nodiscard]] static TMaterialSourceData Convert(const tinyobj::material_t&   Material,
                                                         const std::filesystem::path& TextureBaseDirectory);
     };
 } // namespace MDSS

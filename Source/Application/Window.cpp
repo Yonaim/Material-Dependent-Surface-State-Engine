@@ -23,7 +23,7 @@ namespace MDSS
         std::uint32_t WindowCount = 0;
     } // namespace
 
-    Window::Window(std::uint32_t Width, std::uint32_t Height, std::string Title)
+    TWindow::TWindow(std::uint32_t Width, std::uint32_t Height, std::string Title)
     {
         InitializeGLFW();
 
@@ -41,11 +41,11 @@ namespace MDSS
         glfwSetWindowUserPointer(Handle, this);
         glfwSetFramebufferSizeCallback(Handle, FramebufferSizeCallback);
 
-        Logger::Info("Application",
+        TLogger::Info("TApplication",
                      "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
     }
 
-    Window::~Window()
+    TWindow::~TWindow()
     {
         if (Handle != nullptr)
         {
@@ -56,32 +56,32 @@ namespace MDSS
         TerminateGLFW();
     }
 
-    bool Window::ShouldClose() const
+    bool TWindow::ShouldClose() const
     {
         return glfwWindowShouldClose(Handle) == GLFW_TRUE;
     }
 
-    void Window::PollEvents() const
+    void TWindow::PollEvents() const
     {
         glfwPollEvents();
     }
 
-    GLFWwindow* Window::GetNativeHandle() const noexcept
+    GLFWwindow* TWindow::GetNativeHandle() const noexcept
     {
         return Handle;
     }
 
-    bool Window::WasFramebufferResized() const noexcept
+    bool TWindow::WasFramebufferResized() const noexcept
     {
         return bFramebufferResized;
     }
 
-    void Window::ResetFramebufferResized() noexcept
+    void TWindow::ResetFramebufferResized() noexcept
     {
         bFramebufferResized = false;
     }
 
-    void Window::GetFramebufferSize(std::uint32_t& Width, std::uint32_t& Height) const noexcept
+    void TWindow::GetFramebufferSize(std::uint32_t& Width, std::uint32_t& Height) const noexcept
     {
         int FramebufferWidth = 0;
         int FramebufferHeight = 0;
@@ -91,7 +91,7 @@ namespace MDSS
         Height = static_cast<std::uint32_t>(std::max(FramebufferHeight, 0));
     }
 
-    void Window::WaitForNonZeroFramebuffer() const
+    void TWindow::WaitForNonZeroFramebuffer() const
     {
         std::uint32_t Width = 0;
         std::uint32_t Height = 0;
@@ -104,21 +104,21 @@ namespace MDSS
         }
     }
 
-    void Window::FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height)
+    void TWindow::FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height)
     {
-        auto* WindowInstance = static_cast<Window*>(glfwGetWindowUserPointer(WindowHandle));
+        auto* WindowInstance = static_cast<TWindow*>(glfwGetWindowUserPointer(WindowHandle));
         if (WindowInstance == nullptr)
         {
             return;
         }
 
         WindowInstance->bFramebufferResized = true;
-        Logger::Debug("Application",
-                      "Framebuffer resize requested: " + std::to_string(std::max(Width, 0)) + "x" +
+        TLogger::Debug("TApplication",
+                      "TFramebuffer resize requested: " + std::to_string(std::max(Width, 0)) + "x" +
                           std::to_string(std::max(Height, 0)) + ".");
     }
 
-    void Window::InitializeGLFW()
+    void TWindow::InitializeGLFW()
     {
         std::scoped_lock Lock(GLFWMutex);
 
@@ -128,13 +128,13 @@ namespace MDSS
             {
                 throw std::runtime_error("Failed to initialize GLFW.");
             }
-            Logger::Debug("Application", "GLFW initialized.");
+            TLogger::Debug("TApplication", "GLFW initialized.");
         }
 
         ++WindowCount;
     }
 
-    void Window::TerminateGLFW()
+    void TWindow::TerminateGLFW()
     {
         std::scoped_lock Lock(GLFWMutex);
 
@@ -148,7 +148,7 @@ namespace MDSS
         if (WindowCount == 0)
         {
             glfwTerminate();
-            Logger::Verbose("Application", "GLFW terminated.");
+            TLogger::Verbose("TApplication", "GLFW terminated.");
         }
     }
 } // namespace MDSS

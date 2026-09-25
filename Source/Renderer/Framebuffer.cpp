@@ -13,31 +13,31 @@
 
 namespace MDSS
 {
-    Framebuffer::Framebuffer(VkDevice                        Device,
-                             VkRenderPass                    RenderPass,
+    TFramebuffer::TFramebuffer(VkDevice                        Device,
+                             VkRenderPass                    TRenderPass,
                              VkExtent2D                      Extent,
                              const std::vector<VkImageView>& ColorImageViews,
                              VkImageView                     DepthImageView)
         : Device(Device)
     {
-        Create(RenderPass, Extent, ColorImageViews, DepthImageView);
+        Create(TRenderPass, Extent, ColorImageViews, DepthImageView);
     }
 
-    Framebuffer::~Framebuffer()
+    TFramebuffer::~TFramebuffer()
     {
         Reset();
     }
 
-    void Framebuffer::Recreate(VkRenderPass                    RenderPass,
+    void TFramebuffer::Recreate(VkRenderPass                    TRenderPass,
                                VkExtent2D                      Extent,
                                const std::vector<VkImageView>& ColorImageViews,
                                VkImageView                     DepthImageView)
     {
         Reset();
-        Create(RenderPass, Extent, ColorImageViews, DepthImageView);
+        Create(TRenderPass, Extent, ColorImageViews, DepthImageView);
     }
 
-    void Framebuffer::Reset()
+    void TFramebuffer::Reset()
     {
         for (VkFramebuffer Handle : Handles)
         {
@@ -49,7 +49,7 @@ namespace MDSS
         Handles.clear();
     }
 
-    void Framebuffer::Create(VkRenderPass                    RenderPass,
+    void TFramebuffer::Create(VkRenderPass                    TRenderPass,
                              VkExtent2D                      Extent,
                              const std::vector<VkImageView>& ColorImageViews,
                              VkImageView                     DepthImageView)
@@ -62,7 +62,7 @@ namespace MDSS
 
             VkFramebufferCreateInfo CreateInfo{};
             CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            CreateInfo.renderPass = RenderPass;
+            CreateInfo.renderPass = TRenderPass;
             CreateInfo.attachmentCount = static_cast<std::uint32_t>(Attachments.size());
             CreateInfo.pAttachments = Attachments.data();
             CreateInfo.width = Extent.width;
@@ -80,22 +80,22 @@ namespace MDSS
             }
         }
 
-        Logger::Debug("Renderer",
+        TLogger::Debug("TRenderer",
                       "Framebuffers created: " + std::to_string(Handles.size()) + " at " +
                           std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ".");
     }
 
-    VkFramebuffer Framebuffer::Get(std::size_t Index) const
+    VkFramebuffer TFramebuffer::Get(std::size_t Index) const
     {
         if (Index >= Handles.size())
         {
-            throw std::out_of_range("Framebuffer index is out of range.");
+            throw std::out_of_range("TFramebuffer index is out of range.");
         }
 
         return Handles[Index];
     }
 
-    std::size_t Framebuffer::GetCount() const noexcept
+    std::size_t TFramebuffer::GetCount() const noexcept
     {
         return Handles.size();
     }

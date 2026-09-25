@@ -16,20 +16,20 @@
 
 namespace MDSS
 {
-    VulkanContext::VulkanContext(const Window& Window)
-        : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), Window)),
+    TVulkanContext::TVulkanContext(const TWindow& TWindow)
+        : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), TWindow)),
           Device(Instance.GetHandle(), Surface), Queues(Device.GetPhysicalHandle(), Device.GetHandle(), Surface),
           Commands(Device.GetHandle(), Queues.GetFamilyIndices().GraphicsFamily.value())
     {
         const auto& Families = Queues.GetFamilyIndices();
-        Logger::Info(
+        TLogger::Info(
             "Vulkan",
             "Graphics/present queues acquired (graphics family=" + std::to_string(Families.GraphicsFamily.value()) +
                 ", present family=" + std::to_string(Families.PresentFamily.value()) + ").");
-        Logger::Info("Vulkan", "Graphics command pool created.");
+        TLogger::Info("Vulkan", "Graphics command pool created.");
     }
 
-    VulkanContext::~VulkanContext()
+    TVulkanContext::~TVulkanContext()
     {
         if (Surface != VK_NULL_HANDLE)
         {
@@ -38,42 +38,42 @@ namespace MDSS
         }
     }
 
-    VkInstance VulkanContext::GetInstance() const noexcept
+    VkInstance TVulkanContext::GetInstance() const noexcept
     {
         return Instance.GetHandle();
     }
 
-    VkSurfaceKHR VulkanContext::GetSurface() const noexcept
+    VkSurfaceKHR TVulkanContext::GetSurface() const noexcept
     {
         return Surface;
     }
 
-    VkPhysicalDevice VulkanContext::GetPhysicalDevice() const noexcept
+    VkPhysicalDevice TVulkanContext::GetPhysicalDevice() const noexcept
     {
         return Device.GetPhysicalHandle();
     }
 
-    VkDevice VulkanContext::GetDevice() const noexcept
+    VkDevice TVulkanContext::GetDevice() const noexcept
     {
         return Device.GetHandle();
     }
 
-    bool VulkanContext::SupportsGeometryShader() const noexcept
+    bool TVulkanContext::SupportsGeometryShader() const noexcept
     {
         return Device.SupportsGeometryShader();
     }
 
-    const VulkanQueue& VulkanContext::GetQueues() const noexcept
+    const TVulkanQueue& TVulkanContext::GetQueues() const noexcept
     {
         return Queues;
     }
 
-    const VulkanCommand& VulkanContext::GetCommands() const noexcept
+    const TVulkanCommand& TVulkanContext::GetCommands() const noexcept
     {
         return Commands;
     }
 
-    std::vector<const char*> VulkanContext::RequiredInstanceExtensions()
+    std::vector<const char*> TVulkanContext::RequiredInstanceExtensions()
     {
         if (glfwVulkanSupported() != GLFW_TRUE)
         {
@@ -89,20 +89,20 @@ namespace MDSS
             throw std::runtime_error("GLFW did not provide the required Vulkan instance extensions.");
         }
 
-        Logger::Debug("Vulkan", "GLFW requested " + std::to_string(ExtensionCount) + " Vulkan instance extensions.");
+        TLogger::Debug("Vulkan", "GLFW requested " + std::to_string(ExtensionCount) + " Vulkan instance extensions.");
         return {Extensions, Extensions + ExtensionCount};
     }
 
-    VkSurfaceKHR VulkanContext::CreateSurface(VkInstance Instance, const Window& Window)
+    VkSurfaceKHR TVulkanContext::CreateSurface(VkInstance Instance, const TWindow& TWindow)
     {
         VkSurfaceKHR Surface = VK_NULL_HANDLE;
 
-        if (glfwCreateWindowSurface(Instance, Window.GetNativeHandle(), nullptr, &Surface) != VK_SUCCESS)
+        if (glfwCreateWindowSurface(Instance, TWindow.GetNativeHandle(), nullptr, &Surface) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create Vulkan window surface.");
         }
 
-        Logger::Info("Vulkan", "Window surface created.");
+        TLogger::Info("Vulkan", "TWindow surface created.");
         return Surface;
     }
 } // namespace MDSS

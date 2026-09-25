@@ -30,10 +30,10 @@ namespace MDSS
         }
     } // namespace
 
-    MaterialSourceData MTLLoader::Convert(const tinyobj::material_t&   Material,
+    TMaterialSourceData TMTLLoader::Convert(const tinyobj::material_t&   Material,
                                           const std::filesystem::path& TextureBaseDirectory)
     {
-        MaterialSourceData Result{};
+        TMaterialSourceData Result{};
         Result.Name = Material.name.empty() ? "Material" : Material.name;
         Result.BaseColor = {Material.diffuse[0], Material.diffuse[1], Material.diffuse[2], Material.dissolve};
         Result.BaseColorTexturePath = ResolveTexturePath(TextureBaseDirectory, Material.diffuse_texname);
@@ -44,7 +44,7 @@ namespace MDSS
             !Material.normal_texname.empty() ? Material.normal_texname : Material.bump_texname;
         Result.NormalTexturePath = ResolveTexturePath(TextureBaseDirectory, NormalTextureName);
 
-        Logger::Debug("MTLLoader",
+        TLogger::Debug("TMTLLoader",
                       "Material '" + Result.Name + "': base texture=" +
                           (Result.BaseColorTexturePath.empty() ? std::string("<default>")
                                                                : Result.BaseColorTexturePath.filename().string()) +

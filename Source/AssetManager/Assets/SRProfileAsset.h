@@ -13,15 +13,15 @@
 
 namespace MDSS
 {
-    class SRProfileAsset final : public Asset
+    class TSRProfileAsset final : public TAsset
     {
     public:
         /** @brief Profile 데이터를 보관하고 생성 시 전체 데이터 계약을 검증한다. */
-        SRProfileAsset(AssetID ID, std::string Name, std::filesystem::path SourcePath, SurfaceResponseProfileData Data);
+        TSRProfileAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath, TSurfaceResponseProfileData Data);
 
-        [[nodiscard]] const SurfaceResponseProfileData& GetData() const noexcept;
+        [[nodiscard]] const TSurfaceResponseProfileData& GetData() const noexcept;
 
     private:
-        SurfaceResponseProfileData Data;
+        TSurfaceResponseProfileData Data;
     };
 } // namespace MDSS

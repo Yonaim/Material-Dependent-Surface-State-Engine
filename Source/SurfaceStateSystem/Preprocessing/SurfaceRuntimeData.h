@@ -15,20 +15,20 @@
 namespace MDSS
 {
     /** @brief Shared static mapping output for a Mesh/Profile Distribution input pair. */
-    struct SurfaceRuntimeData
+    struct TSurfaceRuntimeData
     {
-        std::shared_ptr<const SharedSurfaceGeometryData> Geometry;
+        std::shared_ptr<const TSharedSurfaceGeometryData> Geometry;
 
-        explicit SurfaceRuntimeData(SharedSurfaceGeometryData Geometry);
-        [[nodiscard]] std::shared_ptr<const SharedSurfaceGeometryData> GetSharedGeometry() const noexcept;
+        explicit TSurfaceRuntimeData(TSharedSurfaceGeometryData Geometry);
+        [[nodiscard]] std::shared_ptr<const TSharedSurfaceGeometryData> GetSharedGeometry() const noexcept;
     };
 
-    class SurfacePreprocessor final
+    class TSurfacePreprocessor final
     {
     public:
         /** @brief Build in-memory shared geometry from a Runtime mapping and its texel Profile map. */
-        [[nodiscard]] static SurfaceRuntimeData Build(const SurfaceMappingData&        Mapping,
-                                                      std::vector<SurfaceProfileIndex> ProfileMap,
+        [[nodiscard]] static TSurfaceRuntimeData Build(const TSurfaceMappingData&        Mapping,
+                                                      std::vector<TSurfaceProfileIndex> ProfileMap,
                                                       std::uint32_t                    ProfileCount);
     };
 } // namespace MDSS

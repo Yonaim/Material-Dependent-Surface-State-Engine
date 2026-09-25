@@ -14,15 +14,15 @@
 
 namespace MDSS
 {
-    TextureAsset::TextureAsset(AssetID                          ID,
+    TextureAsset::TextureAsset(TAssetID                          ID,
                                std::string                      Name,
                                std::filesystem::path            SourcePath,
-                               const VulkanContext&             Context,
+                               const TVulkanContext&             Context,
                                std::uint32_t                    Width,
                                std::uint32_t                    Height,
                                const std::vector<std::uint8_t>& RGBA8Pixels,
                                VkFormat                         Format)
-        : Asset(ID, std::move(Name), std::move(SourcePath)), Width(Width), Height(Height), Format(Format)
+        : TAsset(ID, std::move(Name), std::move(SourcePath)), Width(Width), Height(Height), Format(Format)
     {
         if (Width == 0 || Height == 0 || RGBA8Pixels.size() != static_cast<std::size_t>(Width) * Height * 4U)
         {
@@ -30,14 +30,14 @@ namespace MDSS
         }
 
         const VkDeviceSize ByteCount = static_cast<VkDeviceSize>(RGBA8Pixels.size());
-        GPUBuffer          StagingBuffer(Context.GetPhysicalDevice(),
+        TGPUBuffer          StagingBuffer(Context.GetPhysicalDevice(),
                                 Context.GetDevice(),
                                 ByteCount,
                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         StagingBuffer.Upload(RGBA8Pixels.data(), ByteCount);
 
-        Image = std::make_unique<GPUImage>(Context.GetPhysicalDevice(),
+        Image = std::make_unique<TGPUImage>(Context.GetPhysicalDevice(),
                                            Context.GetDevice(),
                                            VkExtent2D{Width, Height},
                                            Format,
@@ -54,9 +54,9 @@ namespace MDSS
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         ImageView =
-            std::make_unique<GPUImageView>(Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
-        Sampler = std::make_unique<GPUSampler>(Context.GetDevice());
-        Logger::Debug("AssetManager",
+            std::make_unique<TGPUImageView>(Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
+        Sampler = std::make_unique<TGPUSampler>(Context.GetDevice());
+        TLogger::Debug("TAssetManager",
                       "Uploaded TextureAsset '" + GetName() + "' to GPU (" + std::to_string(Width) + "x" +
                           std::to_string(Height) + ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
@@ -86,7 +86,7 @@ namespace MDSS
         return Sampler->GetHandle();
     }
 
-    void TextureAsset::TransitionImageLayout(const VulkanContext& Context,
+    void TextureAsset::TransitionImageLayout(const TVulkanContext& Context,
                                              VkImage              Image,
                                              VkImageLayout        OldLayout,
                                              VkImageLayout        NewLayout)
@@ -136,7 +136,7 @@ namespace MDSS
     }
 
     void TextureAsset::CopyBufferToImage(
-        const VulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height)
+        const TVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height)
     {
         VkCommandBuffer CommandBuffer = Context.GetCommands().BeginSingleTime();
 

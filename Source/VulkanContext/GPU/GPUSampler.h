@@ -9,17 +9,17 @@
 
 namespace MDSS
 {
-    class GPUSampler
+    class TGPUSampler
     {
     public:
         /** @brief 프로젝트 기본 filtering 및 address mode를 사용하는 sampler를 생성한다. */
-        explicit GPUSampler(VkDevice Device);
-        ~GPUSampler();
+        explicit TGPUSampler(VkDevice Device);
+        ~TGPUSampler();
 
-        GPUSampler(const GPUSampler&) = delete;
-        GPUSampler& operator=(const GPUSampler&) = delete;
-        GPUSampler(GPUSampler&&) = delete;
-        GPUSampler& operator=(GPUSampler&&) = delete;
+        TGPUSampler(const TGPUSampler&) = delete;
+        TGPUSampler& operator=(const TGPUSampler&) = delete;
+        TGPUSampler(TGPUSampler&&) = delete;
+        TGPUSampler& operator=(TGPUSampler&&) = delete;
 
         [[nodiscard]] VkSampler GetHandle() const noexcept;
 

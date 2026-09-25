@@ -21,21 +21,21 @@ namespace MDSS
 {
     namespace
     {
-        struct VertexKey
+        struct TVertexKey
         {
             int Position = -1;
             int Normal = -1;
             int UV = -1;
 
-            bool operator==(const VertexKey& Other) const noexcept
+            bool operator==(const TVertexKey& Other) const noexcept
             {
                 return Position == Other.Position && Normal == Other.Normal && UV == Other.UV;
             }
         };
 
-        struct VertexKeyHash
+        struct TVertexKeyHash
         {
-            std::size_t operator()(const VertexKey& Key) const noexcept
+            std::size_t operator()(const TVertexKey& Key) const noexcept
             {
                 std::size_t Hash = static_cast<std::size_t>(Key.Position + 1);
                 Hash ^= static_cast<std::size_t>(Key.Normal + 1) * 0x9e3779b9U + (Hash << 6U) + (Hash >> 2U);
@@ -76,7 +76,7 @@ namespace MDSS
         }
     } // namespace
 
-    OBJLoadResult OBJLoader::Load(const std::filesystem::path& Path)
+    TOBJLoadResult TOBJLoader::Load(const std::filesystem::path& Path)
     {
         tinyobj::attrib_t                Attrib{};
         std::vector<tinyobj::shape_t>    Shapes;
@@ -102,44 +102,44 @@ namespace MDSS
 
         if (!Warning.empty())
         {
-            Logger::Warning("OBJLoader", Warning);
+            TLogger::Warning("TOBJLoader", Warning);
         }
 
-        Logger::Debug("OBJLoader",
+        TLogger::Debug("TOBJLoader",
                       "Parsed '" + Path.filename().string() + "': shapes=" + std::to_string(Shapes.size()) +
                           ", materials=" + std::to_string(Materials.size()) + ".");
 
-        OBJLoadResult Result{};
+        TOBJLoadResult Result{};
         Result.Materials.reserve(Materials.size());
         for (const tinyobj::material_t& Material : Materials)
         {
-            Result.Materials.push_back(MTLLoader::Convert(Material, BaseDirectory));
+            Result.Materials.push_back(TMTLLoader::Convert(Material, BaseDirectory));
         }
 
-        std::unordered_map<VertexKey, std::uint32_t, VertexKeyHash> UniqueVertices;
+        std::unordered_map<TVertexKey, std::uint32_t, TVertexKeyHash> UniqueVertices;
         std::vector<glm::vec3>                                      GeneratedNormalAccumulator;
-        std::unordered_map<std::int32_t, SurfaceLocalID>            MaterialSurfaces;
+        std::unordered_map<std::int32_t, TSurfaceLocalID>            MaterialSurfaces;
 
-        auto GetSurface = [&](std::int32_t MaterialIndex) -> SurfaceLocalID
+        auto GetSurface = [&](std::int32_t MaterialIndex) -> TSurfaceLocalID
         {
             if (const auto Existing = MaterialSurfaces.find(MaterialIndex); Existing != MaterialSurfaces.end())
             {
                 return Existing->second;
             }
-            const SurfaceLocalID Surface = static_cast<SurfaceLocalID>(MaterialSurfaces.size());
+            const TSurfaceLocalID Surface = static_cast<TSurfaceLocalID>(MaterialSurfaces.size());
             MaterialSurfaces.emplace(MaterialIndex, Surface);
             return Surface;
         };
 
         auto AppendVertex = [&](const tinyobj::index_t& Index) -> std::uint32_t
         {
-            const VertexKey Key{Index.vertex_index, Index.normal_index, Index.texcoord_index};
+            const TVertexKey Key{Index.vertex_index, Index.normal_index, Index.texcoord_index};
             if (const auto Existing = UniqueVertices.find(Key); Existing != UniqueVertices.end())
             {
                 return Existing->second;
             }
 
-            Vertex NewVertex{};
+            TVertex NewVertex{};
             NewVertex.Position = ReadPosition(Attrib, Index.vertex_index);
             NewVertex.Normal = ReadNormal(Attrib, Index.normal_index);
             NewVertex.UV = ReadUV(Attrib, Index.texcoord_index);
@@ -164,7 +164,7 @@ namespace MDSS
 
                 const std::int32_t MaterialIndex =
                     Face < Shape.mesh.material_ids.size() ? Shape.mesh.material_ids[Face] : -1;
-                const SurfaceLocalID Surface = GetSurface(MaterialIndex);
+                const TSurfaceLocalID Surface = GetSurface(MaterialIndex);
 
                 if (Result.Sections.empty() || Result.Sections.back().MaterialIndex != MaterialIndex)
                 {
@@ -236,14 +236,14 @@ namespace MDSS
             Result.Sections.push_back({0, static_cast<std::uint32_t>(Result.Indices.size()), -1, 0});
         }
 
-        Logger::Info("OBJLoader",
+        TLogger::Info("TOBJLoader",
                      "Generated mesh data: vertices=" + std::to_string(Result.Vertices.size()) +
                          ", indices=" + std::to_string(Result.Indices.size()) +
                          ", sections=" + std::to_string(Result.Sections.size()) + ".");
         return Result;
     }
 
-    void OBJLoader::GenerateTangents(std::vector<Vertex>& Vertices, const std::vector<std::uint32_t>& Indices)
+    void TOBJLoader::GenerateTangents(std::vector<TVertex>& Vertices, const std::vector<std::uint32_t>& Indices)
     {
         std::vector<glm::vec3> TangentSums(Vertices.size(), glm::vec3(0.0F));
         std::vector<glm::vec3> BitangentSums(Vertices.size(), glm::vec3(0.0F));

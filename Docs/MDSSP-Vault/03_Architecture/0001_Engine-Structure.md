@@ -4,24 +4,24 @@
 
 | 모듈 | 책임 |
 |---|---|
-| `Application` | 창, Vulkan, 에셋, Scene, Renderer, DebugUI의 수명과 메인 루프 조정 |
-| `AssetManager` | Mesh, Texture, Material, Surface Response Profile Asset 관리 |
-| `DebugUI` | 카메라·렌더 설정과 로그 진단 UI |
+| `TApplication` | 창, Vulkan, 에셋, Scene, Renderer, DebugUI의 수명과 메인 루프 조정 |
+| `TAssetManager` | Mesh, Texture, Material, Surface Response Profile Asset 관리 |
+| `TDebugUI` | 카메라·렌더 설정과 로그 진단 UI |
 | `InputSystem` | 입력 장치 이벤트, Raycast 및 Contact 입력 생성. 현재 placeholder |
-| `Logger` | 모듈별 로그 기록과 로그 항목 조회 |
-| `Renderer` | Swapchain, RenderPass/Pipeline, Framebuffer, 프레임 렌더링 |
-| `Scene` | Camera와 `StaticMeshInstance[]` 관리 |
-| `SurfaceStateSystem` | 공유 형상 데이터, 인스턴스 상태, 입력, Solver, 형상 갱신, DebugData 관리. 현재 placeholder |
-| `VulkanContext` | Instance / Device, Queue / Command, GPU Resource 기반 관리 |
+| `TLogger` | 모듈별 로그 기록과 로그 항목 조회 |
+| `TRenderer` | Swapchain, RenderPass/Pipeline, Framebuffer, 프레임 렌더링 |
+| `TScene` | Camera와 `TStaticMeshInstance[]` 관리 |
+| `TSurfaceStateSystem` | 공유 형상 데이터, 인스턴스 상태, 입력, Solver, 형상 갱신, DebugData 관리. 현재 placeholder |
+| `TVulkanContext` | Instance / Device, Queue / Command, GPU Resource 기반 관리 |
 
-`SurfaceStateSystem`의 논리적 구성은 다음과 같다.
+`TSurfaceStateSystem`의 논리적 구성은 다음과 같다.
 
 ```text
-SurfaceStateSystem
-├── SharedSurfaceGeometryData[]
-├── SurfaceInstanceStateData[]
+TSurfaceStateSystem
+├── TSharedSurfaceGeometryData[]
+├── TSurfaceInstanceStateData[]
 ├── SurfaceInput
-├── SurfaceStateSolver
+├── TSurfaceStateSolver
 ├── SurfaceGeometryUpdate
 └── DebugData
 ```
@@ -32,48 +32,48 @@ SurfaceStateSystem
 
 ```mermaid
 flowchart LR
-  OBJ[OBJ] --> OBJLoader[OBJLoader / tinyobjloader]
-  MTL[MTL] --> OBJLoader
-  OBJLoader --> Assets[AssetManager]
-  OBJLoader -->|parsed material conversion| MTLLoader[MTLLoader]
-  MTLLoader -->|MaterialSourceData| OBJLoader
-  Profile[.SRProfile] --> ProfileLoader[SRProfileLoader]
+  OBJ[OBJ] --> TOBJLoader[TOBJLoader / tinyobjloader]
+  MTL[MTL] --> TOBJLoader
+  TOBJLoader --> Assets[TAssetManager]
+  TOBJLoader -->|parsed material conversion| TMTLLoader[TMTLLoader]
+  TMTLLoader -->|TMaterialSourceData| TOBJLoader
+  Profile[.SRProfile] --> ProfileLoader[TSRProfileLoader]
   ProfileLoader --> Assets
   Mesh --> Preprocess[Surface Preprocessor]
   Profile --> Preprocess
   NormalMap[Normal Map] --> Preprocess
   Preprocess --> RuntimeSurface[Runtime Surface Data]
-  Assets --> Registry[SurfaceStateRegistry]
+  Assets --> Registry[TSurfaceStateRegistry]
   ProfileAsset --> Registry
   SceneFile[.Scene] -. "loader 미구현" .-> Assets
-  Assets --> Material[MaterialAsset]
+  Assets --> Material[TMaterialAsset]
   Assets --> Texture[TextureAsset]
-  Assets --> Mesh[MeshAsset]
-  Assets --> ProfileAsset[SRProfileAsset]
+  Assets --> Mesh[TMeshAsset]
+  Assets --> ProfileAsset[TSRProfileAsset]
   RuntimeSurface --> Shared
   RuntimeSurface --> ProfileMap[Texel Profile Map]
   Material --> Texture
   Registry -. "후속 구현" .-> Instance[Surface Instance State Data]
-  Ray[Raycaster / Contact] --> Input[SurfaceContactInput]
-  Input -. "후속 구현" .-> Solver[SurfaceStateSolver]
+  Ray[Raycaster / Contact] --> Input[TSurfaceContactInput]
+  Input -. "후속 구현" .-> Solver[TSurfaceStateSolver]
   Shared -. "후속 구현" .-> Solver
   Instance -. "후속 구현" .-> Solver
   Solver -. "후속 구현" .-> NewState[Updated State]
   NewState -. "후속 구현" .-> Acc[Accumulation Height]
   Acc -. "후속 구현" .-> Geo[SurfaceGeometryUpdate]
-  NewState -. "후속 구현" .-> Render[Renderer]
+  NewState -. "후속 구현" .-> Render[TRenderer]
   Geo -. "후속 구현" .-> Render
   Geo -. "후속 구현" .-> Solver
 ```
 
-1. OBJ 파싱은 `OBJLoader`, MTL 변환은 `MTLLoader`, `.SRProfile` JSON 파싱은 `SRProfileLoader`가 담당하고, `AssetManager`가 Asset과 handle을 관리한다. [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+1. OBJ 파싱은 `TOBJLoader`, MTL 변환은 `TMTLLoader`, `.SRProfile` JSON 파싱은 `TSRProfileLoader`가 담당하고, `TAssetManager`가 Asset과 handle을 관리한다. [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
 2. Asset/Scene 로딩 중 각 고유 Mesh와 Profile Distribution 조합을 CPU에서 전처리한다. 결과인 Mapping, 공유 정적 Geometry/texel 관계와 texel별 Profile map은 Runtime 메모리에 두고 같은 입력의 instance끼리 공유한다. 매 frame 또는 instance마다 전처리하지 않으며 `.Surface` 파일/캐시는 사용하지 않는다.
-3. 로드된 `.SRProfile`의 State key에서 `SurfaceStateRegistry`를 구성한다. 문자열 이름은 정규화 후 런타임 State ID/index로 변환한다.
-4. 각 Mesh Instance는 Registry 채널에 대응하는 자신의 동적 State와 Overflow를 가진다. 공유 Runtime Geometry와 Profile 반응 파라미터는 instance state에 복제하지 않는다. [[03_Architecture/0002_Surface-State|표면 상태]]
-5. Raycast 등으로 `SurfaceContactInput`을 만들고 Input 항으로 변환한다. [[03_Architecture/0004_Surface-State-Update|State 갱신]]
+3. 로드된 `.SRProfile`의 State key에서 `TSurfaceStateRegistry`를 구성한다. 문자열 이름은 정규화 후 런타임 State ID/index로 변환한다.
+4. 각 Mesh Instance는 Registry 채널에 대응하는 자신의 동적 State를 가진다. 각 State는 `stateCapacity`로 제한하며 초과량을 별도 저장하지 않는다. 공유 Runtime Geometry와 Profile 반응 파라미터는 instance state에 복제하지 않는다. [[03_Architecture/0002_Surface-State|표면 상태]]
+5. Raycast 등으로 `TSurfaceContactInput`을 만들고 Input 항으로 변환한다. [[03_Architecture/0004_Surface-State-Update|State 갱신]]
 6. Solver가 Input / Transport / Decay를 사용해 다음 State를 계산한다.
 7. State가 형상 적층을 만드는 경우 Accumulation Height를 계산하고, 바뀐 형상을 후속 Simulation과 Rendering에 반영한다. [[03_Architecture/0005_Surface-Geometry|형상과 적층]], [[03_Architecture/0006_Rendering|렌더링]]
 
 Simulation UV mapping은 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], Vulkan resource binding / barrier는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 
-위 흐름은 모듈 책임을 요약한다. 구체적인 C++ 상속, 소유, handle 참조와 현재 구현 여부는 [[05_Development/Code-Structure/0000_Overview|구현 구조 개요]]에서 확인한다. `.Scene` 로더와 `SurfaceStateSystem` 조정 클래스는 아직 placeholder이며, 현재 동작하는 파서 흐름과 구분한다.
+위 흐름은 모듈 책임을 요약한다. 구체적인 C++ 상속, 소유, handle 참조와 현재 구현 여부는 [[05_Development/Code-Structure/0000_Overview|구현 구조 개요]]에서 확인한다. `.Scene` 로더와 `TSurfaceStateSystem` 조정 클래스는 아직 placeholder이며, 현재 동작하는 파서 흐름과 구분한다.

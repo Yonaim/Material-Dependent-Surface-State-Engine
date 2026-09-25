@@ -13,10 +13,10 @@
 
 namespace MDSS
 {
-    class MaterialAsset final : public Asset
+    class TMaterialAsset final : public TAsset
     {
     public:
-        MaterialAsset(AssetID               ID,
+        TMaterialAsset(TAssetID               ID,
                       std::string           Name,
                       std::filesystem::path SourcePath,
                       glm::vec4             BaseColor,

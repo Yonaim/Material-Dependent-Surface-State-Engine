@@ -9,17 +9,17 @@
 
 namespace MDSS
 {
-    class GPUImageView
+    class TGPUImageView
     {
     public:
         /** @brief image와 format·aspect 설정을 참조하는 Vulkan image view를 생성한다. */
-        GPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask);
-        ~GPUImageView();
+        TGPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask);
+        ~TGPUImageView();
 
-        GPUImageView(const GPUImageView&) = delete;
-        GPUImageView& operator=(const GPUImageView&) = delete;
-        GPUImageView(GPUImageView&&) = delete;
-        GPUImageView& operator=(GPUImageView&&) = delete;
+        TGPUImageView(const TGPUImageView&) = delete;
+        TGPUImageView& operator=(const TGPUImageView&) = delete;
+        TGPUImageView(TGPUImageView&&) = delete;
+        TGPUImageView& operator=(TGPUImageView&&) = delete;
 
         void Recreate(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask);
         void Reset();

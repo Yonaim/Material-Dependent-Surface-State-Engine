@@ -15,7 +15,7 @@ synthetic State와 Profile을 사용해 GPU에서 Pass 1/Pass 2를 실행하고 
   - `Shaders/SurfaceSolverPass1.comp`
   - `Shaders/SurfaceSolverPass2.comp`
 - 필요 시 compute pipeline wrapper
-- `SurfaceStateSystem`의 step 호출
+- `TSurfaceStateSystem`의 step 호출
 
 기존 `SurfaceTransport.comp`, `SurfaceDecay.comp`, `SurfaceNextState.comp` placeholder는 역할이 겹치지 않게 정리한다. 2-Pass 기준으로 합칠지 제거할지는 이 브랜치에서 한 번만 결정한다.
 
@@ -51,7 +51,7 @@ Profile이 어떤 Registry State를 정의하지 않은 경우의 동작은 아�
 - TexelSurfaceIndex / InvalidSurfaceID
 - NeighborIndex
 - Position/Normal/GeometryScalar (neighbor distance/direction is derived from Position)
-- Surface→Profile
+- Shared Geometry의 texel별 `ProfileIndex` map
 - Profile parameters
 - `DeltaTime`, `gravityLocal`
 

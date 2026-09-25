@@ -14,20 +14,20 @@
 
 namespace MDSS
 {
-    class VulkanContext;
+    class TVulkanContext;
 
-    class RenderContext
+    class TRenderContext
     {
     public:
         static constexpr std::size_t MaxFramesInFlight = 2;
 
-        explicit RenderContext(const VulkanContext& Context);
-        ~RenderContext();
+        explicit TRenderContext(const TVulkanContext& Context);
+        ~TRenderContext();
 
-        RenderContext(const RenderContext&) = delete;
-        RenderContext& operator=(const RenderContext&) = delete;
-        RenderContext(RenderContext&&) = delete;
-        RenderContext& operator=(RenderContext&&) = delete;
+        TRenderContext(const TRenderContext&) = delete;
+        TRenderContext& operator=(const TRenderContext&) = delete;
+        TRenderContext(TRenderContext&&) = delete;
+        TRenderContext& operator=(TRenderContext&&) = delete;
 
         /** @brief 현재 frame slot의 fence가 신호될 때까지 CPU를 대기시킨다. */
         void WaitForCurrentFrame() const;

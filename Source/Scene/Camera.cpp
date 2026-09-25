@@ -14,32 +14,32 @@
 
 namespace MDSS
 {
-    Camera::Camera(
+    TCamera::TCamera(
         glm::vec3 Position, glm::vec3 Target, float VerticalFieldOfViewDegrees, float NearPlane, float FarPlane)
         : Position(Position), Target(Target), VerticalFieldOfViewDegrees(VerticalFieldOfViewDegrees),
           NearPlane(NearPlane), FarPlane(FarPlane)
     {
         if (VerticalFieldOfViewDegrees <= 0.0F || VerticalFieldOfViewDegrees >= 180.0F)
         {
-            throw std::invalid_argument("Camera field of view must be between 0 and 180 degrees.");
+            throw std::invalid_argument("TCamera field of view must be between 0 and 180 degrees.");
         }
 
         if (NearPlane <= 0.0F || FarPlane <= NearPlane)
         {
-            throw std::invalid_argument("Camera clipping planes are invalid.");
+            throw std::invalid_argument("TCamera clipping planes are invalid.");
         }
     }
 
-    glm::mat4 Camera::GetViewMatrix() const
+    glm::mat4 TCamera::GetViewMatrix() const
     {
         return glm::lookAtRH(Position, Target, Up);
     }
 
-    glm::mat4 Camera::GetProjectionMatrix(float AspectRatio) const
+    glm::mat4 TCamera::GetProjectionMatrix(float AspectRatio) const
     {
         if (AspectRatio <= 0.0F)
         {
-            throw std::invalid_argument("Camera aspect ratio must be positive.");
+            throw std::invalid_argument("TCamera aspect ratio must be positive.");
         }
 
         glm::mat4 Projection =
@@ -50,22 +50,22 @@ namespace MDSS
         return Projection;
     }
 
-    glm::mat4 Camera::GetViewProjectionMatrix(float AspectRatio) const
+    glm::mat4 TCamera::GetViewProjectionMatrix(float AspectRatio) const
     {
         return GetProjectionMatrix(AspectRatio) * GetViewMatrix();
     }
 
-    void Camera::SetPosition(glm::vec3 NewPosition) noexcept
+    void TCamera::SetPosition(glm::vec3 NewPosition) noexcept
     {
         Position = NewPosition;
     }
 
-    void Camera::SetTarget(glm::vec3 NewTarget) noexcept
+    void TCamera::SetTarget(glm::vec3 NewTarget) noexcept
     {
         Target = NewTarget;
     }
 
-    void Camera::SetRotationDegrees(glm::vec2 RotationDegrees) noexcept
+    void TCamera::SetRotationDegrees(glm::vec2 RotationDegrees) noexcept
     {
         const float PitchDegrees = std::clamp(RotationDegrees.x, -89.0F, 89.0F);
         const float YawDegrees = RotationDegrees.y;
@@ -77,22 +77,22 @@ namespace MDSS
         Target = Position + glm::normalize(Forward);
     }
 
-    void Camera::SetVerticalFieldOfViewDegrees(float FieldOfViewDegrees) noexcept
+    void TCamera::SetVerticalFieldOfViewDegrees(float FieldOfViewDegrees) noexcept
     {
         VerticalFieldOfViewDegrees = std::clamp(FieldOfViewDegrees, 1.0F, 179.0F);
     }
 
-    const glm::vec3& Camera::GetPosition() const noexcept
+    const glm::vec3& TCamera::GetPosition() const noexcept
     {
         return Position;
     }
 
-    const glm::vec3& Camera::GetTarget() const noexcept
+    const glm::vec3& TCamera::GetTarget() const noexcept
     {
         return Target;
     }
 
-    glm::vec2 Camera::GetRotationDegrees() const noexcept
+    glm::vec2 TCamera::GetRotationDegrees() const noexcept
     {
         const glm::vec3 Direction = glm::normalize(Target - Position);
         const float     Pitch = std::asin(std::clamp(Direction.y, -1.0F, 1.0F));
@@ -100,7 +100,7 @@ namespace MDSS
         return {glm::degrees(Pitch), glm::degrees(Yaw)};
     }
 
-    float Camera::GetVerticalFieldOfViewDegrees() const noexcept
+    float TCamera::GetVerticalFieldOfViewDegrees() const noexcept
     {
         return VerticalFieldOfViewDegrees;
     }

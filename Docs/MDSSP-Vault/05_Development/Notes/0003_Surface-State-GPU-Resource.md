@@ -13,7 +13,7 @@
 | ping-pong | instance마다 State A/B를 만들고 solver step마다 Current/Next 역할을 교환한다. |
 | TempState | Pass 1에서 각 texel의 Registry channel별 `alpha`를 저장한다. State와 마찬가지로 channel count 기반 layout을 사용하며 영구 State가 아니다. |
 | Input | discrete event를 `InputDelta`에 모아 Pass 2에서 한 번 반영한다. `DeltaTime`을 곱하지 않는다. |
-| Profile 연결 | Surface별 Profile index table을 두며 하나의 Surface는 하나의 Profile만 사용한다. |
+| Profile 연결 | 공유 Geometry에 texel당 `uint32 ProfileIndex`를 저장한다. 같은 Profile을 쓰는 texel도 인덱스를 각각 보유한다. |
 | 인덱스 | Neighbor는 공유 Geometry 내부 local texel index를 저장한다. instance State 접근은 `ChannelIndex`를 포함한 layout helper로 계산한다. |
 
 Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 처리하려면 별도 index가 필요하다. 4주차에는 SSBO를 기준 데이터로 두고, 렌더링에 필터링 가능한 texture가 필요하면 파생 resource를 만든다.
@@ -34,7 +34,7 @@ flowchart LR
 |---|---|---|
 | mapping, base geometry, neighbor | 같은 Mesh와 Profile Distribution 조합의 Runtime 결과 | Runtime Asset 변경 시 재생성 |
 | Profile parameter | 같은 `.SRProfile` | Profile reload 시 |
-| Surface→Profile index | instance | Scene 연결 변경 시 |
+| Texel→Profile index map | 같은 Geometry/Profile Distribution 조합의 Runtime Geometry | 전처리 입력 변경 시 재생성 |
 | State A/B, TempAlpha, InputDelta | instance | solver step마다 |
 
 ## 인덱스 구조
@@ -42,17 +42,16 @@ flowchart LR
 공유 Geometry의 texel index는 `0 .. geometryTexelCount-1` local 범위다. 이웃도 이 local index를 저장하므로 같은 Geometry를 여러 instance가 공유할 수 있다.
 
 ```cpp
-struct SurfaceRangeGPU {
+struct TSurfaceRangeGPU {
     uint firstLocalTexel;
     uint texelCount;
     uint width;
     uint height;
 };
 
-struct SurfaceInstanceGPU {
+struct TSurfaceInstanceGPU {
     uint geometryIndex;
     uint stateBaseIndex;
-    uint surfaceProfileBaseIndex;
     uint flags;
 };
 ```
@@ -61,14 +60,12 @@ State 접근은 다음과 같다.
 
 ```text
 stateIndex = getStateIndex(instance, localTexelIndex, channelIndex)
-profileIndex = SurfaceProfileIndex[
-  instance.surfaceProfileBaseIndex + TexelSurfaceIndex[localTexelIndex]
-]
+profileIndex = TexelProfileIndex[localTexelIndex]
 ```
 
 `getStateIndex`의 물리적인 산식은 선택한 AoS/SoA layout에 따라 다르며, 이웃 texel에서도 같은 helper를 사용한다.
 
-`TexelSurfaceIndex`는 Runtime mapping의 local Surface ID다. `SurfaceProfileIndex`는 각 instance의 Surface가 사용할 `SurfaceResponseProfileDataGPU` index다.
+`TexelSurfaceIndex`는 Runtime mapping의 local Surface ID이며 invalid texel 판정에 사용한다. `TexelProfileIndex`는 각 texel이 사용하는 Profile 테이블의 index를 직접 저장한다. 같은 Profile을 쓰는 인접 texel도 index를 따로 보유한다. 이 dense lookup 기본안은 [[../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다.
 
 ## Shared Surface Geometry Buffer
 
@@ -76,7 +73,8 @@ profileIndex = SurfaceProfileIndex[
 
 | Buffer | texel당 형식 | 용도 |
 |---|---|---|
-| `TexelSurfaceIndexBuffer` | `uint` | Surface/Profile 조회. invalid texel은 `InvalidSurfaceID = 0xFFFFFFFF` |
+| `TexelSurfaceIndexBuffer` | `uint` | local Surface ID 및 invalid texel 판정. invalid texel은 `InvalidSurfaceID = 0xFFFFFFFF` |
+| `TexelProfileIndexBuffer` | `uint` | texel별 Profile 테이블 조회. dense 1:1 texel map |
 | `SurfacePositionBuffer` | `vec4` | `xyz`: Mesh local position |
 | `SurfaceNormalBuffer` | `vec4` | `xyz`: Mesh local normal |
 | `GeometryScalarBuffer` | texel당 `{ float MesoVirtualHeight; float ConcavityWeight; }` | 실제 사용하는 두 형상 scalar |
@@ -174,7 +172,7 @@ binding 번호는 구현 시작점이며 Renderer 전역 규칙과 충돌하면 
 Push constant에는 자주 변하는 작은 값만 둔다.
 
 ```cpp
-struct SolverPushConstants {
+struct TSolverPushConstants {
     float deltaTime;
     uint instanceIndex;
     uint localTexelCount;
@@ -233,7 +231,7 @@ InputDelta    4C B
 ## 검증 항목
 
 - A/B 역할을 교환해도 같은 초기조건에서 결과가 반복된다.
-- instance 사이 State와 Surface→Profile mapping이 섞이지 않는다.
+- instance별 State와 공유 Geometry의 texel Profile map이 분리된다.
 - invalid texel은 항상 0이고 dispatch에서 계산을 건너뛴다.
 - seam 이웃은 일반 이웃과 같은 Shader 경로를 사용한다.
 - `stateCapacity > 0` 검증으로 NaN/Inf가 발생하지 않는다.

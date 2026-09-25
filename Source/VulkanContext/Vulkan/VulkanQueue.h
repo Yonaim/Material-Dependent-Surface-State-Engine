@@ -12,7 +12,7 @@
 
 namespace MDSS
 {
-    struct QueueFamilyIndices
+    struct TQueueFamilyIndices
     {
         std::optional<std::uint32_t> GraphicsFamily;
         std::optional<std::uint32_t> PresentFamily;
@@ -23,20 +23,20 @@ namespace MDSS
         }
     };
 
-    class VulkanQueue
+    class TVulkanQueue
     {
     public:
-        VulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface);
+        TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface);
 
         [[nodiscard]] VkQueue                   GetGraphics() const noexcept;
         [[nodiscard]] VkQueue                   GetPresent() const noexcept;
-        [[nodiscard]] const QueueFamilyIndices& GetFamilyIndices() const noexcept;
+        [[nodiscard]] const TQueueFamilyIndices& GetFamilyIndices() const noexcept;
 
         /** @brief graphics와 surface presentation을 지원하는 queue family index를 찾는다. */
-        [[nodiscard]] static QueueFamilyIndices FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
+        [[nodiscard]] static TQueueFamilyIndices FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
 
     private:
-        QueueFamilyIndices FamilyIndices;
+        TQueueFamilyIndices FamilyIndices;
         VkQueue            GraphicsQueue = VK_NULL_HANDLE;
         VkQueue            PresentQueue = VK_NULL_HANDLE;
     };

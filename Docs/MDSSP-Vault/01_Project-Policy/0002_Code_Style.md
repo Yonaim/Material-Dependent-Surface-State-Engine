@@ -16,7 +16,7 @@
 | 대상 | 규칙 | 예 |
 |---|---|---|
 | 프로젝트 namespace | `MDSS` 사용 | `namespace MDSS` |
-| class, struct, enum type | PascalCase | `SurfaceStateSystem`, `Transform`, `SurfaceStateType` |
+| class, struct, enum type, type alias | `T` + PascalCase | `TSurfaceStateSystem`, `TTransform`, `TLogLevel`, `TSurfaceLocalID` |
 | enum value | PascalCase | `Ready`, `Invalid` (State 종류는 enum으로 고정하지 않고 Registry에서 관리) |
 | 함수·메서드 | PascalCase | `RenderFrame()`, `LoadTexture()` |
 | 변수·멤버·매개변수 | PascalCase | `FrameRenderer`, `WindowHandle`, `DeltaTime` |
@@ -26,11 +26,13 @@
 
 `enum class`를 사용해 열거자 이름을 해당 enum 범위에 둔다. 상태 채널 등의 고정 순서는 관련 데이터 계약에서 정의하고 코드와 Shader 사이에 일치시킨다.
 
+`T` 접두사는 프로젝트가 선언한 모든 class, struct, enum type, type alias에 적용한다. 로컬 helper type과 forward declaration도 포함한다. 함수, 변수, 멤버, 매개변수 및 enum value에는 붙이지 않는다. 표준 라이브러리·Vulkan·GLFW 등 외부 라이브러리 타입과 namespace 이름은 변경하지 않는다. 문서의 C++ 예시에도 같은 규칙을 적용한다.
+
 ## 파일과 헤더 구성
 
 | 항목 | 규칙 |
 |---|---|
-| C++ 파일명 | 주된 class 또는 type 이름을 사용한다. 확장자는 `.h`, `.cpp`다. |
+| C++ 파일명 | 모듈 역할 또는 주된 type 이름을 사용한다. 타입 접두사 `T`는 기존 파일 경로에 붙이지 않는다. 확장자는 `.h`, `.cpp`다. |
 | Shader 파일명 | Shader stage를 확장자로 표시한다. 예: `.vert`, `.frag`, `.comp`. |
 | Header guard | `#pragma once`를 사용한다. |
 | Include 최소화 | 완전한 type 정의가 필요하지 않으면 forward declaration을 고려한다. |
@@ -53,7 +55,7 @@
 ## 오류와 로그
 
 - 초기화나 필수 자원 생성에 실패하면 오류를 조용히 삼키지 않는다. 현재 엔진 초기화 코드는 실패 원인을 예외로 전달하고, 최상위 진입점에서 기록한 뒤 종료한다.
-- 진단 로그는 `Logger`를 통해 기록하고, 메시지에 `Vulkan`, `AssetManager`처럼 모듈 맥락을 제공한다. 매 frame의 고빈도 경로에 반복 로그를 추가하지 않는다.
+- 진단 로그는 `TLogger`를 통해 기록하고, 메시지에 `Vulkan`, `TAssetManager`처럼 모듈 맥락을 제공한다. 매 frame의 고빈도 경로에 반복 로그를 추가하지 않는다.
 - 입력 데이터 검증은 가능한 한 오류가 발생한 Asset·Surface·Triangle 식별 정보를 함께 보고한다.
 
 ## Include 순서
@@ -80,7 +82,7 @@ Include는 한 줄씩 정렬하고 그룹 사이를 빈 줄로 분리한다. `.c
 | 중괄호 | Allman style. 함수·class·namespace·제어문 본문을 다음 줄에서 연다. |
 | 한 줄 본문 | 짧은 block, 함수, `if`, loop, case도 한 줄로 축약하지 않는다. |
 | Namespace | 중첩 namespace마다 들여쓴다. |
-| Pointer / reference | 기호를 type에 붙인다. 예: `GPUBuffer* Buffer`, `const Scene& SceneRef` |
+| Pointer / reference | 기호를 type에 붙인다. 예: `TGPUBuffer* Buffer`, `const TScene& SceneRef` |
 | 줄 길이 | 120 columns를 기준으로 줄바꿈한다. |
 | 함수 인자 | 여러 인자·매개변수를 한 줄에 무리하게 묶지 않는다. 줄바꿈 시 여는 괄호 기준으로 정렬한다. |
 | 연산자 정렬 | 여러 줄 expression의 연산자를 설정에 따라 정렬한다. |
@@ -92,7 +94,7 @@ Include는 한 줄씩 정렬하고 그룹 사이를 빈 줄로 분리한다. `.c
 ```cpp
 namespace MDSS
 {
-    class SurfaceStateSystem
+    class TSurfaceStateSystem
     {
     public:
         void UpdateState(float DeltaTime);

@@ -11,24 +11,24 @@
 
 namespace MDSS
 {
-    GPUImageView::GPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
+    TGPUImageView::TGPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
         : Device(Device)
     {
         Create(Image, Format, AspectMask);
     }
 
-    GPUImageView::~GPUImageView()
+    TGPUImageView::~TGPUImageView()
     {
         Reset();
     }
 
-    void GPUImageView::Recreate(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
+    void TGPUImageView::Recreate(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
     {
         Reset();
         Create(Image, Format, AspectMask);
     }
 
-    void GPUImageView::Reset()
+    void TGPUImageView::Reset()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -37,7 +37,7 @@ namespace MDSS
         }
     }
 
-    void GPUImageView::Create(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
+    void TGPUImageView::Create(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
     {
         VkImageViewCreateInfo CreateInfo{};
         CreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -54,10 +54,10 @@ namespace MDSS
         {
             throw std::runtime_error("Failed to create Vulkan image view.");
         }
-        Logger::Verbose("Vulkan", "GPUImageView created (format=" + std::to_string(static_cast<int>(Format)) + ").");
+        TLogger::Verbose("Vulkan", "TGPUImageView created (format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
-    VkImageView GPUImageView::GetHandle() const noexcept
+    VkImageView TGPUImageView::GetHandle() const noexcept
     {
         return Handle;
     }

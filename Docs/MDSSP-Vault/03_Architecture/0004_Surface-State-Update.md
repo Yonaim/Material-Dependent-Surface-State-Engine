@@ -6,15 +6,15 @@
 
 ## Contact Input
 
-`State`는 Registry의 `StateId`로 지정하며, 입력 적용 시 Registry를 통해 `ChannelIndex`로 해석한다. 입력 경로는 문자열이나 고정 enum에 의존하지 않는다.
+`State`는 Registry의 `TStateId`로 지정하며, 입력 적용 시 Registry를 통해 `ChannelIndex`로 해석한다. 입력 경로는 문자열이나 고정 enum에 의존하지 않는다.
 
-외부 접촉은 `SurfaceContactInput`으로 Surface State System에 전달한다.
+외부 접촉은 `TSurfaceContactInput`으로 Surface State System에 전달한다.
 
 ```cpp
-struct SurfaceContactInput
+struct TSurfaceContactInput
 {
-    SurfaceInstanceID   TargetInstance;
-    StateId              State;
+    TSurfaceInstanceID   TargetInstance;
+    TStateId              State;
     glm::vec3           WorldPosition;
     glm::vec3           WorldDirection;
     float               Radius;

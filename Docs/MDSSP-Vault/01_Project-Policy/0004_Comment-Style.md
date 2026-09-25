@@ -36,7 +36,7 @@
  * @param Data 검증할 Profile 데이터.
  * @throws std::invalid_argument 값이 유한하지 않거나 허용 범위를 벗어난 경우.
  */
-void ValidateSurfaceResponseProfileData(const SurfaceResponseProfileData& Data);
+void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data);
 ```
 
 함수 주석은 다음 경우에 특히 작성한다.

@@ -39,7 +39,7 @@ main
 | Registry 크기를 State instance와 GPU 리소스에 전달 | `feat/surface-gpu-resources` | Registry 수명/참조와 channel count를 instance 생성 및 resource 크기에 연결하고 dynamic layout 결정 |
 | 임의 개수 State를 처리하는 Solver | `feat/surface-solver-2pass` | 하드코딩된 State 이름·개수 제거, Registry channel count로 처리 및 테스트 |
 | Profile에 정의되지 않은 Registry State의 처리 규칙 | `feat/surface-solver-2pass` 및 `feat/surface-input-integration` | 지원 여부 표현은 Branch 4가 제공하고, Solver/Contact에서의 동작을 각각 정해 테스트 |
-| Contact 입력의 State 선택 및 UI | `feat/surface-input-integration` | `StateId`를 `ChannelIndex`로 해석해 입력을 기록하고 UI를 Registry에서 구성 |
+| Contact 입력의 State 선택 및 UI | `feat/surface-input-integration` | `TStateId`를 `ChannelIndex`로 해석해 입력을 기록하고 UI를 Registry에서 구성 |
 | Normal Map으로 Meso/Curvature 생성하는 알고리즘 | Week-08 experiment 이후 별도 구현 branch 결정 | Week-08에 후보와 품질·비용을 비교하고 승인된 방법만 후속 계획에 배정. 4주차는 기본값 0 유지 |
 
 ## 운영 원칙

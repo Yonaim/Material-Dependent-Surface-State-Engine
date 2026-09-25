@@ -11,23 +11,23 @@
 
 namespace MDSS
 {
-    class GPUImage
+    class TGPUImage
     {
     public:
         /** @brief 이미지와 backing memory를 생성한다. 실패하면 std::runtime_error를 던진다. */
-        GPUImage(VkPhysicalDevice      PhysicalDevice,
+        TGPUImage(VkPhysicalDevice      PhysicalDevice,
                  VkDevice              Device,
                  VkExtent2D            Extent,
                  VkFormat              Format,
                  VkImageTiling         Tiling,
                  VkImageUsageFlags     Usage,
                  VkMemoryPropertyFlags MemoryProperties);
-        ~GPUImage();
+        ~TGPUImage();
 
-        GPUImage(const GPUImage&) = delete;
-        GPUImage& operator=(const GPUImage&) = delete;
-        GPUImage(GPUImage&&) = delete;
-        GPUImage& operator=(GPUImage&&) = delete;
+        TGPUImage(const TGPUImage&) = delete;
+        TGPUImage& operator=(const TGPUImage&) = delete;
+        TGPUImage(TGPUImage&&) = delete;
+        TGPUImage& operator=(TGPUImage&&) = delete;
 
         /** @brief 기존 image 자원을 해제하고 새 사양으로 다시 생성한다. */
         void Recreate(VkPhysicalDevice      PhysicalDevice,

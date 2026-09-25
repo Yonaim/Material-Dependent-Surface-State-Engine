@@ -1,6 +1,6 @@
 # ADR 0005 — Per-Texel GPU Data Layout과 Dense InputDelta
 
-- 상태: **Partially Superseded by [[0006-Dynamic-State-Registry]]**
+- 상태: **Partially Superseded by [[0006-Dynamic-State-Registry]] and [[0009-Texel-Profile-Index-Map]]**
 - 날짜: 2026-09-25
 
 ## Context
@@ -12,7 +12,7 @@
 ## Decision
 
 > [!warning] 대체 범위
-> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, 두 float `GeometryScalar`, dense `InputDelta` 재사용 결정은 유지한다. State channel은 Registry 크기에 따라 동적으로 배치한다. 물리적인 buffer layout과 channel stride는 `feat/surface-gpu-resources`에서 결정한다.
+> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, 두 float `GeometryScalar`, dense `InputDelta` 재사용 결정은 유지한다. State channel은 Registry 크기에 따라 동적으로 배치한다. Texel별 Profile index map도 dense로 둔다 ([[0009-Texel-Profile-Index-Map]]). 물리적인 State buffer layout과 channel stride는 `feat/surface-gpu-resources`에서 결정한다.
 
 - GPU의 invalid texel 판정은 별도 `ValidMaskBuffer` 대신 `TexelSurfaceIndexBuffer`의 예약값 `InvalidSurfaceID = 0xFFFFFFFF`로 표현한다. 이 값은 유효 Surface ID로 사용할 수 없다. CPU Runtime mapping은 필요하면 별도 validity 정보를 유지할 수 있다.
 - 이웃 Distance는 CPU Runtime mapping 및 GPU buffer 어느 쪽에도 저장하지 않는다. Solver가 `SurfacePosition[j] - SurfacePosition[i]`에서 거리와 방향을 필요할 때 계산한다. CPU 검증 코드도 필요하면 같은 위치에서 임시 계산한다.
@@ -49,11 +49,12 @@ GPU에서 `NeighborDistanceBuffer`와 `ValidMaskBuffer`를 제거하고, `Geomet
 
 ```text
 TexelSurfaceIndex  4 B   // invalid면 InvalidSurfaceID
+TexelProfileIndex  4 B   // 각 texel의 SRProfile index
 Position          16 B
 Normal            16 B
 GeometryScalar     8 B   // height + concavity
 NeighborIndex     32 B  // uint32 8개
-합계              76 B/texel
+합계              80 B/texel
 ```
 
 각 instance는 State A/B, TempAlpha, InputDelta 네 버퍼를 가진다. Registry channel 수가 `C`이고 32-bit scalar를 padding 없이 저장한다면 각 buffer는 texel당 `4C` bytes, 합계는 `16C` bytes다. `C = 4`인 demo workload에서만 64 bytes/texel이 된다. 실제 allocation은 GPU layout과 alignment에 따라 달라질 수 있다.
@@ -66,7 +67,7 @@ InputDelta    4C B
 합계          16C B/texel
 ```
 
-512×512 기준으로 공유 형상 데이터는 Mesh당 약 19 MiB다. 상태 버퍼는 instance당 `4C MiB`이며, `C = 4`라면 약 16 MiB로 합계는 약 35 MiB다. 이 추정에는 할당 정렬, Profile table, 동적 적층 형상 버퍼, 렌더링용 복제 데이터가 포함되지 않는다. 설계한 자료형 크기로 계산한 값이며, 실제 GPU 사용량을 측정한 결과는 아니다.
+512×512 기준으로 공유 형상 데이터는 Mesh당 약 20 MiB다. 상태 버퍼는 instance당 `4C MiB`이며, `C = 4`라면 약 16 MiB로 합계는 약 36 MiB다. 이 추정에는 할당 정렬, Profile table, 동적 적층 형상 버퍼, 렌더링용 복제 데이터가 포함되지 않는다. 설계한 자료형 크기로 계산한 값이며, 실제 GPU 사용량을 측정한 결과는 아니다.
 
 Dense `InputDelta`는 입력이 드문 경우에도 전체 격자 크기를 유지하지만, 매 frame 재할당하지 않고 같은 버퍼를 재사용한다. 이후 성능 측정에서 입력 전달이 병목으로 확인되면 sparse 입력을 다시 검토한다.
 

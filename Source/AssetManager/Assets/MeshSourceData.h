@@ -13,7 +13,7 @@
 
 namespace MDSS
 {
-    struct Vertex
+    struct TVertex
     {
         glm::vec3 Position{0.0F};
         glm::vec3 Normal{0.0F, 1.0F, 0.0F};
@@ -22,11 +22,11 @@ namespace MDSS
     };
 
     /** @brief Render vertex와 OBJ 원본 position topology를 함께 보존한 triangle. */
-    struct MeshTriangleSource
+    struct TMeshTriangleSource
     {
         std::array<std::uint32_t, 3> RenderVertexIndices{};
         std::array<std::int32_t, 3>  OriginalPositionIndices{};
         std::array<std::int32_t, 3>  OriginalUVIndices{};
-        SurfaceLocalID               Surface = InvalidSurfaceID;
+        TSurfaceLocalID               Surface = InvalidSurfaceID;
     };
 } // namespace MDSS

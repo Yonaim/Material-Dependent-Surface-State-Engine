@@ -12,7 +12,7 @@
 
 namespace MDSS
 {
-    class SurfaceMappingBuilder final
+    class TSurfaceMappingBuilder final
     {
     public:
         /**
@@ -20,8 +20,8 @@ namespace MDSS
          * @throws std::invalid_argument 입력 index, UV, Surface 또는 topology가 유효하지 않은 경우.
          * @throws std::runtime_error UV overlap 또는 texel당 이웃 수 제한을 위반한 경우.
          */
-        [[nodiscard]] static SurfaceMappingData Build(const std::vector<Vertex>&             Vertices,
-                                                      const std::vector<MeshTriangleSource>& Triangles,
-                                                      const std::vector<SurfaceDefinition>&  Surfaces);
+        [[nodiscard]] static TSurfaceMappingData Build(const std::vector<TVertex>&             Vertices,
+                                                      const std::vector<TMeshTriangleSource>& Triangles,
+                                                      const std::vector<TSurfaceDefinition>&  Surfaces);
     };
 } // namespace MDSS

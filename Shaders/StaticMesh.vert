@@ -5,7 +5,7 @@ layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec2 InUV;
 layout(location = 3) in vec4 InTangent;
 
-layout(push_constant) uniform StaticMeshPushConstants
+layout(push_constant) uniform TStaticMeshPushConstants
 {
     mat4 Model;
     mat4 ViewProjection;

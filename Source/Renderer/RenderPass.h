@@ -9,17 +9,17 @@
 
 namespace MDSS
 {
-    class RenderPass
+    class TRenderPass
     {
     public:
         /** @brief 지정된 color·depth format에 맞는 render pass를 생성한다. */
-        RenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat);
-        ~RenderPass();
+        TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat);
+        ~TRenderPass();
 
-        RenderPass(const RenderPass&) = delete;
-        RenderPass& operator=(const RenderPass&) = delete;
-        RenderPass(RenderPass&&) = delete;
-        RenderPass& operator=(RenderPass&&) = delete;
+        TRenderPass(const TRenderPass&) = delete;
+        TRenderPass& operator=(const TRenderPass&) = delete;
+        TRenderPass(TRenderPass&&) = delete;
+        TRenderPass& operator=(TRenderPass&&) = delete;
 
         [[nodiscard]] VkRenderPass GetHandle() const noexcept;
 

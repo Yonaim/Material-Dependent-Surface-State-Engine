@@ -9,16 +9,16 @@
 
 namespace MDSS
 {
-    SRProfileAsset::SRProfileAsset(AssetID                    ID,
+    TSRProfileAsset::TSRProfileAsset(TAssetID                    ID,
                                    std::string                Name,
                                    std::filesystem::path      SourcePath,
-                                   SurfaceResponseProfileData Data)
-        : Asset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
+                                   TSurfaceResponseProfileData Data)
+        : TAsset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
     {
         ValidateSurfaceResponseProfileData(this->Data);
     }
 
-    const SurfaceResponseProfileData& SRProfileAsset::GetData() const noexcept
+    const TSurfaceResponseProfileData& TSRProfileAsset::GetData() const noexcept
     {
         return Data;
     }

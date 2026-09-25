@@ -19,9 +19,9 @@ namespace MDSS
 {
     namespace
     {
-        using Json = nlohmann::json;
+        using TJson = nlohmann::json;
 
-        const Json& RequireMember(const Json& Object, const char* Name, const std::string& Context)
+        const TJson& RequireMember(const TJson& Object, const char* Name, const std::string& Context)
         {
             const auto Found = Object.find(Name);
             if (Found == Object.end())
@@ -31,7 +31,7 @@ namespace MDSS
             return *Found;
         }
 
-        std::uint32_t ReadNonNegativeIndex(const Json& Value, const std::string& Name)
+        std::uint32_t ReadNonNegativeIndex(const TJson& Value, const std::string& Name)
         {
             if (!Value.is_number_integer())
             {
@@ -58,7 +58,7 @@ namespace MDSS
         }
     } // namespace
 
-    SurfaceProfileDistribution SurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
+    TSurfaceProfileDistribution TSurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
     {
         std::ifstream Input(Path);
         if (!Input)
@@ -66,12 +66,12 @@ namespace MDSS
             throw std::runtime_error("Unable to open Surface Profile Map: " + Path.string());
         }
 
-        Json Root;
+        TJson Root;
         try
         {
             Input >> Root;
         }
-        catch (const Json::exception& Exception)
+        catch (const TJson::exception& Exception)
         {
             throw std::runtime_error("Invalid Surface Profile Map JSON in '" + Path.string() + "': " + Exception.what());
         }
@@ -79,8 +79,8 @@ namespace MDSS
         {
             throw std::runtime_error("Surface Profile Map root must be a JSON object.");
         }
-        const Json& Type = RequireMember(Root, "type", "Surface Profile Map");
-        const Json& Version = RequireMember(Root, "version", "Surface Profile Map");
+        const TJson& Type = RequireMember(Root, "type", "Surface Profile Map");
+        const TJson& Version = RequireMember(Root, "version", "Surface Profile Map");
         if (!Type.is_string() || Type.get<std::string>() != "SurfaceProfileMap")
         {
             throw std::runtime_error("Surface Profile Map type must be 'SurfaceProfileMap'.");
@@ -90,8 +90,8 @@ namespace MDSS
             throw std::runtime_error("Surface Profile Map version must be the integer 1.");
         }
 
-        const Json& Profiles = RequireMember(Root, "profiles", "Surface Profile Map");
-        const Json& Surfaces = RequireMember(Root, "surfaces", "Surface Profile Map");
+        const TJson& Profiles = RequireMember(Root, "profiles", "Surface Profile Map");
+        const TJson& Surfaces = RequireMember(Root, "surfaces", "Surface Profile Map");
         if (!Profiles.is_array() || Profiles.empty())
         {
             throw std::runtime_error("Surface Profile Map 'profiles' must be a non-empty array.");
@@ -105,7 +105,7 @@ namespace MDSS
             throw std::runtime_error("Surface Profile Map exceeds the supported index range.");
         }
 
-        SurfaceProfileDistribution Result;
+        TSurfaceProfileDistribution Result;
         Result.ProfilePaths.reserve(Profiles.size());
         std::unordered_set<std::string> UniquePaths;
         for (std::size_t Index = 0; Index < Profiles.size(); ++Index)
@@ -137,17 +137,17 @@ namespace MDSS
             Result.ProfilePaths.push_back(std::move(ProfilePath));
         }
 
-        std::vector<SurfaceLocalID> SurfaceIDs;
+        std::vector<TSurfaceLocalID> SurfaceIDs;
         SurfaceIDs.reserve(Surfaces.size());
         for (std::size_t EntryIndex = 0; EntryIndex < Surfaces.size(); ++EntryIndex)
         {
-            const Json& Entry = Surfaces[EntryIndex];
+            const TJson& Entry = Surfaces[EntryIndex];
             if (!Entry.is_object())
             {
                 throw std::runtime_error("Surface Profile Map surface entry must be an object.");
             }
-            const Json& SurfaceId = RequireMember(Entry, "surfaceId", "Surface Profile Map surface entry");
-            const Json& ProfileIndex = RequireMember(Entry, "profileIndex", "Surface Profile Map surface entry");
+            const TJson& SurfaceId = RequireMember(Entry, "surfaceId", "Surface Profile Map surface entry");
+            const TJson& ProfileIndex = RequireMember(Entry, "profileIndex", "Surface Profile Map surface entry");
             const std::uint32_t Surface = ReadNonNegativeIndex(SurfaceId, "surfaceId");
             const std::uint32_t Profile = ReadNonNegativeIndex(ProfileIndex, "profileIndex");
             if (Profile >= Result.ProfilePaths.size())
@@ -162,7 +162,7 @@ namespace MDSS
         }
 
         std::vector<bool> SeenSurfaces(Surfaces.size(), false);
-        for (const SurfaceLocalID Surface : SurfaceIDs)
+        for (const TSurfaceLocalID Surface : SurfaceIDs)
         {
             if (Surface < SeenSurfaces.size())
             {
@@ -176,7 +176,7 @@ namespace MDSS
                 throw std::runtime_error("Surface Profile Map is missing surfaceId " + std::to_string(Surface) + ".");
             }
         }
-        if (std::ranges::any_of(SurfaceIDs, [SurfaceCount = Surfaces.size()](SurfaceLocalID Surface)
+        if (std::ranges::any_of(SurfaceIDs, [SurfaceCount = Surfaces.size()](TSurfaceLocalID Surface)
                                 { return Surface >= SurfaceCount; }))
         {
             throw std::runtime_error("Surface Profile Map surface IDs must be dense and start at zero.");
@@ -192,17 +192,17 @@ namespace MDSS
         return Result;
     }
 
-    std::vector<SurfaceProfileIndex>
-    SurfaceProfileDistribution::BuildTexelProfileMap(const SurfaceMappingData& Mapping) const
+    std::vector<TSurfaceProfileIndex>
+    TSurfaceProfileDistribution::BuildTexelProfileMap(const TSurfaceMappingData& Mapping) const
     {
         if (Mapping.Surfaces.size() != ProfileIndicesBySurface.size())
         {
             throw std::runtime_error("Surface Profile Map surface count does not match the Mesh mapping.");
         }
-        std::vector<SurfaceProfileIndex> Result(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
+        std::vector<TSurfaceProfileIndex> Result(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
         for (std::size_t TexelIndex = 0; TexelIndex < Mapping.Texels.size(); ++TexelIndex)
         {
-            const SurfaceMappingTexel& Texel = Mapping.Texels[TexelIndex];
+            const TSurfaceMappingTexel& Texel = Mapping.Texels[TexelIndex];
             if (!Texel.IsValid())
             {
                 continue;

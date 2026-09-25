@@ -33,13 +33,13 @@ namespace MDSS
 {
     namespace
     {
-        struct StaticMeshPushConstants
+        struct TStaticMeshPushConstants
         {
             glm::mat4 Model{1.0F};
             glm::mat4 ViewProjection{1.0F};
         };
 
-        struct alignas(16) MaterialUniform
+        struct alignas(16) TMaterialUniform
         {
             glm::vec4     BaseColor{1.0F};
             std::uint32_t RenderMode = 0;
@@ -48,31 +48,31 @@ namespace MDSS
             float         AmbientLight = 0.25F;
         };
 
-        const char* GetRenderViewModeName(RenderViewMode Mode)
+        const char* GetRenderViewModeName(TRenderViewMode Mode)
         {
             switch (Mode)
             {
-                case RenderViewMode::Lit:
+                case TRenderViewMode::Lit:
                     return "Lit";
-                case RenderViewMode::Unlit:
+                case TRenderViewMode::Unlit:
                     return "Unlit";
-                case RenderViewMode::VertexNormalWS:
-                    return "Vertex Normal (World Space)";
-                case RenderViewMode::NormalTextureTS:
+                case TRenderViewMode::VertexNormalWS:
+                    return "TVertex Normal (World Space)";
+                case TRenderViewMode::NormalTextureTS:
                     return "Normal Texture (Tangent Space)";
-                case RenderViewMode::MappedNormalWS:
+                case TRenderViewMode::MappedNormalWS:
                     return "Mapped Normal (World Space)";
             }
             return "Unknown";
         }
 
-        static_assert(sizeof(StaticMeshPushConstants) == 128,
+        static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(MaterialUniform) == 32, "MaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 32, "TMaterialUniform must match the std140 shader block layout.");
 
-        GraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
+        TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
-            GraphicsPipelineConfig Config{};
+            TGraphicsPipelineConfig Config{};
             Config.ShaderStages = {
                 {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/StaticMesh.vert.spv", "main"},
                 {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/StaticMesh.frag.spv", "main"},
@@ -88,7 +88,7 @@ namespace MDSS
 
             VkVertexInputBindingDescription Binding{};
             Binding.binding = 0;
-            Binding.stride = sizeof(Vertex);
+            Binding.stride = sizeof(TVertex);
             Binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
             Config.VertexBindings.push_back(Binding);
 
@@ -102,23 +102,23 @@ namespace MDSS
                 Config.VertexAttributes.push_back(Attribute);
             };
 
-            AddAttribute(0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(offsetof(Vertex, Position)));
-            AddAttribute(1, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(offsetof(Vertex, Normal)));
-            AddAttribute(2, VK_FORMAT_R32G32_SFLOAT, static_cast<std::uint32_t>(offsetof(Vertex, UV)));
-            AddAttribute(3, VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<std::uint32_t>(offsetof(Vertex, Tangent)));
+            AddAttribute(0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(offsetof(TVertex, Position)));
+            AddAttribute(1, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(offsetof(TVertex, Normal)));
+            AddAttribute(2, VK_FORMAT_R32G32_SFLOAT, static_cast<std::uint32_t>(offsetof(TVertex, UV)));
+            AddAttribute(3, VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<std::uint32_t>(offsetof(TVertex, Tangent)));
 
             VkPushConstantRange PushConstantRange{};
             PushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
             PushConstantRange.offset = 0;
-            PushConstantRange.size = sizeof(StaticMeshPushConstants);
+            PushConstantRange.size = sizeof(TStaticMeshPushConstants);
             Config.PushConstantRanges.push_back(PushConstantRange);
 
             return Config;
         }
     } // namespace
 
-    Renderer::Renderer(const VulkanContext& Context, Window& Window, const AssetManager& Assets)
-        : Context(Context), TargetWindow(Window), Assets(Assets), SwapchainData(Context, Window),
+    TRenderer::TRenderer(const TVulkanContext& Context, TWindow& TWindow, const TAssetManager& Assets)
+        : Context(Context), TargetWindow(TWindow), Assets(Assets), SwapchainData(Context, TWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
           DepthImage(Context.GetPhysicalDevice(),
                      Context.GetDevice(),
@@ -141,13 +141,13 @@ namespace MDSS
           FrameContext(Context)
     {
         CreateMaterialDescriptorResources();
-        Logger::Info("Renderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
-        Logger::Debug("Renderer",
+        TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
+        TLogger::Debug("TRenderer",
                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
                           ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
     }
 
-    Renderer::~Renderer()
+    TRenderer::~TRenderer()
     {
         if (Context.GetDevice() != VK_NULL_HANDLE)
         {
@@ -167,7 +167,7 @@ namespace MDSS
         }
     }
 
-    void Renderer::RenderFrame(const Scene& SceneData, DebugUI& DebugInterface)
+    void TRenderer::RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface)
     {
         FrameContext.WaitForCurrentFrame();
 
@@ -187,7 +187,7 @@ namespace MDSS
 
         if (AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            Logger::Debug("Renderer", "Swapchain became out of date while acquiring; recreating it.");
+            TLogger::Debug("TRenderer", "TSwapchain became out of date while acquiring; recreating it.");
             RecreateSwapchain(DebugInterface);
             return;
         }
@@ -250,12 +250,12 @@ namespace MDSS
 
         if (bSwapchainNeedsRecreation)
         {
-            Logger::Debug("Renderer", "Presentation requires swapchain recreation.");
+            TLogger::Debug("TRenderer", "Presentation requires swapchain recreation.");
             RecreateSwapchain(DebugInterface);
         }
     }
 
-    void Renderer::RecreateSwapchain(DebugUI& DebugInterface)
+    void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
     {
         TargetWindow.WaitForNonZeroFramebuffer();
         if (TargetWindow.ShouldClose())
@@ -267,7 +267,7 @@ namespace MDSS
         std::uint32_t FramebufferHeight = 0;
         TargetWindow.GetFramebufferSize(FramebufferWidth, FramebufferHeight);
 
-        Logger::Info("Renderer",
+        TLogger::Info("TRenderer",
                      "Recreating swapchain for framebuffer " + std::to_string(FramebufferWidth) + "x" +
                          std::to_string(FramebufferHeight) + ".");
 
@@ -288,7 +288,7 @@ namespace MDSS
         if (PreviousColorFormat != SwapchainData.GetImageFormat())
         {
             throw std::runtime_error(
-                "Swapchain color format changed during resize. RenderPass/Pipeline recreation is required.");
+                "TSwapchain color format changed during resize. TRenderPass/Pipeline recreation is required.");
         }
 
         DepthImage.Recreate(Context.GetPhysicalDevice(),
@@ -307,27 +307,27 @@ namespace MDSS
         DebugInterface.OnSwapchainRecreated(Context, *this);
 
         const VkExtent2D NewExtent = SwapchainData.GetExtent();
-        Logger::Info("Renderer",
-                     "Swapchain recreation complete: " + std::to_string(NewExtent.width) + "x" +
+        TLogger::Info("TRenderer",
+                     "TSwapchain recreation complete: " + std::to_string(NewExtent.width) + "x" +
                          std::to_string(NewExtent.height) + ".");
     }
 
-    const Swapchain& Renderer::GetSwapchain() const noexcept
+    const TSwapchain& TRenderer::GetSwapchain() const noexcept
     {
         return SwapchainData;
     }
 
-    VkRenderPass Renderer::GetRenderPassHandle() const noexcept
+    VkRenderPass TRenderer::GetRenderPassHandle() const noexcept
     {
         return MainRenderPass.GetHandle();
     }
 
-    RenderViewMode Renderer::GetRenderViewMode() const noexcept
+    TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
     {
         return ViewMode;
     }
 
-    void Renderer::SetRenderViewMode(RenderViewMode Mode)
+    void TRenderer::SetRenderViewMode(TRenderViewMode Mode)
     {
         if (ViewMode == Mode)
         {
@@ -336,15 +336,15 @@ namespace MDSS
 
         ViewMode = Mode;
         UpdateMaterialUniforms();
-        Logger::Info("Renderer", std::string("Render view mode changed to ") + GetRenderViewModeName(ViewMode) + ".");
+        TLogger::Info("TRenderer", std::string("Render view mode changed to ") + GetRenderViewModeName(ViewMode) + ".");
     }
 
-    bool Renderer::GetFlipNormalY() const noexcept
+    bool TRenderer::GetFlipNormalY() const noexcept
     {
         return bFlipNormalY;
     }
 
-    void Renderer::SetFlipNormalY(bool bEnabled)
+    void TRenderer::SetFlipNormalY(bool bEnabled)
     {
         if (bFlipNormalY == bEnabled)
         {
@@ -353,32 +353,32 @@ namespace MDSS
 
         bFlipNormalY = bEnabled;
         UpdateMaterialUniforms();
-        Logger::Info("Renderer", std::string("Normal-map Y flip ") + (bFlipNormalY ? "enabled." : "disabled."));
+        TLogger::Info("TRenderer", std::string("Normal-map Y flip ") + (bFlipNormalY ? "enabled." : "disabled."));
     }
 
-    float Renderer::GetNormalStrength() const noexcept
+    float TRenderer::GetNormalStrength() const noexcept
     {
         return NormalStrength;
     }
 
-    void Renderer::SetNormalStrength(float Strength)
+    void TRenderer::SetNormalStrength(float Strength)
     {
         NormalStrength = std::clamp(Strength, 0.0F, 4.0F);
         UpdateMaterialUniforms();
     }
 
-    float Renderer::GetAmbientLight() const noexcept
+    float TRenderer::GetAmbientLight() const noexcept
     {
         return AmbientLight;
     }
 
-    void Renderer::SetAmbientLight(float Intensity)
+    void TRenderer::SetAmbientLight(float Intensity)
     {
         AmbientLight = std::clamp(Intensity, 0.0F, 1.0F);
         UpdateMaterialUniforms();
     }
 
-    VkDescriptorSetLayout Renderer::CreateMaterialDescriptorSetLayout(VkDevice Device)
+    VkDescriptorSetLayout TRenderer::CreateMaterialDescriptorSetLayout(VkDevice Device)
     {
         std::array<VkDescriptorSetLayoutBinding, 3> Bindings{};
 
@@ -410,16 +410,16 @@ namespace MDSS
         return Layout;
     }
 
-    void Renderer::CreateMaterialDescriptorResources()
+    void TRenderer::CreateMaterialDescriptorResources()
     {
         const std::size_t MaterialCount = Assets.GetMaterialCount();
         if (MaterialCount == 0)
         {
-            Logger::Warning("Renderer", "No materials are registered; material descriptor resources were not created.");
+            TLogger::Warning("TRenderer", "No materials are registered; material descriptor resources were not created.");
             return;
         }
 
-        Logger::Debug("Renderer",
+        TLogger::Debug("TRenderer",
                       "Creating descriptor resources for " + std::to_string(MaterialCount) + " material(s).");
 
         std::array<VkDescriptorPoolSize, 2> PoolSizes{};
@@ -456,20 +456,20 @@ namespace MDSS
         MaterialResources.resize(MaterialCount);
         for (std::size_t Index = 0; Index < MaterialCount; ++Index)
         {
-            const MaterialAssetHandle Handle = static_cast<MaterialAssetHandle>(Index);
-            const MaterialAsset&      Material = Assets.GetMaterial(Handle);
+            const TMaterialAssetHandle Handle = static_cast<TMaterialAssetHandle>(Index);
+            const TMaterialAsset&      Material = Assets.GetMaterial(Handle);
             const TextureAsset&       BaseTexture = Assets.GetTexture(Material.GetBaseColorTexture());
             const TextureAsset&       NormalTexture = Assets.GetTexture(Material.GetNormalTexture());
 
             MaterialResources[Index].UniformBuffer =
-                std::make_unique<GPUBuffer>(Context.GetPhysicalDevice(),
+                std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
                                             Context.GetDevice(),
-                                            sizeof(MaterialUniform),
+                                            sizeof(TMaterialUniform),
                                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             MaterialResources[Index].DescriptorSet = Sets[Index];
 
-            const MaterialUniform Uniform{Material.GetBaseColor(),
+            const TMaterialUniform Uniform{Material.GetBaseColor(),
                                           static_cast<std::uint32_t>(ViewMode),
                                           bFlipNormalY ? 1U : 0U,
                                           NormalStrength,
@@ -489,7 +489,7 @@ namespace MDSS
             VkDescriptorBufferInfo MaterialBuffer{};
             MaterialBuffer.buffer = MaterialResources[Index].UniformBuffer->GetHandle();
             MaterialBuffer.offset = 0;
-            MaterialBuffer.range = sizeof(MaterialUniform);
+            MaterialBuffer.range = sizeof(TMaterialUniform);
 
             std::array<VkWriteDescriptorSet, 3> Writes{};
             for (VkWriteDescriptorSet& Write : Writes)
@@ -512,10 +512,10 @@ namespace MDSS
                 Context.GetDevice(), static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
         }
 
-        Logger::Info("Renderer", "Material descriptor sets created: " + std::to_string(MaterialResources.size()) + ".");
+        TLogger::Info("TRenderer", "Material descriptor sets created: " + std::to_string(MaterialResources.size()) + ".");
     }
 
-    void Renderer::UpdateMaterialUniforms()
+    void TRenderer::UpdateMaterialUniforms()
     {
         const std::size_t MaterialCount = std::min(Assets.GetMaterialCount(), MaterialResources.size());
         for (std::size_t Index = 0; Index < MaterialCount; ++Index)
@@ -525,8 +525,8 @@ namespace MDSS
                 continue;
             }
 
-            const MaterialAsset&  Material = Assets.GetMaterial(static_cast<MaterialAssetHandle>(Index));
-            const MaterialUniform Uniform{Material.GetBaseColor(),
+            const TMaterialAsset&  Material = Assets.GetMaterial(static_cast<TMaterialAssetHandle>(Index));
+            const TMaterialUniform Uniform{Material.GetBaseColor(),
                                           static_cast<std::uint32_t>(ViewMode),
                                           bFlipNormalY ? 1U : 0U,
                                           NormalStrength,
@@ -535,10 +535,10 @@ namespace MDSS
         }
     }
 
-    void Renderer::RecordCommandBuffer(VkCommandBuffer CommandBuffer,
+    void TRenderer::RecordCommandBuffer(VkCommandBuffer CommandBuffer,
                                        std::uint32_t   ImageIndex,
-                                       const Scene&    SceneData,
-                                       const DebugUI&  DebugInterface) const
+                                       const TScene&    SceneData,
+                                       const TDebugUI&  DebugInterface) const
     {
         VkCommandBufferBeginInfo BeginInfo{};
         BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -582,20 +582,20 @@ namespace MDSS
             Extent.height == 0 ? 1.0F : static_cast<float>(Extent.width) / static_cast<float>(Extent.height);
         const glm::mat4 ViewProjection = SceneData.GetMainCamera().GetViewProjectionMatrix(AspectRatio);
 
-        for (const StaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
+        for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
             if (Instance.GetMesh() == InvalidAssetHandle)
             {
                 continue;
             }
 
-            const MeshAsset&   Mesh = Assets.GetMesh(Instance.GetMesh());
+            const TMeshAsset&   Mesh = Assets.GetMesh(Instance.GetMesh());
             const VkBuffer     VertexBuffer = Mesh.GetVertexBuffer().GetHandle();
             const VkDeviceSize VertexOffset = 0;
             vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &VertexOffset);
             vkCmdBindIndexBuffer(CommandBuffer, Mesh.GetIndexBuffer().GetHandle(), 0, VK_INDEX_TYPE_UINT32);
 
-            const StaticMeshPushConstants PushConstants{Instance.GetTransform().GetMatrix(), ViewProjection};
+            const TStaticMeshPushConstants PushConstants{Instance.GetTransform().GetMatrix(), ViewProjection};
             vkCmdPushConstants(CommandBuffer,
                                StaticMeshPipeline.GetLayout(),
                                VK_SHADER_STAGE_VERTEX_BIT,
@@ -603,7 +603,7 @@ namespace MDSS
                                sizeof(PushConstants),
                                &PushConstants);
 
-            for (const MeshSection& Section : Mesh.GetSections())
+            for (const TMeshSection& Section : Mesh.GetSections())
             {
                 if (Section.Material >= MaterialResources.size())
                 {
@@ -633,7 +633,7 @@ namespace MDSS
         }
     }
 
-    VkFormat Renderer::FindDepthFormat(VkPhysicalDevice PhysicalDevice)
+    VkFormat TRenderer::FindDepthFormat(VkPhysicalDevice PhysicalDevice)
     {
         constexpr std::array<VkFormat, 3> Candidates = {
             VK_FORMAT_D32_SFLOAT,
@@ -647,7 +647,7 @@ namespace MDSS
                                    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
 
-    VkFormat Renderer::FindSupportedFormat(VkPhysicalDevice     PhysicalDevice,
+    VkFormat TRenderer::FindSupportedFormat(VkPhysicalDevice     PhysicalDevice,
                                            const VkFormat*      Candidates,
                                            std::uint32_t        CandidateCount,
                                            VkImageTiling        Tiling,

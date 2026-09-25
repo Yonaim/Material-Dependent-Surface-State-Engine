@@ -16,12 +16,12 @@ int main()
 {
     try
     {
-        MDSS::Application Application;
-        Application.Run();
+        MDSS::TApplication TApplication;
+        TApplication.Run();
     }
     catch (const std::exception& Exception)
     {
-        MDSS::Logger::Error("Application", std::string("Fatal error: ") + Exception.what());
+        MDSS::TLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
         return 1;
     }
 

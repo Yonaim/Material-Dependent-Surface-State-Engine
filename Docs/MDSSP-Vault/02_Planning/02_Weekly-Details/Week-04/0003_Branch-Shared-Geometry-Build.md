@@ -6,7 +6,7 @@
 
 ## 목표
 
-Mapping의 TriangleID와 barycentric coordinate로 Solver가 읽을 정적 `SharedSurfaceGeometryData`를 만든다. 이 브랜치도 CPU 결과까지 완성하고 Vulkan upload는 다음 브랜치로 넘긴다.
+Mapping의 TriangleID와 barycentric coordinate로 Solver가 읽을 정적 `TSharedSurfaceGeometryData`를 만든다. 이 브랜치도 CPU 결과까지 완성하고 Vulkan upload는 다음 브랜치로 넘긴다.
 
 또한 정적 Surface data를 매 Runtime의 Asset/Scene load에서 생성하는 경로를 연결한다. 이 브랜치는 Profile Distribution 입력을 `SurfaceProfileMap`으로 변환하고, 각 고유 Mesh/Profile Distribution 조합마다 CPU preprocessing을 수행해 Runtime 메모리 Asset으로 등록·공유하는 end-to-end 경로를 소유한다. `.Surface` persistent cache와 Save/Load는 사용하지 않는다.
 
@@ -37,18 +37,18 @@ Mapping의 TriangleID와 barycentric coordinate로 Solver가 읽을 정적 `Shar
 ## CPU 자료구조
 
 ```cpp
-struct SharedSurfaceGeometryCPU
+struct TSharedSurfaceGeometryCPU
 {
     std::uint32_t Width = 0;
     std::uint32_t Height = 0;
 
     std::vector<std::uint32_t> ValidMask;
-    std::vector<SurfaceLocalID> TexelSurfaceIndices;
+    std::vector<TSurfaceLocalID> TexelSurfaceIndices;
     std::vector<glm::vec3> Positions;
     std::vector<glm::vec3> Normals;
     std::vector<float> MesoVirtualHeights;
     std::vector<float> ConcavityWeights;
-    std::vector<std::array<LocalTexelIndex, 8>> NeighborIndices;
+    std::vector<std::array<TLocalTexelIndex, 8>> NeighborIndices;
 };
 ```
 
@@ -90,10 +90,7 @@ Distance(i, j) = max(length(Position[j] - Position[i]), DistanceEpsilon)
 
 ## Surface와 Profile 경계
 
-Geometry에는 Profile index를 직접 저장하지 않는다.
-
-- `TexelSurfaceIndex`: 공유 가능
-- `Surface→ProfileIndex`: instance/scene 연결이므로 별도 데이터
+Shared Geometry는 texel별 Profile index를 직접 저장한다. `TexelSurfaceIndex`는 Surface mapping과 invalid texel 판정에 사용하고, `TexelProfileIndex`는 Profile response table 조회에 사용한다. 같은 Geometry/Profile Distribution 조합을 쓰는 instance들은 두 map을 포함한 Runtime 결과를 공유한다.
 
 서로 다른 Surface의 texel이 topology상 이웃일 수 있다. Geometry는 연결을 유지하고 Solver가 `ProfileBoundaryWeight`를 적용한다.
 
@@ -108,24 +105,20 @@ Geometry에는 Profile index를 직접 저장하지 않는다.
 
 ## Profile Distribution 입력 계약
 
-- Mesh와 같은 stem의 `<MeshStem>.SurfaceProfileMap` JSON sidecar를 사용한다. 예: `DemoCube.obj` 옆의 `DemoCube.SurfaceProfileMap`.
-- `profiles` 배열의 순서가 이 Mesh의 local Profile table 순서다. 경로는 sidecar 디렉토리 기준 상대 `.SRProfile` 경로로 기록한다.
-- `surfaces` 배열은 각 dense `surfaceId`를 `profileIndex`에 연결한다. 한 Surface의 모든 valid texel은 같은 Profile을 사용한다.
-- 로더가 JSON type/version, 자료형, 중복·누락 Surface ID, Profile 경로와 범위를 검증한다.
-- valid texel의 Profile index 범위, invalid texel sentinel, 미등록 Profile 참조를 검증한다.
-- Runtime build 입력으로 사용할 canonical Profile Distribution을 반환한다. Persistent cache용 hash는 만들지 않는다.
+- Profile Distribution의 구체적인 authoring 형식과 `.Scene` 연결 계약은 아직 확정하지 않는다.
+- Runtime 전처리 출력은 valid texel마다 `uint32 ProfileIndex`를 가진 dense map이다. Profile response table은 별도로 유지한다.
+- 각 valid texel의 Profile index 범위와 참조 Profile을 검증한다. 같은 Surface 안에서도 서로 다른 Profile 영역을 표현할 수 있어야 한다.
+- 입력 표현에서 Runtime dense map으로 변환한 canonical Profile Distribution을 반환한다. Persistent cache용 hash는 만들지 않는다.
 - 같은 입력 조합을 Runtime에서 중복 build하지 않도록 생성된 결과를 Asset/Scene 수명 동안 공유한다.
 
-```json
-{
-  "type": "SurfaceProfileMap",
-  "version": 1,
-  "profiles": ["../SurfaceProfiles/Fabric.SRProfile"],
-  "surfaces": [
-    {"surfaceId": 0, "profileIndex": 0}
-  ]
-}
+Runtime Profile Map의 논리적 내용은 다음과 같다. 이는 파일 직렬화 형식을 정하지 않는다.
+
+```text
+ProfileTable[profileIndex] → SRProfile response data
+TexelProfileIndex[localTexelIndex] → profileIndex
 ```
+
+각 valid texel은 자신의 `ProfileIndex`를 직접 가진다. Profile Distribution의 원본 표현은 별도 계약으로 정한다.
 
 ## 구현 대상
 

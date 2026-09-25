@@ -14,15 +14,15 @@
 
 namespace MDSS
 {
-    using StateId = std::uint32_t;
-    inline constexpr StateId InvalidStateId = UINT32_MAX;
+    using TStateId = std::uint32_t;
+    inline constexpr TStateId InvalidStateId = UINT32_MAX;
 
-    using SurfaceProfileIndex = std::uint32_t;
-    using SurfaceInstanceID = std::uint32_t;
-    inline constexpr SurfaceProfileIndex InvalidSurfaceProfileIndex = UINT32_MAX;
-    inline constexpr SurfaceInstanceID   InvalidSurfaceInstanceID = UINT32_MAX;
+    using TSurfaceProfileIndex = std::uint32_t;
+    using TSurfaceInstanceID = std::uint32_t;
+    inline constexpr TSurfaceProfileIndex InvalidSurfaceProfileIndex = UINT32_MAX;
+    inline constexpr TSurfaceInstanceID   InvalidSurfaceInstanceID = UINT32_MAX;
 
-    struct SurfaceStateParameters
+    struct TSurfaceStateParameters
     {
         float StateCapacity = 1.0F;
         float InputFactor = 1.0F;
@@ -35,7 +35,7 @@ namespace MDSS
     };
 
     /** @brief Source and target names are canonicalized during profile loading. */
-    struct SurfaceStateTransition
+    struct TSurfaceStateTransition
     {
         std::string Source;
         std::string Target;
@@ -44,17 +44,17 @@ namespace MDSS
     };
 
     /** @brief A profile contains only the states and transitions it defines. */
-    struct SurfaceResponseProfileData
+    struct TSurfaceResponseProfileData
     {
-        std::unordered_map<std::string, SurfaceStateParameters> States;
-        std::vector<SurfaceStateTransition>                     Transitions;
+        std::unordered_map<std::string, TSurfaceStateParameters> States;
+        std::vector<TSurfaceStateTransition>                     Transitions;
     };
 
-    using SurfaceStateValues = std::vector<float>;
+    using TSurfaceStateValues = std::vector<float>;
 
     /** @brief Trim ASCII whitespace and lowercase ASCII letters; preserve all other bytes. */
     [[nodiscard]] std::string NormalizeSurfaceStateName(std::string_view Name);
 
     /** @throws std::invalid_argument if any parameter or transition is invalid. */
-    void ValidateSurfaceResponseProfileData(const SurfaceResponseProfileData& Data);
+    void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data);
 } // namespace MDSS

@@ -11,7 +11,7 @@
 
 namespace MDSS
 {
-    VulkanCommand::VulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily) : Device(Device)
+    TVulkanCommand::TVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily) : Device(Device)
     {
         VkCommandPoolCreateInfo CreateInfo{};
         CreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -22,11 +22,11 @@ namespace MDSS
         {
             throw std::runtime_error("Failed to create Vulkan command pool.");
         }
-        Logger::Debug("Vulkan",
+        TLogger::Debug("Vulkan",
                       "Command pool created for graphics queue family " + std::to_string(GraphicsQueueFamily) + ".");
     }
 
-    VulkanCommand::~VulkanCommand()
+    TVulkanCommand::~TVulkanCommand()
     {
         if (CommandPool != VK_NULL_HANDLE)
         {
@@ -35,12 +35,12 @@ namespace MDSS
         }
     }
 
-    VkCommandPool VulkanCommand::GetPool() const noexcept
+    VkCommandPool TVulkanCommand::GetPool() const noexcept
     {
         return CommandPool;
     }
 
-    std::vector<VkCommandBuffer> VulkanCommand::AllocatePrimary(std::uint32_t Count) const
+    std::vector<VkCommandBuffer> TVulkanCommand::AllocatePrimary(std::uint32_t Count) const
     {
         std::vector<VkCommandBuffer> CommandBuffers(Count, VK_NULL_HANDLE);
 
@@ -55,11 +55,11 @@ namespace MDSS
             throw std::runtime_error("Failed to allocate Vulkan command buffers.");
         }
 
-        Logger::Verbose("Vulkan", "Allocated " + std::to_string(Count) + " primary command buffer(s).");
+        TLogger::Verbose("Vulkan", "Allocated " + std::to_string(Count) + " primary command buffer(s).");
         return CommandBuffers;
     }
 
-    VkCommandBuffer VulkanCommand::BeginSingleTime() const
+    VkCommandBuffer TVulkanCommand::BeginSingleTime() const
     {
         VkCommandBuffer             CommandBuffer = VK_NULL_HANDLE;
         VkCommandBufferAllocateInfo AllocateInfo{};
@@ -86,7 +86,7 @@ namespace MDSS
         return CommandBuffer;
     }
 
-    void VulkanCommand::EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const
+    void TVulkanCommand::EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const
     {
         if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
         {

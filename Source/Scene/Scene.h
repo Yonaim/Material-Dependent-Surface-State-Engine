@@ -12,21 +12,21 @@
 
 namespace MDSS
 {
-    class Scene
+    class TScene
     {
     public:
-        Scene();
+        TScene();
 
-        [[nodiscard]] Camera&       GetMainCamera() noexcept;
-        [[nodiscard]] const Camera& GetMainCamera() const noexcept;
+        [[nodiscard]] TCamera&       GetMainCamera() noexcept;
+        [[nodiscard]] const TCamera& GetMainCamera() const noexcept;
 
-        /** @brief Scene 소유 목록에 정적 메시 인스턴스를 추가한다. */
-        void                                                 AddStaticMeshInstance(StaticMeshInstance Instance);
-        [[nodiscard]] std::vector<StaticMeshInstance>&       GetStaticMeshInstances() noexcept;
-        [[nodiscard]] const std::vector<StaticMeshInstance>& GetStaticMeshInstances() const noexcept;
+        /** @brief TScene 소유 목록에 정적 메시 인스턴스를 추가한다. */
+        void                                                 AddStaticMeshInstance(TStaticMeshInstance Instance);
+        [[nodiscard]] std::vector<TStaticMeshInstance>&       GetStaticMeshInstances() noexcept;
+        [[nodiscard]] const std::vector<TStaticMeshInstance>& GetStaticMeshInstances() const noexcept;
 
     private:
-        Camera                          MainCamera;
-        std::vector<StaticMeshInstance> StaticMeshInstances;
+        TCamera                          MainCamera;
+        std::vector<TStaticMeshInstance> StaticMeshInstances;
     };
 } // namespace MDSS

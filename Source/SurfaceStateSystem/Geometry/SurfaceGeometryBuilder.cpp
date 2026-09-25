@@ -21,37 +21,37 @@ namespace MDSS
         }
     } // namespace
 
-    SharedSurfaceGeometryData SurfaceGeometryBuilder::Build(const SurfaceMappingData&        Mapping,
-                                                            std::vector<SurfaceProfileIndex> ProfileMap,
+    TSharedSurfaceGeometryData TSurfaceGeometryBuilder::Build(const TSurfaceMappingData&        Mapping,
+                                                            std::vector<TSurfaceProfileIndex> ProfileMap,
                                                             std::uint32_t                    ProfileCount)
     {
         ValidateSurfaceMapping(Mapping);
         if (Mapping.Surfaces.empty())
         {
-            throw std::invalid_argument("SurfaceGeometryBuilder requires at least one Surface.");
+            throw std::invalid_argument("TSurfaceGeometryBuilder requires at least one Surface.");
         }
         if (ProfileCount == 0)
         {
-            throw std::invalid_argument("SurfaceGeometryBuilder requires at least one Profile.");
+            throw std::invalid_argument("TSurfaceGeometryBuilder requires at least one Profile.");
         }
         if (ProfileMap.size() != Mapping.Texels.size())
         {
             throw std::invalid_argument("ProfileMap must provide exactly one entry per mapping texel.");
         }
 
-        std::vector<SurfaceDefinition> Definitions;
+        std::vector<TSurfaceDefinition> Definitions;
         Definitions.reserve(Mapping.Surfaces.size());
-        for (const SurfaceTexelRange& Surface : Mapping.Surfaces)
+        for (const TSurfaceTexelRange& Surface : Mapping.Surfaces)
         {
             Definitions.push_back({Surface.Surface, Surface.Resolution});
         }
 
-        SharedSurfaceGeometryData Geometry(std::move(Definitions));
-        std::vector<SurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
+        TSharedSurfaceGeometryData Geometry(std::move(Definitions));
+        std::vector<TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
-            const SurfaceMappingTexel& Source = Mapping.Texels[Index];
-            SurfaceTexelGeometry&      Target = GeometryTexels[Index];
+            const TSurfaceMappingTexel& Source = Mapping.Texels[Index];
+            TSurfaceTexelGeometry&      Target = GeometryTexels[Index];
             if (!Source.IsValid())
             {
                 if (ProfileMap[Index] != InvalidSurfaceProfileIndex)

@@ -25,15 +25,15 @@
 
 | 모듈 | 주요 역할 | 코드 위치 |
 |---|---|---|
-| `Application` | 창과 하위 시스템 수명, 메인 루프 조정 | `Source/Application/` |
-| `AssetManager` | 에셋 로드 조정, 등록 및 handle 조회 | `Source/AssetManager/` |
-| `DebugUI` | ImGui 기반 설정·로그 UI | `Source/DebugUI/` |
+| `TApplication` | 창과 하위 시스템 수명, 메인 루프 조정 | `Source/Application/` |
+| `TAssetManager` | 에셋 로드 조정, 등록 및 handle 조회 | `Source/AssetManager/` |
+| `TDebugUI` | ImGui 기반 설정·로그 UI | `Source/DebugUI/` |
 | `InputSystem` | 입력 이벤트와 Raycast. 현재 placeholder | `Source/InputSystem/` |
-| `Logger` | 로그 기록과 history 조회 | `Source/Logger/` |
-| `Renderer` | Swapchain 기반 장면 렌더링 | `Source/Renderer/` |
-| `Scene` | Camera와 정적 Mesh Instance 자료형 | `Source/Scene/` |
-| `SurfaceStateSystem` | Mapping 및 Surface State 자료형. Solver/System은 placeholder | `Source/SurfaceStateSystem/` |
-| `VulkanContext` | Vulkan instance/device/queue/command와 GPU 자원 기반 | `Source/VulkanContext/` |
+| `TLogger` | 로그 기록과 history 조회 | `Source/Logger/` |
+| `TRenderer` | Swapchain 기반 장면 렌더링 | `Source/Renderer/` |
+| `TScene` | Camera와 정적 Mesh Instance 자료형 | `Source/Scene/` |
+| `TSurfaceStateSystem` | Mapping 및 Surface State 자료형. Solver/System은 placeholder | `Source/SurfaceStateSystem/` |
+| `TVulkanContext` | Vulkan instance/device/queue/command와 GPU 자원 기반 | `Source/VulkanContext/` |
 
 모듈별 책임은 [[03_Architecture/0001_Engine-Structure|엔진 구조와 데이터 흐름]]을 기준으로 한다. 개별 관계 문서는 해당 기능에서 실제로 연결되는 모듈을 함께 설명한다.
 

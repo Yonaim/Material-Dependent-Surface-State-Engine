@@ -13,37 +13,37 @@
 
 namespace MDSS
 {
-    MeshAsset::MeshAsset(AssetID                         ID,
+    TMeshAsset::TMeshAsset(TAssetID                         ID,
                          std::string                     Name,
                          std::filesystem::path           SourcePath,
-                         const VulkanContext&            Context,
-                         std::vector<Vertex>             Vertices,
+                         const TVulkanContext&            Context,
+                         std::vector<TVertex>             Vertices,
                          std::vector<std::uint32_t>      Indices,
-                         std::vector<MeshSection>        Sections,
-                         std::vector<MeshTriangleSource> Triangles)
-        : Asset(ID, std::move(Name), std::move(SourcePath)), Vertices(std::move(Vertices)), Indices(std::move(Indices)),
+                         std::vector<TMeshSection>        Sections,
+                         std::vector<TMeshTriangleSource> Triangles)
+        : TAsset(ID, std::move(Name), std::move(SourcePath)), Vertices(std::move(Vertices)), Indices(std::move(Indices)),
           Sections(std::move(Sections)), Triangles(std::move(Triangles))
     {
         if (this->Vertices.empty() || this->Indices.empty())
         {
-            throw std::invalid_argument("MeshAsset requires non-empty vertex and index data.");
+            throw std::invalid_argument("TMeshAsset requires non-empty vertex and index data.");
         }
         if (this->Indices.size() % 3U != 0 || this->Triangles.size() != this->Indices.size() / 3U)
         {
-            throw std::invalid_argument("MeshAsset source triangle count must match its render index data.");
+            throw std::invalid_argument("TMeshAsset source triangle count must match its render index data.");
         }
 
-        const VkDeviceSize VertexBytes = sizeof(Vertex) * this->Vertices.size();
+        const VkDeviceSize VertexBytes = sizeof(TVertex) * this->Vertices.size();
         const VkDeviceSize IndexBytes = sizeof(std::uint32_t) * this->Indices.size();
 
         VertexBuffer =
-            std::make_unique<GPUBuffer>(Context.GetPhysicalDevice(),
+            std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
                                         Context.GetDevice(),
                                         VertexBytes,
                                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         IndexBuffer =
-            std::make_unique<GPUBuffer>(Context.GetPhysicalDevice(),
+            std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
                                         Context.GetDevice(),
                                         IndexBytes,
                                         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -52,37 +52,37 @@ namespace MDSS
         VertexBuffer->Upload(this->Vertices.data(), VertexBytes);
         IndexBuffer->Upload(this->Indices.data(), IndexBytes);
 
-        Logger::Debug("AssetManager",
-                      "Uploaded MeshAsset '" + GetName() + "' to GPU (vertex bytes=" + std::to_string(VertexBytes) +
+        TLogger::Debug("TAssetManager",
+                      "Uploaded TMeshAsset '" + GetName() + "' to GPU (vertex bytes=" + std::to_string(VertexBytes) +
                           ", index bytes=" + std::to_string(IndexBytes) + ").");
     }
 
-    const std::vector<Vertex>& MeshAsset::GetVertices() const noexcept
+    const std::vector<TVertex>& TMeshAsset::GetVertices() const noexcept
     {
         return Vertices;
     }
 
-    const std::vector<std::uint32_t>& MeshAsset::GetIndices() const noexcept
+    const std::vector<std::uint32_t>& TMeshAsset::GetIndices() const noexcept
     {
         return Indices;
     }
 
-    const std::vector<MeshSection>& MeshAsset::GetSections() const noexcept
+    const std::vector<TMeshSection>& TMeshAsset::GetSections() const noexcept
     {
         return Sections;
     }
 
-    const std::vector<MeshTriangleSource>& MeshAsset::GetTriangles() const noexcept
+    const std::vector<TMeshTriangleSource>& TMeshAsset::GetTriangles() const noexcept
     {
         return Triangles;
     }
 
-    const GPUBuffer& MeshAsset::GetVertexBuffer() const noexcept
+    const TGPUBuffer& TMeshAsset::GetVertexBuffer() const noexcept
     {
         return *VertexBuffer;
     }
 
-    const GPUBuffer& MeshAsset::GetIndexBuffer() const noexcept
+    const TGPUBuffer& TMeshAsset::GetIndexBuffer() const noexcept
     {
         return *IndexBuffer;
     }

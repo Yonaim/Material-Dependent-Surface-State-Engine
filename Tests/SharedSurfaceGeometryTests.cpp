@@ -53,23 +53,23 @@ namespace
         return std::filesystem::path(MDSS_TEST_FIXTURE_DIR) / RelativePath;
     }
 
-    MDSS::SurfaceMappingData BuildQuad()
+    MDSS::TSurfaceMappingData BuildQuad()
     {
-        const MDSS::OBJLoadResult Mesh = MDSS::OBJLoader::Load(Fixture("Mapping/QuadNoSeam.obj"));
-        return MDSS::SurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {8, 8}}});
+        const MDSS::TOBJLoadResult Mesh = MDSS::TOBJLoader::Load(Fixture("Mapping/QuadNoSeam.obj"));
+        return MDSS::TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {8, 8}}});
     }
 
     void TestProfileDistribution()
     {
         using namespace MDSS;
-        const SurfaceProfileDistribution Distribution =
-            SurfaceProfileDistributionLoader::Load(Fixture("SurfaceProfileMaps/Valid.SurfaceProfileMap"));
+        const TSurfaceProfileDistribution Distribution =
+            TSurfaceProfileDistributionLoader::Load(Fixture("SurfaceProfileMaps/Valid.SurfaceProfileMap"));
         Check(Distribution.ProfilePaths.size() == 1, "distribution should retain its ordered Profile path table");
         Check(Distribution.ProfilePaths[0].filename() == "Valid.SRProfile",
               "relative Profile path should resolve against the sidecar directory");
 
-        const SurfaceMappingData               Mapping = BuildQuad();
-        const std::vector<SurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+        const TSurfaceMappingData               Mapping = BuildQuad();
+        const std::vector<TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
         Check(ProfileMap.size() == Mapping.Texels.size(), "distribution should output one entry per texel");
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
@@ -80,7 +80,7 @@ namespace
         CheckThrows(
             []
             {
-                (void)SurfaceProfileDistributionLoader::Load(
+                (void)TSurfaceProfileDistributionLoader::Load(
                     Fixture("SurfaceProfileMaps/OutOfRange.SurfaceProfileMap"));
             },
             "outside the profiles array",
@@ -88,7 +88,7 @@ namespace
         CheckThrows(
             []
             {
-                (void)SurfaceProfileDistributionLoader::Load(
+                (void)TSurfaceProfileDistributionLoader::Load(
                     Fixture("SurfaceProfileMaps/MissingSurface.SurfaceProfileMap"));
             },
             "missing surfaceId 0",
@@ -96,7 +96,7 @@ namespace
         CheckThrows(
             []
             {
-                (void)SurfaceProfileDistributionLoader::Load(
+                (void)TSurfaceProfileDistributionLoader::Load(
                     Fixture("SurfaceProfileMaps/InvalidIndexType.SurfaceProfileMap"));
             },
             "non-negative integer",
@@ -106,8 +106,8 @@ namespace
     void TestGeometryBuild()
     {
         using namespace MDSS;
-        const SurfaceMappingData         Mapping = BuildQuad();
-        std::vector<SurfaceProfileIndex> ProfileMap(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
+        const TSurfaceMappingData         Mapping = BuildQuad();
+        std::vector<TSurfaceProfileIndex> ProfileMap(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
             if (Mapping.Texels[Index].IsValid())
@@ -116,19 +116,19 @@ namespace
             }
         }
 
-        SharedSurfaceGeometryData Geometry = SurfaceGeometryBuilder::Build(Mapping, ProfileMap, 1);
+        TSharedSurfaceGeometryData Geometry = TSurfaceGeometryBuilder::Build(Mapping, ProfileMap, 1);
         Check(Geometry.GetTexelCount() == Mapping.Texels.size(), "shared geometry should preserve mapping texel count");
-        Check(Geometry.GetSurface(0).Resolution == SurfaceResolution{8, 8},
+        Check(Geometry.GetSurface(0).Resolution == TSurfaceResolution{8, 8},
               "shared geometry should preserve Surface grid resolution");
 
         bool FoundValid = false;
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
-            const SurfaceTexelGeometry& GeometryTexel = Geometry.GetTexels()[Index];
+            const TSurfaceTexelGeometry& GeometryTexel = Geometry.GetTexels()[Index];
             if (!Mapping.Texels[Index].IsValid())
             {
                 Check(!GeometryTexel.IsValid(), "invalid mapping texels should remain invalid in shared geometry");
-                Check(Geometry.GetProfileIndex(static_cast<LocalTexelIndex>(Index)) == InvalidSurfaceProfileIndex,
+                Check(Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(Index)) == InvalidSurfaceProfileIndex,
                       "invalid geometry texels should retain the Profile sentinel");
                 continue;
             }
@@ -141,7 +141,7 @@ namespace
                   "builder should copy the seam-aware neighbor graph");
             Check(GeometryTexel.Geometry.MesoVirtualHeight == 0.0F && GeometryTexel.Geometry.ConcavityWeight == 0.0F,
                   "not-yet-built geometry scalars should have zero defaults");
-            Check(Geometry.GetProfileIndex(static_cast<LocalTexelIndex>(Index)) == 0,
+            Check(Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(Index)) == 0,
                   "valid texels should retain the Profile assigned to their Surface");
         }
         Check(FoundValid, "fixture should include valid mapping texels");
@@ -149,12 +149,12 @@ namespace
         std::size_t CheckedNeighborDistances = 0;
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
-            const SurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+            const TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
             if (!Texel.IsValid())
             {
                 continue;
             }
-            for (const LocalTexelIndex Neighbor : Texel.NeighborIndices)
+            for (const TLocalTexelIndex Neighbor : Texel.NeighborIndices)
             {
                 if (Neighbor == InvalidTexelIndex)
                 {
@@ -165,7 +165,7 @@ namespace
                 Check(std::isfinite(Distance) && Distance > 0.0F,
                       "neighbor distance should be finite and computed on demand from positions");
                 const auto& ReverseNeighbors = Geometry.GetTexels()[Neighbor].NeighborIndices;
-                Check(std::ranges::find(ReverseNeighbors, static_cast<LocalTexelIndex>(Index)) !=
+                Check(std::ranges::find(ReverseNeighbors, static_cast<TLocalTexelIndex>(Index)) !=
                           ReverseNeighbors.end(),
                       "geometry neighbor links should remain bidirectional");
                 ++CheckedNeighborDistances;
@@ -173,10 +173,10 @@ namespace
         }
         Check(CheckedNeighborDistances != 0, "fixture should include neighbors for on-demand distance checks");
 
-        const auto        ValidMappingTexel = std::ranges::find_if(Mapping.Texels, &SurfaceMappingTexel::IsValid);
+        const auto        ValidMappingTexel = std::ranges::find_if(Mapping.Texels, &TSurfaceMappingTexel::IsValid);
         const std::size_t ValidTexelIndex = static_cast<std::size_t>(ValidMappingTexel - Mapping.Texels.begin());
         ProfileMap[ValidTexelIndex] = InvalidSurfaceProfileIndex;
-        CheckThrows([&] { (void)SurfaceGeometryBuilder::Build(Mapping, ProfileMap, 1); },
+        CheckThrows([&] { (void)TSurfaceGeometryBuilder::Build(Mapping, ProfileMap, 1); },
                     "Valid texel Profile index",
                     "valid texel without a Profile");
     }
@@ -184,13 +184,13 @@ namespace
     void TestRuntimePreprocessing()
     {
         using namespace MDSS;
-        const SurfaceProfileDistribution Distribution =
-            SurfaceProfileDistributionLoader::Load(Fixture("SurfaceProfileMaps/Valid.SurfaceProfileMap"));
-        const SurfaceMappingData               Mapping = BuildQuad();
-        const std::vector<SurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+        const TSurfaceProfileDistribution Distribution =
+            TSurfaceProfileDistributionLoader::Load(Fixture("SurfaceProfileMaps/Valid.SurfaceProfileMap"));
+        const TSurfaceMappingData               Mapping = BuildQuad();
+        const std::vector<TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
 
-        const SurfaceRuntimeData First = SurfacePreprocessor::Build(Mapping, ProfileMap, 1);
-        const SurfaceRuntimeData Second = SurfacePreprocessor::Build(Mapping, ProfileMap, 1);
+        const TSurfaceRuntimeData First = TSurfacePreprocessor::Build(Mapping, ProfileMap, 1);
+        const TSurfaceRuntimeData Second = TSurfacePreprocessor::Build(Mapping, ProfileMap, 1);
         Check(First.Geometry->GetTexelCount() == Mapping.Texels.size(),
               "Runtime preprocessing should produce one geometry texel per mapping texel");
         Check(First.Geometry->GetSurfaces().size() == Second.Geometry->GetSurfaces().size() &&

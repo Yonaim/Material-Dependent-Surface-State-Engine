@@ -16,7 +16,7 @@ namespace MDSS
      * @brief Mesh가 공유하는 Surface range와 texel geometry를 소유한다.
      * @note Surface ID는 입력 순서대로 0부터 이어지는 dense 값이어야 한다.
      */
-    class SharedSurfaceGeometryData
+    class TSharedSurfaceGeometryData
     {
     public:
         /**
@@ -25,28 +25,28 @@ namespace MDSS
          * @throws std::invalid_argument 목록이 비었거나 ID·해상도가 유효하지 않은 경우.
          * @throws std::overflow_error 전체 texel 수가 지원 범위를 넘는 경우.
          */
-        explicit SharedSurfaceGeometryData(std::vector<SurfaceDefinition> Surfaces);
-        SharedSurfaceGeometryData(std::vector<SurfaceDefinition> Surfaces, std::vector<SurfaceProfileIndex> ProfileMap);
+        explicit TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition> Surfaces);
+        TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition> Surfaces, std::vector<TSurfaceProfileIndex> ProfileMap);
 
-        [[nodiscard]] const std::vector<SurfaceTexelRange>& GetSurfaces() const noexcept;
+        [[nodiscard]] const std::vector<TSurfaceTexelRange>& GetSurfaces() const noexcept;
         /** @brief 전처리 코드가 채우는 mesh-local texel geometry 배열에 접근한다. */
-        [[nodiscard]] const std::vector<SurfaceTexelGeometry>& GetTexels() const noexcept;
+        [[nodiscard]] const std::vector<TSurfaceTexelGeometry>& GetTexels() const noexcept;
         /** @brief 전처리 단계에서 mapping 결과를 채울 mutable texel geometry 배열에 접근한다. */
-        [[nodiscard]] std::vector<SurfaceTexelGeometry>&      GetTexels() noexcept;
-        [[nodiscard]] const std::vector<SurfaceProfileIndex>& GetProfileMap() const noexcept;
+        [[nodiscard]] std::vector<TSurfaceTexelGeometry>&      GetTexels() noexcept;
+        [[nodiscard]] const std::vector<TSurfaceProfileIndex>& GetProfileMap() const noexcept;
         /** @brief Install the static texel-to-profile map after Geometry has been populated. */
-        void                              SetProfileMap(std::vector<SurfaceProfileIndex> ProfileMap);
-        [[nodiscard]] SurfaceProfileIndex GetProfileIndex(LocalTexelIndex Texel) const;
+        void                              SetProfileMap(std::vector<TSurfaceProfileIndex> ProfileMap);
+        [[nodiscard]] TSurfaceProfileIndex GetProfileIndex(TLocalTexelIndex Texel) const;
         [[nodiscard]] std::size_t         GetTexelCount() const noexcept;
         /**
          * @brief ID에 해당하는 Surface의 연속 texel range를 반환한다.
          * @throws std::out_of_range Surface ID가 이 Mesh에 없는 경우.
          */
-        [[nodiscard]] const SurfaceTexelRange& GetSurface(SurfaceLocalID Surface) const;
+        [[nodiscard]] const TSurfaceTexelRange& GetSurface(TSurfaceLocalID Surface) const;
 
     private:
-        std::vector<SurfaceTexelRange>    Surfaces;
-        std::vector<SurfaceTexelGeometry> Texels;
-        std::vector<SurfaceProfileIndex>  ProfileMap;
+        std::vector<TSurfaceTexelRange>    Surfaces;
+        std::vector<TSurfaceTexelGeometry> Texels;
+        std::vector<TSurfaceProfileIndex>  ProfileMap;
     };
 } // namespace MDSS

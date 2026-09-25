@@ -31,15 +31,15 @@ namespace MDSS
 
             if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0)
             {
-                Logger::Error("Vulkan Validation", Message);
+                TLogger::Error("Vulkan Validation", Message);
             }
             else if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0)
             {
-                Logger::Warning("Vulkan Validation", Message);
+                TLogger::Warning("Vulkan Validation", Message);
             }
             else
             {
-                Logger::Debug("Vulkan Validation", Message);
+                TLogger::Debug("Vulkan Validation", Message);
             }
             return VK_FALSE;
         }
@@ -59,7 +59,7 @@ namespace MDSS
     } // namespace
 #endif
 
-    VulkanInstance::VulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
+    TVulkanInstance::TVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
     {
         const std::vector<const char*> Extensions = BuildExtensionList(RequiredExtensions);
         ValidateExtensions(Extensions);
@@ -119,14 +119,14 @@ namespace MDSS
         }
 #endif
 
-        Logger::Info("Vulkan", "Instance created (API 1.2).");
-        Logger::Debug("Vulkan", "Enabled instance extension count=" + std::to_string(Extensions.size()) + ".");
+        TLogger::Info("Vulkan", "Instance created (API 1.2).");
+        TLogger::Debug("Vulkan", "Enabled instance extension count=" + std::to_string(Extensions.size()) + ".");
 #if MDSS_ENABLE_VALIDATION
-        Logger::Info("Vulkan", "Validation enabled (core, synchronization, best practices).");
+        TLogger::Info("Vulkan", "Validation enabled (core, synchronization, best practices).");
 #endif
     }
 
-    VulkanInstance::~VulkanInstance()
+    TVulkanInstance::~TVulkanInstance()
     {
 #if MDSS_ENABLE_VALIDATION
         if (DebugMessenger != VK_NULL_HANDLE)
@@ -148,12 +148,12 @@ namespace MDSS
         }
     }
 
-    VkInstance VulkanInstance::GetHandle() const noexcept
+    VkInstance TVulkanInstance::GetHandle() const noexcept
     {
         return Instance;
     }
 
-    std::vector<const char*> VulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
+    std::vector<const char*> TVulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
     {
         std::vector<const char*> Extensions = RequiredExtensions;
 
@@ -177,7 +177,7 @@ namespace MDSS
         return Extensions;
     }
 
-    void VulkanInstance::ValidateExtensions(const std::vector<const char*>& Extensions)
+    void TVulkanInstance::ValidateExtensions(const std::vector<const char*>& Extensions)
     {
         std::uint32_t AvailableCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &AvailableCount, nullptr);
@@ -201,7 +201,7 @@ namespace MDSS
     }
 
 #if MDSS_ENABLE_VALIDATION
-    void VulkanInstance::ValidateLayers()
+    void TVulkanInstance::ValidateLayers()
     {
         std::uint32_t LayerCount = 0;
         vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);

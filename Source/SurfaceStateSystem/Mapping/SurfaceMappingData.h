@@ -18,15 +18,15 @@ namespace MDSS
 {
     inline constexpr std::uint32_t InvalidChartID = std::numeric_limits<std::uint32_t>::max();
 
-    struct SurfaceMappingTexel
+    struct TSurfaceMappingTexel
     {
-        SurfaceLocalID                                    Surface = InvalidSurfaceID;
+        TSurfaceLocalID                                    Surface = InvalidSurfaceID;
         std::uint32_t                                     Triangle = InvalidTriangleID;
         std::uint32_t                                     Chart = InvalidChartID;
         glm::vec3                                         Barycentric{0.0F};
         glm::vec3                                         Position{0.0F};
         glm::vec3                                         Normal{0.0F, 1.0F, 0.0F};
-        std::array<LocalTexelIndex, SurfaceNeighborCount> Neighbors = {
+        std::array<TLocalTexelIndex, SurfaceNeighborCount> Neighbors = {
             InvalidTexelIndex,
             InvalidTexelIndex,
             InvalidTexelIndex,
@@ -43,10 +43,10 @@ namespace MDSS
         }
     };
 
-    struct SurfaceMappingData
+    struct TSurfaceMappingData
     {
-        std::vector<SurfaceTexelRange>   Surfaces;
-        std::vector<SurfaceMappingTexel> Texels;
+        std::vector<TSurfaceTexelRange>   Surfaces;
+        std::vector<TSurfaceMappingTexel> Texels;
         std::vector<std::string>         Warnings;
     };
 } // namespace MDSS

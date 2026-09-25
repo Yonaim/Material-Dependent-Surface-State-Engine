@@ -12,24 +12,24 @@
 
 namespace MDSS
 {
-    class Framebuffer
+    class TFramebuffer
     {
     public:
         /** @brief 각 color image view와 공통 depth view를 연결한 framebuffer를 생성한다. */
-        Framebuffer(VkDevice                        Device,
-                    VkRenderPass                    RenderPass,
+        TFramebuffer(VkDevice                        Device,
+                    VkRenderPass                    TRenderPass,
                     VkExtent2D                      Extent,
                     const std::vector<VkImageView>& ColorImageViews,
                     VkImageView                     DepthImageView);
-        ~Framebuffer();
+        ~TFramebuffer();
 
-        Framebuffer(const Framebuffer&) = delete;
-        Framebuffer& operator=(const Framebuffer&) = delete;
-        Framebuffer(Framebuffer&&) = delete;
-        Framebuffer& operator=(Framebuffer&&) = delete;
+        TFramebuffer(const TFramebuffer&) = delete;
+        TFramebuffer& operator=(const TFramebuffer&) = delete;
+        TFramebuffer(TFramebuffer&&) = delete;
+        TFramebuffer& operator=(TFramebuffer&&) = delete;
 
         /** @brief 이전 framebuffer를 제거하고 새 extent와 image view로 다시 생성한다. */
-        void Recreate(VkRenderPass                    RenderPass,
+        void Recreate(VkRenderPass                    TRenderPass,
                       VkExtent2D                      Extent,
                       const std::vector<VkImageView>& ColorImageViews,
                       VkImageView                     DepthImageView);
@@ -41,7 +41,7 @@ namespace MDSS
         [[nodiscard]] std::size_t   GetCount() const noexcept;
 
     private:
-        void Create(VkRenderPass                    RenderPass,
+        void Create(VkRenderPass                    TRenderPass,
                     VkExtent2D                      Extent,
                     const std::vector<VkImageView>& ColorImageViews,
                     VkImageView                     DepthImageView);

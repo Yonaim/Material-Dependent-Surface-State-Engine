@@ -11,35 +11,35 @@
 
 namespace MDSS
 {
-    Scene::Scene() : MainCamera({2.2F, 1.8F, 2.8F}, {0.0F, 0.0F, 0.0F})
+    TScene::TScene() : MainCamera({2.2F, 1.8F, 2.8F}, {0.0F, 0.0F, 0.0F})
     {
-        Logger::Debug("Scene", "Main camera created at default position.");
+        TLogger::Debug("TScene", "Main camera created at default position.");
     }
 
-    Camera& Scene::GetMainCamera() noexcept
-    {
-        return MainCamera;
-    }
-
-    const Camera& Scene::GetMainCamera() const noexcept
+    TCamera& TScene::GetMainCamera() noexcept
     {
         return MainCamera;
     }
 
-    void Scene::AddStaticMeshInstance(StaticMeshInstance Instance)
+    const TCamera& TScene::GetMainCamera() const noexcept
+    {
+        return MainCamera;
+    }
+
+    void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)
     {
         StaticMeshInstances.push_back(std::move(Instance));
-        Logger::Debug("Scene",
-                      "Static mesh instance added. Scene instance count=" + std::to_string(StaticMeshInstances.size()) +
+        TLogger::Debug("TScene",
+                      "Static mesh instance added. TScene instance count=" + std::to_string(StaticMeshInstances.size()) +
                           ".");
     }
 
-    std::vector<StaticMeshInstance>& Scene::GetStaticMeshInstances() noexcept
+    std::vector<TStaticMeshInstance>& TScene::GetStaticMeshInstances() noexcept
     {
         return StaticMeshInstances;
     }
 
-    const std::vector<StaticMeshInstance>& Scene::GetStaticMeshInstances() const noexcept
+    const std::vector<TStaticMeshInstance>& TScene::GetStaticMeshInstances() const noexcept
     {
         return StaticMeshInstances;
     }

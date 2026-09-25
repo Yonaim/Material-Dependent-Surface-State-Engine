@@ -12,9 +12,9 @@ State 종류의 정의와 각 소재의 반응 파라미터를 분리하고, Sol
 ## Decision
 
 - State 종류는 C++ `enum` 또는 별도 `SurfaceStateSchema` 파일에 고정하지 않는다.
-- 로드된 모든 `.SRProfile`의 `states` key를 수집해 `SurfaceStateRegistry`를 구성한다.
+- 로드된 모든 `.SRProfile`의 `states` key를 수집해 `TSurfaceStateRegistry`를 구성한다.
 - 각 `.SRProfile`은 State 종류 목록이 아니라, 해당 Profile이 지원하는 State별 반응 파라미터와 Transition을 정의한다.
-- 파일과 진단 메시지에는 사람이 읽을 수 있는 문자열을 사용하고, 런타임과 GPU에서는 Registry가 부여한 `StateId` 또는 `ChannelIndex`를 사용한다.
+- 파일과 진단 메시지에는 사람이 읽을 수 있는 문자열을 사용하고, 런타임과 GPU에서는 Registry가 부여한 `TStateId` 또는 `ChannelIndex`를 사용한다.
 - Solver는 `Wetness`, `Heat` 등의 이름을 하드코딩하지 않고 등록된 채널을 순회한다.
 - State 이름 및 Transition의 source/target에는 동일한 정규화 규칙을 적용한다.
 
@@ -24,7 +24,7 @@ State 종류의 정의와 각 소재의 반응 파라미터를 분리하고, Sol
 | Transition source/target | State 이름과 같은 규칙 적용 | `"HEAT"` → `heat` |
 | 나머지 문자 | 변경하거나 치환하지 않음 | `surface_heat`, `surface-heat`, `surface heat`는 서로 다른 이름 |
 
-Registry는 Profile 로드 집합에 대해 재현 가능한 ID를 부여한다. canonical State 이름을 bytewise 오름차순으로 정렬한 뒤 0부터 `StateId`를 배정한다. Profile에 정의되지 않은 State parameter slot은 `optional`의 empty 값으로 남겨 해당 Profile이 그 State를 지원하지 않음을 구분한다.
+Registry는 Profile 로드 집합에 대해 재현 가능한 ID를 부여한다. canonical State 이름을 bytewise 오름차순으로 정렬한 뒤 0부터 `TStateId`를 배정한다. Profile에 정의되지 않은 State parameter slot은 `optional`의 empty 값으로 남겨 해당 Profile이 그 State를 지원하지 않음을 구분한다.
 
 ## Alternatives Considered
 

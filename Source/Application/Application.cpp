@@ -18,32 +18,32 @@
 
 namespace MDSS
 {
-    Application::Application() : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), MainScene()
+    TApplication::TApplication() : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), MainScene()
     {
-        Logger::Info("Application", "Initializing MDSS Engine.");
+        TLogger::Info("TApplication", "Initializing MDSS Engine.");
 
         const std::filesystem::path DemoMeshPath = std::filesystem::path(MDSS_ASSET_DIR) / "Meshes" / "DemoCube.obj";
-        const MeshAssetHandle       DemoMesh = Assets.LoadOBJ(DemoMeshPath);
+        const TMeshAssetHandle       DemoMesh = Assets.LoadOBJ(DemoMeshPath);
 
-        Transform InstanceTransform{};
+        TTransform InstanceTransform{};
         InstanceTransform.RotationDegrees = {20.0F, 35.0F, 0.0F};
-        MainScene.AddStaticMeshInstance(StaticMeshInstance(DemoMesh, InstanceTransform));
+        MainScene.AddStaticMeshInstance(TStaticMeshInstance(DemoMesh, InstanceTransform));
 
-        FrameRenderer = std::make_unique<Renderer>(Context, MainWindow, Assets);
-        DebugInterface = std::make_unique<DebugUI>(Context, MainWindow, *FrameRenderer);
-        Logger::Info("Application", "Renderer, scene, asset system, and DebugUI are ready.");
+        FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets);
+        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer);
+        TLogger::Info("TApplication", "TRenderer, scene, asset system, and TDebugUI are ready.");
     }
 
-    Application::~Application() = default;
+    TApplication::~TApplication() = default;
 
-    void Application::Run()
+    void TApplication::Run()
     {
-        Logger::Info("Application", "Entering main loop.");
+        TLogger::Info("TApplication", "Entering main loop.");
         MainLoop();
-        Logger::Info("Application", "Main loop finished.");
+        TLogger::Info("TApplication", "Main loop finished.");
     }
 
-    void Application::MainLoop()
+    void TApplication::MainLoop()
     {
         while (!MainWindow.ShouldClose())
         {
@@ -52,7 +52,7 @@ namespace MDSS
             FrameRenderer->RenderFrame(MainScene, *DebugInterface);
         }
 
-        Logger::Debug("Application", "Waiting for the Vulkan device to become idle before shutdown.");
+        TLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");
         vkDeviceWaitIdle(Context.GetDevice());
     }
 } // namespace MDSS

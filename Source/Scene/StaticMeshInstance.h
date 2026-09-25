@@ -10,18 +10,18 @@
 
 namespace MDSS
 {
-    class StaticMeshInstance
+    class TStaticMeshInstance
     {
     public:
-        StaticMeshInstance() = default;
-        StaticMeshInstance(MeshAssetHandle Mesh, Transform InstanceTransform = {});
+        TStaticMeshInstance() = default;
+        TStaticMeshInstance(TMeshAssetHandle Mesh, TTransform InstanceTransform = {});
 
-        [[nodiscard]] Transform&       GetTransform() noexcept;
-        [[nodiscard]] const Transform& GetTransform() const noexcept;
-        [[nodiscard]] MeshAssetHandle  GetMesh() const noexcept;
+        [[nodiscard]] TTransform&       GetTransform() noexcept;
+        [[nodiscard]] const TTransform& GetTransform() const noexcept;
+        [[nodiscard]] TMeshAssetHandle  GetMesh() const noexcept;
 
     private:
-        MeshAssetHandle Mesh = InvalidAssetHandle;
-        Transform       InstanceTransform;
+        TMeshAssetHandle Mesh = InvalidAssetHandle;
+        TTransform       InstanceTransform;
     };
 } // namespace MDSS
