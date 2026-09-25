@@ -1,11 +1,18 @@
 {
   "type": "SurfaceResponseProfile",
   "version": 1,
-  "name": "BrokenProfile",
+  "name": "PartialProfile",
   "states": {
-    "wetness": {},
-    "heat": {},
-    "burn": {}
+    "snow": {
+      "stateCapacity": 3.0,
+      "inputFactor": 1.0,
+      "saturationTransferRate": 0.2,
+      "geometryTransferRate": 0.1,
+      "decayRate": 0.01,
+      "cavityRetentionFactor": 0.5,
+      "accumulationFactor": 0.8,
+      "cavityFillFactor": 0.6
+    }
   },
   "transitions": []
 }
