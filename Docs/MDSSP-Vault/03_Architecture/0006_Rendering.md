@@ -1,6 +1,6 @@
 # Surface State Rendering
 
-상태: **방향 설계** · 근거: [[06_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[06_Assets/Documents/0007_Target-Demos.pdf|목표 데모]]
+상태: **방향 설계** · 근거: [[07_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[07_Assets/Documents/0007_Target-Demos.pdf|목표 데모]]
 
 Rendering은 State에 따른 **외관 변화**와 Accumulation에 따른 **형상 높이 변화**를 구분한다.
 

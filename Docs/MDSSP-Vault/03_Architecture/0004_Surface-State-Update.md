@@ -1,6 +1,6 @@
 # Surface State Update
 
-상태: **입력 구조 및 핵심 수식 확정 / 세부 구동식 일부 검토 필요** · 근거: [[06_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[06_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
+상태: **입력 구조 및 핵심 수식 확정 / 세부 구동식 일부 검토 필요** · 근거: [[07_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[07_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
 이 문서는 외부 접촉을 State 입력으로 바꾸는 구조와 각 항의 갱신 규칙을 함께 정의한다.
 

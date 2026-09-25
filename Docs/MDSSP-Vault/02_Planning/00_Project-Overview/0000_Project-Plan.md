@@ -1,6 +1,6 @@
 # Project Plan
 
-상태: **프로젝트 범위 및 목표 기준** · 일정 요약은 [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]], 주차별 목표는 [[02_Planning/03_Weekly-Overview/Week-01|Weekly Overview]], 세부 구현 계획은 [[02_Planning/04_Weekly-Details/Week-04/0000_Week4-Branch-Plan|Weekly Implementation Details]]에서 관리한다.
+상태: **프로젝트 범위 및 목표 기준** · 일정 요약은 [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]], 주차별 목표는 [[02_Planning/01_Weekly-Overview/Week-01|Weekly Overview]], 세부 구현 계획은 [[02_Planning/02_Weekly-Details/Week-04/0000_Week4-Branch-Plan|Weekly Implementation Details]]에서 관리한다.
 
 ## 프로젝트 목표
 
@@ -39,8 +39,8 @@ C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** �
 ## 일정과 진척 관리
 
 - [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]]은 16주 전체의 순서와 주요 milestone을 요약한다.
-- `03_Weekly-Overview/Week-XX.md`는 전체 주차의 목표와 주요 산출물을 요약한다.
-- `04_Weekly-Details/Week-XX/`에는 해당 주의 상세 작업 순서와 구현 계획을 둔다.
+- `01_Weekly-Overview/Week-XX.md`는 전체 주차의 목표와 주요 산출물을 요약한다.
+- `02_Weekly-Details/Week-XX/`에는 해당 주의 상세 작업 순서와 구현 계획을 둔다.
 - [[TODO|TODO]]는 실제 미완료 작업과 완료 여부를 추적한다. 계획 문서의 목표를 완료로 간주하지 않는다.
 - 일정·범위가 변경되면 Roadmap과 영향을 받는 주차 문서를 함께 갱신한다.
 

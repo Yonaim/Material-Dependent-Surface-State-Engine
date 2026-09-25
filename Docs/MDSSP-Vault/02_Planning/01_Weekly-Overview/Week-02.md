@@ -26,5 +26,5 @@
 - [[03_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]
 - [[03_Architecture/0004_Surface-State-Update|Surface State 입력과 갱신]]
 - [[03_Architecture/0005_Surface-Geometry|형상 정보와 적층]]
-- [[06_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조 원본]]
-- [[06_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산 원본]]
+- [[07_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조 원본]]
+- [[07_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산 원본]]

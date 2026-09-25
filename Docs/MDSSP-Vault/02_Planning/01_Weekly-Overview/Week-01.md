@@ -22,4 +22,4 @@ Vulkan 렌더링 엔진과 Surface State System의 책임·연결 관계를 정�
 
 - [[03_Architecture/0000_Overview|전체 엔진 구조]]
 - [[03_Architecture/0001_Engine-Structure|엔진 모듈과 데이터 흐름]]
-- [[06_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조 원본]]
+- [[07_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조 원본]]

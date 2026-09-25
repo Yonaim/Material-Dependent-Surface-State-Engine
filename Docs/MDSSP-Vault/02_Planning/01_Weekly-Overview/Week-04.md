@@ -1,6 +1,6 @@
 # Week-04 — Surface 데이터 기반 구현
 
-상태: **계획** · 상위 계획: [[02_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]], [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]] · 상세 계획: [[02_Planning/04_Weekly-Details/Week-04/0000_Week4-Branch-Plan|4주차 구현 브랜치 계획]]
+상태: **계획** · 상위 계획: [[02_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]], [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]] · 상세 계획: [[02_Planning/02_Weekly-Details/Week-04/0000_Week4-Branch-Plan|4주차 구현 브랜치 계획]]
 
 ## 목표
 

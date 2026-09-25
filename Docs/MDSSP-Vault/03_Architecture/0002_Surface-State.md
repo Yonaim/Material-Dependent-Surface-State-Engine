@@ -1,6 +1,6 @@
 # 표면 상태와 데이터 구조
 
-상태: **핵심 의미 확정** · 근거: [[06_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
+상태: **핵심 의미 확정** · 근거: [[07_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
 
 ## 전체 데이터 분류
 

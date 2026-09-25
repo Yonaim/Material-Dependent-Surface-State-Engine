@@ -210,17 +210,24 @@ JSON exception은 그대로 외부에 노출하지 않고 Asset 경로와 JSON k
 
 ## 테스트
 
-- 기본 Profile이 모든 채널에서 유효하다.
-- `stateCapacity == 0`과 음수 rate를 거부한다.
-- `[0,1]` 범위 Factor의 경계값을 검증한다.
-- State 채널 수가 4이고 순서가 Wetness/Heat/Burn/Mud로 고정된다.
-- 문자열 `wetness`, `heat`, `burn`, `mud`가 올바른 enum으로 변환된다.
-- `Heat → Burn` transition JSON을 읽을 수 있다.
-- 알 수 없는 State 문자열, 잘못된 JSON type, 누락 key를 거부한다.
-- invalid index가 유효 texel 범위와 겹치지 않는다.
-- 빈 Surface/0 해상도를 거부한다.
+| 검증 대상 | 입력·조건 | 기대 결과 | 테스트 방식 |
+|---|---|---|---|
+| 기본 Profile | 네 채널에 유효한 기본 파라미터 사용 | Domain validation 통과 | C++ 객체 직접 검증 |
+| State Capacity | `stateCapacity == 0` | 예외 발생, 해당 key 경로 포함 | C++ 객체 직접 검증 |
+| Rate 하한 | Rate에 `-0.1F` 입력 | 음수 값 거부 | C++ 객체 직접 검증 |
+| Factor 경계 | `0.0F`, `1.0F` 및 범위 밖 값 입력 | 경계값은 통과하고 범위 밖 값은 거부 | C++ 객체 직접 검증 |
+| State 채널 계약 | 채널 수와 enum 순서 확인 | `Wetness`, `Heat`, `Burn`, `Mud` 순서 유지 | C++ 상수·변환 함수 검증 |
+| State 문자열 변환 | `wetness`, `heat`, `burn`, `mud` 입력 | 대응하는 enum 반환 | C++ 변환 함수 검증 |
+| State Transition | `Heat → Burn` JSON 입력 | Source, Target과 파라미터를 정상 변환 | 정상 `.SRProfile` fixture 로드 |
+| 알 수 없는 State | `source: "snow"` 등 입력 | Asset 경로와 JSON key 경로를 포함한 오류 | 오류 `.SRProfile` fixture 로드 |
+| JSON 자료형 | 숫자 필드에 문자열 입력 | Field type 오류 | 오류 `.SRProfile` fixture 로드 |
+| 필수 key | State 또는 필수 파라미터 생략 | 누락된 key 경로를 포함한 오류 | 오류 `.SRProfile` fixture 로드 |
+| 빈 Surface | 빈 Surface 목록으로 Geometry 생성 | 생성 거부 | C++ 생성자 검증 |
+| 해상도 | Width 또는 Height가 `0` | 생성 거부 | C++ 생성자 검증 |
+| Sentinel 예약값 | `InvalidSurfaceID`를 실제 Surface ID로 사용 | 유효 ID로 사용하지 못하도록 거부 | C++ 생성자 검증 |
+| Profile 연결 | Surface 수와 Profile index 수 불일치 | Instance State 생성 거부 | C++ 생성자 검증 |
 
-이 브랜치에서는 CPU의 채널 순서까지만 검증한다. 네 채널을 GPU `vec4`의 `x/y/z/w`에 pack하는 검증은 실제 upload 구조체와 Shader 계약을 정의하는 [[02_Planning/04_Weekly-Details/Week-04/0004_Branch-Surface-GPU-Resources|Branch 4 — Surface GPU Resources]]에서 수행한다.
+이 브랜치에서는 CPU의 채널 순서까지만 검증한다. 네 채널을 GPU `vec4`의 `x/y/z/w`에 pack하는 검증은 실제 upload 구조체와 Shader 계약을 정의하는 [[02_Planning/02_Weekly-Details/Week-04/0004_Branch-Surface-GPU-Resources|Branch 4 — Surface GPU Resources]]에서 수행한다.
 
 ## 권장 커밋 분할
 

@@ -1,6 +1,6 @@
 # Next State 계산 메모
 
-상태: **2-Pass 기본안 / GPU Resource 기본안 작성됨** · 근거: [[06_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
+상태: **2-Pass 기본안 / GPU Resource 기본안 작성됨** · 근거: [[07_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
 Architecture 수준의 수식은 [[03_Architecture/0004_Surface-State-Update|Propagation Solver]]가 기준이다. 이 문서는 Compute Shader 계산 순서만 기록한다.
 

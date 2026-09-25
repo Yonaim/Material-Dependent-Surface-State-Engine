@@ -1,7 +1,7 @@
 # 실험 — Normal Map Integration
 
 - 상태: **계획**
-- 근거: [[06_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]]
+- 근거: [[07_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]]
 
 ## 가설
 

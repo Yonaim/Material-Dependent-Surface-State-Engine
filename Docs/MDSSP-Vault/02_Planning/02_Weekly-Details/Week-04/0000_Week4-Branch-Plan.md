@@ -70,9 +70,9 @@ Vulkan 관련 브랜치는 validation layer를 켠 Debug build로 한 번 이상
 
 ## 문서 목록
 
-- [[02_Planning/04_Weekly-Details/Week-04/0001_Branch-Surface-Data-Contract|1. Surface Data Contract]]
-- [[02_Planning/04_Weekly-Details/Week-04/0002_Branch-Simulation-Mapping|2. Simulation Mapping]]
-- [[02_Planning/04_Weekly-Details/Week-04/0003_Branch-Shared-Geometry-Build|3. Shared Geometry Build]]
-- [[02_Planning/04_Weekly-Details/Week-04/0004_Branch-Surface-GPU-Resources|4. Surface GPU Resources]]
-- [[02_Planning/04_Weekly-Details/Week-04/0005_Branch-Surface-Solver-2Pass|5. Surface Solver 2-Pass]]
-- [[02_Planning/04_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|6. Surface Input Integration]]
+- [[02_Planning/02_Weekly-Details/Week-04/0001_Branch-Surface-Data-Contract|1. Surface Data Contract]]
+- [[02_Planning/02_Weekly-Details/Week-04/0002_Branch-Simulation-Mapping|2. Simulation Mapping]]
+- [[02_Planning/02_Weekly-Details/Week-04/0003_Branch-Shared-Geometry-Build|3. Shared Geometry Build]]
+- [[02_Planning/02_Weekly-Details/Week-04/0004_Branch-Surface-GPU-Resources|4. Surface GPU Resources]]
+- [[02_Planning/02_Weekly-Details/Week-04/0005_Branch-Surface-Solver-2Pass|5. Surface Solver 2-Pass]]
+- [[02_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|6. Surface Input Integration]]

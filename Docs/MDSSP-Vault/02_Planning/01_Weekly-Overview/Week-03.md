@@ -26,4 +26,4 @@ Vulkan 기반 실행 경로에서 Mesh와 Material을 로드하고 Static Mesh�
 ## 참고
 
 - [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[06_Assets/Documents/0003_Asset-Structure.pdf|Asset 구조 원본]]
+- [[07_Assets/Documents/0003_Asset-Structure.pdf|Asset 구조 원본]]
