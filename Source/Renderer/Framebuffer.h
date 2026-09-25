@@ -1,3 +1,8 @@
+/**
+ * @file Framebuffer.h
+ * @brief swapchain image와 depth image를 연결하는 framebuffer 자원.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -10,6 +15,7 @@ namespace MDSS
     class Framebuffer
     {
     public:
+        /** @brief 각 color image view와 공통 depth view를 연결한 framebuffer를 생성한다. */
         Framebuffer(VkDevice                        Device,
                     VkRenderPass                    RenderPass,
                     VkExtent2D                      Extent,
@@ -22,12 +28,15 @@ namespace MDSS
         Framebuffer(Framebuffer&&) = delete;
         Framebuffer& operator=(Framebuffer&&) = delete;
 
+        /** @brief 이전 framebuffer를 제거하고 새 extent와 image view로 다시 생성한다. */
         void Recreate(VkRenderPass                    RenderPass,
                       VkExtent2D                      Extent,
                       const std::vector<VkImageView>& ColorImageViews,
                       VkImageView                     DepthImageView);
+        /** @brief 보유 중인 framebuffer handle을 해제한다. */
         void Reset();
 
+        /** @throws std::out_of_range Index가 framebuffer 개수 밖인 경우. */
         [[nodiscard]] VkFramebuffer Get(std::size_t Index) const;
         [[nodiscard]] std::size_t   GetCount() const noexcept;
 

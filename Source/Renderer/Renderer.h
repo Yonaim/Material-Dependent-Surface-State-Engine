@@ -1,3 +1,8 @@
+/**
+ * @file Renderer.h
+ * @brief swapchain 기반 장면 렌더링과 재생성 흐름.
+ */
+
 #pragma once
 
 #include "AssetManager/Asset.h"
@@ -44,6 +49,7 @@ namespace MDSS
         Renderer(Renderer&&) = delete;
         Renderer& operator=(Renderer&&) = delete;
 
+        /** @brief 한 프레임을 acquire, record, submit, present 순서로 렌더링한다. */
         void RenderFrame(const Scene& SceneData, DebugUI& DebugInterface);
 
         [[nodiscard]] const Swapchain& GetSwapchain() const noexcept;

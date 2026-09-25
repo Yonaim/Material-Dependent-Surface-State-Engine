@@ -1,3 +1,8 @@
+/**
+ * @file Window.cpp
+ * @brief GLFW 창의 수명 주기와 framebuffer 변경 이벤트.
+ */
+
 #include "Application/Window.h"
 
 #include "Logger/Logger.h"

@@ -1,3 +1,8 @@
+/**
+ * @file GPUImageView.cpp
+ * @brief Vulkan image에 대한 image view 자원.
+ */
+
 #include "VulkanContext/GPU/GPUImageView.h"
 
 #include "Logger/Logger.h"

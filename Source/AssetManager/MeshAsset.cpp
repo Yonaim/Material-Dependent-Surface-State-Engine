@@ -1,3 +1,8 @@
+/**
+ * @file MeshAsset.cpp
+ * @brief 정점·인덱스 데이터와 GPU 메시 버퍼의 소유권.
+ */
+
 #include "AssetManager/MeshAsset.h"
 
 #include "Logger/Logger.h"

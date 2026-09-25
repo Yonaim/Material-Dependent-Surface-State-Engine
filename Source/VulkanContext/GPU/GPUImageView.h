@@ -1,3 +1,8 @@
+/**
+ * @file GPUImageView.h
+ * @brief Vulkan image에 대한 image view 자원.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -7,6 +12,7 @@ namespace MDSS
     class GPUImageView
     {
     public:
+        /** @brief image와 format·aspect 설정을 참조하는 Vulkan image view를 생성한다. */
         GPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask);
         ~GPUImageView();
 

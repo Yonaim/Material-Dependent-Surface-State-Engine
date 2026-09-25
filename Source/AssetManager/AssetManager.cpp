@@ -1,3 +1,8 @@
+/**
+ * @file AssetManager.cpp
+ * @brief 에셋 로딩, 소유권 관리와 캐시 조회.
+ */
+
 #include "AssetManager/AssetManager.h"
 
 #include "AssetManager/Loader/OBJLoader.h"

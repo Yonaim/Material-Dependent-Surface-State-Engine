@@ -1,3 +1,8 @@
+/**
+ * @file MaterialAsset.cpp
+ * @brief 렌더링에 필요한 재질 값과 텍스처 참조.
+ */
+
 #include "AssetManager/MaterialAsset.h"
 
 #include <utility>

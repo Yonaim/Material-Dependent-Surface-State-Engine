@@ -1,3 +1,8 @@
+/**
+ * @file StaticMeshInstance.cpp
+ * @brief 정적 메시 에셋 참조와 인스턴스 transform.
+ */
+
 #include "Scene/StaticMeshInstance.h"
 
 #include <utility>

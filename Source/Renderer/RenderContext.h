@@ -1,3 +1,8 @@
+/**
+ * @file RenderContext.h
+ * @brief frame-in-flight별 command buffer와 동기화 자원.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -24,8 +29,11 @@ namespace MDSS
         RenderContext(RenderContext&&) = delete;
         RenderContext& operator=(RenderContext&&) = delete;
 
+        /** @brief 현재 frame slot의 fence가 신호될 때까지 CPU를 대기시킨다. */
         void WaitForCurrentFrame() const;
+        /** @brief 현재 frame slot fence를 다음 queue submit을 위해 reset한다. */
         void ResetCurrentFence() const;
+        /** @brief 다음 frame-in-flight slot으로 인덱스를 순환 이동한다. */
         void AdvanceFrame() noexcept;
 
         [[nodiscard]] std::uint32_t   GetCurrentFrameIndex() const noexcept;

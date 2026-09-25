@@ -1,3 +1,8 @@
+/**
+ * @file VulkanQueue.cpp
+ * @brief graphics·present queue family 검색과 queue 접근.
+ */
+
 #include "VulkanContext/Vulkan/VulkanQueue.h"
 
 #include "Logger/Logger.h"

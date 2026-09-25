@@ -1,3 +1,8 @@
+/**
+ * @file GPUBuffer.h
+ * @brief Vulkan buffer와 device memory의 생성·갱신·해제.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -9,6 +14,10 @@ namespace MDSS
     class GPUBuffer
     {
     public:
+        /**
+         * @brief 지정한 usage와 memory property로 Vulkan buffer와 memory를 생성한다.
+         * @throws std::runtime_error buffer 또는 memory 생성에 실패한 경우.
+         */
         GPUBuffer(VkPhysicalDevice      PhysicalDevice,
                   VkDevice              Device,
                   VkDeviceSize          Size,
@@ -26,6 +35,13 @@ namespace MDSS
         [[nodiscard]] VkBuffer     GetHandle() const noexcept;
         [[nodiscard]] VkDeviceSize GetSize() const noexcept;
 
+        /**
+         * @brief host-visible buffer memory에 바이트 범위를 복사한다.
+         * @param Data 복사할 데이터 주소.
+         * @param DataSize 복사할 byte 수.
+         * @param Offset buffer 시작점으로부터의 byte offset.
+         * @throws std::runtime_error mapping 실패 시 발생한다.
+         */
     private:
         static std::uint32_t FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,

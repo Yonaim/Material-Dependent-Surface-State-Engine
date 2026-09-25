@@ -1,3 +1,8 @@
+/**
+ * @file VulkanDevice.cpp
+ * @brief 물리 장치 선택과 논리 장치 생성.
+ */
+
 #include "VulkanContext/Vulkan/VulkanDevice.h"
 
 #include "Logger/Logger.h"

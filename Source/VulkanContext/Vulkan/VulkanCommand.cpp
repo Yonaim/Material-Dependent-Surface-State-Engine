@@ -1,3 +1,8 @@
+/**
+ * @file VulkanCommand.cpp
+ * @brief command pool과 primary·one-time command buffer 관리.
+ */
+
 #include "VulkanContext/Vulkan/VulkanCommand.h"
 
 #include "Logger/Logger.h"

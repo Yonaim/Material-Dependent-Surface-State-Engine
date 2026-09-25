@@ -1,3 +1,8 @@
+/**
+ * @file VulkanCommand.h
+ * @brief command pool과 primary·one-time command buffer 관리.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>

@@ -1,3 +1,8 @@
+/**
+ * @file RenderPass.cpp
+ * @brief color 및 depth attachment를 사용하는 render pass.
+ */
+
 #include "Renderer/RenderPass.h"
 
 #include <array>

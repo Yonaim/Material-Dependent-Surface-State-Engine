@@ -1,3 +1,8 @@
+/**
+ * @file VulkanContext.cpp
+ * @brief Vulkan instance·device·queue·command 자원 통합 수명 주기.
+ */
+
 #include "VulkanContext/VulkanContext.h"
 
 #include "Application/Window.h"

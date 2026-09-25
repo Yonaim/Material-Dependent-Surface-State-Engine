@@ -1,3 +1,8 @@
+/**
+ * @file Application.cpp
+ * @brief 응용 프로그램 초기화, 하위 시스템 구성과 메인 루프.
+ */
+
 #include "Application/Application.h"
 
 #include "DebugUI/DebugUI.h"

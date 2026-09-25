@@ -1,3 +1,8 @@
+/**
+ * @file Swapchain.h
+ * @brief 표면 지원 정보에 따른 swapchain 선택·생성·재생성.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -27,6 +32,7 @@ namespace MDSS
         Swapchain(Swapchain&&) = delete;
         Swapchain& operator=(Swapchain&&) = delete;
 
+        /** @brief 현재 surface와 window 크기에 맞춰 swapchain 및 image view를 다시 만든다. */
         void Recreate(const VulkanContext& Context, const Window& Window);
 
         [[nodiscard]] VkSwapchainKHR                  GetHandle() const noexcept;
@@ -35,6 +41,7 @@ namespace MDSS
         [[nodiscard]] const std::vector<VkImage>&     GetImages() const noexcept;
         [[nodiscard]] const std::vector<VkImageView>& GetImageViews() const noexcept;
 
+        /** @brief physical device와 surface의 capabilities, formats, present modes를 조회한다. */
         [[nodiscard]] static SwapchainSupportDetails QuerySupport(VkPhysicalDevice PhysicalDevice,
                                                                   VkSurfaceKHR     Surface);
 

@@ -1,3 +1,8 @@
+/**
+ * @file Logger.h
+ * @brief 모듈별 로그 기록과 로그 항목 조회.
+ */
+
 #pragma once
 
 #include <cstdint>
@@ -38,11 +43,13 @@ namespace MDSS
         static void Warning(std::string_view Module, std::string_view Message);
         static void Error(std::string_view Module, std::string_view Message);
 
+        /** @brief 로그 항목을 콘솔에 기록하고 thread-safe history에 보관한다. */
         static void Write(LogLevel Level, std::string_view Module, std::string_view Message);
 
-        // Returns a thread-safe snapshot for debug/editor presentation.
+        /** @brief 현재 로그 history의 thread-safe 복사본을 반환한다. */
         static std::vector<LogEntry> GetEntries();
         static std::uint64_t         GetRevision();
+        /** @brief 로그 항목을 콘솔에 기록하고 thread-safe history에 보관한다. */
         static void                  Clear();
 
         static const char* GetLevelName(LogLevel Level) noexcept;

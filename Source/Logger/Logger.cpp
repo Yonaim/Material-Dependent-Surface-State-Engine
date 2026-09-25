@@ -1,3 +1,8 @@
+/**
+ * @file Logger.cpp
+ * @brief 모듈별 로그 기록과 로그 항목 조회.
+ */
+
 #include "Logger/Logger.h"
 
 #include <cstddef>

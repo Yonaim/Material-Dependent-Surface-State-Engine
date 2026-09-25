@@ -1,3 +1,8 @@
+/**
+ * @file OBJLoader.cpp
+ * @brief OBJ 메시 데이터 로딩과 vertex tangent 전처리.
+ */
+
 #include "AssetManager/Loader/OBJLoader.h"
 
 #include "Logger/Logger.h"

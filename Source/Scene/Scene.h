@@ -1,3 +1,8 @@
+/**
+ * @file Scene.h
+ * @brief 주 카메라와 정적 메시 인스턴스 구성.
+ */
+
 #pragma once
 
 #include "Scene/Camera.h"
@@ -15,6 +20,7 @@ namespace MDSS
         [[nodiscard]] Camera&       GetMainCamera() noexcept;
         [[nodiscard]] const Camera& GetMainCamera() const noexcept;
 
+        /** @brief Scene 소유 목록에 정적 메시 인스턴스를 추가한다. */
         void                                                 AddStaticMeshInstance(StaticMeshInstance Instance);
         [[nodiscard]] std::vector<StaticMeshInstance>&       GetStaticMeshInstances() noexcept;
         [[nodiscard]] const std::vector<StaticMeshInstance>& GetStaticMeshInstances() const noexcept;

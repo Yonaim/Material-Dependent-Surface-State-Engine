@@ -1,3 +1,8 @@
+/**
+ * @file GPUImage.cpp
+ * @brief Vulkan image와 device memory의 생성·재생성·해제.
+ */
+
 #include "VulkanContext/GPU/GPUImage.h"
 
 #include "Logger/Logger.h"

@@ -1,3 +1,8 @@
+/**
+ * @file MeshAsset.h
+ * @brief 정점·인덱스 데이터와 GPU 메시 버퍼의 소유권.
+ */
+
 #pragma once
 
 #include "AssetManager/Asset.h"
@@ -32,6 +37,10 @@ namespace MDSS
     class MeshAsset final : public Asset
     {
     public:
+        /**
+         * @brief CPU mesh data를 보관하고 정점·인덱스 GPU buffer를 업로드한다.
+         * @throws std::runtime_error GPU buffer 생성 또는 업로드가 실패한 경우.
+         */
         MeshAsset(AssetID                    ID,
                   std::string                Name,
                   std::filesystem::path      SourcePath,

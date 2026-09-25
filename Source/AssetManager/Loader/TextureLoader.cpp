@@ -1,3 +1,8 @@
+/**
+ * @file TextureLoader.cpp
+ * @brief 이미지 파일을 RGBA8 텍스처 데이터로 디코딩.
+ */
+
 #include "AssetManager/Loader/TextureLoader.h"
 
 #include "Logger/Logger.h"

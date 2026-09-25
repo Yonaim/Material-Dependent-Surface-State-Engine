@@ -1,3 +1,8 @@
+/**
+ * @file Transform.h
+ * @brief 위치·회전·크기와 model 행렬 계산.
+ */
+
 #pragma once
 
 #include <glm/glm.hpp>

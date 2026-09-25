@@ -1,3 +1,8 @@
+/**
+ * @file AssetManager.h
+ * @brief 에셋 로딩, 소유권 관리와 캐시 조회.
+ */
+
 #pragma once
 
 #include "AssetManager/Asset.h"
@@ -21,6 +26,7 @@ namespace MDSS
         explicit AssetManager(const VulkanContext& Context);
 
         [[nodiscard]] MeshAssetHandle LoadOBJ(const std::filesystem::path& Path);
+        /** @brief OBJ와 참조된 material·texture를 로드하고 Mesh handle을 반환한다. */
 
         [[nodiscard]] const MeshAsset&     GetMesh(MeshAssetHandle Handle) const;
         [[nodiscard]] const MaterialAsset& GetMaterial(MaterialAssetHandle Handle) const;
