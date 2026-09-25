@@ -191,3 +191,27 @@ endif()
 set_target_properties(MDSS PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(MDSS_SurfaceStateTests
+        Tests/SurfaceStateContractTests.cpp
+        Source/AssetManager/Asset.cpp
+        Source/AssetManager/SRProfileAsset.cpp
+        Source/AssetManager/Loader/SRProfileLoader.cpp
+        Source/SurfaceStateSystem/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/SurfaceInstanceStateData.cpp
+        Source/SurfaceStateSystem/SurfaceStateTypes.cpp
+    )
+    target_include_directories(MDSS_SurfaceStateTests PRIVATE Source)
+    target_link_libraries(MDSS_SurfaceStateTests PRIVATE glm::glm nlohmann_json::nlohmann_json)
+    target_compile_definitions(MDSS_SurfaceStateTests PRIVATE
+        MDSS_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Tests/Fixtures"
+    )
+    if(MSVC)
+        target_compile_options(MDSS_SurfaceStateTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(MDSS_SurfaceStateTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME MDSS_SurfaceStateContract COMMAND MDSS_SurfaceStateTests)
+endif()
