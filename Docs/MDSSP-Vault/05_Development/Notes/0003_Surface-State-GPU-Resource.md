@@ -9,12 +9,12 @@
 | 항목 | 결정 |
 |---|---|
 | 기본 resource | seam 때문에 불규칙한 index 접근이 필요하므로 Storage Buffer를 사용한다. |
-| State 형식 | 기본 상태 채널 `Wetness`, `Heat`, `Burn`, `Mud` 네 가지를 texel당 `vec4` 하나에 저장한다. |
+| State 형식 | `.SRProfile`에서 구성한 Registry의 `ChannelCount`만큼 동적으로 저장한다. 실제 GPU AoS/SoA layout과 stride는 GPU Resource 구현에서 결정한다. |
 | ping-pong | instance마다 State A/B를 만들고 solver step마다 Current/Next 역할을 교환한다. |
-| TempState | Pass 1의 채널별 `alpha`를 저장하는 `vec4 TempAlpha`로 정의한다. 영구 State가 아니다. |
+| TempState | Pass 1에서 각 texel의 Registry channel별 `alpha`를 저장한다. State와 마찬가지로 channel count 기반 layout을 사용하며 영구 State가 아니다. |
 | Input | discrete event를 `InputDelta`에 모아 Pass 2에서 한 번 반영한다. `DeltaTime`을 곱하지 않는다. |
 | Profile 연결 | Surface별 Profile index table을 두며 하나의 Surface는 하나의 Profile만 사용한다. |
-| 인덱스 | Neighbor는 공유 Geometry 내부 local texel index를 저장한다. instance State 접근 시 `stateBaseIndex`를 더한다. |
+| 인덱스 | Neighbor는 공유 Geometry 내부 local texel index를 저장한다. instance State 접근은 `ChannelIndex`를 포함한 layout helper로 계산한다. |
 
 Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 처리하려면 별도 index가 필요하다. 4주차에는 SSBO를 기준 데이터로 두고, 렌더링에 필터링 가능한 texture가 필요하면 파생 resource를 만든다.
 
@@ -60,11 +60,13 @@ struct SurfaceInstanceGPU {
 State 접근은 다음과 같다.
 
 ```text
-stateIndex = instance.stateBaseIndex + localTexelIndex
+stateIndex = getStateIndex(instance, localTexelIndex, channelIndex)
 profileIndex = SurfaceProfileIndex[
   instance.surfaceProfileBaseIndex + TexelSurfaceIndex[localTexelIndex]
 ]
 ```
+
+`getStateIndex`의 물리적인 산식은 선택한 AoS/SoA layout에 따라 다르며, 이웃 texel에서도 같은 helper를 사용한다.
 
 `TexelSurfaceIndex`는 mapping cache의 local Surface ID다. `SurfaceProfileIndex`는 각 instance의 Surface가 사용할 `SurfaceResponseProfileDataGPU` index다.
 
@@ -96,21 +98,16 @@ Accumulation으로 변하는 instance별 Position/Normal/Curvature는 base geome
 ## Surface Instance State Buffer
 
 ```glsl
-layout(std430) buffer StateBuffer      { vec4 state[];      };
-layout(std430) buffer TempAlphaBuffer  { vec4 alpha[];      };
-layout(std430) buffer InputDeltaBuffer { vec4 inputDelta[]; };
+layout(std430) buffer StateBuffer      { float state[];      };
+layout(std430) buffer TempAlphaBuffer  { float alpha[];      };
+layout(std430) buffer InputDeltaBuffer { float inputDelta[]; };
 ```
 
-채널 순서는 다음과 같이 고정한다.
+위 선언은 Registry 기반 scalar channel을 표현하는 논리 예시이며 최종 AoS/SoA 선택은 GPU Resource 구현 시 확정한다. `ChannelIndex`는 Registry에서 얻고, State와 Profile parameter lookup에 동일하게 적용한다.
 
-```text
-x = Wetness      // 재질 내부에 흡수된 수분
-y = Heat
-z = Burn
-w = Mud
-```
+`Wetness`, `Heat`, `Burn`, `Mud`는 기본 demo Profile에 선언될 수 있는 State 이름이다. Solver, Buffer와 Profile layout은 이 이름들을 하드코딩하지 않는다.
 
-`SurfaceWater`는 Wetness의 별칭이 아니다. 추가할 때는 채널 확장 또는 별도 state layer로 설계한다.
+`SurfaceWater`는 Wetness의 별칭이 아니다. 별도 State로 Registry에 선언할 수 있으며, 별도 물리 layer가 필요한지는 그 동작을 구현할 때 결정한다.
 
 ### State A/B ping-pong
 
@@ -147,20 +144,7 @@ Pass 1은 raw outgoing 합으로 `alpha`를 계산해 저장한다. Pass 2는 �
 
 ## SRProfile GPU Representation
 
-상태별 parameter는 State 채널과 같은 순서로 `vec4`에 저장한다.
-
-```cpp
-struct SurfaceResponseProfileDataGPU {
-    vec4 stateCapacity;
-    vec4 inputFactor;
-    vec4 saturationTransferRate;
-    vec4 geometryTransferRate;
-    vec4 decayRate;
-    vec4 cavityRetentionFactor;
-    vec4 accumulationFactor;
-    vec4 cavityFillFactor;
-};
-```
+Profile parameter는 Registry channel index로 조회한다. 논리적으로 각 parameter는 `(ProfileIndex, ChannelIndex)` 쌍에 대응한다. Registry 크기를 지원하는 물리적인 SSBO 배열, stride와 AoS/SoA layout은 GPU Resource 구현에서 선택하고 검증한다.
 
 - `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다.
 - CPU Asset loader가 모든 `stateCapacity > 0`을 검증한 뒤 upload한다.
@@ -234,14 +218,14 @@ dstAccess = SHADER_STORAGE_READ
 
 ## 메모리 기준
 
-각 instance의 State A/B, TempAlpha, InputDelta 버퍼는 각각 texel당 16바이트를 사용한다. 네 버퍼를 합친 상태 관련 GPU 저장량은 texel당 64바이트다.
+Registry State channel 수를 `C`라 할 때, padding이 없는 32-bit scalar layout의 State A/B, TempAlpha, InputDelta는 각각 texel당 `4C` bytes이며 네 버퍼 합계는 `16C` bytes다. 예를 들어 demo Profile이 4개 State를 등록하면 64 bytes/texel이지만, 이는 고정 layout 크기가 아니다. 실제 allocation은 선택한 GPU layout과 alignment에 따라 달라질 수 있다.
 
 ```text
-State A       16 B
-State B       16 B
-TempAlpha     16 B
-InputDelta    16 B
-합계          64 B/texel
+State A       4C B
+State B       4C B
+TempAlpha     4C B
+InputDelta    4C B
+합계          16C B/texel
 ```
 
 공유 Geometry, allocator 정렬, frame-in-flight 복제는 별도다. 해상도와 instance 수를 정할 때 함께 측정한다.
@@ -262,6 +246,6 @@ InputDelta    16 B
 - 다른 Profile 경계의 `ProfileBoundaryWeight` 결합식
 - 동적 Accumulation geometry의 instance overlay 배치
 - GPU에서 contact event가 겹칠 때의 reduce/atomic 방식
-- 네 채널을 넘는 State 확장 시 AoS/SoA 재검토
+- Registry channel 수에 맞는 AoS/SoA, alignment 및 성능 검증
 - raw flux 재계산과 임시 flux buffer의 성능 비교
 - 최종 descriptor set 번호와 frame-in-flight별 resource 수

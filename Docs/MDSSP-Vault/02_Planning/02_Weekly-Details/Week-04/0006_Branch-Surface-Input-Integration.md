@@ -82,7 +82,8 @@ InputDelta[channel]
 += Strength * ContactWeight * Profile.inputFactor[channel]
 ```
 
-`channel`은 0001에서 정한 Wetness/Heat/Burn/Mud 중 하나다. GPU 업로드 위치는 `texelIndex`로 찾고, vec4 component는 채널 순서(Wetness=0, Heat=1, Burn=2, Mud=3)로 선택한다. 한 texel의 네 채널은 vec4 하나에 저장한다.
+Input event의 State 이름/ID는 `SurfaceStateRegistry`를 통해 `ChannelIndex`로 해석한다. 해당 texel과 channel의 `InputDelta`에 `Strength * ContactWeight * Profile.inputFactor[channelIndex]`를 누적한다. `InputDelta`의 GPU 위치는 Branch 4에서 정한 dynamic layout helper를 사용하며, 특정 이름이나 고정 channel 순서에 의존하지 않는다.
+대상 texel의 Profile이 입력 State를 지원하지 않으면 그 입력은 거부하거나 no-op 처리하고 진단 정보를 남긴다. 이 동작은 입력 테스트에서 고정한다.
 
 - discrete event이므로 `DeltaTime`을 곱하지 않는다.
 - 같은 frame에 여러 event가 겹치면 합산한다.
@@ -116,7 +117,7 @@ InputDelta clear가 다음 upload보다 먼저 끝나는지 확인한다. host-v
 
 최소 제어 항목:
 
-- 활성 상태 채널: Wetness, Heat, Burn, Mud
+- 활성 State 선택: Registry에 등록된 State 목록에서 선택
 - Input Strength
 - Contact Radius
 - Solver pause/step
@@ -161,8 +162,8 @@ InputDelta clear가 다음 upload보다 먼저 끝나는지 확인한다. host-v
 
 ### 채널 선택
 
-- 네 상태 채널 중 선택한 채널에만 입력이 반영됨
-- 선택한 네 채널 중 입력 대상 component만 증가하고 나머지는 변하지 않음
+- 임의 Registry State 중 선택한 채널에만 입력이 반영됨
+- 입력 State의 `ChannelIndex`만 증가하고 다른 채널 값은 변하지 않음
 
 ### Frame-rate 비교
 
@@ -223,5 +224,5 @@ InputDelta clear가 다음 upload보다 먼저 끝나는지 확인한다. host-v
 - ProfileBoundaryWeight 최종 결합식
 - Normal Map/Meso geometry
 - Accumulation dynamic geometry
-- SurfaceWater/Snow 채널 추가와 실제 transition step
+- SurfaceWater/Snow의 구체적인 물리 layer 모델과 실제 transition step (별도 설계 범위)
 - 렌더링 품질 표현

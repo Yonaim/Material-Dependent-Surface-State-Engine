@@ -8,6 +8,8 @@
 
 CPU에서 검증한 Mapping/Geometry/Profile 데이터를 Vulkan Storage Buffer로 올리고, instance별 State A/B와 TempAlpha/InputDelta를 생성한다. 이 브랜치에서는 compute shader가 실제 수식을 실행하지 않아도 된다.
 
+State와 Profile parameter의 GPU 배치는 `.SRProfile`에서 생성된 `SurfaceStateRegistry::ChannelCount`를 지원해야 한다. 임의 개수 채널을 위한 AoS/SoA 및 buffer stride/indexing은 이 브랜치에서 결정·검증하고, 고정 4채널 `vec4` layout을 계약으로 사용하지 않는다.
+
 ## 현재 기반에서 주의할 점
 
 현재 `GPUBuffer`는 다음 특성을 가진다.
@@ -37,30 +39,22 @@ invalid texel은 `TexelSurfaceIndex == InvalidSurfaceID`로 판정한다. 거리
 
 ### Profile
 
-```cpp
-struct alignas(16) SurfaceResponseProfileGPU
-{
-    glm::vec4 StateCapacity;
-    glm::vec4 InputFactor;
-    glm::vec4 SaturationTransferRate;
-    glm::vec4 GeometryTransferRate;
-    glm::vec4 DecayRate;
-    glm::vec4 CavityRetentionFactor;
-    glm::vec4 AccumulationFactor;
-    glm::vec4 CavityFillFactor;
-};
+```text
+Logical lookup: (ProfileIndex, ChannelIndex) → per-State profile parameters
+Physical buffer layout, stride, and AoS/SoA choice: decide and validate in this branch.
 ```
 
-CPU 구조체 크기와 각 필드 offset에 `static_assert`를 둔다. 각 vec4의 component 순서는 Wetness, Heat, Burn, Mud다.
+CPU/GPU serialization layout과 stride를 확정한 뒤 크기·offset·channel index 대응을 검증한다. Registry channel index는 Profile parameter 조회와 State buffer 접근에서 동일해야 한다.
+Profile이 특정 Registry State를 정의하지 않은 경우를 구분할 수 있도록 Profile/Channel slot의 지원 여부를 보존한다. GPU 표현 방식은 이 브랜치에서 정하고, Solver와 Input 단계에서 unsupported slot을 어떻게 건너뛰는지는 Branch 5/6 계획을 따른다.
 
 ### Instance
 
 ```text
 SurfaceInstanceStateGPU
-├─ State A          vec4 × texelCount
-├─ State B          vec4 × texelCount
-├─ TempAlpha        vec4 × texelCount
-├─ InputDelta       vec4 × texelCount
+├─ State A          texelCount × stateChannelCount scalar values
+├─ State B          texelCount × stateChannelCount scalar values
+├─ TempAlpha        texelCount × stateChannelCount scalar values
+├─ InputDelta       texelCount × stateChannelCount scalar values
 └─ SurfaceProfileIndex uint × surfaceCount
 ```
 
@@ -71,11 +65,13 @@ SurfaceInstanceStateGPU
 Shared Geometry의 `NeighborIndex`는 Geometry 내부 local texel index다. instance가 State buffer pool의 `stateBaseIndex`를 갖는 경우 Shader에서만 base를 더한다.
 
 ```text
-stateIndex = stateBaseIndex + localTexelIndex
-neighborStateIndex = stateBaseIndex + NeighborIndex[localTexelIndex][slot]
-stateVectorIndex = stateIndex
-stateComponent = channel
+channelIndex = registry.GetChannelIndex(stateId)
+stateIndex = getStateIndex(instance, localTexelIndex, channelIndex)
+neighborStateIndex = getStateIndex(
+    instance, NeighborIndex[localTexelIndex][slot], channelIndex)
 ```
+
+`getStateIndex`는 이 브랜치에서 선택하는 layout-specific helper다. AoS/SoA 선택에 따라 산식을 달리할 수 있으나 자기 texel과 이웃 texel에서 같은 `ChannelIndex`를 사용해야 한다.
 
 이 규칙을 지켜야 하나의 Geometry를 여러 instance가 공유할 수 있다.
 
@@ -127,7 +123,7 @@ Descriptor BA: Current=B, Next=A
 ## 구현 순서
 
 1. GPU pack 구조와 `static_assert`
-2. CPU Geometry를 vec4/uvec4와 2-float scalar 구조체 upload 배열로 변환. ValidMask/NeighborDistance는 GPU buffer로 만들지 않는다.
+2. CPU Geometry를 vec4/uvec4와 2-float scalar 구조체 upload 배열로 변환. State/Profile arrays는 Registry channel count에 맞춘 선택 layout으로 변환한다. ValidMask/NeighborDistance는 GPU buffer로 만들지 않는다.
 3. Shared Geometry buffer 생성과 upload
 4. Profile buffer 생성과 upload
 5. instance State A/B, TempAlpha, InputDelta 생성 및 clear
@@ -146,7 +142,8 @@ Descriptor BA: Current=B, Next=A
 - GeometryScalar가 texel당 8바이트인지 확인
 - Position 차이에서 이웃 거리/방향이 올바르게 계산됨
 - 8 neighbor가 두 `uvec4`에 올바른 순서로 pack됨
-- CPU의 `Wetness`, `Heat`, `Burn`, `Mud`가 GPU `vec4`의 `x`, `y`, `z`, `w`에 각각 pack되는지 확인
+- 1개, 4개, 6개 이상의 Registry State에서 State와 Profile parameter의 index/stride mapping이 일치하는지 확인
+- Channel count가 달라도 State A/B, TempAlpha, dense InputDelta의 경계와 크기가 맞는지 확인
 
 ### Vulkan 검증
 

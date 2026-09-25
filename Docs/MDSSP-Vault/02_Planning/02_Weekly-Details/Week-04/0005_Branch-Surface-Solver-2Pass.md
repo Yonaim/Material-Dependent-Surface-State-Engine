@@ -32,15 +32,16 @@ if (localIndex >= localTexelCount) return;
 
 invalid texel은 조기에 종료하되 Pass 1의 TempAlpha와 Pass 2의 NextState를 0으로 명시한다.
 
-각 texel의 상태는 `vec4` 하나에 저장한다. 네 component의 순서는 Wetness, Heat, Burn, Mud이며, invocation 하나가 texel 하나의 상태를 갱신한다.
+각 texel에는 Registry가 정한 수만큼의 State channel이 있다. GPU의 실제 layout은 Branch 4에서 확정하지만 Solver는 이름이나 채널 개수를 하드코딩하지 않고 `stateChannelCount`와 `ChannelIndex`를 사용한다. Invocation은 texel 하나를 담당하며 등록된 모든 channel을 처리한다.
 
 ```glsl
-const uint STATE_CHANNEL_COUNT = 4;
-// State buffer에서 texel 하나는 vec4 한 개다.
-uint stateVectorIndex(uint stateIndex) { return stateIndex; }
+uint stateChannelCount; // Registry에서 전달
+float loadState(uint texelIndex, uint channelIndex);
+void storeNextState(uint texelIndex, uint channelIndex, float value);
 ```
 
-채널 index는 Wetness=0, Heat=1, Burn=2, Mud=3 순서로 vec4 component에 대응한다.
+`loadState`와 `storeNextState`는 Branch 4에서 선택한 layout을 감춘다. 예시 demo의 State name은 Profile/Registry에서 찾아 ID로 다루며, Solver의 계산 경로는 특정 State 이름에 분기하지 않는다.
+Profile이 어떤 Registry State를 정의하지 않은 경우의 동작은 아직 결정하지 않았다. 이 브랜치에서 Profile/Channel 지원 mask를 사용해 가능한 정책을 비교하고, 입력·Transport·Decay·Transition 각각의 처리 규칙을 결정해 테스트로 고정한다. 지원 여부는 Branch 4의 Profile GPU representation에서 전달한다.
 
 ## Pass 1
 
@@ -170,9 +171,9 @@ source를 seam 직전에 놓고 반대 chart로 전달되는지 확인한다.
 
 동일 총 시간에 대해 `1/30`과 `1/60` step 결과 차이를 허용 오차 안에서 비교한다.
 
-### 8. 네 채널 저장
+### 8. 동적 State channel 저장
 
-Wetness/Heat/Burn/Mud가 각각 올바른 vec4 component에서 갱신되고 서로 섞이지 않아야 한다.
+Registry channel count가 1, 4, 6 이상인 경우 각 State가 올바른 channel index에서 독립적으로 갱신되고 서로 섞이지 않아야 한다.
 
 ## 디버그 readback
 
@@ -199,7 +200,7 @@ Incoming/Outgoing debug buffer는 Debug build에서만 둘 수 있다.
 
 - validation warning 없이 여러 step을 실행한다.
 - State A/B가 step마다 정확히 교환된다.
-- 네 상태 채널이 texel별 `vec4` component에서 서로 독립적으로 처리된다.
+- Solver가 임의의 Registry channel count에서 State를 서로 독립적으로 처리한다.
 - 보유량 제한과 Capacity 범위가 유지된다.
 - seam/invalid texel test를 통과한다.
 - synthetic input만으로 결과를 반복 재현할 수 있다.
