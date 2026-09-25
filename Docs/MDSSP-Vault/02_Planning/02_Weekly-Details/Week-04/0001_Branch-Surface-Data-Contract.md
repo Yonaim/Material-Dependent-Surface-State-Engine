@@ -12,7 +12,7 @@ Mapping, GPU resource, Solver가 공통으로 사용할 **CPU 자료형과 소�
 
 ## 완료 결과
 
-- 기본 상태 네 종류와 Profile parameter의 CPU 표현
+- Profile에서 선언되는 State와 parameter의 CPU 표현 및 Registry 계약
 - Surface, Geometry, Instance State의 ID/handle 체계
 - Mapping과 GPU upload가 공유할 자료형
 - `.SRProfile` 검증 경계
@@ -22,30 +22,18 @@ Mapping, GPU resource, Solver가 공통으로 사용할 **CPU 자료형과 소�
 
 ### 상태 채널
 
-```cpp
-enum class SurfaceStateChannel : std::uint32_t
-{
-    Wetness = 0,
-    Heat = 1,
-    Burn = 2,
-    Mud = 3,
-    Count = 4
-};
+State 종류는 enum이나 컴파일 시점의 고정 개수로 정의하지 않는다. 로드된 `.SRProfile`의 `states` key 전체에서 `SurfaceStateRegistry`를 구성한다. Registry가 이름을 `StateId`와 런타임 `ChannelIndex`에 연결한다. `Wetness`, `Heat`, `Burn`, `Mud`는 대표 데모 State일 뿐 고정 목록이 아니며, `SurfaceWater`, `Snow`를 포함한 새 State도 Profile에서 선언할 수 있다.
 
-inline constexpr std::uint32_t SurfaceStateChannelCount =
-    static_cast<std::uint32_t>(SurfaceStateChannel::Count);
-```
-
-기본 상태 채널은 `Wetness`, `Heat`, `Burn`, `Mud` 네 가지다. 순서는 기존 GPU 저장 순서와 맞춘다. 문자열과 enum 변환은 하나의 table에서 관리하고, 변환 로직을 여러 loader에 복제하지 않는다. `SurfaceWater`와 `Snow`는 목표 데모를 위한 후속 확장 상태이며 이번 구현에는 포함하지 않는다.
+Branch 1의 CPU 계약은 Profile 데이터가 State key와 parameter의 연관을 보존하도록 한다. 실제 deterministic ID/Transition 변환은 Registry가 소유하며, 구체적 결정은 [[04_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 따른다.
 
 | State | 역할 | 대표 전이/특성 |
 |---|---|---|
-| `Wetness` | 재질 내부에 흡수된 수분 | 기본 채널 |
-| `Heat` | 열 상태 | `Heat → Burn`, Decay 가능 |
-| `Burn` | 그을림·탄 정도 | 잔류 상태 |
-| `Mud` | 부착·적층되는 진흙 | 높은 cavity retention과 Accumulation |
+| `Wetness` | 재질 내부에 흡수된 수분 | 기본 데모에서 사용하는 예시 State |
+| `Heat` | 열 상태 | `Heat → Burn`, Decay 전이 예시 |
+| `Burn` | 그을림·탄 정도 | 잔류 State 예시 |
+| `Mud` | 부착·적층되는 진흙 | 높은 cavity retention과 Accumulation 예시 |
 
-채널별 고정 크기 자료형은 `std::array<T, SurfaceStateChannelCount>`로 표현한다. 예를 들어 `std::array<SurfaceStateParameters, SurfaceStateChannelCount> States;`에 Profile의 채널별 parameter를 담는다. 네 채널은 GPU에서 texel당 `vec4` 하나로 저장하며, CPU와 Shader에서 채널 순서를 동일하게 유지한다. CPU 도메인 구조체의 메모리 배치를 GLSL ABI에 직접 맞추지는 않는다.
+Registry 크기에 종속되는 State parameter 목록은 고정 길이 `std::array`가 아니라 동적 컨테이너로 표현한다. CPU 도메인 구조체의 메모리 배치를 GLSL ABI에 직접 맞추지 않는다. GPU 배치 방식은 후속 `feat/surface-gpu-resources`에서 결정한다.
 
 ### Profile parameter
 
@@ -62,20 +50,24 @@ struct SurfaceStateParameters
     float CavityFillFactor = 0.0F;
 };
 
+using StateId = std::uint32_t;
+
 struct SurfaceStateTransition
 {
-    SurfaceStateChannel Source;
-    SurfaceStateChannel Target;
+    StateId Source;
+    StateId Target;
     float Threshold = 0.0F;
     float TransitionRate = 0.0F;
 };
 
 struct SurfaceResponseProfileData
 {
-    std::array<SurfaceStateParameters, SurfaceStateChannelCount> States;
+    std::unordered_map<StateId, SurfaceStateParameters> States;
     std::vector<SurfaceStateTransition> Transitions;
 };
 ```
+
+Profile 등록 후 Registry를 구성할 때 문자열 key와 Transition endpoint를 Registry ID로 해석한다. Profile이 정의하지 않은 Registry State는 해당 Profile의 미정의 slot으로 구분한다. `unordered_map`은 CPU domain model의 예시이며 GPU upload 순서를 정의하지 않는다.
 
 검증 규칙:
 
@@ -85,7 +77,7 @@ struct SurfaceResponseProfileData
 - 알 수 없는 State 이름과 필수 키 누락은 Asset 경로와 함께 오류 처리
 - transition의 Source/Target이 다르고 유효한 채널인지 확인
 - `Threshold ∈ [0,1]`, `TransitionRate >= 0`
-- 기본 구현에서 데모 전이 `Heat → Burn`을 표현할 수 있어야 함. `Snow → SurfaceWater → Wetness`는 확장 상태 추가 시 구현한다.
+- 대표 데모 전이 `Heat → Burn`을 표현할 수 있어야 한다. 다른 전이는 Profile에 선언된 State ID로 표현한다.
 
 ### ID와 무효값
 
@@ -128,17 +120,17 @@ CPU 구조체는 GPU handle을 필수로 가지지 않는다. CPU 결과와 GPU 
 
 ### 수정
 
-- `Source/SurfaceStateSystem/SharedSurfaceGeometryData.h/.cpp`
-- `Source/SurfaceStateSystem/SurfaceInstanceStateData.h/.cpp`
-- `Source/SurfaceStateSystem/SurfaceInput.h`
-- `Source/AssetManager/SRProfileAsset.h/.cpp`
-- `Source/AssetManager/Loader/SRProfileLoader.h/.cpp`
-- 필요 시 `Source/AssetManager/Asset.h`
+- `Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h/.cpp`
+- `Source/SurfaceStateSystem/State/SurfaceInstanceStateData.h/.cpp`
+- `Source/SurfaceStateSystem/State/SurfaceInput.h`
+- `Source/AssetManager/Assets/SRProfileAsset.h/.cpp`
+- `Source/AssetManager/Loaders/SRProfileLoader.h/.cpp`
+- 필요 시 `Source/AssetManager/Core/Asset.h`
 
 ### 추가 권장
 
-- `Source/SurfaceStateSystem/SurfaceStateTypes.h`
-- `Source/SurfaceStateSystem/SurfaceMappingTypes.h`
+- `Source/SurfaceStateSystem/Types/SurfaceStateTypes.h`
+- `Source/SurfaceStateSystem/Types/SurfaceMappingTypes.h`
 - `Tests/SurfaceStateTypesTests.cpp`
 
 여러 모듈이 사용하는 enum, index, CPU data struct는 `SurfaceStateTypes.h`처럼 의존성이 작은 파일에 둔다.
@@ -212,20 +204,20 @@ JSON exception은 그대로 외부에 노출하지 않고 Asset 경로와 JSON k
 
 구체적인 입력, 기대 결과, fixture와 테스트 함수 목록은 [[06_Testing/0001_Surface-Data-Contract-Tests|Surface Data Contract 테스트 사례]]에서 관리한다.
 
-이 브랜치에서는 CPU의 채널 순서까지만 검증한다. 네 채널을 GPU `vec4`의 `x/y/z/w`에 pack하는 검증은 실제 upload 구조체와 Shader 계약을 정의하는 [[02_Planning/02_Weekly-Details/Week-04/0004_Branch-Surface-GPU-Resources|Branch 4 — Surface GPU Resources]]에서 수행한다.
+이 브랜치에서는 CPU Profile/Registry 계약을 검증한다. 동적 channel count에 맞춘 GPU layout과 upload 검증은 실제 resource와 Shader 계약을 정의하는 [[02_Planning/02_Weekly-Details/Week-04/0004_Branch-Surface-GPU-Resources|Branch 4 — Surface GPU Resources]]에서 수행한다.
 
 ## 권장 커밋 분할
 
-1. `Build: add nlohmann json dependency`
-2. `Feat: define four-channel surface state data types`
-3. `Feat: parse and validate SRProfile assets`
-4. `Test: add surface data contract and JSON tests`
+1. `Build: nlohmann/json 의존성 추가`
+2. `Feat: Registry 기반 Surface State 데이터 타입 정의`
+3. `Feat: SRProfile Asset 파싱 및 검증`
+4. `Test: Surface Data Contract와 JSON 테스트 추가`
 
 ## 완료 조건
 
 - 프로젝트가 warning 없이 빌드된다.
 - CPU test가 Vulkan 초기화 없이 실행된다.
-- 네 상태와 `Heat → Burn` 전이를 `.SRProfile`로 표현할 수 있다.
+- 임의 State 이름과 `Heat → Burn` 같은 전이를 `.SRProfile`로 표현할 수 있다.
 - JSON parse 오류가 파일 경로와 key path를 포함한다.
 - dummy였던 핵심 데이터 파일에 명확한 소유권과 초기값이 존재한다.
 - 다음 브랜치가 추가 설계 없이 `SurfaceMappingData`를 채울 수 있다.

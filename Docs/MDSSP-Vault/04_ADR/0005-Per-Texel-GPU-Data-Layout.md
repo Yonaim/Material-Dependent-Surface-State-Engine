@@ -1,21 +1,24 @@
 # ADR 0005 — Per-Texel GPU Data Layout과 Dense InputDelta
 
-- 상태: **Accepted**
+- 상태: **Partially Superseded by [[0006-Dynamic-State-Registry]]**
 - 날짜: 2026-09-25
 
 ## Context
 
-초기 GPU 데이터 배치에서는 `ValidMask`, `NeighborDistance`, 예약 component가 포함된 `GeometryScalar vec4`를 저장하고, 상태 채널을 확장하는 안에 맞춰 texel마다 `vec4` 두 개를 배치했다. 현재 기본 구현은 `Wetness`, `Heat`, `Burn`, `Mud` 네 채널을 사용한다.
+초기 GPU 데이터 배치 초안은 `ValidMask`, `NeighborDistance`, 예약 component가 포함된 `GeometryScalar vec4`와 State channel을 확장하기 위한 texel당 `vec4` 두 개를 제안했다. 이후 ADR 0006에서 State 종류를 `.SRProfile` 기반 동적 Registry로 결정했으므로, 네 데모 State를 고정 채널로 취급하거나 해당 배치를 기본 layout으로 간주하지 않는다.
 
 이 GPU 배치를 그대로 유지하면 다른 데이터와 중복되거나 사용하지 않는 값과 component가 메모리를 차지한다. 반면 `InputDelta`를 sparse 목록으로 바꾸면 입력 적용을 위한 gather/scatter 및 중복 이벤트 처리 방식까지 추가로 설계해야 한다.
 
 ## Decision
 
+> [!warning] 대체 범위
+> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, 두 float `GeometryScalar`, dense `InputDelta` 재사용 결정은 유지한다. State channel은 Registry 크기에 따라 동적으로 배치한다. 물리적인 buffer layout과 channel stride는 `feat/surface-gpu-resources`에서 결정한다.
+
 - GPU의 invalid texel 판정은 별도 `ValidMaskBuffer` 대신 `TexelSurfaceIndexBuffer`의 예약값 `InvalidSurfaceID = 0xFFFFFFFF`로 표현한다. 이 값은 유효 Surface ID로 사용할 수 없다. CPU mapping/cache는 필요하면 별도 validity 정보를 유지할 수 있다.
 - `NeighborDistanceBuffer`는 GPU에 두지 않는다. Solver가 `SurfacePosition[j] - SurfacePosition[i]`에서 거리와 방향을 계산한다. CPU mapping 단계의 거리 캐시는 GPU upload 대상으로 삼지 않는다.
 - GPU `GeometryScalar`는 texel마다 실제 사용하는 `MesoVirtualHeight`와 `ConcavityWeight` 두 float만 저장한다. `vec4`로 올리거나 예약 component를 두지 않는다.
-- 기본 상태 채널은 `Wetness`, `Heat`, `Burn`, `Mud` 네 가지로 유지한다. 각 texel의 값은 `vec4` 하나에 정확히 들어가므로 padding component가 없다. 이전에 검토한 여섯 채널용 `vec4` 두 개 배치는 기본 구현에서 사용하지 않는다.
-- `InputDelta`는 texel별 dense `vec4` buffer로 유지한다. GPU buffer는 instance resource 생성 시 한 번 할당해 재사용하고, 이벤트 입력이 없거나 소비된 뒤 값을 clear한다. 매 frame buffer를 새로 할당하지 않는다.
+- State 종류는 고정하지 않으며 `.SRProfile`에서 수집한 Registry channel count에 따른다. 기본 demo Profile의 `Wetness`, `Heat`, `Burn`, `Mud`는 예시 workload다. texel별 State와 TempAlpha/InputDelta의 buffer layout은 임의 channel count를 지원해야 한다.
+- `InputDelta`는 texel별 dense buffer로 유지하고 State Registry의 channel count를 반영한다. GPU buffer는 instance resource 생성 시 한 번 할당해 재사용하고, 이벤트 입력이 없거나 소비된 뒤 값을 clear한다. 매 frame buffer를 새로 할당하지 않는다.
 - sparse InputDelta는 이 ADR에서 채택하지 않는다. 실제 입력 밀도와 성능을 측정한 뒤 별도 ADR 또는 변경으로 판단한다.
 
 ## Alternatives Considered
@@ -34,7 +37,7 @@
 
 ### 4. 상태 채널 여섯 개를 `vec4` 두 개에 저장
 
-채널을 여섯 개로 확장하기 쉽고 `vec4` 단위로 읽을 수 있지만, texel마다 두 component가 비게 된다. 현재는 기본 채널 네 개를 `vec4` 하나에 모두 저장한다. `SurfaceWater`와 `Snow`를 기본 채널에 추가할 때 저장 배치를 다시 결정한다.
+고정 네 channel이나 여섯 channel을 가정한 `vec4` 묶음은 Registry가 정한 임의 channel 수를 일반적으로 표현하지 못한다. 동적 buffer layout은 GPU Resource 브랜치에서 AoS/SoA, indexing, alignment와 성능을 비교해 결정한다. `SurfaceWater`, `Snow` 등은 별도 고정 enum 없이 Profile에 선언되는 State 사례다.
 
 ### 5. Sparse `InputDelta`
 
@@ -53,17 +56,17 @@ NeighborIndex     32 B  // uint32 8개
 합계              76 B/texel
 ```
 
-각 instance는 State A/B, TempAlpha, InputDelta 네 버퍼를 가진다. 각 버퍼는 texel당 16바이트를 사용하므로, 합계는 texel당 64바이트다.
+각 instance는 State A/B, TempAlpha, InputDelta 네 버퍼를 가진다. Registry channel 수가 `C`이고 32-bit scalar를 padding 없이 저장한다면 각 buffer는 texel당 `4C` bytes, 합계는 `16C` bytes다. `C = 4`인 demo workload에서만 64 bytes/texel이 된다. 실제 allocation은 GPU layout과 alignment에 따라 달라질 수 있다.
 
 ```text
-State A       16 B
-State B       16 B
-TempAlpha     16 B
-InputDelta    16 B
-합계          64 B/texel
+State A       4C B
+State B       4C B
+TempAlpha     4C B
+InputDelta    4C B
+합계          16C B/texel
 ```
 
-512×512 기준으로 공유 형상 데이터는 Mesh당 약 19 MiB, 상태 버퍼는 instance당 약 16 MiB다. 따라서 해당 Mesh를 사용하는 instance가 하나라면 합계는 약 35 MiB다. 이 추정에는 할당 정렬, Profile table, 동적 적층 형상 버퍼, 렌더링용 복제 데이터가 포함되지 않는다. 설계한 자료형 크기로 계산한 값이며, 실제 GPU 사용량을 측정한 결과는 아니다.
+512×512 기준으로 공유 형상 데이터는 Mesh당 약 19 MiB다. 상태 버퍼는 instance당 `4C MiB`이며, `C = 4`라면 약 16 MiB로 합계는 약 35 MiB다. 이 추정에는 할당 정렬, Profile table, 동적 적층 형상 버퍼, 렌더링용 복제 데이터가 포함되지 않는다. 설계한 자료형 크기로 계산한 값이며, 실제 GPU 사용량을 측정한 결과는 아니다.
 
 Dense `InputDelta`는 입력이 드문 경우에도 전체 격자 크기를 유지하지만, 매 frame 재할당하지 않고 같은 버퍼를 재사용한다. 이후 성능 측정에서 입력 전달이 병목으로 확인되면 sparse 입력을 다시 검토한다.
 

@@ -12,7 +12,7 @@
 - Texel 해상도, Instance 수, valid texel 비율, update frequency와 Solver 설정을 바꿔 측정한다.
 - CPU 전처리·Input upload·Compute pass·Rendering 비용을 가능한 범위에서 분리한다.
 - 같은 조건의 반복 측정과 로그를 보존한다.
-- 기본 네 State 채널은 고정하고, 채널 확장은 별도 합의 없이 실험 변수로 추가하지 않는다.
+- 각 성능 실험에서 사용할 Profile 집합과 Registry State 목록을 고정하고 기록한다. 실험 도중 State 집합을 바꾸지 않으며, 별도 실험 간에는 채널 수가 달라도 된다.
 
 ## 산출물
 

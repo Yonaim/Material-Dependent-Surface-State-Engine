@@ -8,7 +8,7 @@
 
 ## 작업 순서
 
-1. **Surface Data Contract** — 네 상태 채널, CPU data type, ID, Profile과 Surface의 소유권·검증 계약을 만든다.
+1. **Surface Data Contract** — Registry 기반 State 식별, CPU data type, ID, Profile과 Surface의 소유권·검증 계약을 만든다.
 2. **Simulation Mapping** — UV를 검증하고 Triangle rasterization / barycentric mapping, valid texel, 8-neighbor와 seam 연결을 구현한다.
 3. **Shared Geometry Build** — mapping 결과로 texel Position·Normal·Neighbor와 기본 Geometry field를 생성한다.
 4. **Surface GPU Resources** — Shared Geometry, Profile, instance State A/B, TempAlpha와 dense InputDelta를 업로드하고 descriptor를 준비한다.
@@ -34,7 +34,7 @@ OBJ + prepared UV
 → Debug View
 ```
 
-테스트 OBJ에서 위 경로가 확인되고, 기본 네 상태 채널이 서로 섞이지 않으며, seam을 건너는 neighbor가 동작해야 한다.
+테스트 OBJ에서 위 경로가 확인되고, Profile에서 등록된 State 채널이 서로 섞이지 않으며, seam을 건너는 neighbor가 동작해야 한다. 기본 데모 Profile은 `Wetness`, `Heat`, `Burn`, `Mud`를 사용하되 자료구조는 채널 수를 고정하지 않는다.
 
 ## 참고
 

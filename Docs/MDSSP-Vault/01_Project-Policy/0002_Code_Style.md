@@ -17,7 +17,7 @@
 |---|---|---|
 | 프로젝트 namespace | `MDSS` 사용 | `namespace MDSS` |
 | class, struct, enum type | PascalCase | `SurfaceStateSystem`, `Transform`, `SurfaceStateType` |
-| enum value | PascalCase | `Wetness`, `Heat`, `Burn`, `Mud` |
+| enum value | PascalCase | `Ready`, `Invalid` (State 종류는 enum으로 고정하지 않고 Registry에서 관리) |
 | 함수·메서드 | PascalCase | `RenderFrame()`, `LoadTexture()` |
 | 변수·멤버·매개변수 | PascalCase | `FrameRenderer`, `WindowHandle`, `DeltaTime` |
 | bool 변수 | `b` + PascalCase | `bInitialized`, `bSRGB` |

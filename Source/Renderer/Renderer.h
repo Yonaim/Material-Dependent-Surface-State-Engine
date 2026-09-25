@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "AssetManager/Asset.h"
+#include "AssetManager/Core/Asset.h"
 #include "Renderer/Framebuffer.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/RenderContext.h"

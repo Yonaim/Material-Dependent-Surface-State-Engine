@@ -4,14 +4,14 @@
 
 ## 목표
 
-기본 네 상태를 하나의 Surface State System과 공통 update path에서 처리한다.
+기본 데모에 필요한 State들을 하나의 Registry 기반 Surface State System과 공통 update path에서 처리한다.
 
 ## 작업
 
 - `Wetness`, `Mud`, `Heat`, `Burn`의 입력 및 갱신 경로를 통합한다.
 - 공통 Solver 항과 상태별 SRProfile 설정을 구분한다.
 - Heat → Burn transition과 Mud Accumulation을 통합 실행에서 검증한다.
-- 목표 demo에 필요한 기능을 확인하되 `SurfaceWater`/`Snow`를 기본 네 채널에 섞지 않는다.
+- 목표 demo에 필요한 State들을 Profile에 선언하고 통합 실행을 검증한다. `SurfaceWater`/`Snow`는 이 주차의 필수 demo 범위가 아니며, Registry의 고정 채널 제한으로 배제되는 것은 아니다.
 - 각 상태의 렌더링과 Debug View를 통합한다.
 
 ## 산출물

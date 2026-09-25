@@ -21,7 +21,7 @@ C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** �
 
 ## 현재 설계 기준
 
-- 기본 상태 채널은 `Wetness`, `Heat`, `Burn`, `Mud` 네 가지다. `SurfaceWater`와 `Snow`는 별도 범위 결정 전까지 기본 채널에 포함하지 않는다.
+- State 종류는 고정 채널 목록으로 정의하지 않는다. 로드된 `.SRProfile`의 `states` key를 `SurfaceStateRegistry`가 모아 런타임 채널을 구성한다. `Wetness`, `Heat`, `Burn`, `Mud`는 기본 데모에서 사용할 대표 State이며 허용 목록의 상한이 아니다.
 - `Wetness`는 재질 내부에 흡수된 수분이고, 표면 위에서 흐르거나 고이는 물은 `SurfaceWater`다.
 - `State`는 상태별 `stateCapacity` 범위 안에 두고 `Saturation = State / stateCapacity`를 사용한다. 별도 `Overflow` 저장은 하지 않는다.
 - Input은 discrete event, Transport와 Decay는 시간 기반 연속 갱신으로 처리한다.
@@ -34,7 +34,7 @@ C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** �
 
 - 4주차에는 자동 UV unwrap을 구현하지 않는다. 미리 준비한 UV를 검증한 뒤 Mapping에 사용한다.
 - 완전한 Normal Map 적분, 비적분 가능 입력의 최종 보정, 동적 Accumulation geometry의 최종 저장 구조는 현재 기본 구현의 선행 조건이 아니다. 검증·일정 결과를 바탕으로 후속 범위를 정한다.
-- `SurfaceWater`와 `Snow`가 필요한 목표 데모는 기본 네 채널과 구분한다. 해당 기능의 구현 시점과 별도 layer/channel 여부는 별도 결정으로 다룬다.
+- `SurfaceWater`와 `Snow`는 기본 데모 범위의 필수 State는 아니지만 Registry로 표현 가능한 State다. 자유 표면수 등 별도 물리 동작이 필요하면 일반 State channel로 충분한지 별도 layer가 필요한지 구현 전에 결정한다.
 
 ## 일정과 진척 관리
 

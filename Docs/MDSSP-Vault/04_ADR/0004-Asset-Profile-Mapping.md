@@ -1,6 +1,6 @@
 # ADR 0004 — Surface / Material / SRProfile 연결
 
-- 상태: **Accepted**
+- 상태: **Partially Superseded by [[0007-Surface-Preprocessed-Asset]]**
 - 근거: [[07_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 ## Context
@@ -8,6 +8,9 @@
 OBJ Surface는 `.mtl`을 통해 Render Material을 이미 알고 있으며, State 반응은 별도 `.SRProfile`에 저장한다.
 
 ## Decision
+
+> [!warning] 대체 범위
+> Render Material과 SRProfile이 서로 다른 책임이라는 결정은 유지한다. 다만 Surface당 하나의 SRProfile을 지정하고 texel별 Profile map을 두지 않는 결정은 [[0007-Surface-Preprocessed-Asset]]에 의해 대체되었다.
 
 - 하나의 Surface는 하나의 Render Material과 하나의 SRProfile을 사용한다.
 - `.Scene`의 `materialProfiles`에서 MTL Material 이름을 키로 `.SRProfile`을 연결한다.

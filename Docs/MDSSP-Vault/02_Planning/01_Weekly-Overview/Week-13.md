@@ -12,7 +12,7 @@
 - Solver pass 및 Barrier 비용, memory traffic, dispatch 크기를 확인한다.
 - 공유 Geometry와 instance State 접근의 중복·불필요한 읽기/쓰기를 분석한다.
 - 변경 전·후 결과의 정확성을 같은 test로 비교한다.
-- 현재 설계인 네 상태 채널과 dense InputDelta를 기준으로 최적화한다. Sparse 입력으로 표현을 바꾸지 않는다.
+- 기준 workload에서 사용한 Registry State 집합과 dense `InputDelta` 표현을 유지한 채 최적화한다. Sparse 입력으로 바꾸거나 State 집합을 변경하는 일은 성능 비교를 교란하지 않도록 별도 실험으로 다룬다.
 
 ## 산출물
 

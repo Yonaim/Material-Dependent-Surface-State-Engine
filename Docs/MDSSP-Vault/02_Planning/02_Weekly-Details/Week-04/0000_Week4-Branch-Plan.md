@@ -30,11 +30,23 @@ main
 | 5 | `feat/surface-solver-2pass` | Pass 1/2, barrier, ping-pong |
 | 6 | `feat/surface-input-integration` | Raycast부터 State 디버그 표시까지의 연결 |
 
+## 추가 설계 결정의 후속 작업 배정
+
+| 결정·미완료 작업 | 담당 브랜치 | 범위 |
+|---|---|---|
+| Profile Distribution authoring 형식 및 로더 | `feat/shared-geometry-build` | 입력 형식 선택, 파싱·검증, UV texel별 `ProfileIndex` 생성 |
+| `.Surface` cache miss/stale 처리의 end-to-end 연결 | `feat/shared-geometry-build` | Scene/Asset 경로에서 cache 확인, 필요 시 Mapping→Build→Save, 결과 등록. Binary v1 Save/Load 자체는 `feat/simulation-mapping`에 구현됨 |
+| Registry 크기를 State instance와 GPU 리소스에 전달 | `feat/surface-gpu-resources` | Registry 수명/참조와 channel count를 instance 생성 및 resource 크기에 연결하고 dynamic layout 결정 |
+| 임의 개수 State를 처리하는 Solver | `feat/surface-solver-2pass` | 하드코딩된 State 이름·개수 제거, Registry channel count로 처리 및 테스트 |
+| Profile에 정의되지 않은 Registry State의 처리 규칙 | `feat/surface-solver-2pass` 및 `feat/surface-input-integration` | 지원 여부 표현은 Branch 4가 제공하고, Solver/Contact에서의 동작을 각각 정해 테스트 |
+| Contact 입력의 State 선택 및 UI | `feat/surface-input-integration` | `StateId`를 `ChannelIndex`로 해석해 입력을 기록하고 UI를 Registry에서 구성 |
+| Normal Map으로 Meso/Curvature 생성하는 알고리즘 | Week-08 experiment 이후 별도 구현 branch 결정 | Week-08에 후보와 품질·비용을 비교하고 승인된 방법만 후속 계획에 배정. 4주차는 기본값 0 유지 |
+
 ## 운영 원칙
 
 - 뒤 브랜치를 미리 만들지 않는다. 앞 브랜치를 `main`에 병합한 뒤 다음 브랜치를 만든다.
 - 브랜치 하나는 독립적으로 빌드되고, 최소 하나의 확인 가능한 결과를 남겨야 한다.
-- 자료구조 변경은 가능한 한 1번 브랜치에서 끝낸다. 이후 브랜치에서 계약을 바꿔야 하면 먼저 이유를 기록한다.
+- 자료구조 계약은 Registry 기반 dynamic State를 기준으로 한다. GPU의 구체적인 channel memory layout은 4번 브랜치에서 결정하며, 이후 변경 시 ADR와 영향 문서를 갱신한다.
 - GPU 단계 전까지 CPU 결과를 충분히 검증한다. GPU에서 mapping 오류와 solver 오류를 동시에 디버깅하지 않는다.
 - 자동 UV unwrap, 완전한 Normal Map 적분, 동적 Accumulation geometry는 4주차 최소 완료 조건에서 제외한다.
 

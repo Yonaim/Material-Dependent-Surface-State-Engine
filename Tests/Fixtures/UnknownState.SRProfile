@@ -1,14 +1,25 @@
 {
   "type": "SurfaceResponseProfile",
   "version": 1,
-  "name": "UnknownStateProfile",
+  "name": "UnknownTransitionTarget",
   "states": {
-    "wetness": { "stateCapacity": 1, "inputFactor": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 },
-    "heat": { "stateCapacity": 1, "inputFactor": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 },
-    "burn": { "stateCapacity": 1, "inputFactor": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 },
-    "mud": { "stateCapacity": 1, "inputFactor": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 }
+    "snow": {
+      "stateCapacity": 1.0,
+      "inputFactor": 1.0,
+      "saturationTransferRate": 0.0,
+      "geometryTransferRate": 0.0,
+      "decayRate": 0.0,
+      "cavityRetentionFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0
+    }
   },
   "transitions": [
-    { "source": "snow", "target": "wetness", "threshold": 0.5, "transitionRate": 1 }
+    {
+      "source": "snow",
+      "target": "wetness",
+      "threshold": 0.5,
+      "transitionRate": 1.0
+    }
   ]
 }

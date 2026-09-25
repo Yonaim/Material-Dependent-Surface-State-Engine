@@ -2,6 +2,7 @@
 
 - 상태: **계획**
 - 근거: [[07_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]]
+- 일정: Week-08 중간 결과 검토에서 후보 기법을 비교한다. 알고리즘 확정 후 구현 branch를 Roadmap에 추가한다.
 
 ## 가설
 

@@ -20,7 +20,7 @@
 /**
  * @file SurfaceStateTypes.h
  * @brief Surface State 채널과 Profile 데이터의 CPU 표현을 정의한다.
- * @note State 채널 순서는 GPU 데이터와 일치해야 한다.
+ * @note State 이름과 Registry ChannelIndex의 대응은 CPU/GPU 데이터에서 동일해야 한다.
  */
 ```
 

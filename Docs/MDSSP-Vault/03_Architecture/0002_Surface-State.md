@@ -14,20 +14,13 @@ Surface State System Data
 
 `SurfaceResponseProfile`은 여러 Instance가 공유 가능한 소재 반응 데이터이고, `SurfaceData`는 시뮬레이션에 필요한 형상·상태 데이터다.
 
-## 기본 State 채널
+## State 식별과 런타임 채널
 
-```cpp
-enum class SurfaceStateChannel : std::uint32_t
-{
-    Wetness = 0,
-    Heat,
-    Burn,
-    Mud,
-    Count
-};
-```
+State 종류는 C++ enum에 고정하지 않는다. 로드된 `.SRProfile`의 `states` key를 모아 `SurfaceStateRegistry`를 만들며, Registry가 문자열 State 이름을 런타임 `StateId` 또는 `ChannelIndex`에 연결한다. 별도의 `SurfaceStateSchema` 파일은 두지 않는다.
 
-기본 채널 순서는 `Wetness`, `Heat`, `Burn`, `Mud`로 고정하며 CPU `std::array`와 Shader 채널 순서가 일치해야 한다. `Count`는 배열 크기를 구하는 용도이며 State 채널로 사용할 수 없다. `Snow`, `SurfaceWater`는 목표 데모에서 필요하지만 현재 기본 enum에는 없는 확장 대상이다.
+State 이름은 앞뒤 whitespace를 제거하고 lowercase로 정규화하며, 그 외 문자와 내부 공백·구두점은 그대로 보존한다. 예를 들어 `" Wetness "`와 `"WETNESS"`는 `wetness`로 합쳐지지만 `surface_heat`, `surface-heat`, `surface heat`는 서로 다른 이름이다. Transition의 source와 target에도 같은 규칙을 적용한다.
+
+`.SRProfile`은 State 종류의 전역 목록이 아니라, 해당 Profile이 지원하는 각 State의 반응 파라미터와 Transition을 정의한다. 런타임 Solver와 GPU는 문자열을 직접 분기 기준으로 쓰지 않고 Registry가 부여한 ID/index를 사용한다. ID의 배정과 저장 레이아웃은 구현 계약에서 정한다. 상세 결정은 [[../04_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
 
 ## State / Capacity / Saturation
 
@@ -82,7 +75,7 @@ State별로 현재 상태와 Solver 계산 과정의 임시값을 각각 스칼�
 
 `TempState`는 영구 상태 채널이 아니라 Solver 계산 중 사용하는 임시 데이터다. 현재 설계에서는 Capacity 초과량을 별도로 저장하지 않는다. 구체적인 임시값과 GPU 배치는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 
-CPU 자료형은 상태 채널을 `std::array<float, SurfaceStateChannelCount>`로 표현한다. 이 자료형은 CPU 도메인 표현이며 GPU `vec4` 배치와 메모리 ABI를 공유하는 구조체가 아니다.
+CPU 상태 데이터는 Registry의 State 수에 대응하는 동적 채널 집합으로 표현한다. 구체적인 컨테이너와 GPU 배치는 이 문서가 고정하지 않으며 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다. CPU 도메인 표현과 GPU 메모리 ABI는 별도 계약이다.
 
 ## State Transitions
 
