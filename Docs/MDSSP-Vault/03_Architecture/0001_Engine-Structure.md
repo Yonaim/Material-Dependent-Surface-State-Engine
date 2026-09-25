@@ -39,14 +39,21 @@ flowchart LR
   MTLLoader -->|MaterialSourceData| OBJLoader
   Profile[.SRProfile] --> ProfileLoader[SRProfileLoader]
   ProfileLoader --> Assets
+  Mesh --> Preprocess[Surface Preprocessor]
+  Profile --> Preprocess
+  NormalMap[Normal Map] --> Preprocess
+  Preprocess --> SurfaceAsset[.Surface cache]
+  Assets --> Registry[SurfaceStateRegistry]
+  ProfileAsset --> Registry
   SceneFile[.Scene] -. "loader 미구현" .-> Assets
   Assets --> Material[MaterialAsset]
   Assets --> Texture[TextureAsset]
   Assets --> Mesh[MeshAsset]
   Assets --> ProfileAsset[SRProfileAsset]
+  SurfaceAsset --> Shared
+  SurfaceAsset --> ProfileMap[SurfaceProfileMap]
   Material --> Texture
-  Assets -. "후속 구현" .-> Shared[Shared Surface Geometry Data]
-  Assets -. "후속 구현" .-> Instance[Surface Instance State Data]
+  Registry -. "후속 구현" .-> Instance[Surface Instance State Data]
   Ray[Raycaster / Contact] --> Input[SurfaceContactInput]
   Input -. "후속 구현" .-> Solver[SurfaceStateSolver]
   Shared -. "후속 구현" .-> Solver
@@ -59,12 +66,13 @@ flowchart LR
   Geo -. "후속 구현" .-> Solver
 ```
 
-1. OBJ 파싱은 `OBJLoader`, MTL 변환은 `MTLLoader`, `.SRProfile` JSON 파싱은 `SRProfileLoader`가 담당하고, `AssetManager`가 생성된 Asset 객체와 handle을 관리한다. Texture는 경로를 기준으로 로드·캐시한다. [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-2. 같은 Mesh + Normal Map을 사용하는 인스턴스가 공유할 정적 형상 데이터를 준비한다. [[03_Architecture/0005_Surface-Geometry|형상과 적층]]
-3. 각 Mesh Instance는 자신의 State를 가진다. [[03_Architecture/0002_Surface-State|표면 상태]]
-4. Raycast 등으로 `SurfaceContactInput`을 만들고 Input 항으로 변환한다. [[03_Architecture/0004_Surface-State-Update|State 갱신]]
-5. Solver가 Input / Transport / Decay를 사용해 다음 State를 계산한다.
-6. State가 형상 적층을 만드는 경우 Accumulation Height를 계산하고, 바뀐 형상을 후속 Simulation과 Rendering에 반영한다. [[03_Architecture/0005_Surface-Geometry|형상과 적층]], [[03_Architecture/0006_Rendering|렌더링]]
+1. OBJ 파싱은 `OBJLoader`, MTL 변환은 `MTLLoader`, `.SRProfile` JSON 파싱은 `SRProfileLoader`가 담당하고, `AssetManager`가 Asset과 handle을 관리한다. [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+2. Mesh, Normal Map, Profile Distribution에서 `.Surface`를 전처리하거나 유효한 캐시를 로드한다. `.Surface`에는 공유 정적 Geometry/texel 관계와 texel별 Profile map을 둔다.
+3. 로드된 `.SRProfile`의 State key에서 `SurfaceStateRegistry`를 구성한다. 문자열 이름은 정규화 후 런타임 State ID/index로 변환한다.
+4. 각 Mesh Instance는 Registry 채널에 대응하는 자신의 동적 State와 Overflow를 가진다. 정적 `.Surface` 데이터와 Profile 반응 파라미터는 instance state에 복제하지 않는다. [[03_Architecture/0002_Surface-State|표면 상태]]
+5. Raycast 등으로 `SurfaceContactInput`을 만들고 Input 항으로 변환한다. [[03_Architecture/0004_Surface-State-Update|State 갱신]]
+6. Solver가 Input / Transport / Decay를 사용해 다음 State를 계산한다.
+7. State가 형상 적층을 만드는 경우 Accumulation Height를 계산하고, 바뀐 형상을 후속 Simulation과 Rendering에 반영한다. [[03_Architecture/0005_Surface-Geometry|형상과 적층]], [[03_Architecture/0006_Rendering|렌더링]]
 
 Simulation UV mapping은 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], Vulkan resource binding / barrier는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 

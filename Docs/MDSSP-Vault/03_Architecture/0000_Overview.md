@@ -26,9 +26,10 @@ flowchart TD
 핵심 분리는 다음과 같다.
 
 - **Asset / Render Material**: Mesh와 외관 렌더링 정보.
-- **Surface Response Profile**: State에 대한 반응 계수.
-- **Shared Surface Geometry Data**: 인스턴스 간 공유 가능한 정적 형상 데이터.
-- **Surface Instance State Data**: 인스턴스마다 별도로 가지는 동적 상태 데이터.
+- **Surface Response Profile**: State 종류를 고정하는 목록이 아니라, 각 State에 대한 소재별 반응 파라미터와 Transition.
+- **SurfaceStateRegistry**: 로드한 Profile에서 State 이름을 모아 런타임 ID/index로 연결.
+- **`.Surface`**: Mesh·Normal Map·Profile Distribution에서 생성되는 정적 Geometry/texel 관계 및 texel별 Profile map 캐시.
+- **Surface Instance State Data**: Registry 채널에 대응하는 instance별 동적 State와 Overflow.
 
 ## 읽는 순서
 

@@ -1,6 +1,6 @@
 # ADR 0005 — Per-Texel GPU Data Layout과 Dense InputDelta
 
-- 상태: **Accepted**
+- 상태: **Partially Superseded by [[0006-Dynamic-State-Registry]]**
 - 날짜: 2026-09-25
 
 ## Context
@@ -10,6 +10,9 @@
 이 GPU 배치를 그대로 유지하면 다른 데이터와 중복되거나 사용하지 않는 값과 component가 메모리를 차지한다. 반면 `InputDelta`를 sparse 목록으로 바꾸면 입력 적용을 위한 gather/scatter 및 중복 이벤트 처리 방식까지 추가로 설계해야 한다.
 
 ## Decision
+
+> [!warning] 대체 범위
+> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, 두 float `GeometryScalar`, dense `InputDelta` 재사용 결정은 유지한다. 고정된 네 State와 `vec4` 하나로 상태를 배치하는 결정만 [[0006-Dynamic-State-Registry]]에 의해 대체되었다. 동적 채널의 GPU 표현은 별도 설계에서 정한다.
 
 - GPU의 invalid texel 판정은 별도 `ValidMaskBuffer` 대신 `TexelSurfaceIndexBuffer`의 예약값 `InvalidSurfaceID = 0xFFFFFFFF`로 표현한다. 이 값은 유효 Surface ID로 사용할 수 없다. CPU mapping/cache는 필요하면 별도 validity 정보를 유지할 수 있다.
 - `NeighborDistanceBuffer`는 GPU에 두지 않는다. Solver가 `SurfacePosition[j] - SurfacePosition[i]`에서 거리와 방향을 계산한다. CPU mapping 단계의 거리 캐시는 GPU upload 대상으로 삼지 않는다.

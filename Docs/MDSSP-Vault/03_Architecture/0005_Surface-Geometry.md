@@ -150,4 +150,4 @@ $$
 
 Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Distance / Height / Curvature에도 다시 반영한다. [[04_ADR/0003-Dynamic-Accumulation-Geometry|ADR 0003]]
 
-현재 기본 State 중 Wetness / Heat / Burn은 형상 적층이 없도록 `accumulationFactor = 0`을 사용할 수 있고, Mud는 적층을 표현한다. SurfaceWater / Snow의 적층은 해당 State가 추가될 때 프로필로 정의한다.
+예를 들어 Wetness / Heat / Burn은 형상 적층이 없도록 `accumulationFactor = 0`을 사용할 수 있고, Mud는 적층을 표현할 수 있다. State 종류는 고정 목록이 아니며, SurfaceWater / Snow 등 다른 State의 적층 동작도 해당 Profile 파라미터로 정의한다.

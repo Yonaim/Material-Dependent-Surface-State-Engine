@@ -2,7 +2,7 @@
 
 상태: **현재 C++ 코드 기준** · 상위 문서: [[0000_Overview|구현 구조 개요]]
 
-OBJ, MTL, Texture와 `.SRProfile` 파일이 파싱된 뒤 Asset으로 등록되고, Mesh 데이터가 Simulation Mapping과 Surface State 자료형으로 이어지는 과정을 설명한다.
+OBJ, MTL, Texture와 `.SRProfile` 파일이 파싱된 뒤 Asset으로 등록되고, Mesh 데이터가 Simulation Mapping과 Surface State 자료형으로 이어지는 과정을 설명한다. 설계된 파일 책임과 현재 구현을 구분해 정리한다. State Registry와 `.Surface` binary cache의 핵심 자료형/API는 구현됐지만, 전처리 파이프라인의 자동 연결은 아직 완료되지 않았다.
 
 관련 설계 문서:
 
@@ -30,16 +30,57 @@ flowchart LR
   SRProfileLoader --> SRProfileAsset
   AssetManager --> SRProfileAsset
 
+  MeshAsset -. "호출 통합 미구현" .-> Preprocess[SurfacePreprocessor API]
+  NormalMap[Normal Map Asset] -. "CPU 입력 통합 미구현" .-> Preprocess
+  ProfileDistribution[Profile Distribution] -. "authoring 입력 미구현" .-> Preprocess
+  Preprocess -. "호출자 연결 미구현" .-> SurfaceFile[.Surface binary cache]
+  SurfaceFile -. "loader 미구현" .-> SurfaceData[static geometry + texel profile map]
+  SRProfileAsset --> Registry[planned SurfaceStateRegistry]
+  SurfaceData -. "ProfileIndex resolution" .-> SRProfileAsset
+
   MeshAsset -->|Vertex / Triangle source| MappingBuilder[SurfaceMappingBuilder]
   MappingBuilder --> MappingData[SurfaceMappingData]
   MappingData --> MappingValidation[SurfaceMappingValidation]
-  MappingData -. "변환 경로 미구현" .-> SharedGeometry[SharedSurfaceGeometryData]
+  MappingData -. "호출자 직접 연결" .-> Preprocess
+  Preprocess -->|Build 결과| SharedGeometry[SharedSurfaceGeometryData + ProfileMap]
   SharedGeometry -->|shared_ptr const| InstanceState[SurfaceInstanceStateData]
-  SRProfileAsset -. "Profile index 연결 미구현" .-> InstanceState
+  Registry -. "dynamic channel layout 미구현" .-> InstanceState
   InstanceState -. "Solver 미구현" .-> Solver[SurfaceStateSolver]
 ```
 
 실선은 현재 코드에 존재하는 호출·생성·참조 관계다. 점선은 자료형이나 설계는 있지만 상위 연결 코드가 아직 구현되지 않은 구간이다.
+
+## 파일 단위 책임과 수명
+
+입력 원본, 생성 캐시와 런타임 상태는 서로 다른 책임과 수명을 가진다.
+
+| 파일·데이터 | 역할 | 생성·갱신 | 현재 코드 상태 |
+|---|---|---|---|
+| `.obj` | Mesh position/normal/UV/face 및 Surface별 Material 할당의 원본 | 외부 제작·편집 도구에서 생성 | `OBJLoader`로 읽음 |
+| `.mtl` | OBJ가 참조하는 Render Material 및 Texture 경로 | 외부 제작·편집 도구에서 생성 | OBJ 파싱 중 `MTLLoader`가 변환 |
+| Texture (`.png`, `.jpg` 등) | Albedo, Normal 등의 이미지 입력 | 외부 제작 도구에서 생성 | `TextureAsset`으로 로드·GPU 업로드 |
+| `.SRProfile` | State별 반응 파라미터와 Transition | 사용자가 작성·편집 | JSON Loader는 임의 State 이름을 파싱. AssetManager의 Registry 생성 API 구현됨 |
+| Profile Distribution | UV 영역 또는 Texel별 SRProfile 배치 입력 | authoring 방식 미확정 | 입력 형식 및 로더 미구현 |
+| `.Surface` | 전처리된 정적 Geometry/texel 관계와 `Texel → ProfileIndex` map | Mesh, Normal Map, Profile Distribution 또는 입력 변경 시 재생성 | `SurfacePreprocessor::Build`, binary writer/reader 및 metadata 비교 구현. 상위 자동 호출은 미구현 |
+| `SurfaceInstanceStateData` | Instance별 동적 State와 Overflow | Runtime에서 초기화·갱신 | 자료형 일부 구현. Registry 기반 동적 채널 연결은 미구현 |
+
+파일 흐름의 목표 형태는 다음과 같다.
+
+```text
+.obj + .mtl + textures ─────┐
+                             ├─ Surface Preprocessor ─→ .Surface cache
+Normal Map ─────────────────┤                         ├─ static geometry / texel relations
+Profile Distribution ───────┘                         └─ Texel → ProfileIndex
+
+.SRProfile files ─→ SRProfileAsset collection ─→ SurfaceStateRegistry
+       │                                              │
+       └── Profile response parameters ──────────────┤
+                                                      ▼
+.Surface cache ───────────────────────→ SurfaceInstanceStateData
+                                      (dynamic State / Overflow per instance)
+```
+
+`.Surface`는 생성 가능한 캐시다. 현재 binary format version 1과 Mesh/Normal Map/Profile map hash, Profile count, per-Surface grid resolution, UV set, preprocess version 비교를 구현했다. Profile Distribution의 authoring 파일 형식과 cache miss 시 자동으로 Mapping을 만들고 다시 저장하는 orchestration은 아직 정하지 않거나 연결하지 않았다. State와 Overflow는 `.Surface`에 직렬화하지 않는다. 설계 세부사항은 [[04_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]와 [[04_ADR/0007-Surface-Preprocessed-Asset|ADR 0007 — 정적 Surface 전처리 에셋]]을 따른다.
 
 ## 1. OBJ와 MTL 파싱
 
@@ -117,7 +158,22 @@ File read
 
 `SRProfileAsset`은 Profile 데이터를 값으로 소유한다. MTL Material 이름과 SRProfile handle을 연결하는 `.Scene` 로더는 아직 placeholder이므로, 두 Asset 사이의 자동 연결은 현재 구현되어 있지 않다.
 
-## 5. Mesh 원본 topology 보존
+`.SRProfile`의 `states` key를 모으는 `SurfaceStateRegistry`와 정규화, 재현 가능한 ID 배정, Transition endpoint 검증은 구현되어 있다. `AssetManager::GetSurfaceStateRegistry()`가 로드된 Profile 집합을 기준으로 Registry를 지연 생성하고 이후 Profile이 추가되면 cache를 무효화한다. Solver는 아직 placeholder이므로 실제 시뮬레이션이 Registry 기반 채널을 순회하는 단계는 남아 있다. 계약은 [[04_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 기준으로 한다.
+
+## 5. `.Surface` 전처리 파일 흐름
+
+`.Surface`는 사람이 직접 편집하는 설정 파일이 아니라 전처리기가 생성하는 바이너리 캐시다. 같은 Mesh의 여러 instance가 정적 결과를 공유하고, 각 texel이 어느 SRProfile 응답을 사용할지 `ProfileIndex`로 참조한다.
+
+| 전처리 입력 | 결과에 미치는 영향 | Cache metadata에서 추적 |
+|---|---|---|
+| Mesh (`.obj`) | UV rasterization, Surface/Triangle 관계, topology와 seam 이웃 | Mesh content hash, UV set |
+| Normal Map | 정적 Normal 및 Meso 형상 파생값 | Normal Map content hash |
+| Profile Distribution | Texel별 Profile 배치 | Profile Map content hash |
+| Grid / preprocess 설정 | Texel 해상도와 생성 결과 | Resolution, preprocess version |
+
+입력 중 하나라도 바뀌거나 cache version이 맞지 않으면 `SurfaceCache::Load`가 stale 오류를 반환하므로 호출자가 다시 생성할 수 있다. 현재 `SurfacePreprocessor::Build`는 Mapping 결과와 호출자가 제공한 texel Profile index 배열을 정적 geometry/cache payload로 변환하고, `SurfaceCache::Save/Load`가 versioned binary serialization과 metadata 검사를 수행한다. Profile Distribution 파일 reader, cache miss 자동 재생성, Normal Map에서 Meso/Curvature 값을 계산하는 알고리즘은 구현 범위에 포함되지 않았다.
+
+## 6. Mesh 원본 topology 보존
 
 OBJ의 position/UV/normal 조합이 다르면 하나의 원본 position이 여러 render vertex로 분리될 수 있다. `MeshTriangleSource`는 Mapping이 UV seam 너머의 실제 mesh 연결을 찾을 수 있도록 원본 index를 함께 보존한다.
 
@@ -130,7 +186,7 @@ OBJ의 position/UV/normal 조합이 다르면 하나의 원본 position이 여�
 
 `OBJLoader`가 이를 생성하고 `MeshAsset`이 `Triangles` 벡터로 소유한다.
 
-## 6. Surface Mapping 생성
+## 7. Surface Mapping 생성
 
 `SurfaceMappingBuilder::Build`는 Vertex, `MeshTriangleSource`, `SurfaceDefinition` 목록을 읽어 `SurfaceMappingData`를 반환한다.
 
@@ -159,11 +215,11 @@ classDiagram
 
 `SurfaceLocalID`, `LocalTexelIndex`, sentinel, resolution/range와 geometry 자료형은 `SurfaceMappingTypes.h`에서 공통으로 정의한다.
 
-## 7. Shared Geometry 경계
+## 8. Shared Geometry 경계
 
 `SharedSurfaceGeometryData`는 Mesh를 사용하는 Instance들이 공유할 Surface range와 `SurfaceTexelGeometry` 배열을 소유한다.
 
-현재 `SurfaceMappingData`와 `SharedSurfaceGeometryData`는 별도 타입이며, Mapping 결과를 Shared Geometry에 복사하고 추가 Geometry 값을 계산하는 전처리 연결 코드는 아직 구현되지 않았다.
+`SurfaceMappingData`와 `SharedSurfaceGeometryData`는 별도 타입이다. `SurfacePreprocessor::Build`는 Mapping 결과를 Geometry texel로 복사하고 이웃 거리를 채운다. 다만 OBJ/Scene load에서 이 API를 호출하고 cache miss 후 저장하는 상위 orchestration은 아직 연결되지 않았다.
 
 | Mapping 결과 | Shared Geometry에서의 용도 |
 |---|---|
@@ -173,7 +229,7 @@ classDiagram
 | Neighbor index | texel graph 연결 |
 | Chart ID | mapping 생성·검증용이며 Shared Geometry 저장 여부는 후속 단계에서 결정 |
 
-## 8. Instance State와 Profile 연결
+## 9. Instance State와 Profile 연결
 
 `SurfaceInstanceStateData`는 Instance마다 달라지는 State를 소유하고, Mesh 공유 Geometry를 `std::shared_ptr<const SharedSurfaceGeometryData>`로 참조한다.
 
@@ -181,10 +237,10 @@ classDiagram
 |---|---|
 | `SharedSurfaceGeometryData` | 여러 Instance가 공유 소유하며 읽기 전용 접근 |
 | `SurfaceStateValues[]` | 각 `SurfaceInstanceStateData`가 자체 소유 |
-| `SurfaceProfileIndex[]` | 각 Instance가 Surface ID 순서에 맞춰 자체 소유 |
+| `SurfaceProfileMap` | `SharedSurfaceGeometryData`가 `.Surface` payload의 일부로 texel별 ProfileIndex를 정적 소유 |
 | `SurfaceResponseProfileData` | `SRProfileAsset`이 값으로 소유 |
 
-현재 `SurfaceProfileIndex`를 `AssetManager`의 `SRProfileAssetHandle`과 연결하는 Scene/Instance 생성 경로, 그리고 Solver가 Profile index를 해석하는 경로는 구현되어 있지 않다.
+`.Surface`의 texel별 Profile index는 공유 `SharedSurfaceGeometryData`에 저장하며, `SurfaceInstanceStateData`는 texel index로 이를 조회한다. Profile index를 SRProfile Asset handle로 해석해 Solver에 전달하는 Scene/Instance 생성 경로는 아직 구현되어 있지 않다. 과거 계획의 Surface별 Profile 배열로 texel Profile map을 대체하지 않는다.
 
 ```mermaid
 classDiagram
@@ -205,8 +261,11 @@ classDiagram
 | 연결 | 현재 상태 |
 |---|---|
 | `.Scene` → Mesh/Material/SRProfile 연결 | `SceneLoader` placeholder |
-| `SurfaceMappingData` → `SharedSurfaceGeometryData` | 전처리 변환 미구현 |
-| `SRProfileAssetHandle` → `SurfaceProfileIndex` | 상위 등록·매핑 정책 미구현 |
+| `SurfaceMappingData` → `SharedSurfaceGeometryData` | `SurfacePreprocessor::Build` 변환 구현. Mesh/Scene load 및 cache orchestration은 미구현 |
+| `.Surface` 파일 생성·로드·cache invalidation | binary serializer/loader와 metadata 판정 구현. 자동 orchestration 미구현 |
+| Profile Distribution → texel `SurfaceProfileMap` | authoring 형식과 mapping 구현 미정 |
+| Profile collection → `SurfaceStateRegistry` | Registry와 AssetManager 지연 생성 구현. Solver 소비는 미구현 |
+| texel `ProfileIndex` → `SRProfileAssetHandle` | 상위 등록·해석 정책 미구현 |
 | Instance State/Profile → Solver | `SurfaceStateSolver` placeholder |
 | 전체 Surface State 수명과 갱신 | `SurfaceStateSystem` placeholder |
 
@@ -220,7 +279,9 @@ classDiagram
 | `Source/AssetManager/Assets/` | 개별 Asset 데이터와 GPU 자원 |
 | `Source/AssetManager/Assets/MeshSourceData.h` | `Vertex`, `MeshTriangleSource` |
 | `Source/SurfaceStateSystem/Mapping/` | Surface Mapping 생성과 검증 |
+| `Source/SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.*` | Mapping/ProfileMap 변환, cache metadata, `.Surface` binary Save/Load |
 | `Source/SurfaceStateSystem/Types/SurfaceMappingTypes.h` | 공통 Surface/texel/geometry 자료형 |
+| `Source/SurfaceStateSystem/Types/SurfaceStateRegistry.*` | Profile State 이름과 runtime State ID/index Registry |
 | `Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.*` | Mesh 공유 Geometry 저장소 |
 | `Source/SurfaceStateSystem/State/SurfaceInstanceStateData.*` | Instance별 State와 Profile index |
 | `Source/SurfaceStateSystem/Types/SurfaceStateTypes.*` | State와 Profile 값 자료형 및 검증 |

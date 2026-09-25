@@ -15,7 +15,7 @@
 - **흡수**: 필요하면 SurfaceWater가 재질 내부 `Wetness`로 전환.
 - **Rendering**: Wetness는 색 / roughness, SurfaceWater는 표면 물기와 Accumulation Height로 표현.
 
-`SurfaceWater`는 현재 기본 enum에는 없으며 후속 확장 State다.
+`SurfaceWater`는 이 데모가 요구하는 State 이름이다. State 종류는 코드 enum에 등록하지 않고 사용 Profile의 `states` key로 제공한다.
 
 ## 눈 맞고 들어온 사람의 옷
 
@@ -29,7 +29,7 @@ Snow
 - 실내에서 녹으면 SurfaceWater가 된다.
 - 녹은 물은 표면을 이동한 뒤 천 내부로 흡수되어 Wetness가 된다.
 
-`Snow`, `SurfaceWater`는 현재 기본 State에 없는 확장 대상이다.
+`Snow`, `SurfaceWater`는 모든 Profile이 반드시 정의할 필요는 없으며, 해당 반응을 지원하는 Profile에 State key로 추가한다.
 
 ## 등산화 밑창으로 진흙 웅덩이 밟기
 
