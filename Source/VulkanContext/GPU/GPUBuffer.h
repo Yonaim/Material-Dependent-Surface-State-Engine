@@ -30,11 +30,6 @@ namespace MDSS
         GPUBuffer(GPUBuffer&&) = delete;
         GPUBuffer& operator=(GPUBuffer&&) = delete;
 
-        void Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
-
-        [[nodiscard]] VkBuffer     GetHandle() const noexcept;
-        [[nodiscard]] VkDeviceSize GetSize() const noexcept;
-
         /**
          * @brief host-visible buffer memory에 바이트 범위를 복사한다.
          * @param Data 복사할 데이터 주소.
@@ -42,6 +37,11 @@ namespace MDSS
          * @param Offset buffer 시작점으로부터의 byte offset.
          * @throws std::runtime_error mapping 실패 시 발생한다.
          */
+        void Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
+
+        [[nodiscard]] VkBuffer     GetHandle() const noexcept;
+        [[nodiscard]] VkDeviceSize GetSize() const noexcept;
+
     private:
         static std::uint32_t FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,

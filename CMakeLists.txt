@@ -77,6 +77,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
+# JSON parser for .SRProfile assets. Keep the dependency on a fixed release tag.
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.12.0
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # Dear ImGui debug/editor UI. We build only the core plus GLFW/Vulkan backends.
 FetchContent_Declare(
     imgui
@@ -110,10 +119,13 @@ add_executable(MDSS ${MDSS_SOURCES})
 
 target_include_directories(MDSS PRIVATE
     Source
+)
+
+target_include_directories(MDSS SYSTEM PRIVATE
     "${tinyobjloader_SOURCE_DIR}"
     "${stb_SOURCE_DIR}"
 )
-target_link_libraries(MDSS PRIVATE glfw Vulkan::Vulkan glm::glm MDSS_ImGui)
+target_link_libraries(MDSS PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
 
 file(GLOB_RECURSE MDSS_SHADER_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"

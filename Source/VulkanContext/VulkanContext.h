@@ -41,7 +41,8 @@ namespace MDSS
     private:
         /** @brief GLFW가 현재 platform에서 요구하는 Vulkan instance extension을 반환한다. */
         static std::vector<const char*> RequiredInstanceExtensions();
-        static VkSurfaceKHR             CreateSurface(VkInstance Instance, const Window& Window);
+        /** @brief GLFW native window에 대응하는 Vulkan presentation surface를 생성한다. */
+        static VkSurfaceKHR CreateSurface(VkInstance Instance, const Window& Window);
 
         VulkanInstance Instance;
         VkSurfaceKHR   Surface = VK_NULL_HANDLE;

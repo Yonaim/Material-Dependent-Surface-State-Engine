@@ -23,10 +23,13 @@ namespace MDSS
         VulkanCommand(VulkanCommand&&) = delete;
         VulkanCommand& operator=(VulkanCommand&&) = delete;
 
-        [[nodiscard]] VkCommandPool                GetPool() const noexcept;
+        [[nodiscard]] VkCommandPool GetPool() const noexcept;
+        /** @brief graphics command pool에서 primary command buffer를 할당한다. */
         [[nodiscard]] std::vector<VkCommandBuffer> AllocatePrimary(std::uint32_t Count) const;
-        [[nodiscard]] VkCommandBuffer              BeginSingleTime() const;
-        void                                       EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const;
+        /** @brief one-time submit 용도로 기록을 시작한 command buffer를 할당한다. */
+        [[nodiscard]] VkCommandBuffer BeginSingleTime() const;
+        /** @brief 기록한 buffer를 제출하고 queue가 idle이 될 때까지 기다린 뒤 해제한다. */
+        void EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const;
 
     private:
         VkDevice      Device = VK_NULL_HANDLE;

@@ -48,9 +48,10 @@ namespace MDSS
 
         /** @brief 현재 로그 history의 thread-safe 복사본을 반환한다. */
         static std::vector<LogEntry> GetEntries();
-        static std::uint64_t         GetRevision();
-        /** @brief 로그 항목을 콘솔에 기록하고 thread-safe history에 보관한다. */
-        static void                  Clear();
+        /** @brief 로그가 추가되거나 지워질 때 증가하는 revision을 반환한다. */
+        static std::uint64_t GetRevision();
+        /** @brief 콘솔에는 영향을 주지 않고 보관 중인 로그 history를 비운다. */
+        static void Clear();
 
         static const char* GetLevelName(LogLevel Level) noexcept;
 

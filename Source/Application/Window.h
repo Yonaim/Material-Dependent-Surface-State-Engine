@@ -34,15 +34,16 @@ namespace MDSS
         [[nodiscard]] bool        WasFramebufferResized() const noexcept;
         void                      ResetFramebufferResized() noexcept;
         void                      GetFramebufferSize(std::uint32_t& Width, std::uint32_t& Height) const noexcept;
-        void                      WaitForNonZeroFramebuffer() const;
+        /** @brief framebuffer 크기가 0이 아니거나 창이 닫힐 때까지 이벤트를 기다린다. */
+        void WaitForNonZeroFramebuffer() const;
 
     private:
-        static void InitializeGLFW();
         /** @brief 여러 Window 인스턴스 사이에서 GLFW를 첫 사용 시 한 번 초기화한다. */
-        static void TerminateGLFW();
+        static void InitializeGLFW();
         /** @brief 마지막 Window가 사라질 때 GLFW global state를 종료한다. */
-        static void FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height);
+        static void TerminateGLFW();
         /** @brief framebuffer 크기 변경을 instance flag에 반영하는 GLFW callback. */
+        static void FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height);
 
         GLFWwindow* Handle = nullptr;
         bool        bFramebufferResized = false;
