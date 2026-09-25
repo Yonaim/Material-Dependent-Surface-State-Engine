@@ -7,14 +7,28 @@
 
 #include "AssetManager/Loaders/OBJLoader.h"
 #include "AssetManager/Loaders/SRProfileLoader.h"
+#include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "AssetManager/Loaders/TextureLoader.h"
 #include "Logger/Logger.h"
+#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
+#include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "VulkanContext/VulkanContext.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <filesystem>
 #include <glm/glm.hpp>
+#include <limits>
 #include <stdexcept>
 #include <utility>
+
+#ifndef MDSS_PROJECT_ROOT
+#define MDSS_PROJECT_ROOT "."
+#endif
+
+#ifndef MDSS_CACHE_DIR
+#define MDSS_CACHE_DIR "Cache/Surface"
+#endif
 
 namespace MDSS
 {
@@ -77,16 +91,30 @@ namespace MDSS
                                                      std::move(Loaded.Indices),
                                                      std::move(Sections),
                                                      std::move(Loaded.Triangles)));
+        SurfaceAssets.emplace_back();
+        SurfaceProfileTables.emplace_back();
         Logger::Info("AssetManager",
                      "OBJ registered as MeshAsset handle=" + std::to_string(Handle) +
                          " (vertices=" + std::to_string(VertexCount) + ", indices=" + std::to_string(IndexCount) +
                          ", sections=" + std::to_string(SectionCount) +
                          ", imported materials=" + std::to_string(MaterialCount) + ").");
+
+        std::filesystem::path DistributionPath = Path;
+        DistributionPath.replace_extension(".SurfaceProfileMap");
+        if (std::filesystem::exists(DistributionPath))
+        {
+            LoadSurfaceAsset(Handle, DistributionPath);
+        }
         return Handle;
     }
 
     SRProfileAssetHandle AssetManager::LoadSRProfile(const std::filesystem::path& Path)
     {
+        const std::string CacheKey = std::filesystem::absolute(Path).lexically_normal().generic_string();
+        if (const auto Found = SRProfileCache.find(CacheKey); Found != SRProfileCache.end())
+        {
+            return Found->second;
+        }
         if (SRProfiles.size() >= InvalidAssetHandle)
         {
             throw std::overflow_error("SRProfileAsset handle range is exhausted.");
@@ -97,8 +125,134 @@ namespace MDSS
         Logger::Info("AssetManager",
                      "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
         SRProfiles.push_back(std::move(Profile));
+        SRProfileCache.emplace(CacheKey, Handle);
         StateRegistry.reset();
         return Handle;
+    }
+
+    void AssetManager::LoadSurfaceAsset(MeshAssetHandle MeshHandle, const std::filesystem::path& RequestedDistributionPath)
+    {
+        if (MeshHandle >= Meshes.size())
+        {
+            throw std::out_of_range("Invalid MeshAssetHandle for Surface preprocessing.");
+        }
+        const MeshAsset& Mesh = *Meshes[MeshHandle];
+        std::filesystem::path DistributionPath = RequestedDistributionPath;
+        if (DistributionPath.empty())
+        {
+            DistributionPath = Mesh.GetSourcePath();
+            DistributionPath.replace_extension(".SurfaceProfileMap");
+        }
+        const SurfaceProfileDistribution Distribution = SurfaceProfileDistributionLoader::Load(DistributionPath);
+
+        std::vector<SRProfileAssetHandle> ProfileTable;
+        ProfileTable.reserve(Distribution.ProfilePaths.size());
+        for (const std::filesystem::path& ProfilePath : Distribution.ProfilePaths)
+        {
+            ProfileTable.push_back(LoadSRProfile(ProfilePath));
+        }
+
+        SurfaceLocalID SurfaceCount = 0;
+        for (const MeshSection& Section : Mesh.GetSections())
+        {
+            if (Section.Surface == InvalidSurfaceID)
+            {
+                throw std::runtime_error("Mesh section has an invalid Surface ID.");
+            }
+            if (Section.Surface == std::numeric_limits<SurfaceLocalID>::max() - 1U)
+            {
+                throw std::overflow_error("Mesh Surface count exceeds the supported range.");
+            }
+            SurfaceCount = std::max(SurfaceCount, static_cast<SurfaceLocalID>(Section.Surface + 1U));
+        }
+        if (SurfaceCount == 0)
+        {
+            throw std::runtime_error("Mesh contains no Surface sections to preprocess.");
+        }
+
+        std::vector<SurfaceDefinition> SurfaceDefinitions;
+        SurfaceDefinitions.reserve(SurfaceCount);
+        std::vector<SurfaceResolution> Resolutions(SurfaceCount, DefaultSurfaceResolution);
+        for (SurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
+        {
+            SurfaceDefinitions.push_back({Surface, DefaultSurfaceResolution});
+        }
+
+        std::vector<std::filesystem::path> NormalMapPaths(SurfaceCount);
+        std::vector<bool>                  HasMaterial(SurfaceCount, false);
+        for (const MeshSection& Section : Mesh.GetSections())
+        {
+            const MaterialAsset& Material = GetMaterial(Section.Material);
+            const std::filesystem::path NormalPath = GetTexture(Material.GetNormalTexture()).GetSourcePath();
+            if (HasMaterial[Section.Surface] && NormalMapPaths[Section.Surface] != NormalPath)
+            {
+                throw std::runtime_error("One Mesh Surface resolves to multiple Normal Maps.");
+            }
+            NormalMapPaths[Section.Surface] = NormalPath;
+            HasMaterial[Section.Surface] = true;
+        }
+        if (std::ranges::find(HasMaterial, false) != HasMaterial.end())
+        {
+            throw std::runtime_error("Mesh Surface IDs must be dense and have a material section.");
+        }
+
+        SurfaceCacheMetadata Metadata = SurfacePreprocessor::CreateSourceMetadata(
+            Mesh.GetSourcePath(),
+            NormalMapPaths,
+            Resolutions,
+            0,
+            1,
+            static_cast<std::uint32_t>(ProfileTable.size()));
+
+        const std::filesystem::path CachePath = SurfaceCache::GetPath(Mesh.GetSourcePath(),
+                                                                       MDSS_PROJECT_ROOT,
+                                                                       MDSS_CACHE_DIR);
+        std::unique_ptr<SurfacePreprocessedAsset> LoadedAsset;
+        if (std::filesystem::exists(CachePath))
+        {
+            try
+            {
+                LoadedAsset = std::make_unique<SurfacePreprocessedAsset>(SurfaceCache::Load(CachePath, Metadata));
+                const SharedSurfaceGeometryData& CachedGeometry = LoadedAsset->Geometry;
+                for (std::size_t Index = 0; Index < CachedGeometry.GetTexelCount(); ++Index)
+                {
+                    const SurfaceTexelGeometry& Texel = CachedGeometry.GetTexels()[Index];
+                    const SurfaceProfileIndex ExpectedProfile =
+                        Texel.IsValid() && Texel.Surface < Distribution.ProfileIndicesBySurface.size()
+                            ? Distribution.ProfileIndicesBySurface[Texel.Surface]
+                            : InvalidSurfaceProfileIndex;
+                    if (CachedGeometry.GetProfileIndex(static_cast<LocalTexelIndex>(Index)) != ExpectedProfile)
+                    {
+                        throw std::runtime_error("cached Surface Profile map does not match the current distribution");
+                    }
+                }
+                Logger::Info("AssetManager", "Surface cache hit: " + CachePath.string());
+            }
+            catch (const std::exception& Exception)
+            {
+                LoadedAsset.reset();
+                Logger::Warning("AssetManager",
+                                "Surface cache miss/stale; rebuilding '" + CachePath.string() + "': " + Exception.what());
+            }
+        }
+
+        if (!LoadedAsset)
+        {
+            const SurfaceMappingData Mapping =
+                SurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
+            std::vector<SurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+            Metadata.ProfileMapHash = SurfacePreprocessor::HashProfileMap(ProfileMap);
+            SurfacePreprocessedAsset Built =
+                SurfacePreprocessor::Build(Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size()),
+                                            std::move(Metadata));
+            std::filesystem::create_directories(CachePath.parent_path());
+            SurfaceCache::Save(CachePath, Built);
+            LoadedAsset = std::make_unique<SurfacePreprocessedAsset>(std::move(Built));
+            Logger::Info("AssetManager", "Built and saved Surface cache: " + CachePath.string());
+        }
+
+        SurfaceAssets[MeshHandle] = std::move(LoadedAsset);
+        SurfaceProfileTables[MeshHandle] = std::move(ProfileTable);
     }
 
     const MeshAsset& AssetManager::GetMesh(MeshAssetHandle Handle) const
@@ -135,6 +289,29 @@ namespace MDSS
             throw std::out_of_range("Invalid SRProfileAssetHandle.");
         }
         return *SRProfiles[Handle];
+    }
+
+    bool AssetManager::HasSurfaceAsset(MeshAssetHandle Handle) const noexcept
+    {
+        return Handle < SurfaceAssets.size() && static_cast<bool>(SurfaceAssets[Handle]);
+    }
+
+    const SurfacePreprocessedAsset& AssetManager::GetSurfaceAsset(MeshAssetHandle Handle) const
+    {
+        if (!HasSurfaceAsset(Handle))
+        {
+            throw std::out_of_range("Mesh has no loaded Surface preprocessed asset.");
+        }
+        return *SurfaceAssets[Handle];
+    }
+
+    const std::vector<SRProfileAssetHandle>& AssetManager::GetSurfaceProfileTable(MeshAssetHandle Handle) const
+    {
+        if (!HasSurfaceAsset(Handle))
+        {
+            throw std::out_of_range("Mesh has no loaded Surface Profile table.");
+        }
+        return SurfaceProfileTables[Handle];
     }
 
     const SurfaceStateRegistry& AssetManager::GetSurfaceStateRegistry() const

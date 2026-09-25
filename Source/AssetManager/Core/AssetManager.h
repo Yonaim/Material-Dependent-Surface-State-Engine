@@ -10,6 +10,7 @@
 #include "AssetManager/Assets/SRProfileAsset.h"
 #include "AssetManager/Assets/TextureAsset.h"
 #include "AssetManager/Core/Asset.h"
+#include "SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.h"
 #include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
 
 #include <filesystem>
@@ -31,6 +32,12 @@ namespace MDSS
         [[nodiscard]] MeshAssetHandle LoadOBJ(const std::filesystem::path& Path);
         /** @brief `.SRProfile` 파일을 로드하고 Profile handle을 반환한다. */
         [[nodiscard]] SRProfileAssetHandle LoadSRProfile(const std::filesystem::path& Path);
+        /**
+         * @brief Mesh와 인접한 `.SurfaceProfileMap`에서 Profile 배치를 읽고 `.Surface` cache를 로드/생성한다.
+         * @param Mesh Mesh asset handle.
+         * @param DistributionPath Sidecar 경로. 비어 있으면 Mesh와 같은 stem의 `.SurfaceProfileMap`을 사용한다.
+         */
+        void LoadSurfaceAsset(MeshAssetHandle Mesh, const std::filesystem::path& DistributionPath = {});
 
         /** @throws std::out_of_range Handle이 현재 등록된 Mesh 범위를 벗어난 경우. */
         [[nodiscard]] const MeshAsset& GetMesh(MeshAssetHandle Handle) const;
@@ -40,6 +47,10 @@ namespace MDSS
         [[nodiscard]] const TextureAsset& GetTexture(TextureAssetHandle Handle) const;
         /** @throws std::out_of_range Handle이 현재 등록된 Profile 범위를 벗어난 경우. */
         [[nodiscard]] const SRProfileAsset& GetSRProfile(SRProfileAssetHandle Handle) const;
+        [[nodiscard]] bool                 HasSurfaceAsset(MeshAssetHandle Handle) const noexcept;
+        [[nodiscard]] const SurfacePreprocessedAsset& GetSurfaceAsset(MeshAssetHandle Handle) const;
+        /** @brief Profile table order used by the Mesh's per-texel SurfaceProfileMap indices. */
+        [[nodiscard]] const std::vector<SRProfileAssetHandle>& GetSurfaceProfileTable(MeshAssetHandle Handle) const;
         /** @brief Build/cache the deterministic State registry from all currently loaded Profiles. */
         [[nodiscard]] const SurfaceStateRegistry& GetSurfaceStateRegistry() const;
 
@@ -63,6 +74,9 @@ namespace MDSS
         std::vector<std::unique_ptr<SRProfileAsset>>        SRProfiles;
         std::vector<std::unique_ptr<TextureAsset>>          Textures;
         std::unordered_map<std::string, TextureAssetHandle> TextureCache;
+        std::unordered_map<std::string, SRProfileAssetHandle> SRProfileCache;
+        std::vector<std::unique_ptr<SurfacePreprocessedAsset>> SurfaceAssets;
+        std::vector<std::vector<SRProfileAssetHandle>>        SurfaceProfileTables;
         mutable std::unique_ptr<SurfaceStateRegistry>       StateRegistry;
 
         TextureAssetHandle  DefaultBaseColorTexture = InvalidAssetHandle;
