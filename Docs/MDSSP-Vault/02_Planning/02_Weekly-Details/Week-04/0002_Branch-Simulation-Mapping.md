@@ -37,10 +37,10 @@ State 종류를 고정 C++ enum이나 별도 `SurfaceStateSchema`로 정의하�
 
 | 결정 | 현재 상태 | 남은 연결 작업 |
 |---|---|---|
-| Dynamic State Registry | 이름 정규화, Profile State union, deterministic ID, Transition ID 변환 및 AssetManager lazy registry 구현·테스트 완료 | Solver가 Registry 채널을 순회하는 연결은 Solver 구현 시 진행 |
-| Dynamic Instance State | texel별 동적 vector channel과 `SurfaceContactInput::StateId` 적용 | 상위 `SurfaceStateSystem`에서 Registry 크기를 instance 생성에 전달 |
-| `.Surface` payload | Mapping → shared geometry/texel Profile map 변환, sentinel·범위 검증 완료 | Profile Distribution authoring source 형식과 로더 미정 |
-| `.Surface` binary cache | versioned Save/Load, source hash, resolution/UV/version/Profile count 비교, stale 오류 테스트 완료 | missing/stale 시 자동 Build→Save를 수행하는 AssetManager/Scene orchestration |
+| Dynamic State Registry | 이름 정규화, Profile State union, deterministic ID, Transition ID 변환 및 AssetManager lazy registry 구현·테스트 완료 | Registry 크기를 Branch 4의 instance/GPU resource 생성에 전달하고, Branch 5 Solver가 channel count를 순회하며, Branch 6 Input이 `StateId`를 해석하도록 후속 브랜치에 배정 |
+| Dynamic Instance State | texel별 동적 vector channel과 `SurfaceContactInput::StateId` 적용 | Branch 4에서 Registry channel count를 instance state/GPU resource에 연결 |
+| `.Surface` payload | Mapping → shared geometry/texel Profile map 변환, sentinel·범위 검증 완료 | Profile Distribution 입력 형식·loader와 자동 생성 파이프라인을 Branch 3에 배정 |
+| `.Surface` binary cache | versioned Save/Load, source hash, resolution/UV/version/Profile count 비교, stale 오류 테스트 완료 | Branch 3에서 Scene/AssetManager의 cache lookup → miss/stale 시 Mapping/Build → Save → Asset 등록 연결 |
 | Normal Map 전처리 | Normal Map source fingerprint를 cache metadata에 기록 | CPU texel sample로 Meso/Curvature를 생성하는 알고리즘 미정·미구현 |
 
 ## 가장 먼저 해결할 기존 코드 문제
@@ -233,5 +233,5 @@ Registry/Profile 연결 테스트도 이번 브랜치 문서 범위에 포함한
 - 보수적 rasterization
 - geodesic distance
 - GPU buffer upload
-- `.Surface`의 최종 binary serialization 세부 구현 및 Asset Build 통합
+- `.Surface` binary v1 serialization 자체는 구현 완료. End-to-end Asset Build orchestration은 Branch 3 담당
 - Normal Map 기반 Meso geometry 값의 최종 생성 알고리즘 및 품질 조정

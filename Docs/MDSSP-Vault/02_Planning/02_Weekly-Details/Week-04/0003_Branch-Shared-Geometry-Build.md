@@ -8,6 +8,8 @@
 
 Mapping의 TriangleID와 barycentric coordinate로 Solver가 읽을 정적 `SharedSurfaceGeometryData`를 만든다. 이 브랜치도 CPU 결과까지 완성하고 Vulkan upload는 다음 브랜치로 넘긴다.
 
+또한 Branch 2에서 준비된 `.Surface` cache API를 Asset/Scene 생성 흐름에 연결한다. 이 브랜치는 Profile Distribution 입력을 `SurfaceProfileMap`으로 변환하고 cache miss/stale 시 필요한 CPU preprocessing을 수행해 versioned `.Surface`를 저장하는 end-to-end 경로를 소유한다.
+
 ## 4주차 구현 범위
 
 반드시 구현:
@@ -96,7 +98,7 @@ Geometry에는 Profile index를 직접 저장하지 않는다.
 
 ## Cache
 
-초기에는 메모리 cache만 구현해도 된다.
+`.Surface` binary version 1의 Save/Load와 metadata stale 검사 API는 선행 Branch 2에서 구현되었다. 이 브랜치에서는 해당 API를 호출자 흐름에 연결한다.
 
 ```text
 CacheKey
@@ -106,13 +108,23 @@ CacheKey
 + preprocessing version
 ```
 
-disk serialization은 자료형이 안정된 뒤 추가한다. version 없는 binary dump는 만들지 않는다.
+Scene/AssetManager의 흐름은 cache load와 metadata 검사를 먼저 수행하고, missing/stale이면 Mapping 및 Shared Geometry/`SurfaceProfileMap`을 build한 뒤 `.Surface`에 저장하고 Asset으로 등록한다. 기존 binary 형식을 다시 만들거나 version 없는 dump를 추가하지 않는다.
+
+## Profile Distribution 입력 계약
+
+- 이 브랜치에서 사람이 편집하는 Profile Distribution의 입력 형식과 경로 연결 방식을 결정한다.
+- 입력 loader가 이름/asset reference를 검증하고, Registry/Profile table 순서와 일치하는 texel별 `ProfileIndex`를 생성한다.
+- valid texel의 Profile index 범위, invalid texel sentinel, 미등록 Profile 참조를 검증한다.
+- `.Surface` cache fingerprint에 반영되는 canonical Profile Map hash를 생성한다.
+- 파일 형식은 이 브랜치 시작 시 기존 Scene/Asset 로딩 관례를 확인한 뒤 결정하고 문서·fixture·loader test를 함께 추가한다. 계획 문서에서 임의의 JSON schema를 미리 확정하지 않는다.
 
 ## 구현 대상
 
 - `Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h/.cpp`
 - `Source/SurfaceStateSystem/Mapping/SurfaceGeometryBuilder.h/.cpp`
 - 필요 시 `Source/AssetManager/Assets/MeshAsset.h/.cpp`
+- `Source/AssetManager`의 Surface/Profile Distribution asset loading 또는 preprocessing orchestration
+- 필요한 경우 Scene load path의 `.Surface` cache 연결
 - `Tests/SharedSurfaceGeometryTests.cpp`
 
 ## 작업 순서
@@ -157,3 +169,5 @@ disk serialization은 자료형이 안정된 뒤 추가한다. version 없는 bi
 - CPU validation/test가 통과한다.
 - GPU upload에 필요한 배열과 명확한 크기가 준비된다.
 - Normal Map이 없어도 Solver를 실행할 수 있는 기본값이 존재한다.
+- Profile Distribution을 파싱해 유효한 texel Profile map을 만들 수 있다.
+- cache hit는 기존 `.Surface`를 재사용하고, missing/stale는 build-save 후 재사용 가능한 Asset으로 등록된다.

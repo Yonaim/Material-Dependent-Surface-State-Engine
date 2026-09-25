@@ -52,8 +52,9 @@ Mesh, Normal Map과 Profile 배치에서 생성되는 정적 데이터를 재사
 - 동일 Mesh 전처리 결과를 여러 Surface instance가 공유할 수 있다.
 - 같은 Material 내부의 서로 다른 반응 Profile을 texel 단위로 지정할 수 있다.
 - `.Surface`의 입력 fingerprint와 preprocess version 변경 시 캐시를 재생성해야 한다.
-- Profile Distribution의 authoring 형식 및 전처리 파이프라인 연결을 정의해야 한다.
-- Normal Map 기반 Meso Virtual Height 및 Curvature/Concavity 생성 알고리즘과 cache miss 자동 재생성 orchestration은 별도 구현이 남아 있다.
+- Profile Distribution의 authoring 형식 및 전처리 파이프라인 연결은 미완료다.
+- Normal Map 기반 Meso Virtual Height 및 Curvature/Concavity 생성 알고리즘은 미완료다. Cache miss 자동 재생성 orchestration도 미구현이다.
+- Profile Distribution 형식/loader 및 cache miss/stale의 Mapping→Build→Save 자동 연결은 `feat/shared-geometry-build`에 배정한다. Normal Map 기반 형상 복원은 Week-08 experiment에서 후보와 품질·비용을 검증한 뒤 별도 구현 branch를 결정한다.
 - State/Overflow의 크기와 갱신은 `.Surface`의 정적 캐시 수명에 영향을 받지 않는다.
 
 ## Related
