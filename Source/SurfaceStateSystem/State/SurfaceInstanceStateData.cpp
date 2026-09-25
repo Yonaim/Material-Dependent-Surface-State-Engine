@@ -3,7 +3,7 @@
  * @brief Surface instance별 상태값과 Surface-to-Profile 연결.
  */
 
-#include "SurfaceStateSystem/SurfaceInstanceStateData.h"
+#include "SurfaceStateSystem/State/SurfaceInstanceStateData.h"
 
 #include <algorithm>
 #include <ranges>

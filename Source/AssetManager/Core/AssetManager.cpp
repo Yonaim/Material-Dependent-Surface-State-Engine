@@ -3,11 +3,11 @@
  * @brief 에셋 로딩, 소유권 관리와 캐시 조회.
  */
 
-#include "AssetManager/AssetManager.h"
+#include "AssetManager/Core/AssetManager.h"
 
-#include "AssetManager/Loader/OBJLoader.h"
-#include "AssetManager/Loader/SRProfileLoader.h"
-#include "AssetManager/Loader/TextureLoader.h"
+#include "AssetManager/Loaders/OBJLoader.h"
+#include "AssetManager/Loaders/SRProfileLoader.h"
+#include "AssetManager/Loaders/TextureLoader.h"
 #include "Logger/Logger.h"
 #include "VulkanContext/VulkanContext.h"
 
@@ -60,7 +60,7 @@ namespace MDSS
                 Material = MaterialRemap[static_cast<std::size_t>(SourceSection.MaterialIndex)];
             }
 
-            Sections.push_back({SourceSection.FirstIndex, SourceSection.IndexCount, Material});
+            Sections.push_back({SourceSection.FirstIndex, SourceSection.IndexCount, Material, SourceSection.Surface});
         }
 
         const MeshAssetHandle Handle = static_cast<MeshAssetHandle>(Meshes.size());
@@ -75,7 +75,8 @@ namespace MDSS
                                                      Context,
                                                      std::move(Loaded.Vertices),
                                                      std::move(Loaded.Indices),
-                                                     std::move(Sections)));
+                                                     std::move(Sections),
+                                                     std::move(Loaded.Triangles)));
         Logger::Info("AssetManager",
                      "OBJ registered as MeshAsset handle=" + std::to_string(Handle) +
                          " (vertices=" + std::to_string(VertexCount) + ", indices=" + std::to_string(IndexCount) +

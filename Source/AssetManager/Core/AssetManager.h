@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "AssetManager/Asset.h"
-#include "AssetManager/MaterialAsset.h"
-#include "AssetManager/MeshAsset.h"
-#include "AssetManager/SRProfileAsset.h"
-#include "AssetManager/TextureAsset.h"
+#include "AssetManager/Core/Asset.h"
+#include "AssetManager/Assets/MaterialAsset.h"
+#include "AssetManager/Assets/MeshAsset.h"
+#include "AssetManager/Assets/SRProfileAsset.h"
+#include "AssetManager/Assets/TextureAsset.h"
 
 #include <filesystem>
 #include <memory>

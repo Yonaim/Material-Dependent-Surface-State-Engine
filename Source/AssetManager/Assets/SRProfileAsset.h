@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "AssetManager/Asset.h"
-#include "SurfaceStateSystem/SurfaceStateTypes.h"
+#include "AssetManager/Core/Asset.h"
+#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <filesystem>
 #include <string>

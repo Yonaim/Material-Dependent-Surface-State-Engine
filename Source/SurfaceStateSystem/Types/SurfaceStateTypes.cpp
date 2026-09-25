@@ -3,7 +3,7 @@
  * @brief 상태 채널, profile parameter, transition과 검증 계약.
  */
 
-#include "SurfaceStateSystem/SurfaceStateTypes.h"
+#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <array>
 #include <cmath>

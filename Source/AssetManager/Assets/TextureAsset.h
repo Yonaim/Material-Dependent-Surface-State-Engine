@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "AssetManager/Asset.h"
+#include "AssetManager/Core/Asset.h"
 #include "VulkanContext/GPU/GPUImage.h"
 #include "VulkanContext/GPU/GPUImageView.h"
 #include "VulkanContext/GPU/GPUSampler.h"

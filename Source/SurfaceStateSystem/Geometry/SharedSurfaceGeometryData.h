@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "SurfaceStateSystem/SurfaceMappingTypes.h"
+#include "SurfaceStateSystem/Types/SurfaceMappingTypes.h"
 
 #include <vector>
 

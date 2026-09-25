@@ -3,9 +3,9 @@
  * @brief SRProfile JSON 파싱과 데이터 검증.
  */
 
-#include "AssetManager/Loader/SRProfileLoader.h"
+#include "AssetManager/Loaders/SRProfileLoader.h"
 
-#include "AssetManager/SRProfileAsset.h"
+#include "AssetManager/Assets/SRProfileAsset.h"
 
 #include <cmath>
 #include <fstream>

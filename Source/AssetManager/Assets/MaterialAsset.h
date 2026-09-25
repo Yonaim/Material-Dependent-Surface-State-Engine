@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "AssetManager/Asset.h"
+#include "AssetManager/Core/Asset.h"
 
 #include <filesystem>
 #include <glm/glm.hpp>

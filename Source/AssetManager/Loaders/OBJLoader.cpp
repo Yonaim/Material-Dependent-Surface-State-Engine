@@ -3,7 +3,7 @@
  * @brief OBJ 메시 데이터 로딩과 vertex tangent 전처리.
  */
 
-#include "AssetManager/Loader/OBJLoader.h"
+#include "AssetManager/Loaders/OBJLoader.h"
 
 #include "Logger/Logger.h"
 
@@ -118,6 +118,18 @@ namespace MDSS
 
         std::unordered_map<VertexKey, std::uint32_t, VertexKeyHash> UniqueVertices;
         std::vector<glm::vec3>                                      GeneratedNormalAccumulator;
+        std::unordered_map<std::int32_t, SurfaceLocalID>            MaterialSurfaces;
+
+        auto GetSurface = [&](std::int32_t MaterialIndex) -> SurfaceLocalID
+        {
+            if (const auto Existing = MaterialSurfaces.find(MaterialIndex); Existing != MaterialSurfaces.end())
+            {
+                return Existing->second;
+            }
+            const SurfaceLocalID Surface = static_cast<SurfaceLocalID>(MaterialSurfaces.size());
+            MaterialSurfaces.emplace(MaterialIndex, Surface);
+            return Surface;
+        };
 
         auto AppendVertex = [&](const tinyobj::index_t& Index) -> std::uint32_t
         {
@@ -152,21 +164,32 @@ namespace MDSS
 
                 const std::int32_t MaterialIndex =
                     Face < Shape.mesh.material_ids.size() ? Shape.mesh.material_ids[Face] : -1;
+                const SurfaceLocalID Surface = GetSurface(MaterialIndex);
 
                 if (Result.Sections.empty() || Result.Sections.back().MaterialIndex != MaterialIndex)
                 {
-                    Result.Sections.push_back({static_cast<std::uint32_t>(Result.Indices.size()), 0, MaterialIndex});
+                    Result.Sections.push_back(
+                        {static_cast<std::uint32_t>(Result.Indices.size()), 0, MaterialIndex, Surface});
                 }
 
                 std::uint32_t Triangle[3]{};
+                std::int32_t  OriginalPositions[3]{};
+                std::int32_t  OriginalUVs[3]{};
                 for (int VertexIndex = 0; VertexIndex < 3; ++VertexIndex)
                 {
                     const tinyobj::index_t& ObjIndex =
                         Shape.mesh.indices[IndexOffset + static_cast<std::size_t>(VertexIndex)];
                     Triangle[VertexIndex] = AppendVertex(ObjIndex);
+                    OriginalPositions[VertexIndex] = ObjIndex.vertex_index;
+                    OriginalUVs[VertexIndex] = ObjIndex.texcoord_index;
                     Result.Indices.push_back(Triangle[VertexIndex]);
                     ++Result.Sections.back().IndexCount;
                 }
+
+                Result.Triangles.push_back({{Triangle[0], Triangle[1], Triangle[2]},
+                                            {OriginalPositions[0], OriginalPositions[1], OriginalPositions[2]},
+                                            {OriginalUVs[0], OriginalUVs[1], OriginalUVs[2]},
+                                            Surface});
 
                 const glm::vec3 Edge1 = Result.Vertices[Triangle[1]].Position - Result.Vertices[Triangle[0]].Position;
                 const glm::vec3 Edge2 = Result.Vertices[Triangle[2]].Position - Result.Vertices[Triangle[0]].Position;
@@ -210,7 +233,7 @@ namespace MDSS
 
         if (Result.Sections.empty())
         {
-            Result.Sections.push_back({0, static_cast<std::uint32_t>(Result.Indices.size()), -1});
+            Result.Sections.push_back({0, static_cast<std::uint32_t>(Result.Indices.size()), -1, 0});
         }
 
         Logger::Info("OBJLoader",

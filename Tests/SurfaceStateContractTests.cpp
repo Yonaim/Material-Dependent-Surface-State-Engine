@@ -3,13 +3,13 @@
  * @brief Surface State 자료형·profile loader·geometry 계약 검증.
  */
 
-#include "AssetManager/Loader/SRProfileLoader.h"
-#include "AssetManager/SRProfileAsset.h"
-#include "SurfaceStateSystem/SharedSurfaceGeometryData.h"
-#include "SurfaceStateSystem/SurfaceInput.h"
-#include "SurfaceStateSystem/SurfaceInstanceStateData.h"
-#include "SurfaceStateSystem/SurfaceMappingTypes.h"
-#include "SurfaceStateSystem/SurfaceStateTypes.h"
+#include "AssetManager/Loaders/SRProfileLoader.h"
+#include "AssetManager/Assets/SRProfileAsset.h"
+#include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
+#include "SurfaceStateSystem/State/SurfaceInput.h"
+#include "SurfaceStateSystem/State/SurfaceInstanceStateData.h"
+#include "SurfaceStateSystem/Types/SurfaceMappingTypes.h"
+#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <array>
 #include <filesystem>

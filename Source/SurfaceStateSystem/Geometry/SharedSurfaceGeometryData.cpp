@@ -3,7 +3,7 @@
  * @brief mesh 공유 Surface 정의와 texel geometry 데이터 계약.
  */
 
-#include "SurfaceStateSystem/SharedSurfaceGeometryData.h"
+#include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
 
 #include <limits>
 #include <stdexcept>

@@ -3,7 +3,7 @@
  * @brief OBJ 재질 데이터를 엔진 Material 데이터로 변환.
  */
 
-#include "AssetManager/Loader/MTLLoader.h"
+#include "AssetManager/Loaders/MTLLoader.h"
 
 #include "Logger/Logger.h"
 

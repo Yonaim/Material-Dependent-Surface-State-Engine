@@ -3,7 +3,7 @@
  * @brief 정점·인덱스 데이터와 GPU 메시 버퍼의 소유권.
  */
 
-#include "AssetManager/MeshAsset.h"
+#include "AssetManager/Assets/MeshAsset.h"
 
 #include "Logger/Logger.h"
 #include "VulkanContext/VulkanContext.h"
@@ -13,19 +13,24 @@
 
 namespace MDSS
 {
-    MeshAsset::MeshAsset(AssetID                    ID,
-                         std::string                Name,
-                         std::filesystem::path      SourcePath,
-                         const VulkanContext&       Context,
-                         std::vector<Vertex>        Vertices,
-                         std::vector<std::uint32_t> Indices,
-                         std::vector<MeshSection>   Sections)
+    MeshAsset::MeshAsset(AssetID                         ID,
+                         std::string                     Name,
+                         std::filesystem::path           SourcePath,
+                         const VulkanContext&            Context,
+                         std::vector<Vertex>             Vertices,
+                         std::vector<std::uint32_t>      Indices,
+                         std::vector<MeshSection>        Sections,
+                         std::vector<MeshTriangleSource> Triangles)
         : Asset(ID, std::move(Name), std::move(SourcePath)), Vertices(std::move(Vertices)), Indices(std::move(Indices)),
-          Sections(std::move(Sections))
+          Sections(std::move(Sections)), Triangles(std::move(Triangles))
     {
         if (this->Vertices.empty() || this->Indices.empty())
         {
             throw std::invalid_argument("MeshAsset requires non-empty vertex and index data.");
+        }
+        if (this->Indices.size() % 3U != 0 || this->Triangles.size() != this->Indices.size() / 3U)
+        {
+            throw std::invalid_argument("MeshAsset source triangle count must match its render index data.");
         }
 
         const VkDeviceSize VertexBytes = sizeof(Vertex) * this->Vertices.size();
@@ -65,6 +70,11 @@ namespace MDSS
     const std::vector<MeshSection>& MeshAsset::GetSections() const noexcept
     {
         return Sections;
+    }
+
+    const std::vector<MeshTriangleSource>& MeshAsset::GetTriangles() const noexcept
+    {
+        return Triangles;
     }
 
     const GPUBuffer& MeshAsset::GetVertexBuffer() const noexcept

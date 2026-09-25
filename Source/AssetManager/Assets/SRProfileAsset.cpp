@@ -3,7 +3,7 @@
  * @brief 검증된 Surface Response Profile 데이터의 에셋 표현.
  */
 
-#include "AssetManager/SRProfileAsset.h"
+#include "AssetManager/Assets/SRProfileAsset.h"
 
 #include <utility>
 

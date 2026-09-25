@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "AssetManager/Loader/MTLLoader.h"
-#include "AssetManager/MeshAsset.h"
+#include "AssetManager/Loaders/MTLLoader.h"
+#include "AssetManager/Assets/MeshSourceData.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -16,9 +16,10 @@ namespace MDSS
 {
     struct OBJMeshSectionData
     {
-        std::uint32_t FirstIndex = 0;
-        std::uint32_t IndexCount = 0;
-        std::int32_t  MaterialIndex = -1;
+        std::uint32_t  FirstIndex = 0;
+        std::uint32_t  IndexCount = 0;
+        std::int32_t   MaterialIndex = -1;
+        SurfaceLocalID Surface = InvalidSurfaceID;
     };
 
     struct OBJLoadResult
@@ -27,6 +28,7 @@ namespace MDSS
         std::vector<std::uint32_t>      Indices;
         std::vector<OBJMeshSectionData> Sections;
         std::vector<MaterialSourceData> Materials;
+        std::vector<MeshTriangleSource> Triangles;
     };
 
     class OBJLoader

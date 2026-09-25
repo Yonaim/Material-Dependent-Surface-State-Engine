@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "SurfaceStateSystem/SurfaceStateTypes.h"
+#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <glm/glm.hpp>
 

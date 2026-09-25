@@ -6,7 +6,7 @@
 #pragma once
 
 #include "Application/Window.h"
-#include "AssetManager/AssetManager.h"
+#include "AssetManager/Core/AssetManager.h"
 #include "Scene/Scene.h"
 #include "VulkanContext/VulkanContext.h"
 

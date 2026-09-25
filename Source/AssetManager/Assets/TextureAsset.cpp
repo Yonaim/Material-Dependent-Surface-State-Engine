@@ -3,7 +3,7 @@
  * @brief 텍스처 이미지, image view와 sampler 자원.
  */
 
-#include "AssetManager/TextureAsset.h"
+#include "AssetManager/Assets/TextureAsset.h"
 
 #include "Logger/Logger.h"
 #include "VulkanContext/GPU/GPUBuffer.h"

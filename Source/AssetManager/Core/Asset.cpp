@@ -3,7 +3,7 @@
  * @brief 에셋 공통 식별자와 원본 경로 메타데이터.
  */
 
-#include "AssetManager/Asset.h"
+#include "AssetManager/Core/Asset.h"
 
 #include <utility>
 

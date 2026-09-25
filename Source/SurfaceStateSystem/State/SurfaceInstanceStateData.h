@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "SurfaceStateSystem/SharedSurfaceGeometryData.h"
-#include "SurfaceStateSystem/SurfaceStateTypes.h"
+#include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
+#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <cstdint>
 #include <memory>
