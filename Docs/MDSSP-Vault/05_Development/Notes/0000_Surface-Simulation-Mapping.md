@@ -11,14 +11,14 @@
 | Simulation UV | 렌더링 UV와 논리적으로 분리된 전용 UV를 사용한다. |
 | 4주차 범위 | 자동 unwrap은 구현하지 않는다. 조건을 만족하도록 미리 준비한 UV를 사용한다. OBJ의 기존 `vt`를 임시로 Simulation UV로 읽을 수 있다. |
 | 해상도 | 모든 Surface에 `512 × 512`를 사용한다. 한 곳의 코드 상수로 고정하며 `.Scene` override와 UI 설정은 두지 않는다. |
-| 생성 시점 | CPU에서 Asset 전처리 시 생성하고 캐시한다. 매 frame 재생성하지 않는다. |
+| 생성 시점 | CPU에서 Asset/Scene load 때 생성하고 Runtime 메모리에 둔다. 같은 Mesh 입력은 instance 간 공유하며 매 frame 재생성하지 않는다. |
 | Mesh→Texel | UV triangle rasterization과 barycentric coordinate를 사용한다. |
 | 유효성 | Mesh 표면에 대응하는 texel만 `ValidMask = 1`이다. |
 | 이웃 | texel당 최대 8개의 `NeighborIndex`를 저장한다. Distance는 위치 차이에서 필요할 때 계산하며 저장하지 않는다. |
 | UV seam | Mesh topology로 seam 반대편 texel을 찾아 일반 이웃과 같은 표에 연결한다. Shader에는 seam 전용 분기를 두지 않는다. |
 | 무효 인덱스 | `InvalidTexelIndex = 0xFFFFFFFF`를 사용한다. |
 
-전용 UV를 실제 Asset에 별도 채널 또는 전처리 캐시로 보존하는 최종 파일 형식은 후속 과제다. 4주차 구현은 준비된 테스트 Mesh로 mapping과 Solver 연결을 먼저 검증한다.
+전용 UV를 실제 Asset에 별도 채널로 저장하는 최종 파일 형식은 후속 과제다. Mapping 결과는 Runtime에서 만들며 `.Surface` 전처리 캐시 파일은 사용하지 않는다.
 
 ## 입력과 출력
 
@@ -46,7 +46,7 @@
 | `SurfaceID` | texel | Surface와 Profile 연결 |
 | `NeighborIndex[8]` | texel × 8 | seam을 포함한 실제 이웃 |
 
-`TriangleID`와 `Barycentric`은 전처리 캐시에 보관한다. Solver가 직접 필요로 하지 않으면 GPU에는 올리지 않는다. Distance는 CPU mapping/cache나 GPU buffer에 저장하지 않는다. Solver가 `Position[j] - Position[i]`에서 거리와 방향을 계산한다. GPU에서 invalid texel은 `TexelSurfaceIndex = InvalidSurfaceID`로 표시한다. 자세한 packed layout은 [[04_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]]을 따른다.
+`TriangleID`와 `Barycentric`은 Runtime Mapping 결과에 두어 Geometry를 복원하는 데 사용하고, 이후 필요하지 않으면 해제할 수 있다. Solver가 직접 필요로 하지 않으면 GPU에는 올리지 않는다. Distance는 CPU Mapping이나 GPU buffer에 저장하지 않는다. Solver가 `Position[j] - Position[i]`에서 거리와 방향을 계산한다. GPU에서 invalid texel은 `TexelSurfaceIndex = InvalidSurfaceID`로 표시한다. 자세한 packed layout은 [[04_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]]을 따른다.
 
 ## 전체 생성 순서
 
@@ -61,10 +61,10 @@ flowchart LR
   Topology --> Seam[Seam Pair]
   Grid --> Stitch[Seam Neighbor 재연결]
   Seam --> Stitch
-  Stitch --> Result[Mapping Cache]
+  Stitch --> Result[Runtime SurfaceMappingData]
 ```
 
-`.Surface` 입력 fingerprint에는 Mesh content hash, Normal Map hash, canonical Profile Map hash, UV set, 모든 Surface의 `512 × 512` 해상도, cache format 및 preprocessing version을 포함한다. 입력이 달라지면 기존 `.Surface`를 stale로 판정해 다시 생성하고 같은 경로에 덮어쓴다. 파일명과 경로 정책은 [[02_Planning/02_Weekly-Details/Week-04/0003_Branch-Shared-Geometry-Build|Branch 3 계획]]을 따른다.
+Runtime 전처리는 Mesh topology와 UV, 필요한 Normal Map 데이터, Profile Distribution 및 현재 grid 설정을 입력으로 받는다. 같은 입력 조합의 전처리 결과는 Runtime 메모리에서 공유하고, 입력이 교체되면 다시 생성한다. 디스크 cache 경로, fingerprint, version 및 stale 판정은 사용하지 않는다. 전처리 연결은 [[02_Planning/02_Weekly-Details/Week-04/0003_Branch-Shared-Geometry-Build|Branch 3 계획]]을 따른다.
 
 ## 1. Simulation UV 검증
 
@@ -162,7 +162,7 @@ UV seam은 UV에서는 분리됐지만 Mesh topology에서는 같은 edge를 공
 - `i → j`가 있으면 `j → i`도 있다.
 - 양방향 이웃이 같은 두 위치를 가리킨다. 계산되는 양방향 거리는 동일하다.
 - 이웃 수가 8을 넘지 않는다.
-- 모든 이웃 index가 같은 mapping cache 범위 안에 있다.
+- 모든 이웃 index가 같은 Runtime mapping 범위 안에 있다.
 - invalid texel은 이웃으로 참조되지 않는다.
 
 ## 구현 순서
@@ -173,7 +173,7 @@ UV seam은 UV에서는 분리됐지만 Mesh topology에서는 같은 edge를 공
 4. Mesh edge adjacency와 seam 검출
 5. seam texel pair와 양방향 불변조건 검사
 6. 여러 Surface와 Surface ID 처리
-7. mapping cache 저장·재로드
+7. 동일 Mesh를 사용하는 instance들이 같은 Runtime mapping/geometry 결과를 공유하는지 확인
 8. GPU resource 업로드 연결
 
 ## 확인할 사례
@@ -184,7 +184,7 @@ UV seam은 UV에서는 분리됐지만 Mesh topology에서는 같은 edge를 공
 - 공간상 가깝지만 topology상 분리된 표면이 연결되지 않는다.
 - open boundary와 seam이 구분된다.
 - 회전된 instance에서도 mapping은 유지되고 world gravity 변환만 달라진다.
-- 같은 Mesh를 쓰는 여러 instance가 mapping cache를 공유한다.
+- 같은 Mesh와 Profile Distribution을 쓰는 여러 instance가 한 Runtime mapping/geometry 결과를 공유한다.
 
 ## 미결 사항
 

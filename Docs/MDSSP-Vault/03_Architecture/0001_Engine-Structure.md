@@ -42,7 +42,7 @@ flowchart LR
   Mesh --> Preprocess[Surface Preprocessor]
   Profile --> Preprocess
   NormalMap[Normal Map] --> Preprocess
-  Preprocess --> SurfaceAsset[.Surface cache]
+  Preprocess --> RuntimeSurface[Runtime Surface Data]
   Assets --> Registry[SurfaceStateRegistry]
   ProfileAsset --> Registry
   SceneFile[.Scene] -. "loader 미구현" .-> Assets
@@ -50,8 +50,8 @@ flowchart LR
   Assets --> Texture[TextureAsset]
   Assets --> Mesh[MeshAsset]
   Assets --> ProfileAsset[SRProfileAsset]
-  SurfaceAsset --> Shared
-  SurfaceAsset --> ProfileMap[SurfaceProfileMap]
+  RuntimeSurface --> Shared
+  RuntimeSurface --> ProfileMap[Texel Profile Map]
   Material --> Texture
   Registry -. "후속 구현" .-> Instance[Surface Instance State Data]
   Ray[Raycaster / Contact] --> Input[SurfaceContactInput]
@@ -67,9 +67,9 @@ flowchart LR
 ```
 
 1. OBJ 파싱은 `OBJLoader`, MTL 변환은 `MTLLoader`, `.SRProfile` JSON 파싱은 `SRProfileLoader`가 담당하고, `AssetManager`가 Asset과 handle을 관리한다. [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-2. Mesh, Normal Map, Profile Distribution에서 `.Surface`를 전처리하거나 유효한 캐시를 로드한다. `.Surface`에는 공유 정적 Geometry/texel 관계와 texel별 Profile map을 둔다.
+2. Asset/Scene 로딩 중 각 고유 Mesh와 Profile Distribution 조합을 CPU에서 전처리한다. 결과인 Mapping, 공유 정적 Geometry/texel 관계와 texel별 Profile map은 Runtime 메모리에 두고 같은 입력의 instance끼리 공유한다. 매 frame 또는 instance마다 전처리하지 않으며 `.Surface` 파일/캐시는 사용하지 않는다.
 3. 로드된 `.SRProfile`의 State key에서 `SurfaceStateRegistry`를 구성한다. 문자열 이름은 정규화 후 런타임 State ID/index로 변환한다.
-4. 각 Mesh Instance는 Registry 채널에 대응하는 자신의 동적 State와 Overflow를 가진다. 정적 `.Surface` 데이터와 Profile 반응 파라미터는 instance state에 복제하지 않는다. [[03_Architecture/0002_Surface-State|표면 상태]]
+4. 각 Mesh Instance는 Registry 채널에 대응하는 자신의 동적 State와 Overflow를 가진다. 공유 Runtime Geometry와 Profile 반응 파라미터는 instance state에 복제하지 않는다. [[03_Architecture/0002_Surface-State|표면 상태]]
 5. Raycast 등으로 `SurfaceContactInput`을 만들고 Input 항으로 변환한다. [[03_Architecture/0004_Surface-State-Update|State 갱신]]
 6. Solver가 Input / Transport / Decay를 사용해 다음 State를 계산한다.
 7. State가 형상 적층을 만드는 경우 Accumulation Height를 계산하고, 바뀐 형상을 후속 Simulation과 Rendering에 반영한다. [[03_Architecture/0005_Surface-Geometry|형상과 적층]], [[03_Architecture/0006_Rendering|렌더링]]

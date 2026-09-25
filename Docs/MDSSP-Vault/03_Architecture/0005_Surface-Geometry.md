@@ -14,9 +14,10 @@ Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 �
 ## 계산 및 사용 시점
 
 ```text
-Offline
-Normal Map
-→ Meso_Virtual_Height 및 정적 형상 정보
+Runtime Asset/Scene Load
+Mesh + Simulation UV + Normal Map + Profile Distribution
+→ Mapping 및 정적 형상 정보 전처리
+→ Runtime 메모리에 생성하고 같은 입력의 Instance 간 공유
 
 Runtime Simulation
 State
@@ -28,6 +29,8 @@ Meso_Virtual_Height + Accumulation_Height
 → Final Meso Height
 → Normal / Parallax / Displacement 등에 반영
 ```
+
+정적 전처리는 애플리케이션 실행 중 고유 Mesh/Profile Distribution 입력 조합마다 load 시 한 번 수행한다. 매 frame이나 Instance마다 반복하지 않으며, 결과를 `.Surface` 파일이나 persistent cache로 저장하지 않는다. 전처리 시점과 수명은 [[../04_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
 
 ## Macro / Meso Geometry
 

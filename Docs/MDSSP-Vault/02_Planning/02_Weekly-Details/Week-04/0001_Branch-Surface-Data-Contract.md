@@ -93,7 +93,7 @@ inline constexpr SurfaceLocalID InvalidSurfaceID = 0xFFFFFFFFU;
 ```
 
 초기 구현에서 강한 타입 wrapper까지 만들 필요는 없지만, 필드명에 `Local`, `Global`, `Base`를 명시한다.
-GPU upload에서는 별도 ValidMask를 만들지 않고 invalid texel의 `TexelSurfaceIndex`에 `InvalidSurfaceID`를 기록한다. CPU mapping/cache는 필요하면 별도 validity 정보를 유지할 수 있다.
+GPU upload에서는 별도 ValidMask를 만들지 않고 invalid texel의 `TexelSurfaceIndex`에 `InvalidSurfaceID`를 기록한다. CPU Runtime mapping은 필요하면 별도 validity 정보를 유지할 수 있다.
 
 ### 데이터 소유권
 

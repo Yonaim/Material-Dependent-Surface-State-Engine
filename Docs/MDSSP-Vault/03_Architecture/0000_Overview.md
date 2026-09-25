@@ -28,7 +28,7 @@ flowchart TD
 - **Asset / Render Material**: Mesh와 외관 렌더링 정보.
 - **Surface Response Profile**: State 종류를 고정하는 목록이 아니라, 각 State에 대한 소재별 반응 파라미터와 Transition.
 - **SurfaceStateRegistry**: 로드한 Profile에서 State 이름을 모아 런타임 ID/index로 연결.
-- **`.Surface`**: Mesh·Normal Map·Profile Distribution에서 생성되는 정적 Geometry/texel 관계 및 texel별 Profile map 캐시.
+- **Runtime Surface Data**: Mesh·Normal Map·Profile Distribution에서 매 실행 시 전처리해 메모리에 생성하는 정적 Geometry/texel 관계 및 texel별 Profile map. 디스크에 `.Surface` 캐시를 저장하지 않는다.
 - **Surface Instance State Data**: Registry 채널에 대응하는 instance별 동적 State와 Overflow.
 
 ## 읽는 순서

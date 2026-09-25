@@ -35,7 +35,7 @@ main
 | 결정·미완료 작업 | 담당 브랜치 | 범위 |
 |---|---|---|
 | Profile Distribution authoring 형식 및 로더 | `feat/shared-geometry-build` | 입력 형식 선택, 파싱·검증, UV texel별 `ProfileIndex` 생성 |
-| `.Surface` cache miss/stale 처리의 end-to-end 연결 | `feat/shared-geometry-build` | Scene/Asset 경로에서 cache 확인, 필요 시 Mapping→Build→Save, 결과 등록. Binary v1 Save/Load 자체는 `feat/simulation-mapping`에 구현됨 |
+| Runtime Surface preprocessing end-to-end 연결 | `feat/shared-geometry-build` | Asset/Scene load에서 입력을 수집하고 고유 Mesh/Profile Distribution 조합마다 Mapping→Build를 실행해 메모리 Asset으로 등록·공유. Persistent `.Surface` cache는 사용하지 않음 |
 | Registry 크기를 State instance와 GPU 리소스에 전달 | `feat/surface-gpu-resources` | Registry 수명/참조와 channel count를 instance 생성 및 resource 크기에 연결하고 dynamic layout 결정 |
 | 임의 개수 State를 처리하는 Solver | `feat/surface-solver-2pass` | 하드코딩된 State 이름·개수 제거, Registry channel count로 처리 및 테스트 |
 | Profile에 정의되지 않은 Registry State의 처리 규칙 | `feat/surface-solver-2pass` 및 `feat/surface-input-integration` | 지원 여부 표현은 Branch 4가 제공하고, Solver/Contact에서의 동작을 각각 정해 테스트 |

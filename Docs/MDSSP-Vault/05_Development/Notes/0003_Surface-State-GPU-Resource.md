@@ -22,7 +22,7 @@ Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 �
 
 ```mermaid
 flowchart LR
-  Mapping[Mapping Cache] --> Shared[Shared Geometry Buffers]
+  Mapping[Runtime Mapping Data] --> Shared[Shared Geometry Buffers]
   Profile[SRProfile Assets] --> Profiles[Profile Buffer]
   Shared --> Solver[2-Pass Solver]
   Profiles --> Solver
@@ -32,7 +32,7 @@ flowchart LR
 
 | 데이터 | 공유 단위 | 갱신 |
 |---|---|---|
-| mapping, base geometry, neighbor | 같은 Mesh + 전처리 cache | Asset 변경 시 |
+| mapping, base geometry, neighbor | 같은 Mesh와 Profile Distribution 조합의 Runtime 결과 | Runtime Asset 변경 시 재생성 |
 | Profile parameter | 같은 `.SRProfile` | Profile reload 시 |
 | Surface→Profile index | instance | Scene 연결 변경 시 |
 | State A/B, TempAlpha, InputDelta | instance | solver step마다 |
@@ -68,7 +68,7 @@ profileIndex = SurfaceProfileIndex[
 
 `getStateIndex`의 물리적인 산식은 선택한 AoS/SoA layout에 따라 다르며, 이웃 texel에서도 같은 helper를 사용한다.
 
-`TexelSurfaceIndex`는 mapping cache의 local Surface ID다. `SurfaceProfileIndex`는 각 instance의 Surface가 사용할 `SurfaceResponseProfileDataGPU` index다.
+`TexelSurfaceIndex`는 Runtime mapping의 local Surface ID다. `SurfaceProfileIndex`는 각 instance의 Surface가 사용할 `SurfaceResponseProfileDataGPU` index다.
 
 ## Shared Surface Geometry Buffer
 
@@ -84,7 +84,7 @@ profileIndex = SurfaceProfileIndex[
 
 invalid 여부는 `TexelSurfaceIndexBuffer[index] == InvalidSurfaceID`로 판정한다. 실제 Surface ID는 이 예약값을 사용할 수 없다. 거리와 방향은 `SurfacePosition[j] - SurfacePosition[i]`에서 계산하므로 별도 NeighborDistance buffer는 두지 않는다. Geometry scalar 구조체는 두 float만 포함하며, CPU와 GLSL 양쪽에서 크기가 8바이트인지 검증한다. Position/Normal에는 `vec4`를 사용하고 CPU 업로드 구조체에는 크기와 필드 offset에 대한 `static_assert`를 둔다.
 
-`TriangleID`와 `Barycentric`은 Solver 필수 입력이 아니므로 CPU cache에 둔다. GPU 디버그 시각화가 필요할 때만 별도 read-only buffer로 올린다.
+`TriangleID`와 `Barycentric`은 Solver 필수 입력이 아니므로 CPU Runtime mapping data에 두고 Geometry 생성 후 필요하지 않으면 해제한다. GPU 디버그 시각화가 필요할 때만 별도 read-only buffer로 올린다.
 
 Accumulation으로 변하는 instance별 Position/Normal/Curvature는 base geometry와 분리된 dynamic geometry resource가 필요하다. 이웃 거리도 갱신된 Position 차이에서 계산한다. 4주차 첫 구현은 정적 base geometry를 사용하고, 동적 overlay의 정확한 배치는 후속 단계에서 확정한다.
 

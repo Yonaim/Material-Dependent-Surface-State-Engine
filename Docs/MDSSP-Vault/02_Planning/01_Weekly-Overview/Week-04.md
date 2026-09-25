@@ -20,7 +20,7 @@
 - 자동 UV unwrap이나 chart 생성 도구는 이번 주에 구현하지 않는다.
 - UV가 준비된 테스트 OBJ를 사용한다. 기존 OBJ `vt`는 Mapping 검증을 통과할 때만 임시 Simulation UV로 사용한다.
 - 잘못된 UV는 자동 보정하지 않고 Mesh / Surface / Triangle 식별 정보와 오류 원인을 보고한다.
-- 별도 UV channel 또는 preprocessing cache에 보존할 최종 Asset 형식은 후속 설계다.
+- 별도 Simulation UV channel을 원본 Mesh Asset에 보존할 최종 형식은 후속 설계다. 전처리 결과를 위한 persistent cache file은 사용하지 않는다.
 
 ## 산출물 / 확인 경로
 

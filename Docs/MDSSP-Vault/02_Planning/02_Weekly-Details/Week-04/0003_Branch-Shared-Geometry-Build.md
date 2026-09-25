@@ -8,7 +8,7 @@
 
 Mapping의 TriangleID와 barycentric coordinate로 Solver가 읽을 정적 `SharedSurfaceGeometryData`를 만든다. 이 브랜치도 CPU 결과까지 완성하고 Vulkan upload는 다음 브랜치로 넘긴다.
 
-또한 Branch 2에서 준비된 `.Surface` cache API를 Asset/Scene 생성 흐름에 연결한다. 이 브랜치는 Profile Distribution 입력을 `SurfaceProfileMap`으로 변환하고 cache miss/stale 시 필요한 CPU preprocessing을 수행해 versioned `.Surface`를 저장하는 end-to-end 경로를 소유한다.
+또한 정적 Surface data를 매 Runtime의 Asset/Scene load에서 생성하는 경로를 연결한다. 이 브랜치는 Profile Distribution 입력을 `SurfaceProfileMap`으로 변환하고, 각 고유 Mesh/Profile Distribution 조합마다 CPU preprocessing을 수행해 Runtime 메모리 Asset으로 등록·공유하는 end-to-end 경로를 소유한다. `.Surface` persistent cache와 Save/Load는 사용하지 않는다.
 
 ## 4주차 구현 범위
 
@@ -22,7 +22,7 @@ Mapping의 TriangleID와 barycentric coordinate로 Solver가 읽을 정적 `Shar
 - 기본 `MesoVirtualHeight = 0`
 - 기본 `ConcavityWeight = 0`
 
-모든 Surface의 texel 해상도는 `512 × 512`로 고정한다. 해상도 상수는 한 곳에서 관리하고 UI·씬별 설정은 이번 구현에 넣지 않는다. `.Surface` header에는 실제 적용한 Surface별 width/height를 기록한다.
+모든 Surface의 texel 해상도는 `512 × 512`로 고정한다. 해상도 상수는 한 곳에서 관리하고 UI·씬별 설정은 이번 구현에 넣지 않는다. Runtime Geometry data에는 실제 적용한 Surface별 width/height를 보유한다.
 
 후속으로 미룸:
 
@@ -68,7 +68,7 @@ Normal   = normalize(b0*N0 + b1*N1 + b2*N2)
 - Position과 Normal은 Mesh local space
 - instance transform은 이 데이터에 bake하지 않음
 
-CPU 단계에서도 이웃 거리 배열을 보유하거나 `.Surface` payload에 직렬화하지 않는다. 거리와 전달 방향은 Solver가 `Position[j] - Position[i]`에서 필요할 때 계산한다. GPU는 ADR 기준에 따라 invalid `SurfaceID` sentinel을 사용한다.
+CPU 단계에서도 이웃 거리 배열을 보유하거나 Runtime Surface data에 저장하지 않는다. 거리와 전달 방향은 Solver가 `Position[j] - Position[i]`에서 필요할 때 계산한다. GPU는 ADR 기준에 따라 invalid `SurfaceID` sentinel을 사용한다.
 
 ## Distance
 
@@ -97,23 +97,14 @@ Geometry에는 Profile index를 직접 저장하지 않는다.
 
 서로 다른 Surface의 texel이 topology상 이웃일 수 있다. Geometry는 연결을 유지하고 Solver가 `ProfileBoundaryWeight`를 적용한다.
 
-## Cache
+## Runtime 전처리 및 수명
 
-`.Surface` cache API는 선행 Branch 2에서 구현되었다. Distance 직렬화를 제거하면서 format version을 2로 올렸고, version 1 cache는 stale/unsupported로 보고 재생성한다. 이 브랜치에서는 해당 API를 호출자 흐름에 연결한다.
-
-```text
-CacheFingerprint
-= mesh content hash
-+ normal map content hash
-+ simulation UV set/hash
-+ canonical texel Profile map hash
-+ fixed state resolution (512 × 512 per Surface)
-+ cache format and preprocessing version
-```
-
-`.Surface` 경로는 해상도나 content hash가 아닌 Mesh 자산의 안정적인 asset ID를 기준으로 정한다. Asset ID가 없는 현재 경로 기반 구현에서는 프로젝트 내 Mesh 상대 경로를 보존하고 확장자만 `.Surface`로 바꾼 경로를 cache root 아래에 사용한다. 예: `Assets/Meshes/Crate.obj` → `Cache/Surface/Assets/Meshes/Crate.Surface`. 이 규칙은 같은 파일명 Mesh의 경로 충돌을 방지한다.
-
-Mesh 경로가 같은 입력 조합에서 해상도 또는 다른 fingerprint 항목이 달라지면 기존 `.Surface`를 stale로 판정하고 다시 빌드해 같은 경로에 덮어쓴다. 서로 다른 해상도별 cache 파일을 보존하지 않는다. 따라서 과거 설정으로 돌아갈 경우 다시 빌드한다. Scene/AssetManager는 cache load와 metadata 검사를 먼저 수행하고, missing/stale이면 Mapping 및 Shared Geometry/`SurfaceProfileMap`을 build한 뒤 이 경로에 저장하고 Asset으로 등록한다. 기존 binary 형식을 다시 만들거나 version 없는 dump를 추가하지 않는다.
+- 각 애플리케이션 Runtime에서 Asset/Scene load 중 고유 Mesh와 Profile Distribution 조합마다 한 번 Mapping과 Shared Geometry를 생성한다.
+- 같은 입력 조합을 사용하는 여러 Mesh instance는 같은 Runtime 결과를 공유한다. 매 frame 또는 instance마다 다시 계산하지 않는다.
+- 결과는 Runtime Asset/resource로 등록하고, Asset/Scene이 소유하는 참조를 통해 수명을 관리한다.
+- 전처리 실패는 Asset/Scene load 실패로 전달하며, 입력 경로와 Surface/Triangle 진단 정보를 포함한다.
+- `.Surface` binary serialization, cache path, content fingerprint, format version 및 stale/missing cache 분기는 구현하지 않는다.
+- 이전 Branch 2에서 구현한 `.Surface` Save/Load, metadata/fingerprint API와 관련 cache 테스트를 제거하고 Runtime preprocessing API만 남긴다.
 
 ## Profile Distribution 입력 계약
 
@@ -122,8 +113,8 @@ Mesh 경로가 같은 입력 조합에서 해상도 또는 다른 fingerprint �
 - `surfaces` 배열은 각 dense `surfaceId`를 `profileIndex`에 연결한다. 한 Surface의 모든 valid texel은 같은 Profile을 사용한다.
 - 로더가 JSON type/version, 자료형, 중복·누락 Surface ID, Profile 경로와 범위를 검증한다.
 - valid texel의 Profile index 범위, invalid texel sentinel, 미등록 Profile 참조를 검증한다.
-- `.Surface` cache fingerprint에 반영되는 canonical Profile Map hash를 생성한다.
-- Cache miss/stale 시 `.Surface`를 같은 stable path에 재생성해 덮어쓴다. 이전 해상도 변형 파일은 보존하지 않는다.
+- Runtime build 입력으로 사용할 canonical Profile Distribution을 반환한다. Persistent cache용 hash는 만들지 않는다.
+- 같은 입력 조합을 Runtime에서 중복 build하지 않도록 생성된 결과를 Asset/Scene 수명 동안 공유한다.
 
 ```json
 {
@@ -142,7 +133,7 @@ Mesh 경로가 같은 입력 조합에서 해상도 또는 다른 fingerprint �
 - `Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h/.cpp`
 - 필요 시 `Source/AssetManager/Assets/MeshAsset.h/.cpp`
 - `Source/AssetManager`의 Surface/Profile Distribution asset loading 또는 preprocessing orchestration
-- 필요한 경우 Scene load path의 `.Surface` cache 연결
+- Asset/Scene load path에서 Runtime Surface preprocessing 및 결과 등록 연결
 - `Tests/SharedSurfaceGeometryTests.cpp`
 
 ## 작업 순서
@@ -188,4 +179,5 @@ Mesh 경로가 같은 입력 조합에서 해상도 또는 다른 fingerprint �
 - GPU upload에 필요한 배열과 명확한 크기가 준비된다.
 - Normal Map이 없어도 Solver를 실행할 수 있는 기본값이 존재한다.
 - Profile Distribution을 파싱해 유효한 texel Profile map을 만들 수 있다.
-- cache hit는 기존 `.Surface`를 재사용하고, missing/stale는 build-save 후 재사용 가능한 Asset으로 등록된다.
+- 매 Runtime에서 preprocessing이 수행되고, 같은 입력을 사용하는 instance가 생성된 결과를 공유한다.
+- `.Surface` 파일을 읽거나 쓰지 않는 것을 확인한다.

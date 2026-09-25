@@ -2,7 +2,7 @@
 
 상태: **통과** · 대상 브랜치: `feat/surface-data-contract`, `feat/simulation-mapping`
 
-CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map 및 `.Surface` cache 계약의 테스트 사례를 관리한다. 공통 원칙은 [[0000_Testing-Guide|Testing Guide]]를 따른다.
+CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map 및 Runtime preprocessing 계약의 테스트 사례를 관리한다. 공통 원칙은 [[0000_Testing-Guide|Testing Guide]]를 따른다.
 
 ## 테스트 함수 구성
 
@@ -11,7 +11,7 @@ CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map
 | `TestProfileAndRegistry` | Profile 객체와 JSON fixture | 임의 State 이름, 정규화, Registry ID, Transition 참조 및 재현성 |
 | `TestGeometryAndInstanceData` | C++ 객체 직접 구성 | Surface 범위, sentinel, texel Profile map, 동적 State 채널 |
 | `TestContactInputType` | `SurfaceContactInput` 직접 구성 | Registry `StateId`와 입력 기본값 |
-| `TestSurfaceCache` | Mapping 자료형 및 임시 `.Surface` 파일 | Profile map, cache round-trip, metadata stale 판정 |
+| `TestSurfacePreprocessing` | Mapping/Profile Distribution 입력 | Profile map 구성, deterministic build 및 같은 입력의 결과 공유 |
 
 ## 검증 사례
 
@@ -32,9 +32,10 @@ CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map
 | Geometry sentinel | 예약 Surface ID를 실제 ID로 입력 | 거부 | C++ 직접 검증 |
 | 빈 Surface 목록 | 빈 정의 목록 전달 | 거부 | 생성자 검증 |
 | Texel Profile map | valid/invalid texel에 정상 index/sentinel 설정 | count·sentinel·ProfileCount 검사 통과 | C++ 직접 검증 |
-| 잘못된 Profile index | index가 `ProfileCount` 이상 | `.Surface` 생성 거부 | C++ 직접 검증 |
-| Cache round-trip | metadata와 geometry 저장 후 로드 | geometry 및 Profile map 보존 | 임시 binary file |
-| Stale metadata | UV set 또는 입력 hash 변경 | stale 오류 반환 | C++ 직접 검증 |
+| 잘못된 Profile index | index가 `ProfileCount` 이상 | Runtime Surface build 거부 | C++ 직접 검증 |
+| Runtime build 재현성 | 같은 입력으로 전처리 반복 | geometry 및 Profile map 동일 | CPU builder |
+| Runtime 공유 | 동일 Mesh/Profile Distribution을 쓰는 복수 instance | 동일한 전처리 결과 참조 | Runtime Asset/Scene 연결 |
+| 전처리 입력 변경 | Mesh UV 또는 Profile Distribution 변경 | 새 입력으로 Runtime 결과 재생성 | C++ 직접 검증 |
 
 ## Fixture 목록
 

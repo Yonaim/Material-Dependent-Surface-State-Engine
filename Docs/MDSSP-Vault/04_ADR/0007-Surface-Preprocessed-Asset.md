@@ -1,7 +1,9 @@
 # ADR 0007 — 정적 Surface 전처리 에셋
 
-- 상태: **Accepted**
+- 상태: **Superseded by [[0008-Runtime-Surface-Preprocessing]]**
 - 날짜: 2026-09-25
+
+> 이 ADR은 정적 `.Surface` 바이너리 캐시를 선택했던 이전 결정을 기록한다. 현재 선택은 ADR 0008의 Runtime 전처리이며, 아래 내용은 결정 이력으로 보존한다.
 
 ## Context
 

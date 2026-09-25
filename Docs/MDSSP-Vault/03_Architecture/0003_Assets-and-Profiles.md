@@ -13,13 +13,13 @@
 | Texture | `.png`, `.jpg` 등 | Albedo, Normal 등 |
 | Scene | `.Scene` | JSON 형식. 배치 및 Asset 연결 관계 |
 | Surface Response Profile | `.SRProfile` | JSON 형식. Surface State 반응 데이터 |
-| 전처리 Surface | `.Surface` | 생성되는 바이너리 캐시. 정적 Geometry·Texel 관계 및 Texel별 Profile map |
+| Runtime Surface Data | 파일 없음 | Mesh load 때 생성해 메모리에서 공유하는 정적 Geometry·Texel 관계 및 Texel별 Profile map |
 
 ## Surface와 Profile의 관계
 
 Render Material과 Surface Response Profile은 서로 다른 책임이다. Render Material은 외관을 정의하고, `.SRProfile`은 State에 대한 반응 파라미터와 Transition을 정의한다. 하나의 Render Material 영역이 반드시 하나의 SRProfile만 사용한다고 가정하지 않는다.
 
-전처리된 `.Surface`는 UV texel별 `SurfaceProfileMap`을 포함해 각 위치의 `ProfileIndex`를 지정한다. 이로써 동일한 Render Material 내부에서도 위치별로 서로 다른 SRProfile을 사용할 수 있다. Profile Distribution의 authoring 형식과 `.Scene`에서 이를 연결하는 구체적 형식은 별도 결정으로 정한다.
+Runtime 전처리 결과는 UV texel별 Profile 연결을 포함해 각 위치의 `ProfileIndex`를 지정한다. 이로써 동일한 Render Material 내부에서도 위치별로 서로 다른 SRProfile을 사용할 수 있다. Profile Distribution은 전처리의 입력이며, 구체적인 authoring 형식과 `.Scene` 연결 규칙은 별도 결정으로 정한다. 결과는 실행 중 메모리에만 두고 `.Surface` 파일로 저장하지 않는다.
 
 ```text
 UV Texel
@@ -28,15 +28,15 @@ UV Texel
     └── ProfileIndex → SRProfile response data
 ```
 
-`.Surface`는 Mesh, Normal Map, Profile Distribution으로부터 생성하는 정적 전처리 캐시다. Metadata에는 입력 fingerprint와 전처리 설정을 기록해 입력이 바뀌거나 전처리 버전이 달라지면 stale cache를 재생성한다. 데이터 범위는 다음과 같다.
+Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset/Scene load 때 생성하는 정적 데이터다. 같은 Mesh 및 Profile Distribution 조합을 사용하는 instance들은 하나의 결과를 공유한다. persistent cache metadata나 stale 판정은 두지 않는다. 데이터 범위는 다음과 같다.
 
-| `.Surface`에 포함 | `.Surface`에 포함하지 않음 |
+| Runtime Surface Data에 포함 | Runtime Surface Data에 포함하지 않음 |
 |---|---|
 | 유효성, Normal, Meso Virtual Height, Curvature/Concavity 등 정적 Geometry 값 | 시간에 따라 변하는 State와 Overflow |
 | Neighbor, Distance, Height Difference, Boundary, UV seam 연결 등 texel 관계 | `.SRProfile`의 반응 파라미터와 Transition |
 | Texel → `ProfileIndex` map | Instance별 `SurfaceInstanceStateData` |
 
-전처리 에셋 및 캐시 결정은 [[../04_ADR/0007-Surface-Preprocessed-Asset|ADR 0007 — 정적 Surface 전처리 에셋]]을 따른다.
+전처리 시점과 저장 수명은 [[../04_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다. 이전 `.Surface` persistent cache 결정은 [[../04_ADR/0007-Surface-Preprocessed-Asset|ADR 0007]]에서 superseded 상태로 보존한다.
 
 ## State Registry
 

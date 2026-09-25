@@ -8,7 +8,7 @@
 
 | 문서 | 범위 |
 |---|---|---|
-| [[0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]] | 원본·설정·생성 파일의 역할과 수명, OBJ/MTL/Texture/SRProfile 파싱, `.Surface` 캐시 흐름, Mapping, Shared Geometry, Instance State 관계 |
+| [[0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]] | 원본·설정·Runtime 생성 데이터의 역할과 수명, OBJ/MTL/Texture/SRProfile 파싱, Mapping, Shared Geometry, Instance State 관계 |
 
 ## 관계 표기
 
