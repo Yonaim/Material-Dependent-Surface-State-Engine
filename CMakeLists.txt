@@ -214,4 +214,26 @@ if(BUILD_TESTING)
         target_compile_options(MDSS_SurfaceStateTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME MDSS_SurfaceStateContract COMMAND MDSS_SurfaceStateTests)
+
+    add_executable(MDSS_SurfaceMappingTests
+        Tests/SurfaceMappingTests.cpp
+        Source/AssetManager/Loaders/MTLLoader.cpp
+        Source/AssetManager/Loaders/OBJLoader.cpp
+        Source/Logger/Logger.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+    )
+    target_include_directories(MDSS_SurfaceMappingTests PRIVATE Source)
+    target_include_directories(MDSS_SurfaceMappingTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")
+    target_link_libraries(MDSS_SurfaceMappingTests PRIVATE glm::glm)
+    target_compile_definitions(MDSS_SurfaceMappingTests PRIVATE
+        MDSS_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Tests/Fixtures"
+    )
+    if(MSVC)
+        target_compile_options(MDSS_SurfaceMappingTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(MDSS_SurfaceMappingTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME MDSS_SurfaceMapping COMMAND MDSS_SurfaceMappingTests)
 endif()
