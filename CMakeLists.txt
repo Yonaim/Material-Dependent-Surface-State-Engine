@@ -77,6 +77,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
+# JSON parser for .SRProfile assets. Keep the dependency on a fixed release tag.
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.12.0
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # Dear ImGui debug/editor UI. We build only the core plus GLFW/Vulkan backends.
 FetchContent_Declare(
     imgui
@@ -110,10 +119,13 @@ add_executable(MDSS ${MDSS_SOURCES})
 
 target_include_directories(MDSS PRIVATE
     Source
+)
+
+target_include_directories(MDSS SYSTEM PRIVATE
     "${tinyobjloader_SOURCE_DIR}"
     "${stb_SOURCE_DIR}"
 )
-target_link_libraries(MDSS PRIVATE glfw Vulkan::Vulkan glm::glm MDSS_ImGui)
+target_link_libraries(MDSS PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
 
 file(GLOB_RECURSE MDSS_SHADER_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
@@ -179,3 +191,27 @@ endif()
 set_target_properties(MDSS PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(MDSS_SurfaceStateTests
+        Tests/SurfaceStateContractTests.cpp
+        Source/AssetManager/Asset.cpp
+        Source/AssetManager/SRProfileAsset.cpp
+        Source/AssetManager/Loader/SRProfileLoader.cpp
+        Source/SurfaceStateSystem/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/SurfaceInstanceStateData.cpp
+        Source/SurfaceStateSystem/SurfaceStateTypes.cpp
+    )
+    target_include_directories(MDSS_SurfaceStateTests PRIVATE Source)
+    target_link_libraries(MDSS_SurfaceStateTests PRIVATE glm::glm nlohmann_json::nlohmann_json)
+    target_compile_definitions(MDSS_SurfaceStateTests PRIVATE
+        MDSS_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Tests/Fixtures"
+    )
+    if(MSVC)
+        target_compile_options(MDSS_SurfaceStateTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(MDSS_SurfaceStateTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME MDSS_SurfaceStateContract COMMAND MDSS_SurfaceStateTests)
+endif()

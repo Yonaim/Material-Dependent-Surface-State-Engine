@@ -1,7 +1,7 @@
 # ADR 0004 — Surface / Material / SRProfile 연결
 
 - 상태: **Accepted**
-- 근거: [[06_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
+- 근거: [[07_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 형상 정보 전처리 메모
 
-상태: **설계 / 알고리즘 검증 필요** · 근거: [[06_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]]
+상태: **설계 / 알고리즘 검증 필요** · 근거: [[07_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]]
 
 정적 형상 전처리의 목표는 Mesh + Normal/Height detail에서 Solver가 읽을 texel별 Geometry Data를 만드는 것이다.
 

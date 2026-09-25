@@ -1,3 +1,8 @@
+/**
+ * @file Swapchain.cpp
+ * @brief 표면 지원 정보에 따른 swapchain 선택·생성·재생성.
+ */
+
 #include "Renderer/Swapchain.h"
 
 #include "Application/Window.h"

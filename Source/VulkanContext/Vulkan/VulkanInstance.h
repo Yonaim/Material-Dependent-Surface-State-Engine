@@ -1,3 +1,8 @@
+/**
+ * @file VulkanInstance.h
+ * @brief Vulkan instance, validation layer와 debug messenger.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -10,6 +15,10 @@ namespace MDSS
     class VulkanInstance
     {
     public:
+        /**
+         * @brief Vulkan instance를 만들고 요청 extension 및 빌드 설정에 따른 validation을 적용한다.
+         * @throws std::runtime_error 필수 extension/layer가 없거나 instance 생성이 실패한 경우.
+         */
         VulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions);
         ~VulkanInstance();
 

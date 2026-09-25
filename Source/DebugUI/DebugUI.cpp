@@ -1,3 +1,8 @@
+/**
+ * @file DebugUI.cpp
+ * @brief ImGui 기반 카메라·렌더 설정과 로그 진단 UI.
+ */
+
 #include "DebugUI/DebugUI.h"
 
 #include "Application/Window.h"

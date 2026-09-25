@@ -1,3 +1,8 @@
+/**
+ * @file Camera.cpp
+ * @brief 카메라 view·projection 행렬과 시야 설정.
+ */
+
 #include "Scene/Camera.h"
 
 #include <algorithm>

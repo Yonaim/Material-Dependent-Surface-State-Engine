@@ -1,3 +1,8 @@
+/**
+ * @file GPUSampler.h
+ * @brief 텍스처 샘플링과 주소 지정 설정을 담는 Vulkan sampler.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -7,6 +12,7 @@ namespace MDSS
     class GPUSampler
     {
     public:
+        /** @brief 프로젝트 기본 filtering 및 address mode를 사용하는 sampler를 생성한다. */
         explicit GPUSampler(VkDevice Device);
         ~GPUSampler();
 

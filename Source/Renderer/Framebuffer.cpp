@@ -1,3 +1,8 @@
+/**
+ * @file Framebuffer.cpp
+ * @brief swapchain image와 depth image를 연결하는 framebuffer 자원.
+ */
+
 #include "Renderer/Framebuffer.h"
 
 #include "Logger/Logger.h"

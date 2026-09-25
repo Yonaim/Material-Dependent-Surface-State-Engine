@@ -1,3 +1,8 @@
+/**
+ * @file GPUSampler.cpp
+ * @brief 텍스처 샘플링과 주소 지정 설정을 담는 Vulkan sampler.
+ */
+
 #include "VulkanContext/GPU/GPUSampler.h"
 
 #include "Logger/Logger.h"

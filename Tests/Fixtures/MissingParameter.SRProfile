@@ -1,0 +1,12 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 1,
+  "name": "MissingParameterProfile",
+  "states": {
+    "wetness": { "stateCapacity": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 },
+    "heat": { "stateCapacity": 1, "inputFactor": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 },
+    "burn": { "stateCapacity": 1, "inputFactor": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 },
+    "mud": { "stateCapacity": 1, "inputFactor": 1, "saturationTransferRate": 0, "geometryTransferRate": 0, "decayRate": 0, "cavityRetentionFactor": 0, "accumulationFactor": 0, "cavityFillFactor": 0 }
+  },
+  "transitions": []
+}

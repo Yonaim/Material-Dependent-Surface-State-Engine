@@ -1,3 +1,8 @@
+/**
+ * @file GraphicsPipeline.cpp
+ * @brief shader stage와 고정 기능 설정을 이용한 graphics pipeline 생성.
+ */
+
 #include "Renderer/GraphicsPipeline.h"
 
 #include "Logger/Logger.h"

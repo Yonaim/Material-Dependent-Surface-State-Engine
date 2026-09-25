@@ -1,3 +1,8 @@
+/**
+ * @file Asset.h
+ * @brief 에셋 공통 식별자와 원본 경로 메타데이터.
+ */
+
 #pragma once
 
 #include <cstdint>

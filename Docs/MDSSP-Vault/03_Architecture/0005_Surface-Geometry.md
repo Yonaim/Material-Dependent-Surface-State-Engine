@@ -1,6 +1,6 @@
 # 형상 정보와 적층
 
-상태: **형상 의미와 반영 범위 확정 / 전처리 알고리즘 일부 검증 필요** · 근거: [[06_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[06_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
+상태: **형상 의미와 반영 범위 확정 / 전처리 알고리즘 일부 검증 필요** · 근거: [[07_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[07_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
 
 ## 반영하는 형상 정보
 

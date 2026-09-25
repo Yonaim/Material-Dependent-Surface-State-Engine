@@ -1,3 +1,8 @@
+/**
+ * @file Renderer.cpp
+ * @brief swapchain 기반 장면 렌더링과 재생성 흐름.
+ */
+
 #include "Renderer/Renderer.h"
 
 #include "Application/Window.h"

@@ -1,3 +1,8 @@
+/**
+ * @file StaticMeshInstance.h
+ * @brief 정적 메시 에셋 참조와 인스턴스 transform.
+ */
+
 #pragma once
 
 #include "AssetManager/Asset.h"

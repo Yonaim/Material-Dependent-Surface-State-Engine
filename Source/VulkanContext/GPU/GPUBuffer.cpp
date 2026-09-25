@@ -1,3 +1,8 @@
+/**
+ * @file GPUBuffer.cpp
+ * @brief Vulkan buffer와 device memory의 생성·갱신·해제.
+ */
+
 #include "VulkanContext/GPU/GPUBuffer.h"
 
 #include "Logger/Logger.h"

@@ -1,6 +1,6 @@
 # 에셋과 Surface Response Profile
 
-상태: **파일 구조 설계** · 근거: [[06_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
+상태: **파일 구조 설계** · 근거: [[07_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 이 문서는 데이터의 **파일 직렬화와 Asset 연결 관계**만 정의한다. SRProfile 파라미터의 의미와 범위는 [[03_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]를 기준으로 한다.
 

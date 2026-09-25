@@ -1,3 +1,8 @@
+/**
+ * @file DebugUI.h
+ * @brief ImGui 기반 카메라·렌더 설정과 로그 진단 UI.
+ */
+
 #pragma once
 
 #include "Logger/Logger.h"
@@ -29,13 +34,13 @@ namespace MDSS
         DebugUI(DebugUI&&) = delete;
         DebugUI& operator=(DebugUI&&) = delete;
 
-        // Starts a new ImGui frame, builds all debug windows and finalizes draw data.
+        /** @brief 새 ImGui frame을 시작해 진단 창을 갱신하고 draw data를 확정한다. */
         void BeginFrame(Scene& SceneData);
 
-        // Records ImGui rendering commands into the active Vulkan render pass.
+        /** @brief 현재 Vulkan render pass에 ImGui draw command를 기록한다. */
         void Render(VkCommandBuffer CommandBuffer) const;
 
-        // Updates Vulkan backend swapchain-dependent image-count state after a resize.
+        /** @brief swapchain 재생성 후 ImGui Vulkan backend의 image count를 갱신한다. */
         void OnSwapchainRecreated(const VulkanContext& Context, const Renderer& Renderer);
 
     private:

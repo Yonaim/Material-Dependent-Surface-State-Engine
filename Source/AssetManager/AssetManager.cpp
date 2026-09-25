@@ -1,6 +1,12 @@
+/**
+ * @file AssetManager.cpp
+ * @brief 에셋 로딩, 소유권 관리와 캐시 조회.
+ */
+
 #include "AssetManager/AssetManager.h"
 
 #include "AssetManager/Loader/OBJLoader.h"
+#include "AssetManager/Loader/SRProfileLoader.h"
 #include "AssetManager/Loader/TextureLoader.h"
 #include "Logger/Logger.h"
 #include "VulkanContext/VulkanContext.h"
@@ -78,6 +84,21 @@ namespace MDSS
         return Handle;
     }
 
+    SRProfileAssetHandle AssetManager::LoadSRProfile(const std::filesystem::path& Path)
+    {
+        if (SRProfiles.size() >= InvalidAssetHandle)
+        {
+            throw std::overflow_error("SRProfileAsset handle range is exhausted.");
+        }
+
+        const SRProfileAssetHandle      Handle = static_cast<SRProfileAssetHandle>(SRProfiles.size());
+        std::unique_ptr<SRProfileAsset> Profile = SRProfileLoader::Load(Handle, Path);
+        Logger::Info("AssetManager",
+                     "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
+        SRProfiles.push_back(std::move(Profile));
+        return Handle;
+    }
+
     const MeshAsset& AssetManager::GetMesh(MeshAssetHandle Handle) const
     {
         if (Handle >= Meshes.size())
@@ -105,9 +126,23 @@ namespace MDSS
         return *Textures[Handle];
     }
 
+    const SRProfileAsset& AssetManager::GetSRProfile(SRProfileAssetHandle Handle) const
+    {
+        if (Handle >= SRProfiles.size())
+        {
+            throw std::out_of_range("Invalid SRProfileAssetHandle.");
+        }
+        return *SRProfiles[Handle];
+    }
+
     std::size_t AssetManager::GetMaterialCount() const noexcept
     {
         return Materials.size();
+    }
+
+    std::size_t AssetManager::GetSRProfileCount() const noexcept
+    {
+        return SRProfiles.size();
     }
 
     MaterialAssetHandle AssetManager::GetDefaultMaterialHandle() const noexcept

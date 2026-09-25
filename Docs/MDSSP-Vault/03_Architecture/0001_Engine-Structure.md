@@ -1,6 +1,6 @@
 # 엔진 모듈과 데이터 흐름
 
-상태: **설계** · 근거: [[06_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조]]
+상태: **설계** · 근거: [[07_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조]]
 
 | 구성요소 | 책임 |
 |---|---|

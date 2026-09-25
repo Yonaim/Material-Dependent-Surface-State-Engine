@@ -1,3 +1,8 @@
+/**
+ * @file RenderContext.cpp
+ * @brief frame-in-flight별 command buffer와 동기화 자원.
+ */
+
 #include "Renderer/RenderContext.h"
 
 #include "Logger/Logger.h"

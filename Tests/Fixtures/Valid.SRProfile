@@ -1,0 +1,55 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 1,
+  "name": "TestProfile",
+  "states": {
+    "wetness": {
+      "stateCapacity": 2.0,
+      "inputFactor": 0.75,
+      "saturationTransferRate": 0.4,
+      "geometryTransferRate": 0.05,
+      "decayRate": 0.06,
+      "cavityRetentionFactor": 0.5,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0
+    },
+    "heat": {
+      "stateCapacity": 1.0,
+      "inputFactor": 0.3,
+      "saturationTransferRate": 0.3,
+      "geometryTransferRate": 0.0,
+      "decayRate": 0.1,
+      "cavityRetentionFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0
+    },
+    "burn": {
+      "stateCapacity": 1.0,
+      "inputFactor": 0.0,
+      "saturationTransferRate": 0.0,
+      "geometryTransferRate": 0.0,
+      "decayRate": 0.01,
+      "cavityRetentionFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0
+    },
+    "mud": {
+      "stateCapacity": 1.0,
+      "inputFactor": 0.65,
+      "saturationTransferRate": 0.04,
+      "geometryTransferRate": 0.08,
+      "decayRate": 0.04,
+      "cavityRetentionFactor": 0.8,
+      "accumulationFactor": 0.65,
+      "cavityFillFactor": 0.6
+    }
+  },
+  "transitions": [
+    {
+      "source": "heat",
+      "target": "burn",
+      "threshold": 0.7,
+      "transitionRate": 0.2
+    }
+  ]
+}

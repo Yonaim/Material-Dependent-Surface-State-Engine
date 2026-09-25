@@ -1,6 +1,6 @@
 # 목표 데모
 
-상태: **목표 정의** · 근거: [[06_Assets/Documents/0007_Target-Demos.pdf|목표 데모]]
+상태: **목표 정의** · 근거: [[07_Assets/Documents/0007_Target-Demos.pdf|목표 데모]]
 
 ## Brick 사이 홈을 따라 흐르는 물
 

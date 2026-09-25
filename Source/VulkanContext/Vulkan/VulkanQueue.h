@@ -1,3 +1,8 @@
+/**
+ * @file VulkanQueue.h
+ * @brief graphics·present queue family 검색과 queue 접근.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -27,6 +32,7 @@ namespace MDSS
         [[nodiscard]] VkQueue                   GetPresent() const noexcept;
         [[nodiscard]] const QueueFamilyIndices& GetFamilyIndices() const noexcept;
 
+        /** @brief graphics와 surface presentation을 지원하는 queue family index를 찾는다. */
         [[nodiscard]] static QueueFamilyIndices FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
 
     private:

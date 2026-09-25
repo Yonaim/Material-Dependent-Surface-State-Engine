@@ -1,3 +1,8 @@
+/**
+ * @file GraphicsPipeline.h
+ * @brief shader stage와 고정 기능 설정을 이용한 graphics pipeline 생성.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -39,6 +44,10 @@ namespace MDSS
     class GraphicsPipeline
     {
     public:
+        /**
+         * @brief 설정에 지정된 shader와 fixed-function state로 pipeline을 생성한다.
+         * @throws std::runtime_error shader 파일 또는 Vulkan pipeline 생성이 실패한 경우.
+         */
         GraphicsPipeline(VkDevice Device, VkRenderPass RenderPass, const GraphicsPipelineConfig& Config);
         ~GraphicsPipeline();
 

@@ -1,7 +1,7 @@
 # 실험 — Solver Pass 비교
 
 - 상태: **계획**
-- 근거: [[06_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
+- 근거: [[07_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
 ## 가설
 

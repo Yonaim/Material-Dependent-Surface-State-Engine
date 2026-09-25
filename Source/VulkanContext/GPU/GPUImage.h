@@ -1,3 +1,8 @@
+/**
+ * @file GPUImage.h
+ * @brief Vulkan image와 device memory의 생성·재생성·해제.
+ */
+
 #pragma once
 
 #include <vulkan/vulkan.h>
@@ -9,6 +14,7 @@ namespace MDSS
     class GPUImage
     {
     public:
+        /** @brief 이미지와 backing memory를 생성한다. 실패하면 std::runtime_error를 던진다. */
         GPUImage(VkPhysicalDevice      PhysicalDevice,
                  VkDevice              Device,
                  VkExtent2D            Extent,
@@ -23,12 +29,14 @@ namespace MDSS
         GPUImage(GPUImage&&) = delete;
         GPUImage& operator=(GPUImage&&) = delete;
 
+        /** @brief 기존 image 자원을 해제하고 새 사양으로 다시 생성한다. */
         void Recreate(VkPhysicalDevice      PhysicalDevice,
                       VkExtent2D            Extent,
                       VkFormat              Format,
                       VkImageTiling         Tiling,
                       VkImageUsageFlags     Usage,
                       VkMemoryPropertyFlags MemoryProperties);
+        /** @brief image와 memory를 해제하고 객체를 빈 상태로 되돌린다. */
         void Reset();
 
         [[nodiscard]] VkImage    GetHandle() const noexcept;

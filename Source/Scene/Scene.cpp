@@ -1,3 +1,8 @@
+/**
+ * @file Scene.cpp
+ * @brief 주 카메라와 정적 메시 인스턴스 구성.
+ */
+
 #include "Scene/Scene.h"
 
 #include "Logger/Logger.h"
