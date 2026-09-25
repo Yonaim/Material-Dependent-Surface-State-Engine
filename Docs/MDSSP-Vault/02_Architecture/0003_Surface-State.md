@@ -50,7 +50,7 @@ $$
 
 ## Surface Response Profile
 
-`.srprofile`의 직렬화 형식은 [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]에서 다룬다. 파라미터의 **의미와 범위는 이 문서가 기준**이다.
+`.SRProfile`의 직렬화 형식은 [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]에서 다룬다. 파라미터의 **의미와 범위는 이 문서가 기준**이다.
 
 ### State Parameters
 

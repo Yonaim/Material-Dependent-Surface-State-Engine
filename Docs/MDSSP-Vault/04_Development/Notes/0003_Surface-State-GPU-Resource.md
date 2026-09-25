@@ -1,6 +1,6 @@
 # Surface State GPU Resource
 
-상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[02_Architecture/0003_Surface-State|표면 상태]], [[02_Architecture/0006_Propagation-Solver|Propagation Solver]], [[04_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[03_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]], [[02_Architecture/0003_Surface-State|표면 상태]], [[02_Architecture/0006_Propagation-Solver|Propagation Solver]], [[04_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[04_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
 
 이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다. 상태 갱신 수식의 기준은 [[02_Architecture/0006_Propagation-Solver|Propagation Solver]]다.
 
@@ -9,7 +9,7 @@
 | 항목 | 결정 |
 |---|---|
 | 기본 resource | seam 때문에 불규칙한 index 접근이 필요하므로 Storage Buffer를 사용한다. |
-| State 형식 | 기본 네 채널 `Wetness`, `Heat`, `Burn`, `Mud`를 texel당 `vec4`로 저장한다. |
+| State 형식 | 기본 상태 채널 `Wetness`, `Heat`, `Burn`, `Mud` 네 가지를 texel당 `vec4` 하나에 저장한다. |
 | ping-pong | instance마다 State A/B를 만들고 solver step마다 Current/Next 역할을 교환한다. |
 | TempState | Pass 1의 채널별 `alpha`를 저장하는 `vec4 TempAlpha`로 정의한다. 영구 State가 아니다. |
 | Input | discrete event를 `InputDelta`에 모아 Pass 2에서 한 번 반영한다. `DeltaTime`을 곱하지 않는다. |
@@ -33,7 +33,7 @@ flowchart LR
 | 데이터 | 공유 단위 | 갱신 |
 |---|---|---|
 | mapping, base geometry, neighbor | 같은 Mesh + 전처리 cache | Asset 변경 시 |
-| Profile parameter | 같은 `.srprofile` | Profile reload 시 |
+| Profile parameter | 같은 `.SRProfile` | Profile reload 시 |
 | Surface→Profile index | instance | Scene 연결 변경 시 |
 | State A/B, TempAlpha, InputDelta | instance | solver step마다 |
 
@@ -74,19 +74,17 @@ profileIndex = SurfaceProfileIndex[
 
 | Buffer | texel당 형식 | 용도 |
 |---|---|---|
-| `ValidMaskBuffer` | `uint` | invalid texel 조기 종료 |
-| `TexelSurfaceIndexBuffer` | `uint` | Surface/Profile 조회 |
+| `TexelSurfaceIndexBuffer` | `uint` | Surface/Profile 조회. invalid texel은 `InvalidSurfaceID = 0xFFFFFFFF` |
 | `SurfacePositionBuffer` | `vec4` | `xyz`: Mesh local position |
 | `SurfaceNormalBuffer` | `vec4` | `xyz`: Mesh local normal |
-| `GeometryScalarBuffer` | `vec4` | `x`: MesoVirtualHeight, `y`: ConcavityWeight, 나머지 예약 |
+| `GeometryScalarBuffer` | texel당 `{ float MesoVirtualHeight; float ConcavityWeight; }` | 실제 사용하는 두 형상 scalar |
 | `NeighborIndexBuffer` | `uvec4[2]` | 최대 8개 local neighbor index |
-| `NeighborDistanceBuffer` | `vec4[2]` | 각 이웃까지의 surface distance |
 
-`vec3` 대신 `vec4`를 사용해 CPU 구조체와 GLSL `std430` 정렬 차이를 피한다. CPU 업로드 구조체에는 size와 offset에 대한 `static_assert`를 둔다.
+invalid 여부는 `TexelSurfaceIndexBuffer[index] == InvalidSurfaceID`로 판정한다. 실제 Surface ID는 이 예약값을 사용할 수 없다. 거리와 방향은 `SurfacePosition[j] - SurfacePosition[i]`에서 계산하므로 별도 NeighborDistance buffer는 두지 않는다. Geometry scalar 구조체는 두 float만 포함하며, CPU와 GLSL 양쪽에서 크기가 8바이트인지 검증한다. Position/Normal에는 `vec4`를 사용하고 CPU 업로드 구조체에는 크기와 필드 offset에 대한 `static_assert`를 둔다.
 
 `TriangleID`와 `Barycentric`은 Solver 필수 입력이 아니므로 CPU cache에 둔다. GPU 디버그 시각화가 필요할 때만 별도 read-only buffer로 올린다.
 
-Accumulation으로 변하는 instance별 Position/Normal/Distance/Curvature는 base geometry와 분리된 dynamic geometry resource가 필요하다. 4주차 첫 구현은 정적 base geometry를 사용하고, 동적 overlay의 정확한 배치는 후속 단계에서 확정한다.
+Accumulation으로 변하는 instance별 Position/Normal/Curvature는 base geometry와 분리된 dynamic geometry resource가 필요하다. 이웃 거리도 갱신된 Position 차이에서 계산한다. 4주차 첫 구현은 정적 base geometry를 사용하고, 동적 overlay의 정확한 배치는 후속 단계에서 확정한다.
 
 ## Surface Instance State Buffer
 
@@ -131,7 +129,7 @@ Pass 1은 raw outgoing 합으로 `alpha`를 계산해 저장한다. Pass 2는 �
 
 ### InputDelta
 
-4주차에는 CPU가 같은 frame의 contact event를 texel별 `InputDelta`로 합산해 upload한다.
+4주차에는 CPU가 같은 frame의 contact event를 texel별 dense `InputDelta`로 합산해 upload한다. Buffer는 instance resource 생성 시 할당해 재사용하며, 매 frame 새로 할당하지 않는다.
 
 - Input은 event 양이므로 `DeltaTime`을 곱하지 않는다.
 - Pass 1의 Transport와 Decay는 Current State를 기준으로 계산한다.
@@ -142,7 +140,7 @@ Pass 1은 raw outgoing 합으로 `alpha`를 계산해 저장한다. Pass 2는 �
 
 ## SRProfile GPU Representation
 
-상태별 parameter는 State 채널 순서와 같은 `vec4`다.
+상태별 parameter는 State 채널과 같은 순서로 `vec4`에 저장한다.
 
 ```cpp
 struct SurfaceResponseProfileDataGPU {
@@ -169,7 +167,7 @@ binding 번호는 구현 시작점이며 Renderer 전역 규칙과 충돌하면 
 | Binding | Resource | 접근 |
 |---:|---|---|
 | 0 | Instance / Surface Range | read-only |
-| 1 | ValidMask / TexelSurfaceIndex | read-only |
+| 1 | TexelSurfaceIndex / InvalidSurfaceID 검사 | read-only |
 | 2 | Position / Normal | read-only |
 | 3 | Geometry Scalar | read-only |
 | 4 | Neighbor Index / Distance | read-only |
@@ -180,7 +178,7 @@ binding 번호는 구현 시작점이며 Renderer 전역 규칙과 충돌하면 
 | 9 | TempAlpha | Pass 1 write / Pass 2 read |
 | 10 | InputDelta | read-only, 이후 clear |
 
-실제 구현에서는 관련 buffer를 하나의 큰 allocation에 pack할 수 있다. 논리적 binding과 byte offset을 분리해 문서의 데이터 소유권을 유지한다.
+실제 구현에서는 관련 buffer를 하나의 큰 allocation에 pack할 수 있다. 논리적 binding과 바이트 오프셋을 분리해 문서의 데이터 소유권을 유지한다.
 
 Push constant에는 자주 변하는 작은 값만 둔다.
 
@@ -229,14 +227,14 @@ dstAccess = SHADER_STORAGE_READ
 
 ## 메모리 기준
 
-기본 네 채널의 instance별 동적 resource는 texel당 다음과 같다.
+각 instance의 State A/B, TempAlpha, InputDelta 버퍼는 각각 texel당 16바이트를 사용한다. 네 버퍼를 합친 상태 관련 GPU 저장량은 texel당 64바이트다.
 
 ```text
-State A       16 bytes
-State B       16 bytes
-TempAlpha     16 bytes
-InputDelta    16 bytes
-합계          64 bytes / texel
+State A       16 B
+State B       16 B
+TempAlpha     16 B
+InputDelta    16 B
+합계          64 B/texel
 ```
 
 공유 Geometry, allocator 정렬, frame-in-flight 복제는 별도다. 해상도와 instance 수를 정할 때 함께 측정한다.

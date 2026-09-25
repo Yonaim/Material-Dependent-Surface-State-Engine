@@ -5,8 +5,8 @@
 ```mermaid
 flowchart LR
   OBJ[OBJ / MTL] --> Assets[AssetManager]
-  Profile[.srprofile] --> Assets
-  SceneFile[.scene] --> Assets
+  Profile[.SRProfile] --> Assets
+  SceneFile[.Scene] --> Assets
   Assets --> Shared[Shared Surface Geometry Data]
   Assets --> Instance[Surface Instance State Data]
   Ray[Raycaster / Contact] --> Input[SurfaceContactInput]
@@ -21,7 +21,7 @@ flowchart LR
   Geo --> Solver
 ```
 
-1. OBJ / MTL / Texture / `.scene` / `.srprofile`을 로드한다. [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]
+1. OBJ / MTL / Texture / `.Scene` / `.SRProfile`을 로드한다. [[02_Architecture/0004_Assets-and-Profiles|에셋과 프로필]]
 2. 같은 Mesh + Normal Map을 사용하는 인스턴스가 공유할 정적 형상 데이터를 준비한다. [[02_Architecture/0007_Surface-Geometry|형상 정보]]
 3. 각 Mesh Instance는 자신의 State를 가진다. [[02_Architecture/0003_Surface-State|표면 상태]]
 4. Raycast 등으로 `SurfaceContactInput`을 만들고 Input 항으로 변환한다. [[02_Architecture/0005_Contact-Input|Contact Input]]

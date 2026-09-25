@@ -5,7 +5,7 @@ MDSSP Engine에서 사용하는 주요 용어의 현재 의미다.
 | 용어 | 뜻 | 관련 문서 |
 |---|---|---|
 | **Surface State** | 표면 텍셀에 저장되는 시간에 따른 상태량. 현재 기본 채널은 `Wetness`, `Heat`, `Burn`, `Mud`. | [[02_Architecture/0003_Surface-State\|표면 상태]] |
-| **Surface Response Profile / SRProfile** | Surface가 각 State에 어떻게 반응하는지 정의하는 공유 프로필. 파일 확장자는 `.srprofile`. | [[02_Architecture/0003_Surface-State\|표면 상태]], [[02_Architecture/0004_Assets-and-Profiles\|에셋]] |
+| **Surface Response Profile / SRProfile** | Surface가 각 State에 어떻게 반응하는지 정의하는 공유 프로필. 파일 확장자는 `.SRProfile`. | [[02_Architecture/0003_Surface-State\|표면 상태]], [[02_Architecture/0004_Assets-and-Profiles\|에셋]] |
 | **stateCapacity** | 특정 State가 가질 수 있는 최대 상태량. 상태별 독립 프로필 파라미터. | [[02_Architecture/0003_Surface-State\|표면 상태]] |
 | **Saturation** | `State / stateCapacity`로 계산하는 런타임 파생값. | [[02_Architecture/0003_Surface-State\|표면 상태]] |
 | **State** | 현재 표면에 반영된 상태량. `0 ≤ State ≤ stateCapacity`. | [[02_Architecture/0003_Surface-State\|표면 상태]] |

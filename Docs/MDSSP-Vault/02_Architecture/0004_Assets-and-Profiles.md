@@ -11,14 +11,14 @@
 | OBJ Mesh | `.obj` | 정점, UV, Normal, Face, Surface별 Material 할당 |
 | Render Material | `.mtl` | OBJ Surface의 외관용 Material |
 | Texture | `.png`, `.jpg` 등 | Albedo, Normal 등 |
-| Scene | `.scene` | JSON 형식. 배치 및 Asset 연결 관계 |
-| Surface Response Profile | `.srprofile` | JSON 형식. Surface State 반응 데이터 |
+| Scene | `.Scene` | JSON 형식. 배치 및 Asset 연결 관계 |
+| Surface Response Profile | `.SRProfile` | JSON 형식. Surface State 반응 데이터 |
 
 ## Surface와 Profile의 관계
 
 현재 설계에서 **하나의 Surface는 하나의 Render Material과 하나의 SRProfile을 사용**한다. 서로 다른 Surface가 같은 Material / SRProfile을 공유할 수 있다.
 
-OBJ를 로드하면 각 Surface가 사용하는 MTL Material 이름을 알 수 있고, `.scene`의 `materialProfiles`에서 같은 이름으로 `.srprofile`을 찾는다.
+OBJ를 로드하면 각 Surface가 사용하는 MTL Material 이름을 알 수 있고, `.Scene`의 `materialProfiles`에서 같은 이름으로 `.SRProfile`을 찾는다.
 
 ```text
 Surface
@@ -26,12 +26,12 @@ Surface
 │   └── MTL "Silk"
 └── Surface Response
     └── materialProfiles["Silk"]
-        └── silk.srprofile
+        └── silk.SRProfile
 ```
 
 별도의 Texel별 Profile ID Map은 현재 설계에 필요하지 않다.
 
-## `.srprofile` 예시
+## `.SRProfile` 예시
 
 아래 수치는 **튜닝 전 예시값**이며, 키 구조를 보여주기 위한 것이다.
 
@@ -93,7 +93,7 @@ Surface
 }
 ```
 
-## `.scene` 연결 예시
+## `.Scene` 연결 예시
 
 ```json
 {
@@ -106,9 +106,9 @@ Surface
       "surface": {
         "stateResolution": [512, 512],
         "materialProfiles": {
-          "Silk": "Assets/SurfaceProfiles/silk.srprofile",
-          "Steel": "Assets/SurfaceProfiles/steel.srprofile",
-          "Leather": "Assets/SurfaceProfiles/leather.srprofile"
+          "Silk": "Assets/SurfaceProfiles/silk.SRProfile",
+          "Steel": "Assets/SurfaceProfiles/steel.SRProfile",
+          "Leather": "Assets/SurfaceProfiles/leather.SRProfile"
         }
       }
     }

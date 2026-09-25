@@ -10,7 +10,7 @@
 |---|---|
 | Simulation UV | 렌더링 UV와 논리적으로 분리된 전용 UV를 사용한다. |
 | 4주차 범위 | 자동 unwrap은 구현하지 않는다. 조건을 만족하도록 미리 준비한 UV를 사용한다. OBJ의 기존 `vt`를 임시로 Simulation UV로 읽을 수 있다. |
-| 해상도 | `.scene`의 `stateResolution`을 Surface State grid 해상도로 사용한다. 하드코딩하지 않는다. |
+| 해상도 | `.Scene`의 `stateResolution`을 Surface State grid 해상도로 사용한다. 하드코딩하지 않는다. |
 | 생성 시점 | CPU에서 Asset 전처리 시 생성하고 캐시한다. 매 frame 재생성하지 않는다. |
 | Mesh→Texel | UV triangle rasterization과 barycentric coordinate를 사용한다. |
 | 유효성 | Mesh 표면에 대응하는 texel만 `ValidMask = 1`이다. |
@@ -45,7 +45,7 @@
 | `NeighborIndex[8]` | texel × 8 | seam을 포함한 실제 이웃 |
 | `Distance[8]` | texel × 8 | 이웃 표본 사이의 표면 거리 |
 
-`TriangleID`와 `Barycentric`은 전처리 캐시에 보관한다. Solver가 직접 필요로 하지 않으면 GPU에는 올리지 않는다.
+`TriangleID`와 `Barycentric`은 전처리 캐시에 보관한다. Solver가 직접 필요로 하지 않으면 GPU에는 올리지 않는다. CPU mapping 결과는 `ValidMask`와 이웃별 `Distance`를 가질 수 있지만, GPU에는 별도 `ValidMask`/`NeighborDistance` buffer를 올리지 않는다. GPU에서 invalid texel은 `TexelSurfaceIndex = InvalidSurfaceID`로 표시하고, 거리는 Position 차이에서 계산한다. 자세한 packed layout은 [[03_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]]을 따른다.
 
 ## 전체 생성 순서
 
