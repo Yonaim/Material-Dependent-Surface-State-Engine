@@ -177,6 +177,8 @@ add_dependencies(MDSS MDSS_Shaders)
 target_compile_definitions(MDSS PRIVATE
     MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
     MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+    MDSS_PROJECT_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
+    MDSS_CACHE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Cache/Surface"
     MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
     GLM_FORCE_RADIANS
     GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -200,6 +202,7 @@ if(BUILD_TESTING)
         Source/AssetManager/Assets/SRProfileAsset.cpp
         Source/AssetManager/Loaders/SRProfileLoader.cpp
         Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
         Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
         Source/SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.cpp
         Source/SurfaceStateSystem/State/SurfaceInstanceStateData.cpp
@@ -239,4 +242,29 @@ if(BUILD_TESTING)
         target_compile_options(MDSS_SurfaceMappingTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME MDSS_SurfaceMapping COMMAND MDSS_SurfaceMappingTests)
+
+    add_executable(MDSS_SharedSurfaceGeometryTests
+        Tests/SharedSurfaceGeometryTests.cpp
+        Source/AssetManager/Loaders/MTLLoader.cpp
+        Source/AssetManager/Loaders/OBJLoader.cpp
+        Source/AssetManager/Loaders/SurfaceProfileDistributionLoader.cpp
+        Source/Logger/Logger.cpp
+        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceStateSystem/Preprocessing/SurfacePreprocessedAsset.cpp
+    )
+    target_include_directories(MDSS_SharedSurfaceGeometryTests PRIVATE Source)
+    target_include_directories(MDSS_SharedSurfaceGeometryTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")
+    target_link_libraries(MDSS_SharedSurfaceGeometryTests PRIVATE glm::glm nlohmann_json::nlohmann_json)
+    target_compile_definitions(MDSS_SharedSurfaceGeometryTests PRIVATE
+        MDSS_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Tests/Fixtures"
+    )
+    if(MSVC)
+        target_compile_options(MDSS_SharedSurfaceGeometryTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(MDSS_SharedSurfaceGeometryTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME MDSS_SharedSurfaceGeometry COMMAND MDSS_SharedSurfaceGeometryTests)
 endif()
