@@ -27,7 +27,6 @@ namespace MDSS
         for (std::size_t Index = 0; Index < MaxFramesInFlight; ++Index)
         {
             if (vkCreateSemaphore(Device, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[Index]) != VK_SUCCESS ||
-                vkCreateSemaphore(Device, &SemaphoreInfo, nullptr, &RenderFinishedSemaphores[Index]) != VK_SUCCESS ||
                 vkCreateFence(Device, &FenceInfo, nullptr, &InFlightFences[Index]) != VK_SUCCESS)
             {
                 for (std::size_t Created = 0; Created <= Index; ++Created)
@@ -35,10 +34,6 @@ namespace MDSS
                     if (ImageAvailableSemaphores[Created] != VK_NULL_HANDLE)
                     {
                         vkDestroySemaphore(Device, ImageAvailableSemaphores[Created], nullptr);
-                    }
-                    if (RenderFinishedSemaphores[Created] != VK_NULL_HANDLE)
-                    {
-                        vkDestroySemaphore(Device, RenderFinishedSemaphores[Created], nullptr);
                     }
                     if (InFlightFences[Created] != VK_NULL_HANDLE)
                     {
@@ -65,10 +60,6 @@ namespace MDSS
             if (ImageAvailableSemaphores[Index] != VK_NULL_HANDLE)
             {
                 vkDestroySemaphore(Device, ImageAvailableSemaphores[Index], nullptr);
-            }
-            if (RenderFinishedSemaphores[Index] != VK_NULL_HANDLE)
-            {
-                vkDestroySemaphore(Device, RenderFinishedSemaphores[Index], nullptr);
             }
             if (InFlightFences[Index] != VK_NULL_HANDLE)
             {
@@ -120,11 +111,6 @@ namespace MDSS
     VkSemaphore TRenderContext::GetImageAvailableSemaphore() const noexcept
     {
         return ImageAvailableSemaphores[CurrentFrame];
-    }
-
-    VkSemaphore TRenderContext::GetRenderFinishedSemaphore() const noexcept
-    {
-        return RenderFinishedSemaphores[CurrentFrame];
     }
 
     VkFence TRenderContext::GetInFlightFence() const noexcept

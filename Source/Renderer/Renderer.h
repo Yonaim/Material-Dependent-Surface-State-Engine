@@ -11,6 +11,7 @@
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/Swapchain.h"
+#include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
 #include "VulkanContext/GPU/GPUImage.h"
 #include "VulkanContext/GPU/GPUImageView.h"
@@ -41,7 +42,7 @@ namespace MDSS
     class TRenderer
     {
     public:
-        TRenderer(const TVulkanContext& Context, TWindow& TWindow, const TAssetManager& Assets);
+        TRenderer(const TVulkanContext& Context, TWindow& TWindow, const TAssetManager& Assets, const TScene& Scene);
         ~TRenderer();
 
         TRenderer(const TRenderer&) = delete;
@@ -54,6 +55,7 @@ namespace MDSS
 
         [[nodiscard]] const TSwapchain& GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass     GetRenderPassHandle() const noexcept;
+        [[nodiscard]] const TSurfaceGPUResourceManager& GetSurfaceGPUResources() const noexcept;
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
@@ -83,6 +85,8 @@ namespace MDSS
         static VkDescriptorSetLayout CreateMaterialDescriptorSetLayout(VkDevice Device);
 
         void CreateMaterialDescriptorResources();
+        void CreateRenderFinishedSemaphores();
+        void DestroyRenderFinishedSemaphores() noexcept;
         void UpdateMaterialUniforms();
         void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
@@ -108,5 +112,7 @@ namespace MDSS
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;
+        std::unique_ptr<TSurfaceGPUResourceManager> SurfaceGPUResources;
+        std::vector<VkSemaphore> RenderFinishedSemaphores;
     };
 } // namespace MDSS

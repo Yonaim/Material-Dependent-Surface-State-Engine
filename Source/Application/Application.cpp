@@ -29,27 +29,36 @@ namespace MDSS
         InstanceTransform.RotationDegrees = {20.0F, 35.0F, 0.0F};
         MainScene.AddStaticMeshInstance(TStaticMeshInstance(DemoMesh, InstanceTransform));
 
-        FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets);
+        FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets, MainScene);
         DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer);
         TLogger::Info("TApplication", "TRenderer, scene, asset system, and TDebugUI are ready.");
     }
 
     TApplication::~TApplication() = default;
 
-    void TApplication::Run()
+    void TApplication::Run(std::size_t FrameLimit)
     {
-        TLogger::Info("TApplication", "Entering main loop.");
-        MainLoop();
+        if (FrameLimit == 0)
+        {
+            TLogger::Info("TApplication", "Entering main loop.");
+        }
+        else
+        {
+            TLogger::Info("TApplication", "Entering main loop for " + std::to_string(FrameLimit) + " frame(s).");
+        }
+        MainLoop(FrameLimit);
         TLogger::Info("TApplication", "Main loop finished.");
     }
 
-    void TApplication::MainLoop()
+    void TApplication::MainLoop(std::size_t FrameLimit)
     {
-        while (!MainWindow.ShouldClose())
+        std::size_t RenderedFrameCount = 0;
+        while (!MainWindow.ShouldClose() && (FrameLimit == 0 || RenderedFrameCount < FrameLimit))
         {
             MainWindow.PollEvents();
             DebugInterface->BeginFrame(MainScene);
             FrameRenderer->RenderFrame(MainScene, *DebugInterface);
+            ++RenderedFrameCount;
         }
 
         TLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");

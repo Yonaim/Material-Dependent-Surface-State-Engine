@@ -39,7 +39,6 @@ namespace MDSS
         [[nodiscard]] std::uint32_t   GetCurrentFrameIndex() const noexcept;
         [[nodiscard]] VkCommandBuffer GetCurrentCommandBuffer() const noexcept;
         [[nodiscard]] VkSemaphore     GetImageAvailableSemaphore() const noexcept;
-        [[nodiscard]] VkSemaphore     GetRenderFinishedSemaphore() const noexcept;
         [[nodiscard]] VkFence         GetInFlightFence() const noexcept;
 
     private:
@@ -48,7 +47,6 @@ namespace MDSS
 
         std::vector<VkCommandBuffer>               CommandBuffers;
         std::array<VkSemaphore, MaxFramesInFlight> ImageAvailableSemaphores{};
-        std::array<VkSemaphore, MaxFramesInFlight> RenderFinishedSemaphores{};
         std::array<VkFence, MaxFramesInFlight>     InFlightFences{};
         std::uint32_t                              CurrentFrame = 0;
     };

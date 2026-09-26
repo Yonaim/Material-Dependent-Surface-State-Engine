@@ -117,7 +117,10 @@ namespace MDSS
         }
     } // namespace
 
-    TRenderer::TRenderer(const TVulkanContext& Context, TWindow& TWindow, const TAssetManager& Assets)
+    TRenderer::TRenderer(const TVulkanContext& Context,
+                         TWindow& TWindow,
+                         const TAssetManager& Assets,
+                         const TScene& Scene)
         : Context(Context), TargetWindow(TWindow), Assets(Assets), SwapchainData(Context, TWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
           DepthImage(Context.GetPhysicalDevice(),
@@ -141,6 +144,8 @@ namespace MDSS
           FrameContext(Context)
     {
         CreateMaterialDescriptorResources();
+        SurfaceGPUResources = std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, Scene);
+        CreateRenderFinishedSemaphores();
         TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
         TLogger::Debug("TRenderer",
                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
@@ -153,6 +158,7 @@ namespace MDSS
         {
             vkDeviceWaitIdle(Context.GetDevice());
         }
+        DestroyRenderFinishedSemaphores();
 
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
@@ -207,7 +213,11 @@ namespace MDSS
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface);
 
         const VkSemaphore          WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
-        const VkSemaphore          SignalSemaphore = FrameContext.GetRenderFinishedSemaphore();
+        if (ImageIndex >= RenderFinishedSemaphores.size())
+        {
+            throw std::runtime_error("Acquired swapchain image has no render-finished semaphore.");
+        }
+        const VkSemaphore          SignalSemaphore = RenderFinishedSemaphores[ImageIndex];
         const VkPipelineStageFlags WaitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
         VkSubmitInfo SubmitInfo{};
@@ -276,6 +286,8 @@ namespace MDSS
             throw std::runtime_error("Failed to wait for Vulkan device before swapchain recreation.");
         }
 
+        DestroyRenderFinishedSemaphores();
+
         // Framebuffers reference both swapchain image views and the depth image view,
         // so they must be destroyed before either dependency is recreated.
         MainFramebuffers.Reset();
@@ -284,6 +296,7 @@ namespace MDSS
 
         const VkFormat PreviousColorFormat = SwapchainData.GetImageFormat();
         SwapchainData.Recreate(Context, TargetWindow);
+        CreateRenderFinishedSemaphores();
 
         if (PreviousColorFormat != SwapchainData.GetImageFormat())
         {
@@ -320,6 +333,11 @@ namespace MDSS
     VkRenderPass TRenderer::GetRenderPassHandle() const noexcept
     {
         return MainRenderPass.GetHandle();
+    }
+
+    const TSurfaceGPUResourceManager& TRenderer::GetSurfaceGPUResources() const noexcept
+    {
+        return *SurfaceGPUResources;
     }
 
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
@@ -408,6 +426,38 @@ namespace MDSS
             throw std::runtime_error("Failed to create static mesh material descriptor set layout.");
         }
         return Layout;
+    }
+
+    void TRenderer::CreateRenderFinishedSemaphores()
+    {
+        if (!RenderFinishedSemaphores.empty())
+        {
+            throw std::logic_error("Render-finished semaphores already exist for the current swapchain.");
+        }
+
+        RenderFinishedSemaphores.resize(SwapchainData.GetImages().size(), VK_NULL_HANDLE);
+        VkSemaphoreCreateInfo SemaphoreInfo{};
+        SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        for (VkSemaphore& Semaphore : RenderFinishedSemaphores)
+        {
+            if (vkCreateSemaphore(Context.GetDevice(), &SemaphoreInfo, nullptr, &Semaphore) != VK_SUCCESS)
+            {
+                DestroyRenderFinishedSemaphores();
+                throw std::runtime_error("Failed to create swapchain image render-finished semaphore.");
+            }
+        }
+    }
+
+    void TRenderer::DestroyRenderFinishedSemaphores() noexcept
+    {
+        for (VkSemaphore Semaphore : RenderFinishedSemaphores)
+        {
+            if (Semaphore != VK_NULL_HANDLE)
+            {
+                vkDestroySemaphore(Context.GetDevice(), Semaphore, nullptr);
+            }
+        }
+        RenderFinishedSemaphores.clear();
     }
 
     void TRenderer::CreateMaterialDescriptorResources()
