@@ -3,3 +3,33 @@ Kd 1.0 1.0 1.0
 d 1.0
 map_Kd ../Textures/DemoAlbedo.png
 norm ../Textures/DemoNormal.png
+
+newmtl brick_back
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd ../Textures/DemoAlbedo.png
+norm ../Textures/DemoNormal.png
+
+newmtl brick_right
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd ../Textures/DemoAlbedo.png
+norm ../Textures/DemoNormal.png
+
+newmtl brick_left
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd ../Textures/DemoAlbedo.png
+norm ../Textures/DemoNormal.png
+
+newmtl brick_top
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd ../Textures/DemoAlbedo.png
+norm ../Textures/DemoNormal.png
+
+newmtl brick_bottom
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd ../Textures/DemoAlbedo.png
+norm ../Textures/DemoNormal.png

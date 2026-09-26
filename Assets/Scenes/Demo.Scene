@@ -1,0 +1,13 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "objects": [
+    {
+      "mesh": "../Meshes/DemoCube.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/DemoCube.SurfaceProfileMap",
+      "transform": {
+        "rotationDegrees": [20.0, 35.0, 0.0]
+      }
+    }
+  ]
+}

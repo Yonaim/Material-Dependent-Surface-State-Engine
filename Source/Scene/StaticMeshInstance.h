@@ -15,13 +15,18 @@ namespace MDSS
     public:
         TStaticMeshInstance() = default;
         TStaticMeshInstance(TMeshAssetHandle Mesh, TTransform InstanceTransform = {});
+        TStaticMeshInstance(TMeshAssetHandle Mesh,
+                            TSurfaceRuntimeDataHandle SurfaceData,
+                            TTransform InstanceTransform);
 
-        [[nodiscard]] TTransform&       GetTransform() noexcept;
-        [[nodiscard]] const TTransform& GetTransform() const noexcept;
-        [[nodiscard]] TMeshAssetHandle  GetMesh() const noexcept;
+        [[nodiscard]] TTransform&                GetTransform() noexcept;
+        [[nodiscard]] const TTransform&          GetTransform() const noexcept;
+        [[nodiscard]] TMeshAssetHandle           GetMesh() const noexcept;
+        [[nodiscard]] TSurfaceRuntimeDataHandle GetSurfaceData() const noexcept;
 
     private:
         TMeshAssetHandle Mesh = InvalidAssetHandle;
+        TSurfaceRuntimeDataHandle SurfaceData = InvalidSurfaceRuntimeDataHandle;
         TTransform       InstanceTransform;
     };
 } // namespace MDSS

@@ -14,11 +14,14 @@ namespace MDSS
 {
     using TAssetID = std::uint32_t;
     using TMeshAssetHandle = std::uint32_t;
+    using TSurfaceRuntimeDataHandle = std::uint32_t;
     using TMaterialAssetHandle = std::uint32_t;
     using TextureAssetHandle = std::uint32_t;
     using TSRProfileAssetHandle = std::uint32_t;
 
     inline constexpr std::uint32_t InvalidAssetHandle = std::numeric_limits<std::uint32_t>::max();
+    inline constexpr TSurfaceRuntimeDataHandle InvalidSurfaceRuntimeDataHandle =
+        std::numeric_limits<TSurfaceRuntimeDataHandle>::max();
 
     class TAsset
     {
