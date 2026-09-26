@@ -30,7 +30,7 @@ void main()
             {
                 continue;
             }
-            RawOutgoing += rawSaturationFlux(TexelIndex, NeighborTexel, ChannelIndex);
+            RawOutgoing += rawFlux(TexelIndex, NeighborTexel, ChannelIndex);
         }
 
         float Current = CurrentState.Values[StateValueIndex];

@@ -12,6 +12,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 
 namespace MDSS
 {
@@ -31,7 +33,9 @@ namespace MDSS
                         bool bCurrentStateAB,
                         std::size_t TexelCount,
                         std::size_t ChannelCount,
-                        float DeltaTime) const;
+                        float DeltaTime,
+                        const glm::mat4& ModelMatrix,
+                        const glm::vec3& GravityWorld) const;
 
     private:
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);

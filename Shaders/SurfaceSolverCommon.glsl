@@ -72,8 +72,11 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
     uint StateChannelCount;
     uint LocalTexelCount;
     uint Flags;
-    vec4 GravityLocal;
+    vec4 GravityWorld;
+    mat4 ModelMatrix;
 } Solver;
+
+const float GeometryEpsilon = 1.0e-6;
 
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
 {
@@ -124,7 +127,73 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
     return min(Current, max(0.0, DecayRate * Retention * Solver.DeltaTime));
 }
 
-float rawSaturationFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex)
+vec3 worldPosition(uint TexelIndex)
+{
+    return (Solver.ModelMatrix * vec4(Positions.Values[TexelIndex].xyz, 1.0)).xyz;
+}
+
+vec3 worldNormal(uint TexelIndex)
+{
+    mat3 ModelLinear = mat3(Solver.ModelMatrix);
+    float Determinant = determinant(ModelLinear);
+    if (abs(Determinant) <= GeometryEpsilon)
+    {
+        return vec3(0.0);
+    }
+
+    vec3 Transformed = transpose(inverse(ModelLinear)) * Normals.Values[TexelIndex].xyz;
+    float Length = length(Transformed);
+    return Length > GeometryEpsilon ? Transformed / Length : vec3(0.0);
+}
+
+float effectiveWorldHeight(uint TexelIndex)
+{
+    vec3 LocalPosition = Positions.Values[TexelIndex].xyz +
+                         Normals.Values[TexelIndex].xyz * GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+    vec3 WorldPosition = (Solver.ModelMatrix * vec4(LocalPosition, 1.0)).xyz;
+    float GravityLength = length(Solver.GravityWorld.xyz);
+    if (any(isnan(WorldPosition)) || any(isinf(WorldPosition)))
+    {
+        return uintBitsToFloat(0x7fc00000u);
+    }
+    if (GravityLength <= GeometryEpsilon)
+    {
+        return 0.0;
+    }
+    vec3 Up = -Solver.GravityWorld.xyz / GravityLength;
+    return dot(WorldPosition, Up);
+}
+
+float directionDrive(uint SourceTexel, uint TargetTexel)
+{
+    vec3 Gravity = Solver.GravityWorld.xyz;
+    float GravityLength = length(Gravity);
+    if (GravityLength <= GeometryEpsilon)
+    {
+        return 0.0;
+    }
+
+    vec3 Normal = worldNormal(SourceTexel);
+    if (length(Normal) <= GeometryEpsilon)
+    {
+        return 0.0;
+    }
+
+    vec3 GravityOnSurface = Gravity - Normal * dot(Gravity, Normal);
+    float SurfaceGravityLength = length(GravityOnSurface);
+    vec3 NeighborDirection = worldPosition(TargetTexel) - worldPosition(SourceTexel);
+    float NeighborLength = length(NeighborDirection);
+    if (SurfaceGravityLength <= GeometryEpsilon || NeighborLength <= GeometryEpsilon ||
+        any(isnan(GravityOnSurface)) || any(isinf(GravityOnSurface)) ||
+        any(isnan(NeighborDirection)) || any(isinf(NeighborDirection)))
+    {
+        return 0.0;
+    }
+
+    return clamp(dot(GravityOnSurface / SurfaceGravityLength, NeighborDirection / NeighborLength), 0.0, 1.0);
+}
+
+float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex)
 {
     if (!supportsChannel(SourceTexel, ChannelIndex) || !supportsChannel(TargetTexel, ChannelIndex))
     {
@@ -132,10 +201,23 @@ float rawSaturationFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex)
     }
 
     uint SourceRecordIndex = profileRecordIndex(SourceTexel, ChannelIndex);
-    float TransferRate = ProfileParameters.Values[SourceRecordIndex].CapacityInputAndTransfer.z;
+    TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[SourceRecordIndex];
+    float TransferRate = Parameters.CapacityInputAndTransfer.z;
     float SaturationDrive = max(saturation(SourceTexel, ChannelIndex) -
                                 saturation(TargetTexel, ChannelIndex), 0.0);
-    return SaturationDrive * TransferRate * Solver.DeltaTime;
+    float GeometryTransferRate = Parameters.CapacityInputAndTransfer.w;
+    float SourceHeight = effectiveWorldHeight(SourceTexel);
+    float TargetHeight = effectiveWorldHeight(TargetTexel);
+    float GeometryDrive = 0.0;
+    if (!isnan(SourceHeight) && !isinf(SourceHeight) && !isnan(TargetHeight) && !isinf(TargetHeight))
+    {
+        float HeightDifference = abs(SourceHeight - TargetHeight);
+        if (!isnan(HeightDifference) && !isinf(HeightDifference))
+        {
+            GeometryDrive = HeightDifference * directionDrive(SourceTexel, TargetTexel);
+        }
+    }
+    return (SaturationDrive * TransferRate + GeometryDrive * GeometryTransferRate) * Solver.DeltaTime;
 }
 
 uint neighborIndex(uint TexelIndex, uint DirectionIndex)

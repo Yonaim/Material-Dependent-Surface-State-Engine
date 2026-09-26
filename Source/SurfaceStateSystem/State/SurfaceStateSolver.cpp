@@ -126,7 +126,9 @@ namespace MDSS
                                          bool bCurrentStateAB,
                                          std::size_t TexelCount,
                                          std::size_t ChannelCount,
-                                         float DeltaTime) const
+                                         float DeltaTime,
+                                         const glm::mat4& ModelMatrix,
+                                         const glm::vec3& GravityWorld) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || TexelCount == 0 || ChannelCount == 0 ||
             TexelCount > std::numeric_limits<std::uint32_t>::max() ||
@@ -144,6 +146,15 @@ namespace MDSS
         Constants.DeltaTime = DeltaTime;
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
+        Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z, 0.0F};
+        for (std::size_t Column = 0; Column < 4; ++Column)
+        {
+            for (std::size_t Row = 0; Row < 4; ++Row)
+            {
+                Constants.ModelMatrix[Column][Row] = ModelMatrix[static_cast<glm::length_t>(Column)]
+                                                               [static_cast<glm::length_t>(Row)];
+            }
+        }
 
         const std::uint32_t WorkgroupCount = static_cast<std::uint32_t>((TexelCount + 63U) / 64U);
         vkCmdBindDescriptorSets(CommandBuffer,
