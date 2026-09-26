@@ -11,12 +11,20 @@
 | 기본 resource | seam 때문에 불규칙한 index 접근이 필요하므로 Storage Buffer를 사용한다. |
 | State 형식 | `.SRProfile` Registry의 `ChannelCount`에 따라 동적으로 저장한다. ADR 0010의 texel-major AoS와 packed `float32` 배열을 구현한다. |
 | ping-pong | instance마다 State A/B를 만들고 solver step마다 Current/Next 역할을 교환한다. |
-| TempState | Pass 1에서 각 texel의 Registry channel별 `alpha`를 저장한다. State와 마찬가지로 channel count 기반 layout을 사용하며 영구 State가 아니다. |
+| OutgoingFluxScale | Pass 1에서 각 texel의 Registry channel별 `alpha`를 저장한다. State와 같은 channel count 기반 packed layout을 쓰며 영구 State가 아니다. |
 | Input | discrete event를 `InputDelta`에 모아 Pass 2에서 한 번 반영한다. `DeltaTime`을 곱하지 않는다. |
 | Profile 연결 | 공유 Geometry에 texel당 `uint32 ProfileIndex`를 저장한다. 같은 Profile을 쓰는 texel도 인덱스를 각각 보유한다. |
 | 인덱스 | Neighbor는 공유 Geometry 내부 local texel index를 저장한다. instance State 접근은 `ChannelIndex`를 포함한 layout helper로 계산한다. |
 
 Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 처리하려면 별도 index가 필요하다. 4주차에는 SSBO를 기준 데이터로 두고, 렌더링에 필터링 가능한 texture가 필요하면 파생 resource를 만든다.
+
+## Branch 4 구현 및 검증 상태
+
+현재 MVP는 host-visible/coherent storage buffer를 사용한다. Mesh별 Geometry/Profile은 packed CPU 배열에서 한 번 upload하며, instance별 State A/B, OutgoingFluxScale, InputDelta는 생성 시 0으로 초기화한다. Instance마다 descriptor와 State buffer를 따로 소유하고, 같은 Mesh의 공유 Geometry/Profile handle을 재사용한다. 세부 binding은 아래 표를 따른다.
+
+GPU resource CTest는 두 instance용 자원을 만들고, 공유 Geometry binding, 분리된 State handle, AB/BA Current/Next, 생성 초기값과 Geometry/Profile packed 값을 Vulkan buffer readback으로 검사한다. Renderer를 5 frame 실행한 Vulkan validation smoke run에서는 GPU resource 생성과 정상 종료·파괴가 완료됐고 validation error는 없었다.
+
+Validation best-practices는 각 buffer에 별도 `VkDeviceMemory`를 할당하는 현재 `TGPUBuffer` 방식과 기존 depth attachment에 작은 allocation 경고를 남긴다. 이는 API/synchronization 오류가 아니라 suballocation 및 transient attachment 권고이며, allocation 최적화는 후속 작업이다. InputDelta의 solver 소비 후 clear와 CPU/GPU 동기화도 solver/input 구현에서 연결한다.
 
 ## 데이터 소유권
 
@@ -149,27 +157,28 @@ Profile parameter는 `(ProfileIndex, ChannelIndex)` 조합을 사용하며, ADR 
 - JSON을 GPU 구조체 메모리에 직접 역직렬화하지 않고 명시적으로 변환한다.
 - 동일 Profile 사이의 `ProfileBoundaryWeight`는 `1.0`이다. 서로 다른 Profile의 결합식은 Solver 설계의 미결 사항이다.
 
-## Descriptor 기준안
+## Descriptor binding
 
-binding 번호는 구현 시작점이며 Renderer 전역 규칙과 충돌하면 조정할 수 있다.
+Branch 4의 descriptor layout은 아래 12개 binding을 각각 별도의 storage buffer로 연결한다. Geometry와 Profile 자료는 CPU/GPU ABI 문서대로 SoA buffer로 분리한다. 지원 여부 배열도 parameter 배열과 별도 buffer다.
 
-| Binding | Resource | 접근 |
-|---:|---|---|
-| 0 | Instance / Surface Range | read-only |
-| 1 | TexelSurfaceIndex / InvalidSurfaceID 검사 | read-only |
-| 2 | Position / Normal | read-only |
-| 3 | Geometry Scalar | read-only |
-| 4 | Neighbor Index | read-only |
-| 5 | Profile Buffer | read-only |
-| 6 | Surface Profile Index | read-only |
-| 7 | Current State | read-only |
-| 8 | Next State | write-only |
-| 9 | OutgoingFluxScale | Pass 1 write / Pass 2 read |
-| 10 | InputDelta | read-only, 이후 clear |
+| Binding | Buffer | Shader 원소 형식 | 접근 |
+|---:|---|---|---|
+| 0 | `TexelSurfaceIndexBuffer` | `uint[]` | read-only |
+| 1 | `TexelProfileIndexBuffer` | `uint[]` | read-only |
+| 2 | `SurfacePositionBuffer` | `vec4[]` | read-only |
+| 3 | `SurfaceNormalBuffer` | `vec4[]` | read-only |
+| 4 | `GeometryScalarBuffer` | texel당 두 `float` | read-only |
+| 5 | `NeighborIndexBuffer` | texel당 `uvec4[2]` | read-only |
+| 6 | `ProfileParametersBuffer` | `(ProfileIndex, ChannelIndex)`당 두 `vec4` | read-only |
+| 7 | `ProfileSupportedBuffer` | `uint[]` | read-only |
+| 8 | Current State | packed `float[]` | read-only |
+| 9 | Next State | packed `float[]` | write-only |
+| 10 | `OutgoingFluxScaleBuffer` | packed `float[]` | Pass 1 write / Pass 2 read |
+| 11 | `InputDeltaBuffer` | packed `float[]` | read-only, 이후 clear |
 
-실제 구현에서는 관련 buffer를 하나의 큰 allocation에 pack할 수 있다. 논리적 binding과 바이트 오프셋을 분리해 문서의 데이터 소유권을 유지한다.
+각 binding의 descriptor type은 `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`, descriptor count는 1이다. AB와 BA descriptor set을 함께 생성해 Current/Next State의 반대 방향 연결을 제공한다. set은 해당 instance의 State buffers와 Mesh의 공유 Geometry/Profile buffers를 참조한다.
 
-Push constant에는 자주 변하는 작은 값만 둔다.
+Push constant에는 자주 변하는 작은 값만 둔다. CPU 구조체는 GPU upload 구조와 마찬가지로 크기와 offset을 compile-time 검증한다.
 
 ```cpp
 struct TSolverPushConstants {
@@ -236,7 +245,7 @@ InputDelta    4C B
 - seam 이웃은 일반 이웃과 같은 Shader 경로를 사용한다.
 - `stateCapacity > 0` 검증으로 NaN/Inf가 발생하지 않는다.
 - 실제 outgoing 합이 Decay 이후 가용 State를 넘지 않는다.
-- Pass 사이 Vulkan validation 경고가 없다.
+- Pass 사이 synchronization과 resource 사용에 Vulkan validation 오류가 없다. 현재 smoke run에서는 오류가 없었고, best-practices 최적화 권고는 아래에 별도로 기록했다.
 - 렌더링이 최신 ping-pong buffer를 읽는다.
 
 ## 미결 사항
