@@ -1,6 +1,6 @@
 # Surface State Update
 
-상태: **입력 구조 및 핵심 수식 확정 / 세부 구동식 일부 검토 필요** · 근거: [[07_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[07_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
+상태: **입력 구조·Transport Drive/Weight 분리 및 GeometryDrive 계약 확정** · 근거: [[../04_ADR/0015-Geometry-Driven-Transport|ADR 0015]], [[07_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[07_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
 이 문서는 외부 접촉을 State 입력으로 바꾸는 구조와 각 항의 갱신 규칙을 함께 정의한다.
 
@@ -42,6 +42,20 @@ Raycast
 
 `ContactWeight ∈ [0,1]`이며 반경 밖의 texel은 0으로 처리한다. `worldDirection`은 입력 방향 정보를 제공한다. 입사각 감쇠를 ContactWeight에 추가할지는 필수 규칙으로 정하지 않았다.
 
+```mermaid
+flowchart LR
+  Hit["Ray hit\nposition + triangle"] --> UV["Triangle UV 보간"]
+  UV --> Center["중심 texel 후보"]
+  Center --> Valid{"유효 texel이며\nhit triangle 소속?"}
+  Valid -- 예 --> Resolved["중심 texel 확정"]
+  Valid -- 아니오 --> Fallback["같은 triangle 안\n작은 texel 반경 검색"]
+  Fallback -->|찾음| Resolved
+  Fallback -->|실패| Reject["입력 거부"]
+  Resolved --> Radius["World-space radius 내\n유효 texel 검색"]
+  Radius --> Weight["Distance / Radius\n→ ContactWeight"]
+  Weight --> Input["Strength × ContactWeight\n× InputFactor"]
+```
+
 ## 파라미터 접미사 네이밍 규칙
 
 | 접미사 | 의미 | 시간과의 관계 | 일반적인 단위 |
@@ -72,6 +86,31 @@ Input은 **Discrete Event**, Transport와 Decay는 **Continuous Update**로 처�
 | Input | 접촉 이벤트 발생 프레임에 즉시 반영 | X |
 | Transport | 시간 경과에 따른 State 이동 | O |
 | Decay | 시간 경과에 따른 State 감소 | O |
+
+다음 그림은 각 항이 Next State에 합쳐지는 설계 흐름이다. Transport의 Geometry 구동식은 아래에서 별도로 정의하며, 현재 구현 범위와의 차이는 [[0001_Engine-Structure|엔진 데이터 흐름]]에 적혀 있다.
+
+```mermaid
+flowchart LR
+  Current["Current State"] --> Sat["Saturation"]
+  Sat --> SatFlux["Saturation-driven flux"]
+  Geometry["Neighbor geometry\nheight / direction / weights"] --> GeoFlux["Geometry-driven flux"]
+  SatFlux --> Combine["Raw Flux × TransferWeight × Δt"]
+  GeoFlux --> Combine
+  Combine --> Out["Raw outgoing per texel"]
+  Current --> Available["Available State\nafter Decay"]
+  Out --> Alpha["Pass 1: α = min(1, Available / RawOutgoing)"]
+  Available --> Alpha
+  Alpha --> Flux["Pass 2: clamp outgoing by α"]
+  Combine --> Flux
+  Flux --> Transport["Incoming − Outgoing"]
+  Current --> Update["Current + Event Input\n+ Transport − Decay"]
+  Input["InputDelta\none-shot event"] --> Update
+  Transport --> Update
+  Update --> Clamp["Clamp 0…StateCapacity"]
+  Clamp --> Next["Next State"]
+  Next --> Swap["A/B role swap"]
+  Input --> Clear["InputDelta clear after consume"]
+```
 
 ## 1. Input
 
@@ -126,9 +165,35 @@ HeightDrive_{i\rightarrow j}
 \cdot DirectionDrive_{i\rightarrow j}
 $$
 
-- `HeightDrive`: 높이 차이에 의해 이동하려는 정도.
-- `DirectionDrive`: 중력 등의 선호 방향과 전달 방향이 얼마나 일치하는지.
-- GeometryDrive의 정확한 정규화 범위와 Height/Direction 세부식은 아직 확정하지 않았다.
+`HeightDrive`와 `DirectionDrive`는 각각 높이 차의 크기와 이웃 방향에 대한 중력 정렬도를 담당한다. 높이는 Macro Surface와 `MesoVirtualHeight`를 합친 뒤 instance transform을 반영한 world-length 값으로 평가한다.
+
+$$
+EffectiveHeight_i = MacroHeight_i + MesoVirtualHeight_i
+$$
+
+$$
+HeightDrive_{i\rightarrow j} = |EffectiveHeight_i - EffectiveHeight_j|
+$$
+
+높이차를 인접 texel 거리로 나누지 않는다. 실제 이웃 간격은 `DistanceWeight`가 별도로 반영한다. 따라서 `HeightDrive`는 world-length 단위를 가지며, `DirectionDrive`와 `TransferWeight`는 무차원이다.
+
+면 방향과 이웃 방향은 instance transform을 적용해 world space에서 평가한다. Non-uniform scale을 포함해 normal은 normal transform으로 변환한다. source 면에 투영된 중력과 source→target 이웃 방향의 일치도를 DirectionDrive로 사용한다.
+
+$$
+GravityOnSurface_i = GravityWorld - NormalWorld_i \cdot (GravityWorld \cdot NormalWorld_i)
+$$
+
+$$
+DirectionDrive_{i\rightarrow j} =
+\begin{cases}
+max(0, normalize(GravityOnSurface_i) \cdot normalize(WorldPosition_j - WorldPosition_i)), & |GravityOnSurface_i| > \epsilon \\
+0, & otherwise
+\end{cases}
+$$
+
+중력 투영 방향과 이웃 방향이 맞는 source→target flux가 커지고, 반대 방향 flux는 0이 된다. `GeometryTransferRate` 단위는 `State / (world-length · second)`이며, `GeometryDrive × GeometryTransferRate × Δt`는 State 단위 flux를 만든다.
+
+이 정의는 기존 [[../04_ADR/0002-Transport-Drive-and-Weight|ADR 0002]]의 역할 분리를 구체화한다. `DirectionDrive`는 source 면에 투영한 gravity와 이웃 방향을 비교하고, `NormalWeight`는 이웃 두 면 사이의 Normal 차이를 통해 경로 통과성을 조절하므로 역할이 다르다. `DistanceWeight`만 이웃의 실제 표면 간격 효과를 별도로 반영한다.
 
 ### TransferWeight
 
