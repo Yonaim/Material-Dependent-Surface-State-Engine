@@ -11,7 +11,7 @@
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/Swapchain.h"
-#include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
+#include "SurfaceStateSystem/SurfaceStateSystem.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
 #include "VulkanContext/GPU/GPUImage.h"
 #include "VulkanContext/GPU/GPUImageView.h"
@@ -51,7 +51,7 @@ namespace MDSS
         TRenderer& operator=(TRenderer&&) = delete;
 
         /** @brief 한 프레임을 acquire, record, submit, present 순서로 렌더링한다. */
-        void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface);
+        void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
 
         [[nodiscard]] const TSwapchain& GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass     GetRenderPassHandle() const noexcept;
@@ -92,7 +92,8 @@ namespace MDSS
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
                                  std::uint32_t   ImageIndex,
                                  const TScene&    SceneData,
-                                 const TDebugUI&  DebugInterface) const;
+                                 const TDebugUI&  DebugInterface,
+                                 float            DeltaTime);
 
         const TVulkanContext&                Context;
         TWindow&                             TargetWindow;
@@ -112,7 +113,7 @@ namespace MDSS
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;
-        std::unique_ptr<TSurfaceGPUResourceManager> SurfaceGPUResources;
+        std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
         std::vector<VkSemaphore> RenderFinishedSemaphores;
     };
 } // namespace MDSS

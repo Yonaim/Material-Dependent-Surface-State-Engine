@@ -144,7 +144,7 @@ namespace MDSS
           FrameContext(Context)
     {
         CreateMaterialDescriptorResources();
-        SurfaceGPUResources = std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, Scene);
+        SurfaceStates = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
         CreateRenderFinishedSemaphores();
         TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
         TLogger::Debug("TRenderer",
@@ -173,7 +173,7 @@ namespace MDSS
         }
     }
 
-    void TRenderer::RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface)
+    void TRenderer::RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime)
     {
         FrameContext.WaitForCurrentFrame();
 
@@ -210,7 +210,7 @@ namespace MDSS
             throw std::runtime_error("Failed to reset Vulkan command buffer.");
         }
 
-        RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface);
+        RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, DeltaTime);
 
         const VkSemaphore          WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
         if (ImageIndex >= RenderFinishedSemaphores.size())
@@ -337,7 +337,7 @@ namespace MDSS
 
     const TSurfaceGPUResourceManager& TRenderer::GetSurfaceGPUResources() const noexcept
     {
-        return *SurfaceGPUResources;
+        return SurfaceStates->GetGPUResources();
     }
 
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
@@ -588,7 +588,8 @@ namespace MDSS
     void TRenderer::RecordCommandBuffer(VkCommandBuffer CommandBuffer,
                                        std::uint32_t   ImageIndex,
                                        const TScene&    SceneData,
-                                       const TDebugUI&  DebugInterface) const
+                                       const TDebugUI&  DebugInterface,
+                                       float            DeltaTime)
     {
         VkCommandBufferBeginInfo BeginInfo{};
         BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -596,6 +597,8 @@ namespace MDSS
         {
             throw std::runtime_error("Failed to begin Vulkan command buffer.");
         }
+
+        SurfaceStates->RecordStep(CommandBuffer, DeltaTime);
 
         std::array<VkClearValue, 2> ClearValues{};
         ClearValues[0].color = {{0.03F, 0.04F, 0.06F, 1.0F}};

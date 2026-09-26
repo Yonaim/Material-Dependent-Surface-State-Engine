@@ -162,8 +162,11 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
     add_custom_command(
         OUTPUT "${ShaderBinary}"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${ShaderOutputDirectory}"
-        COMMAND "${Vulkan_GLSLC_EXECUTABLE}" "${ShaderSource}" -o "${ShaderBinary}"
-        DEPENDS "${ShaderSource}"
+        COMMAND "${Vulkan_GLSLC_EXECUTABLE}"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
+                "${ShaderSource}"
+                -o "${ShaderBinary}"
+        DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/SurfaceSolverCommon.glsl"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
     )
