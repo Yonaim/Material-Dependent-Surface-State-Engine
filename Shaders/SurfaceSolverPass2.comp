@@ -34,8 +34,8 @@ void main()
                 continue;
             }
 
-            RawOutgoing += rawSaturationFlux(TexelIndex, NeighborTexel, ChannelIndex);
-            float NeighborRawIncoming = rawSaturationFlux(NeighborTexel, TexelIndex, ChannelIndex);
+            RawOutgoing += rawFlux(TexelIndex, NeighborTexel, ChannelIndex);
+            float NeighborRawIncoming = rawFlux(NeighborTexel, TexelIndex, ChannelIndex);
             uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
             Incoming += NeighborRawIncoming * OutgoingFluxScale.Values[NeighborStateValueIndex];
         }

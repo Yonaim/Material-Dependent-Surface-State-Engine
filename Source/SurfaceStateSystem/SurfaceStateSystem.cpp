@@ -304,12 +304,17 @@ namespace MDSS
             }
 
             const bool bCurrentStateAB = GPUResources->IsCurrentStateAB(SceneIndex);
+            const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[SceneIndex];
+            const glm::mat4 ModelMatrix = Instance.GetTransform().GetMatrix();
+            const glm::vec3 GravityWorld(0.0F, -1.0F, 0.0F);
             Solver->RecordStep(CommandBuffer,
                                *Descriptors,
                                bCurrentStateAB,
                                GPUResources->GetInstanceTexelCount(SceneIndex),
                                GPUResources->GetInstanceChannelCount(SceneIndex),
-                               DeltaTime);
+                               DeltaTime,
+                               ModelMatrix,
+                               GravityWorld);
             GPUResources->AdvanceCurrentState(SceneIndex);
         }
     }
