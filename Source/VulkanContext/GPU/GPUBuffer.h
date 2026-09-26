@@ -38,6 +38,8 @@ namespace MDSS
          * @throws std::runtime_error mapping 실패 시 발생한다.
          */
         void Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
+        /** @brief host-visible/coherent buffer memory에서 바이트 범위를 읽는다. */
+        void Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
 
         [[nodiscard]] VkBuffer     GetHandle() const noexcept;
         [[nodiscard]] VkDeviceSize GetSize() const noexcept;

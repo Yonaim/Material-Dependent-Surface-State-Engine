@@ -265,4 +265,24 @@ if(BUILD_TESTING)
         target_compile_options(MDSS_SharedSurfaceGeometryTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME MDSS_SharedSurfaceGeometry COMMAND MDSS_SharedSurfaceGeometryTests)
+
+    add_executable(MDSS_SurfaceGPUResourceTests
+        Tests/SurfaceGPUResourceTests.cpp
+        Source/Logger/Logger.cpp
+        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
+        Source/SurfaceStateSystem/GPU/SurfaceGPUResources.cpp
+        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
+        Source/VulkanContext/GPU/GPUBuffer.cpp
+    )
+    target_include_directories(MDSS_SurfaceGPUResourceTests PRIVATE Source)
+    target_link_libraries(MDSS_SurfaceGPUResourceTests PRIVATE Vulkan::Vulkan glm::glm)
+    if(MSVC)
+        target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME MDSS_SurfaceGPUResource COMMAND MDSS_SurfaceGPUResourceTests)
+    set_tests_properties(MDSS_SurfaceGPUResource PROPERTIES SKIP_RETURN_CODE 77)
 endif()

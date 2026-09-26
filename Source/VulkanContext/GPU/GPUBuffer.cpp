@@ -122,6 +122,34 @@ namespace MDSS
         vkUnmapMemory(Device, Memory);
     }
 
+    void TGPUBuffer::Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset) const
+    {
+        if (Destination == nullptr)
+        {
+            throw std::invalid_argument("GPU buffer download destination must not be null.");
+        }
+
+        if ((MemoryProperties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0 ||
+            (MemoryProperties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
+        {
+            throw std::runtime_error("TGPUBuffer::Download currently requires host-visible/coherent memory.");
+        }
+
+        if (Offset > Size || DataSize > (Size - Offset))
+        {
+            throw std::out_of_range("GPU buffer download range exceeds the buffer size.");
+        }
+
+        void* MappedMemory = nullptr;
+        if (vkMapMemory(Device, Memory, Offset, DataSize, 0, &MappedMemory) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to map Vulkan buffer memory for download.");
+        }
+
+        std::memcpy(Destination, MappedMemory, static_cast<std::size_t>(DataSize));
+        vkUnmapMemory(Device, Memory);
+    }
+
     VkBuffer TGPUBuffer::GetHandle() const noexcept
     {
         return Handle;
