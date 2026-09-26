@@ -1,6 +1,6 @@
-mtllib DemoCube.mtl
+mtllib BrickCube.mtl
 
-o DemoCube
+o BrickCube
 v -0.5 -0.5  0.5
 v  0.5 -0.5  0.5
 v  0.5  0.5  0.5

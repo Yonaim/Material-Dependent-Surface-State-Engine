@@ -55,7 +55,7 @@ flowchart LR
   StateSystem --> Solver[TSurfaceStateSolver: 2-Pass compute]
 ```
 
-실선은 현재 코드에 존재하는 호출·생성·참조 관계다. 점선은 자료형이나 설계는 있지만 상위 연결 코드가 아직 구현되지 않은 구간이다. `.Scene` object가 `surfaceProfileMap`을 지정하면 선택한 Mesh/Map 조합으로 Surface 데이터를 생성하고, GPU 2-Pass dispatch를 기록한다. 기본 `Assets/Scenes/Demo.Scene`은 `DemoCube.SurfaceProfileMap`과 `DemoStone.SRProfile`을 참조해 Solver resource를 만든다. Contact 입력과 State visualization은 아직 연결되지 않아 초기 State는 0에서 시작한다.
+실선은 현재 코드에 존재하는 호출·생성·참조 관계다. 점선은 자료형이나 설계는 있지만 상위 연결 코드가 아직 구현되지 않은 구간이다. `.Scene` object가 `surfaceProfileMap`을 지정하면 선택한 Mesh/Map 조합으로 Surface 데이터를 생성하고, GPU 2-Pass dispatch를 기록한다. 기본 `Assets/Scenes/Demo.Scene`은 `BrickCube.SurfaceProfileMap`과 `DemoStone.SRProfile`을 참조해 Solver resource를 만든다. Contact 입력과 State visualization은 아직 연결되지 않아 초기 State는 0에서 시작한다.
 
 ## 파일 단위 책임과 수명
 
