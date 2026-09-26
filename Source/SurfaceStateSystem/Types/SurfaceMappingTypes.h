@@ -71,9 +71,10 @@ namespace MDSS
     {
         TSurfaceLocalID                                    Surface = InvalidSurfaceID;
         std::uint32_t                                     Triangle = InvalidTriangleID;
+        std::uint32_t                                     Chart = std::numeric_limits<std::uint32_t>::max();
         glm::vec3                                         Barycentric{0.0F};
         glm::vec3                                         Position{0.0F};
-        glm::vec3                                         Normal{0.0F, 1.0F, 0.0F};
+        glm::vec3                                         Normal{0.0F, 0.0F, 1.0F};
         TSurfaceGeometryScalar                             Geometry;
         std::array<TLocalTexelIndex, SurfaceNeighborCount> NeighborIndices = {
             InvalidTexelIndex,

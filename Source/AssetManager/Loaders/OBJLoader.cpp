@@ -216,7 +216,7 @@ namespace MDSS
             {
                 const glm::vec3& Sum = GeneratedNormalAccumulator[Index];
                 Result.Vertices[Index].Normal =
-                    glm::dot(Sum, Sum) > 1.0e-12F ? glm::normalize(Sum) : glm::vec3(0.0F, 1.0F, 0.0F);
+                    glm::dot(Sum, Sum) > 1.0e-12F ? glm::normalize(Sum) : glm::vec3(0.0F, 0.0F, 1.0F);
             }
             else
             {

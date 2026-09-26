@@ -15,6 +15,10 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     uint FlipNormalY;
     float NormalStrength;
     float AmbientLight;
+    uint DebugStateChannel;
+    uint StateChannelCount;
+    float DebugPadding0;
+    float DebugPadding1;
 } Material;
 
 layout(location = 0) out vec4 OutColor;

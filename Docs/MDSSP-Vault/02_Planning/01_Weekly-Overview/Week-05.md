@@ -14,11 +14,14 @@ Input, Transport, Decay를 통해 이웃 texel 사이 State가 Capacity 범위 �
 - 2-Pass gather update, State A/B ping-pong, barrier 순서를 확인한다.
 - 균일 상태, 단일 source, Capacity 차이, invalid texel, seam 전파와 큰 rate 조건을 테스트한다.
 - 동일한 총 시간에서 서로 다른 timestep 결과 차이를 허용 오차로 비교한다.
+- 검증을 돕는 Debug UI를 추가한다: Solver pause/step, State 초기화, 전체 texel 수와 valid 비율, 현재 ping-pong buffer, 최근 GPU solver 시간.
+- `OutgoingFluxScale` 디버그 뷰를 추가해 Solver가 계산한 outgoing flux 제한값을 확인한다.
 
 ## 산출물
 
 - 재현 가능한 기본 Transport / Decay Solver.
 - 상태 전파 테스트 결과와 수식·구현 차이 기록.
+- Solver 동작과 상태를 확인할 수 있는 최소 Debug UI 및 `OutgoingFluxScale` 시각화.
 
 ## 일정 경계
 

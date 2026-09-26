@@ -21,9 +21,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #ifndef MDSS_SHADER_DIR
 #define MDSS_SHADER_DIR "Shaders"
@@ -39,6 +41,60 @@ namespace MDSS
             glm::mat4 ViewProjection{1.0F};
         };
 
+        struct TGizmoVertex
+        {
+            glm::vec3 Position;
+            glm::vec4 Color;
+        };
+
+        struct TGizmoPushConstants
+        {
+            glm::mat4 ViewProjectionModel{1.0F};
+        };
+
+        std::vector<TGizmoVertex> BuildTranslateGizmoVertices()
+        {
+            std::vector<TGizmoVertex> Vertices;
+            constexpr int Segments = 16;
+            constexpr float ShaftRadius = 0.025F;
+            constexpr float HeadRadius = 0.075F;
+            constexpr float ShaftEnd = 0.76F;
+            const std::array<glm::vec3, 3> Axes = {glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)};
+            const std::array<glm::vec3, 3> U = {glm::vec3(0, 1, 0), glm::vec3(0, 0, 1), glm::vec3(1, 0, 0)};
+            const std::array<glm::vec3, 3> V = {glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0)};
+            const std::array<glm::vec4, 3> Colors = {
+                glm::vec4(1.0F, 0.10F, 0.10F, 1.0F),
+                glm::vec4(0.10F, 0.95F, 0.20F, 1.0F),
+                glm::vec4(0.12F, 0.35F, 1.0F, 1.0F)};
+            Vertices.reserve(3U * static_cast<std::size_t>(Segments) * 9U);
+            for (std::size_t Axis = 0; Axis < Axes.size(); ++Axis)
+            {
+                const glm::vec4 Color = Colors[Axis];
+                auto PushTriangle = [&](glm::vec3 A, glm::vec3 B, glm::vec3 C)
+                {
+                    auto World = [&](glm::vec3 P) { return U[Axis] * P.x + V[Axis] * P.y + Axes[Axis] * P.z; };
+                    Vertices.push_back({World(A), Color});
+                    Vertices.push_back({World(B), Color});
+                    Vertices.push_back({World(C), Color});
+                };
+                for (int I = 0; I < Segments; ++I)
+                {
+                    const float A0 = glm::two_pi<float>() * static_cast<float>(I) / Segments;
+                    const float A1 = glm::two_pi<float>() * static_cast<float>(I + 1) / Segments;
+                    const glm::vec3 S0{ShaftRadius * std::cos(A0), ShaftRadius * std::sin(A0), 0.0F};
+                    const glm::vec3 S1{ShaftRadius * std::cos(A1), ShaftRadius * std::sin(A1), 0.0F};
+                    const glm::vec3 E0{S0.x, S0.y, ShaftEnd};
+                    const glm::vec3 E1{S1.x, S1.y, ShaftEnd};
+                    PushTriangle(S0, S1, E1);
+                    PushTriangle(S0, E1, E0);
+                    const glm::vec3 H0{HeadRadius * std::cos(A0), HeadRadius * std::sin(A0), ShaftEnd};
+                    const glm::vec3 H1{HeadRadius * std::cos(A1), HeadRadius * std::sin(A1), ShaftEnd};
+                    PushTriangle(H0, H1, {0.0F, 0.0F, 1.0F});
+                }
+            }
+            return Vertices;
+        }
+
         struct alignas(16) TMaterialUniform
         {
             glm::vec4     BaseColor{1.0F};
@@ -46,6 +102,10 @@ namespace MDSS
             std::uint32_t FlipNormalY = 1;
             float         NormalStrength = 1.0F;
             float         AmbientLight = 0.25F;
+            std::uint32_t DebugStateChannel = 0;
+            std::uint32_t StateChannelCount = 0;
+            float         DebugPadding0 = 0.0F;
+            float         DebugPadding1 = 0.0F;
         };
 
         const char* GetRenderViewModeName(TRenderViewMode Mode)
@@ -57,18 +117,28 @@ namespace MDSS
                 case TRenderViewMode::Unlit:
                     return "Unlit";
                 case TRenderViewMode::VertexNormalWS:
-                    return "TVertex Normal (World Space)";
+                    return "Vertex Normal (World Space)";
                 case TRenderViewMode::NormalTextureTS:
                     return "Normal Texture (Tangent Space)";
                 case TRenderViewMode::MappedNormalWS:
                     return "Mapped Normal (World Space)";
+                case TRenderViewMode::SurfaceStateHeatmap:
+                    return "Surface State Heatmap";
+                case TRenderViewMode::SurfaceValidity:
+                    return "Surface Validity";
+                case TRenderViewMode::SurfaceID:
+                    return "Surface ID";
+                case TRenderViewMode::NeighborCount:
+                    return "Neighbor Count";
+                case TRenderViewMode::SurfaceSeam:
+                    return "Surface Seam";
             }
             return "Unknown";
         }
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 32, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 48, "TMaterialUniform must match the std140 shader block layout.");
 
         TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -113,6 +183,52 @@ namespace MDSS
             PushConstantRange.size = sizeof(TStaticMeshPushConstants);
             Config.PushConstantRanges.push_back(PushConstantRange);
 
+        return Config;
+    }
+
+        TGraphicsPipelineConfig BuildSurfaceDebugPipelineConfig(VkDescriptorSetLayout MaterialLayout,
+                                                             VkDescriptorSetLayout SurfaceLayout)
+    {
+        TGraphicsPipelineConfig Config = BuildStaticMeshPipelineConfig(MaterialLayout);
+        Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/SurfaceDebug.vert.spv";
+        Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/SurfaceDebug.frag.spv";
+        Config.DescriptorSetLayouts.push_back(SurfaceLayout);
+            return Config;
+        }
+
+        TGraphicsPipelineConfig BuildGizmoPipelineConfig()
+        {
+            TGraphicsPipelineConfig Config{};
+            Config.ShaderStages = {
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Gizmo.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Gizmo.frag.spv", "main"},
+            };
+            Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            Config.CullMode = VK_CULL_MODE_NONE;
+            Config.bDepthTestEnabled = false;
+            Config.bDepthWriteEnabled = false;
+            Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+            VkVertexInputBindingDescription Binding{};
+            Binding.binding = 0;
+            Binding.stride = sizeof(TGizmoVertex);
+            Binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            Config.VertexBindings.push_back(Binding);
+            VkVertexInputAttributeDescription Position{};
+            Position.location = 0;
+            Position.binding = 0;
+            Position.format = VK_FORMAT_R32G32B32_SFLOAT;
+            Position.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, Position));
+            Config.VertexAttributes.push_back(Position);
+            VkVertexInputAttributeDescription Color{};
+            Color.location = 1;
+            Color.binding = 0;
+            Color.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            Color.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, Color));
+            Config.VertexAttributes.push_back(Color);
+            VkPushConstantRange Push{};
+            Push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            Push.size = sizeof(TGizmoPushConstants);
+            Config.PushConstantRanges.push_back(Push);
             return Config;
         }
     } // namespace
@@ -136,6 +252,7 @@ namespace MDSS
           StaticMeshPipeline(Context.GetDevice(),
                              MainRenderPass.GetHandle(),
                              BuildStaticMeshPipelineConfig(MaterialDescriptorSetLayout)),
+          GizmoPipeline(Context.GetDevice(), MainRenderPass.GetHandle(), BuildGizmoPipelineConfig()),
           MainFramebuffers(Context.GetDevice(),
                            MainRenderPass.GetHandle(),
                            SwapchainData.GetExtent(),
@@ -143,8 +260,26 @@ namespace MDSS
                            DepthImageView.GetHandle()),
           FrameContext(Context)
     {
+        const std::vector<TGizmoVertex> GizmoVertices = BuildTranslateGizmoVertices();
+        GizmoVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
+        GizmoVertexBuffer = std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
+                                                        Context.GetDevice(),
+                                                        static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)),
+                                                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        GizmoVertexBuffer->Upload(GizmoVertices.data(),
+                                  static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
         CreateMaterialDescriptorResources();
         SurfaceStates = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        if (const TSurfaceStateDescriptorResources* Descriptors =
+                SurfaceStates->GetGPUResources().GetAnyInstanceDescriptors())
+        {
+            SurfaceDebugPipeline = std::make_unique<TGraphicsPipeline>(
+                Context.GetDevice(),
+                MainRenderPass.GetHandle(),
+                BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+        }
         CreateRenderFinishedSemaphores();
         TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
         TLogger::Debug("TRenderer",
@@ -159,6 +294,9 @@ namespace MDSS
             vkDeviceWaitIdle(Context.GetDevice());
         }
         DestroyRenderFinishedSemaphores();
+
+        SurfaceDebugPipeline.reset();
+        SurfaceStates.reset();
 
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
@@ -265,6 +403,35 @@ namespace MDSS
         }
     }
 
+    void TRenderer::SubmitContact(TSurfaceContactInput Contact)
+    {
+        if (SurfaceStates)
+        {
+            SurfaceStates->SubmitContact(std::move(Contact));
+        }
+    }
+
+    void TRenderer::ReloadSceneResources(const TScene& Scene)
+    {
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
+        }
+        auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        std::unique_ptr<TGraphicsPipeline> ReplacementDebugPipeline;
+        if (const TSurfaceStateDescriptorResources* Descriptors =
+                Replacement->GetGPUResources().GetAnyInstanceDescriptors())
+        {
+            ReplacementDebugPipeline = std::make_unique<TGraphicsPipeline>(
+                Context.GetDevice(),
+                MainRenderPass.GetHandle(),
+                BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+        }
+        SurfaceDebugPipeline.reset();
+        SurfaceStates = std::move(Replacement);
+        SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
+    }
+
     void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
     {
         TargetWindow.WaitForNonZeroFramebuffer();
@@ -355,6 +522,25 @@ namespace MDSS
         ViewMode = Mode;
         UpdateMaterialUniforms();
         TLogger::Info("TRenderer", std::string("Render view mode changed to ") + GetRenderViewModeName(ViewMode) + ".");
+    }
+
+    std::uint32_t TRenderer::GetDebugStateChannel() const noexcept
+    {
+        return DebugStateChannel;
+    }
+
+    void TRenderer::SetDebugStateChannel(std::uint32_t Channel)
+    {
+        if (Channel >= Assets.GetSurfaceStateRegistry().GetStateCount())
+        {
+            throw std::out_of_range("Debug State channel is outside the registered State range.");
+        }
+        if (DebugStateChannel == Channel)
+        {
+            return;
+        }
+        DebugStateChannel = Channel;
+        UpdateMaterialUniforms();
     }
 
     bool TRenderer::GetFlipNormalY() const noexcept
@@ -523,7 +709,11 @@ namespace MDSS
                                           static_cast<std::uint32_t>(ViewMode),
                                           bFlipNormalY ? 1U : 0U,
                                           NormalStrength,
-                                          AmbientLight};
+                                          AmbientLight,
+                                          DebugStateChannel,
+                                          static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                                          0.0F,
+                                          0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
             VkDescriptorImageInfo BaseImage{};
@@ -580,7 +770,11 @@ namespace MDSS
                                           static_cast<std::uint32_t>(ViewMode),
                                           bFlipNormalY ? 1U : 0U,
                                           NormalStrength,
-                                          AmbientLight};
+                                          AmbientLight,
+                                          DebugStateChannel,
+                                          static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                                          0.0F,
+                                          0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
         }
     }
@@ -614,7 +808,11 @@ namespace MDSS
         RenderPassInfo.pClearValues = ClearValues.data();
 
         vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, StaticMeshPipeline.GetHandle());
+        const bool bShowSurfaceDebug = ViewMode >= TRenderViewMode::SurfaceStateHeatmap;
+        const bool bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
+        vkCmdBindPipeline(CommandBuffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle() : StaticMeshPipeline.GetHandle());
 
         const VkExtent2D Extent = SwapchainData.GetExtent();
         VkViewport       Viewport{};
@@ -635,14 +833,23 @@ namespace MDSS
             Extent.height == 0 ? 1.0F : static_cast<float>(Extent.width) / static_cast<float>(Extent.height);
         const glm::mat4 ViewProjection = SceneData.GetMainCamera().GetViewProjectionMatrix(AspectRatio);
 
+        const TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates->GetGPUResources();
+        std::size_t SceneIndex = 0;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
+            const std::size_t CurrentSceneIndex = SceneIndex++;
             if (Instance.GetMesh() == InvalidAssetHandle)
             {
                 continue;
             }
 
-            const TMeshAsset&   Mesh = Assets.GetMesh(Instance.GetMesh());
+            const TMeshAsset& Mesh = Assets.GetMesh(Instance.GetMesh());
+            const TSurfaceStateDescriptorResources* SurfaceDescriptors =
+                SurfaceGPU.GetInstanceDescriptors(CurrentSceneIndex);
+            if (bShowSurfaceDebug && (!bCanShowSurfaceDebug || SurfaceDescriptors == nullptr))
+            {
+                continue;
+            }
             const VkBuffer     VertexBuffer = Mesh.GetVertexBuffer().GetHandle();
             const VkDeviceSize VertexOffset = 0;
             vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &VertexOffset);
@@ -666,14 +873,59 @@ namespace MDSS
                 const VkDescriptorSet DescriptorSet = MaterialResources[Section.Material].DescriptorSet;
                 vkCmdBindDescriptorSets(CommandBuffer,
                                         VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                        StaticMeshPipeline.GetLayout(),
+                                        bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetLayout()
+                                                            : StaticMeshPipeline.GetLayout(),
                                         0,
                                         1,
                                         &DescriptorSet,
                                         0,
                                         nullptr);
 
-                vkCmdDrawIndexed(CommandBuffer, Section.IndexCount, 1, Section.FirstIndex, 0, 0);
+                if (bCanShowSurfaceDebug)
+                {
+                    const VkDescriptorSet StateSet = SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex)
+                                                         ? SurfaceDescriptors->GetABSet()
+                                                         : SurfaceDescriptors->GetBASet();
+                    vkCmdBindDescriptorSets(CommandBuffer,
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            SurfaceDebugPipeline->GetLayout(),
+                                            1,
+                                            1,
+                                            &StateSet,
+                                            0,
+                                            nullptr);
+                }
+
+                vkCmdDrawIndexed(CommandBuffer,
+                                 Section.IndexCount,
+                                 1,
+                                 Section.FirstIndex,
+                                 0,
+                                 bCanShowSurfaceDebug ? Section.Surface : 0U);
+            }
+        }
+
+        if (const std::optional<std::size_t> Selected = DebugInterface.GetSelectedObject();
+            Selected && *Selected < SceneData.GetStaticMeshInstances().size() && GizmoVertexBuffer != nullptr)
+        {
+            const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*Selected].GetTransform().Position;
+            const float GizmoScale = glm::length(SceneData.GetMainCamera().GetPosition() - Position) * 0.18F;
+            if (GizmoScale > 0.01F)
+            {
+                const glm::mat4 Model = glm::scale(glm::translate(glm::mat4(1.0F), Position),
+                                                   glm::vec3(GizmoScale));
+                const TGizmoPushConstants Constants{ViewProjection * Model};
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GizmoPipeline.GetHandle());
+                const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
+                const VkDeviceSize Offset = 0;
+                vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &Offset);
+                vkCmdPushConstants(CommandBuffer,
+                                   GizmoPipeline.GetLayout(),
+                                   VK_SHADER_STAGE_VERTEX_BIT,
+                                   0,
+                                   sizeof(Constants),
+                                   &Constants);
+                vkCmdDraw(CommandBuffer, GizmoVertexCount, 1, 0, 0);
             }
         }
 

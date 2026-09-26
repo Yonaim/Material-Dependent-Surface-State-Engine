@@ -16,7 +16,7 @@ namespace MDSS
     struct TVertex
     {
         glm::vec3 Position{0.0F};
-        glm::vec3 Normal{0.0F, 1.0F, 0.0F};
+        glm::vec3 Normal{0.0F, 0.0F, 1.0F};
         glm::vec2 UV{0.0F};
         glm::vec4 Tangent{1.0F, 0.0F, 0.0F, 1.0F};
     };

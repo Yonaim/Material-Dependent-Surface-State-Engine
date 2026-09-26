@@ -16,6 +16,7 @@
 namespace MDSS
 {
     class TDebugUI;
+    class TInputSystem;
     class TRenderer;
 
     class TApplication
@@ -38,5 +39,6 @@ namespace MDSS
         TScene                     MainScene;
         std::unique_ptr<TRenderer> FrameRenderer;
         std::unique_ptr<TDebugUI>  DebugInterface;
+        std::unique_ptr<TInputSystem> InputInterface;
     };
 } // namespace MDSS

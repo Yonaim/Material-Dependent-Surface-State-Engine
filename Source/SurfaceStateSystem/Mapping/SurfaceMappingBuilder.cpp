@@ -450,7 +450,7 @@ namespace MDSS
                     Texel.Position =
                         Barycentric.x * V0.Position + Barycentric.y * V1.Position + Barycentric.z * V2.Position;
                     Texel.Normal =
-                        glm::dot(Normal, Normal) > UVEpsilon ? glm::normalize(Normal) : glm::vec3(0.0F, 1.0F, 0.0F);
+                        glm::dot(Normal, Normal) > UVEpsilon ? glm::normalize(Normal) : glm::vec3(0.0F, 0.0F, 1.0F);
                     ++CoveredTexels;
                 }
             }
