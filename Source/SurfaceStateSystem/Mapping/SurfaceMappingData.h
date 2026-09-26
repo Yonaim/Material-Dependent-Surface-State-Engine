@@ -25,7 +25,7 @@ namespace MDSS
         std::uint32_t                                     Chart = InvalidChartID;
         glm::vec3                                         Barycentric{0.0F};
         glm::vec3                                         Position{0.0F};
-        glm::vec3                                         Normal{0.0F, 1.0F, 0.0F};
+        glm::vec3                                         Normal{0.0F, 0.0F, 1.0F};
         std::array<TLocalTexelIndex, SurfaceNeighborCount> Neighbors = {
             InvalidTexelIndex,
             InvalidTexelIndex,

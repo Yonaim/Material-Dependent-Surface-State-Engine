@@ -7,6 +7,7 @@
 
 #include "DebugUI/DebugUI.h"
 #include "AssetManager/Loaders/SceneLoader.h"
+#include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
 #include "Renderer/Renderer.h"
 
@@ -27,7 +28,8 @@ namespace MDSS
         MainScene = TSceneLoader::Load(DemoScenePath, Assets);
 
         FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets, MainScene);
-        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer);
+        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets);
+        InputInterface = std::make_unique<TInputSystem>(MainWindow.GetNativeHandle());
         TLogger::Info("TApplication", "TRenderer, scene, asset system, and TDebugUI are ready.");
     }
 
@@ -55,6 +57,17 @@ namespace MDSS
         {
             MainWindow.PollEvents();
             DebugInterface->BeginFrame(MainScene);
+            if (const std::optional<TSurfaceContactInput> Contact = InputInterface->PollDebugContact(
+                    MainScene,
+                    Assets,
+                    MainScene.GetMainCamera(),
+                    DebugInterface->IsInjectModeEnabled(),
+                    DebugInterface->GetInjectState(),
+                    DebugInterface->GetInjectStrength(),
+                    DebugInterface->IsKeyboardCaptured()))
+            {
+                FrameRenderer->SubmitContact(*Contact);
+            }
             const auto  CurrentFrameTime = std::chrono::steady_clock::now();
             const float DeltaTime = std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
             PreviousFrameTime = CurrentFrameTime;

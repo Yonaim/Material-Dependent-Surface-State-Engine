@@ -34,6 +34,8 @@ namespace MDSS
         NextState,
         OutgoingFluxScale,
         InputDelta,
+        SurfaceRanges,
+        TexelChartIndices,
         Count
     };
 
@@ -54,6 +56,8 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetNormalBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetGeometryScalarBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetNeighborIndexBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
 
     private:
@@ -64,6 +68,8 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> NormalBuffer;
         std::unique_ptr<TGPUBuffer> GeometryScalarBuffer;
         std::unique_ptr<TGPUBuffer> NeighborIndexBuffer;
+        std::unique_ptr<TGPUBuffer> SurfaceRangeBuffer;
+        std::unique_ptr<TGPUBuffer> TexelChartIndexBuffer;
     };
 
     class TSurfaceProfileGPUResources final
@@ -160,6 +166,7 @@ namespace MDSS
         /** @brief Scene vector index에 해당하는 instance descriptor resources를 반환한다. */
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t GetInstanceTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
         [[nodiscard]] bool IsCurrentStateAB(std::size_t SceneIndex) const;

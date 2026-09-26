@@ -30,7 +30,12 @@ namespace MDSS
         Unlit,
         VertexNormalWS,
         NormalTextureTS,
-        MappedNormalWS
+        MappedNormalWS,
+        SurfaceStateHeatmap,
+        SurfaceValidity,
+        SurfaceID,
+        NeighborCount,
+        SurfaceSeam
     };
 
     class TAssetManager;
@@ -52,6 +57,7 @@ namespace MDSS
 
         /** @brief 한 프레임을 acquire, record, submit, present 순서로 렌더링한다. */
         void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
+        void SubmitContact(TSurfaceContactInput Contact);
 
         [[nodiscard]] const TSwapchain& GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass     GetRenderPassHandle() const noexcept;
@@ -59,6 +65,8 @@ namespace MDSS
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
+        [[nodiscard]] std::uint32_t GetDebugStateChannel() const noexcept;
+        void SetDebugStateChannel(std::uint32_t Channel);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);
@@ -105,11 +113,13 @@ namespace MDSS
         TRenderPass                          MainRenderPass;
         VkDescriptorSetLayout               MaterialDescriptorSetLayout = VK_NULL_HANDLE;
         TGraphicsPipeline                    StaticMeshPipeline;
+        std::unique_ptr<TGraphicsPipeline>    SurfaceDebugPipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
         std::vector<TMaterialRenderResource> MaterialResources;
         TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
+        std::uint32_t                         DebugStateChannel = 0;
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;

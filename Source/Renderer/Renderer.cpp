@@ -21,9 +21,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #ifndef MDSS_SHADER_DIR
 #define MDSS_SHADER_DIR "Shaders"
@@ -39,6 +41,7 @@ namespace MDSS
             glm::mat4 ViewProjection{1.0F};
         };
 
+
         struct alignas(16) TMaterialUniform
         {
             glm::vec4     BaseColor{1.0F};
@@ -46,6 +49,10 @@ namespace MDSS
             std::uint32_t FlipNormalY = 1;
             float         NormalStrength = 1.0F;
             float         AmbientLight = 0.25F;
+            std::uint32_t DebugStateChannel = 0;
+            std::uint32_t StateChannelCount = 0;
+            float         DebugPadding0 = 0.0F;
+            float         DebugPadding1 = 0.0F;
         };
 
         const char* GetRenderViewModeName(TRenderViewMode Mode)
@@ -57,18 +64,28 @@ namespace MDSS
                 case TRenderViewMode::Unlit:
                     return "Unlit";
                 case TRenderViewMode::VertexNormalWS:
-                    return "TVertex Normal (World Space)";
+                    return "Vertex Normal (World Space)";
                 case TRenderViewMode::NormalTextureTS:
                     return "Normal Texture (Tangent Space)";
                 case TRenderViewMode::MappedNormalWS:
                     return "Mapped Normal (World Space)";
+                case TRenderViewMode::SurfaceStateHeatmap:
+                    return "Surface State Heatmap";
+                case TRenderViewMode::SurfaceValidity:
+                    return "Surface Validity";
+                case TRenderViewMode::SurfaceID:
+                    return "Surface ID";
+                case TRenderViewMode::NeighborCount:
+                    return "Neighbor Count";
+                case TRenderViewMode::SurfaceSeam:
+                    return "Surface Seam";
             }
             return "Unknown";
         }
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 32, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 48, "TMaterialUniform must match the std140 shader block layout.");
 
         TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -113,8 +130,19 @@ namespace MDSS
             PushConstantRange.size = sizeof(TStaticMeshPushConstants);
             Config.PushConstantRanges.push_back(PushConstantRange);
 
+        return Config;
+    }
+
+        TGraphicsPipelineConfig BuildSurfaceDebugPipelineConfig(VkDescriptorSetLayout MaterialLayout,
+                                                             VkDescriptorSetLayout SurfaceLayout)
+    {
+        TGraphicsPipelineConfig Config = BuildStaticMeshPipelineConfig(MaterialLayout);
+        Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/SurfaceDebug.vert.spv";
+        Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/SurfaceDebug.frag.spv";
+        Config.DescriptorSetLayouts.push_back(SurfaceLayout);
             return Config;
         }
+
     } // namespace
 
     TRenderer::TRenderer(const TVulkanContext& Context,
@@ -145,6 +173,14 @@ namespace MDSS
     {
         CreateMaterialDescriptorResources();
         SurfaceStates = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        if (const TSurfaceStateDescriptorResources* Descriptors =
+                SurfaceStates->GetGPUResources().GetAnyInstanceDescriptors())
+        {
+            SurfaceDebugPipeline = std::make_unique<TGraphicsPipeline>(
+                Context.GetDevice(),
+                MainRenderPass.GetHandle(),
+                BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+        }
         CreateRenderFinishedSemaphores();
         TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
         TLogger::Debug("TRenderer",
@@ -159,6 +195,9 @@ namespace MDSS
             vkDeviceWaitIdle(Context.GetDevice());
         }
         DestroyRenderFinishedSemaphores();
+
+        SurfaceDebugPipeline.reset();
+        SurfaceStates.reset();
 
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
@@ -265,6 +304,14 @@ namespace MDSS
         }
     }
 
+    void TRenderer::SubmitContact(TSurfaceContactInput Contact)
+    {
+        if (SurfaceStates)
+        {
+            SurfaceStates->SubmitContact(std::move(Contact));
+        }
+    }
+
     void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
     {
         TargetWindow.WaitForNonZeroFramebuffer();
@@ -355,6 +402,25 @@ namespace MDSS
         ViewMode = Mode;
         UpdateMaterialUniforms();
         TLogger::Info("TRenderer", std::string("Render view mode changed to ") + GetRenderViewModeName(ViewMode) + ".");
+    }
+
+    std::uint32_t TRenderer::GetDebugStateChannel() const noexcept
+    {
+        return DebugStateChannel;
+    }
+
+    void TRenderer::SetDebugStateChannel(std::uint32_t Channel)
+    {
+        if (Channel >= Assets.GetSurfaceStateRegistry().GetStateCount())
+        {
+            throw std::out_of_range("Debug State channel is outside the registered State range.");
+        }
+        if (DebugStateChannel == Channel)
+        {
+            return;
+        }
+        DebugStateChannel = Channel;
+        UpdateMaterialUniforms();
     }
 
     bool TRenderer::GetFlipNormalY() const noexcept
@@ -523,7 +589,11 @@ namespace MDSS
                                           static_cast<std::uint32_t>(ViewMode),
                                           bFlipNormalY ? 1U : 0U,
                                           NormalStrength,
-                                          AmbientLight};
+                                          AmbientLight,
+                                          DebugStateChannel,
+                                          static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                                          0.0F,
+                                          0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
             VkDescriptorImageInfo BaseImage{};
@@ -580,7 +650,11 @@ namespace MDSS
                                           static_cast<std::uint32_t>(ViewMode),
                                           bFlipNormalY ? 1U : 0U,
                                           NormalStrength,
-                                          AmbientLight};
+                                          AmbientLight,
+                                          DebugStateChannel,
+                                          static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                                          0.0F,
+                                          0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
         }
     }
@@ -614,7 +688,11 @@ namespace MDSS
         RenderPassInfo.pClearValues = ClearValues.data();
 
         vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, StaticMeshPipeline.GetHandle());
+        const bool bShowSurfaceDebug = ViewMode >= TRenderViewMode::SurfaceStateHeatmap;
+        const bool bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
+        vkCmdBindPipeline(CommandBuffer,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle() : StaticMeshPipeline.GetHandle());
 
         const VkExtent2D Extent = SwapchainData.GetExtent();
         VkViewport       Viewport{};
@@ -635,14 +713,23 @@ namespace MDSS
             Extent.height == 0 ? 1.0F : static_cast<float>(Extent.width) / static_cast<float>(Extent.height);
         const glm::mat4 ViewProjection = SceneData.GetMainCamera().GetViewProjectionMatrix(AspectRatio);
 
+        const TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates->GetGPUResources();
+        std::size_t SceneIndex = 0;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
+            const std::size_t CurrentSceneIndex = SceneIndex++;
             if (Instance.GetMesh() == InvalidAssetHandle)
             {
                 continue;
             }
 
-            const TMeshAsset&   Mesh = Assets.GetMesh(Instance.GetMesh());
+            const TMeshAsset& Mesh = Assets.GetMesh(Instance.GetMesh());
+            const TSurfaceStateDescriptorResources* SurfaceDescriptors =
+                SurfaceGPU.GetInstanceDescriptors(CurrentSceneIndex);
+            if (bShowSurfaceDebug && (!bCanShowSurfaceDebug || SurfaceDescriptors == nullptr))
+            {
+                continue;
+            }
             const VkBuffer     VertexBuffer = Mesh.GetVertexBuffer().GetHandle();
             const VkDeviceSize VertexOffset = 0;
             vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &VertexOffset);
@@ -666,14 +753,35 @@ namespace MDSS
                 const VkDescriptorSet DescriptorSet = MaterialResources[Section.Material].DescriptorSet;
                 vkCmdBindDescriptorSets(CommandBuffer,
                                         VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                        StaticMeshPipeline.GetLayout(),
+                                        bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetLayout()
+                                                            : StaticMeshPipeline.GetLayout(),
                                         0,
                                         1,
                                         &DescriptorSet,
                                         0,
                                         nullptr);
 
-                vkCmdDrawIndexed(CommandBuffer, Section.IndexCount, 1, Section.FirstIndex, 0, 0);
+                if (bCanShowSurfaceDebug)
+                {
+                    const VkDescriptorSet StateSet = SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex)
+                                                         ? SurfaceDescriptors->GetABSet()
+                                                         : SurfaceDescriptors->GetBASet();
+                    vkCmdBindDescriptorSets(CommandBuffer,
+                                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            SurfaceDebugPipeline->GetLayout(),
+                                            1,
+                                            1,
+                                            &StateSet,
+                                            0,
+                                            nullptr);
+                }
+
+                vkCmdDrawIndexed(CommandBuffer,
+                                 Section.IndexCount,
+                                 1,
+                                 Section.FirstIndex,
+                                 0,
+                                 bCanShowSurfaceDebug ? Section.Surface : 0U);
             }
         }
 

@@ -143,6 +143,15 @@ namespace MDSS
         return nullptr;
     }
 
+    const TGPUBuffer& TSurfaceGPUResourceManager::GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const
+    {
+        if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
+        {
+            throw std::out_of_range("Scene instance has no Surface GPU input buffer.");
+        }
+        return InstanceResources[SceneIndex]->State->GetInputDeltaBuffer();
+    }
+
     std::size_t TSurfaceGPUResourceManager::GetInstanceTexelCount(std::size_t SceneIndex) const
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])

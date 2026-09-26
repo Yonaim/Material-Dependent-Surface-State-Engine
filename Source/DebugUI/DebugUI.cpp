@@ -6,6 +6,7 @@
 #include "DebugUI/DebugUI.h"
 
 #include "Application/Window.h"
+#include "AssetManager/Core/AssetManager.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Swapchain.h"
 #include "Scene/Camera.h"
@@ -26,6 +27,11 @@
 #include <imgui.h>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
+#include <exception>
+#include <vector>
+#include <cmath>
+#include <limits>
 
 namespace MDSS
 {
@@ -62,14 +68,27 @@ namespace MDSS
         constexpr std::array<const char*, 5> RenderViewModeNames = {
             "Lit",
             "Unlit",
-            "TVertex Normal (World Space)",
+            "Vertex Normal (World Space)",
             "Normal Texture (Tangent Space)",
             "Mapped Normal (World Space)",
         };
+
+        constexpr std::array<const char*, 5> SurfaceDebugViewNames = {
+            "State Heatmap",
+            "Validity",
+            "Surface ID",
+            "Neighbor Count",
+            "UV Seam",
+        };
+
     } // namespace
 
-    TDebugUI::TDebugUI(const TVulkanContext& Context, const TWindow& TWindow, TRenderer& TRenderer)
-        : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&TRenderer)
+    TDebugUI::TDebugUI(const TVulkanContext& Context,
+                       const TWindow&      TWindow,
+                       TRenderer&          TRenderer,
+                       TAssetManager&      Assets)
+        : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&TRenderer),
+          AssetManager(&Assets)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -120,7 +139,7 @@ namespace MDSS
 
         TLogger::Info("TDebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
         TLogger::Debug("TDebugUI",
-                      "TCamera, render options, normal debug views, and five-level log filtering are active.");
+                      "Camera/render controls, injection controls, normal debug views, and log filtering are active.");
         CachedLogEntries = TLogger::GetEntries();
         LastSeenLogRevision = TLogger::GetRevision();
     }
@@ -149,10 +168,29 @@ namespace MDSS
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ProcessCameraInput(SceneData);
         DrawCameraWindow(SceneData);
         DrawRenderOptionsWindow();
+        DrawInjectWindow();
         DrawLogWindow();
+        ProcessCameraInput(SceneData);
+
+        if (bInjectMode)
+        {
+            ImGuiViewport* Viewport = ImGui::GetMainViewport();
+            const ImVec2   Center{Viewport->WorkPos.x + Viewport->WorkSize.x * 0.5F,
+                                Viewport->WorkPos.y + Viewport->WorkSize.y * 0.5F};
+            constexpr float CrosshairHalfSize = 9.0F;
+            constexpr ImU32 CrosshairColor = IM_COL32(255, 255, 255, 230);
+            ImDrawList* DrawList = ImGui::GetForegroundDrawList();
+            DrawList->AddLine({Center.x - CrosshairHalfSize, Center.y},
+                              {Center.x + CrosshairHalfSize, Center.y},
+                              CrosshairColor,
+                              2.0F);
+            DrawList->AddLine({Center.x, Center.y - CrosshairHalfSize},
+                              {Center.x, Center.y + CrosshairHalfSize},
+                              CrosshairColor,
+                              2.0F);
+        }
 
         ImGui::Render();
     }
@@ -176,6 +214,31 @@ namespace MDSS
         TLogger::Debug("TDebugUI",
                       "ImGui Vulkan backend updated after swapchain recreation (images=" +
                           std::to_string(TRenderer.GetSwapchain().GetImages().size()) + ").");
+    }
+
+    bool TDebugUI::IsInjectModeEnabled() const noexcept
+    {
+        return bInjectMode;
+    }
+
+    TStateId TDebugUI::GetInjectState() const noexcept
+    {
+        return InjectState;
+    }
+
+    float TDebugUI::GetInjectStrength() const noexcept
+    {
+        return InjectStrength;
+    }
+
+    TStateId TDebugUI::GetDebugState() const noexcept
+    {
+        return DebugState;
+    }
+
+    bool TDebugUI::IsKeyboardCaptured() const noexcept
+    {
+        return ImGui::GetIO().WantCaptureKeyboard;
     }
 
     void TDebugUI::ProcessCameraInput(TScene& SceneData)
@@ -216,7 +279,7 @@ namespace MDSS
             }
         }
 
-        if (IO.WantCaptureKeyboard)
+        if (IO.WantTextInput || ImGui::IsAnyItemActive())
         {
             return;
         }
@@ -228,8 +291,14 @@ namespace MDSS
         }
 
         const glm::vec3 Forward = glm::normalize(ViewDirection);
-        const glm::vec3 WorldUp{0.0F, 1.0F, 0.0F};
-        const glm::vec3 RightVector = glm::cross(Forward, WorldUp);
+        const glm::vec3 WorldUp{0.0F, 0.0F, 1.0F};
+        glm::vec3       FlatForward = Forward - WorldUp * glm::dot(Forward, WorldUp);
+        if (glm::dot(FlatForward, FlatForward) <= 1.0e-12F)
+        {
+            FlatForward = {1.0F, 0.0F, 0.0F};
+        }
+        FlatForward = glm::normalize(FlatForward);
+        const glm::vec3 RightVector = glm::cross(FlatForward, WorldUp);
         if (glm::dot(RightVector, RightVector) <= 1.0e-12F)
         {
             return;
@@ -240,11 +309,11 @@ namespace MDSS
 
         if (ImGui::IsKeyDown(ImGuiKey_W))
         {
-            MoveDirection += Forward;
+            MoveDirection += FlatForward;
         }
         if (ImGui::IsKeyDown(ImGuiKey_S))
         {
-            MoveDirection -= Forward;
+            MoveDirection -= FlatForward;
         }
         if (ImGui::IsKeyDown(ImGuiKey_D))
         {
@@ -274,8 +343,7 @@ namespace MDSS
         const float    AvailableWidth = std::max(Viewport->WorkSize.x, 1.0F);
         const float    CameraWidth = std::min(330.0F, std::max(240.0F, AvailableWidth - 20.0F));
         const ImVec2   WindowSize{CameraWidth, 215.0F};
-        const ImVec2   WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - WindowSize.x - 10.0F,
-                                    Viewport->WorkPos.y + 10.0F};
+        const ImVec2   WindowPosition{Viewport->WorkPos.x + 10.0F, Viewport->WorkPos.y + 10.0F};
 
         ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_Always);
         ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Always);
@@ -283,7 +351,7 @@ namespace MDSS
         constexpr ImGuiWindowFlags Flags =
             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 
-        if (ImGui::Begin("TCamera", nullptr, Flags))
+        if (ImGui::Begin("Camera", nullptr, Flags))
         {
             TCamera& CameraData = SceneData.GetMainCamera();
 
@@ -325,9 +393,8 @@ namespace MDSS
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         const float    AvailableWidth = std::max(Viewport->WorkSize.x, 1.0F);
         const float    WindowWidth = std::min(330.0F, std::max(240.0F, AvailableWidth - 20.0F));
-        const ImVec2   WindowSize{WindowWidth, 250.0F};
-        const ImVec2   WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - WindowSize.x - 10.0F,
-                                    Viewport->WorkPos.y + 235.0F};
+        const ImVec2   WindowSize{WindowWidth, 320.0F};
+        const ImVec2   WindowPosition{Viewport->WorkPos.x + 10.0F, Viewport->WorkPos.y + 235.0F};
 
         ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_Always);
         ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Always);
@@ -337,13 +404,123 @@ namespace MDSS
 
         if (ImGui::Begin("Render Options", nullptr, Flags))
         {
-            int SelectedMode = static_cast<int>(FrameRenderer->GetRenderViewMode());
-            if (ImGui::Combo("View Mode",
-                             &SelectedMode,
-                             RenderViewModeNames.data(),
-                             static_cast<int>(RenderViewModeNames.size())))
+            constexpr std::array<const char*, 2> ViewGroups = {"Rendering", "Surface Debug"};
+            TRenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode();
+            int SelectedGroup = CurrentMode >= TRenderViewMode::SurfaceStateHeatmap ? 1 : 0;
+            if (ImGui::Combo("View Group", &SelectedGroup, ViewGroups.data(), static_cast<int>(ViewGroups.size())))
             {
-                FrameRenderer->SetRenderViewMode(static_cast<TRenderViewMode>(SelectedMode));
+                const TRenderViewMode FirstMode = SelectedGroup == 0 ? TRenderViewMode::Lit
+                                                                      : TRenderViewMode::SurfaceStateHeatmap;
+                FrameRenderer->SetRenderViewMode(FirstMode);
+                CurrentMode = FirstMode;
+            }
+
+            if (SelectedGroup == 0)
+            {
+                int SelectedMode = static_cast<int>(CurrentMode);
+                if (ImGui::Combo("View Mode",
+                                 &SelectedMode,
+                                 RenderViewModeNames.data(),
+                                 static_cast<int>(RenderViewModeNames.size())))
+                {
+                    FrameRenderer->SetRenderViewMode(static_cast<TRenderViewMode>(SelectedMode));
+                }
+            }
+            else
+            {
+                int SelectedMode = static_cast<int>(CurrentMode) -
+                                   static_cast<int>(TRenderViewMode::SurfaceStateHeatmap);
+                if (SelectedMode < 0 || SelectedMode >= static_cast<int>(SurfaceDebugViewNames.size()))
+                {
+                    SelectedMode = 0;
+                }
+                if (ImGui::Combo("Debug View",
+                                 &SelectedMode,
+                                 SurfaceDebugViewNames.data(),
+                                 static_cast<int>(SurfaceDebugViewNames.size())))
+                {
+                    FrameRenderer->SetRenderViewMode(static_cast<TRenderViewMode>(
+                        static_cast<int>(TRenderViewMode::SurfaceStateHeatmap) + SelectedMode));
+                }
+            }
+
+            const TSurfaceStateRegistry* Registry =
+                AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+            const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
+            if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceStateHeatmap)
+            {
+                if (StateCount == 0)
+                {
+                    ImGui::TextDisabled("No Surface States are registered.");
+                }
+                else
+                {
+                    if (DebugState >= StateCount)
+                    {
+                        DebugState = 0;
+                    }
+                    const std::string& SelectedName = Registry->GetStateName(DebugState);
+                    if (ImGui::BeginCombo("State channel", SelectedName.c_str()))
+                    {
+                        for (std::size_t Index = 0; Index < StateCount; ++Index)
+                        {
+                            const TStateId State = static_cast<TStateId>(Index);
+                            const std::string& Name = Registry->GetStateName(State);
+                            const bool bSelected = State == DebugState;
+                            if (ImGui::Selectable(Name.c_str(), bSelected))
+                            {
+                                DebugState = State;
+                                FrameRenderer->SetDebugStateChannel(DebugState);
+                            }
+                            if (bSelected)
+                            {
+                                ImGui::SetItemDefaultFocus();
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                    ImGui::TextDisabled("Color shows State / Profile capacity (0 to 1).");
+                    ImDrawList* DrawList = ImGui::GetWindowDrawList();
+                    const ImVec2 BarMin = ImGui::GetCursorScreenPos();
+                    const ImVec2 BarMax{BarMin.x + ImGui::GetContentRegionAvail().x, BarMin.y + 12.0F};
+                    constexpr std::array<ImU32, 4> HeatmapColors = {
+                        IM_COL32(19, 23, 66, 255),
+                        IM_COL32(33, 92, 156, 255),
+                        IM_COL32(31, 156, 138, 255),
+                        IM_COL32(253, 230, 51, 255)};
+                    const float SegmentWidth = (BarMax.x - BarMin.x) / static_cast<float>(HeatmapColors.size() - 1U);
+                    for (std::size_t Segment = 0; Segment + 1U < HeatmapColors.size(); ++Segment)
+                    {
+                        const ImVec2 SegmentMin{BarMin.x + SegmentWidth * static_cast<float>(Segment), BarMin.y};
+                        const ImVec2 SegmentMax{BarMin.x + SegmentWidth * static_cast<float>(Segment + 1U), BarMax.y};
+                        DrawList->AddRectFilledMultiColor(SegmentMin,
+                                                          SegmentMax,
+                                                          HeatmapColors[Segment],
+                                                          HeatmapColors[Segment + 1U],
+                                                          HeatmapColors[Segment + 1U],
+                                                          HeatmapColors[Segment]);
+                    }
+                    ImGui::Dummy({0.0F, 14.0F});
+                    ImGui::Text("0  (empty)");
+                    ImGui::SameLine();
+                    ImGui::Text("1  (capacity)");
+                }
+            }
+            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceValidity)
+            {
+                ImGui::TextDisabled("Green: valid texel   Red: invalid texel");
+            }
+            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceID)
+            {
+                ImGui::TextDisabled("Each Surface uses a stable display color.");
+            }
+            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::NeighborCount)
+            {
+                ImGui::TextDisabled("Dark: 0 neighbors   Bright: 8 neighbors");
+            }
+            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceSeam)
+            {
+                ImGui::TextDisabled("Bright texels have a neighbor on another UV chart.");
             }
 
             bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
@@ -380,6 +557,63 @@ namespace MDSS
             ImGui::Separator();
             ImGui::TextWrapped("Normal Texture (TS) shows the decoded normal map. Mapped Normal (WS) shows the result "
                                "after TBN conversion.");
+        }
+        ImGui::End();
+    }
+
+    void TDebugUI::DrawInjectWindow()
+    {
+        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        const float    Width = std::min(300.0F, std::max(240.0F, Viewport->WorkSize.x - 20.0F));
+        const ImVec2   WindowSize{Width, 170.0F};
+        const ImVec2   WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
+                                    Viewport->WorkPos.y + 10.0F};
+        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_Always);
+        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Always);
+
+        constexpr ImGuiWindowFlags Flags =
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        if (ImGui::Begin("Inject", nullptr, Flags))
+        {
+            ImGui::Checkbox("Inject mode", &bInjectMode);
+            ImGui::TextDisabled("Enable mode, aim with the crosshair, press Space.");
+
+            const TSurfaceStateRegistry* Registry =
+                AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+            const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
+            if (StateCount == 0)
+            {
+                ImGui::TextDisabled("No Surface States are registered.");
+                InjectState = InvalidStateId;
+            }
+            else
+            {
+                if (InjectState >= StateCount)
+                {
+                    InjectState = 0;
+                }
+                const std::string& SelectedName = Registry->GetStateName(InjectState);
+                if (ImGui::BeginCombo("State", SelectedName.c_str()))
+                {
+                    for (std::size_t Index = 0; Index < StateCount; ++Index)
+                    {
+                        const TStateId State = static_cast<TStateId>(Index);
+                        const std::string& Name = Registry->GetStateName(State);
+                        const bool bSelected = State == InjectState;
+                        if (ImGui::Selectable(Name.c_str(), bSelected))
+                        {
+                            InjectState = State;
+                        }
+                        if (bSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
+            ImGui::SliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
         }
         ImGui::End();
     }

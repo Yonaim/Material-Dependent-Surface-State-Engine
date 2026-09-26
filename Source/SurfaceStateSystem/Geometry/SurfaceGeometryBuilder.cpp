@@ -77,6 +77,7 @@ namespace MDSS
 
             Target.Surface = Source.Surface;
             Target.Triangle = Source.Triangle;
+            Target.Chart = Source.Chart;
             Target.Barycentric = Source.Barycentric;
             Target.Position = Source.Position;
             Target.Normal = Source.Normal;

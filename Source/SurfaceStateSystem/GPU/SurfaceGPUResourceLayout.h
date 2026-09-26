@@ -29,6 +29,14 @@ namespace MDSS
         float ConcavityWeight = 0.0F;
     };
 
+    struct alignas(16) TSurfaceGPUSurfaceRange
+    {
+        std::uint32_t FirstTexel = 0;
+        std::uint32_t Width = 0;
+        std::uint32_t Height = 0;
+        std::uint32_t TexelCount = 0;
+    };
+
     struct alignas(16) TSurfaceGPUNeighborIndices
     {
         std::array<std::uint32_t, SurfaceNeighborCount> Indices{};
@@ -57,6 +65,8 @@ namespace MDSS
         std::vector<TSurfaceGPUVec4>              Normals;
         std::vector<TSurfaceGPUGeometryScalar>     GeometryScalars;
         std::vector<TSurfaceGPUNeighborIndices>    NeighborIndices;
+        std::vector<TSurfaceGPUSurfaceRange>       SurfaceRanges;
+        std::vector<std::uint32_t>                 TexelChartIndices;
     };
 
     struct TSurfaceGPUProfileUpload
@@ -72,6 +82,8 @@ namespace MDSS
     static_assert(offsetof(TSurfaceGPUGeometryScalar, ConcavityWeight) == 4);
     static_assert(sizeof(TSurfaceGPUNeighborIndices) == 32);
     static_assert(alignof(TSurfaceGPUNeighborIndices) == 16);
+    static_assert(sizeof(TSurfaceGPUSurfaceRange) == 16);
+    static_assert(alignof(TSurfaceGPUSurfaceRange) == 16);
     static_assert(sizeof(TSurfaceGPUProfileParameters) == 32);
     static_assert(alignof(TSurfaceGPUProfileParameters) == 16);
     static_assert(offsetof(TSurfaceGPUProfileParameters, DecayAndGeometry) == 16);

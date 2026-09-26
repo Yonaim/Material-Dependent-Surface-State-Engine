@@ -113,6 +113,18 @@ namespace MDSS
                                                    Upload.NeighborIndices.size(),
                                                    sizeof(TSurfaceGPUNeighborIndices),
                                                    MaxRange);
+        SurfaceRangeBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                                  Device,
+                                                  Upload.SurfaceRanges.data(),
+                                                  Upload.SurfaceRanges.size(),
+                                                  sizeof(TSurfaceGPUSurfaceRange),
+                                                  MaxRange);
+        TexelChartIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                                     Device,
+                                                     Upload.TexelChartIndices.data(),
+                                                     Upload.TexelChartIndices.size(),
+                                                     sizeof(std::uint32_t),
+                                                     MaxRange);
     }
 
     const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelSurfaceIndexBuffer() const noexcept
@@ -143,6 +155,16 @@ namespace MDSS
     const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetNeighborIndexBuffer() const noexcept
     {
         return *NeighborIndexBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetSurfaceRangeBuffer() const noexcept
+    {
+        return *SurfaceRangeBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelChartIndexBuffer() const noexcept
+    {
+        return *TexelChartIndexBuffer;
     }
 
     std::size_t TSurfaceSharedGeometryGPUResources::GetTexelCount() const noexcept
@@ -264,7 +286,7 @@ namespace MDSS
             Bindings[Binding].binding = Binding;
             Bindings[Binding].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             Bindings[Binding].descriptorCount = 1;
-            Bindings[Binding].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+            Bindings[Binding].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         }
 
         VkDescriptorSetLayoutCreateInfo LayoutInfo{};
@@ -319,7 +341,9 @@ namespace MDSS
             nullptr,
             nullptr,
             &Instance.GetOutgoingFluxScaleBuffer(),
-            &Instance.GetInputDeltaBuffer()};
+            &Instance.GetInputDeltaBuffer(),
+            &SharedGeometry.GetSurfaceRangeBuffer(),
+            &SharedGeometry.GetTexelChartIndexBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

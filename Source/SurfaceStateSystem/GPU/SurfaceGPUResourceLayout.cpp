@@ -37,6 +37,15 @@ namespace MDSS
         Result.Normals.reserve(TexelCount);
         Result.GeometryScalars.reserve(TexelCount);
         Result.NeighborIndices.reserve(TexelCount);
+        Result.TexelChartIndices.reserve(TexelCount);
+        Result.SurfaceRanges.reserve(Geometry.GetSurfaces().size());
+        for (const TSurfaceTexelRange& Range : Geometry.GetSurfaces())
+        {
+            Result.SurfaceRanges.push_back({Range.FirstTexel,
+                                            Range.Resolution.Width,
+                                            Range.Resolution.Height,
+                                            Range.TexelCount});
+        }
 
         for (const TSurfaceTexelGeometry& Texel : Geometry.GetTexels())
         {
@@ -45,6 +54,7 @@ namespace MDSS
             Result.Normals.push_back(ToGPUVec4(Texel.Normal));
             Result.GeometryScalars.push_back({Texel.Geometry.MesoVirtualHeight, Texel.Geometry.ConcavityWeight});
             Result.NeighborIndices.push_back({Texel.NeighborIndices});
+            Result.TexelChartIndices.push_back(Texel.Chart);
         }
 
         return Result;
