@@ -103,7 +103,7 @@ namespace MDSS
         InitInfo.MinImageCount = MinImageCount;
         InitInfo.ImageCount = ImageCount;
         InitInfo.PipelineCache = VK_NULL_HANDLE;
-        InitInfo.PipelineInfoMain.TRenderPass = TRenderer.GetRenderPassHandle();
+        InitInfo.PipelineInfoMain.RenderPass = TRenderer.GetRenderPassHandle();
         InitInfo.PipelineInfoMain.Subpass = 0;
         InitInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         InitInfo.UseDynamicRendering = false;
