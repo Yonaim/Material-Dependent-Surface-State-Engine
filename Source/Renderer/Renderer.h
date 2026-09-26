@@ -58,6 +58,7 @@ namespace MDSS
         /** @brief 한 프레임을 acquire, record, submit, present 순서로 렌더링한다. */
         void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
         void SubmitContact(TSurfaceContactInput Contact);
+        void ReloadSceneResources(const TScene& Scene);
 
         [[nodiscard]] const TSwapchain& GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass     GetRenderPassHandle() const noexcept;
@@ -113,6 +114,9 @@ namespace MDSS
         TRenderPass                          MainRenderPass;
         VkDescriptorSetLayout               MaterialDescriptorSetLayout = VK_NULL_HANDLE;
         TGraphicsPipeline                    StaticMeshPipeline;
+        TGraphicsPipeline                    GizmoPipeline;
+        std::unique_ptr<TGPUBuffer>           GizmoVertexBuffer;
+        std::uint32_t                         GizmoVertexCount = 0;
         std::unique_ptr<TGraphicsPipeline>    SurfaceDebugPipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;

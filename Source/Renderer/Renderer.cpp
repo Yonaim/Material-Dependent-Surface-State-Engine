@@ -41,6 +41,59 @@ namespace MDSS
             glm::mat4 ViewProjection{1.0F};
         };
 
+        struct TGizmoVertex
+        {
+            glm::vec3 Position;
+            glm::vec4 Color;
+        };
+
+        struct TGizmoPushConstants
+        {
+            glm::mat4 ViewProjectionModel{1.0F};
+        };
+
+        std::vector<TGizmoVertex> BuildTranslateGizmoVertices()
+        {
+            std::vector<TGizmoVertex> Vertices;
+            constexpr int Segments = 16;
+            constexpr float ShaftRadius = 0.025F;
+            constexpr float HeadRadius = 0.075F;
+            constexpr float ShaftEnd = 0.76F;
+            const std::array<glm::vec3, 3> Axes = {glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)};
+            const std::array<glm::vec3, 3> U = {glm::vec3(0, 1, 0), glm::vec3(0, 0, 1), glm::vec3(1, 0, 0)};
+            const std::array<glm::vec3, 3> V = {glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0)};
+            const std::array<glm::vec4, 3> Colors = {
+                glm::vec4(1.0F, 0.10F, 0.10F, 1.0F),
+                glm::vec4(0.10F, 0.95F, 0.20F, 1.0F),
+                glm::vec4(0.12F, 0.35F, 1.0F, 1.0F)};
+            Vertices.reserve(3U * static_cast<std::size_t>(Segments) * 9U);
+            for (std::size_t Axis = 0; Axis < Axes.size(); ++Axis)
+            {
+                const glm::vec4 Color = Colors[Axis];
+                auto PushTriangle = [&](glm::vec3 A, glm::vec3 B, glm::vec3 C)
+                {
+                    auto World = [&](glm::vec3 P) { return U[Axis] * P.x + V[Axis] * P.y + Axes[Axis] * P.z; };
+                    Vertices.push_back({World(A), Color});
+                    Vertices.push_back({World(B), Color});
+                    Vertices.push_back({World(C), Color});
+                };
+                for (int I = 0; I < Segments; ++I)
+                {
+                    const float A0 = glm::two_pi<float>() * static_cast<float>(I) / Segments;
+                    const float A1 = glm::two_pi<float>() * static_cast<float>(I + 1) / Segments;
+                    const glm::vec3 S0{ShaftRadius * std::cos(A0), ShaftRadius * std::sin(A0), 0.0F};
+                    const glm::vec3 S1{ShaftRadius * std::cos(A1), ShaftRadius * std::sin(A1), 0.0F};
+                    const glm::vec3 E0{S0.x, S0.y, ShaftEnd};
+                    const glm::vec3 E1{S1.x, S1.y, ShaftEnd};
+                    PushTriangle(S0, S1, E1);
+                    PushTriangle(S0, E1, E0);
+                    const glm::vec3 H0{HeadRadius * std::cos(A0), HeadRadius * std::sin(A0), ShaftEnd};
+                    const glm::vec3 H1{HeadRadius * std::cos(A1), HeadRadius * std::sin(A1), ShaftEnd};
+                    PushTriangle(H0, H1, {0.0F, 0.0F, 1.0F});
+                }
+            }
+            return Vertices;
+        }
 
         struct alignas(16) TMaterialUniform
         {
@@ -143,6 +196,41 @@ namespace MDSS
             return Config;
         }
 
+        TGraphicsPipelineConfig BuildGizmoPipelineConfig()
+        {
+            TGraphicsPipelineConfig Config{};
+            Config.ShaderStages = {
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Gizmo.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Gizmo.frag.spv", "main"},
+            };
+            Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            Config.CullMode = VK_CULL_MODE_NONE;
+            Config.bDepthTestEnabled = false;
+            Config.bDepthWriteEnabled = false;
+            Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+            VkVertexInputBindingDescription Binding{};
+            Binding.binding = 0;
+            Binding.stride = sizeof(TGizmoVertex);
+            Binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            Config.VertexBindings.push_back(Binding);
+            VkVertexInputAttributeDescription Position{};
+            Position.location = 0;
+            Position.binding = 0;
+            Position.format = VK_FORMAT_R32G32B32_SFLOAT;
+            Position.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, Position));
+            Config.VertexAttributes.push_back(Position);
+            VkVertexInputAttributeDescription Color{};
+            Color.location = 1;
+            Color.binding = 0;
+            Color.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            Color.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, Color));
+            Config.VertexAttributes.push_back(Color);
+            VkPushConstantRange Push{};
+            Push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            Push.size = sizeof(TGizmoPushConstants);
+            Config.PushConstantRanges.push_back(Push);
+            return Config;
+        }
     } // namespace
 
     TRenderer::TRenderer(const TVulkanContext& Context,
@@ -164,6 +252,7 @@ namespace MDSS
           StaticMeshPipeline(Context.GetDevice(),
                              MainRenderPass.GetHandle(),
                              BuildStaticMeshPipelineConfig(MaterialDescriptorSetLayout)),
+          GizmoPipeline(Context.GetDevice(), MainRenderPass.GetHandle(), BuildGizmoPipelineConfig()),
           MainFramebuffers(Context.GetDevice(),
                            MainRenderPass.GetHandle(),
                            SwapchainData.GetExtent(),
@@ -171,6 +260,16 @@ namespace MDSS
                            DepthImageView.GetHandle()),
           FrameContext(Context)
     {
+        const std::vector<TGizmoVertex> GizmoVertices = BuildTranslateGizmoVertices();
+        GizmoVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
+        GizmoVertexBuffer = std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
+                                                        Context.GetDevice(),
+                                                        static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)),
+                                                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        GizmoVertexBuffer->Upload(GizmoVertices.data(),
+                                  static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
         CreateMaterialDescriptorResources();
         SurfaceStates = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
         if (const TSurfaceStateDescriptorResources* Descriptors =
@@ -310,6 +409,27 @@ namespace MDSS
         {
             SurfaceStates->SubmitContact(std::move(Contact));
         }
+    }
+
+    void TRenderer::ReloadSceneResources(const TScene& Scene)
+    {
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
+        }
+        auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        std::unique_ptr<TGraphicsPipeline> ReplacementDebugPipeline;
+        if (const TSurfaceStateDescriptorResources* Descriptors =
+                Replacement->GetGPUResources().GetAnyInstanceDescriptors())
+        {
+            ReplacementDebugPipeline = std::make_unique<TGraphicsPipeline>(
+                Context.GetDevice(),
+                MainRenderPass.GetHandle(),
+                BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+        }
+        SurfaceDebugPipeline.reset();
+        SurfaceStates = std::move(Replacement);
+        SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
     }
 
     void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
@@ -782,6 +902,30 @@ namespace MDSS
                                  Section.FirstIndex,
                                  0,
                                  bCanShowSurfaceDebug ? Section.Surface : 0U);
+            }
+        }
+
+        if (const std::optional<std::size_t> Selected = DebugInterface.GetSelectedObject();
+            Selected && *Selected < SceneData.GetStaticMeshInstances().size() && GizmoVertexBuffer != nullptr)
+        {
+            const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*Selected].GetTransform().Position;
+            const float GizmoScale = glm::length(SceneData.GetMainCamera().GetPosition() - Position) * 0.18F;
+            if (GizmoScale > 0.01F)
+            {
+                const glm::mat4 Model = glm::scale(glm::translate(glm::mat4(1.0F), Position),
+                                                   glm::vec3(GizmoScale));
+                const TGizmoPushConstants Constants{ViewProjection * Model};
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GizmoPipeline.GetHandle());
+                const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
+                const VkDeviceSize Offset = 0;
+                vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &Offset);
+                vkCmdPushConstants(CommandBuffer,
+                                   GizmoPipeline.GetLayout(),
+                                   VK_SHADER_STAGE_VERTEX_BIT,
+                                   0,
+                                   sizeof(Constants),
+                                   &Constants);
+                vkCmdDraw(CommandBuffer, GizmoVertexCount, 1, 0, 0);
             }
         }
 

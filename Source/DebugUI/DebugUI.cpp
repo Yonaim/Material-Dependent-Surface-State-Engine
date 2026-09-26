@@ -6,11 +6,15 @@
 #include "DebugUI/DebugUI.h"
 
 #include "Application/Window.h"
+#include "Application/SceneFileDialog.h"
 #include "AssetManager/Core/AssetManager.h"
+#include "AssetManager/Loaders/SceneLoader.h"
+#include "InputSystem/Raycaster.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Swapchain.h"
 #include "Scene/Camera.h"
 #include "Scene/Scene.h"
+#include "Scene/StaticMeshInstance.h"
 #include "VulkanContext/Vulkan/VulkanQueue.h"
 #include "VulkanContext/VulkanContext.h"
 
@@ -24,6 +28,7 @@
 #include <cstdint>
 #include <glm/geometric.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <imgui.h>
 #include <stdexcept>
 #include <string>
@@ -81,6 +86,24 @@ namespace MDSS
             "UV Seam",
         };
 
+        bool ProjectToScreen(glm::vec3 World, const glm::mat4& VP, ImVec2 Size, ImVec2& Screen, float* Depth = nullptr)
+        {
+            const glm::vec4 Clip = VP * glm::vec4(World, 1.0F);
+            if (Clip.w <= 1.0e-5F) return false;
+            const glm::vec3 NDC = glm::vec3(Clip) / Clip.w;
+            if (Depth != nullptr) *Depth = NDC.z;
+            Screen = {((NDC.x + 1.0F) * 0.5F) * Size.x, ((NDC.y + 1.0F) * 0.5F) * Size.y};
+            return NDC.z >= 0.0F && NDC.z <= 1.0F;
+        }
+
+        float PointSegmentDistance(ImVec2 P, ImVec2 A, ImVec2 B, float& Along)
+        {
+            const float DX = B.x - A.x, DY = B.y - A.y;
+            const float Denominator = DX * DX + DY * DY;
+            if (Denominator < 1.0e-6F) { Along = 0.0F; return std::hypot(P.x - A.x, P.y - A.y); }
+            Along = std::clamp(((P.x - A.x) * DX + (P.y - A.y) * DY) / Denominator, 0.0F, 1.0F);
+            return std::hypot(P.x - A.x - Along * DX, P.y - A.y - Along * DY);
+        }
     } // namespace
 
     TDebugUI::TDebugUI(const TVulkanContext& Context,
@@ -168,11 +191,14 @@ namespace MDSS
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        DrawSceneWindow(SceneData);
         DrawCameraWindow(SceneData);
+        DrawSelectedTransformWindow(SceneData);
         DrawRenderOptionsWindow();
         DrawInjectWindow();
         DrawLogWindow();
         ProcessCameraInput(SceneData);
+        ProcessSelectionAndGizmo(SceneData);
 
         if (bInjectMode)
         {
@@ -231,6 +257,11 @@ namespace MDSS
         return InjectStrength;
     }
 
+    std::optional<std::size_t> TDebugUI::GetSelectedObject() const noexcept
+    {
+        return SelectedObject;
+    }
+
     TStateId TDebugUI::GetDebugState() const noexcept
     {
         return DebugState;
@@ -239,6 +270,208 @@ namespace MDSS
     bool TDebugUI::IsKeyboardCaptured() const noexcept
     {
         return ImGui::GetIO().WantCaptureKeyboard;
+    }
+
+    void TDebugUI::DrawSceneWindow(TScene& SceneData)
+    {
+        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_Always);
+        ImGui::SetNextWindowSize({330.0F, 92.0F}, ImGuiCond_Always);
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+                                           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+        ImGui::Begin("Scene File", nullptr, Flags);
+        if (ImGui::Button("Load Scene"))
+        {
+            if (const auto Path = TSceneFileDialog::OpenScene())
+            {
+                try
+                {
+                    TScene Loaded = TSceneLoader::Load(*Path, *AssetManager);
+                    FrameRenderer->ReloadSceneResources(Loaded);
+                    SceneData = std::move(Loaded);
+                    SelectedObject.reset();
+                    ActiveGizmoAxis = -1;
+                    SceneStatus = "Loaded: " + Path->filename().string();
+                }
+                catch (const std::exception& Error)
+                {
+                    SceneStatus = std::string("Load failed: ") + Error.what();
+                }
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Save Scene"))
+        {
+            if (const auto Path = TSceneFileDialog::SaveScene())
+            {
+                try
+                {
+                    std::filesystem::path SavePath = *Path;
+                    if (SavePath.extension() != ".Scene")
+                    {
+                        SavePath += ".Scene";
+                    }
+                    TSceneLoader::Save(SceneData, SavePath);
+                    SceneData.SetSourcePath(std::filesystem::absolute(SavePath).lexically_normal());
+                    SceneStatus = "Saved: " + SavePath.filename().string();
+                }
+                catch (const std::exception& Error)
+                {
+                    SceneStatus = std::string("Save failed: ") + Error.what();
+                }
+            }
+        }
+        if (SceneStatus.empty())
+        {
+            ImGui::TextDisabled("Z-up  |  X red, Y green, Z blue");
+        }
+        else
+        {
+            ImGui::TextWrapped("%s", SceneStatus.c_str());
+        }
+        ImGui::End();
+    }
+
+    void TDebugUI::ProcessSelectionAndGizmo(TScene& SceneData)
+    {
+        ImGuiIO& IO = ImGui::GetIO();
+        const ImVec2 DisplaySize = IO.DisplaySize;
+        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F)
+        {
+            return;
+        }
+        const float Aspect = DisplaySize.x / DisplaySize.y;
+        const glm::mat4 VP = SceneData.GetMainCamera().GetViewProjectionMatrix(Aspect);
+        const glm::vec3 Origin = SceneData.GetMainCamera().GetPosition();
+        const ImVec2 Mouse = IO.MousePos;
+
+        auto GetAxisScreenSegment = [&](glm::vec3 Position, int Axis, ImVec2& A, ImVec2& B, float& WorldScale)
+        {
+            const glm::vec3 AxisVector = Axis == 0 ? glm::vec3(1, 0, 0) :
+                                         Axis == 1 ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
+            WorldScale = glm::length(Origin - Position) * 0.18F;
+            if (WorldScale <= 0.01F || !ProjectToScreen(Position, VP, DisplaySize, A) ||
+                !ProjectToScreen(Position + AxisVector * WorldScale, VP, DisplaySize, B))
+            {
+                return false;
+            }
+            return true;
+        };
+
+        if (ActiveGizmoAxis >= 0)
+        {
+            if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+            {
+                ActiveGizmoAxis = -1;
+            }
+            else if (SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
+            {
+                if (glm::length(glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse) >= 3.0F &&
+                    GizmoDragPixelLength > 1.0F && GizmoDragWorldScale > 0.0F)
+                {
+                    const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse;
+                    const float WorldDelta = glm::dot(MouseDelta, GizmoDragScreenAxis) *
+                                             (GizmoDragWorldScale / GizmoDragPixelLength);
+                    const glm::vec3 AxisVector = ActiveGizmoAxis == 0 ? glm::vec3(1, 0, 0) :
+                                                 ActiveGizmoAxis == 1 ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1);
+                    SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position =
+                        GizmoDragStartPosition + AxisVector * WorldDelta;
+                }
+            }
+            return;
+        }
+
+        if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+            ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemActive() || bInjectMode)
+        {
+            return;
+        }
+
+        if (SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
+        {
+            const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position;
+            float BestDistance = 13.0F;
+            int BestAxis = -1;
+            for (int Axis = 0; Axis < 3; ++Axis)
+            {
+                ImVec2 A{}, B{};
+                float WorldScale = 0.0F, Along = 0.0F;
+                if (GetAxisScreenSegment(Position, Axis, A, B, WorldScale))
+                {
+                    const float Distance = PointSegmentDistance(Mouse, A, B, Along);
+                    if (Distance < BestDistance)
+                    {
+                        BestDistance = Distance;
+                        BestAxis = Axis;
+                    }
+                }
+            }
+            if (BestAxis >= 0)
+            {
+                ActiveGizmoAxis = BestAxis;
+                GizmoDragStartMouse = {Mouse.x, Mouse.y};
+                TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+                GizmoDragStartPosition = Transform.Position;
+                ImVec2 A{}, B{};
+                float WorldScale = 0.0F;
+                if (GetAxisScreenSegment(Transform.Position, BestAxis, A, B, WorldScale))
+                {
+                    const glm::vec2 ScreenAxis{B.x - A.x, B.y - A.y};
+                    GizmoDragPixelLength = glm::length(ScreenAxis);
+                    GizmoDragScreenAxis = GizmoDragPixelLength > 0.0F
+                                              ? ScreenAxis / GizmoDragPixelLength
+                                              : glm::vec2(0.0F);
+                    GizmoDragWorldScale = WorldScale;
+                }
+                return;
+            }
+        }
+
+        const glm::vec2 NDC{Mouse.x / DisplaySize.x * 2.0F - 1.0F,
+                            Mouse.y / DisplaySize.y * 2.0F - 1.0F};
+        const glm::mat4 InvVP = glm::inverse(VP);
+        glm::vec4 FarPoint = InvVP * glm::vec4(NDC, 1.0F, 1.0F);
+        if (std::abs(FarPoint.w) <= 1.0e-6F)
+        {
+            SelectedObject.reset();
+            return;
+        }
+        FarPoint /= FarPoint.w;
+        const TSurfaceRayHit Hit = TRaycaster::Cast(SceneData,
+                                                    *AssetManager,
+                                                    Origin,
+                                                    glm::vec3(FarPoint) - Origin);
+        if (Hit.Hit)
+        {
+            SelectedObject = Hit.InstanceIndex;
+        }
+        else
+        {
+            SelectedObject.reset();
+        }
+    }
+
+    void TDebugUI::DrawSelectedTransformWindow(TScene& SceneData)
+    {
+        if (!SelectedObject || *SelectedObject >= SceneData.GetStaticMeshInstances().size())
+        {
+            return;
+        }
+        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        const ImVec2 Position{Viewport->WorkPos.x + Viewport->WorkSize.x - 340.0F,
+                              Viewport->WorkPos.y + 190.0F};
+        ImGui::SetNextWindowPos(Position, ImGuiCond_Always);
+        ImGui::SetNextWindowSize({330.0F, 170.0F}, ImGuiCond_Always);
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+                                           ImGuiWindowFlags_NoMove;
+        ImGui::Begin("Selected Transform", nullptr, Flags);
+        TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+        ImGui::Text("Object %zu", *SelectedObject);
+        ImGui::DragFloat3("Position", &Transform.Position.x, 0.02F);
+        ImGui::DragFloat3("Rotation", &Transform.RotationDegrees.x, 0.25F);
+        ImGui::DragFloat3("Scale", &Transform.Scale.x, 0.02F);
+        ImGui::TextDisabled("Drag the colored axis arrows to move.");
+        ImGui::End();
     }
 
     void TDebugUI::ProcessCameraInput(TScene& SceneData)
@@ -280,6 +513,10 @@ namespace MDSS
         }
 
         if (IO.WantTextInput || ImGui::IsAnyItemActive())
+        {
+            return;
+        }
+        if (ActiveGizmoAxis >= 0)
         {
             return;
         }

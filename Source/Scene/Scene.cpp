@@ -11,7 +11,7 @@
 
 namespace MDSS
 {
-    TScene::TScene() : MainCamera({2.2F, 1.8F, 2.8F}, {0.0F, 0.0F, 0.0F})
+    TScene::TScene() : MainCamera({3.0F, -5.0F, 3.0F}, {0.0F, 0.0F, 0.0F})
     {
         TLogger::Debug("TScene", "Main camera created at default position.");
     }
@@ -24,6 +24,16 @@ namespace MDSS
     const TCamera& TScene::GetMainCamera() const noexcept
     {
         return MainCamera;
+    }
+
+    void TScene::SetSourcePath(std::filesystem::path Path)
+    {
+        SourcePath = std::move(Path);
+    }
+
+    const std::filesystem::path& TScene::GetSourcePath() const noexcept
+    {
+        return SourcePath;
     }
 
     void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)

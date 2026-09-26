@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <iomanip>
 #include <stdexcept>
 #include <string>
 
@@ -165,6 +166,7 @@ namespace MDSS
 
         const std::filesystem::path SceneDirectory = std::filesystem::absolute(Path).parent_path();
         TScene Scene;
+        Scene.SetSourcePath(std::filesystem::absolute(Path).lexically_normal());
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
             const TJson& Object = Objects[Index];
@@ -174,13 +176,14 @@ namespace MDSS
             const TMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
 
             TSurfaceRuntimeDataHandle SurfaceDataHandle = InvalidSurfaceRuntimeDataHandle;
+            std::filesystem::path DistributionPath;
             if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
             {
                 if (!Distribution->is_string() || Distribution->get_ref<const std::string&>().empty())
                 {
                     throw std::runtime_error(Context + ".surfaceProfileMap must be a non-empty path string.");
                 }
-                const std::filesystem::path DistributionPath = ResolveScenePath(
+                DistributionPath = ResolveScenePath(
                     SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
                 SurfaceDataHandle = Assets.LoadSurfaceData(MeshHandle, DistributionPath);
             }
@@ -190,8 +193,54 @@ namespace MDSS
             {
                 Transform = ReadTransform(*TransformJson, Context + ".transform");
             }
-            Scene.AddStaticMeshInstance(TStaticMeshInstance(MeshHandle, SurfaceDataHandle, Transform));
+            Scene.AddStaticMeshInstance(TStaticMeshInstance(MeshHandle,
+                                                            SurfaceDataHandle,
+                                                            Transform,
+                                                            MeshPath,
+                                                            DistributionPath));
         }
         return Scene;
+    }
+
+    void TSceneLoader::Save(const TScene& Scene, const std::filesystem::path& Path)
+    {
+        const std::filesystem::path AbsolutePath = std::filesystem::absolute(Path).lexically_normal();
+        const std::filesystem::path Directory = AbsolutePath.parent_path();
+        TJson Root;
+        Root["type"] = "TScene";
+        Root["version"] = 1;
+        Root["objects"] = TJson::array();
+        for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
+        {
+            if (Instance.GetMeshPath().empty())
+            {
+                throw std::runtime_error("Cannot save Scene object without its source Mesh path.");
+            }
+            const TTransform& Transform = Instance.GetTransform();
+            TJson Object;
+            Object["mesh"] = Instance.GetMeshPath().lexically_relative(Directory).generic_string();
+            if (!Instance.GetProfileMapPath().empty())
+            {
+                Object["surfaceProfileMap"] =
+                    Instance.GetProfileMapPath().lexically_relative(Directory).generic_string();
+            }
+            Object["transform"] = {{"position", {Transform.Position.x, Transform.Position.y, Transform.Position.z}},
+                                    {"rotationDegrees", {Transform.RotationDegrees.x,
+                                                          Transform.RotationDegrees.y,
+                                                          Transform.RotationDegrees.z}},
+                                    {"scale", {Transform.Scale.x, Transform.Scale.y, Transform.Scale.z}}};
+            Root["objects"].push_back(std::move(Object));
+        }
+
+        std::ofstream Output(AbsolutePath);
+        if (!Output)
+        {
+            throw std::runtime_error("Unable to write Scene file: " + AbsolutePath.string());
+        }
+        Output << std::setw(2) << Root << '\n';
+        if (!Output)
+        {
+            throw std::runtime_error("Failed while writing Scene file: " + AbsolutePath.string());
+        }
     }
 } // namespace MDSS

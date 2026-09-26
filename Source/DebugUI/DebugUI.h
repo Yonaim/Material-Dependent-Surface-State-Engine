@@ -9,10 +9,13 @@
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <vulkan/vulkan.h>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <vector>
 
 struct GLFWwindow;
@@ -51,11 +54,15 @@ namespace MDSS
         [[nodiscard]] bool IsInjectModeEnabled() const noexcept;
         [[nodiscard]] TStateId GetInjectState() const noexcept;
         [[nodiscard]] float GetInjectStrength() const noexcept;
+        [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] TStateId GetDebugState() const noexcept;
         [[nodiscard]] bool IsKeyboardCaptured() const noexcept;
 
     private:
         void ProcessCameraInput(TScene& SceneData);
+        void ProcessSelectionAndGizmo(TScene& SceneData);
+        void DrawSceneWindow(TScene& SceneData);
+        void DrawSelectedTransformWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
         void DrawRenderOptionsWindow();
         void DrawInjectWindow();
@@ -70,6 +77,14 @@ namespace MDSS
         TStateId    InjectState = 0;
         TStateId    DebugState = 0;
         float       InjectStrength = 1.0F;
+        std::optional<std::size_t> SelectedObject;
+        int         ActiveGizmoAxis = -1;
+        glm::vec2   GizmoDragStartMouse{0.0F};
+        glm::vec2   GizmoDragScreenAxis{0.0F};
+        glm::vec3   GizmoDragStartPosition{0.0F};
+        float       GizmoDragWorldScale = 0.0F;
+        float       GizmoDragPixelLength = 0.0F;
+        std::string SceneStatus;
 
         std::array<bool, static_cast<std::size_t>(TLogLevel::Count)> LogLevelFilters{true, true, true, true, true};
         std::vector<TLogEntry>                                       CachedLogEntries;
