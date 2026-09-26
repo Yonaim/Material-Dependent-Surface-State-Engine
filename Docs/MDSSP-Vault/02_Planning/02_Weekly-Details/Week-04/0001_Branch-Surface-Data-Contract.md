@@ -149,20 +149,21 @@ CPU 구조체는 GPU handle을 필수로 가지지 않는다. CPU 결과와 GPU 
 
 ## JSON Parser 결정
 
-**선택: CMake `FetchContent`로 `nlohmann/json`을 추가하고 `.SRProfile` parsing까지 구현한다.**
+**개발 단계 선택: `nlohmann/json` v3.12.0 헤더를 `ThirdParty/`에 포함한다.**
 
-`FetchContent`는 외부 JSON 라이브러리 이름이나 별도 패키지 매니저가 아니라, CMake가 제공하는 내장 모듈이다. `include(FetchContent)`로 불러온 뒤 `FetchContent_Declare`와 `FetchContent_MakeAvailable` 명령으로 configure 단계에서 의존성 소스를 가져와 현재 빌드에 연결한다. 이 프로젝트는 이미 CMake 3.24 이상을 요구하고 `FetchContent`를 사용 중이다.
+개발 중 반복 빌드가 네트워크 다운로드와 DNS 상태에 좌우되지 않도록 현재는 헤더와 라이선스를 `ThirdParty/nlohmann_json/`에 고정한다. 이 경로는 개발 단계의 임시 의존성 관리 방식이다.
 
-직접 `ThirdParty/`에 `json.hpp`를 복사하는 방식은 사용하지 않는다.
+기능 개발이 완료되면 고정된 `v3.12.0` release를 CMake `FetchContent` 또는 패키지 관리 방식으로 전환한다. 버전 변경은 별도 dependency 변경으로 수행한다.
 
-### 선택 이유
+### 개발 단계 선택 이유
 
-- 현재 프로젝트가 이미 glm, GLFW, tinyobjloader, stb, ImGui를 `FetchContent`로 관리하므로 의존성 방식이 일관된다.
-- `nlohmann_json::nlohmann_json` CMake target이 include 경로와 compile requirement를 전달한다.
-- vendored header 복사본의 출처·버전·라이선스·업데이트를 수동 관리할 필요가 없다.
-- release URL과 version을 고정하면 `master`를 가져오는 것보다 재현성이 높다.
+- configure와 빌드 때마다 JSON 라이브러리를 네트워크에서 다시 받을 필요가 없다.
+- 현재 사용하는 버전과 라이선스를 저장소 안에서 확인할 수 있다.
+- 의존성을 CMake 방식으로 정리하는 일은 개발 완료 시점으로 미룬다.
 
-권장 CMake 기준안:
+### 이후 CMake 전환 기준안
+
+전환할 때는 moving branch 대신 `v3.12.0`처럼 버전을 고정한다. 예시:
 
 ```cmake
 FetchContent_Declare(
@@ -174,17 +175,7 @@ FetchContent_MakeAvailable(json)
 target_link_libraries(MDSS PRIVATE nlohmann_json::nlohmann_json)
 ```
 
-`GIT_TAG master`는 사용하지 않는다. 현재 권장 release인 `v3.12.0`을 고정하고, 버전 변경은 별도 dependency commit으로 수행한다.
-
-### ThirdParty 직접 추가가 더 나은 경우
-
-다음 조건이 생기면 release archive 또는 single header vendoring을 다시 검토한다.
-
-- 최초 configure도 완전한 offline 환경에서 수행해야 함
-- 외부 다운로드가 금지된 제출/배포 환경
-- 모든 dependency source를 저장소에 포함해야 하는 규정
-
-현재 저장소는 이미 configure 단계에서 여러 dependency를 내려받으므로 이 조건에 해당하지 않는다.
+의존성 전환 시 현재의 `ThirdParty/nlohmann_json/` include 경로와 CMake target 연결을 함께 교체한다.
 
 ### Parser 책임 분리
 

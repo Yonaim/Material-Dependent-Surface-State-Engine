@@ -77,14 +77,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
-# JSON parser for .SRProfile assets. Keep the dependency on a fixed release tag.
-FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.12.0
-    GIT_SHALLOW TRUE
+# JSON parser for project assets. Vendor headers during active development so
+# configure/build does not require network access; replace with a package-managed
+# dependency when the project dependency workflow is finalized.
+add_library(MDSS_nlohmann_json INTERFACE)
+add_library(nlohmann_json::nlohmann_json ALIAS MDSS_nlohmann_json)
+target_include_directories(MDSS_nlohmann_json SYSTEM INTERFACE
+    "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/nlohmann_json/include"
 )
-FetchContent_MakeAvailable(nlohmann_json)
 
 # Dear ImGui debug/editor UI. We build only the core plus GLFW/Vulkan backends.
 FetchContent_Declare(
