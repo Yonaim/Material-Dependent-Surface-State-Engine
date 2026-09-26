@@ -275,12 +275,17 @@ if(BUILD_TESTING)
         Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
         Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
         Source/SurfaceStateSystem/GPU/SurfaceGPUResources.cpp
+        Source/SurfaceStateSystem/State/SurfaceStateSolver.cpp
         Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
         Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
         Source/VulkanContext/GPU/GPUBuffer.cpp
     )
+    add_dependencies(MDSS_SurfaceGPUResourceTests MDSS_Shaders)
     target_include_directories(MDSS_SurfaceGPUResourceTests PRIVATE Source)
     target_link_libraries(MDSS_SurfaceGPUResourceTests PRIVATE Vulkan::Vulkan glm::glm)
+    target_compile_definitions(MDSS_SurfaceGPUResourceTests PRIVATE
+        MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+    )
     if(MSVC)
         target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE /W4 /permissive-)
     else()
