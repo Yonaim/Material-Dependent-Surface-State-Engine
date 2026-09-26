@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 namespace
 {
     int FailureCount = 0;
@@ -374,7 +376,14 @@ namespace
         {
             Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
             {
-                Solver.RecordStep(CommandBuffer, Descriptors, bCurrentStateAB, 2, 1, 0.25F);
+                Solver.RecordStep(CommandBuffer,
+                                  Descriptors,
+                                  bCurrentStateAB,
+                                  2,
+                                  1,
+                                  0.25F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, -1.0F, 0.0F));
             });
             const TGPUBuffer& StateBuffer = bCurrentStateAB
                 ? Instance.GetStateBBuffer()
@@ -401,6 +410,77 @@ namespace
         Check(std::abs(State[0] - 0.625F) < 1.0e-4F && std::abs(State[1] - 0.375F) < 1.0e-4F,
               "third solver step should continue deterministic diffusion");
     }
+
+    void TestGeometryDrivenSolver(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS;
+
+        TSurfaceResponseProfileData Profile;
+        TSurfaceStateParameters Parameters{};
+        Parameters.StateCapacity = 1.0F;
+        Parameters.SaturationTransferRate = 0.0F;
+        Parameters.GeometryTransferRate = 8.0F;
+        Profile.States.emplace("wetness", Parameters);
+        const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
+        const TSurfaceStateRegistry Registry(ProfileTable);
+
+        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
+        {
+            TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+            Texel.Surface = 0;
+            Texel.Triangle = 0;
+            Texel.Position = Index == 0 ? glm::vec3(1.0F, 0.0F, 0.0F) : glm::vec3(0.0F);
+            Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
+            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+        }
+        Geometry.SetProfileMap({0, 0});
+
+        TSurfaceSharedGeometryGPUResources SharedGeometry(
+            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources Profiles(
+            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1);
+        TSurfaceStateDescriptorResources Descriptors(
+            Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+
+        const glm::mat4 ModelMatrix = glm::rotate(
+            glm::mat4(1.0F), glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+        auto Run = [&](std::array<float, 2> InitialState, glm::vec3 Gravity, float DeltaTime)
+        {
+            Instance.GetStateABuffer().Upload(InitialState.data(), sizeof(InitialState));
+            Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(CommandBuffer,
+                                  Descriptors,
+                                  true,
+                                  2,
+                                  1,
+                                  DeltaTime,
+                                  ModelMatrix,
+                                  Gravity);
+            });
+
+            std::array<float, 2> Result{};
+            Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+            return Result;
+        };
+
+        const std::array<float, 2> Downhill = Run({1.0F, 0.0F}, glm::vec3(0.0F, -1.0F, 0.0F), 0.0625F);
+        Check(std::abs(Downhill[0] - 0.5F) < 1.0e-4F && std::abs(Downhill[1] - 0.5F) < 1.0e-4F,
+              "geometry flux should follow world gravity after applying the instance rotation");
+        Check(std::abs(Downhill[0] + Downhill[1] - 1.0F) < 1.0e-4F,
+              "geometry-only transfer without decay should conserve state");
+
+        const std::array<float, 2> Uphill = Run({1.0F, 0.0F}, glm::vec3(0.0F, 1.0F, 0.0F), 0.25F);
+        Check(std::abs(Uphill[0] - 1.0F) < 1.0e-4F && std::abs(Uphill[1]) < 1.0e-4F,
+              "geometry flux should be zero when the neighbor direction opposes world gravity");
+
+        const std::array<float, 2> Limited = Run({0.5F, 0.9F}, glm::vec3(0.0F, -1.0F, 0.0F), 0.25F);
+        Check(std::abs(Limited[0]) < 1.0e-4F && std::abs(Limited[1] - 1.0F) < 1.0e-4F,
+              "geometry flux should respect available source state and clamp target capacity");
+    }
 } // namespace
 
 int main()
@@ -410,6 +490,7 @@ int main()
         TVulkanTestDevice Vulkan;
         TestGPUResources(Vulkan);
         TestGPUSolver(Vulkan);
+        TestGeometryDrivenSolver(Vulkan);
     }
     catch (const TVulkanUnavailable& Exception)
     {
