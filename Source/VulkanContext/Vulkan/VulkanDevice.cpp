@@ -43,7 +43,8 @@ namespace MDSS
 
         if (Selected == PhysicalDevices.end())
         {
-            throw std::runtime_error("No GPU satisfies the Vulkan 1.2, graphics, present, and swapchain requirements.");
+            throw std::runtime_error(
+                "No GPU satisfies the Vulkan 1.2, graphics/compute, present, and swapchain requirements.");
         }
 
         PhysicalDevice = *Selected;

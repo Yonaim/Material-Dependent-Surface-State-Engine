@@ -6,10 +6,11 @@
 #include "Application/Application.h"
 
 #include "DebugUI/DebugUI.h"
+#include "AssetManager/Loaders/SceneLoader.h"
 #include "Logger/Logger.h"
 #include "Renderer/Renderer.h"
-#include "Scene/StaticMeshInstance.h"
 
+#include <chrono>
 #include <filesystem>
 
 #ifndef MDSS_ASSET_DIR
@@ -22,12 +23,8 @@ namespace MDSS
     {
         TLogger::Info("TApplication", "Initializing MDSS Engine.");
 
-        const std::filesystem::path DemoMeshPath = std::filesystem::path(MDSS_ASSET_DIR) / "Meshes" / "DemoCube.obj";
-        const TMeshAssetHandle       DemoMesh = Assets.LoadOBJ(DemoMeshPath);
-
-        TTransform InstanceTransform{};
-        InstanceTransform.RotationDegrees = {20.0F, 35.0F, 0.0F};
-        MainScene.AddStaticMeshInstance(TStaticMeshInstance(DemoMesh, InstanceTransform));
+        const std::filesystem::path DemoScenePath = std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / "Demo.Scene";
+        MainScene = TSceneLoader::Load(DemoScenePath, Assets);
 
         FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets, MainScene);
         DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer);
@@ -53,11 +50,15 @@ namespace MDSS
     void TApplication::MainLoop(std::size_t FrameLimit)
     {
         std::size_t RenderedFrameCount = 0;
+        auto        PreviousFrameTime = std::chrono::steady_clock::now();
         while (!MainWindow.ShouldClose() && (FrameLimit == 0 || RenderedFrameCount < FrameLimit))
         {
             MainWindow.PollEvents();
             DebugInterface->BeginFrame(MainScene);
-            FrameRenderer->RenderFrame(MainScene, *DebugInterface);
+            const auto  CurrentFrameTime = std::chrono::steady_clock::now();
+            const float DeltaTime = std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
+            PreviousFrameTime = CurrentFrameTime;
+            FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime);
             ++RenderedFrameCount;
         }
 

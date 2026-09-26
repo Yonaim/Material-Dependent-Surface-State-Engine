@@ -1,0 +1,18 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 1,
+  "name": "DemoStone",
+  "states": {
+    "wetness": {
+      "stateCapacity": 1.0,
+      "inputFactor": 1.0,
+      "saturationTransferRate": 0.2,
+      "geometryTransferRate": 0.0,
+      "decayRate": 0.0,
+      "cavityRetentionFactor": 0.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0
+    }
+  },
+  "transitions": []
+}

@@ -4,12 +4,14 @@
  */
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
+#include "SurfaceStateSystem/State/SurfaceStateSolver.h"
 #include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
 
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -125,6 +127,17 @@ namespace
             {
                 throw std::runtime_error("Could not create Vulkan device for GPU resource tests.");
             }
+
+            vkGetDeviceQueue(Device, QueueFamily, 0, &Queue);
+            VkCommandPoolCreateInfo CommandPoolInfo{};
+            CommandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            CommandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
+                                    VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            CommandPoolInfo.queueFamilyIndex = QueueFamily;
+            if (vkCreateCommandPool(Device, &CommandPoolInfo, nullptr, &CommandPool) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Could not create Vulkan command pool for GPU resource tests.");
+            }
         }
 
         ~TVulkanTestDevice()
@@ -132,6 +145,10 @@ namespace
             if (Device != VK_NULL_HANDLE)
             {
                 vkDeviceWaitIdle(Device);
+                if (CommandPool != VK_NULL_HANDLE)
+                {
+                    vkDestroyCommandPool(Device, CommandPool, nullptr);
+                }
                 vkDestroyDevice(Device, nullptr);
             }
             if (Instance != VK_NULL_HANDLE)
@@ -146,11 +163,54 @@ namespace
         [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const noexcept { return PhysicalDevice; }
         [[nodiscard]] VkDevice GetDevice() const noexcept { return Device; }
 
+        void Execute(const std::function<void(VkCommandBuffer)>& Record)
+        {
+            VkCommandBufferAllocateInfo AllocateInfo{};
+            AllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            AllocateInfo.commandPool = CommandPool;
+            AllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            AllocateInfo.commandBufferCount = 1;
+            VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
+            if (vkAllocateCommandBuffers(Device, &AllocateInfo, &CommandBuffer) != VK_SUCCESS)
+            {
+                throw std::runtime_error("Could not allocate Vulkan command buffer for GPU resource tests.");
+            }
+
+            VkCommandBufferBeginInfo BeginInfo{};
+            BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            if (vkBeginCommandBuffer(CommandBuffer, &BeginInfo) != VK_SUCCESS)
+            {
+                vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+                throw std::runtime_error("Could not begin Vulkan command buffer for GPU resource tests.");
+            }
+            Record(CommandBuffer);
+            if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
+            {
+                vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+                throw std::runtime_error("Could not finish Vulkan command buffer for GPU resource tests.");
+            }
+
+            VkSubmitInfo SubmitInfo{};
+            SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            SubmitInfo.commandBufferCount = 1;
+            SubmitInfo.pCommandBuffers = &CommandBuffer;
+            if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS ||
+                vkQueueWaitIdle(Queue) != VK_SUCCESS)
+            {
+                vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+                throw std::runtime_error("Could not submit Vulkan command buffer for GPU resource tests.");
+            }
+            vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
+        }
+
     private:
         VkInstance Instance = VK_NULL_HANDLE;
         VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
         std::uint32_t QueueFamily = 0;
         VkDevice Device = VK_NULL_HANDLE;
+        VkQueue Queue = VK_NULL_HANDLE;
+        VkCommandPool CommandPool = VK_NULL_HANDLE;
     };
 
     MDSS::TSharedSurfaceGeometryData BuildGeometry()
@@ -276,6 +336,71 @@ namespace
         Profiles.GetSupportedBuffer().Download(ProfileSupported.data(), sizeof(ProfileSupported));
         Check(ProfileSupported[0] == 1U, "defined Profile channel should be marked supported");
     }
+
+    void TestGPUSolver(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS;
+        TSurfaceResponseProfileData Profile;
+        TSurfaceStateParameters Parameters{};
+        Parameters.StateCapacity = 1.0F;
+        Parameters.SaturationTransferRate = 1.0F;
+        Profile.States.emplace("wetness", Parameters);
+        const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
+        const TSurfaceStateRegistry Registry(ProfileTable);
+
+        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
+        {
+            TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+            Texel.Surface = 0;
+            Texel.Triangle = 0;
+            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+        }
+        Geometry.SetProfileMap({0, 0});
+
+        TSurfaceSharedGeometryGPUResources SharedGeometry(
+            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources Profiles(
+            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1);
+        TSurfaceStateDescriptorResources Descriptors(
+            Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+
+        const std::array<float, 2> Input{1.0F, 0.0F};
+        Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
+        auto DispatchAndRead = [&](bool bCurrentStateAB, std::array<float, 2>& State,
+                                   std::array<float, 2>& RemainingInput)
+        {
+            Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(CommandBuffer, Descriptors, bCurrentStateAB, 2, 1, 0.25F);
+            });
+            const TGPUBuffer& StateBuffer = bCurrentStateAB
+                ? Instance.GetStateBBuffer()
+                : Instance.GetStateABuffer();
+            StateBuffer.Download(State.data(), sizeof(State));
+            Instance.GetInputDeltaBuffer().Download(RemainingInput.data(), sizeof(RemainingInput));
+        };
+
+        std::array<float, 2> State{};
+        std::array<float, 2> RemainingInput{};
+        DispatchAndRead(true, State, RemainingInput);
+        Check(std::abs(State[0] - 1.0F) < 1.0e-5F && std::abs(State[1]) < 1.0e-5F,
+              "first solver step should apply the one-shot input to texel zero");
+        Check(RemainingInput[0] == 0.0F && RemainingInput[1] == 0.0F,
+              "solver should consume and clear InputDelta after applying it");
+
+        DispatchAndRead(false, State, RemainingInput);
+        Check(std::abs(State[0] - 0.75F) < 1.0e-4F && std::abs(State[1] - 0.25F) < 1.0e-4F,
+              "second solver step should transfer state across the neighbor edge");
+        Check(std::abs(State[0] + State[1] - 1.0F) < 1.0e-4F,
+              "saturation transfer without decay should conserve total state");
+
+        DispatchAndRead(true, State, RemainingInput);
+        Check(std::abs(State[0] - 0.625F) < 1.0e-4F && std::abs(State[1] - 0.375F) < 1.0e-4F,
+              "third solver step should continue deterministic diffusion");
+    }
 } // namespace
 
 int main()
@@ -284,6 +409,7 @@ int main()
     {
         TVulkanTestDevice Vulkan;
         TestGPUResources(Vulkan);
+        TestGPUSolver(Vulkan);
     }
     catch (const TVulkanUnavailable& Exception)
     {

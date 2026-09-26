@@ -32,7 +32,7 @@ namespace MDSS
         [[nodiscard]] VkQueue                   GetPresent() const noexcept;
         [[nodiscard]] const TQueueFamilyIndices& GetFamilyIndices() const noexcept;
 
-        /** @brief graphics와 surface presentation을 지원하는 queue family index를 찾는다. */
+        /** @brief graphics/compute와 surface presentation에 필요한 queue family를 찾는다. */
         [[nodiscard]] static TQueueFamilyIndices FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
 
     private:

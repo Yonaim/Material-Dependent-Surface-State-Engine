@@ -39,12 +39,12 @@ Meso_Virtual_Height + Accumulation_Height
 
 Normal Map은 실제 Mesh를 바꾸지는 않지만 Simulation에서는 Meso-Structure로 취급한다.
 
-| 항목 | 개념식 / 의미 |
-|---|---|
-| Normal | Macro Surface의 tangent basis를 이용해 Meso Normal을 변환하여 최종 Normal 구성 |
-| Distance | `Macro_Surface_Distance × Meso_Path_Stretch` |
-| Height | `Macro_Height + Meso_Virtual_Height` |
-| Curvature | `Macro_Curvature + Meso_Curvature` |
+| 항목        | 개념식 / 의미                                                         |
+| --------- | ---------------------------------------------------------------- |
+| Normal    | Macro Surface의 tangent basis를 이용해 Meso Normal을 변환하여 최종 Normal 구성 |
+| Distance  | `Macro_Surface_Distance × Meso_Path_Stretch`                     |
+| Height    | `Macro_Height + Meso_Virtual_Height`                             |
+| Curvature | `Macro_Curvature + Meso_Curvature`                               |
 
 모든 Normal Map이 integrable하지는 않다. 적분 불가한 경우에는 정규화된 가상 Height / Curvature와 별도 스케일 계수를 사용하는 근사안이 있으며, 실제 알고리즘은 검증이 필요하다. [[05_Development/Experiments/0001_Normal-Map-Integration|Normal Map 적분 실험]]
 
@@ -52,10 +52,10 @@ Normal Map은 실제 Mesh를 바꾸지는 않지만 Simulation에서는 Meso-Str
 
 `Meso_Virtual_Height = 0`이면 Macro Geometry 그대로다.
 
-| 값 | 의미 |
-|---|---|
-| `< 0` | Macro Geometry보다 안쪽으로 들어간 Meso 형상 |
-| `= 0` | Macro Geometry 그대로 |
+| 값     | 의미                                  |
+| ----- | ----------------------------------- |
+| `< 0` | Macro Geometry보다 안쪽으로 들어간 Meso 형상   |
+| `= 0` | Macro Geometry 그대로                  |
 | `> 0` | Macro Geometry보다 바깥쪽으로 튀어나온 Meso 형상 |
 
 Non-integrable fallback에서는 정규화 높이를 `[-1,1]`로 두고 대표 Height 스케일을 곱하는 방식을 검토한다.

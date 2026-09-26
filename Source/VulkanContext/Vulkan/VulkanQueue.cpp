@@ -53,7 +53,8 @@ namespace MDSS
 
         for (std::uint32_t Index = 0; Index < QueueFamilyCount; ++Index)
         {
-            if ((QueueFamilies[Index].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+            constexpr VkQueueFlags RequiredGraphicsComputeFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+            if ((QueueFamilies[Index].queueFlags & RequiredGraphicsComputeFlags) == RequiredGraphicsComputeFlags)
             {
                 Indices.GraphicsFamily = Index;
             }

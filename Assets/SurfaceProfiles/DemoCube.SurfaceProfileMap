@@ -1,0 +1,15 @@
+{
+  "type": "SurfaceProfileMap",
+  "version": 1,
+  "profiles": [
+    "DemoStone.SRProfile"
+  ],
+  "surfaces": [
+    { "surfaceId": 0, "profileIndex": 0 },
+    { "surfaceId": 1, "profileIndex": 0 },
+    { "surfaceId": 2, "profileIndex": 0 },
+    { "surfaceId": 3, "profileIndex": 0 },
+    { "surfaceId": 4, "profileIndex": 0 },
+    { "surfaceId": 5, "profileIndex": 0 }
+  ]
+}

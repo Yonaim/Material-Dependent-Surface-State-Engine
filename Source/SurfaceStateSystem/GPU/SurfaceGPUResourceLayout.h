@@ -43,7 +43,7 @@ namespace MDSS
     struct alignas(16) TSurfaceSolverPushConstants
     {
         float                    DeltaTime = 0.0F;
-        std::uint32_t            InstanceIndex = 0;
+        std::uint32_t            StateChannelCount = 0;
         std::uint32_t            LocalTexelCount = 0;
         std::uint32_t            Flags = 0;
         std::array<float, 4>     GravityLocal{};

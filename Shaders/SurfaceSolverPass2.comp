@@ -1,0 +1,53 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#include "SurfaceSolverCommon.glsl"
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+void main()
+{
+    uint TexelIndex = gl_GlobalInvocationID.x;
+    if (TexelIndex >= Solver.LocalTexelCount)
+    {
+        return;
+    }
+
+    for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
+    {
+        uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
+        if (!supportsChannel(TexelIndex, ChannelIndex))
+        {
+            NextState.Values[StateValueIndex] = 0.0;
+            InputDelta.Values[StateValueIndex] = 0.0;
+            continue;
+        }
+
+        float RawOutgoing = 0.0;
+        float Incoming = 0.0;
+        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+        {
+            uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
+            if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount ||
+                !supportsChannel(NeighborTexel, ChannelIndex))
+            {
+                continue;
+            }
+
+            RawOutgoing += rawSaturationFlux(TexelIndex, NeighborTexel, ChannelIndex);
+            float NeighborRawIncoming = rawSaturationFlux(NeighborTexel, TexelIndex, ChannelIndex);
+            uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
+            Incoming += NeighborRawIncoming * OutgoingFluxScale.Values[NeighborStateValueIndex];
+        }
+
+        float Current = CurrentState.Values[StateValueIndex];
+        float Outgoing = RawOutgoing * OutgoingFluxScale.Values[StateValueIndex];
+        float Decay = decayAmount(TexelIndex, ChannelIndex);
+        float EventInput = InputDelta.Values[StateValueIndex];
+        InputDelta.Values[StateValueIndex] = 0.0;
+        float Capacity = stateCapacity(TexelIndex, ChannelIndex);
+        NextState.Values[StateValueIndex] = clamp(Current + EventInput + Incoming - Outgoing - Decay,
+                                                  0.0,
+                                                  Capacity);
+    }
+}

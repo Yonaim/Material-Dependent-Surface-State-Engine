@@ -77,14 +77,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
-# JSON parser for .SRProfile assets. Keep the dependency on a fixed release tag.
-FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.12.0
-    GIT_SHALLOW TRUE
+# JSON parser for project assets. Vendor headers during active development so
+# configure/build does not require network access; replace with a package-managed
+# dependency when the project dependency workflow is finalized.
+add_library(MDSS_nlohmann_json INTERFACE)
+add_library(nlohmann_json::nlohmann_json ALIAS MDSS_nlohmann_json)
+target_include_directories(MDSS_nlohmann_json SYSTEM INTERFACE
+    "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/nlohmann_json/include"
 )
-FetchContent_MakeAvailable(nlohmann_json)
 
 # Dear ImGui debug/editor UI. We build only the core plus GLFW/Vulkan backends.
 FetchContent_Declare(
@@ -162,8 +162,11 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
     add_custom_command(
         OUTPUT "${ShaderBinary}"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${ShaderOutputDirectory}"
-        COMMAND "${Vulkan_GLSLC_EXECUTABLE}" "${ShaderSource}" -o "${ShaderBinary}"
-        DEPENDS "${ShaderSource}"
+        COMMAND "${Vulkan_GLSLC_EXECUTABLE}"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
+                "${ShaderSource}"
+                -o "${ShaderBinary}"
+        DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/SurfaceSolverCommon.glsl"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
     )
@@ -272,12 +275,17 @@ if(BUILD_TESTING)
         Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
         Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
         Source/SurfaceStateSystem/GPU/SurfaceGPUResources.cpp
+        Source/SurfaceStateSystem/State/SurfaceStateSolver.cpp
         Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
         Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
         Source/VulkanContext/GPU/GPUBuffer.cpp
     )
+    add_dependencies(MDSS_SurfaceGPUResourceTests MDSS_Shaders)
     target_include_directories(MDSS_SurfaceGPUResourceTests PRIVATE Source)
     target_link_libraries(MDSS_SurfaceGPUResourceTests PRIVATE Vulkan::Vulkan glm::glm)
+    target_compile_definitions(MDSS_SurfaceGPUResourceTests PRIVATE
+        MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+    )
     if(MSVC)
         target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE /W4 /permissive-)
     else()

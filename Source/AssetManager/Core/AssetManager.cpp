@@ -23,6 +23,18 @@
 
 namespace MDSS
 {
+    namespace
+    {
+        std::string MakeRuntimeSurfaceKey(const std::filesystem::path& MeshPath,
+                                          const std::filesystem::path& DistributionPath)
+        {
+            const std::string MeshKey = std::filesystem::absolute(MeshPath).lexically_normal().generic_string();
+            const std::string DistributionKey =
+                std::filesystem::absolute(DistributionPath).lexically_normal().generic_string();
+            return MeshKey + '\n' + DistributionKey;
+        }
+    } // namespace
+
     TAssetManager::TAssetManager(const TVulkanContext& Context) : Context(Context)
     {
         TLogger::Info("TAssetManager", "Initializing default material resources.");
@@ -38,17 +50,7 @@ namespace MDSS
         const std::string MeshPathKey = std::filesystem::absolute(Path).lexically_normal().generic_string();
         if (const auto Found = MeshAssetsByPath.find(MeshPathKey); Found != MeshAssetsByPath.end())
         {
-            const TMeshAssetHandle Handle = Found->second;
-            if (!HasSurfaceData(Handle))
-            {
-                std::filesystem::path DistributionPath = Path;
-                DistributionPath.replace_extension(".SurfaceProfileMap");
-                if (std::filesystem::exists(DistributionPath))
-                {
-                    LoadSurfaceData(Handle, DistributionPath);
-                }
-            }
-            return Handle;
+            return Found->second;
         }
 
         TLogger::Info("TAssetManager", "Loading OBJ asset: " + Path.string());
@@ -98,8 +100,6 @@ namespace MDSS
                                                      std::move(Loaded.Indices),
                                                      std::move(Sections),
                                                      std::move(Loaded.Triangles)));
-        SurfaceData.emplace_back();
-        SurfaceProfileTables.emplace_back();
         MeshAssetsByPath.emplace(MeshPathKey, Handle);
         TLogger::Info("TAssetManager",
                      "OBJ registered as TMeshAsset handle=" + std::to_string(Handle) +
@@ -107,12 +107,6 @@ namespace MDSS
                          ", sections=" + std::to_string(SectionCount) +
                          ", imported materials=" + std::to_string(MaterialCount) + ").");
 
-        std::filesystem::path DistributionPath = Path;
-        DistributionPath.replace_extension(".SurfaceProfileMap");
-        if (std::filesystem::exists(DistributionPath))
-        {
-            LoadSurfaceData(Handle, DistributionPath);
-        }
         return Handle;
     }
 
@@ -138,19 +132,24 @@ namespace MDSS
         return Handle;
     }
 
-    void TAssetManager::LoadSurfaceData(TMeshAssetHandle              MeshHandle,
-                                       const std::filesystem::path& RequestedDistributionPath)
+    TSurfaceRuntimeDataHandle TAssetManager::LoadSurfaceData(
+        TMeshAssetHandle MeshHandle, const std::filesystem::path& RequestedDistributionPath)
     {
         if (MeshHandle >= Meshes.size())
         {
             throw std::out_of_range("Invalid TMeshAssetHandle for Surface preprocessing.");
         }
-        const TMeshAsset&      Mesh = *Meshes[MeshHandle];
-        std::filesystem::path DistributionPath = RequestedDistributionPath;
-        if (DistributionPath.empty())
+        if (RequestedDistributionPath.empty())
         {
-            DistributionPath = Mesh.GetSourcePath();
-            DistributionPath.replace_extension(".SurfaceProfileMap");
+            throw std::invalid_argument("A Scene-selected Surface Profile Map path is required.");
+        }
+        const TMeshAsset& Mesh = *Meshes[MeshHandle];
+        const std::filesystem::path DistributionPath = RequestedDistributionPath;
+        const std::string RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath);
+        if (const auto Found = RuntimeSurfaceAssetsByInputs.find(RuntimeKey);
+            Found != RuntimeSurfaceAssetsByInputs.end())
+        {
+            return Found->second;
         }
         const TSurfaceProfileDistribution Distribution = TSurfaceProfileDistributionLoader::Load(DistributionPath);
 
@@ -209,9 +208,19 @@ namespace MDSS
         std::vector<TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
         TSurfaceRuntimeData               Built =
             TSurfacePreprocessor::Build(Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size()));
-        SurfaceData[MeshHandle] = std::make_shared<const TSurfaceRuntimeData>(std::move(Built));
-        SurfaceProfileTables[MeshHandle] = std::move(ProfileTable);
+        if (RuntimeSurfaceAssets.size() >= InvalidSurfaceRuntimeDataHandle)
+        {
+            throw std::overflow_error("Runtime Surface Data handle range is exhausted.");
+        }
+        const TSurfaceRuntimeDataHandle RuntimeHandle =
+            static_cast<TSurfaceRuntimeDataHandle>(RuntimeSurfaceAssets.size());
+        TRuntimeSurfaceAsset RuntimeAsset;
+        RuntimeAsset.Data = std::make_shared<const TSurfaceRuntimeData>(std::move(Built));
+        RuntimeAsset.ProfileTable = std::move(ProfileTable);
+        RuntimeSurfaceAssets.push_back(std::move(RuntimeAsset));
+        RuntimeSurfaceAssetsByInputs.emplace(RuntimeKey, RuntimeHandle);
         TLogger::Info("TAssetManager", "Built Runtime Surface data for Mesh: " + Mesh.GetSourcePath().string());
+        return RuntimeHandle;
     }
 
     const TMeshAsset& TAssetManager::GetMesh(TMeshAssetHandle Handle) const
@@ -250,27 +259,28 @@ namespace MDSS
         return *SRProfiles[Handle];
     }
 
-    bool TAssetManager::HasSurfaceData(TMeshAssetHandle Handle) const noexcept
+    bool TAssetManager::HasSurfaceData(TSurfaceRuntimeDataHandle Handle) const noexcept
     {
-        return Handle < SurfaceData.size() && static_cast<bool>(SurfaceData[Handle]);
+        return Handle < RuntimeSurfaceAssets.size() && static_cast<bool>(RuntimeSurfaceAssets[Handle].Data);
     }
 
-    const TSurfaceRuntimeData& TAssetManager::GetSurfaceData(TMeshAssetHandle Handle) const
+    const TSurfaceRuntimeData& TAssetManager::GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const
     {
         if (!HasSurfaceData(Handle))
         {
-            throw std::out_of_range("Mesh has no Runtime Surface data.");
+            throw std::out_of_range("Invalid Runtime Surface Data handle.");
         }
-        return *SurfaceData[Handle];
+        return *RuntimeSurfaceAssets[Handle].Data;
     }
 
-    const std::vector<TSRProfileAssetHandle>& TAssetManager::GetSurfaceProfileTable(TMeshAssetHandle Handle) const
+    const std::vector<TSRProfileAssetHandle>&
+    TAssetManager::GetSurfaceProfileTable(TSurfaceRuntimeDataHandle Handle) const
     {
         if (!HasSurfaceData(Handle))
         {
-            throw std::out_of_range("Mesh has no loaded Surface Profile table.");
+            throw std::out_of_range("Invalid Runtime Surface Profile table handle.");
         }
-        return SurfaceProfileTables[Handle];
+        return RuntimeSurfaceAssets[Handle].ProfileTable;
     }
 
     const TSurfaceStateRegistry& TAssetManager::GetSurfaceStateRegistry() const

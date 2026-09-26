@@ -140,7 +140,7 @@ namespace MDSS
     };
 
     /**
-     * @brief Scene의 mesh별 공유 Surface buffer와 instance별 solver buffer를 소유한다.
+     * @brief Scene의 Runtime Surface Data 조합별 공유 buffer와 instance별 solver buffer를 소유한다.
      * @note Compute dispatch는 수행하지 않으며 Branch 4 GPU resource 수명만 관리한다.
      */
     class TSurfaceGPUResourceManager final
@@ -155,12 +155,18 @@ namespace MDSS
         TSurfaceGPUResourceManager& operator=(TSurfaceGPUResourceManager&&) = delete;
 
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
-        [[nodiscard]] std::size_t GetManagedMeshCount() const noexcept;
+        [[nodiscard]] std::size_t GetSharedSurfaceDataCount() const noexcept;
+        [[nodiscard]] std::size_t GetSceneInstanceCount() const noexcept;
         /** @brief Scene vector index에 해당하는 instance descriptor resources를 반환한다. */
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
+        [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
+        [[nodiscard]] std::size_t GetInstanceTexelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] bool IsCurrentStateAB(std::size_t SceneIndex) const;
+        void AdvanceCurrentState(std::size_t SceneIndex);
 
     private:
-        struct TSharedMeshResources
+        struct TSharedSurfaceResources
         {
             // Reverse member destruction releases Profile resources before Geometry resources.
             std::unique_ptr<TSurfaceSharedGeometryGPUResources> Geometry;
@@ -172,9 +178,10 @@ namespace MDSS
             std::unique_ptr<TSurfaceInstanceGPUResources> State;
             // Descriptor sets/layout must die before the buffers they reference.
             std::unique_ptr<TSurfaceStateDescriptorResources> Descriptors;
+            bool bCurrentStateAB = true;
         };
 
-        std::unordered_map<TMeshAssetHandle, TSharedMeshResources> SharedMeshes;
+        std::unordered_map<TSurfaceRuntimeDataHandle, TSharedSurfaceResources> SharedSurfaceData;
         std::vector<std::unique_ptr<TInstanceResources>> InstanceResources;
     };
 } // namespace MDSS

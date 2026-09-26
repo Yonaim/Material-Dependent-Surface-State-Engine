@@ -11,7 +11,7 @@
 | Simulation UV | 렌더링 UV와 논리적으로 분리된 전용 UV를 사용한다. |
 | 4주차 범위 | 자동 unwrap은 구현하지 않는다. 조건을 만족하도록 미리 준비한 UV를 사용한다. OBJ의 기존 `vt`를 임시로 Simulation UV로 읽을 수 있다. |
 | 해상도 | 모든 Surface에 `512 × 512`를 사용한다. 한 곳의 코드 상수로 고정하며 `.Scene` override와 UI 설정은 두지 않는다. |
-| 생성 시점 | CPU에서 Asset/Scene load 때 생성하고 Runtime 메모리에 둔다. 같은 Mesh 입력은 instance 간 공유하며 매 frame 재생성하지 않는다. |
+| 생성 시점 | CPU에서 Scene load 때 생성하고 Runtime 메모리에 둔다. 같은 Mesh와 Profile Distribution 입력을 쓰는 instance끼리 공유하며 매 frame 재생성하지 않는다. |
 | Mesh→Texel | UV triangle rasterization과 barycentric coordinate를 사용한다. |
 | 유효성 | Mesh 표면에 대응하는 texel만 `ValidMask = 1`이다. |
 | 이웃 | texel당 최대 8개의 `NeighborIndex`를 저장한다. Distance는 위치 차이에서 필요할 때 계산하며 저장하지 않는다. |
@@ -188,7 +188,7 @@ UV seam은 UV에서는 분리됐지만 Mesh topology에서는 같은 edge를 공
 - 공간상 가깝지만 topology상 분리된 표면이 연결되지 않는다.
 - open boundary와 seam이 구분된다.
 - 회전된 instance에서도 mapping은 유지되고 world gravity 변환만 달라진다.
-- 같은 Mesh와 Profile Distribution을 쓰는 여러 instance가 한 Runtime mapping/geometry 결과를 공유한다.
+- `.Scene`이 선택한 같은 Mesh와 Profile Distribution 조합을 쓰는 여러 instance가 한 Runtime mapping/geometry 결과를 공유한다.
 
 ## 미결 사항
 

@@ -10,7 +10,14 @@
 namespace MDSS
 {
     TStaticMeshInstance::TStaticMeshInstance(TMeshAssetHandle Mesh, TTransform InstanceTransform)
-        : Mesh(Mesh), InstanceTransform(std::move(InstanceTransform))
+        : TStaticMeshInstance(Mesh, InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
+    {
+    }
+
+    TStaticMeshInstance::TStaticMeshInstance(TMeshAssetHandle Mesh,
+                                             TSurfaceRuntimeDataHandle SurfaceData,
+                                             TTransform InstanceTransform)
+        : Mesh(Mesh), SurfaceData(SurfaceData), InstanceTransform(std::move(InstanceTransform))
     {
     }
 
@@ -27,5 +34,10 @@ namespace MDSS
     TMeshAssetHandle TStaticMeshInstance::GetMesh() const noexcept
     {
         return Mesh;
+    }
+
+    TSurfaceRuntimeDataHandle TStaticMeshInstance::GetSurfaceData() const noexcept
+    {
+        return SurfaceData;
     }
 } // namespace MDSS
