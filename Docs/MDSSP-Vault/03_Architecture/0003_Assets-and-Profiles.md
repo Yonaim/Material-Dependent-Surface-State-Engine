@@ -13,7 +13,8 @@
 | Texture | `.png`, `.jpg` 등 | Albedo, Normal 등 |
 | Scene | `.Scene` | JSON 형식. 배치 및 Asset 연결 관계 |
 | Surface Response Profile | `.SRProfile` | JSON 형식. Surface State 반응 데이터 |
-| Runtime Surface Data | 파일 없음 | Mesh load 때 생성해 메모리에서 공유하는 정적 Geometry·Texel 관계 및 Texel별 Profile map |
+| Surface Profile Distribution | `.SurfaceProfileMap` | JSON 형식. Scene object가 경로를 선택하며, Surface별 SRProfile 할당을 기록 |
+| Runtime Surface Data | 파일 없음 | Scene load 때 생성해 메모리에서 공유하는 정적 Geometry·Texel 관계 및 Texel별 Profile map |
 
 ## Surface와 Profile의 관계
 
@@ -28,7 +29,7 @@ UV Texel
     └── ProfileIndex → SRProfile response data
 ```
 
-Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset/Scene load 때 생성하는 정적 데이터다. 같은 Mesh 및 Profile Distribution 조합을 사용하는 instance들은 하나의 결과를 공유한다. persistent cache metadata나 stale 판정은 두지 않는다. 데이터 범위는 다음과 같다.
+Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Scene load 때 생성하는 정적 데이터다. `.Scene`의 각 object가 사용할 `.SurfaceProfileMap` 경로를 선택한다. 같은 Mesh 및 Profile Distribution 조합을 사용하는 instance들은 하나의 결과를 공유하고, 같은 Mesh라도 다른 map을 선택하면 별도 조합으로 전처리한다. persistent cache metadata나 stale 판정은 두지 않는다. 구체 경로 계약은 [[../04_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]를 따른다. 데이터 범위는 다음과 같다.
 
 | Runtime Surface Data에 포함 | Runtime Surface Data에 포함하지 않음 |
 |---|---|
@@ -106,7 +107,7 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset
 
 ## `.Scene` 연결 예시
 
-현재 예시는 이전의 Material 이름 기반 Profile 연결 형식을 기록한 것이다. Texel별 `SurfaceProfileMap` 결정의 최종 authoring/직렬화 형식은 아직 확정되지 않았으므로, 이 예시의 `materialProfiles`를 최종 Profile 배치 계약으로 간주하지 않는다.
+각 Scene object는 Mesh와 선택적인 Profile Distribution 파일을 지정한다. 두 경로는 Scene 파일의 디렉터리를 기준으로 한 상대 경로다. 같은 Mesh를 여러 Scene에서 쓰더라도 서로 다른 `.SurfaceProfileMap`을 선택할 수 있다. Map 내부의 `.SRProfile` 경로는 Map 파일 위치를 기준으로 해석한다.
 
 ```json
 {
@@ -114,14 +115,12 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset
   "version": 1,
   "objects": [
     {
-      "name": "TestClothes",
-      "mesh": "Assets/Models/clothes.obj",
-      "surface": {
-        "materialProfiles": {
-          "Silk": "Assets/SurfaceProfiles/silk.SRProfile",
-          "Steel": "Assets/SurfaceProfiles/steel.SRProfile",
-          "Leather": "Assets/SurfaceProfiles/leather.SRProfile"
-        }
+      "mesh": "../Models/clothes.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/clothes_default.SurfaceProfileMap",
+      "transform": {
+        "position": [0.0, 0.0, 0.0],
+        "rotationDegrees": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
       }
     }
   ]
@@ -129,5 +128,7 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Asset
 ```
 
 현재 4주차 구현에서는 Simulation grid 해상도를 사용자가 `.Scene`에서 지정하지 않는다. 모든 Surface에 `512 × 512`를 적용하며, 이 값은 전처리 코드의 한 곳에서 관리한다.
+
+`.Scene`에서 `surfaceProfileMap`을 생략한 object는 렌더링 전용이며 Runtime Surface simulation data를 만들지 않는다. Scene 경로와 Profile map 참조 정책은 [[../04_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에 정의한다.
 
 Simulation UV는 렌더링 UV와 논리적으로 분리한다. UV 생성·검증과 현재 구현 범위는 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 본다.

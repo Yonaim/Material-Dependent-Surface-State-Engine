@@ -41,7 +41,13 @@ void storeNextState(uint texelIndex, uint channelIndex, float value);
 ```
 
 `loadState`와 `storeNextState`는 Branch 4에서 선택한 layout을 감춘다. 예시 demo의 State name은 Profile/Registry에서 찾아 ID로 다루며, Solver의 계산 경로는 특정 State 이름에 분기하지 않는다.
-Profile이 어떤 Registry State를 정의하지 않은 경우의 동작은 아직 결정하지 않았다. 이 브랜치에서 Profile/Channel 지원 mask를 사용해 가능한 정책을 비교하고, 입력·Transport·Decay·Transition 각각의 처리 규칙을 결정해 테스트로 고정한다. 지원 여부는 Branch 4의 Profile GPU representation에서 전달한다.
+Profile이 어떤 Registry State를 정의하지 않은 경우 해당 texel/channel은 지원되지 않는 것으로 처리한다. 그 채널의 Input, Transport, Decay 계산을 건너뛰고 Pass 1의 OutgoingFluxScale과 Pass 2의 NextState를 0으로 기록한다. Transport는 양쪽 texel이 해당 channel을 모두 지원할 때만 허용한다. Transition은 이 브랜치 범위에 포함하지 않으며, 후속 구현도 같은 지원 여부를 따라야 한다. 지원 여부는 Branch 4의 Profile GPU representation에서 전달한다.
+
+### Branch 5 MVP 계산 범위
+
+- 첫 구현은 Saturation 차이에 의한 전달만 지원한다. `GeometryDrive`는 0으로 두며, 중력 방향과 형상 기반 전달은 후속 확장으로 남긴다.
+- MVP에서 `DistanceWeight`, `NormalWeight`, `CurvatureWeight`, `ProfileBoundaryWeight`는 모두 `1.0`이다. 따라서 두 texel이 해당 State channel을 지원하면 서로 다른 Profile 사이도 전달할 수 있다.
+- 위 상수는 Solver 경로와 2-Pass 불변 조건을 검증하기 위한 초기값이다. 최종 가중치 식이나 물리 모델을 확정하는 결정은 아니다.
 
 ## Pass 1
 
@@ -72,7 +78,7 @@ Profile이 어떤 Registry State를 정의하지 않은 경우의 동작은 아�
 
 ## Barrier 1
 
-OutgoingFluxScale write가 Pass 2 read에 보이도록 `vkCmdPipelineBarrier2`를 사용한다.
+프로젝트가 Vulkan 1.2를 요구하므로 OutgoingFluxScale 전용 `VkBufferMemoryBarrier`와 `vkCmdPipelineBarrier`를 사용한다. Synchronization2 기능을 device에서 활성화하지 않은 채 `vkCmdPipelineBarrier2`를 호출하지 않는다.
 
 ```text
 srcStage  = COMPUTE_SHADER
@@ -121,25 +127,17 @@ TransferWeight
  * ProfileBoundaryWeight
 ```
 
-세부식이 아직 미정인 항목은 4주차 기본값을 명시한다.
+위 MVP 기본값에 따라 SaturationDrive를 먼저 완성한다. `MesoVirtualHeight`와 `ConcavityWeight`는 GeometryDrive가 비활성인 동안 전달 계산에 사용하지 않는다. GeometryDrive는 별도 검증 후 같은 브랜치의 후속 commit에서 추가할 수 있다.
 
-- `MesoVirtualHeight = 0`
-- `ConcavityWeight = 0`
-- 동일 Profile 경계 Weight = 1
-- 다른 Profile 경계는 임시로 1 또는 전파 차단 중 하나를 선택해 상수로 표시
-- GeometryDrive를 아직 검증하지 못하면 0으로 두고 SaturationDrive부터 완성
-
-권장은 SaturationDrive만 먼저 통과시킨 뒤 GeometryDrive를 같은 브랜치의 다음 commit으로 추가하는 것이다.
-
-## Barrier 2와 ping-pong
+## Pass 2 이후 barrier와 ping-pong
 
 Pass 2 이후:
 
-- 다음 compute step이 읽으면 compute write→read barrier
+- 다음 compute step이 읽고 쓸 State/InputDelta에 compute shader write→read/write barrier
 - renderer가 읽으면 해당 shader stage의 storage read를 포함
 - barrier 완료 후에만 Current/Next 논리 역할 교환
 
-frame-in-flight가 여러 개면 CPU가 같은 buffer를 덮지 않도록 fence/timeline 정책을 확인한다.
+Pass 2는 소비한 InputDelta 원소를 같은 invocation에서 0으로 지운다. 다음 CPU 입력 upload는 해당 buffer의 이전 GPU 사용이 끝난 뒤 수행해야 하며, 실제 접촉 입력 연결 단계에서 frame fence 정책을 적용한다.
 
 ## 테스트 시나리오
 

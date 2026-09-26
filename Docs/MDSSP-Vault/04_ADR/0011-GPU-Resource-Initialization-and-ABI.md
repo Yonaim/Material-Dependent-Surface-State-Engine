@@ -26,9 +26,9 @@ GPU buffer는 데이터 layout뿐 아니라 생성 시 초기값, CPU 자료형�
 |---|---|---|
 | State A/B | 생성 시 0을 CPU upload | Solver 단계에서 ping-pong으로 읽고 씀 |
 | OutgoingFluxScale | 생성 시 0을 CPU upload | 각 solver update에서 읽기 전에 유효한 단계 값을 기록해야 함 |
-| InputDelta | 생성 시 0을 CPU upload | 입력/solver 구현에서 event upload, 소비 후 clear 및 GPU 동기화를 추가해야 함 |
+| InputDelta | 생성 시 0을 CPU upload | Solver Pass 2가 값을 한 번 더한 뒤 GPU에서 0으로 지움. 실제 입력 upload는 이전 GPU 사용 완료 후 수행 |
 
-`TGPUBuffer::Download`는 host-visible/coherent buffer를 readback해 packed ABI와 생성 초기값을 검사한다. InputDelta의 매 update 소비 후 clear 및 frame-in-flight 안전 규칙은 compute/input 경로가 구현될 때 확정한다. 추후 device-local 경로에서는 staging, transfer clear 또는 compute clear로 바꿀 수 있다.
+`TGPUBuffer::Download`는 host-visible/coherent buffer를 readback해 packed ABI와 생성 초기값을 검사한다. Solver는 InputDelta를 읽은 Pass 2 invocation이 같은 원소를 지워 매 update 한 번만 소비되게 한다. 실제 접촉 입력 upload는 이전 GPU 사용 완료를 확인한 뒤 수행한다. 추후 device-local 경로에서는 staging, transfer clear 또는 compute clear로 바꿀 수 있다.
 
 ## 2. 검토안과 결정 — Descriptor 및 ping-pong
 
@@ -67,7 +67,7 @@ GPU 전용 구조체는 `sizeof`, `alignof`, `offsetof`를 compile-time 검사�
 
 ## 후속 작업 (Branch 4 범위 밖)
 
-- InputDelta event upload/consumption/clear와 frame-in-flight 동기화 (입력/solver 구현에서 처리)
+- 실제 Contact event 생성·upload와 CPU/GPU frame-in-flight 동기화 (Branch 6)
 - device-local/staging memory 경로와 allocation suballocation 최적화
 
 Descriptor의 구현 계약은 Branch 4 개발 노트에 기록한다. 현재 구현은 12개의 storage-buffer binding을 사용하며 binding별 원소 형식과 Current/Next 연결은 [[../05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에 정리한다. CPU ABI 구조체의 크기, 정렬, 주요 offset은 compile-time assertion으로 검증한다.

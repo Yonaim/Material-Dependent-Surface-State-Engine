@@ -49,16 +49,16 @@ $$
 
 ### State Parameters
 
-| Parameter | 의미 | 범위 | 기본값 |
-|---|---|---:|---:|
-| `stateCapacity` | 해당 State의 최대 상태량 | `(0, n]` | `1.0` |
-| `inputFactor` | 외부 Source 입력을 해당 State에 얼마나 반영할지 결정 | `[0, n]` | `1.0` |
-| `saturationTransferRate` | Saturation 차이에 의한 단위 시간당 기본 전달 속도 | `[0, n]` | `0.0` |
-| `geometryTransferRate` | 높이·중력·표면 방향 등 Geometry에 의한 단위 시간당 기본 전달 속도 | `[0, n]` | `0.0` |
-| `decayRate` | State가 시간 경과에 따라 자연 감소하는 단위 시간당 기본 속도 | `[0, n]` | `0.0` |
-| `cavityRetentionFactor` | 오목한 영역에서 Decay가 억제되는 정도 | `[0,1]` | `0.0` |
-| `accumulationFactor` | State를 형상상의 적층량으로 변환하는 정도 | `[0,n]` | `0.0` |
-| `cavityFillFactor` | 적층량 중 Cavity를 채우는 데 우선 배분할 비율 | `[0,1]` | `0.0` |
+| Parameter                | 의미                                         |       범위 |   기본값 |
+| ------------------------ | ------------------------------------------ | -------: | ----: |
+| `stateCapacity`          | 해당 State의 최대 상태량                           | `(0, n]` | `1.0` |
+| `inputFactor`            | 외부 Source 입력을 해당 State에 얼마나 반영할지 결정        |  `[0,n]` | `1.0` |
+| `saturationTransferRate` | Saturation 차이에 의한 단위 시간당 기본 전달 속도          | `[0, n]` | `0.0` |
+| `geometryTransferRate`   | 높이·중력·표면 방향 등 Geometry에 의한 단위 시간당 기본 전달 속도 | `[0, n]` | `0.0` |
+| `decayRate`              | State가 시간 경과에 따라 자연 감소하는 단위 시간당 기본 속도      | `[0, n]` | `0.0` |
+| `cavityRetentionFactor`  | 오목한 영역에서 Decay가 억제되는 정도                    |  `[0,1]` | `0.0` |
+| `accumulationFactor`     | State를 형상상의 적층량으로 변환하는 정도                  |  `[0,n]` | `0.0` |
+| `cavityFillFactor`       | 적층량 중 Cavity를 채우는 데 우선 배분할 비율              |  `[0,1]` | `0.0` |
 
 상태 전이 규칙과 전이 파라미터의 의미는 [[03_Architecture/0002_Surface-State|State Transition]]에서 정의한다.
 

@@ -8,16 +8,16 @@
 
 Surface simulation에는 Mesh의 Simulation UV를 texel graph로 변환한 Mapping, texel 위치·Normal·이웃 관계와 texel별 Profile 배치가 필요하다. 이전 결정은 이 정적 결과를 `.Surface` 바이너리 캐시에 저장하고 입력 fingerprint가 바뀌면 재생성하는 방식이었다.
 
-현재는 별도 캐시 포맷, 버전 호환, fingerprint 및 stale 판정을 유지하기보다 애플리케이션 Runtime에서 입력으로부터 결과를 생성하는 방식으로 단순화한다. 다만 같은 Mesh를 쓰는 여러 instance가 있다면 전처리 결과를 Runtime 메모리에서 공유해 중복 계산하지 않는다.
+현재는 별도 캐시 포맷, 버전 호환, fingerprint 및 stale 판정을 유지하기보다 애플리케이션 Runtime에서 입력으로부터 결과를 생성하는 방식으로 단순화한다. 다만 같은 Mesh와 Profile Distribution 조합을 쓰는 여러 instance가 있다면 전처리 결과를 Runtime 메모리에서 공유해 중복 계산하지 않는다.
 
 ## Decision
 
 - `.Surface` 파일을 생성하거나 읽지 않는다. Persistent binary cache, cache path, input fingerprint와 cache invalidation을 사용하지 않는다.
-- Asset/Scene 로딩 중 각 고유 Mesh와 Profile Distribution 조합에 대해 CPU 전처리를 수행한다. 결과는 해당 Runtime 세션 동안 메모리에서 유지한다.
+- Asset/Scene 로딩 중 각 고유 Mesh와 Profile Distribution 조합에 대해 CPU 전처리를 수행한다. Scene object가 Profile Distribution을 선택하며, 결과는 해당 Runtime 세션 동안 메모리에서 유지한다.
 - 전처리 입력은 Mesh topology/Simulation UV, 필요한 Normal Map 데이터, Profile Distribution이다. 출력은 texel Mapping 및 `TSharedSurfaceGeometryData`와 texel별 Profile 연결 데이터다.
-- 같은 입력을 사용하는 Mesh instance들은 하나의 Runtime 전처리 결과를 공유한다. Instance별 State는 별도의 `TSurfaceInstanceStateData`에 둔다. State는 `stateCapacity`를 넘지 않으며 초과량은 저장하지 않는다. Solver 임시값은 `TempState`이며 초과량 저장소가 아니다.
+- 같은 입력을 사용하는 Mesh instance들은 하나의 Runtime 전처리 결과를 공유한다. 서로 다른 Profile Distribution을 쓰는 instance는 별도의 Runtime 조합을 사용한다. Instance별 State는 별도의 `TSurfaceInstanceStateData`에 둔다. State는 `stateCapacity`를 넘지 않으며 초과량은 저장하지 않는다. Solver 임시값은 `TempState`이며 초과량 저장소가 아니다.
 - 전처리는 Asset/Scene load 시점에만 실행한다. 매 frame 또는 instance마다 반복하지 않는다. 입력 Asset이 Runtime 중 교체되면 해당 조합의 결과를 다시 만든다.
-- Profile Distribution은 원본 authoring 입력으로 유지할 수 있지만, 전처리 결과를 `.Surface` 파일로 저장하지 않는다. 그 입력 형식과 Scene 연결 규칙은 별도 계약을 따른다.
+- Profile Distribution은 원본 authoring 입력 `.SurfaceProfileMap`으로 유지하며, `.Scene` object가 사용할 map 경로를 지정한다. 전처리 결과는 `.Surface` 파일로 저장하지 않는다. Scene 경로 참조와 Runtime cache key는 [[0012-Scene-Profile-Distribution-Reference|ADR 0012]]를 따른다.
 - 전처리 결과에 대한 disk serialization 및 사전 Asset Build 단계는 이번 설계에서 다루지 않는다.
 
 | 데이터 | 소유 위치 | 수명 및 범위 |
@@ -52,6 +52,7 @@ Runtime 작업량을 줄일 수 있다. 반면 별도 빌드 도구와 산출물
 ## Related
 
 - [[0006-Dynamic-State-Registry]]
+- [[0012-Scene-Profile-Distribution-Reference]]
 - [[../03_Architecture/0001_Engine-Structure|엔진 구조와 데이터 흐름]]
 - [[../03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
 - [[../05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]

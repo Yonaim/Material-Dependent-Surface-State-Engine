@@ -8,7 +8,7 @@ Input, Transport, Decay를 통해 이웃 texel 사이 State가 Capacity 범위 �
 
 ## 작업
 
-- Saturation 차이에 따른 SaturationDrive와 형상 기반 GeometryDrive를 계산한다.
+- Saturation **차이에** 따른 SaturationDrive와 형상 기반 GeometryDrive를 계산한다.
 - Distance, Normal, Curvature, Profile Boundary 가중치를 적용한다.
 - Decay 후 가용량을 기준으로 alpha를 계산해 Outgoing이 보유량을 넘지 않게 한다.
 - 2-Pass gather update, State A/B ping-pong, barrier 순서를 확인한다.

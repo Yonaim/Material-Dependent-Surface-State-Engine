@@ -1,6 +1,6 @@
 # ADR 0004 — Surface / Material / SRProfile 연결
 
-- 상태: **Partially Superseded by [[0007-Surface-Preprocessed-Asset]], [[0008-Runtime-Surface-Preprocessing]], and [[0009-Texel-Profile-Index-Map]]**
+- 상태: **Partially Superseded by [[0007-Surface-Preprocessed-Asset]], [[0008-Runtime-Surface-Preprocessing]], [[0009-Texel-Profile-Index-Map]], and [[0012-Scene-Profile-Distribution-Reference]]**
 - 근거: [[07_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 ## Context
@@ -11,6 +11,7 @@ OBJ Surface는 `.mtl`을 통해 Render Material을 이미 알고 있으며, Stat
 
 > [!warning] 대체 범위
 > Render Material과 SRProfile이 서로 다른 책임이라는 결정은 유지한다. Surface당 하나의 SRProfile만 지정하고 texel별 Profile map을 두지 않는 결정은 [[0007-Surface-Preprocessed-Asset]]에서 대체되어 texel별 Profile map을 채택했다. 그 map의 `.Surface` persistent cache 저장은 [[0008-Runtime-Surface-Preprocessing]]에서 Runtime 메모리 전처리로 대체됐다. Texel마다 dense `ProfileIndex`를 저장하는 기본 표현은 [[0009-Texel-Profile-Index-Map]]에서 정한다.
+> Profile Distribution 파일을 `.Scene`에서 선택하는 연결 규칙은 [[0012-Scene-Profile-Distribution-Reference]]에서 정한다. 아래 `materialProfiles` 연결은 이전 결정 이력이다.
 
 ### 이전 결정 기록 — 대체됨
 

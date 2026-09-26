@@ -20,7 +20,7 @@ Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 �
 
 ## Branch 4 구현 및 검증 상태
 
-현재 MVP는 host-visible/coherent storage buffer를 사용한다. Mesh별 Geometry/Profile은 packed CPU 배열에서 한 번 upload하며, instance별 State A/B, OutgoingFluxScale, InputDelta는 생성 시 0으로 초기화한다. Instance마다 descriptor와 State buffer를 따로 소유하고, 같은 Mesh의 공유 Geometry/Profile handle을 재사용한다. 세부 binding은 아래 표를 따른다.
+현재 MVP는 host-visible/coherent storage buffer를 사용한다. Scene에서 선택한 Mesh/Profile Distribution 조합별 Geometry/Profile은 packed CPU 배열에서 한 번 upload하며, instance별 State A/B, OutgoingFluxScale, InputDelta는 생성 시 0으로 초기화한다. Instance마다 descriptor와 State buffer를 따로 소유하고, 같은 Runtime Surface Data handle을 참조하는 instance끼리 공유 Geometry/Profile handle을 재사용한다. 세부 binding은 아래 표를 따른다.
 
 GPU resource CTest는 두 instance용 자원을 만들고, 공유 Geometry binding, 분리된 State handle, AB/BA Current/Next, 생성 초기값과 Geometry/Profile packed 값을 Vulkan buffer readback으로 검사한다. Renderer를 5 frame 실행한 Vulkan validation smoke run에서는 GPU resource 생성과 정상 종료·파괴가 완료됐고 validation error는 없었다.
 
@@ -40,7 +40,7 @@ flowchart LR
 
 | 데이터 | 공유 단위 | 갱신 |
 |---|---|---|
-| mapping, base geometry, neighbor | 같은 Mesh와 Profile Distribution 조합의 Runtime 결과 | Runtime Asset 변경 시 재생성 |
+| mapping, base geometry, neighbor | `.Scene`이 선택한 같은 Mesh/Profile Distribution 조합의 Runtime 결과 | Runtime Asset 변경 시 재생성 |
 | Profile parameter | 같은 `.SRProfile` | Profile reload 시 |
 | Texel→Profile index map | 같은 Geometry/Profile Distribution 조합의 Runtime Geometry | 전처리 입력 변경 시 재생성 |
 | State A/B, OutgoingFluxScale, InputDelta | instance | solver step마다 |
@@ -174,7 +174,7 @@ Branch 4의 descriptor layout은 아래 12개 binding을 각각 별도의 storag
 | 8 | Current State | packed `float[]` | read-only |
 | 9 | Next State | packed `float[]` | write-only |
 | 10 | `OutgoingFluxScaleBuffer` | packed `float[]` | Pass 1 write / Pass 2 read |
-| 11 | `InputDeltaBuffer` | packed `float[]` | read-only, 이후 clear |
+| 11 | `InputDeltaBuffer` | packed `float[]` | Pass 2 read/write; consume then clear |
 
 각 binding의 descriptor type은 `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`, descriptor count는 1이다. AB와 BA descriptor set을 함께 생성해 Current/Next State의 반대 방향 연결을 제공한다. set은 해당 instance의 State buffers와 Mesh의 공유 Geometry/Profile buffers를 참조한다.
 
@@ -183,7 +183,7 @@ Push constant에는 자주 변하는 작은 값만 둔다. CPU 구조체는 GPU 
 ```cpp
 struct TSolverPushConstants {
     float deltaTime;
-    uint instanceIndex;
+    uint stateChannelCount;
     uint localTexelCount;
     uint flags;
     vec4 gravityLocal;
@@ -198,10 +198,9 @@ CPU는 instance transform을 사용해 World Gravity를 Mesh local space로 변�
 flowchart LR
   Input[InputDelta Upload] --> P1[Pass 1: Decay + RawOutgoing + alpha]
   P1 --> B1[Compute Barrier]
-  B1 --> P2[Pass 2: Incoming/Outgoing + Next]
+  B1 --> P2[Pass 2: Incoming/Outgoing + Next + InputDelta clear]
   P2 --> B2[Compute/Render Barrier]
   B2 --> Swap[A/B 역할 교환]
-  Swap --> Clear[InputDelta clear]
 ```
 
 ### Pass 1 → Pass 2
@@ -221,7 +220,7 @@ dstAccess = SHADER_STORAGE_READ
 - 렌더링이 읽는 경우: 목적 Shader stage와 `SHADER_STORAGE_READ`를 포함한다.
 - SSBO 기준안에는 image layout transition이 없다.
 
-`vkCmdFillBuffer`로 InputDelta를 clear하면 `TRANSFER_WRITE`가 다음 compute read보다 먼저 보이도록 barrier를 둔다.
+현재 MVP Solver는 Pass 2에서 InputDelta를 직접 clear하므로 다음 step에서 재사용하기 전 compute shader write→read/write buffer dependency를 둔다. 실제 CPU event upload와 frame-in-flight 동기화는 Branch 6 입력 연결에서 처리한다.
 
 ## 메모리 기준
 

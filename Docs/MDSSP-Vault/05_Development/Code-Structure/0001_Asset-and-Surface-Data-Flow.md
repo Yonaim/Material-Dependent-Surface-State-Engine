@@ -7,6 +7,7 @@ OBJ, MTL, Texture와 `.SRProfile` 파일이 파싱된 뒤 Asset으로 등록되�
 관련 설계 문서:
 
 - [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+- [[04_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]
 - [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
 - [[03_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]
 
@@ -30,7 +31,12 @@ flowchart LR
   TSRProfileLoader --> TSRProfileAsset
   TAssetManager --> TSRProfileAsset
 
-  TMeshAsset -->|TAsset/TScene load| Preprocess[TSurfacePreprocessor]
+  SceneFile[.Scene JSON] --> TSceneLoader
+  TAssetManager --> TSceneLoader
+  TSceneLoader -->|OBJ path| TAssetManager
+  TSceneLoader -->|selected SurfaceProfileMap path| TAssetManager
+
+  TMeshAsset -->|Mesh + selected distribution| Preprocess[TSurfacePreprocessor]
   NormalMap[Normal Map TAsset] -. "CPU 입력 통합 미구현" .-> Preprocess
   ProfileDistribution[Profile Distribution] -->|parsed input| Preprocess
   Preprocess --> SurfaceData[Runtime static geometry + texel profile map]
@@ -44,10 +50,12 @@ flowchart LR
   Preprocess -->|Build 결과| SharedGeometry[TSharedSurfaceGeometryData + ProfileMap]
   SharedGeometry -->|shared_ptr const| InstanceState[TSurfaceInstanceStateData]
   Registry -. "channel count 전달: Branch 4; Solver 소비: Branch 5; 입력 해석: Branch 6" .-> InstanceState
-  InstanceState -. "Solver 미구현" .-> Solver[TSurfaceStateSolver]
+  Renderer[TRenderer] --> StateSystem[TSurfaceStateSystem]
+  StateSystem --> GPUResources[TSurfaceGPUResourceManager]
+  StateSystem --> Solver[TSurfaceStateSolver: 2-Pass compute]
 ```
 
-실선은 현재 코드에 존재하는 호출·생성·참조 관계다. 점선은 자료형이나 설계는 있지만 상위 연결 코드가 아직 구현되지 않은 구간이다.
+실선은 현재 코드에 존재하는 호출·생성·참조 관계다. 점선은 자료형이나 설계는 있지만 상위 연결 코드가 아직 구현되지 않은 구간이다. `.Scene` object가 `surfaceProfileMap`을 지정하면 선택한 Mesh/Map 조합으로 Surface 데이터를 생성하고, GPU 2-Pass dispatch를 기록한다. 기본 `Assets/Scenes/Demo.Scene`은 `DemoCube.SurfaceProfileMap`과 `DemoStone.SRProfile`을 참조해 Solver resource를 만든다. Contact 입력과 State visualization은 아직 연결되지 않아 초기 State는 0에서 시작한다.
 
 ## 파일 단위 책임과 수명
 
@@ -59,17 +67,17 @@ flowchart LR
 | `.mtl` | OBJ가 참조하는 Render Material 및 Texture 경로 | 외부 제작·편집 도구에서 생성 | OBJ 파싱 중 `TMTLLoader`가 변환 |
 | Texture (`.png`, `.jpg` 등) | Albedo, Normal 등의 이미지 입력 | 외부 제작 도구에서 생성 | `TextureAsset`으로 로드·GPU 업로드 |
 | `.SRProfile` | State별 반응 파라미터와 Transition | 사용자가 작성·편집 | JSON Loader는 임의 State 이름을 파싱. AssetManager의 Registry 생성 API 구현됨 |
-| Profile Distribution | Surface/Material 할당별 SRProfile 지정 입력 | `.SurfaceProfileMap`에서 파싱해 각 valid texel의 index로 확장 | Loader와 `LoadOBJ` 전처리 연결 구현. Surface 내부 texel별 Profile authoring은 후속 기능 |
-| Runtime Surface Data | 전처리된 정적 Geometry/texel 관계와 `Texel → ProfileIndex` map | Runtime의 Asset/Scene load에서 생성하고 같은 Mesh asset의 instance가 공유 | `LoadOBJ` 경로의 Runtime Build 구현. `.Scene` 로더 연결은 후속 작업이며 binary cache를 사용하지 않음 |
-| `TSurfaceInstanceStateData` | Instance별 동적 State (`stateCapacity` 이내) | Runtime에서 초기화·갱신 | 동적 channel 자료형 구현. Registry channel count/GPU layout 연결은 `feat/surface-gpu-resources`, Solver 순회는 `feat/surface-solver-2pass`, 입력은 `feat/surface-input-integration` 담당 |
+| Profile Distribution | Surface/Material 할당별 SRProfile 지정 입력 | `.Scene` object가 선택한 `.SurfaceProfileMap`에서 파싱해 각 valid texel의 index로 확장 | `TSceneLoader`가 선택 경로를 `TAssetManager`에 전달. Surface 내부 texel별 Profile authoring은 후속 기능 |
+| Runtime Surface Data | 전처리된 정적 Geometry/texel 관계와 `Texel → ProfileIndex` map | Runtime의 Scene load에서 Mesh/Map 조합별 생성·공유 | `TSurfaceRuntimeDataHandle`로 같은 조합의 instance가 공유. binary cache는 사용하지 않음 |
+| `TSurfaceInstanceStateData` | Instance별 CPU State (`stateCapacity` 이내) | Runtime에서 초기화·갱신 | 동적 channel 자료형 구현. GPU instance buffer는 `TSurfaceGPUResourceManager`가 별도로 소유하며, Contact 입력 연결은 `feat/surface-input-integration` 담당 |
 
 파일 흐름의 목표 형태는 다음과 같다.
 
 ```text
-.obj + .mtl + textures ─────┐
-                             ├─ Surface Preprocessor ─→ Runtime Surface Data
-Normal Map ─────────────────┤                           ├─ static geometry / texel relations
-Profile Distribution ───────┘                           └─ Texel → ProfileIndex
+.Scene ── selects ──> .obj + .SurfaceProfileMap ─┐
+.obj + .mtl + textures ───────────────────────────┼─ Surface Preprocessor ─→ Runtime Surface Data
+Normal Map ──────────────────────────────────────┤                           ├─ static geometry / texel relations
+.SurfaceProfileMap ── references ──> .SRProfile ─┘                           └─ Texel → ProfileIndex
 
 .SRProfile files ─→ TSRProfileAsset collection ─→ TSurfaceStateRegistry
        │                                              │
@@ -155,24 +163,25 @@ File read
 → TAssetManager 등록
 ```
 
-`TSRProfileAsset`은 Profile 데이터를 값으로 소유한다. MTL Material 이름과 SRProfile handle을 연결하는 `.Scene` 로더는 아직 placeholder이므로, 두 Asset 사이의 자동 연결은 현재 구현되어 있지 않다.
+`TSRProfileAsset`은 Profile 데이터를 값으로 소유한다. `TSceneLoader`는 Scene object의 Mesh 경로와 선택적 `.SurfaceProfileMap` 경로를 해석하고, AssetManager가 map에 선언된 `.SRProfile`들을 로드해 Runtime Surface Data에 연결한다.
 
 `.SRProfile`의 `states` key를 모으는 `TSurfaceStateRegistry`와 정규화, 재현 가능한 ID 배정, Transition endpoint 검증은 구현되어 있다. `TAssetManager::GetSurfaceStateRegistry()`가 로드된 Profile 집합을 기준으로 Registry를 지연 생성하고 이후 Profile이 추가되면 cache를 무효화한다. Registry channel count를 instance/GPU layout에 전달하는 일은 Branch 4, Solver 순회는 Branch 5, Contact 입력의 StateId 해석은 Branch 6에 배정했다. 계약은 [[04_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 기준으로 한다.
 
 ## 5. Runtime Surface 전처리 흐름
 
-`.Surface` 파일은 사용하지 않는다. 각 애플리케이션 Runtime의 Asset/Scene load 중 고유 Mesh와 Profile Distribution 조합을 전처리해 결과를 메모리에 만든다. 같은 조합을 사용하는 여러 instance가 결과를 공유하며, 각 유효 texel은 dense Profile Map에 저장된 `ProfileIndex`로 별도 Profile 응답 테이블을 직접 조회한다. 인접 texel이 같은 Profile이어도 기본안에서는 texel마다 인덱스를 저장한다. 상세 결정은 [[../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다.
+`.Surface` 파일은 사용하지 않는다. 각 애플리케이션 Runtime의 Scene load 중 고유 Mesh와 Profile Distribution 조합을 전처리해 결과를 메모리에 만든다. `.Scene` object가 Profile Distribution 파일을 선택하며, 같은 Mesh와 같은 map을 선택한 여러 instance는 결과를 공유한다. 같은 Mesh라도 다른 map을 선택하면 별도 Runtime Surface Data handle과 Profile table을 갖는다. 각 유효 texel은 dense Profile Map에 저장된 `ProfileIndex`로 해당 table을 조회한다. 상세 결정은 [[../04_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]와 [[../04_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012]]를 따른다.
 
 | 전처리 입력 | 결과에 미치는 영향 | Runtime 처리 |
 |---|---|---|
 | Mesh (`.obj`) | UV rasterization, Surface/Triangle 관계, topology와 seam 이웃 | load 시 Mapping/Geometry build |
 | Normal Map | 정적 Normal 및 Meso 형상 파생값 | 입력이 있으면 전처리 때 사용 |
+| `.Scene` Profile Map reference | object가 사용할 Profile 배치 입력 선택 | Scene load 시 상대 경로 해석 |
 | Profile Distribution | Texel별 Profile 배치 | 파싱 후 Profile map 구성 |
 | Grid / preprocess 설정 | Texel 해상도와 생성 결과 | 현재 설정으로 Runtime 결과 생성 |
 
 전처리 결과의 파일 경로, source hash, cache version 및 stale 판정은 두지 않는다. Runtime 세션 안에서는 같은 입력 조합의 결과를 재사용해 Mesh별 중복 전처리를 방지한다. Runtime 중 입력 Asset이 교체되면 대응하는 메모리 결과를 다시 만든다.
 
-`TAssetManager`/Scene load는 입력을 모아 Runtime builder에 전달한다. Builder는 Simulation Mapping, shared geometry와 texel Profile map을 생성한다. 검증 실패는 잘못된 Asset/입력 식별 정보와 함께 load 오류로 보고한다. 생성된 결과는 Runtime Asset/resource로 등록해 instance들이 참조한다. persistent `SurfaceCache::Save/Load`, metadata fingerprint 및 cache miss/stale 분기는 목표 흐름에 포함하지 않는다. Normal Map 기반 Meso/Curvature algorithm은 Week-08 experiment에서 후보를 비교한 뒤 별도 구현 범위를 결정한다.
+`TSceneLoader`가 `.Scene`의 상대 경로를 해석해 OBJ를 로드하고, `surfaceProfileMap`이 있으면 명시한 조합으로 `TAssetManager::LoadSurfaceData`를 호출한다. AssetManager는 정규화한 Mesh/Map 경로 쌍을 cache key로 사용한다. Builder는 Simulation Mapping, shared geometry와 texel Profile map을 생성한다. 검증 실패는 잘못된 Asset/입력 식별 정보와 함께 load 오류로 보고한다. 생성된 결과는 Runtime Asset/resource로 등록해 instance들이 참조한다. persistent `SurfaceCache::Save/Load`, metadata fingerprint 및 cache miss/stale 분기는 목표 흐름에 포함하지 않는다. Normal Map 기반 Meso/Curvature algorithm은 Week-08 experiment에서 후보를 비교한 뒤 별도 구현 범위를 결정한다.
 
 ## 6. Mesh 원본 topology 보존
 
@@ -243,10 +252,10 @@ classDiagram
 |---|---|
 | `TSharedSurfaceGeometryData` | 여러 Instance가 공유 소유하며 읽기 전용 접근 |
 | `TSurfaceStateValues[]` | 각 `TSurfaceInstanceStateData`가 자체 소유 |
-| `SurfaceProfileMap` | Runtime `TSharedSurfaceGeometryData`가 texel별 ProfileIndex를 메모리에서 정적 소유 |
+| `SurfaceProfileMap` | `.Scene` 선택에 따라 생성한 Runtime `TSharedSurfaceGeometryData`가 texel별 ProfileIndex를 메모리에서 정적 소유 |
 | `TSurfaceResponseProfileData` | `TSRProfileAsset`이 값으로 소유 |
 
-Runtime 전처리의 texel별 Profile index는 공유 `TSharedSurfaceGeometryData`에 저장하며, `TSurfaceInstanceStateData`는 texel index로 이를 조회한다. Profile index를 SRProfile Asset handle로 해석해 Solver에 전달하는 Scene/Instance 생성 경로는 아직 구현되어 있지 않다. 과거 계획의 Surface별 Profile 배열로 texel Profile map을 대체하지 않는다.
+Runtime 전처리의 texel별 Profile index는 Mesh/Map 조합에 해당하는 공유 `TSharedSurfaceGeometryData`에 저장하며, 각 Scene instance는 해당 Runtime Surface Data handle을 통해 이를 참조한다. `TSurfaceInstanceStateData`는 texel index로 Profile map을 조회한다. 과거 계획의 Surface별 Profile 배열로 texel Profile map을 대체하지 않는다.
 
 ```mermaid
 classDiagram
@@ -266,14 +275,14 @@ classDiagram
 
 | 연결 | 현재 상태 |
 |---|---|
-| `.Scene` → Mesh/Material/SRProfile 연결 | `SceneLoader` placeholder |
-| `TSurfaceMappingData` → `TSharedSurfaceGeometryData` | Build 변환 API 구현. Mesh/Scene load에서 Runtime 호출·등록 연결 필요 |
+| `.Scene` → Mesh/SurfaceProfileMap 연결 | `TSceneLoader`가 object 경로와 transform을 파싱하고 AssetManager를 통해 Asset/Runtime data를 연결 |
+| `TSurfaceMappingData` → `TSharedSurfaceGeometryData` | AssetManager가 Mesh/선택 map 조합별 Runtime build 및 handle 등록 |
 | Runtime 전처리 결과 수명 | load 시 생성하고 메모리에서 같은 입력의 instance 간 공유. persistent cache 저장·로드는 하지 않음 |
 | `.SurfaceProfileMap` → texel `ProfileIndex` map | Surface별 Profile 파싱, 검증 및 valid texel로의 확장 구현 완료. Surface 내부의 세밀한 Profile authoring은 후속 기능 |
 | Profile collection → `TSurfaceStateRegistry` | Registry와 AssetManager 지연 생성 구현. Instance/GPU 연결은 Branch 4, Solver 소비는 Branch 5, 입력은 Branch 6 담당 |
 | texel `ProfileIndex` → `TSRProfileAssetHandle` | 상위 등록·해석 정책 미구현 |
-| Instance State/Profile → Solver | `TSurfaceStateSolver` placeholder. Dynamic channel iteration and unsupported Profile-state handling are assigned to Branch 5 |
-| 전체 Surface State 수명과 갱신 | `TSurfaceStateSystem` placeholder |
+| GPU State/Profile → Solver | `TSurfaceStateSolver`가 동적 channel을 순회하는 Pass 1/Pass 2와 State A/B 교환을 기록한다. 지원하지 않는 Profile/channel은 계산에서 제외한다. GPU readback 검증은 미완료 |
+| 전체 Surface State 수명과 갱신 | `TSurfaceStateSystem`이 GPU resources와 Solver를 소유하고 Renderer command buffer에 step을 기록한다. Contact 입력과 렌더링 연결은 후속 작업 |
 
 ## 관련 코드 위치
 
