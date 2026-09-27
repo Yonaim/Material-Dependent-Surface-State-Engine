@@ -57,7 +57,6 @@ namespace MDSS
         {
             MainWindow.PollEvents();
             DebugInterface->BeginFrame(MainScene);
-            const bool bSimulationPaused = DebugInterface->IsSimulationPaused();
             if (const std::optional<TSurfaceContactInput> Contact = InputInterface->PollDebugContact(
                     MainScene,
                     Assets,
@@ -67,18 +66,14 @@ namespace MDSS
                     DebugInterface->GetInjectStrength(),
                     DebugInterface->GetInjectRadius(),
                     DebugInterface->GetInjectFalloff(),
-                    DebugInterface->IsKeyboardCaptured()))
+                    DebugInterface->ShouldSuppressDebugHotkey()))
             {
-                if (!bSimulationPaused)
-                {
-                    FrameRenderer->SubmitContact(*Contact);
-                }
+                FrameRenderer->SubmitContact(*Contact);
             }
             const auto  CurrentFrameTime = std::chrono::steady_clock::now();
             const float DeltaTime = std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
             PreviousFrameTime = CurrentFrameTime;
-            const float SimulationDeltaTime =
-                bSimulationPaused ? 0.0F : DeltaTime * DebugInterface->GetSimulationTimeScale();
+            const float SimulationDeltaTime = DeltaTime * DebugInterface->GetSimulationTimeScale();
             FrameRenderer->RenderFrame(MainScene, *DebugInterface, SimulationDeltaTime);
             ++RenderedFrameCount;
         }
