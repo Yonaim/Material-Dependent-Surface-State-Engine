@@ -44,13 +44,15 @@ Runtime 전처리 결과에는 Geometry와 texel별 Profile map이 함께 들어
 
 Scene이 지정하는 `.SurfaceProfileMap`은 기존 v1 형식을 그대로 사용한다. Profile 경로는 map 파일 기준 상대 경로이고, 각 Surface는 profiles 배열의 항목을 선택한다.
 
+`profileIndex: -1`은 해당 Surface를 렌더링에만 사용하고 Surface simulation에서는 제외한다는 뜻이다. 로더는 이를 내부 `InvalidSurfaceProfileIndex` sentinel로 변환한다. 다른 음수 값은 허용하지 않는다.
+
 ```json
 {
   "type": "SurfaceProfileMap",
   "version": 1,
   "profiles": ["../Profiles/stone.SRProfile", "../Profiles/moss.SRProfile"],
   "surfaces": [
-    { "surfaceId": 0, "profileIndex": 0 },
+    { "surfaceId": 0, "profileIndex": -1 },
     { "surfaceId": 1, "profileIndex": 1 }
   ]
 }
@@ -76,6 +78,7 @@ Scene별 선택권을 제공하면서 Profile Distribution 입력을 별도 파�
 - AssetManager와 GPU resource manager는 Mesh handle 단독이 아니라 Runtime Surface Data handle을 기준으로 Profile map/Geometry 자원을 공유한다.
 - 같은 Mesh를 서로 다른 map으로 쓰면 정적 Surface 결과가 별도로 생성될 수 있다. 같은 Mesh와 map 조합은 Runtime 메모리에서 공유한다.
 - `.Scene`에 map이 빠진 object는 표면 solver resource를 받지 않는다.
+- map 안에서 `profileIndex: -1`인 Surface는 Mesh와 함께 렌더링되지만 Solver와 접촉 입력에서 제외된다. 같은 Mesh의 다른 Surface에는 Profile을 계속 할당할 수 있다.
 - Scene에 명시된 파일이 없거나 형식이 잘못된 경우 로딩은 오류로 실패한다. 자동 sidecar fallback은 하지 않는다.
 
 ## Related

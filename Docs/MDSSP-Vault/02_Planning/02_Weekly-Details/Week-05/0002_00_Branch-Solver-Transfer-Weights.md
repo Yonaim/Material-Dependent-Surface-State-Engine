@@ -10,14 +10,14 @@
 
 TransferWeight 계산과 flux 적용은 Branch 2.1의 캐시 구현에 포함되어 현재 브랜치에 병합되었다. 중복되는 계산 경로를 추가하지 않는다.
 
-| 계약 | 현재 구현 |
-|---|---|
-| DistanceWeight | CPU cache builder가 MesoVirtualHeight 및 instance transform이 반영된 위치와 이웃 정보를 사용해 계산한다. |
-| NormalWeight | instance inverse-transpose를 적용한 world normal 내적으로 계산한다. |
-| CurvatureWeight | 중립값 `1.0`을 사용한다. |
-| ProfileBoundaryWeight | 동일 Profile은 `1.0`, 다른 Profile은 `0.5`를 사용한다. |
-| Flux 적용 | `rawFlux`가 cache 가중치를 읽으며 Pass 1/2 모두 같은 규칙을 적용한다. 양방향 incoming은 대칭인 cache 가중치를 공유해 읽는다. |
-| State 미지원 / invalid geometry | State 지원 검사에서 flux를 0으로 처리하며, invalid 이웃 슬롯의 cache 값은 0이다. |
+| 계약                           | 현재 구현                                                                                    |
+| ---------------------------- | ---------------------------------------------------------------------------------------- |
+| DistanceWeight               | CPU cache builder가 MesoVirtualHeight 및 instance transform이 반영된 위치와 이웃 정보를 사용해 계산한다.      |
+| NormalWeight                 | 현재 구현은 Mesh geometric normal의 world-space 내적으로 계산한다. Normal Map 입력은 Branch 2.2에서 추가할 계획이다. |
+| CurvatureWeight              | 중립값 `1.0`을 사용한다.                                                                         |
+| ProfileBoundaryWeight        | 동일 Profile은 `1.0`, 다른 Profile은 `0.5`를 사용한다.                                              |
+| Flux 적용                      | `rawFlux`가 cache 가중치를 읽으며 Pass 1/2 모두 같은 규칙을 적용한다. 양방향 incoming은 대칭인 cache 가중치를 공유해 읽는다. |
+| State 미지원 / invalid geometry | State 지원 검사에서 flux를 0으로 처리하며, invalid 이웃 슬롯의 cache 값은 0이다.                               |
 
 주 구현은 `BuildSurfaceGPUTransferWeights`와 `SurfaceSolverCommon.glsl`에 있다. `Tests/SurfaceGPUResourceTests.cpp`에는 거리/Profile 경계와 법선 가중치의 GPU flux 사례가 추가되어 있다.
 
@@ -47,7 +47,7 @@ RawFlux(i→j)
 
 - 각 weight 식은 [[04_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
 - `DistanceWeight`는 world-space 이웃 거리와 양 endpoint의 평균 유효 이웃 간격으로 계산한다. 기존 Position/Neighbor buffer를 사용하며 NeighborDistance 전용 buffer를 만들지 않는다.
-- `NormalWeight`는 per-instance transform이 적용된 두 endpoint의 world-space normal 내적으로 계산한다.
+- 현재 `NormalWeight`는 per-instance transform이 적용된 두 endpoint의 Mesh geometric normal 내적으로 계산한다. 이 branch의 기존 구현 범위를 기록하며, Normal Map 방향 입력은 [[02_Planning/02_Weekly-Details/Week-05/0002_02_Branch-Solver-Normal-Map-Weights|Branch 2.2]]에서 다룬다.
 - 이 브랜치에서 `CurvatureWeight = 1.0`으로 둔다. 이는 전달 곡률의 최종 설계 결정이 아니라 중립값을 쓰는 임시 구현 범위다. 곡률이 전달에 어떤 효과를 주는지와 필요한 geometry 입력은 후속 설계 결정으로 남긴다.
 - `ConcavityWeight`는 현재 계약대로 Decay의 cavity retention에만 사용한다. 이 브랜치에서 `CurvatureWeight` 계산에 재사용하지 않는다.
 - `ProfileBoundaryWeight`는 같은 Profile 사이에서 `1.0`, 서로 다른 Profile 사이에서 고정 `0.5`로 둔다. 이는 Profile parameter가 아닌 Solver의 공통 규칙이므로 `.SRProfile` schema와 GPU Profile ABI를 늘리지 않는다.
@@ -75,7 +75,7 @@ RawFlux(i→j)
 
 - State transitions
 - 동적 Accumulation geometry
-- 실시간 Normal Map integration
+- Normal Map에서 MesoVirtualHeight를 복원하는 적분 및 non-integrable fallback ([[02_Planning/02_Weekly-Details/Week-05/0002_03_Branch-Solver-Meso-Geometry|Branch 2.3]])
 - 성능 최적화와 저장형 distance field
 
 ## 성능 후속 브랜치
