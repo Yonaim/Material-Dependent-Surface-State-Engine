@@ -4,6 +4,30 @@
 선행 조건: `feat/solver-geometry-drive` 병합  
 관련 설계: [[03_Architecture/0004_Surface-State-Update|Surface State Update]], [[04_ADR/0016-Transport-Transfer-Weights|ADR 0016]], [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
 
+상태: **구현 및 GPU 실행 검증 완료**
+
+## 구현 현황
+
+TransferWeight 계산과 flux 적용은 Branch 2.1의 캐시 구현에 포함되어 현재 브랜치에 병합되었다. 중복되는 계산 경로를 추가하지 않는다.
+
+| 계약 | 현재 구현 |
+|---|---|
+| DistanceWeight | CPU cache builder가 MesoVirtualHeight 및 instance transform이 반영된 위치와 이웃 정보를 사용해 계산한다. |
+| NormalWeight | instance inverse-transpose를 적용한 world normal 내적으로 계산한다. |
+| CurvatureWeight | 중립값 `1.0`을 사용한다. |
+| ProfileBoundaryWeight | 동일 Profile은 `1.0`, 다른 Profile은 `0.5`를 사용한다. |
+| Flux 적용 | `rawFlux`가 cache 가중치를 읽으며 Pass 1/2 모두 같은 규칙을 적용한다. 양방향 incoming은 대칭인 cache 가중치를 공유해 읽는다. |
+| State 미지원 / invalid geometry | State 지원 검사에서 flux를 0으로 처리하며, invalid 이웃 슬롯의 cache 값은 0이다. |
+
+주 구현은 `BuildSurfaceGPUTransferWeights`와 `SurfaceSolverCommon.glsl`에 있다. `Tests/SurfaceGPUResourceTests.cpp`에는 거리/Profile 경계와 법선 가중치의 GPU flux 사례가 추가되어 있다.
+
+## 검증 결과
+
+- `MDSS_SurfaceGPUResource` GPU 실행 테스트: 통과.
+- Apple M1에서 `MDSS --frames 5` 실행: 5프레임 처리 후 정상 종료.
+- Vulkan validation: 활성화 상태에서 core 또는 synchronization 오류는 보고되지 않았다.
+- 남은 best-practices 경고: 작은 buffer/image마다 별도 메모리 할당을 사용하는 점과 depth attachment에 `VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT`를 사용할 수 있다는 권고. Solver cache 접근이나 flux 계산 관련 validation 오류는 관찰되지 않았다.
+
 ## 목표
 
 이웃별 거리·법선·곡률·Profile 경계에 따른 TransferWeight를 정리하고 Solver flux에 적용한다. 각 가중치는 전달 구동 방향(Drive)과 구분되는 통과 계수로 `[0,1]` 범위에서 작동한다.
