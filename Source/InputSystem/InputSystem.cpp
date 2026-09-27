@@ -21,11 +21,6 @@
 
 namespace MDSS
 {
-    namespace
-    {
-        constexpr float DefaultContactRadius = 0.25F;
-    }
-
     TInputSystem::TInputSystem(GLFWwindow* Window) noexcept : Window(Window)
     {
     }
@@ -36,6 +31,8 @@ namespace MDSS
                                                                        bool                 bInjectMode,
                                                                        TStateId             State,
                                                                        float                Strength,
+                                                                       float                Radius,
+                                                                       float                Falloff,
                                                                        bool                 bKeyboardCaptured)
     {
         const bool bSpaceDown = Window != nullptr && glfwGetKey(Window, GLFW_KEY_SPACE) == GLFW_PRESS;
@@ -46,9 +43,9 @@ namespace MDSS
         {
             return std::nullopt;
         }
-        if (State == InvalidStateId || Strength < 0.0F)
+        if (State == InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
         {
-            TLogger::Warning("TInputSystem", "Ignored debug contact because State or Strength is invalid.");
+            TLogger::Warning("TInputSystem", "Ignored debug contact because State, Strength, radius, or falloff is invalid.");
             return std::nullopt;
         }
 
@@ -84,9 +81,9 @@ namespace MDSS
         Contact.State = State;
         Contact.WorldPosition = Hit.WorldPosition;
         Contact.WorldDirection = glm::normalize(Direction);
-        Contact.Radius = DefaultContactRadius;
+        Contact.Radius = Radius;
         Contact.Strength = Strength;
-        Contact.Falloff = 1.0F;
+        Contact.Falloff = Falloff;
         Contact.bHasSimulationMapping = true;
         Contact.TargetTriangle = Hit.TriangleID;
         Contact.SimulationUV = Hit.SimulationUV;

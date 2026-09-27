@@ -58,7 +58,13 @@ namespace MDSS
         [[nodiscard]] bool IsInjectModeEnabled() const noexcept;
         [[nodiscard]] TStateId GetInjectState() const noexcept;
         [[nodiscard]] float GetInjectStrength() const noexcept;
+        [[nodiscard]] float GetInjectRadius() const noexcept;
+        [[nodiscard]] float GetInjectFalloff() const noexcept;
+        [[nodiscard]] float GetSimulationTimeScale() const noexcept;
+        [[nodiscard]] bool IsSimulationPaused() const noexcept;
+        [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
+        [[nodiscard]] int GetHoveredGizmoAxis() const noexcept;
         [[nodiscard]] TStateId GetDebugState() const noexcept;
         [[nodiscard]] bool IsKeyboardCaptured() const noexcept;
 
@@ -69,8 +75,9 @@ namespace MDSS
         void DrawSelectedTransformWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
         void DrawRenderOptionsWindow();
-        void DrawInjectWindow();
-        void DrawSimulationParametersWindow(const TScene& SceneData);
+        void DrawRenderSettingsWindow();
+        void DrawViewportStatsOverlay();
+        void DrawSimulationDebugWindow(const TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
 
@@ -84,6 +91,10 @@ namespace MDSS
         TStateId    InjectState = 0;
         TStateId    DebugState = 0;
         float       InjectStrength = 1.0F;
+        float       InjectRadius = 0.25F;
+        float       InjectFalloff = 1.0F;
+        float       SimulationTimeScale = 1.0F;
+        bool        bSimulationPaused = false;
         TSRProfileAssetHandle DebugParameterProfile = InvalidAssetHandle;
         TStateId DebugParameterState = 0;
         std::pair<TSRProfileAssetHandle, TStateId> ParameterDraftKey{InvalidAssetHandle, InvalidStateId};
@@ -96,6 +107,7 @@ namespace MDSS
         std::string ParameterStatus;
         std::optional<std::size_t> SelectedObject;
         int         ActiveGizmoAxis = -1;
+        int         HoveredGizmoAxis = -1;
         glm::vec2   GizmoDragStartMouse{0.0F};
         glm::vec2   GizmoDragScreenAxis{0.0F};
         glm::vec3   GizmoDragStartPosition{0.0F};
@@ -103,12 +115,13 @@ namespace MDSS
         float       GizmoDragPixelLength = 0.0F;
         std::string SceneStatus;
         std::uint32_t DockspaceID = 0;
+        glm::vec4 SceneViewportRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
 
         std::array<bool, static_cast<std::size_t>(TLogLevel::Count)> LogLevelFilters{true, true, true, true, true};
         std::array<char, 128>                                     LogSearch{};
         std::vector<TLogEntry>                                       CachedLogEntries;
         std::uint64_t                                               LastSeenLogRevision = 0;
         bool                                                        bScrollLogToBottom = true;
-        float                                                       LogWindowHeight = 360.0F;
+        float                                                       LogWindowHeight = 540.0F;
     };
 } // namespace MDSS
