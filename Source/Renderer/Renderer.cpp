@@ -281,6 +281,35 @@ namespace MDSS
                 BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
         }
         CreateRenderFinishedSemaphores();
+        VkPhysicalDeviceProperties PhysicalDeviceProperties{};
+        vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &PhysicalDeviceProperties);
+        TimestampPeriodNanoseconds = PhysicalDeviceProperties.limits.timestampPeriod;
+        std::uint32_t QueueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(Context.GetPhysicalDevice(), &QueueFamilyCount, nullptr);
+        std::vector<VkQueueFamilyProperties> QueueFamilies(QueueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(Context.GetPhysicalDevice(), &QueueFamilyCount, QueueFamilies.data());
+        const std::uint32_t GraphicsQueueFamily = Context.GetQueues().GetFamilyIndices().GraphicsFamily.value();
+        if (GraphicsQueueFamily < QueueFamilies.size())
+        {
+            TimestampValidBits = QueueFamilies[GraphicsQueueFamily].timestampValidBits;
+        }
+        if (TimestampValidBits > 0)
+        {
+            VkQueryPoolCreateInfo QueryPoolInfo{};
+            QueryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+            QueryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+            QueryPoolInfo.queryCount = static_cast<std::uint32_t>(TRenderContext::MaxFramesInFlight * 2U);
+            if (vkCreateQueryPool(Context.GetDevice(), &QueryPoolInfo, nullptr, &SolverTimestampQueryPool) !=
+                VK_SUCCESS)
+            {
+                SolverTimestampQueryPool = VK_NULL_HANDLE;
+                TLogger::Warning("TRenderer", "GPU timestamp queries unavailable; Solver GPU time will be hidden.");
+            }
+        }
+        else
+        {
+            TLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
+        }
         TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
         TLogger::Debug("TRenderer",
                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
@@ -292,6 +321,11 @@ namespace MDSS
         if (Context.GetDevice() != VK_NULL_HANDLE)
         {
             vkDeviceWaitIdle(Context.GetDevice());
+        }
+        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkDestroyQueryPool(Context.GetDevice(), SolverTimestampQueryPool, nullptr);
+            SolverTimestampQueryPool = VK_NULL_HANDLE;
         }
         DestroyRenderFinishedSemaphores();
 
@@ -313,7 +347,32 @@ namespace MDSS
 
     void TRenderer::RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime)
     {
+        const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
         FrameContext.WaitForCurrentFrame();
+        if (SolverTimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
+        {
+            const std::uint32_t QueryBase = FrameIndex * 2U;
+            std::array<std::uint64_t, 2> Timestamps{};
+            const VkResult QueryResult = vkGetQueryPoolResults(Context.GetDevice(),
+                                                               SolverTimestampQueryPool,
+                                                               QueryBase,
+                                                               static_cast<std::uint32_t>(Timestamps.size()),
+                                                               sizeof(Timestamps),
+                                                               Timestamps.data(),
+                                                               sizeof(Timestamps[0]),
+                                                               VK_QUERY_RESULT_64_BIT);
+            if (QueryResult == VK_SUCCESS && TimestampPeriodNanoseconds > 0.0F)
+            {
+                std::uint64_t ElapsedTicks = Timestamps[1] - Timestamps[0];
+                if (TimestampValidBits < 64U)
+                {
+                    ElapsedTicks &= (std::uint64_t{1} << TimestampValidBits) - 1U;
+                }
+                LastSolverGpuMilliseconds = static_cast<float>(
+                    static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
+            }
+            bTimestampQueriesSubmitted[FrameIndex] = false;
+        }
 
         if (TargetWindow.WasFramebufferResized())
         {
@@ -349,6 +408,10 @@ namespace MDSS
         }
 
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, DeltaTime);
+        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        {
+            bTimestampQueriesSubmitted[FrameIndex] = true;
+        }
 
         const VkSemaphore          WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
         if (ImageIndex >= RenderFinishedSemaphores.size())
@@ -411,6 +474,23 @@ namespace MDSS
         }
     }
 
+    void TRenderer::SetDebugProfileParameters(TSRProfileAssetHandle Profile,
+                                              TStateId State,
+                                              const TSurfaceStateParameters& Parameters,
+                                              bool bKeepRuntimeOverride)
+    {
+        SurfaceStates->SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
+        const auto Key = std::make_pair(Profile, State);
+        if (bKeepRuntimeOverride)
+        {
+            DebugProfileParameterOverrides[Key] = Parameters;
+        }
+        else
+        {
+            DebugProfileParameterOverrides.erase(Key);
+        }
+    }
+
     void TRenderer::ReloadSceneResources(const TScene& Scene)
     {
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
@@ -418,6 +498,17 @@ namespace MDSS
             throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
         auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
+        {
+            try
+            {
+                Replacement->SetDebugProfileParameters(Key.first, Key.second, Parameters);
+            }
+            catch (const std::invalid_argument&)
+            {
+                TLogger::Debug("TRenderer", "Skipped a runtime Profile override not used by the reloaded Scene.");
+            }
+        }
         std::unique_ptr<TGraphicsPipeline> ReplacementDebugPipeline;
         if (const TSurfaceStateDescriptorResources* Descriptors =
                 Replacement->GetGPUResources().GetAnyInstanceDescriptors())
@@ -505,6 +596,11 @@ namespace MDSS
     const TSurfaceGPUResourceManager& TRenderer::GetSurfaceGPUResources() const noexcept
     {
         return SurfaceStates->GetGPUResources();
+    }
+
+    float TRenderer::GetLastSolverGpuMilliseconds() const noexcept
+    {
+        return LastSolverGpuMilliseconds;
     }
 
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
@@ -792,7 +888,22 @@ namespace MDSS
             throw std::runtime_error("Failed to begin Vulkan command buffer.");
         }
 
+        const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
+        const std::uint32_t QueryBase = FrameIndex * 2U;
+        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdResetQueryPool(CommandBuffer, SolverTimestampQueryPool, QueryBase, 2);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, SolverTimestampQueryPool, QueryBase);
+        }
         SurfaceStates->RecordStep(CommandBuffer, DeltaTime);
+        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                SolverTimestampQueryPool,
+                                QueryBase + 1U);
+        }
 
         std::array<VkClearValue, 2> ClearValues{};
         ClearValues[0].color = {{0.03F, 0.04F, 0.06F, 1.0F}};

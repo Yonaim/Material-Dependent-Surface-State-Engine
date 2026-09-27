@@ -26,6 +26,8 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <cstdint>
+#include <cctype>
+#include <imgui_internal.h>
 #include <glm/geometric.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -36,7 +38,9 @@
 #include <exception>
 #include <vector>
 #include <cmath>
+#include <cstdio>
 #include <limits>
+#include <string_view>
 
 namespace MDSS
 {
@@ -104,6 +108,18 @@ namespace MDSS
             Along = std::clamp(((P.x - A.x) * DX + (P.y - A.y) * DY) / Denominator, 0.0F, 1.0F);
             return std::hypot(P.x - A.x - Along * DX, P.y - A.y - Along * DY);
         }
+
+        bool ContainsCaseInsensitive(std::string_view Text, std::string_view Search)
+        {
+            if (Search.empty())
+            {
+                return true;
+            }
+            return std::search(Text.begin(), Text.end(), Search.begin(), Search.end(), [](char Left, char Right) {
+                return std::tolower(static_cast<unsigned char>(Left)) ==
+                       std::tolower(static_cast<unsigned char>(Right));
+            }) != Text.end();
+        }
     } // namespace
 
     TDebugUI::TDebugUI(const TVulkanContext& Context,
@@ -117,10 +133,41 @@ namespace MDSS
         ImGui::CreateContext();
 
         ImGuiIO& IO = ImGui::GetIO();
-        IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        IO.IniFilename = nullptr;
+        IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
+        IO.IniFilename = "MDSS_EditorLayout.ini";
+
+#if defined(_WIN32)
+        constexpr const char* FontCandidates[] = {"C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf"};
+#elif defined(__APPLE__)
+        constexpr const char* FontCandidates[] = {"/System/Library/Fonts/Supplemental/Arial.ttf",
+                                                   "/System/Library/Fonts/Supplemental/Verdana.ttf"};
+#else
+        constexpr const char* FontCandidates[] = {"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                                                   "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"};
+#endif
+        for (const char* FontPath : FontCandidates)
+        {
+            if (std::filesystem::exists(FontPath))
+            {
+                if (ImFont* Font = IO.Fonts->AddFontFromFileTTF(FontPath, 13.0F))
+                {
+                    IO.FontDefault = Font;
+                    break;
+                }
+            }
+        }
+        if (IO.FontDefault == nullptr)
+        {
+            IO.FontDefault = IO.Fonts->AddFontDefault();
+        }
 
         ImGui::StyleColorsDark();
+        ImGuiStyle& Style = ImGui::GetStyle();
+        Style.WindowPadding = {12.0F, 10.0F};
+        Style.FramePadding = {8.0F, 5.0F};
+        Style.ItemSpacing = {8.0F, 6.0F};
+        Style.WindowRounding = 6.0F;
+        Style.FrameRounding = 4.0F;
 
         if (!ImGui_ImplGlfw_InitForVulkan(TWindow.GetNativeHandle(), true))
         {
@@ -191,11 +238,16 @@ namespace MDSS
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
+        ImGui::GetIO().FontGlobalScale = DisplaySize.x >= 1280.0F && DisplaySize.y >= 800.0F ? 1.15F : 1.0F;
+        SetupDockspace();
+
         DrawSceneWindow(SceneData);
         DrawCameraWindow(SceneData);
         DrawSelectedTransformWindow(SceneData);
         DrawRenderOptionsWindow();
         DrawInjectWindow();
+        DrawSimulationParametersWindow(SceneData);
         DrawLogWindow();
         ProcessCameraInput(SceneData);
         ProcessSelectionAndGizmo(SceneData);
@@ -272,13 +324,58 @@ namespace MDSS
         return ImGui::GetIO().WantCaptureKeyboard;
     }
 
+    void TDebugUI::SetupDockspace()
+    {
+        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        constexpr ImGuiDockNodeFlags DockFlags = ImGuiDockNodeFlags_PassthruCentralNode;
+        constexpr ImGuiID StableDockspaceID = 0x4D445353U;
+        DockspaceID = ImGui::DockSpaceOverViewport(StableDockspaceID, Viewport, DockFlags);
+        ImGuiDockNode* DockspaceNode = ImGui::DockBuilderGetNode(DockspaceID);
+
+        if (bDockLayoutInitialized)
+        {
+            return;
+        }
+        if (DockspaceNode == nullptr)
+        {
+            return;
+        }
+        if (DockspaceNode->IsSplitNode())
+        {
+            bDockLayoutInitialized = true;
+            return;
+        }
+
+        ImGui::DockBuilderRemoveNode(DockspaceID);
+        ImGui::DockBuilderAddNode(DockspaceID, ImGuiDockNodeFlags_DockSpace | DockFlags);
+        ImGui::DockBuilderSetNodeSize(DockspaceID, Viewport->WorkSize);
+
+        ImGuiID LogID = 0;
+        ImGuiID WorkspaceID = 0;
+        ImGui::DockBuilderSplitNode(DockspaceID, ImGuiDir_Down, 0.44F, &LogID, &WorkspaceID);
+        ImGuiID LeftID = 0;
+        ImGuiID MainRightID = 0;
+        ImGui::DockBuilderSplitNode(WorkspaceID, ImGuiDir_Left, 0.22F, &LeftID, &MainRightID);
+        ImGuiID RightID = 0;
+        ImGuiID CenterID = 0;
+        ImGui::DockBuilderSplitNode(MainRightID, ImGuiDir_Right, 0.28F, &RightID, &CenterID);
+
+        ImGui::DockBuilderDockWindow("Camera", LeftID);
+        ImGui::DockBuilderDockWindow("Scene File", LeftID);
+        ImGui::DockBuilderDockWindow("Inject", RightID);
+        ImGui::DockBuilderDockWindow("Simulation Parameters", RightID);
+        ImGui::DockBuilderDockWindow("Selected Transform##SceneTools", RightID);
+        ImGui::DockBuilderDockWindow("Log", LogID);
+        ImGui::DockBuilderFinish(DockspaceID);
+        bDockLayoutInitialized = true;
+    }
+
     void TDebugUI::DrawSceneWindow(TScene& SceneData)
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_Always);
-        ImGui::SetNextWindowSize({330.0F, 92.0F}, ImGuiCond_Always);
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                                           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+        ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Scene File", nullptr, Flags);
         if (ImGui::Button("Load Scene"))
         {
@@ -458,13 +555,11 @@ namespace MDSS
             return;
         }
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
-        const ImVec2 Position{Viewport->WorkPos.x + Viewport->WorkSize.x - 340.0F,
-                              Viewport->WorkPos.y + 190.0F};
-        ImGui::SetNextWindowPos(Position, ImGuiCond_Always);
-        ImGui::SetNextWindowSize({330.0F, 170.0F}, ImGuiCond_Always);
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                                           ImGuiWindowFlags_NoMove;
-        ImGui::Begin("Selected Transform", nullptr, Flags);
+        const ImVec2 Position{Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 135.0F};
+        ImGui::SetNextWindowPos(Position, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 190.0F}, ImGuiCond_FirstUseEver);
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
+        ImGui::Begin("Selected Transform##SceneTools", nullptr, Flags);
         TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
         ImGui::Text("Object %zu", *SelectedObject);
         ImGui::DragFloat3("Position", &Transform.Position.x, 0.02F);
@@ -582,11 +677,10 @@ namespace MDSS
         const ImVec2   WindowSize{CameraWidth, 215.0F};
         const ImVec2   WindowPosition{Viewport->WorkPos.x + 10.0F, Viewport->WorkPos.y + 10.0F};
 
-        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_Always);
-        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Always);
+        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
 
-        constexpr ImGuiWindowFlags Flags =
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
 
         if (ImGui::Begin("Camera", nullptr, Flags))
         {
@@ -627,35 +721,41 @@ namespace MDSS
             return;
         }
 
-        ImGuiViewport* Viewport = ImGui::GetMainViewport();
-        const float    AvailableWidth = std::max(Viewport->WorkSize.x, 1.0F);
-        const float    WindowWidth = std::min(330.0F, std::max(240.0F, AvailableWidth - 20.0F));
-        const ImVec2   WindowSize{WindowWidth, 320.0F};
-        const ImVec2   WindowPosition{Viewport->WorkPos.x + 10.0F, Viewport->WorkPos.y + 235.0F};
+        ImGuiDockNode* ViewportNode = DockspaceID != 0 ? ImGui::DockBuilderGetCentralNode(DockspaceID) : nullptr;
+        if (ViewportNode == nullptr)
+        {
+            return;
+        }
+        ImGui::SetNextWindowPos(ViewportNode->Pos, ImGuiCond_Always);
+        ImGui::SetNextWindowSize({ViewportNode->Size.x, 68.0F}, ImGuiCond_Always);
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+                                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                                           ImGuiWindowFlags_NoNavFocus;
 
-        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_Always);
-        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Always);
-
-        constexpr ImGuiWindowFlags Flags =
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-
-        if (ImGui::Begin("Render Options", nullptr, Flags))
+        if (ImGui::Begin("Render Options##ViewportToolbar", nullptr, Flags))
         {
             constexpr std::array<const char*, 2> ViewGroups = {"Rendering", "Surface Debug"};
             TRenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode();
             int SelectedGroup = CurrentMode >= TRenderViewMode::SurfaceStateHeatmap ? 1 : 0;
-            if (ImGui::Combo("View Group", &SelectedGroup, ViewGroups.data(), static_cast<int>(ViewGroups.size())))
+            ImGui::SetNextItemWidth(125.0F);
+            if (ImGui::Combo("##ViewGroup", &SelectedGroup, ViewGroups.data(), static_cast<int>(ViewGroups.size())))
             {
                 const TRenderViewMode FirstMode = SelectedGroup == 0 ? TRenderViewMode::Lit
                                                                       : TRenderViewMode::SurfaceStateHeatmap;
                 FrameRenderer->SetRenderViewMode(FirstMode);
                 CurrentMode = FirstMode;
             }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Choose a rendering view or a Surface diagnostic view.");
+            }
 
+            ImGui::SameLine();
             if (SelectedGroup == 0)
             {
                 int SelectedMode = static_cast<int>(CurrentMode);
-                if (ImGui::Combo("View Mode",
+                ImGui::SetNextItemWidth(245.0F);
+                if (ImGui::Combo("##RenderMode",
                                  &SelectedMode,
                                  RenderViewModeNames.data(),
                                  static_cast<int>(RenderViewModeNames.size())))
@@ -671,7 +771,8 @@ namespace MDSS
                 {
                     SelectedMode = 0;
                 }
-                if (ImGui::Combo("Debug View",
+                ImGui::SetNextItemWidth(215.0F);
+                if (ImGui::Combo("##SurfaceDebugMode",
                                  &SelectedMode,
                                  SurfaceDebugViewNames.data(),
                                  static_cast<int>(SurfaceDebugViewNames.size())))
@@ -686,6 +787,7 @@ namespace MDSS
             const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
             if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceStateHeatmap)
             {
+                ImGui::SameLine();
                 if (StateCount == 0)
                 {
                     ImGui::TextDisabled("No Surface States are registered.");
@@ -697,7 +799,8 @@ namespace MDSS
                         DebugState = 0;
                     }
                     const std::string& SelectedName = Registry->GetStateName(DebugState);
-                    if (ImGui::BeginCombo("State channel", SelectedName.c_str()))
+                    ImGui::SetNextItemWidth(160.0F);
+                    if (ImGui::BeginCombo("##StateChannel", SelectedName.c_str()))
                     {
                         for (std::size_t Index = 0; Index < StateCount; ++Index)
                         {
@@ -716,84 +819,48 @@ namespace MDSS
                         }
                         ImGui::EndCombo();
                     }
-                    ImGui::TextDisabled("Color shows State / Profile capacity (0 to 1).");
-                    ImDrawList* DrawList = ImGui::GetWindowDrawList();
-                    const ImVec2 BarMin = ImGui::GetCursorScreenPos();
-                    const ImVec2 BarMax{BarMin.x + ImGui::GetContentRegionAvail().x, BarMin.y + 12.0F};
-                    constexpr std::array<ImU32, 4> HeatmapColors = {
-                        IM_COL32(19, 23, 66, 255),
-                        IM_COL32(33, 92, 156, 255),
-                        IM_COL32(31, 156, 138, 255),
-                        IM_COL32(253, 230, 51, 255)};
-                    const float SegmentWidth = (BarMax.x - BarMin.x) / static_cast<float>(HeatmapColors.size() - 1U);
-                    for (std::size_t Segment = 0; Segment + 1U < HeatmapColors.size(); ++Segment)
-                    {
-                        const ImVec2 SegmentMin{BarMin.x + SegmentWidth * static_cast<float>(Segment), BarMin.y};
-                        const ImVec2 SegmentMax{BarMin.x + SegmentWidth * static_cast<float>(Segment + 1U), BarMax.y};
-                        DrawList->AddRectFilledMultiColor(SegmentMin,
-                                                          SegmentMax,
-                                                          HeatmapColors[Segment],
-                                                          HeatmapColors[Segment + 1U],
-                                                          HeatmapColors[Segment + 1U],
-                                                          HeatmapColors[Segment]);
-                    }
-                    ImGui::Dummy({0.0F, 14.0F});
-                    ImGui::Text("0  (empty)");
                     ImGui::SameLine();
-                    ImGui::Text("1  (capacity)");
+                    ImGui::TextDisabled("State / Profile capacity: 0 → 1");
                 }
             }
-            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceValidity)
+
+            if (ImGui::BeginMenu("Render Settings"))
             {
-                ImGui::TextDisabled("Green: valid texel   Red: invalid texel");
-            }
-            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceID)
-            {
-                ImGui::TextDisabled("Each Surface uses a stable display color.");
-            }
-            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::NeighborCount)
-            {
-                ImGui::TextDisabled("Dark: 0 neighbors   Bright: 8 neighbors");
-            }
-            else if (FrameRenderer->GetRenderViewMode() == TRenderViewMode::SurfaceSeam)
-            {
-                ImGui::TextDisabled("Bright texels have a neighbor on another UV chart.");
+                bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
+                if (ImGui::Checkbox("Flip Normal Y", &bFlipNormalY))
+                {
+                    FrameRenderer->SetFlipNormalY(bFlipNormalY);
+                }
+                float NormalStrength = FrameRenderer->GetNormalStrength();
+                if (ImGui::SliderFloat("Normal Strength", &NormalStrength, 0.0F, 4.0F, "%.2f"))
+                {
+                    FrameRenderer->SetNormalStrength(NormalStrength);
+                }
+                float AmbientLight = FrameRenderer->GetAmbientLight();
+                if (ImGui::SliderFloat("Ambient Light", &AmbientLight, 0.0F, 1.0F, "%.2f"))
+                {
+                    FrameRenderer->SetAmbientLight(AmbientLight);
+                }
+                ImGui::EndMenu();
             }
 
-            bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
-            if (ImGui::Checkbox("Flip Normal Y", &bFlipNormalY))
+            ImGui::SameLine();
+            const float FPS = ImGui::GetIO().Framerate;
+            const float FrameTimeMs = FPS > 0.0F ? 1000.0F / FPS : 0.0F;
+            const ImVec4 FPSColor = FPS >= 55.0F ? ImVec4(0.57F, 0.92F, 0.68F, 1.0F)
+                                   : FPS >= 30.0F ? ImVec4(1.0F, 0.84F, 0.47F, 1.0F)
+                                                  : ImVec4(1.0F, 0.57F, 0.57F, 1.0F);
+            ImGui::TextColored(FPSColor, "%.1f FPS  |  %.2f ms", FPS, FrameTimeMs);
+            ImGui::SameLine();
+            const float SolverMilliseconds = FrameRenderer->GetLastSolverGpuMilliseconds();
+            if (SolverMilliseconds >= 0.0F)
             {
-                FrameRenderer->SetFlipNormalY(bFlipNormalY);
+                ImGui::TextDisabled("Solver GPU: %.2f ms", SolverMilliseconds);
             }
-            if (ImGui::IsItemHovered())
+            else
             {
-                ImGui::SetTooltip(
-                    "Useful when the source normal-map Y convention differs from the engine tangent basis.");
+                ImGui::TextDisabled("Solver GPU: unavailable");
             }
-
-            float NormalStrength = FrameRenderer->GetNormalStrength();
-            if (ImGui::SliderFloat("Normal Strength", &NormalStrength, 0.0F, 4.0F, "%.2f"))
-            {
-                FrameRenderer->SetNormalStrength(NormalStrength);
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Controls normal-map depth. 0 is flat, 1 uses the original strength.");
-            }
-
-            float AmbientLight = FrameRenderer->GetAmbientLight();
-            if (ImGui::SliderFloat("Ambient Light", &AmbientLight, 0.0F, 1.0F, "%.2f"))
-            {
-                FrameRenderer->SetAmbientLight(AmbientLight);
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Sets the minimum brightness on surfaces facing away from the light.");
-            }
-
-            ImGui::Separator();
-            ImGui::TextWrapped("Normal Texture (TS) shows the decoded normal map. Mapped Normal (WS) shows the result "
-                               "after TBN conversion.");
         }
         ImGui::End();
     }
@@ -805,11 +872,10 @@ namespace MDSS
         const ImVec2   WindowSize{Width, 170.0F};
         const ImVec2   WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
                                     Viewport->WorkPos.y + 10.0F};
-        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_Always);
-        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Always);
+        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
 
-        constexpr ImGuiWindowFlags Flags =
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         if (ImGui::Begin("Inject", nullptr, Flags))
         {
             ImGui::Checkbox("Inject mode", &bInjectMode);
@@ -855,47 +921,245 @@ namespace MDSS
         ImGui::End();
     }
 
+    void TDebugUI::DrawSimulationParametersWindow(const TScene& SceneData)
+    {
+        if (AssetManager == nullptr || FrameRenderer == nullptr)
+        {
+            return;
+        }
+
+        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        constexpr float Width = 310.0F;
+        const ImVec2 WindowSize{Width, 280.0F};
+        const ImVec2 WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
+                                    Viewport->WorkPos.y + 190.0F};
+        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
+
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
+        if (ImGui::Begin("Simulation Parameters", nullptr, Flags))
+        {
+            std::vector<TSRProfileAssetHandle> SceneProfiles;
+            for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
+            {
+                const TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
+                if (!AssetManager->HasSurfaceData(SurfaceData))
+                {
+                    continue;
+                }
+                for (TSRProfileAssetHandle Profile : AssetManager->GetSurfaceProfileTable(SurfaceData))
+                {
+                    if (std::find(SceneProfiles.begin(), SceneProfiles.end(), Profile) == SceneProfiles.end())
+                    {
+                        SceneProfiles.push_back(Profile);
+                    }
+                }
+            }
+
+            if (SceneProfiles.empty())
+            {
+                ImGui::TextDisabled("The current scene has no Surface Profiles.");
+                ImGui::End();
+                return;
+            }
+            if (std::find(SceneProfiles.begin(), SceneProfiles.end(), DebugParameterProfile) == SceneProfiles.end())
+            {
+                DebugParameterProfile = SceneProfiles.front();
+                ParameterDraftKey = {InvalidAssetHandle, InvalidStateId};
+            }
+
+            const auto GetProfileName = [this](TSRProfileAssetHandle Handle) -> const char* {
+                return AssetManager->GetSRProfile(Handle).GetName().c_str();
+            };
+            if (ImGui::BeginCombo("Profile", GetProfileName(DebugParameterProfile)))
+            {
+                for (TSRProfileAssetHandle Profile : SceneProfiles)
+                {
+                    const bool bSelected = Profile == DebugParameterProfile;
+                    if (ImGui::Selectable(GetProfileName(Profile), bSelected))
+                    {
+                        DebugParameterProfile = Profile;
+                    }
+                    if (bSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            const TSurfaceStateRegistry& Registry = AssetManager->GetSurfaceStateRegistry();
+            const std::size_t StateCount = Registry.GetStateCount();
+            if (StateCount == 0)
+            {
+                ImGui::TextDisabled("No State channels are registered.");
+                ImGui::End();
+                return;
+            }
+            if (DebugParameterState >= StateCount)
+            {
+                DebugParameterState = 0;
+            }
+            const std::string& StateName = Registry.GetStateName(DebugParameterState);
+            if (ImGui::BeginCombo("State", StateName.c_str()))
+            {
+                for (std::size_t Index = 0; Index < StateCount; ++Index)
+                {
+                    const TStateId State = static_cast<TStateId>(Index);
+                    const std::string& Name = Registry.GetStateName(State);
+                    const bool bSelected = State == DebugParameterState;
+                    if (ImGui::Selectable(Name.c_str(), bSelected))
+                    {
+                        DebugParameterState = State;
+                    }
+                    if (bSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            const std::pair<TSRProfileAssetHandle, TStateId> Key{DebugParameterProfile, DebugParameterState};
+            if (ParameterDraftKey != Key)
+            {
+                if (bParameterDraftAvailable)
+                {
+                    ParameterDrafts[ParameterDraftKey] = ParameterDraft;
+                }
+                ParameterDraftKey = Key;
+                bParameterDraftDirty = DirtyParameterDrafts.contains(Key);
+                bParameterDraftAvailable = false;
+
+                const auto SavedDraft = ParameterDrafts.find(Key);
+                if (SavedDraft != ParameterDrafts.end())
+                {
+                    ParameterDraft = SavedDraft->second;
+                    bParameterDraftAvailable = true;
+                }
+                else
+                {
+                    const TRegisteredSurfaceResponseProfileData Resolved =
+                        Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
+                    if (DebugParameterState < Resolved.States.size() &&
+                        Resolved.States[DebugParameterState].has_value())
+                    {
+                        const auto Override = RuntimeProfileOverrides.find(Key);
+                        ParameterDraft = Override != RuntimeProfileOverrides.end()
+                            ? Override->second
+                            : *Resolved.States[DebugParameterState];
+                        ParameterDrafts[Key] = ParameterDraft;
+                        bParameterDraftAvailable = true;
+                    }
+                }
+            }
+
+            const TRegisteredSurfaceResponseProfileData Resolved =
+                Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
+            const bool bProfileSupportsState = DebugParameterState < Resolved.States.size() &&
+                                                Resolved.States[DebugParameterState].has_value();
+            if (!bProfileSupportsState || !bParameterDraftAvailable)
+            {
+                ImGui::TextDisabled("This Profile does not define the selected State.");
+                ImGui::End();
+                return;
+            }
+
+            ImGui::Separator();
+            ImGui::TextDisabled("Runtime only. Apply updates the current scene; source files stay unchanged.");
+            ImGui::TextDisabled("Only parameters currently used by the solver are shown.");
+            bool bChanged = false;
+            bChanged |= ImGui::DragFloat("Capacity", &ParameterDraft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
+            bChanged |= ImGui::DragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
+            bChanged |= ImGui::DragFloat("Saturation transfer /s",
+                                         &ParameterDraft.SaturationTransferRate,
+                                         0.01F,
+                                         0.0F,
+                                         100.0F,
+                                         "%.3f");
+            bChanged |= ImGui::DragFloat("Geometry transfer /s",
+                                         &ParameterDraft.GeometryTransferRate,
+                                         0.01F,
+                                         0.0F,
+                                         100.0F,
+                                         "%.3f");
+            bChanged |= ImGui::DragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
+            bChanged |= ImGui::SliderFloat("Cavity retention",
+                                           &ParameterDraft.CavityRetentionFactor,
+                                           0.0F,
+                                           1.0F,
+                                           "%.3f");
+            if (bChanged)
+            {
+                bParameterDraftDirty = true;
+                DirtyParameterDrafts.insert(Key);
+                ParameterDrafts[Key] = ParameterDraft;
+            }
+
+            if (bParameterDraftDirty)
+            {
+                ImGui::TextColored({1.0F, 0.78F, 0.24F, 1.0F}, "Changes not applied");
+            }
+            else if (RuntimeProfileOverrides.contains(Key))
+            {
+                ImGui::TextColored({0.35F, 0.85F, 0.55F, 1.0F}, "Runtime override active");
+            }
+            else
+            {
+                ImGui::TextDisabled("Using Profile asset values.");
+            }
+
+            if (ImGui::Button("Apply Override") && bParameterDraftDirty)
+            {
+                try
+                {
+                    TSurfaceResponseProfileData ValidationData;
+                    ValidationData.States.emplace(Registry.GetStateName(DebugParameterState), ParameterDraft);
+                    ValidateSurfaceResponseProfileData(ValidationData);
+                    FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, ParameterDraft);
+                    RuntimeProfileOverrides[Key] = ParameterDraft;
+                    DirtyParameterDrafts.erase(Key);
+                    bParameterDraftDirty = false;
+                    ParameterDrafts[Key] = ParameterDraft;
+                }
+                catch (const std::exception& Exception)
+                {
+                    ParameterStatus = Exception.what();
+                    TLogger::Warning("TDebugUI", "Could not apply Profile override: " + ParameterStatus);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Restore Profile Values"))
+            {
+                const TSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
+                if (RuntimeProfileOverrides.contains(Key))
+                {
+                    FrameRenderer->SetDebugProfileParameters(
+                        DebugParameterProfile, DebugParameterState, Original, false);
+                    RuntimeProfileOverrides.erase(Key);
+                }
+                ParameterDraft = Original;
+                ParameterDrafts[Key] = Original;
+                DirtyParameterDrafts.erase(Key);
+                bParameterDraftDirty = false;
+                ParameterStatus.clear();
+            }
+            if (!ParameterStatus.empty())
+            {
+                ImGui::TextWrapped("%s", ParameterStatus.c_str());
+            }
+        }
+        ImGui::End();
+    }
+
     void TDebugUI::DrawLogWindow()
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
-        const float    MaxLogHeight = std::max(120.0F, Viewport->WorkSize.y * 0.80F);
-        LogWindowHeight = std::clamp(LogWindowHeight, 120.0F, MaxLogHeight);
+        ImGui::SetNextWindowSize({std::max(Viewport->WorkSize.x * 0.70F, 720.0F), LogWindowHeight},
+                                 ImGuiCond_FirstUseEver);
 
-        const ImVec2 WindowPosition{Viewport->WorkPos.x,
-                                    Viewport->WorkPos.y + std::max(0.0F, Viewport->WorkSize.y - LogWindowHeight)};
-        const ImVec2 WindowSize{std::max(Viewport->WorkSize.x, 1.0F),
-                                std::min(LogWindowHeight, std::max(Viewport->WorkSize.y, 1.0F))};
-
-        ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_Always);
-        ImGui::SetNextWindowSize(WindowSize, ImGuiCond_Always);
-
-        constexpr ImGuiWindowFlags Flags =
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-
-        if (ImGui::Begin("Log", nullptr, Flags))
+        if (ImGui::Begin("Log"))
         {
-            // A dedicated top-edge splitter keeps the log anchored to the bottom while allowing arbitrary height
-            // changes.
-            const ImVec2 ResizeStart = ImGui::GetCursorScreenPos();
-            ImGui::InvisibleButton("##LogHeightResize", ImVec2(-1.0F, 6.0F));
-            const ImVec2 ResizeEnd = ImGui::GetItemRectMax();
-            ImGui::GetWindowDrawList()->AddLine(ImVec2(ResizeStart.x, ResizeStart.y + 3.0F),
-                                                ImVec2(ResizeEnd.x, ResizeStart.y + 3.0F),
-                                                ImGui::GetColorU32(ImGuiCol_Separator),
-                                                2.0F);
-            if (ImGui::IsItemHovered() || ImGui::IsItemActive())
-            {
-                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Drag to resize the log window height.");
-            }
-            if (ImGui::IsItemActive())
-            {
-                LogWindowHeight = std::clamp(LogWindowHeight - ImGui::GetIO().MouseDelta.y, 120.0F, MaxLogHeight);
-            }
-
             const std::uint64_t CurrentRevision = TLogger::GetRevision();
             if (CurrentRevision != LastSeenLogRevision)
             {
@@ -911,13 +1175,17 @@ namespace MDSS
             }
 
             ImGui::SameLine();
+            ImGui::SetNextItemWidth(260.0F);
+            ImGui::InputTextWithHint("##LogSearch", "Search logs...", LogSearch.data(), LogSearch.size());
+            ImGui::SameLine();
             if (ImGui::Button("Copy Visible"))
             {
                 std::string ClipboardText;
                 for (const TLogEntry& Entry : CachedLogEntries)
                 {
                     const std::size_t Index = static_cast<std::size_t>(Entry.Level);
-                    if (Index < LogLevelFilters.size() && LogLevelFilters[Index])
+                    if (Index < LogLevelFilters.size() && LogLevelFilters[Index] &&
+                        ContainsCaseInsensitive(Entry.Formatted, LogSearch.data()))
                     {
                         ClipboardText += Entry.Formatted;
                         ClipboardText.push_back('\n');
@@ -957,6 +1225,10 @@ namespace MDSS
             {
                 const std::size_t Index = static_cast<std::size_t>(Entry.Level);
                 if (Index >= LogLevelFilters.size() || !LogLevelFilters[Index])
+                {
+                    continue;
+                }
+                if (!ContainsCaseInsensitive(Entry.Formatted, LogSearch.data()))
                 {
                     continue;
                 }
