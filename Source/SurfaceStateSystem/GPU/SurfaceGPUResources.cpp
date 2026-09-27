@@ -181,6 +181,7 @@ namespace MDSS
     {
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         const TSurfaceGPUProfileUpload Upload = PackSurfaceProfiles(Profiles, Registry);
+        SupportedChannels = Upload.Supported;
         ParametersBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                 Device,
                                                 Upload.Parameters.data(),
@@ -215,10 +216,39 @@ namespace MDSS
         return ChannelCount;
     }
 
+    void TSurfaceProfileGPUResources::UpdateParameters(std::size_t ProfileIndex,
+                                                       std::size_t ChannelIndex,
+                                                       const TSurfaceStateParameters& Parameters)
+    {
+        if (ProfileIndex >= ProfileCount || ChannelIndex >= ChannelCount)
+        {
+            throw std::out_of_range("Surface Profile parameter index is outside the GPU table.");
+        }
+
+        const std::size_t RecordIndex = GetSurfaceGPUProfileRecordIndex(ProfileIndex, ChannelIndex, ChannelCount);
+        if (RecordIndex >= SupportedChannels.size() || SupportedChannels[RecordIndex] == 0U)
+        {
+            throw std::invalid_argument("Cannot override a State that this Profile does not support.");
+        }
+
+        const TSurfaceGPUProfileParameters Packed{
+            {Parameters.StateCapacity,
+             Parameters.InputFactor,
+             Parameters.SaturationTransferRate,
+             Parameters.GeometryTransferRate},
+            {Parameters.DecayRate,
+             Parameters.CavityRetentionFactor,
+             Parameters.AccumulationFactor,
+             Parameters.CavityFillFactor}};
+        const VkDeviceSize Offset = static_cast<VkDeviceSize>(RecordIndex * sizeof(Packed));
+        ParametersBuffer->Upload(&Packed, sizeof(Packed), Offset);
+    }
+
     TSurfaceInstanceGPUResources::TSurfaceInstanceGPUResources(VkPhysicalDevice PhysicalDevice,
                                                                VkDevice         Device,
                                                                std::size_t      TexelCount,
-                                                               std::size_t      ChannelCount)
+                                                               std::size_t      ChannelCount,
+                                                               const std::vector<float>& TransferWeights)
         : TexelCount(TexelCount), ChannelCount(ChannelCount)
     {
         if (TexelCount == 0 || ChannelCount == 0)
@@ -229,12 +259,24 @@ namespace MDSS
         {
             throw std::overflow_error("Surface Instance GPU scalar count overflowed.");
         }
+        if (TexelCount > std::numeric_limits<std::size_t>::max() / SurfaceNeighborCount ||
+            TransferWeights.size() != TexelCount * SurfaceNeighborCount)
+        {
+            throw std::invalid_argument("TransferWeight cache size must be texel count × neighbor count.");
+        }
         ScalarCount = TexelCount * ChannelCount;
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         StateABuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         StateBBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         OutgoingFluxScaleBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         InputDeltaBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
+        TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                                    Device,
+                                                    TransferWeights.data(),
+                                                    TransferWeights.size(),
+                                                    sizeof(float),
+                                                    MaxRange);
+        RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
     }
 
     const TGPUBuffer& TSurfaceInstanceGPUResources::GetStateABuffer() const noexcept
@@ -255,6 +297,25 @@ namespace MDSS
     const TGPUBuffer& TSurfaceInstanceGPUResources::GetInputDeltaBuffer() const noexcept
     {
         return *InputDeltaBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceInstanceGPUResources::GetTransferWeightBuffer() const noexcept
+    {
+        return *TransferWeightBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceInstanceGPUResources::GetRawOutgoingBuffer() const noexcept
+    {
+        return *RawOutgoingBuffer;
+    }
+
+    void TSurfaceInstanceGPUResources::UpdateTransferWeights(const std::vector<float>& TransferWeights)
+    {
+        if (TransferWeights.size() != TexelCount * SurfaceNeighborCount)
+        {
+            throw std::invalid_argument("Updated TransferWeight cache has an incompatible size.");
+        }
+        TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeightBuffer->GetSize());
     }
 
     std::size_t TSurfaceInstanceGPUResources::GetTexelCount() const noexcept
@@ -343,7 +404,9 @@ namespace MDSS
             &Instance.GetOutgoingFluxScaleBuffer(),
             &Instance.GetInputDeltaBuffer(),
             &SharedGeometry.GetSurfaceRangeBuffer(),
-            &SharedGeometry.GetTexelChartIndexBuffer()};
+            &SharedGeometry.GetTexelChartIndexBuffer(),
+            &Instance.GetTransferWeightBuffer(),
+            &Instance.GetRawOutgoingBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

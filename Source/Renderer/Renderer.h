@@ -18,8 +18,11 @@
 
 #include <vulkan/vulkan.h>
 
+#include <array>
 #include <cstdint>
+#include <map>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace MDSS
@@ -59,10 +62,16 @@ namespace MDSS
         void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
         void SubmitContact(TSurfaceContactInput Contact);
         void ReloadSceneResources(const TScene& Scene);
+        void SetDebugProfileParameters(TSRProfileAssetHandle Profile,
+                                       TStateId State,
+                                       const TSurfaceStateParameters& Parameters,
+                                       bool bKeepRuntimeOverride = true);
 
         [[nodiscard]] const TSwapchain& GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass     GetRenderPassHandle() const noexcept;
         [[nodiscard]] const TSurfaceGPUResourceManager& GetSurfaceGPUResources() const noexcept;
+        /** @brief 마지막 완료 프레임에서 측정한 GPU Solver 시간(ms), 미지원 시 -1. */
+        [[nodiscard]] float GetLastSolverGpuMilliseconds() const noexcept;
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
@@ -128,6 +137,13 @@ namespace MDSS
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;
         std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
+        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters>
+            DebugProfileParameterOverrides;
         std::vector<VkSemaphore> RenderFinishedSemaphores;
+        VkQueryPool SolverTimestampQueryPool = VK_NULL_HANDLE;
+        std::array<bool, TRenderContext::MaxFramesInFlight> bTimestampQueriesSubmitted{};
+        float TimestampPeriodNanoseconds = 0.0F;
+        std::uint32_t TimestampValidBits = 0;
+        float LastSolverGpuMilliseconds = -1.0F;
     };
 } // namespace MDSS

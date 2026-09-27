@@ -210,10 +210,24 @@ $$
 
 | Weight | 의미 | 계산 기준 |
 |---|---|---|
-| `DistanceWeight` | 실제 표면상 가까운 이웃으로 전달이 잘 되도록 보정 | Surface Distance |
-| `NormalWeight` | 표면 방향이 비슷한 영역 사이에서 전달이 잘 되도록 보정 | Surface Normal |
-| `CurvatureWeight` | 홈·요철에 의해 State가 붙잡히거나 이동이 억제되는 정도 | Curvature / Concavity |
-| `ProfileBoundaryWeight` | 서로 다른 SRProfile 영역 사이의 전달 정도. 동일 Profile 사이에서는 기본 `1.0` | SRProfile Boundary |
+| `DistanceWeight` | 주변 이웃보다 먼 연결의 전달량을 낮춤 | 정규화된 world-space Surface Distance |
+| `NormalWeight` | 면 방향 차이가 클수록 전달량을 연속적으로 낮춤 | World-space Surface Normal 내적 |
+| `CurvatureWeight` | 현재 브랜치에서는 중립값 `1.0`; 실제 전달 곡률 효과는 후속 결정 | 후속 설계 |
+| `ProfileBoundaryWeight` | 같은 Profile 사이 `1.0`, 다른 Profile 사이 고정 `0.5`로 전달량을 낮춤 | SRProfile ID 비교 |
+
+현재 `DistanceWeight`는 각 endpoint의 평균 유효 이웃 간격을 `dRef`로 삼는다. `dRef(i,j) = 0.5 × (meanDistance_i + meanDistance_j)`이고, `d(i,j)`는 두 texel의 world-space 거리다.
+
+$$
+DistanceWeight_{i\rightarrow j} = clamp\left(\frac{dRef(i,j)}{d(i,j)}, 0, 1\right)
+$$
+
+유효 이웃 간격이나 endpoint 거리가 epsilon 이하이거나 유한하지 않으면 가중치를 0으로 둔다. 거리는 MesoVirtualHeight와 향후 AccumulationHeight를 반영한 최신 유효 Position 및 Neighbor 관계로 계산한다. 초기 구현은 즉시 계산하며, 확정된 최적화 설계는 [[03_Architecture/0010_Surface-Solver-Cache|Surface Solver Cache]]에 따라 간선별 TransferWeight와 Pass 1의 RawOutgoing를 저장해 재사용한다. 이 캐시 경로는 구현 예정이다.
+
+$$
+NormalWeight_{i\rightarrow j} = clamp\left(NormalWorld_i \cdot NormalWorld_j, 0, 1\right)
+$$
+
+두 normal은 최신 변형 Geometry의 normal에 instance transform의 inverse-transpose를 적용한 뒤 정규화한다. 유효하지 않은 normal은 가중치 0으로 처리한다. `ProfileBoundaryWeight`는 별도 Profile parameter가 아닌 Solver 공통 규칙이다. 거리·법선·Profile 경계 식과 곡률 보류 범위는 [[../04_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
 
 UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 전달 가중치를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**한다. 생성 방식은 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 따른다.
 

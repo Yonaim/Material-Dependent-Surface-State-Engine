@@ -27,12 +27,12 @@
 |---|---|---|
 | `TApplication` | 창과 하위 시스템 수명, 메인 루프 조정 | `Source/Application/` |
 | `TAssetManager` | 에셋 로드 조정, 등록 및 handle 조회 | `Source/AssetManager/` |
-| `TDebugUI` | ImGui 기반 설정·로그 UI | `Source/DebugUI/` |
-| `InputSystem` | 입력 이벤트와 Raycast. 현재 placeholder | `Source/InputSystem/` |
+| `TDebugUI` | ImGui 설정·로그, Surface 진단, Inject 및 Scene 편집 UI | `Source/DebugUI/` |
+| `TInputSystem` | 현재 Debug Inject의 Space 입력과 중앙 Mesh Raycast 처리 | `Source/InputSystem/` |
 | `TLogger` | 로그 기록과 history 조회 | `Source/Logger/` |
 | `TRenderer` | Swapchain 기반 장면 렌더링 | `Source/Renderer/` |
-| `TScene` | Camera와 정적 Mesh Instance 자료형 | `Source/Scene/` |
-| `TSurfaceStateSystem` | Mapping 및 Surface State 자료형. Solver/System은 placeholder | `Source/SurfaceStateSystem/` |
+| `TScene` | Camera와 정적 Mesh Instance, Scene 원본 경로 관리 | `Source/Scene/` |
+| `TSurfaceStateSystem` | 접촉 입력 누적·업로드 및 GPU 2-pass Solver 기록. 동적 Geometry 갱신은 placeholder | `Source/SurfaceStateSystem/` |
 | `TVulkanContext` | Vulkan instance/device/queue/command와 GPU 자원 기반 | `Source/VulkanContext/` |
 
 모듈별 책임은 [[03_Architecture/0001_Engine-Structure|엔진 구조와 데이터 흐름]]을 기준으로 한다. 개별 관계 문서는 해당 기능에서 실제로 연결되는 모듈을 함께 설명한다.

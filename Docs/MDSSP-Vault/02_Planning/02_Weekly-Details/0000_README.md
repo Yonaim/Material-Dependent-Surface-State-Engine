@@ -8,6 +8,8 @@
 
 - `Week-01/`, `Week-02/`, `Week-03/`, `Week-04/`, `Week-05/`, `Week-06/`, `Week-07/`, `Week-08/`
 - `Week-09/`, `Week-10/`, `Week-11/`, `Week-12/`, `Week-13/`, `Week-14/`, `Week-15/`, `Week-16/`
-- 현재 작성된 상세 계획: [[02_Planning/02_Weekly-Details/Week-04/0000_Week4-Branch-Plan|4주차 브랜치 계획]]
+- 현재 작성된 상세 계획: [[02_Planning/02_Weekly-Details/Week-04/0000_Week4-Branch-Plan|4주차 브랜치 계획]], [[02_Planning/02_Weekly-Details/Week-05/0000_Week5-Branch-Plan|5주차 구현 상세 계획]], [[02_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|6주차 Wetness 브랜치 계획]]
 
 전체 목표 요약은 `01_Weekly-Overview/`에 유지하고, 구체적인 구현 순서와 브랜치별 계획은 이 디렉터리에 둬 두 단계의 계획이 섞이지 않게 한다.
+
+5주차 구현 순서와 브랜치별 작업은 [[02_Planning/02_Weekly-Details/Week-05/0000_Week5-Branch-Plan|5주차 브랜치 계획]]에서 확인한다. 각 브랜치의 범위와 완료 조건은 해당 Week-05 상세 문서에 분리해 기록한다.

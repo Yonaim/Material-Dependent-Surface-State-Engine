@@ -23,7 +23,6 @@ void main()
             continue;
         }
 
-        float RawOutgoing = 0.0;
         float Incoming = 0.0;
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
@@ -34,14 +33,18 @@ void main()
                 continue;
             }
 
-            RawOutgoing += rawFlux(TexelIndex, NeighborTexel, ChannelIndex);
-            float NeighborRawIncoming = rawFlux(NeighborTexel, TexelIndex, ChannelIndex);
+            float CachedTransferWeight = transferWeight(TexelIndex, DirectionIndex);
+            float NeighborRawIncoming = rawFlux(NeighborTexel,
+                                                TexelIndex,
+                                                ChannelIndex,
+                                                CachedTransferWeight);
             uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
             Incoming += NeighborRawIncoming * OutgoingFluxScale.Values[NeighborStateValueIndex];
         }
 
         float Current = CurrentState.Values[StateValueIndex];
-        float Outgoing = RawOutgoing * OutgoingFluxScale.Values[StateValueIndex];
+        float Outgoing = RawOutgoingBuffer.Values[StateValueIndex] *
+                         OutgoingFluxScale.Values[StateValueIndex];
         float Decay = decayAmount(TexelIndex, ChannelIndex);
         float EventInput = InputDelta.Values[StateValueIndex];
         InputDelta.Values[StateValueIndex] = 0.0;

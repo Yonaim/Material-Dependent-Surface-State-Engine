@@ -206,6 +206,6 @@ Incoming/Outgoing debug buffer는 Debug build에서만 둘 수 있다.
 ## 제외 범위
 
 - 실제 Raycast와 ContactWeight
-- 최종 ProfileBoundaryWeight 결합식
+- ProfileBoundaryWeight 결합식은 [[../../../04_ADR/0016-Transport-Transfer-Weights|ADR 0016]]에서 결정했다. 적용 구현은 Week 5 Branch 2 범위다.
 - Accumulation geometry 갱신
 - 렌더링 품질 최적화

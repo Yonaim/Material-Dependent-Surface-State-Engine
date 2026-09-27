@@ -20,7 +20,7 @@ Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 �
 
 ## Branch 4 구현 및 검증 상태
 
-현재 MVP는 host-visible/coherent storage buffer를 사용한다. Scene에서 선택한 Mesh/Profile Distribution 조합별 Geometry/Profile은 packed CPU 배열에서 한 번 upload하며, instance별 State A/B, OutgoingFluxScale, InputDelta는 생성 시 0으로 초기화한다. Instance마다 descriptor와 State buffer를 따로 소유하고, 같은 Runtime Surface Data handle을 참조하는 instance끼리 공유 Geometry/Profile handle을 재사용한다. 세부 binding은 아래 표를 따른다.
+현재 MVP는 host-visible/coherent storage buffer를 사용한다. Scene에서 선택한 Mesh/Profile Distribution 조합별 Geometry/Profile은 packed CPU 배열에서 한 번 upload한다. Instance별 State A/B, OutgoingFluxScale, InputDelta, RawOutgoing은 생성 시 0으로 초기화하며 TransferWeights는 Geometry와 instance 선형 transform으로 생성한다. Instance마다 descriptor와 State/cache buffer를 따로 소유하고, 같은 Runtime Surface Data handle을 참조하는 instance끼리 공유 Geometry/Profile handle을 재사용한다. 세부 binding은 아래 표를 따른다.
 
 GPU resource CTest는 두 instance용 자원을 만들고, 공유 Geometry binding, 분리된 State handle, AB/BA Current/Next, 생성 초기값과 Geometry/Profile packed 값을 Vulkan buffer readback으로 검사한다. Renderer를 5 frame 실행한 Vulkan validation smoke run에서는 GPU resource 생성과 정상 종료·파괴가 완료됐고 validation error는 없었다.
 
@@ -43,7 +43,8 @@ flowchart LR
 | mapping, base geometry, neighbor | `.Scene`이 선택한 같은 Mesh/Profile Distribution 조합의 Runtime 결과 | Runtime Asset 변경 시 재생성 |
 | Profile parameter | 같은 `.SRProfile` | Profile reload 시 |
 | Texel→Profile index map | 같은 Geometry/Profile Distribution 조합의 Runtime Geometry | 전처리 입력 변경 시 재생성 |
-| State A/B, OutgoingFluxScale, InputDelta | instance | solver step마다 |
+| State A/B, OutgoingFluxScale, InputDelta, RawOutgoing | instance | solver step마다 |
+| TransferWeights | instance | 생성 및 transform/geometry cache invalidation |
 
 ## 인덱스 구조
 
@@ -135,7 +136,19 @@ Step N + 1: B = Current, A = Next
 OutgoingFluxScale[i].channel = alpha[i].channel
 ```
 
-Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. Pass 2는 이웃의 `OutgoingFluxScale`을 읽고 `j → i` raw flux를 재계산한다. 8방향 raw flux를 별도 저장하지 않아 메모리를 줄이는 대신 계산량이 증가하므로 [[05_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]에서 측정한다.
+Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. Pass 2는 이웃의 `OutgoingFluxScale`을 읽고 `j → i` raw flux를 계산한다. 자신의 outgoing 합계는 `RawOutgoingBuffer`에서 재사용한다. 간선별 raw flux는 별도로 저장하지 않는다.
+
+### TransferWeights
+
+`TransferWeightsBuffer`는 `texel × 8 + neighborSlot` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 1.0 CurvatureWeight × ProfileBoundaryWeight를 각 슬롯에 기록한다. Profile이 같으면 경계 가중치는 1.0, 다르면 0.5다.
+
+초기 cache는 instance GPU resource 생성 시 준비한다. `TSurfaceStateSystem::RecordStep`은 회전/scale 등 3×3 선형 transform의 변화를 확인한다. dirty cache가 하나라도 있으면 이전 dispatch가 끝나도록 Graphics queue를 idle한 뒤 해당 instance cache를 다시 계산·업로드한다. 순수 translation은 가중치에 영향을 주지 않아 재생성하지 않는다. 현재 Geometry scalar/topology를 runtime에서 수정하는 경로는 없으며, 추후 추가할 때 resource manager의 `InvalidateTransferWeightCache`를 호출해야 한다. 동적 AccumulationHeight/normal 값의 공급과 invalidation은 미구현이다.
+
+동일한 edge의 양 방향 슬롯은 현재 대칭 가중치 식에서 같은 값을 갖지만 각 방향 슬롯을 별도로 저장한다. 무방향 edge 저장으로 압축하는 방식은 후속 최적화 후보로만 남아 있다.
+
+### RawOutgoing
+
+`RawOutgoingBuffer`는 `texel × channelCount + channel` 위치에 Pass 1의 유출 합계를 저장한다. 모든 지원되지 않는 texel/channel에는 0을 기록한다. 매 실행 step에 Pass 1이 전체 유효 범위를 덮어쓰므로 초기 clear는 필요 없고, Pass 2는 자신의 outgoing 합계를 다시 계산하지 않는다. neighbor→current incoming만 재계산하므로 rawFlux 평가의 구조적 상한은 텍셀·채널당 24회에서 16회로 줄어든다.
 
 ### InputDelta
 
@@ -155,11 +168,11 @@ Profile parameter는 `(ProfileIndex, ChannelIndex)` 조합을 사용하며, ADR 
 - `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다.
 - CPU Asset loader가 모든 `stateCapacity > 0`을 검증한 뒤 upload한다.
 - JSON을 GPU 구조체 메모리에 직접 역직렬화하지 않고 명시적으로 변환한다.
-- 동일 Profile 사이의 `ProfileBoundaryWeight`는 `1.0`이다. 서로 다른 Profile의 결합식은 Solver 설계의 미결 사항이다.
+- 동일 Profile 사이의 `ProfileBoundaryWeight`는 `1.0`, 서로 다른 Profile 사이에서는 고정 `0.5`다. 이 값은 Solver 공통 규칙이며 Profile parameter나 추가 GPU ABI 필드는 필요하지 않다. 세부 weight 계약은 [[../../04_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
 
 ## Descriptor binding
 
-Branch 4의 descriptor layout은 아래 12개 binding을 각각 별도의 storage buffer로 연결한다. Geometry와 Profile 자료는 CPU/GPU ABI 문서대로 SoA buffer로 분리한다. 지원 여부 배열도 parameter 배열과 별도 buffer다.
+Branch 4의 descriptor layout은 아래 16개 binding을 각각 별도의 storage buffer로 연결한다. Geometry와 Profile 자료는 CPU/GPU ABI 문서대로 SoA buffer로 분리한다. 지원 여부 배열도 parameter 배열과 별도 buffer다. Binding 12·13은 Surface debug view가 사용하므로 유지하고, Solver cache는 14·15에 추가했다.
 
 | Binding | Buffer | Shader 원소 형식 | 접근 |
 |---:|---|---|---|
@@ -175,8 +188,12 @@ Branch 4의 descriptor layout은 아래 12개 binding을 각각 별도의 storag
 | 9 | Next State | packed `float[]` | write-only |
 | 10 | `OutgoingFluxScaleBuffer` | packed `float[]` | Pass 1 write / Pass 2 read |
 | 11 | `InputDeltaBuffer` | packed `float[]` | Pass 2 read/write; consume then clear |
+| 12 | `SurfaceRangesBuffer` | packed `uvec4[]` | debug fragment Surface grid lookup |
+| 13 | `TexelChartIndicesBuffer` | packed `uint[]` | debug fragment UV chart lookup |
+| 14 | `TransferWeightsBuffer` | packed `float[]`, `texel × 8 + neighborSlot` | cache preparation / Pass 1·2 read |
+| 15 | `RawOutgoingBuffer` | packed `float[]`, `texel × channelCount + channel` | Pass 1 write / Pass 2 read |
 
-각 binding의 descriptor type은 `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`, descriptor count는 1이다. AB와 BA descriptor set을 함께 생성해 Current/Next State의 반대 방향 연결을 제공한다. set은 해당 instance의 State buffers와 Mesh의 공유 Geometry/Profile buffers를 참조한다.
+각 binding의 descriptor type은 `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`, descriptor count는 1이다. AB와 BA descriptor set을 함께 생성해 Current/Next State의 반대 방향 연결을 제공한다. set은 해당 instance의 State/cache buffers와 Mesh의 공유 Geometry/Profile buffers를 참조한다.
 
 Push constant에는 자주 변하는 작은 값만 둔다. CPU 구조체는 GPU upload 구조와 마찬가지로 크기와 offset을 compile-time 검증한다.
 
@@ -205,7 +222,7 @@ flowchart LR
 
 ### Pass 1 → Pass 2
 
-`OutgoingFluxScaleBuffer`에 다음 dependency를 둔다.
+`OutgoingFluxScaleBuffer`와 `RawOutgoingBuffer`에 Pass 1 write→Pass 2 read dependency를 둔다.
 
 ```text
 srcStage  = COMPUTE_SHADER
@@ -224,14 +241,16 @@ dstAccess = SHADER_STORAGE_READ
 
 ## 메모리 기준
 
-Registry State channel 수를 `C`라 할 때, padding이 없는 32-bit scalar layout의 State A/B, OutgoingFluxScale, InputDelta는 각각 texel당 `4C` bytes이며 네 버퍼 합계는 `16C` bytes다. 예를 들어 demo Profile이 4개 State를 등록하면 64 bytes/texel이지만, 이는 고정 layout 크기가 아니다. 실제 allocation은 선택한 GPU layout과 alignment에 따라 달라질 수 있다.
+Registry State channel 수를 `C`라 할 때, padding이 없는 32-bit scalar layout의 State A/B, OutgoingFluxScale, InputDelta, RawOutgoing은 각각 texel당 `4C` bytes다. TransferWeights는 채널과 무관하게 texel당 `8 × 4 = 32` bytes다. 다섯 State/임시 scalar buffer 합계는 texel당 `20C` bytes이고, TransferWeights 32 bytes/texel을 더한다. 실제 allocation은 선택한 GPU layout과 alignment에 따라 달라질 수 있다.
 
 ```text
-State A       4C B
-State B       4C B
-OutgoingFluxScale     4C B
-InputDelta    4C B
-합계          16C B/texel
+State A            4C B
+State B            4C B
+OutgoingFluxScale  4C B
+InputDelta         4C B
+RawOutgoing        4C B
+TransferWeights    32 B
+합계               20C + 32 B/texel
 ```
 
 공유 Geometry, allocator 정렬, frame-in-flight 복제는 별도다. 해상도와 instance 수를 정할 때 함께 측정한다.
@@ -249,7 +268,6 @@ InputDelta    4C B
 
 ## 미결 사항
 
-- 다른 Profile 경계의 `ProfileBoundaryWeight` 결합식
 - 동적 Accumulation geometry의 instance overlay 배치
 - GPU에서 contact event가 겹칠 때의 reduce/atomic 방식
 - Registry channel 수에 맞는 AoS 인덱싱, alignment 및 성능 검증

@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "AssetManager/Core/Asset.h"
 #include "Logger/Logger.h"
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
@@ -14,8 +15,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct GLFWwindow;
@@ -66,17 +70,30 @@ namespace MDSS
         void DrawCameraWindow(TScene& SceneData);
         void DrawRenderOptionsWindow();
         void DrawInjectWindow();
+        void DrawSimulationParametersWindow(const TScene& SceneData);
         void DrawLogWindow();
+        void SetupDockspace();
 
         VkDevice    Device = VK_NULL_HANDLE;
         GLFWwindow* NativeWindow = nullptr;
         TRenderer*   FrameRenderer = nullptr;
         TAssetManager* AssetManager = nullptr;
         bool        bRotatingCamera = false;
+        bool        bDockLayoutInitialized = false;
         bool        bInjectMode = false;
         TStateId    InjectState = 0;
         TStateId    DebugState = 0;
         float       InjectStrength = 1.0F;
+        TSRProfileAssetHandle DebugParameterProfile = InvalidAssetHandle;
+        TStateId DebugParameterState = 0;
+        std::pair<TSRProfileAssetHandle, TStateId> ParameterDraftKey{InvalidAssetHandle, InvalidStateId};
+        TSurfaceStateParameters ParameterDraft{};
+        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
+        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> ParameterDrafts;
+        std::set<std::pair<TSRProfileAssetHandle, TStateId>> DirtyParameterDrafts;
+        bool bParameterDraftAvailable = false;
+        bool bParameterDraftDirty = false;
+        std::string ParameterStatus;
         std::optional<std::size_t> SelectedObject;
         int         ActiveGizmoAxis = -1;
         glm::vec2   GizmoDragStartMouse{0.0F};
@@ -85,11 +102,13 @@ namespace MDSS
         float       GizmoDragWorldScale = 0.0F;
         float       GizmoDragPixelLength = 0.0F;
         std::string SceneStatus;
+        std::uint32_t DockspaceID = 0;
 
         std::array<bool, static_cast<std::size_t>(TLogLevel::Count)> LogLevelFilters{true, true, true, true, true};
+        std::array<char, 128>                                     LogSearch{};
         std::vector<TLogEntry>                                       CachedLogEntries;
         std::uint64_t                                               LastSeenLogRevision = 0;
         bool                                                        bScrollLogToBottom = true;
-        float                                                       LogWindowHeight = 240.0F;
+        float                                                       LogWindowHeight = 360.0F;
     };
 } // namespace MDSS
