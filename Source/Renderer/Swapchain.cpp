@@ -206,6 +206,14 @@ namespace MDSS
 
     VkPresentModeKHR TSwapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& PresentModes)
     {
+        // IMMEDIATE presents as soon as rendering completes, independently of the display refresh rate.
+        // This may produce tearing; fall back to MAILBOX and then FIFO when unsupported.
+        const auto Immediate = std::find(PresentModes.begin(), PresentModes.end(), VK_PRESENT_MODE_IMMEDIATE_KHR);
+        if (Immediate != PresentModes.end())
+        {
+            return VK_PRESENT_MODE_IMMEDIATE_KHR;
+        }
+
         const auto Mailbox = std::find(PresentModes.begin(), PresentModes.end(), VK_PRESENT_MODE_MAILBOX_KHR);
 
         return Mailbox != PresentModes.end() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_FIFO_KHR;
