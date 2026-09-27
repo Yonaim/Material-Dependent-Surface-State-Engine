@@ -24,7 +24,7 @@
 
 현재 구현은 GeometryDrive와 `DistanceWeight`, `NormalWeight`, 중립 `CurvatureWeight`, `ProfileBoundaryWeight`를 적용하고 TransferWeight를 캐시한다. `NormalWeight`는 아직 Mesh의 geometric normal만 사용하므로 Normal Map의 texel별 tangent-space 방향은 반영하지 않는다. 이번 계획에 Branch 2.2를 추가해 이 입력을 연결한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 각 TransferWeight 히트맵을 둔다. `OutgoingFluxScale` 뷰와 Solver 제어·통계 UI는 별도 후속 단계다.
 
-이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Meso height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry, State transition, 렌더링 표현 개선은 포함하지 않는다. Normal Map 적분 및 non-integrable 입력 fallback도 Branch 2.3에서 후보를 비교하고 적용 범위를 확정한다.
+이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Meso height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry와 State transition은 제외한다. Branch 2.3은 [[04_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]에서 graph least-squares 적분, scale, chart boundary, fallback과 곡률 정의를 결정했다. fixture 및 데모 검증이 남아 있다.
 
 ## 데이터 흐름
 

@@ -48,7 +48,22 @@ Normal Map은 실제 Mesh를 바꾸지는 않지만 Simulation에서는 Meso-Str
 | Height    | `Macro_Height + Meso_Virtual_Height`                             |
 | Curvature | `Macro_Curvature + Meso_Curvature`                               |
 
-모든 Normal Map이 integrable하지는 않다. 적분 불가한 경우에는 정규화된 가상 Height / Curvature와 별도 스케일 계수를 사용하는 근사안이 있으며, 실제 알고리즘은 검증이 필요하다. [[05_Development/Experiments/0001_Normal-Map-Integration|Normal Map 적분 실험]]
+Normal Map은 Simulation UV에 대응하는 각 texel에서 sample한다. 이웃 texel 간 mesh-local 위치와 변환된 Normal Map normal로 방향별 높이차를 계산한 뒤, 연결 graph 전체에서 그 차이를 최소제곱으로 만족시키는 height field를 구한다. Normal Map의 기울기는 완전히 적분 가능하지 않을 수 있다. 이 경우 residual을 기록하고 least-squares 해를 그대로 사용한다. 유효한 normal sample이 없거나 정규 macro normal과 반대 방향인 texel은 높이 0으로 남기고 적분 graph에서 제외한다. 자세한 수식과 한계는 [[04_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]을 따른다.
+
+```mermaid
+flowchart LR
+  Map["Normal Map"] --> Sample["Simulation texel UV로 sample"]
+  Sample --> Edge["이웃 간 signed height difference"]
+  Neighbor["Texel neighbor graph\nUV seam 연결 포함"] --> Edge
+  Edge --> Solve["Anchored least-squares / PCG"]
+  Solve --> Height["MesoVirtualHeight"]
+  Height --> Derivative["Local height derivative fit"]
+  Derivative --> Normal["MesoNormal"]
+  Derivative --> Curvature["Mean + Gaussian curvature"]
+  Curvature --> Concavity["Positive mean curvature → ConcavityWeight"]
+  Height --> GeometryDrive["GeometryDrive + DistanceWeight"]
+  Normal --> Transfer["TransferWeight NormalWeight cache"]
+```
 
 ## Meso Virtual Height
 
@@ -60,7 +75,9 @@ Normal Map은 실제 Mesh를 바꾸지는 않지만 Simulation에서는 Meso-Str
 | `= 0` | Macro Geometry 그대로                  |
 | `> 0` | Macro Geometry보다 바깥쪽으로 튀어나온 Meso 형상 |
 
-Non-integrable fallback에서는 정규화 높이를 `[-1,1]`로 두고 대표 Height 스케일을 곱하는 방식을 검토한다.
+각 연결 component에서 첫 유효 texel을 내부 기준점으로 고정해 해의 임의 상수를 없앤 뒤, component 평균 높이를 0으로 이동한다. 서로 끊긴 chart는 같은 기준 높이를 강제로 공유하지 않는다. UV seam은 Mapping neighbor graph가 연결한 경우에만 함께 적분한다. 높이차는 mesh-local 길이 단위이므로 별도 `β_meso` 또는 authoring scale을 곱하지 않는다. 이 선택은 물리적 mesh scale을 사용하므로 Mesh 크기를 바꾸면 복원 높이도 같은 비율로 바뀐다.
+
+Non-integrable 입력에 별도 임계값 기반 거부는 두지 않는다. 최소제곱이 가장 가까운 일관된 height field를 반환하며, relative edge residual을 전처리 로그에 남긴다. 기울기 입력이 invalid하거나 macro normal에 거의 수직/반대인 texel은 neutral height 0으로 두고, 해당 연결은 적분에서 제외한다.
 
 ## Shared Surface Geometry Data
 
@@ -70,14 +87,17 @@ Non-integrable fallback에서는 정규화 높이를 `[-1,1]`로 두고 대표 H
 
 | 항목 | 저장 단위 | 의미 |
 |---|---|---|
-| `Normal` | Texel별 | Macro + Meso를 반영한 표면 방향 |
+| `Normal` | Texel별 | Macro mesh의 기저 표면 방향 |
 | `TransferNormal` | 전처리 중 CPU texel별 | Simulation mapping의 triangle/barycentric 대응으로 Normal Map을 sample하고 tangent-space 방향을 mesh-local로 바꾼 값. TransferWeight cache 생성에 사용하며 geometric `Normal`이 fallback이다. GPU shared-geometry buffer에는 올리지 않는다. |
+| `MesoNormal` | Texel별 CPU/GPU | 적분한 Meso height의 국소 미분으로부터 재구성한 mesh-local 유효 normal. 미분 fit이 불가능하면 sampled `TransferNormal`, 그것도 없으면 macro `Normal`을 사용한다. |
 | `NeighborIndex` | Texel × 최대 8개 | seam을 포함한 실제 이웃 texel 인덱스 |
 | Neighbor Distance | 저장하지 않음 | Solver가 이웃 Position 간 차이에서 필요할 때 계산 |
 | `Meso_Virtual_Height` | Texel별 | Macro 기준 Normal Map에서 복원한 상대 높이 |
-| `Curvature / ConcavityWeight` | Texel별 | 국소 곡률 또는 Solver가 읽는 오목함 파생값 |
+| `MesoMeanCurvature` | Texel별 CPU/GPU | height field의 국소 이차 fit에서 계산한 signed mean curvature. 단위는 1/mesh-local length다. |
+| `MesoGaussianCurvature` | Texel별 CPU/GPU | height field의 국소 이차 fit에서 계산한 Gaussian curvature. 단위는 1/(mesh-local length²)다. 곡면이 볼록/오목/안장인지 보조적으로 구분한다. |
+| `ConcavityWeight` | Texel별 CPU/GPU | 양의 signed mean curvature에 평균 이웃 간격을 곱해 `[0,1]`로 clamp한 Decay 전용 cavity retention 입력. 평탄/볼록 영역은 0이다. |
 
-현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. Transport의 `CurvatureWeight`는 중립값 `1.0`이다. `NormalWeight`가 이웃 표면 방향 차이를 반영하므로 곡률 항을 더하면 굽힘 효과를 중복할 수 있다. GPU에서 어떤 형상 값을 저장할지는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.
+현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. Mean/Gaussian curvature는 형상 데이터로 생성하지만 Transport의 `CurvatureWeight`는 중립값 `1.0`이다. `NormalWeight`가 이웃 유효 normal 차이를 반영하므로 곡률 항을 더하면 굽힘 효과를 중복할 수 있다. GPU storage layout은 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]와 ADR 0018을 따른다.
 
 ### Geometry Common Parameters
 

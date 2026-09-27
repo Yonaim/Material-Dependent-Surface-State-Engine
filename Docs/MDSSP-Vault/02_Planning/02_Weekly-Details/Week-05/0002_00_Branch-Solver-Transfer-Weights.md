@@ -75,7 +75,7 @@ RawFlux(i→j)
 
 - State transitions
 - 동적 Accumulation geometry
-- Normal Map에서 MesoVirtualHeight를 복원하는 적분 및 non-integrable fallback ([[02_Planning/02_Weekly-Details/Week-05/0002_03_Branch-Solver-Meso-Geometry|Branch 2.3]])
+- Normal Map에서 MesoVirtualHeight를 복원하는 적분 및 non-integrable fallback은 [[02_Planning/02_Weekly-Details/Week-05/0002_03_Branch-Solver-Meso-Geometry|Branch 2.3]]의 PCG least-squares 경로에 구현한다.
 - 성능 최적화와 저장형 distance field
 
 ## 성능 후속 브랜치

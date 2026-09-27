@@ -86,10 +86,11 @@ profileIndex = TexelProfileIndex[localTexelIndex]
 | `TexelProfileIndexBuffer` | `uint` | texel별 Profile 테이블 조회. dense 1:1 texel map |
 | `SurfacePositionBuffer` | `vec4` | `xyz`: Mesh local position |
 | `SurfaceNormalBuffer` | `vec4` | `xyz`: Mesh local normal |
-| `GeometryScalarBuffer` | texel당 `{ float MesoVirtualHeight; float ConcavityWeight; }` | 실제 사용하는 두 형상 scalar |
+| `GeometryScalarBuffer` | texel당 `{ MesoVirtualHeight, ConcavityWeight, MesoMeanCurvature, MesoGaussianCurvature }` float 4개 | 높이, Solver 파생값과 형상 분석 곡률 |
+| `MesoNormalBuffer` | texel당 `vec4` | 높이 미분에서 재구성한 mesh-local 유효 normal |
 | `NeighborIndexBuffer` | `uvec4[2]` | 최대 8개 local neighbor index |
 
-invalid 여부는 `TexelSurfaceIndexBuffer[index] == InvalidSurfaceID`로 판정한다. 실제 Surface ID는 이 예약값을 사용할 수 없다. 거리와 방향은 `SurfacePosition[j] - SurfacePosition[i]`에서 계산하므로 별도 NeighborDistance buffer는 두지 않는다. Geometry scalar 구조체는 두 float만 포함하며, CPU와 GLSL 양쪽에서 크기가 8바이트인지 검증한다. Position/Normal에는 `vec4`를 사용하고 CPU 업로드 구조체에는 크기와 필드 offset에 대한 `static_assert`를 둔다.
+invalid 여부는 `TexelSurfaceIndexBuffer[index] == InvalidSurfaceID`로 판정한다. 실제 Surface ID는 이 예약값을 사용할 수 없다. 거리와 방향은 `SurfacePosition[j] - SurfacePosition[i]`에서 계산하므로 별도 NeighborDistance buffer는 두지 않는다. Geometry scalar는 네 float(16 B)이며 CPU와 GLSL의 stride를 맞춘다. Position/Normal/MesoNormal에는 `vec4`를 사용하고 CPU 업로드 구조체에는 크기와 필드 offset에 대한 `static_assert`를 둔다.
 
 `TriangleID`와 `Barycentric`은 Solver 필수 입력이 아니므로 CPU Runtime mapping data에 두고 Geometry 생성 후 필요하지 않으면 해제한다. GPU 디버그 시각화가 필요할 때만 별도 read-only buffer로 올린다.
 
@@ -172,7 +173,7 @@ Profile parameter는 `(ProfileIndex, ChannelIndex)` 조합을 사용하며, ADR 
 
 ## Descriptor binding
 
-Branch 4의 descriptor layout은 아래 16개 binding을 각각 별도의 storage buffer로 연결한다. Geometry와 Profile 자료는 CPU/GPU ABI 문서대로 SoA buffer로 분리한다. 지원 여부 배열도 parameter 배열과 별도 buffer다. Binding 12·13은 Surface debug view가 사용하므로 유지하고, Solver cache는 14·15에 추가했다.
+Descriptor layout은 아래 binding을 각각 별도의 storage buffer로 연결한다. Geometry와 Profile 자료는 CPU/GPU ABI 문서대로 SoA buffer로 분리한다. 지원 여부 배열도 parameter 배열과 별도 buffer다. Binding 12·13과 16·17은 Surface debug view 및 cache 진단에 사용한다.
 
 | Binding | Buffer | Shader 원소 형식 | 접근 |
 |---:|---|---|---|
@@ -180,7 +181,7 @@ Branch 4의 descriptor layout은 아래 16개 binding을 각각 별도의 storag
 | 1 | `TexelProfileIndexBuffer` | `uint[]` | read-only |
 | 2 | `SurfacePositionBuffer` | `vec4[]` | read-only |
 | 3 | `SurfaceNormalBuffer` | `vec4[]` | read-only |
-| 4 | `GeometryScalarBuffer` | texel당 두 `float` | read-only |
+| 4 | `GeometryScalarBuffer` | texel당 네 `float` | vertex / fragment / compute read-only |
 | 5 | `NeighborIndexBuffer` | texel당 `uvec4[2]` | read-only |
 | 6 | `ProfileParametersBuffer` | `(ProfileIndex, ChannelIndex)`당 두 `vec4` | read-only |
 | 7 | `ProfileSupportedBuffer` | `uint[]` | read-only |
@@ -192,6 +193,8 @@ Branch 4의 descriptor layout은 아래 16개 binding을 각각 별도의 storag
 | 13 | `TexelChartIndicesBuffer` | packed `uint[]` | debug fragment UV chart lookup |
 | 14 | `TransferWeightsBuffer` | packed `float[]`, `texel × 8 + neighborSlot` | cache preparation / Pass 1·2 read |
 | 15 | `RawOutgoingBuffer` | packed `float[]`, `texel × channelCount + channel` | Pass 1 write / Pass 2 read |
+| 16 | `TransferWeightDebugAverageBuffer` | texel당 `vec4` | fragment read-only |
+| 17 | `MesoNormalBuffer` | texel당 `vec4[]` | vertex / fragment / compute read-only |
 
 각 binding의 descriptor type은 `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`, descriptor count는 1이다. AB와 BA descriptor set을 함께 생성해 Current/Next State의 반대 방향 연결을 제공한다. set은 해당 instance의 State/cache buffers와 Mesh의 공유 Geometry/Profile buffers를 참조한다.
 
