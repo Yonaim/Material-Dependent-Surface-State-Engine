@@ -1,6 +1,6 @@
 # 5주차 구현 상세 계획 — Solver 확장과 검증
 
-상태: **구현 계획** · 상위 계획: [[02_Planning/01_Weekly-Overview/Week-05|Week 05 Overview]]
+상태: **구현 중** · 상위 계획: [[02_Planning/01_Weekly-Overview/Week-05|Week 05 Overview]]
 
 ## 목표와 완료 기준
 
@@ -22,7 +22,7 @@
 
 4주차에는 State A/B, OutgoingFluxScale, InputDelta GPU 리소스, 2-Pass compute dispatch와 barrier, ping-pong, Contact 입력 연결이 구현되었다. 따라서 이번 주에는 리소스 생성·descriptor 기본 구성·2-Pass 구조 자체를 다시 만들지 않는다.
 
-현재 구현은 GeometryDrive와 `DistanceWeight`, `NormalWeight`, 중립 `CurvatureWeight`, `ProfileBoundaryWeight`를 적용하고 TransferWeight를 캐시한다. `NormalWeight`는 아직 Mesh의 geometric normal만 사용하므로 Normal Map의 texel별 tangent-space 방향은 반영하지 않는다. 이번 계획에 Branch 2.2를 추가해 이 입력을 연결한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 각 TransferWeight 히트맵을 둔다. `OutgoingFluxScale` 뷰와 Solver 제어·통계 UI는 별도 후속 단계다.
+현재 구현은 GeometryDrive, 네 가지 TransferWeight, TransferWeight 캐시, Normal Map 기반 `NormalWeight`, Normal Map에서 복원한 Meso 높이와 Curvature/Concavity 파생값을 포함한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 TransferWeight와 구성 가중치 히트맵이 있다. Branch 3 `feat/solver-debug-tools`에서 `OutgoingFluxScale` 뷰, Solver 제어·통계 UI 구현도 완료했다. Branch 2.1의 캐시 동등성·성능 검증과 Branch 2.3의 fixture/런타임 시각 검증은 아직 남아 있으며, 전체 통합 검증은 Branch 6에서 수행한다.
 
 이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Meso height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry와 State transition은 제외한다. Branch 2.3은 [[04_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]에서 graph least-squares 적분, scale, chart boundary, fallback과 곡률 정의를 결정했다. fixture 및 데모 검증이 남아 있다.
 
@@ -32,7 +32,7 @@
 flowchart TD
     A[Current State + Profile + Shared Geometry] --> B[Pass 1: Decay와 이웃별 RawFlux 계산]
     B --> C[RawOutgoing 합과 AvailableState 산출]
-    C --> D[OutgoingFluxScale / alpha 저장]
+    C --> D[OutgoingFluxScale 저장]
     D --> E[Compute barrier]
     A --> F[Pass 2: 이웃 flux 재계산]
     D --> F
@@ -80,11 +80,11 @@ Branch 2에서 확정한 거리·법선·프로파일 경계 가중치 규칙은
 
 ### 3. OutgoingFluxScale 디버그 뷰
 
-`OutgoingFluxScale`은 State 채널별 `[0,1]` alpha다. 1이면 outgoing 제한이 적용되지 않았고, 0에 가까울수록 Pass 1에서 계산한 outgoing을 더 크게 제한한다.
+`OutgoingFluxScale` buffer는 texel × State channel마다 `[0,1]` scalar 하나를 저장한다. Solver 수식에서 이 값은 alpha처럼 유출량 제한 비율로 사용된다. 1이면 제한이 없고, 0에 가까울수록 Pass 1에서 계산한 outgoing을 더 크게 제한한다.
 
 - Surface Debug 뷰 목록에 `Outgoing Flux Scale`을 추가한다.
-- 현재 State Heatmap처럼 Registry에서 채널 하나를 선택해 해당 채널의 alpha를 표시한다.
-- Surface Debug fragment shader가 instance별 OutgoingFluxScale 버퍼를 읽도록 descriptor layout/set과 shader를 연결한다. 기존 compute descriptor의 binding 접근을 그대로 쓸 수 있는지 확인하고, graphics용 binding 변경은 GPU ABI 문서에도 반영한다.
+- 현재 State Heatmap처럼 Registry에서 채널 하나를 선택해 해당 채널의 scale 값을 표시한다.
+- Surface Debug fragment shader가 기존 graphics descriptor set의 binding 10에서 instance별 OutgoingFluxScale buffer를 읽는다. Descriptor layout은 이미 fragment stage visibility를 포함한다.
 - 색상은 `0–1`의 의미를 보여주는 단순한 연속 ramp로 표시하고 범례와 양 끝의 의미를 UI에 적는다. State saturation heatmap과 혼동되지 않도록 라벨을 분리한다.
 - valid/unsupported/invalid 표시는 기존 Surface Debug view의 규칙과 일관되게 처리한다.
 
@@ -96,7 +96,7 @@ Branch 2에서 확정한 거리·법선·프로파일 경계 가중치 규칙은
 |---|---|
 | Pause | 켜져 있으면 Solver dispatch와 A/B 역할 교환을 멈춘다. 제출된 접촉 입력은 다음 실행 step이 소비할 수 있도록 보존한다. |
 | Step | 일시 정지 상태에서 현재 프레임의 `DeltaTime`으로 Solver를 정확히 한 번 실행하고 역할을 한 번 교환한다. |
-| Reset State | 모든 simulated instance의 State A/B와 InputDelta를 0으로 만들고, OutgoingFluxScale은 지원 채널에서 중립값 1(제한 없음), invalid/unsupported 위치에서 0으로 초기화한 뒤 현재 State 역할을 A로 되돌린다. 이미 대기 중인 CPU Contact 입력도 비운다. GPU 사용 중인 버퍼를 덮어쓰지 않도록 기존 queue/fence 안전 경로를 따른다. |
+| Reset State | 모든 simulated instance의 State A/B와 InputDelta를 0으로 만들고, OutgoingFluxScale은 지원 채널에서 중립값 1(제한 없음), invalid/unsupported 위치에서 0으로 초기화한 뒤 현재 State 역할을 A로 되돌린다. 이미 대기 중인 CPU Contact 입력도 비운다. 요청 직전에 graphics queue를 idle로 만든 뒤 host-visible buffers를 초기화한다. |
 | Texel 통계 | Scene에서 Solver가 관리하는 instance별 texel 수를 합산하고, valid texel 수와 valid 비율을 표시한다. 공유 Geometry는 instance마다 State가 별도이므로 Solver 작업량 통계에는 instance마다 포함한다. |
 | Ping-pong 상태 | 다음 step이 읽을 Current buffer가 A인지 B인지 표시한다. |
 | 최근 GPU Solver 시간 | GPU timestamp query로 가장 최근 완료된 Solver step의 시간을 표시한다. 선택된 장치/compute queue가 timestamp를 지원하지 않으면 CPU 시간을 GPU 시간으로 오인해 표시하지 말고 `N/A`로 나타낸다. |
@@ -116,7 +116,7 @@ Reset은 매 frame 초기화하지 않고 사용자가 명시적으로 눌렀을
 | Profile 경계 | 같은 Profile 내부와 Profile 경계를 가로지르는 flux가 결정한 규칙을 따른다. |
 | invalid / seam / dynamic channel | invalid texel에 State가 남지 않고, seam 이웃 및 Registry channel 수가 달라도 기존 계약을 유지한다. |
 | timestep | 같은 총 시간의 `1/30`과 `1/60` 결과 차이를 기록한 허용 오차와 비교한다. |
-| Debug controls | pause 중 값과 Current buffer가 변하지 않고, Step 한 번은 한 update만 하며, Reset 뒤 State와 입력이 0이고, alpha는 지원 채널에서 1·invalid/unsupported 위치에서 0이며 Current가 A다. |
+| Debug controls | pause 중 값과 Current buffer가 변하지 않고, Step 한 번은 한 update만 하며, Reset 뒤 State와 입력이 0이고, OutgoingFluxScale은 지원 채널에서 1·invalid/unsupported 위치에서 0이며 Current가 A다. |
 | GPU timing / validation | timestamp 지원 여부, 최근 측정값, Vulkan validation 결과를 실행 환경과 함께 기록한다. GPU를 사용할 수 없는 환경의 test skip은 실패와 구분해 보고한다. |
 
 GPU 테스트는 기존 `SurfaceGPUResourceTests` 경로를 확장한다. 화면 스크린샷만으로 수식 정확성을 판정하지 않는다. 수식별 작은 GPU fixture를 우선하고, 실제 Demo Scene은 UI 통합과 시각 확인에 사용한다.
@@ -132,10 +132,8 @@ flowchart LR
     B2 --> B21[2.1 Solver Transfer Cache]
     B21 --> B22[2.2 Normal Map NormalWeight]
     B22 --> B23[2.3 Meso Height / Curvature]
-    B23 --> B3[3 OutgoingFluxScale View]
-    B3 --> B4[4 Solver Controls]
-    B4 --> B5[5 Solver Statistics]
-    B5 --> B6[6 Integrated Validation]
+    B23 --> B3[3 Solver Debug Tools]
+    B3 --> B6[6 Integrated Validation]
 ```
 
 | 순서 | 브랜치 | 결과물 |
@@ -143,12 +141,10 @@ flowchart LR
 | 1 | `feat/solver-geometry-drive` | GeometryDrive 식·단위 확정, 구현 및 방향 테스트 |
 | 2 | `feat/solver-transfer-weights` | 네 TransferWeight 식과 flux 적용·경계 테스트 |
 | 2.1 | `perf/solver-transfer-cache` | TransferWeight 캐시와 RawOutgoing 합계 재사용·성능 검증 |
-| 2.2 | `feat/solver-normal-map-weights` | Normal Map 방향을 NormalWeight에 연결하고 fallback·cache 갱신 검증 (구현 중) |
-| 2.3 | `feat/solver-meso-geometry` | Normal Map에서 MesoVirtualHeight 및 Curvature/Concavity 생성·적분 fallback 검증 |
-| 3 | `feat/solver-outgoing-flux-debug` | channel별 OutgoingFluxScale Surface Debug view |
-| 4 | `feat/solver-debug-controls` | pause, 단일 step, State reset |
-| 5 | `feat/solver-debug-statistics` | texel/valid 통계, 현재 ping-pong, GPU timestamp |
-| 6 | `test/solver-week5-validation` | timestep/회귀/통합 검증과 결과 기록 |
+| 2.2 | `feat/solver-normal-map-weights` | Normal Map 방향을 NormalWeight에 연결하고 fallback·cache 갱신 검증 (구현 완료) |
+| 2.3 | `feat/solver-meso-geometry` | Normal Map에서 MesoVirtualHeight 및 Curvature/Concavity 생성 (구현 완료, fixture/runtime 시각 검증 대기) |
+| 3 | `feat/solver-debug-tools` | OutgoingFluxScale view, pause/step/reset, texel·valid·A/B·GPU 시간 통계 (구현 완료) |
+| 6 | `test/solver-week5-validation` | timestep/회귀/통합 검증과 결과 기록 (미착수) |
 
 ### 설계 결정 선행 조건
 
@@ -161,9 +157,7 @@ Branch 1의 HeightDrive/DirectionDrive 분리, height 차이에서 neighbor dist
 - [[02_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|2.1. Solver Transfer Cache]]
 - [[02_Planning/02_Weekly-Details/Week-05/0002_02_Branch-Solver-Normal-Map-Weights|2.2. Solver Normal Map Weights]]
 - [[02_Planning/02_Weekly-Details/Week-05/0002_03_Branch-Solver-Meso-Geometry|2.3. Solver Meso Geometry from Normal Map]]
-- [[02_Planning/02_Weekly-Details/Week-05/0003_Branch-Outgoing-Flux-Debug-View|3. OutgoingFluxScale Debug View]]
-- [[02_Planning/02_Weekly-Details/Week-05/0004_Branch-Solver-Debug-Controls|4. Solver Debug Controls]]
-- [[02_Planning/02_Weekly-Details/Week-05/0005_Branch-Solver-Debug-Statistics|5. Solver Debug Statistics]]
+- [[02_Planning/02_Weekly-Details/Week-05/0003_Branch-Solver-Debug-Tools|3. Solver Debug Tools (기존 Branch 3·4·5 통합)]]
 - [[02_Planning/02_Weekly-Details/Week-05/0006_Branch-Solver-Week5-Validation|6. Solver 통합 검증]]
 
 ## 참고 문서
