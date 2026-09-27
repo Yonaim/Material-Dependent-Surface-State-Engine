@@ -35,7 +35,8 @@ namespace MDSS
                         std::size_t ChannelCount,
                         float DeltaTime,
                         const glm::mat4& ModelMatrix,
-                        const glm::vec3& GravityWorld) const;
+                        const glm::vec3& GravityWorld,
+                        bool bGeometryDriveEnabled = true) const;
 
     private:
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);

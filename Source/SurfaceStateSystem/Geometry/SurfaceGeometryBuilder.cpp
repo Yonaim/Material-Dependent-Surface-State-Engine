@@ -61,9 +61,9 @@ namespace MDSS
                 continue;
             }
 
-            if (ProfileMap[Index] == InvalidSurfaceProfileIndex || ProfileMap[Index] >= ProfileCount)
+            if (ProfileMap[Index] != InvalidSurfaceProfileIndex && ProfileMap[Index] >= ProfileCount)
             {
-                throw std::invalid_argument("Valid texel Profile index is outside the loaded Profile range.");
+                throw std::invalid_argument("Texel Profile index is outside the loaded Profile range.");
             }
             if (!IsFinite(Source.Position) || !IsFinite(Source.Normal) || !IsFinite(Source.Barycentric))
             {

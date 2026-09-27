@@ -56,6 +56,29 @@ namespace MDSS
             }
             return static_cast<std::uint32_t>(Parsed);
         }
+
+        TSurfaceProfileIndex ReadProfileIndex(const TJson& Value)
+        {
+            if (Value.is_number_unsigned())
+            {
+                return ReadNonNegativeIndex(Value, "profileIndex");
+            }
+            if (!Value.is_number_integer())
+            {
+                throw std::runtime_error("Surface Profile Map 'profileIndex' must be -1 or a non-negative integer.");
+            }
+
+            const std::int64_t Parsed = Value.get<std::int64_t>();
+            if (Parsed == -1)
+            {
+                return InvalidSurfaceProfileIndex;
+            }
+            if (Parsed < 0 || static_cast<std::uint64_t>(Parsed) >= InvalidSurfaceProfileIndex)
+            {
+                throw std::runtime_error("Surface Profile Map 'profileIndex' must be -1 or a supported non-negative integer.");
+            }
+            return static_cast<TSurfaceProfileIndex>(Parsed);
+        }
     } // namespace
 
     TSurfaceProfileDistribution TSurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
@@ -149,8 +172,8 @@ namespace MDSS
             const TJson& SurfaceId = RequireMember(Entry, "surfaceId", "Surface Profile Map surface entry");
             const TJson& ProfileIndex = RequireMember(Entry, "profileIndex", "Surface Profile Map surface entry");
             const std::uint32_t Surface = ReadNonNegativeIndex(SurfaceId, "surfaceId");
-            const std::uint32_t Profile = ReadNonNegativeIndex(ProfileIndex, "profileIndex");
-            if (Profile >= Result.ProfilePaths.size())
+            const TSurfaceProfileIndex Profile = ReadProfileIndex(ProfileIndex);
+            if (Profile != InvalidSurfaceProfileIndex && Profile >= Result.ProfilePaths.size())
             {
                 throw std::runtime_error("Surface Profile Map profileIndex is outside the profiles array.");
             }
@@ -186,7 +209,7 @@ namespace MDSS
         for (std::size_t EntryIndex = 0; EntryIndex < Surfaces.size(); ++EntryIndex)
         {
             const std::uint32_t Surface = ReadNonNegativeIndex(Surfaces[EntryIndex]["surfaceId"], "surfaceId");
-            const std::uint32_t Profile = ReadNonNegativeIndex(Surfaces[EntryIndex]["profileIndex"], "profileIndex");
+            const TSurfaceProfileIndex Profile = ReadProfileIndex(Surfaces[EntryIndex]["profileIndex"]);
             Result.ProfileIndicesBySurface[Surface] = Profile;
         }
         return Result;

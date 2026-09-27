@@ -50,7 +50,51 @@ namespace MDSS
         struct TGizmoPushConstants
         {
             glm::mat4 ViewProjectionModel{1.0F};
+            std::int32_t HighlightAxis = -1;
+            std::int32_t Padding0 = 0;
+            std::int32_t Padding1 = 0;
+            std::int32_t Padding2 = 0;
         };
+
+        constexpr std::array<glm::vec4, 3> WorldAxisColors = {
+            glm::vec4(1.0F, 0.10F, 0.10F, 1.0F),
+            glm::vec4(0.10F, 0.95F, 0.20F, 1.0F),
+            glm::vec4(0.12F, 0.35F, 1.0F, 1.0F)};
+
+        std::vector<TGizmoVertex> BuildWorldReferenceVertices()
+        {
+            std::vector<TGizmoVertex> Vertices;
+            constexpr float GridExtent = 50.0F;
+            constexpr float GridHalfWidth = 0.008F;
+            constexpr float AxisHalfWidth = 0.035F;
+            const glm::vec4 GridColor(1.0F);
+            auto AddQuad = [&](glm::vec3 A, glm::vec3 B, glm::vec3 C, glm::vec3 D, glm::vec4 Color)
+            {
+                Vertices.insert(Vertices.end(), {{A, Color}, {B, Color}, {C, Color},
+                                                 {A, Color}, {C, Color}, {D, Color}});
+            };
+
+            for (int I = -static_cast<int>(GridExtent); I <= static_cast<int>(GridExtent); ++I)
+            {
+                const float Coordinate = static_cast<float>(I);
+                AddQuad({Coordinate - GridHalfWidth, -GridExtent, 0.0F},
+                        {Coordinate + GridHalfWidth, -GridExtent, 0.0F},
+                        {Coordinate + GridHalfWidth, GridExtent, 0.0F},
+                        {Coordinate - GridHalfWidth, GridExtent, 0.0F}, GridColor);
+                AddQuad({-GridExtent, Coordinate - GridHalfWidth, 0.0F},
+                        {GridExtent, Coordinate - GridHalfWidth, 0.0F},
+                        {GridExtent, Coordinate + GridHalfWidth, 0.0F},
+                        {-GridExtent, Coordinate + GridHalfWidth, 0.0F}, GridColor);
+            }
+
+            AddQuad({-GridExtent, -AxisHalfWidth, 0.002F}, {GridExtent, -AxisHalfWidth, 0.002F},
+                    {GridExtent, AxisHalfWidth, 0.002F}, {-GridExtent, AxisHalfWidth, 0.002F}, WorldAxisColors[0]);
+            AddQuad({-AxisHalfWidth, -GridExtent, 0.002F}, {AxisHalfWidth, -GridExtent, 0.002F},
+                    {AxisHalfWidth, GridExtent, 0.002F}, {-AxisHalfWidth, GridExtent, 0.002F}, WorldAxisColors[1]);
+            AddQuad({-AxisHalfWidth, 0.0F, -GridExtent}, {AxisHalfWidth, 0.0F, -GridExtent},
+                    {AxisHalfWidth, 0.0F, GridExtent}, {-AxisHalfWidth, 0.0F, GridExtent}, WorldAxisColors[2]);
+            return Vertices;
+        }
 
         std::vector<TGizmoVertex> BuildTranslateGizmoVertices()
         {
@@ -62,10 +106,7 @@ namespace MDSS
             const std::array<glm::vec3, 3> Axes = {glm::vec3(1, 0, 0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)};
             const std::array<glm::vec3, 3> U = {glm::vec3(0, 1, 0), glm::vec3(0, 0, 1), glm::vec3(1, 0, 0)};
             const std::array<glm::vec3, 3> V = {glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0)};
-            const std::array<glm::vec4, 3> Colors = {
-                glm::vec4(1.0F, 0.10F, 0.10F, 1.0F),
-                glm::vec4(0.10F, 0.95F, 0.20F, 1.0F),
-                glm::vec4(0.12F, 0.35F, 1.0F, 1.0F)};
+            const auto& Colors = WorldAxisColors;
             Vertices.reserve(3U * static_cast<std::size_t>(Segments) * 9U);
             for (std::size_t Axis = 0; Axis < Axes.size(); ++Axis)
             {
@@ -132,6 +173,8 @@ namespace MDSS
                     return "Neighbor Count";
                 case TRenderViewMode::SurfaceSeam:
                     return "Surface Seam";
+                case TRenderViewMode::SolverTransferWeight:
+                    return "Solver Transfer Weight";
             }
             return "Unknown";
         }
@@ -231,6 +274,15 @@ namespace MDSS
             Config.PushConstantRanges.push_back(Push);
             return Config;
         }
+
+        TGraphicsPipelineConfig BuildWorldReferencePipelineConfig()
+        {
+            TGraphicsPipelineConfig Config = BuildGizmoPipelineConfig();
+            Config.bDepthTestEnabled = true;
+            Config.bDepthWriteEnabled = false;
+            Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+            return Config;
+        }
     } // namespace
 
     TRenderer::TRenderer(const TVulkanContext& Context,
@@ -253,6 +305,7 @@ namespace MDSS
                              MainRenderPass.GetHandle(),
                              BuildStaticMeshPipelineConfig(MaterialDescriptorSetLayout)),
           GizmoPipeline(Context.GetDevice(), MainRenderPass.GetHandle(), BuildGizmoPipelineConfig()),
+          WorldReferencePipeline(Context.GetDevice(), MainRenderPass.GetHandle(), BuildWorldReferencePipelineConfig()),
           MainFramebuffers(Context.GetDevice(),
                            MainRenderPass.GetHandle(),
                            SwapchainData.GetExtent(),
@@ -260,7 +313,10 @@ namespace MDSS
                            DepthImageView.GetHandle()),
           FrameContext(Context)
     {
-        const std::vector<TGizmoVertex> GizmoVertices = BuildTranslateGizmoVertices();
+        std::vector<TGizmoVertex> GizmoVertices = BuildWorldReferenceVertices();
+        WorldReferenceVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
+        const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
+        GizmoVertices.insert(GizmoVertices.end(), TranslateGizmoVertices.begin(), TranslateGizmoVertices.end());
         GizmoVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
         GizmoVertexBuffer = std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
                                                         Context.GetDevice(),
@@ -498,6 +554,8 @@ namespace MDSS
             throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
         auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        Replacement->SetDebugGeometryDriveEnabled(bDebugGeometryDriveEnabled);
+        Replacement->SetDebugNormalWeightEnabled(bDebugNormalWeightEnabled);
         for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
         {
             try
@@ -637,6 +695,49 @@ namespace MDSS
         }
         DebugStateChannel = Channel;
         UpdateMaterialUniforms();
+    }
+
+    TSolverTransferWeightView TRenderer::GetSolverTransferWeightView() const noexcept
+    {
+        return SolverTransferWeightView;
+    }
+
+    void TRenderer::SetSolverTransferWeightView(TSolverTransferWeightView View)
+    {
+        if (SolverTransferWeightView == View)
+        {
+            return;
+        }
+        SolverTransferWeightView = View;
+        UpdateMaterialUniforms();
+    }
+
+    bool TRenderer::IsDebugGeometryDriveEnabled() const noexcept
+    {
+        return bDebugGeometryDriveEnabled;
+    }
+
+    void TRenderer::SetDebugGeometryDriveEnabled(bool bEnabled)
+    {
+        bDebugGeometryDriveEnabled = bEnabled;
+        if (SurfaceStates)
+        {
+            SurfaceStates->SetDebugGeometryDriveEnabled(bEnabled);
+        }
+    }
+
+    bool TRenderer::IsDebugNormalWeightEnabled() const noexcept
+    {
+        return bDebugNormalWeightEnabled;
+    }
+
+    void TRenderer::SetDebugNormalWeightEnabled(bool bEnabled)
+    {
+        bDebugNormalWeightEnabled = bEnabled;
+        if (SurfaceStates)
+        {
+            SurfaceStates->SetDebugNormalWeightEnabled(bEnabled);
+        }
     }
 
     bool TRenderer::GetFlipNormalY() const noexcept
@@ -808,7 +909,7 @@ namespace MDSS
                                           AmbientLight,
                                           DebugStateChannel,
                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
-                                          0.0F,
+                                          static_cast<float>(SolverTransferWeightView),
                                           0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
@@ -869,7 +970,7 @@ namespace MDSS
                                           AmbientLight,
                                           DebugStateChannel,
                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
-                                          0.0F,
+                                          static_cast<float>(SolverTransferWeightView),
                                           0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
         }
@@ -925,27 +1026,42 @@ namespace MDSS
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
                           bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle() : StaticMeshPipeline.GetHandle());
 
-        const VkExtent2D Extent = SwapchainData.GetExtent();
-        VkViewport       Viewport{};
-        Viewport.x = 0.0F;
-        Viewport.y = 0.0F;
-        Viewport.width = static_cast<float>(Extent.width);
-        Viewport.height = static_cast<float>(Extent.height);
+        const VkExtent2D    Extent = SwapchainData.GetExtent();
+        const glm::vec4     NormalizedViewport = DebugInterface.GetSceneViewportRectNormalized();
+        const std::uint32_t ViewportX = std::min(
+            static_cast<std::uint32_t>(std::max(NormalizedViewport.x, 0.0F) * static_cast<float>(Extent.width)),
+            Extent.width - 1U);
+        const std::uint32_t ViewportY = std::min(
+            static_cast<std::uint32_t>(std::max(NormalizedViewport.y, 0.0F) * static_cast<float>(Extent.height)),
+            Extent.height - 1U);
+        const std::uint32_t ViewportWidth = std::clamp(
+            static_cast<std::uint32_t>(std::max(NormalizedViewport.z, 0.0F) * static_cast<float>(Extent.width)),
+            1U,
+            Extent.width - ViewportX);
+        const std::uint32_t ViewportHeight = std::clamp(
+            static_cast<std::uint32_t>(std::max(NormalizedViewport.w, 0.0F) * static_cast<float>(Extent.height)),
+            1U,
+            Extent.height - ViewportY);
+
+        VkViewport Viewport{};
+        Viewport.x = static_cast<float>(ViewportX);
+        Viewport.y = static_cast<float>(ViewportY);
+        Viewport.width = static_cast<float>(ViewportWidth);
+        Viewport.height = static_cast<float>(ViewportHeight);
         Viewport.minDepth = 0.0F;
         Viewport.maxDepth = 1.0F;
         vkCmdSetViewport(CommandBuffer, 0, 1, &Viewport);
 
         VkRect2D Scissor{};
-        Scissor.offset = {0, 0};
-        Scissor.extent = Extent;
+        Scissor.offset = {static_cast<std::int32_t>(ViewportX), static_cast<std::int32_t>(ViewportY)};
+        Scissor.extent = {ViewportWidth, ViewportHeight};
         vkCmdSetScissor(CommandBuffer, 0, 1, &Scissor);
 
-        const float AspectRatio =
-            Extent.height == 0 ? 1.0F : static_cast<float>(Extent.width) / static_cast<float>(Extent.height);
+        const float     AspectRatio = static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight);
         const glm::mat4 ViewProjection = SceneData.GetMainCamera().GetViewProjectionMatrix(AspectRatio);
 
         const TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates->GetGPUResources();
-        std::size_t SceneIndex = 0;
+        std::size_t                       SceneIndex = 0;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
             const std::size_t CurrentSceneIndex = SceneIndex++;
@@ -954,7 +1070,7 @@ namespace MDSS
                 continue;
             }
 
-            const TMeshAsset& Mesh = Assets.GetMesh(Instance.GetMesh());
+            const TMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
             const TSurfaceStateDescriptorResources* SurfaceDescriptors =
                 SurfaceGPU.GetInstanceDescriptors(CurrentSceneIndex);
             if (bShowSurfaceDebug && (!bCanShowSurfaceDebug || SurfaceDescriptors == nullptr))
@@ -1016,6 +1132,18 @@ namespace MDSS
             }
         }
 
+        if (GizmoVertexBuffer != nullptr && WorldReferenceVertexCount > 0)
+        {
+            const TGizmoPushConstants Constants{ViewProjection};
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, WorldReferencePipeline.GetHandle());
+            const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
+            const VkDeviceSize Offset = 0;
+            vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &Offset);
+            vkCmdPushConstants(CommandBuffer, WorldReferencePipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT,
+                               0, sizeof(Constants), &Constants);
+            vkCmdDraw(CommandBuffer, WorldReferenceVertexCount, 1, 0, 0);
+        }
+
         if (const std::optional<std::size_t> Selected = DebugInterface.GetSelectedObject();
             Selected && *Selected < SceneData.GetStaticMeshInstances().size() && GizmoVertexBuffer != nullptr)
         {
@@ -1025,7 +1153,7 @@ namespace MDSS
             {
                 const glm::mat4 Model = glm::scale(glm::translate(glm::mat4(1.0F), Position),
                                                    glm::vec3(GizmoScale));
-                const TGizmoPushConstants Constants{ViewProjection * Model};
+                const TGizmoPushConstants Constants{ViewProjection * Model, DebugInterface.GetHoveredGizmoAxis()};
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GizmoPipeline.GetHandle());
                 const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
                 const VkDeviceSize Offset = 0;
@@ -1036,7 +1164,8 @@ namespace MDSS
                                    0,
                                    sizeof(Constants),
                                    &Constants);
-                vkCmdDraw(CommandBuffer, GizmoVertexCount, 1, 0, 0);
+                vkCmdDraw(CommandBuffer, GizmoVertexCount - WorldReferenceVertexCount, 1,
+                          WorldReferenceVertexCount, 0);
             }
         }
 

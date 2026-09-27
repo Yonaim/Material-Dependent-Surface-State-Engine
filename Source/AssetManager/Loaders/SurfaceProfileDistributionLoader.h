@@ -17,6 +17,7 @@ namespace MDSS
     struct TSurfaceProfileDistribution
     {
         std::vector<std::filesystem::path> ProfilePaths;
+        /** @brief Per-Surface Profile index; InvalidSurfaceProfileIndex means render-only/no simulation. */
         std::vector<TSurfaceProfileIndex>    ProfileIndicesBySurface;
 
         /** @brief Expand one Profile assignment per Surface to one index per mapping texel. */

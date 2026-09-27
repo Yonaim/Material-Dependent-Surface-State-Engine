@@ -62,6 +62,10 @@ layout(std430, set = 1, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
     uint Values[];
 } TexelChartIndices;
+layout(std430, set = 1, binding = 16) readonly buffer TSurfaceTransferWeightDebugAverages
+{
+    vec4 Values[];
+} TransferWeightDebugAverages;
 
 layout(location = 0) out vec4 OutColor;
 
@@ -96,16 +100,20 @@ void main()
 
     uvec2 TexelXY = min(uvec2(floor(clamp(FragUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
     uint TexelIndex = Range.x + TexelXY.y * Range.y + TexelXY.x;
-    bool bInBuffer = TexelIndex < uint(TexelSurfaceIndices.Values.length());
-    bool bValid = bInBuffer && TexelSurfaceIndices.Values[TexelIndex] == FragSurfaceIndex &&
-                  TexelProfileIndices.Values[TexelIndex] != InvalidIndex;
+    bool bInBuffer = TexelIndex < uint(TexelSurfaceIndices.Values.length()) &&
+                     TexelIndex < uint(TexelProfileIndices.Values.length());
+    bool bGeometryValid = bInBuffer && TexelSurfaceIndices.Values[TexelIndex] == FragSurfaceIndex;
+    bool bSimulationEnabled = bGeometryValid &&
+                              TexelProfileIndices.Values[TexelIndex] != InvalidIndex;
 
     if (Material.RenderMode == 6u)
     {
-        OutColor = vec4(bValid ? vec3(0.10, 0.78, 0.24) : vec3(0.86, 0.12, 0.08), 1.0);
+        vec3 Color = !bGeometryValid ? vec3(0.86, 0.12, 0.08) :
+                     (bSimulationEnabled ? vec3(0.10, 0.78, 0.24) : vec3(0.18, 0.48, 0.82));
+        OutColor = vec4(Color, 1.0);
         return;
     }
-    if (!bValid)
+    if (!bGeometryValid)
     {
         OutColor = vec4(0.10, 0.10, 0.13, 1.0);
         return;
@@ -147,6 +155,28 @@ void main()
         {
             OutColor = vec4(bHasCrossChartNeighbor ? vec3(1.0, 0.18, 0.72) : vec3(0.12, 0.16, 0.22), 1.0);
         }
+        return;
+    }
+
+    if (Material.RenderMode == 10u)
+    {
+        if (TexelIndex >= uint(TransferWeightDebugAverages.Values.length()))
+        {
+            OutColor = vec4(0.35, 0.35, 0.35, 1.0);
+            return;
+        }
+        vec4 Values = TransferWeightDebugAverages.Values[TexelIndex];
+        uint Component = uint(clamp(Material.DebugPadding0, 0.0, 3.0));
+        float Value = Component == 0u ? Values.x :
+                      (Component == 1u ? Values.y : (Component == 2u ? Values.z : Values.w));
+        OutColor = vec4(HeatColor(Value), 1.0);
+        return;
+    }
+
+    // Geometry-only views remain available for surfaces intentionally excluded from simulation.
+    if (!bSimulationEnabled)
+    {
+        OutColor = vec4(0.18, 0.20, 0.24, 1.0);
         return;
     }
 

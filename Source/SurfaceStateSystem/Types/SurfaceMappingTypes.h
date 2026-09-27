@@ -19,9 +19,9 @@ namespace MDSS
 
     inline constexpr TSurfaceLocalID  InvalidSurfaceID = std::numeric_limits<TSurfaceLocalID>::max();
     inline constexpr TLocalTexelIndex InvalidTexelIndex = std::numeric_limits<TLocalTexelIndex>::max();
-    inline constexpr std::uint32_t   InvalidTriangleID = std::numeric_limits<std::uint32_t>::max();
-    inline constexpr std::size_t     SurfaceNeighborCount = 8;
-    inline constexpr std::uint32_t   SurfaceSimulationResolution = 512;
+    inline constexpr std::uint32_t    InvalidTriangleID = std::numeric_limits<std::uint32_t>::max();
+    inline constexpr std::size_t      SurfaceNeighborCount = 8;
+    inline constexpr std::uint32_t    SurfaceSimulationResolution = 512;
 
     struct TSurfaceResolution
     {
@@ -69,12 +69,16 @@ namespace MDSS
      */
     struct TSurfaceTexelGeometry
     {
-        TSurfaceLocalID                                    Surface = InvalidSurfaceID;
-        std::uint32_t                                     Triangle = InvalidTriangleID;
-        std::uint32_t                                     Chart = std::numeric_limits<std::uint32_t>::max();
-        glm::vec3                                         Barycentric{0.0F};
-        glm::vec3                                         Position{0.0F};
-        glm::vec3                                         Normal{0.0F, 0.0F, 1.0F};
+        TSurfaceLocalID Surface = InvalidSurfaceID;
+        std::uint32_t   Triangle = InvalidTriangleID;
+        std::uint32_t   Chart = std::numeric_limits<std::uint32_t>::max();
+        glm::vec3       Barycentric{0.0F};
+        glm::vec3       Position{0.0F};
+        glm::vec3       Normal{0.0F, 0.0F, 1.0F};
+        /** @brief Normal Map normal converted to mesh-local space for TransferWeight; absent means geometric fallback.
+         */
+        glm::vec3                                          TransferNormal{0.0F, 0.0F, 1.0F};
+        bool                                               HasTransferNormal = false;
         TSurfaceGeometryScalar                             Geometry;
         std::array<TLocalTexelIndex, SurfaceNeighborCount> NeighborIndices = {
             InvalidTexelIndex,

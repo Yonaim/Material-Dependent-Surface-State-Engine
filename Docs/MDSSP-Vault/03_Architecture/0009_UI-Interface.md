@@ -21,15 +21,17 @@
 
 | 위치 / 창 | 기능 |
 |---|---|
-| 3D 뷰포트 상단 `Render Options` | 뷰 그룹·렌더 모드·State channel 선택, 렌더 설정 메뉴, 현재 FPS·프레임 시간·GPU Solver 시간을 표시. FPS는 낮은 구간에서 노랑·빨강으로 바뀜 |
-| 좌측 도킹 영역 `Camera`, `Scene File` | Camera 조정과 Scene 열기·저장. 화면에서 W/A/S/D 이동, Shift 가속, 우클릭 회전, 휠 Dolly도 제공 |
-| 우측 도킹 영역 `Inject`, `Simulation Parameters`, `Selected Transform` | 접촉 입력 설정, Profile parameter runtime override, 선택 object Transform 편집 |
-| 하단 도킹 영역 `Log` | 로그 level 필터링, 대소문자 구분 없는 키워드 검색, 복사·삭제. 기본 화면 높이의 약 44%를 할당하고 도킹 분할자로 조절 |
+| 3D 뷰포트 상단 `Render Options` | View 선택과 State/Weight 등 선택한 렌더 뷰의 보조 선택 |
+| 좌측 도킹 영역 `Scene File`, `Camera`, `Selected Transform`, `Render Settings` | Scene 열기·저장, Camera 및 선택 object Transform 조정, Normal strength·Ambient light·Normal Y 반전 설정 |
+| 우측 도킹 영역 `Simulation Debug` | `Control`, `Inject`, `Runtime Override` 탭에서 simulation 재생·속도, 접촉 입력, Solver 진단, Profile parameter runtime override를 설정 |
+| `Control` 탭의 `Solver debug terms` | GeometryDrive와 NormalWeight의 runtime on/off. 기본은 둘 다 on이며 solver 결과에 즉시 적용 |
+| 3D 뷰포트 좌상단 | FPS, frame time, GPU Solver 시간을 반투명 overlay로 표시 |
+| 하단 도킹 영역 `Log` | 로그 level 필터링, 대소문자 구분 없는 키워드 검색, 복사·삭제 |
 | 중앙 도킹 영역 | 3D Scene viewport. Surface State Heatmap 등 선택한 진단 모드로 Mesh Surface를 색칠한다 |
 
-Dear ImGui docking 기능을 사용한다. 기본 레이아웃은 좌측 Camera/Scene 도구, 우측 입력·시뮬레이션 도구, 하단 Log, 가운데 3D viewport다. Render Options 바는 전체 창의 위가 아니라 가운데 3D viewport의 위쪽에 붙는다. 도구 창은 탭으로 겹치거나 다른 도킹 영역으로 옮길 수 있고, 도킹 분할자를 조절해 각 영역의 폭과 높이를 바꿀 수 있다. 배치는 `MDSS_EditorLayout.ini`에 저장된다. 시스템 Arial/Segoe UI/DejaVu Sans 폰트 중 사용 가능한 것을 쓰며, 앱 창이 1280×800 이상일 때만 폰트를 15% 키운다. 그보다 작은 창에서는 기본 크기를 유지한다.
+Dear ImGui docking 기능을 사용한다. 기본 레이아웃은 좌측 Scene·렌더 설정, 우측 Surface simulation·진단 도구, 하단 Log, 가운데 3D viewport다. Render Options 바는 전체 창의 위가 아니라 가운데 영역의 위쪽에 붙는다. 3D pass의 Vulkan viewport와 scissor는 이 바 아래에서 시작하므로 바 영역에는 Scene geometry를 렌더링하지 않는다. 같은 영역을 Camera projection aspect, object 선택, gizmo projection과 Inject crosshair에도 사용한다. 도킹 분할자를 조절하거나 창을 다른 영역으로 옮길 수 있다. 배치는 `Config/MDSS_EditorLayout.ini`에 저장된다. 로그 기본 높이는 기존 360px에서 약 1.5배인 540px이며, 초기 dock 분할도 화면 높이의 약 36%를 로그에 할당한다. 시스템 Arial/Segoe UI/DejaVu Sans 폰트 중 사용 가능한 것을 쓰며, 앱 창이 1280×800 이상일 때만 폰트를 15% 키운다. 그보다 작은 창에서는 기본 크기를 유지한다.
 
-상단 바의 `Solver GPU` 수치는 Vulkan timestamp query로 Solver compute 구간을 측정한다. 완료된 frame slot의 결과를 읽으므로 진단 표시를 위해 별도 GPU 대기를 추가하지 않는다. GPU timestamp를 지원하지 않는 장치에서는 `unavailable`로 표시한다.
+뷰포트 좌상단 overlay의 `Solver GPU` 수치는 Vulkan timestamp query로 Solver compute 구간을 측정한다. 완료된 frame slot의 결과를 읽으므로 진단 표시를 위해 별도 GPU 대기를 추가하지 않는다. GPU timestamp를 지원하지 않는 장치에서는 `unavailable`로 표시한다.
 
 ```mermaid
 flowchart TB
@@ -37,30 +39,34 @@ flowchart TB
     direction TB
     subgraph WorkArea["작업 영역"]
       direction LR
-      subgraph Left["좌측 도킹 탭"]
+      subgraph Left["좌측 Scene 편집"]
         direction TB
-        Camera["Camera"]
         SceneFile["Scene File"]
+        Camera["Camera"]
+        Transform["Selected Transform"]
+        RenderSettings["Render Settings"]
       end
       subgraph Center["가운데 3D viewport"]
         direction TB
-        Toolbar["viewport 상단: Render Options + FPS / GPU Solver time"]
+        Toolbar["viewport 상단: Render Options"]
         Viewport["3D Scene View\nSurface State Heatmap"]
       end
-      subgraph Right["우측 도킹 탭"]
+      subgraph Right["우측 Surface simulation / debug"]
         direction TB
-        Inject["Inject"]
-        Parameters["Simulation Parameters"]
-        Transform["Selected Transform"]
+        SimulationDebug["Simulation Debug\nControl | Inject | Runtime Override"]
       end
     end
     Log["하단: Log + keyword search"]
   end
 ```
 
-`Render Options`는 가운데 3D viewport의 상단 바에서 선택한다. Rendering 목록은 Lit, Unlit, Vertex Normal (WS), Normal Texture (TS), Mapped Normal (WS)다. Surface Debug 목록은 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이다. 한 번에 하나의 View Mode를 선택한다. `State Heatmap`은 선택된 State channel의 현재 GPU State 값 `State / Profile Capacity`를 3D Mesh Surface에 실시간 색으로 출력하는 디버그 뷰다. 별도의 2D UV 텍스처 창은 아직 제공하지 않는다. `OutgoingFluxScale` 시각화는 이 목록에 포함되지 않는다.
+`Render Options`는 가운데 3D viewport의 상단 바에서 선택한다. 하나의 View 드롭다운 안에서 `Display`와 `Debug` 제목으로 항목을 구분한다. Display 목록은 Lit, Unlit, Vertex Normal (WS), Normal Texture (TS), Mapped Normal (WS)이고, Debug 목록은 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam, Solver Transfer Weights다. 한 번에 하나의 View Mode를 선택한다. State/Weight selector 등 선택된 모드에 직접 필요한 옵션만 상단에 표시한다. Normal strength, Ambient light, Normal Y flip은 좌측 `Render Settings` 창에 둔다. `State Heatmap`은 선택된 State channel의 현재 GPU State 값 `State / Profile Capacity`를 3D Mesh Surface에 실시간 색으로 출력한다. 별도의 2D UV 텍스처 창은 아직 제공하지 않는다. `OutgoingFluxScale` 시각화는 이 목록에 포함되지 않는다.
 
-`Simulation Parameters`는 현재 Scene에서 참조하는 `.SRProfile`만 선택할 수 있다. State parameter는 임시 draft로 편집하고 `Apply Override`를 눌렀을 때만 활성화한다. 현재 Solver가 읽는 `StateCapacity`, `InputFactor`, `SaturationTransferRate`, `GeometryTransferRate`, `DecayRate`, `CavityRetentionFactor`만 노출하며, 구현되지 않은 parameter는 편집하지 않는다.
+우측 `Simulation Debug` 창은 `Control`, `Inject`, `Runtime Override` 탭을 제공한다. `Control` 탭은 Running/Paused 라디오 버튼, `0.25x`, `0.5x`, `1x`, `2x` 속도 프리셋과 `0.05x`–`4x` Time scale 슬라이더를 제공한다. Pause는 Solver Delta Time을 0으로 만들고 그동안의 Inject 제출도 무시한다. Time scale은 실제 frame Delta Time에 곱해 다음 Solver step부터 적용한다. single-step 및 State snapshot/restore는 아직 구현하지 않았다.
+
+같은 창의 `Solver debug terms`는 GeometryDrive와 NormalWeight의 runtime on/off 토글을 제공한다. GeometryDrive를 끄면 해당 flux 항만 0이 되고 SaturationDrive는 유지된다. NormalWeight를 끄면 이웃 법선 dot 가중치를 1로 두어 NormalWeight 감쇠만 제거하며 DistanceWeight와 ProfileBoundaryWeight는 유지한다. 기본은 둘 다 on이다. NormalWeight 변경 시 instance별 TransferWeight cache를 재생성하고, 사용 중인 GPU 작업이 끝난 뒤 다음 Solver step부터 적용한다. 이미 누적된 State는 토글해도 보존되므로 같은 초기 조건 비교에는 scene 재로드 등 초기화가 필요하다.
+
+`Runtime Override` 탭은 현재 Scene에서 참조하는 `.SRProfile`만 선택할 수 있다. State parameter는 임시 draft로 편집하고 `Apply Override`를 눌렀을 때만 활성화한다. 현재 Solver가 읽는 `StateCapacity`, `InputFactor`, `SaturationTransferRate`, `GeometryTransferRate`, `DecayRate`, `CavityRetentionFactor`만 노출하며, 구현되지 않은 parameter는 편집하지 않는다.
 
 Override는 실행 중 메모리에만 보관하며 `.SRProfile` 파일을 수정하지 않는다. 같은 Profile을 여러 Surface나 instance가 공유하면 모두 같은 값을 사용한다. Apply/Restore 시 Renderer는 Graphics queue가 사용 중인 Profile buffer를 다 쓰기를 기다린 뒤 해당 Profile record를 갱신한다. `InputFactor`는 이후 접촉 입력에, 나머지 parameter는 다음 Solver dispatch부터 반영한다. Scene resource를 다시 만들면 현재 Scene에서 사용 가능한 override를 다시 적용한다.
 
@@ -114,7 +120,7 @@ sequenceDiagram
   Note over ParameterUI,Params: Runtime only; Restore writes the original .SRProfile values back.
 ```
 
-Space를 누르고 있는 동안 반복하지 않고 새로 누른 순간 한 번만 event를 만든다. ImGui가 키보드를 capture 중이면 접촉을 만들지 않는다. 현재 Debug 설정은 World radius `0.25`, falloff `1`을 고정 사용한다. 법선·입사각 weighting은 적용하지 않는다. 입력 API의 target 결정과 공통 제출 경로는 [[0008_Surface-Input|Surface Contact Input]]을 따른다. 이 경로는 게임 Physics 입력과 같은 공개 API 계약을 사용하도록 설계한다. 현재 C++ 구현은 내부 `TSurfaceContactInput` 및 instance index로 라우팅하며, Surface-bound 공개 wrapper와 Collider adapter는 아직 연결되어 있지 않다.
+Space를 누르고 있는 동안 반복하지 않고 새로 누른 순간 한 번만 event를 만든다. ImGui가 키보드를 capture 중이면 접촉을 만들지 않는다. `Simulation Debug` 창의 `Inject` 탭에서 State, World radius, Strength, Falloff를 조절한다. 법선·입사각 weighting은 적용하지 않는다. 입력 API의 target 결정과 공통 제출 경로는 [[0008_Surface-Input|Surface Contact Input]]을 따른다. 이 경로는 게임 Physics 입력과 같은 공개 API 계약을 사용하도록 설계한다. 현재 C++ 구현은 내부 `TSurfaceContactInput` 및 instance index로 라우팅하며, Surface-bound 공개 wrapper와 Collider adapter는 아직 연결되어 있지 않다.
 
 ## Scene 편집 흐름
 
@@ -152,6 +158,7 @@ sequenceDiagram
 ## 경계와 불변 조건
 
 - `TDebugUI`는 State 값을 직접 쓰거나 Solver pass를 dispatch하지 않는다. 입력은 접촉 payload로 전달하고, State 표시는 Renderer가 GPU의 현재 State buffer에서 읽는다. Profile parameter 편집은 Renderer API로 runtime override를 요청하며, asset 파일을 바꾸지 않는다.
+- Solver term 진단 토글은 Renderer API를 거쳐 Surface State System에 전달한다. GeometryDrive 활성 상태는 push constant flag로 Solver에 전달하고, NormalWeight 상태는 CPU TransferWeight cache 재생성에 사용한다. 토글은 runtime 전용이며 설정 파일에 저장하지 않는다.
 - 공개 API 설계에서는 Debug Raycast와 게임 충돌 입력이 같은 Surface contact 제출 경로를 사용한다. 현재 코드는 Debug 경로만 내부 `TSurfaceContactInput`으로 연결되어 있으며 게임 Collider adapter는 미연결이다. Debug UI 전용 State 갱신 수식이나 buffer는 두지 않는다.
 - 현재 입력 조작과 Scene 편집은 Static Mesh instance에 한정된다.
 - ImGui keyboard capture 중에는 Space 접촉 event를 막아 UI 조작이 State 입력으로 오인되지 않게 한다.

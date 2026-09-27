@@ -130,7 +130,8 @@ namespace MDSS
                                          std::size_t ChannelCount,
                                          float DeltaTime,
                                          const glm::mat4& ModelMatrix,
-                                         const glm::vec3& GravityWorld) const
+                                         const glm::vec3& GravityWorld,
+                                         bool bGeometryDriveEnabled) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || TexelCount == 0 || ChannelCount == 0 ||
             TexelCount > std::numeric_limits<std::uint32_t>::max() ||
@@ -148,6 +149,7 @@ namespace MDSS
         Constants.DeltaTime = DeltaTime;
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
+        Constants.Flags = bGeometryDriveEnabled ? 0U : 1U;
         Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z, 0.0F};
         for (std::size_t Column = 0; Column < 4; ++Column)
         {

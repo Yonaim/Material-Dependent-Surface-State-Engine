@@ -179,6 +179,8 @@ $$
 
 면 방향과 이웃 방향은 instance transform을 적용해 world space에서 평가한다. Non-uniform scale을 포함해 normal은 normal transform으로 변환한다. source 면에 투영된 중력과 source→target 이웃 방향의 일치도를 DirectionDrive로 사용한다.
 
+현재 Z-up 데모의 world gravity는 `(0, 0, -1)`이다. 따라서 유효 높이는 반대 방향인 world `+Z` 축으로 투영한다.
+
 $$
 GravityOnSurface_i = GravityWorld - NormalWorld_i \cdot (GravityWorld \cdot NormalWorld_i)
 $$
@@ -211,8 +213,8 @@ $$
 | Weight | 의미 | 계산 기준 |
 |---|---|---|
 | `DistanceWeight` | 주변 이웃보다 먼 연결의 전달량을 낮춤 | 정규화된 world-space Surface Distance |
-| `NormalWeight` | 면 방향 차이가 클수록 전달량을 연속적으로 낮춤 | World-space Surface Normal 내적 |
-| `CurvatureWeight` | 현재 브랜치에서는 중립값 `1.0`; 실제 전달 곡률 효과는 후속 결정 | 후속 설계 |
+| `NormalWeight` | 이웃 texel의 유효 표면 방향 차이가 클수록 전달량을 낮춤 | map normal이 있으면 Simulation texel에 대응시킨 tangent-space normal을 mesh-local로 변환한 뒤 instance inverse-transpose를 적용한 world normal 내적; 없으면 geometric normal |
+| `CurvatureWeight` | 중립값 `1.0`; `NormalWeight`가 이웃 표면 방향 차이를 반영하므로 곡률 감쇠를 더하면 굽힘 효과를 중복할 수 있음 | 독립적인 곡률 항의 이득이 비교 검증될 때 재검토 |
 | `ProfileBoundaryWeight` | 같은 Profile 사이 `1.0`, 다른 Profile 사이 고정 `0.5`로 전달량을 낮춤 | SRProfile ID 비교 |
 
 현재 `DistanceWeight`는 각 endpoint의 평균 유효 이웃 간격을 `dRef`로 삼는다. `dRef(i,j) = 0.5 × (meanDistance_i + meanDistance_j)`이고, `d(i,j)`는 두 texel의 world-space 거리다.

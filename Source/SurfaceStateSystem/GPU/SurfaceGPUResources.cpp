@@ -248,7 +248,8 @@ namespace MDSS
                                                                VkDevice         Device,
                                                                std::size_t      TexelCount,
                                                                std::size_t      ChannelCount,
-                                                               const std::vector<float>& TransferWeights)
+                                                               const std::vector<float>& TransferWeights,
+                                                               const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages)
         : TexelCount(TexelCount), ChannelCount(ChannelCount)
     {
         if (TexelCount == 0 || ChannelCount == 0)
@@ -276,6 +277,23 @@ namespace MDSS
                                                     TransferWeights.size(),
                                                     sizeof(float),
                                                     MaxRange);
+        std::vector<TSurfaceGPUVec4> ZeroDebugAverages;
+        const std::vector<TSurfaceGPUVec4>* DebugAverages = &TransferWeightDebugAverages;
+        if (DebugAverages->empty())
+        {
+            ZeroDebugAverages.resize(TexelCount);
+            DebugAverages = &ZeroDebugAverages;
+        }
+        if (DebugAverages->size() != TexelCount)
+        {
+            throw std::invalid_argument("TransferWeight debug averages must match the texel count.");
+        }
+        TransferWeightDebugAverageBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                                                Device,
+                                                                DebugAverages->data(),
+                                                                DebugAverages->size(),
+                                                                sizeof(TSurfaceGPUVec4),
+                                                                MaxRange);
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
     }
 
@@ -304,18 +322,34 @@ namespace MDSS
         return *TransferWeightBuffer;
     }
 
+    const TGPUBuffer& TSurfaceInstanceGPUResources::GetTransferWeightDebugAverageBuffer() const noexcept
+    {
+        return *TransferWeightDebugAverageBuffer;
+    }
+
     const TGPUBuffer& TSurfaceInstanceGPUResources::GetRawOutgoingBuffer() const noexcept
     {
         return *RawOutgoingBuffer;
     }
 
-    void TSurfaceInstanceGPUResources::UpdateTransferWeights(const std::vector<float>& TransferWeights)
+    void TSurfaceInstanceGPUResources::UpdateTransferWeights(
+        const std::vector<float>& TransferWeights,
+        const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages)
     {
         if (TransferWeights.size() != TexelCount * SurfaceNeighborCount)
         {
             throw std::invalid_argument("Updated TransferWeight cache has an incompatible size.");
         }
         TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeightBuffer->GetSize());
+        if (!TransferWeightDebugAverages.empty())
+        {
+            if (TransferWeightDebugAverages.size() != TexelCount)
+            {
+                throw std::invalid_argument("Updated TransferWeight debug averages have an incompatible size.");
+            }
+            TransferWeightDebugAverageBuffer->Upload(TransferWeightDebugAverages.data(),
+                                                      TransferWeightDebugAverageBuffer->GetSize());
+        }
     }
 
     std::size_t TSurfaceInstanceGPUResources::GetTexelCount() const noexcept
@@ -406,7 +440,8 @@ namespace MDSS
             &SharedGeometry.GetSurfaceRangeBuffer(),
             &SharedGeometry.GetTexelChartIndexBuffer(),
             &Instance.GetTransferWeightBuffer(),
-            &Instance.GetRawOutgoingBuffer()};
+            &Instance.GetRawOutgoingBuffer(),
+            &Instance.GetTransferWeightDebugAverageBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

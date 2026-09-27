@@ -10,14 +10,15 @@
 #include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "AssetManager/Loaders/TextureLoader.h"
 #include "Logger/Logger.h"
+#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
+#include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"
 #include "VulkanContext/VulkanContext.h"
 
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <glm/glm.hpp>
-#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -33,6 +34,7 @@ namespace MDSS
                 std::filesystem::absolute(DistributionPath).lexically_normal().generic_string();
             return MeshKey + '\n' + DistributionKey;
         }
+
     } // namespace
 
     TAssetManager::TAssetManager(const TVulkanContext& Context) : Context(Context)
@@ -87,25 +89,25 @@ namespace MDSS
         }
 
         const TMeshAssetHandle Handle = static_cast<TMeshAssetHandle>(Meshes.size());
-        const std::size_t     VertexCount = Loaded.Vertices.size();
-        const std::size_t     IndexCount = Loaded.Indices.size();
-        const std::size_t     SectionCount = Sections.size();
-        const std::size_t     MaterialCount = MaterialRemap.size();
+        const std::size_t      VertexCount = Loaded.Vertices.size();
+        const std::size_t      IndexCount = Loaded.Indices.size();
+        const std::size_t      SectionCount = Sections.size();
+        const std::size_t      MaterialCount = MaterialRemap.size();
 
         Meshes.push_back(std::make_unique<TMeshAsset>(Handle,
-                                                     Path.stem().string(),
-                                                     Path,
-                                                     Context,
-                                                     std::move(Loaded.Vertices),
-                                                     std::move(Loaded.Indices),
-                                                     std::move(Sections),
-                                                     std::move(Loaded.Triangles)));
+                                                      Path.stem().string(),
+                                                      Path,
+                                                      Context,
+                                                      std::move(Loaded.Vertices),
+                                                      std::move(Loaded.Indices),
+                                                      std::move(Sections),
+                                                      std::move(Loaded.Triangles)));
         MeshAssetsByPath.emplace(MeshPathKey, Handle);
         TLogger::Info("TAssetManager",
-                     "OBJ registered as TMeshAsset handle=" + std::to_string(Handle) +
-                         " (vertices=" + std::to_string(VertexCount) + ", indices=" + std::to_string(IndexCount) +
-                         ", sections=" + std::to_string(SectionCount) +
-                         ", imported materials=" + std::to_string(MaterialCount) + ").");
+                      "OBJ registered as TMeshAsset handle=" + std::to_string(Handle) +
+                          " (vertices=" + std::to_string(VertexCount) + ", indices=" + std::to_string(IndexCount) +
+                          ", sections=" + std::to_string(SectionCount) +
+                          ", imported materials=" + std::to_string(MaterialCount) + ").");
 
         return Handle;
     }
@@ -125,15 +127,15 @@ namespace MDSS
         const TSRProfileAssetHandle      Handle = static_cast<TSRProfileAssetHandle>(SRProfiles.size());
         std::unique_ptr<TSRProfileAsset> Profile = TSRProfileLoader::Load(Handle, Path);
         TLogger::Info("TAssetManager",
-                     "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
+                      "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
         SRProfiles.push_back(std::move(Profile));
         SRProfileCache.emplace(CacheKey, Handle);
         StateRegistry.reset();
         return Handle;
     }
 
-    TSurfaceRuntimeDataHandle TAssetManager::LoadSurfaceData(
-        TMeshAssetHandle MeshHandle, const std::filesystem::path& RequestedDistributionPath)
+    TSurfaceRuntimeDataHandle TAssetManager::LoadSurfaceData(TMeshAssetHandle             MeshHandle,
+                                                             const std::filesystem::path& RequestedDistributionPath)
     {
         if (MeshHandle >= Meshes.size())
         {
@@ -143,9 +145,9 @@ namespace MDSS
         {
             throw std::invalid_argument("A Scene-selected Surface Profile Map path is required.");
         }
-        const TMeshAsset& Mesh = *Meshes[MeshHandle];
+        const TMeshAsset&           Mesh = *Meshes[MeshHandle];
         const std::filesystem::path DistributionPath = RequestedDistributionPath;
-        const std::string RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath);
+        const std::string           RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath);
         if (const auto Found = RuntimeSurfaceAssetsByInputs.find(RuntimeKey);
             Found != RuntimeSurfaceAssetsByInputs.end())
         {
@@ -189,7 +191,7 @@ namespace MDSS
         std::vector<bool>                  HasMaterial(SurfaceCount, false);
         for (const TMeshSection& Section : Mesh.GetSections())
         {
-            const TMaterialAsset&        Material = GetMaterial(Section.Material);
+            const TMaterialAsset&       Material = GetMaterial(Section.Material);
             const std::filesystem::path NormalPath = GetTexture(Material.GetNormalTexture()).GetSourcePath();
             if (HasMaterial[Section.Surface] && NormalMapPaths[Section.Surface] != NormalPath)
             {
@@ -205,9 +207,58 @@ namespace MDSS
 
         const TSurfaceMappingData Mapping =
             TSurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
+        for (const std::string& MappingWarning : Mapping.Warnings)
+        {
+            if (MappingWarning.starts_with("UV seam texel links were dropped:"))
+            {
+                TLogger::Warning("TAssetManager", MappingWarning);
+            }
+        }
         std::vector<TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
-        TSurfaceRuntimeData               Built =
-            TSurfacePreprocessor::Build(Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size()));
+        TSharedSurfaceGeometryData        Geometry = TSurfaceGeometryBuilder::Build(
+            Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size()));
+
+        std::unordered_map<std::string, TextureData> NormalMapPixels;
+        for (const std::filesystem::path& NormalMapPath : NormalMapPaths)
+        {
+            if (NormalMapPath.empty())
+            {
+                continue;
+            }
+            const std::string Key = std::filesystem::absolute(NormalMapPath).lexically_normal().generic_string();
+            if (!NormalMapPixels.contains(Key))
+            {
+                NormalMapPixels.emplace(Key, TextureLoader::LoadRGBA8(NormalMapPath));
+            }
+        }
+
+        std::size_t                         MappedNormalCount = 0;
+        std::vector<TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
+        for (TSurfaceTexelGeometry& Texel : GeometryTexels)
+        {
+            if (!Texel.IsValid() || Texel.Surface >= NormalMapPaths.size() || NormalMapPaths[Texel.Surface].empty())
+            {
+                continue;
+            }
+
+            const std::string Key =
+                std::filesystem::absolute(NormalMapPaths[Texel.Surface]).lexically_normal().generic_string();
+            const auto TextureIt = NormalMapPixels.find(Key);
+            glm::vec3  TransferNormal{};
+            if (TextureIt != NormalMapPixels.end() &&
+                BuildNormalMapTransferNormal(
+                    Texel, Mesh.GetVertices(), Mesh.GetTriangles(), TextureIt->second, TransferNormal))
+            {
+                Texel.TransferNormal = TransferNormal;
+                Texel.HasTransferNormal = true;
+                ++MappedNormalCount;
+            }
+        }
+
+        TLogger::Info("TAssetManager",
+                      "Precomputed Normal Map transfer normals for " + std::to_string(MappedNormalCount) + "/" +
+                          std::to_string(Geometry.GetTexelCount()) + " Simulation texels.");
+        TSurfaceRuntimeData Built(std::move(Geometry));
         if (RuntimeSurfaceAssets.size() >= InvalidSurfaceRuntimeDataHandle)
         {
             throw std::overflow_error("Runtime Surface Data handle range is exhausted.");
@@ -323,7 +374,7 @@ namespace MDSS
         }
 
         TLogger::Debug("TAssetManager",
-                      "Loading " + std::string(bSRGB ? "sRGB" : "linear") + " texture: " + Path.string());
+                       "Loading " + std::string(bSRGB ? "sRGB" : "linear") + " texture: " + Path.string());
 
         const TextureData        Data = TextureLoader::LoadRGBA8(Path);
         const TextureAssetHandle Handle = static_cast<TextureAssetHandle>(Textures.size());
@@ -333,8 +384,8 @@ namespace MDSS
             Handle, Path.stem().string(), Path, Context, Data.Width, Data.Height, Data.Pixels, Format));
         TextureCache.emplace(CacheKey, Handle);
         TLogger::Info("TAssetManager",
-                     "Texture registered: " + Path.filename().string() + " (handle=" + std::to_string(Handle) + ", " +
-                         std::to_string(Data.Width) + "x" + std::to_string(Data.Height) + ").");
+                      "Texture registered: " + Path.filename().string() + " (handle=" + std::to_string(Handle) + ", " +
+                          std::to_string(Data.Width) + "x" + std::to_string(Data.Height) + ").");
         return Handle;
     }
 
@@ -352,24 +403,24 @@ namespace MDSS
         Textures.push_back(std::make_unique<TextureAsset>(
             Handle, std::move(Name), std::filesystem::path{}, Context, 1, 1, RGBA, Format));
         TLogger::Verbose("TAssetManager",
-                        "Created solid fallback texture '" + LogName + "' (handle=" + std::to_string(Handle) + ").");
+                         "Created solid fallback texture '" + LogName + "' (handle=" + std::to_string(Handle) + ").");
         return Handle;
     }
 
     TMaterialAssetHandle TAssetManager::CreateMaterial(std::string                  Name,
-                                                     const std::filesystem::path& SourcePath,
-                                                     glm::vec4                    BaseColor,
-                                                     TextureAssetHandle           BaseColorTexture,
-                                                     TextureAssetHandle           NormalTexture)
+                                                       const std::filesystem::path& SourcePath,
+                                                       glm::vec4                    BaseColor,
+                                                       TextureAssetHandle           BaseColorTexture,
+                                                       TextureAssetHandle           NormalTexture)
     {
         const TMaterialAssetHandle Handle = static_cast<TMaterialAssetHandle>(Materials.size());
-        const std::string         LogName = Name;
+        const std::string          LogName = Name;
         Materials.push_back(std::make_unique<TMaterialAsset>(
             Handle, std::move(Name), SourcePath, BaseColor, BaseColorTexture, NormalTexture));
         TLogger::Debug("TAssetManager",
-                      "Material registered: '" + LogName + "' (handle=" + std::to_string(Handle) +
-                          ", base texture=" + std::to_string(BaseColorTexture) +
-                          ", normal texture=" + std::to_string(NormalTexture) + ").");
+                       "Material registered: '" + LogName + "' (handle=" + std::to_string(Handle) +
+                           ", base texture=" + std::to_string(BaseColorTexture) +
+                           ", normal texture=" + std::to_string(NormalTexture) + ").");
         return Handle;
     }
 } // namespace MDSS

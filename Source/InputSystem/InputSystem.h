@@ -29,6 +29,8 @@ namespace MDSS
                                                                            bool bInjectMode,
                                                                            TStateId State,
                                                                            float Strength,
+                                                                           float Radius,
+                                                                           float Falloff,
                                                                            bool bKeyboardCaptured);
 
     private:

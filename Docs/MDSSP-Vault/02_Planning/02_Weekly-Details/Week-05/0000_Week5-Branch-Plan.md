@@ -4,13 +4,16 @@
 
 ## 목표와 완료 기준
 
-4주차에 구축한 2-Pass Solver 경로를 바탕으로 Geometry 구동과 이웃 전달 가중치를 추가하고, 계산 중간값과 실행 상태를 Debug UI에서 확인한다. 수식의 보존·용량 제한·경계 처리를 자동 테스트와 GPU 실행으로 검증한다.
+4주차에 구축한 2-Pass Solver 경로를 바탕으로 Geometry 구동, Normal Map 기반 표면 방향, 이웃 전달 가중치를 추가하고, 계산 중간값과 실행 상태를 Debug UI에서 확인한다. 수식의 보존·용량 제한·경계 처리를 자동 테스트와 GPU 실행으로 검증한다.
 
 5주차 완료 시 다음을 재현할 수 있어야 한다.
 
 - 같은 조건에서 Solver 결과가 반복 가능하고, 각 State 값이 `[0, StateCapacity]` 범위를 지킨다.
 - Geometry 입력이 없는 상태에서는 기존 Saturation 전달 결과가 유지된다.
 - Geometry 구동과 각 TransferWeight가 의도한 이웃 방향·Profile 경계에 영향을 준다.
+- Normal Map의 방향 정보가 `NormalWeight`에 반영되고, 맵 부재 시 기본 Mesh normal 경로가 동작한다.
+- Normal Map에서 복원한 `MesoVirtualHeight`가 위치에 반영되고, Curvature/Concavity 파생값이 정의된 입력·단위·범위 계약을 따른다.
+- `Combined TransferWeight`, `DistanceWeight`, `NormalWeight`, `ProfileBoundaryWeight`를 Solver Debug 히트맵에서 구분해 확인할 수 있다.
 - `OutgoingFluxScale`을 채널별로 화면에서 확인할 수 있다.
 - Solver를 pause, 한 step 진행, 전체 State 초기화할 수 있고 실행 통계를 확인할 수 있다.
 - Validation layer에서 새 동기화·descriptor 오류가 없으며, 지원되는 GPU 환경에서 GPU 테스트를 통과한다.
@@ -19,9 +22,9 @@
 
 4주차에는 State A/B, OutgoingFluxScale, InputDelta GPU 리소스, 2-Pass compute dispatch와 barrier, ping-pong, Contact 입력 연결이 구현되었다. 따라서 이번 주에는 리소스 생성·descriptor 기본 구성·2-Pass 구조 자체를 다시 만들지 않는다.
 
-현재 `SurfaceSolverCommon.glsl`의 Transport는 State 포화도 차이와 `SaturationTransferRate`만 사용한다. Profile의 `GeometryTransferRate`는 GPU에 전달되지만 flux 계산에는 쓰이지 않는다. `DistanceWeight`, `NormalWeight`, `CurvatureWeight`, `ProfileBoundaryWeight`는 아직 적용되지 않았고, MVP 구현에서 전달 가중치는 사실상 1이다. `ConcavityWeight`는 현재 Decay의 cavity retention에 쓰인다. UI에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam 뷰가 있지만 `OutgoingFluxScale` 뷰와 Solver 제어·통계 UI는 아직 없다.
+현재 구현은 GeometryDrive와 `DistanceWeight`, `NormalWeight`, 중립 `CurvatureWeight`, `ProfileBoundaryWeight`를 적용하고 TransferWeight를 캐시한다. `NormalWeight`는 아직 Mesh의 geometric normal만 사용하므로 Normal Map의 texel별 tangent-space 방향은 반영하지 않는다. 이번 계획에 Branch 2.2를 추가해 이 입력을 연결한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 각 TransferWeight 히트맵을 둔다. `OutgoingFluxScale` 뷰와 Solver 제어·통계 UI는 별도 후속 단계다.
 
-이번 계획에는 State transition, 동적 Accumulation geometry, Normal Map 기반 geometry 생성, 렌더링 표현 개선을 포함하지 않는다. 이 항목들은 별도 계획 범위다.
+이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Meso height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry, State transition, 렌더링 표현 개선은 포함하지 않는다. Normal Map 적분 및 non-integrable 입력 fallback도 Branch 2.3에서 후보를 비교하고 적용 범위를 확정한다.
 
 ## 데이터 흐름
 
@@ -56,7 +59,7 @@ GeometryDrive의 역할·높이차·방향 정렬·거리 소유권·단위는 [
 - 이웃 표면 거리의 효과는 `DistanceWeight`만 담당한다.
 - `GeometryTransferRate`는 `State / (world-length · second)`다.
 
-Branch 2에서 확정할 항목은 Distance/Normal/Curvature/ProfileBoundary weight의 구체식·파라미터 소유권이다. Timestep tolerance는 Branch 6의 비교 결과로 정한다. GPU ABI나 descriptor가 바뀌면 [[03_Architecture/0007_Surface-GPU-Data-Layout|Surface GPU Data Layout]] 및 관련 GPU resource note를 같은 브랜치에서 갱신한다.
+Branch 2에서 확정한 거리·법선·프로파일 경계 가중치 규칙은 ADR 0016을 따른다. Branch 2.2에서 Normal Map 샘플의 UV 기준, tangent-space에서 Solver world normal로의 변환, 맵 누락·비정상 샘플 fallback을 결정하고 구현한다. Branch 2.3에서 normal-to-height 적분 후보, 높이 기준/scale, non-integrable 오차 처리와 높이에서 Curvature/Concavity를 만드는 방법을 결정하고 구현한다. Timestep tolerance는 Branch 6의 비교 결과로 정한다. GPU ABI나 descriptor가 바뀌면 [[03_Architecture/0007_Surface-GPU-Data-Layout|Surface GPU Data Layout]] 및 관련 GPU resource note를 같은 브랜치에서 갱신한다.
 
 ### 1. 기존 Solver 기준 테스트 고정
 
@@ -120,14 +123,16 @@ GPU 테스트는 기존 `SurfaceGPUResourceTests` 경로를 확장한다. 화면
 
 ## 브랜치 순서와 상세 문서
 
-기본적으로 각 브랜치는 앞 브랜치를 `main`에 병합한 뒤 생성한다. 성능 후속 Branch 2.1은 예외로 현재 `feat/solver-transfer-weights` HEAD에서 `perf/solver-transfer-cache`로 직접 분기한다. 동시에 여러 브랜치를 미리 파지 않는다. 각 단계는 빌드 가능한 상태를 유지하며, 해당 단계의 테스트를 함께 추가한다.
+기본적으로 각 브랜치는 앞 브랜치의 결과를 기준으로 생성한다. 성능 Branch 2.1은 `perf/solver-transfer-cache`에서 완료됐다. Normal Map 직접 방향 반영 Branch 2.2는 캐시 구현 뒤 생성하고, Meso geometry 복원 Branch 2.3은 Branch 2.2 결과를 기준으로 생성한다. 동시에 여러 브랜치를 미리 파지 않는다. 각 단계는 빌드 가능한 상태를 유지하며, 해당 단계의 테스트를 함께 추가한다.
 
 ```mermaid
 flowchart LR
     Main[main] --> B1[1 Geometry Drive]
     B1 --> B2[2 Transfer Weights]
     B2 --> B21[2.1 Solver Transfer Cache]
-    B21 --> B3[3 OutgoingFluxScale View]
+    B21 --> B22[2.2 Normal Map NormalWeight]
+    B22 --> B23[2.3 Meso Height / Curvature]
+    B23 --> B3[3 OutgoingFluxScale View]
     B3 --> B4[4 Solver Controls]
     B4 --> B5[5 Solver Statistics]
     B5 --> B6[6 Integrated Validation]
@@ -138,6 +143,8 @@ flowchart LR
 | 1 | `feat/solver-geometry-drive` | GeometryDrive 식·단위 확정, 구현 및 방향 테스트 |
 | 2 | `feat/solver-transfer-weights` | 네 TransferWeight 식과 flux 적용·경계 테스트 |
 | 2.1 | `perf/solver-transfer-cache` | TransferWeight 캐시와 RawOutgoing 합계 재사용·성능 검증 |
+| 2.2 | `feat/solver-normal-map-weights` | Normal Map 방향을 NormalWeight에 연결하고 fallback·cache 갱신 검증 (구현 중) |
+| 2.3 | `feat/solver-meso-geometry` | Normal Map에서 MesoVirtualHeight 및 Curvature/Concavity 생성·적분 fallback 검증 |
 | 3 | `feat/solver-outgoing-flux-debug` | channel별 OutgoingFluxScale Surface Debug view |
 | 4 | `feat/solver-debug-controls` | pause, 단일 step, State reset |
 | 5 | `feat/solver-debug-statistics` | texel/valid 통계, 현재 ping-pong, GPU timestamp |
@@ -152,6 +159,8 @@ Branch 1의 HeightDrive/DirectionDrive 분리, height 차이에서 neighbor dist
 - [[02_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|1. Solver Geometry Drive]]
 - [[0002_00_Branch-Solver-Transfer-Weights|2. Solver Transfer Weights]]
 - [[02_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|2.1. Solver Transfer Cache]]
+- [[02_Planning/02_Weekly-Details/Week-05/0002_02_Branch-Solver-Normal-Map-Weights|2.2. Solver Normal Map Weights]]
+- [[02_Planning/02_Weekly-Details/Week-05/0002_03_Branch-Solver-Meso-Geometry|2.3. Solver Meso Geometry from Normal Map]]
 - [[02_Planning/02_Weekly-Details/Week-05/0003_Branch-Outgoing-Flux-Debug-View|3. OutgoingFluxScale Debug View]]
 - [[02_Planning/02_Weekly-Details/Week-05/0004_Branch-Solver-Debug-Controls|4. Solver Debug Controls]]
 - [[02_Planning/02_Weekly-Details/Week-05/0005_Branch-Solver-Debug-Statistics|5. Solver Debug Statistics]]

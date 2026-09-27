@@ -38,7 +38,16 @@ namespace MDSS
         SurfaceValidity,
         SurfaceID,
         NeighborCount,
-        SurfaceSeam
+        SurfaceSeam,
+        SolverTransferWeight
+    };
+
+    enum class TSolverTransferWeightView : std::uint32_t
+    {
+        Combined = 0,
+        Distance,
+        Normal,
+        ProfileBoundary
     };
 
     class TAssetManager;
@@ -77,6 +86,12 @@ namespace MDSS
         void                         SetRenderViewMode(TRenderViewMode Mode);
         [[nodiscard]] std::uint32_t GetDebugStateChannel() const noexcept;
         void SetDebugStateChannel(std::uint32_t Channel);
+        [[nodiscard]] TSolverTransferWeightView GetSolverTransferWeightView() const noexcept;
+        void SetSolverTransferWeightView(TSolverTransferWeightView View);
+        [[nodiscard]] bool IsDebugGeometryDriveEnabled() const noexcept;
+        void SetDebugGeometryDriveEnabled(bool bEnabled);
+        [[nodiscard]] bool IsDebugNormalWeightEnabled() const noexcept;
+        void SetDebugNormalWeightEnabled(bool bEnabled);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);
@@ -124,8 +139,10 @@ namespace MDSS
         VkDescriptorSetLayout               MaterialDescriptorSetLayout = VK_NULL_HANDLE;
         TGraphicsPipeline                    StaticMeshPipeline;
         TGraphicsPipeline                    GizmoPipeline;
+        TGraphicsPipeline                    WorldReferencePipeline;
         std::unique_ptr<TGPUBuffer>           GizmoVertexBuffer;
         std::uint32_t                         GizmoVertexCount = 0;
+        std::uint32_t                         WorldReferenceVertexCount = 0;
         std::unique_ptr<TGraphicsPipeline>    SurfaceDebugPipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;
@@ -133,6 +150,9 @@ namespace MDSS
         std::vector<TMaterialRenderResource> MaterialResources;
         TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
         std::uint32_t                         DebugStateChannel = 0;
+        TSolverTransferWeightView             SolverTransferWeightView = TSolverTransferWeightView::Combined;
+        bool                                  bDebugGeometryDriveEnabled = true;
+        bool                                  bDebugNormalWeightEnabled = true;
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;

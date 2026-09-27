@@ -71,12 +71,13 @@ Non-integrable fallback에서는 정규화 높이를 `[-1,1]`로 두고 대표 H
 | 항목 | 저장 단위 | 의미 |
 |---|---|---|
 | `Normal` | Texel별 | Macro + Meso를 반영한 표면 방향 |
+| `TransferNormal` | 전처리 중 CPU texel별 | Simulation mapping의 triangle/barycentric 대응으로 Normal Map을 sample하고 tangent-space 방향을 mesh-local로 바꾼 값. TransferWeight cache 생성에 사용하며 geometric `Normal`이 fallback이다. GPU shared-geometry buffer에는 올리지 않는다. |
 | `NeighborIndex` | Texel × 최대 8개 | seam을 포함한 실제 이웃 texel 인덱스 |
 | Neighbor Distance | 저장하지 않음 | Solver가 이웃 Position 간 차이에서 필요할 때 계산 |
 | `Meso_Virtual_Height` | Texel별 | Macro 기준 Normal Map에서 복원한 상대 높이 |
 | `Curvature / ConcavityWeight` | Texel별 | 국소 곡률 또는 Solver가 읽는 오목함 파생값 |
 
-현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. `CurvatureWeight` 역시 Curvature/Concavity 정보에서 계산한다. GPU에서 어떤 형상 값을 저장할지는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.
+현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. Transport의 `CurvatureWeight`는 중립값 `1.0`이다. `NormalWeight`가 이웃 표면 방향 차이를 반영하므로 곡률 항을 더하면 굽힘 효과를 중복할 수 있다. GPU에서 어떤 형상 값을 저장할지는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.
 
 ### Geometry Common Parameters
 

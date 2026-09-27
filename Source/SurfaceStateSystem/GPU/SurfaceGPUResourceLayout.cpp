@@ -6,11 +6,10 @@
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
 
 #include <algorithm>
-#include <limits>
 #include <cmath>
-#include <stdexcept>
-
 #include <glm/geometric.hpp>
+#include <limits>
+#include <stdexcept>
 
 namespace
 {
@@ -55,10 +54,8 @@ namespace MDSS
         Result.SurfaceRanges.reserve(Geometry.GetSurfaces().size());
         for (const TSurfaceTexelRange& Range : Geometry.GetSurfaces())
         {
-            Result.SurfaceRanges.push_back({Range.FirstTexel,
-                                            Range.Resolution.Width,
-                                            Range.Resolution.Height,
-                                            Range.TexelCount});
+            Result.SurfaceRanges.push_back(
+                {Range.FirstTexel, Range.Resolution.Width, Range.Resolution.Height, Range.TexelCount});
         }
 
         for (const TSurfaceTexelGeometry& Texel : Geometry.GetTexels())
@@ -75,26 +72,30 @@ namespace MDSS
     }
 
     std::vector<float> BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
-                                                       const glm::mat4& ModelMatrix)
+                                                      const glm::mat4&                  ModelMatrix,
+                                                      std::vector<TSurfaceGPUVec4>*     OutDebugAverages,
+                                                      bool                             bUseNormalWeight)
     {
         const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
-        const std::vector<TSurfaceProfileIndex>& Profiles = Geometry.GetProfileMap();
-        const std::size_t TexelCount = Geometry.GetTexelCount();
+        const std::vector<TSurfaceProfileIndex>&  Profiles = Geometry.GetProfileMap();
+        const std::size_t                         TexelCount = Geometry.GetTexelCount();
         if (TexelCount == 0 || Profiles.size() != TexelCount)
         {
             throw std::invalid_argument("TransferWeight cache requires non-empty, profile-mapped Geometry.");
         }
 
-        const glm::mat3 Linear(ModelMatrix);
-        const float Determinant = glm::determinant(Linear);
-        const bool bInvertible = std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon;
-        const glm::mat3 NormalMatrix = bInvertible ? glm::transpose(glm::inverse(Linear)) : glm::mat3(0.0F);
+        const glm::mat3        Linear(ModelMatrix);
+        const float            Determinant = glm::determinant(Linear);
+        const bool             bInvertible = std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon;
+        const glm::mat3        NormalMatrix = bInvertible ? glm::transpose(glm::inverse(Linear)) : glm::mat3(0.0F);
         std::vector<glm::vec3> WorldPositions(TexelCount, glm::vec3(0.0F));
         std::vector<glm::vec3> WorldNormals(TexelCount, glm::vec3(0.0F));
-        std::vector<float> MeanNeighborDistances(TexelCount, 0.0F);
-        std::vector<float> Result(TexelCount * SurfaceNeighborCount, 0.0F);
-        std::vector<bool> bValidPosition(TexelCount, false);
-        std::vector<bool> bValidNormal(TexelCount, false);
+        std::vector<float>     MeanNeighborDistances(TexelCount, 0.0F);
+        std::vector<float>     Result(TexelCount * SurfaceNeighborCount, 0.0F);
+        std::vector<std::array<float, 4>> DebugSums(TexelCount, {0.0F, 0.0F, 0.0F, 0.0F});
+        std::vector<std::uint32_t>        DebugCounts(TexelCount, 0U);
+        std::vector<bool>                 bValidPosition(TexelCount, false);
+        std::vector<bool>                 bValidNormal(TexelCount, false);
 
         for (std::size_t Index = 0; Index < TexelCount; ++Index)
         {
@@ -104,11 +105,11 @@ namespace MDSS
                 continue;
             }
 
-            const glm::vec3 EffectiveLocalPosition =
-                Texel.Position + Texel.Normal * Texel.Geometry.MesoVirtualHeight;
+            const glm::vec3 EffectiveLocalPosition = Texel.Position + Texel.Normal * Texel.Geometry.MesoVirtualHeight;
             const glm::vec4 WorldPosition = ModelMatrix * glm::vec4(EffectiveLocalPosition, 1.0F);
-            const glm::vec3 TransformedNormal = bInvertible ? NormalMatrix * Texel.Normal : glm::vec3(0.0F);
-            const float NormalLength = glm::length(TransformedNormal);
+            const glm::vec3 TransferNormal = Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal;
+            const glm::vec3 TransformedNormal = bInvertible ? NormalMatrix * TransferNormal : glm::vec3(0.0F);
+            const float     NormalLength = glm::length(TransformedNormal);
             if (!IsFinite(EffectiveLocalPosition) || !IsFinite(glm::vec3(WorldPosition)))
             {
                 continue;
@@ -128,12 +129,11 @@ namespace MDSS
             {
                 continue;
             }
-            float DistanceSum = 0.0F;
+            float         DistanceSum = 0.0F;
             std::uint32_t ValidDistanceCount = 0;
             for (const TLocalTexelIndex NeighborIndex : Texels[Index].NeighborIndices)
             {
-                if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount ||
-                    !bValidPosition[NeighborIndex])
+                if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount || !bValidPosition[NeighborIndex])
                 {
                     continue;
                 }
@@ -152,8 +152,7 @@ namespace MDSS
 
         for (std::size_t Index = 0; Index < TexelCount; ++Index)
         {
-            if (!bValidPosition[Index] || !bValidNormal[Index] ||
-                MeanNeighborDistances[Index] <= GeometryEpsilon)
+            if (!bValidPosition[Index] || !bValidNormal[Index] || MeanNeighborDistances[Index] <= GeometryEpsilon)
             {
                 continue;
             }
@@ -177,12 +176,37 @@ namespace MDSS
                 }
 
                 const float DistanceWeight = std::clamp(ReferenceDistance / EdgeDistance, 0.0F, 1.0F);
-                const float NormalWeight =
-                    std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]), 0.0F, 1.0F);
+                const float NormalWeight = bUseNormalWeight
+                                               ? std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]),
+                                                            0.0F,
+                                                            1.0F)
+                                               : 1.0F;
                 constexpr float CurvatureWeight = 1.0F;
-                const float ProfileBoundaryWeight = Profiles[Index] == Profiles[NeighborIndex] ? 1.0F : 0.5F;
-                Result[Index * SurfaceNeighborCount + Slot] =
-                    DistanceWeight * NormalWeight * CurvatureWeight * ProfileBoundaryWeight;
+                const float     ProfileBoundaryWeight = Profiles[Index] == Profiles[NeighborIndex] ? 1.0F : 0.5F;
+                const float TransferWeight = DistanceWeight * NormalWeight * CurvatureWeight * ProfileBoundaryWeight;
+                Result[Index * SurfaceNeighborCount + Slot] = TransferWeight;
+                DebugSums[Index][0] += TransferWeight;
+                DebugSums[Index][1] += DistanceWeight;
+                DebugSums[Index][2] += NormalWeight;
+                DebugSums[Index][3] += ProfileBoundaryWeight;
+                ++DebugCounts[Index];
+            }
+        }
+
+        if (OutDebugAverages != nullptr)
+        {
+            OutDebugAverages->assign(TexelCount, {});
+            for (std::size_t Index = 0; Index < TexelCount; ++Index)
+            {
+                if (DebugCounts[Index] == 0U)
+                {
+                    continue;
+                }
+                const float Count = static_cast<float>(DebugCounts[Index]);
+                (*OutDebugAverages)[Index] = {DebugSums[Index][0] / Count,
+                                              DebugSums[Index][1] / Count,
+                                              DebugSums[Index][2] / Count,
+                                              DebugSums[Index][3] / Count};
             }
         }
 
@@ -190,7 +214,7 @@ namespace MDSS
     }
 
     TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
-                                                 const TSurfaceStateRegistry& Registry)
+                                                 const TSurfaceStateRegistry&                    Registry)
     {
         if (Profiles.empty())
         {
@@ -206,7 +230,7 @@ namespace MDSS
             throw std::overflow_error("Surface Profile table element count overflowed.");
         }
 
-        const std::size_t RecordCount = Profiles.size() * ChannelCount;
+        const std::size_t        RecordCount = Profiles.size() * ChannelCount;
         TSurfaceGPUProfileUpload Result;
         Result.Parameters.resize(RecordCount);
         Result.Supported.resize(RecordCount, 0U);
@@ -223,15 +247,14 @@ namespace MDSS
                 }
 
                 const TSurfaceStateParameters& Parameters = *Resolved.States[ChannelIndex];
-                Result.Parameters[RecordIndex] = {
-                    {Parameters.StateCapacity,
-                     Parameters.InputFactor,
-                     Parameters.SaturationTransferRate,
-                     Parameters.GeometryTransferRate},
-                    {Parameters.DecayRate,
-                     Parameters.CavityRetentionFactor,
-                     Parameters.AccumulationFactor,
-                     Parameters.CavityFillFactor}};
+                Result.Parameters[RecordIndex] = {{Parameters.StateCapacity,
+                                                   Parameters.InputFactor,
+                                                   Parameters.SaturationTransferRate,
+                                                   Parameters.GeometryTransferRate},
+                                                  {Parameters.DecayRate,
+                                                   Parameters.CavityRetentionFactor,
+                                                   Parameters.AccumulationFactor,
+                                                   Parameters.CavityFillFactor}};
                 Result.Supported[RecordIndex] = 1U;
             }
         }
@@ -239,9 +262,7 @@ namespace MDSS
         return Result;
     }
 
-    std::size_t GetSurfaceGPUStateValueIndex(std::size_t TexelIndex,
-                                             std::size_t ChannelIndex,
-                                             std::size_t ChannelCount)
+    std::size_t GetSurfaceGPUStateValueIndex(std::size_t TexelIndex, std::size_t ChannelIndex, std::size_t ChannelCount)
     {
         if (ChannelCount == 0 || ChannelIndex >= ChannelCount)
         {
@@ -254,9 +275,8 @@ namespace MDSS
         return TexelIndex * ChannelCount + ChannelIndex;
     }
 
-    std::size_t GetSurfaceGPUProfileRecordIndex(std::size_t ProfileIndex,
-                                                std::size_t ChannelIndex,
-                                                std::size_t ChannelCount)
+    std::size_t
+    GetSurfaceGPUProfileRecordIndex(std::size_t ProfileIndex, std::size_t ChannelIndex, std::size_t ChannelCount)
     {
         if (ChannelCount == 0 || ChannelIndex >= ChannelCount)
         {
@@ -269,9 +289,8 @@ namespace MDSS
         return ProfileIndex * ChannelCount + ChannelIndex;
     }
 
-    std::size_t GetSurfaceGPUBufferByteSize(std::size_t ElementCount,
-                                            std::size_t ElementStride,
-                                            std::size_t MaxStorageBufferRange)
+    std::size_t
+    GetSurfaceGPUBufferByteSize(std::size_t ElementCount, std::size_t ElementStride, std::size_t MaxStorageBufferRange)
     {
         if (ElementCount == 0 || ElementStride == 0)
         {

@@ -60,7 +60,7 @@ namespace MDSS
     {
         const std::string ModuleText = Module.empty() ? "General" : std::string(Module);
         const std::string MessageText(Message);
-        const std::string Formatted = "[" + std::string(GetLevelName(Level)) + "][" + ModuleText + "] " + MessageText;
+        const std::string Formatted = "[" + std::string(GetLevelName(Level)) + "] [" + ModuleText + "] " + MessageText;
 
         TLoggerStorage&   Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);

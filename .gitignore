@@ -3,7 +3,7 @@
 /.vscode/
 /.idea/
 .DS_Store
-MDSS_EditorLayout.ini
+Config/MDSS_EditorLayout.ini
 *.user
 *.suo
 

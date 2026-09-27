@@ -172,10 +172,10 @@ namespace
         CheckThrows(
             [&] { Geometry->SetProfileMap({InvalidSurfaceProfileIndex}); }, "one entry per texel", "wrong map size");
 
-        std::vector<TSurfaceProfileIndex> InvalidMap(7, InvalidSurfaceProfileIndex);
-        CheckThrows([&] { Geometry->SetProfileMap(std::move(InvalidMap)); },
-                    "Valid texels require",
-                    "valid texel assigned invalid Profile sentinel");
+        std::vector<TSurfaceProfileIndex> NoSimulationMap(7, InvalidSurfaceProfileIndex);
+        Geometry->SetProfileMap(std::move(NoSimulationMap));
+        Check(Geometry->GetProfileIndex(0) == InvalidSurfaceProfileIndex,
+              "valid geometry should allow an invalid Profile sentinel to disable simulation");
     }
 
     void TestContactInputType()

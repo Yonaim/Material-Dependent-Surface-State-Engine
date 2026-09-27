@@ -100,7 +100,9 @@ namespace MDSS
     /** @brief Build the directed texel-slot cache for the symmetric TransferWeight rule. */
     [[nodiscard]] std::vector<float> BuildSurfaceGPUTransferWeights(
         const TSharedSurfaceGeometryData& Geometry,
-        const glm::mat4& ModelMatrix);
+        const glm::mat4& ModelMatrix,
+        std::vector<TSurfaceGPUVec4>* OutDebugAverages = nullptr,
+        bool bUseNormalWeight = true);
 
     [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(
         const std::vector<TSurfaceResponseProfileData>& Profiles,

@@ -176,9 +176,11 @@ namespace
         const auto        ValidMappingTexel = std::ranges::find_if(Mapping.Texels, &TSurfaceMappingTexel::IsValid);
         const std::size_t ValidTexelIndex = static_cast<std::size_t>(ValidMappingTexel - Mapping.Texels.begin());
         ProfileMap[ValidTexelIndex] = InvalidSurfaceProfileIndex;
-        CheckThrows([&] { (void)TSurfaceGeometryBuilder::Build(Mapping, ProfileMap, 1); },
-                    "Valid texel Profile index",
-                    "valid texel without a Profile");
+        const TSharedSurfaceGeometryData NoSimulationGeometry =
+            TSurfaceGeometryBuilder::Build(Mapping, ProfileMap, 1);
+        Check(NoSimulationGeometry.GetProfileIndex(static_cast<TLocalTexelIndex>(ValidTexelIndex)) ==
+                  InvalidSurfaceProfileIndex,
+              "valid geometry should preserve the sentinel that disables simulation for a texel");
     }
 
     void TestRuntimePreprocessing()

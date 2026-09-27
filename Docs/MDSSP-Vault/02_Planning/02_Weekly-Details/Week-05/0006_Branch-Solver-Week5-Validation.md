@@ -14,10 +14,12 @@ GeometryDrive, TransferWeight, 제한 alpha, Debug controls/stats를 함께 검�
 - 단일 source가 이웃으로 이동하며 decay/input을 끈 경우 총량이 보존.
 - Capacity 차이, Profile 지원 여부, Profile 경계가 확정 수식과 일치.
 - Geometry 높이/방향과 각 TransferWeight가 독립적으로 예상 flux에 반영.
+- 평탄 Normal Map은 기존 geometric normal 기준과 동등하고, 방향 변화가 있는 맵은 해당 이웃의 `NormalWeight`를 낮춘다.
+- Normal Map 없음·invalid sample·퇴화 tangent에서 정한 geometric-normal fallback을 적용하고 결과가 finite `[0,1]` 범위다.
 - 큰 transfer rate/DeltaTime에서도 outgoing은 Decay 후 available state를 넘지 않고 결과는 Capacity 범위 안.
 - invalid texel, UV seam 이웃, dynamic Registry channel count의 동작 유지.
 - 동일 총 시간의 `1/30`과 `1/60` 비교를 기록된 tolerance로 평가.
-- Pause/Step/Reset 순서와 channel debug view의 통합 동작 확인.
+- Pause/Step/Reset 순서와 State/TransferWeight component debug view의 통합 동작 확인.
 
 ## 검증 방법
 

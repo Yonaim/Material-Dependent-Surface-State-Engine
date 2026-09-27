@@ -258,6 +258,7 @@ namespace MDSS
 
             bool bAppliedToAnyTexel = false;
             bool bUnsupportedProfile = false;
+            bool bOverlappedNoSimulationSurface = false;
             const std::size_t StateChannel = Contact.State;
             for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
             {
@@ -272,6 +273,12 @@ namespace MDSS
                 const float Distance = glm::length(WorldTexelPosition - InfluenceCenter);
                 if (!std::isfinite(Distance) || Distance > Contact.Radius)
                 {
+                    continue;
+                }
+
+                if (ProfileIndex == InvalidSurfaceProfileIndex)
+                {
+                    bOverlappedNoSimulationSurface = true;
                     continue;
                 }
 
@@ -294,7 +301,7 @@ namespace MDSS
             {
                 Diagnose("Some contact texels do not support the requested State; those texels were skipped.");
             }
-            if (!bAppliedToAnyTexel && !bUnsupportedProfile)
+            if (!bAppliedToAnyTexel && !bUnsupportedProfile && !bOverlappedNoSimulationSurface)
             {
                 Diagnose("Contact did not overlap a valid texel; no State input was applied.");
             }
@@ -335,7 +342,7 @@ namespace MDSS
             return;
         }
 
-        bool bHasDirtyTransferWeightCache = false;
+        bool bHasDirtyTransferWeightCache = bTransferWeightSettingsDirty;
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             if (GPUResources->GetInstanceDescriptors(SceneIndex) == nullptr)
@@ -363,11 +370,12 @@ namespace MDSS
             const bool bCurrentStateAB = GPUResources->IsCurrentStateAB(SceneIndex);
             const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[SceneIndex];
             const glm::mat4 ModelMatrix = Instance.GetTransform().GetMatrix();
-            if (GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, ModelMatrix))
+            if (bTransferWeightSettingsDirty ||
+                GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, ModelMatrix))
             {
-                GPUResources->UpdateTransferWeightCache(SceneIndex, ModelMatrix);
+                GPUResources->UpdateTransferWeightCache(SceneIndex, ModelMatrix, bDebugNormalWeightEnabled);
             }
-            const glm::vec3 GravityWorld(0.0F, -1.0F, 0.0F);
+            const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             Solver->RecordStep(CommandBuffer,
                                *Descriptors,
                                bCurrentStateAB,
@@ -375,8 +383,24 @@ namespace MDSS
                                GPUResources->GetInstanceChannelCount(SceneIndex),
                                DeltaTime,
                                ModelMatrix,
-                               GravityWorld);
+                               GravityWorld,
+                               bDebugGeometryDriveEnabled);
             GPUResources->AdvanceCurrentState(SceneIndex);
+        }
+        bTransferWeightSettingsDirty = false;
+    }
+
+    void TSurfaceStateSystem::SetDebugGeometryDriveEnabled(bool bEnabled) noexcept
+    {
+        bDebugGeometryDriveEnabled = bEnabled;
+    }
+
+    void TSurfaceStateSystem::SetDebugNormalWeightEnabled(bool bEnabled) noexcept
+    {
+        if (bDebugNormalWeightEnabled != bEnabled)
+        {
+            bDebugNormalWeightEnabled = bEnabled;
+            bTransferWeightSettingsDirty = true;
         }
     }
 
