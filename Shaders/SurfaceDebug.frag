@@ -5,6 +5,7 @@ layout(location = 1) in vec3 FragTangent;
 layout(location = 2) in float FragTangentSign;
 layout(location = 3) in vec2 FragUV;
 layout(location = 4) flat in uint FragSurfaceIndex;
+layout(location = 5) in vec3 FragMesoNormalWS;
 
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
@@ -16,13 +17,23 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     uint DebugStateChannel;
     uint StateChannelCount;
     float DebugPadding0;
-    float DebugPadding1;
+    float ReliefShadingEnabled;
 } Material;
+
+layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
 
 struct TSurfaceGPUProfileParameters
 {
     vec4 CapacityInputAndTransfer;
     vec4 DecayAndGeometry;
+};
+
+struct TSurfaceGPUGeometryScalar
+{
+    float MesoVirtualHeight;
+    float ConcavityWeight;
+    float MesoMeanCurvature;
+    float MesoGaussianCurvature;
 };
 
 struct TSurfaceGPUNeighborIndices
@@ -42,6 +53,10 @@ layout(std430, set = 1, binding = 5) readonly buffer TSurfaceNeighborIndices
 {
     TSurfaceGPUNeighborIndices Values[];
 } NeighborIndices;
+layout(std430, set = 1, binding = 4) readonly buffer TSurfaceGeometryScalars
+{
+    TSurfaceGPUGeometryScalar Values[];
+} GeometryScalars;
 layout(std430, set = 1, binding = 6) readonly buffer TSurfaceProfileParameters
 {
     TSurfaceGPUProfileParameters Values[];
@@ -56,7 +71,7 @@ layout(std430, set = 1, binding = 8) readonly buffer TSurfaceCurrentState
 } CurrentState;
 layout(std430, set = 1, binding = 12) readonly buffer TSurfaceRanges
 {
-    uvec4 Values[]; // first texel, width, height, texel count
+    uvec4 Values[]; // 시작 texel, 너비, 높이, texel 수
 } SurfaceRanges;
 layout(std430, set = 1, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
@@ -66,6 +81,10 @@ layout(std430, set = 1, binding = 16) readonly buffer TSurfaceTransferWeightDebu
 {
     vec4 Values[];
 } TransferWeightDebugAverages;
+layout(std430, set = 1, binding = 17) readonly buffer TSurfaceMesoNormals
+{
+    vec4 Values[];
+} MesoNormals;
 
 layout(location = 0) out vec4 OutColor;
 
@@ -81,6 +100,29 @@ vec3 HeatColor(float Value)
     if (T < 0.33) return mix(DeepBlue, Blue, T / 0.33);
     if (T < 0.66) return mix(Blue, Teal, (T - 0.33) / 0.33);
     return mix(Teal, Yellow, (T - 0.66) / 0.34);
+}
+
+vec3 TransferWeightColor(float Value)
+{
+    const vec3 Blocked = vec3(0.16, 0.035, 0.24);
+    const vec3 Medium  = vec3(0.30, 0.24, 0.78);
+    const vec3 Open    = vec3(0.18, 0.94, 0.98);
+    float T = clamp(Value, 0.0, 1.0);
+    return T < 0.5 ? mix(Blocked, Medium, T * 2.0) : mix(Medium, Open, (T - 0.5) * 2.0);
+}
+
+vec3 ApplyReliefLighting(vec3 HeatmapColor, vec3 MesoNormal)
+{
+    if (Material.ReliefShadingEnabled < 0.5)
+    {
+        return HeatmapColor;
+    }
+
+    vec3 ReliefNormal = normalize(MesoNormal);
+    vec3 LightDirection = normalize(vec3(0.35, 0.55, 1.0));
+    float Diffuse = max(dot(ReliefNormal, LightDirection), 0.0);
+    float Brightness = 0.58 + 0.42 * Diffuse;
+    return HeatmapColor * Brightness;
 }
 
 void main()
@@ -116,6 +158,37 @@ void main()
     if (!bGeometryValid)
     {
         OutColor = vec4(0.10, 0.10, 0.13, 1.0);
+        return;
+    }
+
+    if (Material.RenderMode == 11u)
+    {
+        if (TexelIndex >= uint(GeometryScalars.Values.length()))
+        {
+            OutColor = vec4(0.35, 0.35, 0.35, 1.0);
+            return;
+        }
+        float Height = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+        float SignedT = clamp(0.5 + atan(Height * 16.0) / 3.14159265, 0.0, 1.0);
+        vec3 Negative = vec3(0.12, 0.52, 0.92);
+        vec3 Zero = vec3(0.12, 0.13, 0.17);
+        vec3 Positive = vec3(1.0, 0.42, 0.10);
+        vec3 Color = SignedT < 0.5 ? mix(Negative, Zero, SignedT * 2.0) : mix(Zero, Positive, (SignedT - 0.5) * 2.0);
+        OutColor = vec4(Color, 1.0);
+        return;
+    }
+    if (Material.RenderMode == 12u)
+    {
+        vec3 Normal = normalize(FragMesoNormalWS);
+        float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
+        OutColor = vec4(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Material.BaseColor.a);
+        return;
+    }
+    if (Material.RenderMode == 13u)
+    {
+        vec3 Normal = normalize(FragNormal);
+        float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
+        OutColor = vec4(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Material.BaseColor.a);
         return;
     }
 
@@ -169,11 +242,11 @@ void main()
         uint Component = uint(clamp(Material.DebugPadding0, 0.0, 3.0));
         float Value = Component == 0u ? Values.x :
                       (Component == 1u ? Values.y : (Component == 2u ? Values.z : Values.w));
-        OutColor = vec4(HeatColor(Value), 1.0);
+        OutColor = vec4(TransferWeightColor(Value), 1.0);
         return;
     }
 
-    // Geometry-only views remain available for surfaces intentionally excluded from simulation.
+    // 시뮬레이션에서 제외한 Surface도 형상 진단 뷰에서는 표시한다.
     if (!bSimulationEnabled)
     {
         OutColor = vec4(0.18, 0.20, 0.24, 1.0);
@@ -204,5 +277,5 @@ void main()
     float Capacity = ProfileParameters.Values[ProfileRecordIndex].CapacityInputAndTransfer.x;
     float StateValue = CurrentState.Values[StateIndex];
     float Saturation = Capacity > 0.0 ? clamp(StateValue / Capacity, 0.0, 1.0) : 0.0;
-    OutColor = vec4(HeatColor(Saturation), 1.0);
+    OutColor = vec4(ApplyReliefLighting(HeatColor(Saturation), FragMesoNormalWS), 1.0);
 }

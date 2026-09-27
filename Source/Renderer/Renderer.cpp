@@ -1,15 +1,15 @@
 /**
  * @file Renderer.cpp
- * @brief swapchain 기반 장면 렌더링과 재생성 흐름.
+ * @brief 스왑체인 기반 장면 렌더링과 재생성 흐름.
  */
 
 #include "Renderer/Renderer.h"
 
 #include "Application/Window.h"
-#include "AssetManager/Core/AssetManager.h"
 #include "AssetManager/Assets/MaterialAsset.h"
 #include "AssetManager/Assets/MeshAsset.h"
 #include "AssetManager/Assets/TextureAsset.h"
+#include "AssetManager/Core/AssetManager.h"
 #include "DebugUI/DebugUI.h"
 #include "Logger/Logger.h"
 #include "Scene/Scene.h"
@@ -56,8 +56,7 @@ namespace MDSS
             std::int32_t Padding2 = 0;
         };
 
-        constexpr std::array<glm::vec4, 3> WorldAxisColors = {
-            glm::vec4(1.0F, 0.10F, 0.10F, 1.0F),
+        constexpr std::array<glm::vec4, 3> WorldAxisColors = {glm::vec4(1.0F, 0.10F, 0.10F, 1.0F),
             glm::vec4(0.10F, 0.95F, 0.20F, 1.0F),
             glm::vec4(0.12F, 0.35F, 1.0F, 1.0F)};
 
@@ -70,8 +69,8 @@ namespace MDSS
             const glm::vec4 GridColor(1.0F);
             auto AddQuad = [&](glm::vec3 A, glm::vec3 B, glm::vec3 C, glm::vec3 D, glm::vec4 Color)
             {
-                Vertices.insert(Vertices.end(), {{A, Color}, {B, Color}, {C, Color},
-                                                 {A, Color}, {C, Color}, {D, Color}});
+                Vertices.insert(Vertices.end(),
+                                {{A, Color}, {B, Color}, {C, Color}, {A, Color}, {C, Color}, {D, Color}});
             };
 
             for (int I = -static_cast<int>(GridExtent); I <= static_cast<int>(GridExtent); ++I)
@@ -80,19 +79,30 @@ namespace MDSS
                 AddQuad({Coordinate - GridHalfWidth, -GridExtent, 0.0F},
                         {Coordinate + GridHalfWidth, -GridExtent, 0.0F},
                         {Coordinate + GridHalfWidth, GridExtent, 0.0F},
-                        {Coordinate - GridHalfWidth, GridExtent, 0.0F}, GridColor);
+                        {Coordinate - GridHalfWidth, GridExtent, 0.0F},
+                        GridColor);
                 AddQuad({-GridExtent, Coordinate - GridHalfWidth, 0.0F},
                         {GridExtent, Coordinate - GridHalfWidth, 0.0F},
                         {GridExtent, Coordinate + GridHalfWidth, 0.0F},
-                        {-GridExtent, Coordinate + GridHalfWidth, 0.0F}, GridColor);
+                        {-GridExtent, Coordinate + GridHalfWidth, 0.0F},
+                        GridColor);
             }
 
-            AddQuad({-GridExtent, -AxisHalfWidth, 0.002F}, {GridExtent, -AxisHalfWidth, 0.002F},
-                    {GridExtent, AxisHalfWidth, 0.002F}, {-GridExtent, AxisHalfWidth, 0.002F}, WorldAxisColors[0]);
-            AddQuad({-AxisHalfWidth, -GridExtent, 0.002F}, {AxisHalfWidth, -GridExtent, 0.002F},
-                    {AxisHalfWidth, GridExtent, 0.002F}, {-AxisHalfWidth, GridExtent, 0.002F}, WorldAxisColors[1]);
-            AddQuad({-AxisHalfWidth, 0.0F, -GridExtent}, {AxisHalfWidth, 0.0F, -GridExtent},
-                    {AxisHalfWidth, 0.0F, GridExtent}, {-AxisHalfWidth, 0.0F, GridExtent}, WorldAxisColors[2]);
+            AddQuad({-GridExtent, -AxisHalfWidth, 0.002F},
+                    {GridExtent, -AxisHalfWidth, 0.002F},
+                    {GridExtent, AxisHalfWidth, 0.002F},
+                    {-GridExtent, AxisHalfWidth, 0.002F},
+                    WorldAxisColors[0]);
+            AddQuad({-AxisHalfWidth, -GridExtent, 0.002F},
+                    {AxisHalfWidth, -GridExtent, 0.002F},
+                    {AxisHalfWidth, GridExtent, 0.002F},
+                    {-AxisHalfWidth, GridExtent, 0.002F},
+                    WorldAxisColors[1]);
+            AddQuad({-AxisHalfWidth, 0.0F, -GridExtent},
+                    {AxisHalfWidth, 0.0F, -GridExtent},
+                    {AxisHalfWidth, 0.0F, GridExtent},
+                    {-AxisHalfWidth, 0.0F, GridExtent},
+                    WorldAxisColors[2]);
             return Vertices;
         }
 
@@ -146,7 +156,7 @@ namespace MDSS
             std::uint32_t DebugStateChannel = 0;
             std::uint32_t StateChannelCount = 0;
             float         DebugPadding0 = 0.0F;
-            float         DebugPadding1 = 0.0F;
+            float         ReliefShadingEnabled = 1.0F;
         };
 
         const char* GetRenderViewModeName(TRenderViewMode Mode)
@@ -175,6 +185,12 @@ namespace MDSS
                     return "Surface Seam";
                 case TRenderViewMode::SolverTransferWeight:
                     return "Solver Transfer Weight";
+                case TRenderViewMode::MesoHeight:
+                    return "Meso Color";
+                case TRenderViewMode::MesoOffset:
+                    return "Meso Displacement";
+                case TRenderViewMode::MacroGeometry:
+                    return "Macro Geometry";
             }
             return "Unknown";
         }
@@ -283,7 +299,7 @@ namespace MDSS
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             return Config;
         }
-    } // namespace
+    } // 내부 네임스페이스
 
     TRenderer::TRenderer(const TVulkanContext& Context,
                          TWindow& TWindow,
@@ -318,12 +334,12 @@ namespace MDSS
         const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
         GizmoVertices.insert(GizmoVertices.end(), TranslateGizmoVertices.begin(), TranslateGizmoVertices.end());
         GizmoVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
-        GizmoVertexBuffer = std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
+        GizmoVertexBuffer =
+            std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
                                                         Context.GetDevice(),
                                                         static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)),
                                                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         GizmoVertexBuffer->Upload(GizmoVertices.data(),
                                   static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
         CreateMaterialDescriptorResources();
@@ -424,8 +440,8 @@ namespace MDSS
                 {
                     ElapsedTicks &= (std::uint64_t{1} << TimestampValidBits) - 1U;
                 }
-                LastSolverGpuMilliseconds = static_cast<float>(
-                    static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
+                LastSolverGpuMilliseconds =
+                    static_cast<float>(static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
             }
             bTimestampQueriesSubmitted[FrameIndex] = false;
         }
@@ -604,8 +620,8 @@ namespace MDSS
 
         DestroyRenderFinishedSemaphores();
 
-        // Framebuffers reference both swapchain image views and the depth image view,
-        // so they must be destroyed before either dependency is recreated.
+        // 프레임버퍼가 스왑체인 이미지 뷰와 깊이 이미지 뷰를 참조하므로,
+        // 두 이미지 뷰를 다시 만들기 전에 프레임버퍼를 먼저 해제한다.
         MainFramebuffers.Reset();
         DepthImageView.Reset();
         DepthImage.Reset();
@@ -694,6 +710,21 @@ namespace MDSS
             return;
         }
         DebugStateChannel = Channel;
+        UpdateMaterialUniforms();
+    }
+
+    bool TRenderer::IsStateHeatmapReliefShadingEnabled() const noexcept
+    {
+        return bStateHeatmapReliefShadingEnabled;
+    }
+
+    void TRenderer::SetStateHeatmapReliefShadingEnabled(bool bEnabled)
+    {
+        if (bStateHeatmapReliefShadingEnabled == bEnabled)
+        {
+            return;
+        }
+        bStateHeatmapReliefShadingEnabled = bEnabled;
         UpdateMaterialUniforms();
     }
 
@@ -796,7 +827,8 @@ namespace MDSS
         Bindings[2].binding = 2;
         Bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         Bindings[2].descriptorCount = 1;
-        Bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        // Meso Offset은 정점 셰이더도 렌더 모드 값을 읽어 변위 여부를 결정한다.
+        Bindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutCreateInfo Info{};
         Info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -848,7 +880,8 @@ namespace MDSS
         const std::size_t MaterialCount = Assets.GetMaterialCount();
         if (MaterialCount == 0)
         {
-            TLogger::Warning("TRenderer", "No materials are registered; material descriptor resources were not created.");
+            TLogger::Warning("TRenderer",
+                             "No materials are registered; material descriptor resources were not created.");
             return;
         }
 
@@ -894,8 +927,8 @@ namespace MDSS
             const TextureAsset&       BaseTexture = Assets.GetTexture(Material.GetBaseColorTexture());
             const TextureAsset&       NormalTexture = Assets.GetTexture(Material.GetNormalTexture());
 
-            MaterialResources[Index].UniformBuffer =
-                std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
+            MaterialResources[Index].UniformBuffer = std::make_unique<TGPUBuffer>(
+                Context.GetPhysicalDevice(),
                                             Context.GetDevice(),
                                             sizeof(TMaterialUniform),
                                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -910,7 +943,7 @@ namespace MDSS
                                           DebugStateChannel,
                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
                                           static_cast<float>(SolverTransferWeightView),
-                                          0.0F};
+                                           bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
             VkDescriptorImageInfo BaseImage{};
@@ -949,7 +982,8 @@ namespace MDSS
                 Context.GetDevice(), static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
         }
 
-        TLogger::Info("TRenderer", "Material descriptor sets created: " + std::to_string(MaterialResources.size()) + ".");
+        TLogger::Info("TRenderer",
+                      "Material descriptor sets created: " + std::to_string(MaterialResources.size()) + ".");
     }
 
     void TRenderer::UpdateMaterialUniforms()
@@ -971,7 +1005,7 @@ namespace MDSS
                                           DebugStateChannel,
                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
                                           static_cast<float>(SolverTransferWeightView),
-                                          0.0F};
+                                           bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
         }
     }
@@ -994,16 +1028,13 @@ namespace MDSS
         if (SolverTimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdResetQueryPool(CommandBuffer, SolverTimestampQueryPool, QueryBase, 2);
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, SolverTimestampQueryPool, QueryBase);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, SolverTimestampQueryPool, QueryBase);
         }
         SurfaceStates->RecordStep(CommandBuffer, DeltaTime);
         if (SolverTimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                SolverTimestampQueryPool,
-                                QueryBase + 1U);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, SolverTimestampQueryPool, QueryBase + 1U);
         }
 
         std::array<VkClearValue, 2> ClearValues{};
@@ -1139,8 +1170,12 @@ namespace MDSS
             const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
             const VkDeviceSize Offset = 0;
             vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &Offset);
-            vkCmdPushConstants(CommandBuffer, WorldReferencePipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT,
-                               0, sizeof(Constants), &Constants);
+            vkCmdPushConstants(CommandBuffer,
+                               WorldReferencePipeline.GetLayout(),
+                               VK_SHADER_STAGE_VERTEX_BIT,
+                               0,
+                               sizeof(Constants),
+                               &Constants);
             vkCmdDraw(CommandBuffer, WorldReferenceVertexCount, 1, 0, 0);
         }
 
@@ -1151,8 +1186,7 @@ namespace MDSS
             const float GizmoScale = glm::length(SceneData.GetMainCamera().GetPosition() - Position) * 0.18F;
             if (GizmoScale > 0.01F)
             {
-                const glm::mat4 Model = glm::scale(glm::translate(glm::mat4(1.0F), Position),
-                                                   glm::vec3(GizmoScale));
+                const glm::mat4 Model = glm::scale(glm::translate(glm::mat4(1.0F), Position), glm::vec3(GizmoScale));
                 const TGizmoPushConstants Constants{ViewProjection * Model, DebugInterface.GetHoveredGizmoAxis()};
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GizmoPipeline.GetHandle());
                 const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
@@ -1164,8 +1198,7 @@ namespace MDSS
                                    0,
                                    sizeof(Constants),
                                    &Constants);
-                vkCmdDraw(CommandBuffer, GizmoVertexCount - WorldReferenceVertexCount, 1,
-                          WorldReferenceVertexCount, 0);
+                vkCmdDraw(CommandBuffer, GizmoVertexCount - WorldReferenceVertexCount, 1, WorldReferenceVertexCount, 0);
             }
         }
 
@@ -1212,4 +1245,4 @@ namespace MDSS
         }
         throw std::runtime_error("Failed to find a supported Vulkan format.");
     }
-} // namespace MDSS
+} // MDSS 네임스페이스

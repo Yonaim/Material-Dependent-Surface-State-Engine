@@ -1,6 +1,6 @@
 /**
  * @file SurfaceGPUResources.cpp
- * @brief Upload packed Surface data and create solver descriptor sets.
+ * @brief 패킹된 Surface 데이터를 업로드하고 솔버 디스크립터 세트를 생성한다.
  */
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
@@ -41,11 +41,8 @@ namespace MDSS
         {
             const std::size_t ByteSize =
                 GetSurfaceGPUBufferByteSize(ElementCount, ElementStride, MaxStorageBufferRange);
-            auto Buffer = std::make_unique<TGPUBuffer>(PhysicalDevice,
-                                                       Device,
-                                                       static_cast<VkDeviceSize>(ByteSize),
-                                                       StorageUsage,
-                                                       UploadMemory);
+            auto Buffer = std::make_unique<TGPUBuffer>(
+                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), StorageUsage, UploadMemory);
             Buffer->Upload(Data, static_cast<VkDeviceSize>(ByteSize));
             return Buffer;
         }
@@ -55,22 +52,17 @@ namespace MDSS
                                                              std::size_t      ScalarCount,
                                                              std::size_t      MaxStorageBufferRange)
         {
-            const std::size_t ByteSize =
-                GetSurfaceGPUBufferByteSize(ScalarCount, sizeof(float), MaxStorageBufferRange);
+            const std::size_t ByteSize = GetSurfaceGPUBufferByteSize(ScalarCount, sizeof(float), MaxStorageBufferRange);
             std::vector<float> Zeros(ScalarCount, 0.0F);
-            auto Buffer = std::make_unique<TGPUBuffer>(PhysicalDevice,
-                                                       Device,
-                                                       static_cast<VkDeviceSize>(ByteSize),
-                                                       StorageUsage,
-                                                       UploadMemory);
+            auto               Buffer = std::make_unique<TGPUBuffer>(
+                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), StorageUsage, UploadMemory);
             Buffer->Upload(Zeros.data(), static_cast<VkDeviceSize>(ByteSize));
             return Buffer;
         }
 
-    } // namespace
+    } // 내부 네임스페이스
 
-    TSurfaceSharedGeometryGPUResources::TSurfaceSharedGeometryGPUResources(
-        VkPhysicalDevice PhysicalDevice,
+    TSurfaceSharedGeometryGPUResources::TSurfaceSharedGeometryGPUResources(VkPhysicalDevice PhysicalDevice,
         VkDevice         Device,
         const TSharedSurfaceGeometryData& Geometry)
         : TexelCount(Geometry.GetTexelCount())
@@ -95,10 +87,13 @@ namespace MDSS
                                               Upload.Positions.size(),
                                               sizeof(TSurfaceGPUVec4),
                                               MaxRange);
-        NormalBuffer = CreateUploadedBuffer(PhysicalDevice,
+        NormalBuffer = CreateUploadedBuffer(
+            PhysicalDevice, Device, Upload.Normals.data(), Upload.Normals.size(), sizeof(TSurfaceGPUVec4), MaxRange);
+        // 렌더링과 디버그 뷰가 복원 노멀을 GPU에서 텍셀별로 조회한다.
+        MesoNormalBuffer = CreateUploadedBuffer(PhysicalDevice,
                                             Device,
-                                            Upload.Normals.data(),
-                                            Upload.Normals.size(),
+                                                Upload.MesoNormals.data(),
+                                                Upload.MesoNormals.size(),
                                             sizeof(TSurfaceGPUVec4),
                                             MaxRange);
         GeometryScalarBuffer = CreateUploadedBuffer(PhysicalDevice,
@@ -147,6 +142,11 @@ namespace MDSS
         return *NormalBuffer;
     }
 
+    const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetMesoNormalBuffer() const noexcept
+    {
+        return *MesoNormalBuffer;
+    }
+
     const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetGeometryScalarBuffer() const noexcept
     {
         return *GeometryScalarBuffer;
@@ -172,8 +172,7 @@ namespace MDSS
         return TexelCount;
     }
 
-    TSurfaceProfileGPUResources::TSurfaceProfileGPUResources(
-        VkPhysicalDevice PhysicalDevice,
+    TSurfaceProfileGPUResources::TSurfaceProfileGPUResources(VkPhysicalDevice PhysicalDevice,
         VkDevice         Device,
         const std::vector<TSurfaceResponseProfileData>& Profiles,
         const TSurfaceStateRegistry& Registry)
@@ -188,12 +187,8 @@ namespace MDSS
                                                 Upload.Parameters.size(),
                                                 sizeof(TSurfaceGPUProfileParameters),
                                                 MaxRange);
-        SupportedBuffer = CreateUploadedBuffer(PhysicalDevice,
-                                                Device,
-                                                Upload.Supported.data(),
-                                                Upload.Supported.size(),
-                                                sizeof(std::uint32_t),
-                                                MaxRange);
+        SupportedBuffer = CreateUploadedBuffer(
+            PhysicalDevice, Device, Upload.Supported.data(), Upload.Supported.size(), sizeof(std::uint32_t), MaxRange);
     }
 
     const TGPUBuffer& TSurfaceProfileGPUResources::GetParametersBuffer() const noexcept
@@ -231,8 +226,7 @@ namespace MDSS
             throw std::invalid_argument("Cannot override a State that this Profile does not support.");
         }
 
-        const TSurfaceGPUProfileParameters Packed{
-            {Parameters.StateCapacity,
+        const TSurfaceGPUProfileParameters Packed{{Parameters.StateCapacity,
              Parameters.InputFactor,
              Parameters.SaturationTransferRate,
              Parameters.GeometryTransferRate},
@@ -244,7 +238,8 @@ namespace MDSS
         ParametersBuffer->Upload(&Packed, sizeof(Packed), Offset);
     }
 
-    TSurfaceInstanceGPUResources::TSurfaceInstanceGPUResources(VkPhysicalDevice PhysicalDevice,
+    TSurfaceInstanceGPUResources::TSurfaceInstanceGPUResources(
+        VkPhysicalDevice                    PhysicalDevice,
                                                                VkDevice         Device,
                                                                std::size_t      TexelCount,
                                                                std::size_t      ChannelCount,
@@ -271,12 +266,8 @@ namespace MDSS
         StateBBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         OutgoingFluxScaleBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         InputDeltaBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
-        TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice,
-                                                    Device,
-                                                    TransferWeights.data(),
-                                                    TransferWeights.size(),
-                                                    sizeof(float),
-                                                    MaxRange);
+        TransferWeightBuffer = CreateUploadedBuffer(
+            PhysicalDevice, Device, TransferWeights.data(), TransferWeights.size(), sizeof(float), MaxRange);
         std::vector<TSurfaceGPUVec4> ZeroDebugAverages;
         const std::vector<TSurfaceGPUVec4>* DebugAverages = &TransferWeightDebugAverages;
         if (DebugAverages->empty())
@@ -288,12 +279,8 @@ namespace MDSS
         {
             throw std::invalid_argument("TransferWeight debug averages must match the texel count.");
         }
-        TransferWeightDebugAverageBuffer = CreateUploadedBuffer(PhysicalDevice,
-                                                                Device,
-                                                                DebugAverages->data(),
-                                                                DebugAverages->size(),
-                                                                sizeof(TSurfaceGPUVec4),
-                                                                MaxRange);
+        TransferWeightDebugAverageBuffer = CreateUploadedBuffer(
+            PhysicalDevice, Device, DebugAverages->data(), DebugAverages->size(), sizeof(TSurfaceGPUVec4), MaxRange);
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
     }
 
@@ -332,8 +319,8 @@ namespace MDSS
         return *RawOutgoingBuffer;
     }
 
-    void TSurfaceInstanceGPUResources::UpdateTransferWeights(
-        const std::vector<float>& TransferWeights,
+    void
+    TSurfaceInstanceGPUResources::UpdateTransferWeights(const std::vector<float>&           TransferWeights,
         const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages)
     {
         if (TransferWeights.size() != TexelCount * SurfaceNeighborCount)
@@ -381,7 +368,8 @@ namespace MDSS
             Bindings[Binding].binding = Binding;
             Bindings[Binding].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             Bindings[Binding].descriptorCount = 1;
-            Bindings[Binding].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            Bindings[Binding].stageFlags =
+                VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
         }
 
         VkDescriptorSetLayoutCreateInfo LayoutInfo{};
@@ -441,7 +429,9 @@ namespace MDSS
             &SharedGeometry.GetTexelChartIndexBuffer(),
             &Instance.GetTransferWeightBuffer(),
             &Instance.GetRawOutgoingBuffer(),
-            &Instance.GetTransferWeightDebugAverageBuffer()};
+            &Instance.GetTransferWeightDebugAverageBuffer(),
+            // 바인딩 17에는 공유 Meso 노멀 버퍼를 연결한다.
+            &SharedGeometry.GetMesoNormalBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {
@@ -452,8 +442,7 @@ namespace MDSS
             std::array<VkWriteDescriptorSet, DescriptorBindingCount> Writes{};
             for (std::uint32_t BindingNumber = 0; BindingNumber < DescriptorBindingCount; ++BindingNumber)
             {
-                const TSurfaceGPUDescriptorBinding Binding =
-                    static_cast<TSurfaceGPUDescriptorBinding>(BindingNumber);
+                const TSurfaceGPUDescriptorBinding Binding = static_cast<TSurfaceGPUDescriptorBinding>(BindingNumber);
                 const TGPUBuffer* Buffer = SharedAndProfileBuffers[BindingNumber];
                 if (Binding == TSurfaceGPUDescriptorBinding::CurrentState)
                 {
@@ -518,4 +507,4 @@ namespace MDSS
         return BoundBufferHandles[bAB ? 0U : 1U][BindingNumber];
     }
 
-} // namespace MDSS
+} // MDSS 네임스페이스

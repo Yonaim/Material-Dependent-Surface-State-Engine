@@ -61,6 +61,8 @@ namespace MDSS
     {
         float MesoVirtualHeight = 0.0F;
         float ConcavityWeight = 0.0F;
+        float MesoMeanCurvature = 0.0F;
+        float MesoGaussianCurvature = 0.0F;
     };
 
     /**
@@ -75,10 +77,13 @@ namespace MDSS
         glm::vec3       Barycentric{0.0F};
         glm::vec3       Position{0.0F};
         glm::vec3       Normal{0.0F, 0.0F, 1.0F};
-        /** @brief Normal Map normal converted to mesh-local space for TransferWeight; absent means geometric fallback.
+        /** @brief TransferWeight용으로 mesh-local 변환한 Normal Map normal. 없으면 기하 normal을 사용한다.
          */
         glm::vec3                                          TransferNormal{0.0F, 0.0F, 1.0F};
         bool                                               HasTransferNormal = false;
+        /** @brief 높이 미분에서 구한 mesh-local 표면 normal. 없으면 TransferNormal을 사용한다. */
+        glm::vec3                                          MesoNormal{0.0F, 0.0F, 1.0F};
+        bool                                               HasMesoNormal = false;
         TSurfaceGeometryScalar                             Geometry;
         std::array<TLocalTexelIndex, SurfaceNeighborCount> NeighborIndices = {
             InvalidTexelIndex,
@@ -95,4 +100,4 @@ namespace MDSS
         [[nodiscard]] bool IsValid() const noexcept;
     };
 
-} // namespace MDSS
+} // MDSS 네임스페이스

@@ -1,6 +1,6 @@
 /**
  * @file Renderer.h
- * @brief swapchain 기반 장면 렌더링과 재생성 흐름.
+ * @brief 스왑체인 기반 장면 렌더링과 재생성 흐름.
  */
 
 #pragma once
@@ -39,7 +39,13 @@ namespace MDSS
         SurfaceID,
         NeighborCount,
         SurfaceSeam,
-        SolverTransferWeight
+        SolverTransferWeight,
+        /** @brief 부호가 있는 중간 규모 높이를 색상으로 표시한다. */
+        MesoHeight,
+        /** @brief 렌더 정점을 대응 텍셀의 Meso 높이만큼 옮긴다. */
+        MesoOffset,
+        /** @brief 원본 거시 형상을 노멀 맵 음영 없이 표시한다. */
+        MacroGeometry
     };
 
     enum class TSolverTransferWeightView : std::uint32_t
@@ -67,7 +73,7 @@ namespace MDSS
         TRenderer(TRenderer&&) = delete;
         TRenderer& operator=(TRenderer&&) = delete;
 
-        /** @brief 한 프레임을 acquire, record, submit, present 순서로 렌더링한다. */
+        /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
         void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
         void SubmitContact(TSurfaceContactInput Contact);
         void ReloadSceneResources(const TScene& Scene);
@@ -86,6 +92,8 @@ namespace MDSS
         void                         SetRenderViewMode(TRenderViewMode Mode);
         [[nodiscard]] std::uint32_t GetDebugStateChannel() const noexcept;
         void SetDebugStateChannel(std::uint32_t Channel);
+        [[nodiscard]] bool                      IsStateHeatmapReliefShadingEnabled() const noexcept;
+        void                                    SetStateHeatmapReliefShadingEnabled(bool bEnabled);
         [[nodiscard]] TSolverTransferWeightView GetSolverTransferWeightView() const noexcept;
         void SetSolverTransferWeightView(TSolverTransferWeightView View);
         [[nodiscard]] bool IsDebugGeometryDriveEnabled() const noexcept;
@@ -150,6 +158,7 @@ namespace MDSS
         std::vector<TMaterialRenderResource> MaterialResources;
         TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
         std::uint32_t                         DebugStateChannel = 0;
+        bool                                 bStateHeatmapReliefShadingEnabled = true;
         TSolverTransferWeightView             SolverTransferWeightView = TSolverTransferWeightView::Combined;
         bool                                  bDebugGeometryDriveEnabled = true;
         bool                                  bDebugNormalWeightEnabled = true;
@@ -157,8 +166,7 @@ namespace MDSS
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;
         std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
-        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters>
-            DebugProfileParameterOverrides;
+        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> DebugProfileParameterOverrides;
         std::vector<VkSemaphore> RenderFinishedSemaphores;
         VkQueryPool SolverTimestampQueryPool = VK_NULL_HANDLE;
         std::array<bool, TRenderContext::MaxFramesInFlight> bTimestampQueriesSubmitted{};
@@ -166,4 +174,4 @@ namespace MDSS
         std::uint32_t TimestampValidBits = 0;
         float LastSolverGpuMilliseconds = -1.0F;
     };
-} // namespace MDSS
+} // MDSS 네임스페이스

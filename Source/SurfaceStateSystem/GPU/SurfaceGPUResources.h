@@ -1,20 +1,20 @@
 /**
  * @file SurfaceGPUResources.h
- * @brief Vulkan storage buffers and descriptor sets for Surface simulation data.
+ * @brief Surface 시뮬레이션 데이터용 Vulkan 스토리지 버퍼와 디스크립터 세트를 관리한다.
  */
 
 #pragma once
 
-#include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
 #include "AssetManager/Core/Asset.h"
+#include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
 
 #include <vulkan/vulkan.h>
-#include <glm/glm.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <glm/glm.hpp>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -40,6 +40,7 @@ namespace MDSS
         TransferWeights,
         RawOutgoing,
         TransferWeightDebugAverages,
+        MesoNormals,
         Count
     };
 
@@ -58,6 +59,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetPositionBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetNormalBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetMesoNormalBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetGeometryScalarBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetNeighborIndexBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
@@ -70,6 +72,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> TexelProfileIndexBuffer;
         std::unique_ptr<TGPUBuffer> PositionBuffer;
         std::unique_ptr<TGPUBuffer> NormalBuffer;
+        std::unique_ptr<TGPUBuffer> MesoNormalBuffer;
         std::unique_ptr<TGPUBuffer> GeometryScalarBuffer;
         std::unique_ptr<TGPUBuffer> NeighborIndexBuffer;
         std::unique_ptr<TGPUBuffer> SurfaceRangeBuffer;
@@ -88,9 +91,8 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetSupportedBuffer() const noexcept;
         [[nodiscard]] std::size_t GetProfileCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
-        void UpdateParameters(std::size_t ProfileIndex,
-                              std::size_t ChannelIndex,
-                              const TSurfaceStateParameters& Parameters);
+        void
+        UpdateParameters(std::size_t ProfileIndex, std::size_t ChannelIndex, const TSurfaceStateParameters& Parameters);
 
     private:
         std::size_t ProfileCount = 0;
@@ -164,8 +166,8 @@ namespace MDSS
     };
 
     /**
-     * @brief Scene의 Runtime Surface Data 조합별 공유 buffer와 instance별 solver buffer를 소유한다.
-     * @note Compute dispatch는 수행하지 않으며 Branch 4 GPU resource 수명만 관리한다.
+     * @brief Scene의 런타임 Surface 데이터 조합별 공유 버퍼와 instance별 솔버 버퍼를 소유한다.
+     * @note Compute dispatch는 수행하지 않으며 4주차 GPU 리소스 수명만 관리한다.
      */
     class TSurfaceGPUResourceManager final
     {
@@ -181,7 +183,7 @@ namespace MDSS
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
         [[nodiscard]] std::size_t GetSharedSurfaceDataCount() const noexcept;
         [[nodiscard]] std::size_t GetSceneInstanceCount() const noexcept;
-        /** @brief Scene vector index에 해당하는 instance descriptor resources를 반환한다. */
+        /** @brief Scene 벡터 인덱스에 해당하는 instance 디스크립터 리소스를 반환한다. */
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
@@ -191,16 +193,16 @@ namespace MDSS
         [[nodiscard]] std::size_t GetInstanceTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
         [[nodiscard]] bool IsCurrentStateAB(std::size_t SceneIndex) const;
-        [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex,
-                                                          const glm::mat4& ModelMatrix) const;
-        void UpdateTransferWeightCache(std::size_t SceneIndex, const glm::mat4& ModelMatrix, bool bUseNormalWeight = true);
+        [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const glm::mat4& ModelMatrix) const;
+        void
+        UpdateTransferWeightCache(std::size_t SceneIndex, const glm::mat4& ModelMatrix, bool bUseNormalWeight = true);
         void InvalidateTransferWeightCache(std::size_t SceneIndex);
         void AdvanceCurrentState(std::size_t SceneIndex);
 
     private:
         struct TSharedSurfaceResources
         {
-            // Reverse member destruction releases Profile resources before Geometry resources.
+            // 멤버는 역순으로 파괴되므로 Profile 리소스가 Geometry 리소스보다 먼저 해제된다.
             std::unique_ptr<TSurfaceSharedGeometryGPUResources> Geometry;
             std::unique_ptr<TSurfaceProfileGPUResources> Profiles;
             std::vector<TSRProfileAssetHandle> ProfileHandles;
@@ -210,7 +212,7 @@ namespace MDSS
         struct TInstanceResources
         {
             std::unique_ptr<TSurfaceInstanceGPUResources> State;
-            // Descriptor sets/layout must die before the buffers they reference.
+            // 디스크립터가 참조하는 버퍼보다 디스크립터 세트와 레이아웃을 먼저 파괴한다.
             std::unique_ptr<TSurfaceStateDescriptorResources> Descriptors;
             TSurfaceRuntimeDataHandle SurfaceDataHandle{};
             glm::mat4 TransferWeightModelMatrix{1.0F};
@@ -221,4 +223,4 @@ namespace MDSS
         std::unordered_map<TSurfaceRuntimeDataHandle, TSharedSurfaceResources> SharedSurfaceData;
         std::vector<std::unique_ptr<TInstanceResources>> InstanceResources;
     };
-} // namespace MDSS
+} // MDSS 네임스페이스
