@@ -19,6 +19,7 @@ void main()
         if (!supportsChannel(TexelIndex, ChannelIndex))
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
+            RawOutgoingBuffer.Values[StateValueIndex] = 0.0;
             continue;
         }
 
@@ -30,9 +31,13 @@ void main()
             {
                 continue;
             }
-            RawOutgoing += rawFlux(TexelIndex, NeighborTexel, ChannelIndex);
+            RawOutgoing += rawFlux(TexelIndex,
+                                   NeighborTexel,
+                                   ChannelIndex,
+                                   transferWeight(TexelIndex, DirectionIndex));
         }
 
+        RawOutgoingBuffer.Values[StateValueIndex] = RawOutgoing;
         float Current = CurrentState.Values[StateValueIndex];
         float AvailableState = max(Current - decayAmount(TexelIndex, ChannelIndex), 0.0);
         OutgoingFluxScale.Values[StateValueIndex] = RawOutgoing > 0.0

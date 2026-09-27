@@ -5,8 +5,22 @@
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
 
+#include <algorithm>
 #include <limits>
+#include <cmath>
 #include <stdexcept>
+
+#include <glm/geometric.hpp>
+
+namespace
+{
+    constexpr float GeometryEpsilon = 1.0e-6F;
+
+    bool IsFinite(const glm::vec3& Value)
+    {
+        return std::isfinite(Value.x) && std::isfinite(Value.y) && std::isfinite(Value.z);
+    }
+}
 
 namespace MDSS
 {
@@ -55,6 +69,121 @@ namespace MDSS
             Result.GeometryScalars.push_back({Texel.Geometry.MesoVirtualHeight, Texel.Geometry.ConcavityWeight});
             Result.NeighborIndices.push_back({Texel.NeighborIndices});
             Result.TexelChartIndices.push_back(Texel.Chart);
+        }
+
+        return Result;
+    }
+
+    std::vector<float> BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
+                                                       const glm::mat4& ModelMatrix)
+    {
+        const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
+        const std::vector<TSurfaceProfileIndex>& Profiles = Geometry.GetProfileMap();
+        const std::size_t TexelCount = Geometry.GetTexelCount();
+        if (TexelCount == 0 || Profiles.size() != TexelCount)
+        {
+            throw std::invalid_argument("TransferWeight cache requires non-empty, profile-mapped Geometry.");
+        }
+
+        const glm::mat3 Linear(ModelMatrix);
+        const float Determinant = glm::determinant(Linear);
+        const bool bInvertible = std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon;
+        const glm::mat3 NormalMatrix = bInvertible ? glm::transpose(glm::inverse(Linear)) : glm::mat3(0.0F);
+        std::vector<glm::vec3> WorldPositions(TexelCount, glm::vec3(0.0F));
+        std::vector<glm::vec3> WorldNormals(TexelCount, glm::vec3(0.0F));
+        std::vector<float> MeanNeighborDistances(TexelCount, 0.0F);
+        std::vector<float> Result(TexelCount * SurfaceNeighborCount, 0.0F);
+        std::vector<bool> bValidPosition(TexelCount, false);
+        std::vector<bool> bValidNormal(TexelCount, false);
+
+        for (std::size_t Index = 0; Index < TexelCount; ++Index)
+        {
+            const TSurfaceTexelGeometry& Texel = Texels[Index];
+            if (!Texel.IsValid() || Profiles[Index] == InvalidSurfaceProfileIndex)
+            {
+                continue;
+            }
+
+            const glm::vec3 EffectiveLocalPosition =
+                Texel.Position + Texel.Normal * Texel.Geometry.MesoVirtualHeight;
+            const glm::vec4 WorldPosition = ModelMatrix * glm::vec4(EffectiveLocalPosition, 1.0F);
+            const glm::vec3 TransformedNormal = bInvertible ? NormalMatrix * Texel.Normal : glm::vec3(0.0F);
+            const float NormalLength = glm::length(TransformedNormal);
+            if (!IsFinite(EffectiveLocalPosition) || !IsFinite(glm::vec3(WorldPosition)))
+            {
+                continue;
+            }
+            WorldPositions[Index] = glm::vec3(WorldPosition);
+            bValidPosition[Index] = true;
+            if (std::isfinite(NormalLength) && NormalLength > GeometryEpsilon)
+            {
+                WorldNormals[Index] = TransformedNormal / NormalLength;
+                bValidNormal[Index] = true;
+            }
+        }
+
+        for (std::size_t Index = 0; Index < TexelCount; ++Index)
+        {
+            if (!bValidPosition[Index])
+            {
+                continue;
+            }
+            float DistanceSum = 0.0F;
+            std::uint32_t ValidDistanceCount = 0;
+            for (const TLocalTexelIndex NeighborIndex : Texels[Index].NeighborIndices)
+            {
+                if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount ||
+                    !bValidPosition[NeighborIndex])
+                {
+                    continue;
+                }
+                const float Distance = glm::length(WorldPositions[NeighborIndex] - WorldPositions[Index]);
+                if (std::isfinite(Distance) && Distance > GeometryEpsilon)
+                {
+                    DistanceSum += Distance;
+                    ++ValidDistanceCount;
+                }
+            }
+            if (ValidDistanceCount > 0)
+            {
+                MeanNeighborDistances[Index] = DistanceSum / static_cast<float>(ValidDistanceCount);
+            }
+        }
+
+        for (std::size_t Index = 0; Index < TexelCount; ++Index)
+        {
+            if (!bValidPosition[Index] || !bValidNormal[Index] ||
+                MeanNeighborDistances[Index] <= GeometryEpsilon)
+            {
+                continue;
+            }
+            for (std::size_t Slot = 0; Slot < SurfaceNeighborCount; ++Slot)
+            {
+                const TLocalTexelIndex NeighborIndex = Texels[Index].NeighborIndices[Slot];
+                if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount ||
+                    !bValidPosition[NeighborIndex] || !bValidNormal[NeighborIndex] ||
+                    MeanNeighborDistances[NeighborIndex] <= GeometryEpsilon)
+                {
+                    continue;
+                }
+
+                const float EdgeDistance = glm::length(WorldPositions[NeighborIndex] - WorldPositions[Index]);
+                const float ReferenceDistance =
+                    0.5F * (MeanNeighborDistances[Index] + MeanNeighborDistances[NeighborIndex]);
+                if (!std::isfinite(EdgeDistance) || !std::isfinite(ReferenceDistance) ||
+                    EdgeDistance <= GeometryEpsilon || ReferenceDistance <= GeometryEpsilon)
+                {
+                    continue;
+                }
+
+                const float DistanceWeight = std::clamp(ReferenceDistance / EdgeDistance, 0.0F, 1.0F);
+                const float NormalWeight =
+                    std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]), 0.0F, 1.0F);
+                constexpr float CurvatureWeight = 1.0F;
+                const float ProfileBoundaryWeight = Profiles[Index] == Profiles[NeighborIndex] ? 1.0F : 0.5F;
+                Result[Index * SurfaceNeighborCount + Slot] =
+                    DistanceWeight * NormalWeight * CurvatureWeight * ProfileBoundaryWeight;
+            }
         }
 
         return Result;

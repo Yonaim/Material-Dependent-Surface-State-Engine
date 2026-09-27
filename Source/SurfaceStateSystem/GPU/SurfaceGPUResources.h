@@ -10,6 +10,7 @@
 #include "VulkanContext/GPU/GPUBuffer.h"
 
 #include <vulkan/vulkan.h>
+#include <glm/glm.hpp>
 
 #include <array>
 #include <cstddef>
@@ -36,6 +37,8 @@ namespace MDSS
         InputDelta,
         SurfaceRanges,
         TexelChartIndices,
+        TransferWeights,
+        RawOutgoing,
         Count
     };
 
@@ -84,10 +87,14 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetSupportedBuffer() const noexcept;
         [[nodiscard]] std::size_t GetProfileCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
+        void UpdateParameters(std::size_t ProfileIndex,
+                              std::size_t ChannelIndex,
+                              const TSurfaceStateParameters& Parameters);
 
     private:
         std::size_t ProfileCount = 0;
         std::size_t ChannelCount = 0;
+        std::vector<std::uint32_t> SupportedChannels;
         std::unique_ptr<TGPUBuffer> ParametersBuffer;
         std::unique_ptr<TGPUBuffer> SupportedBuffer;
     };
@@ -98,12 +105,16 @@ namespace MDSS
         TSurfaceInstanceGPUResources(VkPhysicalDevice PhysicalDevice,
                                      VkDevice         Device,
                                      std::size_t      TexelCount,
-                                     std::size_t      ChannelCount);
+                                     std::size_t      ChannelCount,
+                                     const std::vector<float>& TransferWeights);
 
         [[nodiscard]] const TGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetStateBBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetOutgoingFluxScaleBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetInputDeltaBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetTransferWeightBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
+        void UpdateTransferWeights(const std::vector<float>& TransferWeights);
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
 
@@ -115,6 +126,8 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> StateBBuffer;
         std::unique_ptr<TGPUBuffer> OutgoingFluxScaleBuffer;
         std::unique_ptr<TGPUBuffer> InputDeltaBuffer;
+        std::unique_ptr<TGPUBuffer> TransferWeightBuffer;
+        std::unique_ptr<TGPUBuffer> RawOutgoingBuffer;
     };
 
     class TSurfaceStateDescriptorResources final
@@ -167,9 +180,16 @@ namespace MDSS
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] bool UpdateProfileParameters(TSRProfileAssetHandle ProfileHandle,
+                                                   TStateId State,
+                                                   const TSurfaceStateParameters& Parameters);
         [[nodiscard]] std::size_t GetInstanceTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
         [[nodiscard]] bool IsCurrentStateAB(std::size_t SceneIndex) const;
+        [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex,
+                                                          const glm::mat4& ModelMatrix) const;
+        void UpdateTransferWeightCache(std::size_t SceneIndex, const glm::mat4& ModelMatrix);
+        void InvalidateTransferWeightCache(std::size_t SceneIndex);
         void AdvanceCurrentState(std::size_t SceneIndex);
 
     private:
@@ -178,6 +198,8 @@ namespace MDSS
             // Reverse member destruction releases Profile resources before Geometry resources.
             std::unique_ptr<TSurfaceSharedGeometryGPUResources> Geometry;
             std::unique_ptr<TSurfaceProfileGPUResources> Profiles;
+            std::vector<TSRProfileAssetHandle> ProfileHandles;
+            const TSharedSurfaceGeometryData* CPUGeometry = nullptr;
         };
 
         struct TInstanceResources
@@ -185,6 +207,9 @@ namespace MDSS
             std::unique_ptr<TSurfaceInstanceGPUResources> State;
             // Descriptor sets/layout must die before the buffers they reference.
             std::unique_ptr<TSurfaceStateDescriptorResources> Descriptors;
+            TSurfaceRuntimeDataHandle SurfaceDataHandle{};
+            glm::mat4 TransferWeightModelMatrix{1.0F};
+            bool bTransferWeightCacheValid = false;
             bool bCurrentStateAB = true;
         };
 

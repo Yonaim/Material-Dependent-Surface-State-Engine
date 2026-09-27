@@ -65,6 +65,14 @@ layout(std430, set = 0, binding = 11) buffer TSurfaceInputDelta
 {
     float Values[];
 } InputDelta;
+layout(std430, set = 0, binding = 14) readonly buffer TSurfaceTransferWeights
+{
+    float Values[];
+} TransferWeights;
+layout(std430, set = 0, binding = 15) buffer TSurfaceRawOutgoing
+{
+    float Values[];
+} RawOutgoingBuffer;
 
 layout(push_constant) uniform TSurfaceSolverPushConstants
 {
@@ -93,6 +101,16 @@ bool isValidTexel(uint TexelIndex)
     return TexelIndex < Solver.LocalTexelCount &&
            TexelSurfaceIndices.Values[TexelIndex] != InvalidSurfaceId &&
            TexelProfileIndices.Values[TexelIndex] != InvalidSurfaceId;
+}
+
+uint neighborIndex(uint TexelIndex, uint DirectionIndex)
+{
+    return NeighborIndices.Values[TexelIndex * SurfaceNeighborCount + DirectionIndex];
+}
+
+float transferWeight(uint SourceTexel, uint DirectionIndex)
+{
+    return TransferWeights.Values[SourceTexel * SurfaceNeighborCount + DirectionIndex];
 }
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex)
@@ -129,7 +147,10 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
 
 vec3 worldPosition(uint TexelIndex)
 {
-    return (Solver.ModelMatrix * vec4(Positions.Values[TexelIndex].xyz, 1.0)).xyz;
+    vec3 EffectiveLocalPosition = Positions.Values[TexelIndex].xyz +
+                                  Normals.Values[TexelIndex].xyz *
+                                  GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+    return (Solver.ModelMatrix * vec4(EffectiveLocalPosition, 1.0)).xyz;
 }
 
 vec3 worldNormal(uint TexelIndex)
@@ -193,7 +214,7 @@ float directionDrive(uint SourceTexel, uint TargetTexel)
     return clamp(dot(GravityOnSurface / SurfaceGravityLength, NeighborDirection / NeighborLength), 0.0, 1.0);
 }
 
-float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex)
+float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight)
 {
     if (!supportsChannel(SourceTexel, ChannelIndex) || !supportsChannel(TargetTexel, ChannelIndex))
     {
@@ -206,23 +227,22 @@ float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex)
     float SaturationDrive = max(saturation(SourceTexel, ChannelIndex) -
                                 saturation(TargetTexel, ChannelIndex), 0.0);
     float GeometryTransferRate = Parameters.CapacityInputAndTransfer.w;
-    float SourceHeight = effectiveWorldHeight(SourceTexel);
-    float TargetHeight = effectiveWorldHeight(TargetTexel);
     float GeometryDrive = 0.0;
-    if (!isnan(SourceHeight) && !isinf(SourceHeight) && !isnan(TargetHeight) && !isinf(TargetHeight))
+    if (GeometryTransferRate > 0.0)
     {
-        float HeightDifference = abs(SourceHeight - TargetHeight);
-        if (!isnan(HeightDifference) && !isinf(HeightDifference))
+        float SourceHeight = effectiveWorldHeight(SourceTexel);
+        float TargetHeight = effectiveWorldHeight(TargetTexel);
+        if (!isnan(SourceHeight) && !isinf(SourceHeight) && !isnan(TargetHeight) && !isinf(TargetHeight))
         {
-            GeometryDrive = HeightDifference * directionDrive(SourceTexel, TargetTexel);
+            float HeightDifference = abs(SourceHeight - TargetHeight);
+            if (!isnan(HeightDifference) && !isinf(HeightDifference))
+            {
+                GeometryDrive = HeightDifference * directionDrive(SourceTexel, TargetTexel);
+            }
         }
     }
-    return (SaturationDrive * TransferRate + GeometryDrive * GeometryTransferRate) * Solver.DeltaTime;
-}
-
-uint neighborIndex(uint TexelIndex, uint DirectionIndex)
-{
-    return NeighborIndices.Values[TexelIndex * SurfaceNeighborCount + DirectionIndex];
+    return (SaturationDrive * TransferRate + GeometryDrive * GeometryTransferRate) *
+           CachedTransferWeight * Solver.DeltaTime;
 }
 
 #endif

@@ -48,6 +48,41 @@ namespace MDSS
         PendingContacts.push_back(std::move(Contact));
     }
 
+    void TSurfaceStateSystem::SetDebugProfileParameters(TSRProfileAssetHandle Profile,
+                                                        TStateId State,
+                                                        const TSurfaceStateParameters& Parameters,
+                                                        bool bKeepRuntimeOverride)
+    {
+        const TSurfaceStateRegistry& Registry = Assets.GetSurfaceStateRegistry();
+        if (State >= Registry.GetStateCount())
+        {
+            throw std::out_of_range("Debug Profile override State is outside the Registry.");
+        }
+
+        TSurfaceResponseProfileData ValidationData;
+        ValidationData.States.emplace(Registry.GetStateName(State), Parameters);
+        ValidateSurfaceResponseProfileData(ValidationData);
+
+        if (vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for the graphics queue before updating Profile parameters.");
+        }
+        if (!GPUResources->UpdateProfileParameters(Profile, State, Parameters))
+        {
+            throw std::invalid_argument("Debug Profile override does not belong to the current Scene.");
+        }
+
+        const auto Key = std::make_pair(Profile, State);
+        if (bKeepRuntimeOverride)
+        {
+            RuntimeProfileOverrides[Key] = Parameters;
+        }
+        else
+        {
+            RuntimeProfileOverrides.erase(Key);
+        }
+    }
+
     void TSurfaceStateSystem::ApplyPendingContacts()
     {
         if (PendingContacts.empty())
@@ -213,6 +248,11 @@ namespace MDSS
                 {
                     InputFactors[ProfileIndex] = Resolved.States[Contact.State]->InputFactor;
                     bProfileSupportsState[ProfileIndex] = true;
+                    const auto Override = RuntimeProfileOverrides.find({ProfileHandles[ProfileIndex], Contact.State});
+                    if (Override != RuntimeProfileOverrides.end())
+                    {
+                        InputFactors[ProfileIndex] = Override->second.InputFactor;
+                    }
                 }
             }
 
@@ -295,6 +335,23 @@ namespace MDSS
             return;
         }
 
+        bool bHasDirtyTransferWeightCache = false;
+        for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
+        {
+            if (GPUResources->GetInstanceDescriptors(SceneIndex) == nullptr)
+            {
+                continue;
+            }
+            const glm::mat4 ModelMatrix = Scene.GetStaticMeshInstances()[SceneIndex].GetTransform().GetMatrix();
+            bHasDirtyTransferWeightCache =
+                bHasDirtyTransferWeightCache ||
+                GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, ModelMatrix);
+        }
+        if (bHasDirtyTransferWeightCache && vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for the graphics queue before updating TransferWeight caches.");
+        }
+
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(SceneIndex);
@@ -306,6 +363,10 @@ namespace MDSS
             const bool bCurrentStateAB = GPUResources->IsCurrentStateAB(SceneIndex);
             const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[SceneIndex];
             const glm::mat4 ModelMatrix = Instance.GetTransform().GetMatrix();
+            if (GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, ModelMatrix))
+            {
+                GPUResources->UpdateTransferWeightCache(SceneIndex, ModelMatrix);
+            }
             const glm::vec3 GravityWorld(0.0F, -1.0F, 0.0F);
             Solver->RecordStep(CommandBuffer,
                                *Descriptors,
