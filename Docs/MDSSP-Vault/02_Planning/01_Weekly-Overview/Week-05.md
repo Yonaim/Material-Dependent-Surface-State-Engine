@@ -27,6 +27,10 @@ Input, Transport, Decay를 통해 이웃 texel 사이 State가 Capacity 범위 �
 
 4주차에서 확인한 최소 수직 경로를 확장해 Solver의 계산 정확성과 경계 사례를 검증한다. 4주차 목표를 반복해 새로 구현하는 것이 아니다.
 
+## 구현 상세
+
+- [[02_Planning/02_Weekly-Details/Week-05/0000_Week5-Branch-Plan|5주차 구현 상세 계획]]
+
 ## 참고
 
 - [[03_Architecture/0004_Surface-State-Update|Surface State Update]]

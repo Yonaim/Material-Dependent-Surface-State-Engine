@@ -4,6 +4,23 @@
 
 Rendering은 State에 따른 **외관 변화**와 Accumulation에 따른 **형상 높이 변화**를 구분한다.
 
+```mermaid
+flowchart LR
+  State["Surface State"] --> Appearance["Profile-driven appearance"]
+  Appearance --> Material["Color / Roughness / other material response"]
+  Material --> Pixel["Shaded pixel"]
+
+  State --> Accumulation["Accumulation calculation"]
+  Meso["MesoVirtualHeight"] --> FinalHeight["Final Meso Height"]
+  Accumulation --> FinalHeight
+  Macro["Macro mesh"] --> Surface["Rendered surface"]
+  FinalHeight --> GeometryEffect["Normal / Parallax / Displacement"]
+  GeometryEffect --> Surface
+  Surface --> Pixel
+```
+
+이 그림은 목표 구조를 나타낸다. 현재 Renderer는 기본 Material 및 Normal Map 표시와 Surface Debug view를 구현했으며, State 기반 Material 반응과 동적 Accumulation 형상은 이 경로에 연결되지 않았다.
+
 ## 외관 변화 (State-based Appearance Changes)
 
 - `Wetness`: 재질 내부 수분에 따른 색 / roughness 변화.

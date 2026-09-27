@@ -9,7 +9,9 @@
 #include "SurfaceStateSystem/State/SurfaceInput.h"
 #include "SurfaceStateSystem/State/SurfaceStateSolver.h"
 
+#include <map>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace MDSS
@@ -31,6 +33,10 @@ namespace MDSS
 
         void RecordStep(VkCommandBuffer CommandBuffer, float DeltaTime);
         void SubmitContact(TSurfaceContactInput Contact);
+        void SetDebugProfileParameters(TSRProfileAssetHandle Profile,
+                                       TStateId State,
+                                       const TSurfaceStateParameters& Parameters,
+                                       bool bKeepRuntimeOverride = true);
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
 
     private:
@@ -42,5 +48,6 @@ namespace MDSS
         std::unique_ptr<TSurfaceGPUResourceManager> GPUResources;
         std::unique_ptr<TSurfaceStateSolver>        Solver;
         std::vector<TSurfaceContactInput>            PendingContacts;
+        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
     };
 } // namespace MDSS

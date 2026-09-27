@@ -11,6 +11,8 @@
 #include "Scene/StaticMeshInstance.h"
 #include "VulkanContext/VulkanContext.h"
 
+#include <algorithm>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -70,18 +72,26 @@ namespace MDSS
                         PhysicalDevice, Device, *RuntimeData.GetSharedGeometry());
                     Resources.Profiles = std::make_unique<TSurfaceProfileGPUResources>(
                         PhysicalDevice, Device, Profiles, Registry);
+                    Resources.ProfileHandles = ProfileHandles;
+                    Resources.CPUGeometry = RuntimeData.GetSharedGeometry().get();
                     SharedIt = SharedSurfaceData.emplace(SurfaceDataHandle, std::move(Resources)).first;
                 }
 
                 const std::size_t TexelCount = SharedIt->second.Geometry->GetTexelCount();
+                const glm::mat4 ModelMatrix = MeshInstance.GetTransform().GetMatrix();
+                const std::vector<float> TransferWeights = BuildSurfaceGPUTransferWeights(
+                    *SharedIt->second.CPUGeometry, ModelMatrix);
                 auto State = std::make_unique<TSurfaceInstanceGPUResources>(
-                    PhysicalDevice, Device, TexelCount, Registry.GetStateCount());
+                    PhysicalDevice, Device, TexelCount, Registry.GetStateCount(), TransferWeights);
                 auto Descriptors = std::make_unique<TSurfaceStateDescriptorResources>(
                     Device, *SharedIt->second.Geometry, *SharedIt->second.Profiles, *State);
 
                 Instance = std::make_unique<TInstanceResources>();
                 Instance->State = std::move(State);
                 Instance->Descriptors = std::move(Descriptors);
+                Instance->SurfaceDataHandle = SurfaceDataHandle;
+                Instance->TransferWeightModelMatrix = ModelMatrix;
+                Instance->bTransferWeightCacheValid = true;
             }
             InstanceResources.push_back(std::move(Instance));
         }
@@ -152,6 +162,31 @@ namespace MDSS
         return InstanceResources[SceneIndex]->State->GetInputDeltaBuffer();
     }
 
+    bool TSurfaceGPUResourceManager::UpdateProfileParameters(TSRProfileAssetHandle ProfileHandle,
+                                                              TStateId State,
+                                                              const TSurfaceStateParameters& Parameters)
+    {
+        bool bUpdated = false;
+        for (auto& [SurfaceDataHandle, Resources] : SharedSurfaceData)
+        {
+            (void)SurfaceDataHandle;
+            const auto ProfileIt = std::find(Resources.ProfileHandles.begin(),
+                                             Resources.ProfileHandles.end(),
+                                             ProfileHandle);
+            if (ProfileIt == Resources.ProfileHandles.end())
+            {
+                continue;
+            }
+
+            Resources.Profiles->UpdateParameters(
+                static_cast<std::size_t>(std::distance(Resources.ProfileHandles.begin(), ProfileIt)),
+                State,
+                Parameters);
+            bUpdated = true;
+        }
+        return bUpdated;
+    }
+
     std::size_t TSurfaceGPUResourceManager::GetInstanceTexelCount(std::size_t SceneIndex) const
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
@@ -177,6 +212,60 @@ namespace MDSS
             throw std::out_of_range("Scene instance has no Surface GPU state resources.");
         }
         return InstanceResources[SceneIndex]->bCurrentStateAB;
+    }
+
+    bool TSurfaceGPUResourceManager::NeedsTransferWeightCacheUpdate(std::size_t SceneIndex,
+                                                                     const glm::mat4& ModelMatrix) const
+    {
+        if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
+        {
+            throw std::out_of_range("Scene instance has no Surface GPU State resources.");
+        }
+        const TInstanceResources& Instance = *InstanceResources[SceneIndex];
+        if (!Instance.bTransferWeightCacheValid)
+        {
+            return true;
+        }
+        for (glm::length_t Column = 0; Column < 3; ++Column)
+        {
+            for (glm::length_t Row = 0; Row < 3; ++Row)
+            {
+                if (Instance.TransferWeightModelMatrix[Column][Row] != ModelMatrix[Column][Row])
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    void TSurfaceGPUResourceManager::UpdateTransferWeightCache(std::size_t SceneIndex,
+                                                                const glm::mat4& ModelMatrix)
+    {
+        if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
+        {
+            throw std::out_of_range("Scene instance has no Surface GPU State resources.");
+        }
+        TInstanceResources& Instance = *InstanceResources[SceneIndex];
+        auto SharedIt = SharedSurfaceData.find(Instance.SurfaceDataHandle);
+        if (SharedIt == SharedSurfaceData.end() || SharedIt->second.CPUGeometry == nullptr)
+        {
+            throw std::logic_error("Surface TransferWeight cache has no source Geometry.");
+        }
+        const std::vector<float> TransferWeights =
+            BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry, ModelMatrix);
+        Instance.State->UpdateTransferWeights(TransferWeights);
+        Instance.TransferWeightModelMatrix = ModelMatrix;
+        Instance.bTransferWeightCacheValid = true;
+    }
+
+    void TSurfaceGPUResourceManager::InvalidateTransferWeightCache(std::size_t SceneIndex)
+    {
+        if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
+        {
+            throw std::out_of_range("Scene instance has no Surface GPU State resources.");
+        }
+        InstanceResources[SceneIndex]->bTransferWeightCacheValid = false;
     }
 
     void TSurfaceGPUResourceManager::AdvanceCurrentState(std::size_t SceneIndex)

@@ -4,12 +4,18 @@
 
 ## 전체 데이터 분류
 
-```text
-Surface State System Data
-├── SurfaceResponseProfile        [Instance 간 공유]
-└── SurfaceData
-    ├── TSharedSurfaceGeometryData [Static / Instance 간 공유]
-    └── TSurfaceInstanceStateData  [Dynamic / Instance별]
+```mermaid
+flowchart LR
+  Profiles["SRProfile assets\nresponse parameters"] --> ProfileTable["Profile table\nshared by matching runtime data"]
+  Runtime["Runtime Surface Data"] --> Geometry["Shared Geometry\nstatic texel data"]
+  Runtime --> ProfileMap["Texel → ProfileIndex map"]
+  InstanceA["Surface Instance A"] --> StateA["A's dynamic State\nState A/B, InputDelta"]
+  InstanceB["Surface Instance B"] --> StateB["B's dynamic State\nState A/B, InputDelta"]
+  InstanceA -. "references" .-> Runtime
+  InstanceB -. "references" .-> Runtime
+  ProfileMap --> Lookup["(ProfileIndex, ChannelIndex)\n→ Profile parameters"]
+  ProfileTable --> Lookup
+  Registry["State Registry\nState name → channel"] --> Lookup
 ```
 
 `SurfaceResponseProfile`은 여러 Instance가 공유 가능한 소재 반응 데이터이고, `SurfaceData`는 시뮬레이션에 필요한 형상·상태 데이터다.
@@ -19,6 +25,17 @@ Surface State System Data
 State 종류는 C++ enum에 고정하지 않는다. 로드된 `.SRProfile`의 `states` key를 모아 `TSurfaceStateRegistry`를 만들며, Registry가 문자열 State 이름을 런타임 `TStateId` 또는 `ChannelIndex`에 연결한다. 별도의 `SurfaceStateSchema` 파일은 두지 않는다.
 
 State 이름은 앞뒤 whitespace를 제거하고 lowercase로 정규화하며, 그 외 문자와 내부 공백·구두점은 그대로 보존한다. 예를 들어 `" Wetness "`와 `"WETNESS"`는 `wetness`로 합쳐지지만 `surface_heat`, `surface-heat`, `surface heat`는 서로 다른 이름이다. Transition의 source와 target에도 같은 규칙을 적용한다.
+
+```mermaid
+flowchart LR
+  Profiles["여러 .SRProfile"] --> Keys["states key 수집"]
+  Keys --> Normalize["trim + lowercase"]
+  Normalize --> Registry["TSurfaceStateRegistry"]
+  Registry --> IDs["TStateId / ChannelIndex"]
+  UI["입력·디버그에서 고른 State"] --> Name["State name"]
+  Name --> IDs
+  IDs --> GPU["동적 channel 배열 조회"]
+```
 
 `.SRProfile`은 State 종류의 전역 목록이 아니라, 해당 Profile이 지원하는 각 State의 반응 파라미터와 Transition을 정의한다. 런타임 Solver와 GPU는 문자열을 직접 분기 기준으로 쓰지 않고 Registry가 부여한 ID/index를 사용한다. ID의 배정과 저장 레이아웃은 구현 계약에서 정한다. 상세 결정은 [[../04_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
 
@@ -95,3 +112,11 @@ Heat → Burn
 | `transitionRate` | 조건 만족 후 target State의 단위 시간당 증가 속도 |
 
 예를 들어 `threshold = 0.7`이면 source의 Saturation이 `0.7` 이상일 때 전이 조건을 만족한다. Transition의 실행 순서와 Solver 패스 배치는 [[05_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]에서 다룬다.
+
+```mermaid
+flowchart LR
+  Source["Source State\nHeat"] --> Saturation["Source Saturation"]
+  Saturation --> Condition{"Saturation ≥ threshold?"}
+  Condition -- yes --> Target["Increase Target State\nBurn at transitionRate"]
+  Condition -- no --> Hold["No transition input"]
+```

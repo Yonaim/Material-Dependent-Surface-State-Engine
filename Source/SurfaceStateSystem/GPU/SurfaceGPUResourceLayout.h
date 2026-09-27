@@ -11,6 +11,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <glm/glm.hpp>
 #include <vector>
 
 namespace MDSS
@@ -95,6 +96,11 @@ namespace MDSS
 
     [[nodiscard]] TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(
         const TSharedSurfaceGeometryData& Geometry);
+
+    /** @brief Build the directed texel-slot cache for the symmetric TransferWeight rule. */
+    [[nodiscard]] std::vector<float> BuildSurfaceGPUTransferWeights(
+        const TSharedSurfaceGeometryData& Geometry,
+        const glm::mat4& ModelMatrix);
 
     [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(
         const std::vector<TSurfaceResponseProfileData>& Profiles,
