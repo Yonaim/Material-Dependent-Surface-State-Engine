@@ -21,14 +21,51 @@ surface.SubmitContact({stateType, worldPosition, worldDirection, radius, strengt
 
 ## 대상 Surface 연결
 
-Scene 구성 시 Collider와 Surface instance의 연결을 한 번 설정한다. MVP에서는 Collider 하나가 Surface instance 하나를 가리킨다. 충돌 이벤트가 발생하면 해당 Collider에 연결된 Surface에 접촉 정보를 제출한다.
+접촉 입력은 대상 Surface에 바인딩된 하나의 공개 `SubmitContact` 경로로 들어간다. Debug 입력 어댑터와 게임 입력 어댑터는 입력 출처만 다르고, 접촉 payload와 제출 경로는 공유한다.
 
-```text
-Scene setup: Collider → Surface instance 연결
-Contact event: 연결된 Surface에 접촉 정보 제출
+- **Debug 입력 어댑터**는 중앙 Raycast hit에서 대상 Surface를 얻는다.
+- **게임 입력 어댑터**는 Scene에 미리 등록한 Collider–Surface 관계를 통해 대상 Surface를 얻는다. MVP에서는 Collider 하나가 Surface instance 하나를 가리킨다.
+- 두 어댑터 모두 대상 Surface의 `SubmitContact(contact)`를 호출한다. Debug 입력만을 위한 별도 Surface 입력 경로를 만들지 않는다.
+
+```mermaid
+flowchart LR
+  Debug["Debug adapter"] --> Ray["Center-screen raycast"]
+  Ray --> Hit["Hit Surface"]
+  Physics["Game / Physics adapter"] --> Collision["Collision event"]
+  Collision --> Binding["Scene Collider → Surface binding"]
+  Binding --> Target["Target Surface"]
+  Hit --> API["Surface.SubmitContact(contact)"]
+  Target --> API
+  API --> Core["Shared Surface input path"]
 ```
 
-따라서 게임 코드는 접촉마다 Surface ID를 조회하거나 입력 구조체에 복사할 필요가 없다. 충돌 이벤트에서 얻는 접촉 위치와 방향, 그리고 게임이 정한 State·반경·세기·감쇠 정도를 전달한다. Debug Raycast도 hit 결과에서 대상 Surface를 얻어 같은 제출 경로를 사용한다.
+따라서 입력 어댑터는 접촉마다 내부 Surface ID를 payload에 넣지 않는다. 어댑터가 대상 Surface를 정한 뒤 접촉 위치와 방향, State·반경·세기·감쇠 정도만 제출한다. Debug Raycast 역시 hit 결과에서 대상 Surface를 정하고 게임 입력과 같은 공개 제출 경로를 사용한다.
+
+위 공개 API는 아키텍처 계약이다. 현재 내부 구현의 `TSurfaceContactInput`은 GPU 자원을 찾기 위해 `TargetInstance`를 보유하며, Debug Raycast는 hit instance index를 이 내부 입력으로 변환한다. 이는 내부 라우팅 정보이며 외부 contact payload에 Surface ID를 요구한다는 뜻은 아니다. 현재 C++ 코드에는 Surface-bound 공개 wrapper와 Collider 등록 기능이 아직 연결되어 있지 않다.
+
+아래 순서는 두 입력 출처가 같은 Surface-bound API에 합류한 뒤, 내부에서 GPU 입력으로 바뀌는 설계를 보여준다. 현재 구현은 Debug 경로의 내부 입력까지만 연결되어 있다.
+
+```mermaid
+sequenceDiagram
+  participant Debug as Debug adapter
+  participant Game as Game/Physics adapter
+  participant API as Surface-bound SubmitContact
+  participant SSS as TSurfaceStateSystem
+  participant Queue as Graphics queue
+  participant Buffer as InputDelta GPU buffer
+  participant Solver as 2-pass Solver
+
+  Debug->>API: Ray hit Surface + contact payload
+  Game->>API: Collider-bound Surface + contact payload
+  API->>SSS: route to target instance
+  SSS->>SSS: resolve texels and accumulate dense InputDelta
+  opt new event input exists
+    SSS->>Queue: wait idle before host write
+    SSS->>Buffer: upload dense InputDelta
+  end
+  SSS->>Solver: record solver update
+  Solver->>Buffer: Pass 2 reads once, then clears consumed values
+```
 
 ## 접촉 위치의 내부 처리
 
@@ -40,6 +77,32 @@ Contact event: 연결된 Surface에 접촉 정보 제출
 2. 매핑된 texel이 유효하고 hit Triangle에 속하면 그 texel을 중심으로 삼는다. invalid이거나 다른 Triangle에 속하면 같은 Surface와 같은 Triangle 안에서만 fallback을 검색한다.
 3. Fallback은 `max(|dx|, |dy|) <= 2`인 범위로 제한한다. 즉 각 축에서 중심으로 최대 2 texel 떨어진 격자 안에서 유효 texel을 찾고, grid 거리 제곱이 가장 작은 것을 선택한다. 동률이면 고정된 탐색 순서를 따른다. 찾지 못하면 해당 입력을 거부하고 입력 event당 진단 로그를 최대 한 번 남긴다.
 4. 선택한 중심 texel의 월드 위치를 기준으로 `radius` 안에 있는 valid texel을 영향 대상으로 찾고 `falloff`를 계산한다. 이 단계는 UV 해상도와 무관한 실제 표면 거리 기준이다. 반경 안에 물리적으로 가까운 다른 면이나 Surface texel이 있으면 함께 영향을 받을 수 있다.
+
+입력 중심과 영향 영역을 나누어 보면 fallback은 hit triangle 주변의 중심 텍셀을 정하고, World radius 검색은 최종 영향 texel을 고른다.
+
+```mermaid
+flowchart TD
+  Hit["Hit Triangle + Simulation UV"] --> UVTexel["UV → center texel"]
+  UVTexel --> Check{"valid and same triangle?"}
+  Check -- yes --> Center["Resolved center"]
+  Check -- no --> Search["Search up to 2 texels\ninside same triangle"]
+  Search -->|found| Center
+  Search -->|not found| Reject["Reject input + one diagnostic"]
+  Center --> World["Transform center to world position"]
+  World --> Radius["World-space radius search\nacross valid texels"]
+  Radius --> Falloff["distance → falloff weight"]
+  Falloff --> Delta["Accumulate into State channel InputDelta"]
+```
+
+현재 구현의 falloff는 선형 감쇠를 지수로 조절한다.
+
+```text
+normalizedDistance = clamp(distance / radius, 0, 1)
+linearWeight = 1 - normalizedDistance
+contactWeight = falloff == 0 ? 1 : pow(linearWeight, falloff)
+```
+
+`falloff = 1`이면 중심에서 반경 경계까지 선형으로 감소한다. `falloff > 1`이면 중심 주변에 더 집중되고, `0 < falloff < 1`이면 완만하게 감소한다. `falloff = 0`은 반경 안에 균일하게 적용한다. 반경 밖 texel은 후보에서 제외되므로 입력을 받지 않는다. Debug Inject는 현재 `falloff = 1`을 사용한다.
 
 Fallback은 UV→texel 변환 과정에서 빈 texel이나 경계에 걸린 중심을 보정한다. 월드 공간 반경 검색은 그 중심 주변에 영향을 줄 texel 집합을 정한다. 두 검색은 서로 대체하지 않는다.
 

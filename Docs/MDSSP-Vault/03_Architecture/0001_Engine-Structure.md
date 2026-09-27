@@ -1,29 +1,77 @@
 # 엔진 구조와 데이터 흐름
 
-상태: **설계** · 근거: [[07_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조]]
+상태: **현재 구현 흐름과 설계 범위** · 최종 확인: 2026-09-26 · 근거: [[07_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조]]
 
 | 모듈 | 책임 |
 |---|---|
 | `TApplication` | 창, Vulkan, 에셋, Scene, Renderer, DebugUI의 수명과 메인 루프 조정 |
 | `TAssetManager` | Mesh, Texture, Material, Surface Response Profile Asset 관리 |
-| `TDebugUI` | 카메라·렌더 설정과 로그 진단 UI |
-| `InputSystem` | 입력 장치 이벤트, Raycast 및 Contact 입력 생성. 현재 placeholder |
+| `TDebugUI` | 카메라·렌더·State 디버그 설정, Inject 제어, Scene 열기/저장과 오브젝트 편집, 로그 UI |
+| `TInputSystem` | 현재는 Debug Inject용 Space 입력, 중앙 Raycast, 접촉 입력 생성. 게임 Physics 입력 어댑터는 설계 범위이며 미연결 |
 | `TLogger` | 모듈별 로그 기록과 로그 항목 조회 |
-| `TRenderer` | Swapchain, RenderPass/Pipeline, Framebuffer, 프레임 렌더링 |
-| `TScene` | Camera와 `TStaticMeshInstance[]` 관리 |
-| `TSurfaceStateSystem` | 공유 형상 데이터, 인스턴스 상태, 입력, Solver, 형상 갱신, DebugData 관리. 현재 placeholder |
+| `TRenderer` | Swapchain, RenderPass/Pipeline, Framebuffer와 Scene 렌더링. `TSurfaceStateSystem` 소유 및 프레임 compute 기록 |
+| `TScene` | Camera, `TStaticMeshInstance[]`, Scene 원본 경로 관리 |
+| `TSurfaceStateSystem` | instance별 GPU State resource, 접촉 입력 누적·업로드, 2-pass Solver dispatch 관리 |
 | `TVulkanContext` | Instance / Device, Queue / Command, GPU Resource 기반 관리 |
 
-`TSurfaceStateSystem`의 논리적 구성은 다음과 같다.
+아래 관계도는 객체와 자원의 **소유**를 실선 합성(`*--`), handle 참조를 점선으로 표시한다. 예를 들어 Scene Instance는 Runtime Surface Data를 직접 소유하지 않고 handle로 가리킨다.
 
-```text
-TSurfaceStateSystem
-├── TSharedSurfaceGeometryData[]
-├── TSurfaceInstanceStateData[]
-├── SurfaceInput
-├── TSurfaceStateSolver
-├── SurfaceGeometryUpdate
-└── DebugData
+```mermaid
+classDiagram
+direction LR
+class TApplication
+class TRenderer
+class TDebugUI
+class TInputSystem
+class TAssetManager
+class TScene
+class TStaticMeshInstance
+class TSurfaceRuntimeData
+class TSurfaceStateSystem
+class TSurfaceGPUResourceManager
+class TSurfaceStateSolver
+class TSurfaceSharedGeometryGPUResources
+class TSurfaceProfileGPUResources
+class TSurfaceInstanceGPUResources
+class TSurfaceStateDescriptorResources
+
+TApplication *-- TRenderer : owns
+TApplication *-- TDebugUI : owns
+TApplication *-- TInputSystem : owns
+TApplication *-- TAssetManager : owns
+TApplication *-- TScene : owns
+TRenderer *-- TSurfaceStateSystem : owns
+TSurfaceStateSystem *-- TSurfaceGPUResourceManager : owns
+TSurfaceStateSystem *-- TSurfaceStateSolver : owns
+TAssetManager *-- TSurfaceRuntimeData : caches shared runtime data
+TScene *-- TStaticMeshInstance : contains
+TStaticMeshInstance ..> TSurfaceRuntimeData : runtime data handle
+TSurfaceGPUResourceManager *-- TSurfaceSharedGeometryGPUResources : shared geometry cache
+TSurfaceGPUResourceManager *-- TSurfaceProfileGPUResources : shared profile cache
+TSurfaceGPUResourceManager *-- TSurfaceInstanceGPUResources : per-instance state
+TSurfaceGPUResourceManager *-- TSurfaceStateDescriptorResources : per-instance bindings
+TDebugUI ..> TRenderer : reads and changes view settings
+TInputSystem ..> TApplication : returns contact event
+TApplication ..> TRenderer : submits contact event
+```
+
+현재 코드에서 `TRenderer`가 `TSurfaceStateSystem`을 소유한다. Surface Runtime Geometry와 Profile table은 `TAssetManager`가 Scene 로딩 중 생성·공유하고, GPU resource manager는 Runtime data handle을 키로 Shared Geometry/Profile buffer를 공유하며 instance별 State buffer와 descriptor를 관리한다. 상세 구현 관계는 [[../05_Development/Code-Structure/0000_Overview|구현 구조 개요]]를 본다.
+
+설계상 `TSurfaceStateSystem`이 맡을 전체 책임은 다음과 같다. 형상 갱신은 현재 구현 흐름에 연결되지 않은 설계 항목이다.
+
+```mermaid
+flowchart LR
+  SSS["TSurfaceStateSystem"] --> GPUManager["GPU resource manager"]
+  SSS --> Pending["Pending contact events"]
+  Pending --> Upload["InputDelta upload"]
+  SSS --> Solver["TSurfaceStateSolver"]
+  GPUManager --> Shared["Shared Geometry + Profile buffers"]
+  GPUManager --> Instance["Per-instance State buffers"]
+  Shared --> Solver
+  Instance --> Solver
+  Upload --> Solver
+  Solver --> Debug["Current State for debug view"]
+  Solver -. "designed, not connected" .-> Geometry["SurfaceGeometryUpdate"]
 ```
 
 이 구성은 시스템의 **논리적 책임**을 나타낸다. 현재 C++ 클래스 구현 상태와 타입 간 소유·참조 관계는 [[05_Development/Code-Structure/0000_Overview|구현 구조 개요]]를 기준으로 한다.
@@ -45,7 +93,9 @@ flowchart LR
   Preprocess --> RuntimeSurface[Runtime Surface Data]
   Assets --> Registry[TSurfaceStateRegistry]
   ProfileAsset --> Registry
-  SceneFile[.Scene] -. "loader 미구현" .-> Assets
+  SceneFile[.Scene] --> SceneLoader[TSceneLoader]
+  SceneLoader --> Scene[TScene / Static Mesh Instances]
+  SceneLoader --> Assets
   Assets --> Material[TMaterialAsset]
   Assets --> Texture[TextureAsset]
   Assets --> Mesh[TMeshAsset]
@@ -53,27 +103,33 @@ flowchart LR
   RuntimeSurface --> Shared
   RuntimeSurface --> ProfileMap[Texel Profile Map]
   Material --> Texture
-  Registry -. "후속 구현" .-> Instance[Surface Instance State Data]
-  Ray[Raycaster / Contact] --> Input[TSurfaceContactInput]
-  Input -. "후속 구현" .-> Solver[TSurfaceStateSolver]
-  Shared -. "후속 구현" .-> Solver
-  Instance -. "후속 구현" .-> Solver
-  Solver -. "후속 구현" .-> NewState[Updated State]
-  NewState -. "후속 구현" .-> Acc[Accumulation Height]
-  Acc -. "후속 구현" .-> Geo[SurfaceGeometryUpdate]
-  NewState -. "후속 구현" .-> Render[TRenderer]
-  Geo -. "후속 구현" .-> Render
-  Geo -. "후속 구현" .-> Solver
+  Registry --> GPUState[Instance GPU State Resources]
+  Shared --> GPUState
+  ProfileMap --> GPUState
+  UI[TDebugUI: Inject / Debug View] --> MainLoop[TApplication frame loop]
+  Scene --> MainLoop
+  MainLoop --> DebugInput[TInputSystem: Debug adapter]
+  DebugInput --> Ray[TRaycaster]
+  Ray --> Contact[TSurfaceContactInput]
+  Contact --> MainLoop
+  MainLoop --> Renderer[TRenderer SubmitContact]
+  Renderer --> Input[TSurfaceStateSystem: InputDelta upload]
+  GPUState --> Solver[TSurfaceStateSolver: 2-Pass compute]
+  Input --> Solver
+  Solver --> NewState[Updated GPU State]
+  NewState --> Render[TRenderer: Surface Debug View]
+  NewState -. "설계 범위" .-> Acc[Accumulation Height]
+  Acc -. "설계 범위" .-> Geo[SurfaceGeometryUpdate]
+  Geo -. "설계 범위" .-> Solver
 ```
 
-1. OBJ 파싱은 `TOBJLoader`, MTL 변환은 `TMTLLoader`, `.SRProfile` JSON 파싱은 `TSRProfileLoader`가 담당하고, `TAssetManager`가 Asset과 handle을 관리한다. [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-2. Asset/Scene 로딩 중 각 고유 Mesh와 Profile Distribution 조합을 CPU에서 전처리한다. 결과인 Mapping, 공유 정적 Geometry/texel 관계와 texel별 Profile map은 Runtime 메모리에 두고 같은 입력의 instance끼리 공유한다. 매 frame 또는 instance마다 전처리하지 않으며 `.Surface` 파일/캐시는 사용하지 않는다.
-3. 로드된 `.SRProfile`의 State key에서 `TSurfaceStateRegistry`를 구성한다. 문자열 이름은 정규화 후 런타임 State ID/index로 변환한다.
-4. 각 Mesh Instance는 Registry 채널에 대응하는 자신의 동적 State를 가진다. 각 State는 `stateCapacity`로 제한하며 초과량을 별도 저장하지 않는다. 공유 Runtime Geometry와 Profile 반응 파라미터는 instance state에 복제하지 않는다. [[03_Architecture/0002_Surface-State|표면 상태]]
-5. Raycast 등으로 `TSurfaceContactInput`을 만들고 Input 항으로 변환한다. [[03_Architecture/0004_Surface-State-Update|State 갱신]]
-6. Solver가 Input / Transport / Decay를 사용해 다음 State를 계산한다.
-7. State가 형상 적층을 만드는 경우 Accumulation Height를 계산하고, 바뀐 형상을 후속 Simulation과 Rendering에 반영한다. [[03_Architecture/0005_Surface-Geometry|형상과 적층]], [[03_Architecture/0006_Rendering|렌더링]]
+1. `TSceneLoader`가 `.Scene`을 읽고 AssetManager로 OBJ 및 선택 Profile Map을 불러온다. Runtime Surface Data는 Scene object가 지정한 Mesh/Profile Map 조합별로 생성되어 같은 입력끼리 공유한다. Scene 편집 UI는 같은 Loader의 저장 기능도 사용한다.
+2. `TAssetManager`가 로드된 Profile들에서 Registry와 GPU용 Profile table을 구성한다. instance별 State GPU buffer는 0으로 초기화되며 Shared Geometry/Profile table과 분리 소유한다.
+3. 현재 Debug 입력 경로는 Inject mode, State, Strength를 `TDebugUI`에서 설정하고, `TInputSystem`이 Space 입력 edge에 중앙 카메라 Raycast를 수행해 접촉 payload를 만든다. 게임용 Physics adapter는 아직 연결되지 않았다. 접촉 입력 API 계약은 [[03_Architecture/0008_Surface-Input|Surface Contact Input]]을 따른다.
+4. `TRenderer::SubmitContact`가 입력을 `TSurfaceStateSystem`에 전달한다. Surface system은 접촉 범위의 texel별 `InputDelta`를 CPU에서 누적하고, 새 입력이 있을 때 graphics queue idle 후 instance GPU buffer에 업로드한다.
+5. Renderer는 매 프레임 2-pass compute Solver를 기록한다. Solver가 `InputDelta`, State, Saturation 기반 이웃 전달, Decay를 적용하고 State A/B 역할을 교환한다. 선택한 State와 Surface Mapping 진단 모드는 렌더 패스에서 GPU State/Geometry를 읽는다.
+6. Accumulation에 따른 동적 형상 갱신과 State 기반 최종 Material 표현은 설계 범위에 남아 있다. [[03_Architecture/0005_Surface-Geometry|형상과 적층]], [[03_Architecture/0006_Rendering|렌더링]]
 
 Simulation UV mapping은 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], Vulkan resource binding / barrier는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 
-위 흐름은 모듈 책임을 요약한다. 구체적인 C++ 상속, 소유, handle 참조와 현재 구현 여부는 [[05_Development/Code-Structure/0000_Overview|구현 구조 개요]]에서 확인한다. `.Scene` 로더와 `TSurfaceStateSystem` 조정 클래스는 아직 placeholder이며, 현재 동작하는 파서 흐름과 구분한다.
+위 흐름의 실선은 현재 연결된 경로, 점선은 설계되었지만 아직 현재 실행 경로에 연결되지 않은 기능이다. 구체적인 C++ 소유, handle 참조와 코드 위치는 [[05_Development/Code-Structure/0000_Overview|구현 구조 개요]]에서 확인한다. UI 패널과 입력 조작 계약은 [[0009_UI-Interface|UI Interface]]를 본다.

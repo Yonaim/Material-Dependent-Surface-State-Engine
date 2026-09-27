@@ -16,6 +16,31 @@
 | Surface Profile Distribution | `.SurfaceProfileMap` | JSON 형식. Scene object가 경로를 선택하며, Surface별 SRProfile 할당을 기록 |
 | Runtime Surface Data | 파일 없음 | Scene load 때 생성해 메모리에서 공유하는 정적 Geometry·Texel 관계 및 Texel별 Profile map |
 
+파일 이름만 보는 대신 아래 연결을 따라가면 Scene에서 GPU 시뮬레이션 입력까지 데이터가 만들어지는 경로를 볼 수 있다.
+
+```mermaid
+flowchart LR
+  SceneFile[".Scene"] --> Loader["TSceneLoader"]
+  Loader --> Instance["Scene object / Mesh instance"]
+  Instance --> Mesh[".obj"]
+  Instance --> Map[".SurfaceProfileMap"]
+  Mesh --> MTL[".mtl"]
+  MTL --> Textures["Albedo / Normal textures"]
+  Map --> ProfilePaths[".SRProfile paths"]
+  ProfilePaths --> Profiles["TSRProfileAsset collection"]
+  Profiles --> Registry["State Registry"]
+  Mesh --> Build["Runtime Preprocessor"]
+  Textures --> Build
+  Map --> Build
+  Profiles --> Build
+  Build --> Runtime["Runtime Surface Data\nshared by Mesh + Map key"]
+  Runtime --> Geometry["Shared texel geometry\nand neighbors"]
+  Runtime --> TexelMap["Texel → ProfileIndex"]
+  TexelMap --> ProfileTable["Profile parameters per channel"]
+  Profiles --> ProfileTable
+  Registry --> ProfileTable
+```
+
 ## Surface와 Profile의 관계
 
 Render Material과 Surface Response Profile은 서로 다른 책임이다. Render Material은 외관을 정의하고, `.SRProfile`은 State에 대한 반응 파라미터와 Transition을 정의한다. 현재 입력 계약에서는 각 Surface/Material 할당에 SRProfile 하나를 지정하며, 그 Surface의 모든 valid texel이 해당 Profile을 사용한다.

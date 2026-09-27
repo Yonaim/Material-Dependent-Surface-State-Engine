@@ -13,21 +13,23 @@ Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 �
 
 ## 계산 및 사용 시점
 
-```text
-Runtime TAsset/TScene Load
-Mesh + Simulation UV + Normal Map + Profile Distribution
-→ Mapping 및 정적 형상 정보 전처리
-→ Runtime 메모리에 생성하고 같은 입력의 Instance 간 공유
+```mermaid
+flowchart LR
+  Mesh["Mesh + Simulation UV"] --> Preprocess["Scene load\nMapping / static preprocessing"]
+  NormalMap["Normal Map"] --> Preprocess
+  ProfileMap["Profile Distribution"] --> Preprocess
+  Preprocess --> Shared["Shared static geometry\nper Mesh + Profile Map"]
 
-Runtime Simulation
-State
-→ Accumulation_Height
-→ 형상 정보 갱신
-
-Rendering
-Meso_Virtual_Height + Accumulation_Height
-→ Final Meso Height
-→ Normal / Parallax / Displacement 등에 반영
+  State["Per-instance State"] --> Amount["State × AccumulationFactor"]
+  Profile["CavityFillFactor"] --> Split["Cavity / surface allocation"]
+  Amount --> Split
+  Geometry["MesoVirtualHeight"] --> Split
+  Split --> Accumulation["AccumulationHeight"]
+  Geometry --> Final["FinalMesoHeight"]
+  Accumulation --> Final
+  Final --> Render["Rendering\nNormal / Parallax / Displacement"]
+  Final -. "dynamic geometry feedback\n(designed path)" .-> Updated["Updated positions / normals"]
+  Updated -.-> Simulation["Later simulation steps"]
 ```
 
 정적 전처리는 애플리케이션 실행 중 고유 Mesh/Profile Distribution 입력 조합마다 load 시 한 번 수행한다. 매 frame이나 Instance마다 반복하지 않으며, 결과를 `.Surface` 파일이나 persistent cache로 저장하지 않는다. 전처리 시점과 수명은 [[../04_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
@@ -95,9 +97,18 @@ Static Mesh의 World Gravity를 UV-space 전파 방향으로 반영할 때는 �
 
 Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space로 변환할 수 있다.
 
+```mermaid
+flowchart LR
+  Gravity["World Gravity"] --> Project["Project onto triangle plane"]
+  Normal["Current Surface Normal"] --> Project
+  Project --> Tangent["Convert direction to UV / tangent space"]
+  Triangle["Triangle UV basis"] --> Tangent
+  Tangent --> Drive["DirectionDrive for neighbor transfer"]
+```
+
 ## 동적 형상
 
-적층으로 Height가 변하면 Normal / Curvature가 달라져 **후속 Simulation에 다시 반영**된다. Neighbor Distance는 저장하지 않으며 갱신된 Position에서 매번 계산한다. 현재는 동적 형상 갱신의 의미를 정의하며, Instance별 저장 구조는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|GPU resource 설계]]에서 다룬다.
+적층으로 Height가 변하면 Normal / Curvature가 달라져 **후속 Simulation에 다시 반영**된다. 최신 유효 Position에서 이웃 거리를 계산하며, Solver 성능 경로는 원시 거리 대신 이 값에서 만든 간선별 TransferWeight를 형상 revision 동안 캐시한다. 현재 Runtime은 MesoVirtualHeight를 geometry scalar로 보유하고, instance별 동적 AccumulationHeight 생성은 후속 구현이다. 높이 또는 갱신 normal이 바뀌면 해당 instance TransferWeight cache를 다시 준비한다. GPU 소유와 동기화는 [[03_Architecture/0010_Surface-Solver-Cache|Surface Solver Cache]]와 [[05_Development/Notes/0003_Surface-State-GPU-Resource|GPU resource 설계]]를 따른다.
 
 Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. Shared Geometry의 GPU 배치는 [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 
@@ -145,6 +156,25 @@ Accumulation_Height = Cavity_Filling_Height + Surface_Following_Height
 ```
 
 Cavity는 최대 100%까지만 채우며, 초과 적층량은 버리지 않고 Surface Following으로 넘긴다.
+
+```mermaid
+flowchart LR
+  State["State"] --> Total["AccumulationAmount\nState × AccumulationFactor"]
+  AccFactor["CavityFillFactor"] --> Split["Split total amount"]
+  Total --> Split
+  Split --> Cavity["CavityAmount"]
+  Split --> Surface["SurfaceAmount"]
+  Depth["CavityDepth = max(-MesoVirtualHeight, 0)"] --> Fill["CavityFill = min(CavityAmount, 1)"]
+  Cavity --> Fill
+  Fill --> CavityHeight["CavityFillingHeight\nCavityFill × CavityDepth"]
+  Cavity --> Excess["CavityExcess = max(CavityAmount - 1, 0)"]
+  Surface --> Following["SurfaceFollowingHeight"]
+  Excess --> Following
+  Reference["MesoHeightReference"] --> Following
+  CavityHeight --> Sum["AccumulationHeight"]
+  Following --> Sum
+  Sum --> Final["Final Meso Height"]
+```
 
 ### 최종 높이
 

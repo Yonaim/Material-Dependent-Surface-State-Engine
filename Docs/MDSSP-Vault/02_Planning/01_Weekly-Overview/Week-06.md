@@ -22,6 +22,10 @@
 - Wetness demo와 재질별 비교 이미지.
 - Input, Transport, Decay와 시각 표현을 확인할 수 있는 Debug View.
 
+## 구현 상세
+
+- [[02_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|6주차 Wetness 브랜치 계획]]
+
 ## 참고
 
 - [[03_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]
