@@ -1,13 +1,13 @@
 # Stanford Bunny
 
-## Source and attribution
+## Mesh files
 
-- Model: Stanford Bunny, zipper reconstruction
-- Source: Stanford University Computer Graphics Laboratory, Stanford 3D Scanning Repository
-- Repository: https://graphics.stanford.edu/data/3Dscanrep/
-- Original archive: https://graphics.stanford.edu/pub/3Dscanrep/bunny.tar.gz
-- Scanned in 1994; reconstruction has 35,947 vertices and 69,451 triangles, with five holes on the bottom according to the source repository.
+- `bun_zipper.ply` is the original Stanford zipper reconstruction distributed for reference.
+- `StanfordBunny.obj` contains the original Stanford scan geometry with a UV atlas generated for the engine's 512×512 Simulation UV mapping. The positions and non-degenerate source triangles are retained; xatlas generated the UV coordinates and split vertices at chart seams.
 
-The OBJ was converted from the repository's `bun_zipper.ply`; vertex positions and face indices were preserved. The PLY file is included as the conversion source.
+## Attribution and terms
 
-The repository asks users to acknowledge Stanford Computer Graphics Laboratory. It permits research use and free mirroring or redistribution. Commercial use, or inclusion in products for sale, requires permission from Stanford. See the repository page for the full terms.
+- Original scan/model: Greg Turk and Marc Levoy, Stanford University Computer Graphics Laboratory.
+- Source: [Stanford 3D Scanning Repository](https://graphics.stanford.edu/data/3Dscanrep/), including its [bunny archive](https://graphics.stanford.edu/pub/3Dscanrep/bunny.tar.gz).
+- UV atlas generator: [xatlas](https://github.com/jpcy/xatlas).
+- Stanford's repository requests acknowledgment of the Stanford Computer Graphics Laboratory and limits commercial use or inclusion in products for sale without permission. See the repository page for its terms.
