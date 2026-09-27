@@ -105,10 +105,9 @@ namespace MDSS
         {
             const bool bValidTexel = Texels[Index].IsValid();
             const bool bHasProfile = NewProfileMap[Index] != InvalidSurfaceProfileIndex;
-            if (bValidTexel != bHasProfile)
+            if (!bValidTexel && bHasProfile)
             {
-                throw std::invalid_argument(bValidTexel ? "Valid texels require a Profile index."
-                                                        : "Invalid texels must use InvalidSurfaceProfileIndex.");
+                throw std::invalid_argument("Invalid texels must use InvalidSurfaceProfileIndex.");
             }
         }
         ProfileMap = std::move(NewProfileMap);

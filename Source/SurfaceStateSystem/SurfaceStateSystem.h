@@ -32,6 +32,8 @@ namespace MDSS
         TSurfaceStateSystem& operator=(TSurfaceStateSystem&&) = delete;
 
         void RecordStep(VkCommandBuffer CommandBuffer, float DeltaTime);
+        void SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
+        void SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
         void SubmitContact(TSurfaceContactInput Contact);
         void SetDebugProfileParameters(TSRProfileAssetHandle Profile,
                                        TStateId State,
@@ -48,6 +50,9 @@ namespace MDSS
         std::unique_ptr<TSurfaceGPUResourceManager> GPUResources;
         std::unique_ptr<TSurfaceStateSolver>        Solver;
         std::vector<TSurfaceContactInput>            PendingContacts;
+        bool bDebugGeometryDriveEnabled = true;
+        bool bDebugNormalWeightEnabled = true;
+        bool bTransferWeightSettingsDirty = false;
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
     };
 } // namespace MDSS

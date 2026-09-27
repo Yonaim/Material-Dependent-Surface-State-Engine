@@ -228,7 +228,7 @@ float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float Cache
                                 saturation(TargetTexel, ChannelIndex), 0.0);
     float GeometryTransferRate = Parameters.CapacityInputAndTransfer.w;
     float GeometryDrive = 0.0;
-    if (GeometryTransferRate > 0.0)
+    if (GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u)
     {
         float SourceHeight = effectiveWorldHeight(SourceTexel);
         float TargetHeight = effectiveWorldHeight(TargetTexel);
