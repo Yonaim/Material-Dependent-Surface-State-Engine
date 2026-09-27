@@ -1,6 +1,6 @@
 /**
  * @file SurfaceGPUResourceLayout.cpp
- * @brief Pack validated CPU Surface data into the selected shader-facing arrays.
+ * @brief 검증된 CPU Surface 데이터를 셰이더 입력 배열 형식으로 패킹한다.
  */
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
@@ -29,7 +29,7 @@ namespace MDSS
         {
             return {Value.x, Value.y, Value.z, 0.0F};
         }
-    } // namespace
+    } // 내부 네임스페이스
 
     TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData& Geometry)
     {
@@ -48,6 +48,7 @@ namespace MDSS
         Result.TexelProfileIndices = Geometry.GetProfileMap();
         Result.Positions.reserve(TexelCount);
         Result.Normals.reserve(TexelCount);
+        Result.MesoNormals.reserve(TexelCount);
         Result.GeometryScalars.reserve(TexelCount);
         Result.NeighborIndices.reserve(TexelCount);
         Result.TexelChartIndices.reserve(TexelCount);
@@ -63,7 +64,15 @@ namespace MDSS
             Result.TexelSurfaceIndices.push_back(Texel.Surface);
             Result.Positions.push_back(ToGPUVec4(Texel.Position));
             Result.Normals.push_back(ToGPUVec4(Texel.Normal));
-            Result.GeometryScalars.push_back({Texel.Geometry.MesoVirtualHeight, Texel.Geometry.ConcavityWeight});
+            Result.GeometryScalars.push_back({Texel.Geometry.MesoVirtualHeight,
+                                              Texel.Geometry.ConcavityWeight,
+                                              Texel.Geometry.MesoMeanCurvature,
+                                              Texel.Geometry.MesoGaussianCurvature});
+            // 높이에서 구한 normal이 없으면 샘플 Normal Map, 그것도 없으면 Macro normal을 올린다.
+            const glm::vec3 MesoNormal = Texel.HasMesoNormal
+                                             ? Texel.MesoNormal
+                                             : (Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal);
+            Result.MesoNormals.push_back(ToGPUVec4(MesoNormal));
             Result.NeighborIndices.push_back({Texel.NeighborIndices});
             Result.TexelChartIndices.push_back(Texel.Chart);
         }
@@ -107,7 +116,10 @@ namespace MDSS
 
             const glm::vec3 EffectiveLocalPosition = Texel.Position + Texel.Normal * Texel.Geometry.MesoVirtualHeight;
             const glm::vec4 WorldPosition = ModelMatrix * glm::vec4(EffectiveLocalPosition, 1.0F);
-            const glm::vec3 TransferNormal = Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal;
+            // NormalWeight cache도 복원된 Meso normal을 우선 사용한다.
+            const glm::vec3 TransferNormal = Texel.HasMesoNormal
+                                                 ? Texel.MesoNormal
+                                                 : (Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal);
             const glm::vec3 TransformedNormal = bInvertible ? NormalMatrix * TransferNormal : glm::vec3(0.0F);
             const float     NormalLength = glm::length(TransformedNormal);
             if (!IsFinite(EffectiveLocalPosition) || !IsFinite(glm::vec3(WorldPosition)))
@@ -176,10 +188,9 @@ namespace MDSS
                 }
 
                 const float DistanceWeight = std::clamp(ReferenceDistance / EdgeDistance, 0.0F, 1.0F);
-                const float NormalWeight = bUseNormalWeight
-                                               ? std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]),
-                                                            0.0F,
-                                                            1.0F)
+                const float NormalWeight =
+                    bUseNormalWeight
+                        ? std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]), 0.0F, 1.0F)
                                                : 1.0F;
                 constexpr float CurvatureWeight = 1.0F;
                 const float     ProfileBoundaryWeight = Profiles[Index] == Profiles[NeighborIndex] ? 1.0F : 0.5F;
@@ -307,4 +318,4 @@ namespace MDSS
         }
         return ByteSize;
     }
-} // namespace MDSS
+} // MDSS 네임스페이스

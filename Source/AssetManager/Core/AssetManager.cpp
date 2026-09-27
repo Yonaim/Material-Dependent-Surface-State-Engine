@@ -10,9 +10,10 @@
 #include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "AssetManager/Loaders/TextureLoader.h"
 #include "Logger/Logger.h"
+#include "SurfaceStateSystem/Geometry/MesoGeometryBuilder.h"
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
-#include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"
+#include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "VulkanContext/VulkanContext.h"
 
 #include <algorithm>
@@ -35,7 +36,7 @@ namespace MDSS
             return MeshKey + '\n' + DistributionKey;
         }
 
-    } // namespace
+    } // 내부 네임스페이스
 
     TAssetManager::TAssetManager(const TVulkanContext& Context) : Context(Context)
     {
@@ -258,6 +259,13 @@ namespace MDSS
         TLogger::Info("TAssetManager",
                       "Precomputed Normal Map transfer normals for " + std::to_string(MappedNormalCount) + "/" +
                           std::to_string(Geometry.GetTexelCount()) + " Simulation texels.");
+        // 노멀 맵의 텍셀 노멀을 준비한 뒤 공유 형상의 높이와 파생 형상을 전처리한다.
+        const TMesoGeometryBuildReport MesoReport = BuildMesoGeometry(Geometry);
+        TLogger::Info("TAssetManager",
+                      "Integrated Normal Map meso geometry for " + std::to_string(MesoReport.ActiveTexelCount) +
+                          " texels across " + std::to_string(MesoReport.ComponentCount) + " connected charts (" +
+                          std::to_string(MesoReport.IterationCount) + " PCG iterations, relative edge residual " +
+                          std::to_string(MesoReport.RelativeEdgeResidual) + ").");
         TSurfaceRuntimeData Built(std::move(Geometry));
         if (RuntimeSurfaceAssets.size() >= InvalidSurfaceRuntimeDataHandle)
         {
@@ -423,4 +431,4 @@ namespace MDSS
                            ", normal texture=" + std::to_string(NormalTexture) + ").");
         return Handle;
     }
-} // namespace MDSS
+} // MDSS 네임스페이스

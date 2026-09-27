@@ -28,6 +28,8 @@ Normal Map에서 Meso Virtual Height를 복원해 GeometryDrive / Curvature / Ac
 
 Simulation texel mapping의 triangle/barycentric 좌표로 Normal Map을 샘플링하고, tangent frame에서 mesh-local transfer normal을 복원해 NormalWeight cache에 연결했다. 평탄/기울어진 Map, UV 보간과 chart 경계, repeat 주소 지정, tangent handedness 및 invalid tangent fallback CPU fixture를 추가했다. GPU fixture는 이 normal이 TransferWeight와 State flux에 반영되고, non-uniform instance scale에서 inverse-transpose를 거치며, map 부재 시 geometric normal fallback을 사용하는 것을 확인한다. 2026-09-27 로컬 Apple M1에서 전체 CTest 5/5 통과, 데모 1 frame 실행, Vulkan validation 오류 없음.
 
-### Week-05 Branch 2.3 — Meso geometry
+### Week-05 Branch 2.3 — Meso geometry (구현 진행 중)
 
-미실시. Normal Map의 적분 가능성, 높이 복원, Curvature/Concavity 생성과 fallback 실험은 Branch 2.3 범위다.
+Branch 2.3은 per-texel sampled Normal Map normal을 mesh-local neighbor graph의 signed height difference로 바꾸고, component mean-zero gauge를 둔 Jacobi-PCG least-squares 적분 경로를 구현했다. 결과는 `MesoVirtualHeight`, local derivative에서 만든 `MesoNormal`, mean/Gaussian curvature, `ConcavityWeight`다. Non-integrable map은 least-squares 결과를 유지하고 relative edge residual을 로그에 남긴다. 현재 `BuildMesoGeometry` helper와 AssetManager 연결, GPU 업로드, Height/Offset debug mode 및 heatmap relief normal 연결까지 구현했다.
+
+아직 정량 fixture와 runtime 시각 검증은 수행하지 않았다. 평탄/ramp/bowl/dome/noisy/seam 표본의 높이 오차, 곡률 부호·단위, relative residual, PCG iteration 및 처리시간을 기록해야 한다. render mesh의 정점 밀도보다 작은 세부는 Offset view가 복원하지 못한다.

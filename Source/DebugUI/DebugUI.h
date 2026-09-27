@@ -74,7 +74,7 @@ namespace MDSS
         void DrawSceneWindow(TScene& SceneData);
         void DrawSelectedTransformWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
-        void DrawRenderOptionsWindow();
+        void DrawRenderOptionsWindow(TScene& SceneData);
         void DrawRenderSettingsWindow();
         void DrawViewportStatsOverlay();
         void DrawSimulationDebugWindow(const TScene& SceneData);

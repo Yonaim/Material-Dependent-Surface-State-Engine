@@ -1,6 +1,6 @@
 /**
  * @file SurfaceGPUResourceLayout.h
- * @brief CPU pack records matching the accepted Surface GPU buffer layout.
+ * @brief Surface GPU 버퍼 레이아웃에 맞는 CPU 패킹 레코드와 변환 함수를 정의한다.
  */
 
 #pragma once
@@ -28,6 +28,8 @@ namespace MDSS
     {
         float MesoVirtualHeight = 0.0F;
         float ConcavityWeight = 0.0F;
+        float MesoMeanCurvature = 0.0F;
+        float MesoGaussianCurvature = 0.0F;
     };
 
     struct alignas(16) TSurfaceGPUSurfaceRange
@@ -65,6 +67,7 @@ namespace MDSS
         std::vector<std::uint32_t>               TexelProfileIndices;
         std::vector<TSurfaceGPUVec4>              Positions;
         std::vector<TSurfaceGPUVec4>              Normals;
+        std::vector<TSurfaceGPUVec4>            MesoNormals;
         std::vector<TSurfaceGPUGeometryScalar>     GeometryScalars;
         std::vector<TSurfaceGPUNeighborIndices>    NeighborIndices;
         std::vector<TSurfaceGPUSurfaceRange>       SurfaceRanges;
@@ -80,8 +83,9 @@ namespace MDSS
     static_assert(sizeof(TSurfaceGPUVec4) == 16);
     static_assert(alignof(TSurfaceGPUVec4) == 16);
     static_assert(offsetof(TSurfaceGPUVec4, W) == 12);
-    static_assert(sizeof(TSurfaceGPUGeometryScalar) == 8);
+    static_assert(sizeof(TSurfaceGPUGeometryScalar) == 16);
     static_assert(offsetof(TSurfaceGPUGeometryScalar, ConcavityWeight) == 4);
+    static_assert(offsetof(TSurfaceGPUGeometryScalar, MesoGaussianCurvature) == 12);
     static_assert(sizeof(TSurfaceGPUNeighborIndices) == 32);
     static_assert(alignof(TSurfaceGPUNeighborIndices) == 16);
     static_assert(sizeof(TSurfaceGPUSurfaceRange) == 16);
@@ -94,29 +98,24 @@ namespace MDSS
     static_assert(offsetof(TSurfaceSolverPushConstants, GravityWorld) == 16);
     static_assert(offsetof(TSurfaceSolverPushConstants, ModelMatrix) == 32);
 
-    [[nodiscard]] TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(
-        const TSharedSurfaceGeometryData& Geometry);
+    [[nodiscard]] TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData& Geometry);
 
-    /** @brief Build the directed texel-slot cache for the symmetric TransferWeight rule. */
-    [[nodiscard]] std::vector<float> BuildSurfaceGPUTransferWeights(
-        const TSharedSurfaceGeometryData& Geometry,
+    /** @brief 대칭 TransferWeight 규칙을 각 텍셀의 이웃 슬롯별 cache로 만든다. */
+    [[nodiscard]] std::vector<float>
+    BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
         const glm::mat4& ModelMatrix,
         std::vector<TSurfaceGPUVec4>* OutDebugAverages = nullptr,
         bool bUseNormalWeight = true);
 
-    [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(
-        const std::vector<TSurfaceResponseProfileData>& Profiles,
+    [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
         const TSurfaceStateRegistry& Registry);
 
-    [[nodiscard]] std::size_t GetSurfaceGPUStateValueIndex(std::size_t TexelIndex,
-                                                           std::size_t ChannelIndex,
-                                                           std::size_t ChannelCount);
+    [[nodiscard]] std::size_t
+    GetSurfaceGPUStateValueIndex(std::size_t TexelIndex, std::size_t ChannelIndex, std::size_t ChannelCount);
 
-    [[nodiscard]] std::size_t GetSurfaceGPUProfileRecordIndex(std::size_t ProfileIndex,
-                                                               std::size_t ChannelIndex,
-                                                               std::size_t ChannelCount);
+    [[nodiscard]] std::size_t
+    GetSurfaceGPUProfileRecordIndex(std::size_t ProfileIndex, std::size_t ChannelIndex, std::size_t ChannelCount);
 
-    [[nodiscard]] std::size_t GetSurfaceGPUBufferByteSize(std::size_t ElementCount,
-                                                          std::size_t ElementStride,
-                                                          std::size_t MaxStorageBufferRange);
-} // namespace MDSS
+    [[nodiscard]] std::size_t
+    GetSurfaceGPUBufferByteSize(std::size_t ElementCount, std::size_t ElementStride, std::size_t MaxStorageBufferRange);
+} // MDSS 네임스페이스

@@ -11,10 +11,13 @@ struct TSurfaceGPUProfileParameters
     vec4 DecayAndGeometry;
 };
 
+// CPU 업로드 구조체의 필드 순서와 stride를 맞춘 texel별 형상 값이다.
 struct TSurfaceGPUGeometryScalar
 {
     float MesoVirtualHeight;
     float ConcavityWeight;
+    float MesoMeanCurvature;
+    float MesoGaussianCurvature;
 };
 
 layout(std430, set = 0, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
