@@ -25,6 +25,9 @@ namespace MDSS
     namespace
     {
         constexpr float UVEpsilon = 1.0e-6F;
+        // A valid atlas can assign very small UV triangles to high-resolution meshes.
+        // Keep the degeneracy check scale-aware without rejecting those usable triangles.
+        constexpr float TriangleUVAreaEpsilon = 1.0e-8F;
         constexpr float RasterEdgeEpsilon = 1.0e-4F;
         constexpr float EdgeCandidateDistance = 0.8F;
 
@@ -186,14 +189,25 @@ namespace MDSS
             throw std::runtime_error("Surface mapping texel exceeds the eight-neighbor limit.");
         }
 
-        void AddBidirectionalNeighbor(TSurfaceMappingData& Mapping, TLocalTexelIndex A, TLocalTexelIndex B)
+        bool CanAddNeighbor(const TSurfaceMappingTexel& Texel, TLocalTexelIndex Target)
+        {
+            return std::ranges::find(Texel.Neighbors, Target) != Texel.Neighbors.end() ||
+                   std::ranges::find(Texel.Neighbors, InvalidTexelIndex) != Texel.Neighbors.end();
+        }
+
+        bool AddBidirectionalNeighbor(TSurfaceMappingData& Mapping, TLocalTexelIndex A, TLocalTexelIndex B)
         {
             if (A == B)
             {
-                return;
+                return true;
+            }
+            if (!CanAddNeighbor(Mapping.Texels[A], B) || !CanAddNeighbor(Mapping.Texels[B], A))
+            {
+                return false;
             }
             AddNeighbor(Mapping, A, B);
             AddNeighbor(Mapping, B, A);
+            return true;
         }
 
         const TSurfaceTexelRange& GetSurfaceRange(const TSurfaceMappingData& Mapping, TSurfaceLocalID Surface)
@@ -326,7 +340,7 @@ namespace MDSS
                     throw std::invalid_argument("Triangle UV must be finite and inside [0, 1].");
                 }
             }
-            if (std::abs(EdgeFunction(UVs[0], UVs[1], UVs[2])) <= UVEpsilon)
+            if (std::abs(EdgeFunction(UVs[0], UVs[1], UVs[2])) <= TriangleUVAreaEpsilon)
             {
                 throw std::invalid_argument("Triangle UV area must be greater than epsilon.");
             }
@@ -506,6 +520,7 @@ namespace MDSS
             }
         }
 
+        std::size_t TotalDroppedSeamConnections = 0;
         for (const TEdgeRecord& Seam : SeamEdges)
         {
             const std::uint32_t              FirstTriangle = Seam.Incidents[0].Triangle;
@@ -521,16 +536,32 @@ namespace MDSS
                 continue;
             }
 
+            std::size_t DroppedConnections = 0;
             for (const TSeamCandidate& Candidate : FirstCandidates)
             {
-                AddBidirectionalNeighbor(
-                    Mapping, Candidate.Texel, FindClosestCandidate(SecondCandidates, Candidate.Parameter).Texel);
+                DroppedConnections += AddBidirectionalNeighbor(
+                                          Mapping,
+                                          Candidate.Texel,
+                                          FindClosestCandidate(SecondCandidates, Candidate.Parameter).Texel)
+                                          ? 0U
+                                          : 1U;
             }
             for (const TSeamCandidate& Candidate : SecondCandidates)
             {
-                AddBidirectionalNeighbor(
-                    Mapping, Candidate.Texel, FindClosestCandidate(FirstCandidates, Candidate.Parameter).Texel);
+                DroppedConnections += AddBidirectionalNeighbor(
+                                          Mapping,
+                                          Candidate.Texel,
+                                          FindClosestCandidate(FirstCandidates, Candidate.Parameter).Texel)
+                                          ? 0U
+                                          : 1U;
             }
+            TotalDroppedSeamConnections += DroppedConnections;
+        }
+        if (TotalDroppedSeamConnections > 0)
+        {
+            Mapping.Warnings.push_back("UV seam texel links were dropped: " +
+                                       std::to_string(TotalDroppedSeamConnections) +
+                                       " bidirectional links could not fit within the eight-neighbor limit.");
         }
 
         ValidateSurfaceMapping(Mapping);
