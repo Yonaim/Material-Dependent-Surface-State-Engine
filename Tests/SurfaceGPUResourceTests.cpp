@@ -574,12 +574,40 @@ namespace
             Texel.Surface = 0;
             Texel.Triangle = 0;
             Texel.Position = {static_cast<float>(Index), 0.0F, 0.0F};
-            Texel.Normal = Index == 0
-                ? glm::vec3(0.0F, 0.0F, 1.0F)
-                : glm::vec3(std::sqrt(0.75F), 0.0F, 0.5F);
+            Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
             Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
         }
+        NormalGeometry.GetTexels()[0].TransferNormal = {0.0F, 0.0F, 1.0F};
+        NormalGeometry.GetTexels()[1].TransferNormal = {std::sqrt(0.75F), 0.0F, 0.5F};
+        NormalGeometry.GetTexels()[0].HasTransferNormal = true;
+        NormalGeometry.GetTexels()[1].HasTransferNormal = true;
         NormalGeometry.SetProfileMap({0, 0});
+
+        const std::vector<float> MappedNormalWeights = BuildSurfaceGPUTransferWeights(NormalGeometry, glm::mat4(1.0F));
+        Check(std::abs(MappedNormalWeights[0] - 0.5F) < 1.0e-5F &&
+                  std::abs(MappedNormalWeights[SurfaceNeighborCount] - 0.5F) < 1.0e-5F,
+              "precomputed Normal Map transfer normals should drive the cached NormalWeight");
+        const glm::mat4 NonUniformScale = glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 1.0F));
+        const std::vector<float> ScaledMappedWeights =
+            BuildSurfaceGPUTransferWeights(NormalGeometry, NonUniformScale);
+        Check(std::abs(ScaledMappedWeights[0] - (1.0F / std::sqrt(1.75F))) < 1.0e-5F,
+              "Normal Map transfer normals should use the instance inverse-transpose under non-uniform scale");
+        const std::vector<float> NormalWeightDisabled =
+            BuildSurfaceGPUTransferWeights(NormalGeometry, glm::mat4(1.0F), nullptr, false);
+        Check(std::abs(NormalWeightDisabled[0] - 1.0F) < 1.0e-5F,
+              "disabling the debug NormalWeight contribution should restore a neutral value");
+
+        TSharedSurfaceGeometryData FallbackGeometry = NormalGeometry;
+        for (TSurfaceTexelGeometry& Texel : FallbackGeometry.GetTexels())
+        {
+            Texel.HasTransferNormal = false;
+        }
+        FallbackGeometry.GetTexels()[1].Normal = {std::sqrt(0.75F), 0.0F, 0.5F};
+        const std::vector<float> GeometricFallbackWeights =
+            BuildSurfaceGPUTransferWeights(FallbackGeometry, glm::mat4(1.0F));
+        Check(std::abs(GeometricFallbackWeights[0] - 0.5F) < 1.0e-5F &&
+                  std::abs(GeometricFallbackWeights[SurfaceNeighborCount] - 0.5F) < 1.0e-5F,
+              "missing Normal Map transfer normals should fall back to geometric normals");
 
         TSurfaceSharedGeometryGPUResources NormalSharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), NormalGeometry);
@@ -603,7 +631,7 @@ namespace
         NormalInstance.GetStateBBuffer().Download(NormalResult.data(), sizeof(NormalResult));
         Check(std::abs(NormalResult[0] - 0.875F) < 1.0e-4F &&
                   std::abs(NormalResult[1] - 0.125F) < 1.0e-4F,
-              "NormalWeight should multiply flux by the transformed endpoint normal alignment");
+              "GPU solver flux should use the Normal Map-derived NormalWeight from the cache");
     }
 } // namespace
 

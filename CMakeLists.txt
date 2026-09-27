@@ -244,6 +244,20 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME MDSS_SurfaceMapping COMMAND MDSS_SurfaceMappingTests)
 
+    add_executable(MDSS_NormalMapTransferTests
+        Tests/NormalMapTransferTests.cpp
+        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.cpp
+    )
+    target_include_directories(MDSS_NormalMapTransferTests PRIVATE Source)
+    target_link_libraries(MDSS_NormalMapTransferTests PRIVATE glm::glm)
+    if(MSVC)
+        target_compile_options(MDSS_NormalMapTransferTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(MDSS_NormalMapTransferTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME MDSS_NormalMapTransfer COMMAND MDSS_NormalMapTransferTests)
+
     add_executable(MDSS_SharedSurfaceGeometryTests
         Tests/SharedSurfaceGeometryTests.cpp
         Source/AssetManager/Loaders/MTLLoader.cpp
