@@ -39,6 +39,7 @@ namespace MDSS
         TexelChartIndices,
         TransferWeights,
         RawOutgoing,
+        TransferWeightDebugAverages,
         Count
     };
 
@@ -106,15 +107,18 @@ namespace MDSS
                                      VkDevice         Device,
                                      std::size_t      TexelCount,
                                      std::size_t      ChannelCount,
-                                     const std::vector<float>& TransferWeights);
+                                     const std::vector<float>& TransferWeights,
+                                     const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
 
         [[nodiscard]] const TGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetStateBBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetOutgoingFluxScaleBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetInputDeltaBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTransferWeightBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetTransferWeightDebugAverageBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
-        void UpdateTransferWeights(const std::vector<float>& TransferWeights);
+        void UpdateTransferWeights(const std::vector<float>& TransferWeights,
+                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
 
@@ -127,6 +131,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> OutgoingFluxScaleBuffer;
         std::unique_ptr<TGPUBuffer> InputDeltaBuffer;
         std::unique_ptr<TGPUBuffer> TransferWeightBuffer;
+        std::unique_ptr<TGPUBuffer> TransferWeightDebugAverageBuffer;
         std::unique_ptr<TGPUBuffer> RawOutgoingBuffer;
     };
 
@@ -188,7 +193,7 @@ namespace MDSS
         [[nodiscard]] bool IsCurrentStateAB(std::size_t SceneIndex) const;
         [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex,
                                                           const glm::mat4& ModelMatrix) const;
-        void UpdateTransferWeightCache(std::size_t SceneIndex, const glm::mat4& ModelMatrix);
+        void UpdateTransferWeightCache(std::size_t SceneIndex, const glm::mat4& ModelMatrix, bool bUseNormalWeight = true);
         void InvalidateTransferWeightCache(std::size_t SceneIndex);
         void AdvanceCurrentState(std::size_t SceneIndex);
 

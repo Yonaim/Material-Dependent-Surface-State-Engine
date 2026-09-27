@@ -79,10 +79,16 @@ namespace MDSS
 
                 const std::size_t TexelCount = SharedIt->second.Geometry->GetTexelCount();
                 const glm::mat4 ModelMatrix = MeshInstance.GetTransform().GetMatrix();
+                std::vector<TSurfaceGPUVec4> TransferWeightDebugAverages;
                 const std::vector<float> TransferWeights = BuildSurfaceGPUTransferWeights(
-                    *SharedIt->second.CPUGeometry, ModelMatrix);
+                    *SharedIt->second.CPUGeometry, ModelMatrix, &TransferWeightDebugAverages);
                 auto State = std::make_unique<TSurfaceInstanceGPUResources>(
-                    PhysicalDevice, Device, TexelCount, Registry.GetStateCount(), TransferWeights);
+                    PhysicalDevice,
+                    Device,
+                    TexelCount,
+                    Registry.GetStateCount(),
+                    TransferWeights,
+                    TransferWeightDebugAverages);
                 auto Descriptors = std::make_unique<TSurfaceStateDescriptorResources>(
                     Device, *SharedIt->second.Geometry, *SharedIt->second.Profiles, *State);
 
@@ -240,7 +246,8 @@ namespace MDSS
     }
 
     void TSurfaceGPUResourceManager::UpdateTransferWeightCache(std::size_t SceneIndex,
-                                                                const glm::mat4& ModelMatrix)
+                                                                const glm::mat4& ModelMatrix,
+                                                                bool bUseNormalWeight)
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
@@ -252,9 +259,13 @@ namespace MDSS
         {
             throw std::logic_error("Surface TransferWeight cache has no source Geometry.");
         }
+        std::vector<TSurfaceGPUVec4> TransferWeightDebugAverages;
         const std::vector<float> TransferWeights =
-            BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry, ModelMatrix);
-        Instance.State->UpdateTransferWeights(TransferWeights);
+            BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry,
+                                           ModelMatrix,
+                                           &TransferWeightDebugAverages,
+                                           bUseNormalWeight);
+        Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages);
         Instance.TransferWeightModelMatrix = ModelMatrix;
         Instance.bTransferWeightCacheValid = true;
     }
