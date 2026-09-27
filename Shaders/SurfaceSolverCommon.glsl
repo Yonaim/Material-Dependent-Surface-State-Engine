@@ -139,11 +139,17 @@ float saturation(uint TexelIndex, uint ChannelIndex)
 
 float decayAmount(uint TexelIndex, uint ChannelIndex)
 {
+    if ((Solver.Flags & (1u << 2u)) != 0u)
+    {
+        return 0.0;
+    }
     uint RecordIndex = profileRecordIndex(TexelIndex, ChannelIndex);
     float DecayRate = ProfileParameters.Values[RecordIndex].DecayAndGeometry.x;
     float CavityRetentionFactor = ProfileParameters.Values[RecordIndex].DecayAndGeometry.y;
     float ConcavityWeight = GeometryScalars.Values[TexelIndex].ConcavityWeight;
-    float Retention = 1.0 - ConcavityWeight * CavityRetentionFactor;
+    float Retention = (Solver.Flags & (1u << 3u)) != 0u
+                          ? 1.0
+                          : 1.0 - ConcavityWeight * CavityRetentionFactor;
     float Current = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
     return min(Current, max(0.0, DecayRate * Retention * Solver.DeltaTime));
 }
@@ -227,11 +233,14 @@ float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float Cache
     uint SourceRecordIndex = profileRecordIndex(SourceTexel, ChannelIndex);
     TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[SourceRecordIndex];
     float TransferRate = Parameters.CapacityInputAndTransfer.z;
-    float SaturationDrive = max(saturation(SourceTexel, ChannelIndex) -
-                                saturation(TargetTexel, ChannelIndex), 0.0);
+    float SaturationDrive = (Solver.Flags & (1u << 1u)) != 0u
+                                ? 0.0
+                                : max(saturation(SourceTexel, ChannelIndex) -
+                                          saturation(TargetTexel, ChannelIndex),
+                                      0.0);
     float GeometryTransferRate = Parameters.CapacityInputAndTransfer.w;
     float GeometryDrive = 0.0;
-    if (GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u)
+    if (GeometryTransferRate > 0.0 && (Solver.Flags & (1u << 0u)) == 0u)
     {
         float SourceHeight = effectiveWorldHeight(SourceTexel);
         float TargetHeight = effectiveWorldHeight(TargetTexel);

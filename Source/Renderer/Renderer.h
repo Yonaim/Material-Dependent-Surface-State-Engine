@@ -31,6 +31,7 @@ namespace MDSS
     {
         Lit = 0,
         Unlit,
+        Wireframe,
         VertexNormalWS,
         NormalTextureTS,
         MappedNormalWS,
@@ -39,6 +40,7 @@ namespace MDSS
         SurfaceID,
         NeighborCount,
         SurfaceSeam,
+        OutgoingFluxScale,
         SolverTransferWeight,
         /** @brief 부호가 있는 중간 규모 높이를 색상으로 표시한다. */
         MesoHeight,
@@ -87,6 +89,9 @@ namespace MDSS
         [[nodiscard]] const TSurfaceGPUResourceManager& GetSurfaceGPUResources() const noexcept;
         /** @brief 마지막 완료 프레임에서 측정한 GPU Solver 시간(ms), 미지원 시 -1. */
         [[nodiscard]] float GetLastSolverGpuMilliseconds() const noexcept;
+        [[nodiscard]] float GetLastRenderGpuMilliseconds() const noexcept;
+        [[nodiscard]] float GetLastSolverPass1GpuMilliseconds() const noexcept;
+        [[nodiscard]] float GetLastSolverPass2GpuMilliseconds() const noexcept;
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
@@ -100,6 +105,8 @@ namespace MDSS
         void SetDebugGeometryDriveEnabled(bool bEnabled);
         [[nodiscard]] bool IsDebugNormalWeightEnabled() const noexcept;
         void SetDebugNormalWeightEnabled(bool bEnabled);
+        [[nodiscard]] bool IsDebugSolverTermEnabled(TSurfaceSolverTerm Term) const noexcept;
+        void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);
@@ -128,13 +135,15 @@ namespace MDSS
         void CreateMaterialDescriptorResources();
         void CreateRenderFinishedSemaphores();
         void DestroyRenderFinishedSemaphores() noexcept;
+        void CreateTimestampQueryPool(std::size_t SolverInstanceCount);
         void UpdateMaterialUniforms();
         void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
                                  std::uint32_t   ImageIndex,
                                  const TScene&    SceneData,
                                  const TDebugUI&  DebugInterface,
-                                 float            DeltaTime);
+                                 float            DeltaTime,
+                                 bool             bRunSolverStep);
 
         const TVulkanContext&                Context;
         TWindow&                             TargetWindow;
@@ -146,6 +155,7 @@ namespace MDSS
         TRenderPass                          MainRenderPass;
         VkDescriptorSetLayout               MaterialDescriptorSetLayout = VK_NULL_HANDLE;
         TGraphicsPipeline                    StaticMeshPipeline;
+        TGraphicsPipeline                    WireframePipeline;
         TGraphicsPipeline                    GizmoPipeline;
         TGraphicsPipeline                    WorldReferencePipeline;
         std::unique_ptr<TGPUBuffer>           GizmoVertexBuffer;
@@ -160,18 +170,23 @@ namespace MDSS
         std::uint32_t                         DebugStateChannel = 0;
         bool                                 bStateHeatmapReliefShadingEnabled = true;
         TSolverTransferWeightView             SolverTransferWeightView = TSolverTransferWeightView::Combined;
-        bool                                  bDebugGeometryDriveEnabled = true;
-        bool                                  bDebugNormalWeightEnabled = true;
+        TSurfaceSolverDebugSettings DebugSolverSettings;
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;
         std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> DebugProfileParameterOverrides;
         std::vector<VkSemaphore> RenderFinishedSemaphores;
-        VkQueryPool SolverTimestampQueryPool = VK_NULL_HANDLE;
+        VkQueryPool TimestampQueryPool = VK_NULL_HANDLE;
         std::array<bool, TRenderContext::MaxFramesInFlight> bTimestampQueriesSubmitted{};
+        std::array<bool, TRenderContext::MaxFramesInFlight> bSolverTimestampQueriesSubmitted{};
+        std::uint32_t TimestampQueriesPerFrame = 2;
+        std::uint32_t SolverTimestampSlotCount = 0;
         float TimestampPeriodNanoseconds = 0.0F;
         std::uint32_t TimestampValidBits = 0;
+        float LastRenderGpuMilliseconds = -1.0F;
         float LastSolverGpuMilliseconds = -1.0F;
+        float LastSolverPass1GpuMilliseconds = -1.0F;
+        float LastSolverPass2GpuMilliseconds = -1.0F;
     };
 } // MDSS 네임스페이스

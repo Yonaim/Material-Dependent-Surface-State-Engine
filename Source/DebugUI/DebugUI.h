@@ -23,6 +23,7 @@
 #include <vector>
 
 struct GLFWwindow;
+struct ImFont;
 
 namespace MDSS
 {
@@ -62,11 +63,13 @@ namespace MDSS
         [[nodiscard]] float GetInjectFalloff() const noexcept;
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
+        [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
+        [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
         [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] int GetHoveredGizmoAxis() const noexcept;
         [[nodiscard]] TStateId GetDebugState() const noexcept;
-        [[nodiscard]] bool IsKeyboardCaptured() const noexcept;
+        [[nodiscard]] bool ShouldSuppressDebugHotkey() const noexcept;
 
     private:
         void ProcessCameraInput(TScene& SceneData);
@@ -80,6 +83,7 @@ namespace MDSS
         void DrawSimulationDebugWindow(const TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
+        void DrawSectionHeader(const char* Title) const;
 
         VkDevice    Device = VK_NULL_HANDLE;
         GLFWwindow* NativeWindow = nullptr;
@@ -95,6 +99,8 @@ namespace MDSS
         float       InjectFalloff = 1.0F;
         float       SimulationTimeScale = 1.0F;
         bool        bSimulationPaused = false;
+        bool        bSolverStepRequested = false;
+        bool        bSolverResetRequested = false;
         TSRProfileAssetHandle DebugParameterProfile = InvalidAssetHandle;
         TStateId DebugParameterState = 0;
         std::pair<TSRProfileAssetHandle, TStateId> ParameterDraftKey{InvalidAssetHandle, InvalidStateId};
@@ -115,6 +121,7 @@ namespace MDSS
         float       GizmoDragPixelLength = 0.0F;
         std::string SceneStatus;
         std::uint32_t DockspaceID = 0;
+        ImFont* SectionHeaderFont = nullptr;
         glm::vec4 SceneViewportRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
 
         std::array<bool, static_cast<std::size_t>(TLogLevel::Count)> LogLevelFilters{true, true, true, true, true};
@@ -123,5 +130,14 @@ namespace MDSS
         std::uint64_t                                               LastSeenLogRevision = 0;
         bool                                                        bScrollLogToBottom = true;
         float                                                       LogWindowHeight = 540.0F;
+        double                                                      ProfilingWindowElapsed = 0.0;
+        double                                                      ProfilingFpsSum = 0.0;
+        double                                                      ProfilingFrameTimeSum = 0.0;
+        std::uint32_t                                               ProfilingFrameSamples = 0;
+        std::array<double, 4>                                       ProfilingGpuSums{};
+        std::array<std::uint32_t, 4>                                ProfilingGpuSamples{};
+        std::array<float, 6>                                        ProfilingAverages{-1.0F, -1.0F, -1.0F,
+                                                                                     -1.0F, -1.0F, -1.0F};
+        bool                                                        bProfilingAverageAvailable = false;
     };
 } // namespace MDSS

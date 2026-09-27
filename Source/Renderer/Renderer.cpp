@@ -167,6 +167,8 @@ namespace MDSS
                     return "Lit";
                 case TRenderViewMode::Unlit:
                     return "Unlit";
+                case TRenderViewMode::Wireframe:
+                    return "Wireframe";
                 case TRenderViewMode::VertexNormalWS:
                     return "Vertex Normal (World Space)";
                 case TRenderViewMode::NormalTextureTS:
@@ -183,6 +185,8 @@ namespace MDSS
                     return "Neighbor Count";
                 case TRenderViewMode::SurfaceSeam:
                     return "Surface Seam";
+                case TRenderViewMode::OutgoingFluxScale:
+                    return "Outgoing Flux Scale";
                 case TRenderViewMode::SolverTransferWeight:
                     return "Solver Transfer Weight";
                 case TRenderViewMode::MesoHeight:
@@ -255,6 +259,13 @@ namespace MDSS
             return Config;
         }
 
+        TGraphicsPipelineConfig BuildWireframePipelineConfig(VkDescriptorSetLayout MaterialLayout)
+        {
+            TGraphicsPipelineConfig Config = BuildStaticMeshPipelineConfig(MaterialLayout);
+            Config.PolygonMode = VK_POLYGON_MODE_LINE;
+            return Config;
+        }
+
         TGraphicsPipelineConfig BuildGizmoPipelineConfig()
         {
             TGraphicsPipelineConfig Config{};
@@ -320,6 +331,9 @@ namespace MDSS
           StaticMeshPipeline(Context.GetDevice(),
                              MainRenderPass.GetHandle(),
                              BuildStaticMeshPipelineConfig(MaterialDescriptorSetLayout)),
+          WireframePipeline(Context.GetDevice(),
+                            MainRenderPass.GetHandle(),
+                            BuildWireframePipelineConfig(MaterialDescriptorSetLayout)),
           GizmoPipeline(Context.GetDevice(), MainRenderPass.GetHandle(), BuildGizmoPipelineConfig()),
           WorldReferencePipeline(Context.GetDevice(), MainRenderPass.GetHandle(), BuildWorldReferencePipelineConfig()),
           MainFramebuffers(Context.GetDevice(),
@@ -367,16 +381,7 @@ namespace MDSS
         }
         if (TimestampValidBits > 0)
         {
-            VkQueryPoolCreateInfo QueryPoolInfo{};
-            QueryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-            QueryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-            QueryPoolInfo.queryCount = static_cast<std::uint32_t>(TRenderContext::MaxFramesInFlight * 2U);
-            if (vkCreateQueryPool(Context.GetDevice(), &QueryPoolInfo, nullptr, &SolverTimestampQueryPool) !=
-                VK_SUCCESS)
-            {
-                SolverTimestampQueryPool = VK_NULL_HANDLE;
-                TLogger::Warning("TRenderer", "GPU timestamp queries unavailable; Solver GPU time will be hidden.");
-            }
+            CreateTimestampQueryPool(SurfaceStates->GetSolverTimestampSlotCount());
         }
         else
         {
@@ -394,10 +399,10 @@ namespace MDSS
         {
             vkDeviceWaitIdle(Context.GetDevice());
         }
-        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkDestroyQueryPool(Context.GetDevice(), SolverTimestampQueryPool, nullptr);
-            SolverTimestampQueryPool = VK_NULL_HANDLE;
+            vkDestroyQueryPool(Context.GetDevice(), TimestampQueryPool, nullptr);
+            TimestampQueryPool = VK_NULL_HANDLE;
         }
         DestroyRenderFinishedSemaphores();
 
@@ -421,30 +426,61 @@ namespace MDSS
     {
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
         FrameContext.WaitForCurrentFrame();
-        if (SolverTimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
+        if (TimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
         {
-            const std::uint32_t QueryBase = FrameIndex * 2U;
-            std::array<std::uint64_t, 2> Timestamps{};
+            const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
+            const std::uint32_t QueryCount = bSolverTimestampQueriesSubmitted[FrameIndex]
+                                                 ? TimestampQueriesPerFrame
+                                                 : 2U;
+            std::vector<std::uint64_t> Timestamps(QueryCount, 0U);
             const VkResult QueryResult = vkGetQueryPoolResults(Context.GetDevice(),
-                                                               SolverTimestampQueryPool,
+                                                               TimestampQueryPool,
                                                                QueryBase,
-                                                               static_cast<std::uint32_t>(Timestamps.size()),
-                                                               sizeof(Timestamps),
+                                                               QueryCount,
+                                                               Timestamps.size() * sizeof(std::uint64_t),
                                                                Timestamps.data(),
-                                                               sizeof(Timestamps[0]),
+                                                               sizeof(std::uint64_t),
                                                                VK_QUERY_RESULT_64_BIT);
             if (QueryResult == VK_SUCCESS && TimestampPeriodNanoseconds > 0.0F)
             {
-                std::uint64_t ElapsedTicks = Timestamps[1] - Timestamps[0];
-                if (TimestampValidBits < 64U)
+                const auto ToMilliseconds = [this](std::uint64_t Start, std::uint64_t End)
                 {
-                    ElapsedTicks &= (std::uint64_t{1} << TimestampValidBits) - 1U;
+                    std::uint64_t ElapsedTicks = End - Start;
+                    if (TimestampValidBits < 64U)
+                    {
+                        ElapsedTicks &= (std::uint64_t{1} << TimestampValidBits) - 1U;
+                    }
+                    return static_cast<float>(static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
+                };
+                LastRenderGpuMilliseconds = ToMilliseconds(Timestamps[0], Timestamps[1]);
+                if (bSolverTimestampQueriesSubmitted[FrameIndex])
+                {
+                    LastSolverPass1GpuMilliseconds = 0.0F;
+                    LastSolverPass2GpuMilliseconds = 0.0F;
+                    for (std::uint32_t Slot = 0; Slot < SolverTimestampSlotCount; ++Slot)
+                    {
+                        const std::uint32_t SlotQuery = 2U + Slot * 4U;
+                        LastSolverPass1GpuMilliseconds +=
+                            ToMilliseconds(Timestamps[SlotQuery], Timestamps[SlotQuery + 1U]);
+                        LastSolverPass2GpuMilliseconds +=
+                            ToMilliseconds(Timestamps[SlotQuery + 2U], Timestamps[SlotQuery + 3U]);
+                    }
+                    LastSolverGpuMilliseconds =
+                        LastSolverPass1GpuMilliseconds + LastSolverPass2GpuMilliseconds;
                 }
-                LastSolverGpuMilliseconds =
-                    static_cast<float>(static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
             }
             bTimestampQueriesSubmitted[FrameIndex] = false;
+            bSolverTimestampQueriesSubmitted[FrameIndex] = false;
         }
+
+        const bool bResetSolverState = DebugInterface.ConsumeSolverResetRequest();
+        const bool bRequestSolverStep = DebugInterface.ConsumeSolverStepRequest();
+        if (bResetSolverState)
+        {
+            SurfaceStates->ResetState();
+        }
+        const bool bRunSolverStep = !bResetSolverState &&
+                                    (!DebugInterface.IsSimulationPaused() || bRequestSolverStep);
 
         if (TargetWindow.WasFramebufferResized())
         {
@@ -479,10 +515,11 @@ namespace MDSS
             throw std::runtime_error("Failed to reset Vulkan command buffer.");
         }
 
-        RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, DeltaTime);
-        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, DeltaTime, bRunSolverStep);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             bTimestampQueriesSubmitted[FrameIndex] = true;
+            bSolverTimestampQueriesSubmitted[FrameIndex] = bRunSolverStep;
         }
 
         const VkSemaphore          WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
@@ -570,8 +607,11 @@ namespace MDSS
             throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
         auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
-        Replacement->SetDebugGeometryDriveEnabled(bDebugGeometryDriveEnabled);
-        Replacement->SetDebugNormalWeightEnabled(bDebugNormalWeightEnabled);
+        for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
+        {
+            Replacement->SetDebugSolverTermEnabled(
+                static_cast<TSurfaceSolverTerm>(Index), DebugSolverSettings.Enabled[Index]);
+        }
         for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
         {
             try
@@ -595,6 +635,7 @@ namespace MDSS
         SurfaceDebugPipeline.reset();
         SurfaceStates = std::move(Replacement);
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
+        CreateTimestampQueryPool(SurfaceStates->GetSolverTimestampSlotCount());
     }
 
     void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
@@ -677,6 +718,21 @@ namespace MDSS
         return LastSolverGpuMilliseconds;
     }
 
+    float TRenderer::GetLastRenderGpuMilliseconds() const noexcept
+    {
+        return LastRenderGpuMilliseconds;
+    }
+
+    float TRenderer::GetLastSolverPass1GpuMilliseconds() const noexcept
+    {
+        return LastSolverPass1GpuMilliseconds;
+    }
+
+    float TRenderer::GetLastSolverPass2GpuMilliseconds() const noexcept
+    {
+        return LastSolverPass2GpuMilliseconds;
+    }
+
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
     {
         return ViewMode;
@@ -745,30 +801,36 @@ namespace MDSS
 
     bool TRenderer::IsDebugGeometryDriveEnabled() const noexcept
     {
-        return bDebugGeometryDriveEnabled;
+        return IsDebugSolverTermEnabled(TSurfaceSolverTerm::GeometryDrive);
     }
 
     void TRenderer::SetDebugGeometryDriveEnabled(bool bEnabled)
     {
-        bDebugGeometryDriveEnabled = bEnabled;
+        SetDebugSolverTermEnabled(TSurfaceSolverTerm::GeometryDrive, bEnabled);
+    }
+
+    bool TRenderer::IsDebugSolverTermEnabled(TSurfaceSolverTerm Term) const noexcept
+    {
+        return DebugSolverSettings.IsEnabled(Term);
+    }
+
+    void TRenderer::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled)
+    {
+        DebugSolverSettings.SetEnabled(Term, bEnabled);
         if (SurfaceStates)
         {
-            SurfaceStates->SetDebugGeometryDriveEnabled(bEnabled);
+            SurfaceStates->SetDebugSolverTermEnabled(Term, bEnabled);
         }
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept
     {
-        return bDebugNormalWeightEnabled;
+        return IsDebugSolverTermEnabled(TSurfaceSolverTerm::NormalWeight);
     }
 
     void TRenderer::SetDebugNormalWeightEnabled(bool bEnabled)
     {
-        bDebugNormalWeightEnabled = bEnabled;
-        if (SurfaceStates)
-        {
-            SurfaceStates->SetDebugNormalWeightEnabled(bEnabled);
-        }
+        SetDebugSolverTermEnabled(TSurfaceSolverTerm::NormalWeight, bEnabled);
     }
 
     bool TRenderer::GetFlipNormalY() const noexcept
@@ -873,6 +935,43 @@ namespace MDSS
             }
         }
         RenderFinishedSemaphores.clear();
+    }
+
+    void TRenderer::CreateTimestampQueryPool(std::size_t SolverInstanceCount)
+    {
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkDestroyQueryPool(Context.GetDevice(), TimestampQueryPool, nullptr);
+            TimestampQueryPool = VK_NULL_HANDLE;
+        }
+        if (TimestampValidBits == 0U)
+        {
+            return;
+        }
+        if (SolverInstanceCount > (std::numeric_limits<std::uint32_t>::max() - 2U) / 4U)
+        {
+            TLogger::Warning("TRenderer", "GPU timing query count exceeds the supported range.");
+            return;
+        }
+
+        SolverTimestampSlotCount = static_cast<std::uint32_t>(SolverInstanceCount);
+        TimestampQueriesPerFrame = 2U + SolverTimestampSlotCount * 4U;
+        VkQueryPoolCreateInfo QueryPoolInfo{};
+        QueryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+        QueryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+        QueryPoolInfo.queryCount =
+            static_cast<std::uint32_t>(TRenderContext::MaxFramesInFlight) * TimestampQueriesPerFrame;
+        if (vkCreateQueryPool(Context.GetDevice(), &QueryPoolInfo, nullptr, &TimestampQueryPool) != VK_SUCCESS)
+        {
+            TimestampQueryPool = VK_NULL_HANDLE;
+            LastRenderGpuMilliseconds = -1.0F;
+            LastSolverGpuMilliseconds = -1.0F;
+            LastSolverPass1GpuMilliseconds = -1.0F;
+            LastSolverPass2GpuMilliseconds = -1.0F;
+            TLogger::Warning("TRenderer", "GPU timestamp queries unavailable; profiling timings will be hidden.");
+        }
+        bTimestampQueriesSubmitted.fill(false);
+        bSolverTimestampQueriesSubmitted.fill(false);
     }
 
     void TRenderer::CreateMaterialDescriptorResources()
@@ -1014,7 +1113,8 @@ namespace MDSS
                                        std::uint32_t   ImageIndex,
                                        const TScene&    SceneData,
                                        const TDebugUI&  DebugInterface,
-                                       float            DeltaTime)
+                                       float            DeltaTime,
+                                       bool             bRunSolverStep)
     {
         VkCommandBufferBeginInfo BeginInfo{};
         BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1024,17 +1124,14 @@ namespace MDSS
         }
 
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
-        const std::uint32_t QueryBase = FrameIndex * 2U;
-        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
+        if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdResetQueryPool(CommandBuffer, SolverTimestampQueryPool, QueryBase, 2);
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, SolverTimestampQueryPool, QueryBase);
+            vkCmdResetQueryPool(CommandBuffer, TimestampQueryPool, QueryBase, TimestampQueriesPerFrame);
         }
-        SurfaceStates->RecordStep(CommandBuffer, DeltaTime);
-        if (SolverTimestampQueryPool != VK_NULL_HANDLE)
+        if (bRunSolverStep)
         {
-            vkCmdWriteTimestamp(
-                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, SolverTimestampQueryPool, QueryBase + 1U);
+            SurfaceStates->RecordStep(CommandBuffer, DeltaTime, TimestampQueryPool, QueryBase + 2U);
         }
 
         std::array<VkClearValue, 2> ClearValues{};
@@ -1050,12 +1147,19 @@ namespace MDSS
         RenderPassInfo.clearValueCount = static_cast<std::uint32_t>(ClearValues.size());
         RenderPassInfo.pClearValues = ClearValues.data();
 
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase);
+        }
         vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         const bool bShowSurfaceDebug = ViewMode >= TRenderViewMode::SurfaceStateHeatmap;
         const bool bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
+        const bool bWireframe = ViewMode == TRenderViewMode::Wireframe;
         vkCmdBindPipeline(CommandBuffer,
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle() : StaticMeshPipeline.GetHandle());
+                          bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle()
+                                               : (bWireframe ? WireframePipeline.GetHandle()
+                                                             : StaticMeshPipeline.GetHandle()));
 
         const VkExtent2D    Extent = SwapchainData.GetExtent();
         const glm::vec4     NormalizedViewport = DebugInterface.GetSceneViewportRectNormalized();
@@ -1115,7 +1219,8 @@ namespace MDSS
 
             const TStaticMeshPushConstants PushConstants{Instance.GetTransform().GetMatrix(), ViewProjection};
             vkCmdPushConstants(CommandBuffer,
-                               StaticMeshPipeline.GetLayout(),
+                               bWireframe && !bCanShowSurfaceDebug ? WireframePipeline.GetLayout()
+                                                                  : StaticMeshPipeline.GetLayout(),
                                VK_SHADER_STAGE_VERTEX_BIT,
                                0,
                                sizeof(PushConstants),
@@ -1132,7 +1237,8 @@ namespace MDSS
                 vkCmdBindDescriptorSets(CommandBuffer,
                                         VK_PIPELINE_BIND_POINT_GRAPHICS,
                                         bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetLayout()
-                                                            : StaticMeshPipeline.GetLayout(),
+                                                            : (bWireframe ? WireframePipeline.GetLayout()
+                                                                          : StaticMeshPipeline.GetLayout()),
                                         0,
                                         1,
                                         &DescriptorSet,
@@ -1202,6 +1308,13 @@ namespace MDSS
             }
         }
 
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                TimestampQueryPool,
+                                QueryBase + 1U);
+        }
         DebugInterface.Render(CommandBuffer);
 
         vkCmdEndRenderPass(CommandBuffer);

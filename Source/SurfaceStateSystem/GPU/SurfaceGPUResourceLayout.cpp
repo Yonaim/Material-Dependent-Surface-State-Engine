@@ -83,7 +83,9 @@ namespace MDSS
     std::vector<float> BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
                                                       const glm::mat4&                  ModelMatrix,
                                                       std::vector<TSurfaceGPUVec4>*     OutDebugAverages,
-                                                      bool                             bUseNormalWeight)
+                                                      bool                             bUseNormalWeight,
+                                                      bool                             bUseDistanceWeight,
+                                                      bool                             bUseProfileBoundaryWeight)
     {
         const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
         const std::vector<TSurfaceProfileIndex>&  Profiles = Geometry.GetProfileMap();
@@ -137,7 +139,7 @@ namespace MDSS
 
         for (std::size_t Index = 0; Index < TexelCount; ++Index)
         {
-            if (!bValidPosition[Index])
+            if (!bUseDistanceWeight || !bValidPosition[Index])
             {
                 continue;
             }
@@ -164,7 +166,8 @@ namespace MDSS
 
         for (std::size_t Index = 0; Index < TexelCount; ++Index)
         {
-            if (!bValidPosition[Index] || !bValidNormal[Index] || MeanNeighborDistances[Index] <= GeometryEpsilon)
+            if (!bValidPosition[Index] || (bUseNormalWeight && !bValidNormal[Index]) ||
+                (bUseDistanceWeight && MeanNeighborDistances[Index] <= GeometryEpsilon))
             {
                 continue;
             }
@@ -172,28 +175,34 @@ namespace MDSS
             {
                 const TLocalTexelIndex NeighborIndex = Texels[Index].NeighborIndices[Slot];
                 if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount ||
-                    !bValidPosition[NeighborIndex] || !bValidNormal[NeighborIndex] ||
-                    MeanNeighborDistances[NeighborIndex] <= GeometryEpsilon)
+                    !bValidPosition[NeighborIndex] || (bUseNormalWeight && !bValidNormal[NeighborIndex]) ||
+                    (bUseDistanceWeight && MeanNeighborDistances[NeighborIndex] <= GeometryEpsilon))
                 {
                     continue;
                 }
 
-                const float EdgeDistance = glm::length(WorldPositions[NeighborIndex] - WorldPositions[Index]);
-                const float ReferenceDistance =
-                    0.5F * (MeanNeighborDistances[Index] + MeanNeighborDistances[NeighborIndex]);
-                if (!std::isfinite(EdgeDistance) || !std::isfinite(ReferenceDistance) ||
-                    EdgeDistance <= GeometryEpsilon || ReferenceDistance <= GeometryEpsilon)
+                float DistanceWeight = 1.0F;
+                if (bUseDistanceWeight)
                 {
-                    continue;
+                    const float EdgeDistance = glm::length(WorldPositions[NeighborIndex] - WorldPositions[Index]);
+                    const float ReferenceDistance =
+                        0.5F * (MeanNeighborDistances[Index] + MeanNeighborDistances[NeighborIndex]);
+                    if (!std::isfinite(EdgeDistance) || !std::isfinite(ReferenceDistance) ||
+                        EdgeDistance <= GeometryEpsilon || ReferenceDistance <= GeometryEpsilon)
+                    {
+                        continue;
+                    }
+                    DistanceWeight = std::clamp(ReferenceDistance / EdgeDistance, 0.0F, 1.0F);
                 }
 
-                const float DistanceWeight = std::clamp(ReferenceDistance / EdgeDistance, 0.0F, 1.0F);
                 const float NormalWeight =
                     bUseNormalWeight
                         ? std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]), 0.0F, 1.0F)
-                                               : 1.0F;
+                        : 1.0F;
                 constexpr float CurvatureWeight = 1.0F;
-                const float     ProfileBoundaryWeight = Profiles[Index] == Profiles[NeighborIndex] ? 1.0F : 0.5F;
+                const float ProfileBoundaryWeight = !bUseProfileBoundaryWeight || Profiles[Index] == Profiles[NeighborIndex]
+                                                        ? 1.0F
+                                                        : 0.5F;
                 const float TransferWeight = DistanceWeight * NormalWeight * CurvatureWeight * ProfileBoundaryWeight;
                 Result[Index * SurfaceNeighborCount + Slot] = TransferWeight;
                 DebugSums[Index][0] += TransferWeight;

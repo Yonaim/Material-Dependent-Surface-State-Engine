@@ -10,6 +10,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <glm/mat4x4.hpp>
@@ -17,6 +18,34 @@
 
 namespace MDSS
 {
+    enum class TSurfaceSolverTerm : std::uint8_t
+    {
+        SaturationDrive,
+        GeometryDrive,
+        Decay,
+        ConcavityRetention,
+        DistanceWeight,
+        NormalWeight,
+        ProfileBoundaryWeight,
+        Count
+    };
+
+    struct TSurfaceSolverDebugSettings
+    {
+        std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
+            true, true, true, true, true, true, true};
+
+        [[nodiscard]] bool IsEnabled(TSurfaceSolverTerm Term) const noexcept
+        {
+            return Enabled[static_cast<std::size_t>(Term)];
+        }
+
+        void SetEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept
+        {
+            Enabled[static_cast<std::size_t>(Term)] = bEnabled;
+        }
+    };
+
     class TSurfaceStateSolver final
     {
     public:
@@ -36,7 +65,9 @@ namespace MDSS
                         float DeltaTime,
                         const glm::mat4& ModelMatrix,
                         const glm::vec3& GravityWorld,
-                        bool bGeometryDriveEnabled = true) const;
+                        std::uint32_t SolverFlags = 0U,
+                        VkQueryPool TimestampQueryPool = VK_NULL_HANDLE,
+                        std::uint32_t FirstPassQuery = 0U) const;
 
     private:
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);

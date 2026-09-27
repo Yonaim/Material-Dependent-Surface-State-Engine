@@ -105,7 +105,9 @@ namespace MDSS
     BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
         const glm::mat4& ModelMatrix,
         std::vector<TSurfaceGPUVec4>* OutDebugAverages = nullptr,
-        bool bUseNormalWeight = true);
+        bool bUseNormalWeight = true,
+        bool bUseDistanceWeight = true,
+        bool bUseProfileBoundaryWeight = true);
 
     [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
         const TSurfaceStateRegistry& Registry);
