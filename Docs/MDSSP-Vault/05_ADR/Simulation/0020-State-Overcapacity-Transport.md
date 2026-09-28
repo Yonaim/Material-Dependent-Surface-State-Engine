@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** State A/B에 Capacity 초과량을 포함해 보존하고, Saturation 차이에 따른 기존 Transport 경로로 다음 Solver step부터 이동시킨다.
 
-- Status: **Accepted — 구현 완료 · GPU 실행 검증 대기**
+- Status: **Accepted — 구현 완료 · 일부 GPU 회귀 검증 완료**
 - Date: 2026-09-28
 - Supersedes: [[0001-Capacity-and-Saturation|ADR 0001]]의 State 상한 및 초과량 처리 계약
 
@@ -40,6 +40,7 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 - RawFlux의 Drive/Weight 및 source Profile rate 구조는 유지한다. Capacity는 각 endpoint의 Saturation 계산에 사용하며 목적지의 남은 저장 공간을 검사하거나 전달량의 상한으로 사용하지 않는다.
 - Pass 1의 OutgoingFluxScale(alpha)은 감쇠 후 source 보유량만 제한한다. 초과분을 전량 즉시 보내기 위해 alpha를 1보다 크게 만들지 않는다. alpha는 State가 Capacity보다 커도 전체 Current를 가용량으로 사용한다.
+- 후속 [[0022-Pass1-Source-Reuse|ADR 0022]]는 가용량=0 또는 dt=0인 항목의 raw 평가를 생략하고 RawFlux·RawOutgoing·alpha를 0으로 기록한다. 이 분기의 제한 전 디버그 값은 위 초기 alpha 식과 다를 수 있으나 실제 outgoing과 Next는 같다.
 - Pass 2는 여러 이웃의 유입과 EventInput을 합산해 Capacity 상한 없이 Next에 보관한다. 입력은 한 번 적용하고 InputDelta를 비운다.
 - Next는 A/B 역할 교환 뒤 **다음 Solver step**에서 Current로 읽는다. 받은 양의 후속 이동도 기존 RawFlux와 rate·Δt에 따른다. 렌더 프레임과 Solver step은 같은 개념으로 고정하지 않는다.
 - 자신의 Next만 쓰는 gather 및 2-Pass를 유지한다. 목적지 수용 비율(beta), 별도 Overflow buffer, 추가 채널·pass·descriptor·동기화는 도입하지 않는다.
@@ -48,7 +49,7 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 ### 구현 상태
 
-`Shaders/SurfaceSolverCommon.glsl::saturation()`은 상한 없는 `Current / Capacity`를 반환하고 `SurfaceSolverPass2.comp`는 `max(Current + Input + Incoming - Outgoing - Decay, 0)`을 기록한다. Pass 1의 가용량·alpha, 두 pass·barrier·descriptor·GPU ABI는 유지한다. 기존 Geometry source/sink fixture의 기대값을 기준량 초과 보존에 맞췄다. 앱·compute shader·기존 GPU 검사 실행 파일의 빌드는 통과했으며 GPU 실행 검증과 아래 후속 fixture는 아직 수행하지 않았다.
+`Shaders/SurfaceSolverCommon.glsl::saturation()`은 상한 없는 `Current / Capacity`를 반환하고 `SurfaceSolverPass2.comp`는 `max(Current + Input + Incoming - Outgoing - Decay, 0)`을 기록한다. Pass 1의 가용량·alpha, 두 pass·barrier·descriptor·GPU ABI는 유지한다. 기존 Geometry source/sink fixture의 기대값을 기준량 초과 보존에 맞췄다. 앱·compute shader 빌드와 CTest 5개가 통과했다. 기존 Geometry fixture와 ADR 0021의 multichannel cache fixture에서 source 유출 제한, 여러 이웃 유입·EventInput의 초과량 보존, 서로 다른 Capacity/Profile, 입력 소비, unsupported/invalid 처리를 GPU로 확인했다. 아래 후속 항목의 전수 검증과 timestep 비교는 별도 수행한다. ADR 0020 자체의 추가 payload는 0 B이며, 이후 ADR 0021의 성능 캐시 payload와 구분한다.
 
 ## Alternatives Considered
 
@@ -89,3 +90,5 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 - [[../../04_Architecture/0008_Surface-GPU-Data-Layout|GPU 배치]]
 - [[../../04_Architecture/0007_Surface-Solver-Cache|Solver 캐시]]
 - [[../../02_Research/0001_Bound-Preserving-Transport|포화와 전달 연구 노트]]
+
+- [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 RawFlux 캐시 및 GPU 회귀]]

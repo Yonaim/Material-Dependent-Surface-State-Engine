@@ -1,16 +1,16 @@
 # Surface Solver Cache
 
-> **한 줄 요약:** 현재 Solver는 인스턴스별 TransferWeight 캐시와 Pass 1의 RawOutgoing 합계를 재사용한다.
+> **한 줄 요약:** 현재 Solver는 TransferWeight 캐시와 Pass 1의 RawOutgoing·방향별 RawFlux를 재사용한다.
 
 상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정** · 근거: [[05_ADR/Simulation/0017-Solver-Transfer-Cache|ADR 0017]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
 
-초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용한다. 이 문서는 인스턴스별 TransferWeight 캐시와 Pass 간 RawOutgoing 재사용을 정의한다. 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
+초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용한다. 초기 캐시는 RawOutgoing 합계만 보관했다. [[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]]부터 방향·채널별 RawFlux와 공유 역방향 슬롯 정보도 보관한다. 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
 
 ## 초과량 보존 계약과 구현 상태
 
-[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B를 유지하고 Capacity를 포화 기준량으로 사용한다. 아래 Next 식과 상한 없는 Saturation은 Shader에 구현했다. 빌드는 통과했으며 GPU 실행 검증은 대기 중이다. RawOutgoing·alpha·TransferWeight 캐시의 배치와 기존 두 pass·barrier는 유지하며 이 결정으로 추가되는 GPU payload는 0 B다.
+[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B를 유지하고 Capacity를 포화 기준량으로 사용한다. 아래 Next 식과 상한 없는 Saturation은 Shader에 구현했다. 빌드는 통과했으며 GPU 회귀에서 source 유출 제한·여러 이웃의 초과 유입 보존·서로 다른 Capacity와 입력 소비를 확인했다. RawOutgoing·alpha·TransferWeight 캐시의 배치와 기존 두 pass·barrier는 유지하며 이 결정으로 추가되는 GPU payload는 0 B다.
 
-State 변화와 Capacity 수치 편집은 RawFlux에 영향을 주므로 RawOutgoing와 alpha를 다음 Pass 1에서 다시 계산한다. TransferWeight는 이 수치에 의존하지 않아 캐시를 무효화하지 않는다. Profile ID 배치·Geometry 변경에 따른 기존 invalidation은 유지한다.
+State 변화와 Capacity 수치 편집은 RawFlux에 영향을 주므로 RawFlux·RawOutgoing와 alpha를 다음 Pass 1에서 다시 계산한다. TransferWeight는 이 수치에 의존하지 않아 캐시를 무효화하지 않는다. Profile ID 배치·Geometry 변경에 따른 기존 invalidation은 유지한다.
 
 ## 소유권과 값의 수명
 
@@ -25,7 +25,10 @@ flowchart TD
     P1 --> Alpha[텍셀·채널별 OutgoingFluxScale]
     Sum --> P2[Pass 2]
     Alpha --> P2
-    Weight --> P2
+    P1 --> Flux[방향·채널별 RawFlux]
+    Flux --> P2
+    Shared --> Reverse[공유 역방향 슬롯]
+    Reverse --> P2
     Current --> P2
     P2 --> Next[Next State]
 ```
@@ -36,16 +39,17 @@ flowchart TD
 
 | 값 | 원소 타입·인덱스 | 갱신 조건 | 소비 위치 |
 |---|---|---|---|
-| TransferWeight | float32, `texel × 8 + slot` | 최초 생성, MesoVirtualHeight/AccumulationHeight를 반영한 유효 위치·normal revision, 이웃·Surface/Profile 배치, instance 선형 변환, weight 규칙 변경 | Pass 1/2 rawFlux |
+| TransferWeight | float32, `texel × 8 + slot` | 최초 생성, MesoVirtualHeight/AccumulationHeight를 반영한 유효 위치·normal revision, 이웃·Surface/Profile 배치, instance 선형 변환, weight 규칙 변경 | Pass 1 rawFlux |
 
 ### 인스턴스별 step 임시 결과
 
 | 값 | 원소 타입·인덱스 | 갱신 조건 | 소비 위치 |
 |---|---|---|---|
+| RawFlux | float32, `slot × TexelCount × ChannelCount + texel × ChannelCount + channel` | 매 실행 step의 Pass 1 | Pass 2 이웃의 역방향 incoming 조회 |
 | RawOutgoing | float32, `texel × ChannelCount + channel` | 매 실행 step의 Pass 1 | Pass 2 자신의 outgoing 계산 |
 | OutgoingFluxScale | 기존 float32, 동일 인덱스 | 매 실행 step의 Pass 1 | Pass 2 자신의 outgoing와 이웃 incoming 제한 |
 
-invalid/unsupported texel-channel의 RawOutgoing과 alpha는 Pass 1에서 0으로 기록한다. RawOutgoing는 매 step 완전히 덮어쓰므로 매 frame 별도 clear하지 않는다. pause 중 합계는 오래된 중간값이며 재개/step의 Pass 1에서 갱신된 뒤에만 소비한다. reset 직후에도 다음 Pass 1 전에는 소비하지 않는다.
+invalid/unsupported texel-channel의 RawOutgoing·alpha·8개 RawFlux 슬롯은 Pass 1에서 0으로 기록한다. 유효 texel에서도 invalid 이웃 슬롯은 RawFlux=0으로 덮어쓴다. RawFlux는 생성·reset 시 clear하지 않으며 Pass 1이 전체 범위를 덮어쓴 뒤에만 읽는다. 공유 `ReverseNeighborSlots`는 texel당 uint32 하나에 슬롯별 4 bit를 사용하며, 이웃에서 자신을 가리키는 슬롯 0–7 또는 invalid 0xf를 보관한다. topology 생성 때 CPU에서 준비하므로 UV seam에서도 고정 반대 방향을 가정하지 않는다. RawOutgoing는 매 step 완전히 덮어쓰므로 매 frame 별도 clear하지 않는다. pause 중 합계는 오래된 중간값이며 재개/step의 Pass 1에서 갱신된 뒤에만 소비한다. reset 직후에도 다음 Pass 1 전에는 소비하지 않는다.
 
 ### 준비용 계산값
 
@@ -70,24 +74,24 @@ flowchart TD
     Edges --> Ready[업로드 또는 GPU write-read 동기화]
     Dirty -->|아니오| P1[Pass 1]
     Ready --> P1
-    P1 --> Store[RawOutgoing 합계와 alpha 기록]
-    Store --> Barrier[두 버퍼 compute write-read barrier]
+    P1 --> Store[RawFlux·RawOutgoing 합계와 alpha 기록]
+    Store --> Barrier[세 버퍼 compute write-read barrier]
     Barrier --> P2[Pass 2]
     P2 --> Apply[Next State 기록과 InputDelta 소비]
     Apply --> Swap[후속 barrier와 State A/B 전환]
 ```
 
-Pass 1은 현재 State로 각 유효 이웃의 RawFlux를 계산해 RawOutgoing buffer에 합계를 저장한다. 감쇠 후 가용량으로 기존 alpha를 계산한다. Pass 2는 저장된 합계로 outgoing을 구하고, incoming만 이웃→자신 방향의 rawFlux를 계산한다. 현재 TransferWeight 식은 양 endpoint를 바꾸어도 같은 값이므로 incoming flux는 현재 texel의 이웃 슬롯에 저장한 값을 사용한다. RawFlux 전체는 saturation/GeometryDrive 방향이 있어 대칭으로 취급하지 않는다.
+Pass 1은 현재 State로 각 유효 이웃의 RawFlux를 계산해 RawOutgoing buffer에 합계를 저장한다. 감쇠 후 가용량으로 기존 alpha를 계산한다. Pass 2는 저장된 합계로 outgoing을 구하고, 공유 역방향 슬롯으로 이웃 source의 RawFlux를 읽어 incoming을 구한다. Pass 2는 rawFlux·GeometryDrive·inverse-transpose를 재계산하지 않는다. RawFlux 전체는 saturation/GeometryDrive 방향이 있어 대칭으로 취급하지 않으며 source 방향 값을 읽는다. 상호 이웃 연결은 Mapping validation 계약이다. 역방향이 없는 슬롯은 invalid로 표시하고 gather에서 건너뛴다.
 
 ```text
 RawOutgoing_i = Σ RawFlux(i→j)                       // Pass 1
 alpha_i = RawOutgoing_i > 0 ? min(1, Available_i / RawOutgoing_i) : 1
 Outgoing_i = StoredRawOutgoing_i × alpha_i          // Pass 2
-Incoming_i = Σ RawFlux(j→i) × alpha_j
+Incoming_i = Σ StoredRawFlux(j, channel, ReverseSlot(i→j)) × alpha_j
 Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 ```
 
-무효 Geometry, 거리 epsilon, 퇴화한 법선의 가중치 0 처리는 ADR 0016과 동일하다. dirty cache는 해당 buffer upload 뒤에만 dispatch한다. transform 변경에 따른 CPU overwrite 전 Graphics queue를 idle시켜 이전 GPU read 완료를 보장한다. Pass 1 뒤 alpha/RawOutgoing write→read barrier를 적용하고, Pass 2 이후 다음 step write 재사용을 위한 read→write dependency를 적용한다. 실제 descriptor binding은 [[0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]에 기재했다.
+무효 Geometry, 거리 epsilon, 퇴화한 법선의 가중치 0 처리는 ADR 0016과 동일하다. dirty cache는 해당 buffer upload 뒤에만 dispatch한다. transform 변경에 따른 CPU overwrite 전 Graphics queue를 idle시켜 이전 GPU read 완료를 보장한다. Pass 1 뒤 alpha/RawOutgoing/RawFlux write→read barrier를 적용하고, Pass 2 이후 다음 step write 재사용을 위한 read→write dependency를 적용한다. 실제 descriptor binding은 [[0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]에 기재했다.
 
 ## Virtual Geometry 경계
 
@@ -101,11 +105,12 @@ TransferWeight cache는 현재 구현된 MesoVirtualHeight 또는 향후 Accumul
 |---|---|---|---|---|
 | TransferWeight 캐시 | 구현 | 인스턴스당 48 MiB | 생성, 선형 transform 변경, 명시적 geometry invalidation | cache가 유지되는 동안 Solver 내 중첩 평균 거리 순회를 제거. CPU rebuild당 텍셀별 평균 거리 계산 1회 |
 | RawOutgoing 저장 | 구현 | 인스턴스당 채널당 6 MiB | 매 step | rawFlux 상한 24→16회/텍셀·채널 |
-| 간선별 Raw flux | 후속 검토 | 인스턴스당 채널당 48 MiB 및 역방향 조회 정보 | 매 step | 기존 대비 rawFlux 24→8회/텍셀·채널 |
+| 간선별 RawFlux | 구현 | 인스턴스당 채널당 48 MiB | 매 step | 직전 구현의 rawFlux 16→8회/텍셀·채널, Pass 2 재평가 제거 |
+| 역방향 슬롯 | 구현 | 공유 Geometry당 6 MiB | topology 생성 때 | 매 step 이웃의 역방향 슬롯 탐색 제거 |
 
-가정은 6 Surface × 512×512, 이웃 8개, float32, 원소 padding 없음이다. 채널 수는 Registry에서 결정하며 데모 측정은 1채널이다. 선택한 두 버퍼의 추가 payload는 데모 인스턴스당 총 54 MiB이며 allocator alignment와 scratch를 제외한다. invalid 슬롯도 할당한다. 캐시 준비 시 최신 유효 위치로 평균 이웃 거리를 텍셀당 한 번 계산하고 간선 가중치를 최대 8개 계산한다. 지금은 MesoVirtualHeight만 cache 입력으로 사용하며 AccumulationHeight는 후속 Dynamic Geometry 구현이 제공할 때부터 같은 invalidation 규칙을 적용한다. 따라서 형상이 매 step 바뀌어도 rawFlux 호출 안에서 수행하던 endpoint별 평균 재순회는 캐시 준비의 텍셀당 1회 평균 계산으로 바뀐다. 모든 texel/neighbor가 valid인 소스 수준 상한이며 컴파일러 최적화나 실제 GPU 시간을 뜻하지 않는다.
+가정은 6 Surface × 512×512, 이웃 8개, float32, 원소 padding 없음이다. 채널 수는 Registry에서 결정하며 데모 측정은 1채널이다. TransferWeight·RawOutgoing·RawFlux의 payload는 1채널 인스턴스당 총 102 MiB다. 역방향 슬롯은 uint32당 8개 슬롯의 4 bit를 packed하며 원소 padding 없이 공유 Geometry당 6 MiB를 더한다. 이번 변경의 증가분은 인스턴스당 채널당 48 MiB와 공유 Geometry당 6 MiB이며 allocator alignment와 CPU scratch를 제외한다. invalid 슬롯도 할당한다. 캐시 준비 시 최신 유효 위치로 평균 이웃 거리를 텍셀당 한 번 계산하고 간선 가중치를 최대 8개 계산한다. 지금은 MesoVirtualHeight만 cache 입력으로 사용하며 AccumulationHeight는 후속 Dynamic Geometry 구현이 제공할 때부터 같은 invalidation 규칙을 적용한다. 따라서 형상이 매 step 바뀌어도 rawFlux 호출 안에서 수행하던 endpoint별 평균 재순회는 캐시 준비의 텍셀당 1회 평균 계산으로 바뀐다. 모든 texel/neighbor가 valid인 소스 수준 상한이며 컴파일러 최적화나 실제 GPU 시간을 뜻하지 않는다.
 
-가중치 캐시가 유효한 step에서는 준비 비용이 없다. 선형 transform이 매 step 달라지면 매 step CPU 준비와 queue idle 비용이 발생하므로 성능 측정에서 별도 보고해야 한다. 간선별 Raw flux 저장은 RawOutgoing 저장에 추가로 67%가 줄어드는 방식이 아니며, 기존 24회 대비 최종 8회가 되는 별도 후속 설계다. 이번 구현에서 baseline 대비 실제 GPU 시간이 얼마나 줄었는지는 아직 측정하지 않았다.
+가중치 캐시가 유효한 step에서는 준비 비용이 없다. 선형 transform이 매 step 달라지면 매 step CPU 준비와 queue idle 비용이 발생하므로 성능 측정에서 별도 보고해야 한다. 간선별 RawFlux 저장은 직전 구현의 최대 16회에서 8회로 줄인다. 초기 24회 기준으로는 최종 8회다. 호출 상한 감소를 실제 Scene FPS 개선률로 해석하지 않는다. 측정 조건과 결과는 ADR 0021에 기록한다.
 
 ## 후속 최적화 후보: 대칭 TransferWeight의 공유 저장
 
@@ -121,10 +126,14 @@ TransferWeight cache는 현재 구현된 MesoVirtualHeight 또는 향후 Accumul
 
 ## GeometryDrive 반복 계산 축소 (2026-09-28)
 
-각 invocation은 instance inverse-transpose와 gravity의 높이 축을 한 번 준비한다. RawFlux의 GeometryDrive는 mesh-local displaced endpoint 차이를 instance 선형 변환으로 변환해 높이차·방향에 함께 사용하며 translation은 상쇄된다. 기본 ON에서는 MesoNormal의 binding 17을 읽고, `DirectionDrive: MesoNormal`이 OFF이면 macro normal의 binding 3을 읽는다. 선택은 push constant flag bit 4로 두 pass에 동일하게 적용하며 TransferWeight cache를 무효화하지 않는다. 이 값은 invocation-local이며 별도 GPU buffer를 추가하지 않는다. 여러 채널의 간선 GeometryDrive를 배열로 재사용하는 후보도 측정했으나 1채널에서 안정적인 개선이 확인되지 않아 채택하지 않았다.
+초기 구현은 Pass 1의 각 invocation에서 instance inverse-transpose와 gravity의 높이 축을 준비했다. [[05_ADR/Simulation/0022-Pass1-Source-Reuse|ADR 0022]] 이후 CPU가 dispatch당 한 번 준비하여 128-byte push constant로 전달한다. source 법선 변환·정규화, 중력 투영 방향과 displaced source 위치는 실제 geometry 전달을 사용하는 채널이 있을 때 invocation당 한 번 준비하며, source 포화도·프로파일 파라미터·지원 여부는 channel당 재사용한다. RawFlux의 GeometryDrive는 mesh-local displaced endpoint 차이를 instance 선형 변환으로 변환해 높이차·방향에 함께 사용하며 translation은 상쇄된다. 기본 ON에서는 MesoNormal의 binding 17을 읽고, `DirectionDrive: MesoNormal`이 OFF이면 macro normal의 binding 3을 읽는다. 선택은 push constant flag bit 4로 Pass 1 계산에 적용하며 TransferWeight cache를 무효화하지 않는다. source 재사용 값은 invocation-local이며 별도 GPU buffer를 추가하지 않는다. 여러 채널의 간선 GeometryDrive를 배열로 재사용하는 후보는 1채널에서 안정적인 개선이 확인되지 않아 채택하지 않았다.
 
 CurvatureWeight 옵션 변경도 TransferWeight cache를 무효화한다. 기본은 OFF이며 계산식은 [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
 
-## 빈 Source의 incoming 계산 생략
+## 빈 Source의 incoming 계산 생략 — 초기 구현
 
 Pass 2는 이웃 source의 Current State가 0 이하이거나 alpha가 0 이하, 해당 간선 TransferWeight가 0 이하이면 incoming RawFlux 평가를 생략한다. State는 비음수이며 alpha는 감쇠 후 보유량으로 제한하므로 이 경우 실제 전달량은 0이다. Pass 1의 RawOutgoing/alpha 계산과 기록은 유지한다. Event Input은 Transport 뒤에 적용하므로 빈 source에 이번 step에서 새로 들어온 Input은 다음 step부터 전달하며, InputDelta는 기존대로 소비·clear한다. Pass 2의 inverse-transpose 준비도 첫 유효 incoming 평가까지 지연한다. 추가 buffer와 barrier는 없다. 비용 절감은 빈/감쇠된 State 분포에 의존하며 State가 넓게 퍼지면 효과가 줄어든다.
+
+ADR 0021 이후 Pass 2는 위 RawFlux 재평가 대신 저장된 값을 gather한다. alpha가 0 이하인 source는 gather를 생략한다. 이벤트 입력 소비 시점은 유지하며 빈 source의 새 입력은 다음 step에서 이동한다.
+
+ADR 0022 이후 Pass 1은 texel·channel의 감쇠 후 가용량이 0이거나 dt=0이면 rawFlux 평가를 생략하고 8개 RawFlux 슬롯·RawOutgoing·alpha를 0으로 기록한다. Pass 2의 이웃 유입·이벤트 입력·Next 갱신은 계속 수행한다. 별도 활동 마스크나 pass는 추가하지 않는다. 이 경로의 제한 전 RawOutgoing과 alpha 디버그 표시는 초기 구현과 다를 수 있지만 실제 outgoing과 Next State는 보존한다.

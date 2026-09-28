@@ -6,7 +6,7 @@
 - 상태: **기능 검증 완료 / 실제 Scene FPS 개선은 미확정**
 - 관련: [[../../04_Architecture/0007_Surface-Solver-Cache|Solver Cache]], [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]
 
-## 코드에서 확인한 비용
+## RawFlux 방향별 캐시 적용 전 확인한 비용
 
 - Pass 1은 최대 8개 outgoing RawFlux를, Pass 2는 최대 8개 incoming RawFlux를 texel·채널마다 계산한다. Pass 2는 outgoing 합계를 캐시에서 재사용하지만 incoming RawFlux는 재평가한다. 따라서 두 pass 모두 같은 비싼 GeometryDrive 경로를 실행한다.
 - 기존 경로는 RawFlux마다 두 height의 world 변환, direction용 두 world 변환과 source normal inverse-transpose를 반복한다. TransferWeight cache와 RawOutgoing 저장은 이미 구현되어 있으므로 캐시 부재를 현재 병목으로 설명하지 않는다.
@@ -77,3 +77,7 @@ CMake 전체 build 및 CTest의 5개 테스트를 실행한다. 새 검증은 Me
 Pass 2는 source Current State가 0 이하, alpha가 0 이하, 또는 간선 가중치가 0 이하이면 incoming rawFlux 평가를 생략한다. inverse-transpose 준비도 첫 실제 incoming 평가까지 지연한다. Pass 1의 RawOutgoing/alpha scratch 값과 최종 갱신 식은 유지한다. 빈 source의 입력 이벤트가 소실되지 않고 다음 step부터 전달되며 InputDelta가 한 번 소비되는 GPU regression을 추가했다. 전체 build 및 CTest 5개가 통과했다. 실제 Scene FPS 개선은 아직 측정되지 않았다.
 
 후속 비교는 동일 카메라·해상도·State에서 Pause/Run의 frame time, pass별 GPU 시간, Render GPU를 기록한다. Simulation resolution 512→256은 Surface당 texel 수를 262,144→65,536으로 줄이지만 공간 정밀도와 현행 전달 이산화 결과에 영향을 준다. 기본 해상도를 조용히 변경하지 않는다. 512를 유지하는 후보는 Pass 1의 방향별·채널별 rawFlux 저장과 Pass 2의 역방향 슬롯 gather이며 추가 buffer·대역폭 비용을 별도 측정해야 한다.
+
+## 방향별 RawFlux 캐시 후속 구현
+
+[[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]]에서 마지막 후보를 채택했다. Pass 1의 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 슬롯으로 gather한다. 기존의 Pass 2 RawFlux·GeometryDrive 재평가는 제거했다. 위 측정과 빈 source 최적화 설명은 방향별 캐시 적용 이전 기록이다. 새 측정과 메모리 가정은 ADR 0021에 기록한다.

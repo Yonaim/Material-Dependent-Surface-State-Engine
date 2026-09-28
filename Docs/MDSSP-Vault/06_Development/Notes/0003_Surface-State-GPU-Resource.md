@@ -139,7 +139,7 @@ Step N + 1: B = Current, A = Next
 OutgoingFluxScale[i].channel = alpha[i].channel
 ```
 
-Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. Pass 2는 이웃의 `OutgoingFluxScale`을 읽고 `j → i` raw flux를 계산한다. 자신의 outgoing 합계는 `RawOutgoingBuffer`에서 재사용한다. 간선별 raw flux는 별도로 저장하지 않는다.
+Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. Pass 2는 이웃의 `OutgoingFluxScale`과 `RawFluxBuffer`의 `j → i` 방향 슬롯을 읽는다. 자신의 outgoing 합계는 `RawOutgoingBuffer`에서 재사용한다. [[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]]에서 방향·채널별 raw flux 저장을 추가했다.
 
 ### TransferWeights
 
@@ -151,7 +151,11 @@ Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. 
 
 ### RawOutgoing
 
-`RawOutgoingBuffer`는 `texel × channelCount + channel` 위치에 Pass 1의 유출 합계를 저장한다. 모든 지원되지 않는 texel/channel에는 0을 기록한다. 매 실행 step에 Pass 1이 전체 유효 범위를 덮어쓰므로 초기 clear는 필요 없고, Pass 2는 자신의 outgoing 합계를 다시 계산하지 않는다. neighbor→current incoming만 재계산하므로 rawFlux 평가의 구조적 상한은 텍셀·채널당 24회에서 16회로 줄어든다.
+`RawOutgoingBuffer`는 `texel × channelCount + channel` 위치에 Pass 1의 유출 합계를 저장한다. 모든 지원되지 않는 texel/channel에는 0을 기록한다. 매 실행 step에 Pass 1이 전체 유효 범위를 덮어쓰므로 초기 clear는 필요 없고, Pass 2는 자신의 outgoing 합계를 다시 계산하지 않는다. 초기 합계 저장은 rawFlux 평가 상한을 텍셀·채널당 24→16회로 줄였다. 현재는 방향별 RawFlux도 저장해 Pass 2 재계산을 제거하므로 상한은 8회다.
+
+### RawFlux와 역방향 슬롯
+
+`RawFluxBuffer`는 instance별 float32 scratch이며 `slot × texelCount × channelCount + texel × channelCount + channel`로 조회한다. Pass 1이 모든 슬롯을 매 step 덮어쓰므로 생성·reset 시 clear하지 않는다. invalid 이웃·지원되지 않는 채널·invalid texel은 0을 기록한다. Pass 2는 공유 uint32 `ReverseNeighborSlots`에서 이웃 source의 역방향 슬롯을 읽어 flux에 source alpha를 곱한다. 8개 슬롯 번호는 4 bit씩 packed하며 0xf가 invalid다. UV seam도 실제 이웃 배열에서 역방향을 찾아 CPU pack 단계에 준비한다. Pass 1 write→Pass 2 read와 Pass 2 read→다음 Pass 1 write의 barrier에 RawFlux를 포함한다. 6×512×512·1채널·8슬롯·scalar padding 없음에서 RawFlux 인스턴스당 48 MiB, 역방향 슬롯 공유 Geometry당 6 MiB가 추가되며 allocator overhead는 제외한다.
 
 ### InputDelta
 
@@ -168,7 +172,7 @@ InputDelta는 discrete event(발생 시점에 한 번 기록되는 접촉 사건
 
 Profile parameter는 `(ProfileIndex, ChannelIndex)` 조합을 사용하며, ADR 0010의 Profile-major record 배치와 index 산식을 따른다.
 
-- `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다. [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에서 전달용 비율은 상한 clamp하지 않으며 State A/B에 전체 초과량을 보존한다. 기존 float32 AoS·채널 수·padding 없음의 ABI를 유지해 추가 GPU payload는 0 B다. Shader의 상한 clamp 제거는 구현했고 빌드는 통과했다. GPU 실행 검증은 대기 중이다.
+- `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다. [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에서 전달용 비율은 상한 clamp하지 않으며 State A/B에 전체 초과량을 보존한다. 기존 float32 AoS·채널 수·padding 없음의 ABI를 유지해 추가 GPU payload는 0 B다. Shader의 상한 clamp 제거는 구현했고 빌드는 통과했다. GPU 회귀에서 source 유출 제한·여러 이웃의 초과 유입 보존·서로 다른 Capacity와 입력 소비를 확인했다.
 - CPU Asset loader가 모든 `stateCapacity > 0`을 검증한 뒤 upload한다.
 - JSON을 GPU 구조체 메모리에 직접 역직렬화하지 않고 명시적으로 변환한다.
 - 동일 Profile 사이의 `ProfileBoundaryWeight`는 `1.0`, 서로 다른 Profile 사이에서는 고정 `0.5`다. 이 값은 Solver 공통 규칙이며 Profile parameter나 추가 GPU ABI 필드는 필요하지 않다. 세부 weight 계약은 [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
@@ -193,10 +197,12 @@ Descriptor layout은 아래 binding을 각각 별도의 storage buffer로 연결
 | 11 | `InputDeltaBuffer` | packed `float[]` | Pass 2 read/write; consume then clear |
 | 12 | `SurfaceRangesBuffer` | packed `uvec4[]` | debug fragment Surface grid lookup |
 | 13 | `TexelChartIndicesBuffer` | packed `uint[]` | debug fragment UV chart lookup |
-| 14 | `TransferWeightsBuffer` | packed `float[]`, `texel × 8 + neighborSlot` | cache preparation / Pass 1·2 read |
+| 14 | `TransferWeightsBuffer` | packed `float[]`, `texel × 8 + neighborSlot` | cache preparation / Pass 1 read |
 | 15 | `RawOutgoingBuffer` | packed `float[]`, `texel × channelCount + channel` | Pass 1 write / Pass 2 read |
 | 16 | `TransferWeightDebugAverageBuffer` | texel당 `vec4` | fragment read-only |
 | 17 | `MesoNormalBuffer` | texel당 `vec4[]` | vertex / fragment / compute read-only |
+| 18 | `ReverseNeighborSlotBuffer` | texel당 `uint32`, 8 × 4 bit packed | Shared Geometry / Pass 2 read |
+| 19 | `RawFluxBuffer` | packed `float[]`, slot-major·texel/channel 순서 | instance / Pass 1 write / Pass 2 read |
 
 각 binding의 descriptor type은 `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`, descriptor count는 1이다. AB와 BA descriptor set을 함께 생성해 Current/Next State의 반대 방향 연결을 제공한다. set은 해당 instance의 State/cache buffers와 Mesh의 공유 Geometry/Profile buffers를 참조한다.
 
@@ -208,11 +214,13 @@ struct TSolverPushConstants {
     uint stateChannelCount;
     uint localTexelCount;
     uint flags;
-    vec4 gravityLocal;
+    vec4 gravityWorld;
+    vec4 modelLinearColumns[3];
+    vec4 normalMatrixAndUpColumns[3];
 };
 ```
 
-CPU는 instance transform을 사용해 World Gravity를 Mesh local space로 변환한다. Position과 Normal이 local space에 있으므로 Shader는 `gravityLocal`로 `DirectionDrive`를 계산한다.
+현재 Solver push constant는 128 byte이며, CPU가 instance의 inverse-transpose와 world gravity의 up 축을 dispatch당 한 번 준비한다. 마지막 세 column의 xyz는 normal matrix이고 w는 up의 x/y/z다. Shader는 source 법선을 world로 변환하고 local endpoint 차이에 instance 선형 변환을 적용하여 world gravity와 함께 DirectionDrive를 계산한다. source 공통 형상은 invocation당 재사용하며 [[05_ADR/Simulation/0022-Pass1-Source-Reuse|ADR 0022]]를 따른다.
 
 ## Solver 실행과 동기화
 
@@ -276,5 +284,5 @@ TransferWeights    32 B
 - 동적 Accumulation geometry의 instance overlay 배치
 - GPU에서 contact event가 겹칠 때의 reduce/atomic 방식
 - Registry channel 수에 맞는 AoS 인덱싱, alignment 및 성능 검증
-- raw flux 재계산과 임시 flux buffer의 성능 비교
+- 방향별 RawFlux cache의 실제 Scene GPU 시간·대역폭 검증 (구현은 ADR 0021 완료)
 - 최종 descriptor set 번호와 frame-in-flight별 resource 수
