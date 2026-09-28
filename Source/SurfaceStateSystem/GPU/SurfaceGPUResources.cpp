@@ -108,6 +108,12 @@ namespace MDSS
                                                    Upload.NeighborIndices.size(),
                                                    sizeof(TSurfaceGPUNeighborIndices),
                                                    MaxRange);
+        ReverseNeighborSlotBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                                         Device,
+                                                         Upload.ReverseNeighborSlots.data(),
+                                                         Upload.ReverseNeighborSlots.size(),
+                                                         sizeof(std::uint32_t),
+                                                         MaxRange);
         SurfaceRangeBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                   Device,
                                                   Upload.SurfaceRanges.data(),
@@ -155,6 +161,11 @@ namespace MDSS
     const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetNeighborIndexBuffer() const noexcept
     {
         return *NeighborIndexBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetReverseNeighborSlotBuffer() const noexcept
+    {
+        return *ReverseNeighborSlotBuffer;
     }
 
     const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetSurfaceRangeBuffer() const noexcept
@@ -268,6 +279,12 @@ namespace MDSS
         }
         ScalarCount = TexelCount * ChannelCount;
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
+        if (ScalarCount > std::numeric_limits<std::uint32_t>::max() / SurfaceNeighborCount)
+        {
+            throw std::length_error("Surface RawFlux indices exceed the shader uint32 range.");
+        }
+        const std::size_t RawFluxByteSize =
+            GetSurfaceGPUBufferByteSize(ScalarCount, SurfaceNeighborCount * sizeof(float), MaxRange);
         StateABuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         StateBBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         OutgoingFluxScaleBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
@@ -288,6 +305,9 @@ namespace MDSS
         TransferWeightDebugAverageBuffer = CreateUploadedBuffer(
             PhysicalDevice, Device, DebugAverages->data(), DebugAverages->size(), sizeof(TSurfaceGPUVec4), MaxRange);
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
+        // Pass 1 overwrites all slots each step, including invalid and unsupported slots.
+        RawFluxBuffer = std::make_unique<TGPUBuffer>(
+            PhysicalDevice, Device, static_cast<VkDeviceSize>(RawFluxByteSize), StorageUsage, UploadMemory);
     }
 
     const TGPUBuffer& TSurfaceInstanceGPUResources::GetStateABuffer() const noexcept
@@ -323,6 +343,11 @@ namespace MDSS
     const TGPUBuffer& TSurfaceInstanceGPUResources::GetRawOutgoingBuffer() const noexcept
     {
         return *RawOutgoingBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceInstanceGPUResources::GetRawFluxBuffer() const noexcept
+    {
+        return *RawFluxBuffer;
     }
 
     void
@@ -367,6 +392,7 @@ namespace MDSS
         StateBBuffer->Upload(Zeros.data(), ByteSize);
         InputDeltaBuffer->Upload(Zeros.data(), ByteSize);
         RawOutgoingBuffer->Upload(Zeros.data(), ByteSize);
+        // RawFlux scratch needs no reset: the next Pass 1 overwrites its entire range.
         OutgoingFluxScaleBuffer->Upload(ResetOutgoingFluxScale.data(), ByteSize);
     }
 
@@ -452,7 +478,9 @@ namespace MDSS
             &Instance.GetRawOutgoingBuffer(),
             &Instance.GetTransferWeightDebugAverageBuffer(),
             // 바인딩 17에는 공유 Meso 노멀 버퍼를 연결한다.
-            &SharedGeometry.GetMesoNormalBuffer()};
+            &SharedGeometry.GetMesoNormalBuffer(),
+            &SharedGeometry.GetReverseNeighborSlotBuffer(),
+            &Instance.GetRawFluxBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

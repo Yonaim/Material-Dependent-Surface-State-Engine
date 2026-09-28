@@ -70,6 +70,8 @@ namespace MDSS
         std::vector<TSurfaceGPUVec4>            MesoNormals;
         std::vector<TSurfaceGPUGeometryScalar>     GeometryScalars;
         std::vector<TSurfaceGPUNeighborIndices>    NeighborIndices;
+        // Eight 4-bit reverse slots per texel; 0xf means no reciprocal neighbor.
+        std::vector<std::uint32_t>                 ReverseNeighborSlots;
         std::vector<TSurfaceGPUSurfaceRange>       SurfaceRanges;
         std::vector<std::uint32_t>                 TexelChartIndices;
     };

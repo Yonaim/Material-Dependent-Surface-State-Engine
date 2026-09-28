@@ -82,6 +82,15 @@ layout(std430, set = 0, binding = 17) readonly buffer TSurfaceMesoNormals
     vec4 Values[];
 } MesoNormals;
 
+layout(std430, set = 0, binding = 18) readonly buffer TSurfaceReverseNeighborSlots
+{
+    uint Values[];
+} ReverseNeighborSlots;
+layout(std430, set = 0, binding = 19) buffer TSurfaceRawFlux
+{
+    float Values[];
+} RawFluxBuffer;
+
 layout(push_constant) uniform TSurfaceSolverPushConstants
 {
     float DeltaTime;
@@ -114,6 +123,18 @@ bool isValidTexel(uint TexelIndex)
 uint neighborIndex(uint TexelIndex, uint DirectionIndex)
 {
     return NeighborIndices.Values[TexelIndex * SurfaceNeighborCount + DirectionIndex];
+}
+
+uint reverseNeighborSlot(uint TexelIndex, uint DirectionIndex)
+{
+    return (ReverseNeighborSlots.Values[TexelIndex] >> (DirectionIndex * 4u)) & 0xfu;
+}
+
+uint rawFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
+{
+    // Slot-major planes keep neighboring invocations' stores contiguous.
+    return DirectionIndex * (Solver.LocalTexelCount * Solver.StateChannelCount) +
+           stateIndex(TexelIndex, ChannelIndex);
 }
 
 float transferWeight(uint SourceTexel, uint DirectionIndex)

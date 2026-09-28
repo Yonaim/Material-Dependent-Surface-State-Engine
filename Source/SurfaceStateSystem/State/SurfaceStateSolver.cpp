@@ -195,12 +195,15 @@ namespace MDSS
                                 FirstPassQuery + 1U);
         }
 
-        const std::array<VkBufferMemoryBarrier, 2> Pass1Barriers = {
+        const std::array<VkBufferMemoryBarrier, 3> Pass1Barriers = {
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::OutgoingFluxScale, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT),
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::RawOutgoing, bCurrentStateAB),
+                VK_ACCESS_SHADER_READ_BIT),
+            MakeComputeBufferBarrier(
+                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::RawFlux, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT)};
         vkCmdPipelineBarrier(CommandBuffer,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -230,7 +233,7 @@ namespace MDSS
                                 FirstPassQuery + 3U);
         }
 
-        const std::array<VkBufferMemoryBarrier, 4> NextStepBarriers = {
+        const std::array<VkBufferMemoryBarrier, 5> NextStepBarriers = {
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::NextState, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT),
@@ -240,6 +243,10 @@ namespace MDSS
                 VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT),
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::RawOutgoing, bCurrentStateAB),
+                VK_ACCESS_SHADER_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT),
+            MakeComputeBufferBarrier(
+                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::RawFlux, bCurrentStateAB),
                 VK_ACCESS_SHADER_WRITE_BIT,
                 VK_ACCESS_SHADER_READ_BIT),
             MakeComputeBufferBarrier(

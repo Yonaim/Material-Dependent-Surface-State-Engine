@@ -13,8 +13,6 @@ void main()
         return;
     }
 
-    bool GeometryInitialized = false;
-
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
@@ -29,30 +27,26 @@ void main()
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
-            if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount ||
-                !supportsChannel(NeighborTexel, ChannelIndex))
+            if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
             {
                 continue;
             }
 
             uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
             float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
-            float CachedTransferWeight = transferWeight(TexelIndex, DirectionIndex);
+            // Pass 1 writes alpha=0 for invalid/unsupported source texel-channels.
             // 이벤트 입력은 전달 계산 뒤 반영하므로 빈 source의 새 입력은 다음 step부터 전달한다.
-            if (CurrentState.Values[NeighborStateValueIndex] <= 0.0 || NeighborScale <= 0.0 ||
-                CachedTransferWeight <= 0.0)
+            if (NeighborScale <= 0.0)
             {
                 continue;
             }
-            if (!GeometryInitialized)
+            uint ReverseSlot = reverseNeighborSlot(TexelIndex, DirectionIndex);
+            if (ReverseSlot >= SurfaceNeighborCount)
             {
-                initializeGeometryDrive();
-                GeometryInitialized = true;
+                continue;
             }
-            float NeighborRawIncoming = rawFlux(NeighborTexel,
-                                                TexelIndex,
-                                                ChannelIndex,
-                                                CachedTransferWeight);
+            float NeighborRawIncoming =
+                RawFluxBuffer.Values[rawFluxIndex(NeighborTexel, ChannelIndex, ReverseSlot)];
             Incoming += NeighborRawIncoming * NeighborScale;
         }
 

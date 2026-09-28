@@ -25,6 +25,10 @@ void main()
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
             RawOutgoingBuffer.Values[StateValueIndex] = 0.0;
+            for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+            {
+                RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = 0.0;
+            }
             continue;
         }
 
@@ -32,14 +36,16 @@ void main()
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
-            if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
+            float RawFlux = 0.0;
+            if (NeighborTexel != InvalidTexelIndex && NeighborTexel < Solver.LocalTexelCount)
             {
-                continue;
+                RawFlux = rawFlux(TexelIndex,
+                                  NeighborTexel,
+                                  ChannelIndex,
+                                  transferWeight(TexelIndex, DirectionIndex));
             }
-            RawOutgoing += rawFlux(TexelIndex,
-                                   NeighborTexel,
-                                   ChannelIndex,
-                                   transferWeight(TexelIndex, DirectionIndex));
+            RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = RawFlux;
+            RawOutgoing += RawFlux;
         }
 
         RawOutgoingBuffer.Values[StateValueIndex] = RawOutgoing;
