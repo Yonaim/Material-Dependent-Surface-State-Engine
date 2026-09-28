@@ -96,6 +96,10 @@ namespace MDSS
                 Instance->State = std::move(State);
                 Instance->Descriptors = std::move(Descriptors);
                 Instance->SurfaceDataHandle = SurfaceDataHandle;
+                Instance->ValidTexelCount = static_cast<std::size_t>(std::count_if(
+                    SharedIt->second.CPUGeometry->GetTexels().begin(),
+                    SharedIt->second.CPUGeometry->GetTexels().end(),
+                    [](const TSurfaceTexelGeometry& Texel) { return Texel.IsValid(); }));
                 Instance->TransferWeightModelMatrix = ModelMatrix;
                 Instance->bTransferWeightCacheValid = true;
             }
@@ -202,6 +206,15 @@ namespace MDSS
         return InstanceResources[SceneIndex]->State->GetTexelCount();
     }
 
+    std::size_t TSurfaceGPUResourceManager::GetInstanceValidTexelCount(std::size_t SceneIndex) const
+    {
+        if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
+        {
+            throw std::out_of_range("Scene instance has no Surface GPU state resources.");
+        }
+        return InstanceResources[SceneIndex]->ValidTexelCount;
+    }
+
     std::size_t TSurfaceGPUResourceManager::GetInstanceChannelCount(std::size_t SceneIndex) const
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
@@ -218,6 +231,51 @@ namespace MDSS
             throw std::out_of_range("Scene instance has no Surface GPU state resources.");
         }
         return InstanceResources[SceneIndex]->bCurrentStateAB;
+    }
+
+    void TSurfaceGPUResourceManager::ResetStates()
+    {
+        for (const std::unique_ptr<TInstanceResources>& Instance : InstanceResources)
+        {
+            if (!Instance)
+            {
+                continue;
+            }
+            const auto SharedIt = SharedSurfaceData.find(Instance->SurfaceDataHandle);
+            if (SharedIt == SharedSurfaceData.end() || SharedIt->second.CPUGeometry == nullptr)
+            {
+                throw std::logic_error("Surface GPU instance lost its shared CPU geometry during reset.");
+            }
+
+            const TSharedSurfaceGeometryData& Geometry = *SharedIt->second.CPUGeometry;
+            const TSurfaceProfileGPUResources& Profiles = *SharedIt->second.Profiles;
+            const std::size_t ChannelCount = Instance->State->GetChannelCount();
+            std::vector<float> InitialOutgoingFluxScale(Geometry.GetTexelCount() * ChannelCount, 0.0F);
+            const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
+            for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
+            {
+                if (!Texels[TexelIndex].IsValid())
+                {
+                    continue;
+                }
+                const TSurfaceProfileIndex ProfileIndex =
+                    Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(TexelIndex));
+                if (ProfileIndex == InvalidSurfaceProfileIndex)
+                {
+                    continue;
+                }
+                for (std::size_t ChannelIndex = 0; ChannelIndex < ChannelCount; ++ChannelIndex)
+                {
+                    if (Profiles.IsSupported(ProfileIndex, ChannelIndex))
+                    {
+                        InitialOutgoingFluxScale[TexelIndex * ChannelCount + ChannelIndex] = 1.0F;
+                    }
+                }
+            }
+
+            Instance->State->ResetState(InitialOutgoingFluxScale);
+            Instance->bCurrentStateAB = true;
+        }
     }
 
     bool TSurfaceGPUResourceManager::NeedsTransferWeightCacheUpdate(std::size_t SceneIndex,
@@ -247,7 +305,10 @@ namespace MDSS
 
     void TSurfaceGPUResourceManager::UpdateTransferWeightCache(std::size_t SceneIndex,
                                                                 const glm::mat4& ModelMatrix,
-                                                                bool bUseNormalWeight)
+                                                                bool bUseNormalWeight,
+                                                                bool bUseDistanceWeight,
+                                                                bool bUseProfileBoundaryWeight,
+                                                                bool bUseCurvatureWeight)
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
@@ -264,7 +325,10 @@ namespace MDSS
             BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry,
                                            ModelMatrix,
                                            &TransferWeightDebugAverages,
-                                           bUseNormalWeight);
+                                           bUseNormalWeight,
+                                           bUseDistanceWeight,
+                                           bUseProfileBoundaryWeight,
+                                           bUseCurvatureWeight);
         Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages);
         Instance.TransferWeightModelMatrix = ModelMatrix;
         Instance.bTransferWeightCacheValid = true;

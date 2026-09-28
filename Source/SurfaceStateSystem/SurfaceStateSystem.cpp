@@ -48,6 +48,16 @@ namespace MDSS
         PendingContacts.push_back(std::move(Contact));
     }
 
+    void TSurfaceStateSystem::ResetState()
+    {
+        if (vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for the graphics queue before resetting Surface State.");
+        }
+        PendingContacts.clear();
+        GPUResources->ResetStates();
+    }
+
     void TSurfaceStateSystem::SetDebugProfileParameters(TSRProfileAssetHandle Profile,
                                                         TStateId State,
                                                         const TSurfaceStateParameters& Parameters,
@@ -334,7 +344,10 @@ namespace MDSS
         PendingContacts.clear();
     }
 
-    void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer, float DeltaTime)
+    void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
+                                         float DeltaTime,
+                                         VkQueryPool TimestampQueryPool,
+                                         std::uint32_t FirstInstanceQuery)
     {
         ApplyPendingContacts();
         if (!Solver)
@@ -343,6 +356,7 @@ namespace MDSS
         }
 
         bool bHasDirtyTransferWeightCache = bTransferWeightSettingsDirty;
+        std::uint32_t SolverQuerySlot = 0U;
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             if (GPUResources->GetInstanceDescriptors(SceneIndex) == nullptr)
@@ -373,9 +387,36 @@ namespace MDSS
             if (bTransferWeightSettingsDirty ||
                 GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, ModelMatrix))
             {
-                GPUResources->UpdateTransferWeightCache(SceneIndex, ModelMatrix, bDebugNormalWeightEnabled);
+                GPUResources->UpdateTransferWeightCache(
+                    SceneIndex,
+                    ModelMatrix,
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::CurvatureWeight));
             }
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
+            std::uint32_t SolverFlags = 0U;
+            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::GeometryDrive))
+            {
+                SolverFlags |= 1U << 0U;
+            }
+            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::SaturationDrive))
+            {
+                SolverFlags |= 1U << 1U;
+            }
+            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::Decay))
+            {
+                SolverFlags |= 1U << 2U;
+            }
+            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ConcavityRetention))
+            {
+                SolverFlags |= 1U << 3U;
+            }
+            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::MesoDirectionNormal))
+            {
+                SolverFlags |= 1U << 4U;
+            }
             Solver->RecordStep(CommandBuffer,
                                *Descriptors,
                                bCurrentStateAB,
@@ -384,24 +425,56 @@ namespace MDSS
                                DeltaTime,
                                ModelMatrix,
                                GravityWorld,
-                               bDebugGeometryDriveEnabled);
+                               SolverFlags,
+                               TimestampQueryPool,
+                               FirstInstanceQuery + SolverQuerySlot * 4U);
             GPUResources->AdvanceCurrentState(SceneIndex);
+            ++SolverQuerySlot;
         }
         bTransferWeightSettingsDirty = false;
     }
 
+    std::size_t TSurfaceStateSystem::GetSolverTimestampSlotCount() const noexcept
+    {
+        if (!GPUResources)
+        {
+            return 0;
+        }
+        std::size_t SlotCount = 0;
+        for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
+        {
+            SlotCount += GPUResources->GetInstanceDescriptors(SceneIndex) != nullptr ? 1U : 0U;
+        }
+        return SlotCount;
+    }
+
+    const TSurfaceSolverDebugSettings& TSurfaceStateSystem::GetDebugSolverSettings() const noexcept
+    {
+        return DebugSolverSettings;
+    }
+
+    void TSurfaceStateSystem::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept
+    {
+        if (DebugSolverSettings.IsEnabled(Term) == bEnabled)
+        {
+            return;
+        }
+        DebugSolverSettings.SetEnabled(Term, bEnabled);
+        if (Term == TSurfaceSolverTerm::DistanceWeight || Term == TSurfaceSolverTerm::NormalWeight ||
+            Term == TSurfaceSolverTerm::ProfileBoundaryWeight || Term == TSurfaceSolverTerm::CurvatureWeight)
+        {
+            bTransferWeightSettingsDirty = true;
+        }
+    }
+
     void TSurfaceStateSystem::SetDebugGeometryDriveEnabled(bool bEnabled) noexcept
     {
-        bDebugGeometryDriveEnabled = bEnabled;
+        SetDebugSolverTermEnabled(TSurfaceSolverTerm::GeometryDrive, bEnabled);
     }
 
     void TSurfaceStateSystem::SetDebugNormalWeightEnabled(bool bEnabled) noexcept
     {
-        if (bDebugNormalWeightEnabled != bEnabled)
-        {
-            bDebugNormalWeightEnabled = bEnabled;
-            bTransferWeightSettingsDirty = true;
-        }
+        SetDebugSolverTermEnabled(TSurfaceSolverTerm::NormalWeight, bEnabled);
     }
 
     const TSurfaceGPUResourceManager& TSurfaceStateSystem::GetGPUResources() const noexcept

@@ -33,13 +33,13 @@ namespace MDSS
                                                                        float                Strength,
                                                                        float                Radius,
                                                                        float                Falloff,
-                                                                       bool                 bKeyboardCaptured)
+                                                                       bool                 bHotkeySuppressed)
     {
         const bool bSpaceDown = Window != nullptr && glfwGetKey(Window, GLFW_KEY_SPACE) == GLFW_PRESS;
         const bool bSpacePressed = bSpaceDown && !bWasSpaceDown;
         bWasSpaceDown = bSpaceDown;
 
-        if (!bSpacePressed || !bInjectMode || bKeyboardCaptured)
+        if (!bSpacePressed || !bInjectMode || bHotkeySuppressed)
         {
             return std::nullopt;
         }

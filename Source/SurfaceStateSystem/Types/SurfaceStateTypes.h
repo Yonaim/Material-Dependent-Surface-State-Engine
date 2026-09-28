@@ -24,6 +24,7 @@ namespace MDSS
 
     struct TSurfaceStateParameters
     {
+        // Saturation이 1이 되는 포화 기준량이며 State의 저장 상한은 아니다.
         float StateCapacity = 1.0F;
         float InputFactor = 1.0F;
         float SaturationTransferRate = 0.0F;

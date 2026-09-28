@@ -211,6 +211,12 @@ namespace MDSS
         return ChannelCount;
     }
 
+    bool TSurfaceProfileGPUResources::IsSupported(std::size_t ProfileIndex, std::size_t ChannelIndex) const noexcept
+    {
+        return ProfileIndex < ProfileCount && ChannelIndex < ChannelCount &&
+               SupportedChannels[ProfileIndex * ChannelCount + ChannelIndex] != 0U;
+    }
+
     void TSurfaceProfileGPUResources::UpdateParameters(std::size_t ProfileIndex,
                                                        std::size_t ChannelIndex,
                                                        const TSurfaceStateParameters& Parameters)
@@ -347,6 +353,21 @@ namespace MDSS
     std::size_t TSurfaceInstanceGPUResources::GetChannelCount() const noexcept
     {
         return ChannelCount;
+    }
+
+    void TSurfaceInstanceGPUResources::ResetState(const std::vector<float>& ResetOutgoingFluxScale)
+    {
+        if (ResetOutgoingFluxScale.size() != ScalarCount)
+        {
+            throw std::invalid_argument("Reset OutgoingFluxScale must match the instance scalar count.");
+        }
+        const std::vector<float> Zeros(ScalarCount, 0.0F);
+        const VkDeviceSize ByteSize = static_cast<VkDeviceSize>(ScalarCount * sizeof(float));
+        StateABuffer->Upload(Zeros.data(), ByteSize);
+        StateBBuffer->Upload(Zeros.data(), ByteSize);
+        InputDeltaBuffer->Upload(Zeros.data(), ByteSize);
+        RawOutgoingBuffer->Upload(Zeros.data(), ByteSize);
+        OutgoingFluxScaleBuffer->Upload(ResetOutgoingFluxScale.data(), ByteSize);
     }
 
     TSurfaceStateDescriptorResources::TSurfaceStateDescriptorResources(

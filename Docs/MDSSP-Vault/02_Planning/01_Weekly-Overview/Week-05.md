@@ -1,6 +1,6 @@
 # Week-05 — Solver 가중치와 형상 입력 검증
 
-상태: **계획** · 상위 계획: [[02_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]], [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]]
+상태: **구현 중** · 상위 계획: [[02_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]], [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]]
 
 ## 목표
 
@@ -18,6 +18,8 @@ Input, Transport, Decay를 통해 이웃 texel 사이 State가 Capacity 범위 �
 - 동일한 총 시간에서 서로 다른 timestep 결과 차이를 허용 오차로 비교한다.
 - 검증을 돕는 Debug UI를 추가한다: TransferWeight 및 구성 가중치 히트맵, Solver pause/step, State 초기화, 전체 texel 수와 valid 비율, 현재 ping-pong buffer, 최근 GPU solver 시간.
 - `OutgoingFluxScale` 디버그 뷰를 추가해 Solver가 계산한 outgoing flux 제한값을 확인한다.
+
+위 관측·제어 기능은 서로 같은 Solver 상태와 GPU 리소스 수명에 의존하므로 상세 계획의 Branch 3 통합 브랜치 `feat/solver-debug-tools`에서 함께 구현한다.
 
 ## 산출물
 

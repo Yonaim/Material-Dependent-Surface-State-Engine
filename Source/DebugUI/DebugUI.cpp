@@ -6,6 +6,7 @@
 #include "DebugUI/DebugUI.h"
 
 #include "Application/SceneFileDialog.h"
+#include "Application/EngineConfig.h"
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "AssetManager/Loaders/SceneLoader.h"
@@ -55,7 +56,7 @@ namespace MDSS
                 case TLogLevel::Debug:
                     return {1.00F, 1.00F, 1.00F, 1.0F}; // 흰색
                 case TLogLevel::Info:
-                    return {0.45F, 0.78F, 1.00F, 1.0F}; // 연한 파랑
+                    return {0.28F, 0.52F, 0.86F, 1.0F}; // 파랑
                 case TLogLevel::Warning:
                     return {1.00F, 0.84F, 0.25F, 1.0F}; // 노랑
                 case TLogLevel::Error:
@@ -74,20 +75,22 @@ namespace MDSS
             TLogLevel::Error,
         };
 
-        constexpr std::array<const char*, 5> RenderViewModeNames = {
+        constexpr std::array<const char*, 6> RenderViewModeNames = {
             "Lit",
             "Unlit",
+            "Wireframe",
             "Vertex Normal (World Space)",
             "Normal Texture (Tangent Space)",
             "Mapped Normal (World Space)",
         };
 
-        constexpr std::array<const char*, 5> SurfaceDebugViewNames = {
+        constexpr std::array<const char*, 6> SurfaceDebugViewNames = {
             "State Heatmap",
             "Validity",
             "Surface ID",
             "Neighbor Count",
             "UV Seam",
+            "Outgoing Flux Scale",
         };
 
         constexpr std::array<const char*, 4> SolverTransferWeightViewNames = {
@@ -113,15 +116,19 @@ namespace MDSS
         void DollyCamera(TCamera& CameraData, float Steps)
         {
             const glm::vec3 ViewDirection = CameraData.GetTarget() - CameraData.GetPosition();
-            if (glm::dot(ViewDirection, ViewDirection) <= 1.0e-12F)
+            const float Distance = glm::length(ViewDirection);
+            if (Distance <= 1.0e-6F)
             {
                 return;
             }
 
-            constexpr float DollyDistancePerStep = 0.35F;
-            const glm::vec3 DollyDelta = glm::normalize(ViewDirection) * Steps * DollyDistancePerStep;
-            CameraData.SetPosition(CameraData.GetPosition() + DollyDelta);
-            CameraData.SetTarget(CameraData.GetTarget() + DollyDelta);
+            constexpr float ZoomSensitivity = 0.12F;
+            constexpr float MinimumCameraDistance = 0.05F;
+            const float ClampedSteps = std::clamp(Steps, -10.0F, 10.0F);
+            const float NewDistance =
+                std::max(Distance * std::exp(-ClampedSteps * ZoomSensitivity), MinimumCameraDistance);
+            const glm::vec3 Forward = ViewDirection / Distance;
+            CameraData.SetPosition(CameraData.GetPosition() + Forward * (Distance - NewDistance));
         }
 
         // 라벨은 같은 시작점에 두고, 조절 위젯은 고정된 열에서 시작해 행을 정렬한다.
@@ -264,24 +271,34 @@ namespace MDSS
 
         ImGuiIO& IO = ImGui::GetIO();
         IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
-        IO.IniFilename = "Config/MDSS_EditorLayout.ini";
+        std::filesystem::create_directories(GetEngineConfigDirectory());
+        EditorLayoutPath = (GetEngineConfigDirectory() / "EditorLayout.ini").string();
+        IO.IniFilename = EditorLayoutPath.c_str();
 
 #if defined(_WIN32)
-        constexpr const char* FontCandidates[] = {"C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf"};
+        constexpr const char* FontCandidates[] = {"C:/Windows/Fonts/malgun.ttf",
+                                                   "C:/Windows/Fonts/segoeui.ttf",
+                                                   "C:/Windows/Fonts/arial.ttf"};
 #elif defined(__APPLE__)
-        constexpr const char* FontCandidates[] = {"/System/Library/Fonts/Supplemental/Arial.ttf",
+        constexpr const char* FontCandidates[] = {"/System/Library/Fonts/AppleSDGothicNeo.ttc",
+                                                   "/System/Library/Fonts/Supplemental/Arial.ttf",
                                                    "/System/Library/Fonts/Supplemental/Verdana.ttf"};
 #else
-        constexpr const char* FontCandidates[] = {"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        constexpr const char* FontCandidates[] = {"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                                                   "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+                                                   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
                                                    "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"};
 #endif
         for (const char* FontPath : FontCandidates)
         {
             if (std::filesystem::exists(FontPath))
             {
-                if (ImFont* Font = IO.Fonts->AddFontFromFileTTF(FontPath, 13.0F))
+                if (ImFont* Font = IO.Fonts->AddFontFromFileTTF(FontPath, 13.0F, nullptr,
+                                                                IO.Fonts->GetGlyphRangesKorean()))
                 {
                     IO.FontDefault = Font;
+                    SectionHeaderFont = IO.Fonts->AddFontFromFileTTF(
+                        FontPath, 17.0F, nullptr, IO.Fonts->GetGlyphRangesKorean());
                     break;
                 }
             }
@@ -290,14 +307,50 @@ namespace MDSS
         {
             IO.FontDefault = IO.Fonts->AddFontDefault();
         }
+        if (SectionHeaderFont == nullptr)
+        {
+            ImFontConfig HeaderFontConfig{};
+            HeaderFontConfig.SizePixels = 17.0F;
+            SectionHeaderFont = IO.Fonts->AddFontDefault(&HeaderFontConfig);
+        }
 
         ImGui::StyleColorsDark();
         ImGuiStyle& Style = ImGui::GetStyle();
         Style.WindowPadding = {12.0F, 10.0F};
         Style.FramePadding = {8.0F, 5.0F};
         Style.ItemSpacing = {8.0F, 6.0F};
-        Style.WindowRounding = 6.0F;
-        Style.FrameRounding = 4.0F;
+        Style.WindowRounding = 3.0F;
+        Style.FrameRounding = 3.0F;
+        Style.PopupRounding = 3.0F;
+        Style.GrabRounding = 3.0F;
+        Style.TabRounding = 3.0F;
+        Style.Colors[ImGuiCol_Text] = {0.91F, 0.93F, 0.97F, 1.0F};
+        Style.Colors[ImGuiCol_TextDisabled] = {0.58F, 0.62F, 0.69F, 1.0F};
+        // 창 배경은 패널과 내부 영역에 두 단계의 더 어두운 회색을 쓴다.
+        Style.Colors[ImGuiCol_WindowBg] = {0.075F, 0.082F, 0.10F, 0.99F};
+        Style.Colors[ImGuiCol_ChildBg] = {0.058F, 0.065F, 0.082F, 0.94F};
+        Style.Colors[ImGuiCol_PopupBg] = {0.075F, 0.082F, 0.10F, 0.99F};
+        Style.Colors[ImGuiCol_MenuBarBg] = {0.058F, 0.065F, 0.082F, 1.0F};
+        Style.Colors[ImGuiCol_DockingEmptyBg] = {0.065F, 0.072F, 0.09F, 1.0F};
+        Style.Colors[ImGuiCol_Border] = {0.20F, 0.24F, 0.31F, 0.75F};
+        Style.Colors[ImGuiCol_FrameBg] = {0.14F, 0.17F, 0.22F, 1.0F};
+        Style.Colors[ImGuiCol_FrameBgHovered] = {0.17F, 0.25F, 0.37F, 1.0F};
+        Style.Colors[ImGuiCol_FrameBgActive] = {0.13F, 0.30F, 0.53F, 1.0F};
+        Style.Colors[ImGuiCol_TitleBg] = {0.048F, 0.053F, 0.068F, 1.0F};
+        Style.Colors[ImGuiCol_TitleBgActive] = {0.060F, 0.086F, 0.13F, 1.0F};
+        Style.Colors[ImGuiCol_CheckMark] = {0.10F, 0.40F, 0.78F, 1.0F};
+        Style.Colors[ImGuiCol_SliderGrab] = {0.10F, 0.36F, 0.70F, 1.0F};
+        Style.Colors[ImGuiCol_SliderGrabActive] = {0.12F, 0.48F, 0.88F, 1.0F};
+        Style.Colors[ImGuiCol_Button] = {0.12F, 0.27F, 0.47F, 1.0F};
+        Style.Colors[ImGuiCol_ButtonHovered] = {0.15F, 0.36F, 0.61F, 1.0F};
+        Style.Colors[ImGuiCol_ButtonActive] = {0.09F, 0.31F, 0.59F, 1.0F};
+        Style.Colors[ImGuiCol_Header] = {0.12F, 0.27F, 0.47F, 0.82F};
+        Style.Colors[ImGuiCol_HeaderHovered] = {0.15F, 0.36F, 0.61F, 0.92F};
+        Style.Colors[ImGuiCol_HeaderActive] = {0.10F, 0.32F, 0.58F, 1.0F};
+        Style.Colors[ImGuiCol_Tab] = {0.062F, 0.105F, 0.17F, 1.0F};
+        Style.Colors[ImGuiCol_TabHovered] = {0.13F, 0.35F, 0.62F, 1.0F};
+        Style.Colors[ImGuiCol_TabSelected] = {0.11F, 0.29F, 0.51F, 1.0F};
+        Style.Colors[ImGuiCol_TabSelectedOverline] = {0.08F, 0.34F, 0.70F, 1.0F};
 
         if (!ImGui_ImplGlfw_InitForVulkan(TWindow.GetNativeHandle(), true))
         {
@@ -408,6 +461,24 @@ namespace MDSS
         ImGui::Render();
     }
 
+    void TDebugUI::DrawSectionHeader(const char* Title, float TopPadding) const
+    {
+        ImGui::Dummy({0.0F, TopPadding});
+        ImGui::PushStyleColor(ImGuiCol_Text, {0.91F, 0.93F, 0.97F, 1.0F});
+        if (SectionHeaderFont != nullptr)
+        {
+            ImGui::PushFont(SectionHeaderFont);
+        }
+        ImGui::TextUnformatted(Title);
+        if (SectionHeaderFont != nullptr)
+        {
+            ImGui::PopFont();
+        }
+        ImGui::PopStyleColor();
+        ImGui::Separator();
+        ImGui::Dummy({0.0F, 8.0F});
+    }
+
     void TDebugUI::Render(VkCommandBuffer CommandBuffer) const
     {
         ImDrawData* DrawData = ImGui::GetDrawData();
@@ -464,6 +535,20 @@ namespace MDSS
         return bSimulationPaused;
     }
 
+    bool TDebugUI::ConsumeSolverStepRequest() noexcept
+    {
+        const bool bRequested = bSolverStepRequested;
+        bSolverStepRequested = false;
+        return bRequested;
+    }
+
+    bool TDebugUI::ConsumeSolverResetRequest() noexcept
+    {
+        const bool bRequested = bSolverResetRequested;
+        bSolverResetRequested = false;
+        return bRequested;
+    }
+
     glm::vec4 TDebugUI::GetSceneViewportRectNormalized() const noexcept
     {
         return SceneViewportRectNormalized;
@@ -484,9 +569,11 @@ namespace MDSS
         return DebugState;
     }
 
-    bool TDebugUI::IsKeyboardCaptured() const noexcept
+    bool TDebugUI::ShouldSuppressDebugHotkey() const noexcept
     {
-        return ImGui::GetIO().WantCaptureKeyboard;
+        const ImGuiIO& IO = ImGui::GetIO();
+        return IO.WantCaptureKeyboard || IO.WantTextInput || ImGui::IsAnyItemActive() ||
+               ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     }
 
     void TDebugUI::SetupDockspace()
@@ -553,6 +640,12 @@ namespace MDSS
         ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Scene File", nullptr, Flags);
+        const auto& SourcePath = SceneData.GetSourcePath();
+        ImGui::TextWrapped("Current Scene: %s", SourcePath.empty() ? "(unsaved)" : SourcePath.filename().string().c_str());
+        if (!SourcePath.empty() && ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", SourcePath.string().c_str());
+        }
         if (ImGui::Button("Load Scene"))
         {
             if (const auto Path = TSceneFileDialog::OpenScene())
@@ -560,8 +653,18 @@ namespace MDSS
                 try
                 {
                     TScene Loaded = TSceneLoader::Load(*Path, *AssetManager);
-                    FrameRenderer->ReloadSceneResources(Loaded);
+                    TScene PreviousScene = SceneData;
                     SceneData = std::move(Loaded);
+                    try
+                    {
+                        // Solver가 임시 Loaded가 아니라 수명이 유지되는 SceneData를 참조하게 한다.
+                        FrameRenderer->ReloadSceneResources(SceneData);
+                    }
+                    catch (...)
+                    {
+                        SceneData = std::move(PreviousScene);
+                        throw;
+                    }
                     SelectedObject.reset();
                     ActiveGizmoAxis = -1;
                     SceneStatus = "Loaded: " + Path->filename().string();
@@ -820,7 +923,7 @@ namespace MDSS
             }
         }
 
-        if (IO.WantTextInput || ImGui::IsAnyItemActive())
+        if (ShouldSuppressDebugHotkey())
         {
             return;
         }
@@ -951,12 +1054,12 @@ namespace MDSS
             return;
         }
         ImGui::SetNextWindowPos(ViewportNode->Pos, ImGuiCond_Always);
-        ImGui::SetNextWindowSize({ViewportNode->Size.x, 110.0F}, ImGuiCond_Always);
+        ImGui::SetNextWindowSize({ViewportNode->Size.x, 150.0F}, ImGuiCond_Always);
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
         if (DisplaySize.x > 0.0F && DisplaySize.y > 0.0F)
         {
-            constexpr float ToolbarHeight = 110.0F;
+            constexpr float ToolbarHeight = 150.0F;
             SceneViewportRectNormalized = {(ViewportNode->Pos.x - MainViewport->Pos.x) / DisplaySize.x,
                 (ViewportNode->Pos.y + ToolbarHeight - MainViewport->Pos.y) / DisplaySize.y,
                 ViewportNode->Size.x / DisplaySize.x,
@@ -1000,8 +1103,7 @@ namespace MDSS
             ImGui::PushID("ViewportViewCombo");
             if (ImGui::BeginCombo("##View", CurrentName, ImGuiComboFlags_HeightLarge))
             {
-                ImGui::TextColored({0.55F, 0.78F, 1.0F, 1.0F}, "DISPLAY");
-                ImGui::Separator();
+                DrawSectionHeader("DISPLAY", 0.0F);
                 for (int Index = 0; Index < static_cast<int>(RenderViewModeNames.size()); ++Index)
                 {
                     const auto Mode = static_cast<TRenderViewMode>(Index);
@@ -1011,9 +1113,7 @@ namespace MDSS
                         FrameRenderer->SetRenderViewMode(Mode);
                     }
                 }
-                ImGui::Spacing();
-                ImGui::TextColored({1.0F, 0.76F, 0.38F, 1.0F}, "DEBUG");
-                ImGui::Separator();
+                DrawSectionHeader("DEBUG");
                 for (int Index = 0; Index < static_cast<int>(SurfaceDebugViewNames.size()); ++Index)
                 {
                     const auto Mode =
@@ -1072,13 +1172,25 @@ namespace MDSS
             {
                 ImGui::SetTooltip("Zoom in");
             }
+            ImGui::SameLine(0.0F, 14.0F);
+            bool bGridVisible = FrameRenderer->IsWorldGridVisible();
+            if (ImGui::Checkbox("Grid", &bGridVisible))
+            {
+                FrameRenderer->SetWorldGridVisible(bGridVisible);
+            }
+            ImGui::SameLine();
+            bool bAxisVisible = FrameRenderer->IsWorldAxisVisible();
+            if (ImGui::Checkbox("Axis", &bAxisVisible))
+            {
+                FrameRenderer->SetWorldAxisVisible(bAxisVisible);
+            }
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0F);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {8.0F, 2.0F});
-            if (ImGui::BeginChild("SelectedViewContext", {0.0F, 50.0F}, true,
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {8.0F, 4.0F});
+            if (ImGui::BeginChild("SelectedViewContext", {0.0F, 90.0F}, true,
                                   ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
             {
-                const ImVec4 ContextTitleColor{0.42F, 0.76F, 1.0F, 1.0F};
+                const ImVec4 ContextTitleColor{0.24F, 0.48F, 0.82F, 1.0F};
                 auto BeginViewContext = [&](const char* Title, const char* Description)
                 {
                     ImGui::AlignTextToFramePadding();
@@ -1095,6 +1207,9 @@ namespace MDSS
                         break;
                     case TRenderViewMode::Unlit:
                         BeginViewContext("UNLIT", "조명 없이 재질색만 표시.");
+                        break;
+                    case TRenderViewMode::Wireframe:
+                        BeginViewContext("WIREFRAME", "삼각형 와이어프레임으로 형상을 표시.");
                         break;
                     case TRenderViewMode::VertexNormalWS:
                         BeginViewContext("VERTEX NORMAL", "RGB 채널은 월드 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
@@ -1145,10 +1260,11 @@ namespace MDSS
                             }
                             ImGui::SameLine(0.0F, 10.0F);
                             bool bReliefShadingEnabled = FrameRenderer->IsStateHeatmapReliefShadingEnabled();
-                            if (ImGui::Checkbox("Relief", &bReliefShadingEnabled))
+                            if (ImGui::Checkbox("Relief Shading", &bReliefShadingEnabled))
                             {
                                 FrameRenderer->SetStateHeatmapReliefShadingEnabled(bReliefShadingEnabled);
                             }
+                            ImGui::NewLine();
                         }
                         DrawLegendColor({0.075F, 0.090F, 0.260F, 1.0F}, "0%");
                         DrawLegendColor({0.120F, 0.610F, 0.540F, 1.0F}, "중간");
@@ -1176,6 +1292,45 @@ namespace MDSS
                         DrawLegendColor({1.0F, 0.18F, 0.72F, 1.0F}, "Seam 이웃 있음");
                         DrawLegendColor({0.12F, 0.16F, 0.22F, 1.0F}, "없음");
                         break;
+                    case TRenderViewMode::OutgoingFluxScale:
+                    {
+                        BeginViewContext("OUTGOING FLUX SCALE", "선택 State 채널의 유출 제한값: 0은 제한, 1은 제한 없음.");
+                        const TSurfaceStateRegistry* Registry = AssetManager != nullptr
+                                                                   ? &AssetManager->GetSurfaceStateRegistry()
+                                                                   : nullptr;
+                        if (Registry != nullptr && Registry->GetStateCount() > 0)
+                        {
+                            const std::size_t StateCount = Registry->GetStateCount();
+                            DebugState = std::min<TStateId>(DebugState, static_cast<TStateId>(StateCount - 1));
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::TextUnformatted("State");
+                            ImGui::SameLine(0.0F, 6.0F);
+                            ImGui::SetNextItemWidth(125.0F);
+                            if (ImGui::BeginCombo("##OutgoingFluxState", Registry->GetStateName(DebugState).c_str()))
+                            {
+                                for (std::size_t Index = 0; Index < StateCount; ++Index)
+                                {
+                                    const TStateId State = static_cast<TStateId>(Index);
+                                    const bool bSelected = State == DebugState;
+                                    if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
+                                    {
+                                        DebugState = State;
+                                        FrameRenderer->SetDebugStateChannel(DebugState);
+                                    }
+                                    if (bSelected)
+                                    {
+                                        ImGui::SetItemDefaultFocus();
+                                    }
+                                }
+                                ImGui::EndCombo();
+                            }
+                        }
+                        DrawLegendColor({0.76F, 0.08F, 0.10F, 1.0F}, "0 제한");
+                        DrawLegendColor({1.00F, 0.70F, 0.10F, 1.0F}, "0.5 부분 제한");
+                        DrawLegendColor({0.34F, 0.86F, 0.28F, 1.0F}, "1 제한 없음");
+                        DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "시뮬레이션 꺼짐");
+                        break;
+                    }
                     case TRenderViewMode::SolverTransferWeight:
                     {
                         BeginViewContext("TRANSFER WEIGHT", "선택 가중치 평균: 0은 차단, 1은 완전 전달.");
@@ -1201,7 +1356,8 @@ namespace MDSS
                         DrawLegendColor({1.0F, 0.42F, 0.10F, 1.0F}, "양수");
                         break;
                     case TRenderViewMode::MesoOffset:
-                        BeginViewContext("MESO DISPLACEMENT", "높이만큼 정점을 이동하고 복원 노멀로 음영.");
+                        BeginViewContext("MESO DISPLACEMENT",
+                                         "Meso 높이만큼 정점을 이동합니다. 회백색은 재질·조명이며 높이 색상은 Meso Color에서 확인하세요.");
                         break;
                     case TRenderViewMode::MacroGeometry:
                         BeginViewContext("MACRO GEOMETRY", "노멀 맵 효과를 제외한 원본 형상.");
@@ -1223,6 +1379,7 @@ namespace MDSS
 
         if (ImGui::Begin("Render Settings"))
         {
+            DrawSectionHeader("Surface Shading");
             float NormalStrength = FrameRenderer->GetNormalStrength();
             if (LabeledSliderFloat("Normal", &NormalStrength, 0.0F, 4.0F, "%.2f"))
             {
@@ -1257,37 +1414,112 @@ namespace MDSS
             return;
         }
 
-        constexpr float ToolbarHeight = 68.0F;
+        constexpr float ToolbarHeight = 150.0F;
         ImGui::SetNextWindowPos({ViewportNode->Pos.x + 10.0F, ViewportNode->Pos.y + ToolbarHeight + 10.0F},
                                 ImGuiCond_Always);
-        ImGui::SetNextWindowBgAlpha(0.72F);
+        ImGui::SetNextWindowBgAlpha(0.84F);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                                            ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus |
                                            ImGuiWindowFlags_NoInputs;
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
         if (ImGui::Begin("Viewport Stats##Overlay", nullptr, Flags))
         {
-            const float FPS = ImGui::GetIO().Framerate;
-            const float FrameTimeMs = FPS > 0.0F ? 1000.0F / FPS : 0.0F;
+            const ImGuiIO& IO = ImGui::GetIO();
+            const double FrameSeconds = static_cast<double>(IO.DeltaTime);
+            const std::array<float, 4> GpuValues = {
+                FrameRenderer->GetLastRenderGpuMilliseconds(),
+                FrameRenderer->GetLastSolverGpuMilliseconds(),
+                FrameRenderer->GetLastSolverPass1GpuMilliseconds(),
+                FrameRenderer->GetLastSolverPass2GpuMilliseconds(),
+            };
+            if (std::isfinite(FrameSeconds) && FrameSeconds > 0.0)
+            {
+                ProfilingWindowElapsed += FrameSeconds;
+                ProfilingFpsSum += 1.0 / FrameSeconds;
+                ProfilingFrameTimeSum += FrameSeconds * 1000.0;
+                ++ProfilingFrameSamples;
+                for (std::size_t Index = 0; Index < GpuValues.size(); ++Index)
+                {
+                    if (std::isfinite(GpuValues[Index]) && GpuValues[Index] >= 0.0F)
+                    {
+                        ProfilingGpuSums[Index] += GpuValues[Index];
+                        ++ProfilingGpuSamples[Index];
+                    }
+                }
+            }
+            if (ProfilingWindowElapsed >= 1.0 && ProfilingFrameSamples > 0)
+            {
+                ProfilingAverages[0] = static_cast<float>(ProfilingFpsSum / ProfilingFrameSamples);
+                ProfilingAverages[1] = static_cast<float>(ProfilingFrameTimeSum / ProfilingFrameSamples);
+                for (std::size_t Index = 0; Index < GpuValues.size(); ++Index)
+                {
+                    ProfilingAverages[Index + 2] = ProfilingGpuSamples[Index] > 0
+                                                       ? static_cast<float>(ProfilingGpuSums[Index] /
+                                                                            ProfilingGpuSamples[Index])
+                                                       : -1.0F;
+                }
+                bProfilingAverageAvailable = true;
+                ProfilingWindowElapsed = 0.0;
+                ProfilingFpsSum = 0.0;
+                ProfilingFrameTimeSum = 0.0;
+                ProfilingFrameSamples = 0;
+                ProfilingGpuSums.fill(0.0);
+                ProfilingGpuSamples.fill(0U);
+            }
+
+            const float FPS = ProfilingAverages[0];
             const ImVec4 FPSColor = FPS >= 55.0F ? ImVec4(0.57F, 0.92F, 0.68F, 1.0F)
                                    : FPS >= 30.0F ? ImVec4(1.0F, 0.84F, 0.47F, 1.0F)
                                                   : ImVec4(1.0F, 0.57F, 0.57F, 1.0F);
-            ImGui::TextColored(FPSColor, "%.1f FPS", FPS);
-            ImGui::SameLine();
-            ImGui::TextDisabled("%.2f ms", FrameTimeMs);
-
-            const float SolverMilliseconds = FrameRenderer->GetLastSolverGpuMilliseconds();
-            if (SolverMilliseconds >= 0.0F)
+            if (ImGui::BeginTable("ViewportProfiling", 2,
+                                  ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
             {
-                ImGui::TextDisabled("Solver GPU %.2f ms", SolverMilliseconds);
-            }
-            else
-            {
-                ImGui::TextDisabled("Solver GPU unavailable");
+                ImGui::TableSetupColumn("Metric", ImGuiTableColumnFlags_WidthFixed, 96.0F);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed, 160.0F);
+                const auto DrawMetric = [this](const char* Label, const char* Format, float Value, ImVec4 Color)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextDisabled("%s", Label);
+                    ImGui::TableSetColumnIndex(1);
+                    if (Value >= 0.0F)
+                    {
+                        ImGui::TextColored(Color, Format, Value);
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled(bProfilingAverageAvailable ? "unavailable" : "collecting 1s average");
+                    }
+                };
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextDisabled("Frame");
+                ImGui::TableSetColumnIndex(1);
+                if (bProfilingAverageAvailable)
+                {
+                    ImGui::TextColored(FPSColor, "%.1f FPS  |  %.2f ms", FPS, ProfilingAverages[1]);
+                }
+                else
+                {
+                    ImGui::TextDisabled("collecting 1s average");
+                }
+                DrawMetric("Render GPU", "%.2f ms", ProfilingAverages[2],
+                           {0.82F, 0.87F, 0.94F, 1.0F});
+                DrawMetric("Solver GPU", "%.2f ms", ProfilingAverages[3],
+                           {0.82F, 0.87F, 0.94F, 1.0F});
+                DrawMetric("  Pass 1", "%.2f ms", ProfilingAverages[4],
+                           {0.72F, 0.78F, 0.87F, 1.0F});
+                DrawMetric("  Pass 2", "%.2f ms", ProfilingAverages[5],
+                           {0.72F, 0.78F, 0.87F, 1.0F});
+                ImGui::EndTable();
             }
         }
         ImGui::End();
+        ImGui::PopStyleVar(3);
     }
 
     void TDebugUI::DrawSimulationDebugWindow(const TScene& SceneData)
@@ -1299,20 +1531,20 @@ namespace MDSS
 
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         constexpr float Width = 310.0F;
-        const ImVec2 WindowSize{Width, 280.0F};
+        const ImVec2 WindowSize{Width, 520.0F};
         const ImVec2 WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
-                                    Viewport->WorkPos.y + 190.0F};
+                                    Viewport->WorkPos.y + 150.0F};
         ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
 
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoTitleBar;
         if (ImGui::Begin("Simulation Debug", nullptr, Flags))
         {
             if (ImGui::BeginTabBar("SimulationTabs"))
             {
-                if (ImGui::BeginTabItem("Control"))
+                if (ImGui::BeginTabItem("Simulation"))
                 {
-                    ImGui::TextDisabled("Playback");
+                    DrawSectionHeader("Playback");
                     if (ImGui::RadioButton("Running", !bSimulationPaused))
                     {
                         bSimulationPaused = false;
@@ -1323,7 +1555,7 @@ namespace MDSS
                         bSimulationPaused = true;
                     }
 
-                    ImGui::TextDisabled("Speed preset");
+                    DrawSectionHeader("Simulation Speed");
                     if (ImGui::RadioButton("0.25x", std::abs(SimulationTimeScale - 0.25F) < 0.001F))
                     {
                         SimulationTimeScale = 0.25F;
@@ -1345,26 +1577,127 @@ namespace MDSS
                     }
                     LabeledSliderFloat("Time scale", &SimulationTimeScale, 0.05F, 4.0F, "%.2fx");
 
-                    ImGui::Separator();
-                    ImGui::TextDisabled("Solver debug terms");
-                    bool bGeometryDrive = FrameRenderer->IsDebugGeometryDriveEnabled();
-                    if (LabeledCheckbox("GeometryDrive", &bGeometryDrive))
+                    DrawSectionHeader("Solver Controls");
+                    if (!bSimulationPaused)
                     {
-                        FrameRenderer->SetDebugGeometryDriveEnabled(bGeometryDrive);
+                        ImGui::BeginDisabled();
+                    }
+                    if (ImGui::Button("Step"))
+                    {
+                        bSolverStepRequested = true;
+                    }
+                    if (!bSimulationPaused)
+                    {
+                        ImGui::EndDisabled();
                     }
                     ImGui::SameLine();
-                    bool bNormalWeight = FrameRenderer->IsDebugNormalWeightEnabled();
-                    if (LabeledCheckbox("NormalWeight", &bNormalWeight))
+                    if (ImGui::Button("Reset State"))
                     {
-                        FrameRenderer->SetDebugNormalWeightEnabled(bNormalWeight);
+                        bSolverResetRequested = true;
                     }
+
+                    const TSurfaceGPUResourceManager& GPUResources = FrameRenderer->GetSurfaceGPUResources();
+                    std::size_t TotalTexels = 0;
+                    std::size_t ValidTexels = 0;
+                    std::optional<bool> FirstCurrentAB;
+                    bool bMixedCurrentBuffers = false;
+                    for (std::size_t SceneIndex = 0; SceneIndex < GPUResources.GetSceneInstanceCount(); ++SceneIndex)
+                    {
+                        if (GPUResources.GetInstanceDescriptors(SceneIndex) == nullptr)
+                        {
+                            continue;
+                        }
+                        TotalTexels += GPUResources.GetInstanceTexelCount(SceneIndex);
+                        ValidTexels += GPUResources.GetInstanceValidTexelCount(SceneIndex);
+                        const bool bCurrentAB = GPUResources.IsCurrentStateAB(SceneIndex);
+                        if (!FirstCurrentAB.has_value())
+                        {
+                            FirstCurrentAB = bCurrentAB;
+                        }
+                        else if (*FirstCurrentAB != bCurrentAB)
+                        {
+                            bMixedCurrentBuffers = true;
+                        }
+                    }
+                    const float ValidRatio = TotalTexels > 0
+                                                 ? 100.0F * static_cast<float>(ValidTexels) /
+                                                       static_cast<float>(TotalTexels)
+                                                 : 0.0F;
+                    ImGui::Text("Texels: %zu  |  Valid: %zu (%.1f%%)", TotalTexels, ValidTexels, ValidRatio);
+                    const char* CurrentBuffer = bMixedCurrentBuffers ? "Mixed" :
+                                                !FirstCurrentAB.has_value() ? "N/A" :
+                                                *FirstCurrentAB ? "A" : "B";
+                    if (bSimulationPaused)
+                    {
+                        ImGui::Text("Next read buffer: %s", CurrentBuffer);
+                        const float SolverMilliseconds = FrameRenderer->GetLastSolverGpuMilliseconds();
+                        if (SolverMilliseconds >= 0.0F)
+                        {
+                            ImGui::Text("Recent Solver GPU: %.2f ms", SolverMilliseconds);
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled("Recent Solver GPU: N/A");
+                        }
+                    }
+
+                    ImGui::TextDisabled("Solver term toggles");
+                    const auto DrawSolverTerm = [this](TSurfaceSolverTerm Term, const char* Label,
+                                                       const char* Description)
+                    {
+                        bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
+                        if (ImGui::Checkbox(Label, &bEnabled))
+                        {
+                            FrameRenderer->SetDebugSolverTermEnabled(Term, bEnabled);
+                        }
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("%s", Description);
+                        }
+                    };
+
+                    DrawSectionHeader("Transport");
+                    DrawSolverTerm(TSurfaceSolverTerm::SaturationDrive, "SaturationDrive",
+                                   "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
+                                   "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive, "GeometryDrive",
+                                   "ON: 높이와 중력 방향에 따른 기하 전달을 적용합니다.\n"
+                                   "OFF: 기하 전달량을 0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal, "DirectionDrive: MesoNormal",
+                                   "ON: 중력을 표면에 투영할 때 복원된 MesoNormal을 사용합니다.\n"
+                                   "OFF: 중력을 표면에 투영할 때 기본 mesh normal을 사용합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::DistanceWeight, "DistanceWeight",
+                                   "ON: 이웃 간 실제 표면 거리 기반 가중치를 적용합니다.\n"
+                                   "OFF: 거리 가중치를 1.0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::NormalWeight, "NormalWeight",
+                                   "ON: 이웃 표면 법선의 방향 일치도 가중치를 적용합니다.\n"
+                                   "OFF: 법선 가중치를 1.0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::ProfileBoundaryWeight, "ProfileBoundaryWeight",
+                                   "ON: 서로 다른 Profile 사이 전달 가중치를 0.5로 낮춥니다.\n"
+                                   "OFF: Profile 경계 가중치를 1.0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::CurvatureWeight, "CurvatureWeight (precomputed)",
+                                   "ON: 사전 계산된 Meso 평균 곡률로 전달을 감쇠합니다.\n"
+                                   "OFF: 곡률 가중치를 1.0으로 설정합니다.");
+
+                    DrawSectionHeader("Decay");
+                    DrawSolverTerm(TSurfaceSolverTerm::Decay, "Decay",
+                                   "ON: Profile DecayRate에 따른 State 감소를 적용합니다.\n"
+                                   "OFF: 감소량을 0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::ConcavityRetention, "ConcavityRetention",
+                                   "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
+                                   "OFF: Decay 보유율을 1.0으로 설정합니다.");
+
                     ImGui::EndTabItem();
                 }
 
-                if (ImGui::BeginTabItem("Inject"))
+                if (ImGui::BeginTabItem("Contact Input"))
                 {
-                    LabeledCheckbox("Inject mode", &bInjectMode);
-                    ImGui::TextDisabled("Aim with the crosshair and press Space.");
+                    DrawSectionHeader("Contact Input");
+                    ImGui::Checkbox("Inject mode", &bInjectMode);
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Enable contact injection. Aim with the crosshair and press Space.");
+                    }
 
                     const TSurfaceStateRegistry* InjectRegistry =
                         AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
@@ -1382,7 +1715,12 @@ namespace MDSS
                             InjectState = 0;
                         }
                         const std::string& SelectedName = InjectRegistry->GetStateName(InjectState);
-                        if (BeginLabeledCombo("State", SelectedName.c_str()))
+                        const bool bStateOpen = BeginLabeledCombo("State", SelectedName.c_str());
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Surface State channel to inject.");
+                        }
+                        if (bStateOpen)
                         {
                             for (std::size_t Index = 0; Index < InjectStateCount; ++Index)
                             {
@@ -1403,13 +1741,26 @@ namespace MDSS
                     }
 
                     LabeledSliderFloat("Radius (world)", &InjectRadius, 0.01F, 2.0F, "%.2f");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("World-space radius of the injected contact.");
+                    }
                     LabeledSliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Amount of State added by the contact.");
+                    }
                     LabeledSliderFloat("Falloff", &InjectFalloff, 0.0F, 4.0F, "%.2f");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Controls how injection strength fades toward the radius edge.");
+                    }
                     ImGui::EndTabItem();
                 }
 
-                if (ImGui::BeginTabItem("Runtime Override"))
+                if (ImGui::BeginTabItem("Profile Tuning"))
                 {
+                    DrawSectionHeader("Runtime Profile Parameters");
                     std::vector<TSRProfileAssetHandle> SceneProfiles;
                     for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
                     {
@@ -1498,6 +1849,7 @@ namespace MDSS
                     const std::pair<TSRProfileAssetHandle, TStateId> Key{DebugParameterProfile, DebugParameterState};
                     if (ParameterDraftKey != Key)
                     {
+                        ParameterStatus.clear();
                         if (bParameterDraftAvailable)
                         {
                             ParameterDrafts[ParameterDraftKey] = ParameterDraft;
@@ -1590,6 +1942,7 @@ namespace MDSS
                             DirtyParameterDrafts.erase(Key);
                             bParameterDraftDirty = false;
                             ParameterDrafts[Key] = ParameterDraft;
+                            ParameterStatus.clear();
                         }
                         catch (const std::exception& Exception)
                         {

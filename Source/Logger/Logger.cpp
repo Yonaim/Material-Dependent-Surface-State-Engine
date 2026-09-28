@@ -6,9 +6,16 @@
 #include "Logger/Logger.h"
 
 #include <cstddef>
+#include <cstdio>
 #include <iostream>
 #include <mutex>
 #include <utility>
+
+#if defined(_WIN32)
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace MDSS
 {
@@ -29,6 +36,47 @@ namespace MDSS
         }
 
         constexpr std::size_t MaxRetainedEntries = 10000;
+
+        bool IsTerminal(std::ostream& Stream)
+        {
+            if (&Stream == &std::cout)
+            {
+#if defined(_WIN32)
+                return _isatty(_fileno(stdout)) != 0;
+#else
+                return isatty(fileno(stdout)) != 0;
+#endif
+            }
+            if (&Stream == &std::cerr)
+            {
+#if defined(_WIN32)
+                return _isatty(_fileno(stderr)) != 0;
+#else
+                return isatty(fileno(stderr)) != 0;
+#endif
+            }
+            return false;
+        }
+
+        const char* GetAnsiColor(TLogLevel Level) noexcept
+        {
+            switch (Level)
+            {
+                case TLogLevel::Verbose:
+                    return "\033[90m";
+                case TLogLevel::Debug:
+                    return "\033[36m";
+                case TLogLevel::Info:
+                    return "\033[32m";
+                case TLogLevel::Warning:
+                    return "\033[33m";
+                case TLogLevel::Error:
+                    return "\033[31m";
+                case TLogLevel::Count:
+                    break;
+            }
+            return "\033[0m";
+        }
     } // namespace
 
     void TLogger::Verbose(std::string_view Module, std::string_view Message)
@@ -67,7 +115,14 @@ namespace MDSS
 
         // Keep terminal output and TDebugUI backed by the exact same formatted entry.
         std::ostream& Stream = (Level == TLogLevel::Warning || Level == TLogLevel::Error) ? std::cerr : std::cout;
-        Stream << Formatted << '\n';
+        if (IsTerminal(Stream))
+        {
+            Stream << GetAnsiColor(Level) << Formatted << "\033[0m\n";
+        }
+        else
+        {
+            Stream << Formatted << '\n';
+        }
         Stream.flush();
 
         if (Storage.Entries.size() >= MaxRetainedEntries)

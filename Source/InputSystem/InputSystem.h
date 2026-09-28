@@ -22,7 +22,7 @@ namespace MDSS
     public:
         explicit TInputSystem(GLFWwindow* Window) noexcept;
 
-        /** @brief Convert one uncaptured Space press into a center-camera ray contact, if one hits a Surface. */
+        /** @brief Convert one Space press into a center-camera ray contact unless text entry or a UI drag is active. */
         [[nodiscard]] std::optional<TSurfaceContactInput> PollDebugContact(const TScene& Scene,
                                                                            const TAssetManager& Assets,
                                                                            const TCamera& Camera,
@@ -31,7 +31,7 @@ namespace MDSS
                                                                            float Strength,
                                                                            float Radius,
                                                                            float Falloff,
-                                                                           bool bKeyboardCaptured);
+                                                                           bool bHotkeySuppressed);
 
     private:
         GLFWwindow* Window = nullptr;

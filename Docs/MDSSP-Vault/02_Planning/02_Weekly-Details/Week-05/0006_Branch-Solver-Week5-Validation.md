@@ -1,7 +1,7 @@
 # Branch 6 — Solver Week 5 통합 검증
 
 브랜치: `test/solver-week5-validation`  
-선행 조건: `feat/solver-debug-statistics` 병합  
+선행 조건: `feat/solver-debug-tools` 병합
 관련 설계: [[03_Architecture/0004_Surface-State-Update|Surface State Update]], [[05_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]], [[06_Testing/0000_Testing-Guide|Testing Guide]]
 
 ## 목표

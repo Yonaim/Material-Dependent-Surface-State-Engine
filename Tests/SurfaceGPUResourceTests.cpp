@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <functional>
 #include <stdexcept>
 #include <string>
@@ -492,8 +493,130 @@ namespace
               "geometry flux should be zero when the neighbor direction opposes world gravity");
 
         const std::array<float, 2> Limited = Run({0.5F, 0.9F}, glm::vec3(0.0F, -1.0F, 0.0F), 0.25F);
-        Check(std::abs(Limited[0]) < 1.0e-4F && std::abs(Limited[1] - 1.0F) < 1.0e-4F,
-              "geometry flux should respect available source state and clamp target capacity");
+        Check(std::abs(Limited[0]) < 1.0e-4F && std::abs(Limited[1] - 1.4F) < 1.0e-4F,
+              "유출은 source 보유량으로 제한하고 target의 Capacity 초과량은 보존해야 한다.");
+    }
+
+    void TestCurvatureWeightOptions()
+    {
+        using namespace MDSS;
+        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        for (std::size_t Index = 0; Index < 2; ++Index)
+        {
+            auto& Texel = Geometry.GetTexels()[Index];
+            Texel.Surface = 0;
+            Texel.Triangle = 0;
+            Texel.Position = {static_cast<float>(Index), 0.0F, 0.0F};
+            Texel.Normal = {0.0F, 0.0F, 1.0F};
+            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+            Texel.Geometry.MesoMeanCurvature = Index == 0 ? 2.0F : -2.0F;
+        }
+        Geometry.SetProfileMap({0, 0});
+        const auto Fixed = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
+        const auto Curved = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F), nullptr, true, true, true, true);
+        Check(std::abs(Fixed[0] - 1.0F) < 1.0e-5F, "default curvature weight should remain fixed at one");
+        Check(std::abs(Curved[0] - 1.0F / 3.0F) < 1.0e-5F &&
+                  std::abs(Curved[0] - Curved[SurfaceNeighborCount]) < 1.0e-5F,
+              "precomputed curvature attenuation should be symmetric for convex and concave endpoints");
+        const auto Scaled = BuildSurfaceGPUTransferWeights(Geometry,
+            glm::scale(glm::mat4(1.0F), glm::vec3(3.0F)), nullptr, true, true, true, true);
+        Check(std::abs(Curved[0] - Scaled[0]) < 1.0e-5F,
+              "mesh-local curvature attenuation should not depend on instance scale");
+        for (auto& Texel : Geometry.GetTexels()) Texel.Geometry.MesoMeanCurvature = 0.0F;
+        const auto Flat = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F), nullptr, true, true, true, true);
+        Check(std::abs(Flat[0] - 1.0F) < 1.0e-5F, "zero curvature should produce neutral transfer weight");
+        Geometry.GetTexels()[0].Geometry.MesoMeanCurvature = std::numeric_limits<float>::quiet_NaN();
+        const auto Invalid = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F), nullptr, true, true, true, true);
+        Check(Invalid[0] == 0.0F && Invalid[SurfaceNeighborCount] == 0.0F,
+              "invalid curvature should block both edge directions without propagating NaN");
+        Check(!TSurfaceSolverDebugSettings{}.IsEnabled(TSurfaceSolverTerm::CurvatureWeight),
+              "precomputed curvature should be off by default in the UI settings");
+    }
+
+    void TestMesoGeometryDrive(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS;
+        TSurfaceResponseProfileData Profile;
+        TSurfaceStateParameters Parameters{};
+        Parameters.StateCapacity = 1.0F;
+        Parameters.GeometryTransferRate = 1.0F;
+        Profile.States.emplace("deposit", Parameters);
+        const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
+        const TSurfaceStateRegistry Registry(ProfileTable);
+        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        for (std::size_t Index = 0; Index < 2; ++Index)
+        {
+            auto& Texel = Geometry.GetTexels()[Index];
+            Texel.Surface = 0;
+            Texel.Triangle = 0;
+            Texel.Position = {1.0F - static_cast<float>(Index), 0.0F, 0.0F};
+            Texel.Normal = {0.0F, 0.0F, 1.0F};
+            Texel.MesoNormal = glm::normalize(glm::vec3(-1.0F, 0.0F, 1.0F));
+            Texel.HasMesoNormal = true;
+            Texel.Geometry.MesoVirtualHeight = Index == 0 ? 0.2F : 0.0F;
+            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+        }
+        Geometry.SetProfileMap({0, 0});
+        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
+            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const std::array<float, 2> EmptyState{0.0F, 0.0F};
+        const std::array<float, 2> EventInput{0.125F, 0.0F};
+        Instance.GetStateABuffer().Upload(EmptyState.data(), sizeof(EmptyState));
+        Instance.GetInputDeltaBuffer().Upload(EventInput.data(), sizeof(EventInput));
+        Vulkan.Execute([&](VkCommandBuffer Commands) {
+            Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, glm::mat4(1.0F),
+                              glm::vec3(0.0F, 0.0F, -1.0F));
+        });
+        std::array<float, 2> EventResult{};
+        Instance.GetStateBBuffer().Download(EventResult.data(), sizeof(EventResult));
+        Check(std::abs(EventResult[0] - EventInput[0]) < 1.0e-5F && EventResult[1] == 0.0F,
+              "empty source skipping should preserve event input and defer its transport to the next step");
+        Instance.GetInputDeltaBuffer().Download(EventResult.data(), sizeof(EventResult));
+        Check(EventResult[0] == 0.0F && EventResult[1] == 0.0F,
+              "empty source skipping should still consume event input exactly once");
+
+        Check(TSurfaceSolverDebugSettings{}.IsEnabled(TSurfaceSolverTerm::MesoDirectionNormal),
+              "Meso direction normal should be enabled by default");
+        const glm::vec3 Gravity(0.0F, 0.0F, -1.0F);
+        for (const glm::vec3 Scale : {glm::vec3(1.0F), glm::vec3(2.0F, 1.0F, 0.5F)})
+        {
+            const glm::mat4 Model = glm::scale(glm::mat4(1.0F), Scale);
+            Instance.UpdateTransferWeights(BuildSurfaceGPUTransferWeights(Geometry, Model));
+            const std::array<float, 2> Initial{1.0F, 0.0F};
+            Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
+            Vulkan.Execute([&](VkCommandBuffer Commands) {
+                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity);
+            });
+            std::array<float, 2> Result{};
+            Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+            const glm::vec3 Normal = glm::normalize(glm::transpose(glm::inverse(glm::mat3(Model))) *
+                                                   Geometry.GetTexels()[0].MesoNormal);
+            const glm::vec3 SurfaceGravity = Gravity - Normal * glm::dot(Gravity, Normal);
+            const glm::vec3 Edge = Scale * glm::vec3(-1.0F, 0.0F, -0.2F);
+            const float Expected = 0.25F * std::abs(Edge.z) *
+                std::max(glm::dot(glm::normalize(SurfaceGravity), glm::normalize(Edge)), 0.0F);
+            Check(Expected > 0.0F && std::abs(Result[1] - Expected) < 1.0e-5F &&
+                      std::abs(Result[0] + Result[1] - 1.0F) < 1.0e-5F,
+                  "both passes should use Meso height and inverse-transpose Meso normal under instance scaling");
+            Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
+            Vulkan.Execute([&](VkCommandBuffer Commands) {
+                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, 1U << 4U);
+            });
+            Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+            Check(std::abs(Result[0] - Initial[0]) < 1.0e-5F &&
+                      std::abs(Result[1] - Initial[1]) < 1.0e-5F,
+                  "macro direction normal should suppress geometry flux on a horizontal base surface in both passes");
+            Vulkan.Execute([&](VkCommandBuffer Commands) {
+                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity);
+            });
+            Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+            Check(std::abs(Result[1] - Expected) < 1.0e-5F,
+                  "re-enabling Meso direction normal should restore geometry flux from the same initial state");
+        }
     }
 
     void TestTransferWeightSolver(TVulkanTestDevice& Vulkan)
@@ -639,10 +762,12 @@ int main()
 {
     try
     {
+        TestCurvatureWeightOptions();
         TVulkanTestDevice Vulkan;
         TestGPUResources(Vulkan);
         TestGPUSolver(Vulkan);
         TestGeometryDrivenSolver(Vulkan);
+        TestMesoGeometryDrive(Vulkan);
         TestTransferWeightSolver(Vulkan);
     }
     catch (const TVulkanUnavailable& Exception)

@@ -131,7 +131,9 @@ namespace MDSS
                                          float DeltaTime,
                                          const glm::mat4& ModelMatrix,
                                          const glm::vec3& GravityWorld,
-                                         bool bGeometryDriveEnabled) const
+                                         std::uint32_t SolverFlags,
+                                         VkQueryPool TimestampQueryPool,
+                                         std::uint32_t FirstPassQuery) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || TexelCount == 0 || ChannelCount == 0 ||
             TexelCount > std::numeric_limits<std::uint32_t>::max() ||
@@ -149,7 +151,7 @@ namespace MDSS
         Constants.DeltaTime = DeltaTime;
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
-        Constants.Flags = bGeometryDriveEnabled ? 0U : 1U;
+        Constants.Flags = SolverFlags;
         Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z, 0.0F};
         for (std::size_t Column = 0; Column < 4; ++Column)
         {
@@ -177,7 +179,21 @@ namespace MDSS
                            &Constants);
 
         vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipeline);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                TimestampQueryPool,
+                                FirstPassQuery);
+        }
         vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                TimestampQueryPool,
+                                FirstPassQuery + 1U);
+        }
 
         const std::array<VkBufferMemoryBarrier, 2> Pass1Barriers = {
             MakeComputeBufferBarrier(
@@ -198,7 +214,21 @@ namespace MDSS
                              nullptr);
 
         vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipeline);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                TimestampQueryPool,
+                                FirstPassQuery + 2U);
+        }
         vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                TimestampQueryPool,
+                                FirstPassQuery + 3U);
+        }
 
         const std::array<VkBufferMemoryBarrier, 4> NextStepBarriers = {
             MakeComputeBufferBarrier(

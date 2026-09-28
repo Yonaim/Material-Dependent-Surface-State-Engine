@@ -74,6 +74,7 @@ namespace MDSS
 
         VkPhysicalDeviceFeatures Features{};
         Features.geometryShader = SupportedFeatures.geometryShader;
+        Features.fillModeNonSolid = SupportedFeatures.fillModeNonSolid;
         bGeometryShaderSupported = SupportedFeatures.geometryShader == VK_TRUE;
 
         VkDeviceCreateInfo CreateInfo{};
@@ -136,6 +137,13 @@ namespace MDSS
 
         if (VK_API_VERSION_MAJOR(Properties.apiVersion) < 1 ||
             (VK_API_VERSION_MAJOR(Properties.apiVersion) == 1 && VK_API_VERSION_MINOR(Properties.apiVersion) < 2))
+        {
+            return false;
+        }
+
+        VkPhysicalDeviceFeatures SupportedFeatures{};
+        vkGetPhysicalDeviceFeatures(PhysicalDevice, &SupportedFeatures);
+        if (SupportedFeatures.fillModeNonSolid != VK_TRUE)
         {
             return false;
         }

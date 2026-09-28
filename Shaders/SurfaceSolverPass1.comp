@@ -13,6 +13,11 @@ void main()
         return;
     }
 
+    if (isValidTexel(TexelIndex))
+    {
+        initializeGeometryDrive();
+    }
+
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
@@ -39,6 +44,7 @@ void main()
 
         RawOutgoingBuffer.Values[StateValueIndex] = RawOutgoing;
         float Current = CurrentState.Values[StateValueIndex];
+        // Capacity 초과량까지 포함한 전체 보유량으로 유출을 제한한다.
         float AvailableState = max(Current - decayAmount(TexelIndex, ChannelIndex), 0.0);
         OutgoingFluxScale.Values[StateValueIndex] = RawOutgoing > 0.0
             ? min(1.0, AvailableState / RawOutgoing)

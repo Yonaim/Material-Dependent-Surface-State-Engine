@@ -91,6 +91,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetSupportedBuffer() const noexcept;
         [[nodiscard]] std::size_t GetProfileCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
+        [[nodiscard]] bool IsSupported(std::size_t ProfileIndex, std::size_t ChannelIndex) const noexcept;
         void
         UpdateParameters(std::size_t ProfileIndex, std::size_t ChannelIndex, const TSurfaceStateParameters& Parameters);
 
@@ -123,6 +124,7 @@ namespace MDSS
                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
+        void ResetState(const std::vector<float>& OutgoingFluxScale);
 
     private:
         std::size_t TexelCount = 0;
@@ -191,11 +193,18 @@ namespace MDSS
                                                    TStateId State,
                                                    const TSurfaceStateParameters& Parameters);
         [[nodiscard]] std::size_t GetInstanceTexelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] std::size_t GetInstanceValidTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
         [[nodiscard]] bool IsCurrentStateAB(std::size_t SceneIndex) const;
+        void ResetStates();
         [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const glm::mat4& ModelMatrix) const;
         void
-        UpdateTransferWeightCache(std::size_t SceneIndex, const glm::mat4& ModelMatrix, bool bUseNormalWeight = true);
+        UpdateTransferWeightCache(std::size_t SceneIndex,
+                                  const glm::mat4& ModelMatrix,
+                                  bool bUseNormalWeight = true,
+                                  bool bUseDistanceWeight = true,
+                                  bool bUseProfileBoundaryWeight = true,
+                                  bool bUseCurvatureWeight = false);
         void InvalidateTransferWeightCache(std::size_t SceneIndex);
         void AdvanceCurrentState(std::size_t SceneIndex);
 
@@ -215,6 +224,7 @@ namespace MDSS
             // 디스크립터가 참조하는 버퍼보다 디스크립터 세트와 레이아웃을 먼저 파괴한다.
             std::unique_ptr<TSurfaceStateDescriptorResources> Descriptors;
             TSurfaceRuntimeDataHandle SurfaceDataHandle{};
+            std::size_t ValidTexelCount = 0;
             glm::mat4 TransferWeightModelMatrix{1.0F};
             bool bTransferWeightCacheValid = false;
             bool bCurrentStateAB = true;

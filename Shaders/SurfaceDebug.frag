@@ -69,6 +69,10 @@ layout(std430, set = 1, binding = 8) readonly buffer TSurfaceCurrentState
 {
     float Values[];
 } CurrentState;
+layout(std430, set = 1, binding = 10) readonly buffer TSurfaceOutgoingFluxScale
+{
+    float Values[];
+} OutgoingFluxScale;
 layout(std430, set = 1, binding = 12) readonly buffer TSurfaceRanges
 {
     uvec4 Values[]; // 시작 texel, 너비, 높이, texel 수
@@ -89,6 +93,17 @@ layout(std430, set = 1, binding = 17) readonly buffer TSurfaceMesoNormals
 layout(location = 0) out vec4 OutColor;
 
 const uint InvalidIndex = 0xffffffffu;
+// 값은 TRenderViewMode enum과 일치해야 한다.
+const uint RENDER_MODE_SURFACE_STATE_HEATMAP = 6u;
+const uint RENDER_MODE_SURFACE_VALIDITY = 7u;
+const uint RENDER_MODE_SURFACE_ID = 8u;
+const uint RENDER_MODE_NEIGHBOR_COUNT = 9u;
+const uint RENDER_MODE_SURFACE_SEAM = 10u;
+const uint RENDER_MODE_OUTGOING_FLUX_SCALE = 11u;
+const uint RENDER_MODE_SOLVER_TRANSFER_WEIGHT = 12u;
+const uint RENDER_MODE_MESO_HEIGHT = 13u;
+const uint RENDER_MODE_MESO_OFFSET = 14u;
+const uint RENDER_MODE_MACRO_GEOMETRY = 15u;
 
 vec3 HeatColor(float Value)
 {
@@ -109,6 +124,15 @@ vec3 TransferWeightColor(float Value)
     const vec3 Open    = vec3(0.18, 0.94, 0.98);
     float T = clamp(Value, 0.0, 1.0);
     return T < 0.5 ? mix(Blocked, Medium, T * 2.0) : mix(Medium, Open, (T - 0.5) * 2.0);
+}
+
+vec3 OutgoingFluxScaleColor(float Value)
+{
+    const vec3 Restricted = vec3(0.76, 0.08, 0.10);
+    const vec3 Partial = vec3(1.00, 0.70, 0.10);
+    const vec3 Unrestricted = vec3(0.34, 0.86, 0.28);
+    float T = clamp(Value, 0.0, 1.0);
+    return T < 0.5 ? mix(Restricted, Partial, T * 2.0) : mix(Partial, Unrestricted, (T - 0.5) * 2.0);
 }
 
 vec3 ApplyReliefLighting(vec3 HeatmapColor, vec3 MesoNormal)
@@ -148,7 +172,7 @@ void main()
     bool bSimulationEnabled = bGeometryValid &&
                               TexelProfileIndices.Values[TexelIndex] != InvalidIndex;
 
-    if (Material.RenderMode == 6u)
+    if (Material.RenderMode == RENDER_MODE_SURFACE_VALIDITY)
     {
         vec3 Color = !bGeometryValid ? vec3(0.86, 0.12, 0.08) :
                      (bSimulationEnabled ? vec3(0.10, 0.78, 0.24) : vec3(0.18, 0.48, 0.82));
@@ -161,7 +185,28 @@ void main()
         return;
     }
 
-    if (Material.RenderMode == 11u)
+    if (Material.RenderMode == RENDER_MODE_OUTGOING_FLUX_SCALE)
+    {
+        if (Material.StateChannelCount == 0u || Material.DebugStateChannel >= Material.StateChannelCount)
+        {
+            OutColor = vec4(0.35, 0.35, 0.38, 1.0);
+            return;
+        }
+        uint ScaleIndex = TexelIndex * Material.StateChannelCount + Material.DebugStateChannel;
+        uint ProfileIndex = TexelProfileIndices.Values[TexelIndex];
+        uint ProfileRecordIndex = ProfileIndex * Material.StateChannelCount + Material.DebugStateChannel;
+        if (!bSimulationEnabled || ScaleIndex >= uint(OutgoingFluxScale.Values.length()) ||
+            ProfileRecordIndex >= uint(ProfileSupported.Values.length()) ||
+            ProfileSupported.Values[ProfileRecordIndex] == 0u)
+        {
+            OutColor = vec4(0.42, 0.42, 0.45, 1.0);
+            return;
+        }
+        OutColor = vec4(OutgoingFluxScaleColor(OutgoingFluxScale.Values[ScaleIndex]), 1.0);
+        return;
+    }
+
+    if (Material.RenderMode == RENDER_MODE_MESO_HEIGHT)
     {
         if (TexelIndex >= uint(GeometryScalars.Values.length()))
         {
@@ -177,14 +222,14 @@ void main()
         OutColor = vec4(Color, 1.0);
         return;
     }
-    if (Material.RenderMode == 12u)
+    if (Material.RenderMode == RENDER_MODE_MESO_OFFSET)
     {
         vec3 Normal = normalize(FragMesoNormalWS);
         float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
         OutColor = vec4(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Material.BaseColor.a);
         return;
     }
-    if (Material.RenderMode == 13u)
+    if (Material.RenderMode == RENDER_MODE_MACRO_GEOMETRY)
     {
         vec3 Normal = normalize(FragNormal);
         float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
@@ -192,14 +237,14 @@ void main()
         return;
     }
 
-    if (Material.RenderMode == 7u)
+    if (Material.RenderMode == RENDER_MODE_SURFACE_ID)
     {
         uint Hash = FragSurfaceIndex * 1664525u + 1013904223u;
         vec3 Color = vec3(float(Hash & 255u), float((Hash >> 8u) & 255u), float((Hash >> 16u) & 255u)) / 255.0;
         OutColor = vec4(0.25 + 0.70 * Color, 1.0);
         return;
     }
-    if (Material.RenderMode == 8u || Material.RenderMode == 9u)
+    if (Material.RenderMode == RENDER_MODE_NEIGHBOR_COUNT || Material.RenderMode == RENDER_MODE_SURFACE_SEAM)
     {
         if (TexelIndex >= uint(NeighborIndices.Values.length()) ||
             TexelIndex >= uint(TexelChartIndices.Values.length()))
@@ -219,7 +264,7 @@ void main()
             bHasCrossChartNeighbor = bHasCrossChartNeighbor ||
                                      (Chart != InvalidIndex && NeighborChart != InvalidIndex && NeighborChart != Chart);
         }
-        if (Material.RenderMode == 8u)
+        if (Material.RenderMode == RENDER_MODE_NEIGHBOR_COUNT)
         {
             float T = float(NeighborCount) / 8.0;
             OutColor = vec4(mix(vec3(0.08, 0.10, 0.18), vec3(0.95, 0.72, 0.12), T), 1.0);
@@ -231,7 +276,7 @@ void main()
         return;
     }
 
-    if (Material.RenderMode == 10u)
+    if (Material.RenderMode == RENDER_MODE_SOLVER_TRANSFER_WEIGHT)
     {
         if (TexelIndex >= uint(TransferWeightDebugAverages.Values.length()))
         {
@@ -243,6 +288,12 @@ void main()
         float Value = Component == 0u ? Values.x :
                       (Component == 1u ? Values.y : (Component == 2u ? Values.z : Values.w));
         OutColor = vec4(TransferWeightColor(Value), 1.0);
+        return;
+    }
+
+    if (Material.RenderMode != RENDER_MODE_SURFACE_STATE_HEATMAP)
+    {
+        OutColor = vec4(0.35, 0.35, 0.38, 1.0);
         return;
     }
 
