@@ -18,6 +18,8 @@
 
 namespace MDSS
 {
+    inline constexpr std::uint32_t SurfaceSolverDisableRawFluxCacheFlag = 1U << 5U;
+
     enum class TSurfaceSolverTerm : std::uint8_t
     {
         SaturationDrive,
@@ -34,6 +36,7 @@ namespace MDSS
 
     struct TSurfaceSolverDebugSettings
     {
+        bool bRawFluxCacheEnabled = true;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, false, true};
 
@@ -75,11 +78,12 @@ namespace MDSS
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
         static VkPipeline CreateComputePipeline(VkDevice Device,
                                                 VkPipelineLayout Layout,
-                                                const char* ShaderPath);
+                                                const char* ShaderPath,
+                                                bool bRawFluxCacheEnabled);
 
         VkDevice         Device = VK_NULL_HANDLE;
         VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
-        VkPipeline       Pass1Pipeline = VK_NULL_HANDLE;
-        VkPipeline       Pass2Pipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 2> Pass1Pipelines{};
+        std::array<VkPipeline, 2> Pass2Pipelines{};
     };
 } // namespace MDSS

@@ -45,8 +45,26 @@ void main()
             {
                 continue;
             }
-            float NeighborRawIncoming =
-                RawFluxBuffer.Values[rawFluxIndex(NeighborTexel, ChannelIndex, ReverseSlot)];
+            float NeighborRawIncoming;
+            if (rawFluxCacheEnabled())
+            {
+                NeighborRawIncoming =
+                    RawFluxBuffer.Values[rawFluxIndex(NeighborTexel, ChannelIndex, ReverseSlot)];
+            }
+            else
+            {
+                TSurfaceGPUProfileParameters SourceParameters =
+                    ProfileParameters.Values[profileRecordIndex(NeighborTexel, ChannelIndex)];
+                float SourceSaturation = (Solver.Flags & (1u << 1u)) != 0u
+                    ? 0.0 : CurrentState.Values[NeighborStateValueIndex] / SourceParameters.CapacityInputAndTransfer.x;
+                if (SourceParameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & 1u) == 0u)
+                {
+                    prepareSourceGeometry(NeighborTexel);
+                }
+                // Recompute the same directed source edge, including its source-side weight.
+                NeighborRawIncoming = rawFlux(TexelIndex, ChannelIndex,
+                    transferWeight(NeighborTexel, ReverseSlot), SourceParameters, SourceSaturation);
+            }
             Incoming += NeighborRawIncoming * NeighborScale;
         }
 

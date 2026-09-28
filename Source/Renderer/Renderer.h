@@ -114,6 +114,9 @@ namespace MDSS
         void SetDebugNormalWeightEnabled(bool bEnabled);
         [[nodiscard]] bool IsDebugSolverTermEnabled(TSurfaceSolverTerm Term) const noexcept;
         void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled);
+        [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
+        /** @brief Preserve State and allocations, but discard timings from the previous mode. */
+        void SetRawFluxCacheEnabled(bool bEnabled);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);

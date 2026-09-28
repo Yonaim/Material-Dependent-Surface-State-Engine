@@ -4,6 +4,7 @@
 const uint InvalidSurfaceId = 0xffffffffu;
 const uint InvalidTexelIndex = 0xffffffffu;
 const uint SurfaceNeighborCount = 8u;
+layout(constant_id = 0) const bool UseRawFluxCache = true;
 
 struct TSurfaceGPUProfileParameters
 {
@@ -102,6 +103,11 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
     vec4 NormalMatrixAndUpColumns[3];
 } Solver;
 
+bool rawFluxCacheEnabled()
+{
+    return UseRawFluxCache;
+}
+
 const float GeometryEpsilon = 1.0e-6;
 
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
@@ -182,7 +188,8 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
     return min(Current, max(0.0, DecayRate * Retention * Solver.DeltaTime));
 }
 
-// Lazily prepared once per source invocation, shared by eligible neighbors and channels.
+// Pass 1 prepares this once per source, sharing it across neighbors and channels.
+// Uncached Pass 2 prepares each incoming source before recomputing its directed flux.
 mat3 SolverModelLinear;
 vec3 SolverUp;
 vec3 SourcePosition;

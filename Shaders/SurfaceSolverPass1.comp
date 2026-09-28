@@ -25,9 +25,12 @@ void main()
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
             RawOutgoingBuffer.Values[StateValueIndex] = 0.0;
-            for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+            if (rawFluxCacheEnabled())
             {
-                RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = 0.0;
+                for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+                {
+                    RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = 0.0;
+                }
             }
             continue;
         }
@@ -55,7 +58,10 @@ void main()
                                   Parameters,
                                   SourceSaturation);
             }
-            RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = RawFlux;
+            if (rawFluxCacheEnabled())
+            {
+                RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = RawFlux;
+            }
             RawOutgoing += RawFlux;
         }
 

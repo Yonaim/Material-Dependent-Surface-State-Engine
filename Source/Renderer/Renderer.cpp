@@ -636,6 +636,7 @@ namespace MDSS
             throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
         auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        Replacement->SetRawFluxCacheEnabled(DebugSolverSettings.bRawFluxCacheEnabled);
         for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
         {
             Replacement->SetDebugSolverTermEnabled(
@@ -915,6 +916,26 @@ namespace MDSS
         {
             SurfaceStates->SetDebugSolverTermEnabled(Term, bEnabled);
         }
+    }
+
+    bool TRenderer::IsRawFluxCacheEnabled() const noexcept
+    {
+        return DebugSolverSettings.bRawFluxCacheEnabled;
+    }
+
+    void TRenderer::SetRawFluxCacheEnabled(bool bEnabled)
+    {
+        if (IsRawFluxCacheEnabled() == bEnabled) return;
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for GPU before changing RawFlux cache mode.");
+        }
+        DebugSolverSettings.bRawFluxCacheEnabled = bEnabled;
+        if (SurfaceStates) SurfaceStates->SetRawFluxCacheEnabled(bEnabled);
+        bTimestampQueriesSubmitted.fill(false);
+        bSolverTimestampQueriesSubmitted.fill(false);
+        LastRenderGpuMilliseconds = LastSolverGpuMilliseconds = -1.0F;
+        LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = -1.0F;
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept
