@@ -27,13 +27,15 @@ namespace MDSS
         DistanceWeight,
         NormalWeight,
         ProfileBoundaryWeight,
+        CurvatureWeight,
+        MesoDirectionNormal,
         Count
     };
 
     struct TSurfaceSolverDebugSettings
     {
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
-            true, true, true, true, true, true, true};
+            true, true, true, true, true, true, true, false, true};
 
         [[nodiscard]] bool IsEnabled(TSurfaceSolverTerm Term) const noexcept
         {

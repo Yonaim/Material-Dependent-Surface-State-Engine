@@ -30,24 +30,24 @@ namespace MDSS
     enum class TRenderViewMode : std::uint32_t
     {
         Lit = 0,
-        Unlit,
-        Wireframe,
-        VertexNormalWS,
-        NormalTextureTS,
-        MappedNormalWS,
-        SurfaceStateHeatmap,
-        SurfaceValidity,
-        SurfaceID,
-        NeighborCount,
-        SurfaceSeam,
-        OutgoingFluxScale,
-        SolverTransferWeight,
+        Unlit = 1,
+        Wireframe = 2,
+        VertexNormalWS = 3,
+        NormalTextureTS = 4,
+        MappedNormalWS = 5,
+        SurfaceStateHeatmap = 6,
+        SurfaceValidity = 7,
+        SurfaceID = 8,
+        NeighborCount = 9,
+        SurfaceSeam = 10,
+        OutgoingFluxScale = 11,
+        SolverTransferWeight = 12,
         /** @brief 부호가 있는 중간 규모 높이를 색상으로 표시한다. */
-        MesoHeight,
+        MesoHeight = 13,
         /** @brief 렌더 정점을 대응 텍셀의 Meso 높이만큼 옮긴다. */
-        MesoOffset,
+        MesoOffset = 14,
         /** @brief 원본 거시 형상을 노멀 맵 음영 없이 표시한다. */
-        MacroGeometry
+        MacroGeometry = 15
     };
 
     enum class TSolverTransferWeightView : std::uint32_t
@@ -95,6 +95,10 @@ namespace MDSS
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
+        [[nodiscard]] bool IsWorldGridVisible() const noexcept;
+        void SetWorldGridVisible(bool bVisible) noexcept;
+        [[nodiscard]] bool IsWorldAxisVisible() const noexcept;
+        void SetWorldAxisVisible(bool bVisible) noexcept;
         [[nodiscard]] std::uint32_t GetDebugStateChannel() const noexcept;
         void SetDebugStateChannel(std::uint32_t Channel);
         [[nodiscard]] bool                      IsStateHeatmapReliefShadingEnabled() const noexcept;
@@ -160,7 +164,10 @@ namespace MDSS
         TGraphicsPipeline                    WorldReferencePipeline;
         std::unique_ptr<TGPUBuffer>           GizmoVertexBuffer;
         std::uint32_t                         GizmoVertexCount = 0;
-        std::uint32_t                         WorldReferenceVertexCount = 0;
+        std::uint32_t                         WorldGridVertexCount = 0;
+        std::uint32_t                         WorldAxisVertexCount = 0;
+        bool                                  bWorldGridVisible = true;
+        bool                                  bWorldAxisVisible = true;
         std::unique_ptr<TGraphicsPipeline>    SurfaceDebugPipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;

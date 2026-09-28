@@ -45,6 +45,7 @@ namespace MDSS
         {
             glm::vec3 Position;
             glm::vec4 Color;
+            float     EdgeCoordinate = -2.0F;
         };
 
         struct TGizmoPushConstants
@@ -60,49 +61,70 @@ namespace MDSS
             glm::vec4(0.10F, 0.95F, 0.20F, 1.0F),
             glm::vec4(0.12F, 0.35F, 1.0F, 1.0F)};
 
-        std::vector<TGizmoVertex> BuildWorldReferenceVertices()
+        std::vector<TGizmoVertex> BuildWorldReferenceVertices(std::uint32_t& GridVertexCount,
+                                                             std::uint32_t& AxisVertexCount)
         {
             std::vector<TGizmoVertex> Vertices;
             constexpr float GridExtent = 50.0F;
             constexpr float GridHalfWidth = 0.008F;
+            constexpr float GridEdgeCoordinate = 1.25F;
             constexpr float AxisHalfWidth = 0.035F;
             const glm::vec4 GridColor(1.0F);
-            auto AddQuad = [&](glm::vec3 A, glm::vec3 B, glm::vec3 C, glm::vec3 D, glm::vec4 Color)
+            auto AddQuad = [&](glm::vec3 A,
+                               glm::vec3 B,
+                               glm::vec3 C,
+                               glm::vec3 D,
+                               glm::vec4 Color,
+                               std::array<float, 4> EdgeCoordinates)
             {
                 Vertices.insert(Vertices.end(),
-                                {{A, Color}, {B, Color}, {C, Color}, {A, Color}, {C, Color}, {D, Color}});
+                                {{A, Color, EdgeCoordinates[0]},
+                                 {B, Color, EdgeCoordinates[1]},
+                                 {C, Color, EdgeCoordinates[2]},
+                                 {A, Color, EdgeCoordinates[0]},
+                                 {C, Color, EdgeCoordinates[2]},
+                                 {D, Color, EdgeCoordinates[3]}});
             };
 
             for (int I = -static_cast<int>(GridExtent); I <= static_cast<int>(GridExtent); ++I)
             {
                 const float Coordinate = static_cast<float>(I);
-                AddQuad({Coordinate - GridHalfWidth, -GridExtent, 0.0F},
-                        {Coordinate + GridHalfWidth, -GridExtent, 0.0F},
-                        {Coordinate + GridHalfWidth, GridExtent, 0.0F},
-                        {Coordinate - GridHalfWidth, GridExtent, 0.0F},
-                        GridColor);
-                AddQuad({-GridExtent, Coordinate - GridHalfWidth, 0.0F},
-                        {GridExtent, Coordinate - GridHalfWidth, 0.0F},
-                        {GridExtent, Coordinate + GridHalfWidth, 0.0F},
-                        {-GridExtent, Coordinate + GridHalfWidth, 0.0F},
-                        GridColor);
+                const float ExpandedHalfWidth = GridHalfWidth * GridEdgeCoordinate;
+                AddQuad({Coordinate - ExpandedHalfWidth, -GridExtent, 0.0F},
+                        {Coordinate + ExpandedHalfWidth, -GridExtent, 0.0F},
+                        {Coordinate + ExpandedHalfWidth, GridExtent, 0.0F},
+                        {Coordinate - ExpandedHalfWidth, GridExtent, 0.0F},
+                        GridColor,
+                        {-GridEdgeCoordinate, GridEdgeCoordinate, GridEdgeCoordinate, -GridEdgeCoordinate});
+                AddQuad({-GridExtent, Coordinate - ExpandedHalfWidth, 0.0F},
+                        {GridExtent, Coordinate - ExpandedHalfWidth, 0.0F},
+                        {GridExtent, Coordinate + ExpandedHalfWidth, 0.0F},
+                        {-GridExtent, Coordinate + ExpandedHalfWidth, 0.0F},
+                        GridColor,
+                        {-GridEdgeCoordinate, -GridEdgeCoordinate, GridEdgeCoordinate, GridEdgeCoordinate});
             }
 
+            GridVertexCount = static_cast<std::uint32_t>(Vertices.size());
+            constexpr std::array<float, 4> NoEdgeFade{-2.0F, -2.0F, -2.0F, -2.0F};
             AddQuad({-GridExtent, -AxisHalfWidth, 0.002F},
                     {GridExtent, -AxisHalfWidth, 0.002F},
                     {GridExtent, AxisHalfWidth, 0.002F},
                     {-GridExtent, AxisHalfWidth, 0.002F},
-                    WorldAxisColors[0]);
+                    WorldAxisColors[0],
+                    NoEdgeFade);
             AddQuad({-AxisHalfWidth, -GridExtent, 0.002F},
                     {AxisHalfWidth, -GridExtent, 0.002F},
                     {AxisHalfWidth, GridExtent, 0.002F},
                     {-AxisHalfWidth, GridExtent, 0.002F},
-                    WorldAxisColors[1]);
+                    WorldAxisColors[1],
+                    NoEdgeFade);
             AddQuad({-AxisHalfWidth, 0.0F, -GridExtent},
                     {AxisHalfWidth, 0.0F, -GridExtent},
                     {AxisHalfWidth, 0.0F, GridExtent},
                     {-AxisHalfWidth, 0.0F, GridExtent},
-                    WorldAxisColors[2]);
+                    WorldAxisColors[2],
+                    NoEdgeFade);
+            AxisVertexCount = static_cast<std::uint32_t>(Vertices.size()) - GridVertexCount;
             return Vertices;
         }
 
@@ -295,6 +317,12 @@ namespace MDSS
             Color.format = VK_FORMAT_R32G32B32A32_SFLOAT;
             Color.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, Color));
             Config.VertexAttributes.push_back(Color);
+            VkVertexInputAttributeDescription EdgeCoordinate{};
+            EdgeCoordinate.location = 2;
+            EdgeCoordinate.binding = 0;
+            EdgeCoordinate.format = VK_FORMAT_R32_SFLOAT;
+            EdgeCoordinate.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, EdgeCoordinate));
+            Config.VertexAttributes.push_back(EdgeCoordinate);
             VkPushConstantRange Push{};
             Push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
             Push.size = sizeof(TGizmoPushConstants);
@@ -308,6 +336,7 @@ namespace MDSS
             Config.bDepthTestEnabled = true;
             Config.bDepthWriteEnabled = false;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+            Config.bBlendingEnabled = true;
             return Config;
         }
     } // 내부 네임스페이스
@@ -343,8 +372,8 @@ namespace MDSS
                            DepthImageView.GetHandle()),
           FrameContext(Context)
     {
-        std::vector<TGizmoVertex> GizmoVertices = BuildWorldReferenceVertices();
-        WorldReferenceVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
+        std::vector<TGizmoVertex> GizmoVertices = BuildWorldReferenceVertices(WorldGridVertexCount,
+                                                                               WorldAxisVertexCount);
         const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
         GizmoVertices.insert(GizmoVertices.end(), TranslateGizmoVertices.begin(), TranslateGizmoVertices.end());
         GizmoVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
@@ -736,6 +765,26 @@ namespace MDSS
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
     {
         return ViewMode;
+    }
+
+    bool TRenderer::IsWorldGridVisible() const noexcept
+    {
+        return bWorldGridVisible;
+    }
+
+    void TRenderer::SetWorldGridVisible(bool bVisible) noexcept
+    {
+        bWorldGridVisible = bVisible;
+    }
+
+    bool TRenderer::IsWorldAxisVisible() const noexcept
+    {
+        return bWorldAxisVisible;
+    }
+
+    void TRenderer::SetWorldAxisVisible(bool bVisible) noexcept
+    {
+        bWorldAxisVisible = bVisible;
     }
 
     void TRenderer::SetRenderViewMode(TRenderViewMode Mode)
@@ -1269,7 +1318,8 @@ namespace MDSS
             }
         }
 
-        if (GizmoVertexBuffer != nullptr && WorldReferenceVertexCount > 0)
+        if (GizmoVertexBuffer != nullptr && ((bWorldGridVisible && WorldGridVertexCount > 0) ||
+                                             (bWorldAxisVisible && WorldAxisVertexCount > 0)))
         {
             const TGizmoPushConstants Constants{ViewProjection};
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, WorldReferencePipeline.GetHandle());
@@ -1282,7 +1332,14 @@ namespace MDSS
                                0,
                                sizeof(Constants),
                                &Constants);
-            vkCmdDraw(CommandBuffer, WorldReferenceVertexCount, 1, 0, 0);
+            if (bWorldGridVisible)
+            {
+                vkCmdDraw(CommandBuffer, WorldGridVertexCount, 1, 0, 0);
+            }
+            if (bWorldAxisVisible)
+            {
+                vkCmdDraw(CommandBuffer, WorldAxisVertexCount, 1, WorldGridVertexCount, 0);
+            }
         }
 
         if (const std::optional<std::size_t> Selected = DebugInterface.GetSelectedObject();
@@ -1304,7 +1361,11 @@ namespace MDSS
                                    0,
                                    sizeof(Constants),
                                    &Constants);
-                vkCmdDraw(CommandBuffer, GizmoVertexCount - WorldReferenceVertexCount, 1, WorldReferenceVertexCount, 0);
+                vkCmdDraw(CommandBuffer,
+                          GizmoVertexCount - WorldGridVertexCount - WorldAxisVertexCount,
+                          1,
+                          WorldGridVertexCount + WorldAxisVertexCount,
+                          0);
             }
         }
 

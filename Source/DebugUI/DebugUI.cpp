@@ -6,6 +6,7 @@
 #include "DebugUI/DebugUI.h"
 
 #include "Application/SceneFileDialog.h"
+#include "Application/EngineConfig.h"
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "AssetManager/Loaders/SceneLoader.h"
@@ -121,11 +122,13 @@ namespace MDSS
                 return;
             }
 
-            constexpr float DollyDistancePerStep = 0.35F;
-            constexpr float MinimumCameraDistance = 0.35F;
-            const float NewDistance = std::max(Distance - Steps * DollyDistancePerStep, MinimumCameraDistance);
-            const glm::vec3 NewPosition = CameraData.GetTarget() - (ViewDirection / Distance) * NewDistance;
-            CameraData.SetPosition(NewPosition);
+            constexpr float ZoomSensitivity = 0.12F;
+            constexpr float MinimumCameraDistance = 0.05F;
+            const float ClampedSteps = std::clamp(Steps, -10.0F, 10.0F);
+            const float NewDistance =
+                std::max(Distance * std::exp(-ClampedSteps * ZoomSensitivity), MinimumCameraDistance);
+            const glm::vec3 Forward = ViewDirection / Distance;
+            CameraData.SetPosition(CameraData.GetPosition() + Forward * (Distance - NewDistance));
         }
 
         // 라벨은 같은 시작점에 두고, 조절 위젯은 고정된 열에서 시작해 행을 정렬한다.
@@ -268,7 +271,9 @@ namespace MDSS
 
         ImGuiIO& IO = ImGui::GetIO();
         IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
-        IO.IniFilename = "Config/MDSS_EditorLayout.ini";
+        std::filesystem::create_directories(GetEngineConfigDirectory());
+        EditorLayoutPath = (GetEngineConfigDirectory() / "EditorLayout.ini").string();
+        IO.IniFilename = EditorLayoutPath.c_str();
 
 #if defined(_WIN32)
         constexpr const char* FontCandidates[] = {"C:/Windows/Fonts/malgun.ttf",
@@ -456,9 +461,9 @@ namespace MDSS
         ImGui::Render();
     }
 
-    void TDebugUI::DrawSectionHeader(const char* Title) const
+    void TDebugUI::DrawSectionHeader(const char* Title, float TopPadding) const
     {
-        ImGui::Dummy({0.0F, 12.0F});
+        ImGui::Dummy({0.0F, TopPadding});
         ImGui::PushStyleColor(ImGuiCol_Text, {0.91F, 0.93F, 0.97F, 1.0F});
         if (SectionHeaderFont != nullptr)
         {
@@ -566,7 +571,9 @@ namespace MDSS
 
     bool TDebugUI::ShouldSuppressDebugHotkey() const noexcept
     {
-        return ImGui::GetIO().WantTextInput || ImGui::IsAnyItemActive();
+        const ImGuiIO& IO = ImGui::GetIO();
+        return IO.WantCaptureKeyboard || IO.WantTextInput || ImGui::IsAnyItemActive() ||
+               ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     }
 
     void TDebugUI::SetupDockspace()
@@ -633,6 +640,12 @@ namespace MDSS
         ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Scene File", nullptr, Flags);
+        const auto& SourcePath = SceneData.GetSourcePath();
+        ImGui::TextWrapped("Current Scene: %s", SourcePath.empty() ? "(unsaved)" : SourcePath.filename().string().c_str());
+        if (!SourcePath.empty() && ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("%s", SourcePath.string().c_str());
+        }
         if (ImGui::Button("Load Scene"))
         {
             if (const auto Path = TSceneFileDialog::OpenScene())
@@ -640,8 +653,18 @@ namespace MDSS
                 try
                 {
                     TScene Loaded = TSceneLoader::Load(*Path, *AssetManager);
-                    FrameRenderer->ReloadSceneResources(Loaded);
+                    TScene PreviousScene = SceneData;
                     SceneData = std::move(Loaded);
+                    try
+                    {
+                        // Solver가 임시 Loaded가 아니라 수명이 유지되는 SceneData를 참조하게 한다.
+                        FrameRenderer->ReloadSceneResources(SceneData);
+                    }
+                    catch (...)
+                    {
+                        SceneData = std::move(PreviousScene);
+                        throw;
+                    }
                     SelectedObject.reset();
                     ActiveGizmoAxis = -1;
                     SceneStatus = "Loaded: " + Path->filename().string();
@@ -900,7 +923,7 @@ namespace MDSS
             }
         }
 
-        if (IO.WantTextInput || ImGui::IsAnyItemActive())
+        if (ShouldSuppressDebugHotkey())
         {
             return;
         }
@@ -1080,7 +1103,7 @@ namespace MDSS
             ImGui::PushID("ViewportViewCombo");
             if (ImGui::BeginCombo("##View", CurrentName, ImGuiComboFlags_HeightLarge))
             {
-                DrawSectionHeader("DISPLAY");
+                DrawSectionHeader("DISPLAY", 0.0F);
                 for (int Index = 0; Index < static_cast<int>(RenderViewModeNames.size()); ++Index)
                 {
                     const auto Mode = static_cast<TRenderViewMode>(Index);
@@ -1148,6 +1171,18 @@ namespace MDSS
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetTooltip("Zoom in");
+            }
+            ImGui::SameLine(0.0F, 14.0F);
+            bool bGridVisible = FrameRenderer->IsWorldGridVisible();
+            if (ImGui::Checkbox("Grid", &bGridVisible))
+            {
+                FrameRenderer->SetWorldGridVisible(bGridVisible);
+            }
+            ImGui::SameLine();
+            bool bAxisVisible = FrameRenderer->IsWorldAxisVisible();
+            if (ImGui::Checkbox("Axis", &bAxisVisible))
+            {
+                FrameRenderer->SetWorldAxisVisible(bAxisVisible);
             }
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0F);
@@ -1623,22 +1658,34 @@ namespace MDSS
 
                     DrawSectionHeader("Transport");
                     DrawSolverTerm(TSurfaceSolverTerm::SaturationDrive, "SaturationDrive",
-                                   "State 포화도 차이에 따른 이웃 전달.");
+                                   "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
+                                   "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
                     DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive, "GeometryDrive",
-                                   "높이와 중력 방향으로 구동되는 전달.");
+                                   "ON: 높이와 중력 방향에 따른 기하 전달을 적용합니다.\n"
+                                   "OFF: 기하 전달량을 0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal, "DirectionDrive: MesoNormal",
+                                   "ON: 중력을 표면에 투영할 때 복원된 MesoNormal을 사용합니다.\n"
+                                   "OFF: 중력을 표면에 투영할 때 기본 mesh normal을 사용합니다.");
                     DrawSolverTerm(TSurfaceSolverTerm::DistanceWeight, "DistanceWeight",
-                                   "이웃 간 실제 표면 거리 기반 가중치.");
+                                   "ON: 이웃 간 실제 표면 거리 기반 가중치를 적용합니다.\n"
+                                   "OFF: 거리 가중치를 1.0으로 설정합니다.");
                     DrawSolverTerm(TSurfaceSolverTerm::NormalWeight, "NormalWeight",
-                                   "이웃 표면 방향 일치도 가중치.");
+                                   "ON: 이웃 표면 법선의 방향 일치도 가중치를 적용합니다.\n"
+                                   "OFF: 법선 가중치를 1.0으로 설정합니다.");
                     DrawSolverTerm(TSurfaceSolverTerm::ProfileBoundaryWeight, "ProfileBoundaryWeight",
-                                   "다른 Profile 경계의 고정 0.5 감쇠.");
-                    ImGui::TextDisabled("CurvatureWeight: 1.0 (현재 중립값, 고정)");
+                                   "ON: 서로 다른 Profile 사이 전달 가중치를 0.5로 낮춥니다.\n"
+                                   "OFF: Profile 경계 가중치를 1.0으로 설정합니다.");
+                    DrawSolverTerm(TSurfaceSolverTerm::CurvatureWeight, "CurvatureWeight (precomputed)",
+                                   "ON: 사전 계산된 Meso 평균 곡률로 전달을 감쇠합니다.\n"
+                                   "OFF: 곡률 가중치를 1.0으로 설정합니다.");
 
                     DrawSectionHeader("Decay");
                     DrawSolverTerm(TSurfaceSolverTerm::Decay, "Decay",
-                                   "Profile DecayRate에 따른 State 감소.");
+                                   "ON: Profile DecayRate에 따른 State 감소를 적용합니다.\n"
+                                   "OFF: 감소량을 0으로 설정합니다.");
                     DrawSolverTerm(TSurfaceSolverTerm::ConcavityRetention, "ConcavityRetention",
-                                   "오목도 기반 Decay 보유량 조절.");
+                                   "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
+                                   "OFF: Decay 보유율을 1.0으로 설정합니다.");
 
                     ImGui::EndTabItem();
                 }
@@ -1646,8 +1693,11 @@ namespace MDSS
                 if (ImGui::BeginTabItem("Contact Input"))
                 {
                     DrawSectionHeader("Contact Input");
-                    LabeledCheckbox("Inject mode", &bInjectMode);
-                    ImGui::TextDisabled("Aim with the crosshair and press Space.");
+                    ImGui::Checkbox("Inject mode", &bInjectMode);
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Enable contact injection. Aim with the crosshair and press Space.");
+                    }
 
                     const TSurfaceStateRegistry* InjectRegistry =
                         AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
@@ -1665,7 +1715,12 @@ namespace MDSS
                             InjectState = 0;
                         }
                         const std::string& SelectedName = InjectRegistry->GetStateName(InjectState);
-                        if (BeginLabeledCombo("State", SelectedName.c_str()))
+                        const bool bStateOpen = BeginLabeledCombo("State", SelectedName.c_str());
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::SetTooltip("Surface State channel to inject.");
+                        }
+                        if (bStateOpen)
                         {
                             for (std::size_t Index = 0; Index < InjectStateCount; ++Index)
                             {
@@ -1686,8 +1741,20 @@ namespace MDSS
                     }
 
                     LabeledSliderFloat("Radius (world)", &InjectRadius, 0.01F, 2.0F, "%.2f");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("World-space radius of the injected contact.");
+                    }
                     LabeledSliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Amount of State added by the contact.");
+                    }
                     LabeledSliderFloat("Falloff", &InjectFalloff, 0.0F, 4.0F, "%.2f");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Controls how injection strength fades toward the radius edge.");
+                    }
                     ImGui::EndTabItem();
                 }
 
@@ -1782,6 +1849,7 @@ namespace MDSS
                     const std::pair<TSRProfileAssetHandle, TStateId> Key{DebugParameterProfile, DebugParameterState};
                     if (ParameterDraftKey != Key)
                     {
+                        ParameterStatus.clear();
                         if (bParameterDraftAvailable)
                         {
                             ParameterDrafts[ParameterDraftKey] = ParameterDraft;
@@ -1874,6 +1942,7 @@ namespace MDSS
                             DirtyParameterDrafts.erase(Key);
                             bParameterDraftDirty = false;
                             ParameterDrafts[Key] = ParameterDraft;
+                            ParameterStatus.clear();
                         }
                         catch (const std::exception& Exception)
                         {

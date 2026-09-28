@@ -392,7 +392,8 @@ namespace MDSS
                     ModelMatrix,
                     DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
                     DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight));
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::CurvatureWeight));
             }
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             std::uint32_t SolverFlags = 0U;
@@ -411,6 +412,10 @@ namespace MDSS
             if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ConcavityRetention))
             {
                 SolverFlags |= 1U << 3U;
+            }
+            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::MesoDirectionNormal))
+            {
+                SolverFlags |= 1U << 4U;
             }
             Solver->RecordStep(CommandBuffer,
                                *Descriptors,
@@ -456,7 +461,7 @@ namespace MDSS
         }
         DebugSolverSettings.SetEnabled(Term, bEnabled);
         if (Term == TSurfaceSolverTerm::DistanceWeight || Term == TSurfaceSolverTerm::NormalWeight ||
-            Term == TSurfaceSolverTerm::ProfileBoundaryWeight)
+            Term == TSurfaceSolverTerm::ProfileBoundaryWeight || Term == TSurfaceSolverTerm::CurvatureWeight)
         {
             bTransferWeightSettingsDirty = true;
         }

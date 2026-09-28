@@ -182,7 +182,7 @@ namespace MDSS
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                 TimestampQueryPool,
                                 FirstPassQuery);
         }
@@ -217,7 +217,7 @@ namespace MDSS
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                 TimestampQueryPool,
                                 FirstPassQuery + 2U);
         }

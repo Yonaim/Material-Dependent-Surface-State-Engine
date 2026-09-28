@@ -83,7 +83,7 @@ namespace MDSS
         void DrawSimulationDebugWindow(const TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
-        void DrawSectionHeader(const char* Title) const;
+        void DrawSectionHeader(const char* Title, float TopPadding = 12.0F) const;
 
         VkDevice    Device = VK_NULL_HANDLE;
         GLFWwindow* NativeWindow = nullptr;
@@ -120,6 +120,7 @@ namespace MDSS
         float       GizmoDragWorldScale = 0.0F;
         float       GizmoDragPixelLength = 0.0F;
         std::string SceneStatus;
+        std::string EditorLayoutPath;
         std::uint32_t DockspaceID = 0;
         ImFont* SectionHeaderFont = nullptr;
         glm::vec4 SceneViewportRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};

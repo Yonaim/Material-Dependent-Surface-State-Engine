@@ -25,9 +25,10 @@ layout(location = 0) out vec4 OutColor;
 
 const uint RENDER_MODE_LIT = 0u;
 const uint RENDER_MODE_BASE_COLOR = 1u;
-const uint RENDER_MODE_VERTEX_NORMAL_WS = 2u;
-const uint RENDER_MODE_NORMAL_TEXTURE_TS = 3u;
-const uint RENDER_MODE_MAPPED_NORMAL_WS = 4u;
+const uint RENDER_MODE_WIREFRAME = 2u;
+const uint RENDER_MODE_VERTEX_NORMAL_WS = 3u;
+const uint RENDER_MODE_NORMAL_TEXTURE_TS = 4u;
+const uint RENDER_MODE_MAPPED_NORMAL_WS = 5u;
 
 vec3 VisualizeNormal(vec3 Normal)
 {

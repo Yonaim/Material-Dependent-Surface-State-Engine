@@ -85,7 +85,8 @@ namespace MDSS
                                                       std::vector<TSurfaceGPUVec4>*     OutDebugAverages,
                                                       bool                             bUseNormalWeight,
                                                       bool                             bUseDistanceWeight,
-                                                      bool                             bUseProfileBoundaryWeight)
+                                                      bool                             bUseProfileBoundaryWeight,
+                                                      bool                             bUseCurvatureWeight)
     {
         const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
         const std::vector<TSurfaceProfileIndex>&  Profiles = Geometry.GetProfileMap();
@@ -199,7 +200,21 @@ namespace MDSS
                     bUseNormalWeight
                         ? std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]), 0.0F, 1.0F)
                         : 1.0F;
-                constexpr float CurvatureWeight = 1.0F;
+                float CurvatureWeight = 1.0F;
+                if (bUseCurvatureWeight)
+                {
+                    // H is inverse mesh-local length. Keep the edge length in the same metric.
+                    const float SourceCurvature = Texels[Index].Geometry.MesoMeanCurvature;
+                    const float TargetCurvature = Texels[NeighborIndex].Geometry.MesoMeanCurvature;
+                    const glm::vec3 SourcePosition = Texels[Index].Position +
+                        Texels[Index].Normal * Texels[Index].Geometry.MesoVirtualHeight;
+                    const glm::vec3 TargetPosition = Texels[NeighborIndex].Position +
+                        Texels[NeighborIndex].Normal * Texels[NeighborIndex].Geometry.MesoVirtualHeight;
+                    const float Bend = (0.5F * std::abs(SourceCurvature) +
+                                        0.5F * std::abs(TargetCurvature)) *
+                                       glm::length(TargetPosition - SourcePosition);
+                    CurvatureWeight = std::isfinite(Bend) && Bend >= 0.0F ? 1.0F / (1.0F + Bend) : 0.0F;
+                }
                 const float ProfileBoundaryWeight = !bUseProfileBoundaryWeight || Profiles[Index] == Profiles[NeighborIndex]
                                                         ? 1.0F
                                                         : 0.5F;

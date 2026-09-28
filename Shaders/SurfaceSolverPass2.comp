@@ -13,6 +13,8 @@ void main()
         return;
     }
 
+    bool GeometryInitialized = false;
+
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
@@ -33,13 +35,25 @@ void main()
                 continue;
             }
 
+            uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
+            float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
             float CachedTransferWeight = transferWeight(TexelIndex, DirectionIndex);
+            // 이벤트 입력은 전달 계산 뒤 반영하므로 빈 source의 새 입력은 다음 step부터 전달한다.
+            if (CurrentState.Values[NeighborStateValueIndex] <= 0.0 || NeighborScale <= 0.0 ||
+                CachedTransferWeight <= 0.0)
+            {
+                continue;
+            }
+            if (!GeometryInitialized)
+            {
+                initializeGeometryDrive();
+                GeometryInitialized = true;
+            }
             float NeighborRawIncoming = rawFlux(NeighborTexel,
                                                 TexelIndex,
                                                 ChannelIndex,
                                                 CachedTransferWeight);
-            uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
-            Incoming += NeighborRawIncoming * OutgoingFluxScale.Values[NeighborStateValueIndex];
+            Incoming += NeighborRawIncoming * NeighborScale;
         }
 
         float Current = CurrentState.Values[StateValueIndex];
@@ -48,9 +62,7 @@ void main()
         float Decay = decayAmount(TexelIndex, ChannelIndex);
         float EventInput = InputDelta.Values[StateValueIndex];
         InputDelta.Values[StateValueIndex] = 0.0;
-        float Capacity = stateCapacity(TexelIndex, ChannelIndex);
-        NextState.Values[StateValueIndex] = clamp(Current + EventInput + Incoming - Outgoing - Decay,
-                                                  0.0,
-                                                  Capacity);
+        // 유입·입력의 초과량도 보존하고 다음 step의 기존 RawFlux로 다시 전달한다.
+        NextState.Values[StateValueIndex] = max(Current + EventInput + Incoming - Outgoing - Decay, 0.0);
     }
 }

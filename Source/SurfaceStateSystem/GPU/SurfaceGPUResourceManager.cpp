@@ -307,7 +307,8 @@ namespace MDSS
                                                                 const glm::mat4& ModelMatrix,
                                                                 bool bUseNormalWeight,
                                                                 bool bUseDistanceWeight,
-                                                                bool bUseProfileBoundaryWeight)
+                                                                bool bUseProfileBoundaryWeight,
+                                                                bool bUseCurvatureWeight)
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
@@ -326,7 +327,8 @@ namespace MDSS
                                            &TransferWeightDebugAverages,
                                            bUseNormalWeight,
                                            bUseDistanceWeight,
-                                           bUseProfileBoundaryWeight);
+                                           bUseProfileBoundaryWeight,
+                                           bUseCurvatureWeight);
         Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages);
         Instance.TransferWeightModelMatrix = ModelMatrix;
         Instance.bTransferWeightCacheValid = true;

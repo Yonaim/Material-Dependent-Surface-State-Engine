@@ -203,7 +203,8 @@ namespace MDSS
                                   const glm::mat4& ModelMatrix,
                                   bool bUseNormalWeight = true,
                                   bool bUseDistanceWeight = true,
-                                  bool bUseProfileBoundaryWeight = true);
+                                  bool bUseProfileBoundaryWeight = true,
+                                  bool bUseCurvatureWeight = false);
         void InvalidateTransferWeightCache(std::size_t SceneIndex);
         void AdvanceCurrentState(std::size_t SceneIndex);
 
