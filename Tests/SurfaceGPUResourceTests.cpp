@@ -432,7 +432,7 @@ namespace
         Input[Index(0, WaterChannel)] = 0.25F;
         Input[Index(2, HeatChannel)] = 0.25F;
         Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
-        std::vector<float> Flux(4U * 2U * SurfaceNeighborCount, 123.0F);
+        std::vector<float> Flux(4U * 2U * SurfaceNeighborCount, std::numeric_limits<float>::quiet_NaN());
         Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
@@ -448,6 +448,9 @@ namespace
                   Result[Index(3, WaterChannel)] == 0.0F,
               "cached flux should isolate Registry channels and zero unsupported/invalid states");
         CheckZeroBuffer(Instance.GetInputDeltaBuffer(), 8, "consumed multichannel InputDelta");
+        std::array<float, 8> CachedAlpha{}, CachedOutgoing{};
+        Instance.GetOutgoingFluxScaleBuffer().Download(CachedAlpha.data(), sizeof(CachedAlpha));
+        Instance.GetRawOutgoingBuffer().Download(CachedOutgoing.data(), sizeof(CachedOutgoing));
         Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
         for (std::size_t I = 0; I < Flux.size(); ++I)
         {
@@ -461,13 +464,10 @@ namespace
             {
                 Expected = 0.5F;
             }
-            Check(std::abs(Flux[I] - Expected) < 1.0e-5F,
-                  "Pass 1 must overwrite every directional slot with raw, unscaled flux or zero");
+            Check(CachedAlpha[I % Initial.size()] == 0.0F ? std::isnan(Flux[I]) : std::abs(Flux[I] - Expected) < 1.0e-5F,
+                  "active sources must overwrite every slot; alpha-zero sources must preserve scratch");
         }
         const auto CachedResult = Result;
-        std::array<float, 8> CachedAlpha{}, CachedOutgoing{};
-        Instance.GetOutgoingFluxScaleBuffer().Download(CachedAlpha.data(), sizeof(CachedAlpha));
-        Instance.GetRawOutgoingBuffer().Download(CachedOutgoing.data(), sizeof(CachedOutgoing));
         Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
         Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
         std::fill(Flux.begin(), Flux.end(), 123.0F);
@@ -520,11 +520,21 @@ namespace
         Profiles.UpdateParameters(0, WaterChannel, Water);
         Profiles.UpdateParameters(1, WaterChannel, OtherWater);
         Profiles.UpdateParameters(0, HeatChannel, Heat);
-        // Two consecutive steps in one submission exercise read->write scratch reuse and both AB/BA sets.
+        std::fill(Flux.begin(), Flux.end(), 123.0F);
+        Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
             {
                 Solver.RecordStep(Commands, Descriptors, false, 4, 2, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F));
+            });
+        Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
+        for (const float Value : Flux)
+            Check(Value == 123.0F, "zero timestep must preserve stale cache in every slot");
+        CheckZeroBuffer(Instance.GetOutgoingFluxScaleBuffer(), Initial.size(), "zero timestep alpha");
+        CheckZeroBuffer(Instance.GetRawOutgoingBuffer(), Initial.size(), "zero timestep RawOutgoing");
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
                 Solver.RecordStep(Commands, Descriptors, true, 4, 2, 0.5F, glm::mat4(1.0F), glm::vec3(0.0F));
             });
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
@@ -532,7 +542,11 @@ namespace
                   std::abs(Result[Index(2, WaterChannel)] - 1.4F) < 1.0e-5F &&
                   std::abs(Result[Index(0, HeatChannel)] - 0.5F) < 1.0e-5F,
               "zero timestep and edited rates must not reuse stale flux or consumed event input");
-        CheckZeroBuffer(Instance.GetRawFluxBuffer(), Flux.size(), "disabled transport RawFlux");
+        Instance.GetOutgoingFluxScaleBuffer().Download(UncachedAlpha.data(), sizeof(UncachedAlpha));
+        Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
+        for (std::size_t I = 0; I < Flux.size(); ++I)
+            Check(Flux[I] == (UncachedAlpha[I % Initial.size()] == 0.0F ? 123.0F : 0.0F),
+                  "active sources with edited zero rates must clear stale flux while inactive sources preserve it");
     }
 
     void TestGPUSolver(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
@@ -753,7 +767,7 @@ namespace
         Instance.GetStateABuffer().Upload(EmptyState.data(), sizeof(EmptyState));
         Instance.GetInputDeltaBuffer().Upload(EventInput.data(), sizeof(EventInput));
         std::array<float, 2 * SurfaceNeighborCount> PoisonedFlux{};
-        PoisonedFlux.fill(123.0F);
+        PoisonedFlux.fill(std::numeric_limits<float>::quiet_NaN());
         Instance.GetRawFluxBuffer().Upload(PoisonedFlux.data(), sizeof(PoisonedFlux));
         Vulkan.Execute([&](VkCommandBuffer Commands) {
             Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, glm::mat4(1.0F),
@@ -766,15 +780,11 @@ namespace
         Instance.GetInputDeltaBuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(EventResult[0] == 0.0F && EventResult[1] == 0.0F,
               "empty source skipping should still consume event input exactly once");
-        if (CacheFlags == 0U)
-        {
-            CheckZeroBuffer(Instance.GetRawFluxBuffer(), PoisonedFlux.size(), "empty source RawFlux overwrite");
-        }
-        else
         {
             auto UntouchedFlux = PoisonedFlux;
             Instance.GetRawFluxBuffer().Download(UntouchedFlux.data(), sizeof(UntouchedFlux));
-            Check(UntouchedFlux == PoisonedFlux, "cache OFF must preserve poisoned scratch for empty/depleted sources");
+            for (const float Value : UntouchedFlux)
+                Check(std::isnan(Value), "inactive sources must preserve poisoned scratch in either cache mode");
         }
         CheckZeroBuffer(Instance.GetOutgoingFluxScaleBuffer(), 2, "empty source alpha");
         Vulkan.Execute([&](VkCommandBuffer Commands) {
@@ -784,6 +794,17 @@ namespace
         Instance.GetStateABuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(EventResult[1] > 0.0F && std::abs(EventResult[0] + EventResult[1] - EventInput[0]) < 1.0e-5F,
               "a previously empty target must receive neighbor flux and transport the previous step's event input");
+        if (CacheFlags == 0U)
+        {
+            auto RefreshedFlux = PoisonedFlux;
+            Instance.GetRawFluxBuffer().Download(RefreshedFlux.data(), sizeof(RefreshedFlux));
+            // The source activated by InputDelta overwrites all eight slots before gather.
+            for (std::size_t Slot = 0; Slot < SurfaceNeighborCount; ++Slot)
+            {
+                Check(std::isfinite(RefreshedFlux[Slot * 2U]), "reactivated source must refresh every slot");
+                Check(std::isnan(RefreshedFlux[Slot * 2U + 1U]), "empty receiving target must preserve its own scratch");
+            }
+        }
 
         Parameters.DecayRate = 4.0F;
         Profiles.UpdateParameters(0, 0, Parameters);
@@ -800,15 +821,11 @@ namespace
         Check(std::abs(EventResult[0] - DepletedInput[0]) < 1.0e-5F &&
                   std::abs(EventResult[1] - DepletedInput[1]) < 1.0e-5F,
               "decay-depleted sources must skip outgoing but still apply external input to both texels");
-        if (CacheFlags == 0U)
-        {
-            CheckZeroBuffer(Instance.GetRawFluxBuffer(), PoisonedFlux.size(), "decay-depleted source RawFlux overwrite");
-        }
-        else
         {
             auto UntouchedFlux = PoisonedFlux;
             Instance.GetRawFluxBuffer().Download(UntouchedFlux.data(), sizeof(UntouchedFlux));
-            Check(UntouchedFlux == PoisonedFlux, "cache OFF must preserve poisoned scratch for empty/depleted sources");
+            for (const float Value : UntouchedFlux)
+                Check(std::isnan(Value), "inactive sources must preserve poisoned scratch in either cache mode");
         }
         Parameters.DecayRate = 0.0F;
         Profiles.UpdateParameters(0, 0, Parameters);
