@@ -1,0 +1,90 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "objects": [
+    {
+      "mesh": "../Meshes/BrickCube/BrickCube.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/BrickCube_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -1.15,
+          -1.1,
+          0.5
+        ],
+        "rotationDegrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/MarbleCube/MarbleCube.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/MarbleCube_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          1.15,
+          -1.1,
+          0.5
+        ],
+        "rotationDegrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/BrickCube/BrickCube.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/BrickCube_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -1.15,
+          1.1,
+          0.825378
+        ],
+        "rotationDegrees": [
+          20.0,
+          35.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/MarbleCube/MarbleCube.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/MarbleCube_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          1.15,
+          1.1,
+          0.825378
+        ],
+        "rotationDegrees": [
+          20.0,
+          35.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    }
+  ]
+}

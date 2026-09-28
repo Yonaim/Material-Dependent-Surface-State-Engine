@@ -3,7 +3,7 @@
 /.vscode/
 /.idea/
 .DS_Store
-Config/MDSS_EditorLayout.ini
+Config/EditorLayout.ini
 *.user
 *.suo
 
@@ -81,3 +81,5 @@ Cache/
 
 # exceptionally allowed
 !/Assets/Meshes/*.obj
+
+!/Assets/Meshes/MarbleCube/MarbleCube.obj

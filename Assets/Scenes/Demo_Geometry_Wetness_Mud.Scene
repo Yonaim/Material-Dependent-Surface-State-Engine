@@ -1,0 +1,90 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "objects": [
+    {
+      "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Wetness.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -1.14184,
+          -1.159871,
+          -0.211866
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          6.42264883,
+          6.42264883,
+          6.42264883
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/Mountain/Mountain.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/Mountain_Wetness.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -1.250609,
+          1.15031,
+          0.033503
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.21463775,
+          0.21463775,
+          0.21463775
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          1.35816,
+          -1.159871,
+          -0.211866
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          6.42264883,
+          6.42264883,
+          6.42264883
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/Mountain/Mountain.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/Mountain_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          1.249391,
+          1.15031,
+          0.033503
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.21463775,
+          0.21463775,
+          0.21463775
+        ]
+      }
+    }
+  ]
+}

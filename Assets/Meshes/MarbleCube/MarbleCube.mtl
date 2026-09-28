@@ -1,0 +1,29 @@
+newmtl marble
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd MarbleCubeAlbedo.png
+
+newmtl marble_back
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd MarbleCubeAlbedo.png
+
+newmtl marble_right
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd MarbleCubeAlbedo.png
+
+newmtl marble_left
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd MarbleCubeAlbedo.png
+
+newmtl marble_top
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd MarbleCubeAlbedo.png
+
+newmtl marble_bottom
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd MarbleCubeAlbedo.png

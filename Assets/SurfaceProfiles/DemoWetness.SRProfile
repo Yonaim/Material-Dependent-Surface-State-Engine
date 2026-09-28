@@ -1,0 +1,18 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 1,
+  "name": "DemoWetness",
+  "states": {
+    "wetness": {
+      "stateCapacity": 1.0,
+      "inputFactor": 1.0,
+      "saturationTransferRate": 0.2,
+      "geometryTransferRate": 50.0,
+      "decayRate": 0.03,
+      "cavityRetentionFactor": 0.5,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0
+    }
+  },
+  "transitions": []
+}
