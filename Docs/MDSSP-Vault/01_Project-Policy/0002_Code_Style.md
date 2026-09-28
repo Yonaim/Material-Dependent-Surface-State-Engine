@@ -1,5 +1,7 @@
 # MDSS Engine Code Style
 
+> **한 줄 요약:** 이 문서는 MDSS Engine C++ 코드의 명명·구성 관례를 정하고, 형식 규칙은 저장소 루트의 `.clang-format`을 기준으로 삼는다.
+
 이 문서는 MDSS Engine C++ 코드의 명명·구성 관례를 정하고, 형식 규칙은 저장소 루트의 `.clang-format`을 기준으로 삼는다. `.clang-format`은 자동으로 적용할 수 있는 형식을 제어하지만, 명명 규칙과 소유권 의도까지 검사하지는 않는다.
 
 ## 적용 기준

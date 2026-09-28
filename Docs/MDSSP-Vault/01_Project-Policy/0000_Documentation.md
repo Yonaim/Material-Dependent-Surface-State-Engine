@@ -1,5 +1,7 @@
 # 문서 정책
 
+> **한 줄 요약:** 이 볼트는 현재 확정된 설계, 구현 기본안, 아직 정해야 하는 항목을 구분한다.
+
 이 볼트는 **현재 확정된 설계**, **구현 기본안**, **아직 정해야 하는 항목**을 구분한다. 설계 문서에 적혀 있다는 사실만으로 구현 완료를 의미하지 않는다.
 
 ## 상태 표기
@@ -13,16 +15,17 @@
 ## 문서 책임
 
 - `01_Project-Policy/`: 공식 용어, 문서 규칙, 프로젝트 전반에 적용되는 원칙.
-- `02_Planning/`: 프로젝트 전체 계획, 전체 주차 목표 요약, 주차별 상세 구현 계획.
-- `03_Architecture/`: 시스템의 논리 구조, 데이터 의미, 시스템 동작 규칙과 정의 수식.
-- `04_ADR/`: 중요한 설계 결정을 선택한 이유와 결과.
-- `05_Development/`: 구현 순서와 구체적인 구현 방식, 미검증 구현안, 실험·디버깅 기록.
-- `06_Testing/`: 공통 테스트 구성 기준, 사례 작성 원칙과 회귀 검증 문서.
-- `07_Assets/Documents/`: 설계의 근거가 된 원본 PDF.
+- `02_Research/`: 외부 연구·기술 근거의 쉬운 요약, 상세 설명과 프로젝트 적용 검토.
+- `03_Planning/`: 프로젝트 전체 계획, 전체 주차 목표 요약, 주차별 상세 구현 계획.
+- `04_Architecture/`: 시스템의 논리 구조, 데이터 의미, 시스템 동작 규칙과 정의 수식.
+- `05_ADR/`: 중요한 설계 결정을 선택한 이유와 결과.
+- `06_Development/`: 구현 순서와 구체적인 구현 방식, 미검증 구현안, 실험·디버깅 기록.
+- `07_Testing/`: 공통 테스트 구성 기준, 사례 작성 원칙과 회귀 검증 문서.
+- `08_Assets/Documents/`: 설계의 근거가 된 원본 PDF.
 
-주차별 계획은 [[02_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]]과 [[02_Planning/00_Project-Overview/0001_Roadmap|Roadmap]]을 기준으로 한다. 실제 완료 여부와 당장 남은 작업은 [[TODO|TODO]]에서 관리한다.
+주차별 계획은 [[03_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]]과 [[03_Planning/00_Project-Overview/0001_Roadmap|Roadmap]]을 기준으로 한다. 실제 완료 여부와 당장 남은 작업은 [[TODO|TODO]]에서 관리한다.
 
-같은 내용을 여러 문서에 복제하지 않는다. 예를 들어 **SRProfile 파라미터의 의미와 범위는 [[03_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]에서만 정의**하고, [[03_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]에서는 파일 직렬화와 연결 관계만 다룬다.
+같은 내용을 여러 문서에 복제하지 않는다. 예를 들어 **SRProfile 파라미터의 의미와 범위는 [[04_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]에서만 정의**하고, [[04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]에서는 파일 직렬화와 연결 관계만 다룬다.
 
 시스템이 무엇을 의미하고 어떤 규칙으로 동작하는지는 Architecture에 둔다. 특정 주차의 임시 선택, GPU 자원 배치, 실행 순서, 아직 검증이 필요한 구현 방식은 Development에 둔다. 구현 방식 중 중요한 대안 선택과 그 근거를 기록해야 하면 ADR을 작성한다. 미정이라는 이유만으로 시스템 동작의 의미나 수식 정의를 Development로 옮기지는 않는다.
 
@@ -37,7 +40,7 @@
 
 ## 출처와 최신성
 
-`07_Assets/Documents/`의 PDF는 설계 근거 자료다. 이후 대화에서 명시적으로 수정·확정된 설계는 PDF의 이전 표현보다 우선한다. 특히 다음 변경은 현재 설계에 반영한다.
+`08_Assets/Documents/`의 PDF는 설계 근거 자료다. 이후 대화에서 명시적으로 수정·확정된 설계는 PDF의 이전 표현보다 우선한다. 특히 다음 변경은 현재 설계에 반영한다.
 
 - `Overflow` 초과량 모델 폐기, `State + TempState` 사용.
 - 상태별 `stateCapacity`와 파생값 `Saturation` 사용.
@@ -46,4 +49,4 @@
 - 적층량은 `State × accumulationFactor`에서 계산.
 - 표면 위 물(`SurfaceWater`)과 내부 흡수 수분(`Wetness`)의 의미를 구분.
 
-원본 자료 목록은 [[07_Assets/Documents/0000_Source-Index|Source Index]]에서 확인한다.
+원본 자료 목록은 [[08_Assets/Documents/0000_Source-Index|Source Index]]에서 확인한다.

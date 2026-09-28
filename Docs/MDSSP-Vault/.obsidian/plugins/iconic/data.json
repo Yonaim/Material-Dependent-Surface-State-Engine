@@ -43,48 +43,48 @@
         "60e847407cf0ad33"
       ]
     },
-    "02_Planning": {
+    "03_Planning": {
       "icon": "lucide-calendar-check",
       "unsynced": [
         "60e847407cf0ad33"
       ]
     },
-    "03_Architecture": {
+    "04_Architecture": {
       "icon": "lucide-badge",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
       ]
     },
-    "04_ADR": {
+    "05_ADR": {
       "icon": "lucide-stamp",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
       ]
     },
-    "05_Development": {
+    "06_Development": {
       "icon": "lucide-shovel",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
       ]
     },
-    "05_Development/Debugging": {
+    "06_Development/Debugging": {
       "icon": "lucide-bug",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
       ]
     },
-    "05_Development/Experiments": {
+    "06_Development/Experiments": {
       "icon": "lucide-flask-conical",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
       ]
     },
-    "05_Development/Notes": {
+    "06_Development/Notes": {
       "icon": "lucide-sticky-note",
       "unsynced": [
         "cbda2c37e432a588",
@@ -98,13 +98,13 @@
         "60e847407cf0ad33"
       ]
     },
-    "06_Testing": {
+    "07_Testing": {
       "icon": "lucide-list-restart",
       "unsynced": [
         "60e847407cf0ad33"
       ]
     },
-    "07_Assets": {
+    "08_Assets": {
       "icon": "lucide-gem",
       "unsynced": [
         "60e847407cf0ad33"
