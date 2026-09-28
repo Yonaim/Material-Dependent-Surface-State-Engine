@@ -1,4 +1,4 @@
-# Surface Solver Cache
+# Simulation Optimization
 
 > **한 줄 요약:** 현재 Solver는 TransferWeight 캐시와 Pass 1의 RawOutgoing·방향별 RawFlux를 재사용한다.
 
