@@ -58,7 +58,9 @@ namespace MDSS
         std::uint32_t                LocalTexelCount = 0;
         std::uint32_t                Flags = 0;
         std::array<float, 4>         GravityWorld{};
-        std::array<std::array<float, 4>, 4> ModelMatrix{};
+        std::array<std::array<float, 4>, 3> ModelLinearColumns{};
+        // xyz: inverse-transpose columns, w: corresponding component of the gravity up axis.
+        std::array<std::array<float, 4>, 3> NormalMatrixAndUpColumns{};
     };
 
     struct TSurfaceGPUSharedGeometryUpload
@@ -95,10 +97,11 @@ namespace MDSS
     static_assert(sizeof(TSurfaceGPUProfileParameters) == 32);
     static_assert(alignof(TSurfaceGPUProfileParameters) == 16);
     static_assert(offsetof(TSurfaceGPUProfileParameters, DecayAndGeometry) == 16);
-    static_assert(sizeof(TSurfaceSolverPushConstants) == 96);
+    static_assert(sizeof(TSurfaceSolverPushConstants) == 128);
     static_assert(alignof(TSurfaceSolverPushConstants) == 16);
     static_assert(offsetof(TSurfaceSolverPushConstants, GravityWorld) == 16);
-    static_assert(offsetof(TSurfaceSolverPushConstants, ModelMatrix) == 32);
+    static_assert(offsetof(TSurfaceSolverPushConstants, ModelLinearColumns) == 32);
+    static_assert(offsetof(TSurfaceSolverPushConstants, NormalMatrixAndUpColumns) == 80);
 
     [[nodiscard]] TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData& Geometry);
 

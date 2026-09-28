@@ -153,13 +153,31 @@ namespace MDSS
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
         Constants.Flags = SolverFlags;
         Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z, 0.0F};
-        for (std::size_t Column = 0; Column < 4; ++Column)
+        // All texels in this dispatch share these values. Stay within Vulkan's minimum 128-byte budget.
+        constexpr float GeometryEpsilon = 1.0e-6F;
+        const glm::mat3 ModelLinear(ModelMatrix);
+        glm::mat3 NormalMatrix(0.0F);
+        glm::vec3 Up(0.0F);
+        const float GravityLength = glm::length(GravityWorld);
+        if ((SolverFlags & 1U) == 0U && std::isfinite(GravityLength) && GravityLength > GeometryEpsilon)
         {
-            for (std::size_t Row = 0; Row < 4; ++Row)
+            Up = -GravityWorld / GravityLength;
+            const float Determinant = glm::determinant(ModelLinear);
+            if (std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon)
             {
-                Constants.ModelMatrix[Column][Row] = ModelMatrix[static_cast<glm::length_t>(Column)]
-                                                               [static_cast<glm::length_t>(Row)];
+                NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
             }
+        }
+        for (std::size_t Column = 0; Column < 3; ++Column)
+        {
+            for (std::size_t Row = 0; Row < 3; ++Row)
+            {
+                Constants.ModelLinearColumns[Column][Row] =
+                    ModelLinear[static_cast<glm::length_t>(Column)][static_cast<glm::length_t>(Row)];
+                Constants.NormalMatrixAndUpColumns[Column][Row] =
+                    NormalMatrix[static_cast<glm::length_t>(Column)][static_cast<glm::length_t>(Row)];
+            }
+            Constants.NormalMatrixAndUpColumns[Column][3] = Up[static_cast<glm::length_t>(Column)];
         }
 
         const std::uint32_t WorkgroupCount = static_cast<std::uint32_t>((TexelCount + 63U) / 64U);
