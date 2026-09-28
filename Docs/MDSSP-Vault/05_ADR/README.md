@@ -44,3 +44,4 @@ Material·Profile 연결, 전처리와 Scene의 Profile Distribution 참조 결�
 - [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|0008 — Runtime Surface 전처리]]
 - [[05_ADR/Assets/0009-Texel-Profile-Index-Map|0009 — Texel별 Profile Index Map]]
 - [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|0012 — Scene별 Profile Distribution 참조]]
+- [[05_ADR/Assets/0026-Resolution-Surface-Cache|0026 — 해상도별 Surface 전처리 캐시]]

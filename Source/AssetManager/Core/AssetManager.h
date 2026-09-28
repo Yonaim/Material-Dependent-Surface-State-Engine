@@ -33,7 +33,7 @@ namespace MDSS
         /** @brief `.SRProfile` 파일을 로드하고 Profile handle을 반환한다. */
         [[nodiscard]] TSRProfileAssetHandle LoadSRProfile(const std::filesystem::path& Path);
         /**
-         * @brief Profile Distribution을 읽고 Mesh의 Surface mapping/geometry를 Runtime 메모리에 생성한다.
+         * @brief 해상도별 .Surface 캐시를 로드하거나 전처리 후 저장하고 Runtime 메모리에서 공유한다.
          * @param Mesh Mesh asset handle.
          * @param DistributionPath Scene에서 지정한 `.SurfaceProfileMap` 경로.
          */

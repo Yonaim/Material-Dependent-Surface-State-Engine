@@ -18,7 +18,7 @@ Runtime 전처리 결과에는 Geometry와 texel별 Profile map이 함께 들어
 - 두 경로는 `.Scene` 파일이 있는 디렉터리를 기준으로 해석하며 상대 경로만 허용한다. `mesh`는 `.obj`, `surfaceProfileMap`은 `.SurfaceProfileMap` 확장자를 사용한다.
 - `surfaceProfileMap`이 없으면 해당 object는 렌더링 Mesh만 로드하고 Surface simulation data는 생성하지 않는다.
 - `surfaceProfileMap`이 지정되면 Scene loader가 해당 Mesh와 map으로 Runtime Surface Data를 로드/생성해 instance에 연결한다. map 안의 `.SRProfile` 경로는 기존 계약대로 map 파일 디렉터리 기준 상대 경로다.
-- AssetManager는 정규화한 `(Mesh 경로, SurfaceProfileMap 경로)` 조합별로 Runtime Surface Data와 Profile table을 캐시한다. 서로 다른 map은 동일 Mesh라도 서로 다른 Runtime handle을 받는다.
+- AssetManager는 정규화한 `(Mesh 경로, SurfaceProfileMap 경로, Simulation 해상도)` 조합별로 Runtime Surface Data와 Profile table을 캐시한다. 서로 다른 map은 동일 Mesh라도 서로 다른 Runtime handle을 받는다. ADR 0026의 `.Surface`는 이 입력 조합에서 자동 선택하며 `.Scene`에 캐시 경로를 추가하지 않는다.
 - Scene instance의 동적 State는 instance별로 유지하고, 같은 Runtime Surface Data 조합을 가진 instance끼리는 정적 GPU Geometry와 Profile buffer를 공유한다.
 - OBJ 로더는 `.SurfaceProfileMap`을 이름 규칙으로 자동 검색하지 않는다. Profile Distribution 선택은 `.Scene`이 소유한다.
 
@@ -85,6 +85,7 @@ Scene별 선택권을 제공하면서 Profile Distribution 입력을 별도 파�
 
 ## Related
 
+- [[0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 전처리 캐시]]
 - [[04_Architecture/0003_Assets-and-Profiles|Assets and Profiles]]
 - [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]
 - [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
