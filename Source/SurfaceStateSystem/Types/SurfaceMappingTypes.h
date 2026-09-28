@@ -21,7 +21,25 @@ namespace MDSS
     inline constexpr TLocalTexelIndex InvalidTexelIndex = std::numeric_limits<TLocalTexelIndex>::max();
     inline constexpr std::uint32_t    InvalidTriangleID = std::numeric_limits<std::uint32_t>::max();
     inline constexpr std::size_t      SurfaceNeighborCount = 8;
-    inline constexpr std::uint32_t    SurfaceSimulationResolution = 512;
+    inline constexpr std::uint32_t    SurfaceSimulationResolution = 256;
+
+    struct TSurfaceSimulationResolutionPreset
+    {
+        const char* Label;
+        std::uint32_t Resolution;
+    };
+
+    inline constexpr std::array<TSurfaceSimulationResolutionPreset, 3> SurfaceSimulationResolutionPresets{{
+        {"Low", 128}, {"Medium", 256}, {"High", 512}}};
+
+    [[nodiscard]] constexpr bool IsSurfaceSimulationResolution(std::uint32_t Resolution) noexcept
+    {
+        for (const auto& Preset : SurfaceSimulationResolutionPresets)
+        {
+            if (Preset.Resolution == Resolution) return true;
+        }
+        return false;
+    }
 
     struct TSurfaceResolution
     {

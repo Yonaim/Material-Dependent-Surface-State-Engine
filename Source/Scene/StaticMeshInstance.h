@@ -27,6 +27,7 @@ namespace MDSS
         [[nodiscard]] const TTransform&          GetTransform() const noexcept;
         [[nodiscard]] TMeshAssetHandle           GetMesh() const noexcept;
         [[nodiscard]] TSurfaceRuntimeDataHandle GetSurfaceData() const noexcept;
+        void SetSurfaceData(TSurfaceRuntimeDataHandle Handle) noexcept;
         [[nodiscard]] const std::filesystem::path& GetMeshPath() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetProfileMapPath() const noexcept;
 

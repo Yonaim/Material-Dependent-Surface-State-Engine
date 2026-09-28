@@ -1522,7 +1522,7 @@ namespace MDSS
         ImGui::PopStyleVar(3);
     }
 
-    void TDebugUI::DrawSimulationDebugWindow(const TScene& SceneData)
+    void TDebugUI::DrawSimulationDebugWindow(TScene& SceneData)
     {
         if (AssetManager == nullptr || FrameRenderer == nullptr)
         {
@@ -1544,6 +1544,45 @@ namespace MDSS
             {
                 if (ImGui::BeginTabItem("Simulation"))
                 {
+                    DrawSectionHeader("Simulation Resolution");
+                    const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
+                    const char* CurrentLabel = "Medium";
+                    for (const auto& Preset : SurfaceSimulationResolutionPresets)
+                        if (Preset.Resolution == CurrentResolution) CurrentLabel = Preset.Label;
+                    ImGui::SetNextItemWidth(-1.0F);
+                    if (ImGui::BeginCombo("##SimulationResolution", CurrentLabel))
+                    {
+                        for (const auto& Preset : SurfaceSimulationResolutionPresets)
+                        {
+                            const bool Selected = Preset.Resolution == CurrentResolution;
+                            if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
+                            {
+                                try
+                                {
+                                    FrameRenderer->SetSimulationResolution(SceneData, Preset.Resolution);
+                                    ResolutionStatus = "Resolution changed. State reset.";
+                                    ProfilingWindowElapsed = ProfilingFpsSum = ProfilingFrameTimeSum = 0.0;
+                                    ProfilingFrameSamples = 0;
+                                    ProfilingGpuSums.fill(0.0);
+                                    ProfilingGpuSamples.fill(0);
+                                    ProfilingAverages.fill(-1.0F);
+                                    bProfilingAverageAvailable = false;
+                                }
+                                catch (const std::exception& Error)
+                                {
+                                    ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
+                                    TLogger::Warning("TDebugUI", ResolutionStatus);
+                                }
+                            }
+                            if (Selected) ImGui::SetItemDefaultFocus();
+                        }
+                        ImGui::EndCombo();
+                    }
+                    const std::uint32_t ActiveResolution = FrameRenderer->GetSimulationResolution();
+                    ImGui::TextDisabled("%u x %u per surface", ActiveResolution, ActiveResolution);
+                    ImGui::TextWrapped("Changing resolution resets State.");
+                    if (!ResolutionStatus.empty()) ImGui::TextWrapped("%s", ResolutionStatus.c_str());
+
                     DrawSectionHeader("Playback");
                     if (ImGui::RadioButton("Running", !bSimulationPaused))
                     {

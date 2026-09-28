@@ -80,7 +80,7 @@ namespace MDSS
         void DrawRenderOptionsWindow(TScene& SceneData);
         void DrawRenderSettingsWindow();
         void DrawViewportStatsOverlay();
-        void DrawSimulationDebugWindow(const TScene& SceneData);
+        void DrawSimulationDebugWindow(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
         void DrawSectionHeader(const char* Title, float TopPadding = 12.0F) const;
@@ -111,6 +111,7 @@ namespace MDSS
         bool bParameterDraftAvailable = false;
         bool bParameterDraftDirty = false;
         std::string ParameterStatus;
+        std::string ResolutionStatus;
         std::optional<std::size_t> SelectedObject;
         int         ActiveGizmoAxis = -1;
         int         HoveredGizmoAxis = -1;

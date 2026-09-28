@@ -44,6 +44,11 @@ namespace MDSS
         return SurfaceData;
     }
 
+    void TStaticMeshInstance::SetSurfaceData(TSurfaceRuntimeDataHandle Handle) noexcept
+    {
+        SurfaceData = Handle;
+    }
+
     const std::filesystem::path& TStaticMeshInstance::GetMeshPath() const noexcept
     {
         return SourceMeshPath;
