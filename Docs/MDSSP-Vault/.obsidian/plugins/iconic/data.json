@@ -43,6 +43,12 @@
         "60e847407cf0ad33"
       ]
     },
+    "02_Research": {
+      "icon": "lucide-book-open-text",
+      "unsynced": [
+        "60e847407cf0ad33"
+      ]
+    },
     "03_Planning": {
       "icon": "lucide-calendar-check",
       "unsynced": [
@@ -58,6 +64,13 @@
     },
     "05_ADR": {
       "icon": "lucide-stamp",
+      "unsynced": [
+        "cbda2c37e432a588",
+        "60e847407cf0ad33"
+      ]
+    },
+    "06_Assets": {
+      "icon": "lucide-boxes",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
@@ -86,13 +99,6 @@
     },
     "06_Development/Notes": {
       "icon": "lucide-sticky-note",
-      "unsynced": [
-        "cbda2c37e432a588",
-        "60e847407cf0ad33"
-      ]
-    },
-    "06_Assets": {
-      "icon": "lucide-boxes",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
