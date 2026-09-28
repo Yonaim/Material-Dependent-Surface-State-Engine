@@ -4,13 +4,13 @@
 
 ## 4주차 구현 설계
 
-- [x] [[05_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [x] [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
   - Simulation UV 생성 방식
   - Mesh → Texel 대응
   - Valid Texel 처리
   - 8-neighbor / NeighborIndex
   - UV Seam 연결
-- [x] [[05_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [x] [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
   - State ping-pong + TempState
   - Shared Geometry GPU Resource
   - SRProfile GPU representation / binding
