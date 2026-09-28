@@ -530,6 +530,11 @@ namespace MDSS
         return SimulationTimeScale;
     }
 
+    float TDebugUI::GetSimulationDeltaTime(float FrameDeltaTime) const noexcept
+    {
+        return (bFixedSimulationTimestep ? 1.0F / 60.0F : FrameDeltaTime) * SimulationTimeScale;
+    }
+
     bool TDebugUI::IsSimulationPaused() const noexcept
     {
         return bSimulationPaused;
@@ -1401,6 +1406,16 @@ namespace MDSS
         ImGui::End();
     }
 
+    void TDebugUI::ResetProfilingAverages() noexcept
+    {
+        ProfilingWindowElapsed = ProfilingFpsSum = ProfilingFrameTimeSum = 0.0;
+        ProfilingFrameSamples = 0;
+        ProfilingGpuSums.fill(0.0);
+        ProfilingGpuSamples.fill(0);
+        ProfilingAverages.fill(-1.0F);
+        bProfilingAverageAvailable = false;
+    }
+
     void TDebugUI::DrawViewportStatsOverlay()
     {
         if (FrameRenderer == nullptr)
@@ -1428,6 +1443,11 @@ namespace MDSS
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
         if (ImGui::Begin("Viewport Stats##Overlay", nullptr, Flags))
         {
+            if (bProfiledRawFluxCacheEnabled != FrameRenderer->IsRawFluxCacheEnabled())
+            {
+                ResetProfilingAverages();
+                bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
+            }
             const ImGuiIO& IO = ImGui::GetIO();
             const double FrameSeconds = static_cast<double>(IO.DeltaTime);
             const std::array<float, 4> GpuValues = {
@@ -1515,6 +1535,11 @@ namespace MDSS
                            {0.72F, 0.78F, 0.87F, 1.0F});
                 DrawMetric("  Pass 2", "%.2f ms", ProfilingAverages[5],
                            {0.72F, 0.78F, 0.87F, 1.0F});
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextDisabled("RawFlux Cache");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextDisabled("%s", FrameRenderer->IsRawFluxCacheEnabled() ? "ON" : "OFF");
                 ImGui::EndTable();
             }
         }
@@ -1561,12 +1586,7 @@ namespace MDSS
                                 {
                                     FrameRenderer->SetSimulationResolution(SceneData, Preset.Resolution);
                                     ResolutionStatus = "Resolution changed. State reset.";
-                                    ProfilingWindowElapsed = ProfilingFpsSum = ProfilingFrameTimeSum = 0.0;
-                                    ProfilingFrameSamples = 0;
-                                    ProfilingGpuSums.fill(0.0);
-                                    ProfilingGpuSamples.fill(0);
-                                    ProfilingAverages.fill(-1.0F);
-                                    bProfilingAverageAvailable = false;
+                                    ResetProfilingAverages();
                                 }
                                 catch (const std::exception& Error)
                                 {
@@ -1582,6 +1602,37 @@ namespace MDSS
                     ImGui::TextDisabled("%u x %u per surface", ActiveResolution, ActiveResolution);
                     ImGui::TextWrapped("Changing resolution resets State.");
                     if (!ResolutionStatus.empty()) ImGui::TextWrapped("%s", ResolutionStatus.c_str());
+
+                    DrawSectionHeader("Cache Comparison");
+                    bool bCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
+                    if (ImGui::Checkbox("RawFlux Cache", &bCacheEnabled))
+                    {
+                        FrameRenderer->SetRawFluxCacheEnabled(bCacheEnabled);
+                        ResetProfilingAverages();
+                    }
+                    ImGui::TextDisabled("%s", bCacheEnabled ? "ON: reuse Pass 1 flux" : "OFF: recompute in Pass 2");
+                    const auto Memory = FrameRenderer->GetSurfaceGPUResources().GetRawFluxMemoryUsage();
+                    constexpr double MiB = 1024.0 * 1024.0;
+                    ImGui::Text("Cache buffers: %.2f MiB",
+                        static_cast<double>(Memory.InstanceRawFluxBytes + Memory.SharedReverseSlotBytes) / MiB);
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("RawFlux (all instances): %.2f MiB", static_cast<double>(Memory.InstanceRawFluxBytes) / MiB);
+                        ImGui::Text("Reverse slots (shared once): %.2f MiB", static_cast<double>(Memory.SharedReverseSlotBytes) / MiB);
+                        ImGui::TextUnformatted("Buffer sizes; excludes allocator overhead.");
+                        ImGui::EndTooltip();
+                    }
+                    ImGui::TextWrapped("State is preserved. Buffers stay allocated while OFF.");
+                    if (ImGui::Checkbox("Fixed timestep (1/60 s)", &bFixedSimulationTimestep))
+                    {
+                        ResetProfilingAverages();
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Fixed time per solver step, scaled by Time scale. Simulation speed depends on FPS.");
+                    if (bFixedSimulationTimestep)
+                        ImGui::TextDisabled("%.3f ms per step at %.2fx", 1000.0F * GetSimulationDeltaTime(0.0F), SimulationTimeScale);
+                    ImGui::TextWrapped("Compare with the same resolution, time scale and starting State. Reset and replay the same input for each mode; allow warmup before reading averages.");
 
                     DrawSectionHeader("Playback");
                     if (ImGui::RadioButton("Running", !bSimulationPaused))

@@ -62,6 +62,7 @@ namespace MDSS
         [[nodiscard]] float GetInjectRadius() const noexcept;
         [[nodiscard]] float GetInjectFalloff() const noexcept;
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
+        [[nodiscard]] float GetSimulationDeltaTime(float FrameDeltaTime) const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
@@ -80,6 +81,7 @@ namespace MDSS
         void DrawRenderOptionsWindow(TScene& SceneData);
         void DrawRenderSettingsWindow();
         void DrawViewportStatsOverlay();
+        void ResetProfilingAverages() noexcept;
         void DrawSimulationDebugWindow(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
@@ -98,6 +100,7 @@ namespace MDSS
         float       InjectRadius = 0.25F;
         float       InjectFalloff = 1.0F;
         float       SimulationTimeScale = 1.0F;
+        bool        bFixedSimulationTimestep = false;
         bool        bSimulationPaused = false;
         bool        bSolverStepRequested = false;
         bool        bSolverResetRequested = false;
@@ -141,5 +144,6 @@ namespace MDSS
         std::array<float, 6>                                        ProfilingAverages{-1.0F, -1.0F, -1.0F,
                                                                                      -1.0F, -1.0F, -1.0F};
         bool                                                        bProfilingAverageAvailable = false;
+        bool                                                        bProfiledRawFluxCacheEnabled = true;
     };
 } // namespace MDSS

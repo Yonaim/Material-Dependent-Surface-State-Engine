@@ -173,6 +173,12 @@ namespace MDSS
             BoundBufferHandles{};
     };
 
+    struct TSurfaceRawFluxMemoryUsage
+    {
+        VkDeviceSize InstanceRawFluxBytes = 0;
+        VkDeviceSize SharedReverseSlotBytes = 0;
+    };
+
     /**
      * @brief Scene의 런타임 Surface 데이터 조합별 공유 버퍼와 instance별 솔버 버퍼를 소유한다.
      * @note Compute dispatch는 수행하지 않으며 4주차 GPU 리소스 수명만 관리한다.
@@ -191,6 +197,8 @@ namespace MDSS
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
         [[nodiscard]] std::size_t GetSharedSurfaceDataCount() const noexcept;
         [[nodiscard]] std::size_t GetSceneInstanceCount() const noexcept;
+        /** @brief Actual buffer sizes, counting shared geometry once; excludes allocator overhead. */
+        [[nodiscard]] TSurfaceRawFluxMemoryUsage GetRawFluxMemoryUsage() const noexcept;
         /** @brief Scene 벡터 인덱스에 해당하는 instance 디스크립터 리소스를 반환한다. */
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
