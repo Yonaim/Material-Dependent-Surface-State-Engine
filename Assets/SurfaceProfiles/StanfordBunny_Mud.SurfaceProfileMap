@@ -1,0 +1,13 @@
+{
+  "type": "SurfaceProfileMap",
+  "version": 1,
+  "profiles": [
+    "DemoMud.SRProfile"
+  ],
+  "surfaces": [
+    {
+      "surfaceId": 0,
+      "profileIndex": 0
+    }
+  ]
+}

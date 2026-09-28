@@ -5,7 +5,6 @@
     "DemoStone.SRProfile"
   ],
   "surfaces": [
-    { "surfaceId": 0, "profileIndex": -1 },
-    { "surfaceId": 1, "profileIndex": 0 }
+    { "surfaceId": 0, "profileIndex": 0 }
   ]
 }
