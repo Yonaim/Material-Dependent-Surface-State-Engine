@@ -14,7 +14,7 @@
 - NormalWeight, CurvatureWeight와 ConcavityWeight의 역할을 구분해 검증한다.
 - 4주차 mapping의 seam / neighbor 연결 실패 사례를 보완한다.
 - 서로 다른 Surface 또는 SRProfile 경계에서 전파를 확인한다.
-- Week-05에 반영한 Normal Map `NormalWeight` 및 Meso geometry를 평가하고, 관찰된 형상·전달 한계에 대한 보정 범위를 결정한다.
+- Week-05에 반영한 Normal Map `NormalWeight` 및 Virtual Meso Geometry를 평가하고, 관찰된 형상·전달 한계에 대한 보정 범위를 결정한다.
 
 ## 산출물
 

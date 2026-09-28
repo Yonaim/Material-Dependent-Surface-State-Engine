@@ -60,7 +60,7 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Scene
 
 | Runtime Surface Data에 포함 | Runtime Surface Data에 포함하지 않음 |
 |---|---|
-| 유효성, Normal, Meso Virtual Height, Curvature/Concavity 등 정적 Geometry 값 | 시간에 따라 변하는 instance별 State |
+| 유효성, Normal, Virtual Height, Curvature/Concavity 등 정적 Geometry 값 | 시간에 따라 변하는 instance별 State |
 | Neighbor, Distance, Height Difference, Boundary, UV seam 연결 등 texel 관계 | `.SRProfile`의 반응 파라미터와 Transition |
 | Texel → `ProfileIndex` map | Instance별 `SurfaceInstanceStateData` |
 

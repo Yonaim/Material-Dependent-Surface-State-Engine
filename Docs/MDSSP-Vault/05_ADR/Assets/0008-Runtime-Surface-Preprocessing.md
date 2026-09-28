@@ -48,7 +48,7 @@ Runtime 작업량을 줄일 수 있다. 반면 별도 빌드 도구와 산출물
 - 모든 실행에서 전처리 비용이 발생하지만, 같은 입력을 쓰는 instance끼리는 결과를 공유하여 Mesh별 한 번만 계산한다.
 - `.Surface` binary Save/Load, metadata/fingerprint 자료형과 cache round-trip 테스트를 코드에서 제거한다. Runtime preprocessing API만 남긴다.
 - Missing/stale cache 경로는 없어지고, 전처리 입력 오류는 Asset/Scene load 실패로 보고한다.
-- Normal Map 기반 Meso Virtual Height 및 Curvature/Concavity 생성 알고리즘은 별도 설계 대상이며, Runtime 실행 시점만 정한 이 ADR이 해당 알고리즘을 확정하지는 않는다.
+- Normal Map 기반 Virtual Height 및 Curvature/Concavity 생성 알고리즘은 별도 설계 대상이며, Runtime 실행 시점만 정한 이 ADR이 해당 알고리즘을 확정하지는 않는다.
 - 전처리 비용이 허용되지 않을 정도로 커지는지 실제 Asset 집합에서 측정한다. 그 결과가 나오기 전에는 persistent cache를 다시 도입하지 않는다.
 
 ## Related

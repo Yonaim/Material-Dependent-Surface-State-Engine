@@ -10,11 +10,11 @@
 
 | Scene 파일명 | 목적 | Profile |
 |---|---|---|
-| `Demo_Cubes_Wetness.Scene` | 브릭의 Meso 형상 유무와 회전에 따른 중력 투영·물 상태 전파 비교 | `DemoWetness.SRProfile` |
+| `Demo_Cubes_Wetness.Scene` | 브릭의 Virtual Meso Geometry 유무와 회전에 따른 중력 투영·물 상태 전파 비교 | `DemoWetness.SRProfile` |
 | `Demo_Cubes_Mud.Scene` | 같은 큐브에서 Mud의 전달·잔류·실제 적층을 비교 | `DemoMud.SRProfile` |
 | `Demo_Geometry_Wetness_Mud.Scene` | Normal Map 없이 Macro 형상에 따른 전달과 Wetness/Mud 차이 비교 | 두 Profile |
 
-물 데모는 현재 Surface State 기반 Wetness 예시다. 체적 물·자유 표면 유체 시뮬레이션을 의미하지 않는다. Mud 데모의 완료 조건은 Heatmap 변화뿐 아니라 **적층 높이와 렌더 형상의 변화**다. 정적인 Meso Displacement는 Mud 적층의 대체물이 아니다.
+물 데모는 현재 Surface State 기반 Wetness 예시다. 체적 물·자유 표면 유체 시뮬레이션을 의미하지 않는다. Mud 데모의 완료 조건은 Heatmap 변화뿐 아니라 **적층 높이와 렌더 형상의 변화**다. 정적인 Virtual Height Displacement는 Mud 적층의 대체물이 아니다.
 
 ```mermaid
 flowchart TD
@@ -62,7 +62,7 @@ Wetness 씬과 Mesh·머티리얼·위치·회전·크기를 그대로 공유한
 | Bunny Mud | StanfordBunny | Bunny Wetness와 동일 | 없음 | DemoMud / `mud` |
 | Mountain Mud | Mountain | Mountain Wetness와 동일 | 없음 | DemoMud / `mud` |
 
-Wetness 쌍과 Mud 쌍으로 배치한다. 같은 Mesh의 두 복사본은 크기·회전과 축 보정을 동일하게 적용한다. 산은 최대 폭 1.8, 토끼는 최대 폭 1.0으로 균일 scale을 적용한다. Wetness 쌍은 X=-1.25, Mud 쌍은 X=1.25이며 토끼는 Y=-1.15, 산은 Y=1.15에 bounds 중심을 맞춘다. 바닥은 Z=0이다. 두 Mesh의 Y-up 원본 축 보정을 위해 X축 90도 회전만 적용한다. 각 Mesh의 UV와 Simulation UV는 유지한다. Normal Map이 없으므로 Meso height는 기본값 0이고 Macro 위치·법선으로 비교한다. 현재 Mountain OBJ의 Plane에는 face가 없으며 Landscape만 Surface 0으로 로드된다. 두 Map 모두 Surface 0에 Profile을 연결한다. 크기 산정에서도 미참조 Plane 꼭짓점은 제외한다.
+Wetness 쌍과 Mud 쌍으로 배치한다. 같은 Mesh의 두 복사본은 크기·회전과 축 보정을 동일하게 적용한다. 산은 최대 폭 1.8, 토끼는 최대 폭 1.0으로 균일 scale을 적용한다. Wetness 쌍은 X=-1.25, Mud 쌍은 X=1.25이며 토끼는 Y=-1.15, 산은 Y=1.15에 bounds 중심을 맞춘다. 바닥은 Z=0이다. 두 Mesh의 Y-up 원본 축 보정을 위해 X축 90도 회전만 적용한다. 각 Mesh의 UV와 Simulation UV는 유지한다. Normal Map이 없으므로 Virtual Height는 기본값 0이고 Macro 위치·법선으로 비교한다. 현재 Mountain OBJ의 Plane에는 face가 없으며 Landscape만 Surface 0으로 로드된다. 두 Map 모두 Surface 0에 Profile을 연결한다. 크기 산정에서도 미참조 Plane 꼭짓점은 제외한다.
 
 ## Profile 동작과 완료 조건
 

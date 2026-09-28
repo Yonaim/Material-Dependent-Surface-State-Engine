@@ -21,7 +21,10 @@ State / Capacity / Saturation은 [[05_ADR/Simulation/0020-State-Overcapacity-Tra
 | **TransferWeight** | 해당 이웃 관계를 실제 State가 얼마나 잘 통과하는지 보정하는 가중치. | [[04_Architecture/0006_Surface-State-Update\|Solver]] |
 | **ProfileBoundaryWeight** | 서로 다른 SRProfile 영역 사이의 전달 정도를 조절하는 가중치. | [[04_Architecture/0006_Surface-State-Update\|Solver]] |
 | **ContactWeight** | 접촉 중심에서의 거리와 반경·falloff에 따라 texel이 외부 입력을 받는 정도. | [[04_Architecture/0006_Surface-State-Update\|Contact Input]] |
-| **Meso Virtual Height** | Normal Map에서 복원한, Macro Geometry 기준의 가상 미세 높이. | [[04_Architecture/0004_Surface-Geometry\|형상 정보]] |
+| **Macro Geometry** | 실제 Mesh가 만드는 거시 형상. | [[04_Architecture/0004_Surface-Geometry\|형상 정보]] |
+| **Virtual Meso Geometry** | Normal Map 등에서 유도해 Simulation이 사용하는 중간 규모의 가상 표면 형상. | [형상 정보](../04_Architecture/0004_Surface-Geometry.md), [ADR 0018](../05_ADR/Simulation/0018-Normal-Map-Meso-Geometry.md) |
+| **Virtual Height** | Virtual Meso Geometry의 높이 성분. Macro Geometry 기준 상대 높이 (`MesoVirtualHeight`). | [형상 정보](../04_Architecture/0004_Surface-Geometry.md) |
+| **Surface Geometry Field** | Simulation texel별 정적 표면 형상 데이터 집합. | [형상 정보](../04_Architecture/0004_Surface-Geometry.md), [GPU Resource](../06_Development/Notes/0003_Surface-State-GPU-Resource.md) |
 | **Accumulation Height** | State를 기반으로 계산한 동적 적층 높이. Cavity Filling과 Surface Following으로 구성. | [[04_Architecture/0004_Surface-Geometry\|적층]] |
 | **Wetness** | 재질 내부에 흡수된 수분 상태. 기본적으로 형상 적층을 만들지 않는다. | [[../03_Planning/00_Project-Overview/0002_Final_Demo\|데모]] |
 | **SurfaceWater** | 표면 위에 존재하고 흐르거나 고이는 물. `Wetness`와 구별되는 State이며 Profile/Registry에서 정의할 수 있다. 필요한 동작이 별도 물리 layer를 요구하는지는 별도 결정한다. | [[../03_Planning/00_Project-Overview/0002_Final_Demo\|데모]] |

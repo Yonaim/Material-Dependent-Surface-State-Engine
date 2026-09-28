@@ -14,7 +14,7 @@
 - [[05_ADR/Simulation/0015-Geometry-Driven-Transport|0015 — Geometry-Driven Transport]]
 - [[05_ADR/Simulation/0016-Transport-Transfer-Weights|0016 — Transport TransferWeight]]
 - [[05_ADR/Simulation/0017-Solver-Transfer-Cache|0017 — Solver Transfer 캐시]]
-- [[05_ADR/Simulation/0018-Normal-Map-Meso-Geometry|0018 — Normal Map 기반 Meso Geometry]]
+- [[05_ADR/Simulation/0018-Normal-Map-Meso-Geometry|0018 — Normal Map 기반 Virtual Meso Geometry]]
 - [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|0019 — 선택적 CurvatureWeight]]
 - [[05_ADR/Simulation/0020-State-Overcapacity-Transport|0020 — State 초과량 Transport]]
 

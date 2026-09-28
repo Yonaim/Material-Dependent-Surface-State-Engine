@@ -1,6 +1,6 @@
-# ADR 0018 — Normal Map 기반 Meso Geometry 복원
+# ADR 0018 — Normal Map 기반 Virtual Meso Geometry 복원
 
-> **한 줄 요약:** Normal Map의 slope를 texel graph에서 적분해 MesoVirtualHeight와 곡률 파생값을 생성한다.
+> **한 줄 요약:** Normal Map의 slope를 texel graph에서 적분해 Virtual Height와 곡률 파생값을 생성한다.
 
 - 상태: **채택**
 - 날짜: 2026-09-27
@@ -33,7 +33,7 @@ Normal Map의 tangent-space 방향을 `NormalWeight`에 직접 사용하는 것�
 6. 적분 높이의 local tangent 좌표 이웃을 weighted quadratic least-squares fit해 `MesoNormal`, signed mean curvature `H`, Gaussian curvature `K`를 계산한다. `H` 단위는 1/mesh-local length, `K`는 1/(mesh-local length²)다. `ConcavityWeight = clamp(H × mean projected neighbor spacing, 0, 1)`로 두며 양의 H를 bowl/cavity, 평탄·볼록을 0으로 취급한다. Gaussian curvature는 형상 분석 데이터로 보존하되 현재 Decay 입력이나 Transport에 직접 연결하지 않는다.
 7. Curvature와 Concavity는 별도 값이다. `CurvatureWeight`의 기본값은 1.0으로 유지한다. 초기 구현은 고정값만 제공했으며 현재 선택적 비교 모드는 [[0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. NormalWeight가 유효 normal 차이를 반영하므로 곡률 전달 감쇠를 추가하면 형상 방향 효과를 중복할 수 있다. ConcavityWeight만 Decay의 cavity retention에 사용한다.
 8. shared CPU Geometry는 높이, mean/Gaussian curvature, ConcavityWeight와 MesoNormal을 보유한다. GPU GeometryScalar는 네 float(16 B)로 확장되고, MesoNormal은 별도 `vec4` buffer(binding 17)에 저장한다. TransferWeight cache의 NormalWeight 입력은 MesoNormal, fallback으로 TransferNormal, 최종 fallback으로 macro Normal을 사용한다. height는 기존 GeometryDrive 및 DistanceWeight 경로에 즉시 반영된다. DirectionDrive도 기본 ON에서 binding 17의 MesoNormal을 inverse-transpose로 변환해 사용한다. 비교용 UI `DirectionDrive: MesoNormal`을 OFF로 두면 macro normal을 사용한다.
-9. Meso Height 디버그 모드는 부호가 다른 값을 파랑/짙은 중립/주황색으로 표시한다. Meso Offset은 GPU vertex shader가 각 render vertex UV에 대응하는 Simulation texel height를 읽어 macro normal 방향으로 변위한다. 화면상 실제 세부 정도는 render mesh의 정점 밀도에 제한된다. State Heatmap의 relief shading은 MesoNormal을 사용하며 Heatmap 팔레트는 유지한다.
+9. Virtual Height 디버그 모드는 부호가 다른 값을 파랑/짙은 중립/주황색으로 표시한다. Virtual Height Offset은 GPU vertex shader가 각 render vertex UV에 대응하는 Simulation texel 높이를 읽어 Macro normal 방향으로 변위한다. 화면상 실제 세부 정도는 render mesh의 정점 밀도에 제한된다. State Heatmap의 relief shading은 `MesoNormal`을 사용하며 Heatmap 팔레트는 유지한다.
 
 ## Alternatives Considered
 
@@ -47,9 +47,9 @@ Normal Map의 tangent-space 방향을 `NormalWeight`에 직접 사용하는 것�
 
 ## Consequences
 
-- Normal Map/UV/tangent/mesh 변경은 shared Meso Geometry와 instance별 TransferWeight cache를 무효화한다.
+- Normal Map/UV/tangent/mesh 변경은 shared Virtual Meso Geometry와 instance별 TransferWeight cache를 무효화한다.
 - GPU 공유 형상 payload는 texel당 기존 80 B에서 104 B가 된다. 추가분은 mean/Gaussian curvature를 포함한 GeometryScalar 8 B와 MesoNormal 16 B다.
-- Meso displacement는 기존 render mesh 정점을 옮기는 경로다. 조밀한 texel relief를 재현하려면 render mesh도 충분히 세밀하거나 후속 tessellation/displacement 경로가 필요하다.
+- Virtual Height를 이용한 displacement는 기존 render mesh 정점을 옮기는 경로다. 조밀한 texel relief를 재현하려면 render mesh도 충분히 세밀하거나 후속 tessellation/displacement 경로가 필요하다.
 - 매핑 graph의 UV seam 연결이 없거나 normal sample이 불안정한 영역은 높이 0 / fallback normal로 나타난다. 해당 상태와 relative edge residual은 전처리 로그에서 확인한다.
 
 ## Validation Evidence
@@ -58,4 +58,4 @@ Normal Map의 tangent-space 방향을 `NormalWeight`에 직접 사용하는 것�
 - 적분 가능한 ramp / bowl / dome fixture는 높이 기울기와 부호, mean/Gaussian curvature 정의를 확인해야 한다.
 - noisy/non-integrable fixture는 finite least-squares 높이와 상대 edge residual을 확인해야 한다.
 - UV seam neighbor와 disconnected chart는 연결/비연결 기준이 유지되는지 검사해야 한다.
-- GPU pack의 크기·offset, shader vertex/fragment descriptor binding, Meso Height/Offset 및 State Heatmap relief 표시를 확인해야 한다.
+- GPU pack의 크기·offset, shader vertex/fragment descriptor binding, Virtual Height/Offset 및 State Heatmap relief 표시를 확인해야 한다.

@@ -10,7 +10,7 @@
 
 ## 후속 변경 (2026-09-28)
 
-초기 구현은 CurvatureWeight 고정 1.0이었다. 현재는 기본 OFF(1.0)를 유지하며 ON에서 사전 계산 Meso mean curvature 기반 비교용 감쇠를 적용한다. [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]가 현재 결정이며 아래의 고정값 구현 범위는 초기 branch 기록이다.
+초기 구현은 CurvatureWeight 고정 1.0이었다. 현재는 기본 OFF(1.0)를 유지하며 ON에서 Virtual Height로부터 사전 계산한 mean curvature 기반 비교용 감쇠를 적용한다. [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]가 현재 결정이며 아래의 고정값 구현 범위는 초기 branch 기록이다.
 
 ## 구현 현황
 

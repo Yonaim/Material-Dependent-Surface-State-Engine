@@ -89,6 +89,6 @@ Normal Map의 map normal을 `NormalWeight`에 직접 사용한다. Normal Map �
 ```mermaid
 flowchart LR
     Cache[2.1 Transfer Cache] --> NormalMap[2.2 Normal Map NormalWeight]
-    NormalMap --> Meso[2.3 Meso Height / Curvature]
+    NormalMap --> Meso[2.3 Virtual Height / Curvature]
     Meso --> Debug[3 OutgoingFluxScale Debug View]
 ```

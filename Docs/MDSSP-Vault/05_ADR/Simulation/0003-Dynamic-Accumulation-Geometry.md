@@ -13,7 +13,7 @@ Mud·Snow·SurfaceWater처럼 적층이 생기면 보이는 형상뿐 아니라 
 - 적층을 `Cavity Filling + Surface Following`으로 나눈다.
 - `AccumulationHeight`를 계산한다.
 - 적층으로 변한 Height를 기반으로 Normal / Distance / Curvature를 후속 Simulation에 다시 반영한다.
-- Rendering의 최종 높이에도 Meso Virtual Height와 함께 반영한다.
+- Rendering의 최종 높이에도 Virtual Height와 함께 반영한다.
 
 ## Consequences
 

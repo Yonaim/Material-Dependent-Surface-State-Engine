@@ -53,7 +53,7 @@ Apple M1, 한 instance에 6개 Surface × 512×512, 1채널, 모든 texel 유효
 | dry / run 1 | 13.808 | 12.813 | 1.40e-9 |
 | dry / run 2 | 14.106 | 13.262 | 1.40e-9 |
 
-임시 후보 shader로 기존 Surface GPU resource/solver 회귀 검사도 통과했다. Meso height·normal, 비균일 scale, 중력 반전, term toggle, 여러 channel·seam 슬롯·초과량 보존·입력 소비 fixture를 포함하며 validation 오류가 없었다.
+임시 후보 shader로 기존 Surface GPU resource/solver 회귀 검사도 통과했다. Virtual Height·normal, 비균일 scale, 중력 반전, term toggle, 여러 channel·seam 슬롯·초과량 보존·입력 소비 fixture를 포함하며 validation 오류가 없었다.
 
 source 재사용의 개선은 전체 State 조건에서 약 32–38%, dry에서 약 6–7%다. 시간 편차와 위 다른 실험 run을 섞지 않으며 실제 Scene 성능 개선률로 환산하지 않는다. 여러 Profile/channel의 GeometryTransferRate=0 경로에서는 불필요한 source 준비를 피하도록 실제 적용 시 준비 시점을 검토한다.
 
@@ -88,4 +88,4 @@ Pass 2는 계속 이웃 source의 캐시를 gather하고 InputDelta를 소비해
 2. 위 source 공통 geometry 재사용을 검토한다. channel 수가 달라도 source geometry는 동일하며, GeometryDrive가 실제 필요한 경우에 한 번 준비한다.
 3. instance 공통 inverse-transpose와 gravity up 축을 instance 단위로 준비해 invocation당 반복을 줄이는 방안을 검토한다. 비용 절감 폭은 따로 측정한다.
 4. source·channel 공통 포화도·Profile 조회·지원 검사를 이웃 루프 밖으로 옮기는 후보를 검토한다. 여러 channel의 edge 재사용과 pass 간 Decay 재사용은 별도 측정 후 판단한다.
-5. 실제 Scene의 네 instance별 Pass 1/2와 frame별 timestamp를 수집해 Meso 형상·회전·State 분포·시간 편차를 분리한다. 이 기록은 상시 높은 Pass 1의 원인을 분석했으며 순간 급등 원인은 별도 시계열이 필요하다.
+5. 실제 Scene의 네 instance별 Pass 1/2와 frame별 timestamp를 수집해 Virtual Meso Geometry·회전·State 분포·시간 편차를 분리한다. 이 기록은 상시 높은 Pass 1의 원인을 분석했으며 순간 급등 원인은 별도 시계열이 필요하다.

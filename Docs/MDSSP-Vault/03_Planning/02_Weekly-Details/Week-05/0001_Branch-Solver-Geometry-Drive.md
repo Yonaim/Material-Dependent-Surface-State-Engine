@@ -21,7 +21,7 @@
 ## 구현 범위
 
 - SaturationDrive와 GeometryDrive를 같은 `rawFlux` 경로에서 합산한다.
-- 정적 geometry만 사용한다. Meso height 생성 알고리즘이나 동적 geometry 갱신은 다루지 않는다.
+- 정적 geometry만 사용한다. Virtual Height 생성 알고리즘이나 동적 geometry 갱신은 다루지 않는다.
 - Pass 1과 Pass 2가 동일한 공통 GLSL 함수를 사용한다.
 - 비정상 height/방향, 0에 가까운 거리와 invalid neighbor가 flux를 만들지 않게 한다.
 - 최소 GPU fixture를 추가하고 확정한 수식·단위와 일치하는지 검증한다. Architecture와 ADR은 [[05_ADR/Simulation/0015-Geometry-Driven-Transport|ADR 0015]]를 기준으로 삼는다.
@@ -54,6 +54,6 @@
 ## 제외 범위
 
 - Distance/Normal/Curvature/Profile Boundary 가중치 적용
-- Normal Map에서 Meso/Curvature 생성
+- Normal Map에서 Virtual Height/Curvature 생성
 - Accumulation geometry 갱신
 - OutgoingFluxScale UI

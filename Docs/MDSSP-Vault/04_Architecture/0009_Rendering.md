@@ -13,7 +13,7 @@ flowchart LR
   Material --> Pixel["Shaded pixel"]
 
   State --> Accumulation["Accumulation calculation"]
-  Meso["MesoVirtualHeight"] --> FinalHeight["Final Meso Height"]
+  Meso["Virtual Height"] --> FinalHeight["Final Surface Height"]
   Accumulation --> FinalHeight
   Macro["Macro mesh"] --> Surface["Rendered surface"]
   FinalHeight --> GeometryEffect["Normal / Parallax / Displacement"]
@@ -36,7 +36,7 @@ flowchart LR
 
 ## 형상 높이 변화 (Accumulation-based Geometry Height Changes)
 
-최종 Meso Height는 다음과 같다.
+최종 Virtual Height는 다음과 같다.
 
 $$
 FinalMesoHeight

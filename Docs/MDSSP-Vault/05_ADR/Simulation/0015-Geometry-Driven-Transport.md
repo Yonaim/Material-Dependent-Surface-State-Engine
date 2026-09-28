@@ -15,7 +15,7 @@ ADR 0002는 State를 움직이는 구동력(`SaturationDrive`, `GeometryDrive`)�
 ## Decision
 
 - Geometry transport는 `GeometryDrive = HeightDrive × DirectionDrive`로 계산하고, 이후 다른 통과성 계수와 함께 `TransferWeight`를 곱한다.
-- Effective height는 Macro Surface 높이와 `MesoVirtualHeight`의 합이다. 두 항은 instance transform을 반영한 world-length로 비교한다. 현재 Meso field가 0이면 Macro Surface 높이만 반영된다.
+- Effective height는 Macro Surface 높이와 Virtual Height(`MesoVirtualHeight`)의 합이다. 두 항은 instance transform을 반영한 world-length로 비교한다. 현재 Virtual Height가 0이면 Macro Surface 높이만 반영된다.
 - `HeightDrive(i→j) = abs(EffectiveHeight_i - EffectiveHeight_j)`로 정의한다. 인접 texel 간 거리로 나누지 않는다.
 - `DirectionDrive`는 source 면 방향에 투영한 World Gravity와 source→target의 world-space 이웃 방향의 정렬도로 정의한다. 정렬도가 높을수록 해당 방향의 geometry flux가 커지며, 투영 중력과 반대인 이웃 방향은 0으로 처리한다. 투영 중력 길이가 epsilon 이하이면 `DirectionDrive = 0`이다.
 - DirectionDrive의 source normal은 기본적으로 복원 MesoNormal을 사용하며, GPU pack에서 sampled TransferNormal, macro normal 순으로 fallback한다. 비교용 UI `DirectionDrive: MesoNormal`을 OFF로 두면 macro mesh normal을 선택한다. 이 선택은 HeightDrive나 TransferWeight의 NormalWeight 입력을 변경하지 않는다. GeometryDrive가 OFF이면 선택 효과도 없다.
@@ -43,7 +43,7 @@ ADR 0002는 State를 움직이는 구동력(`SaturationDrive`, `GeometryDrive`)�
 - GeometryDrive는 높이차의 크기를 구하고 DirectionDrive는 중력에 맞는 이웃 방향을 고른다. 둘은 동일한 방향 판정을 반복하지 않는다.
 - `DistanceWeight`는 거리 감쇠를 별도로 표현하되 구체 함수와 기준 거리 선택을 정해야 한다.
 - instance 회전과 스케일은 각 Solver invocation에 전달되는 per-instance Model Matrix로 반영한다. Solver는 mesh-local 위치를 world space로 변환하고, normal은 inverse-transpose normal transform으로 변환한다. World Gravity도 push constant로 함께 전달한다.
-- normal texture에서 Meso fields를 생성하는 알고리즘과 dynamic accumulation geometry는 이 ADR의 범위가 아니다.
+- normal texture에서 Virtual Meso Geometry의 height/normal/curvature fields를 생성하는 알고리즘과 dynamic accumulation geometry는 이 ADR의 범위가 아니다.
 - outgoing flux 보유량 제한과 Capacity clamp는 기존 2-Pass 규칙을 그대로 따른다.
 
 ## Related

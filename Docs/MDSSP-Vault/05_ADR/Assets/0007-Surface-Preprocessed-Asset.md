@@ -18,7 +18,7 @@ Mesh, Normal Map과 Profile 배치에서 생성되는 정적 데이터를 재사
 - 전처리 결과의 확장자는 `.Surface`로 표기한다.
 - `.Surface`는 사용자가 직접 편집하는 파일이 아니라, Mesh 및 관련 입력에서 생성하는 정적 바이너리 에셋이자 전처리 캐시다.
 - 전처리 입력은 Mesh, Normal Map, Profile Distribution이며, 출력에는 Shared Surface Geometry Data와 texel별 `SurfaceProfileMap`을 포함한다.
-- Shared Surface Geometry Data는 유효성, Normal, Meso Virtual Height, Curvature/Concavity 등 정적 Geometry 값과 Neighbor index, Height Difference, Boundary, UV seam 연결 등 texel 관계 정보를 담는다. 이웃 Distance는 저장하지 않으며 Position 차이에서 계산한다.
+- Shared Surface Geometry Data는 유효성, Normal, Virtual Height, Curvature/Concavity 등 정적 Geometry 값과 Neighbor index, Height Difference, Boundary, UV seam 연결 등 texel 관계 정보를 담는다. 이웃 Distance는 저장하지 않으며 Position 차이에서 계산한다.
 - `SurfaceProfileMap`은 UV Texel을 `ProfileIndex`에 매핑한다. Render Material과 SRProfile은 별개이며, 동일 Render Material 영역 안에서도 texel별 Profile을 지정할 수 있다.
 - State, Overflow, `inputFactor`, `transferRate`, `decayRate` 등의 Profile 반응 파라미터는 `.Surface`에 저장하지 않는다. 반응 파라미터는 `.SRProfile`, 동적 State/Overflow는 `TSurfaceInstanceStateData`가 소유한다.
 - `.Surface` metadata에는 입력 변경과 캐시 유효성을 판별할 정보로 Mesh hash, Normal Map hash, Profile Map hash, grid resolution, UV set, preprocess version 등을 둔다.
@@ -60,7 +60,7 @@ Mesh, Normal Map과 Profile 배치에서 생성되는 정적 데이터를 재사
 - `.Surface`의 입력 fingerprint와 preprocess version 변경 시 캐시를 재생성해야 한다.
 - cache path는 Mesh Asset을 기준으로 안정적으로 유지되며, stale/missing 결과는 해당 파일을 재생성해 대체한다.
 - Profile Distribution의 authoring 형식 및 전처리 파이프라인 연결은 미완료다.
-- Normal Map 기반 Meso Virtual Height 및 Curvature/Concavity 생성 알고리즘은 미완료다. Cache miss 자동 재생성 orchestration도 미구현이다.
+- Normal Map 기반 Virtual Height 및 Curvature/Concavity 생성 알고리즘은 미완료다. Cache miss 자동 재생성 orchestration도 미구현이다.
 - Profile Distribution 형식/loader 및 cache miss/stale의 Mapping→Build→Save 자동 연결은 `feat/shared-geometry-build`에 배정한다. Normal Map 기반 형상 복원은 Week-08 experiment에서 후보와 품질·비용을 검증한 뒤 별도 구현 branch를 결정한다.
 - State/Overflow의 크기와 갱신은 `.Surface`의 정적 캐시 수명에 영향을 받지 않는다.
 

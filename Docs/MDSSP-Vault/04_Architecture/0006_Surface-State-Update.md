@@ -221,7 +221,7 @@ $$
 |---|---|---|
 | `DistanceWeight` | 주변 이웃보다 먼 연결의 전달량을 낮춤 | 정규화된 world-space Surface Distance |
 | `NormalWeight` | 이웃 texel의 유효 표면 방향 차이가 클수록 전달량을 낮춤 | 복원된 MesoNormal을 우선 사용하고 sampled TransferNormal, geometric normal 순으로 fallback한 뒤 instance inverse-transpose를 적용한 world normal 내적 |
-| `CurvatureWeight` | 기본 OFF는 고정 `1.0`; ON은 사전 계산된 Meso mean curvature 크기로 감쇠 | 대칭 mesh-local 간선 가중치, [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight\|ADR 0019]] |
+| `CurvatureWeight` | 기본 OFF는 고정 `1.0`; ON은 Virtual Height에서 유도한 mean curvature 크기로 감쇠 | 대칭 mesh-local 간선 가중치, [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight\|ADR 0019]] |
 | `ProfileBoundaryWeight` | 같은 Profile 사이 `1.0`, 다른 Profile 사이 고정 `0.5`로 전달량을 낮춤 | SRProfile ID 비교 |
 
 현재 `DistanceWeight`는 각 endpoint의 평균 유효 이웃 간격을 `dRef`로 삼는다. `dRef(i,j) = 0.5 × (meanDistance_i + meanDistance_j)`이고, `d(i,j)`는 두 texel의 world-space 거리다.

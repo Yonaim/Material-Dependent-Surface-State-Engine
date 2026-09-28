@@ -17,7 +17,7 @@ C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** �
 | 엔진 기반 | Vulkan 초기화, 렌더러, Scene 및 Asset 로딩 | Static Mesh와 Material을 표시하는 실행 가능한 기반 |
 | 표면 데이터 | Simulation Mapping, Shared Geometry, Instance State, SRProfile 연결 | Solver에서 사용할 수 있는 texel 단위 데이터 |
 | 상태 갱신 | discrete Input, `DeltaTime` 기반 Transport / Decay, source 보유량 제한·초과량 보존 | 재현 가능한 기본 Surface State Solver |
-| 형상 반영 | Macro / Meso 형상과 Accumulation Height | 형상에 반응하는 이동과 적층 표현 |
+| 형상 반영 | Macro Geometry, Virtual Meso Geometry와 Accumulation Height | 형상에 반응하는 이동과 적층 표현 |
 | 렌더링 | 상태별 외관 변화와 적층 결과 표시 | Wetness / Mud / Heat / Burn 데모 및 평가 |
 | 평가·보고 | 성능 측정, 실패 사례 분석, 저장소·보고서·발표 정리 | 수치와 재현 절차를 포함한 최종 결과물 |
 

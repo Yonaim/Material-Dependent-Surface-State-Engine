@@ -18,7 +18,7 @@
 
 각 compute invocation은 한 texel을 처리한다. GeometryDrive가 켜져 있으면 이웃 간선과 State channel을 계산하기 전에 `initializeGeometryDrive()`가 두 값을 준비한다. `SolverUp = normalize(-GravityWorld)`는 월드 중력에 반대인 높이 축이고, `SolverNormalMatrix = transpose(inverse(mat3(ModelMatrix)))`는 mesh-local normal을 world normal로 바꾸는 행렬이다. 두 값은 해당 invocation의 모든 이웃 간선과 channel에서 재사용한다. 따라서 역행렬과 중력 정규화는 간선·channel마다 반복하지 않지만, 여전히 dispatch의 각 invocation에서 계산한다. Pass 1은 valid texel에서 계산을 시작할 때 준비하고, Pass 2는 실제 incoming flux를 처음 평가할 때까지 준비를 미룬다.
 
-방향성 flux를 계산할 source texel `i`와 target texel `j`마다 Meso 높이를 반영한 mesh-local endpoint를 만든다. 여기서 높이 displacement는 현재 구현처럼 각 endpoint의 macro normal 방향으로 적용된다.
+방향성 flux를 계산할 source texel `i`와 target texel `j`마다 Virtual Height를 반영한 mesh-local endpoint를 만든다. 여기서 높이 displacement는 현재 구현처럼 각 endpoint의 macro normal 방향으로 적용된다.
 
 ```text
 Q_i = Position_i + MacroNormal_i × MesoVirtualHeight_i
@@ -37,9 +37,9 @@ GeometryDrive  = HeightDrive × DirectionDrive
 
 `HeightDrive`는 endpoint 사이의 월드 높이 차이 크기를 나타낸다. `abs`를 쓰므로 위·아래 부호는 여기서 구분하지 않는다. `DirectionDrive`가 source 표면에 투영한 중력이 이웃 방향과 얼마나 같은지를 평가하고, 반대 방향의 이동은 0으로 제한한다.
 
-`GravityOnSurface_i`는 `GravityWorld`에서 source normal 방향 성분을 제거해 구한다. 기본 경로의 source normal은 이미 업로드된 `MesoNormal`(set 0, binding 17)을 mesh-local에서 읽어 `SolverNormalMatrix`로 world space에 변환한 값이다. 이 리소스는 tangent-space Normal Map의 원시 픽셀이 아니다. 전처리가 Macro normal로 tangent frame을 세우고 Meso height의 국소 기울기를 결합해 만든 mesh-local 복원 normal이므로 Macro 방향이 포함된다. 따라서 DirectionDrive가 macro normal 대신 이를 쓰는 것은 Macro 정보를 버리는 것이 아니라, Meso 요철까지 반영한 표면 방향을 쓰는 것이다. 비교용 `DirectionDrive: MesoNormal` 설정을 끄면 macro normal을 사용한다. 유효 복원 normal이 없는 texel은 pack 단계에서 sampled `TransferNormal`, macro normal 순으로 대체한다.
+`GravityOnSurface_i`는 `GravityWorld`에서 source normal 방향 성분을 제거해 구한다. 기본 경로의 source normal은 이미 업로드된 `MesoNormal`(set 0, binding 17)을 mesh-local에서 읽어 `SolverNormalMatrix`로 world space에 변환한 값이다. 이 리소스는 tangent-space Normal Map의 원시 픽셀이 아니다. 전처리가 Macro normal로 tangent frame을 세우고 Virtual Height의 국소 기울기를 결합해 만든 mesh-local 복원 normal이므로 Macro 방향이 포함된다. 따라서 DirectionDrive가 macro normal 대신 이를 쓰면 Virtual Meso Geometry의 요철까지 반영한 표면 방향을 사용한다. 비교용 `DirectionDrive: MesoNormal` 설정을 끄면 macro normal을 사용한다. 유효 복원 normal이 없는 texel은 pack 단계에서 sampled `TransferNormal`, macro normal 순으로 대체한다.
 
-요약하면 높이 비교와 이웃 이동 방향은 같은 displaced endpoint 차이에서 나오며, 표면에서 중력이 향하는 방향은 source의 복원 Meso normal로 결정한다. 위치/방향 벡터에는 model transform의 선형 부분을 쓰고, normal에는 inverse-transpose를 쓰는 이유가 서로 다르다.
+요약하면 높이 비교와 이웃 이동 방향은 같은 displaced endpoint 차이에서 나오며, 표면에서 중력이 향하는 방향은 source의 복원 normal로 결정한다. 위치/방향 벡터에는 model transform의 선형 부분을 쓰고, normal에는 inverse-transpose를 쓰는 이유가 서로 다르다.
 
 여러 채널의 GeometryDrive를 간선 배열에 준비해 재사용하는 후보는 4채널의 일부 표본에서 개선됐으나 1채널에서 안정적인 이득을 확인하지 못해 최종 변경에서 제외했다.
 
@@ -61,14 +61,14 @@ Capacity 1, SaturationTransferRate 0.5, GeometryTransferRate 1, DecayRate 0.01, 
 ## 구현 상태 점검
 
 - Next State의 event Input, saturation/geometry transport, alpha 보유량 제한, Decay/ConcavityRetention, Capacity clamp, InputDelta 소비 및 A/B swap은 구현되어 있다.
-- HeightDrive와 DirectionDrive는 같은 공통 함수로 양 pass에 적용한다. Meso height와 MesoNormal은 연결되어 있으며 non-uniform instance scale GPU 검증을 추가했다.
-- Meso mean/Gaussian curvature는 전처리된다. 독립 Macro curvature field는 없으며 Gaussian curvature는 Transport에 연결하지 않는다.
+- HeightDrive와 DirectionDrive는 같은 공통 함수로 양 pass에 적용한다. Virtual Height와 MesoNormal은 연결되어 있으며 non-uniform instance scale GPU 검증을 추가했다.
+- Virtual Height에서 유도한 mean/Gaussian curvature는 전처리된다. 독립 Macro curvature field는 없으며 Gaussian curvature는 Transport에 연결하지 않는다.
 - AccumulationFactor/CavityFillFactor는 Profile/GPU record에 존재하지만 SurfaceAccumulation.comp와 SurfaceGeometryUpdate가 placeholder다. Cavity Filling, Surface Following, AccumulationHeight, 적층 후 normal/distance/curvature 갱신은 미구현이다.
-- Curvature UI는 OFF=1.0, ON=사전 계산 Meso mean curvature 기반 cache 감쇠이며 기본 OFF다. 물리 응집·응결 구현의 완성을 뜻하지 않는다.
+- Curvature UI는 OFF=1.0, ON=Virtual Height에서 유도한 mean curvature 기반 cache 감쇠이며 기본 OFF다. 물리 응집·응결 구현의 완성을 뜻하지 않는다.
 
 ## 검증
 
-CMake 전체 build 및 CTest의 5개 테스트를 실행한다. 새 검증은 Meso height/normal 기반 GPU 전달과 비균일 scale, mass conservation, curvature 기본값·평탄·오목/볼록 대칭·scale 독립성·NaN 차단을 포함한다. 실제 UI 클릭과 실제 Scene FPS는 이 실험에서 검증하지 않았다.
+CMake 전체 build 및 CTest의 5개 테스트를 실행한다. 새 검증은 Virtual Height/normal 기반 GPU 전달과 비균일 scale, mass conservation, curvature 기본값·평탄·오목/볼록 대칭·scale 독립성·NaN 차단을 포함한다. 실제 UI 클릭과 실제 Scene FPS는 이 실험에서 검증하지 않았다.
 
 ## 30fps 데모 후속 점검
 

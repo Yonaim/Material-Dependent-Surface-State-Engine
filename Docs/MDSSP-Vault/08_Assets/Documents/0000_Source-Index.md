@@ -11,7 +11,7 @@
 | [[08_Assets/Documents/0003_Asset-Structure.pdf\|Asset-Structure.pdf]] | OBJ / MTL / scene / srprofile 직렬화와 연결 |
 | [[08_Assets/Documents/0004_Contact-Input.pdf\|Contact-Input.pdf]] | `TSurfaceContactInput` 구조 |
 | [[08_Assets/Documents/0005_Next-State-Calculation.pdf\|Next-State-Calculation.pdf]] | Input / Transport / Decay, ContactWeight, Flux, TransferWeight, 2-Pass |
-| [[08_Assets/Documents/0006_Geometry-Integration.pdf\|Geometry-Integration.pdf]] | Macro / Meso Geometry, Normal Map, Accumulation Height, Rendering |
+| [[08_Assets/Documents/0006_Geometry-Integration.pdf\|Geometry-Integration.pdf]] | Macro / Virtual Meso Geometry, Normal Map, Accumulation Height, Rendering |
 | [[08_Assets/Documents/0007_Target-Demos.pdf\|Target-Demos.pdf]] | 목표 데모 네 가지 |
 | [[08_Assets/Documents/0008_2026-09-11-Meeting.pdf\|2026-09-11-Meeting.pdf]] | 9월 11일 면담 기록(참고용) |
 

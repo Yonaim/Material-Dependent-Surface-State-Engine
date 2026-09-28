@@ -84,7 +84,7 @@ Wetness State 변화가 Demo Scene의 재질에 시각적으로 나타나며, St
 ## 제외 범위
 
 - `SurfaceWater` 전용 자유 표면수 모델이나 물리 layer
-- Normal Map을 이용한 Meso geometry 생성
+- Normal Map을 이용한 Virtual Meso Geometry 생성
 - Accumulation 기반 dynamic geometry/displacement
 - Solver geometry flux 수식 변경
 - 별도 Collider/Contact API 변경

@@ -10,7 +10,7 @@
 | [[03_Planning/01_Weekly-Overview/Week-02\|2주차]] | 시뮬레이션 설계 | 데이터 구조, 갱신식, Solver 흐름과 적층 규칙 정리 |
 | [[03_Planning/01_Weekly-Overview/Week-03\|3주차]] | 렌더링 기반 | Static Mesh, Material, Asset을 표시하는 Vulkan 엔진 기반 |
 | [[03_Planning/01_Weekly-Overview/Week-04\|4주차]] | Surface 데이터 구현 | UV mapping부터 Geometry·GPU·입력까지 최소 검증 경로 |
-| [[03_Planning/01_Weekly-Overview/Week-05\|5주차]] | Solver 가중치와 형상 입력 | Transport / Decay / Capacity, Normal Map 방향 가중치와 Meso geometry 파생값 검증 |
+| [[03_Planning/01_Weekly-Overview/Week-05\|5주차]] | Solver 가중치와 형상 입력 | Transport / Decay / Capacity, Normal Map 방향 가중치와 Virtual Meso Geometry 파생값 검증 |
 | [[03_Planning/01_Weekly-Overview/Week-06\|6주차]] | Wetness | 수분 상태의 재질별 반응과 외관 표현 |
 | [[03_Planning/01_Weekly-Overview/Week-07\|7주차]] | Mud 및 중간 Demo | Mud 적층을 Wetness와 통합한 중간 결과 |
 | [[03_Planning/01_Weekly-Overview/Week-08\|8주차]] | 중간 결과 검토 | 품질·성능·문제 분석 및 후반 범위 조정 |

@@ -176,14 +176,14 @@ File read
 | 전처리 입력 | 결과에 미치는 영향 | Runtime 처리 |
 |---|---|---|
 | Mesh (`.obj`) | UV rasterization, Surface/Triangle 관계, topology와 seam 이웃 | load 시 Mapping/Geometry build |
-| Normal Map | 정적 Normal 및 Meso 형상 파생값 | 입력이 있으면 전처리 때 사용 |
+| Normal Map | 정적 Normal 및 Virtual Meso Geometry 파생값 | 입력이 있으면 전처리 때 사용 |
 | `.Scene` Profile Map reference | object가 사용할 Profile 배치 입력 선택 | Scene load 시 상대 경로 해석 |
 | Profile Distribution | Texel별 Profile 배치 | 파싱 후 Profile map 구성 |
 | Grid / preprocess 설정 | Texel 해상도와 생성 결과 | 현재 설정으로 Runtime 결과 생성 |
 
 전처리 결과의 파일 경로, source hash, cache version 및 stale 판정은 두지 않는다. Runtime 세션 안에서는 같은 입력 조합의 결과를 재사용해 Mesh별 중복 전처리를 방지한다. Runtime 중 입력 Asset이 교체되면 대응하는 메모리 결과를 다시 만든다.
 
-`TSceneLoader`가 `.Scene`의 상대 경로를 해석해 OBJ를 로드하고, `surfaceProfileMap`이 있으면 명시한 조합으로 `TAssetManager::LoadSurfaceData`를 호출한다. AssetManager는 정규화한 Mesh/Map 경로 쌍을 cache key로 사용한다. Builder는 Simulation Mapping, shared geometry와 texel Profile map을 생성한다. 검증 실패는 잘못된 Asset/입력 식별 정보와 함께 load 오류로 보고한다. 생성된 결과는 Runtime Asset/resource로 등록해 instance들이 참조한다. persistent `SurfaceCache::Save/Load`, metadata fingerprint 및 cache miss/stale 분기는 목표 흐름에 포함하지 않는다. Normal Map 기반 Meso/Curvature algorithm은 Week-08 experiment에서 후보를 비교한 뒤 별도 구현 범위를 결정한다.
+`TSceneLoader`가 `.Scene`의 상대 경로를 해석해 OBJ를 로드하고, `surfaceProfileMap`이 있으면 명시한 조합으로 `TAssetManager::LoadSurfaceData`를 호출한다. AssetManager는 정규화한 Mesh/Map 경로 쌍을 cache key로 사용한다. Builder는 Simulation Mapping, shared geometry와 texel Profile map을 생성한다. 검증 실패는 잘못된 Asset/입력 식별 정보와 함께 load 오류로 보고한다. 생성된 결과는 Runtime Asset/resource로 등록해 instance들이 참조한다. persistent `SurfaceCache::Save/Load`, metadata fingerprint 및 cache miss/stale 분기는 목표 흐름에 포함하지 않는다. Normal Map 기반 Virtual Meso Geometry/Curvature algorithm은 Week-08 experiment에서 후보를 비교한 뒤 별도 구현 범위를 결정한다.
 
 ## 6. Mesh 원본 topology 보존
 

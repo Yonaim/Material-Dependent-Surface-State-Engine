@@ -26,9 +26,9 @@
 
 4주차에는 State A/B, OutgoingFluxScale, InputDelta GPU 리소스, 2-Pass compute dispatch와 barrier, ping-pong, Contact 입력 연결이 구현되었다. 따라서 이번 주에는 리소스 생성·descriptor 기본 구성·2-Pass 구조 자체를 다시 만들지 않는다.
 
-현재 구현은 GeometryDrive, 네 가지 TransferWeight, TransferWeight 캐시, Normal Map 기반 `NormalWeight`, Normal Map에서 복원한 Meso 높이와 Curvature/Concavity 파생값을 포함한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 TransferWeight와 구성 가중치 히트맵이 있다. Branch 3 `feat/solver-debug-tools`에서 `OutgoingFluxScale` 뷰, Solver 제어·통계 UI 구현도 완료했다. Branch 2.1의 캐시 동등성·성능 검증과 Branch 2.3의 fixture/런타임 시각 검증은 아직 남아 있으며, 전체 통합 검증은 Branch 6에서 수행한다.
+현재 구현은 GeometryDrive, 네 가지 TransferWeight, TransferWeight 캐시, Normal Map 기반 `NormalWeight`, Normal Map에서 복원한 Virtual Height와 Curvature/Concavity 파생값을 포함한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 TransferWeight와 구성 가중치 히트맵이 있다. Branch 3 `feat/solver-debug-tools`에서 `OutgoingFluxScale` 뷰, Solver 제어·통계 UI 구현도 완료했다. Branch 2.1의 캐시 동등성·성능 검증과 Branch 2.3의 fixture/런타임 시각 검증은 아직 남아 있으며, 전체 통합 검증은 Branch 6에서 수행한다.
 
-이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Meso height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry와 State transition은 제외한다. Branch 2.3은 [[05_ADR/Simulation/0018-Normal-Map-Meso-Geometry|ADR 0018]]에서 graph least-squares 적분, scale, chart boundary, fallback과 곡률 정의를 결정했다. fixture 및 데모 검증이 남아 있다.
+이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Virtual Height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry와 State transition은 제외한다. Branch 2.3은 [[05_ADR/Simulation/0018-Normal-Map-Meso-Geometry|ADR 0018]]에서 graph least-squares 적분, scale, chart boundary, fallback과 곡률 정의를 결정했다. fixture 및 데모 검증이 남아 있다.
 
 ## 데이터 흐름
 
@@ -127,7 +127,7 @@ GPU 테스트는 기존 `SurfaceGPUResourceTests` 경로를 확장한다. 화면
 
 ## 브랜치 순서와 상세 문서
 
-기본적으로 각 브랜치는 앞 브랜치의 결과를 기준으로 생성한다. 성능 Branch 2.1은 `perf/solver-transfer-cache`에서 완료됐다. Normal Map 직접 방향 반영 Branch 2.2는 캐시 구현 뒤 생성하고, Meso geometry 복원 Branch 2.3은 Branch 2.2 결과를 기준으로 생성한다. 동시에 여러 브랜치를 미리 파지 않는다. 각 단계는 빌드 가능한 상태를 유지하며, 해당 단계의 테스트를 함께 추가한다.
+기본적으로 각 브랜치는 앞 브랜치의 결과를 기준으로 생성한다. 성능 Branch 2.1은 `perf/solver-transfer-cache`에서 완료됐다. Normal Map 직접 방향 반영 Branch 2.2는 캐시 구현 뒤 생성하고, Virtual Meso Geometry 복원 Branch 2.3은 Branch 2.2 결과를 기준으로 생성한다. 동시에 여러 브랜치를 미리 파지 않는다. 각 단계는 빌드 가능한 상태를 유지하며, 해당 단계의 테스트를 함께 추가한다.
 
 ```mermaid
 flowchart LR
@@ -135,7 +135,7 @@ flowchart LR
     B1 --> B2[2 Transfer Weights]
     B2 --> B21[2.1 Solver Transfer Cache]
     B21 --> B22[2.2 Normal Map NormalWeight]
-    B22 --> B23[2.3 Meso Height / Curvature]
+    B22 --> B23[2.3 Virtual Height / Curvature]
     B23 --> B3[3 Solver Debug Tools]
     B3 --> B6[6 Integrated Validation]
 ```
@@ -160,7 +160,7 @@ Branch 1의 HeightDrive/DirectionDrive 분리, height 차이에서 neighbor dist
 - [[0002_00_Branch-Solver-Transfer-Weights|2. Solver Transfer Weights]]
 - [[03_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|2.1. Solver Transfer Cache]]
 - [[03_Planning/02_Weekly-Details/Week-05/0002_02_Branch-Solver-Normal-Map-Weights|2.2. Solver Normal Map Weights]]
-- [[03_Planning/02_Weekly-Details/Week-05/0002_03_Branch-Solver-Meso-Geometry|2.3. Solver Meso Geometry from Normal Map]]
+- [[03_Planning/02_Weekly-Details/Week-05/0002_03_Branch-Solver-Meso-Geometry|2.3. Solver Virtual Meso Geometry from Normal Map]]
 - [[03_Planning/02_Weekly-Details/Week-05/0003_Branch-Solver-Debug-Tools|3. Solver Debug Tools (기존 Branch 3·4·5 통합)]]
 - [[03_Planning/02_Weekly-Details/Week-05/0006_Branch-Solver-Week5-Validation|6. Solver 통합 검증]]
 

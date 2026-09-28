@@ -15,7 +15,7 @@ flowchart LR
   Scene["Scene Mesh instances"] --> Manager["TSurfaceGPUResourceManager"]
   RuntimeHandle["Runtime Surface Data handle"] --> SharedResources
   Manager --> SharedResources["Shared resources\nkeyed by runtime handle"]
-  SharedResources --> Geometry["Geometry buffers\nIndices, Position, Macro/Meso normals, Height/Curvature, Neighbors"]
+  SharedResources --> Geometry["Geometry buffers\nIndices, Position, Macro and Virtual Meso Geometry normals, Virtual Height/Curvature, Neighbors"]
   SharedResources --> DebugAux["Debug auxiliary buffers\nSurfaceRanges, TexelChartIndices"]
   SharedResources --> Profile["Profile buffers\nParameters, Supported"]
   Scene --> PerInstance["one resource set per simulated instance"]
@@ -57,7 +57,7 @@ Shared Geometry는 Mesh와 Profile Distribution 조합에 대해 전처리한 te
 |---|---|---:|---:|---:|---|
 | `SurfaceRanges` | `uvec4` (`firstTexel`, `width`, `height`, `texelCount`) | `surfaceCount` | 16 B | `16 × surfaceCount` B | Fragment의 Surface UV를 해당 grid의 local texel index로 변환 |
 | `TexelChartIndices` | `uint32` | `texelCount` | 4 B | `4 × texelCount` B | Neighbor가 다른 UV chart를 가로지르는지 seam view에서 판별 |
-GeometryScalar는 ADR 0018에서 mean/Gaussian curvature를 추가하며 texel당 16 B가 되었다. MesoNormal 별도 buffer를 포함한 역방향 슬롯 buffer를 포함한 공유 geometry payload는 texel당 108 B다. 현재 Meso normal은 CPU shared geometry 전처리에서 만들며, GPU normal buffer는 렌더링과 geometry/cache 소비자가 같은 결과를 읽도록 보관한다.
+GeometryScalar는 ADR 0018에서 mean/Gaussian curvature를 추가하며 texel당 16 B가 되었다. `MesoNormal` 별도 buffer를 포함한 역방향 슬롯 buffer를 포함한 공유 geometry payload는 texel당 108 B다. 현재 복원 normal은 CPU shared geometry 전처리에서 만들며, GPU normal buffer는 렌더링과 geometry/cache 소비자가 같은 결과를 읽도록 보관한다.
 
 각 배열의 원소 번호는 Geometry 안의 local texel index와 일치한다. `TexelSurfaceIndex`의 `InvalidSurfaceID`는 UV 격자에 포함되지만 Mesh 표면에 대응하지 않는 texel을 표시하므로 별도 ValidMask는 필요하지 않다. Position과 Normal은 vec4로 저장하고 xyz를 사용한다. NeighborIndex의 8개 칸에는 기본 격자 이웃과 UV seam 너머의 topology 이웃이 함께 들어간다. 이웃 거리와 방향은 별도로 저장하지 않고 두 texel의 Position 차이에서 계산한다.
 

@@ -39,7 +39,7 @@ ADR 0017의 초기 캐시는 TransferWeight와 RawOutgoing 합계만 보관했�
 
 ## Validation
 
-전체 build와 CTest 5개가 통과했다. Vulkan validation 및 synchronization validation을 요청한 verbose CTest 로그에서 VUID·SYNC validation 오류가 없었다. GPU fixture는 다른 역방향 슬롯 번호, UV chart·Surface range 간 연결, 여러 Registry channel, unsupported/invalid 항목, poisoned scratch 전체 덮어쓰기, 서로 다른 Capacity/Profile, source alpha·Decay·초과량 보존·InputDelta 소비를 포함한다. zero timestep과 Profile rate 편집 후 연속 AB/BA step을 같은 command submission에 기록해 오래된 RawFlux가 재사용되지 않는지 확인한다. 기존 Meso height·normal, 비균일 scale, 중력 반전 및 term toggle fixture도 통과했다. 기본 `Demo_Cubes_Wetness.Scene`을 8프레임 실행해 정상 종료(exit 0)와 4개 instance·2개 공유 data variant 생성을 확인했다. 앱 로그에는 Vulkan validation error가 없으며 작은 buffer의 개별 allocation에 대한 기존 성능 권고 warning은 남아 있다.
+전체 build와 CTest 5개가 통과했다. Vulkan validation 및 synchronization validation을 요청한 verbose CTest 로그에서 VUID·SYNC validation 오류가 없었다. GPU fixture는 다른 역방향 슬롯 번호, UV chart·Surface range 간 연결, 여러 Registry channel, unsupported/invalid 항목, poisoned scratch 전체 덮어쓰기, 서로 다른 Capacity/Profile, source alpha·Decay·초과량 보존·InputDelta 소비를 포함한다. zero timestep과 Profile rate 편집 후 연속 AB/BA step을 같은 command submission에 기록해 오래된 RawFlux가 재사용되지 않는지 확인한다. 기존 Virtual Height·normal, 비균일 scale, 중력 반전 및 term toggle fixture도 통과했다. 기본 `Demo_Cubes_Wetness.Scene`을 8프레임 실행해 정상 종료(exit 0)와 4개 instance·2개 공유 data variant 생성을 확인했다. 앱 로그에는 Vulkan validation error가 없으며 작은 buffer의 개별 allocation에 대한 기존 성능 권고 warning은 남아 있다.
 
 ## 합성 GPU 비교
 

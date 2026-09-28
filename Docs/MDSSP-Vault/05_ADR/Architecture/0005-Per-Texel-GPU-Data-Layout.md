@@ -14,7 +14,7 @@
 ## Decision
 
 > [!warning] 대체 범위
-> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, dense `InputDelta` 재사용 결정은 유지한다. 두 float `GeometryScalar`는 Normal Map Meso Geometry를 추가한 [[0018-Normal-Map-Meso-Geometry|ADR 0018]]에 의해 네 float로 확장되었다. State channel은 Registry 크기에 따라 동적으로 배치한다. Texel별 Profile index map도 dense로 둔다 ([[0009-Texel-Profile-Index-Map]]). 물리적인 State/Profile buffer layout은 [[0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]]에서 결정했다.
+> `ValidMask` sentinel, GPU `NeighborDistanceBuffer` 제거, dense `InputDelta` 재사용 결정은 유지한다. 두 float `GeometryScalar`는 Normal Map 기반 Virtual Meso Geometry 값을 추가한 [[0018-Normal-Map-Meso-Geometry|ADR 0018]]에 의해 네 float로 확장되었다. State channel은 Registry 크기에 따라 동적으로 배치한다. Texel별 Profile index map도 dense로 둔다 ([[0009-Texel-Profile-Index-Map]]). 물리적인 State/Profile buffer layout은 [[0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]]에서 결정했다.
 
 - GPU의 invalid texel 판정은 별도 `ValidMaskBuffer` 대신 `TexelSurfaceIndexBuffer`의 예약값 `InvalidSurfaceID = 0xFFFFFFFF`로 표현한다. 이 값은 유효 Surface ID로 사용할 수 없다. CPU Runtime mapping은 필요하면 별도 validity 정보를 유지할 수 있다.
 - 이웃 Distance는 CPU Runtime mapping 및 GPU buffer 어느 쪽에도 저장하지 않는다. Solver가 `SurfacePosition[j] - SurfacePosition[i]`에서 거리와 방향을 필요할 때 계산한다. CPU 검증 코드도 필요하면 같은 위치에서 임시 계산한다.

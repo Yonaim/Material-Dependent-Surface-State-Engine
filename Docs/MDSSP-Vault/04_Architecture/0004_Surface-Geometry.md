@@ -1,6 +1,6 @@
 # 형상 정보와 적층
 
-> **한 줄 요약:** Surface Solver가 사용하는 macro·meso 형상, texel 이웃과 누적 형상 데이터의 계약을 정의한다.
+> **한 줄 요약:** Surface Solver가 사용하는 Macro Geometry와 Virtual Meso Geometry, texel 이웃 및 누적 형상 데이터의 계약을 정의한다.
 
 상태: **형상 의미와 반영 범위 확정 / 전처리 알고리즘 일부 검증 필요** · 근거: [[08_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[08_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
 
@@ -25,9 +25,9 @@ flowchart LR
   State["Per-instance State"] --> Amount["State × AccumulationFactor"]
   Profile["CavityFillFactor"] --> Split["Cavity / surface allocation"]
   Amount --> Split
-  Geometry["MesoVirtualHeight"] --> Split
+  Geometry["Virtual Height"] --> Split
   Split --> Accumulation["AccumulationHeight"]
-  Geometry --> Final["FinalMesoHeight"]
+  Geometry --> Final["Virtual Height + Accumulation Height"]
   Accumulation --> Final
   Final --> Render["Rendering\nNormal / Parallax / Displacement"]
   Final -. "dynamic geometry feedback\n(designed path)" .-> Updated["Updated positions / normals"]
@@ -36,16 +36,16 @@ flowchart LR
 
 정적 전처리는 애플리케이션 실행 중 고유 Mesh/Profile Distribution 입력 조합마다 load 시 한 번 수행한다. 매 frame이나 Instance마다 반복하지 않으며, 결과를 `.Surface` 파일이나 persistent cache로 저장하지 않는다. 전처리 시점과 수명은 [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
 
-## Macro / Meso Geometry
+## Macro Geometry and Virtual Meso Geometry
 
-- **Macro Geometry**: 실제 Mesh polygon이 만드는 큰 형상.
-- **Meso Geometry**: Normal / Height detail이 만드는 작은 요철.
+- **Macro Geometry**: 실제 Mesh polygon이 만드는 거시 형상.
+- **Virtual Meso Geometry**: Normal Map 등 세부 표면 정보에서 유도해 Solver가 기하 정보처럼 사용하는 중간 규모 형상 표현. 원본 Mesh Geometry는 바꾸지 않으며, Virtual Height와 유효 Normal·Curvature 등으로 구성해 Simulation 입력으로 사용한다. 렌더링은 별도 경로에서 Virtual Height를 이용해 render vertex를 변위할 수 있다.
 
-Normal Map은 실제 Mesh를 바꾸지는 않지만 Simulation에서는 Meso-Structure로 취급한다.
+따라서 `Meso`는 표면 형상의 스케일을, `Virtual`은 실제 Mesh 변형이 아닌 시뮬레이션용 표현 방식을 나타낸다. 이 문서에서 Virtual Meso Geometry 내부의 개별량은 `Virtual Height`, `Normal`, `Curvature` 등으로 부른다.
 
 | 항목        | 개념식 / 의미                                                         |
 | --------- | ---------------------------------------------------------------- |
-| Normal    | Macro Surface의 tangent basis를 이용해 Meso Normal을 변환하여 최종 Normal 구성 |
+| Normal    | Macro Surface의 tangent basis를 이용해 Virtual Meso Geometry에서 유도한 normal을 변환하여 최종 Normal 구성 |
 | Distance  | `Macro_Surface_Distance × Meso_Path_Stretch`                     |
 | Height    | `Macro_Height + Meso_Virtual_Height`                             |
 | Curvature | `Macro_Curvature + Meso_Curvature`                               |
@@ -67,15 +67,17 @@ flowchart LR
   Normal --> Transfer["TransferWeight NormalWeight cache"]
 ```
 
-## Meso Virtual Height
+## Virtual Height
+
+Virtual Height는 Virtual Meso Geometry의 높이 성분이며, Normal Map에서 복원한 Macro Geometry 기준 상대 높이다. 구현 필드 이름은 `MesoVirtualHeight`다.
 
 `Meso_Virtual_Height = 0`이면 Macro Geometry 그대로다.
 
 | 값     | 의미                                  |
 | ----- | ----------------------------------- |
-| `< 0` | Macro Geometry보다 안쪽으로 들어간 Meso 형상   |
+| `< 0` | Macro Geometry보다 안쪽으로 들어간 Virtual Meso Geometry 형상 |
 | `= 0` | Macro Geometry 그대로                  |
-| `> 0` | Macro Geometry보다 바깥쪽으로 튀어나온 Meso 형상 |
+| `> 0` | Macro Geometry보다 바깥쪽으로 튀어나온 Virtual Meso Geometry 형상 |
 
 각 연결 component에서 첫 유효 texel을 내부 기준점으로 고정해 해의 임의 상수를 없앤 뒤, component 평균 높이를 0으로 이동한다. 서로 끊긴 chart는 같은 기준 높이를 강제로 공유하지 않는다. UV seam은 Mapping neighbor graph가 연결한 경우에만 함께 적분한다. 높이차는 mesh-local 길이 단위이므로 별도 `β_meso` 또는 authoring scale을 곱하지 않는다. 이 선택은 물리적 mesh scale을 사용하므로 Mesh 크기를 바꾸면 복원 높이도 같은 비율로 바뀐다.
 
@@ -91,21 +93,21 @@ Non-integrable 입력에 별도 임계값 기반 거부는 두지 않는다. 최
 |---|---|---|
 | `Normal` | Texel별 | Macro mesh의 기저 표면 방향 |
 | `TransferNormal` | 전처리 중 CPU texel별 | Simulation mapping의 triangle/barycentric 대응으로 Normal Map을 sample하고 tangent-space 방향을 mesh-local로 바꾼 값. TransferWeight cache 생성에 사용하며 geometric `Normal`이 fallback이다. GPU shared-geometry buffer에는 올리지 않는다. |
-| `MesoNormal` | Texel별 CPU/GPU | 적분한 Meso height의 국소 미분으로부터 재구성한 mesh-local 유효 normal. 미분 fit이 불가능하면 sampled `TransferNormal`, 그것도 없으면 macro `Normal`을 사용한다. |
+| `MesoNormal` | Texel별 CPU/GPU | 적분한 Virtual Height의 국소 미분으로부터 재구성한 mesh-local 유효 normal. 미분 fit이 불가능하면 sampled `TransferNormal`, 그것도 없으면 macro `Normal`을 사용한다. |
 | `NeighborIndex` | Texel × 최대 8개 | seam을 포함한 실제 이웃 texel 인덱스 |
 | Neighbor Distance | 저장하지 않음 | Solver가 이웃 Position 간 차이에서 필요할 때 계산 |
-| `Meso_Virtual_Height` | Texel별 | Macro 기준 Normal Map에서 복원한 상대 높이 |
+| `Meso_Virtual_Height` | Texel별 | Virtual Height를 저장하는 구현 필드. Macro Geometry 기준 Normal Map 복원 상대 높이 |
 | `MesoMeanCurvature` | Texel별 CPU/GPU | height field의 국소 이차 fit에서 계산한 signed mean curvature. 단위는 1/mesh-local length다. |
 | `MesoGaussianCurvature` | Texel별 CPU/GPU | height field의 국소 이차 fit에서 계산한 Gaussian curvature. 단위는 1/(mesh-local length²)다. 곡면이 볼록/오목/안장인지 보조적으로 구분한다. |
 | `ConcavityWeight` | Texel별 CPU/GPU | 양의 signed mean curvature에 평균 이웃 간격을 곱해 `[0,1]`로 clamp한 Decay 전용 cavity retention 입력. 평탄/볼록 영역은 0이다. |
 
-현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. Mean/Gaussian curvature는 형상 데이터로 생성한다. Transport의 `CurvatureWeight`는 기본 OFF에서 중립값 `1.0`이며, ON이면 Meso mean curvature 기반 사전 계산 가중치를 사용한다. 식과 제한은 [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. `NormalWeight`가 이웃 유효 normal 차이를 반영하므로 곡률 항을 더하면 굽힘 효과를 중복할 수 있다. GPU storage layout은 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]와 ADR 0018을 따른다.
+현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. Mean/Gaussian curvature는 형상 데이터로 생성한다. Transport의 `CurvatureWeight`는 기본 OFF에서 중립값 `1.0`이며, ON이면 Virtual Height에서 유도한 mean curvature 기반 사전 계산 가중치를 사용한다. 식과 제한은 [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. `NormalWeight`가 이웃 유효 normal 차이를 반영하므로 곡률 항을 더하면 굽힘 효과를 중복할 수 있다. GPU storage layout은 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]와 ADR 0018을 따른다.
 
 ### Geometry Common Parameters
 
 | 항목 | 저장 단위 | 의미 |
 |---|---|---|
-| `Meso_Height_Reference` | Surface당 1개 | 적층량을 실제 높이로 변환할 때 사용하는 Meso 대표 높이 규모 |
+| `Meso_Height_Reference` | Surface당 1개 | 적층량을 실제 높이로 변환할 때 사용하는 Virtual Meso Geometry의 대표 높이 규모 |
 
 ## World Gravity
 
@@ -143,8 +145,8 @@ $$
 Accumulation\_Height = Cavity\_Filling\_Height + Surface\_Following\_Height
 $$
 
-- **Cavity Filling**: Macro Surface 기준 아래쪽의 Meso cavity를 메운다.
-- **Surface Following**: 기존 Meso 요철을 따라 표면 바깥쪽으로 쌓인다.
+- **Cavity Filling**: Macro Surface 기준 아래쪽의 Virtual Meso Geometry cavity를 메운다.
+- **Surface Following**: 기존 Virtual Meso Geometry의 요철을 따라 표면 바깥쪽으로 쌓인다.
 
 적층은 전체 State에서 계산하므로 Capacity 초과량을 별도로 다시 더하지 않는다. `stateCapacity`는 형상 두께의 상한도 아니다. 아래 Accumulation 경로는 설계이며 실제 동적 적층은 미구현이다.
 
@@ -198,7 +200,7 @@ flowchart LR
   Reference["MesoHeightReference"] --> Following
   CavityHeight --> Sum["AccumulationHeight"]
   Following --> Sum
-  Sum --> Final["Final Meso Height"]
+  Sum --> Final["Final Surface Height"]
 ```
 
 ### 최종 높이

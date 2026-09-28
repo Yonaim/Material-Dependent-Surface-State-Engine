@@ -27,7 +27,7 @@ Input, Transport, Decay를 통해 이웃 texel 사이 State가 finite·비음수
 
 ## 산출물
 
-- 재현 가능한 기본 Transport / Decay Solver, Normal Map 기반 표면 방향 가중치와 Meso 형상 파생값.
+- 재현 가능한 기본 Transport / Decay Solver, Normal Map 기반 표면 방향 가중치와 Virtual Meso Geometry 파생값.
 - 상태 전파 테스트 결과와 수식·구현 차이 기록.
 - Solver 동작과 상태를 확인할 수 있는 최소 Debug UI 및 `OutgoingFluxScale` 시각화.
 
