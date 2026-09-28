@@ -230,7 +230,7 @@ $$
 DistanceWeight_{i\rightarrow j} = clamp\left(\frac{dRef(i,j)}{d(i,j)}, 0, 1\right)
 $$
 
-유효 이웃 간격이나 endpoint 거리가 epsilon 이하이거나 유한하지 않으면 가중치를 0으로 둔다. 거리는 MesoVirtualHeight와 향후 AccumulationHeight를 반영한 최신 유효 Position 및 Neighbor 관계로 계산한다. 초기 구현은 즉시 계산하며, 확정된 최적화 설계는 [[04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]에 따라 간선별 TransferWeight와 Pass 1의 RawOutgoing를 저장해 재사용한다. 이 캐시 경로는 구현되어 있다.
+유효 이웃 간격이나 endpoint 거리가 epsilon 이하이거나 유한하지 않으면 가중치를 0으로 둔다. 거리는 MesoVirtualHeight와 향후 AccumulationHeight를 반영한 최신 유효 Position 및 Neighbor 관계로 계산한다. 초기 구현은 즉시 계산하며, 확정된 최적화 설계는 [[04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]에 따라 간선별 TransferWeight와 Pass 1의 RawOutgoing·방향별 RawFlux를 저장해 재사용한다. RawFlux 캐시는 기본 ON이며 OFF 비교 경로는 같은 전달 수식을 Pass 2에서 재평가한다. 이 캐시 경로는 구현되어 있다.
 
 $$
 NormalWeight_{i\rightarrow j} = clamp\left(NormalWorld_i \cdot NormalWorld_j, 0, 1\right)
@@ -251,14 +251,19 @@ $$
 $$
 \alpha_i =
 \begin{cases}
-1, & RawOutgoing_i = 0 \\
-min\left(1, \frac{AvailableState_i}{RawOutgoing_i}\right), & RawOutgoing_i > 0
+0, & inactive_i \\
+1, & \neg inactive_i \land RawOutgoing_i = 0 \\
+min\left(1, \frac{AvailableState_i}{RawOutgoing_i}\right), & \neg inactive_i \land RawOutgoing_i > 0
 \end{cases}
 $$
 
 $$
 Flux_{i\rightarrow j} = \alpha_i \cdot RawFlux_{i\rightarrow j}
 $$
+
+`inactive`는 unsupported/invalid texel-channel, 감쇠 후 AvailableState=0 또는 dt=0인 source다. 현재 GPU 구현은 이 경로의 RawOutgoing·alpha를 0으로 기록하고 RawFlux 평가·쓰기를 생략한다. Pass 2는 source alpha가 0이면 캐시를 읽지 않으며 해당 source의 실제 전달량을 0으로 처리한다. 비활성 RawFlux에는 오래된 값이나 미초기화 값이 남을 수 있으므로 읽어서 alpha=0을 곱하는 방식으로 처리하지 않는다. target의 incoming·입력·Next 갱신은 계속 실행하고, 받은 값의 outgoing 전달은 다음 step부터 수행한다.
+
+Pass 1에서 source의 Profile·포화도·지원 여부는 channel당, source 형상은 geometry를 쓰는 invocation당 한 번 준비하여 이웃 평가에서 재사용한다. instance 공통 선형 행렬·inverse-transpose·gravity up은 CPU가 dispatch당 한 번 준비한다. 캐시 및 source 재사용은 전달 수식을 바꾸지 않으며 실행·유효성 계약은 [[0007_Surface-Solver-Cache|Surface Solver Cache]]를 따른다.
 
 2-Pass + `alpha` 저장의 GPU 계산 순서는 [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]를 본다.
 
