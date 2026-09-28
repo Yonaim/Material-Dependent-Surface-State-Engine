@@ -74,20 +74,20 @@ flowchart TD
     Edges --> Ready[업로드 또는 GPU write-read 동기화]
     Dirty -->|아니오| P1[Pass 1]
     Ready --> P1
-    P1 --> Store[RawFlux·RawOutgoing 합계와 alpha 기록]
+    P1 --> Store[활성 source RawFlux·모든 RawOutgoing과 alpha 기록]
     Store --> Barrier[세 버퍼 compute write-read barrier]
     Barrier --> P2[Pass 2]
     P2 --> Apply[Next State 기록과 InputDelta 소비]
     Apply --> Swap[후속 barrier와 State A/B 전환]
 ```
 
-Pass 1은 현재 State로 각 유효 이웃의 RawFlux를 계산해 RawOutgoing buffer에 합계를 저장한다. 감쇠 후 가용량으로 기존 alpha를 계산한다. Pass 2는 저장된 합계로 outgoing을 구하고, 공유 역방향 슬롯으로 이웃 source의 RawFlux를 읽어 incoming을 구한다. Pass 2는 rawFlux·GeometryDrive·inverse-transpose를 재계산하지 않는다. RawFlux 전체는 saturation/GeometryDrive 방향이 있어 대칭으로 취급하지 않으며 source 방향 값을 읽는다. 상호 이웃 연결은 Mapping validation 계약이다. 역방향이 없는 슬롯은 invalid로 표시하고 gather에서 건너뛴다.
+캐시 ON에서 Pass 1은 활성 source의 현재 State로 각 유효 이웃의 RawFlux를 계산해 RawOutgoing buffer에 합계를 저장한다. 비활성 source는 RawOutgoing·alpha만 0으로 갱신하며 RawFlux는 기록하지 않는다. Pass 2는 이웃의 alpha를 먼저 확인해 0이면 RawFlux를 읽지 않는다. 캐시 OFF의 재계산 경로는 [[05_ADR/Simulation/0024-RawFlux-Cache-Comparison|ADR 0024]]를 따른다. 감쇠 후 가용량으로 기존 alpha를 계산한다. Pass 2는 저장된 합계로 outgoing을 구하고, 공유 역방향 슬롯으로 이웃 source의 RawFlux를 읽어 incoming을 구한다. Pass 2는 rawFlux·GeometryDrive·inverse-transpose를 재계산하지 않는다. RawFlux 전체는 saturation/GeometryDrive 방향이 있어 대칭으로 취급하지 않으며 source 방향 값을 읽는다. 상호 이웃 연결은 Mapping validation 계약이다. 역방향이 없는 슬롯은 invalid로 표시하고 gather에서 건너뛴다.
 
 ```text
-RawOutgoing_i = Σ RawFlux(i→j)                       // Pass 1
-alpha_i = RawOutgoing_i > 0 ? min(1, Available_i / RawOutgoing_i) : 1
+RawOutgoing_i = inactive_i ? 0 : Σ RawFlux(i→j)     // Pass 1
+alpha_i = inactive_i ? 0 : (RawOutgoing_i > 0 ? min(1, Available_i / RawOutgoing_i) : 1)
 Outgoing_i = StoredRawOutgoing_i × alpha_i          // Pass 2
-Incoming_i = Σ StoredRawFlux(j, channel, ReverseSlot(i→j)) × alpha_j
+Incoming_i = Σ_{j: alpha_j > 0} StoredRawFlux(j, channel, ReverseSlot(i→j)) × alpha_j
 Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 ```
 
@@ -136,4 +136,4 @@ Pass 2는 이웃 source의 Current State가 0 이하이거나 alpha가 0 이하,
 
 ADR 0021 이후 Pass 2는 위 RawFlux 재평가 대신 저장된 값을 gather한다. alpha가 0 이하인 source는 gather를 생략한다. 이벤트 입력 소비 시점은 유지하며 빈 source의 새 입력은 다음 step에서 이동한다.
 
-ADR 0022 이후 Pass 1은 texel·channel의 감쇠 후 가용량이 0이거나 dt=0이면 rawFlux 평가를 생략하고 8개 RawFlux 슬롯·RawOutgoing·alpha를 0으로 기록한다. Pass 2의 이웃 유입·이벤트 입력·Next 갱신은 계속 수행한다. 별도 활동 마스크나 pass는 추가하지 않는다. 이 경로의 제한 전 RawOutgoing과 alpha 디버그 표시는 초기 구현과 다를 수 있지만 실제 outgoing과 Next State는 보존한다.
+ADR 0022의 초기 구현은 texel·channel의 감쇠 후 가용량이 0이거나 dt=0이면 rawFlux 평가를 생략하고 8개 RawFlux 슬롯·RawOutgoing·alpha를 0으로 기록했다. [[05_ADR/Simulation/0025-Inactive-RawFlux-Write-Elision|ADR 0025]] 이후에는 unsupported/invalid, 가용량=0 또는 dt=0 경로에서 RawOutgoing·alpha만 0으로 기록하고 RawFlux 쓰기를 생략한다. RawFlux는 alpha가 양수인 source에 대해서만 현재 step의 값으로 보장한다. Pass 2의 이웃 유입·이벤트 입력·Next 갱신은 계속 수행한다. 별도 활동 마스크나 pass는 추가하지 않는다. 이 경로의 제한 전 RawOutgoing과 alpha 디버그 표시는 초기 구현과 다를 수 있지만 실제 outgoing과 Next State는 보존한다.

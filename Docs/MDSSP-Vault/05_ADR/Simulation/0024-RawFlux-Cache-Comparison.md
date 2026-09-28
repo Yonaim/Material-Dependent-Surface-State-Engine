@@ -10,7 +10,7 @@
 ## Decision
 
 1. Simulation 탭에 기본 ON인 `RawFlux Cache` 체크박스를 둔다. INI 수정이나 재시작 없이 전환한다. State, 현재 A/B 방향, 입력, Profile 설정, 해상도는 보존한다.
-2. ON은 Pass 1에서 제한 전 방향별 RawFlux를 저장하고 Pass 2에서 읽는다. OFF는 RawFlux 버퍼의 모든 저장·읽기를 생략하고, Pass 2에서 이웃 source→target flux를 재계산한다. Pass 1의 source 재사용·가용량 검사, RawOutgoing·alpha, Pass 2의 incoming·input·decay 처리는 동일하게 유지한다. 새로운 pass는 추가하지 않는다.
+2. ON은 Pass 1에서 활성 source의 제한 전 방향별 RawFlux를 저장하고 Pass 2에서 읽는다. [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]] 이후 alpha=0인 source의 RawFlux는 쓰거나 읽지 않는다. OFF는 RawFlux 버퍼의 모든 저장·읽기를 생략하고, Pass 2에서 이웃 source→target flux를 재계산한다. Pass 1의 source 재사용·가용량 검사, RawOutgoing·alpha, Pass 2의 incoming·input·decay 처리는 동일하게 유지한다. 새로운 pass는 추가하지 않는다.
 3. OFF도 실제 source의 reciprocal slot을 사용하여 source-side TransferWeight를 읽는다. 두 모드 모두 공유 reverse-slot 메타데이터를 사용하며 임의로 반대 방향 slot을 가정하지 않는다.
 4. 두 pass 각각 캐시 ON/OFF pipeline을 shader specialization constant 0으로 생성한다. CPU의 SolverFlags bit 5는 OFF pipeline과 barrier 범위를 선택한다. 사용하지 않는 shader 경로가 ON pipeline의 비용에 영향을 주지 않도록 한다. 초기 pipeline 생성 작업은 늘지만 런타임 전환 시 재컴파일하지 않는다.
 5. 전환 전 GPU 작업을 완료하고 이전 모드의 미수집 timestamp 및 UI 평균을 버린다. 화면의 Pass 1·Pass 2·Solver 시간과 함께 현재 ON/OFF 모드를 표시한다. 새 모드의 평균은 새 측정으로 수집한다.
@@ -27,7 +27,7 @@
 
 - 같은 해상도, Profile, transform, 다른 Solver 항목, 초기 State, 입력, 시간 간격으로 비교해야 한다. 실행 중 토글만 바꾸면 시뮬레이션이 진행되어 서로 다른 State를 측정하므로 통제된 A/B 실험이 아니다.
 - 수동 비교는 고정 시간 간격과 동일한 Time scale을 사용하고, 각 모드에서 Reset State 후 동일한 입력을 재현하고, warmup 후 평균을 읽는다. UI는 자동 snapshot/replay benchmark를 제공하지 않는다.
-- 캐시가 유리한 정도는 활성 source 비율과 GPU에 따라 달라진다. 전체 텍셀 dispatch와 Pass 2 갱신은 두 모드 모두 유지된다. 빈 영역에서도 ON은 cache zero store를 수행하지만 OFF는 생략한다.
+- 캐시가 유리한 정도는 활성 source 비율과 GPU에 따라 달라진다. 전체 텍셀 dispatch와 Pass 2 갱신은 두 모드 모두 유지된다. 초기 ON은 빈 영역의 cache zero store 비용을 부담했으나 ADR 0025 이후 두 모드 모두 이 쓰기를 생략한다.
 - 캐시 메모리 payload는 `instance별 Σ(TexelCount × RegistryChannelCount × 8 × 4 B) + 공유 Geometry별 Σ(TexelCount × 4 B)`다. RawFlux는 float32, reverse slots는 uint32이며 두 배열 모두 원소당 4 B, 추가 원소 padding은 없다. Registry channel 수는 로드한 `.SRProfile`들의 State 키로 결정된다.
 - 예를 들어 6 Surface, 256×256, 1채널, 4 instance, 2 공유 Geometry 조합이면 RawFlux 48 MiB + reverse slots 3 MiB = 51 MiB다. 같은 구성의 128×128은 12.75 MiB, 512×512는 204 MiB다. State·Input·형상·TransferWeight 등 기존 버퍼는 이 합계에 포함하지 않는다.
 
@@ -37,7 +37,7 @@
 - 서로 다른 reciprocal slot·Profile·Capacity, 여러 Registry channel, unsupported/invalid texel, overcapacity, decay, InputDelta 조건에서 ON/OFF의 Next·RawOutgoing·alpha를 비교했다. OFF에서 poisoned RawFlux buffer가 그대로 유지되면서 결과가 ON과 일치함을 확인했다.
 - 동일 submission에서 ON/OFF와 AB/BA를 연속 전환하고 dt=0을 포함하여 이전 cache를 재사용하지 않는지 확인했다. GeometryDrive, Meso/Macro 방향, 비균일 scale·회전, singular transform·영/비유한 중력, 빈/감쇠로 비워진 source를 두 모드에서 기존 예상값과 비교했다.
 - 실제 Renderer/API 통합 구동에서 기본 ON, 전환 시 descriptor·현재 A/B·입력 보존, 이전 timestamp 무효화, 양쪽 모드의 timestamp 재수집, OFF 입력 소비, 256→128 해상도 재구성 후 OFF 유지와 메모리 집계를 검증했다. 4 instance·2 공유 Geometry·1채널 구성의 집계는 256에서 RawFlux 48 MiB + reverse slots 3 MiB, 128에서 12 MiB + 0.75 MiB였다. UI 클릭을 통한 시각적 검증은 수행하지 않았다.
-- [[../../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]에서 동일 initial State·dt의 합성 fixture를 두 모드로 측정했다. 전체 양수 조건은 ON이 전체 GPU 구간을 약 43–52% 줄였고, 약 1.56% 양수 및 전체 0 조건은 OFF가 빨랐다. 실제 demo Scene FPS 개선률로 환산하지 않는다.
+- [[../../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]에서 동일 initial State·dt의 합성 fixture를 두 모드로 측정했다. 이 측정은 ADR 0025 적용 전이며, 당시 전체 양수 조건은 ON이 전체 GPU 구간을 약 43–52% 줄였고 약 1.56% 양수 및 전체 0 조건은 OFF가 빨랐다. 현재 경로의 측정은 ADR 0025를 따른다. 실제 demo Scene FPS 개선률로 환산하지 않는다.
 
 ## Related
 
