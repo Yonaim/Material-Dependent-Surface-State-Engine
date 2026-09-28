@@ -25,13 +25,7 @@ void main()
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
             RawOutgoingBuffer.Values[StateValueIndex] = 0.0;
-            if (rawFluxCacheEnabled())
-            {
-                for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-                {
-                    RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = 0.0;
-                }
-            }
+            // Pass 2 checks alpha before reading RawFlux. Inactive scratch can stay stale.
             continue;
         }
 

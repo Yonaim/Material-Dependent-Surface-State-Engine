@@ -305,7 +305,7 @@ namespace MDSS
         TransferWeightDebugAverageBuffer = CreateUploadedBuffer(
             PhysicalDevice, Device, DebugAverages->data(), DebugAverages->size(), sizeof(TSurfaceGPUVec4), MaxRange);
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
-        // Pass 1 overwrites all slots each step, including invalid and unsupported slots.
+        // Pass 1 overwrites all slots of active sources; alpha=0 guards untouched inactive scratch.
         RawFluxBuffer = std::make_unique<TGPUBuffer>(
             PhysicalDevice, Device, static_cast<VkDeviceSize>(RawFluxByteSize), StorageUsage, UploadMemory);
     }
@@ -392,7 +392,7 @@ namespace MDSS
         StateBBuffer->Upload(Zeros.data(), ByteSize);
         InputDeltaBuffer->Upload(Zeros.data(), ByteSize);
         RawOutgoingBuffer->Upload(Zeros.data(), ByteSize);
-        // RawFlux scratch needs no reset: the next Pass 1 overwrites its entire range.
+        // RawFlux needs no reset: Pass 1 refreshes active sources and alpha=0 guards inactive ones.
         OutgoingFluxScaleBuffer->Upload(ResetOutgoingFluxScale.data(), ByteSize);
     }
 

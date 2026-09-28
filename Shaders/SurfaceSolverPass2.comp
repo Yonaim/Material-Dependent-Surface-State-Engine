@@ -35,6 +35,7 @@ void main()
             uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
             float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
             // Pass 1 writes alpha=0 for invalid/unsupported source texel-channels.
+            // alpha=0 also guards stale/uninitialized RawFlux slots of inactive sources.
             // 이벤트 입력은 전달 계산 뒤 반영하므로 빈 source의 새 입력은 다음 step부터 전달한다.
             if (NeighborScale <= 0.0)
             {
