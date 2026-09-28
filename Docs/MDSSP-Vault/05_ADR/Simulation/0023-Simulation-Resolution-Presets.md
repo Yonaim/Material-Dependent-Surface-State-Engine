@@ -10,7 +10,7 @@ Surface simulation grid가 512×512로 고정되어 기본 Cube Scene에서도 �
 ## Decision
 
 1. Simulation 탭에 Low(128), Medium(256), High(512) 순서의 드롭다운을 둔다. 기본값은 Medium이며 각 Surface에 정사각형 grid를 적용한다.
-2. 선택 시 mesh/Profile Distribution으로 mapping·Profile map·Normal Map transfer normal·Virtual Meso Geometry를 다시 준비하고 GPU geometry·State/cache·descriptor·Solver·debug pipeline·timing query를 재생성한다.
+2. 선택 시 mesh/Profile Distribution과 해상도로 CPU Geometry를 준비한다. [[../Assets/0026-Resolution-Surface-Cache|ADR 0026]]부터 유효한 `.Surface`를 우선 로드하며, cache miss/stale/corrupt일 때 mapping·Profile map·Normal Map transfer normal·Virtual Meso Geometry를 다시 생성한다. GPU geometry·State/cache·descriptor·Solver·debug pipeline·timing query는 기존처럼 재생성한다.
 3. State A/B·InputDelta·pending contact를 초기화한다. UI는 변경 시 State가 초기화됨을 안내한다. 재표본화와 State 보존은 구현하지 않는다.
 4. CPU asset cache key에 해상도를 포함한다. 같은 mesh·distribution·해상도 조합은 공유한다. 모든 새 handle을 준비한 뒤 persistent Scene에 적용하고, GPU idle 후 자원을 교체한다. 준비/교체 실패 시 이전 Scene handles·해상도·GPU 자원을 유지한다.
 5. 성공 시 사용하지 않는 이전 CPU runtime geometry를 해제한다. 선택값은 현재 실행 중 새 Scene load에도 적용하며 `.Scene`/INI에는 저장하지 않는다. 재실행 기본값은 Medium이다.
@@ -26,7 +26,7 @@ Surface simulation grid가 512×512로 고정되어 기본 Cube Scene에서도 �
 
 - Surface 수가 같을 때 Medium은 High의 1/4, Low는 High의 1/16 텍셀을 사용한다. 이는 texel 수 비율이며 FPS 비율이 아니다. 해상도별 이산화와 Virtual Meso Geometry 복원 결과는 달라질 수 있다.
 - 6 Surface·1 Registry channel·8슬롯·원소 padding 없는 float32 RawFlux에서 instance당 payload는 Low 3 MiB, Medium 12 MiB, High 48 MiB다. uint32 역방향 슬롯은 공유 Geometry당 각각 0.375/1.5/6 MiB다. allocator overhead와 다른 buffer는 제외한다.
-- 해상도 전환은 CPU preprocessing과 GPU 생성이 끝날 때까지 동기적으로 처리되어 잠시 멈출 수 있다. 이전 자원은 새 준비가 끝날 때까지 살아 있으므로 전환 중 peak memory는 steady-state보다 크다.
+- 해상도 전환은 CPU cache load/검증 또는 miss 전처리와 GPU 생성이 끝날 때까지 동기적으로 처리되어 잠시 멈출 수 있다. 이전 자원은 새 준비가 끝날 때까지 살아 있으므로 전환 중 peak memory는 steady-state보다 크다.
 - GPU addressing/`maxStorageBufferRange` 한도 검사는 선택값에도 유지한다. 실패를 숨겨 임의 해상도로 낮추지 않는다.
 
 ## Validation
@@ -35,6 +35,7 @@ Surface simulation grid가 512×512로 고정되어 기본 Cube Scene에서도 �
 
 ## Related
 
+- [[../Assets/0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 전처리 캐시]]
 - [[0022-Pass1-Source-Reuse|ADR 0022 — Pass 1 source 재사용]]
 - [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 캐시]]
 - [[../../04_Architecture/0010_UI-Interface|UI Interface]]

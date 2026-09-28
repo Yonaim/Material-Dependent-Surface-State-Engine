@@ -1,11 +1,11 @@
 # ADR 0007 — 정적 Surface 전처리 에셋
 
-> **한 줄 요약:** 이 ADR은 `.Surface` 정적 캐시를 선택했던 이전 결정을 기록하며, 현재는 ADR 0008의 Runtime 전처리를 따른다.
+> **한 줄 요약:** Mesh당 단일 `.Surface` 캐시를 선택했던 이전 결정이며, 현재는 ADR 0026의 해상도별 캐시를 따른다.
 
 - 상태: **Superseded by [[0008-Runtime-Surface-Preprocessing]]**
 - 날짜: 2026-09-25
 
-> 이 ADR은 정적 `.Surface` 바이너리 캐시를 선택했던 이전 결정을 기록한다. 현재 선택은 ADR 0008의 Runtime 전처리이며, 아래 내용은 결정 이력으로 보존한다.
+> 이 ADR은 정적 `.Surface` 바이너리 캐시를 선택했던 이전 결정을 기록한다. 이후 ADR 0008의 Runtime 전처리 전용 단계를 거쳐 현재는 [[0026-Resolution-Surface-Cache|ADR 0026]]의 해상도별 캐시를 사용한다. 아래 단일 파일 정책과 v2 표현은 결정 이력으로 보존한다.
 
 ## Context
 

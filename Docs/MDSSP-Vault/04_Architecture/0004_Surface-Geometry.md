@@ -17,10 +17,13 @@ Transport에는 거리, 높이·중력 방향, 표면 방향, 국소 요철이 �
 
 ```mermaid
 flowchart LR
-  Mesh["Mesh + Simulation UV"] --> Preprocess["Scene load\nMapping / static preprocessing"]
-  NormalMap["Normal Map"] --> Preprocess
-  ProfileMap["Profile Distribution"] --> Preprocess
-  Preprocess --> Shared["Shared static geometry\nper Mesh + Profile Map"]
+  Mesh["Mesh + Simulation UV"] --> Lookup["Mesh + Map + resolution\nCache validation"]
+  NormalMap["Normal Map"] --> Lookup
+  ProfileMap["Profile Distribution"] --> Lookup
+  Lookup -->|valid .Surface| Shared["Shared static CPU geometry"]
+  Lookup -->|missing / stale / corrupt| Preprocess["Mapping / Normal Map sample\nMeso integration / derivatives"]
+  Preprocess --> Shared
+  Preprocess --> Save["Save resolution-specific .Surface"]
 
   State["Per-instance State"] --> Amount["State × AccumulationFactor"]
   Profile["CavityFillFactor"] --> Split["Cavity / surface allocation"]
@@ -34,7 +37,7 @@ flowchart LR
   Updated -.-> Simulation["Later simulation steps"]
 ```
 
-정적 전처리는 애플리케이션 실행 중 고유 Mesh/Profile Distribution 입력 조합마다 load 시 한 번 수행한다. 매 frame이나 Instance마다 반복하지 않으며, 결과를 `.Surface` 파일이나 persistent cache로 저장하지 않는다. 전처리 시점과 수명은 [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
+정적 전처리는 고유 Mesh·Profile Distribution·해상도 조합의 `.Surface` 캐시가 없거나 무효일 때 load 시 수행한다. 유효한 캐시에서는 최종 CPU Geometry를 직접 복원하며, 같은 조합의 instance는 Runtime 메모리 결과를 공유한다. 매 frame이나 instance마다 전처리하지 않는다. 초기 Runtime 전처리 전용 설계에서 해상도별 persistent cache를 재사용하는 설계로 변경했다. 저장 수명과 무효화 규칙은 [[05_ADR/Assets/0026-Resolution-Surface-Cache|ADR 0026]]와 [[04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]을 따른다.
 
 ## Macro Geometry and Virtual Meso Geometry
 
@@ -85,7 +88,7 @@ Non-integrable 입력에 별도 임계값 기반 거부는 두지 않는다. 최
 
 ## Shared Surface Geometry Data
 
-같은 Mesh + Normal Map을 사용하는 Instance가 공유할 수 있는 정적 형상 데이터다.
+형상 값은 Mesh·Normal Map·해상도에 종속된다. 현재 `TSharedSurfaceGeometryData`는 texel Profile map도 함께 소유하므로 같은 Mesh·Profile Distribution·해상도 조합의 instance가 공유한다.
 
 ### Surface Geometry Field
 
@@ -108,6 +111,35 @@ Non-integrable 입력에 별도 임계값 기반 거부는 두지 않는다. 최
 | 항목 | 저장 단위 | 의미 |
 |---|---|---|
 | `Meso_Height_Reference` | Surface당 1개 | 적층량을 실제 높이로 변환할 때 사용하는 Virtual Meso Geometry의 대표 높이 규모 |
+
+## 해상도별 정적 Geometry 캐시
+
+캐시 지점은 **`BuildMesoGeometry()` 완료 직후, GPU 업로드와 instance별 TransferWeight 생성 전**이다. Normal Map 법선만 저장하면 PCG 높이 적분과 미분 fit 비용이 남으므로 최종 CPU Geometry 전체를 저장한다.
+
+| texel별 저장 필드 | 표현 | 복원하는 의미 |
+|---|---|---|
+| `Surface`, `Triangle`, `Chart` | 각각 `uint32` | 유효성/sentinel, Surface 소속, 원본 삼각형과 UV chart |
+| `Barycentric` | `float32 × 3` | 삼각형 내 표면 대응 |
+| `Position`, `Normal` | 각각 `float32 × 3` | mesh-local Macro 위치와 법선 |
+| `TransferNormal`, `MesoNormal` | 각각 `float32 × 3` | 샘플 Normal Map 법선과 높이에서 유도한 mesh-local 법선 |
+| `HasTransferNormal`, `HasMesoNormal` | 하나의 `uint32`에 두 bit | 기존 법선 fallback 규칙 보존 |
+| `MesoVirtualHeight`, `ConcavityWeight`, `MesoMeanCurvature`, `MesoGaussianCurvature` | 각각 `float32` | 최종 상대 높이·오목함·두 곡률 |
+| `NeighborIndices[8]` | `uint32 × 8` | seam을 포함한 최종 이웃 graph. invalid 슬롯 포함 |
+| texel `ProfileIndex` | `uint32` | 별도 순서 있는 Profile table 참조. render-only sentinel 포함 |
+
+각 레코드는 위 필드를 순서대로 저장하며 padding 없는 128 byte다. 이는 디스크 직렬화 크기이며 CPU `sizeof`나 GPU buffer stride를 뜻하지 않는다. 파일 전체에는 Surface별 ID·해상도를 저장하고 dense range는 로드 시 동일하게 재구성한다. Profile 경로/순서와 입력·버전 metadata도 함께 저장한다.
+
+128·256·512의 Mapping, neighbor graph, PCG 적분과 미분 결과는 각각 해당 grid에서 계산해 별도 파일로 유지한다. 높은 해상도의 결과를 낮은 해상도로 단순 축소하지 않는다. 같은 Mesh·Map에서 해상도를 다시 선택하면 보관된 변형을 로드할 수 있다.
+
+다음 항목은 `.Surface`에 저장하지 않는다.
+
+- Normal Map image decode 결과, tangent basis, PCG의 RHS·탐색 벡터·잔차 등 전처리 임시값.
+- 이웃 Distance와 간선별 Height Difference. 저장한 Position·Normal·Virtual Height에서 계산한다.
+- GPU packing으로 생성하는 `ReverseNeighborSlots`, GPU buffer·descriptor handle.
+- instance의 월드 위치·법선, transform/옵션에 의존하는 `TransferWeight` 및 debug averages. Geometry를 로드한 뒤 instance마다 계산한다.
+- State A/B, InputDelta, RawOutgoing·RawFlux·OutgoingFluxScale 등 매 실행/step의 동적 데이터와 `.SRProfile` 반응 파라미터.
+
+CPU 저장 표현은 GPU ABI와 분리한다. 캐시 hit는 정적 CPU 전처리를 생략하는 최적화이며 GPU 자원 생성과 Solver 동작·동적 적층 설계를 변경하지 않는다. `.Surface` 로드 결과는 기존 `TSharedSurfaceGeometryData`를 복원하므로 Normal fallback, UV seam, TransferWeight 및 렌더링은 같은 데이터를 사용한다.
 
 ## World Gravity
 

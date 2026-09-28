@@ -1,10 +1,12 @@
 # ADR 0008 — Runtime Surface 전처리
 
-> **한 줄 요약:** 고유 Mesh와 Profile Distribution 조합을 Runtime에 전처리하고 결과를 메모리에서 공유하며, persistent `.Surface` 캐시는 사용하지 않는다.
+> **한 줄 요약:** Runtime 전처리만 유지했던 이전 결정이며, 현재는 ADR 0026의 해상도별 `.Surface` 캐시를 함께 사용한다.
 
-- 상태: **Accepted**
+- Status: **Superseded by [[0026-Resolution-Surface-Cache]]**
 - 날짜: 2026-09-25
 - 대체: [[0007-Surface-Preprocessed-Asset]]
+
+아래는 Runtime 전처리 전용 단계의 결정 이력이다. 현재는 메모리 공유와 cache miss 전처리를 유지하고, 실행 간 최종 Geometry를 재사용하는 [[0026-Resolution-Surface-Cache|ADR 0026]]를 따른다.
 
 ## Context
 
