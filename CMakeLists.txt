@@ -180,6 +180,7 @@ add_dependencies(MDSS MDSS_Shaders)
 target_compile_definitions(MDSS PRIVATE
     MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
     MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+    MDSS_SURFACE_CACHE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Cache/Surface"
     MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
     GLM_FORCE_RADIANS
     GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -197,6 +198,35 @@ set_target_properties(MDSS PROPERTIES
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(MDSS_SurfaceCacheTests
+        Tests/SurfaceCacheTests.cpp
+        Source/AssetManager/Loaders/MTLLoader.cpp
+        Source/AssetManager/Loaders/OBJLoader.cpp
+        Source/Logger/Logger.cpp
+        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
+        Source/SurfaceStateSystem/Geometry/MesoGeometryBuilder.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.cpp
+        Source/SurfaceStateSystem/Preprocessing/SurfaceCache.cpp
+        Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
+        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
+    )
+    target_include_directories(MDSS_SurfaceCacheTests PRIVATE Source)
+    target_include_directories(MDSS_SurfaceCacheTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")
+    target_link_libraries(MDSS_SurfaceCacheTests PRIVATE glm::glm)
+    target_compile_definitions(MDSS_SurfaceCacheTests PRIVATE
+        MDSS_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Tests/Fixtures"
+    )
+    if(MSVC)
+        target_compile_options(MDSS_SurfaceCacheTests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(MDSS_SurfaceCacheTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME MDSS_SurfaceCache COMMAND MDSS_SurfaceCacheTests)
+
     add_executable(MDSS_SurfaceStateTests
         Tests/SurfaceStateContractTests.cpp
         Source/AssetManager/Core/Asset.cpp

@@ -14,9 +14,11 @@
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
+#include "SurfaceStateSystem/Preprocessing/SurfaceCache.h"
 #include "VulkanContext/VulkanContext.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -213,67 +215,100 @@ namespace MDSS
             throw std::runtime_error("Mesh Surface IDs must be dense and have a material section.");
         }
 
-        const TSurfaceMappingData Mapping =
-            TSurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
-        for (const std::string& MappingWarning : Mapping.Warnings)
+        const auto CacheStart = std::chrono::steady_clock::now();
+        const TSurfaceCacheDescriptor CacheDescriptor = TSurfaceCache::Describe(
+            Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions, NormalMapPaths, DistributionPath,
+            Distribution.ProfilePaths, Distribution.ProfileIndicesBySurface);
+        const std::filesystem::path CachePath = TSurfaceCache::GetPath(
+            MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
+        std::string CacheDiagnostic;
+        auto CachedGeometry = TSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
+        if (CachedGeometry)
         {
-            if (MappingWarning.starts_with("UV seam texel links were dropped:"))
+            const double LoadMilliseconds = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - CacheStart).count();
+            TLogger::Info("TAssetManager", "Loaded .Surface cache: " + CachePath.string() + " (" +
+                          std::to_string(LoadMilliseconds) + " ms, including input fingerprint).");
+        }
+        else
+        {
+            TLogger::Info("TAssetManager", "Rebuilding .Surface cache (" + CacheDiagnostic + "): " + CachePath.string());
+            const TSurfaceMappingData Mapping =
+                TSurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
+            for (const std::string& MappingWarning : Mapping.Warnings)
             {
-                TLogger::Warning("TAssetManager", MappingWarning);
+                if (MappingWarning.starts_with("UV seam texel links were dropped:"))
+                {
+                    TLogger::Warning("TAssetManager", MappingWarning);
+                }
+            }
+            std::vector<TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+            CachedGeometry.emplace(TSurfaceGeometryBuilder::Build(
+                Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size())));
+            TSharedSurfaceGeometryData& Geometry = *CachedGeometry;
+
+            std::unordered_map<std::string, TextureData> NormalMapPixels;
+            for (const std::filesystem::path& NormalMapPath : NormalMapPaths)
+            {
+                if (NormalMapPath.empty())
+                {
+                    continue;
+                }
+                const std::string Key = std::filesystem::absolute(NormalMapPath).lexically_normal().generic_string();
+                if (!NormalMapPixels.contains(Key))
+                {
+                    NormalMapPixels.emplace(Key, TextureLoader::LoadRGBA8(NormalMapPath));
+                }
+            }
+
+            std::size_t                         MappedNormalCount = 0;
+            std::vector<TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
+            for (TSurfaceTexelGeometry& Texel : GeometryTexels)
+            {
+                if (!Texel.IsValid() || Texel.Surface >= NormalMapPaths.size() || NormalMapPaths[Texel.Surface].empty())
+                {
+                    continue;
+                }
+
+                const std::string Key =
+                    std::filesystem::absolute(NormalMapPaths[Texel.Surface]).lexically_normal().generic_string();
+                const auto TextureIt = NormalMapPixels.find(Key);
+                glm::vec3  TransferNormal{};
+                if (TextureIt != NormalMapPixels.end() &&
+                    BuildNormalMapTransferNormal(
+                        Texel, Mesh.GetVertices(), Mesh.GetTriangles(), TextureIt->second, TransferNormal))
+                {
+                    Texel.TransferNormal = TransferNormal;
+                    Texel.HasTransferNormal = true;
+                    ++MappedNormalCount;
+                }
+            }
+
+            TLogger::Info("TAssetManager",
+                          "Precomputed Normal Map transfer normals for " + std::to_string(MappedNormalCount) + "/" +
+                              std::to_string(Geometry.GetTexelCount()) + " Simulation texels.");
+            // 노멀 맵의 텍셀 노멀을 준비한 뒤 공유 형상의 높이와 파생 형상을 전처리한다.
+            const TMesoGeometryBuildReport MesoReport = BuildMesoGeometry(Geometry);
+            TLogger::Info("TAssetManager",
+                          "Integrated Normal Map meso geometry for " + std::to_string(MesoReport.ActiveTexelCount) +
+                              " texels across " + std::to_string(MesoReport.ComponentCount) + " connected charts (" +
+                              std::to_string(MesoReport.IterationCount) + " PCG iterations, relative edge residual " +
+                              std::to_string(MesoReport.RelativeEdgeResidual) + ").");
+            try
+            {
+                TSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
+                const double BuildMilliseconds = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - CacheStart).count();
+                TLogger::Info("TAssetManager", "Saved .Surface cache: " + CachePath.string() + " (" +
+                              std::to_string(BuildMilliseconds) + " ms, including preprocessing and save).");
+            }
+            catch (const std::exception& Error)
+            {
+                TLogger::Warning("TAssetManager", "Unable to save .Surface cache; using Runtime data: " +
+                                 std::string(Error.what()));
             }
         }
-        std::vector<TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
-        TSharedSurfaceGeometryData        Geometry = TSurfaceGeometryBuilder::Build(
-            Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size()));
-
-        std::unordered_map<std::string, TextureData> NormalMapPixels;
-        for (const std::filesystem::path& NormalMapPath : NormalMapPaths)
-        {
-            if (NormalMapPath.empty())
-            {
-                continue;
-            }
-            const std::string Key = std::filesystem::absolute(NormalMapPath).lexically_normal().generic_string();
-            if (!NormalMapPixels.contains(Key))
-            {
-                NormalMapPixels.emplace(Key, TextureLoader::LoadRGBA8(NormalMapPath));
-            }
-        }
-
-        std::size_t                         MappedNormalCount = 0;
-        std::vector<TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
-        for (TSurfaceTexelGeometry& Texel : GeometryTexels)
-        {
-            if (!Texel.IsValid() || Texel.Surface >= NormalMapPaths.size() || NormalMapPaths[Texel.Surface].empty())
-            {
-                continue;
-            }
-
-            const std::string Key =
-                std::filesystem::absolute(NormalMapPaths[Texel.Surface]).lexically_normal().generic_string();
-            const auto TextureIt = NormalMapPixels.find(Key);
-            glm::vec3  TransferNormal{};
-            if (TextureIt != NormalMapPixels.end() &&
-                BuildNormalMapTransferNormal(
-                    Texel, Mesh.GetVertices(), Mesh.GetTriangles(), TextureIt->second, TransferNormal))
-            {
-                Texel.TransferNormal = TransferNormal;
-                Texel.HasTransferNormal = true;
-                ++MappedNormalCount;
-            }
-        }
-
-        TLogger::Info("TAssetManager",
-                      "Precomputed Normal Map transfer normals for " + std::to_string(MappedNormalCount) + "/" +
-                          std::to_string(Geometry.GetTexelCount()) + " Simulation texels.");
-        // 노멀 맵의 텍셀 노멀을 준비한 뒤 공유 형상의 높이와 파생 형상을 전처리한다.
-        const TMesoGeometryBuildReport MesoReport = BuildMesoGeometry(Geometry);
-        TLogger::Info("TAssetManager",
-                      "Integrated Normal Map meso geometry for " + std::to_string(MesoReport.ActiveTexelCount) +
-                          " texels across " + std::to_string(MesoReport.ComponentCount) + " connected charts (" +
-                          std::to_string(MesoReport.IterationCount) + " PCG iterations, relative edge residual " +
-                          std::to_string(MesoReport.RelativeEdgeResidual) + ").");
-        TSurfaceRuntimeData Built(std::move(Geometry));
+        TSurfaceRuntimeData Built(std::move(*CachedGeometry));
         if (RuntimeSurfaceAssets.size() >= InvalidSurfaceRuntimeDataHandle)
         {
             throw std::overflow_error("Runtime Surface Data handle range is exhausted.");
@@ -287,7 +322,7 @@ namespace MDSS
         RuntimeAsset.DistributionPath = DistributionPath;
         RuntimeSurfaceAssets.push_back(std::move(RuntimeAsset));
         RuntimeSurfaceAssetsByInputs.emplace(RuntimeKey, RuntimeHandle);
-        TLogger::Info("TAssetManager", "Built Runtime Surface data (" + std::to_string(Resolution) + " x " +
+        TLogger::Info("TAssetManager", "Registered Runtime Surface data (" + std::to_string(Resolution) + " x " +
                       std::to_string(Resolution) + ") for Mesh: " + Mesh.GetSourcePath().string());
         return RuntimeHandle;
     }
