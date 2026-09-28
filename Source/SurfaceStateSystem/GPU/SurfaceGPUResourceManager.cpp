@@ -135,6 +135,20 @@ namespace MDSS
         return SharedSurfaceData.size();
     }
 
+    TSurfaceRawFluxMemoryUsage TSurfaceGPUResourceManager::GetRawFluxMemoryUsage() const noexcept
+    {
+        TSurfaceRawFluxMemoryUsage Usage;
+        for (const auto& Instance : InstanceResources)
+        {
+            if (Instance) Usage.InstanceRawFluxBytes += Instance->State->GetRawFluxBuffer().GetSize();
+        }
+        for (const auto& [Handle, Shared] : SharedSurfaceData)
+        {
+            Usage.SharedReverseSlotBytes += Shared.Geometry->GetReverseNeighborSlotBuffer().GetSize();
+        }
+        return Usage;
+    }
+
     std::size_t TSurfaceGPUResourceManager::GetSceneInstanceCount() const noexcept
     {
         return InstanceResources.size();

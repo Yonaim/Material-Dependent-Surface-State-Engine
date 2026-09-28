@@ -397,6 +397,10 @@ namespace MDSS
             }
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             std::uint32_t SolverFlags = 0U;
+            if (!DebugSolverSettings.bRawFluxCacheEnabled)
+            {
+                SolverFlags |= SurfaceSolverDisableRawFluxCacheFlag;
+            }
             if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::GeometryDrive))
             {
                 SolverFlags |= 1U << 0U;
@@ -451,6 +455,11 @@ namespace MDSS
     const TSurfaceSolverDebugSettings& TSurfaceStateSystem::GetDebugSolverSettings() const noexcept
     {
         return DebugSolverSettings;
+    }
+
+    void TSurfaceStateSystem::SetRawFluxCacheEnabled(bool bEnabled) noexcept
+    {
+        DebugSolverSettings.bRawFluxCacheEnabled = bEnabled;
     }
 
     void TSurfaceStateSystem::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept

@@ -343,7 +343,7 @@ namespace MDSS
 
     TRenderer::TRenderer(const TVulkanContext& Context,
                          TWindow& TWindow,
-                         const TAssetManager& Assets,
+                         TAssetManager& Assets,
                          const TScene& Scene)
         : Context(Context), TargetWindow(TWindow), Assets(Assets), SwapchainData(Context, TWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
@@ -636,6 +636,7 @@ namespace MDSS
             throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
         auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+        Replacement->SetRawFluxCacheEnabled(DebugSolverSettings.bRawFluxCacheEnabled);
         for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
         {
             Replacement->SetDebugSolverTermEnabled(
@@ -665,6 +666,51 @@ namespace MDSS
         SurfaceStates = std::move(Replacement);
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
         CreateTimestampQueryPool(SurfaceStates->GetSolverTimestampSlotCount());
+        LastRenderGpuMilliseconds = -1.0F;
+        LastSolverGpuMilliseconds = -1.0F;
+        LastSolverPass1GpuMilliseconds = -1.0F;
+        LastSolverPass2GpuMilliseconds = -1.0F;
+    }
+
+    std::uint32_t TRenderer::GetSimulationResolution() const noexcept
+    {
+        return Assets.GetSimulationResolution();
+    }
+
+    void TRenderer::SetSimulationResolution(TScene& Scene, std::uint32_t Resolution)
+    {
+        if (!IsSurfaceSimulationResolution(Resolution))
+            throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
+        if (Resolution == GetSimulationResolution()) return;
+
+        auto& Instances = Scene.GetStaticMeshInstances();
+        std::vector<TSurfaceRuntimeDataHandle> PreviousHandles;
+        PreviousHandles.reserve(Instances.size());
+        for (const auto& Instance : Instances) PreviousHandles.push_back(Instance.GetSurfaceData());
+        auto ReplacementHandles = PreviousHandles;
+        try
+        {
+            for (std::size_t Index = 0; Index < Instances.size(); ++Index)
+            {
+                if (Assets.HasSurfaceData(PreviousHandles[Index]))
+                    ReplacementHandles[Index] = Assets.LoadSurfaceDataAtResolution(PreviousHandles[Index], Resolution);
+            }
+            for (std::size_t Index = 0; Index < Instances.size(); ++Index)
+                Instances[Index].SetSurfaceData(ReplacementHandles[Index]);
+            // The solver must keep referencing the persistent Scene, rather than a temporary copy.
+            ReloadSceneResources(Scene);
+        }
+        catch (...)
+        {
+            for (std::size_t Index = 0; Index < Instances.size(); ++Index)
+                Instances[Index].SetSurfaceData(PreviousHandles[Index]);
+            Assets.ReleaseUnusedSurfaceData(PreviousHandles);
+            throw;
+        }
+        Assets.SetSimulationResolution(Resolution);
+        Assets.ReleaseUnusedSurfaceData(ReplacementHandles);
+        TLogger::Info("TRenderer", "Simulation resolution changed to " + std::to_string(Resolution) +
+                      " x " + std::to_string(Resolution) + "; State reset.");
     }
 
     void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
@@ -870,6 +916,26 @@ namespace MDSS
         {
             SurfaceStates->SetDebugSolverTermEnabled(Term, bEnabled);
         }
+    }
+
+    bool TRenderer::IsRawFluxCacheEnabled() const noexcept
+    {
+        return DebugSolverSettings.bRawFluxCacheEnabled;
+    }
+
+    void TRenderer::SetRawFluxCacheEnabled(bool bEnabled)
+    {
+        if (IsRawFluxCacheEnabled() == bEnabled) return;
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to wait for GPU before changing RawFlux cache mode.");
+        }
+        DebugSolverSettings.bRawFluxCacheEnabled = bEnabled;
+        if (SurfaceStates) SurfaceStates->SetRawFluxCacheEnabled(bEnabled);
+        bTimestampQueriesSubmitted.fill(false);
+        bSolverTimestampQueriesSubmitted.fill(false);
+        LastRenderGpuMilliseconds = LastSolverGpuMilliseconds = -1.0F;
+        LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = -1.0F;
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept

@@ -62,6 +62,7 @@ namespace MDSS
         [[nodiscard]] float GetInjectRadius() const noexcept;
         [[nodiscard]] float GetInjectFalloff() const noexcept;
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
+        [[nodiscard]] float GetSimulationDeltaTime(float FrameDeltaTime) const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
@@ -80,7 +81,8 @@ namespace MDSS
         void DrawRenderOptionsWindow(TScene& SceneData);
         void DrawRenderSettingsWindow();
         void DrawViewportStatsOverlay();
-        void DrawSimulationDebugWindow(const TScene& SceneData);
+        void ResetProfilingAverages() noexcept;
+        void DrawSimulationDebugWindow(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
         void DrawSectionHeader(const char* Title, float TopPadding = 12.0F) const;
@@ -98,6 +100,7 @@ namespace MDSS
         float       InjectRadius = 0.25F;
         float       InjectFalloff = 1.0F;
         float       SimulationTimeScale = 1.0F;
+        bool        bFixedSimulationTimestep = false;
         bool        bSimulationPaused = false;
         bool        bSolverStepRequested = false;
         bool        bSolverResetRequested = false;
@@ -111,6 +114,7 @@ namespace MDSS
         bool bParameterDraftAvailable = false;
         bool bParameterDraftDirty = false;
         std::string ParameterStatus;
+        std::string ResolutionStatus;
         std::optional<std::size_t> SelectedObject;
         int         ActiveGizmoAxis = -1;
         int         HoveredGizmoAxis = -1;
@@ -140,5 +144,6 @@ namespace MDSS
         std::array<float, 6>                                        ProfilingAverages{-1.0F, -1.0F, -1.0F,
                                                                                      -1.0F, -1.0F, -1.0F};
         bool                                                        bProfilingAverageAvailable = false;
+        bool                                                        bProfiledRawFluxCacheEnabled = true;
     };
 } // namespace MDSS

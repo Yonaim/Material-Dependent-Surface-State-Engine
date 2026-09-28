@@ -67,7 +67,7 @@ namespace MDSS
     class TRenderer
     {
     public:
-        TRenderer(const TVulkanContext& Context, TWindow& TWindow, const TAssetManager& Assets, const TScene& Scene);
+        TRenderer(const TVulkanContext& Context, TWindow& TWindow, TAssetManager& Assets, const TScene& Scene);
         ~TRenderer();
 
         TRenderer(const TRenderer&) = delete;
@@ -79,6 +79,9 @@ namespace MDSS
         void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
         void SubmitContact(TSurfaceContactInput Contact);
         void ReloadSceneResources(const TScene& Scene);
+        [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
+        /** @brief Rebuild Surface mapping and GPU resources, resetting State on success. */
+        void SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);
         void SetDebugProfileParameters(TSRProfileAssetHandle Profile,
                                        TStateId State,
                                        const TSurfaceStateParameters& Parameters,
@@ -111,6 +114,9 @@ namespace MDSS
         void SetDebugNormalWeightEnabled(bool bEnabled);
         [[nodiscard]] bool IsDebugSolverTermEnabled(TSurfaceSolverTerm Term) const noexcept;
         void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled);
+        [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
+        /** @brief Preserve State and allocations, but discard timings from the previous mode. */
+        void SetRawFluxCacheEnabled(bool bEnabled);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);
@@ -151,7 +157,7 @@ namespace MDSS
 
         const TVulkanContext&                Context;
         TWindow&                             TargetWindow;
-        const TAssetManager&                 Assets;
+        TAssetManager&                       Assets;
         TSwapchain                           SwapchainData;
         VkFormat                            DepthFormat = VK_FORMAT_UNDEFINED;
         TGPUImage                            DepthImage;

@@ -4,6 +4,7 @@
 const uint InvalidSurfaceId = 0xffffffffu;
 const uint InvalidTexelIndex = 0xffffffffu;
 const uint SurfaceNeighborCount = 8u;
+layout(constant_id = 0) const bool UseRawFluxCache = true;
 
 struct TSurfaceGPUProfileParameters
 {
@@ -82,6 +83,15 @@ layout(std430, set = 0, binding = 17) readonly buffer TSurfaceMesoNormals
     vec4 Values[];
 } MesoNormals;
 
+layout(std430, set = 0, binding = 18) readonly buffer TSurfaceReverseNeighborSlots
+{
+    uint Values[];
+} ReverseNeighborSlots;
+layout(std430, set = 0, binding = 19) buffer TSurfaceRawFlux
+{
+    float Values[];
+} RawFluxBuffer;
+
 layout(push_constant) uniform TSurfaceSolverPushConstants
 {
     float DeltaTime;
@@ -89,8 +99,14 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
     uint LocalTexelCount;
     uint Flags;
     vec4 GravityWorld;
-    mat4 ModelMatrix;
+    vec4 ModelLinearColumns[3];
+    vec4 NormalMatrixAndUpColumns[3];
 } Solver;
+
+bool rawFluxCacheEnabled()
+{
+    return UseRawFluxCache;
+}
 
 const float GeometryEpsilon = 1.0e-6;
 
@@ -114,6 +130,18 @@ bool isValidTexel(uint TexelIndex)
 uint neighborIndex(uint TexelIndex, uint DirectionIndex)
 {
     return NeighborIndices.Values[TexelIndex * SurfaceNeighborCount + DirectionIndex];
+}
+
+uint reverseNeighborSlot(uint TexelIndex, uint DirectionIndex)
+{
+    return (ReverseNeighborSlots.Values[TexelIndex] >> (DirectionIndex * 4u)) & 0xfu;
+}
+
+uint rawFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
+{
+    // Slot-major planes keep neighboring invocations' stores contiguous.
+    return DirectionIndex * (Solver.LocalTexelCount * Solver.StateChannelCount) +
+           stateIndex(TexelIndex, ChannelIndex);
 }
 
 float transferWeight(uint SourceTexel, uint DirectionIndex)
@@ -160,38 +188,34 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
     return min(Current, max(0.0, DecayRate * Retention * Solver.DeltaTime));
 }
 
-// Per-invocation values, shared across all neighbor slots and State channels.
-mat3 SolverNormalMatrix;
+// Pass 1 prepares this once per source, sharing it across neighbors and channels.
+// Uncached Pass 2 prepares each incoming source before recomputing its directed flux.
+mat3 SolverModelLinear;
 vec3 SolverUp;
+vec3 SourcePosition;
+vec3 SourceGravityDirection;
+bool SourceGeometryValid;
 
-void initializeGeometryDrive()
+void prepareSourceGeometry(uint SourceTexel)
 {
-    SolverNormalMatrix = mat3(0.0);
-    SolverUp = vec3(0.0);
+    SourceGeometryValid = false;
     if ((Solver.Flags & (1u << 0u)) != 0u)
     {
         return;
     }
-    float GravityLength = length(Solver.GravityWorld.xyz);
-    if (GravityLength <= GeometryEpsilon || isnan(GravityLength) || isinf(GravityLength))
+    SolverUp = vec3(Solver.NormalMatrixAndUpColumns[0].w,
+                    Solver.NormalMatrixAndUpColumns[1].w,
+                    Solver.NormalMatrixAndUpColumns[2].w);
+    if (length(SolverUp) <= GeometryEpsilon)
     {
         return;
     }
-    SolverUp = -Solver.GravityWorld.xyz / GravityLength;
-    mat3 ModelLinear = mat3(Solver.ModelMatrix);
-    float Determinant = determinant(ModelLinear);
-    if (!isnan(Determinant) && !isinf(Determinant) && abs(Determinant) > GeometryEpsilon)
-    {
-        SolverNormalMatrix = transpose(inverse(ModelLinear));
-    }
-}
-
-float geometryDrive(uint SourceTexel, uint TargetTexel)
-{
-    if ((Solver.Flags & (1u << 0u)) != 0u || length(SolverUp) <= GeometryEpsilon)
-    {
-        return 0.0;
-    }
+    SolverModelLinear = mat3(Solver.ModelLinearColumns[0].xyz,
+                             Solver.ModelLinearColumns[1].xyz,
+                             Solver.ModelLinearColumns[2].xyz);
+    mat3 SolverNormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
+                                   Solver.NormalMatrixAndUpColumns[1].xyz,
+                                   Solver.NormalMatrixAndUpColumns[2].xyz);
     vec3 LocalNormal = (Solver.Flags & (1u << 4u)) != 0u
                            ? Normals.Values[SourceTexel].xyz
                            : MesoNormals.Values[SourceTexel].xyz;
@@ -199,50 +223,61 @@ float geometryDrive(uint SourceTexel, uint TargetTexel)
     float NormalLength = length(Normal);
     if (NormalLength <= GeometryEpsilon || isnan(NormalLength) || isinf(NormalLength))
     {
-        return 0.0;
+        return;
     }
     Normal /= NormalLength;
     vec3 Gravity = Solver.GravityWorld.xyz;
     vec3 GravityOnSurface = Gravity - Normal * dot(Gravity, Normal);
     float SurfaceGravityLength = length(GravityOnSurface);
-    vec3 SourcePosition = Positions.Values[SourceTexel].xyz + Normals.Values[SourceTexel].xyz *
-                          GeometryScalars.Values[SourceTexel].MesoVirtualHeight;
+    if (SurfaceGravityLength <= GeometryEpsilon || isnan(SurfaceGravityLength) || isinf(SurfaceGravityLength))
+    {
+        return;
+    }
+    SourceGravityDirection = GravityOnSurface / SurfaceGravityLength;
+    SourcePosition = Positions.Values[SourceTexel].xyz + Normals.Values[SourceTexel].xyz *
+                     GeometryScalars.Values[SourceTexel].MesoVirtualHeight;
+    SourceGeometryValid = true;
+}
+
+float geometryDrive(uint TargetTexel)
+{
+    if (!SourceGeometryValid)
+    {
+        return 0.0;
+    }
     vec3 TargetPosition = Positions.Values[TargetTexel].xyz + Normals.Values[TargetTexel].xyz *
                           GeometryScalars.Values[TargetTexel].MesoVirtualHeight;
     // Translation cancels in both height difference and neighbor direction.
-    vec3 NeighborDirection = mat3(Solver.ModelMatrix) * (TargetPosition - SourcePosition);
+    vec3 NeighborDirection = SolverModelLinear * (TargetPosition - SourcePosition);
     float NeighborLength = length(NeighborDirection);
-    if (SurfaceGravityLength <= GeometryEpsilon || NeighborLength <= GeometryEpsilon ||
-        isnan(SurfaceGravityLength) || isinf(SurfaceGravityLength) ||
-        isnan(NeighborLength) || isinf(NeighborLength))
+    if (NeighborLength <= GeometryEpsilon || isnan(NeighborLength) || isinf(NeighborLength))
     {
         return 0.0;
     }
     float HeightDrive = abs(dot(NeighborDirection, SolverUp));
-    float DirectionDrive = clamp(dot(GravityOnSurface / SurfaceGravityLength,
+    float DirectionDrive = clamp(dot(SourceGravityDirection,
                                     NeighborDirection / NeighborLength), 0.0, 1.0);
     return HeightDrive * DirectionDrive;
 }
 
-float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight)
+float rawFlux(uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
+              TSurfaceGPUProfileParameters SourceParameters, float SourceSaturation)
 {
     if (CachedTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0 ||
-        !supportsChannel(SourceTexel, ChannelIndex) || !supportsChannel(TargetTexel, ChannelIndex))
+        !supportsChannel(TargetTexel, ChannelIndex))
     {
         return 0.0;
     }
 
-    uint SourceRecordIndex = profileRecordIndex(SourceTexel, ChannelIndex);
-    TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[SourceRecordIndex];
-    float TransferRate = Parameters.CapacityInputAndTransfer.z;
+    float TransferRate = SourceParameters.CapacityInputAndTransfer.z;
     float SaturationDrive = (Solver.Flags & (1u << 1u)) != 0u
                                 ? 0.0
-                                : max(saturation(SourceTexel, ChannelIndex) -
+                                : max(SourceSaturation -
                                           saturation(TargetTexel, ChannelIndex),
                                       0.0);
-    float GeometryTransferRate = Parameters.CapacityInputAndTransfer.w;
-    float GeometryDrive = GeometryTransferRate > 0.0
-                              ? geometryDrive(SourceTexel, TargetTexel)
+    float GeometryTransferRate = SourceParameters.CapacityInputAndTransfer.w;
+    float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
+                              ? geometryDrive(TargetTexel)
                               : 0.0;
     return (SaturationDrive * TransferRate + GeometryDrive * GeometryTransferRate) *
            CachedTransferWeight * Solver.DeltaTime;

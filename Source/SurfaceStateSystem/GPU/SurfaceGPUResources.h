@@ -41,6 +41,8 @@ namespace MDSS
         RawOutgoing,
         TransferWeightDebugAverages,
         MesoNormals,
+        ReverseNeighborSlots,
+        RawFlux,
         Count
     };
 
@@ -62,6 +64,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetMesoNormalBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetGeometryScalarBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetNeighborIndexBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetReverseNeighborSlotBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
@@ -75,6 +78,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> MesoNormalBuffer;
         std::unique_ptr<TGPUBuffer> GeometryScalarBuffer;
         std::unique_ptr<TGPUBuffer> NeighborIndexBuffer;
+        std::unique_ptr<TGPUBuffer> ReverseNeighborSlotBuffer;
         std::unique_ptr<TGPUBuffer> SurfaceRangeBuffer;
         std::unique_ptr<TGPUBuffer> TexelChartIndexBuffer;
     };
@@ -120,6 +124,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetTransferWeightBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTransferWeightDebugAverageBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetRawFluxBuffer() const noexcept;
         void UpdateTransferWeights(const std::vector<float>& TransferWeights,
                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
@@ -137,6 +142,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> TransferWeightBuffer;
         std::unique_ptr<TGPUBuffer> TransferWeightDebugAverageBuffer;
         std::unique_ptr<TGPUBuffer> RawOutgoingBuffer;
+        std::unique_ptr<TGPUBuffer> RawFluxBuffer;
     };
 
     class TSurfaceStateDescriptorResources final
@@ -167,6 +173,12 @@ namespace MDSS
             BoundBufferHandles{};
     };
 
+    struct TSurfaceRawFluxMemoryUsage
+    {
+        VkDeviceSize InstanceRawFluxBytes = 0;
+        VkDeviceSize SharedReverseSlotBytes = 0;
+    };
+
     /**
      * @brief Scene의 런타임 Surface 데이터 조합별 공유 버퍼와 instance별 솔버 버퍼를 소유한다.
      * @note Compute dispatch는 수행하지 않으며 4주차 GPU 리소스 수명만 관리한다.
@@ -185,6 +197,8 @@ namespace MDSS
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
         [[nodiscard]] std::size_t GetSharedSurfaceDataCount() const noexcept;
         [[nodiscard]] std::size_t GetSceneInstanceCount() const noexcept;
+        /** @brief Actual buffer sizes, counting shared geometry once; excludes allocator overhead. */
+        [[nodiscard]] TSurfaceRawFluxMemoryUsage GetRawFluxMemoryUsage() const noexcept;
         /** @brief Scene 벡터 인덱스에 해당하는 instance 디스크립터 리소스를 반환한다. */
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;

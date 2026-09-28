@@ -28,12 +28,13 @@ namespace MDSS
     namespace
     {
         std::string MakeRuntimeSurfaceKey(const std::filesystem::path& MeshPath,
-                                          const std::filesystem::path& DistributionPath)
+                                          const std::filesystem::path& DistributionPath,
+                                          std::uint32_t Resolution)
         {
             const std::string MeshKey = std::filesystem::absolute(MeshPath).lexically_normal().generic_string();
             const std::string DistributionKey =
                 std::filesystem::absolute(DistributionPath).lexically_normal().generic_string();
-            return MeshKey + '\n' + DistributionKey;
+            return MeshKey + '\n' + DistributionKey + '\n' + std::to_string(Resolution);
         }
 
     } // 내부 네임스페이스
@@ -136,8 +137,14 @@ namespace MDSS
     }
 
     TSurfaceRuntimeDataHandle TAssetManager::LoadSurfaceData(TMeshAssetHandle             MeshHandle,
-                                                             const std::filesystem::path& RequestedDistributionPath)
+                                                             const std::filesystem::path& RequestedDistributionPath,
+                                                             std::uint32_t Resolution)
     {
+        if (Resolution == 0) Resolution = SimulationResolution;
+        if (!IsSurfaceSimulationResolution(Resolution))
+        {
+            throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
+        }
         if (MeshHandle >= Meshes.size())
         {
             throw std::out_of_range("Invalid TMeshAssetHandle for Surface preprocessing.");
@@ -148,7 +155,7 @@ namespace MDSS
         }
         const TMeshAsset&           Mesh = *Meshes[MeshHandle];
         const std::filesystem::path DistributionPath = RequestedDistributionPath;
-        const std::string           RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath);
+        const std::string           RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath, Resolution);
         if (const auto Found = RuntimeSurfaceAssetsByInputs.find(RuntimeKey);
             Found != RuntimeSurfaceAssetsByInputs.end())
         {
@@ -185,7 +192,7 @@ namespace MDSS
         SurfaceDefinitions.reserve(SurfaceCount);
         for (TSurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
         {
-            SurfaceDefinitions.push_back({Surface, DefaultSurfaceResolution});
+            SurfaceDefinitions.push_back({Surface, {Resolution, Resolution}});
         }
 
         std::vector<std::filesystem::path> NormalMapPaths(SurfaceCount);
@@ -276,10 +283,50 @@ namespace MDSS
         TRuntimeSurfaceAsset RuntimeAsset;
         RuntimeAsset.Data = std::make_shared<const TSurfaceRuntimeData>(std::move(Built));
         RuntimeAsset.ProfileTable = std::move(ProfileTable);
+        RuntimeAsset.Mesh = MeshHandle;
+        RuntimeAsset.DistributionPath = DistributionPath;
         RuntimeSurfaceAssets.push_back(std::move(RuntimeAsset));
         RuntimeSurfaceAssetsByInputs.emplace(RuntimeKey, RuntimeHandle);
-        TLogger::Info("TAssetManager", "Built Runtime Surface data for Mesh: " + Mesh.GetSourcePath().string());
+        TLogger::Info("TAssetManager", "Built Runtime Surface data (" + std::to_string(Resolution) + " x " +
+                      std::to_string(Resolution) + ") for Mesh: " + Mesh.GetSourcePath().string());
         return RuntimeHandle;
+    }
+
+    TSurfaceRuntimeDataHandle TAssetManager::LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
+                                                                        std::uint32_t Resolution)
+    {
+        if (!HasSurfaceData(Handle)) throw std::out_of_range("Invalid Runtime Surface Data handle.");
+        // Copy before LoadSurfaceData can grow RuntimeSurfaceAssets and invalidate references.
+        const TMeshAssetHandle Mesh = RuntimeSurfaceAssets[Handle].Mesh;
+        const auto DistributionPath = RuntimeSurfaceAssets[Handle].DistributionPath;
+        return LoadSurfaceData(Mesh, DistributionPath, Resolution);
+    }
+
+    std::uint32_t TAssetManager::GetSimulationResolution() const noexcept
+    {
+        return SimulationResolution;
+    }
+
+    void TAssetManager::SetSimulationResolution(std::uint32_t Resolution)
+    {
+        if (!IsSurfaceSimulationResolution(Resolution))
+            throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
+        SimulationResolution = Resolution;
+    }
+
+    void TAssetManager::ReleaseUnusedSurfaceData(const std::vector<TSurfaceRuntimeDataHandle>& RetainedHandles)
+    {
+        const auto IsRetained = [&](TSurfaceRuntimeDataHandle Handle)
+        { return std::find(RetainedHandles.begin(), RetainedHandles.end(), Handle) != RetainedHandles.end(); };
+        std::erase_if(RuntimeSurfaceAssetsByInputs, [&](const auto& Entry) { return !IsRetained(Entry.second); });
+        for (std::size_t Index = 0; Index < RuntimeSurfaceAssets.size(); ++Index)
+        {
+            if (!IsRetained(static_cast<TSurfaceRuntimeDataHandle>(Index)))
+            {
+                RuntimeSurfaceAssets[Index].Data.reset();
+                RuntimeSurfaceAssets[Index].ProfileTable.clear();
+            }
+        }
     }
 
     const TMeshAsset& TAssetManager::GetMesh(TMeshAssetHandle Handle) const

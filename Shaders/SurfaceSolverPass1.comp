@@ -13,39 +13,54 @@ void main()
         return;
     }
 
-    if (isValidTexel(TexelIndex))
-    {
-        initializeGeometryDrive();
-    }
+    bool SourceGeometryPrepared = false;
 
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
-        if (!supportsChannel(TexelIndex, ChannelIndex))
+        bool Supported = supportsChannel(TexelIndex, ChannelIndex);
+        float Current = Supported ? CurrentState.Values[StateValueIndex] : 0.0;
+        float AvailableState = Supported ? max(Current - decayAmount(TexelIndex, ChannelIndex), 0.0) : 0.0;
+        if (!Supported || AvailableState <= 0.0 || Solver.DeltaTime <= 0.0)
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
             RawOutgoingBuffer.Values[StateValueIndex] = 0.0;
+            // Pass 2 checks alpha before reading RawFlux. Inactive scratch can stay stale.
             continue;
         }
 
+        TSurfaceGPUProfileParameters Parameters =
+            ProfileParameters.Values[profileRecordIndex(TexelIndex, ChannelIndex)];
+        float SourceSaturation = (Solver.Flags & (1u << 1u)) != 0u
+                                     ? 0.0 : Current / Parameters.CapacityInputAndTransfer.x;
+        if (!SourceGeometryPrepared && Parameters.CapacityInputAndTransfer.w > 0.0 &&
+            (Solver.Flags & (1u << 0u)) == 0u)
+        {
+            prepareSourceGeometry(TexelIndex);
+            SourceGeometryPrepared = true;
+        }
         float RawOutgoing = 0.0;
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
-            if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
+            float RawFlux = 0.0;
+            if (NeighborTexel != InvalidTexelIndex && NeighborTexel < Solver.LocalTexelCount)
             {
-                continue;
+                RawFlux = rawFlux(NeighborTexel,
+                                  ChannelIndex,
+                                  transferWeight(TexelIndex, DirectionIndex),
+                                  Parameters,
+                                  SourceSaturation);
             }
-            RawOutgoing += rawFlux(TexelIndex,
-                                   NeighborTexel,
-                                   ChannelIndex,
-                                   transferWeight(TexelIndex, DirectionIndex));
+            if (rawFluxCacheEnabled())
+            {
+                RawFluxBuffer.Values[rawFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = RawFlux;
+            }
+            RawOutgoing += RawFlux;
         }
 
         RawOutgoingBuffer.Values[StateValueIndex] = RawOutgoing;
-        float Current = CurrentState.Values[StateValueIndex];
         // Capacity 초과량까지 포함한 전체 보유량으로 유출을 제한한다.
-        float AvailableState = max(Current - decayAmount(TexelIndex, ChannelIndex), 0.0);
         OutgoingFluxScale.Values[StateValueIndex] = RawOutgoing > 0.0
             ? min(1.0, AvailableState / RawOutgoing)
             : 1.0;

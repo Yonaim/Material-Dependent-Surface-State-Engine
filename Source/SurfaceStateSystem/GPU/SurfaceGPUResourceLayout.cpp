@@ -51,6 +51,8 @@ namespace MDSS
         Result.MesoNormals.reserve(TexelCount);
         Result.GeometryScalars.reserve(TexelCount);
         Result.NeighborIndices.reserve(TexelCount);
+        static_assert(SurfaceNeighborCount == 8);
+        Result.ReverseNeighborSlots.assign(TexelCount, UINT32_MAX);
         Result.TexelChartIndices.reserve(TexelCount);
         Result.SurfaceRanges.reserve(Geometry.GetSurfaces().size());
         for (const TSurfaceTexelRange& Range : Geometry.GetSurfaces())
@@ -59,8 +61,9 @@ namespace MDSS
                 {Range.FirstTexel, Range.Resolution.Width, Range.Resolution.Height, Range.TexelCount});
         }
 
-        for (const TSurfaceTexelGeometry& Texel : Geometry.GetTexels())
+        for (std::size_t TexelIndex = 0; TexelIndex < TexelCount; ++TexelIndex)
         {
+            const TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[TexelIndex];
             Result.TexelSurfaceIndices.push_back(Texel.Surface);
             Result.Positions.push_back(ToGPUVec4(Texel.Position));
             Result.Normals.push_back(ToGPUVec4(Texel.Normal));
@@ -74,6 +77,26 @@ namespace MDSS
                                              : (Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal);
             Result.MesoNormals.push_back(ToGPUVec4(MesoNormal));
             Result.NeighborIndices.push_back({Texel.NeighborIndices});
+            for (std::size_t Slot = 0; Slot < SurfaceNeighborCount; ++Slot)
+            {
+                const TLocalTexelIndex Neighbor = Texel.NeighborIndices[Slot];
+                if (Neighbor >= TexelCount)
+                {
+                    continue;
+                }
+                const auto& NeighborSlots = Geometry.GetTexels()[Neighbor].NeighborIndices;
+                for (std::uint32_t ReverseSlot = 0; ReverseSlot < SurfaceNeighborCount; ++ReverseSlot)
+                {
+                    if (NeighborSlots[ReverseSlot] == TexelIndex)
+                    {
+                        // UV seam connections have no fixed opposite direction slot.
+                        const std::uint32_t Shift = static_cast<std::uint32_t>(Slot * 4U);
+                        Result.ReverseNeighborSlots[TexelIndex] =
+                            (Result.ReverseNeighborSlots[TexelIndex] & ~(0xfU << Shift)) | (ReverseSlot << Shift);
+                        break;
+                    }
+                }
+            }
             Result.TexelChartIndices.push_back(Texel.Chart);
         }
 

@@ -14,7 +14,7 @@ TransferWeight 구현은 Position/Normal/Neighbor에서 가중치를 즉시 계�
 
 1. 인스턴스별·이웃 슬롯별 TransferWeight 캐시를 채택한다. DistanceWeight, NormalWeight, 기본 중립·선택적 사전 계산 CurvatureWeight([[0019-Optional-Curvature-Transfer-Weight|ADR 0019]])와 ProfileBoundaryWeight의 곱을 저장하고 rawFlux에서 읽는다. 계산식과 무효 Geometry의 가중치 0 규칙은 ADR 0016을 유지한다.
 2. 텍셀·State 채널별 RawOutgoing 합계를 Pass 1에서 저장하고 Pass 2가 재사용한다. OutgoingFluxScale은 기존대로 별도 저장한다.
-3. 간선별 Raw flux 버퍼는 이번 구현에서 채택하지 않는다. 1·2 적용 후 GPU 시간과 메모리 비용을 측정해 후속 결정한다.
+3. 초기 결정은 간선별 RawFlux 버퍼 보류였다. 2026-09-28의 [[0021-Directional-RawFlux-Cache|ADR 0021]]에서 방향·채널별 RawFlux 저장과 역방향 슬롯 gather를 채택하여 이 항목을 대체했다. TransferWeight와 RawOutgoing 재사용은 유지한다.
 4. TransferWeight cache는 최신 유효 표면 형상을 사용한다. 유효 위치는 `BasePosition + BaseNormal × (MesoVirtualHeight + AccumulationHeight)`이며 instance transform을 적용한다. 현재 upload는 MesoVirtualHeight만 포함하고, AccumulationHeight는 future dynamic geometry input이다. NormalWeight에는 같은 유효 형상에서 갱신된 normal을 사용하고, instance transform의 inverse-transpose를 적용한다. GeometryDrive의 높이와 방향도 이 최신 형상을 사용한다. 이는 ADR 0003의 적층 형상 반영 결정을 따른다.
 5. 준비 단계는 월드 위치·법선, 텍셀별 평균 유효 이웃 거리, 간선별 가중치 순서로 계산한다. 평균은 텍셀당 한 번만 계산한다. inverse-transpose normal matrix는 인스턴스 변환 갱신 시 한 번 산출한다. 준비 단계의 CPU/GPU 배치는 구현에서 확정하고 기록한다.
 6. Meso/Accumulation 형상 갱신이 매 Solver step 바뀌면 그 갱신 뒤 TransferWeight cache를 한 번 재생성한다. 형상 revision이 그대로면 재사용한다. 캐시 준비 완료 및 필요한 barrier 이전에는 Solver를 실행하지 않는다. 기존 2-Pass 제한, 입력 소비 시점, State A/B 전환, Registry 기반 채널 구조를 유지한다.
@@ -36,7 +36,7 @@ TransferWeight 구현은 Position/Normal/Neighbor에서 가중치를 즉시 계�
 
 ## Consequences
 
-- steady-state에서 중첩 평균 거리 순회를 제거하고 Pass 2의 rawFlux 호출 상한을 16회에서 8회로 줄인다.
+- 이 초기 구현은 중첩 평균 거리 순회를 제거하고 전체 rawFlux 호출 상한을 24→16회/텍셀·채널로 줄였다. 이후 ADR 0021은 Pass 2 재평가를 제거해 전체 상한을 8회로 줄인다.
 - 인스턴스마다 메모리가 늘며 캐시 무효화와 GPU 접근 동기화가 필요하다.
 - 채널 지원/StateCapacity/전달률 변경은 TransferWeight 자체를 바꾸지 않는다. 지원 여부는 rawFlux 경계에서 검사한다. Profile ID 배치 변경은 캐시를 갱신한다.
 - 순수 translation은 거리·법선 가중치를 바꾸지 않아 재생성이 필요 없다. 초기 구현은 모든 transform 변경을 dirty로 처리하는 보수적인 정책도 허용하며 구현 문서에 기록한다.
@@ -51,3 +51,5 @@ TransferWeight 구현은 Position/Normal/Neighbor에서 가중치를 즉시 계�
 - [[0003-Dynamic-Accumulation-Geometry|ADR 0003 — Dynamic Accumulation Geometry]]
 - [[../../04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]
 - [[../../03_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|Branch 2.1 — Solver Transfer Cache]]
+
+- [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 RawFlux 재사용]]

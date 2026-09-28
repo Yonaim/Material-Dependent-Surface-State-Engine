@@ -38,7 +38,14 @@ namespace MDSS
          * @param DistributionPath Scene에서 지정한 `.SurfaceProfileMap` 경로.
          */
         [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceData(TMeshAssetHandle Mesh,
-                                                                const std::filesystem::path& DistributionPath);
+                                                                const std::filesystem::path& DistributionPath,
+                                                                std::uint32_t Resolution = 0);
+        [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
+                                                                           std::uint32_t Resolution);
+        [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
+        void SetSimulationResolution(std::uint32_t Resolution);
+        /** @brief Call after replacing GPU resources; retained Scene handles remain valid. */
+        void ReleaseUnusedSurfaceData(const std::vector<TSurfaceRuntimeDataHandle>& RetainedHandles);
 
         /** @throws std::out_of_range Handle이 현재 등록된 Mesh 범위를 벗어난 경우. */
         [[nodiscard]] const TMeshAsset& GetMesh(TMeshAssetHandle Handle) const;
@@ -75,6 +82,8 @@ namespace MDSS
         {
             std::shared_ptr<const TSurfaceRuntimeData> Data;
             std::vector<TSRProfileAssetHandle> ProfileTable;
+            TMeshAssetHandle Mesh = InvalidAssetHandle;
+            std::filesystem::path DistributionPath;
         };
 
         std::vector<std::unique_ptr<TMeshAsset>>                Meshes;
@@ -87,6 +96,7 @@ namespace MDSS
         std::vector<TRuntimeSurfaceAsset>                       RuntimeSurfaceAssets;
         std::unordered_map<std::string, TSurfaceRuntimeDataHandle> RuntimeSurfaceAssetsByInputs;
         mutable std::unique_ptr<TSurfaceStateRegistry>          StateRegistry;
+        std::uint32_t SimulationResolution = SurfaceSimulationResolution;
 
         TextureAssetHandle  DefaultBaseColorTexture = InvalidAssetHandle;
         TextureAssetHandle  DefaultNormalTexture = InvalidAssetHandle;
