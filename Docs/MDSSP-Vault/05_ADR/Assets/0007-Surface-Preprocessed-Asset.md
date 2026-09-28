@@ -67,6 +67,6 @@ Mesh, Normal Map과 Profile 배치에서 생성되는 정적 데이터를 재사
 ## Related
 
 - [[0004-Asset-Profile-Mapping]]
-- [[../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
-- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+- [[../../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]

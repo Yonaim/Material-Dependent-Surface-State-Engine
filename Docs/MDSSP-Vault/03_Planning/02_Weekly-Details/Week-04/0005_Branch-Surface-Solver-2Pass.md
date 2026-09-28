@@ -6,7 +6,7 @@
 선행 조건: `feat/surface-gpu-resources` 병합  
 관련 설계: [[04_Architecture/0006_Surface-State-Update|Propagation Solver]], [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산]]
 
-> **초기 구현 기록:** 이 브랜치의 Capacity clamp 및 기존 검증 결과는 초기 상한 계약 기준이다. [[../../../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity를 포화 기준량으로 변경했으며 초과량 보존의 Shader 변경은 구현했고 새 GPU 실행 검증은 대기 중이다. 아래 완료 기록은 당시 결과로 유지한다.
+> **초기 구현 기록:** 이 브랜치의 Capacity clamp 및 기존 검증 결과는 초기 상한 계약 기준이다. [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity를 포화 기준량으로 변경했으며 초과량 보존의 Shader 변경은 구현했고 새 GPU 실행 검증은 대기 중이다. 아래 완료 기록은 당시 결과로 유지한다.
 
 ## 목표
 
@@ -210,6 +210,6 @@ Incoming/Outgoing debug buffer는 Debug build에서만 둘 수 있다.
 ## 제외 범위
 
 - 실제 Raycast와 ContactWeight
-- ProfileBoundaryWeight 결합식은 [[../../../05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]에서 결정했다. 적용 구현은 Week 5 Branch 2 범위다.
+- ProfileBoundaryWeight 결합식은 [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]]에서 결정했다. 적용 구현은 Week 5 Branch 2 범위다.
 - Accumulation geometry 갱신
 - 렌더링 품질 최적화

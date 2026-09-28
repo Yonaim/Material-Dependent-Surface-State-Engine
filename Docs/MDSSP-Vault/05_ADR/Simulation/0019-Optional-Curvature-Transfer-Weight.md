@@ -35,5 +35,5 @@
 
 - [[0016-Transport-Transfer-Weights|ADR 0016]]
 - [[0018-Normal-Map-Meso-Geometry|ADR 0018]]
-- [[../04_Architecture/0010_UI-Interface|UI Interface]]
-- [[../04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]
+- [[../../04_Architecture/0010_UI-Interface|UI Interface]]
+- [[../../04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]

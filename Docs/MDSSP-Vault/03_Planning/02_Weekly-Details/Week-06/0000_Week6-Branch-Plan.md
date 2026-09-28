@@ -14,7 +14,7 @@
 - 기존 Contact Input은 Registry State를 선택해 `InputDelta`로 전달한다. 새 contact API나 별도의 Wetness channel을 고정 enum으로 추가하지 않는다.
 - Wetness는 Registry 및 `.SRProfile`에 선언된 State다. 자유 표면의 `SurfaceWater` 모델은 이번 주 범위가 아니다.
 
-[[../../../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했고 기존 A/B에 초과량을 보존한다. Solver의 Saturation·Next 상한 clamp 제거는 구현했고 빌드는 통과했다. 이 계약의 GPU 회귀 검증 후 Wetness Profile 및 표시 remap을 평가한다.
+[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했고 기존 A/B에 초과량을 보존한다. Solver의 Saturation·Next 상한 clamp 제거는 구현했고 빌드는 통과했다. 이 계약의 GPU 회귀 검증 후 Wetness Profile 및 표시 remap을 평가한다.
 
 ## Week 5에서 확정한 Geometry transport 계약
 
@@ -26,7 +26,7 @@ Wetness는 generic Solver의 Geometry transport를 사용한다. 이 브랜치�
 - `DistanceWeight`가 실제 이웃 표면 간격의 감쇠를 맡는다.
 - `GeometryTransferRate`의 단위는 `State / (world-length · second)`다.
 
-계약의 기준은 [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]]와 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]다.
+계약의 기준은 [[05_ADR/Simulation/0015-Geometry-Driven-Transport|ADR 0015]]와 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]다.
 
 ## 브랜치 순서
 
@@ -91,7 +91,7 @@ Wetness State 변화가 Demo Scene의 재질에 시각적으로 나타나며, St
 
 ## 참고
 
-- [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015 — Geometry-Driven Transport]]
+- [[05_ADR/Simulation/0015-Geometry-Driven-Transport|ADR 0015 — Geometry-Driven Transport]]
 - [[04_Architecture/0006_Surface-State-Update|Surface State Update]]
 - [[04_Architecture/0009_Rendering|Rendering]]
 - [[03_Planning/01_Weekly-Overview/Week-06|Week 06 Overview]]

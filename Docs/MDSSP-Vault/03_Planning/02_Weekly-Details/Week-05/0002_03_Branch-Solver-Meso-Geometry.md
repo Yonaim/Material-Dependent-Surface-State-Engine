@@ -28,7 +28,7 @@ Normal Map은 noise, bake 오차 또는 비적분 가능 성분을 가질 수 �
 | Least-squares / Poisson 적분 | 전체 slope 오차를 줄이고 경로 편향을 완화한다. | boundary 조건, 기준 높이, 해법과 수렴 조건이 필요하다. |
 | 정규화된 근사 높이 | 빠르게 Meso offset을 만들 수 있다. | 실제 높이와 단위가 보장되지 않으며 scale 보정이 필요하다. |
 
-채택안은 **mesh-local 이웃 길이에서 edge별 signed height difference를 만들고, connected texel graph 전체에서 PCG least-squares height field를 구하는 방식**이다. component별 내부 기준 texel을 pin한 뒤 component mean을 0으로 이동한다. Non-Integrable 입력도 가장 가까운 least-squares height로 유지하고 relative edge residual을 기록한다. invalid/급경사 normal sample은 해당 texel을 높이 0으로 두고 적분에서 제외한다. 수식 및 상수는 [[05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]을 따른다.
+채택안은 **mesh-local 이웃 길이에서 edge별 signed height difference를 만들고, connected texel graph 전체에서 PCG least-squares height field를 구하는 방식**이다. component별 내부 기준 texel을 pin한 뒤 component mean을 0으로 이동한다. Non-Integrable 입력도 가장 가까운 least-squares height로 유지하고 relative edge residual을 기록한다. invalid/급경사 normal sample은 해당 texel을 높이 0으로 두고 적분에서 제외한다. 수식 및 상수는 [[05_ADR/Simulation/0018-Normal-Map-Meso-Geometry|ADR 0018]]을 따른다.
 
 ## 결정할 계약
 
@@ -102,4 +102,4 @@ flowchart LR
 
 ## 후속 변경 (2026-09-28)
 
-위 branch 범위는 초기 구현 기록이다. 현재는 CurvatureWeight 기본 OFF(1.0)를 유지하며 사전 계산된 Meso mean curvature 감쇠를 ON으로 비교할 수 있다. [[../../../05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다.
+위 branch 범위는 초기 구현 기록이다. 현재는 CurvatureWeight 기본 OFF(1.0)를 유지하며 사전 계산된 Meso mean curvature 감쇠를 ON으로 비교할 수 있다. [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다.

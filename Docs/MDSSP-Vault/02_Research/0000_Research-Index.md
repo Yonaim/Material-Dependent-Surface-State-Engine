@@ -13,7 +13,7 @@
 | `02_Research/` | 외부 연구의 이해·비교·프로젝트 적용 검토 |
 | `08_Assets/Documents/` | 원본 PDF 등 참고 자료. 노트에서는 DOI·공개 원문 또는 로컬 원본을 링크 |
 | `04_Architecture/` | 프로젝트에 채택한 계약과 수식 |
-| `05_ADR/` | 채택·보류·기각 이유와 대안 |
+| [[05_ADR/README\|`05_ADR/`]] | 채택·보류·기각 이유와 대안, 주제별 색인 |
 | `06_Development/Experiments/` | 프로젝트 구현으로 수행한 실험 조건·측정 결과 |
 | `00_Start/Templates/0006_Research-Note.md` | 연구 노트 양식 |
 

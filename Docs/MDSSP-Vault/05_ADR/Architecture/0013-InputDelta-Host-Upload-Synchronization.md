@@ -4,7 +4,7 @@
 
 - 상태: **Accepted**
 - 날짜: 2026-09-26
-- 관련: [[0011-GPU-Resource-Initialization-and-ABI|ADR 0011]], [[../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
+- 관련: [[0011-GPU-Resource-Initialization-and-ABI|ADR 0011]], [[../../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
 
 ## Context
 
@@ -45,5 +45,5 @@ CPU upload와 Solver가 접근하는 buffer를 분리해 전체 queue idle 대�
 ## Related
 
 - [[0011-GPU-Resource-Initialization-and-ABI|ADR 0011 — GPU Resource Initialization, Descriptors, and CPU↔GPU ABI]]
-- [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
-- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../../04_Architecture/0006_Surface-State-Update|Surface State Update]]
+- [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]

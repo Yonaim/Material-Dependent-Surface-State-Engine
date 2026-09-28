@@ -2,13 +2,13 @@
 
 > **한 줄 요약:** 현재 Solver는 인스턴스별 TransferWeight 캐시와 Pass 1의 RawOutgoing 합계를 재사용한다.
 
-상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정** · 근거: [[05_ADR/0017-Solver-Transfer-Cache|ADR 0017]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
+상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정** · 근거: [[05_ADR/Simulation/0017-Solver-Transfer-Cache|ADR 0017]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용한다. 이 문서는 인스턴스별 TransferWeight 캐시와 Pass 간 RawOutgoing 재사용을 정의한다. 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
 
 ## 초과량 보존 계약과 구현 상태
 
-[[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B를 유지하고 Capacity를 포화 기준량으로 사용한다. 아래 Next 식과 상한 없는 Saturation은 Shader에 구현했다. 빌드는 통과했으며 GPU 실행 검증은 대기 중이다. RawOutgoing·alpha·TransferWeight 캐시의 배치와 기존 두 pass·barrier는 유지하며 이 결정으로 추가되는 GPU payload는 0 B다.
+[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B를 유지하고 Capacity를 포화 기준량으로 사용한다. 아래 Next 식과 상한 없는 Saturation은 Shader에 구현했다. 빌드는 통과했으며 GPU 실행 검증은 대기 중이다. RawOutgoing·alpha·TransferWeight 캐시의 배치와 기존 두 pass·barrier는 유지하며 이 결정으로 추가되는 GPU payload는 0 B다.
 
 State 변화와 Capacity 수치 편집은 RawFlux에 영향을 주므로 RawOutgoing와 alpha를 다음 Pass 1에서 다시 계산한다. TransferWeight는 이 수치에 의존하지 않아 캐시를 무효화하지 않는다. Profile ID 배치·Geometry 변경에 따른 기존 invalidation은 유지한다.
 
@@ -123,7 +123,7 @@ TransferWeight cache는 현재 구현된 MesoVirtualHeight 또는 향후 Accumul
 
 각 invocation은 instance inverse-transpose와 gravity의 높이 축을 한 번 준비한다. RawFlux의 GeometryDrive는 mesh-local displaced endpoint 차이를 instance 선형 변환으로 변환해 높이차·방향에 함께 사용하며 translation은 상쇄된다. 기본 ON에서는 MesoNormal의 binding 17을 읽고, `DirectionDrive: MesoNormal`이 OFF이면 macro normal의 binding 3을 읽는다. 선택은 push constant flag bit 4로 두 pass에 동일하게 적용하며 TransferWeight cache를 무효화하지 않는다. 이 값은 invocation-local이며 별도 GPU buffer를 추가하지 않는다. 여러 채널의 간선 GeometryDrive를 배열로 재사용하는 후보도 측정했으나 1채널에서 안정적인 개선이 확인되지 않아 채택하지 않았다.
 
-CurvatureWeight 옵션 변경도 TransferWeight cache를 무효화한다. 기본은 OFF이며 계산식은 [[../05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
+CurvatureWeight 옵션 변경도 TransferWeight cache를 무효화한다. 기본은 OFF이며 계산식은 [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
 
 ## 빈 Source의 incoming 계산 생략
 

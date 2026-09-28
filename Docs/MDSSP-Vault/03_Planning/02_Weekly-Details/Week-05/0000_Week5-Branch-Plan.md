@@ -20,7 +20,7 @@
 - Solver를 pause, 한 step 진행, 전체 State 초기화할 수 있고 실행 통계를 확인할 수 있다.
 - Validation layer에서 새 동기화·descriptor 오류가 없으며, 지원되는 GPU 환경에서 GPU 테스트를 통과한다.
 
-[[../../../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. 아래 흐름·완료 기준은 새 계약이며 Saturation 상한과 Next Capacity clamp 제거는 구현했고 빌드는 통과했다. GPU 실행 검증은 대기 중이다. 기존 완료 기록은 이전 상한 계약의 결과이므로 새 계약 통과로 간주하지 않는다. Branch 6에는 초과 입력·유입·다음 step 후속 전달을 포함한다.
+[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. 아래 흐름·완료 기준은 새 계약이며 Saturation 상한과 Next Capacity clamp 제거는 구현했고 빌드는 통과했다. GPU 실행 검증은 대기 중이다. 기존 완료 기록은 이전 상한 계약의 결과이므로 새 계약 통과로 간주하지 않는다. Branch 6에는 초과 입력·유입·다음 step 후속 전달을 포함한다.
 
 ## 현재 기준선과 범위 경계
 
@@ -28,7 +28,7 @@
 
 현재 구현은 GeometryDrive, 네 가지 TransferWeight, TransferWeight 캐시, Normal Map 기반 `NormalWeight`, Normal Map에서 복원한 Meso 높이와 Curvature/Concavity 파생값을 포함한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 TransferWeight와 구성 가중치 히트맵이 있다. Branch 3 `feat/solver-debug-tools`에서 `OutgoingFluxScale` 뷰, Solver 제어·통계 UI 구현도 완료했다. Branch 2.1의 캐시 동등성·성능 검증과 Branch 2.3의 fixture/런타임 시각 검증은 아직 남아 있으며, 전체 통합 검증은 Branch 6에서 수행한다.
 
-이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Meso height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry와 State transition은 제외한다. Branch 2.3은 [[05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]에서 graph least-squares 적분, scale, chart boundary, fallback과 곡률 정의를 결정했다. fixture 및 데모 검증이 남아 있다.
+이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Meso height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry와 State transition은 제외한다. Branch 2.3은 [[05_ADR/Simulation/0018-Normal-Map-Meso-Geometry|ADR 0018]]에서 graph least-squares 적분, scale, chart boundary, fallback과 곡률 정의를 결정했다. fixture 및 데모 검증이 남아 있다.
 
 ## 데이터 흐름
 
@@ -55,7 +55,7 @@ Pass 1/2의 바탕 구조는 유지한다. 이번 작업은 공통 flux 계산�
 
 ### 0. 확정된 GeometryDrive 계약과 후속 weight 결정
 
-GeometryDrive의 역할·높이차·방향 정렬·거리 소유권·단위는 [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]]와 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]에 확정했다. Branch 1은 이 계약을 구현하며 새 수식을 임의로 선택하지 않는다.
+GeometryDrive의 역할·높이차·방향 정렬·거리 소유권·단위는 [[05_ADR/Simulation/0015-Geometry-Driven-Transport|ADR 0015]]와 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]에 확정했다. Branch 1은 이 계약을 구현하며 새 수식을 임의로 선택하지 않는다.
 
 - `EffectiveHeight = MacroHeight + MesoVirtualHeight`를 instance transform이 반영된 world-length로 평가한다.
 - `HeightDrive(i→j) = abs(EffectiveHeight_i - EffectiveHeight_j)`로 계산하며 neighbor distance로 나누지 않는다.

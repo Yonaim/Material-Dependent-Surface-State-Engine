@@ -4,7 +4,7 @@
 
 - Status: **Accepted**
 - Date: 2026-09-27
-- Related: [[0002-Transport-Drive-and-Weight|ADR 0002]], [[../04_Architecture/0006_Surface-State-Update|Surface State Update]], [[../04_Architecture/0004_Surface-Geometry|Surface Geometry]], [[../08_Assets/Documents/0006_Geometry-Integration|Geometry Integration]], [[../03_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|Week 5 Branch 1]], [[../03_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|Week 6 Branch Plan]]
+- Related: [[0002-Transport-Drive-and-Weight|ADR 0002]], [[../../04_Architecture/0006_Surface-State-Update|Surface State Update]], [[../../04_Architecture/0004_Surface-Geometry|Surface Geometry]], [[../../08_Assets/Documents/0006_Geometry-Integration|Geometry Integration]], [[../../03_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|Week 5 Branch 1]], [[../../03_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|Week 6 Branch Plan]]
 
 ## Context
 
@@ -49,8 +49,8 @@ ADR 0002는 State를 움직이는 구동력(`SaturationDrive`, `GeometryDrive`)�
 ## Related
 
 - [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 TransferWeight 분리]]
-- [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
-- [[../04_Architecture/0004_Surface-Geometry|Surface Geometry]]
-- [[../08_Assets/Documents/0006_Geometry-Integration|Geometry Integration]]
-- [[../03_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|Week 5 Branch 1 — Solver Geometry Drive]]
-- [[../03_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|Week 6 Branch Plan]]
+- [[../../04_Architecture/0006_Surface-State-Update|Surface State Update]]
+- [[../../04_Architecture/0004_Surface-Geometry|Surface Geometry]]
+- [[../../08_Assets/Documents/0006_Geometry-Integration|Geometry Integration]]
+- [[../../03_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|Week 5 Branch 1 — Solver Geometry Drive]]
+- [[../../03_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|Week 6 Branch Plan]]

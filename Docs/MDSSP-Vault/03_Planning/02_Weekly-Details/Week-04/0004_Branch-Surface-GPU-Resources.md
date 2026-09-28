@@ -10,7 +10,7 @@
 
 CPU에서 검증한 Mapping/Geometry/Profile 데이터를 Vulkan Storage Buffer로 올리고, instance별 State A/B와 OutgoingFluxScale/InputDelta를 생성한다. 이 브랜치에서는 compute shader가 실제 수식을 실행하지 않아도 된다.
 
-State와 Profile parameter의 GPU 배치는 `.SRProfile`에서 생성된 `TSurfaceStateRegistry::ChannelCount`를 지원한다. texel별 dense ProfileIndex map은 [[../../../../05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다. State channel layout, Profile parameter layout, scalar stride/indexing은 [[../../../../05_ADR/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]]에서 정한 계약을 구현·검증한다. 고정 4채널 `vec4` layout은 사용하지 않는다.
+State와 Profile parameter의 GPU 배치는 `.SRProfile`에서 생성된 `TSurfaceStateRegistry::ChannelCount`를 지원한다. texel별 dense ProfileIndex map은 [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다. State channel layout, Profile parameter layout, scalar stride/indexing은 [[05_ADR/Architecture/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]]에서 정한 계약을 구현·검증한다. 고정 4채널 `vec4` layout은 사용하지 않는다.
 
 ## 현재 기반에서 주의할 점
 

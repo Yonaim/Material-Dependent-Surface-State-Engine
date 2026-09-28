@@ -47,7 +47,7 @@ flowchart LR
 
 Render Material과 Surface Response Profile은 서로 다른 책임이다. Render Material은 외관을 정의하고, `.SRProfile`은 State에 대한 반응 파라미터와 Transition을 정의한다. 현재 입력 계약에서는 각 Surface/Material 할당에 SRProfile 하나를 지정하며, 그 Surface의 모든 valid texel이 해당 Profile을 사용한다.
 
-Runtime 전처리 결과는 유효한 각 UV texel에 `ProfileIndex` 하나를 저장하는 dense Profile Map을 포함한다. 각 texel은 별도 Profile 테이블의 반응 파라미터를 이 인덱스로 조회한다. 현재는 Surface/Material 할당 하나에 Profile 하나를 연결한 뒤 해당 Surface의 texel마다 같은 인덱스를 확장한다. dense map은 조회 표현이며, Surface 내부를 여러 Profile 영역으로 나누는 authoring 기능까지 의미하지 않는다. 그 세분화는 후속 기능으로 남긴다. Profile Map은 실행 중 메모리에만 두고 `.Surface` 파일로 저장하지 않는다. [[../05_ADR/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
+Runtime 전처리 결과는 유효한 각 UV texel에 `ProfileIndex` 하나를 저장하는 dense Profile Map을 포함한다. 각 texel은 별도 Profile 테이블의 반응 파라미터를 이 인덱스로 조회한다. 현재는 Surface/Material 할당 하나에 Profile 하나를 연결한 뒤 해당 Surface의 texel마다 같은 인덱스를 확장한다. dense map은 조회 표현이며, Surface 내부를 여러 Profile 영역으로 나누는 authoring 기능까지 의미하지 않는다. 그 세분화는 후속 기능으로 남긴다. Profile Map은 실행 중 메모리에만 두고 `.Surface` 파일로 저장하지 않는다. [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
 
 ```text
 UV Texel
@@ -56,7 +56,7 @@ UV Texel
     └── ProfileIndex → SRProfile response data
 ```
 
-Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Scene load 때 생성하는 정적 데이터다. `.Scene`의 각 object가 사용할 `.SurfaceProfileMap` 경로를 선택한다. 같은 Mesh 및 Profile Distribution 조합을 사용하는 instance들은 하나의 결과를 공유하고, 같은 Mesh라도 다른 map을 선택하면 별도 조합으로 전처리한다. persistent cache metadata나 stale 판정은 두지 않는다. 구체 경로 계약은 [[../05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]를 따른다. 데이터 범위는 다음과 같다.
+Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Scene load 때 생성하는 정적 데이터다. `.Scene`의 각 object가 사용할 `.SurfaceProfileMap` 경로를 선택한다. 같은 Mesh 및 Profile Distribution 조합을 사용하는 instance들은 하나의 결과를 공유하고, 같은 Mesh라도 다른 map을 선택하면 별도 조합으로 전처리한다. persistent cache metadata나 stale 판정은 두지 않는다. 구체 경로 계약은 [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]를 따른다. 데이터 범위는 다음과 같다.
 
 | Runtime Surface Data에 포함 | Runtime Surface Data에 포함하지 않음 |
 |---|---|
@@ -64,11 +64,11 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Scene
 | Neighbor, Distance, Height Difference, Boundary, UV seam 연결 등 texel 관계 | `.SRProfile`의 반응 파라미터와 Transition |
 | Texel → `ProfileIndex` map | Instance별 `SurfaceInstanceStateData` |
 
-전처리 시점과 저장 수명은 [[../05_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다. 이전 `.Surface` persistent cache 결정은 [[../05_ADR/0007-Surface-Preprocessed-Asset|ADR 0007]]에서 superseded 상태로 보존한다.
+전처리 시점과 저장 수명은 [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다. 이전 `.Surface` persistent cache 결정은 [[05_ADR/Assets/0007-Surface-Preprocessed-Asset|ADR 0007]]에서 superseded 상태로 보존한다.
 
 ## State Registry
 
-`.SRProfile`의 `states` key가 프로젝트에서 사용하는 State 이름을 제공한다. Profile을 로드하면서 이 이름들을 모아 `TSurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 `TStateId`/`ChannelIndex`로 변환한다. 이름 정규화 규칙과 Solver의 데이터 주도 처리 원칙은 [[../05_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
+`.SRProfile`의 `states` key가 프로젝트에서 사용하는 State 이름을 제공한다. Profile을 로드하면서 이 이름들을 모아 `TSurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 `TStateId`/`ChannelIndex`로 변환한다. 이름 정규화 규칙과 Solver의 데이터 주도 처리 원칙은 [[05_ADR/Architecture/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
 
 ## `.SRProfile` 예시
 
@@ -156,6 +156,6 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution으로부터 Scene
 
 현재 4주차 구현에서는 Simulation grid 해상도를 사용자가 `.Scene`에서 지정하지 않는다. 모든 Surface에 `512 × 512`를 적용하며, 이 값은 전처리 코드의 한 곳에서 관리한다.
 
-`.Scene`에서 `surfaceProfileMap`을 생략한 object는 렌더링 전용이며 Runtime Surface simulation data를 만들지 않는다. Scene 경로와 Profile map 참조 정책은 [[../05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에 정의한다.
+`.Scene`에서 `surfaceProfileMap`을 생략한 object는 렌더링 전용이며 Runtime Surface simulation data를 만들지 않는다. Scene 경로와 Profile map 참조 정책은 [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에 정의한다.
 
 Simulation UV는 렌더링 UV와 논리적으로 분리한다. UV 생성·검증과 현재 구현 범위는 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 본다.

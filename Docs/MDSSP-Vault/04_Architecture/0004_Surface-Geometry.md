@@ -34,7 +34,7 @@ flowchart LR
   Updated -.-> Simulation["Later simulation steps"]
 ```
 
-정적 전처리는 애플리케이션 실행 중 고유 Mesh/Profile Distribution 입력 조합마다 load 시 한 번 수행한다. 매 frame이나 Instance마다 반복하지 않으며, 결과를 `.Surface` 파일이나 persistent cache로 저장하지 않는다. 전처리 시점과 수명은 [[../05_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
+정적 전처리는 애플리케이션 실행 중 고유 Mesh/Profile Distribution 입력 조합마다 load 시 한 번 수행한다. 매 frame이나 Instance마다 반복하지 않으며, 결과를 `.Surface` 파일이나 persistent cache로 저장하지 않는다. 전처리 시점과 수명은 [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
 
 ## Macro / Meso Geometry
 
@@ -50,7 +50,7 @@ Normal Map은 실제 Mesh를 바꾸지는 않지만 Simulation에서는 Meso-Str
 | Height    | `Macro_Height + Meso_Virtual_Height`                             |
 | Curvature | `Macro_Curvature + Meso_Curvature`                               |
 
-Normal Map은 Simulation UV에 대응하는 각 texel에서 sample한다. 이웃 texel 간 mesh-local 위치와 변환된 Normal Map normal로 방향별 높이차를 계산한 뒤, 연결 graph 전체에서 그 차이를 최소제곱으로 만족시키는 height field를 구한다. Normal Map의 기울기는 완전히 적분 가능하지 않을 수 있다. 이 경우 residual을 기록하고 least-squares 해를 그대로 사용한다. 유효한 normal sample이 없거나 정규 macro normal과 반대 방향인 texel은 높이 0으로 남기고 적분 graph에서 제외한다. 자세한 수식과 한계는 [[05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]을 따른다.
+Normal Map은 Simulation UV에 대응하는 각 texel에서 sample한다. 이웃 texel 간 mesh-local 위치와 변환된 Normal Map normal로 방향별 높이차를 계산한 뒤, 연결 graph 전체에서 그 차이를 최소제곱으로 만족시키는 height field를 구한다. Normal Map의 기울기는 완전히 적분 가능하지 않을 수 있다. 이 경우 residual을 기록하고 least-squares 해를 그대로 사용한다. 유효한 normal sample이 없거나 정규 macro normal과 반대 방향인 texel은 높이 0으로 남기고 적분 graph에서 제외한다. 자세한 수식과 한계는 [[05_ADR/Simulation/0018-Normal-Map-Meso-Geometry|ADR 0018]]을 따른다.
 
 ```mermaid
 flowchart LR
@@ -99,7 +99,7 @@ Non-integrable 입력에 별도 임계값 기반 거부는 두지 않는다. 최
 | `MesoGaussianCurvature` | Texel별 CPU/GPU | height field의 국소 이차 fit에서 계산한 Gaussian curvature. 단위는 1/(mesh-local length²)다. 곡면이 볼록/오목/안장인지 보조적으로 구분한다. |
 | `ConcavityWeight` | Texel별 CPU/GPU | 양의 signed mean curvature에 평균 이웃 간격을 곱해 `[0,1]`로 clamp한 Decay 전용 cavity retention 입력. 평탄/볼록 영역은 0이다. |
 
-현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. Mean/Gaussian curvature는 형상 데이터로 생성한다. Transport의 `CurvatureWeight`는 기본 OFF에서 중립값 `1.0`이며, ON이면 Meso mean curvature 기반 사전 계산 가중치를 사용한다. 식과 제한은 [[../05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. `NormalWeight`가 이웃 유효 normal 차이를 반영하므로 곡률 항을 더하면 굽힘 효과를 중복할 수 있다. GPU storage layout은 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]와 ADR 0018을 따른다.
+현재 Solver의 Decay는 `ConcavityWeight`를 직접 읽는다. Mean/Gaussian curvature는 형상 데이터로 생성한다. Transport의 `CurvatureWeight`는 기본 OFF에서 중립값 `1.0`이며, ON이면 Meso mean curvature 기반 사전 계산 가중치를 사용한다. 식과 제한은 [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. `NormalWeight`가 이웃 유효 normal 차이를 반영하므로 곡률 항을 더하면 굽힘 효과를 중복할 수 있다. GPU storage layout은 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]와 ADR 0018을 따른다.
 
 ### Geometry Common Parameters
 
@@ -154,7 +154,7 @@ $$
 Accumulation\_Amount = State \times Accumulation\_Factor
 $$
 
-- `State`는 유한한 비음수 전체 상태량이며 Capacity 초과량도 포함한다. 포화 기준량으로 상한 clamp하지 않는다. [[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 Solver 변경은 구현했으며 GPU 실행 검증은 대기 중이다.
+- `State`는 유한한 비음수 전체 상태량이며 Capacity 초과량도 포함한다. 포화 기준량으로 상한 clamp하지 않는다. [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]의 Solver 변경은 구현했으며 GPU 실행 검증은 대기 중이다.
 - `Accumulation_Factor ∈ [0,n]`
 - `Accumulation_Factor = 0`이면 State가 있어도 형상 적층을 만들지 않는다.
 
@@ -207,6 +207,6 @@ $$
 DynamicFinalHeight = MacroHeight + MesoVirtualHeight + AccumulationHeight
 $$
 
-Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Height / Curvature에도 다시 반영한다. Neighbor Distance는 Position 기반으로 필요할 때 계산한다. [[05_ADR/0003-Dynamic-Accumulation-Geometry|ADR 0003]]
+Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Height / Curvature에도 다시 반영한다. Neighbor Distance는 Position 기반으로 필요할 때 계산한다. [[05_ADR/Simulation/0003-Dynamic-Accumulation-Geometry|ADR 0003]]
 
 예를 들어 Wetness / Heat / Burn은 형상 적층이 없도록 `accumulationFactor = 0`을 사용할 수 있고, Mud는 적층을 표현할 수 있다. State 종류는 고정 목록이 아니며, SurfaceWater / Snow 등 다른 State의 적층 동작도 해당 Profile 파라미터로 정의한다.

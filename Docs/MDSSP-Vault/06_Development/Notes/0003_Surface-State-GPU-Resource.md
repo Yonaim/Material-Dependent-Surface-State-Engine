@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** 이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다.
 
-상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[05_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]], [[04_Architecture/0002_Surface-State|표면 상태]], [[04_Architecture/0006_Surface-State-Update|Propagation Solver]], [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[05_ADR/Architecture/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]], [[04_Architecture/0002_Surface-State|표면 상태]], [[04_Architecture/0006_Surface-State-Update|Propagation Solver]], [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
 
 이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다. 상태 갱신 수식의 기준은 [[04_Architecture/0006_Surface-State-Update|Propagation Solver]]다.
 
@@ -76,7 +76,7 @@ profileIndex = TexelProfileIndex[localTexelIndex]
 
 `getStateIndex`는 ADR 0010의 `texelIndex * channelCount + channelIndex` 산식을 사용하며, 이웃 texel에서도 같은 helper를 사용한다.
 
-`TexelSurfaceIndex`는 Runtime mapping의 local Surface ID이며 invalid texel 판정에 사용한다. `TexelProfileIndex`는 각 texel이 사용하는 Profile 테이블의 index를 직접 저장한다. 같은 Profile을 쓰는 인접 texel도 index를 따로 보유한다. 이 dense lookup 기본안은 [[../05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다.
+`TexelSurfaceIndex`는 Runtime mapping의 local Surface ID이며 invalid texel 판정에 사용한다. `TexelProfileIndex`는 각 texel이 사용하는 Profile 테이블의 index를 직접 저장한다. 같은 Profile을 쓰는 인접 texel도 index를 따로 보유한다. 이 dense lookup 기본안은 [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다.
 
 ## Shared Surface Geometry Buffer
 
@@ -143,7 +143,7 @@ Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. 
 
 ### TransferWeights
 
-`TransferWeightsBuffer`는 `texel × 8 + neighborSlot` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 선택적 CurvatureWeight(기본 1.0; [[../../05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]) × ProfileBoundaryWeight를 각 슬롯에 기록한다. Profile이 같으면 경계 가중치는 1.0, 다르면 0.5다.
+`TransferWeightsBuffer`는 `texel × 8 + neighborSlot` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 선택적 CurvatureWeight(기본 1.0; [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]) × ProfileBoundaryWeight를 각 슬롯에 기록한다. Profile이 같으면 경계 가중치는 1.0, 다르면 0.5다.
 
 초기 cache는 instance GPU resource 생성 시 준비한다. `TSurfaceStateSystem::RecordStep`은 회전/scale 등 3×3 선형 transform의 변화를 확인한다. dirty cache가 하나라도 있으면 이전 dispatch가 끝나도록 Graphics queue를 idle한 뒤 해당 instance cache를 다시 계산·업로드한다. 순수 translation은 가중치에 영향을 주지 않아 재생성하지 않는다. 현재 Geometry scalar/topology를 runtime에서 수정하는 경로는 없으며, 추후 추가할 때 resource manager의 `InvalidateTransferWeightCache`를 호출해야 한다. 동적 AccumulationHeight/normal 값의 공급과 invalidation은 미구현이다.
 
@@ -168,10 +168,10 @@ InputDelta는 discrete event(발생 시점에 한 번 기록되는 접촉 사건
 
 Profile parameter는 `(ProfileIndex, ChannelIndex)` 조합을 사용하며, ADR 0010의 Profile-major record 배치와 index 산식을 따른다.
 
-- `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다. [[../../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 전달용 비율은 상한 clamp하지 않으며 State A/B에 전체 초과량을 보존한다. 기존 float32 AoS·채널 수·padding 없음의 ABI를 유지해 추가 GPU payload는 0 B다. Shader의 상한 clamp 제거는 구현했고 빌드는 통과했다. GPU 실행 검증은 대기 중이다.
+- `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다. [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에서 전달용 비율은 상한 clamp하지 않으며 State A/B에 전체 초과량을 보존한다. 기존 float32 AoS·채널 수·padding 없음의 ABI를 유지해 추가 GPU payload는 0 B다. Shader의 상한 clamp 제거는 구현했고 빌드는 통과했다. GPU 실행 검증은 대기 중이다.
 - CPU Asset loader가 모든 `stateCapacity > 0`을 검증한 뒤 upload한다.
 - JSON을 GPU 구조체 메모리에 직접 역직렬화하지 않고 명시적으로 변환한다.
-- 동일 Profile 사이의 `ProfileBoundaryWeight`는 `1.0`, 서로 다른 Profile 사이에서는 고정 `0.5`다. 이 값은 Solver 공통 규칙이며 Profile parameter나 추가 GPU ABI 필드는 필요하지 않다. 세부 weight 계약은 [[../../05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
+- 동일 Profile 사이의 `ProfileBoundaryWeight`는 `1.0`, 서로 다른 Profile 사이에서는 고정 `0.5`다. 이 값은 Solver 공통 규칙이며 Profile parameter나 추가 GPU ABI 필드는 필요하지 않다. 세부 weight 계약은 [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
 
 ## Descriptor binding
 

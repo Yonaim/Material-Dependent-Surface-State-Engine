@@ -9,7 +9,7 @@ OBJ, MTL, Texture와 `.SRProfile` 파일이 파싱된 뒤 Asset으로 등록되�
 관련 설계 문서:
 
 - [[04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]
+- [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]
 - [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
 - [[04_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]
 
@@ -89,7 +89,7 @@ Normal Map ───────────────────────
                                       (Registry-sized dynamic State per instance; each channel is capacity-limited)
 ```
 
-최종 설계는 `.Surface` 파일을 만들지 않는다. 각 Runtime의 Asset/Scene load에서 고유 Mesh 및 Profile Distribution 조합을 전처리하고, 결과를 메모리에 보유해 같은 입력의 instance들이 공유한다. 같은 frame이나 instance별로 반복 생성하지 않는다. 현재 코드의 binary serialization/metadata API는 이전 결정의 잔여 구현이므로 Runtime 전처리 흐름에서는 제거하거나 비활성화한다. Profile Distribution 입력 형식/loader는 builder의 입력 계약으로 유지한다. 동적 State는 공유 Geometry가 아니라 instance별 State 데이터가 소유하며, 각 State의 Capacity 초과량은 저장하지 않는다. 현재 결정은 [[05_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
+최종 설계는 `.Surface` 파일을 만들지 않는다. 각 Runtime의 Asset/Scene load에서 고유 Mesh 및 Profile Distribution 조합을 전처리하고, 결과를 메모리에 보유해 같은 입력의 instance들이 공유한다. 같은 frame이나 instance별로 반복 생성하지 않는다. 현재 코드의 binary serialization/metadata API는 이전 결정의 잔여 구현이므로 Runtime 전처리 흐름에서는 제거하거나 비활성화한다. Profile Distribution 입력 형식/loader는 builder의 입력 계약으로 유지한다. 동적 State는 공유 Geometry가 아니라 instance별 State 데이터가 소유하며, 각 State의 Capacity 초과량은 저장하지 않는다. 현재 결정은 [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]를 따른다.
 
 ## 1. OBJ와 MTL 파싱
 
@@ -167,11 +167,11 @@ File read
 
 `TSRProfileAsset`은 Profile 데이터를 값으로 소유한다. `TSceneLoader`는 Scene object의 Mesh 경로와 선택적 `.SurfaceProfileMap` 경로를 해석하고, AssetManager가 map에 선언된 `.SRProfile`들을 로드해 Runtime Surface Data에 연결한다.
 
-`.SRProfile`의 `states` key를 모으는 `TSurfaceStateRegistry`와 정규화, 재현 가능한 ID 배정, Transition endpoint 검증은 구현되어 있다. `TAssetManager::GetSurfaceStateRegistry()`가 로드된 Profile 집합을 기준으로 Registry를 지연 생성하고 이후 Profile이 추가되면 cache를 무효화한다. Registry channel count를 instance/GPU layout에 전달하는 일은 Branch 4, Solver 순회는 Branch 5, Contact 입력의 StateId 해석은 Branch 6에 배정했다. 계약은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 기준으로 한다.
+`.SRProfile`의 `states` key를 모으는 `TSurfaceStateRegistry`와 정규화, 재현 가능한 ID 배정, Transition endpoint 검증은 구현되어 있다. `TAssetManager::GetSurfaceStateRegistry()`가 로드된 Profile 집합을 기준으로 Registry를 지연 생성하고 이후 Profile이 추가되면 cache를 무효화한다. Registry channel count를 instance/GPU layout에 전달하는 일은 Branch 4, Solver 순회는 Branch 5, Contact 입력의 StateId 해석은 Branch 6에 배정했다. 계약은 [[05_ADR/Architecture/0006-Dynamic-State-Registry|ADR 0006]]을 기준으로 한다.
 
 ## 5. Runtime Surface 전처리 흐름
 
-`.Surface` 파일은 사용하지 않는다. 각 애플리케이션 Runtime의 Scene load 중 고유 Mesh와 Profile Distribution 조합을 전처리해 결과를 메모리에 만든다. `.Scene` object가 Profile Distribution 파일을 선택하며, 같은 Mesh와 같은 map을 선택한 여러 instance는 결과를 공유한다. 같은 Mesh라도 다른 map을 선택하면 별도 Runtime Surface Data handle과 Profile table을 갖는다. 각 유효 texel은 dense Profile Map에 저장된 `ProfileIndex`로 해당 table을 조회한다. 상세 결정은 [[../05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]와 [[../05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012]]를 따른다.
+`.Surface` 파일은 사용하지 않는다. 각 애플리케이션 Runtime의 Scene load 중 고유 Mesh와 Profile Distribution 조합을 전처리해 결과를 메모리에 만든다. `.Scene` object가 Profile Distribution 파일을 선택하며, 같은 Mesh와 같은 map을 선택한 여러 instance는 결과를 공유한다. 같은 Mesh라도 다른 map을 선택하면 별도 Runtime Surface Data handle과 Profile table을 갖는다. 각 유효 texel은 dense Profile Map에 저장된 `ProfileIndex`로 해당 table을 조회한다. 상세 결정은 [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009]]와 [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|ADR 0012]]를 따른다.
 
 | 전처리 입력 | 결과에 미치는 영향 | Runtime 처리 |
 |---|---|---|

@@ -4,7 +4,7 @@
 
 - 상태: **Accepted**
 - 날짜: 2026-09-26
-- 관련: [[0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[0006-Dynamic-State-Registry|ADR 0006]], [[0009-Texel-Profile-Index-Map|ADR 0009]], [[../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
+- 관련: [[0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[0006-Dynamic-State-Registry|ADR 0006]], [[0009-Texel-Profile-Index-Map|ADR 0009]], [[../../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
 
 ## Context
 
@@ -89,4 +89,4 @@ texelCount × channelCount × sizeof(float)
 - [[0005-Per-Texel-GPU-Data-Layout|ADR 0005 — Per-Texel GPU Data Layout]]
 - [[0006-Dynamic-State-Registry|ADR 0006 — Dynamic State Registry]]
 - [[0009-Texel-Profile-Index-Map|ADR 0009 — Texel Profile Index Map]]
-- [[../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
+- [[../../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]

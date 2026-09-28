@@ -10,7 +10,7 @@
 2. `01_Project-Policy/`에서 공식 용어와 작성·개발 규칙을 확인한다.
 3. `02_Research/0000_Research-Index.md`에서 관련 연구와 프로젝트 적용 검토를 확인한다.
 4. `03_Planning/00_Project-Overview/0000_Project-Plan.md`와 `0001_Roadmap.md`에서 범위와 일정을 확인한다.
-5. `04_Architecture/0000_Overview.md`에서 시스템 구성을 파악하고 `05_ADR/`에서 결정 근거를 읽는다.
+5. `04_Architecture/0000_Overview.md`에서 시스템 구성을 파악하고 `05_ADR/README.md`에서 주제별 ADR 색인을 확인한다.
 6. 실제 구현 메모·실험은 `06_Development/`, 테스트 기준·결과는 `07_Testing/`, 원본 자료는 `08_Assets/`에서 확인한다.
 7. 진행할 작업과 완료 여부는 볼트 루트의 `TODO.md`에서 확인한다.
 
@@ -34,6 +34,10 @@
 │       └── Week-XX/            주차별 상세 구현 계획
 ├── 04_Architecture/            전체 구조, 기능별 설계, 시스템 정의 수식
 ├── 05_ADR/                     설계 결정과 근거
+│   ├── Architecture/           시스템 구조와 GPU/API 계약
+│   ├── Assets/                 에셋 연결과 전처리
+│   ├── Rendering/              렌더링 결정
+│   └── Simulation/             상태, 형상과 Solver 결정
 ├── 06_Development/
 │   ├── Notes/                  구현 메모, 계산 순서, 최적화
 │   ├── Experiments/            가설과 측정 결과

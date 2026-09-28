@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** 이 문서는 Surface simulation에서 GPU로 올리는 데이터의 타입과 배치, 소유 범위를 정한다.
 
-상태: **결정 사항** · 결정 근거와 검토 대안: [[../05_ADR/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]], [[../05_ADR/0011-GPU-Resource-Initialization-and-ABI|ADR 0011]] · 관련: [[0004_Surface-Geometry|Surface Geometry]], [[../05_ADR/0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[../05_ADR/0006-Dynamic-State-Registry|ADR 0006]], [[../05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
+상태: **결정 사항** · 결정 근거와 검토 대안: [[05_ADR/Architecture/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]], [[05_ADR/Architecture/0011-GPU-Resource-Initialization-and-ABI|ADR 0011]] · 관련: [[0004_Surface-Geometry|Surface Geometry]], [[05_ADR/Architecture/0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[05_ADR/Architecture/0006-Dynamic-State-Registry|ADR 0006]], [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 이 문서는 Surface simulation에서 GPU로 올리는 데이터의 타입과 배치, 소유 범위를 정한다. 데이터는 수명과 공유 단위에 따라 세 그룹으로 나뉜다. 전처리로 만들어 여러 instance가 함께 쓰는 **Shared Geometry**, Profile 반응값을 담는 **Profile table**, 그리고 시뮬레이션 상태를 instance마다 따로 보유하는 **Instance State**다.
 
@@ -109,7 +109,7 @@ index = texelIndex * channelCount + channelIndex
 
 `StateA`와 `StateB`는 ping-pong에 사용한다. 한 step에서 Current를 읽고 Next에 쓰며, step이 끝나면 역할을 바꾼다. Descriptor set은 A→B와 B→A 구성을 미리 만들어 번갈아 쓴다. 매 step마다 descriptor를 수정하지 않는다.
 
-[[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량을 저장한다. `StateCapacity` Profile 필드는 같은 float32 위치·기본값을 유지하고 의미만 포화 기준량으로 바뀐다. 기존 instance별 texel-major AoS 및 채널 padding 없음의 크기·stride·descriptor를 유지하므로 추가 GPU payload는 **0 B**다. 초과량용 임시 buffer는 추가하지 않는다. Shader의 두 상한 clamp 제거를 구현했고 GPU 실행 검증은 대기 중이다.
+[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]의 State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량을 저장한다. `StateCapacity` Profile 필드는 같은 float32 위치·기본값을 유지하고 의미만 포화 기준량으로 바뀐다. 기존 instance별 texel-major AoS 및 채널 padding 없음의 크기·stride·descriptor를 유지하므로 추가 GPU payload는 **0 B**다. 초과량용 임시 buffer는 추가하지 않는다. Shader의 두 상한 clamp 제거를 구현했고 GPU 실행 검증은 대기 중이다.
 
 `OutgoingFluxScale`은 Pass 1에서 계산해 Pass 2에서 읽는 텍셀·채널별 outgoing flux 제한 비율이다. `InputDelta`는 접촉에서 발생한 discrete event(발생 시점에 한 번 기록되는 접촉 사건)의 양을 누적한다. 이벤트 입력 뒤 처음 실행되는 solver update의 Pass 2가 이를 Next State에 한 번 더하고, 그 update 뒤 비운다. 따라서 입력은 그 update 결과에 즉시 반영되지만 Pass 1은 입력 전 Current State로 flux를 계산하므로, 접촉으로 추가된 양의 이웃 전파는 다음 solver update부터 시작한다. 지속 시간 동안 계속 작용하는 입력은 이 이벤트 입력과 다른 입력 모델이며, 필요하면 DeltaTime을 적용하는 별도 rate 입력으로 다룬다. State A/B의 시작값은 0이다.
 

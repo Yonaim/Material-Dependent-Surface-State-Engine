@@ -84,8 +84,8 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 - [[0001-Capacity-and-Saturation|ADR 0001 — 초기 상한 계약]]
 - [[0017-Solver-Transfer-Cache|ADR 0017 — 기존 pass/cache 재사용]]
-- [[../04_Architecture/0002_Surface-State|State 데이터 계약]]
-- [[../04_Architecture/0006_Surface-State-Update|Solver 갱신식]]
-- [[../04_Architecture/0008_Surface-GPU-Data-Layout|GPU 배치]]
-- [[../04_Architecture/0007_Surface-Solver-Cache|Solver 캐시]]
-- [[../02_Research/0001_Bound-Preserving-Transport|포화와 전달 연구 노트]]
+- [[../../04_Architecture/0002_Surface-State|State 데이터 계약]]
+- [[../../04_Architecture/0006_Surface-State-Update|Solver 갱신식]]
+- [[../../04_Architecture/0008_Surface-GPU-Data-Layout|GPU 배치]]
+- [[../../04_Architecture/0007_Surface-Solver-Cache|Solver 캐시]]
+- [[../../02_Research/0001_Bound-Preserving-Transport|포화와 전달 연구 노트]]

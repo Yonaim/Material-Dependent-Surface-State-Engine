@@ -4,7 +4,7 @@
 
 MDSSP Engine에서 사용하는 주요 용어의 현재 의미다.
 
-State / Capacity / Saturation은 [[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 새 계약을 따른다. Shader의 상한 clamp 제거는 구현했으며 GPU 실행 검증은 대기 중이다.
+State / Capacity / Saturation은 [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]의 새 계약을 따른다. Shader의 상한 clamp 제거는 구현했으며 GPU 실행 검증은 대기 중이다.
 
 | 용어 | 뜻 | 관련 문서 |
 |---|---|---|

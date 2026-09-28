@@ -55,7 +55,7 @@ Runtime 작업량을 줄일 수 있다. 반면 별도 빌드 도구와 산출물
 
 - [[0006-Dynamic-State-Registry]]
 - [[0012-Scene-Profile-Distribution-Reference]]
-- [[../04_Architecture/0001_Engine-Structure|엔진 구조와 데이터 흐름]]
-- [[../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
-- [[../06_Development/Code-Structure/0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]]
+- [[../../04_Architecture/0001_Engine-Structure|엔진 구조와 데이터 흐름]]
+- [[../../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+- [[../../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [[../../06_Development/Code-Structure/0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]]

@@ -25,7 +25,7 @@ flowchart LR
 
 ## 저장량과 표시 범위
 
-[[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 전체 State는 Capacity를 넘을 수 있다. Heatmap과 외관 remap은 필요하면 `clamp(State / Capacity, 0, 1)`을 표시용으로 사용하되 GPU State 및 Transport용 Saturation을 바꾸지 않는다. 따라서 Saturation≥1이 같은 최상위 색이어도 저장된 양이 같다는 뜻은 아니다. 초과량 보존 Shader 변경은 구현했고 GPU 실행 검증은 대기 중이다. 최종 재질 반응·동적 적층은 미구현이다.
+[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]의 전체 State는 Capacity를 넘을 수 있다. Heatmap과 외관 remap은 필요하면 `clamp(State / Capacity, 0, 1)`을 표시용으로 사용하되 GPU State 및 Transport용 Saturation을 바꾸지 않는다. 따라서 Saturation≥1이 같은 최상위 색이어도 저장된 양이 같다는 뜻은 아니다. 초과량 보존 Shader 변경은 구현했고 GPU 실행 검증은 대기 중이다. 최종 재질 반응·동적 적층은 미구현이다.
 
 ## 외관 변화 (State-based Appearance Changes)
 

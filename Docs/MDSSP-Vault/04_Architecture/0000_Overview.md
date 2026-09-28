@@ -31,7 +31,7 @@ flowchart TD
 - **Surface Response Profile**: State 종류를 고정하는 목록이 아니라, 각 State에 대한 소재별 반응 파라미터와 Transition.
 - **SurfaceStateRegistry**: 로드한 Profile에서 State 이름을 모아 런타임 ID/index로 연결.
 - **Runtime Surface Data**: Mesh·Normal Map·Profile Distribution에서 매 실행 시 전처리해 메모리에 생성하는 정적 Geometry/texel 관계 및 texel별 Profile map. 디스크에 `.Surface` 캐시를 저장하지 않는다.
-- **Surface Instance State Data**: Registry 채널에 대응하는 instance별 동적 State. State는 finite·비음수 전체 양을 저장하고 `stateCapacity`는 포화 기준량으로 쓴다. Capacity 초과 허용 계약은 [[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에 확정했으며 Shader의 상한 clamp 제거는 구현했으며 GPU 실행 검증은 대기 중이다.
+- **Surface Instance State Data**: Registry 채널에 대응하는 instance별 동적 State. State는 finite·비음수 전체 양을 저장하고 `stateCapacity`는 포화 기준량으로 쓴다. Capacity 초과 허용 계약은 [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에 확정했으며 Shader의 상한 clamp 제거는 구현했으며 GPU 실행 검증은 대기 중이다.
 
 ## 읽는 순서
 

@@ -4,7 +4,7 @@
 
 상태: **구현 중** · 상위 계획: [[03_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]], [[03_Planning/00_Project-Overview/0001_Roadmap|Roadmap]]
 
-[[../../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. Shader의 Saturation·Next 상한 clamp 제거는 구현했으며 빌드는 통과했다. 이전 상한 계약의 실행 결과와 대기 중인 새 계약 GPU 검증을 구분한다.
+[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. Shader의 Saturation·Next 상한 clamp 제거는 구현했으며 빌드는 통과했다. 이전 상한 계약의 실행 결과와 대기 중인 새 계약 GPU 검증을 구분한다.
 
 ## 목표
 

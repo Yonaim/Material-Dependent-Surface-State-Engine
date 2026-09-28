@@ -17,7 +17,7 @@
 
 ## PDF 이후 반영된 최신 설계
 
-- 초기 ADR 0001의 `State [0,stateCapacity] + TempState` 계약은 [[../../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]으로 변경했다. 현재 설계는 전체 State A/B에 초과량을 보존하고 Capacity를 포화 기준량으로 쓴다. `TempState`는 Solver 중간값이며 초과량 전용 저장은 추가하지 않는다. Shader 변경은 구현했고 GPU 실행 검증은 대기 중이다.
+- 초기 ADR 0001의 `State [0,stateCapacity] + TempState` 계약은 [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]으로 변경했다. 현재 설계는 전체 State A/B에 초과량을 보존하고 Capacity를 포화 기준량으로 쓴다. `TempState`는 Solver 중간값이며 초과량 전용 저장은 추가하지 않는다. Shader 변경은 구현했고 GPU 실행 검증은 대기 중이다.
 - `Saturation = State / stateCapacity`. 전달 계산에서 1 초과를 허용하며 표시 정규화와 분리한다.
 - Transport는 `SaturationDrive + GeometryDrive` 구조.
 - `TransferWeight = Distance × Normal × Curvature × ProfileBoundary`.

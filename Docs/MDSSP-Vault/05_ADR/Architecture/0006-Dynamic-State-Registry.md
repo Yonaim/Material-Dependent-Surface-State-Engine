@@ -55,5 +55,5 @@ Profile 데이터에 등장하는 State를 자동으로 등록하고 런타임�
 
 - [[0004-Asset-Profile-Mapping]]
 - [[0005-Per-Texel-GPU-Data-Layout]]
-- [[../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+- [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]

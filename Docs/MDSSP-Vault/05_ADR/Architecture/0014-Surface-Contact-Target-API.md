@@ -4,7 +4,7 @@
 
 - 상태: **Accepted**
 - 날짜: 2026-09-26
-- 관련: [[../04_Architecture/0005_Surface-Input|Surface Contact Input]], [[../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
+- 관련: [[../../04_Architecture/0005_Surface-Input|Surface Contact Input]], [[../../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
 
 ## Context
 
@@ -44,6 +44,6 @@ Assets 예시와 직접 대응하며 입력이 자체적으로 대상을 식별�
 
 ## Related
 
-- [[../04_Architecture/0005_Surface-Input|Surface Contact Input]]
-- [[../08_Assets/Documents/0004_Contact-Input|Assets — Contact Input API]]
-- [[../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
+- [[../../04_Architecture/0005_Surface-Input|Surface Contact Input]]
+- [[../../08_Assets/Documents/0004_Contact-Input|Assets — Contact Input API]]
+- [[../../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]

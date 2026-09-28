@@ -22,7 +22,7 @@
 |---|---|---|
 | State / Capacity | 포화 기준량과 저장 상한을 같은 개념으로 둘 것인가? | [[../04_Architecture/0002_Surface-State\|State 계약]] |
 | Transport | source 유출과 target 유입에 같은 Flux를 반영하고 비음수를 유지하는가? | [[../04_Architecture/0006_Surface-State-Update\|갱신식]] |
-| Capacity 초과량 | 입력·유입 초과를 삭제할지 보존할지? | [[../05_ADR/0020-State-Overcapacity-Transport\|ADR 0020]] |
+| Capacity 초과량 | 입력·유입 초과를 삭제할지 보존할지? | [[05_ADR/Simulation/0020-State-Overcapacity-Transport\|ADR 0020]] |
 | 계산 검증 | timestep·채널·경계 조건 변화에서 무엇을 검사할 것인가? | [[../03_Planning/02_Weekly-Details/Week-05/0006_Branch-Solver-Week5-Validation\|Solver 통합 검증]] |
 
 ## 2. 연구 요지와 요약
@@ -154,6 +154,6 @@ ADR 0020은 초과량을 float32 State A/B에 포함하고 Capacity를 포화 �
 ## 관련
 
 - [[0000_Research-Index|연구 색인]]
-- [[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]
+- [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]
 - [[../04_Architecture/0007_Surface-Solver-Cache|2-Pass와 캐시]]
 - [[../00_Start/Templates/0006_Research-Note|연구 노트 템플릿]]

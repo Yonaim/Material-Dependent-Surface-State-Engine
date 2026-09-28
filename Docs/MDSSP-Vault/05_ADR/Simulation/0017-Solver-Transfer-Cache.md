@@ -49,5 +49,5 @@ TransferWeight 구현은 Position/Normal/Neighbor에서 가중치를 즉시 계�
 - [[0016-Transport-Transfer-Weights|ADR 0016 — TransferWeight 계산식]]
 - [[0015-Geometry-Driven-Transport|ADR 0015 — GeometryDrive]]
 - [[0003-Dynamic-Accumulation-Geometry|ADR 0003 — Dynamic Accumulation Geometry]]
-- [[../04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]
-- [[../03_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|Branch 2.1 — Solver Transfer Cache]]
+- [[../../04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]
+- [[../../03_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|Branch 2.1 — Solver Transfer Cache]]
