@@ -5,7 +5,7 @@
 브랜치: `perf/solver-transfer-cache`  
 분기 기준: 현재 `feat/solver-transfer-weights`의 HEAD  
 상태: **브랜치 생성 · 구현 완료 · 성능/런타임 검증 대기**
-관련 설계: [[05_ADR/Simulation/0017-Solver-Transfer-Cache|ADR 0017]], [[04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]
+관련 설계: [[05_ADR/Simulation/0017-Solver-Transfer-Cache|ADR 0017]], [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 
 ## 목표
 

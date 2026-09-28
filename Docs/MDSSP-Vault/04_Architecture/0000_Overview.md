@@ -41,7 +41,7 @@ flowchart TD
 4. [[04_Architecture/0004_Surface-Geometry|형상과 적층]]
 5. [[04_Architecture/0005_Surface-Input|외부 접촉 입력 API]]
 6. [[04_Architecture/0006_Surface-State-Update|Surface State 입력과 갱신]]
-7. [[04_Architecture/0007_Surface-Solver-Cache|Solver 캐시와 Pass 간 재사용]]
+7. [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 8. [[04_Architecture/0008_Surface-GPU-Data-Layout|GPU 데이터 배치와 수명]]
 9. [[04_Architecture/0009_Rendering|렌더링]]
 10. [[04_Architecture/0010_UI-Interface|UI Interface와 Scene 편집]]

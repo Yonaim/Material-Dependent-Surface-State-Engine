@@ -155,5 +155,5 @@ ADR 0020은 초과량을 float32 State A/B에 포함하고 Capacity를 포화 �
 
 - [[0000_Research-Index|연구 색인]]
 - [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]
-- [[../04_Architecture/0007_Surface-Solver-Cache|2-Pass와 캐시]]
+- [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 - [[../00_Start/Templates/0006_Research-Note|연구 노트 템플릿]]

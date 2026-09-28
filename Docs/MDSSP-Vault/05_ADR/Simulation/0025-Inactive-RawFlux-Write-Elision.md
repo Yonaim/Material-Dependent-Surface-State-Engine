@@ -51,4 +51,4 @@
 - [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 RawFlux 캐시]]
 - [[0022-Pass1-Source-Reuse|ADR 0022 — Pass 1 source 재사용]]
 - [[0024-RawFlux-Cache-Comparison|ADR 0024 — RawFlux 캐시 ON/OFF 비교]]
-- [[../../04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]
+- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]

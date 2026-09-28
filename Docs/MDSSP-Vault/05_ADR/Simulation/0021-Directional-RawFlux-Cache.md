@@ -63,6 +63,6 @@ run별 시간 편차가 있고 실제 네 큐브 Scene의 FPS는 측정하지 �
 
 - [[0017-Solver-Transfer-Cache|ADR 0017 — 초기 Solver cache]]
 - [[0020-State-Overcapacity-Transport|ADR 0020 — State 초과량 보존]]
-- [[../../04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]
+- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 - [[../../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
 - [[../../06_Development/Experiments/0002_Solver-Geometry-Cost|Solver GeometryDrive 비용 실험]]

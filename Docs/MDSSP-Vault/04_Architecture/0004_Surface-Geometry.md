@@ -165,7 +165,7 @@ flowchart LR
 
 ## 동적 형상
 
-적층으로 Height가 변하면 Normal / Curvature가 달라져 **후속 Simulation에 다시 반영**된다. 최신 유효 Position에서 이웃 거리를 계산하며, Solver 성능 경로는 원시 거리 대신 이 값에서 만든 간선별 TransferWeight를 형상 revision 동안 캐시한다. 현재 Runtime은 MesoVirtualHeight를 geometry scalar로 보유하고, instance별 동적 AccumulationHeight 생성은 후속 구현이다. 높이 또는 갱신 normal이 바뀌면 해당 instance TransferWeight cache를 다시 준비한다. GPU 소유와 동기화는 [[04_Architecture/0007_Surface-Solver-Cache|Surface Solver Cache]]와 [[06_Development/Notes/0003_Surface-State-GPU-Resource|GPU resource 설계]]를 따른다.
+적층으로 Height가 변하면 Normal / Curvature가 달라져 **후속 Simulation에 다시 반영**된다. 최신 유효 Position에서 이웃 거리를 계산하며, Solver 성능 경로는 원시 거리 대신 이 값에서 만든 간선별 TransferWeight를 형상 revision 동안 캐시한다. 현재 Runtime은 MesoVirtualHeight를 geometry scalar로 보유하고, instance별 동적 AccumulationHeight 생성은 후속 구현이다. 높이 또는 갱신 normal이 바뀌면 해당 instance TransferWeight cache를 다시 준비한다. GPU 소유와 동기화는 [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]와 [[06_Development/Notes/0003_Surface-State-GPU-Resource|GPU resource 설계]]를 따른다.
 
 Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. Shared Geometry의 GPU 배치는 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 

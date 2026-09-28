@@ -72,7 +72,7 @@ Heatmap의 `[0,1]`은 표시 범위다. [[05_ADR/Simulation/0020-State-Overcapac
 
 Simulation Resolution 드롭다운은 Low(128×128), Medium(256×256), High(512×512) 순서이며 기본 Medium이다. 선택값 아래에 Surface별 grid 크기와 변경 시 State 초기화 안내를 표시한다. 전환은 mapping·Virtual Meso Geometry·GPU 자원 전체를 재생성하고 기존 State·입력을 비우며, Solver 토글·프로파일 튜닝·카메라·pause/speed는 유지한다. 실패하면 기존 해상도를 유지하고 오류를 표시한다. 현재 실행의 새 Scene load에도 선택값을 적용하고 재실행 시 Medium으로 시작한다. [[05_ADR/Simulation/0023-Simulation-Resolution-Presets|ADR 0023]]을 따른다.
 
-`Cache Comparison`의 `RawFlux Cache`는 기본 ON이다. ON은 Pass 1의 방향별 flux를 Pass 2에서 재사용하고 OFF는 RawFlux buffer 접근을 생략하여 Pass 2에서 재계산한다. 두 모드 모두 Pass 1 source 재사용과 비활성 source 계산·쓰기 생략을 유지한다. 전환 시 State·입력·A/B 방향은 보존하며 GPU 작업 완료 후 이전 모드의 timestamp와 UI 평균을 초기화한다. overlay는 현재 ON/OFF도 표시한다. 모드 전환과 Scene resource 재구성 시 동작은 [[0007_Surface-Solver-Cache|Surface Solver Cache]]를 따른다.
+`Cache Comparison`의 `RawFlux Cache`는 기본 ON이다. ON은 Pass 1의 방향별 flux를 Pass 2에서 재사용하고 OFF는 RawFlux buffer 접근을 생략하여 Pass 2에서 재계산한다. 두 모드 모두 Pass 1 source 재사용과 비활성 source 계산·쓰기 생략을 유지한다. 전환 시 State·입력·A/B 방향은 보존하며 GPU 작업 완료 후 이전 모드의 timestamp와 UI 평균을 초기화한다. overlay는 현재 ON/OFF도 표시한다. 모드 전환과 Scene resource 재구성 시 동작은 [[0007_Simulation-Optimization|Simulation Optimization]]를 따른다.
 
 `Cache buffers`는 모든 instance의 RawFlux buffer byte size와 공유 Geometry마다 한 번만 센 reverse-slot buffer byte size의 합을 MiB로 표시한다. tooltip은 두 부분을 나눠 표시하며 allocator overhead는 제외한다. OFF에서도 할당을 유지하므로 표시값이 줄어들지 않는다. 메모리 타입·원소 padding·인덱스는 [[0008_Surface-GPU-Data-Layout|GPU Data Layout]]을 따른다.
 

@@ -2,7 +2,7 @@
 
 - Date: 2026-09-28
 - 상태: **원인 분리 및 ADR 0022 적용 완료 · 합성 성능/GPU 회귀 검증 완료**
-- 관련: [[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]], [[../../04_Architecture/0007_Surface-Solver-Cache|Solver cache]]
+- 관련: [[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]], [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 
 ## 실행 화면 관측과 집계
 

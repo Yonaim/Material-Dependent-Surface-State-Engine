@@ -49,4 +49,4 @@ Next State 전체 배열의 최대 절대 오차는 모든 run에서 0이었다.
 - [[0021-Directional-RawFlux-Cache|ADR 0021 — RawFlux 캐시]]
 - [[0020-State-Overcapacity-Transport|ADR 0020 — State 초과량 보존]]
 - [[0023-Simulation-Resolution-Presets|ADR 0023 — 해상도 프리셋]]
-- [[../../04_Architecture/0007_Surface-Solver-Cache|Solver Cache]]
+- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]

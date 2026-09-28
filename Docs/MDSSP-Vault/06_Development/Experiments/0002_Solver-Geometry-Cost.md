@@ -4,7 +4,7 @@
 
 - Date: 2026-09-28
 - 상태: **기능 검증 완료 / 실제 Scene FPS 개선은 미확정**
-- 관련: [[../../04_Architecture/0007_Surface-Solver-Cache|Solver Cache]], [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]
+- 관련: [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]], [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]
 
 ## RawFlux 방향별 캐시 적용 전 확인한 비용
 
