@@ -6,6 +6,14 @@
 
 이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다. 상태 갱신 수식의 기준은 [[04_Architecture/0006_Surface-State-Update|Propagation Solver]]다.
 
+## 면적과 누적 시간 확장 — 2026-09-29
+
+현재 State는 texel 총량이다. Profile Capacity에 `AreaScale=WorldArea/(1/256²)`를 곱해 런타임 포화 기준량을 구한다. 입력·Decay에도 같은 환산을 적용하며 포화도는 상한 없이 Geometry mobility에 재사용한다. SaturationDrive OFF에서도 mobility는 유지한다.
+
+GPU에 instance별 scalar `float32 WorldTexelAreas[N]`를 binding 20으로 추가했다. stride 4 B, payload 4N B, 전체 storage descriptor binding 수는 21이다. CPU shared `AreaVector`는 float32×3이며 `.Surface` format 4의 140-byte 레코드 끝에 직렬화한다. 과거 0 B 추가 기록은 Capacity 초과 clamp 제거만의 비용이다.
+
+frame에 여러 step을 기록할 때 매번 barrier와 A/B 교환을 수행하고 InputDelta를 한 번만 소비한다. timestamp pool은 frame당 최대 8회×instance 수의 Pass 1·2 구간을 수용하고 실제 기록한 구간만 읽는다. 전체 시간은 모든 반복 합이다. [[../../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]], [[../../05_ADR/0031-Geometry-Transport-Mobility|ADR 0031]], [[../../05_ADR/0032-Accumulated-Simulation-Timestep|ADR 0032]]
+
 ## 핵심 결정
 
 | 항목 | 결정 |

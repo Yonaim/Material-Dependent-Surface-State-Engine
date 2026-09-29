@@ -34,7 +34,7 @@
 
 | Debug View | 표시 내용 |
 |---|---|
-| State Heatmap | 선택한 State의 `State / Profile Capacity` |
+| State Heatmap | 선택한 State의 `State / (Profile Capacity × AreaScale)` |
 | Validity, Surface ID | 유효 texel, Surface 구분 |
 | Neighbor Count, UV Seam | texel 이웃 수, UV seam 연결 |
 | Outgoing Flux Scale, Solver Transfer Weights | Solver 전달 관련 값 |
@@ -71,21 +71,26 @@
 |---|---|
 | Run / Pause | Solver 갱신을 재생·일시정지. Pause 중 접촉 입력은 유지 |
 | Step | Paused에서만 활성화. 한 번 갱신하고 Paused를 유지 |
-| Reset State | State와 누적 입력 초기화. Profile override 복원과 별개 |
-| Time scale | Solver step 시간 간격 조절 |
+| Reset State | State, 누적 입력, 진행·대기 시간 초기화. Profile override 복원과 별개 |
+| Time scale | 실제 누적 시간에 곱하는 배속. 고정 기본 구간 1/60초는 유지 |
 
 ## Global Settings 탭
 
-탭 순서는 `Solver → Contact Input → Profile Tuning → Global Settings`다. `Global Settings`는 맨 오른쪽 탭이며 Simulation Resolution과 Fixed timestep을 포함한다.
+탭 순서는 `Solver → Contact Input → Profile Tuning → Global Settings`다. `Global Settings`는 맨 오른쪽 탭이며 Simulation Resolution, Fixed timestep, Auto substepping을 포함한다.
 
 | 설정 | 동작 |
 |---|---|
 | Simulation Resolution | Low `128 × 128`, Medium `256 × 256`, High `512 × 512` |
-| Fixed timestep | 기본 ON. Solver step 간격으로 `1/60 s × Time scale` 사용. OFF에서는 실제 프레임 경과 시간을 사용. ON일 때 실제 시간 대비 속도는 FPS에 따라 달라짐 |
+| Fixed timestep | 기본 ON. 실제 시간×배속을 누적하고 1/60초 구간이 모일 때 계산. Auto OFF이면 dt는 정확히 1/60초 |
+| Auto substepping | 기본 OFF. ON에서만 Transport 상한에 맞춰 구간을 작은 Solver step으로 나눔. Fixed OFF·Auto OFF는 누적 시간을 한 번에 계산 |
 
 - Scene에 해상도가 없으면 Medium을 사용한다.
 - 해상도 변경 시 Surface 데이터와 GPU 자원을 다시 준비하고 State·입력을 초기화한다.
 - 변경 실패 시 기존 해상도를 유지한다. (해상도 전환: [[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]])
+
+한 frame 최대 8 Solver step을 실행하며 남은 시간은 버리지 않고 이월한다. Fixed ON·Auto ON에서는 1/60초가 모인 뒤 세분화하며 미완료 구간도 다음 frame에서 재개한다. 옵션 변경은 State와 누적 시간을 유지한다. Auto OFF로 전환 시 진행 중인 구간의 잔여 길이를 한 번 마무리한 뒤 새 구간부터 1/60초를 사용한다.
+
+Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인한다. Pause 중에는 시간을 누적하지 않고 Step은 Solver 한 번이다. 수동 실행 dt는 Auto OFF에서 1/60초, ON에서 현재 Transport 상한이다. 지속 GPU 과부하에서는 backlog가 늘 수 있다. [[../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]], [[../02_Research/0004_Substepping-and-Adaptive-Time-Stepping|용어와 공식 문서]]
 
 ## Solver 탭
 
@@ -94,7 +99,7 @@
   - Decay: Decay, ConcavityRetention
   - CurvatureWeight는 기본 OFF이며 변경은 이후 Solver step에 적용한다. 같은 초기 조건 비교에는 Reset이 필요하다.
   - CurvatureWeight 계산식과 범위는 [[0007_Simulation-Optimization|Simulation Optimization]]에 정리한다 ([[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]).
-- `Cache Comparison`은 기본 접힘이다. RawFlux Cache ON/OFF, 실제 cache buffer 크기와 비교 조건을 표시한다. Fixed timestep은 `Global Settings` 탭에서 조절한다.
+- `Cache Comparison`은 기본 접힘이다. RawFlux Cache ON/OFF, 실제 cache buffer 크기와 비교 조건을 표시한다. Fixed timestep과 Auto substepping은 `Global Settings` 탭에서 조절한다.
 - `Diagnostics`는 기본 접힘이다. 전체 texel 수와 유효 texel 비율을 표시하며, Paused에서는 다음 read buffer와 최근 Solver GPU 시간도 표시한다.
 
 ## Contact Input과 Profile Tuning
@@ -116,7 +121,7 @@
 
 ## 성능 표시와 경계
 
-- Viewport overlay: FPS/frame time, GPU Render, Solver 전체 시간, Pass 1·2 시간
+- Viewport overlay: FPS/frame time, GPU Render, frame의 모든 Solver 반복을 합한 전체 시간, Pass 1·2 시간
 - 시간은 1초 구간 평균으로 갱신한다. GPU timestamp query 미지원 장치에서는 측정값을 사용할 수 없다고 표시한다.
 - UI는 Solver나 GPU State를 직접 수정하지 않는다. 요청은 Renderer와 Surface State System을 거친다.
 - Scene 편집과 Debug 접촉 입력은 현재 Static Mesh instance에 한정된다.

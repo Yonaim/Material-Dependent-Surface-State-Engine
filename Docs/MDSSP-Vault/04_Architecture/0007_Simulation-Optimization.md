@@ -38,6 +38,17 @@
 
 State 변화와 Capacity 수치 편집은 RawFlux에 영향을 주므로 RawFlux·RawOutgoing와 alpha를 다음 Pass 1에서 다시 계산한다. TransferWeight는 이 수치에 의존하지 않아 캐시를 무효화하지 않는다. Profile ID 배치·Geometry 변경에 따른 기존 invalidation은 유지한다.
 
+## 면적 환산과 반복 step의 비용
+
+instance별 월드 면적은 `float32 × texelCount`, padding 없이 texel당 4 B다. 6 Surface, channel 수와 무관한 면적 buffer만 계산하면 Low 0.375 MiB, Medium 1.5 MiB, High 6 MiB다. Vulkan allocation overhead는 제외한다. CPU shared geometry/cache에는 면적 벡터 `float32×3`가 추가되며 GPU 공유 geometry stride는 유지한다.
+
+면적은 선형 transform 변경 시 갱신하고 step마다 기하 면적을 재계산하지 않는다. Geometry mobility는 기존 source saturation을 재사용하므로 pass를 추가하지 않는다.
+
+실제 시간을 누적해 frame당 최대 8 Solver step을 실행한다. 기본 Fixed ON·Auto OFF는 1/60초 구간을 사용하며, Auto ON에서만 Transport 시간 상한의 CPU 계산을 호출한다. 상한은 Profile·term·transform 변경에 따라 갱신한다. Auto ON의 고정 구간이 한도에서 끊기면 다음 frame에서 재개한다.
+
+RawFlux cache는 **step 안에서** 재사용하며 step 사이에는 바뀐 State로 갱신한다. GPU 시간은 frame의 모든 반복 합이다. 작은 간격을 요구하면 GPU 비용과 backlog가 늘 수 있으므로 성능 개선과 시뮬레이션 시간 추종을 분리해서 측정한다. [[../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]]
+
+
 ## 소유권과 값의 수명
 
 ### TransferWeight cache 생성

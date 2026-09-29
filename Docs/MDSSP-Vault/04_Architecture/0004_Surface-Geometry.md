@@ -133,6 +133,20 @@ Non-integrable 입력은 임계값으로 거부하지 않는다.
 |---|---|---|
 | `Meso_Height_Reference` | Surface당 1개 | 적층량을 실제 높이로 변환할 때 사용하는 Virtual Meso Geometry의 대표 높이 규모 |
 
+## World texel 면적
+
+Simulation UV 한 texel이 Macro Mesh에서 차지하는 면적을 계산한다. texel 중심의 삼각형에서 mesh edge와 UV edge를 이용한다.
+
+```text
+AreaVector = cross(PositionEdge1, PositionEdge2) / (UV determinant × Width × Height)
+WorldTexelArea = length(cofactor(instance linear transform) × AreaVector)
+```
+
+Shared CPU texel의 `AreaVector`는 mesh-local 면적 벡터다. instance별 GPU `WorldTexelAreas`는 scalar float32로 저장한다. 비균일 scale과 반사를 반영하며 translation은 영향을 주지 않는다. Capacity·입력·Decay 환산에 사용한다.
+
+Macro footprint 근사이며 Meso 요철·적층의 추가 표면적은 포함하지 않는다. chart 경계에서 부분 footprint를 clip하지 않고 중심의 삼각형 Jacobian을 적용하므로 해상도별 경계 오차가 남는다. [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]]
+
+
 ## 해상도별 정적 Geometry 캐시
 
 캐시 지점은 **`BuildMesoGeometry()` 완료 직후, GPU 업로드와 instance별 TransferWeight 생성 전**이다. Normal Map 법선만 저장하면 PCG 높이 적분과 미분 fit 비용이 남으므로 최종 CPU Geometry 전체를 저장한다.
@@ -147,8 +161,9 @@ Non-integrable 입력은 임계값으로 거부하지 않는다.
 | `MesoVirtualHeight`, `ConcavityWeight`, `MesoMeanCurvature`, `MesoGaussianCurvature` | 각각 `float32` | 최종 상대 높이·오목함·두 곡률 |
 | `NeighborIndices[8]` | `uint32 × 8` | seam을 포함한 최종 이웃 graph. invalid 슬롯 포함 |
 | texel `ProfileIndex` | `uint32` | 별도 순서 있는 Profile table 참조. render-only sentinel 포함 |
+| `AreaVector` | `float32 × 3`, 레코드 끝 | mesh-local texel footprint 면적 벡터 |
 
-각 레코드는 위 필드를 순서대로 저장하며 padding 없는 128 byte다. 이 크기는 디스크 직렬화 크기이며 CPU `sizeof`나 GPU buffer stride를 뜻하지 않는다.
+각 레코드는 위 필드를 순서대로 저장하며 padding 없는 140 byte다. 이 크기는 디스크 직렬화 크기이며 CPU `sizeof`나 GPU buffer stride를 뜻하지 않는다.
 
 - 파일에는 Surface별 ID와 해상도를 저장한다. Dense range는 load 시 재구성한다.
 - Profile 경로·순서, 입력 fingerprint, version metadata도 저장한다.

@@ -8,6 +8,10 @@
 - 관련 문서: [[0001-Capacity-and-Saturation|ADR 0001 — Capacity와 Saturation]], [[../04_Architecture/0002_Surface-State|Surface State 데이터 계약]], [[../04_Architecture/0006_Surface-State-Update|Surface State 갱신식]]
 - Supersedes: [[0001-Capacity-and-Saturation|ADR 0001]]의 State 상한 및 초과량 처리 계약
 
+## 후속 결정 — 2026-09-29
+
+ADR 0030에서 State를 texel 총량으로 명시하고 Capacity를 고정 기준 면적에서 실제 texel 면적으로 환산한다. 저장 상한 없음과 source alpha 제한은 유지한다.
+
 ## Context
 
 초기 계약은 `0 ≤ State ≤ stateCapacity`이며 Pass 2에서 Capacity로 clamp했다. 전달·이벤트 입력으로 기준량을 초과하면 저장하지 못한 양이 사라졌다. 초기 Shader의 Saturation도 `[0,1]`로 clamp해 초과 상태를 Saturation 차이에 반영하지 못했다.

@@ -7,6 +7,10 @@
 - Date: 2026-09-27
 - 관련 문서: [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 Weight]], [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
 
+## 후속 결정 — 2026-09-29
+
+ADR 0031에서 기존 HeightDrive×DirectionDrive에 출발 Saturation을 별도 mobility로 곱하도록 확장했다. 아래 높이·방향 정의는 유지한다.
+
 ## Context
 
 ADR 0002는 State를 움직이는 구동력(`SaturationDrive`, `GeometryDrive`)과 이웃 관계의 통과성(`TransferWeight`)을 분리했다. Geometry Integration 설계는 Transport가 높이차에 따른 중력 영향과 이웃 표면 거리를 고려해야 한다고 정하지만, Solver의 구체 계산 계약은 정해져 있지 않았다.

@@ -6,7 +6,7 @@
 - 상태: **기능 검증 완료 / 실제 Scene FPS 개선은 미확정**
 - 관련: [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]], [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]
 
-> **파라미터 표현 변경:** 아래 Rate 수치는 측정 당시의 실제 속도다. 현재 Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장하며 실제 속도는 각각 기준 속도 `1.0`, `100.0`을 곱한다. 기존 Geometry Rate `50`, `1`은 Factor `0.5`, `0.01`에 대응한다. 과거 측정 결과는 재측정값이 아니다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+> **파라미터 표현과 기준값 변경:** 아래 Rate 수치는 측정 당시의 전달량 계수다. Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장한다. 초기 기준 Geometry Rate 100에서는 Rate `50`, `1`이 Factor `0.5`, `0.01`에 대응했다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]). 현재 기준값은 6000으로 재보정되어 Factor `0.5`의 Rate는 3000이다 ([[../../05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). 아래 과거 측정 결과는 새 기준값으로 재측정한 결과가 아니다.
 
 ## RawFlux 방향별 캐시 적용 전 확인한 비용
 

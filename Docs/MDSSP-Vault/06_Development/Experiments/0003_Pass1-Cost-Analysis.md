@@ -4,7 +4,7 @@
 - 상태: **원인 분리 및 ADR 0022 적용 완료 · 합성 성능/GPU 회귀 검증 완료**
 - 관련: [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]], [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 
-> **파라미터 표현 변경:** 아래 Rate 수치는 측정 당시의 실제 속도다. 현재 Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장하며 실제 속도는 각각 기준 속도 `1.0`, `100.0`을 곱한다. 기존 Geometry Rate `50`, `1`은 Factor `0.5`, `0.01`에 대응한다. 과거 측정 결과는 재측정값이 아니다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+> **파라미터 표현과 기준값 변경:** 아래 Rate 수치는 측정 당시의 전달량 계수다. Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장한다. 초기 기준 Geometry Rate 100에서는 Rate `50`, `1`이 Factor `0.5`, `0.01`에 대응했다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]). 현재 기준값은 6000으로 재보정되어 Factor `0.5`의 Rate는 3000이다 ([[../../05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). 아래 과거 측정 결과는 새 기준값으로 재측정한 결과가 아니다.
 
 ## 실행 화면 관측과 집계
 
@@ -23,7 +23,7 @@
 - `geometryDrive(source,target)`는 이웃마다 source 법선 읽기·행렬 변환·길이·정규화, source 중력 투영·길이, source displaced position을 다시 계산한다. source가 같으면 이 값들은 이웃마다 동일하다. target 위치·edge 길이·방향·높이 차이는 이웃별 계산이 필요하다.
 - ADR 0021은 Pass 2의 RawFlux 재평가를 없앴다. 위 Pass 1 계산은 유지되며 RawFlux 저장 쓰기가 추가됐다.
 - RawFlux 쓰기는 instance별 float32, slot-major plane, 6×512×512·1채널·8슬롯, scalar 원소 padding 없음에서 instance당 48 MiB/step이다. 4 instances는 192 MiB/step의 payload store다. allocator padding 및 다른 buffer 접근은 제외하며 실제 DRAM transaction 양과 동일시하지 않는다.
-- 기본 DemoWetness의 GeometryTransferRate=50은 곱셈 계수다. 값이 크다고 반복 횟수가 늘지 않는다.
+- 측정 당시 DemoWetness의 GeometryTransferRate=50은 곱셈 계수로, 그 값만으로 한 dispatch의 이웃 반복 횟수가 늘지 않았다. 현재 Auto substepping ON에서는 Rate 증가가 안전 step 간격을 줄여 frame당 Solver 반복 수를 늘릴 수 있다. 기본 Auto OFF·Fixed ON의 dt=1/60초는 계수로 바뀌지 않는다 ([[../../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]]).
 
 ## 합성 분리 측정
 

@@ -153,11 +153,11 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 4. 파일이 없거나 stale·손상된 경우 기존 CPU 전처리 경로로 Geometry를 생성한 뒤 캐시를 저장한다.
 5. 복원하거나 생성한 Geometry에서 GPU 버퍼와 instance별 TransferWeight·State 자원을 준비한다.
 
-- File format은 version 3이다. `.Surface` v1/v2는 변환하지 않고 재생성한다.
+- File format은 version 4, PreprocessVersion은 2다. `AreaVector`를 포함하며 이전 `.Surface` cache는 재생성한다.
 - 정수는 little-endian `uint32`/`uint64`, 실수는 IEEE-754 `float32`로 기록한다. C++ 구조체 메모리는 그대로 덤프하지 않는다.
 - Header: magic, format/preprocess version, input fingerprint, Surface/Profile/triangle/texel count, payload checksum
 - Payload: Surface 정의, 순서 있는 Profile 경로, texel 레코드
-- Texel record는 padding 없이 128 byte다. 세부 필드는 [[04_Architecture/0004_Surface-Geometry#해상도별 정적 Geometry 캐시|형상 정보의 캐시 계약]]을 따른다.
+- Texel record는 padding 없이 140 byte다. 세부 필드는 [[04_Architecture/0004_Surface-Geometry#해상도별 정적 Geometry 캐시|형상 정보의 캐시 계약]]을 따른다.
 
 - 현재 입력에 맞는 예상 파일 길이와 개수를 먼저 확인한다.
 - Checksum, Surface·Profile table 대응, 유한한 형상 값, normal 유효성, invalid sentinel, 이웃 범위·중복·양방향 연결을 검사한 뒤 Runtime에 등록한다.
@@ -179,7 +179,9 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 
 ## `.SRProfile` 예시
 
-현재 schema는 **version 2**다. `saturationTransferFactor`, `geometryTransferFactor`는 유한한 `[0,1]` 무차원 계수이며 Loader는 version 1을 거부한다. 초기 version 1은 실제 Rate를 저장했다. 변환 규칙은 `saturationTransferFactor = 기존 saturationTransferRate / 1.0`, `geometryTransferFactor = 기존 geometryTransferRate / 100.0`이고 `version`을 2로 변경한다. 변환 결과가 `[0,1]` 밖이면 새 기준 속도 범위에서 재튜닝해야 한다. 기준 속도와 단위는 [[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]를 따른다.
+Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-length²`에 대한 값이다. 런타임에서 실제 월드 texel 면적 비율을 곱한다. 기준 면적은 Low·Medium·High 선택과 함께 바뀌지 않는다. [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]]
+
+현재 schema는 **version 2**다. `saturationTransferFactor`, `geometryTransferFactor`는 유한한 `[0,1]` 무차원 계수이며 Loader는 version 1을 거부한다. 초기 version 1은 실제 Rate를 저장했다. 초기 schema 전환은 Geometry Rate를 100으로 나눴다. 현재 기준값에서 이전 실제 Rate를 유지하는 수동 환산은 `saturationTransferFactor = 기존 saturationTransferRate / 1.0`, `geometryTransferFactor = 기존 geometryTransferRate / 6000.0`이며 `version`을 2로 변경한다. 기존 version 2 자산의 Factor는 재환산하지 않아 이번 기준값 변경으로 Geometry Rate가 60배가 된다. 변환 결과가 `[0,1]` 밖이면 새 기준 Rate 범위에서 재튜닝해야 한다. Factor schema와 단위는 [[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], 현재 기준값은 [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]을 따른다.
 
 아래 수치는 **튜닝 전 예시값**이며, Profile이 여러 State 응답을 정의할 수 있음을 보여준다. 예시 State 이름은 고정된 전역 채널 목록이 아니다.
 

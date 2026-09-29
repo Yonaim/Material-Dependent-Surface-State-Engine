@@ -9,6 +9,10 @@
 통합 범위: 기존 Branch 3 `OutgoingFluxScale Debug View`, Branch 4 `Solver Debug Controls`, Branch 5 `Solver Debug Statistics`  
 관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[04_Architecture/0009_Rendering|Rendering]], [[04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]], [[04_Architecture/0010_UI-Interface|UI Interface]], [[../../../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 
+## 실행 시간 계약 갱신 — 2026-09-29
+
+실제 경과 시간×배속을 누적한다. 기본 Fixed ON·Auto OFF는 1/60초씩 계산하며 Auto ON에서만 세분화한다. frame당 최대 8 Solver 실행이며 미완료 구간과 잔여 시간은 이월한다. Pause 중 시간은 누적하지 않으며 Step은 Auto OFF에서 1/60초, ON에서 Transport 상한으로 한 번이다. Reset은 State·입력뿐 아니라 진행·대기·미완료 구간도 초기화한다. GPU timing은 frame의 모든 반복 합이다. [[05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]]
+
 ## 목표
 
 Solver 동작을 한 곳에서 제어하고 관찰할 수 있도록 `OutgoingFluxScale` 뷰, pause/step/reset, 실행 통계를 한 브랜치에서 구현한다. 이 기능들은 같은 Solver 상태와 GPU 리소스 수명에 의존하므로 순차 브랜치로 나누지 않고 한 번에 통합한다.
@@ -40,7 +44,7 @@ Solver 동작을 한 곳에서 제어하고 관찰할 수 있도록 `OutgoingFlu
 | Control | 동작 |
 |---|---|
 | Pause | Solver dispatch 및 A/B 역할 교환을 멈춘다. 렌더링과 UI 갱신은 계속한다. 접촉 입력은 다음 Solver step까지 보존한다. |
-| Step | 일시 정지 상태에서 현재 frame의 `DeltaTime`으로 모든 simulated instance를 정확히 한 번 갱신하고, 각 A/B 방향을 한 번 교환한 뒤 계속 pause 상태를 유지한다. |
+| Step | 일시 정지 상태에서 Auto OFF는 1/60초, ON은 현재 Transport 상한으로 모든 simulated instance를 정확히 한 번 갱신하고, 각 A/B 방향을 한 번 교환한 뒤 계속 pause 상태를 유지한다. |
 | Reset State | 명시적으로 요청된 시점에 모든 simulated instance의 State A/B와 InputDelta를 0으로 초기화하고 현재 방향을 A로 되돌린다. 지원 channel의 OutgoingFluxScale은 1, invalid/unsupported 위치는 0으로 둔다. 이미 누적된 CPU Contact 입력도 비운다. |
 
 Reset은 frame마다 실행하지 않는다. 요청을 처리하기 전에 graphics queue의 작업 완료를 기다린 뒤 host-visible buffer를 0으로 초기화한다. Pause 중 새로 들어온 입력은 보존하지만 Reset 직전에 대기 중인 입력은 reset 계약대로 비운다.

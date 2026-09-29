@@ -11,6 +11,32 @@
 
 > **계약과 구현:** 아래 갱신식은 확정된 전체 State 보존 계약을 따른다 ([[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]). Shader 변경과 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다. GeometryDrive·TransferWeight와 기존 2-Pass 자원 구조는 유지한다.
 
+## 면적과 시간의 현재 계약
+
+State는 texel별 총량이고 `AreaScale_i = WorldTexelArea_i / (1/256²)`다. 고정 기준 면적은 선택 해상도와 함께 바꾸지 않는다. Capacity·Strength·DecayRate는 이 기준 면적에 대한 값이며 실제 texel 면적으로 환산한다. Strength는 사건 한 번의 기준 면적 입력량이고 브러시 전체 총량은 아니다.
+
+Geometry 원시 전달에는 출발 `Saturation_i`를 곱하며 **상한 1을 두지 않는다**. SaturationDrive의 이웃 포화도 차이는 별도로 유지한다. 같은 포화도·경사에서 Geometry가, 평평한 포화도 차이에서 Saturation이 작동한다. SaturationDrive OFF도 Geometry의 출발 포화도를 없애지 않는다.
+
+실제 경과 시간×배속을 누적한다. 기본값은 **Fixed timestep ON·Auto substepping OFF**이며 1/60초씩 반복한다. Profile 계수나 면적은 이 기본 dt를 바꾸지 않는다. 같은 frame의 후속 step은 갱신된 State를 읽는다. Contact 입력은 첫 step에서 한 번 소비하고 RawFlux·alpha는 매번 갱신한다.
+
+### 시간 구간과 자동 세분화
+
+| Fixed timestep | Auto substepping | 시간 소비 |
+|---|---|---|
+| ON | OFF | 1/60초가 모이면 dt=1/60초 한 번. 남은 시간은 대기 |
+| ON | ON | 1/60초가 모이면 Transport 상한 이하로 나눠 실행. 마지막 짧은 step까지 합쳐 구간 완료 |
+| OFF | OFF | 누적된 경과 시간을 한 번의 dt로 실행 |
+| OFF | ON | Transport 상한 이하로 나누고 마지막 잔여 시간까지 실행 |
+
+frame당 최대 8 Solver 실행을 기록한다. Auto ON의 고정 구간이 중간에 끊기면 남은 구간을 다음 frame에서 재개한다. 잔여 구간은 PendingTime에 포함되며 시간 budget을 중복 누적하지 않는다. 옵션 변경은 State나 clock를 초기화하지 않는다. Auto OFF 전환은 진행 중인 고정 구간의 잔여 길이를 한 번 마무리한 뒤 새 구간부터 1/60초를 사용한다.
+
+Pause는 시간을 누적·소비하지 않는다. 수동 Step은 Auto OFF에서 1/60초, ON에서 Transport 상한으로 Solver 한 번이며 기존 backlog를 소비하지 않는다. Reset·Scene·해상도 변경은 미완료 구간도 초기화한다. Auto OFF에서는 CPU Transport 시간 상한 계산을 호출하지 않는다.
+
+자동 상한은 원시 Transport 유출 비율 90% 이하를 목표로 한 보수적 조건이다. alpha는 모든 옵션에서 유지한다. GPU 과부하에서는 미처리 시간이 쌓일 수 있다. 계약은 [[../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]], 초기 시간 상한의 식은 [[../05_ADR/0032-Accumulated-Simulation-Timestep|ADR 0032]], 용어·공식 문서는 [[../02_Research/0004_Substepping-and-Adaptive-Time-Stepping|Substepping과 Adaptive Time Stepping]]을 따른다.
+
+결정: [[../05_ADR/0030-Texel-Area-and-State-Amounts|면적·총량]], [[../05_ADR/0031-Geometry-Transport-Mobility|Geometry 비례 전달]]. HeightDrive, DistanceWeight와 2-Pass 구조는 유지한다.
+
+
 ## Contact Input
 
 `State`는 Registry의 `TStateId`로 지정하며, 입력 적용 시 Registry를 통해 `ChannelIndex`로 해석한다. 입력 경로는 문자열이나 고정 enum에 의존하지 않는다.
@@ -130,7 +156,7 @@ flowchart LR
 ## 1. Input
 
 $$
-Input_i = Strength \times ContactWeight_i \times InputFactor_i
+Input_i = Strength \times ContactWeight_i \times InputFactor_i \times AreaScale_i
 $$
 
 `ContactWeight` 정의는 위 절을 따른다.
@@ -148,7 +174,7 @@ $$
 ### Saturation
 
 $$
-Saturation_i = \frac{State_i}{stateCapacity_i}
+Saturation_i = \frac{State_i}{Capacity_i},\quad Capacity_i = ProfileStateCapacity_i\cdot AreaScale_i
 $$
 
 Saturation은 1을 초과할 수 있고 Transport에서 상한 clamp하지 않는다. 예를 들어 동일 Capacity=1인 두 이웃의 State가 `1.2`, `1.0`이면 SaturationDrive는 `0.2`다. 둘 다 `1.2`이고 GeometryDrive가 0이면 이 Drive도 0이다. Heatmap의 표시 정규화는 이 값에 영향을 주지 않는다.
@@ -168,9 +194,9 @@ $$
 | Solver 상수 | 현재 값 | 단위 |
 |---|---:|---|
 | `BaseSaturationTransferRate` | `1.0` | `State / second` |
-| `BaseGeometryTransferRate` | `100.0` | `State / (world-length · second)` |
+| `BaseGeometryTransferRate` | `6000.0` | `State / (world-length · second)` |
 
-기준값은 기존 데모의 속도를 유지하는 초기 보정값이다. `State` 단위는 Registry에 등록된 해당 State의 시뮬레이션 상태량 단위이며, 기준 상수는 모든 channel의 해당 전달 경로에 공통 적용한다. 두 상수는 공통 GLSL에 정의해 cache ON/OFF와 Pass 1/2에 동일하게 적용한다. 프로파일 계수의 정규화는 Saturation 상한 clamp나 높이차의 거리 정규화를 추가하지 않는다.
+초기 Geometry 기준값은 100이었으며 면적·총량 모델의 흐름을 재보정해 6000으로 변경했다 ([[../05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). `State` 단위는 Registry에 등록된 해당 State의 시뮬레이션 상태량 단위이며, 기준 상수는 모든 channel의 해당 전달 경로에 공통 적용한다. 두 상수는 C++/GLSL 공용 `SurfaceSolverRates.h`에 정의해 cache ON/OFF·Pass 1/2와 CPU 안전 시간 간격 계산에 동일하게 적용한다. 프로파일 계수의 정규화는 Saturation 상한 clamp나 높이차의 거리 정규화를 추가하지 않는다.
 
 `SaturationDrive`와 `GeometryDrive`에 의한 전달을 독립적으로 계산한 뒤 합친다.
 
@@ -180,7 +206,7 @@ RawFlux_{i\rightarrow j}
 \left(
 SaturationDrive_{i\rightarrow j}\cdot SaturationTransferRate_i
 +
-GeometryDrive_{i\rightarrow j}\cdot GeometryTransferRate_i
+GeometryDrive_{i\rightarrow j}\cdot GeometryTransferRate_i\cdot Saturation_i
 \right)
 \cdot TransferWeight_{i\rightarrow j}
 \cdot \Delta t
@@ -346,6 +372,7 @@ $$
 Decay_i
 =
 DecayRate_i
+\cdot AreaScale_i
 \cdot
 \left(1 - ConcavityWeight_i\cdot CavityRetentionFactor_i\right)
 \cdot \Delta t

@@ -129,6 +129,13 @@ contactWeight = falloff == 0 ? 1 : pow(linearWeight, falloff)
 
 Fallback은 UV→texel 변환 과정에서 빈 texel이나 경계에 걸린 중심을 보정한다. 월드 공간 반경 검색은 그 중심 주변에 영향을 줄 texel 집합을 정한다. 두 검색은 서로 대체하지 않는다.
 
+## 입력량과 면적
+
+Contact는 한 번의 사건이다. `Input_i = Strength × ContactWeight_i × InputFactor_i × WorldTexelArea_i / ReferenceArea`이고 `ReferenceArea=1/256² world-length²`는 고정이다. Strength는 이 기준 면적에 넣는 양이며, 브러시 전체 총량으로 정규화하지 않는다. 같은 월드 반경·falloff에서는 해상도에 따른 총 입력량 차이를 줄이지만 경계 중심 sample 오차는 남는다.
+
+Solver 반복 시 첫 Pass 2에서 한 번 적용하고 비운다. 그 입력으로 생긴 State는 다음 반복부터 전달된다. [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]], [[../05_ADR/0032-Accumulated-Simulation-Timestep|ADR 0032]]
+
+
 ## 접촉 정보 필드
 
 | 필드 | 의미 |
