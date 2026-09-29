@@ -31,13 +31,14 @@
 - 검증: 전체 build 및 CTest 8개 통과, Vulkan validation 오류 없음. CPU topology에서 중앙 texel 포함·Surface/chart 분리·mirrored UV winding·invalid/퇴화 제외를 확인했다. 실제 GPU 출력과 fragment에서 중앙 적층 실루엣, A/B 전환, 위치·normal의 표시 배율, 미지원 State의 Meso 유지, 반복 계산의 비누적성, State 보존·리셋 및 변위 면의 heatmap을 검증했다.
 - 표시 출력은 texel당 두 `vec4`, 16-byte 정렬·32-byte stride이며 추가 padding은 없다. 모든 Surface range의 valid/invalid texel을 포함한 instance별 총 texel 수 T에 대해 `32 × T` byte다. 프레임별 복제는 없고 처음 사용한 instance의 출력은 Scene 교체까지 유지한다. 예를 들어 Surface 하나가 256×256일 때 해당 instance 출력은 2 MiB다. allocator overhead는 제외한다.
 - 정적 index는 `uint32_t`(4 byte, 원소 padding 없음)이며 동일 Surface Runtime handle을 사용하는 instance들이 GPU buffer를 공유한다. 모든 cell이 유효한 256×256 Surface 하나의 최대 payload는 `6 × 255 × 255 × 4 = 1,560,600` byte다. CPU index 목록은 업로드 후 보존하지 않는다.
-- chart 경계는 열린 상태이며 texel 중심까지만 면을 연결한다. chart stitching, 경계 확장, subtexel 보간/LOD 및 대표 Scene 성능 측정은 후속 작업이다. watertight 최종 모델이나 Lit 경로의 적층 구현을 뜻하지 않는다.
+- chart 경계는 열린 상태이며 texel 중심까지만 면을 연결한다. chart stitching, 경계 확장, subtexel 보간/LOD 및 대표 Scene 성능 측정은 후속 작업이다. watertight 최종 모델을 뜻하지 않는다. 현재 Mud 데모의 Lit 재사용과 높이 grid는 [[0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]]을 따른다.
 - 실제 물리적 다중 layer 합성, Surface별 높이 기준값, Solver의 동적 거리·normal·곡률 피드백은 후속 구현이다. `SurfaceAccumulation.comp`와 `SurfaceGeometryUpdate` placeholder는 유지한다.
 - Inspector 선택은 Macro mesh ray hit 기준이다. 변위된 표시 면의 정확한 picking은 후속 작업이다.
 
 ## Related
 
 - [[0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035 — 적층 디버그와 Inspector]]
+- [[0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037 — Grid와 데모 Lit]]
 - [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Virtual Meso Geometry]]
 - [[0003-Dynamic-Accumulation-Geometry|ADR 0003 — Solver 형상 피드백]]
 - [[0028-Accumulation-Height-and-Normal-Map|ADR 0028 — 높이와 Normal Map]]

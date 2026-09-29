@@ -45,9 +45,11 @@
 
 - Saturation 표시 범위는 `[0,1]`이며 Capacity 초과량은 같은 색이다. Raw State는 texel 총량을 조절 가능한 고정 범위로 표시한다. 범위 초과는 주황색이다. 표시 결과는 Solver에 입력되지 않는다.
 - Accumulation의 높이 범위·Height reference는 mesh-local 단위다. Cavity Fill만 0–100% 고정 범위다. Accumulation/Final Geometry의 공통 Display scale은 표시 위치·normal 전용이며 색상 수치와 Inspector에는 반영하지 않는다.
-- 현재 적층 뷰는 선택 State의 설계식 미리보기다. 실제 동적 Geometry buffer와 Solver 형상 피드백은 후속 구현이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
+- 현재 적층 뷰는 선택 State의 설계식 미리보기다. Solver에 반영되는 동적 Geometry와 형상 피드백은 후속 구현이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
 - Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]).
 - 좌측 `Render Settings`: Normal strength, Ambient light, Normal Y 반전
+- `Lit Demo Effects`: Wetness/Mud 반응, Mud height 적용 여부, Dry/Wet/Mud roughness, 독립 Mud height reference. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
+- `Height Surface Grid`: Off / Overlay / Grid only, 셀당 texel 수. Meso·Accumulation·Final Geometry에 적용하며 Grid only도 어두운 면으로 depth를 유지한다. 새 View Mode는 추가하지 않는다 ([[../05_ADR/0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]]).
 - 선택한 뷰의 State·보조 옵션은 Viewport 상단에 표시한다.
 
 ## Scene 편집
