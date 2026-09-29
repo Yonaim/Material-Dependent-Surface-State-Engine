@@ -1165,6 +1165,14 @@ namespace MDSS
             {
                 CurrentName = "Macro Geometry";
             }
+            else if (CurrentMode == TRenderViewMode::SurfaceTexelGrid)
+            {
+                CurrentName = "Texel Grid";
+            }
+            else if (CurrentMode == TRenderViewMode::SurfaceTexelArea)
+            {
+                CurrentName = "Texel Area Heatmap";
+            }
             ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted("View");
             ImGui::SameLine(0.0F, 8.0F);
@@ -1194,6 +1202,16 @@ namespace MDSS
                     }
                 }
                 const auto SolverMode = TRenderViewMode::SolverTransferWeight;
+                if (ImGui::Selectable("Texel Grid", CurrentMode == TRenderViewMode::SurfaceTexelGrid))
+                {
+                    CurrentMode = TRenderViewMode::SurfaceTexelGrid;
+                    FrameRenderer->SetRenderViewMode(CurrentMode);
+                }
+                if (ImGui::Selectable("Texel Area Heatmap", CurrentMode == TRenderViewMode::SurfaceTexelArea))
+                {
+                    CurrentMode = TRenderViewMode::SurfaceTexelArea;
+                    FrameRenderer->SetRenderViewMode(CurrentMode);
+                }
                 if (ImGui::Selectable("Solver Transfer Weights", CurrentMode == SolverMode))
                 {
                     CurrentMode = SolverMode;
@@ -1422,6 +1440,51 @@ namespace MDSS
                         DrawLegendColor({0.16F, 0.035F, 0.24F, 1.0F}, "0 차단");
                         DrawLegendColor({0.30F, 0.24F, 0.78F, 1.0F}, "0.5 중간");
                         DrawLegendColor({0.18F, 0.94F, 0.98F, 1.0F}, "1 허용");
+                        break;
+                    }
+                    case TRenderViewMode::SurfaceTexelGrid:
+                    {
+                        BeginViewContext("TEXEL GRID", "시뮬레이션 UV 격자. 확대하면 개별 텍셀 경계가 나타납니다.");
+                        const std::uint32_t                  BlockSize = FrameRenderer->GetTexelGridBlockSize();
+                        int                                  SelectedBlock = BlockSize == 16U ? 1 : 0;
+                        constexpr std::array<const char*, 2> BlockNames = {"8 x 8 texels", "16 x 16 texels"};
+                        ImGui::SetNextItemWidth(150.0F);
+                        if (ImGui::Combo("##TexelGridBlock",
+                                         &SelectedBlock,
+                                         BlockNames.data(),
+                                         static_cast<int>(BlockNames.size())))
+                        {
+                            FrameRenderer->SetTexelGridBlockSize(SelectedBlock == 0 ? 8U : 16U);
+                        }
+                        ImGui::SameLine(0.0F, 10.0F);
+                        ImGui::Text("Resolution: %u x %u",
+                                    FrameRenderer->GetSimulationResolution(),
+                                    FrameRenderer->GetSimulationResolution());
+                        DrawLegendColor({0.42F, 0.46F, 0.51F, 1.0F}, "1 텍셀");
+                        DrawLegendColor({0.72F, 0.88F, 0.98F, 1.0F}, "묶음 경계");
+                        break;
+                    }
+                    case TRenderViewMode::SurfaceTexelArea:
+                    {
+                        BeginViewContext("TEXEL AREA", "텍셀당 월드 면적. 해상도 변경에도 동일 색 기준.");
+                        float Reference = FrameRenderer->GetTexelAreaReference();
+                        ImGui::SetNextItemWidth(150.0F);
+                        if (ImGui::DragFloat("Reference",
+                                             &Reference,
+                                             Reference * 0.05F,
+                                             1.0e-12F,
+                                             1.0e12F,
+                                             "%.6g",
+                                             ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp))
+                        {
+                            FrameRenderer->SetTexelAreaReference(Reference);
+                        }
+                        ImGui::SameLine(0.0F, 10.0F);
+                        ImGui::TextDisabled("world units^2 / texel");
+                        DrawLegendColor({0.12F, 0.52F, 0.92F, 1.0F}, "1/4x 이하 (촘촘)");
+                        DrawLegendColor({0.10F, 0.78F, 0.24F, 1.0F}, "1x 기준");
+                        DrawLegendColor({0.92F, 0.18F, 0.12F, 1.0F}, "4x 이상 (성김)");
+                        DrawLegendColor({1.0F, 0.18F, 0.72F, 1.0F}, "면적 계산 불가");
                         break;
                     }
                     case TRenderViewMode::MesoHeight:

@@ -18,7 +18,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     float AmbientLight;
     uint DebugStateChannel;
     uint StateChannelCount;
-    float DebugPadding0;
+    float DebugViewParameter;
     float ReliefShadingEnabled;
 } Material;
 
@@ -64,6 +64,7 @@ layout(location = 2) out float FragTangentSign;
 layout(location = 3) out vec2 FragUV;
 layout(location = 4) flat out uint FragSurfaceIndex;
 layout(location = 5) out vec3 FragMesoNormalWS;
+layout(location = 6) out vec3 FragWorldPosition;
 
 void main()
 {
@@ -88,6 +89,8 @@ void main()
         }
     }
     vec3 LocalPosition = InPosition;
+    // Texel Area 진단은 Meso Offset과 Normal Map을 적용하기 전의 위치와 instance scale을 사용한다.
+    FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
     if (MaterialRenderModeIsMesoOffset())
     {
         // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.

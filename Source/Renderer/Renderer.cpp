@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <glm/glm.hpp>
@@ -177,7 +178,7 @@ namespace MDSS
             float         AmbientLight = 0.25F;
             std::uint32_t DebugStateChannel = 0;
             std::uint32_t StateChannelCount = 0;
-            float         DebugPadding0 = 0.0F;
+            float         DebugViewParameter = 0.0F;
             float         ReliefShadingEnabled = 1.0F;
         };
 
@@ -217,6 +218,10 @@ namespace MDSS
                     return "Meso Displacement";
                 case TRenderViewMode::MacroGeometry:
                     return "Macro Geometry";
+                case TRenderViewMode::SurfaceTexelGrid:
+                    return "Texel Grid";
+                case TRenderViewMode::SurfaceTexelArea:
+                    return "Texel Area Heatmap";
             }
             return "Unknown";
         }
@@ -911,6 +916,53 @@ namespace MDSS
         UpdateMaterialUniforms();
     }
 
+    std::uint32_t TRenderer::GetTexelGridBlockSize() const noexcept
+    {
+        return TexelGridBlockSize;
+    }
+
+    void TRenderer::SetTexelGridBlockSize(std::uint32_t Size)
+    {
+        if (Size != 8U && Size != 16U)
+        {
+            throw std::invalid_argument("Texel grid block size must be 8 or 16.");
+        }
+        if (TexelGridBlockSize == Size)
+            return;
+        TexelGridBlockSize = Size;
+        UpdateMaterialUniforms();
+    }
+
+    float TRenderer::GetTexelAreaReference() const noexcept
+    {
+        return TexelAreaReference;
+    }
+
+    void TRenderer::SetTexelAreaReference(float Area)
+    {
+        if (!std::isfinite(Area) || Area < 1.0e-12F || Area > 1.0e12F)
+        {
+            throw std::invalid_argument("Texel reference area must be finite and in [1e-12, 1e12].");
+        }
+        if (TexelAreaReference == Area)
+            return;
+        TexelAreaReference = Area;
+        UpdateMaterialUniforms();
+    }
+
+    float TRenderer::GetDebugViewParameter() const noexcept
+    {
+        switch (ViewMode)
+        {
+            case TRenderViewMode::SurfaceTexelGrid:
+                return static_cast<float>(TexelGridBlockSize);
+            case TRenderViewMode::SurfaceTexelArea:
+                return TexelAreaReference;
+            default:
+                return static_cast<float>(SolverTransferWeightView);
+        }
+    }
+
     bool TRenderer::IsDebugGeometryDriveEnabled() const noexcept
     {
         return IsDebugSolverTermEnabled(TSurfaceSolverTerm::GeometryDrive);
@@ -1167,13 +1219,13 @@ namespace MDSS
             MaterialResources[Index].DescriptorSet = Sets[Index];
 
             const TMaterialUniform Uniform{Material.GetBaseColor(),
-                                          static_cast<std::uint32_t>(ViewMode),
-                                          bFlipNormalY ? 1U : 0U,
-                                          NormalStrength,
-                                          AmbientLight,
-                                          DebugStateChannel,
-                                          static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
-                                          static_cast<float>(SolverTransferWeightView),
+                                           static_cast<std::uint32_t>(ViewMode),
+                                           bFlipNormalY ? 1U : 0U,
+                                           NormalStrength,
+                                           AmbientLight,
+                                           DebugStateChannel,
+                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                                           GetDebugViewParameter(),
                                            bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
@@ -1229,13 +1281,13 @@ namespace MDSS
 
             const TMaterialAsset&  Material = Assets.GetMaterial(static_cast<TMaterialAssetHandle>(Index));
             const TMaterialUniform Uniform{Material.GetBaseColor(),
-                                          static_cast<std::uint32_t>(ViewMode),
-                                          bFlipNormalY ? 1U : 0U,
-                                          NormalStrength,
-                                          AmbientLight,
-                                          DebugStateChannel,
-                                          static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
-                                          static_cast<float>(SolverTransferWeightView),
+                                           static_cast<std::uint32_t>(ViewMode),
+                                           bFlipNormalY ? 1U : 0U,
+                                           NormalStrength,
+                                           AmbientLight,
+                                           DebugStateChannel,
+                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                                           GetDebugViewParameter(),
                                            bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
         }

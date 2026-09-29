@@ -201,7 +201,7 @@ if(BUILD_TESTING)
     # Exercise the actual Scene/AssetManager/Renderer resource lifecycle with a small native Vulkan window.
     set(MDSS_SCENE_TEST_SOURCES ${MDSS_SOURCES})
     list(FILTER MDSS_SCENE_TEST_SOURCES EXCLUDE REGEX "/main\\.cpp$")
-    add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp ${MDSS_SCENE_TEST_SOURCES})
+    add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp Tests/SurfaceDebugRenderingTests.cpp ${MDSS_SCENE_TEST_SOURCES})
     add_dependencies(MDSS_SceneResourceTests MDSS_Shaders)
     target_include_directories(MDSS_SceneResourceTests PRIVATE Source)
     target_include_directories(MDSS_SceneResourceTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")

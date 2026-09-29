@@ -47,7 +47,11 @@ namespace MDSS
         /** @brief 렌더 정점을 대응 텍셀의 Meso 높이만큼 옮긴다. */
         MesoOffset = 14,
         /** @brief 원본 거시 형상을 노멀 맵 음영 없이 표시한다. */
-        MacroGeometry = 15
+        MacroGeometry = 15,
+        /** @brief 확대 시 개별 텍셀과 고정 크기 묶음의 UV 격자를 표시한다. */
+        SurfaceTexelGrid = 16,
+        /** @brief 원본 삼각형의 월드 면적 / UV 면적 / 텍셀 수를 표시한다. */
+        SurfaceTexelArea = 17
     };
 
     enum class TSolverTransferWeightView : std::uint32_t
@@ -109,6 +113,11 @@ namespace MDSS
         void                                    SetStateHeatmapReliefShadingEnabled(bool bEnabled);
         [[nodiscard]] TSolverTransferWeightView GetSolverTransferWeightView() const noexcept;
         void SetSolverTransferWeightView(TSolverTransferWeightView View);
+        [[nodiscard]] std::uint32_t             GetTexelGridBlockSize() const noexcept;
+        void                                    SetTexelGridBlockSize(std::uint32_t Size);
+        [[nodiscard]] float                     GetTexelAreaReference() const noexcept;
+        /** @brief 해상도·Scene 전환과 독립적인 기준 면적(world units²/texel)을 설정한다. */
+        void               SetTexelAreaReference(float Area);
         [[nodiscard]] bool IsDebugGeometryDriveEnabled() const noexcept;
         void SetDebugGeometryDriveEnabled(bool bEnabled);
         [[nodiscard]] bool IsDebugNormalWeightEnabled() const noexcept;
@@ -148,6 +157,7 @@ namespace MDSS
         void DestroyRenderFinishedSemaphores() noexcept;
         void CreateTimestampQueryPool(std::size_t SolverInstanceCount);
         void UpdateMaterialUniforms();
+        [[nodiscard]] float GetDebugViewParameter() const noexcept;
         void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
                                  std::uint32_t   ImageIndex,
@@ -184,6 +194,8 @@ namespace MDSS
         std::uint32_t                         DebugStateChannel = 0;
         bool                                 bStateHeatmapReliefShadingEnabled = true;
         TSolverTransferWeightView             SolverTransferWeightView = TSolverTransferWeightView::Combined;
+        std::uint32_t                         TexelGridBlockSize = 8;
+        float                                 TexelAreaReference = 1.0e-4F;
         TSurfaceSolverDebugSettings DebugSolverSettings;
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;

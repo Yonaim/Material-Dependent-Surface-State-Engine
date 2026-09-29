@@ -10,6 +10,7 @@ layout(location = 2) in float FragTangentSign;
 layout(location = 3) in vec2 FragUV;
 layout(location = 4) flat in uint FragSurfaceIndex;
 layout(location = 5) in vec3 FragMesoNormalWS;
+layout(location = 6) in vec3 FragWorldPosition;
 
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
@@ -20,7 +21,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     float AmbientLight;
     uint DebugStateChannel;
     uint StateChannelCount;
-    float DebugPadding0;
+    float DebugViewParameter;
     float ReliefShadingEnabled;
 } Material;
 
@@ -79,7 +80,7 @@ layout(std430, set = 1, binding = 10) readonly buffer TSurfaceOutgoingFluxScale
 } OutgoingFluxScale;
 layout(std430, set = 1, binding = 12) readonly buffer TSurfaceRanges
 {
-    uvec4 Values[]; // 시작 texel, 너비, 높이, texel 수
+    uvec4 Values[]; // 시작 texel index, 너비, 높이, 전체 texel 수
 } SurfaceRanges;
 layout(std430, set = 1, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
@@ -108,6 +109,43 @@ const uint RENDER_MODE_SOLVER_TRANSFER_WEIGHT = 12u;
 const uint RENDER_MODE_MESO_HEIGHT = 13u;
 const uint RENDER_MODE_MESO_OFFSET = 14u;
 const uint RENDER_MODE_MACRO_GEOMETRY = 15u;
+const uint RENDER_MODE_SURFACE_TEXEL_GRID = 16u;
+const uint RENDER_MODE_SURFACE_TEXEL_AREA = 17u;
+
+float GridLines(vec2 Coordinate, vec2 PixelFootprint, float LineWidth)
+{
+    vec2 Fraction = fract(Coordinate);
+    vec2 Distance = min(Fraction, 1.0 - Fraction) / max(PixelFootprint, vec2(1e-8));
+    vec2 Lines = 1.0 - smoothstep(vec2(0.0), vec2(LineWidth), Distance);
+    // 셀 간격이 화면에서 2~5픽셀보다 좁아지면 세부 grid line을 숨겨 aliasing을 줄인다.
+    Lines *= 1.0 - smoothstep(vec2(0.20), vec2(0.50), PixelFootprint);
+    return max(Lines.x, Lines.y);
+}
+
+vec3 TexelGridColor(vec2 Coordinate, vec2 PixelFootprint)
+{
+    float BlockSize = max(Material.DebugViewParameter, 1.0);
+    vec2 BlockCoordinate = Coordinate / BlockSize;
+    vec2 BlockFootprint = PixelFootprint / BlockSize;
+    float Checker = mod(floor(BlockCoordinate.x) + floor(BlockCoordinate.y), 2.0);
+    float Visibility = 1.0 - smoothstep(0.20, 0.50, max(BlockFootprint.x, BlockFootprint.y));
+    vec3 Color = mix(vec3(0.215, 0.245, 0.275),
+                     mix(vec3(0.18, 0.21, 0.24), vec3(0.25, 0.28, 0.31), Checker), Visibility);
+    Color = mix(Color, vec3(0.42, 0.46, 0.51), GridLines(Coordinate, PixelFootprint, 0.65));
+    return mix(Color, vec3(0.72, 0.88, 0.98), GridLines(BlockCoordinate, BlockFootprint, 1.4));
+}
+
+vec3 TexelAreaColor(float Area)
+{
+    float Reference = max(Material.DebugViewParameter, 1e-12);
+    // 고정 log2 범위로 색을 정한다: 기준의 1/4 이하는 파랑, 기준은 초록, 4배 이상은 빨강.
+    float T = clamp((log2(Area) - log2(Reference)) * 0.25 + 0.5, 0.0, 1.0);
+    vec3 Small = vec3(0.12, 0.52, 0.92);
+    vec3 ReferenceColor = vec3(0.10, 0.78, 0.24);
+    vec3 Large = vec3(0.92, 0.18, 0.12);
+    return T < 0.5 ? mix(Small, ReferenceColor, T * 2.0) :
+                     mix(ReferenceColor, Large, (T - 0.5) * 2.0);
+}
 
 vec3 HeatColor(float Value)
 {
@@ -155,6 +193,23 @@ vec3 ApplyReliefLighting(vec3 HeatmapColor, vec3 MesoNormal)
 
 void main()
 {
+    // fwidth와 dFdx/dFdy는 fragment별 조기 반환 전에 uniform 분기 안에서 계산한다.
+    vec2 UVFootprint = vec2(0.0);
+    float WorldAreaPerUV = 0.0;
+    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
+    {
+        UVFootprint = fwidth(FragUV);
+    }
+    else if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_AREA)
+    {
+        vec2 UVdx = dFdx(FragUV);
+        vec2 UVdy = dFdy(FragUV);
+        vec3 PositionDx = dFdx(FragWorldPosition);
+        vec3 PositionDy = dFdy(FragWorldPosition);
+        float UVArea = abs(UVdx.x * UVdy.y - UVdx.y * UVdy.x);
+        // 분자와 분모의 화면 면적이 상쇄되므로 카메라 거리와 무관한 월드 면적 비율을 얻는다.
+        WorldAreaPerUV = UVArea > 0.0 ? length(cross(PositionDx, PositionDy)) / UVArea : 0.0;
+    }
     if (FragSurfaceIndex >= uint(SurfaceRanges.Values.length()))
     {
         OutColor = vec4(0.35, 0.35, 0.35, 1.0);
@@ -165,6 +220,19 @@ void main()
     if (Range.y == 0u || Range.z == 0u)
     {
         OutColor = vec4(0.35, 0.35, 0.35, 1.0);
+        return;
+    }
+
+    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
+    {
+        OutColor = vec4(TexelGridColor(FragUV * vec2(Range.yz), UVFootprint * vec2(Range.yz)), 1.0);
+        return;
+    }
+    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_AREA)
+    {
+        float Area = WorldAreaPerUV / (float(Range.y) * float(Range.z));
+        bool ValidArea = Area > 0.0 && !isnan(Area) && !isinf(Area);
+        OutColor = vec4(ValidArea ? TexelAreaColor(Area) : vec3(1.0, 0.18, 0.72), 1.0);
         return;
     }
 
@@ -288,7 +356,7 @@ void main()
             return;
         }
         vec4 Values = TransferWeightDebugAverages.Values[TexelIndex];
-        uint Component = uint(clamp(Material.DebugPadding0, 0.0, 3.0));
+        uint Component = uint(clamp(Material.DebugViewParameter, 0.0, 3.0));
         float Value = Component == 0u ? Values.x :
                       (Component == 1u ? Values.y : (Component == 2u ? Values.z : Values.w));
         OutColor = vec4(TransferWeightColor(Value), 1.0);

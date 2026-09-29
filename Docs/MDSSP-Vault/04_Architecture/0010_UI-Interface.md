@@ -95,6 +95,7 @@ Surface 진단 색은 다음과 같다.
 | Surface ID | Surface마다 결정적인 표시 색상 |
 | Neighbor Count | 이웃 0개는 어둡게, 8개는 밝게 표시 |
 | UV Seam | 다른 UV chart에 속한 이웃이 있는 texel을 분홍색으로 표시 |
+| Texel Grid, Texel Area Heatmap | Simulation UV 격자, 표면 면적 분포 |
 
 ## Debug 접촉 입력 흐름
 

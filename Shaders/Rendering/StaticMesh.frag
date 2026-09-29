@@ -21,7 +21,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     float AmbientLight;
     uint DebugStateChannel;
     uint StateChannelCount;
-    float DebugPadding0;
+    float DebugViewParameter;
     float DebugPadding1;
 } Material;
 

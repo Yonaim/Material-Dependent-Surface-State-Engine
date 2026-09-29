@@ -4,25 +4,32 @@
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "AssetManager/Loaders/SceneLoader.h"
+#include "DebugUI/DebugUI.h"
 #include "Logger/Logger.h"
 #include "Renderer/Renderer.h"
-#include "SurfaceStateSystem/SurfaceStateSystem.h"
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
+#include "SurfaceStateSystem/SurfaceStateSystem.h"
 #include "VulkanContext/VulkanContext.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <imgui.h>
 #include <iostream>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <numeric>
 #include <stdexcept>
+
+namespace MDSS::Tests
+{
+    void TestSurfaceDebugRendering(const TVulkanContext& Context);
+}
 
 namespace
 {
@@ -116,6 +123,29 @@ namespace
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
         TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
         TRenderer Renderer(Context, Window, Assets, Scene);
+        {
+            TDebugUI UI(Context, Window, Renderer, Assets);
+            // Keep the hidden test window from reading or overwriting the editor docking layout.
+            ImGui::GetIO().IniFilename = nullptr;
+            Renderer.SetTexelGridBlockSize(16);
+            Renderer.SetTexelAreaReference(1.0F / (128.0F * 128.0F));
+            for (auto Mode : {TRenderViewMode::SurfaceTexelGrid,
+                              TRenderViewMode::SurfaceTexelArea,
+                              TRenderViewMode::SolverTransferWeight,
+                              TRenderViewMode::MesoOffset})
+            {
+                Renderer.SetRenderViewMode(Mode);
+                Window.PollEvents();
+                UI.BeginFrame(Scene);
+                Renderer.RenderFrame(Scene, UI, 0.0F);
+            }
+            Renderer.SetSimulationResolution(Scene, 256);
+            Check(Renderer.GetTexelGridBlockSize() == 16 &&
+                      Renderer.GetTexelAreaReference() == 1.0F / (128.0F * 128.0F),
+                  "resolution change must preserve debug grid size and area color reference");
+            Renderer.SetSimulationResolution(Scene, 128);
+            vkDeviceWaitIdle(Context.GetDevice());
+        }
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
               Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness", "cached foreign States must be excluded");
         const auto WetHandle = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
@@ -241,6 +271,7 @@ int main()
     try
     {
         TFixtures Fixtures;
+        MDSS::Tests::TestSurfaceDebugRendering(*Context);
         TestSceneResources(*Window, *Context, Fixtures);
         Context.reset();
         Window.reset();

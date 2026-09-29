@@ -20,6 +20,22 @@
 | 빈 Scene 및 이전 Scene으로 재전환 | 빈 Registry 처리 및 실패한 로드의 캐시 State 제외 |
 | 생성·Compute·파괴 | Vulkan validation error 없음 |
 
+`Tests/SurfaceDebugRenderingTests.cpp`는 같은 Vulkan context에서 실제 `SurfaceDebug.vert`·`SurfaceDebug.frag`를 float32 RGBA offscreen attachment에 렌더링하고 GPU 출력 픽셀을 읽는다. 삼각형 비율 계산을 CPU에서 반복하는 대신 알려진 단위 정사각형의 표시 결과를 검증한다.
+
+| 렌더 조건 | 기대 결과 |
+|---|---|
+| 단위 정사각형, 기준 `1 / 256²`, 해상도 128·256·512 | 각각 빨강·초록·파랑 |
+| 동일 화면 크기를 유지한 월드 2배 확대 | 텍셀당 면적 4배로 빨강 |
+| 비균일 scale `(2, 0.5, 3)`의 XY 표면 | 표면 면적은 같으므로 초록 |
+| 원근 투영 및 비스듬한 Camera | 기준 면적 색 유지 |
+| UV의 두 축을 1/2로 축소 | 텍셀당 면적 4배로 빨강 |
+| 반전 UV / 퇴화 UV | 정상 면적 / 계산 불가 분홍색 |
+| 격자 8×8 → 16×16 변경 | 개별 텍셀 경계 위치를 유지하고 묶음 경계 변경 |
+| 화면에서 구분 불가능한 격자 | 평균 중립색으로 축소 패턴 숨김 |
+| invalid simulation texel | 두 기하 진단 뷰는 원본 mesh를 계속 표시 |
+| 실제 Renderer·ImGui frame에서 Grid·Area·Transfer Weight·Meso Displacement 표시 | pipeline·UI context 정상 동작, Vulkan validation error 없음 |
+| 해상도 128 → 256 → 128 | Grid 묶음 크기와 Area 색 기준 유지 |
+
 Scene 전환은 Loader와 Renderer API로 실행한다. UI 파일 다이얼로그의 클릭 동작은 이 CTest의 검증 범위에 포함하지 않는다. Native window 또는 Vulkan context를 만들 수 없는 환경에서는 return code 77로 skip한다.
 
 ```sh
