@@ -1,6 +1,6 @@
 /**
  * @file SurfaceDebug.vert
- * @brief Surface Debug 데이터를 준비하고 Meso/Final Geometry 모드에서 정점을 변위한다.
+ * @brief Macro mesh 기반 Surface Debug 데이터를 준비한다. 높이 형상은 TexelGeometry.vert를 사용한다.
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
@@ -66,7 +66,7 @@ void main()
     vec3 LocalPosition = InPosition;
     // Texel Area 진단은 Meso Offset과 Normal Map을 적용하기 전의 위치와 instance scale을 사용한다.
     FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
-    if (Material.RenderMode == 14u || Material.RenderMode == 19u)
+    if (Material.RenderMode == 14u)
     {
         // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.
         uint Surface = uint(gl_InstanceIndex);
@@ -82,14 +82,6 @@ void main()
                     TexelSurfaceIndices.Values[TexelIndex] == Surface)
                 {
                     float Height = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
-                    if (Material.RenderMode == 19u)
-                    {
-                        TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel, Material.StateChannelCount, Material.DebugOptions.z);
-                        if (D.Status == 3u) Height += D.Height;
-                        if (TexelIndex < uint(MesoNormals.Values.length()))
-                            FragMesoNormalWS = normalize(NormalMatrix * DebugFinalNormal(TexelIndex, Material.DebugStateChannel, Material.StateChannelCount, Material.DebugOptions.z));
-                        Height *= Material.DebugOptions.w;
-                    }
                     LocalPosition += InNormal * Height;
                 }
             }

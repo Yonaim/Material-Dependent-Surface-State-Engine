@@ -134,6 +134,7 @@ namespace
             for (auto Mode : {TRenderViewMode::SurfaceTexelGrid,
                               TRenderViewMode::SurfaceTexelArea,
                               TRenderViewMode::SolverTransferWeight,
+                              TRenderViewMode::MesoHeight,
                               TRenderViewMode::MesoOffset,
                               TRenderViewMode::SurfaceAccumulation,
                               TRenderViewMode::SurfaceFinalGeometry})
