@@ -587,10 +587,14 @@ namespace MDSS
             throw std::runtime_error("Failed to reset Vulkan command buffer.");
         }
 
-        MaximumSimulationStep = SurfaceStates->GetMaximumStableDeltaTime();
+        MaximumSimulationStep = DebugInterface.IsAutoSubsteppingEnabled() ?
+            SurfaceStates->GetMaximumStableDeltaTime() : FixedSimulationStepSeconds;
         const auto SimulationSteps = bResetSolverState ? std::vector<float>{} : SimulationClock.Consume(
             MaximumSimulationStep, DebugInterface.IsFixedSimulationTimestep(),
-            DebugInterface.IsSimulationPaused(), bRequestSolverStep);
+            DebugInterface.IsAutoSubsteppingEnabled(), DebugInterface.IsSimulationPaused(), bRequestSolverStep);
+        if (!DebugInterface.IsFixedSimulationTimestep() && !DebugInterface.IsAutoSubsteppingEnabled() &&
+            !SimulationSteps.empty())
+            MaximumSimulationStep = SimulationSteps.front();
         LastSimulationStepCount = static_cast<std::uint32_t>(SimulationSteps.size());
         if (SimulationSteps.empty())
             LastSolverGpuMilliseconds = LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = 0.0F;

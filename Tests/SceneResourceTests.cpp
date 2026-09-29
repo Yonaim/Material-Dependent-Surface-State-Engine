@@ -125,6 +125,8 @@ namespace
         TRenderer Renderer(Context, Window, Assets, Scene);
         {
             TDebugUI UI(Context, Window, Renderer, Assets);
+            Check(UI.IsFixedSimulationTimestep() && !UI.IsAutoSubsteppingEnabled(),
+                  "the actual UI must default to Fixed ON and Auto substepping OFF");
             // Keep the hidden test window from reading or overwriting the editor docking layout.
             ImGui::GetIO().IniFilename = nullptr;
             Renderer.SetTexelGridBlockSize(16);
@@ -139,6 +141,12 @@ namespace
                 UI.BeginFrame(Scene);
                 Renderer.RenderFrame(Scene, UI, 0.0F);
             }
+            Window.PollEvents();
+            UI.BeginFrame(Scene);
+            Renderer.RenderFrame(Scene, UI, 1.0F / 15.0F);
+            Check(Renderer.GetLastSimulationStepCount() == 4 &&
+                  std::abs(Renderer.GetSimulatedSeconds() - 1.0 / 15.0) < 1e-6,
+                  "the Renderer must run four fixed steps for a 15 FPS frame with the default policy");
             Renderer.SetSimulationResolution(Scene, 256);
             Check(Renderer.GetTexelGridBlockSize() == 16 &&
                       Renderer.GetTexelAreaReference() == 1.0F / (128.0F * 128.0F),

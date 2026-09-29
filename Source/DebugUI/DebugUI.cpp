@@ -2027,7 +2027,13 @@ namespace MDSS
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Accumulate elapsed time and run steps of at most 1/60 s. Smaller steps are used when needed for transport.");
+            SetDescriptionTooltip("Accumulate elapsed time and process fixed 1/60 s ticks. Profile factors do not change this interval. Auto substepping can divide each tick.");
+        if (ImGui::Checkbox("Auto substepping", &bAutoSubstepping))
+        {
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Divide simulation time into smaller solver steps using the transport limit. Adds GPU work. Off uses fixed 1/60 s ticks, or elapsed time when Fixed timestep is off.");
         ImGui::TextDisabled("%u steps, %.3f ms maximum step", FrameRenderer->GetLastSimulationStepCount(),
                             1000.0F * FrameRenderer->GetMaximumSimulationStep());
         ImGui::TextDisabled("Simulation %.2f s, pending %.3f s", FrameRenderer->GetSimulatedSeconds(),
@@ -2116,7 +2122,7 @@ namespace MDSS
                 ImGui::EndTooltip();
             }
             TextDescriptionWrapped("State is preserved. Buffers stay allocated while OFF.");
-            TextDescriptionWrapped("Fixed timestep is available in the Global Settings tab.");
+            TextDescriptionWrapped("Fixed timestep and Auto substepping are available in the Global Settings tab.");
             TextDescriptionWrapped(
                 "Compare with the same resolution, time scale and starting State. Reset and replay the "
                 "same input for each mode; allow warmup before reading averages.");

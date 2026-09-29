@@ -66,6 +66,7 @@ namespace MDSS
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
         [[nodiscard]] bool IsFixedSimulationTimestep() const noexcept { return bFixedSimulationTimestep; }
+        [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept { return bAutoSubstepping; }
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
         [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;
@@ -112,7 +113,8 @@ namespace MDSS
         float       InjectFalloff = 1.0F;
         int         InjectTexelSearchRadius = 2;
         float       SimulationTimeScale = 1.0F;
-        bool        bFixedSimulationTimestep = true;
+        bool        bFixedSimulationTimestep = DefaultFixedSimulationTimestep;
+        bool        bAutoSubstepping = DefaultAutoSubstepping;
         bool        bSimulationPaused = false;
         bool        bSolverStepRequested = false;
         bool        bSolverResetRequested = false;
