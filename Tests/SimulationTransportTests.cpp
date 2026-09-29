@@ -1,3 +1,4 @@
+#include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
@@ -11,6 +12,43 @@ namespace
     void Check(bool Condition, const char* Message)
     {
         if (!Condition) throw std::runtime_error(Message);
+    }
+
+    void TestClock()
+    {
+        using namespace MDSS;
+        for (int FPS : {15, 30, 60, 120})
+        {
+            TSimulationClock Clock;
+            std::size_t Steps = 0;
+            for (int Frame = 0; Frame < FPS; ++Frame)
+            {
+                Clock.Accumulate(1.0 / FPS, 1.0, false);
+                Steps += Clock.Consume(FixedSimulationStepSeconds, true, false, false).size();
+            }
+            Check(Steps == 60 && std::abs(Clock.GetSimulatedSeconds() - 1.0) < 1.0e-6,
+                  "15/30/60/120 FPS must advance the same simulation time");
+        }
+        TSimulationClock Clock;
+        Clock.Accumulate(1.0, 1.0, false);
+        Check(Clock.Consume(FixedSimulationStepSeconds, true, false, false).size() == MaxSimulationStepsPerFrame,
+              "catch-up work must be bounded");
+        Check(Clock.GetPendingSeconds() > 0.8, "catch-up limit must retain elapsed time");
+        Clock.Accumulate(50.0, 1.0, true);
+        const double Backlog = Clock.GetPendingSeconds();
+        Check(Clock.Consume(FixedSimulationStepSeconds, true, true, false).empty(), "pause must not advance");
+        Check(Clock.Consume(FixedSimulationStepSeconds, true, true, true).size() == 1,
+              "paused single-step must execute exactly once");
+        Check(Clock.GetPendingSeconds() == Backlog, "paused time and manual step must not consume backlog");
+        Clock.Reset();
+        Clock.Accumulate(0.1, 2.0, false);
+        Check(Clock.Consume(0.01F, true, false, false).size() == 8 && Clock.GetPendingSeconds() > 0.11,
+              "time scale must apply to elapsed budget while small safe steps retain backlog");
+        Clock.Reset();
+        Clock.Accumulate(0.005, 1.0, false);
+        Check(Clock.Consume(FixedSimulationStepSeconds, true, false, false).empty(), "fixed mode must retain remainder");
+        const auto Partial = Clock.Consume(FixedSimulationStepSeconds, false, false, false);
+        Check(Partial.size() == 1 && std::abs(Partial[0] - 0.005F) < 1.0e-7, "variable mode must consume partial step");
     }
 
     void TestArea()
@@ -47,6 +85,6 @@ namespace
 
 int main()
 {
-    try { TestArea(); std::cout << "World-area tests passed\n"; return 0; }
+    try { TestClock(); TestArea(); std::cout << "Simulation clock and world-area tests passed\n"; return 0; }
     catch (const std::exception& Error) { std::cerr << Error.what() << '\n'; return 1; }
 }

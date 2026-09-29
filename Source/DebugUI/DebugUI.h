@@ -7,6 +7,7 @@
 
 #include "AssetManager/Core/Asset.h"
 #include "Logger/Logger.h"
+#include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <vulkan/vulkan.h>
@@ -63,8 +64,8 @@ namespace MDSS
         [[nodiscard]] float GetInjectFalloff() const noexcept;
         [[nodiscard]] std::uint32_t GetInjectTexelSearchRadius() const noexcept;
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
-        [[nodiscard]] float GetSimulationDeltaTime(float FrameDeltaTime) const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
+        [[nodiscard]] bool IsFixedSimulationTimestep() const noexcept { return bFixedSimulationTimestep; }
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
         [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;

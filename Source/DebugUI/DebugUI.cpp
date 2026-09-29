@@ -551,11 +551,6 @@ namespace MDSS
         return SimulationTimeScale;
     }
 
-    float TDebugUI::GetSimulationDeltaTime(float FrameDeltaTime) const noexcept
-    {
-        return (bFixedSimulationTimestep ? 1.0F / 60.0F : FrameDeltaTime) * SimulationTimeScale;
-    }
-
     bool TDebugUI::IsSimulationPaused() const noexcept
     {
         return bSimulationPaused;
@@ -2027,15 +2022,18 @@ namespace MDSS
             }
         }
 
-        if (ImGui::Checkbox("Fixed timestep (1/60 s)", &bFixedSimulationTimestep))
+        if (ImGui::Checkbox("Fixed timestep", &bFixedSimulationTimestep))
         {
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Fixed time per solver step, scaled by Time scale. Simulation speed depends on FPS.");
-        if (bFixedSimulationTimestep)
-            ImGui::TextDisabled(
-                "%.3f ms per step at %.2fx", 1000.0F * GetSimulationDeltaTime(0.0F), SimulationTimeScale);
+            SetDescriptionTooltip("Accumulate elapsed time and run steps of at most 1/60 s. Smaller steps are used when needed for transport.");
+        ImGui::TextDisabled("%u steps, %.3f ms maximum step", FrameRenderer->GetLastSimulationStepCount(),
+                            1000.0F * FrameRenderer->GetMaximumSimulationStep());
+        ImGui::TextDisabled("Simulation %.2f s, pending %.3f s", FrameRenderer->GetSimulatedSeconds(),
+                            FrameRenderer->GetPendingSimulationSeconds());
+        if (FrameRenderer->GetPendingSimulationSeconds() > 0.25)
+            TextDescriptionWrapped("Simulation is catching up. Lower resolution or time scale to reduce the workload.");
     }
 
     void TDebugUI::DrawSolverTab()

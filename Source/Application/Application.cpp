@@ -77,8 +77,7 @@ namespace MDSS
             const auto  CurrentFrameTime = std::chrono::steady_clock::now();
             const float DeltaTime = std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
             PreviousFrameTime = CurrentFrameTime;
-            const float SimulationDeltaTime = DebugInterface->GetSimulationDeltaTime(DeltaTime);
-            FrameRenderer->RenderFrame(MainScene, *DebugInterface, SimulationDeltaTime);
+            FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime);
             ++RenderedFrameCount;
         }
 

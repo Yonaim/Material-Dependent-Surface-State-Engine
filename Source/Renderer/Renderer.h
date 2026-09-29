@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include "SurfaceStateSystem/State/SimulationClock.h"
+#include <span>
+
 #include "AssetManager/Core/Asset.h"
 #include "Renderer/Framebuffer.h"
 #include "Renderer/GraphicsPipeline.h"
@@ -81,6 +84,10 @@ namespace MDSS
 
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
         void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
+        [[nodiscard]] double GetPendingSimulationSeconds() const noexcept { return SimulationClock.GetPendingSeconds(); }
+        [[nodiscard]] double GetSimulatedSeconds() const noexcept { return SimulationClock.GetSimulatedSeconds(); }
+        [[nodiscard]] std::uint32_t GetLastSimulationStepCount() const noexcept { return LastSimulationStepCount; }
+        [[nodiscard]] float GetMaximumSimulationStep() const noexcept { return MaximumSimulationStep; }
         void SubmitContact(TSurfaceContactInput Contact);
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
         void ReloadSceneResources(const TScene& Scene, bool bResetStateSettings = true);
@@ -163,8 +170,7 @@ namespace MDSS
                                  std::uint32_t   ImageIndex,
                                  const TScene&    SceneData,
                                  const TDebugUI&  DebugInterface,
-                                 float            DeltaTime,
-                                 bool             bRunSolverStep);
+                                 std::span<const float> SimulationSteps);
 
         const TVulkanContext&                Context;
         TWindow&                             TargetWindow;
@@ -206,7 +212,10 @@ namespace MDSS
         std::vector<VkSemaphore> RenderFinishedSemaphores;
         VkQueryPool TimestampQueryPool = VK_NULL_HANDLE;
         std::array<bool, TRenderContext::MaxFramesInFlight> bTimestampQueriesSubmitted{};
-        std::array<bool, TRenderContext::MaxFramesInFlight> bSolverTimestampQueriesSubmitted{};
+        std::array<std::uint32_t, TRenderContext::MaxFramesInFlight> SolverTimestampStepsSubmitted{};
+        TSimulationClock SimulationClock;
+        std::uint32_t LastSimulationStepCount = 0;
+        float MaximumSimulationStep = FixedSimulationStepSeconds;
         std::uint32_t TimestampQueriesPerFrame = 2;
         std::uint32_t SolverTimestampSlotCount = 0;
         float TimestampPeriodNanoseconds = 0.0F;

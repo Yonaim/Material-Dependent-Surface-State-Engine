@@ -82,6 +82,7 @@ namespace MDSS
             throw std::invalid_argument("Debug Profile override does not belong to the current Scene.");
         }
 
+        bStableDeltaTimeDirty = true;
         const auto Key = std::make_pair(Profile, State);
         if (bKeepRuntimeOverride)
         {
@@ -415,6 +416,68 @@ namespace MDSS
         PendingContacts.clear();
     }
 
+    float TSurfaceStateSystem::GetMaximumStableDeltaTime()
+    {
+        const auto& Instances = Scene.GetStaticMeshInstances();
+        for (std::size_t I = 0; I < Instances.size(); ++I)
+            if (GPUResources->GetInstanceDescriptors(I) &&
+                GPUResources->NeedsTransferWeightCacheUpdate(I, Instances[I].GetTransform().GetMatrix()))
+                bStableDeltaTimeDirty = true;
+        if (!bStableDeltaTimeDirty) return CachedMaximumStableDeltaTime;
+
+        double Limit = 1.0 / 60.0;
+        const bool SatEnabled = DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::SaturationDrive);
+        const bool GeoEnabled = DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::GeometryDrive);
+        for (std::size_t I = 0; I < Instances.size(); ++I)
+        {
+            if (!GPUResources->GetInstanceDescriptors(I)) continue;
+            const auto Handle = Instances[I].GetSurfaceData();
+            const auto& Geometry = *Assets.GetSurfaceData(Handle).GetSharedGeometry();
+            const auto& Texels = Geometry.GetTexels();
+            const auto& Profiles = Assets.GetSurfaceProfileTable(Handle);
+            const glm::mat4 Model = Instances[I].GetTransform().GetMatrix();
+            const glm::mat3 Linear(Model);
+            const auto Weights = BuildSurfaceGPUTransferWeights(Geometry, Model, nullptr,
+                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
+                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
+                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
+                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::CurvatureWeight));
+            for (std::size_t T = 0; T < Texels.size(); ++T)
+            {
+                const auto Profile = Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(T));
+                if (!Texels[T].IsValid() || Profile >= Profiles.size()) continue;
+                const double AreaScale = GetSurfaceWorldTexelArea(Texels[T], Model) / SurfaceStateReferenceArea;
+                if (AreaScale <= 0.0) continue;
+                double WeightSum = 0.0, HeightWeightSum = 0.0;
+                const glm::vec3 Position = Texels[T].Position + Texels[T].Normal * Texels[T].Geometry.MesoVirtualHeight;
+                for (std::size_t D = 0; D < SurfaceNeighborCount; ++D)
+                {
+                    const auto N = Texels[T].NeighborIndices[D];
+                    if (N >= Texels.size()) continue;
+                    const double W = Weights[T * SurfaceNeighborCount + D];
+                    WeightSum += W;
+                    const glm::vec3 Target = Texels[N].Position + Texels[N].Normal * Texels[N].Geometry.MesoVirtualHeight;
+                    // DirectionDrive <= 1; use an upper bound including both gravity directions.
+                    HeightWeightSum += W * std::abs((Linear * (Target - Position)).z);
+                }
+                for (const auto& [Name, Original] : Assets.GetSRProfile(Profiles[Profile]).GetData().States)
+                {
+                    const TStateId State = Assets.GetSurfaceStateRegistry().GetStateId(Name);
+                    const auto Override = RuntimeProfileOverrides.find({Profiles[Profile], State});
+                    const auto& P = Override == RuntimeProfileOverrides.end() ? Original : Override->second;
+                    // SaturationDrive <= source saturation; Geometry uses the same unclamped mobility.
+                    const double RateBound = (SatEnabled ? 1.0F * P.SaturationTransferFactor * WeightSum : 0.0) +
+                        (GeoEnabled ? 100.0F * P.GeometryTransferFactor * HeightWeightSum : 0.0);
+                    if (RateBound > 0.0)
+                        Limit = std::min(Limit, 0.9 * P.StateCapacity * AreaScale / RateBound);
+                }
+            }
+        }
+        CachedMaximumStableDeltaTime = static_cast<float>(Limit);
+        bStableDeltaTimeDirty = false;
+        return CachedMaximumStableDeltaTime;
+    }
+
     void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
                                          float DeltaTime,
                                          VkQueryPool TimestampQueryPool,
@@ -540,6 +603,7 @@ namespace MDSS
             return;
         }
         DebugSolverSettings.SetEnabled(Term, bEnabled);
+        bStableDeltaTimeDirty = true;
         if (Term == TSurfaceSolverTerm::DistanceWeight || Term == TSurfaceSolverTerm::NormalWeight ||
             Term == TSurfaceSolverTerm::ProfileBoundaryWeight || Term == TSurfaceSolverTerm::CurvatureWeight)
         {
