@@ -61,6 +61,7 @@ namespace MDSS
         [[nodiscard]] float GetInjectStrength() const noexcept;
         [[nodiscard]] float GetInjectRadius() const noexcept;
         [[nodiscard]] float GetInjectFalloff() const noexcept;
+        [[nodiscard]] std::uint32_t GetInjectTexelSearchRadius() const noexcept;
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
         [[nodiscard]] float GetSimulationDeltaTime(float FrameDeltaTime) const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
@@ -100,6 +101,7 @@ namespace MDSS
         float       InjectStrength = 1.0F;
         float       InjectRadius = 0.25F;
         float       InjectFalloff = 1.0F;
+        int         InjectTexelSearchRadius = 2;
         float       SimulationTimeScale = 1.0F;
         bool        bFixedSimulationTimestep = false;
         bool        bSimulationPaused = false;

@@ -182,6 +182,9 @@ namespace MDSS
                 const std::uint32_t CenterY = std::min(static_cast<std::uint32_t>(Contact.SimulationUV.y *
                                                                                   Range.Resolution.Height),
                                                        Range.Resolution.Height - 1U);
+                const std::uint32_t MaxSearchRadius = std::max(Range.Resolution.Width, Range.Resolution.Height);
+                const std::uint32_t EffectiveSearchRadius = std::min(Contact.TexelSearchRadius, MaxSearchRadius);
+                const std::int32_t SearchRadius = static_cast<std::int32_t>(EffectiveSearchRadius);
                 std::optional<TLocalTexelIndex> ResolvedCenter;
                 const auto IsHitTriangleTexel = [&](std::uint32_t X, std::uint32_t Y) {
                     const std::size_t Index = static_cast<std::size_t>(Range.FirstTexel) +
@@ -202,9 +205,9 @@ namespace MDSS
                 if (!IsHitTriangleTexel(CenterX, CenterY))
                 {
                     std::uint32_t BestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
-                    for (std::int32_t OffsetY = -2; OffsetY <= 2; ++OffsetY)
+                    for (std::int32_t OffsetY = -SearchRadius; OffsetY <= SearchRadius; ++OffsetY)
                     {
-                        for (std::int32_t OffsetX = -2; OffsetX <= 2; ++OffsetX)
+                        for (std::int32_t OffsetX = -SearchRadius; OffsetX <= SearchRadius; ++OffsetX)
                         {
                             if (OffsetX == 0 && OffsetY == 0)
                             {
@@ -237,7 +240,73 @@ namespace MDSS
                 }
                 if (!ResolvedCenter.has_value())
                 {
-                    Diagnose("Rejected contact because no valid texel for the hit triangle was found within the 2-texel fallback radius.");
+                    std::uint32_t NearestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
+                    std::int32_t NearestOffsetX = 0;
+                    std::int32_t NearestOffsetY = 0;
+                    std::uint32_t NearestX = 0;
+                    std::uint32_t NearestY = 0;
+                    for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
+                    {
+                        for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
+                        {
+                            const std::size_t Index = static_cast<std::size_t>(Range.FirstTexel) +
+                                                      static_cast<std::size_t>(Y) * Range.Resolution.Width + X;
+                            if (Index >= Texels.size())
+                            {
+                                continue;
+                            }
+                            const TSurfaceTexelGeometry& Texel = Texels[Index];
+                            if (!Texel.IsValid() || Texel.Surface != TargetSurface ||
+                                Texel.Triangle != Contact.TargetTriangle)
+                            {
+                                continue;
+                            }
+
+                            const std::int32_t OffsetX = static_cast<std::int32_t>(X) -
+                                                         static_cast<std::int32_t>(CenterX);
+                            const std::int32_t OffsetY = static_cast<std::int32_t>(Y) -
+                                                         static_cast<std::int32_t>(CenterY);
+                            const std::uint32_t DistanceSquared =
+                                static_cast<std::uint32_t>(OffsetX * OffsetX + OffsetY * OffsetY);
+                            if (DistanceSquared < NearestDistanceSquared)
+                            {
+                                NearestDistanceSquared = DistanceSquared;
+                                NearestOffsetX = OffsetX;
+                                NearestOffsetY = OffsetY;
+                                NearestX = X;
+                                NearestY = Y;
+                            }
+                        }
+                    }
+
+                    if (NearestDistanceSquared == std::numeric_limits<std::uint32_t>::max())
+                    {
+                        Diagnose("Rejected contact: the hit triangle has no valid simulation texels at this "
+                                 "resolution; no texel center was rasterized inside it. Surface=" +
+                                 std::to_string(TargetSurface) + ", triangle=" +
+                                 std::to_string(Contact.TargetTriangle) + ", UV=(" +
+                                 std::to_string(Contact.SimulationUV.x) + ", " +
+                                 std::to_string(Contact.SimulationUV.y) + "), grid=" +
+                                 std::to_string(Range.Resolution.Width) + "x" +
+                                 std::to_string(Range.Resolution.Height) + ".");
+                    }
+                    else
+                    {
+                        Diagnose("Rejected contact: the nearest valid texel for the hit triangle is outside the "
+                                 "fallback search window (±" + std::to_string(EffectiveSearchRadius) +
+                                 " texels per axis). Surface=" +
+                                 std::to_string(TargetSurface) + ", triangle=" +
+                                 std::to_string(Contact.TargetTriangle) + ", UV=(" +
+                                 std::to_string(Contact.SimulationUV.x) + ", " +
+                                 std::to_string(Contact.SimulationUV.y) + "), grid=" +
+                                 std::to_string(Range.Resolution.Width) + "x" +
+                                 std::to_string(Range.Resolution.Height) + ", center=(" +
+                                 std::to_string(CenterX) + ", " + std::to_string(CenterY) +
+                                 "), nearest=(" + std::to_string(NearestX) + ", " +
+                                 std::to_string(NearestY) + "), offset=(" +
+                                 std::to_string(NearestOffsetX) + ", " +
+                                 std::to_string(NearestOffsetY) + ").");
+                    }
                     continue;
                 }
                 InfluenceCenter = glm::vec3(Model * glm::vec4(Texels[*ResolvedCenter].Position, 1.0F));

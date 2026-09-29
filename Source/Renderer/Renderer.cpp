@@ -1425,30 +1425,33 @@ namespace MDSS
             }
         }
 
-        if (const std::optional<std::size_t> Selected = DebugInterface.GetSelectedObject();
-            Selected && *Selected < SceneData.GetStaticMeshInstances().size() && GizmoVertexBuffer != nullptr)
+        if (!DebugInterface.IsInjectModeEnabled())
         {
-            const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*Selected].GetTransform().Position;
-            const float GizmoScale = glm::length(SceneData.GetMainCamera().GetPosition() - Position) * 0.18F;
-            if (GizmoScale > 0.01F)
+            if (const std::optional<std::size_t> Selected = DebugInterface.GetSelectedObject();
+                Selected && *Selected < SceneData.GetStaticMeshInstances().size() && GizmoVertexBuffer != nullptr)
             {
-                const glm::mat4 Model = glm::scale(glm::translate(glm::mat4(1.0F), Position), glm::vec3(GizmoScale));
-                const TGizmoPushConstants Constants{ViewProjection * Model, DebugInterface.GetHoveredGizmoAxis()};
-                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GizmoPipeline.GetHandle());
-                const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
-                const VkDeviceSize Offset = 0;
-                vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &Offset);
-                vkCmdPushConstants(CommandBuffer,
-                                   GizmoPipeline.GetLayout(),
-                                   VK_SHADER_STAGE_VERTEX_BIT,
-                                   0,
-                                   sizeof(Constants),
-                                   &Constants);
-                vkCmdDraw(CommandBuffer,
-                          GizmoVertexCount - WorldGridVertexCount - WorldAxisVertexCount,
-                          1,
-                          WorldGridVertexCount + WorldAxisVertexCount,
-                          0);
+                const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*Selected].GetTransform().Position;
+                const float GizmoScale = glm::length(SceneData.GetMainCamera().GetPosition() - Position) * 0.18F;
+                if (GizmoScale > 0.01F)
+                {
+                    const glm::mat4 Model = glm::scale(glm::translate(glm::mat4(1.0F), Position), glm::vec3(GizmoScale));
+                    const TGizmoPushConstants Constants{ViewProjection * Model, DebugInterface.GetHoveredGizmoAxis()};
+                    vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, GizmoPipeline.GetHandle());
+                    const VkBuffer VertexBuffer = GizmoVertexBuffer->GetHandle();
+                    const VkDeviceSize Offset = 0;
+                    vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &Offset);
+                    vkCmdPushConstants(CommandBuffer,
+                                       GizmoPipeline.GetLayout(),
+                                       VK_SHADER_STAGE_VERTEX_BIT,
+                                       0,
+                                       sizeof(Constants),
+                                       &Constants);
+                    vkCmdDraw(CommandBuffer,
+                              GizmoVertexCount - WorldGridVertexCount - WorldAxisVertexCount,
+                              1,
+                              WorldGridVertexCount + WorldAxisVertexCount,
+                              0);
+                }
             }
         }
 

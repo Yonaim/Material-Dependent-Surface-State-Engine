@@ -65,9 +65,14 @@ namespace MDSS
                     DebugInterface->GetInjectStrength(),
                     DebugInterface->GetInjectRadius(),
                     DebugInterface->GetInjectFalloff(),
+                    DebugInterface->GetInjectTexelSearchRadius(),
                     DebugInterface->ShouldSuppressDebugHotkey()))
             {
                 FrameRenderer->SubmitContact(*Contact);
+                TLogger::Info("TInputSystem",
+                              "Debug contact submitted for processing (state=" + std::to_string(Contact->State) +
+                                  ", instance=" + std::to_string(Contact->TargetInstance) +
+                                  ", strength=" + std::to_string(Contact->Strength) + ").");
             }
             const auto  CurrentFrameTime = std::chrono::steady_clock::now();
             const float DeltaTime = std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();

@@ -26,6 +26,8 @@ namespace MDSS
         float             Radius = 0.0F;
         float             Strength = 0.0F;
         float             Falloff = 1.0F;
+        /** @brief UV→texel 중심 보정에서 같은 Triangle을 탐색할 축별 격자 범위. 2이면 기본 ±2 texel이다. */
+        std::uint32_t     TexelSearchRadius = 2;
         bool              bHasSimulationMapping = false;
         std::uint32_t     TargetTriangle = 0;
         glm::vec2         SimulationUV{0.0F};

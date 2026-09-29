@@ -7,6 +7,7 @@
 
 #include "SurfaceStateSystem/State/SurfaceInput.h"
 
+#include <cstdint>
 #include <optional>
 
 struct GLFWwindow;
@@ -31,6 +32,7 @@ namespace MDSS
                                                                            float Strength,
                                                                            float Radius,
                                                                            float Falloff,
+                                                                           std::uint32_t TexelSearchRadius,
                                                                            bool bHotkeySuppressed);
 
     private:

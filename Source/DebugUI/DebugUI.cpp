@@ -526,6 +526,11 @@ namespace MDSS
         return InjectFalloff;
     }
 
+    std::uint32_t TDebugUI::GetInjectTexelSearchRadius() const noexcept
+    {
+        return static_cast<std::uint32_t>(InjectTexelSearchRadius);
+    }
+
     float TDebugUI::GetSimulationTimeScale() const noexcept
     {
         return SimulationTimeScale;
@@ -741,6 +746,13 @@ namespace MDSS
 
     void TDebugUI::ProcessSelectionAndGizmo(TScene& SceneData)
     {
+        if (bInjectMode)
+        {
+            ActiveGizmoAxis = -1;
+            HoveredGizmoAxis = -1;
+            return;
+        }
+
         ImGuiIO&     IO = ImGui::GetIO();
         const ImVec2 DisplaySize = IO.DisplaySize;
         if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F)
@@ -1812,8 +1824,9 @@ namespace MDSS
                     ImGui::Checkbox("Inject mode", &bInjectMode);
                     if (ImGui::IsItemHovered())
                     {
-                        ImGui::SetTooltip("Enable contact injection. Aim with the crosshair and press Space.");
+                        ImGui::SetTooltip("Inject with Space at the crosshair hit.");
                     }
+                    ImGui::TextDisabled("Crosshair hit → triangle → UV → simulation texel.");
 
                     const TSurfaceStateRegistry* InjectRegistry =
                         AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
@@ -1870,6 +1883,13 @@ namespace MDSS
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::SetTooltip("Controls how injection strength fades toward the radius edge.");
+                    }
+                    BeginLabeledControlRow("Texel search");
+                    ImGui::SetNextItemWidth(-1.0F);
+                    ImGui::SliderInt("##InjectTexelSearchRadius", &InjectTexelSearchRadius, 0, 16, "%d texels");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("Same-triangle UV fallback range per axis. Default: 2; 0 disables fallback.");
                     }
                     ImGui::EndTabItem();
                 }

@@ -33,6 +33,7 @@ namespace MDSS
                                                                        float                Strength,
                                                                        float                Radius,
                                                                        float                Falloff,
+                                                                       std::uint32_t        TexelSearchRadius,
                                                                        bool                 bHotkeySuppressed)
     {
         const bool bSpaceDown = Window != nullptr && glfwGetKey(Window, GLFW_KEY_SPACE) == GLFW_PRESS;
@@ -84,6 +85,7 @@ namespace MDSS
         Contact.Radius = Radius;
         Contact.Strength = Strength;
         Contact.Falloff = Falloff;
+        Contact.TexelSearchRadius = TexelSearchRadius;
         Contact.bHasSimulationMapping = true;
         Contact.TargetTriangle = Hit.TriangleID;
         Contact.SimulationUV = Hit.SimulationUV;
