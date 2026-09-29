@@ -2231,7 +2231,7 @@ namespace MDSS
         LabeledSliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("Amount of State added by the contact.");
+            SetDescriptionTooltip("Input per reference area. The affected world area determines the total amount.");
         }
         LabeledSliderFloat("Falloff", &InjectFalloff, 0.0F, 4.0F, "%.2f");
         if (ImGui::IsItemHovered())
@@ -2376,12 +2376,16 @@ namespace MDSS
         ImGui::TextDisabled("Only parameters currently used by the solver are shown.");
         bool bChanged = false;
         bChanged |= LabeledDragFloat("Capacity", &ParameterDraft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Saturation reference per reference area. Texel Capacity scales with world area.");
         bChanged |= LabeledDragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
         bChanged |= LabeledSliderFloat(
             "Saturation transfer factor", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
         bChanged |=
             LabeledSliderFloat("Geometry transfer factor", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
         bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Amount lost per second per reference area, scaled to each texel's world area.");
         bChanged |= LabeledSliderFloat("Cavity retention", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
         if (bChanged)
         {

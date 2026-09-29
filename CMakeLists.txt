@@ -198,6 +198,20 @@ set_target_properties(MDSS PROPERTIES
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(MDSS_SimulationTransportTests
+        Tests/SimulationTransportTests.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
+        Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
+        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
+    )
+    target_include_directories(MDSS_SimulationTransportTests PRIVATE Source)
+    target_link_libraries(MDSS_SimulationTransportTests PRIVATE glm::glm)
+    add_test(NAME MDSS_SimulationTransport COMMAND MDSS_SimulationTransportTests)
+
     # Exercise the actual Scene/AssetManager/Renderer resource lifecycle with a small native Vulkan window.
     set(MDSS_SCENE_TEST_SOURCES ${MDSS_SOURCES})
     list(FILTER MDSS_SCENE_TEST_SOURCES EXCLUDE REGEX "/main\\.cpp$")

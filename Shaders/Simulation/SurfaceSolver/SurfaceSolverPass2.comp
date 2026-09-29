@@ -22,7 +22,11 @@ void main()
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
         if (!supportsChannel(TexelIndex, ChannelIndex))
         {
-            NextState.Values[StateValueIndex] = 0.0;
+            // A collapsed instance has no transport area, but its existing total amount is retained.
+            bool SupportedProfile = isValidTexel(TexelIndex) &&
+                ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
+            NextState.Values[StateValueIndex] = SupportedProfile ?
+                max(CurrentState.Values[StateValueIndex] + InputDelta.Values[StateValueIndex], 0.0) : 0.0;
             InputDelta.Values[StateValueIndex] = 0.0;
             continue;
         }
@@ -61,7 +65,7 @@ void main()
                 TSurfaceGPUProfileParameters SourceParameters =
                     ProfileParameters.Values[profileRecordIndex(NeighborTexel, ChannelIndex)];
                 float SourceSaturation = (Solver.Flags & (1u << 1u)) != 0u
-                    ? 0.0 : CurrentState.Values[NeighborStateValueIndex] / SourceParameters.CapacityInputAndTransfer.x;
+                    ? 0.0 : CurrentState.Values[NeighborStateValueIndex] / stateCapacity(NeighborTexel, ChannelIndex);
                 if (SourceParameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & 1u) == 0u)
                 {
                     prepareSourceGeometry(NeighborTexel);

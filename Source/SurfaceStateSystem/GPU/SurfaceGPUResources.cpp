@@ -262,7 +262,8 @@ namespace MDSS
                                                                std::size_t      TexelCount,
                                                                std::size_t      ChannelCount,
                                                                const std::vector<float>& TransferWeights,
-                                                               const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages)
+                                                               const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages,
+        const std::vector<float>& WorldTexelAreas)
         : TexelCount(TexelCount), ChannelCount(ChannelCount)
     {
         if (TexelCount == 0 || ChannelCount == 0)
@@ -278,6 +279,11 @@ namespace MDSS
         {
             throw std::invalid_argument("TransferWeight cache size must be texel count × neighbor count.");
         }
+        const std::vector<float> Areas = WorldTexelAreas.empty()
+            ? std::vector<float>(TexelCount, SurfaceStateReferenceArea) : WorldTexelAreas;
+        if (Areas.size() != TexelCount || std::any_of(Areas.begin(), Areas.end(), [](float A) {
+                return !std::isfinite(A) || A < 0.0F; }))
+            throw std::invalid_argument("World texel areas must be finite, nonnegative and match texel count.");
         ScalarCount = TexelCount * ChannelCount;
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         if (ScalarCount > std::numeric_limits<std::uint32_t>::max() / SurfaceNeighborCount)
@@ -286,6 +292,8 @@ namespace MDSS
         }
         const std::size_t RawFluxByteSize =
             GetSurfaceGPUBufferByteSize(ScalarCount, SurfaceNeighborCount * sizeof(float), MaxRange);
+        WorldTexelAreaBuffer = CreateUploadedBuffer(
+            PhysicalDevice, Device, Areas.data(), Areas.size(), sizeof(float), MaxRange);
         StateABuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         StateBBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         OutgoingFluxScaleBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
@@ -349,6 +357,19 @@ namespace MDSS
     const TGPUBuffer& TSurfaceInstanceGPUResources::GetRawFluxBuffer() const noexcept
     {
         return *RawFluxBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceInstanceGPUResources::GetWorldTexelAreaBuffer() const noexcept
+    {
+        return *WorldTexelAreaBuffer;
+    }
+
+    void TSurfaceInstanceGPUResources::UpdateWorldTexelAreas(const std::vector<float>& Areas)
+    {
+        if (Areas.size() != TexelCount || std::any_of(Areas.begin(), Areas.end(), [](float A) {
+                return !std::isfinite(A) || A < 0.0F; }))
+            throw std::invalid_argument("Invalid updated world texel areas.");
+        WorldTexelAreaBuffer->Upload(Areas.data(), WorldTexelAreaBuffer->GetSize());
     }
 
     void
@@ -481,7 +502,8 @@ namespace MDSS
             // 바인딩 17에는 공유 Meso 노멀 버퍼를 연결한다.
             &SharedGeometry.GetMesoNormalBuffer(),
             &SharedGeometry.GetReverseNeighborSlotBuffer(),
-            &Instance.GetRawFluxBuffer()};
+            &Instance.GetRawFluxBuffer(),
+            &Instance.GetWorldTexelAreaBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

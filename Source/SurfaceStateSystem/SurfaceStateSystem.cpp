@@ -372,7 +372,9 @@ namespace MDSS
                 const float ContactWeight = Contact.Falloff == 0.0F ? 1.0F : std::pow(LinearFalloff, Contact.Falloff);
                 const std::size_t ScalarIndex =
                     GetSurfaceGPUStateValueIndex(TexelIndex, StateChannel, ChannelCount);
-                InputDeltas[InstanceIndex][ScalarIndex] += Contact.Strength * ContactWeight * InputFactors[ProfileIndex];
+                const float AreaScale = GetSurfaceWorldTexelArea(Texel, Model) / SurfaceStateReferenceArea;
+                InputDeltas[InstanceIndex][ScalarIndex] += Contact.Strength * ContactWeight *
+                                                         InputFactors[ProfileIndex] * AreaScale;
                 bAppliedToAnyTexel = true;
             }
 

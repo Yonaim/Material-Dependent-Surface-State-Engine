@@ -25,7 +25,7 @@ namespace MDSS
     {
         constexpr std::array<std::uint8_t, 8> Magic{'M', 'D', 'S', 'S', 'S', 'R', 'F', '3'};
         constexpr std::size_t HeaderBytes = 52;
-        constexpr std::size_t TexelBytes = 128;
+        constexpr std::size_t TexelBytes = 140;
         constexpr std::uint64_t HashBasis = 14695981039346656037ULL;
         constexpr std::uint64_t HashPrime = 1099511628211ULL;
         static_assert(sizeof(float) == 4 && std::numeric_limits<float>::is_iec559);
@@ -183,7 +183,7 @@ namespace MDSS
                 {
                     const auto& T = Geometry.GetTexels()[I];
                     const auto Profile = Geometry.GetProfileMap()[I];
-                    if (!Finite(T.Position) || !Finite(T.Barycentric) || !Finite(T.Normal) ||
+                    if (!Finite(T.Position) || !Finite(T.AreaVector) || !Finite(T.Barycentric) || !Finite(T.Normal) ||
                         !Finite(T.TransferNormal) || !Finite(T.MesoNormal) ||
                         !std::isfinite(T.Geometry.MesoVirtualHeight) || !std::isfinite(T.Geometry.ConcavityWeight) ||
                         !std::isfinite(T.Geometry.MesoMeanCurvature) || !std::isfinite(T.Geometry.MesoGaussianCurvature) ||
@@ -338,6 +338,7 @@ namespace MDSS
                 T.Geometry.MesoMeanCurvature = Reader.ReadFloat(); T.Geometry.MesoGaussianCurvature = Reader.ReadFloat();
                 for (auto& Neighbor : T.NeighborIndices) Neighbor = Reader.Read32();
                 Profiles[I] = Reader.Read32();
+                T.AreaVector = Reader.ReadVec3();
             }
             Geometry.SetProfileMap(std::move(Profiles));
             if (Reader.Offset != Data.size()) throw std::runtime_error("trailing cache payload");
@@ -379,6 +380,7 @@ namespace MDSS
             WriteFloat(Data, T.Geometry.MesoMeanCurvature); WriteFloat(Data, T.Geometry.MesoGaussianCurvature);
             for (const auto Neighbor : T.NeighborIndices) Write32(Data, Neighbor);
             Write32(Data, Geometry.GetProfileMap()[I]);
+            WriteVec3(Data, T.AreaVector);
         }
         if (Data.size() != EncodedSize(Descriptor)) throw std::runtime_error("Surface cache encoding size mismatch.");
         THash PayloadHash; PayloadHash.Bytes(std::span(Data).subspan(HeaderBytes));

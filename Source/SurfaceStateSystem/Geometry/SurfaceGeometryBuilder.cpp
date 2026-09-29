@@ -80,6 +80,7 @@ namespace MDSS
             Target.Chart = Source.Chart;
             Target.Barycentric = Source.Barycentric;
             Target.Position = Source.Position;
+            Target.AreaVector = Source.AreaVector;
             Target.Normal = Source.Normal;
             Target.NeighborIndices = Source.Neighbors;
             // Geometry fields retain their declared zero defaults until their preprocessing is implemented.

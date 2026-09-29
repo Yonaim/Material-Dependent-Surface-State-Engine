@@ -105,7 +105,8 @@ namespace MDSS
                     TexelCount,
                     Registry.GetStateCount(),
                     TransferWeights,
-                    TransferWeightDebugAverages);
+                    TransferWeightDebugAverages,
+                    BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));
                 auto Descriptors = std::make_unique<TSurfaceStateDescriptorResources>(
                     Device, *SharedIt->second.Geometry, *SceneProfiles, *State);
 
@@ -376,6 +377,7 @@ namespace MDSS
                                            bUseProfileBoundaryWeight,
                                            bUseCurvatureWeight);
         Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages);
+        Instance.State->UpdateWorldTexelAreas(BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));
         Instance.TransferWeightModelMatrix = ModelMatrix;
         Instance.bTransferWeightCacheValid = true;
     }

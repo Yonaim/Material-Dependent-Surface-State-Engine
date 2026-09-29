@@ -96,6 +96,14 @@ layout(std430, set = 0, binding = 19) buffer TSurfaceRawFlux
     float Values[];
 } RawFluxBuffer;
 
+layout(std430, set = 0, binding = 20) readonly buffer TSurfaceWorldTexelAreas
+{
+    float Values[];
+} WorldTexelAreas;
+
+const float StateReferenceArea = 1.0 / (256.0 * 256.0);
+float texelAreaScale(uint TexelIndex) { return WorldTexelAreas.Values[TexelIndex] / StateReferenceArea; }
+
 layout(push_constant) uniform TSurfaceSolverPushConstants
 {
     float DeltaTime;
@@ -163,13 +171,14 @@ bool supportsChannel(uint TexelIndex, uint ChannelIndex)
     {
         return false;
     }
-    return ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
+    return WorldTexelAreas.Values[TexelIndex] > 0.0 &&
+           ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
 }
 
 float stateCapacity(uint TexelIndex, uint ChannelIndex)
 {
     return ProfileParameters.Values[profileRecordIndex(TexelIndex, ChannelIndex)]
-        .CapacityInputAndTransfer.x;
+        .CapacityInputAndTransfer.x * texelAreaScale(TexelIndex);
 }
 
 float saturation(uint TexelIndex, uint ChannelIndex)
@@ -193,7 +202,7 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
                           ? 1.0
                           : 1.0 - ConcavityWeight * CavityRetentionFactor;
     float Current = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
-    return min(Current, max(0.0, DecayRate * Retention * Solver.DeltaTime));
+    return min(Current, max(0.0, DecayRate * texelAreaScale(TexelIndex) * Retention * Solver.DeltaTime));
 }
 
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.

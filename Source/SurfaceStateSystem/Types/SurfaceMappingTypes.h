@@ -22,6 +22,8 @@ namespace MDSS
     inline constexpr std::uint32_t    InvalidTriangleID = std::numeric_limits<std::uint32_t>::max();
     inline constexpr std::size_t      SurfaceNeighborCount = 8;
     inline constexpr std::uint32_t    SurfaceSimulationResolution = 256;
+    // Fixed physical reference area; independent of the selected simulation resolution.
+    inline constexpr float SurfaceStateReferenceArea = 1.0F / (256.0F * 256.0F);
 
     struct TSurfaceSimulationResolutionPreset
     {
@@ -94,6 +96,8 @@ namespace MDSS
         std::uint32_t   Chart = std::numeric_limits<std::uint32_t>::max();
         glm::vec3       Barycentric{0.0F};
         glm::vec3       Position{0.0F};
+        // Oriented mesh-local UV texel footprint; transforms with the linear cofactor matrix.
+        glm::vec3       AreaVector{0.0F};
         glm::vec3       Normal{0.0F, 0.0F, 1.0F};
         /** @brief TransferWeight용으로 mesh-local 변환한 Normal Map normal. 없으면 기하 normal을 사용한다.
          */

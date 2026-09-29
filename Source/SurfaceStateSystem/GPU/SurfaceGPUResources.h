@@ -43,6 +43,7 @@ namespace MDSS
         MesoNormals,
         ReverseNeighborSlots,
         RawFlux,
+        WorldTexelAreas,
         Count
     };
 
@@ -116,7 +117,8 @@ namespace MDSS
                                      std::size_t      TexelCount,
                                      std::size_t      ChannelCount,
                                      const std::vector<float>& TransferWeights,
-                                     const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
+                                     const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                     const std::vector<float>& WorldTexelAreas = {});
 
         [[nodiscard]] const TGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetStateBBuffer() const noexcept;
@@ -126,6 +128,8 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetTransferWeightDebugAverageBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawFluxBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
+        void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void UpdateTransferWeights(const std::vector<float>& TransferWeights,
                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
@@ -144,6 +148,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> TransferWeightDebugAverageBuffer;
         std::unique_ptr<TGPUBuffer> RawOutgoingBuffer;
         std::unique_ptr<TGPUBuffer> RawFluxBuffer;
+        std::unique_ptr<TGPUBuffer> WorldTexelAreaBuffer;
     };
 
     class TSurfaceStateDescriptorResources final

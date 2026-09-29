@@ -95,6 +95,11 @@ layout(std430, set = 1, binding = 17) readonly buffer TSurfaceMesoNormals
     vec4 Values[];
 } MesoNormals;
 
+layout(std430, set = 1, binding = 20) readonly buffer TSurfaceWorldTexelAreas
+{
+    float Values[];
+} WorldTexelAreas;
+
 layout(location = 0) out vec4 OutColor;
 
 const uint InvalidIndex = 0xffffffffu;
@@ -397,7 +402,8 @@ void main()
         return;
     }
 
-    float Capacity = ProfileParameters.Values[ProfileRecordIndex].CapacityInputAndTransfer.x;
+    float Capacity = ProfileParameters.Values[ProfileRecordIndex].CapacityInputAndTransfer.x *
+                     WorldTexelAreas.Values[TexelIndex] * (256.0 * 256.0);
     float StateValue = CurrentState.Values[StateIndex];
     float Saturation = Capacity > 0.0 ? clamp(StateValue / Capacity, 0.0, 1.0) : 0.0;
     OutColor = vec4(ApplyReliefLighting(HeatColor(Saturation), FragMesoNormalWS), 1.0);

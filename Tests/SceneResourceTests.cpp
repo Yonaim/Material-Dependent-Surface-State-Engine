@@ -202,6 +202,7 @@ namespace
                 Contact.State = WetState;
                 Contact.Radius = 100.0F;
                 Contact.Strength = 1.0F;
+                Contact.Falloff = 0.0F;
                 System.SubmitContact(Contact);
             }
             const VkCommandBuffer Command = Context.GetCommands().BeginSingleTime();
@@ -215,6 +216,18 @@ namespace
                 const float Sum = std::accumulate(Values.begin(), Values.end(), 0.0F);
                 Check(Index == 2 ? Sum == 0.0F : Sum > 0.0F,
                       "local Profile order remapping must inject Wetness into both Wet Meshes and skip the Mud Mesh");
+                if (Index < 2)
+                {
+                    const auto& MeshInstance = Scene.GetStaticMeshInstances()[Index];
+                    const auto& Geometry = *Assets.GetSurfaceData(MeshInstance.GetSurfaceData()).GetSharedGeometry();
+                    const auto Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, MeshInstance.GetTransform().GetMatrix());
+                    for (std::size_t Texel = 0; Texel < Areas.size(); ++Texel)
+                    {
+                        const float Expected = 0.75F * Areas[Texel] / SurfaceStateReferenceArea;
+                        Check(std::abs(Values[Texel * Registry.GetStateCount() + WetState] - Expected) < 1e-5F,
+                              "contact input must scale per texel world area");
+                    }
+                }
             }
         }
         Renderer.SetSimulationResolution(Scene, 256);
