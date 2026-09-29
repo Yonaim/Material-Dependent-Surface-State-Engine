@@ -443,6 +443,10 @@ namespace MDSS
                 Context.GetDevice(),
                 MainRenderPass.GetHandle(),
                 BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+            TexelInspector = std::make_unique<TTexelInspector>(Context.GetPhysicalDevice(),
+                                                               Context.GetDevice(),
+                                                               Descriptors->GetLayout(),
+                                                               TRenderContext::MaxFramesInFlight);
         }
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
@@ -486,6 +490,7 @@ namespace MDSS
         DestroyRenderFinishedSemaphores();
 
         SurfaceDebugPipeline.reset();
+        TexelInspector.reset();
         SurfaceStates.reset();
 
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
@@ -505,6 +510,8 @@ namespace MDSS
     {
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
         FrameContext.WaitForCurrentFrame();
+        if (TexelInspector)
+            TexelInspector->CompleteFrame(FrameIndex);
         if (TimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
         {
             const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
@@ -556,6 +563,9 @@ namespace MDSS
         {
             SurfaceStates->ResetState();
             SimulationClock.Reset();
+            SimulationStepSerial = 0;
+            if (TexelInspector)
+                TexelInspector->Invalidate();
         }
         SimulationClock.Accumulate(DeltaTime, DebugInterface.GetSimulationTimeScale(),
                                    bResetSolverState || DebugInterface.IsSimulationPaused());
@@ -678,6 +688,8 @@ namespace MDSS
                                               bool bKeepRuntimeOverride)
     {
         SurfaceStates->SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
+        if (TexelInspector)
+            TexelInspector->Invalidate();
         const auto Key = std::make_pair(Profile, State);
         if (bKeepRuntimeOverride)
         {
@@ -698,6 +710,7 @@ namespace MDSS
         auto PreviousRegistry = Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(Scene));
         std::unique_ptr<TSurfaceStateSystem> Replacement;
         std::unique_ptr<TGraphicsPipeline> ReplacementDebugPipeline;
+        std::unique_ptr<TTexelInspector>     ReplacementInspector;
         try
         {
             Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
@@ -721,6 +734,10 @@ namespace MDSS
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+                ReplacementInspector = std::make_unique<TTexelInspector>(Context.GetPhysicalDevice(),
+                                                                         Context.GetDevice(),
+                                                                         Descriptors->GetLayout(),
+                                                                         TRenderContext::MaxFramesInFlight);
             }
         }
         catch (...)
@@ -729,10 +746,14 @@ namespace MDSS
             throw;
         }
         SurfaceDebugPipeline.reset();
+        TexelInspector.reset();
+        InspectedTexel.reset();
+        SimulationStepSerial = 0;
         SurfaceStates = std::move(Replacement);
         SimulationClock.Reset();
         LastSimulationStepCount = 0;
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
+        TexelInspector = std::move(ReplacementInspector);
         Assets.SetSimulationResolution(Scene.GetSimulationResolution());
         if (bResetStateSettings)
         {
@@ -938,6 +959,8 @@ namespace MDSS
             return;
         }
         DebugStateChannel = Channel;
+        if (TexelInspector)
+            TexelInspector->Invalidate();
         UpdateMaterialUniforms();
     }
 
@@ -952,8 +975,55 @@ namespace MDSS
         if (!Positive(Settings.RawStateMax) || !Positive(Settings.HeightMax) || !Positive(Settings.HeightReference) ||
             !Positive(Settings.DisplacementScale) || Settings.AccumulationComponent > 3)
             throw std::invalid_argument("Invalid Surface debug range, reference, scale or component.");
+        if (Settings.HeightReference != SurfaceDebugSettings.HeightReference && TexelInspector)
+            TexelInspector->Invalidate();
         SurfaceDebugSettings = Settings;
         UpdateMaterialUniforms();
+    }
+
+    bool TRenderer::InspectTexel(const TScene& Scene, std::size_t InstanceIndex, std::uint32_t Triangle, glm::vec2 UV)
+    {
+        ClearInspectedTexel();
+        const auto& Instances = Scene.GetStaticMeshInstances();
+        if (!TexelInspector || InstanceIndex >= Instances.size() || !std::isfinite(UV.x) || !std::isfinite(UV.y) ||
+            UV.x < 0 || UV.x > 1 || UV.y < 0 || UV.y > 1)
+            return false;
+        const auto& Instance = Instances[InstanceIndex];
+        if (!Assets.HasSurfaceData(Instance.GetSurfaceData()) ||
+            !SurfaceStates->GetGPUResources().GetInstanceDescriptors(InstanceIndex))
+            return false;
+        const auto& Triangles = Assets.GetMesh(Instance.GetMesh()).GetTriangles();
+        if (Triangle >= Triangles.size())
+            return false;
+        const auto& Geometry = *Assets.GetSurfaceData(Instance.GetSurfaceData()).GetSharedGeometry();
+        const auto  Surface = Triangles[Triangle].Surface;
+        if (Surface >= Geometry.GetSurfaces().size())
+            return false;
+        const auto& Range = Geometry.GetSurface(Surface);
+        const auto X = std::min(static_cast<std::uint32_t>(UV.x * Range.Resolution.Width), Range.Resolution.Width - 1U);
+        const auto Y =
+            std::min(static_cast<std::uint32_t>(UV.y * Range.Resolution.Height), Range.Resolution.Height - 1U);
+        const auto  Texel = Range.FirstTexel + Y * Range.Resolution.Width + X;
+        const auto  ProfileIndex = Geometry.GetProfileIndex(Texel);
+        const auto& Profiles = Assets.GetSurfaceProfileTable(Instance.GetSurfaceData());
+        std::string Profile = "Unassigned";
+        if (ProfileIndex < Profiles.size())
+            Profile = Assets.GetSRProfile(Profiles[ProfileIndex]).GetName();
+        InspectedTexel = TSurfaceTexelSelection{InstanceIndex, Surface, Texel, Triangle, {X, Y}, std::move(Profile)};
+        return true;
+    }
+
+    void TRenderer::ClearInspectedTexel() noexcept
+    {
+        InspectedTexel.reset();
+        if (TexelInspector)
+            TexelInspector->Invalidate();
+    }
+
+    const std::optional<TSurfaceTexelSnapshot>& TRenderer::GetTexelSnapshot() const noexcept
+    {
+        static const std::optional<TSurfaceTexelSnapshot> Empty;
+        return TexelInspector ? TexelInspector->GetSnapshot() : Empty;
     }
 
     void TRenderer::SetStateHeatmapReliefShadingEnabled(bool bEnabled)
@@ -1393,6 +1463,23 @@ namespace MDSS
         {
             SurfaceStates->RecordStep(CommandBuffer, SimulationSteps[Step], TimestampQueryPool,
                 QueryBase + 2U + static_cast<std::uint32_t>(Step) * SolverTimestampSlotCount * 4U);
+        }
+
+        SimulationStepSerial += SimulationSteps.size();
+        if (TexelInspector && InspectedTexel && DebugStateChannel < Assets.GetSurfaceStateRegistry().GetStateCount())
+        {
+            const auto& Resources = SurfaceStates->GetGPUResources();
+            if (const auto* Descriptors = Resources.GetInstanceDescriptors(InspectedTexel->Instance))
+                TexelInspector->Record(
+                    CommandBuffer,
+                    FrameIndex,
+                    *Descriptors,
+                    *InspectedTexel,
+                    DebugStateChannel,
+                    static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(InspectedTexel->Instance)),
+                    SurfaceDebugSettings.HeightReference,
+                    Resources.IsCurrentStateAB(InspectedTexel->Instance),
+                    SimulationStepSerial);
         }
 
         std::array<VkClearValue, 2> ClearValues{};

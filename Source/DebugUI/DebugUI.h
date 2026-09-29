@@ -90,6 +90,8 @@ namespace MDSS
         void DrawSimulationDebugWindow(TScene& SceneData);
         void DrawSimulationCommonControls();
         void DrawSolverTab();
+        void DrawTexelInspectorTab();
+        void DrawDebugStateSelector();
         void DrawContactInputTab();
         void DrawProfileTuningTab(TScene& SceneData);
         void DrawGlobalSettingsTab(TScene& SceneData);

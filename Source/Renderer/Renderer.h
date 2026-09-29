@@ -11,6 +11,7 @@
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/Swapchain.h"
+#include "SurfaceStateSystem/Debug/TexelInspector.h"
 #include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/SurfaceStateSystem.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
@@ -135,6 +136,14 @@ namespace MDSS
             return SurfaceDebugSettings;
         }
         void SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings);
+        [[nodiscard]] bool
+             InspectTexel(const TScene& Scene, std::size_t Instance, std::uint32_t Triangle, glm::vec2 UV);
+        void ClearInspectedTexel() noexcept;
+        [[nodiscard]] const std::optional<TSurfaceTexelSelection>& GetInspectedTexel() const noexcept
+        {
+            return InspectedTexel;
+        }
+        [[nodiscard]] const std::optional<TSurfaceTexelSnapshot>& GetTexelSnapshot() const noexcept;
         [[nodiscard]] TSolverTransferWeightView GetSolverTransferWeightView() const noexcept;
         void SetSolverTransferWeightView(TSolverTransferWeightView View);
         [[nodiscard]] std::uint32_t             GetTexelGridBlockSize() const noexcept;
@@ -218,6 +227,9 @@ namespace MDSS
         std::uint32_t                         DebugStateChannel = 0;
         bool                                 bStateHeatmapReliefShadingEnabled = true;
         TSurfaceDebugDisplaySettings          SurfaceDebugSettings;
+        std::optional<TSurfaceTexelSelection> InspectedTexel;
+        std::unique_ptr<TTexelInspector>      TexelInspector;
+        std::uint64_t                         SimulationStepSerial = 0;
         TSolverTransferWeightView             SolverTransferWeightView = TSolverTransferWeightView::Combined;
         std::uint32_t                         TexelGridBlockSize = 8;
         float                                 TexelAreaReference = 1.0e-4F;
