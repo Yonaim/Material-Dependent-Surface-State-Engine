@@ -91,6 +91,7 @@ namespace
             const auto& X = A.GetTexels()[I]; const auto& Y = B.GetTexels()[I];
             Equal = X.Surface == Y.Surface && X.Triangle == Y.Triangle && X.Chart == Y.Chart &&
                 X.Barycentric == Y.Barycentric && X.Position == Y.Position && X.Normal == Y.Normal &&
+                X.AreaVector == Y.AreaVector &&
                 X.TransferNormal == Y.TransferNormal && X.HasTransferNormal == Y.HasTransferNormal &&
                 X.MesoNormal == Y.MesoNormal && X.HasMesoNormal == Y.HasMesoNormal &&
                 X.Geometry.MesoVirtualHeight == Y.Geometry.MesoVirtualHeight &&
@@ -159,7 +160,7 @@ namespace
         auto RejectRecord = [&](std::size_t FieldOffset, std::uint32_t Value, const std::string& ExpectedDiagnostic)
         {
             auto Bytes = GoodBytes;
-            const auto Offset = RecordsStart + FirstValid * 128 + FieldOffset;
+            const auto Offset = RecordsStart + FirstValid * 140 + FieldOffset;
             for (int I = 0; I < 4; ++I) Bytes[Offset + I] = static_cast<std::uint8_t>(Value >> (I * 8));
             std::uint64_t Hash = 14695981039346656037ULL;
             for (std::size_t I = 52; I < Bytes.size(); ++I) Hash = (Hash ^ Bytes[I]) * 1099511628211ULL;

@@ -65,3 +65,11 @@ CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map
 | 완료 기준 | 모든 contract test가 성공 |
 
 GPU memory packing, descriptor와 barrier 검증은 GPU Resource 단계에서 별도로 다룬다.
+
+## 면적·시간 계약 확장
+
+`MDSS_SimulationTransport`는 15·30·60·120 FPS clock, 반복 한도·backlog·pause·배속 및 128·256·512의 비균일 scale 면적 합을 검사한다. `MDSS_SurfaceGPUResource`는 면적 환산 Capacity·Decay, 상한 없는 Geometry mobility, SaturationDrive OFF, 한 command buffer의 반복·입력 한 번 소비와 단일 이웃의 공간 스케일을 cache ON/OFF에서 검사한다. `MDSS_SceneResources`는 실제 접촉 입력의 면적 환산을 확인한다. 전체 결과와 아직 실시하지 않은 비교 범위는 [[../06_Development/Experiments/0006_Area-and-Timestep-Regression|면적·시간 회귀 검증]]을 따른다.
+
+Geometry 기준값 6000은 `MDSS_SurfaceGPUResource`에서 기본 Factor 0.5의 128·256·512 국소 이동률과 cache ON/OFF를 검사한다. `MDSS_SceneResources`에서는 Factor 변경 및 Geometry OFF에 따른 안전 시간 간격 변경을 검사한다. 조건과 결과는 [[../06_Development/Experiments/0007_Geometry-Rate-Recalibration|Geometry 재보정 검증]]을 따른다.
+
+`MDSS_SimulationTransport`는 Fixed·Auto 네 조합과 기본값 ON·OFF를 검사한다. 작은 Transport 상한에서도 Auto OFF의 고정 dt=1/60초가 유지되는지, Auto ON이 전체 고정 구간 대기·마지막 짧은 substep·반복 한도 이후 재개·전환·Reset에서 시간을 보존하는지 확인한다. 현재 정책은 [[../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]]다.

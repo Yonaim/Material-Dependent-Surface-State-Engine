@@ -34,4 +34,4 @@ Simulation texel mapping의 triangle/barycentric 좌표로 Normal Map을 샘플�
 
 Branch 2.3은 per-texel sampled Normal Map normal을 mesh-local neighbor graph의 signed height difference로 바꾸고, component mean-zero gauge를 둔 Jacobi-PCG least-squares 적분 경로를 구현했다. 결과는 `MesoVirtualHeight`, local derivative에서 만든 `MesoNormal`, mean/Gaussian curvature, `ConcavityWeight`다. Non-integrable map은 least-squares 결과를 유지하고 relative edge residual을 로그에 남긴다. 현재 `BuildMesoGeometry` helper와 AssetManager 연결, GPU 업로드, Height/Offset debug mode 및 heatmap relief normal 연결까지 구현했다.
 
-아직 정량 fixture와 runtime 시각 검증은 수행하지 않았다. 평탄/ramp/bowl/dome/noisy/seam 표본의 높이 오차, 곡률 부호·단위, relative residual, PCG iteration 및 처리시간을 기록해야 한다. render mesh의 정점 밀도보다 작은 세부는 Offset view가 복원하지 못한다.
+아직 정량 fixture와 runtime 시각 검증은 수행하지 않았다. 평탄/ramp/bowl/dome/noisy/seam 표본의 높이 오차, 곡률 부호·단위, relative residual, PCG iteration 및 처리시간을 기록해야 한다. 초기 Offset view는 render mesh 정점 밀도로 제한되었다. 이후 [[../../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]의 texel 연결면으로 표시 경로를 변경했다. 이 변경의 중앙 texel 실루엣 GPU 검증은 PCG 적분의 정량 오차 검증과 구분한다.

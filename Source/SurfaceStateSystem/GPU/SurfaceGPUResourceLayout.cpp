@@ -120,6 +120,25 @@ namespace MDSS
         return Result;
     }
 
+    float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel,
+                                     const glm::mat4& ModelMatrix) noexcept
+    {
+        if (!Texel.IsValid()) return 0.0F;
+        const glm::mat3 L(ModelMatrix);
+        const glm::mat3 Cofactor(glm::cross(L[1], L[2]), glm::cross(L[2], L[0]), glm::cross(L[0], L[1]));
+        const float Area = glm::length(Cofactor * Texel.AreaVector);
+        return std::isfinite(Area) && Area > 0.0F ? Area : 0.0F;
+    }
+
+    std::vector<float> BuildSurfaceGPUWorldTexelAreas(const TSharedSurfaceGeometryData& Geometry,
+                                                       const glm::mat4& ModelMatrix)
+    {
+        std::vector<float> Areas;
+        Areas.reserve(Geometry.GetTexelCount());
+        for (const auto& Texel : Geometry.GetTexels()) Areas.push_back(GetSurfaceWorldTexelArea(Texel, ModelMatrix));
+        return Areas;
+    }
+
     std::vector<float> BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
                                                       const glm::mat4&                  ModelMatrix,
                                                       std::vector<TSurfaceGPUVec4>*     OutDebugAverages,

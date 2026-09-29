@@ -7,6 +7,7 @@
 
 #include "AssetManager/Core/Asset.h"
 #include "Logger/Logger.h"
+#include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <vulkan/vulkan.h>
@@ -63,8 +64,9 @@ namespace MDSS
         [[nodiscard]] float GetInjectFalloff() const noexcept;
         [[nodiscard]] std::uint32_t GetInjectTexelSearchRadius() const noexcept;
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
-        [[nodiscard]] float GetSimulationDeltaTime(float FrameDeltaTime) const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
+        [[nodiscard]] bool IsFixedSimulationTimestep() const noexcept { return bFixedSimulationTimestep; }
+        [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept { return bAutoSubstepping; }
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
         [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;
@@ -88,6 +90,8 @@ namespace MDSS
         void DrawSimulationDebugWindow(TScene& SceneData);
         void DrawSimulationCommonControls();
         void DrawSolverTab();
+        void DrawTexelInspectorTab();
+        void DrawDebugStateSelector();
         void DrawContactInputTab();
         void DrawProfileTuningTab(TScene& SceneData);
         void DrawGlobalSettingsTab(TScene& SceneData);
@@ -111,7 +115,8 @@ namespace MDSS
         float       InjectFalloff = 1.0F;
         int         InjectTexelSearchRadius = 2;
         float       SimulationTimeScale = 1.0F;
-        bool        bFixedSimulationTimestep = true;
+        bool        bFixedSimulationTimestep = DefaultFixedSimulationTimestep;
+        bool        bAutoSubstepping = DefaultAutoSubstepping;
         bool        bSimulationPaused = false;
         bool        bSolverStepRequested = false;
         bool        bSolverResetRequested = false;

@@ -463,6 +463,12 @@ namespace MDSS
                     Texel.Barycentric = Barycentric;
                     Texel.Position =
                         Barycentric.x * V0.Position + Barycentric.y * V1.Position + Barycentric.z * V2.Position;
+                    const glm::vec2 DU = UVs[1] - UVs[0];
+                    const glm::vec2 DV = UVs[2] - UVs[0];
+                    const float UVDet = DU.x * DV.y - DU.y * DV.x;
+                    // Full UV-cell footprint; center rasterization approximates chart boundaries.
+                    Texel.AreaVector = glm::cross(V1.Position - V0.Position, V2.Position - V0.Position) /
+                                       (UVDet * Scale.x * Scale.y);
                     Texel.Normal =
                         glm::dot(Normal, Normal) > UVEpsilon ? glm::normalize(Normal) : glm::vec3(0.0F, 0.0F, 1.0F);
                     ++CoveredTexels;

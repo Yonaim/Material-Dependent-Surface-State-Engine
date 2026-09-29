@@ -37,6 +37,7 @@ namespace MDSS
                         std::uint32_t FirstInstanceQuery = 0);
         [[nodiscard]] std::size_t GetSolverTimestampSlotCount() const noexcept;
         void ResetState();
+        [[nodiscard]] float GetMaximumStableDeltaTime();
         [[nodiscard]] const TSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
         void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
         void SetRawFluxCacheEnabled(bool bEnabled) noexcept;
@@ -60,6 +61,8 @@ namespace MDSS
         std::vector<TSurfaceContactInput>            PendingContacts;
         TSurfaceSolverDebugSettings DebugSolverSettings;
         bool bTransferWeightSettingsDirty = false;
+        bool bStableDeltaTimeDirty = true;
+        float CachedMaximumStableDeltaTime = 1.0F / 60.0F;
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
     };
 } // namespace MDSS

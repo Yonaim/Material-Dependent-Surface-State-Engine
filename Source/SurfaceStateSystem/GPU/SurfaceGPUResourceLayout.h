@@ -109,6 +109,11 @@ namespace MDSS
         const TSharedSurfaceGeometryData& Geometry,
         std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
 
+    [[nodiscard]] float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel,
+                                                  const glm::mat4& ModelMatrix) noexcept;
+    [[nodiscard]] std::vector<float> BuildSurfaceGPUWorldTexelAreas(
+        const TSharedSurfaceGeometryData& Geometry, const glm::mat4& ModelMatrix);
+
     /** @brief 대칭 TransferWeight 규칙을 각 텍셀의 이웃 슬롯별 cache로 만든다. */
     [[nodiscard]] std::vector<float>
     BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,

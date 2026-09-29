@@ -61,7 +61,9 @@ CurvatureWeight와 ConcavityWeight는 별도 역할이다. CurvatureWeight는 �
 
 뷰 모드에서 `Meso`를 선택하면 하위 표시 방식을 라디오 버튼으로 고른다. `Meso`는 현재 UI 항목 이름이며, `Height`와 `Offset`은 Virtual Height의 상호 배타적인 표시 방식이다.
 
-| 표시 | 동작 |
+초기 Height/Offset 구현은 아래 표와 같다. 현재 Meso Color/Displacement는 texel 연결면을 사용해 원본 메시 정점 밀도 제한을 제거했다. 표시용 compute buffer와 chart 경계의 제한은 [[../../../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]을 따른다.
+
+| 표시 | 초기 동작 |
 |---|---|
 | `Height` | texel별 signed `MesoVirtualHeight`를 파랑/중립/주황색으로 표시한다. 부호와 chart 경계 artifact를 확인하며 메시 위치는 이동하지 않는다. |
 | `Offset` | vertex shader가 각 render vertex UV의 Simulation texel height를 읽고 `Position + Normal × MesoVirtualHeight`로 변위한다. 표현 detail은 render mesh vertex density에 제한된다. |

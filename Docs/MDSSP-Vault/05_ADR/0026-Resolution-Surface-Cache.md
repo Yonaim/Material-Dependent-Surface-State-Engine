@@ -8,6 +8,10 @@
 - 관련 문서: [[0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]], [[0023-Simulation-Resolution-Presets|ADR 0023 — Simulation 해상도 프리셋]], [[../04_Architecture/0004_Surface-Geometry|Surface Geometry]]
 - Supersedes: [[0008-Runtime-Surface-Preprocessing]]의 persistent cache 제외 결정
 
+## 후속 결정 — 2026-09-29
+
+현재 cache는 ADR 0030의 AreaVector 추가로 format 4, preprocessing 2, texel record 140 B를 사용한다. 아래 format 3·128 B 기록은 최초 채택 당시의 구조다.
+
 ## Context
 
 초기 ADR 0007은 Mesh당 단일 `.Surface` 파일을 선택했고, ADR 0008은 직렬화·무효화 관리를 줄이기 위해 Runtime 전처리와 메모리 공유만 유지했다. 이후 Normal Map sample, PCG 높이 적분과 국소 미분 fit을 도입했고 ADR 0023에서 128·256·512 grid 전환을 지원했다. 이 정적 계산을 매 실행과 다시 선택한 해상도에서 반복하면 초기 준비가 길어진다.

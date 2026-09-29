@@ -96,6 +96,14 @@ layout(std430, set = 0, binding = 19) buffer TSurfaceRawFlux
     float Values[];
 } RawFluxBuffer;
 
+layout(std430, set = 0, binding = 20) readonly buffer TSurfaceWorldTexelAreas
+{
+    float Values[];
+} WorldTexelAreas;
+
+const float StateReferenceArea = 1.0 / (256.0 * 256.0);
+float texelAreaScale(uint TexelIndex) { return WorldTexelAreas.Values[TexelIndex] / StateReferenceArea; }
+
 layout(push_constant) uniform TSurfaceSolverPushConstants
 {
     float DeltaTime;
@@ -114,9 +122,10 @@ bool rawFluxCacheEnabled()
 
 const float GeometryEpsilon = 1.0e-6;
 // Profile은 [0, 1] 무차원 계수를 저장하며 실제 속도는 여기서 계산한다.
-// 초기 기준값은 기존 DemoWetness의 전달 속도를 유지한다 (ADR 0029).
-const float BaseSaturationTransferRate = 1.0;  // State / second
-const float BaseGeometryTransferRate = 100.0; // State / (world-length * second)
+// Share the calibration with the CPU transport step bound (ADR 0033).
+#include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
+const float BaseSaturationTransferRate = MDSS_BASE_SATURATION_TRANSFER_RATE; // State / second
+const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // State / (world-length * second)
 
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
 {
@@ -163,13 +172,14 @@ bool supportsChannel(uint TexelIndex, uint ChannelIndex)
     {
         return false;
     }
-    return ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
+    return WorldTexelAreas.Values[TexelIndex] > 0.0 &&
+           ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
 }
 
 float stateCapacity(uint TexelIndex, uint ChannelIndex)
 {
     return ProfileParameters.Values[profileRecordIndex(TexelIndex, ChannelIndex)]
-        .CapacityInputAndTransfer.x;
+        .CapacityInputAndTransfer.x * texelAreaScale(TexelIndex);
 }
 
 float saturation(uint TexelIndex, uint ChannelIndex)
@@ -193,7 +203,7 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
                           ? 1.0
                           : 1.0 - ConcavityWeight * CavityRetentionFactor;
     float Current = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
-    return min(Current, max(0.0, DecayRate * Retention * Solver.DeltaTime));
+    return min(Current, max(0.0, DecayRate * texelAreaScale(TexelIndex) * Retention * Solver.DeltaTime));
 }
 
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.
@@ -287,7 +297,7 @@ float rawFlux(uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
     float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
                               ? geometryDrive(TargetTexel)
                               : 0.0;
-    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate) *
+    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
            CachedTransferWeight * Solver.DeltaTime;
 }
 

@@ -106,11 +106,11 @@ vec4[0] = StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransfer
 vec4[1] = DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor
 ```
 
-두 TransferFactor는 CPU에서 기준 속도를 곱하지 않고 그대로 저장한다. Solver 공통 GLSL에서 각각 기준 속도 `1.0`, `100.0`을 곱한다. 레코드의 슬롯·stride·descriptor 수는 유지한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+두 TransferFactor는 CPU에서 기준 Rate를 곱하지 않고 그대로 저장한다. C++/GLSL 공용 기준 Rate `1.0`, `6000.0`을 Solver에서 곱한다. CPU 시간 간격 상한도 같은 정의를 사용한다. 레코드의 슬롯·stride·descriptor 수는 유지한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]).
 
 ## Instance State
 
-각 instance는 같은 Mesh와 Profile을 사용하더라도 시뮬레이션 상태를 독립적으로 가져야 한다. State와 channel별 임시 버퍼는 텍셀×실제 channel 수로 구성한다. TransferWeight만 channel과 무관하게 texel×8 이웃 슬롯으로 구성한다.
+각 instance는 같은 Mesh와 Profile을 사용하더라도 시뮬레이션 상태를 독립적으로 가져야 한다. State와 channel별 임시 버퍼는 텍셀×실제 channel 수로 구성한다. TransferWeight는 channel과 무관하게 texel×8 이웃 슬롯, WorldTexelAreas는 texel별 한 값으로 구성한다.
 
 | Buffer       | GPU 원소 타입 |                          개수 |           텍셀당 stride |                         총 payload |
 | ------------ | --------- | --------------------------: | -------------------: | --------------------------------: |
@@ -121,6 +121,9 @@ vec4[1] = DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor
 | `TransferWeights` | `float32` | `texelCount × 8` | 32 B | `32 × texelCount` B |
 | `RawOutgoing` | `float32` | `texelCount × channelCount` | `4 × channelCount` B | `4 × texelCount × channelCount` B |
 | `RawFlux` | `float32` | `texelCount × channelCount × 8` | `32 × channelCount` B | `32 × texelCount × channelCount` B |
+| `WorldTexelAreas` | `float32` | `texelCount` | 4 B | `4 × texelCount` B |
+
+면적 buffer는 instance별 binding 20이며 Capacity·Decay 계산과 State heatmap에 사용한다. CPU shared AreaVector를 world로 변환한 값이고 선형 transform 변경 시 갱신한다. Profile Capacity는 기준 면적의 양이며 shader가 `WorldTexelArea / ReferenceArea`를 곱한다. [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]]
 
 State 배열은 texel-major AoS다. 한 texel에 속한 channel 값들이 연속으로 저장되며, 원소 위치는 다음 산식으로 구한다. 채널 padding은 두지 않는다.
 
@@ -197,7 +200,7 @@ flowchart LR
 
 ## Solver 캐시 buffer descriptor binding
 
-각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver cache는 14·15·19를 사용하고 공유 역방향 슬롯은 18을 사용한다. 전체 descriptor binding count는 20이며 기존 device limit 검증에도 적용한다.
+각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver cache는 14·15·19를 사용하고 공유 역방향 슬롯은 18을 사용한다. 전체 descriptor binding count는 21이며 기존 device limit 검증에도 적용한다.
 
 | set 0 binding | Buffer | 소유 범위 | 원소 / 인덱스 |
 |---:|---|---|---|
@@ -211,6 +214,7 @@ flowchart LR
 | 17 | MesoNormals | Shared Geometry | texel별 vec4 |
 | 18 | ReverseNeighborSlots | Shared Geometry | texel별 uint32 (8 × 4 bit) |
 | 19 | RawFlux | instance | `neighborSlot × texelCount × channelCount + texel × channelCount + channel` |
+| 20 | WorldTexelAreas | instance | texel별 float32, stride 4 B |
 
 - AB와 BA descriptor set은 같은 instance cache와 Shared Geometry/Profile buffer를 참조한다. Current/Next만 서로 바뀐다.
 - 6×512×512 texel·1 channel 예시의 추가 payload: TransferWeights 48 MiB, RawOutgoing 6 MiB

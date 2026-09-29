@@ -6,6 +6,7 @@
 #include "AssetManager/Loaders/OBJLoader.h"
 #include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
+#include "SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.h"
 
@@ -15,6 +16,7 @@
 #include <functional>
 #include <glm/geometric.hpp>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -183,6 +185,51 @@ namespace
               "valid geometry should preserve the sentinel that disables simulation for a texel");
     }
 
+    void TestTexelMesh()
+    {
+        using namespace MDSS;
+        TSharedSurfaceGeometryData Geometry({{0, {3, 3}}, {1, {2, 2}}});
+        for (const auto& Range : Geometry.GetSurfaces())
+            for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
+                for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
+                {
+                    auto& T = Geometry.GetTexels()[Range.FirstTexel + Y * Range.Resolution.Width + X];
+                    T.Surface = Range.Surface;
+                    T.Triangle = 0;
+                    T.Chart = Range.Surface;
+                    // Second chart has mirrored UV-to-position orientation.
+                    T.Position = {Range.Surface == 0 ? float(X) : -float(X), float(Y), 0};
+                }
+        const auto Mesh = BuildSurfaceTexelMesh(Geometry);
+        Check(Mesh.Surfaces.size() == 2 && Mesh.Surfaces[0].IndexCount == 24 && Mesh.Surfaces[1].IndexCount == 6,
+              "texel grids should produce two triangles per complete cell with separate Surface ranges");
+        Check(std::ranges::find(Mesh.Indices, 4U) != Mesh.Indices.end(),
+              "interior texels must participate even when the source mesh only has corner vertices");
+        for (std::size_t I = 0; I < Mesh.Indices.size(); I += 3)
+        {
+            const auto& A = Geometry.GetTexels()[Mesh.Indices[I]];
+            const auto& B = Geometry.GetTexels()[Mesh.Indices[I + 1]];
+            const auto& C = Geometry.GetTexels()[Mesh.Indices[I + 2]];
+            Check(A.Surface == B.Surface && A.Surface == C.Surface && A.Chart == B.Chart && A.Chart == C.Chart,
+                  "triangles must not connect different Surfaces or charts");
+            Check(glm::dot(glm::cross(B.Position - A.Position, C.Position - A.Position), A.Normal) > 0,
+                  "mirrored UV charts must retain front-facing geometric winding");
+        }
+        Geometry.GetTexels()[4].Surface = InvalidSurfaceID;
+        const auto Hole = BuildSurfaceTexelMesh(Geometry);
+        Check(std::ranges::find(Hole.Indices, 4U) == Hole.Indices.end() && Hole.Surfaces[0].IndexCount == 12,
+              "invalid texels must be omitted while retaining valid three-corner cell triangles");
+        Geometry.GetTexels()[10].Chart = 42;
+        Check(BuildSurfaceTexelMesh(Geometry).Surfaces[1].IndexCount == 3,
+              "chart boundaries must not be bridged by the regular UV grid");
+        Geometry.GetTexels()[9].Position.x = std::numeric_limits<float>::quiet_NaN();
+        Check(BuildSurfaceTexelMesh(Geometry).Surfaces[1].IndexCount == 0,
+              "nonfinite geometry must not produce render indices");
+        Geometry.GetTexels()[9].Position = Geometry.GetTexels()[11].Position;
+        Check(BuildSurfaceTexelMesh(Geometry).Surfaces[1].IndexCount == 0,
+              "degenerate triangles must not produce render indices");
+    }
+
     void TestRuntimePreprocessing()
     {
         using namespace MDSS;
@@ -210,6 +257,7 @@ int main()
 {
     TestProfileDistribution();
     TestGeometryBuild();
+    TestTexelMesh();
     TestRuntimePreprocessing();
 
     if (FailureCount != 0)

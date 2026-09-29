@@ -177,13 +177,18 @@ namespace MDSS
             return bChanged;
         }
 
-        bool
-        LabeledDragFloat(const char* Label, float* Value, float Speed, float Minimum, float Maximum, const char* Format)
+        bool LabeledDragFloat(const char*      Label,
+                              float*           Value,
+                              float            Speed,
+                              float            Minimum,
+                              float            Maximum,
+                              const char*      Format,
+                              ImGuiSliderFlags Flags = ImGuiSliderFlags_None)
         {
             ImGui::PushID(Label);
             BeginLabeledControlRow(Label);
             ImGui::SetNextItemWidth(-1.0F);
-            const bool bChanged = ImGui::DragFloat("##Value", Value, Speed, Minimum, Maximum, Format);
+            const bool bChanged = ImGui::DragFloat("##Value", Value, Speed, Minimum, Maximum, Format, Flags);
             ImGui::PopID();
             return bChanged;
         }
@@ -549,11 +554,6 @@ namespace MDSS
     float TDebugUI::GetSimulationTimeScale() const noexcept
     {
         return SimulationTimeScale;
-    }
-
-    float TDebugUI::GetSimulationDeltaTime(float FrameDeltaTime) const noexcept
-    {
-        return (bFixedSimulationTimestep ? 1.0F / 60.0F : FrameDeltaTime) * SimulationTimeScale;
     }
 
     bool TDebugUI::IsSimulationPaused() const noexcept
@@ -980,7 +980,7 @@ namespace MDSS
         }
 
         if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) ||
-            ImGui::IsAnyItemActive() || bInjectMode)
+            ImGui::IsAnyItemActive() || (bInjectMode && !ImGui::GetIO().KeyShift))
         {
             return;
         }
@@ -989,7 +989,7 @@ namespace MDSS
             return;
         }
 
-        if (SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
+        if (!ImGui::GetIO().KeyShift && SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
         {
             const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position;
             float           BestDistance = 13.0F;
@@ -1066,6 +1066,14 @@ namespace MDSS
         }
         FarPoint /= FarPoint.w;
         const TSurfaceRayHit Hit = TRaycaster::Cast(SceneData, *AssetManager, Origin, glm::vec3(FarPoint) - Origin);
+        if (ImGui::GetIO().KeyShift)
+        {
+            if (Hit.Hit)
+                (void)FrameRenderer->InspectTexel(SceneData, Hit.InstanceIndex, Hit.TriangleID, Hit.SimulationUV);
+            else
+                FrameRenderer->ClearInspectedTexel();
+            return;
+        }
         if (Hit.Hit)
         {
             SelectedObject = Hit.InstanceIndex;
@@ -1295,7 +1303,7 @@ namespace MDSS
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
         if (DisplaySize.x > 0.0F && DisplaySize.y > 0.0F)
         {
-            constexpr float ToolbarHeight = 150.0F;
+            constexpr float ToolbarHeight = 170.0F;
             SceneViewportRectNormalized = {(ViewportNode->Pos.x - MainViewport->Pos.x) / DisplaySize.x,
                 (ViewportNode->Pos.y + ToolbarHeight - MainViewport->Pos.y) / DisplaySize.y,
                 ViewportNode->Size.x / DisplaySize.x,
@@ -1320,6 +1328,10 @@ namespace MDSS
                 CurrentName =
                     SurfaceDebugViewNames[CurrentIndex - static_cast<int>(TRenderViewMode::SurfaceStateHeatmap)];
             }
+            else if (CurrentMode == TRenderViewMode::SurfaceAccumulation)
+                CurrentName = "Accumulation";
+            else if (CurrentMode == TRenderViewMode::SurfaceFinalGeometry)
+                CurrentName = "Final Geometry";
             else if (CurrentMode == TRenderViewMode::MesoHeight)
             {
                 CurrentName = "Meso Color";
@@ -1389,6 +1401,16 @@ namespace MDSS
                     CurrentMode = TRenderViewMode::MacroGeometry;
                     FrameRenderer->SetRenderViewMode(CurrentMode);
                 }
+                for (const auto& [Name, Mode] : std::array<std::pair<const char*, TRenderViewMode>, 2>{
+                         {{"Accumulation", TRenderViewMode::SurfaceAccumulation},
+                          {"Final Geometry", TRenderViewMode::SurfaceFinalGeometry}}})
+                {
+                    if (ImGui::Selectable(Name, CurrentMode == Mode))
+                    {
+                        CurrentMode = Mode;
+                        FrameRenderer->SetRenderViewMode(Mode);
+                    }
+                }
                 if (ImGui::BeginMenu("Meso"))
                 {
                     // Meso 높이를 색으로 볼지, 실제 형상 변위로 볼지 선택한다.
@@ -1441,7 +1463,9 @@ namespace MDSS
 
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0F);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {8.0F, 4.0F});
-            if (ImGui::BeginChild("SelectedViewContext", {0.0F, 90.0F}, true,
+            if (ImGui::BeginChild("SelectedViewContext",
+                                  {0.0F, 110.0F},
+                                  true,
                                   ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
             {
                 const ImVec4 ContextTitleColor{0.24F, 0.48F, 0.82F, 1.0F};
@@ -1520,17 +1544,109 @@ namespace MDSS
                             }
                             ImGui::NewLine();
                         }
-                        DrawLegendColor(
-                            {0.075F, 0.090F, 0.260F, 1.0F}, "0%", "State 값이 프로파일 용량의 0%입니다.");
-                        DrawLegendColor(
-                            {0.120F, 0.610F, 0.540F, 1.0F}, "중간", "State 값이 프로파일 용량의 중간 수준입니다.");
-                        DrawLegendColor({0.990F, 0.900F, 0.200F, 1.0F}, "100%",
-                                        "State/용량이 100% 이상입니다. 표시 색은 100%에서 포화됩니다.");
-                        DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "State 미지원",
-                                        "이 texel에 지정된 .SRProfile이 현재 선택한 State를 정의하지 않습니다.");
-                        DrawLegendColor({0.18F, 0.20F, 0.24F, 1.0F}, "프로파일 미할당",
-                                        "해당 Surface에 시뮬레이션 프로파일이 연결되지 않았습니다. .SurfaceProfileMap에서 "
-                                        "프로파일을 지정하세요. solver 일시정지와는 다른 상태입니다.");
+                        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+                        int  Representation = Settings.bRawState ? 1 : 0;
+                        ImGui::SetNextItemWidth(125.0F);
+                        bool Changed =
+                            ImGui::Combo("##StateRepresentation", &Representation, "Saturation\0Raw State\0");
+                        Settings.bRawState = Representation == 1;
+                        if (Settings.bRawState)
+                        {
+                            ImGui::SameLine();
+                            ImGui::SetNextItemWidth(110.0F);
+                            Changed |= ImGui::DragFloat("Max##RawState",
+                                                        &Settings.RawStateMax,
+                                                        0.05F,
+                                                        1e-8F,
+                                                        1e6F,
+                                                        "%.4g",
+                                                        ImGuiSliderFlags_AlwaysClamp);
+                        }
+                        if (Changed)
+                            FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+                        ImGui::SameLine();
+                        ImGui::TextDisabled("%s",
+                                            Settings.bRawState ? "Total amount / texel; fixed range"
+                                                               : "State / area-scaled Capacity; color capped at 100%");
+                        DrawLegendColor({0.075F, 0.090F, 0.260F, 1.0F}, "0");
+                        DrawLegendColor({0.990F, 0.900F, 0.200F, 1.0F}, Settings.bRawState ? "Max" : "100%+");
+                        if (Settings.bRawState)
+                            DrawLegendColor({1.0F, 0.25F, 0.05F, 1.0F}, "> Max");
+                        DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "State 미지원");
+                        DrawLegendColor({0.18F, 0.20F, 0.24F, 1.0F}, "프로파일 미할당");
+                        DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
+                        break;
+                    }
+                    case TRenderViewMode::SurfaceAccumulation:
+                    case TRenderViewMode::SurfaceFinalGeometry:
+                    {
+                        const bool bFinal = CurrentMode == TRenderViewMode::SurfaceFinalGeometry;
+                        BeginViewContext(bFinal ? "FINAL GEOMETRY" : "ACCUMULATION", "선택 State의 적층을 texel 연결면으로 표시합니다. UV chart 경계는 열린 상태입니다.");
+                        DrawDebugStateSelector();
+                        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+                        bool Changed = false;
+                        if (!bFinal)
+                        {
+                            int Component = static_cast<int>(Settings.AccumulationComponent);
+                            ImGui::SameLine();
+                            ImGui::SetNextItemWidth(160.0F);
+                            Changed |= ImGui::Combo("##AccumulationComponent",
+                                                    &Component,
+                                                    "Total Height\0Cavity Height\0Following Height\0Cavity Fill\0");
+                            Settings.AccumulationComponent = static_cast<std::uint32_t>(Component);
+                        }
+                        ImGui::SameLine();
+                        ImGui::SetNextItemWidth(95.0F);
+                        Changed |= ImGui::DragFloat("Height ref",
+                                                    &Settings.HeightReference,
+                                                    0.001F,
+                                                    1e-8F,
+                                                    1e6F,
+                                                    "%.4g",
+                                                    ImGuiSliderFlags_AlwaysClamp);
+                        ImGui::NewLine();
+                        ImGui::SetNextItemWidth(95.0F);
+                        Changed |= ImGui::DragFloat("Display scale",
+                                                    &Settings.DisplacementScale,
+                                                    0.1F,
+                                                    1e-8F,
+                                                    1e6F,
+                                                    "%.3gx",
+                                                    ImGuiSliderFlags_AlwaysClamp);
+                        if (bFinal)
+                        {
+                            ImGui::SameLine();
+                            ImGui::TextDisabled("Meso + selected State; scale affects display only");
+                        }
+                        else if (Settings.AccumulationComponent != 3)
+                        {
+                            ImGui::SameLine();
+                            ImGui::SetNextItemWidth(95.0F);
+                            Changed |= ImGui::DragFloat("Height max",
+                                                        &Settings.HeightMax,
+                                                        0.001F,
+                                                        1e-8F,
+                                                        1e6F,
+                                                        "%.4g",
+                                                        ImGuiSliderFlags_AlwaysClamp);
+                            ImGui::SameLine();
+                            ImGui::TextDisabled("mesh-local units; fixed range");
+                            DrawLegendColor({1, 0.25F, 0.05F, 1}, "> Max");
+                        }
+                        else
+                        {
+                            ImGui::SameLine();
+                            ImGui::TextDisabled("Cavity Fill: fixed 0-100%%; excess goes to Following Height");
+                        }
+                        if (Changed)
+                            FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+                        if (!bFinal)
+                        {
+                            DrawLegendColor({0.075F, 0.090F, 0.260F, 1}, "0");
+                            DrawLegendColor({0.990F, 0.900F, 0.200F, 1},
+                                            Settings.AccumulationComponent == 3 ? "100%" : "Max");
+                            DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
+                        }
                         break;
                     }
                     case TRenderViewMode::SurfaceValidity:
@@ -1655,14 +1771,14 @@ namespace MDSS
                         break;
                     }
                     case TRenderViewMode::MesoHeight:
-                        BeginViewContext("MESO COLOR", "복원 높이의 부호와 크기.");
+                        BeginViewContext("MESO COLOR", "texel 연결면에서 복원 높이의 부호와 크기를 표시합니다.");
                         DrawLegendColor({0.12F, 0.52F, 0.92F, 1.0F}, "음수");
                         DrawLegendColor({0.12F, 0.13F, 0.17F, 1.0F}, "0 기준");
                         DrawLegendColor({1.0F, 0.42F, 0.10F, 1.0F}, "양수");
                         break;
                     case TRenderViewMode::MesoOffset:
                         BeginViewContext("MESO DISPLACEMENT",
-                                         "Meso 높이만큼 정점을 이동합니다. 회백색은 재질·조명이며 높이 색상은 Meso Color에서 확인하세요.");
+                                         "texel 연결면에 Meso 높이를 적용합니다. 높이 색상은 Meso Color에서 확인하세요.");
                         break;
                     case TRenderViewMode::MacroGeometry:
                         BeginViewContext("MACRO GEOMETRY", "노멀 맵 효과를 제외한 원본 형상.");
@@ -1702,6 +1818,28 @@ namespace MDSS
             {
                 FrameRenderer->SetFlipNormalY(bFlipNormalY);
             }
+
+            DrawSectionHeader("Lit Demo Effects");
+            auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
+            bool EffectsChanged = ImGui::Checkbox("Wetness / Mud", &Effects.bEnabled);
+            EffectsChanged |= ImGui::Checkbox("Mud height", &Effects.bMudDisplacement);
+            EffectsChanged |= LabeledSliderFloat("Dry roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
+            EffectsChanged |= LabeledSliderFloat("Wet roughness", &Effects.WetRoughness, 0.05F, 1.0F, "%.2f");
+            EffectsChanged |= LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
+            EffectsChanged |= LabeledSliderFloat("Mud height ref", &Effects.MudHeightReference, 0.0001F, 0.1F, "%.4f");
+            if (EffectsChanged) FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
+
+            DrawSectionHeader("Height Surface Grid");
+            auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+            int GridMode = static_cast<int>(Settings.HeightGridMode);
+            const char* Modes[] = {"Off", "Overlay", "Grid only"};
+            bool Changed = ImGui::Combo("Grid", &GridMode, Modes, 3);
+            Settings.HeightGridMode = static_cast<std::uint32_t>(GridMode);
+            int BlockSize = static_cast<int>(Settings.HeightGridBlockSize);
+            Changed |= ImGui::SliderInt("Cell texels", &BlockSize, 1, 64);
+            Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
+            ImGui::TextDisabled("Meso / Accumulation / Final Geometry");
+            if (Changed) FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
         }
         ImGui::End();
     }
@@ -1729,7 +1867,7 @@ namespace MDSS
             return;
         }
 
-        constexpr float ToolbarHeight = 150.0F;
+        constexpr float ToolbarHeight = 170.0F;
         ImGui::SetNextWindowPos({ViewportNode->Pos.x + 10.0F, ViewportNode->Pos.y + ToolbarHeight + 10.0F},
                                 ImGuiCond_Always);
         ImGui::SetNextWindowBgAlpha(0.84F);
@@ -1904,6 +2042,14 @@ namespace MDSS
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
+                if (ImGui::BeginTabItem("Inspector"))
+                {
+                    if (ImGui::BeginChild(
+                            "InspectorContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+                        DrawTexelInspectorTab();
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
+                }
                 if (ImGui::BeginTabItem("Global Settings"))
                 {
                     if (ImGui::BeginChild(
@@ -1918,6 +2064,118 @@ namespace MDSS
             }
         }
         ImGui::End();
+    }
+
+    void TDebugUI::DrawDebugStateSelector()
+    {
+        const auto& Registry = AssetManager->GetSurfaceStateRegistry();
+        if (Registry.GetStateCount() == 0)
+        {
+            ImGui::TextDisabled("등록된 State 없음");
+            return;
+        }
+        DebugState = FrameRenderer->GetDebugStateChannel();
+        ImGui::SetNextItemWidth(125.0F);
+        if (ImGui::BeginCombo("##InspectorState", Registry.GetStateName(DebugState).c_str()))
+        {
+            for (std::size_t Index = 0; Index < Registry.GetStateCount(); ++Index)
+            {
+                const auto State = static_cast<TStateId>(Index);
+                if (ImGui::Selectable(Registry.GetStateName(State).c_str(), State == DebugState))
+                {
+                    DebugState = State;
+                    FrameRenderer->SetDebugStateChannel(State);
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
+
+    void TDebugUI::DrawTexelInspectorTab()
+    {
+        DrawSectionHeader("Texel Inspector", 0.0F);
+        TextDescriptionWrapped(
+            "Shift + left click on the surface to select a texel. Pause / Step controls remain available above.");
+        TextDescriptionWrapped("Picking uses the Macro mesh. Accumulation is a selected-State preview; it does not "
+                               "update Solver geometry.");
+        DrawDebugStateSelector();
+        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+        if (LabeledDragFloat("Height reference",
+                             &Settings.HeightReference,
+                             0.001F,
+                             1e-8F,
+                             1e6F,
+                             "%.5g",
+                             ImGuiSliderFlags_AlwaysClamp))
+            FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+        const auto& Selection = FrameRenderer->GetInspectedTexel();
+        if (!Selection)
+        {
+            ImGui::TextDisabled("선택된 texel 없음");
+            return;
+        }
+        if (ImGui::Button("Clear selection"))
+        {
+            FrameRenderer->ClearInspectedTexel();
+            return;
+        }
+        ImGui::Text("Instance %zu / Surface %u", Selection->Instance, Selection->Surface);
+        ImGui::Text("Texel %u (%u, %u)", Selection->Texel, Selection->XY.x, Selection->XY.y);
+        ImGui::Text("Hit triangle %u", Selection->Triangle);
+        ImGui::TextWrapped("Profile: %s", Selection->Profile.c_str());
+        const auto& Snapshot = FrameRenderer->GetTexelSnapshot();
+        if (!Snapshot)
+        {
+            ImGui::TextDisabled("GPU snapshot 대기 중");
+            return;
+        }
+        const auto& S = *Snapshot;
+        ImGui::Text("Completed sample / Step %llu / Buffer %s",
+                    static_cast<unsigned long long>(S.Step),
+                    S.bStateAB ? "A" : "B");
+        const auto                           Status = static_cast<std::uint32_t>(S.Values[2].w);
+        constexpr std::array<const char*, 5> StatusNames{
+            "Invalid texel", "Unassigned Profile", "Unsupported State", "Valid", "Invalid value / area"};
+        ImGui::TextColored(Status == 3 ? ImVec4{0.35F, 0.85F, 0.55F, 1} : ImVec4{1, 0.65F, 0.25F, 1},
+                           "%s",
+                           StatusNames[std::min(Status, 4U)]);
+        if (Status != 3)
+            return;
+        TextDescriptionWrapped("Values are calculated on the GPU with the same formula used by the debug views. "
+                               "Heights use mesh-local units; display scale is excluded.");
+        if (ImGui::BeginTable("TexelValues", 2, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp))
+        {
+            ImGui::TableSetupColumn("Field", ImGuiTableColumnFlags_WidthStretch, 1.4F);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 1.0F);
+            const auto Row = [](const char* Label, float Value)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(Label);
+                ImGui::TableNextColumn();
+                ImGui::Text("%.7g", Value);
+            };
+            Row("Raw State (total)", S.Values[0].x);
+            Row("Profile Capacity", S.Values[0].y / S.Values[4].y);
+            Row("Texel Capacity", S.Values[0].y);
+            Row("Saturation", S.Values[0].z);
+            Row("Reference-area amount", S.Values[0].w);
+            Row("World area", S.Values[4].x);
+            Row("Area / reference area", S.Values[4].y);
+            Row("Accumulation factor", S.Values[1].x);
+            Row("Cavity fill factor", S.Values[1].y);
+            Row("Meso height", S.Values[1].z);
+            Row("Height reference", S.Values[1].w);
+            Row("Cavity depth", S.Values[2].x);
+            Row("Cavity fill (0-1)", S.Values[2].y);
+            Row("Cavity excess", S.Values[2].z);
+            Row("Cavity height", S.Values[3].x);
+            Row("Following height", S.Values[3].y);
+            Row("Accumulation height", S.Values[3].z);
+            Row("Final height", S.Values[3].w);
+            ImGui::EndTable();
+        }
+        ImGui::Text("Final local normal (scale 1): %.4g, %.4g, %.4g", S.Values[5].x, S.Values[5].y, S.Values[5].z);
     }
 
     void TDebugUI::DrawSimulationCommonControls()
@@ -2027,15 +2285,24 @@ namespace MDSS
             }
         }
 
-        if (ImGui::Checkbox("Fixed timestep (1/60 s)", &bFixedSimulationTimestep))
+        if (ImGui::Checkbox("Fixed timestep", &bFixedSimulationTimestep))
         {
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Fixed time per solver step, scaled by Time scale. Simulation speed depends on FPS.");
-        if (bFixedSimulationTimestep)
-            ImGui::TextDisabled(
-                "%.3f ms per step at %.2fx", 1000.0F * GetSimulationDeltaTime(0.0F), SimulationTimeScale);
+            SetDescriptionTooltip("Accumulate elapsed time and process fixed 1/60 s ticks. Profile factors do not change this interval. Auto substepping can divide each tick.");
+        if (ImGui::Checkbox("Auto substepping", &bAutoSubstepping))
+        {
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Divide simulation time into smaller solver steps using the transport limit. Adds GPU work. Off uses fixed 1/60 s ticks, or elapsed time when Fixed timestep is off.");
+        ImGui::TextDisabled("%u steps, %.3f ms maximum step", FrameRenderer->GetLastSimulationStepCount(),
+                            1000.0F * FrameRenderer->GetMaximumSimulationStep());
+        ImGui::TextDisabled("Simulation %.2f s, pending %.3f s", FrameRenderer->GetSimulatedSeconds(),
+                            FrameRenderer->GetPendingSimulationSeconds());
+        if (FrameRenderer->GetPendingSimulationSeconds() > 0.25)
+            TextDescriptionWrapped("Simulation is catching up. Lower resolution or time scale to reduce the workload.");
     }
 
     void TDebugUI::DrawSolverTab()
@@ -2060,7 +2327,7 @@ namespace MDSS
                        "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
         DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive,
                        "GeometryDrive",
-                       "ON: 높이와 중력 방향에 따른 기하 전달을 적용합니다.\n"
+                       "ON: 높이와 중력 방향에 따른 전달에 출발 포화도를 곱합니다. 포화도는 1을 넘을 수 있습니다.\n"
                        "OFF: 기하 전달량을 0으로 설정합니다.");
         DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal,
                        "DirectionDrive: MesoNormal",
@@ -2118,7 +2385,7 @@ namespace MDSS
                 ImGui::EndTooltip();
             }
             TextDescriptionWrapped("State is preserved. Buffers stay allocated while OFF.");
-            TextDescriptionWrapped("Fixed timestep is available in the Global Settings tab.");
+            TextDescriptionWrapped("Fixed timestep and Auto substepping are available in the Global Settings tab.");
             TextDescriptionWrapped(
                 "Compare with the same resolution, time scale and starting State. Reset and replay the "
                 "same input for each mode; allow warmup before reading averages.");
@@ -2231,7 +2498,7 @@ namespace MDSS
         LabeledSliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("Amount of State added by the contact.");
+            SetDescriptionTooltip("Input per reference area. The affected world area determines the total amount.");
         }
         LabeledSliderFloat("Falloff", &InjectFalloff, 0.0F, 4.0F, "%.2f");
         if (ImGui::IsItemHovered())
@@ -2373,16 +2640,22 @@ namespace MDSS
 
         ImGui::Separator();
         ImGui::TextDisabled("Runtime only. Apply updates the current scene; source files stay unchanged.");
-        ImGui::TextDisabled("Only parameters currently used by the solver are shown.");
+        ImGui::TextDisabled("Runtime parameters; accumulation factors also drive the debug preview.");
         bool bChanged = false;
         bChanged |= LabeledDragFloat("Capacity", &ParameterDraft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Saturation reference per reference area. Texel Capacity scales with world area.");
         bChanged |= LabeledDragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
         bChanged |= LabeledSliderFloat(
             "Saturation transfer factor", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
         bChanged |=
             LabeledSliderFloat("Geometry transfer factor", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
         bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Amount lost per second per reference area, scaled to each texel's world area.");
         bChanged |= LabeledSliderFloat("Cavity retention", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
+        bChanged |= LabeledDragFloat("Accumulation", &ParameterDraft.AccumulationFactor, 0.01F, 0.0F, 1000.0F, "%.3f");
+        bChanged |= LabeledSliderFloat("Cavity fill", &ParameterDraft.CavityFillFactor, 0.0F, 1.0F, "%.3f");
         if (bChanged)
         {
             bParameterDraftDirty = true;

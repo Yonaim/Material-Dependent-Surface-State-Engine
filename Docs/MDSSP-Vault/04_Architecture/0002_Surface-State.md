@@ -58,10 +58,11 @@ flowchart LR
 ## State / Capacity / Saturation
 
 ```text
-stateCapacity = Saturation이 1이 되는 포화 기준량; 저장 상한이 아님
-State         = Capacity 초과량을 포함한 전체 상태량
-Saturation    = State / stateCapacity; 전달 계산에서는 상한 clamp 없음
-Excess        = max(State - stateCapacity, 0); 별도 저장하지 않는 파생값
+Profile.stateCapacity = 고정 기준 면적의 포화 기준량
+Capacity_i    = Profile.stateCapacity × AreaScale_i; 저장 상한이 아님
+State_i       = Capacity 초과량을 포함한 texel별 총량
+Saturation_i  = State_i / Capacity_i; 전달 계산에서는 상한 clamp 없음
+Excess_i      = max(State_i - Capacity_i, 0); 별도 저장하지 않는 파생값
 ```
 
 $$
@@ -69,7 +70,7 @@ State_i \ge 0, \quad State_i \text{ is finite}
 $$
 
 $$
-Saturation_i = \frac{State_i}{stateCapacity_i}
+Saturation_i = \frac{State_i}{Capacity_i},\quad Capacity_i = ProfileStateCapacity_i\cdot AreaScale_i
 $$
 
 - `stateCapacity`는 State별 SRProfile 독립 파라미터이며 기본값은 `1.0`이다.
@@ -83,6 +84,20 @@ State A/B에는 Capacity 초과량까지 보존한다 ([[05_ADR/0020-State-Overc
 - 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다.
 - `TempState`나 별도 Overflow 채널은 추가하지 않는다.
 
+## State 총량과 월드 texel 면적
+
+State는 **texel별 총량**이다. 면적당 양을 보려면 `State / WorldTexelArea`로 환산한다. 전체 보존량은 `ΣState`이며 면적을 다시 곱하지 않는다.
+
+```text
+ReferenceArea = 1 / (256 × 256) world-length²   // 선택 해상도와 무관한 고정 기준
+AreaScale_i = WorldTexelArea_i / ReferenceArea
+Capacity_i = Profile.stateCapacity × AreaScale_i
+Saturation_i = State_i / Capacity_i              // 1에서 자르지 않음
+```
+
+Profile `stateCapacity`는 **고정 기준 면적의 포화 기준량**이다. 실제 texel Capacity는 면적에 따라 달라진다. 같은 밀도에서 texel 면적이 1/4이면 State와 Capacity도 1/4이고 Saturation은 같다. Capacity·외부 입력·Decay에 같은 면적 환산을 적용한다. 면적의 생성·근사 범위는 [[0004_Surface-Geometry|Geometry]], 결정은 [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]]을 따른다.
+
+
 ## Surface Response Profile
 
 `.SRProfile`의 직렬화 형식은 [[04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]에서 다룬다. 파라미터의 **의미와 범위는 이 문서가 기준**이다.
@@ -91,16 +106,16 @@ State A/B에는 Capacity 초과량까지 보존한다 ([[05_ADR/0020-State-Overc
 
 | Parameter                | 의미                                         |       범위 |   기본값 |
 | ------------------------ | ------------------------------------------ | -------: | ----: |
-| `stateCapacity`          | 해당 State의 포화 기준량                           | `(0, n]` | `1.0` |
+| `stateCapacity`          | 고정 기준 면적의 해당 State 포화 기준량                           | `(0, n]` | `1.0` |
 | `inputFactor`            | 외부 Source 입력을 해당 State에 얼마나 반영할지 결정        |  `[0,n]` | `1.0` |
 | `saturationTransferFactor` | Saturation 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
 | `geometryTransferFactor` | Geometry 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
-| `decayRate`              | State가 시간 경과에 따라 자연 감소하는 단위 시간당 기본 속도      | `[0, n]` | `0.0` |
+| `decayRate`              | 고정 기준 면적의 초당 자연 감소량      | `[0, n]` | `0.0` |
 | `cavityRetentionFactor`  | 오목한 영역에서 Decay가 억제되는 정도                    |  `[0,1]` | `0.0` |
 | `accumulationFactor`     | State를 형상상의 적층량으로 변환하는 정도                  |  `[0,n]` | `0.0` |
 | `cavityFillFactor`       | 적층량 중 Cavity를 채우는 데 우선 배분할 비율              |  `[0,1]` | `0.0` |
 
-두 TransferFactor는 유한한 `[0,1]` 값으로 검증한다. 실제 속도는 Solver에서 `SaturationTransferFactor × 1.0 State/s`, `GeometryTransferFactor × 100.0 State/(world-length·s)`로 계산한다. 기준값은 기존 데모 속도를 유지하기 위한 초기 보정값이며 물성 검증값이 아니다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]). Saturation 및 State의 Capacity 초과 허용은 유지한다.
+두 TransferFactor는 유한한 `[0,1]` 값으로 검증한다. 실제 속도는 Solver에서 `SaturationTransferFactor × 1.0 State/s`, `GeometryTransferFactor × 6000.0 State/(world-length·s)`로 계산한다. Geometry 기준값은 초기 100에서 6000으로 재보정했다. 기준 면적을 사용하는 단순 수직면에서 Factor 0.5의 국소 이동률은 약 0.101 world-length/s다. 물성 검증값은 아니며 모든 Surface의 동일 속도를 보장하지 않는다 ([[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). Saturation 및 State의 Capacity 초과 허용은 유지한다.
 
 State Transition 규칙과 전이 파라미터의 의미는 [[04_Architecture/0002_Surface-State|State Transition]]에서 정의한다.
 

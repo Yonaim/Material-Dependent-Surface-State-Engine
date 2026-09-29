@@ -6,6 +6,12 @@
 - Status: **Accepted**
 - Date: 2026-09-29
 
+## 후속 결정 — 2026-09-29
+
+ADR 0033에서 Geometry 기준 Rate를 100→6000으로 재보정했다. 아래 Rate 50·기준값 100과 schema 변환 예시는 최초 정규화 당시의 기록이다. 현재 실행값은 공용 SurfaceSolverRates.h를 따른다.
+
+ADR 0030·0031·0032에서 면적 환산, Geometry 출발 포화도, 누적 시간 반복을 추가했다. 아래 데모 동등성 검증은 정규화 변경 당시의 결과이며 이후 분포·시간 의미는 새 계약을 따른다.
+
 ## Context
 
 초기 `.SRProfile` version 1은 `saturationTransferRate`, `geometryTransferRate`에 실제 전달 속도를 저장했다. SaturationDrive는 무차원이고 GeometryDrive는 world-length이므로 두 Rate의 단위와 숫자 규모가 달랐다. DemoWetness와 DemoStone의 `(0.2, 50.0)`은 유효한 수식 입력이지만 Profile 튜닝 과정에서 내부 속도 및 길이 스케일을 함께 해석해야 했다.

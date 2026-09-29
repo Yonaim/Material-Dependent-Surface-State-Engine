@@ -1,8 +1,9 @@
 /**
  * @file SurfaceDebug.vert
- * @brief Surface Debug 렌더링 데이터를 준비하고 Meso Offset 모드에서 정점을 변위한다.
+ * @brief Macro mesh 기반 Surface Debug 데이터를 준비한다. 높이 형상은 TexelGeometry.vert를 사용한다.
  */
 #version 450
+#extension GL_GOOGLE_include_directive : require
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -20,37 +21,11 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     uint StateChannelCount;
     float DebugViewParameter;
     float ReliefShadingEnabled;
+    vec4 DebugOptions; // Raw State max, height max, preview height reference, displacement scale
+    uvec4 DebugFlags; // Raw State, Accumulation component, reserved, reserved
 } Material;
 
-bool MaterialRenderModeIsMesoOffset()
-{
-    return Material.RenderMode == 14u;
-}
-
-struct TSurfaceGPUGeometryScalar
-{
-    float MesoVirtualHeight;
-    float ConcavityWeight;
-    float MesoMeanCurvature;
-    float MesoGaussianCurvature;
-};
-
-layout(std430, set = 1, binding = 4) readonly buffer TSurfaceGeometryScalars
-{
-    TSurfaceGPUGeometryScalar Values[];
-} GeometryScalars;
-layout(std430, set = 1, binding = 12) readonly buffer TSurfaceRanges
-{
-    uvec4 Values[];
-} SurfaceRanges;
-layout(std430, set = 1, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
-{
-    uint Values[];
-} TexelSurfaceIndices;
-layout(std430, set = 1, binding = 17) readonly buffer TSurfaceMesoNormals
-{
-    vec4 Values[];
-} MesoNormals;
+#include "Debug/SurfaceDebugData.glsl"
 
 layout(push_constant) uniform TStaticMeshPushConstants
 {
@@ -91,7 +66,7 @@ void main()
     vec3 LocalPosition = InPosition;
     // Texel Area 진단은 Meso Offset과 Normal Map을 적용하기 전의 위치와 instance scale을 사용한다.
     FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
-    if (MaterialRenderModeIsMesoOffset())
+    if (Material.RenderMode == 14u)
     {
         // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.
         uint Surface = uint(gl_InstanceIndex);
@@ -106,7 +81,8 @@ void main()
                     TexelIndex < uint(TexelSurfaceIndices.Values.length()) &&
                     TexelSurfaceIndices.Values[TexelIndex] == Surface)
                 {
-                    LocalPosition += InNormal * GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+                    float Height = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+                    LocalPosition += InNormal * Height;
                 }
             }
         }

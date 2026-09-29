@@ -2,16 +2,23 @@
  * @brief 실제 fragment 출력으로 면적 비율과 격자의 해상도·축소 동작을 검증한다.
  */
 #include "AssetManager/Assets/MeshSourceData.h"
+#include "AssetManager/Assets/TextureAsset.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/Renderer.h"
+#include "SurfaceStateSystem/Debug/TexelInspector.h"
+#include "SurfaceStateSystem/Debug/TexelGeometryPreview.h"
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
 #include "VulkanContext/GPU/GPUImage.h"
 #include "VulkanContext/GPU/GPUImageView.h"
 #include "VulkanContext/VulkanContext.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <stdexcept>
 #include <string>
@@ -64,8 +71,13 @@ namespace MDSS::Tests
             std::uint32_t StateChannelCount = 1;
             float         DebugViewParameter = 1.0F / (256.0F * 256.0F);
             float         ReliefShadingEnabled = 0.0F;
+            glm::vec4     DebugOptions{4.0F, 0.01F, 0.01F, 1.0F};
+            glm::uvec4    DebugFlags{0};
+            glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, 1U, 0U};
+            glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 0.1F};
+            glm::vec4     CameraPosition{-0.35F, -0.55F, 1.0F, 1.0F};
         };
-        static_assert(sizeof(TUniform) == 48);
+        static_assert(sizeof(TUniform) == 128);
 
         struct TPush
         {
@@ -110,6 +122,8 @@ namespace MDSS::Tests
         TSurfaceInstanceGPUResources Instance(
             Context.GetPhysicalDevice(), Device, 4, 1, std::vector<float>(4 * SurfaceNeighborCount, 0.0F));
         TSurfaceStateDescriptorResources SurfaceDescriptors(Device, Shared, Profiles, Instance);
+        TextureAsset WhiteTexture(0, "white", {}, Context, 1, 1, {255,255,255,255}, VK_FORMAT_R8G8B8A8_UNORM);
+        TextureAsset FlatNormalTexture(1, "flat", {}, Context, 1, 1, {128,128,255,255}, VK_FORMAT_R8G8B8A8_UNORM);
         TRenderHandles                   Handles{Device};
 
         VkAttachmentDescription Attachment{};
@@ -151,22 +165,22 @@ namespace MDSS::Tests
         FrameInfo.layers = 1;
         RequireVk(vkCreateFramebuffer(Device, &FrameInfo, nullptr, &Handles.Framebuffer));
 
-        VkDescriptorSetLayoutBinding    Binding{2,
-                                             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                             1,
-                                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                             nullptr};
+        const std::array<VkDescriptorSetLayoutBinding, 3> Bindings{{
+            {0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+            {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+            {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr}}};
         VkDescriptorSetLayoutCreateInfo LayoutInfo{};
         LayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        LayoutInfo.bindingCount = 1;
-        LayoutInfo.pBindings = &Binding;
+        LayoutInfo.bindingCount = Bindings.size();
+        LayoutInfo.pBindings = Bindings.data();
         RequireVk(vkCreateDescriptorSetLayout(Device, &LayoutInfo, nullptr, &Handles.MaterialLayout));
-        VkDescriptorPoolSize       PoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1};
+        const std::array<VkDescriptorPoolSize, 2> PoolSizes{{{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+                                                          {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2}}};
         VkDescriptorPoolCreateInfo PoolInfo{};
         PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         PoolInfo.maxSets = 1;
-        PoolInfo.poolSizeCount = 1;
-        PoolInfo.pPoolSizes = &PoolSize;
+        PoolInfo.poolSizeCount = PoolSizes.size();
+        PoolInfo.pPoolSizes = PoolSizes.data();
         RequireVk(vkCreateDescriptorPool(Device, &PoolInfo, nullptr, &Handles.Pool));
         VkDescriptorSetAllocateInfo AllocateInfo{};
         AllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -184,6 +198,18 @@ namespace MDSS::Tests
         Write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         Write.pBufferInfo = &BufferInfo;
         vkUpdateDescriptorSets(Device, 1, &Write, 0, nullptr);
+        const std::array<VkDescriptorImageInfo, 2> Images{{
+            {WhiteTexture.GetSampler(), WhiteTexture.GetImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL},
+            {FlatNormalTexture.GetSampler(), FlatNormalTexture.GetImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}}};
+        for (std::uint32_t I = 0; I < Images.size(); ++I)
+        {
+            Write.dstBinding = I;
+            Write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            Write.pBufferInfo = nullptr;
+            Write.pImageInfo = &Images[I];
+            vkUpdateDescriptorSets(Device, 1, &Write, 0, nullptr);
+        }
+
 
         TGraphicsPipelineConfig Config;
         Config.ShaderStages = {{VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Debug/SurfaceDebug.vert.spv"},
@@ -198,6 +224,7 @@ namespace MDSS::Tests
         Config.PushConstantRanges = {{VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TPush)}};
         TGraphicsPipeline Pipeline(Device, Handles.Pass, Config);
 
+        TUniform DebugControls;
         auto Render = [&](TRenderViewMode Mode,
                           std::uint32_t   Resolution,
                           float           Parameter,
@@ -215,7 +242,7 @@ namespace MDSS::Tests
                 Data[Index].Tangent = {1, 0, 0, 1};
             }
             Vertices.Upload(Data.data(), sizeof(Data));
-            TUniform Uniform;
+            TUniform Uniform = DebugControls;
             Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
             Uniform.DebugViewParameter = Parameter;
             UniformBuffer.Upload(&Uniform, sizeof(Uniform));
@@ -300,5 +327,430 @@ namespace MDSS::Tests
                 "Changing 8 to 16 must change the coarse boundary without moving the fine grid.");
         Require(Near(Pixel(Render(GridView, 512, 8)), {0.215F, 0.245F, 0.275F}),
                 "Subpixel grid patterns must fade to a neutral fill.");
+
+        // Diagnose the actual GPU values, not a CPU copy of the height formula.
+        const std::array<std::uint32_t, 4> Valid{0, 0, 0, 0};
+        Shared.GetTexelSurfaceIndexBuffer().Upload(Valid.data(), sizeof(Valid));
+        Shared.GetTexelProfileIndexBuffer().Upload(Valid.data(), sizeof(Valid));
+        std::array<TSurfaceGPUGeometryScalar, 4> Scalars{};
+        for (auto& Scalar : Scalars)
+            Scalar.MesoVirtualHeight = -0.02F;
+        Shared.GetGeometryScalarBuffer().Upload(Scalars.data(), sizeof(Scalars));
+        std::array<TSurfaceGPUVec4, 4>            Normals{}, Positions{};
+        std::array<TSurfaceGPUNeighborIndices, 4> Neighbors{};
+        for (std::uint32_t Index = 0; Index < 4; ++Index)
+        {
+            Normals[Index] = {0, 0, 1, 0};
+            Positions[Index] = {float(Index % 2), float(Index / 2), 0, 0};
+            Neighbors[Index].Indices.fill(UINT32_MAX);
+            for (std::uint32_t Other = 0, Slot = 0; Other < 4; ++Other)
+                if (Other != Index)
+                    Neighbors[Index].Indices[Slot++] = Other;
+        }
+        Shared.GetNormalBuffer().Upload(Normals.data(), sizeof(Normals));
+        Shared.GetMesoNormalBuffer().Upload(Normals.data(), sizeof(Normals));
+        Shared.GetPositionBuffer().Upload(Positions.data(), sizeof(Positions));
+        Shared.GetNeighborIndexBuffer().Upload(Neighbors.data(), sizeof(Neighbors));
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, 2 * SurfaceStateReferenceArea));
+        auto Parameters = TSurfaceStateParameters{};
+        Parameters.StateCapacity = 2;
+        Parameters.AccumulationFactor = 0.15F;
+        Parameters.CavityFillFactor = 0.8F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        std::array<float, 4> State{10, 10, 10, 10};
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        DebugControls.DebugFlags.x = 0;
+        const auto StateView = TRenderViewMode::SurfaceStateHeatmap;
+        const auto Saturated = Render(StateView, 2, 0);
+        State.fill(20);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(Near(Pixel(Saturated), Pixel(Render(StateView, 2, 0))),
+                "Saturation must preserve the existing 100% color cap.");
+        DebugControls.DebugFlags.x = 1;
+        DebugControls.DebugOptions.x = 40;
+        const auto Raw20 = Render(StateView, 2, 0);
+        State.fill(10);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(glm::length(Pixel(Raw20) - Pixel(Render(StateView, 2, 0))) > 0.1F,
+                "Raw State must distinguish over-capacity amounts.");
+        DebugControls.DebugOptions.x = 5;
+        Require(Near(Pixel(Render(StateView, 2, 0)), {1, 0.25F, 0.05F}),
+                "Raw State must mark values exceeding the fixed range.");
+        DebugControls.DebugOptions.y = 0.02F;
+        DebugControls.DebugFlags.y = 0;
+        const auto TotalHeight = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        DebugControls.DebugFlags.y = 1;
+        const auto CavityHeight = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        DebugControls.DebugFlags.y = 2;
+        const auto FollowingHeight = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        Require(glm::length(Pixel(TotalHeight) - Pixel(FollowingHeight)) > 0.1F &&
+                    glm::length(Pixel(CavityHeight) - Pixel(FollowingHeight)) > 0.1F,
+                "Accumulation components must produce distinct fragment output.");
+        DebugControls.DebugFlags.y = 3;
+        DebugControls.DebugOptions.y = 100;
+        const auto FillView = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        DebugControls.DebugOptions.y = 0.001F;
+        Require(Near(Pixel(FillView), Pixel(Render(TRenderViewMode::SurfaceAccumulation, 2, 0))),
+                "Cavity Fill must keep a fixed 0-1 range independent of height range.");
+
+        TTexelInspector              Inspector(Context.GetPhysicalDevice(), Device, SurfaceDescriptors.GetLayout(), 2);
+        const TSurfaceTexelSelection Selection{0, 0, 0, 0, {0, 0}, "test"};
+        const auto                   Sample =
+            [&](bool bAB = true, std::uint32_t Channel = 0, float Reference = 0.01F, std::uint64_t Step = 1)
+        {
+            auto Command = Context.GetCommands().BeginSingleTime();
+            Inspector.Record(Command, 0, SurfaceDescriptors, Selection, Channel, 1, Reference, bAB, Step);
+            Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+            Inspector.CompleteFrame(0);
+            Require(Inspector.GetSnapshot().has_value(), "Completed GPU snapshot must be available.");
+            return *Inspector.GetSnapshot();
+        };
+        const auto Close = [](float A, float B) { return std::abs(A - B) < 1e-6F; };
+        auto       S = Sample();
+        Require(S.Values[2].w == 3 && Close(S.Values[0].x, 10) && Close(S.Values[0].y, 4) &&
+                    Close(S.Values[0].z, 2.5F) && Close(S.Values[0].w, 5),
+                "Inspector must expose unclamped State and area-scaled Capacity and saturation.");
+        Require(Close(S.Values[2].y, 0.6F) && Close(S.Values[3].x, 0.012F) && Close(S.Values[3].y, 0.0015F) &&
+                    Close(S.Values[3].z, 0.0135F),
+                "GPU cavity/following allocation must use the reference-area amount.");
+        Require(Close(Sample(true, 0, 0.01F, 50).Values[3].z, S.Values[3].z),
+                "Unchanged State must not accumulate height across steps.");
+        State.fill(40);
+        Instance.GetStateBBuffer().Upload(State.data(), sizeof(State));
+        S = Sample(false);
+        Require(!S.bStateAB && Close(S.Values[2].y, 1) && Close(S.Values[2].z, 1.4F) && Close(S.Values[3].z, 0.04F),
+                "Inspector must read buffer B and preserve cavity excess in Following Height.");
+        Require(Close(Sample(false, 0, 0.02F).Values[3].z, 0.06F),
+                "Height reference must affect only Surface Following height.");
+        Require(Sample(true, 1).Values[2].w == 2, "Unsupported channel must be diagnosed without out-of-bounds reads.");
+        // A changed selection/reference must discard already-submitted results.
+        auto Command = Context.GetCommands().BeginSingleTime();
+        Inspector.Record(Command, 1, SurfaceDescriptors, Selection, 0, 1, 0.01F, true, 60);
+        Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+        Inspector.Invalidate();
+        Inspector.CompleteFrame(1);
+        Require(!Inspector.GetSnapshot(), "Invalidated pending snapshots must never repopulate the Inspector.");
+        Parameters.AccumulationFactor = 0;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        Require(Sample().Values[3].z == 0, "Zero accumulation factor must produce zero height despite positive State.");
+        Parameters.AccumulationFactor = 0.15F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        // Same physical reference-area amount at a quarter of the original texel area.
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, 0.5F * SurfaceStateReferenceArea));
+        State.fill(2.5F);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(Close(Sample().Values[3].z, 0.0135F),
+                "Changing texel area must not change thickness at equal reference-area amount.");
+        State = {2.5F, 20.0F, 2.5F, 20.0F};
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(Sample().Values[5].x < -0.02F, "Final normal must respond to the selected State height gradient.");
+        std::array<float, 4> AfterInspection{};
+        Instance.GetStateABuffer().Download(AfterInspection.data(), sizeof(AfterInspection));
+        Require(AfterInspection == State, "Debug views and Inspector must leave State untouched.");
+        const std::uint32_t Unsupported = 0, Supported = 1;
+        Profiles.GetSupportedBuffer().Upload(&Unsupported, sizeof(Unsupported));
+        Require(Sample().Values[2].w == 2, "Profile-defined unsupported State must be diagnosed.");
+        Profiles.GetSupportedBuffer().Upload(&Supported, sizeof(Supported));
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, 0));
+        Require(Sample().Values[2].w == 4, "Degenerate world area must be diagnosed.");
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, SurfaceStateReferenceArea));
+        // A central sample must change the actual silhouette even with zero height on every boundary sample.
+        TSharedSurfaceGeometryData GridGeometry({{0, {3, 3}}});
+        for (std::uint32_t T = 0; T < 9; ++T)
+        {
+            auto& G = GridGeometry.GetTexels()[T];
+            G.Surface = G.Triangle = G.Chart = 0;
+            G.Position = {float(T % 3) * 0.5F - 0.5F, float(T / 3) * 0.5F - 0.5F, 0};
+            std::size_t Slot = 0;
+            for (std::uint32_t Other = 0; Other < 9; ++Other)
+                if (Other != T && std::abs(int(Other % 3) - int(T % 3)) <= 1 &&
+                    std::abs(int(Other / 3) - int(T / 3)) <= 1)
+                    G.NeighborIndices[Slot++] = Other;
+        }
+        GridGeometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(9, 0));
+        TSurfaceSharedGeometryGPUResources GridShared(Context.GetPhysicalDevice(), Device, GridGeometry);
+        TSurfaceInstanceGPUResources GridInstance(Context.GetPhysicalDevice(), Device, 9, 1,
+            std::vector<float>(9 * SurfaceNeighborCount, 0), {}, std::vector<float>(9, SurfaceStateReferenceArea));
+        TSurfaceStateDescriptorResources GridDescriptors(Device, GridShared, Profiles, GridInstance);
+        TTexelGeometryPreview Preview(Context.GetPhysicalDevice(), Device, GridDescriptors.GetLayout(), 1);
+        auto GridConfig = Config;
+        GridConfig.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/TexelGeometry.vert.spv";
+        GridConfig.VertexBindings.clear();
+        GridConfig.VertexAttributes.clear();
+        GridConfig.DescriptorSetLayouts = {Handles.MaterialLayout, GridDescriptors.GetLayout(), Preview.GetOutputLayout()};
+        TGraphicsPipeline GridPipeline(Device, Handles.Pass, GridConfig);
+        // Insert an unrelated State before the demo names: rendering must use resolved IDs, not fixed slots.
+        TSurfaceResponseProfileData LitProfile;
+        TSurfaceStateParameters LitParameters;
+        LitParameters.AccumulationFactor = 1;
+        LitParameters.CavityFillFactor = 0;
+        LitProfile.States.emplace("aaa", LitParameters);
+        LitProfile.States.emplace("mud", LitParameters);
+        LitProfile.States.emplace("wetness", LitParameters);
+        const TSurfaceStateRegistry LitRegistry({LitProfile});
+        const auto LitBindings = ResolveDemoSurfaceStates(LitRegistry);
+        Require(LitBindings.Mud == 1 && LitBindings.Wetness == 2,
+                "Demo bindings must follow dynamically assigned Registry IDs.");
+        TSurfaceProfileGPUResources LitProfiles(Context.GetPhysicalDevice(), Device, {LitProfile}, LitRegistry);
+        TSurfaceInstanceGPUResources LitInstance(Context.GetPhysicalDevice(), Device, 9, 3,
+            std::vector<float>(9 * SurfaceNeighborCount, 0), {}, std::vector<float>(9, SurfaceStateReferenceArea));
+        TSurfaceStateDescriptorResources LitDescriptors(Device, GridShared, LitProfiles, LitInstance);
+        auto LitConfig = GridConfig;
+        LitConfig.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.vert.spv";
+        LitConfig.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.frag.spv";
+        TGraphicsPipeline LitPipeline(Device, Handles.Pass, LitConfig);
+
+        TGPUBuffer VertexReadback(Context.GetPhysicalDevice(), Device, 9 * sizeof(TTexelGeometryVertex),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
+        Parameters.AccumulationFactor = 1;
+        Parameters.CavityFillFactor = 0;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        std::array<float, 9> GridState{};
+        GridState[4] = 4;
+        GridInstance.GetStateABuffer().Upload(GridState.data(), sizeof(GridState));
+        auto BState = GridState;
+        BState[4] = 1;
+        GridInstance.GetStateBBuffer().Upload(BState.data(), sizeof(BState));
+        TPush Side;
+        Side.ViewProjection[2][0] = 3;
+        Side.ViewProjection[3][2] = 0.2F;
+        std::array<TTexelGeometryVertex, 9> Computed{};
+        const auto RenderGrid = [&](bool bAB, bool bAccumulation, float Scale,
+                                    TRenderViewMode Mode = TRenderViewMode::SurfaceFinalGeometry,
+                                    std::uint32_t GridMode = 0, std::uint32_t BlockSize = 1, const TUniform* LitUniform = nullptr)
+        {
+            TUniform Uniform = LitUniform ? *LitUniform : TUniform{};
+            Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
+            if (!LitUniform) Uniform.DebugOptions = {4, 0.5F, 0.1F, Scale};
+            Uniform.DebugFlags.z = GridMode;
+            Uniform.DebugFlags.w = BlockSize;
+            UniformBuffer.Upload(&Uniform, sizeof(Uniform));
+            const auto Command = Context.GetCommands().BeginSingleTime();
+            const auto& Descriptors = LitUniform ? LitDescriptors : GridDescriptors;
+            const auto& Pipeline = LitUniform ? LitPipeline : GridPipeline;
+            Preview.Record(Command, 0, Descriptors, 9, LitUniform ? LitBindings.Mud : 0,
+                           LitUniform ? 3 : 1, LitUniform ? Uniform.DemoOptions.w : 0.1F, Scale, bAB, bAccumulation);
+            VkBufferMemoryBarrier CopyBarrier{};
+            CopyBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            CopyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            CopyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            CopyBarrier.srcQueueFamilyIndex = CopyBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            CopyBarrier.buffer = Preview.GetOutputBuffer(0).GetHandle();
+            CopyBarrier.size = VK_WHOLE_SIZE;
+            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0, 0, nullptr, 1, &CopyBarrier, 0, nullptr);
+            const VkBufferCopy VertexCopy{0, 0, sizeof(Computed)};
+            vkCmdCopyBuffer(Command, CopyBarrier.buffer, VertexReadback.GetHandle(), 1, &VertexCopy);
+            VkClearValue Clear{};
+            VkRenderPassBeginInfo Begin{};
+            Begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            Begin.renderPass = Handles.Pass;
+            Begin.framebuffer = Handles.Framebuffer;
+            Begin.renderArea.extent = Extent;
+            Begin.clearValueCount = 1;
+            Begin.pClearValues = &Clear;
+            vkCmdBeginRenderPass(Command, &Begin, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.GetHandle());
+            const VkViewport Viewport{0, 0, float(Extent.width), float(Extent.height), 0, 1};
+            const VkRect2D Scissor{{0, 0}, Extent};
+            vkCmdSetViewport(Command, 0, 1, &Viewport);
+            vkCmdSetScissor(Command, 0, 1, &Scissor);
+            const std::array<VkDescriptorSet, 3> Sets{MaterialSet,
+                bAB ? Descriptors.GetABSet() : Descriptors.GetBASet(), Preview.GetOutputSet(0)};
+            vkCmdBindDescriptorSets(Command, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.GetLayout(),
+                0, Sets.size(), Sets.data(), 0, nullptr);
+            vkCmdPushConstants(Command, Pipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Side), &Side);
+            vkCmdBindIndexBuffer(Command, GridShared.GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+            const auto Range = GridShared.GetTexelMeshRanges()[0];
+            vkCmdDrawIndexed(Command, Range.IndexCount, 1, Range.FirstIndex, 0, 0);
+            vkCmdEndRenderPass(Command);
+            VkBufferImageCopy Copy{};
+            Copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+            Copy.imageExtent = {Extent.width, Extent.height, 1};
+            vkCmdCopyImageToBuffer(Command, Image.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                Readback.GetHandle(), 1, &Copy);
+            std::array<VkBufferMemoryBarrier, 2> HostBarriers{};
+            for (std::size_t I = 0; I < HostBarriers.size(); ++I)
+            {
+                auto& Barrier = HostBarriers[I];
+                Barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+                Barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                Barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+                Barrier.srcQueueFamilyIndex = Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                Barrier.buffer = I == 0 ? VertexReadback.GetHandle() : Readback.GetHandle();
+                Barrier.size = VK_WHOLE_SIZE;
+            }
+            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                0, 0, nullptr, HostBarriers.size(), HostBarriers.data(), 0, nullptr);
+            Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+            VertexReadback.Download(Computed.data(), sizeof(Computed));
+            std::vector<glm::vec4> Pixels(Extent.width * Extent.height);
+            Readback.Download(Pixels.data(), Pixels.size() * sizeof(glm::vec4));
+            return Pixels;
+        };
+        const auto Flat = RenderGrid(true, false, 1);
+        const auto Raised = RenderGrid(true, true, 1);
+        Require(Flat[128 * Extent.width + 220].a == 0 && Raised[128 * Extent.width + 220].a > 0.5F,
+                "An interior texel must raise the actual silhouette while all boundary samples stay flat.");
+        Require(Close(Computed[4].PositionAndHeight.z, 0.4F) && Computed[0].PositionAndHeight.z == 0,
+                "Compute must store per-texel positions from the latest State without resampling sparse mesh vertices.");
+        const auto EdgeNormal = Computed[3].Normal;
+
+        const auto GridOverlay = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 1);
+        const auto GridOnly = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 2);
+        const auto CoarseGrid = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 2, 2);
+        std::size_t BrightLines = 0, CoarseBrightLines = 0, DarkInterior = 0;
+        for (std::size_t P = 0; P < Raised.size(); ++P)
+        {
+            Require(Raised[P].a == GridOnly[P].a && Raised[P].a == GridOverlay[P].a,
+                    "Grid visualization must preserve the displaced silhouette.");
+            if (GridOnly[P].a > 0.5F)
+            {
+                BrightLines += GridOnly[P].b > 0.6F;
+                CoarseBrightLines += CoarseGrid[P].b > 0.6F;
+                DarkInterior += GridOnly[P].b < 0.1F;
+            }
+        }
+        Require(BrightLines > 50 && DarkInterior > BrightLines && CoarseBrightLines < BrightLines,
+                "Height grid must draw sparse texel cell boundaries and respond to block size.");
+        const auto Reduced = RenderGrid(true, true, 0.5F);
+        Require(Reduced[128 * Extent.width + 220].a == 0 && Close(Computed[4].PositionAndHeight.z, 0.2F),
+                "Display scale must affect actual texel geometry.");
+        Require(std::abs(EdgeNormal.x) > std::abs(Computed[3].Normal.x) + 0.05F,
+                "Displayed normal must be reconstructed using the same display scale as the positions.");
+        (void)RenderGrid(false, true, 1);
+        Require(Close(Computed[4].PositionAndHeight.z, 0.1F), "Texel geometry must follow the current State B descriptor.");
+        (void)RenderGrid(true, true, 1);
+        (void)RenderGrid(true, true, 1);
+        Require(Close(Computed[4].PositionAndHeight.z, 0.4F), "Repeated previews must not compound accumulation height.");
+        const auto HeightMap = RenderGrid(true, true, 1, TRenderViewMode::SurfaceAccumulation);
+        Require(HeightMap[128 * Extent.width + 220].a > 0.5F,
+                "Accumulation heatmap must cover the same displaced texel geometry as Final Geometry.");
+        std::array<float, 9> StateAfter{};
+        GridInstance.GetStateABuffer().Download(StateAfter.data(), sizeof(StateAfter));
+        Require(StateAfter == GridState, "Computed display geometry must leave simulation State unchanged.");
+        GridState.fill(0);
+        GridInstance.GetStateABuffer().Upload(GridState.data(), sizeof(GridState));
+        (void)RenderGrid(true, true, 1);
+        Require(Computed[4].PositionAndHeight.z == 0, "Reset State must discard the previous computed mound.");
+        std::array<TSurfaceGPUGeometryScalar, 9> MesoRamp{};
+        for (std::size_t T = 0; T < MesoRamp.size(); ++T)
+            MesoRamp[T].MesoVirtualHeight = float(T % 3) * 0.1F;
+        GridShared.GetGeometryScalarBuffer().Upload(MesoRamp.data(), sizeof(MesoRamp));
+        Profiles.GetSupportedBuffer().Upload(&Unsupported, sizeof(Unsupported));
+        (void)RenderGrid(true, true, 2);
+        Require(Close(Computed[4].PositionAndHeight.z, 0.2F) && Computed[4].Normal.x < -0.35F,
+                "Unsupported State must retain Meso geometry with a normal consistent with its display scale.");
+        GridShared.GetGeometryScalarBuffer().Upload(std::array<TSurfaceGPUGeometryScalar,9>{}.data(), sizeof(MesoRamp));
+        Side.ViewProjection = glm::mat4(1.0F);
+        Side.ViewProjection[3][2] = 0.2F;
+        TUniform LitUniform;
+        LitUniform.StateChannelCount = 3;
+        LitUniform.BaseColor = {0.4F, 0.4F, 0.4F, 1};
+        LitUniform.DemoStateChannels = {LitBindings.Wetness, LitBindings.Mud, 1, 0};
+        std::array<float,27> LitState{};
+        auto UploadLitState = [&] { LitInstance.GetStateABuffer().Upload(LitState.data(), sizeof(LitState)); };
+        auto RenderLit = [&](bool AB = true, bool Height = false) {
+            return RenderGrid(AB, Height, 1, TRenderViewMode::Lit, 0, 1, &LitUniform);
+        };
+        UploadLitState();
+        const auto DryLit = RenderLit();
+        for (std::size_t T = 0; T < 9; ++T) LitState[T*3] = 500;
+        UploadLitState();
+        const auto UnrelatedLit = RenderLit();
+        Require(DryLit == UnrelatedLit, "An unrelated State must not affect Wetness or Mud appearance.");
+        for (std::size_t T = 0; T < 9; ++T) LitState[T*3 + LitBindings.Wetness] = 1;
+        UploadLitState();
+        const auto WetLit = RenderLit();
+        Require(WetLit[90*Extent.width+90].r < DryLit[90*Extent.width+90].r,
+                "Wetness must darken diffuse appearance away from the highlight.");
+        float DryPeak = 0, WetPeak = 0;
+        for (std::size_t P = 0; P < WetLit.size(); ++P)
+        {
+            Require(std::isfinite(WetLit[P].r), "Lit highlights must remain finite.");
+            DryPeak = std::max(DryPeak, DryLit[P].r);
+            WetPeak = std::max(WetPeak, WetLit[P].r);
+        }
+        Require(WetPeak > DryPeak + 0.1F, "Wet roughness must produce a stronger localized specular highlight.");
+        LitUniform.CameraPosition = {0.8F, 0.4F, 1, 1};
+        const auto MovedCameraLit = RenderLit();
+        Require(MovedCameraLit != WetLit, "Specular reflection must follow camera position.");
+        // Equal saturation at half texel area must keep the same Lit appearance.
+        LitInstance.UpdateWorldTexelAreas(std::vector<float>(9, SurfaceStateReferenceArea * 0.5F));
+        for (auto& V : LitState) V *= 0.5F;
+        UploadLitState();
+        Require(RenderLit() == MovedCameraLit, "Lit saturation must respect texel world area and Profile capacity.");
+        LitInstance.UpdateWorldTexelAreas(std::vector<float>(9, SurfaceStateReferenceArea));
+        for (auto& V : LitState) V *= 2;
+        UploadLitState();
+        LitUniform.CameraPosition = {-0.35F,-0.55F,1,1};
+        LitUniform.DemoStateChannels.z = 0;
+        Require(RenderLit() == DryLit, "Disabling demo effects must recover the dry base material.");
+        LitUniform.DemoStateChannels.z = 1;
+        LitState.fill(0);
+        for (std::size_t T = 0; T < 9; ++T) LitState[T*3 + LitBindings.Mud] = 1;
+        UploadLitState();
+        const auto MudLit = RenderLit();
+        const auto MudPixel = MudLit[90*Extent.width+90];
+        Require(MudPixel.r > MudPixel.g * 1.25F && MudPixel.g > MudPixel.b * 1.15F,
+                "Mud must replace the base color with a brown coating.");
+        for (std::size_t T = 0; T < 9; ++T) LitState[T*3 + LitBindings.Wetness] = 1;
+        UploadLitState();
+        const auto WetMudLit = RenderLit();
+        Require(WetMudLit[90*Extent.width+90].r < MudPixel.r && WetMudLit[90*Extent.width+90].g < MudPixel.g,
+                "Wetness must also darken an existing Mud coating.");
+        LitUniform.DemoStateChannels.x = LitUniform.DemoStateChannels.y = InvalidStateId;
+        Require(RenderLit() == DryLit, "Absent demo names must produce the dry base material.");
+        LitUniform.DemoStateChannels.x = LitBindings.Wetness;
+        LitUniform.DemoStateChannels.y = LitBindings.Mud;
+
+        LitInstance.GetStateBBuffer().Upload(std::array<float,27>{}.data(), sizeof(LitState));
+        Require(RenderLit(false) == DryLit, "Lit must read the currently bound State B buffer.");
+        std::array<std::uint32_t,3> Support{1,1,0};
+        LitProfiles.GetSupportedBuffer().Upload(Support.data(), sizeof(Support));
+        LitState.fill(0);
+        for (std::size_t T = 0; T < 9; ++T) LitState[T*3 + LitBindings.Wetness] = 1;
+        UploadLitState();
+        Require(RenderLit() == DryLit, "A profile-unsupported State must have no appearance even if its slot contains data.");
+        Support = {1,1,1};
+        LitProfiles.GetSupportedBuffer().Upload(Support.data(), sizeof(Support));
+        LitState.fill(0);
+        LitState[4*3+LitBindings.Mud] = 4;
+        UploadLitState();
+        Side.ViewProjection[2][0] = 3;
+        const auto LitMound = RenderLit(true, true);
+        Require(LitMound[128*Extent.width+220].a > 0.5F && Close(Computed[4].PositionAndHeight.z, 0.4F),
+                "Mud Lit must use the same computed interior-texel displacement as height debugging.");
+        LitUniform.DebugOptions.z = 100;
+        Require(RenderLit(true, true) == LitMound, "Debug height settings must not change Lit mud geometry.");
+        std::array<float,27> LitStateAfter{};
+        LitInstance.GetStateABuffer().Download(LitStateAfter.data(), sizeof(LitStateAfter));
+        Require(LitStateAfter == LitState, "Lit rendering must preserve simulation State.");
+        // Optional artifacts for inspecting the actual GPU output without changing the application.
+        if (const char* Directory = std::getenv("MDSS_SURFACE_RENDER_CAPTURE_DIR"))
+        {
+            std::filesystem::create_directories(Directory);
+            const auto Capture = [&](const char* Name, const std::vector<glm::vec4>& Pixels)
+            {
+                std::ofstream File(std::filesystem::path(Directory) / Name, std::ios::binary);
+                File << "P6\n" << Extent.width << ' ' << Extent.height << "\n255\n";
+                for (const auto& Pixel : Pixels)
+                    for (int C = 0; C < 3; ++C)
+                    {
+                        const float Linear = std::clamp(Pixel[C], 0.0F, 1.0F);
+                        const float SRGB = Linear <= 0.0031308F ? Linear * 12.92F :
+                            1.055F * std::pow(Linear, 1.0F / 2.4F) - 0.055F;
+                        File.put(static_cast<char>(std::lround(SRGB * 255)));
+                    }
+                Require(File.good(), "GPU render artifact could not be saved.");
+            };
+            Capture("dry.ppm", DryLit);
+            Capture("wet.ppm", WetLit);
+            Capture("mud.ppm", MudLit);
+            Capture("mud-mound.ppm", LitMound);
+            Capture("height-grid.ppm", GridOnly);
+        }
+
+
     }
 } // namespace MDSS::Tests

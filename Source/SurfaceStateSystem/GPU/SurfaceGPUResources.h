@@ -6,6 +6,7 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
+#include "SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.h"
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
 
@@ -43,6 +44,7 @@ namespace MDSS
         MesoNormals,
         ReverseNeighborSlots,
         RawFlux,
+        WorldTexelAreas,
         Count
     };
 
@@ -69,6 +71,8 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
+        [[nodiscard]] const TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept { return TexelMeshIndexBuffer.get(); }
+        [[nodiscard]] const std::vector<TSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept { return TexelMeshRanges; }
 
     private:
         std::size_t TexelCount = 0;
@@ -82,6 +86,8 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> ReverseNeighborSlotBuffer;
         std::unique_ptr<TGPUBuffer> SurfaceRangeBuffer;
         std::unique_ptr<TGPUBuffer> TexelChartIndexBuffer;
+        std::unique_ptr<TGPUBuffer> TexelMeshIndexBuffer;
+        std::vector<TSurfaceTexelMeshRange> TexelMeshRanges;
     };
 
     class TSurfaceProfileGPUResources final
@@ -116,7 +122,8 @@ namespace MDSS
                                      std::size_t      TexelCount,
                                      std::size_t      ChannelCount,
                                      const std::vector<float>& TransferWeights,
-                                     const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
+                                     const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                     const std::vector<float>& WorldTexelAreas = {});
 
         [[nodiscard]] const TGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetStateBBuffer() const noexcept;
@@ -126,6 +133,8 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetTransferWeightDebugAverageBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawFluxBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
+        void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void UpdateTransferWeights(const std::vector<float>& TransferWeights,
                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
@@ -144,6 +153,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> TransferWeightDebugAverageBuffer;
         std::unique_ptr<TGPUBuffer> RawOutgoingBuffer;
         std::unique_ptr<TGPUBuffer> RawFluxBuffer;
+        std::unique_ptr<TGPUBuffer> WorldTexelAreaBuffer;
     };
 
     class TSurfaceStateDescriptorResources final
@@ -202,6 +212,7 @@ namespace MDSS
         [[nodiscard]] TSurfaceRawFluxMemoryUsage GetRawFluxMemoryUsage() const noexcept;
         /** @brief Scene 벡터 인덱스에 해당하는 instance 디스크립터 리소스를 반환한다. */
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
+        [[nodiscard]] const TSurfaceSharedGeometryGPUResources* GetInstanceSharedGeometry(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;

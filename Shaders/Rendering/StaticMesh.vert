@@ -19,6 +19,7 @@ layout(location = 0) out vec3 FragNormal;
 layout(location = 1) out vec3 FragTangent;
 layout(location = 2) out float FragTangentSign;
 layout(location = 3) out vec2 FragUV;
+layout(location = 4) out vec3 FragWorldPosition;
 
 void main()
 {
@@ -28,5 +29,6 @@ void main()
     FragTangentSign = InTangent.w;
     FragUV = InUV;
 
+    FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
     gl_Position = Push.ViewProjection * Push.Model * vec4(InPosition, 1.0);
 }

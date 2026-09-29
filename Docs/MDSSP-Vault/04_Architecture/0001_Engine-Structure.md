@@ -131,7 +131,7 @@ flowchart LR
 2. Renderer가 현재 Scene의 참조 Profile로 Registry를 구성하고, GPU resource manager가 Scene 공유 Profile table과 Runtime별 Geometry를 만든다. instance별 State GPU buffer는 0으로 초기화된다. Scene 교체 성공 시 State 선택·튜닝 값을 초기화하며, 자원 준비 실패 시 이전 Registry와 GPU 자원으로 복원한다 ([[05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]).
 3. 현재 Debug 입력 경로는 Inject mode, State, Strength를 `TDebugUI`에서 설정하고, `TInputSystem`이 Space 입력 edge에 중앙 카메라 Raycast를 수행해 접촉 payload를 만든다. 게임용 Physics adapter는 아직 연결되지 않았다. 접촉 입력 API 계약은 [[04_Architecture/0005_Surface-Input|Surface Contact Input]]을 따른다.
 4. `TRenderer::SubmitContact`가 입력을 `TSurfaceStateSystem`에 전달한다. Surface system은 접촉 범위의 texel별 `InputDelta`를 CPU에서 누적하고, 새 입력이 있을 때 graphics queue idle 후 instance GPU buffer에 업로드한다.
-5. Renderer는 매 프레임 2-pass compute Solver를 기록한다. Solver가 `InputDelta`, State, Saturation 기반 이웃 전달, Decay를 적용하고 State A/B 역할을 교환한다. 선택한 State와 Surface Mapping 진단 모드는 렌더 패스에서 GPU State/Geometry를 읽는다.
+5. Renderer는 실제 경과 시간×배속을 누적하고 2-pass compute Solver를 필요한 만큼 기록한다. 기본 Fixed timestep ON·Auto substepping OFF는 1/60초씩 계산하며, Auto ON에서만 Transport 조건에 따라 세분화한다. frame당 최대 8회이고 미처리 시간과 미완료 고정 구간은 이월한다. 반복마다 면적 환산 Capacity, 포화도 차이와 Geometry mobility, Decay를 적용하고 State A/B를 교환한다. `InputDelta`는 첫 실행 step에서 한 번 소비한다. 선택한 State와 Surface Mapping 진단 모드는 렌더 패스에서 GPU State/Geometry를 읽는다.
 6. Accumulation에 따른 동적 형상 갱신과 State 기반 최종 Material 표현은 설계 범위에 남아 있다. [[04_Architecture/0004_Surface-Geometry|형상과 적층]], [[04_Architecture/0009_Rendering|렌더링]]
 
 전체 State A/B에 기준량 초과분까지 보존하며, Capacity는 포화 기준량이고 Transport는 상한 없는 `State / Capacity`를 사용한다 ([[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]).

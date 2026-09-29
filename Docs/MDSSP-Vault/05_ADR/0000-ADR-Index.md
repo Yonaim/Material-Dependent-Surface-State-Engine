@@ -58,6 +58,9 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | --- | --- | --- |
 | [[0028-Accumulation-Height-and-Normal-Map|ADR 0028 — Rendering]] | Accumulation Height와 Normal Map 렌더링 | Normal Map에서 복원한 Virtual Meso Geometry와 동적 `AccumulationHeight`를 한 번씩만 최종 표면 방향에 반영한다. |
 
+| [[0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]] | 적층 디버그 뷰와 Texel Inspector | 두 적층 디버그 뷰와 선택 texel의 완료 GPU snapshot으로 상태량·높이·형상 표시를 검사한다. |
+| [[0036-Texel-Geometry-Preview|ADR 0036]] | Texel 연결면 기반 형상 미리보기 | Compute의 texel별 위치·법선을 같은 UV chart의 연결 삼각형으로 표시한다. |
+
 ### Simulation
 
 | 문서 링크 | 안건 | 한 줄 요약 |
@@ -77,3 +80,8 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0024-RawFlux-Cache-Comparison|ADR 0024]] | RawFlux 캐시 ON/OFF 비교 | 방향별 RawFlux 캐시의 ON/OFF 성능과 메모리 비용을 비교하는 기준을 정한다. |
 | [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]] | 비활성 source의 RawFlux 쓰기 생략 | 가용량이 없는 비활성 source는 RawFlux 슬롯을 갱신하지 않는다. |
 | [[0029-Normalized-Transport-Factors|ADR 0029]] | 정규화된 Transport Factor와 Solver 기준 속도 | Profile은 `[0,1]` 계수를 저장하고 Solver가 기준 속도 `1.0`, `100.0`을 곱한다. |
+| [[0030-Texel-Area-and-State-Amounts|ADR 0030]] | 텍셀 면적과 State 총량 | 총량을 저장하고 Capacity, 입력, 감쇠를 월드 texel 면적으로 환산한다. |
+| [[0031-Geometry-Transport-Mobility|ADR 0031]] | 출발 포화도에 비례하는 Geometry 전달 | Geometry에 상한 없는 출발 State/Capacity를 곱하고 SaturationDrive를 유지한다. |
+| [[0032-Accumulated-Simulation-Timestep|ADR 0032]] | 실제 경과 시간을 누적하는 Solver 반복 | 안전 간격으로 반복하고 처리하지 못한 시간은 이월한다. |
+| [[0033-Geometry-Rate-Recalibration|ADR 0033]] | Geometry 전달 기준값 재보정 | 기준 Rate를 6000으로 높이고 C++·GLSL과 안전 시간 간격 계산이 공유한다. |
+| [[0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]] | Fixed timestep과 Auto substepping 분리 | 기본 Fixed ON은 1/60초 구간을 사용하고 기본 OFF인 Auto에서만 Transport 조건에 따라 세분화한다. |

@@ -27,9 +27,9 @@ namespace MDSS
     {
     public:
         // Bump whenever mapping, sampling, integration or derivative rules change.
-        static constexpr std::uint32_t PreprocessVersion = 1;
-        // Version 3 replaces the retired v1/v2 .Surface layouts; no legacy migration.
-        static constexpr std::uint32_t FormatVersion = 3;
+        static constexpr std::uint32_t PreprocessVersion = 2;
+        // Version 4 includes local texel area vectors; older caches are rebuilt.
+        static constexpr std::uint32_t FormatVersion = 4;
 
         /** @brief Fingerprint parsed mesh inputs, Normal Map bytes and ordered Profile assignments.
          * SRProfile response parameters and Registry channels are deliberately excluded.

@@ -123,23 +123,61 @@ namespace
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
         TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
         TRenderer Renderer(Context, Window, Assets, Scene);
+        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == 0 &&
+              Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId, "Wet Scene demo bindings must resolve optional names.");
         {
             TDebugUI UI(Context, Window, Renderer, Assets);
+            Check(UI.IsFixedSimulationTimestep() && !UI.IsAutoSubsteppingEnabled(),
+                  "the actual UI must default to Fixed ON and Auto substepping OFF");
             // Keep the hidden test window from reading or overwriting the editor docking layout.
             ImGui::GetIO().IniFilename = nullptr;
             Renderer.SetTexelGridBlockSize(16);
             Renderer.SetTexelAreaReference(1.0F / (128.0F * 128.0F));
-            for (auto Mode : {TRenderViewMode::SurfaceTexelGrid,
+            for (auto Mode : {TRenderViewMode::Lit, TRenderViewMode::SurfaceTexelGrid,
                               TRenderViewMode::SurfaceTexelArea,
                               TRenderViewMode::SolverTransferWeight,
-                              TRenderViewMode::MesoOffset})
+                              TRenderViewMode::MesoHeight,
+                              TRenderViewMode::MesoOffset,
+                              TRenderViewMode::SurfaceAccumulation,
+                              TRenderViewMode::SurfaceFinalGeometry})
             {
                 Renderer.SetRenderViewMode(Mode);
                 Window.PollEvents();
                 UI.BeginFrame(Scene);
                 Renderer.RenderFrame(Scene, UI, 0.0F);
             }
+            Window.PollEvents();
+            UI.BeginFrame(Scene);
+            Renderer.RenderFrame(Scene, UI, 1.0F / 15.0F);
+            Check(Renderer.GetLastSimulationStepCount() == 4 &&
+                  std::abs(Renderer.GetSimulatedSeconds() - 1.0 / 15.0) < 1e-6,
+                  "the Renderer must run four fixed steps for a 15 FPS frame with the default policy");
+            Check(Renderer.InspectTexel(Scene, 0, 0, {0.2F, 0.2F}),
+                  "Macro mesh hit must resolve an inspectable texel.");
+            const auto SelectedTexel = Renderer.GetInspectedTexel()->Texel;
+            for (int Frame = 0; Frame < 4; ++Frame)
+            {
+                Window.PollEvents();
+                UI.BeginFrame(Scene);
+                Renderer.RenderFrame(Scene, UI, 0.0F);
+            }
+            Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Selection.Texel == SelectedTexel,
+                  "Renderer must publish a completed asynchronous GPU snapshot.");
+            auto DisplaySettings = Renderer.GetSurfaceDebugDisplaySettings();
+            DisplaySettings.HeightReference = 0.02F;
+            Renderer.SetSurfaceDebugDisplaySettings(DisplaySettings);
+            Check(!Renderer.GetTexelSnapshot(), "Changing height reference must invalidate prior samples.");
+            for (int Frame = 0; Frame < 4; ++Frame)
+            {
+                Window.PollEvents();
+                UI.BeginFrame(Scene);
+                Renderer.RenderFrame(Scene, UI, 0.0F);
+            }
+            Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Values[1].w == 0.02F,
+                  "New snapshots must carry the current height reference.");
             Renderer.SetSimulationResolution(Scene, 256);
+            Check(!Renderer.GetInspectedTexel() && !Renderer.GetTexelSnapshot(),
+                  "Resolution replacement must clear Inspector selection and pending samples.");
             Check(Renderer.GetTexelGridBlockSize() == 16 &&
                       Renderer.GetTexelAreaReference() == 1.0F / (128.0F * 128.0F),
                   "resolution change must preserve debug grid size and area color reference");
@@ -166,9 +204,38 @@ namespace
         SwitchScene("Mud");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
               Assets.GetSurfaceStateRegistry().GetStateName(0) == "mud", "Scene switch must replace the Registry");
+        Check(Renderer.GetDemoSurfaceStateBindings().Mud == 0 &&
+              Renderer.GetDemoSurfaceStateBindings().Wetness == InvalidStateId, "Mud Scene must discard the former Wetness ID.");
+        {
+            TDebugUI UI(Context, Window, Renderer, Assets);
+            ImGui::GetIO().IniFilename = nullptr;
+            Renderer.SetRenderViewMode(TRenderViewMode::Lit);
+            const auto MudState = Assets.GetSurfaceStateRegistry().GetStateId("mud");
+            TSurfaceContactInput Contact;
+            Contact.TargetInstance = 0;
+            Contact.State = MudState;
+            Contact.Radius = 100;
+            Contact.Strength = 10;
+            Contact.Falloff = 0;
+            Renderer.SubmitContact(Contact);
+            for (int Frame = 0; Frame < 3; ++Frame)
+            {
+                auto Effects = Renderer.GetDemoSurfaceEffectSettings();
+                Effects.bMudDisplacement = Frame != 1;
+                Effects.bEnabled = Frame != 2;
+                Renderer.SetDemoSurfaceEffectSettings(Effects);
+                Window.PollEvents();
+                UI.BeginFrame(Scene);
+                Renderer.RenderFrame(Scene, UI, 1.0F/60.0F);
+            }
+            Renderer.SetDemoSurfaceEffectSettings({});
+        }
+
         SwitchScene("Mixed");
         const auto& Registry = Assets.GetSurfaceStateRegistry();
         const TStateId WetState = Registry.GetStateId("wetness");
+        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == WetState &&
+              Renderer.GetDemoSurfaceStateBindings().Mud == Registry.GetStateId("mud"), "Scene reload must resolve changed demo IDs.");
         Check(Registry.GetStateCount() == 2, "mixed Scene must use exactly its two States");
         const auto& GPU = Renderer.GetSurfaceGPUResources();
         Check(GPU.GetSceneProfileCount() == 2 && GPU.GetSharedSurfaceDataCount() == 3,
@@ -202,6 +269,7 @@ namespace
                 Contact.State = WetState;
                 Contact.Radius = 100.0F;
                 Contact.Strength = 1.0F;
+                Contact.Falloff = 0.0F;
                 System.SubmitContact(Contact);
             }
             const VkCommandBuffer Command = Context.GetCommands().BeginSingleTime();
@@ -215,11 +283,48 @@ namespace
                 const float Sum = std::accumulate(Values.begin(), Values.end(), 0.0F);
                 Check(Index == 2 ? Sum == 0.0F : Sum > 0.0F,
                       "local Profile order remapping must inject Wetness into both Wet Meshes and skip the Mud Mesh");
+                if (Index < 2)
+                {
+                    const auto& MeshInstance = Scene.GetStaticMeshInstances()[Index];
+                    const auto& Geometry = *Assets.GetSurfaceData(MeshInstance.GetSurfaceData()).GetSharedGeometry();
+                    const auto Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, MeshInstance.GetTransform().GetMatrix());
+                    for (std::size_t Texel = 0; Texel < Areas.size(); ++Texel)
+                    {
+                        const float Expected = 0.75F * Areas[Texel] / SurfaceStateReferenceArea;
+                        Check(std::abs(Values[Texel * Registry.GetStateCount() + WetState] - Expected) < 1e-5F,
+                              "contact input must scale per texel world area");
+                    }
+                }
             }
         }
         Renderer.SetSimulationResolution(Scene, 256);
         Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) - 1.25F) < 1e-6F,
               "resolution change must preserve current Scene tuning");
+
+        {
+            // A vertical unit triangle must reduce dt with the new rate, including runtime overrides.
+            auto& Transform = Scene.GetStaticMeshInstances()[0].GetTransform();
+            const auto PreviousRotation = Transform.RotationDegrees;
+            Transform.RotationDegrees = {90, 0, 0};
+            {
+                TSurfaceStateSystem System(Context, Assets, Scene);
+                auto Flow = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
+                Flow.GeometryTransferFactor = 0.5F;
+                System.SetDebugProfileParameters(WetHandle, WetState, Flow);
+                const float HalfFactorStep = System.GetMaximumStableDeltaTime();
+                Check(HalfFactorStep > 0.012F && HalfFactorStep < 0.016F,
+                      "calibrated Geometry must lower the transport step bound on a vertical Medium surface");
+                Flow.GeometryTransferFactor = 1.0F;
+                System.SetDebugProfileParameters(WetHandle, WetState, Flow);
+                const float FullFactorStep = System.GetMaximumStableDeltaTime();
+                Check(std::abs(FullFactorStep * 2 - HalfFactorStep) < 1e-6F,
+                      "doubling Geometry factor must halve its safe step bound");
+                System.SetDebugGeometryDriveEnabled(false);
+                Check(std::abs(System.GetMaximumStableDeltaTime() - 1.0F / 60) < 1e-7F,
+                      "disabling Geometry must remove its calibrated step restriction");
+            }
+            Transform.RotationDegrees = PreviousRotation;
+        }
 
         // Force a resource-size failure after installing a valid new Registry, before any State allocation.
         VkPhysicalDeviceProperties Limits{};
@@ -247,6 +352,8 @@ namespace
         SwitchScene("Empty");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 0 &&
               Renderer.GetSurfaceGPUResources().GetManagedInstanceCount() == 0, "empty Scene must have no State channels or resources");
+        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == InvalidStateId &&
+              Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId, "Empty Registry must resolve both demo States as absent.");
         SwitchScene("Wet");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
               Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness", "switching back must exclude cached failed Scene States");
