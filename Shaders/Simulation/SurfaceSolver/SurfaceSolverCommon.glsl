@@ -122,9 +122,10 @@ bool rawFluxCacheEnabled()
 
 const float GeometryEpsilon = 1.0e-6;
 // Profile은 [0, 1] 무차원 계수를 저장하며 실제 속도는 여기서 계산한다.
-// 초기 기준값은 기존 DemoWetness의 전달 속도를 유지한다 (ADR 0029).
-const float BaseSaturationTransferRate = 1.0;  // State / second
-const float BaseGeometryTransferRate = 100.0; // State / (world-length * second)
+// Share the calibration with the CPU transport step bound (ADR 0033).
+#include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
+const float BaseSaturationTransferRate = MDSS_BASE_SATURATION_TRANSFER_RATE; // State / second
+const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // State / (world-length * second)
 
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
 {

@@ -164,9 +164,11 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${ShaderOutputDirectory}"
         COMMAND "${Vulkan_GLSLC_EXECUTABLE}"
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/Source"
                 "${ShaderSource}"
                 -o "${ShaderBinary}"
         DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
+                "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceStateSystem/Types/SurfaceSolverRates.h"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
     )

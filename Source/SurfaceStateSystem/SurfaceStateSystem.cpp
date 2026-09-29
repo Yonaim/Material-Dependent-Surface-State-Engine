@@ -14,6 +14,7 @@
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
 #include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
 #include "SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.h"
+#include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
 #include "VulkanContext/VulkanContext.h"
 
 #include <algorithm>
@@ -466,8 +467,8 @@ namespace MDSS
                     const auto Override = RuntimeProfileOverrides.find({Profiles[Profile], State});
                     const auto& P = Override == RuntimeProfileOverrides.end() ? Original : Override->second;
                     // SaturationDrive <= source saturation; Geometry uses the same unclamped mobility.
-                    const double RateBound = (SatEnabled ? 1.0F * P.SaturationTransferFactor * WeightSum : 0.0) +
-                        (GeoEnabled ? 100.0F * P.GeometryTransferFactor * HeightWeightSum : 0.0);
+                    const double RateBound = (SatEnabled ? BaseSaturationTransferRate * P.SaturationTransferFactor * WeightSum : 0.0) +
+                        (GeoEnabled ? BaseGeometryTransferRate * P.GeometryTransferFactor * HeightWeightSum : 0.0);
                     if (RateBound > 0.0)
                         Limit = std::min(Limit, 0.9 * P.StateCapacity * AreaScale / RateBound);
                 }

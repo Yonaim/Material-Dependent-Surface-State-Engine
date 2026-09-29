@@ -234,6 +234,31 @@ namespace
         Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) - 1.25F) < 1e-6F,
               "resolution change must preserve current Scene tuning");
 
+        {
+            // A vertical unit triangle must reduce dt with the new rate, including runtime overrides.
+            auto& Transform = Scene.GetStaticMeshInstances()[0].GetTransform();
+            const auto PreviousRotation = Transform.RotationDegrees;
+            Transform.RotationDegrees = {90, 0, 0};
+            {
+                TSurfaceStateSystem System(Context, Assets, Scene);
+                auto Flow = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
+                Flow.GeometryTransferFactor = 0.5F;
+                System.SetDebugProfileParameters(WetHandle, WetState, Flow);
+                const float HalfFactorStep = System.GetMaximumStableDeltaTime();
+                Check(HalfFactorStep > 0.012F && HalfFactorStep < 0.016F,
+                      "calibrated Geometry must lower the transport step bound on a vertical Medium surface");
+                Flow.GeometryTransferFactor = 1.0F;
+                System.SetDebugProfileParameters(WetHandle, WetState, Flow);
+                const float FullFactorStep = System.GetMaximumStableDeltaTime();
+                Check(std::abs(FullFactorStep * 2 - HalfFactorStep) < 1e-6F,
+                      "doubling Geometry factor must halve its safe step bound");
+                System.SetDebugGeometryDriveEnabled(false);
+                Check(std::abs(System.GetMaximumStableDeltaTime() - 1.0F / 60) < 1e-7F,
+                      "disabling Geometry must remove its calibrated step restriction");
+            }
+            Transform.RotationDegrees = PreviousRotation;
+        }
+
         // Force a resource-size failure after installing a valid new Registry, before any State allocation.
         VkPhysicalDeviceProperties Limits{};
         vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &Limits);

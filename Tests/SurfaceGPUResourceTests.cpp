@@ -6,6 +6,7 @@
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
 #include "SurfaceStateSystem/State/SurfaceStateSolver.h"
 #include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
+#include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
 
 #include <algorithm>
 #include <array>
@@ -633,7 +634,7 @@ namespace
     {
         using namespace MDSS;
         TSurfaceStateParameters Parameters{};
-        Parameters.GeometryTransferFactor = 1.0F / 100.0F;
+        Parameters.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         // Nonzero Saturation factor verifies that its debug flag is independent of Geometry mobility.
         Parameters.SaturationTransferFactor = 1.0F;
         TSurfaceResponseProfileData Profile;
@@ -695,7 +696,7 @@ namespace
         Check(std::abs(Decayed[0] - 1.8F) < 1e-5F && std::abs(Decayed[1] - 3.6F) < 1e-5F,
               "Decay must scale with area to retain equal density loss");
         Parameters.DecayRate = 0;
-        Parameters.GeometryTransferFactor = 1.0F / 100.0F;
+        Parameters.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         Profiles.UpdateParameters(0, 0, Parameters);
         const std::array<float, 2> Empty{};
         const std::array<float, 2> Input{0.3F, 0};
@@ -729,6 +730,73 @@ namespace
         Check(Collapsed == std::array<float, 2>{3,7}, "zero area must freeze transport while retaining existing amounts");
     }
 
+    void TestCalibratedGeometrySpeed(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags)
+    {
+        using namespace MDSS;
+        TSurfaceResponseProfileData Profile;
+        TSurfaceStateParameters Parameters{};
+        Parameters.GeometryTransferFactor = 0.5F;
+        Profile.States.emplace("flow", Parameters);
+        const std::vector<TSurfaceResponseProfileData> Table{Profile};
+        const TSurfaceStateRegistry Registry(Table);
+        constexpr std::size_t Width = 5, Count = Width * Width, Source = Count / 2;
+        constexpr float Dt = 0.001F;
+        for (float Resolution : {128.0F, 256.0F, 512.0F})
+        {
+            const float H = 1.0F / Resolution;
+            TSharedSurfaceGeometryData Geometry({{0, {Width, Width}}});
+            for (int Y = 0; Y < int(Width); ++Y)
+                for (int X = 0; X < int(Width); ++X)
+                {
+                    auto& Texel = Geometry.GetTexels()[Y * Width + X];
+                    Texel.Surface = 0;
+                    Texel.Triangle = 0;
+                    Texel.Position = {0, (X - 2) * H, (2 - Y) * H};
+                    Texel.Normal = {1, 0, 0};
+                    Texel.AreaVector = {H * H, 0, 0};
+                    std::size_t Slot = 0;
+                    for (int DY = -1; DY <= 1; ++DY)
+                        for (int DX = -1; DX <= 1; ++DX)
+                        {
+                            if (DX == 0 && DY == 0) continue;
+                            if (X + DX >= 0 && X + DX < int(Width) && Y + DY >= 0 && Y + DY < int(Width))
+                                Texel.NeighborIndices[Slot] = static_cast<TLocalTexelIndex>((Y + DY) * Width + X + DX);
+                            ++Slot;
+                        }
+                }
+            Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(Count, 0));
+            TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+            TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+            TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Count, 1,
+                BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)), {},
+                BuildSurfaceGPUWorldTexelAreas(Geometry, glm::mat4(1)));
+            TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+            TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+            std::array<float, Count> Initial{}, Result{};
+            const double Mass = 2.0 * H * H / SurfaceStateReferenceArea; // Saturation=2, deliberately above 1.
+            Initial[Source] = static_cast<float>(Mass);
+            Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
+            Vulkan.Execute([&](VkCommandBuffer Commands) {
+                Solver.RecordStep(Commands, Descriptors, true, Count, 1, Dt, glm::mat4(1),
+                                  glm::vec3(0, 0, -1), CacheFlags);
+            });
+            Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+            double Total = 0, DownwardMoment = 0;
+            for (std::size_t I = 0; I < Count; ++I)
+            {
+                Check(std::isfinite(Result[I]) && Result[I] >= 0, "calibrated flow must remain finite and nonnegative");
+                Total += Result[I];
+                DownwardMoment -= Result[I] * Geometry.GetTexels()[I].Position.z;
+            }
+            const double Speed = DownwardMoment / Mass / Dt;
+            Check(std::abs(Speed - 0.101033333) < 1e-5,
+                  "factor 0.5 must produce about 0.101 world units/s at 128/256/512 with the calibrated rate");
+            Check(std::abs(Total - Mass) < Mass * 1e-6, "calibrated flow must conserve total amount");
+            std::cout << "Calibrated Geometry R=" << Resolution << ", cache=" << (CacheFlags ? "OFF" : "ON")
+                      << ": " << Speed << " world units/s\n";
+        }
+    }
+
     void TestGeometryDrivenSolver(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
     {
         using namespace MDSS;
@@ -737,7 +805,7 @@ namespace
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 0.0F;
-        Parameters.GeometryTransferFactor = 8.0F / 100.0F;
+        Parameters.GeometryTransferFactor = 8.0F / BaseGeometryTransferRate;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -843,7 +911,7 @@ namespace
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
-        Parameters.GeometryTransferFactor = 1.0F / 100.0F;
+        Parameters.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         Profile.States.emplace("deposit", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -997,8 +1065,8 @@ namespace
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Static{}, Flow{}, FastFlow{};
-        Flow.GeometryTransferFactor = 1.0F / 100.0F;
-        FastFlow.GeometryTransferFactor = 2.0F / 100.0F;
+        Flow.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
+        FastFlow.GeometryTransferFactor = 2.0F / BaseGeometryTransferRate;
         FastFlow.StateCapacity = 2.0F;
         Profile.States.emplace("a_static", Static);
         Profile.States.emplace("b_flow", Flow);
@@ -1202,6 +1270,8 @@ int main()
         TestCachedDirectionalFlux(Vulkan);
         TestAreaAndMobility(Vulkan, 0U);
         TestAreaAndMobility(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
+        TestCalibratedGeometrySpeed(Vulkan, 0U);
+        TestCalibratedGeometrySpeed(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
         TestGeometryDrivenSolver(Vulkan);
         TestGeometryDrivenSolver(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
         TestMesoGeometryDrive(Vulkan);
