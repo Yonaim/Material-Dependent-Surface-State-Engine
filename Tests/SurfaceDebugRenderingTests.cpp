@@ -4,6 +4,7 @@
 #include "AssetManager/Assets/MeshSourceData.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/Renderer.h"
+#include "SurfaceStateSystem/Debug/TexelInspector.h"
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
 #include "VulkanContext/GPU/GPUImage.h"
 #include "VulkanContext/GPU/GPUImageView.h"
@@ -200,6 +201,7 @@ namespace MDSS::Tests
         Config.PushConstantRanges = {{VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TPush)}};
         TGraphicsPipeline Pipeline(Device, Handles.Pass, Config);
 
+        TUniform DebugControls;
         auto Render = [&](TRenderViewMode Mode,
                           std::uint32_t   Resolution,
                           float           Parameter,
@@ -217,7 +219,7 @@ namespace MDSS::Tests
                 Data[Index].Tangent = {1, 0, 0, 1};
             }
             Vertices.Upload(Data.data(), sizeof(Data));
-            TUniform Uniform;
+            TUniform Uniform = DebugControls;
             Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
             Uniform.DebugViewParameter = Parameter;
             UniformBuffer.Upload(&Uniform, sizeof(Uniform));
@@ -302,5 +304,156 @@ namespace MDSS::Tests
                 "Changing 8 to 16 must change the coarse boundary without moving the fine grid.");
         Require(Near(Pixel(Render(GridView, 512, 8)), {0.215F, 0.245F, 0.275F}),
                 "Subpixel grid patterns must fade to a neutral fill.");
+
+        // Diagnose the actual GPU values, not a CPU copy of the height formula.
+        const std::array<std::uint32_t, 4> Valid{0, 0, 0, 0};
+        Shared.GetTexelSurfaceIndexBuffer().Upload(Valid.data(), sizeof(Valid));
+        Shared.GetTexelProfileIndexBuffer().Upload(Valid.data(), sizeof(Valid));
+        std::array<TSurfaceGPUGeometryScalar, 4> Scalars{};
+        for (auto& Scalar : Scalars)
+            Scalar.MesoVirtualHeight = -0.02F;
+        Shared.GetGeometryScalarBuffer().Upload(Scalars.data(), sizeof(Scalars));
+        std::array<TSurfaceGPUVec4, 4>            Normals{}, Positions{};
+        std::array<TSurfaceGPUNeighborIndices, 4> Neighbors{};
+        for (std::uint32_t Index = 0; Index < 4; ++Index)
+        {
+            Normals[Index] = {0, 0, 1, 0};
+            Positions[Index] = {float(Index % 2), float(Index / 2), 0, 0};
+            Neighbors[Index].Indices.fill(UINT32_MAX);
+            for (std::uint32_t Other = 0, Slot = 0; Other < 4; ++Other)
+                if (Other != Index)
+                    Neighbors[Index].Indices[Slot++] = Other;
+        }
+        Shared.GetNormalBuffer().Upload(Normals.data(), sizeof(Normals));
+        Shared.GetMesoNormalBuffer().Upload(Normals.data(), sizeof(Normals));
+        Shared.GetPositionBuffer().Upload(Positions.data(), sizeof(Positions));
+        Shared.GetNeighborIndexBuffer().Upload(Neighbors.data(), sizeof(Neighbors));
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, 2 * SurfaceStateReferenceArea));
+        auto Parameters = TSurfaceStateParameters{};
+        Parameters.StateCapacity = 2;
+        Parameters.AccumulationFactor = 0.15F;
+        Parameters.CavityFillFactor = 0.8F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        std::array<float, 4> State{10, 10, 10, 10};
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        DebugControls.DebugFlags.x = 0;
+        const auto StateView = TRenderViewMode::SurfaceStateHeatmap;
+        const auto Saturated = Render(StateView, 2, 0);
+        State.fill(20);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(Near(Pixel(Saturated), Pixel(Render(StateView, 2, 0))),
+                "Saturation must preserve the existing 100% color cap.");
+        DebugControls.DebugFlags.x = 1;
+        DebugControls.DebugOptions.x = 40;
+        const auto Raw20 = Render(StateView, 2, 0);
+        State.fill(10);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(glm::length(Pixel(Raw20) - Pixel(Render(StateView, 2, 0))) > 0.1F,
+                "Raw State must distinguish over-capacity amounts.");
+        DebugControls.DebugOptions.x = 5;
+        Require(Near(Pixel(Render(StateView, 2, 0)), {1, 0.25F, 0.05F}),
+                "Raw State must mark values exceeding the fixed range.");
+        DebugControls.DebugOptions.y = 0.02F;
+        DebugControls.DebugFlags.y = 0;
+        const auto TotalHeight = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        DebugControls.DebugFlags.y = 1;
+        const auto CavityHeight = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        DebugControls.DebugFlags.y = 2;
+        const auto FollowingHeight = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        Require(glm::length(Pixel(TotalHeight) - Pixel(FollowingHeight)) > 0.1F &&
+                    glm::length(Pixel(CavityHeight) - Pixel(FollowingHeight)) > 0.1F,
+                "Accumulation components must produce distinct fragment output.");
+        DebugControls.DebugFlags.y = 3;
+        DebugControls.DebugOptions.y = 100;
+        const auto FillView = Render(TRenderViewMode::SurfaceAccumulation, 2, 0);
+        DebugControls.DebugOptions.y = 0.001F;
+        Require(Near(Pixel(FillView), Pixel(Render(TRenderViewMode::SurfaceAccumulation, 2, 0))),
+                "Cavity Fill must keep a fixed 0-1 range independent of height range.");
+
+        TTexelInspector              Inspector(Context.GetPhysicalDevice(), Device, SurfaceDescriptors.GetLayout(), 2);
+        const TSurfaceTexelSelection Selection{0, 0, 0, 0, {0, 0}, "test"};
+        const auto                   Sample =
+            [&](bool bAB = true, std::uint32_t Channel = 0, float Reference = 0.01F, std::uint64_t Step = 1)
+        {
+            auto Command = Context.GetCommands().BeginSingleTime();
+            Inspector.Record(Command, 0, SurfaceDescriptors, Selection, Channel, 1, Reference, bAB, Step);
+            Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+            Inspector.CompleteFrame(0);
+            Require(Inspector.GetSnapshot().has_value(), "Completed GPU snapshot must be available.");
+            return *Inspector.GetSnapshot();
+        };
+        const auto Close = [](float A, float B) { return std::abs(A - B) < 1e-6F; };
+        auto       S = Sample();
+        Require(S.Values[2].w == 3 && Close(S.Values[0].x, 10) && Close(S.Values[0].y, 4) &&
+                    Close(S.Values[0].z, 2.5F) && Close(S.Values[0].w, 5),
+                "Inspector must expose unclamped State and area-scaled Capacity and saturation.");
+        Require(Close(S.Values[2].y, 0.6F) && Close(S.Values[3].x, 0.012F) && Close(S.Values[3].y, 0.0015F) &&
+                    Close(S.Values[3].z, 0.0135F),
+                "GPU cavity/following allocation must use the reference-area amount.");
+        Require(Close(Sample(true, 0, 0.01F, 50).Values[3].z, S.Values[3].z),
+                "Unchanged State must not accumulate height across steps.");
+        State.fill(40);
+        Instance.GetStateBBuffer().Upload(State.data(), sizeof(State));
+        S = Sample(false);
+        Require(!S.bStateAB && Close(S.Values[2].y, 1) && Close(S.Values[2].z, 1.4F) && Close(S.Values[3].z, 0.04F),
+                "Inspector must read buffer B and preserve cavity excess in Following Height.");
+        Require(Close(Sample(false, 0, 0.02F).Values[3].z, 0.06F),
+                "Height reference must affect only Surface Following height.");
+        Require(Sample(true, 1).Values[2].w == 2, "Unsupported channel must be diagnosed without out-of-bounds reads.");
+        // A changed selection/reference must discard already-submitted results.
+        auto Command = Context.GetCommands().BeginSingleTime();
+        Inspector.Record(Command, 1, SurfaceDescriptors, Selection, 0, 1, 0.01F, true, 60);
+        Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+        Inspector.Invalidate();
+        Inspector.CompleteFrame(1);
+        Require(!Inspector.GetSnapshot(), "Invalidated pending snapshots must never repopulate the Inspector.");
+        Parameters.AccumulationFactor = 0;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        Require(Sample().Values[3].z == 0, "Zero accumulation factor must produce zero height despite positive State.");
+        Parameters.AccumulationFactor = 0.15F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        // Same physical reference-area amount at a quarter of the original texel area.
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, 0.5F * SurfaceStateReferenceArea));
+        State.fill(2.5F);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(Close(Sample().Values[3].z, 0.0135F),
+                "Changing texel area must not change thickness at equal reference-area amount.");
+        State = {2.5F, 20.0F, 2.5F, 20.0F};
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        Require(Sample().Values[5].x < -0.02F, "Final normal must respond to the selected State height gradient.");
+        std::array<float, 4> AfterInspection{};
+        Instance.GetStateABuffer().Download(AfterInspection.data(), sizeof(AfterInspection));
+        Require(AfterInspection == State, "Debug views and Inspector must leave State untouched.");
+        const std::uint32_t Unsupported = 0, Supported = 1;
+        Profiles.GetSupportedBuffer().Upload(&Unsupported, sizeof(Unsupported));
+        Require(Sample().Values[2].w == 2, "Profile-defined unsupported State must be diagnosed.");
+        Profiles.GetSupportedBuffer().Upload(&Supported, sizeof(Supported));
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, 0));
+        Require(Sample().Values[2].w == 4, "Degenerate world area must be diagnosed.");
+        Instance.UpdateWorldTexelAreas(std::vector<float>(4, SurfaceStateReferenceArea));
+        // Final displacement must move actual geometry, including the display-only scale.
+        State.fill(20);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        DebugControls.DebugOptions.w = 20;
+        TPush Side;
+        Side.ViewProjection[2][0] = 1;
+        Side.ViewProjection[3][2] = 0.5F;
+        const auto Meso = Render(TRenderViewMode::MesoOffset, 2, 0, Side);
+        const auto Final = Render(TRenderViewMode::SurfaceFinalGeometry, 2, 0, Side);
+        const auto CentroidX = [&](const auto& Pixels)
+        {
+            double Sum = 0, Count = 0;
+            for (std::size_t Y = 0; Y < Extent.height; ++Y)
+                for (std::size_t X = 0; X < Extent.width; ++X)
+                    if (Pixels[Y * Extent.width + X].a > 0.5F)
+                    {
+                        Sum += X;
+                        ++Count;
+                    }
+            Require(Count > 0, "Displacement test must render visible geometry.");
+            return Sum / Count;
+        };
+        Require(CentroidX(Final) > CentroidX(Meso) + 30,
+                "Final Geometry must displace the vertices, not just change their color.");
     }
 } // namespace MDSS::Tests

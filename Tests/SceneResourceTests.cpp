@@ -134,7 +134,9 @@ namespace
             for (auto Mode : {TRenderViewMode::SurfaceTexelGrid,
                               TRenderViewMode::SurfaceTexelArea,
                               TRenderViewMode::SolverTransferWeight,
-                              TRenderViewMode::MesoOffset})
+                              TRenderViewMode::MesoOffset,
+                              TRenderViewMode::SurfaceAccumulation,
+                              TRenderViewMode::SurfaceFinalGeometry})
             {
                 Renderer.SetRenderViewMode(Mode);
                 Window.PollEvents();
@@ -147,7 +149,32 @@ namespace
             Check(Renderer.GetLastSimulationStepCount() == 4 &&
                   std::abs(Renderer.GetSimulatedSeconds() - 1.0 / 15.0) < 1e-6,
                   "the Renderer must run four fixed steps for a 15 FPS frame with the default policy");
+            Check(Renderer.InspectTexel(Scene, 0, 0, {0.2F, 0.2F}),
+                  "Macro mesh hit must resolve an inspectable texel.");
+            const auto SelectedTexel = Renderer.GetInspectedTexel()->Texel;
+            for (int Frame = 0; Frame < 4; ++Frame)
+            {
+                Window.PollEvents();
+                UI.BeginFrame(Scene);
+                Renderer.RenderFrame(Scene, UI, 0.0F);
+            }
+            Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Selection.Texel == SelectedTexel,
+                  "Renderer must publish a completed asynchronous GPU snapshot.");
+            auto DisplaySettings = Renderer.GetSurfaceDebugDisplaySettings();
+            DisplaySettings.HeightReference = 0.02F;
+            Renderer.SetSurfaceDebugDisplaySettings(DisplaySettings);
+            Check(!Renderer.GetTexelSnapshot(), "Changing height reference must invalidate prior samples.");
+            for (int Frame = 0; Frame < 4; ++Frame)
+            {
+                Window.PollEvents();
+                UI.BeginFrame(Scene);
+                Renderer.RenderFrame(Scene, UI, 0.0F);
+            }
+            Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Values[1].w == 0.02F,
+                  "New snapshots must carry the current height reference.");
             Renderer.SetSimulationResolution(Scene, 256);
+            Check(!Renderer.GetInspectedTexel() && !Renderer.GetTexelSnapshot(),
+                  "Resolution replacement must clear Inspector selection and pending samples.");
             Check(Renderer.GetTexelGridBlockSize() == 16 &&
                       Renderer.GetTexelAreaReference() == 1.0F / (128.0F * 128.0F),
                   "resolution change must preserve debug grid size and area color reference");
