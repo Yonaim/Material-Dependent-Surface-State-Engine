@@ -24,6 +24,6 @@
 
 ## 참고
 
-- [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [[../../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]]
 - [[06_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]
 - [[TODO|TODO]]

@@ -7,7 +7,7 @@
 브랜치: `feat/solver-debug-tools`  
 선행 조건: Branch 2.3 Virtual Meso Geometry 구현을 포함한 현재 `main`
 통합 범위: 기존 Branch 3 `OutgoingFluxScale Debug View`, Branch 4 `Solver Debug Controls`, Branch 5 `Solver Debug Statistics`  
-관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[04_Architecture/0009_Rendering|Rendering]], [[04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]], [[04_Architecture/0010_UI-Interface|UI Interface]], [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[04_Architecture/0009_Rendering|Rendering]], [[04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]], [[04_Architecture/0010_UI-Interface|UI Interface]], [[../../../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 ## 목표
 

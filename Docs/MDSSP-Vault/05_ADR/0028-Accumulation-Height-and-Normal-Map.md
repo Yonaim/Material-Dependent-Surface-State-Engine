@@ -1,4 +1,4 @@
-# ADR 0021 — Accumulation Height와 Normal Map 렌더링
+# ADR 0028 — Accumulation Height와 Normal Map 렌더링
 
 > **한 줄 요약:** Normal Map에서 복원한 Virtual Meso Geometry와 동적 `AccumulationHeight`를 한 번씩만 최종 표면 방향에 반영한다.
 
@@ -41,4 +41,4 @@ Normal Map에서 복원한 Virtual Height(`MesoVirtualHeight`)와 그 height fie
 - [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map 기반 Virtual Meso Geometry 복원]]
 - [[../04_Architecture/0009_Rendering|Surface State Rendering]]
 - [[../04_Architecture/0004_Surface-Geometry|형상 정보와 적층]]
-- [[../06_Development/Notes/0004_Rendering-Implementation|Rendering 구현 검토]]
+- [[../06_Development/Notes/Rendering-Implementation|Rendering 구현 검토]]

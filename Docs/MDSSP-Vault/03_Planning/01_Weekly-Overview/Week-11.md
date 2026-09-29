@@ -26,5 +26,5 @@
 
 - [[04_Architecture/0006_Surface-State-Update|Surface State Update]]
 - [[04_Architecture/0004_Surface-Geometry|형상 정보와 적층]]
-- [[06_Development/Notes/0001_Geometry-Preprocessing|Geometry Preprocessing]]
+- [[../../06_Development/Notes/Geometry-Preprocessing|Geometry Preprocessing]]
 - [[06_Development/Experiments/0001_Normal-Map-Integration|Normal Map Integration 실험]]

@@ -4,7 +4,7 @@
 
 브랜치: `feat/solver-transfer-weights`  
 선행 조건: `feat/solver-geometry-drive` 병합  
-관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]], [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]], [[../../../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 상태: **구현 및 GPU 실행 검증 완료**
 
@@ -65,7 +65,7 @@ RawFlux(i→j)
 
 ## 설계 경계
 
-`GeometryDrive`는 이동을 일으키는 방향·구동력이고 `TransferWeight`는 그 이웃 관계를 통한 전달량을 조절한다. weight로 중력 방향이나 State 차이를 중복 계산하지 않는다. 필요한 buffer/ABI 변경이 확인되면 [[06_Development/Notes/0003_Surface-State-GPU-Resource|GPU Resource note]]를 함께 갱신한다.
+`GeometryDrive`는 이동을 일으키는 방향·구동력이고 `TransferWeight`는 그 이웃 관계를 통한 전달량을 조절한다. weight로 중력 방향이나 State 차이를 중복 계산하지 않는다. 필요한 buffer/ABI 변경이 확인되면 [[../../../06_Development/Notes/Surface-State-GPU-Resource|GPU Resource note]]를 함께 갱신한다.
 
 ## 검증
 

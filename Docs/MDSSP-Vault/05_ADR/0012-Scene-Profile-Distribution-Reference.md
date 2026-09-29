@@ -92,4 +92,4 @@ Scene별 선택권을 제공하면서 Profile Distribution 입력을 별도 파�
 - [[04_Architecture/0003_Assets-and-Profiles|Assets and Profiles]]
 - [[05_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]
 - [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
-- [[06_Development/Code-Structure/0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]]
+- [[Flow-Maps/0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]]

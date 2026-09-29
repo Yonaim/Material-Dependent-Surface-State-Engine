@@ -46,8 +46,8 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | 문서 링크 | 안건 | 한 줄 요약 |
 | --- | --- | --- |
 | [[0004-Asset-Profile-Mapping|ADR 0004]] | Surface / Material / SRProfile 연결 | 하나의 Surface는 하나의 Render Material과 하나의 SRProfile을 사용한다. |
-| [[0007-Surface-Preprocessed-Asset|ADR 0007]] | 정적 Surface 전처리 에셋 | Mesh당 단일 `.Surface` 캐시를 선택했던 이전 결정이며, 현재는 ADR 0026의 해상도별 캐시를 따른다. |
-| [[0008-Runtime-Surface-Preprocessing|ADR 0008]] | Runtime Surface 전처리 | Runtime 전처리만 유지했던 이전 결정이며, 현재는 ADR 0026의 해상도별 `.Surface` 캐시를 함께 사용한다. |
+| [[0007-Surface-Preprocessed-Asset|ADR 0007]] | 정적 Surface 전처리 에셋 | Mesh당 단일 캐시를 택했던 초기 결정이며, ADR 0008을 거쳐 ADR 0026의 해상도별 캐시로 대체됐다. |
+| [[0008-Runtime-Surface-Preprocessing|ADR 0008]] | Runtime Surface 전처리 | 실행 중 전처리만 유지했던 중간 결정이며, 현재는 ADR 0026의 해상도별 `.Surface` 캐시를 따른다. |
 | [[0009-Texel-Profile-Index-Map|ADR 0009]] | Texel별 Profile Index Map | 시뮬레이션에 참여하는 유효 texel은 자신이 사용할 SRProfile 테이블 항목의 `ProfileIndex` 하나를 가진다. |
 | [[0012-Scene-Profile-Distribution-Reference|ADR 0012]] | Scene별 Surface Profile Map 참조 | Scene에서 Surface Profile Distribution Map을 참조하고 적용하는 방식을 결정한다. |
 | [[0026-Resolution-Surface-Cache|ADR 0026]] | 해상도별 Surface 전처리 캐시 | Surface 전처리 결과를 해상도별 `.Surface` 캐시로 재사용한다. |
@@ -56,7 +56,7 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 
 | 문서 링크 | 안건 | 한 줄 요약 |
 | --- | --- | --- |
-| [[0021-Accumulation-Height-and-Normal-Map|ADR 0021 — Rendering]] | Accumulation Height와 Normal Map 렌더링 | Normal Map에서 복원한 Virtual Meso Geometry와 동적 `AccumulationHeight`를 한 번씩만 최종 표면 방향에 반영한다. |
+| [[0028-Accumulation-Height-and-Normal-Map|ADR 0028 — Rendering]] | Accumulation Height와 Normal Map 렌더링 | Normal Map에서 복원한 Virtual Meso Geometry와 동적 `AccumulationHeight`를 한 번씩만 최종 표면 방향에 반영한다. |
 
 ### Simulation
 

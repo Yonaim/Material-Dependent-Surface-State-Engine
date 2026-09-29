@@ -6,7 +6,7 @@
 
 브랜치: `feat/shared-geometry-build`  
 선행 조건: `feat/simulation-mapping` 병합  
-관련 설계: [[04_Architecture/0004_Surface-Geometry|Surface Geometry]], [[06_Development/Notes/0001_Geometry-Preprocessing|Geometry Preprocessing]]
+관련 설계: [[04_Architecture/0004_Surface-Geometry|Surface Geometry]], [[../../../06_Development/Notes/Geometry-Preprocessing|Geometry Preprocessing]]
 
 ## 목표
 

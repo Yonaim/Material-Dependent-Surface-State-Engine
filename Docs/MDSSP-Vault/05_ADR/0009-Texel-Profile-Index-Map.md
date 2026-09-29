@@ -52,5 +52,5 @@ texel당 4-byte index를 저장한다. 인접 texel에서 Profile이 반복되�
 
 - [[0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 전처리 캐시]]
 - [[04_Architecture/0003_Assets-and-Profiles|Assets and Profiles]]
-- [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 - [[05_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]

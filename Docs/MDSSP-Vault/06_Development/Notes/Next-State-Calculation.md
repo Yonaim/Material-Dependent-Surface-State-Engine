@@ -6,11 +6,11 @@
 
 Architecture 수준의 수식은 [[04_Architecture/0006_Surface-State-Update|Propagation Solver]]가 기준이다. 이 문서는 Compute Shader 계산 순서만 기록한다.
 
-## 초과량 보존 계약 — 구현 완료 · GPU 실행 검증 대기
+## 초과량 보존 계약 — 구현 완료 · 선택 GPU 회귀 통과 · 통합 검증 대기
 
 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 전달용 Saturation은 `Current / Capacity`이며 1을 넘을 수 있다. Pass 2는 `Next = max(Current + InputDelta + Incoming - Outgoing - Decay, 0)`으로 Capacity 초과량까지 같은 State A/B에 저장한다. 받은 양은 A/B 교환 후 다음 Solver step의 RawFlux에 반영한다. Pass 1의 alpha는 전체 Current에서 Decay를 뺀 source 보유량으로 제한하며 수신 측 공간 제한이나 추가 pass·buffer를 만들지 않는다.
 
-Shader의 Saturation `[0,1]` clamp와 Next Capacity 상한 clamp를 제거했다. 빌드는 통과했으며 기존 실행·테스트 기록과 대기 중인 새 계약의 GPU 검증을 구분한다. RawOutgoing 저장·재사용은 [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]를 따른다.
+Shader의 Saturation `[0,1]` clamp와 Next Capacity 상한 clamp를 제거했다. 선택 GPU 회귀 fixture는 통과했다. 기존 상한 계약의 실행·테스트 기록과 남은 5주차 통합 GPU 검증 및 timestep 비교를 구분한다. RawOutgoing 저장·재사용은 [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]를 따른다.
 
 ## Gather 방식
 
@@ -45,7 +45,7 @@ texel i
 
 1-Pass에서 이웃의 `alpha[j]`를 재계산하면 각 이웃마다 다시 주변 8개 flux를 계산해야 해서 중복 계산이 커진다. 현재 기본안은 `2-Pass + alpha 저장`이다.
 
-State A / State B / OutgoingFluxScale 리소스 타입, descriptor, barrier는 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 따른다.
+State A / State B / OutgoingFluxScale 리소스 타입, descriptor, barrier는 [[Surface-State-GPU-Resource|Surface State GPU Resource]]를 따른다.
 
 ## 구현 시 결정할 항목
 

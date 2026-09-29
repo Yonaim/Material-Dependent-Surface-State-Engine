@@ -14,7 +14,7 @@
 - 기존 Contact Input은 Registry State를 선택해 `InputDelta`로 전달한다. 새 contact API나 별도의 Wetness channel을 고정 enum으로 추가하지 않는다.
 - Wetness는 Registry 및 `.SRProfile`에 선언된 State다. 자유 표면의 `SurfaceWater` 모델은 이번 주 범위가 아니다.
 
-[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했고 기존 A/B에 초과량을 보존한다. Solver의 Saturation·Next 상한 clamp 제거는 구현했고 빌드는 통과했다. 이 계약의 GPU 회귀 검증 후 Wetness Profile 및 표시 remap을 평가한다.
+[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했고 기존 A/B에 초과량을 보존한다. Shader 변경과 선택 GPU 회귀 fixture는 통과했다. 5주차 통합 GPU 검증과 timestep 비교를 마친 뒤 Wetness Profile 및 표시 remap을 평가한다.
 
 ## Week 5에서 확정한 Geometry transport 계약
 

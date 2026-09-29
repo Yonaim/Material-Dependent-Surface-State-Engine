@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** 이 문서는 Mesh의 연속 표면을 Solver가 처리할 texel graph로 변환하는 방법을 정의한다.
 
-상태: **4주차 구현 기본안 / 자동 UV 생성과 복잡 경계 검증 필요** · 관련 문서: [[04_Architecture/0004_Surface-Geometry|형상 정보]], [[06_Development/Notes/0001_Geometry-Preprocessing|형상 정보 전처리]], [[06_Development/Notes/0003_Surface-State-GPU-Resource|GPU Resource]]
+상태: **Mapping 구현 기준 / 자동 UV 생성과 복잡 경계 검증 필요** · 관련 문서: [[04_Architecture/0004_Surface-Geometry|형상 정보]], [[Geometry-Preprocessing|형상 정보 전처리]], [[Surface-State-GPU-Resource|GPU Resource]]
 
 이 문서는 Mesh의 연속 표면을 Solver가 처리할 **texel graph**로 변환하는 방법을 정의한다. 출력은 `TSharedSurfaceGeometryData` 생성의 입력이다.
 
@@ -12,15 +12,15 @@
 |---|---|
 | Simulation UV | 렌더링 UV와 논리적으로 분리된 전용 UV를 사용한다. |
 | 4주차 범위 | 자동 unwrap은 구현하지 않는다. 조건을 만족하도록 미리 준비한 UV를 사용한다. OBJ의 기존 `vt`를 임시로 Simulation UV로 읽을 수 있다. |
-| 해상도 | 모든 Surface에 `512 × 512`를 사용한다. 한 곳의 코드 상수로 고정하며 `.Scene` override와 UI 설정은 두지 않는다. |
-| 생성 시점 | CPU에서 Scene load 때 생성하고 Runtime 메모리에 둔다. 같은 Mesh와 Profile Distribution 입력을 쓰는 instance끼리 공유하며 매 frame 재생성하지 않는다. |
+| 해상도 | `.Scene`의 해상도 설정을 따르며 `128 × 128`, `256 × 256`, `512 × 512`를 지원한다. 기본값은 `256 × 256`이다. |
+| 생성 시점 | 검증된 해상도별 `.Surface` cache에서 읽거나, cache miss에 CPU 전처리해 저장한다. 같은 Mesh·Profile Distribution·해상도의 instance끼리는 Runtime 메모리 결과를 공유한다. |
 | Mesh→Texel | UV triangle rasterization과 barycentric coordinate를 사용한다. |
 | 유효성 | Mesh 표면에 대응하는 texel만 `ValidMask = 1`이다. |
 | 이웃 | texel당 최대 8개의 `NeighborIndex`를 저장한다. Distance는 위치 차이에서 필요할 때 계산하며 저장하지 않는다. |
 | UV seam | Mesh topology로 seam 반대편 texel을 찾아 일반 이웃과 같은 표에 연결한다. Shader에는 seam 전용 분기를 두지 않는다. |
 | 무효 인덱스 | `InvalidTexelIndex = 0xFFFFFFFF`를 사용한다. |
 
-전용 UV를 실제 Asset에 별도 채널로 저장하는 최종 파일 형식은 후속 과제다. Mapping 결과는 Runtime에서 만들며 `.Surface` 전처리 캐시 파일은 사용하지 않는다.
+전용 UV를 실제 Asset에 별도 채널로 저장하는 최종 파일 형식은 후속 과제다. 현재 cache path, fingerprint, 저장 형식과 무효화 규칙은 [[05_ADR/0026-Resolution-Surface-Cache|ADR 0026]]을 따른다.
 
 ## 입력과 출력
 
@@ -29,7 +29,7 @@
 - Mesh position, normal, triangle index
 - triangle별 Surface ID
 - Simulation UV
-- 고정 해상도 `512 × 512`
+- 선택 해상도 `128 × 128`, `256 × 256`, `512 × 512` (기본 `256 × 256`)
 - 선택적으로 Normal / Height detail
 
 ### 현재 Material 단위 처리와 후속 확장
@@ -70,7 +70,7 @@ flowchart LR
   Stitch --> Result[Runtime TSurfaceMappingData]
 ```
 
-Runtime 전처리는 Mesh topology와 UV, 필요한 Normal Map 데이터, Profile Distribution 및 현재 grid 설정을 입력으로 받는다. 같은 입력 조합의 전처리 결과는 Runtime 메모리에서 공유하고, 입력이 교체되면 다시 생성한다. 디스크 cache 경로, fingerprint, version 및 stale 판정은 사용하지 않는다. 전처리 연결은 [[03_Planning/02_Weekly-Details/Week-04/0003_Branch-Shared-Geometry-Build|Branch 3 계획]]을 따른다.
+Cache hit에서는 Mapping 생성을 생략한다. Cache miss에는 Mesh topology·UV, 필요한 Normal Map 데이터, Profile Distribution과 선택 grid를 사용해 Runtime 전처리하고 결과를 해상도별 `.Surface` 캐시에 저장한다. 같은 Mesh·Map·해상도의 instance는 Runtime 결과를 공유한다. Fingerprint와 cache lifecycle은 [[05_ADR/0026-Resolution-Surface-Cache|ADR 0026]]을 따른다. 초기 연결 순서는 [[03_Planning/02_Weekly-Details/Week-04/0003_Branch-Shared-Geometry-Build|Branch 3 계획]]에서 확인한다.
 
 ## 1. Simulation UV 검증
 
@@ -87,7 +87,7 @@ Runtime 전처리는 Mesh topology와 UV, 필요한 Normal Map 데이터, Profil
 
 ## 2. Mesh → Texel Mapping
 
-각 Surface의 UV triangle을 고정된 `512 × 512` grid에 CPU로 rasterize한다.
+각 Surface의 UV triangle을 선택된 grid 해상도에 CPU로 rasterize한다. 지원 해상도와 Scene 기본값은 [[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]을 따른다.
 
 1. UV를 texel 좌표로 변환한다.
 2. triangle의 texel-space bounding box만 순회한다.

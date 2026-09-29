@@ -4,7 +4,7 @@
 
 상태: **구현 중** · 상위 계획: [[03_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]], [[03_Planning/00_Project-Overview/0001_Roadmap|Roadmap]]
 
-[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. Shader의 Saturation·Next 상한 clamp 제거는 구현했으며 빌드는 통과했다. 이전 상한 계약의 실행 결과와 대기 중인 새 계약 GPU 검증을 구분한다.
+[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. Shader 변경과 선택 GPU 회귀 fixture는 통과했다. 이전 상한 계약의 실행 결과와 남은 5주차 통합 GPU 검증·timestep 비교를 구분한다.
 
 ## 목표
 
@@ -42,5 +42,5 @@ Input, Transport, Decay를 통해 이웃 texel 사이 State가 finite·비음수
 ## 참고
 
 - [[04_Architecture/0006_Surface-State-Update|Surface State Update]]
-- [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]
+- [[../../06_Development/Notes/Next-State-Calculation|Next State 계산 메모]]
 - [[06_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]

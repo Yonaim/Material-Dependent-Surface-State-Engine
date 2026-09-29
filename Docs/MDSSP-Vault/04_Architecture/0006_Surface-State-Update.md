@@ -2,11 +2,14 @@
 
 > **한 줄 요약:** 이 문서는 외부 접촉을 State 입력으로 바꾸는 구조와 각 항의 갱신 규칙을 함께 정의한다.
 
-상태: **입력 구조·Transport Drive/Weight 분리 및 GeometryDrive 계약 확정** · 근거: [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]], [[08_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[08_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
+상태: **입력 구조·Transport Drive/Weight 분리 및 GeometryDrive 계약 확정**
+근거: [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]], [[08_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[08_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
+
+---
 
 이 문서는 외부 접촉을 State 입력으로 바꾸는 구조와 각 항의 갱신 규칙을 함께 정의한다.
 
-> **계약과 구현:** 아래 갱신식은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 확정 계약이다. Shader에서 Saturation `[0,1]` clamp 및 Next의 Capacity 상한 clamp를 제거했다. 빌드는 통과했으며 초과량 보존의 GPU 실행 검증은 대기 중이다. GeometryDrive·TransferWeight와 기존 2-Pass 자원 구조는 유지한다.
+> **계약과 구현:** 아래 갱신식은 확정된 전체 State 보존 계약을 따른다 ([[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]). Shader 변경과 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다. GeometryDrive·TransferWeight와 기존 2-Pass 자원 구조는 유지한다.
 
 ## Contact Input
 
@@ -45,6 +48,8 @@ Raycast
 ```
 
 `ContactWeight ∈ [0,1]`이며 반경 밖의 texel은 0으로 처리한다. `worldDirection`은 입력 방향 정보를 제공한다. 입사각 감쇠를 ContactWeight에 추가할지는 필수 규칙으로 정하지 않았다.
+
+#### Contact 위치에서 State 입력까지
 
 ```mermaid
 flowchart LR
@@ -92,27 +97,34 @@ Input은 **Discrete Event**, Transport와 Decay는 **Continuous Update**로 처�
 
 다음 그림은 각 항이 Next State에 합쳐지는 설계 흐름이다. Transport의 `GeometryDrive` 계산식은 아래에서 별도로 정의하며, 현재 구현 범위와의 차이는 [[0001_Engine-Structure|엔진 데이터 흐름]]에 적혀 있다.
 
+### Flux와 outgoing 제한 계산
+
 ```mermaid
 flowchart LR
-  Current["Current State · 초과량 포함"] --> Sat["State / Capacity · 상한 clamp 없음"]
-  Sat --> SatFlux["Saturation-driven flux"]
-  Geometry["Neighbor geometry\nheight / direction / weights"] --> GeoFlux["Geometry-driven flux"]
-  SatFlux --> Combine["Raw Flux × TransferWeight × Δt"]
-  GeoFlux --> Combine
-  Combine --> Out["Raw outgoing per texel"]
-  Current --> Available["Available State\nafter Decay"]
-  Out --> Alpha["Pass 1: α = min(1, Available / RawOutgoing)"]
+  Current["Current State · overcapacity allowed"] --> Ratio["State / Capacity · no upper clamp"]
+  Ratio --> Saturation["Saturation-driven flux"]
+  Geometry["Neighbor geometry"] --> GeometryFlux["Geometry-driven flux"]
+  Saturation --> Raw["Raw Flux × TransferWeight × Δt"]
+  GeometryFlux --> Raw
+  Raw --> Outgoing["RawOutgoing per texel"]
+  Current --> Available["Available State after Decay"]
+  Outgoing --> Alpha["Pass 1: α = min(1, Available / RawOutgoing)"]
   Available --> Alpha
-  Alpha --> Flux["Pass 2: clamp outgoing by α"]
-  Combine --> Flux
-  Flux --> Transport["Incoming − Outgoing"]
-  Current --> Update["Current + Event Input\n+ Transport − Decay"]
-  Input["InputDelta\none-shot event"] --> Update
+```
+
+### Next State 갱신과 입력 소비
+
+```mermaid
+flowchart LR
+  Raw["Raw Flux"] --> Clamp["Pass 2: clamp outgoing by α"]
+  Alpha["Pass 1 α"] --> Clamp
+  Clamp --> Transport["Incoming − Outgoing"]
+  Current["Current State"] --> Update["Current + Input + Transport − Decay"]
+  Input["InputDelta"] --> Update
   Transport --> Update
-  Update --> Nonnegative["max(결과, 0) · 초과량 유지"]
-  Nonnegative --> Next["Next State"]
-  Next --> Swap["A/B role swap"]
-  Input --> Clear["InputDelta clear after consume"]
+  Update --> Next["max(result, 0) · overcapacity retained"]
+  Next --> Swap["Next State / A-B role swap"]
+  Input --> Clear["Clear after consume"]
 ```
 
 ## 1. Input
@@ -219,7 +231,7 @@ $$
 
 중력 투영 방향과 이웃 방향이 맞는 source→target flux가 커지고, 반대 방향 flux는 0이 된다. `GeometryTransferRate` 단위는 `State / (world-length · second)`이며, `GeometryDrive × GeometryTransferRate × Δt`는 State 단위 flux를 만든다.
 
-이 정의는 기존 [[05_ADR/0002-Transport-Drive-and-Weight|ADR 0002]]의 역할 분리를 구체화한다. `DirectionDrive`는 source 면에 투영한 gravity와 이웃 방향을 비교하고, `NormalWeight`는 이웃 두 면 사이의 Normal 차이를 통해 경로 통과성을 조절하므로 역할이 다르다. `DistanceWeight`만 이웃의 실제 표면 간격 효과를 별도로 반영한다.
+이 정의는 기존 역할 분리를 구체화한다 ([[05_ADR/0002-Transport-Drive-and-Weight|ADR 0002]]). `DirectionDrive`는 source 면에 투영한 gravity와 이웃 방향을 비교한다. `NormalWeight`는 이웃 두 면 사이의 Normal 차이를 통해 경로 통과성을 조절한다. 두 항은 역할이 다르며, `DistanceWeight`는 이웃의 실제 표면 간격 효과를 별도로 반영한다.
 
 ### TransferWeight
 
@@ -238,7 +250,7 @@ $$
 |---|---|---|
 | `DistanceWeight` | 주변 이웃보다 먼 연결의 전달량을 낮춤 | 정규화된 world-space Surface Distance |
 | `NormalWeight` | 이웃 texel의 유효 표면 방향 차이가 클수록 전달량을 낮춤 | 복원된 MesoNormal을 우선 사용하고 sampled TransferNormal, geometric normal 순으로 fallback한 뒤 instance inverse-transpose를 적용한 world normal 내적 |
-| `CurvatureWeight` | 기본 OFF는 고정 `1.0`; ON은 Virtual Height에서 유도한 mean curvature 크기로 감쇠 | 대칭 mesh-local 간선 가중치, [[05_ADR/0019-Optional-Curvature-Transfer-Weight\|ADR 0019]] |
+| `CurvatureWeight` | 기본 OFF는 고정 `1.0`; ON은 Virtual Height에서 유도한 mean curvature 크기로 감쇠 | 대칭 mesh-local 간선 가중치 ([[05_ADR/0019-Optional-Curvature-Transfer-Weight\|ADR 0019]]) |
 | `ProfileBoundaryWeight` | 같은 Profile 사이 `1.0`, 다른 Profile 사이 고정 `0.5`로 전달량을 낮춤 | SRProfile ID 비교 |
 
 현재 `DistanceWeight`는 각 endpoint의 평균 유효 이웃 간격을 `dRef`로 삼는다. `dRef(i,j) = 0.5 × (meanDistance_i + meanDistance_j)`이고, `d(i,j)`는 두 texel의 world-space 거리다.
@@ -247,15 +259,18 @@ $$
 DistanceWeight_{i\rightarrow j} = clamp\left(\frac{dRef(i,j)}{d(i,j)}, 0, 1\right)
 $$
 
-유효 이웃 간격이나 endpoint 거리가 epsilon 이하이거나 유한하지 않으면 가중치를 0으로 둔다. 거리는 MesoVirtualHeight와 향후 AccumulationHeight를 반영한 최신 유효 Position 및 Neighbor 관계로 계산한다. 초기 구현은 즉시 계산하며, 확정된 최적화 설계는 [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]에 따라 간선별 TransferWeight와 Pass 1의 RawOutgoing·방향별 RawFlux를 저장해 재사용한다. RawFlux 캐시는 기본 ON이며 OFF 비교 경로는 같은 전달 수식을 Pass 2에서 재평가한다. 이 캐시 경로는 구현되어 있다.
+- 유효 이웃 간격이나 endpoint 거리가 epsilon 이하이거나 유한하지 않으면 가중치를 0으로 둔다.
+- 거리는 MesoVirtualHeight와 향후 AccumulationHeight를 반영한 최신 유효 Position과 Neighbor 관계에서 계산한다.
+- 초기 구현은 매번 계산했다. 현재는 간선별 TransferWeight, Pass 1의 RawOutgoing, 방향별 RawFlux를 저장해 재사용한다 ([[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]).
+- RawFlux cache는 기본 ON이다. OFF 비교 경로는 같은 전달 수식을 Pass 2에서 재평가한다.
 
 $$
 NormalWeight_{i\rightarrow j} = clamp\left(NormalWorld_i \cdot NormalWorld_j, 0, 1\right)
 $$
 
-두 normal은 최신 변형 Geometry의 normal에 instance transform의 inverse-transpose를 적용한 뒤 정규화한다. 유효하지 않은 normal은 가중치 0으로 처리한다. `ProfileBoundaryWeight`는 별도 Profile parameter가 아닌 Solver 공통 규칙이다. 거리·법선·Profile 경계 식과 곡률 보류 범위는 [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
+두 normal은 최신 변형 Geometry의 normal에 instance transform의 inverse-transpose를 적용한 뒤 정규화한다. 유효하지 않은 normal은 가중치 0으로 처리한다. `ProfileBoundaryWeight`는 별도 Profile parameter가 아닌 Solver 공통 규칙이다. 거리·법선·Profile 경계 식과 곡률 보류 범위에 따른다 ([[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]).
 
-UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 `TransferWeight`를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**한다. 생성 방식은 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 따른다.
+UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 `TransferWeight`를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**한다. 생성 방식은 [[../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]]을 따른다.
 
 ### 보유량 제한과 alpha
 
@@ -278,15 +293,27 @@ $$
 Flux_{i\rightarrow j} = \alpha_i \cdot RawFlux_{i\rightarrow j}
 $$
 
-`inactive`는 unsupported/invalid texel-channel, 감쇠 후 AvailableState=0 또는 dt=0인 source다. 현재 GPU 구현은 이 경로의 RawOutgoing·alpha를 0으로 기록하고 RawFlux 평가·쓰기를 생략한다. Pass 2는 source alpha가 0이면 캐시를 읽지 않으며 해당 source의 실제 전달량을 0으로 처리한다. 비활성 RawFlux에는 오래된 값이나 미초기화 값이 남을 수 있으므로 읽어서 alpha=0을 곱하는 방식으로 처리하지 않는다. target의 incoming·입력·Next 갱신은 계속 실행하고, 받은 값의 outgoing 전달은 다음 step부터 수행한다.
+`inactive` source는 다음 중 하나에 해당한다.
+
+- Unsupported/invalid texel-channel
+- 감쇠 후 `AvailableState = 0`
+- `dt = 0`
+
+현재 GPU 구현은 비활성 항목의 RawOutgoing·alpha를 0으로 기록하고 RawFlux 평가·쓰기를 생략한다.
+
+- Pass 2는 source alpha가 0이면 cache를 읽지 않고 실제 전달량을 0으로 처리한다.
+- 비활성 RawFlux에는 이전 값이나 미초기화 값이 남을 수 있다. 값을 읽고 alpha=0을 곱하는 방식은 사용하지 않는다.
+- Target의 incoming·입력·Next 갱신은 계속 수행한다. 받은 값의 outgoing 전달은 다음 step부터 시작한다.
 
 Pass 1에서 source의 Profile·Saturation·지원 여부는 channel당, source 형상은 geometry를 쓰는 invocation당 한 번 준비하여 이웃 평가에서 재사용한다. instance 공통 선형 행렬·inverse-transpose·gravity up은 CPU가 dispatch당 한 번 준비한다. 캐시 및 source 재사용은 전달 수식을 바꾸지 않으며 실행·유효성 계약은 [[0007_Simulation-Optimization|Simulation Optimization]]를 따른다.
 
-2-Pass + `alpha` 저장의 GPU 계산 순서는 [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]를 본다.
+2-Pass + `alpha` 저장의 GPU 계산 순서는 [[../06_Development/Notes/Next-State-Calculation|Next State 계산 메모]]를 본다.
 
 ### Capacity 초과량의 후속 전달
 
 Capacity는 포화 기준량이고 저장 상한이 아니다. 입력과 여러 이웃의 Incoming이 기준량을 넘으면 전체 결과를 Next State에 기록한다. 초과량은 `max(State - Capacity, 0)`으로 필요할 때 구하며 추가 버퍼로 저장하지 않는다.
+
+#### Capacity 초과량의 다음 Step 전달
 
 ```mermaid
 flowchart TD
@@ -328,4 +355,4 @@ $$
 Decay_i = min(Decay_i, State_i)
 $$
 
-`ConcavityWeight`는 현재 texel이 얼마나 오목한지를 나타내는 `[0,1]` 값이다. Solver의 형상 입력 저장 방식은 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.
+`ConcavityWeight`는 현재 texel이 얼마나 오목한지를 나타내는 `[0,1]` 값이다. Solver의 형상 입력 저장 방식은 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.

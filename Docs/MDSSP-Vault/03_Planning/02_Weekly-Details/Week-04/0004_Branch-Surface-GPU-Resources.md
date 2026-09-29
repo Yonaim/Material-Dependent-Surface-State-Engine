@@ -4,7 +4,7 @@
 
 브랜치: `feat/surface-gpu-resources`  
 선행 조건: `feat/shared-geometry-build` 병합  
-관련 설계: [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+관련 설계: [[../../../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 이 문서의 Profile 자원 구성은 초기 브랜치 계획이다. 현재 구현은 [[05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]에 따라 Scene별 Registry와 Scene 전체의 단일 Profile GPU 테이블을 사용한다. Runtime-local Profile index는 GPU 업로드에서 Scene index로 변환하며 Geometry와 instance State의 공유 단위는 유지한다.
 

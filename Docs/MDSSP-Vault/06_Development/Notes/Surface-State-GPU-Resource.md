@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** 이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다.
 
-상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[05_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]], [[04_Architecture/0002_Surface-State|표면 상태]], [[04_Architecture/0006_Surface-State-Update|Propagation Solver]], [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산]], [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+상태: **4주차 Vulkan 구현 기본안 / 실제 성능과 동적 형상 배치 검증 필요** · 관련 문서: [[05_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]], [[04_Architecture/0002_Surface-State|표면 상태]], [[04_Architecture/0006_Surface-State-Update|Propagation Solver]], [[Next-State-Calculation|Next State 계산]], [[Surface-Simulation-Mapping|Surface Simulation Mapping]]
 
 이 문서는 CPU의 Surface State 설계를 Vulkan GPU resource로 배치하고 2-Pass Solver가 읽고 쓰는 방법을 정의한다. 상태 갱신 수식의 기준은 [[04_Architecture/0006_Surface-State-Update|Propagation Solver]]다.
 

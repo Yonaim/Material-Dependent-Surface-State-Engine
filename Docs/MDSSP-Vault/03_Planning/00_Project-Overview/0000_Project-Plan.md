@@ -30,7 +30,7 @@ C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** �
 - Accumulation은 `State × accumulationFactor`에서 계산하고 Cavity Fill / Excess를 구분한다.
 - State 갱신의 GPU 기본안은 2-Pass `alpha` solver와 State A/B ping-pong이다. `InputDelta`는 dense buffer를 사용한다.
 
-초과량 보존 계약은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에 확정했으며 Shader의 상한 clamp 제거는 구현했고 빌드는 통과했다. 새 fixture와 GPU 실행 검증은 대기 중이다. 연구 검토는 [[../../02_Research/0000_Research-Index|Research 색인]]을 본다.
+초과량 보존 계약은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에 확정했다. Shader 변경과 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다. 연구 검토는 [[../../02_Research/0000_Research-Index|Research 색인]]을 본다.
 
 세부 의미와 식은 [[04_Architecture/0002_Surface-State|Surface State]], [[04_Architecture/0006_Surface-State-Update|State Update]], [[04_Architecture/0004_Surface-Geometry|Surface Geometry]]를 기준으로 한다.
 

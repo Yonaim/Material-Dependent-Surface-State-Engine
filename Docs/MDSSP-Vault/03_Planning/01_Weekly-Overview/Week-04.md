@@ -1,5 +1,7 @@
 # Week-04 — Surface 데이터 기반 구현
 
+> **후속 결정:** 이 주차 계획은 당시 512 grid와 Runtime 전처리만을 전제로 한다. 현재 해상도 프리셋은 ADR 0023, 실행 간 `.Surface` cache는 ADR 0026을 따른다.
+
 > **한 줄 요약:** 준비된 Simulation UV를 가진 테스트 Mesh에서 Surface data 생성부터 GPU Solver와 접촉 입력까지 최소 end-to-end 경로를 연결한다.
 
 상태: **계획** · 상위 계획: [[03_Planning/00_Project-Overview/0000_Project-Plan|Project Plan]], [[03_Planning/00_Project-Overview/0001_Roadmap|Roadmap]] · 상세 계획: [[03_Planning/02_Weekly-Details/Week-04/0000_Week4-Branch-Plan|4주차 구현 브랜치 계획]]
@@ -40,6 +42,6 @@ OBJ + prepared UV
 
 ## 참고
 
-- [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
-- [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [[../../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 - [[04_Architecture/0006_Surface-State-Update|Surface State Update]]

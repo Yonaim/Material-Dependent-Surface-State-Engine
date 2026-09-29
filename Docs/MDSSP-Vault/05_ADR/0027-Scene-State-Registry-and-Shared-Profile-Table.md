@@ -48,4 +48,4 @@ Profile GPU 테이블도 Runtime Surface Data handle별로 생성했다. 서로 
 - [[0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Profile Map 참조]]
 - [[0026-Resolution-Surface-Cache|ADR 0026 — Surface 캐시]]
 - [[../04_Architecture/0008_Surface-GPU-Data-Layout|GPU Data Layout]]
-- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|GPU Resource 구현]]
+- [[../06_Development/Notes/Surface-State-GPU-Resource|GPU Resource 구현]]

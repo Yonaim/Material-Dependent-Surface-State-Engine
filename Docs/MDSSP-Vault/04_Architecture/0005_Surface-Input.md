@@ -2,7 +2,11 @@
 
 > **한 줄 요약:** Surface 대상 접촉 입력을 공개 API에서 받아 texel별 State 입력으로 전달하는 방식을 정의한다.
 
-상태: **MVP API 설계** · 근거: [[../08_Assets/Documents/0004_Contact-Input|Contact Input API]] · 결정: [[05_ADR/0014-Surface-Contact-Target-API|ADR 0014]]
+상태: **MVP API 설계**
+근거: [[../08_Assets/Documents/0004_Contact-Input|Contact Input API]]
+결정: [[05_ADR/0014-Surface-Contact-Target-API|ADR 0014]]
+
+---
 
 Assets의 `SurfaceContactInput`은 대상 Surface와 접촉 정보를 한 구조체에 담는 예시다. 모듈을 사용하는 게임 코드가 내부 `SurfaceInstanceID`를 직접 찾고 매 접촉마다 넘기지 않도록, MVP 공개 API에서는 대상 Surface를 제출 함수의 주체로 정하고 접촉 정보만 전달한다.
 
@@ -30,6 +34,8 @@ surface.SubmitContact({stateType, worldPosition, worldDirection, radius, strengt
 - **게임 입력 어댑터**는 Scene에 미리 등록한 Collider–Surface 관계를 통해 대상 Surface를 얻는다. MVP에서는 Collider 하나가 Surface instance 하나를 가리킨다.
 - 두 어댑터 모두 대상 Surface의 `SubmitContact(contact)`를 호출한다. Debug 입력만을 위한 별도 Surface 입력 경로를 만들지 않는다.
 
+### 입력 어댑터와 공개 API
+
 ```mermaid
 flowchart LR
   Debug["Debug adapter"] --> Ray["Center-screen raycast"]
@@ -48,20 +54,30 @@ flowchart LR
 
 아래 순서는 두 입력 출처가 같은 Surface-bound API에 합류한 뒤, 내부에서 GPU 입력으로 바뀌는 설계를 보여준다. 현재 구현은 Debug 경로의 내부 입력까지만 연결되어 있다.
 
+### Contact 출처와 내부 라우팅
+
 ```mermaid
 sequenceDiagram
   participant Debug as Debug adapter
   participant Game as Game/Physics adapter
   participant API as Surface-bound SubmitContact
   participant SSS as TSurfaceStateSystem
-  participant Queue as Graphics queue
-  participant Buffer as InputDelta GPU buffer
-  participant Solver as 2-pass Solver
 
   Debug->>API: Ray hit Surface + contact payload
   Game->>API: Collider-bound Surface + contact payload
   API->>SSS: route to target instance
   SSS->>SSS: resolve texels and accumulate dense InputDelta
+```
+
+### GPU 업로드와 Solver 처리
+
+```mermaid
+sequenceDiagram
+  participant SSS as TSurfaceStateSystem
+  participant Queue as Graphics queue
+  participant Buffer as InputDelta GPU buffer
+  participant Solver as 2-pass Solver
+
   opt new event input exists
     SSS->>Queue: wait idle before host write
     SSS->>Buffer: upload dense InputDelta
@@ -84,6 +100,8 @@ sequenceDiagram
 삼각형은 ray hit이 가능해도 UV 면적이 격자보다 작거나 가늘면 삼각형 내부에 texel 중심이 없어 유효 texel을 하나도 얻지 못할 수 있다. 이 경우 검색 범위를 늘려도 해당 삼각형 소유의 후보가 없으므로 접촉은 거부된다. 삼각형에 후보가 있지만 가장 가까운 texel이 설정 범위 밖에 있으면 `texelSearchRadius`를 높여 검색할 수 있다. 실패 로그는 두 경우를 구분하고 Surface, triangle, UV, 격자 해상도와 필요한 경우 가장 가까운 texel의 offset을 기록한다.
 
 입력 중심과 영향 영역을 나누어 보면 fallback은 hit triangle 주변의 중심 텍셀을 정하고, World radius 검색은 최종 영향 texel을 고른다.
+
+### 중심 texel과 영향 영역 계산
 
 ```mermaid
 flowchart TD

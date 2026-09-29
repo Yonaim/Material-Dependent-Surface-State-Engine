@@ -4,7 +4,7 @@
 
 브랜치: `feat/solver-geometry-drive`
 선행 조건: 없음. 4주차 Solver가 병합된 최신 `main`에서 생성한다.
-관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]], [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]
+관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]], [[../../../06_Development/Notes/Next-State-Calculation|Next State 계산 메모]]
 
 > **초기 구현 기록:** 이 브랜치의 Capacity clamp 및 기존 검증 결과는 초기 상한 계약 기준이다. [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity를 포화 기준량으로 변경했으며 초과량 보존의 Shader 변경은 구현했고 새 GPU 실행 검증은 대기 중이다. 아래 완료 기록은 당시 결과로 유지한다.
 

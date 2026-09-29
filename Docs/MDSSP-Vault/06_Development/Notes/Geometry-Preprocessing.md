@@ -18,4 +18,4 @@ Mesh Geometry + Normal / Height Detail
 
 Normal Map의 모든 경우가 integrable하지는 않으므로 Virtual Height 복원 알고리즘과 Non-Integrable fallback을 검증해야 한다. [[06_Development/Experiments/0001_Normal-Map-Integration|실험]]
 
-Simulation UV 생성, Mesh→Texel mapping, Valid Mask, UV Seam, Neighbor Index는 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. 이 문서는 그 결과 위에서 Virtual Height와 Curvature/Concavity를 만드는 단계에 집중한다.
+Simulation UV 생성, Mesh→Texel mapping, Valid Mask, UV Seam, Neighbor Index는 [[Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. 이 문서는 그 결과 위에서 Virtual Height와 Curvature/Concavity를 만드는 단계에 집중한다.

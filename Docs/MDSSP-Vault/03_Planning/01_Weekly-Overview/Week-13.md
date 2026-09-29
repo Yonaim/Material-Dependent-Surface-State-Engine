@@ -23,5 +23,5 @@
 
 ## 참고
 
-- [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 - [[06_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]

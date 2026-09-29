@@ -77,6 +77,6 @@ Dense `InputDelta`는 입력이 드문 경우에도 전체 격자 크기를 유�
 
 ## Related
 
-- [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
-- [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
-- [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산]]
+- [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [[../06_Development/Notes/Next-State-Calculation|Next State 계산]]

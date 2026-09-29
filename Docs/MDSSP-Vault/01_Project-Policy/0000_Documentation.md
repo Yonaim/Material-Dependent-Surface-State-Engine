@@ -17,6 +17,7 @@
 - `01_Project-Policy/`: 공식 용어, 문서 규칙, 프로젝트 전반에 적용되는 원칙.
 - `02_Research/`: 외부 연구·기술 근거의 쉬운 요약, 상세 설명과 프로젝트 적용 검토.
 - `03_Planning/`: 프로젝트 전체 계획, 전체 주차 목표 요약, 주차별 상세 구현 계획.
+- `Flow-Maps/`: 입력부터 결과까지 여러 시스템을 통과하는 처리 순서와 구현 경계.
 - `04_Architecture/`: 시스템의 논리 구조, 데이터 의미, 시스템 동작 규칙과 정의 수식.
 - `05_ADR/`: 중요한 설계 결정을 선택한 이유와 결과. ADR은 [[05_ADR/README|주제별 분류와 색인]]을 기준으로 Architecture, Assets, Rendering, Simulation으로 나눈다.
 - `06_Development/`: 구현 순서와 구체적인 구현 방식, 미검증 구현안, 실험·디버깅 기록.
@@ -27,22 +28,23 @@
 
 같은 내용을 여러 문서에 복제하지 않는다. 예를 들어 **SRProfile 파라미터의 의미와 범위는 [[04_Architecture/0002_Surface-State|표면 상태와 데이터 구조]]에서만 정의**하고, [[04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]에서는 파일 직렬화와 연결 관계만 다룬다.
 
-시스템이 무엇을 의미하고 어떤 규칙으로 동작하는지는 Architecture에 둔다. 특정 주차의 임시 선택, GPU 자원 배치, 실행 순서, 아직 검증이 필요한 구현 방식은 Development에 둔다. 구현 방식 중 중요한 대안 선택과 그 근거를 기록해야 하면 ADR을 작성한다. 미정이라는 이유만으로 시스템 동작의 의미나 수식 정의를 Development로 옮기지는 않는다.
+시스템이 무엇을 의미하고 어떤 규칙으로 동작하는지는 Architecture에 둔다. Flow Map은 여러 기준 문서와 구현 단계를 하나의 처리 순서로 연결하며 정의나 수식을 새로 만들지 않는다. 특정 주차의 임시 선택, GPU 자원 배치, 세부 실행 순서, 아직 검증이 필요한 구현 방식은 Development에 둔다. 구현 방식 중 중요한 대안 선택과 그 근거를 기록해야 하면 ADR을 작성한다. 미정이라는 이유만으로 시스템 동작의 의미나 수식 정의를 Development로 옮기지는 않는다.
 
 ## 파일명 규칙
 
-- 문서 파일은 디렉터리별로 `0000_이름.md` 형식의 네 자리 번호를 붙인다.
+- 정식 문서는 디렉터리별로 `0000_이름.md` 형식의 네 자리 번호를 붙인다. `06_Development/Notes/`의 임시 메모는 번호 없이 주제 이름으로 작성한다.
 - Overview, Guide, Index처럼 폴더의 시작점은 `0000`이다.
 - ADR은 문서 ID를 보존하기 위해 `0001-이름.md` 형식을 사용한다.
 - 주차별 목표 요약은 `01_Weekly-Overview/Week-01.md`부터 `Week-16.md`에 둔다.
 - 주차별 구현 상세는 `02_Weekly-Details/Week-XX/` 아래에 둔다.
-- 번호는 권장 읽기·구현 순서를 나타내며 문서 제목에는 포함하지 않는다.
+- `Flow-Maps/` 내부 문서는 `0000_Overview.md`에서 시작해 권장 읽기 순서대로 번호를 붙인다.
+- 번호는 권장 읽기·구현 순서를 나타내며 문서 제목에는 포함하지 않는다. 임시 메모에 정식 문서로 남길 내용이 생기면 담당 문서로 옮기고 메모를 정리한다.
 
 ## 출처와 최신성
 
 `08_Assets/Documents/`의 PDF는 설계 근거 자료다. 이후 대화에서 명시적으로 수정·확정된 설계는 PDF의 이전 표현보다 우선한다. 특히 다음 변경은 현재 설계에 반영한다.
 
-- `Overflow` 초과량 모델 폐기, `State + TempState` 사용.
+- `Overflow` 초과량 모델 폐기. Capacity 초과량은 State에 포함하고 Solver 중간값은 목적별 scratch buffer로 둔다.
 - 상태별 `stateCapacity`와 파생값 `Saturation` 사용.
 - Transport를 `SaturationDrive`와 `GeometryDrive`로 분리.
 - `TransferWeight`를 Distance / Normal / Curvature / Profile Boundary로 구성.

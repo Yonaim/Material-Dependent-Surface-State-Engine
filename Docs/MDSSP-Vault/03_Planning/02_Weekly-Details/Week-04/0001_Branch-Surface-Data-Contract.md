@@ -4,7 +4,7 @@
 
 브랜치: `feat/surface-data-contract`  
 선행 조건: 없음. 최신 `main`에서 생성한다.  
-관련 설계: [[04_Architecture/0002_Surface-State|Surface State]], [[04_Architecture/0003_Assets-and-Profiles|Assets and Profiles]], [[../../00_Project-Overview/0002_Final_Demo|Demos]], [[06_Development/Notes/0003_Surface-State-GPU-Resource|GPU Resource]]
+관련 설계: [[04_Architecture/0002_Surface-State|Surface State]], [[04_Architecture/0003_Assets-and-Profiles|Assets and Profiles]], [[../../00_Project-Overview/0002_Final_Demo|Demos]], [[../../../06_Development/Notes/Surface-State-GPU-Resource|GPU Resource]]
 
 ## 목표
 

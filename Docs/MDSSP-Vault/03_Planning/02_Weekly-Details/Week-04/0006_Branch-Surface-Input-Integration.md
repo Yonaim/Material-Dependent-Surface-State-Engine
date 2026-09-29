@@ -1,10 +1,12 @@
 # Branch 6 — Surface Input Integration
 
+> **후속 결정:** 이 초기 구현 계획은 Capacity clamp를 전제로 작성됐다. 현재 State 저장 계약은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]을 따르며 Capacity는 저장 상한이 아니다. Heatmap의 `[0,1]` clamp는 표시용으로만 사용할 수 있다.
+
 > **한 줄 요약:** 접촉 이벤트를 texel별 InputDelta로 누적해 Surface Solver 입력 경로에 연결한다.
 
 브랜치: `feat/surface-input-integration`  
 선행 조건: `feat/surface-solver-2pass` 병합  
-관련 설계: [[04_Architecture/0005_Surface-Input|Surface Contact Input 아키텍처]], [[04_Architecture/0006_Surface-State-Update|Contact Input 수식]], [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], [[05_ADR/0013-InputDelta-Host-Upload-Synchronization|InputDelta Host Upload 동기화 ADR]], [[05_ADR/0014-Surface-Contact-Target-API|Surface 접촉 대상 API ADR]]
+관련 설계: [[04_Architecture/0005_Surface-Input|Surface Contact Input 아키텍처]], [[04_Architecture/0006_Surface-State-Update|Contact Input 수식]], [[../../../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]], [[05_ADR/0013-InputDelta-Host-Upload-Synchronization|InputDelta Host Upload 동기화 ADR]], [[05_ADR/0014-Surface-Contact-Target-API|Surface 접촉 대상 API ADR]]
 
 ## 목표
 
@@ -96,7 +98,7 @@ Input event의 State 이름/ID는 `TSurfaceStateRegistry`를 통해 `ChannelInde
 - 새 입력이 있는 경우에만 Solver가 사용하는 queue가 idle이 될 때까지 기다린 다음 CPU upload를 수행한다. 현재 Solver는 graphics queue에서 실행되므로 해당 queue를 기다린다. 전체 동기화 정책과 staging buffer 전환 조건은 [[05_ADR/0013-InputDelta-Host-Upload-Synchronization|InputDelta Host Upload 동기화 ADR]]을 따른다.
 - 입력이 없는 frame에는 queue 대기와 InputDelta upload를 생략한다. Solver가 소비 후 clear한 GPU buffer를 재사용한다.
 - 음수 입력이 필요하지 않으면 Strength를 `>= 0`으로 검증한다.
-- Capacity clamp는 Solver Pass 2의 최종 NextState에서 적용한다.
+- **초기 계획:** Solver Pass 2의 Next State를 Capacity로 clamp한다. 현재는 ADR 0020에 따라 이 clamp를 적용하지 않고 전체 State를 보존한다.
 - Profile이 해당 State를 지원하지 않는 texel은 그 texel에 한해 입력을 적용하지 않는다. 일부 texel만 적용되지 않은 경우를 포함해 한 입력 event당 진단 로그는 최대 한 번 남긴다.
 - `WorldDirection`을 이용한 법선·입사각 기반 weighting은 Branch 6에서 구현하지 않는다.
 
@@ -143,7 +145,7 @@ Inject 입력으로 법선 또는 입사각을 보정하는 동작은 아직 넣
 
 ### State debug view 색상
 
-한 번에 Registry에서 선택한 State channel 하나를 Heatmap으로 표시한다. 각 texel 값은 해당 Profile의 `StateCapacity`로 나눈 Saturation (`State / Capacity`)을 사용해 고정된 `[0, 1]` 범위로 정규화한다. 낮은 값은 짙은 남색, 중간값은 파랑과 청록, 높은 값은 노랑으로 이어지는 Viridis 계열 색상표를 사용한다. Profile마다 Capacity가 달라도 색을 비교할 수 있고, 범례는 0(비어 있음)부터 1(용량 도달)까지 표시한다. 지원하지 않는 State는 회색, invalid texel은 어두운 색으로 구분한다.
+한 번에 Registry에서 선택한 State channel 하나를 Heatmap으로 표시한다. 표시값은 `clamp(State / Capacity, 0, 1)`로 정규화한다. Transport용 Saturation은 1을 넘을 수 있지만 이 Heatmap에서는 최상위 색으로 포화되어 초과량 크기를 구분하지 않는다. 낮은 값은 짙은 남색, 중간값은 파랑과 청록, 높은 값은 노랑으로 이어지는 Viridis 계열 색상표를 사용한다. Profile마다 Capacity가 달라도 표시 기준을 비교할 수 있고, 범례는 0(비어 있음)부터 1(표시 상한)에 해당한다. 지원하지 않는 State는 회색, invalid texel은 어두운 색으로 구분한다.
 
 ## 구현 대상
 

@@ -2,9 +2,14 @@
 
 > **한 줄 요약:** State Registry와 Profile, 공유 Surface 데이터 및 인스턴스별 동적 상태의 구조를 설명한다.
 
-상태: **핵심 의미 확정 · 초과량 보존 구현 완료 · GPU 실행 검증 대기** · 근거: [[08_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
+상태: **핵심 의미 확정 · 초과량 보존 구현 완료 · 선택 GPU 회귀 통과 · 통합 검증 대기**
+근거: [[08_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
+
+---
 
 ## 전체 데이터 분류
+
+### 공유 데이터와 Instance State
 
 ```mermaid
 flowchart LR
@@ -26,7 +31,13 @@ flowchart LR
 
 State 종류는 C++ enum에 고정하지 않는다. 로드된 `.SRProfile`의 `states` key를 모아 `TSurfaceStateRegistry`를 만들며, Registry가 문자열 State 이름을 런타임 `TStateId` 또는 `ChannelIndex`에 연결한다. 별도의 `SurfaceStateSchema` 파일은 두지 않는다.
 
-State 이름은 앞뒤 whitespace를 제거하고 lowercase로 정규화하며, 그 외 문자와 내부 공백·구두점은 그대로 보존한다. 예를 들어 `" Wetness "`와 `"WETNESS"`는 `wetness`로 합쳐지지만 `surface_heat`, `surface-heat`, `surface heat`는 서로 다른 이름이다. Transition의 source와 target에도 같은 규칙을 적용한다.
+State 이름은 앞뒤 whitespace를 제거하고 lowercase로 정규화한다. 그 외 문자와 내부 공백·구두점은 보존한다.
+
+- `" Wetness "`와 `"WETNESS"`는 `wetness`로 합쳐진다.
+- `surface_heat`, `surface-heat`, `surface heat`는 서로 다른 이름이다.
+- Transition의 source와 target에도 같은 정규화 규칙을 적용한다.
+
+### Runtime State ID 생성
 
 ```mermaid
 flowchart LR
@@ -39,7 +50,10 @@ flowchart LR
   IDs --> GPU["동적 channel 배열 조회"]
 ```
 
-`.SRProfile`은 State 종류의 전역 목록이 아니라, 해당 Profile이 지원하는 각 State의 반응 파라미터와 Transition을 정의한다. 런타임 Solver와 GPU는 문자열을 직접 분기 기준으로 쓰지 않고 Registry가 부여한 ID/index를 사용한다. ID의 배정과 저장 레이아웃은 구현 계약에서 정한다. 상세 결정은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
+`.SRProfile`은 전역 State 종류 목록이 아니라 해당 Profile이 지원하는 State의 반응 파라미터와 Transition을 정의한다.
+
+- Runtime Solver와 GPU는 문자열 대신 Registry가 부여한 ID/index를 사용한다.
+- ID 배정과 저장 레이아웃은 구현 계약에서 정한다. ([[05_ADR/0006-Dynamic-State-Registry|ADR 0006]])
 
 ## State / Capacity / Saturation
 
@@ -63,7 +77,11 @@ $$
 - `Saturation`은 저장 파라미터가 아니라 런타임 파생값이며 1을 넘을 수 있다. 표시용 `[0,1]` clamp는 전달 계산과 분리한다.
 - Saturation 계산 때문에 `stateCapacity`는 유한한 양수로 사용한다. 양수 검증만으로 모든 연산의 NaN/Inf를 방지하는 것은 아니다.
 
-[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에 따라 State A/B에 초과량까지 보존한다. Shader의 Saturation `[0,1]` clamp 및 Next State의 Capacity 상한 clamp 제거를 구현했다. 빌드는 통과했으며 GPU 실행 검증은 대기 중이다. `TempState`나 별도 Overflow 채널을 추가하지 않는다.
+State A/B에는 Capacity 초과량까지 보존한다 ([[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]).
+
+- Shader에서 Saturation `[0,1]` clamp와 Next State의 Capacity 상한 clamp를 제거했다.
+- 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다.
+- `TempState`나 별도 Overflow 채널은 추가하지 않는다.
 
 ## Surface Response Profile
 
@@ -95,11 +113,15 @@ State별로 현재 상태와 Solver 계산 과정의 임시값을 각각 스칼�
 | 항목 | 저장 단위 | 범위 | 의미 |
 |---|---|---|---|
 | `State` | Texel·Registry 채널별 | finite, `≥ 0`; Capacity 초과 허용 | 초과량까지 포함한 전체 상태량 |
-| `TempState` | Texel별 | Solver에 따라 다름 | Solver 계산 중 필요한 임시 상태값 |
+| Solver scratch | 목적별 | GPU resource 설계에 따름 | 현재는 `OutgoingFluxScale`, `RawOutgoing`, `InputDelta`, 선택적 `RawFlux` 등으로 나눈다. 단일 `TempState` buffer는 두지 않는다. |
 
-`TempState`는 영구 상태 채널이 아니라 Solver 계산 중 사용하는 임시 데이터다. Capacity 초과량은 전체 State에 이미 포함하며 별도 임시값으로 저장하지 않는다. 구체적인 임시값과 GPU 배치는 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
+- 초기 자료의 `TempState`는 Solver 중간 데이터의 일반 개념이며 현재 buffer 이름이 아니다.
+- Capacity 초과량은 전체 State에 포함한다. 별도 임시값으로 저장하지 않는다.
+- Scratch 종류와 GPU 배치는 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 
-CPU 상태 데이터는 Registry의 State 수에 대응하는 동적 채널 집합으로 표현한다. 구체적인 컨테이너와 GPU 배치는 이 문서가 고정하지 않으며 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다. CPU 도메인 표현과 GPU 메모리 ABI는 별도 계약이다.
+- CPU 상태 데이터는 Registry State 수에 대응하는 동적 channel 집합으로 표현한다.
+- 구체적인 container와 GPU 배치는 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.
+- CPU 도메인 표현과 GPU 메모리 ABI는 별도 계약이다.
 
 ## State Transitions
 
@@ -118,7 +140,12 @@ Heat → Burn
 | `threshold` | source Saturation의 임계값 |
 | `transitionRate` | 조건 만족 후 target State의 단위 시간당 증가 속도 |
 
-예를 들어 `threshold = 0.7`이면 source의 Saturation이 `0.7` 이상일 때 전이 조건을 만족한다. 새 계약의 Saturation은 1을 넘을 수 있으므로 전이 구현 시 이 범위를 함께 검증한다. State Transition의 실제 Solver 적용은 미구현이다. Transition의 실행 순서와 Solver 패스 배치는 [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]에서 다룬다.
+- `threshold = 0.7`이면 source Saturation이 `0.7` 이상일 때 전이 조건을 만족한다.
+- Saturation은 1을 넘을 수 있으므로 Transition 구현에서 이 범위를 검증한다.
+- State Transition의 Solver 적용은 미구현이다.
+- 실행 순서와 Solver pass 배치는 [[../06_Development/Notes/Next-State-Calculation|Next State 계산 메모]]에서 다룬다.
+
+### State Transition 조건 평가
 
 ```mermaid
 flowchart LR

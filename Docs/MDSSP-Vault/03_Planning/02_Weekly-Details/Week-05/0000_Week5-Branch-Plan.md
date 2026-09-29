@@ -22,7 +22,7 @@
 - Solver를 pause, 한 step 진행, 전체 State 초기화할 수 있고 실행 통계를 확인할 수 있다.
 - Validation layer에서 새 동기화·descriptor 오류가 없으며, 지원되는 GPU 환경에서 GPU 테스트를 통과한다.
 
-[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. 아래 흐름·완료 기준은 새 계약이며 Saturation 상한과 Next Capacity clamp 제거는 구현했고 빌드는 통과했다. GPU 실행 검증은 대기 중이다. 기존 완료 기록은 이전 상한 계약의 결과이므로 새 계약 통과로 간주하지 않는다. Branch 6에는 초과 입력·유입·다음 step 후속 전달을 포함한다.
+[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity는 포화 기준량으로 변경했다. 아래 흐름·완료 기준은 새 계약이며 Shader 변경과 선택 GPU 회귀 fixture는 통과했다. 기존 완료 기록은 이전 상한 계약의 결과이므로 5주차 통합 검증 통과로 간주하지 않는다. Branch 6에는 초과 입력·유입·다음 step 후속 전달과 timestep 비교를 포함한다.
 
 ## 현재 기준선과 범위 경계
 
@@ -170,7 +170,7 @@ Branch 1의 HeightDrive/DirectionDrive 분리, height 차이에서 neighbor dist
 
 - [[03_Planning/01_Weekly-Overview/Week-05|Week 05 Overview]]
 - [[04_Architecture/0006_Surface-State-Update|Surface State Update]]
-- [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]
-- [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../../../06_Development/Notes/Next-State-Calculation|Next State 계산 메모]]
+- [[../../../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 - [[06_Development/Experiments/0000_Solver-Pass-Comparison|Solver Pass 비교]]
 - [[07_Testing/0000_Testing-Guide|Testing Guide]]

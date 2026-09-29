@@ -6,7 +6,7 @@
 
 브랜치: `feat/simulation-mapping`  
 선행 조건: `feat/surface-data-contract` 병합  
-관련 설계: [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+관련 설계: [[../../../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]]
 
 ## 목표
 

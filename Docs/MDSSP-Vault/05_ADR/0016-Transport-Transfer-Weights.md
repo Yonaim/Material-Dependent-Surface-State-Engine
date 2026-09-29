@@ -60,5 +60,5 @@ ConcavityWeight는 texel-local Decay retention 데이터다. 이를 edge transpo
 - [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 TransferWeight 분리]]
 - [[0015-Geometry-Driven-Transport|ADR 0015 — Geometry-Driven Transport]]
 - [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
-- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]
 - [[../03_Planning/02_Weekly-Details/Week-05/0002_00_Branch-Solver-Transfer-Weights|Week 5 Branch 2 — Solver Transfer Weights]]
