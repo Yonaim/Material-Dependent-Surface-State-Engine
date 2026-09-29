@@ -87,7 +87,7 @@ namespace MDSS
         void DrawSimulationDebugWindow(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
-        void DrawSectionHeader(const char* Title, float TopPadding = 12.0F) const;
+        void DrawSectionHeader(const char* Title, float TopPadding = 12.0F, float BottomPadding = 8.0F) const;
 
         VkDevice    Device = VK_NULL_HANDLE;
         GLFWwindow* NativeWindow = nullptr;

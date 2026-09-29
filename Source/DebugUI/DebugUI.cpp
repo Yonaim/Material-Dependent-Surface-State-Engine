@@ -100,13 +100,21 @@ namespace MDSS
             "ProfileBoundaryWeight",
         };
 
-        void DrawLegendColor(ImVec4 Color, const char* Label)
+        void DrawLegendColor(ImVec4 Color, const char* Label, const char* Tooltip = nullptr)
         {
             ImGui::PushID(Label);
             ImGui::ColorButton("##Color", Color, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
                                {12.0F, 12.0F});
+            if (Tooltip != nullptr && ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", Tooltip);
+            }
             ImGui::SameLine(0.0F, 4.0F);
             ImGui::TextUnformatted(Label);
+            if (Tooltip != nullptr && ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("%s", Tooltip);
+            }
             ImGui::PopID();
             ImGui::SameLine(0.0F, 10.0F);
         }
@@ -293,7 +301,7 @@ namespace MDSS
         {
             if (std::filesystem::exists(FontPath))
             {
-                if (ImFont* Font = IO.Fonts->AddFontFromFileTTF(FontPath, 13.0F, nullptr,
+                if (ImFont* Font = IO.Fonts->AddFontFromFileTTF(FontPath, 14.0F, nullptr,
                                                                 IO.Fonts->GetGlyphRangesKorean()))
                 {
                     IO.FontDefault = Font;
@@ -305,7 +313,9 @@ namespace MDSS
         }
         if (IO.FontDefault == nullptr)
         {
-            IO.FontDefault = IO.Fonts->AddFontDefault();
+            ImFontConfig DefaultFontConfig{};
+            DefaultFontConfig.SizePixels = 14.0F;
+            IO.FontDefault = IO.Fonts->AddFontDefault(&DefaultFontConfig);
         }
         if (SectionHeaderFont == nullptr)
         {
@@ -334,11 +344,10 @@ namespace MDSS
         Style.Colors[ImGuiCol_DockingEmptyBg] = {0.065F, 0.072F, 0.09F, 1.0F};
         Style.Colors[ImGuiCol_Border] = {0.20F, 0.24F, 0.31F, 0.75F};
         Style.Colors[ImGuiCol_FrameBg] = {0.14F, 0.17F, 0.22F, 1.0F};
-        Style.Colors[ImGuiCol_FrameBgHovered] = {0.17F, 0.25F, 0.37F, 1.0F};
-        Style.Colors[ImGuiCol_FrameBgActive] = {0.13F, 0.30F, 0.53F, 1.0F};
+        Style.Colors[ImGuiCol_FrameBgHovered] = {0.18F, 0.29F, 0.44F, 1.0F};
+        Style.Colors[ImGuiCol_FrameBgActive] = {0.12F, 0.34F, 0.60F, 1.0F};
         Style.Colors[ImGuiCol_TitleBg] = {0.048F, 0.053F, 0.068F, 1.0F};
         Style.Colors[ImGuiCol_TitleBgActive] = {0.060F, 0.086F, 0.13F, 1.0F};
-        Style.Colors[ImGuiCol_CheckMark] = {0.10F, 0.40F, 0.78F, 1.0F};
         Style.Colors[ImGuiCol_SliderGrab] = {0.10F, 0.36F, 0.70F, 1.0F};
         Style.Colors[ImGuiCol_SliderGrabActive] = {0.12F, 0.48F, 0.88F, 1.0F};
         Style.Colors[ImGuiCol_Button] = {0.12F, 0.27F, 0.47F, 1.0F};
@@ -462,7 +471,7 @@ namespace MDSS
         ImGui::Render();
     }
 
-    void TDebugUI::DrawSectionHeader(const char* Title, float TopPadding) const
+    void TDebugUI::DrawSectionHeader(const char* Title, float TopPadding, float BottomPadding) const
     {
         ImGui::Dummy({0.0F, TopPadding});
         ImGui::PushStyleColor(ImGuiCol_Text, {0.91F, 0.93F, 0.97F, 1.0F});
@@ -477,7 +486,7 @@ namespace MDSS
         }
         ImGui::PopStyleColor();
         ImGui::Separator();
-        ImGui::Dummy({0.0F, 8.0F});
+        ImGui::Dummy({0.0F, BottomPadding});
     }
 
     void TDebugUI::Render(VkCommandBuffer CommandBuffer) const
@@ -1163,7 +1172,7 @@ namespace MDSS
             ImGui::PushID("ViewportViewCombo");
             if (ImGui::BeginCombo("##View", CurrentName, ImGuiComboFlags_HeightLarge))
             {
-                DrawSectionHeader("DISPLAY", 0.0F);
+                DrawSectionHeader("DISPLAY", 0.0F, 2.0F);
                 for (int Index = 0; Index < static_cast<int>(RenderViewModeNames.size()); ++Index)
                 {
                     const auto Mode = static_cast<TRenderViewMode>(Index);
@@ -1173,7 +1182,7 @@ namespace MDSS
                         FrameRenderer->SetRenderViewMode(Mode);
                     }
                 }
-                DrawSectionHeader("DEBUG");
+                DrawSectionHeader("DEBUG", 12.0F, 2.0F);
                 for (int Index = 0; Index < static_cast<int>(SurfaceDebugViewNames.size()); ++Index)
                 {
                     const auto Mode =
@@ -1282,7 +1291,7 @@ namespace MDSS
                         break;
                     case TRenderViewMode::SurfaceStateHeatmap:
                     {
-                        BeginViewContext("STATE HEATMAP", "값=State/용량 비율; 회색=미지원, 진회색=비활성.");
+                        BeginViewContext("STATE HEATMAP", "색상 = State/용량 비율.");
                         const TSurfaceStateRegistry* Registry =
                             AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
                         const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
@@ -1326,11 +1335,17 @@ namespace MDSS
                             }
                             ImGui::NewLine();
                         }
-                        DrawLegendColor({0.075F, 0.090F, 0.260F, 1.0F}, "0%");
-                        DrawLegendColor({0.120F, 0.610F, 0.540F, 1.0F}, "중간");
-                        DrawLegendColor({0.990F, 0.900F, 0.200F, 1.0F}, "100%");
-                        DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "State 미지원");
-                        DrawLegendColor({0.18F, 0.20F, 0.24F, 1.0F}, "시뮬레이션 꺼짐");
+                        DrawLegendColor(
+                            {0.075F, 0.090F, 0.260F, 1.0F}, "0%", "State 값이 프로파일 용량의 0%입니다.");
+                        DrawLegendColor(
+                            {0.120F, 0.610F, 0.540F, 1.0F}, "중간", "State 값이 프로파일 용량의 중간 수준입니다.");
+                        DrawLegendColor({0.990F, 0.900F, 0.200F, 1.0F}, "100%",
+                                        "State/용량이 100% 이상입니다. 표시 색은 100%에서 포화됩니다.");
+                        DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "State 미지원",
+                                        "이 texel에 지정된 .SRProfile이 현재 선택한 State를 정의하지 않습니다.");
+                        DrawLegendColor({0.18F, 0.20F, 0.24F, 1.0F}, "프로파일 미할당",
+                                        "해당 Surface에 시뮬레이션 프로파일이 연결되지 않았습니다. .SurfaceProfileMap에서 "
+                                        "프로파일을 지정하세요. solver 일시정지와는 다른 상태입니다.");
                         break;
                     }
                     case TRenderViewMode::SurfaceValidity:
