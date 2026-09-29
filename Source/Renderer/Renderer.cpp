@@ -229,8 +229,8 @@ namespace MDSS
         {
             TGraphicsPipelineConfig Config{};
             Config.ShaderStages = {
-                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/StaticMesh.vert.spv", "main"},
-                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/StaticMesh.frag.spv", "main"},
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/StaticMesh.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/StaticMesh.frag.spv", "main"},
             };
             Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             Config.CullMode = VK_CULL_MODE_BACK_BIT;
@@ -275,8 +275,8 @@ namespace MDSS
                                                              VkDescriptorSetLayout SurfaceLayout)
     {
         TGraphicsPipelineConfig Config = BuildStaticMeshPipelineConfig(MaterialLayout);
-        Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/SurfaceDebug.vert.spv";
-        Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/SurfaceDebug.frag.spv";
+        Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/SurfaceDebug.vert.spv";
+        Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/SurfaceDebug.frag.spv";
         Config.DescriptorSetLayouts.push_back(SurfaceLayout);
             return Config;
         }
@@ -292,8 +292,8 @@ namespace MDSS
         {
             TGraphicsPipelineConfig Config{};
             Config.ShaderStages = {
-                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Gizmo.vert.spv", "main"},
-                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Gizmo.frag.spv", "main"},
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Gizmo.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Gizmo.frag.spv", "main"},
             };
             Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             Config.CullMode = VK_CULL_MODE_NONE;

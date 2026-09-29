@@ -1,0 +1,4 @@
+/**
+ * @file SurfaceAccumulation.comp
+ * @brief Surface Accumulation compute shader의 자리표시자다. 현재 구현은 비어 있다.
+ */

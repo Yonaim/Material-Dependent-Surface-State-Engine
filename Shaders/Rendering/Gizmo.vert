@@ -1,3 +1,7 @@
+/**
+ * @file Gizmo.vert
+ * @brief Object Gizmo 정점을 변환하고 hover 상태인 축을 강조한다.
+ */
 #version 450
 
 layout(location = 0) in vec3 InPosition;

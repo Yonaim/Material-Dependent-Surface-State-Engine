@@ -1,3 +1,7 @@
+/**
+ * @file SurfaceSolverCommon.glsl
+ * @brief Solver pass에서 공유하는 GPU 데이터와 상태, 감쇠, 형상 계산 함수를 선언한다.
+ */
 #ifndef MDSS_SURFACE_SOLVER_COMMON_GLSL
 #define MDSS_SURFACE_SOLVER_COMMON_GLSL
 
@@ -12,7 +16,7 @@ struct TSurfaceGPUProfileParameters
     vec4 DecayAndGeometry;
 };
 
-// CPU 업로드 구조체의 필드 순서와 stride를 맞춘 texel별 형상 값이다.
+// CPU에서 업로드하는 구조체와 필드 순서 및 stride를 맞춘 texel별 형상 데이터다.
 struct TSurfaceGPUGeometryScalar
 {
     float MesoVirtualHeight;
@@ -139,7 +143,7 @@ uint reverseNeighborSlot(uint TexelIndex, uint DirectionIndex)
 
 uint rawFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
 {
-    // Slot-major planes keep neighboring invocations' stores contiguous.
+    // Direction slot별 plane으로 나눠 인접 invocation의 저장 위치를 연속시킨다.
     return DirectionIndex * (Solver.LocalTexelCount * Solver.StateChannelCount) +
            stateIndex(TexelIndex, ChannelIndex);
 }
@@ -167,7 +171,7 @@ float stateCapacity(uint TexelIndex, uint ChannelIndex)
 float saturation(uint TexelIndex, uint ChannelIndex)
 {
     float Capacity = stateCapacity(TexelIndex, ChannelIndex);
-    // Capacity는 포화 기준량이다. 초과량도 이웃 전달을 구동하도록 비율의 상한을 제한하지 않는다.
+    // Capacity는 포화 기준량이다. 보유량이 Capacity를 넘으면 초과 비율도 이웃 전달량에 반영한다.
     return CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)] / Capacity;
 }
 
@@ -188,8 +192,8 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
     return min(Current, max(0.0, DecayRate * Retention * Solver.DeltaTime));
 }
 
-// Pass 1 prepares this once per source, sharing it across neighbors and channels.
-// Uncached Pass 2 prepares each incoming source before recomputing its directed flux.
+// Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.
+// RawFlux cache를 쓰지 않는 Pass 2에서는 유입 source의 형상 데이터를 준비한 뒤 방향별 flux를 다시 계산한다.
 mat3 SolverModelLinear;
 vec3 SolverUp;
 vec3 SourcePosition;
@@ -247,7 +251,7 @@ float geometryDrive(uint TargetTexel)
     }
     vec3 TargetPosition = Positions.Values[TargetTexel].xyz + Normals.Values[TargetTexel].xyz *
                           GeometryScalars.Values[TargetTexel].MesoVirtualHeight;
-    // Translation cancels in both height difference and neighbor direction.
+    // 위치 차이를 사용하므로 model translation은 높이 차와 이웃 방향 계산에서 상쇄된다.
     vec3 NeighborDirection = SolverModelLinear * (TargetPosition - SourcePosition);
     float NeighborLength = length(NeighborDirection);
     if (NeighborLength <= GeometryEpsilon || isnan(NeighborLength) || isinf(NeighborLength))

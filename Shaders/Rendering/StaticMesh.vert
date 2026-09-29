@@ -1,3 +1,7 @@
+/**
+ * @file StaticMesh.vert
+ * @brief Static Mesh 정점을 변환해 월드 공간의 normal과 tangent, UV를 전달한다.
+ */
 #version 450
 
 layout(location = 0) in vec3 InPosition;

@@ -93,9 +93,9 @@ namespace MDSS
             for (std::size_t Mode = 0; Mode < Pass1Pipelines.size(); ++Mode)
             {
                 Pass1Pipelines[Mode] = CreateComputePipeline(
-                    Device, PipelineLayout, (ShaderRoot + "/SurfaceSolverPass1.comp.spv").c_str(), Mode == 0);
+                    Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1.comp.spv").c_str(), Mode == 0);
                 Pass2Pipelines[Mode] = CreateComputePipeline(
-                    Device, PipelineLayout, (ShaderRoot + "/SurfaceSolverPass2.comp.spv").c_str(), Mode == 0);
+                    Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2.comp.spv").c_str(), Mode == 0);
             }
         }
         catch (...)

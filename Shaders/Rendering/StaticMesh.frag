@@ -1,3 +1,7 @@
+/**
+ * @file StaticMesh.frag
+ * @brief Static Mesh의 기본 색상, Normal Map 조명과 렌더링 진단 모드를 처리한다.
+ */
 #version 450
 
 layout(location = 0) in vec3 FragNormal;

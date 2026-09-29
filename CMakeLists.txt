@@ -166,7 +166,7 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
                 "${ShaderSource}"
                 -o "${ShaderBinary}"
-        DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/SurfaceSolverCommon.glsl"
+        DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
     )

@@ -1,7 +1,11 @@
+/**
+ * @file SurfaceSolverPass2.comp
+ * @brief 이웃 유입·유출·감쇠를 합산해 텍셀별 다음 상태 계산.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
-#include "SurfaceSolverCommon.glsl"
+#include "Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
@@ -34,9 +38,9 @@ void main()
 
             uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
             float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
-            // Pass 1 writes alpha=0 for invalid/unsupported source texel-channels.
-            // alpha=0 also guards stale/uninitialized RawFlux slots of inactive sources.
-            // 이벤트 입력은 전달 계산 뒤 반영하므로 빈 source의 새 입력은 다음 step부터 전달한다.
+            // Pass 1은 유효하지 않거나 해당 channel을 지원하지 않는 source의 OutgoingFluxScale을 0으로 기록한다.
+            // 비활성 source의 RawFlux slot에 이전 값이나 미초기화 값이 남아 있어도 0 scale로 읽기를 막는다.
+            // Event Input은 flux 계산 후 반영하므로 비어 있던 source에 새로 들어온 양은 다음 step부터 전달된다.
             if (NeighborScale <= 0.0)
             {
                 continue;
@@ -62,7 +66,7 @@ void main()
                 {
                     prepareSourceGeometry(NeighborTexel);
                 }
-                // Recompute the same directed source edge, including its source-side weight.
+                // source 쪽 transfer weight를 포함해 cache 사용 시와 같은 방향의 edge flux를 다시 계산한다.
                 NeighborRawIncoming = rawFlux(TexelIndex, ChannelIndex,
                     transferWeight(NeighborTexel, ReverseSlot), SourceParameters, SourceSaturation);
             }
@@ -75,7 +79,7 @@ void main()
         float Decay = decayAmount(TexelIndex, ChannelIndex);
         float EventInput = InputDelta.Values[StateValueIndex];
         InputDelta.Values[StateValueIndex] = 0.0;
-        // 유입·입력의 초과량도 보존하고 다음 step의 기존 RawFlux로 다시 전달한다.
+        // 유입량과 Event Input은 Capacity를 넘어도 보존하며, 다음 step에서 다시 이웃으로 전달될 수 있다.
         NextState.Values[StateValueIndex] = max(Current + EventInput + Incoming - Outgoing - Decay, 0.0);
     }
 }

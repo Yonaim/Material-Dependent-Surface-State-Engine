@@ -1,3 +1,7 @@
+/**
+ * @file SurfaceDebug.vert
+ * @brief Surface Debug 렌더링 데이터를 준비하고 Meso Offset 모드에서 정점을 변위한다.
+ */
 #version 450
 
 layout(location = 0) in vec3 InPosition;
@@ -69,7 +73,7 @@ void main()
     FragTangentSign = InTangent.w;
     FragUV = InUV;
     FragSurfaceIndex = gl_InstanceIndex;
-    // 상태 히트맵의 입체 음영에 쓸 복원 노멀을 정점에서 찾아 화면 공간으로 변환한다.
+    // 상태 히트맵에 입체감을 더할 Meso Normal을 조회해 월드 공간으로 변환한다.
     FragMesoNormalWS = FragNormal;
     uint Surface = uint(gl_InstanceIndex);
     if (Surface < uint(SurfaceRanges.Values.length()))
@@ -86,7 +90,7 @@ void main()
     vec3 LocalPosition = InPosition;
     if (MaterialRenderModeIsMesoOffset())
     {
-        // 렌더 정점 UV에 대응하는 시뮬레이션 텍셀 높이만큼 원본 정점을 이동한다.
+        // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.
         uint Surface = uint(gl_InstanceIndex);
         if (Surface < uint(SurfaceRanges.Values.length()))
         {

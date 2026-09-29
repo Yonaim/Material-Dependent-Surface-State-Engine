@@ -1,3 +1,7 @@
+/**
+ * @file SurfaceDebug.frag
+ * @brief Surface 상태, 유효성, 이웃, texel 및 Meso 형상을 Surface Debug 뷰에 출력한다.
+ */
 #version 450
 
 layout(location = 0) in vec3 FragNormal;
@@ -93,7 +97,7 @@ layout(std430, set = 1, binding = 17) readonly buffer TSurfaceMesoNormals
 layout(location = 0) out vec4 OutColor;
 
 const uint InvalidIndex = 0xffffffffu;
-// 값은 TRenderViewMode enum과 일치해야 한다.
+// 값은 TRenderViewMode enum의 항목과 일치해야 한다.
 const uint RENDER_MODE_SURFACE_STATE_HEATMAP = 6u;
 const uint RENDER_MODE_SURFACE_VALIDITY = 7u;
 const uint RENDER_MODE_SURFACE_ID = 8u;
@@ -297,7 +301,7 @@ void main()
         return;
     }
 
-    // 시뮬레이션에서 제외한 Surface도 형상 진단 뷰에서는 표시한다.
+    // simulation 대상이 아닌 Surface도 형상 진단 뷰에는 표시한다.
     if (!bSimulationEnabled)
     {
         OutColor = vec4(0.18, 0.20, 0.24, 1.0);
