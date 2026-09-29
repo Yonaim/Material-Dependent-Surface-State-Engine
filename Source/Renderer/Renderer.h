@@ -77,6 +77,9 @@ namespace MDSS
         // Debug preview reference, independent of the pending per-Surface simulation contract.
         float HeightReference = 0.01F;
         float DisplacementScale = 1.0F;
+        // 0: shaded surface, 1: grid overlay, 2: grid on a dark surface.
+        std::uint32_t HeightGridMode = 0;
+        std::uint32_t HeightGridBlockSize = 8;
     };
 
     class TAssetManager;

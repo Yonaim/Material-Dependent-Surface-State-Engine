@@ -1818,6 +1818,18 @@ namespace MDSS
             {
                 FrameRenderer->SetFlipNormalY(bFlipNormalY);
             }
+
+            DrawSectionHeader("Height Surface Grid");
+            auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+            int GridMode = static_cast<int>(Settings.HeightGridMode);
+            const char* Modes[] = {"Off", "Overlay", "Grid only"};
+            bool Changed = ImGui::Combo("Grid", &GridMode, Modes, 3);
+            Settings.HeightGridMode = static_cast<std::uint32_t>(GridMode);
+            int BlockSize = static_cast<int>(Settings.HeightGridBlockSize);
+            Changed |= ImGui::SliderInt("Cell texels", &BlockSize, 1, 64);
+            Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
+            ImGui::TextDisabled("Meso / Accumulation / Final Geometry");
+            if (Changed) FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
         }
         ImGui::End();
     }

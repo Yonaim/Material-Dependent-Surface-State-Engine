@@ -1009,7 +1009,8 @@ namespace MDSS
     {
         const auto Positive = [](float Value) { return std::isfinite(Value) && Value >= 1e-8F && Value <= 1e6F; };
         if (!Positive(Settings.RawStateMax) || !Positive(Settings.HeightMax) || !Positive(Settings.HeightReference) ||
-            !Positive(Settings.DisplacementScale) || Settings.AccumulationComponent > 3)
+            !Positive(Settings.DisplacementScale) || Settings.AccumulationComponent > 3 ||
+            Settings.HeightGridMode > 2 || Settings.HeightGridBlockSize < 1 || Settings.HeightGridBlockSize > 256)
             throw std::invalid_argument("Invalid Surface debug range, reference, scale or component.");
         if (Settings.HeightReference != SurfaceDebugSettings.HeightReference && TexelInspector)
             TexelInspector->Invalidate();
@@ -1403,7 +1404,8 @@ namespace MDSS
                  SurfaceDebugSettings.HeightMax,
                  SurfaceDebugSettings.HeightReference,
                  SurfaceDebugSettings.DisplacementScale},
-                {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent, 0U, 0U}};
+                {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent,
+                 SurfaceDebugSettings.HeightGridMode, SurfaceDebugSettings.HeightGridBlockSize}};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
             VkDescriptorImageInfo BaseImage{};
@@ -1471,7 +1473,8 @@ namespace MDSS
                  SurfaceDebugSettings.HeightMax,
                  SurfaceDebugSettings.HeightReference,
                  SurfaceDebugSettings.DisplacementScale},
-                {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent, 0U, 0U}};
+                {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent,
+                 SurfaceDebugSettings.HeightGridMode, SurfaceDebugSettings.HeightGridBlockSize}};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
         }
     }

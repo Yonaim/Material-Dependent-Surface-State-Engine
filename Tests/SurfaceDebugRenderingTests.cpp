@@ -473,11 +473,14 @@ namespace MDSS::Tests
         Side.ViewProjection[3][2] = 0.2F;
         std::array<TTexelGeometryVertex, 9> Computed{};
         const auto RenderGrid = [&](bool bAB, bool bAccumulation, float Scale,
-                                    TRenderViewMode Mode = TRenderViewMode::SurfaceFinalGeometry)
+                                    TRenderViewMode Mode = TRenderViewMode::SurfaceFinalGeometry,
+                                    std::uint32_t GridMode = 0, std::uint32_t BlockSize = 1)
         {
             TUniform Uniform;
             Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
             Uniform.DebugOptions = {4, 0.5F, 0.1F, Scale};
+            Uniform.DebugFlags.z = GridMode;
+            Uniform.DebugFlags.w = BlockSize;
             UniformBuffer.Upload(&Uniform, sizeof(Uniform));
             const auto Command = Context.GetCommands().BeginSingleTime();
             Preview.Record(Command, 0, GridDescriptors, 9, 0, 1, 0.1F, Scale, bAB, bAccumulation);
@@ -546,6 +549,24 @@ namespace MDSS::Tests
         Require(Close(Computed[4].PositionAndHeight.z, 0.4F) && Computed[0].PositionAndHeight.z == 0,
                 "Compute must store per-texel positions from the latest State without resampling sparse mesh vertices.");
         const auto EdgeNormal = Computed[3].Normal;
+
+        const auto GridOverlay = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 1);
+        const auto GridOnly = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 2);
+        const auto CoarseGrid = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 2, 2);
+        std::size_t BrightLines = 0, CoarseBrightLines = 0, DarkInterior = 0;
+        for (std::size_t P = 0; P < Raised.size(); ++P)
+        {
+            Require(Raised[P].a == GridOnly[P].a && Raised[P].a == GridOverlay[P].a,
+                    "Grid visualization must preserve the displaced silhouette.");
+            if (GridOnly[P].a > 0.5F)
+            {
+                BrightLines += GridOnly[P].b > 0.6F;
+                CoarseBrightLines += CoarseGrid[P].b > 0.6F;
+                DarkInterior += GridOnly[P].b < 0.1F;
+            }
+        }
+        Require(BrightLines > 50 && DarkInterior > BrightLines && CoarseBrightLines < BrightLines,
+                "Height grid must draw sparse texel cell boundaries and respond to block size.");
         const auto Reduced = RenderGrid(true, true, 0.5F);
         Require(Reduced[128 * Extent.width + 220].a == 0 && Close(Computed[4].PositionAndHeight.z, 0.2F),
                 "Display scale must affect actual texel geometry.");

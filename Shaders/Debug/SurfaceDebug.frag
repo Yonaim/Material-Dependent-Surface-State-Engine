@@ -86,6 +86,16 @@ vec3 TexelGridColor(vec2 Coordinate, vec2 PixelFootprint)
     return mix(Color, vec3(0.72, 0.88, 0.98), GridLines(BlockCoordinate, BlockFootprint, 1.4));
 }
 
+vec3 HeightGridColor(vec3 Color, uvec4 Range, vec2 UVFootprint)
+{
+    if (Material.DebugFlags.z == 0u) return Color;
+    float BlockSize = max(float(Material.DebugFlags.w), 1.0);
+    vec2 Coordinate = FragUV * vec2(Range.yz) / BlockSize;
+    vec2 Footprint = UVFootprint * vec2(Range.yz) / BlockSize;
+    vec3 Background = Material.DebugFlags.z == 2u ? vec3(0.035, 0.045, 0.060) : Color;
+    return mix(Background, vec3(0.72, 0.88, 0.98), GridLines(Coordinate, Footprint, 1.4));
+}
+
 vec3 TexelAreaColor(float Area)
 {
     float Reference = max(Material.DebugViewParameter, 1e-12);
@@ -147,7 +157,9 @@ void main()
     // fwidth와 dFdx/dFdy는 fragment별 조기 반환 전에 uniform 분기 안에서 계산한다.
     vec2 UVFootprint = vec2(0.0);
     float WorldAreaPerUV = 0.0;
-    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
+    bool HeightMode = Material.RenderMode == RENDER_MODE_MESO_HEIGHT || Material.RenderMode == RENDER_MODE_MESO_OFFSET ||
+                      Material.RenderMode == RENDER_MODE_ACCUMULATION || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY;
+    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID || (HeightMode && Material.DebugFlags.z != 0u))
     {
         UVFootprint = fwidth(FragUV);
     }
@@ -242,14 +254,14 @@ void main()
         vec3 Zero = vec3(0.12, 0.13, 0.17);
         vec3 Positive = vec3(1.0, 0.42, 0.10);
         vec3 Color = SignedT < 0.5 ? mix(Negative, Zero, SignedT * 2.0) : mix(Zero, Positive, (SignedT - 0.5) * 2.0);
-        OutColor = vec4(Color, 1.0);
+        OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1.0);
         return;
     }
     if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY)
     {
         vec3 Normal = normalize(FragMesoNormalWS);
         float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
-        OutColor = vec4(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Material.BaseColor.a);
+        OutColor = vec4(HeightGridColor(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Range, UVFootprint), Material.BaseColor.a);
         return;
     }
     if (Material.RenderMode == RENDER_MODE_MACRO_GEOMETRY)
@@ -319,7 +331,8 @@ void main()
         TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel, Material.StateChannelCount, Material.DebugOptions.z);
         if (D.Status != 3u)
         {
-            OutColor = vec4(D.Status == 4u ? vec3(1,0,1) : (D.Status == 2u ? vec3(0.42,0.42,0.45) : vec3(0.18,0.20,0.24)), 1);
+            vec3 Color = D.Status == 4u ? vec3(1,0,1) : (D.Status == 2u ? vec3(0.42,0.42,0.45) : vec3(0.18,0.20,0.24));
+            OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1);
             return;
         }
         uint Component = Material.DebugFlags.y;
@@ -327,7 +340,7 @@ void main()
         float Limit = Component == 3u ? 1.0 : max(Material.DebugOptions.y, 1e-12);
         vec3 Color = HeatColor(Value / Limit);
         if (Value > Limit) Color = vec3(1,0.25,0.05);
-        OutColor = vec4(Color, 1);
+        OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1);
         return;
     }
 
