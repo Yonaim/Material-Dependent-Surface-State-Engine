@@ -12,6 +12,7 @@
 #include "Renderer/RenderPass.h"
 #include "Renderer/Swapchain.h"
 #include "SurfaceStateSystem/Debug/TexelInspector.h"
+#include "SurfaceStateSystem/Debug/TexelGeometryPreview.h"
 #include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/SurfaceStateSystem.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
@@ -47,7 +48,7 @@ namespace MDSS
         SolverTransferWeight = 12,
         /** @brief 부호가 있는 중간 규모 높이를 색상으로 표시한다. */
         MesoHeight = 13,
-        /** @brief 렌더 정점을 대응 텍셀의 Meso 높이만큼 옮긴다. */
+        /** @brief texel 연결면을 복원한 Meso 높이로 표시한다. */
         MesoOffset = 14,
         /** @brief 원본 거시 형상을 노멀 맵 음영 없이 표시한다. */
         MacroGeometry = 15,
@@ -219,6 +220,8 @@ namespace MDSS
         bool                                  bWorldGridVisible = true;
         bool                                  bWorldAxisVisible = true;
         std::unique_ptr<TGraphicsPipeline>    SurfaceDebugPipeline;
+        std::unique_ptr<TTexelGeometryPreview> TexelGeometryPreview;
+        std::unique_ptr<TGraphicsPipeline>     TexelGeometryPipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;

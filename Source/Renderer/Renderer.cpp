@@ -329,6 +329,24 @@ namespace MDSS
             return Config;
         }
 
+        bool UsesTexelGeometry(TRenderViewMode Mode)
+        {
+            return Mode == TRenderViewMode::MesoHeight || Mode == TRenderViewMode::MesoOffset ||
+                   Mode == TRenderViewMode::SurfaceAccumulation || Mode == TRenderViewMode::SurfaceFinalGeometry;
+        }
+
+        TGraphicsPipelineConfig BuildTexelGeometryPipelineConfig(VkDescriptorSetLayout MaterialLayout,
+                                                                  VkDescriptorSetLayout SurfaceLayout,
+                                                                  VkDescriptorSetLayout OutputLayout)
+        {
+            auto Config = BuildSurfaceDebugPipelineConfig(MaterialLayout, SurfaceLayout);
+            Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/TexelGeometry.vert.spv";
+            Config.VertexBindings.clear();
+            Config.VertexAttributes.clear();
+            Config.DescriptorSetLayouts.push_back(OutputLayout);
+            return Config;
+        }
+
         TGraphicsPipelineConfig BuildGizmoPipelineConfig()
         {
             TGraphicsPipelineConfig Config{};
@@ -447,6 +465,11 @@ namespace MDSS
                                                                Context.GetDevice(),
                                                                Descriptors->GetLayout(),
                                                                TRenderContext::MaxFramesInFlight);
+            TexelGeometryPreview = std::make_unique<TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                Context.GetDevice(), Descriptors->GetLayout(), Scene.GetStaticMeshInstances().size());
+            TexelGeometryPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(),
+                MainRenderPass.GetHandle(), BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
+                    Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
         }
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
@@ -490,6 +513,8 @@ namespace MDSS
         DestroyRenderFinishedSemaphores();
 
         SurfaceDebugPipeline.reset();
+        TexelGeometryPipeline.reset();
+        TexelGeometryPreview.reset();
         TexelInspector.reset();
         SurfaceStates.reset();
 
@@ -711,6 +736,8 @@ namespace MDSS
         std::unique_ptr<TSurfaceStateSystem> Replacement;
         std::unique_ptr<TGraphicsPipeline> ReplacementDebugPipeline;
         std::unique_ptr<TTexelInspector>     ReplacementInspector;
+        std::unique_ptr<TTexelGeometryPreview> ReplacementGeometryPreview;
+        std::unique_ptr<TGraphicsPipeline> ReplacementGeometryPipeline;
         try
         {
             Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
@@ -738,6 +765,11 @@ namespace MDSS
                                                                          Context.GetDevice(),
                                                                          Descriptors->GetLayout(),
                                                                          TRenderContext::MaxFramesInFlight);
+                ReplacementGeometryPreview = std::make_unique<TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                    Context.GetDevice(), Descriptors->GetLayout(), Scene.GetStaticMeshInstances().size());
+                ReplacementGeometryPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(),
+                    MainRenderPass.GetHandle(), BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
+                        Descriptors->GetLayout(), ReplacementGeometryPreview->GetOutputLayout()));
             }
         }
         catch (...)
@@ -746,6 +778,8 @@ namespace MDSS
             throw;
         }
         SurfaceDebugPipeline.reset();
+        TexelGeometryPipeline.reset();
+        TexelGeometryPreview.reset();
         TexelInspector.reset();
         InspectedTexel.reset();
         SimulationStepSerial = 0;
@@ -754,6 +788,8 @@ namespace MDSS
         LastSimulationStepCount = 0;
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
         TexelInspector = std::move(ReplacementInspector);
+        TexelGeometryPreview = std::move(ReplacementGeometryPreview);
+        TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
         Assets.SetSimulationResolution(Scene.GetSimulationResolution());
         if (bResetStateSettings)
         {
@@ -1482,6 +1518,27 @@ namespace MDSS
                     SimulationStepSerial);
         }
 
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase);
+        const bool bTexelGeometry = UsesTexelGeometry(ViewMode) && TexelGeometryPreview && TexelGeometryPipeline;
+        if (bTexelGeometry)
+        {
+            const auto& Resources = SurfaceStates->GetGPUResources();
+            const bool bAccumulation = ViewMode == TRenderViewMode::SurfaceAccumulation ||
+                                       ViewMode == TRenderViewMode::SurfaceFinalGeometry;
+            for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
+            {
+                const auto* Shared = Resources.GetInstanceSharedGeometry(Instance);
+                const auto* Descriptors = Resources.GetInstanceDescriptors(Instance);
+                if (Shared && Descriptors && Shared->GetTexelMeshIndexBuffer())
+                    TexelGeometryPreview->Record(CommandBuffer, Instance, *Descriptors,
+                        static_cast<std::uint32_t>(Shared->GetTexelCount()), DebugStateChannel,
+                        static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(Instance)),
+                        SurfaceDebugSettings.HeightReference, bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F,
+                        Resources.IsCurrentStateAB(Instance), bAccumulation);
+            }
+        }
+
         std::array<VkClearValue, 2> ClearValues{};
         ClearValues[0].color = {{0.03F, 0.04F, 0.06F, 1.0F}};
         ClearValues[1].depthStencil = {1.0F, 0};
@@ -1495,16 +1552,13 @@ namespace MDSS
         RenderPassInfo.clearValueCount = static_cast<std::uint32_t>(ClearValues.size());
         RenderPassInfo.pClearValues = ClearValues.data();
 
-        if (TimestampQueryPool != VK_NULL_HANDLE)
-        {
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase);
-        }
         vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         const bool bShowSurfaceDebug = ViewMode >= TRenderViewMode::SurfaceStateHeatmap;
         const bool bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
         const bool bWireframe = ViewMode == TRenderViewMode::Wireframe;
         vkCmdBindPipeline(CommandBuffer,
                           VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          bTexelGeometry ? TexelGeometryPipeline->GetHandle() :
                           bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle()
                                                : (bWireframe ? WireframePipeline.GetHandle()
                                                              : StaticMeshPipeline.GetHandle()));
@@ -1558,6 +1612,29 @@ namespace MDSS
                 SurfaceGPU.GetInstanceDescriptors(CurrentSceneIndex);
             if (bShowSurfaceDebug && (!bCanShowSurfaceDebug || SurfaceDescriptors == nullptr))
             {
+                continue;
+            }
+            if (bTexelGeometry)
+            {
+                const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
+                if (!Shared || !Shared->GetTexelMeshIndexBuffer()) continue;
+                const auto Layout = TexelGeometryPipeline->GetLayout();
+                const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
+                vkCmdPushConstants(CommandBuffer, Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push), &Push);
+                vkCmdBindIndexBuffer(CommandBuffer, Shared->GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+                const std::array<VkDescriptorSet, 2> Sets{
+                    SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex) ? SurfaceDescriptors->GetABSet() : SurfaceDescriptors->GetBASet(),
+                    TexelGeometryPreview->GetOutputSet(CurrentSceneIndex)};
+                vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 1, Sets.size(), Sets.data(), 0, nullptr);
+                for (const auto& Section : Mesh.GetSections())
+                {
+                    if (Section.Material >= MaterialResources.size() || Section.Surface >= Shared->GetTexelMeshRanges().size()) continue;
+                    const auto& Range = Shared->GetTexelMeshRanges()[Section.Surface];
+                    if (Range.IndexCount == 0) continue;
+                    const auto MaterialSet = MaterialResources[Section.Material].DescriptorSet;
+                    vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 0, 1, &MaterialSet, 0, nullptr);
+                    vkCmdDrawIndexed(CommandBuffer, Range.IndexCount, 1, Range.FirstIndex, 0, 0);
+                }
                 continue;
             }
             const VkBuffer     VertexBuffer = Mesh.GetVertexBuffer().GetHandle();

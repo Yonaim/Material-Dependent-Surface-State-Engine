@@ -1581,7 +1581,7 @@ namespace MDSS
                     case TRenderViewMode::SurfaceFinalGeometry:
                     {
                         const bool bFinal = CurrentMode == TRenderViewMode::SurfaceFinalGeometry;
-                        BeginViewContext(bFinal ? "FINAL GEOMETRY" : "ACCUMULATION", "선택 State의 적층 미리보기.");
+                        BeginViewContext(bFinal ? "FINAL GEOMETRY" : "ACCUMULATION", "선택 State의 적층을 texel 연결면으로 표시합니다. UV chart 경계는 열린 상태입니다.");
                         DrawDebugStateSelector();
                         auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
                         bool Changed = false;
@@ -1605,21 +1605,22 @@ namespace MDSS
                                                     "%.4g",
                                                     ImGuiSliderFlags_AlwaysClamp);
                         ImGui::NewLine();
+                        ImGui::SetNextItemWidth(95.0F);
+                        Changed |= ImGui::DragFloat("Display scale",
+                                                    &Settings.DisplacementScale,
+                                                    0.1F,
+                                                    1e-8F,
+                                                    1e6F,
+                                                    "%.3gx",
+                                                    ImGuiSliderFlags_AlwaysClamp);
                         if (bFinal)
                         {
-                            ImGui::SetNextItemWidth(95.0F);
-                            Changed |= ImGui::DragFloat("Display scale",
-                                                        &Settings.DisplacementScale,
-                                                        0.1F,
-                                                        1e-8F,
-                                                        1e6F,
-                                                        "%.3gx",
-                                                        ImGuiSliderFlags_AlwaysClamp);
                             ImGui::SameLine();
                             ImGui::TextDisabled("Meso + selected State; scale affects display only");
                         }
                         else if (Settings.AccumulationComponent != 3)
                         {
+                            ImGui::SameLine();
                             ImGui::SetNextItemWidth(95.0F);
                             Changed |= ImGui::DragFloat("Height max",
                                                         &Settings.HeightMax,
@@ -1633,7 +1634,10 @@ namespace MDSS
                             DrawLegendColor({1, 0.25F, 0.05F, 1}, "> Max");
                         }
                         else
+                        {
+                            ImGui::SameLine();
                             ImGui::TextDisabled("Cavity Fill: fixed 0-100%%; excess goes to Following Height");
+                        }
                         if (Changed)
                             FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
                         if (!bFinal)
@@ -1767,14 +1771,14 @@ namespace MDSS
                         break;
                     }
                     case TRenderViewMode::MesoHeight:
-                        BeginViewContext("MESO COLOR", "복원 높이의 부호와 크기.");
+                        BeginViewContext("MESO COLOR", "texel 연결면에서 복원 높이의 부호와 크기를 표시합니다.");
                         DrawLegendColor({0.12F, 0.52F, 0.92F, 1.0F}, "음수");
                         DrawLegendColor({0.12F, 0.13F, 0.17F, 1.0F}, "0 기준");
                         DrawLegendColor({1.0F, 0.42F, 0.10F, 1.0F}, "양수");
                         break;
                     case TRenderViewMode::MesoOffset:
                         BeginViewContext("MESO DISPLACEMENT",
-                                         "Meso 높이만큼 정점을 이동합니다. 회백색은 재질·조명이며 높이 색상은 Meso Color에서 확인하세요.");
+                                         "texel 연결면에 Meso 높이를 적용합니다. 높이 색상은 Meso Color에서 확인하세요.");
                         break;
                     case TRenderViewMode::MacroGeometry:
                         BeginViewContext("MACRO GEOMETRY", "노멀 맵 효과를 제외한 원본 형상.");
@@ -2149,7 +2153,7 @@ namespace MDSS
             Row("Final height", S.Values[3].w);
             ImGui::EndTable();
         }
-        ImGui::Text("Final local normal: %.4g, %.4g, %.4g", S.Values[5].x, S.Values[5].y, S.Values[5].z);
+        ImGui::Text("Final local normal (scale 1): %.4g, %.4g, %.4g", S.Values[5].x, S.Values[5].y, S.Values[5].z);
     }
 
     void TDebugUI::DrawSimulationCommonControls()
