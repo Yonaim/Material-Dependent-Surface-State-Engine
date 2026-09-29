@@ -34,7 +34,7 @@ Mapping의 TriangleID와 barycentric coordinate로 Solver가 읽을 정적 `TSha
 - geodesic distance
 - Accumulation에 따른 동적 갱신
 
-이렇게 하면 Solver 구조를 먼저 검증하면서도 나중에 Meso/동적 geometry 필드를 교체할 수 있다.
+이렇게 하면 Solver 구조를 먼저 검증하면서도 나중에 Virtual Meso Geometry/동적 geometry 필드를 교체할 수 있다.
 
 ## CPU 자료구조
 

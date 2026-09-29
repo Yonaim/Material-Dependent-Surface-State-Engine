@@ -42,7 +42,7 @@ State 종류를 고정 C++ enum이나 별도 `SurfaceStateSchema`로 정의하�
 | Dynamic Instance State | texel별 동적 vector channel과 `TSurfaceContactInput::TStateId` 적용 | Branch 4에서 Registry channel count를 instance state/GPU resource에 연결 |
 | Runtime Surface payload | Mapping → shared geometry/texel Profile map 변환, sentinel·범위 검증 완료 | Profile Distribution 입력 형식·loader와 Runtime Asset/Scene 호출 연결을 Branch 3에 배정 |
 | 이전 binary cache API | serializer 및 metadata API가 구현돼 있음 | 새 결정에서는 목표 경로에서 제거하거나 비활성화. Cache lookup/save는 Branch 3 범위에서 제외 |
-| Normal Map 전처리 | Normal Map은 Runtime builder 입력으로 예정 | CPU texel sample로 Meso/Curvature를 생성하는 알고리즘 미정·미구현 |
+| Normal Map 전처리 | Normal Map은 Runtime builder 입력으로 예정 | CPU texel sample로 Virtual Height/Curvature를 생성하는 알고리즘 미정·미구현 |
 
 ## 가장 먼저 해결할 기존 코드 문제
 
@@ -235,4 +235,4 @@ Registry/Profile 연결 테스트도 이번 브랜치 문서 범위에 포함한
 - geodesic distance
 - GPU buffer upload
 - persistent binary serialization 및 cache invalidation은 새 결정에 따라 구현 범위에서 제외
-- Normal Map 기반 Meso geometry 값의 최종 생성 알고리즘 및 품질 조정
+- Normal Map 기반 Virtual Meso Geometry 값의 최종 생성 알고리즘 및 품질 조정

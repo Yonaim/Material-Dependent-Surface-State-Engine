@@ -241,7 +241,7 @@ State debug view는 고정 범위 포화도 히트맵과 0–1 범례로 표시�
 
 - GPU contact event reduce/atomic
 - ProfileBoundaryWeight 결합식은 [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]]에서 결정했다. 적용 구현은 Week 5 Branch 2 범위다.
-- Normal Map/Meso geometry
+- Normal Map/Virtual Meso Geometry
 - Accumulation dynamic geometry
 - SurfaceWater/Snow의 구체적인 물리 layer 모델과 실제 transition step (별도 설계 범위)
 - 렌더링 품질 표현
