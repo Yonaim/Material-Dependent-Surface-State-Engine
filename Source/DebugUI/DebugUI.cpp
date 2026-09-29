@@ -962,7 +962,7 @@ namespace MDSS
             const glm::vec3 ViewDirection = CameraData.GetTarget() - CameraData.GetPosition();
             if (glm::dot(ViewDirection, ViewDirection) > 1.0e-12F)
             {
-                DollyCamera(CameraData, IO.MouseWheel);
+                DollyCamera(CameraData, IO.MouseWheel * (CameraZoomSpeed / 12.0F));
             }
         }
 
@@ -973,6 +973,18 @@ namespace MDSS
         if (ActiveGizmoAxis >= 0)
         {
             return;
+        }
+
+        // Main-row Minus and Equal keys work on tenkeyless keyboards; Equal also
+        // covers the shifted Plus character on the same physical key.
+        const float ZoomSteps = CameraZoomSpeed * IO.DeltaTime;
+        if (ImGui::IsKeyDown(ImGuiKey_Minus))
+        {
+            DollyCamera(CameraData, -ZoomSteps);
+        }
+        if (ImGui::IsKeyDown(ImGuiKey_Equal))
+        {
+            DollyCamera(CameraData, ZoomSteps);
         }
 
         const glm::vec3 ViewDirection = CameraData.GetTarget() - CameraData.GetPosition();
@@ -1020,9 +1032,8 @@ namespace MDSS
             return;
         }
 
-        constexpr float MoveSpeed = 2.5F;
         constexpr float FastMoveMultiplier = 3.0F;
-        const float     Speed = MoveSpeed * (IO.KeyShift ? FastMoveMultiplier : 1.0F);
+        const float     Speed = CameraMoveSpeed * (IO.KeyShift ? FastMoveMultiplier : 1.0F);
         const glm::vec3 Delta = glm::normalize(MoveDirection) * Speed * IO.DeltaTime;
         CameraData.SetPosition(CameraData.GetPosition() + Delta);
         CameraData.SetTarget(CameraData.GetTarget() + Delta);
@@ -1033,11 +1044,14 @@ namespace MDSS
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         const float    AvailableWidth = std::max(Viewport->WorkSize.x, 1.0F);
         const float    CameraWidth = std::min(330.0F, std::max(240.0F, AvailableWidth - 20.0F));
-        const ImVec2   WindowSize{CameraWidth, 215.0F};
+        const ImVec2   WindowSize{CameraWidth, 275.0F};
         const ImVec2   WindowPosition{Viewport->WorkPos.x + 10.0F, Viewport->WorkPos.y + 10.0F};
 
         ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSizeConstraints({240.0F, 275.0F},
+                                            {std::numeric_limits<float>::max(),
+                                             std::numeric_limits<float>::max()});
 
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
 
@@ -1077,9 +1091,12 @@ namespace MDSS
                 CameraData.SetVerticalFieldOfViewDegrees(FieldOfViewDegrees);
             }
 
+            LabeledSliderFloat("Zoom speed", &CameraZoomSpeed, 4.0F, 36.0F, "%.0f steps/s");
+            LabeledSliderFloat("Move speed", &CameraMoveSpeed, 0.5F, 20.0F, "%.1f units/s");
+
             ImGui::Separator();
             ImGui::TextDisabled("RMB + Mouse: look  |  WASD: move");
-            ImGui::TextDisabled("Shift: faster  |  Wheel: dolly");
+            ImGui::TextDisabled("Shift: 3x move  |  Wheel / hold - / = (+): zoom");
         }
         ImGui::End();
     }

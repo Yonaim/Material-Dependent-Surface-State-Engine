@@ -94,6 +94,8 @@ namespace MDSS
         TRenderer*   FrameRenderer = nullptr;
         TAssetManager* AssetManager = nullptr;
         bool        bRotatingCamera = false;
+        float       CameraZoomSpeed = 12.0F;
+        float       CameraMoveSpeed = 2.5F;
         bool        bDockLayoutInitialized = false;
         bool        bInjectMode = false;
         TStateId    InjectState = 0;
