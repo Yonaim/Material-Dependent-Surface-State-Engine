@@ -210,6 +210,8 @@ namespace MDSS
             std::uint32_t StateChannelCount = 0;
             float         DebugViewParameter = 0.0F;
             float         ReliefShadingEnabled = 1.0F;
+            glm::vec4     DebugOptions{4.0F, 0.01F, 0.01F, 1.0F};
+            glm::uvec4    DebugFlags{0};
         };
 
         const char* GetRenderViewModeName(TRenderViewMode Mode)
@@ -250,6 +252,10 @@ namespace MDSS
                     return "Macro Geometry";
                 case TRenderViewMode::SurfaceTexelGrid:
                     return "Texel Grid";
+                case TRenderViewMode::SurfaceAccumulation:
+                    return "Accumulation";
+                case TRenderViewMode::SurfaceFinalGeometry:
+                    return "Final Geometry";
                 case TRenderViewMode::SurfaceTexelArea:
                     return "Texel Area Heatmap";
             }
@@ -258,7 +264,7 @@ namespace MDSS
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 48, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 80, "TMaterialUniform must match the std140 shader block layout.");
 
         TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -940,6 +946,16 @@ namespace MDSS
         return bStateHeatmapReliefShadingEnabled;
     }
 
+    void TRenderer::SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings)
+    {
+        const auto Positive = [](float Value) { return std::isfinite(Value) && Value >= 1e-8F && Value <= 1e6F; };
+        if (!Positive(Settings.RawStateMax) || !Positive(Settings.HeightMax) || !Positive(Settings.HeightReference) ||
+            !Positive(Settings.DisplacementScale) || Settings.AccumulationComponent > 3)
+            throw std::invalid_argument("Invalid Surface debug range, reference, scale or component.");
+        SurfaceDebugSettings = Settings;
+        UpdateMaterialUniforms();
+    }
+
     void TRenderer::SetStateHeatmapReliefShadingEnabled(bool bEnabled)
     {
         if (bStateHeatmapReliefShadingEnabled == bEnabled)
@@ -1267,15 +1283,21 @@ namespace MDSS
                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             MaterialResources[Index].DescriptorSet = Sets[Index];
 
-            const TMaterialUniform Uniform{Material.GetBaseColor(),
-                                           static_cast<std::uint32_t>(ViewMode),
-                                           bFlipNormalY ? 1U : 0U,
-                                           NormalStrength,
-                                           AmbientLight,
-                                           DebugStateChannel,
-                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
-                                           GetDebugViewParameter(),
-                                           bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F};
+            const TMaterialUniform Uniform{
+                Material.GetBaseColor(),
+                static_cast<std::uint32_t>(ViewMode),
+                bFlipNormalY ? 1U : 0U,
+                NormalStrength,
+                AmbientLight,
+                DebugStateChannel,
+                static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                GetDebugViewParameter(),
+                bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F,
+                {SurfaceDebugSettings.RawStateMax,
+                 SurfaceDebugSettings.HeightMax,
+                 SurfaceDebugSettings.HeightReference,
+                 SurfaceDebugSettings.DisplacementScale},
+                {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent, 0U, 0U}};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
 
             VkDescriptorImageInfo BaseImage{};
@@ -1329,15 +1351,21 @@ namespace MDSS
             }
 
             const TMaterialAsset&  Material = Assets.GetMaterial(static_cast<TMaterialAssetHandle>(Index));
-            const TMaterialUniform Uniform{Material.GetBaseColor(),
-                                           static_cast<std::uint32_t>(ViewMode),
-                                           bFlipNormalY ? 1U : 0U,
-                                           NormalStrength,
-                                           AmbientLight,
-                                           DebugStateChannel,
-                                           static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
-                                           GetDebugViewParameter(),
-                                           bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F};
+            const TMaterialUniform Uniform{
+                Material.GetBaseColor(),
+                static_cast<std::uint32_t>(ViewMode),
+                bFlipNormalY ? 1U : 0U,
+                NormalStrength,
+                AmbientLight,
+                DebugStateChannel,
+                static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
+                GetDebugViewParameter(),
+                bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F,
+                {SurfaceDebugSettings.RawStateMax,
+                 SurfaceDebugSettings.HeightMax,
+                 SurfaceDebugSettings.HeightReference,
+                 SurfaceDebugSettings.DisplacementScale},
+                {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent, 0U, 0U}};
             MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
         }
     }

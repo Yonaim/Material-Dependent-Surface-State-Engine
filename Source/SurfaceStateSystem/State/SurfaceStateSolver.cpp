@@ -179,6 +179,24 @@ namespace MDSS
             Constants.NormalMatrixAndUpColumns[Column][3] = Up[static_cast<glm::length_t>(Column)];
         }
 
+        // Previous frames can still read either ping-pong buffer in debug vertex/fragment shaders.
+        // Order those reads before this step reuses the buffers as compute outputs.
+        VkMemoryBarrier ReadCompletion{};
+        ReadCompletion.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        ReadCompletion.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        ReadCompletion.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        vkCmdPipelineBarrier(CommandBuffer,
+                             VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             0,
+                             1,
+                             &ReadCompletion,
+                             0,
+                             nullptr,
+                             0,
+                             nullptr);
+
         const std::size_t CacheMode = (SolverFlags & SurfaceSolverDisableRawFluxCacheFlag) == 0U ? 0U : 1U;
         const std::uint32_t WorkgroupCount = static_cast<std::uint32_t>((TexelCount + 63U) / 64U);
         vkCmdBindDescriptorSets(CommandBuffer,
@@ -273,7 +291,8 @@ namespace MDSS
                 VK_ACCESS_SHADER_READ_BIT)};
         vkCmdPipelineBarrier(CommandBuffer,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                                 VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
                              0,
                              0,
                              nullptr,

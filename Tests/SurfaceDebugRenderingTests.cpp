@@ -64,8 +64,10 @@ namespace MDSS::Tests
             std::uint32_t StateChannelCount = 1;
             float         DebugViewParameter = 1.0F / (256.0F * 256.0F);
             float         ReliefShadingEnabled = 0.0F;
+            glm::vec4     DebugOptions{4.0F, 0.01F, 0.01F, 1.0F};
+            glm::uvec4    DebugFlags{0};
         };
-        static_assert(sizeof(TUniform) == 48);
+        static_assert(sizeof(TUniform) == 80);
 
         struct TPush
         {

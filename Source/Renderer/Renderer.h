@@ -5,15 +5,13 @@
 
 #pragma once
 
-#include "SurfaceStateSystem/State/SimulationClock.h"
-#include <span>
-
 #include "AssetManager/Core/Asset.h"
 #include "Renderer/Framebuffer.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/Swapchain.h"
+#include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/SurfaceStateSystem.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
 #include "VulkanContext/GPU/GPUImage.h"
@@ -25,6 +23,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -54,7 +53,9 @@ namespace MDSS
         /** @brief 확대 시 개별 텍셀과 고정 크기 묶음의 UV 격자를 표시한다. */
         SurfaceTexelGrid = 16,
         /** @brief 원본 삼각형의 월드 면적 / UV 면적 / 텍셀 수를 표시한다. */
-        SurfaceTexelArea = 17
+        SurfaceTexelArea = 17,
+        SurfaceAccumulation = 18,
+        SurfaceFinalGeometry = 19
     };
 
     enum class TSolverTransferWeightView : std::uint32_t
@@ -63,6 +64,17 @@ namespace MDSS
         Distance,
         Normal,
         ProfileBoundary
+    };
+
+    struct TSurfaceDebugDisplaySettings
+    {
+        bool          bRawState = false;
+        std::uint32_t AccumulationComponent = 0;
+        float         RawStateMax = 4.0F;
+        float         HeightMax = 0.01F;
+        // Debug preview reference, independent of the pending per-Surface simulation contract.
+        float HeightReference = 0.01F;
+        float DisplacementScale = 1.0F;
     };
 
     class TAssetManager;
@@ -118,6 +130,11 @@ namespace MDSS
         void SetDebugStateChannel(std::uint32_t Channel);
         [[nodiscard]] bool                      IsStateHeatmapReliefShadingEnabled() const noexcept;
         void                                    SetStateHeatmapReliefShadingEnabled(bool bEnabled);
+        [[nodiscard]] const TSurfaceDebugDisplaySettings& GetSurfaceDebugDisplaySettings() const noexcept
+        {
+            return SurfaceDebugSettings;
+        }
+        void SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings);
         [[nodiscard]] TSolverTransferWeightView GetSolverTransferWeightView() const noexcept;
         void SetSolverTransferWeightView(TSolverTransferWeightView View);
         [[nodiscard]] std::uint32_t             GetTexelGridBlockSize() const noexcept;
@@ -200,6 +217,7 @@ namespace MDSS
         TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
         std::uint32_t                         DebugStateChannel = 0;
         bool                                 bStateHeatmapReliefShadingEnabled = true;
+        TSurfaceDebugDisplaySettings          SurfaceDebugSettings;
         TSolverTransferWeightView             SolverTransferWeightView = TSolverTransferWeightView::Combined;
         std::uint32_t                         TexelGridBlockSize = 8;
         float                                 TexelAreaReference = 1.0e-4F;
