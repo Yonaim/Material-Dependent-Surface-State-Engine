@@ -1,0 +1,39 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define SURFACE_DEBUG_SET 0
+#include "Debug/SurfaceDebugData.glsl"
+#include "Debug/TexelGeometryData.glsl"
+layout(local_size_x = 64) in;
+layout(set = 1, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } Output;
+layout(push_constant) uniform TPush
+{
+    uint TexelCount;
+    uint Channel;
+    uint Channels;
+    uint Accumulation;
+    float HeightReference;
+    float DisplayScale;
+} Push;
+void main()
+{
+    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (T >= Push.TexelCount) return;
+    vec3 P = Positions.Values[T].xyz;
+    vec3 N = Normals.Values[T].xyz;
+    float H = GeometryScalars.Values[T].MesoVirtualHeight;
+    if (isnan(H) || isinf(H)) H = 0.0;
+    vec3 FinalNormal = MesoNormals.Values[T].xyz;
+    if (TexelSurfaceIndices.Values[T] != 0xffffffffu && Push.Accumulation != 0u)
+    {
+        TDebugAccumulation D = DebugAccumulation(T, Push.Channel, Push.Channels, Push.HeightReference);
+        if (D.Status == 3u)
+            H += D.Height;
+        FinalNormal = DebugFinalNormal(T, Push.Channel, Push.Channels, Push.HeightReference, Push.DisplayScale);
+    }
+    if (any(isnan(FinalNormal)) || any(isinf(FinalNormal)) || dot(FinalNormal, FinalNormal) < 1e-12)
+        FinalNormal = N;
+    H *= Push.DisplayScale;
+    if (isnan(H) || isinf(H)) H = 0.0;
+    Output.Values[T].PositionAndHeight = vec4(P + N * H, H);
+    Output.Values[T].Normal = vec4(normalize(FinalNormal), 0.0);
+}

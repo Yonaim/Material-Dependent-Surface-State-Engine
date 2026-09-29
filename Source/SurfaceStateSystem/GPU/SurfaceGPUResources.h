@@ -6,6 +6,7 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
+#include "SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.h"
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
 #include "VulkanContext/GPU/GPUBuffer.h"
 
@@ -70,6 +71,8 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
+        [[nodiscard]] const TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept { return TexelMeshIndexBuffer.get(); }
+        [[nodiscard]] const std::vector<TSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept { return TexelMeshRanges; }
 
     private:
         std::size_t TexelCount = 0;
@@ -83,6 +86,8 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> ReverseNeighborSlotBuffer;
         std::unique_ptr<TGPUBuffer> SurfaceRangeBuffer;
         std::unique_ptr<TGPUBuffer> TexelChartIndexBuffer;
+        std::unique_ptr<TGPUBuffer> TexelMeshIndexBuffer;
+        std::vector<TSurfaceTexelMeshRange> TexelMeshRanges;
     };
 
     class TSurfaceProfileGPUResources final
@@ -207,6 +212,7 @@ namespace MDSS
         [[nodiscard]] TSurfaceRawFluxMemoryUsage GetRawFluxMemoryUsage() const noexcept;
         /** @brief Scene 벡터 인덱스에 해당하는 instance 디스크립터 리소스를 반환한다. */
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
+        [[nodiscard]] const TSurfaceSharedGeometryGPUResources* GetInstanceSharedGeometry(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;

@@ -190,6 +190,13 @@ namespace MDSS
         return Instance ? Instance->Descriptors.get() : nullptr;
     }
 
+    const TSurfaceSharedGeometryGPUResources*
+    TSurfaceGPUResourceManager::GetInstanceSharedGeometry(std::size_t SceneIndex) const
+    {
+        const auto& Instance = InstanceResources.at(SceneIndex);
+        return Instance ? SharedSurfaceData.at(Instance->SurfaceDataHandle).Geometry.get() : nullptr;
+    }
+
     const TSurfaceStateDescriptorResources* TSurfaceGPUResourceManager::GetAnyInstanceDescriptors() const noexcept
     {
         for (const std::unique_ptr<TInstanceResources>& Instance : InstanceResources)

@@ -167,7 +167,9 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Source"
                 "${ShaderSource}"
                 -o "${ShaderBinary}"
-        DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Debug/SurfaceDebugData.glsl" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
+        DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Debug/SurfaceDebugData.glsl"
+                "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Debug/TexelGeometryData.glsl"
+                "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
                 "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceStateSystem/Types/SurfaceSolverRates.h"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
@@ -329,6 +331,7 @@ if(BUILD_TESTING)
 
     add_executable(MDSS_SharedSurfaceGeometryTests
         Tests/SharedSurfaceGeometryTests.cpp
+        Source/SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.cpp
         Source/AssetManager/Loaders/MTLLoader.cpp
         Source/AssetManager/Loaders/OBJLoader.cpp
         Source/AssetManager/Loaders/SurfaceProfileDistributionLoader.cpp
@@ -354,6 +357,7 @@ if(BUILD_TESTING)
 
     add_executable(MDSS_SurfaceGPUResourceTests
         Tests/SurfaceGPUResourceTests.cpp
+        Source/SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.cpp
         Source/Logger/Logger.cpp
         Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
         Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp

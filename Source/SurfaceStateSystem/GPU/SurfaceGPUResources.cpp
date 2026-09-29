@@ -127,6 +127,15 @@ namespace MDSS
                                                      Upload.TexelChartIndices.size(),
                                                      sizeof(std::uint32_t),
                                                      MaxRange);
+        auto Mesh = BuildSurfaceTexelMesh(Geometry);
+        TexelMeshRanges = std::move(Mesh.Surfaces);
+        if (!Mesh.Indices.empty())
+        {
+            const auto Bytes = static_cast<VkDeviceSize>(Mesh.Indices.size() * sizeof(std::uint32_t));
+            TexelMeshIndexBuffer = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, Bytes,
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT, UploadMemory);
+            TexelMeshIndexBuffer->Upload(Mesh.Indices.data(), Bytes);
+        }
     }
 
     const TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelSurfaceIndexBuffer() const noexcept

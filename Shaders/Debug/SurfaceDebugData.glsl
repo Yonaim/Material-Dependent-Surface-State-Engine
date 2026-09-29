@@ -1,4 +1,4 @@
-// Shared GPU evaluation for the two debug views and the Texel Inspector.
+// Shared GPU evaluation for height previews, heatmaps and the Texel Inspector.
 // These are diagnostic projections; the transport solver still uses static geometry.
 #ifndef MDSS_SURFACE_DEBUG_DATA
 #define MDSS_SURFACE_DEBUG_DATA
@@ -78,11 +78,11 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels, fl
 }
 
 // Least-squares height gradient in the macro tangent plane. Seam neighbors use mesh-local positions.
-vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightReference)
+vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightReference, float HeightScale)
 {
     vec3 Fallback = MesoNormals.Values[Texel].xyz;
     TDebugAccumulation Center = DebugAccumulation(Texel, Channel, Channels, HeightReference);
-    if (Center.Status != 3u || Texel >= uint(Positions.Values.length()) ||
+    if (Center.Status == 0u || Center.Status == 4u || Texel >= uint(Positions.Values.length()) ||
         Texel >= uint(Normals.Values.length()) || Texel >= uint(NeighborIndices.Values.length())) return Fallback;
     vec3 N = normalize(Normals.Values[Texel].xyz);
     vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0), N));
@@ -100,7 +100,7 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightRefer
         float LengthSquared = X * X + Y * Y;
         if (LengthSquared <= 1e-16) continue;
         float Weight = 1.0 / LengthSquared;
-        float DH = Neighbor.MesoHeight + Neighbor.Height - Center.MesoHeight - Center.Height;
+        float DH = (Neighbor.MesoHeight + Neighbor.Height - Center.MesoHeight - Center.Height) * HeightScale;
         XX += X * X * Weight; XY += X * Y * Weight; YY += Y * Y * Weight;
         XH += X * DH * Weight; YH += Y * DH * Weight;
     }
@@ -108,5 +108,9 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightRefer
     if (Det <= 1e-6 * max(XX * YY, 1e-12)) return Fallback;
     vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
     return normalize(N - U * Gradient.x - V * Gradient.y);
+}
+vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightReference)
+{
+    return DebugFinalNormal(Texel, Channel, Channels, HeightReference, 1.0);
 }
 #endif
