@@ -629,6 +629,106 @@ namespace
               "third solver step should continue deterministic diffusion");
     }
 
+    void TestAreaAndMobility(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags)
+    {
+        using namespace MDSS;
+        TSurfaceStateParameters Parameters{};
+        Parameters.GeometryTransferFactor = 1.0F / 100.0F;
+        // Nonzero Saturation factor verifies that its debug flag is independent of Geometry mobility.
+        Parameters.SaturationTransferFactor = 1.0F;
+        TSurfaceResponseProfileData Profile;
+        Profile.States.emplace("test_flow", Parameters);
+        const std::vector<TSurfaceResponseProfileData> Table{Profile};
+        const TSurfaceStateRegistry Registry(Table);
+        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        for (std::size_t I = 0; I < 2; ++I)
+        {
+            auto& Texel = Geometry.GetTexels()[I];
+            Texel.Surface = 0;
+            Texel.Triangle = 0;
+            Texel.Position = {0, 0, 1.0F - float(I)};
+            Texel.Normal = {1, 0, 0};
+            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1 - I);
+        }
+        Geometry.SetProfileMap({0, 0});
+        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
+            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)), {},
+            {2 * SurfaceStateReferenceArea, 4 * SurfaceStateReferenceArea});
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const std::uint32_t Flags = CacheFlags | (1U << 1U);
+        auto Run = [&](std::array<float, 2> Initial, std::uint32_t ExtraFlags = 0U)
+        {
+            Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
+            Vulkan.Execute([&](VkCommandBuffer Commands) {
+                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1),
+                                  glm::vec3(0, 0, -1), Flags | ExtraFlags);
+            });
+            std::array<float, 2> Result{};
+            Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+            return Result;
+        };
+        const auto A = Run({4, 0}); // Capacity=2, source saturation=2.
+        const auto B = Run({8, 0}); // source saturation=4, no upper clamp.
+        Check(std::abs(A[1] - 0.2F) < 1e-5F && std::abs(B[1] - 0.4F) < 1e-5F,
+              "Geometry must use area-adjusted Capacity and remain proportional above saturation one, with SaturationDrive OFF");
+        Check(std::abs(A[0] + A[1] - 4) < 1e-5F && std::abs(B[0] + B[1] - 8) < 1e-5F,
+              "Geometry mobility must conserve the total amount");
+        Parameters.GeometryTransferFactor = 0;
+        Parameters.SaturationTransferFactor = 1;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        // Re-enable SaturationDrive explicitly for unequal area at equal saturation.
+        const std::array<float, 2> EqualInitial{2, 4};
+        Instance.GetStateABuffer().Upload(EqualInitial.data(), sizeof(EqualInitial));
+        Vulkan.Execute([&](VkCommandBuffer Commands) {
+            Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1),
+                              glm::vec3(0, 0, -1), CacheFlags);
+        });
+        std::array<float, 2> Result{};
+        Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+        Check(Result == EqualInitial, "unequal amounts at equal area-adjusted saturation must not diffuse");
+        Parameters.DecayRate = 1;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        const auto Decayed = Run({2, 4});
+        Check(std::abs(Decayed[0] - 1.8F) < 1e-5F && std::abs(Decayed[1] - 3.6F) < 1e-5F,
+              "Decay must scale with area to retain equal density loss");
+        Parameters.DecayRate = 0;
+        Parameters.GeometryTransferFactor = 1.0F / 100.0F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        const std::array<float, 2> Empty{};
+        const std::array<float, 2> Input{0.3F, 0};
+        Instance.GetStateABuffer().Upload(Empty.data(), sizeof(Empty));
+        Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
+        Vulkan.Execute([&](VkCommandBuffer Commands) {
+            Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0,0,-1), Flags);
+            Solver.RecordStep(Commands, Descriptors, false, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0,0,-1), Flags);
+        });
+        Instance.GetStateABuffer().Download(Result.data(), sizeof(Result));
+        Check(std::abs(Result[1] - 0.015F) < 1e-5F && std::abs(Result[0] + Result[1] - 0.3F) < 1e-5F,
+              "substeps in one command buffer must use updated State and apply input exactly once");
+        for (float Resolution : {128.0F, 256.0F, 512.0F})
+        {
+            // Local one-edge scaling check, distinct from an entire-scene resolution comparison.
+            const float H = 1.0F / Resolution;
+            const std::array<TSurfaceGPUVec4, 2> Positions{{{0,0,H,0}, {0,0,0,0}}};
+            Shared.GetPositionBuffer().Upload(Positions.data(), sizeof(Positions));
+            Instance.UpdateWorldTexelAreas({H * H, H * H});
+            const float Mass = H * H / SurfaceStateReferenceArea;
+            const auto Scaled = Run({Mass, 0});
+            const float WorldDisplacement = Scaled[1] * H / Mass;
+            const float ExpectedDisplacement = 0.1F * SurfaceStateReferenceArea;
+            Check(std::abs(WorldDisplacement - ExpectedDisplacement) < ExpectedDisplacement * 1e-4F,
+                  "Geometry one-edge world displacement must retain its scale at 128/256/512");
+            Check(std::abs(Scaled[0] + Scaled[1] - Mass) < Mass * 1e-5F,
+                  "resolution scaling must conserve total amount");
+        }
+        Instance.UpdateWorldTexelAreas({0, 0});
+        const auto Collapsed = Run({3, 7});
+        Check(Collapsed == std::array<float, 2>{3,7}, "zero area must freeze transport while retaining existing amounts");
+    }
+
     void TestGeometryDrivenSolver(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
     {
         using namespace MDSS;
@@ -637,7 +737,7 @@ namespace
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 0.0F;
-        Parameters.GeometryTransferFactor = 0.08F;
+        Parameters.GeometryTransferFactor = 8.0F / 100.0F;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -743,7 +843,7 @@ namespace
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
-        Parameters.GeometryTransferFactor = 0.01F;
+        Parameters.GeometryTransferFactor = 1.0F / 100.0F;
         Profile.States.emplace("deposit", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -897,8 +997,8 @@ namespace
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Static{}, Flow{}, FastFlow{};
-        Flow.GeometryTransferFactor = 0.01F;
-        FastFlow.GeometryTransferFactor = 0.02F;
+        Flow.GeometryTransferFactor = 1.0F / 100.0F;
+        FastFlow.GeometryTransferFactor = 2.0F / 100.0F;
         FastFlow.StateCapacity = 2.0F;
         Profile.States.emplace("a_static", Static);
         Profile.States.emplace("b_flow", Flow);
@@ -944,8 +1044,8 @@ namespace
             glm::dot(glm::normalize(ProjectedGravity), glm::normalize(glm::vec3(-1, 0, -0.2F))), 0.0F);
         Check(std::abs(Result[StaticChannel] - 0.7F) < 1.0e-5F && Result[3 + StaticChannel] == 0.0F,
               "a geometry-disabled channel before active channels must retain its independent state");
-        Check(std::abs(Result[3 + FlowChannel] - Expected) < 1.0e-5F &&
-                  std::abs(Result[3 + FastChannel] - 2.0F * Expected) < 1.0e-5F &&
+        Check(std::abs(Result[3 + FlowChannel] - 0.5F * Expected) < 1.0e-5F &&
+                  std::abs(Result[3 + FastChannel] - Expected) < 1.0e-5F &&
                   std::abs(Result[FlowChannel] + Result[3 + FlowChannel] - 0.5F) < 1.0e-5F &&
                   std::abs(Result[FastChannel] + Result[3 + FastChannel] - 1.0F) < 1.0e-5F,
               "shared source geometry must preserve distinct Registry channel rates, capacities and conservation");
@@ -1100,6 +1200,8 @@ int main()
         TestGPUSolver(Vulkan);
         TestGPUSolver(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
         TestCachedDirectionalFlux(Vulkan);
+        TestAreaAndMobility(Vulkan, 0U);
+        TestAreaAndMobility(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
         TestGeometryDrivenSolver(Vulkan);
         TestGeometryDrivenSolver(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
         TestMesoGeometryDrive(Vulkan);

@@ -296,7 +296,7 @@ float rawFlux(uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
     float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
                               ? geometryDrive(TargetTexel)
                               : 0.0;
-    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate) *
+    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
            CachedTransferWeight * Solver.DeltaTime;
 }
 

@@ -35,8 +35,7 @@ void main()
 
         TSurfaceGPUProfileParameters Parameters =
             ProfileParameters.Values[profileRecordIndex(TexelIndex, ChannelIndex)];
-        float SourceSaturation = (Solver.Flags & (1u << 1u)) != 0u
-                                     ? 0.0 : Current / stateCapacity(TexelIndex, ChannelIndex);
+        float SourceSaturation = Current / stateCapacity(TexelIndex, ChannelIndex);
         if (!SourceGeometryPrepared && Parameters.CapacityInputAndTransfer.w > 0.0 &&
             (Solver.Flags & (1u << 0u)) == 0u)
         {

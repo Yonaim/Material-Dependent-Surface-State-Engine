@@ -2060,7 +2060,7 @@ namespace MDSS
                        "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
         DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive,
                        "GeometryDrive",
-                       "ON: 높이와 중력 방향에 따른 기하 전달을 적용합니다.\n"
+                       "ON: 높이와 중력 방향에 따른 전달에 출발 포화도를 곱합니다. 포화도는 1을 넘을 수 있습니다.\n"
                        "OFF: 기하 전달량을 0으로 설정합니다.");
         DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal,
                        "DirectionDrive: MesoNormal",
