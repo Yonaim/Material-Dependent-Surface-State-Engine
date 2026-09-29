@@ -39,13 +39,15 @@ Registry 크기에 종속되는 State parameter 목록은 고정 길이 `std::ar
 
 ### Profile parameter
 
+현재 자료형은 초기 Rate 필드에서 `[0,1]` 무차원 TransferFactor로 변경됐다. `.SRProfile` Loader는 version 2를 사용하며 실제 속도는 Solver 기준 속도를 곱한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 ```cpp
 struct TSurfaceStateParameters
 {
     float StateCapacity = 1.0F;
     float InputFactor = 1.0F;
-    float SaturationTransferRate = 0.0F;
-    float GeometryTransferRate = 0.0F;
+    float SaturationTransferFactor = 0.0F;
+    float GeometryTransferFactor = 0.0F;
     float DecayRate = 0.0F;
     float CavityRetentionFactor = 0.0F;
     float AccumulationFactor = 0.0F;

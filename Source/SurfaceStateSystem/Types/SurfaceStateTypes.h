@@ -27,8 +27,9 @@ namespace MDSS
         // Saturation이 1이 되는 포화 기준량이며 State의 저장 상한은 아니다.
         float StateCapacity = 1.0F;
         float InputFactor = 1.0F;
-        float SaturationTransferRate = 0.0F;
-        float GeometryTransferRate = 0.0F;
+        // [0, 1] 무차원 계수. Solver가 각 전달 경로의 기준 속도를 곱한다.
+        float SaturationTransferFactor = 0.0F;
+        float GeometryTransferFactor = 0.0F;
         float DecayRate = 0.0F;
         float CavityRetentionFactor = 0.0F;
         float AccumulationFactor = 0.0F;

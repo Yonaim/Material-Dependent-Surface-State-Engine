@@ -122,19 +122,21 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 
 ## `.SRProfile` 예시
 
+현재 schema는 **version 2**다. `saturationTransferFactor`, `geometryTransferFactor`는 유한한 `[0,1]` 무차원 계수이며 Loader는 version 1을 거부한다. 초기 version 1은 실제 Rate를 저장했다. 변환 규칙은 `saturationTransferFactor = 기존 saturationTransferRate / 1.0`, `geometryTransferFactor = 기존 geometryTransferRate / 100.0`이고 `version`을 2로 변경한다. 변환 결과가 `[0,1]` 밖이면 새 기준 속도 범위에서 재튜닝해야 한다. 기준 속도와 단위는 [[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]를 따른다.
+
 아래 수치는 **튜닝 전 예시값**이며, Profile이 여러 State 응답을 정의할 수 있음을 보여준다. 예시 State 이름은 고정된 전역 채널 목록이 아니다.
 
 ```json
 {
   "type": "SurfaceResponseProfile",
-  "version": 1,
+  "version": 2,
   "name": "Brick",
   "states": {
     "wetness": {
       "stateCapacity": 1.0,
       "inputFactor": 0.75,
-      "saturationTransferRate": 0.40,
-      "geometryTransferRate": 0.05,
+      "saturationTransferFactor": 0.40,
+      "geometryTransferFactor": 0.0005,
       "decayRate": 0.06,
       "cavityRetentionFactor": 0.50,
       "accumulationFactor": 0.0,
@@ -143,8 +145,8 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
     "heat": {
       "stateCapacity": 1.0,
       "inputFactor": 0.30,
-      "saturationTransferRate": 0.30,
-      "geometryTransferRate": 0.0,
+      "saturationTransferFactor": 0.30,
+      "geometryTransferFactor": 0,
       "decayRate": 0.10,
       "cavityRetentionFactor": 0.0,
       "accumulationFactor": 0.0,
@@ -153,8 +155,8 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
     "burn": {
       "stateCapacity": 1.0,
       "inputFactor": 0.0,
-      "saturationTransferRate": 0.0,
-      "geometryTransferRate": 0.0,
+      "saturationTransferFactor": 0.0,
+      "geometryTransferFactor": 0,
       "decayRate": 0.01,
       "cavityRetentionFactor": 0.0,
       "accumulationFactor": 0.0,
@@ -163,8 +165,8 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
     "mud": {
       "stateCapacity": 1.0,
       "inputFactor": 0.65,
-      "saturationTransferRate": 0.04,
-      "geometryTransferRate": 0.08,
+      "saturationTransferFactor": 0.04,
+      "geometryTransferFactor": 0.0008,
       "decayRate": 0.04,
       "cavityRetentionFactor": 0.80,
       "accumulationFactor": 0.65,

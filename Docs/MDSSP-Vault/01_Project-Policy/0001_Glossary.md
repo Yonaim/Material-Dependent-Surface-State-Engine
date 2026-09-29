@@ -22,6 +22,7 @@ State / Capacity / Saturation은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 
 | **GeometryDrive** | 높이 차이와 중력·표면 방향에 의해 발생하는 전달 구동력. | [[04_Architecture/0006_Surface-State-Update\|Solver]] |
 | **HeightDrive** | 이웃 texel 사이 `EffectiveHeight` 차이의 크기. `DirectionDrive`와 곱해 `GeometryDrive`를 구성한다. | [[04_Architecture/0006_Surface-State-Update\|Solver]] |
 | **DirectionDrive** | source 표면에 투영한 중력과 source→target 방향의 정렬도. 중력 반대 방향은 0으로 처리한다. | [[04_Architecture/0006_Surface-State-Update\|Solver]] |
+| **TransferFactor** | Profile의 `[0,1]` 무차원 전달 조절값. Saturation/Geometry 경로의 기준 속도 `1.0`, `100.0`을 곱해 실제 Rate를 구한다. | [[05_ADR/0029-Normalized-Transport-Factors\|ADR 0029]] |
 | **TransferWeight** | 해당 이웃 관계를 실제 State가 얼마나 잘 통과하는지 보정하는 가중치. | [[04_Architecture/0006_Surface-State-Update\|Solver]] |
 | **DistanceWeight** | 주변 평균 이웃 간격에 대한 상대 거리로 전달량을 보정하는 가중치. | [[05_ADR/0016-Transport-Transfer-Weights\|ADR 0016]] |
 | **NormalWeight** | 이웃 texel의 유효 world normal 내적으로 전달량을 보정하는 가중치. | [[05_ADR/0016-Transport-Transfer-Weights\|ADR 0016]] |

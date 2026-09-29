@@ -75,8 +75,8 @@ namespace MDSS
             return {
                 ReadFloat(State, "stateCapacity", JsonPath),
                 ReadFloat(State, "inputFactor", JsonPath),
-                ReadFloat(State, "saturationTransferRate", JsonPath),
-                ReadFloat(State, "geometryTransferRate", JsonPath),
+                ReadFloat(State, "saturationTransferFactor", JsonPath),
+                ReadFloat(State, "geometryTransferFactor", JsonPath),
                 ReadFloat(State, "decayRate", JsonPath),
                 ReadFloat(State, "cavityRetentionFactor", JsonPath),
                 ReadFloat(State, "accumulationFactor", JsonPath),
@@ -101,9 +101,9 @@ namespace MDSS
             {
                 throw std::invalid_argument("$.version must be an integer.");
             }
-            if (Version.get<std::int64_t>() != 1)
+            if (Version.get<std::int64_t>() != 2)
             {
-                throw std::invalid_argument("$.version is unsupported; expected version 1.");
+                throw std::invalid_argument("$.version is unsupported; expected version 2 with normalized transfer factors.");
             }
 
             Name = ReadString(Root, "name", "$");

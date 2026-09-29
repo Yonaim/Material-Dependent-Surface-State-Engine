@@ -75,12 +75,14 @@ $$
 | ------------------------ | ------------------------------------------ | -------: | ----: |
 | `stateCapacity`          | 해당 State의 포화 기준량                           | `(0, n]` | `1.0` |
 | `inputFactor`            | 외부 Source 입력을 해당 State에 얼마나 반영할지 결정        |  `[0,n]` | `1.0` |
-| `saturationTransferRate` | Saturation 차이에 의한 단위 시간당 기본 전달 속도          | `[0, n]` | `0.0` |
-| `geometryTransferRate`   | 높이·중력·표면 방향 등 Geometry에 의한 단위 시간당 기본 전달 속도 | `[0, n]` | `0.0` |
+| `saturationTransferFactor` | Saturation 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
+| `geometryTransferFactor` | Geometry 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
 | `decayRate`              | State가 시간 경과에 따라 자연 감소하는 단위 시간당 기본 속도      | `[0, n]` | `0.0` |
 | `cavityRetentionFactor`  | 오목한 영역에서 Decay가 억제되는 정도                    |  `[0,1]` | `0.0` |
 | `accumulationFactor`     | State를 형상상의 적층량으로 변환하는 정도                  |  `[0,n]` | `0.0` |
 | `cavityFillFactor`       | 적층량 중 Cavity를 채우는 데 우선 배분할 비율              |  `[0,1]` | `0.0` |
+
+두 TransferFactor는 유한한 `[0,1]` 값으로 검증한다. 실제 속도는 Solver에서 `SaturationTransferFactor × 1.0 State/s`, `GeometryTransferFactor × 100.0 State/(world-length·s)`로 계산한다. 기준값은 기존 데모 속도를 유지하기 위한 초기 보정값이며 물성 검증값이 아니다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]). Saturation 및 State의 Capacity 초과 허용은 유지한다.
 
 State Transition 규칙과 전이 파라미터의 의미는 [[04_Architecture/0002_Surface-State|State Transition]]에서 정의한다.
 

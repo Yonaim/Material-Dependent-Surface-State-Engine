@@ -28,6 +28,8 @@
 
 ### 갱신과 전달
 
+아래 Rate는 Profile의 `[0,1]` TransferFactor에 Solver 기준 속도 `1.0`, `100.0`을 곱한 실제 속도다 ([[0029-Normalized-Transport-Factors|ADR 0029]]). 보유량·Saturation·alpha 계약은 유지한다.
+
 ```text
 Saturation_i = Current_i / Capacity_i
 SaturationDrive(i→j) = max(Saturation_i - Saturation_j, 0)

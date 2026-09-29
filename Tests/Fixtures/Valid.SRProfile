@@ -1,13 +1,13 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 1,
+  "version": 2,
   "name": "TestProfile",
   "states": {
     " Wetness ": {
       "stateCapacity": 2.0,
       "inputFactor": 0.75,
-      "saturationTransferRate": 0.4,
-      "geometryTransferRate": 0.05,
+      "saturationTransferFactor": 0.4,
+      "geometryTransferFactor": 0.0005,
       "decayRate": 0.06,
       "cavityRetentionFactor": 0.5,
       "accumulationFactor": 0.0,
@@ -16,8 +16,8 @@
     "Mud": {
       "stateCapacity": 1.0,
       "inputFactor": 0.65,
-      "saturationTransferRate": 0.04,
-      "geometryTransferRate": 0.08,
+      "saturationTransferFactor": 0.04,
+      "geometryTransferFactor": 0.0008,
       "decayRate": 0.04,
       "cavityRetentionFactor": 0.8,
       "accumulationFactor": 0.65,

@@ -4,6 +4,8 @@
 
 상태: **구현 중** · 상위 계획: [[03_Planning/01_Weekly-Overview/Week-05|Week 05 Overview]]
 
+> **현재 파라미터 계약:** 초기 구현의 Rate 저장 방식은 version 2의 `[0,1]` 무차원 TransferFactor로 변경됐다. 아래 전달식의 Rate는 각각 `SaturationTransferFactor × 1.0`, `GeometryTransferFactor × 100.0`으로 구한 실제 속도다. Profile과 GPU 레코드에는 Factor를 저장한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 ## 목표와 완료 기준
 
 4주차에 구축한 2-Pass Solver 경로를 바탕으로 `GeometryDrive`, Normal Map 기반 표면 방향, `TransferWeight`를 추가하고, 계산 중간값과 실행 상태를 Debug UI에서 확인한다. 수식의 보존·source 보유량 제한·초과량 처리·경계 처리를 자동 테스트와 GPU 실행으로 검증한다.
@@ -80,7 +82,7 @@ Branch 2에서 확정한 `DistanceWeight`·`NormalWeight`·`ProfileBoundaryWeigh
 - Pass 1과 Pass 2가 동일한 계산 함수를 사용한다.
 - 양쪽 texel 모두 해당 Registry State를 지원하는 경우에만 flux를 계산한다.
 - invalid neighbor, unsupported State, 0 또는 비정상 geometry 값이 flux에 유입되지 않도록 경계 처리를 둔다.
-- 어떤 Profile 입력이 필요한지 먼저 확정하고, 필요할 때만 CPU/GPU ABI·descriptor를 변경한다. 이미 존재하는 `GeometryTransferRate`와 geometry buffer를 우선 활용한다.
+- 어떤 Profile 입력이 필요한지 먼저 확정하고, 필요할 때만 CPU/GPU ABI·descriptor를 변경한다. 이미 존재하는 `GeometryTransferFactor`와 geometry buffer를 우선 활용한다.
 
 ### 3. OutgoingFluxScale 디버그 뷰
 

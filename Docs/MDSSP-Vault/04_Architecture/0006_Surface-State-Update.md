@@ -143,6 +143,23 @@ Saturation은 1을 초과할 수 있고 Transport에서 상한 clamp하지 않�
 
 ### Raw Flux
 
+`.SRProfile`과 GPU Profile 레코드는 `[0,1]` 무차원 TransferFactor를 저장한다. Solver에서 아래 실제 속도로 변환한 뒤 flux에 사용한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
+$$
+SaturationTransferRate_i = SaturationTransferFactor_i \cdot BaseSaturationTransferRate
+$$
+
+$$
+GeometryTransferRate_i = GeometryTransferFactor_i \cdot BaseGeometryTransferRate
+$$
+
+| Solver 상수 | 현재 값 | 단위 |
+|---|---:|---|
+| `BaseSaturationTransferRate` | `1.0` | `State / second` |
+| `BaseGeometryTransferRate` | `100.0` | `State / (world-length · second)` |
+
+기준값은 기존 데모의 속도를 유지하는 초기 보정값이다. `State` 단위는 Registry에 등록된 해당 State의 시뮬레이션 상태량 단위이며, 기준 상수는 모든 channel의 해당 전달 경로에 공통 적용한다. 두 상수는 공통 GLSL에 정의해 cache ON/OFF와 Pass 1/2에 동일하게 적용한다. 프로파일 계수의 정규화는 Saturation 상한 clamp나 높이차의 거리 정규화를 추가하지 않는다.
+
 `SaturationDrive`와 `GeometryDrive`에 의한 전달을 독립적으로 계산한 뒤 합친다.
 
 $$

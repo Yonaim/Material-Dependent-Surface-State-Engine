@@ -73,10 +73,10 @@ namespace
             for (const auto& State : States)
             {
                 Entries[State] = {{"stateCapacity", 1.0}, {"inputFactor", InputFactor},
-                    {"saturationTransferRate", 0.0}, {"geometryTransferRate", 0.0}, {"decayRate", 0.0},
+                    {"saturationTransferFactor", 0.0}, {"geometryTransferFactor", 0.0}, {"decayRate", 0.0},
                     {"cavityRetentionFactor", 0.0}, {"accumulationFactor", 0.0}, {"cavityFillFactor", 0.0}};
             }
-            Write(Name + ".SRProfile", {{"type", "SurfaceResponseProfile"}, {"version", 1}, {"name", Name},
+            Write(Name + ".SRProfile", {{"type", "SurfaceResponseProfile"}, {"version", 2}, {"name", Name},
                                        {"states", Entries}, {"transitions", TJson::array()}});
         }
         void WriteMap(const std::string& Name, const std::vector<std::string>& Profiles, int Index) const

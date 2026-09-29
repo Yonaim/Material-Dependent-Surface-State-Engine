@@ -34,7 +34,7 @@ Padding은 정렬을 위해 실제 데이터가 없는 빈 칸을 넣는 것이�
 
 ### 검토안과 결정 — Profile parameter layout
 
-논리 lookup은 `(ProfileIndex, ChannelIndex) → parameters`다. 이는 State 값이 아니라 Profile이 채널마다 정하는 Capacity, InputFactor, TransferRate 등의 설정값이다. **레코드(record)**는 Profile 하나와 State channel 하나의 조합에 속하는 parameter 묶음 한 항목을 뜻한다. 새 ID 종류가 아니라, Profile table GPU 배열의 한 원소다. `recordIndex`는 Profile index와 channel index 두 값을 1차원 배열 위치로 평탄화한 번호다.
+논리 lookup은 `(ProfileIndex, ChannelIndex) → parameters`다. 이는 State 값이 아니라 Profile이 채널마다 정하는 Capacity, InputFactor, TransferFactor 등의 설정값이다. **레코드(record)**는 Profile 하나와 State channel 하나의 조합에 속하는 parameter 묶음 한 항목을 뜻한다. 새 ID 종류가 아니라, Profile table GPU 배열의 한 원소다. `recordIndex`는 Profile index와 channel index 두 값을 1차원 배열 위치로 평탄화한 번호다.
 
 | 검토안 | 설명 | 결과 |
 |---|---|---|
@@ -45,10 +45,12 @@ Padding은 정렬을 위해 실제 데이터가 없는 빈 칸을 넣는 것이�
 Profile/channel 레코드는 8개의 32-bit float를 `vec4` 두 개로 담아 32 byte로 고정한다. Profile-major 순서이므로 channel이 4개일 때 Profile 1, channel 2는 `1 * 4 + 2 = 6`번 레코드다.
 
 ```text
-vec4 0 = StateCapacity, InputFactor, SaturationTransferRate, GeometryTransferRate
+vec4 0 = StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor
 vec4 1 = DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor
 recordIndex = profileIndex * channelCount + channelIndex
 ```
+
+두 TransferFactor는 CPU에서 기준 속도를 곱하지 않고 그대로 저장한다. Solver 공통 GLSL에서 각각 기준 속도 `1.0`, `100.0`을 곱한다. 레코드의 슬롯·stride·descriptor 수는 유지한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
 
 CPU domain parameters에서 GPU 전용 record로 pack한다. Profile이 정의하지 않은 State는 값 0과 구분되도록 별도 dense `uint32` support map으로 나타낸다. map은 `(profileIndex, channelIndex)`마다 한 항목이며 동일한 `recordIndex`를 쓴다.
 

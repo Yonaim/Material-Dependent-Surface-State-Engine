@@ -1,13 +1,13 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 1,
+  "version": 2,
   "name": "PartialProfile",
   "states": {
     "snow": {
       "stateCapacity": 3.0,
       "inputFactor": 1.0,
-      "saturationTransferRate": 0.2,
-      "geometryTransferRate": 0.1,
+      "saturationTransferFactor": 0.2,
+      "geometryTransferFactor": 0.001,
       "decayRate": 0.01,
       "cavityRetentionFactor": 0.5,
       "accumulationFactor": 0.8,

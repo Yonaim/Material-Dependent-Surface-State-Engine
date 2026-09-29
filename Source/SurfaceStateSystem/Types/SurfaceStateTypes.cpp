@@ -73,8 +73,8 @@ namespace MDSS
             }
 
             ValidateFiniteNonNegative(State.InputFactor, Prefix + "inputFactor");
-            ValidateFiniteNonNegative(State.SaturationTransferRate, Prefix + "saturationTransferRate");
-            ValidateFiniteNonNegative(State.GeometryTransferRate, Prefix + "geometryTransferRate");
+            ValidateUnitInterval(State.SaturationTransferFactor, Prefix + "saturationTransferFactor");
+            ValidateUnitInterval(State.GeometryTransferFactor, Prefix + "geometryTransferFactor");
             ValidateFiniteNonNegative(State.DecayRate, Prefix + "decayRate");
             ValidateUnitInterval(State.CavityRetentionFactor, Prefix + "cavityRetentionFactor");
             ValidateFiniteNonNegative(State.AccumulationFactor, Prefix + "accumulationFactor");

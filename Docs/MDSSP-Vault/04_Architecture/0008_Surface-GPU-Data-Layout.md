@@ -86,9 +86,11 @@ recordIndex = profileIndex * channelCount + channelIndex
 두 vec4에는 각각 아래 매개변수를 순서대로 둔다. 별도 support map은 Profile에서 정의하지 않은 channel과 값이 0인 channel을 구분한다.
 
 ```text
-vec4[0] = StateCapacity, InputFactor, SaturationTransferRate, GeometryTransferRate
+vec4[0] = StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor
 vec4[1] = DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor
 ```
+
+두 TransferFactor는 CPU에서 기준 속도를 곱하지 않고 그대로 저장한다. Solver 공통 GLSL에서 각각 기준 속도 `1.0`, `100.0`을 곱한다. 레코드의 슬롯·stride·descriptor 수는 유지한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
 
 ## Instance State
 

@@ -24,7 +24,7 @@ Wetness는 generic Solver의 Geometry transport를 사용한다. 이 브랜치�
 - `HeightDrive(i→j) = abs(EffectiveHeight_i - EffectiveHeight_j)`이며 neighbor distance로 나누지 않는다.
 - `DirectionDrive`는 instance transform을 반영한 source 면에 투영한 World Gravity와 source→target 방향의 정렬도다. 반대 방향은 0, 퇴화한 투영은 0이다.
 - `DistanceWeight`가 실제 이웃 표면 간격의 감쇠를 맡는다.
-- `GeometryTransferRate`의 단위는 `State / (world-length · second)`다.
+- Profile은 `[0,1]` 무차원 `GeometryTransferFactor`를 저장한다. 실제 `GeometryTransferRate = GeometryTransferFactor × 100.0`의 단위는 `State / (world-length · second)`다. Saturation도 `SaturationTransferFactor × 1.0`으로 실제 속도를 구한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
 
 계약의 기준은 [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]]와 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]다.
 
@@ -41,7 +41,7 @@ flowchart LR
 
 | 순서 | 브랜치 | 결과물 |
 |---:|---|---|
-| 1 | `feat/wetness-profile-response` | Wetness의 inputFactor, saturation/geometry transfer rate, decay Profile 조정 및 입력·전파 테스트 |
+| 1 | `feat/wetness-profile-response` | Wetness의 inputFactor, saturation/geometry transfer factor, decay Profile 조정 및 입력·전파 테스트 |
 | 2 | `feat/wetness-rendering-response` | Wetness에 따른 재질 color/roughness 변화 |
 | 3 | `test/wetness-demo-validation` | 동일 입력 조건의 재질별 결과 비교와 통합 검증 기록 |
 
@@ -50,10 +50,10 @@ flowchart LR
 ### 작업 범위
 
 - 현재 Profile 구조에 맞춰 Wetness를 지원하는 재질 Profile을 준비한다.
-- `inputFactor`, `SaturationTransferRate`, `GeometryTransferRate`, `DecayRate`를 조정한다. 등록된 State 이름은 Registry로 조회한다.
+- `inputFactor`, `SaturationTransferFactor`, `GeometryTransferFactor`, `DecayRate`를 조정한다. 등록된 State 이름은 Registry로 조회한다.
 - 동일한 접촉 위치·세기·시간 조건으로 서로 다른 Profile의 Wetness 입력·확산·감쇠를 비교한다.
 - 방향 변화와 transform된 instance에서 World Gravity가 면 방향에 맞게 작용하는지 확인한다.
-- Rate 튜닝은 geometry transport 단위 계약(ADR 0015)에 맞춘다. 이웃 간 거리 감쇠는 `DistanceWeight`에 남긴다.
+- TransferFactor 튜닝은 `[0,1]` 범위와 기준 속도 계약(ADR 0029)에 맞춘다. 실제 Geometry Rate의 단위는 ADR 0015를 따른다. 이웃 간 거리 감쇠는 `DistanceWeight`에 남긴다.
 
 ### 완료 조건
 

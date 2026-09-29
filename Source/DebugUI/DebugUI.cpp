@@ -2070,10 +2070,10 @@ namespace MDSS
                         LabeledDragFloat("Capacity", &ParameterDraft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
                     bChanged |=
                         LabeledDragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
-                    bChanged |= LabeledDragFloat(
-                        "Saturation transfer /s", &ParameterDraft.SaturationTransferRate, 0.01F, 0.0F, 100.0F, "%.3f");
-                    bChanged |= LabeledDragFloat(
-                        "Geometry transfer /s", &ParameterDraft.GeometryTransferRate, 0.01F, 0.0F, 100.0F, "%.3f");
+                    bChanged |= LabeledSliderFloat(
+                        "Saturation transfer factor", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
+                    bChanged |= LabeledSliderFloat(
+                        "Geometry transfer factor", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
                     bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
                     bChanged |= LabeledSliderFloat(
                         "Cavity retention", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");

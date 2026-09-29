@@ -261,6 +261,8 @@ namespace
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 3.0F;
         Parameters.InputFactor = 0.75F;
+        Parameters.SaturationTransferFactor = 0.2F;
+        Parameters.GeometryTransferFactor = 0.5F;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -358,8 +360,10 @@ namespace
         std::array<TSurfaceGPUProfileParameters, 1> UploadedProfiles{};
         Profiles.GetParametersBuffer().Download(UploadedProfiles.data(), sizeof(UploadedProfiles));
         Check(UploadedProfiles[0].CapacityInputAndTransfer[0] == 3.0F &&
-                  UploadedProfiles[0].CapacityInputAndTransfer[1] == 0.75F,
-              "Profile parameters should be packed in the declared ABI slots");
+                  UploadedProfiles[0].CapacityInputAndTransfer[1] == 0.75F &&
+                  UploadedProfiles[0].CapacityInputAndTransfer[2] == 0.2F &&
+                  UploadedProfiles[0].CapacityInputAndTransfer[3] == 0.5F,
+              "Profile ABI slots should contain normalized factors; the solver applies base rates");
         std::array<std::uint32_t, 1> ProfileSupported{};
         Profiles.GetSupportedBuffer().Download(ProfileSupported.data(), sizeof(ProfileSupported));
         Check(ProfileSupported[0] == 1U, "defined Profile channel should be marked supported");
@@ -368,20 +372,21 @@ namespace
     void TestCachedDirectionalFlux(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
+        // Scale the former rates and decay by 1/10 and dt by 10 to retain the limiter fixture.
         TSurfaceStateParameters Water{};
-        Water.SaturationTransferRate = 4.0F;
-        Water.DecayRate = 0.2F;
+        Water.SaturationTransferFactor = 0.4F;
+        Water.DecayRate = 0.02F;
         TSurfaceStateParameters Heat{};
         Heat.StateCapacity = 2.0F;
-        Heat.SaturationTransferRate = 1.0F;
+        Heat.SaturationTransferFactor = 0.1F;
         TSurfaceResponseProfileData ProfileA;
         ProfileA.States.emplace("wetness", Water);
         ProfileA.States.emplace("heat", Heat);
         TSurfaceResponseProfileData ProfileB;
         TSurfaceStateParameters     OtherWater = Water;
         OtherWater.StateCapacity = 2.0F;
-        OtherWater.SaturationTransferRate = 8.0F;
-        OtherWater.DecayRate = 0.4F;
+        OtherWater.SaturationTransferFactor = 0.8F;
+        OtherWater.DecayRate = 0.04F;
         ProfileB.States.emplace("wetness", OtherWater);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{ProfileA, ProfileB};
         const TSurfaceStateRegistry                    Registry(ProfileTable);
@@ -436,7 +441,7 @@ namespace
         Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
-            { Solver.RecordStep(Commands, Descriptors, true, 4, 2, 0.5F, glm::mat4(1.0F), glm::vec3(0.0F)); });
+            { Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F)); });
         std::array<float, 8> Result{};
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
         Check(std::abs(Result[Index(0, WaterChannel)] - 5.15F) < 1.0e-5F &&
@@ -473,7 +478,7 @@ namespace
         std::fill(Flux.begin(), Flux.end(), 123.0F);
         Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
         Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, true, 4, 2, 0.5F, glm::mat4(1.0F), glm::vec3(0.0F),
+            Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F),
                               SurfaceSolverDisableRawFluxCacheFlag);
         });
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
@@ -504,7 +509,7 @@ namespace
                     const auto Flags = MixedModes && (Step == 1U || Step == 2U || Step == 4U)
                         ? SurfaceSolverDisableRawFluxCacheFlag : 0U;
                     Solver.RecordStep(Commands, Descriptors, Step % 2U == 0U, 4, 2,
-                                      Step == 2U ? 0.0F : 0.5F, glm::mat4(1.0F), glm::vec3(0.0F), Flags);
+                                      Step == 2U ? 0.0F : 5.0F, glm::mat4(1.0F), glm::vec3(0.0F), Flags);
                 }
             });
             Instance.GetStateABuffer().Download(Result.data(), sizeof(Result));
@@ -514,9 +519,9 @@ namespace
                       "ON/OFF/ON sequences must match all-cached steps without stale flux");
         }
         Instance.GetStateBBuffer().Upload(CachedResult.data(), sizeof(CachedResult));
-        Water.SaturationTransferRate = 0.0F;
-        OtherWater.SaturationTransferRate = 0.0F;
-        Heat.SaturationTransferRate = 0.0F;
+        Water.SaturationTransferFactor = 0.0F;
+        OtherWater.SaturationTransferFactor = 0.0F;
+        Heat.SaturationTransferFactor = 0.0F;
         Profiles.UpdateParameters(0, WaterChannel, Water);
         Profiles.UpdateParameters(1, WaterChannel, OtherWater);
         Profiles.UpdateParameters(0, HeatChannel, Heat);
@@ -535,7 +540,7 @@ namespace
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
             {
-                Solver.RecordStep(Commands, Descriptors, true, 4, 2, 0.5F, glm::mat4(1.0F), glm::vec3(0.0F));
+                Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F));
             });
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
         Check(std::abs(Result[Index(0, WaterChannel)] - 5.05F) < 1.0e-5F &&
@@ -555,7 +560,7 @@ namespace
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
-        Parameters.SaturationTransferRate = 1.0F;
+        Parameters.SaturationTransferFactor = 1.0F;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -631,8 +636,8 @@ namespace
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
-        Parameters.SaturationTransferRate = 0.0F;
-        Parameters.GeometryTransferRate = 8.0F;
+        Parameters.SaturationTransferFactor = 0.0F;
+        Parameters.GeometryTransferFactor = 0.08F;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -738,7 +743,7 @@ namespace
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
-        Parameters.GeometryTransferRate = 1.0F;
+        Parameters.GeometryTransferFactor = 0.01F;
         Profile.States.emplace("deposit", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
@@ -892,8 +897,8 @@ namespace
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
         TSurfaceStateParameters Static{}, Flow{}, FastFlow{};
-        Flow.GeometryTransferRate = 1.0F;
-        FastFlow.GeometryTransferRate = 2.0F;
+        Flow.GeometryTransferFactor = 0.01F;
+        FastFlow.GeometryTransferFactor = 0.02F;
         FastFlow.StateCapacity = 2.0F;
         Profile.States.emplace("a_static", Static);
         Profile.States.emplace("b_flow", Flow);
@@ -953,7 +958,7 @@ namespace
         TSurfaceResponseProfileData ProfileA;
         TSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
-        Parameters.SaturationTransferRate = 1.0F;
+        Parameters.SaturationTransferFactor = 1.0F;
         ProfileA.States.emplace("wetness", Parameters);
         TSurfaceResponseProfileData ProfileB = ProfileA;
         TSurfaceResponseProfileData ProfileWithoutWetness;

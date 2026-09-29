@@ -1,13 +1,13 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 1,
+  "version": 2,
   "name": "UnknownTransitionTarget",
   "states": {
     "snow": {
       "stateCapacity": 1.0,
       "inputFactor": 1.0,
-      "saturationTransferRate": 0.0,
-      "geometryTransferRate": 0.0,
+      "saturationTransferFactor": 0.0,
+      "geometryTransferFactor": 0,
       "decayRate": 0.0,
       "cavityRetentionFactor": 0.0,
       "accumulationFactor": 0.0,

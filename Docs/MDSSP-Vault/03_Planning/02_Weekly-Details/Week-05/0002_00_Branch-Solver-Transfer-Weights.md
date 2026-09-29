@@ -8,6 +8,8 @@
 
 상태: **구현 및 GPU 실행 검증 완료**
 
+> **현재 파라미터 계약:** 초기 구현의 Rate 저장 방식은 version 2의 `[0,1]` 무차원 TransferFactor로 변경됐다. 아래 전달식의 Rate는 각각 `SaturationTransferFactor × 1.0`, `GeometryTransferFactor × 100.0`으로 구한 실제 속도다. Profile과 GPU 레코드에는 Factor를 저장한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 ## 후속 변경 (2026-09-28)
 
 초기 구현은 CurvatureWeight 고정 1.0이었다. 현재는 기본 OFF(1.0)를 유지하며 ON에서 Virtual Height로부터 사전 계산한 mean curvature 기반 비교용 감쇠를 적용한다. [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]가 현재 결정이며 아래의 고정값 구현 범위는 초기 branch 기록이다.

@@ -324,8 +324,8 @@ namespace MDSS
                 const TSurfaceStateParameters& Parameters = *Resolved.States[ChannelIndex];
                 Result.Parameters[RecordIndex] = {{Parameters.StateCapacity,
                                                    Parameters.InputFactor,
-                                                   Parameters.SaturationTransferRate,
-                                                   Parameters.GeometryTransferRate},
+                                                   Parameters.SaturationTransferFactor,
+                                                   Parameters.GeometryTransferFactor},
                                                   {Parameters.DecayRate,
                                                    Parameters.CavityRetentionFactor,
                                                    Parameters.AccumulationFactor,

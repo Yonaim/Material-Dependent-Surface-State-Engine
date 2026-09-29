@@ -4,6 +4,8 @@
 - 상태: **원인 분리 및 ADR 0022 적용 완료 · 합성 성능/GPU 회귀 검증 완료**
 - 관련: [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]], [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 
+> **파라미터 표현 변경:** 아래 Rate 수치는 측정 당시의 실제 속도다. 현재 Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장하며 실제 속도는 각각 기준 속도 `1.0`, `100.0`을 곱한다. 기존 Geometry Rate `50`, `1`은 Factor `0.5`, `0.01`에 대응한다. 과거 측정 결과는 재측정값이 아니다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 ## 실행 화면 관측과 집계
 
 기본 Cube Wetness Scene의 관측은 Frame 13.4 FPS / 74.50 ms, Render GPU 0.38 ms, Solver GPU 74.01 ms, Pass 1 62.61 ms, Pass 2 11.40 ms다. Pass 1은 Solver 표시 시간의 약 84.6%다.

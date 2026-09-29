@@ -172,6 +172,8 @@ InputDelta는 discrete event(발생 시점에 한 번 기록되는 접촉 사건
 
 ## SRProfile GPU Representation
 
+Profile 레코드의 전달 필드는 실제 Rate 대신 `[0,1]`의 `SaturationTransferFactor`, `GeometryTransferFactor`를 저장한다. 최초 upload와 Runtime override 모두 Factor를 그대로 pack하며 Solver에서 기준 속도 `1.0`, `100.0`을 적용한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 Profile parameter는 `(ProfileIndex, ChannelIndex)` 조합을 사용하며, ADR 0010의 Profile-major record 배치와 index 산식을 따른다.
 
 - `Saturation`은 저장하지 않고 `State / stateCapacity`로 계산한다. [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 전달용 비율은 상한 clamp하지 않으며 State A/B에 전체 초과량을 보존한다. 기존 float32 AoS·채널 수·padding 없음의 ABI를 유지해 추가 GPU payload는 0 B다. Shader의 상한 clamp 제거는 구현했고 빌드는 통과했다. GPU 회귀에서 source 유출 제한·여러 이웃의 초과 유입 보존·서로 다른 Capacity와 입력 소비를 확인했다.

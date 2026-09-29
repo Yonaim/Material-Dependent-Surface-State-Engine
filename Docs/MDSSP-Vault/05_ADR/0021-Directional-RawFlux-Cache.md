@@ -10,6 +10,8 @@
 
 후속 ADR 0022는 Pass 1 source 재사용과 가용량 0 생략을, ADR 0023은 해상도 프리셋과 기본 Medium 256을 추가했다. 아래 512 유지 결정과 측정은 이 ADR 채택 당시 기준이며 High 해상도에서 그대로 사용할 수 있다.
 
+> **파라미터 표현 변경:** 아래 Rate 수치는 측정 당시의 실제 속도다. 현재 Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장하며 실제 속도는 각각 기준 속도 `1.0`, `100.0`을 곱한다. 기존 Geometry Rate `50`, `1`은 Factor `0.5`, `0.01`에 대응한다. 과거 측정 결과는 재측정값이 아니다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 ## Context
 
 ADR 0017의 초기 캐시는 TransferWeight와 RawOutgoing 합계만 보관했다. Pass 1은 최대 8개 outgoing RawFlux를 계산하고 Pass 2는 최대 8개 incoming RawFlux를 다시 계산했다. GeometryDrive의 displaced endpoint와 source normal 계산도 Pass 2에서 반복했다. 빈 source 생략은 State가 퍼지면 효과가 줄어든다. Surface당 512×512의 해상도를 유지하며 이 재평가를 제거한다.

@@ -11,6 +11,7 @@ CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map
 | 테스트 함수 | 입력 방식 | 검증 범위 |
 |---|---|---|
 | `TestProfileAndRegistry` | Profile 객체와 JSON fixture | 임의 State 이름, 정규화, Registry ID, Transition 참조 및 재현성 |
+| `TestTransferFactorValidation` | C++ Profile 객체 | 두 Factor의 `[0,1]` 경계값 허용 및 음수·상한 초과·NaN/Inf 거부 |
 | `TestGeometryAndInstanceData` | C++ 객체 직접 구성 | Surface 범위, sentinel, texel Profile map, 동적 State 채널 |
 | `TestContactInputType` | `TSurfaceContactInput` 직접 구성 | Registry `TStateId`와 입력 기본값 |
 | `TestSurfacePreprocessing` | Mapping/Profile Distribution 입력 | Profile map 구성, deterministic build 및 같은 입력의 결과 공유 |
@@ -19,6 +20,10 @@ CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map
 
 | 대상 | 입력·조건 | 기대 결과 | 방식 |
 |---|---|---|---|
+| 정규화 전달 계수 | version 2의 두 TransferFactor | Factor를 그대로 로드하고 Solver 기준 속도는 적용하지 않음 | `Valid.SRProfile` |
+| 이전 schema | version 1의 실제 Rate 필드 | version 2 요구 오류 | `LegacyRates.SRProfile` |
+| 범위 밖 전달 계수 | version 2에서 GeometryTransferFactor=50 | 필드 경로와 `[0,1]` 오류 | `InvalidTransferFactor.SRProfile` |
+| Factor 범위 | 각 Factor의 0, 0.5, 1 및 음수·1 초과·NaN/Inf | 정상 범위 허용, 나머지 거부 | C++ 직접 검증 |
 | 부분 State 정의 | Profile에 임의 State key 하나만 선언 | 고정된 채널 집합 없이 로드 | 정상 JSON fixture |
 | 이름 정규화 | 대소문자와 앞뒤 ASCII whitespace 차이 | 같은 canonical name; 구두점과 내부 공백은 보존 | 직접 검증 및 fixture |
 | Registry 구성 | 둘 이상의 Profile에 서로 다른 State 선언 | 전체 State union에 deterministic ID 배정 | C++ 직접 검증 |
@@ -43,6 +48,8 @@ CPU 자료형, `.SRProfile` loader, State Registry, Surface geometry/Profile map
 
 | 파일 | 목적 |
 |---|---|
+| `LegacyRates.SRProfile` | version 1의 Rate schema를 거부 |
+| `InvalidTransferFactor.SRProfile` | version 2의 정규화 계수 범위 위반을 거부 |
 | `Valid.SRProfile` | 정규화할 이름과 Transition을 포함하는 다중 State Profile |
 | `MissingState.SRProfile` | 임의의 단일 State만 지원하는 부분 Profile |
 | `UnknownState.SRProfile` | 존재하지 않는 Transition endpoint를 Registry에서 거부 |

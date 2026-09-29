@@ -76,3 +76,4 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0023-Simulation-Resolution-Presets|ADR 0023]] | 시뮬레이션 해상도 프리셋 | Surface simulation 해상도를 Low, Medium, High 프리셋으로 선택한다. |
 | [[0024-RawFlux-Cache-Comparison|ADR 0024]] | RawFlux 캐시 ON/OFF 비교 | 방향별 RawFlux 캐시의 ON/OFF 성능과 메모리 비용을 비교하는 기준을 정한다. |
 | [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]] | 비활성 source의 RawFlux 쓰기 생략 | 가용량이 없는 비활성 source는 RawFlux 슬롯을 갱신하지 않는다. |
+| [[0029-Normalized-Transport-Factors|ADR 0029]] | 정규화된 Transport Factor와 Solver 기준 속도 | Profile은 `[0,1]` 계수를 저장하고 Solver가 기준 속도 `1.0`, `100.0`을 곱한다. |

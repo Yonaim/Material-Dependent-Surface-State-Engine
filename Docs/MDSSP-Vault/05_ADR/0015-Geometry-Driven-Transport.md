@@ -22,6 +22,7 @@ ADR 0002는 State를 움직이는 구동력(`SaturationDrive`, `GeometryDrive`)�
 - DirectionDrive의 source normal은 기본적으로 복원 MesoNormal을 사용하며, GPU pack에서 sampled TransferNormal, macro normal 순으로 fallback한다. 비교용 UI `DirectionDrive: MesoNormal`을 OFF로 두면 macro mesh normal을 선택한다. 이 선택은 HeightDrive나 TransferWeight의 NormalWeight 입력을 변경하지 않는다. GeometryDrive가 OFF이면 선택 효과도 없다.
 - Instance transform은 per-instance Solver evaluation에 적용한다. Shared Geometry position/normal을 world-space로 bake하거나 instance마다 복제하지 않는다. World position에는 instance transform을 적용하고, surface normal에는 inverse-transpose normal transform을 적용한다.
 - 이웃 표면 간격은 `DistanceWeight`가 소유한다. HeightDrive에는 neighbor distance normalization을 다시 넣지 않는다. `DistanceWeight`의 구체 감쇠 곡선은 별도 구현 결정으로 둔다.
+- Profile 입력은 초기 Rate 저장 방식에서 version 2의 `[0,1]` 무차원 `GeometryTransferFactor`로 변경했다. 아래 `GeometryTransferRate`는 `GeometryTransferFactor × BaseGeometryTransferRate(100.0)`로 구한 실제 속도다 ([[0029-Normalized-Transport-Factors|ADR 0029]]). 높이·방향·거리 계약은 유지한다.
 - `HeightDrive`는 world-length, `DirectionDrive`와 `TransferWeight`는 무차원으로 둔다. `GeometryTransferRate` 단위는 `State / (world-length · second)`이며 시간 적분은 `Δt`를 곱한다.
 - GeometryDrive는 Transport flux 안에서만 작동한다. 이는 직접 수신량을 더하지 않고 source에서 target으로 향하는 outgoing flux를 만든다. Pass 1/2는 같은 공통 flux 함수를 사용한다.
 

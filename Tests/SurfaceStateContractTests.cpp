@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -81,6 +82,9 @@ namespace
         Check(Profile->GetData().States.size() == 2, "profile should load only its declared States");
         Check(Profile->GetData().States.at("wetness").StateCapacity == 2.0F,
               "State parameters should be indexed by canonical name");
+        Check(Profile->GetData().States.at("wetness").SaturationTransferFactor == 0.4F &&
+                  Profile->GetData().States.at("wetness").GeometryTransferFactor == 0.0005F,
+              "version 2 profiles should load normalized transfer factors without applying solver rates");
         Check(Profile->GetData().Transitions[0].Source == "mud" &&
                   Profile->GetData().Transitions[0].Target == "wetness",
               "transition endpoint names should be normalized");
@@ -97,6 +101,12 @@ namespace
         CheckThrows([&] { (void)TSRProfileLoader::Load(11, GetFixturePath("MissingParameter.SRProfile")); },
                     "states.wetness.inputFactor is required",
                     "missing parameter");
+        CheckThrows([&] { (void)TSRProfileLoader::Load(12, GetFixturePath("LegacyRates.SRProfile")); },
+                    "expected version 2",
+                    "legacy rate schema must not be interpreted as normalized factors");
+        CheckThrows([&] { (void)TSRProfileLoader::Load(13, GetFixturePath("InvalidTransferFactor.SRProfile")); },
+                    "states.wetness.geometryTransferFactor must be finite and in [0, 1]",
+                    "unnormalized transfer factor in JSON");
 
         TSurfaceResponseProfileData InvalidProfile;
         InvalidProfile.States["wetness"].StateCapacity = 0.0F;
@@ -137,6 +147,32 @@ namespace
         Check(ReorderedRegistry.GetStateId("snow") == Registry.GetStateId("snow") &&
                   ReorderedRegistry.GetStateId("wetness") == Registry.GetStateId("wetness"),
               "Registry IDs should be independent of Profile load order");
+    }
+
+    void TestTransferFactorValidation()
+    {
+        using namespace MDSS;
+        for (const auto& [Member, Name] :
+             {std::pair{&TSurfaceStateParameters::SaturationTransferFactor, "saturationTransferFactor"},
+              std::pair{&TSurfaceStateParameters::GeometryTransferFactor, "geometryTransferFactor"}})
+        {
+            TSurfaceResponseProfileData Profile;
+            auto& Parameters = Profile.States["wetness"];
+            for (float Value : {0.0F, 0.5F, 1.0F})
+            {
+                Parameters.*Member = Value;
+                CheckDoesNotThrow([&] { ValidateSurfaceResponseProfileData(Profile); },
+                                  std::string(Name) + " valid normalized factor");
+            }
+            for (float Value : {-0.1F, 1.1F, std::numeric_limits<float>::quiet_NaN(),
+                                std::numeric_limits<float>::infinity()})
+            {
+                Parameters.*Member = Value;
+                CheckThrows([&] { ValidateSurfaceResponseProfileData(Profile); },
+                            std::string("states.wetness.") + Name + " must be finite and in [0, 1]",
+                            std::string(Name) + " invalid normalized factor");
+            }
+        }
     }
 
     void TestGeometryAndInstanceData()
@@ -227,6 +263,7 @@ namespace
 int main()
 {
     TestProfileAndRegistry();
+    TestTransferFactorValidation();
     TestGeometryAndInstanceData();
     TestContactInputType();
     TestRuntimePreprocessing();

@@ -6,6 +6,8 @@
 - 상태: **기능 검증 완료 / 실제 Scene FPS 개선은 미확정**
 - 관련: [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]], [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]
 
+> **파라미터 표현 변경:** 아래 Rate 수치는 측정 당시의 실제 속도다. 현재 Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장하며 실제 속도는 각각 기준 속도 `1.0`, `100.0`을 곱한다. 기존 Geometry Rate `50`, `1`은 Factor `0.5`, `0.01`에 대응한다. 과거 측정 결과는 재측정값이 아니다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 ## RawFlux 방향별 캐시 적용 전 확인한 비용
 
 - Pass 1은 최대 8개 outgoing RawFlux를, Pass 2는 최대 8개 incoming RawFlux를 texel·채널마다 계산한다. Pass 2는 outgoing 합계를 캐시에서 재사용하지만 incoming RawFlux는 재평가한다. 따라서 두 pass 모두 같은 비싼 GeometryDrive 경로를 실행한다.

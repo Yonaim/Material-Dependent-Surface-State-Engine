@@ -1,13 +1,13 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 1,
+  "version": 2,
   "name": "DemoMud",
   "states": {
     "mud": {
       "stateCapacity": 2.0,
       "inputFactor": 1.0,
-      "saturationTransferRate": 0.03,
-      "geometryTransferRate": 0.5,
+      "saturationTransferFactor": 0.03,
+      "geometryTransferFactor": 0.005,
       "decayRate": 0.005,
       "cavityRetentionFactor": 0.9,
       "accumulationFactor": 0.15,

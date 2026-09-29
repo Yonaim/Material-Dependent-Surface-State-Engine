@@ -8,6 +8,8 @@
 
 > **초기 구현 기록:** 이 브랜치의 Capacity clamp 및 기존 검증 결과는 초기 상한 계약 기준이다. [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity를 포화 기준량으로 변경했으며 초과량 보존의 Shader 변경은 구현했고 새 GPU 실행 검증은 대기 중이다. 아래 완료 기록은 당시 결과로 유지한다.
 
+> **현재 파라미터 계약:** 초기 구현의 Rate 저장 방식은 version 2의 `[0,1]` 무차원 TransferFactor로 변경됐다. 아래 전달식의 Rate는 각각 `SaturationTransferFactor × 1.0`, `GeometryTransferFactor × 100.0`으로 구한 실제 속도다. Profile과 GPU 레코드에는 Factor를 저장한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+
 ## 목표
 
 현재 Saturation 차이로만 계산하는 flux에 ADR 0015에서 확정한 `GeometryDrive × GeometryTransferRate`를 추가한다. 이 브랜치에서는 수식 결정을 다시 열지 않고 공통 Pass 1/2 경로에 구현하고 검증한다.
@@ -15,7 +17,7 @@
 ## 현재 기준선
 
 - 2-Pass, barrier, A/B ping-pong, InputDelta 소비는 이미 구현되어 있다.
-- `GeometryTransferRate`, Position, Normal, MesoVirtualHeight가 GPU에 전달되지만 GeometryDrive 계산은 아직 없다.
+- 초기 기준선에서는 `GeometryTransferRate`, Position, Normal, MesoVirtualHeight를 GPU에 전달했지만 GeometryDrive 계산은 없었다. 현재 Profile 레코드는 `GeometryTransferFactor`를 전달하고 실제 Rate는 Solver에서 구한다.
 - Decay는 기존 Concavity 기반 cavity retention을 사용한다. Geometry transport 식과 혼동하지 않도록 역할을 구분한다.
 
 ## 구현 범위
