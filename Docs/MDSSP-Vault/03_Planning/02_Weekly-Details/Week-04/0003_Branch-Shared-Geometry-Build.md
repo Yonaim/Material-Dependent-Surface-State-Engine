@@ -1,5 +1,7 @@
 # Branch 3 — Shared Geometry Build
 
+> **후속 결정:** 이 문서의 Runtime 전처리 전용 범위는 4주차 구현 기록이다. 해상도 프리셋은 ADR 0023, 실행 간 `.Surface` 재사용과 자동 재생성은 [[05_ADR/Assets/0026-Resolution-Surface-Cache|ADR 0026]]에서 추가했다.
+
 > **한 줄 요약:** Simulation Mapping 결과에서 공유 texel 위치·normal·neighbor와 Geometry 데이터를 생성한다.
 
 브랜치: `feat/shared-geometry-build`  
