@@ -1,0 +1,20 @@
+/* Make nested list levels easier to distinguish. */
+.markdown-rendered,
+.markdown-source-view.mod-cm6 {
+  --list-indent: 2.5em;
+}
+
+/* Add a little breathing room between list items in reading and editing views. */
+.markdown-rendered li {
+  padding-block: 0.1em;
+  padding-inline-start: 0.2em;
+}
+
+.markdown-source-view.mod-cm6 .HyperMD-list-line {
+  padding-block: 0.1em;
+}
+
+/* Keep the list marker visually separate from its text in Live Preview. */
+.markdown-source-view.mod-cm6 .cm-formatting-list {
+  margin-right: 0.2em;
+}

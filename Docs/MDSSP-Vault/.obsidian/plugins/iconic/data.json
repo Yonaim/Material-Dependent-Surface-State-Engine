@@ -108,17 +108,19 @@
       "icon": "lucide-list-restart",
       "unsynced": [
         "60e847407cf0ad33"
-      ]
+      ],
+      "color": "gray"
     },
     "08_Assets": {
       "icon": "lucide-gem",
       "unsynced": [
         "60e847407cf0ad33"
-      ]
+      ],
+      "color": "gray"
     },
     "TODO.md": {
       "icon": "lucide-check-circle",
-      "color": "gray"
+      "color": "green"
     }
   },
   "bookmarkIcons": {},

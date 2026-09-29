@@ -1,0 +1,15 @@
+/* Add breathing room below the note title and Markdown headings. */
+body {
+  --inline-title-margin-bottom: 1em;
+  --vault-heading-bottom-space: 0.5em;
+}
+
+/* Preserve the existing heading margins in reading view. */
+.markdown-rendered :is(h1, h2, h3, h4, h5, h6) {
+  padding-block-end: var(--vault-heading-bottom-space);
+}
+
+/* Use padding so CodeMirror can measure heading lines correctly. */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header {
+  padding-block-end: var(--vault-heading-bottom-space);
+}
