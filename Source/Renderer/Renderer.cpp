@@ -169,6 +169,36 @@ namespace MDSS
             return Vertices;
         }
 
+        std::vector<TGizmoVertex> BuildRotateGizmoVertices()
+        {
+            std::vector<TGizmoVertex> Vertices;
+            constexpr int Segments = 96;
+            constexpr float Radius = 0.9F;
+            constexpr float HalfWidth = 0.012F;
+            const std::array<glm::vec3, 3> U = {glm::vec3(0, 1, 0), glm::vec3(0, 0, 1), glm::vec3(1, 0, 0)};
+            const std::array<glm::vec3, 3> V = {glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0)};
+
+            Vertices.reserve(3U * static_cast<std::size_t>(Segments) * 6U);
+            for (std::size_t Axis = 0; Axis < U.size(); ++Axis)
+            {
+                const glm::vec4 Color = WorldAxisColors[Axis];
+                for (int Segment = 0; Segment < Segments; ++Segment)
+                {
+                    const float A0 = glm::two_pi<float>() * static_cast<float>(Segment) / Segments;
+                    const float A1 = glm::two_pi<float>() * static_cast<float>(Segment + 1) / Segments;
+                    const glm::vec3 Radial0 = U[Axis] * std::cos(A0) + V[Axis] * std::sin(A0);
+                    const glm::vec3 Radial1 = U[Axis] * std::cos(A1) + V[Axis] * std::sin(A1);
+                    const glm::vec3 Inner0 = (Radius - HalfWidth) * Radial0;
+                    const glm::vec3 Outer0 = (Radius + HalfWidth) * Radial0;
+                    const glm::vec3 Inner1 = (Radius - HalfWidth) * Radial1;
+                    const glm::vec3 Outer1 = (Radius + HalfWidth) * Radial1;
+                    Vertices.insert(Vertices.end(), {{Inner0, Color}, {Outer0, Color}, {Outer1, Color},
+                                                     {Inner0, Color}, {Outer1, Color}, {Inner1, Color}});
+                }
+            }
+            return Vertices;
+        }
+
         struct alignas(16) TMaterialUniform
         {
             glm::vec4     BaseColor{1.0F};
@@ -322,12 +352,6 @@ namespace MDSS
             Color.format = VK_FORMAT_R32G32B32A32_SFLOAT;
             Color.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, Color));
             Config.VertexAttributes.push_back(Color);
-            VkVertexInputAttributeDescription EdgeCoordinate{};
-            EdgeCoordinate.location = 2;
-            EdgeCoordinate.binding = 0;
-            EdgeCoordinate.format = VK_FORMAT_R32_SFLOAT;
-            EdgeCoordinate.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, EdgeCoordinate));
-            Config.VertexAttributes.push_back(EdgeCoordinate);
             VkPushConstantRange Push{};
             Push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
             Push.size = sizeof(TGizmoPushConstants);
@@ -338,6 +362,16 @@ namespace MDSS
         TGraphicsPipelineConfig BuildWorldReferencePipelineConfig()
         {
             TGraphicsPipelineConfig Config = BuildGizmoPipelineConfig();
+            Config.ShaderStages = {
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/WorldReference.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/WorldReference.frag.spv", "main"},
+            };
+            VkVertexInputAttributeDescription EdgeCoordinate{};
+            EdgeCoordinate.location = 2;
+            EdgeCoordinate.binding = 0;
+            EdgeCoordinate.format = VK_FORMAT_R32_SFLOAT;
+            EdgeCoordinate.offset = static_cast<std::uint32_t>(offsetof(TGizmoVertex, EdgeCoordinate));
+            Config.VertexAttributes.push_back(EdgeCoordinate);
             Config.bDepthTestEnabled = true;
             Config.bDepthWriteEnabled = false;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
@@ -381,8 +415,11 @@ namespace MDSS
         std::vector<TGizmoVertex> GizmoVertices = BuildWorldReferenceVertices(WorldGridVertexCount,
                                                                                WorldAxisVertexCount);
         const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
+        TranslateGizmoVertexCount = static_cast<std::uint32_t>(TranslateGizmoVertices.size());
         GizmoVertices.insert(GizmoVertices.end(), TranslateGizmoVertices.begin(), TranslateGizmoVertices.end());
-        GizmoVertexCount = static_cast<std::uint32_t>(GizmoVertices.size());
+        const std::vector<TGizmoVertex> RotateGizmoVertices = BuildRotateGizmoVertices();
+        RotateGizmoVertexCount = static_cast<std::uint32_t>(RotateGizmoVertices.size());
+        GizmoVertices.insert(GizmoVertices.end(), RotateGizmoVertices.begin(), RotateGizmoVertices.end());
         GizmoVertexBuffer =
             std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
                                                         Context.GetDevice(),
@@ -1498,11 +1535,12 @@ namespace MDSS
                                        0,
                                        sizeof(Constants),
                                        &Constants);
-                    vkCmdDraw(CommandBuffer,
-                              GizmoVertexCount - WorldGridVertexCount - WorldAxisVertexCount,
-                              1,
-                              WorldGridVertexCount + WorldAxisVertexCount,
-                              0);
+                    const bool bRotationGizmo = DebugInterface.IsRotationGizmoMode();
+                    const std::uint32_t FirstVertex = WorldGridVertexCount + WorldAxisVertexCount +
+                        (bRotationGizmo ? TranslateGizmoVertexCount : 0U);
+                    const std::uint32_t VertexCount =
+                        bRotationGizmo ? RotateGizmoVertexCount : TranslateGizmoVertexCount;
+                    vkCmdDraw(CommandBuffer, VertexCount, 1, FirstVertex, 0);
                 }
             }
         }

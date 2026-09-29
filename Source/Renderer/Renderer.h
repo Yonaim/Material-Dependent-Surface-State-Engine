@@ -180,9 +180,10 @@ namespace MDSS
         TGraphicsPipeline                    GizmoPipeline;
         TGraphicsPipeline                    WorldReferencePipeline;
         std::unique_ptr<TGPUBuffer>           GizmoVertexBuffer;
-        std::uint32_t                         GizmoVertexCount = 0;
         std::uint32_t                         WorldGridVertexCount = 0;
         std::uint32_t                         WorldAxisVertexCount = 0;
+        std::uint32_t                         TranslateGizmoVertexCount = 0;
+        std::uint32_t                         RotateGizmoVertexCount = 0;
         bool                                  bWorldGridVisible = true;
         bool                                  bWorldAxisVisible = true;
         std::unique_ptr<TGraphicsPipeline>    SurfaceDebugPipeline;

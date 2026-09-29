@@ -157,7 +157,7 @@ flowchart LR
 ## Scene 편집 흐름
 
 - Scene의 Mesh를 화면에서 클릭해 object를 선택한다. 선택한 object는 `Selected Transform` 창과 렌더링 gizmo에 반영된다.
-- Position은 숫자 입력 또는 X/Y/Z 축 이동 gizmo로 편집한다. Rotation과 Scale은 현재 숫자 입력으로 편집한다.
+- Position은 숫자 입력 또는 X/Y/Z 축 이동 gizmo로 편집한다. Rotation은 숫자 입력 또는 Rotate 모드의 월드 축 회전 링으로 편집하며, Scale은 숫자 입력으로 편집한다.
 - `Load Scene`은 파일 대화상자와 `TSceneLoader`로 Scene을 읽고 수명이 유지되는 활성 Scene에 새 데이터를 대입한 뒤 Renderer의 Surface/GPU resource를 다시 만든다. 갱신 실패 시 이전 Scene 데이터를 복구한다.
 - `Save Scene`은 시뮬레이션 해상도, Mesh 경로, 선택적 `.SurfaceProfileMap` 경로, object Transform을 저장한다. 경로는 저장할 Scene 파일 위치 기준 상대 경로다.
 - 현재 Scene 직렬화에는 Camera 설정과 시뮬레이션 State가 포함되지 않는다. Scene 편집 후 State를 보존하는 기능은 제공하지 않는다.

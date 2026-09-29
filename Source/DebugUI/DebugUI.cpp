@@ -35,6 +35,9 @@
 #include <glm/geometric.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <limits>
@@ -584,6 +587,11 @@ namespace MDSS
         return HoveredGizmoAxis;
     }
 
+    bool TDebugUI::IsRotationGizmoMode() const noexcept
+    {
+        return bRotationGizmoMode;
+    }
+
     TStateId TDebugUI::GetDebugState() const noexcept
     {
         return DebugState;
@@ -803,6 +811,60 @@ namespace MDSS
             return true;
         };
 
+        auto GetRotationRingScreenPoint = [&](glm::vec3 Position,
+                                              int Axis,
+                                              float Angle,
+                                              float WorldScale,
+                                              ImVec2& Screen)
+        {
+            const glm::vec3 U = Axis == 0   ? glm::vec3(0, 1, 0)
+                                : Axis == 1 ? glm::vec3(0, 0, 1)
+                                            : glm::vec3(1, 0, 0);
+            const glm::vec3 V = Axis == 0   ? glm::vec3(0, 0, 1)
+                                : Axis == 1 ? glm::vec3(1, 0, 0)
+                                            : glm::vec3(0, 1, 0);
+            const glm::vec3 Point = Position + WorldScale * 0.9F * (U * std::cos(Angle) + V * std::sin(Angle));
+            if (!ProjectToScreen(Point, VP, ViewportSize, Screen))
+            {
+                return false;
+            }
+            Screen.x += ViewportOrigin.x;
+            Screen.y += ViewportOrigin.y;
+            return true;
+        };
+
+        auto GetRotationRingAngle = [&](glm::vec3 Position,
+                                        int Axis,
+                                        float WorldScale,
+                                        ImVec2 MousePosition,
+                                        float& Angle,
+                                        float& Distance)
+        {
+            constexpr int Segments = 96;
+            Distance = std::numeric_limits<float>::max();
+            bool bFound = false;
+            for (int Segment = 0; Segment < Segments; ++Segment)
+            {
+                const float Angle0 = glm::two_pi<float>() * static_cast<float>(Segment) / Segments;
+                const float Angle1 = glm::two_pi<float>() * static_cast<float>(Segment + 1) / Segments;
+                ImVec2 A{}, B{};
+                if (!GetRotationRingScreenPoint(Position, Axis, Angle0, WorldScale, A) ||
+                    !GetRotationRingScreenPoint(Position, Axis, Angle1, WorldScale, B))
+                {
+                    continue;
+                }
+                float Along = 0.0F;
+                const float SegmentDistance = PointSegmentDistance(MousePosition, A, B, Along);
+                if (SegmentDistance < Distance)
+                {
+                    Distance = SegmentDistance;
+                    Angle = Angle0 + (Angle1 - Angle0) * Along;
+                    bFound = true;
+                }
+            }
+            return bFound;
+        };
+
         if (ActiveGizmoAxis >= 0)
         {
             HoveredGizmoAxis = ActiveGizmoAxis;
@@ -812,8 +874,58 @@ namespace MDSS
             }
             else if (SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
             {
-                if (glm::length(glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse) >= 3.0F &&
-                    GizmoDragPixelLength > 1.0F && GizmoDragWorldScale > 0.0F)
+                if (bRotationGizmoMode)
+                {
+                    const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse;
+                    if (glm::length(MouseDelta) >= 3.0F && GizmoDragWorldScale > 0.0F)
+                    {
+                        TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+                        float CurrentAngle = 0.0F, Distance = 0.0F;
+                        if (GetRotationRingAngle(Transform.Position,
+                                                 ActiveGizmoAxis,
+                                                 GizmoDragWorldScale,
+                                                 Mouse,
+                                                 CurrentAngle,
+                                                 Distance))
+                        {
+                            GizmoDragAccumulatedAngle += std::remainder(
+                                CurrentAngle - GizmoDragLastAngle, glm::two_pi<float>());
+                            GizmoDragLastAngle = CurrentAngle;
+                            glm::mat4 StartRotation(1.0F);
+                            StartRotation = glm::rotate(StartRotation,
+                                                        glm::radians(GizmoDragStartRotation.x),
+                                                        glm::vec3(1.0F, 0.0F, 0.0F));
+                            StartRotation = glm::rotate(StartRotation,
+                                                        glm::radians(GizmoDragStartRotation.y),
+                                                        glm::vec3(0.0F, 1.0F, 0.0F));
+                            StartRotation = glm::rotate(StartRotation,
+                                                        glm::radians(GizmoDragStartRotation.z),
+                                                        glm::vec3(0.0F, 0.0F, 1.0F));
+                            const glm::vec3 Axis = ActiveGizmoAxis == 0   ? glm::vec3(1, 0, 0)
+                                                   : ActiveGizmoAxis == 1 ? glm::vec3(0, 1, 0)
+                                                                          : glm::vec3(0, 0, 1);
+                            const glm::quat WorldRotation = glm::angleAxis(GizmoDragAccumulatedAngle, Axis) *
+                                glm::quat_cast(glm::mat3(StartRotation));
+                            const glm::mat3 Rotated = glm::mat3_cast(WorldRotation);
+                            const float SinY = std::clamp(Rotated[2][0], -1.0F, 1.0F);
+                            const float Y = std::asin(SinY);
+                            const float CosY = std::cos(Y);
+                            float X = 0.0F, Z = 0.0F;
+                            if (std::abs(CosY) > 1.0e-5F)
+                            {
+                                X = std::atan2(-Rotated[2][1], Rotated[2][2]);
+                                Z = std::atan2(-Rotated[1][0], Rotated[0][0]);
+                            }
+                            else
+                            {
+                                X = std::atan2(SinY * Rotated[0][1], Rotated[1][1]);
+                            }
+                            Transform.RotationDegrees = glm::degrees(glm::vec3(X, Y, Z));
+                        }
+                    }
+                }
+                else if (glm::length(glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse) >= 3.0F &&
+                         GizmoDragPixelLength > 1.0F && GizmoDragWorldScale > 0.0F)
                 {
                     const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse;
                     const float     WorldDelta =
@@ -833,13 +945,28 @@ namespace MDSS
         {
             const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position;
             float           BestDistance = 13.0F;
+            float           WorldScale = glm::length(Origin - Position) * 0.18F;
             for (int Axis = 0; Axis < 3; ++Axis)
             {
-                ImVec2 A{}, B{};
-                float  WorldScale = 0.0F, Along = 0.0F;
-                if (GetAxisScreenSegment(Position, Axis, A, B, WorldScale))
+                float Distance = 0.0F, Angle = 0.0F;
+                bool bProjected = false;
+                if (bRotationGizmoMode)
                 {
-                    const float Distance = PointSegmentDistance(Mouse, A, B, Along);
+                    bProjected = WorldScale > 0.01F &&
+                        GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
+                }
+                else
+                {
+                    ImVec2 A{}, B{};
+                    float AxisWorldScale = 0.0F, Along = 0.0F;
+                    bProjected = GetAxisScreenSegment(Position, Axis, A, B, AxisWorldScale);
+                    if (bProjected)
+                    {
+                        Distance = PointSegmentDistance(Mouse, A, B, Along);
+                    }
+                }
+                if (bProjected)
+                {
                     if (Distance < BestDistance)
                     {
                         BestDistance = Distance;
@@ -864,17 +991,34 @@ namespace MDSS
             const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position;
             float           BestDistance = 13.0F;
             int             BestAxis = -1;
+            float           BestAngle = 0.0F;
+            const float     WorldScale = glm::length(Origin - Position) * 0.18F;
             for (int Axis = 0; Axis < 3; ++Axis)
             {
-                ImVec2 A{}, B{};
-                float  WorldScale = 0.0F, Along = 0.0F;
-                if (GetAxisScreenSegment(Position, Axis, A, B, WorldScale))
+                float Distance = 0.0F, Angle = 0.0F;
+                bool bProjected = false;
+                if (bRotationGizmoMode)
                 {
-                    const float Distance = PointSegmentDistance(Mouse, A, B, Along);
+                    bProjected = WorldScale > 0.01F &&
+                        GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
+                }
+                else
+                {
+                    ImVec2 A{}, B{};
+                    float AxisWorldScale = 0.0F, Along = 0.0F;
+                    bProjected = GetAxisScreenSegment(Position, Axis, A, B, AxisWorldScale);
+                    if (bProjected)
+                    {
+                        Distance = PointSegmentDistance(Mouse, A, B, Along);
+                    }
+                }
+                if (bProjected)
+                {
                     if (Distance < BestDistance)
                     {
                         BestDistance = Distance;
                         BestAxis = Axis;
+                        BestAngle = Angle;
                     }
                 }
             }
@@ -884,15 +1028,25 @@ namespace MDSS
                 GizmoDragStartMouse = {Mouse.x, Mouse.y};
                 TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
                 GizmoDragStartPosition = Transform.Position;
-                ImVec2 A{}, B{};
-                float  WorldScale = 0.0F;
-                if (GetAxisScreenSegment(Transform.Position, BestAxis, A, B, WorldScale))
+                GizmoDragWorldScale = WorldScale;
+                if (bRotationGizmoMode)
                 {
-                    const glm::vec2 ScreenAxis{B.x - A.x, B.y - A.y};
-                    GizmoDragPixelLength = glm::length(ScreenAxis);
-                    GizmoDragScreenAxis =
-                        GizmoDragPixelLength > 0.0F ? ScreenAxis / GizmoDragPixelLength : glm::vec2(0.0F);
-                    GizmoDragWorldScale = WorldScale;
+                    GizmoDragLastAngle = BestAngle;
+                    GizmoDragAccumulatedAngle = 0.0F;
+                    GizmoDragStartRotation = Transform.RotationDegrees;
+                }
+                else
+                {
+                    ImVec2 A{}, B{};
+                    float AxisWorldScale = 0.0F;
+                    if (GetAxisScreenSegment(Transform.Position, BestAxis, A, B, AxisWorldScale))
+                    {
+                        const glm::vec2 ScreenAxis{B.x - A.x, B.y - A.y};
+                        GizmoDragPixelLength = glm::length(ScreenAxis);
+                        GizmoDragScreenAxis =
+                            GizmoDragPixelLength > 0.0F ? ScreenAxis / GizmoDragPixelLength : glm::vec2(0.0F);
+                        GizmoDragWorldScale = AxisWorldScale;
+                    }
                 }
                 return;
             }
@@ -928,15 +1082,25 @@ namespace MDSS
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         const ImVec2 Position{Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 135.0F};
         ImGui::SetNextWindowPos(Position, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({330.0F, 190.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 220.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Selected Transform##SceneTools", nullptr, Flags);
         TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
         ImGui::Text("Object %zu", *SelectedObject);
+        if (ImGui::RadioButton("Translate", !bRotationGizmoMode))
+        {
+            bRotationGizmoMode = false;
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate", bRotationGizmoMode))
+        {
+            bRotationGizmoMode = true;
+        }
         LabeledDragFloat3("Position", &Transform.Position.x, 0.02F);
         LabeledDragFloat3("Rotation", &Transform.RotationDegrees.x, 0.25F);
         LabeledDragFloat3("Scale", &Transform.Scale.x, 0.02F);
-        ImGui::TextDisabled("Drag the colored axis arrows to move.");
+        ImGui::TextDisabled(bRotationGizmoMode ? "Drag a colored ring to rotate around that axis."
+                                               : "Drag a colored axis arrow to move along that axis.");
         ImGui::End();
     }
 

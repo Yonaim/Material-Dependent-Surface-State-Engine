@@ -6,7 +6,6 @@
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec4 InColor;
-layout(location = 2) in float InEdgeCoordinate;
 
 layout(push_constant) uniform TGizmoPushConstants
 {
@@ -18,12 +17,10 @@ layout(push_constant) uniform TGizmoPushConstants
 } Push;
 
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out float EdgeCoordinate;
 
 void main()
 {
     FragColor = InColor;
-    EdgeCoordinate = InEdgeCoordinate;
     if ((Push.HighlightAxis == 0 && InColor.r > 0.9 && InColor.g < 0.2) ||
         (Push.HighlightAxis == 1 && InColor.g > 0.9 && InColor.r < 0.2) ||
         (Push.HighlightAxis == 2 && InColor.b > 0.9 && InColor.r < 0.2))

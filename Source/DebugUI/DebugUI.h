@@ -70,6 +70,7 @@ namespace MDSS
         [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] int GetHoveredGizmoAxis() const noexcept;
+        [[nodiscard]] bool IsRotationGizmoMode() const noexcept;
         [[nodiscard]] TStateId GetDebugState() const noexcept;
         [[nodiscard]] bool ShouldSuppressDebugHotkey() const noexcept;
 
@@ -123,9 +124,13 @@ namespace MDSS
         std::optional<std::size_t> SelectedObject;
         int         ActiveGizmoAxis = -1;
         int         HoveredGizmoAxis = -1;
+        bool        bRotationGizmoMode = false;
         glm::vec2   GizmoDragStartMouse{0.0F};
         glm::vec2   GizmoDragScreenAxis{0.0F};
         glm::vec3   GizmoDragStartPosition{0.0F};
+        glm::vec3   GizmoDragStartRotation{0.0F};
+        float       GizmoDragLastAngle = 0.0F;
+        float       GizmoDragAccumulatedAngle = 0.0F;
         float       GizmoDragWorldScale = 0.0F;
         float       GizmoDragPixelLength = 0.0F;
         std::string SceneStatus;
