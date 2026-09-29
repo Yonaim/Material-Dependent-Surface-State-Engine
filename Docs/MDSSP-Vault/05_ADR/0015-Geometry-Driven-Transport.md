@@ -1,10 +1,11 @@
 # ADR 0015 — Geometry-Driven Transport의 높이·방향·거리 계약
 
-> **한 줄 요약:** 형상에 따른 이동 구동을 HeightDrive와 DirectionDrive의 곱으로 계산해 전달 가중치와 결합한다.
+> **한 줄 요약:** `GeometryDrive`를 `HeightDrive × DirectionDrive`로 계산해 `TransferWeight`와 결합한다.
 
+- 분류: **Simulation**
 - Status: **Accepted**
 - Date: 2026-09-27
-- Related: [[0002-Transport-Drive-and-Weight|ADR 0002]], [[../../04_Architecture/0006_Surface-State-Update|Surface State Update]], [[../../04_Architecture/0004_Surface-Geometry|Surface Geometry]], [[../../08_Assets/Documents/0006_Geometry-Integration|Geometry Integration]], [[../../03_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|Week 5 Branch 1]], [[../../03_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|Week 6 Branch Plan]]
+- 관련 문서: [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 Weight]], [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
 
 ## Context
 
@@ -15,7 +16,7 @@ ADR 0002는 State를 움직이는 구동력(`SaturationDrive`, `GeometryDrive`)�
 ## Decision
 
 - Geometry transport는 `GeometryDrive = HeightDrive × DirectionDrive`로 계산하고, 이후 다른 통과성 계수와 함께 `TransferWeight`를 곱한다.
-- Effective height는 Macro Surface 높이와 Virtual Height(`MesoVirtualHeight`)의 합이다. 두 항은 instance transform을 반영한 world-length로 비교한다. 현재 Virtual Height가 0이면 Macro Surface 높이만 반영된다.
+- `EffectiveHeight`는 Macro Surface 높이와 Virtual Height(`MesoVirtualHeight`)의 합이다. 두 항은 instance transform을 반영한 world-length로 비교한다. 현재 Virtual Height가 0이면 Macro Surface 높이만 반영된다.
 - `HeightDrive(i→j) = abs(EffectiveHeight_i - EffectiveHeight_j)`로 정의한다. 인접 texel 간 거리로 나누지 않는다.
 - `DirectionDrive`는 source 면 방향에 투영한 World Gravity와 source→target의 world-space 이웃 방향의 정렬도로 정의한다. 정렬도가 높을수록 해당 방향의 geometry flux가 커지며, 투영 중력과 반대인 이웃 방향은 0으로 처리한다. 투영 중력 길이가 epsilon 이하이면 `DirectionDrive = 0`이다.
 - DirectionDrive의 source normal은 기본적으로 복원 MesoNormal을 사용하며, GPU pack에서 sampled TransferNormal, macro normal 순으로 fallback한다. 비교용 UI `DirectionDrive: MesoNormal`을 OFF로 두면 macro mesh normal을 선택한다. 이 선택은 HeightDrive나 TransferWeight의 NormalWeight 입력을 변경하지 않는다. GeometryDrive가 OFF이면 선택 효과도 없다.
@@ -49,8 +50,8 @@ ADR 0002는 State를 움직이는 구동력(`SaturationDrive`, `GeometryDrive`)�
 ## Related
 
 - [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 TransferWeight 분리]]
-- [[../../04_Architecture/0006_Surface-State-Update|Surface State Update]]
-- [[../../04_Architecture/0004_Surface-Geometry|Surface Geometry]]
-- [[../../08_Assets/Documents/0006_Geometry-Integration|Geometry Integration]]
-- [[../../03_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|Week 5 Branch 1 — Solver Geometry Drive]]
-- [[../../03_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|Week 6 Branch Plan]]
+- [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
+- [[../04_Architecture/0004_Surface-Geometry|Surface Geometry]]
+- [[../08_Assets/Documents/0006_Geometry-Integration|Geometry Integration]]
+- [[../03_Planning/02_Weekly-Details/Week-05/0001_Branch-Solver-Geometry-Drive|Week 5 Branch 1 — Solver Geometry Drive]]
+- [[../03_Planning/02_Weekly-Details/Week-06/0000_Week6-Branch-Plan|Week 6 Branch Plan]]

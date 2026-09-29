@@ -4,7 +4,7 @@
 
 MDSSP Engine에서 사용하는 주요 용어의 현재 의미다.
 
-State / Capacity / Saturation은 [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]의 새 계약을 따른다. Shader의 상한 clamp 제거는 구현했으며 GPU 실행 검증은 대기 중이다.
+State / Capacity / Saturation은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 새 계약을 따른다. Shader의 상한 clamp 제거는 구현했으며 GPU 실행 검증은 대기 중이다.
 
 | 용어 | 뜻 | 관련 문서 |
 |---|---|---|
@@ -22,7 +22,7 @@ State / Capacity / Saturation은 [[05_ADR/Simulation/0020-State-Overcapacity-Tra
 | **ProfileBoundaryWeight** | 서로 다른 SRProfile 영역 사이의 전달 정도를 조절하는 가중치. | [[04_Architecture/0006_Surface-State-Update\|Solver]] |
 | **ContactWeight** | 접촉 중심에서의 거리와 반경·falloff에 따라 texel이 외부 입력을 받는 정도. | [[04_Architecture/0006_Surface-State-Update\|Contact Input]] |
 | **Macro Geometry** | 실제 Mesh가 만드는 거시 형상. | [[04_Architecture/0004_Surface-Geometry\|형상 정보]] |
-| **Virtual Meso Geometry** | Normal Map 등에서 유도해 Simulation이 사용하는 중간 규모의 가상 표면 형상. | [형상 정보](../04_Architecture/0004_Surface-Geometry.md), [ADR 0018](../05_ADR/Simulation/0018-Normal-Map-Meso-Geometry.md) |
+| **Virtual Meso Geometry** | Normal Map 등에서 유도해 Simulation이 사용하는 중간 규모의 가상 표면 형상. | [형상 정보](../04_Architecture/0004_Surface-Geometry.md), [ADR 0018](../05_ADR/0018-Normal-Map-Meso-Geometry.md) |
 | **Virtual Height** | Virtual Meso Geometry의 높이 성분. Macro Geometry 기준 상대 높이 (`MesoVirtualHeight`). | [형상 정보](../04_Architecture/0004_Surface-Geometry.md) |
 | **Surface Geometry Field** | Simulation texel별 정적 표면 형상 데이터 집합. | [형상 정보](../04_Architecture/0004_Surface-Geometry.md), [GPU Resource](../06_Development/Notes/0003_Surface-State-GPU-Resource.md) |
 | **Accumulation Height** | State를 기반으로 계산한 동적 적층 높이. Cavity Filling과 Surface Following으로 구성. | [[04_Architecture/0004_Surface-Geometry\|적층]] |

@@ -2,8 +2,8 @@
 
 - Date: 2026-09-28
 - Status: **초기 ON/OFF 경로의 합성 GPU 비교 완료 · ADR 0025 이전 측정 기록**
-- 적용 범위: 아래 수치는 빈 source의 RawFlux를 0으로 덮어쓰던 초기 ON 구현이다. [[../../05_ADR/Simulation/0025-Inactive-RawFlux-Write-Elision|ADR 0025]] 이후에는 해당 쓰기를 생략하므로 현재 성능 수치로 사용하지 않는다.
-- 결정: [[../../05_ADR/Simulation/0024-RawFlux-Cache-Comparison|ADR 0024 — RawFlux 캐시 ON/OFF 비교]]
+- 적용 범위: 아래 수치는 빈 source의 RawFlux를 0으로 덮어쓰던 초기 ON 구현이다. [[../../05_ADR/0025-Inactive-RawFlux-Write-Elision|ADR 0025]] 이후에는 해당 쓰기를 생략하므로 현재 성능 수치로 사용하지 않는다.
+- 결정: [[../../05_ADR/0024-RawFlux-Cache-Comparison|ADR 0024 — RawFlux 캐시 ON/OFF 비교]]
 
 ## 비교 조건
 

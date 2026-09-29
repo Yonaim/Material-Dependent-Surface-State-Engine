@@ -5,7 +5,7 @@
 브랜치: `feat/solver-normal-map-weights`
 선행 조건: Branch 2.1의 TransferWeight cache가 포함된 최신 작업 HEAD
 상태: **구현 및 로컬 검증 완료 · 라이브 에셋 핫리로드는 미지원**
-관련 설계: [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]], [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]], [[06_Development/Experiments/0001_Normal-Map-Integration|Normal Map Integration 실험]]
+관련 설계: [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]], [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]], [[06_Development/Experiments/0001_Normal-Map-Integration|Normal Map Integration 실험]]
 
 ## 목표
 

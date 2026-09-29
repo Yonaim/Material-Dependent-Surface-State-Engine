@@ -2,8 +2,10 @@
 
 > **한 줄 요약:** State 종류는 로드한 `.SRProfile`의 `states` key에서 Registry로 구성한다.
 
+- 분류: **Architecture**
 - 상태: **Accepted**
 - 날짜: 2026-09-25
+- 관련 문서: [[0005-Per-Texel-GPU-Data-Layout|ADR 0005 — Per-Texel GPU Data Layout]], [[0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027 — Scene State Registry]]
 
 ## Context
 
@@ -14,7 +16,7 @@ State 종류의 정의와 각 소재의 반응 파라미터를 분리하고, Sol
 ## Decision
 
 - State 종류는 C++ `enum` 또는 별도 `SurfaceStateSchema` 파일에 고정하지 않는다.
-- 로드된 모든 `.SRProfile`의 `states` key를 수집해 `TSurfaceStateRegistry`를 구성한다.
+- 현재 Scene의 Runtime Surface Profile 테이블에 참조된 `.SRProfile`의 `states` key를 수집해 `TSurfaceStateRegistry`를 구성한다. 초기 구현은 AssetManager의 모든 캐시 Profile을 사용했으며, 현재 범위와 전환 수명은 [[0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]에 따른다.
 - 각 `.SRProfile`은 State 종류 목록이 아니라, 해당 Profile이 지원하는 State별 반응 파라미터와 Transition을 정의한다.
 - 파일과 진단 메시지에는 사람이 읽을 수 있는 문자열을 사용하고, 런타임과 GPU에서는 Registry가 부여한 `TStateId` 또는 `ChannelIndex`를 사용한다.
 - Solver는 `Wetness`, `Heat` 등의 이름을 하드코딩하지 않고 등록된 채널을 순회한다.
@@ -55,5 +57,6 @@ Profile 데이터에 등장하는 State를 자동으로 등록하고 런타임�
 
 - [[0004-Asset-Profile-Mapping]]
 - [[0005-Per-Texel-GPU-Data-Layout]]
-- [[../../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[0027-Scene-State-Registry-and-Shared-Profile-Table]]
+- [[../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]

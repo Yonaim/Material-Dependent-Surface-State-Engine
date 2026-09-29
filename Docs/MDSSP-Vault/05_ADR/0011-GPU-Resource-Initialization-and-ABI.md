@@ -2,9 +2,10 @@
 
 > **한 줄 요약:** GPU resource의 초기값, CPU·GLSL 데이터 ABI와 descriptor 연결 계약을 결정한다.
 
+- 분류: **Architecture**
 - 상태: **Accepted**
 - 날짜: 2026-09-26
-- 관련: [[0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]], [[../../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]], [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- 관련 문서: [[0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010 — Dynamic State GPU Buffer Layout]], [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 ## Context
 
@@ -41,7 +42,7 @@ Descriptor는 shader binding에 실제 GPU buffer를 연결하는 Vulkan 설정�
 | 매 step descriptor 갱신 | Current/Next가 바뀔 때마다 binding을 수정 | 미선택. 매 step host-side 갱신이 필요하다. |
 | AB/BA descriptor set 사전 생성 | A→B용과 B→A용을 각각 만들어 번갈아 사용 | **채택**. 역할 전환이 명확하고 매 step descriptor 수정이 없다. |
 
-실제 descriptor binding/type/range 계약은 [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]의 12개 storage-buffer binding 표를 따른다. 각 binding은 descriptor count 1과 해당 buffer 전체 range를 사용한다.
+실제 descriptor binding/type/range 계약은 [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]의 12개 storage-buffer binding 표를 따른다. 각 binding은 descriptor count 1과 해당 buffer 전체 range를 사용한다.
 
 ## 3. 검토안과 결정 — CPU↔GPU ABI 및 packing
 
@@ -72,11 +73,11 @@ GPU 전용 구조체는 `sizeof`, `alignof`, `offsetof`를 compile-time 검사�
 - 실제 Contact event 생성·upload와 CPU/GPU frame-in-flight 동기화 (Branch 6)
 - device-local/staging memory 경로와 allocation suballocation 최적화
 
-Descriptor의 구현 계약은 Branch 4 개발 노트에 기록한다. 현재 구현은 12개의 storage-buffer binding을 사용하며 binding별 원소 형식과 Current/Next 연결은 [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에 정리한다. CPU ABI 구조체의 크기, 정렬, 주요 offset은 compile-time assertion으로 검증한다.
+Descriptor의 구현 계약은 Branch 4 개발 노트에 기록한다. 현재 구현은 12개의 storage-buffer binding을 사용하며 binding별 원소 형식과 Current/Next 연결은 [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]에 정리한다. CPU ABI 구조체의 크기, 정렬, 주요 offset은 compile-time assertion으로 검증한다.
 
 ## Related
 
 - [[0005-Per-Texel-GPU-Data-Layout|ADR 0005 — Per-Texel GPU Data Layout]]
 - [[0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010 — Dynamic State GPU Buffer Layout]]
-- [[../../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
-- [[../../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
+- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]

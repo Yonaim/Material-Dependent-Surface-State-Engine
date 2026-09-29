@@ -2,8 +2,10 @@
 
 > **한 줄 요약:** Pass 1에서 방향별 RawFlux를 저장하고 Pass 2에서 이웃 source의 역방향 값을 재사용한다.
 
+- 분류: **Simulation**
 - Status: **Accepted**
 - Date: 2026-09-28
+- 관련 문서: [[0017-Solver-Transfer-Cache|ADR 0017 — Solver Transfer Cache]], [[../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
 - 구현 상태: **구현 완료 · GPU 회귀 검증 완료 · 실제 Scene FPS 개선은 미확정**
 
 후속 ADR 0022는 Pass 1 source 재사용과 가용량 0 생략을, ADR 0023은 해상도 프리셋과 기본 Medium 256을 추가했다. 아래 512 유지 결정과 측정은 이 ADR 채택 당시 기준이며 High 해상도에서 그대로 사용할 수 있다.
@@ -63,6 +65,6 @@ run별 시간 편차가 있고 실제 네 큐브 Scene의 FPS는 측정하지 �
 
 - [[0017-Solver-Transfer-Cache|ADR 0017 — 초기 Solver cache]]
 - [[0020-State-Overcapacity-Transport|ADR 0020 — State 초과량 보존]]
-- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
-- [[../../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
-- [[../../06_Development/Experiments/0002_Solver-Geometry-Cost|Solver GeometryDrive 비용 실험]]
+- [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
+- [[../04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]]
+- [[../06_Development/Experiments/0002_Solver-Geometry-Cost|Solver GeometryDrive 비용 실험]]

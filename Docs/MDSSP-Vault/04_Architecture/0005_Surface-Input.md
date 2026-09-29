@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** Surface 대상 접촉 입력을 공개 API에서 받아 texel별 State 입력으로 전달하는 방식을 정의한다.
 
-상태: **MVP API 설계** · 근거: [[../08_Assets/Documents/0004_Contact-Input|Contact Input API]] · 결정: [[05_ADR/Architecture/0014-Surface-Contact-Target-API|ADR 0014]]
+상태: **MVP API 설계** · 근거: [[../08_Assets/Documents/0004_Contact-Input|Contact Input API]] · 결정: [[05_ADR/0014-Surface-Contact-Target-API|ADR 0014]]
 
 Assets의 `SurfaceContactInput`은 대상 Surface와 접촉 정보를 한 구조체에 담는 예시다. 모듈을 사용하는 게임 코드가 내부 `SurfaceInstanceID`를 직접 찾고 매 접촉마다 넘기지 않도록, MVP 공개 API에서는 대상 Surface를 제출 함수의 주체로 정하고 접촉 정보만 전달한다.
 

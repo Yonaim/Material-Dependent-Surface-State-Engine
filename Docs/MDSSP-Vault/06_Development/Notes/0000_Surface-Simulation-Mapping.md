@@ -52,7 +52,7 @@
 | `SurfaceID` | texel | Surface와 Profile 연결 |
 | `NeighborIndex[8]` | texel × 8 | seam을 포함한 실제 이웃 |
 
-`TriangleID`와 `Barycentric`은 Runtime Mapping 결과에 두어 Geometry를 복원하는 데 사용하고, 이후 필요하지 않으면 해제할 수 있다. Solver가 직접 필요로 하지 않으면 GPU에는 올리지 않는다. Distance는 CPU Mapping이나 GPU buffer에 저장하지 않는다. Solver가 `Position[j] - Position[i]`에서 거리와 방향을 계산한다. GPU에서 invalid texel은 `TexelSurfaceIndex = InvalidSurfaceID`로 표시한다. 자세한 packed layout은 [[05_ADR/Architecture/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]]을 따른다.
+`TriangleID`와 `Barycentric`은 Runtime Mapping 결과에 두어 Geometry를 복원하는 데 사용하고, 이후 필요하지 않으면 해제할 수 있다. Solver가 직접 필요로 하지 않으면 GPU에는 올리지 않는다. Distance는 CPU Mapping이나 GPU buffer에 저장하지 않는다. Solver가 `Position[j] - Position[i]`에서 거리와 방향을 계산한다. GPU에서 invalid texel은 `TexelSurfaceIndex = InvalidSurfaceID`로 표시한다. 자세한 packed layout은 [[05_ADR/0005-Per-Texel-GPU-Data-Layout|Per-Texel GPU Data Layout ADR]]을 따른다.
 
 ## 전체 생성 순서
 

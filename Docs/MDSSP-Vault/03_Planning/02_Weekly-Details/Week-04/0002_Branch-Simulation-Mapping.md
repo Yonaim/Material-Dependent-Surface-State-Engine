@@ -1,6 +1,6 @@
 # Branch 2 — Simulation Mapping
 
-> **후속 결정:** 이 문서의 Runtime 전처리 전용 범위는 4주차 구현 기록이다. 해상도 프리셋은 ADR 0023, 실행 간 `.Surface` 재사용과 자동 재생성은 [[05_ADR/Assets/0026-Resolution-Surface-Cache|ADR 0026]]에서 추가했다.
+> **후속 결정:** 이 문서의 Runtime 전처리 전용 범위는 4주차 구현 기록이다. 해상도 프리셋은 ADR 0023, 실행 간 `.Surface` 재사용과 자동 재생성은 [[05_ADR/0026-Resolution-Surface-Cache|ADR 0026]]에서 추가했다.
 
 > **한 줄 요약:** 준비된 Simulation UV를 검증하고 rasterization, texel 유효성, 이웃 graph와 seam 연결을 구현한다.
 

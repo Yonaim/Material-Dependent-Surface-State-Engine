@@ -2,14 +2,16 @@
 
 > **한 줄 요약:** `stateCapacity`를 State별 SRProfile 독립 파라미터로 둔다.
 
+- 분류: **Simulation**
 - 상태: **Partially Superseded — State 상한·초과량 처리 계약은 ADR 0020으로 대체**
 - 날짜: 2026-09-11 이후 최신 설계에 반영
+- 관련 문서: [[0020-State-Overcapacity-Transport|ADR 0020 — State 초과량 Transport]]
 
 2026-09-28: [[0020-State-Overcapacity-Transport|ADR 0020]]에서 Capacity를 포화 기준량으로 변경하고 전체 State에 초과량을 보존하기로 결정했다. 아래 Decision은 초기 결정 이력이다. 상태별 독립 Capacity, 기본값 및 Saturation 파생값·임시 데이터 구분은 유지한다.
 
 ## Context
 
-기존 `State ∈ [0,1] + Overflow` 구조는 Mud·Snow처럼 큰 누적량을 표현할 때 Capacity의 의미와 포화도를 분리하기 어려웠다.
+기존 `State ∈ [0,1] + Overflow` 구조는 Mud·Snow처럼 큰 누적량을 표현할 때 Capacity의 의미와 Saturation을 분리하기 어려웠다.
 
 ## Decision
 
@@ -23,13 +25,13 @@
 
 ## Consequences
 
-Transport의 상태 차이는 raw State가 아니라 Saturation을 사용할 수 있다. Accumulation은 `(State + Overflow)`가 아니라 `State`에서 계산한다. [[04_Architecture/0002_Surface-State|표면 상태]], [[04_Architecture/0004_Surface-Geometry|적층]].
+Transport에서 State 차이를 비교할 때는 raw State가 아니라 Saturation을 사용할 수 있다. Accumulation은 `(State + Overflow)`가 아니라 `State`에서 계산한다. [[04_Architecture/0002_Surface-State|표면 상태]], [[04_Architecture/0004_Surface-Geometry|적층]].
 
 ## Alternatives Considered
 
 ### 1. `State ∈ [0,1]`과 별도 `Overflow` 유지
 
-정규화된 State 범위를 유지할 수 있지만, Overflow와 State가 같은 양의 서로 다른 표현이 되어 전파·적층·포화 계산에서 두 값을 계속 함께 다뤄야 한다. 용량과 포화도를 분리하는 결정을 선택했다.
+정규화된 State 범위를 유지할 수 있지만, Overflow와 State가 같은 양의 서로 다른 표현이 되어 전파·적층·포화 계산에서 두 값을 계속 함께 다뤄야 한다. Capacity와 Saturation을 분리하는 결정을 선택했다.
 
 ### 2. Capacity 없이 State에 임의의 상한만 사용
 

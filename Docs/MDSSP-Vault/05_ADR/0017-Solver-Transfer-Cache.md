@@ -1,9 +1,11 @@
-# ADR 0017 — Solver Transfer 캐시와 유출 합계 재사용
+# ADR 0017 — Solver TransferWeight 캐시와 RawOutgoing 재사용
 
 > **한 줄 요약:** 인스턴스별 TransferWeight 캐시와 Pass 1 RawOutgoing 합계 재사용을 채택한다.
 
+- 분류: **Simulation**
 - Status: **Accepted**
 - Date: 2026-09-27
+- 관련 문서: [[0016-Transport-Transfer-Weights|ADR 0016 — Transport TransferWeight]], [[0021-Directional-RawFlux-Cache|ADR 0021 — Directional RawFlux Cache]], [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 - 구현 상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정**
 
 ## Context
@@ -39,7 +41,7 @@ TransferWeight 구현은 Position/Normal/Neighbor에서 가중치를 즉시 계�
 - 이 초기 구현은 중첩 평균 거리 순회를 제거하고 전체 rawFlux 호출 상한을 24→16회/텍셀·채널로 줄였다. 이후 ADR 0021은 Pass 2 재평가를 제거해 전체 상한을 8회로 줄인다.
 - 인스턴스마다 메모리가 늘며 캐시 무효화와 GPU 접근 동기화가 필요하다.
 - 채널 지원/StateCapacity/전달률 변경은 TransferWeight 자체를 바꾸지 않는다. 지원 여부는 rawFlux 경계에서 검사한다. Profile ID 배치 변경은 캐시를 갱신한다.
-- 순수 translation은 거리·법선 가중치를 바꾸지 않아 재생성이 필요 없다. 초기 구현은 모든 transform 변경을 dirty로 처리하는 보수적인 정책도 허용하며 구현 문서에 기록한다.
+- 순수 translation은 `DistanceWeight`·`NormalWeight`를 바꾸지 않아 재생성이 필요 없다. 초기 구현은 모든 transform 변경을 dirty로 처리하는 보수적인 정책도 허용하며 구현 문서에 기록한다.
 - 현재 MesoVirtualHeight와 향후 AccumulationHeight 변경은 유효 표면 형상을 바꾸므로 TransferWeight 캐시를 무효화한다. 중력 변경은 TransferWeight에는 영향을 주지 않으며 GeometryDrive에서 최신 값을 사용한다.
 - Geometry 생성 경로가 제공하는 유효 normal을 사용한다. 형상 갱신과 normal 산출 방식은 동적 Geometry 계약을 따른다. 다음 Solver가 base normal로 되돌아가지 않게 준비 단계의 입력 revision을 연결한다.
 - 최적화 전후 상태·유입·유출·alpha를 허용 오차 안에서 비교하고 동일 환경의 GPU 시간을 반복 측정한다.
@@ -49,7 +51,7 @@ TransferWeight 구현은 Position/Normal/Neighbor에서 가중치를 즉시 계�
 - [[0016-Transport-Transfer-Weights|ADR 0016 — TransferWeight 계산식]]
 - [[0015-Geometry-Driven-Transport|ADR 0015 — GeometryDrive]]
 - [[0003-Dynamic-Accumulation-Geometry|ADR 0003 — Dynamic Accumulation Geometry]]
-- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
-- [[../../03_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|Branch 2.1 — Solver Transfer Cache]]
+- [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
+- [[../03_Planning/02_Weekly-Details/Week-05/0002_01_Branch-Solver-Transfer-Cache|Branch 2.1 — Solver Transfer Cache]]
 
 - [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 RawFlux 재사용]]

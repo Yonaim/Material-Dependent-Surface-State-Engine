@@ -2,8 +2,10 @@
 
 > **한 줄 요약:** 선택형 CurvatureWeight는 기본 OFF이며, 활성화하면 Virtual Height에서 유도한 mean curvature 기반 가중치를 캐시에 적용한다.
 
+- 분류: **Simulation**
 - Status: **Accepted**
 - Date: 2026-09-28
+- 관련 문서: [[0016-Transport-Transfer-Weights|ADR 0016 — Transport TransferWeight]], [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map Meso Geometry]]
 
 ## Context
 
@@ -35,5 +37,5 @@
 
 - [[0016-Transport-Transfer-Weights|ADR 0016]]
 - [[0018-Normal-Map-Meso-Geometry|ADR 0018]]
-- [[../../04_Architecture/0010_UI-Interface|UI Interface]]
-- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
+- [[../04_Architecture/0010_UI-Interface|UI Interface]]
+- [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]

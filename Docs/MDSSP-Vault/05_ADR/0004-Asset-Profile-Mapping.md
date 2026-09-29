@@ -2,7 +2,10 @@
 
 > **한 줄 요약:** 하나의 Surface는 하나의 Render Material과 하나의 SRProfile을 사용한다.
 
+- 분류: **Assets**
 - 상태: **Partially Superseded by [[0007-Surface-Preprocessed-Asset]], [[0008-Runtime-Surface-Preprocessing]], [[0009-Texel-Profile-Index-Map]], and [[0012-Scene-Profile-Distribution-Reference]]**
+- 날짜: 미기록
+- 관련 문서: [[0007-Surface-Preprocessed-Asset|ADR 0007 — 정적 Surface 전처리 에셋]], [[0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]], [[0009-Texel-Profile-Index-Map|ADR 0009 — Texel Profile Index Map]], [[0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene Profile Distribution]]
 - 근거: [[08_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 ## Context

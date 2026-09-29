@@ -2,9 +2,10 @@
 
 > **한 줄 요약:** 접촉 입력을 대상 Surface에 전달하는 공개 API와 Collider 연결 방식을 결정한다.
 
+- 분류: **Architecture**
 - 상태: **Accepted**
 - 날짜: 2026-09-26
-- 관련: [[../../04_Architecture/0005_Surface-Input|Surface Contact Input]], [[../../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
+- 관련 문서: [[../04_Architecture/0005_Surface-Input|Surface Contact Input]], [[../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
 
 ## Context
 
@@ -16,7 +17,7 @@ Assets의 `SurfaceContactInput` 예시는 `targetSurface`와 접촉 정보를 �
 
 - Scene 설정 시 Collider와 Surface instance의 관계를 한 번 등록한다.
 - Branch 6 MVP에서는 Collider 하나가 Surface instance 하나를 가리키도록 한다.
-- 외부 입력 API는 대상 Surface에 바인딩된 제출 함수를 제공하는 형태로 설계한다. 접촉 이벤트별 데이터에는 Surface ID를 넣지 않고, State 종류, 월드 접촉 위치와 방향, 반경, 세기, 감쇠 정도를 전달한다.
+- 외부 입력 API는 대상 Surface에 바인딩된 제출 함수를 제공하는 형태로 설계한다. 접촉 이벤트별 데이터에는 Surface ID를 넣지 않고, State 종류, 월드 접촉 위치와 방향, 반경, 세기, Falloff를 전달한다.
 - 접촉 이벤트는 Collider-Surface 연결을 통해 대상 Surface에 제출한다. Debug Raycast도 hit 결과의 Surface를 사용해 같은 접촉 제출 경로를 호출한다.
 - `SurfaceContact::SubmitContact(...)` 형태는 이 계약을 설명하기 위한 예시이며, 구체적인 C++ 공개 선언은 구현 중 코드 구조에 맞춰 정한다.
 
@@ -44,6 +45,6 @@ Assets 예시와 직접 대응하며 입력이 자체적으로 대상을 식별�
 
 ## Related
 
-- [[../../04_Architecture/0005_Surface-Input|Surface Contact Input]]
-- [[../../08_Assets/Documents/0004_Contact-Input|Assets — Contact Input API]]
-- [[../../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]
+- [[../04_Architecture/0005_Surface-Input|Surface Contact Input]]
+- [[../08_Assets/Documents/0004_Contact-Input|Assets — Contact Input API]]
+- [[../03_Planning/02_Weekly-Details/Week-04/0006_Branch-Surface-Input-Integration|Branch 6 — Surface Input Integration]]

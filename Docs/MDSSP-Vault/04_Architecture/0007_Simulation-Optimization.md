@@ -2,9 +2,9 @@
 
 > **한 줄 요약:** 현재 Solver는 TransferWeight 캐시와 Pass 1의 RawOutgoing·방향별 RawFlux를 재사용한다.
 
-상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정** · 근거: [[05_ADR/Simulation/0017-Solver-Transfer-Cache|ADR 0017]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
+상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정** · 근거: [[05_ADR/0017-Solver-Transfer-Cache|ADR 0017]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
 
-초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용한다. 초기 캐시는 RawOutgoing 합계만 보관했다. [[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]]부터 방향·채널별 RawFlux와 공유 역방향 슬롯 정보도 보관한다. 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
+초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용한다. 초기 캐시는 RawOutgoing 합계만 보관했다. [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]부터 방향·채널별 RawFlux와 공유 역방향 슬롯 정보도 보관한다. 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
 
 ## 현재 적용된 성능 최적화
 
@@ -18,11 +18,11 @@
 | 비활성 source | unsupported/invalid, 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록 | outgoing 평가와 8개 RawFlux 슬롯의 불필요한 0 쓰기 |
 | 시뮬레이션 해상도 | Low 128, Medium 256, High 512, 기본 Medium | Surface별 texel 수와 이에 비례하는 작업·버퍼 payload |
 
-모든 texel은 여전히 dispatch 대상이며, 각 invocation의 분기로 비싼 source 계산을 생략한다. 빈 target도 Pass 2에서 incoming·InputDelta·Next를 처리한다. 별도 활동 mask나 추가 pass는 없다. 캐시 ON/OFF와 해상도 선택 UI는 [[0010_UI-Interface|UI Interface]], 버퍼 배치와 유효성은 [[0008_Surface-GPU-Data-Layout|GPU Data Layout]]을 따른다. 성능 개선률은 State 분포·GPU에 따라 달라지며 측정 기록은 [[../06_Development/Experiments/0003_Pass1-Cost-Analysis|Pass 1 비용 분석]], [[../06_Development/Experiments/0004_RawFlux-Cache-Comparison|초기 ON/OFF 비교]], [[../05_ADR/Simulation/0025-Inactive-RawFlux-Write-Elision|비활성 쓰기 생략의 전후 검증]]에서 조건별로 구분한다.
+모든 texel은 여전히 dispatch 대상이며, 각 invocation의 분기로 비싼 source 계산을 생략한다. 빈 target도 Pass 2에서 incoming·InputDelta·Next를 처리한다. 별도 활동 mask나 추가 pass는 없다. 캐시 ON/OFF와 해상도 선택 UI는 [[0010_UI-Interface|UI Interface]], 버퍼 배치와 유효성은 [[0008_Surface-GPU-Data-Layout|GPU Data Layout]]을 따른다. 성능 개선률은 State 분포·GPU에 따라 달라지며 측정 기록은 [[../06_Development/Experiments/0003_Pass1-Cost-Analysis|Pass 1 비용 분석]], [[../06_Development/Experiments/0004_RawFlux-Cache-Comparison|초기 ON/OFF 비교]], [[../05_ADR/0025-Inactive-RawFlux-Write-Elision|비활성 쓰기 생략의 전후 검증]]에서 조건별로 구분한다.
 
 ## 초과량 보존 계약과 구현 상태
 
-[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B를 유지하고 Capacity를 포화 기준량으로 사용한다. 아래 Next 식과 상한 없는 Saturation은 Shader에 구현했다. 빌드는 통과했으며 GPU 회귀에서 source 유출 제한·여러 이웃의 초과 유입 보존·서로 다른 Capacity와 입력 소비를 확인했다. RawOutgoing·alpha·TransferWeight 캐시의 배치와 기존 두 pass·barrier는 유지하며 이 결정으로 추가되는 GPU payload는 0 B다.
+[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B를 유지하고 Capacity를 포화 기준량으로 사용한다. 아래 Next 식과 상한 없는 Saturation은 Shader에 구현했다. 빌드는 통과했으며 GPU 회귀에서 source 유출 제한·여러 이웃의 초과 유입 보존·서로 다른 Capacity와 입력 소비를 확인했다. RawOutgoing·alpha·TransferWeight 캐시의 배치와 기존 두 pass·barrier는 유지하며 이 결정으로 추가되는 GPU payload는 0 B다.
 
 State 변화와 Capacity 수치 편집은 RawFlux에 영향을 주므로 RawFlux·RawOutgoing와 alpha를 다음 Pass 1에서 다시 계산한다. TransferWeight는 이 수치에 의존하지 않아 캐시를 무효화하지 않는다. Profile ID 배치·Geometry 변경에 따른 기존 invalidation은 유지한다.
 
@@ -150,9 +150,9 @@ TransferWeight cache는 현재 구현된 MesoVirtualHeight 또는 향후 Accumul
 
 ## GeometryDrive 반복 계산 축소 (2026-09-28)
 
-초기 구현은 Pass 1의 각 invocation에서 instance inverse-transpose와 gravity의 높이 축을 준비했다. [[05_ADR/Simulation/0022-Pass1-Source-Reuse|ADR 0022]] 이후 CPU가 dispatch당 한 번 준비하여 128-byte push constant로 전달한다. source 법선 변환·정규화, 중력 투영 방향과 displaced source 위치는 실제 geometry 전달을 사용하는 채널이 있을 때 invocation당 한 번 준비하며, source 포화도·프로파일 파라미터·지원 여부는 channel당 재사용한다. RawFlux의 GeometryDrive는 mesh-local displaced endpoint 차이를 instance 선형 변환으로 변환해 높이차·방향에 함께 사용하며 translation은 상쇄된다. 기본 ON에서는 MesoNormal의 binding 17을 읽고, `DirectionDrive: MesoNormal`이 OFF이면 macro normal의 binding 3을 읽는다. 선택은 push constant flag bit 4로 Pass 1 계산에 적용하며 TransferWeight cache를 무효화하지 않는다. source 재사용 값은 invocation-local이며 별도 GPU buffer를 추가하지 않는다. 여러 채널의 간선 GeometryDrive를 배열로 재사용하는 후보는 1채널에서 안정적인 개선이 확인되지 않아 채택하지 않았다.
+초기 구현은 Pass 1의 각 invocation에서 instance inverse-transpose와 gravity의 높이 축을 준비했다. [[05_ADR/0022-Pass1-Source-Reuse|ADR 0022]] 이후 CPU가 dispatch당 한 번 준비하여 128-byte push constant로 전달한다. source 법선 변환·정규화, 중력 투영 방향과 displaced source 위치는 실제 geometry 전달을 사용하는 채널이 있을 때 invocation당 한 번 준비하며, source 포화도·프로파일 파라미터·지원 여부는 channel당 재사용한다. RawFlux의 GeometryDrive는 mesh-local displaced endpoint 차이를 instance 선형 변환으로 변환해 높이차·방향에 함께 사용하며 translation은 상쇄된다. 기본 ON에서는 MesoNormal의 binding 17을 읽고, `DirectionDrive: MesoNormal`이 OFF이면 macro normal의 binding 3을 읽는다. 선택은 push constant flag bit 4로 Pass 1 계산에 적용하며 TransferWeight cache를 무효화하지 않는다. source 재사용 값은 invocation-local이며 별도 GPU buffer를 추가하지 않는다. 여러 채널의 간선 GeometryDrive를 배열로 재사용하는 후보는 1채널에서 안정적인 개선이 확인되지 않아 채택하지 않았다.
 
-CurvatureWeight 옵션 변경도 TransferWeight cache를 무효화한다. 기본은 OFF이며 계산식은 [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
+CurvatureWeight 옵션 변경도 TransferWeight cache를 무효화한다. 기본은 OFF이며 계산식은 [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
 
 ## 빈 Source의 incoming 계산 생략 — 초기 구현
 
@@ -160,4 +160,4 @@ Pass 2는 이웃 source의 Current State가 0 이하이거나 alpha가 0 이하,
 
 ADR 0021 이후 Pass 2는 위 RawFlux 재평가 대신 저장된 값을 gather한다. alpha가 0 이하인 source는 gather를 생략한다. 이벤트 입력 소비 시점은 유지하며 빈 source의 새 입력은 다음 step에서 이동한다.
 
-ADR 0022의 초기 구현은 texel·channel의 감쇠 후 가용량이 0이거나 dt=0이면 rawFlux 평가를 생략하고 8개 RawFlux 슬롯·RawOutgoing·alpha를 0으로 기록했다. [[05_ADR/Simulation/0025-Inactive-RawFlux-Write-Elision|ADR 0025]] 이후에는 unsupported/invalid, 가용량=0 또는 dt=0 경로에서 RawOutgoing·alpha만 0으로 기록하고 RawFlux 쓰기를 생략한다. RawFlux는 alpha가 양수인 source에 대해서만 현재 step의 값으로 보장한다. Pass 2의 이웃 유입·이벤트 입력·Next 갱신은 계속 수행한다. 별도 활동 마스크나 pass는 추가하지 않는다. 이 경로의 제한 전 RawOutgoing과 alpha 디버그 표시는 초기 구현과 다를 수 있지만 실제 outgoing과 Next State는 보존한다.
+ADR 0022의 초기 구현은 texel·channel의 감쇠 후 가용량이 0이거나 dt=0이면 rawFlux 평가를 생략하고 8개 RawFlux 슬롯·RawOutgoing·alpha를 0으로 기록했다. [[05_ADR/0025-Inactive-RawFlux-Write-Elision|ADR 0025]] 이후에는 unsupported/invalid, 가용량=0 또는 dt=0 경로에서 RawOutgoing·alpha만 0으로 기록하고 RawFlux 쓰기를 생략한다. RawFlux는 alpha가 양수인 source에 대해서만 현재 step의 값으로 보장한다. Pass 2의 이웃 유입·이벤트 입력·Next 갱신은 계속 수행한다. 별도 활동 마스크나 pass는 추가하지 않는다. 이 경로의 제한 전 RawOutgoing과 alpha 디버그 표시는 초기 구현과 다를 수 있지만 실제 outgoing과 Next State는 보존한다.

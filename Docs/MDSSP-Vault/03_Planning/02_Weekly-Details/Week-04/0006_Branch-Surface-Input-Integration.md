@@ -4,7 +4,7 @@
 
 브랜치: `feat/surface-input-integration`  
 선행 조건: `feat/surface-solver-2pass` 병합  
-관련 설계: [[04_Architecture/0005_Surface-Input|Surface Contact Input 아키텍처]], [[04_Architecture/0006_Surface-State-Update|Contact Input 수식]], [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], [[05_ADR/Architecture/0013-InputDelta-Host-Upload-Synchronization|InputDelta Host Upload 동기화 ADR]], [[05_ADR/Architecture/0014-Surface-Contact-Target-API|Surface 접촉 대상 API ADR]]
+관련 설계: [[04_Architecture/0005_Surface-Input|Surface Contact Input 아키텍처]], [[04_Architecture/0006_Surface-State-Update|Contact Input 수식]], [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], [[05_ADR/0013-InputDelta-Host-Upload-Synchronization|InputDelta Host Upload 동기화 ADR]], [[05_ADR/0014-Surface-Contact-Target-API|Surface 접촉 대상 API ADR]]
 
 ## 목표
 
@@ -93,7 +93,7 @@ Input event의 State 이름/ID는 `TSurfaceStateRegistry`를 통해 `ChannelInde
 - 지속 입력은 이 이벤트 입력과 구분하며, 필요할 때 별도 rate 입력으로 설계하고 `DeltaTime`을 반영한다.
 - 같은 frame에 여러 event가 겹치면 합산한다.
 - Branch 6 MVP에서는 CPU dense vector에 같은 frame의 입력을 합산한 뒤 대상 instance의 기존 host-visible/coherent `InputDelta` buffer에 upload한다.
-- 새 입력이 있는 경우에만 Solver가 사용하는 queue가 idle이 될 때까지 기다린 다음 CPU upload를 수행한다. 현재 Solver는 graphics queue에서 실행되므로 해당 queue를 기다린다. 전체 동기화 정책과 staging buffer 전환 조건은 [[05_ADR/Architecture/0013-InputDelta-Host-Upload-Synchronization|InputDelta Host Upload 동기화 ADR]]을 따른다.
+- 새 입력이 있는 경우에만 Solver가 사용하는 queue가 idle이 될 때까지 기다린 다음 CPU upload를 수행한다. 현재 Solver는 graphics queue에서 실행되므로 해당 queue를 기다린다. 전체 동기화 정책과 staging buffer 전환 조건은 [[05_ADR/0013-InputDelta-Host-Upload-Synchronization|InputDelta Host Upload 동기화 ADR]]을 따른다.
 - 입력이 없는 frame에는 queue 대기와 InputDelta upload를 생략한다. Solver가 소비 후 clear한 GPU buffer를 재사용한다.
 - 음수 입력이 필요하지 않으면 Strength를 `>= 0`으로 검증한다.
 - Capacity clamp는 Solver Pass 2의 최종 NextState에서 적용한다.
@@ -240,7 +240,7 @@ State debug view는 고정 범위 포화도 히트맵과 0–1 범례로 표시�
 ## 후속 작업
 
 - GPU contact event reduce/atomic
-- ProfileBoundaryWeight 결합식은 [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]]에서 결정했다. 적용 구현은 Week 5 Branch 2 범위다.
+- ProfileBoundaryWeight 결합식은 [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]에서 결정했다. 적용 구현은 Week 5 Branch 2 범위다.
 - Normal Map/Virtual Meso Geometry
 - Accumulation dynamic geometry
 - SurfaceWater/Snow의 구체적인 물리 layer 모델과 실제 transition step (별도 설계 범위)

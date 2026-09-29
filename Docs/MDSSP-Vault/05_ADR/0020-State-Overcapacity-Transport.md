@@ -2,13 +2,15 @@
 
 > **한 줄 요약:** State A/B에 Capacity 초과량을 포함해 보존하고, Saturation 차이에 따른 기존 Transport 경로로 다음 Solver step부터 이동시킨다.
 
+- 분류: **Simulation**
 - Status: **Accepted — 구현 완료 · 일부 GPU 회귀 검증 완료**
 - Date: 2026-09-28
+- 관련 문서: [[0001-Capacity-and-Saturation|ADR 0001 — Capacity와 Saturation]], [[../04_Architecture/0002_Surface-State|Surface State 데이터 계약]], [[../04_Architecture/0006_Surface-State-Update|Surface State 갱신식]]
 - Supersedes: [[0001-Capacity-and-Saturation|ADR 0001]]의 State 상한 및 초과량 처리 계약
 
 ## Context
 
-초기 계약은 `0 ≤ State ≤ stateCapacity`이며 Pass 2에서 Capacity로 clamp했다. 전달·이벤트 입력으로 기준량을 초과하면 저장하지 못한 양이 사라졌다. 초기 Shader의 Saturation도 `[0,1]`로 clamp해 초과 상태를 포화도 차이에 반영하지 못했다.
+초기 계약은 `0 ≤ State ≤ stateCapacity`이며 Pass 2에서 Capacity로 clamp했다. 전달·이벤트 입력으로 기준량을 초과하면 저장하지 못한 양이 사라졌다. 초기 Shader의 Saturation도 `[0,1]`로 clamp해 초과 상태를 Saturation 차이에 반영하지 못했다.
 
 초과량을 다음 Solver step의 기존 Transport로 이동시키되 GPU 메모리 payload와 pass 수를 늘리지 않는 계약이 필요하다. 초과량을 이웃으로 즉시 연쇄 재분배하는 별도 알고리즘은 이번 결정의 목표가 아니다.
 
@@ -44,7 +46,7 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 - Pass 2는 여러 이웃의 유입과 EventInput을 합산해 Capacity 상한 없이 Next에 보관한다. 입력은 한 번 적용하고 InputDelta를 비운다.
 - Next는 A/B 역할 교환 뒤 **다음 Solver step**에서 Current로 읽는다. 받은 양의 후속 이동도 기존 RawFlux와 rate·Δt에 따른다. 렌더 프레임과 Solver step은 같은 개념으로 고정하지 않는다.
 - 자신의 Next만 쓰는 gather 및 2-Pass를 유지한다. 목적지 수용 비율(beta), 별도 Overflow buffer, 추가 채널·pass·descriptor·동기화는 도입하지 않는다.
-- 이동 경로가 없거나 TransferRate/Weight가 0이면 초과량은 State에 남는다. 양쪽 Saturation이 같고 Geometry 구동이 없으면 Saturation-driven flux는 0이다. 주변의 모든 텍셀이 기준량을 넘더라도 State 저장이 허용되며, 기준량 이하로 반드시 내려가는 것을 보장하지 않는다.
+- 이동 경로가 없거나 TransferRate/Weight가 0이면 초과량은 State에 남는다. 양쪽 Saturation이 같고 `GeometryDrive`가 없으면 Saturation-driven flux는 0이다. 주변의 모든 텍셀이 기준량을 넘더라도 State 저장이 허용되며, 기준량 이하로 반드시 내려가는 것을 보장하지 않는다.
 - invalid/unsupported texel의 State=0 계약은 유지한다. Accumulation은 기존대로 **전체 State × accumulationFactor**를 사용하며 별도 초과량을 중복 더하지 않는다. 실제 적층은 미구현이다.
 
 ### 구현 상태
@@ -85,10 +87,10 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 - [[0001-Capacity-and-Saturation|ADR 0001 — 초기 상한 계약]]
 - [[0017-Solver-Transfer-Cache|ADR 0017 — 기존 pass/cache 재사용]]
-- [[../../04_Architecture/0002_Surface-State|State 데이터 계약]]
-- [[../../04_Architecture/0006_Surface-State-Update|Solver 갱신식]]
-- [[../../04_Architecture/0008_Surface-GPU-Data-Layout|GPU 배치]]
-- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
-- [[../../02_Research/0001_Bound-Preserving-Transport|포화와 전달 연구 노트]]
+- [[../04_Architecture/0002_Surface-State|State 데이터 계약]]
+- [[../04_Architecture/0006_Surface-State-Update|Solver 갱신식]]
+- [[../04_Architecture/0008_Surface-GPU-Data-Layout|GPU 배치]]
+- [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
+- [[../02_Research/0001_Bound-Preserving-Transport|포화와 전달 연구 노트]]
 
 - [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 RawFlux 캐시 및 GPU 회귀]]

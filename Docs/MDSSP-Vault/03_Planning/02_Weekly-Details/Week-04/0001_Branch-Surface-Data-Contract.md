@@ -26,7 +26,7 @@ Mapping, GPU resource, Solver가 공통으로 사용할 **CPU 자료형과 소�
 
 State 종류는 enum이나 컴파일 시점의 고정 개수로 정의하지 않는다. 로드된 `.SRProfile`의 `states` key 전체에서 `TSurfaceStateRegistry`를 구성한다. Registry가 이름을 `TStateId`와 런타임 `ChannelIndex`에 연결한다. `Wetness`, `Heat`, `Burn`, `Mud`는 대표 데모 State일 뿐 고정 목록이 아니며, `SurfaceWater`, `Snow`를 포함한 새 State도 Profile에서 선언할 수 있다.
 
-Branch 1의 CPU 계약은 Profile 데이터가 State key와 parameter의 연관을 보존하도록 한다. 실제 deterministic ID/Transition 변환은 Registry가 소유하며, 구체적 결정은 [[05_ADR/Architecture/0006-Dynamic-State-Registry|ADR 0006]]을 따른다.
+Branch 1의 CPU 계약은 Profile 데이터가 State key와 parameter의 연관을 보존하도록 한다. 실제 deterministic ID/Transition 변환은 Registry가 소유하며, 구체적 결정은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 따른다.
 
 | State | 역할 | 대표 전이/특성 |
 |---|---|---|

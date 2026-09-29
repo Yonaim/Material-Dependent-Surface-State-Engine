@@ -1,7 +1,11 @@
 # ADR 0024 — RawFlux 캐시 ON/OFF 비교
 
+> **한 줄 요약:** 방향별 RawFlux 캐시의 ON/OFF 성능과 메모리 비용을 비교하는 기준을 정한다.
+
+- 분류: **Simulation**
 - Status: **Accepted · 구현 완료**
 - Date: 2026-09-28
+- 관련 문서: [[0021-Directional-RawFlux-Cache|ADR 0021 — Directional RawFlux Cache]], [[../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]
 
 ## Context
 
@@ -37,12 +41,12 @@
 - 서로 다른 reciprocal slot·Profile·Capacity, 여러 Registry channel, unsupported/invalid texel, overcapacity, decay, InputDelta 조건에서 ON/OFF의 Next·RawOutgoing·alpha를 비교했다. OFF에서 poisoned RawFlux buffer가 그대로 유지되면서 결과가 ON과 일치함을 확인했다.
 - 동일 submission에서 ON/OFF와 AB/BA를 연속 전환하고 dt=0을 포함하여 이전 cache를 재사용하지 않는지 확인했다. GeometryDrive, Meso/Macro 방향, 비균일 scale·회전, singular transform·영/비유한 중력, 빈/감쇠로 비워진 source를 두 모드에서 기존 예상값과 비교했다.
 - 실제 Renderer/API 통합 구동에서 기본 ON, 전환 시 descriptor·현재 A/B·입력 보존, 이전 timestamp 무효화, 양쪽 모드의 timestamp 재수집, OFF 입력 소비, 256→128 해상도 재구성 후 OFF 유지와 메모리 집계를 검증했다. 4 instance·2 공유 Geometry·1채널 구성의 집계는 256에서 RawFlux 48 MiB + reverse slots 3 MiB, 128에서 12 MiB + 0.75 MiB였다. UI 클릭을 통한 시각적 검증은 수행하지 않았다.
-- [[../../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]에서 동일 initial State·dt의 합성 fixture를 두 모드로 측정했다. 이 측정은 ADR 0025 적용 전이며, 당시 전체 양수 조건은 ON이 전체 GPU 구간을 약 43–52% 줄였고 약 1.56% 양수 및 전체 0 조건은 OFF가 빨랐다. 현재 경로의 측정은 ADR 0025를 따른다. 실제 demo Scene FPS 개선률로 환산하지 않는다.
+- [[../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]에서 동일 initial State·dt의 합성 fixture를 두 모드로 측정했다. 이 측정은 ADR 0025 적용 전이며, 당시 전체 양수 조건은 ON이 전체 GPU 구간을 약 43–52% 줄였고 약 1.56% 양수 및 전체 0 조건은 OFF가 빨랐다. 현재 경로의 측정은 ADR 0025를 따른다. 실제 demo Scene FPS 개선률로 환산하지 않는다.
 
 ## Related
 
 - [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 RawFlux 캐시]]
 - [[0022-Pass1-Source-Reuse|ADR 0022 — Pass 1 source 재사용]]
 - [[0023-Simulation-Resolution-Presets|ADR 0023 — 시뮬레이션 해상도]]
-- [[../../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]
-- [[../../01_Project-Policy/0003_Commit-Message-Style|커밋 메시지 규칙]]
+- [[../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]
+- [[../01_Project-Policy/0003_Commit-Message-Style|커밋 메시지 규칙]]

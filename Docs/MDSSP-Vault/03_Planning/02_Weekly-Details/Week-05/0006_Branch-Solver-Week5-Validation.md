@@ -12,7 +12,7 @@ GeometryDrive, TransferWeight, 제한 alpha, Debug controls/stats를 함께 검�
 
 ## 초과량 보존 계약의 선행 구현
 
-[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B에 초과량을 보존하고 전달용 Saturation을 상한 clamp하지 않는다. Shader의 두 상한 clamp 제거는 구현했고 앱·shader·기존 GPU 검사 실행 파일은 빌드했다. 기존 Geometry fixture의 target 결과를 1.0에서 1.4로 바꿔 전체 보존량을 기대하도록 수정했다. 아래 새 계약의 GPU 실행 검증과 추가 fixture는 아직 수행하지 않았다.
+[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]은 전체 State A/B에 초과량을 보존하고 전달용 Saturation을 상한 clamp하지 않는다. Shader의 두 상한 clamp 제거는 구현했고 앱·shader·기존 GPU 검사 실행 파일은 빌드했다. 기존 Geometry fixture의 target 결과를 1.0에서 1.4로 바꿔 전체 보존량을 기대하도록 수정했다. 아래 새 계약의 GPU 실행 검증과 추가 fixture는 아직 수행하지 않았다.
 
 ## 테스트 범위
 

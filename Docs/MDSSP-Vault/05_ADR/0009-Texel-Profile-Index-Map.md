@@ -2,9 +2,10 @@
 
 > **한 줄 요약:** 시뮬레이션에 참여하는 유효 texel은 자신이 사용할 SRProfile 테이블 항목의 `ProfileIndex` 하나를 가진다.
 
+- 분류: **Assets**
 - 상태: **Accepted**
 - 날짜: 2026-09-26
-- 관련 결정: [[0004-Asset-Profile-Mapping]], [[0008-Runtime-Surface-Preprocessing]]
+- 관련 문서: [[0004-Asset-Profile-Mapping|ADR 0004 — Asset Profile Mapping]], [[0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]], [[0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 캐시]]
 
 ## Context
 
@@ -17,6 +18,7 @@ Runtime Surface 전처리는 texel별 Profile 배치를 만든다. Profile Map�
 - 유효 Geometry texel도 `InvalidSurfaceProfileIndex`를 가질 수 있다. 이는 Surface Profile Map의 `profileIndex: -1`에서 만들어지며, texel geometry와 렌더링은 유지하면서 Solver와 접촉 입력에서는 제외한다.
 - 여러 인접 texel이 같은 Profile을 사용해도 각 texel에 index를 각각 저장한다. 중복 index 압축은 기본안에 적용하지 않는다.
 - Profile 반응 파라미터와 Transition은 texel에 복제하지 않고 별도 Profile 데이터에 둔다. `(ProfileIndex, ChannelIndex)`로 해당 State 파라미터를 조회한다.
+- CPU Geometry와 `.Surface`의 index는 Runtime-local Profile 테이블 기준이다. GPU 업로드에서는 [[0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]의 Scene 공유 테이블 index로 변환하며, dense texel map과 invalid sentinel은 유지한다.
 - Runtime Profile Map은 해당 Geometry/Profile Distribution/해상도 조합을 쓰는 instance 간 공유한다. 초기에는 Runtime 메모리에만 두었으며, [[0026-Resolution-Surface-Cache|ADR 0026]]부터 최종 Geometry와 함께 `.Surface`에 저장한다. Dense index 표현과 Profile 파라미터의 분리는 유지한다.
 - Geometry가 invalid인 texel은 `TexelSurfaceIndex`의 예약 sentinel로 판정하고 Profile index를 조회하지 않는다. Geometry는 valid지만 Profile index가 `InvalidSurfaceProfileIndex`인 texel은 의도적으로 simulation에서 제외한다.
 - 현재 authoring 입력은 Surface/Material 할당마다 Profile 하나를 지정하고, Runtime builder가 이를 각 valid texel로 확장한다. Surface 내부의 texel별 Profile authoring은 이 표현을 사용할 수 있는 후속 기능이며 이번 구현 범위에는 포함하지 않는다.
@@ -51,4 +53,4 @@ texel당 4-byte index를 저장한다. 인접 texel에서 Profile이 반복되�
 - [[0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 전처리 캐시]]
 - [[04_Architecture/0003_Assets-and-Profiles|Assets and Profiles]]
 - [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
-- [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]
+- [[05_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]

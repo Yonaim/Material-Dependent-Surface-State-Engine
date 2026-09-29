@@ -2,8 +2,10 @@
 
 > **한 줄 요약:** Normal Map의 slope를 texel graph에서 적분해 Virtual Height와 곡률 파생값을 생성한다.
 
+- 분류: **Simulation**
 - 상태: **채택**
 - 날짜: 2026-09-27
+- 관련 문서: [[0019-Optional-Curvature-Transfer-Weight|ADR 0019 — CurvatureWeight]]
 - 범위: Week-05 Branch 2.3
 
 ## Context

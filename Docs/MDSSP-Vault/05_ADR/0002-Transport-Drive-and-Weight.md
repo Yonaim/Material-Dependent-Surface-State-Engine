@@ -1,8 +1,11 @@
 # ADR 0002 — Transport Drive와 TransferWeight 분리
 
-> **한 줄 요약:** Transport에서 상태 차이, 형상 구동, 이웃 전달 가중치의 역할을 분리한다.
+> **한 줄 요약:** Transport에서 `SaturationDrive`, `GeometryDrive`, `TransferWeight`의 역할을 분리한다.
 
+- 분류: **Simulation**
 - 상태: **Accepted**
+- 날짜: 미기록
+- 관련 문서: [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
 
 ## Context
 

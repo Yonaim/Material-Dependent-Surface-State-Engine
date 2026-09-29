@@ -4,13 +4,13 @@
 
 브랜치: `feat/solver-transfer-weights`  
 선행 조건: `feat/solver-geometry-drive` 병합  
-관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]], [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+관련 설계: [[04_Architecture/0006_Surface-State-Update|Surface State Update]], [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]], [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 상태: **구현 및 GPU 실행 검증 완료**
 
 ## 후속 변경 (2026-09-28)
 
-초기 구현은 CurvatureWeight 고정 1.0이었다. 현재는 기본 OFF(1.0)를 유지하며 ON에서 Virtual Height로부터 사전 계산한 mean curvature 기반 비교용 감쇠를 적용한다. [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]가 현재 결정이며 아래의 고정값 구현 범위는 초기 branch 기록이다.
+초기 구현은 CurvatureWeight 고정 1.0이었다. 현재는 기본 OFF(1.0)를 유지하며 ON에서 Virtual Height로부터 사전 계산한 mean curvature 기반 비교용 감쇠를 적용한다. [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]가 현재 결정이며 아래의 고정값 구현 범위는 초기 branch 기록이다.
 
 ## 구현 현황
 
@@ -51,7 +51,7 @@ RawFlux(i→j)
  × DeltaTime
 ```
 
-- 각 weight 식은 [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
+- 각 weight 식은 [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
 - `DistanceWeight`는 world-space 이웃 거리와 양 endpoint의 평균 유효 이웃 간격으로 계산한다. 기존 Position/Neighbor buffer를 사용하며 NeighborDistance 전용 buffer를 만들지 않는다.
 - 현재 `NormalWeight`는 per-instance transform이 적용된 두 endpoint의 Mesh geometric normal 내적으로 계산한다. 이 branch의 기존 구현 범위를 기록하며, Normal Map 방향 입력은 [[03_Planning/02_Weekly-Details/Week-05/0002_02_Branch-Solver-Normal-Map-Weights|Branch 2.2]]에서 다룬다.
 - 이 브랜치에서 `CurvatureWeight = 1.0`으로 둔다. 이는 전달 곡률의 최종 설계 결정이 아니라 중립값을 쓰는 임시 구현 범위다. 곡률이 전달에 어떤 효과를 주는지와 필요한 geometry 입력은 후속 설계 결정으로 남긴다.

@@ -1,7 +1,11 @@
 # ADR 0026 — 해상도별 Surface 전처리 캐시
 
+> **한 줄 요약:** Surface 전처리 결과를 해상도별 `.Surface` 캐시로 재사용한다.
+
+- 분류: **Assets**
 - Status: **Accepted · 구현 완료**
 - Date: 2026-09-28
+- 관련 문서: [[0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]], [[0023-Simulation-Resolution-Presets|ADR 0023 — Simulation 해상도 프리셋]], [[../04_Architecture/0004_Surface-Geometry|Surface Geometry]]
 - Supersedes: [[0008-Runtime-Surface-Preprocessing]]의 persistent cache 제외 결정
 
 ## Context
@@ -12,7 +16,7 @@
 
 ## Decision
 
-1. `.Surface`를 해상도별 생성 바이너리 캐시로 사용한다. `BuildMesoGeometry()` 완료 후 최종 CPU Geometry 전체와 Profile map을 저장한다. 필드·좌표계는 [[../../04_Architecture/0004_Surface-Geometry#해상도별 정적 Geometry 캐시|Geometry 캐시 계약]]을 따른다.
+1. `.Surface`를 해상도별 생성 바이너리 캐시로 사용한다. `BuildMesoGeometry()` 완료 후 최종 CPU Geometry 전체와 Profile map을 저장한다. 필드·좌표계는 [[../04_Architecture/0004_Surface-Geometry#해상도별 정적 Geometry 캐시|Geometry 캐시 계약]]을 따른다.
 2. `Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface`를 사용한다. Identity는 정규화한 절대 Mesh·Map 경로 쌍의 FNV-1a 값이다. 다른 Map과 해상도는 별도 파일로 보존하며 내용 변경은 대응하는 파일을 교체한다. 선택한 해상도만 필요 시 생성한다.
 3. Fingerprint에는 파싱된 Mesh의 Position·Normal·UV·Tangent, topology와 Surface ID, Surface별 Normal Map 경로와 파일 bytes, Distribution 경로/bytes와 Profile 배치/경로/순서, grid 및 전처리 버전을 포함한다. 파일 크기·mtime만으로 유효성을 판정하지 않는다.
 4. `.SRProfile`의 반응 파라미터·Transition·`states`는 원본 loader와 `TSurfaceStateRegistry`로 계속 읽는다. 이 값과 Registry channel count는 Geometry fingerprint에 넣지 않는다. Runtime Asset handle을 직렬화하지 않는다.
@@ -57,10 +61,10 @@ CPU 준비 구간은 fingerprint를 포함하며 최초 생성에는 전처리�
 - [[0007-Surface-Preprocessed-Asset]]
 - [[0008-Runtime-Surface-Preprocessing]]
 - [[0012-Scene-Profile-Distribution-Reference]]
-- [[../Simulation/0018-Normal-Map-Meso-Geometry]]
-- [[../Simulation/0023-Simulation-Resolution-Presets]]
-- [[../../04_Architecture/0003_Assets-and-Profiles]]
-- [[../../04_Architecture/0004_Surface-Geometry]]
+- [[0018-Normal-Map-Meso-Geometry]]
+- [[0023-Simulation-Resolution-Presets]]
+- [[../04_Architecture/0003_Assets-and-Profiles]]
+- [[../04_Architecture/0004_Surface-Geometry]]
 - `Source/SurfaceStateSystem/Preprocessing/SurfaceCache.*`
 - `Source/AssetManager/Core/AssetManager.cpp`
 - `Tests/SurfaceCacheTests.cpp`

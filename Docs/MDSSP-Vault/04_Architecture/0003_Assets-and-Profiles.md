@@ -51,7 +51,7 @@ flowchart LR
 
 Render Material과 Surface Response Profile은 서로 다른 책임이다. Render Material은 외관을 정의하고, `.SRProfile`은 State에 대한 반응 파라미터와 Transition을 정의한다. 현재 입력 계약에서는 각 Surface/Material 할당에 SRProfile 하나를 지정하며, 그 Surface의 모든 valid texel이 해당 Profile을 사용한다.
 
-Runtime 전처리 결과는 유효한 각 UV texel에 `ProfileIndex` 하나를 저장하는 dense Profile Map을 포함한다. 각 texel은 별도 Profile 테이블의 반응 파라미터를 이 인덱스로 조회한다. 현재는 Surface/Material 할당 하나에 Profile 하나를 연결한 뒤 해당 Surface의 texel마다 같은 인덱스를 확장한다. dense map은 조회 표현이며, Surface 내부를 여러 Profile 영역으로 나누는 authoring 기능까지 의미하지 않는다. 그 세분화는 후속 기능으로 남긴다. Profile Map은 `.Surface`에 정적 데이터로 저장하고 Runtime에서는 공유 Geometry의 일부로 로드한다. Profile table의 경로와 순서를 함께 저장하되, `.SRProfile`의 반응 파라미터와 Runtime Asset handle은 저장하지 않는다. [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
+Runtime 전처리 결과는 유효한 각 UV texel에 `ProfileIndex` 하나를 저장하는 dense Profile Map을 포함한다. 각 texel은 별도 Profile 테이블의 반응 파라미터를 이 인덱스로 조회한다. 현재는 Surface/Material 할당 하나에 Profile 하나를 연결한 뒤 해당 Surface의 texel마다 같은 인덱스를 확장한다. dense map은 조회 표현이며, Surface 내부를 여러 Profile 영역으로 나누는 authoring 기능까지 의미하지 않는다. 그 세분화는 후속 기능으로 남긴다. Profile Map은 `.Surface`에 정적 데이터로 저장하고 Runtime에서는 공유 Geometry의 일부로 로드한다. Profile table의 경로와 순서를 함께 저장하되, `.SRProfile`의 반응 파라미터와 Runtime Asset handle은 저장하지 않는다. [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
 
 ```text
 UV Texel
@@ -60,7 +60,7 @@ UV Texel
     └── ProfileIndex → SRProfile response data
 ```
 
-Runtime Surface Data는 Mesh, Normal Map, Profile Distribution과 Simulation 해상도에 대응하는 정적 데이터다. `.Scene`의 각 object가 사용할 `.SurfaceProfileMap` 경로를 선택한다. 같은 Mesh·Map·해상도 조합의 instance들은 하나의 메모리 결과를 공유하며, 실행 간에는 `.Surface`로 최종 CPU 전처리 결과를 재사용한다. 다른 Map이나 해상도는 별도 캐시 변형으로 유지한다. 구체 경로 계약은 [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]를 따른다. 데이터 범위는 다음과 같다.
+Runtime Surface Data는 Mesh, Normal Map, Profile Distribution과 Simulation 해상도에 대응하는 정적 데이터다. `.Scene`의 각 object가 사용할 `.SurfaceProfileMap` 경로를 선택한다. 같은 Mesh·Map·해상도 조합의 instance들은 하나의 메모리 결과를 공유하며, 실행 간에는 `.Surface`로 최종 CPU 전처리 결과를 재사용한다. 다른 Map이나 해상도는 별도 캐시 변형으로 유지한다. 구체 경로 계약은 [[05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012 — Scene별 Surface Profile Map 참조]]를 따른다. 데이터 범위는 다음과 같다.
 
 | Runtime Surface Data에 포함 | Runtime Surface Data에 포함하지 않음 |
 |---|---|
@@ -68,7 +68,7 @@ Runtime Surface Data는 Mesh, Normal Map, Profile Distribution과 Simulation 해
 | 최종 Neighbor index, Chart 및 UV seam 연결. Distance와 간선별 Height Difference는 저장하지 않음 | `.SRProfile`의 반응 파라미터와 Transition |
 | Texel → `ProfileIndex` map | Instance별 `SurfaceInstanceStateData` |
 
-초기 `.Surface` 설계는 Mesh당 단일 파일을 두었고, 이후 ADR 0008에서 Runtime 전처리만 수행하도록 단순화했다. 현재는 시작 시 전처리 비용을 줄이기 위해 해상도별 캐시를 유지한다. 현재 결정은 [[05_ADR/Assets/0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 전처리 캐시]]를 따르며 ADR 0007·0008은 이전 결정 이력으로 보존한다.
+초기 `.Surface` 설계는 Mesh당 단일 파일을 두었고, 이후 ADR 0008에서 Runtime 전처리만 수행하도록 단순화했다. 현재는 시작 시 전처리 비용을 줄이기 위해 해상도별 캐시를 유지한다. 현재 결정은 [[05_ADR/0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 전처리 캐시]]를 따르며 ADR 0007·0008은 이전 결정 이력으로 보존한다.
 
 ## `.Surface` 캐시 경로와 유효성
 
@@ -108,11 +108,11 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 
 저장은 같은 디렉터리의 고유한 임시 파일에 기록하고 flush·close 후 rename으로 완성 파일을 교체한다. 실패 시 임시 파일을 제거하고 기존 완성 파일은 보존한다. 캐시 저장 실패는 경고를 남기고 이미 생성한 Runtime Geometry로 계속 실행한다. 캐시는 삭제해도 재생성되며, 저장 실패가 시뮬레이션 입력 실패로 바뀌지 않는다.
 
-현재 구현은 동기 load/save와 자동 재생성이다. 별도 Asset Build 도구, 압축, streaming IO, 캐시 용량 제한/자동 정리 및 source Asset hot reload는 후속 기능이다. 해상도 전환 시 CPU 캐시가 hit해도 GPU 자원 재생성과 State 초기화는 [[05_ADR/Simulation/0023-Simulation-Resolution-Presets|ADR 0023]]의 기존 규칙을 유지한다.
+현재 구현은 동기 load/save와 자동 재생성이다. 별도 Asset Build 도구, 압축, streaming IO, 캐시 용량 제한/자동 정리 및 source Asset hot reload는 후속 기능이다. 해상도 전환 시 CPU 캐시가 hit해도 GPU 자원 재생성과 State 초기화는 [[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]의 기존 규칙을 유지한다.
 
 ## State Registry
 
-`.SRProfile`의 `states` key가 프로젝트에서 사용하는 State 이름을 제공한다. Profile을 로드하면서 이 이름들을 모아 `TSurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 `TStateId`/`ChannelIndex`로 변환한다. 이름 정규화 규칙과 Solver의 데이터 주도 처리 원칙은 [[05_ADR/Architecture/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
+`.SRProfile`의 `states` key가 프로젝트에서 사용하는 State 이름을 제공한다. Profile을 로드하면서 이 이름들을 모아 `TSurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 `TStateId`/`ChannelIndex`로 변환한다. 이름 정규화 규칙과 Solver의 데이터 주도 처리 원칙은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
 
 ## `.SRProfile` 예시
 
@@ -198,8 +198,8 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 }
 ```
 
-Simulation grid 해상도는 `.Scene`에 지정하지 않고 Simulation 탭에서 Low(128), Medium(256), High(512)를 선택한다. 기본값은 Medium이며 현재 선택값을 Mesh의 모든 Surface에 적용한다. 해상도별 캐시를 재사용하되 전환 시 State는 초기화한다. [[05_ADR/Simulation/0023-Simulation-Resolution-Presets|ADR 0023]]
+Simulation grid 해상도는 `.Scene`에 지정하지 않고 Simulation 탭에서 Low(128), Medium(256), High(512)를 선택한다. 기본값은 Medium이며 현재 선택값을 Mesh의 모든 Surface에 적용한다. 해상도별 캐시를 재사용하되 전환 시 State는 초기화한다. [[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]
 
-`.Scene`에서 `surfaceProfileMap`을 생략한 object는 렌더링 전용이며 Runtime Surface simulation data를 만들지 않는다. Scene 경로와 Profile map 참조 정책은 [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에 정의한다.
+`.Scene`에서 `surfaceProfileMap`을 생략한 object는 렌더링 전용이며 Runtime Surface simulation data를 만들지 않는다. Scene 경로와 Profile map 참조 정책은 [[05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에 정의한다.
 
 Simulation UV는 렌더링 UV와 논리적으로 분리한다. UV 생성·검증과 현재 구현 범위는 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 본다.

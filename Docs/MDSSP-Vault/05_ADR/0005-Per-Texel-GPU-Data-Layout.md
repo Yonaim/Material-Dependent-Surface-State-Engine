@@ -2,8 +2,10 @@
 
 > **한 줄 요약:** GPU 텍셀 데이터 배치와 각 데이터의 공유·인스턴스 소유 범위를 결정한다.
 
+- 분류: **Architecture**
 - 상태: **Partially Superseded by [[0006-Dynamic-State-Registry]], [[0009-Texel-Profile-Index-Map]], [[0010-Dynamic-State-GPU-Buffer-Layout]], and [[0018-Normal-Map-Meso-Geometry]]**
 - 날짜: 2026-09-25
+- 관련 문서: [[0006-Dynamic-State-Registry|ADR 0006 — Dynamic State Registry]], [[0009-Texel-Profile-Index-Map|ADR 0009 — Texel Profile Index Map]], [[0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010 — GPU Buffer Layout]]
 
 ## Context
 

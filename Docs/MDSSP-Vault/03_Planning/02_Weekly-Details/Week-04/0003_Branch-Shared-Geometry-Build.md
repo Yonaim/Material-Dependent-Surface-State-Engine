@@ -1,6 +1,6 @@
 # Branch 3 — Shared Geometry Build
 
-> **후속 결정:** 이 문서의 Runtime 전처리 전용 범위는 4주차 구현 기록이다. 해상도 프리셋은 ADR 0023, 실행 간 `.Surface` 재사용과 자동 재생성은 [[05_ADR/Assets/0026-Resolution-Surface-Cache|ADR 0026]]에서 추가했다.
+> **후속 결정:** 이 문서의 Runtime 전처리 전용 범위는 4주차 구현 기록이다. 해상도 프리셋은 ADR 0023, 실행 간 `.Surface` 재사용과 자동 재생성은 [[05_ADR/0026-Resolution-Surface-Cache|ADR 0026]]에서 추가했다.
 
 > **한 줄 요약:** Simulation Mapping 결과에서 공유 texel 위치·normal·neighbor와 Geometry 데이터를 생성한다.
 
@@ -109,7 +109,7 @@ Shared Geometry는 texel별 Profile index를 직접 저장한다. `TexelSurfaceI
 
 ## Profile Distribution 입력 계약
 
-- Profile Distribution 입력은 `.SurfaceProfileMap` v1 sidecar를 사용하며, 각 Surface ID에 Profile table의 항목 하나를 지정한다. 초기 계획과 달리 최종 `.Scene` 연결은 object가 사용할 map 경로를 선택하며, [[05_ADR/Assets/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에서 정한다.
+- Profile Distribution 입력은 `.SurfaceProfileMap` v1 sidecar를 사용하며, 각 Surface ID에 Profile table의 항목 하나를 지정한다. 초기 계획과 달리 최종 `.Scene` 연결은 object가 사용할 map 경로를 선택하며, [[05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에서 정한다.
 - Runtime 전처리 출력은 valid texel마다 `uint32 ProfileIndex`를 가진 dense map이다. Profile response table은 별도로 유지한다.
 - 현재 Profile Distribution은 각 Surface/Material 할당에 SRProfile 하나를 지정한다. 해당 Surface의 valid texel에는 그 Profile index를 반복해 dense map을 만든다.
 - 같은 Surface 내부를 여러 Profile 영역으로 나누는 authoring 및 전처리는 후속 기능이며 이번 브랜치 완료 조건에 포함하지 않는다.

@@ -2,7 +2,7 @@
 
 - Date: 2026-09-28
 - 상태: **원인 분리 및 ADR 0022 적용 완료 · 합성 성능/GPU 회귀 검증 완료**
-- 관련: [[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]], [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
+- 관련: [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]], [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 
 ## 실행 화면 관측과 집계
 
@@ -82,7 +82,7 @@ Pass 2는 계속 이웃 source의 캐시를 gather하고 InputDelta를 소비해
 
 ## 후속 우선순위
 
-아래는 원인 분리 시점의 우선순위다. 1–4의 가용량 0 생략·source 공통 형상·instance 공통 행렬·source channel 공통 조회는 ADR 0022에서 적용했다. 여러 channel의 edge 배열과 pass 간 Decay 캐시는 보류하며 실제 Scene 시계열은 별도 과제다. 적용 후 동일 512 해상도의 합성 비교 결과는 [[05_ADR/Simulation/0022-Pass1-Source-Reuse|ADR 0022]]에 기록했다. 기본 해상도는 후속 ADR 0023에서 Medium 256으로 변경했으므로 최초 화면 관측과 기본 실행 시간을 직접 비교하지 않는다.
+아래는 원인 분리 시점의 우선순위다. 1–4의 가용량 0 생략·source 공통 형상·instance 공통 행렬·source channel 공통 조회는 ADR 0022에서 적용했다. 여러 channel의 edge 배열과 pass 간 Decay 캐시는 보류하며 실제 Scene 시계열은 별도 과제다. 적용 후 동일 512 해상도의 합성 비교 결과는 [[05_ADR/0022-Pass1-Source-Reuse|ADR 0022]]에 기록했다. 기본 해상도는 후속 ADR 0023에서 Medium 256으로 변경했으므로 최초 화면 관측과 기본 실행 시간을 직접 비교하지 않는다.
 
 1. 가용 State=0인 source의 실제 outgoing은 source alpha 제한으로 0이다. Pass 1의 형상·포화도 계산을 생략하는 경로를 검토한다. Input은 기존대로 Pass 2에 반영하므로 새 입력의 전달 시점은 다음 step이다. 생략 시 RawFlux·RawOutgoing·alpha scratch의 0 기록 의미와 디버그 계약을 함께 정의해야 한다.
 2. 위 source 공통 geometry 재사용을 검토한다. channel 수가 달라도 source geometry는 동일하며, GeometryDrive가 실제 필요한 경우에 한 번 준비한다.

@@ -2,7 +2,10 @@
 
 > **한 줄 요약:** 적층을 `Cavity Filling + Surface Following`으로 나눈다.
 
+- 분류: **Simulation**
 - 상태: **Accepted**
+- 날짜: 미기록
+- 관련 문서: [[../04_Architecture/0004_Surface-Geometry|Surface Geometry]]
 
 ## Context
 

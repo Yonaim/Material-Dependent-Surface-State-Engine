@@ -2,8 +2,10 @@
 
 > **한 줄 요약:** Runtime 전처리만 유지했던 이전 결정이며, 현재는 ADR 0026의 해상도별 `.Surface` 캐시를 함께 사용한다.
 
+- 분류: **Assets**
 - Status: **Superseded by [[0026-Resolution-Surface-Cache]]**
 - 날짜: 2026-09-25
+- 관련 문서: [[0007-Surface-Preprocessed-Asset|ADR 0007 — 정적 Surface 전처리 에셋]], [[0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 캐시]]
 - 대체: [[0007-Surface-Preprocessed-Asset]]
 
 아래는 Runtime 전처리 전용 단계의 결정 이력이다. 현재는 메모리 공유와 cache miss 전처리를 유지하고, 실행 간 최종 Geometry를 재사용하는 [[0026-Resolution-Surface-Cache|ADR 0026]]를 따른다.
@@ -57,7 +59,7 @@ Runtime 작업량을 줄일 수 있다. 반면 별도 빌드 도구와 산출물
 
 - [[0006-Dynamic-State-Registry]]
 - [[0012-Scene-Profile-Distribution-Reference]]
-- [[../../04_Architecture/0001_Engine-Structure|엔진 구조와 데이터 흐름]]
-- [[../../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[../../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
-- [[../../06_Development/Code-Structure/0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]]
+- [[../04_Architecture/0001_Engine-Structure|엔진 구조와 데이터 흐름]]
+- [[../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+- [[../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [[../06_Development/Code-Structure/0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]]

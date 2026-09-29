@@ -2,8 +2,10 @@
 
 > **한 줄 요약:** Mesh당 단일 `.Surface` 캐시를 선택했던 이전 결정이며, 현재는 ADR 0026의 해상도별 캐시를 따른다.
 
+- 분류: **Assets**
 - 상태: **Superseded by [[0008-Runtime-Surface-Preprocessing]]**
 - 날짜: 2026-09-25
+- 관련 문서: [[0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]], [[0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 캐시]]
 
 > 이 ADR은 정적 `.Surface` 바이너리 캐시를 선택했던 이전 결정을 기록한다. 이후 ADR 0008의 Runtime 전처리 전용 단계를 거쳐 현재는 [[0026-Resolution-Surface-Cache|ADR 0026]]의 해상도별 캐시를 사용한다. 아래 단일 파일 정책과 v2 표현은 결정 이력으로 보존한다.
 
@@ -67,6 +69,6 @@ Mesh, Normal Map과 Profile 배치에서 생성되는 정적 데이터를 재사
 ## Related
 
 - [[0004-Asset-Profile-Mapping]]
-- [[../../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
-- [[../../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
-- [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../04_Architecture/0003_Assets-and-Profiles|에셋과 프로필]]
+- [[../06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]
+- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]

@@ -2,9 +2,10 @@
 
 > **한 줄 요약:** `TransferWeight(i→j)`는 `DistanceWeight × NormalWeight × CurvatureWeight × ProfileBoundaryWeight`다.
 
+- 분류: **Simulation**
 - Status: **Accepted**
 - Date: 2026-09-27
-- Related: [[0002-Transport-Drive-and-Weight|ADR 0002]], [[0015-Geometry-Driven-Transport|ADR 0015]], [[../../04_Architecture/0006_Surface-State-Update|Surface State Update]], [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]], [[../../03_Planning/02_Weekly-Details/Week-05/0002_00_Branch-Solver-Transfer-Weights|Week 5 Branch 2]]
+- 관련 문서: [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 Weight]], [[0015-Geometry-Driven-Transport|ADR 0015 — Geometry-Driven Transport]]
 
 ## Context
 
@@ -49,7 +50,7 @@ ConcavityWeight는 texel-local Decay retention 데이터다. 이를 edge transpo
 
 ## Consequences
 
-- 서로 다른 Simulation resolution과 크기의 Surface 사이에서도 거리 가중치는 주변 이웃 간격에 대한 상대 거리로 동작한다.
+- 서로 다른 Simulation resolution과 크기의 Surface 사이에서도 `DistanceWeight`는 주변 이웃 간격에 대한 상대 거리로 동작한다.
 - 급격히 다른 surface normal을 가진 이웃은 전달량이 줄며, 반대 방향 또는 직교 normal 내적은 0이 된다.
 - 서로 다른 Profile 사이 전달은 동일 Profile 사이 전달의 절반이며 asset별 튜닝 값은 없다.
 - 기본 OFF의 CurvatureWeight는 Transport 결과를 바꾸지 않으며, NormalWeight와 중복될 수 있어 의도적으로 중립값을 사용한다. 향후 곡률 효과를 채택하려면 ConcavityWeight/Decay뿐 아니라 NormalWeight와도 구별되는 의도와 검증 결과가 필요하다.
@@ -58,6 +59,6 @@ ConcavityWeight는 texel-local Decay retention 데이터다. 이를 edge transpo
 
 - [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 TransferWeight 분리]]
 - [[0015-Geometry-Driven-Transport|ADR 0015 — Geometry-Driven Transport]]
-- [[../../04_Architecture/0006_Surface-State-Update|Surface State Update]]
-- [[../../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
-- [[../../03_Planning/02_Weekly-Details/Week-05/0002_00_Branch-Solver-Transfer-Weights|Week 5 Branch 2 — Solver Transfer Weights]]
+- [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
+- [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
+- [[../03_Planning/02_Weekly-Details/Week-05/0002_00_Branch-Solver-Transfer-Weights|Week 5 Branch 2 — Solver Transfer Weights]]

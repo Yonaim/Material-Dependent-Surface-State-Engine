@@ -2,9 +2,10 @@
 
 > **한 줄 요약:** Scene에서 Surface Profile Distribution Map을 참조하고 적용하는 방식을 결정한다.
 
+- 분류: **Assets**
 - 상태: **Accepted**
 - 날짜: 2026-09-26
-- 관련 결정: [[0008-Runtime-Surface-Preprocessing]], [[0009-Texel-Profile-Index-Map]]
+- 관련 문서: [[0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]], [[0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]], [[0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027 — Scene State Registry]]
 
 ## Context
 
@@ -17,9 +18,10 @@ Runtime 전처리 결과에는 Geometry와 texel별 Profile map이 함께 들어
 - `.Scene`의 각 Mesh object는 `mesh` 경로와 선택적 `surfaceProfileMap` 경로를 가진다.
 - 두 경로는 `.Scene` 파일이 있는 디렉터리를 기준으로 해석하며 상대 경로만 허용한다. `mesh`는 `.obj`, `surfaceProfileMap`은 `.SurfaceProfileMap` 확장자를 사용한다.
 - `surfaceProfileMap`이 없으면 해당 object는 렌더링 Mesh만 로드하고 Surface simulation data는 생성하지 않는다.
+- Scene 최상위 `simulationResolution`은 [[0023-Simulation-Resolution-Presets|ADR 0023]]에 따라 128·256·512 중 하나를 저장하며 생략 시 256이다. Loader는 이 해상도를 모든 object의 Runtime Surface Data 생성에 전달한다.
 - `surfaceProfileMap`이 지정되면 Scene loader가 해당 Mesh와 map으로 Runtime Surface Data를 로드/생성해 instance에 연결한다. map 안의 `.SRProfile` 경로는 기존 계약대로 map 파일 디렉터리 기준 상대 경로다.
 - AssetManager는 정규화한 `(Mesh 경로, SurfaceProfileMap 경로, Simulation 해상도)` 조합별로 Runtime Surface Data와 Profile table을 캐시한다. 서로 다른 map은 동일 Mesh라도 서로 다른 Runtime handle을 받는다. ADR 0026의 `.Surface`는 이 입력 조합에서 자동 선택하며 `.Scene`에 캐시 경로를 추가하지 않는다.
-- Scene instance의 동적 State는 instance별로 유지하고, 같은 Runtime Surface Data 조합을 가진 instance끼리는 정적 GPU Geometry와 Profile buffer를 공유한다.
+- Scene instance의 동적 State는 instance별로 유지하고, 같은 Runtime Surface Data 조합을 가진 instance끼리는 정적 GPU Geometry를 공유한다. Profile GPU buffer는 [[0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]에 따라 Scene 전체에서 공유한다.
 - OBJ 로더는 `.SurfaceProfileMap`을 이름 규칙으로 자동 검색하지 않는다. Profile Distribution 선택은 `.Scene`이 소유한다.
 
 ## `.Scene` 예시
@@ -28,6 +30,7 @@ Runtime 전처리 결과에는 Geometry와 texel별 Profile map이 함께 들어
 {
   "type": "TScene",
   "version": 1,
+  "simulationResolution": 256,
   "objects": [
     {
       "mesh": "../Meshes/Rock.obj",
@@ -77,7 +80,7 @@ Scene별 선택권을 제공하면서 Profile Distribution 입력을 별도 파�
 ## Consequences
 
 - Scene loader는 Mesh, 선택된 Profile Map, transform을 검증하고 각 Asset을 연결한다.
-- AssetManager와 GPU resource manager는 Mesh handle 단독이 아니라 Runtime Surface Data handle을 기준으로 Profile map/Geometry 자원을 공유한다.
+- AssetManager와 GPU resource manager는 Mesh handle 단독이 아니라 Runtime Surface Data handle을 기준으로 Profile map/Geometry 자원을 공유한다. GPU Profile 파라미터 테이블은 Scene별로 중복 Profile handle을 제거해 별도로 공유한다.
 - 같은 Mesh를 서로 다른 map으로 쓰면 정적 Surface 결과가 별도로 생성될 수 있다. 같은 Mesh와 map 조합은 Runtime 메모리에서 공유한다.
 - `.Scene`에 map이 빠진 object는 표면 solver resource를 받지 않는다.
 - map 안에서 `profileIndex: -1`인 Surface는 Mesh와 함께 렌더링되지만 Solver와 접촉 입력에서 제외된다. 같은 Mesh의 다른 Surface에는 Profile을 계속 할당할 수 있다.
@@ -87,6 +90,6 @@ Scene별 선택권을 제공하면서 Profile Distribution 입력을 별도 파�
 
 - [[0026-Resolution-Surface-Cache|ADR 0026 — 해상도별 Surface 전처리 캐시]]
 - [[04_Architecture/0003_Assets-and-Profiles|Assets and Profiles]]
-- [[05_ADR/Assets/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]
-- [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
+- [[05_ADR/0008-Runtime-Surface-Preprocessing|ADR 0008 — Runtime Surface 전처리]]
+- [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009 — Texel별 Profile Index Map]]
 - [[06_Development/Code-Structure/0001_Asset-and-Surface-Data-Flow|Asset과 Surface 데이터 흐름]]

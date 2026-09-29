@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** 이 문서는 Surface simulation에서 GPU로 올리는 데이터의 타입과 배치, 소유 범위를 정한다.
 
-상태: **결정 사항** · 결정 근거와 검토 대안: [[05_ADR/Architecture/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]], [[05_ADR/Architecture/0011-GPU-Resource-Initialization-and-ABI|ADR 0011]] · 관련: [[0004_Surface-Geometry|Surface Geometry]], [[05_ADR/Architecture/0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[05_ADR/Architecture/0006-Dynamic-State-Registry|ADR 0006]], [[05_ADR/Assets/0009-Texel-Profile-Index-Map|ADR 0009]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
+상태: **결정 사항** · 결정 근거와 검토 대안: [[05_ADR/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]], [[05_ADR/0011-GPU-Resource-Initialization-and-ABI|ADR 0011]] · 관련: [[0004_Surface-Geometry|Surface Geometry]], [[05_ADR/0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]], [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 이 문서는 Surface simulation에서 GPU로 올리는 데이터의 타입과 배치, 소유 범위를 정한다. 데이터는 수명과 공유 단위에 따라 세 그룹으로 나뉜다. 전처리로 만들어 여러 instance가 함께 쓰는 **Shared Geometry**, Profile 반응값을 담는 **Profile table**, 그리고 시뮬레이션 상태를 instance마다 따로 보유하는 **Instance State**다.
 
@@ -111,7 +111,7 @@ index = texelIndex * channelCount + channelIndex
 
 `StateA`와 `StateB`는 ping-pong에 사용한다. 한 step에서 Current를 읽고 Next에 쓰며, step이 끝나면 역할을 바꾼다. Descriptor set은 A→B와 B→A 구성을 미리 만들어 번갈아 쓴다. 매 step마다 descriptor를 수정하지 않는다.
 
-[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]의 State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량을 저장한다. `StateCapacity` Profile 필드는 같은 float32 위치·기본값을 유지하고 의미만 포화 기준량으로 바뀐다. 기존 instance별 texel-major AoS 및 채널 padding 없음의 크기·stride·descriptor를 유지하므로 추가 GPU payload는 **0 B**다. 초과량용 임시 buffer는 추가하지 않는다. Shader의 두 상한 clamp 제거를 구현했고 GPU 회귀에서 source 유출 제한·여러 이웃의 초과 유입 보존·서로 다른 Capacity와 입력 소비를 확인했다.
+[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량을 저장한다. `StateCapacity` Profile 필드는 같은 float32 위치·기본값을 유지하고 의미만 포화 기준량으로 바뀐다. 기존 instance별 texel-major AoS 및 채널 padding 없음의 크기·stride·descriptor를 유지하므로 추가 GPU payload는 **0 B**다. 초과량용 임시 buffer는 추가하지 않는다. Shader의 두 상한 clamp 제거를 구현했고 GPU 회귀에서 source 유출 제한·여러 이웃의 초과 유입 보존·서로 다른 Capacity와 입력 소비를 확인했다.
 
 `OutgoingFluxScale`은 Pass 1에서 계산해 Pass 2에서 읽는 텍셀·채널별 outgoing flux 제한 비율이다. `InputDelta`는 접촉에서 발생한 discrete event(발생 시점에 한 번 기록되는 접촉 사건)의 양을 누적한다. 이벤트 입력 뒤 처음 실행되는 solver update의 Pass 2가 이를 Next State에 한 번 더하고, 그 update 뒤 비운다. 따라서 입력은 그 update 결과에 즉시 반영되지만 Pass 1은 입력 전 Current State로 flux를 계산하므로, 접촉으로 추가된 양의 이웃 전파는 다음 solver update부터 시작한다. 지속 시간 동안 계속 작용하는 입력은 이 이벤트 입력과 다른 입력 모델이며, 필요하면 DeltaTime을 적용하는 별도 rate 입력으로 다룬다. State A/B의 시작값은 0이다.
 
@@ -119,7 +119,7 @@ index = texelIndex * channelCount + channelIndex
 
 `RawOutgoing`은 Pass 1이 Current State와 TransferWeights로 계산한 텍셀·채널별 제한 전 유출 합계다. Pass 1에서 매 step 모든 항목을 덮어쓰고 Pass 2가 자기 쪽 outgoing을 재계산하지 않고 읽는다. invalid 또는 unsupported 항목은 0으로 쓴다. 감쇠 후 가용량=0 또는 dt=0인 항목은 RawOutgoing·alpha만 0으로 기록하고 RawFlux 평가·쓰기를 생략한다. 이 경우 실제 outgoing은 기존대로 0이며 Pass 2의 Incoming·Input·Next 갱신은 수행한다. Pass 1 뒤 `OutgoingFluxScale`·`RawOutgoing`에 compute write→read barrier를 적용하고 캐시 ON에서만 `RawFlux`를 포함한다. Pass 2의 read 뒤 다음 step의 Pass 1 write 전에 재사용 barrier를 두며 OFF는 RawFlux를 대상에서 제외한다.
 
-`RawFlux`는 `neighborSlot × texelCount × channelCount + texelIndex × channelCount + channelIndex` 순서로 source의 방향별·채널별 unscaled flux를 저장한다. 캐시 ON에서 활성 source의 모든 슬롯을 갱신하며 invalid 이웃이나 rate/weight=0인 간선은 0으로 덮어쓴다. unsupported/invalid, 가용량=0 또는 dt=0인 source의 슬롯은 갱신하지 않아 stale·미초기화 값이 남을 수 있다. 생성·reset 시 clear는 필요 없다. Pass 2는 source alpha를 먼저 확인해 0이면 RawFlux를 읽지 않는다. alpha>0일 때만 `ReverseNeighborSlots[texel]`에서 `(packed >> (slot × 4)) & 0xf`로 역방향 source 슬롯을 찾아 저장값에 source alpha를 곱한다. 0xf는 invalid이며 0–7만 조회한다. 역방향 슬롯은 Geometry와 함께 공유하고 topology 변경 때 다시 준비한다. RawFlux는 instance별이며 AB/BA가 같은 scratch를 참조한다. 캐시 OFF는 이 버퍼의 읽기·쓰기를 모두 생략하지만 버퍼와 descriptor 할당을 유지한다. 슬롯 배치는 [[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]], 유효성은 [[05_ADR/Simulation/0025-Inactive-RawFlux-Write-Elision|ADR 0025]]를 따른다.
+`RawFlux`는 `neighborSlot × texelCount × channelCount + texelIndex × channelCount + channelIndex` 순서로 source의 방향별·채널별 unscaled flux를 저장한다. 캐시 ON에서 활성 source의 모든 슬롯을 갱신하며 invalid 이웃이나 rate/weight=0인 간선은 0으로 덮어쓴다. unsupported/invalid, 가용량=0 또는 dt=0인 source의 슬롯은 갱신하지 않아 stale·미초기화 값이 남을 수 있다. 생성·reset 시 clear는 필요 없다. Pass 2는 source alpha를 먼저 확인해 0이면 RawFlux를 읽지 않는다. alpha>0일 때만 `ReverseNeighborSlots[texel]`에서 `(packed >> (slot × 4)) & 0xf`로 역방향 source 슬롯을 찾아 저장값에 source alpha를 곱한다. 0xf는 invalid이며 0–7만 조회한다. 역방향 슬롯은 Geometry와 함께 공유하고 topology 변경 때 다시 준비한다. RawFlux는 instance별이며 AB/BA가 같은 scratch를 참조한다. 캐시 OFF는 이 버퍼의 읽기·쓰기를 모두 생략하지만 버퍼와 descriptor 할당을 유지한다. 슬롯 배치는 [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]], 유효성은 [[05_ADR/0025-Inactive-RawFlux-Write-Elision|ADR 0025]]를 따른다.
 
 ## CPU와 GPU 데이터 형식
 
@@ -166,4 +166,4 @@ ADR 0021의 증가분은 6 Surface × 512×512·1채널·8슬롯 기준 RawFlux 
 
 Solver push constant는 128 byte다. dt·채널 수·texel 수·flags가 offset 0–15, world gravity vec4가 16–31, 선형 변환의 세 vec4 column이 32–79, inverse-transpose의 세 vec4 column이 80–127이다. 마지막 세 column의 xyz는 normal matrix이고 w는 gravity up의 x/y/z를 담는다. CPU가 dispatch당 한 번 계산하며 크기·offset은 static_assert로 검증한다. Translation은 edge 차이에서 상쇄되어 Solver에는 전달하지 않는다. SolverFlags bit 5는 CPU에서 RawFlux 캐시 OFF pipeline을 선택하며 두 pass의 specialization constant 0을 false로 지정한다. push constant 및 descriptor 배치는 ON/OFF에 공통이다.
 
-[[05_ADR/Simulation/0023-Simulation-Resolution-Presets|ADR 0023]] 이후 기본 Surface grid는 Medium 256×256이며 Low 128×128, High 512×512를 선택할 수 있다. 위 512 메모리 예시는 High 기준이다. float32·8슬롯·1채널·원소 padding 없음에서 Medium RawFlux는 instance당 12 MiB, uint32 역방향 슬롯은 공유 Geometry당 1.5 MiB다. 여전히 6개 Surface와 allocator overhead 제외를 가정한다. 해상도 변경은 mapping·geometry·GPU buffer·descriptor·Solver를 재생성하고 State를 초기화한다.
+[[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]] 이후 기본 Surface grid는 Medium 256×256이며 Low 128×128, High 512×512를 선택할 수 있다. 위 512 메모리 예시는 High 기준이다. float32·8슬롯·1채널·원소 padding 없음에서 Medium RawFlux는 instance당 12 MiB, uint32 역방향 슬롯은 공유 Geometry당 1.5 MiB다. 여전히 6개 Surface와 allocator overhead 제외를 가정한다. 해상도 변경은 mapping·geometry·GPU buffer·descriptor·Solver를 재생성하고 State를 초기화한다.

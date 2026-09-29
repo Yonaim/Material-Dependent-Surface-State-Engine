@@ -4,7 +4,7 @@
 
 - Date: 2026-09-28
 - 상태: **기능 검증 완료 / 실제 Scene FPS 개선은 미확정**
-- 관련: [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]], [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]
+- 관련: [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]], [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]
 
 ## RawFlux 방향별 캐시 적용 전 확인한 비용
 
@@ -80,4 +80,4 @@ Pass 2는 source Current State가 0 이하, alpha가 0 이하, 또는 간선 가
 
 ## 방향별 RawFlux 캐시 후속 구현
 
-[[05_ADR/Simulation/0021-Directional-RawFlux-Cache|ADR 0021]]에서 마지막 후보를 채택했다. Pass 1의 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 슬롯으로 gather한다. 기존의 Pass 2 RawFlux·GeometryDrive 재평가는 제거했다. 위 측정과 빈 source 최적화 설명은 방향별 캐시 적용 이전 기록이다. 새 측정과 메모리 가정은 ADR 0021에 기록한다.
+[[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]에서 마지막 후보를 채택했다. Pass 1의 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 슬롯으로 gather한다. 기존의 Pass 2 RawFlux·GeometryDrive 재평가는 제거했다. 위 측정과 빈 source 최적화 설명은 방향별 캐시 적용 이전 기록이다. 새 측정과 메모리 가정은 ADR 0021에 기록한다.

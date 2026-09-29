@@ -132,7 +132,7 @@ flowchart LR
 5. Renderer는 매 프레임 2-pass compute Solver를 기록한다. Solver가 `InputDelta`, State, Saturation 기반 이웃 전달, Decay를 적용하고 State A/B 역할을 교환한다. 선택한 State와 Surface Mapping 진단 모드는 렌더 패스에서 GPU State/Geometry를 읽는다.
 6. Accumulation에 따른 동적 형상 갱신과 State 기반 최종 Material 표현은 설계 범위에 남아 있다. [[04_Architecture/0004_Surface-Geometry|형상과 적층]], [[04_Architecture/0009_Rendering|렌더링]]
 
-State 저장 계약은 [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에 따라 전체 State A/B에 기준량 초과분까지 보존하도록 변경했다. Capacity는 포화 기준량이고 Transport는 상한 없는 `State / Capacity`를 사용한다. 현재 Shader는 Saturation·Next의 상한 clamp를 제거해 이 계약을 구현했다. GPU 실행 검증은 대기 중이다. 기존 2-Pass, gather, InputDelta 소비 시점과 A/B 소유권은 유지한다.
+State 저장 계약은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에 따라 전체 State A/B에 기준량 초과분까지 보존하도록 변경했다. Capacity는 포화 기준량이고 Transport는 상한 없는 `State / Capacity`를 사용한다. 현재 Shader는 Saturation·Next의 상한 clamp를 제거해 이 계약을 구현했다. GPU 실행 검증은 대기 중이다. 기존 2-Pass, gather, InputDelta 소비 시점과 A/B 소유권은 유지한다.
 
 Simulation UV mapping은 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]], Vulkan resource binding / barrier는 [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
 

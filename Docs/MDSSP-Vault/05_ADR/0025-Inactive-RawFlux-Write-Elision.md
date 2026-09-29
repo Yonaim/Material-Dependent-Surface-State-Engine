@@ -1,7 +1,11 @@
 # ADR 0025 — 비활성 source의 RawFlux 쓰기 생략
 
+> **한 줄 요약:** 가용량이 없는 비활성 source는 RawFlux 슬롯을 갱신하지 않는다.
+
+- 분류: **Simulation**
 - Status: **Accepted · 구현 및 GPU 회귀 검증 완료**
 - Date: 2026-09-28
+- 관련 문서: [[0021-Directional-RawFlux-Cache|ADR 0021 — Directional RawFlux Cache]], [[0022-Pass1-Source-Reuse|ADR 0022 — Pass 1 source 재사용]], [[../06_Development/Experiments/0004_RawFlux-Cache-Comparison|RawFlux 캐시 비교 실험]]
 
 ## Context
 
@@ -34,7 +38,7 @@
 - 빈 source, decay-depleted source, unsupported/invalid channel의 RawFlux에 NaN을 넣어도 올바른 Next가 생성되고 scratch가 보존되는지 확인했다. 외부 입력 소비와 다음 step 전달, 빈 target의 incoming, 재활성화된 source의 8개 슬롯 갱신을 검증했다.
 - dt=0에서는 모든 RawFlux가 그대로 남고 RawOutgoing·alpha가 0으로 갱신된다. 이후 rate=0인 활성 source는 stale flux를 0으로 덮어쓰는지 검사했다. ON/OFF와 AB/BA 연속 전환 및 여러 Profile·Capacity·Registry channel 회귀도 통과했다.
 - 합성 비교에서는 변경 전 ON, 변경 후 ON, 변경 후 OFF의 세 pipeline 구성을 같은 GPU 리소스와 initial State로 평가했다. 변경 전 SPIR-V를 별도 경로에 보존하여 서로 다른 pipeline을 동일 process에서 준비하고 각 측정 전 A를 동일 값으로 업로드했다. 5회 warmup 후 30회 GPU timestamp 중앙값을 구했으며 두 번째 반복은 실행 순서를 뒤집었다.
-- Apple M1, 6 Surface×512×512, 1채널·1 instance, identity transform, gravity=(0,0,-1), dt=1/60초다. grid 위치·법선·Profile·State 분포는 [[../../06_Development/Experiments/0004_RawFlux-Cache-Comparison|실험 0004]]와 같고 렌더링·입력·CPU 준비·pipeline 생성은 측정 밖이다. 전체 구간은 두 pass 사이의 barrier 시간을 포함한다.
+- Apple M1, 6 Surface×512×512, 1채널·1 instance, identity transform, gravity=(0,0,-1), dt=1/60초다. grid 위치·법선·Profile·State 분포는 [[../06_Development/Experiments/0004_RawFlux-Cache-Comparison|실험 0004]]와 같고 렌더링·입력·CPU 준비·pipeline 생성은 측정 밖이다. 전체 구간은 두 pass 사이의 barrier 시간을 포함한다.
 
 시간 단위는 ms이며 각 열은 반복 1 / 반복 2다.
 
@@ -51,4 +55,4 @@
 - [[0021-Directional-RawFlux-Cache|ADR 0021 — 방향별 RawFlux 캐시]]
 - [[0022-Pass1-Source-Reuse|ADR 0022 — Pass 1 source 재사용]]
 - [[0024-RawFlux-Cache-Comparison|ADR 0024 — RawFlux 캐시 ON/OFF 비교]]
-- [[../../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
+- [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]

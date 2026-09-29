@@ -2,11 +2,11 @@
 
 > **한 줄 요약:** 이 문서는 외부 접촉을 State 입력으로 바꾸는 구조와 각 항의 갱신 규칙을 함께 정의한다.
 
-상태: **입력 구조·Transport Drive/Weight 분리 및 GeometryDrive 계약 확정** · 근거: [[05_ADR/Simulation/0015-Geometry-Driven-Transport|ADR 0015]], [[08_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[08_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
+상태: **입력 구조·Transport Drive/Weight 분리 및 GeometryDrive 계약 확정** · 근거: [[05_ADR/0015-Geometry-Driven-Transport|ADR 0015]], [[08_Assets/Documents/0004_Contact-Input.pdf|Contact Input]], [[08_Assets/Documents/0005_Next-State-Calculation.pdf|Next State 계산]]
 
 이 문서는 외부 접촉을 State 입력으로 바꾸는 구조와 각 항의 갱신 규칙을 함께 정의한다.
 
-> **계약과 구현:** 아래 갱신식은 [[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]의 확정 계약이다. Shader에서 Saturation `[0,1]` clamp 및 Next의 Capacity 상한 clamp를 제거했다. 빌드는 통과했으며 초과량 보존의 GPU 실행 검증은 대기 중이다. GeometryDrive·TransferWeight와 기존 2-Pass 자원 구조는 유지한다.
+> **계약과 구현:** 아래 갱신식은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]의 확정 계약이다. Shader에서 Saturation `[0,1]` clamp 및 Next의 Capacity 상한 clamp를 제거했다. 빌드는 통과했으며 초과량 보존의 GPU 실행 검증은 대기 중이다. GeometryDrive·TransferWeight와 기존 2-Pass 자원 구조는 유지한다.
 
 ## Contact Input
 
@@ -202,7 +202,7 @@ $$
 
 중력 투영 방향과 이웃 방향이 맞는 source→target flux가 커지고, 반대 방향 flux는 0이 된다. `GeometryTransferRate` 단위는 `State / (world-length · second)`이며, `GeometryDrive × GeometryTransferRate × Δt`는 State 단위 flux를 만든다.
 
-이 정의는 기존 [[05_ADR/Simulation/0002-Transport-Drive-and-Weight|ADR 0002]]의 역할 분리를 구체화한다. `DirectionDrive`는 source 면에 투영한 gravity와 이웃 방향을 비교하고, `NormalWeight`는 이웃 두 면 사이의 Normal 차이를 통해 경로 통과성을 조절하므로 역할이 다르다. `DistanceWeight`만 이웃의 실제 표면 간격 효과를 별도로 반영한다.
+이 정의는 기존 [[05_ADR/0002-Transport-Drive-and-Weight|ADR 0002]]의 역할 분리를 구체화한다. `DirectionDrive`는 source 면에 투영한 gravity와 이웃 방향을 비교하고, `NormalWeight`는 이웃 두 면 사이의 Normal 차이를 통해 경로 통과성을 조절하므로 역할이 다르다. `DistanceWeight`만 이웃의 실제 표면 간격 효과를 별도로 반영한다.
 
 ### TransferWeight
 
@@ -221,7 +221,7 @@ $$
 |---|---|---|
 | `DistanceWeight` | 주변 이웃보다 먼 연결의 전달량을 낮춤 | 정규화된 world-space Surface Distance |
 | `NormalWeight` | 이웃 texel의 유효 표면 방향 차이가 클수록 전달량을 낮춤 | 복원된 MesoNormal을 우선 사용하고 sampled TransferNormal, geometric normal 순으로 fallback한 뒤 instance inverse-transpose를 적용한 world normal 내적 |
-| `CurvatureWeight` | 기본 OFF는 고정 `1.0`; ON은 Virtual Height에서 유도한 mean curvature 크기로 감쇠 | 대칭 mesh-local 간선 가중치, [[05_ADR/Simulation/0019-Optional-Curvature-Transfer-Weight\|ADR 0019]] |
+| `CurvatureWeight` | 기본 OFF는 고정 `1.0`; ON은 Virtual Height에서 유도한 mean curvature 크기로 감쇠 | 대칭 mesh-local 간선 가중치, [[05_ADR/0019-Optional-Curvature-Transfer-Weight\|ADR 0019]] |
 | `ProfileBoundaryWeight` | 같은 Profile 사이 `1.0`, 다른 Profile 사이 고정 `0.5`로 전달량을 낮춤 | SRProfile ID 비교 |
 
 현재 `DistanceWeight`는 각 endpoint의 평균 유효 이웃 간격을 `dRef`로 삼는다. `dRef(i,j) = 0.5 × (meanDistance_i + meanDistance_j)`이고, `d(i,j)`는 두 texel의 world-space 거리다.
@@ -236,7 +236,7 @@ $$
 NormalWeight_{i\rightarrow j} = clamp\left(NormalWorld_i \cdot NormalWorld_j, 0, 1\right)
 $$
 
-두 normal은 최신 변형 Geometry의 normal에 instance transform의 inverse-transpose를 적용한 뒤 정규화한다. 유효하지 않은 normal은 가중치 0으로 처리한다. `ProfileBoundaryWeight`는 별도 Profile parameter가 아닌 Solver 공통 규칙이다. 거리·법선·Profile 경계 식과 곡률 보류 범위는 [[05_ADR/Simulation/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
+두 normal은 최신 변형 Geometry의 normal에 instance transform의 inverse-transpose를 적용한 뒤 정규화한다. 유효하지 않은 normal은 가중치 0으로 처리한다. `ProfileBoundaryWeight`는 별도 Profile parameter가 아닌 Solver 공통 규칙이다. 거리·법선·Profile 경계 식과 곡률 보류 범위는 [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
 
 UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 전달 가중치를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**한다. 생성 방식은 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 따른다.
 

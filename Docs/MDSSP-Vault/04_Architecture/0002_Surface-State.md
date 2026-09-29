@@ -39,7 +39,7 @@ flowchart LR
   IDs --> GPU["동적 channel 배열 조회"]
 ```
 
-`.SRProfile`은 State 종류의 전역 목록이 아니라, 해당 Profile이 지원하는 각 State의 반응 파라미터와 Transition을 정의한다. 런타임 Solver와 GPU는 문자열을 직접 분기 기준으로 쓰지 않고 Registry가 부여한 ID/index를 사용한다. ID의 배정과 저장 레이아웃은 구현 계약에서 정한다. 상세 결정은 [[05_ADR/Architecture/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
+`.SRProfile`은 State 종류의 전역 목록이 아니라, 해당 Profile이 지원하는 각 State의 반응 파라미터와 Transition을 정의한다. 런타임 Solver와 GPU는 문자열을 직접 분기 기준으로 쓰지 않고 Registry가 부여한 ID/index를 사용한다. ID의 배정과 저장 레이아웃은 구현 계약에서 정한다. 상세 결정은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
 
 ## State / Capacity / Saturation
 
@@ -63,7 +63,7 @@ $$
 - `Saturation`은 저장 파라미터가 아니라 런타임 파생값이며 1을 넘을 수 있다. 표시용 `[0,1]` clamp는 전달 계산과 분리한다.
 - Saturation 계산 때문에 `stateCapacity`는 유한한 양수로 사용한다. 양수 검증만으로 모든 연산의 NaN/Inf를 방지하는 것은 아니다.
 
-[[05_ADR/Simulation/0020-State-Overcapacity-Transport|ADR 0020]]에 따라 State A/B에 초과량까지 보존한다. Shader의 Saturation `[0,1]` clamp 및 Next State의 Capacity 상한 clamp 제거를 구현했다. 빌드는 통과했으며 GPU 실행 검증은 대기 중이다. `TempState`나 별도 Overflow 채널을 추가하지 않는다.
+[[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에 따라 State A/B에 초과량까지 보존한다. Shader의 Saturation `[0,1]` clamp 및 Next State의 Capacity 상한 clamp 제거를 구현했다. 빌드는 통과했으며 GPU 실행 검증은 대기 중이다. `TempState`나 별도 Overflow 채널을 추가하지 않는다.
 
 ## Surface Response Profile
 

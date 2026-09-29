@@ -1,14 +1,15 @@
 # ADR 0021 — Accumulation Height와 Normal Map 렌더링
 
-> **한 줄 요약:** Normal Map에서 복원한 Virtual Meso Geometry와 동적 적층 높이를 한 번씩만 최종 표면 방향에 반영한다.
+> **한 줄 요약:** Normal Map에서 복원한 Virtual Meso Geometry와 동적 `AccumulationHeight`를 한 번씩만 최종 표면 방향에 반영한다.
 
+- 분류: **Rendering**
 - Status: **Proposed**
 - Date: 2026-09-28
-- Related: [[../Simulation/0003-Dynamic-Accumulation-Geometry|ADR 0003]], [[../Simulation/0018-Normal-Map-Meso-Geometry|ADR 0018]], [[../../04_Architecture/0009_Rendering|Surface State Rendering]], [[../../06_Development/Notes/0004_Rendering-Implementation|Rendering 구현 검토]]
+- 관련 문서: [[0003-Dynamic-Accumulation-Geometry|ADR 0003 — 동적 적층 형상]], [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map Meso Geometry]], [[../04_Architecture/0009_Rendering|Surface State Rendering]]
 
 ## Context
 
-Normal Map에서 복원한 Virtual Height(`MesoVirtualHeight`)와 그 높이장에서 얻은 `MesoNormal`은 이미 원본 Normal Map의 표면 변화를 나타낸다. 동적 `AccumulationHeight`는 여기에 적층으로 생긴 높이를 더한다. 원본 Normal Map을 복원 normal 위에 그대로 다시 적용하면 같은 세부 방향을 중복 반영할 수 있다.
+Normal Map에서 복원한 Virtual Height(`MesoVirtualHeight`)와 그 height field에서 얻은 `MesoNormal`은 이미 원본 Normal Map의 표면 변화를 나타낸다. 동적 `AccumulationHeight`는 여기에 적층으로 생긴 높이를 더한다. 원본 Normal Map을 복원 normal 위에 그대로 다시 적용하면 같은 세부 방향을 중복 반영할 수 있다.
 
 현재 Architecture는 최종 높이를 `MesoVirtualHeight + AccumulationHeight`로 정의하지만, 일반 렌더링 경로에서 적층 형상과 그 normal을 어떻게 적용할지는 미정이다. 검토 중인 구현은 높이 기반 shading/parallax와 실제 Geometry Displacement다.
 
@@ -36,8 +37,8 @@ Normal Map에서 복원한 Virtual Height(`MesoVirtualHeight`)와 그 높이장�
 
 ## Related
 
-- [[../Simulation/0003-Dynamic-Accumulation-Geometry|ADR 0003 — Accumulation Height의 동적 형상 반영]]
-- [[../Simulation/0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map 기반 Virtual Meso Geometry 복원]]
-- [[../../04_Architecture/0009_Rendering|Surface State Rendering]]
-- [[../../04_Architecture/0004_Surface-Geometry|형상 정보와 적층]]
-- [[../../06_Development/Notes/0004_Rendering-Implementation|Rendering 구현 검토]]
+- [[0003-Dynamic-Accumulation-Geometry|ADR 0003 — Accumulation Height의 동적 형상 반영]]
+- [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map 기반 Virtual Meso Geometry 복원]]
+- [[../04_Architecture/0009_Rendering|Surface State Rendering]]
+- [[../04_Architecture/0004_Surface-Geometry|형상 정보와 적층]]
+- [[../06_Development/Notes/0004_Rendering-Implementation|Rendering 구현 검토]]
