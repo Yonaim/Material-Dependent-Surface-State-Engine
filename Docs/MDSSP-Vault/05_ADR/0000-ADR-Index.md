@@ -59,6 +59,7 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0028-Accumulation-Height-and-Normal-Map|ADR 0028 — Rendering]] | Accumulation Height와 Normal Map 렌더링 | Normal Map에서 복원한 Virtual Meso Geometry와 동적 `AccumulationHeight`를 한 번씩만 최종 표면 방향에 반영한다. |
 
 | [[0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]] | 적층 디버그 뷰와 Texel Inspector | 두 적층 디버그 뷰와 선택 texel의 완료 GPU snapshot으로 상태량·높이·형상 표시를 검사한다. |
+| [[0036-Texel-Geometry-Preview|ADR 0036]] | Texel 연결면 기반 형상 미리보기 | Compute의 texel별 위치·법선을 같은 UV chart의 연결 삼각형으로 표시한다. |
 
 ### Simulation
 

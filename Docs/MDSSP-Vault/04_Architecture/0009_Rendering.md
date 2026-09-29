@@ -72,4 +72,6 @@ Mud·Snow처럼 실제 두께 변화가 중요한 적층은 화면상 외관 변
 
 ## 적층 디버그 미리보기
 
-Accumulation은 선택 State의 기준면적 환산량에서 총 높이·Cavity·Following·Fill 비율을 계산한다. Final Geometry는 해당 높이와 Meso 높이를 결합해 변위하며 원본 Normal Map을 중복 적용하지 않는다. Inspector는 같은 GPU 식의 선택 texel 결과를 완료 frame fence 이후 표시한다. 공통 조절형 Height reference는 디버그 설정이며, 실제 Surface별 높이 기준값과 Solver 동적 형상 피드백은 미구현이다. 물리적 layer의 합성/순서 또는 최종 Lit rendering 완료를 뜻하지 않는다. [[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]를 따른다.
+Accumulation은 선택 State의 기준면적 환산량에서 총 높이·Cavity·Following·Fill 비율을 계산한다. Compute는 최신 State와 Meso 높이에서 texel별 표시 위치·법선을 만들고, vertex shader는 그 결과를 같은 UV chart의 연결 삼각형으로 표시한다. Final Geometry와 Accumulation heatmap은 같은 변위 면을 사용한다. Meso Color/Displacement도 texel 연결면을 사용하며 적층을 제외한다. 초기 원본 메시 정점 변위의 밀도 제한은 제거되었지만 texel 중심 경계와 UV chart 사이의 stitching은 미구현이다. 원본 Normal Map은 중복 적용하지 않는다.
+
+Inspector는 같은 GPU 식의 선택 texel 결과를 완료 frame fence 이후 표시한다. 공통 조절형 Height reference는 디버그 설정이며, 실제 Surface별 높이 기준값과 Solver 동적 형상 피드백은 미구현이다. 표시용 compute buffer는 물리적 layer의 합성/순서 또는 최종 Lit rendering 완료를 뜻하지 않는다. [[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]], [[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]을 따른다.

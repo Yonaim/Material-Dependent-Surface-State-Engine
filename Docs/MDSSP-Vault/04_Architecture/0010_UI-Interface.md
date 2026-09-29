@@ -35,8 +35,8 @@
 | Debug View | 표시 내용 |
 |---|---|
 | State Heatmap | Saturation (`State / (Profile Capacity × AreaScale)`) 또는 Raw State |
-| Accumulation | 선택 State의 총 높이·Cavity 높이·Following 높이·Cavity Fill 비율 미리보기 |
-| Final Geometry | Meso + 선택 State의 적층 높이로 정점 변위하고 갱신 normal로 표시 |
+| Accumulation | texel 연결면에서 선택 State의 총 높이·Cavity 높이·Following 높이·Cavity Fill 비율 표시 |
+| Final Geometry | Compute가 만든 texel별 위치·normal을 연결된 삼각형으로 표시 |
 | Validity, Surface ID | 유효 texel, Surface 구분 |
 | Neighbor Count, UV Seam | texel 이웃 수, UV seam 연결 |
 | Outgoing Flux Scale, Solver Transfer Weights | Solver 전달 관련 값 |
@@ -44,9 +44,9 @@
 | Macro Geometry, Meso | 표면 형상, Normal Map 기반 meso 정보 |
 
 - Saturation 표시 범위는 `[0,1]`이며 Capacity 초과량은 같은 색이다. Raw State는 texel 총량을 조절 가능한 고정 범위로 표시한다. 범위 초과는 주황색이다. 표시 결과는 Solver에 입력되지 않는다.
-- Accumulation의 높이 범위·Height reference는 mesh-local 단위다. Cavity Fill만 0–100% 고정 범위다. Final Geometry의 Display scale은 표시 전용이다.
+- Accumulation의 높이 범위·Height reference는 mesh-local 단위다. Cavity Fill만 0–100% 고정 범위다. Accumulation/Final Geometry의 공통 Display scale은 표시 위치·normal 전용이며 색상 수치와 Inspector에는 반영하지 않는다.
 - 현재 적층 뷰는 선택 State의 설계식 미리보기다. 실제 동적 Geometry buffer와 Solver 형상 피드백은 후속 구현이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
-- Meso 뷰는 색상 표시 또는 Displacement를 선택한다.
+- Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]).
 - 좌측 `Render Settings`: Normal strength, Ambient light, Normal Y 반전
 - 선택한 뷰의 State·보조 옵션은 Viewport 상단에 표시한다.
 
