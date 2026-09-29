@@ -34,8 +34,8 @@
 
 ## 실제 Scene에서 비교
 
-1. Simulation 탭의 Cache Comparison에서 RawFlux Cache를 선택한다. 기본값은 ON이다.
-2. 동일한 해상도·다른 Solver 항목·Profile·transform을 유지하고 Fixed timestep을 켠다. 양쪽에서 같은 Time scale을 사용한다. 1x이면 solver step당 1/60초다.
+1. Solver 탭의 Cache Comparison을 펼쳐 RawFlux Cache를 선택한다. 기본값은 ON이다.
+2. 동일한 해상도·다른 Solver 항목·Profile·transform을 유지하고 맨 오른쪽 Global Settings 탭에서 Fixed timestep을 켠다. 양쪽에서 같은 Time scale을 사용한다. 1x이면 solver step당 1/60초다.
 3. 각 모드에서 Reset State 후 같은 입력을 재현한다. 같은 초기 State 없이 실행 중 토글한 숫자는 동등한 조건의 A/B 측정으로 해석하지 않는다. 입력 위치·강도·횟수와 경과 step을 맞춰야 한다.
 4. warmup과 전환 직후 첫 평균을 지나서 Pass 1·Pass 2·Solver GPU를 읽는다. 화면의 모드 표시와 cache buffer MiB를 함께 기록한다. OFF에서도 할당은 유지되며 추가 VRAM 절감은 발생하지 않는다.
 

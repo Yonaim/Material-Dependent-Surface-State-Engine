@@ -86,6 +86,11 @@ namespace MDSS
         void ResetProfilingAverages() noexcept;
         void ResetSurfaceStateSettings();
         void DrawSimulationDebugWindow(TScene& SceneData);
+        void DrawSimulationCommonControls();
+        void DrawSolverTab();
+        void DrawContactInputTab();
+        void DrawProfileTuningTab(TScene& SceneData);
+        void DrawGlobalSettingsTab(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
         void DrawSectionHeader(const char* Title, float TopPadding = 12.0F, float BottomPadding = 8.0F) const;
@@ -106,7 +111,7 @@ namespace MDSS
         float       InjectFalloff = 1.0F;
         int         InjectTexelSearchRadius = 2;
         float       SimulationTimeScale = 1.0F;
-        bool        bFixedSimulationTimestep = false;
+        bool        bFixedSimulationTimestep = true;
         bool        bSimulationPaused = false;
         bool        bSolverStepRequested = false;
         bool        bSolverResetRequested = false;

@@ -34,10 +34,10 @@
 #include <filesystem>
 #include <glm/geometric.hpp>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <limits>
@@ -103,6 +103,21 @@ namespace MDSS
             "ProfileBoundaryWeight",
         };
 
+        // 설명과 도움말은 전역 보조 텍스트 색을 사용한다.
+        void TextDescriptionWrapped(const char* Text)
+        {
+            ImGui::PushTextWrapPos(0.0F);
+            ImGui::TextDisabled("%s", Text);
+            ImGui::PopTextWrapPos();
+        }
+
+        void SetDescriptionTooltip(const char* Text)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+            ImGui::SetTooltip("%s", Text);
+            ImGui::PopStyleColor();
+        }
+
         void DrawLegendColor(ImVec4 Color, const char* Label, const char* Tooltip = nullptr)
         {
             ImGui::PushID(Label);
@@ -110,13 +125,13 @@ namespace MDSS
                                {12.0F, 12.0F});
             if (Tooltip != nullptr && ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", Tooltip);
+                SetDescriptionTooltip(Tooltip);
             }
             ImGui::SameLine(0.0F, 4.0F);
             ImGui::TextUnformatted(Label);
             if (Tooltip != nullptr && ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("%s", Tooltip);
+                SetDescriptionTooltip(Tooltip);
             }
             ImGui::PopID();
             ImGui::SameLine(0.0F, 10.0F);
@@ -189,18 +204,6 @@ namespace MDSS
             BeginLabeledControlRow(Label);
             ImGui::SetNextItemWidth(-1.0F);
             const bool bChanged = ImGui::DragFloat3("##Value", Value, Speed);
-            ImGui::PopID();
-            return bChanged;
-        }
-
-        bool LabeledCheckbox(const char* Label, bool* Value)
-        {
-            ImGui::PushID(Label);
-            ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted(Label);
-            ImGui::SameLine();
-            ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - ImGui::GetFrameHeight());
-            const bool bChanged = ImGui::Checkbox("##Value", Value);
             ImGui::PopID();
             return bChanged;
         }
@@ -338,7 +341,7 @@ namespace MDSS
         Style.GrabRounding = 3.0F;
         Style.TabRounding = 3.0F;
         Style.Colors[ImGuiCol_Text] = {0.91F, 0.93F, 0.97F, 1.0F};
-        Style.Colors[ImGuiCol_TextDisabled] = {0.58F, 0.62F, 0.69F, 1.0F};
+        Style.Colors[ImGuiCol_TextDisabled] = {0.46F, 0.50F, 0.57F, 1.0F};
         // 창 배경은 패널과 내부 영역에 두 단계의 더 어두운 회색을 쓴다.
         Style.Colors[ImGuiCol_WindowBg] = {0.075F, 0.082F, 0.10F, 0.99F};
         Style.Colors[ImGuiCol_ChildBg] = {0.058F, 0.065F, 0.082F, 0.94F};
@@ -1240,7 +1243,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Restore the startup camera position, target, and FOV.");
+                SetDescriptionTooltip("Restore the startup camera position, target, and FOV.");
             }
 
             glm::vec3 Position = CameraData.GetPosition();
@@ -1412,7 +1415,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Zoom out");
+                SetDescriptionTooltip("Zoom out");
             }
             ImGui::SameLine();
             if (ImGui::Button("+"))
@@ -1421,7 +1424,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Zoom in");
+                SetDescriptionTooltip("Zoom in");
             }
             ImGui::SameLine(0.0F, 14.0F);
             bool bGridVisible = FrameRenderer->IsWorldGridVisible();
@@ -1695,7 +1698,7 @@ namespace MDSS
             }
 
             bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
-            if (LabeledCheckbox("Flip Normal Y", &bFlipNormalY))
+            if (ImGui::Checkbox("Flip Normal Y", &bFlipNormalY))
             {
                 FrameRenderer->SetFlipNormalY(bFlipNormalY);
             }
@@ -1851,526 +1854,594 @@ namespace MDSS
             return;
         }
 
-        ImGuiViewport* Viewport = ImGui::GetMainViewport();
+        ImGuiViewport*  Viewport = ImGui::GetMainViewport();
         constexpr float Width = 310.0F;
-        const ImVec2 WindowSize{Width, 520.0F};
-        const ImVec2 WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
+        const ImVec2    WindowSize{Width, 520.0F};
+        const ImVec2    WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
                                     Viewport->WorkPos.y + 150.0F};
         ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
 
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoTitleBar;
+        constexpr ImGuiWindowFlags Flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
         if (ImGui::Begin("Simulation Debug", nullptr, Flags))
         {
+            DrawSimulationCommonControls();
+            ImGui::Dummy({0.0F, 10.0F});
+            ImGui::Separator();
+            ImGui::Dummy({0.0F, 10.0F});
+
+            // 본문 배경은 부모 패널을 그대로 사용하고, 각 탭의 본문만 스크롤한다.
             if (ImGui::BeginTabBar("SimulationTabs"))
             {
-                if (ImGui::BeginTabItem("Simulation"))
+                if (ImGui::BeginTabItem("Solver"))
                 {
-                    DrawSectionHeader("Simulation Resolution");
-                    const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
-                    const char* CurrentLabel = "Medium";
-                    for (const auto& Preset : SurfaceSimulationResolutionPresets)
-                        if (Preset.Resolution == CurrentResolution) CurrentLabel = Preset.Label;
-                    ImGui::SetNextItemWidth(-1.0F);
-                    if (ImGui::BeginCombo("##SimulationResolution", CurrentLabel))
+                    if (ImGui::BeginChild(
+                            "SolverContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        for (const auto& Preset : SurfaceSimulationResolutionPresets)
-                        {
-                            const bool Selected = Preset.Resolution == CurrentResolution;
-                            if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
-                            {
-                                try
-                                {
-                                    FrameRenderer->SetSimulationResolution(SceneData, Preset.Resolution);
-                                    ResolutionStatus = "Resolution changed. State reset.";
-                                    ResetProfilingAverages();
-                                }
-                                catch (const std::exception& Error)
-                                {
-                                    ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
-                                    TLogger::Warning("TDebugUI", ResolutionStatus);
-                                }
-                            }
-                            if (Selected) ImGui::SetItemDefaultFocus();
-                        }
-                        ImGui::EndCombo();
+                        DrawSolverTab();
                     }
-                    const std::uint32_t ActiveResolution = FrameRenderer->GetSimulationResolution();
-                    ImGui::TextDisabled("%u x %u per surface", ActiveResolution, ActiveResolution);
-                    ImGui::TextWrapped("Changing resolution resets State.");
-                    if (!ResolutionStatus.empty()) ImGui::TextWrapped("%s", ResolutionStatus.c_str());
-
-                    DrawSectionHeader("Cache Comparison");
-                    bool bCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
-                    if (ImGui::Checkbox("RawFlux Cache", &bCacheEnabled))
-                    {
-                        FrameRenderer->SetRawFluxCacheEnabled(bCacheEnabled);
-                        ResetProfilingAverages();
-                    }
-                    ImGui::TextDisabled("%s", bCacheEnabled ? "ON: reuse Pass 1 flux" : "OFF: recompute in Pass 2");
-                    const auto Memory = FrameRenderer->GetSurfaceGPUResources().GetRawFluxMemoryUsage();
-                    constexpr double MiB = 1024.0 * 1024.0;
-                    ImGui::Text("Cache buffers: %.2f MiB",
-                        static_cast<double>(Memory.InstanceRawFluxBytes + Memory.SharedReverseSlotBytes) / MiB);
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::BeginTooltip();
-                        ImGui::Text("RawFlux (all instances): %.2f MiB", static_cast<double>(Memory.InstanceRawFluxBytes) / MiB);
-                        ImGui::Text("Reverse slots (shared once): %.2f MiB", static_cast<double>(Memory.SharedReverseSlotBytes) / MiB);
-                        ImGui::TextUnformatted("Buffer sizes; excludes allocator overhead.");
-                        ImGui::EndTooltip();
-                    }
-                    ImGui::TextWrapped("State is preserved. Buffers stay allocated while OFF.");
-                    if (ImGui::Checkbox("Fixed timestep (1/60 s)", &bFixedSimulationTimestep))
-                    {
-                        ResetProfilingAverages();
-                    }
-                    if (ImGui::IsItemHovered())
-                        ImGui::SetTooltip("Fixed time per solver step, scaled by Time scale. Simulation speed depends on FPS.");
-                    if (bFixedSimulationTimestep)
-                        ImGui::TextDisabled("%.3f ms per step at %.2fx", 1000.0F * GetSimulationDeltaTime(0.0F), SimulationTimeScale);
-                    ImGui::TextWrapped("Compare with the same resolution, time scale and starting State. Reset and replay the same input for each mode; allow warmup before reading averages.");
-
-                    DrawSectionHeader("Playback");
-                    if (ImGui::RadioButton("Running", !bSimulationPaused))
-                    {
-                        bSimulationPaused = false;
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::RadioButton("Paused", bSimulationPaused))
-                    {
-                        bSimulationPaused = true;
-                    }
-
-                    DrawSectionHeader("Simulation Speed");
-                    if (ImGui::RadioButton("0.25x", std::abs(SimulationTimeScale - 0.25F) < 0.001F))
-                    {
-                        SimulationTimeScale = 0.25F;
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::RadioButton("0.5x", std::abs(SimulationTimeScale - 0.5F) < 0.001F))
-                    {
-                        SimulationTimeScale = 0.5F;
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::RadioButton("1x", std::abs(SimulationTimeScale - 1.0F) < 0.001F))
-                    {
-                        SimulationTimeScale = 1.0F;
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::RadioButton("2x", std::abs(SimulationTimeScale - 2.0F) < 0.001F))
-                    {
-                        SimulationTimeScale = 2.0F;
-                    }
-                    LabeledSliderFloat("Time scale", &SimulationTimeScale, 0.05F, 4.0F, "%.2fx");
-
-                    DrawSectionHeader("Solver Controls");
-                    if (!bSimulationPaused)
-                    {
-                        ImGui::BeginDisabled();
-                    }
-                    if (ImGui::Button("Step"))
-                    {
-                        bSolverStepRequested = true;
-                    }
-                    if (!bSimulationPaused)
-                    {
-                        ImGui::EndDisabled();
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Reset State"))
-                    {
-                        bSolverResetRequested = true;
-                    }
-
-                    const TSurfaceGPUResourceManager& GPUResources = FrameRenderer->GetSurfaceGPUResources();
-                    std::size_t TotalTexels = 0;
-                    std::size_t ValidTexels = 0;
-                    std::optional<bool> FirstCurrentAB;
-                    bool bMixedCurrentBuffers = false;
-                    for (std::size_t SceneIndex = 0; SceneIndex < GPUResources.GetSceneInstanceCount(); ++SceneIndex)
-                    {
-                        if (GPUResources.GetInstanceDescriptors(SceneIndex) == nullptr)
-                        {
-                            continue;
-                        }
-                        TotalTexels += GPUResources.GetInstanceTexelCount(SceneIndex);
-                        ValidTexels += GPUResources.GetInstanceValidTexelCount(SceneIndex);
-                        const bool bCurrentAB = GPUResources.IsCurrentStateAB(SceneIndex);
-                        if (!FirstCurrentAB.has_value())
-                        {
-                            FirstCurrentAB = bCurrentAB;
-                        }
-                        else if (*FirstCurrentAB != bCurrentAB)
-                        {
-                            bMixedCurrentBuffers = true;
-                        }
-                    }
-                    const float ValidRatio = TotalTexels > 0
-                                                 ? 100.0F * static_cast<float>(ValidTexels) /
-                                                       static_cast<float>(TotalTexels)
-                                                 : 0.0F;
-                    ImGui::Text("Texels: %zu  |  Valid: %zu (%.1f%%)", TotalTexels, ValidTexels, ValidRatio);
-                    const char* CurrentBuffer = bMixedCurrentBuffers ? "Mixed" :
-                                                !FirstCurrentAB.has_value() ? "N/A" :
-                                                *FirstCurrentAB ? "A" : "B";
-                    if (bSimulationPaused)
-                    {
-                        ImGui::Text("Next read buffer: %s", CurrentBuffer);
-                        const float SolverMilliseconds = FrameRenderer->GetLastSolverGpuMilliseconds();
-                        if (SolverMilliseconds >= 0.0F)
-                        {
-                            ImGui::Text("Recent Solver GPU: %.2f ms", SolverMilliseconds);
-                        }
-                        else
-                        {
-                            ImGui::TextDisabled("Recent Solver GPU: N/A");
-                        }
-                    }
-
-                    ImGui::TextDisabled("Solver term toggles");
-                    const auto DrawSolverTerm = [this](TSurfaceSolverTerm Term, const char* Label,
-                                                       const char* Description)
-                    {
-                        bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
-                        if (ImGui::Checkbox(Label, &bEnabled))
-                        {
-                            FrameRenderer->SetDebugSolverTermEnabled(Term, bEnabled);
-                        }
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("%s", Description);
-                        }
-                    };
-
-                    DrawSectionHeader("Transport");
-                    DrawSolverTerm(TSurfaceSolverTerm::SaturationDrive, "SaturationDrive",
-                                   "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
-                                   "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
-                    DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive, "GeometryDrive",
-                                   "ON: 높이와 중력 방향에 따른 기하 전달을 적용합니다.\n"
-                                   "OFF: 기하 전달량을 0으로 설정합니다.");
-                    DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal, "DirectionDrive: MesoNormal",
-                                   "ON: 중력을 표면에 투영할 때 복원된 MesoNormal을 사용합니다.\n"
-                                   "OFF: 중력을 표면에 투영할 때 기본 mesh normal을 사용합니다.");
-                    DrawSolverTerm(TSurfaceSolverTerm::DistanceWeight, "DistanceWeight",
-                                   "ON: 이웃 간 실제 표면 거리 기반 가중치를 적용합니다.\n"
-                                   "OFF: 거리 가중치를 1.0으로 설정합니다.");
-                    DrawSolverTerm(TSurfaceSolverTerm::NormalWeight, "NormalWeight",
-                                   "ON: 이웃 표면 법선의 방향 일치도 가중치를 적용합니다.\n"
-                                   "OFF: 법선 가중치를 1.0으로 설정합니다.");
-                    DrawSolverTerm(TSurfaceSolverTerm::ProfileBoundaryWeight, "ProfileBoundaryWeight",
-                                   "ON: 서로 다른 Profile 사이 전달 가중치를 0.5로 낮춥니다.\n"
-                                   "OFF: Profile 경계 가중치를 1.0으로 설정합니다.");
-                    DrawSolverTerm(TSurfaceSolverTerm::CurvatureWeight, "CurvatureWeight (precomputed)",
-                                   "ON: 사전 계산된 Meso 평균 곡률로 전달을 감쇠합니다.\n"
-                                   "OFF: 곡률 가중치를 1.0으로 설정합니다.");
-
-                    DrawSectionHeader("Decay");
-                    DrawSolverTerm(TSurfaceSolverTerm::Decay, "Decay",
-                                   "ON: Profile DecayRate에 따른 State 감소를 적용합니다.\n"
-                                   "OFF: 감소량을 0으로 설정합니다.");
-                    DrawSolverTerm(TSurfaceSolverTerm::ConcavityRetention, "ConcavityRetention",
-                                   "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
-                                   "OFF: Decay 보유율을 1.0으로 설정합니다.");
-
+                    ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
-
                 if (ImGui::BeginTabItem("Contact Input"))
                 {
-                    DrawSectionHeader("Contact Input");
-                    ImGui::Checkbox("Inject mode", &bInjectMode);
-                    if (ImGui::IsItemHovered())
+                    if (ImGui::BeginChild(
+                            "ContactInputContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        ImGui::SetTooltip("Inject with Space at the crosshair hit.");
+                        DrawContactInputTab();
                     }
-                    ImGui::TextDisabled("Crosshair hit → triangle → UV → simulation texel.");
-
-                    const TSurfaceStateRegistry* InjectRegistry =
-                        AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
-                    const std::size_t InjectStateCount =
-                        InjectRegistry != nullptr ? InjectRegistry->GetStateCount() : 0;
-                    if (InjectStateCount == 0)
-                    {
-                        ImGui::TextDisabled("No Surface States are registered.");
-                        InjectState = InvalidStateId;
-                    }
-                    else
-                    {
-                        if (InjectState >= InjectStateCount)
-                        {
-                            InjectState = 0;
-                        }
-                        const std::string& SelectedName = InjectRegistry->GetStateName(InjectState);
-                        const bool bStateOpen = BeginLabeledCombo("State", SelectedName.c_str());
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::SetTooltip("Surface State channel to inject.");
-                        }
-                        if (bStateOpen)
-                        {
-                            for (std::size_t Index = 0; Index < InjectStateCount; ++Index)
-                            {
-                                const TStateId State = static_cast<TStateId>(Index);
-                                const std::string& Name = InjectRegistry->GetStateName(State);
-                                const bool bSelected = State == InjectState;
-                                if (ImGui::Selectable(Name.c_str(), bSelected))
-                                {
-                                    InjectState = State;
-                                }
-                                if (bSelected)
-                                {
-                                    ImGui::SetItemDefaultFocus();
-                                }
-                            }
-                            EndLabeledCombo();
-                        }
-                    }
-
-                    LabeledSliderFloat("Radius (world)", &InjectRadius, 0.01F, 2.0F, "%.2f");
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("World-space radius of the injected contact.");
-                    }
-                    LabeledSliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Amount of State added by the contact.");
-                    }
-                    LabeledSliderFloat("Falloff", &InjectFalloff, 0.0F, 4.0F, "%.2f");
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Controls how injection strength fades toward the radius edge.");
-                    }
-                    BeginLabeledControlRow("Texel search");
-                    ImGui::SetNextItemWidth(-1.0F);
-                    ImGui::SliderInt("##InjectTexelSearchRadius", &InjectTexelSearchRadius, 0, 16, "%d texels");
-                    if (ImGui::IsItemHovered())
-                    {
-                        ImGui::SetTooltip("Same-triangle UV fallback range per axis. Default: 2; 0 disables fallback.");
-                    }
+                    ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
-
                 if (ImGui::BeginTabItem("Profile Tuning"))
                 {
-                    DrawSectionHeader("Runtime Profile Parameters");
-                    std::vector<TSRProfileAssetHandle> SceneProfiles;
-                    for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
+                    if (ImGui::BeginChild(
+                            "ProfileTuningContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        const TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
-                        if (!AssetManager->HasSurfaceData(SurfaceData))
-                        {
-                            continue;
-                        }
-                        for (TSRProfileAssetHandle Profile : AssetManager->GetSurfaceProfileTable(SurfaceData))
-                        {
-                            if (std::find(SceneProfiles.begin(), SceneProfiles.end(), Profile) == SceneProfiles.end())
-                            {
-                                SceneProfiles.push_back(Profile);
-                            }
-                        }
+                        DrawProfileTuningTab(SceneData);
                     }
-
-                    if (SceneProfiles.empty())
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
+                }
+                if (ImGui::BeginTabItem("Global Settings"))
+                {
+                    if (ImGui::BeginChild(
+                            "GlobalSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        ImGui::TextDisabled("The current scene has no Surface Profiles.");
-                        ImGui::EndTabItem();
-                        ImGui::EndTabBar();
-                        ImGui::End();
-                        return;
+                        DrawGlobalSettingsTab(SceneData);
                     }
-                    if (std::find(SceneProfiles.begin(), SceneProfiles.end(), DebugParameterProfile) ==
-                        SceneProfiles.end())
-                    {
-                        DebugParameterProfile = SceneProfiles.front();
-                        ParameterDraftKey = {InvalidAssetHandle, InvalidStateId};
-                    }
-
-                    const auto GetProfileName = [this](TSRProfileAssetHandle Handle) -> const char*
-                    { return AssetManager->GetSRProfile(Handle).GetName().c_str(); };
-                    if (BeginLabeledCombo("Profile", GetProfileName(DebugParameterProfile)))
-                    {
-                        for (TSRProfileAssetHandle Profile : SceneProfiles)
-                        {
-                            const bool bSelected = Profile == DebugParameterProfile;
-                            if (ImGui::Selectable(GetProfileName(Profile), bSelected))
-                            {
-                                DebugParameterProfile = Profile;
-                            }
-                            if (bSelected)
-                            {
-                                ImGui::SetItemDefaultFocus();
-                            }
-                        }
-                        EndLabeledCombo();
-                    }
-
-                    const TSurfaceStateRegistry& Registry = AssetManager->GetSurfaceStateRegistry();
-                    const std::size_t            StateCount = Registry.GetStateCount();
-                    if (StateCount == 0)
-                    {
-                        ImGui::TextDisabled("No State channels are registered.");
-                        ImGui::EndTabItem();
-                        ImGui::EndTabBar();
-                        ImGui::End();
-                        return;
-                    }
-                    if (DebugParameterState >= StateCount)
-                    {
-                        DebugParameterState = 0;
-                    }
-                    const std::string& StateName = Registry.GetStateName(DebugParameterState);
-                    if (BeginLabeledCombo("State", StateName.c_str()))
-                    {
-                        for (std::size_t Index = 0; Index < StateCount; ++Index)
-                        {
-                            const TStateId     State = static_cast<TStateId>(Index);
-                            const std::string& Name = Registry.GetStateName(State);
-                            const bool         bSelected = State == DebugParameterState;
-                            if (ImGui::Selectable(Name.c_str(), bSelected))
-                            {
-                                DebugParameterState = State;
-                            }
-                            if (bSelected)
-                            {
-                                ImGui::SetItemDefaultFocus();
-                            }
-                        }
-                        EndLabeledCombo();
-                    }
-
-                    const std::pair<TSRProfileAssetHandle, TStateId> Key{DebugParameterProfile, DebugParameterState};
-                    if (ParameterDraftKey != Key)
-                    {
-                        ParameterStatus.clear();
-                        if (bParameterDraftAvailable)
-                        {
-                            ParameterDrafts[ParameterDraftKey] = ParameterDraft;
-                        }
-                        ParameterDraftKey = Key;
-                        bParameterDraftDirty = DirtyParameterDrafts.contains(Key);
-                        bParameterDraftAvailable = false;
-
-                        const auto SavedDraft = ParameterDrafts.find(Key);
-                        if (SavedDraft != ParameterDrafts.end())
-                        {
-                            ParameterDraft = SavedDraft->second;
-                            bParameterDraftAvailable = true;
-                        }
-                        else
-                        {
-                            const TRegisteredSurfaceResponseProfileData Resolved =
-                                Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
-                            if (DebugParameterState < Resolved.States.size() &&
-                                Resolved.States[DebugParameterState].has_value())
-                            {
-                                const auto Override = RuntimeProfileOverrides.find(Key);
-                                ParameterDraft = Override != RuntimeProfileOverrides.end()
-                                                     ? Override->second
-                                                     : *Resolved.States[DebugParameterState];
-                                ParameterDrafts[Key] = ParameterDraft;
-                                bParameterDraftAvailable = true;
-                            }
-                        }
-                    }
-
-                    const TRegisteredSurfaceResponseProfileData Resolved =
-                        Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
-                    const bool bProfileSupportsState = DebugParameterState < Resolved.States.size() &&
-                                                       Resolved.States[DebugParameterState].has_value();
-                    if (!bProfileSupportsState || !bParameterDraftAvailable)
-                    {
-                        ImGui::TextDisabled("This Profile does not define the selected State.");
-                        ImGui::EndTabItem();
-                        ImGui::EndTabBar();
-                        ImGui::End();
-                        return;
-                    }
-
-                    ImGui::Separator();
-                    ImGui::TextDisabled("Runtime only. Apply updates the current scene; source files stay unchanged.");
-                    ImGui::TextDisabled("Only parameters currently used by the solver are shown.");
-                    bool bChanged = false;
-                    bChanged |=
-                        LabeledDragFloat("Capacity", &ParameterDraft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
-                    bChanged |=
-                        LabeledDragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
-                    bChanged |= LabeledSliderFloat(
-                        "Saturation transfer factor", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
-                    bChanged |= LabeledSliderFloat(
-                        "Geometry transfer factor", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
-                    bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
-                    bChanged |= LabeledSliderFloat(
-                        "Cavity retention", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
-                    if (bChanged)
-                    {
-                        bParameterDraftDirty = true;
-                        DirtyParameterDrafts.insert(Key);
-                        ParameterDrafts[Key] = ParameterDraft;
-                    }
-
-                    if (bParameterDraftDirty)
-                    {
-                        ImGui::TextColored({1.0F, 0.78F, 0.24F, 1.0F}, "Changes not applied");
-                    }
-                    else if (RuntimeProfileOverrides.contains(Key))
-                    {
-                        ImGui::TextColored({0.35F, 0.85F, 0.55F, 1.0F}, "Runtime override active");
-                    }
-                    else
-                    {
-                        ImGui::TextDisabled("Using Profile asset values.");
-                    }
-
-                    if (ImGui::Button("Apply Override") && bParameterDraftDirty)
-                    {
-                        try
-                        {
-                            TSurfaceResponseProfileData ValidationData;
-                            ValidationData.States.emplace(Registry.GetStateName(DebugParameterState), ParameterDraft);
-                            ValidateSurfaceResponseProfileData(ValidationData);
-                            FrameRenderer->SetDebugProfileParameters(
-                                DebugParameterProfile, DebugParameterState, ParameterDraft);
-                            RuntimeProfileOverrides[Key] = ParameterDraft;
-                            DirtyParameterDrafts.erase(Key);
-                            bParameterDraftDirty = false;
-                            ParameterDrafts[Key] = ParameterDraft;
-                            ParameterStatus.clear();
-                        }
-                        catch (const std::exception& Exception)
-                        {
-                            ParameterStatus = Exception.what();
-                            TLogger::Warning("TDebugUI", "Could not apply Profile override: " + ParameterStatus);
-                        }
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Restore Profile Values"))
-                    {
-                        const TSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
-                        if (RuntimeProfileOverrides.contains(Key))
-                        {
-                            FrameRenderer->SetDebugProfileParameters(
-                                DebugParameterProfile, DebugParameterState, Original, false);
-                            RuntimeProfileOverrides.erase(Key);
-                        }
-                        ParameterDraft = Original;
-                        ParameterDrafts[Key] = Original;
-                        DirtyParameterDrafts.erase(Key);
-                        bParameterDraftDirty = false;
-                        ParameterStatus.clear();
-                    }
-                    if (!ParameterStatus.empty())
-                    {
-                        ImGui::TextWrapped("%s", ParameterStatus.c_str());
-                    }
+                    ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
                 ImGui::EndTabBar();
             }
         }
         ImGui::End();
+    }
+
+    void TDebugUI::DrawSimulationCommonControls()
+    {
+        const float ControlColumnX = ImGui::GetCursorPosX() + LabeledControlColumnWidth;
+        const auto  ContinueControlRow = [ControlColumnX](float NextItemWidth)
+        {
+            const float RightEdge = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+            if (ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + NextItemWidth <= RightEdge)
+            {
+                ImGui::SameLine();
+            }
+            else
+            {
+                ImGui::SetCursorPosX(ControlColumnX);
+            }
+        };
+        const auto RadioWidth = [](const char* Label)
+        { return ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(Label).x; };
+
+        BeginLabeledControlRow("Playback");
+        if (ImGui::RadioButton("Running", !bSimulationPaused))
+        {
+            bSimulationPaused = false;
+        }
+        ContinueControlRow(RadioWidth("Paused"));
+        if (ImGui::RadioButton("Paused", bSimulationPaused))
+        {
+            bSimulationPaused = true;
+        }
+
+        BeginLabeledControlRow("Controls");
+        ImGui::BeginDisabled(!bSimulationPaused);
+        if (ImGui::Button("Step"))
+        {
+            bSolverStepRequested = true;
+        }
+        ImGui::EndDisabled();
+        ContinueControlRow(ImGui::CalcTextSize("Reset State").x + 2.0F * ImGui::GetStyle().FramePadding.x);
+        if (ImGui::Button("Reset State"))
+        {
+            bSolverResetRequested = true;
+        }
+
+        BeginLabeledControlRow("Speed");
+        constexpr std::array<std::pair<const char*, float>, 4> SpeedPresets = {
+            {{"0.25x", 0.25F}, {"0.5x", 0.5F}, {"1x", 1.0F}, {"2x", 2.0F}}};
+        bool bFirstPreset = true;
+        for (const auto& [Label, Scale] : SpeedPresets)
+        {
+            if (!bFirstPreset)
+            {
+                ContinueControlRow(RadioWidth(Label));
+            }
+            if (ImGui::RadioButton(Label, std::abs(SimulationTimeScale - Scale) < 0.001F))
+            {
+                SimulationTimeScale = Scale;
+            }
+            bFirstPreset = false;
+        }
+        LabeledSliderFloat("Time scale", &SimulationTimeScale, 0.05F, 4.0F, "%.2fx");
+    }
+
+    void TDebugUI::DrawGlobalSettingsTab(TScene& SceneData)
+    {
+        const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
+        const char*         CurrentLabel = "Medium";
+        for (const auto& Preset : SurfaceSimulationResolutionPresets)
+            if (Preset.Resolution == CurrentResolution)
+                CurrentLabel = Preset.Label;
+        if (BeginLabeledCombo("Resolution", CurrentLabel))
+        {
+            for (const auto& Preset : SurfaceSimulationResolutionPresets)
+            {
+                const bool Selected = Preset.Resolution == CurrentResolution;
+                if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
+                {
+                    try
+                    {
+                        FrameRenderer->SetSimulationResolution(SceneData, Preset.Resolution);
+                        ResolutionStatus = "Resolution changed. State reset.";
+                        ResetProfilingAverages();
+                    }
+                    catch (const std::exception& Error)
+                    {
+                        ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
+                        TLogger::Warning("TDebugUI", ResolutionStatus);
+                    }
+                }
+                if (Selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            EndLabeledCombo();
+        }
+        const std::uint32_t ActiveResolution = FrameRenderer->GetSimulationResolution();
+        ImGui::TextDisabled("%u x %u per surface", ActiveResolution, ActiveResolution);
+        TextDescriptionWrapped("Changing resolution resets State.");
+        if (!ResolutionStatus.empty())
+        {
+            if (ResolutionStatus.starts_with("Resolution change failed:"))
+            {
+                ImGui::TextWrapped("%s", ResolutionStatus.c_str());
+            }
+            else
+            {
+                TextDescriptionWrapped(ResolutionStatus.c_str());
+            }
+        }
+
+        if (ImGui::Checkbox("Fixed timestep (1/60 s)", &bFixedSimulationTimestep))
+        {
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Fixed time per solver step, scaled by Time scale. Simulation speed depends on FPS.");
+        if (bFixedSimulationTimestep)
+            ImGui::TextDisabled(
+                "%.3f ms per step at %.2fx", 1000.0F * GetSimulationDeltaTime(0.0F), SimulationTimeScale);
+    }
+
+    void TDebugUI::DrawSolverTab()
+    {
+        const auto DrawSolverTerm = [this](TSurfaceSolverTerm Term, const char* Label, const char* Description)
+        {
+            bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
+            if (ImGui::Checkbox(Label, &bEnabled))
+            {
+                FrameRenderer->SetDebugSolverTermEnabled(Term, bEnabled);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                SetDescriptionTooltip(Description);
+            }
+        };
+
+        DrawSectionHeader("Transport", 0.0F, 2.0F);
+        DrawSolverTerm(TSurfaceSolverTerm::SaturationDrive,
+                       "SaturationDrive",
+                       "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
+                       "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
+        DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive,
+                       "GeometryDrive",
+                       "ON: 높이와 중력 방향에 따른 기하 전달을 적용합니다.\n"
+                       "OFF: 기하 전달량을 0으로 설정합니다.");
+        DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal,
+                       "DirectionDrive: MesoNormal",
+                       "ON: 중력을 표면에 투영할 때 복원된 MesoNormal을 사용합니다.\n"
+                       "OFF: 중력을 표면에 투영할 때 기본 mesh normal을 사용합니다.");
+        DrawSolverTerm(TSurfaceSolverTerm::DistanceWeight,
+                       "DistanceWeight",
+                       "ON: 이웃 간 실제 표면 거리 기반 가중치를 적용합니다.\n"
+                       "OFF: 거리 가중치를 1.0으로 설정합니다.");
+        DrawSolverTerm(TSurfaceSolverTerm::NormalWeight,
+                       "NormalWeight",
+                       "ON: 이웃 표면 법선의 방향 일치도 가중치를 적용합니다.\n"
+                       "OFF: 법선 가중치를 1.0으로 설정합니다.");
+        DrawSolverTerm(TSurfaceSolverTerm::ProfileBoundaryWeight,
+                       "ProfileBoundaryWeight",
+                       "ON: 서로 다른 Profile 사이 전달 가중치를 0.5로 낮춥니다.\n"
+                       "OFF: Profile 경계 가중치를 1.0으로 설정합니다.");
+        DrawSolverTerm(TSurfaceSolverTerm::CurvatureWeight,
+                       "CurvatureWeight (precomputed)",
+                       "ON: 사전 계산된 Meso 평균 곡률로 전달을 감쇠합니다.\n"
+                       "OFF: 곡률 가중치를 1.0으로 설정합니다.");
+
+        DrawSectionHeader("Decay");
+        DrawSolverTerm(TSurfaceSolverTerm::Decay,
+                       "Decay",
+                       "ON: Profile DecayRate에 따른 State 감소를 적용합니다.\n"
+                       "OFF: 감소량을 0으로 설정합니다.");
+        DrawSolverTerm(TSurfaceSolverTerm::ConcavityRetention,
+                       "ConcavityRetention",
+                       "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
+                       "OFF: Decay 보유율을 1.0으로 설정합니다.");
+
+        ImGui::Spacing();
+        if (ImGui::CollapsingHeader("Cache Comparison"))
+        {
+            bool bCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
+            if (ImGui::Checkbox("RawFlux Cache", &bCacheEnabled))
+            {
+                FrameRenderer->SetRawFluxCacheEnabled(bCacheEnabled);
+                ResetProfilingAverages();
+            }
+            ImGui::TextDisabled("%s", bCacheEnabled ? "ON: reuse Pass 1 flux" : "OFF: recompute in Pass 2");
+            const auto       Memory = FrameRenderer->GetSurfaceGPUResources().GetRawFluxMemoryUsage();
+            constexpr double MiB = 1024.0 * 1024.0;
+            ImGui::Text("Cache buffers: %.2f MiB",
+                        static_cast<double>(Memory.InstanceRawFluxBytes + Memory.SharedReverseSlotBytes) / MiB);
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text("RawFlux (all instances): %.2f MiB",
+                            static_cast<double>(Memory.InstanceRawFluxBytes) / MiB);
+                ImGui::Text("Reverse slots (shared once): %.2f MiB",
+                            static_cast<double>(Memory.SharedReverseSlotBytes) / MiB);
+                ImGui::TextDisabled("Buffer sizes; excludes allocator overhead.");
+                ImGui::EndTooltip();
+            }
+            TextDescriptionWrapped("State is preserved. Buffers stay allocated while OFF.");
+            TextDescriptionWrapped("Fixed timestep is available in the Global Settings tab.");
+            TextDescriptionWrapped(
+                "Compare with the same resolution, time scale and starting State. Reset and replay the "
+                "same input for each mode; allow warmup before reading averages.");
+        }
+        ImGui::Spacing();
+        if (ImGui::CollapsingHeader("Diagnostics"))
+        {
+            const TSurfaceGPUResourceManager& GPUResources = FrameRenderer->GetSurfaceGPUResources();
+            std::size_t                       TotalTexels = 0;
+            std::size_t                       ValidTexels = 0;
+            std::optional<bool>               FirstCurrentAB;
+            bool                              bMixedCurrentBuffers = false;
+            for (std::size_t SceneIndex = 0; SceneIndex < GPUResources.GetSceneInstanceCount(); ++SceneIndex)
+            {
+                if (GPUResources.GetInstanceDescriptors(SceneIndex) == nullptr)
+                {
+                    continue;
+                }
+                TotalTexels += GPUResources.GetInstanceTexelCount(SceneIndex);
+                ValidTexels += GPUResources.GetInstanceValidTexelCount(SceneIndex);
+                const bool bCurrentAB = GPUResources.IsCurrentStateAB(SceneIndex);
+                if (!FirstCurrentAB.has_value())
+                {
+                    FirstCurrentAB = bCurrentAB;
+                }
+                else if (*FirstCurrentAB != bCurrentAB)
+                {
+                    bMixedCurrentBuffers = true;
+                }
+            }
+            const float ValidRatio =
+                TotalTexels > 0 ? 100.0F * static_cast<float>(ValidTexels) / static_cast<float>(TotalTexels) : 0.0F;
+            ImGui::Text("Texels: %zu", TotalTexels);
+            ImGui::Text("Valid: %zu (%.1f%%)", ValidTexels, ValidRatio);
+            const char* CurrentBuffer = bMixedCurrentBuffers          ? "Mixed"
+                                        : !FirstCurrentAB.has_value() ? "N/A"
+                                        : *FirstCurrentAB             ? "A"
+                                                                      : "B";
+            if (bSimulationPaused)
+            {
+                ImGui::Text("Next read buffer: %s", CurrentBuffer);
+                const float SolverMilliseconds = FrameRenderer->GetLastSolverGpuMilliseconds();
+                if (SolverMilliseconds >= 0.0F)
+                {
+                    ImGui::Text("Recent Solver GPU: %.2f ms", SolverMilliseconds);
+                }
+                else
+                {
+                    ImGui::TextDisabled("Recent Solver GPU: N/A");
+                }
+            }
+        }
+    }
+
+    void TDebugUI::DrawContactInputTab()
+    {
+        DrawSectionHeader("Contact Input", 0.0F, 2.0F);
+        ImGui::Checkbox("Inject mode", &bInjectMode);
+        if (ImGui::IsItemHovered())
+        {
+            SetDescriptionTooltip("Inject with Space at the crosshair hit.");
+        }
+        ImGui::TextDisabled("Crosshair hit → triangle → UV → simulation texel.");
+
+        const TSurfaceStateRegistry* InjectRegistry =
+            AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+        const std::size_t InjectStateCount = InjectRegistry != nullptr ? InjectRegistry->GetStateCount() : 0;
+        if (InjectStateCount == 0)
+        {
+            ImGui::TextDisabled("No Surface States are registered.");
+            InjectState = InvalidStateId;
+        }
+        else
+        {
+            if (InjectState >= InjectStateCount)
+            {
+                InjectState = 0;
+            }
+            const std::string& SelectedName = InjectRegistry->GetStateName(InjectState);
+            const bool         bStateOpen = BeginLabeledCombo("State", SelectedName.c_str());
+            if (ImGui::IsItemHovered())
+            {
+                SetDescriptionTooltip("Surface State channel to inject.");
+            }
+            if (bStateOpen)
+            {
+                for (std::size_t Index = 0; Index < InjectStateCount; ++Index)
+                {
+                    const TStateId     State = static_cast<TStateId>(Index);
+                    const std::string& Name = InjectRegistry->GetStateName(State);
+                    const bool         bSelected = State == InjectState;
+                    if (ImGui::Selectable(Name.c_str(), bSelected))
+                    {
+                        InjectState = State;
+                    }
+                    if (bSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                EndLabeledCombo();
+            }
+        }
+
+        LabeledSliderFloat("Radius (world)", &InjectRadius, 0.01F, 2.0F, "%.2f");
+        if (ImGui::IsItemHovered())
+        {
+            SetDescriptionTooltip("World-space radius of the injected contact.");
+        }
+        LabeledSliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
+        if (ImGui::IsItemHovered())
+        {
+            SetDescriptionTooltip("Amount of State added by the contact.");
+        }
+        LabeledSliderFloat("Falloff", &InjectFalloff, 0.0F, 4.0F, "%.2f");
+        if (ImGui::IsItemHovered())
+        {
+            SetDescriptionTooltip("Controls how injection strength fades toward the radius edge.");
+        }
+        BeginLabeledControlRow("Texel search");
+        ImGui::SetNextItemWidth(-1.0F);
+        ImGui::SliderInt("##InjectTexelSearchRadius", &InjectTexelSearchRadius, 0, 16, "%d texels");
+        if (ImGui::IsItemHovered())
+        {
+            SetDescriptionTooltip("Same-triangle UV fallback range per axis. Default: 2; 0 disables fallback.");
+        }
+    }
+
+    void TDebugUI::DrawProfileTuningTab(TScene& SceneData)
+    {
+        DrawSectionHeader("Runtime Profile Parameters", 0.0F, 2.0F);
+        std::vector<TSRProfileAssetHandle> SceneProfiles;
+        for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
+        {
+            const TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
+            if (!AssetManager->HasSurfaceData(SurfaceData))
+            {
+                continue;
+            }
+            for (TSRProfileAssetHandle Profile : AssetManager->GetSurfaceProfileTable(SurfaceData))
+            {
+                if (std::find(SceneProfiles.begin(), SceneProfiles.end(), Profile) == SceneProfiles.end())
+                {
+                    SceneProfiles.push_back(Profile);
+                }
+            }
+        }
+
+        if (SceneProfiles.empty())
+        {
+            ImGui::TextDisabled("The current scene has no Surface Profiles.");
+            return;
+        }
+        if (std::find(SceneProfiles.begin(), SceneProfiles.end(), DebugParameterProfile) == SceneProfiles.end())
+        {
+            DebugParameterProfile = SceneProfiles.front();
+            ParameterDraftKey = {InvalidAssetHandle, InvalidStateId};
+        }
+
+        const auto GetProfileName = [this](TSRProfileAssetHandle Handle) -> const char*
+        { return AssetManager->GetSRProfile(Handle).GetName().c_str(); };
+        if (BeginLabeledCombo("Profile", GetProfileName(DebugParameterProfile)))
+        {
+            for (TSRProfileAssetHandle Profile : SceneProfiles)
+            {
+                const bool bSelected = Profile == DebugParameterProfile;
+                if (ImGui::Selectable(GetProfileName(Profile), bSelected))
+                {
+                    DebugParameterProfile = Profile;
+                }
+                if (bSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            EndLabeledCombo();
+        }
+
+        const TSurfaceStateRegistry& Registry = AssetManager->GetSurfaceStateRegistry();
+        const std::size_t            StateCount = Registry.GetStateCount();
+        if (StateCount == 0)
+        {
+            ImGui::TextDisabled("No State channels are registered.");
+            return;
+        }
+        if (DebugParameterState >= StateCount)
+        {
+            DebugParameterState = 0;
+        }
+        const std::string& StateName = Registry.GetStateName(DebugParameterState);
+        if (BeginLabeledCombo("State", StateName.c_str()))
+        {
+            for (std::size_t Index = 0; Index < StateCount; ++Index)
+            {
+                const TStateId     State = static_cast<TStateId>(Index);
+                const std::string& Name = Registry.GetStateName(State);
+                const bool         bSelected = State == DebugParameterState;
+                if (ImGui::Selectable(Name.c_str(), bSelected))
+                {
+                    DebugParameterState = State;
+                }
+                if (bSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            EndLabeledCombo();
+        }
+
+        const std::pair<TSRProfileAssetHandle, TStateId> Key{DebugParameterProfile, DebugParameterState};
+        if (ParameterDraftKey != Key)
+        {
+            ParameterStatus.clear();
+            if (bParameterDraftAvailable)
+            {
+                ParameterDrafts[ParameterDraftKey] = ParameterDraft;
+            }
+            ParameterDraftKey = Key;
+            bParameterDraftDirty = DirtyParameterDrafts.contains(Key);
+            bParameterDraftAvailable = false;
+
+            const auto SavedDraft = ParameterDrafts.find(Key);
+            if (SavedDraft != ParameterDrafts.end())
+            {
+                ParameterDraft = SavedDraft->second;
+                bParameterDraftAvailable = true;
+            }
+            else
+            {
+                const TRegisteredSurfaceResponseProfileData Resolved =
+                    Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
+                if (DebugParameterState < Resolved.States.size() && Resolved.States[DebugParameterState].has_value())
+                {
+                    const auto Override = RuntimeProfileOverrides.find(Key);
+                    ParameterDraft = Override != RuntimeProfileOverrides.end() ? Override->second
+                                                                               : *Resolved.States[DebugParameterState];
+                    ParameterDrafts[Key] = ParameterDraft;
+                    bParameterDraftAvailable = true;
+                }
+            }
+        }
+
+        const TRegisteredSurfaceResponseProfileData Resolved =
+            Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
+        const bool bProfileSupportsState =
+            DebugParameterState < Resolved.States.size() && Resolved.States[DebugParameterState].has_value();
+        if (!bProfileSupportsState || !bParameterDraftAvailable)
+        {
+            ImGui::TextDisabled("This Profile does not define the selected State.");
+            return;
+        }
+
+        ImGui::Separator();
+        ImGui::TextDisabled("Runtime only. Apply updates the current scene; source files stay unchanged.");
+        ImGui::TextDisabled("Only parameters currently used by the solver are shown.");
+        bool bChanged = false;
+        bChanged |= LabeledDragFloat("Capacity", &ParameterDraft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
+        bChanged |= LabeledDragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
+        bChanged |= LabeledSliderFloat(
+            "Saturation transfer factor", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
+        bChanged |=
+            LabeledSliderFloat("Geometry transfer factor", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
+        bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
+        bChanged |= LabeledSliderFloat("Cavity retention", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
+        if (bChanged)
+        {
+            bParameterDraftDirty = true;
+            DirtyParameterDrafts.insert(Key);
+            ParameterDrafts[Key] = ParameterDraft;
+        }
+
+        if (bParameterDraftDirty)
+        {
+            ImGui::TextColored({1.0F, 0.78F, 0.24F, 1.0F}, "Changes not applied");
+        }
+        else if (RuntimeProfileOverrides.contains(Key))
+        {
+            ImGui::TextColored({0.35F, 0.85F, 0.55F, 1.0F}, "Runtime override active");
+        }
+        else
+        {
+            ImGui::TextDisabled("Using Profile asset values.");
+        }
+
+        if (ImGui::Button("Apply Override") && bParameterDraftDirty)
+        {
+            try
+            {
+                TSurfaceResponseProfileData ValidationData;
+                ValidationData.States.emplace(Registry.GetStateName(DebugParameterState), ParameterDraft);
+                ValidateSurfaceResponseProfileData(ValidationData);
+                FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, ParameterDraft);
+                RuntimeProfileOverrides[Key] = ParameterDraft;
+                DirtyParameterDrafts.erase(Key);
+                bParameterDraftDirty = false;
+                ParameterDrafts[Key] = ParameterDraft;
+                ParameterStatus.clear();
+            }
+            catch (const std::exception& Exception)
+            {
+                ParameterStatus = Exception.what();
+                TLogger::Warning("TDebugUI", "Could not apply Profile override: " + ParameterStatus);
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Restore Profile Values"))
+        {
+            const TSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
+            if (RuntimeProfileOverrides.contains(Key))
+            {
+                FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, Original, false);
+                RuntimeProfileOverrides.erase(Key);
+            }
+            ParameterDraft = Original;
+            ParameterDrafts[Key] = Original;
+            DirtyParameterDrafts.erase(Key);
+            bParameterDraftDirty = false;
+            ParameterStatus.clear();
+        }
+        if (!ParameterStatus.empty())
+        {
+            ImGui::TextWrapped("%s", ParameterStatus.c_str());
+        }
     }
 
     void TDebugUI::DrawLogWindow()

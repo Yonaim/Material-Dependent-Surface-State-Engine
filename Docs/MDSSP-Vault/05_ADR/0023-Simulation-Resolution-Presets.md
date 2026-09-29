@@ -15,7 +15,7 @@ Surface simulation grid가 512×512로 고정되어 기본 Cube Scene에서도 �
 
 ## Decision
 
-1. Simulation 탭에 Low(128), Medium(256), High(512) 순서의 드롭다운을 둔다. 기본값은 Medium이며 각 Surface에 정사각형 grid를 적용한다.
+1. 우측 패널의 맨 오른쪽 `Global Settings` 탭에 Low(128), Medium(256), High(512) 순서의 드롭다운을 둔다. 초기 UI는 `Simulation` 탭에 배치했으며, 현재는 별도 전역 설정 탭에 둔다. 기본값은 Medium이며 각 Surface에 정사각형 grid를 적용한다.
 2. 선택 시 mesh/Profile Distribution과 해상도로 CPU Geometry를 준비한다. [[0026-Resolution-Surface-Cache|ADR 0026]]부터 유효한 `.Surface`를 우선 로드하며, cache miss/stale/corrupt일 때 mapping·Profile map·Normal Map transfer normal·Virtual Meso Geometry를 다시 생성한다. GPU geometry·State/cache·descriptor·Solver·debug pipeline·timing query는 기존처럼 재생성한다.
 3. State A/B·InputDelta·pending contact를 초기화한다. UI는 변경 시 State가 초기화됨을 안내한다. 재표본화와 State 보존은 구현하지 않는다.
 4. CPU asset cache key에 해상도를 포함한다. 같은 mesh·distribution·해상도 조합은 공유한다. 모든 새 handle을 준비한 뒤 persistent Scene에 적용하고, GPU idle 후 자원을 교체한다. 준비/교체 실패 시 이전 Scene handles·해상도·GPU 자원을 유지한다.

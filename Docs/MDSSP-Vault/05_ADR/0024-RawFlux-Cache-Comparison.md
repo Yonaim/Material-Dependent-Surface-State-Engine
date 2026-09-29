@@ -13,12 +13,12 @@
 
 ## Decision
 
-1. Simulation 탭에 기본 ON인 `RawFlux Cache` 체크박스를 둔다. INI 수정이나 재시작 없이 전환한다. State, 현재 A/B 방향, 입력, Profile 설정, 해상도는 보존한다.
+1. `Solver` 탭의 접이식 `Cache Comparison`에 기본 ON인 `RawFlux Cache` 체크박스를 둔다. 초기 UI는 `Simulation` 탭에 배치했으며, 현재는 Solver 분석 영역에 둔다. INI 수정이나 재시작 없이 전환한다. State, 현재 A/B 방향, 입력, Profile 설정, 해상도는 보존한다.
 2. ON은 Pass 1에서 활성 source의 제한 전 방향별 RawFlux를 저장하고 Pass 2에서 읽는다. [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]] 이후 alpha=0인 source의 RawFlux는 쓰거나 읽지 않는다. OFF는 RawFlux 버퍼의 모든 저장·읽기를 생략하고, Pass 2에서 이웃 source→target flux를 재계산한다. Pass 1의 source 재사용·가용량 검사, RawOutgoing·alpha, Pass 2의 incoming·input·decay 처리는 동일하게 유지한다. 새로운 pass는 추가하지 않는다.
 3. OFF도 실제 source의 reciprocal slot을 사용하여 source-side TransferWeight를 읽는다. 두 모드 모두 공유 reverse-slot 메타데이터를 사용하며 임의로 반대 방향 slot을 가정하지 않는다.
 4. 두 pass 각각 캐시 ON/OFF pipeline을 shader specialization constant 0으로 생성한다. CPU의 SolverFlags bit 5는 OFF pipeline과 barrier 범위를 선택한다. 사용하지 않는 shader 경로가 ON pipeline의 비용에 영향을 주지 않도록 한다. 초기 pipeline 생성 작업은 늘지만 런타임 전환 시 재컴파일하지 않는다.
 5. 전환 전 GPU 작업을 완료하고 이전 모드의 미수집 timestamp 및 UI 평균을 버린다. 화면의 Pass 1·Pass 2·Solver 시간과 함께 현재 ON/OFF 모드를 표시한다. 새 모드의 평균은 새 측정으로 수집한다.
-6. 비교용 `Fixed timestep (1/60 s)` 옵션을 둔다. 활성화하면 frame elapsed time 대신 solver step당 1/60초를 사용하며 Time scale을 곱한다. 기본은 기존 가변 시간 간격이다. 고정 옵션에서는 실제 시간 대비 시뮬레이션 속도가 FPS에 따라 달라진다.
+6. 맨 오른쪽 `Global Settings` 탭에 `Fixed timestep (1/60 s)` 옵션을 둔다. 활성화하면 frame elapsed time 대신 solver step당 1/60초를 사용하며 Time scale을 곱한다. 초기 기본값은 OFF였으며 2026-09-29부터 ON으로 변경했다. OFF에서는 실제 프레임 경과 시간을 사용한다. 고정 옵션에서는 실제 시간 대비 시뮬레이션 속도가 FPS에 따라 달라진다.
 7. OFF에서도 버퍼 할당은 유지한다. 표시하는 메모리는 실제 RawFlux buffer 크기를 모든 instance에 대해 합하고, reverse-slot buffer 크기를 공유 Geometry마다 한 번 더한 값이다. allocator alignment·메모리 블록 overhead·pipeline 메모리는 포함하지 않는다. OFF는 연산과 버퍼 접근 비용을 비교하는 경로이며 메모리 절감 경로가 아니다.
 
 ## Alternatives Considered
