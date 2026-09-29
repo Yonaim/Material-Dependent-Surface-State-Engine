@@ -3,27 +3,18 @@
  * @brief Static Mesh의 기본 색상, Normal Map 조명과 렌더링 진단 모드를 처리한다.
  */
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#include "Rendering/MaterialParameters.glsl"
+#include "Rendering/Lighting.glsl"
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
 layout(location = 2) in float FragTangentSign;
 layout(location = 3) in vec2 FragUV;
+layout(location = 4) in vec3 FragWorldPosition;
 
 layout(set = 0, binding = 0) uniform sampler2D BaseColorTexture;
 layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
-
-layout(set = 0, binding = 2) uniform MaterialParameters
-{
-    vec4 BaseColor;
-    uint RenderMode;
-    uint FlipNormalY;
-    float NormalStrength;
-    float AmbientLight;
-    uint DebugStateChannel;
-    uint StateChannelCount;
-    float DebugViewParameter;
-    float DebugPadding1;
-} Material;
 
 layout(location = 0) out vec4 OutColor;
 
@@ -81,8 +72,12 @@ void main()
         return;
     }
 
-    vec3 lightDirectionWS = normalize(vec3(0.35, 0.55, 1.0));
-    float directLight = max(dot(mappedNormalWS, lightDirectionWS), 0.0);
-    float diffuse = Material.AmbientLight + (1.0 - Material.AmbientLight) * directLight;
-    OutColor = vec4(albedo.rgb * diffuse, albedo.a);
+    if (Material.RenderMode == RENDER_MODE_WIREFRAME)
+    {
+        float Diffuse = max(dot(mappedNormalWS, normalize(vec3(0.35,0.55,1.0))), 0.0);
+        OutColor = vec4(albedo.rgb * (Material.AmbientLight + (1.0-Material.AmbientLight) * Diffuse), albedo.a);
+        return;
+    }
+    OutColor = vec4(ShadeSurface(albedo.rgb, mappedNormalWS, Material.CameraPosition.xyz - FragWorldPosition,
+                               Material.DemoOptions.x, Material.AmbientLight), albedo.a);
 }

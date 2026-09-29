@@ -8,6 +8,7 @@
 #include "Application/Window.h"
 #include "AssetManager/Assets/MaterialAsset.h"
 #include "AssetManager/Assets/MeshAsset.h"
+#include "AssetManager/Assets/SRProfileAsset.h"
 #include "AssetManager/Assets/TextureAsset.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "DebugUI/DebugUI.h"
@@ -212,6 +213,9 @@ namespace MDSS
             float         ReliefShadingEnabled = 1.0F;
             glm::vec4     DebugOptions{4.0F, 0.01F, 0.01F, 1.0F};
             glm::uvec4    DebugFlags{0};
+            glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, 1U, 0U};
+            glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 0.01F};
+            glm::vec4     CameraPosition{0, 0, 1, 1};
         };
 
         const char* GetRenderViewModeName(TRenderViewMode Mode)
@@ -264,7 +268,7 @@ namespace MDSS
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 80, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 128, "TMaterialUniform must match the std140 shader block layout.");
 
         TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -345,6 +349,38 @@ namespace MDSS
             Config.VertexAttributes.clear();
             Config.DescriptorSetLayouts.push_back(OutputLayout);
             return Config;
+        }
+
+        TGraphicsPipelineConfig BuildSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
+                                                               VkDescriptorSetLayout SurfaceLayout,
+                                                               VkDescriptorSetLayout OutputLayout = VK_NULL_HANDLE)
+        {
+            auto Config = BuildSurfaceDebugPipelineConfig(MaterialLayout, SurfaceLayout);
+            Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/SurfaceLit.vert.spv";
+            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/SurfaceLit.frag.spv";
+            if (OutputLayout != VK_NULL_HANDLE)
+            {
+                Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.vert.spv";
+                Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.frag.spv";
+                Config.VertexBindings.clear();
+                Config.VertexAttributes.clear();
+                Config.DescriptorSetLayouts.push_back(OutputLayout);
+            }
+            return Config;
+        }
+
+        bool UsesMudGeometry(const TStaticMeshInstance& Instance, const TAssetManager& Assets,
+                             const TSurfaceSharedGeometryGPUResources* Shared)
+        {
+            if (!Shared || !Shared->GetTexelMeshIndexBuffer() || Instance.GetMesh() == InvalidAssetHandle ||
+                !Assets.HasSurfaceData(Instance.GetSurfaceData())) return false;
+            // Thin charts without any connected triangles retain their original mesh and appearance.
+            for (const auto& Section : Assets.GetMesh(Instance.GetMesh()).GetSections())
+                if (Section.Surface >= Shared->GetTexelMeshRanges().size() ||
+                    Shared->GetTexelMeshRanges()[Section.Surface].IndexCount == 0) return false;
+            for (const auto Profile : Assets.GetSurfaceProfileTable(Instance.GetSurfaceData()))
+                if (Assets.GetSRProfile(Profile).GetData().States.contains("mud")) return true;
+            return false;
         }
 
         TGraphicsPipelineConfig BuildGizmoPipelineConfig()
@@ -470,6 +506,11 @@ namespace MDSS
             TexelGeometryPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(),
                 MainRenderPass.GetHandle(), BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
                     Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
+            SurfaceLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+            TexelSurfaceLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                    TexelGeometryPreview->GetOutputLayout()));
         }
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
@@ -513,6 +554,8 @@ namespace MDSS
         DestroyRenderFinishedSemaphores();
 
         SurfaceDebugPipeline.reset();
+        SurfaceLitPipeline.reset();
+        TexelSurfaceLitPipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
         TexelInspector.reset();
@@ -738,6 +781,8 @@ namespace MDSS
         std::unique_ptr<TTexelInspector>     ReplacementInspector;
         std::unique_ptr<TTexelGeometryPreview> ReplacementGeometryPreview;
         std::unique_ptr<TGraphicsPipeline> ReplacementGeometryPipeline;
+        std::unique_ptr<TGraphicsPipeline> ReplacementLitPipeline;
+        std::unique_ptr<TGraphicsPipeline> ReplacementTexelLitPipeline;
         try
         {
             Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
@@ -770,6 +815,11 @@ namespace MDSS
                 ReplacementGeometryPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(),
                     MainRenderPass.GetHandle(), BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
                         Descriptors->GetLayout(), ReplacementGeometryPreview->GetOutputLayout()));
+                ReplacementLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+                ReplacementTexelLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                        ReplacementGeometryPreview->GetOutputLayout()));
             }
         }
         catch (...)
@@ -778,6 +828,8 @@ namespace MDSS
             throw;
         }
         SurfaceDebugPipeline.reset();
+        SurfaceLitPipeline.reset();
+        TexelSurfaceLitPipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
         TexelInspector.reset();
@@ -790,6 +842,8 @@ namespace MDSS
         TexelInspector = std::move(ReplacementInspector);
         TexelGeometryPreview = std::move(ReplacementGeometryPreview);
         TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
+        SurfaceLitPipeline = std::move(ReplacementLitPipeline);
+        TexelSurfaceLitPipeline = std::move(ReplacementTexelLitPipeline);
         Assets.SetSimulationResolution(Scene.GetSimulationResolution());
         if (bResetStateSettings)
         {
@@ -797,7 +851,6 @@ namespace MDSS
             DebugStateChannel = 0;
         }
         CreateTimestampQueryPool(SurfaceStates->GetSolverTimestampSlotCount());
-        UpdateMaterialUniforms();
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
         LastSolverPass1GpuMilliseconds = -1.0F;
@@ -975,7 +1028,6 @@ namespace MDSS
         }
 
         ViewMode = Mode;
-        UpdateMaterialUniforms();
         TLogger::Info("TRenderer", std::string("Render view mode changed to ") + GetRenderViewModeName(ViewMode) + ".");
     }
 
@@ -997,7 +1049,6 @@ namespace MDSS
         DebugStateChannel = Channel;
         if (TexelInspector)
             TexelInspector->Invalidate();
-        UpdateMaterialUniforms();
     }
 
     bool TRenderer::IsStateHeatmapReliefShadingEnabled() const noexcept
@@ -1015,7 +1066,20 @@ namespace MDSS
         if (Settings.HeightReference != SurfaceDebugSettings.HeightReference && TexelInspector)
             TexelInspector->Invalidate();
         SurfaceDebugSettings = Settings;
-        UpdateMaterialUniforms();
+    }
+
+    TDemoSurfaceStateBindings TRenderer::GetDemoSurfaceStateBindings() const
+    {
+        return ResolveDemoSurfaceStates(Assets.GetSurfaceStateRegistry());
+    }
+
+    void TRenderer::SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings)
+    {
+        const auto Roughness = [](float V) { return std::isfinite(V) && V >= 0.05F && V <= 1.0F; };
+        if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.WetRoughness) || !Roughness(Settings.MudRoughness) ||
+            !std::isfinite(Settings.MudHeightReference) || Settings.MudHeightReference < 1e-8F || Settings.MudHeightReference > 1e6F)
+            throw std::invalid_argument("Invalid demo roughness or mud height reference.");
+        DemoEffects = Settings;
     }
 
     bool TRenderer::InspectTexel(const TScene& Scene, std::size_t InstanceIndex, std::uint32_t Triangle, glm::vec2 UV)
@@ -1070,7 +1134,6 @@ namespace MDSS
             return;
         }
         bStateHeatmapReliefShadingEnabled = bEnabled;
-        UpdateMaterialUniforms();
     }
 
     TSolverTransferWeightView TRenderer::GetSolverTransferWeightView() const noexcept
@@ -1085,7 +1148,6 @@ namespace MDSS
             return;
         }
         SolverTransferWeightView = View;
-        UpdateMaterialUniforms();
     }
 
     std::uint32_t TRenderer::GetTexelGridBlockSize() const noexcept
@@ -1102,7 +1164,6 @@ namespace MDSS
         if (TexelGridBlockSize == Size)
             return;
         TexelGridBlockSize = Size;
-        UpdateMaterialUniforms();
     }
 
     float TRenderer::GetTexelAreaReference() const noexcept
@@ -1119,7 +1180,6 @@ namespace MDSS
         if (TexelAreaReference == Area)
             return;
         TexelAreaReference = Area;
-        UpdateMaterialUniforms();
     }
 
     float TRenderer::GetDebugViewParameter() const noexcept
@@ -1202,7 +1262,6 @@ namespace MDSS
         }
 
         bFlipNormalY = bEnabled;
-        UpdateMaterialUniforms();
         TLogger::Info("TRenderer", std::string("Normal-map Y flip ") + (bFlipNormalY ? "enabled." : "disabled."));
     }
 
@@ -1214,7 +1273,6 @@ namespace MDSS
     void TRenderer::SetNormalStrength(float Strength)
     {
         NormalStrength = std::clamp(Strength, 0.0F, 4.0F);
-        UpdateMaterialUniforms();
     }
 
     float TRenderer::GetAmbientLight() const noexcept
@@ -1225,7 +1283,6 @@ namespace MDSS
     void TRenderer::SetAmbientLight(float Intensity)
     {
         AmbientLight = std::clamp(Intensity, 0.0F, 1.0F);
-        UpdateMaterialUniforms();
     }
 
     VkDescriptorSetLayout TRenderer::CreateMaterialDescriptorSetLayout(VkDevice Device)
@@ -1345,28 +1402,28 @@ namespace MDSS
 
         std::array<VkDescriptorPoolSize, 2> PoolSizes{};
         PoolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        PoolSizes[0].descriptorCount = static_cast<std::uint32_t>(MaterialCount * 2U);
+        PoolSizes[0].descriptorCount = static_cast<std::uint32_t>(MaterialCount * TRenderContext::MaxFramesInFlight * 2U);
         PoolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        PoolSizes[1].descriptorCount = static_cast<std::uint32_t>(MaterialCount);
+        PoolSizes[1].descriptorCount = static_cast<std::uint32_t>(MaterialCount * TRenderContext::MaxFramesInFlight);
 
         VkDescriptorPoolCreateInfo PoolInfo{};
         PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         PoolInfo.poolSizeCount = static_cast<std::uint32_t>(PoolSizes.size());
         PoolInfo.pPoolSizes = PoolSizes.data();
-        PoolInfo.maxSets = static_cast<std::uint32_t>(MaterialCount);
+        PoolInfo.maxSets = static_cast<std::uint32_t>(MaterialCount * TRenderContext::MaxFramesInFlight);
 
         if (vkCreateDescriptorPool(Context.GetDevice(), &PoolInfo, nullptr, &MaterialDescriptorPool) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create material descriptor pool.");
         }
 
-        std::vector<VkDescriptorSetLayout> Layouts(MaterialCount, MaterialDescriptorSetLayout);
-        std::vector<VkDescriptorSet>       Sets(MaterialCount, VK_NULL_HANDLE);
+        std::vector<VkDescriptorSetLayout> Layouts(MaterialCount * TRenderContext::MaxFramesInFlight, MaterialDescriptorSetLayout);
+        std::vector<VkDescriptorSet>       Sets(MaterialCount * TRenderContext::MaxFramesInFlight, VK_NULL_HANDLE);
 
         VkDescriptorSetAllocateInfo AllocateInfo{};
         AllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         AllocateInfo.descriptorPool = MaterialDescriptorPool;
-        AllocateInfo.descriptorSetCount = static_cast<std::uint32_t>(MaterialCount);
+        AllocateInfo.descriptorSetCount = static_cast<std::uint32_t>(MaterialCount * TRenderContext::MaxFramesInFlight);
         AllocateInfo.pSetLayouts = Layouts.data();
 
         if (vkAllocateDescriptorSets(Context.GetDevice(), &AllocateInfo, Sets.data()) != VK_SUCCESS)
@@ -1379,81 +1436,68 @@ namespace MDSS
         {
             const TMaterialAssetHandle Handle = static_cast<TMaterialAssetHandle>(Index);
             const TMaterialAsset&      Material = Assets.GetMaterial(Handle);
-            const TextureAsset&       BaseTexture = Assets.GetTexture(Material.GetBaseColorTexture());
-            const TextureAsset&       NormalTexture = Assets.GetTexture(Material.GetNormalTexture());
+            const TextureAsset&        BaseTexture = Assets.GetTexture(Material.GetBaseColorTexture());
+            const TextureAsset&        NormalTexture = Assets.GetTexture(Material.GetNormalTexture());
 
-            MaterialResources[Index].UniformBuffer = std::make_unique<TGPUBuffer>(
-                Context.GetPhysicalDevice(),
-                                            Context.GetDevice(),
-                                            sizeof(TMaterialUniform),
-                                            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            MaterialResources[Index].DescriptorSet = Sets[Index];
-
-            const TMaterialUniform Uniform{
-                Material.GetBaseColor(),
-                static_cast<std::uint32_t>(ViewMode),
-                bFlipNormalY ? 1U : 0U,
-                NormalStrength,
-                AmbientLight,
-                DebugStateChannel,
-                static_cast<std::uint32_t>(Assets.GetSurfaceStateRegistry().GetStateCount()),
-                GetDebugViewParameter(),
-                bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F,
-                {SurfaceDebugSettings.RawStateMax,
-                 SurfaceDebugSettings.HeightMax,
-                 SurfaceDebugSettings.HeightReference,
-                 SurfaceDebugSettings.DisplacementScale},
-                {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent,
-                 SurfaceDebugSettings.HeightGridMode, SurfaceDebugSettings.HeightGridBlockSize}};
-            MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
-
-            VkDescriptorImageInfo BaseImage{};
-            BaseImage.sampler = BaseTexture.GetSampler();
-            BaseImage.imageView = BaseTexture.GetImageView();
-            BaseImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-            VkDescriptorImageInfo NormalImage{};
-            NormalImage.sampler = NormalTexture.GetSampler();
-            NormalImage.imageView = NormalTexture.GetImageView();
-            NormalImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-            VkDescriptorBufferInfo MaterialBuffer{};
-            MaterialBuffer.buffer = MaterialResources[Index].UniformBuffer->GetHandle();
-            MaterialBuffer.offset = 0;
-            MaterialBuffer.range = sizeof(TMaterialUniform);
-
-            std::array<VkWriteDescriptorSet, 3> Writes{};
-            for (VkWriteDescriptorSet& Write : Writes)
+            for (std::uint32_t Frame = 0; Frame < TRenderContext::MaxFramesInFlight; ++Frame)
             {
-                Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                Write.dstSet = Sets[Index];
-                Write.descriptorCount = 1;
-            }
-            Writes[0].dstBinding = 0;
-            Writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            Writes[0].pImageInfo = &BaseImage;
-            Writes[1].dstBinding = 1;
-            Writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            Writes[1].pImageInfo = &NormalImage;
-            Writes[2].dstBinding = 2;
-            Writes[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            Writes[2].pBufferInfo = &MaterialBuffer;
+                const std::size_t SetIndex = Index * TRenderContext::MaxFramesInFlight + Frame;
+                MaterialResources[Index].UniformBuffers[Frame] = std::make_unique<TGPUBuffer>(
+                    Context.GetPhysicalDevice(),
+                    Context.GetDevice(),
+                    sizeof(TMaterialUniform),
+                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                MaterialResources[Index].DescriptorSets[Frame] = Sets[SetIndex];
 
-            vkUpdateDescriptorSets(
-                Context.GetDevice(), static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
+                VkDescriptorImageInfo BaseImage{};
+                BaseImage.sampler = BaseTexture.GetSampler();
+                BaseImage.imageView = BaseTexture.GetImageView();
+                BaseImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                VkDescriptorImageInfo NormalImage{};
+                NormalImage.sampler = NormalTexture.GetSampler();
+                NormalImage.imageView = NormalTexture.GetImageView();
+                NormalImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                VkDescriptorBufferInfo MaterialBuffer{};
+                MaterialBuffer.buffer = MaterialResources[Index].UniformBuffers[Frame]->GetHandle();
+                MaterialBuffer.offset = 0;
+                MaterialBuffer.range = sizeof(TMaterialUniform);
+
+                std::array<VkWriteDescriptorSet, 3> Writes{};
+                for (VkWriteDescriptorSet& Write : Writes)
+                {
+                    Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    Write.dstSet = Sets[SetIndex];
+                    Write.descriptorCount = 1;
+                }
+                Writes[0].dstBinding = 0;
+                Writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                Writes[0].pImageInfo = &BaseImage;
+                Writes[1].dstBinding = 1;
+                Writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                Writes[1].pImageInfo = &NormalImage;
+                Writes[2].dstBinding = 2;
+                Writes[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                Writes[2].pBufferInfo = &MaterialBuffer;
+
+                vkUpdateDescriptorSets(
+                    Context.GetDevice(), static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
+            }
         }
 
         TLogger::Info("TRenderer",
                       "Material descriptor sets created: " + std::to_string(MaterialResources.size()) + ".");
     }
 
-    void TRenderer::UpdateMaterialUniforms()
+    void TRenderer::UploadMaterialUniforms(std::uint32_t Frame, const glm::vec3& CameraPosition)
     {
+        const auto Bindings = GetDemoSurfaceStateBindings();
         const std::size_t MaterialCount = std::min(Assets.GetMaterialCount(), MaterialResources.size());
         for (std::size_t Index = 0; Index < MaterialCount; ++Index)
         {
-            if (!MaterialResources[Index].UniformBuffer)
+            if (!MaterialResources[Index].UniformBuffers[Frame])
             {
                 continue;
             }
@@ -1474,8 +1518,11 @@ namespace MDSS
                  SurfaceDebugSettings.HeightReference,
                  SurfaceDebugSettings.DisplacementScale},
                 {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent,
-                 SurfaceDebugSettings.HeightGridMode, SurfaceDebugSettings.HeightGridBlockSize}};
-            MaterialResources[Index].UniformBuffer->Upload(&Uniform, sizeof(Uniform));
+                 SurfaceDebugSettings.HeightGridMode, SurfaceDebugSettings.HeightGridBlockSize},
+                {Bindings.Wetness, Bindings.Mud, DemoEffects.bEnabled ? 1U : 0U, 0U},
+                {DemoEffects.DryRoughness, DemoEffects.WetRoughness, DemoEffects.MudRoughness, DemoEffects.MudHeightReference},
+                glm::vec4(CameraPosition, 1.0F)};
+            MaterialResources[Index].UniformBuffers[Frame]->Upload(&Uniform, sizeof(Uniform));
         }
     }
 
@@ -1493,6 +1540,7 @@ namespace MDSS
         }
 
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
+        UploadMaterialUniforms(FrameIndex, SceneData.GetMainCamera().GetPosition());
         const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
@@ -1524,20 +1572,26 @@ namespace MDSS
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase);
         const bool bTexelGeometry = UsesTexelGeometry(ViewMode) && TexelGeometryPreview && TexelGeometryPipeline;
-        if (bTexelGeometry)
+        const auto DemoBindings = GetDemoSurfaceStateBindings();
+        const bool bSurfaceLit = ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipeline;
+        const bool bLitTexelGeometry = bSurfaceLit && DemoEffects.bMudDisplacement &&
+                                      DemoBindings.Mud != InvalidStateId && TexelSurfaceLitPipeline;
+        if (bTexelGeometry || bLitTexelGeometry)
         {
             const auto& Resources = SurfaceStates->GetGPUResources();
             const bool bAccumulation = ViewMode == TRenderViewMode::SurfaceAccumulation ||
-                                       ViewMode == TRenderViewMode::SurfaceFinalGeometry;
+                                       ViewMode == TRenderViewMode::SurfaceFinalGeometry || bLitTexelGeometry;
             for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
             {
                 const auto* Shared = Resources.GetInstanceSharedGeometry(Instance);
                 const auto* Descriptors = Resources.GetInstanceDescriptors(Instance);
-                if (Shared && Descriptors && Shared->GetTexelMeshIndexBuffer())
+                if (Shared && Descriptors && Shared->GetTexelMeshIndexBuffer() &&
+                    (!bLitTexelGeometry || UsesMudGeometry(SceneData.GetStaticMeshInstances()[Instance], Assets, Shared)))
                     TexelGeometryPreview->Record(CommandBuffer, Instance, *Descriptors,
-                        static_cast<std::uint32_t>(Shared->GetTexelCount()), DebugStateChannel,
+                        static_cast<std::uint32_t>(Shared->GetTexelCount()), bLitTexelGeometry ? DemoBindings.Mud : DebugStateChannel,
                         static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(Instance)),
-                        SurfaceDebugSettings.HeightReference, bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F,
+                        bLitTexelGeometry ? DemoEffects.MudHeightReference : SurfaceDebugSettings.HeightReference,
+                        bLitTexelGeometry ? 1.0F : (bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F),
                         Resources.IsCurrentStateAB(Instance), bAccumulation);
             }
         }
@@ -1617,11 +1671,14 @@ namespace MDSS
             {
                 continue;
             }
-            if (bTexelGeometry)
+            const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
+            const bool bInstanceTexelLit = bLitTexelGeometry && SurfaceDescriptors && UsesMudGeometry(Instance, Assets, Shared);
+            if (bTexelGeometry || bInstanceTexelLit)
             {
-                const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
                 if (!Shared || !Shared->GetTexelMeshIndexBuffer()) continue;
-                const auto Layout = TexelGeometryPipeline->GetLayout();
+                const auto& Pipeline = bInstanceTexelLit ? TexelSurfaceLitPipeline : TexelGeometryPipeline;
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline->GetHandle());
+                const auto Layout = Pipeline->GetLayout();
                 const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
                 vkCmdPushConstants(CommandBuffer, Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push), &Push);
                 vkCmdBindIndexBuffer(CommandBuffer, Shared->GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
@@ -1634,12 +1691,18 @@ namespace MDSS
                     if (Section.Material >= MaterialResources.size() || Section.Surface >= Shared->GetTexelMeshRanges().size()) continue;
                     const auto& Range = Shared->GetTexelMeshRanges()[Section.Surface];
                     if (Range.IndexCount == 0) continue;
-                    const auto MaterialSet = MaterialResources[Section.Material].DescriptorSet;
+                    const auto MaterialSet = MaterialResources[Section.Material].DescriptorSets[FrameIndex];
                     vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 0, 1, &MaterialSet, 0, nullptr);
                     vkCmdDrawIndexed(CommandBuffer, Range.IndexCount, 1, Range.FirstIndex, 0, 0);
                 }
                 continue;
             }
+            const bool bInstanceSurfaceLit = bSurfaceLit && SurfaceDescriptors;
+            const auto& Pipeline = bInstanceSurfaceLit ? *SurfaceLitPipeline :
+                                   (bCanShowSurfaceDebug ? *SurfaceDebugPipeline :
+                                   (bWireframe ? WireframePipeline : StaticMeshPipeline));
+            const auto Layout = Pipeline.GetLayout();
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.GetHandle());
             const VkBuffer     VertexBuffer = Mesh.GetVertexBuffer().GetHandle();
             const VkDeviceSize VertexOffset = 0;
             vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &VertexBuffer, &VertexOffset);
@@ -1647,8 +1710,7 @@ namespace MDSS
 
             const TStaticMeshPushConstants PushConstants{Instance.GetTransform().GetMatrix(), ViewProjection};
             vkCmdPushConstants(CommandBuffer,
-                               bWireframe && !bCanShowSurfaceDebug ? WireframePipeline.GetLayout()
-                                                                  : StaticMeshPipeline.GetLayout(),
+                               Layout,
                                VK_SHADER_STAGE_VERTEX_BIT,
                                0,
                                sizeof(PushConstants),
@@ -1661,26 +1723,24 @@ namespace MDSS
                     continue;
                 }
 
-                const VkDescriptorSet DescriptorSet = MaterialResources[Section.Material].DescriptorSet;
+                const VkDescriptorSet DescriptorSet = MaterialResources[Section.Material].DescriptorSets[FrameIndex];
                 vkCmdBindDescriptorSets(CommandBuffer,
                                         VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                        bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetLayout()
-                                                            : (bWireframe ? WireframePipeline.GetLayout()
-                                                                          : StaticMeshPipeline.GetLayout()),
+                                        Layout,
                                         0,
                                         1,
                                         &DescriptorSet,
                                         0,
                                         nullptr);
 
-                if (bCanShowSurfaceDebug)
+                if (bCanShowSurfaceDebug || bInstanceSurfaceLit)
                 {
                     const VkDescriptorSet StateSet = SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex)
                                                          ? SurfaceDescriptors->GetABSet()
                                                          : SurfaceDescriptors->GetBASet();
                     vkCmdBindDescriptorSets(CommandBuffer,
                                             VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                            SurfaceDebugPipeline->GetLayout(),
+                                            Layout,
                                             1,
                                             1,
                                             &StateSet,
@@ -1693,7 +1753,7 @@ namespace MDSS
                                  1,
                                  Section.FirstIndex,
                                  0,
-                                 bCanShowSurfaceDebug ? Section.Surface : 0U);
+                                 (bCanShowSurfaceDebug || bInstanceSurfaceLit) ? Section.Surface : 0U);
             }
         }
 

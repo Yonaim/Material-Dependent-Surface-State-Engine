@@ -1819,6 +1819,16 @@ namespace MDSS
                 FrameRenderer->SetFlipNormalY(bFlipNormalY);
             }
 
+            DrawSectionHeader("Lit Demo Effects");
+            auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
+            bool EffectsChanged = ImGui::Checkbox("Wetness / Mud", &Effects.bEnabled);
+            EffectsChanged |= ImGui::Checkbox("Mud height", &Effects.bMudDisplacement);
+            EffectsChanged |= LabeledSliderFloat("Dry roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
+            EffectsChanged |= LabeledSliderFloat("Wet roughness", &Effects.WetRoughness, 0.05F, 1.0F, "%.2f");
+            EffectsChanged |= LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
+            EffectsChanged |= LabeledSliderFloat("Mud height ref", &Effects.MudHeightReference, 0.0001F, 0.1F, "%.4f");
+            if (EffectsChanged) FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
+
             DrawSectionHeader("Height Surface Grid");
             auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
             int GridMode = static_cast<int>(Settings.HeightGridMode);

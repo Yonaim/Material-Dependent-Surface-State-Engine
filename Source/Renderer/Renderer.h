@@ -7,6 +7,7 @@
 
 #include "AssetManager/Core/Asset.h"
 #include "Renderer/Framebuffer.h"
+#include "Renderer/DemoSurfaceEffects.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderPass.h"
@@ -140,6 +141,10 @@ namespace MDSS
             return SurfaceDebugSettings;
         }
         void SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings);
+        [[nodiscard]] const TDemoSurfaceEffectSettings& GetDemoSurfaceEffectSettings() const noexcept { return DemoEffects; }
+        void SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings);
+        [[nodiscard]] TDemoSurfaceStateBindings GetDemoSurfaceStateBindings() const;
+
         [[nodiscard]] bool
              InspectTexel(const TScene& Scene, std::size_t Instance, std::uint32_t Triangle, glm::vec2 UV);
         void ClearInspectedTexel() noexcept;
@@ -177,8 +182,8 @@ namespace MDSS
     private:
         struct TMaterialRenderResource
         {
-            std::unique_ptr<TGPUBuffer> UniformBuffer;
-            VkDescriptorSet            DescriptorSet = VK_NULL_HANDLE;
+            std::array<std::unique_ptr<TGPUBuffer>, TRenderContext::MaxFramesInFlight> UniformBuffers;
+            std::array<VkDescriptorSet, TRenderContext::MaxFramesInFlight> DescriptorSets{};
         };
 
         static VkFormat              FindDepthFormat(VkPhysicalDevice PhysicalDevice);
@@ -193,7 +198,7 @@ namespace MDSS
         void CreateRenderFinishedSemaphores();
         void DestroyRenderFinishedSemaphores() noexcept;
         void CreateTimestampQueryPool(std::size_t SolverInstanceCount);
-        void UpdateMaterialUniforms();
+        void UploadMaterialUniforms(std::uint32_t Frame, const glm::vec3& CameraPosition);
         [[nodiscard]] float GetDebugViewParameter() const noexcept;
         void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
@@ -225,6 +230,8 @@ namespace MDSS
         std::unique_ptr<TGraphicsPipeline>    SurfaceDebugPipeline;
         std::unique_ptr<TTexelGeometryPreview> TexelGeometryPreview;
         std::unique_ptr<TGraphicsPipeline>     TexelGeometryPipeline;
+        std::unique_ptr<TGraphicsPipeline>     SurfaceLitPipeline;
+        std::unique_ptr<TGraphicsPipeline>     TexelSurfaceLitPipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
@@ -233,6 +240,7 @@ namespace MDSS
         std::uint32_t                         DebugStateChannel = 0;
         bool                                 bStateHeatmapReliefShadingEnabled = true;
         TSurfaceDebugDisplaySettings          SurfaceDebugSettings;
+        TDemoSurfaceEffectSettings             DemoEffects;
         std::optional<TSurfaceTexelSelection> InspectedTexel;
         std::unique_ptr<TTexelInspector>      TexelInspector;
         std::uint64_t                         SimulationStepSerial = 0;

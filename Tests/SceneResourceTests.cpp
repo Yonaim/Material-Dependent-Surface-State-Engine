@@ -123,6 +123,8 @@ namespace
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
         TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
         TRenderer Renderer(Context, Window, Assets, Scene);
+        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == 0 &&
+              Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId, "Wet Scene demo bindings must resolve optional names.");
         {
             TDebugUI UI(Context, Window, Renderer, Assets);
             Check(UI.IsFixedSimulationTimestep() && !UI.IsAutoSubsteppingEnabled(),
@@ -131,7 +133,7 @@ namespace
             ImGui::GetIO().IniFilename = nullptr;
             Renderer.SetTexelGridBlockSize(16);
             Renderer.SetTexelAreaReference(1.0F / (128.0F * 128.0F));
-            for (auto Mode : {TRenderViewMode::SurfaceTexelGrid,
+            for (auto Mode : {TRenderViewMode::Lit, TRenderViewMode::SurfaceTexelGrid,
                               TRenderViewMode::SurfaceTexelArea,
                               TRenderViewMode::SolverTransferWeight,
                               TRenderViewMode::MesoHeight,
@@ -202,9 +204,38 @@ namespace
         SwitchScene("Mud");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
               Assets.GetSurfaceStateRegistry().GetStateName(0) == "mud", "Scene switch must replace the Registry");
+        Check(Renderer.GetDemoSurfaceStateBindings().Mud == 0 &&
+              Renderer.GetDemoSurfaceStateBindings().Wetness == InvalidStateId, "Mud Scene must discard the former Wetness ID.");
+        {
+            TDebugUI UI(Context, Window, Renderer, Assets);
+            ImGui::GetIO().IniFilename = nullptr;
+            Renderer.SetRenderViewMode(TRenderViewMode::Lit);
+            const auto MudState = Assets.GetSurfaceStateRegistry().GetStateId("mud");
+            TSurfaceContactInput Contact;
+            Contact.TargetInstance = 0;
+            Contact.State = MudState;
+            Contact.Radius = 100;
+            Contact.Strength = 10;
+            Contact.Falloff = 0;
+            Renderer.SubmitContact(Contact);
+            for (int Frame = 0; Frame < 3; ++Frame)
+            {
+                auto Effects = Renderer.GetDemoSurfaceEffectSettings();
+                Effects.bMudDisplacement = Frame != 1;
+                Effects.bEnabled = Frame != 2;
+                Renderer.SetDemoSurfaceEffectSettings(Effects);
+                Window.PollEvents();
+                UI.BeginFrame(Scene);
+                Renderer.RenderFrame(Scene, UI, 1.0F/60.0F);
+            }
+            Renderer.SetDemoSurfaceEffectSettings({});
+        }
+
         SwitchScene("Mixed");
         const auto& Registry = Assets.GetSurfaceStateRegistry();
         const TStateId WetState = Registry.GetStateId("wetness");
+        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == WetState &&
+              Renderer.GetDemoSurfaceStateBindings().Mud == Registry.GetStateId("mud"), "Scene reload must resolve changed demo IDs.");
         Check(Registry.GetStateCount() == 2, "mixed Scene must use exactly its two States");
         const auto& GPU = Renderer.GetSurfaceGPUResources();
         Check(GPU.GetSceneProfileCount() == 2 && GPU.GetSharedSurfaceDataCount() == 3,
@@ -321,6 +352,8 @@ namespace
         SwitchScene("Empty");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 0 &&
               Renderer.GetSurfaceGPUResources().GetManagedInstanceCount() == 0, "empty Scene must have no State channels or resources");
+        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == InvalidStateId &&
+              Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId, "Empty Registry must resolve both demo States as absent.");
         SwitchScene("Wet");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
               Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness", "switching back must exclude cached failed Scene States");

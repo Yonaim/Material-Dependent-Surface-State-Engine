@@ -136,6 +136,10 @@ file(GLOB_RECURSE MDSS_SHADER_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.comp"
 )
 
+file(GLOB_RECURSE MDSS_SHADER_INCLUDES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.glsl"
+)
+
 # Reconfigure when a placeholder shader receives its first implementation.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MDSS_SHADER_SOURCES})
 
@@ -167,9 +171,7 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Source"
                 "${ShaderSource}"
                 -o "${ShaderBinary}"
-        DEPENDS "${ShaderSource}" "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Debug/SurfaceDebugData.glsl"
-                "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Debug/TexelGeometryData.glsl"
-                "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
+        DEPENDS "${ShaderSource}" ${MDSS_SHADER_INCLUDES}
                 "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceStateSystem/Types/SurfaceSolverRates.h"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
