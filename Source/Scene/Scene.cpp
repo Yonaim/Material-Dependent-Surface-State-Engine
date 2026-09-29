@@ -7,6 +7,7 @@
 
 #include "Logger/Logger.h"
 
+#include <stdexcept>
 #include <utility>
 
 namespace MDSS
@@ -34,6 +35,20 @@ namespace MDSS
     const std::filesystem::path& TScene::GetSourcePath() const noexcept
     {
         return SourcePath;
+    }
+
+    std::uint32_t TScene::GetSimulationResolution() const noexcept
+    {
+        return SimulationResolution;
+    }
+
+    void TScene::SetSimulationResolution(std::uint32_t Resolution)
+    {
+        if (!IsSurfaceSimulationResolution(Resolution))
+        {
+            throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
+        }
+        SimulationResolution = Resolution;
     }
 
     void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)

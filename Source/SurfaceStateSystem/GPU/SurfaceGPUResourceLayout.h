@@ -11,6 +11,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -103,7 +104,10 @@ namespace MDSS
     static_assert(offsetof(TSurfaceSolverPushConstants, ModelLinearColumns) == 32);
     static_assert(offsetof(TSurfaceSolverPushConstants, NormalMatrixAndUpColumns) == 80);
 
-    [[nodiscard]] TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData& Geometry);
+    /** @brief Optional Runtime-local → Scene Profile index remap; CPU Geometry remains unchanged. */
+    [[nodiscard]] TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(
+        const TSharedSurfaceGeometryData& Geometry,
+        std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
 
     /** @brief 대칭 TransferWeight 규칙을 각 텍셀의 이웃 슬롯별 cache로 만든다. */
     [[nodiscard]] std::vector<float>

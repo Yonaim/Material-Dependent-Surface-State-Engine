@@ -31,7 +31,9 @@ namespace MDSS
         }
     } // 내부 네임스페이스
 
-    TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData& Geometry)
+    TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(
+        const TSharedSurfaceGeometryData& Geometry,
+        std::span<const TSurfaceProfileIndex> ProfileIndexRemap)
     {
         const std::size_t TexelCount = Geometry.GetTexelCount();
         if (TexelCount == 0)
@@ -46,6 +48,21 @@ namespace MDSS
         TSurfaceGPUSharedGeometryUpload Result;
         Result.TexelSurfaceIndices.reserve(TexelCount);
         Result.TexelProfileIndices = Geometry.GetProfileMap();
+        if (!ProfileIndexRemap.empty())
+        {
+            for (TSurfaceProfileIndex& Index : Result.TexelProfileIndices)
+            {
+                if (Index == InvalidSurfaceProfileIndex)
+                {
+                    continue;
+                }
+                if (Index >= ProfileIndexRemap.size() || ProfileIndexRemap[Index] == InvalidSurfaceProfileIndex)
+                {
+                    throw std::invalid_argument("Surface Geometry references an unmapped Scene Profile.");
+                }
+                Index = ProfileIndexRemap[Index];
+            }
+        }
         Result.Positions.reserve(TexelCount);
         Result.Normals.reserve(TexelCount);
         Result.MesoNormals.reserve(TexelCount);

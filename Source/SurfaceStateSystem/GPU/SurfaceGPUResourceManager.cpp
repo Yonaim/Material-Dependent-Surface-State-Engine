@@ -33,13 +33,28 @@ namespace MDSS
         const VkDevice         Device = Context.GetDevice();
         const TSurfaceStateRegistry& Registry = Assets.GetSurfaceStateRegistry();
         bool bDescriptorLimitsChecked = false;
+        SceneProfileHandles = Assets.GetSceneSurfaceProfiles(Scene);
+        if (SceneProfileHandles.size() >= InvalidSurfaceProfileIndex)
+        {
+            throw std::overflow_error("Scene Profile table exceeds the supported Profile index range.");
+        }
+        if (!SceneProfileHandles.empty() && Registry.GetStateCount() != 0)
+        {
+            std::vector<TSurfaceResponseProfileData> Profiles;
+            Profiles.reserve(SceneProfileHandles.size());
+            for (TSRProfileAssetHandle Handle : SceneProfileHandles)
+            {
+                Profiles.push_back(Assets.GetSRProfile(Handle).GetData());
+            }
+            SceneProfiles = std::make_unique<TSurfaceProfileGPUResources>(PhysicalDevice, Device, Profiles, Registry);
+        }
 
         InstanceResources.reserve(Scene.GetStaticMeshInstances().size());
         for (const TStaticMeshInstance& MeshInstance : Scene.GetStaticMeshInstances())
         {
             std::unique_ptr<TInstanceResources> Instance;
             const TSurfaceRuntimeDataHandle SurfaceDataHandle = MeshInstance.GetSurfaceData();
-            if (Assets.HasSurfaceData(SurfaceDataHandle))
+            if (Assets.HasSurfaceData(SurfaceDataHandle) && SceneProfiles != nullptr)
             {
                 if (!bDescriptorLimitsChecked)
                 {
@@ -60,19 +75,21 @@ namespace MDSS
                     const TSurfaceRuntimeData& RuntimeData = Assets.GetSurfaceData(SurfaceDataHandle);
                     const std::vector<TSRProfileAssetHandle>& ProfileHandles =
                         Assets.GetSurfaceProfileTable(SurfaceDataHandle);
-                    std::vector<TSurfaceResponseProfileData> Profiles;
-                    Profiles.reserve(ProfileHandles.size());
+                    TSharedSurfaceResources Resources;
+                    Resources.SceneProfileIndices.reserve(ProfileHandles.size());
                     for (TSRProfileAssetHandle ProfileHandle : ProfileHandles)
                     {
-                        Profiles.push_back(Assets.GetSRProfile(ProfileHandle).GetData());
+                        const auto Found = std::lower_bound(
+                            SceneProfileHandles.begin(), SceneProfileHandles.end(), ProfileHandle);
+                        if (Found == SceneProfileHandles.end() || *Found != ProfileHandle)
+                        {
+                            throw std::logic_error("Runtime Surface Profile is missing from the Scene table.");
+                        }
+                        Resources.SceneProfileIndices.push_back(static_cast<TSurfaceProfileIndex>(
+                            std::distance(SceneProfileHandles.begin(), Found)));
                     }
-
-                    TSharedSurfaceResources Resources;
                     Resources.Geometry = std::make_unique<TSurfaceSharedGeometryGPUResources>(
-                        PhysicalDevice, Device, *RuntimeData.GetSharedGeometry());
-                    Resources.Profiles = std::make_unique<TSurfaceProfileGPUResources>(
-                        PhysicalDevice, Device, Profiles, Registry);
-                    Resources.ProfileHandles = ProfileHandles;
+                        PhysicalDevice, Device, *RuntimeData.GetSharedGeometry(), Resources.SceneProfileIndices);
                     Resources.CPUGeometry = RuntimeData.GetSharedGeometry().get();
                     SharedIt = SharedSurfaceData.emplace(SurfaceDataHandle, std::move(Resources)).first;
                 }
@@ -90,7 +107,7 @@ namespace MDSS
                     TransferWeights,
                     TransferWeightDebugAverages);
                 auto Descriptors = std::make_unique<TSurfaceStateDescriptorResources>(
-                    Device, *SharedIt->second.Geometry, *SharedIt->second.Profiles, *State);
+                    Device, *SharedIt->second.Geometry, *SceneProfiles, *State);
 
                 Instance = std::make_unique<TInstanceResources>();
                 Instance->State = std::move(State);
@@ -109,7 +126,9 @@ namespace MDSS
         TLogger::Info("TSurfaceGPUResourceManager",
                       "Created resources for " + std::to_string(GetSharedSurfaceDataCount()) +
                           " Surface data variant(s) and " +
-                          std::to_string(GetManagedInstanceCount()) + " Surface instances.");
+                          std::to_string(GetManagedInstanceCount()) + " Surface instances; one Scene Profile table with " +
+                          std::to_string(GetSceneProfileCount()) + " unique Profile(s), " +
+                          std::to_string(Registry.GetStateCount()) + " State channel(s).");
     }
 
     TSurfaceGPUResourceManager::~TSurfaceGPUResourceManager()
@@ -133,6 +152,11 @@ namespace MDSS
     std::size_t TSurfaceGPUResourceManager::GetSharedSurfaceDataCount() const noexcept
     {
         return SharedSurfaceData.size();
+    }
+
+    std::size_t TSurfaceGPUResourceManager::GetSceneProfileCount() const noexcept
+    {
+        return SceneProfiles != nullptr ? SceneProfiles->GetProfileCount() : 0;
     }
 
     TSurfaceRawFluxMemoryUsage TSurfaceGPUResourceManager::GetRawFluxMemoryUsage() const noexcept
@@ -186,29 +210,37 @@ namespace MDSS
         return InstanceResources[SceneIndex]->State->GetInputDeltaBuffer();
     }
 
+    const TGPUBuffer& TSurfaceGPUResourceManager::GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const
+    {
+        if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
+        {
+            throw std::out_of_range("Scene instance has no Surface GPU State resources.");
+        }
+        const TInstanceResources& Instance = *InstanceResources[SceneIndex];
+        return Instance.bCurrentStateAB ? Instance.State->GetStateABuffer() : Instance.State->GetStateBBuffer();
+    }
+
+    const TGPUBuffer& TSurfaceGPUResourceManager::GetSceneProfileParametersBuffer() const
+    {
+        if (SceneProfiles == nullptr)
+        {
+            throw std::out_of_range("Scene has no Profile GPU resources.");
+        }
+        return SceneProfiles->GetParametersBuffer();
+    }
+
     bool TSurfaceGPUResourceManager::UpdateProfileParameters(TSRProfileAssetHandle ProfileHandle,
                                                               TStateId State,
                                                               const TSurfaceStateParameters& Parameters)
     {
-        bool bUpdated = false;
-        for (auto& [SurfaceDataHandle, Resources] : SharedSurfaceData)
+        const auto Found = std::lower_bound(SceneProfileHandles.begin(), SceneProfileHandles.end(), ProfileHandle);
+        if (SceneProfiles == nullptr || Found == SceneProfileHandles.end() || *Found != ProfileHandle)
         {
-            (void)SurfaceDataHandle;
-            const auto ProfileIt = std::find(Resources.ProfileHandles.begin(),
-                                             Resources.ProfileHandles.end(),
-                                             ProfileHandle);
-            if (ProfileIt == Resources.ProfileHandles.end())
-            {
-                continue;
-            }
-
-            Resources.Profiles->UpdateParameters(
-                static_cast<std::size_t>(std::distance(Resources.ProfileHandles.begin(), ProfileIt)),
-                State,
-                Parameters);
-            bUpdated = true;
+            return false;
         }
-        return bUpdated;
+        SceneProfiles->UpdateParameters(
+            static_cast<std::size_t>(std::distance(SceneProfileHandles.begin(), Found)), State, Parameters);
+        return true;
     }
 
     std::size_t TSurfaceGPUResourceManager::GetInstanceTexelCount(std::size_t SceneIndex) const
@@ -262,7 +294,7 @@ namespace MDSS
             }
 
             const TSharedSurfaceGeometryData& Geometry = *SharedIt->second.CPUGeometry;
-            const TSurfaceProfileGPUResources& Profiles = *SharedIt->second.Profiles;
+            const TSurfaceProfileGPUResources& Profiles = *SceneProfiles;
             const std::size_t ChannelCount = Instance->State->GetChannelCount();
             std::vector<float> InitialOutgoingFluxScale(Geometry.GetTexelCount() * ChannelCount, 0.0F);
             const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
@@ -280,7 +312,7 @@ namespace MDSS
                 }
                 for (std::size_t ChannelIndex = 0; ChannelIndex < ChannelCount; ++ChannelIndex)
                 {
-                    if (Profiles.IsSupported(ProfileIndex, ChannelIndex))
+                    if (Profiles.IsSupported(SharedIt->second.SceneProfileIndices.at(ProfileIndex), ChannelIndex))
                     {
                         InitialOutgoingFluxScale[TexelIndex * ChannelCount + ChannelIndex] = 1.0F;
                     }

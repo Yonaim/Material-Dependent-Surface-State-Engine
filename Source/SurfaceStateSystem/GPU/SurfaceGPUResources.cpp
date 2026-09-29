@@ -64,11 +64,12 @@ namespace MDSS
 
     TSurfaceSharedGeometryGPUResources::TSurfaceSharedGeometryGPUResources(VkPhysicalDevice PhysicalDevice,
         VkDevice         Device,
-        const TSharedSurfaceGeometryData& Geometry)
+        const TSharedSurfaceGeometryData& Geometry,
+        std::span<const TSurfaceProfileIndex> ProfileIndexRemap)
         : TexelCount(Geometry.GetTexelCount())
     {
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
-        const TSurfaceGPUSharedGeometryUpload Upload = PackSharedSurfaceGeometry(Geometry);
+        const TSurfaceGPUSharedGeometryUpload Upload = PackSharedSurfaceGeometry(Geometry, ProfileIndexRemap);
         TexelSurfaceIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                        Device,
                                                        Upload.TexelSurfaceIndices.data(),

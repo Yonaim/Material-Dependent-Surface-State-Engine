@@ -22,6 +22,7 @@
 namespace MDSS
 {
     class TVulkanContext;
+    class TScene;
 
     class TAssetManager
     {
@@ -42,6 +43,7 @@ namespace MDSS
                                                                 std::uint32_t Resolution = 0);
         [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
                                                                            std::uint32_t Resolution);
+        /** @brief 현재 GPU Scene에 적용된 해상도. Scene load 후보의 해상도는 명시적으로 전달한다. */
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         void SetSimulationResolution(std::uint32_t Resolution);
         /** @brief Call after replacing GPU resources; retained Scene handles remain valid. */
@@ -60,8 +62,13 @@ namespace MDSS
         /** @brief Profile table order used by this Runtime Surface Data's per-texel Profile indices. */
         [[nodiscard]] const std::vector<TSRProfileAssetHandle>&
         GetSurfaceProfileTable(TSurfaceRuntimeDataHandle Handle) const;
-        /** @brief Build/cache the deterministic State registry from all currently loaded Profiles. */
-        [[nodiscard]] const TSurfaceStateRegistry& GetSurfaceStateRegistry() const;
+        /** @brief Unique, sorted Profile handles referenced by the Scene's Runtime Surface tables. */
+        [[nodiscard]] std::vector<TSRProfileAssetHandle> GetSceneSurfaceProfiles(const TScene& Scene) const;
+        /** @brief Build a Registry from this Scene only; loading cached assets does not change the active Registry. */
+        [[nodiscard]] TSurfaceStateRegistry BuildSurfaceStateRegistry(const TScene& Scene) const;
+        /** @brief Install a Scene Registry and return the previous one for resource-reload rollback. */
+        TSurfaceStateRegistry ExchangeSurfaceStateRegistry(TSurfaceStateRegistry Registry) noexcept;
+        [[nodiscard]] const TSurfaceStateRegistry& GetSurfaceStateRegistry() const noexcept;
 
         [[nodiscard]] std::size_t          GetMaterialCount() const noexcept;
         [[nodiscard]] std::size_t          GetSRProfileCount() const noexcept;
@@ -95,7 +102,7 @@ namespace MDSS
         std::unordered_map<std::string, TSRProfileAssetHandle>  SRProfileCache;
         std::vector<TRuntimeSurfaceAsset>                       RuntimeSurfaceAssets;
         std::unordered_map<std::string, TSurfaceRuntimeDataHandle> RuntimeSurfaceAssetsByInputs;
-        mutable std::unique_ptr<TSurfaceStateRegistry>          StateRegistry;
+        TSurfaceStateRegistry StateRegistry{std::vector<TSurfaceResponseProfileData>{}};
         std::uint32_t SimulationResolution = SurfaceSimulationResolution;
 
         TextureAssetHandle  DefaultBaseColorTexture = InvalidAssetHandle;

@@ -390,6 +390,7 @@ namespace MDSS
             throw std::runtime_error("Failed to initialize Dear ImGui Vulkan backend.");
         }
 
+        ResetSurfaceStateSettings();
         TLogger::Info("TDebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
         TLogger::Debug("TDebugUI",
                       "Camera/render controls, injection controls, normal debug views, and log filtering are active.");
@@ -638,6 +639,29 @@ namespace MDSS
         bDockLayoutInitialized = true;
     }
 
+    void TDebugUI::ResetSurfaceStateSettings()
+    {
+        const bool bHasStates = AssetManager->GetSurfaceStateRegistry().GetStateCount() != 0;
+        InjectState = bHasStates ? 0 : InvalidStateId;
+        DebugState = InjectState;
+        DebugParameterState = InjectState;
+        DebugParameterProfile = InvalidAssetHandle;
+        ParameterDraftKey = {InvalidAssetHandle, InvalidStateId};
+        ParameterDraft = {};
+        bParameterDraftAvailable = false;
+        bParameterDraftDirty = false;
+        ParameterDrafts.clear();
+        DirtyParameterDrafts.clear();
+        RuntimeProfileOverrides.clear();
+        ParameterStatus.clear();
+        bSolverStepRequested = false;
+        bSolverResetRequested = false;
+        if (bHasStates)
+        {
+            FrameRenderer->SetDebugStateChannel(DebugState);
+        }
+    }
+
     void TDebugUI::DrawSceneWindow(TScene& SceneData)
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
@@ -670,6 +694,8 @@ namespace MDSS
                         SceneData = std::move(PreviousScene);
                         throw;
                     }
+                    ResetSurfaceStateSettings();
+                    ResetProfilingAverages();
                     SelectedObject.reset();
                     ActiveGizmoAxis = -1;
                     SceneStatus = "Loaded: " + Path->filename().string();

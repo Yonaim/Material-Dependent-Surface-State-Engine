@@ -55,7 +55,8 @@ namespace MDSS
     public:
         TSurfaceSharedGeometryGPUResources(VkPhysicalDevice PhysicalDevice,
                                            VkDevice         Device,
-                                           const TSharedSurfaceGeometryData& Geometry);
+                                           const TSharedSurfaceGeometryData& Geometry,
+                                           std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
 
         [[nodiscard]] const TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
@@ -180,8 +181,7 @@ namespace MDSS
     };
 
     /**
-     * @brief Scene의 런타임 Surface 데이터 조합별 공유 버퍼와 instance별 솔버 버퍼를 소유한다.
-     * @note Compute dispatch는 수행하지 않으며 4주차 GPU 리소스 수명만 관리한다.
+     * @brief Scene 전체 Profile table, Runtime별 Geometry, instance별 Solver buffer를 소유한다.
      */
     class TSurfaceGPUResourceManager final
     {
@@ -196,6 +196,7 @@ namespace MDSS
 
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
         [[nodiscard]] std::size_t GetSharedSurfaceDataCount() const noexcept;
+        [[nodiscard]] std::size_t GetSceneProfileCount() const noexcept;
         [[nodiscard]] std::size_t GetSceneInstanceCount() const noexcept;
         /** @brief Actual buffer sizes, counting shared geometry once; excludes allocator overhead. */
         [[nodiscard]] TSurfaceRawFluxMemoryUsage GetRawFluxMemoryUsage() const noexcept;
@@ -203,6 +204,8 @@ namespace MDSS
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetInstanceDescriptors(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources* GetAnyInstanceDescriptors() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const TGPUBuffer& GetSceneProfileParametersBuffer() const;
         [[nodiscard]] bool UpdateProfileParameters(TSRProfileAssetHandle ProfileHandle,
                                                    TStateId State,
                                                    const TSurfaceStateParameters& Parameters);
@@ -225,10 +228,8 @@ namespace MDSS
     private:
         struct TSharedSurfaceResources
         {
-            // 멤버는 역순으로 파괴되므로 Profile 리소스가 Geometry 리소스보다 먼저 해제된다.
             std::unique_ptr<TSurfaceSharedGeometryGPUResources> Geometry;
-            std::unique_ptr<TSurfaceProfileGPUResources> Profiles;
-            std::vector<TSRProfileAssetHandle> ProfileHandles;
+            std::vector<TSurfaceProfileIndex> SceneProfileIndices;
             const TSharedSurfaceGeometryData* CPUGeometry = nullptr;
         };
 
@@ -244,6 +245,9 @@ namespace MDSS
             bool bCurrentStateAB = true;
         };
 
+        // Reverse destruction order: descriptors → Geometry → Scene Profile buffers.
+        std::vector<TSRProfileAssetHandle> SceneProfileHandles;
+        std::unique_ptr<TSurfaceProfileGPUResources> SceneProfiles;
         std::unordered_map<TSurfaceRuntimeDataHandle, TSharedSurfaceResources> SharedSurfaceData;
         std::vector<std::unique_ptr<TInstanceResources>> InstanceResources;
     };

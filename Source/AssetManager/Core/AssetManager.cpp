@@ -10,6 +10,7 @@
 #include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "AssetManager/Loaders/TextureLoader.h"
 #include "Logger/Logger.h"
+#include "Scene/Scene.h"
 #include "SurfaceStateSystem/Geometry/MesoGeometryBuilder.h"
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"
@@ -134,7 +135,6 @@ namespace MDSS
                       "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
         SRProfiles.push_back(std::move(Profile));
         SRProfileCache.emplace(CacheKey, Handle);
-        StateRegistry.reset();
         return Handle;
     }
 
@@ -424,19 +424,41 @@ namespace MDSS
         return RuntimeSurfaceAssets[Handle].ProfileTable;
     }
 
-    const TSurfaceStateRegistry& TAssetManager::GetSurfaceStateRegistry() const
+    std::vector<TSRProfileAssetHandle> TAssetManager::GetSceneSurfaceProfiles(const TScene& Scene) const
     {
-        if (!StateRegistry)
+        std::vector<TSRProfileAssetHandle> Handles;
+        for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {
-            std::vector<TSurfaceResponseProfileData> Profiles;
-            Profiles.reserve(SRProfiles.size());
-            for (const std::unique_ptr<TSRProfileAsset>& Profile : SRProfiles)
+            if (HasSurfaceData(Instance.GetSurfaceData()))
             {
-                Profiles.push_back(Profile->GetData());
+                const auto& Table = GetSurfaceProfileTable(Instance.GetSurfaceData());
+                Handles.insert(Handles.end(), Table.begin(), Table.end());
             }
-            StateRegistry = std::make_unique<TSurfaceStateRegistry>(Profiles);
         }
-        return *StateRegistry;
+        std::sort(Handles.begin(), Handles.end());
+        Handles.erase(std::unique(Handles.begin(), Handles.end()), Handles.end());
+        return Handles;
+    }
+
+    TSurfaceStateRegistry TAssetManager::BuildSurfaceStateRegistry(const TScene& Scene) const
+    {
+        std::vector<TSurfaceResponseProfileData> Profiles;
+        for (TSRProfileAssetHandle Handle : GetSceneSurfaceProfiles(Scene))
+        {
+            Profiles.push_back(GetSRProfile(Handle).GetData());
+        }
+        return TSurfaceStateRegistry(Profiles);
+    }
+
+    TSurfaceStateRegistry TAssetManager::ExchangeSurfaceStateRegistry(TSurfaceStateRegistry Registry) noexcept
+    {
+        std::swap(StateRegistry, Registry);
+        return Registry;
+    }
+
+    const TSurfaceStateRegistry& TAssetManager::GetSurfaceStateRegistry() const noexcept
+    {
+        return StateRegistry;
     }
 
     std::size_t TAssetManager::GetMaterialCount() const noexcept

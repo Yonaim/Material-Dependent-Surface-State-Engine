@@ -7,6 +7,7 @@
 
 #include "Scene/Camera.h"
 #include "Scene/StaticMeshInstance.h"
+#include "SurfaceStateSystem/Types/SurfaceMappingTypes.h"
 
 #include <vector>
 #include <filesystem>
@@ -22,6 +23,9 @@ namespace MDSS
         [[nodiscard]] const TCamera& GetMainCamera() const noexcept;
         void SetSourcePath(std::filesystem::path Path);
         [[nodiscard]] const std::filesystem::path& GetSourcePath() const noexcept;
+        [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
+        /** @brief Scene의 모든 Surface에 적용할 해상도. Runtime 자원 교체는 Renderer가 처리한다. */
+        void SetSimulationResolution(std::uint32_t Resolution);
 
         /** @brief TScene 소유 목록에 정적 메시 인스턴스를 추가한다. */
         void                                                 AddStaticMeshInstance(TStaticMeshInstance Instance);
@@ -32,5 +36,6 @@ namespace MDSS
         TCamera                          MainCamera;
         std::vector<TStaticMeshInstance> StaticMeshInstances;
         std::filesystem::path SourcePath;
+        std::uint32_t SimulationResolution = SurfaceSimulationResolution;
     };
 } // namespace MDSS

@@ -78,7 +78,8 @@ namespace MDSS
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
         void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
         void SubmitContact(TSurfaceContactInput Contact);
-        void ReloadSceneResources(const TScene& Scene);
+        /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
+        void ReloadSceneResources(const TScene& Scene, bool bResetStateSettings = true);
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         /** @brief Rebuild Surface mapping and GPU resources, resetting State on success. */
         void SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);

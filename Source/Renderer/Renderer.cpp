@@ -372,6 +372,7 @@ namespace MDSS
                            DepthImageView.GetHandle()),
           FrameContext(Context)
     {
+        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(Scene));
         std::vector<TGizmoVertex> GizmoVertices = BuildWorldReferenceVertices(WorldGridVertexCount,
                                                                                WorldAxisVertexCount);
         const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
@@ -416,6 +417,7 @@ namespace MDSS
         {
             TLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
         }
+        Assets.SetSimulationResolution(Scene.GetSimulationResolution());
         TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
         TLogger::Debug("TRenderer",
                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
@@ -629,43 +631,56 @@ namespace MDSS
         }
     }
 
-    void TRenderer::ReloadSceneResources(const TScene& Scene)
+    void TRenderer::ReloadSceneResources(const TScene& Scene, bool bResetStateSettings)
     {
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
-        auto Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
-        Replacement->SetRawFluxCacheEnabled(DebugSolverSettings.bRawFluxCacheEnabled);
-        for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
-        {
-            Replacement->SetDebugSolverTermEnabled(
-                static_cast<TSurfaceSolverTerm>(Index), DebugSolverSettings.Enabled[Index]);
-        }
-        for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
-        {
-            try
-            {
-                Replacement->SetDebugProfileParameters(Key.first, Key.second, Parameters);
-            }
-            catch (const std::invalid_argument&)
-            {
-                TLogger::Debug("TRenderer", "Skipped a runtime Profile override not used by the reloaded Scene.");
-            }
-        }
+        auto PreviousRegistry = Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(Scene));
+        std::unique_ptr<TSurfaceStateSystem> Replacement;
         std::unique_ptr<TGraphicsPipeline> ReplacementDebugPipeline;
-        if (const TSurfaceStateDescriptorResources* Descriptors =
-                Replacement->GetGPUResources().GetAnyInstanceDescriptors())
+        try
         {
-            ReplacementDebugPipeline = std::make_unique<TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+            Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
+            Replacement->SetRawFluxCacheEnabled(DebugSolverSettings.bRawFluxCacheEnabled);
+            for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
+            {
+                Replacement->SetDebugSolverTermEnabled(
+                    static_cast<TSurfaceSolverTerm>(Index), DebugSolverSettings.Enabled[Index]);
+            }
+            if (!bResetStateSettings)
+            {
+                for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
+                {
+                    Replacement->SetDebugProfileParameters(Key.first, Key.second, Parameters);
+                }
+            }
+            if (const TSurfaceStateDescriptorResources* Descriptors =
+                    Replacement->GetGPUResources().GetAnyInstanceDescriptors())
+            {
+                ReplacementDebugPipeline = std::make_unique<TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+            }
+        }
+        catch (...)
+        {
+            Assets.ExchangeSurfaceStateRegistry(std::move(PreviousRegistry));
+            throw;
         }
         SurfaceDebugPipeline.reset();
         SurfaceStates = std::move(Replacement);
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
+        Assets.SetSimulationResolution(Scene.GetSimulationResolution());
+        if (bResetStateSettings)
+        {
+            DebugProfileParameterOverrides.clear();
+            DebugStateChannel = 0;
+        }
         CreateTimestampQueryPool(SurfaceStates->GetSolverTimestampSlotCount());
+        UpdateMaterialUniforms();
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
         LastSolverPass1GpuMilliseconds = -1.0F;
@@ -683,6 +698,7 @@ namespace MDSS
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         if (Resolution == GetSimulationResolution()) return;
 
+        const std::uint32_t PreviousResolution = Scene.GetSimulationResolution();
         auto& Instances = Scene.GetStaticMeshInstances();
         std::vector<TSurfaceRuntimeDataHandle> PreviousHandles;
         PreviousHandles.reserve(Instances.size());
@@ -697,17 +713,18 @@ namespace MDSS
             }
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
                 Instances[Index].SetSurfaceData(ReplacementHandles[Index]);
+            Scene.SetSimulationResolution(Resolution);
             // The solver must keep referencing the persistent Scene, rather than a temporary copy.
-            ReloadSceneResources(Scene);
+            ReloadSceneResources(Scene, false);
         }
         catch (...)
         {
+            Scene.SetSimulationResolution(PreviousResolution);
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
                 Instances[Index].SetSurfaceData(PreviousHandles[Index]);
             Assets.ReleaseUnusedSurfaceData(PreviousHandles);
             throw;
         }
-        Assets.SetSimulationResolution(Resolution);
         Assets.ReleaseUnusedSurfaceData(ReplacementHandles);
         TLogger::Info("TRenderer", "Simulation resolution changed to " + std::to_string(Resolution) +
                       " x " + std::to_string(Resolution) + "; State reset.");

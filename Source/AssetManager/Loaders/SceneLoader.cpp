@@ -61,6 +61,31 @@ namespace MDSS
             return static_cast<std::uint32_t>(Version);
         }
 
+        std::uint32_t ReadSimulationResolution(const TJson& Value)
+        {
+            constexpr const char* Error = "Scene simulationResolution must be the integer 128, 256 or 512.";
+            std::uint64_t Number = 0;
+            if (Value.is_number_unsigned())
+            {
+                Number = Value.get<std::uint64_t>();
+            }
+            else if (Value.is_number_integer())
+            {
+                const auto SignedNumber = Value.get<std::int64_t>();
+                if (SignedNumber < 0) throw std::runtime_error(Error);
+                Number = static_cast<std::uint64_t>(SignedNumber);
+            }
+            else
+            {
+                throw std::runtime_error(Error);
+            }
+            for (const auto& Preset : SurfaceSimulationResolutionPresets)
+            {
+                if (Number == Preset.Resolution) return Preset.Resolution;
+            }
+            throw std::runtime_error(Error);
+        }
+
         float ReadFiniteFloat(const TJson& Value, const std::string& Context)
         {
             if (!Value.is_number())
@@ -167,6 +192,10 @@ namespace MDSS
         const std::filesystem::path SceneDirectory = std::filesystem::absolute(Path).parent_path();
         TScene Scene;
         Scene.SetSourcePath(std::filesystem::absolute(Path).lexically_normal());
+        if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
+        {
+            Scene.SetSimulationResolution(ReadSimulationResolution(*Resolution));
+        }
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
             const TJson& Object = Objects[Index];
@@ -185,7 +214,7 @@ namespace MDSS
                 }
                 DistributionPath = ResolveScenePath(
                     SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
-                SurfaceDataHandle = Assets.LoadSurfaceData(MeshHandle, DistributionPath);
+                SurfaceDataHandle = Assets.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
             }
 
             TTransform Transform;
@@ -209,6 +238,7 @@ namespace MDSS
         TJson Root;
         Root["type"] = "TScene";
         Root["version"] = 1;
+        Root["simulationResolution"] = Scene.GetSimulationResolution();
         Root["objects"] = TJson::array();
         for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {

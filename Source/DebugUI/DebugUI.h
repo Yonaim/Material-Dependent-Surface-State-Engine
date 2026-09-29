@@ -82,6 +82,7 @@ namespace MDSS
         void DrawRenderSettingsWindow();
         void DrawViewportStatsOverlay();
         void ResetProfilingAverages() noexcept;
+        void ResetSurfaceStateSettings();
         void DrawSimulationDebugWindow(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
