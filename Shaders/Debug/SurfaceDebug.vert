@@ -24,7 +24,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
 
 bool MaterialRenderModeIsMesoOffset()
 {
-    return Material.RenderMode == 12u;
+    return Material.RenderMode == 14u;
 }
 
 struct TSurfaceGPUGeometryScalar
