@@ -14,7 +14,7 @@
 |---|---|
 | 가운데 3D Viewport | Scene 표시, object 선택, 렌더·Surface 진단 뷰 선택 |
 | 좌측 패널 | Scene 열기·저장, Camera, 선택 object Transform, 렌더 설정 |
-| 우측 패널 | 상단 공통 실행 제어, 하단 `Solver`, `Contact Input`, `Profile Tuning`, `Global Settings` 탭 |
+| 우측 패널 | 상단 공통 실행 제어, 하단 `Solver`, `Contact Input`, `Profile Tuning`, `Inspector`, `Global Settings` 탭 |
 | Viewport 상단 | FPS, GPU Render·Solver 성능 표시 |
 | 하단 `Log` | 로그 level 필터, 검색, 복사·삭제 |
 
@@ -34,14 +34,18 @@
 
 | Debug View | 표시 내용 |
 |---|---|
-| State Heatmap | 선택한 State의 `State / (Profile Capacity × AreaScale)` |
+| State Heatmap | Saturation (`State / (Profile Capacity × AreaScale)`) 또는 Raw State |
+| Accumulation | 선택 State의 총 높이·Cavity 높이·Following 높이·Cavity Fill 비율 미리보기 |
+| Final Geometry | Meso + 선택 State의 적층 높이로 정점 변위하고 갱신 normal로 표시 |
 | Validity, Surface ID | 유효 texel, Surface 구분 |
 | Neighbor Count, UV Seam | texel 이웃 수, UV seam 연결 |
 | Outgoing Flux Scale, Solver Transfer Weights | Solver 전달 관련 값 |
 | Texel Grid, Texel Area Heatmap | Simulation UV 격자, 표면 면적 분포 |
 | Macro Geometry, Meso | 표면 형상, Normal Map 기반 meso 정보 |
 
-- Heatmap 범위는 `[0,1]`이다. Capacity 초과량은 색으로 구별할 수 없고, 표시 결과는 Solver에 입력되지 않는다.
+- Saturation 표시 범위는 `[0,1]`이며 Capacity 초과량은 같은 색이다. Raw State는 texel 총량을 조절 가능한 고정 범위로 표시한다. 범위 초과는 주황색이다. 표시 결과는 Solver에 입력되지 않는다.
+- Accumulation의 높이 범위·Height reference는 mesh-local 단위다. Cavity Fill만 0–100% 고정 범위다. Final Geometry의 Display scale은 표시 전용이다.
+- 현재 적층 뷰는 선택 State의 설계식 미리보기다. 실제 동적 Geometry buffer와 Solver 형상 피드백은 후속 구현이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
 - Meso 뷰는 색상 표시 또는 Displacement를 선택한다.
 - 좌측 `Render Settings`: Normal strength, Ambient light, Normal Y 반전
 - 선택한 뷰의 State·보조 옵션은 Viewport 상단에 표시한다.
@@ -60,7 +64,7 @@
 
 ## 공통 Simulation 제어
 
-초기 UI는 실행 제어와 Solver 설정을 `Simulation` 탭에 함께 배치했다. 현재는 자주 사용하는 실행 제어를 탭 위에 두고, 세부 기능을 `Solver`, `Contact Input`, `Profile Tuning`, `Global Settings` 탭으로 나눈다.
+초기 UI는 실행 제어와 Solver 설정을 `Simulation` 탭에 함께 배치했다. 현재는 자주 사용하는 실행 제어를 탭 위에 두고, 세부 기능을 `Solver`, `Contact Input`, `Profile Tuning`, `Inspector`, `Global Settings` 탭으로 나눈다.
 
 - Running/Paused, Step, Reset State, 속도 프리셋과 Time scale은 항상 표시한다.
 - Playback, Controls, Speed, Time scale은 일반 텍스트 라벨을 왼쪽에, 조절 위젯을 오른쪽에 정렬한다. 패널 폭이 좁으면 같은 조절 열에서 다음 줄로 이어진다.
@@ -76,7 +80,7 @@
 
 ## Global Settings 탭
 
-탭 순서는 `Solver → Contact Input → Profile Tuning → Global Settings`다. `Global Settings`는 맨 오른쪽 탭이며 Simulation Resolution, Fixed timestep, Auto substepping을 포함한다.
+탭 순서는 `Solver → Contact Input → Profile Tuning → Inspector → Global Settings`다. `Global Settings`는 맨 오른쪽 탭이며 Simulation Resolution, Fixed timestep, Auto substepping을 포함한다.
 
 | 설정 | 동작 |
 |---|---|
@@ -114,10 +118,19 @@ Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인�
 **Profile Tuning**
 
 - 현재 Scene에서 참조하는 `.SRProfile`과 State를 선택한다.
-- 지원 parameter: StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor, DecayRate, CavityRetentionFactor
+- 지원 parameter: StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor, DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor
 - 두 TransferFactor는 `[0,1]` Slider로 조절한다. UI와 GPU에는 무차원 계수를 저장하고 Solver가 기준 속도를 적용한다.
 - 초안은 `Apply Override`를 눌러 적용하고 원래 값으로 복원할 수 있다.
 - Override는 실행 중에만 유지되며 `.SRProfile` 파일은 수정하지 않는다.
+
+## Texel Inspector
+
+- Simulation Debug의 `Inspector` 탭에서 사용한다. View Mode는 추가하지 않는다.
+- 어느 뷰에서든 `Shift + 왼쪽 클릭`으로 Macro mesh의 표면 texel을 선택한다. 클릭은 gizmo 조작·object 선택 대신 검사에 사용되며 Inject 모드에서도 동작한다. 변위된 실루엣을 대상으로 raycast하지 않는다.
+- Instance·Surface·texel 좌표·hit triangle·Profile과 선택 State를 표시한다. State 선택은 State Heatmap/Accumulation/Final Geometry와 공유한다.
+- GPU snapshot은 Raw State, texel Capacity, 상한 없는 Saturation, 기준면적 환산량, world area, 적층 파라미터, Meso 높이, Height reference, Cavity depth/fill/excess, 각 높이 항목과 최종 mesh-local normal을 표시한다.
+- step 번호와 State A/B는 완료 sample 기준이다. Pause 후 snapshot 완료를 기다리고 Step으로 검사한다. invalid·미할당·미지원·비정상 면적/수치를 별도 상태로 표시한다.
+- Scene/해상도 교체 성공 시 선택을 해제하고, 채널·Height reference·Profile override·State reset 변경 시 이전 snapshot을 무효화한다. Height reference는 미리보기 설정이며 Profile 파일에 저장하지 않는다.
 
 ## 성능 표시와 경계
 
