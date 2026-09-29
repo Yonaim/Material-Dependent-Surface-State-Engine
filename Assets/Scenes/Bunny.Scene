@@ -1,0 +1,49 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "simulationResolution": 256,
+  "objects": [
+    {
+      "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Wetness.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -1.25,
+          0.0,
+          -0.211866
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          6.42264883,
+          6.42264883,
+          6.42264883
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          1.25,
+          0.0,
+          -0.211866
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          6.42264883,
+          6.42264883,
+          6.42264883
+        ]
+      }
+    }
+  ]
+}

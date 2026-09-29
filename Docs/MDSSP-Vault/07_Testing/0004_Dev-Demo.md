@@ -1,26 +1,27 @@
 # Dev Demo — 개발 검증용 Scene 구성
 
-> **한 줄 요약:** 개발 검증용 세 Scene은 Profile과 형상 구성을 나눠 Wetness·Mud 동작을 같은 조건에서 비교한다.
+> **한 줄 요약:** 개발 검증용 Cube Scene 두 개와 형상별 Scene 두 개로 Wetness·Mud 상태 전달을 비교한다.
 
-상태: **세 Scene·Profile·Map·대리석 자산 생성 완료** / Mud 동적 적층은 미구현 · 2026-09-28
+상태: **Cube Scene 두 개·형상별 Scene 두 개·Profile·Map·대리석 자산 생성 완료** / Mud 동적 적층은 미구현 · 2026-09-28
 
 ## 목적과 공통 규칙
 
-데모를 세 파일로 분리했다. Cube 데모 두 개는 동일한 형상·머티리얼·Transform·Simulation UV·해상도를 사용하고 Profile 연결만 달리한다. 각 데모는 오브젝트 네 개를 포함한다. 비교 시 입력 위치, 반경, 세기와 시간 간격도 동일하게 유지한다.
+Cube 데모 두 개는 동일한 형상·머티리얼·Transform·Simulation UV·해상도를 사용하고 Profile 연결만 달리한다. 각 Cube Scene은 오브젝트 네 개를 포함한다. Geometry 비교는 Bunny와 Mountain별 Scene 하나에 같은 형상의 오브젝트 두 개를 두고, 각각 Wetness와 Mud Profile을 연결한다. 비교 시 입력 위치, 반경, 세기와 시간 간격도 동일하게 유지한다.
 
-| Scene 파일명 | 목적 | Profile |
+| Scene 파일명 | 목적 | Profile 구성 |
 |---|---|---|
 | `Demo_Cubes_Wetness.Scene` | 브릭의 Virtual Meso Geometry 유무와 회전에 따른 중력 투영·물 상태 전파 비교 | `DemoWetness.SRProfile` |
 | `Demo_Cubes_Mud.Scene` | 같은 큐브에서 Mud의 전달·잔류·실제 적층을 비교 | `DemoMud.SRProfile` |
-| `Demo_Geometry_Wetness_Mud.Scene` | Normal Map 없이 Macro 형상에 따른 전달과 Wetness/Mud 차이 비교 | 두 Profile |
+| `Bunny.Scene` | Bunny의 Macro 형상에서 Wetness와 Mud 전달 비교 | Wetness·Mud 각 1개 오브젝트 |
+| `Mountain.Scene` | Mountain의 Macro 형상에서 Wetness와 Mud 전달 비교 | Wetness·Mud 각 1개 오브젝트 |
 
-물 데모는 현재 Surface State 기반 Wetness 예시다. 체적 물·자유 표면 유체 시뮬레이션을 의미하지 않는다. Mud 데모의 완료 조건은 Heatmap 변화뿐 아니라 **적층 높이와 렌더 형상의 변화**다. 정적인 Virtual Height Displacement는 Mud 적층의 대체물이 아니다.
+물 데모는 현재 Surface State 기반 Wetness 예시다. 체적 물·자유 표면 유체 시뮬레이션을 의미하지 않는다. Mud 데모의 완료 조건은 Heatmap 변화뿐 아니라 **Accumulation Height와 렌더 형상의 변화**다. 정적인 Virtual Height Displacement는 Mud 적층의 대체물이 아니다.
 
 ```mermaid
 flowchart TD
-  Scenes[세 Demo Scene] --> Water[Cube Wetness: 네 큐브]
+  Scenes[네 Demo Scene] --> Water[Cube Wetness: 네 큐브]
   Scenes --> Mud[Cube Mud: 동일한 네 큐브]
-  Scenes --> Macro[Macro 비교: 토끼 둘과 산 둘]
+  Scenes --> Macro[형상별 Scene 두 개: 각 두 오브젝트]
   Water --> WetProfile[DemoWetness.SRProfile]
   Mud --> MudProfile[DemoMud.SRProfile]
   Macro --> WetProfile
@@ -53,16 +54,18 @@ MarbleCube는 BrickCube와 같은 형상·UV·Surface 분할을 사용하고 MTL
 
 Wetness 씬과 Mesh·머티리얼·위치·회전·크기를 그대로 공유한다. Scene 형식에서는 `.SurfaceProfileMap`을 명시하므로 씬의 Map 경로도 Wetness용에서 Mud용으로 바뀐다. Map의 Surface ID와 분할은 같고 연결되는 Profile만 다르다.
 
-## 3. Geometry Wetness / Mud
+## 3. 형상별 Wetness / Mud Scene
 
-| 오브젝트 구분 | 형상 | 머티리얼 | Normal Map | Profile / State |
+통합 `Demo_Geometry_Wetness_Mud.Scene`은 제거하고 Bunny와 Mountain Scene으로 나눈다. 각 Scene에는 같은 형상의 오브젝트 두 개를 두고 Wetness와 Mud `.SurfaceProfileMap`을 각각 연결한다. 파일은 `Assets/Scenes/`에 저장한다.
+
+| Scene 내 오브젝트 | 형상 | 머티리얼 | Normal Map | Profile / State |
 |---|---|---|---|---|
-| Bunny Wetness | StanfordBunny | 두 토끼에 동일한 무늬 없는 기본 재질 | 없음 | DemoWetness / `wetness` |
-| Mountain Wetness | Mountain | 기존 산의 Base Color 재질 | 없음 | DemoWetness / `wetness` |
+| Bunny Wetness | StanfordBunny | 동일한 기본 재질 | 없음 | DemoWetness / `wetness` |
 | Bunny Mud | StanfordBunny | Bunny Wetness와 동일 | 없음 | DemoMud / `mud` |
+| Mountain Wetness | Mountain | 동일한 Base Color 재질 | 없음 | DemoWetness / `wetness` |
 | Mountain Mud | Mountain | Mountain Wetness와 동일 | 없음 | DemoMud / `mud` |
 
-Wetness 쌍과 Mud 쌍으로 배치한다. 같은 Mesh의 두 복사본은 크기·회전과 축 보정을 동일하게 적용한다. 산은 최대 폭 1.8, 토끼는 최대 폭 1.0으로 균일 scale을 적용한다. Wetness 쌍은 X=-1.25, Mud 쌍은 X=1.25이며 토끼는 Y=-1.15, 산은 Y=1.15에 bounds 중심을 맞춘다. 바닥은 Z=0이다. 두 Mesh의 Y-up 원본 축 보정을 위해 X축 90도 회전만 적용한다. 각 Mesh의 UV와 Simulation UV는 유지한다. Normal Map이 없으므로 Virtual Height는 기본값 0이고 Macro 위치·법선으로 비교한다. 현재 Mountain OBJ의 Plane에는 face가 없으며 Landscape만 Surface 0으로 로드된다. 두 Map 모두 Surface 0에 Profile을 연결한다. 크기 산정에서도 미참조 Plane 꼭짓점은 제외한다.
+같은 형상의 Wetness/Mud 오브젝트는 Mesh·머티리얼·회전·크기를 공유하고 X축으로 나란히 배치한다(X=-1.25, +1.25). 산은 최대 폭 1.8, 토끼는 최대 폭 1.0으로 균일 scale을 적용한다. 형상 쌍의 중심을 원점에 맞추고 바닥은 Z=0에 둔다. 두 Mesh의 Y-up 원본 축 보정을 위해 X축 90도 회전만 적용한다. 각 Mesh의 UV와 Simulation UV는 유지한다. Normal Map이 없으므로 Virtual Height는 기본값 0이고 Macro 위치·법선으로 비교한다. 현재 Mountain OBJ의 Plane에는 face가 없으며 Landscape만 Surface 0으로 로드된다. 두 Map 모두 Surface 0에 Profile을 연결한다. 크기 산정에서도 미참조 Plane 꼭짓점은 제외한다.
 
 ## Profile 동작과 완료 조건
 
@@ -90,7 +93,8 @@ Wetness 쌍과 Mud 쌍으로 배치한다. 같은 Mesh의 두 복사본은 크�
 
 | 위치 | 파일 |
 |---|---|
-| `Assets/Scenes/` | 위의 세 `.Scene` |
+| `Assets/Scenes/` | `Demo_Cubes_Wetness.Scene`, `Demo_Cubes_Mud.Scene` |
+| `Assets/Scenes/` | `Bunny.Scene`, `Mountain.Scene` |
 | `Assets/SurfaceProfiles/` | `DemoWetness.SRProfile`, `DemoMud.SRProfile` |
 | `Assets/SurfaceProfiles/` | `BrickCube_Wetness.SurfaceProfileMap`, `BrickCube_Mud.SurfaceProfileMap` |
 | `Assets/SurfaceProfiles/` | `MarbleCube_Wetness.SurfaceProfileMap`, `MarbleCube_Mud.SurfaceProfileMap` |
@@ -98,7 +102,7 @@ Wetness 쌍과 Mud 쌍으로 배치한다. 같은 Mesh의 두 복사본은 크�
 | `Assets/SurfaceProfiles/` | `Mountain_Wetness.SurfaceProfileMap`, `Mountain_Mud.SurfaceProfileMap` |
 | `Assets/Meshes/MarbleCube/` | `MarbleCube.obj`, `MarbleCube.mtl`, `MarbleCubeAlbedo.png` |
 
-각 쌍의 동일 재질 큐브는 같은 Mesh와 Map을 공유하되 instance State는 별도로 가진다. 기존 `Demo.Scene`과 `DemoStone.SRProfile`은 현재 실행 가능한 데모로 유지한다. 위 신규 씬 3개, Profile 2개, Map 8개와 대리석 자산을 생성했다. 토끼·산·브릭 Mesh는 기존 파일을 재사용한다. 대리석 자산 출처는 `Assets/Meshes/MarbleCube/README.md`에 기록했다.
+Wetness/Mud 쌍은 같은 형상 Mesh와 재질을 공유하고 Profile Map과 instance State는 각각 가진다. 기존 `Demo.Scene`과 `DemoStone.SRProfile`은 현재 실행 가능한 데모로 유지한다. 개발용 Cube Scene 두 개와 형상 Scene 두 개, Profile 2개, Map 8개 및 대리석 자산을 사용한다. 토끼·산·브릭 Mesh는 기존 파일을 재사용한다. 대리석 자산 출처는 `Assets/Meshes/MarbleCube/README.md`에 기록했다.
 
 ## 시작 Scene과 UI 설정 — 구현됨
 
@@ -109,13 +113,13 @@ Wetness 쌍과 Mud 쌍으로 배치한다. 같은 Mesh의 두 복사본은 크�
 StartupScene=../Assets/Scenes/Demo_Cubes_Wetness.Scene
 ```
 
-기본 시작 씬은 Cube Wetness이며 나머지 두 Scene 경로로 바꿀 수 있다. INI가 없으면 기존 Demo.Scene을 사용하고 경고를 남긴다. 값이 없거나 비어 있거나 중복되면 설정 오류를 보고한다. 파일이 존재하지 않으면 Scene loader가 오류를 보고한다. UI의 Load Scene은 현재 실행 중인 Scene만 바꾸고 Engine.ini는 수정하지 않는다.
+기본 시작 씬은 Cube Wetness이며 다른 개발 검증 Scene 경로로 바꿀 수 있다. INI가 없으면 기존 Demo.Scene을 사용하고 경고를 남긴다. 값이 없거나 비어 있거나 중복되면 설정 오류를 보고한다. 파일이 존재하지 않으면 Scene loader가 오류를 보고한다. UI의 Load Scene은 현재 실행 중인 Scene만 바꾸고 Engine.ini는 수정하지 않는다.
 
 Scene File 창은 현재 파일명을 항상 표시하며 마우스를 올리면 전체 경로를 보여준다. 성공한 Load/Save 후에도 현재 경로와 일치한다. 도킹 배치 파일은 `Config/EditorLayout.ini`로 변경하고 기존 `MDSS_EditorLayout.ini`의 저장된 배치를 이동했다. 배치 파일은 Git 추적에서 제외한다.
 
 ## 관련
 
-- [[../01_Weekly-Overview/Week-07|Week-07 — Mud 및 중간 Demo]]
-- [[../../04_Architecture/0004_Surface-Geometry|형상 정보와 적층]]
-- [[../../04_Architecture/0010_UI-Interface|UI Interface]]
-- [[0002_Final_Demo|최종 목표 데모]]
+- [[../03_Planning/01_Weekly-Overview/Week-07|Week-07 — Mud 및 중간 Demo]]
+- [[../04_Architecture/0004_Surface-Geometry|형상 정보와 적층]]
+- [[../04_Architecture/0010_UI-Interface|UI Interface]]
+- [[../03_Planning/00_Project-Overview/0002_Final_Demo|최종 목표 데모]]

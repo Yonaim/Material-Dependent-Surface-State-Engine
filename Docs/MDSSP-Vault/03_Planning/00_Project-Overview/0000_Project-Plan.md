@@ -55,4 +55,4 @@ C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** �
 - 설계, 구현, 성능 실험, 실패 사례 및 한계를 설명하는 최종 보고서.
 - 발표 자료와 결과 시각화.
 
-개발 검증용 씬 구성과 실행 설정은 [[0003_Dev_Demo|Dev Demo]]에 정리한다.
+개발 검증용 씬 구성과 실행 설정은 [[07_Testing/0004_Dev-Demo|Dev Demo]]에 정리한다.

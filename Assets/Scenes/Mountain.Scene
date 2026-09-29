@@ -1,0 +1,49 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "simulationResolution": 256,
+  "objects": [
+    {
+      "mesh": "../Meshes/Mountain/Mountain.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/Mountain_Wetness.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -1.25,
+          0.0,
+          0.033503
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.21463775,
+          0.21463775,
+          0.21463775
+        ]
+      }
+    },
+    {
+      "mesh": "../Meshes/Mountain/Mountain.obj",
+      "surfaceProfileMap": "../SurfaceProfiles/Mountain_Mud.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          1.25,
+          0.0,
+          0.033503
+        ],
+        "rotationDegrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.21463775,
+          0.21463775,
+          0.21463775
+        ]
+      }
+    }
+  ]
+}
