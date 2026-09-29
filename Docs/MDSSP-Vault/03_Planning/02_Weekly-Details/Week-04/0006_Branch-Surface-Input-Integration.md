@@ -143,7 +143,7 @@ Inject 입력으로 법선 또는 입사각을 보정하는 동작은 아직 넣
 
 ### State debug view 색상
 
-한 번에 Registry에서 선택한 State channel 하나를 히트맵으로 표시한다. 각 texel 값은 해당 Profile의 `StateCapacity`로 나눈 포화도(`State / Capacity`)를 사용해 고정된 `[0, 1]` 범위로 정규화한다. 낮은 값은 짙은 남색, 중간값은 파랑과 청록, 높은 값은 노랑으로 이어지는 Viridis 계열 색상표를 사용한다. Profile마다 Capacity가 달라도 색을 비교할 수 있고, 범례는 0(비어 있음)부터 1(용량 도달)까지 표시한다. 지원하지 않는 State는 회색, invalid texel은 어두운 색으로 구분한다.
+한 번에 Registry에서 선택한 State channel 하나를 Heatmap으로 표시한다. 각 texel 값은 해당 Profile의 `StateCapacity`로 나눈 Saturation (`State / Capacity`)을 사용해 고정된 `[0, 1]` 범위로 정규화한다. 낮은 값은 짙은 남색, 중간값은 파랑과 청록, 높은 값은 노랑으로 이어지는 Viridis 계열 색상표를 사용한다. Profile마다 Capacity가 달라도 색을 비교할 수 있고, 범례는 0(비어 있음)부터 1(용량 도달)까지 표시한다. 지원하지 않는 State는 회색, invalid texel은 어두운 색으로 구분한다.
 
 ## 구현 대상
 
@@ -164,7 +164,7 @@ Inject 입력으로 법선 또는 입사각을 보정하는 동작은 아직 넣
 - `InputDelta`는 입력이 있을 때 queue idle 후 직접 host upload한다. staging buffer는 후속 최적화다.
 - 법선·입사각 weighting은 구현하지 않는다.
 
-State debug view는 고정 범위 포화도 히트맵과 0–1 범례로 표시한다.
+State debug view는 고정 범위 Saturation Heatmap과 0–1 범례로 표시한다.
 
 ## 통합 테스트 시나리오
 

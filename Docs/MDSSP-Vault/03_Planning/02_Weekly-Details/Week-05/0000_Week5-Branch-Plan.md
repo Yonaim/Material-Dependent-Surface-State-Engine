@@ -1,21 +1,21 @@
 # 5주차 구현 상세 계획 — Solver 확장과 검증
 
-> **한 줄 요약:** 4주차에 구축한 2-Pass Solver 경로를 바탕으로 Geometry 구동, Normal Map 기반 표면 방향, 이웃 전달 가중치를 추가하고, 계산 중간값과 실행 상태를 Debug UI에서 확인한다.
+> **한 줄 요약:** 4주차에 구축한 2-Pass Solver 경로를 바탕으로 `GeometryDrive`, Normal Map 기반 표면 방향, `TransferWeight`를 추가하고, 계산 중간값과 실행 상태를 Debug UI에서 확인한다.
 
 상태: **구현 중** · 상위 계획: [[03_Planning/01_Weekly-Overview/Week-05|Week 05 Overview]]
 
 ## 목표와 완료 기준
 
-4주차에 구축한 2-Pass Solver 경로를 바탕으로 Geometry 구동, Normal Map 기반 표면 방향, 이웃 전달 가중치를 추가하고, 계산 중간값과 실행 상태를 Debug UI에서 확인한다. 수식의 보존·source 보유량 제한·초과량 처리·경계 처리를 자동 테스트와 GPU 실행으로 검증한다.
+4주차에 구축한 2-Pass Solver 경로를 바탕으로 `GeometryDrive`, Normal Map 기반 표면 방향, `TransferWeight`를 추가하고, 계산 중간값과 실행 상태를 Debug UI에서 확인한다. 수식의 보존·source 보유량 제한·초과량 처리·경계 처리를 자동 테스트와 GPU 실행으로 검증한다.
 
 5주차 완료 시 다음을 재현할 수 있어야 한다.
 
 - 같은 조건에서 Solver 결과가 반복 가능하고, 각 State 값이 finite·비음수이며 Capacity 초과 입력·유입량도 보존한다.
 - Geometry 입력이 없는 상태에서는 기존 Saturation 전달 결과가 유지된다.
-- Geometry 구동과 각 TransferWeight가 의도한 이웃 방향·Profile 경계에 영향을 준다.
+- `GeometryDrive`와 각 TransferWeight가 의도한 이웃 방향·Profile 경계에 영향을 준다.
 - Normal Map의 방향 정보가 `NormalWeight`에 반영되고, 맵 부재 시 기본 Mesh normal 경로가 동작한다.
 - Normal Map에서 복원한 `MesoVirtualHeight`가 위치에 반영되고, Curvature/Concavity 파생값이 정의된 입력·단위·범위 계약을 따른다.
-- `Combined TransferWeight`, `DistanceWeight`, `NormalWeight`, `ProfileBoundaryWeight`를 Solver Debug 히트맵에서 구분해 확인할 수 있다.
+- `Combined TransferWeight`, `DistanceWeight`, `NormalWeight`, `ProfileBoundaryWeight`를 Solver Debug Heatmap에서 구분해 확인할 수 있다.
 - `OutgoingFluxScale`을 채널별로 화면에서 확인할 수 있다.
 - Solver를 pause, 한 step 진행, 전체 State 초기화할 수 있고 실행 통계를 확인할 수 있다.
 - Validation layer에서 새 동기화·descriptor 오류가 없으며, 지원되는 GPU 환경에서 GPU 테스트를 통과한다.
@@ -26,7 +26,7 @@
 
 4주차에는 State A/B, OutgoingFluxScale, InputDelta GPU 리소스, 2-Pass compute dispatch와 barrier, ping-pong, Contact 입력 연결이 구현되었다. 따라서 이번 주에는 리소스 생성·descriptor 기본 구성·2-Pass 구조 자체를 다시 만들지 않는다.
 
-현재 구현은 GeometryDrive, 네 가지 TransferWeight, TransferWeight 캐시, Normal Map 기반 `NormalWeight`, Normal Map에서 복원한 Virtual Height와 Curvature/Concavity 파생값을 포함한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 TransferWeight와 구성 가중치 히트맵이 있다. Branch 3 `feat/solver-debug-tools`에서 `OutgoingFluxScale` 뷰, Solver 제어·통계 UI 구현도 완료했다. Branch 2.1의 캐시 동등성·성능 검증과 Branch 2.3의 fixture/런타임 시각 검증은 아직 남아 있으며, 전체 통합 검증은 Branch 6에서 수행한다.
+현재 구현은 GeometryDrive, 네 가지 TransferWeight, TransferWeight 캐시, Normal Map 기반 `NormalWeight`, Normal Map에서 복원한 Virtual Height와 Curvature/Concavity 파생값을 포함한다. `ConcavityWeight`는 Decay의 cavity retention에 사용한다. Surface Debug에는 State Heatmap, Validity, Surface ID, Neighbor Count, UV Seam이 있고, Solver Debug에는 TransferWeight와 구성 가중치 Heatmap이 있다. Branch 3 `feat/solver-debug-tools`에서 `OutgoingFluxScale` 뷰, Solver 제어·통계 UI 구현도 완료했다. Branch 2.1의 캐시 동등성·성능 검증과 Branch 2.3의 fixture/런타임 시각 검증은 아직 남아 있으며, 전체 통합 검증은 Branch 6에서 수행한다.
 
 이번 계획에는 Normal Map의 tangent-space normal을 `NormalWeight`에 연결하는 Branch 2.2와 Normal Map에서 Virtual Height 및 Curvature/Concavity를 생성하는 Branch 2.3이 포함된다. 동적 Accumulation geometry와 State transition은 제외한다. Branch 2.3은 [[05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]에서 graph least-squares 적분, scale, chart boundary, fallback과 곡률 정의를 결정했다. fixture 및 데모 검증이 남아 있다.
 
@@ -49,7 +49,7 @@ flowchart TD
     L[Solver 통계] --> M[Debug UI]
 ```
 
-Pass 1/2의 바탕 구조는 유지한다. 이번 작업은 공통 flux 계산식과 전달 가중치, 관측 UI, 검증을 확장한다. Pass 1과 Pass 2는 같은 공통 함수를 사용해 계산이 어긋나지 않도록 한다.
+Pass 1/2의 바탕 구조는 유지한다. 이번 작업은 공통 flux 계산식과 `TransferWeight`, 관측 UI, 검증을 확장한다. Pass 1과 Pass 2는 같은 공통 함수를 사용해 계산이 어긋나지 않도록 한다.
 
 ## 작업 순서
 
@@ -63,11 +63,11 @@ GeometryDrive의 역할·높이차·방향 정렬·거리 소유권·단위는 [
 - 이웃 표면 거리의 효과는 `DistanceWeight`만 담당한다.
 - `GeometryTransferRate`는 `State / (world-length · second)`다.
 
-Branch 2에서 확정한 거리·법선·프로파일 경계 가중치 규칙은 ADR 0016을 따른다. Branch 2.2에서 Normal Map 샘플의 UV 기준, tangent-space에서 Solver world normal로의 변환, 맵 누락·비정상 샘플 fallback을 결정하고 구현한다. Branch 2.3에서 normal-to-height 적분 후보, 높이 기준/scale, non-integrable 오차 처리와 높이에서 Curvature/Concavity를 만드는 방법을 결정하고 구현한다. Timestep tolerance는 Branch 6의 비교 결과로 정한다. GPU ABI나 descriptor가 바뀌면 [[04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]] 및 관련 GPU resource note를 같은 브랜치에서 갱신한다.
+Branch 2에서 확정한 `DistanceWeight`·`NormalWeight`·`ProfileBoundaryWeight` 규칙은 ADR 0016을 따른다. Branch 2.2에서 Normal Map 샘플의 UV 기준, tangent-space에서 Solver world normal로의 변환, 맵 누락·비정상 샘플 fallback을 결정하고 구현한다. Branch 2.3에서 normal-to-height 적분 후보, 높이 기준/scale, non-integrable 오차 처리와 높이에서 Curvature/Concavity를 만드는 방법을 결정하고 구현한다. Timestep tolerance는 Branch 6의 비교 결과로 정한다. GPU ABI나 descriptor가 바뀌면 [[04_Architecture/0008_Surface-GPU-Data-Layout|Surface GPU Data Layout]] 및 관련 GPU resource note를 같은 브랜치에서 갱신한다.
 
 ### 1. 기존 Solver 기준 테스트 고정
 
-현재 GPU 테스트의 입력 소비와 포화도 전달 결과를 기준선으로 유지한다. 이후 Geometry·Weight 경로를 켜고 끌 수 있는 작은 fixture를 추가해 기존 결과의 회귀 여부를 분리한다.
+현재 GPU 테스트의 입력 소비와 `SaturationDrive` 기반 전달 결과를 기준선으로 유지한다. 이후 Geometry·Weight 경로를 켜고 끌 수 있는 작은 fixture를 추가해 기존 결과의 회귀 여부를 분리한다.
 
 - GeometryDrive가 0인 경우 기존 saturation-only 테스트 결과가 바뀌지 않는다.
 - Decay와 InputDelta를 제외한 전달에서 총 State가 보존된다.

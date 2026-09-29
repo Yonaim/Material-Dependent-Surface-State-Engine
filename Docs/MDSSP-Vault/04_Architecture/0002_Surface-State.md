@@ -82,9 +82,9 @@ $$
 | `accumulationFactor`     | State를 형상상의 적층량으로 변환하는 정도                  |  `[0,n]` | `0.0` |
 | `cavityFillFactor`       | 적층량 중 Cavity를 채우는 데 우선 배분할 비율              |  `[0,1]` | `0.0` |
 
-상태 전이 규칙과 전이 파라미터의 의미는 [[04_Architecture/0002_Surface-State|State Transition]]에서 정의한다.
+State Transition 규칙과 전이 파라미터의 의미는 [[04_Architecture/0002_Surface-State|State Transition]]에서 정의한다.
 
-상태 전이의 사용 예는 [[04_Architecture/0002_Surface-State|State Transition]]을 본다.
+State Transition의 사용 예는 [[04_Architecture/0002_Surface-State|State Transition]]을 본다.
 
 ## Surface Instance State Data
 

@@ -50,6 +50,6 @@ State A / State B / OutgoingFluxScale 리소스 타입, descriptor, barrier는 [
 ## 구현 시 결정할 항목
 
 - `ContactInput.falloff`가 제어하는 거리 감쇠 함수의 구체적인 형태.
-- 상태 전이(예: Heat → Burn)를 Solver에 적용하는 순서와 같은 패스/별도 패스 여부.
+- State Transition (예: Heat → Burn)을 Solver에 적용하는 순서와 같은 패스/별도 패스 여부.
 
 위 항목은 Architecture에서 정의한 입력·전이의 의미를 바꾸지 않고, 구현과 검증 과정에서 정한다.

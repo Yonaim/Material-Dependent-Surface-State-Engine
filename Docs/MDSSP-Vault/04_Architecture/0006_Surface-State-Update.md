@@ -90,7 +90,7 @@ Input은 **Discrete Event**, Transport와 Decay는 **Continuous Update**로 처�
 | Transport | 시간 경과에 따른 State 이동 | O |
 | Decay | 시간 경과에 따른 State 감소 | O |
 
-다음 그림은 각 항이 Next State에 합쳐지는 설계 흐름이다. Transport의 Geometry 구동식은 아래에서 별도로 정의하며, 현재 구현 범위와의 차이는 [[0001_Engine-Structure|엔진 데이터 흐름]]에 적혀 있다.
+다음 그림은 각 항이 Next State에 합쳐지는 설계 흐름이다. Transport의 `GeometryDrive` 계산식은 아래에서 별도로 정의하며, 현재 구현 범위와의 차이는 [[0001_Engine-Structure|엔진 데이터 흐름]]에 적혀 있다.
 
 ```mermaid
 flowchart LR
@@ -143,7 +143,7 @@ Saturation은 1을 초과할 수 있고 Transport에서 상한 clamp하지 않�
 
 ### Raw Flux
 
-Saturation 차이와 Geometry에 의한 전달을 독립적으로 계산한 뒤 합친다.
+`SaturationDrive`와 `GeometryDrive`에 의한 전달을 독립적으로 계산한 뒤 합친다.
 
 $$
 RawFlux_{i\rightarrow j}
@@ -184,9 +184,9 @@ $$
 
 면 방향과 이웃 방향은 instance transform을 적용해 world space에서 평가한다. Non-uniform scale을 포함해 normal은 normal transform으로 변환한다. source 면에 투영된 중력과 source→target 이웃 방향의 일치도를 DirectionDrive로 사용한다.
 
-DirectionDrive의 NormalWorld는 기본 ON에서 복원된 MesoNormal을 사용하며 sampled TransferNormal, macro normal 순으로 fallback한다. UI `DirectionDrive: MesoNormal`을 OFF로 두면 기본 mesh normal을 선택한다. 동적 적층 높이·법선은 아직 공급되지 않는다.
+DirectionDrive의 NormalWorld는 기본 ON에서 복원된 MesoNormal을 사용하며 sampled TransferNormal, macro normal 순으로 fallback한다. UI `DirectionDrive: MesoNormal`을 OFF로 두면 기본 mesh normal을 선택한다. 동적 `AccumulationHeight`와 그에 따른 normal은 아직 공급되지 않는다.
 
-현재 Z-up 데모의 world gravity는 `(0, 0, -1)`이다. 따라서 유효 높이는 반대 방향인 world `+Z` 축으로 투영한다.
+현재 Z-up 데모의 world gravity는 `(0, 0, -1)`이다. 따라서 `EffectiveHeight`는 반대 방향인 world `+Z` 축으로 투영한다.
 
 $$
 GravityOnSurface_i = GravityWorld - NormalWorld_i \cdot (GravityWorld \cdot NormalWorld_i)
@@ -238,7 +238,7 @@ $$
 
 두 normal은 최신 변형 Geometry의 normal에 instance transform의 inverse-transpose를 적용한 뒤 정규화한다. 유효하지 않은 normal은 가중치 0으로 처리한다. `ProfileBoundaryWeight`는 별도 Profile parameter가 아닌 Solver 공통 규칙이다. 거리·법선·Profile 경계 식과 곡률 보류 범위는 [[05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]을 따른다.
 
-UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 전달 가중치를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**한다. 생성 방식은 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 따른다.
+UV Seam은 Profile Boundary와 다른 문제다. 같은 실제 Surface가 UV에서 끊어진 경우에는 `TransferWeight`를 약화하는 것이 아니라 **올바른 실제 이웃 texel을 연결**한다. 생성 방식은 [[06_Development/Notes/0000_Surface-Simulation-Mapping|Surface Simulation Mapping]]을 따른다.
 
 ### 보유량 제한과 alpha
 
@@ -263,7 +263,7 @@ $$
 
 `inactive`는 unsupported/invalid texel-channel, 감쇠 후 AvailableState=0 또는 dt=0인 source다. 현재 GPU 구현은 이 경로의 RawOutgoing·alpha를 0으로 기록하고 RawFlux 평가·쓰기를 생략한다. Pass 2는 source alpha가 0이면 캐시를 읽지 않으며 해당 source의 실제 전달량을 0으로 처리한다. 비활성 RawFlux에는 오래된 값이나 미초기화 값이 남을 수 있으므로 읽어서 alpha=0을 곱하는 방식으로 처리하지 않는다. target의 incoming·입력·Next 갱신은 계속 실행하고, 받은 값의 outgoing 전달은 다음 step부터 수행한다.
 
-Pass 1에서 source의 Profile·포화도·지원 여부는 channel당, source 형상은 geometry를 쓰는 invocation당 한 번 준비하여 이웃 평가에서 재사용한다. instance 공통 선형 행렬·inverse-transpose·gravity up은 CPU가 dispatch당 한 번 준비한다. 캐시 및 source 재사용은 전달 수식을 바꾸지 않으며 실행·유효성 계약은 [[0007_Simulation-Optimization|Simulation Optimization]]를 따른다.
+Pass 1에서 source의 Profile·Saturation·지원 여부는 channel당, source 형상은 geometry를 쓰는 invocation당 한 번 준비하여 이웃 평가에서 재사용한다. instance 공통 선형 행렬·inverse-transpose·gravity up은 CPU가 dispatch당 한 번 준비한다. 캐시 및 source 재사용은 전달 수식을 바꾸지 않으며 실행·유효성 계약은 [[0007_Simulation-Optimization|Simulation Optimization]]를 따른다.
 
 2-Pass + `alpha` 저장의 GPU 계산 순서는 [[06_Development/Notes/0002_Next-State-Calculation|Next State 계산 메모]]를 본다.
 

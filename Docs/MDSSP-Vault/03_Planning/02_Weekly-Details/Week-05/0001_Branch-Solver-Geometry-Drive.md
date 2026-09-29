@@ -28,13 +28,13 @@
 
 ## 확정된 계산 계약
 
-- 유효 높이는 Macro 표면 높이와 `MesoVirtualHeight`를 합쳐 instance transform을 반영한 월드 공간에서 평가한다. 현재 `MesoVirtualHeight = 0`이면 Macro Geometry의 높이만 작용한다.
-- `HeightDrive(i → j) = abs(EffectiveHeight_i - EffectiveHeight_j)`로 둔다. **이웃 표면 거리로 나누지 않는다.** 높이차의 크기는 Geometry 구동량에, 이웃 간 실제 거리는 별도의 `DistanceWeight`에 맡긴다.
+- `EffectiveHeight`는 Macro 표면 높이와 `MesoVirtualHeight`를 합쳐 instance transform을 반영한 월드 공간에서 평가한다. 현재 `MesoVirtualHeight = 0`이면 Macro Geometry의 높이만 작용한다.
+- `HeightDrive(i → j) = abs(EffectiveHeight_i - EffectiveHeight_j)`로 둔다. **이웃 표면 거리로 나누지 않는다.** 높이차의 크기는 `GeometryDrive`에, 이웃 간 실제 거리는 별도의 `DistanceWeight`에 맡긴다.
 - `DirectionDrive(i → j)`는 instance transform을 적용한 면 방향에 World Gravity를 투영하고, 투영된 중력 방향과 월드 공간의 이웃 방향이 얼마나 일치하는지로 계산한다. 중력 반대 방향의 전달은 0으로 제한한다.
 - `GeometryTransferRate`는 `State / (world-length · second)` 단위를 갖는다. `DirectionDrive`와 나머지 무차원 계수를 곱하고 `DeltaTime`을 적용하면 flux 단위는 State가 된다.
 - `DistanceWeight`는 이웃 표면 거리 효과를 별도로 반영한다. `HeightDrive`에 같은 거리 나눗셈을 다시 넣지 않는다.
 
-구현은 local position에 local normal 방향의 `MesoVirtualHeight` offset을 더한 뒤 per-instance Model Matrix를 적용해 world height를 계산한다. Non-uniform scale을 포함한 면 normal은 inverse-transpose normal transform으로 변환한다. World Gravity의 표면 투영 길이가 epsilon 이하이거나 geometry/방향 값이 비정상이면 Geometry flux를 0으로 처리한다. 거리 가중치의 구체식은 2번 브랜치에서 정한다.
+구현은 local position에 local normal 방향의 `MesoVirtualHeight` offset을 더한 뒤 per-instance Model Matrix를 적용해 world height를 계산한다. Non-uniform scale을 포함한 면 normal은 inverse-transpose normal transform으로 변환한다. World Gravity의 표면 투영 길이가 epsilon 이하이거나 geometry/방향 값이 비정상이면 Geometry flux를 0으로 처리한다. `DistanceWeight`의 구체식은 2번 브랜치에서 정한다.
 
 ## 검증
 

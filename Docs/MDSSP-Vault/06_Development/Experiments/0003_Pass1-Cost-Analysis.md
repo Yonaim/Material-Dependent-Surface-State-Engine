@@ -71,21 +71,21 @@ Pass 2는 계속 이웃 source의 캐시를 gather하고 InputDelta를 소비해
 
 | 항목 | 현행 반복 범위 | 재사용 가능한 범위와 적용 제한 |
 |---|---|---|
-| source 포화도 `Current / Capacity` | SaturationDrive가 켜져 있으면 이웃당 한 번, 최대 8회/channel | source·channel당 한 번. target의 포화도는 이웃마다 다르다. |
-| source 지원 검사·profile index·profile parameters | Pass 1 외부 지원 검사 이후에도 각 `rawFlux`에서 source 지원 검사를 반복하고 profile을 다시 조회한다. source Capacity도 포화도 함수에서 재조회한다. | 이미 지원을 확인한 source·channel의 Parameters와 Current를 이웃 루프 밖에서 준비한다. target의 지원 여부와 Capacity 검사는 유지한다. |
+| source Saturation `Current / Capacity` | SaturationDrive가 켜져 있으면 이웃당 한 번, 최대 8회/channel | source·channel당 한 번. target의 Saturation은 이웃마다 다르다. |
+| source 지원 검사·profile index·profile parameters | Pass 1 외부 지원 검사 이후에도 각 `rawFlux`에서 source 지원 검사를 반복하고 profile을 다시 조회한다. source Capacity도 Saturation 함수에서 재조회한다. | 이미 지원을 확인한 source·channel의 Parameters와 Current를 이웃 루프 밖에서 준비한다. target의 지원 여부와 Capacity 검사는 유지한다. |
 | instance normal matrix·gravity up 축 | 각 유효 texel invocation의 `initializeGeometryDrive` | transform·gravity가 같은 instance의 dispatch 공통 값이다. CPU 또는 instance 공통 자원에서 준비하는 후보이며 push constant/layout 변경 비용을 함께 검토한다. 이 행렬은 이웃당 8회가 아니라 현행에서도 texel당 한 번 준비한다. |
 | source projected gravity의 방향 정규화·공통 유효성 검사 | `length(SolverUp)`와 source 방향 `GravityOnSurface / SurfaceGravityLength`가 `geometryDrive`마다 평가된다. | source 형상 준비에 유효 여부와 정규화된 방향을 포함해 이웃들이 재사용한다. 기존 임시 후보도 source 방향 나눗셈은 이웃 평가 안에 남아 있다. target edge 길이·정규화는 이웃별로 필요하다. |
 | 같은 edge의 GeometryDrive·neighbor index·TransferWeight | channel 루프 안에서 이웃 루프를 반복하므로 여러 channel에서 동일 값을 재평가/재조회한다. | 형상·topology·가중치는 channel 독립이다. 여러 channel에서 재사용할 수 있으나 현재 1채널 wetness 데모에는 channel 간 절감이 없다. edge 배열의 register 압력과 1채널 성능을 검증해야 하며 기존 배열 후보는 안정적인 개선이 확인되지 않아 미채택이다. |
 | 동일 texel·channel의 `decayAmount` | Pass 1에서 가용량 계산, Pass 2에서 Next 계산으로 두 번 | 두 pass가 같은 Current·Profile·형상·dt·flags를 읽는다. 재사용하려면 pass 간 저장과 읽기가 필요하므로 단순 루프 이동과 다르다. 추가 메모리 접근 대비 이득을 측정하기 전에는 우선순위를 낮춘다. |
 
-이웃별 target 위치·포화도와 source→target 방향은 실제로 다르므로 source와 같은 값으로 취급하지 않는다. 반대 방향 `rawFlux(j,i)`도 포화도 차이·source 계수·중력 방향에 따라 달라지므로 `rawFlux(i,j)`를 그대로 재사용할 수 없다.
+이웃별 target 위치·Saturation과 source→target 방향은 실제로 다르므로 source와 같은 값으로 취급하지 않는다. 반대 방향 `rawFlux(j,i)`도 Saturation 차이·source 계수·중력 방향에 따라 달라지므로 `rawFlux(i,j)`를 그대로 재사용할 수 없다.
 
 ## 후속 우선순위
 
 아래는 원인 분리 시점의 우선순위다. 1–4의 가용량 0 생략·source 공통 형상·instance 공통 행렬·source channel 공통 조회는 ADR 0022에서 적용했다. 여러 channel의 edge 배열과 pass 간 Decay 캐시는 보류하며 실제 Scene 시계열은 별도 과제다. 적용 후 동일 512 해상도의 합성 비교 결과는 [[05_ADR/0022-Pass1-Source-Reuse|ADR 0022]]에 기록했다. 기본 해상도는 후속 ADR 0023에서 Medium 256으로 변경했으므로 최초 화면 관측과 기본 실행 시간을 직접 비교하지 않는다.
 
-1. 가용 State=0인 source의 실제 outgoing은 source alpha 제한으로 0이다. Pass 1의 형상·포화도 계산을 생략하는 경로를 검토한다. Input은 기존대로 Pass 2에 반영하므로 새 입력의 전달 시점은 다음 step이다. 생략 시 RawFlux·RawOutgoing·alpha scratch의 0 기록 의미와 디버그 계약을 함께 정의해야 한다.
+1. 가용 State=0인 source의 실제 outgoing은 source alpha 제한으로 0이다. Pass 1의 형상·Saturation 계산을 생략하는 경로를 검토한다. Input은 기존대로 Pass 2에 반영하므로 새 입력의 전달 시점은 다음 step이다. 생략 시 RawFlux·RawOutgoing·alpha scratch의 0 기록 의미와 디버그 계약을 함께 정의해야 한다.
 2. 위 source 공통 geometry 재사용을 검토한다. channel 수가 달라도 source geometry는 동일하며, GeometryDrive가 실제 필요한 경우에 한 번 준비한다.
 3. instance 공통 inverse-transpose와 gravity up 축을 instance 단위로 준비해 invocation당 반복을 줄이는 방안을 검토한다. 비용 절감 폭은 따로 측정한다.
-4. source·channel 공통 포화도·Profile 조회·지원 검사를 이웃 루프 밖으로 옮기는 후보를 검토한다. 여러 channel의 edge 재사용과 pass 간 Decay 재사용은 별도 측정 후 판단한다.
+4. source·channel 공통 Saturation·Profile 조회·지원 검사를 이웃 루프 밖으로 옮기는 후보를 검토한다. 여러 channel의 edge 재사용과 pass 간 Decay 재사용은 별도 측정 후 판단한다.
 5. 실제 Scene의 네 instance별 Pass 1/2와 frame별 timestamp를 수집해 Virtual Meso Geometry·회전·State 분포·시간 편차를 분리한다. 이 기록은 상시 높은 Pass 1의 원인을 분석했으며 순간 급등 원인은 별도 시계열이 필요하다.

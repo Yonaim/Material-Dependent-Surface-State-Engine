@@ -18,7 +18,7 @@ Branch 2의 전달 수식을 유지하며 중복 Geometry 계산과 Pass 2의 �
 | 인스턴스별 TransferWeight 버퍼 | 채택 | 최초 생성, 현재 MesoVirtualHeight 및 향후 AccumulationHeight를 반영한 유효 위치·normal revision, 이웃·Surface/Profile 배치, 인스턴스 선형 변환, weight 규칙 변경 |
 | 텍셀·채널별 RawOutgoing 버퍼 | 채택 | 매 Solver step의 Pass 1에서 덮어쓰기 |
 | 간선별 Raw flux 버퍼 | 보류 | 후속 채택 시 매 Solver step |
-| GeometryDrive 캐시 | 제외 | 기존 경로에서 최신 가상 높이·중력·변환을 사용 |
+| GeometryDrive 캐시 | 제외 | 기존 경로에서 최신 Virtual Height·중력·변환을 사용 |
 
 현재 구현은 instance의 3×3 선형 transform 변경을 dirty로 처리하며 순수 translation은 cache를 유지한다. Profile 수치 파라미터 편집과 State/InputDelta 변경은 TransferWeight를 무효화하지 않는다. Profile ID 배치나 유효 Geometry가 바뀌는 미래 경로는 명시적 invalidation을 호출해야 한다.
 

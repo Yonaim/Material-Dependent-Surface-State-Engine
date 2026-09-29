@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** 현재 Solver는 TransferWeight 캐시와 Pass 1의 RawOutgoing·방향별 RawFlux를 재사용한다.
 
-상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정** · 근거: [[05_ADR/0017-Solver-Transfer-Cache|ADR 0017]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
+상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정** · 근거: [[05_ADR/0017-Solver-Transfer-Cache|ADR 0017]], [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용한다. 초기 캐시는 RawOutgoing 합계만 보관했다. [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]부터 방향·채널별 RawFlux와 공유 역방향 슬롯 정보도 보관한다. 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
 
@@ -10,10 +10,10 @@
 
 | 범위 | 현재 처리 | 줄이는 비용 |
 |---|---|---|
-| TransferWeight | instance별로 준비하고 선형 transform·형상·가중치 설정이 바뀔 때만 갱신 | RawFlux 내부의 반복 거리·법선 가중치 계산 |
+| TransferWeight | instance별로 준비하고 선형 transform·형상·가중치 설정이 바뀔 때만 갱신 | RawFlux 내부의 반복 `DistanceWeight`·`NormalWeight` 계산 |
 | RawOutgoing | Pass 1 합계를 저장하여 Pass 2가 재사용 | 자기 outgoing 합계의 재계산 |
 | 방향별 RawFlux | 기본 ON에서 활성 source의 8개 슬롯을 저장하고 Pass 2가 이웃 source의 역방향 값을 읽음 | incoming의 RawFlux·GeometryDrive 재평가 |
-| Pass 1 source 계산 | 지원 여부·Profile·포화도는 channel당 준비, source 법선 변환·중력 투영·위치는 geometry를 쓰는 invocation당 한 번 준비 | 같은 source를 이웃 8개·여러 채널에서 반복 준비하는 비용 |
+| Pass 1 source 계산 | 지원 여부·Profile·Saturation은 channel당 준비, source 법선 변환·중력 투영·위치는 geometry를 쓰는 invocation당 한 번 준비 | 같은 source를 이웃 8개·여러 채널에서 반복 준비하는 비용 |
 | instance 계산 | CPU가 solver dispatch당 선형 행렬·inverse-transpose·gravity up을 준비해 128-byte push constant로 전달 | 텍셀별 공통 행렬 계산 |
 | 비활성 source | unsupported/invalid, 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록 | outgoing 평가와 8개 RawFlux 슬롯의 불필요한 0 쓰기 |
 | 시뮬레이션 해상도 | Low 128, Medium 256, High 512, 기본 Medium | Surface별 texel 수와 이에 비례하는 작업·버퍼 payload |
@@ -140,17 +140,17 @@ TransferWeight cache는 현재 구현된 MesoVirtualHeight 또는 향후 Accumul
 
 현재 설계는 `texel × neighborSlot`마다 TransferWeight를 저장한다. 이웃 간선의 양방향 슬롯에 같은 값을 각각 보관하므로 payload 추정은 48 MiB다. 현재 TransferWeight 식은 양 endpoint를 바꾸어도 값이 같다. DistanceWeight는 endpoint 거리와 양 endpoint 평균 간격으로, NormalWeight는 법선 내적으로 계산하며, 현재 ProfileBoundaryWeight도 같은/다른 Profile 비교라 대칭이다. 따라서 `TransferWeight(A→B) = TransferWeight(B→A)`다.
 
-후속 최적화에서는 하나의 무방향 간선당 가중치를 한 번 저장하고 두 방향 flux가 같은 값을 읽도록 할 수 있다. 단, RawFlux 자체는 포화도 차이와 GeometryDrive 방향 때문에 양방향에서 다를 수 있으므로 공유하지 않는다. 이 변경은 결과 수식은 유지하고 캐시 주소 표현만 바꾼다.
+후속 최적화에서는 하나의 무방향 간선당 가중치를 한 번 저장하고 두 방향 flux가 같은 값을 읽도록 할 수 있다. 단, RawFlux 자체는 Saturation 차이와 GeometryDrive 방향 때문에 양방향에서 다를 수 있으므로 공유하지 않는다. 이 변경은 결과 수식은 유지하고 캐시 주소 표현만 바꾼다.
 
 무방향 간선 배열에서 값을 찾는 edge mapping이 필요하다. 직접 32비트 간선 ID를 모든 이웃 슬롯에 추가하면 인덱스 버퍼가 커져 weight 절감분을 상쇄할 수 있다. 압축된 순번과 텍셀별 시작 offset은 가능한 주소 방식의 한 예이며, 현재 구현 계약이 아니다. 주소 계산 비용, 실제 유효 edge 수, 버퍼 크기, Solver GPU 시간을 측정한 뒤 이 방식을 적용할지 결정한다. 따라서 이번 브랜치에서는 방향별 슬롯 캐시를 사용하고, 무방향 공유 저장은 후속 최적화로 보류한다.
 
 ## 검증 계약
 
-최적화 전후 동일 입력에서 Next State, RawOutgoing, alpha와 총 State를 허용 오차로 비교한다. invalid/unsupported, seam, 다른 Capacity/Profile, 큰 전달률, 비균일 scale, transform 변경, 가상 높이·중력 변경을 포함한다. 캐시 갱신 조건별 변경과 unchanged step의 재사용을 확인한다. 동일 build/device/scene/해상도/채널/State와 충분한 warm-up으로 GPU 시간의 반복 표본을 기록한다. cache 준비 시간과 steady-state 시간을 나누고 Validation 오류를 검사한다.
+최적화 전후 동일 입력에서 Next State, RawOutgoing, alpha와 총 State를 허용 오차로 비교한다. invalid/unsupported, seam, 다른 Capacity/Profile, 큰 전달률, 비균일 scale, transform 변경, Virtual Height·중력 변경을 포함한다. 캐시 갱신 조건별 변경과 unchanged step의 재사용을 확인한다. 동일 build/device/scene/해상도/채널/State와 충분한 warm-up으로 GPU 시간의 반복 표본을 기록한다. cache 준비 시간과 steady-state 시간을 나누고 Validation 오류를 검사한다.
 
 ## GeometryDrive 반복 계산 축소 (2026-09-28)
 
-초기 구현은 Pass 1의 각 invocation에서 instance inverse-transpose와 gravity의 높이 축을 준비했다. [[05_ADR/0022-Pass1-Source-Reuse|ADR 0022]] 이후 CPU가 dispatch당 한 번 준비하여 128-byte push constant로 전달한다. source 법선 변환·정규화, 중력 투영 방향과 displaced source 위치는 실제 geometry 전달을 사용하는 채널이 있을 때 invocation당 한 번 준비하며, source 포화도·프로파일 파라미터·지원 여부는 channel당 재사용한다. RawFlux의 GeometryDrive는 mesh-local displaced endpoint 차이를 instance 선형 변환으로 변환해 높이차·방향에 함께 사용하며 translation은 상쇄된다. 기본 ON에서는 MesoNormal의 binding 17을 읽고, `DirectionDrive: MesoNormal`이 OFF이면 macro normal의 binding 3을 읽는다. 선택은 push constant flag bit 4로 Pass 1 계산에 적용하며 TransferWeight cache를 무효화하지 않는다. source 재사용 값은 invocation-local이며 별도 GPU buffer를 추가하지 않는다. 여러 채널의 간선 GeometryDrive를 배열로 재사용하는 후보는 1채널에서 안정적인 개선이 확인되지 않아 채택하지 않았다.
+초기 구현은 Pass 1의 각 invocation에서 instance inverse-transpose와 gravity의 높이 축을 준비했다. [[05_ADR/0022-Pass1-Source-Reuse|ADR 0022]] 이후 CPU가 dispatch당 한 번 준비하여 128-byte push constant로 전달한다. source 법선 변환·정규화, 중력 투영 방향과 displaced source 위치는 실제 geometry 전달을 사용하는 채널이 있을 때 invocation당 한 번 준비하며, source Saturation·프로파일 파라미터·지원 여부는 channel당 재사용한다. RawFlux의 GeometryDrive는 mesh-local displaced endpoint 차이를 instance 선형 변환으로 변환해 높이차·방향에 함께 사용하며 translation은 상쇄된다. 기본 ON에서는 MesoNormal의 binding 17을 읽고, `DirectionDrive: MesoNormal`이 OFF이면 macro normal의 binding 3을 읽는다. 선택은 push constant flag bit 4로 Pass 1 계산에 적용하며 TransferWeight cache를 무효화하지 않는다. source 재사용 값은 invocation-local이며 별도 GPU buffer를 추가하지 않는다. 여러 채널의 간선 GeometryDrive를 배열로 재사용하는 후보는 1채널에서 안정적인 개선이 확인되지 않아 채택하지 않았다.
 
 CurvatureWeight 옵션 변경도 TransferWeight cache를 무효화한다. 기본은 OFF이며 계산식은 [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]를 따른다. 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
 

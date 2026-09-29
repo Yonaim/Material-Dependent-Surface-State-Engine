@@ -18,7 +18,7 @@
 1. 텍셀마다 Mesh의 geometric normal을 읽는다.
 2. 인스턴스 inverse-transpose 행렬로 world normal을 만든다.
 3. 이웃 world normal의 내적을 `clamp(dot(N_i, N_j), 0, 1)`로 계산해 `NormalWeight`로 사용한다.
-4. Distance 및 Profile 경계 가중치와 곱한 결과를 인스턴스 TransferWeight cache에 저장한다.
+4. `DistanceWeight` 및 `ProfileBoundaryWeight`와 곱한 결과를 인스턴스 TransferWeight cache에 저장한다.
 
 현재 경로는 Material Normal Map과 texel의 UV/tangent frame을 읽지 않는다.
 
@@ -40,7 +40,7 @@ Normal Map의 map normal을 `NormalWeight`에 직접 사용한다. Normal Map �
 1. [x] Simulation texel mapping의 triangle/barycentric 정보, mesh Material UV와 tangent frame을 사용해 Normal Map sample을 CPU 전처리한다.
 2. [x] sample tangent-space normal을 mesh-local transfer normal로 바꿔 shared CPU geometry에 보관한다. 사용할 수 없는 입력은 geometric normal fallback 표식으로 남긴다.
 3. [x] cache 생성 시 transfer normal을 instance inverse-transpose로 world 변환하고 기존 dot/clamp `NormalWeight`에 연결한다.
-4. [x] Surface Debug 아래 Solver Debug의 `NormalWeight` 히트맵과 GPU fixture에서 map normal이 flux에 반영되는 것을 확인한다.
+4. [x] Surface Debug 아래 Solver Debug의 `NormalWeight` Heatmap과 GPU fixture에서 map normal이 flux에 반영되는 것을 확인한다.
 5. [x] map이 없는 경우의 geometric normal fallback을 fixture로 확인하고 Architecture, ADR, 실험 문서에 계약을 반영한다.
 
 ## 검증

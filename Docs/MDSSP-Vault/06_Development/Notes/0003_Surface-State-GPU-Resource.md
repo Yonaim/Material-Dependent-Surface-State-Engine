@@ -22,7 +22,7 @@ Storage Image는 규칙적인 2D 접근에는 유리하지만 seam neighbor를 �
 
 ## Branch 4 구현 및 검증 상태
 
-현재 MVP는 host-visible/coherent storage buffer를 사용한다. Scene에서 선택한 Mesh/Profile Distribution 조합별 Geometry/Profile은 packed CPU 배열에서 한 번 upload한다. Instance별 State A/B, OutgoingFluxScale, InputDelta, RawOutgoing은 생성 시 0으로 초기화하며 TransferWeights는 Geometry와 instance 선형 transform으로 생성한다. Instance마다 descriptor와 State/cache buffer를 따로 소유하고, 같은 Runtime Surface Data handle을 참조하는 instance끼리 공유 Geometry/Profile handle을 재사용한다. 세부 binding은 아래 표를 따른다.
+현재 MVP는 host-visible/coherent storage buffer를 사용한다. Geometry는 Runtime Surface Data 조합별로 upload하고, Profile 파라미터와 지원 여부는 Scene 전체의 고유 Profile 테이블로 한 번 upload한다. CPU Geometry의 Runtime-local Profile index는 GPU 업로드 시 Scene 테이블 index로 변환한다. Instance별 State A/B, OutgoingFluxScale, InputDelta, RawOutgoing은 생성 시 0으로 초기화하며 TransferWeights는 Geometry와 instance 선형 transform으로 생성한다. Instance마다 descriptor와 State/cache buffer를 따로 소유한다. 같은 Runtime handle의 Geometry와 Scene 전체의 Profile buffer를 각각 공유한다. 세부 binding은 아래 표를 따른다.
 
 GPU resource CTest는 두 instance용 자원을 만들고, 공유 Geometry binding, 분리된 State handle, AB/BA Current/Next, 생성 초기값과 Geometry/Profile packed 값을 Vulkan buffer readback으로 검사한다. Renderer를 5 frame 실행한 Vulkan validation smoke run에서는 GPU resource 생성과 정상 종료·파괴가 완료됐고 validation error는 없었다.
 
@@ -43,7 +43,7 @@ flowchart LR
 | 데이터 | 공유 단위 | 갱신 |
 |---|---|---|
 | mapping, base geometry, neighbor | `.Scene`이 선택한 같은 Mesh/Profile Distribution 조합의 Runtime 결과 | Runtime Asset 변경 시 재생성 |
-| Profile parameter | 같은 `.SRProfile` | Profile reload 시 |
+| Profile parameter·지원 여부 | Scene GPU resource manager의 고유 `.SRProfile` 테이블 하나 | Scene 교체 시 재생성, Runtime Profile Tuning 시 해당 record 갱신 |
 | Texel→Profile index map | 같은 Geometry/Profile Distribution 조합의 Runtime Geometry | 전처리 입력 변경 시 재생성 |
 | State A/B, OutgoingFluxScale, InputDelta, RawOutgoing | instance | solver step마다 |
 | TransferWeights | instance | 생성 및 transform/geometry cache invalidation |
@@ -76,7 +76,9 @@ profileIndex = TexelProfileIndex[localTexelIndex]
 
 `getStateIndex`는 ADR 0010의 `texelIndex * channelCount + channelIndex` 산식을 사용하며, 이웃 texel에서도 같은 helper를 사용한다.
 
-`TexelSurfaceIndex`는 Runtime mapping의 local Surface ID이며 invalid texel 판정에 사용한다. `TexelProfileIndex`는 각 texel이 사용하는 Profile 테이블의 index를 직접 저장한다. 같은 Profile을 쓰는 인접 texel도 index를 따로 보유한다. 이 dense lookup 기본안은 [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]]를 따른다.
+`TexelSurfaceIndex`는 Runtime mapping의 local Surface ID이며 invalid texel 판정에 사용한다. GPU `TexelProfileIndex`는 각 texel이 사용하는 Scene 공유 Profile 테이블의 index를 저장한다. CPU Geometry와 `.Surface`는 로컬 테이블 index를 유지하고 업로드 단계에서 변환한다. 같은 Profile을 쓰는 인접 texel도 index를 따로 보유한다. Dense lookup은 [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]], Scene별 공유·전환 수명은 [[05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]을 따른다.
+
+Scene 전환은 현재 Scene의 Runtime Profile 테이블만으로 Registry를 구성하고 GPU 자원을 재생성한다. 성공 시 Inject/Heatmap 선택과 이전 State ID 기반 튜닝 값을 초기화하며, 준비 실패 시 기존 Registry/GPU 자원을 유지한다. Profile 자산 캐시의 추가 로드는 활성 Registry를 변경하지 않는다. 동일 Scene의 해상도 변경은 현재 튜닝 값을 유지한다. `MDSS_SceneResources` CTest가 서로 다른 Mesh와 로컬 Profile 순서, 미지원 State 입력, 해상도 전환 및 GPU 생성 실패 복원을 검사한다.
 
 ## Shared Surface Geometry Buffer
 
@@ -143,7 +145,7 @@ Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. 
 
 ### TransferWeights
 
-`TransferWeightsBuffer`는 `texel × 8 + neighborSlot` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 선택적 CurvatureWeight(기본 1.0; [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]) × ProfileBoundaryWeight를 각 슬롯에 기록한다. Profile이 같으면 경계 가중치는 1.0, 다르면 0.5다.
+`TransferWeightsBuffer`는 `texel × 8 + neighborSlot` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 선택적 CurvatureWeight(기본 1.0; [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]) × ProfileBoundaryWeight를 각 슬롯에 기록한다. Profile이 같으면 `ProfileBoundaryWeight`는 1.0, 다르면 0.5다.
 
 초기 cache는 instance GPU resource 생성 시 준비한다. `TSurfaceStateSystem::RecordStep`은 회전/scale 등 3×3 선형 transform의 변화를 확인한다. dirty cache가 하나라도 있으면 이전 dispatch가 끝나도록 Graphics queue를 idle한 뒤 해당 instance cache를 다시 계산·업로드한다. 순수 translation은 가중치에 영향을 주지 않아 재생성하지 않는다. 현재 Geometry scalar/topology를 runtime에서 수정하는 경로는 없으며, 추후 추가할 때 resource manager의 `InvalidateTransferWeightCache`를 호출해야 한다. 동적 AccumulationHeight/normal 값의 공급과 invalidation은 미구현이다.
 

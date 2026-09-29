@@ -13,7 +13,7 @@ Normal Map에 저장된 tangent-space 표면 방향을 이용해 texel별 `MesoV
 
 Branch 2.2의 직접 Normal Map `NormalWeight` 입력과 역할을 나눈다.
 
-- Branch 2.2: map normal 방향을 이웃 간 전달 가중치에 직접 사용한다.
+- Branch 2.2: map normal 방향을 `TransferWeight`에 직접 사용한다.
 - Branch 2.3: map normal을 slope field로 보고 일관된 height field 및 파생 geometry를 복원한다.
 
 ## 복원 절차 후보

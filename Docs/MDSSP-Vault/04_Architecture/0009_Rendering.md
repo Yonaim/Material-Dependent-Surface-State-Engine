@@ -32,7 +32,7 @@ flowchart LR
 - `Wetness`: 재질 내부 수분에 따른 색 / roughness 변화.
 - `Burn`: 그을림·탄 정도 변화.
 - `Mud`: 외관 변화 + `AccumulationHeight`.
-- `SurfaceWater`(확장 예정): 표면 물기 / 고임 + 적층 높이 가능.
+- `SurfaceWater`(확장 예정): 표면 물기 / 고임 + Accumulation Height 가능.
 
 ## 형상 높이 변화 (Accumulation-based Geometry Height Changes)
 

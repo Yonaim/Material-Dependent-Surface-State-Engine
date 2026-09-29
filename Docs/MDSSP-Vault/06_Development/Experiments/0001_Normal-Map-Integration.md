@@ -1,6 +1,6 @@
 # 실험 — Normal Map Integration
 
-> **한 줄 요약:** Normal Map 방향 가중치와 Virtual Height 복원에 필요한 적분 전략을 평가하는 실험이다.
+> **한 줄 요약:** Normal Map 기반 `NormalWeight`와 Virtual Height 복원에 필요한 적분 전략을 평가하는 실험이다.
 
 - 상태: **NormalWeight 연결 완료 · Virtual Height 복원 실험 대기**
 - 근거: [[08_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]]

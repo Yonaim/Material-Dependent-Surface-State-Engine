@@ -58,7 +58,7 @@ flowchart LR
 ### 완료 조건
 
 - Wetness 입력이 선택된 instance/Profile에만 적용된다.
-- 입력·포화도 전달·GeometryDrive·Decay가 의도한 Profile 값에 따라 변화한다.
+- 입력·`SaturationDrive` 기반 전달·GeometryDrive·Decay가 의도한 Profile 값에 따라 변화한다.
 - State의 finite·비음수, Capacity 초과량 보존, outgoing alpha 및 기존 2-Pass 불변 조건을 유지한다.
 
 ## Branch 2 — Wetness Rendering Response

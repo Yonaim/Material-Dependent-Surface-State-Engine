@@ -13,7 +13,7 @@
 | OBJ Mesh | `.obj` | 정점, UV, Normal, Face, Surface별 Material 할당 |
 | Render Material | `.mtl` | OBJ Surface의 외관용 Material |
 | Texture | `.png`, `.jpg` 등 | Albedo, Normal 등 |
-| Scene | `.Scene` | JSON 형식. 배치 및 Asset 연결 관계 |
+| Scene | `.Scene` | JSON 형식. 배치, Asset 연결 관계 및 시뮬레이션 해상도 |
 | Surface Response Profile | `.SRProfile` | JSON 형식. Surface State 반응 데이터 |
 | Surface Profile Distribution | `.SurfaceProfileMap` | JSON 형식. Scene object가 경로를 선택하며, Surface별 SRProfile 할당을 기록 |
 | Surface Preprocessing Cache | `.Surface` | 해상도별 최종 CPU Geometry·Texel 관계·Profile map을 저장하는 생성 바이너리 캐시 |
@@ -46,6 +46,12 @@ flowchart LR
   Profiles --> ProfileTable
   Registry --> ProfileTable
 ```
+
+## `.Scene` 시뮬레이션 해상도
+
+최상위 `simulationResolution`은 Scene 내 모든 simulated Surface에 적용할 정사각형 grid의 한 변 크기다. 정수 128·256·512만 허용하며 필드가 없으면 256을 사용한다. 기존 Scene의 활성 해상도는 새 파일의 기본값에 영향을 주지 않는다.
+
+`TSceneLoader`는 이 값을 먼저 검증한 뒤 `LoadSurfaceData`에 명시적으로 전달한다. Loader가 후보 Scene을 읽는 동안 활성 해상도는 유지하고, Renderer의 GPU 자원 교체가 성공하면 새 Scene의 해상도를 적용한다. UI 변경은 현재 `TScene`에도 반영하며 `Save Scene`은 값을 파일에 기록한다. 자세한 전환 계약은 [[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]을 따른다.
 
 ## Surface와 Profile의 관계
 
@@ -112,7 +118,7 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 
 ## State Registry
 
-`.SRProfile`의 `states` key가 프로젝트에서 사용하는 State 이름을 제공한다. Profile을 로드하면서 이 이름들을 모아 `TSurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 `TStateId`/`ChannelIndex`로 변환한다. 이름 정규화 규칙과 Solver의 데이터 주도 처리 원칙은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006 — SRProfile 기반 동적 State Registry]]를 따른다.
+`.SRProfile`의 `states` key가 State 이름을 제공한다. 현재 Scene의 Runtime Profile 테이블에 참조된 Profile만으로 `TSurfaceStateRegistry`를 구성하고, 문자열 State 이름을 런타임 숫자 `TStateId`/`ChannelIndex`로 변환한다. 이전 Scene 또는 실패한 로드의 자산이 캐시에 남아 있어도 활성 Registry에는 포함하지 않는다. Scene 전환과 공유 GPU Profile 테이블은 [[05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]], 이름 정규화와 데이터 주도 처리 원칙은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 따른다.
 
 ## `.SRProfile` 예시
 
@@ -198,7 +204,7 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 }
 ```
 
-Simulation grid 해상도는 `.Scene`에 지정하지 않고 Simulation 탭에서 Low(128), Medium(256), High(512)를 선택한다. 기본값은 Medium이며 현재 선택값을 Mesh의 모든 Surface에 적용한다. 해상도별 캐시를 재사용하되 전환 시 State는 초기화한다. [[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]
+Simulation grid 해상도는 `.Scene`의 `simulationResolution`에 저장하며 Simulation 탭에서 Low(128), Medium(256), High(512)를 선택한다. 필드가 없으면 Medium을 사용하고 Scene의 모든 simulated Surface에 같은 해상도를 적용한다. 해상도별 캐시를 재사용하되 전환 시 State는 초기화한다. [[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]
 
 `.Scene`에서 `surfaceProfileMap`을 생략한 object는 렌더링 전용이며 Runtime Surface simulation data를 만들지 않는다. Scene 경로와 Profile map 참조 정책은 [[05_ADR/0012-Scene-Profile-Distribution-Reference|ADR 0012]]에 정의한다.
 

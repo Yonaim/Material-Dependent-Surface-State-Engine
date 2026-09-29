@@ -167,7 +167,7 @@ File read
 
 `TSRProfileAsset`은 Profile 데이터를 값으로 소유한다. `TSceneLoader`는 Scene object의 Mesh 경로와 선택적 `.SurfaceProfileMap` 경로를 해석하고, AssetManager가 map에 선언된 `.SRProfile`들을 로드해 Runtime Surface Data에 연결한다.
 
-`.SRProfile`의 `states` key를 모으는 `TSurfaceStateRegistry`와 정규화, 재현 가능한 ID 배정, Transition endpoint 검증은 구현되어 있다. `TAssetManager::GetSurfaceStateRegistry()`가 로드된 Profile 집합을 기준으로 Registry를 지연 생성하고 이후 Profile이 추가되면 cache를 무효화한다. Registry channel count를 instance/GPU layout에 전달하는 일은 Branch 4, Solver 순회는 Branch 5, Contact 입력의 StateId 해석은 Branch 6에 배정했다. 계약은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]]을 기준으로 한다.
+`.SRProfile`의 `states` key를 모으는 `TSurfaceStateRegistry`와 정규화, 재현 가능한 ID 배정, Transition endpoint 검증은 구현되어 있다. 초기 구현은 전체 캐시 Profile의 지연 Registry를 사용했다. 현재는 `TAssetManager::BuildSurfaceStateRegistry(Scene)`가 현재 Scene의 Profile 집합으로 Registry를 만들고, Renderer가 이를 설치해 GPU 자원을 준비한다. 실패하면 이전 Registry를 복원한다. 자산 캐시 로드는 활성 Registry를 변경하지 않는다. GPU Profile 테이블은 Scene 전체에서 중복 handle을 제거해 공유하며 Geometry의 로컬 Profile index를 업로드 시 변환한다. 계약은 [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]]과 [[05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]을 따른다.
 
 ## 5. Runtime Surface 전처리 흐름
 
@@ -281,7 +281,7 @@ classDiagram
 | `TSurfaceMappingData` → `TSharedSurfaceGeometryData` | AssetManager가 Mesh/선택 map 조합별 Runtime build 및 handle 등록 |
 | Runtime 전처리 결과 수명 | load 시 생성하고 메모리에서 같은 입력의 instance 간 공유. persistent cache 저장·로드는 하지 않음 |
 | `.SurfaceProfileMap` → texel `ProfileIndex` map | Surface별 Profile 파싱, 검증 및 valid texel로의 확장 구현 완료. Surface 내부의 세밀한 Profile authoring은 후속 기능 |
-| Profile collection → `TSurfaceStateRegistry` | Registry와 AssetManager 지연 생성 구현. Instance/GPU 연결은 Branch 4, Solver 소비는 Branch 5, 입력은 Branch 6 담당 |
+| Scene Profile collection → `TSurfaceStateRegistry` | Scene별 Registry 구성·GPU 재생성·실패 복원 구현. Profile GPU 테이블은 Scene 전체에서 공유하며 State는 instance별로 소유 |
 | texel `ProfileIndex` → `TSRProfileAssetHandle` | 상위 등록·해석 정책 미구현 |
 | GPU State/Profile → Solver | `TSurfaceStateSolver`가 동적 channel을 순회하는 Pass 1/Pass 2와 State A/B 교환을 기록한다. 지원하지 않는 Profile/channel은 계산에서 제외한다. GPU readback 검증은 미완료 |
 | 전체 Surface State 수명과 갱신 | `TSurfaceStateSystem`이 GPU resources와 Solver를 소유하고 Renderer command buffer에 step을 기록한다. Contact 입력과 렌더링 연결은 후속 작업 |

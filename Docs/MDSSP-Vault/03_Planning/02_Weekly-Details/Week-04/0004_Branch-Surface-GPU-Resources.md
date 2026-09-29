@@ -6,6 +6,8 @@
 선행 조건: `feat/shared-geometry-build` 병합  
 관련 설계: [[06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
 
+이 문서의 Profile 자원 구성은 초기 브랜치 계획이다. 현재 구현은 [[05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]에 따라 Scene별 Registry와 Scene 전체의 단일 Profile GPU 테이블을 사용한다. Runtime-local Profile index는 GPU 업로드에서 Scene index로 변환하며 Geometry와 instance State의 공유 단위는 유지한다.
+
 ## 목표
 
 CPU에서 검증한 Mapping/Geometry/Profile 데이터를 Vulkan Storage Buffer로 올리고, instance별 State A/B와 OutgoingFluxScale/InputDelta를 생성한다. 이 브랜치에서는 compute shader가 실제 수식을 실행하지 않아도 된다.

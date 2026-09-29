@@ -1,6 +1,6 @@
 # 형상 정보와 적층
 
-> **한 줄 요약:** Surface Solver가 사용하는 Macro Geometry와 Virtual Meso Geometry, texel 이웃 및 누적 형상 데이터의 계약을 정의한다.
+> **한 줄 요약:** Surface Solver가 사용하는 Macro Geometry와 Virtual Meso Geometry, texel 이웃 및 Accumulation Height 기반 동적 Geometry 데이터의 계약을 정의한다.
 
 상태: **형상 의미와 반영 범위 확정 / 전처리 알고리즘 일부 검증 필요** · 근거: [[08_Assets/Documents/0006_Geometry-Integration.pdf|형상 정보 반영]], [[08_Assets/Documents/0002_Surface-System-Data.pdf|시스템 데이터 구조]]
 

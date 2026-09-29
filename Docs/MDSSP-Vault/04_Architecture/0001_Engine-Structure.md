@@ -57,7 +57,7 @@ TInputSystem ..> TApplication : returns contact event
 TApplication ..> TRenderer : submits contact event
 ```
 
-현재 코드에서 `TRenderer`가 `TSurfaceStateSystem`을 소유한다. Surface Runtime Geometry와 Profile table은 `TAssetManager`가 Scene 로딩 중 생성·공유하고, GPU resource manager는 Runtime data handle을 키로 Shared Geometry/Profile buffer를 공유하며 instance별 State buffer와 descriptor를 관리한다. 상세 구현 관계는 [[../06_Development/Code-Structure/0000_Overview|구현 구조 개요]]를 본다.
+현재 코드에서 `TRenderer`가 `TSurfaceStateSystem`을 소유한다. Surface Runtime Geometry와 로컬 Profile table은 `TAssetManager`가 Scene 로딩 중 생성·공유한다. GPU resource manager는 Runtime data handle별 Geometry와 Scene 전체의 고유 Profile 테이블을 각각 공유하며 instance별 State buffer와 descriptor를 관리한다. 상세 구현 관계는 [[../06_Development/Code-Structure/0000_Overview|구현 구조 개요]]를 본다.
 
 설계상 `TSurfaceStateSystem`이 맡을 전체 책임은 다음과 같다. 형상 갱신은 현재 구현 흐름에 연결되지 않은 설계 항목이다.
 
@@ -126,7 +126,7 @@ flowchart LR
 ```
 
 1. `TSceneLoader`가 `.Scene`을 읽고 AssetManager로 OBJ 및 선택 Profile Map을 불러온다. Runtime Surface Data는 Scene object가 지정한 Mesh/Profile Map 조합별로 생성되어 같은 입력끼리 공유한다. Scene 편집 UI는 같은 Loader의 저장 기능도 사용한다.
-2. `TAssetManager`가 로드된 Profile들에서 Registry와 GPU용 Profile table을 구성한다. instance별 State GPU buffer는 0으로 초기화되며 Shared Geometry/Profile table과 분리 소유한다.
+2. Renderer가 현재 Scene의 참조 Profile로 Registry를 구성하고, GPU resource manager가 Scene 공유 Profile table과 Runtime별 Geometry를 만든다. instance별 State GPU buffer는 0으로 초기화된다. Scene 교체 성공 시 State 선택·튜닝 값을 초기화하며, 자원 준비 실패 시 이전 Registry와 GPU 자원으로 복원한다. [[05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]을 따른다.
 3. 현재 Debug 입력 경로는 Inject mode, State, Strength를 `TDebugUI`에서 설정하고, `TInputSystem`이 Space 입력 edge에 중앙 카메라 Raycast를 수행해 접촉 payload를 만든다. 게임용 Physics adapter는 아직 연결되지 않았다. 접촉 입력 API 계약은 [[04_Architecture/0005_Surface-Input|Surface Contact Input]]을 따른다.
 4. `TRenderer::SubmitContact`가 입력을 `TSurfaceStateSystem`에 전달한다. Surface system은 접촉 범위의 texel별 `InputDelta`를 CPU에서 누적하고, 새 입력이 있을 때 graphics queue idle 후 instance GPU buffer에 업로드한다.
 5. Renderer는 매 프레임 2-pass compute Solver를 기록한다. Solver가 `InputDelta`, State, Saturation 기반 이웃 전달, Decay를 적용하고 State A/B 역할을 교환한다. 선택한 State와 Surface Mapping 진단 모드는 렌더 패스에서 GPU State/Geometry를 읽는다.

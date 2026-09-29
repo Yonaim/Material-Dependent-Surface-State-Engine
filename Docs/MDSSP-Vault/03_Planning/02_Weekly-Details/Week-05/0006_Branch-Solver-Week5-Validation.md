@@ -42,7 +42,7 @@ GeometryDrive, TransferWeight, 제한 alpha, Debug controls/stats를 함께 검�
 1. 작은 synthetic GPU fixture로 수식과 보존 불변 조건을 테스트한다.
 2. 전체 build와 기존 CPU/GPU test suite를 실행한다.
 3. 지원 GPU에서는 validation layer를 켜고 여러 step을 실행한다.
-4. Demo Scene에서 Geometry 구동, Profile 경계, alpha view, pause/step/reset을 수동 확인한다.
+4. Demo Scene에서 `GeometryDrive`, Profile 경계, alpha view, pause/step/reset을 수동 확인한다.
 5. Vulkan/GPU를 사용할 수 없는 환경의 skip은 테스트 실패와 구분해 결과에 기록한다.
 
 ## 결과 기록

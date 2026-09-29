@@ -2,13 +2,13 @@
 
 > **한 줄 요약:** 이 문서는 Surface simulation에서 GPU로 올리는 데이터의 타입과 배치, 소유 범위를 정한다.
 
-상태: **결정 사항** · 결정 근거와 검토 대안: [[05_ADR/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]], [[05_ADR/0011-GPU-Resource-Initialization-and-ABI|ADR 0011]] · 관련: [[0004_Surface-Geometry|Surface Geometry]], [[05_ADR/0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]], [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]], [[../06_Development/Notes/0003-Surface-State-GPU-Resource|Surface State GPU Resource]]
+상태: **결정 사항** · 결정 근거와 검토 대안: [[05_ADR/0010-Dynamic-State-GPU-Buffer-Layout|ADR 0010]], [[05_ADR/0011-GPU-Resource-Initialization-and-ABI|ADR 0011]] · 관련: [[0004_Surface-Geometry|Surface Geometry]], [[05_ADR/0005-Per-Texel-GPU-Data-Layout|ADR 0005]], [[05_ADR/0006-Dynamic-State-Registry|ADR 0006]], [[05_ADR/0009-Texel-Profile-Index-Map|ADR 0009]], [[../06_Development/Notes/0003_Surface-State-GPU-Resource|Surface State GPU Resource]]
 
 이 문서는 Surface simulation에서 GPU로 올리는 데이터의 타입과 배치, 소유 범위를 정한다. 데이터는 수명과 공유 단위에 따라 세 그룹으로 나뉜다. 전처리로 만들어 여러 instance가 함께 쓰는 **Shared Geometry**, Profile 반응값을 담는 **Profile table**, 그리고 시뮬레이션 상태를 instance마다 따로 보유하는 **Instance State**다.
 
 아래 byte 수는 실제 데이터 payload다. Vulkan 메모리 할당의 heap 단위 올림이나 구현별 allocation overhead는 포함하지 않는다. `uint`는 `uint32`, scalar `float`는 32-bit로 사용한다.
 
-먼저 자원 사이의 관계를 보면 **공유 데이터**와 **instance별 데이터**가 분리되는 이유가 드러난다. Scene instance가 같은 Runtime Surface Data handle을 참조하면 geometry/profile 자원을 함께 쓰고, 시뮬레이션 State와 Solver 임시 buffer는 각 instance가 따로 가진다.
+Scene instance가 같은 Runtime Surface Data handle을 참조하면 Geometry 자원을 공유한다. Profile GPU 테이블은 Scene 전체에서 하나를 공유하고, 시뮬레이션 State와 Solver 임시 buffer는 각 instance가 따로 가진다. 공유 범위와 Scene별 Registry 수명은 [[../05_ADR/0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]]에 따른다.
 
 ```mermaid
 flowchart LR
@@ -17,13 +17,14 @@ flowchart LR
   Manager --> SharedResources["Shared resources\nkeyed by runtime handle"]
   SharedResources --> Geometry["Geometry buffers\nIndices, Position, Macro and Virtual Meso Geometry normals, Virtual Height/Curvature, Neighbors"]
   SharedResources --> DebugAux["Debug auxiliary buffers\nSurfaceRanges, TexelChartIndices"]
-  SharedResources --> Profile["Profile buffers\nParameters, Supported"]
+  Manager --> Profile["One Scene Profile table\nParameters, Supported"]
   Scene --> PerInstance["one resource set per simulated instance"]
   Manager --> PerInstance
   PerInstance --> State["State A / State B"]
   PerInstance --> Temp["OutgoingFluxScale / InputDelta / RawOutgoing / RawFlux"]
   PerInstance --> Cache["TransferWeight cache"]
   SharedResources --> Descriptor["Per-instance descriptor sets"]
+  Profile --> Descriptor
   PerInstance --> Descriptor
   Descriptor --> AB["A → B descriptor set"]
   Descriptor --> BA["B → A descriptor set"]
@@ -66,6 +67,8 @@ GeometryScalar는 ADR 0018에서 mean/Gaussian curvature를 추가하며 texel�
 ## Profile table
 
 Profile table은 각 Profile이 Registry의 각 State channel에 제공하는 반응 매개변수를 보관한다. 여기서 record(레코드)는 “Profile 하나와 State channel 하나의 조합에 속하는 매개변수 묶음”을 뜻한다. 예를 들어 `Stone Profile + Heat channel`이 한 레코드이고, 그 안에 Capacity, InputFactor, Rate 같은 값들이 함께 들어 있다. 레코드는 별도의 ID 체계가 아니라 GPU 배열에 저장되는 한 항목이다.
+
+`profileCount`는 현재 Scene의 고유 Profile handle 수다. 서로 다른 Mesh·Map이 같은 `.SRProfile`을 참조하면 한 번 저장한다. CPU Geometry와 `.Surface`의 Profile index는 Runtime-local 테이블 순서를 유지하며, GPU 업로드 시 Scene 테이블 index로 변환한다. CPU 접촉 입력은 로컬 테이블을, Shader는 변환된 index와 Scene 공유 테이블을 사용한다.
 
 Texel은 Shared Geometry의 `TexelProfileIndex`에서 `profileIndex`를 얻고, 처리 중인 State의 Registry `channelIndex`를 사용한다. 이 둘로 2차원 조합(Profile, channel)을 1차원 배열 위치로 바꾼 값이 `recordIndex`다.
 
