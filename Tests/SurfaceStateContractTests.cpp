@@ -84,7 +84,7 @@ namespace
               "State parameters should be indexed by canonical name");
         Check(Profile->GetData().States.at("wetness").SaturationTransferFactor == 0.4F &&
                   Profile->GetData().States.at("wetness").GeometryTransferFactor == 0.0005F,
-              "version 2 profiles should load normalized transfer factors without applying solver rates");
+              "version 3 profiles should load normalized transfer factors without applying solver rates");
         Check(Profile->GetData().Transitions[0].Source == "mud" &&
                   Profile->GetData().Transitions[0].Target == "wetness",
               "transition endpoint names should be normalized");
@@ -102,7 +102,7 @@ namespace
                     "states.wetness.inputFactor is required",
                     "missing parameter");
         CheckThrows([&] { (void)TSRProfileLoader::Load(12, GetFixturePath("LegacyRates.SRProfile")); },
-                    "expected version 2",
+                    "expected version 3",
                     "legacy rate schema must not be interpreted as normalized factors");
         CheckThrows([&] { (void)TSRProfileLoader::Load(13, GetFixturePath("InvalidTransferFactor.SRProfile")); },
                     "states.wetness.geometryTransferFactor must be finite and in [0, 1]",

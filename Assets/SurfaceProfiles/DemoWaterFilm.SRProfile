@@ -1,6 +1,6 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 2,
+  "version": 3,
   "name": "DemoWaterFilm",
   "states": {
     "waterfilm": {
@@ -11,7 +11,8 @@
       "decayRate": 0.03,
       "cavityRetentionFactor": 0.5,
       "accumulationFactor": 0.15,
-      "cavityFillFactor": 0.8
+      "cavityFillFactor": 0.8,
+      "thicknessPerAmount": 0.001
     }
   },
   "transitions": []

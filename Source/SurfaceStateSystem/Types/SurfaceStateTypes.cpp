@@ -79,6 +79,7 @@ namespace MDSS
             ValidateUnitInterval(State.CavityRetentionFactor, Prefix + "cavityRetentionFactor");
             ValidateFiniteNonNegative(State.AccumulationFactor, Prefix + "accumulationFactor");
             ValidateUnitInterval(State.CavityFillFactor, Prefix + "cavityFillFactor");
+            ValidateFiniteNonNegative(State.ThicknessPerAmount, Prefix + "thicknessPerAmount");
         }
 
         for (std::size_t Index = 0; Index < Data.Transitions.size(); ++Index)

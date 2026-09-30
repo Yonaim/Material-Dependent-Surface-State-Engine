@@ -1,6 +1,6 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 2,
+  "version": 3,
   "name": "DemoWetness",
   "states": {
     "wetness": {
@@ -11,7 +11,8 @@
       "decayRate": 0.03,
       "cavityRetentionFactor": 0.5,
       "accumulationFactor": 0.0,
-      "cavityFillFactor": 0.0
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.01
     }
   },
   "transitions": []

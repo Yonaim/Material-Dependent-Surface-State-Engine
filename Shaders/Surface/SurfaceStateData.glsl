@@ -4,7 +4,7 @@
 #ifndef SURFACE_DEBUG_SET
 #define SURFACE_DEBUG_SET 1
 #endif
-struct TSurfaceGPUProfileParameters { vec4 CapacityInputAndTransfer; vec4 DecayAndGeometry; };
+struct TSurfaceGPUProfileParameters { vec4 CapacityInputAndTransfer; vec4 DecayAndGeometry; vec4 AccumulationThickness; };
 struct TSurfaceGPUGeometryScalar { float MesoVirtualHeight; float ConcavityWeight; float MesoMeanCurvature; float MesoGaussianCurvature; };
 struct TSurfaceGPUNeighborIndices { uint Indices[8]; };
 layout(std430, set = SURFACE_DEBUG_SET, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices { uint Values[]; } TexelSurfaceIndices;

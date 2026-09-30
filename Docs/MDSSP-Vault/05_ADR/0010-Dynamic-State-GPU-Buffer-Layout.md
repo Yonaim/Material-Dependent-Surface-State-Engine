@@ -56,6 +56,8 @@ CPU domain parameters에서 GPU 전용 record로 pack한다. Profile이 정의�
 
 Profile parameter는 State buffer와 다르게 Profile-major AoS를 쓰며, State의 texel-major 배열 규칙을 강제하지 않는다.
 
+2026-09-30 후속 결정: State별 `thicknessPerAmount`를 담기 위해 레코드에 세 번째 `vec4`를 추가했다. 위 32 B/두 `vec4`는 초기 배치이며 현재 레코드는 48 B/세 `vec4`다. Profile-major 순서와 support map은 유지한다 ([[0039-State-Thickness-Per-Amount|ADR 0039]]).
+
 ### Buffer size and limits
 
 Packed scalar layout에서 State 계열 buffer 하나의 payload 크기는 다음과 같다.

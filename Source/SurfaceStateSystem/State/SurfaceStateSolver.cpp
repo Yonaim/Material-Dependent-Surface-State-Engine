@@ -164,23 +164,19 @@ namespace MDSS
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
         Constants.Flags = SolverFlags;
-        // w is reserved from the force vector and supplies the fixed simulation-only layer-height scale.
-        Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z,
-                                  SurfaceSimulationAccumulationHeightReference};
+        Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z, 0.0F};
         // All texels in this dispatch share these values. Stay within Vulkan's minimum 128-byte budget.
         constexpr float GeometryEpsilon = 1.0e-6F;
         const glm::mat3 ModelLinear(ModelMatrix);
         glm::mat3 NormalMatrix(0.0F);
         glm::vec3 Up(0.0F);
+        const float Determinant = glm::determinant(ModelLinear);
+        if (std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon)
+            NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
         const float GravityLength = glm::length(GravityWorld);
         if ((SolverFlags & 1U) == 0U && std::isfinite(GravityLength) && GravityLength > GeometryEpsilon)
         {
             Up = -GravityWorld / GravityLength;
-            const float Determinant = glm::determinant(ModelLinear);
-            if (std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon)
-            {
-                NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
-            }
         }
         for (std::size_t Column = 0; Column < 3; ++Column)
         {

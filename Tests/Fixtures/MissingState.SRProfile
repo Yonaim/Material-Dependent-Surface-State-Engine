@@ -1,6 +1,6 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 2,
+  "version": 3,
   "name": "PartialProfile",
   "states": {
     "snow": {
@@ -11,7 +11,8 @@
       "decayRate": 0.01,
       "cavityRetentionFactor": 0.5,
       "accumulationFactor": 0.8,
-      "cavityFillFactor": 0.6
+      "cavityFillFactor": 0.6,
+      "thicknessPerAmount": 0.01
     }
   },
   "transitions": []

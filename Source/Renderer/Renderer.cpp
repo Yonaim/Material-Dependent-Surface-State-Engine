@@ -211,10 +211,10 @@ namespace MDSS
             std::uint32_t StateChannelCount = 0;
             float         DebugViewParameter = 0.0F;
             float         ReliefShadingEnabled = 1.0F;
-            glm::vec4     DebugOptions{4.0F, 0.01F, 0.01F, 1.0F};
+            glm::vec4     DebugOptions{4.0F, 0.01F, 1.0F, 1.0F};
             glm::uvec4    DebugFlags{0};
             glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, InvalidStateId, 1U};
-            glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 0.01F};
+            glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
             glm::vec4     CameraPosition{0, 0, 1, 1};
         };
 
@@ -322,6 +322,7 @@ namespace MDSS
         TGraphicsPipelineConfig Config = BuildStaticMeshPipelineConfig(MaterialLayout);
         Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/SurfaceDebug.vert.spv";
         Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/SurfaceDebug.frag.spv";
+        Config.PushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         Config.DescriptorSetLayouts.push_back(SurfaceLayout);
             return Config;
         }
@@ -1089,12 +1090,11 @@ namespace MDSS
     void TRenderer::SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings)
     {
         const auto Positive = [](float Value) { return std::isfinite(Value) && Value >= 1e-8F && Value <= 1e6F; };
-        if (!Positive(Settings.RawStateMax) || !Positive(Settings.HeightMax) || !Positive(Settings.HeightReference) ||
-            !Positive(Settings.DisplacementScale) || Settings.AccumulationComponent > 3 ||
+        if (!Positive(Settings.RawStateMax) || !Positive(Settings.HeightMax) ||
+            !Positive(Settings.DisplacementScale) ||
+            Settings.AccumulationComponent > 3 ||
             Settings.HeightGridMode > 2 || Settings.HeightGridBlockSize < 1 || Settings.HeightGridBlockSize > 256)
-            throw std::invalid_argument("Invalid Surface debug range, reference, scale or component.");
-        if (Settings.HeightReference != SurfaceDebugSettings.HeightReference && TexelInspector)
-            TexelInspector->Invalidate();
+            throw std::invalid_argument("Invalid Surface debug range, display scale or component.");
         SurfaceDebugSettings = Settings;
     }
 
@@ -1106,11 +1106,19 @@ namespace MDSS
     void TRenderer::SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings)
     {
         const auto Roughness = [](float V) { return std::isfinite(V) && V >= 0.05F && V <= 1.0F; };
-        if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.WetRoughness) || !Roughness(Settings.MudRoughness) ||
-            !std::isfinite(Settings.AccumulationHeightReference) || Settings.AccumulationHeightReference < 1e-8F ||
-            Settings.AccumulationHeightReference > 1e6F)
-            throw std::invalid_argument("Invalid demo roughness or accumulation height reference.");
+        if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.WetRoughness) || !Roughness(Settings.MudRoughness))
+            throw std::invalid_argument("Invalid demo roughness.");
         DemoEffects = Settings;
+    }
+
+    void TRenderer::SetSceneLitHeightDisplayScale(TScene& Scene, float Scale)
+    {
+        const bool bChanged = Scene.GetLitHeightDisplayScale() != Scale;
+        Scene.SetLitHeightDisplayScale(Scale);
+        if (bChanged && TexelInspector)
+        {
+            TexelInspector->Invalidate();
+        }
     }
 
     bool TRenderer::InspectTexel(const TScene& Scene, std::size_t InstanceIndex, std::uint32_t Triangle, glm::vec2 UV)
@@ -1553,7 +1561,9 @@ namespace MDSS
                       "Material descriptor sets created: " + std::to_string(MaterialResources.size()) + ".");
     }
 
-    void TRenderer::UploadMaterialUniforms(std::uint32_t Frame, const glm::vec3& CameraPosition)
+    void TRenderer::UploadMaterialUniforms(std::uint32_t Frame,
+                                           const glm::vec3& CameraPosition,
+                                           float LitHeightDisplayScale)
     {
         const auto Bindings = GetDemoSurfaceStateBindings();
         const std::size_t MaterialCount = std::min(Assets.GetMaterialCount(), MaterialResources.size());
@@ -1577,12 +1587,12 @@ namespace MDSS
                 bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F,
                 {SurfaceDebugSettings.RawStateMax,
                  SurfaceDebugSettings.HeightMax,
-                 SurfaceDebugSettings.HeightReference,
+                 LitHeightDisplayScale,
                  SurfaceDebugSettings.DisplacementScale},
                 {SurfaceDebugSettings.bRawState ? 1U : 0U, SurfaceDebugSettings.AccumulationComponent,
                  SurfaceDebugSettings.HeightGridMode, SurfaceDebugSettings.HeightGridBlockSize},
                 {Bindings.Wetness, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
-                {DemoEffects.DryRoughness, DemoEffects.WetRoughness, DemoEffects.MudRoughness, DemoEffects.AccumulationHeightReference},
+                {DemoEffects.DryRoughness, DemoEffects.WetRoughness, DemoEffects.MudRoughness, LitHeightDisplayScale},
                 glm::vec4(CameraPosition, 1.0F)};
             MaterialResources[Index].UniformBuffers[Frame]->Upload(&Uniform, sizeof(Uniform));
         }
@@ -1602,7 +1612,8 @@ namespace MDSS
         }
 
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
-        UploadMaterialUniforms(FrameIndex, SceneData.GetMainCamera().GetPosition());
+        const float LitHeightDisplayScale = SceneData.GetLitHeightDisplayScale();
+        UploadMaterialUniforms(FrameIndex, SceneData.GetMainCamera().GetPosition(), LitHeightDisplayScale);
         const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
@@ -1626,7 +1637,8 @@ namespace MDSS
                     *InspectedTexel,
                     DebugStateChannel,
                     static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(InspectedTexel->Instance)),
-                    SurfaceDebugSettings.HeightReference,
+                    LitHeightDisplayScale,
+                    SceneData.GetStaticMeshInstances()[InspectedTexel->Instance].GetTransform().GetMatrix(),
                     Resources.IsCurrentStateAB(InspectedTexel->Instance),
                     SimulationStepSerial);
         }
@@ -1657,8 +1669,9 @@ namespace MDSS
                     TexelGeometryPreview->Record(CommandBuffer, Instance, *Descriptors,
                         static_cast<std::uint32_t>(Shared->GetTexelCount()), bLitTexelGeometry ? GeometryChannel : DebugStateChannel,
                         static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(Instance)),
-                        bLitTexelGeometry ? DemoEffects.AccumulationHeightReference : SurfaceDebugSettings.HeightReference,
+                        LitHeightDisplayScale,
                         bLitTexelGeometry ? 1.0F : (bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F),
+                        SceneData.GetStaticMeshInstances()[Instance].GetTransform().GetMatrix(),
                         Resources.IsCurrentStateAB(Instance), bAccumulation);
             }
         }
@@ -1750,7 +1763,9 @@ namespace MDSS
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline->GetHandle());
                 const auto Layout = Pipeline->GetLayout();
                 const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
-                vkCmdPushConstants(CommandBuffer, Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push), &Push);
+                vkCmdPushConstants(CommandBuffer, Layout,
+                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                   0, sizeof(Push), &Push);
                 const VkBuffer TexelVertices = Shared->GetTexelMeshVertexBuffer()->GetHandle();
                 const VkDeviceSize TexelOffset = 0;
                 vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &TexelVertices, &TexelOffset);
@@ -1784,7 +1799,9 @@ namespace MDSS
             const TStaticMeshPushConstants PushConstants{Instance.GetTransform().GetMatrix(), ViewProjection};
             vkCmdPushConstants(CommandBuffer,
                                Layout,
-                               VK_SHADER_STAGE_VERTEX_BIT,
+                               (bInstanceSurfaceLit || bCanShowSurfaceDebug)
+                                   ? (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+                                   : VK_SHADER_STAGE_VERTEX_BIT,
                                0,
                                sizeof(PushConstants),
                                &PushConstants);

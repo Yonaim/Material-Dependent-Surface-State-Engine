@@ -348,7 +348,8 @@ namespace MDSS
                                                   {Parameters.DecayRate,
                                                    Parameters.CavityRetentionFactor,
                                                    Parameters.AccumulationFactor,
-                                                   Parameters.CavityFillFactor}};
+                                                   Parameters.CavityFillFactor},
+                                                  {Parameters.ThicknessPerAmount, 0.0F, 0.0F, 0.0F}};
                 Result.Supported[RecordIndex] = 1U;
             }
         }

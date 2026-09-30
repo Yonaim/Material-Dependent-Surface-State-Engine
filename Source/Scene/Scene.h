@@ -26,6 +26,9 @@ namespace MDSS
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         /** @brief Scene의 모든 Surface에 적용할 해상도. Runtime 자원 교체는 Renderer가 처리한다. */
         void SetSimulationResolution(std::uint32_t Resolution);
+        [[nodiscard]] float GetLitHeightDisplayScale() const noexcept;
+        /** @brief Lit 및 표면 디버그 미리보기의 렌더링 전용 높이 배율. */
+        void SetLitHeightDisplayScale(float Scale);
 
         /** @brief TScene 소유 목록에 정적 메시 인스턴스를 추가한다. */
         void                                                 AddStaticMeshInstance(TStaticMeshInstance Instance);
@@ -37,5 +40,6 @@ namespace MDSS
         std::vector<TStaticMeshInstance> StaticMeshInstances;
         std::filesystem::path SourcePath;
         std::uint32_t SimulationResolution = SurfaceSimulationResolution;
+        float LitHeightDisplayScale = 4.0F;
     };
 } // namespace MDSS

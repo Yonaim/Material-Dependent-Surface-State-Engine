@@ -21,7 +21,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     uint StateChannelCount;
     float DebugViewParameter;
     float ReliefShadingEnabled;
-    vec4 DebugOptions; // Raw State max, height max, preview height reference, displacement scale
+    vec4 DebugOptions; // Raw State max, height max, Lit height display scale, displacement scale
     uvec4 DebugFlags; // Raw State, Accumulation component, reserved, reserved
 } Material;
 

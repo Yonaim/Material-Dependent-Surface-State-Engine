@@ -75,8 +75,6 @@ namespace MDSS
         std::uint32_t AccumulationComponent = 0;
         float         RawStateMax = 4.0F;
         float         HeightMax = 0.01F;
-        // Debug preview reference, independent of the pending per-Surface simulation contract.
-        float HeightReference = 0.01F;
         float DisplacementScale = 1.0F;
         // 0: shaded surface, 1: grid overlay, 2: grid on a dark surface.
         std::uint32_t HeightGridMode = 0;
@@ -143,6 +141,7 @@ namespace MDSS
         void SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings);
         [[nodiscard]] const TDemoSurfaceEffectSettings& GetDemoSurfaceEffectSettings() const noexcept { return DemoEffects; }
         void SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings);
+        void SetSceneLitHeightDisplayScale(TScene& Scene, float Scale);
         [[nodiscard]] TDemoSurfaceStateBindings GetDemoSurfaceStateBindings() const;
 
         [[nodiscard]] bool
@@ -200,7 +199,7 @@ namespace MDSS
         void CreateRenderFinishedSemaphores();
         void DestroyRenderFinishedSemaphores() noexcept;
         void CreateTimestampQueryPool(std::size_t SolverInstanceCount);
-        void UploadMaterialUniforms(std::uint32_t Frame, const glm::vec3& CameraPosition);
+        void UploadMaterialUniforms(std::uint32_t Frame, const glm::vec3& CameraPosition, float LitHeightDisplayScale);
         [[nodiscard]] float GetDebugViewParameter() const noexcept;
         void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,

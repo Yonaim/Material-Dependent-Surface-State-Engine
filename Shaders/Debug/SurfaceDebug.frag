@@ -31,6 +31,16 @@ layout(set = 0, binding = 2) uniform MaterialParameters
 layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
 
 #include "Debug/SurfaceDebugData.glsl"
+layout(push_constant) uniform TStaticMeshPushConstants
+{
+    mat4 Model;
+    mat4 ViewProjection;
+} Push;
+
+mat3 AccumulationNormalMatrix()
+{
+    return transpose(inverse(mat3(Push.Model)));
+}
 
 layout(std430, set = 1, binding = 10) readonly buffer TSurfaceOutgoingFluxScale
 {
@@ -329,7 +339,9 @@ void main()
 
     if (Material.RenderMode == RENDER_MODE_ACCUMULATION)
     {
-        TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel, Material.StateChannelCount, Material.DebugOptions.z);
+        TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel,
+                                                Material.StateChannelCount, Material.DebugOptions.z,
+                                                AccumulationNormalMatrix());
         if (D.Status != 3u)
         {
             vec3 Color = D.Status == 4u ? vec3(1,0,1) : (D.Status == 2u ? vec3(0.42,0.42,0.45) : vec3(0.18,0.20,0.24));
@@ -379,7 +391,9 @@ void main()
         return;
     }
 
-    TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel, Material.StateChannelCount, Material.DebugOptions.z);
+    TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel,
+                                            Material.StateChannelCount, Material.DebugOptions.z,
+                                            AccumulationNormalMatrix());
     if (D.Status != 3u)
     {
         OutColor = vec4(1,0,1,1);

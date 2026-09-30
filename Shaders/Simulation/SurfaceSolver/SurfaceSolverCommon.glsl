@@ -14,6 +14,7 @@ struct TSurfaceGPUProfileParameters
 {
     vec4 CapacityInputAndTransfer;
     vec4 DecayAndGeometry;
+    vec4 AccumulationThickness;
 };
 
 // CPU에서 업로드하는 구조체와 필드 순서 및 stride를 맞춘 texel별 형상 데이터다.
@@ -182,7 +183,8 @@ float accumulationHeight(uint TexelIndex)
     float AreaScale = texelAreaScale(TexelIndex);
     if (AreaScale <= 0.0 || isnan(AreaScale) || isinf(AreaScale)) return 0.0;
     float CavityAmount = 0.0;
-    float FollowingAmount = 0.0;
+    float FollowingHeightWorld = 0.0;
+    float CavityThicknessWeighted = 0.0;
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
         if (!supportsChannel(TexelIndex, ChannelIndex)) continue;
@@ -190,17 +192,34 @@ float accumulationHeight(uint TexelIndex)
         TSurfaceGPUProfileParameters P = ProfileParameters.Values[Record];
         float Factor = P.DecayAndGeometry.z;
         float CavityFactor = P.DecayAndGeometry.w;
+        float ThicknessPerAmount = P.AccumulationThickness.x;
         float State = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
         if (isnan(State) || isinf(State) || State <= 0.0 ||
             isnan(Factor) || isinf(Factor) || Factor <= 0.0 ||
-            isnan(CavityFactor) || isinf(CavityFactor)) continue;
+            isnan(CavityFactor) || isinf(CavityFactor) ||
+            isnan(ThicknessPerAmount) || isinf(ThicknessPerAmount) || ThicknessPerAmount < 0.0) continue;
+        // Capacity bounds the geometry contribution, while the State buffer retains excess for transport.
+        float Capacity = P.CapacityInputAndTransfer.x * AreaScale;
+        if (isnan(Capacity) || isinf(Capacity) || Capacity <= 0.0) continue;
+        State = min(State, Capacity);
         float Amount = (State / AreaScale) * Factor;
-        CavityAmount += Amount * clamp(CavityFactor, 0.0, 1.0);
-        FollowingAmount += Amount * (1.0 - clamp(CavityFactor, 0.0, 1.0));
+        float CavityContribution = Amount * clamp(CavityFactor, 0.0, 1.0);
+        CavityAmount += CavityContribution;
+        CavityThicknessWeighted += CavityContribution * ThicknessPerAmount;
+        FollowingHeightWorld += Amount * (1.0 - clamp(CavityFactor, 0.0, 1.0)) * ThicknessPerAmount;
     }
     float MesoHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
     float CavityHeight = min(CavityAmount, 1.0) * max(-MesoHeight, 0.0);
-    float FollowingHeight = (FollowingAmount + max(CavityAmount - 1.0, 0.0)) * Solver.GravityWorld.w;
+    // Above-capacity cavity contributions join the surface in proportion to each State's cavity share.
+    if (CavityAmount > 1.0)
+        FollowingHeightWorld += (CavityAmount - 1.0) * (CavityThicknessWeighted / CavityAmount);
+    mat3 NormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
+                             Solver.NormalMatrixAndUpColumns[1].xyz,
+                             Solver.NormalMatrixAndUpColumns[2].xyz);
+    vec3 LocalNormal = normalize(Normals.Values[TexelIndex].xyz);
+    // Local-normal displacement projects to the requested thickness along the world geometric normal.
+    float WorldToLocalHeight = length(NormalMatrix * LocalNormal);
+    float FollowingHeight = FollowingHeightWorld * WorldToLocalHeight;
     float Height = CavityHeight + FollowingHeight;
     return isnan(Height) || isinf(Height) ? 0.0 : max(Height, 0.0);
 }
