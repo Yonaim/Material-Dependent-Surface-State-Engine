@@ -340,6 +340,7 @@ namespace MDSS
             bool bAppliedToAnyTexel = false;
             bool bUnsupportedProfile = false;
             bool bOverlappedNoSimulationSurface = false;
+            std::size_t AppliedTexelCount = 0;
             const std::size_t StateChannel = Contact.State;
             for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
             {
@@ -378,8 +379,17 @@ namespace MDSS
                 InputDeltas[InstanceIndex][ScalarIndex] += Contact.Strength * ContactWeight *
                                                          InputFactors[ProfileIndex] * AreaScale;
                 bAppliedToAnyTexel = true;
+                ++AppliedTexelCount;
             }
 
+            if (bAppliedToAnyTexel)
+            {
+                TLogger::Info("TSurfaceStateSystem",
+                              "Contact input applied (state=" +
+                                  Assets.GetSurfaceStateRegistry().GetStateName(Contact.State) +
+                                  ", instance=" + std::to_string(InstanceIndex) +
+                                  ", texels=" + std::to_string(AppliedTexelCount) + ").");
+            }
             if (bUnsupportedProfile)
             {
                 Diagnose("Some contact texels do not support the requested State; those texels were skipped.");
