@@ -75,7 +75,10 @@ namespace MDSS
                                   ", strength=" + std::to_string(Contact->Strength) + ").");
             }
             const auto  CurrentFrameTime = std::chrono::steady_clock::now();
-            const float DeltaTime = std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
+            // 파일 대화상자와 씬 로딩 동안 멈춘 시간을 Solver가 따라잡지 않도록 기준을 갱신한다.
+            const float DeltaTime = DebugInterface->ConsumeFrameTimeResetRequest()
+                                        ? 0.0F
+                                        : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
             PreviousFrameTime = CurrentFrameTime;
             FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime);
             ++RenderedFrameCount;
