@@ -18,8 +18,29 @@ void main()
 {
     vec3 N = normalize(FragNormal);
 #ifdef TEXEL_LIT
-    // Computed normal already includes Meso and accumulation. Do not apply the source normal map twice.
+    // Use the displaced geometric normal as the basis, then restore the material's tangent-space detail.
     N = normalize(FragMesoNormalWS);
+    vec3 PositionDx = dFdx(FragWorldPosition);
+    vec3 PositionDy = dFdy(FragWorldPosition);
+    vec2 UVDx = dFdx(FragUV);
+    vec2 UVDy = dFdy(FragUV);
+    float UVDeterminant = UVDx.x * UVDy.y - UVDx.y * UVDy.x;
+    if (abs(UVDeterminant) > 1e-10)
+    {
+        vec3 Tangent = (PositionDx * UVDy.y - PositionDy * UVDx.y) / UVDeterminant;
+        vec3 Bitangent = (-PositionDx * UVDy.x + PositionDy * UVDx.x) / UVDeterminant;
+        Tangent -= N * dot(N, Tangent);
+        if (dot(Tangent, Tangent) > 1e-12 && dot(Bitangent, Bitangent) > 1e-12)
+        {
+            Tangent = normalize(Tangent);
+            float Handedness = dot(cross(N, Tangent), Bitangent) < 0.0 ? -1.0 : 1.0;
+            Bitangent = normalize(cross(N, Tangent)) * Handedness;
+            vec3 MapN = texture(NormalTexture, FragUV).xyz * 2.0 - 1.0;
+            if (Material.FlipNormalY != 0u) MapN.y = -MapN.y;
+            MapN.xy *= Material.NormalStrength;
+            N = normalize(mat3(Tangent, Bitangent, N) * normalize(MapN));
+        }
+    }
 #else
     vec3 T = normalize(FragTangent - N * dot(N, FragTangent));
     vec3 B = normalize(cross(N,T)) * FragTangentSign;
