@@ -1,9 +1,10 @@
 /**
  * @file SurfaceStateSolver.cpp
- * @brief Two-pass GPU Surface State update and its storage-buffer dependencies.
+ * @brief Optional dynamic geometry preparation and two-pass GPU Surface State update.
  */
 
 #include "SurfaceStateSystem/State/SurfaceStateSolver.h"
+#include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
 
 #include <array>
 #include <cmath>
@@ -89,6 +90,10 @@ namespace MDSS
         try
         {
             const std::string ShaderRoot = MDSS_SHADER_DIR;
+            AccumulationGeometryPipeline = CreateComputePipeline(
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulation.comp.spv").c_str(), false);
+            DynamicTransferWeightPipeline = CreateComputePipeline(
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceGeometryUpdate.comp.spv").c_str(), false);
             // Specialize both modes so the cached shader does not retain the recomputation path.
             for (std::size_t Mode = 0; Mode < Pass1Pipelines.size(); ++Mode)
             {
@@ -100,6 +105,10 @@ namespace MDSS
         }
         catch (...)
         {
+            if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
+            if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
             for (const auto Pipeline : Pass1Pipelines)
                 if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
             for (const auto Pipeline : Pass2Pipelines)
@@ -112,6 +121,10 @@ namespace MDSS
 
     TSurfaceStateSolver::~TSurfaceStateSolver()
     {
+        if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
+        if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
         for (const auto Pipeline : Pass1Pipelines)
             if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
         for (const auto Pipeline : Pass2Pipelines)
@@ -151,7 +164,9 @@ namespace MDSS
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
         Constants.Flags = SolverFlags;
-        Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z, 0.0F};
+        // w is reserved from the force vector and supplies the fixed simulation-only layer-height scale.
+        Constants.GravityWorld = {GravityWorld.x, GravityWorld.y, GravityWorld.z,
+                                  SurfaceSimulationAccumulationHeightReference};
         // All texels in this dispatch share these values. Stay within Vulkan's minimum 128-byte budget.
         constexpr float GeometryEpsilon = 1.0e-6F;
         const glm::mat3 ModelLinear(ModelMatrix);
@@ -213,6 +228,26 @@ namespace MDSS
                            0,
                            sizeof(Constants),
                            &Constants);
+
+        if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) != 0U)
+        {
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationGeometryPipeline);
+            vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
+            const VkBufferMemoryBarrier GeometryBarrier = MakeComputeBufferBarrier(
+                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::DynamicGeometry, bCurrentStateAB),
+                VK_ACCESS_SHADER_READ_BIT);
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &GeometryBarrier, 0, nullptr);
+
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DynamicTransferWeightPipeline);
+            vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
+            const VkBufferMemoryBarrier TransferWeightBarrier = MakeComputeBufferBarrier(
+                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::TransferWeights, bCurrentStateAB),
+                VK_ACCESS_SHADER_READ_BIT);
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1,
+                                 &TransferWeightBarrier, 0, nullptr);
+        }
 
         vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[CacheMode]);
         if (TimestampQueryPool != VK_NULL_HANDLE)

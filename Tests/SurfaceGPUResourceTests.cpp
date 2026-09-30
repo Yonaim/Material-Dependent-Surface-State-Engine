@@ -15,6 +15,7 @@
 #include <iostream>
 #include <limits>
 #include <functional>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -1256,6 +1257,107 @@ namespace
                   std::abs(NormalResult[1] - 0.125F) < 1.0e-4F,
               "GPU solver flux should use the Normal Map-derived NormalWeight from the cache");
     }
+
+    void TestAccumulationGeometryFeedback(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS;
+        TSurfaceResponseProfileData Profile;
+        TSurfaceStateParameters Layer{};
+        Layer.StateCapacity = 1.0F;
+        Layer.AccumulationFactor = 10.0F;
+        Layer.CavityFillFactor = 0.0F;
+        Layer.GeometryTransferFactor = 1.0F;
+        Profile.States.emplace("mud", Layer);
+        Profile.States.emplace("waterfilm", Layer);
+        const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
+        const TSurfaceStateRegistry Registry(ProfileTable);
+        const TStateId Mud = Registry.GetStateId("mud");
+        const TStateId WaterFilm = Registry.GetStateId("waterfilm");
+        Check(Mud != InvalidStateId && WaterFilm != InvalidStateId && Mud != WaterFilm,
+              "feedback fixture should resolve two independent accumulation states");
+
+        TSharedSurfaceGeometryData Geometry({{0, {3, 1}}});
+        const std::array<glm::vec3, 3> Positions{
+            glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F)};
+        const std::array<std::array<TLocalTexelIndex, 2>, 3> Neighbors{{{{1, 2}}, {{0, 2}}, {{0, 1}}}};
+        for (std::size_t TexelIndex = 0; TexelIndex < Geometry.GetTexelCount(); ++TexelIndex)
+        {
+            TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[TexelIndex];
+            Texel.Surface = 0;
+            Texel.Triangle = 0;
+            Texel.Position = Positions[TexelIndex];
+            Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
+            Texel.NeighborIndices[0] = Neighbors[TexelIndex][0];
+            Texel.NeighborIndices[1] = Neighbors[TexelIndex][1];
+        }
+        Geometry.SetProfileMap({0, 0, 0});
+
+        TSurfaceSharedGeometryGPUResources SharedGeometry(
+            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources Profiles(
+            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        const auto StaticWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 3, 2, StaticWeights);
+        TSurfaceStateDescriptorResources Descriptors(
+            Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+
+        std::array<float, 6> InitialState{};
+        InitialState[Mud] = 0.5F;
+        InitialState[WaterFilm] = 0.5F;
+        Instance.GetStateABuffer().Upload(InitialState.data(), sizeof(InitialState));
+        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
+        {
+            Solver.RecordStep(CommandBuffer, Descriptors, true, 3, 2, 0.01F,
+                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), 0U);
+        });
+        std::vector<float> WeightsWithFeedbackOff(StaticWeights.size(), 0.0F);
+        Instance.GetTransferWeightBuffer().Download(WeightsWithFeedbackOff.data(),
+            static_cast<VkDeviceSize>(WeightsWithFeedbackOff.size() * sizeof(float)));
+        std::array<TSurfaceGPUVec4, 6> GeometryWithFeedbackOff{};
+        Instance.GetDynamicGeometryBuffer().Download(GeometryWithFeedbackOff.data(), sizeof(GeometryWithFeedbackOff));
+        Check(std::equal(StaticWeights.begin(), StaticWeights.end(), WeightsWithFeedbackOff.begin(),
+                         [](float A, float B) { return std::abs(A - B) < 1.0e-6F; }) &&
+                  std::abs(GeometryWithFeedbackOff[0].Z) < 1.0e-7F,
+              "feedback OFF should retain the static transfer cache and skip dynamic geometry prepasses");
+        std::array<float, 6> StateWithFeedbackOff{};
+        Instance.GetStateBBuffer().Download(StateWithFeedbackOff.data(), sizeof(StateWithFeedbackOff));
+        Check(std::equal(InitialState.begin(), InitialState.end(), StateWithFeedbackOff.begin(),
+                         [](float A, float B) { return std::abs(A - B) < 1.0e-6F; }),
+              "the static flat geometry should produce no geometry-driven movement in the feedback-OFF run");
+
+        std::uint32_t Flags = SurfaceSolverAccumulationFeedbackFlag |
+                              SurfaceSolverDistanceWeightFlag |
+                              SurfaceSolverNormalWeightFlag |
+                              SurfaceSolverProfileBoundaryWeightFlag;
+        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
+        {
+            Solver.RecordStep(CommandBuffer, Descriptors, false, 3, 2, 0.0001F,
+                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
+        });
+
+        std::array<TSurfaceGPUVec4, 6> DynamicGeometry{};
+        Instance.GetDynamicGeometryBuffer().Download(DynamicGeometry.data(), sizeof(DynamicGeometry));
+        std::vector<float> DynamicWeights(StaticWeights.size(), 0.0F);
+        Instance.GetTransferWeightBuffer().Download(DynamicWeights.data(),
+            static_cast<VkDeviceSize>(DynamicWeights.size() * sizeof(float)));
+        std::array<float, 6> ResultingState{};
+        Instance.GetStateABuffer().Download(ResultingState.data(), sizeof(ResultingState));
+
+        Check(std::abs(DynamicGeometry[0].Z - 0.1F) < 1.0e-5F,
+              "feedback geometry should add the fixed simulation height from all supported accumulation states");
+        Check(DynamicGeometry[1].X > 0.0F && DynamicGeometry[1].Y > 0.0F && DynamicGeometry[1].Z > 0.99F,
+              "feedback geometry should rebuild the local normal from the accumulated height gradient");
+        Check(std::abs(DynamicWeights[9] - StaticWeights[9]) > 1.0e-4F,
+              "feedback should rebuild edge weights using displaced distances and updated normals");
+        const float InitialTotal = std::accumulate(InitialState.begin(), InitialState.end(), 0.0F);
+        const float ResultTotal = std::accumulate(ResultingState.begin(), ResultingState.end(), 0.0F);
+        Check(ResultingState[Mud] < InitialState[Mud] && ResultingState[WaterFilm] < InitialState[WaterFilm] &&
+                  (ResultingState[4U + Mud] + ResultingState[4U + WaterFilm]) > 0.0F,
+              "accumulation geometry should change subsequent GeometryDrive transport toward the downhill neighbor");
+        Check(std::abs(InitialTotal - ResultTotal) < 1.0e-5F,
+              "accumulation feedback transport should conserve State in the no-decay fixture");
+    }
 } // namespace
 
 int main()
@@ -1280,6 +1382,7 @@ int main()
         TestSourceGeometryChannelReuse(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
         TestTransferWeightSolver(Vulkan);
         TestTransferWeightSolver(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
+        TestAccumulationGeometryFeedback(Vulkan);
     }
     catch (const TVulkanUnavailable& Exception)
     {

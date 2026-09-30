@@ -566,6 +566,18 @@ namespace MDSS
             {
                 SolverFlags |= 1U << 4U;
             }
+            if (DebugSolverSettings.bAccumulationFeedbackEnabled)
+            {
+                SolverFlags |= SurfaceSolverAccumulationFeedbackFlag;
+                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight))
+                    SolverFlags |= SurfaceSolverDistanceWeightFlag;
+                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight))
+                    SolverFlags |= SurfaceSolverNormalWeightFlag;
+                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight))
+                    SolverFlags |= SurfaceSolverProfileBoundaryWeightFlag;
+                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::CurvatureWeight))
+                    SolverFlags |= SurfaceSolverCurvatureWeightFlag;
+            }
             Solver->RecordStep(CommandBuffer,
                                *Descriptors,
                                bCurrentStateAB,
@@ -605,6 +617,11 @@ namespace MDSS
     void TSurfaceStateSystem::SetRawFluxCacheEnabled(bool bEnabled) noexcept
     {
         DebugSolverSettings.bRawFluxCacheEnabled = bEnabled;
+    }
+
+    void TSurfaceStateSystem::SetAccumulationFeedbackEnabled(bool bEnabled) noexcept
+    {
+        DebugSolverSettings.bAccumulationFeedbackEnabled = bEnabled;
     }
 
     void TSurfaceStateSystem::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept

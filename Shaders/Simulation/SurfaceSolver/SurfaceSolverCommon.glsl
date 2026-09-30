@@ -73,7 +73,11 @@ layout(std430, set = 0, binding = 11) buffer TSurfaceInputDelta
 {
     float Values[];
 } InputDelta;
+#ifdef SURFACE_TRANSFER_WEIGHTS_WRITE
+layout(std430, set = 0, binding = 14) buffer TSurfaceTransferWeights
+#else
 layout(std430, set = 0, binding = 14) readonly buffer TSurfaceTransferWeights
+#endif
 {
     float Values[];
 } TransferWeights;
@@ -100,6 +104,10 @@ layout(std430, set = 0, binding = 20) readonly buffer TSurfaceWorldTexelAreas
 {
     float Values[];
 } WorldTexelAreas;
+layout(std430, set = 0, binding = 21) buffer TSurfaceDynamicGeometry
+{
+    vec4 Values[]; // local displaced position and updated local normal, two vec4 values per texel
+} DynamicGeometry;
 
 const float StateReferenceArea = 1.0 / (256.0 * 256.0);
 float texelAreaScale(uint TexelIndex) { return WorldTexelAreas.Values[TexelIndex] / StateReferenceArea; }
@@ -164,6 +172,77 @@ uint rawFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
 float transferWeight(uint SourceTexel, uint DirectionIndex)
 {
     return TransferWeights.Values[SourceTexel * SurfaceNeighborCount + DirectionIndex];
+}
+
+bool supportsChannel(uint TexelIndex, uint ChannelIndex);
+
+float accumulationHeight(uint TexelIndex)
+{
+    if (!isValidTexel(TexelIndex)) return 0.0;
+    float AreaScale = texelAreaScale(TexelIndex);
+    if (AreaScale <= 0.0 || isnan(AreaScale) || isinf(AreaScale)) return 0.0;
+    float CavityAmount = 0.0;
+    float FollowingAmount = 0.0;
+    for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
+    {
+        if (!supportsChannel(TexelIndex, ChannelIndex)) continue;
+        uint Record = profileRecordIndex(TexelIndex, ChannelIndex);
+        TSurfaceGPUProfileParameters P = ProfileParameters.Values[Record];
+        float Factor = P.DecayAndGeometry.z;
+        float CavityFactor = P.DecayAndGeometry.w;
+        float State = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
+        if (isnan(State) || isinf(State) || State <= 0.0 ||
+            isnan(Factor) || isinf(Factor) || Factor <= 0.0 ||
+            isnan(CavityFactor) || isinf(CavityFactor)) continue;
+        float Amount = (State / AreaScale) * Factor;
+        CavityAmount += Amount * clamp(CavityFactor, 0.0, 1.0);
+        FollowingAmount += Amount * (1.0 - clamp(CavityFactor, 0.0, 1.0));
+    }
+    float MesoHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+    float CavityHeight = min(CavityAmount, 1.0) * max(-MesoHeight, 0.0);
+    float FollowingHeight = (FollowingAmount + max(CavityAmount - 1.0, 0.0)) * Solver.GravityWorld.w;
+    float Height = CavityHeight + FollowingHeight;
+    return isnan(Height) || isinf(Height) ? 0.0 : max(Height, 0.0);
+}
+
+vec3 effectiveLocalPosition(uint TexelIndex)
+{
+    vec3 Position = Positions.Values[TexelIndex].xyz +
+                    Normals.Values[TexelIndex].xyz * GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+    if ((Solver.Flags & (1u << 6u)) != 0u)
+        Position += Normals.Values[TexelIndex].xyz * accumulationHeight(TexelIndex);
+    return Position;
+}
+
+vec3 effectiveLocalNormal(uint TexelIndex)
+{
+    if ((Solver.Flags & (1u << 6u)) == 0u) return MesoNormals.Values[TexelIndex].xyz;
+    vec3 Fallback = MesoNormals.Values[TexelIndex].xyz;
+    vec3 N = normalize(Normals.Values[TexelIndex].xyz);
+    vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0), N));
+    vec3 V = cross(N, U);
+    float CenterHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight + accumulationHeight(TexelIndex);
+    float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
+    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
+    {
+        uint Other = neighborIndex(TexelIndex, Slot);
+        if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other) ||
+            dot(N, Normals.Values[Other].xyz) < 0.5) continue;
+        vec3 Delta = Positions.Values[Other].xyz - Positions.Values[TexelIndex].xyz;
+        float X = dot(Delta, U), Y = dot(Delta, V);
+        float LengthSquared = X * X + Y * Y;
+        if (LengthSquared <= 1.0e-16) continue;
+        float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight + accumulationHeight(Other);
+        float Weight = 1.0 / LengthSquared;
+        float DH = OtherHeight - CenterHeight;
+        XX += X * X * Weight; XY += X * Y * Weight; YY += Y * Y * Weight;
+        XH += X * DH * Weight; YH += Y * DH * Weight;
+    }
+    float Det = XX * YY - XY * XY;
+    if (Det <= 1.0e-6 * max(XX * YY, 1.0e-12)) return Fallback;
+    vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
+    vec3 Result = normalize(N - U * Gradient.x - V * Gradient.y);
+    return any(isnan(Result)) || any(isinf(Result)) ? Fallback : Result;
 }
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex)
@@ -234,9 +313,11 @@ void prepareSourceGeometry(uint SourceTexel)
     mat3 SolverNormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
                                    Solver.NormalMatrixAndUpColumns[1].xyz,
                                    Solver.NormalMatrixAndUpColumns[2].xyz);
-    vec3 LocalNormal = (Solver.Flags & (1u << 4u)) != 0u
-                           ? Normals.Values[SourceTexel].xyz
-                           : MesoNormals.Values[SourceTexel].xyz;
+    vec3 LocalNormal = (Solver.Flags & (1u << 6u)) != 0u
+                           ? effectiveLocalNormal(SourceTexel)
+                           : ((Solver.Flags & (1u << 4u)) != 0u
+                                  ? Normals.Values[SourceTexel].xyz
+                                  : MesoNormals.Values[SourceTexel].xyz);
     vec3 Normal = SolverNormalMatrix * LocalNormal;
     float NormalLength = length(Normal);
     if (NormalLength <= GeometryEpsilon || isnan(NormalLength) || isinf(NormalLength))
@@ -252,8 +333,7 @@ void prepareSourceGeometry(uint SourceTexel)
         return;
     }
     SourceGravityDirection = GravityOnSurface / SurfaceGravityLength;
-    SourcePosition = Positions.Values[SourceTexel].xyz + Normals.Values[SourceTexel].xyz *
-                     GeometryScalars.Values[SourceTexel].MesoVirtualHeight;
+    SourcePosition = effectiveLocalPosition(SourceTexel);
     SourceGeometryValid = true;
 }
 
@@ -263,8 +343,7 @@ float geometryDrive(uint TargetTexel)
     {
         return 0.0;
     }
-    vec3 TargetPosition = Positions.Values[TargetTexel].xyz + Normals.Values[TargetTexel].xyz *
-                          GeometryScalars.Values[TargetTexel].MesoVirtualHeight;
+    vec3 TargetPosition = effectiveLocalPosition(TargetTexel);
     // 위치 차이를 사용하므로 model translation은 높이 차와 이웃 방향 계산에서 상쇄된다.
     vec3 NeighborDirection = SolverModelLinear * (TargetPosition - SourcePosition);
     float NeighborLength = length(NeighborDirection);

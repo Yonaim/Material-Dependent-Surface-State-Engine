@@ -1,4 +1,25 @@
 /**
  * @file SurfaceAccumulation.comp
- * @brief Surface Accumulation compute shader의 자리표시자다. 현재 구현은 비어 있다.
+ * @brief Build instance-local displaced positions and accumulation-aware normals for one solver step.
  */
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#include "Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
+
+layout(local_size_x = 64) in;
+
+void main()
+{
+    uint Texel = gl_GlobalInvocationID.x;
+    if (Texel >= Solver.LocalTexelCount) return;
+    uint PositionIndex = Texel * 2u;
+    vec3 Position = effectiveLocalPosition(Texel);
+    vec3 Normal = effectiveLocalNormal(Texel);
+    if (any(isnan(Position)) || any(isinf(Position)))
+        Position = Positions.Values[Texel].xyz + Normals.Values[Texel].xyz * GeometryScalars.Values[Texel].MesoVirtualHeight;
+    if (any(isnan(Normal)) || any(isinf(Normal)) || dot(Normal, Normal) < 1.0e-12)
+        Normal = MesoNormals.Values[Texel].xyz;
+    DynamicGeometry.Values[PositionIndex] = vec4(Position, 1.0);
+    DynamicGeometry.Values[PositionIndex + 1u] = vec4(normalize(Normal), 0.0);
+}

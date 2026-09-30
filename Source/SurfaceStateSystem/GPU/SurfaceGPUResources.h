@@ -45,6 +45,7 @@ namespace MDSS
         ReverseNeighborSlots,
         RawFlux,
         WorldTexelAreas,
+        DynamicGeometry,
         Count
     };
 
@@ -138,6 +139,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawFluxBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
         void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void UpdateTransferWeights(const std::vector<float>& TransferWeights,
                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
@@ -158,6 +160,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> RawOutgoingBuffer;
         std::unique_ptr<TGPUBuffer> RawFluxBuffer;
         std::unique_ptr<TGPUBuffer> WorldTexelAreaBuffer;
+        std::unique_ptr<TGPUBuffer> DynamicGeometryBuffer;
     };
 
     class TSurfaceStateDescriptorResources final
