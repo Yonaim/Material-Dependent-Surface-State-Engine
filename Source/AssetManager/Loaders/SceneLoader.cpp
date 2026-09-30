@@ -196,6 +196,10 @@ namespace MDSS
         {
             Scene.SetSimulationResolution(ReadSimulationResolution(*Resolution));
         }
+        if (const auto DisplayScale = Root.find("litHeightDisplayScale"); DisplayScale != Root.end())
+        {
+            Scene.SetLitHeightDisplayScale(ReadFiniteFloat(*DisplayScale, "Scene.litHeightDisplayScale"));
+        }
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
             const TJson& Object = Objects[Index];
@@ -239,6 +243,7 @@ namespace MDSS
         Root["type"] = "TScene";
         Root["version"] = 1;
         Root["simulationResolution"] = Scene.GetSimulationResolution();
+        Root["litHeightDisplayScale"] = Scene.GetLitHeightDisplayScale();
         Root["objects"] = TJson::array();
         for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {

@@ -33,8 +33,8 @@ namespace MDSS
         {
             if (std::filesystem::exists(AbsoluteConfig))
                 throw std::runtime_error("Cannot read engine config: " + AbsoluteConfig.string());
-            TLogger::Warning("EngineConfig", "Config missing; using Assets/Scenes/Demo.Scene.");
-            return std::filesystem::absolute(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Demo.Scene").lexically_normal();
+            TLogger::Warning("EngineConfig", "Config missing; using Assets/Scenes/Mountain.Scene.");
+            return std::filesystem::absolute(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain.Scene").lexically_normal();
         }
         std::string Section, Line, SceneValue;
         bool Found = false;

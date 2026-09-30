@@ -168,12 +168,60 @@ namespace MDSS
             ImGui::SetCursorPosX(RowStartX + LabeledControlColumnWidth);
         }
 
+        bool SliderFloatWithDoubleClickInput(const char*      Label,
+                                             float*           Value,
+                                             float            Minimum,
+                                             float            Maximum,
+                                             const char*      Format,
+                                             ImGuiSliderFlags Flags = ImGuiSliderFlags_AlwaysClamp)
+        {
+            const ImVec2 Position = ImGui::GetCursorScreenPos();
+            const ImVec2 Size(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+            const bool   bDoubleClicked = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+                                        ImGui::IsMouseHoveringRect(
+                                            Position, ImVec2(Position.x + Size.x, Position.y + Size.y));
+            ImGuiIO&     IO = ImGui::GetIO();
+            const bool   bWasControlDown = IO.KeyCtrl;
+            if (bDoubleClicked)
+            {
+                // Dear ImGui's slider input mode is normally entered with Ctrl+click.
+                // Route a double-click through that built-in path for this widget only.
+                IO.KeyCtrl = true;
+            }
+            const bool bChanged = ImGui::SliderFloat(Label, Value, Minimum, Maximum, Format, Flags);
+            IO.KeyCtrl = bWasControlDown;
+            return bChanged;
+        }
+
+        bool SliderIntWithDoubleClickInput(const char*      Label,
+                                           int*             Value,
+                                           int              Minimum,
+                                           int              Maximum,
+                                           const char*      Format = "%d",
+                                           ImGuiSliderFlags Flags = ImGuiSliderFlags_AlwaysClamp)
+        {
+            const ImVec2 Position = ImGui::GetCursorScreenPos();
+            const ImVec2 Size(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+            const bool   bDoubleClicked = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+                                        ImGui::IsMouseHoveringRect(
+                                            Position, ImVec2(Position.x + Size.x, Position.y + Size.y));
+            ImGuiIO&     IO = ImGui::GetIO();
+            const bool   bWasControlDown = IO.KeyCtrl;
+            if (bDoubleClicked)
+            {
+                IO.KeyCtrl = true;
+            }
+            const bool bChanged = ImGui::SliderInt(Label, Value, Minimum, Maximum, Format, Flags);
+            IO.KeyCtrl = bWasControlDown;
+            return bChanged;
+        }
+
         bool LabeledSliderFloat(const char* Label, float* Value, float Minimum, float Maximum, const char* Format)
         {
             ImGui::PushID(Label);
             BeginLabeledControlRow(Label);
             ImGui::SetNextItemWidth(-1.0F);
-            const bool bChanged = ImGui::SliderFloat("##Value", Value, Minimum, Maximum, Format);
+            const bool bChanged = SliderFloatWithDoubleClickInput("##Value", Value, Minimum, Maximum, Format);
             ImGui::PopID();
             return bChanged;
         }
@@ -785,6 +833,13 @@ namespace MDSS
             return;
         }
 
+        if (ImGui::IsKeyPressed(ImGuiKey_Space) && !ShouldSuppressDebugHotkey())
+        {
+            bRotationGizmoMode = !bRotationGizmoMode;
+            ActiveGizmoAxis = -1;
+            HoveredGizmoAxis = -1;
+        }
+
         ImGuiIO&     IO = ImGui::GetIO();
         const ImVec2 DisplaySize = IO.DisplaySize;
         if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F)
@@ -1309,13 +1364,20 @@ namespace MDSS
         {
             return;
         }
+        const TRenderViewMode SelectedMode = FrameRenderer->GetRenderViewMode();
+        const bool bHasViewControls = SelectedMode == TRenderViewMode::Wireframe ||
+                                      SelectedMode == TRenderViewMode::SurfaceAccumulation ||
+                                      SelectedMode == TRenderViewMode::SurfaceFinalGeometry ||
+                                      SelectedMode == TRenderViewMode::MesoHeight ||
+                                      SelectedMode == TRenderViewMode::MesoOffset;
+        const float OptionsWindowHeight = bHasViewControls ? 185.0F : 150.0F;
         ImGui::SetNextWindowPos(ViewportNode->Pos, ImGuiCond_Always);
-        ImGui::SetNextWindowSize({ViewportNode->Size.x, 150.0F}, ImGuiCond_Always);
+        ImGui::SetNextWindowSize({ViewportNode->Size.x, OptionsWindowHeight}, ImGuiCond_Always);
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
         if (DisplaySize.x > 0.0F && DisplaySize.y > 0.0F)
         {
-            constexpr float ToolbarHeight = 170.0F;
+            const float ToolbarHeight = OptionsWindowHeight + 20.0F;
             SceneViewportRectNormalized = {(ViewportNode->Pos.x - MainViewport->Pos.x) / DisplaySize.x,
                 (ViewportNode->Pos.y + ToolbarHeight - MainViewport->Pos.y) / DisplaySize.y,
                 ViewportNode->Size.x / DisplaySize.x,
@@ -1372,70 +1434,68 @@ namespace MDSS
             if (ImGui::BeginCombo("##View", CurrentName, ImGuiComboFlags_HeightLarge))
             {
                 DrawSectionHeader("DISPLAY", 0.0F, 2.0F);
-                for (int Index = 0; Index < static_cast<int>(RenderViewModeNames.size()); ++Index)
+                const auto SelectDisplayView = [&](int Index)
                 {
                     const auto Mode = static_cast<TRenderViewMode>(Index);
-                    if (ImGui::Selectable(RenderViewModeNames[Index], CurrentMode == Mode))
+                    if (ImGui::MenuItem(RenderViewModeNames[Index], nullptr, CurrentMode == Mode))
                     {
                         CurrentMode = Mode;
                         FrameRenderer->SetRenderViewMode(Mode);
                     }
+                };
+                for (int Index = 0; Index < 3; ++Index)
+                {
+                    SelectDisplayView(Index);
+                }
+                if (ImGui::BeginMenu("Normal"))
+                {
+                    for (int Index = 3; Index < static_cast<int>(RenderViewModeNames.size()); ++Index)
+                    {
+                        SelectDisplayView(Index);
+                    }
+                    ImGui::EndMenu();
                 }
                 DrawSectionHeader("DEBUG", 12.0F, 2.0F);
-                for (int Index = 0; Index < static_cast<int>(SurfaceDebugViewNames.size()); ++Index)
+                const auto SelectDebugView = [&](const char* Name, TRenderViewMode Mode)
                 {
-                    const auto Mode =
-                        static_cast<TRenderViewMode>(static_cast<int>(TRenderViewMode::SurfaceStateHeatmap) + Index);
-                    if (ImGui::Selectable(SurfaceDebugViewNames[Index], CurrentMode == Mode))
+                    if (ImGui::MenuItem(Name, nullptr, CurrentMode == Mode))
                     {
                         CurrentMode = Mode;
                         FrameRenderer->SetRenderViewMode(Mode);
                     }
-                }
-                const auto SolverMode = TRenderViewMode::SolverTransferWeight;
-                if (ImGui::Selectable("Texel Grid", CurrentMode == TRenderViewMode::SurfaceTexelGrid))
+                };
+                SelectDebugView(SurfaceDebugViewNames[0], TRenderViewMode::SurfaceStateHeatmap);
+                if (ImGui::BeginMenu("Surface"))
                 {
-                    CurrentMode = TRenderViewMode::SurfaceTexelGrid;
-                    FrameRenderer->SetRenderViewMode(CurrentMode);
+                    SelectDebugView(SurfaceDebugViewNames[1], TRenderViewMode::SurfaceValidity);
+                    SelectDebugView(SurfaceDebugViewNames[2], TRenderViewMode::SurfaceID);
+                    SelectDebugView(SurfaceDebugViewNames[3], TRenderViewMode::NeighborCount);
+                    SelectDebugView(SurfaceDebugViewNames[4], TRenderViewMode::SurfaceSeam);
+                    ImGui::EndMenu();
                 }
-                if (ImGui::Selectable("Texel Area Heatmap", CurrentMode == TRenderViewMode::SurfaceTexelArea))
+                if (ImGui::BeginMenu("Geometry"))
                 {
-                    CurrentMode = TRenderViewMode::SurfaceTexelArea;
-                    FrameRenderer->SetRenderViewMode(CurrentMode);
-                }
-                if (ImGui::Selectable("Solver Transfer Weights", CurrentMode == SolverMode))
-                {
-                    CurrentMode = SolverMode;
-                    FrameRenderer->SetRenderViewMode(SolverMode);
-                }
-                if (ImGui::Selectable("Macro Geometry", CurrentMode == TRenderViewMode::MacroGeometry))
-                {
-                    CurrentMode = TRenderViewMode::MacroGeometry;
-                    FrameRenderer->SetRenderViewMode(CurrentMode);
-                }
-                for (const auto& [Name, Mode] : std::array<std::pair<const char*, TRenderViewMode>, 2>{
-                         {{"Accumulation", TRenderViewMode::SurfaceAccumulation},
-                          {"Final Geometry", TRenderViewMode::SurfaceFinalGeometry}}})
-                {
-                    if (ImGui::Selectable(Name, CurrentMode == Mode))
+                    SelectDebugView("Macro Geometry", TRenderViewMode::MacroGeometry);
+                    SelectDebugView("Accumulation", TRenderViewMode::SurfaceAccumulation);
+                    SelectDebugView("Final Geometry", TRenderViewMode::SurfaceFinalGeometry);
+                    if (ImGui::BeginMenu("Meso"))
                     {
-                        CurrentMode = Mode;
-                        FrameRenderer->SetRenderViewMode(Mode);
+                        SelectDebugView("Color", TRenderViewMode::MesoHeight);
+                        SelectDebugView("Displacement", TRenderViewMode::MesoOffset);
+                        ImGui::EndMenu();
                     }
+                    ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Meso"))
+                if (ImGui::BeginMenu("Texel"))
                 {
-                    // Meso 높이를 색으로 볼지, 실제 형상 변위로 볼지 선택한다.
-                    if (ImGui::RadioButton("Color", CurrentMode == TRenderViewMode::MesoHeight))
-                    {
-                        CurrentMode = TRenderViewMode::MesoHeight;
-                        FrameRenderer->SetRenderViewMode(CurrentMode);
-                    }
-                    if (ImGui::RadioButton("Displacement", CurrentMode == TRenderViewMode::MesoOffset))
-                    {
-                        CurrentMode = TRenderViewMode::MesoOffset;
-                        FrameRenderer->SetRenderViewMode(CurrentMode);
-                    }
+                    SelectDebugView("Texel Grid", TRenderViewMode::SurfaceTexelGrid);
+                    SelectDebugView("Texel Area Heatmap", TRenderViewMode::SurfaceTexelArea);
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Solver"))
+                {
+                    SelectDebugView(SurfaceDebugViewNames[5], TRenderViewMode::OutgoingFluxScale);
+                    SelectDebugView("Solver Transfer Weights", TRenderViewMode::SolverTransferWeight);
                     ImGui::EndMenu();
                 }
                 ImGui::EndCombo();
@@ -1476,7 +1536,7 @@ namespace MDSS
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0F);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {8.0F, 4.0F});
             if (ImGui::BeginChild("SelectedViewContext",
-                                  {0.0F, 110.0F},
+                                  {0.0F, bHasViewControls ? 140.0F : 110.0F},
                                   true,
                                   ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
             {
@@ -1489,6 +1549,23 @@ namespace MDSS
                     ImGui::TextDisabled("%s", Description);
                     ImGui::NewLine();
                 };
+                auto DrawHeightGridControls = [&]()
+                {
+                    auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+                    int GridMode = static_cast<int>(Settings.HeightGridMode);
+                    const char* Modes[] = {"Off", "Overlay", "Grid only"};
+                    bool Changed = ImGui::Combo("Height grid", &GridMode, Modes, 3);
+                    Settings.HeightGridMode = static_cast<std::uint32_t>(GridMode);
+                    ImGui::SameLine();
+                    int BlockSize = static_cast<int>(Settings.HeightGridBlockSize);
+                    ImGui::SetNextItemWidth(130.0F);
+                    Changed |= SliderIntWithDoubleClickInput("Cell texels", &BlockSize, 1, 64);
+                    Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
+                    if (Changed)
+                    {
+                        FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+                    }
+                };
 
                 switch (CurrentMode)
                 {
@@ -1499,8 +1576,31 @@ namespace MDSS
                         BeginViewContext("UNLIT", "조명 없이 재질색만 표시.");
                         break;
                     case TRenderViewMode::Wireframe:
+                    {
                         BeginViewContext("WIREFRAME", "삼각형 와이어프레임으로 형상을 표시.");
+                        bool bUniformWhite = FrameRenderer->IsWireframeUniformWhite();
+                        if (ImGui::Checkbox("Uniform white lines", &bUniformWhite))
+                        {
+                            FrameRenderer->SetWireframeUniformWhite(bUniformWhite);
+                        }
+                        if (FrameRenderer->SupportsWireframeLineWidth())
+                        {
+                            ImGui::SameLine(0.0F, 16.0F);
+                            float Width = FrameRenderer->GetWireframeLineWidth();
+                            ImGui::SetNextItemWidth(180.0F);
+                            if (SliderFloatWithDoubleClickInput("Line width", &Width,
+                                                                FrameRenderer->GetWireframeLineWidthMin(),
+                                                                FrameRenderer->GetWireframeLineWidthMax(), "%.1f px"))
+                            {
+                                FrameRenderer->SetWireframeLineWidth(Width);
+                            }
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled("Line width adjustment is unsupported by this GPU.");
+                        }
                         break;
+                    }
                     case TRenderViewMode::VertexNormalWS:
                         BeginViewContext("VERTEX NORMAL", "RGB 채널은 월드 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                         break;
@@ -1643,6 +1743,8 @@ namespace MDSS
                         }
                         if (Changed)
                             FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+                        ImGui::NewLine();
+                        DrawHeightGridControls();
                         if (!bFinal)
                         {
                             DrawLegendColor({0.075F, 0.090F, 0.260F, 1}, "0");
@@ -1774,14 +1876,18 @@ namespace MDSS
                         break;
                     }
                     case TRenderViewMode::MesoHeight:
+                    {
                         BeginViewContext("MESO COLOR", "texel 연결면에서 복원 높이의 부호와 크기를 표시합니다.");
                         DrawLegendColor({0.12F, 0.52F, 0.92F, 1.0F}, "음수");
                         DrawLegendColor({0.12F, 0.13F, 0.17F, 1.0F}, "0 기준");
                         DrawLegendColor({1.0F, 0.42F, 0.10F, 1.0F}, "양수");
+                        DrawHeightGridControls();
                         break;
+                    }
                     case TRenderViewMode::MesoOffset:
                         BeginViewContext("MESO DISPLACEMENT",
                                          "texel 연결면에 Meso 높이를 적용합니다. 높이 색상은 Meso Color에서 확인하세요.");
+                        DrawHeightGridControls();
                         break;
                     case TRenderViewMode::MacroGeometry:
                         BeginViewContext("MACRO GEOMETRY", "노멀 맵 효과를 제외한 원본 형상.");
@@ -1855,26 +1961,6 @@ namespace MDSS
                     ImGui::EndTabItem();
                 }
 
-                if (ImGui::BeginTabItem("Geometry"))
-                {
-                    if (ImGui::BeginChild(
-                            "GeometrySettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        DrawSectionHeader("Height Surface Grid");
-                        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
-                        int GridMode = static_cast<int>(Settings.HeightGridMode);
-                        const char* Modes[] = {"Off", "Overlay", "Grid only"};
-                        bool Changed = ImGui::Combo("Grid", &GridMode, Modes, 3);
-                        Settings.HeightGridMode = static_cast<std::uint32_t>(GridMode);
-                        int BlockSize = static_cast<int>(Settings.HeightGridBlockSize);
-                        Changed |= ImGui::SliderInt("Cell texels", &BlockSize, 1, 64);
-                        Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
-                        ImGui::TextDisabled("Meso / Accumulation / Final Geometry");
-                        if (Changed) FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
-                    }
-                    ImGui::EndChild();
-                    ImGui::EndTabItem();
-                }
                 ImGui::EndTabBar();
             }
         }
@@ -2268,7 +2354,9 @@ namespace MDSS
             }
             bFirstPreset = false;
         }
-        LabeledSliderFloat("Time scale", &SimulationTimeScale, 0.05F, 4.0F, "%.2fx");
+        ContinueControlRow(160.0F);
+        ImGui::SetNextItemWidth(-1.0F);
+        SliderFloatWithDoubleClickInput("##Speed", &SimulationTimeScale, 0.05F, 4.0F, "%.2fx");
     }
 
     void TDebugUI::DrawGlobalSettingsTab(TScene& SceneData)
@@ -2554,7 +2642,7 @@ namespace MDSS
         }
         BeginLabeledControlRow("Texel search");
         ImGui::SetNextItemWidth(-1.0F);
-        ImGui::SliderInt("##InjectTexelSearchRadius", &InjectTexelSearchRadius, 0, 16, "%d texels");
+        SliderIntWithDoubleClickInput("##InjectTexelSearchRadius", &InjectTexelSearchRadius, 0, 16, "%d texels");
         if (ImGui::IsItemHovered())
         {
             SetDescriptionTooltip("Same-triangle UV fallback range per axis. Default: 2; 0 disables fallback.");

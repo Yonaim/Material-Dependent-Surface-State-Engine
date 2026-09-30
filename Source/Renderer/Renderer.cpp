@@ -218,6 +218,8 @@ namespace MDSS
             glm::vec4     CameraPosition{0, 0, 1, 1};
         };
 
+        constexpr std::uint32_t RenderModeWireframeUniformWhite = 20U;
+
         const char* GetRenderViewModeName(TRenderViewMode Mode)
         {
             switch (Mode)
@@ -331,6 +333,7 @@ namespace MDSS
         {
             TGraphicsPipelineConfig Config = BuildStaticMeshPipelineConfig(MaterialLayout);
             Config.PolygonMode = VK_POLYGON_MODE_LINE;
+            Config.bDynamicLineWidth = true;
             return Config;
         }
 
@@ -497,6 +500,18 @@ namespace MDSS
                            DepthImageView.GetHandle()),
           FrameContext(Context)
     {
+        VkPhysicalDeviceFeatures DeviceFeatures{};
+        vkGetPhysicalDeviceFeatures(Context.GetPhysicalDevice(), &DeviceFeatures);
+        VkPhysicalDeviceProperties DeviceProperties{};
+        vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &DeviceProperties);
+        bSupportsWireframeLineWidth = DeviceFeatures.wideLines == VK_TRUE;
+        if (bSupportsWireframeLineWidth)
+        {
+            WireframeLineWidthMin = std::max(1.0F, DeviceProperties.limits.lineWidthRange[0]);
+            WireframeLineWidthMax = std::max(WireframeLineWidthMin, DeviceProperties.limits.lineWidthRange[1]);
+            WireframeLineWidth = std::clamp(2.0F, WireframeLineWidthMin, WireframeLineWidthMax);
+        }
+
         std::vector<TGizmoVertex> GizmoVertices = BuildWorldReferenceVertices(WorldGridVertexCount,
                                                                                WorldAxisVertexCount);
         const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
@@ -1019,6 +1034,14 @@ namespace MDSS
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
     {
         return ViewMode;
+    }
+
+    void TRenderer::SetWireframeLineWidth(float Width) noexcept
+    {
+        if (std::isfinite(Width))
+        {
+            WireframeLineWidth = std::clamp(Width, WireframeLineWidthMin, WireframeLineWidthMax);
+        }
     }
 
     bool TRenderer::IsWorldGridVisible() const noexcept
@@ -1564,7 +1587,9 @@ namespace MDSS
             const TMaterialAsset&  Material = Assets.GetMaterial(static_cast<TMaterialAssetHandle>(Index));
             const TMaterialUniform Uniform{
                 Material.GetBaseColor(),
-                static_cast<std::uint32_t>(ViewMode),
+                ViewMode == TRenderViewMode::Wireframe && bWireframeUniformWhite
+                    ? RenderModeWireframeUniformWhite
+                    : static_cast<std::uint32_t>(ViewMode),
                 bFlipNormalY ? 1U : 0U,
                 NormalStrength,
                 AmbientLight,
@@ -1686,6 +1711,10 @@ namespace MDSS
                           bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle()
                                                : (bWireframe ? WireframePipeline.GetHandle()
                                                              : StaticMeshPipeline.GetHandle()));
+        if (bWireframe && bSupportsWireframeLineWidth)
+        {
+            vkCmdSetLineWidth(CommandBuffer, WireframeLineWidth);
+        }
 
         const VkExtent2D    Extent = SwapchainData.GetExtent();
         const glm::vec4     NormalizedViewport = DebugInterface.GetSceneViewportRectNormalized();

@@ -36,6 +36,7 @@ namespace MDSS
         bool        bDepthWriteEnabled = false;
         VkCompareOp DepthCompareOp = VK_COMPARE_OP_LESS;
         bool        bBlendingEnabled = false;
+        bool        bDynamicLineWidth = false;
 
         std::vector<VkDescriptorSetLayout> DescriptorSetLayouts;
         std::vector<VkPushConstantRange>   PushConstantRanges;

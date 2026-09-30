@@ -140,7 +140,11 @@ namespace MDSS
             ColorBlending.attachmentCount = 1;
             ColorBlending.pAttachments = &ColorBlendAttachment;
 
-            const std::array<VkDynamicState, 2> DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+            std::vector<VkDynamicState> DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+            if (Config.bDynamicLineWidth)
+            {
+                DynamicStates.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
+            }
             VkPipelineDynamicStateCreateInfo    DynamicState{};
             DynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             DynamicState.dynamicStateCount = static_cast<std::uint32_t>(DynamicStates.size());

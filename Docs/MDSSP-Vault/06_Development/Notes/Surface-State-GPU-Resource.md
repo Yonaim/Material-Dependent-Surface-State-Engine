@@ -155,7 +155,7 @@ Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. 
 
 `TransferWeightsBuffer`는 `texel × 8 + neighborSlot` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 선택적 CurvatureWeight(기본 1.0; [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]) × ProfileBoundaryWeight를 각 슬롯에 기록한다. Profile이 같으면 `ProfileBoundaryWeight`는 1.0, 다르면 0.5다.
 
-초기 cache는 instance GPU resource 생성 시 준비한다. `TSurfaceStateSystem::RecordStep`은 회전/scale 등 3×3 선형 transform의 변화를 확인한다. dirty cache가 하나라도 있으면 이전 dispatch가 끝나도록 Graphics queue를 idle한 뒤 해당 instance cache를 다시 계산·업로드한다. 순수 translation은 가중치에 영향을 주지 않아 재생성하지 않는다. 현재 Geometry scalar/topology를 runtime에서 수정하는 경로는 없으며, 추후 추가할 때 resource manager의 `InvalidateTransferWeightCache`를 호출해야 한다. 동적 AccumulationHeight/normal 값의 공급과 invalidation은 미구현이다.
+초기 cache는 instance GPU resource 생성 시 준비한다. `TSurfaceStateSystem::RecordStep`은 회전/scale 등 3×3 선형 transform의 변화를 확인한다. dirty cache가 하나라도 있으면 이전 dispatch가 끝나도록 Graphics queue를 idle한 뒤 해당 instance cache를 다시 계산·업로드한다. 순수 translation은 가중치에 영향을 주지 않아 재생성하지 않는다. Geometry feedback ON에서는 매 Solver step의 사전 compute pass가 Profile 두께로 적층 위치·normal을 만들고 동적 TransferWeight를 갱신한다. OFF에서는 정적 cache를 재사용한다. 현재 Geometry scalar/topology를 runtime에서 수정하는 경로는 없으며, 추후 추가할 때 resource manager의 `InvalidateTransferWeightCache`를 호출해야 한다.
 
 동일한 edge의 양 방향 슬롯은 현재 대칭 가중치 식에서 같은 값을 갖지만 각 방향 슬롯을 별도로 저장한다. 무방향 edge 저장으로 압축하는 방식은 후속 최적화 후보로만 남아 있다.
 
@@ -201,7 +201,7 @@ Descriptor layout은 아래 binding을 각각 별도의 storage buffer로 연결
 | 3 | `SurfaceNormalBuffer` | `vec4[]` | read-only |
 | 4 | `GeometryScalarBuffer` | texel당 네 `float` | vertex / fragment / compute read-only |
 | 5 | `NeighborIndexBuffer` | texel당 `uvec4[2]` | read-only |
-| 6 | `ProfileParametersBuffer` | `(ProfileIndex, ChannelIndex)`당 두 `vec4` | read-only |
+| 6 | `ProfileParametersBuffer` | `(ProfileIndex, ChannelIndex)`당 세 `vec4` (48 B, 세 번째의 `x`가 `ThicknessPerAmount`) | read-only |
 | 7 | `ProfileSupportedBuffer` | `uint[]` | read-only |
 | 8 | Current State | packed `float[]` | read-only |
 | 9 | Next State | packed `float[]` | write-only |

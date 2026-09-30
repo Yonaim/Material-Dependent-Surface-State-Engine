@@ -24,6 +24,7 @@ const uint RENDER_MODE_WIREFRAME = 2u;
 const uint RENDER_MODE_VERTEX_NORMAL_WS = 3u;
 const uint RENDER_MODE_NORMAL_TEXTURE_TS = 4u;
 const uint RENDER_MODE_MAPPED_NORMAL_WS = 5u;
+const uint RENDER_MODE_WIREFRAME_UNIFORM_WHITE = 20u;
 
 vec3 VisualizeNormal(vec3 Normal)
 {
@@ -76,6 +77,11 @@ void main()
     {
         float Diffuse = max(dot(mappedNormalWS, normalize(vec3(0.35,0.55,1.0))), 0.0);
         OutColor = vec4(albedo.rgb * (Material.AmbientLight + (1.0-Material.AmbientLight) * Diffuse), albedo.a);
+        return;
+    }
+    if (Material.RenderMode == RENDER_MODE_WIREFRAME_UNIFORM_WHITE)
+    {
+        OutColor = vec4(1.0);
         return;
     }
     OutColor = vec4(ShadeSurface(albedo.rgb, mappedNormalWS, Material.CameraPosition.xyz - FragWorldPosition,

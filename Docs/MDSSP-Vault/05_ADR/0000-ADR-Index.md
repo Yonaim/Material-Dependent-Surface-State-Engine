@@ -40,6 +40,7 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0013-InputDelta-Host-Upload-Synchronization|ADR 0013]] | InputDelta Host Upload 동기화 | CPU가 InputDelta buffer를 갱신할 때 필요한 host upload와 GPU 동기화 방식을 결정한다. |
 | [[0014-Surface-Contact-Target-API|ADR 0014]] | Surface Contact Target API | 접촉 입력을 대상 Surface에 전달하는 공개 API와 Collider 연결 방식을 결정한다. |
 | [[0027-Scene-State-Registry-and-Shared-Profile-Table|ADR 0027]] | Scene별 State Registry와 공유 Profile GPU 테이블 | Scene별 State Registry와 Profile GPU 테이블의 구성 및 공유 범위를 정한다. |
+| [[0040-Application-Owned-Surface-State-System|ADR 0040]] | Application 소유 Surface State System | `TApplication`이 Surface State System의 수명을 소유하고 Renderer는 비소유 참조만 사용한다. |
 
 ### Assets
 
@@ -88,3 +89,4 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0032-Accumulated-Simulation-Timestep|ADR 0032]] | 실제 경과 시간을 누적하는 Solver 반복 | 안전 간격으로 반복하고 처리하지 못한 시간은 이월한다. |
 | [[0033-Geometry-Rate-Recalibration|ADR 0033]] | Geometry 전달 기준값 재보정 | 기준 Rate를 6000으로 높이고 C++·GLSL과 안전 시간 간격 계산이 공유한다. |
 | [[0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]] | Fixed timestep과 Auto substepping 분리 | 기본 Fixed ON은 1/60초 구간을 사용하고 기본 OFF인 Auto에서만 Transport 조건에 따라 세분화한다. |
+| [[0039-State-Thickness-Per-Amount|ADR 0039]] | Capacity 제한 State 기여량의 적층 두께 | Capacity 제한 형상 기여량과 `.SRProfile` 두께를 렌더링·Solver Geometry에서 공유한다. |

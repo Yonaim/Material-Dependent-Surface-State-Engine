@@ -27,7 +27,7 @@ C++20 / Vulkan 기반 렌더링 엔진에 **Material-Dependent Surface State** �
 - `Wetness`는 재질 내부에 흡수된 수분이고, 표면 위에서 흐르거나 고이는 물은 `SurfaceWater`다.
 - `State`는 Capacity 초과를 포함한 전체 finite·비음수 양을 기존 A/B에 저장한다. `stateCapacity`는 포화 기준량이며 전달용 `Saturation = State / stateCapacity`는 상한 clamp하지 않는다. 별도 `Overflow` 저장은 하지 않는다.
 - Input은 discrete event, Transport와 Decay는 시간 기반 연속 갱신으로 처리한다.
-- Accumulation은 `State × accumulationFactor`에서 계산하고 Cavity Fill / Excess를 구분한다.
+- Accumulation geometry는 Capacity로 제한한 State 기여량에서 계산하고 Cavity Fill / Excess를 구분한다. Capacity 초과량은 State와 수송에는 보존하지만 형상 높이를 더 키우지 않는다.
 - State 갱신의 GPU 기본안은 2-Pass `alpha` solver와 State A/B ping-pong이다. `InputDelta`는 dense buffer를 사용한다.
 
 초과량 보존 계약은 [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]에 확정했다. Shader 변경과 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다. 연구 검토는 [[../../02_Research/0000_Research-Index|Research 색인]]을 본다.

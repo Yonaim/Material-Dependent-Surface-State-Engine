@@ -129,6 +129,13 @@ namespace MDSS
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
+        [[nodiscard]] bool IsWireframeUniformWhite() const noexcept { return bWireframeUniformWhite; }
+        void SetWireframeUniformWhite(bool bEnabled) noexcept { bWireframeUniformWhite = bEnabled; }
+        [[nodiscard]] bool SupportsWireframeLineWidth() const noexcept { return bSupportsWireframeLineWidth; }
+        [[nodiscard]] float GetWireframeLineWidth() const noexcept { return WireframeLineWidth; }
+        [[nodiscard]] float GetWireframeLineWidthMin() const noexcept { return WireframeLineWidthMin; }
+        [[nodiscard]] float GetWireframeLineWidthMax() const noexcept { return WireframeLineWidthMax; }
+        void SetWireframeLineWidth(float Width) noexcept;
         [[nodiscard]] bool IsWorldGridVisible() const noexcept;
         void SetWorldGridVisible(bool bVisible) noexcept;
         [[nodiscard]] bool IsWorldAxisVisible() const noexcept;
@@ -243,6 +250,11 @@ namespace MDSS
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
         std::vector<TMaterialRenderResource> MaterialResources;
         TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
+        bool                                 bWireframeUniformWhite = false;
+        bool                                 bSupportsWireframeLineWidth = false;
+        float                                WireframeLineWidth = 2.0F;
+        float                                WireframeLineWidthMin = 1.0F;
+        float                                WireframeLineWidthMax = 1.0F;
         std::uint32_t                         DebugStateChannel = 0;
         bool                                 bStateHeatmapReliefShadingEnabled = true;
         TSurfaceDebugDisplaySettings          SurfaceDebugSettings;

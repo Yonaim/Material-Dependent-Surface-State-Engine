@@ -75,6 +75,7 @@ namespace MDSS
         VkPhysicalDeviceFeatures Features{};
         Features.geometryShader = SupportedFeatures.geometryShader;
         Features.fillModeNonSolid = SupportedFeatures.fillModeNonSolid;
+        Features.wideLines = SupportedFeatures.wideLines;
         bGeometryShaderSupported = SupportedFeatures.geometryShader == VK_TRUE;
 
         VkDeviceCreateInfo CreateInfo{};
