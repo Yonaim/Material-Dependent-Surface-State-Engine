@@ -214,6 +214,14 @@ void main()
         OutColor = vec4(Color, 1.0);
         return;
     }
+    // Refined source boundary faces remain visible even where UV cells have no center sample.
+    if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY)
+    {
+        vec3 Normal = normalize(FragMesoNormalWS);
+        float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
+        OutColor = vec4(HeightGridColor(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Range, UVFootprint), Material.BaseColor.a);
+        return;
+    }
     if (!bGeometryValid)
     {
         OutColor = vec4(0.10, 0.10, 0.13, 1.0);
@@ -255,13 +263,6 @@ void main()
         vec3 Positive = vec3(1.0, 0.42, 0.10);
         vec3 Color = SignedT < 0.5 ? mix(Negative, Zero, SignedT * 2.0) : mix(Zero, Positive, (SignedT - 0.5) * 2.0);
         OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1.0);
-        return;
-    }
-    if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY)
-    {
-        vec3 Normal = normalize(FragMesoNormalWS);
-        float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
-        OutColor = vec4(HeightGridColor(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Range, UVFootprint), Material.BaseColor.a);
         return;
     }
     if (Material.RenderMode == RENDER_MODE_MACRO_GEOMETRY)

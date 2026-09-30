@@ -73,7 +73,7 @@ namespace MDSS::Tests
             float         ReliefShadingEnabled = 0.0F;
             glm::vec4     DebugOptions{4.0F, 0.01F, 0.01F, 1.0F};
             glm::uvec4    DebugFlags{0};
-            glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, 1U, 0U};
+            glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, InvalidStateId, 1U};
             glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 0.1F};
             glm::vec4     CameraPosition{-0.35F, -0.55F, 1.0F, 1.0F};
         };
@@ -475,8 +475,15 @@ namespace MDSS::Tests
         TTexelGeometryPreview Preview(Context.GetPhysicalDevice(), Device, GridDescriptors.GetLayout(), 1);
         auto GridConfig = Config;
         GridConfig.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/TexelGeometry.vert.spv";
-        GridConfig.VertexBindings.clear();
-        GridConfig.VertexAttributes.clear();
+        using V = TSurfaceTexelMeshVertex;
+        GridConfig.VertexBindings = {{0, sizeof(V), VK_VERTEX_INPUT_RATE_VERTEX}};
+        GridConfig.VertexAttributes = {
+            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(V, Position)},
+            {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(V, Normal)},
+            {2, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(V, UVSurface)},
+            {3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(V, DisplacementNormal)},
+            {4, 0, VK_FORMAT_R32G32B32A32_UINT, offsetof(V, Samples)},
+            {5, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(V, Weights)}};
         GridConfig.DescriptorSetLayouts = {Handles.MaterialLayout, GridDescriptors.GetLayout(), Preview.GetOutputLayout()};
         TGraphicsPipeline GridPipeline(Device, Handles.Pass, GridConfig);
         // Insert an unrelated State before the demo names: rendering must use resolved IDs, not fixed slots.
@@ -517,7 +524,8 @@ namespace MDSS::Tests
         std::array<TTexelGeometryVertex, 9> Computed{};
         const auto RenderGrid = [&](bool bAB, bool bAccumulation, float Scale,
                                     TRenderViewMode Mode = TRenderViewMode::SurfaceFinalGeometry,
-                                    std::uint32_t GridMode = 0, std::uint32_t BlockSize = 1, const TUniform* LitUniform = nullptr)
+                                    std::uint32_t GridMode = 0, std::uint32_t BlockSize = 1, const TUniform* LitUniform = nullptr,
+                                    const TSurfaceSharedGeometryGPUResources* MeshOverride = nullptr)
         {
             TUniform Uniform = LitUniform ? *LitUniform : TUniform{};
             Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
@@ -560,8 +568,12 @@ namespace MDSS::Tests
             vkCmdBindDescriptorSets(Command, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.GetLayout(),
                 0, Sets.size(), Sets.data(), 0, nullptr);
             vkCmdPushConstants(Command, Pipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Side), &Side);
-            vkCmdBindIndexBuffer(Command, GridShared.GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
-            const auto Range = GridShared.GetTexelMeshRanges()[0];
+            const auto& RenderMesh = MeshOverride ? *MeshOverride : GridShared;
+            const VkBuffer GridVertices = RenderMesh.GetTexelMeshVertexBuffer()->GetHandle();
+            const VkDeviceSize GridOffset = 0;
+            vkCmdBindVertexBuffers(Command, 0, 1, &GridVertices, &GridOffset);
+            vkCmdBindIndexBuffer(Command, RenderMesh.GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+            const auto Range = RenderMesh.GetTexelMeshRanges()[0];
             vkCmdDrawIndexed(Command, Range.IndexCount, 1, Range.FirstIndex, 0, 0);
             vkCmdEndRenderPass(Command);
             VkBufferImageCopy Copy{};
@@ -594,6 +606,39 @@ namespace MDSS::Tests
                 "An interior texel must raise the actual silhouette while all boundary samples stay flat.");
         Require(Close(Computed[4].PositionAndHeight.z, 0.4F) && Computed[0].PositionAndHeight.z == 0,
                 "Compute must store per-texel positions from the latest State without resampling sparse mesh vertices.");
+        // Refine a UV-seamed source quad. The center sample lies exactly on its shared edge,
+        // and must raise that edge in both charts without opening a crack.
+        std::vector<TVertex> SeamVertices(6);
+        const std::array<glm::vec3, 6> SeamPositions{{
+            {-0.5F,-0.5F,0}, {0.5F,-0.5F,0}, {0.5F,0.5F,0},
+            {-0.5F,-0.5F,0}, {0.5F,0.5F,0}, {-0.5F,0.5F,0}}};
+        const std::array<glm::vec2, 6> SeamUVs{{
+            {0.05F,0.05F}, {0.45F,0.05F}, {0.45F,0.45F},
+            {0.55F,0.55F}, {0.95F,0.95F}, {0.55F,0.95F}}};
+        for (std::size_t K = 0; K < 6; ++K)
+        {
+            SeamVertices[K].Position = SeamPositions[K];
+            SeamVertices[K].UV = SeamUVs[K];
+        }
+        const std::vector<TMeshTriangleSource> SeamTriangles{
+            {{0,1,2}, {0,1,2}, {0,1,2}, 0}, {{3,4,5}, {0,2,3}, {3,4,5}, 0}};
+        auto SeamGeometry = GridGeometry;
+        for (std::uint32_t T = 0; T < 9; ++T)
+        {
+            const float X = float(T % 3) * 0.5F, Y = float(T / 3) * 0.5F;
+            auto& G = SeamGeometry.GetTexels()[T];
+            G.Triangle = G.Chart = Y <= X ? 0 : 1;
+            G.Barycentric = Y <= X ? glm::vec3(1-X, X-Y, Y) : glm::vec3(1-Y, X, Y-X);
+        }
+        TSurfaceSharedGeometryGPUResources SeamShared(Context.GetPhysicalDevice(), Device, SeamGeometry,
+            {}, SeamVertices, SeamTriangles);
+        const auto SeamFlat = RenderGrid(true, false, 1, TRenderViewMode::SurfaceFinalGeometry, 0, 1, nullptr, &SeamShared);
+        const auto SeamRaised = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 0, 1, nullptr, &SeamShared);
+        Require(SeamFlat[128 * Extent.width + 220].a == 0 && SeamRaised[128 * Extent.width + 220].a > 0.5F,
+                "Source-edge texel heights must survive seam welding and raise the actual GPU silhouette.");
+        Require(std::count_if(SeamFlat.begin(), SeamFlat.end(), [](auto P) { return P.a > 0.5F; }) ==
+                std::count_if(Flat.begin(), Flat.end(), [](auto P) { return P.a > 0.5F; }),
+                "A flat source-seamed quad must have complete GPU coverage without chart border gaps.");
         const auto EdgeNormal = Computed[3].Normal;
 
         const auto GridOverlay = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 1);
@@ -647,7 +692,7 @@ namespace MDSS::Tests
         TUniform LitUniform;
         LitUniform.StateChannelCount = 3;
         LitUniform.BaseColor = {0.4F, 0.4F, 0.4F, 1};
-        LitUniform.DemoStateChannels = {LitBindings.Wetness, LitBindings.Mud, 1, 0};
+        LitUniform.DemoStateChannels = {LitBindings.Wetness, LitBindings.Mud, InvalidStateId, 1};
         std::array<float,27> LitState{};
         auto UploadLitState = [&] { LitInstance.GetStateABuffer().Upload(LitState.data(), sizeof(LitState)); };
         auto RenderLit = [&](bool AB = true, bool Height = false) {
@@ -684,9 +729,9 @@ namespace MDSS::Tests
         for (auto& V : LitState) V *= 2;
         UploadLitState();
         LitUniform.CameraPosition = {-0.35F,-0.55F,1,1};
-        LitUniform.DemoStateChannels.z = 0;
+        LitUniform.DemoStateChannels.w = 0;
         Require(RenderLit() == DryLit, "Disabling demo effects must recover the dry base material.");
-        LitUniform.DemoStateChannels.z = 1;
+        LitUniform.DemoStateChannels.w = 1;
         LitState.fill(0);
         for (std::size_t T = 0; T < 9; ++T) LitState[T*3 + LitBindings.Mud] = 1;
         UploadLitState();

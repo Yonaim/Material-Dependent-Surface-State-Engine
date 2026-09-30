@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** Scene의 Mesh·Material과 현재 Surface State가 기본 렌더링 및 진단 뷰로 출력되고, 향후 외관·적층 변화로 연결되는 경로를 설명한다.
 
-상태: **기본 Material·Normal Map·Surface Debug view 연결 · State 기반 최종 Material과 동적 Accumulation 미연결** · 상위 지도: [[0000_Overview|시스템 흐름 지도]]
+상태: **기본 렌더·Surface 진단·선택된 Wetness/Mud/WaterFilm demo Lit 및 표시용 변위 연결 · 범용 Material 반응과 Solver Geometry feedback 미연결** · 상위 지도: [[0000_Overview|시스템 흐름 지도]]
 
 이 문서는 렌더링에 들어오는 데이터와 화면 출력까지의 연결을 설명한다. 외관과 형상 변화의 의미는 [[04_Architecture/0009_Rendering|Surface State Rendering]]이 기준이다.
 
@@ -20,18 +20,23 @@ flowchart LR
   Profile["Profile Capacity and Parameters"] --> Debug
   Debug --> Diagnostic["State and Mapping Diagnostics"]
 
-  State -. target .-> Appearance["Profile-driven Material Response"]
-  State -. target .-> Height["AccumulationHeight"]
-  Runtime -. target .-> Height
-  Appearance -. target .-> Final["Final Surface Appearance"]
-  Height -. target .-> Final
+  State --> Demo["Wetness / Mud / WaterFilm demo response"]
+  State --> Height["Display AccumulationHeight"]
+  Runtime --> Height
+  Height --> TexelMesh["Texel-connected preview / demo mesh"]
+  TexelMesh --> Frame["Viewport Frame"]
+
+  Height -. future .-> Feedback["Updated Solver Geometry"]
+  Feedback -. future .-> State
+  State -. target .-> Final["General Profile-driven appearance"]
+  Height --> Final
 
   Base --> Frame["Viewport Frame"]
   Diagnostic --> Frame
   Final -. target .-> Frame
 ```
 
-기본 Mesh 렌더링과 Surface 진단 렌더링은 현재 연결되어 있다. State가 Material 색·roughness를 직접 바꾸는 경로와 Accumulation이 실제 표시 형상을 바꾸는 경로는 설계 목표다.
+기본 Mesh 렌더링, Surface 진단, 선택된 demo State의 색·roughness 변화와 표시용 적층 변위는 현재 연결되어 있다. 임시 데모 반응을 모든 State/Profile에 일반화한 렌더 반응과, 변형된 Geometry를 다음 Solver step에서 다시 사용하는 피드백은 아직 연결되지 않았다.
 
 ## Frame에서의 데이터 흐름
 
@@ -59,6 +64,8 @@ sequenceDiagram
 | Albedo·Material 값 | Lit 또는 Unlit shading | 기본 색과 조명 반응 |
 | Normal Texture | tangent-space normal 변환 | Normal Map이 반영된 shading |
 | Camera와 render settings | view/projection 및 조명 설정 | Viewport 장면 |
+| 선택된 Wetness·Mud·WaterFilm State | demo shader에서 상태별 색·roughness 반응 | 제한된 demo Lit 외관 |
+| 선택된 State, Profile 파라미터와 Meso height | 표시용 Accumulation 계산·texel geometry 생성 | 진단 preview와 일부 demo displacement |
 
 ## Surface 진단 경로
 
@@ -73,19 +80,23 @@ sequenceDiagram
 
 Heatmap은 알아보기 쉽도록 `clamp(State / Capacity, 0, 1)`을 사용할 수 있다. 이 clamp는 표시 전용이며 State 저장값과 Transport에 사용하는 Saturation을 바꾸지 않는다. 따라서 Capacity를 넘는 서로 다른 양이 같은 최상위 색으로 보일 수 있다.
 
-## 목표 외관 경로
+## 현재 demo와 후속 외관 경로
 
 ```mermaid
 flowchart TD
-  State["Current State"] --> Ratio["Profile-driven response"]
-  Profile["State response parameters"] --> Ratio
-  Ratio --> Material["Color Roughness and other appearance"]
+  State["Current State"] --> Demo["Explicit demo State bindings"]
+  Demo --> Material["Wetness / Mud / WaterFilm color and roughness"]
+  State -. future .-> General["General State ID to appearance mapping"]
+  Profile["Profile response parameters"] -. future .-> General
+  General -. future .-> Material
 
   State --> Amount["State times accumulationFactor"]
   Amount --> Accumulation["AccumulationHeight"]
   Meso["MesoVirtualHeight"] --> FinalHeight["FinalMesoHeight"]
   Accumulation --> FinalHeight
-  FinalHeight --> Method["Parallax Shading or Geometry Displacement"]
+  FinalHeight --> Method["Current preview / selected demo texel-mesh displacement"]
+  Method --> Material
+  Feedback["Solver Geometry feedback"] -. future .-> FinalHeight
 
   Material --> Pixel["Final shaded pixel"]
   Method --> Pixel
@@ -100,10 +111,11 @@ State 기반 외관 반응은 Profile별로 달라질 수 있다. 적층 상태�
 | Mesh·Material·Texture 기본 렌더링 | 현재 연결 |
 | Normal Texture와 normal 관련 display view | 현재 연결 |
 | State Heatmap과 Surface Mapping 진단 | 현재 연결 |
-| Solver State → Profile 기반 최종 Material 반응 | 미연결 |
-| State → `AccumulationHeight` 생성 | 미연결 |
-| Accumulation → render displacement/parallax | 방식 검토 중 |
-| 동적 Geometry → 후속 Solver Geometry 입력 | 설계 목표, 미연결 |
+| Wetness·Mud·WaterFilm demo 색·roughness 반응 | 선택된 State key에 한해 현재 연결 |
+| State → 표시용 `AccumulationHeight`와 texel geometry | Debug view 및 일부 demo Lit에서 현재 연결 |
+| State·Accumulation을 범용 Profile material response로 확장 | 미연결 |
+| 표시용 높이와 적층 형상을 Solver Geometry로 되먹임 | 미연결 |
+| 실제 Surface별 accumulation height 기준과 다중 layer 물리 합성 | 미구현 |
 
 ## 세부 문서
 

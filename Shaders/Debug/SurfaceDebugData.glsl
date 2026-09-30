@@ -1,5 +1,5 @@
 // Shared GPU evaluation for height previews, heatmaps and the Texel Inspector.
-// These are diagnostic projections; the transport solver still uses static geometry.
+// These previews are diagnostic; optional solver feedback builds its own aggregate geometry.
 #ifndef MDSS_SURFACE_DEBUG_DATA
 #define MDSS_SURFACE_DEBUG_DATA
 #ifndef SURFACE_DEBUG_SET

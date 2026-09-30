@@ -9,6 +9,7 @@ namespace MDSS
     {
         TStateId Wetness = InvalidStateId;
         TStateId Mud = InvalidStateId;
+        TStateId WaterFilm = InvalidStateId;
     };
     inline TDemoSurfaceStateBindings ResolveDemoSurfaceStates(const TSurfaceStateRegistry& Registry)
     {
@@ -20,6 +21,8 @@ namespace MDSS
                 Result.Wetness = ID;
             else if (Name == "mud")
                 Result.Mud = ID;
+            else if (Name == "waterfilm")
+                Result.WaterFilm = ID;
         }
         return Result;
     }
@@ -27,10 +30,11 @@ namespace MDSS
     {
         bool  bEnabled = true;
         bool  bMudDisplacement = true;
+        bool  bWaterFilmDisplacement = true;
         float DryRoughness = 0.65F;
         float WetRoughness = 0.16F;
         float MudRoughness = 0.48F;
-        // Local-space visualization reference; not a new physics/profile contract.
-        float MudHeightReference = 0.01F;
+        // Local-space accumulation display reference; not a new physics/profile contract.
+        float AccumulationHeightReference = 0.01F;
     };
 }

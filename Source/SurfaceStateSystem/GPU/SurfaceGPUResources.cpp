@@ -65,7 +65,8 @@ namespace MDSS
     TSurfaceSharedGeometryGPUResources::TSurfaceSharedGeometryGPUResources(VkPhysicalDevice PhysicalDevice,
         VkDevice         Device,
         const TSharedSurfaceGeometryData& Geometry,
-        std::span<const TSurfaceProfileIndex> ProfileIndexRemap)
+        std::span<const TSurfaceProfileIndex> ProfileIndexRemap,
+        std::span<const TVertex> SourceVertices, std::span<const TMeshTriangleSource> SourceTriangles)
         : TexelCount(Geometry.GetTexelCount())
     {
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
@@ -127,7 +128,7 @@ namespace MDSS
                                                      Upload.TexelChartIndices.size(),
                                                      sizeof(std::uint32_t),
                                                      MaxRange);
-        auto Mesh = BuildSurfaceTexelMesh(Geometry);
+        auto Mesh = BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles);
         TexelMeshRanges = std::move(Mesh.Surfaces);
         if (!Mesh.Indices.empty())
         {
@@ -135,6 +136,10 @@ namespace MDSS
             TexelMeshIndexBuffer = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, Bytes,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, UploadMemory);
             TexelMeshIndexBuffer->Upload(Mesh.Indices.data(), Bytes);
+            const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(TSurfaceTexelMeshVertex));
+            TexelMeshVertexBuffer = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, VertexBytes,
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, UploadMemory);
+            TexelMeshVertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
         }
     }
 
@@ -303,6 +308,9 @@ namespace MDSS
             GetSurfaceGPUBufferByteSize(ScalarCount, SurfaceNeighborCount * sizeof(float), MaxRange);
         WorldTexelAreaBuffer = CreateUploadedBuffer(
             PhysicalDevice, Device, Areas.data(), Areas.size(), sizeof(float), MaxRange);
+        std::vector<TSurfaceGPUVec4> ZeroDynamicGeometry(TexelCount * 2U);
+        DynamicGeometryBuffer = CreateUploadedBuffer(
+            PhysicalDevice, Device, ZeroDynamicGeometry.data(), ZeroDynamicGeometry.size(), sizeof(TSurfaceGPUVec4), MaxRange);
         StateABuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         StateBBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         OutgoingFluxScaleBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
@@ -371,6 +379,11 @@ namespace MDSS
     const TGPUBuffer& TSurfaceInstanceGPUResources::GetWorldTexelAreaBuffer() const noexcept
     {
         return *WorldTexelAreaBuffer;
+    }
+
+    const TGPUBuffer& TSurfaceInstanceGPUResources::GetDynamicGeometryBuffer() const noexcept
+    {
+        return *DynamicGeometryBuffer;
     }
 
     void TSurfaceInstanceGPUResources::UpdateWorldTexelAreas(const std::vector<float>& Areas)
@@ -512,7 +525,8 @@ namespace MDSS
             &SharedGeometry.GetMesoNormalBuffer(),
             &SharedGeometry.GetReverseNeighborSlotBuffer(),
             &Instance.GetRawFluxBuffer(),
-            &Instance.GetWorldTexelAreaBuffer()};
+            &Instance.GetWorldTexelAreaBuffer(),
+            &Instance.GetDynamicGeometryBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

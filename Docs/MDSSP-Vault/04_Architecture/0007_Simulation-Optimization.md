@@ -186,17 +186,16 @@ Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 ## Virtual Geometry 경계
 
-- 현재 구현은 MesoVirtualHeight만 geometry scalar로 보유한다. Instance별 AccumulationHeight 저장·갱신은 미구현이다.
-- 구현 후 AccumulationHeight의 geometry revision을 cache dependency에 포함한다.
-- `DistanceWeight`와 `NormalWeight`는 base Position/Normal이 아닌 현재 유효 형상을 사용한다.
+- Shared geometry는 MesoVirtualHeight를 보유한다. `Accumulation feedback`이 ON이면 instance별 DynamicGeometry buffer에 현재 State에서 계산한 displaced position과 갱신 normal을 매 step 생성한다.
+- Runtime dynamic TransferWeight pass는 이 위치·normal과 재구성된 곡률로 edge cache를 매 step 다시 쓴다. OFF에서는 기존 CPU cache를 유지한다.
+- `DistanceWeight`와 `NormalWeight`는 feedback ON에서 base Position/Normal이 아닌 현재 유효 형상을 사용한다.
 - 유효 위치는 `BasePosition + BaseNormal × (MesoVirtualHeight + AccumulationHeight)`를 instance transform으로 변환해 구한다.
 - 유효 normal은 동적 Geometry 갱신 결과에 instance inverse-transpose를 적용한다.
 - GeometryDrive의 유효 높이와 방향도 최신 가상 형상과 gravity를 사용한다.
 
-- MesoVirtualHeight 또는 향후 AccumulationHeight가 갱신되면 TransferWeight cache를 다시 만든다.
-- 동적 적층에서 높이가 매 step 바뀌면 cache preparation도 매 step 수행한다. 형상이 유지되는 동안은 재사용한다.
+- Feedback ON에서 적층 높이는 매 step State로부터 다시 계산하므로 동적 geometry와 TransferWeight 갱신도 매 step 수행한다.
 - Geometry update와 normal 생성은 cache preparation보다 먼저 끝나야 하며, GPU 경로 사이 write→read barrier를 보장한다.
-- Height 변경은 유효 형상과 weight를 바꾸므로 cache를 dirty로 만든다.
+- Feedback OFF의 정적 cache invalidation은 기존대로 유지한다. Feedback ON은 매 step GPU pass에서 덮어쓴다.
 - Gravity 변경은 GeometryDrive만 바꾸므로 TransferWeight cache는 무효화하지 않는다.
 
 ## 메모리와 예상 연산량
@@ -207,14 +206,16 @@ Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 | RawOutgoing 저장 | 구현 | 인스턴스당 채널당 6 MiB | 매 step | rawFlux 상한 24→16회/텍셀·채널 |
 | 간선별 RawFlux | 구현 | 인스턴스당 채널당 48 MiB | 매 step | 직전 구현의 rawFlux 16→8회/텍셀·채널, Pass 2 재평가 제거 |
 | 역방향 슬롯 | 구현 | 공유 Geometry당 6 MiB | topology 생성 때 | 매 step 이웃의 역방향 슬롯 탐색 제거 |
+| DynamicGeometry | feedback ON | 인스턴스당 32 B × texel 수 | 매 step | Meso+적층 position/normal, geometry 및 edge-weight compute dispatch 2회 |
 
 - 메모리 추정 가정: 6 Surface × 512×512, 이웃 8개, float32, 원소 padding 없음
+- DynamicGeometry는 local position·normal 각 16-byte `vec4`, texel당 32 byte이며 instance별이다. 256×256 texel의 단일 instance는 2 MiB, 512×512은 8 MiB다. 옵션 OFF에서도 descriptor 계약을 위해 buffer는 할당 상태로 유지한다.
 - Registry가 채널 수를 결정하며 데모 측정은 1채널이다.
 - TransferWeight·RawOutgoing·RawFlux payload는 인스턴스당 총 102 MiB다.
 - 역방향 슬롯은 uint32 원소에 8개 슬롯의 4 bit를 pack한다. 공유 Geometry당 6 MiB를 추가한다.
 - 이번 변경의 증가분은 인스턴스·채널당 48 MiB와 공유 Geometry당 6 MiB다. Allocator alignment와 CPU scratch는 제외하며 invalid 슬롯도 할당한다.
 - Cache 준비 시 최신 유효 위치로 평균 이웃 거리를 texel당 한 번 계산하고, edge별 weight를 최대 8개 계산한다.
-- 현재 cache 입력은 MesoVirtualHeight다. AccumulationHeight는 Dynamic Geometry 구현이 제공될 때 같은 invalidation 규칙에 추가한다.
+- Feedback ON에서는 cache 입력에 MesoVirtualHeight와 모든 지원 State의 AccumulationHeight를 사용한다.
 - 이로써 매 step마다 하던 endpoint별 평균 거리 재계산을 cache 준비 시 texel당 한 번으로 줄인다.
 - 모든 texel과 neighbor가 valid한 경우의 source 수준 상한이다. Compiler 최적화나 실제 GPU 시간은 뜻하지 않는다.
 

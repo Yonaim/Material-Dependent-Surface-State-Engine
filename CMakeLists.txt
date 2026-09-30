@@ -383,3 +383,10 @@ if(BUILD_TESTING)
     add_test(NAME MDSS_SurfaceGPUResource COMMAND MDSS_SurfaceGPUResourceTests)
     set_tests_properties(MDSS_SurfaceGPUResource PROPERTIES SKIP_RETURN_CODE 77)
 endif()
+
+# Vendored triangulation is used only by the source-topology render mesh builder.
+foreach(Target MDSS MDSS_SceneResourceTests MDSS_SharedSurfaceGeometryTests MDSS_SurfaceGPUResourceTests)
+    if(TARGET ${Target})
+        target_include_directories(${Target} SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/delaunator")
+    endif()
+endforeach()

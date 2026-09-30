@@ -6,7 +6,7 @@
 
 Architecture 문서는 렌더링 결과의 의미와 요구사항을 정의한다. 이 문서는 해당 결과를 실제 렌더링 경로에 연결할 때 선택·검증할 구현 항목을 기록한다.
 
-현재 높이 디버그는 compute에서 texel별 위치·normal을 계산하고 같은 UV chart 안에서 연결한 삼각형으로 표시한다 ([[../../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]). 독립 surfel 패치는 채택하지 않는다. 원본 메시 정점 밀도로 제한되던 초기 미리보기와 구분하며, 현재 Mud 데모 Lit에서도 같은 표시 형상을 사용한다. 물리적 다중 layer·Solver 형상 피드백의 방식 확정을 뜻하지 않는다.
+현재 높이 디버그는 compute에서 texel별 위치·normal을 계산한다 ([[../../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]). 연결면은 원본 triangle 내부에 texel 중심을 추가하고, 원본 position/edge topology의 공통 변위로 UV seam을 봉합한다 ([[../../05_ADR/0038-Source-Topology-Seam-Stitching|ADR 0038]]). 독립 surfel 패치는 채택하지 않는다. 원본 메시 정점 밀도로 제한되던 초기 미리보기와 구분하며, 현재 Mud 데모 Lit에서도 같은 표시 형상을 사용한다. 물리적 다중 layer·Solver 형상 피드백의 방식 확정을 뜻하지 않는다.
 
 ## 현재 데모 구현
 

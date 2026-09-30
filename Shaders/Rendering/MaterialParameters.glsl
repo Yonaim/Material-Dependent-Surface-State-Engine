@@ -13,8 +13,8 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     float ReliefShadingEnabled;
     vec4 DebugOptions;
     uvec4 DebugFlags;
-    uvec4 DemoStateChannels; // Wetness ID, Mud ID, effects enabled, reserved
-    vec4 DemoOptions; // dry / wet / mud perceptual roughness, Lit mud height reference
+    uvec4 DemoStateChannels; // Wetness ID, Mud ID, WaterFilm ID, effects enabled
+    vec4 DemoOptions; // dry / wet / mud perceptual roughness, Lit accumulation height reference
     vec4 CameraPosition;
 } Material;
 #endif

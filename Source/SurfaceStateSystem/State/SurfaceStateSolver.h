@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateSolver.h
- * @brief Record the two compute passes that update per-instance Surface State.
+ * @brief Record optional accumulation geometry updates and the two Surface State solver passes.
  */
 
 #pragma once
@@ -19,6 +19,11 @@
 namespace MDSS
 {
     inline constexpr std::uint32_t SurfaceSolverDisableRawFluxCacheFlag = 1U << 5U;
+    inline constexpr std::uint32_t SurfaceSolverAccumulationFeedbackFlag = 1U << 6U;
+    inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
+    inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
+    inline constexpr std::uint32_t SurfaceSolverProfileBoundaryWeightFlag = 1U << 9U;
+    inline constexpr std::uint32_t SurfaceSolverCurvatureWeightFlag = 1U << 10U;
 
     enum class TSurfaceSolverTerm : std::uint8_t
     {
@@ -37,6 +42,7 @@ namespace MDSS
     struct TSurfaceSolverDebugSettings
     {
         bool bRawFluxCacheEnabled = true;
+        bool bAccumulationFeedbackEnabled = false;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, false, true};
 
@@ -83,6 +89,8 @@ namespace MDSS
 
         VkDevice         Device = VK_NULL_HANDLE;
         VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
+        VkPipeline AccumulationGeometryPipeline = VK_NULL_HANDLE;
+        VkPipeline DynamicTransferWeightPipeline = VK_NULL_HANDLE;
         std::array<VkPipeline, 2> Pass1Pipelines{};
         std::array<VkPipeline, 2> Pass2Pipelines{};
     };

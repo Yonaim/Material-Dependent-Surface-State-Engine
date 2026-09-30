@@ -45,6 +45,7 @@ namespace MDSS
         ReverseNeighborSlots,
         RawFlux,
         WorldTexelAreas,
+        DynamicGeometry,
         Count
     };
 
@@ -58,7 +59,9 @@ namespace MDSS
         TSurfaceSharedGeometryGPUResources(VkPhysicalDevice PhysicalDevice,
                                            VkDevice         Device,
                                            const TSharedSurfaceGeometryData& Geometry,
-                                           std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
+                                           std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {},
+                                           std::span<const TVertex> SourceVertices = {},
+                                           std::span<const TMeshTriangleSource> SourceTriangles = {});
 
         [[nodiscard]] const TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
@@ -72,6 +75,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] const TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept { return TexelMeshIndexBuffer.get(); }
+        [[nodiscard]] const TGPUBuffer* GetTexelMeshVertexBuffer() const noexcept { return TexelMeshVertexBuffer.get(); }
         [[nodiscard]] const std::vector<TSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept { return TexelMeshRanges; }
 
     private:
@@ -87,6 +91,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> SurfaceRangeBuffer;
         std::unique_ptr<TGPUBuffer> TexelChartIndexBuffer;
         std::unique_ptr<TGPUBuffer> TexelMeshIndexBuffer;
+        std::unique_ptr<TGPUBuffer> TexelMeshVertexBuffer;
         std::vector<TSurfaceTexelMeshRange> TexelMeshRanges;
     };
 
@@ -134,6 +139,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetRawFluxBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
         void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void UpdateTransferWeights(const std::vector<float>& TransferWeights,
                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
@@ -154,6 +160,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> RawOutgoingBuffer;
         std::unique_ptr<TGPUBuffer> RawFluxBuffer;
         std::unique_ptr<TGPUBuffer> WorldTexelAreaBuffer;
+        std::unique_ptr<TGPUBuffer> DynamicGeometryBuffer;
     };
 
     class TSurfaceStateDescriptorResources final
