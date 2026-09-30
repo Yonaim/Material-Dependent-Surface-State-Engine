@@ -225,6 +225,10 @@ namespace MDSS
                            sizeof(Constants),
                            &Constants);
 
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery);
+        }
         if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) != 0U)
         {
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationGeometryPipeline);
@@ -235,6 +239,13 @@ namespace MDSS
             vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &GeometryBarrier, 0, nullptr);
 
+            if (TimestampQueryPool != VK_NULL_HANDLE)
+            {
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
+                                    FirstPassQuery + 1U);
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
+                                    FirstPassQuery + 2U);
+            }
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DynamicTransferWeightPipeline);
             vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
             const VkBufferMemoryBarrier TransferWeightBarrier = MakeComputeBufferBarrier(
@@ -244,6 +255,18 @@ namespace MDSS
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1,
                                  &TransferWeightBarrier, 0, nullptr);
         }
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) == 0U)
+            {
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
+                                    FirstPassQuery + 1U);
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
+                                    FirstPassQuery + 2U);
+            }
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
+                                FirstPassQuery + 3U);
+        }
 
         vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[CacheMode]);
         if (TimestampQueryPool != VK_NULL_HANDLE)
@@ -251,7 +274,7 @@ namespace MDSS
             vkCmdWriteTimestamp(CommandBuffer,
                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                 TimestampQueryPool,
-                                FirstPassQuery);
+                                FirstPassQuery + 4U);
         }
         vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
         if (TimestampQueryPool != VK_NULL_HANDLE)
@@ -259,7 +282,7 @@ namespace MDSS
             vkCmdWriteTimestamp(CommandBuffer,
                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                 TimestampQueryPool,
-                                FirstPassQuery + 1U);
+                                FirstPassQuery + 5U);
         }
 
         const std::array<VkBufferMemoryBarrier, 3> Pass1Barriers = {
@@ -289,7 +312,7 @@ namespace MDSS
             vkCmdWriteTimestamp(CommandBuffer,
                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                 TimestampQueryPool,
-                                FirstPassQuery + 2U);
+                                FirstPassQuery + 6U);
         }
         vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
         if (TimestampQueryPool != VK_NULL_HANDLE)
@@ -297,7 +320,7 @@ namespace MDSS
             vkCmdWriteTimestamp(CommandBuffer,
                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                 TimestampQueryPool,
-                                FirstPassQuery + 3U);
+                                FirstPassQuery + 7U);
         }
 
         const std::array<VkBufferMemoryBarrier, 5> NextStepBarriers = {

@@ -1,0 +1,49 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#include "Rendering/StateSampling.glsl"
+#include "Rendering/MaterialParameters.glsl"
+#include "Debug/TexelGeometryData.glsl"
+
+layout(location = 0) in vec3 InPosition;
+layout(location = 1) in vec3 InNormal;
+layout(location = 2) in vec4 InUVSurface;
+layout(location = 3) in vec3 InDisplacementNormal;
+layout(location = 4) in uvec4 InSamples;
+layout(location = 5) in vec4 InWeights;
+layout(set = 2, binding = 0, std430) readonly buffer TComputedVertices
+{
+    TTexelGeometryVertex Values[];
+} Computed;
+layout(push_constant) uniform TPush { mat4 Model; mat4 ViewProjection; } Push;
+
+layout(location = 0) out vec3 FragNormal;
+layout(location = 1) out vec2 FragUV;
+layout(location = 2) flat out uint FragSurfaceIndex;
+layout(location = 3) out vec3 FragWorldPosition;
+layout(location = 4) out float FragCoverage;
+
+void main()
+{
+    float Height = 0.0;
+    vec3 NormalOffset = vec3(0.0);
+    float Weight = 0.0;
+    for (uint K = 0u; K < 4u; ++K)
+    {
+        uint T = InSamples[K];
+        if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length())) continue;
+        Height += InWeights[K] * Computed.Values[T].PositionAndHeight.w;
+        NormalOffset += InWeights[K] * (Computed.Values[T].Normal.xyz - Normals.Values[T].xyz);
+        Weight += InWeights[K];
+    }
+    vec3 Normal = InNormal + NormalOffset;
+    if (Weight == 0.0 || dot(Normal, Normal) < 1e-12) Normal = InNormal;
+    mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
+    FragNormal = normalize(NormalMatrix * Normal);
+    FragUV = InUVSurface.xy;
+    FragSurfaceIndex = uint(InUVSurface.w);
+    FragCoverage = SampleStateSaturation(FragSurfaceIndex, FragUV, uint(gl_InstanceIndex),
+                                        Material.StateChannelCount);
+    vec3 Position = InPosition + InDisplacementNormal * Height;
+    FragWorldPosition = vec3(Push.Model * vec4(Position, 1.0));
+    gl_Position = Push.ViewProjection * vec4(FragWorldPosition, 1.0);
+}

@@ -18,7 +18,7 @@ float EvaluateSpecularLobe(vec3 N, vec3 V, vec3 L, float PerceptualRoughness, fl
 }
 
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
-                  float WetnessCoverage, float WaterFilmCoverage)
+                  float WetnessCoverage, float WaterFilmCoverage, float WetnessSpecularStrength)
 {
     vec3 V = ViewVector * inversesqrt(max(dot(ViewVector, ViewVector), 1e-12));
     vec3 L = normalize(vec3(0.35, 0.55, 1.0));
@@ -39,16 +39,23 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
     float Wet = clamp(WetnessCoverage, 0.0, 1.0);
     float Film = clamp(WaterFilmCoverage, 0.0, 1.0);
     float WetHighlight = EvaluateSpecularLobe(N, V, L, 0.32, 0.08);
-    float FilmHighlight = EvaluateSpecularLobe(N, V, L, 0.075, 0.14);
-    Direct += vec3(WetHighlight * Wet * 0.65 + FilmHighlight * Film * 0.9);
+    float FilmHighlight = EvaluateSpecularLobe(N, V, L, PerceptualRoughness, 0.14);
+    Direct += vec3(WetHighlight * Wet * 0.65 * WetnessSpecularStrength + FilmHighlight * Film * 0.9);
 
     // A restrained view-angle reflection hint keeps wet edges legible without an environment map.
     float Grazing = pow(1.0 - max(dot(N, V), 0.0), 5.0);
-    vec3 SoftWetReflection = vec3(0.12, 0.15, 0.18) * (Wet * Grazing * 0.45);
+    vec3 SoftWetReflection = vec3(0.12, 0.15, 0.18) * (Wet * Grazing * 0.45 * WetnessSpecularStrength);
     vec3 FilmEdgeReflection = vec3(0.22, 0.27, 0.32) * (Film * Grazing * 0.8);
 
     // Existing ambient control, fixed white key light; no environment map or tone mapper.
     return Albedo * Ambient + Direct * (1.0-Ambient) + SoftWetReflection + FilmEdgeReflection;
+}
+
+vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
+                  float WetnessCoverage, float WaterFilmCoverage)
+{
+    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient,
+                        WetnessCoverage, WaterFilmCoverage, 1.0);
 }
 
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient)

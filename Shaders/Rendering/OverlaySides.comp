@@ -1,0 +1,126 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define SURFACE_DEBUG_SET 0
+#include "Rendering/StateSampling.glsl"
+#include "Debug/TexelGeometryData.glsl"
+
+layout(local_size_x = 64) in;
+struct TOverlayVertex
+{
+    vec4 Position;
+    vec4 Normal;
+    vec4 UVSurface;
+    vec4 DisplacementNormal;
+    uvec4 Samples;
+    vec4 Weights;
+};
+struct TSideSegment
+{
+    vec4 BaseA; // xyz: original surface, w: u
+    vec4 TopA;  // xyz: displaced surface, w: v
+    vec4 BaseB;
+    vec4 TopB;
+    vec4 Inside; // xyz: point inside the covered triangle, w: Surface ID or -1
+};
+layout(set = 1, binding = 0, std430) readonly buffer TComputed { TTexelGeometryVertex Values[]; } Computed;
+layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices { TOverlayVertex Values[]; } MeshVertices;
+layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices { uint Values[]; } MeshIndices;
+layout(set = 2, binding = 2, std430) readonly buffer TBoundaryEdges { uvec4 Values[]; } BoundaryEdges;
+layout(set = 2, binding = 3, std430) writeonly buffer TSegments { TSideSegment Values[]; } Segments;
+layout(push_constant) uniform TPush
+{
+    uint TriangleCount;
+    uint BoundaryCount;
+    uint Channel;
+    uint Channels;
+} Push;
+
+const float Cutoff = 0.02;
+struct TPoint { vec3 Base; vec3 Top; vec2 UV; float Coverage; };
+
+TPoint ReadPoint(uint Index)
+{
+    TOverlayVertex V = MeshVertices.Values[Index];
+    TPoint P;
+    P.Base = V.Position.xyz;
+    P.UV = V.UVSurface.xy;
+    P.Coverage = SampleStateSaturation(uint(V.UVSurface.w), P.UV, Push.Channel, Push.Channels);
+    float Height = 0.0;
+    for (uint K = 0u; K < 4u; ++K)
+    {
+        uint Texel = V.Samples[K];
+        if (V.Weights[K] > 0.0 && Texel < uint(Computed.Values.length()))
+            Height += V.Weights[K] * Computed.Values[Texel].PositionAndHeight.w;
+    }
+    P.Top = P.Base + V.DisplacementNormal.xyz * Height;
+    return P;
+}
+
+TPoint Interpolate(TPoint A, TPoint B, float T)
+{
+    TPoint P;
+    P.Base = mix(A.Base, B.Base, T);
+    P.Top = mix(A.Top, B.Top, T);
+    P.UV = mix(A.UV, B.UV, T);
+    P.Coverage = mix(A.Coverage, B.Coverage, T);
+    return P;
+}
+
+void WriteSegment(uint Slot, TPoint A, TPoint B, vec3 Inside, float Surface)
+{
+    Segments.Values[Slot].BaseA = vec4(A.Base, A.UV.x);
+    Segments.Values[Slot].TopA = vec4(A.Top, A.UV.y);
+    Segments.Values[Slot].BaseB = vec4(B.Base, B.UV.x);
+    Segments.Values[Slot].TopB = vec4(B.Top, B.UV.y);
+    Segments.Values[Slot].Inside = vec4(Inside, Surface);
+}
+
+void main()
+{
+    uint Slot = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (Slot >= Push.TriangleCount + Push.BoundaryCount) return;
+    Segments.Values[Slot].Inside.w = -1.0;
+    if (Slot < Push.TriangleCount)
+    {
+        uint Offset = Slot * 3u;
+        if (Offset + 2u >= uint(MeshIndices.Values.length())) return;
+        TPoint P[3];
+        for (uint I = 0u; I < 3u; ++I) P[I] = ReadPoint(MeshIndices.Values[Offset + I]);
+        TPoint Crossing[2];
+        uint Count = 0u;
+        vec3 Inside = vec3(0.0);
+        for (uint I = 0u; I < 3u; ++I)
+        {
+            uint J = (I + 1u) % 3u;
+            bool A = P[I].Coverage > Cutoff;
+            bool B = P[J].Coverage > Cutoff;
+            if (A) Inside = P[I].Base;
+            if (A != B && Count < 2u)
+            {
+                float Denominator = P[J].Coverage - P[I].Coverage;
+                float T = clamp((Cutoff - P[I].Coverage) / Denominator, 0.0, 1.0);
+                Crossing[Count++] = Interpolate(P[I], P[J], T);
+            }
+        }
+        if (Count == 2u) WriteSegment(Slot, Crossing[0], Crossing[1], Inside,
+                                     MeshVertices.Values[MeshIndices.Values[Offset]].UVSurface.w);
+    }
+    else
+    {
+        uvec4 Edge = BoundaryEdges.Values[Slot - Push.TriangleCount];
+        TPoint A = ReadPoint(Edge.x);
+        TPoint B = ReadPoint(Edge.y);
+        bool AActive = A.Coverage > Cutoff;
+        bool BActive = B.Coverage > Cutoff;
+        if (!AActive && !BActive) return;
+        if (AActive != BActive)
+        {
+            float T = clamp((Cutoff - A.Coverage) / (B.Coverage - A.Coverage), 0.0, 1.0);
+            TPoint Crossing = Interpolate(A, B, T);
+            if (AActive) B = Crossing;
+            else A = Crossing;
+        }
+        WriteSegment(Slot, A, B, MeshVertices.Values[Edge.z].Position.xyz,
+                     MeshVertices.Values[Edge.x].UVSurface.w);
+    }
+}

@@ -5,6 +5,7 @@
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -130,16 +131,24 @@ namespace MDSS
                                                      MaxRange);
         auto Mesh = BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles);
         TexelMeshRanges = std::move(Mesh.Surfaces);
+        TexelMeshBoundaryCount = static_cast<std::uint32_t>(Mesh.BoundaryEdges.size());
         if (!Mesh.Indices.empty())
         {
             const auto Bytes = static_cast<VkDeviceSize>(Mesh.Indices.size() * sizeof(std::uint32_t));
             TexelMeshIndexBuffer = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, Bytes,
-                VK_BUFFER_USAGE_INDEX_BUFFER_BIT, UploadMemory);
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, UploadMemory);
             TexelMeshIndexBuffer->Upload(Mesh.Indices.data(), Bytes);
             const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(TSurfaceTexelMeshVertex));
             TexelMeshVertexBuffer = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, VertexBytes,
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, UploadMemory);
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, UploadMemory);
             TexelMeshVertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
+            const glm::uvec4 EmptyEdge{0};
+            const auto* Edges = Mesh.BoundaryEdges.empty() ? &EmptyEdge : Mesh.BoundaryEdges.data();
+            const auto BoundaryBytes = static_cast<VkDeviceSize>(
+                std::max<std::size_t>(Mesh.BoundaryEdges.size(), 1) * sizeof(glm::uvec4));
+            TexelMeshBoundaryBuffer = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, BoundaryBytes,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, UploadMemory);
+            TexelMeshBoundaryBuffer->Upload(Edges, BoundaryBytes);
         }
     }
 

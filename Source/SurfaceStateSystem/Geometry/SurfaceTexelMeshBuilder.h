@@ -29,6 +29,8 @@ namespace MDSS
     {
         std::vector<TSurfaceTexelMeshVertex> Vertices;
         std::vector<std::uint32_t> Indices;
+        // x/y: render edge endpoints, z: incident triangle's third vertex.
+        std::vector<glm::uvec4> BoundaryEdges;
         std::vector<TSurfaceTexelMeshRange> Surfaces;
     };
 

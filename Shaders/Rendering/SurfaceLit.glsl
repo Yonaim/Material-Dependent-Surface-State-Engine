@@ -58,10 +58,20 @@ void main()
         Wetness = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.x, Material.StateChannelCount);
         float Mud = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.y, Material.StateChannelCount);
         WaterFilm = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.z, Material.StateChannelCount);
+#ifndef BASE_SURFACE_LIT
         ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
-        ApplyWetness(Wetness, Color.rgb, Roughness, Material.DemoOptions.y);
-        ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoOptions.y);
+#endif
+        ApplyWetness(Wetness, Color.rgb, Roughness, Material.DemoOptions.y,
+                     Material.WetnessTint.rgb, Material.DemoEffectOptions.x);
+#ifndef BASE_SURFACE_LIT
+        ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w,
+                       Material.WaterFilmTint.rgb);
+#else
+        WaterFilm = 0.0;
+#endif
     }
     OutColor = vec4(ShadeSurface(Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition,
-                               Roughness, Material.AmbientLight, Wetness, WaterFilm), Color.a);
+                               Roughness, Material.AmbientLight,
+                               Wetness * Material.DemoEffectOptions.x, WaterFilm,
+                               Material.DemoEffectOptions.y), Color.a);
 }

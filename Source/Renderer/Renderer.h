@@ -7,6 +7,8 @@
 
 #include "AssetManager/Core/Asset.h"
 #include "Renderer/Framebuffer.h"
+#include "Renderer/AccumulationOverlaySides.h"
+#include "Renderer/HeightFieldSmoothing.h"
 #include "Renderer/DemoSurfaceEffects.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/RenderContext.h"
@@ -32,6 +34,32 @@
 
 namespace MDSS
 {
+    struct TRendererProfilingStats
+    {
+        float SolverGpuMilliseconds = -1.0F;
+        float SolverPass1GpuMilliseconds = -1.0F;
+        float SolverPass2GpuMilliseconds = -1.0F;
+        float AccumulationGeometryGpuMilliseconds = -1.0F;
+        float TransferWeightGpuMilliseconds = -1.0F;
+        float RenderPreparationGpuMilliseconds = -1.0F;
+        float SceneDrawGpuMilliseconds = -1.0F;
+        float TexelInspectorGpuMilliseconds = -1.0F;
+        float BaseMeshDrawGpuMilliseconds = -1.0F;
+        float MudOverlayDrawGpuMilliseconds = -1.0F;
+        float WaterFilmOverlayDrawGpuMilliseconds = -1.0F;
+        float OverlayPreparationGpuMilliseconds = -1.0F;
+        float FrameFenceWaitCpuMilliseconds = -1.0F;
+        float AcquireCpuMilliseconds = -1.0F;
+        float CommandRecordCpuMilliseconds = -1.0F;
+        float QueueSubmitCpuMilliseconds = -1.0F;
+        float PresentCpuMilliseconds = -1.0F;
+        std::uint32_t SimulationSteps = 0;
+        std::uint32_t SimulationInstances = 0;
+        std::uint64_t SimulationTexels = 0;
+        std::uint32_t StateChannels = 0;
+        std::uint32_t SimulationResolution = 0;
+    };
+
     enum class TRenderViewMode : std::uint32_t
     {
         Lit = 0,
@@ -126,6 +154,7 @@ namespace MDSS
         [[nodiscard]] float GetLastRenderGpuMilliseconds() const noexcept;
         [[nodiscard]] float GetLastSolverPass1GpuMilliseconds() const noexcept;
         [[nodiscard]] float GetLastSolverPass2GpuMilliseconds() const noexcept;
+        [[nodiscard]] const TRendererProfilingStats& GetProfilingStats() const noexcept { return ProfilingStats; }
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
@@ -244,13 +273,21 @@ namespace MDSS
         std::unique_ptr<TTexelGeometryPreview> TexelGeometryPreview;
         std::unique_ptr<TGraphicsPipeline>     TexelGeometryPipeline;
         std::unique_ptr<TGraphicsPipeline>     SurfaceLitPipeline;
-        std::unique_ptr<TGraphicsPipeline>     TexelSurfaceLitPipeline;
+        std::unique_ptr<TGraphicsPipeline>     BaseSurfaceLitPipeline;
+        std::unique_ptr<TTexelGeometryPreview> MudLayerGeometry;
+        std::unique_ptr<TTexelGeometryPreview> WaterLayerGeometry;
+        std::unique_ptr<THeightFieldSmoothing> HeightFieldSmoothing;
+        std::unique_ptr<TAccumulationOverlaySides> OverlaySides;
+        std::unique_ptr<TGraphicsPipeline>     MudOverlayTopPipeline;
+        std::unique_ptr<TGraphicsPipeline>     MudOverlaySidePipeline;
+        std::unique_ptr<TGraphicsPipeline>     WaterOverlayTopPipeline;
+        std::unique_ptr<TGraphicsPipeline>     WaterOverlaySidePipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
         std::vector<TMaterialRenderResource> MaterialResources;
         TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
-        bool                                 bWireframeUniformWhite = false;
+        bool                                 bWireframeUniformWhite = true;
         bool                                 bSupportsWireframeLineWidth = false;
         float                                WireframeLineWidth = 2.0F;
         float                                WireframeLineWidthMin = 1.0F;
@@ -277,7 +314,7 @@ namespace MDSS
         TSimulationClock SimulationClock;
         std::uint32_t LastSimulationStepCount = 0;
         float MaximumSimulationStep = FixedSimulationStepSeconds;
-        std::uint32_t TimestampQueriesPerFrame = 2;
+        std::uint32_t TimestampQueriesPerFrame = 14;
         std::uint32_t SolverTimestampSlotCount = 0;
         float TimestampPeriodNanoseconds = 0.0F;
         std::uint32_t TimestampValidBits = 0;
@@ -285,5 +322,6 @@ namespace MDSS
         float LastSolverGpuMilliseconds = -1.0F;
         float LastSolverPass1GpuMilliseconds = -1.0F;
         float LastSolverPass2GpuMilliseconds = -1.0F;
+        TRendererProfilingStats ProfilingStats;
     };
 } // MDSS 네임스페이스

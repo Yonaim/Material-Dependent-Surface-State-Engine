@@ -31,6 +31,7 @@
 
 ## Consequences
 
+- 후속 설계 결정 [[0041-Base-Surface-and-Accumulation-Overlay|ADR 0041]]은 단일 변위 texel 연결면을 Base Surface와 적층 Overlay의 분리 렌더링으로 발전시킨다. 이 문서의 단일 Lit draw 설명은 이전 데모 구현을 기록한다. 1차 Overlay 렌더 경로는 코드에 반영됐으며 실행 검증은 남아 있다.
 - 2026-09-30 후속 결정: 위 Decision 6·8의 임시 `Accumulation height ref`는 `.SRProfile`의 State별 `thicknessPerAmount`와 렌더 전용 `Lit height display scale`로 대체했다. Lit은 Profile 두께에 표시 배율을 곱하고 Solver는 표시 배율을 읽지 않는다 ([[0039-State-Thickness-Per-Amount|ADR 0039]]).
 - Render Settings에서 전역 Lit 효과, Mud·WaterFilm 높이 적용 여부 및 roughness를 조절한다. 선택한 Meso·Accumulation·Final Geometry 뷰의 설명 상자에서 높이 grid를 조절한다. 표시 설정은 `.Scene`/`.SRProfile`에 저장하지 않는다.
 - 실제 GPU 출력 회귀 검증은 grid 셀 크기·실루엣 보존, Wetness diffuse 변화·specular peak·카메라 반응, Mud 색·중앙 적층, 이름 조회 후 ID 이동, 미지원 Profile·A/B 전환·면적 보정·State 보존을 포함한다. Scene 교체와 Lit 형상/외관 토글은 실제 renderer에서도 검증한다.
