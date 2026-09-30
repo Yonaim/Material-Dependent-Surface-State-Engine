@@ -1,0 +1,18 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 2,
+  "name": "DemoWaterFilm",
+  "states": {
+    "waterfilm": {
+      "stateCapacity": 1.0,
+      "inputFactor": 1.0,
+      "saturationTransferFactor": 0.2,
+      "geometryTransferFactor": 0.5,
+      "decayRate": 0.03,
+      "cavityRetentionFactor": 0.5,
+      "accumulationFactor": 0.15,
+      "cavityFillFactor": 0.8
+    }
+  },
+  "transitions": []
+}

@@ -69,6 +69,8 @@ namespace MDSS
         [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept { return bAutoSubstepping; }
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
+        /** @brief 파일 대화상자와 동기 로딩이 포함된 frame의 경과 시간을 한 번 제외한다. */
+        [[nodiscard]] bool ConsumeFrameTimeResetRequest() noexcept;
         [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] int GetHoveredGizmoAxis() const noexcept;
@@ -120,6 +122,7 @@ namespace MDSS
         bool        bSimulationPaused = false;
         bool        bSolverStepRequested = false;
         bool        bSolverResetRequested = false;
+        bool        bFrameTimeResetRequested = false;
         TSRProfileAssetHandle DebugParameterProfile = InvalidAssetHandle;
         TStateId DebugParameterState = 0;
         std::pair<TSRProfileAssetHandle, TStateId> ParameterDraftKey{InvalidAssetHandle, InvalidStateId};
