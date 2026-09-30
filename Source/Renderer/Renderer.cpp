@@ -816,6 +816,7 @@ namespace MDSS
         {
             Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
             Replacement->SetRawFluxCacheEnabled(DebugSolverSettings.bRawFluxCacheEnabled);
+            Replacement->SetAccumulationFeedbackEnabled(DebugSolverSettings.bAccumulationFeedbackEnabled);
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
                 Replacement->SetDebugSolverTermEnabled(
@@ -1267,6 +1268,17 @@ namespace MDSS
         SolverTimestampStepsSubmitted.fill(0);
         LastRenderGpuMilliseconds = LastSolverGpuMilliseconds = -1.0F;
         LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = -1.0F;
+    }
+
+    bool TRenderer::IsAccumulationFeedbackEnabled() const noexcept
+    {
+        return DebugSolverSettings.bAccumulationFeedbackEnabled;
+    }
+
+    void TRenderer::SetAccumulationFeedbackEnabled(bool bEnabled)
+    {
+        DebugSolverSettings.bAccumulationFeedbackEnabled = bEnabled;
+        if (SurfaceStates) SurfaceStates->SetAccumulationFeedbackEnabled(bEnabled);
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept
