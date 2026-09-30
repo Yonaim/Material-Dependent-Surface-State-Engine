@@ -89,7 +89,9 @@ namespace MDSS
                             std::distance(SceneProfileHandles.begin(), Found)));
                     }
                     Resources.Geometry = std::make_unique<TSurfaceSharedGeometryGPUResources>(
-                        PhysicalDevice, Device, *RuntimeData.GetSharedGeometry(), Resources.SceneProfileIndices);
+                        PhysicalDevice, Device, *RuntimeData.GetSharedGeometry(), Resources.SceneProfileIndices,
+                        Assets.GetMesh(MeshInstance.GetMesh()).GetVertices(),
+                        Assets.GetMesh(MeshInstance.GetMesh()).GetTriangles());
                     Resources.CPUGeometry = RuntimeData.GetSharedGeometry().get();
                     SharedIt = SharedSurfaceData.emplace(SurfaceDataHandle, std::move(Resources)).first;
                 }

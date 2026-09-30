@@ -1,9 +1,24 @@
 #pragma once
 
 #include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
+#include "AssetManager/Assets/MeshSourceData.h"
+
+#include <span>
 
 namespace MDSS
 {
+    // Static render vertex. Seam copies retain their own UV/normal but share displacement data.
+    struct TSurfaceTexelMeshVertex
+    {
+        glm::vec4 Position{0};
+        glm::vec4 Normal{0, 0, 1, 0};
+        glm::vec4 UVSurface{0}; // xy: UV, w: Surface ID
+        glm::vec4 DisplacementNormal{0, 0, 1, 0};
+        glm::uvec4 Samples{InvalidTexelIndex};
+        glm::vec4 Weights{0};
+    };
+    static_assert(sizeof(TSurfaceTexelMeshVertex) == 96);
+
     struct TSurfaceTexelMeshRange
     {
         std::uint32_t FirstIndex = 0;
@@ -12,11 +27,14 @@ namespace MDSS
 
     struct TSurfaceTexelMesh
     {
-        // Absolute texel indices become gl_VertexIndex; no duplicate position buffer.
+        std::vector<TSurfaceTexelMeshVertex> Vertices;
         std::vector<std::uint32_t> Indices;
         std::vector<TSurfaceTexelMeshRange> Surfaces;
     };
 
-    /** @brief Connect valid samples inside each UV chart. Chart boundaries remain open. */
-    [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData& Geometry);
+    /** @brief Refine source triangles with texel centers; preserve and weld source seam boundaries.
+     *  Without source topology, connect the supplied same-chart grid (synthetic geometry fixtures).
+     */
+    [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData& Geometry,
+        std::span<const TVertex> Vertices = {}, std::span<const TMeshTriangleSource> Triangles = {});
 }

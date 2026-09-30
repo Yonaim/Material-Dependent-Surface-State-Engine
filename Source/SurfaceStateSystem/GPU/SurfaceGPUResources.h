@@ -58,7 +58,9 @@ namespace MDSS
         TSurfaceSharedGeometryGPUResources(VkPhysicalDevice PhysicalDevice,
                                            VkDevice         Device,
                                            const TSharedSurfaceGeometryData& Geometry,
-                                           std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
+                                           std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {},
+                                           std::span<const TVertex> SourceVertices = {},
+                                           std::span<const TMeshTriangleSource> SourceTriangles = {});
 
         [[nodiscard]] const TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
@@ -72,6 +74,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] const TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept { return TexelMeshIndexBuffer.get(); }
+        [[nodiscard]] const TGPUBuffer* GetTexelMeshVertexBuffer() const noexcept { return TexelMeshVertexBuffer.get(); }
         [[nodiscard]] const std::vector<TSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept { return TexelMeshRanges; }
 
     private:
@@ -87,6 +90,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> SurfaceRangeBuffer;
         std::unique_ptr<TGPUBuffer> TexelChartIndexBuffer;
         std::unique_ptr<TGPUBuffer> TexelMeshIndexBuffer;
+        std::unique_ptr<TGPUBuffer> TexelMeshVertexBuffer;
         std::vector<TSurfaceTexelMeshRange> TexelMeshRanges;
     };
 

@@ -33,7 +33,7 @@
 - 검증: 전체 build와 CTest 8개 통과. 실제 GPU fragment에서 Raw State·높이 항목·Cavity Fill 범위·정점 변위를 확인했고, Inspector compute 결과의 면적 환산·Cavity 초과·A/B·normal gradient·무효화 및 Renderer 비동기 readback·해상도 교체를 검증했다. Vulkan validation 오류는 없었다.
 - 후속 작업: 실제 동적 Geometry buffer, Surface별 높이 기준값, 물리적 다중 layer 합성, 갱신 normal/거리/곡률 및 TransferWeight cache의 Solver 피드백. 기존 SurfaceAccumulation/SurfaceGeometryUpdate placeholder는 유지한다.
 - 현재 Inspector는 설계식의 GPU 미리보기 값을 검사한다. 미래 적층 pass가 다른 buffer를 생성하면 Inspector가 그 실제 출력도 읽도록 확장해야 한다.
-- 초기 정점 변위는 원본 메시 밀도로 실루엣 세부가 제한되었다. 현재 texel 연결면은 시뮬레이션 샘플 밀도를 따르며 chart 경계는 열린 상태다. 표시 배율은 위치와 gradient normal에 함께 적용하지만 실제 두께·물리적 layer 합성과 별도로 해석한다.
+- 초기 정점 변위는 원본 메시 밀도로 실루엣 세부가 제한되었다. 현재 연결면은 시뮬레이션 샘플을 포함하고 원본 topology의 seam 경계를 봉합한다 ([[0038-Source-Topology-Seam-Stitching|ADR 0038]]). 원본 메시의 열린 경계는 유지한다. 표시 배율은 위치와 gradient normal에 함께 적용하지만 실제 두께·물리적 layer 합성과 별도로 해석한다.
 - 선택 값은 완료 프레임의 snapshot이며 Running 중에는 현재 화면보다 늦을 수 있다. Pause 후 완료될 때까지 기다리고 Step으로 비교한다.
 
 ## Related

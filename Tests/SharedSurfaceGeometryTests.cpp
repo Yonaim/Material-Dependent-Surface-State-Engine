@@ -17,6 +17,8 @@
 #include <glm/geometric.hpp>
 #include <iostream>
 #include <limits>
+#include <map>
+#include <tuple>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -230,6 +232,66 @@ namespace
               "degenerate triangles must not produce render indices");
     }
 
+    void TestStitchedSourceMesh()
+    {
+        using namespace MDSS;
+        for (const auto* Name : {"Mapping/QuadSeam.obj", "Mapping/QuadNoSeam.obj", "Mapping/DisconnectedQuads.obj"})
+        {
+            const auto Source = TOBJLoader::Load(Fixture(Name));
+            const auto Mapping = TSurfaceMappingBuilder::Build(Source.Vertices, Source.Triangles, {{0, {24, 24}}});
+            std::vector<TSurfaceProfileIndex> Profiles(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
+            for (std::size_t T = 0; T < Profiles.size(); ++T)
+                if (Mapping.Texels[T].IsValid()) Profiles[T] = 0;
+            const auto Geometry = TSurfaceGeometryBuilder::Build(Mapping, Profiles, 1);
+            const auto Mesh = BuildSurfaceTexelMesh(Geometry, Source.Vertices, Source.Triangles);
+            using TPoint = std::tuple<float, float, float>;
+            const auto Point = [](glm::vec4 P) { return TPoint{P.x, P.y, P.z}; };
+            std::map<std::pair<TPoint, TPoint>, unsigned> Edges;
+            double Area = 0;
+            for (std::size_t I = 0; I < Mesh.Indices.size(); I += 3)
+            {
+                const auto A = Mesh.Indices[I], B = Mesh.Indices[I + 1], C = Mesh.Indices[I + 2];
+                const auto Cross = glm::cross(glm::vec3(Mesh.Vertices[B].Position - Mesh.Vertices[A].Position),
+                                              glm::vec3(Mesh.Vertices[C].Position - Mesh.Vertices[A].Position));
+                Check(Cross.z > 0, "refined source triangles must retain front-facing winding");
+                Area += glm::length(Cross) * 0.5;
+                for (unsigned K = 0; K < 3; ++K)
+                {
+                    auto X = Point(Mesh.Vertices[Mesh.Indices[I + K]].Position);
+                    auto Y = Point(Mesh.Vertices[Mesh.Indices[I + (K + 1) % 3]].Position);
+                    if (Y < X) std::swap(X, Y);
+                    ++Edges[{X, Y}];
+                }
+            }
+            const bool Disconnected = std::string(Name).find("Disconnected") != std::string::npos;
+            const auto Boundary = std::count_if(Edges.begin(), Edges.end(), [](const auto& E) { return E.second == 1; });
+            Check(Boundary == (Disconnected ? 8 : 4), "texel refinement must add no open edges or seam T-junctions");
+            Check(std::all_of(Edges.begin(), Edges.end(), [](const auto& E) { return E.second <= 2; }),
+                  "refinement must not create overlapping/non-manifold faces");
+            Check(std::abs(Area - (Disconnected ? 2.0 : 1.0)) < 1e-5,
+                  "refinement must cover the entire source surface, including chart border bands");
+            // Different chart heights must still produce bit-identical positions at UV seam copies.
+            std::map<TPoint, glm::vec3> Displaced;
+            for (const auto& V : Mesh.Vertices)
+            {
+                float Height = 0;
+                for (unsigned K = 0; K < 4; ++K)
+                    if (V.Weights[K] > 0) Height += V.Weights[K] * float(1 + Geometry.GetTexels()[V.Samples[K]].Chart);
+                const auto P = glm::vec3(V.Position) + glm::vec3(V.DisplacementNormal) * Height;
+                const auto [It, Added] = Displaced.try_emplace(Point(V.Position), P);
+                Check(Added || It->second == P, "seam copies must remain welded with unequal chart heights");
+            }
+            Check(Mesh.Vertices.size() > Source.Vertices.size(), "interior texels must participate in source refinement");
+        }
+        // Tiny triangles without any simulation centers must retain their full source geometry.
+        const auto Tiny = TOBJLoader::Load(Fixture("Mapping/SingleTriangle.obj"));
+        TSharedSurfaceGeometryData Empty({{0, {1, 1}}});
+        const auto Mesh = BuildSurfaceTexelMesh(Empty, Tiny.Vertices, Tiny.Triangles);
+        Check(Mesh.Indices.size() == 3, "triangles with no texel samples must not disappear");
+        Check(std::all_of(Mesh.Vertices.begin(), Mesh.Vertices.end(), [](const auto& V) {
+            return V.Weights == glm::vec4(0); }), "unsampled connected components must retain zero displacement");
+    }
+
     void TestRuntimePreprocessing()
     {
         using namespace MDSS;
@@ -258,6 +320,7 @@ int main()
     TestProfileDistribution();
     TestGeometryBuild();
     TestTexelMesh();
+    TestStitchedSourceMesh();
     TestRuntimePreprocessing();
 
     if (FailureCount != 0)
