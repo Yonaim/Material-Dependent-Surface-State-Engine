@@ -76,6 +76,8 @@ namespace MDSS
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] const TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept { return TexelMeshIndexBuffer.get(); }
         [[nodiscard]] const TGPUBuffer* GetTexelMeshVertexBuffer() const noexcept { return TexelMeshVertexBuffer.get(); }
+        [[nodiscard]] const TGPUBuffer* GetTexelMeshBoundaryBuffer() const noexcept { return TexelMeshBoundaryBuffer.get(); }
+        [[nodiscard]] std::uint32_t GetTexelMeshBoundaryCount() const noexcept { return TexelMeshBoundaryCount; }
         [[nodiscard]] const std::vector<TSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept { return TexelMeshRanges; }
 
     private:
@@ -92,6 +94,8 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> TexelChartIndexBuffer;
         std::unique_ptr<TGPUBuffer> TexelMeshIndexBuffer;
         std::unique_ptr<TGPUBuffer> TexelMeshVertexBuffer;
+        std::unique_ptr<TGPUBuffer> TexelMeshBoundaryBuffer;
+        std::uint32_t TexelMeshBoundaryCount = 0;
         std::vector<TSurfaceTexelMeshRange> TexelMeshRanges;
     };
 

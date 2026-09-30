@@ -8,6 +8,8 @@
 - 관련 문서: [[0019-Optional-Curvature-Transfer-Weight|ADR 0019 — CurvatureWeight]]
 - 범위: Week-05 Branch 2.3
 
+> **후속 결정 (2026-10-01):** [[0044-Macro-Meso-Concavity-Field|ADR 0044]]는 최종 ConcavityWeight를 Macro Mesh와 Normal Map의 결합 형상에서 만든다. 아래 Normal Map 전용 곡률·오목도 계산은 초기 구현 기록이며, MesoVirtualHeight와 MesoMean/Gaussian 데이터의 의미는 유지한다.
+
 ## Context
 
 Normal Map의 tangent-space 방향을 `NormalWeight`에 직접 사용하는 것만으로는 GeometryDrive의 높이차와 실제 형상 거리, cavity retention, 높이 기반 디버그 표시를 만들 수 없다. Normal Map에는 noise나 bake 오차가 있을 수 있어, 국소 기울기를 단일 height field로 정확히 적분할 수 있다는 보장도 없다.

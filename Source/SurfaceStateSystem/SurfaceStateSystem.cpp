@@ -605,7 +605,7 @@ namespace MDSS
                                GravityWorld,
                                SolverFlags,
                                TimestampQueryPool,
-                               FirstInstanceQuery + SolverQuerySlot * 4U);
+                               FirstInstanceQuery + SolverQuerySlot * 8U);
             GPUResources->AdvanceCurrentState(SceneIndex);
             ++SolverQuerySlot;
         }

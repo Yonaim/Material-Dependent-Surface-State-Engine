@@ -4,7 +4,6 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
-#include <algorithm>
 #include <array>
 #include <queue>
 #include <map>
@@ -13,6 +12,28 @@
 
 namespace MDSS
 {
+    static void BuildBoundaryEdges(TSurfaceTexelMesh& Mesh, const std::vector<std::uint32_t>& TopologyIDs)
+    {
+        struct TEdgeOccurrence
+        {
+            glm::uvec4 Edge{0};
+            std::uint32_t Count = 0;
+        };
+        std::map<std::pair<std::uint32_t, std::uint32_t>, TEdgeOccurrence> Edges;
+        for (std::size_t I = 0; I + 2 < Mesh.Indices.size(); I += 3)
+            for (std::size_t C = 0; C < 3; ++C)
+            {
+                const auto A = Mesh.Indices[I + C];
+                const auto B = Mesh.Indices[I + (C + 1) % 3];
+                const auto Other = Mesh.Indices[I + (C + 2) % 3];
+                const auto Key = std::minmax(TopologyIDs[A], TopologyIDs[B]);
+                auto& Occurrence = Edges[{Key.first, Key.second}];
+                if (Occurrence.Count++ == 0) Occurrence.Edge = {A, B, Other, 0};
+            }
+        for (const auto& [Key, Occurrence] : Edges)
+            if (Occurrence.Count == 1) Mesh.BoundaryEdges.push_back(Occurrence.Edge);
+    }
+
     static TSurfaceTexelMesh BuildGridMesh(const TSharedSurfaceGeometryData& Geometry)
     {
         TSurfaceTexelMesh Result;
@@ -86,6 +107,9 @@ namespace MDSS
                 }
             Result.Surfaces.push_back({First, static_cast<std::uint32_t>(Result.Indices.size()) - First});
         }
+        std::vector<std::uint32_t> TopologyIDs(Result.Vertices.size());
+        for (std::uint32_t I = 0; I < TopologyIDs.size(); ++I) TopologyIDs[I] = I;
+        BuildBoundaryEdges(Result, TopologyIDs);
         return Result;
     }
 
@@ -193,6 +217,7 @@ namespace MDSS
         using TEdgeKey = std::pair<std::uint32_t, std::uint32_t>;
         std::map<TEdgeKey, std::vector<std::pair<float, std::uint32_t>>> EdgeSamples;
         std::map<TEdgeKey, std::vector<TEdgePoint>> EdgePoints;
+        std::map<TEdgeKey, std::vector<std::uint32_t>> EdgeTopologyIDs;
         // Union exact edge samples from both charts before refinement. Both incident source
         // triangles receive identical subdivisions, so edge samples cannot form T-junctions.
         for (std::size_t I = 0; I < Triangles.size(); ++I)
@@ -208,6 +233,7 @@ namespace MDSS
                 if (Parameter <= 1e-6F || Parameter >= 1.0F - 1e-6F) continue;
                 EdgeSamples[{TriangleWelds[I][A], TriangleWelds[I][B]}].push_back({Parameter, T});
             }
+        std::uint32_t NextTopologyID = static_cast<std::uint32_t>(Welds.size());
         for (auto& [Key, Samples] : EdgeSamples)
         {
             std::sort(Samples.begin(), Samples.end());
@@ -227,10 +253,12 @@ namespace MDSS
                 auto N = glm::mix(Welds[Key.first].Normal, Welds[Key.second].Normal, Point.Parameter);
                 Point.Direction = glm::vec4(glm::dot(N, N) > 1e-12F ? glm::normalize(N) : Welds[Key.first].Normal, 0);
                 Points.push_back(Point);
+                EdgeTopologyIDs[Key].push_back(NextTopologyID++);
                 K = End;
             }
         }
         TSurfaceTexelMesh Result;
+        std::vector<std::uint32_t> TopologyIDs;
         // Render vertices stay split at UV/material/normal seams; their displacement is welded.
         Result.Vertices.reserve(Vertices.size() + Texels.size());
         std::unordered_map<std::uint64_t, std::uint32_t> RenderIndices;
@@ -244,6 +272,7 @@ namespace MDSS
                 TriangleRenderIndices[I][C] = It->second;
                 if (!Added) continue;
                 Result.Vertices.emplace_back();
+                TopologyIDs.push_back(TriangleWelds[I][C]);
                 const auto& Source = Vertices[R];
                 const auto& Weld = Welds[TriangleWelds[I][C]];
                 auto& V = Result.Vertices.back();
@@ -271,8 +300,9 @@ namespace MDSS
                 if (TriangleWelds[I][A] > TriangleWelds[I][B]) std::swap(A, B);
                 const auto Found = EdgePoints.find({TriangleWelds[I][A], TriangleWelds[I][B]});
                 if (Found == EdgePoints.end()) continue;
-                for (const auto& Point : Found->second)
+                for (std::size_t PointIndex = 0; PointIndex < Found->second.size(); ++PointIndex)
                 {
+                    const auto& Point = Found->second[PointIndex];
                     TSurfaceTexelMeshVertex V;
                     V.Position = Point.Position;
                     V.DisplacementNormal = Point.Direction;
@@ -285,6 +315,7 @@ namespace MDSS
                     V.Weights = Point.Weights;
                     Points.push_back(static_cast<std::uint32_t>(Result.Vertices.size()));
                     Result.Vertices.push_back(V);
+                    TopologyIDs.push_back(EdgeTopologyIDs.at({TriangleWelds[I][A], TriangleWelds[I][B]})[PointIndex]);
                     glm::dvec3 Bary{0};
                     Bary[A] = 1.0 - double(Point.Parameter);
                     Bary[B] = double(Point.Parameter);
@@ -310,6 +341,7 @@ namespace MDSS
                 V.Samples.x = T;
                 V.Weights.x = 1;
                 Result.Vertices.push_back(V);
+                TopologyIDs.push_back(NextTopologyID++);
                 Coordinates.push_back(Texel.Barycentric.y);
                 Coordinates.push_back(Texel.Barycentric.z);
             }
@@ -339,6 +371,7 @@ namespace MDSS
             Result.Surfaces.push_back({static_cast<std::uint32_t>(Result.Indices.size()), static_cast<std::uint32_t>(Indices.size())});
             Result.Indices.insert(Result.Indices.end(), Indices.begin(), Indices.end());
         }
+        BuildBoundaryEdges(Result, TopologyIDs);
         return Result;
     }
 }

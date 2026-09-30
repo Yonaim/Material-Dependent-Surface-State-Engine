@@ -1,0 +1,78 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define SURFACE_DEBUG_SET 0
+#include "Rendering/StateSampling.glsl"
+#include "Debug/TexelGeometryData.glsl"
+
+layout(local_size_x = 64) in;
+layout(set = 1, binding = 0, std430) readonly buffer TInput { TTexelGeometryVertex Values[]; } InputGeometry;
+layout(set = 2, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } OutputGeometry;
+layout(push_constant) uniform TPush
+{
+    uint TexelCount;
+    uint Channel;
+    uint Channels;
+    uint Padding;
+} Push;
+
+const float CoverageCutoff = 0.02;
+
+void main()
+{
+    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (T >= Push.TexelCount) return;
+    TTexelGeometryVertex Original = InputGeometry.Values[T];
+    OutputGeometry.Values[T] = Original;
+    if (T >= uint(TexelSurfaceIndices.Values.length()) ||
+        T >= uint(TexelProfileIndices.Values.length()) ||
+        T >= uint(TexelChartIndices.Values.length()) ||
+        T >= uint(GeometryScalars.Values.length()) ||
+        T >= uint(Positions.Values.length()) || T >= uint(Normals.Values.length())) return;
+
+    uint Surface = TexelSurfaceIndices.Values[T];
+    if (Surface >= uint(SurfaceRanges.Values.length()) ||
+        StateSaturation(T, Push.Channel, Push.Channels, Surface) <= CoverageCutoff) return;
+    uvec4 Range = SurfaceRanges.Values[Surface];
+    if (Range.y == 0u || Range.z == 0u || T < Range.x) return;
+    uint Local = T - Range.x;
+    if (Local >= Range.y * Range.z) return;
+    ivec2 Center = ivec2(int(Local % Range.y), int(Local / Range.y));
+    uint Chart = TexelChartIndices.Values[T];
+    uint Profile = TexelProfileIndices.Values[T];
+    float WeightedHeight = 0.0;
+    vec3 WeightedNormal = vec3(0.0);
+    float WeightSum = 0.0;
+    for (int Y = -1; Y <= 1; ++Y)
+    for (int X = -1; X <= 1; ++X)
+    {
+        ivec2 XY = Center + ivec2(X, Y);
+        if (XY.x < 0 || XY.y < 0 || XY.x >= int(Range.y) || XY.y >= int(Range.z)) continue;
+        uint N = Range.x + uint(XY.y) * Range.y + uint(XY.x);
+        if (N >= Push.TexelCount || N >= uint(InputGeometry.Values.length()) ||
+            N >= uint(GeometryScalars.Values.length()) ||
+            N >= uint(TexelSurfaceIndices.Values.length()) ||
+            N >= uint(TexelProfileIndices.Values.length()) ||
+            N >= uint(TexelChartIndices.Values.length()) ||
+            TexelSurfaceIndices.Values[N] != Surface ||
+            TexelProfileIndices.Values[N] != Profile ||
+            TexelChartIndices.Values[N] != Chart ||
+            StateSaturation(N, Push.Channel, Push.Channels, Surface) <= CoverageCutoff) continue;
+
+        float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
+        if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
+        float AccumulationHeight = InputGeometry.Values[N].PositionAndHeight.w - Meso;
+        if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
+        float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
+        WeightedHeight += Weight * AccumulationHeight;
+        WeightedNormal += Weight * InputGeometry.Values[N].Normal.xyz;
+        WeightSum += Weight;
+    }
+    if (WeightSum <= 0.0) return;
+    float CenterMeso = GeometryScalars.Values[T].MesoVirtualHeight;
+    if (isnan(CenterMeso) || isinf(CenterMeso)) CenterMeso = 0.0;
+    float Height = CenterMeso + WeightedHeight / WeightSum;
+    OutputGeometry.Values[T].PositionAndHeight =
+        vec4(Positions.Values[T].xyz + Normals.Values[T].xyz * Height, Height);
+    if (dot(WeightedNormal, WeightedNormal) > 1e-12)
+        OutputGeometry.Values[T].Normal = vec4(normalize(WeightedNormal), 0.0);
+}

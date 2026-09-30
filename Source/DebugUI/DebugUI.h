@@ -164,12 +164,18 @@ namespace MDSS
         double                                                      ProfilingWindowElapsed = 0.0;
         double                                                      ProfilingFpsSum = 0.0;
         double                                                      ProfilingFrameTimeSum = 0.0;
+        std::vector<float>                                          ProfilingFrameTimeWindowSamples;
+        float                                                       ProfilingFrameTimeMaximum = -1.0F;
+        float                                                       ProfilingFrameTimePercentile95 = -1.0F;
         std::uint32_t                                               ProfilingFrameSamples = 0;
-        std::array<double, 4>                                       ProfilingGpuSums{};
-        std::array<std::uint32_t, 4>                                ProfilingGpuSamples{};
-        std::array<float, 6>                                        ProfilingAverages{-1.0F, -1.0F, -1.0F,
-                                                                                     -1.0F, -1.0F, -1.0F};
+        std::array<double, 17>                                      ProfilingMetricSums{};
+        std::array<std::uint32_t, 17>                               ProfilingMetricSamples{};
+        std::array<float, 19>                                       ProfilingAverages{};
+        std::array<float, 17>                                       ProfilingMaximums{};
+        std::array<float, 17>                                       ProfilingPercentiles95{};
+        std::array<std::vector<float>, 17>                          ProfilingMetricWindowSamples;
         bool                                                        bProfilingAverageAvailable = false;
         bool                                                        bProfiledRawFluxCacheEnabled = true;
+        bool                                                        bViewportOverlaysVisible = true;
     };
 } // namespace MDSS

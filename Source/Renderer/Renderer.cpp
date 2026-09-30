@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -215,6 +216,9 @@ namespace MDSS
             glm::uvec4    DebugFlags{0};
             glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, InvalidStateId, 1U};
             glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
+            glm::vec4     DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
+            glm::vec4     WetnessTint{0.44F, 0.56F, 0.68F, 1.0F};
+            glm::vec4     WaterFilmTint{0.35F, 0.53F, 0.68F, 1.0F};
             glm::vec4     CameraPosition{0, 0, 1, 1};
         };
 
@@ -270,7 +274,7 @@ namespace MDSS
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 128, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 176, "TMaterialUniform must match the std140 shader block layout.");
 
         TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -384,30 +388,49 @@ namespace MDSS
             return Config;
         }
 
+        TGraphicsPipelineConfig BuildBaseSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
+                                                                   VkDescriptorSetLayout SurfaceLayout)
+        {
+            auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout);
+            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/BaseSurfaceLit.frag.spv";
+            return Config;
+        }
+
+        TGraphicsPipelineConfig BuildOverlayPipelineConfig(VkDescriptorSetLayout MaterialLayout,
+            VkDescriptorSetLayout SurfaceLayout, VkDescriptorSetLayout ComputedLayout,
+            VkDescriptorSetLayout SideLayout, bool bWater, bool bSide)
+        {
+            auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, ComputedLayout);
+            Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) +
+                (bSide ? "/Rendering/OverlaySide.vert.spv" : "/Rendering/OverlayTop.vert.spv");
+            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) +
+                (bWater ? "/Rendering/OverlayWater.frag.spv" : "/Rendering/OverlayMud.frag.spv");
+            Config.CullMode = bSide ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+            Config.bDepthWriteEnabled = !bWater;
+            Config.bBlendingEnabled = bWater;
+            if (bSide)
+            {
+                Config.VertexBindings.clear();
+                Config.VertexAttributes.clear();
+                Config.DescriptorSetLayouts.push_back(SideLayout);
+            }
+            return Config;
+        }
+
         bool UsesAccumulationGeometry(const TStaticMeshInstance& Instance, const TAssetManager& Assets,
                                       const TSurfaceSharedGeometryGPUResources* Shared, const std::string& StateName)
         {
             if (!Shared || !Shared->GetTexelMeshIndexBuffer() || Instance.GetMesh() == InvalidAssetHandle ||
                 !Assets.HasSurfaceData(Instance.GetSurfaceData())) return false;
-            // Thin charts without any connected triangles retain their original mesh and appearance.
+            bool bHasConnectedTriangles = false;
             for (const auto& Section : Assets.GetMesh(Instance.GetMesh()).GetSections())
-                if (Section.Surface >= Shared->GetTexelMeshRanges().size() ||
-                    Shared->GetTexelMeshRanges()[Section.Surface].IndexCount == 0) return false;
+                if (Section.Surface < Shared->GetTexelMeshRanges().size() &&
+                    Shared->GetTexelMeshRanges()[Section.Surface].IndexCount > 0)
+                    bHasConnectedTriangles = true;
+            if (!bHasConnectedTriangles) return false;
             for (const auto Profile : Assets.GetSurfaceProfileTable(Instance.GetSurfaceData()))
                 if (Assets.GetSRProfile(Profile).GetData().States.contains(StateName)) return true;
             return false;
-        }
-
-        TStateId GetAccumulationGeometryChannel(const TStaticMeshInstance& Instance, const TAssetManager& Assets,
-                                                const TDemoSurfaceStateBindings& Bindings,
-                                                const TDemoSurfaceEffectSettings& Settings,
-                                                const TSurfaceSharedGeometryGPUResources* Shared)
-        {
-            if (Settings.bWaterFilmDisplacement && Bindings.WaterFilm != InvalidStateId &&
-                UsesAccumulationGeometry(Instance, Assets, Shared, "waterfilm")) return Bindings.WaterFilm;
-            if (Settings.bMudDisplacement && Bindings.Mud != InvalidStateId &&
-                UsesAccumulationGeometry(Instance, Assets, Shared, "mud")) return Bindings.Mud;
-            return InvalidStateId;
         }
 
         TGraphicsPipelineConfig BuildGizmoPipelineConfig()
@@ -547,9 +570,29 @@ namespace MDSS
                     Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
             SurfaceLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
                 BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
-            TexelSurfaceLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
-                BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
-                    TexelGeometryPreview->GetOutputLayout()));
+            BaseSurfaceLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+            MudLayerGeometry = std::make_unique<TTexelGeometryPreview>(Context.GetPhysicalDevice(), Context.GetDevice(),
+                Descriptors->GetLayout(), Scene.GetStaticMeshInstances().size());
+            WaterLayerGeometry = std::make_unique<TTexelGeometryPreview>(Context.GetPhysicalDevice(), Context.GetDevice(),
+                Descriptors->GetLayout(), Scene.GetStaticMeshInstances().size());
+            HeightFieldSmoothing = std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
+                Context.GetDevice(), Descriptors->GetLayout(), MudLayerGeometry->GetOutputLayout(),
+                Scene.GetStaticMeshInstances().size());
+            OverlaySides = std::make_unique<TAccumulationOverlaySides>(Context.GetPhysicalDevice(), Context.GetDevice(),
+                Descriptors->GetLayout(), MudLayerGeometry->GetOutputLayout(), Scene.GetStaticMeshInstances().size());
+            MudOverlayTopPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                    MudLayerGeometry->GetOutputLayout(), OverlaySides->GetLayout(), false, false));
+            MudOverlaySidePipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                    MudLayerGeometry->GetOutputLayout(), OverlaySides->GetLayout(), false, true));
+            WaterOverlayTopPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                    WaterLayerGeometry->GetOutputLayout(), OverlaySides->GetLayout(), true, false));
+            WaterOverlaySidePipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                    WaterLayerGeometry->GetOutputLayout(), OverlaySides->GetLayout(), true, true));
         }
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
@@ -594,9 +637,17 @@ namespace MDSS
 
         SurfaceDebugPipeline.reset();
         SurfaceLitPipeline.reset();
-        TexelSurfaceLitPipeline.reset();
+        BaseSurfaceLitPipeline.reset();
+        MudOverlayTopPipeline.reset();
+        MudOverlaySidePipeline.reset();
+        WaterOverlayTopPipeline.reset();
+        WaterOverlaySidePipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
+        OverlaySides.reset();
+        HeightFieldSmoothing.reset();
+        MudLayerGeometry.reset();
+        WaterLayerGeometry.reset();
         TexelInspector.reset();
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
@@ -614,13 +665,20 @@ namespace MDSS
     void TRenderer::RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime)
     {
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
+        using TClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](TClock::duration Duration)
+        {
+            return std::chrono::duration<float, std::milli>(Duration).count();
+        };
+        auto CpuStageStart = TClock::now();
         FrameContext.WaitForCurrentFrame();
+        ProfilingStats.FrameFenceWaitCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
         if (TexelInspector)
             TexelInspector->CompleteFrame(FrameIndex);
         if (TimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
         {
             const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
-            const std::uint32_t QueryCount = SolverTimestampStepsSubmitted[FrameIndex] * SolverTimestampSlotCount * 4U + 2U;
+            const std::uint32_t QueryCount = SolverTimestampStepsSubmitted[FrameIndex] * SolverTimestampSlotCount * 8U + 14U;
             std::vector<std::uint64_t> Timestamps(QueryCount, 0U);
             const VkResult QueryResult = vkGetQueryPoolResults(Context.GetDevice(),
                                                                TimestampQueryPool,
@@ -641,22 +699,40 @@ namespace MDSS
                     }
                     return static_cast<float>(static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
                 };
-                LastRenderGpuMilliseconds = ToMilliseconds(Timestamps[0], Timestamps[1]);
+                ProfilingStats.RenderPreparationGpuMilliseconds = ToMilliseconds(Timestamps[0], Timestamps[1]);
+                ProfilingStats.SceneDrawGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[3]);
+                ProfilingStats.TexelInspectorGpuMilliseconds = ToMilliseconds(Timestamps[4], Timestamps[5]);
+                ProfilingStats.BaseMeshDrawGpuMilliseconds = ToMilliseconds(Timestamps[6], Timestamps[7]);
+                ProfilingStats.MudOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[8], Timestamps[9]);
+                ProfilingStats.WaterFilmOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[10], Timestamps[11]);
+                ProfilingStats.OverlayPreparationGpuMilliseconds = ToMilliseconds(Timestamps[12], Timestamps[13]);
+                LastRenderGpuMilliseconds = ProfilingStats.RenderPreparationGpuMilliseconds +
+                                           ProfilingStats.SceneDrawGpuMilliseconds;
+                LastSolverPass1GpuMilliseconds = 0.0F;
+                LastSolverPass2GpuMilliseconds = 0.0F;
+                ProfilingStats.AccumulationGeometryGpuMilliseconds = 0.0F;
+                ProfilingStats.TransferWeightGpuMilliseconds = 0.0F;
                 if (SolverTimestampStepsSubmitted[FrameIndex] > 0U)
                 {
-                    LastSolverPass1GpuMilliseconds = 0.0F;
-                    LastSolverPass2GpuMilliseconds = 0.0F;
                     for (std::uint32_t Slot = 0; Slot < SolverTimestampSlotCount * SolverTimestampStepsSubmitted[FrameIndex]; ++Slot)
                     {
-                        const std::uint32_t SlotQuery = 2U + Slot * 4U;
-                        LastSolverPass1GpuMilliseconds +=
+                        const std::uint32_t SlotQuery = 14U + Slot * 8U;
+                        ProfilingStats.AccumulationGeometryGpuMilliseconds +=
                             ToMilliseconds(Timestamps[SlotQuery], Timestamps[SlotQuery + 1U]);
-                        LastSolverPass2GpuMilliseconds +=
+                        ProfilingStats.TransferWeightGpuMilliseconds +=
                             ToMilliseconds(Timestamps[SlotQuery + 2U], Timestamps[SlotQuery + 3U]);
+                        LastSolverPass1GpuMilliseconds +=
+                            ToMilliseconds(Timestamps[SlotQuery + 4U], Timestamps[SlotQuery + 5U]);
+                        LastSolverPass2GpuMilliseconds +=
+                            ToMilliseconds(Timestamps[SlotQuery + 6U], Timestamps[SlotQuery + 7U]);
                     }
-                    LastSolverGpuMilliseconds =
-                        LastSolverPass1GpuMilliseconds + LastSolverPass2GpuMilliseconds;
                 }
+                ProfilingStats.SolverPass1GpuMilliseconds = LastSolverPass1GpuMilliseconds;
+                ProfilingStats.SolverPass2GpuMilliseconds = LastSolverPass2GpuMilliseconds;
+                ProfilingStats.SolverGpuMilliseconds = LastSolverPass1GpuMilliseconds +
+                    LastSolverPass2GpuMilliseconds + ProfilingStats.AccumulationGeometryGpuMilliseconds +
+                    ProfilingStats.TransferWeightGpuMilliseconds;
+                LastSolverGpuMilliseconds = ProfilingStats.SolverGpuMilliseconds;
             }
             bTimestampQueriesSubmitted[FrameIndex] = false;
             SolverTimestampStepsSubmitted[FrameIndex] = 0;
@@ -682,12 +758,14 @@ namespace MDSS
         }
 
         std::uint32_t  ImageIndex = 0;
+        CpuStageStart = TClock::now();
         const VkResult AcquireResult = vkAcquireNextImageKHR(Context.GetDevice(),
                                                              SwapchainData.GetHandle(),
                                                              std::numeric_limits<std::uint64_t>::max(),
                                                              FrameContext.GetImageAvailableSemaphore(),
                                                              VK_NULL_HANDLE,
                                                              &ImageIndex);
+        ProfilingStats.AcquireCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
 
         if (AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -717,9 +795,23 @@ namespace MDSS
             !SimulationSteps.empty())
             MaximumSimulationStep = SimulationSteps.front();
         LastSimulationStepCount = static_cast<std::uint32_t>(SimulationSteps.size());
+        ProfilingStats.SimulationSteps = LastSimulationStepCount;
+        ProfilingStats.SimulationInstances = static_cast<std::uint32_t>(SurfaceStates.GetSolverTimestampSlotCount());
+        ProfilingStats.SimulationTexels = 0;
+        ProfilingStats.StateChannels = 0;
+        ProfilingStats.SimulationResolution = GetSimulationResolution();
+        const auto& GPUResources = SurfaceStates.GetGPUResources();
+        for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
+        {
+            if (GPUResources.GetInstanceDescriptors(Instance) == nullptr) continue;
+            ProfilingStats.SimulationTexels += GPUResources.GetInstanceTexelCount(Instance);
+            ProfilingStats.StateChannels = static_cast<std::uint32_t>(GPUResources.GetInstanceChannelCount(Instance));
+        }
         if (SimulationSteps.empty())
             LastSolverGpuMilliseconds = LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = 0.0F;
+        CpuStageStart = TClock::now();
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, SimulationSteps);
+        ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             bTimestampQueriesSubmitted[FrameIndex] = true;
@@ -744,11 +836,13 @@ namespace MDSS
         SubmitInfo.signalSemaphoreCount = 1;
         SubmitInfo.pSignalSemaphores = &SignalSemaphore;
 
+        CpuStageStart = TClock::now();
         if (vkQueueSubmit(Context.GetQueues().GetGraphics(), 1, &SubmitInfo, FrameContext.GetInFlightFence()) !=
             VK_SUCCESS)
         {
             throw std::runtime_error("Failed to submit Vulkan draw command buffer.");
         }
+        ProfilingStats.QueueSubmitCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
 
         const VkSwapchainKHR SwapchainHandle = SwapchainData.GetHandle();
         VkPresentInfoKHR     PresentInfo{};
@@ -759,7 +853,9 @@ namespace MDSS
         PresentInfo.pSwapchains = &SwapchainHandle;
         PresentInfo.pImageIndices = &ImageIndex;
 
+        CpuStageStart = TClock::now();
         const VkResult PresentResult = vkQueuePresentKHR(Context.GetQueues().GetPresent(), &PresentInfo);
+        ProfilingStats.PresentCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
         const bool     bSwapchainNeedsRecreation =
             AcquireResult == VK_SUBOPTIMAL_KHR || PresentResult == VK_ERROR_OUT_OF_DATE_KHR ||
             PresentResult == VK_SUBOPTIMAL_KHR || TargetWindow.WasFramebufferResized();
@@ -817,7 +913,15 @@ namespace MDSS
         std::unique_ptr<TTexelGeometryPreview> ReplacementGeometryPreview;
         std::unique_ptr<TGraphicsPipeline> ReplacementGeometryPipeline;
         std::unique_ptr<TGraphicsPipeline> ReplacementLitPipeline;
-        std::unique_ptr<TGraphicsPipeline> ReplacementTexelLitPipeline;
+        std::unique_ptr<TGraphicsPipeline> ReplacementBaseLitPipeline;
+        std::unique_ptr<TTexelGeometryPreview> ReplacementMudGeometry;
+        std::unique_ptr<TTexelGeometryPreview> ReplacementWaterGeometry;
+        std::unique_ptr<THeightFieldSmoothing> ReplacementHeightFieldSmoothing;
+        std::unique_ptr<TAccumulationOverlaySides> ReplacementOverlaySides;
+        std::unique_ptr<TGraphicsPipeline> ReplacementMudTopPipeline;
+        std::unique_ptr<TGraphicsPipeline> ReplacementMudSidePipeline;
+        std::unique_ptr<TGraphicsPipeline> ReplacementWaterTopPipeline;
+        std::unique_ptr<TGraphicsPipeline> ReplacementWaterSidePipeline;
         try
         {
             Replacement = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
@@ -853,9 +957,30 @@ namespace MDSS
                         Descriptors->GetLayout(), ReplacementGeometryPreview->GetOutputLayout()));
                 ReplacementLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
                     BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
-                ReplacementTexelLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
-                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
-                        ReplacementGeometryPreview->GetOutputLayout()));
+                ReplacementBaseLitPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                    BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+                ReplacementMudGeometry = std::make_unique<TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                    Context.GetDevice(), Descriptors->GetLayout(), Scene.GetStaticMeshInstances().size());
+                ReplacementWaterGeometry = std::make_unique<TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                    Context.GetDevice(), Descriptors->GetLayout(), Scene.GetStaticMeshInstances().size());
+                ReplacementHeightFieldSmoothing = std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
+                    Context.GetDevice(), Descriptors->GetLayout(), ReplacementMudGeometry->GetOutputLayout(),
+                    Scene.GetStaticMeshInstances().size());
+                ReplacementOverlaySides = std::make_unique<TAccumulationOverlaySides>(Context.GetPhysicalDevice(),
+                    Context.GetDevice(), Descriptors->GetLayout(), ReplacementMudGeometry->GetOutputLayout(),
+                    Scene.GetStaticMeshInstances().size());
+                ReplacementMudTopPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                        ReplacementMudGeometry->GetOutputLayout(), ReplacementOverlaySides->GetLayout(), false, false));
+                ReplacementMudSidePipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                        ReplacementMudGeometry->GetOutputLayout(), ReplacementOverlaySides->GetLayout(), false, true));
+                ReplacementWaterTopPipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                        ReplacementWaterGeometry->GetOutputLayout(), ReplacementOverlaySides->GetLayout(), true, false));
+                ReplacementWaterSidePipeline = std::make_unique<TGraphicsPipeline>(Context.GetDevice(), MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                        ReplacementWaterGeometry->GetOutputLayout(), ReplacementOverlaySides->GetLayout(), true, true));
             }
         }
         catch (...)
@@ -865,9 +990,17 @@ namespace MDSS
         }
         SurfaceDebugPipeline.reset();
         SurfaceLitPipeline.reset();
-        TexelSurfaceLitPipeline.reset();
+        BaseSurfaceLitPipeline.reset();
+        MudOverlayTopPipeline.reset();
+        MudOverlaySidePipeline.reset();
+        WaterOverlayTopPipeline.reset();
+        WaterOverlaySidePipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
+        OverlaySides.reset();
+        HeightFieldSmoothing.reset();
+        MudLayerGeometry.reset();
+        WaterLayerGeometry.reset();
         TexelInspector.reset();
         InspectedTexel.reset();
         SimulationStepSerial = 0;
@@ -879,7 +1012,15 @@ namespace MDSS
         TexelGeometryPreview = std::move(ReplacementGeometryPreview);
         TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
         SurfaceLitPipeline = std::move(ReplacementLitPipeline);
-        TexelSurfaceLitPipeline = std::move(ReplacementTexelLitPipeline);
+        BaseSurfaceLitPipeline = std::move(ReplacementBaseLitPipeline);
+        MudLayerGeometry = std::move(ReplacementMudGeometry);
+        WaterLayerGeometry = std::move(ReplacementWaterGeometry);
+        HeightFieldSmoothing = std::move(ReplacementHeightFieldSmoothing);
+        OverlaySides = std::move(ReplacementOverlaySides);
+        MudOverlayTopPipeline = std::move(ReplacementMudTopPipeline);
+        MudOverlaySidePipeline = std::move(ReplacementMudSidePipeline);
+        WaterOverlayTopPipeline = std::move(ReplacementWaterTopPipeline);
+        WaterOverlaySidePipeline = std::move(ReplacementWaterSidePipeline);
         Assets.SetSimulationResolution(Scene.GetSimulationResolution());
         if (bResetStateSettings)
         {
@@ -1119,8 +1260,13 @@ namespace MDSS
     void TRenderer::SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings)
     {
         const auto Roughness = [](float V) { return std::isfinite(V) && V >= 0.05F && V <= 1.0F; };
-        if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.WetRoughness) || !Roughness(Settings.MudRoughness))
-            throw std::invalid_argument("Invalid demo roughness.");
+        const auto Unit = [](float V) { return std::isfinite(V) && V >= 0.0F && V <= 1.0F; };
+        const auto Color = [&](const glm::vec3& V) { return Unit(V.r) && Unit(V.g) && Unit(V.b); };
+        if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.WetRoughness) ||
+            !Roughness(Settings.MudRoughness) || !Roughness(Settings.WaterFilmRoughness) ||
+            !Unit(Settings.WetnessStrength) || !Unit(Settings.WetnessSpecularStrength) ||
+            !Unit(Settings.WaterFilmOpacity) || !Color(Settings.WetnessTint) || !Color(Settings.WaterFilmTint))
+            throw std::invalid_argument("Invalid demo surface effect settings.");
         DemoEffects = Settings;
     }
 
@@ -1421,14 +1567,16 @@ namespace MDSS
         {
             return;
         }
-        if (SolverInstanceCount > (std::numeric_limits<std::uint32_t>::max() / TRenderContext::MaxFramesInFlight - 2U) / (4U * MaxSimulationStepsPerFrame))
+        if (SolverInstanceCount > (std::numeric_limits<std::uint32_t>::max() /
+                                   TRenderContext::MaxFramesInFlight - 14U) /
+                                      (8U * MaxSimulationStepsPerFrame))
         {
             TLogger::Warning("TRenderer", "GPU timing query count exceeds the supported range.");
             return;
         }
 
         SolverTimestampSlotCount = static_cast<std::uint32_t>(SolverInstanceCount);
-        TimestampQueriesPerFrame = 2U + SolverTimestampSlotCount * 4U * MaxSimulationStepsPerFrame;
+        TimestampQueriesPerFrame = 14U + SolverTimestampSlotCount * 8U * MaxSimulationStepsPerFrame;
         VkQueryPoolCreateInfo QueryPoolInfo{};
         QueryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
         QueryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
@@ -1605,6 +1753,10 @@ namespace MDSS
                  SurfaceDebugSettings.HeightGridMode, SurfaceDebugSettings.HeightGridBlockSize},
                 {Bindings.Wetness, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
                 {DemoEffects.DryRoughness, DemoEffects.WetRoughness, DemoEffects.MudRoughness, LitHeightDisplayScale},
+                {DemoEffects.WetnessStrength, DemoEffects.WetnessSpecularStrength,
+                 DemoEffects.WaterFilmOpacity, DemoEffects.WaterFilmRoughness},
+                {DemoEffects.WetnessTint, 1.0F},
+                {DemoEffects.WaterFilmTint, 1.0F},
                 glm::vec4(CameraPosition, 1.0F)};
             MaterialResources[Index].UniformBuffers[Frame]->Upload(&Uniform, sizeof(Uniform));
         }
@@ -1634,10 +1786,12 @@ namespace MDSS
         for (std::size_t Step = 0; Step < SimulationSteps.size(); ++Step)
         {
             SurfaceStates.RecordStep(CommandBuffer, SimulationSteps[Step], TimestampQueryPool,
-                QueryBase + 2U + static_cast<std::uint32_t>(Step) * SolverTimestampSlotCount * 4U);
+                QueryBase + 14U + static_cast<std::uint32_t>(Step) * SolverTimestampSlotCount * 8U);
         }
 
         SimulationStepSerial += SimulationSteps.size();
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 4U);
         if (TexelInspector && InspectedTexel && DebugStateChannel < Assets.GetSurfaceStateRegistry().GetStateCount())
         {
             const auto& Resources = SurfaceStates.GetGPUResources();
@@ -1654,39 +1808,71 @@ namespace MDSS
                     Resources.IsCurrentStateAB(InspectedTexel->Instance),
                     SimulationStepSerial);
         }
-
         if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 5U);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase);
+        }
+
         const bool bTexelGeometry = UsesTexelGeometry(ViewMode) && TexelGeometryPreview && TexelGeometryPipeline;
         const auto DemoBindings = GetDemoSurfaceStateBindings();
         const bool bSurfaceLit = ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipeline;
-        const bool bLitTexelGeometry = bSurfaceLit && TexelSurfaceLitPipeline &&
-            ((DemoEffects.bMudDisplacement && DemoBindings.Mud != InvalidStateId) ||
-             (DemoEffects.bWaterFilmDisplacement && DemoBindings.WaterFilm != InvalidStateId));
-        if (bTexelGeometry || bLitTexelGeometry)
+        const bool bOverlayRendering = bSurfaceLit && BaseSurfaceLitPipeline && OverlaySides && HeightFieldSmoothing &&
+            MudLayerGeometry && WaterLayerGeometry && MudOverlayTopPipeline && MudOverlaySidePipeline &&
+            WaterOverlayTopPipeline && WaterOverlaySidePipeline;
+        std::vector<std::array<bool, 2>> OverlayActive(SceneData.GetStaticMeshInstances().size(), {false, false});
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 12U);
+        if (bTexelGeometry || bOverlayRendering)
         {
             const auto& Resources = SurfaceStates.GetGPUResources();
             const bool bAccumulation = ViewMode == TRenderViewMode::SurfaceAccumulation ||
-                                       ViewMode == TRenderViewMode::SurfaceFinalGeometry || bLitTexelGeometry;
+                                       ViewMode == TRenderViewMode::SurfaceFinalGeometry;
             for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
             {
                 const auto* Shared = Resources.GetInstanceSharedGeometry(Instance);
                 const auto* Descriptors = Resources.GetInstanceDescriptors(Instance);
-                const TStateId GeometryChannel = bLitTexelGeometry
-                    ? GetAccumulationGeometryChannel(SceneData.GetStaticMeshInstances()[Instance], Assets,
-                                                     DemoBindings, DemoEffects, Shared)
-                    : InvalidStateId;
-                if (Shared && Descriptors && Shared->GetTexelMeshIndexBuffer() &&
-                    (!bLitTexelGeometry || GeometryChannel != InvalidStateId))
+                if (!Shared || !Descriptors || !Shared->GetTexelMeshIndexBuffer()) continue;
+                const auto& MeshInstance = SceneData.GetStaticMeshInstances()[Instance];
+                const auto ChannelCount = static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(Instance));
+                const auto Model = MeshInstance.GetTransform().GetMatrix();
+                const bool bStateAB = Resources.IsCurrentStateAB(Instance);
+                if (bTexelGeometry)
                     TexelGeometryPreview->Record(CommandBuffer, Instance, *Descriptors,
-                        static_cast<std::uint32_t>(Shared->GetTexelCount()), bLitTexelGeometry ? GeometryChannel : DebugStateChannel,
-                        static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(Instance)),
+                        static_cast<std::uint32_t>(Shared->GetTexelCount()), DebugStateChannel, ChannelCount,
                         LitHeightDisplayScale,
-                        bLitTexelGeometry ? 1.0F : (bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F),
-                        SceneData.GetStaticMeshInstances()[Instance].GetTransform().GetMatrix(),
-                        Resources.IsCurrentStateAB(Instance), bAccumulation);
+                        bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F,
+                        Model, bStateAB, bAccumulation);
+                if (!bOverlayRendering) continue;
+                const bool bMud = DemoEffects.bMudDisplacement && DemoBindings.Mud != InvalidStateId &&
+                    UsesAccumulationGeometry(MeshInstance, Assets, Shared, "mud");
+                const bool bWater = DemoEffects.bWaterFilmDisplacement && DemoBindings.WaterFilm != InvalidStateId &&
+                    UsesAccumulationGeometry(MeshInstance, Assets, Shared, "waterfilm");
+                OverlayActive[Instance] = {bMud, bWater};
+                const auto RecordLayer = [&](TTexelGeometryPreview& Preview, TStateId Channel)
+                {
+                    Preview.Record(CommandBuffer, Instance, *Descriptors,
+                        static_cast<std::uint32_t>(Shared->GetTexelCount()), Channel, ChannelCount,
+                        LitHeightDisplayScale, 1.0F, Model, bStateAB, true);
+                    VkDescriptorSet GeometrySet = Preview.GetOutputSet(Instance);
+                    if (DemoEffects.bHeightFieldSmoothing)
+                    {
+                        HeightFieldSmoothing->Record(CommandBuffer, Instance, Channel, ChannelCount,
+                            static_cast<std::uint32_t>(Shared->GetTexelCount()), *Descriptors,
+                            GeometrySet, Preview.GetOutputBuffer(Instance), bStateAB);
+                        GeometrySet = HeightFieldSmoothing->GetOutputSet(Instance, Channel);
+                    }
+                    OverlaySides->Record(CommandBuffer, Instance, Channel, ChannelCount, *Shared, *Descriptors,
+                        GeometrySet, bStateAB);
+                };
+                if (bMud) RecordLayer(*MudLayerGeometry, DemoBindings.Mud);
+                if (bWater) RecordLayer(*WaterLayerGeometry, DemoBindings.WaterFilm);
             }
         }
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 13U);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 1U);
 
         std::array<VkClearValue, 2> ClearValues{};
         ClearValues[0].color = {{0.03F, 0.04F, 0.06F, 1.0F}};
@@ -1701,6 +1887,8 @@ namespace MDSS
         RenderPassInfo.clearValueCount = static_cast<std::uint32_t>(ClearValues.size());
         RenderPassInfo.pClearValues = ClearValues.data();
 
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 2U);
         vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         const bool bShowSurfaceDebug = ViewMode >= TRenderViewMode::SurfaceStateHeatmap;
         const bool bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
@@ -1711,9 +1899,11 @@ namespace MDSS
                           bCanShowSurfaceDebug ? SurfaceDebugPipeline->GetHandle()
                                                : (bWireframe ? WireframePipeline.GetHandle()
                                                              : StaticMeshPipeline.GetHandle()));
-        if (bWireframe && bSupportsWireframeLineWidth)
+        if (bWireframe)
         {
-            vkCmdSetLineWidth(CommandBuffer, WireframeLineWidth);
+            // Dynamic line width must be set before drawing with the wireframe pipeline.
+            // Without wideLines support, Vulkan only permits the default width of 1.0.
+            vkCmdSetLineWidth(CommandBuffer, bSupportsWireframeLineWidth ? WireframeLineWidth : 1.0F);
         }
 
         const VkExtent2D    Extent = SwapchainData.GetExtent();
@@ -1751,6 +1941,8 @@ namespace MDSS
         const glm::mat4 ViewProjection = SceneData.GetMainCamera().GetViewProjectionMatrix(AspectRatio);
 
         const TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates.GetGPUResources();
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 6U);
         std::size_t                       SceneIndex = 0;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
@@ -1768,14 +1960,10 @@ namespace MDSS
                 continue;
             }
             const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
-            const TStateId GeometryChannel = bLitTexelGeometry
-                ? GetAccumulationGeometryChannel(Instance, Assets, DemoBindings, DemoEffects, Shared)
-                : InvalidStateId;
-            const bool bInstanceTexelLit = bLitTexelGeometry && SurfaceDescriptors && GeometryChannel != InvalidStateId;
-            if (bTexelGeometry || bInstanceTexelLit)
+            if (bTexelGeometry)
             {
                 if (!Shared || !Shared->GetTexelMeshIndexBuffer()) continue;
-                const auto& Pipeline = bInstanceTexelLit ? TexelSurfaceLitPipeline : TexelGeometryPipeline;
+                const auto& Pipeline = TexelGeometryPipeline;
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline->GetHandle());
                 const auto Layout = Pipeline->GetLayout();
                 const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
@@ -1802,7 +1990,10 @@ namespace MDSS
                 continue;
             }
             const bool bInstanceSurfaceLit = bSurfaceLit && SurfaceDescriptors;
-            const auto& Pipeline = bInstanceSurfaceLit ? *SurfaceLitPipeline :
+            const bool bInstanceOverlay = bOverlayRendering &&
+                (OverlayActive[CurrentSceneIndex][0] || OverlayActive[CurrentSceneIndex][1]);
+            const auto& Pipeline = bInstanceSurfaceLit
+                ? (bInstanceOverlay ? *BaseSurfaceLitPipeline : *SurfaceLitPipeline) :
                                    (bCanShowSurfaceDebug ? *SurfaceDebugPipeline :
                                    (bWireframe ? WireframePipeline : StaticMeshPipeline));
             const auto Layout = Pipeline.GetLayout();
@@ -1863,6 +2054,120 @@ namespace MDSS
             }
         }
 
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 7U);
+
+        if (bOverlayRendering)
+        {
+            const auto DrawLayer = [&](bool bWater)
+            {
+                const TStateId Channel = bWater ? DemoBindings.WaterFilm : DemoBindings.Mud;
+                if (Channel == InvalidStateId) return;
+                const auto& Preview = bWater ? WaterLayerGeometry : MudLayerGeometry;
+                const auto& TopPipeline = bWater ? WaterOverlayTopPipeline : MudOverlayTopPipeline;
+                const auto& SidePipeline = bWater ? WaterOverlaySidePipeline : MudOverlaySidePipeline;
+                std::vector<std::size_t> Order;
+                for (std::size_t I = 0; I < OverlayActive.size(); ++I)
+                    if (OverlayActive[I][bWater ? 1 : 0]) Order.push_back(I);
+                if (bWater)
+                {
+                    const auto Camera = SceneData.GetMainCamera().GetPosition();
+                    std::sort(Order.begin(), Order.end(), [&](std::size_t A, std::size_t B)
+                    {
+                        const auto PA = SceneData.GetStaticMeshInstances()[A].GetTransform().Position;
+                        const auto PB = SceneData.GetStaticMeshInstances()[B].GetTransform().Position;
+                        return glm::dot(PA - Camera, PA - Camera) > glm::dot(PB - Camera, PB - Camera);
+                    });
+                }
+                for (const std::size_t I : Order)
+                {
+                    const auto& Instance = SceneData.GetStaticMeshInstances()[I];
+                    const auto& Mesh = Assets.GetMesh(Instance.GetMesh());
+                    const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(I);
+                    const auto* Descriptors = SurfaceGPU.GetInstanceDescriptors(I);
+                    if (!Shared || !Descriptors || !Shared->GetTexelMeshIndexBuffer()) continue;
+                    const VkDescriptorSet StateSet = SurfaceGPU.IsCurrentStateAB(I)
+                        ? Descriptors->GetABSet() : Descriptors->GetBASet();
+                    const VkDescriptorSet ComputedSet = DemoEffects.bHeightFieldSmoothing
+                        ? HeightFieldSmoothing->GetOutputSet(I, Channel) : Preview->GetOutputSet(I);
+                    const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
+
+                    const auto TopLayout = TopPipeline->GetLayout();
+                    vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, TopPipeline->GetHandle());
+                    vkCmdPushConstants(CommandBuffer, TopLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                       0, sizeof(Push), &Push);
+                    const VkBuffer Vertices = Shared->GetTexelMeshVertexBuffer()->GetHandle();
+                    const VkDeviceSize Offset = 0;
+                    vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &Vertices, &Offset);
+                    vkCmdBindIndexBuffer(CommandBuffer, Shared->GetTexelMeshIndexBuffer()->GetHandle(), 0,
+                                         VK_INDEX_TYPE_UINT32);
+                    const std::array<VkDescriptorSet, 2> TopSets{StateSet, ComputedSet};
+                    vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, TopLayout, 1,
+                        static_cast<std::uint32_t>(TopSets.size()), TopSets.data(), 0, nullptr);
+                    for (const auto& Section : Mesh.GetSections())
+                    {
+                        if (Section.Material >= MaterialResources.size() ||
+                            Section.Surface >= Shared->GetTexelMeshRanges().size()) continue;
+                        const auto& Range = Shared->GetTexelMeshRanges()[Section.Surface];
+                        if (Range.IndexCount == 0) continue;
+                        const VkDescriptorSet MaterialSet = MaterialResources[Section.Material].DescriptorSets[FrameIndex];
+                        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, TopLayout, 0, 1,
+                                                 &MaterialSet, 0, nullptr);
+                        vkCmdDrawIndexed(CommandBuffer, Range.IndexCount, 1, Range.FirstIndex, 0, Channel);
+                    }
+
+                    const auto SideLayout = SidePipeline->GetLayout();
+                    vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, SidePipeline->GetHandle());
+                    vkCmdPushConstants(CommandBuffer, SideLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                       0, sizeof(Push), &Push);
+                    const std::array<VkDescriptorSet, 3> SideSets{StateSet, ComputedSet,
+                        OverlaySides->GetSet(I, Channel)};
+                    vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, SideLayout, 1,
+                        static_cast<std::uint32_t>(SideSets.size()), SideSets.data(), 0, nullptr);
+                    for (const auto& Section : Mesh.GetSections())
+                    {
+                        if (Section.Material >= MaterialResources.size() ||
+                            Section.Surface >= Shared->GetTexelMeshRanges().size()) continue;
+                        const auto& Range = Shared->GetTexelMeshRanges()[Section.Surface];
+                        if (Range.IndexCount == 0) continue;
+                        const VkDescriptorSet MaterialSet = MaterialResources[Section.Material].DescriptorSets[FrameIndex];
+                        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, SideLayout, 0, 1,
+                                                 &MaterialSet, 0, nullptr);
+                        vkCmdDraw(CommandBuffer, Range.IndexCount * 2U, 1, Range.FirstIndex * 2U, Channel);
+                    }
+                    if (OverlaySides->GetBoundaryCount(I, Channel) > 0 && !Mesh.GetSections().empty())
+                    {
+                        const auto Material = Mesh.GetSections().front().Material;
+                        if (Material < MaterialResources.size())
+                        {
+                            const VkDescriptorSet MaterialSet = MaterialResources[Material].DescriptorSets[FrameIndex];
+                            vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, SideLayout, 0, 1,
+                                                     &MaterialSet, 0, nullptr);
+                            vkCmdDraw(CommandBuffer, OverlaySides->GetBoundaryCount(I, Channel) * 6U, 1,
+                                OverlaySides->GetTriangleCount(I, Channel) * 6U, Channel);
+                        }
+                    }
+                }
+            };
+            if (TimestampQueryPool != VK_NULL_HANDLE)
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
+            DrawLayer(false);
+            if (TimestampQueryPool != VK_NULL_HANDLE)
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
+            if (TimestampQueryPool != VK_NULL_HANDLE)
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
+            DrawLayer(true);
+            if (TimestampQueryPool != VK_NULL_HANDLE)
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 11U);
+        }
+        else if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 11U);
+        }
+
         if (GizmoVertexBuffer != nullptr && ((bWorldGridVisible && WorldGridVertexCount > 0) ||
                                              (bWorldAxisVisible && WorldAxisVertexCount > 0)))
         {
@@ -1919,12 +2224,7 @@ namespace MDSS
         }
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
-        {
-            vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                TimestampQueryPool,
-                                QueryBase + 1U);
-        }
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 3U);
         DebugInterface.Render(CommandBuffer);
 
         vkCmdEndRenderPass(CommandBuffer);

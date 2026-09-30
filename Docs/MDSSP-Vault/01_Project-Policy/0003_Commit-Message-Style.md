@@ -7,8 +7,11 @@
 ## 형식
 
 ```text
-<Type>: <한국어 설명>
+<Type>(<Scope>): <한국어 설명>
 ```
+
+- `Scope`는 변경 대상 모듈이나 하위 시스템을 표시하며 선택 사항이다. 범위가 넓거나 특정 모듈에 속하지 않으면 기존처럼 `<Type>: <한국어 설명>`을 쓴다.
+- Scope는 저장소의 모듈명·컴포넌트명을 사용한다. 예: `Renderer`, `DebugUI`, `SurfaceStateSystem`.
 
 - `Type`은 아래 표에 있는 키워드만 사용한다. 임의의 키워드는 추가하지 않는다.
 - 키워드는 첫 글자만 대문자로 쓴다. 예: `Feat`, `Docs`, `Chore`.
@@ -38,6 +41,7 @@
 ## 예시
 
 ```text
+Feat(Renderer): 적층 Overlay 렌더링 추가
 Feat: Shared Surface Geometry 데이터 추가
 Docs: 주차별 구현 범위 명확화
 Refactor: SRProfile 검증 로직 분리

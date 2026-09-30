@@ -7,6 +7,8 @@
 - Date: 2026-09-27
 - 관련 문서: [[0002-Transport-Drive-and-Weight|ADR 0002 — Transport Drive와 Weight]], [[0015-Geometry-Driven-Transport|ADR 0015 — Geometry-Driven Transport]]
 
+> **후속 결정 (2026-10-01):** [[0045-Directional-Cavity-Transport-Retention|ADR 0045]]는 ConcavityWeight를 Decay 외에 독립적인 방향별 Transport 보유 항에도 사용한다. 아래의 Decay 전용 문장과 재사용 대안 평가는 초기 TransferWeight 결정의 기록이며, 대칭 CurvatureWeight로 재사용하지 않는 원칙은 유지한다.
+
 ## Context
 
 ADR 0002는 State를 이동시키는 Drive와 이웃 관계를 통과하는 정도인 TransferWeight를 분리했다. ADR 0015에서 GeometryDrive의 높이와 방향을 확정한 뒤, Solver는 이웃 간 거리, 면 방향, Profile 경계에 따른 전달 보정을 필요로 한다. CurvatureWeight와 기존 ConcavityWeight의 역할도 구별해야 한다.

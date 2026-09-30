@@ -8,6 +8,8 @@
 - 관련 문서: [[0016-Transport-Transfer-Weights|ADR 0016 — Transport TransferWeight]], [[0021-Directional-RawFlux-Cache|ADR 0021 — Directional RawFlux Cache]], [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
 - 구현 상태: **구현 및 GPU 기능 검증 완료 · 실제 Scene 성능 개선은 미확정**
 
+> **후속 결정 (2026-10-01):** [[0043-Rotation-Invariant-Transfer-Cache|ADR 0043]]은 이 문서의 초기 선형 transform 전체 dirty 정책에서 순수 회전을 제외한다. 아래 기존 구현·메모리·성능 기록은 당시 상태를 설명한다.
+
 ## Context
 
 TransferWeight 구현은 Position/Normal/Neighbor에서 가중치를 즉시 계산한다. rawFlux 호출마다 양 endpoint의 평균 이웃 거리를 다시 순회하며, Pass 1의 유출 합계를 버려 Pass 2에서 다시 계산한다. 동일한 방향의 flux는 Pass 1과 Pass 2 양 endpoint에서 총 세 번 평가될 수 있다. 데모 화면에서 FPS 8.7, frame time 114.71 ms, Solver GPU 122.42 ms가 관측되었다. 이는 단일 관측이며 두 시간 표시는 같은 표본임이 보장되지 않아 정확한 점유율이나 개선 배수의 기준값으로 사용하지 않는다.
