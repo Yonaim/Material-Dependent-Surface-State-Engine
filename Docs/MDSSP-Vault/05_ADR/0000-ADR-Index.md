@@ -60,6 +60,7 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 
 | [[0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]] | 적층 디버그 뷰와 Texel Inspector | 두 적층 디버그 뷰와 선택 texel의 완료 GPU snapshot으로 상태량·높이·형상 표시를 검사한다. |
 | [[0036-Texel-Geometry-Preview|ADR 0036]] | Texel 연결면 기반 형상 미리보기 | Compute의 texel별 표시 위치·법선과 GPU 미리보기 경로를 정의한다. |
+| [[0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]] | Texel Grid와 데모 Lit 효과 | 선택 State의 표시 형상과 Wetness·Mud·WaterFilm 데모 외관을 연결한다. |
 
 | [[0038-Source-Topology-Seam-Stitching|ADR 0038]] | 원본 topology 기반 seam 봉합 | 원본 triangle을 texel로 세분하고 공통 position/edge 변위로 UV seam을 봉합한다. |
 

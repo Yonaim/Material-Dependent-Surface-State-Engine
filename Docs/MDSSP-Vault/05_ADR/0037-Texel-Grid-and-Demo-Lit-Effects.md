@@ -17,9 +17,9 @@
 3. Shader는 공통 read-only Surface 데이터 선언(`SurfaceStateData.glsl`), Profile·면적을 확인하는 표시용 State 샘플링(`StateSampling.glsl`), 효과별 재질 변경(`Effects/Wetness.glsl`, `Effects/Mud.glsl`, `Effects/WaterFilm.glsl`), 공통 조명(`Lighting.glsl`)으로 분리한다. 세 데모 State key만 명시적으로 연결하며 범용 State ID→효과 분배 시스템은 도입하지 않는다. Registry와 `.SRProfile` 로딩 계약은 유지한다.
 4. 외관 입력은 `clamp(State / (ProfileCapacity × WorldTexelArea / SurfaceStateReferenceArea), 0, 1)`이다. bilinear 샘플은 중심 texel과 같은 Surface·chart·Profile 안에서만 반응하며 invalid/미지원 샘플은 0을 기여한다. GPU State와 Solver용 Saturation은 수정하지 않는다.
 5. Mud는 갈색 피복과 demo roughness를 적용한 뒤 Wetness가 색을 더 어둡게 하고 roughness를 낮춘다. 둘이 같은 Profile에 있으면 이 순서로 함께 반응한다. 색·roughness는 현재 데모 렌더링 기본값이며 물성 측정값이나 새 `.SRProfile` 필드는 아니다.
-6. WaterFilm은 `waterfilm` saturation에 따라 albedo를 어둡게 하고 roughness를 낮춘다. 누적 높이는 해당 Profile의 `accumulationFactor`, `cavityFillFactor`와 표시용 accumulation height reference로 계산해 Lit texel mesh에 적용한다. 이는 선택 State의 렌더 형상이다. Solver의 별도 Geometry Feedback 옵션은 모든 적층 State를 합산하며, 물리적 재질 layer 순서를 뜻하지 않는다.
+6. WaterFilm은 `waterfilm` saturation에 따라 albedo를 어둡게 하고 roughness를 낮춘다. 누적 높이는 Capacity 제한 State와 해당 Profile의 `accumulationFactor`, `cavityFillFactor`, `thicknessPerAmount`로 계산해 Lit texel mesh에 적용한다. Solver의 별도 Geometry Feedback 옵션도 각 State의 Capacity 제한 형상 기여를 합산한다. 물리적 재질 layer 순서를 뜻하지 않는다 ([[0039-State-Thickness-Per-Amount|ADR 0039]]).
 7. Lit은 고정 흰색 방향광과 기존 ambient, GGX/Smith/Schlick 반사 항을 사용한다. roughness는 perceptual roughness이며 GGX alpha로 제곱한다. 카메라 위치에 따라 하이라이트가 움직인다. BRDF 항의 기준은 [Filament standard model](https://google.github.io/filament/main/filament.html)이다. 환경맵·그림자·tone mapping은 포함하지 않는다.
-8. Mud 또는 WaterFilm State를 지원하는 Runtime Profile table을 가진 instance는 해당 State ID를 높이 입력으로 쓰며, 기존 compute 표시 위치·normal과 texel 연결면을 Lit에서도 사용한다. 표시 배율은 1이고 Lit의 `Accumulation height ref`는 임시 mesh-local 기준값이다. 원본 Normal Map을 computed normal에 중복 적용하지 않는다. 해당 State가 없는 instance는 원본 메시와 Normal Map 경로를 유지한다. 연결 삼각형이 없는 Surface가 포함된 instance도 원본 메시로 fallback한다.
+8. Mud 또는 WaterFilm State를 지원하는 Runtime Profile table을 가진 instance는 해당 State ID의 Capacity 제한 형상 기여를 높이 입력으로 쓰며, 기존 compute 표시 위치·normal과 texel 연결면을 Lit에서도 사용한다. `Lit height display scale`과 State별 두께 계약은 ADR 0039를 따른다. 원본 Normal Map을 computed normal에 중복 적용하지 않는다. 해당 State가 없는 instance는 원본 메시와 Normal Map 경로를 유지한다. 연결 삼각형이 없는 Surface가 포함된 instance도 원본 메시로 fallback한다.
 9. Material UBO와 descriptor set은 in-flight frame별로 분리한다. 해당 frame fence 이후 카메라·재질 설정·현재 State ID를 업로드해 진행 중인 draw의 uniform을 덮어쓰지 않는다. Scene/해상도 교체는 Lit pipeline도 기존 리소스와 함께 교체하며 실패 시 이전 리소스를 유지한다.
 
 ## Alternatives Considered
@@ -31,7 +31,8 @@
 
 ## Consequences
 
-- Render Settings에서 높이 grid와 Lit 효과, Mud·WaterFilm 높이 적용 여부 및 roughness를 조절한다. 표시 설정은 `.Scene`/`.SRProfile`에 저장하지 않는다.
+- 2026-09-30 후속 결정: 위 Decision 6·8의 임시 `Accumulation height ref`는 `.SRProfile`의 State별 `thicknessPerAmount`와 렌더 전용 `Lit height display scale`로 대체했다. Lit은 Profile 두께에 표시 배율을 곱하고 Solver는 표시 배율을 읽지 않는다 ([[0039-State-Thickness-Per-Amount|ADR 0039]]).
+- Render Settings에서 전역 Lit 효과, Mud·WaterFilm 높이 적용 여부 및 roughness를 조절한다. 선택한 Meso·Accumulation·Final Geometry 뷰의 설명 상자에서 높이 grid를 조절한다. 표시 설정은 `.Scene`/`.SRProfile`에 저장하지 않는다.
 - 실제 GPU 출력 회귀 검증은 grid 셀 크기·실루엣 보존, Wetness diffuse 변화·specular peak·카메라 반응, Mud 색·중앙 적층, 이름 조회 후 ID 이동, 미지원 Profile·A/B 전환·면적 보정·State 보존을 포함한다. Scene 교체와 Lit 형상/외관 토글은 실제 renderer에서도 검증한다.
 - Material UBO는 `vec4`, `uvec4`, 32-bit scalar의 std140 block이며 16-byte 정렬, 128-byte 크기다. 기존 80-byte prefix에 세 16-byte 항목을 추가하며 별도 tail padding은 없다. 현재 in-flight frame 2개, Material 하나당 `128 × 2 = 256` byte의 uniform payload이며 texture image는 공유하고 descriptor set만 frame별로 복제한다. allocator/descriptor overhead는 제외한다.
 - Mud 형상 출력과 정적 index payload는 ADR 0036의 instance별/Runtime별 공유 범위를 유지한다. Lit·Debug 간에도 같은 compute 출력 allocation을 재사용한다.
