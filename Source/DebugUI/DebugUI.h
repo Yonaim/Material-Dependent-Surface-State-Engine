@@ -99,7 +99,10 @@ namespace MDSS
         void DrawGlobalSettingsTab(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
-        void DrawSectionHeader(const char* Title, float TopPadding = 12.0F, float BottomPadding = 8.0F) const;
+        static constexpr float SectionHeaderTopPadding = 8.0F;
+        void DrawSectionHeader(const char* Title,
+                               float TopPadding = SectionHeaderTopPadding,
+                               float BottomPadding = 4.0F) const;
 
         VkDevice    Device = VK_NULL_HANDLE;
         GLFWwindow* NativeWindow = nullptr;

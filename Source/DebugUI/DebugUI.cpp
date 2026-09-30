@@ -1816,55 +1816,70 @@ namespace MDSS
             {
                 if (ImGui::BeginTabItem("Surface"))
                 {
-                    DrawSectionHeader("Surface Shading", 0.0F);
-                    float NormalStrength = FrameRenderer->GetNormalStrength();
-                    if (LabeledSliderFloat("Normal", &NormalStrength, 0.0F, 4.0F, "%.2f"))
+                    if (ImGui::BeginChild(
+                            "SurfaceSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        FrameRenderer->SetNormalStrength(NormalStrength);
-                    }
+                        DrawSectionHeader("Surface Shading");
+                        float NormalStrength = FrameRenderer->GetNormalStrength();
+                        if (LabeledSliderFloat("Normal", &NormalStrength, 0.0F, 4.0F, "%.2f"))
+                        {
+                            FrameRenderer->SetNormalStrength(NormalStrength);
+                        }
 
-                    float AmbientLight = FrameRenderer->GetAmbientLight();
-                    if (LabeledSliderFloat("Ambient", &AmbientLight, 0.0F, 1.0F, "%.2f"))
-                    {
-                        FrameRenderer->SetAmbientLight(AmbientLight);
-                    }
+                        float AmbientLight = FrameRenderer->GetAmbientLight();
+                        if (LabeledSliderFloat("Ambient", &AmbientLight, 0.0F, 1.0F, "%.2f"))
+                        {
+                            FrameRenderer->SetAmbientLight(AmbientLight);
+                        }
 
-                    bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
-                    if (ImGui::Checkbox("Flip Normal Y", &bFlipNormalY))
-                    {
-                        FrameRenderer->SetFlipNormalY(bFlipNormalY);
+                        bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
+                        if (ImGui::Checkbox("Flip Normal Y", &bFlipNormalY))
+                        {
+                            FrameRenderer->SetFlipNormalY(bFlipNormalY);
+                        }
                     }
+                    ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Effects"))
                 {
-                    DrawSectionHeader("Lit Demo Effects", 0.0F);
-                    auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-                    bool EffectsChanged = ImGui::Checkbox("Wetness / Mud / WaterFilm", &Effects.bEnabled);
-                    EffectsChanged |= ImGui::Checkbox("Mud height", &Effects.bMudDisplacement);
-                    EffectsChanged |= ImGui::Checkbox("WaterFilm height", &Effects.bWaterFilmDisplacement);
-                    EffectsChanged |= LabeledSliderFloat("Dry roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
-                    EffectsChanged |= LabeledSliderFloat("Wet roughness", &Effects.WetRoughness, 0.05F, 1.0F, "%.2f");
-                    EffectsChanged |= LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
-                    EffectsChanged |= LabeledSliderFloat("Accumulation height ref", &Effects.AccumulationHeightReference, 0.0001F, 0.1F, "%.4f");
-                    if (EffectsChanged) FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
+                    if (ImGui::BeginChild(
+                            "EffectSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+                    {
+                        DrawSectionHeader("Lit Demo Effects");
+                        auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
+                        bool EffectsChanged = ImGui::Checkbox("Wetness / Mud / WaterFilm", &Effects.bEnabled);
+                        EffectsChanged |= ImGui::Checkbox("Mud height", &Effects.bMudDisplacement);
+                        EffectsChanged |= ImGui::Checkbox("WaterFilm height", &Effects.bWaterFilmDisplacement);
+                        EffectsChanged |= LabeledSliderFloat("Dry roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
+                        EffectsChanged |= LabeledSliderFloat("Wet roughness", &Effects.WetRoughness, 0.05F, 1.0F, "%.2f");
+                        EffectsChanged |= LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
+                        EffectsChanged |= LabeledSliderFloat("Accumulation height ref", &Effects.AccumulationHeightReference, 0.0001F, 0.1F, "%.4f");
+                        if (EffectsChanged) FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
+                    }
+                    ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Geometry"))
                 {
-                    DrawSectionHeader("Height Surface Grid", 0.0F);
-                    auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
-                    int GridMode = static_cast<int>(Settings.HeightGridMode);
-                    const char* Modes[] = {"Off", "Overlay", "Grid only"};
-                    bool Changed = ImGui::Combo("Grid", &GridMode, Modes, 3);
-                    Settings.HeightGridMode = static_cast<std::uint32_t>(GridMode);
-                    int BlockSize = static_cast<int>(Settings.HeightGridBlockSize);
-                    Changed |= ImGui::SliderInt("Cell texels", &BlockSize, 1, 64);
-                    Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
-                    ImGui::TextDisabled("Meso / Accumulation / Final Geometry");
-                    if (Changed) FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+                    if (ImGui::BeginChild(
+                            "GeometrySettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+                    {
+                        DrawSectionHeader("Height Surface Grid");
+                        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+                        int GridMode = static_cast<int>(Settings.HeightGridMode);
+                        const char* Modes[] = {"Off", "Overlay", "Grid only"};
+                        bool Changed = ImGui::Combo("Grid", &GridMode, Modes, 3);
+                        Settings.HeightGridMode = static_cast<std::uint32_t>(GridMode);
+                        int BlockSize = static_cast<int>(Settings.HeightGridBlockSize);
+                        Changed |= ImGui::SliderInt("Cell texels", &BlockSize, 1, 64);
+                        Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
+                        ImGui::TextDisabled("Meso / Accumulation / Final Geometry");
+                        if (Changed) FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+                    }
+                    ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
                 ImGui::EndTabBar();
@@ -2046,7 +2061,6 @@ namespace MDSS
                     if (ImGui::BeginChild(
                             "SolverContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        ImGui::Dummy({0.0F, 8.0F});
                         DrawSolverTab();
                     }
                     ImGui::EndChild();
@@ -2057,7 +2071,6 @@ namespace MDSS
                     if (ImGui::BeginChild(
                             "ContactInputContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        ImGui::Dummy({0.0F, 8.0F});
                         DrawContactInputTab();
                     }
                     ImGui::EndChild();
@@ -2068,7 +2081,6 @@ namespace MDSS
                     if (ImGui::BeginChild(
                             "ProfileTuningContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        ImGui::Dummy({0.0F, 8.0F});
                         DrawProfileTuningTab(SceneData);
                     }
                     ImGui::EndChild();
@@ -2079,7 +2091,6 @@ namespace MDSS
                     if (ImGui::BeginChild(
                             "InspectorContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        ImGui::Dummy({0.0F, 8.0F});
                         DrawTexelInspectorTab();
                     }
                     ImGui::EndChild();
@@ -2090,7 +2101,6 @@ namespace MDSS
                     if (ImGui::BeginChild(
                             "GlobalSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
-                        ImGui::Dummy({0.0F, 8.0F});
                         DrawGlobalSettingsTab(SceneData);
                     }
                     ImGui::EndChild();
@@ -2129,7 +2139,7 @@ namespace MDSS
 
     void TDebugUI::DrawTexelInspectorTab()
     {
-        DrawSectionHeader("Texel Inspector", 0.0F);
+        DrawSectionHeader("Texel Inspector");
         TextDescriptionWrapped(
             "Shift + left click on the surface to select a texel. Pause / Step controls remain available above.");
         TextDescriptionWrapped("Picking uses the Macro mesh. Accumulation is a selected-State preview; it does not "
@@ -2277,6 +2287,8 @@ namespace MDSS
 
     void TDebugUI::DrawGlobalSettingsTab(TScene& SceneData)
     {
+        // Keep the first control aligned with the standard section-header top margin.
+        ImGui::Dummy({0.0F, SectionHeaderTopPadding});
         const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
         const char*         CurrentLabel = "Medium";
         for (const auto& Preset : SurfaceSimulationResolutionPresets)
@@ -2356,7 +2368,7 @@ namespace MDSS
             }
         };
 
-        DrawSectionHeader("Geometry Feedback", 0.0F, 2.0F);
+        DrawSectionHeader("Geometry Feedback");
         bool bAccumulationFeedback = FrameRenderer->IsAccumulationFeedbackEnabled();
         if (ImGui::Checkbox("Accumulation feedback", &bAccumulationFeedback))
         {
@@ -2369,7 +2381,7 @@ namespace MDSS
                                   "Render Options의 Height Reference는 디버그 렌더링 전용입니다. ON은 step마다 GPU 작업이 추가됩니다.");
         }
 
-        DrawSectionHeader("Transport", 0.0F, 2.0F);
+        DrawSectionHeader("Transport");
         DrawSolverTerm(TSurfaceSolverTerm::SaturationDrive,
                        "SaturationDrive",
                        "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
@@ -2491,7 +2503,7 @@ namespace MDSS
 
     void TDebugUI::DrawContactInputTab()
     {
-        DrawSectionHeader("Contact Input", 0.0F, 2.0F);
+        DrawSectionHeader("Contact Input");
         ImGui::Checkbox("Inject mode", &bInjectMode);
         if (ImGui::IsItemHovered())
         {
@@ -2565,7 +2577,7 @@ namespace MDSS
 
     void TDebugUI::DrawProfileTuningTab(TScene& SceneData)
     {
-        DrawSectionHeader("Runtime Profile Parameters", 0.0F, 2.0F);
+        DrawSectionHeader("Runtime Profile Parameters");
         std::vector<TSRProfileAssetHandle> SceneProfiles;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
