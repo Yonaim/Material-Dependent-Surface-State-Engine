@@ -53,7 +53,7 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 - Next는 A/B 역할 교환 뒤 **다음 Solver step**에서 Current로 읽는다. 받은 양의 후속 이동도 기존 RawFlux와 rate·Δt에 따른다. 렌더 프레임과 Solver step은 같은 개념으로 고정하지 않는다.
 - 자신의 Next만 쓰는 gather 및 2-Pass를 유지한다. 목적지 수용 비율(beta), 별도 Overflow buffer, 추가 채널·pass·descriptor·동기화는 도입하지 않는다.
 - 이동 경로가 없거나 TransferRate/Weight가 0이면 초과량은 State에 남는다. 양쪽 Saturation이 같고 `GeometryDrive`가 없으면 Saturation-driven flux는 0이다. 주변의 모든 텍셀이 기준량을 넘더라도 State 저장이 허용되며, 기준량 이하로 반드시 내려가는 것을 보장하지 않는다.
-- invalid/unsupported texel의 State=0 계약은 유지한다. Accumulation은 기존대로 **전체 State × accumulationFactor**를 사용하며 별도 초과량을 중복 더하지 않는다. 실제 적층은 미구현이다.
+- invalid/unsupported texel의 State=0 계약은 유지한다. Accumulation geometry는 각 State 기여를 계산할 때 `min(State, Capacity) × accumulationFactor`의 면적 정규화 값을 사용한다. Capacity 초과량은 State에 계속 보존·수송되지만 국소 형상 기여량을 더 키우지 않는다. 별도 초과량을 중복 저장하지 않는다. 높이 계약은 [[0039-State-Thickness-Per-Amount|ADR 0039]]를 따른다.
 
 ### 구현 상태
 

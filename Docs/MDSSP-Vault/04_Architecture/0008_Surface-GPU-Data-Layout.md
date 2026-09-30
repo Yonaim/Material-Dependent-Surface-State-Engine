@@ -90,7 +90,7 @@ Texel은 Shared Geometry의 `TexelProfileIndex`에서 `profileIndex`를 얻고, 
 
 | Buffer                  | GPU 원소 타입                   |                                    개수 | 원소 stride |                            총 payload |
 | ----------------------- | --------------------------- | ------------------------------------: | --------: | -----------------------------------: |
-| `ProfileParameters`     | Profile/channel마다 `vec4[2]` | `profileCount × channelCount` records |      32 B | `32 × profileCount × channelCount` B |
+| `ProfileParameters`     | Profile/channel마다 `vec4[3]` (`float32` 12개, 마지막 3개는 padding) | `profileCount × channelCount` records | 48 B | `48 × profileCount × channelCount` B |
 | `ProfileStateSupported` | `uint32`                    |         `profileCount × channelCount` |       4 B |  `4 × profileCount × channelCount` B |
 
 레코드는 Profile-major 순서다. 각 Profile의 channel 레코드가 연달아 온다. 예를 들어 channel이 4개일 때 Profile 1의 channel 2는 `1 * 4 + 2 = 6`이므로 배열의 6번 항목이다. `ProfileParameters`와 `ProfileStateSupported` 모두 이 위치를 사용한다.
@@ -99,14 +99,15 @@ Texel은 Shared Geometry의 `TexelProfileIndex`에서 `profileIndex`를 얻고, 
 recordIndex = profileIndex * channelCount + channelIndex
 ```
 
-두 vec4에는 각각 아래 매개변수를 순서대로 둔다. 별도 support map은 Profile에서 정의하지 않은 channel과 값이 0인 channel을 구분한다.
+세 vec4에는 각각 아래 매개변수를 순서대로 둔다. 별도 support map은 Profile에서 정의하지 않은 channel과 값이 0인 channel을 구분한다.
 
 ```text
 vec4[0] = StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor
 vec4[1] = DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor
+vec4[2] = ThicknessPerAmount, 0, 0, 0
 ```
 
-두 TransferFactor는 CPU에서 기준 Rate를 곱하지 않고 그대로 저장한다. C++/GLSL 공용 기준 Rate `1.0`, `6000.0`을 Solver에서 곱한다. CPU 시간 간격 상한도 같은 정의를 사용한다. 레코드의 슬롯·stride·descriptor 수는 유지한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]).
+두 TransferFactor는 CPU에서 기준 Rate를 곱하지 않고 그대로 저장한다. C++/GLSL 공용 기준 Rate `1.0`, `6000.0`을 Solver에서 곱한다. CPU 시간 간격 상한도 같은 정의를 사용한다. `ThicknessPerAmount` 추가로 Profile record stride는 32 B에서 48 B로 늘고 descriptor 수는 그대로다. Scene 전체에서 공유되는 Profile table의 payload 증가는 `16 × profileCount × channelCount` B다. `float32`와 std430 `vec4` 16 B 정렬을 가정하며 allocator overhead는 제외한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]], [[05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]]).
 
 ## Instance State
 

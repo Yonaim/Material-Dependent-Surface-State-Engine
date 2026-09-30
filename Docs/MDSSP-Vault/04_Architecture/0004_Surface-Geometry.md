@@ -127,11 +127,9 @@ Non-integrable 입력은 임계값으로 거부하지 않는다.
 - `NormalWeight`도 이웃 normal 차이를 반영하므로 곡률 항을 추가하면 굽힘 효과가 중복될 수 있다.
 - GPU storage layout은 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]와 관련 결정에 따른다 ([[05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]).
 
-### Geometry Common Parameters
+### 적층 두께 기준
 
-| 항목 | 저장 단위 | 의미 |
-|---|---|---|
-| `Meso_Height_Reference` | Surface당 1개 | 적층량을 실제 높이로 변환할 때 사용하는 Virtual Meso Geometry의 대표 높이 규모 |
+초기안은 Surface별 `Meso_Height_Reference`로 표면 위 적층량을 높이로 바꾸는 방식이었다. 현재는 `.SRProfile`의 State별 `thicknessPerAmount`를 사용한다. 이 값은 기준 면적당 적층량 1에 대응하는 world-length 두께이며, 특정 Mesh의 Meso 높이에서 산정하지 않는다. 높이 환산값은 State의 저장량이나 입력·Decay 식을 직접 바꾸지 않는다. Geometry feedback가 켜져 있으면 바뀐 형상이 후속 수송에 간접적으로 영향을 준다 ([[../05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]]).
 
 ## World texel 면적
 
@@ -212,7 +210,7 @@ Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space�
 - Solver는 원시 거리 대신 간선별 TransferWeight를 geometry revision 동안 cache한다.
 - Runtime은 instance별로 모든 지원 State의 적층 높이를 합산하고, step마다 위치·normal·곡률·TransferWeight를 GPU에서 갱신한다.
 - Geometry feedback는 Simulation/Solver의 `Accumulation feedback` 옵션으로 제어하며 기본 OFF다. OFF에서는 기존 정적 형상과 CPU TransferWeight cache를 사용한다.
-- 시뮬레이션용 Following height 기준은 고정 `0.01` mesh-local 단위다. Render Options의 선택 State `Height Reference`와 Lit의 demo height reference는 디버그 렌더링 전용이며 Solver 형상에 영향을 주지 않는다.
+- 시뮬레이션은 각 State의 `.SRProfile` `thicknessPerAmount`로 표면 위 두께를 계산한다. 공통 `Lit height display scale`은 렌더링 전용이며 Solver 형상에 영향을 주지 않는다.
 - GPU 소유와 동기화는 [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]과 [[../06_Development/Notes/Surface-State-GPU-Resource|GPU resource 설계]]를 따른다.
 
 Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 [[../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. Shared Geometry의 GPU 배치는 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
@@ -228,42 +226,44 @@ $$
 - **Cavity Filling**: Macro Surface 기준 아래쪽의 Virtual Meso Geometry cavity를 메운다.
 - **Surface Following**: 기존 Virtual Meso Geometry의 요철을 따라 표면 바깥쪽으로 쌓인다.
 
-적층은 전체 State에서 계산하므로 Capacity 초과량을 별도로 다시 더하지 않는다. `stateCapacity`는 형상 두께의 상한도 아니다. Runtime의 동적 적층은 지원되는 모든 State의 `AccumulationFactor > 0` 기여를 공통 층으로 합산한다. cavity 기여는 한 번만 채우고 1 초과분은 Following height로 넘긴다. 시뮬레이션 Following 기준은 고정 `0.01` mesh-local 단위이며, 조절형 렌더 `Height Reference`와 독립적이다. 선택 State의 Accumulation/Final Geometry 미리보기와 GPU Texel Inspector는 여전히 표시 전용 projection이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]], [[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]).
+각 State의 형상 기여는 `State`를 해당 texel `Capacity`에서 제한한 뒤 계산한다. Capacity 초과량은 State A/B에 보존되고 전달용 Saturation에도 반영되지만, 그 State의 국소 높이를 Capacity 기준 기여 이상으로 키우지 않는다. Runtime의 동적 적층은 지원되는 모든 State의 제한된 `AccumulationFactor > 0` 기여를 공통 층으로 합산한다. cavity 기여는 한 번만 채우고 1 초과분은 각 State의 cavity 기여 비율대로 표면 위 높이에 배분한다. 시뮬레이션 높이는 Profile 값을 사용하며 렌더 표시 배율과 독립적이다. 선택 State의 Accumulation/Final Geometry 미리보기와 GPU Texel Inspector는 여전히 표시용 projection이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]], [[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]).
 
 ### 전체 적층량과 배분
 
 $$
-Accumulation\_Amount = State \times Accumulation\_Factor
+GeometryState_i = min(max(State_i, 0), Capacity_i)
+Accumulation\_Amount_i = (GeometryState_i / AreaScale) \times Accumulation\_Factor_i
 $$
 
-- `State`는 유한한 비음수 전체 상태량이며 Capacity 초과량도 포함한다. 포화 기준량으로 상한 clamp하지 않는다. (초과량 보존 계약: [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]])
+- 저장·수송 State는 Capacity 초과량을 포함하며 상한 clamp하지 않는다. 형상 계산에만 `GeometryState_i = min(State_i, Capacity_i)`를 사용한다. 따라서 초과량은 보존·수송되지만 해당 State의 국소 적층 기여를 더 키우지 않는다. (저장·수송 계약: [[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]], 형상 계약: [[../05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]])
 - Shader 변경과 선택 GPU 회귀 fixture는 통과했다. 5주차 통합 검증과 timestep 비교는 대기 중이다.
 - `Accumulation_Factor ∈ [0,n]`
 - `Accumulation_Factor = 0`이면 State가 있어도 형상 적층을 만들지 않는다.
 
 $$
-Cavity\_Amount = Accumulation\_Amount \times Cavity\_Fill\_Factor
+Cavity\_Amount_i = Accumulation\_Amount_i \times Cavity\_Fill\_Factor_i
 $$
 
 $$
-Surface\_Amount = Accumulation\_Amount \times (1-Cavity\_Fill\_Factor)
+Surface\_Amount_i = Accumulation\_Amount_i \times (1-Cavity\_Fill\_Factor_i)
 $$
 
-`Cavity_Fill_Factor ∈ [0,1]`이며 SRProfile에서 결정한다. `Cavity_Amount`는 전체 cavity 깊이를 100% 채우는 양을 `1`로 둔 정규화 비율이다. 따라서 `0.4`는 깊이의 40%를 채우며, `1`을 넘는 초과분은 cavity를 더 채우지 않고 Surface Following으로 넘긴다.
+`Cavity_Fill_Factor ∈ [0,1]`이며 `.SRProfile`에서 결정한다. `AreaScale = WorldTexelArea / ReferenceArea`이고 State는 texel 총량이다. `Cavity_Amount`는 전체 cavity 깊이를 100% 채우는 양을 `1`로 둔 정규화 비율이다. 따라서 `0.4`는 깊이의 40%를 채우며, 전체 State의 합이 `1`을 넘는 초과분은 cavity를 더 채우지 않고 Surface Following으로 넘긴다.
 
 ### 실제 높이와 Cavity 상한
 
 ```text
-Cavity_Depth = max(-Meso_Virtual_Height, 0)
-Cavity_Fill = min(Cavity_Amount, 1)
-Cavity_Excess = max(Cavity_Amount - 1, 0)
-Cavity_Filling_Height = Cavity_Fill × Cavity_Depth
-Surface_Following_Height = (Surface_Amount + Cavity_Excess)
-                           × Meso_Height_Reference
-Accumulation_Height = Cavity_Filling_Height + Surface_Following_Height
+Cavity_Total = Σ Cavity_Amount_i
+Cavity_Fill = min(Cavity_Total, 1)
+Cavity_Excess = max(Cavity_Total - 1, 0)
+Cavity_Filling_Height_local = Cavity_Fill × max(-Meso_Virtual_Height, 0)
+Surface_Following_Height_world = Σ (Surface_Amount_i × thicknessPerAmount_i)
+  + Cavity_Excess × (Σ Cavity_Amount_i × thicknessPerAmount_i) / Cavity_Total
+Surface_Following_Height_local = Surface_Following_Height_world × |transpose(inverse(ModelLinear)) × MacroNormal_local|
+Accumulation_Height_local = Cavity_Filling_Height_local + Surface_Following_Height_local
 ```
 
-Cavity는 최대 100%까지만 채우며, 초과 적층량은 버리지 않고 Surface Following으로 넘긴다.
+Cavity는 최대 100%까지만 채우며, 제한된 형상 기여량으로 생긴 cavity 초과분은 버리지 않고 각 State의 cavity 기여 비율로 Surface Following에 넘긴다. State의 Capacity 초과 저장량은 이 형상 계산에 다시 더하지 않는다. `Cavity_Total = 0`이면 초과분도 0으로 취급한다. 현재 GPU 변위는 mesh-local Macro normal 방향을 유지하며, 위 변환은 월드 기하 법선 방향으로 측정한 두께가 Profile 값과 일치하도록 한다. 특이한 instance 변환은 기존 Geometry fallback 규칙을 따른다.
 
 #### State량 배분
 
@@ -286,7 +286,7 @@ flowchart LR
   Cavity --> Excess["Excess above cavity capacity"]
   Surface["SurfaceAmount"] --> Following["Surface following height"]
   Excess --> Following
-  Reference["MesoHeightReference"] --> Following
+  Thickness["Profile thicknessPerAmount"] --> Following
 ```
 
 #### 최종 Accumulation Height

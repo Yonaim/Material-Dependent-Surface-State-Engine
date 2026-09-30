@@ -181,14 +181,14 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 
 Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-length²`에 대한 값이다. 런타임에서 실제 월드 texel 면적 비율을 곱한다. 기준 면적은 Low·Medium·High 선택과 함께 바뀌지 않는다. [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]]
 
-현재 schema는 **version 2**다. `saturationTransferFactor`, `geometryTransferFactor`는 유한한 `[0,1]` 무차원 계수이며 Loader는 version 1을 거부한다. 초기 version 1은 실제 Rate를 저장했다. 초기 schema 전환은 Geometry Rate를 100으로 나눴다. 현재 기준값에서 이전 실제 Rate를 유지하는 수동 환산은 `saturationTransferFactor = 기존 saturationTransferRate / 1.0`, `geometryTransferFactor = 기존 geometryTransferRate / 6000.0`이며 `version`을 2로 변경한다. 기존 version 2 자산의 Factor는 재환산하지 않아 이번 기준값 변경으로 Geometry Rate가 60배가 된다. 변환 결과가 `[0,1]` 밖이면 새 기준 Rate 범위에서 재튜닝해야 한다. Factor schema와 단위는 [[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], 현재 기준값은 [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]을 따른다.
+현재 schema는 **version 3**이다. Version 2의 정규화된 두 TransferFactor는 그대로 유지하고, 각 State에 유한·비음수 `thicknessPerAmount`를 필수로 추가했다. 기존 version 2 파일은 각 State의 두께값을 정한 뒤 `version`을 3으로 바꿔야 한다. Loader는 version 1·2를 거부한다. 초기 version 1은 실제 Rate를 저장했으며 정규화 계수로의 이전 환산식과 현재 기준 Rate는 [[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]을 따른다. 두께값의 의미와 렌더링 배율과의 분리는 [[05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]]에 기록한다.
 
 아래 수치는 **튜닝 전 예시값**이며, Profile이 여러 State 응답을 정의할 수 있음을 보여준다. 예시 State 이름은 고정된 전역 채널 목록이 아니다.
 
 ```json
 {
   "type": "SurfaceResponseProfile",
-  "version": 2,
+  "version": 3,
   "name": "Brick",
   "states": {
     "wetness": {
@@ -199,7 +199,8 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
       "decayRate": 0.06,
       "cavityRetentionFactor": 0.50,
       "accumulationFactor": 0.0,
-      "cavityFillFactor": 0.0
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.01
     },
     "heat": {
       "stateCapacity": 1.0,
@@ -209,7 +210,8 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
       "decayRate": 0.10,
       "cavityRetentionFactor": 0.0,
       "accumulationFactor": 0.0,
-      "cavityFillFactor": 0.0
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.01
     },
     "burn": {
       "stateCapacity": 1.0,
@@ -219,7 +221,8 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
       "decayRate": 0.01,
       "cavityRetentionFactor": 0.0,
       "accumulationFactor": 0.0,
-      "cavityFillFactor": 0.0
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.01
     },
     "mud": {
       "stateCapacity": 1.0,
@@ -229,7 +232,8 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
       "decayRate": 0.04,
       "cavityRetentionFactor": 0.80,
       "accumulationFactor": 0.65,
-      "cavityFillFactor": 0.60
+      "cavityFillFactor": 0.60,
+      "thicknessPerAmount": 0.01
     }
   },
   "transitions": [

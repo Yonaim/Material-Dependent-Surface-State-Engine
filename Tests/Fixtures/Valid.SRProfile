@@ -1,6 +1,6 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 2,
+  "version": 3,
   "name": "TestProfile",
   "states": {
     " Wetness ": {
@@ -11,7 +11,8 @@
       "decayRate": 0.06,
       "cavityRetentionFactor": 0.5,
       "accumulationFactor": 0.0,
-      "cavityFillFactor": 0.0
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.01
     },
     "Mud": {
       "stateCapacity": 1.0,
@@ -21,7 +22,8 @@
       "decayRate": 0.04,
       "cavityRetentionFactor": 0.8,
       "accumulationFactor": 0.65,
-      "cavityFillFactor": 0.6
+      "cavityFillFactor": 0.6,
+      "thicknessPerAmount": 0.01
     }
   },
   "transitions": [

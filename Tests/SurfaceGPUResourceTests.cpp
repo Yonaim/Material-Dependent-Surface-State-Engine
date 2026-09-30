@@ -1268,7 +1268,9 @@ namespace
         Layer.CavityFillFactor = 0.0F;
         Layer.GeometryTransferFactor = 1.0F;
         Profile.States.emplace("mud", Layer);
-        Profile.States.emplace("waterfilm", Layer);
+        TSurfaceStateParameters FilmLayer = Layer;
+        FilmLayer.ThicknessPerAmount = 0.002F;
+        Profile.States.emplace("waterfilm", FilmLayer);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
         const TSurfaceStateRegistry Registry(ProfileTable);
         const TStateId Mud = Registry.GetStateId("mud");
@@ -1344,8 +1346,8 @@ namespace
         std::array<float, 6> ResultingState{};
         Instance.GetStateABuffer().Download(ResultingState.data(), sizeof(ResultingState));
 
-        Check(std::abs(DynamicGeometry[0].Z - 0.1F) < 1.0e-5F,
-              "feedback geometry should add the fixed simulation height from all supported accumulation states");
+        Check(std::abs(DynamicGeometry[0].Z - 0.06F) < 1.0e-5F,
+              "feedback geometry should add State-specific Profile thickness from all supported accumulation states");
         Check(DynamicGeometry[1].X > 0.0F && DynamicGeometry[1].Y > 0.0F && DynamicGeometry[1].Z > 0.99F,
               "feedback geometry should rebuild the local normal from the accumulated height gradient");
         Check(std::abs(DynamicWeights[9] - StaticWeights[9]) > 1.0e-4F,

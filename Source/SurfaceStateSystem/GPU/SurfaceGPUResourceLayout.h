@@ -50,6 +50,7 @@ namespace MDSS
     {
         std::array<float, 4> CapacityInputAndTransfer{};
         std::array<float, 4> DecayAndGeometry{};
+        std::array<float, 4> AccumulationThickness{};
     };
 
     struct alignas(16) TSurfaceSolverPushConstants
@@ -95,9 +96,10 @@ namespace MDSS
     static_assert(alignof(TSurfaceGPUNeighborIndices) == 16);
     static_assert(sizeof(TSurfaceGPUSurfaceRange) == 16);
     static_assert(alignof(TSurfaceGPUSurfaceRange) == 16);
-    static_assert(sizeof(TSurfaceGPUProfileParameters) == 32);
+    static_assert(sizeof(TSurfaceGPUProfileParameters) == 48);
     static_assert(alignof(TSurfaceGPUProfileParameters) == 16);
     static_assert(offsetof(TSurfaceGPUProfileParameters, DecayAndGeometry) == 16);
+    static_assert(offsetof(TSurfaceGPUProfileParameters, AccumulationThickness) == 32);
     static_assert(sizeof(TSurfaceSolverPushConstants) == 128);
     static_assert(alignof(TSurfaceSolverPushConstants) == 16);
     static_assert(offsetof(TSurfaceSolverPushConstants, GravityWorld) == 16);

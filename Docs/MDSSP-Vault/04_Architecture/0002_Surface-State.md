@@ -62,6 +62,7 @@ Profile.stateCapacity = 고정 기준 면적의 포화 기준량
 Capacity_i    = Profile.stateCapacity × AreaScale_i; 저장 상한이 아님
 State_i       = Capacity 초과량을 포함한 texel별 총량
 Saturation_i  = State_i / Capacity_i; 전달 계산에서는 상한 clamp 없음
+GeometryState_i = min(State_i, Capacity_i); 형상 기여 계산에만 사용
 Excess_i      = max(State_i - Capacity_i, 0); 별도 저장하지 않는 파생값
 ```
 
@@ -76,6 +77,7 @@ $$
 - `stateCapacity`는 State별 SRProfile 독립 파라미터이며 기본값은 `1.0`이다.
 - `stateCapacity > 1`도 가능하다. 값은 포화 기준을 조정하며, State의 저장 상한을 설정하지 않는다.
 - `Saturation`은 저장 파라미터가 아니라 런타임 파생값이며 1을 넘을 수 있다. 표시용 `[0,1]` clamp는 전달 계산과 분리한다.
+- Accumulation geometry는 각 State의 기여량을 계산하기 전에 `State`를 `[0, Capacity]`로 제한한다. 이 제한은 State A/B나 전달용 Saturation에 적용하지 않으며, Capacity 초과량은 계속 보존·수송한다. 높이 환산은 [[0004_Surface-Geometry|Geometry]]와 [[../05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]]를 따른다.
 - Saturation 계산 때문에 `stateCapacity`는 유한한 양수로 사용한다. 양수 검증만으로 모든 연산의 NaN/Inf를 방지하는 것은 아니다.
 
 State A/B에는 Capacity 초과량까지 보존한다 ([[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]).
@@ -106,7 +108,7 @@ Profile `stateCapacity`는 **고정 기준 면적의 포화 기준량**이다. �
 
 | Parameter                | 의미                                         |       범위 |   기본값 |
 | ------------------------ | ------------------------------------------ | -------: | ----: |
-| `stateCapacity`          | 고정 기준 면적의 해당 State 포화 기준량                           | `(0, n]` | `1.0` |
+| `stateCapacity`          | 고정 기준 면적의 해당 State 포화 기준량; 동일한 기준이 형상 기여량 clamp에 사용됨 | `(0, n]` | `1.0` |
 | `inputFactor`            | 외부 Source 입력을 해당 State에 얼마나 반영할지 결정        |  `[0,n]` | `1.0` |
 | `saturationTransferFactor` | Saturation 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
 | `geometryTransferFactor` | Geometry 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
@@ -114,6 +116,7 @@ Profile `stateCapacity`는 **고정 기준 면적의 포화 기준량**이다. �
 | `cavityRetentionFactor`  | 오목한 영역에서 Decay가 억제되는 정도                    |  `[0,1]` | `0.0` |
 | `accumulationFactor`     | State를 형상상의 적층량으로 변환하는 정도                  |  `[0,n]` | `0.0` |
 | `cavityFillFactor`       | 적층량 중 Cavity를 채우는 데 우선 배분할 비율              |  `[0,1]` | `0.0` |
+| `thicknessPerAmount`     | 기준 면적당 적층량 1에 대한 표면 위 State 두께 (world-length) | `[0,n]` | `0.01` |
 
 두 TransferFactor는 유한한 `[0,1]` 값으로 검증한다. 실제 속도는 Solver에서 `SaturationTransferFactor × 1.0 State/s`, `GeometryTransferFactor × 6000.0 State/(world-length·s)`로 계산한다. Geometry 기준값은 초기 100에서 6000으로 재보정했다. 기준 면적을 사용하는 단순 수직면에서 Factor 0.5의 국소 이동률은 약 0.101 world-length/s다. 물성 검증값은 아니며 모든 Surface의 동일 속도를 보장하지 않는다 ([[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). Saturation 및 State의 Capacity 초과 허용은 유지한다.
 

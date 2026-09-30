@@ -81,6 +81,7 @@ namespace MDSS
                 ReadFloat(State, "cavityRetentionFactor", JsonPath),
                 ReadFloat(State, "accumulationFactor", JsonPath),
                 ReadFloat(State, "cavityFillFactor", JsonPath),
+                ReadFloat(State, "thicknessPerAmount", JsonPath),
             };
         }
 
@@ -101,9 +102,9 @@ namespace MDSS
             {
                 throw std::invalid_argument("$.version must be an integer.");
             }
-            if (Version.get<std::int64_t>() != 2)
+            if (Version.get<std::int64_t>() != 3)
             {
-                throw std::invalid_argument("$.version is unsupported; expected version 2 with normalized transfer factors.");
+                throw std::invalid_argument("$.version is unsupported; expected version 3 with thicknessPerAmount.");
             }
 
             Name = ReadString(Root, "name", "$");

@@ -1,6 +1,6 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 2,
+  "version": 3,
   "name": "UnknownTransitionTarget",
   "states": {
     "snow": {
@@ -11,7 +11,8 @@
       "decayRate": 0.0,
       "cavityRetentionFactor": 0.0,
       "accumulationFactor": 0.0,
-      "cavityFillFactor": 0.0
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.01
     }
   },
   "transitions": [

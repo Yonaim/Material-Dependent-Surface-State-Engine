@@ -265,7 +265,8 @@ namespace MDSS
             {Parameters.DecayRate,
              Parameters.CavityRetentionFactor,
              Parameters.AccumulationFactor,
-             Parameters.CavityFillFactor}};
+             Parameters.CavityFillFactor},
+            {Parameters.ThicknessPerAmount, 0.0F, 0.0F, 0.0F}};
         const VkDeviceSize Offset = static_cast<VkDeviceSize>(RecordIndex * sizeof(Packed));
         ParametersBuffer->Upload(&Packed, sizeof(Packed), Offset);
     }

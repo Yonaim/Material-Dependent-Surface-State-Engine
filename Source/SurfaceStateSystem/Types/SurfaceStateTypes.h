@@ -36,6 +36,8 @@ namespace MDSS
         float CavityRetentionFactor = 0.0F;
         float AccumulationFactor = 0.0F;
         float CavityFillFactor = 0.0F;
+        // World-length thickness per reference-area accumulation amount.
+        float ThicknessPerAmount = 0.01F;
     };
 
     /** @brief Source and target names are canonicalized during profile loading. */
