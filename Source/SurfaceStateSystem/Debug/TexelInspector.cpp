@@ -1,6 +1,7 @@
 #include "SurfaceStateSystem/Debug/TexelInspector.h"
 
 #include <fstream>
+#include <cmath>
 #include <stdexcept>
 
 #ifndef MDSS_SHADER_DIR
@@ -39,7 +40,7 @@ namespace MDSS
             OutputInfo.pBindings = &Binding;
             RequireVk(vkCreateDescriptorSetLayout(Device, &OutputInfo, nullptr, &OutputLayout));
             const std::array<VkDescriptorSetLayout, 2> Layouts{SurfaceLayout, OutputLayout};
-            const VkPushConstantRange                  Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 16};
+            const VkPushConstantRange                  Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 64};
             VkPipelineLayoutCreateInfo                 Info{};
             Info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             Info.setLayoutCount = 2;
@@ -139,7 +140,8 @@ namespace MDSS
                                  const TSurfaceTexelSelection&           Selection,
                                  TStateId                                Channel,
                                  std::uint32_t                           Channels,
-                                 float                                   HeightReference,
+                                 float                                   AccumulationDisplayScale,
+                                 const glm::mat4&                        ModelMatrix,
                                  bool                                    bStateAB,
                                  std::uint64_t                           Step)
     {
@@ -147,9 +149,18 @@ namespace MDSS
         struct TPush
         {
             std::uint32_t Texel, Channel, Channels;
-            float         HeightReference;
+            float AccumulationDisplayScale;
+            std::array<glm::vec4, 3> NormalMatrixColumns;
         };
-        const TPush                          Push{Selection.Texel, Channel, Channels, HeightReference};
+        static_assert(sizeof(TPush) == 64);
+        glm::mat3 NormalMatrix(0.0F);
+        const glm::mat3 ModelLinear(ModelMatrix);
+        const float Determinant = glm::determinant(ModelLinear);
+        if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
+            NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
+        TPush Push{Selection.Texel, Channel, Channels, AccumulationDisplayScale, {}};
+        for (int Column = 0; Column < 3; ++Column)
+            Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);
         const std::array<VkDescriptorSet, 2> Sets{bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(),
                                                   Frame.Set};
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);

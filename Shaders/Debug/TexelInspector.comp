@@ -3,18 +3,27 @@
 #define SURFACE_DEBUG_SET 0
 #include "Debug/SurfaceDebugData.glsl"
 layout(local_size_x = 1) in;
-layout(push_constant) uniform TSelection { uint Texel; uint Channel; uint Channels; float HeightReference; } Selection;
+layout(push_constant) uniform TSelection
+{
+    uint Texel; uint Channel; uint Channels; float AccumulationDisplayScale;
+    vec4 NormalMatrixColumns[3];
+} Selection;
 layout(std430, set = 1, binding = 0) writeonly buffer TSnapshot { vec4 Values[6]; } Snapshot;
 void main()
 {
-    TDebugAccumulation D = DebugAccumulation(Selection.Texel, Selection.Channel, Selection.Channels, Selection.HeightReference);
+    mat3 NormalMatrix = mat3(Selection.NormalMatrixColumns[0].xyz,
+                             Selection.NormalMatrixColumns[1].xyz,
+                             Selection.NormalMatrixColumns[2].xyz);
+    TDebugAccumulation D = DebugAccumulation(Selection.Texel, Selection.Channel, Selection.Channels,
+                                            Selection.AccumulationDisplayScale, NormalMatrix);
     Snapshot.Values[0] = vec4(D.State, D.Capacity, D.Saturation, D.ReferenceAmount);
-    Snapshot.Values[1] = vec4(D.Factor, D.CavityFactor, D.MesoHeight, Selection.HeightReference);
+    Snapshot.Values[1] = vec4(D.Factor, D.CavityFactor, D.MesoHeight, D.ThicknessPerAmount);
     Snapshot.Values[2] = vec4(D.CavityDepth, D.Fill, D.Excess, float(D.Status));
     Snapshot.Values[3] = vec4(D.CavityHeight, D.FollowingHeight, D.Height, D.MesoHeight + D.Height);
-    Snapshot.Values[4] = vec4(D.Area, D.AreaScale, 0, 0);
+    Snapshot.Values[4] = vec4(D.Area, D.AreaScale, Selection.AccumulationDisplayScale, D.WorldToLocalHeight);
     vec3 Normal = vec3(0,0,1);
     if (D.Status == 3u && Selection.Texel < uint(MesoNormals.Values.length()))
-        Normal = DebugFinalNormal(Selection.Texel, Selection.Channel, Selection.Channels, Selection.HeightReference);
+        Normal = DebugFinalNormal(Selection.Texel, Selection.Channel, Selection.Channels,
+                                  Selection.AccumulationDisplayScale, NormalMatrix);
     Snapshot.Values[5] = vec4(Normal, 0);
 }

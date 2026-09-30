@@ -32,7 +32,7 @@
 - 표시 출력은 texel당 두 `vec4`, 16-byte 정렬·32-byte stride이며 추가 padding은 없다. 모든 Surface range의 valid/invalid texel을 포함한 instance별 총 texel 수 T에 대해 `32 × T` byte다. 프레임별 복제는 없고 처음 사용한 instance의 출력은 Scene 교체까지 유지한다. 예를 들어 Surface 하나가 256×256일 때 해당 instance 출력은 2 MiB다. allocator overhead는 제외한다.
 - 초기 grid의 정적 index는 `uint32_t`(4 byte, 원소 padding 없음)이며 모든 cell이 유효한 256×256 Surface 하나에서 `6 × 255 × 255 × 4 = 1,560,600` byte였다. 현재 원본 topology 기반 render vertex/index의 계산 및 Runtime별 공유 범위는 ADR 0038을 따른다. CPU 목록은 업로드 후 보존하지 않는다.
 - 초기 chart 경계는 texel 중심까지만 연결되어 열린 상태였다. 현재 원본 topology 기반 seam 봉합과 경계 확장은 ADR 0038로 구현했다. 원본 메시 자체의 열린 경계는 유지한다. LOD·대표 Scene 성능 측정은 후속 작업이다. Mud 데모의 Lit 재사용과 높이 grid는 [[0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]]을 따른다.
-- 선택 State의 렌더링 미리보기는 Solver 피드백과 독립적이다. Simulation feedback은 별도 옵션으로 모든 적층 State를 계산하고 고정 `0.01` mesh-local 높이 기준을 사용한다. 물리 재질별 다중 layer 합성은 후속 구현이다.
+- 선택 State의 렌더링 미리보기는 Solver 피드백과 독립적이다. 2026-09-30부터 미리보기와 Simulation feedback은 State별 Capacity 제한 형상 기여 및 `.SRProfile` `thicknessPerAmount`를 사용하며, Solver는 렌더링의 공통 `Lit height display scale`을 읽지 않는다 ([[0039-State-Thickness-Per-Amount|ADR 0039]]). 물리 재질별 다중 layer 순서·상호작용은 후속 구현이다.
 - Inspector 선택은 Macro mesh ray hit 기준이다. 변위된 표시 면의 정확한 picking은 후속 작업이다.
 
 ## Related

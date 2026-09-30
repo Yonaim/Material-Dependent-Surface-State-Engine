@@ -7,6 +7,7 @@
 
 #include "Logger/Logger.h"
 
+#include <cmath>
 #include <stdexcept>
 #include <utility>
 
@@ -49,6 +50,20 @@ namespace MDSS
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         }
         SimulationResolution = Resolution;
+    }
+
+    float TScene::GetLitHeightDisplayScale() const noexcept
+    {
+        return LitHeightDisplayScale;
+    }
+
+    void TScene::SetLitHeightDisplayScale(float Scale)
+    {
+        if (!std::isfinite(Scale) || Scale < 0.0F || Scale > 100.0F)
+        {
+            throw std::invalid_argument("Lit height display scale must be finite and between 0 and 100.");
+        }
+        LitHeightDisplayScale = Scale;
     }
 
     void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)

@@ -34,7 +34,5 @@ namespace MDSS
         float DryRoughness = 0.65F;
         float WetRoughness = 0.16F;
         float MudRoughness = 0.48F;
-        // Local-space accumulation display reference; not a new physics/profile contract.
-        float AccumulationHeightReference = 0.01F;
     };
 }

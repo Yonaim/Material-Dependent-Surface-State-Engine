@@ -46,7 +46,8 @@ namespace MDSS
                                 const TSurfaceTexelSelection&           Selection,
                                 TStateId                                Channel,
                                 std::uint32_t                           Channels,
-                                float                                   HeightReference,
+                                float                                   AccumulationDisplayScale,
+                                const glm::mat4&                        ModelMatrix,
                                 bool                                    bStateAB,
                                 std::uint64_t                           Step);
         /** @brief Call only after the corresponding frame fence has signaled. */

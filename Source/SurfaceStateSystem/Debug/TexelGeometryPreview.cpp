@@ -1,6 +1,8 @@
 #include "SurfaceStateSystem/Debug/TexelGeometryPreview.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <fstream>
 #include <limits>
 #include <stdexcept>
@@ -44,7 +46,7 @@ namespace MDSS
             OutputInfo.pBindings = &Binding;
             RequireVk(vkCreateDescriptorSetLayout(Device, &OutputInfo, nullptr, &OutputLayout));
             const std::array<VkDescriptorSetLayout, 2> Layouts{SurfaceLayout, OutputLayout};
-            const VkPushConstantRange Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 24};
+            const VkPushConstantRange Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 80};
             VkPipelineLayoutCreateInfo Info{};
             Info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             Info.setLayoutCount = Layouts.size();
@@ -105,8 +107,9 @@ namespace MDSS
 
     void TTexelGeometryPreview::Record(VkCommandBuffer Command, std::size_t Instance,
                                       const TSurfaceStateDescriptorResources& Descriptors, std::uint32_t TexelCount,
-                                      std::uint32_t Channel, std::uint32_t Channels, float HeightReference,
-                                      float DisplayScale, bool bStateAB, bool bAccumulation)
+                                      std::uint32_t Channel, std::uint32_t Channels, float AccumulationDisplayScale,
+                                      float GeometryDisplayScale, const glm::mat4& ModelMatrix,
+                                      bool bStateAB, bool bAccumulation)
     {
         const auto Bytes = GetSurfaceGPUBufferByteSize(TexelCount, sizeof(TTexelGeometryVertex), Limits.maxStorageBufferRange);
         auto It = Outputs.find(Instance);
@@ -149,9 +152,24 @@ namespace MDSS
         Barrier.size = VK_WHOLE_SIZE;
         vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &Barrier, 0, nullptr);
-        struct TPush { std::uint32_t Texels, Channel, Channels, Accumulation; float Reference, Scale; };
-        static_assert(sizeof(TPush) == 24);
-        const TPush Push{TexelCount, Channel, Channels, bAccumulation ? 1U : 0U, HeightReference, DisplayScale};
+        struct TPush
+        {
+            std::uint32_t Texels, Channel, Channels, Accumulation;
+            float AccumulationDisplayScale, GeometryDisplayScale;
+            std::uint32_t Padding[2];
+            std::array<glm::vec4, 3> NormalMatrixColumns;
+        };
+        static_assert(offsetof(TPush, NormalMatrixColumns) == 32);
+        static_assert(sizeof(TPush) == 80);
+        glm::mat3 NormalMatrix(0.0F);
+        const glm::mat3 ModelLinear(ModelMatrix);
+        const float Determinant = glm::determinant(ModelLinear);
+        if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
+            NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
+        TPush Push{TexelCount, Channel, Channels, bAccumulation ? 1U : 0U,
+                   AccumulationDisplayScale, GeometryDisplayScale, {}, {}};
+        for (int Column = 0; Column < 3; ++Column)
+            Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);
         const std::array<VkDescriptorSet, 2> Sets{bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(), It->second.Set};
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
         vkCmdBindDescriptorSets(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Layout, 0, Sets.size(), Sets.data(), 0, nullptr);

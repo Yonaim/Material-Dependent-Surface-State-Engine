@@ -29,8 +29,8 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetOutputBuffer(std::size_t Instance) const;
         void Record(VkCommandBuffer Command, std::size_t Instance,
                     const TSurfaceStateDescriptorResources& Descriptors, std::uint32_t TexelCount,
-                    std::uint32_t Channel, std::uint32_t Channels, float HeightReference,
-                    float DisplayScale, bool bStateAB, bool bAccumulation);
+                    std::uint32_t Channel, std::uint32_t Channels, float AccumulationDisplayScale,
+                    float GeometryDisplayScale, const glm::mat4& ModelMatrix, bool bStateAB, bool bAccumulation);
 
     private:
         void Destroy() noexcept;

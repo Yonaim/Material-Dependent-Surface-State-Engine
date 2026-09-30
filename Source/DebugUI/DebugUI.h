@@ -85,7 +85,7 @@ namespace MDSS
         void DrawSelectedTransformWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
         void DrawRenderOptionsWindow(TScene& SceneData);
-        void DrawRenderSettingsWindow();
+        void DrawRenderSettingsWindow(TScene& SceneData);
         void DrawViewportStatsOverlay();
         void ResetProfilingAverages() noexcept;
         void ResetSurfaceStateSettings();

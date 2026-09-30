@@ -14,7 +14,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     vec4 DebugOptions;
     uvec4 DebugFlags;
     uvec4 DemoStateChannels; // Wetness ID, Mud ID, WaterFilm ID, effects enabled
-    vec4 DemoOptions; // dry / wet / mud perceptual roughness, Lit accumulation height reference
+    vec4 DemoOptions; // dry / wet / mud perceptual roughness, Lit height display scale
     vec4 CameraPosition;
 } Material;
 #endif

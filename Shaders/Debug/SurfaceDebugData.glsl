@@ -12,13 +12,14 @@ struct TDebugAccumulation
     float State; float Capacity; float Saturation; float ReferenceAmount;
     float Factor; float CavityFactor; float MesoHeight; float CavityDepth;
     float Fill; float Excess; float CavityHeight; float FollowingHeight;
-    float Height; float Area; float AreaScale;
+    float Height; float Area; float AreaScale; float ThicknessPerAmount; float WorldToLocalHeight;
     uint Status; // 0 invalid, 1 unassigned, 2 unsupported, 3 valid, 4 nonfinite/invalid area
 };
 
-TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels, float HeightReference)
+TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
+                                    float AccumulationDisplayScale, mat3 NormalMatrix)
 {
-    TDebugAccumulation D = TDebugAccumulation(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0u);
+    TDebugAccumulation D = TDebugAccumulation(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0u);
     if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
         TexelSurfaceIndices.Values[Texel] == 0xffffffffu || Texel >= uint(GeometryScalars.Values.length())) return D;
     D.MesoHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
@@ -38,6 +39,7 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels, fl
     D.State = CurrentState.Values[Texel * Channels + Channel];
     D.Factor = P.DecayAndGeometry.z;
     D.CavityFactor = P.DecayAndGeometry.w;
+    D.ThicknessPerAmount = P.AccumulationThickness.x;
     D.Status = 4u;
     if (Texel >= uint(WorldTexelAreas.Values.length())) return D;
     D.Area = WorldTexelAreas.Values[Texel];
@@ -47,16 +49,21 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels, fl
         isnan(D.AreaScale) || isinf(D.AreaScale) || D.AreaScale <= 0.0 ||
         D.Capacity <= 0.0 || isnan(D.Capacity) || isinf(D.Capacity) ||
         isnan(D.Factor) || isinf(D.Factor) || D.Factor < 0.0 ||
-        isnan(D.CavityFactor) || isinf(D.CavityFactor) || D.CavityFactor < 0.0 || D.CavityFactor > 1.0) return D;
+        isnan(D.CavityFactor) || isinf(D.CavityFactor) || D.CavityFactor < 0.0 || D.CavityFactor > 1.0 ||
+        isnan(D.ThicknessPerAmount) || isinf(D.ThicknessPerAmount) || D.ThicknessPerAmount < 0.0) return D;
     D.Saturation = D.State / D.Capacity;
     // State is total texel amount. Convert to fixed-reference-area amount for thickness.
-    D.ReferenceAmount = D.State / D.AreaScale;
+    // Capacity bounds the geometry contribution, while the State buffer retains excess for transport.
+    D.ReferenceAmount = min(D.State, D.Capacity) / D.AreaScale;
     float Amount = D.ReferenceAmount * D.Factor;
     float CavityAmount = Amount * D.CavityFactor;
     D.Fill = min(CavityAmount, 1.0);
     D.Excess = max(CavityAmount - 1.0, 0.0);
-    D.CavityHeight = D.Fill * D.CavityDepth;
-    D.FollowingHeight = (Amount * (1.0 - D.CavityFactor) + D.Excess) * HeightReference;
+    D.WorldToLocalHeight = length(NormalMatrix * normalize(Normals.Values[Texel].xyz));
+    if (isnan(D.WorldToLocalHeight) || isinf(D.WorldToLocalHeight) || D.WorldToLocalHeight <= 0.0) return D;
+    D.CavityHeight = D.Fill * D.CavityDepth * AccumulationDisplayScale;
+    D.FollowingHeight = (Amount * (1.0 - D.CavityFactor) + D.Excess) *
+                        D.ThicknessPerAmount * D.WorldToLocalHeight * AccumulationDisplayScale;
     D.Height = D.CavityHeight + D.FollowingHeight;
     if (isnan(D.Height) || isinf(D.Height) || isnan(D.Saturation) || isinf(D.Saturation)) return D;
     D.Status = 3u;
@@ -64,10 +71,11 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels, fl
 }
 
 // Least-squares height gradient in the macro tangent plane. Seam neighbors use mesh-local positions.
-vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightReference, float HeightScale)
+vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float AccumulationDisplayScale,
+                      mat3 NormalMatrix, float HeightScale)
 {
     vec3 Fallback = MesoNormals.Values[Texel].xyz;
-    TDebugAccumulation Center = DebugAccumulation(Texel, Channel, Channels, HeightReference);
+    TDebugAccumulation Center = DebugAccumulation(Texel, Channel, Channels, AccumulationDisplayScale, NormalMatrix);
     if (Center.Status == 0u || Center.Status == 4u || Texel >= uint(Positions.Values.length()) ||
         Texel >= uint(Normals.Values.length()) || Texel >= uint(NeighborIndices.Values.length())) return Fallback;
     vec3 N = normalize(Normals.Values[Texel].xyz);
@@ -79,7 +87,7 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightRefer
         uint Other = NeighborIndices.Values[Texel].Indices[Slot];
         if (Other >= uint(Positions.Values.length()) || Other >= uint(Normals.Values.length()) ||
             dot(N, Normals.Values[Other].xyz) < 0.5) continue;
-        TDebugAccumulation Neighbor = DebugAccumulation(Other, Channel, Channels, HeightReference);
+        TDebugAccumulation Neighbor = DebugAccumulation(Other, Channel, Channels, AccumulationDisplayScale, NormalMatrix);
         if (Neighbor.Status == 0u || Neighbor.Status == 4u) continue;
         vec3 Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
         float X = dot(Delta, U), Y = dot(Delta, V);
@@ -95,8 +103,8 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightRefer
     vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
-vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float HeightReference)
+vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float AccumulationDisplayScale, mat3 NormalMatrix)
 {
-    return DebugFinalNormal(Texel, Channel, Channels, HeightReference, 1.0);
+    return DebugFinalNormal(Texel, Channel, Channels, AccumulationDisplayScale, NormalMatrix, 1.0);
 }
 #endif

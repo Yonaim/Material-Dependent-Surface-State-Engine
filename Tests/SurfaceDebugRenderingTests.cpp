@@ -71,10 +71,10 @@ namespace MDSS::Tests
             std::uint32_t StateChannelCount = 1;
             float         DebugViewParameter = 1.0F / (256.0F * 256.0F);
             float         ReliefShadingEnabled = 0.0F;
-            glm::vec4     DebugOptions{4.0F, 0.01F, 0.01F, 1.0F};
+            glm::vec4     DebugOptions{4.0F, 0.01F, 1.0F, 1.0F};
             glm::uvec4    DebugFlags{0};
             glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, InvalidStateId, 1U};
-            glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 0.1F};
+            glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
             glm::vec4     CameraPosition{-0.35F, -0.55F, 1.0F, 1.0F};
         };
         static_assert(sizeof(TUniform) == 128);
@@ -221,7 +221,7 @@ namespace MDSS::Tests
                                    {2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(TVertex, UV)},
                                    {3, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(TVertex, Tangent)}};
         Config.DescriptorSetLayouts = {Handles.MaterialLayout, SurfaceDescriptors.GetLayout()};
-        Config.PushConstantRanges = {{VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(TPush)}};
+        Config.PushConstantRanges = {{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TPush)}};
         TGraphicsPipeline Pipeline(Device, Handles.Pass, Config);
 
         TUniform DebugControls;
@@ -275,7 +275,8 @@ namespace MDSS::Tests
             const VkBuffer     VertexBuffer = Vertices.GetHandle();
             const VkDeviceSize Offset = 0;
             vkCmdBindVertexBuffers(Command, 0, 1, &VertexBuffer, &Offset);
-            vkCmdPushConstants(Command, Pipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push), &Push);
+            vkCmdPushConstants(Command, Pipeline.GetLayout(),
+                               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Push), &Push);
             vkCmdDraw(Command, 6, 1, 0, 0);
             vkCmdEndRenderPass(Command);
             VkBufferImageCopy Copy{};
@@ -396,10 +397,11 @@ namespace MDSS::Tests
         TTexelInspector              Inspector(Context.GetPhysicalDevice(), Device, SurfaceDescriptors.GetLayout(), 2);
         const TSurfaceTexelSelection Selection{0, 0, 0, 0, {0, 0}, "test"};
         const auto                   Sample =
-            [&](bool bAB = true, std::uint32_t Channel = 0, float Reference = 0.01F, std::uint64_t Step = 1)
+            [&](bool bAB = true, std::uint32_t Channel = 0, float DisplayScale = 1.0F, std::uint64_t Step = 1)
         {
             auto Command = Context.GetCommands().BeginSingleTime();
-            Inspector.Record(Command, 0, SurfaceDescriptors, Selection, Channel, 1, Reference, bAB, Step);
+            Inspector.Record(Command, 0, SurfaceDescriptors, Selection, Channel, 1,
+                             DisplayScale, glm::mat4(1.0F), bAB, Step);
             Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
             Inspector.CompleteFrame(0);
             Require(Inspector.GetSnapshot().has_value(), "Completed GPU snapshot must be available.");
@@ -413,19 +415,20 @@ namespace MDSS::Tests
         Require(Close(S.Values[2].y, 0.6F) && Close(S.Values[3].x, 0.012F) && Close(S.Values[3].y, 0.0015F) &&
                     Close(S.Values[3].z, 0.0135F),
                 "GPU cavity/following allocation must use the reference-area amount.");
-        Require(Close(Sample(true, 0, 0.01F, 50).Values[3].z, S.Values[3].z),
+        Require(Close(Sample(true, 0, 1.0F, 50).Values[3].z, S.Values[3].z),
                 "Unchanged State must not accumulate height across steps.");
         State.fill(40);
         Instance.GetStateBBuffer().Upload(State.data(), sizeof(State));
         S = Sample(false);
         Require(!S.bStateAB && Close(S.Values[2].y, 1) && Close(S.Values[2].z, 1.4F) && Close(S.Values[3].z, 0.04F),
                 "Inspector must read buffer B and preserve cavity excess in Following Height.");
-        Require(Close(Sample(false, 0, 0.02F).Values[3].z, 0.06F),
-                "Height reference must affect only Surface Following height.");
+        Require(Close(Sample(false, 0, 2.0F).Values[3].z, 0.08F),
+                "Display scale must affect the visible cavity and following heights.");
         Require(Sample(true, 1).Values[2].w == 2, "Unsupported channel must be diagnosed without out-of-bounds reads.");
         // A changed selection/reference must discard already-submitted results.
         auto Command = Context.GetCommands().BeginSingleTime();
-        Inspector.Record(Command, 1, SurfaceDescriptors, Selection, 0, 1, 0.01F, true, 60);
+        Inspector.Record(Command, 1, SurfaceDescriptors, Selection, 0, 1,
+                         1.0F, glm::mat4(1.0F), true, 60);
         Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
         Inspector.Invalidate();
         Inspector.CompleteFrame(1);
@@ -491,6 +494,7 @@ namespace MDSS::Tests
         TSurfaceStateParameters LitParameters;
         LitParameters.AccumulationFactor = 1;
         LitParameters.CavityFillFactor = 0;
+        LitParameters.ThicknessPerAmount = 0.1F;
         LitProfile.States.emplace("aaa", LitParameters);
         LitProfile.States.emplace("mud", LitParameters);
         LitProfile.States.emplace("wetness", LitParameters);
@@ -511,6 +515,7 @@ namespace MDSS::Tests
             VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
         Parameters.AccumulationFactor = 1;
         Parameters.CavityFillFactor = 0;
+        Parameters.ThicknessPerAmount = 0.1F;
         Profiles.UpdateParameters(0, 0, Parameters);
         std::array<float, 9> GridState{};
         GridState[4] = 4;
@@ -529,7 +534,7 @@ namespace MDSS::Tests
         {
             TUniform Uniform = LitUniform ? *LitUniform : TUniform{};
             Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
-            if (!LitUniform) Uniform.DebugOptions = {4, 0.5F, 0.1F, Scale};
+            if (!LitUniform) Uniform.DebugOptions = {4, 0.5F, 1.0F, Scale};
             Uniform.DebugFlags.z = GridMode;
             Uniform.DebugFlags.w = BlockSize;
             UniformBuffer.Upload(&Uniform, sizeof(Uniform));
@@ -537,7 +542,8 @@ namespace MDSS::Tests
             const auto& Descriptors = LitUniform ? LitDescriptors : GridDescriptors;
             const auto& Pipeline = LitUniform ? LitPipeline : GridPipeline;
             Preview.Record(Command, 0, Descriptors, 9, LitUniform ? LitBindings.Mud : 0,
-                           LitUniform ? 3 : 1, LitUniform ? Uniform.DemoOptions.w : 0.1F, Scale, bAB, bAccumulation);
+                           LitUniform ? 3 : 1, LitUniform ? Uniform.DemoOptions.w : 1.0F,
+                           Scale, glm::mat4(1.0F), bAB, bAccumulation);
             VkBufferMemoryBarrier CopyBarrier{};
             CopyBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
             CopyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -567,7 +573,8 @@ namespace MDSS::Tests
                 bAB ? Descriptors.GetABSet() : Descriptors.GetBASet(), Preview.GetOutputSet(0)};
             vkCmdBindDescriptorSets(Command, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline.GetLayout(),
                 0, Sets.size(), Sets.data(), 0, nullptr);
-            vkCmdPushConstants(Command, Pipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Side), &Side);
+            vkCmdPushConstants(Command, Pipeline.GetLayout(),
+                               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Side), &Side);
             const auto& RenderMesh = MeshOverride ? *MeshOverride : GridShared;
             const VkBuffer GridVertices = RenderMesh.GetTexelMeshVertexBuffer()->GetHandle();
             const VkDeviceSize GridOffset = 0;

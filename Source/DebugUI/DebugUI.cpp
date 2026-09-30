@@ -451,7 +451,7 @@ namespace MDSS
         DrawCameraWindow(SceneData);
         DrawSelectedTransformWindow(SceneData);
         DrawRenderOptionsWindow(SceneData);
-        DrawRenderSettingsWindow();
+        DrawRenderSettingsWindow(SceneData);
         DrawViewportStatsOverlay();
         DrawSimulationDebugWindow(SceneData);
         DrawLogWindow();
@@ -1607,15 +1607,6 @@ namespace MDSS
                                                     "Total Height\0Cavity Height\0Following Height\0Cavity Fill\0");
                             Settings.AccumulationComponent = static_cast<std::uint32_t>(Component);
                         }
-                        ImGui::SameLine();
-                        ImGui::SetNextItemWidth(95.0F);
-                        Changed |= ImGui::DragFloat("Height ref",
-                                                    &Settings.HeightReference,
-                                                    0.001F,
-                                                    1e-8F,
-                                                    1e6F,
-                                                    "%.4g",
-                                                    ImGuiSliderFlags_AlwaysClamp);
                         ImGui::NewLine();
                         ImGui::SetNextItemWidth(95.0F);
                         Changed |= ImGui::DragFloat("Display scale",
@@ -1803,7 +1794,7 @@ namespace MDSS
         ImGui::End();
     }
 
-    void TDebugUI::DrawRenderSettingsWindow()
+    void TDebugUI::DrawRenderSettingsWindow(TScene& SceneData)
     {
         if (FrameRenderer == nullptr)
         {
@@ -1855,8 +1846,10 @@ namespace MDSS
                         EffectsChanged |= LabeledSliderFloat("Dry roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
                         EffectsChanged |= LabeledSliderFloat("Wet roughness", &Effects.WetRoughness, 0.05F, 1.0F, "%.2f");
                         EffectsChanged |= LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
-                        EffectsChanged |= LabeledSliderFloat("Accumulation height ref", &Effects.AccumulationHeightReference, 0.0001F, 0.1F, "%.4f");
                         if (EffectsChanged) FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
+                        float LitHeightDisplayScale = SceneData.GetLitHeightDisplayScale();
+                        if (LabeledSliderFloat("Lit height display scale", &LitHeightDisplayScale, 0.0F, 10.0F, "%.2f"))
+                            FrameRenderer->SetSceneLitHeightDisplayScale(SceneData, LitHeightDisplayScale);
                     }
                     ImGui::EndChild();
                     ImGui::EndTabItem();
@@ -2145,15 +2138,6 @@ namespace MDSS
         TextDescriptionWrapped("Picking uses the Macro mesh. Accumulation is a selected-State preview; it does not "
                                "update Solver geometry.");
         DrawDebugStateSelector();
-        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
-        if (LabeledDragFloat("Height reference",
-                             &Settings.HeightReference,
-                             0.001F,
-                             1e-8F,
-                             1e6F,
-                             "%.5g",
-                             ImGuiSliderFlags_AlwaysClamp))
-            FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
         const auto& Selection = FrameRenderer->GetInspectedTexel();
         if (!Selection)
         {
@@ -2188,7 +2172,7 @@ namespace MDSS
         if (Status != 3)
             return;
         TextDescriptionWrapped("Values are calculated on the GPU with the same formula used by the debug views. "
-                               "Heights use mesh-local units; display scale is excluded.");
+                               "Heights use mesh-local units and include the Lit height display scale.");
         if (ImGui::BeginTable("TexelValues", 2, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp))
         {
             ImGui::TableSetupColumn("Field", ImGuiTableColumnFlags_WidthStretch, 1.4F);
@@ -2211,7 +2195,9 @@ namespace MDSS
             Row("Accumulation factor", S.Values[1].x);
             Row("Cavity fill factor", S.Values[1].y);
             Row("Meso height", S.Values[1].z);
-            Row("Height reference", S.Values[1].w);
+            Row("Thickness per amount (world)", S.Values[1].w);
+            Row("Lit height display scale", S.Values[4].z);
+            Row("World-to-local height", S.Values[4].w);
             Row("Cavity depth", S.Values[2].x);
             Row("Cavity fill (0-1)", S.Values[2].y);
             Row("Cavity excess", S.Values[2].z);
@@ -2377,8 +2363,8 @@ namespace MDSS
         if (ImGui::IsItemHovered())
         {
             SetDescriptionTooltip("ON: 적층 높이가 있는 모든 State를 합산해 이후 수송의 위치·법선·거리 계산에 반영합니다.\n"
-                                  "OFF: 기존 정적 지형으로 수송합니다. 시뮬레이션 높이 기준은 고정 0.01 mesh-local 단위이며,\n"
-                                  "Render Options의 Height Reference는 디버그 렌더링 전용입니다. ON은 step마다 GPU 작업이 추가됩니다.");
+                                  "OFF: 기존 정적 지형으로 수송합니다. 시뮬레이션 두께는 .SRProfile의 thicknessPerAmount를 사용하며,\n"
+                                  "Render Options의 display scale은 렌더링 전용입니다. ON은 step마다 GPU 작업이 추가됩니다.");
         }
 
         DrawSectionHeader("Transport");
@@ -2717,6 +2703,11 @@ namespace MDSS
         bChanged |= LabeledSliderFloat("Cavity retention", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
         bChanged |= LabeledDragFloat("Accumulation", &ParameterDraft.AccumulationFactor, 0.01F, 0.0F, 1000.0F, "%.3f");
         bChanged |= LabeledSliderFloat("Cavity fill", &ParameterDraft.CavityFillFactor, 0.0F, 1.0F, "%.3f");
+        bChanged |= LabeledDragFloat("Thickness per amount", &ParameterDraft.ThicknessPerAmount,
+                                     0.001F, 0.0F, 100.0F, "%.4f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("World-length thickness per reference-area accumulation amount. "
+                                  "This Profile value affects simulation geometry when feedback is enabled.");
         if (bChanged)
         {
             bParameterDraftDirty = true;

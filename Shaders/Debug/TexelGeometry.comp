@@ -11,8 +11,9 @@ layout(push_constant) uniform TPush
     uint Channel;
     uint Channels;
     uint Accumulation;
-    float HeightReference;
-    float DisplayScale;
+    float AccumulationDisplayScale;
+    float GeometryDisplayScale;
+    vec4 NormalMatrixColumns[3];
 } Push;
 void main()
 {
@@ -23,16 +24,21 @@ void main()
     float H = GeometryScalars.Values[T].MesoVirtualHeight;
     if (isnan(H) || isinf(H)) H = 0.0;
     vec3 FinalNormal = MesoNormals.Values[T].xyz;
+    mat3 NormalMatrix = mat3(Push.NormalMatrixColumns[0].xyz,
+                             Push.NormalMatrixColumns[1].xyz,
+                             Push.NormalMatrixColumns[2].xyz);
     if (TexelSurfaceIndices.Values[T] != 0xffffffffu && Push.Accumulation != 0u)
     {
-        TDebugAccumulation D = DebugAccumulation(T, Push.Channel, Push.Channels, Push.HeightReference);
+        TDebugAccumulation D = DebugAccumulation(T, Push.Channel, Push.Channels,
+                                                Push.AccumulationDisplayScale, NormalMatrix);
         if (D.Status == 3u)
             H += D.Height;
-        FinalNormal = DebugFinalNormal(T, Push.Channel, Push.Channels, Push.HeightReference, Push.DisplayScale);
+        FinalNormal = DebugFinalNormal(T, Push.Channel, Push.Channels,
+                                       Push.AccumulationDisplayScale, NormalMatrix, Push.GeometryDisplayScale);
     }
     if (any(isnan(FinalNormal)) || any(isinf(FinalNormal)) || dot(FinalNormal, FinalNormal) < 1e-12)
         FinalNormal = N;
-    H *= Push.DisplayScale;
+    H *= Push.GeometryDisplayScale;
     if (isnan(H) || isinf(H)) H = 0.0;
     Output.Values[T].PositionAndHeight = vec4(P + N * H, H);
     Output.Values[T].Normal = vec4(normalize(FinalNormal), 0.0);
