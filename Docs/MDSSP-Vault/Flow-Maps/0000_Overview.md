@@ -30,15 +30,17 @@ flowchart LR
   GPU --> Solver
   Solver --> State["Updated Surface State"]
   State --> Debug["State and Mapping Debug Views"]
-  State -. target .-> Appearance["Profile-driven Appearance"]
-  State -. target .-> Accumulation["Accumulation Geometry"]
+  State --> Demo["Selected Wetness / Mud / WaterFilm Demo Effects"]
+  State --> Accumulation["Accumulation Preview and Demo Displacement"]
+  Accumulation -. future solver feedback .-> Solver
   Runtime --> Render["Mesh and Material Rendering"]
   Debug --> Render
-  Appearance -. target .-> Render
-  Accumulation -. target .-> Render
+  Demo --> Render
+  Accumulation --> Render
+  State -. general profile-driven materials .-> Render
 ```
 
-실선은 현재 실행 경로에 연결된 흐름이고, 점선은 설계가 정의됐지만 최종 렌더링 경로에는 아직 연결되지 않은 흐름이다.
+실선은 현재 구현 경로다. 점선은 범용 Profile 기반 렌더 반응과 적층 형상을 Solver 입력 Geometry로 되먹임하는 후속 경로다.
 
 ## 문서별 경계
 
@@ -47,7 +49,7 @@ flowchart LR
 | Asset과 Surface Data | 원본·설정 파일 | Runtime Surface Data, Registry, GPU 자원 연결 | State 수식의 상세 정의 |
 | Surface Simulation | 준비된 Geometry·Profile·State와 입력 | 갱신된 Current State | 접촉 대상을 찾는 UI·Physics 과정 |
 | Contact Input | Debug ray 또는 게임 collision | Solver가 한 번 소비할 `InputDelta` | Transport·Decay 수식 |
-| Rendering | Scene Mesh·Material과 현재 Surface State | 화면의 기본 렌더링·진단 출력 | Solver 내부 계산 |
+| Rendering | Scene Mesh·Material과 현재 Surface State | 기본·진단 출력과 선택된 demo Lit/height view | 범용 Profile 기반 외관과 Solver Geometry feedback |
 
 ## 상태 표기
 

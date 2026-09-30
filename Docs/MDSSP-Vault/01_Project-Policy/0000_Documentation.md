@@ -42,7 +42,9 @@
 
 ## 출처와 최신성
 
-`08_Assets/Documents/`의 PDF는 설계 근거 자료다. 이후 대화에서 명시적으로 수정·확정된 설계는 PDF의 이전 표현보다 우선한다. 특히 다음 변경은 현재 설계에 반영한다.
+`08_Assets/Documents/`의 설계 PDF는 검토·확정된 내용을 판본 단위로 보존하는 기준 문서다. 같은 판본을 작업 메모처럼 수시 수정하지 않지만, 설계가 바뀌어 새 기준이 확정되면 PDF도 개정해 발행일·개정 정보와 함께 갱신한다. Markdown은 세부 정의와 현재 구현·검증 상태를 갱신한다. 둘 사이에 차이가 생기면 Source Index에 보완 항목을 적고, 문서 내용을 일치시킨다. 면담·회의록은 당시 기록으로 보존하고 후속 결정을 현재 설계 문서에 반영한다. 자료별 역할은 [[08_Assets/Documents/0000_Source-Index|Source Index]]를 따른다.
+
+특히 다음 변경은 현재 설계와 PDF 보완 검토에 반영한다.
 
 - `Overflow` 초과량 모델 폐기. Capacity 초과량은 State에 포함하고 Solver 중간값은 목적별 scratch buffer로 둔다.
 - 상태별 `stateCapacity`와 파생값 `Saturation` 사용.

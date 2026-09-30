@@ -29,7 +29,7 @@ flowchart LR
 이 그림은 목표 구조를 나타낸다. 현재 구현 범위는 다음과 같다.
 
 - 구현됨: 기본 Material·Normal Map, Surface Debug와 Texel Inspector, texel 연결면의 높이 표시·묶음 grid, Wetness·Mud 데모 Lit 반응과 Mud 표시 형상
-- 후속 구현: 범용 State 재질 반응, 실제 Surface별 높이 기준과 다중 layer 합성, Solver 동적 형상 피드백
+- 후속 구현: 범용 State 재질 반응, 실제 Surface별 높이 기준과 물리 재질별 다중 layer 합성
 
 ## 저장량과 표시 범위
 
@@ -37,7 +37,7 @@ State는 Capacity를 넘을 수 있다 ([[05_ADR/0020-State-Overcapacity-Transpo
 
 - Saturation 표시에서 1 이상은 같은 최상위 색이다. Raw State 옵션은 고정 범위의 texel 총량을 표시하고 범위 초과를 구분한다.
 - Shader 변경과 선택 GPU 회귀 fixture는 통과했다. 5주차 통합 검증과 timestep 비교는 대기 중이다.
-- Wetness·Mud의 Lit 데모 반응은 구현됐다. 최종 물리 재질 모델과 Solver용 동적 적층은 미구현이다.
+- Wetness·Mud의 Lit 데모 반응과 옵션형 Solver 적층 형상 피드백은 구현됐다. 피드백은 기본 OFF이며, 최종 물리 재질 모델은 미구현이다.
 
 ## 외관 변화 (State-based Appearance Changes)
 
@@ -74,10 +74,10 @@ Mud·Snow처럼 실제 두께 변화가 중요한 적층은 화면상 외관 변
 
 Accumulation은 선택 State의 기준면적 환산량에서 총 높이·Cavity·Following·Fill 비율을 계산한다. Compute는 최신 State와 Meso 높이에서 texel별 표시 위치·법선을 만들고, vertex shader는 그 결과를 원본 triangle과 texel 중심으로 세분한 연결면에 표시한다. Final Geometry와 Accumulation heatmap은 같은 변위 면을 사용한다. Meso Color/Displacement도 texel 연결면을 사용하며 적층을 제외한다. 초기 원본 메시 정점 변위의 밀도 제한을 제거했고, 원본 position/edge topology의 공통 높이 stencil과 경계 분할로 UV seam을 봉합한다 ([[../05_ADR/0038-Source-Topology-Seam-Stitching|ADR 0038]]). 원본 메시의 열린 경계는 유지한다. 원본 Normal Map은 중복 적용하지 않는다.
 
-Inspector는 같은 GPU 식의 선택 texel 결과를 완료 frame fence 이후 표시한다. 공통 조절형 Height reference는 디버그 설정이며, 실제 Surface별 높이 기준값과 Solver 동적 형상 피드백은 미구현이다. 표시용 compute buffer는 Mud 데모 Lit에도 재사용하지만 물리적 layer의 합성/순서 또는 최종 Lit rendering 완료를 뜻하지 않는다. [[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]], [[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]을 따른다.
+Inspector는 같은 GPU 식의 선택 texel 결과를 완료 frame fence 이후 표시한다. 공통 조절형 Height reference는 디버그 렌더링 전용이며 시뮬레이션은 고정 `0.01` mesh-local 기준값을 사용한다. 표시용 compute buffer는 Mud 데모 Lit에도 재사용하지만 물리적 재질별 layer 합성/순서 또는 최종 Lit rendering 완료를 뜻하지 않는다. [[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]], [[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]을 따른다.
 
 ## Wetness·Mud·WaterFilm 데모 Lit
 
 Registry는 로드된 `.SRProfile`의 State 종류를 유지한다. 데모 adapter가 `wetness`·`mud`·`waterfilm` 이름의 현재 ID를 조회하고, Shader는 해당 texel의 Profile 지원과 면적 보정 Capacity를 확인한다. State 샘플링, 효과별 재질 반응, GGX 반사 조명을 별도 모듈로 나눈다. Mud 피복 뒤 Wetness 외관을 적용한다. WaterFilm은 별도 `waterfilm` State를 사용해 광택과 렌더 누적 높이를 표시한다. WaterFilm 및 Mud 지원 instance는 computed texel 형상을 사용하고 원본 Normal Map을 중복 적용하지 않는다.
 
-Lit의 `Accumulation height ref`는 디버그 높이 설정과 분리된 mesh-local 데모 기준이다. 표시 설정은 State·Solver에 피드백하지 않는다. 범용 State ID→효과 시스템, Solver 동적 형상 피드백, 물리 재질·다중 layer·환경 조명은 후속 설계다. [[../05_ADR/0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]]을 따른다.
+Lit의 `Accumulation height ref`와 Render Options의 `Height Reference`는 디버그 렌더링 설정이다. 표시 설정은 State·Solver에 피드백하지 않는다. 범용 State ID→효과 시스템, 물리 재질별 다중 layer·환경 조명은 후속 설계다. [[../05_ADR/0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]]을 따른다.

@@ -44,8 +44,8 @@
 | Macro Geometry, Meso | 표면 형상, Normal Map 기반 meso 정보 |
 
 - Saturation 표시 범위는 `[0,1]`이며 Capacity 초과량은 같은 색이다. Raw State는 texel 총량을 조절 가능한 고정 범위로 표시한다. 범위 초과는 주황색이다. 표시 결과는 Solver에 입력되지 않는다.
-- Accumulation의 높이 범위·Height reference는 mesh-local 단위다. Cavity Fill만 0–100% 고정 범위다. Accumulation/Final Geometry의 공통 Display scale은 표시 위치·normal 전용이며 색상 수치와 Inspector에는 반영하지 않는다.
-- 현재 적층 뷰는 선택 State의 설계식 미리보기다. Solver에 반영되는 동적 Geometry와 형상 피드백은 후속 구현이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
+- Accumulation의 높이 범위·Height reference는 mesh-local 단위다. Cavity Fill만 0–100% 고정 범위다. 이 Height reference와 Accumulation/Final Geometry의 공통 Display scale은 디버그 렌더링 전용이며 Solver의 물리 형상에 반영하지 않는다.
+- 적층 뷰는 선택 State를 따로 미리보기한다. Simulation의 `Accumulation feedback`은 지원되는 모든 적층 State를 합산하는 별도 Solver 옵션이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
 - Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]).
 - 좌측 `Render Settings`: Normal strength, Ambient light, Normal Y 반전
 - `Lit Demo Effects`: Wetness/Mud 반응, Mud height 적용 여부, Dry/Wet/Mud roughness, 독립 Mud height reference. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
@@ -101,9 +101,12 @@ Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인�
 ## Solver 탭
 
 - Solver debug terms를 runtime에 켜고 끌 수 있다:
+  - Geometry Feedback: `Accumulation feedback`은 기본 OFF이며, ON에서 모든 적층 State의 위치·갱신 normal·이웃 거리를 다음 Solver step에 반영한다. Simulation height reference는 고정 `0.01` mesh-local 단위다.
+  - ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
   - Transport: SaturationDrive, GeometryDrive, DirectionDrive: MesoNormal, DistanceWeight, NormalWeight, ProfileBoundaryWeight, CurvatureWeight
   - Decay: Decay, ConcavityRetention
   - CurvatureWeight는 기본 OFF이며 변경은 이후 Solver step에 적용한다. 같은 초기 조건 비교에는 Reset이 필요하다.
+  - Render Options와 Lit Demo Effects의 Height Reference는 디버그 렌더링 전용이며 Simulation height reference와 별도다.
   - CurvatureWeight 계산식과 범위는 [[0007_Simulation-Optimization|Simulation Optimization]]에 정리한다 ([[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]).
 - `Cache Comparison`은 기본 접힘이다. RawFlux Cache ON/OFF, 실제 cache buffer 크기와 비교 조건을 표시한다. Fixed timestep과 Auto substepping은 `Global Settings` 탭에서 조절한다.
 - `Diagnostics`는 기본 접힘이다. 전체 texel 수와 유효 texel 비율을 표시하며, Paused에서는 다음 read buffer와 최근 Solver GPU 시간도 표시한다.

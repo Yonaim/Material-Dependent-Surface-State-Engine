@@ -52,6 +52,14 @@
 
 `01_Project-Policy/`에는 프로젝트에서 지킬 규칙과 용어의 공식 의미를 둔다. `02_Research/`에는 관련 연구의 쉬운 요약과 상세 설명, 프로젝트 적용 검토를 둔다. 수식의 기호·단위 같은 표기 규칙도 여기에 둔다. 프로젝트 범위와 로드맵은 `03_Planning/00_Project-Overview/0000_Project-Plan.md`와 `0001_Roadmap.md`, 주차별 목표 요약은 `01_Weekly-Overview/`, 주차별 상세 구현은 `02_Weekly-Details/`에 기록한다. 여러 모듈을 지나는 처음부터 끝까지의 처리 순서는 `Flow-Maps/`, 시스템을 정의하는 수식은 `04_Architecture/`, 실제 계산 순서와 최적화는 `06_Development/Notes/`, 공통 테스트 기준은 `07_Testing/`에 기록한다. 원본 참고 자료는 `08_Assets/`에 둔다.
 
+## PDF와 Markdown의 역할
+
+- `08_Assets/Documents/`의 설계 PDF는 검토·확정된 기준 내용을 하나의 고정된 판본으로 보존한다. 해당 판본은 임의로 계속 고치는 작업 노트가 아니다.
+- 프로젝트 설계가 바뀌면 PDF도 갱신한다. 변경 내용을 검토한 뒤 새 기준 판본으로 반영하고, 작성일·개정일 또는 버전을 함께 기록해 이전 판본과 변경 이력을 추적할 수 있게 한다.
+- Markdown은 현재 설계의 세부 정의, 구현 상태, 남은 검증과 문서 간 연결을 계속 갱신하는 작업 문서다. PDF의 요약이나 표현이 현재 설계와 달라지면 Markdown만 고쳐 두지 말고 PDF 갱신도 검토한다.
+- 날짜가 있는 면담·회의록 PDF는 당시 기록을 보존한다. 회의 뒤 확정된 변경을 회의록에 덮어쓰지 말고, 관련 Architecture·ADR·PDF의 새 판본에서 현재 결정을 기록한다.
+- `08_Assets/Documents/0000_Source-Index.md`에서 각 PDF의 판본·역할·현재 설계와의 차이 및 보완 항목을 추적한다.
+
 ## 문서 작성
 
 - 표, 문단, 순서도와 code block의 선택 기준은 [[00_Start/0001_Document-Writing-Guide|문서 작성 가이드]]를 따른다.

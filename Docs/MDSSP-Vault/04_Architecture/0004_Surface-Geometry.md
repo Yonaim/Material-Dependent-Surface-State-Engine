@@ -210,8 +210,9 @@ Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space�
 
 - 최신 유효 Position에서 이웃 거리를 계산한다.
 - Solver는 원시 거리 대신 간선별 TransferWeight를 geometry revision 동안 cache한다.
-- 현재 Runtime은 MesoVirtualHeight를 보유한다. Instance별 동적 AccumulationHeight 생성은 후속 구현이다.
-- Height나 갱신 Normal이 바뀌면 해당 instance의 TransferWeight cache를 다시 준비한다.
+- Runtime은 instance별로 모든 지원 State의 적층 높이를 합산하고, step마다 위치·normal·곡률·TransferWeight를 GPU에서 갱신한다.
+- Geometry feedback는 Simulation/Solver의 `Accumulation feedback` 옵션으로 제어하며 기본 OFF다. OFF에서는 기존 정적 형상과 CPU TransferWeight cache를 사용한다.
+- 시뮬레이션용 Following height 기준은 고정 `0.01` mesh-local 단위다. Render Options의 선택 State `Height Reference`와 Lit의 demo height reference는 디버그 렌더링 전용이며 Solver 형상에 영향을 주지 않는다.
 - GPU 소유와 동기화는 [[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]과 [[../06_Development/Notes/Surface-State-GPU-Resource|GPU resource 설계]]를 따른다.
 
 Simulation UV 생성, Mesh→Texel mapping, Valid Texel, UV Seam 및 Neighbor Index는 [[../06_Development/Notes/Surface-Simulation-Mapping|Surface Simulation Mapping]]에서 정의한다. Shared Geometry의 GPU 배치는 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]를 본다.
@@ -227,7 +228,7 @@ $$
 - **Cavity Filling**: Macro Surface 기준 아래쪽의 Virtual Meso Geometry cavity를 메운다.
 - **Surface Following**: 기존 Virtual Meso Geometry의 요철을 따라 표면 바깥쪽으로 쌓인다.
 
-적층은 전체 State에서 계산하므로 Capacity 초과량을 별도로 다시 더하지 않는다. `stateCapacity`는 형상 두께의 상한도 아니다. 아래 Accumulation 경로는 설계이며 실제 동적 적층은 미구현이다. 선택 State의 적층 디버그 미리보기와 GPU Texel Inspector는 구현되어 있다. 미리보기는 기준면적 환산 State와 조절형 공통 Height reference를 사용한다. 표시용 compute buffer의 texel별 위치·normal과 chart 내부 연결면은 [[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]을 따르며, 실제 동적 Geometry 저장 및 다음 Solver 입력을 대체하지 않는다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
+적층은 전체 State에서 계산하므로 Capacity 초과량을 별도로 다시 더하지 않는다. `stateCapacity`는 형상 두께의 상한도 아니다. Runtime의 동적 적층은 지원되는 모든 State의 `AccumulationFactor > 0` 기여를 공통 층으로 합산한다. cavity 기여는 한 번만 채우고 1 초과분은 Following height로 넘긴다. 시뮬레이션 Following 기준은 고정 `0.01` mesh-local 단위이며, 조절형 렌더 `Height Reference`와 독립적이다. 선택 State의 Accumulation/Final Geometry 미리보기와 GPU Texel Inspector는 여전히 표시 전용 projection이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]], [[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]).
 
 ### 전체 적층량과 배분
 
