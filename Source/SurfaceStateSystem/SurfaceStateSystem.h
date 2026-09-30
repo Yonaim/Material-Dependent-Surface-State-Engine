@@ -31,6 +31,8 @@ namespace MDSS
         TSurfaceStateSystem(TSurfaceStateSystem&&) = delete;
         TSurfaceStateSystem& operator=(TSurfaceStateSystem&&) = delete;
 
+        /** @brief 같은 Application 소유 객체를 유지한 채 준비된 Scene별 GPU 자원을 교체한다. */
+        void ReplaceSceneResources(TSurfaceStateSystem&& Replacement);
         void RecordStep(VkCommandBuffer CommandBuffer,
                         float DeltaTime,
                         VkQueryPool TimestampQueryPool = VK_NULL_HANDLE,

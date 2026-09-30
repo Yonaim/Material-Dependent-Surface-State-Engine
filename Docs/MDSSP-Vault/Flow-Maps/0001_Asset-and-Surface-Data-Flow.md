@@ -53,7 +53,8 @@ flowchart LR
   Preprocess -->|Build 결과| SharedGeometry[TSharedSurfaceGeometryData + ProfileMap]
   SharedGeometry -->|shared_ptr const| InstanceState[TSurfaceInstanceStateData]
   Registry -. "channel count 전달: Branch 4; Solver 소비: Branch 5; 입력 해석: Branch 6" .-> InstanceState
-  Renderer[TRenderer] --> StateSystem[TSurfaceStateSystem]
+  Application[TApplication] -->|owns| StateSystem[TSurfaceStateSystem]
+  Renderer[TRenderer] -. "records compute and reads resources" .-> StateSystem
   StateSystem --> GPUResources[TSurfaceGPUResourceManager]
   StateSystem --> Solver[TSurfaceStateSolver: 2-Pass compute]
 ```

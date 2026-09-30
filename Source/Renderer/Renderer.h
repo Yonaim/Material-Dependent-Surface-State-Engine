@@ -90,7 +90,11 @@ namespace MDSS
     class TRenderer
     {
     public:
-        TRenderer(const TVulkanContext& Context, TWindow& TWindow, TAssetManager& Assets, const TScene& Scene);
+        TRenderer(const TVulkanContext& Context,
+                  TWindow& TWindow,
+                  TAssetManager& Assets,
+                  const TScene& Scene,
+                  TSurfaceStateSystem& SurfaceStates);
         ~TRenderer();
 
         TRenderer(const TRenderer&) = delete;
@@ -104,7 +108,6 @@ namespace MDSS
         [[nodiscard]] double GetSimulatedSeconds() const noexcept { return SimulationClock.GetSimulatedSeconds(); }
         [[nodiscard]] std::uint32_t GetLastSimulationStepCount() const noexcept { return LastSimulationStepCount; }
         [[nodiscard]] float GetMaximumSimulationStep() const noexcept { return MaximumSimulationStep; }
-        void SubmitContact(TSurfaceContactInput Contact);
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
         void ReloadSceneResources(const TScene& Scene, bool bResetStateSettings = true);
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
@@ -211,6 +214,8 @@ namespace MDSS
         const TVulkanContext&                Context;
         TWindow&                             TargetWindow;
         TAssetManager&                       Assets;
+        /** @brief Application이 소유하며 Renderer는 compute 기록과 렌더링 동안만 참조한다. */
+        TSurfaceStateSystem&                 SurfaceStates;
         TSwapchain                           SwapchainData;
         VkFormat                            DepthFormat = VK_FORMAT_UNDEFINED;
         TGPUImage                            DepthImage;
@@ -252,7 +257,6 @@ namespace MDSS
         bool                                bFlipNormalY = true;
         float                               NormalStrength = 1.0F;
         float                               AmbientLight = 0.25F;
-        std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> DebugProfileParameterOverrides;
         std::vector<VkSemaphore> RenderFinishedSemaphores;
         VkQueryPool TimestampQueryPool = VK_NULL_HANDLE;

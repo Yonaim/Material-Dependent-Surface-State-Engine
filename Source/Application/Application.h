@@ -18,6 +18,7 @@ namespace MDSS
     class TDebugUI;
     class TInputSystem;
     class TRenderer;
+    class TSurfaceStateSystem;
 
     class TApplication
     {
@@ -37,6 +38,7 @@ namespace MDSS
         TVulkanContext             Context;
         TAssetManager              Assets;
         TScene                     MainScene;
+        std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
         std::unique_ptr<TRenderer> FrameRenderer;
         std::unique_ptr<TDebugUI>  DebugInterface;
         std::unique_ptr<TInputSystem> InputInterface;

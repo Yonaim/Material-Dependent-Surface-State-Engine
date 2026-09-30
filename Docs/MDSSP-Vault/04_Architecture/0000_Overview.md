@@ -16,9 +16,10 @@ MDSS Engine은 C++/Vulkan 기반 렌더링 엔진에 **Material-Dependent Surfac
 ```mermaid
 flowchart LR
   App[TApplication] --> Core[Scene + Assets]
+  App --> Surface[TSurfaceStateSystem]
   App --> Render[TRenderer]
   App --> Interaction[Input + Debug UI]
-  Render --> Surface[TSurfaceStateSystem]
+  Render -. records compute and reads resources .-> Surface
   Surface --> Data[Shared Geometry + instance State]
   Surface --> Solver[TSurfaceStateSolver]
 ```

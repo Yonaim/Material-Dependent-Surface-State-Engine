@@ -28,7 +28,7 @@ flowchart LR
   Upload --> Solver["Solver Pass 2 consumes once"]
 ```
 
-현재 Debug 경로는 hit instance를 내부 `TSurfaceContactInput`의 대상 정보로 변환해 `TSurfaceStateSystem`에 전달한다. 설계된 공개 API에서는 호출 대상인 Surface가 target을 나타내므로 게임 코드가 내부 instance ID나 texel index를 payload에 넣지 않는다.
+현재 Debug 경로는 hit instance를 내부 `TSurfaceContactInput`의 대상 정보로 변환하고, `TApplication`이 자신이 소유한 `TSurfaceStateSystem`에 전달한다. 설계된 공개 API에서는 호출 대상인 Surface가 target을 나타내므로 게임 코드가 내부 instance ID나 texel index를 payload에 넣지 않는다.
 
 ## 1. 접촉 생성
 
@@ -77,11 +77,13 @@ InputDelta        += strength × contactWeight × InputFactor
 ```mermaid
 sequenceDiagram
   participant Source as Debug or Game Source
+  participant App as TApplication
   participant System as TSurfaceStateSystem
   participant Buffer as Instance InputDelta
   participant Solver as Solver Pass 2
 
-  Source->>System: submit contact
+  Source->>App: contact event
+  App->>System: submit contact
   System->>System: resolve texels and accumulate CPU delta
   opt new delta exists
     System->>Buffer: synchronize and upload dense delta

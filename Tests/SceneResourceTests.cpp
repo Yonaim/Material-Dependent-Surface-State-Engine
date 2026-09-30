@@ -81,9 +81,10 @@ namespace
             {
                 Entries[State] = {{"stateCapacity", 1.0}, {"inputFactor", InputFactor},
                     {"saturationTransferFactor", 0.0}, {"geometryTransferFactor", 0.0}, {"decayRate", 0.0},
-                    {"cavityRetentionFactor", 0.0}, {"accumulationFactor", 0.0}, {"cavityFillFactor", 0.0}};
+                    {"cavityRetentionFactor", 0.0}, {"accumulationFactor", 0.0},
+                    {"cavityFillFactor", 0.0}, {"thicknessPerAmount", 0.01}};
             }
-            Write(Name + ".SRProfile", {{"type", "SurfaceResponseProfile"}, {"version", 2}, {"name", Name},
+            Write(Name + ".SRProfile", {{"type", "SurfaceResponseProfile"}, {"version", 3}, {"name", Name},
                                        {"states", Entries}, {"transitions", TJson::array()}});
         }
         void WriteMap(const std::string& Name, const std::vector<std::string>& Profiles, int Index) const
@@ -122,7 +123,9 @@ namespace
         TAssetManager Assets(Context);
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
         TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
-        TRenderer Renderer(Context, Window, Assets, Scene);
+        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(Scene));
+        TSurfaceStateSystem SurfaceStates(Context, Assets, Scene);
+        TRenderer Renderer(Context, Window, Assets, Scene, SurfaceStates);
         Check(Renderer.GetDemoSurfaceStateBindings().Wetness == 0 &&
               Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId, "Wet Scene demo bindings must resolve optional names.");
         {
@@ -163,18 +166,16 @@ namespace
             }
             Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Selection.Texel == SelectedTexel,
                   "Renderer must publish a completed asynchronous GPU snapshot.");
-            auto DisplaySettings = Renderer.GetSurfaceDebugDisplaySettings();
-            DisplaySettings.HeightReference = 0.02F;
-            Renderer.SetSurfaceDebugDisplaySettings(DisplaySettings);
-            Check(!Renderer.GetTexelSnapshot(), "Changing height reference must invalidate prior samples.");
+            Renderer.SetSceneLitHeightDisplayScale(Scene, 2.0F);
+            Check(!Renderer.GetTexelSnapshot(), "Changing display scale must invalidate prior samples.");
             for (int Frame = 0; Frame < 4; ++Frame)
             {
                 Window.PollEvents();
                 UI.BeginFrame(Scene);
                 Renderer.RenderFrame(Scene, UI, 0.0F);
             }
-            Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Values[1].w == 0.02F,
-                  "New snapshots must carry the current height reference.");
+            Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Values[4].z == 2.0F,
+                  "New snapshots must carry the current Lit height display scale.");
             Renderer.SetSimulationResolution(Scene, 256);
             Check(!Renderer.GetInspectedTexel() && !Renderer.GetTexelSnapshot(),
                   "Resolution replacement must clear Inspector selection and pending samples.");
@@ -217,7 +218,7 @@ namespace
             Contact.Radius = 100;
             Contact.Strength = 10;
             Contact.Falloff = 0;
-            Renderer.SubmitContact(Contact);
+            SurfaceStates.SubmitContact(Contact);
             for (int Frame = 0; Frame < 3; ++Frame)
             {
                 auto Effects = Renderer.GetDemoSurfaceEffectSettings();

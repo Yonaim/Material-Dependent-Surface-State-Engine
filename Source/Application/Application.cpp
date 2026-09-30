@@ -11,6 +11,7 @@
 #include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
 #include "Renderer/Renderer.h"
+#include "SurfaceStateSystem/SurfaceStateSystem.h"
 
 #include <chrono>
 #include <filesystem>
@@ -26,10 +27,12 @@ namespace MDSS
         TLogger::Info("TApplication", "Startup Scene: " + StartupScenePath.string());
         MainScene = TSceneLoader::Load(StartupScenePath, Assets);
 
-        FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets, MainScene);
+        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(MainScene));
+        SurfaceStates = std::make_unique<TSurfaceStateSystem>(Context, Assets, MainScene);
+        FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets, MainScene, *SurfaceStates);
         DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets);
         InputInterface = std::make_unique<TInputSystem>(MainWindow.GetNativeHandle());
-        TLogger::Info("TApplication", "TRenderer, scene, asset system, and TDebugUI are ready.");
+        TLogger::Info("TApplication", "Surface State System, renderer, scene, asset system, and Debug UI are ready.");
     }
 
     TApplication::~TApplication() = default;
@@ -68,7 +71,7 @@ namespace MDSS
                     DebugInterface->GetInjectTexelSearchRadius(),
                     DebugInterface->ShouldSuppressDebugHotkey()))
             {
-                FrameRenderer->SubmitContact(*Contact);
+                SurfaceStates->SubmitContact(*Contact);
                 TLogger::Info("TInputSystem",
                               "Debug contact submitted for processing (state=" + std::to_string(Contact->State) +
                                   ", instance=" + std::to_string(Contact->TargetInstance) +

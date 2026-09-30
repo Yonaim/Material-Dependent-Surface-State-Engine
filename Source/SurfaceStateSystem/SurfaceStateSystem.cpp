@@ -44,6 +44,23 @@ namespace MDSS
 
     TSurfaceStateSystem::~TSurfaceStateSystem() = default;
 
+    void TSurfaceStateSystem::ReplaceSceneResources(TSurfaceStateSystem&& Replacement)
+    {
+        if (&Context != &Replacement.Context || &Assets != &Replacement.Assets || &Scene != &Replacement.Scene)
+        {
+            throw std::invalid_argument("Replacement Surface State resources must use the same runtime owners.");
+        }
+
+        Solver = std::move(Replacement.Solver);
+        GPUResources = std::move(Replacement.GPUResources);
+        PendingContacts = std::move(Replacement.PendingContacts);
+        DebugSolverSettings = Replacement.DebugSolverSettings;
+        bTransferWeightSettingsDirty = Replacement.bTransferWeightSettingsDirty;
+        bStableDeltaTimeDirty = Replacement.bStableDeltaTimeDirty;
+        CachedMaximumStableDeltaTime = Replacement.CachedMaximumStableDeltaTime;
+        RuntimeProfileOverrides = std::move(Replacement.RuntimeProfileOverrides);
+    }
+
     void TSurfaceStateSystem::SubmitContact(TSurfaceContactInput Contact)
     {
         PendingContacts.push_back(std::move(Contact));

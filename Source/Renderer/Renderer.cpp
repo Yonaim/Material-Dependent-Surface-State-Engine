@@ -467,8 +467,10 @@ namespace MDSS
     TRenderer::TRenderer(const TVulkanContext& Context,
                          TWindow& TWindow,
                          TAssetManager& Assets,
-                         const TScene& Scene)
-        : Context(Context), TargetWindow(TWindow), Assets(Assets), SwapchainData(Context, TWindow),
+                         const TScene& Scene,
+                         TSurfaceStateSystem& SurfaceStates)
+        : Context(Context), TargetWindow(TWindow), Assets(Assets), SurfaceStates(SurfaceStates),
+          SwapchainData(Context, TWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
           DepthImage(Context.GetPhysicalDevice(),
                      Context.GetDevice(),
@@ -495,7 +497,6 @@ namespace MDSS
                            DepthImageView.GetHandle()),
           FrameContext(Context)
     {
-        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(Scene));
         std::vector<TGizmoVertex> GizmoVertices = BuildWorldReferenceVertices(WorldGridVertexCount,
                                                                                WorldAxisVertexCount);
         const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
@@ -513,9 +514,8 @@ namespace MDSS
         GizmoVertexBuffer->Upload(GizmoVertices.data(),
                                   static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
         CreateMaterialDescriptorResources();
-        SurfaceStates = std::make_unique<TSurfaceStateSystem>(Context, Assets, Scene);
         if (const TSurfaceStateDescriptorResources* Descriptors =
-                SurfaceStates->GetGPUResources().GetAnyInstanceDescriptors())
+                SurfaceStates.GetGPUResources().GetAnyInstanceDescriptors())
         {
             SurfaceDebugPipeline = std::make_unique<TGraphicsPipeline>(
                 Context.GetDevice(),
@@ -551,7 +551,7 @@ namespace MDSS
         }
         if (TimestampValidBits > 0)
         {
-            CreateTimestampQueryPool(SurfaceStates->GetSolverTimestampSlotCount());
+            CreateTimestampQueryPool(SurfaceStates.GetSolverTimestampSlotCount());
         }
         else
         {
@@ -583,8 +583,6 @@ namespace MDSS
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
         TexelInspector.reset();
-        SurfaceStates.reset();
-
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorPool(Context.GetDevice(), MaterialDescriptorPool, nullptr);
@@ -653,7 +651,7 @@ namespace MDSS
         const bool bRequestSolverStep = DebugInterface.ConsumeSolverStepRequest();
         if (bResetSolverState)
         {
-            SurfaceStates->ResetState();
+            SurfaceStates.ResetState();
             SimulationClock.Reset();
             SimulationStepSerial = 0;
             if (TexelInspector)
@@ -696,7 +694,7 @@ namespace MDSS
         }
 
         MaximumSimulationStep = DebugInterface.IsAutoSubsteppingEnabled() ?
-            SurfaceStates->GetMaximumStableDeltaTime() : FixedSimulationStepSeconds;
+            SurfaceStates.GetMaximumStableDeltaTime() : FixedSimulationStepSeconds;
         const auto SimulationSteps = bResetSolverState ? std::vector<float>{} : SimulationClock.Consume(
             MaximumSimulationStep, DebugInterface.IsFixedSimulationTimestep(),
             DebugInterface.IsAutoSubsteppingEnabled(), DebugInterface.IsSimulationPaused(), bRequestSolverStep);
@@ -766,20 +764,12 @@ namespace MDSS
         }
     }
 
-    void TRenderer::SubmitContact(TSurfaceContactInput Contact)
-    {
-        if (SurfaceStates)
-        {
-            SurfaceStates->SubmitContact(std::move(Contact));
-        }
-    }
-
     void TRenderer::SetDebugProfileParameters(TSRProfileAssetHandle Profile,
                                               TStateId State,
                                               const TSurfaceStateParameters& Parameters,
                                               bool bKeepRuntimeOverride)
     {
-        SurfaceStates->SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
+        SurfaceStates.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
         if (TexelInspector)
             TexelInspector->Invalidate();
         const auto Key = std::make_pair(Profile, State);
@@ -866,7 +856,7 @@ namespace MDSS
         TexelInspector.reset();
         InspectedTexel.reset();
         SimulationStepSerial = 0;
-        SurfaceStates = std::move(Replacement);
+        SurfaceStates.ReplaceSceneResources(std::move(*Replacement));
         SimulationClock.Reset();
         LastSimulationStepCount = 0;
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
@@ -881,7 +871,7 @@ namespace MDSS
             DebugProfileParameterOverrides.clear();
             DebugStateChannel = 0;
         }
-        CreateTimestampQueryPool(SurfaceStates->GetSolverTimestampSlotCount());
+        CreateTimestampQueryPool(SurfaceStates.GetSolverTimestampSlotCount());
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
         LastSolverPass1GpuMilliseconds = -1.0F;
@@ -1003,7 +993,7 @@ namespace MDSS
 
     const TSurfaceGPUResourceManager& TRenderer::GetSurfaceGPUResources() const noexcept
     {
-        return SurfaceStates->GetGPUResources();
+        return SurfaceStates.GetGPUResources();
     }
 
     float TRenderer::GetLastSolverGpuMilliseconds() const noexcept
@@ -1130,7 +1120,7 @@ namespace MDSS
             return false;
         const auto& Instance = Instances[InstanceIndex];
         if (!Assets.HasSurfaceData(Instance.GetSurfaceData()) ||
-            !SurfaceStates->GetGPUResources().GetInstanceDescriptors(InstanceIndex))
+            !SurfaceStates.GetGPUResources().GetInstanceDescriptors(InstanceIndex))
             return false;
         const auto& Triangles = Assets.GetMesh(Instance.GetMesh()).GetTriangles();
         if (Triangle >= Triangles.size())
@@ -1252,10 +1242,7 @@ namespace MDSS
     void TRenderer::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled)
     {
         DebugSolverSettings.SetEnabled(Term, bEnabled);
-        if (SurfaceStates)
-        {
-            SurfaceStates->SetDebugSolverTermEnabled(Term, bEnabled);
-        }
+        SurfaceStates.SetDebugSolverTermEnabled(Term, bEnabled);
     }
 
     bool TRenderer::IsRawFluxCacheEnabled() const noexcept
@@ -1271,7 +1258,7 @@ namespace MDSS
             throw std::runtime_error("Failed to wait for GPU before changing RawFlux cache mode.");
         }
         DebugSolverSettings.bRawFluxCacheEnabled = bEnabled;
-        if (SurfaceStates) SurfaceStates->SetRawFluxCacheEnabled(bEnabled);
+        SurfaceStates.SetRawFluxCacheEnabled(bEnabled);
         bTimestampQueriesSubmitted.fill(false);
         SolverTimestampStepsSubmitted.fill(0);
         LastRenderGpuMilliseconds = LastSolverGpuMilliseconds = -1.0F;
@@ -1286,7 +1273,7 @@ namespace MDSS
     void TRenderer::SetAccumulationFeedbackEnabled(bool bEnabled)
     {
         DebugSolverSettings.bAccumulationFeedbackEnabled = bEnabled;
-        if (SurfaceStates) SurfaceStates->SetAccumulationFeedbackEnabled(bEnabled);
+        SurfaceStates.SetAccumulationFeedbackEnabled(bEnabled);
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept
@@ -1621,14 +1608,14 @@ namespace MDSS
         }
         for (std::size_t Step = 0; Step < SimulationSteps.size(); ++Step)
         {
-            SurfaceStates->RecordStep(CommandBuffer, SimulationSteps[Step], TimestampQueryPool,
+            SurfaceStates.RecordStep(CommandBuffer, SimulationSteps[Step], TimestampQueryPool,
                 QueryBase + 2U + static_cast<std::uint32_t>(Step) * SolverTimestampSlotCount * 4U);
         }
 
         SimulationStepSerial += SimulationSteps.size();
         if (TexelInspector && InspectedTexel && DebugStateChannel < Assets.GetSurfaceStateRegistry().GetStateCount())
         {
-            const auto& Resources = SurfaceStates->GetGPUResources();
+            const auto& Resources = SurfaceStates.GetGPUResources();
             if (const auto* Descriptors = Resources.GetInstanceDescriptors(InspectedTexel->Instance))
                 TexelInspector->Record(
                     CommandBuffer,
@@ -1653,7 +1640,7 @@ namespace MDSS
              (DemoEffects.bWaterFilmDisplacement && DemoBindings.WaterFilm != InvalidStateId));
         if (bTexelGeometry || bLitTexelGeometry)
         {
-            const auto& Resources = SurfaceStates->GetGPUResources();
+            const auto& Resources = SurfaceStates.GetGPUResources();
             const bool bAccumulation = ViewMode == TRenderViewMode::SurfaceAccumulation ||
                                        ViewMode == TRenderViewMode::SurfaceFinalGeometry || bLitTexelGeometry;
             for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
@@ -1734,7 +1721,7 @@ namespace MDSS
         const float     AspectRatio = static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight);
         const glm::mat4 ViewProjection = SceneData.GetMainCamera().GetViewProjectionMatrix(AspectRatio);
 
-        const TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates->GetGPUResources();
+        const TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates.GetGPUResources();
         std::size_t                       SceneIndex = 0;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {

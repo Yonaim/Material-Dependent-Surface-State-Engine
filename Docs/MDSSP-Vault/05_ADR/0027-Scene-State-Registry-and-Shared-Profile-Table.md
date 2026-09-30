@@ -19,7 +19,7 @@ Profile GPU 테이블도 Runtime Surface Data handle별로 생성했다. 서로 
 
 - 현재 Scene instance의 Runtime Surface Profile 테이블에 참조된 고유 `.SRProfile`만으로 Registry를 구성한다. State 종류는 해당 Profile의 `states` key에서 수집하며 canonical 이름 정렬에 따른 숫자 `TStateId`를 사용한다.
 - Mesh·Profile 자산 캐시는 유지한다. 새 자산을 로드하는 동안 활성 Registry는 변경하지 않는다.
-- Renderer는 Scene 교체 시 새 Registry를 설치한 뒤 GPU 자원을 준비한다. 준비가 실패하면 이전 Registry를 복원하고 이전 GPU 자원을 유지한다. UI도 이전 Scene으로 복원한다.
+- Application 초기화는 현재 Scene의 새 Registry를 설치한 뒤 자신이 소유할 Surface State GPU 자원을 준비한다. Scene 교체 UI에서는 Renderer가 pipeline과 함께 새 Registry·Surface State 내부 자원을 트랜잭션으로 준비하되 Application 소유 `TSurfaceStateSystem` 객체의 수명은 유지한다. 준비가 실패하면 이전 Registry와 GPU 자원을 유지하고 UI도 이전 Scene으로 복원한다.
 - Scene 교체 성공 시 Inject와 Heatmap의 선택을 채널 0으로 초기화한다. Registry가 비어 있으면 UI 선택은 `InvalidStateId`다. 이전 State ID에 연결된 Profile Tuning draft·override와 Solver step/reset 요청을 비운다.
 - 동일 Scene의 Simulation 해상도 변경은 Profile 집합과 ID를 유지하므로 현재 선택·튜닝 값을 유지하고 State만 초기화한다.
 - Profile GPU 테이블은 Scene GPU resource manager당 하나로 소유한다. 고유 Profile handle을 한 번씩 넣고 모든 simulated instance가 같은 Parameters·Supported buffer를 참조한다. Profile tuning은 이 테이블의 해당 record를 한 번 갱신한다.
@@ -49,3 +49,4 @@ Profile GPU 테이블도 Runtime Surface Data handle별로 생성했다. 서로 
 - [[0026-Resolution-Surface-Cache|ADR 0026 — Surface 캐시]]
 - [[../04_Architecture/0008_Surface-GPU-Data-Layout|GPU Data Layout]]
 - [[../06_Development/Notes/Surface-State-GPU-Resource|GPU Resource 구현]]
+- [[0040-Application-Owned-Surface-State-System|ADR 0040 — Application 소유 Surface State System]]
