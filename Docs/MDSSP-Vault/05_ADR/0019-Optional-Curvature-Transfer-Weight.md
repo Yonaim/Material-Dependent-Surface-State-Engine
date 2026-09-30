@@ -7,6 +7,8 @@
 - Date: 2026-09-28
 - 관련 문서: [[0016-Transport-Transfer-Weights|ADR 0016 — Transport TransferWeight]], [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map Meso Geometry]]
 
+> **후속 결정 (2026-10-01):** [[0045-Directional-Cavity-Transport-Retention|ADR 0045]]의 오목한 홈 이탈 억제는 이 문서의 대칭적 절댓값 CurvatureWeight와 별도 항이다. 이 비교용 옵션의 기본 OFF 및 현재 수식은 유지한다.
+
 ## Context
 
 초기안은 CurvatureWeight를 1.0으로 유지했다. Virtual Height 전처리는 signed mean curvature를 이미 생성하지만 Transport에는 연결하지 않았다. 고정값과 곡률 기반 전달 감쇠를 같은 UI에서 비교할 필요가 있다. NormalWeight와 효과가 중복될 가능성은 여전히 남아 있다.

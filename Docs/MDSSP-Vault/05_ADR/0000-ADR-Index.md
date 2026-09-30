@@ -52,6 +52,7 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0009-Texel-Profile-Index-Map|ADR 0009]] | Texel별 Profile Index Map | 시뮬레이션에 참여하는 유효 texel은 자신이 사용할 SRProfile 테이블 항목의 `ProfileIndex` 하나를 가진다. |
 | [[0012-Scene-Profile-Distribution-Reference|ADR 0012]] | Scene별 Surface Profile Map 참조 | Scene에서 Surface Profile Distribution Map을 참조하고 적용하는 방식을 결정한다. |
 | [[0026-Resolution-Surface-Cache|ADR 0026]] | 해상도별 Surface 전처리 캐시 | Surface 전처리 결과를 해상도별 `.Surface` 캐시로 재사용한다. |
+| [[0042-Scene-Referenced-Demo-Animation|ADR 0042]] | Scene 참조형 데모 애니메이션 | Scene별 JSON 시간표를 공통 C++ 재생기로 실행하고 Play Demo로 재현한다. |
 
 ### Rendering
 
@@ -64,6 +65,7 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]] | Texel Grid와 데모 Lit 효과 | 선택 State의 표시 형상과 Wetness·Mud·WaterFilm 데모 외관을 연결한다. |
 
 | [[0038-Source-Topology-Seam-Stitching|ADR 0038]] | 원본 topology 기반 seam 봉합 | 원본 triangle을 texel로 세분하고 공통 position/edge 변위로 UV seam을 봉합한다. |
+| [[0041-Base-Surface-and-Accumulation-Overlay|ADR 0041]] | 원본 표면과 적층 Overlay 분리 렌더링 | 원본 Mesh를 바닥으로 유지하고 기존 texel 연결면을 적층의 윗면으로 재사용하며, 적층 영역의 경계에 옆면을 생성한다. |
 
 ### Simulation
 
@@ -90,3 +92,6 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0033-Geometry-Rate-Recalibration|ADR 0033]] | Geometry 전달 기준값 재보정 | 기준 Rate를 6000으로 높이고 C++·GLSL과 안전 시간 간격 계산이 공유한다. |
 | [[0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]] | Fixed timestep과 Auto substepping 분리 | 기본 Fixed ON은 1/60초 구간을 사용하고 기본 OFF인 Auto에서만 Transport 조건에 따라 세분화한다. |
 | [[0039-State-Thickness-Per-Amount|ADR 0039]] | Capacity 제한 State 기여량의 적층 두께 | Capacity 제한 형상 기여량과 `.SRProfile` 두께를 렌더링·Solver Geometry에서 공유한다. |
+| [[0043-Rotation-Invariant-Transfer-Cache|ADR 0043]] | 순수 회전에 불변인 TransferWeight 캐시 | 순수 회전에서 TransferWeight·면적 버퍼의 CPU 재계산과 GPU 갱신을 생략한다. |
+| [[0044-Macro-Meso-Concavity-Field|ADR 0044]] | Macro Mesh와 Normal Map을 반영한 텍셀 오목도 | 기존 ConcavityWeight에 Mesh와 Normal Map의 굴곡을 함께 반영한다. |
+| [[0045-Directional-Cavity-Transport-Retention|ADR 0045]] | 방향별 홈 이탈 억제와 Decay 계수 분리 | State별 독립 계수로 오목한 곳에서 밖으로 나가는 Transport를 줄인다. |
