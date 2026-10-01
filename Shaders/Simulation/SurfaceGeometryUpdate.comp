@@ -33,30 +33,19 @@ vec3 worldNormal(uint Texel)
     return normalize(NormalMatrix * localNormal(Texel));
 }
 
-float meanNeighborDistance(uint Texel)
-{
-    if (!isValidTexel(Texel)) return 0.0;
-    vec3 Center = worldPosition(Texel);
-    float Sum = 0.0;
-    uint Count = 0u;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
-    {
-        uint Neighbor = neighborIndex(Texel, Slot);
-        if (Neighbor == InvalidTexelIndex || Neighbor >= Solver.LocalTexelCount || !isValidTexel(Neighbor)) continue;
-        float Distance = length(worldPosition(Neighbor) - Center);
-        if (!isnan(Distance) && !isinf(Distance) && Distance > DynamicGeometryEpsilon)
-        {
-            Sum += Distance;
-            ++Count;
-        }
-    }
-    return Count > 0u ? Sum / float(Count) : 0.0;
-}
-
 void main()
 {
     uint Source = gl_GlobalInvocationID.x;
     if (Source >= Solver.LocalTexelCount) return;
+    bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
+                 AccumulationHeights.Values[2u * Solver.LocalTexelCount + Source] != 0.0;
+    for (uint Slot = 0u; Slot < SurfaceNeighborCount && !Dirty; ++Slot)
+    {
+        uint Neighbor = neighborIndex(Source, Slot);
+        Dirty = Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount &&
+                AccumulationHeights.Values[2u * Solver.LocalTexelCount + Neighbor] != 0.0;
+    }
+    if (!Dirty) return;
     ModelLinear = mat3(Solver.ModelLinearColumns[0].xyz,
                        Solver.ModelLinearColumns[1].xyz,
                        Solver.ModelLinearColumns[2].xyz);
@@ -73,7 +62,8 @@ void main()
 
     vec3 SourceWorld = worldPosition(Source);
     vec3 SourceNormal = worldNormal(Source);
-    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u ? meanNeighborDistance(Source) : 1.0;
+    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u
+        ? DynamicGeometry.Values[Source * 2u].w : 1.0;
     bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5 &&
                              !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
 
@@ -91,7 +81,7 @@ void main()
             bool Valid = true;
             if ((Solver.Flags & (1u << 7u)) != 0u)
             {
-                float TargetMeanDistance = meanNeighborDistance(Target);
+                float TargetMeanDistance = DynamicGeometry.Values[Target * 2u].w;
                 float EdgeDistance = length(TargetWorld - SourceWorld);
                 float ReferenceDistance = 0.5 * (SourceMeanDistance + TargetMeanDistance);
                 Valid = SourceMeanDistance > DynamicGeometryEpsilon &&

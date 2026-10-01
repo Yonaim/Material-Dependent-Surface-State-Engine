@@ -9,6 +9,7 @@
 namespace MDSS
 {
     inline constexpr std::uint32_t MaxSimulationStepsPerFrame = 8;
+    inline constexpr double MaxRealtimePendingTicks = 4.0;
     inline constexpr float FixedSimulationStepSeconds = 1.0F / 60.0F;
     inline constexpr bool DefaultFixedSimulationTimestep = true;
     inline constexpr bool DefaultAutoSubstepping = false;
@@ -22,6 +23,19 @@ namespace MDSS
                 !std::isfinite(TimeScale) || TimeScale < 0.0)
                 throw std::invalid_argument("Invalid simulation elapsed time or time scale.");
             if (!bPaused) PendingSeconds += ElapsedSeconds * TimeScale;
+        }
+
+        // Interactive playback drops elapsed time that cannot fit in the frame's
+        // work budget. Call after Accumulate, before Consume; paused manual steps
+        // remain independent of the pending budget.
+        double LimitPendingSeconds(double MaximumSeconds)
+        {
+            if (!std::isfinite(MaximumSeconds) || MaximumSeconds < 0.0)
+                throw std::invalid_argument("Invalid maximum pending simulation time.");
+            const double DroppedSeconds = std::max(0.0, PendingSeconds - MaximumSeconds);
+            PendingSeconds -= DroppedSeconds;
+            FixedTickRemainingSeconds = std::min(FixedTickRemainingSeconds, PendingSeconds);
+            return DroppedSeconds;
         }
 
         [[nodiscard]] std::vector<float> Consume(float TransportMaximumStep, bool bFixed, bool bAutoSubstepping,

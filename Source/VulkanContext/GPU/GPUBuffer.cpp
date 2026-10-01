@@ -120,6 +120,7 @@ namespace MDSS
 
         std::memcpy(MappedMemory, Data, static_cast<std::size_t>(DataSize));
         vkUnmapMemory(Device, Memory);
+        UploadRevision.fetch_add(1, std::memory_order_release);
     }
 
     void TGPUBuffer::Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset) const
@@ -158,6 +159,11 @@ namespace MDSS
     VkDeviceSize TGPUBuffer::GetSize() const noexcept
     {
         return Size;
+    }
+
+    std::uint64_t TGPUBuffer::GetUploadRevision() const noexcept
+    {
+        return UploadRevision.load(std::memory_order_acquire);
     }
 
     std::uint32_t TGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,

@@ -107,8 +107,16 @@ layout(std430, set = 0, binding = 20) readonly buffer TSurfaceWorldTexelAreas
 } WorldTexelAreas;
 layout(std430, set = 0, binding = 21) buffer TSurfaceDynamicGeometry
 {
-    vec4 Values[]; // local displaced position and updated local normal, two vec4 values per texel
+    vec4 Values[]; // displaced position + mean distance, local normal + last built height
 } DynamicGeometry;
+#if defined(SURFACE_ACCUMULATION_HEIGHT_WRITE) || defined(SURFACE_GEOMETRY_DIRTY_WRITE)
+layout(std430, set = 0, binding = 22) buffer TSurfaceAccumulationHeights
+#else
+layout(std430, set = 0, binding = 22) readonly buffer TSurfaceAccumulationHeights
+#endif
+{
+    float Values[]; // height, dirty planes, workgroup flags, indirect command bits
+} AccumulationHeights;
 
 const float StateReferenceArea = 1.0 / (256.0 * 256.0);
 float texelAreaScale(uint TexelIndex) { return WorldTexelAreas.Values[TexelIndex] / StateReferenceArea; }
@@ -229,7 +237,7 @@ vec3 effectiveLocalPosition(uint TexelIndex)
     vec3 Position = Positions.Values[TexelIndex].xyz +
                     Normals.Values[TexelIndex].xyz * GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
     if ((Solver.Flags & (1u << 6u)) != 0u)
-        Position += Normals.Values[TexelIndex].xyz * accumulationHeight(TexelIndex);
+        Position += Normals.Values[TexelIndex].xyz * AccumulationHeights.Values[TexelIndex];
     return Position;
 }
 
@@ -240,7 +248,7 @@ vec3 effectiveLocalNormal(uint TexelIndex)
     vec3 N = normalize(Normals.Values[TexelIndex].xyz);
     vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0), N));
     vec3 V = cross(N, U);
-    float CenterHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight + accumulationHeight(TexelIndex);
+    float CenterHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight + AccumulationHeights.Values[TexelIndex];
     float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
     for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
     {
@@ -251,7 +259,7 @@ vec3 effectiveLocalNormal(uint TexelIndex)
         float X = dot(Delta, U), Y = dot(Delta, V);
         float LengthSquared = X * X + Y * Y;
         if (LengthSquared <= 1.0e-16) continue;
-        float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight + accumulationHeight(Other);
+        float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight + AccumulationHeights.Values[Other];
         float Weight = 1.0 / LengthSquared;
         float DH = OtherHeight - CenterHeight;
         XX += X * X * Weight; XY += X * Y * Weight; YY += Y * Y * Weight;

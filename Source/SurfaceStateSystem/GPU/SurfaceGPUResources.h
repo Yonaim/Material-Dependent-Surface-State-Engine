@@ -47,6 +47,7 @@ namespace MDSS
         RawFlux,
         WorldTexelAreas,
         DynamicGeometry,
+        AccumulationHeights,
         Count
     };
 
@@ -147,6 +148,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer& GetRawFluxBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
         [[nodiscard]] const TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
+        [[nodiscard]] const TGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
         void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void UpdateTransferWeights(const std::vector<float>& TransferWeights,
                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
@@ -168,6 +170,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> RawFluxBuffer;
         std::unique_ptr<TGPUBuffer> WorldTexelAreaBuffer;
         std::unique_ptr<TGPUBuffer> DynamicGeometryBuffer;
+        std::unique_ptr<TGPUBuffer> AccumulationHeightBuffer;
     };
 
     class TSurfaceStateDescriptorResources final
@@ -188,9 +191,11 @@ namespace MDSS
         [[nodiscard]] VkDescriptorSet GetABSet() const noexcept;
         [[nodiscard]] VkDescriptorSet GetBASet() const noexcept;
         [[nodiscard]] VkBuffer GetBoundBufferHandle(TSurfaceGPUDescriptorBinding Binding, bool bAB) const;
+        [[nodiscard]] std::array<std::uint64_t, 6> GetGeometryInputRevisions() const noexcept;
 
     private:
         VkDevice Device = VK_NULL_HANDLE;
+        const TSurfaceSharedGeometryGPUResources* SharedGeometryResources = nullptr;
         VkDescriptorSetLayout Layout = VK_NULL_HANDLE;
         VkDescriptorPool Pool = VK_NULL_HANDLE;
         std::array<VkDescriptorSet, 2> Sets{VK_NULL_HANDLE, VK_NULL_HANDLE};

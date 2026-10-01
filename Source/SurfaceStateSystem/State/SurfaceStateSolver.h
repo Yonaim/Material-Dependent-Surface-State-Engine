@@ -23,6 +23,7 @@ namespace MDSS
     inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
     inline constexpr std::uint32_t SurfaceSolverProfileBoundaryWeightFlag = 1U << 9U;
+    inline constexpr std::uint32_t SurfaceSolverForceFullGeometryFlag = 1U << 10U;
 
     enum class TSurfaceSolverTerm : std::uint8_t
     {
@@ -77,6 +78,12 @@ namespace MDSS
                         std::uint32_t SolverFlags = 0U,
                         VkQueryPool TimestampQueryPool = VK_NULL_HANDLE,
                         std::uint32_t FirstPassQuery = 0U) const;
+        void RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer,
+                                             const TSurfaceStateDescriptorResources& Descriptors,
+                                             bool bCurrentStateAB,
+                                             std::size_t TexelCount,
+                                             std::size_t ChannelCount,
+                                             const glm::mat4& ModelMatrix) const;
 
     private:
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
@@ -87,6 +94,8 @@ namespace MDSS
 
         VkDevice         Device = VK_NULL_HANDLE;
         VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
+        VkPipeline AccumulationHeightPipeline = VK_NULL_HANDLE;
+        VkPipeline DirtyDispatchPipeline = VK_NULL_HANDLE;
         VkPipeline AccumulationGeometryPipeline = VK_NULL_HANDLE;
         VkPipeline DynamicTransferWeightPipeline = VK_NULL_HANDLE;
         std::array<VkPipeline, 2> Pass1Pipelines{};

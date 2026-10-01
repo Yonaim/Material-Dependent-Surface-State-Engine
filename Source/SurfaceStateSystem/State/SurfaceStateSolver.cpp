@@ -90,6 +90,10 @@ namespace MDSS
         try
         {
             const std::string ShaderRoot = MDSS_SHADER_DIR;
+            AccumulationHeightPipeline = CreateComputePipeline(
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulationHeight.comp.spv").c_str(), false);
+            DirtyDispatchPipeline = CreateComputePipeline(
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceDirtyDispatch.comp.spv").c_str(), false);
             AccumulationGeometryPipeline = CreateComputePipeline(
                 Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulation.comp.spv").c_str(), false);
             DynamicTransferWeightPipeline = CreateComputePipeline(
@@ -105,6 +109,10 @@ namespace MDSS
         }
         catch (...)
         {
+            if (AccumulationHeightPipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, AccumulationHeightPipeline, nullptr);
+            if (DirtyDispatchPipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, DirtyDispatchPipeline, nullptr);
             if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
                 vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
             if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
@@ -121,6 +129,10 @@ namespace MDSS
 
     TSurfaceStateSolver::~TSurfaceStateSolver()
     {
+        if (AccumulationHeightPipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(Device, AccumulationHeightPipeline, nullptr);
+        if (DirtyDispatchPipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(Device, DirtyDispatchPipeline, nullptr);
         if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
             vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
         if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
@@ -194,11 +206,12 @@ namespace MDSS
         // Order those reads before this step reuses the buffers as compute outputs.
         VkMemoryBarrier ReadCompletion{};
         ReadCompletion.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-        ReadCompletion.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        ReadCompletion.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
+                                       VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
         ReadCompletion.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         vkCmdPipelineBarrier(CommandBuffer,
                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                              0,
                              1,
@@ -231,13 +244,39 @@ namespace MDSS
         }
         if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) != 0U)
         {
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationGeometryPipeline);
+            const VkBuffer HeightBuffer = Descriptors.GetBoundBufferHandle(
+                TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB);
+            const VkDeviceSize IndirectOffset = static_cast<VkDeviceSize>(
+                (3U * TexelCount + WorkgroupCount) * sizeof(float));
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationHeightPipeline);
             vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
-            const VkBufferMemoryBarrier GeometryBarrier = MakeComputeBufferBarrier(
-                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::DynamicGeometry, bCurrentStateAB),
+            const VkBufferMemoryBarrier HeightBarrier = MakeComputeBufferBarrier(
+                HeightBuffer,
                 VK_ACCESS_SHADER_READ_BIT);
             vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &GeometryBarrier, 0, nullptr);
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr,
+                                 1, &HeightBarrier, 0, nullptr);
+
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DirtyDispatchPipeline);
+            vkCmdDispatch(CommandBuffer, 1, 1, 1);
+            const VkBufferMemoryBarrier IndirectBarrier = MakeComputeBufferBarrier(
+                HeightBuffer, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, nullptr,
+                                 1, &IndirectBarrier, 0, nullptr);
+
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationGeometryPipeline);
+            vkCmdDispatchIndirect(CommandBuffer, HeightBuffer, IndirectOffset);
+            const std::array<VkBufferMemoryBarrier, 2> GeometryBarriers = {
+                MakeComputeBufferBarrier(
+                    Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::DynamicGeometry, bCurrentStateAB),
+                    VK_ACCESS_SHADER_READ_BIT),
+                MakeComputeBufferBarrier(
+                    Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB),
+                    VK_ACCESS_SHADER_READ_BIT)};
+            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr,
+                                 static_cast<std::uint32_t>(GeometryBarriers.size()), GeometryBarriers.data(), 0, nullptr);
 
             if (TimestampQueryPool != VK_NULL_HANDLE)
             {
@@ -247,7 +286,7 @@ namespace MDSS
                                     FirstPassQuery + 2U);
             }
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DynamicTransferWeightPipeline);
-            vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
+            vkCmdDispatchIndirect(CommandBuffer, HeightBuffer, IndirectOffset);
             const VkBufferMemoryBarrier TransferWeightBarrier = MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::TransferWeights, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT);
@@ -354,6 +393,55 @@ namespace MDSS
                              NextStepBarriers.data(),
                              0,
                              nullptr);
+    }
+
+    void TSurfaceStateSolver::RecordCurrentAccumulationHeight(
+        VkCommandBuffer CommandBuffer, const TSurfaceStateDescriptorResources& Descriptors,
+        bool bCurrentStateAB, std::size_t TexelCount, std::size_t ChannelCount,
+        const glm::mat4& ModelMatrix) const
+    {
+        if (CommandBuffer == VK_NULL_HANDLE || TexelCount == 0 || ChannelCount == 0 ||
+            TexelCount > static_cast<std::size_t>(65535U) * 64U ||
+            TexelCount > std::numeric_limits<std::uint32_t>::max() ||
+            ChannelCount > std::numeric_limits<std::uint32_t>::max())
+            throw std::invalid_argument("Current accumulation height received invalid dimensions.");
+
+        TSurfaceSolverPushConstants Constants{};
+        Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
+        Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
+        const glm::mat3 ModelLinear(ModelMatrix);
+        const float Determinant = glm::determinant(ModelLinear);
+        glm::mat3 NormalMatrix(0.0F);
+        if (std::isfinite(Determinant) && std::abs(Determinant) > 1.0e-6F)
+            NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
+        for (std::size_t Column = 0; Column < 3; ++Column)
+            for (std::size_t Row = 0; Row < 3; ++Row)
+                Constants.NormalMatrixAndUpColumns[Column][Row] =
+                    NormalMatrix[static_cast<glm::length_t>(Column)][static_cast<glm::length_t>(Row)];
+
+        VkMemoryBarrier Before{};
+        Before.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+        Before.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+        Before.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+        vkCmdPipelineBarrier(CommandBuffer,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &Before, 0, nullptr, 0, nullptr);
+
+        const VkDescriptorSet Set = bCurrentStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet();
+        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout,
+                                0, 1, &Set, 0, nullptr);
+        vkCmdPushConstants(CommandBuffer, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
+                           0, sizeof(Constants), &Constants);
+        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationHeightPipeline);
+        vkCmdDispatch(CommandBuffer, static_cast<std::uint32_t>((TexelCount + 63U) / 64U), 1, 1);
+
+        const VkBufferMemoryBarrier HeightBarrier = MakeComputeBufferBarrier(
+            Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB),
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+            0, 0, nullptr, 1, &HeightBarrier, 0, nullptr);
     }
 
     VkShaderModule TSurfaceStateSolver::CreateShaderModule(VkDevice Device, const char* Path)

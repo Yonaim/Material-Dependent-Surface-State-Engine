@@ -26,6 +26,8 @@ namespace
             for (int Frame = 0; Frame < FPS; ++Frame)
             {
                 Clock.Accumulate(1.0 / FPS, 1.0, false);
+                Check(Clock.LimitPendingSeconds(MaxRealtimePendingTicks * FixedSimulationStepSeconds) == 0.0,
+                      "normal 15/30/60/120 FPS playback must not skip simulation time");
                 const auto FrameSteps = Clock.Consume(0.001F, true, false, false, false);
                 for (float Step : FrameSteps)
                     Check(Step == FixedSimulationStepSeconds, "fixed dt must ignore the transport limit when auto is off");
@@ -39,6 +41,29 @@ namespace
         Check(Clock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == MaxSimulationStepsPerFrame,
               "catch-up work must be bounded");
         Check(Clock.GetPendingSeconds() > 0.8, "catch-up limit must retain elapsed time");
+        TSimulationClock RealtimeClock;
+        RealtimeClock.Accumulate(1.0, 1.0, false);
+        const double MaximumRealtimePending = MaxRealtimePendingTicks * FixedSimulationStepSeconds;
+        const double Dropped = RealtimeClock.LimitPendingSeconds(MaximumRealtimePending);
+        Check(std::abs(Dropped - (1.0 - MaximumRealtimePending)) < 1.0e-8 &&
+                  std::abs(RealtimeClock.GetPendingSeconds() - MaximumRealtimePending) < 1.0e-8,
+              "interactive playback must discard excess elapsed time after a long frame");
+        Check(RealtimeClock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == 4 &&
+                  RealtimeClock.GetPendingSeconds() == 0.0,
+              "interactive catch-up must stay within four fixed ticks at normal speed");
+        RealtimeClock.Accumulate(FixedSimulationStepSeconds, 1.0, false);
+        Check(RealtimeClock.LimitPendingSeconds(MaximumRealtimePending) == 0.0 &&
+                  RealtimeClock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == 1,
+              "normal frame timing must remain unchanged after a discarded stall");
+        TSimulationClock FastClock;
+        FastClock.Accumulate(1.0 / 60.0, 4.0, false);
+        Check(FastClock.LimitPendingSeconds(MaximumRealtimePending) == 0.0 &&
+                  FastClock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == 4,
+              "4x playback at 60 FPS must retain all four requested fixed ticks");
+        RealtimeClock.Accumulate(0.2, 1.0, false);
+        Check(RealtimeClock.LimitPendingSeconds(0.0) > 0.19 &&
+                  RealtimeClock.Consume(FixedSimulationStepSeconds, true, false, false, false).empty(),
+              "setting changes must drop old pending ticks before playback resumes");
         Clock.Accumulate(50.0, 1.0, true);
         const double Backlog = Clock.GetPendingSeconds();
         Check(Clock.Consume(FixedSimulationStepSeconds, true, false, true, false).empty(), "pause must not advance");
