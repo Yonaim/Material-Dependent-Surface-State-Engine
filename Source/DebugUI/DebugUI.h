@@ -16,6 +16,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <map>
 #include <optional>
 #include <set>
@@ -63,6 +64,7 @@ namespace MDSS
         [[nodiscard]] float GetInjectRadius() const noexcept;
         [[nodiscard]] float GetInjectFalloff() const noexcept;
         [[nodiscard]] std::uint32_t GetInjectTexelSearchRadius() const noexcept;
+        [[nodiscard]] float GetAnimationTimeScale() const noexcept;
         [[nodiscard]] float GetSimulationTimeScale() const noexcept;
         [[nodiscard]] bool IsSimulationPaused() const noexcept;
         [[nodiscard]] bool IsFixedSimulationTimestep() const noexcept { return bFixedSimulationTimestep; }
@@ -82,6 +84,7 @@ namespace MDSS
         void ProcessCameraInput(TScene& SceneData);
         void ProcessSelectionAndGizmo(TScene& SceneData);
         void DrawSceneWindow(TScene& SceneData);
+        void DrawAnimationWindow(TScene& SceneData);
         void DrawSelectedTransformWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
         void DrawRenderOptionsWindow(TScene& SceneData);
@@ -119,6 +122,7 @@ namespace MDSS
         float       InjectRadius = 0.25F;
         float       InjectFalloff = 1.0F;
         int         InjectTexelSearchRadius = 2;
+        float       AnimationTimeScale = 1.0F;
         float       SimulationTimeScale = 1.0F;
         bool        bFixedSimulationTimestep = DefaultFixedSimulationTimestep;
         bool        bAutoSubstepping = DefaultAutoSubstepping;
@@ -161,21 +165,44 @@ namespace MDSS
         std::uint64_t                                               LastSeenLogRevision = 0;
         bool                                                        bScrollLogToBottom = true;
         float                                                       LogWindowHeight = 540.0F;
+        struct TProfilingSample
+        {
+            double TimeSeconds = 0.0;
+            std::array<float, 38> Values{};
+        };
         double                                                      ProfilingWindowElapsed = 0.0;
+        double                                                      ProfilingElapsedSeconds = 0.0;
         double                                                      ProfilingFpsSum = 0.0;
         double                                                      ProfilingFrameTimeSum = 0.0;
-        std::vector<float>                                          ProfilingFrameTimeWindowSamples;
-        float                                                       ProfilingFrameTimeMaximum = -1.0F;
-        float                                                       ProfilingFrameTimePercentile95 = -1.0F;
         std::uint32_t                                               ProfilingFrameSamples = 0;
-        std::array<double, 17>                                      ProfilingMetricSums{};
-        std::array<std::uint32_t, 17>                               ProfilingMetricSamples{};
-        std::array<float, 19>                                       ProfilingAverages{};
-        std::array<float, 17>                                       ProfilingMaximums{};
-        std::array<float, 17>                                       ProfilingPercentiles95{};
-        std::array<std::vector<float>, 17>                          ProfilingMetricWindowSamples;
+        std::array<double, 36>                                      ProfilingMetricSums{};
+        std::array<std::uint32_t, 36>                               ProfilingMetricSamples{};
+        std::array<float, 38>                                       ProfilingAverages{};
+        std::array<float, 38>                                       ProfilingMaximums = []
+        {
+            std::array<float, 38> Values{};
+            Values.fill(-1.0F);
+            return Values;
+        }();
+        std::array<float, 38>                                       ProfilingWindowMaximums = []
+        {
+            std::array<float, 38> Values{};
+            Values.fill(-1.0F);
+            return Values;
+        }();
+        std::array<float, 38>                                       ProfilingRecent100msAverages = []
+        {
+            std::array<float, 38> Values{};
+            Values.fill(-1.0F);
+            return Values;
+        }();
+        std::deque<TProfilingSample>                                ProfilingRecentSamples;
         bool                                                        bProfilingAverageAvailable = false;
-        bool                                                        bProfiledRawFluxCacheEnabled = true;
+        bool                                                        bShowProfilingAverage = true;
+        bool                                                        bShowProfilingMaximum = false;
+        bool                                                        bShowProfilingPast100ms = false;
+        bool                                                        bShowDetailedProfiling = true;
+        bool                                                        bProfiledRawFluxCacheEnabled = false;
         bool                                                        bViewportOverlaysVisible = true;
     };
 } // namespace MDSS

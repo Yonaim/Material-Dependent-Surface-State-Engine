@@ -3,7 +3,7 @@
 > **한 줄 요약:** 엔진 모듈의 책임과 Scene·Asset·Surface State 간 데이터 흐름 및 소유 관계를 정의한다.
 
 상태: **현재 구현 흐름과 설계 범위**
-최종 확인: 2026-09-30
+최종 확인: 2026-10-01
 근거: [[08_Assets/Documents/0001_Overall-Engine-Structure.pdf|전체 엔진 구조]]
 
 ---
@@ -17,6 +17,7 @@
 | `TLogger` | 모듈별 로그 기록과 로그 항목 조회 |
 | `TRenderer` | Swapchain, RenderPass/Pipeline, Framebuffer와 Scene 렌더링. Application 소유 `TSurfaceStateSystem`을 참조해 프레임 compute 기록과 State 렌더링 수행 |
 | `TScene` | Camera, `TStaticMeshInstance[]`, Scene 원본 경로 관리 |
+| Demo Animation (accepted, implementation pending) | `.Scene`이 선택적으로 참조하는 버전형 `.DemoAnim`을 읽어 object transform과 camera keyframe을 재생. 애니메이션 시계와 Simulation 제어는 독립 |
 | `TSurfaceStateSystem` | instance별 GPU State resource, 접촉 입력 누적·업로드, 2-pass Solver dispatch 관리 |
 | `TVulkanContext` | Instance / Device, Queue / Command, GPU Resource 기반 관리 |
 
@@ -93,6 +94,9 @@ flowchart LR
 flowchart LR
   File[".Scene"] --> Loader[TSceneLoader]
   Loader --> Scene[TScene instances]
+  Loader -. accepted optional reference .-> AnimFile[".DemoAnim JSON"]
+  AnimFile -. played by .-> AnimPlayer[Demo Animation Player]
+  AnimPlayer -. updates .-> Scene
   Loader --> Assets[TAssetManager]
   Assets --> Mesh[Mesh + Material + Texture]
   Assets --> Profile[TSRProfileAsset]
@@ -136,6 +140,17 @@ flowchart LR
 4. `TApplication`이 접촉 입력을 자신이 소유한 `TSurfaceStateSystem`에 직접 전달한다. Surface system은 접촉 범위의 texel별 `InputDelta`를 CPU에서 누적하고, 새 입력이 있을 때 graphics queue idle 후 instance GPU buffer에 업로드한다.
 5. Renderer는 비소유 참조로 Surface State System의 `RecordStep`을 호출한다. 실제 경과 시간×배속을 누적하고 2-pass compute Solver를 필요한 만큼 기록한다. 기본 Fixed timestep ON·Auto substepping OFF는 1/60초씩 계산하며, Auto ON에서만 Transport 조건에 따라 세분화한다. frame당 최대 8회이고 미처리 시간과 미완료 고정 구간은 이월한다. 반복마다 면적 환산 Capacity, 포화도 차이와 Geometry mobility, Decay를 적용하고 State A/B를 교환한다. `InputDelta`는 첫 실행 step에서 한 번 소비한다. 선택한 State와 Surface Mapping 진단 모드는 렌더 패스에서 GPU State/Geometry를 읽는다.
 6. Accumulation에 따른 동적 형상 갱신과 State 기반 최종 Material 표현은 설계 범위에 남아 있다. [[04_Architecture/0004_Surface-Geometry|형상과 적층]], [[04_Architecture/0009_Rendering|렌더링]]
+
+## 데모 애니메이션 — 구현
+
+`.Scene`은 선택적으로 `Assets/Animations/*.DemoAnim` JSON 파일을 참조한다. 공통 C++ 재생기는 고유 object ID를 대상으로 위치·회전·크기 및 선택적 카메라 keyframe을 적용한다. 파일이 없는 기존 Scene도 계속 유효하다 ([[05_ADR/0042-Scene-Referenced-Demo-Animation|ADR 0042]]).
+
+- 애니메이션의 재생·일시정지와 Simulation의 Run·Pause·Step은 서로 독립된 UI 제어와 시간 진행을 가진다.
+- 둘 다 재생 중이면 각 Solver step은 그 시점에 평가된 현재 오브젝트 transform을 사용한다. Simulation이 멈춰도 애니메이션은 계속 재생할 수 있고, 이때 Surface State는 갱신되지 않는다.
+- 애니메이션 재생은 Surface State를 초기화하지 않는다. 애니메이션만으로 접촉 입력이나 물질 이동을 만들지 않는다.
+- 자동 접촉 입력 생성은 이번 애니메이션 기능 범위에서 제외한다. 향후 접촉 드라이버는 별도 설계로 추가한다.
+- `TSceneLoader`가 `.DemoAnim`을 검증해 로드하고, `TApplication`이 매 frame 애니메이션 시간을 갱신한다. UI의 Animation 버튼은 Simulation 제어와 독립적이다.
+- 기본 네 Scene은 12초 주기의 연속 회전을 사용한다. 같은 Scene의 같은 형상은 회전 시점과 위상을 맞춘다. Mountain Scene의 넓은 지형 세 개는 수직축으로 돌고, 머드 산 위에 놓인 뒤집힌 산은 고정한다.
 
 전체 State A/B에 기준량 초과분까지 보존하며, Capacity는 포화 기준량이고 Transport는 상한 없는 `State / Capacity`를 사용한다 ([[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]).
 

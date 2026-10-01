@@ -1,9 +1,11 @@
 {
   "type": "TScene",
   "version": 1,
+  "animation": "../Animations/Bunny.DemoAnim",
   "simulationResolution": 256,
   "objects": [
     {
+      "id": "bunny_wet",
       "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
       "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Wetness.SurfaceProfileMap",
       "transform": {
@@ -25,6 +27,7 @@
       }
     },
     {
+      "id": "bunny_water",
       "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
       "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_WaterFilm.SurfaceProfileMap",
       "transform": {
@@ -46,6 +49,7 @@
       }
     },
     {
+      "id": "bunny_mud",
       "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
       "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Mud.SurfaceProfileMap",
       "transform": {

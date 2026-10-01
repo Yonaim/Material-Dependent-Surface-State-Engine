@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 
 namespace MDSS
 {
@@ -200,10 +201,18 @@ namespace MDSS
         {
             Scene.SetLitHeightDisplayScale(ReadFiniteFloat(*DisplayScale, "Scene.litHeightDisplayScale"));
         }
+        std::unordered_set<std::string> ObjectIds;
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
             const TJson& Object = Objects[Index];
             const std::string Context = "Scene objects[" + std::to_string(Index) + "]";
+            std::string ObjectId;
+            if (const auto Id = Object.find("id"); Id != Object.end())
+            {
+                ObjectId = ReadString(Object, "id", Context);
+                if (ObjectId == "camera" || !ObjectIds.insert(ObjectId).second)
+                    throw std::runtime_error(Context + ".id must be unique and cannot be 'camera'.");
+            }
             const std::filesystem::path MeshPath = ResolveScenePath(
                 SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
             const TMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
@@ -230,7 +239,14 @@ namespace MDSS
                                                             SurfaceDataHandle,
                                                             Transform,
                                                             MeshPath,
-                                                            DistributionPath));
+                                                            DistributionPath,
+                                                            std::move(ObjectId)));
+        }
+        if (const auto Animation = Root.find("animation"); Animation != Root.end())
+        {
+            const std::filesystem::path AnimationPath = ResolveScenePath(
+                SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
+            Scene.SetDemoAnimation(AnimationPath, LoadDemoAnimation(AnimationPath, Scene));
         }
         return Scene;
     }
@@ -244,6 +260,8 @@ namespace MDSS
         Root["version"] = 1;
         Root["simulationResolution"] = Scene.GetSimulationResolution();
         Root["litHeightDisplayScale"] = Scene.GetLitHeightDisplayScale();
+        if (Scene.HasDemoAnimation())
+            Root["animation"] = Scene.GetDemoAnimationPath().lexically_relative(Directory).generic_string();
         Root["objects"] = TJson::array();
         for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {
@@ -253,6 +271,7 @@ namespace MDSS
             }
             const TTransform& Transform = Instance.GetTransform();
             TJson Object;
+            if (!Instance.GetId().empty()) Object["id"] = Instance.GetId();
             Object["mesh"] = Instance.GetMeshPath().lexically_relative(Directory).generic_string();
             if (!Instance.GetProfileMapPath().empty())
             {

@@ -83,6 +83,7 @@ namespace MDSS
                                         ? 0.0F
                                         : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
             PreviousFrameTime = CurrentFrameTime;
+            MainScene.AdvanceDemoAnimation(DeltaTime * DebugInterface->GetAnimationTimeScale());
             FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime);
             ++RenderedFrameCount;
         }

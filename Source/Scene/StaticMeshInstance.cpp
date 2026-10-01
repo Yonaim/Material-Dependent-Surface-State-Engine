@@ -18,9 +18,10 @@ namespace MDSS
                                              TSurfaceRuntimeDataHandle SurfaceData,
                                              TTransform InstanceTransform,
                                              std::filesystem::path MeshPath,
-                                             std::filesystem::path ProfileMapPath)
+                                             std::filesystem::path ProfileMapPath,
+                                             std::string ObjectId)
         : Mesh(Mesh), SurfaceData(SurfaceData), InstanceTransform(std::move(InstanceTransform)),
-          SourceMeshPath(std::move(MeshPath)), SourceProfileMapPath(std::move(ProfileMapPath))
+          SourceMeshPath(std::move(MeshPath)), SourceProfileMapPath(std::move(ProfileMapPath)), Id(std::move(ObjectId))
     {
     }
 
@@ -57,5 +58,10 @@ namespace MDSS
     const std::filesystem::path& TStaticMeshInstance::GetProfileMapPath() const noexcept
     {
         return SourceProfileMapPath;
+    }
+
+    const std::string& TStaticMeshInstance::GetId() const noexcept
+    {
+        return Id;
     }
 } // namespace MDSS

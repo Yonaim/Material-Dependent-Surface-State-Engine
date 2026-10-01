@@ -66,6 +66,54 @@ namespace MDSS
         LitHeightDisplayScale = Scale;
     }
 
+    void TScene::SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip)
+    {
+        DemoAnimationPath = std::move(Path);
+        DemoAnimation = std::move(Clip);
+        DemoAnimationTime = 0.0F;
+        bDemoAnimationPlaying = false;
+    }
+
+    const std::filesystem::path& TScene::GetDemoAnimationPath() const noexcept { return DemoAnimationPath; }
+    bool TScene::HasDemoAnimation() const noexcept { return DemoAnimation.has_value(); }
+    bool TScene::IsDemoAnimationPlaying() const noexcept { return bDemoAnimationPlaying; }
+    float TScene::GetDemoAnimationTime() const noexcept { return DemoAnimationTime; }
+    float TScene::GetDemoAnimationDuration() const noexcept
+    {
+        return DemoAnimation ? DemoAnimation->DurationSeconds : 0.0F;
+    }
+
+    void TScene::PlayDemoAnimation()
+    {
+        if (!DemoAnimation) return;
+        if (DemoAnimationTime >= DemoAnimation->DurationSeconds) RestartDemoAnimation();
+        bDemoAnimationPlaying = true;
+    }
+
+    void TScene::PauseDemoAnimation() noexcept { bDemoAnimationPlaying = false; }
+
+    void TScene::RestartDemoAnimation()
+    {
+        if (!DemoAnimation) return;
+        bDemoAnimationPlaying = false;
+        DemoAnimationTime = 0.0F;
+        ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
+    }
+
+    void TScene::AdvanceDemoAnimation(float DeltaTime)
+    {
+        if (!DemoAnimation || !bDemoAnimationPlaying || !std::isfinite(DeltaTime) || DeltaTime <= 0.0F) return;
+        DemoAnimationTime += DeltaTime;
+        if (DemoAnimation->bLoop)
+            DemoAnimationTime = std::fmod(DemoAnimationTime, DemoAnimation->DurationSeconds);
+        else if (DemoAnimationTime >= DemoAnimation->DurationSeconds)
+        {
+            DemoAnimationTime = DemoAnimation->DurationSeconds;
+            bDemoAnimationPlaying = false;
+        }
+        ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
+    }
+
     void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)
     {
         StaticMeshInstances.push_back(std::move(Instance));

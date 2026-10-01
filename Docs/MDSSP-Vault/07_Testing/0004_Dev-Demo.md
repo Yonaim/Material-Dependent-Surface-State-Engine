@@ -80,14 +80,14 @@ Wetness 씬과 Mesh·머티리얼·위치·회전·크기를 그대로 공유한
 |---|---:|---:|
 | `stateCapacity` | 1.0 | 2.0 |
 | `inputFactor` | 1.0 | 1.0 |
-| `saturationTransferFactor` | 0.2 | 0.03 |
-| `geometryTransferFactor` | 0.5 | 0.005 |
+| `saturationSpreadFactor` | 0.2 | 0.03 |
+| `gravityFlowFactor` | 0.5 | 0.005 |
 | `decayRate` | 0.03 | 0.005 |
-| `cavityRetentionFactor` | 0.5 | 0.9 |
+| `cavityDecayProtectionFactor` | 0.5 | 0.9 |
 | `accumulationFactor` | 0.0 | 0.15 |
 | `cavityFillFactor` | 0.0 | 0.8 |
 
-두 TransferFactor는 version 2의 `[0,1]` 무차원 값이다. Solver 기준 속도는 Saturation `1.0 State/s`, Geometry `100.0 State/(world-length·s)`다. DemoWetness와 DemoStone은 `(0.2, 0.5)`, DemoMud는 `(0.03, 0.005)`를 사용하며 기존 실제 전달 속도 `(0.2, 50.0)`, `(0.03, 0.5)`를 유지한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+현재 Demo Profile은 version 4 키를 사용하는 `[0,1]` 무차원 계수를 저장한다. Solver 기준 속도는 Saturation `1.0 State/s`, Geometry `6000.0 State/(world-length·s)`다. 실제 Demo 수치는 각 `.SRProfile` 파일을 따른다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]).
 
 현재 `AccumulationFactor`는 데이터 계약과 GPU 레코드에는 있지만 동적 적층 계산·렌더 형상 갱신은 연결되지 않았다. Mud를 선언하는 것만으로는 적층이 발생하지 않는다. Week-07의 Accumulation 구현과 검증이 필요하다. Wetness/Mud는 고정 enum이 아니라 각 `.SRProfile`의 `states` key로 선언한다.
 

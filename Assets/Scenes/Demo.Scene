@@ -1,9 +1,11 @@
 {
   "type": "TScene",
   "version": 1,
+  "animation": "../Animations/Demo.DemoAnim",
   "simulationResolution": 256,
   "objects": [
     {
+      "id": "demo_cube",
       "mesh": "../Meshes/BrickCube/BrickCube.obj",
       "surfaceProfileMap": "../SurfaceProfiles/BrickCube.SurfaceProfileMap",
       "transform": {
@@ -15,6 +17,7 @@
       }
     },
     {
+      "id": "demo_mountain",
       "mesh": "../Meshes/Mountain/Mountain.obj",
       "transform": {
         "position": [
@@ -36,6 +39,7 @@
       "surfaceProfileMap": "../SurfaceProfiles/Mountain.SurfaceProfileMap"
     },
     {
+      "id": "demo_bunny",
       "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
       "transform": {
         "position": [

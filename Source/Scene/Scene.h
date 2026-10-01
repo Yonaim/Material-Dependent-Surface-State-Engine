@@ -6,11 +6,13 @@
 #pragma once
 
 #include "Scene/Camera.h"
+#include "Scene/DemoAnimation.h"
 #include "Scene/StaticMeshInstance.h"
 #include "SurfaceStateSystem/Types/SurfaceMappingTypes.h"
 
 #include <vector>
 #include <filesystem>
+#include <optional>
 
 namespace MDSS
 {
@@ -29,6 +31,16 @@ namespace MDSS
         [[nodiscard]] float GetLitHeightDisplayScale() const noexcept;
         /** @brief Lit 및 표면 디버그 미리보기의 렌더링 전용 높이 배율. */
         void SetLitHeightDisplayScale(float Scale);
+        void SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip);
+        [[nodiscard]] const std::filesystem::path& GetDemoAnimationPath() const noexcept;
+        [[nodiscard]] bool HasDemoAnimation() const noexcept;
+        [[nodiscard]] bool IsDemoAnimationPlaying() const noexcept;
+        [[nodiscard]] float GetDemoAnimationTime() const noexcept;
+        [[nodiscard]] float GetDemoAnimationDuration() const noexcept;
+        void PlayDemoAnimation();
+        void PauseDemoAnimation() noexcept;
+        void RestartDemoAnimation();
+        void AdvanceDemoAnimation(float DeltaTime);
 
         /** @brief TScene 소유 목록에 정적 메시 인스턴스를 추가한다. */
         void                                                 AddStaticMeshInstance(TStaticMeshInstance Instance);
@@ -41,5 +53,9 @@ namespace MDSS
         std::filesystem::path SourcePath;
         std::uint32_t SimulationResolution = SurfaceSimulationResolution;
         float LitHeightDisplayScale = 4.0F;
+        std::filesystem::path DemoAnimationPath;
+        std::optional<TDemoAnimationClip> DemoAnimation;
+        float DemoAnimationTime = 0.0F;
+        bool bDemoAnimationPlaying = false;
     };
 } // namespace MDSS

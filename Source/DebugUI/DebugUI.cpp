@@ -340,6 +340,8 @@ namespace MDSS
         : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&TRenderer),
           AssetManager(&Assets)
     {
+        ResetProfilingAverages();
+        bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -503,6 +505,7 @@ namespace MDSS
         SetupDockspace();
 
         DrawSceneWindow(SceneData);
+        DrawAnimationWindow(SceneData);
         DrawCameraWindow(SceneData);
         DrawSelectedTransformWindow(SceneData);
         DrawRenderOptionsWindow(SceneData);
@@ -605,6 +608,11 @@ namespace MDSS
     std::uint32_t TDebugUI::GetInjectTexelSearchRadius() const noexcept
     {
         return static_cast<std::uint32_t>(InjectTexelSearchRadius);
+    }
+
+    float TDebugUI::GetAnimationTimeScale() const noexcept
+    {
+        return AnimationTimeScale;
     }
 
     float TDebugUI::GetSimulationTimeScale() const noexcept
@@ -718,6 +726,7 @@ namespace MDSS
         ImGui::DockBuilderSplitNode(LeftLowerID, ImGuiDir_Up, 0.62F, &TransformID, &RenderSettingsID);
 
         ImGui::DockBuilderDockWindow("Scene File", SceneID);
+        ImGui::DockBuilderDockWindow("Animation", SceneID);
         ImGui::DockBuilderDockWindow("Camera", CameraID);
         ImGui::DockBuilderDockWindow("Selected Transform##SceneTools", TransformID);
         ImGui::DockBuilderDockWindow("Render Settings", RenderSettingsID);
@@ -827,6 +836,63 @@ namespace MDSS
         else
         {
             ImGui::TextWrapped("%s", SceneStatus.c_str());
+        }
+        ImGui::End();
+    }
+
+    void TDebugUI::DrawAnimationWindow(TScene& SceneData)
+    {
+        if (!SceneData.HasDemoAnimation())
+        {
+            return;
+        }
+
+        // 기존 EditorLayout.ini에서도 Scene File과 같은 탭 그룹으로 처음 배치한다.
+        if (const ImGuiWindow* SceneFileWindow = ImGui::FindWindowByName("Scene File");
+            SceneFileWindow != nullptr && SceneFileWindow->DockId != 0)
+        {
+            ImGui::SetNextWindowDockID(SceneFileWindow->DockId, ImGuiCond_FirstUseEver);
+        }
+        ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Animation"))
+        {
+            if (ImGui::Button(SceneData.IsDemoAnimationPlaying() ? "Pause Animation" : "Play Animation"))
+            {
+                if (SceneData.IsDemoAnimationPlaying()) SceneData.PauseDemoAnimation();
+                else SceneData.PlayDemoAnimation();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Restart Animation")) SceneData.RestartDemoAnimation();
+
+            constexpr std::array<std::pair<const char*, float>, 4> SpeedPresets = {
+                {{"0.25x", 0.25F}, {"0.5x", 0.5F}, {"1x", 1.0F}, {"2x", 2.0F}}};
+            const char* SelectedSpeedLabel = "Custom";
+            for (const auto& [Label, Scale] : SpeedPresets)
+            {
+                if (std::abs(AnimationTimeScale - Scale) < 0.001F)
+                {
+                    SelectedSpeedLabel = Label;
+                    break;
+                }
+            }
+            ImGui::TextDisabled("%.1f / %.1f s", SceneData.GetDemoAnimationTime(),
+                                SceneData.GetDemoAnimationDuration());
+            ImGui::SameLine();
+            ImGui::TextUnformatted("Speed");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(90.0F);
+            if (ImGui::BeginCombo("##AnimationSpeedPreset", SelectedSpeedLabel))
+            {
+                for (const auto& [Label, Scale] : SpeedPresets)
+                {
+                    const bool bSelected = std::abs(AnimationTimeScale - Scale) < 0.001F;
+                    if (ImGui::Selectable(Label, bSelected)) AnimationTimeScale = Scale;
+                    if (bSelected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::SetNextItemWidth(-1.0F);
+            SliderFloatWithDoubleClickInput("##AnimationSpeed", &AnimationTimeScale, 0.05F, 4.0F, "%.2fx");
         }
         ImGui::End();
     }
@@ -1661,14 +1727,6 @@ namespace MDSS
                 }
             }
 
-            const bool bHasViewSettings =
-                CurrentMode == TRenderViewMode::Wireframe || CurrentMode == TRenderViewMode::SurfaceStateHeatmap ||
-                CurrentMode == TRenderViewMode::SurfaceAccumulation ||
-                CurrentMode == TRenderViewMode::SurfaceFinalGeometry ||
-                CurrentMode == TRenderViewMode::OutgoingFluxScale ||
-                CurrentMode == TRenderViewMode::SolverTransferWeight ||
-                CurrentMode == TRenderViewMode::SurfaceTexelGrid || CurrentMode == TRenderViewMode::SurfaceTexelArea ||
-                CurrentMode == TRenderViewMode::MesoHeight || CurrentMode == TRenderViewMode::MesoOffset;
             ImGui::SameLine(0.0F, 6.0F);
             const float GearButtonSize = ImGui::GetFrameHeight();
             const bool  bOpenViewSettings = ImGui::Button("##ViewSettingsButton", {GearButtonSize, GearButtonSize});
@@ -1703,8 +1761,9 @@ namespace MDSS
             const auto ZoomButtonWidth = [&](const char* Label)
             { return ImGui::CalcTextSize(Label).x + Style.FramePadding.x * 2.0F; };
             const float RightControlsWidth = CheckboxWidth("Grid") + CheckboxWidth("Axis") + CheckboxWidth("Overlays") +
+                                             ZoomButtonWidth("Metrics") +
                                              ImGui::CalcTextSize("|").x + ZoomButtonWidth("-") + ZoomButtonWidth("+") +
-                                             Style.ItemSpacing.x * 3.0F + 20.0F;
+                                             Style.ItemSpacing.x * 4.0F + 24.0F;
             const float RightControlsStart = ImGui::GetWindowWidth() - Style.WindowPadding.x - RightControlsWidth;
             ImGui::SameLine(0.0F, 6.0F);
             if (RightControlsStart > ImGui::GetCursorPosX() + Style.ItemSpacing.x)
@@ -1729,6 +1788,26 @@ namespace MDSS
             {
                 SetDescriptionTooltip("Show or hide the Profiling and Render State overlays.");
             }
+            ImGui::SameLine(0.0F, 4.0F);
+            if (ImGui::SmallButton("Metrics"))
+            {
+                ImGui::OpenPopup("ProfilingDisplayPopup");
+            }
+            if (ImGui::IsItemHovered())
+            {
+                SetDescriptionTooltip("Choose profiling columns and detail level.");
+            }
+            if (ImGui::BeginPopup("ProfilingDisplayPopup"))
+            {
+                ImGui::TextDisabled("Profiling display");
+                ImGui::Separator();
+                ImGui::Checkbox("Average (1s)", &bShowProfilingAverage);
+                ImGui::Checkbox("Max (1s)", &bShowProfilingMaximum);
+                ImGui::Checkbox("Past 100ms", &bShowProfilingPast100ms);
+                ImGui::Separator();
+                ImGui::Checkbox("Detailed breakdowns", &bShowDetailedProfiling);
+                ImGui::EndPopup();
+            }
             ImGui::SameLine(0.0F, 10.0F);
             ImGui::TextDisabled("|");
 
@@ -1751,10 +1830,8 @@ namespace MDSS
                 SetDescriptionTooltip("Zoom in");
             }
 
-            if (bHasViewSettings)
-            {
-                ImGui::SetNextWindowSizeConstraints({340.0F, 0.0F}, {560.0F, 600.0F});
-            }
+            if (bOpenViewSettings || ImGui::IsPopupOpen("ViewSettingsPopup"))
+                ImGui::SetNextWindowSizeConstraints({360.0F, 0.0F}, {560.0F, 600.0F});
             if (ImGui::BeginPopup("ViewSettingsPopup"))
             {
                 const char* ViewSettingsTitle = CurrentName;
@@ -2208,14 +2285,14 @@ namespace MDSS
     {
         ProfilingWindowElapsed = ProfilingFpsSum = ProfilingFrameTimeSum = 0.0;
         ProfilingFrameSamples = 0;
-        ProfilingFrameTimeWindowSamples.clear();
-        ProfilingFrameTimeMaximum = ProfilingFrameTimePercentile95 = -1.0F;
         ProfilingMetricSums.fill(0.0);
         ProfilingMetricSamples.fill(0);
         ProfilingAverages.fill(-1.0F);
         ProfilingMaximums.fill(-1.0F);
-        ProfilingPercentiles95.fill(-1.0F);
-        for (auto& Samples : ProfilingMetricWindowSamples) Samples.clear();
+        ProfilingWindowMaximums.fill(-1.0F);
+        ProfilingRecent100msAverages.fill(-1.0F);
+        ProfilingRecentSamples.clear();
+        ProfilingElapsedSeconds = 0.0;
         bProfilingAverageAvailable = false;
     }
 
@@ -2262,8 +2339,10 @@ namespace MDSS
             const ImGuiIO& IO = ImGui::GetIO();
             const double FrameSeconds = static_cast<double>(IO.DeltaTime);
             const TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
-            const std::array<float, 17> MetricValues = {
-                Stats.RenderPreparationGpuMilliseconds + Stats.SceneDrawGpuMilliseconds,
+            const bool bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
+            const std::array<float, 36> MetricValues = {
+                Stats.RenderPreparationGpuMilliseconds + Stats.SceneDrawGpuMilliseconds +
+                    (bFineRenderTimings ? Stats.UIDrawGpuMilliseconds + Stats.RenderPassEndGpuMilliseconds : 0.0F),
                 Stats.SolverGpuMilliseconds,
                 Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds,
                 Stats.SolverPass1GpuMilliseconds,
@@ -2280,69 +2359,99 @@ namespace MDSS
                 Stats.MudOverlayDrawGpuMilliseconds,
                 Stats.WaterFilmOverlayDrawGpuMilliseconds,
                 Stats.OverlayPreparationGpuMilliseconds,
+                Stats.OverlayGeometryGpuMilliseconds,
+                Stats.OverlaySmoothingGpuMilliseconds,
+                Stats.OverlaySidesGpuMilliseconds,
+                Stats.SceneSetupGpuMilliseconds,
+                Stats.SceneBetweenDrawsGpuMilliseconds,
+                Stats.SceneTailGpuMilliseconds,
+                Stats.OverlaySidesPreBarrierGpuMilliseconds,
+                Stats.OverlaySidesDispatchGpuMilliseconds,
+                Stats.OverlaySidesPostBarrierGpuMilliseconds,
+                Stats.RenderPassBeginGpuMilliseconds,
+                Stats.ViewportSetupGpuMilliseconds,
+                Stats.OverlayBoundarySearchGpuMilliseconds,
+                Stats.OverlaySideSegmentBuildGpuMilliseconds,
+                Stats.OverlaySidesInterPassBarrierGpuMilliseconds,
+                Stats.OverlayCoverageSampleGpuMilliseconds,
+                Stats.RenderPassColorStageGpuMilliseconds,
+                Stats.RenderPassDepthStageGpuMilliseconds,
+                Stats.UIDrawGpuMilliseconds,
+                Stats.RenderPassEndGpuMilliseconds,
             };
             if (std::isfinite(FrameSeconds) && FrameSeconds > 0.0)
             {
+                ProfilingElapsedSeconds += FrameSeconds;
                 ProfilingWindowElapsed += FrameSeconds;
                 ProfilingFpsSum += 1.0 / FrameSeconds;
                 ProfilingFrameTimeSum += FrameSeconds * 1000.0;
-                ProfilingFrameTimeWindowSamples.push_back(static_cast<float>(FrameSeconds * 1000.0));
                 ++ProfilingFrameSamples;
+                TProfilingSample Sample;
+                Sample.TimeSeconds = ProfilingElapsedSeconds;
+                Sample.Values.fill(-1.0F);
+                Sample.Values[0] = static_cast<float>(1.0 / FrameSeconds);
+                Sample.Values[1] = static_cast<float>(FrameSeconds * 1000.0);
+                ProfilingWindowMaximums[0] = std::max(ProfilingWindowMaximums[0], Sample.Values[0]);
+                ProfilingWindowMaximums[1] = std::max(ProfilingWindowMaximums[1], Sample.Values[1]);
                 for (std::size_t Index = 0; Index < MetricValues.size(); ++Index)
                 {
                     if (std::isfinite(MetricValues[Index]) && MetricValues[Index] >= 0.0F)
                     {
                         ProfilingMetricSums[Index] += MetricValues[Index];
                         ++ProfilingMetricSamples[Index];
-                        ProfilingMetricWindowSamples[Index].push_back(MetricValues[Index]);
+                        ProfilingWindowMaximums[Index + 2U] =
+                            std::max(ProfilingWindowMaximums[Index + 2U], MetricValues[Index]);
+                        Sample.Values[Index + 2U] = MetricValues[Index];
                     }
+                }
+                ProfilingRecentSamples.push_back(Sample);
+                while (!ProfilingRecentSamples.empty() &&
+                       ProfilingRecentSamples.front().TimeSeconds < ProfilingElapsedSeconds - 0.1)
+                    ProfilingRecentSamples.pop_front();
+                std::array<double, 38> RecentSums{};
+                std::array<std::uint32_t, 38> RecentCounts{};
+                for (const TProfilingSample& RecentSample : ProfilingRecentSamples)
+                {
+                    for (std::size_t Index = 0; Index < RecentSample.Values.size(); ++Index)
+                    {
+                        const float Value = RecentSample.Values[Index];
+                        if (std::isfinite(Value) && Value >= 0.0F)
+                        {
+                            RecentSums[Index] += Value;
+                            ++RecentCounts[Index];
+                        }
+                    }
+                }
+                ProfilingRecent100msAverages.fill(-1.0F);
+                for (std::size_t Index = 0; Index < ProfilingRecent100msAverages.size(); ++Index)
+                {
+                    if (RecentCounts[Index] != 0U)
+                        ProfilingRecent100msAverages[Index] =
+                            static_cast<float>(RecentSums[Index] / RecentCounts[Index]);
                 }
             }
             if (ProfilingWindowElapsed >= 1.0 && ProfilingFrameSamples > 0)
             {
                 ProfilingAverages[0] = static_cast<float>(ProfilingFpsSum / ProfilingFrameSamples);
                 ProfilingAverages[1] = static_cast<float>(ProfilingFrameTimeSum / ProfilingFrameSamples);
-                std::sort(ProfilingFrameTimeWindowSamples.begin(), ProfilingFrameTimeWindowSamples.end());
-                if (!ProfilingFrameTimeWindowSamples.empty())
-                {
-                    ProfilingFrameTimeMaximum = ProfilingFrameTimeWindowSamples.back();
-                    const std::size_t P95Index = std::min(
-                        ProfilingFrameTimeWindowSamples.size() - 1U,
-                        static_cast<std::size_t>(std::ceil(
-                            0.95 * static_cast<double>(ProfilingFrameTimeWindowSamples.size()))) - 1U);
-                    ProfilingFrameTimePercentile95 = ProfilingFrameTimeWindowSamples[P95Index];
-                }
                 for (std::size_t Index = 0; Index < MetricValues.size(); ++Index)
                 {
                     ProfilingAverages[Index + 2] = ProfilingMetricSamples[Index] > 0
                         ? static_cast<float>(ProfilingMetricSums[Index] / ProfilingMetricSamples[Index])
                         : -1.0F;
-                    auto& Samples = ProfilingMetricWindowSamples[Index];
-                    if (!Samples.empty())
-                    {
-                        std::sort(Samples.begin(), Samples.end());
-                        ProfilingMaximums[Index] = Samples.back();
-                        const std::size_t P95Index = std::min(
-                            Samples.size() - 1U,
-                            static_cast<std::size_t>(std::ceil(0.95 * static_cast<double>(Samples.size()))) - 1U);
-                        ProfilingPercentiles95[Index] = Samples[P95Index];
-                    }
-                    else
-                    {
-                        ProfilingMaximums[Index] = ProfilingPercentiles95[Index] = -1.0F;
-                    }
                 }
+                ProfilingMaximums = ProfilingWindowMaximums;
                 bProfilingAverageAvailable = true;
                 ProfilingWindowElapsed = 0.0;
                 ProfilingFpsSum = 0.0;
                 ProfilingFrameTimeSum = 0.0;
                 ProfilingFrameSamples = 0;
-                ProfilingFrameTimeWindowSamples.clear();
                 ProfilingMetricSums.fill(0.0);
                 ProfilingMetricSamples.fill(0U);
-                for (auto& Samples : ProfilingMetricWindowSamples) Samples.clear();
+                ProfilingWindowMaximums.fill(-1.0F);
             }
 
+            if (ImGui::CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 const float FPS = ProfilingAverages[0];
                 const ImVec4 FPSColor = FPS >= 55.0F ? ImVec4(0.57F, 0.92F, 0.68F, 1.0F)
@@ -2350,46 +2459,81 @@ namespace MDSS
                                    : ImVec4(1.0F, 0.57F, 0.57F, 1.0F);
                 if (bProfilingAverageAvailable) ImGui::TextColored(FPSColor, "FPS: %.1f", FPS);
                 else ImGui::TextDisabled("FPS: collecting 1s average");
-                const auto SetupMetricTable = [](const char* Id)
+                const auto SetupMetricTable = [this](const char* Id)
                 {
-                    if (!ImGui::BeginTable(Id, 4,
+                    const int ColumnCount = 1 + static_cast<int>(bShowProfilingAverage) +
+                                            static_cast<int>(bShowProfilingMaximum) +
+                                            static_cast<int>(bShowProfilingPast100ms);
+                    if (!ImGui::BeginTable(Id, ColumnCount,
                                            ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
                         return false;
-                    ImGui::TableSetupColumn("Metric", ImGuiTableColumnFlags_WidthFixed, 112.0F);
-                    ImGui::TableSetupColumn("Avg", ImGuiTableColumnFlags_WidthFixed, 62.0F);
-                    ImGui::TableSetupColumn("Max", ImGuiTableColumnFlags_WidthFixed, 62.0F);
-                    ImGui::TableSetupColumn("p95", ImGuiTableColumnFlags_WidthFixed, 52.0F);
+                    ImGui::TableSetupColumn("Metric", ImGuiTableColumnFlags_WidthFixed, 134.0F);
+                    if (bShowProfilingAverage)
+                        ImGui::TableSetupColumn("Avg", ImGuiTableColumnFlags_WidthFixed, 44.0F);
+                    if (bShowProfilingMaximum)
+                        ImGui::TableSetupColumn("Max", ImGuiTableColumnFlags_WidthFixed, 44.0F);
+                    if (bShowProfilingPast100ms)
+                        ImGui::TableSetupColumn("100ms", ImGuiTableColumnFlags_WidthFixed, 50.0F);
                     return true;
                 };
-                const auto DrawMetric = [this](std::size_t Index, const char* Label, ImVec4 Color)
+                const auto DrawMetric = [this](std::size_t Index, const char* Label, ImVec4 Color,
+                                               const char* Tooltip = nullptr)
                 {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::TextDisabled("%s", Label);
-                    for (std::size_t Column = 1; Column < 4; ++Column)
+                    if (Tooltip != nullptr && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tooltip);
+                    int Column = 1;
+                    const auto DrawValue = [&](float Value, bool bReady)
                     {
-                        ImGui::TableSetColumnIndex(static_cast<int>(Column));
-                        const float Value = Column == 1 ? ProfilingAverages[Index + 2]
-                            : Column == 2 ? ProfilingMaximums[Index]
-                                          : ProfilingPercentiles95[Index];
+                        ImGui::TableSetColumnIndex(Column++);
                         if (Value >= 0.0F) ImGui::TextColored(Color, "%.2f", Value);
-                        else ImGui::TextDisabled(bProfilingAverageAvailable ? "—" : "…");
-                    }
+                        else ImGui::TextDisabled(bReady ? "—" : "…");
+                    };
+                    if (bShowProfilingAverage)
+                        DrawValue(ProfilingAverages[Index + 2], bProfilingAverageAvailable);
+                    if (bShowProfilingMaximum)
+                        DrawValue(ProfilingMaximums[Index + 2], true);
+                    if (bShowProfilingPast100ms)
+                        DrawValue(ProfilingRecent100msAverages[Index + 2], true);
                 };
                 if (SetupMetricTable("ViewportProfilingSummary"))
                 {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0); ImGui::TextDisabled("Metric");
-                    ImGui::TableSetColumnIndex(1); ImGui::TextDisabled("Avg ms");
-                    ImGui::TableSetColumnIndex(2); ImGui::TextDisabled("Max ms");
-                    ImGui::TableSetColumnIndex(3); ImGui::TextDisabled("p95 ms");
+                    if (bShowProfilingAverage)
+                    {
+                        ImGui::TableSetColumnIndex(ImGui::TableGetColumnIndex() + 1);
+                        ImGui::TextDisabled("Avg ms");
+                    }
+                    if (bShowProfilingMaximum)
+                    {
+                        const int Column = 1 + static_cast<int>(bShowProfilingAverage);
+                        ImGui::TableSetColumnIndex(Column);
+                        ImGui::TextDisabled("Max ms");
+                    }
+                    if (bShowProfilingPast100ms)
+                    {
+                        const int Column = 1 + static_cast<int>(bShowProfilingAverage) +
+                                           static_cast<int>(bShowProfilingMaximum);
+                        ImGui::TableSetColumnIndex(Column);
+                        ImGui::TextDisabled("100ms");
+                    }
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0); ImGui::TextDisabled("Frame time");
-                    ImGui::TableSetColumnIndex(1);
-                    if (bProfilingAverageAvailable) ImGui::TextColored(FPSColor, "%.2f", ProfilingAverages[1]);
-                    else ImGui::TextDisabled("…");
-                    ImGui::TableSetColumnIndex(2); ImGui::TextColored(FPSColor, "%.2f", ProfilingFrameTimeMaximum);
-                    ImGui::TableSetColumnIndex(3); ImGui::TextColored(FPSColor, "%.2f", ProfilingFrameTimePercentile95);
+                    int FrameColumn = 1;
+                    const auto DrawFrameValue = [&](float Value, bool bReady)
+                    {
+                        ImGui::TableSetColumnIndex(FrameColumn++);
+                        if (Value >= 0.0F) ImGui::TextColored(FPSColor, "%.2f", Value);
+                        else ImGui::TextDisabled(bReady ? "—" : "…");
+                    };
+                    if (bShowProfilingAverage)
+                        DrawFrameValue(ProfilingAverages[1], bProfilingAverageAvailable);
+                    if (bShowProfilingMaximum)
+                        DrawFrameValue(ProfilingMaximums[1], true);
+                    if (bShowProfilingPast100ms)
+                        DrawFrameValue(ProfilingRecent100msAverages[1], true);
                     DrawMetric(0, "Render GPU", {0.82F, 0.87F, 0.94F, 1.0F});
                     DrawMetric(1, "Solver GPU", {0.82F, 0.87F, 0.94F, 1.0F});
                     ImGui::EndTable();
@@ -2399,7 +2543,7 @@ namespace MDSS
                 ImGui::PushStyleColor(ImGuiCol_Header, {0.0F, 0.0F, 0.0F, 0.0F});
                 ImGui::PushStyleColor(ImGuiCol_HeaderHovered, {0.30F, 0.32F, 0.35F, 0.35F});
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, {0.0F, 0.0F, 0.0F, 0.0F});
-                if (BeginTextTreeNode("Simulation"))
+                if (bShowDetailedProfiling && BeginTextTreeNode("GPU: Simulation"))
                 {
                     if (SetupMetricTable("ViewportProfilingSimulation"))
                     {
@@ -2408,50 +2552,96 @@ namespace MDSS
                         DrawMetric(4, "Pass 2", {0.72F, 0.78F, 0.87F, 1.0F});
                         ImGui::EndTable();
                     }
-                    if (BeginTextTreeNode("Workload & settings"))
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::TextDisabled("WORKLOAD & SETTINGS");
+                    if (ImGui::BeginTable("ViewportProfilingWorkload", 2,
+                                          ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
                     {
-                        if (ImGui::BeginTable("ViewportProfilingWorkload", 2,
-                                              ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
+                        ImGui::TableSetupColumn("Setting", ImGuiTableColumnFlags_WidthFixed, 130.0F);
+                        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed, 165.0F);
+                        const auto AddStateRow = [](const char* Label, const char* Format, auto... Values)
                         {
-                            ImGui::TableSetupColumn("Setting", ImGuiTableColumnFlags_WidthFixed, 130.0F);
-                            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed, 165.0F);
-                            const auto AddStateRow = [](const char* Label, const char* Format, auto... Values)
-                            {
-                                ImGui::TableNextRow();
-                                ImGui::TableSetColumnIndex(0); ImGui::TextDisabled("%s", Label);
-                                ImGui::TableSetColumnIndex(1); ImGui::TextDisabled(Format, Values...);
-                            };
-                            AddStateRow("Sim Steps", "%u", Stats.SimulationSteps);
-                            AddStateRow("Instances", "%u", Stats.SimulationInstances);
-                            AddStateRow("Texels / Ch.", "%llu / %u",
-                                        static_cast<unsigned long long>(Stats.SimulationTexels), Stats.StateChannels);
-                            AddStateRow("Resolution", "%u x %u", Stats.SimulationResolution, Stats.SimulationResolution);
-                            AddStateRow("RawFlux Cache", "%s", FrameRenderer->IsRawFluxCacheEnabled() ? "ON" : "OFF");
-                            AddStateRow("Geometry Feedback", "%s", FrameRenderer->IsAccumulationFeedbackEnabled() ? "ON" : "OFF");
-                            const auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-                            AddStateRow("Height Smoothing", "%s", Effects.bHeightFieldSmoothing ? "ON" : "OFF");
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0); ImGui::TextDisabled("%s", Label);
+                            ImGui::TableSetColumnIndex(1); ImGui::TextDisabled(Format, Values...);
+                        };
+                        AddStateRow("Sim Steps", "%u", Stats.SimulationSteps);
+                        AddStateRow("Instances", "%u", Stats.SimulationInstances);
+                        AddStateRow("Texels / Ch.", "%llu / %u",
+                                    static_cast<unsigned long long>(Stats.SimulationTexels), Stats.StateChannels);
+                        AddStateRow("Resolution", "%u x %u", Stats.SimulationResolution, Stats.SimulationResolution);
+                        AddStateRow("RawFlux Cache", "%s", FrameRenderer->IsRawFluxCacheEnabled() ? "ON" : "OFF");
+                        AddStateRow("Geometry Feedback", "%s", FrameRenderer->IsAccumulationFeedbackEnabled() ? "ON" : "OFF");
+                        const auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
+                        AddStateRow("Height Smoothing", "%s", Effects.bHeightFieldSmoothing ? "ON" : "OFF");
+                        ImGui::EndTable();
+                    }
+                    ImGui::TreePop();
+                }
+                if (BeginTextTreeNode("GPU: Rendering"))
+                {
+                    if (SetupMetricTable("ViewportProfilingRendering"))
+                    {
+                        DrawMetric(5, "Render prep", {0.82F, 0.87F, 0.94F, 1.0F});
+                        DrawMetric(6, bFineRenderTimings ? "Scene draw" : "Render pass",
+                                   {0.82F, 0.87F, 0.94F, 1.0F});
+                        if (bFineRenderTimings)
+                        {
+                            DrawMetric(34, "UI draw", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(35, "Render pass end", {0.82F, 0.87F, 0.94F, 1.0F});
+                        }
+                        DrawMetric(7, "Texel inspector", {0.82F, 0.87F, 0.94F, 1.0F});
+                        ImGui::EndTable();
+                    }
+                    if (bShowDetailedProfiling && BeginTextTreeNode("Render prep breakdown"))
+                    {
+                        if (SetupMetricTable("ViewportProfilingRenderPrepBreakdown"))
+                        {
+                            DrawMetric(16, "Overlay prep", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(17, "Overlay geometry", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(18, "Height smoothing", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(19, "Overlay sides", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(23, "  Pre-write barrier", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(24, "  Total dispatches", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(31, "    Coverage sample", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(28, "    Boundary search", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(30, "    Between passes", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(29, "    Segment build", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(25, "  Pre-draw barrier", {0.82F, 0.87F, 0.94F, 1.0F});
+                            ImGui::EndTable();
+                        }
+                        ImGui::TreePop();
+                    }
+                    if (!bFineRenderTimings)
+                    {
+                        TextDescriptionWrapped("MoltenVK on Apple GPUs records in-pass timestamps at the end "
+                                               "of the render pass. Per-draw GPU timings are unavailable here.");
+                    }
+                    if (bFineRenderTimings && bShowDetailedProfiling && BeginTextTreeNode("Scene draw breakdown"))
+                    {
+                        if (SetupMetricTable("ViewportProfilingSceneDrawBreakdown"))
+                        {
+                            DrawMetric(20, "Render pass setup", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(26, "  Pass begin total", {0.72F, 0.78F, 0.87F, 1.0F},
+                                       "Time around render-pass begin; may include image availability waits.");
+                            DrawMetric(32, "    Color stage", {0.72F, 0.78F, 0.87F, 1.0F},
+                                       "Color-output timestamps around pass begin. This overlaps the total.");
+                            DrawMetric(33, "    Depth stage", {0.72F, 0.78F, 0.87F, 1.0F},
+                                       "Early-depth timestamps around pass begin. This overlaps the total.");
+                            DrawMetric(27, "  Viewport state setup", {0.72F, 0.78F, 0.87F, 1.0F});
+                            DrawMetric(13, "Base mesh draw", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(14, "Mud overlay draw", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(15, "WaterFilm draw", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(21, "Between draws", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(22, "Grid / gizmo", {0.82F, 0.87F, 0.94F, 1.0F});
                             ImGui::EndTable();
                         }
                         ImGui::TreePop();
                     }
                     ImGui::TreePop();
                 }
-                if (BeginTextTreeNode("Rendering"))
-                {
-                    if (SetupMetricTable("ViewportProfilingRendering"))
-                    {
-                        DrawMetric(5, "Render prep", {0.82F, 0.87F, 0.94F, 1.0F});
-                        DrawMetric(6, "Scene draw", {0.82F, 0.87F, 0.94F, 1.0F});
-                        DrawMetric(7, "Texel inspector", {0.82F, 0.87F, 0.94F, 1.0F});
-                        DrawMetric(13, "Base mesh draw", {0.82F, 0.87F, 0.94F, 1.0F});
-                        DrawMetric(14, "Mud overlay draw", {0.82F, 0.87F, 0.94F, 1.0F});
-                        DrawMetric(15, "WaterFilm draw", {0.82F, 0.87F, 0.94F, 1.0F});
-                        DrawMetric(16, "Overlay prep", {0.82F, 0.87F, 0.94F, 1.0F});
-                        ImGui::EndTable();
-                    }
-                    ImGui::TreePop();
-                }
-                if (BeginTextTreeNode("CPU"))
+                if (bShowDetailedProfiling && BeginTextTreeNode("CPU"))
                 {
                     if (SetupMetricTable("ViewportProfilingCPU"))
                     {
@@ -2494,11 +2684,8 @@ namespace MDSS
         constexpr ImGuiWindowFlags StateFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
             ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
-        ImGui::PushStyleColor(ImGuiCol_Header, {0.0F, 0.0F, 0.0F, 0.0F});
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, {0.30F, 0.32F, 0.35F, 0.35F});
-        ImGui::PushStyleColor(ImGuiCol_HeaderActive, {0.0F, 0.0F, 0.0F, 0.0F});
         if (ImGui::Begin("Render State##Overlay", nullptr, StateFlags) &&
-            BeginTextTreeNode("Render State", ImGuiTreeNodeFlags_DefaultOpen))
+            ImGui::CollapsingHeader("Render State", ImGuiTreeNodeFlags_DefaultOpen))
         {
             if (ImGui::BeginTable("RenderStateFlags", 2,
                                   ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
@@ -2521,10 +2708,8 @@ namespace MDSS
                 DrawState("Height-field smoothing", Effects.bHeightFieldSmoothing, bSmoothingActive);
                 ImGui::EndTable();
             }
-            ImGui::TreePop();
         }
         ImGui::End();
-        ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(3);
     }
 
@@ -2547,6 +2732,7 @@ namespace MDSS
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
         if (ImGui::Begin("Simulation Debug", nullptr, Flags))
         {
+            ImGui::TextUnformatted("Simulation");
             DrawSimulationCommonControls();
             ImGui::Dummy({0.0F, 10.0F});
             ImGui::Separator();
@@ -2877,11 +3063,11 @@ namespace MDSS
 
         DrawSectionHeader("Transport");
         DrawSolverTerm(TSurfaceSolverTerm::SaturationDrive,
-                       "SaturationDrive",
+                       "Saturation spreading",
                        "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
                        "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
         DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive,
-                       "GeometryDrive",
+                       "Gravity-guided flow",
                        "ON: 높이와 중력 방향에 따른 전달에 출발 포화도를 곱합니다. 포화도는 1을 넘을 수 있습니다.\n"
                        "OFF: 기하 전달량을 0으로 설정합니다.");
         DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal,
@@ -2900,10 +3086,6 @@ namespace MDSS
                        "ProfileBoundaryWeight",
                        "ON: 서로 다른 Profile 사이 전달 가중치를 0.5로 낮춥니다.\n"
                        "OFF: Profile 경계 가중치를 1.0으로 설정합니다.");
-        DrawSolverTerm(TSurfaceSolverTerm::CurvatureWeight,
-                       "CurvatureWeight (precomputed)",
-                       "ON: 사전 계산된 Meso 평균 곡률로 전달을 감쇠합니다.\n"
-                       "OFF: 곡률 가중치를 1.0으로 설정합니다.");
 
         DrawSectionHeader("Decay");
         DrawSolverTerm(TSurfaceSolverTerm::Decay,
@@ -2911,7 +3093,7 @@ namespace MDSS
                        "ON: Profile DecayRate에 따른 State 감소를 적용합니다.\n"
                        "OFF: 감소량을 0으로 설정합니다.");
         DrawSolverTerm(TSurfaceSolverTerm::ConcavityRetention,
-                       "ConcavityRetention",
+                       "Cavity decay protection",
                        "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
                        "OFF: Decay 보유율을 1.0으로 설정합니다.");
 
@@ -3201,14 +3383,28 @@ namespace MDSS
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("Saturation reference per reference area. Texel Capacity scales with world area.");
         bChanged |= LabeledDragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
+        DrawSectionHeader("Transport: flow", 6.0F, 2.0F);
         bChanged |= LabeledSliderFloat(
-            "Saturation transfer factor", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
+            "Saturation spread", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Moves State from higher saturation to lower saturation.");
         bChanged |=
-            LabeledSliderFloat("Geometry transfer factor", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
+            LabeledSliderFloat("Gravity flow", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Scales flow driven by world height difference and gravity projected onto the surface.");
+        DrawSectionHeader("Transport: resistance", 6.0F, 2.0F);
+        bChanged |= LabeledSliderFloat("Cavity exit resistance", &ParameterDraft.CavityTransportRetentionFactor,
+                                      0.0F, 1.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Reduces transport only toward a less concave neighbor. Equal concavity leaves flow unchanged.");
+        DrawSectionHeader("Decay", 6.0F, 2.0F);
         bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("Amount lost per second per reference area, scaled to each texel's world area.");
-        bChanged |= LabeledSliderFloat("Cavity retention", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
+        bChanged |= LabeledSliderFloat("Cavity decay protection", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Reduces State decay in concave texels; does not directly slow transport.");
+        DrawSectionHeader("Accumulation", 6.0F, 2.0F);
         bChanged |= LabeledDragFloat("Accumulation", &ParameterDraft.AccumulationFactor, 0.01F, 0.0F, 1000.0F, "%.3f");
         bChanged |= LabeledSliderFloat("Cavity fill", &ParameterDraft.CavityFillFactor, 0.0F, 1.0F, "%.3f");
         bChanged |= LabeledDragFloat("Thickness per amount", &ParameterDraft.ThicknessPerAmount,

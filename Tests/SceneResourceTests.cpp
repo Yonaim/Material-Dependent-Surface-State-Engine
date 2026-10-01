@@ -25,6 +25,7 @@
 #include <nlohmann/json.hpp>
 #include <numeric>
 #include <stdexcept>
+#include <string_view>
 
 namespace MDSS::Tests
 {
@@ -80,11 +81,11 @@ namespace
             for (const auto& State : States)
             {
                 Entries[State] = {{"stateCapacity", 1.0}, {"inputFactor", InputFactor},
-                    {"saturationTransferFactor", 0.0}, {"geometryTransferFactor", 0.0}, {"decayRate", 0.0},
-                    {"cavityRetentionFactor", 0.0}, {"accumulationFactor", 0.0},
+                    {"saturationSpreadFactor", 0.0}, {"gravityFlowFactor", 0.0}, {"decayRate", 0.0},
+                    {"cavityDecayProtectionFactor", 0.0}, {"accumulationFactor", 0.0},
                     {"cavityFillFactor", 0.0}, {"thicknessPerAmount", 0.01}};
             }
-            Write(Name + ".SRProfile", {{"type", "SurfaceResponseProfile"}, {"version", 3}, {"name", Name},
+            Write(Name + ".SRProfile", {{"type", "SurfaceResponseProfile"}, {"version", 4}, {"name", Name},
                                        {"states", Entries}, {"transitions", TJson::array()}});
         }
         void WriteMap(const std::string& Name, const std::vector<std::string>& Profiles, int Index) const
@@ -116,6 +117,121 @@ namespace
             Assets.GetSurfaceStateRegistry().GetStateCount()) * sizeof(Parameters);
         GPU.GetSceneProfileParametersBuffer().Download(&Parameters, sizeof(Parameters), Offset);
         return Parameters.CapacityInputAndTransfer[1];
+    }
+
+    void TestDemoAnimation(const TVulkanContext& Context, const TFixtures& Fixtures)
+    {
+        Fixtures.Write("Animated.DemoAnim", {
+            {"version", 1}, {"durationSeconds", 2.0}, {"loop", true},
+            {"tracks", TJson::array({
+                {{"target", "object"}, {"property", "position"},
+                 {"keys", TJson::array({{{"time", 0.0}, {"value", {0, 0, 0}}},
+                                         {{"time", 2.0}, {"value", {2, 0, 0}}}})}},
+                {{"target", "object"}, {"property", "rotation"},
+                 {"keys", TJson::array({{{"time", 0.0}, {"value", {0, 0, 0, 1}}},
+                                         {{"time", 2.0}, {"value", {0, 0, 1, 0}}}})}},
+                {{"target", "camera"}, {"property", "target"},
+                 {"keys", TJson::array({{{"time", 0.0}, {"value", {0, 0, 0}}},
+                                         {{"time", 2.0}, {"value", {2, 0, 0}}}})}}
+            })}
+        });
+        Fixtures.Write("Animated.Scene", {{"type", "TScene"}, {"version", 1},
+            {"animation", "Animated.DemoAnim"},
+            {"objects", TJson::array({{{"id", "object"}, {"mesh", "A.obj"}}})}});
+        TAssetManager Assets(Context);
+        TScene Scene = TSceneLoader::Load(Fixtures.Root / "Animated.Scene", Assets);
+        Check(Scene.HasDemoAnimation() && !Scene.IsDemoAnimationPlaying(),
+              "Scene animation should load paused independently of simulation");
+        Scene.PlayDemoAnimation();
+        Scene.AdvanceDemoAnimation(1.0F);
+        const auto& Transform = Scene.GetStaticMeshInstances()[0].GetTransform();
+        Check(std::abs(Transform.Position.x - 1.0F) < 1.0e-5F &&
+              std::abs(Transform.RotationDegrees.z - 90.0F) < 1.0e-3F &&
+              std::abs(Scene.GetMainCamera().GetTarget().x - 1.0F) < 1.0e-5F,
+              "animation should interpolate object and camera tracks at half time");
+        Scene.PauseDemoAnimation();
+        Scene.AdvanceDemoAnimation(0.5F);
+        Check(Scene.GetDemoAnimationTime() == 1.0F,
+              "paused animation must not advance its own clock");
+        Scene.PlayDemoAnimation();
+        Scene.AdvanceDemoAnimation(1.5F);
+        Check(std::abs(Scene.GetDemoAnimationTime() - 0.5F) < 1.0e-5F &&
+              std::abs(Transform.Position.x - 0.5F) < 1.0e-5F,
+              "looping animation should wrap and evaluate the new time");
+        Scene.RestartDemoAnimation();
+        Check(!Scene.IsDemoAnimationPlaying() && Scene.GetDemoAnimationTime() == 0.0F &&
+              Transform.Position.x == 0.0F, "restart should restore the first pose without starting playback");
+        TSceneLoader::Save(Scene, Fixtures.Root / "AnimatedSaved.Scene");
+        const TScene Saved = TSceneLoader::Load(Fixtures.Root / "AnimatedSaved.Scene", Assets);
+        Check(Saved.HasDemoAnimation() && Saved.GetStaticMeshInstances()[0].GetId() == "object",
+              "Scene save and load should preserve animation reference and object IDs");
+
+        TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
+        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(SurfaceScene));
+        TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceScene);
+        auto& SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
+        const auto& GPU = SurfaceStates.GetGPUResources();
+        Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform),
+              "new Surface cache should be valid");
+        SurfaceTransform.RotationDegrees.x = 35.0F;
+        SurfaceTransform.Position.y = 2.0F;
+        Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform),
+              "rotation and translation should reuse static TransferWeight and world area buffers");
+        SurfaceTransform.Scale.x = 2.0F;
+        Check(GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform),
+              "scale changes must still refresh TransferWeight and world area buffers");
+        SurfaceTransform.Scale.x = 1.0F;
+        SurfaceTransform.RotationDegrees.x = 0.0F;
+        const auto WetProfile = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
+        auto Flow = Assets.GetSRProfile(WetProfile).GetData().States.at("wetness");
+        Flow.GeometryTransferFactor = 1.0F;
+        const auto WetState = Assets.GetSurfaceStateRegistry().GetStateId("wetness");
+        SurfaceStates.SetDebugProfileParameters(WetProfile, WetState, Flow);
+        const float FlatBound = SurfaceStates.GetMaximumStableDeltaTime();
+        SurfaceTransform.RotationDegrees.x = 90.0F;
+        const float TiltedBound = SurfaceStates.GetMaximumStableDeltaTime();
+        Check(TiltedBound < FlatBound,
+              "Auto timestep bound should reflect rotation even when static TransferWeight cache is reused");
+
+        for (const char* Name : {"Mountain", "Bunny"})
+        {
+            TScene RealScene = TSceneLoader::Load(
+                std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (std::string(Name) + ".Scene"), Assets);
+            const auto Handle = RealScene.GetStaticMeshInstances().front().GetSurfaceData();
+            const auto& Texels = Assets.GetSurfaceData(Handle).GetSharedGeometry()->GetTexels();
+            const auto Positive = std::count_if(Texels.begin(), Texels.end(), [](const auto& Texel)
+            {
+                return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.01F;
+            });
+            Check(Positive > 0, "Mountain and Bunny must contain Macro concavity without normal maps");
+            if (std::string_view(Name) == "Mountain")
+            {
+                Check(RealScene.GetStaticMeshInstances().size() == 4 &&
+                      RealScene.GetStaticMeshInstances()[3].GetId() == "mountain_mud_inverted" &&
+                      RealScene.GetStaticMeshInstances()[3].GetTransform().Position.z == 1.0F &&
+                      RealScene.GetStaticMeshInstances()[3].GetTransform().RotationDegrees.x == 270.0F,
+                      "Mountain Scene should have a fixed inverted Mud mountain above the original");
+            }
+            RealScene.PlayDemoAnimation();
+            RealScene.AdvanceDemoAnimation(3.0F);
+            const auto& Objects = RealScene.GetStaticMeshInstances();
+            Check(std::abs(Objects[0].GetTransform().RotationDegrees.x - Objects[1].GetTransform().RotationDegrees.x) < 1.0e-4F &&
+                  std::abs(Objects[1].GetTransform().RotationDegrees.x - Objects[2].GetTransform().RotationDegrees.x) < 1.0e-4F,
+                  "matching objects in one Scene must reach the same rotation at the same time");
+            if (std::string_view(Name) == "Mountain")
+            {
+                const glm::vec3 Up = glm::mat3(Objects[0].GetTransform().GetMatrix()) * glm::vec3(0, 1, 0);
+                Check(std::abs(Up.z - Objects[0].GetTransform().Scale.y) < 1.0e-4F,
+                      "rotating Mountains must stay upright beneath the fixed inverted Mountain");
+            }
+            RealScene.AdvanceDemoAnimation(3.0F);
+            Check(std::abs(Objects[0].GetTransform().RotationDegrees.x - Objects[2].GetTransform().RotationDegrees.x) < 1.0e-4F,
+                  "matching objects must remain synchronized through the full turn");
+            if (std::string_view(Name) == "Mountain")
+                Check(Objects[3].GetTransform().Position.z == 1.0F &&
+                      Objects[3].GetTransform().RotationDegrees.x == 270.0F,
+                      "the inverted Mud mountain must remain stationary during animation");
+        }
     }
 
     void TestSceneResources(TWindow& Window, const TVulkanContext& Context, const TFixtures& Fixtures)
@@ -361,7 +477,7 @@ namespace
     }
 }
 
-int main()
+int main(int Argc, char* Argv[])
 {
     std::unique_ptr<MDSS::TWindow> Window;
     std::unique_ptr<MDSS::TVulkanContext> Context;
@@ -379,8 +495,13 @@ int main()
     try
     {
         TFixtures Fixtures;
-        MDSS::Tests::TestSurfaceDebugRendering(*Context);
-        TestSceneResources(*Window, *Context, Fixtures);
+        TestDemoAnimation(*Context, Fixtures);
+        const bool DemoOnly = Argc == 2 && std::string_view(Argv[1]) == "--demo-animation";
+        if (!DemoOnly)
+        {
+            MDSS::Tests::TestSurfaceDebugRendering(*Context);
+            TestSceneResources(*Window, *Context, Fixtures);
+        }
         Context.reset();
         Window.reset();
         for (const auto& Entry : MDSS::TLogger::GetEntries())

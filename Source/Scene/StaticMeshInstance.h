@@ -9,6 +9,7 @@
 #include "Scene/Transform.h"
 
 #include <filesystem>
+#include <string>
 
 namespace MDSS
 {
@@ -21,7 +22,8 @@ namespace MDSS
                             TSurfaceRuntimeDataHandle SurfaceData,
                             TTransform InstanceTransform,
                             std::filesystem::path MeshPath = {},
-                            std::filesystem::path ProfileMapPath = {});
+                            std::filesystem::path ProfileMapPath = {},
+                            std::string ObjectId = {});
 
         [[nodiscard]] TTransform&                GetTransform() noexcept;
         [[nodiscard]] const TTransform&          GetTransform() const noexcept;
@@ -30,6 +32,7 @@ namespace MDSS
         void SetSurfaceData(TSurfaceRuntimeDataHandle Handle) noexcept;
         [[nodiscard]] const std::filesystem::path& GetMeshPath() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetProfileMapPath() const noexcept;
+        [[nodiscard]] const std::string& GetId() const noexcept;
 
     private:
         TMeshAssetHandle Mesh = InvalidAssetHandle;
@@ -37,5 +40,6 @@ namespace MDSS
         TTransform       InstanceTransform;
         std::filesystem::path SourceMeshPath;
         std::filesystem::path SourceProfileMapPath;
+        std::string Id;
     };
 } // namespace MDSS
