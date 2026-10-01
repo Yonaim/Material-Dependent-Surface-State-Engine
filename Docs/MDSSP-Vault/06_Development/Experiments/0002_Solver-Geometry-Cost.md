@@ -58,7 +58,7 @@ Capacity 1, SaturationTransferRate 0.5, GeometryTransferRate 1, DecayRate 0.01, 
 | 4 | ON | 8.882 / 10.601 | 7.692 / 8.766 |
 | 4 | OFF | 6.287 / 2.060 | 6.356 / 1.961 |
 
-이는 한 측정 run이며 반복 run 간 시간 편차가 크다. 1채널의 개선을 입증하지 못했고, 4채널 표본도 실제 Scene FPS 개선 배수로 사용하지 않는다. ON/OFF 차이는 GeometryDrive가 비용을 추가한다는 관찰을 제공하지만 ALU/메모리/driver 점유율은 이 실험만으로 분리할 수 없다. 현재 DemoStone.SRProfile은 wetness 1채널이고 accumulationFactor=0이다. 실제 Scene의 고정 카메라·동일 State와 GPU 부하 조건에서 별도 검증이 필요하다.
+이는 한 측정 run이며 반복 run 간 시간 편차가 크다. 1채널의 개선을 입증하지 못했고, 4채널 표본도 실제 Scene FPS 개선 배수로 사용하지 않는다. ON/OFF 차이는 GeometryDrive가 비용을 추가한다는 관찰을 제공하지만 ALU/메모리/driver 점유율은 이 실험만으로 분리할 수 없다. 초기 실험은 wetness 1채널·accumulationFactor=0인 DemoStone.SRProfile을 사용했다. 실제 Scene의 고정 카메라·동일 State와 GPU 부하 조건에서 별도 검증이 필요하다.
 
 ## 구현 상태 점검
 

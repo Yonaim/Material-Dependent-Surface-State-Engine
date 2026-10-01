@@ -8,6 +8,8 @@
 
 > **후속 결정 — 2026-09-29:** 이하의 `MaximumStep` 기반 Fixed 정책은 초기 누적 시간 구현 기록이다. 현재 정책은 [[0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]]로 분리했다. Fixed 기본 ON은 1/60초 구간을 사용하고, 기본 OFF인 Auto substepping에서만 아래 Transport 상한을 적용한다.
 
+> **후속 결정 — 2026-10-02:** 이하의 무제한 backlog 보존은 초기안의 기록이다. 현재 인터랙티브 실행은 설정 준비 시간을 제외하고 pending을 제한한다. [[0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]]를 따른다.
+
 ## Context
 
 기존 Fixed ON은 렌더 frame마다 1/60초×배속의 step 한 번을 실행했다. 15 FPS·배속 1에서는 실제 1초에 시뮬레이션 0.25초만 진행했다. 실제 frame dt를 한 번 곱하면 진행 시간은 맞지만 중간 유입을 같은 frame에서 다시 전달할 기회가 부족하다.
