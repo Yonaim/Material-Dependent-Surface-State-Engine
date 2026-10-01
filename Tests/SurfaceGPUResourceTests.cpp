@@ -556,6 +556,58 @@ namespace
                   "active sources with edited zero rates must clear stale flux while inactive sources preserve it");
     }
 
+    void TestDirectionalCavityRetention(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags)
+    {
+        using namespace MDSS;
+        TSurfaceStateParameters Parameters{};
+        Parameters.SaturationTransferFactor = 1.0F;
+        Parameters.CavityTransportRetentionFactor = 1.0F;
+        TSurfaceResponseProfileData Profile;
+        Profile.States.emplace("wetness", Parameters);
+        const std::vector<TSurfaceResponseProfileData> Table{Profile};
+        const TSurfaceStateRegistry Registry(Table);
+        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        for (std::size_t I = 0; I < 2; ++I)
+        {
+            auto& Texel = Geometry.GetTexels()[I];
+            Texel.Surface = Texel.Triangle = Texel.Chart = 0;
+            Texel.Position = {float(I), 0.0F, 0.0F};
+            Texel.Normal = {0.0F, 0.0F, 1.0F};
+            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - I);
+        }
+        Geometry.GetTexels()[0].Geometry.ConcavityWeight = 1.0F;
+        Geometry.SetProfileMap({0, 0});
+        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
+                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const auto Run = [&](std::array<float, 2> Initial)
+        {
+            Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
+            Vulkan.Execute([&](VkCommandBuffer Command)
+            {
+                Solver.RecordStep(Command, Descriptors, true, 2, 1, 0.25F, glm::mat4(1.0F),
+                                  glm::vec3(0.0F), CacheFlags);
+            });
+            std::array<float, 2> Result{};
+            Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+            return Result;
+        };
+        const auto Exit = Run({1.0F, 0.0F});
+        Check(std::abs(Exit[0] - 1.0F) < 1.0e-5F && std::abs(Exit[1]) < 1.0e-5F,
+              "cavity exit should be blocked at full directional retention");
+        const auto Entry = Run({0.0F, 1.0F});
+        Check(std::abs(Entry[0] - 0.25F) < 1.0e-5F && std::abs(Entry[1] - 0.75F) < 1.0e-5F,
+              "entry into a cavity should remain mobile and conserve State");
+        Parameters.CavityTransportRetentionFactor = 0.0F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        const auto Neutral = Run({1.0F, 0.0F});
+        Check(std::abs(Neutral[0] - 0.75F) < 1.0e-5F && std::abs(Neutral[1] - 0.25F) < 1.0e-5F,
+              "zero cavity retention should preserve the previous transport result");
+    }
+
     void TestGPUSolver(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
     {
         using namespace MDSS;
@@ -868,42 +920,6 @@ namespace
         const std::array<float, 2> Limited = Run({0.5F, 0.9F}, glm::vec3(0.0F, -1.0F, 0.0F), 0.25F);
         Check(std::abs(Limited[0]) < 1.0e-4F && std::abs(Limited[1] - 1.4F) < 1.0e-4F,
               "유출은 source 보유량으로 제한하고 target의 Capacity 초과량은 보존해야 한다.");
-    }
-
-    void TestCurvatureWeightOptions()
-    {
-        using namespace MDSS;
-        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
-        for (std::size_t Index = 0; Index < 2; ++Index)
-        {
-            auto& Texel = Geometry.GetTexels()[Index];
-            Texel.Surface = 0;
-            Texel.Triangle = 0;
-            Texel.Position = {static_cast<float>(Index), 0.0F, 0.0F};
-            Texel.Normal = {0.0F, 0.0F, 1.0F};
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
-            Texel.Geometry.MesoMeanCurvature = Index == 0 ? 2.0F : -2.0F;
-        }
-        Geometry.SetProfileMap({0, 0});
-        const auto Fixed = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
-        const auto Curved = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F), nullptr, true, true, true, true);
-        Check(std::abs(Fixed[0] - 1.0F) < 1.0e-5F, "default curvature weight should remain fixed at one");
-        Check(std::abs(Curved[0] - 1.0F / 3.0F) < 1.0e-5F &&
-                  std::abs(Curved[0] - Curved[SurfaceNeighborCount]) < 1.0e-5F,
-              "precomputed curvature attenuation should be symmetric for convex and concave endpoints");
-        const auto Scaled = BuildSurfaceGPUTransferWeights(Geometry,
-            glm::scale(glm::mat4(1.0F), glm::vec3(3.0F)), nullptr, true, true, true, true);
-        Check(std::abs(Curved[0] - Scaled[0]) < 1.0e-5F,
-              "mesh-local curvature attenuation should not depend on instance scale");
-        for (auto& Texel : Geometry.GetTexels()) Texel.Geometry.MesoMeanCurvature = 0.0F;
-        const auto Flat = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F), nullptr, true, true, true, true);
-        Check(std::abs(Flat[0] - 1.0F) < 1.0e-5F, "zero curvature should produce neutral transfer weight");
-        Geometry.GetTexels()[0].Geometry.MesoMeanCurvature = std::numeric_limits<float>::quiet_NaN();
-        const auto Invalid = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F), nullptr, true, true, true, true);
-        Check(Invalid[0] == 0.0F && Invalid[SurfaceNeighborCount] == 0.0F,
-              "invalid curvature should block both edge directions without propagating NaN");
-        Check(!TSurfaceSolverDebugSettings{}.IsEnabled(TSurfaceSolverTerm::CurvatureWeight),
-              "precomputed curvature should be off by default in the UI settings");
     }
 
     void TestMesoGeometryDrive(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
@@ -1366,11 +1382,12 @@ int main()
 {
     try
     {
-        TestCurvatureWeightOptions();
         TVulkanTestDevice Vulkan;
         TestGPUResources(Vulkan);
         TestGPUSolver(Vulkan);
         TestGPUSolver(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
+        TestDirectionalCavityRetention(Vulkan, 0U);
+        TestDirectionalCavityRetention(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);
         TestCachedDirectionalFlux(Vulkan);
         TestAreaAndMobility(Vulkan, 0U);
         TestAreaAndMobility(Vulkan, MDSS::SurfaceSolverDisableRawFluxCacheFlag);

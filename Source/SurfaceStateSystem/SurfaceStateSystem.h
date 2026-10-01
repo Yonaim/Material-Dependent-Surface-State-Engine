@@ -13,6 +13,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <glm/mat3x3.hpp>
 
 namespace MDSS
 {
@@ -66,6 +67,7 @@ namespace MDSS
         bool bTransferWeightSettingsDirty = false;
         bool bStableDeltaTimeDirty = true;
         float CachedMaximumStableDeltaTime = 1.0F / 60.0F;
+        std::vector<glm::mat3> StableDeltaTimeModelMatrices;
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
     };
 } // namespace MDSS

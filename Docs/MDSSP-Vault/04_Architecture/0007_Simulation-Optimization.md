@@ -13,9 +13,9 @@
 
 | 범위 | 현재 처리 | 줄이는 비용 |
 |---|---|---|
-| TransferWeight | instance별로 준비하고 선형 transform·형상·가중치 설정이 바뀔 때만 갱신 | RawFlux 내부의 반복 `DistanceWeight`·`NormalWeight` 계산 |
+| TransferWeight | Instance별로 준비한다. 정적 형상에서 순수 translation·rotation은 재사용하고 scale·가중치 설정이 바뀔 때 갱신한다. Scene 형상 교체는 새 resource를 만든다. | RawFlux 내부의 반복 `DistanceWeight`·`NormalWeight` 계산 |
 | RawOutgoing | Pass 1 합계를 저장하여 Pass 2가 재사용 | 자기 outgoing 합계의 재계산 |
-| 방향별 RawFlux | 기본 ON에서 활성 source의 8개 슬롯을 저장하고 Pass 2가 이웃 source의 역방향 값을 읽음 | incoming의 RawFlux·GeometryDrive 재평가 |
+| 방향별 RawFlux | 선택적으로 ON에서 활성 source의 8개 슬롯을 저장하고 Pass 2가 이웃 source의 역방향 값을 읽음. 기본값은 OFF | incoming의 RawFlux·GeometryDrive 재평가 |
 | Pass 1 source 계산 | 지원 여부·Profile·Saturation은 channel당 준비, source 법선 변환·중력 투영·위치는 geometry를 쓰는 invocation당 한 번 준비 | 같은 source를 이웃 8개·여러 채널에서 반복 준비하는 비용 |
 | instance 계산 | CPU가 solver dispatch당 선형 행렬·inverse-transpose·gravity up을 준비해 128-byte push constant로 전달 | 텍셀별 공통 행렬 계산 |
 | 비활성 source | unsupported/invalid, 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록 | outgoing 평가와 8개 RawFlux 슬롯의 불필요한 0 쓰기 |
@@ -50,6 +50,15 @@ RawFlux cache는 **step 안에서** 재사용하며 step 사이에는 바뀐 Sta
 
 
 ## 소유권과 값의 수명
+
+### 회전 시 TransferWeight 유지 — 구현
+
+현재 GPU resource manager는 `TTransform.Scale`이 달라질 때 TransferWeight와 WorldTexelAreas를 다시 만든다. 정적 Geometry와 크기가 고정된 순수 translation·rotation에서는 두 값을 유지한다. 강체 회전은 이웃 거리, 법선 내적, mesh-local 곡률 및 월드 텍셀 면적을 보존한다.
+
+- 회전 중에도 Solver는 최신 model 행렬과 World Gravity를 사용해 월드 높이 차와 중력 방향을 GPU에서 매 step 계산한다.
+- 실제 캐시 입력이 변해 CPU가 buffer를 갱신할 때만 queue idle과 업로드를 수행한다.
+- 크기 또는 가중치 규칙이 바뀌면 정적 캐시를 갱신한다. Scene의 형상·배치 변경은 resource 교체로 반영하며, 동적 적층 형상은 별도 GPU 경로에서 처리한다.
+- Auto substepping 상한의 CPU 계산은 별도 캐시이며 회전 시 다시 계산한다. 회전별 중력값 사전 계산은 별도 최적화다 ([[05_ADR/0043-Rotation-Invariant-Transfer-Cache|ADR 0043]], [[../03_Planning/03_Future-Plans/0001_Angle-Sampled-Gravity-Cache|각도별 중력 캐시 후속 검토]]).
 
 ### TransferWeight cache 생성
 
@@ -258,7 +267,7 @@ Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 - 재사용 값은 invocation-local이며 별도 GPU buffer는 추가하지 않는다.
 - 여러 channel의 edge GeometryDrive를 배열로 재사용하는 후보는 1-channel에서 안정적인 개선이 없어 채택하지 않았다.
 
-CurvatureWeight 옵션 변경도 TransferWeight cache를 무효화한다. 기본은 OFF이며 계산식을 따른다 ([[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]). 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
+DistanceWeight·NormalWeight·ProfileBoundaryWeight 옵션 변경은 TransferWeight cache를 무효화한다. 각 pass의 timestamp 시작·끝은 compute stage로 맞춘다. 이는 동일 stage 완료 경계 사이의 측정이며 driver latch 특성과 barrier overhead가 있어 순수 ALU 시간은 아니다.
 
 ## 빈 Source의 incoming 계산 생략 — 초기 구현
 

@@ -22,6 +22,7 @@
 
 namespace MDSS
 {
+    struct TTransform;
     enum class TSurfaceGPUDescriptorBinding : std::uint32_t
     {
         TexelSurfaceIndices = 0,
@@ -77,6 +78,7 @@ namespace MDSS
         [[nodiscard]] const TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept { return TexelMeshIndexBuffer.get(); }
         [[nodiscard]] const TGPUBuffer* GetTexelMeshVertexBuffer() const noexcept { return TexelMeshVertexBuffer.get(); }
         [[nodiscard]] const TGPUBuffer* GetTexelMeshBoundaryBuffer() const noexcept { return TexelMeshBoundaryBuffer.get(); }
+        [[nodiscard]] std::uint32_t GetTexelMeshVertexCount() const noexcept { return TexelMeshVertexCount; }
         [[nodiscard]] std::uint32_t GetTexelMeshBoundaryCount() const noexcept { return TexelMeshBoundaryCount; }
         [[nodiscard]] const std::vector<TSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept { return TexelMeshRanges; }
 
@@ -95,6 +97,7 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> TexelMeshIndexBuffer;
         std::unique_ptr<TGPUBuffer> TexelMeshVertexBuffer;
         std::unique_ptr<TGPUBuffer> TexelMeshBoundaryBuffer;
+        std::uint32_t TexelMeshVertexCount = 0;
         std::uint32_t TexelMeshBoundaryCount = 0;
         std::vector<TSurfaceTexelMeshRange> TexelMeshRanges;
     };
@@ -236,14 +239,13 @@ namespace MDSS
         [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
         [[nodiscard]] bool IsCurrentStateAB(std::size_t SceneIndex) const;
         void ResetStates();
-        [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const glm::mat4& ModelMatrix) const;
+        [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const TTransform& Transform) const;
         void
         UpdateTransferWeightCache(std::size_t SceneIndex,
-                                  const glm::mat4& ModelMatrix,
+                                  const TTransform& Transform,
                                   bool bUseNormalWeight = true,
                                   bool bUseDistanceWeight = true,
-                                  bool bUseProfileBoundaryWeight = true,
-                                  bool bUseCurvatureWeight = false);
+                                  bool bUseProfileBoundaryWeight = true);
         void InvalidateTransferWeightCache(std::size_t SceneIndex);
         void AdvanceCurrentState(std::size_t SceneIndex);
 
@@ -262,7 +264,7 @@ namespace MDSS
             std::unique_ptr<TSurfaceStateDescriptorResources> Descriptors;
             TSurfaceRuntimeDataHandle SurfaceDataHandle{};
             std::size_t ValidTexelCount = 0;
-            glm::mat4 TransferWeightModelMatrix{1.0F};
+            glm::vec3 TransferWeightScale{1.0F};
             bool bTransferWeightCacheValid = false;
             bool bCurrentStateAB = true;
         };

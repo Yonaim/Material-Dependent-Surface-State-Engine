@@ -110,15 +110,16 @@ Profile `stateCapacity`는 **고정 기준 면적의 포화 기준량**이다. �
 | ------------------------ | ------------------------------------------ | -------: | ----: |
 | `stateCapacity`          | 고정 기준 면적의 해당 State 포화 기준량; 동일한 기준이 형상 기여량 clamp에 사용됨 | `(0, n]` | `1.0` |
 | `inputFactor`            | 외부 Source 입력을 해당 State에 얼마나 반영할지 결정        |  `[0,n]` | `1.0` |
-| `saturationTransferFactor` | Saturation 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
-| `geometryTransferFactor` | Geometry 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
+| `saturationSpreadFactor` | Saturation 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
+| `gravityFlowFactor` | Geometry 전달 기준 속도에 곱하는 무차원 계수 | `[0,1]` | `0.0` |
 | `decayRate`              | 고정 기준 면적의 초당 자연 감소량      | `[0, n]` | `0.0` |
-| `cavityRetentionFactor`  | 오목한 영역에서 Decay가 억제되는 정도                    |  `[0,1]` | `0.0` |
+| `cavityDecayProtectionFactor`  | 오목한 영역에서 Decay가 억제되는 정도                    |  `[0,1]` | `0.0` |
+| `cavityExitResistanceFactor` | 오목한 곳에서 낮은 오목도 영역으로 나가는 Transport를 줄이는 정도 | `[0,1]` | `0.0` |
 | `accumulationFactor`     | State를 형상상의 적층량으로 변환하는 정도                  |  `[0,n]` | `0.0` |
 | `cavityFillFactor`       | 적층량 중 Cavity를 채우는 데 우선 배분할 비율              |  `[0,1]` | `0.0` |
 | `thicknessPerAmount`     | 기준 면적당 적층량 1에 대한 표면 위 State 두께 (world-length) | `[0,n]` | `0.01` |
 
-두 TransferFactor는 유한한 `[0,1]` 값으로 검증한다. 실제 속도는 Solver에서 `SaturationTransferFactor × 1.0 State/s`, `GeometryTransferFactor × 6000.0 State/(world-length·s)`로 계산한다. Geometry 기준값은 초기 100에서 6000으로 재보정했다. 기준 면적을 사용하는 단순 수직면에서 Factor 0.5의 국소 이동률은 약 0.101 world-length/s다. 물성 검증값은 아니며 모든 Surface의 동일 속도를 보장하지 않는다 ([[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). Saturation 및 State의 Capacity 초과 허용은 유지한다.
+두 이동 계수는 유한한 `[0,1]` 값으로 검증한다. 실제 속도는 Solver에서 `saturationSpreadFactor × 1.0 State/s`, `gravityFlowFactor × 6000.0 State/(world-length·s)`로 계산한다. Geometry 기준값은 초기 100에서 6000으로 재보정했다. 기준 면적을 사용하는 단순 수직면에서 Factor 0.5의 국소 이동률은 약 0.101 world-length/s다. 물성 검증값은 아니며 모든 Surface의 동일 속도를 보장하지 않는다 ([[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). Saturation 및 State의 Capacity 초과 허용은 유지한다.
 
 State Transition 규칙과 전이 파라미터의 의미는 [[04_Architecture/0002_Surface-State|State Transition]]에서 정의한다.
 

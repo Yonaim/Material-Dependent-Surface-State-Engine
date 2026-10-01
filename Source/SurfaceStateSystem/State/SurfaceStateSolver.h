@@ -23,7 +23,6 @@ namespace MDSS
     inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
     inline constexpr std::uint32_t SurfaceSolverProfileBoundaryWeightFlag = 1U << 9U;
-    inline constexpr std::uint32_t SurfaceSolverCurvatureWeightFlag = 1U << 10U;
 
     enum class TSurfaceSolverTerm : std::uint8_t
     {
@@ -34,17 +33,16 @@ namespace MDSS
         DistanceWeight,
         NormalWeight,
         ProfileBoundaryWeight,
-        CurvatureWeight,
         MesoDirectionNormal,
         Count
     };
 
     struct TSurfaceSolverDebugSettings
     {
-        bool bRawFluxCacheEnabled = true;
+        bool bRawFluxCacheEnabled = false;
         bool bAccumulationFeedbackEnabled = false;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
-            true, true, true, true, true, true, true, false, true};
+            true, true, true, true, true, true, true, true};
 
         [[nodiscard]] bool IsEnabled(TSurfaceSolverTerm Term) const noexcept
         {

@@ -27,7 +27,7 @@ namespace MDSS
     {
     public:
         // Bump whenever mapping, sampling, integration or derivative rules change.
-        static constexpr std::uint32_t PreprocessVersion = 2;
+        static constexpr std::uint32_t PreprocessVersion = 3;
         // Version 4 includes local texel area vectors; older caches are rebuilt.
         static constexpr std::uint32_t FormatVersion = 4;
 

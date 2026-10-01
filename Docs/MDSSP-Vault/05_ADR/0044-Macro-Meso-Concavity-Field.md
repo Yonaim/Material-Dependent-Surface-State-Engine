@@ -3,7 +3,7 @@
 > **한 줄 요약:** 기존 텍셀별 ConcavityWeight에 Mesh 형상과 Normal Map의 가상 Meso 형상을 함께 반영해 Decay와 후속 방향별 Transport가 공유한다.
 
 - 분류: **Simulation**
-- Status: **Accepted — 구현 전**
+- Status: **Implemented**
 - Date: 2026-10-01
 - 관련 문서: [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map Meso Geometry]], [[0003-Dynamic-Accumulation-Geometry|ADR 0003 — 적층 형상]], [[0045-Directional-Cavity-Transport-Retention|ADR 0045 — 홈 이탈 억제]]
 
@@ -21,6 +21,10 @@
 4. 기존 MesoMeanCurvature·MesoGaussianCurvature의 Meso 전용 의미는 유지한다. 통합 오목도를 만들기 위한 Macro/combined 곡률은 별도 전처리 중간값으로 계산하고, GPU 레이아웃 확장이 필요한 디버그 데이터는 구현 시 별도 검토한다. ADR 0019의 선택적 절댓값 CurvatureWeight가 이 결정만으로 조용히 바뀌지 않게 한다.
 5. Decay는 현재처럼 texel의 ConcavityWeight와 .SRProfile의 cavityRetentionFactor를 사용한다. Transport는 같은 오목도 필드를 사용하되 독립 계수와 방향 규칙을 ADR 0045에서 정한다.
 6. 동적 적층 feedback이 활성화되어 홈의 유효 형상이 바뀌면 오목도도 다음 Simulation에 맞게 갱신해야 한다. 기존 SurfaceGeometryUpdate.comp의 unsigned bend 값은 signed ConcavityWeight의 갱신을 대신하지 않는다. 정적 통합 전처리와 동적 갱신은 각각 검증한다.
+
+## Implementation
+
+`BuildMesoGeometry`의 최종 단계에서 Macro 위치·법선과 복원한 Meso 높이·법선을 결합한 유효 표면의 이웃 법선 변화로 H·K 및 주곡률을 구한다. 이웃 간격을 곱한 양의 주곡률 합에서 음의 주곡률 합의 두 배를 뺀 뒤 gain 8과 `[0,1]` clamp를 적용한다. 기존 Meso 전용 H·K 필드는 그대로 둔다. `.Surface` cache preprocess version을 3으로 높였다. 적층 feedback이 켜지면 Solver가 현재 DynamicGeometry에서 signed 오목도를 다시 평가한다. 평면·그릇·긴 홈·돔·안장형 합성 Mesh 검사를 통과했다.
 
 ## Alternatives Considered
 

@@ -75,10 +75,10 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0002-Transport-Drive-and-Weight|ADR 0002]] | Transport Drive와 TransferWeight 분리 | Transport에서 `SaturationDrive`, `GeometryDrive`, `TransferWeight`의 역할을 분리한다. |
 | [[0003-Dynamic-Accumulation-Geometry|ADR 0003]] | Accumulation Height의 동적 형상 반영 | 적층을 `Cavity Filling + Surface Following`으로 나눈다. |
 | [[0015-Geometry-Driven-Transport|ADR 0015]] | Geometry-Driven Transport의 높이·방향·거리 계약 | `GeometryDrive`를 `HeightDrive × DirectionDrive`로 계산해 `TransferWeight`와 결합한다. |
-| [[0016-Transport-Transfer-Weights|ADR 0016]] | Transport TransferWeight 계산 계약 | `TransferWeight(i→j)`는 `DistanceWeight × NormalWeight × CurvatureWeight × ProfileBoundaryWeight`다. |
+| [[0016-Transport-Transfer-Weights|ADR 0016]] | Transport TransferWeight 계산 계약 | 초기 가중치 계약이며 곡률 항은 ADR 0046에서 제거됐다. |
 | [[0017-Solver-Transfer-Cache|ADR 0017]] | Solver TransferWeight 캐시와 RawOutgoing 재사용 | 인스턴스별 TransferWeight 캐시와 Pass 1 RawOutgoing 합계 재사용을 채택한다. |
 | [[0018-Normal-Map-Meso-Geometry|ADR 0018]] | Normal Map 기반 Virtual Meso Geometry 복원 | Normal Map의 slope를 texel graph에서 적분해 Virtual Height와 곡률 파생값을 생성한다. |
-| [[0019-Optional-Curvature-Transfer-Weight|ADR 0019]] | 선택적 사전 계산 CurvatureWeight | 선택형 CurvatureWeight는 기본 OFF이며, 활성화하면 Virtual Height에서 유도한 mean curvature 기반 가중치를 캐시에 적용한다. |
+| [[0019-Optional-Curvature-Transfer-Weight|ADR 0019]] | 선택적 사전 계산 CurvatureWeight | 이전 비교용 항이며 ADR 0046에서 제거됐다. |
 | [[0020-State-Overcapacity-Transport|ADR 0020]] | State A/B에 초과량을 보존하는 Transport | State A/B에 Capacity 초과량을 포함해 보존하고, Saturation 차이에 따른 기존 Transport 경로로 다음 Solver step부터 이동시킨다. |
 | [[0021-Directional-RawFlux-Cache|ADR 0021 — Simulation]] | 방향·채널별 RawFlux 캐시와 역방향 gather | Pass 1에서 방향별 RawFlux를 저장하고 Pass 2에서 이웃 source의 역방향 값을 재사용한다. |
 | [[0022-Pass1-Source-Reuse|ADR 0022]] | Pass 1 source 재사용과 가용량 0 생략 | Pass 1에서 source별 계산값을 재사용하고 가용량이 0인 source의 계산을 생략한다. |
@@ -95,3 +95,4 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0043-Rotation-Invariant-Transfer-Cache|ADR 0043]] | 순수 회전에 불변인 TransferWeight 캐시 | 순수 회전에서 TransferWeight·면적 버퍼의 CPU 재계산과 GPU 갱신을 생략한다. |
 | [[0044-Macro-Meso-Concavity-Field|ADR 0044]] | Macro Mesh와 Normal Map을 반영한 텍셀 오목도 | 기존 ConcavityWeight에 Mesh와 Normal Map의 굴곡을 함께 반영한다. |
 | [[0045-Directional-Cavity-Transport-Retention|ADR 0045]] | 방향별 홈 이탈 억제와 Decay 계수 분리 | State별 독립 계수로 오목한 곳에서 밖으로 나가는 Transport를 줄인다. |
+| [[0046-Transport-Role-Names-and-Curvature-Removal|ADR 0046]] | Transport 역할별 Profile 키와 곡률 감쇠 제거 | Profile 키로 이동·이탈·감소를 구별하고 선택적 곡률 감쇠를 제거한다. |

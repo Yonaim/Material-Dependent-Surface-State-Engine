@@ -7,6 +7,7 @@
 
 #include "AssetManager/Assets/SRProfileAsset.h"
 
+#include <array>
 #include <cmath>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -68,20 +69,48 @@ namespace MDSS
             return Result;
         }
 
-        TSurfaceStateParameters ReadStateParameters(const TJson& State, const std::string& StateName)
+        TSurfaceStateParameters ReadStateParameters(const TJson& State, const std::string& StateName, std::int64_t Version)
         {
             const std::string JsonPath = "states." + StateName;
+            const bool bCurrentSchema = Version == 4;
+            const char* SaturationKey = bCurrentSchema ? "saturationSpreadFactor" : "saturationTransferFactor";
+            const char* GravityKey = bCurrentSchema ? "gravityFlowFactor" : "geometryTransferFactor";
+            const char* ExitKey = bCurrentSchema ? "cavityExitResistanceFactor" : "cavityTransportRetentionFactor";
+            const char* DecayProtectionKey = bCurrentSchema ? "cavityDecayProtectionFactor" : "cavityRetentionFactor";
+            const std::array<const char*, 4> WrongVersionKeys = bCurrentSchema
+                ? std::array<const char*, 4>{"saturationTransferFactor", "geometryTransferFactor",
+                                             "cavityTransportRetentionFactor", "cavityRetentionFactor"}
+                : std::array<const char*, 4>{"saturationSpreadFactor", "gravityFlowFactor",
+                                             "cavityExitResistanceFactor", "cavityDecayProtectionFactor"};
+            for (const char* Key : WrongVersionKeys)
+            {
+                if (State.contains(Key))
+                {
+                    throw std::invalid_argument(JsonPath + "." + Key + " belongs to the other .SRProfile version.");
+                }
+            }
+
+            float CavityTransportRetentionFactor = 0.0F;
+            if (const auto Found = State.find(ExitKey); Found != State.end())
+            {
+                if (!Found->is_number())
+                {
+                    throw std::invalid_argument(JsonPath + "." + ExitKey + " must be a number.");
+                }
+                CavityTransportRetentionFactor = Found->get<float>();
+            }
 
             return {
                 ReadFloat(State, "stateCapacity", JsonPath),
                 ReadFloat(State, "inputFactor", JsonPath),
-                ReadFloat(State, "saturationTransferFactor", JsonPath),
-                ReadFloat(State, "geometryTransferFactor", JsonPath),
+                ReadFloat(State, SaturationKey, JsonPath),
+                ReadFloat(State, GravityKey, JsonPath),
                 ReadFloat(State, "decayRate", JsonPath),
-                ReadFloat(State, "cavityRetentionFactor", JsonPath),
+                ReadFloat(State, DecayProtectionKey, JsonPath),
                 ReadFloat(State, "accumulationFactor", JsonPath),
                 ReadFloat(State, "cavityFillFactor", JsonPath),
                 ReadFloat(State, "thicknessPerAmount", JsonPath),
+                CavityTransportRetentionFactor,
             };
         }
 
@@ -102,9 +131,10 @@ namespace MDSS
             {
                 throw std::invalid_argument("$.version must be an integer.");
             }
-            if (Version.get<std::int64_t>() != 3)
+            const std::int64_t SchemaVersion = Version.get<std::int64_t>();
+            if (SchemaVersion != 3 && SchemaVersion != 4)
             {
-                throw std::invalid_argument("$.version is unsupported; expected version 3 with thicknessPerAmount.");
+                throw std::invalid_argument("$.version is unsupported; expected version 3 or 4.");
             }
 
             Name = ReadString(Root, "name", "$");
@@ -136,7 +166,7 @@ namespace MDSS
                     throw std::invalid_argument("$.states contains duplicate State name after normalization: '" +
                                                 CanonicalName + "'.");
                 }
-                Data.States.emplace(CanonicalName, ReadStateParameters(Iterator.value(), CanonicalName));
+                Data.States.emplace(CanonicalName, ReadStateParameters(Iterator.value(), CanonicalName, SchemaVersion));
             }
 
             const TJson& Transitions = RequireMember(Root, "transitions", "$");

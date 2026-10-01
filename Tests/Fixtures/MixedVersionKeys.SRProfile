@@ -1,16 +1,16 @@
 {
   "type": "SurfaceResponseProfile",
   "version": 4,
-  "name": "DemoWetness",
+  "name": "MixedVersionKeys",
   "states": {
     "wetness": {
       "stateCapacity": 1.0,
       "inputFactor": 1.0,
       "saturationSpreadFactor": 0.2,
-      "gravityFlowFactor": 0.3412,
-      "decayRate": 0.03,
+      "gravityFlowFactor": 0.3,
+      "decayRate": 0.0,
       "cavityDecayProtectionFactor": 0.5,
-      "cavityExitResistanceFactor": 1.0,
+      "cavityTransportRetentionFactor": 0.8,
       "accumulationFactor": 0.0,
       "cavityFillFactor": 0.0,
       "thicknessPerAmount": 0.01

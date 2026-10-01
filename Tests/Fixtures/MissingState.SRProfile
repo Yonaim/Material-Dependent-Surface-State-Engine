@@ -10,6 +10,7 @@
       "geometryTransferFactor": 0.001,
       "decayRate": 0.01,
       "cavityRetentionFactor": 0.5,
+      "cavityTransportRetentionFactor": 0.4,
       "accumulationFactor": 0.8,
       "cavityFillFactor": 0.6,
       "thicknessPerAmount": 0.01

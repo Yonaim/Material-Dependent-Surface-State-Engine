@@ -119,11 +119,12 @@ Non-integrable 입력은 임계값으로 거부하지 않는다.
 | `Meso_Virtual_Height` | Texel별 | Virtual Height를 저장하는 구현 필드. Macro Geometry 기준 Normal Map 복원 상대 높이 |
 | `MesoMeanCurvature` | Texel별 CPU/GPU | height field의 국소 이차 fit에서 계산한 signed mean curvature. 단위는 1/mesh-local length다. |
 | `MesoGaussianCurvature` | Texel별 CPU/GPU | height field의 국소 이차 fit에서 계산한 Gaussian curvature. 단위는 1/(mesh-local length²)다. 곡면이 볼록/오목/안장인지 보조적으로 구분한다. |
-| `ConcavityWeight` | Texel별 CPU/GPU | 양의 signed mean curvature에 평균 이웃 간격을 곱해 `[0,1]`로 clamp한 Decay 전용 cavity retention 입력. 평탄/볼록 영역은 0이다. |
+| `ConcavityWeight` | Texel별 CPU/GPU | **현재 구현:** Macro Mesh와 Normal Map Meso를 합친 유효 표면의 부호 있는 오목도를 `[0,1]`로 제한한 Decay·Transport 공유 입력. |
 
-- Solver의 Decay는 `ConcavityWeight`를 직접 사용한다.
+- Solver의 Decay와 홈 이탈 Transport는 같은 `ConcavityWeight`를 사용하지만 서로 다른 Profile 계수로 조절한다.
 - Mean/Gaussian curvature는 형상 데이터로 생성한다.
-- Transport의 `CurvatureWeight`는 기본 OFF에서 `1.0`을 사용한다. ON이면 Virtual Height에서 유도한 mean curvature 기반 사전 계산 가중치를 적용한다 ([[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]).
+- 전처리는 유효 위치·법선의 이웃 변화에서 H와 K 및 주곡률을 구하고, 평균 이웃 간격으로 무차원화한다. 양의 주곡률 합에서 음의 주곡률 합의 두 배를 빼고 gain 8을 적용한 뒤 `[0,1]`로 제한한다. 평면·그릇·홈·돔·안장형 합성 Mesh fixture를 통과했다 ([[05_ADR/0044-Macro-Meso-Concavity-Field|ADR 0044]]).
+- 홈 이탈 Transport는 `cavityExitResistanceFactor`와 source→target 오목도 차이로 감쇠한다. Decay의 `cavityDecayProtectionFactor`는 자연 감소에만 적용된다 ([[05_ADR/0046-Transport-Role-Names-and-Curvature-Removal|ADR 0046]]).
 - `NormalWeight`도 이웃 normal 차이를 반영하므로 곡률 항을 추가하면 굽힘 효과가 중복될 수 있다.
 - GPU storage layout은 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]와 관련 결정에 따른다 ([[05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]).
 

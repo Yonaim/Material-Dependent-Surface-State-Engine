@@ -73,13 +73,14 @@ namespace MDSS
             }
 
             ValidateFiniteNonNegative(State.InputFactor, Prefix + "inputFactor");
-            ValidateUnitInterval(State.SaturationTransferFactor, Prefix + "saturationTransferFactor");
-            ValidateUnitInterval(State.GeometryTransferFactor, Prefix + "geometryTransferFactor");
+            ValidateUnitInterval(State.SaturationTransferFactor, Prefix + "saturationSpreadFactor");
+            ValidateUnitInterval(State.GeometryTransferFactor, Prefix + "gravityFlowFactor");
             ValidateFiniteNonNegative(State.DecayRate, Prefix + "decayRate");
-            ValidateUnitInterval(State.CavityRetentionFactor, Prefix + "cavityRetentionFactor");
+            ValidateUnitInterval(State.CavityRetentionFactor, Prefix + "cavityDecayProtectionFactor");
             ValidateFiniteNonNegative(State.AccumulationFactor, Prefix + "accumulationFactor");
             ValidateUnitInterval(State.CavityFillFactor, Prefix + "cavityFillFactor");
             ValidateFiniteNonNegative(State.ThicknessPerAmount, Prefix + "thicknessPerAmount");
+            ValidateUnitInterval(State.CavityTransportRetentionFactor, Prefix + "cavityExitResistanceFactor");
         }
 
         for (std::size_t Index = 0; Index < Data.Transitions.size(); ++Index)

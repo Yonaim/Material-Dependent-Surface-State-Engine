@@ -201,7 +201,7 @@ Descriptor layout은 아래 binding을 각각 별도의 storage buffer로 연결
 | 3 | `SurfaceNormalBuffer` | `vec4[]` | read-only |
 | 4 | `GeometryScalarBuffer` | texel당 네 `float` | vertex / fragment / compute read-only |
 | 5 | `NeighborIndexBuffer` | texel당 `uvec4[2]` | read-only |
-| 6 | `ProfileParametersBuffer` | `(ProfileIndex, ChannelIndex)`당 세 `vec4` (48 B, 세 번째의 `x`가 `ThicknessPerAmount`) | read-only |
+| 6 | `ProfileParametersBuffer` | `(ProfileIndex, ChannelIndex)`당 세 `vec4` (48 B, 세 번째의 `x`가 `ThicknessPerAmount`, `y`가 `CavityTransportRetentionFactor`) | read-only |
 | 7 | `ProfileSupportedBuffer` | `uint[]` | read-only |
 | 8 | Current State | packed `float[]` | read-only |
 | 9 | Next State | packed `float[]` | write-only |

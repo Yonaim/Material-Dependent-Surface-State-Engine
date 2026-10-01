@@ -58,6 +58,7 @@ namespace MDSS
         bTransferWeightSettingsDirty = Replacement.bTransferWeightSettingsDirty;
         bStableDeltaTimeDirty = Replacement.bStableDeltaTimeDirty;
         CachedMaximumStableDeltaTime = Replacement.CachedMaximumStableDeltaTime;
+        StableDeltaTimeModelMatrices = std::move(Replacement.StableDeltaTimeModelMatrices);
         RuntimeProfileOverrides = std::move(Replacement.RuntimeProfileOverrides);
     }
 
@@ -447,10 +448,16 @@ namespace MDSS
     float TSurfaceStateSystem::GetMaximumStableDeltaTime()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
+        if (StableDeltaTimeModelMatrices.size() != Instances.size()) bStableDeltaTimeDirty = true;
         for (std::size_t I = 0; I < Instances.size(); ++I)
-            if (GPUResources->GetInstanceDescriptors(I) &&
-                GPUResources->NeedsTransferWeightCacheUpdate(I, Instances[I].GetTransform().GetMatrix()))
-                bStableDeltaTimeDirty = true;
+        {
+            if (!GPUResources->GetInstanceDescriptors(I) || I >= StableDeltaTimeModelMatrices.size()) continue;
+            const glm::mat3 Model(Instances[I].GetTransform().GetMatrix());
+            for (glm::length_t Column = 0; Column < 3; ++Column)
+                for (glm::length_t Row = 0; Row < 3; ++Row)
+                    if (StableDeltaTimeModelMatrices[I][Column][Row] != Model[Column][Row])
+                        bStableDeltaTimeDirty = true;
+        }
         if (!bStableDeltaTimeDirty) return CachedMaximumStableDeltaTime;
 
         double Limit = 1.0 / 60.0;
@@ -468,8 +475,7 @@ namespace MDSS
             const auto Weights = BuildSurfaceGPUTransferWeights(Geometry, Model, nullptr,
                 DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
                 DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::CurvatureWeight));
+                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight));
             for (std::size_t T = 0; T < Texels.size(); ++T)
             {
                 const auto Profile = Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(T));
@@ -502,6 +508,9 @@ namespace MDSS
             }
         }
         CachedMaximumStableDeltaTime = static_cast<float>(Limit);
+        StableDeltaTimeModelMatrices.resize(Instances.size());
+        for (std::size_t I = 0; I < Instances.size(); ++I)
+            StableDeltaTimeModelMatrices[I] = glm::mat3(Instances[I].GetTransform().GetMatrix());
         bStableDeltaTimeDirty = false;
         return CachedMaximumStableDeltaTime;
     }
@@ -525,10 +534,9 @@ namespace MDSS
             {
                 continue;
             }
-            const glm::mat4 ModelMatrix = Scene.GetStaticMeshInstances()[SceneIndex].GetTransform().GetMatrix();
             bHasDirtyTransferWeightCache =
                 bHasDirtyTransferWeightCache ||
-                GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, ModelMatrix);
+                GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, Scene.GetStaticMeshInstances()[SceneIndex].GetTransform());
         }
         if (bHasDirtyTransferWeightCache && vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
         {
@@ -547,15 +555,14 @@ namespace MDSS
             const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[SceneIndex];
             const glm::mat4 ModelMatrix = Instance.GetTransform().GetMatrix();
             if (bTransferWeightSettingsDirty ||
-                GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, ModelMatrix))
+                GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, Instance.GetTransform()))
             {
                 GPUResources->UpdateTransferWeightCache(
                     SceneIndex,
-                    ModelMatrix,
+                    Instance.GetTransform(),
                     DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
                     DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
-                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::CurvatureWeight));
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight));
             }
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             std::uint32_t SolverFlags = 0U;
@@ -592,8 +599,6 @@ namespace MDSS
                     SolverFlags |= SurfaceSolverNormalWeightFlag;
                 if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight))
                     SolverFlags |= SurfaceSolverProfileBoundaryWeightFlag;
-                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::CurvatureWeight))
-                    SolverFlags |= SurfaceSolverCurvatureWeightFlag;
             }
             Solver->RecordStep(CommandBuffer,
                                *Descriptors,
@@ -650,7 +655,7 @@ namespace MDSS
         DebugSolverSettings.SetEnabled(Term, bEnabled);
         bStableDeltaTimeDirty = true;
         if (Term == TSurfaceSolverTerm::DistanceWeight || Term == TSurfaceSolverTerm::NormalWeight ||
-            Term == TSurfaceSolverTerm::ProfileBoundaryWeight || Term == TSurfaceSolverTerm::CurvatureWeight)
+            Term == TSurfaceSolverTerm::ProfileBoundaryWeight)
         {
             bTransferWeightSettingsDirty = true;
         }

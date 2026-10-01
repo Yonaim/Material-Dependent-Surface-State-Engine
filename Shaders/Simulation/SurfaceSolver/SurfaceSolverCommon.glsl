@@ -8,7 +8,7 @@
 const uint InvalidSurfaceId = 0xffffffffu;
 const uint InvalidTexelIndex = 0xffffffffu;
 const uint SurfaceNeighborCount = 8u;
-layout(constant_id = 0) const bool UseRawFluxCache = true;
+layout(constant_id = 0) const bool UseRawFluxCache = false;
 
 struct TSurfaceGPUProfileParameters
 {
@@ -264,6 +264,55 @@ vec3 effectiveLocalNormal(uint TexelIndex)
     return any(isnan(Result)) || any(isinf(Result)) ? Fallback : Result;
 }
 
+float concavityWeight(uint TexelIndex)
+{
+    float StaticWeight = GeometryScalars.Values[TexelIndex].ConcavityWeight;
+    if ((Solver.Flags & (1u << 6u)) == 0u) return StaticWeight;
+
+    vec3 CenterPosition = DynamicGeometry.Values[TexelIndex * 2u].xyz;
+    vec3 N = normalize(DynamicGeometry.Values[TexelIndex * 2u + 1u].xyz);
+    if (any(isnan(N)) || any(isinf(N))) return StaticWeight;
+    vec3 Axis = abs(N.z) < 0.85 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+    vec3 T = normalize(cross(Axis, N));
+    vec3 B = cross(N, T);
+    float XX = 0.0, XY = 0.0, YY = 0.0;
+    float UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
+    float SpacingSum = 0.0;
+    uint SampleCount = 0u;
+    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
+    {
+        uint Other = neighborIndex(TexelIndex, Slot);
+        if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other)) continue;
+        vec3 OtherPosition = DynamicGeometry.Values[Other * 2u].xyz;
+        vec3 OtherNormal = normalize(DynamicGeometry.Values[Other * 2u + 1u].xyz);
+        if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05) continue;
+        vec3 Delta = OtherPosition - CenterPosition;
+        float X = dot(Delta, T), Y = dot(Delta, B);
+        float DistanceSquared = X * X + Y * Y;
+        if (DistanceSquared <= 1.0e-12 || isnan(DistanceSquared) || isinf(DistanceSquared)) continue;
+        float Weight = 1.0 / DistanceSquared;
+        vec3 NormalDelta = OtherNormal - N;
+        float DU = -dot(NormalDelta, T), DV = -dot(NormalDelta, B);
+        XX += Weight * X * X; XY += Weight * X * Y; YY += Weight * Y * Y;
+        UX += Weight * X * DU; UY += Weight * Y * DU;
+        VX += Weight * X * DV; VY += Weight * Y * DV;
+        SpacingSum += sqrt(DistanceSquared);
+        ++SampleCount;
+    }
+    float Determinant = XX * YY - XY * XY;
+    if (SampleCount < 3u || Determinant <= 1.0e-6 * max(XX * YY, 1.0e-12)) return StaticWeight;
+    float Sxx = (YY * UX - XY * UY) / Determinant;
+    float Sxy = 0.5 * ((XX * UY - XY * UX) + (YY * VX - XY * VY)) / Determinant;
+    float Syy = (XX * VY - XY * VX) / Determinant;
+    float H = 0.5 * (Sxx + Syy), K = Sxx * Syy - Sxy * Sxy;
+    float Root = sqrt(max(H * H - K, 0.0));
+    float A = H + Root, C = H - Root;
+    float Positive = max(A, 0.0) + max(C, 0.0);
+    float Negative = max(-A, 0.0) + max(-C, 0.0);
+    float Score = 8.0 * (SpacingSum / float(SampleCount)) * max(Positive - 2.0 * Negative, 0.0);
+    return isnan(Score) || isinf(Score) ? StaticWeight : clamp(Score, 0.0, 1.0);
+}
+
 bool supportsChannel(uint TexelIndex, uint ChannelIndex)
 {
     if (!isValidTexel(TexelIndex) || ChannelIndex >= Solver.StateChannelCount)
@@ -296,7 +345,7 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
     uint RecordIndex = profileRecordIndex(TexelIndex, ChannelIndex);
     float DecayRate = ProfileParameters.Values[RecordIndex].DecayAndGeometry.x;
     float CavityRetentionFactor = ProfileParameters.Values[RecordIndex].DecayAndGeometry.y;
-    float ConcavityWeight = GeometryScalars.Values[TexelIndex].ConcavityWeight;
+    float ConcavityWeight = concavityWeight(TexelIndex);
     float Retention = (Solver.Flags & (1u << 3u)) != 0u
                           ? 1.0
                           : 1.0 - ConcavityWeight * CavityRetentionFactor;
@@ -376,7 +425,7 @@ float geometryDrive(uint TargetTexel)
     return HeightDrive * DirectionDrive;
 }
 
-float rawFlux(uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
+float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
               TSurfaceGPUProfileParameters SourceParameters, float SourceSaturation)
 {
     if (CachedTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0 ||
@@ -395,8 +444,10 @@ float rawFlux(uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
     float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
                               ? geometryDrive(TargetTexel)
                               : 0.0;
+    float Exit = max(concavityWeight(SourceTexel) - concavityWeight(TargetTexel), 0.0);
+    float Retention = clamp(1.0 - SourceParameters.AccumulationThickness.y * Exit, 0.0, 1.0);
     return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
-           CachedTransferWeight * Solver.DeltaTime;
+           CachedTransferWeight * Retention * Solver.DeltaTime;
 }
 
 #endif

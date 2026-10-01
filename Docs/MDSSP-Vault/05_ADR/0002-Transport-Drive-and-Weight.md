@@ -7,6 +7,8 @@
 - 날짜: 미기록
 - 관련 문서: [[../04_Architecture/0006_Surface-State-Update|Surface State Update]]
 
+> **후속 결정 (2026-10-01):** 높이 차이를 `GeometryDrive`에 두는 역할 분리는 유지한다. 아래 초기 `TransferWeight`의 곡률 항은 [[0046-Transport-Role-Names-and-Curvature-Removal|ADR 0046]]에서 제거했다.
+
 ## Context
 
 기존 TransferWeight 안에 Height / Direction을 모두 넣으면 Geometry 자체가 이동을 발생시키는 효과와, 이웃 관계가 전달을 통과시키는 효과가 섞인다.

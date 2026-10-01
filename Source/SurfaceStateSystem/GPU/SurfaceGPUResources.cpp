@@ -131,6 +131,7 @@ namespace MDSS
                                                      MaxRange);
         auto Mesh = BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles);
         TexelMeshRanges = std::move(Mesh.Surfaces);
+        TexelMeshVertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
         TexelMeshBoundaryCount = static_cast<std::uint32_t>(Mesh.BoundaryEdges.size());
         if (!Mesh.Indices.empty())
         {
@@ -275,7 +276,7 @@ namespace MDSS
              Parameters.CavityRetentionFactor,
              Parameters.AccumulationFactor,
              Parameters.CavityFillFactor},
-            {Parameters.ThicknessPerAmount, 0.0F, 0.0F, 0.0F}};
+            {Parameters.ThicknessPerAmount, Parameters.CavityTransportRetentionFactor, 0.0F, 0.0F}};
         const VkDeviceSize Offset = static_cast<VkDeviceSize>(RecordIndex * sizeof(Packed));
         ParametersBuffer->Upload(&Packed, sizeof(Packed), Offset);
     }
