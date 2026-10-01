@@ -13,7 +13,7 @@
 | 영역 | 기능 |
 |---|---|
 | 가운데 3D Viewport | Scene 표시, object 선택, 렌더·Surface 진단 뷰 선택 |
-| 좌측 패널 | 상단 `Scene File`·`Animation` 탭, Camera, 선택 object Transform, 렌더 설정 |
+| 좌측 패널 | 상단 `Scene`·`Animation` 탭, Camera, 선택 object Transform, 렌더 설정 |
 | 우측 패널 | 상단 공통 실행 제어, 하단 `Solver`, `Contact Input`, `Profile Tuning`, `Inspector`, `Global Settings` 탭 |
 | Viewport 상단 | FPS, GPU Render·Solver 성능 표시 |
 | 하단 `Log` | 로그 level 필터, 검색, 복사·삭제 |
@@ -51,38 +51,40 @@
 - Wireframe 뷰 설명 상자에서 선을 흰색으로 통일할지 선택하고, GPU가 wide lines를 지원하면 선 굵기도 조절한다. 기본 굵기는 2 px다.
 - Meso·Accumulation·Final Geometry 뷰 설명 상자에서 `Height Surface Grid`의 Off / Overlay / Grid only와 셀당 texel 수를 조절한다. Grid only도 어두운 면으로 depth를 유지한다. 새 View Mode는 추가하지 않는다 ([[../05_ADR/0037-Texel-Grid-and-Demo-Lit-Effects|ADR 0037]]).
 - 좌측 `Render Settings`: Normal strength, Ambient light, Normal Y 반전
-- `Lit Demo Effects`: Wetness/Mud/WaterFilm 반응, Mud/WaterFilm height 적용 여부, Dry/Wet/Mud roughness, Lit·선택 State 미리보기·Inspector가 공유하는 `Lit height display scale`. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
+- `Lit Demo Effects`: Wetness/Mud/WaterFilm/Lava 반응, 적층 레이어 적용 여부, Dry/Wet/Mud roughness, Lit·선택 State 미리보기·Inspector가 공유하는 `Lit height display scale`. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
 - 선택한 뷰의 State·보조 옵션은 Viewport 상단에 표시한다.
 
 ## Scene 편집
 
-- Scene을 열거나 저장하고, Viewport에서 Static Mesh object를 선택한다.
+- `Scene` 창에서 저장된 Scene을 열거나 다시 시작하거나 저장하고, Viewport에서 Static Mesh object를 선택한다.
 - Transform 편집:
   - Position: 숫자 입력 또는 이동 gizmo
   - Rotation: 숫자 입력 또는 Rotate 모드의 월드 축 회전 링
   - Scale: 숫자 입력
-- Scene 파일 저장 항목: 해상도, Lit height display scale, Mesh 경로, 선택적 `.SurfaceProfileMap` 경로, object Transform
+- Scene 파일 저장 항목: 시작 Camera, 해상도, Lit height display scale, Mesh 경로, 선택적 `.SurfaceProfileMap` 경로, object Transform, 선택적 `.DemoAnim` 경로와 `initialContacts`
 - Lit height display scale은 렌더링 전용 Scene 설정이다. 이전 `.Scene` 파일에서 필드가 없으면 `4.0`을 사용한다.
 - 저장 경로는 Scene 파일 위치 기준 상대 경로다.
-- Camera 설정과 simulation State는 저장하지 않는다.
+- Scene camera의 Position, Target, 수직 FOV를 저장한다. Simulation State는 저장하지 않는다.
 - `Config/Engine.ini`의 `[Application] StartupScene`이 앱 시작 Scene을 지정한다. 실행 중 Scene을 바꿔도 설정은 자동 저장하지 않는다.
 
 ### Demo Animation 제어 — 구현
 
-`.Scene`이 `.DemoAnim`을 참조하면 좌측 맨 위 도킹 영역에 `Scene File`과 나란한 `Animation` 탭을 표시한다. 별도 Animation 창을 `Scene File`과 같은 도킹 노드에 배치하며, Scene에 `.DemoAnim`이 없으면 탭을 표시하지 않는다. 애니메이션은 오브젝트 Transform과 선택적 Camera keyframe을 재생한다 ([[../05_ADR/0042-Scene-Referenced-Demo-Animation|ADR 0042]]).
+`.Scene`이 `.DemoAnim`을 참조하면 좌측 맨 위 도킹 영역에 `Scene`과 나란한 `Animation` 탭을 표시한다. 별도 Animation 창을 `Scene`과 같은 도킹 노드에 배치하며, Scene에 `.DemoAnim`이 없으면 탭을 표시하지 않는다. 애니메이션은 오브젝트 Transform과 선택적 Camera keyframe을 재생한다 ([[../05_ADR/0042-Scene-Referenced-Demo-Animation|ADR 0042]]).
 
 | 설정 | 동작 |
 |---|---|
 | Animation Play / Pause | 애니메이션 시간과 keyframe 평가만 진행·정지 |
 | Restart Animation | 애니메이션 시간을 처음으로 되돌리고 초기 keyframe을 적용. Solver State는 유지 |
+| Restart Scene | 메모리에 보관한 초기 Camera·Transform·애니메이션 상태를 복원하고 Solver State를 초기화한다. 기존 Scene/GPU 자원은 유지하며 `initialContacts`를 다음 Solver step에 다시 적용 |
 | Animation Speed | `0.25×`, `0.5×`, `1×`, `2×` 프리셋 또는 `0.05×`–`4×` 슬라이더로 애니메이션 시간 배율 조절 |
 | Simulation Run / Pause / Step | 기존 Simulation 제어대로 Solver 갱신만 진행·정지·한 번 실행 |
 
 - 두 재생 제어는 별도 상태와 시간 진행을 가진다. Animation을 재생해도 Solver는 자동 시작하지 않고, Solver를 재생해도 Animation은 자동 시작하지 않는다.
 - Animation Speed는 UI의 애니메이션 시간에만 곱한다. Simulation Speed는 Solver에만 적용한다.
 - 둘 다 실행 중이면 각 Solver step은 그 시점의 현재 Transform을 사용한다. Simulation을 멈춘 상태에서도 Animation만 계속 재생할 수 있으며 Surface State는 바뀌지 않는다.
-- Animation만으로 접촉 입력을 만들거나 Simulation State를 초기화하지 않는다. 자동 접촉 입력은 별도 후속 설계다.
+- Animation만으로 접촉 입력을 만들거나 Simulation State를 초기화하지 않는다. `.Scene.initialContacts`는 Scene 로드와 Restart Scene 후 첫 Solver step에 적용한다.
 - `.DemoAnim`이 있는 Scene에서만 Animation 제어를 표시한다.
+- Save Scene이 성공하면 현재 Camera와 Transform을 재시작 기준으로 갱신한다. Scene을 다시 읽지 않아 메시·텍스처·Pipeline 로딩 비용이 Restart에 들지 않는다.
 
 ## 공통 Simulation 제어
 

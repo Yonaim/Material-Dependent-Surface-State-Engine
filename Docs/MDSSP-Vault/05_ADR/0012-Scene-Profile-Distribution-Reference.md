@@ -34,7 +34,7 @@ Runtime 전처리 결과에는 Geometry와 texel별 Profile map이 함께 들어
   "objects": [
     {
       "mesh": "../Meshes/Rock.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/Rock_Wet.SurfaceProfileMap",
+      "surfaceProfileMap": "../SurfaceProfileMaps/Rock_Wet.SurfaceProfileMap",
       "transform": {
         "position": [0.0, 0.0, 0.0],
         "rotationDegrees": [0.0, 30.0, 0.0],

@@ -16,7 +16,7 @@
 | OBJ Mesh | `.obj` | 정점, UV, Normal, Face, Surface별 Material 할당 |
 | Render Material | `.mtl` | OBJ Surface의 외관용 Material |
 | Texture | `.png`, `.jpg` 등 | Albedo, Normal 등 |
-| Scene | `.Scene` | JSON 형식. 배치, Asset 연결 관계 및 시뮬레이션 해상도 |
+| Scene | `.Scene` | JSON 형식. 배치, Asset 연결 관계, 시작 카메라 및 시뮬레이션 해상도 |
 | Demo Animation | `.DemoAnim` | JSON 형식. 버전, 길이, 반복 설정, object transform 및 선택적 camera keyframe. `.Scene`의 선택적 참조이며 구현됨 ([[../05_ADR/0042-Scene-Referenced-Demo-Animation|ADR 0042]]) |
 | Surface Response Profile | `.SRProfile` | JSON 형식. Surface State 반응 데이터 |
 | Surface Profile Distribution | `.SurfaceProfileMap` | JSON 형식. Scene object가 경로를 선택하며, Surface별 SRProfile 할당을 기록 |
@@ -104,6 +104,20 @@ flowchart LR
 - 후보 Scene을 읽는 동안 기존 활성 해상도를 유지한다. Renderer의 GPU 자원 교체가 성공하면 새 해상도를 적용한다.
 - UI에서 바꾼 해상도는 현재 `TScene`에 반영하며, `Save Scene`이 파일에 기록한다.
 - 해상도 전환 계약을 따른다 ([[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]).
+
+## `.Scene` 시작 카메라
+
+최상위 `camera`는 씬 로드 및 `Reset Camera View`에서 사용할 시작 위치, 시선 대상, 수직 FOV를 저장한다. 필드가 없는 기존 Scene은 기본 카메라 설정을 사용한다.
+
+```json
+"camera": {
+  "position": [2.0, -3.3, 2.0],
+  "target": [0.0, 0.0, 0.0],
+  "verticalFieldOfViewDegrees": 50.0
+}
+```
+
+`Save Scene`은 현재 카메라 설정을 기록하고, 성공하면 현재 설정을 재시작 기준으로 저장한다.
 
 ## Surface와 Profile의 관계
 
@@ -292,7 +306,7 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
   "objects": [
     {
       "mesh": "../Models/clothes.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/clothes_default.SurfaceProfileMap",
+      "surfaceProfileMap": "../SurfaceProfileMaps/clothes_default.SurfaceProfileMap",
       "transform": {
         "position": [0.0, 0.0, 0.0],
         "rotationDegrees": [0.0, 0.0, 0.0],

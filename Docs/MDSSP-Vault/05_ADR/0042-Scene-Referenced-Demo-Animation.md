@@ -18,11 +18,14 @@
 3. 공통 C++ 재생기는 애니메이션 시간을 독립적으로 진행한다. Simulation Running/Paused/Step은 Solver만 제어하며, 어느 한쪽의 재생 상태가 다른 쪽을 자동으로 바꾸지 않는다. 애니메이션에 접촉 입력 이벤트를 넣지 않는다.
    둘 다 실행 중이면 Solver는 각 step에서 평가된 현재 object transform을 사용한다. Simulation이 멈춘 동안 애니메이션만 진행해도 State는 바뀌지 않는다.
 4. 애니메이션 재생·일시정지·처음부터 재생은 Surface State 초기화와 분리한다. Scene 교체 시 애니메이션 재생 상태는 새 Scene에 맞게 초기화한다. UI에는 애니메이션 제어와 Simulation 제어를 따로 표시한다.
-5. 현재 Assets/Scenes의 Cubes.Scene은 Wetness·WaterFilm·Mud 비교, Mountain.Scene은 경사와 골짜기 흐름 및 고정된 뒤집힌 Mud 산, Bunny.Scene은 굴곡 잔류와 뒤집기, Demo.Scene은 세 형상의 비교를 목표로 한다. 각 Scene에서 회전 대상은 시작 시점과 12초 한 바퀴 회전 주기를 공유한다. 넓은 Mountain 지형은 위 고정 산과 교차하지 않도록 월드 수직축으로 돌리고, 추가 뒤집힌 산은 회전 대상에서 제외한다.
+5. 초기 데모안은 복합 Wetness·WaterFilm·Mud 비교 Scene을 사용했다. 현재 `Assets/Scenes`에는 BrickCube, Bunny, Mountain Scene이 있다. BrickCube와 Bunny는 단일 오브젝트에 Lava 입력을 적용하고, Mountain은 세 배치의 지형 오브젝트에 Lava 입력을 적용한다.
+6. 효과별 단일 State Scene 조합은 향후 확장안으로 남긴다. 현재 세 Scene의 Profile은 Wetness, WaterFilm, Mud, Lava 상태를 정의하며, 각 Scene의 `initialContacts`는 그중 Lava를 초기 입력으로 사용한다. 상태별 애니메이션 파일이 일부 추가되어 있지만, 각 상태별 Scene 조합은 아직 구현되지 않았다.
 
 ## Implementation
 
-`.Scene`의 선택적 `animation` 경로와 object `id`를 `TSceneLoader`가 처리한다. `Source/Scene/DemoAnimation.cpp`는 버전 1 `.DemoAnim`의 대상·키·보간을 검증하고 위치·크기·카메라 선형/계단 보간 및 회전 quaternion Slerp를 평가한다. `TScene`의 시간·재생 상태는 Simulation과 분리했다. 네 기본 Scene에 각각 반복 회전을 연결했으며, 같은 형상의 오브젝트는 동일한 keyframe 시간과 회전 위상을 쓴다. Mountain Scene의 `mountain_mud_inverted`는 z=1.0에 고정한다. 자동 접촉 입력은 포함하지 않는다.
+`.Scene`의 선택적 `animation` 경로와 object `id`를 `TSceneLoader`가 처리한다. `Source/Scene/DemoAnimation.cpp`는 버전 1 `.DemoAnim`의 대상·키·보간을 검증하고 위치·크기·카메라 선형/계단 보간 및 회전 quaternion Slerp를 평가한다. `TScene`의 시간·재생 상태는 Simulation과 분리했다. 네 기본 Scene에 각각 반복 회전을 연결했으며, 같은 형상의 오브젝트는 동일한 keyframe 시간과 회전 위상을 쓴다. Mountain Scene의 `mountain_mud_inverted`는 z=1.0에 고정한다. 애니메이션 이벤트에는 자동 접촉 입력을 포함하지 않는다.
+
+현재 BrickCube, Bunny, Mountain Scene은 각각 참조하는 `.DemoAnim`을 사용한다. `.Scene`의 `initialContacts`는 지정한 상태 입력을 Scene 초기화 시 적용하며, 애니메이션 이벤트와 독립적이다. Restart Scene도 Scene 초기 접촉을 다시 적용한다.
 
 ## Alternatives Considered
 
