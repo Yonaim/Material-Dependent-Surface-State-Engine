@@ -5,6 +5,7 @@
 #include "Debug/TexelGeometryData.glsl"
 layout(local_size_x = 64) in;
 layout(set = 1, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } Output;
+layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache { uint Values[]; } GeometryCache;
 layout(push_constant) uniform TPush
 {
     uint TexelCount;
@@ -13,33 +14,116 @@ layout(push_constant) uniform TPush
     uint Accumulation;
     float AccumulationDisplayScale;
     float GeometryDisplayScale;
+    uint TotalHeight;
+    uint UseBaseline;
+    uint TileSize;
+    uint Padding[3];
     vec4 NormalMatrixColumns[3];
 } Push;
+
+float DisplayHeight(uint Texel)
+{
+    if (Push.TotalHeight != 0u)
+        return GeometryScalars.Values[Texel].MesoVirtualHeight +
+               AccumulationHeights.Values[Texel] * Push.AccumulationDisplayScale;
+    return uintBitsToFloat(GeometryCache.Values[Texel]);
+}
+
+vec3 CachedFinalNormal(uint Texel)
+{
+    vec3 Fallback = MesoNormals.Values[Texel].xyz;
+    if (Texel >= Push.TexelCount || Texel >= uint(Positions.Values.length()) ||
+        Texel >= uint(Normals.Values.length()) || Texel >= uint(NeighborIndices.Values.length())) return Fallback;
+    float CenterHeight = DisplayHeight(Texel);
+    if (isnan(CenterHeight)) return Fallback;
+    // The cached baseline uses this same least-squares fit with meso heights only.
+    // Skip it for TotalHeight, whose invalid-neighbor rules differ from the preview.
+    if (Push.UseBaseline != 0u && Texel < Push.TexelCount &&
+        Texel < uint(GeometryScalars.Values.length()) &&
+        CenterHeight == GeometryScalars.Values[Texel].MesoVirtualHeight)
+    {
+        bool Unchanged = true;
+        for (uint Slot = 0u; Slot < 8u; ++Slot)
+        {
+            uint Other = NeighborIndices.Values[Texel].Indices[Slot];
+            if (Other >= Push.TexelCount) continue;
+            if (Other >= uint(GeometryScalars.Values.length()))
+            {
+                Unchanged = false;
+                break;
+            }
+            float NeighborHeight = DisplayHeight(Other);
+            if (isnan(NeighborHeight) ||
+                NeighborHeight != GeometryScalars.Values[Other].MesoVirtualHeight)
+            {
+                Unchanged = false;
+                break;
+            }
+        }
+        if (Unchanged)
+        {
+            uint Offset = Push.TexelCount + Texel * 3u;
+            return vec3(uintBitsToFloat(GeometryCache.Values[Offset]),
+                        uintBitsToFloat(GeometryCache.Values[Offset + 1u]),
+                        uintBitsToFloat(GeometryCache.Values[Offset + 2u]));
+        }
+    }
+    vec3 N = normalize(Normals.Values[Texel].xyz);
+    vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0), N));
+    vec3 V = cross(N, U);
+    float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
+    for (uint Slot = 0u; Slot < 8u; ++Slot)
+    {
+        uint Other = NeighborIndices.Values[Texel].Indices[Slot];
+        if (Other >= Push.TexelCount || Other >= uint(Positions.Values.length()) ||
+            Other >= uint(Normals.Values.length()) ||
+            dot(N, Normals.Values[Other].xyz) < 0.5) continue;
+        float NeighborHeight = DisplayHeight(Other);
+        if (isnan(NeighborHeight)) continue;
+        vec3 Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
+        float X = dot(Delta, U), Y = dot(Delta, V);
+        float LengthSquared = X * X + Y * Y;
+        if (LengthSquared <= 1e-16) continue;
+        float Weight = 1.0 / LengthSquared;
+        float DH = (NeighborHeight - CenterHeight) * Push.GeometryDisplayScale;
+        XX += X * X * Weight; XY += X * Y * Weight; YY += Y * Y * Weight;
+        XH += X * DH * Weight; YH += Y * DH * Weight;
+    }
+    float Det = XX * YY - XY * XY;
+    if (Det <= 1e-6 * max(XX * YY, 1e-12)) return Fallback;
+    vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
+    return normalize(N - U * Gradient.x - V * Gradient.y);
+}
+
 void main()
 {
     uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     if (T >= Push.TexelCount) return;
-    vec3 P = Positions.Values[T].xyz;
+    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+    uint TileFlag = GeometryCache.Values[Push.TexelCount * 4u + T / TilePixels];
+    if (TileFlag == 0u)
+    {
+        float BaseHeight = GeometryScalars.Values[T].MesoVirtualHeight;
+        if (isnan(BaseHeight) || isinf(BaseHeight)) BaseHeight = 0.0;
+        vec3 BaseNormal = MesoNormals.Values[T].xyz;
+        if (any(isnan(BaseNormal)) || any(isinf(BaseNormal)) || dot(BaseNormal, BaseNormal) < 1e-12)
+            BaseNormal = Normals.Values[T].xyz;
+        Output.Values[T].HeightAndNormal = vec4(BaseHeight * Push.GeometryDisplayScale, normalize(BaseNormal));
+        return;
+    }
     vec3 N = Normals.Values[T].xyz;
     float H = GeometryScalars.Values[T].MesoVirtualHeight;
     if (isnan(H) || isinf(H)) H = 0.0;
     vec3 FinalNormal = MesoNormals.Values[T].xyz;
-    mat3 NormalMatrix = mat3(Push.NormalMatrixColumns[0].xyz,
-                             Push.NormalMatrixColumns[1].xyz,
-                             Push.NormalMatrixColumns[2].xyz);
     if (TexelSurfaceIndices.Values[T] != 0xffffffffu && Push.Accumulation != 0u)
     {
-        TDebugAccumulation D = DebugAccumulation(T, Push.Channel, Push.Channels,
-                                                Push.AccumulationDisplayScale, NormalMatrix);
-        if (D.Status == 3u)
-            H += D.Height;
-        FinalNormal = DebugFinalNormal(T, Push.Channel, Push.Channels,
-                                       Push.AccumulationDisplayScale, NormalMatrix, Push.GeometryDisplayScale);
+        float CachedHeight = DisplayHeight(T);
+        if (!isnan(CachedHeight)) H = CachedHeight;
+        FinalNormal = CachedFinalNormal(T);
     }
     if (any(isnan(FinalNormal)) || any(isinf(FinalNormal)) || dot(FinalNormal, FinalNormal) < 1e-12)
         FinalNormal = N;
     H *= Push.GeometryDisplayScale;
     if (isnan(H) || isinf(H)) H = 0.0;
-    Output.Values[T].PositionAndHeight = vec4(P + N * H, H);
-    Output.Values[T].Normal = vec4(normalize(FinalNormal), 0.0);
+    Output.Values[T].HeightAndNormal = vec4(H, normalize(FinalNormal));
 }

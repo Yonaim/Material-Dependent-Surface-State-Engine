@@ -2,7 +2,7 @@
 
 > **한 줄 요약:** 이 문서는 데이터의 파일 직렬화와 Asset 연결 관계만 정의한다.
 
-상태: **파일 구조 설계 / 해상도별 `.Surface` 캐시 구현**
+상태: **Scene·Profile 파일 로드 및 해상도별 `.Surface` 캐시 구현**
 근거: [[08_Assets/Documents/0003_Asset-Structure.pdf|에셋 구조]]
 
 ---
@@ -17,12 +17,42 @@
 | Render Material | `.mtl` | OBJ Surface의 외관용 Material |
 | Texture | `.png`, `.jpg` 등 | Albedo, Normal 등 |
 | Scene | `.Scene` | JSON 형식. 배치, Asset 연결 관계 및 시뮬레이션 해상도 |
+| Demo Animation | `.DemoAnim` | JSON 형식. 버전, 길이, 반복 설정, object transform 및 선택적 camera keyframe. `.Scene`의 선택적 참조이며 구현됨 ([[../05_ADR/0042-Scene-Referenced-Demo-Animation|ADR 0042]]) |
 | Surface Response Profile | `.SRProfile` | JSON 형식. Surface State 반응 데이터 |
 | Surface Profile Distribution | `.SurfaceProfileMap` | JSON 형식. Scene object가 경로를 선택하며, Surface별 SRProfile 할당을 기록 |
 | Surface Preprocessing Cache | `.Surface` | 해상도별 최종 CPU Geometry·Texel 관계·Profile map을 저장하는 생성 바이너리 캐시 |
 | Runtime Surface Data | 메모리 객체 | 유효한 `.Surface`를 로드하거나 전처리해 생성하고, 같은 Mesh·Map·해상도의 instance끼리 공유 |
 
 Scene files select Mesh, Material, and Surface Profile assets.
+
+### `.Scene`과 `.DemoAnim` 참조 — 구현
+
+`.Scene`은 선택적으로 `.DemoAnim` 경로를 기록한다. 경로는 Scene 파일이 있는 디렉터리를 기준으로 해석한다. `.DemoAnim`은 버전 필드가 있는 선언형 JSON이며, 접촉 입력이나 Simulation Run/Pause 명령은 포함하지 않는다.
+
+```json
+{
+  "version": 1,
+  "durationSeconds": 6.0,
+  "loop": false,
+  "tracks": [
+    {
+      "target": "bunny",
+      "property": "rotation",
+      "interpolation": "slerp",
+      "keys": [
+        { "time": 0.0, "value": [0.0, 0.0, 0.0, 1.0] },
+        { "time": 3.0, "value": [0.0, 0.0, 0.7071, 0.7071] }
+      ]
+    }
+  ]
+}
+```
+
+- `target`는 Scene 배열 순서가 아닌 안정적인 object ID를 가리킨다. `.Scene` object의 `id`는 유일해야 하며, `camera`는 예약된 대상이다.
+- transform keyframe은 위치·회전·크기를 지원한다. 회전은 quaternion으로 저장하고 Slerp로 보간한다.
+- camera keyframe은 선택 항목이며 `target: "camera"`에 `position` 또는 `target` 속성을 쓴다. 위치·크기·카메라는 `linear` 또는 `step`, 회전은 `slerp` 또는 `step`을 허용한다. 첫 key는 0초이고 시간은 엄격히 증가해야 한다.
+- 애니메이션 재생·일시정지와 Solver Run·Pause·Step은 별도 UI 제어와 시간 상태를 가진다. 한쪽을 조작해도 다른 쪽을 자동으로 시작·정지하지 않는다.
+- 공통 C++ 재생기는 `.DemoAnim`을 읽는다. Python/Lua 실행 환경은 두지 않는다.
 
 ### Scene과 Asset 참조
 
@@ -181,23 +211,23 @@ Cache/Surface/<MeshName>_<MeshMapIdentity>/<MeshName>_<Resolution>.Surface
 
 Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-length²`에 대한 값이다. 런타임에서 실제 월드 texel 면적 비율을 곱한다. 기준 면적은 Low·Medium·High 선택과 함께 바뀌지 않는다. [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]]
 
-현재 schema는 **version 3**이다. Version 2의 정규화된 두 TransferFactor는 그대로 유지하고, 각 State에 유한·비음수 `thicknessPerAmount`를 필수로 추가했다. 기존 version 2 파일은 각 State의 두께값을 정한 뒤 `version`을 3으로 바꿔야 한다. Loader는 version 1·2를 거부한다. 초기 version 1은 실제 Rate를 저장했으며 정규화 계수로의 이전 환산식과 현재 기준 Rate는 [[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]을 따른다. 두께값의 의미와 렌더링 배율과의 분리는 [[05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]]에 기록한다.
+현재 schema는 **version 4**다. `saturationSpreadFactor`, `gravityFlowFactor`, `cavityExitResistanceFactor`, `cavityDecayProtectionFactor`를 사용한다. 기존 version 3 파일의 이전 키도 version 3으로 선언된 경우 읽을 수 있다. 서로 다른 version의 키를 한 파일에 섞으면 Loader가 오류를 낸다. Loader는 version 1·2를 거부한다. 정규화된 전달 계수와 기준 Rate는 [[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]을 따른다. 두께값의 의미는 [[05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]], 키 이름 변경은 [[05_ADR/0046-Transport-Role-Names-and-Curvature-Removal|ADR 0046]]에 기록한다.
 
 아래 수치는 **튜닝 전 예시값**이며, Profile이 여러 State 응답을 정의할 수 있음을 보여준다. 예시 State 이름은 고정된 전역 채널 목록이 아니다.
 
 ```json
 {
   "type": "SurfaceResponseProfile",
-  "version": 3,
+  "version": 4,
   "name": "Brick",
   "states": {
     "wetness": {
       "stateCapacity": 1.0,
       "inputFactor": 0.75,
-      "saturationTransferFactor": 0.40,
-      "geometryTransferFactor": 0.0005,
+      "saturationSpreadFactor": 0.40,
+      "gravityFlowFactor": 0.0005,
       "decayRate": 0.06,
-      "cavityRetentionFactor": 0.50,
+      "cavityDecayProtectionFactor": 0.50,
       "accumulationFactor": 0.0,
       "cavityFillFactor": 0.0,
       "thicknessPerAmount": 0.01
@@ -205,10 +235,10 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
     "heat": {
       "stateCapacity": 1.0,
       "inputFactor": 0.30,
-      "saturationTransferFactor": 0.30,
-      "geometryTransferFactor": 0,
+      "saturationSpreadFactor": 0.30,
+      "gravityFlowFactor": 0,
       "decayRate": 0.10,
-      "cavityRetentionFactor": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
       "accumulationFactor": 0.0,
       "cavityFillFactor": 0.0,
       "thicknessPerAmount": 0.01
@@ -216,10 +246,10 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
     "burn": {
       "stateCapacity": 1.0,
       "inputFactor": 0.0,
-      "saturationTransferFactor": 0.0,
-      "geometryTransferFactor": 0,
+      "saturationSpreadFactor": 0.0,
+      "gravityFlowFactor": 0,
       "decayRate": 0.01,
-      "cavityRetentionFactor": 0.0,
+      "cavityDecayProtectionFactor": 0.0,
       "accumulationFactor": 0.0,
       "cavityFillFactor": 0.0,
       "thicknessPerAmount": 0.01
@@ -227,10 +257,11 @@ Profile `stateCapacity`와 `decayRate`는 고정 기준 면적 `1/256² world-le
     "mud": {
       "stateCapacity": 1.0,
       "inputFactor": 0.65,
-      "saturationTransferFactor": 0.04,
-      "geometryTransferFactor": 0.0008,
+      "saturationSpreadFactor": 0.04,
+      "gravityFlowFactor": 0.0008,
       "decayRate": 0.04,
-      "cavityRetentionFactor": 0.80,
+      "cavityDecayProtectionFactor": 0.80,
+      "cavityExitResistanceFactor": 0.85,
       "accumulationFactor": 0.65,
       "cavityFillFactor": 0.60,
       "thicknessPerAmount": 0.01

@@ -6,6 +6,7 @@
 #include "AssetManager/Loaders/OBJLoader.h"
 #include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
+#include "SurfaceStateSystem/Geometry/MesoGeometryBuilder.h"
 #include "SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.h"
@@ -313,6 +314,38 @@ namespace
         Check(First.Geometry->GetProfileMap() == Second.Geometry->GetProfileMap(),
               "identical Runtime inputs should deterministically reproduce the texel Profile map");
     }
+
+    void TestMacroConcavityWithoutNormalMap()
+    {
+        using namespace MDSS;
+        const auto CenterWeight = [](float CurvatureX, float CurvatureY)
+        {
+            TSharedSurfaceGeometryData Geometry({{0, {5, 5}}});
+            auto& Texels = Geometry.GetTexels();
+            for (int Y = 0; Y < 5; ++Y)
+            for (int X = 0; X < 5; ++X)
+            {
+                const int Index = Y * 5 + X;
+                auto& Texel = Texels[Index];
+                const float DX = float(X - 2), DY = float(Y - 2);
+                Texel.Surface = Texel.Triangle = Texel.Chart = 0;
+                Texel.Position = {DX, DY, CurvatureX * DX * DX + CurvatureY * DY * DY};
+                Texel.Normal = glm::normalize(glm::vec3(-2.0F * CurvatureX * DX,
+                                                        -2.0F * CurvatureY * DY, 1.0F));
+                std::size_t Slot = 0;
+                for (int NY = std::max(0, Y - 1); NY <= std::min(4, Y + 1); ++NY)
+                for (int NX = std::max(0, X - 1); NX <= std::min(4, X + 1); ++NX)
+                    if (NX != X || NY != Y) Texel.NeighborIndices[Slot++] = NY * 5 + NX;
+            }
+            (void)BuildMesoGeometry(Geometry);
+            return Texels[12].Geometry.ConcavityWeight;
+        };
+        Check(CenterWeight(0.0F, 0.0F) < 1.0e-5F, "flat Macro surface should have no concavity");
+        Check(CenterWeight(0.12F, 0.12F) > 0.1F, "Macro bowl should have concavity without a normal map");
+        Check(CenterWeight(0.12F, 0.0F) > 0.1F, "Macro trough should have concavity without a normal map");
+        Check(CenterWeight(-0.12F, -0.12F) < 1.0e-5F, "convex Macro dome should not retain material");
+        Check(CenterWeight(0.12F, -0.12F) < 1.0e-5F, "saddle should not be classified as a cavity");
+    }
 } // namespace
 
 int main()
@@ -322,6 +355,7 @@ int main()
     TestTexelMesh();
     TestStitchedSourceMesh();
     TestRuntimePreprocessing();
+    TestMacroConcavityWithoutNormalMap();
 
     if (FailureCount != 0)
     {

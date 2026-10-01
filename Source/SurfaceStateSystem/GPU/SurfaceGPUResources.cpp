@@ -51,12 +51,13 @@ namespace MDSS
         std::unique_ptr<TGPUBuffer> CreateZeroedScalarBuffer(VkPhysicalDevice PhysicalDevice,
                                                              VkDevice         Device,
                                                              std::size_t      ScalarCount,
-                                                             std::size_t      MaxStorageBufferRange)
+                                                             std::size_t      MaxStorageBufferRange,
+                                                             VkBufferUsageFlags Usage = StorageUsage)
         {
             const std::size_t ByteSize = GetSurfaceGPUBufferByteSize(ScalarCount, sizeof(float), MaxStorageBufferRange);
             std::vector<float> Zeros(ScalarCount, 0.0F);
             auto               Buffer = std::make_unique<TGPUBuffer>(
-                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), StorageUsage, UploadMemory);
+                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), Usage, UploadMemory);
             Buffer->Upload(Zeros.data(), static_cast<VkDeviceSize>(ByteSize));
             return Buffer;
         }
@@ -131,6 +132,7 @@ namespace MDSS
                                                      MaxRange);
         auto Mesh = BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles);
         TexelMeshRanges = std::move(Mesh.Surfaces);
+        TexelMeshVertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
         TexelMeshBoundaryCount = static_cast<std::uint32_t>(Mesh.BoundaryEdges.size());
         if (!Mesh.Indices.empty())
         {
@@ -275,7 +277,7 @@ namespace MDSS
              Parameters.CavityRetentionFactor,
              Parameters.AccumulationFactor,
              Parameters.CavityFillFactor},
-            {Parameters.ThicknessPerAmount, 0.0F, 0.0F, 0.0F}};
+            {Parameters.ThicknessPerAmount, Parameters.CavityTransportRetentionFactor, 0.0F, 0.0F}};
         const VkDeviceSize Offset = static_cast<VkDeviceSize>(RecordIndex * sizeof(Packed));
         ParametersBuffer->Upload(&Packed, sizeof(Packed), Offset);
     }
@@ -321,6 +323,15 @@ namespace MDSS
         std::vector<TSurfaceGPUVec4> ZeroDynamicGeometry(TexelCount * 2U);
         DynamicGeometryBuffer = CreateUploadedBuffer(
             PhysicalDevice, Device, ZeroDynamicGeometry.data(), ZeroDynamicGeometry.size(), sizeof(TSurfaceGPUVec4), MaxRange);
+        const std::size_t WorkgroupCount = TexelCount / 64U + (TexelCount % 64U != 0U);
+        if (WorkgroupCount > std::numeric_limits<std::size_t>::max() - 3U ||
+            TexelCount > (std::numeric_limits<std::size_t>::max() - WorkgroupCount - 3U) / 3U)
+            throw std::overflow_error("Surface accumulation height and dirty flag count overflowed.");
+        // Height, two dirty planes, one flag per 64-texel workgroup, and a
+        // three-word VkDispatchIndirectCommand share the existing descriptor.
+        AccumulationHeightBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device,
+            TexelCount * 3U + WorkgroupCount + 3U, MaxRange,
+            StorageUsage | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
         StateABuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         StateBBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         OutgoingFluxScaleBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
@@ -396,6 +407,11 @@ namespace MDSS
         return *DynamicGeometryBuffer;
     }
 
+    const TGPUBuffer& TSurfaceInstanceGPUResources::GetAccumulationHeightBuffer() const noexcept
+    {
+        return *AccumulationHeightBuffer;
+    }
+
     void TSurfaceInstanceGPUResources::UpdateWorldTexelAreas(const std::vector<float>& Areas)
     {
         if (Areas.size() != TexelCount || std::any_of(Areas.begin(), Areas.end(), [](float A) {
@@ -455,7 +471,7 @@ namespace MDSS
         const TSurfaceSharedGeometryGPUResources& SharedGeometry,
         const TSurfaceProfileGPUResources&        Profiles,
         const TSurfaceInstanceGPUResources&       Instance)
-        : Device(Device)
+        : Device(Device), SharedGeometryResources(&SharedGeometry)
     {
         if (SharedGeometry.GetTexelCount() != Instance.GetTexelCount() ||
             Profiles.GetChannelCount() != Instance.GetChannelCount())
@@ -536,7 +552,8 @@ namespace MDSS
             &SharedGeometry.GetReverseNeighborSlotBuffer(),
             &Instance.GetRawFluxBuffer(),
             &Instance.GetWorldTexelAreaBuffer(),
-            &Instance.GetDynamicGeometryBuffer()};
+            &Instance.GetDynamicGeometryBuffer(),
+            &Instance.GetAccumulationHeightBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {
@@ -610,6 +627,17 @@ namespace MDSS
             throw std::out_of_range("Surface descriptor binding is outside the declared layout.");
         }
         return BoundBufferHandles[bAB ? 0U : 1U][BindingNumber];
+    }
+
+    std::array<std::uint64_t, 6> TSurfaceStateDescriptorResources::GetGeometryInputRevisions() const noexcept
+    {
+        return {
+            SharedGeometryResources->GetTexelSurfaceIndexBuffer().GetUploadRevision(),
+            SharedGeometryResources->GetPositionBuffer().GetUploadRevision(),
+            SharedGeometryResources->GetNormalBuffer().GetUploadRevision(),
+            SharedGeometryResources->GetGeometryScalarBuffer().GetUploadRevision(),
+            SharedGeometryResources->GetNeighborIndexBuffer().GetUploadRevision(),
+            SharedGeometryResources->GetMesoNormalBuffer().GetUploadRevision()};
     }
 
 } // MDSS 네임스페이스

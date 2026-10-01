@@ -33,56 +33,19 @@ vec3 worldNormal(uint Texel)
     return normalize(NormalMatrix * localNormal(Texel));
 }
 
-float meanNeighborDistance(uint Texel)
-{
-    if (!isValidTexel(Texel)) return 0.0;
-    vec3 Center = worldPosition(Texel);
-    float Sum = 0.0;
-    uint Count = 0u;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
-    {
-        uint Neighbor = neighborIndex(Texel, Slot);
-        if (Neighbor == InvalidTexelIndex || Neighbor >= Solver.LocalTexelCount || !isValidTexel(Neighbor)) continue;
-        float Distance = length(worldPosition(Neighbor) - Center);
-        if (!isnan(Distance) && !isinf(Distance) && Distance > DynamicGeometryEpsilon)
-        {
-            Sum += Distance;
-            ++Count;
-        }
-    }
-    return Count > 0u ? Sum / float(Count) : 0.0;
-}
-
-float meanAbsoluteCurvature(uint Texel)
-{
-    if (!isValidTexel(Texel)) return 0.0;
-    vec3 CenterPosition = localPosition(Texel);
-    vec3 CenterNormal = normalize(localNormal(Texel));
-    float Sum = 0.0;
-    uint Count = 0u;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
-    {
-        uint Neighbor = neighborIndex(Texel, Slot);
-        if (Neighbor == InvalidTexelIndex || Neighbor >= Solver.LocalTexelCount || !isValidTexel(Neighbor)) continue;
-        vec3 Edge = localPosition(Neighbor) - CenterPosition;
-        float Distance = length(Edge);
-        vec3 NeighborNormal = normalize(localNormal(Neighbor));
-        if (Distance <= DynamicGeometryEpsilon || isnan(Distance) || isinf(Distance) ||
-            any(isnan(NeighborNormal)) || any(isinf(NeighborNormal))) continue;
-        float BendAngle = acos(clamp(dot(CenterNormal, NeighborNormal), -1.0, 1.0));
-        if (!isnan(BendAngle) && !isinf(BendAngle))
-        {
-            Sum += BendAngle / Distance;
-            ++Count;
-        }
-    }
-    return Count > 0u ? Sum / float(Count) : abs(GeometryScalars.Values[Texel].MesoMeanCurvature);
-}
-
 void main()
 {
     uint Source = gl_GlobalInvocationID.x;
     if (Source >= Solver.LocalTexelCount) return;
+    bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
+                 AccumulationHeights.Values[2u * Solver.LocalTexelCount + Source] != 0.0;
+    for (uint Slot = 0u; Slot < SurfaceNeighborCount && !Dirty; ++Slot)
+    {
+        uint Neighbor = neighborIndex(Source, Slot);
+        Dirty = Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount &&
+                AccumulationHeights.Values[2u * Solver.LocalTexelCount + Neighbor] != 0.0;
+    }
+    if (!Dirty) return;
     ModelLinear = mat3(Solver.ModelLinearColumns[0].xyz,
                        Solver.ModelLinearColumns[1].xyz,
                        Solver.ModelLinearColumns[2].xyz);
@@ -99,7 +62,8 @@ void main()
 
     vec3 SourceWorld = worldPosition(Source);
     vec3 SourceNormal = worldNormal(Source);
-    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u ? meanNeighborDistance(Source) : 1.0;
+    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u
+        ? DynamicGeometry.Values[Source * 2u].w : 1.0;
     bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5 &&
                              !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
 
@@ -117,7 +81,7 @@ void main()
             bool Valid = true;
             if ((Solver.Flags & (1u << 7u)) != 0u)
             {
-                float TargetMeanDistance = meanNeighborDistance(Target);
+                float TargetMeanDistance = DynamicGeometry.Values[Target * 2u].w;
                 float EdgeDistance = length(TargetWorld - SourceWorld);
                 float ReferenceDistance = 0.5 * (SourceMeanDistance + TargetMeanDistance);
                 Valid = SourceMeanDistance > DynamicGeometryEpsilon &&
@@ -135,19 +99,11 @@ void main()
                 if (Valid) NormalWeight = clamp(dot(SourceNormal, TargetNormal), 0.0, 1.0);
             }
 
-            float CurvatureWeight = 1.0;
-            if ((Solver.Flags & (1u << 10u)) != 0u)
-            {
-                float Curvature = 0.5 * (meanAbsoluteCurvature(Source) + meanAbsoluteCurvature(Target));
-                float Bend = Curvature * length(localPosition(Target) - localPosition(Source));
-                CurvatureWeight = !isnan(Bend) && !isinf(Bend) && Bend >= 0.0 ? 1.0 / (1.0 + Bend) : 0.0;
-            }
-
             float ProfileBoundaryWeight = 1.0;
             if ((Solver.Flags & (1u << 9u)) != 0u &&
                 TexelProfileIndices.Values[Source] != TexelProfileIndices.Values[Target])
                 ProfileBoundaryWeight = 0.5;
-            if (Valid) Weight = DistanceWeight * NormalWeight * CurvatureWeight * ProfileBoundaryWeight;
+            if (Valid) Weight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
         }
         TransferWeights.Values[Base + Slot] = Weight;
     }

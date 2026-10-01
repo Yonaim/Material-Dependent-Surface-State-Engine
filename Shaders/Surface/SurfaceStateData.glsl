@@ -19,5 +19,6 @@ layout(std430, set = SURFACE_DEBUG_SET, binding = 8) readonly buffer TSurfaceCur
 layout(std430, set = SURFACE_DEBUG_SET, binding = 12) readonly buffer TSurfaceRanges { uvec4 Values[]; } SurfaceRanges;
 layout(std430, set = SURFACE_DEBUG_SET, binding = 17) readonly buffer TSurfaceMesoNormals { vec4 Values[]; } MesoNormals;
 layout(std430, set = SURFACE_DEBUG_SET, binding = 20) readonly buffer TSurfaceWorldTexelAreas { float Values[]; } WorldTexelAreas;
+layout(std430, set = SURFACE_DEBUG_SET, binding = 22) readonly buffer TSurfaceAccumulationHeights { float Values[]; } AccumulationHeights;
 
 #endif

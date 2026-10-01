@@ -181,14 +181,14 @@ Saturation은 1을 초과할 수 있고 Transport에서 상한 clamp하지 않�
 
 ### Raw Flux
 
-`.SRProfile`과 GPU Profile 레코드는 `[0,1]` 무차원 TransferFactor를 저장한다. Solver에서 아래 실제 속도로 변환한 뒤 flux에 사용한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
+`.SRProfile`은 `[0,1]` 무차원 `saturationSpreadFactor`와 `gravityFlowFactor`를 저장한다. GPU Profile 레코드는 기존 필드명으로 같은 값을 저장한다. Solver에서 아래 실제 속도로 변환한 뒤 flux에 사용한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]).
 
 $$
-SaturationTransferRate_i = SaturationTransferFactor_i \cdot BaseSaturationTransferRate
+SaturationTransferRate_i = saturationSpreadFactor_i \cdot BaseSaturationTransferRate
 $$
 
 $$
-GeometryTransferRate_i = GeometryTransferFactor_i \cdot BaseGeometryTransferRate
+GeometryTransferRate_i = gravityFlowFactor_i \cdot BaseGeometryTransferRate
 $$
 
 | Solver 상수 | 현재 값 | 단위 |
@@ -198,7 +198,7 @@ $$
 
 초기 Geometry 기준값은 100이었으며 면적·총량 모델의 흐름을 재보정해 6000으로 변경했다 ([[../05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]]). `State` 단위는 Registry에 등록된 해당 State의 시뮬레이션 상태량 단위이며, 기준 상수는 모든 channel의 해당 전달 경로에 공통 적용한다. 두 상수는 C++/GLSL 공용 `SurfaceSolverRates.h`에 정의해 cache ON/OFF·Pass 1/2와 CPU 안전 시간 간격 계산에 동일하게 적용한다. 프로파일 계수의 정규화는 Saturation 상한 clamp나 높이차의 거리 정규화를 추가하지 않는다.
 
-`SaturationDrive`와 `GeometryDrive`에 의한 전달을 독립적으로 계산한 뒤 합친다.
+현재 구현은 `SaturationDrive`와 `GeometryDrive`에 의한 전달을 독립적으로 계산한 뒤 합친다.
 
 $$
 RawFlux_{i\rightarrow j}
@@ -224,6 +224,15 @@ GeometryDrive_{i\rightarrow j}
 HeightDrive_{i\rightarrow j}
 \cdot DirectionDrive_{i\rightarrow j}
 $$
+
+### 홈 이탈 방향의 Transport 보유 — 구현
+
+RawFlux는 ADR 0044의 Macro/Meso 통합 `ConcavityWeight`와 `.SRProfile` State별 `cavityExitResistanceFactor`를 사용한다. Decay의 `cavityDecayProtectionFactor`는 자연 감소에만 적용한다.
+
+- 방향 항은 `exit(i→j) = max(ConcavityWeight_i − ConcavityWeight_j, 0)`이다.
+- 감쇠는 `1 − cavityExitResistanceFactor × exit(i→j)`이다. 두 texel GPU fixture에서 홈 이탈·진입 비대칭과 총량 보존을 확인했다. 실제 형상별 체감 세기는 시각 검증이 남아 있다.
+- 방향 항은 SaturationDrive와 GeometryDrive를 합친 RawFlux에 적용해 State 전체가 홈에서 이탈하는 양을 줄인다.
+- `.SRProfile`에서 이 계수를 생략하면 0을 사용해 기존 전달 결과를 유지한다 ([[../05_ADR/0044-Macro-Meso-Concavity-Field|ADR 0044]], [[../05_ADR/0045-Directional-Cavity-Transport-Retention|ADR 0045]]).
 
 `HeightDrive`와 `DirectionDrive`는 각각 높이 차의 크기와 이웃 방향에 대한 중력 정렬도를 담당한다. 높이는 Macro Surface와 `MesoVirtualHeight`를 합친 뒤 instance transform을 반영한 world-length 값으로 평가한다.
 
@@ -261,14 +270,13 @@ $$
 
 ### TransferWeight
 
-`GeometryDrive`가 **이동을 발생시키는 방향·구동력**이라면, `TransferWeight`는 **그 이웃 관계를 실제 State가 얼마나 잘 통과하는지** 보정한다.
+`GeometryDrive`가 높이 차이와 중력 방향으로 이동을 구동한다. `TransferWeight`는 거리·법선·Profile 경계에 따라 이웃 간 전달량을 보정한다. 홈에서 밖으로 나가는 흐름은 방향별 `cavityExitResistanceFactor`가 별도로 줄인다.
 
 $$
 TransferWeight_{i\rightarrow j}
 =
 W_{distance}
 \cdot W_{normal}
-\cdot W_{curvature}
 \cdot W_{profileBoundary}
 $$
 
@@ -276,7 +284,6 @@ $$
 |---|---|---|
 | `DistanceWeight` | 주변 이웃보다 먼 연결의 전달량을 낮춤 | 정규화된 world-space Surface Distance |
 | `NormalWeight` | 이웃 texel의 유효 표면 방향 차이가 클수록 전달량을 낮춤 | 복원된 MesoNormal을 우선 사용하고 sampled TransferNormal, geometric normal 순으로 fallback한 뒤 instance inverse-transpose를 적용한 world normal 내적 |
-| `CurvatureWeight` | 기본 OFF는 고정 `1.0`; ON은 Virtual Height에서 유도한 mean curvature 크기로 감쇠 | 대칭 mesh-local 간선 가중치 ([[05_ADR/0019-Optional-Curvature-Transfer-Weight\|ADR 0019]]) |
 | `ProfileBoundaryWeight` | 같은 Profile 사이 `1.0`, 다른 Profile 사이 고정 `0.5`로 전달량을 낮춤 | SRProfile ID 비교 |
 
 현재 `DistanceWeight`는 각 endpoint의 평균 유효 이웃 간격을 `dRef`로 삼는다. `dRef(i,j) = 0.5 × (meanDistance_i + meanDistance_j)`이고, `d(i,j)`는 두 texel의 world-space 거리다.
@@ -288,7 +295,7 @@ $$
 - 유효 이웃 간격이나 endpoint 거리가 epsilon 이하이거나 유한하지 않으면 가중치를 0으로 둔다.
 - 거리는 MesoVirtualHeight와 향후 AccumulationHeight를 반영한 최신 유효 Position과 Neighbor 관계에서 계산한다.
 - 초기 구현은 매번 계산했다. 현재는 간선별 TransferWeight, Pass 1의 RawOutgoing, 방향별 RawFlux를 저장해 재사용한다 ([[04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]).
-- RawFlux cache는 기본 ON이다. OFF 비교 경로는 같은 전달 수식을 Pass 2에서 재평가한다.
+- RawFlux cache는 기본 OFF이다. ON에서는 Pass 1의 방향별 flux를 저장하고 Pass 2에서 재사용한다. OFF에서는 같은 전달 수식을 Pass 2에서 재평가한다.
 
 $$
 NormalWeight_{i\rightarrow j} = clamp\left(NormalWorld_i \cdot NormalWorld_j, 0, 1\right)
@@ -382,4 +389,4 @@ $$
 Decay_i = min(Decay_i, State_i)
 $$
 
-`ConcavityWeight`는 현재 texel이 얼마나 오목한지를 나타내는 `[0,1]` 값이다. Solver의 형상 입력 저장 방식은 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.
+Decay 식은 현재 texel의 `[0,1]` `ConcavityWeight`로 감소량을 줄인다. 이 값은 Macro Mesh와 Normal Map Meso의 유효 형상에서 만든다 ([[../05_ADR/0044-Macro-Meso-Concavity-Field|ADR 0044]]). Solver의 형상 입력 저장 방식은 [[../06_Development/Notes/Surface-State-GPU-Resource|Surface State GPU Resource]]에서 다룬다.

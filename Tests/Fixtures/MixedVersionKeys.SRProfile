@@ -1,15 +1,16 @@
 {
   "type": "SurfaceResponseProfile",
-  "version": 3,
-  "name": "DemoStone",
+  "version": 4,
+  "name": "MixedVersionKeys",
   "states": {
     "wetness": {
       "stateCapacity": 1.0,
       "inputFactor": 1.0,
-      "saturationTransferFactor": 0.2,
-      "geometryTransferFactor": 0.5,
+      "saturationSpreadFactor": 0.2,
+      "gravityFlowFactor": 0.3,
       "decayRate": 0.0,
-      "cavityRetentionFactor": 0.0,
+      "cavityDecayProtectionFactor": 0.5,
+      "cavityTransportRetentionFactor": 0.8,
       "accumulationFactor": 0.0,
       "cavityFillFactor": 0.0,
       "thicknessPerAmount": 0.01

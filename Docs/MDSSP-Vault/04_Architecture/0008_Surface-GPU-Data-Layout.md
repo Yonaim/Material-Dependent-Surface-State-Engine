@@ -90,7 +90,7 @@ Texel은 Shared Geometry의 `TexelProfileIndex`에서 `profileIndex`를 얻고, 
 
 | Buffer                  | GPU 원소 타입                   |                                    개수 | 원소 stride |                            총 payload |
 | ----------------------- | --------------------------- | ------------------------------------: | --------: | -----------------------------------: |
-| `ProfileParameters`     | Profile/channel마다 `vec4[3]` (`float32` 12개, 마지막 3개는 padding) | `profileCount × channelCount` records | 48 B | `48 × profileCount × channelCount` B |
+| `ProfileParameters`     | Profile/channel마다 `vec4[3]` (`float32` 12개, 마지막 2개는 padding) | `profileCount × channelCount` records | 48 B | `48 × profileCount × channelCount` B |
 | `ProfileStateSupported` | `uint32`                    |         `profileCount × channelCount` |       4 B |  `4 × profileCount × channelCount` B |
 
 레코드는 Profile-major 순서다. 각 Profile의 channel 레코드가 연달아 온다. 예를 들어 channel이 4개일 때 Profile 1의 channel 2는 `1 * 4 + 2 = 6`이므로 배열의 6번 항목이다. `ProfileParameters`와 `ProfileStateSupported` 모두 이 위치를 사용한다.
@@ -104,8 +104,10 @@ recordIndex = profileIndex * channelCount + channelIndex
 ```text
 vec4[0] = StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor
 vec4[1] = DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor
-vec4[2] = ThicknessPerAmount, 0, 0, 0
+vec4[2] = ThicknessPerAmount, CavityTransportRetentionFactor, 0, 0
 ```
+
+위 GPU 필드명은 기존 ABI를 유지한다. version 4 `.SRProfile`의 `saturationSpreadFactor`, `gravityFlowFactor`, `cavityDecayProtectionFactor`, `cavityExitResistanceFactor`가 각각 `SaturationTransferFactor`, `GeometryTransferFactor`, `CavityRetentionFactor`, `CavityTransportRetentionFactor`로 매핑된다.
 
 두 TransferFactor는 CPU에서 기준 Rate를 곱하지 않고 그대로 저장한다. C++/GLSL 공용 기준 Rate `1.0`, `6000.0`을 Solver에서 곱한다. CPU 시간 간격 상한도 같은 정의를 사용한다. `ThicknessPerAmount` 추가로 Profile record stride는 32 B에서 48 B로 늘고 descriptor 수는 그대로다. Scene 전체에서 공유되는 Profile table의 payload 증가는 `16 × profileCount × channelCount` B다. `float32`와 std430 `vec4` 16 B 정렬을 가정하며 allocator overhead는 제외한다 ([[05_ADR/0029-Normalized-Transport-Factors|ADR 0029]], [[05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]], [[05_ADR/0039-State-Thickness-Per-Amount|ADR 0039]]).
 
@@ -152,11 +154,11 @@ State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량�
 
 - `TransferWeights`는 유효 Geometry와 instance 선형 변환으로 준비하는 edge cache다.
 - Slot 위치: `texelIndex × 8 + neighborSlot`
-- 저장값: 해당 slot의 DistanceWeight × NormalWeight × CurvatureWeight × ProfileBoundaryWeight
+- 저장값: 해당 slot의 DistanceWeight × NormalWeight × ProfileBoundaryWeight
 - 방향별 slot을 각각 저장한다. 대칭 식을 무방향 edge 저장으로 압축하는 최적화는 후속 작업이다.
 - Cache는 RawFlux 계산에서 평균 이웃 거리를 반복 계산하지 않게 한다.
-- CPU builder는 resource 생성 시와 instance의 회전·scale 등 선형 변환이 바뀔 때 갱신한다. 순수 이동은 영향을 주지 않는다.
-- 동적 Geometry scalar나 topology 변경 경로가 추가되면 cache invalidation을 연결해야 한다.
+- **현재 구현:** CPU builder는 resource 생성 시와 instance scale 또는 Weight 토글이 바뀔 때 갱신한다. 순수 translation·rotation은 TransferWeights 및 WorldTexelAreas의 cache invalidation을 일으키지 않는다. GPU GeometryDrive는 회전 후에도 최신 중력과 model 행렬을 매 step 사용한다 ([[../05_ADR/0043-Rotation-Invariant-Transfer-Cache|ADR 0043]]).
+- 동적 적층 feedback은 별도 GPU pass에서 현재 형상의 edge weight를 갱신한다. 향후 정적 Geometry나 topology를 런타임 수정하는 경로가 추가되면 공유 resource 재구성과 무효화 정책을 함께 정의해야 한다.
 
 - `RawOutgoing`은 Pass 1이 Current State와 TransferWeights로 계산하는 texel·channel별 제한 전 outgoing 합계다.
 - Pass 1은 매 step 모든 항목을 덮어쓴다. Pass 2는 자기 outgoing을 재계산하지 않고 읽는다.

@@ -18,6 +18,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     vec4 DemoEffectOptions; // wetness strength, wet specular strength, waterfilm opacity, waterfilm roughness
     vec4 WetnessTint;
     vec4 WaterFilmTint;
+    uvec4 DemoExtraStateChannels; // Lava ID, reserved
     vec4 CameraPosition;
 } Material;
 #endif

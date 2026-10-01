@@ -1,0 +1,35 @@
+#version 450
+
+layout(local_size_x = 64) in;
+
+struct TSideDrawCommand
+{
+    uint VertexCount;
+    uint InstanceCount;
+    uint FirstVertex;
+    uint FirstInstance;
+};
+struct TTopDrawCommand
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int VertexOffset;
+    uint FirstInstance;
+};
+layout(set = 0, binding = 0, std430) readonly buffer TSideDrawCommands
+{
+    TSideDrawCommand Values[];
+} SideDrawCommands;
+layout(set = 0, binding = 1, std430) buffer TTopDrawCommands
+{
+    TTopDrawCommand Values[];
+} TopDrawCommands;
+
+void main()
+{
+    uint Surface = gl_GlobalInvocationID.x;
+    if (Surface >= uint(TopDrawCommands.Values.length())) return;
+    bool AnyActive = SideDrawCommands.Values[uint(SideDrawCommands.Values.length()) - 1u].VertexCount != 0u;
+    TopDrawCommands.Values[Surface].InstanceCount = AnyActive ? 1u : 0u;
+}

@@ -72,6 +72,7 @@ const uint RENDER_MODE_SURFACE_TEXEL_GRID = 16u;
 const uint RENDER_MODE_SURFACE_TEXEL_AREA = 17u;
 const uint RENDER_MODE_ACCUMULATION = 18u;
 const uint RENDER_MODE_FINAL_GEOMETRY = 19u;
+const uint RENDER_MODE_TOTAL_SIMULATION_HEIGHT = 21u;
 
 float GridLines(vec2 Coordinate, vec2 PixelFootprint, float LineWidth)
 {
@@ -168,7 +169,8 @@ void main()
     vec2 UVFootprint = vec2(0.0);
     float WorldAreaPerUV = 0.0;
     bool HeightMode = Material.RenderMode == RENDER_MODE_MESO_HEIGHT || Material.RenderMode == RENDER_MODE_MESO_OFFSET ||
-                      Material.RenderMode == RENDER_MODE_ACCUMULATION || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY;
+                      Material.RenderMode == RENDER_MODE_ACCUMULATION || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY ||
+                      Material.RenderMode == RENDER_MODE_TOTAL_SIMULATION_HEIGHT;
     if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID || (HeightMode && Material.DebugFlags.z != 0u))
     {
         UVFootprint = fwidth(FragUV);
@@ -225,7 +227,8 @@ void main()
         return;
     }
     // Refined source boundary faces remain visible even where UV cells have no center sample.
-    if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY)
+    if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY ||
+        Material.RenderMode == RENDER_MODE_TOTAL_SIMULATION_HEIGHT)
     {
         vec3 Normal = normalize(FragMesoNormalWS);
         float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
@@ -278,7 +281,7 @@ void main()
     if (Material.RenderMode == RENDER_MODE_MACRO_GEOMETRY)
     {
         vec3 Normal = normalize(FragNormal);
-        float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
+        float Diffuse = abs(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))));
         OutColor = vec4(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Material.BaseColor.a);
         return;
     }

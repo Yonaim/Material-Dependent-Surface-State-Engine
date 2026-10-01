@@ -182,6 +182,69 @@ namespace MDSS
                 }
             }
         }
+
+        void BuildCombinedConcavity(std::vector<TSurfaceTexelGeometry>& Texels)
+        {
+            // Normal variation measures the shape operator of the effective Macro + Meso surface.
+            // The existing MesoMean/Gaussian fields remain Meso-only diagnostic values.
+            for (std::size_t Index = 0; Index < Texels.size(); ++Index)
+            {
+                TSurfaceTexelGeometry& Texel = Texels[Index];
+                if (!Texel.IsValid()) continue;
+                const glm::vec3 CenterNormal = Texel.HasMesoNormal ? Texel.MesoNormal : Texel.Normal;
+                if (!IsFinite(CenterNormal) || glm::dot(CenterNormal, CenterNormal) <= GeometryEpsilon) continue;
+                const glm::vec3 N = glm::normalize(CenterNormal);
+                const glm::vec3 Axis = std::abs(N.z) < 0.85F ? glm::vec3(0, 0, 1) : glm::vec3(0, 1, 0);
+                const glm::vec3 T = glm::normalize(glm::cross(Axis, N));
+                const glm::vec3 B = glm::cross(N, T);
+                const glm::vec3 CenterPosition = Texel.Position + Texel.Normal * Texel.Geometry.MesoVirtualHeight;
+                double XX = 0.0, XY = 0.0, YY = 0.0;
+                double UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
+                double SpacingSum = 0.0;
+                std::size_t SampleCount = 0;
+                for (const TLocalTexelIndex NeighborIndex : Texel.NeighborIndices)
+                {
+                    if (NeighborIndex >= Texels.size() || !Texels[NeighborIndex].IsValid()) continue;
+                    const TSurfaceTexelGeometry& Other = Texels[NeighborIndex];
+                    const glm::vec3 OtherNormal = Other.HasMesoNormal ? Other.MesoNormal : Other.Normal;
+                    if (!IsFinite(OtherNormal) || glm::dot(OtherNormal, OtherNormal) <= GeometryEpsilon) continue;
+                    const glm::vec3 NeighborNormal = glm::normalize(OtherNormal);
+                    if (glm::dot(N, NeighborNormal) <= 0.05F) continue;
+                    const glm::vec3 OtherPosition = Other.Position + Other.Normal * Other.Geometry.MesoVirtualHeight;
+                    const glm::vec3 Delta = OtherPosition - CenterPosition;
+                    const double X = glm::dot(Delta, T);
+                    const double Y = glm::dot(Delta, B);
+                    const double DistanceSquared = X * X + Y * Y;
+                    if (!std::isfinite(DistanceSquared) || DistanceSquared <= GeometryEpsilon * GeometryEpsilon)
+                        continue;
+                    const double Weight = 1.0 / DistanceSquared;
+                    const glm::vec3 NormalDelta = NeighborNormal - N;
+                    const double DU = -glm::dot(NormalDelta, T);
+                    const double DV = -glm::dot(NormalDelta, B);
+                    XX += Weight * X * X; XY += Weight * X * Y; YY += Weight * Y * Y;
+                    UX += Weight * X * DU; UY += Weight * Y * DU;
+                    VX += Weight * X * DV; VY += Weight * Y * DV;
+                    SpacingSum += std::sqrt(DistanceSquared);
+                    ++SampleCount;
+                }
+                const double Determinant = XX * YY - XY * XY;
+                if (SampleCount < 3 || Determinant <= 1.0e-6 * std::max(XX * YY, 1.0e-12)) continue;
+                const double Sxx = (YY * UX - XY * UY) / Determinant;
+                const double Sxy = 0.5 * ((XX * UY - XY * UX) + (YY * VX - XY * VY)) / Determinant;
+                const double Syy = (XX * VY - XY * VX) / Determinant;
+                const double H = 0.5 * (Sxx + Syy);
+                const double K = Sxx * Syy - Sxy * Sxy;
+                const double Root = std::sqrt(std::max(H * H - K, 0.0));
+                const double PrincipalA = H + Root;
+                const double PrincipalB = H - Root;
+                const double Positive = std::max(PrincipalA, 0.0) + std::max(PrincipalB, 0.0);
+                const double Negative = std::max(-PrincipalA, 0.0) + std::max(-PrincipalB, 0.0);
+                const double Spacing = SpacingSum / static_cast<double>(SampleCount);
+                const double Score = 8.0 * Spacing * std::max(Positive - 2.0 * Negative, 0.0);
+                if (std::isfinite(Score))
+                    Texel.Geometry.ConcavityWeight = static_cast<float>(std::clamp(Score, 0.0, 1.0));
+            }
+        }
     } // 내부 네임스페이스
 
     TMesoGeometryBuildReport BuildMesoGeometry(TSharedSurfaceGeometryData& Geometry)
@@ -365,6 +428,7 @@ namespace MDSS
                 static_cast<float>(std::sqrt(EdgeErrorSquared / std::max(EdgeTargetSquared, 1.0e-20)));
         }
         BuildDifferentialGeometry(Texels, Active);
+        BuildCombinedConcavity(Texels);
         return Report;
     }
 } // MDSS 네임스페이스

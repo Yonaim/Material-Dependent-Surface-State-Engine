@@ -120,7 +120,7 @@ namespace MDSS
                     SharedIt->second.CPUGeometry->GetTexels().begin(),
                     SharedIt->second.CPUGeometry->GetTexels().end(),
                     [](const TSurfaceTexelGeometry& Texel) { return Texel.IsValid(); }));
-                Instance->TransferWeightModelMatrix = ModelMatrix;
+                Instance->TransferWeightScale = MeshInstance.GetTransform().Scale;
                 Instance->bTransferWeightCacheValid = true;
             }
             InstanceResources.push_back(std::move(Instance));
@@ -335,7 +335,7 @@ namespace MDSS
     }
 
     bool TSurfaceGPUResourceManager::NeedsTransferWeightCacheUpdate(std::size_t SceneIndex,
-                                                                     const glm::mat4& ModelMatrix) const
+                                                                     const TTransform& Transform) const
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
@@ -346,25 +346,16 @@ namespace MDSS
         {
             return true;
         }
-        for (glm::length_t Column = 0; Column < 3; ++Column)
-        {
-            for (glm::length_t Row = 0; Row < 3; ++Row)
-            {
-                if (Instance.TransferWeightModelMatrix[Column][Row] != ModelMatrix[Column][Row])
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return Instance.TransferWeightScale.x != Transform.Scale.x ||
+               Instance.TransferWeightScale.y != Transform.Scale.y ||
+               Instance.TransferWeightScale.z != Transform.Scale.z;
     }
 
     void TSurfaceGPUResourceManager::UpdateTransferWeightCache(std::size_t SceneIndex,
-                                                                const glm::mat4& ModelMatrix,
+                                                                const TTransform& Transform,
                                                                 bool bUseNormalWeight,
                                                                 bool bUseDistanceWeight,
-                                                                bool bUseProfileBoundaryWeight,
-                                                                bool bUseCurvatureWeight)
+                                                                bool bUseProfileBoundaryWeight)
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
@@ -376,6 +367,7 @@ namespace MDSS
         {
             throw std::logic_error("Surface TransferWeight cache has no source Geometry.");
         }
+        const glm::mat4 ModelMatrix = Transform.GetMatrix();
         std::vector<TSurfaceGPUVec4> TransferWeightDebugAverages;
         const std::vector<float> TransferWeights =
             BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry,
@@ -383,11 +375,10 @@ namespace MDSS
                                            &TransferWeightDebugAverages,
                                            bUseNormalWeight,
                                            bUseDistanceWeight,
-                                           bUseProfileBoundaryWeight,
-                                           bUseCurvatureWeight);
+                                           bUseProfileBoundaryWeight);
         Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages);
         Instance.State->UpdateWorldTexelAreas(BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));
-        Instance.TransferWeightModelMatrix = ModelMatrix;
+        Instance.TransferWeightScale = Transform.Scale;
         Instance.bTransferWeightCacheValid = true;
     }
 

@@ -2,7 +2,6 @@
 #define MDSS_TEXEL_GEOMETRY_DATA
 struct TTexelGeometryVertex
 {
-    vec4 PositionAndHeight; // xyz: mesh-local display position, w: scaled total height
-    vec4 Normal;            // xyz: normal of the displayed height field
+    vec4 HeightAndNormal; // x: scaled total height, yzw: displayed height-field normal
 };
 #endif

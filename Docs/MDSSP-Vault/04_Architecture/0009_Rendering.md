@@ -29,6 +29,8 @@ flowchart LR
 이 그림은 목표 구조를 나타낸다. 현재 구현 범위는 다음과 같다.
 
 - 구현됨: 기본 Material·Normal Map, Surface Debug와 Texel Inspector, texel 연결면의 높이 표시·묶음 grid, Wetness·Mud 데모 Lit 반응과 Mud 표시 형상
+- 구현됨: 완전히 뒤집힌 데모 Mesh와 Overlay도 보이도록 채운 표면은 양면 렌더링하고, 뒷면에서는 표시용 법선을 카메라 쪽으로 뒤집는다. Wireframe은 기존 뒷면 제거를 유지한다.
+- 코드 반영·실행 검증 대기: 각 swapchain image의 framebuffer는 해당 image 전용 depth attachment를 사용한다. 프레임 간 depth 쓰기가 같은 image에 겹치지 않도록 한다.
 - 코드 반영·실행 검증 대기: 원본 Mesh를 Base로 그린 뒤 texel 연결면을 적층 윗면으로, State 경계를 옆면으로 그리는 Mud·WaterFilm Overlay 경로 ([[../05_ADR/0041-Base-Surface-and-Accumulation-Overlay|ADR 0041]])
 - 코드 반영·시각 검증 대기: 기본 OFF인 `Height-field smoothing`은 선택 State의 렌더링용 적층 높이에만 3×3 가우시안 공간 필터를 적용한다. 같은 Surface·UV chart·Profile·표시 영역의 texel을 사용하며, 윗면과 옆면은 같은 필터 결과를 읽는다.
 - 후속 구현: 범용 State 재질 반응, 물리 재질별 다중 layer 순서와 겹침 정책, Overlay의 시각·성능 검증

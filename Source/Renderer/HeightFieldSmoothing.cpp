@@ -15,6 +15,8 @@ namespace MDSS
 {
     namespace
     {
+        constexpr std::uint32_t MaxOverlayLayersPerInstance = 3;
+
         void RequireVk(VkResult Result)
         {
             if (Result != VK_SUCCESS) throw std::runtime_error("Failed to create height-field smoothing resources.");
@@ -26,7 +28,7 @@ namespace MDSS
         : PhysicalDevice(PhysicalDevice), Device(Device), HeightLayout(HeightLayout)
     {
         if (!SurfaceLayout || !HeightLayout || MaxInstances == 0 ||
-            MaxInstances > std::numeric_limits<std::uint32_t>::max() / 2U)
+            MaxInstances > std::numeric_limits<std::uint32_t>::max() / MaxOverlayLayersPerInstance)
             throw std::invalid_argument("Height-field smoothing requires valid layouts and instance slots.");
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
@@ -76,8 +78,9 @@ namespace MDSS
             vkDestroyShaderModule(Device, Module, nullptr);
             Module = VK_NULL_HANDLE;
 
-            const auto SetCount = static_cast<std::uint32_t>(MaxInstances * 2U);
-            const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SetCount};
+            // Smoothing output sets are cached per instance and overlay State channel.
+            const auto SetCount = static_cast<std::uint32_t>(MaxInstances * MaxOverlayLayersPerInstance);
+            const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SetCount * 2U};
             VkDescriptorPoolCreateInfo PoolInfo{};
             PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
             PoolInfo.maxSets = SetCount;
@@ -113,7 +116,7 @@ namespace MDSS
         const TSurfaceStateDescriptorResources& StateDescriptors,
         VkDescriptorSet InputSet, const TGPUBuffer& InputBuffer, bool bStateAB)
     {
-        const auto Bytes = GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4) * 2U,
+        const auto Bytes = GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4),
                                                        Limits.maxStorageBufferRange);
         if (!InputSet || InputBuffer.GetSize() != Bytes)
             throw std::invalid_argument("Height-field smoothing input does not match the texel geometry.");
@@ -138,7 +141,16 @@ namespace MDSS
             Write.descriptorCount = 1;
             Write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             Write.pBufferInfo = &Buffer;
-            vkUpdateDescriptorSets(Device, 1, &Write, 0, nullptr);
+            // The smoothed geometry replaces binding 0, while downstream overlay
+            // passes still read the input preview's occupancy GeometryCache at binding 1.
+            VkCopyDescriptorSet CopyGeometryCache{};
+            CopyGeometryCache.sType = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET;
+            CopyGeometryCache.srcSet = InputSet;
+            CopyGeometryCache.srcBinding = 1;
+            CopyGeometryCache.dstSet = Output.Set;
+            CopyGeometryCache.dstBinding = 1;
+            CopyGeometryCache.descriptorCount = 1;
+            vkUpdateDescriptorSets(Device, 1, &Write, 1, &CopyGeometryCache);
             It = Outputs.emplace(Key, std::move(Output)).first;
         }
         if (It->second.Buffer->GetSize() != Bytes)

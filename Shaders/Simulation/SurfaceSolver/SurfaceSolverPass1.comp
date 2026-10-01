@@ -49,7 +49,7 @@ void main()
             float RawFlux = 0.0;
             if (NeighborTexel != InvalidTexelIndex && NeighborTexel < Solver.LocalTexelCount)
             {
-                RawFlux = rawFlux(NeighborTexel,
+                RawFlux = rawFlux(TexelIndex, NeighborTexel,
                                   ChannelIndex,
                                   transferWeight(TexelIndex, DirectionIndex),
                                   Parameters,

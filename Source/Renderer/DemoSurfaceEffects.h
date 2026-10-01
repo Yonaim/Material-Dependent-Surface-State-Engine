@@ -11,6 +11,7 @@ namespace MDSS
         TStateId Wetness = InvalidStateId;
         TStateId Mud = InvalidStateId;
         TStateId WaterFilm = InvalidStateId;
+        TStateId Lava = InvalidStateId;
     };
     inline TDemoSurfaceStateBindings ResolveDemoSurfaceStates(const TSurfaceStateRegistry& Registry)
     {
@@ -24,6 +25,8 @@ namespace MDSS
                 Result.Mud = ID;
             else if (Name == "waterfilm")
                 Result.WaterFilm = ID;
+            else if (Name == "lava")
+                Result.Lava = ID;
         }
         return Result;
     }
@@ -32,7 +35,11 @@ namespace MDSS
         bool  bEnabled = true;
         bool  bMudDisplacement = true;
         bool  bWaterFilmDisplacement = true;
+        bool  bLavaDisplacement = true;
         bool  bHeightFieldSmoothing = false;
+        bool  bWaterFilmSmoothing = true;
+        bool  bMudSmoothing = true;
+        bool  bLavaSmoothing = true;
         float DryRoughness = 0.65F;
         float WetRoughness = 0.16F;
         float MudRoughness = 0.48F;

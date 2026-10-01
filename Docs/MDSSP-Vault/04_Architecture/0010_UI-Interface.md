@@ -3,7 +3,7 @@
 > **한 줄 요약:** 개발 UI에서 Scene을 편집하고 렌더링과 Surface simulation을 확인·조정한다.
 
 상태: **현재 Debug·Scene 편집 UI 구현 기준**
-최종 확인: 2026-09-29
+최종 확인: 2026-10-01
 관련: [[0001_Engine-Structure|엔진 구조와 데이터 흐름]], [[0009_Rendering|렌더링]], [[0005_Surface-Input|Surface Contact Input]]
 
 ---
@@ -13,7 +13,7 @@
 | 영역 | 기능 |
 |---|---|
 | 가운데 3D Viewport | Scene 표시, object 선택, 렌더·Surface 진단 뷰 선택 |
-| 좌측 패널 | Scene 열기·저장, Camera, 선택 object Transform, 렌더 설정 |
+| 좌측 패널 | 상단 `Scene File`·`Animation` 탭, Camera, 선택 object Transform, 렌더 설정 |
 | 우측 패널 | 상단 공통 실행 제어, 하단 `Solver`, `Contact Input`, `Profile Tuning`, `Inspector`, `Global Settings` 탭 |
 | Viewport 상단 | FPS, GPU Render·Solver 성능 표시 |
 | 하단 `Log` | 로그 level 필터, 검색, 복사·삭제 |
@@ -67,6 +67,23 @@
 - Camera 설정과 simulation State는 저장하지 않는다.
 - `Config/Engine.ini`의 `[Application] StartupScene`이 앱 시작 Scene을 지정한다. 실행 중 Scene을 바꿔도 설정은 자동 저장하지 않는다.
 
+### Demo Animation 제어 — 구현
+
+`.Scene`이 `.DemoAnim`을 참조하면 좌측 맨 위 도킹 영역에 `Scene File`과 나란한 `Animation` 탭을 표시한다. 별도 Animation 창을 `Scene File`과 같은 도킹 노드에 배치하며, Scene에 `.DemoAnim`이 없으면 탭을 표시하지 않는다. 애니메이션은 오브젝트 Transform과 선택적 Camera keyframe을 재생한다 ([[../05_ADR/0042-Scene-Referenced-Demo-Animation|ADR 0042]]).
+
+| 설정 | 동작 |
+|---|---|
+| Animation Play / Pause | 애니메이션 시간과 keyframe 평가만 진행·정지 |
+| Restart Animation | 애니메이션 시간을 처음으로 되돌리고 초기 keyframe을 적용. Solver State는 유지 |
+| Animation Speed | `0.25×`, `0.5×`, `1×`, `2×` 프리셋 또는 `0.05×`–`4×` 슬라이더로 애니메이션 시간 배율 조절 |
+| Simulation Run / Pause / Step | 기존 Simulation 제어대로 Solver 갱신만 진행·정지·한 번 실행 |
+
+- 두 재생 제어는 별도 상태와 시간 진행을 가진다. Animation을 재생해도 Solver는 자동 시작하지 않고, Solver를 재생해도 Animation은 자동 시작하지 않는다.
+- Animation Speed는 UI의 애니메이션 시간에만 곱한다. Simulation Speed는 Solver에만 적용한다.
+- 둘 다 실행 중이면 각 Solver step은 그 시점의 현재 Transform을 사용한다. Simulation을 멈춘 상태에서도 Animation만 계속 재생할 수 있으며 Surface State는 바뀌지 않는다.
+- Animation만으로 접촉 입력을 만들거나 Simulation State를 초기화하지 않는다. 자동 접촉 입력은 별도 후속 설계다.
+- `.DemoAnim`이 있는 Scene에서만 Animation 제어를 표시한다.
+
 ## 공통 Simulation 제어
 
 초기 UI는 실행 제어와 Solver 설정을 `Simulation` 탭에 함께 배치했다. 현재는 자주 사용하는 실행 제어를 탭 위에 두고, 세부 기능을 `Solver`, `Contact Input`, `Profile Tuning`, `Inspector`, `Global Settings` 탭으로 나눈다.
@@ -107,11 +124,9 @@ Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인�
 - Solver debug terms를 runtime에 켜고 끌 수 있다:
   - Geometry Feedback: `Accumulation feedback`은 기본 OFF이며, ON에서 모든 적층 State의 Profile별 `thicknessPerAmount`로 계산한 위치·갱신 normal·이웃 거리를 다음 Solver step에 반영한다.
   - ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
-  - Transport: SaturationDrive, GeometryDrive, DirectionDrive: MesoNormal, DistanceWeight, NormalWeight, ProfileBoundaryWeight, CurvatureWeight
-  - Decay: Decay, ConcavityRetention
-  - CurvatureWeight는 기본 OFF이며 변경은 이후 Solver step에 적용한다. 같은 초기 조건 비교에는 Reset이 필요하다.
+  - Transport: `Saturation spreading` (`SaturationDrive`), `Gravity-guided flow` (`GeometryDrive`), DirectionDrive: MesoNormal, DistanceWeight, NormalWeight, ProfileBoundaryWeight
+  - Decay: Decay, `Cavity decay protection` (`ConcavityRetention`)
   - Lit Demo Effects의 `Lit height display scale`은 Lit과 디버그 미리보기에서 공유하는 렌더링 전용 설정이며 Simulation이 읽지 않는다.
-  - CurvatureWeight 계산식과 범위는 [[0007_Simulation-Optimization|Simulation Optimization]]에 정리한다 ([[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]).
 - `Cache Comparison`은 기본 접힘이다. RawFlux Cache ON/OFF, 실제 cache buffer 크기와 비교 조건을 표시한다. Fixed timestep과 Auto substepping은 `Global Settings` 탭에서 조절한다.
 - `Diagnostics`는 기본 접힘이다. 전체 texel 수와 유효 texel 비율을 표시하며, Paused에서는 다음 read buffer와 최근 Solver GPU 시간도 표시한다.
 
@@ -127,7 +142,8 @@ Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인�
 **Profile Tuning**
 
 - 현재 Scene에서 참조하는 `.SRProfile`과 State를 선택한다.
-- 지원 parameter: StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor, DecayRate, CavityRetentionFactor, AccumulationFactor, CavityFillFactor, ThicknessPerAmount
+- 지원 parameter: StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor, DecayRate, CavityRetentionFactor, CavityTransportRetentionFactor, AccumulationFactor, CavityFillFactor, ThicknessPerAmount
+- UI는 `Transport: flow`에 `Saturation spread`와 `Gravity flow`, `Transport: resistance`에 `Cavity exit resistance`를 표시한다. 앞의 두 계수는 각각 포화도 차이와 중력·높이차에 의한 이동을 조절하고, 마지막 계수는 더 낮은 오목도로 나갈 때만 수송을 줄인다. `Cavity decay protection`은 별도 `Decay` 구역에서 자연 감소를 줄인다. version 4 `.SRProfile` 키도 각각 `saturationSpreadFactor`, `gravityFlowFactor`, `cavityExitResistanceFactor`, `cavityDecayProtectionFactor`다.
 - 두 TransferFactor는 `[0,1]` Slider로 조절한다. UI와 GPU에는 무차원 계수를 저장하고 Solver가 기준 속도를 적용한다.
 - 초안은 `Apply Override`를 눌러 적용하고 원래 값으로 복원할 수 있다.
 - Override는 실행 중에만 유지되며 `.SRProfile` 파일은 수정하지 않는다.
@@ -143,7 +159,10 @@ Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인�
 
 ## 성능 표시와 경계
 
-- Viewport overlay: FPS/frame time, GPU Render, frame의 모든 Solver 반복을 합한 전체 시간, Pass 1·2 시간
+- Viewport overlay: FPS/frame time, GPU Render, frame의 모든 Solver 반복을 합한 전체 시간, Pass 1·2 시간.
+- GPU Rendering은 overlay 준비를 형상 계산·높이 스무딩·옆면 생성으로 나눠 표시한다. 옆면 생성은 메시 정점별 State coverage 샘플링, 경계 검색 compute, 각 compute 사이 barrier, segment 생성 compute로 나눠 표시한다. 버퍼 쓰기 전·draw 읽기 전 barrier도 표시한다.
+- Apple GPU의 MoltenVK에서는 render pass 내부 timestamp가 Metal encoder 끝에서 함께 기록될 수 있다. 이 환경에서는 `Render pass` 전체 시간만 표시하고 내부 draw·UI·pass begin 세부 시간을 숨긴다. `Render GPU`는 render prep과 render pass 전체의 합이다. render pass 내부의 실제 비용은 Metal GPU Capture 또는 Metal System Trace로 조사한다.
+- 그 밖의 장치에서는 `Scene draw`를 render pass 준비·base mesh·mud/water draw·draw 사이·grid/gizmo 구간으로 나누고, 이후의 `UI draw`와 `Render pass end`도 표시한다. `Render GPU`는 render prep·Scene draw·UI draw·render pass 종료의 합이다. `Pass begin total`은 render pass 시작 명령 전후의 timestamp 구간이며 `Color stage`와 `Depth stage`는 각각 color attachment output과 early fragment tests 단계에서 측정한다. 이 구간들은 중첩될 수 있으므로 합산하거나 clear 전용 시간으로 해석하지 않는다.
 - 시간은 1초 구간 평균으로 갱신한다. GPU timestamp query 미지원 장치에서는 측정값을 사용할 수 없다고 표시한다.
 - UI는 Solver나 GPU State를 직접 수정하지 않는다. 요청은 Renderer와 Surface State System을 거친다.
 - Scene 편집과 Debug 접촉 입력은 현재 Static Mesh instance에 한정된다.

@@ -15,6 +15,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <stdexcept>
 
 
 namespace MDSS
@@ -62,7 +63,7 @@ namespace MDSS
             if (const std::optional<TSurfaceContactInput> Contact = InputInterface->PollDebugContact(
                     MainScene,
                     Assets,
-                    MainScene.GetMainCamera(),
+                    DebugInterface->GetActiveViewportCamera(MainScene),
                     DebugInterface->IsInjectModeEnabled(),
                     DebugInterface->GetInjectState(),
                     DebugInterface->GetInjectStrength(),
@@ -78,12 +79,23 @@ namespace MDSS
                                   ", strength=" + std::to_string(Contact->Strength) + ").");
             }
             const auto  CurrentFrameTime = std::chrono::steady_clock::now();
-            // 파일 대화상자와 씬 로딩 동안 멈춘 시간을 Solver가 따라잡지 않도록 기준을 갱신한다.
-            const float DeltaTime = DebugInterface->ConsumeFrameTimeResetRequest()
+            // Settings and file dialogs can block inside BeginFrame. Exclude
+            // their elapsed time from the interactive simulation clock.
+            const bool bSuspendSimulationClock = DebugInterface->ConsumeFrameTimeResetRequest();
+            const float DeltaTime = bSuspendSimulationClock
                                         ? 0.0F
                                         : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
             PreviousFrameTime = CurrentFrameTime;
-            FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime);
+            MainScene.AdvanceDemoAnimation(DeltaTime * DebugInterface->GetAnimationTimeScale());
+            FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime, bSuspendSimulationClock);
+            if (bSuspendSimulationClock)
+            {
+                // The setting's GPU work can outlive RenderFrame. Resume the
+                // clock only after that work is complete.
+                if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+                    throw std::runtime_error("Failed to wait for GPU after a setting change.");
+                PreviousFrameTime = std::chrono::steady_clock::now();
+            }
             ++RenderedFrameCount;
         }
 

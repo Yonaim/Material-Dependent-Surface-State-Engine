@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <atomic>
 
 namespace MDSS
 {
@@ -43,6 +44,7 @@ namespace MDSS
 
         [[nodiscard]] VkBuffer     GetHandle() const noexcept;
         [[nodiscard]] VkDeviceSize GetSize() const noexcept;
+        [[nodiscard]] std::uint64_t GetUploadRevision() const noexcept;
 
     private:
         static std::uint32_t FindMemoryType(VkPhysicalDevice      PhysicalDevice,
@@ -54,5 +56,6 @@ namespace MDSS
         VkDeviceMemory        Memory = VK_NULL_HANDLE;
         VkDeviceSize          Size = 0;
         VkMemoryPropertyFlags MemoryProperties = 0;
+        mutable std::atomic<std::uint64_t> UploadRevision{0};
     };
 } // namespace MDSS

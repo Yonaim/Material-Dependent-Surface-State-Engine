@@ -123,8 +123,7 @@ namespace MDSS
         std::vector<TSurfaceGPUVec4>* OutDebugAverages = nullptr,
         bool bUseNormalWeight = true,
         bool bUseDistanceWeight = true,
-        bool bUseProfileBoundaryWeight = true,
-        bool bUseCurvatureWeight = false);
+        bool bUseProfileBoundaryWeight = true);
 
     [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
         const TSurfaceStateRegistry& Registry);

@@ -47,6 +47,7 @@ void main()
     normalTS = normalize(normalTS);
 
     vec3 mappedNormalWS = normalize(tangentToWorld * normalTS);
+    if (!gl_FrontFacing) mappedNormalWS = -mappedNormalWS;
     vec4 albedo = texture(BaseColorTexture, FragUV) * Material.BaseColor;
 
     if (Material.RenderMode == RENDER_MODE_BASE_COLOR)

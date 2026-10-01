@@ -1,70 +1,69 @@
 {
   "type": "TScene",
   "version": 1,
+  "animation": "../Animations/Mountain_CenterRock.DemoAnim",
+  "camera": {
+    "position": [2.0, -3.3, 2.7],
+    "target": [0.0, 0.0, 0.7],
+    "verticalFieldOfViewDegrees": 55.0
+  },
   "simulationResolution": 256,
   "objects": [
     {
+      "id": "mountain_default",
       "mesh": "../Meshes/Mountain/Mountain.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/Mountain_WaterFilm.SurfaceProfileMap",
+      "surfaceProfileMap": "../SurfaceProfileMaps/Mountain.SurfaceProfileMap",
       "transform": {
-        "position": [
-          0.0,
-          0.0,
-          0.033503
-        ],
-        "rotationDegrees": [
-          90.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          0.21463775,
-          0.21463775,
-          0.21463775
-        ]
+        "position": [-1.50060946, 0.00031047, 0.03350302],
+        "rotationDegrees": [90.0, 0.0, 0.0],
+        "scale": [0.21463775, 0.21463775, 0.21463775]
       }
     },
     {
+      "id": "mountain_tilted",
       "mesh": "../Meshes/Mountain/Mountain.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/Mountain_Wetness.SurfaceProfileMap",
+      "surfaceProfileMap": "../SurfaceProfileMaps/Mountain.SurfaceProfileMap",
       "transform": {
-        "position": [
-          -2.0,
-          0.0,
-          0.033503
-        ],
-        "rotationDegrees": [
-          90.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          0.21463775,
-          0.21463775,
-          0.21463775
-        ]
+        "position": [-0.00161027, 0.00031047, 0.14415921],
+        "rotationDegrees": [134.293, 0.0, 12.0],
+        "scale": [0.21463775, 0.21463775, 0.21463775]
       }
     },
     {
+      "id": "mountain_inverted",
       "mesh": "../Meshes/Mountain/Mountain.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/Mountain_Mud.SurfaceProfileMap",
+      "surfaceProfileMap": "../SurfaceProfileMaps/Mountain.SurfaceProfileMap",
       "transform": {
-        "position": [
-          2.0,
-          0.0,
-          0.033503
-        ],
-        "rotationDegrees": [
-          90.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          0.21463775,
-          0.21463775,
-          0.21463775
-        ]
+        "position": [1.49939054, -0.00031047, 1.76807504],
+        "rotationDegrees": [-114.659, 0.0, 0.0],
+        "scale": [0.21463775, 0.21463775, 0.21463775]
       }
+    }
+  ],
+  "initialContacts": [
+    {
+      "target": "mountain_default",
+      "state": "lava",
+      "worldPosition": [-1.50060946, 0.00031047, 0.30157806],
+      "radius": 0.42,
+      "strength": 1.5,
+      "falloff": 1.0
+    },
+    {
+      "target": "mountain_tilted",
+      "state": "lava",
+      "worldPosition": [-0.05734620, 0.00031047, 0.40637616],
+      "radius": 0.42,
+      "strength": 1.5,
+      "falloff": 1.0
+    },
+    {
+      "target": "mountain_inverted",
+      "state": "lava",
+      "worldPosition": [1.49939054, -0.00031047, 1.5],
+      "radius": 0.42,
+      "strength": 1.5,
+      "falloff": 1.0
     }
   ]
 }

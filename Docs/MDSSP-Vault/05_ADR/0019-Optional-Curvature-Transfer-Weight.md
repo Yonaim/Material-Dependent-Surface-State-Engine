@@ -3,11 +3,11 @@
 > **한 줄 요약:** 선택형 CurvatureWeight는 기본 OFF이며, 활성화하면 Virtual Height에서 유도한 mean curvature 기반 가중치를 캐시에 적용한다.
 
 - 분류: **Simulation**
-- Status: **Accepted**
+- Status: **Superseded by ADR 0046**
 - Date: 2026-09-28
 - 관련 문서: [[0016-Transport-Transfer-Weights|ADR 0016 — Transport TransferWeight]], [[0018-Normal-Map-Meso-Geometry|ADR 0018 — Normal Map Meso Geometry]]
 
-> **후속 결정 (2026-10-01):** [[0045-Directional-Cavity-Transport-Retention|ADR 0045]]의 오목한 홈 이탈 억제는 이 문서의 대칭적 절댓값 CurvatureWeight와 별도 항이다. 이 비교용 옵션의 기본 OFF 및 현재 수식은 유지한다.
+> **후속 결정 (2026-10-01):** [[0046-Transport-Role-Names-and-Curvature-Removal|ADR 0046]]에서 이 비교용 옵션을 제거했다. 아래는 이전 결정의 기록이다.
 
 ## Context
 

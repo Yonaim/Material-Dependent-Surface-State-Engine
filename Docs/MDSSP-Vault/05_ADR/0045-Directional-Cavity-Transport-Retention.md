@@ -3,9 +3,11 @@
 > **한 줄 요약:** 통합 ConcavityWeight를 홈 밖으로 나가는 Transport의 방향별 보유 입력으로 사용하되 Decay의 cavityRetentionFactor와 독립된 State별 계수를 둔다.
 
 - 분류: **Simulation**
-- Status: **Accepted — 구현 전**
+- Status: **Implemented**
 - Date: 2026-10-01
 - 관련 문서: [[0016-Transport-Transfer-Weights|ADR 0016 — TransferWeight]], [[0019-Optional-Curvature-Transfer-Weight|ADR 0019 — 대칭 곡률 감쇠]], [[0044-Macro-Meso-Concavity-Field|ADR 0044 — 통합 오목도]]
+
+> **후속 결정 (2026-10-01):** [[0046-Transport-Role-Names-and-Curvature-Removal|ADR 0046]]은 선택적 CurvatureWeight를 제거하고 `.SRProfile` 키를 역할별 이름으로 변경했다. 아래 기존 키와 비교용 항 유지 결정은 당시 기록이다.
 
 ## Context
 
@@ -18,6 +20,10 @@
 3. 홈 보유 효과가 필요한 State에서는 GeometryDrive와 SaturationDrive를 합친 raw flux에 방향별 계수를 적용한다. GeometryDrive만 줄이면 SaturationDrive 경로로 같은 State가 계속 빠져나갈 수 있다. 이 계수는 State 양을 없애지 않고 기존 outgoing·incoming 및 alpha 보존 경로 안에서 유량만 조절한다.
 4. Mud와 WaterFilm·Wetness는 동일한 물성값을 강제하지 않는다. 데모의 State별 계수는 각 .SRProfile에서 조절한다. 뒤집힌 홈에 물막까지 무조건 붙는 효과를 기본 물리 규칙으로 선언하지 않는다.
 5. ADR 0019의 대칭적인 CurvatureWeight는 비교용 선택 항목으로 유지한다. 새 방향별 보유 항을 기존 CurvatureWeight나 Decay 계수에 합치지 않는다. 적층으로 홈이 메워지면 ADR 0044의 동적 오목도 갱신 결과를 다음 step에서 사용한다.
+
+## Implementation
+
+`.SRProfile` 버전 3의 선택 필드 `cavityTransportRetentionFactor`는 생략 시 0이다. 기존 48바이트 GPU Profile 레코드의 `AccumulationThickness.y`에 저장하고 UI에서 조절한다. 두 Solver pass의 raw flux에 `1 − factor × max(sourceConcavity − targetConcavity, 0)`을 적용한다. GPU 검사는 홈 이탈 억제·진입 허용·총량 보존·계수 0 호환을 cache ON/OFF에서 확인했다. 실제 데모의 형상별 강도는 시각 조정 대상이다.
 
 ## Alternatives Considered
 

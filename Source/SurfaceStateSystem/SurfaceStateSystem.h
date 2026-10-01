@@ -13,6 +13,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <glm/mat3x3.hpp>
 
 namespace MDSS
 {
@@ -37,8 +38,11 @@ namespace MDSS
                         float DeltaTime,
                         VkQueryPool TimestampQueryPool = VK_NULL_HANDLE,
                         std::uint32_t FirstInstanceQuery = 0);
+        void RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer, std::size_t SceneIndex);
+        void PrepareTransferWeightCachesForSettingChange();
         [[nodiscard]] std::size_t GetSolverTimestampSlotCount() const noexcept;
         void ResetState();
+        void RestartState();
         [[nodiscard]] float GetMaximumStableDeltaTime();
         [[nodiscard]] const TSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
         void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
@@ -54,6 +58,7 @@ namespace MDSS
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
 
     private:
+        void QueueInitialContacts();
         void ApplyPendingContacts();
 
         const TVulkanContext& Context;
@@ -64,8 +69,10 @@ namespace MDSS
         std::vector<TSurfaceContactInput>            PendingContacts;
         TSurfaceSolverDebugSettings DebugSolverSettings;
         bool bTransferWeightSettingsDirty = false;
+        bool bForceFullGeometryOnNextStep = false;
         bool bStableDeltaTimeDirty = true;
         float CachedMaximumStableDeltaTime = 1.0F / 60.0F;
+        std::vector<glm::mat3> StableDeltaTimeModelMatrices;
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
     };
 } // namespace MDSS

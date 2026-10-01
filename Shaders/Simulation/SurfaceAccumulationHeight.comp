@@ -1,0 +1,44 @@
+/**
+ * @file SurfaceAccumulationHeight.comp
+ * @brief Compute one accumulation height per texel for the current solver step.
+ */
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define SURFACE_ACCUMULATION_HEIGHT_WRITE
+#include "Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
+
+layout(local_size_x = 64) in;
+shared uint WorkgroupDirty;
+
+void main()
+{
+    uint Texel = gl_GlobalInvocationID.x;
+    bool Dirty = false;
+    // A zero-workgroup indirect dispatch skips the geometry pass entirely.
+    // Clear its per-texel output here so diagnostics never retain old dirt.
+    if (Texel < Solver.LocalTexelCount)
+        AccumulationHeights.Values[2u * Solver.LocalTexelCount + Texel] = 0.0;
+    if (Texel < Solver.LocalTexelCount && !isValidTexel(Texel))
+    {
+        AccumulationHeights.Values[Solver.LocalTexelCount + Texel] = 0.0;
+        AccumulationHeights.Values[Texel] = 0.0;
+    }
+    else if (Texel < Solver.LocalTexelCount)
+    {
+        float Height = accumulationHeight(Texel);
+        float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
+        vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
+        // Rendering may refresh the displayed height without rebuilding geometry.
+        Dirty = Height != BuiltHeight || any(isnan(BuiltNormal)) ||
+            any(isinf(BuiltNormal)) || dot(BuiltNormal, BuiltNormal) < 0.5;
+        AccumulationHeights.Values[Solver.LocalTexelCount + Texel] = Dirty ? 1.0 : 0.0;
+        AccumulationHeights.Values[Texel] = Height;
+    }
+
+    if (gl_LocalInvocationIndex == 0u) WorkgroupDirty = 0u;
+    barrier();
+    if (Dirty) atomicOr(WorkgroupDirty, 1u);
+    barrier();
+    if (gl_LocalInvocationIndex == 0u)
+        AccumulationHeights.Values[3u * Solver.LocalTexelCount + gl_WorkGroupID.x] = float(WorkgroupDirty);
+}

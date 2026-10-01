@@ -38,6 +38,8 @@ namespace MDSS
         float CavityFillFactor = 0.0F;
         // World-length thickness per reference-area accumulation amount.
         float ThicknessPerAmount = 0.01F;
+        // Directional suppression of raw flux when transport leaves a more concave texel.
+        float CavityTransportRetentionFactor = 0.0F;
     };
 
     /** @brief Source and target names are canonicalized during profile loading. */

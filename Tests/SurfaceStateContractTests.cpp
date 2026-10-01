@@ -84,7 +84,14 @@ namespace
               "State parameters should be indexed by canonical name");
         Check(Profile->GetData().States.at("wetness").SaturationTransferFactor == 0.4F &&
                   Profile->GetData().States.at("wetness").GeometryTransferFactor == 0.0005F,
-              "version 3 profiles should load normalized transfer factors without applying solver rates");
+              "version 4 profiles should load normalized transfer factors without applying solver rates");
+        Check(Profile->GetData().States.at("wetness").CavityTransportRetentionFactor == 0.6F &&
+                  Profile->GetData().States.at("wetness").CavityRetentionFactor == 0.5F,
+              "version 4 cavity resistance and decay protection keys should map independently");
+        Check(PartialProfile->GetData().States.at("snow").SaturationTransferFactor == 0.2F,
+              "version 3 profile keys remain readable");
+        Check(PartialProfile->GetData().States.at("snow").CavityTransportRetentionFactor == 0.4F,
+              "version 3 optional cavity exit key remains readable");
         Check(Profile->GetData().Transitions[0].Source == "mud" &&
                   Profile->GetData().Transitions[0].Target == "wetness",
               "transition endpoint names should be normalized");
@@ -102,11 +109,14 @@ namespace
                     "states.wetness.inputFactor is required",
                     "missing parameter");
         CheckThrows([&] { (void)TSRProfileLoader::Load(12, GetFixturePath("LegacyRates.SRProfile")); },
-                    "expected version 3",
+                    "expected version 3 or 4",
                     "legacy rate schema must not be interpreted as normalized factors");
         CheckThrows([&] { (void)TSRProfileLoader::Load(13, GetFixturePath("InvalidTransferFactor.SRProfile")); },
-                    "states.wetness.geometryTransferFactor must be finite and in [0, 1]",
+                    "states.wetness.gravityFlowFactor must be finite and in [0, 1]",
                     "unnormalized transfer factor in JSON");
+        CheckThrows([&] { (void)TSRProfileLoader::Load(14, GetFixturePath("MixedVersionKeys.SRProfile")); },
+                    "states.wetness.cavityTransportRetentionFactor belongs to the other .SRProfile version",
+                    "version 4 must reject legacy optional keys instead of silently ignoring them");
 
         TSurfaceResponseProfileData InvalidProfile;
         InvalidProfile.States["wetness"].StateCapacity = 0.0F;
@@ -153,8 +163,8 @@ namespace
     {
         using namespace MDSS;
         for (const auto& [Member, Name] :
-             {std::pair{&TSurfaceStateParameters::SaturationTransferFactor, "saturationTransferFactor"},
-              std::pair{&TSurfaceStateParameters::GeometryTransferFactor, "geometryTransferFactor"}})
+             {std::pair{&TSurfaceStateParameters::SaturationTransferFactor, "saturationSpreadFactor"},
+              std::pair{&TSurfaceStateParameters::GeometryTransferFactor, "gravityFlowFactor"}})
         {
             TSurfaceResponseProfileData Profile;
             auto& Parameters = Profile.States["wetness"];

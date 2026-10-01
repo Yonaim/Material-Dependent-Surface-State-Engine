@@ -17,10 +17,10 @@ namespace MDSS
                              VkRenderPass                    TRenderPass,
                              VkExtent2D                      Extent,
                              const std::vector<VkImageView>& ColorImageViews,
-                             VkImageView                     DepthImageView)
+                             const std::vector<VkImageView>& DepthImageViews)
         : Device(Device)
     {
-        Create(TRenderPass, Extent, ColorImageViews, DepthImageView);
+        Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
     }
 
     TFramebuffer::~TFramebuffer()
@@ -31,10 +31,10 @@ namespace MDSS
     void TFramebuffer::Recreate(VkRenderPass                    TRenderPass,
                                VkExtent2D                      Extent,
                                const std::vector<VkImageView>& ColorImageViews,
-                               VkImageView                     DepthImageView)
+                               const std::vector<VkImageView>& DepthImageViews)
     {
         Reset();
-        Create(TRenderPass, Extent, ColorImageViews, DepthImageView);
+        Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
     }
 
     void TFramebuffer::Reset()
@@ -52,13 +52,15 @@ namespace MDSS
     void TFramebuffer::Create(VkRenderPass                    TRenderPass,
                              VkExtent2D                      Extent,
                              const std::vector<VkImageView>& ColorImageViews,
-                             VkImageView                     DepthImageView)
+                             const std::vector<VkImageView>& DepthImageViews)
     {
+        if (ColorImageViews.size() != DepthImageViews.size() || ColorImageViews.empty())
+            throw std::invalid_argument("Framebuffer color and depth image view counts must match.");
         Handles.resize(ColorImageViews.size(), VK_NULL_HANDLE);
 
         for (std::size_t Index = 0; Index < ColorImageViews.size(); ++Index)
         {
-            const std::array<VkImageView, 2> Attachments = {ColorImageViews[Index], DepthImageView};
+            const std::array<VkImageView, 2> Attachments = {ColorImageViews[Index], DepthImageViews[Index]};
 
             VkFramebufferCreateInfo CreateInfo{};
             CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
