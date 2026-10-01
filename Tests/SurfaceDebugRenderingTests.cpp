@@ -3,6 +3,7 @@
  */
 #include "AssetManager/Assets/MeshSourceData.h"
 #include "AssetManager/Assets/TextureAsset.h"
+#include "Renderer/AccumulationOverlaySides.h"
 #include "Renderer/GraphicsPipeline.h"
 #include "Renderer/Renderer.h"
 #include "SurfaceStateSystem/Debug/TexelInspector.h"
@@ -75,15 +76,155 @@ namespace MDSS::Tests
             glm::uvec4    DebugFlags{0};
             glm::uvec4    DemoStateChannels{InvalidStateId, InvalidStateId, InvalidStateId, 1U};
             glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
+            glm::vec4     DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
+            glm::vec4     WetnessTint{0.44F, 0.56F, 0.68F, 1.0F};
+            glm::vec4     WaterFilmTint{0.35F, 0.53F, 0.68F, 1.0F};
+            glm::uvec4    DemoExtraStateChannels{InvalidStateId, 0U, 0U, 0U};
             glm::vec4     CameraPosition{-0.35F, -0.55F, 1.0F, 1.0F};
         };
-        static_assert(sizeof(TUniform) == 128);
+        static_assert(sizeof(TUniform) == 192);
 
         struct TPush
         {
             glm::mat4 Model{1.0F};
             glm::mat4 ViewProjection{1.0F};
         };
+    }
+
+    void TestOverlaySideCompaction(const TVulkanContext& Context)
+    {
+        const VkDevice Device = Context.GetDevice();
+        const auto HostMemory = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        TSharedSurfaceGeometryData Geometry({{0, {2, 2}}, {1, {2, 2}}});
+        for (std::uint32_t Texel = 0; Texel < 8; ++Texel)
+        {
+            auto& G = Geometry.GetTexels()[Texel];
+            G.Surface = Texel / 4;
+            G.Triangle = G.Chart = 0;
+            G.Position = {float(Texel % 2) + 2.0F * float(Texel / 4), float((Texel / 2) % 2), 0};
+            for (std::uint32_t Other = 0, Slot = 0; Other < 4; ++Other)
+                if (Other != Texel % 4) G.NeighborIndices[Slot++] = 4 * (Texel / 4) + Other;
+        }
+        Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(8, 0));
+        TSurfaceResponseProfileData Profile;
+        auto Parameters = TSurfaceStateParameters{};
+        Parameters.AccumulationFactor = 1.0F;
+        Profile.States.emplace("test", Parameters);
+        const TSurfaceStateRegistry Registry({Profile});
+        TSurfaceSharedGeometryGPUResources Shared(Context.GetPhysicalDevice(), Device, Geometry);
+        TSurfaceProfileGPUResources Profiles(Context.GetPhysicalDevice(), Device, {Profile}, Registry);
+        TSurfaceInstanceGPUResources Instance(Context.GetPhysicalDevice(), Device, 8, 1,
+            std::vector<float>(8 * SurfaceNeighborCount, 0.0F), {},
+            std::vector<float>(8, SurfaceStateReferenceArea));
+        TSurfaceStateDescriptorResources Descriptors(Device, Shared, Profiles, Instance);
+        TTexelGeometryPreview Preview(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1, true);
+        TAccumulationOverlaySides Sides(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(),
+            Preview.GetOutputLayout(), 1);
+        std::array<VkDrawIndirectCommand, 3> Draws{};
+        TGPUBuffer Readback(Context.GetPhysicalDevice(), Device, sizeof(Draws),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
+        std::array<VkDrawIndexedIndirectCommand, 2> TopDraws{};
+        TGPUBuffer TopReadback(Context.GetPhysicalDevice(), Device, sizeof(TopDraws),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
+        std::array<TTexelGeometryVertex, 8> Computed{};
+        TAccumulationOverlaySides::TTriangleActivity Activity{};
+        TGPUBuffer GeometryReadback(Context.GetPhysicalDevice(), Device, sizeof(Computed),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
+        const auto Run = [&](const std::array<float, 8>& State)
+        {
+            Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+            auto Command = Context.GetCommands().BeginSingleTime();
+            Preview.Record(Command, 0, Descriptors, 8, 0, 1, 1.0F, 1.0F, glm::mat4(1.0F), true, true);
+            Sides.Record(Command, 0, 0, 1, Shared, Descriptors, Preview.GetOutputSet(0), true);
+            VkBufferMemoryBarrier CopyBarrier{};
+            CopyBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            CopyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            CopyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            CopyBarrier.srcQueueFamilyIndex = CopyBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            CopyBarrier.buffer = Sides.GetDrawBuffer(0, 0);
+            CopyBarrier.size = sizeof(Draws);
+            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0, 0, nullptr, 1, &CopyBarrier, 0, nullptr);
+            VkBufferCopy Copy{0, 0, sizeof(Draws)};
+            vkCmdCopyBuffer(Command, CopyBarrier.buffer, Readback.GetHandle(), 1, &Copy);
+            CopyBarrier.buffer = Sides.GetTopDrawBuffer(0, 0);
+            CopyBarrier.size = sizeof(TopDraws);
+            CopyBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0, 0, nullptr, 1, &CopyBarrier, 0, nullptr);
+            Copy.size = sizeof(TopDraws);
+            vkCmdCopyBuffer(Command, CopyBarrier.buffer, TopReadback.GetHandle(), 1, &Copy);
+            CopyBarrier.buffer = Preview.GetOutputBuffer(0).GetHandle();
+            CopyBarrier.size = sizeof(Computed);
+            CopyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0, 0, nullptr, 1, &CopyBarrier, 0, nullptr);
+            Copy.size = sizeof(Computed);
+            vkCmdCopyBuffer(Command, CopyBarrier.buffer, GeometryReadback.GetHandle(), 1, &Copy);
+            std::array<VkBufferMemoryBarrier, 3> HostBarriers{};
+            for (auto& HostBarrier : HostBarriers)
+            {
+                HostBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+                HostBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                HostBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+                HostBarrier.srcQueueFamilyIndex = HostBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                HostBarrier.size = VK_WHOLE_SIZE;
+            }
+            HostBarriers[0].buffer = Readback.GetHandle();
+            HostBarriers[1].buffer = TopReadback.GetHandle();
+            HostBarriers[2].buffer = GeometryReadback.GetHandle();
+            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                0, 0, nullptr, static_cast<std::uint32_t>(HostBarriers.size()), HostBarriers.data(), 0, nullptr);
+            Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+            Activity = Sides.CompleteFrame(0);
+            Readback.Download(Draws.data(), sizeof(Draws));
+            TopReadback.Download(TopDraws.data(), sizeof(TopDraws));
+            GeometryReadback.Download(Computed.data(), sizeof(Computed));
+        };
+        Run({});
+        Require(TopDraws[0].instanceCount == 0 && TopDraws[1].instanceCount == 0,
+                "An empty overlay must skip all top draws.");
+        const auto UncachedFlat = Computed;
+        Run({});
+        for (std::size_t T = 0; T < Computed.size(); ++T)
+            Require(glm::length(Computed[T].HeightAndNormal - UncachedFlat[T].HeightAndNormal) < 1e-5F,
+                "Cached meso normals must match the uncached height-field fit.");
+        Run({0, 1.0F, 0, 0, 0, 0, 0, 0});
+        Require(Activity.Total == Shared.GetTexelMeshIndexBuffer()->GetSize() / (3U * sizeof(std::uint32_t)) &&
+                Activity.Active > 0 && Activity.Active <= Activity.Total,
+                "Overlay activity must count covered top triangles without exceeding the mesh total.");
+        Require(TopDraws[0].instanceCount == 1 && TopDraws[1].instanceCount == 1 &&
+                TopDraws[0].indexCount == Shared.GetTexelMeshRanges()[0].IndexCount,
+                "A populated overlay must restore the full top draw commands.");
+        Require(Draws[0].vertexCount == 6 && Draws[0].firstVertex == 0,
+                "Only the boundary-crossing triangle may enter the active surface draw.");
+        Require(Draws[1].vertexCount == 0 && Draws[1].firstVertex == 12 &&
+                Draws[2].vertexCount == 12 && Draws[2].firstVertex == 24,
+                "Inactive surface must not draw sides; two active open edges must remain.");
+        Require(std::abs(Computed[1].HeightAndNormal.x - 0.01F) < 1e-6F &&
+                std::abs(Computed[1].HeightAndNormal.y) > 0.005F,
+                "Cached accumulation height must displace the active texel and affect its normal.");
+        Run({});
+        Require(Activity.Active == 0 && Activity.Total > 0,
+                "Overlay activity must reset when all accumulation disappears.");
+        Require(TopDraws[0].instanceCount == 0 && TopDraws[1].instanceCount == 0,
+                "Top draws must turn off again when the overlay becomes empty.");
+        Require(Draws[0].vertexCount == 0 && Draws[1].vertexCount == 0 && Draws[2].vertexCount == 0,
+                "Indirect side counts must reset when all accumulation disappears.");
+        Require(Computed[1].HeightAndNormal.x == 0.0F,
+                "Cached render height must refresh after accumulation disappears.");
+        std::array<TSurfaceGPUGeometryScalar, 8> MesoRamp{};
+        MesoRamp[1].MesoVirtualHeight = 0.05F;
+        Shared.GetGeometryScalarBuffer().Upload(MesoRamp.data(), sizeof(MesoRamp));
+        Run({});
+        const auto UpdatedMeso = Computed;
+        Run({});
+        Require(std::abs(Computed[1].HeightAndNormal.x - 0.05F) < 1e-6F,
+            "Changing meso height must invalidate the render baseline.");
+        for (std::size_t T = 0; T < Computed.size(); ++T)
+            Require(glm::length(Computed[T].HeightAndNormal - UpdatedMeso[T].HeightAndNormal) < 1e-5F,
+                "Rebuilt meso normals must match the uncached result after a height update.");
     }
 
     void TestSurfaceDebugRendering(const TVulkanContext& Context)
@@ -611,8 +752,8 @@ namespace MDSS::Tests
         const auto Raised = RenderGrid(true, true, 1);
         Require(Flat[128 * Extent.width + 220].a == 0 && Raised[128 * Extent.width + 220].a > 0.5F,
                 "An interior texel must raise the actual silhouette while all boundary samples stay flat.");
-        Require(Close(Computed[4].PositionAndHeight.z, 0.4F) && Computed[0].PositionAndHeight.z == 0,
-                "Compute must store per-texel positions from the latest State without resampling sparse mesh vertices.");
+        Require(Close(Computed[4].HeightAndNormal.x, 0.4F) && Computed[0].HeightAndNormal.x == 0,
+                "Compute must store per-texel heights from the latest State without resampling sparse mesh vertices.");
         // Refine a UV-seamed source quad. The center sample lies exactly on its shared edge,
         // and must raise that edge in both charts without opening a crack.
         std::vector<TVertex> SeamVertices(6);
@@ -646,7 +787,7 @@ namespace MDSS::Tests
         Require(std::count_if(SeamFlat.begin(), SeamFlat.end(), [](auto P) { return P.a > 0.5F; }) ==
                 std::count_if(Flat.begin(), Flat.end(), [](auto P) { return P.a > 0.5F; }),
                 "A flat source-seamed quad must have complete GPU coverage without chart border gaps.");
-        const auto EdgeNormal = Computed[3].Normal;
+        const float EdgeNormalX = Computed[3].HeightAndNormal.y;
 
         const auto GridOverlay = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 1);
         const auto GridOnly = RenderGrid(true, true, 1, TRenderViewMode::SurfaceFinalGeometry, 2);
@@ -666,15 +807,15 @@ namespace MDSS::Tests
         Require(BrightLines > 50 && DarkInterior > BrightLines && CoarseBrightLines < BrightLines,
                 "Height grid must draw sparse texel cell boundaries and respond to block size.");
         const auto Reduced = RenderGrid(true, true, 0.5F);
-        Require(Reduced[128 * Extent.width + 220].a == 0 && Close(Computed[4].PositionAndHeight.z, 0.2F),
+        Require(Reduced[128 * Extent.width + 220].a == 0 && Close(Computed[4].HeightAndNormal.x, 0.2F),
                 "Display scale must affect actual texel geometry.");
-        Require(std::abs(EdgeNormal.x) > std::abs(Computed[3].Normal.x) + 0.05F,
+        Require(std::abs(EdgeNormalX) > std::abs(Computed[3].HeightAndNormal.y) + 0.05F,
                 "Displayed normal must be reconstructed using the same display scale as the positions.");
         (void)RenderGrid(false, true, 1);
-        Require(Close(Computed[4].PositionAndHeight.z, 0.1F), "Texel geometry must follow the current State B descriptor.");
+        Require(Close(Computed[4].HeightAndNormal.x, 0.1F), "Texel geometry must follow the current State B descriptor.");
         (void)RenderGrid(true, true, 1);
         (void)RenderGrid(true, true, 1);
-        Require(Close(Computed[4].PositionAndHeight.z, 0.4F), "Repeated previews must not compound accumulation height.");
+        Require(Close(Computed[4].HeightAndNormal.x, 0.4F), "Repeated previews must not compound accumulation height.");
         const auto HeightMap = RenderGrid(true, true, 1, TRenderViewMode::SurfaceAccumulation);
         Require(HeightMap[128 * Extent.width + 220].a > 0.5F,
                 "Accumulation heatmap must cover the same displaced texel geometry as Final Geometry.");
@@ -684,14 +825,14 @@ namespace MDSS::Tests
         GridState.fill(0);
         GridInstance.GetStateABuffer().Upload(GridState.data(), sizeof(GridState));
         (void)RenderGrid(true, true, 1);
-        Require(Computed[4].PositionAndHeight.z == 0, "Reset State must discard the previous computed mound.");
+        Require(Computed[4].HeightAndNormal.x == 0, "Reset State must discard the previous computed mound.");
         std::array<TSurfaceGPUGeometryScalar, 9> MesoRamp{};
         for (std::size_t T = 0; T < MesoRamp.size(); ++T)
             MesoRamp[T].MesoVirtualHeight = float(T % 3) * 0.1F;
         GridShared.GetGeometryScalarBuffer().Upload(MesoRamp.data(), sizeof(MesoRamp));
         Profiles.GetSupportedBuffer().Upload(&Unsupported, sizeof(Unsupported));
         (void)RenderGrid(true, true, 2);
-        Require(Close(Computed[4].PositionAndHeight.z, 0.2F) && Computed[4].Normal.x < -0.35F,
+        Require(Close(Computed[4].HeightAndNormal.x, 0.2F) && Computed[4].HeightAndNormal.y < -0.35F,
                 "Unsupported State must retain Meso geometry with a normal consistent with its display scale.");
         GridShared.GetGeometryScalarBuffer().Upload(std::array<TSurfaceGPUGeometryScalar,9>{}.data(), sizeof(MesoRamp));
         Side.ViewProjection = glm::mat4(1.0F);
@@ -771,7 +912,7 @@ namespace MDSS::Tests
         UploadLitState();
         Side.ViewProjection[2][0] = 3;
         const auto LitMound = RenderLit(true, true);
-        Require(LitMound[128*Extent.width+220].a > 0.5F && Close(Computed[4].PositionAndHeight.z, 0.4F),
+        Require(LitMound[128*Extent.width+220].a > 0.5F && Close(Computed[4].HeightAndNormal.x, 0.4F),
                 "Mud Lit must use the same computed interior-texel displacement as height debugging.");
         LitUniform.DebugOptions.z = 100;
         Require(RenderLit(true, true) == LitMound, "Debug height settings must not change Lit mud geometry.");

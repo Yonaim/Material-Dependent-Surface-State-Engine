@@ -21,21 +21,44 @@ layout(set = 2, binding = 4, std430) writeonly buffer TCoverageValues
 {
     float Values[];
 } Coverage;
+layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
+{
+    uint Values[];
+} GeometryCache;
 layout(push_constant) uniform TPush
 {
     uint VertexCount;
     uint BoundaryCount;
     uint Channel;
     uint Channels;
+    uint TexelCount;
+    uint TileSize;
 } Push;
+
+bool IsTileActive(TOverlayVertex Vertex)
+{
+    uint Texel = 0xffffffffu;
+    for (uint K = 0u; K < 4u; ++K)
+        if (Vertex.Weights[K] > 0.0) { Texel = Vertex.Samples[K]; break; }
+    if (Texel == 0xffffffffu || Push.TileSize == 0u) return true;
+    uint Tile = Texel / (Push.TileSize * Push.TileSize);
+    uint Flag = Push.TexelCount * 4u + Tile;
+    return Flag < uint(GeometryCache.Values.length()) && GeometryCache.Values[Flag] != 0u;
+}
 
 void main()
 {
+    if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u) return;
     uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     if (Index >= Push.VertexCount || Index >= uint(MeshVertices.Values.length()) ||
         Index >= uint(Coverage.Values.length())) return;
 
     TOverlayVertex Vertex = MeshVertices.Values[Index];
+    if (!IsTileActive(Vertex))
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
     Coverage.Values[Index] = SampleStateSaturation(uint(Vertex.UVSurface.w), Vertex.UVSurface.xy,
                                                     Push.Channel, Push.Channels);
 }

@@ -7,6 +7,7 @@
 
 #include "AssetManager/Core/Asset.h"
 #include "Logger/Logger.h"
+#include "Scene/Camera.h"
 #include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
@@ -17,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <set>
@@ -52,6 +54,9 @@ namespace MDSS
         /** @brief 새 ImGui frame을 시작해 진단 창을 갱신하고 draw data를 확정한다. */
         void BeginFrame(TScene& SceneData);
 
+        /** @brief 저장된 .Scene을 다시 읽어 애니메이션, 상태, 초기 접촉 입력을 처음부터 시작한다. */
+        void RestartScene(TScene& SceneData);
+
         /** @brief 현재 Vulkan render pass에 ImGui draw command를 기록한다. */
         void Render(VkCommandBuffer CommandBuffer) const;
 
@@ -71,9 +76,12 @@ namespace MDSS
         [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept { return bAutoSubstepping; }
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
-        /** @brief 파일 대화상자와 동기 로딩이 포함된 frame의 경과 시간을 한 번 제외한다. */
+        /** @brief 설정 준비나 파일 대화상자가 포함된 frame의 경과 시간을 한 번 제외한다. */
         [[nodiscard]] bool ConsumeFrameTimeResetRequest() noexcept;
-        [[nodiscard]] glm::vec4 GetSceneViewportRectNormalized() const noexcept;
+        [[nodiscard]] std::size_t GetViewportCount() const noexcept;
+        [[nodiscard]] glm::vec4 GetViewportRectNormalized(std::size_t Index) const noexcept;
+        [[nodiscard]] const TCamera& GetViewportCamera(const TScene& SceneData, std::size_t Index) const noexcept;
+        [[nodiscard]] const TCamera& GetActiveViewportCamera(const TScene& SceneData) const noexcept;
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] int GetHoveredGizmoAxis() const noexcept;
         [[nodiscard]] bool IsRotationGizmoMode() const noexcept;
@@ -84,12 +92,15 @@ namespace MDSS
         void ProcessCameraInput(TScene& SceneData);
         void ProcessSelectionAndGizmo(TScene& SceneData);
         void DrawSceneWindow(TScene& SceneData);
+        void ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path);
         void DrawAnimationWindow(TScene& SceneData);
-        void DrawSelectedTransformWindow(TScene& SceneData);
+        void DrawSelectedObjectWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
+        void DrawViewportPanels(TScene& SceneData);
         void DrawRenderOptionsWindow(TScene& SceneData);
         void DrawRenderSettingsWindow(TScene& SceneData);
         void DrawViewportStatsOverlay();
+        void DrawTotalHeightCacheOverlay();
         void ResetProfilingAverages() noexcept;
         void ResetSurfaceStateSettings();
         void DrawSimulationDebugWindow(TScene& SceneData);
@@ -102,6 +113,9 @@ namespace MDSS
         void DrawGlobalSettingsTab(TScene& SceneData);
         void DrawLogWindow();
         void SetupDockspace();
+        void ApplyCameraViewPreset(TScene& SceneData, std::size_t Index);
+        [[nodiscard]] TCamera& GetViewportCamera(TScene& SceneData, std::size_t Index) noexcept;
+        [[nodiscard]] std::size_t GetActiveViewportIndex() const noexcept;
         static constexpr float SectionHeaderTopPadding = 8.0F;
         void DrawSectionHeader(const char* Title,
                                float TopPadding = SectionHeaderTopPadding,
@@ -157,7 +171,19 @@ namespace MDSS
         std::string EditorLayoutPath;
         std::uint32_t DockspaceID = 0;
         ImFont* SectionHeaderFont = nullptr;
-        glm::vec4 SceneViewportRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
+        struct TViewportPanel
+        {
+            std::uint32_t Id = 0;
+            TCamera Camera;
+            glm::vec4 RectNormalized{0.0F};
+        };
+        std::vector<TViewportPanel> ViewportPanels{TViewportPanel{1U, TCamera{}, glm::vec4(0.0F)}};
+        std::uint32_t NextViewportId = 2;
+        std::uint32_t ActiveViewportId = 1;
+        std::uint32_t HoveredViewportId = 0;
+        bool bMouseOverViewportOverlay = false;
+        glm::vec4 ViewportWorkspaceRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
+        int ViewportLayout = 0; // 0: grid, 1: horizontal, 2: vertical
 
         std::array<bool, static_cast<std::size_t>(TLogLevel::Count)> LogLevelFilters{true, true, true, true, true};
         std::array<char, 128>                                     LogSearch{};
@@ -168,31 +194,31 @@ namespace MDSS
         struct TProfilingSample
         {
             double TimeSeconds = 0.0;
-            std::array<float, 38> Values{};
+            std::array<float, 43> Values{};
         };
         double                                                      ProfilingWindowElapsed = 0.0;
         double                                                      ProfilingElapsedSeconds = 0.0;
         double                                                      ProfilingFpsSum = 0.0;
         double                                                      ProfilingFrameTimeSum = 0.0;
         std::uint32_t                                               ProfilingFrameSamples = 0;
-        std::array<double, 36>                                      ProfilingMetricSums{};
-        std::array<std::uint32_t, 36>                               ProfilingMetricSamples{};
-        std::array<float, 38>                                       ProfilingAverages{};
-        std::array<float, 38>                                       ProfilingMaximums = []
+        std::array<double, 40>                                      ProfilingMetricSums{};
+        std::array<std::uint32_t, 40>                               ProfilingMetricSamples{};
+        std::array<float, 43>                                       ProfilingAverages{};
+        std::array<float, 43>                                       ProfilingMaximums = []
         {
-            std::array<float, 38> Values{};
+            std::array<float, 43> Values{};
             Values.fill(-1.0F);
             return Values;
         }();
-        std::array<float, 38>                                       ProfilingWindowMaximums = []
+        std::array<float, 43>                                       ProfilingWindowMaximums = []
         {
-            std::array<float, 38> Values{};
+            std::array<float, 43> Values{};
             Values.fill(-1.0F);
             return Values;
         }();
-        std::array<float, 38>                                       ProfilingRecent100msAverages = []
+        std::array<float, 43>                                       ProfilingRecent100msAverages = []
         {
-            std::array<float, 38> Values{};
+            std::array<float, 43> Values{};
             Values.fill(-1.0F);
             return Values;
         }();
@@ -202,6 +228,7 @@ namespace MDSS
         bool                                                        bShowProfilingMaximum = false;
         bool                                                        bShowProfilingPast100ms = false;
         bool                                                        bShowDetailedProfiling = true;
+        bool                                                        bSolverMetricsPerStep = false;
         bool                                                        bProfiledRawFluxCacheEnabled = false;
         bool                                                        bViewportOverlaysVisible = true;
     };

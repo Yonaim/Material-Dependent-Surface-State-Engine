@@ -67,6 +67,9 @@ namespace MDSS
 
     void TCamera::SetRotationDegrees(glm::vec2 RotationDegrees) noexcept
     {
+        const glm::vec3 ViewDirection = Target - Position;
+        const float     Distance = std::max(glm::length(ViewDirection), 1.0F);
+
         const float PitchDegrees = std::clamp(RotationDegrees.x, -89.0F, 89.0F);
         const float YawDegrees = RotationDegrees.y;
 
@@ -76,7 +79,7 @@ namespace MDSS
         const glm::vec3 Forward{std::cos(Pitch) * std::cos(Yaw),
                                 std::cos(Pitch) * std::sin(Yaw),
                                 std::sin(Pitch)};
-        Target = Position + glm::normalize(Forward);
+        Target = Position + glm::normalize(Forward) * Distance;
     }
 
     void TCamera::SetVerticalFieldOfViewDegrees(float FieldOfViewDegrees) noexcept

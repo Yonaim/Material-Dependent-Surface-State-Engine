@@ -1,0 +1,40 @@
+#version 450
+
+layout(local_size_x = 64) in;
+layout(set = 0, binding = 8, std430) readonly buffer TCurrentState { float Values[]; } CurrentState;
+layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
+layout(push_constant) uniform TPush
+{
+    uint Texels;
+    uint Channel;
+    uint Channels;
+    uint TileSize;
+} Push;
+
+shared uint AnyStateInGroup;
+
+void main()
+{
+    if (gl_LocalInvocationIndex == 0u) AnyStateInGroup = 0u;
+    barrier();
+    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (T < Push.Texels && Push.Channels != 0u && Push.Channel < Push.Channels)
+    {
+        uint I = T * Push.Channels + Push.Channel;
+        if (I < uint(CurrentState.Values.length()))
+        {
+            float State = CurrentState.Values[I];
+            // Conservative: every visible saturated sample needs a finite positive state.
+            if (State > 0.0 && !isinf(State)) atomicOr(AnyStateInGroup, 1u);
+        }
+    }
+    barrier();
+    if (gl_LocalInvocationIndex == 0u && AnyStateInGroup != 0u)
+    {
+        uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+        uint Tile = ((gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u) / TilePixels;
+        uint Base = Push.Texels * 4u;
+        atomicOr(GeometryCache.Values[Base + Tile], 1u);
+        atomicOr(GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u], 1u);
+    }
+}

@@ -240,7 +240,11 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME MDSS_SceneResources COMMAND MDSS_SceneResourceTests)
     add_test(NAME MDSS_DemoAnimation COMMAND MDSS_SceneResourceTests --demo-animation)
+    add_test(NAME MDSS_LavaScene COMMAND MDSS_SceneResourceTests --lava-scene)
+    add_test(NAME MDSS_OverlaySideCompaction COMMAND MDSS_SceneResourceTests --overlay-side-compaction)
     set_tests_properties(MDSS_SceneResources PROPERTIES SKIP_RETURN_CODE 77)
+    set_tests_properties(MDSS_OverlaySideCompaction PROPERTIES SKIP_RETURN_CODE 77)
+    set_tests_properties(MDSS_LavaScene PROPERTIES SKIP_RETURN_CODE 77)
 
     add_executable(MDSS_SurfaceCacheTests
         Tests/SurfaceCacheTests.cpp

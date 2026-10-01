@@ -7,6 +7,7 @@
 
 #include "AssetManager/Core/AssetManager.h"
 #include "Scene/StaticMeshInstance.h"
+#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <nlohmann/json.hpp>
 
@@ -201,6 +202,20 @@ namespace MDSS
         {
             Scene.SetLitHeightDisplayScale(ReadFiniteFloat(*DisplayScale, "Scene.litHeightDisplayScale"));
         }
+        if (const auto Camera = Root.find("camera"); Camera != Root.end())
+        {
+            if (!Camera->is_object())
+                throw std::runtime_error("Scene.camera must be an object.");
+            const std::string Context = "Scene.camera";
+            TCamera& MainCamera = Scene.GetMainCamera();
+            MainCamera.SetPosition(ReadVector3(RequireMember(*Camera, "position", Context), Context + ".position"));
+            MainCamera.SetTarget(ReadVector3(RequireMember(*Camera, "target", Context), Context + ".target"));
+            const float FieldOfView = ReadFiniteFloat(
+                RequireMember(*Camera, "verticalFieldOfViewDegrees", Context), Context + ".verticalFieldOfViewDegrees");
+            if (FieldOfView <= 0.0F || FieldOfView >= 180.0F)
+                throw std::runtime_error("Scene.camera.verticalFieldOfViewDegrees must be between 0 and 180.");
+            MainCamera.SetVerticalFieldOfViewDegrees(FieldOfView);
+        }
         std::unordered_set<std::string> ObjectIds;
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
@@ -242,12 +257,38 @@ namespace MDSS
                                                             DistributionPath,
                                                             std::move(ObjectId)));
         }
+        if (const auto Contacts = Root.find("initialContacts"); Contacts != Root.end())
+        {
+            if (!Contacts->is_array())
+                throw std::runtime_error("Scene.initialContacts must be an array.");
+            for (std::size_t Index = 0; Index < Contacts->size(); ++Index)
+            {
+                const TJson& Contact = (*Contacts)[Index];
+                const std::string Context = "Scene.initialContacts[" + std::to_string(Index) + "]";
+                TSceneInitialContact Initial;
+                Initial.Target = ReadString(Contact, "target", Context);
+                Initial.State = ReadString(Contact, "state", Context);
+                if (!ObjectIds.contains(Initial.Target))
+                    throw std::runtime_error(Context + ".target must name a Scene object with an id.");
+                if (NormalizeSurfaceStateName(Initial.State) != Initial.State)
+                    throw std::runtime_error(Context + ".state must be a normalized State name.");
+                Initial.WorldPosition = ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
+                Initial.Radius = ReadFiniteFloat(RequireMember(Contact, "radius", Context), Context + ".radius");
+                Initial.Strength = ReadFiniteFloat(RequireMember(Contact, "strength", Context), Context + ".strength");
+                if (const auto Falloff = Contact.find("falloff"); Falloff != Contact.end())
+                    Initial.Falloff = ReadFiniteFloat(*Falloff, Context + ".falloff");
+                if (Initial.Radius <= 0.0F || Initial.Strength < 0.0F || Initial.Falloff < 0.0F)
+                    throw std::runtime_error(Context + " requires positive radius and nonnegative strength/falloff.");
+                Scene.AddInitialContact(std::move(Initial));
+            }
+        }
         if (const auto Animation = Root.find("animation"); Animation != Root.end())
         {
             const std::filesystem::path AnimationPath = ResolveScenePath(
                 SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
             Scene.SetDemoAnimation(AnimationPath, LoadDemoAnimation(AnimationPath, Scene));
         }
+        Scene.CaptureInitialState();
         return Scene;
     }
 
@@ -260,8 +301,22 @@ namespace MDSS
         Root["version"] = 1;
         Root["simulationResolution"] = Scene.GetSimulationResolution();
         Root["litHeightDisplayScale"] = Scene.GetLitHeightDisplayScale();
+        const TCamera& Camera = Scene.GetMainCamera();
+        const glm::vec3& CameraPosition = Camera.GetPosition();
+        const glm::vec3& CameraTarget = Camera.GetTarget();
+        Root["camera"] = {{"position", {CameraPosition.x, CameraPosition.y, CameraPosition.z}},
+                          {"target", {CameraTarget.x, CameraTarget.y, CameraTarget.z}},
+                          {"verticalFieldOfViewDegrees", Camera.GetVerticalFieldOfViewDegrees()}};
         if (Scene.HasDemoAnimation())
             Root["animation"] = Scene.GetDemoAnimationPath().lexically_relative(Directory).generic_string();
+        if (!Scene.GetInitialContacts().empty())
+        {
+            Root["initialContacts"] = TJson::array();
+            for (const auto& Contact : Scene.GetInitialContacts())
+                Root["initialContacts"].push_back({{"target", Contact.Target}, {"state", Contact.State},
+                    {"worldPosition", {Contact.WorldPosition.x, Contact.WorldPosition.y, Contact.WorldPosition.z}},
+                    {"radius", Contact.Radius}, {"strength", Contact.Strength}, {"falloff", Contact.Falloff}});
+        }
         Root["objects"] = TJson::array();
         for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {

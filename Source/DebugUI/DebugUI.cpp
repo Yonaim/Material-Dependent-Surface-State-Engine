@@ -80,6 +80,12 @@ namespace MDSS
             TLogLevel::Error,
         };
 
+        constexpr std::array<std::array<float, 2>, 9> CameraViewPresetPitchYawDegrees = {{
+            {{-90.0F, -90.0F}}, {{-90.0F, 0.0F}}, {{-90.0F, 90.0F}},
+            {{0.0F, -90.0F}},   {{0.0F, 0.0F}},   {{0.0F, 90.0F}},
+            {{90.0F, -90.0F}},  {{90.0F, 0.0F}},  {{90.0F, 90.0F}},
+        }};
+
         constexpr std::array<const char*, 6> RenderViewModeNames = {
             "Lit",
             "Unlit",
@@ -499,32 +505,38 @@ namespace MDSS
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        bMouseOverViewportOverlay = false;
 
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::GetIO().FontGlobalScale = DisplaySize.x >= 1280.0F && DisplaySize.y >= 800.0F ? 1.15F : 1.0F;
         SetupDockspace();
 
+        // Render the viewport windows before the other editor windows.  The
+        // viewport panels are transparent overlays, so creating them last
+        // would also make them the topmost ImGui hit-test target when another
+        // window is visually above the viewport.
+        DrawRenderOptionsWindow(SceneData);
+        DrawViewportPanels(SceneData);
         DrawSceneWindow(SceneData);
         DrawAnimationWindow(SceneData);
         DrawCameraWindow(SceneData);
-        DrawSelectedTransformWindow(SceneData);
-        DrawRenderOptionsWindow(SceneData);
+        DrawSelectedObjectWindow(SceneData);
         DrawRenderSettingsWindow(SceneData);
         DrawViewportStatsOverlay();
+        DrawTotalHeightCacheOverlay();
+        if (bMouseOverViewportOverlay) HoveredViewportId = 0;
         DrawSimulationDebugWindow(SceneData);
         DrawLogWindow();
         ProcessCameraInput(SceneData);
         ProcessSelectionAndGizmo(SceneData);
 
-        if (bInjectMode)
+        if (bInjectMode && GetViewportRectNormalized(GetActiveViewportIndex()).z > 0.0F)
         {
             ImGuiViewport* Viewport = ImGui::GetMainViewport();
             const ImVec2   DisplaySize = ImGui::GetIO().DisplaySize;
-            const ImVec2   Center{
-                Viewport->Pos.x +
-                    (SceneViewportRectNormalized.x + SceneViewportRectNormalized.z * 0.5F) * DisplaySize.x,
-                Viewport->Pos.y +
-                    (SceneViewportRectNormalized.y + SceneViewportRectNormalized.w * 0.5F) * DisplaySize.y};
+            const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+            const ImVec2   Center{Viewport->Pos.x + (Rect.x + Rect.z * 0.5F) * DisplaySize.x,
+                                  Viewport->Pos.y + (Rect.y + Rect.w * 0.5F) * DisplaySize.y};
             constexpr float CrosshairHalfSize = 9.0F;
             constexpr ImU32 CrosshairColor = IM_COL32(255, 255, 255, 230);
             ImDrawList*     DrawList = ImGui::GetForegroundDrawList();
@@ -646,9 +658,77 @@ namespace MDSS
         return bRequested;
     }
 
-    glm::vec4 TDebugUI::GetSceneViewportRectNormalized() const noexcept
+    std::size_t TDebugUI::GetViewportCount() const noexcept
     {
-        return SceneViewportRectNormalized;
+        return ViewportPanels.size();
+    }
+
+    glm::vec4 TDebugUI::GetViewportRectNormalized(std::size_t Index) const noexcept
+    {
+        return Index < ViewportPanels.size() ? ViewportPanels[Index].RectNormalized : glm::vec4(0.0F);
+    }
+
+    const TCamera& TDebugUI::GetViewportCamera(const TScene& SceneData, std::size_t Index) const noexcept
+    {
+        return Index == 0 || Index >= ViewportPanels.size() ? SceneData.GetMainCamera() : ViewportPanels[Index].Camera;
+    }
+
+    TCamera& TDebugUI::GetViewportCamera(TScene& SceneData, std::size_t Index) noexcept
+    {
+        return Index == 0 || Index >= ViewportPanels.size() ? SceneData.GetMainCamera() : ViewportPanels[Index].Camera;
+    }
+
+    std::size_t TDebugUI::GetActiveViewportIndex() const noexcept
+    {
+        for (std::size_t Index = 0; Index < ViewportPanels.size(); ++Index)
+            if (ViewportPanels[Index].Id == ActiveViewportId) return Index;
+        return 0;
+    }
+
+    void TDebugUI::ApplyCameraViewPreset(TScene& SceneData, std::size_t Index)
+    {
+        if (!SelectedObject || *SelectedObject >= SceneData.GetStaticMeshInstances().size() ||
+            Index >= CameraViewPresetPitchYawDegrees.size())
+        {
+            return;
+        }
+
+        TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+        glm::vec3 Target = Transform.Position;
+        if (AssetManager != nullptr)
+        {
+            const TMeshAsset& Mesh = AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*SelectedObject].GetMesh());
+            const auto& Vertices = Mesh.GetVertices();
+            if (!Vertices.empty())
+            {
+                glm::vec3 Minimum(std::numeric_limits<float>::max());
+                glm::vec3 Maximum(std::numeric_limits<float>::lowest());
+                for (const TVertex& Vertex : Vertices)
+                {
+                    Minimum = glm::min(Minimum, Vertex.Position);
+                    Maximum = glm::max(Maximum, Vertex.Position);
+                }
+                const glm::vec3 LocalBoundsCenter = (Minimum + Maximum) * 0.5F;
+                Target = glm::vec3(Transform.GetMatrix() * glm::vec4(LocalBoundsCenter, 1.0F));
+            }
+        }
+
+        TCamera& Camera = GetViewportCamera(SceneData, GetActiveViewportIndex());
+        const glm::vec3 ViewOffset = Camera.GetPosition() - Camera.GetTarget();
+        const float OffsetLength = glm::length(ViewOffset);
+        const float Distance = OffsetLength > 1.0e-6F ? OffsetLength : 3.0F;
+        const float Pitch = glm::radians(CameraViewPresetPitchYawDegrees[Index][0]);
+        const float Yaw = glm::radians(CameraViewPresetPitchYawDegrees[Index][1]);
+        const glm::vec3 Forward{std::cos(Pitch) * std::cos(Yaw),
+                                std::cos(Pitch) * std::sin(Yaw),
+                                std::sin(Pitch)};
+        Camera.SetPosition(Target - Forward * Distance);
+        Camera.SetTarget(Target);
+    }
+
+    const TCamera& TDebugUI::GetActiveViewportCamera(const TScene& SceneData) const noexcept
+    {
+        return GetViewportCamera(SceneData, GetActiveViewportIndex());
     }
 
     std::optional<std::size_t> TDebugUI::GetSelectedObject() const noexcept
@@ -674,8 +754,9 @@ namespace MDSS
     bool TDebugUI::ShouldSuppressDebugHotkey() const noexcept
     {
         const ImGuiIO& IO = ImGui::GetIO();
-        return IO.WantCaptureKeyboard || IO.WantTextInput || ImGui::IsAnyItemActive() ||
-               ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+        return bMouseOverViewportOverlay || IO.WantTextInput ||
+               (HoveredViewportId == 0 && (IO.WantCaptureKeyboard || ImGui::IsAnyItemActive() ||
+                                           ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)));
     }
 
     void TDebugUI::SetupDockspace()
@@ -725,10 +806,10 @@ namespace MDSS
         ImGuiID RenderSettingsID = 0;
         ImGui::DockBuilderSplitNode(LeftLowerID, ImGuiDir_Up, 0.62F, &TransformID, &RenderSettingsID);
 
-        ImGui::DockBuilderDockWindow("Scene File", SceneID);
+        ImGui::DockBuilderDockWindow("Scene", SceneID);
         ImGui::DockBuilderDockWindow("Animation", SceneID);
         ImGui::DockBuilderDockWindow("Camera", CameraID);
-        ImGui::DockBuilderDockWindow("Selected Transform##SceneTools", TransformID);
+        ImGui::DockBuilderDockWindow("Selected Object##SceneTools", TransformID);
         ImGui::DockBuilderDockWindow("Render Settings", RenderSettingsID);
         ImGui::DockBuilderDockWindow("Simulation Debug", RightID);
         ImGui::DockBuilderDockWindow("Log", LogID);
@@ -759,13 +840,46 @@ namespace MDSS
         }
     }
 
+    void TDebugUI::ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path)
+    {
+        TScene Loaded = TSceneLoader::Load(Path, *AssetManager);
+        TScene PreviousScene = SceneData;
+        SceneData = std::move(Loaded);
+        try
+        {
+            // Solver가 임시 Loaded가 아니라 수명이 유지되는 SceneData를 참조하게 한다.
+            FrameRenderer->ReloadSceneResources(SceneData);
+        }
+        catch (...)
+        {
+            SceneData = std::move(PreviousScene);
+            throw;
+        }
+        ResetSurfaceStateSettings();
+        ResetProfilingAverages();
+        SelectedObject.reset();
+        ActiveGizmoAxis = -1;
+    }
+
+    void TDebugUI::RestartScene(TScene& SceneData)
+    {
+        const std::filesystem::path Path = SceneData.GetSourcePath();
+        bFrameTimeResetRequested = true;
+        SceneData.RestoreInitialState();
+        FrameRenderer->RestartSimulationState();
+        ResetProfilingAverages();
+        SelectedObject.reset();
+        ActiveGizmoAxis = -1;
+        SceneStatus = Path.empty() ? "Restarted: Scene" : "Restarted: " + Path.filename().string();
+    }
+
     void TDebugUI::DrawSceneWindow(TScene& SceneData)
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
-        ImGui::Begin("Scene File", nullptr, Flags);
+        ImGui::Begin("Scene", nullptr, Flags);
         const auto& SourcePath = SceneData.GetSourcePath();
         ImGui::TextWrapped("Current Scene: %s", SourcePath.empty() ? "(unsaved)" : SourcePath.filename().string().c_str());
         if (!SourcePath.empty() && ImGui::IsItemHovered())
@@ -780,23 +894,7 @@ namespace MDSS
             {
                 try
                 {
-                    TScene Loaded = TSceneLoader::Load(*Path, *AssetManager);
-                    TScene PreviousScene = SceneData;
-                    SceneData = std::move(Loaded);
-                    try
-                    {
-                        // Solver가 임시 Loaded가 아니라 수명이 유지되는 SceneData를 참조하게 한다.
-                        FrameRenderer->ReloadSceneResources(SceneData);
-                    }
-                    catch (...)
-                    {
-                        SceneData = std::move(PreviousScene);
-                        throw;
-                    }
-                    ResetSurfaceStateSettings();
-                    ResetProfilingAverages();
-                    SelectedObject.reset();
-                    ActiveGizmoAxis = -1;
+                    ReplaceSceneFromPath(SceneData, *Path);
                     SceneStatus = "Loaded: " + Path->filename().string();
                 }
                 catch (const std::exception& Error)
@@ -821,6 +919,7 @@ namespace MDSS
                     }
                     TSceneLoader::Save(SceneData, SavePath);
                     SceneData.SetSourcePath(std::filesystem::absolute(SavePath).lexically_normal());
+                    SceneData.CaptureInitialState();
                     SceneStatus = "Saved: " + SavePath.filename().string();
                 }
                 catch (const std::exception& Error)
@@ -829,11 +928,48 @@ namespace MDSS
                 }
             }
         }
-        if (SceneStatus.empty())
+        ImGui::SameLine();
+        if (ImGui::Button("Restart Scene"))
         {
-            ImGui::TextDisabled("Z-up  |  X red, Y green, Z blue");
+            try
+            {
+                RestartScene(SceneData);
+            }
+            catch (const std::exception& Error)
+            {
+                SceneStatus = std::string("Restart failed: ") + Error.what();
+                TLogger::Error("TDebugUI", SceneStatus);
+            }
         }
-        else
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            ImGui::SetTooltip("Restore the initial Scene state and replay contacts without reloading resources.");
+
+        const std::filesystem::path SceneDirectory = std::filesystem::path(MDSS_ASSET_DIR) / "Scenes";
+        const auto DrawDemoSceneButton = [&](const char* Label, const char* FileName)
+        {
+            if (ImGui::Button(Label))
+            {
+                bFrameTimeResetRequested = true;
+                const std::filesystem::path DemoScenePath = SceneDirectory / FileName;
+                try
+                {
+                    ReplaceSceneFromPath(SceneData, DemoScenePath);
+                    SceneStatus = "Loaded: " + DemoScenePath.filename().string();
+                }
+                catch (const std::exception& Error)
+                {
+                    SceneStatus = std::string("Load failed: ") + Error.what();
+                    TLogger::Error("TDebugUI", SceneStatus);
+                }
+            }
+        };
+
+        DrawDemoSceneButton("Mountain", "Mountain.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("BrickCube", "BrickCube.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("Bunny", "Bunny.Scene");
+        if (!SceneStatus.empty())
         {
             ImGui::TextWrapped("%s", SceneStatus.c_str());
         }
@@ -847,50 +983,60 @@ namespace MDSS
             return;
         }
 
-        // 기존 EditorLayout.ini에서도 Scene File과 같은 탭 그룹으로 처음 배치한다.
-        if (const ImGuiWindow* SceneFileWindow = ImGui::FindWindowByName("Scene File");
-            SceneFileWindow != nullptr && SceneFileWindow->DockId != 0)
+        // 기존 EditorLayout.ini에서도 Scene과 같은 탭 그룹으로 처음 배치한다.
+        if (const ImGuiWindow* SceneWindow = ImGui::FindWindowByName("Scene");
+            SceneWindow != nullptr && SceneWindow->DockId != 0)
         {
-            ImGui::SetNextWindowDockID(SceneFileWindow->DockId, ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowDockID(SceneWindow->DockId, ImGuiCond_FirstUseEver);
         }
-        ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 90.0F}, ImGuiCond_FirstUseEver);
         if (ImGui::Begin("Animation"))
         {
-            if (ImGui::Button(SceneData.IsDemoAnimationPlaying() ? "Pause Animation" : "Play Animation"))
+            const float ControlColumnX = ImGui::GetCursorPosX() + LabeledControlColumnWidth;
+            const auto ContinueControlRow = [ControlColumnX](float NextItemWidth)
             {
-                if (SceneData.IsDemoAnimationPlaying()) SceneData.PauseDemoAnimation();
-                else SceneData.PlayDemoAnimation();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Restart Animation")) SceneData.RestartDemoAnimation();
+                const float RightEdge = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+                if (ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + NextItemWidth <= RightEdge)
+                {
+                    ImGui::SameLine();
+                }
+                else
+                {
+                    ImGui::SetCursorPosX(ControlColumnX);
+                }
+            };
+            const auto RadioWidth = [](const char* Label)
+            { return ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(Label).x; };
 
+            const bool bAnimationPlaying = SceneData.IsDemoAnimationPlaying();
+            BeginLabeledControlRow("Playback");
+            if (ImGui::RadioButton("Running", bAnimationPlaying))
+            {
+                SceneData.PlayDemoAnimation();
+            }
+            ContinueControlRow(RadioWidth("Paused"));
+            if (ImGui::RadioButton("Paused", !bAnimationPlaying))
+            {
+                SceneData.PauseDemoAnimation();
+            }
+
+            BeginLabeledControlRow("Speed");
             constexpr std::array<std::pair<const char*, float>, 4> SpeedPresets = {
                 {{"0.25x", 0.25F}, {"0.5x", 0.5F}, {"1x", 1.0F}, {"2x", 2.0F}}};
-            const char* SelectedSpeedLabel = "Custom";
+            bool bFirstPreset = true;
             for (const auto& [Label, Scale] : SpeedPresets)
             {
-                if (std::abs(AnimationTimeScale - Scale) < 0.001F)
+                if (!bFirstPreset)
                 {
-                    SelectedSpeedLabel = Label;
-                    break;
+                    ContinueControlRow(RadioWidth(Label));
                 }
-            }
-            ImGui::TextDisabled("%.1f / %.1f s", SceneData.GetDemoAnimationTime(),
-                                SceneData.GetDemoAnimationDuration());
-            ImGui::SameLine();
-            ImGui::TextUnformatted("Speed");
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(90.0F);
-            if (ImGui::BeginCombo("##AnimationSpeedPreset", SelectedSpeedLabel))
-            {
-                for (const auto& [Label, Scale] : SpeedPresets)
+                if (ImGui::RadioButton(Label, std::abs(AnimationTimeScale - Scale) < 0.001F))
                 {
-                    const bool bSelected = std::abs(AnimationTimeScale - Scale) < 0.001F;
-                    if (ImGui::Selectable(Label, bSelected)) AnimationTimeScale = Scale;
-                    if (bSelected) ImGui::SetItemDefaultFocus();
+                    AnimationTimeScale = Scale;
                 }
-                ImGui::EndCombo();
+                bFirstPreset = false;
             }
+            ContinueControlRow(160.0F);
             ImGui::SetNextItemWidth(-1.0F);
             SliderFloatWithDoubleClickInput("##AnimationSpeed", &AnimationTimeScale, 0.05F, 4.0F, "%.2fx");
         }
@@ -913,6 +1059,24 @@ namespace MDSS
             HoveredGizmoAxis = -1;
         }
 
+        if (SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size() &&
+            !ShouldSuppressDebugHotkey())
+        {
+            constexpr std::array<ImGuiKey, 9> NumpadKeys = {
+                ImGuiKey_Keypad1, ImGuiKey_Keypad2, ImGuiKey_Keypad3,
+                ImGuiKey_Keypad4, ImGuiKey_Keypad5, ImGuiKey_Keypad6,
+                ImGuiKey_Keypad7, ImGuiKey_Keypad8, ImGuiKey_Keypad9,
+            };
+            for (std::size_t Index = 0; Index < NumpadKeys.size(); ++Index)
+            {
+                if (ImGui::IsKeyPressed(NumpadKeys[Index]))
+                {
+                    ApplyCameraViewPreset(SceneData, Index);
+                    break;
+                }
+            }
+        }
+
         ImGuiIO&     IO = ImGui::GetIO();
         const ImVec2 DisplaySize = IO.DisplaySize;
         if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F)
@@ -920,17 +1084,18 @@ namespace MDSS
             return;
         }
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-        const ImVec2         ViewportOrigin{MainViewport->Pos.x + SceneViewportRectNormalized.x * DisplaySize.x,
-                                    MainViewport->Pos.y + SceneViewportRectNormalized.y * DisplaySize.y};
-        const ImVec2         ViewportSize{SceneViewportRectNormalized.z * DisplaySize.x,
-                                  SceneViewportRectNormalized.w * DisplaySize.y};
+        const glm::vec4      Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+        const ImVec2         ViewportOrigin{MainViewport->Pos.x + Rect.x * DisplaySize.x,
+                                          MainViewport->Pos.y + Rect.y * DisplaySize.y};
+        const ImVec2         ViewportSize{Rect.z * DisplaySize.x, Rect.w * DisplaySize.y};
         if (ViewportSize.x <= 0.0F || ViewportSize.y <= 0.0F)
         {
             return;
         }
         const float     Aspect = ViewportSize.x / ViewportSize.y;
-        const glm::mat4 VP = SceneData.GetMainCamera().GetViewProjectionMatrix(Aspect);
-        const glm::vec3 Origin = SceneData.GetMainCamera().GetPosition();
+        const TCamera& Camera = GetActiveViewportCamera(SceneData);
+        const glm::mat4 VP = Camera.GetViewProjectionMatrix(Aspect);
+        const glm::vec3 Origin = Camera.GetPosition();
         const ImVec2    Mouse = IO.MousePos;
         const bool      bMouseInViewport = Mouse.x >= ViewportOrigin.x && Mouse.y >= ViewportOrigin.y &&
                                       Mouse.x < ViewportOrigin.x + ViewportSize.x &&
@@ -1084,7 +1249,8 @@ namespace MDSS
         }
 
         HoveredGizmoAxis = -1;
-        if (bMouseInViewport && SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
+        if (bMouseInViewport && !bMouseOverViewportOverlay && SelectedObject &&
+            *SelectedObject < SceneData.GetStaticMeshInstances().size())
         {
             const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position;
             float           BestDistance = 13.0F;
@@ -1119,8 +1285,14 @@ namespace MDSS
             }
         }
 
-        if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) ||
-            ImGui::IsAnyItemActive() || (bInjectMode && !ImGui::GetIO().KeyShift))
+        const ImGuiWindow* HoveredWindow = GImGui->HoveredWindow;
+        const std::string  ActiveViewportWindowName =
+            "Viewport " + std::to_string(ActiveViewportId) + "##ViewportPanel";
+        const bool bMouseOverActiveViewportWindow = HoveredWindow != nullptr &&
+            std::string_view(HoveredWindow->Name) == ActiveViewportWindowName;
+        if (bMouseOverViewportOverlay || !ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+            HoveredViewportId != ActiveViewportId ||
+            !bMouseOverActiveViewportWindow || (bInjectMode && !ImGui::GetIO().KeyShift))
         {
             return;
         }
@@ -1224,7 +1396,7 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::DrawSelectedTransformWindow(TScene& SceneData)
+    void TDebugUI::DrawSelectedObjectWindow(TScene& SceneData)
     {
         if (!SelectedObject || *SelectedObject >= SceneData.GetStaticMeshInstances().size())
         {
@@ -1233,11 +1405,12 @@ namespace MDSS
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         const ImVec2 Position{Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 135.0F};
         ImGui::SetNextWindowPos(Position, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({330.0F, 220.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 420.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
-        ImGui::Begin("Selected Transform##SceneTools", nullptr, Flags);
+        ImGui::Begin("Selected Object##SceneTools", nullptr, Flags);
         TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
         ImGui::Text("Object %zu", *SelectedObject);
+        DrawSectionHeader("Transform");
         if (ImGui::RadioButton("Translate", !bRotationGizmoMode))
         {
             bRotationGizmoMode = false;
@@ -1252,13 +1425,33 @@ namespace MDSS
         LabeledDragFloat3("Scale", &Transform.Scale.x, 0.02F);
         ImGui::TextDisabled(bRotationGizmoMode ? "Drag a colored ring to rotate around that axis."
                                                : "Drag a colored axis arrow to move along that axis.");
+        DrawSectionHeader("Camera View Presets");
+        ImGui::TextDisabled("Numpad 1-9 or buttons; rows = pitch, columns = yaw. Focuses the selected mesh.");
+        for (std::size_t Index = 0; Index < CameraViewPresetPitchYawDegrees.size(); ++Index)
+        {
+            if (Index % 3 != 0)
+            {
+                ImGui::SameLine();
+            }
+            const std::string Label = std::to_string(Index + 1) + "###CameraViewPreset" +
+                                      std::to_string(Index + 1);
+            if (ImGui::Button(Label.c_str(), {78.0F, 28.0F}))
+            {
+                ApplyCameraViewPreset(SceneData, Index);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Camera pitch: %.0f degrees, yaw: %.0f degrees",
+                                  CameraViewPresetPitchYawDegrees[Index][0],
+                                  CameraViewPresetPitchYawDegrees[Index][1]);
+            }
+        }
         ImGui::End();
     }
 
     void TDebugUI::ProcessCameraInput(TScene& SceneData)
     {
         ImGuiIO& IO = ImGui::GetIO();
-        TCamera& CameraData = SceneData.GetMainCamera();
 
         const bool bWindowFocused =
             NativeWindow != nullptr && glfwGetWindowAttrib(NativeWindow, GLFW_FOCUSED) == GLFW_TRUE;
@@ -1273,16 +1466,25 @@ namespace MDSS
         }
 
         const bool bRightMouseDown = ImGui::IsMouseDown(ImGuiMouseButton_Right);
-        if (!bRotatingCamera && bRightMouseDown && !IO.WantCaptureMouse)
+        const ImGuiWindow* HoveredWindow = GImGui->HoveredWindow;
+        const std::string  ActiveViewportWindowName =
+            "Viewport " + std::to_string(ActiveViewportId) + "##ViewportPanel";
+        const bool bMouseOverActiveViewportWindow = HoveredWindow != nullptr &&
+            std::string_view(HoveredWindow->Name) == ActiveViewportWindowName;
+
+        if (!bRotatingCamera && bRightMouseDown && HoveredViewportId != 0 && bMouseOverActiveViewportWindow)
         {
             bRotatingCamera = true;
+            ActiveViewportId = HoveredViewportId;
             glfwSetInputMode(NativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
-        else if (bRotatingCamera && (!bRightMouseDown || IO.WantCaptureMouse))
+        else if (bRotatingCamera && !bRightMouseDown)
         {
             bRotatingCamera = false;
             glfwSetInputMode(NativeWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
+
+        TCamera& CameraData = GetViewportCamera(SceneData, GetActiveViewportIndex());
 
         if (bRotatingCamera)
         {
@@ -1293,7 +1495,7 @@ namespace MDSS
             CameraData.SetRotationDegrees(RotationDegrees);
         }
 
-        if (!IO.WantCaptureMouse && IO.MouseWheel != 0.0F)
+        if (HoveredViewportId == ActiveViewportId && bMouseOverActiveViewportWindow && IO.MouseWheel != 0.0F)
         {
             const glm::vec3 ViewDirection = CameraData.GetTarget() - CameraData.GetPosition();
             if (glm::dot(ViewDirection, ViewDirection) > 1.0e-12F)
@@ -1302,7 +1504,7 @@ namespace MDSS
             }
         }
 
-        if (ShouldSuppressDebugHotkey())
+        if (!bRotatingCamera && ShouldSuppressDebugHotkey())
         {
             return;
         }
@@ -1393,13 +1595,13 @@ namespace MDSS
 
         if (ImGui::Begin("Camera", nullptr, Flags))
         {
-            TCamera& CameraData = SceneData.GetMainCamera();
+            TCamera& CameraData = GetViewportCamera(SceneData, GetActiveViewportIndex());
+
+            ImGui::TextDisabled("Viewport %u", ActiveViewportId);
 
             if (ImGui::Button("Reset Camera View"))
             {
-                CameraData.SetPosition({3.0F, -5.0F, 3.0F});
-                CameraData.SetTarget({0.0F, 0.0F, 0.0F});
-                CameraData.SetVerticalFieldOfViewDegrees(60.0F);
+                CameraData = SceneData.GetInitialCamera();
             }
             if (ImGui::IsItemHovered())
             {
@@ -1455,10 +1657,10 @@ namespace MDSS
         const ImVec2         DisplaySize = ImGui::GetIO().DisplaySize;
         if (DisplaySize.x > 0.0F && DisplaySize.y > 0.0F)
         {
-            SceneViewportRectNormalized = {(ViewportNode->Pos.x - MainViewport->Pos.x) / DisplaySize.x,
-                                           (ViewportNode->Pos.y + ToolbarHeight - MainViewport->Pos.y) / DisplaySize.y,
-                                           ViewportNode->Size.x / DisplaySize.x,
-                                           std::max(ViewportNode->Size.y - ToolbarHeight, 1.0F) / DisplaySize.y};
+            ViewportWorkspaceRectNormalized = {(ViewportNode->Pos.x - MainViewport->Pos.x) / DisplaySize.x,
+                                               (ViewportNode->Pos.y + ToolbarHeight - MainViewport->Pos.y) / DisplaySize.y,
+                                               ViewportNode->Size.x / DisplaySize.x,
+                                               std::max(ViewportNode->Size.y - ToolbarHeight, 1.0F) / DisplaySize.y};
         }
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -1501,6 +1703,8 @@ namespace MDSS
                     return "Meso + 선택 State 전체 높이를 형상에 적용합니다. 색은 선택한 적층 성분을 표시합니다.";
                 case TRenderViewMode::SurfaceFinalGeometry:
                     return "Meso + 선택 State 적층을 적용한 형상입니다. 모든 State를 합친 최종 형상은 아닙니다.";
+                case TRenderViewMode::TotalSimulationHeight:
+                    return "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.";
             }
             return "원본 메시 형상입니다.";
         };
@@ -1523,6 +1727,8 @@ namespace MDSS
                 CurrentName = "State Height Heatmap";
             else if (CurrentMode == TRenderViewMode::SurfaceFinalGeometry)
                 CurrentName = "Meso + State Geometry";
+            else if (CurrentMode == TRenderViewMode::TotalSimulationHeight)
+                CurrentName = "Total Simulation Height";
             else if (CurrentMode == TRenderViewMode::MesoHeight || CurrentMode == TRenderViewMode::MesoOffset)
             {
                 CurrentName = "Meso Geometry";
@@ -1653,6 +1859,9 @@ namespace MDSS
                                     TRenderViewMode::SurfaceFinalGeometry,
                                     "Meso + 선택 State 적층을 적용한 형상입니다. 선택 State 미리보기이며 모든 State의 "
                                     "최종 합성이 아닙니다.");
+                    SelectDebugView("Total Simulation Height",
+                                    TRenderViewMode::TotalSimulationHeight,
+                                    "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Texel"))
@@ -1806,6 +2015,14 @@ namespace MDSS
                 ImGui::Checkbox("Past 100ms", &bShowProfilingPast100ms);
                 ImGui::Separator();
                 ImGui::Checkbox("Detailed breakdowns", &bShowDetailedProfiling);
+                if (ImGui::Checkbox("Solver timings per step", &bSolverMetricsPerStep))
+                {
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Show Solver GPU timings as a frame total or divide them by the number of simulation steps.");
+                }
                 ImGui::EndPopup();
             }
             ImGui::SameLine(0.0F, 10.0F);
@@ -1814,7 +2031,7 @@ namespace MDSS
             ImGui::SameLine(0.0F, 10.0F);
             if (ImGui::Button("-"))
             {
-                DollyCamera(SceneData.GetMainCamera(), -1.0F);
+                DollyCamera(GetViewportCamera(SceneData, GetActiveViewportIndex()), -1.0F);
             }
             if (ImGui::IsItemHovered())
             {
@@ -1823,7 +2040,7 @@ namespace MDSS
             ImGui::SameLine();
             if (ImGui::Button("+"))
             {
-                DollyCamera(SceneData.GetMainCamera(), 1.0F);
+                DollyCamera(GetViewportCamera(SceneData, GetActiveViewportIndex()), 1.0F);
             }
             if (ImGui::IsItemHovered())
             {
@@ -2023,6 +2240,19 @@ namespace MDSS
                         }
                         break;
                     }
+                    case TRenderViewMode::TotalSimulationHeight:
+                    {
+                        BeginViewContext("TOTAL SIMULATION HEIGHT",
+                                         "Meso와 모든 State의 현재 높이를 적용한 형상입니다. "
+                                         "높이 캐시는 시뮬레이션 상태나 메시 회전·스케일이 바뀌면 갱신됩니다.");
+                        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+                        ImGui::SetNextItemWidth(95.0F);
+                        if (ImGui::DragFloat("Display scale", &Settings.DisplacementScale,
+                                             0.1F, 1e-8F, 1e6F, "%.3gx", ImGuiSliderFlags_AlwaysClamp))
+                            FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
+                        DrawHeightGridControls();
+                        break;
+                    }
                     case TRenderViewMode::SurfaceValidity:
                         BeginViewContext("VALIDITY", "Surface 텍셀 유효 여부와 시뮬레이션 적용 여부.");
                         DrawLegendColor({0.10F, 0.78F, 0.24F, 1.0F}, "유효·시뮬레이션 켜짐");
@@ -2179,6 +2409,69 @@ namespace MDSS
         ImGui::End();
     }
 
+    void TDebugUI::DrawViewportPanels(TScene&)
+    {
+        HoveredViewportId = 0;
+        const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
+        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || ViewportPanels.empty()) return;
+
+        const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
+        const ImVec2 WorkspacePos{MainViewport->Pos.x + ViewportWorkspaceRectNormalized.x * DisplaySize.x,
+                                  MainViewport->Pos.y + ViewportWorkspaceRectNormalized.y * DisplaySize.y};
+        const ImVec2 WorkspaceSize{ViewportWorkspaceRectNormalized.z * DisplaySize.x,
+                                   ViewportWorkspaceRectNormalized.w * DisplaySize.y};
+        if (WorkspaceSize.x < 1.0F || WorkspaceSize.y < 1.0F) return;
+
+        const std::size_t Count = ViewportPanels.size();
+        const std::size_t Columns = ViewportLayout == 1 ? Count : ViewportLayout == 2 ? 1U :
+            static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(Count))));
+        const std::size_t Rows = (Count + Columns - 1U) / Columns;
+        // Keep viewport input windows behind the profiling and render-state overlays after a canvas click.
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+                                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground |
+                                           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                           ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+                                           ImGuiWindowFlags_NoBringToFrontOnFocus;
+        for (std::size_t Index = 0; Index < Count; ++Index)
+        {
+            TViewportPanel& Panel = ViewportPanels[Index];
+            const std::size_t Column = Index % Columns;
+            const std::size_t Row = Index / Columns;
+            const float Left = WorkspacePos.x + WorkspaceSize.x * static_cast<float>(Column) / static_cast<float>(Columns);
+            const float Right = WorkspacePos.x + WorkspaceSize.x * static_cast<float>(Column + 1U) / static_cast<float>(Columns);
+            const float Top = WorkspacePos.y + WorkspaceSize.y * static_cast<float>(Row) / static_cast<float>(Rows);
+            const float Bottom = WorkspacePos.y + WorkspaceSize.y * static_cast<float>(Row + 1U) / static_cast<float>(Rows);
+            const ImVec2 PanelSize{std::max(Right - Left, 1.0F), std::max(Bottom - Top, 1.0F)};
+            const std::string WindowName = "Viewport " + std::to_string(Panel.Id) + "##ViewportPanel";
+            ImGui::SetNextWindowPos({Left, Top}, ImGuiCond_Always);
+            ImGui::SetNextWindowSize(PanelSize, ImGuiCond_Always);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.0F, 0.0F});
+            if (ImGui::Begin(WindowName.c_str(), nullptr, Flags))
+            {
+                const float CanvasTop = Top;
+                const ImVec2 CanvasSize{PanelSize.x, std::max(Bottom - CanvasTop, 0.0F)};
+                Panel.RectNormalized = {(Left - MainViewport->Pos.x) / DisplaySize.x,
+                                        (CanvasTop - MainViewport->Pos.y) / DisplaySize.y,
+                                        CanvasSize.x / DisplaySize.x, CanvasSize.y / DisplaySize.y};
+                if (CanvasSize.x >= 1.0F && CanvasSize.y >= 1.0F)
+                {
+                    ImGui::SetCursorScreenPos({Left, CanvasTop});
+                    ImGui::InvisibleButton("##Canvas", CanvasSize,
+                                           ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
+                    if (ImGui::IsItemHovered())
+                    {
+                        HoveredViewportId = Panel.Id;
+                        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+                            ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                            ActiveViewportId = Panel.Id;
+                    }
+                }
+            }
+            ImGui::End();
+            ImGui::PopStyleVar();
+        }
+    }
+
     void TDebugUI::DrawRenderSettingsWindow(TScene& SceneData)
     {
         if (FrameRenderer == nullptr)
@@ -2243,7 +2536,7 @@ namespace MDSS
                         ImGui::Separator();
                         DrawSectionHeader("Individual Effects", 6.0F, 6.0F);
 
-                        if (ImGui::CollapsingHeader("Wetness", ImGuiTreeNodeFlags_DefaultOpen))
+                        if (ImGui::CollapsingHeader("Wetness"))
                         {
                             EffectsChanged |= ImGui::ColorEdit3("Tint##Wetness", glm::value_ptr(Effects.WetnessTint));
                             EffectsChanged |= LabeledSliderFloat(
@@ -2255,19 +2548,43 @@ namespace MDSS
                         }
 
                         ImGui::Spacing();
-                        if (ImGui::CollapsingHeader("WaterFilm", ImGuiTreeNodeFlags_DefaultOpen))
+                        if (ImGui::CollapsingHeader("WaterFilm"))
                         {
                             EffectsChanged |= ImGui::Checkbox("Enable layer##WaterFilm", &Effects.bWaterFilmDisplacement);
+                            EffectsChanged |= ImGui::Checkbox(
+                                "Visual smoothing##WaterFilm", &Effects.bWaterFilmSmoothing);
+                            if (ImGui::IsItemHovered())
+                                SetDescriptionTooltip(
+                                    "Smooth WaterFilm coverage and displacement for rendering only. "
+                                    "Disabling this skips both layer-specific smoothing passes unless common "
+                                    "Height-field smoothing is enabled. Simulation State is unchanged.");
                             EffectsChanged |= ImGui::ColorEdit3("Tint##WaterFilm", glm::value_ptr(Effects.WaterFilmTint));
                             EffectsChanged |= LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
                             EffectsChanged |= LabeledSliderFloat("Roughness", &Effects.WaterFilmRoughness, 0.05F, 1.0F, "%.2f");
                         }
 
                         ImGui::Spacing();
-                        if (ImGui::CollapsingHeader("Mud", ImGuiTreeNodeFlags_DefaultOpen))
+                        if (ImGui::CollapsingHeader("Mud"))
                         {
                             EffectsChanged |= ImGui::Checkbox("Enable layer##Mud", &Effects.bMudDisplacement);
+                            EffectsChanged |= ImGui::Checkbox("Visual smoothing##Mud", &Effects.bMudSmoothing);
+                            if (ImGui::IsItemHovered())
+                                SetDescriptionTooltip(
+                                    "Smooth Mud coverage and displacement for rendering only. "
+                                    "Disabling this skips both layer-specific smoothing passes unless common "
+                                    "Height-field smoothing is enabled. Simulation State is unchanged.");
                             EffectsChanged |= LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
+                        }
+                        ImGui::Spacing();
+                        if (ImGui::CollapsingHeader("Lava"))
+                        {
+                            EffectsChanged |= ImGui::Checkbox("Enable layer##Lava", &Effects.bLavaDisplacement);
+                            EffectsChanged |= ImGui::Checkbox("Visual smoothing##Lava", &Effects.bLavaSmoothing);
+                            if (ImGui::IsItemHovered())
+                                SetDescriptionTooltip(
+                                    "Smooth Lava coverage and displacement for rendering only. "
+                                    "Disabling this skips both layer-specific smoothing passes unless common "
+                                    "Height-field smoothing is enabled. Simulation State is unchanged.");
                         }
                         if (EffectsChanged) FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
                     }
@@ -2296,6 +2613,35 @@ namespace MDSS
         bProfilingAverageAvailable = false;
     }
 
+    void TDebugUI::DrawTotalHeightCacheOverlay()
+    {
+        if (FrameRenderer == nullptr ||
+            FrameRenderer->GetRenderViewMode() != TRenderViewMode::TotalSimulationHeight ||
+            !FrameRenderer->WasTotalHeightCacheHit()) return;
+
+        const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
+        const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || Rect.z <= 0.0F || Rect.w <= 0.0F)
+            return;
+        const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+        constexpr const char* Title = "Total Height Cache: HIT";
+        constexpr const char* Detail = "Last frame | all channels | height pass skipped";
+        const ImVec2 TitleSize = ImGui::CalcTextSize(Title);
+        const ImVec2 DetailSize = ImGui::CalcTextSize(Detail);
+        const float Width = std::max(TitleSize.x, DetailSize.x) + 24.0F;
+        const float Height = TitleSize.y + DetailSize.y + 20.0F;
+        const float Right = Origin.x + (Rect.x + Rect.z) * DisplaySize.x - 10.0F;
+        const float Top = Origin.y + Rect.y * DisplaySize.y + 10.0F;
+        if (Width + 20.0F > Rect.z * DisplaySize.x || Height + 20.0F > Rect.w * DisplaySize.y)
+            return;
+        ImDrawList* DrawList = ImGui::GetForegroundDrawList();
+        DrawList->AddRectFilled({Right - Width, Top}, {Right, Top + Height}, IM_COL32(18, 31, 30, 220), 5.0F);
+        DrawList->AddRect({Right - Width, Top}, {Right, Top + Height}, IM_COL32(80, 190, 139, 220), 5.0F);
+        DrawList->AddText({Right - Width + 12.0F, Top + 6.0F}, IM_COL32(153, 244, 181, 255), Title);
+        DrawList->AddText({Right - Width + 12.0F, Top + 10.0F + TitleSize.y},
+                          IM_COL32(212, 228, 221, 255), Detail);
+    }
+
     void TDebugUI::DrawViewportStatsOverlay()
     {
         if (FrameRenderer == nullptr || !bViewportOverlaysVisible)
@@ -2314,10 +2660,11 @@ namespace MDSS
             return;
         }
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-        const ImVec2 ViewportOrigin{MainViewport->Pos.x + SceneViewportRectNormalized.x * DisplaySize.x,
-                                    MainViewport->Pos.y + SceneViewportRectNormalized.y * DisplaySize.y};
-        const ImVec2 ViewportSize{SceneViewportRectNormalized.z * DisplaySize.x,
-                                  SceneViewportRectNormalized.w * DisplaySize.y};
+        const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+        const ImVec2 ViewportOrigin{MainViewport->Pos.x + Rect.x * DisplaySize.x,
+                                    MainViewport->Pos.y + Rect.y * DisplaySize.y};
+        const ImVec2 ViewportSize{Rect.z * DisplaySize.x, Rect.w * DisplaySize.y};
+        if (ViewportSize.x < 340.0F || ViewportSize.y < 240.0F) return;
         constexpr float OverlayWindowWidth = 320.0F;
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
@@ -2340,13 +2687,22 @@ namespace MDSS
             const double FrameSeconds = static_cast<double>(IO.DeltaTime);
             const TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
             const bool bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
-            const std::array<float, 36> MetricValues = {
+            const float FeedbackGpuMilliseconds = Stats.AccumulationGeometryGpuMilliseconds >= 0.0F &&
+                Stats.TransferWeightGpuMilliseconds >= 0.0F
+                ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds : -1.0F;
+            const auto SolverMetric = [&](float Milliseconds)
+            {
+                if (!bSolverMetricsPerStep) return Milliseconds;
+                if (Milliseconds < 0.0F || Stats.SimulationSteps == 0U) return -1.0F;
+                return Milliseconds / static_cast<float>(Stats.SimulationSteps);
+            };
+            const std::array<float, 40> MetricValues = {
                 Stats.RenderPreparationGpuMilliseconds + Stats.SceneDrawGpuMilliseconds +
                     (bFineRenderTimings ? Stats.UIDrawGpuMilliseconds + Stats.RenderPassEndGpuMilliseconds : 0.0F),
-                Stats.SolverGpuMilliseconds,
-                Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds,
-                Stats.SolverPass1GpuMilliseconds,
-                Stats.SolverPass2GpuMilliseconds,
+                SolverMetric(Stats.SolverGpuMilliseconds),
+                SolverMetric(FeedbackGpuMilliseconds),
+                SolverMetric(Stats.SolverPass1GpuMilliseconds),
+                SolverMetric(Stats.SolverPass2GpuMilliseconds),
                 Stats.RenderPreparationGpuMilliseconds,
                 Stats.SceneDrawGpuMilliseconds,
                 Stats.TexelInspectorGpuMilliseconds,
@@ -2371,15 +2727,21 @@ namespace MDSS
                 Stats.RenderPassBeginGpuMilliseconds,
                 Stats.ViewportSetupGpuMilliseconds,
                 Stats.OverlayBoundarySearchGpuMilliseconds,
-                Stats.OverlaySideSegmentBuildGpuMilliseconds,
+                Stats.OverlayTopCommandGpuMilliseconds,
                 Stats.OverlaySidesInterPassBarrierGpuMilliseconds,
                 Stats.OverlayCoverageSampleGpuMilliseconds,
                 Stats.RenderPassColorStageGpuMilliseconds,
                 Stats.RenderPassDepthStageGpuMilliseconds,
                 Stats.UIDrawGpuMilliseconds,
                 Stats.RenderPassEndGpuMilliseconds,
+                SolverMetric(Stats.AccumulationGeometryGpuMilliseconds),
+                SolverMetric(Stats.TransferWeightGpuMilliseconds),
+                Stats.OverlayHeightGpuMilliseconds,
+                Stats.OverlayNormalVertexGpuMilliseconds,
             };
-            if (std::isfinite(FrameSeconds) && FrameSeconds > 0.0)
+            // GPU timestamps arrive after the frame fence. Do not mix samples from the previous draw mode.
+            if (std::isfinite(FrameSeconds) && FrameSeconds > 0.0 &&
+                Stats.OverlayDrawMode == FrameRenderer->GetOverlayDrawProfilingMode())
             {
                 ProfilingElapsedSeconds += FrameSeconds;
                 ProfilingWindowElapsed += FrameSeconds;
@@ -2408,8 +2770,8 @@ namespace MDSS
                 while (!ProfilingRecentSamples.empty() &&
                        ProfilingRecentSamples.front().TimeSeconds < ProfilingElapsedSeconds - 0.1)
                     ProfilingRecentSamples.pop_front();
-                std::array<double, 38> RecentSums{};
-                std::array<std::uint32_t, 38> RecentCounts{};
+                std::array<double, 43> RecentSums{};
+                std::array<std::uint32_t, 43> RecentCounts{};
                 for (const TProfilingSample& RecentSample : ProfilingRecentSamples)
                 {
                     for (std::size_t Index = 0; Index < RecentSample.Values.size(); ++Index)
@@ -2459,6 +2821,34 @@ namespace MDSS
                                    : ImVec4(1.0F, 0.57F, 0.57F, 1.0F);
                 if (bProfilingAverageAvailable) ImGui::TextColored(FPSColor, "FPS: %.1f", FPS);
                 else ImGui::TextDisabled("FPS: collecting 1s average");
+                int OverlayDrawMode = static_cast<int>(FrameRenderer->GetOverlayDrawProfilingMode());
+                ImGui::TextDisabled("Draw test");
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(125.0F);
+                if (ImGui::Combo("##OverlayDrawTest", &OverlayDrawMode,
+                                 "Both\0Top only\0Sides only\0"))
+                {
+                    FrameRenderer->SetOverlayDrawProfilingMode(
+                        static_cast<TOverlayDrawProfilingMode>(OverlayDrawMode));
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Only overlay draw calls change; render preparation stays enabled. "
+                                      "Compare Render pass after each mode has collected a new average.");
+                int OccupancyTile = FrameRenderer->GetOverlayOccupancyTileSize() == TOverlayOccupancyTileSize::Tile32 ? 1 : 0;
+                ImGui::TextDisabled("Active tile");
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(125.0F);
+                if (ImGui::Combo("##OverlayOccupancyTile", &OccupancyTile,
+                                 "16 x 16\0" "32 x 32\0"))
+                {
+                    bFrameTimeResetRequested = true;
+                    FrameRenderer->SetOverlayOccupancyTileSize(
+                        OccupancyTile == 1 ? TOverlayOccupancyTileSize::Tile32 : TOverlayOccupancyTileSize::Tile16);
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Group State texels into active tiles before geometry preparation.");
                 const auto SetupMetricTable = [this](const char* Id)
                 {
                     const int ColumnCount = 1 + static_cast<int>(bShowProfilingAverage) +
@@ -2535,7 +2925,8 @@ namespace MDSS
                     if (bShowProfilingPast100ms)
                         DrawFrameValue(ProfilingRecent100msAverages[1], true);
                     DrawMetric(0, "Render GPU", {0.82F, 0.87F, 0.94F, 1.0F});
-                    DrawMetric(1, "Solver GPU", {0.82F, 0.87F, 0.94F, 1.0F});
+                    DrawMetric(1, bSolverMetricsPerStep ? "Solver GPU / step" : "Solver GPU / frame",
+                               {0.82F, 0.87F, 0.94F, 1.0F});
                     ImGui::EndTable();
                 }
                 ImGui::Separator();
@@ -2547,9 +2938,16 @@ namespace MDSS
                 {
                     if (SetupMetricTable("ViewportProfilingSimulation"))
                     {
-                        DrawMetric(2, "Geometry feedback", {0.82F, 0.87F, 0.94F, 1.0F});
-                        DrawMetric(3, "Pass 1", {0.72F, 0.78F, 0.87F, 1.0F});
-                        DrawMetric(4, "Pass 2", {0.72F, 0.78F, 0.87F, 1.0F});
+                        DrawMetric(2, bSolverMetricsPerStep ? "Geometry feedback / step" : "Geometry feedback / frame",
+                                   {0.82F, 0.87F, 0.94F, 1.0F});
+                        DrawMetric(3, bSolverMetricsPerStep ? "Pass 1 / step" : "Pass 1 / frame",
+                                   {0.72F, 0.78F, 0.87F, 1.0F});
+                        DrawMetric(4, bSolverMetricsPerStep ? "Pass 2 / step" : "Pass 2 / frame",
+                                   {0.72F, 0.78F, 0.87F, 1.0F});
+                        DrawMetric(36, bSolverMetricsPerStep ? "Geometry build / step" : "Geometry build / frame",
+                                   {0.82F, 0.87F, 0.94F, 1.0F});
+                        DrawMetric(37, bSolverMetricsPerStep ? "Transfer weights / step" : "Transfer weights / frame",
+                                   {0.82F, 0.87F, 0.94F, 1.0F});
                         ImGui::EndTable();
                     }
                     ImGui::Spacing();
@@ -2567,12 +2965,18 @@ namespace MDSS
                             ImGui::TableSetColumnIndex(1); ImGui::TextDisabled(Format, Values...);
                         };
                         AddStateRow("Sim Steps", "%u", Stats.SimulationSteps);
+                        AddStateRow("Simulated this frame", "%.2f ms", Stats.SimulatedThisFrameSeconds * 1000.0F);
+                        AddStateRow("Pending simulation", "%.2f ms", Stats.PendingSimulationSeconds * 1000.0F);
+                        AddStateRow("Time skipped", "%.2f ms", Stats.DroppedSimulationSeconds * 1000.0F);
                         AddStateRow("Instances", "%u", Stats.SimulationInstances);
                         AddStateRow("Texels / Ch.", "%llu / %u",
                                     static_cast<unsigned long long>(Stats.SimulationTexels), Stats.StateChannels);
                         AddStateRow("Resolution", "%u x %u", Stats.SimulationResolution, Stats.SimulationResolution);
                         AddStateRow("RawFlux Cache", "%s", FrameRenderer->IsRawFluxCacheEnabled() ? "ON" : "OFF");
                         AddStateRow("Geometry Feedback", "%s", FrameRenderer->IsAccumulationFeedbackEnabled() ? "ON" : "OFF");
+                        AddStateRow("Fixed timestep", "%s", bFixedSimulationTimestep ? "ON" : "OFF");
+                        AddStateRow("Auto substepping", "%s", bAutoSubstepping ? "ON" : "OFF");
+                        AddStateRow("Time scale", "%.2fx", SimulationTimeScale);
                         const auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
                         AddStateRow("Height Smoothing", "%s", Effects.bHeightFieldSmoothing ? "ON" : "OFF");
                         ImGui::EndTable();
@@ -2581,6 +2985,20 @@ namespace MDSS
                 }
                 if (BeginTextTreeNode("GPU: Rendering"))
                 {
+                    if (Stats.OverlayTotalTopTriangles > 0 &&
+                        Stats.OverlayDrawMode == FrameRenderer->GetOverlayDrawProfilingMode())
+                    {
+                        const double ActivePercent = 100.0 * static_cast<double>(Stats.OverlayActiveTopTriangles) /
+                            static_cast<double>(Stats.OverlayTotalTopTriangles);
+                        ImGui::TextDisabled("Active top triangles: %.1f%%", ActivePercent);
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("A triangle counts as active when at least one vertex exceeds "
+                                              "the 2%% coverage cutoff. Enabled layers are counted separately; "
+                                              "the ratio is not area weighted.");
+                        ImGui::TextDisabled("%llu / %llu triangles",
+                            static_cast<unsigned long long>(Stats.OverlayActiveTopTriangles),
+                            static_cast<unsigned long long>(Stats.OverlayTotalTopTriangles));
+                    }
                     if (SetupMetricTable("ViewportProfilingRendering"))
                     {
                         DrawMetric(5, "Render prep", {0.82F, 0.87F, 0.94F, 1.0F});
@@ -2600,15 +3018,20 @@ namespace MDSS
                         {
                             DrawMetric(16, "Overlay prep", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(17, "Overlay geometry", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(38, "  Height pass", {0.82F, 0.87F, 0.94F, 1.0F},
+                                       "Height dispatch and its dependency barrier.");
+                            DrawMetric(39, "  Normal + vertex pass", {0.82F, 0.87F, 0.94F, 1.0F},
+                                       "Normal/vertex dispatch and its output barrier.");
                             DrawMetric(18, "Height smoothing", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(19, "Overlay sides", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(23, "  Pre-write barrier", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(24, "  Total dispatches", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(31, "    Coverage sample", {0.82F, 0.87F, 0.94F, 1.0F});
-                            DrawMetric(28, "    Boundary search", {0.82F, 0.87F, 0.94F, 1.0F});
-                            DrawMetric(30, "    Between passes", {0.82F, 0.87F, 0.94F, 1.0F});
-                            DrawMetric(29, "    Segment build", {0.82F, 0.87F, 0.94F, 1.0F});
-                            DrawMetric(25, "  Pre-draw barrier", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(28, "    Boundary + segment", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(29, "    Top draw command", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(30, "    Coverage barrier", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(25, "  Pre-draw sync", {0.82F, 0.87F, 0.94F, 1.0F},
+                                       "Includes activity counter readback and draw barriers.");
                             ImGui::EndTable();
                         }
                         ImGui::TreePop();
@@ -2658,6 +3081,11 @@ namespace MDSS
             }
             RenderStateY = ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + 6.0F;
         }
+        const ImVec2 ProfilingPos = ImGui::GetWindowPos();
+        const ImVec2 ProfilingSize = ImGui::GetWindowSize();
+        const ImVec2 Mouse = ImGui::GetIO().MousePos;
+        bMouseOverViewportOverlay |= Mouse.x >= ProfilingPos.x && Mouse.y >= ProfilingPos.y &&
+            Mouse.x < ProfilingPos.x + ProfilingSize.x && Mouse.y < ProfilingPos.y + ProfilingSize.y;
         ImGui::End();
         ImGui::PopStyleVar(3);
 
@@ -2703,12 +3131,17 @@ namespace MDSS
                 DrawState("Lit effects", Effects.bEnabled, bLitView);
                 DrawState("Mud layer", Effects.bMudDisplacement, bEffectsActive);
                 DrawState("WaterFilm layer", Effects.bWaterFilmDisplacement, bEffectsActive);
+                DrawState("Lava layer", Effects.bLavaDisplacement, bEffectsActive);
                 const bool bSmoothingActive = bEffectsActive &&
-                    (Effects.bMudDisplacement || Effects.bWaterFilmDisplacement);
+                    (Effects.bMudDisplacement || Effects.bWaterFilmDisplacement || Effects.bLavaDisplacement);
                 DrawState("Height-field smoothing", Effects.bHeightFieldSmoothing, bSmoothingActive);
                 ImGui::EndTable();
             }
         }
+        const ImVec2 StatePos = ImGui::GetWindowPos();
+        const ImVec2 StateSize = ImGui::GetWindowSize();
+        bMouseOverViewportOverlay |= Mouse.x >= StatePos.x && Mouse.y >= StatePos.y &&
+            Mouse.x < StatePos.x + StateSize.x && Mouse.y < StatePos.y + StateSize.y;
         ImGui::End();
         ImGui::PopStyleVar(3);
     }
@@ -2942,11 +3375,12 @@ namespace MDSS
         if (ImGui::Button("Reset State"))
         {
             bSolverResetRequested = true;
+            bFrameTimeResetRequested = true;
         }
 
         BeginLabeledControlRow("Speed");
-        constexpr std::array<std::pair<const char*, float>, 4> SpeedPresets = {
-            {{"0.25x", 0.25F}, {"0.5x", 0.5F}, {"1x", 1.0F}, {"2x", 2.0F}}};
+        constexpr std::array<std::pair<const char*, float>, 6> SpeedPresets = {
+            {{"0.25x", 0.25F}, {"0.5x", 0.5F}, {"1x", 1.0F}, {"2x", 2.0F}, {"4x", 4.0F}, {"8x", 8.0F}}};
         bool bFirstPreset = true;
         for (const auto& [Label, Scale] : SpeedPresets)
         {
@@ -2962,7 +3396,7 @@ namespace MDSS
         }
         ContinueControlRow(160.0F);
         ImGui::SetNextItemWidth(-1.0F);
-        SliderFloatWithDoubleClickInput("##Speed", &SimulationTimeScale, 0.05F, 4.0F, "%.2fx");
+        SliderFloatWithDoubleClickInput("##Speed", &SimulationTimeScale, 0.05F, 8.0F, "%.2fx");
     }
 
     void TDebugUI::DrawGlobalSettingsTab(TScene& SceneData)
@@ -2981,6 +3415,7 @@ namespace MDSS
                 const bool Selected = Preset.Resolution == CurrentResolution;
                 if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
                 {
+                    bFrameTimeResetRequested = true;
                     try
                     {
                         FrameRenderer->SetSimulationResolution(SceneData, Preset.Resolution);
@@ -3015,12 +3450,14 @@ namespace MDSS
 
         if (ImGui::Checkbox("Fixed timestep", &bFixedSimulationTimestep))
         {
+            bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("Accumulate elapsed time and process fixed 1/60 s ticks. Profile factors do not change this interval. Auto substepping can divide each tick.");
         if (ImGui::Checkbox("Auto substepping", &bAutoSubstepping))
         {
+            bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
@@ -3029,8 +3466,8 @@ namespace MDSS
                             1000.0F * FrameRenderer->GetMaximumSimulationStep());
         ImGui::TextDisabled("Simulation %.2f s, pending %.3f s", FrameRenderer->GetSimulatedSeconds(),
                             FrameRenderer->GetPendingSimulationSeconds());
-        if (FrameRenderer->GetPendingSimulationSeconds() > 0.25)
-            TextDescriptionWrapped("Simulation is catching up. Lower resolution or time scale to reduce the workload.");
+        if (FrameRenderer->GetProfilingStats().DroppedSimulationSeconds > 0.0F)
+            TextDescriptionWrapped("Long frames skip excess simulation time to keep controls responsive.");
     }
 
     void TDebugUI::DrawSolverTab()
@@ -3040,7 +3477,9 @@ namespace MDSS
             bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
             if (ImGui::Checkbox(Label, &bEnabled))
             {
+                bFrameTimeResetRequested = true;
                 FrameRenderer->SetDebugSolverTermEnabled(Term, bEnabled);
+                ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
             {
@@ -3052,7 +3491,9 @@ namespace MDSS
         bool bAccumulationFeedback = FrameRenderer->IsAccumulationFeedbackEnabled();
         if (ImGui::Checkbox("Accumulation feedback", &bAccumulationFeedback))
         {
+            bFrameTimeResetRequested = true;
             FrameRenderer->SetAccumulationFeedbackEnabled(bAccumulationFeedback);
+            ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
         {
@@ -3103,6 +3544,7 @@ namespace MDSS
             bool bCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
             if (ImGui::Checkbox("RawFlux Cache", &bCacheEnabled))
             {
+                bFrameTimeResetRequested = true;
                 FrameRenderer->SetRawFluxCacheEnabled(bCacheEnabled);
                 ResetProfilingAverages();
             }
@@ -3284,7 +3726,10 @@ namespace MDSS
 
         const auto GetProfileName = [this](TSRProfileAssetHandle Handle) -> const char*
         { return AssetManager->GetSRProfile(Handle).GetName().c_str(); };
-        if (BeginLabeledCombo("Profile", GetProfileName(DebugParameterProfile)))
+        const bool bProfileComboOpen = BeginLabeledCombo("Profile", GetProfileName(DebugParameterProfile));
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("현재 씬에 사용 중인 Surface Profile 중 조정할 프로필을 선택합니다.");
+        if (bProfileComboOpen)
         {
             for (TSRProfileAssetHandle Profile : SceneProfiles)
             {
@@ -3313,7 +3758,10 @@ namespace MDSS
             DebugParameterState = 0;
         }
         const std::string& StateName = Registry.GetStateName(DebugParameterState);
-        if (BeginLabeledCombo("State", StateName.c_str()))
+        const bool bStateComboOpen = BeginLabeledCombo("State", StateName.c_str());
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("선택한 프로필에서 조정할 State 채널을 선택합니다.");
+        if (bStateComboOpen)
         {
             for (std::size_t Index = 0; Index < StateCount; ++Index)
             {
@@ -3381,37 +3829,42 @@ namespace MDSS
         bool bChanged = false;
         bChanged |= LabeledDragFloat("Capacity", &ParameterDraft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Saturation reference per reference area. Texel Capacity scales with world area.");
+            SetDescriptionTooltip("기준 면적당 포화 용량입니다. 텍셀별 용량은 실제 월드 면적에 비례해 조정됩니다.");
         bChanged |= LabeledDragFloat("Input factor", &ParameterDraft.InputFactor, 0.01F, 0.0F, 100.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("접촉 입력으로 이 State가 추가되는 양의 배율입니다. 값이 클수록 같은 입력에서 더 많이 쌓입니다.");
         DrawSectionHeader("Transport: flow", 6.0F, 2.0F);
         bChanged |= LabeledSliderFloat(
             "Saturation spread", &ParameterDraft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Moves State from higher saturation to lower saturation.");
+            SetDescriptionTooltip("포화도가 높은 곳에서 낮은 곳으로 State가 이동하는 정도를 조절합니다.");
         bChanged |=
             LabeledSliderFloat("Gravity flow", &ParameterDraft.GeometryTransferFactor, 0.0F, 1.0F, "%.4f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Scales flow driven by world height difference and gravity projected onto the surface.");
+            SetDescriptionTooltip("월드 높이 차이와 표면 방향으로 투영된 중력에 따른 흐름의 세기를 조절합니다.");
         DrawSectionHeader("Transport: resistance", 6.0F, 2.0F);
         bChanged |= LabeledSliderFloat("Cavity exit resistance", &ParameterDraft.CavityTransportRetentionFactor,
                                       0.0F, 1.0F, "%.3f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Reduces transport only toward a less concave neighbor. Equal concavity leaves flow unchanged.");
+            SetDescriptionTooltip("더 오목하지 않은 이웃 방향으로 이동할 때 수송을 줄입니다. 오목한 정도가 같으면 흐름에 영향을 주지 않습니다.");
         DrawSectionHeader("Decay", 6.0F, 2.0F);
         bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Amount lost per second per reference area, scaled to each texel's world area.");
+            SetDescriptionTooltip("기준 면적당 초당 감소량입니다. 각 텍셀의 실제 월드 면적에 비례해 적용됩니다.");
         bChanged |= LabeledSliderFloat("Cavity decay protection", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Reduces State decay in concave texels; does not directly slow transport.");
+            SetDescriptionTooltip("오목한 텍셀에서 State의 감소를 줄입니다. 수송 속도에는 직접 영향을 주지 않습니다.");
         DrawSectionHeader("Accumulation", 6.0F, 2.0F);
         bChanged |= LabeledDragFloat("Accumulation", &ParameterDraft.AccumulationFactor, 0.01F, 0.0F, 1000.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("이 State의 누적량 배율입니다. 값이 클수록 같은 조건에서 더 많이 쌓이며 디버그 미리보기에도 반영됩니다.");
         bChanged |= LabeledSliderFloat("Cavity fill", &ParameterDraft.CavityFillFactor, 0.0F, 1.0F, "%.3f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("오목한 영역을 채우는 누적 효과의 세기를 조절합니다. 0이면 효과가 없고 1이면 최대입니다.");
         bChanged |= LabeledDragFloat("Thickness per amount", &ParameterDraft.ThicknessPerAmount,
                                      0.001F, 0.0F, 100.0F, "%.4f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("World-length thickness per reference-area accumulation amount. "
-                                  "This Profile value affects simulation geometry when feedback is enabled.");
+            SetDescriptionTooltip("기준 면적당 누적량을 월드 길이 단위의 두께로 환산하는 값입니다. 피드백이 활성화되면 시뮬레이션 형상에 반영됩니다.");
         if (bChanged)
         {
             bParameterDraftDirty = true;
@@ -3432,14 +3885,19 @@ namespace MDSS
             ImGui::TextDisabled("Using Profile asset values.");
         }
 
-        if (ImGui::Button("Apply Override") && bParameterDraftDirty)
+        const bool bApplyOverride = ImGui::Button("Apply Override");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("현재 조정값을 이 실행 중인 씬에 적용합니다. Profile 원본 파일은 변경되지 않습니다.");
+        if (bApplyOverride && bParameterDraftDirty)
         {
+            bFrameTimeResetRequested = true;
             try
             {
                 TSurfaceResponseProfileData ValidationData;
                 ValidationData.States.emplace(Registry.GetStateName(DebugParameterState), ParameterDraft);
                 ValidateSurfaceResponseProfileData(ValidationData);
                 FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, ParameterDraft);
+                ResetProfilingAverages();
                 RuntimeProfileOverrides[Key] = ParameterDraft;
                 DirtyParameterDrafts.erase(Key);
                 bParameterDraftDirty = false;
@@ -3453,12 +3911,17 @@ namespace MDSS
             }
         }
         ImGui::SameLine();
-        if (ImGui::Button("Restore Profile Values"))
+        const bool bRestoreProfileValues = ImGui::Button("Restore Profile Values");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("선택한 Profile의 원래 값으로 되돌리고 해당 런타임 오버라이드를 해제합니다.");
+        if (bRestoreProfileValues)
         {
+            bFrameTimeResetRequested = true;
             const TSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
             if (RuntimeProfileOverrides.contains(Key))
             {
                 FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, Original, false);
+                ResetProfilingAverages();
                 RuntimeProfileOverrides.erase(Key);
             }
             ParameterDraft = Original;

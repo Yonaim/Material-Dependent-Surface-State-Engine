@@ -14,6 +14,10 @@ layout(set = 2, binding = 0, std430) readonly buffer TComputedVertices
 {
     TTexelGeometryVertex Values[];
 } Computed;
+layout(set = 3, binding = 4, std430) readonly buffer TCoverageValues
+{
+    float Values[];
+} Coverage;
 layout(push_constant) uniform TPush { mat4 Model; mat4 ViewProjection; } Push;
 
 layout(location = 0) out vec3 FragNormal;
@@ -31,8 +35,8 @@ void main()
     {
         uint T = InSamples[K];
         if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length())) continue;
-        Height += InWeights[K] * Computed.Values[T].PositionAndHeight.w;
-        NormalOffset += InWeights[K] * (Computed.Values[T].Normal.xyz - Normals.Values[T].xyz);
+        Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
+        NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
         Weight += InWeights[K];
     }
     vec3 Normal = InNormal + NormalOffset;
@@ -41,8 +45,8 @@ void main()
     FragNormal = normalize(NormalMatrix * Normal);
     FragUV = InUVSurface.xy;
     FragSurfaceIndex = uint(InUVSurface.w);
-    FragCoverage = SampleStateSaturation(FragSurfaceIndex, FragUV, uint(gl_InstanceIndex),
-                                        Material.StateChannelCount);
+    uint Vertex = uint(gl_VertexIndex);
+    FragCoverage = Vertex < uint(Coverage.Values.length()) ? Coverage.Values[Vertex] : 0.0;
     vec3 Position = InPosition + InDisplacementNormal * Height;
     FragWorldPosition = vec3(Push.Model * vec4(Position, 1.0));
     gl_Position = Push.ViewProjection * vec4(FragWorldPosition, 1.0);

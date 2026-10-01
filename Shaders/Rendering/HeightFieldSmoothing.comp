@@ -60,19 +60,18 @@ void main()
 
         float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
         if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
-        float AccumulationHeight = InputGeometry.Values[N].PositionAndHeight.w - Meso;
+        float AccumulationHeight = InputGeometry.Values[N].HeightAndNormal.x - Meso;
         if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
         float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
         WeightedHeight += Weight * AccumulationHeight;
-        WeightedNormal += Weight * InputGeometry.Values[N].Normal.xyz;
+        WeightedNormal += Weight * InputGeometry.Values[N].HeightAndNormal.yzw;
         WeightSum += Weight;
     }
     if (WeightSum <= 0.0) return;
     float CenterMeso = GeometryScalars.Values[T].MesoVirtualHeight;
     if (isnan(CenterMeso) || isinf(CenterMeso)) CenterMeso = 0.0;
     float Height = CenterMeso + WeightedHeight / WeightSum;
-    OutputGeometry.Values[T].PositionAndHeight =
-        vec4(Positions.Values[T].xyz + Normals.Values[T].xyz * Height, Height);
+    OutputGeometry.Values[T].HeightAndNormal.x = Height;
     if (dot(WeightedNormal, WeightedNormal) > 1e-12)
-        OutputGeometry.Values[T].Normal = vec4(normalize(WeightedNormal), 0.0);
+        OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(WeightedNormal);
 }

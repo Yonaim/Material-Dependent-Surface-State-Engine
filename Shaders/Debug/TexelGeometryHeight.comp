@@ -1,0 +1,42 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define SURFACE_DEBUG_SET 0
+#include "Debug/SurfaceDebugData.glsl"
+layout(local_size_x = 64) in;
+layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
+layout(push_constant) uniform TPush
+{
+    uint TexelCount;
+    uint Channel;
+    uint Channels;
+    uint Accumulation;
+    float AccumulationDisplayScale;
+    float GeometryDisplayScale;
+    uint TotalHeight;
+    uint UseBaseline;
+    uint TileSize;
+    uint Padding[3];
+    vec4 NormalMatrixColumns[3];
+} Push;
+
+void main()
+{
+    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (T >= Push.TexelCount) return;
+    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+    uint TileFlag = GeometryCache.Values[Push.TexelCount * 4u + T / TilePixels];
+    if (TileFlag == 0u)
+    {
+        float Meso = GeometryScalars.Values[T].MesoVirtualHeight;
+        GeometryCache.Values[T] = isnan(Meso) || isinf(Meso) ? 0x7fc00000u : floatBitsToUint(Meso);
+        return;
+    }
+    mat3 NormalMatrix = mat3(Push.NormalMatrixColumns[0].xyz,
+                             Push.NormalMatrixColumns[1].xyz,
+                             Push.NormalMatrixColumns[2].xyz);
+    TDebugAccumulation D = DebugAccumulation(T, Push.Channel, Push.Channels,
+                                            Push.AccumulationDisplayScale, NormalMatrix);
+    // NaN marks neighbors that DebugFinalNormal previously excluded (status 0 or 4).
+    GeometryCache.Values[T] = D.Status == 0u || D.Status == 4u
+        ? 0x7fc00000u : floatBitsToUint(D.MesoHeight + D.Height);
+}

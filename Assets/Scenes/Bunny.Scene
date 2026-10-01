@@ -1,74 +1,33 @@
 {
   "type": "TScene",
   "version": 1,
-  "animation": "../Animations/Bunny.DemoAnim",
+  "animation": "../Animations/Bunny_Scene.DemoAnim",
+  "camera": {
+    "position": [2.0, -3.3, 2.7],
+    "target": [0.0, 0.0, 0.7],
+    "verticalFieldOfViewDegrees": 45.0
+  },
   "simulationResolution": 256,
   "objects": [
     {
-      "id": "bunny_wet",
+      "id": "bunny",
       "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Wetness.SurfaceProfileMap",
+      "surfaceProfileMap": "../SurfaceProfileMaps/Bunny.SurfaceProfileMap",
       "transform": {
-        "position": [
-          -2.0,
-          0.0,
-          -0.211866
-        ],
-        "rotationDegrees": [
-          90.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          6.42264883,
-          6.42264883,
-          6.42264883
-        ]
+        "position": [0.0, 0.0, 0.0],
+        "rotationDegrees": [90.0, 0.0, 0.0],
+        "scale": [6.42264883, 6.42264883, 6.42264883]
       }
-    },
+    }
+  ],
+  "initialContacts": [
     {
-      "id": "bunny_water",
-      "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_WaterFilm.SurfaceProfileMap",
-      "transform": {
-        "position": [
-          0.0,
-          0.0,
-          -0.211866
-        ],
-        "rotationDegrees": [
-          90.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          6.42264883,
-          6.42264883,
-          6.42264883
-        ]
-      }
-    },
-    {
-      "id": "bunny_mud",
-      "mesh": "../Meshes/StanfordBunny/StanfordBunny.obj",
-      "surfaceProfileMap": "../SurfaceProfiles/StanfordBunny_Mud.SurfaceProfileMap",
-      "transform": {
-        "position": [
-          2.0,
-          0.0,
-          -0.211866
-        ],
-        "rotationDegrees": [
-          90.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          6.42264883,
-          6.42264883,
-          6.42264883
-        ]
-      }
+      "target": "bunny",
+      "state": "lava",
+      "worldPosition": [0.0, -0.33, 0.7],
+      "radius": 0.32,
+      "strength": 1.5,
+      "falloff": 1.0
     }
   ]
 }

@@ -35,11 +35,11 @@ namespace MDSS
         [[nodiscard]] float            GetVerticalFieldOfViewDegrees() const noexcept;
 
     private:
-        glm::vec3 Position{0.0F, 0.0F, 3.0F};
+        glm::vec3 Position{2.0F, -3.3F, 2.0F};
         glm::vec3 Target{0.0F, 0.0F, 0.0F};
         glm::vec3 Up{0.0F, 0.0F, 1.0F};
 
-        float VerticalFieldOfViewDegrees = 60.0F;
+        float VerticalFieldOfViewDegrees = 50.0F;
         float NearPlane = 0.1F;
         float FarPlane = 100.0F;
     };

@@ -15,6 +15,7 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
@@ -30,6 +31,7 @@
 namespace MDSS::Tests
 {
     void TestSurfaceDebugRendering(const TVulkanContext& Context);
+    void TestOverlaySideCompaction(const TVulkanContext& Context);
 }
 
 namespace
@@ -232,6 +234,101 @@ namespace
                       Objects[3].GetTransform().RotationDegrees.x == 270.0F,
                       "the inverted Mud mountain must remain stationary during animation");
         }
+        constexpr std::array<std::pair<std::string_view, std::string_view>, 4> Effects{{
+            {"Wetness", "wetness"}, {"WaterFilm", "waterfilm"}, {"Mud", "mud"}, {"Lava", "lava"}
+        }};
+        for (const std::string_view Shape : {"Cube", "Bunny", "Mountain"})
+        {
+            glm::vec3 ReferencePosition(0.0F);
+            glm::vec3 ReferenceRotation(0.0F);
+            glm::vec3 ReferenceScale(0.0F);
+            glm::vec3 ReferenceAnimatedRotation(0.0F);
+            bool bFirstEffect = true;
+            for (const auto& [Effect, State] : Effects)
+            {
+                const std::string Stem = std::string(Shape) + "_" + std::string(Effect);
+                TScene Isolated = TSceneLoader::Load(
+                    std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (Stem + ".Scene"), Assets);
+                Check(Isolated.GetStaticMeshInstances().size() == 1 &&
+                      Isolated.GetInitialContacts().size() == 1 && Isolated.HasDemoAnimation() &&
+                      Isolated.GetSimulationResolution() == 256,
+                      "isolated Scene must have one object, one contact, one animation and fixed resolution");
+                const auto& Object = Isolated.GetStaticMeshInstances()[0];
+                const auto& Contact = Isolated.GetInitialContacts()[0];
+                Check(Contact.Target == Object.GetId() && Contact.State == State &&
+                      Contact.Radius == 0.42F && Contact.Strength == 1.5F && Contact.Falloff == 1.0F,
+                      "isolated Scene contact must target its only effect with common input parameters");
+                const auto Registry = Assets.BuildSurfaceStateRegistry(Isolated);
+                Check(Registry.GetStateCount() == 1 && Registry.GetStateName(0) == State,
+                      "isolated Scene must expose exactly its selected Surface State");
+                const auto& Transform = Object.GetTransform();
+                if (bFirstEffect)
+                {
+                    ReferencePosition = Transform.Position;
+                    ReferenceRotation = Transform.RotationDegrees;
+                    ReferenceScale = Transform.Scale;
+                }
+                else
+                {
+                    Check(glm::length(Transform.Position - ReferencePosition) < 1.0e-5F &&
+                          glm::length(Transform.RotationDegrees - ReferenceRotation) < 1.0e-5F &&
+                          glm::length(Transform.Scale - ReferenceScale) < 1.0e-5F,
+                          "all effects of one shape must start with the same transform");
+                }
+                const auto& Texels = Assets.GetSurfaceData(Object.GetSurfaceData()).GetSharedGeometry()->GetTexels();
+                const glm::mat4 Model = Transform.GetMatrix();
+                Check(std::any_of(Texels.begin(), Texels.end(), [&](const auto& Texel)
+                {
+                    return Texel.IsValid() && glm::length(
+                        glm::vec3(Model * glm::vec4(Texel.Position, 1.0F)) - Contact.WorldPosition) < Contact.Radius;
+                }), "isolated Scene initial contact must reach valid surface texels");
+                Isolated.PlayDemoAnimation();
+                Isolated.AdvanceDemoAnimation(3.0F);
+                const glm::vec3 AnimatedRotation = Object.GetTransform().RotationDegrees;
+                if (bFirstEffect)
+                {
+                    Check(glm::length(AnimatedRotation - ReferenceRotation) > 1.0F,
+                          "isolated Scene animation must move its object");
+                    ReferenceAnimatedRotation = AnimatedRotation;
+                    bFirstEffect = false;
+                }
+                else
+                    Check(glm::length(AnimatedRotation - ReferenceAnimatedRotation) < 1.0e-3F,
+                          "all effects of one shape must use the same animation phase");
+            }
+        }
+        TScene LavaScene = TSceneLoader::Load(
+            std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", Assets);
+        Check(LavaScene.GetStaticMeshInstances().size() == 1 &&
+              LavaScene.GetStaticMeshInstances()[0].GetId() == "mountain_lava" &&
+              LavaScene.GetInitialContacts().size() == 1 &&
+              LavaScene.GetInitialContacts()[0].State == "lava",
+              "Lava Scene must load its Mountain and initial Lava input");
+        const auto& LavaObject = LavaScene.GetStaticMeshInstances()[0];
+        const auto& LavaContact = LavaScene.GetInitialContacts()[0];
+        const auto& LavaTexels = Assets.GetSurfaceData(LavaObject.GetSurfaceData()).GetSharedGeometry()->GetTexels();
+        const glm::mat4 LavaModel = LavaObject.GetTransform().GetMatrix();
+        const auto ContactedCavityCount = std::count_if(LavaTexels.begin(), LavaTexels.end(), [&](const auto& Texel)
+        {
+            return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.1F &&
+                glm::length(glm::vec3(LavaModel * glm::vec4(Texel.Position, 1.0F)) - LavaContact.WorldPosition) <
+                    LavaContact.Radius;
+        });
+        Check(ContactedCavityCount > 0, "Lava initial contact must reach concave Mountain texels");
+        const auto LavaProfile = Assets.LoadSRProfile(
+            std::filesystem::path(MDSS_ASSET_DIR) / "SurfaceProfiles/DemoLava.SRProfile");
+        const auto& Lava = Assets.GetSRProfile(LavaProfile).GetData().States.at("lava");
+        Check(Lava.GeometryTransferFactor < 0.01F && Lava.SaturationTransferFactor < 0.01F &&
+              Lava.CavityTransportRetentionFactor > 0.95F && Lava.DecayRate == 0.0F,
+              "Lava should move slowly and resist leaving cavities without evaporating");
+        const auto LavaRegistry = Assets.BuildSurfaceStateRegistry(LavaScene);
+        Check(ResolveDemoSurfaceStates(LavaRegistry).Lava == LavaRegistry.GetStateId("lava"),
+              "Lava rendering channel must resolve from the loaded profile");
+        LavaScene.PlayDemoAnimation();
+        LavaScene.AdvanceDemoAnimation(9.0F);
+        const glm::vec3 LavaUp = glm::mat3(LavaScene.GetStaticMeshInstances()[0].GetTransform().GetMatrix()) *
+            glm::vec3(0, 1, 0);
+        Check(LavaUp.z < 0.0F, "Lava Mountain animation must turn its basin upside down");
     }
 
     void TestSceneResources(TWindow& Window, const TVulkanContext& Context, const TFixtures& Fixtures)
@@ -494,6 +591,97 @@ int main(int Argc, char* Argv[])
     }
     try
     {
+        if (Argc == 2 && std::string_view(Argv[1]) == "--lava-scene")
+        {
+            TAssetManager LavaAssets(*Context);
+            TScene LavaScene = TSceneLoader::Load(
+                std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", LavaAssets);
+            LavaAssets.ExchangeSurfaceStateRegistry(LavaAssets.BuildSurfaceStateRegistry(LavaScene));
+            TSurfaceStateSystem LavaStates(*Context, LavaAssets, LavaScene);
+            TRenderer LavaRenderer(*Context, *Window, LavaAssets, LavaScene, LavaStates);
+            TDebugUI LavaUI(*Context, *Window, LavaRenderer, LavaAssets);
+            ImGui::GetIO().IniFilename = nullptr;
+            LavaRenderer.SetRenderViewMode(TRenderViewMode::Lit);
+            Check(LavaRenderer.GetDemoSurfaceStateBindings().Lava != InvalidStateId,
+                  "Lava Scene must bind its rendering State");
+            Window->PollEvents();
+            LavaUI.BeginFrame(LavaScene);
+            LavaRenderer.RenderFrame(LavaScene, LavaUI, 1.0F / 60.0F);
+            vkDeviceWaitIdle(Context->GetDevice());
+            const auto& StateBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
+            std::vector<float> StateValues(StateBuffer.GetSize() / sizeof(float));
+            StateBuffer.Download(StateValues.data(), StateBuffer.GetSize());
+            Check(std::any_of(StateValues.begin(), StateValues.end(), [](float Value) { return Value > 0.0F; }),
+                  "Lava Scene must seed visible State on its first simulation step");
+            LavaScene.PlayDemoAnimation();
+            LavaScene.AdvanceDemoAnimation(9.0F);
+            Window->PollEvents();
+            LavaUI.BeginFrame(LavaScene);
+            LavaRenderer.RenderFrame(LavaScene, LavaUI, 1.0F / 60.0F);
+            vkDeviceWaitIdle(Context->GetDevice());
+            LavaUI.RestartScene(LavaScene);
+            Check(LavaScene.GetDemoAnimationTime() == 0.0F && !LavaScene.IsDemoAnimationPlaying() &&
+                  LavaScene.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x == 90.0F &&
+                  LavaRenderer.GetSimulatedSeconds() == 0.0,
+                  "Restart Scene must restore saved pose, animation and simulation clock");
+            const auto& RestartedBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
+            std::vector<float> RestartedValues(RestartedBuffer.GetSize() / sizeof(float));
+            RestartedBuffer.Download(RestartedValues.data(), RestartedBuffer.GetSize());
+            Check(std::all_of(RestartedValues.begin(), RestartedValues.end(), [](float Value) { return Value == 0.0F; }),
+                  "Restart Scene must clear the previous Lava State before replaying initial contact");
+            Window->PollEvents();
+            LavaUI.BeginFrame(LavaScene);
+            LavaRenderer.RenderFrame(LavaScene, LavaUI, 1.0F / 60.0F);
+            vkDeviceWaitIdle(Context->GetDevice());
+            const auto& ReplayedBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
+            std::vector<float> ReplayedValues(ReplayedBuffer.GetSize() / sizeof(float));
+            ReplayedBuffer.Download(ReplayedValues.data(), ReplayedBuffer.GetSize());
+            Check(std::any_of(ReplayedValues.begin(), ReplayedValues.end(), [](float Value) { return Value > 0.0F; }),
+                  "Restart Scene must apply its initial Lava contact again");
+            for (const auto& Entry : MDSS::TLogger::GetEntries())
+                Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::TLogLevel::Error,
+                      "Lava Scene rendering must have no Vulkan validation errors");
+            std::cout << "Lava Scene checks passed.\n";
+            return 0;
+        }
+        if (Argc == 2 && std::string_view(Argv[1]) == "--overlay-side-compaction")
+        {
+            MDSS::Tests::TestOverlaySideCompaction(*Context);
+            {
+                TFixtures OverlayFixtures;
+                TAssetManager OverlayAssets(*Context);
+                TScene OverlayScene = TSceneLoader::Load(OverlayFixtures.Root / "Mud.Scene", OverlayAssets);
+                OverlayAssets.ExchangeSurfaceStateRegistry(OverlayAssets.BuildSurfaceStateRegistry(OverlayScene));
+                TSurfaceStateSystem OverlayStates(*Context, OverlayAssets, OverlayScene);
+                TRenderer OverlayRenderer(*Context, *Window, OverlayAssets, OverlayScene, OverlayStates);
+                TDebugUI OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets);
+                ImGui::GetIO().IniFilename = nullptr;
+                OverlayRenderer.SetRenderViewMode(TRenderViewMode::Lit);
+                Window->PollEvents();
+                OverlayUI.BeginFrame(OverlayScene);
+                OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 0.0F);
+                OverlayRenderer.SetAccumulationFeedbackEnabled(true);
+                Window->PollEvents();
+                OverlayUI.BeginFrame(OverlayScene);
+                OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 1.0F / 60.0F, true);
+                Check(OverlayRenderer.GetLastSimulationStepCount() == 0 &&
+                          OverlayRenderer.GetPendingSimulationSeconds() == 0.0,
+                      "changing feedback must prepare resources without advancing simulation time");
+                Window->PollEvents();
+                OverlayUI.BeginFrame(OverlayScene);
+                OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 1.0F / 60.0F);
+                Check(OverlayRenderer.GetLastSimulationStepCount() == 1,
+                      "simulation must resume with one normal tick after feedback preparation");
+                vkDeviceWaitIdle(Context->GetDevice());
+            }
+            Context.reset();
+            Window.reset();
+            for (const auto& Entry : MDSS::TLogger::GetEntries())
+                Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::TLogLevel::Error,
+                    "Overlay side compaction must have no Vulkan validation errors");
+            std::cout << "Overlay side compaction checks passed.\n";
+            return 0;
+        }
         TFixtures Fixtures;
         TestDemoAnimation(*Context, Fixtures);
         const bool DemoOnly = Argc == 2 && std::string_view(Argv[1]) == "--demo-animation";

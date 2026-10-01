@@ -1,0 +1,70 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define SURFACE_DEBUG_SET 0
+#include "Surface/SurfaceStateData.glsl"
+
+layout(local_size_x = 64) in;
+layout(set = 1, binding = 1, std430) writeonly buffer TGeometryCache { uint Values[]; } GeometryCache;
+layout(push_constant) uniform TPush
+{
+    uint TexelCount;
+    uint Channel;
+    uint Channels;
+    uint Accumulation;
+    float AccumulationDisplayScale;
+    float GeometryDisplayScale;
+    uint TotalHeight;
+    uint UseBaseline;
+    uint TileSize;
+    uint Padding[3];
+    vec4 NormalMatrixColumns[3];
+} Push;
+
+vec3 BaselineNormal(uint Texel)
+{
+    vec3 Fallback = MesoNormals.Values[Texel].xyz;
+    if (Texel >= uint(Positions.Values.length()) || Texel >= uint(Normals.Values.length()) ||
+        Texel >= uint(NeighborIndices.Values.length()) || Texel >= uint(GeometryScalars.Values.length()) ||
+        Texel >= uint(TexelSurfaceIndices.Values.length()) ||
+        TexelSurfaceIndices.Values[Texel] == 0xffffffffu) return Fallback;
+    float CenterHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
+    if (isnan(CenterHeight) || isinf(CenterHeight)) return Fallback;
+    vec3 N = normalize(Normals.Values[Texel].xyz);
+    vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0), N));
+    vec3 V = cross(N, U);
+    float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
+    for (uint Slot = 0u; Slot < 8u; ++Slot)
+    {
+        uint Other = NeighborIndices.Values[Texel].Indices[Slot];
+        if (Other >= Push.TexelCount || Other >= uint(Positions.Values.length()) ||
+            Other >= uint(Normals.Values.length()) || Other >= uint(GeometryScalars.Values.length()) ||
+            Other >= uint(TexelSurfaceIndices.Values.length()) ||
+            TexelSurfaceIndices.Values[Other] == 0xffffffffu ||
+            dot(N, Normals.Values[Other].xyz) < 0.5) continue;
+        float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight;
+        if (isnan(OtherHeight) || isinf(OtherHeight)) continue;
+        vec3 Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
+        float X = dot(Delta, U), Y = dot(Delta, V);
+        float LengthSquared = X * X + Y * Y;
+        if (LengthSquared <= 1e-16) continue;
+        float Weight = 1.0 / LengthSquared;
+        float DH = (OtherHeight - CenterHeight) * Push.GeometryDisplayScale;
+        XX += X * X * Weight; XY += X * Y * Weight; YY += Y * Y * Weight;
+        XH += X * DH * Weight; YH += Y * DH * Weight;
+    }
+    float Det = XX * YY - XY * XY;
+    if (Det <= 1e-6 * max(XX * YY, 1e-12)) return Fallback;
+    vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
+    return normalize(N - U * Gradient.x - V * Gradient.y);
+}
+
+void main()
+{
+    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (T >= Push.TexelCount) return;
+    vec3 Normal = BaselineNormal(T);
+    uint Offset = Push.TexelCount + T * 3u;
+    GeometryCache.Values[Offset] = floatBitsToUint(Normal.x);
+    GeometryCache.Values[Offset + 1u] = floatBitsToUint(Normal.y);
+    GeometryCache.Values[Offset + 2u] = floatBitsToUint(Normal.z);
+}

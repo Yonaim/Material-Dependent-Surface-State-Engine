@@ -1,0 +1,20 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 4,
+  "name": "DemoLava",
+  "states": {
+    "lava": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.008,
+      "gravityFlowFactor": 0.15,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 1.0,
+      "cavityExitResistanceFactor": 0.98,
+      "accumulationFactor": 0.8,
+      "cavityFillFactor": 0.9,
+      "thicknessPerAmount": 0.02
+    }
+  },
+  "transitions": []
+}

@@ -34,6 +34,19 @@
 
 namespace MDSS
 {
+    enum class TOverlayDrawProfilingMode : std::uint32_t
+    {
+        Both = 0,
+        TopOnly,
+        SidesOnly
+    };
+
+    enum class TOverlayOccupancyTileSize : std::uint32_t
+    {
+        Tile16 = 16,
+        Tile32 = 32
+    };
+
     struct TRendererProfilingStats
     {
         float SolverGpuMilliseconds = -1.0F;
@@ -49,13 +62,15 @@ namespace MDSS
         float WaterFilmOverlayDrawGpuMilliseconds = -1.0F;
         float OverlayPreparationGpuMilliseconds = -1.0F;
         float OverlayGeometryGpuMilliseconds = -1.0F;
+        float OverlayHeightGpuMilliseconds = -1.0F;
+        float OverlayNormalVertexGpuMilliseconds = -1.0F;
         float OverlaySmoothingGpuMilliseconds = -1.0F;
         float OverlaySidesGpuMilliseconds = -1.0F;
         float OverlaySidesPreBarrierGpuMilliseconds = -1.0F;
         float OverlaySidesDispatchGpuMilliseconds = -1.0F;
         float OverlaySidesPostBarrierGpuMilliseconds = -1.0F;
         float OverlayBoundarySearchGpuMilliseconds = -1.0F;
-        float OverlaySideSegmentBuildGpuMilliseconds = -1.0F;
+        float OverlayTopCommandGpuMilliseconds = -1.0F;
         float OverlaySidesInterPassBarrierGpuMilliseconds = -1.0F;
         float OverlayCoverageSampleGpuMilliseconds = -1.0F;
         float SceneSetupGpuMilliseconds = -1.0F;
@@ -73,10 +88,16 @@ namespace MDSS
         float QueueSubmitCpuMilliseconds = -1.0F;
         float PresentCpuMilliseconds = -1.0F;
         std::uint32_t SimulationSteps = 0;
+        float SimulatedThisFrameSeconds = 0.0F;
+        float PendingSimulationSeconds = 0.0F;
+        float DroppedSimulationSeconds = 0.0F;
         std::uint32_t SimulationInstances = 0;
         std::uint64_t SimulationTexels = 0;
         std::uint32_t StateChannels = 0;
         std::uint32_t SimulationResolution = 0;
+        std::uint64_t OverlayActiveTopTriangles = 0;
+        std::uint64_t OverlayTotalTopTriangles = 0;
+        TOverlayDrawProfilingMode OverlayDrawMode = TOverlayDrawProfilingMode::Both;
     };
 
     enum class TRenderViewMode : std::uint32_t
@@ -105,7 +126,8 @@ namespace MDSS
         /** @brief 원본 삼각형의 월드 면적 / UV 면적 / 텍셀 수를 표시한다. */
         SurfaceTexelArea = 17,
         SurfaceAccumulation = 18,
-        SurfaceFinalGeometry = 19
+        SurfaceFinalGeometry = 19,
+        TotalSimulationHeight = 21
     };
 
     enum class TSolverTransferWeightView : std::uint32_t
@@ -150,13 +172,16 @@ namespace MDSS
         TRenderer& operator=(TRenderer&&) = delete;
 
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
-        void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime);
+        void RenderFrame(const TScene& SceneData, TDebugUI& DebugInterface, float DeltaTime,
+                         bool bSuspendSimulationClock = false);
         [[nodiscard]] double GetPendingSimulationSeconds() const noexcept { return SimulationClock.GetPendingSeconds(); }
         [[nodiscard]] double GetSimulatedSeconds() const noexcept { return SimulationClock.GetSimulatedSeconds(); }
         [[nodiscard]] std::uint32_t GetLastSimulationStepCount() const noexcept { return LastSimulationStepCount; }
         [[nodiscard]] float GetMaximumSimulationStep() const noexcept { return MaximumSimulationStep; }
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
         void ReloadSceneResources(const TScene& Scene, bool bResetStateSettings = true);
+        /** @brief Reset simulation and caches while retaining loaded Scene/GPU resources. */
+        void RestartSimulationState();
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         /** @brief Rebuild Surface mapping and GPU resources, resetting State on success. */
         void SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);
@@ -174,12 +199,26 @@ namespace MDSS
         [[nodiscard]] float GetLastSolverPass1GpuMilliseconds() const noexcept;
         [[nodiscard]] float GetLastSolverPass2GpuMilliseconds() const noexcept;
         [[nodiscard]] const TRendererProfilingStats& GetProfilingStats() const noexcept { return ProfilingStats; }
+        [[nodiscard]] TOverlayDrawProfilingMode GetOverlayDrawProfilingMode() const noexcept
+        {
+            return OverlayDrawProfilingMode;
+        }
+        void SetOverlayDrawProfilingMode(TOverlayDrawProfilingMode Mode) noexcept
+        {
+            OverlayDrawProfilingMode = Mode;
+        }
+        [[nodiscard]] TOverlayOccupancyTileSize GetOverlayOccupancyTileSize() const noexcept
+        {
+            return OverlayOccupancyTileSize;
+        }
+        void SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size);
         [[nodiscard]] bool AreRenderPassSubstageTimingsReliable() const noexcept
         {
             return bRenderPassSubstageTimingsReliable;
         }
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
+        [[nodiscard]] bool WasTotalHeightCacheHit() const noexcept { return bTotalHeightCacheHit; }
         void                         SetRenderViewMode(TRenderViewMode Mode);
         [[nodiscard]] bool IsWireframeUniformWhite() const noexcept { return bWireframeUniformWhite; }
         void SetWireframeUniformWhite(bool bEnabled) noexcept { bWireframeUniformWhite = bEnabled; }
@@ -243,6 +282,14 @@ namespace MDSS
         void                SetAmbientLight(float Intensity);
 
     private:
+        struct TTotalHeightCacheEntry
+        {
+            glm::mat4 Model{1.0F};
+            std::uint64_t StepSerial = 0;
+            std::uint64_t ProfileRevision = 0;
+            bool bValid = false;
+        };
+
         struct TMaterialRenderResource
         {
             std::array<std::unique_ptr<TGPUBuffer>, TRenderContext::MaxFramesInFlight> UniformBuffers;
@@ -261,7 +308,8 @@ namespace MDSS
         void CreateRenderFinishedSemaphores();
         void DestroyRenderFinishedSemaphores() noexcept;
         void CreateTimestampQueryPool(std::size_t SolverInstanceCount);
-        void UploadMaterialUniforms(std::uint32_t Frame, const glm::vec3& CameraPosition, float LitHeightDisplayScale);
+        void UploadMaterialUniforms(std::uint32_t Frame, const TScene& SceneData,
+                                    const TDebugUI& DebugInterface, float LitHeightDisplayScale);
         [[nodiscard]] float GetDebugViewParameter() const noexcept;
         void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
@@ -299,16 +347,21 @@ namespace MDSS
         std::unique_ptr<TGraphicsPipeline>     BaseSurfaceLitPipeline;
         std::unique_ptr<TTexelGeometryPreview> MudLayerGeometry;
         std::unique_ptr<TTexelGeometryPreview> WaterLayerGeometry;
+        std::unique_ptr<TTexelGeometryPreview> LavaLayerGeometry;
         std::unique_ptr<THeightFieldSmoothing> HeightFieldSmoothing;
         std::unique_ptr<TAccumulationOverlaySides> OverlaySides;
         std::unique_ptr<TGraphicsPipeline>     MudOverlayTopPipeline;
         std::unique_ptr<TGraphicsPipeline>     MudOverlaySidePipeline;
         std::unique_ptr<TGraphicsPipeline>     WaterOverlayTopPipeline;
         std::unique_ptr<TGraphicsPipeline>     WaterOverlaySidePipeline;
+        std::unique_ptr<TGraphicsPipeline>     LavaOverlayTopPipeline;
+        std::unique_ptr<TGraphicsPipeline>     LavaOverlaySidePipeline;
         TFramebuffer                         MainFramebuffers;
         TRenderContext                       FrameContext;
         VkDescriptorPool                    MaterialDescriptorPool = VK_NULL_HANDLE;
         std::vector<TMaterialRenderResource> MaterialResources;
+        VkDeviceSize MaterialUniformStride = 0;
+        std::size_t MaterialViewportCapacity = 1;
         TRenderViewMode                      ViewMode = TRenderViewMode::Lit;
         bool                                 bWireframeUniformWhite = true;
         bool                                 bSupportsWireframeLineWidth = false;
@@ -319,9 +372,14 @@ namespace MDSS
         bool                                 bStateHeatmapReliefShadingEnabled = true;
         TSurfaceDebugDisplaySettings          SurfaceDebugSettings;
         TDemoSurfaceEffectSettings             DemoEffects;
+        TOverlayDrawProfilingMode              OverlayDrawProfilingMode = TOverlayDrawProfilingMode::Both;
+        TOverlayOccupancyTileSize              OverlayOccupancyTileSize = TOverlayOccupancyTileSize::Tile16;
         std::optional<TSurfaceTexelSelection> InspectedTexel;
         std::unique_ptr<TTexelInspector>      TexelInspector;
         std::uint64_t                         SimulationStepSerial = 0;
+        std::uint64_t                         TotalHeightProfileRevision = 0;
+        std::vector<TTotalHeightCacheEntry> TotalHeightCacheEntries;
+        bool bTotalHeightCacheHit = false;
         TSolverTransferWeightView             SolverTransferWeightView = TSolverTransferWeightView::Combined;
         std::uint32_t                         TexelGridBlockSize = 8;
         float                                 TexelAreaReference = 1.0e-4F;
@@ -335,6 +393,7 @@ namespace MDSS
         std::array<bool, TRenderContext::MaxFramesInFlight> bTimestampQueriesSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight> SolverTimestampStepsSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight> OverlayTimestampLayersSubmitted{};
+        std::array<TOverlayDrawProfilingMode, TRenderContext::MaxFramesInFlight> OverlayDrawModesSubmitted{};
         TSimulationClock SimulationClock;
         std::uint32_t LastSimulationStepCount = 0;
         float MaximumSimulationStep = FixedSimulationStepSeconds;

@@ -52,6 +52,13 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
         isnan(D.CavityFactor) || isinf(D.CavityFactor) || D.CavityFactor < 0.0 || D.CavityFactor > 1.0 ||
         isnan(D.ThicknessPerAmount) || isinf(D.ThicknessPerAmount) || D.ThicknessPerAmount < 0.0) return D;
     D.Saturation = D.State / D.Capacity;
+    D.WorldToLocalHeight = length(NormalMatrix * normalize(Normals.Values[Texel].xyz));
+    if (isnan(D.WorldToLocalHeight) || isinf(D.WorldToLocalHeight) || D.WorldToLocalHeight <= 0.0) return D;
+    if (D.State == 0.0)
+    {
+        D.Status = 3u;
+        return D;
+    }
     // State is total texel amount. Convert to fixed-reference-area amount for thickness.
     // Capacity bounds the geometry contribution, while the State buffer retains excess for transport.
     D.ReferenceAmount = min(D.State, D.Capacity) / D.AreaScale;
@@ -59,8 +66,6 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
     float CavityAmount = Amount * D.CavityFactor;
     D.Fill = min(CavityAmount, 1.0);
     D.Excess = max(CavityAmount - 1.0, 0.0);
-    D.WorldToLocalHeight = length(NormalMatrix * normalize(Normals.Values[Texel].xyz));
-    if (isnan(D.WorldToLocalHeight) || isinf(D.WorldToLocalHeight) || D.WorldToLocalHeight <= 0.0) return D;
     D.CavityHeight = D.Fill * D.CavityDepth * AccumulationDisplayScale;
     D.FollowingHeight = (Amount * (1.0 - D.CavityFactor) + D.Excess) *
                         D.ThicknessPerAmount * D.WorldToLocalHeight * AccumulationDisplayScale;

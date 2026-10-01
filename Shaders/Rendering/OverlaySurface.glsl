@@ -2,6 +2,7 @@
 #define MDSS_OVERLAY_SURFACE
 #include "Rendering/MaterialParameters.glsl"
 #include "Rendering/Lighting.glsl"
+#include "Rendering/Effects/Lava.glsl"
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec2 FragUV;
 layout(location = 2) flat in uint FragSurfaceIndex;
@@ -15,7 +16,10 @@ void main()
     vec3 N = normalize(FragNormal);
     if (!gl_FrontFacing) N = -N;
     vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
-#ifdef OVERLAY_WATER
+#ifdef OVERLAY_LAVA
+    vec3 Color = ShadeSurface(LavaColor(FragCoverage), N, V, 0.34, Material.AmbientLight);
+    OutColor = vec4(min(Color + LavaEmission(FragCoverage), vec3(1.0)), 1.0);
+#elif defined(OVERLAY_WATER)
     float Fresnel = 0.04 + 0.96 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
     vec3 Color = ShadeSurface(Material.WaterFilmTint.rgb, N, V, Material.DemoEffectOptions.w,
                               Material.AmbientLight, 0.0, FragCoverage);

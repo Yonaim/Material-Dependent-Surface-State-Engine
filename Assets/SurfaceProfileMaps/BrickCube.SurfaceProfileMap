@@ -1,9 +1,7 @@
 {
   "type": "SurfaceProfileMap",
   "version": 1,
-  "profiles": [
-    "DemoWaterFilm.SRProfile"
-  ],
+  "profiles": ["../SurfaceProfiles/BrickCube.SRProfile"],
   "surfaces": [
     { "surfaceId": 0, "profileIndex": 0 },
     { "surfaceId": 1, "profileIndex": 0 },

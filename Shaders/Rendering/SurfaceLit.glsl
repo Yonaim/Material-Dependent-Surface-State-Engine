@@ -3,6 +3,7 @@
 #include "Rendering/Effects/Mud.glsl"
 #include "Rendering/Effects/Wetness.glsl"
 #include "Rendering/Effects/WaterFilm.glsl"
+#include "Rendering/Effects/Lava.glsl"
 #include "Rendering/Lighting.glsl"
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -54,13 +55,16 @@ void main()
     float Roughness = Material.DemoOptions.x;
     float Wetness = 0.0;
     float WaterFilm = 0.0;
+    float Lava = 0.0;
     if (Material.DemoStateChannels.w != 0u)
     {
         Wetness = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.x, Material.StateChannelCount);
         float Mud = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.y, Material.StateChannelCount);
         WaterFilm = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.z, Material.StateChannelCount);
+        Lava = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoExtraStateChannels.x, Material.StateChannelCount);
 #ifndef BASE_SURFACE_LIT
         ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
+        ApplyLava(Lava, Color.rgb, Roughness);
 #endif
         ApplyWetness(Wetness, Color.rgb, Roughness, Material.DemoOptions.y,
                      Material.WetnessTint.rgb, Material.DemoEffectOptions.x);
@@ -75,4 +79,8 @@ void main()
                                Roughness, Material.AmbientLight,
                                Wetness * Material.DemoEffectOptions.x, WaterFilm,
                                Material.DemoEffectOptions.y), Color.a);
+#ifndef BASE_SURFACE_LIT
+    if (Material.DemoStateChannels.w != 0u)
+        OutColor.rgb = min(OutColor.rgb + LavaEmission(Lava), vec3(1.0));
+#endif
 }

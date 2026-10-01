@@ -28,9 +28,9 @@ void main()
     {
         uint T = InSamples[K];
         if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length())) continue;
-        Height += InWeights[K] * Computed.Values[T].PositionAndHeight.w;
+        Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
         // Retain authored smooth/hard normals at source corners, adding the sampled Meso/height change.
-        NormalOffset += InWeights[K] * (Computed.Values[T].Normal.xyz - Normals.Values[T].xyz);
+        NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
         Weight += InWeights[K];
     }
     vec3 Normal = InNormal + NormalOffset;
