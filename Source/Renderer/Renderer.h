@@ -48,6 +48,25 @@ namespace MDSS
         float MudOverlayDrawGpuMilliseconds = -1.0F;
         float WaterFilmOverlayDrawGpuMilliseconds = -1.0F;
         float OverlayPreparationGpuMilliseconds = -1.0F;
+        float OverlayGeometryGpuMilliseconds = -1.0F;
+        float OverlaySmoothingGpuMilliseconds = -1.0F;
+        float OverlaySidesGpuMilliseconds = -1.0F;
+        float OverlaySidesPreBarrierGpuMilliseconds = -1.0F;
+        float OverlaySidesDispatchGpuMilliseconds = -1.0F;
+        float OverlaySidesPostBarrierGpuMilliseconds = -1.0F;
+        float OverlayBoundarySearchGpuMilliseconds = -1.0F;
+        float OverlaySideSegmentBuildGpuMilliseconds = -1.0F;
+        float OverlaySidesInterPassBarrierGpuMilliseconds = -1.0F;
+        float OverlayCoverageSampleGpuMilliseconds = -1.0F;
+        float SceneSetupGpuMilliseconds = -1.0F;
+        float RenderPassBeginGpuMilliseconds = -1.0F;
+        float RenderPassColorStageGpuMilliseconds = -1.0F;
+        float RenderPassDepthStageGpuMilliseconds = -1.0F;
+        float ViewportSetupGpuMilliseconds = -1.0F;
+        float UIDrawGpuMilliseconds = -1.0F;
+        float RenderPassEndGpuMilliseconds = -1.0F;
+        float SceneBetweenDrawsGpuMilliseconds = -1.0F;
+        float SceneTailGpuMilliseconds = -1.0F;
         float FrameFenceWaitCpuMilliseconds = -1.0F;
         float AcquireCpuMilliseconds = -1.0F;
         float CommandRecordCpuMilliseconds = -1.0F;
@@ -155,6 +174,10 @@ namespace MDSS
         [[nodiscard]] float GetLastSolverPass1GpuMilliseconds() const noexcept;
         [[nodiscard]] float GetLastSolverPass2GpuMilliseconds() const noexcept;
         [[nodiscard]] const TRendererProfilingStats& GetProfilingStats() const noexcept { return ProfilingStats; }
+        [[nodiscard]] bool AreRenderPassSubstageTimingsReliable() const noexcept
+        {
+            return bRenderPassSubstageTimingsReliable;
+        }
 
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         void                         SetRenderViewMode(TRenderViewMode Mode);
@@ -254,8 +277,8 @@ namespace MDSS
         TSurfaceStateSystem&                 SurfaceStates;
         TSwapchain                           SwapchainData;
         VkFormat                            DepthFormat = VK_FORMAT_UNDEFINED;
-        TGPUImage                            DepthImage;
-        TGPUImageView                        DepthImageView;
+        std::vector<std::unique_ptr<TGPUImage>> DepthImages;
+        std::vector<std::unique_ptr<TGPUImageView>> DepthImageViews;
         TRenderPass                          MainRenderPass;
         VkDescriptorSetLayout               MaterialDescriptorSetLayout = VK_NULL_HANDLE;
         TGraphicsPipeline                    StaticMeshPipeline;
@@ -311,13 +334,15 @@ namespace MDSS
         VkQueryPool TimestampQueryPool = VK_NULL_HANDLE;
         std::array<bool, TRenderContext::MaxFramesInFlight> bTimestampQueriesSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight> SolverTimestampStepsSubmitted{};
+        std::array<std::uint32_t, TRenderContext::MaxFramesInFlight> OverlayTimestampLayersSubmitted{};
         TSimulationClock SimulationClock;
         std::uint32_t LastSimulationStepCount = 0;
         float MaximumSimulationStep = FixedSimulationStepSeconds;
-        std::uint32_t TimestampQueriesPerFrame = 14;
+        std::uint32_t TimestampQueriesPerFrame = 21;
         std::uint32_t SolverTimestampSlotCount = 0;
         float TimestampPeriodNanoseconds = 0.0F;
         std::uint32_t TimestampValidBits = 0;
+        bool bRenderPassSubstageTimingsReliable = true;
         float LastRenderGpuMilliseconds = -1.0F;
         float LastSolverGpuMilliseconds = -1.0F;
         float LastSolverPass1GpuMilliseconds = -1.0F;

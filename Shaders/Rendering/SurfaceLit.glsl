@@ -49,6 +49,7 @@ void main()
     MapN.xy *= Material.NormalStrength;
     N = normalize(mat3(T,B,N) * normalize(MapN));
 #endif
+    if (!gl_FrontFacing) N = -N;
     vec4 Color = texture(BaseColorTexture, FragUV) * Material.BaseColor;
     float Roughness = Material.DemoOptions.x;
     float Wetness = 0.0;

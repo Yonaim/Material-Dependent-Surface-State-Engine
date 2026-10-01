@@ -1,0 +1,112 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+layout(local_size_x = 64) in;
+struct TSideSegment
+{
+    vec4 BaseA;
+    vec4 TopA;
+    vec4 BaseB;
+    vec4 TopB;
+    vec4 Inside;
+};
+layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices
+{
+    uint Values[];
+} MeshIndices;
+layout(set = 2, binding = 2, std430) readonly buffer TBoundaryEdges
+{
+    uvec4 Values[];
+} BoundaryEdges;
+layout(set = 2, binding = 3, std430) writeonly buffer TSegments
+{
+    TSideSegment Values[];
+} Segments;
+layout(set = 2, binding = 4, std430) readonly buffer TCoverageValues
+{
+    float Values[];
+} Coverage;
+layout(push_constant) uniform TPush
+{
+    uint TriangleCount;
+    uint BoundaryCount;
+    uint Channel;
+    uint Channels;
+} Push;
+
+const float Cutoff = 0.02;
+
+void WritePlan(uint Slot, uvec4 VertexIndices, uvec4 Metadata, vec2 Parameters)
+{
+    // Store the temporary plan in the final segment slot to avoid another large buffer.
+    Segments.Values[Slot].BaseA = uintBitsToFloat(VertexIndices);
+    Segments.Values[Slot].TopA = uintBitsToFloat(Metadata);
+    Segments.Values[Slot].BaseB = vec4(Parameters, 0.0, 0.0);
+}
+
+void WriteInactivePlan(uint Slot)
+{
+    WritePlan(Slot, uvec4(0u), uvec4(0u), vec2(0.0));
+}
+
+void main()
+{
+    uint Slot = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (Slot >= Push.TriangleCount + Push.BoundaryCount) return;
+    WriteInactivePlan(Slot);
+
+    if (Slot < Push.TriangleCount)
+    {
+        uint Offset = Slot * 3u;
+        if (Offset + 2u >= uint(MeshIndices.Values.length())) return;
+        uvec3 Indices = uvec3(MeshIndices.Values[Offset], MeshIndices.Values[Offset + 1u],
+                              MeshIndices.Values[Offset + 2u]);
+        if (Indices.x >= uint(Coverage.Values.length()) || Indices.y >= uint(Coverage.Values.length()) ||
+            Indices.z >= uint(Coverage.Values.length())) return;
+        vec3 VertexCoverage = vec3(Coverage.Values[Indices.x], Coverage.Values[Indices.y],
+                                   Coverage.Values[Indices.z]);
+        uint CrossingEdges[2];
+        float CrossingParameters[2];
+        uint CrossingCount = 0u;
+        uint InsideVertex = 0u;
+        for (uint I = 0u; I < 3u; ++I)
+        {
+            uint J = (I + 1u) % 3u;
+            bool A = VertexCoverage[I] > Cutoff;
+            bool B = VertexCoverage[J] > Cutoff;
+            if (A) InsideVertex = I;
+            if (A != B && CrossingCount < 2u)
+            {
+                float Denominator = VertexCoverage[J] - VertexCoverage[I];
+                CrossingEdges[CrossingCount] = I;
+                CrossingParameters[CrossingCount] =
+                    clamp((Cutoff - VertexCoverage[I]) / Denominator, 0.0, 1.0);
+                ++CrossingCount;
+            }
+        }
+        if (CrossingCount == 2u)
+            WritePlan(Slot, uvec4(Indices, InsideVertex),
+                      uvec4(1u, 0u, CrossingEdges[0], CrossingEdges[1]),
+                      vec2(CrossingParameters[0], CrossingParameters[1]));
+        return;
+    }
+
+    uvec4 Edge = BoundaryEdges.Values[Slot - Push.TriangleCount];
+    if (Edge.x >= uint(Coverage.Values.length()) || Edge.y >= uint(Coverage.Values.length())) return;
+    float CoverageA = Coverage.Values[Edge.x];
+    float CoverageB = Coverage.Values[Edge.y];
+    bool AActive = CoverageA > Cutoff;
+    bool BActive = CoverageB > Cutoff;
+    if (!AActive && !BActive) return;
+
+    float ParameterA = 0.0;
+    float ParameterB = 1.0;
+    if (AActive != BActive)
+    {
+        float Denominator = CoverageB - CoverageA;
+        float Crossing = clamp((Cutoff - CoverageA) / Denominator, 0.0, 1.0);
+        if (AActive) ParameterB = Crossing;
+        else ParameterA = Crossing;
+    }
+    WritePlan(Slot, uvec4(Edge.xyz, 0u), uvec4(1u, 1u, 0u, 0u),
+              vec2(ParameterA, ParameterB));
+}

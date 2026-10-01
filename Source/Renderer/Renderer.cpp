@@ -38,6 +38,40 @@ namespace MDSS
 {
     namespace
     {
+        constexpr std::uint32_t FixedTimestampQueryCount = 21U;
+
+        std::vector<std::unique_ptr<TGPUImage>> CreateDepthImages(VkPhysicalDevice PhysicalDevice, VkDevice Device,
+            VkExtent2D Extent, VkFormat Format, std::size_t Count)
+        {
+            std::vector<std::unique_ptr<TGPUImage>> Images;
+            Images.reserve(Count);
+            for (std::size_t Index = 0; Index < Count; ++Index)
+                Images.push_back(std::make_unique<TGPUImage>(PhysicalDevice, Device, Extent, Format,
+                    VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+            return Images;
+        }
+
+        std::vector<std::unique_ptr<TGPUImageView>> CreateDepthImageViews(VkDevice Device,
+            const std::vector<std::unique_ptr<TGPUImage>>& Images, VkFormat Format)
+        {
+            std::vector<std::unique_ptr<TGPUImageView>> Views;
+            Views.reserve(Images.size());
+            for (const auto& Image : Images)
+                Views.push_back(std::make_unique<TGPUImageView>(Device, Image->GetHandle(), Format,
+                    VK_IMAGE_ASPECT_DEPTH_BIT));
+            return Views;
+        }
+
+        std::vector<VkImageView> GetDepthImageViewHandles(
+            const std::vector<std::unique_ptr<TGPUImageView>>& Views)
+        {
+            std::vector<VkImageView> Handles;
+            Handles.reserve(Views.size());
+            for (const auto& View : Views) Handles.push_back(View->GetHandle());
+            return Handles;
+        }
+
         struct TStaticMeshPushConstants
         {
             glm::mat4 Model{1.0F};
@@ -284,7 +318,8 @@ namespace MDSS
                 {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/StaticMesh.frag.spv", "main"},
             };
             Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            Config.CullMode = VK_CULL_MODE_BACK_BIT;
+            // Demo meshes can turn fully upside down; both sides must remain visible.
+            Config.CullMode = VK_CULL_MODE_NONE;
             Config.FrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
             Config.bDepthTestEnabled = true;
             Config.bDepthWriteEnabled = true;
@@ -336,6 +371,7 @@ namespace MDSS
         TGraphicsPipelineConfig BuildWireframePipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
             TGraphicsPipelineConfig Config = BuildStaticMeshPipelineConfig(MaterialLayout);
+            Config.CullMode = VK_CULL_MODE_BACK_BIT;
             Config.PolygonMode = VK_POLYGON_MODE_LINE;
             Config.bDynamicLineWidth = true;
             return Config;
@@ -405,7 +441,7 @@ namespace MDSS
                 (bSide ? "/Rendering/OverlaySide.vert.spv" : "/Rendering/OverlayTop.vert.spv");
             Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) +
                 (bWater ? "/Rendering/OverlayWater.frag.spv" : "/Rendering/OverlayMud.frag.spv");
-            Config.CullMode = bSide ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+            Config.CullMode = VK_CULL_MODE_NONE;
             Config.bDepthWriteEnabled = !bWater;
             Config.bBlendingEnabled = bWater;
             if (bSide)
@@ -498,14 +534,9 @@ namespace MDSS
         : Context(Context), TargetWindow(TWindow), Assets(Assets), SurfaceStates(SurfaceStates),
           SwapchainData(Context, TWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
-          DepthImage(Context.GetPhysicalDevice(),
-                     Context.GetDevice(),
-                     SwapchainData.GetExtent(),
-                     DepthFormat,
-                     VK_IMAGE_TILING_OPTIMAL,
-                     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-          DepthImageView(Context.GetDevice(), DepthImage.GetHandle(), DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT),
+          DepthImages(CreateDepthImages(Context.GetPhysicalDevice(), Context.GetDevice(),
+              SwapchainData.GetExtent(), DepthFormat, SwapchainData.GetImageViews().size())),
+          DepthImageViews(CreateDepthImageViews(Context.GetDevice(), DepthImages, DepthFormat)),
           MainRenderPass(Context.GetDevice(), SwapchainData.GetImageFormat(), DepthFormat),
           MaterialDescriptorSetLayout(CreateMaterialDescriptorSetLayout(Context.GetDevice())),
           StaticMeshPipeline(Context.GetDevice(),
@@ -520,13 +551,20 @@ namespace MDSS
                            MainRenderPass.GetHandle(),
                            SwapchainData.GetExtent(),
                            SwapchainData.GetImageViews(),
-                           DepthImageView.GetHandle()),
+                           GetDepthImageViewHandles(DepthImageViews)),
           FrameContext(Context)
     {
         VkPhysicalDeviceFeatures DeviceFeatures{};
         vkGetPhysicalDeviceFeatures(Context.GetPhysicalDevice(), &DeviceFeatures);
-        VkPhysicalDeviceProperties DeviceProperties{};
-        vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &DeviceProperties);
+        VkPhysicalDeviceDriverProperties DriverProperties{};
+        DriverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+        VkPhysicalDeviceProperties2 DevicePropertiesWithDriver{};
+        DevicePropertiesWithDriver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        DevicePropertiesWithDriver.pNext = &DriverProperties;
+        vkGetPhysicalDeviceProperties2(Context.GetPhysicalDevice(), &DevicePropertiesWithDriver);
+        const VkPhysicalDeviceProperties& DeviceProperties = DevicePropertiesWithDriver.properties;
+        bRenderPassSubstageTimingsReliable =
+            DriverProperties.driverID != VK_DRIVER_ID_MOLTENVK || DeviceProperties.vendorID != 0x106BU;
         bSupportsWireframeLineWidth = DeviceFeatures.wideLines == VK_TRUE;
         if (bSupportsWireframeLineWidth)
         {
@@ -678,7 +716,9 @@ namespace MDSS
         if (TimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
         {
             const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
-            const std::uint32_t QueryCount = SolverTimestampStepsSubmitted[FrameIndex] * SolverTimestampSlotCount * 8U + 14U;
+            const std::uint32_t OverlayQueryOffset =
+                FixedTimestampQueryCount + SolverTimestampStepsSubmitted[FrameIndex] * SolverTimestampSlotCount * 8U;
+            const std::uint32_t QueryCount = OverlayQueryOffset + OverlayTimestampLayersSubmitted[FrameIndex] * 12U;
             std::vector<std::uint64_t> Timestamps(QueryCount, 0U);
             const VkResult QueryResult = vkGetQueryPoolResults(Context.GetDevice(),
                                                                TimestampQueryPool,
@@ -700,14 +740,66 @@ namespace MDSS
                     return static_cast<float>(static_cast<double>(ElapsedTicks) * TimestampPeriodNanoseconds / 1.0e6);
                 };
                 ProfilingStats.RenderPreparationGpuMilliseconds = ToMilliseconds(Timestamps[0], Timestamps[1]);
-                ProfilingStats.SceneDrawGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[3]);
+                ProfilingStats.SceneDrawGpuMilliseconds = ToMilliseconds(Timestamps[2],
+                    Timestamps[bRenderPassSubstageTimingsReliable ? 3U : 20U]);
                 ProfilingStats.TexelInspectorGpuMilliseconds = ToMilliseconds(Timestamps[4], Timestamps[5]);
                 ProfilingStats.BaseMeshDrawGpuMilliseconds = ToMilliseconds(Timestamps[6], Timestamps[7]);
                 ProfilingStats.MudOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[8], Timestamps[9]);
                 ProfilingStats.WaterFilmOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[10], Timestamps[11]);
                 ProfilingStats.OverlayPreparationGpuMilliseconds = ToMilliseconds(Timestamps[12], Timestamps[13]);
+                ProfilingStats.SceneSetupGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[6]);
+                ProfilingStats.RenderPassBeginGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[14]);
+                ProfilingStats.RenderPassColorStageGpuMilliseconds = ToMilliseconds(Timestamps[15], Timestamps[16]);
+                ProfilingStats.RenderPassDepthStageGpuMilliseconds = ToMilliseconds(Timestamps[17], Timestamps[18]);
+                ProfilingStats.ViewportSetupGpuMilliseconds = ToMilliseconds(Timestamps[14], Timestamps[6]);
+                ProfilingStats.UIDrawGpuMilliseconds = ToMilliseconds(Timestamps[3], Timestamps[19]);
+                ProfilingStats.RenderPassEndGpuMilliseconds = ToMilliseconds(Timestamps[19], Timestamps[20]);
+                ProfilingStats.SceneBetweenDrawsGpuMilliseconds =
+                    ToMilliseconds(Timestamps[7], Timestamps[8]) +
+                    ToMilliseconds(Timestamps[9], Timestamps[10]);
+                ProfilingStats.SceneTailGpuMilliseconds = ToMilliseconds(Timestamps[11], Timestamps[3]);
+                ProfilingStats.OverlayGeometryGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlaySmoothingGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlaySidesGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlaySidesPreBarrierGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlaySidesDispatchGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlaySidesPostBarrierGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlayBoundarySearchGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlaySideSegmentBuildGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlaySidesInterPassBarrierGpuMilliseconds = 0.0F;
+                ProfilingStats.OverlayCoverageSampleGpuMilliseconds = 0.0F;
+                for (std::uint32_t Layer = 0; Layer < OverlayTimestampLayersSubmitted[FrameIndex]; ++Layer)
+                {
+                    const std::uint32_t LayerQuery = OverlayQueryOffset + Layer * 12U;
+                    ProfilingStats.OverlayGeometryGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery], Timestamps[LayerQuery + 1U]);
+                    ProfilingStats.OverlaySmoothingGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 2U], Timestamps[LayerQuery + 3U]);
+                    ProfilingStats.OverlaySidesGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 4U], Timestamps[LayerQuery + 11U]);
+                    ProfilingStats.OverlaySidesPreBarrierGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 4U], Timestamps[LayerQuery + 5U]);
+                    ProfilingStats.OverlayCoverageSampleGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 5U], Timestamps[LayerQuery + 6U]);
+                    ProfilingStats.OverlayBoundarySearchGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 7U], Timestamps[LayerQuery + 8U]);
+                    ProfilingStats.OverlaySidesInterPassBarrierGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 6U], Timestamps[LayerQuery + 7U]) +
+                        ToMilliseconds(Timestamps[LayerQuery + 8U], Timestamps[LayerQuery + 9U]);
+                    ProfilingStats.OverlaySideSegmentBuildGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 9U], Timestamps[LayerQuery + 10U]);
+                    ProfilingStats.OverlaySidesDispatchGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 5U], Timestamps[LayerQuery + 6U]) +
+                        ToMilliseconds(Timestamps[LayerQuery + 7U], Timestamps[LayerQuery + 8U]) +
+                        ToMilliseconds(Timestamps[LayerQuery + 9U], Timestamps[LayerQuery + 10U]);
+                    ProfilingStats.OverlaySidesPostBarrierGpuMilliseconds +=
+                        ToMilliseconds(Timestamps[LayerQuery + 10U], Timestamps[LayerQuery + 11U]);
+                }
                 LastRenderGpuMilliseconds = ProfilingStats.RenderPreparationGpuMilliseconds +
-                                           ProfilingStats.SceneDrawGpuMilliseconds;
+                    ProfilingStats.SceneDrawGpuMilliseconds;
+                if (bRenderPassSubstageTimingsReliable)
+                    LastRenderGpuMilliseconds += ProfilingStats.UIDrawGpuMilliseconds +
+                        ProfilingStats.RenderPassEndGpuMilliseconds;
                 LastSolverPass1GpuMilliseconds = 0.0F;
                 LastSolverPass2GpuMilliseconds = 0.0F;
                 ProfilingStats.AccumulationGeometryGpuMilliseconds = 0.0F;
@@ -716,7 +808,7 @@ namespace MDSS
                 {
                     for (std::uint32_t Slot = 0; Slot < SolverTimestampSlotCount * SolverTimestampStepsSubmitted[FrameIndex]; ++Slot)
                     {
-                        const std::uint32_t SlotQuery = 14U + Slot * 8U;
+                        const std::uint32_t SlotQuery = FixedTimestampQueryCount + Slot * 8U;
                         ProfilingStats.AccumulationGeometryGpuMilliseconds +=
                             ToMilliseconds(Timestamps[SlotQuery], Timestamps[SlotQuery + 1U]);
                         ProfilingStats.TransferWeightGpuMilliseconds +=
@@ -736,6 +828,7 @@ namespace MDSS
             }
             bTimestampQueriesSubmitted[FrameIndex] = false;
             SolverTimestampStepsSubmitted[FrameIndex] = 0;
+            OverlayTimestampLayersSubmitted[FrameIndex] = 0;
         }
 
         const bool bResetSolverState = DebugInterface.ConsumeSolverResetRequest();
@@ -1101,10 +1194,10 @@ namespace MDSS
         DestroyRenderFinishedSemaphores();
 
         // 프레임버퍼가 스왑체인 이미지 뷰와 깊이 이미지 뷰를 참조하므로,
-        // 두 이미지 뷰를 다시 만들기 전에 프레임버퍼를 먼저 해제한다.
+        // 이미지 뷰를 다시 만들기 전에 프레임버퍼를 먼저 해제한다.
         MainFramebuffers.Reset();
-        DepthImageView.Reset();
-        DepthImage.Reset();
+        DepthImageViews.clear();
+        DepthImages.clear();
 
         const VkFormat PreviousColorFormat = SwapchainData.GetImageFormat();
         SwapchainData.Recreate(Context, TargetWindow);
@@ -1116,17 +1209,13 @@ namespace MDSS
                 "TSwapchain color format changed during resize. TRenderPass/Pipeline recreation is required.");
         }
 
-        DepthImage.Recreate(Context.GetPhysicalDevice(),
-                            SwapchainData.GetExtent(),
-                            DepthFormat,
-                            VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        DepthImageView.Recreate(DepthImage.GetHandle(), DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        DepthImages = CreateDepthImages(Context.GetPhysicalDevice(), Context.GetDevice(),
+            SwapchainData.GetExtent(), DepthFormat, SwapchainData.GetImageViews().size());
+        DepthImageViews = CreateDepthImageViews(Context.GetDevice(), DepthImages, DepthFormat);
         MainFramebuffers.Recreate(MainRenderPass.GetHandle(),
                                   SwapchainData.GetExtent(),
                                   SwapchainData.GetImageViews(),
-                                  DepthImageView.GetHandle());
+                                  GetDepthImageViewHandles(DepthImageViews));
 
         TargetWindow.ResetFramebufferResized();
         DebugInterface.OnSwapchainRecreated(Context, *this);
@@ -1430,6 +1519,7 @@ namespace MDSS
         SurfaceStates.SetRawFluxCacheEnabled(bEnabled);
         bTimestampQueriesSubmitted.fill(false);
         SolverTimestampStepsSubmitted.fill(0);
+        OverlayTimestampLayersSubmitted.fill(0);
         LastRenderGpuMilliseconds = LastSolverGpuMilliseconds = -1.0F;
         LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = -1.0F;
     }
@@ -1568,15 +1658,16 @@ namespace MDSS
             return;
         }
         if (SolverInstanceCount > (std::numeric_limits<std::uint32_t>::max() /
-                                   TRenderContext::MaxFramesInFlight - 14U) /
-                                      (8U * MaxSimulationStepsPerFrame))
+                                   TRenderContext::MaxFramesInFlight - FixedTimestampQueryCount) /
+                                      (8U * MaxSimulationStepsPerFrame + 24U))
         {
             TLogger::Warning("TRenderer", "GPU timing query count exceeds the supported range.");
             return;
         }
 
         SolverTimestampSlotCount = static_cast<std::uint32_t>(SolverInstanceCount);
-        TimestampQueriesPerFrame = 14U + SolverTimestampSlotCount * 8U * MaxSimulationStepsPerFrame;
+        TimestampQueriesPerFrame = FixedTimestampQueryCount + SolverTimestampSlotCount *
+            (8U * MaxSimulationStepsPerFrame + 24U);
         VkQueryPoolCreateInfo QueryPoolInfo{};
         QueryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
         QueryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
@@ -1593,6 +1684,7 @@ namespace MDSS
         }
         bTimestampQueriesSubmitted.fill(false);
         SolverTimestampStepsSubmitted.fill(0);
+        OverlayTimestampLayersSubmitted.fill(0);
     }
 
     void TRenderer::CreateMaterialDescriptorResources()
@@ -1779,6 +1871,9 @@ namespace MDSS
         const float LitHeightDisplayScale = SceneData.GetLitHeightDisplayScale();
         UploadMaterialUniforms(FrameIndex, SceneData.GetMainCamera().GetPosition(), LitHeightDisplayScale);
         const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
+        const std::uint32_t OverlayQueryBase = QueryBase + FixedTimestampQueryCount +
+            static_cast<std::uint32_t>(SimulationSteps.size()) * SolverTimestampSlotCount * 8U;
+        OverlayTimestampLayersSubmitted[FrameIndex] = 0;
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdResetQueryPool(CommandBuffer, TimestampQueryPool, QueryBase, TimestampQueriesPerFrame);
@@ -1786,7 +1881,7 @@ namespace MDSS
         for (std::size_t Step = 0; Step < SimulationSteps.size(); ++Step)
         {
             SurfaceStates.RecordStep(CommandBuffer, SimulationSteps[Step], TimestampQueryPool,
-                QueryBase + 14U + static_cast<std::uint32_t>(Step) * SolverTimestampSlotCount * 8U);
+                QueryBase + FixedTimestampQueryCount + static_cast<std::uint32_t>(Step) * SolverTimestampSlotCount * 8U);
         }
 
         SimulationStepSerial += SimulationSteps.size();
@@ -1822,7 +1917,7 @@ namespace MDSS
             WaterOverlayTopPipeline && WaterOverlaySidePipeline;
         std::vector<std::array<bool, 2>> OverlayActive(SceneData.GetStaticMeshInstances().size(), {false, false});
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 12U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 12U);
         if (bTexelGeometry || bOverlayRendering)
         {
             const auto& Resources = SurfaceStates.GetGPUResources();
@@ -1851,9 +1946,21 @@ namespace MDSS
                 OverlayActive[Instance] = {bMud, bWater};
                 const auto RecordLayer = [&](TTexelGeometryPreview& Preview, TStateId Channel)
                 {
+                    const std::uint32_t LayerQuery = OverlayQueryBase +
+                        OverlayTimestampLayersSubmitted[FrameIndex] * 12U;
+                    if (TimestampQueryPool != VK_NULL_HANDLE)
+                        vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool, LayerQuery);
                     Preview.Record(CommandBuffer, Instance, *Descriptors,
                         static_cast<std::uint32_t>(Shared->GetTexelCount()), Channel, ChannelCount,
                         LitHeightDisplayScale, 1.0F, Model, bStateAB, true);
+                    if (TimestampQueryPool != VK_NULL_HANDLE)
+                    {
+                        vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool, LayerQuery + 1U);
+                        vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool, LayerQuery + 2U);
+                    }
                     VkDescriptorSet GeometrySet = Preview.GetOutputSet(Instance);
                     if (DemoEffects.bHeightFieldSmoothing)
                     {
@@ -1862,8 +1969,17 @@ namespace MDSS
                             GeometrySet, Preview.GetOutputBuffer(Instance), bStateAB);
                         GeometrySet = HeightFieldSmoothing->GetOutputSet(Instance, Channel);
                     }
+                    if (TimestampQueryPool != VK_NULL_HANDLE)
+                    {
+                        vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool, LayerQuery + 3U);
+                        vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                            TimestampQueryPool, LayerQuery + 4U);
+                    }
                     OverlaySides->Record(CommandBuffer, Instance, Channel, ChannelCount, *Shared, *Descriptors,
-                        GeometrySet, bStateAB);
+                        GeometrySet, bStateAB, TimestampQueryPool, LayerQuery + 4U);
+                    if (TimestampQueryPool != VK_NULL_HANDLE)
+                        ++OverlayTimestampLayersSubmitted[FrameIndex];
                 };
                 if (bMud) RecordLayer(*MudLayerGeometry, DemoBindings.Mud);
                 if (bWater) RecordLayer(*WaterLayerGeometry, DemoBindings.WaterFilm);
@@ -1888,8 +2004,22 @@ namespace MDSS
         RenderPassInfo.pClearValues = ClearValues.data();
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 2U);
+        {
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 2U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                TimestampQueryPool, QueryBase + 15U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                TimestampQueryPool, QueryBase + 17U);
+        }
         vkCmdBeginRenderPass(CommandBuffer, &RenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                TimestampQueryPool, QueryBase + 16U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                TimestampQueryPool, QueryBase + 18U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 14U);
+        }
         const bool bShowSurfaceDebug = ViewMode >= TRenderViewMode::SurfaceStateHeatmap;
         const bool bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
         const bool bWireframe = ViewMode == TRenderViewMode::Wireframe;
@@ -1942,7 +2072,7 @@ namespace MDSS
 
         const TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates.GetGPUResources();
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 6U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 6U);
         std::size_t                       SceneIndex = 0;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
@@ -2150,21 +2280,21 @@ namespace MDSS
                 }
             };
             if (TimestampQueryPool != VK_NULL_HANDLE)
-                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
             DrawLayer(false);
             if (TimestampQueryPool != VK_NULL_HANDLE)
                 vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
             if (TimestampQueryPool != VK_NULL_HANDLE)
-                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
+                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
             DrawLayer(true);
             if (TimestampQueryPool != VK_NULL_HANDLE)
                 vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 11U);
         }
         else if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 11U);
         }
 
@@ -2226,8 +2356,12 @@ namespace MDSS
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 3U);
         DebugInterface.Render(CommandBuffer);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 19U);
 
         vkCmdEndRenderPass(CommandBuffer);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 20U);
         if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to record Vulkan command buffer.");

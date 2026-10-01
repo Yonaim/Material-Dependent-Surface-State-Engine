@@ -13,6 +13,7 @@ void main()
     const float Cutoff = 0.02;
     if (FragCoverage <= Cutoff) discard;
     vec3 N = normalize(FragNormal);
+    if (!gl_FrontFacing) N = -N;
     vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
 #ifdef OVERLAY_WATER
     float Fresnel = 0.04 + 0.96 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
