@@ -35,7 +35,7 @@
 
 | Group | Debug View | 표시 내용 |
 |---|---|---|
-| Surface | State Heatmap | Saturation (`State / (Profile Capacity × AreaScale)`) 또는 Raw State |
+| Surface | State Heatmap | 선택 State의 용량 대비 비율 (`State / (Profile Capacity × AreaScale)`) |
 | Surface | Validity, Surface ID | 유효 texel, Surface 구분 |
 | Surface | Neighbor Count, UV Seam | texel 이웃 수, UV seam 연결 |
 | Geometry | Macro Geometry, Meso | 표면 형상, Normal Map 기반 meso 정보 |
@@ -44,8 +44,8 @@
 | Texel | Texel Grid, Texel Area Heatmap | Simulation UV 격자, 표면 면적 분포 |
 | Solver | Outgoing Flux Scale, Solver Transfer Weights | Solver 전달 관련 값 |
 
-- Saturation 표시 범위는 `[0,1]`이며 Capacity 초과량은 같은 색이다. Raw State는 texel 총량을 조절 가능한 고정 범위로 표시한다. 범위 초과는 주황색이다. 표시 결과는 Solver에 입력되지 않는다.
-- Accumulation의 높이 범위는 mesh-local 단위이며 공통 `Lit height display scale`은 무차원 배율이다. Cavity Fill만 0–100% 고정 범위다. 이 렌더 배율은 Solver의 형상에 반영하지 않는다.
+- State Heatmap은 용량 기준 0–100%를 표시하고 초과량은 주황색으로 표시한다. 실제 총량은 Texel Inspector에서 확인한다. 표시 결과는 Solver에 입력되지 않는다.
+- Accumulation 높이 색은 선택 Profile의 Capacity로 제한된 높이를 100% 기준으로 정규화한다. Total/Cavity/Following은 각 성분의 기준 높이를 사용하며, Cavity Fill은 cavity depth 대비 0–100%다. `Display scale`은 형상 표시만 과장하며 색상 기준과 Solver 형상에는 반영하지 않는다.
 - 적층 뷰는 선택 State를 따로 미리보기한다. Simulation의 `Accumulation feedback`은 지원되는 모든 적층 State를 합산하는 별도 Solver 옵션이다 ([[../05_ADR/0035-Accumulation-Debug-and-Texel-Inspector|ADR 0035]]).
 - Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[../05_ADR/0036-Texel-Geometry-Preview|ADR 0036]]).
 - Wireframe 뷰 설명 상자에서 선을 흰색으로 통일할지 선택하고, GPU가 wide lines를 지원하면 선 굵기도 조절한다. 기본 굵기는 2 px다.

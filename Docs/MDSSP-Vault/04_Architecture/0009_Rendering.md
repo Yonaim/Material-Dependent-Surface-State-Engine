@@ -39,7 +39,7 @@ flowchart LR
 
 State는 Capacity를 넘을 수 있다 ([[05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]). Heatmap과 외관 remap은 필요하면 `clamp(State / Capacity, 0, 1)`을 표시용으로 사용하되 GPU State 및 Transport용 Saturation은 바꾸지 않는다.
 
-- Saturation 표시에서 1 이상은 같은 최상위 색이다. Raw State 옵션은 고정 범위의 texel 총량을 표시하고 범위 초과를 구분한다.
+- State Heatmap은 선택 State의 `State / (Profile Capacity × AreaScale)`를 표시한다. 100% 초과는 주황색으로 구분한다. 실제 총량은 Texel Inspector에서 확인한다.
 - Shader 변경과 선택 GPU 회귀 fixture는 통과했다. 5주차 통합 검증과 timestep 비교는 대기 중이다.
 - Wetness·Mud의 Lit 데모 반응과 옵션형 Solver 적층 형상 피드백은 구현됐다. 피드백은 기본 OFF이며, 최종 물리 재질 모델은 미구현이다.
 
