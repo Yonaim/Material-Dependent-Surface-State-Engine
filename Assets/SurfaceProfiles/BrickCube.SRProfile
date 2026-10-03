@@ -42,14 +42,14 @@
     "lava": {
       "stateCapacity": 2.0,
       "inputFactor": 1.0,
-      "saturationSpreadFactor": 0.008,
-      "gravityFlowFactor": 0.15,
+      "saturationSpreadFactor": 1.0,
+      "gravityFlowFactor": 0.2,
       "decayRate": 0.0,
       "cavityDecayProtectionFactor": 1.0,
-      "cavityExitResistanceFactor": 0.98,
-      "accumulationFactor": 0.8,
+      "cavityExitResistanceFactor": 1.0,
+      "accumulationFactor": 0.08,
       "cavityFillFactor": 0.9,
-      "thicknessPerAmount": 0.02
+      "thicknessPerAmount": 0.0
     }
   },
   "transitions": []
