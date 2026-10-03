@@ -1,5 +1,7 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
+#define SURFACE_DEBUG_SET 0
+#include "Surface/SurfaceStateData.glsl"
 #include "Debug/TexelGeometryData.glsl"
 layout(local_size_x = 64) in;
 shared uint ActiveTrianglesInGroup;
@@ -94,16 +96,20 @@ TPoint ReadGeometryPoint(uint Index)
 {
     TOverlayVertex V = MeshVertices.Values[Index];
     TPoint P;
-    P.Base = V.Position.xyz;
     P.UV = V.UVSurface.xy;
     float Height = 0.0;
+    float MesoHeight = 0.0;
     for (uint K = 0u; K < 4u; ++K)
     {
         uint Texel = V.Samples[K];
-        if (V.Weights[K] > 0.0 && Texel < uint(Computed.Values.length()))
+        if (V.Weights[K] <= 0.0) continue;
+        if (Texel < uint(Computed.Values.length()))
             Height += V.Weights[K] * Computed.Values[Texel].HeightAndNormal.x;
+        if (Texel < uint(GeometryScalars.Values.length()))
+            MesoHeight += V.Weights[K] * GeometryScalars.Values[Texel].MesoVirtualHeight;
     }
-    P.Top = P.Base + V.DisplacementNormal.xyz * Height;
+    P.Base = V.Position.xyz + V.DisplacementNormal.xyz * MesoHeight;
+    P.Top = V.Position.xyz + V.DisplacementNormal.xyz * Height;
     return P;
 }
 
@@ -226,5 +232,5 @@ void main()
     TPoint A = Interpolate(EdgeA, EdgeB, ParameterA);
     TPoint B = Interpolate(EdgeA, EdgeB, ParameterB);
     WriteSegment(uint(DrawCommands.Values.length()) - 2u, A, B,
-                 MeshVertices.Values[Edge.z].Position.xyz, MeshVertices.Values[Edge.x].UVSurface.w);
+                 ReadGeometryPoint(Edge.z).Base, MeshVertices.Values[Edge.x].UVSurface.w);
 }

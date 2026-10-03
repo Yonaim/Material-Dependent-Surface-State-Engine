@@ -5,6 +5,7 @@
 #include "AssetManager/Assets/TextureAsset.h"
 #include "Renderer/AccumulationOverlaySides.h"
 #include "Renderer/GraphicsPipeline.h"
+#include "Renderer/HeightFieldSmoothing.h"
 #include "Renderer/Renderer.h"
 #include "SurfaceStateSystem/Debug/TexelInspector.h"
 #include "SurfaceStateSystem/Debug/TexelGeometryPreview.h"
@@ -225,6 +226,124 @@ namespace MDSS::Tests
         for (std::size_t T = 0; T < Computed.size(); ++T)
             Require(glm::length(Computed[T].HeightAndNormal - UpdatedMeso[T].HeightAndNormal) < 1e-5F,
                 "Rebuilt meso normals must match the uncached result after a height update.");
+    }
+
+    void TestCavityFillDisplayBound(const TVulkanContext& Context)
+    {
+        const VkDevice Device = Context.GetDevice();
+        TSharedSurfaceGeometryData Geometry({{0, {2, 2}}});
+        for (std::uint32_t Texel = 0; Texel < 4; ++Texel)
+        {
+            auto& G = Geometry.GetTexels()[Texel];
+            G.Surface = G.Triangle = G.Chart = 0;
+            G.Position = {float(Texel % 2), float(Texel / 2), 0.0F};
+            G.Geometry.MesoVirtualHeight = -0.02F;
+            for (std::uint32_t Other = 0, Slot = 0; Other < 4; ++Other)
+                if (Other != Texel) G.NeighborIndices[Slot++] = Other;
+        }
+        Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(4, 0));
+        TSurfaceStateParameters Parameters;
+        Parameters.StateCapacity = 2.0F;
+        Parameters.AccumulationFactor = 0.15F;
+        Parameters.CavityFillFactor = 1.0F;
+        Parameters.ThicknessPerAmount = 0.01F;
+        TSurfaceResponseProfileData Profile;
+        Profile.States.emplace("mud", Parameters);
+        const TSurfaceStateRegistry Registry({Profile});
+        TSurfaceSharedGeometryGPUResources Shared(Context.GetPhysicalDevice(), Device, Geometry);
+        TSurfaceProfileGPUResources Profiles(Context.GetPhysicalDevice(), Device, {Profile}, Registry);
+        TSurfaceInstanceGPUResources Instance(Context.GetPhysicalDevice(), Device, 4, 1,
+            std::vector<float>(4 * SurfaceNeighborCount, 0.0F), {},
+            std::vector<float>(4, SurfaceStateReferenceArea));
+        TSurfaceStateDescriptorResources Descriptors(Device, Shared, Profiles, Instance);
+        TTexelInspector Inspector(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1);
+        const TSurfaceTexelSelection Selection{0, 0, 0, 0, {0, 0}, "mud"};
+        const auto Sample = [&](float DisplayScale)
+        {
+            auto Command = Context.GetCommands().BeginSingleTime();
+            Inspector.Record(Command, 0, Descriptors, Selection, 0, 1, DisplayScale,
+                             glm::mat4(1.0F), true, 1);
+            Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+            Inspector.CompleteFrame(0);
+            Require(Inspector.GetSnapshot().has_value(), "Cavity fill Inspector snapshot must complete.");
+            return *Inspector.GetSnapshot();
+        };
+        const auto Close = [](float A, float B) { return std::abs(A - B) < 1e-6F; };
+        std::array<float, 4> State{2.0F, 2.0F, 2.0F, 2.0F};
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        const auto Zero = Sample(0.0F);
+        Require(Close(Zero.Values[3].x, 0.0F) && Close(Zero.Values[3].w, -0.02F),
+                "Zero display scale must remove State height while preserving the Meso cavity.");
+        const auto Unit = Sample(1.0F);
+        Require(Close(Unit.Values[2].y, 0.3F) && Close(Unit.Values[3].x, 0.006F),
+                "Unit display scale must preserve the designed cavity fill fraction.");
+        const auto Amplified = Sample(4.0F);
+        Require(Close(Amplified.Values[3].x, 0.02F) && Close(Amplified.Values[3].w, 0.0F),
+                "Display exaggeration must not lift cavity fill above the macro surface.");
+        Require(Close(Sample(10.0F).Values[3].x, 0.02F),
+                "Further display exaggeration must leave cavity fill capped at its depth.");
+        State.fill(8.0F);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        const auto AboveCapacity = Sample(4.0F);
+        Require(Close(AboveCapacity.Values[0].x, 8.0F) &&
+                Close(AboveCapacity.Values[3].x, Amplified.Values[3].x),
+                "State above capacity must remain stored without increasing cavity geometry.");
+        Parameters.CavityFillFactor = 0.8F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        const auto Mixed = Sample(4.0F);
+        Require(Mixed.Values[3].x <= Mixed.Values[2].x + 1e-6F &&
+                Close(Mixed.Values[3].y, 0.0024F),
+                "Cavity fill must stay bounded while designed surface-following thickness remains independent.");
+
+        // Smoothing must blend fill fractions, not transfer a deep neighbor's absolute
+        // cavity height into a shallow texel and lift it above the macro surface.
+        Parameters.CavityFillFactor = 1.0F;
+        Parameters.ThicknessPerAmount = 0.0F;
+        Profiles.UpdateParameters(0, 0, Parameters);
+        State.fill(2.0F);
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        std::array<TSurfaceGPUGeometryScalar, 4> Scalars{};
+        Scalars[0].MesoVirtualHeight = -0.001F;
+        for (std::size_t I = 1; I < Scalars.size(); ++I)
+            Scalars[I].MesoVirtualHeight = -0.02F;
+        Shared.GetGeometryScalarBuffer().Upload(Scalars.data(), sizeof(Scalars));
+        TTexelGeometryPreview Preview(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1, true);
+        THeightFieldSmoothing Smoothing(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(),
+                                        Preview.GetOutputLayout(), 1);
+        std::array<TTexelGeometryVertex, 4> Smoothed{};
+        TGPUBuffer Readback(Context.GetPhysicalDevice(), Device, sizeof(Smoothed),
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        auto Command = Context.GetCommands().BeginSingleTime();
+        Preview.Record(Command, 0, Descriptors, 4, 0, 1, 4.0F, 1.0F,
+                       glm::mat4(1.0F), true, true);
+        Smoothing.Record(Command, 0, 0, 1, 4, Descriptors, Preview.GetOutputSet(0),
+                         Preview.GetOutputBuffer(0), true, 4.0F);
+        VkBufferMemoryBarrier CopyBarrier{};
+        CopyBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        CopyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        CopyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        CopyBarrier.srcQueueFamilyIndex = CopyBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        CopyBarrier.buffer = Smoothing.GetOutputBuffer(0, 0).GetHandle();
+        CopyBarrier.size = sizeof(Smoothed);
+        vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             0, 0, nullptr, 1, &CopyBarrier, 0, nullptr);
+        const VkBufferCopy Copy{0, 0, sizeof(Smoothed)};
+        vkCmdCopyBuffer(Command, CopyBarrier.buffer, Readback.GetHandle(), 1, &Copy);
+        VkBufferMemoryBarrier HostBarrier{};
+        HostBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        HostBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        HostBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+        HostBarrier.srcQueueFamilyIndex = HostBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        HostBarrier.buffer = Readback.GetHandle();
+        HostBarrier.size = sizeof(Smoothed);
+        vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                             0, 0, nullptr, 1, &HostBarrier, 0, nullptr);
+        Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+        Readback.Download(Smoothed.data(), sizeof(Smoothed));
+        Require(Smoothed[0].HeightAndNormal.x <= 1e-6F &&
+                Smoothed[0].HeightAndNormal.x >= -0.001F - 1e-6F,
+                "Smoothing must not overfill a shallow cavity using taller neighboring cavities.");
     }
 
     void TestSurfaceDebugRendering(const TVulkanContext& Context)

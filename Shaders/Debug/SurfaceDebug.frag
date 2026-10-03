@@ -352,8 +352,18 @@ void main()
             return;
         }
         uint Component = Material.DebugFlags.y;
-        float Value = Component == 1u ? D.CavityHeight : (Component == 2u ? D.FollowingHeight : (Component == 3u ? D.Fill : D.Height));
-        float Limit = Component == 3u ? 1.0 : max(Material.DebugOptions.y, 1e-12);
+        if (Component == 4u && (D.CavityDepth <= 1e-8 || D.Fill <= 0.0))
+        {
+            OutColor = vec4(HeightGridColor(vec3(0.12, 0.13, 0.15), Range, UVFootprint), 1);
+            return;
+        }
+        float Value = Component == 1u ? D.CavityHeight :
+                      (Component == 2u ? D.FollowingHeight :
+                       ((Component == 3u || Component == 4u) ? D.Fill : D.Height));
+        float Limit = Component == 0u ? D.CapacityHeight :
+                      (Component == 1u ? D.CapacityCavityHeight :
+                       (Component == 2u ? D.CapacityFollowingHeight : 1.0));
+        Limit = max(Limit, 1e-12);
         vec3 Color = HeatColor(Value / Limit);
         if (Value > Limit) Color = vec3(1,0.25,0.05);
         OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1);
@@ -402,8 +412,8 @@ void main()
         OutColor = vec4(1,0,1,1);
         return;
     }
-    float Value = Material.DebugFlags.x != 0u ? D.State / max(Material.DebugOptions.x, 1e-12) : D.Saturation;
+    float Value = D.Saturation;
     vec3 Color = HeatColor(Value);
-    if (Material.DebugFlags.x != 0u && Value > 1.0) Color = vec3(1,0.25,0.05);
+    if (Value > 1.0) Color = vec3(1,0.25,0.05);
     OutColor = vec4(ApplyReliefLighting(Color, FragMesoNormalWS), 1.0);
 }

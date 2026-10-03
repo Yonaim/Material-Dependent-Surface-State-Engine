@@ -48,6 +48,7 @@ void main()
     uint Vertex = uint(gl_VertexIndex);
     FragCoverage = Vertex < uint(Coverage.Values.length()) ? Coverage.Values[Vertex] : 0.0;
     vec3 Position = InPosition + InDisplacementNormal * Height;
-    FragWorldPosition = vec3(Push.Model * vec4(Position, 1.0));
-    gl_Position = Push.ViewProjection * vec4(FragWorldPosition, 1.0);
+    vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
+    FragWorldPosition = WorldPosition.xyz;
+    gl_Position = Push.ViewProjection * WorldPosition;
 }

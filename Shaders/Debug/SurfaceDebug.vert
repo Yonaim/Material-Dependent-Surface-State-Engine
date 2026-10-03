@@ -21,8 +21,8 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     uint StateChannelCount;
     float DebugViewParameter;
     float ReliefShadingEnabled;
-    vec4 DebugOptions; // Raw State max, height max, Lit height display scale, displacement scale
-    uvec4 DebugFlags; // Raw State, Accumulation component, reserved, reserved
+    vec4 DebugOptions; // reserved, reserved, Lit height display scale, displacement scale
+    uvec4 DebugFlags; // reserved, Accumulation component, height grid mode, height grid block size
 } Material;
 
 #include "Debug/SurfaceDebugData.glsl"

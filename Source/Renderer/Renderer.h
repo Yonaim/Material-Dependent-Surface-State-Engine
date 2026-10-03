@@ -140,10 +140,7 @@ namespace MDSS
 
     struct TSurfaceDebugDisplaySettings
     {
-        bool          bRawState = false;
         std::uint32_t AccumulationComponent = 0;
-        float         RawStateMax = 4.0F;
-        float         HeightMax = 0.01F;
         float DisplacementScale = 1.0F;
         // 0: shaded surface, 1: grid overlay, 2: grid on a dark surface.
         std::uint32_t HeightGridMode = 0;
@@ -153,6 +150,7 @@ namespace MDSS
     class TAssetManager;
     class TDebugUI;
     class TScene;
+    class TStaticMeshInstance;
     class TVulkanContext;
     class TWindow;
 
@@ -242,6 +240,7 @@ namespace MDSS
         void SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings);
         [[nodiscard]] const TDemoSurfaceEffectSettings& GetDemoSurfaceEffectSettings() const noexcept { return DemoEffects; }
         void SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings);
+        [[nodiscard]] bool IsLitTexelMeshBaseRendered(const TScene& Scene, std::size_t Instance) const;
         void SetSceneLitHeightDisplayScale(TScene& Scene, float Scale);
         [[nodiscard]] TDemoSurfaceStateBindings GetDemoSurfaceStateBindings() const;
 
@@ -311,6 +310,10 @@ namespace MDSS
         void UploadMaterialUniforms(std::uint32_t Frame, const TScene& SceneData,
                                     const TDebugUI& DebugInterface, float LitHeightDisplayScale);
         [[nodiscard]] float GetDebugViewParameter() const noexcept;
+        [[nodiscard]] bool CanRenderLitOverlays() const noexcept;
+        [[nodiscard]] std::array<bool, 3> GetLitOverlayActivity(
+            const TStaticMeshInstance& Instance, const TSurfaceSharedGeometryGPUResources* Shared,
+            const TDemoSurfaceStateBindings& Bindings) const;
         void RecreateSwapchain(TDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer CommandBuffer,
                                  std::uint32_t   ImageIndex,

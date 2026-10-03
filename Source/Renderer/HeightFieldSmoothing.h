@@ -21,10 +21,12 @@ namespace MDSS
         THeightFieldSmoothing& operator=(const THeightFieldSmoothing&) = delete;
 
         [[nodiscard]] VkDescriptorSet GetOutputSet(std::size_t Instance, std::uint32_t Channel) const;
+        [[nodiscard]] const TGPUBuffer& GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const;
         void Record(VkCommandBuffer Command, std::size_t Instance, std::uint32_t Channel,
                     std::uint32_t Channels, std::uint32_t TexelCount,
                     const TSurfaceStateDescriptorResources& StateDescriptors,
-                    VkDescriptorSet InputSet, const TGPUBuffer& InputBuffer, bool bStateAB);
+                    VkDescriptorSet InputSet, const TGPUBuffer& InputBuffer, bool bStateAB,
+                    float AccumulationDisplayScale);
 
     private:
         struct TOutput

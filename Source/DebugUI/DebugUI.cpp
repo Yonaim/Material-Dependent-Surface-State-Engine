@@ -150,7 +150,7 @@ namespace MDSS
             ImGui::SameLine(0.0F, 10.0F);
         }
 
-        constexpr float LabeledControlColumnWidth = 158.0F;
+        constexpr float LabeledControlColumnWidth = 140.0F;
 
         void DollyCamera(TCamera& CameraData, float Steps)
         {
@@ -517,6 +517,7 @@ namespace MDSS
         // window is visually above the viewport.
         DrawRenderOptionsWindow(SceneData);
         DrawViewportPanels(SceneData);
+        DrawBrickCubeTexelMeshNotice(SceneData);
         DrawSceneWindow(SceneData);
         DrawAnimationWindow(SceneData);
         DrawCameraWindow(SceneData);
@@ -864,8 +865,10 @@ namespace MDSS
     void TDebugUI::RestartScene(TScene& SceneData)
     {
         const std::filesystem::path Path = SceneData.GetSourcePath();
+        const TCamera CurrentCamera = SceneData.GetMainCamera();
         bFrameTimeResetRequested = true;
         SceneData.RestoreInitialState();
+        SceneData.GetMainCamera() = CurrentCamera;
         FrameRenderer->RestartSimulationState();
         ResetProfilingAverages();
         SelectedObject.reset();
@@ -942,7 +945,7 @@ namespace MDSS
             }
         }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-            ImGui::SetTooltip("Restore the initial Scene state and replay contacts without reloading resources.");
+            ImGui::SetTooltip("초기 Scene 상태로 복원하고 리소스를 다시 불러오지 않은 채 접촉 입력을 재생합니다.");
 
         const std::filesystem::path SceneDirectory = std::filesystem::path(MDSS_ASSET_DIR) / "Scenes";
         const auto DrawDemoSceneButton = [&](const char* Label, const char* FileName)
@@ -1441,7 +1444,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Camera pitch: %.0f degrees, yaw: %.0f degrees",
+                ImGui::SetTooltip("카메라 피치: %.0f도, 요: %.0f도",
                                   CameraViewPresetPitchYawDegrees[Index][0],
                                   CameraViewPresetPitchYawDegrees[Index][1]);
             }
@@ -1605,7 +1608,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                SetDescriptionTooltip("Restore the startup camera position, target, and FOV.");
+                SetDescriptionTooltip("시작 시 카메라 위치, 시선 대상, FOV로 되돌립니다.");
             }
 
             glm::vec3 Position = CameraData.GetPosition();
@@ -1671,7 +1674,8 @@ namespace MDSS
             switch (Mode)
             {
                 case TRenderViewMode::Lit:
-                    return "원본 메시를 렌더링합니다. 데모 효과와 높이 옵션이 켜지면 Mud/WaterFilm 적층이 추가됩니다.";
+                    return "기본적으로 원본 메시를 렌더링합니다. Mud/WaterFilm/Lava 적층 레이어가 활성화된 물체는 "
+                           "베이스 표면도 텍셀 메시로 그립니다.";
                 case TRenderViewMode::Unlit:
                     return "원본 메시 위치에 조명 없이 재질색을 표시합니다. Meso와 State 적층 변위는 없습니다.";
                 case TRenderViewMode::Wireframe:
@@ -1843,6 +1847,16 @@ namespace MDSS
                                     "원본 메시 위에 UV chart 사이의 텍셀 이웃 경계를 표시합니다.");
                     ImGui::EndMenu();
                 }
+                if (ImGui::BeginMenu("Texel"))
+                {
+                    SelectDebugView("Texel Grid",
+                                    TRenderViewMode::SurfaceTexelGrid,
+                                    "원본 메시 표면에 시뮬레이션 텍셀 격자를 표시합니다.");
+                    SelectDebugView("Texel Area Heatmap",
+                                    TRenderViewMode::SurfaceTexelArea,
+                                    "원본 메시 표면에 텍셀별 월드 면적을 표시합니다.");
+                    ImGui::EndMenu();
+                }
                 if (ImGui::BeginMenu("Geometry"))
                 {
                     SelectDebugView("Base Geometry",
@@ -1862,16 +1876,6 @@ namespace MDSS
                     SelectDebugView("Total Simulation Height",
                                     TRenderViewMode::TotalSimulationHeight,
                                     "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.");
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Texel"))
-                {
-                    SelectDebugView("Texel Grid",
-                                    TRenderViewMode::SurfaceTexelGrid,
-                                    "원본 메시 표면에 시뮬레이션 텍셀 격자를 표시합니다.");
-                    SelectDebugView("Texel Area Heatmap",
-                                    TRenderViewMode::SurfaceTexelArea,
-                                    "원본 메시 표면에 텍셀별 월드 면적을 표시합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Solver"))
@@ -1895,7 +1899,9 @@ namespace MDSS
             ImGui::SameLine(0.0F, 10.0F);
             ImGui::TextDisabled("|");
 
-            if (CurrentMode == TRenderViewMode::SurfaceStateHeatmap)
+            if (CurrentMode == TRenderViewMode::SurfaceStateHeatmap ||
+                CurrentMode == TRenderViewMode::SurfaceAccumulation ||
+                CurrentMode == TRenderViewMode::SurfaceFinalGeometry)
             {
                 ImGui::SameLine(0.0F, 8.0F);
                 const TSurfaceStateRegistry* Registry =
@@ -1915,7 +1921,10 @@ namespace MDSS
                     ImGui::TextUnformatted("State");
                     ImGui::SameLine(0.0F, 6.0F);
                     ImGui::SetNextItemWidth(145.0F);
-                    if (ImGui::BeginCombo("##ToolbarHeatmapState", Registry->GetStateName(DebugState).c_str()))
+                    const char* StateComboId = CurrentMode == TRenderViewMode::SurfaceStateHeatmap
+                                                   ? "##ToolbarHeatmapState"
+                                                   : "##ToolbarHeightState";
+                    if (ImGui::BeginCombo(StateComboId, Registry->GetStateName(DebugState).c_str()))
                     {
                         for (std::size_t Index = 0; Index < StateCount; ++Index)
                         {
@@ -1932,6 +1941,22 @@ namespace MDSS
                             }
                         }
                         ImGui::EndCombo();
+                    }
+                }
+                if (CurrentMode == TRenderViewMode::SurfaceAccumulation)
+                {
+                    ImGui::SameLine(0.0F, 8.0F);
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::TextUnformatted("Color");
+                    ImGui::SameLine(0.0F, 6.0F);
+                    auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
+                    int Component = static_cast<int>(Settings.AccumulationComponent);
+                    ImGui::SetNextItemWidth(185.0F);
+                    if (ImGui::Combo("##ToolbarHeightComponent", &Component,
+                                     "Total Height\0Cavity Height\0Following Height\0Cavity Fill\0Filled Cavities Only\0"))
+                    {
+                        Settings.AccumulationComponent = static_cast<std::uint32_t>(Component);
+                        FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
                     }
                 }
             }
@@ -1957,7 +1982,7 @@ namespace MDSS
             DrawList->AddCircleFilled(GearCenter, 1.7F, ImGui::GetColorU32(ImGuiCol_Button));
             if (ImGui::IsItemHovered())
             {
-                SetDescriptionTooltip("View settings");
+                SetDescriptionTooltip("뷰 설정");
             }
             if (bOpenViewSettings)
             {
@@ -1995,7 +2020,7 @@ namespace MDSS
             ImGui::Checkbox("Overlays", &bViewportOverlaysVisible);
             if (ImGui::IsItemHovered())
             {
-                SetDescriptionTooltip("Show or hide the Profiling and Render State overlays.");
+                SetDescriptionTooltip("프로파일링 및 렌더 상태 오버레이를 표시하거나 숨깁니다.");
             }
             ImGui::SameLine(0.0F, 4.0F);
             if (ImGui::SmallButton("Metrics"))
@@ -2004,7 +2029,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                SetDescriptionTooltip("Choose profiling columns and detail level.");
+                SetDescriptionTooltip("프로파일링 열과 상세 수준을 선택합니다.");
             }
             if (ImGui::BeginPopup("ProfilingDisplayPopup"))
             {
@@ -2021,7 +2046,7 @@ namespace MDSS
                 }
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("Show Solver GPU timings as a frame total or divide them by the number of simulation steps.");
+                    ImGui::SetTooltip("Solver GPU 시간을 프레임 전체 시간으로 표시하거나 시뮬레이션 단계 수로 나누어 표시합니다.");
                 }
                 ImGui::EndPopup();
             }
@@ -2035,7 +2060,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                SetDescriptionTooltip("Zoom out");
+                SetDescriptionTooltip("축소합니다.");
             }
             ImGui::SameLine();
             if (ImGui::Button("+"))
@@ -2044,7 +2069,7 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
             {
-                SetDescriptionTooltip("Zoom in");
+                SetDescriptionTooltip("확대합니다.");
             }
 
             if (bOpenViewSettings || ImGui::IsPopupOpen("ViewSettingsPopup"))
@@ -2131,41 +2156,16 @@ namespace MDSS
                     case TRenderViewMode::SurfaceStateHeatmap:
                     {
                         BeginViewContext("STATE HEATMAP",
-                                         "원본 메시 위에 State/용량 비율을 표시합니다. Meso 변위와 State 적층은 형상에 적용하지 않습니다.");
+                                         "프로파일 용량 대비 State 비율을 표시합니다. 100% 초과는 주황색이며, 실제 양은 Texel Inspector에서 확인할 수 있습니다.");
                         bool bReliefShadingEnabled = FrameRenderer->IsStateHeatmapReliefShadingEnabled();
                         if (ImGui::Checkbox("Relief Shading", &bReliefShadingEnabled))
                         {
                             FrameRenderer->SetStateHeatmapReliefShadingEnabled(bReliefShadingEnabled);
                         }
                         ImGui::NewLine();
-                        auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
-                        int  Representation = Settings.bRawState ? 1 : 0;
-                        ImGui::SetNextItemWidth(125.0F);
-                        bool Changed =
-                            ImGui::Combo("##StateRepresentation", &Representation, "Saturation\0Raw State\0");
-                        Settings.bRawState = Representation == 1;
-                        if (Settings.bRawState)
-                        {
-                            ImGui::SameLine();
-                            ImGui::SetNextItemWidth(110.0F);
-                            Changed |= ImGui::DragFloat("Max##RawState",
-                                                        &Settings.RawStateMax,
-                                                        0.05F,
-                                                        1e-8F,
-                                                        1e6F,
-                                                        "%.4g",
-                                                        ImGuiSliderFlags_AlwaysClamp);
-                        }
-                        if (Changed)
-                            FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
-                        ImGui::SameLine();
-                        ImGui::TextDisabled("%s",
-                                            Settings.bRawState ? "Total amount / texel; fixed range"
-                                                               : "State / area-scaled Capacity; color capped at 100%");
                         DrawLegendColor({0.075F, 0.090F, 0.260F, 1.0F}, "0");
-                        DrawLegendColor({0.990F, 0.900F, 0.200F, 1.0F}, Settings.bRawState ? "Max" : "100%+");
-                        if (Settings.bRawState)
-                            DrawLegendColor({1.0F, 0.25F, 0.05F, 1.0F}, "> Max");
+                        DrawLegendColor({0.990F, 0.900F, 0.200F, 1.0F}, "100% 용량");
+                        DrawLegendColor({1.0F, 0.25F, 0.05F, 1.0F}, "> 100%");
                         DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "State 미지원");
                         DrawLegendColor({0.18F, 0.20F, 0.24F, 1.0F}, "프로파일 미할당");
                         DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
@@ -2180,19 +2180,8 @@ namespace MDSS
                                                   "미리보기이며 모든 State의 최종 합성이 아닙니다."
                                                 : "형상에는 Meso와 선택 State 전체 높이를 적용합니다. 색은 선택한 적층 "
                                                   "성분을 표시하며, UV chart 경계는 열려 있습니다.");
-                        DrawDebugStateSelector();
                         auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
                         bool Changed = false;
-                        if (!bFinal)
-                        {
-                            int Component = static_cast<int>(Settings.AccumulationComponent);
-                            ImGui::SameLine();
-                            ImGui::SetNextItemWidth(160.0F);
-                            Changed |= ImGui::Combo("##AccumulationComponent",
-                                                    &Component,
-                                                    "Total Height\0Cavity Height\0Following Height\0Cavity Fill\0");
-                            Settings.AccumulationComponent = static_cast<std::uint32_t>(Component);
-                        }
                         ImGui::NewLine();
                         ImGui::SetNextItemWidth(95.0F);
                         Changed |= ImGui::DragFloat("Display scale",
@@ -2207,25 +2196,23 @@ namespace MDSS
                             ImGui::SameLine();
                             ImGui::TextDisabled("Meso + selected State; scale affects display only");
                         }
-                        else if (Settings.AccumulationComponent != 3)
-                        {
-                            ImGui::SameLine();
-                            ImGui::SetNextItemWidth(95.0F);
-                            Changed |= ImGui::DragFloat("Height max",
-                                                        &Settings.HeightMax,
-                                                        0.001F,
-                                                        1e-8F,
-                                                        1e6F,
-                                                        "%.4g",
-                                                        ImGuiSliderFlags_AlwaysClamp);
-                            ImGui::SameLine();
-                            ImGui::TextDisabled("mesh-local units; fixed range");
-                            DrawLegendColor({1, 0.25F, 0.05F, 1}, "> Max");
-                        }
                         else
                         {
                             ImGui::SameLine();
-                            ImGui::TextDisabled("Cavity Fill: fixed 0-100%%; excess goes to Following Height");
+                            ImGui::TextDisabled("형상 배율; 색상 기준은 유지");
+                            if (Settings.AccumulationComponent < 3)
+                            {
+                                ImGui::SameLine();
+                                ImGui::TextDisabled("프로파일 용량 기준");
+                                DrawLegendColor({1, 0.25F, 0.05F, 1}, "> 용량 기준");
+                            }
+                            else
+                            {
+                                ImGui::SameLine();
+                                ImGui::TextDisabled(Settings.AccumulationComponent == 3
+                                                        ? "Cavity Fill: 0-100%; 초과 높이는 Following에 포함"
+                                                        : "채워진 cavity만 표시");
+                            }
                         }
                         if (Changed)
                             FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
@@ -2233,9 +2220,17 @@ namespace MDSS
                         DrawHeightGridControls();
                         if (!bFinal)
                         {
-                            DrawLegendColor({0.075F, 0.090F, 0.260F, 1}, "0");
+                            if (Settings.AccumulationComponent == 4)
+                            {
+                                DrawLegendColor({0.12F, 0.13F, 0.15F, 1}, "채워진 cavity 없음");
+                            }
+                            else
+                            {
+                                DrawLegendColor({0.075F, 0.090F, 0.260F, 1}, "0");
+                            }
                             DrawLegendColor({0.990F, 0.900F, 0.200F, 1},
-                                            Settings.AccumulationComponent == 3 ? "100%" : "Max");
+                                            Settings.AccumulationComponent == 4 ? "채워진 cavity" :
+                                            (Settings.AccumulationComponent == 3 ? "100%" : "용량 기준"));
                             DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
                         }
                         break;
@@ -2472,6 +2467,46 @@ namespace MDSS
         }
     }
 
+    void TDebugUI::DrawBrickCubeTexelMeshNotice(const TScene& SceneData)
+    {
+        if (FrameRenderer == nullptr || AssetManager == nullptr) return;
+        const auto& Instances = SceneData.GetStaticMeshInstances();
+        bool bBrickCubeTexelMesh = false;
+        for (std::size_t Index = 0; Index < Instances.size(); ++Index)
+        {
+            const auto Mesh = Instances[Index].GetMesh();
+            if (Mesh != InvalidAssetHandle && AssetManager->GetMesh(Mesh).GetName() == "BrickCube" &&
+                FrameRenderer->IsLitTexelMeshBaseRendered(SceneData, Index))
+            {
+                bBrickCubeTexelMesh = true;
+                break;
+            }
+        }
+        if (!bBrickCubeTexelMesh) return;
+
+        constexpr const char* Message = "LIT 뷰: BrickCube를 텍셀 메시로 렌더링 중";
+        const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
+        const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || Rect.z <= 0.0F || Rect.w <= 0.0F ||
+            Rect.z * DisplaySize.x < ImGui::CalcTextSize(Message).x + 36.0F) return;
+        const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+        const ImVec2 TopRight{Origin.x + (Rect.x + Rect.z) * DisplaySize.x - 10.0F,
+                              Origin.y + Rect.y * DisplaySize.y + 10.0F};
+        ImGui::SetNextWindowPos(TopRight, ImGuiCond_Always, {1.0F, 0.0F});
+        ImGui::SetNextWindowBgAlpha(0.84F);
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+                                           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                                           ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
+        if (ImGui::Begin("BrickCube Texel Mesh##ViewportNotice", nullptr, Flags))
+        {
+            ImGui::TextUnformatted(Message);
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("원본 메시와 비교하려면 Base Geometry 뷰를 선택하세요.");
+            bMouseOverViewportOverlay |= ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+        }
+        ImGui::End();
+    }
+
     void TDebugUI::DrawRenderSettingsWindow(TScene& SceneData)
     {
         if (FrameRenderer == nullptr)
@@ -2507,6 +2542,8 @@ namespace MDSS
                         {
                             FrameRenderer->SetFlipNormalY(bFlipNormalY);
                         }
+                        if (ImGui::IsItemHovered())
+                            SetDescriptionTooltip("화면의 Normal Map 조명만 바꿉니다. Meso 형상은 기본 Flip Y 켜짐으로 전처리됩니다.");
                     }
                     ImGui::EndChild();
                     ImGui::EndTabItem();
@@ -2555,9 +2592,9 @@ namespace MDSS
                                 "Visual smoothing##WaterFilm", &Effects.bWaterFilmSmoothing);
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip(
-                                    "Smooth WaterFilm coverage and displacement for rendering only. "
-                                    "Disabling this skips both layer-specific smoothing passes unless common "
-                                    "Height-field smoothing is enabled. Simulation State is unchanged.");
+                                    "렌더링용 WaterFilm 커버리지와 변위를 부드럽게 처리합니다. "
+                                    "끄면 공통 높이 필드 스무딩이 활성화된 경우를 제외하고 레이어별 스무딩을 모두 건너뜁니다. "
+                                    "시뮬레이션 State는 바뀌지 않습니다.");
                             EffectsChanged |= ImGui::ColorEdit3("Tint##WaterFilm", glm::value_ptr(Effects.WaterFilmTint));
                             EffectsChanged |= LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
                             EffectsChanged |= LabeledSliderFloat("Roughness", &Effects.WaterFilmRoughness, 0.05F, 1.0F, "%.2f");
@@ -2570,9 +2607,9 @@ namespace MDSS
                             EffectsChanged |= ImGui::Checkbox("Visual smoothing##Mud", &Effects.bMudSmoothing);
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip(
-                                    "Smooth Mud coverage and displacement for rendering only. "
-                                    "Disabling this skips both layer-specific smoothing passes unless common "
-                                    "Height-field smoothing is enabled. Simulation State is unchanged.");
+                                    "렌더링용 Mud 커버리지와 변위를 부드럽게 처리합니다. "
+                                    "끄면 공통 높이 필드 스무딩이 활성화된 경우를 제외하고 레이어별 스무딩을 모두 건너뜁니다. "
+                                    "시뮬레이션 State는 바뀌지 않습니다.");
                             EffectsChanged |= LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
                         }
                         ImGui::Spacing();
@@ -2582,9 +2619,9 @@ namespace MDSS
                             EffectsChanged |= ImGui::Checkbox("Visual smoothing##Lava", &Effects.bLavaSmoothing);
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip(
-                                    "Smooth Lava coverage and displacement for rendering only. "
-                                    "Disabling this skips both layer-specific smoothing passes unless common "
-                                    "Height-field smoothing is enabled. Simulation State is unchanged.");
+                                    "렌더링용 Lava 커버리지와 변위를 부드럽게 처리합니다. "
+                                    "끄면 공통 높이 필드 스무딩이 활성화된 경우를 제외하고 레이어별 스무딩을 모두 건너뜁니다. "
+                                    "시뮬레이션 State는 바뀌지 않습니다.");
                         }
                         if (EffectsChanged) FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
                     }
@@ -2833,8 +2870,8 @@ namespace MDSS
                     ResetProfilingAverages();
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Only overlay draw calls change; render preparation stays enabled. "
-                                      "Compare Render pass after each mode has collected a new average.");
+                    ImGui::SetTooltip("오버레이 그리기 호출만 바뀌며 렌더 준비는 계속 수행됩니다. "
+                                      "각 모드에서 새 평균을 수집한 뒤 Render 패스를 비교하세요.");
                 int OccupancyTile = FrameRenderer->GetOverlayOccupancyTileSize() == TOverlayOccupancyTileSize::Tile32 ? 1 : 0;
                 ImGui::TextDisabled("Active tile");
                 ImGui::SameLine();
@@ -2848,7 +2885,7 @@ namespace MDSS
                     ResetProfilingAverages();
                 }
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Group State texels into active tiles before geometry preparation.");
+                    ImGui::SetTooltip("형상 준비 전에 State 텍셀을 활성 타일 단위로 묶습니다.");
                 const auto SetupMetricTable = [this](const char* Id)
                 {
                     const int ColumnCount = 1 + static_cast<int>(bShowProfilingAverage) +
@@ -2983,7 +3020,7 @@ namespace MDSS
                     }
                     ImGui::TreePop();
                 }
-                if (BeginTextTreeNode("GPU: Rendering"))
+                if (bShowDetailedProfiling && BeginTextTreeNode("GPU: Rendering"))
                 {
                     if (Stats.OverlayTotalTopTriangles > 0 &&
                         Stats.OverlayDrawMode == FrameRenderer->GetOverlayDrawProfilingMode())
@@ -2992,9 +3029,8 @@ namespace MDSS
                             static_cast<double>(Stats.OverlayTotalTopTriangles);
                         ImGui::TextDisabled("Active top triangles: %.1f%%", ActivePercent);
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("A triangle counts as active when at least one vertex exceeds "
-                                              "the 2%% coverage cutoff. Enabled layers are counted separately; "
-                                              "the ratio is not area weighted.");
+                            ImGui::SetTooltip("정점 하나 이상이 2%% 커버리지 기준을 넘으면 활성 삼각형으로 계산합니다. "
+                                              "활성화된 레이어는 각각 집계하며, 비율은 면적 가중치가 적용되지 않습니다.");
                         ImGui::TextDisabled("%llu / %llu triangles",
                             static_cast<unsigned long long>(Stats.OverlayActiveTopTriangles),
                             static_cast<unsigned long long>(Stats.OverlayTotalTopTriangles));
@@ -3454,14 +3490,14 @@ namespace MDSS
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Accumulate elapsed time and process fixed 1/60 s ticks. Profile factors do not change this interval. Auto substepping can divide each tick.");
+            SetDescriptionTooltip("경과 시간을 누적해 1/60초 고정 간격으로 처리합니다. Profile 배율은 이 간격을 바꾸지 않습니다. 자동 세부 단계 분할은 각 간격을 나눠 처리할 수 있습니다.");
         if (ImGui::Checkbox("Auto substepping", &bAutoSubstepping))
         {
             bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Divide simulation time into smaller solver steps using the transport limit. Adds GPU work. Off uses fixed 1/60 s ticks, or elapsed time when Fixed timestep is off.");
+            SetDescriptionTooltip("수송 한계를 기준으로 시뮬레이션 시간을 더 작은 Solver 단계로 나눕니다. GPU 작업량이 늘어납니다. 끄면 고정 시간 간격이 켜진 경우 1/60초 간격을 사용하고, 꺼진 경우 경과 시간을 사용합니다.");
         ImGui::TextDisabled("%u steps, %.3f ms maximum step", FrameRenderer->GetLastSimulationStepCount(),
                             1000.0F * FrameRenderer->GetMaximumSimulationStep());
         ImGui::TextDisabled("Simulation %.2f s, pending %.3f s", FrameRenderer->GetSimulatedSeconds(),
@@ -3497,9 +3533,9 @@ namespace MDSS
         }
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("ON: 적층 높이가 있는 모든 State를 합산해 이후 수송의 위치·법선·거리 계산에 반영합니다.\n"
-                                  "OFF: 기존 정적 지형으로 수송합니다. 시뮬레이션 두께는 .SRProfile의 thicknessPerAmount를 사용하며,\n"
-                                  "Render Options의 display scale은 렌더링 전용입니다. ON은 step마다 GPU 작업이 추가됩니다.");
+            SetDescriptionTooltip("켜짐: 적층 높이가 있는 모든 State를 합산해 이후 수송의 위치·법선·거리 계산에 반영합니다.\n"
+                                  "꺼짐: 기존 정적 지형으로 수송합니다. 시뮬레이션 두께는 .SRProfile의 thicknessPerAmount를 사용하며,\n"
+                                  "렌더 옵션의 표시 배율은 렌더링 전용입니다. 켜짐 상태에서는 단계마다 GPU 작업이 추가됩니다.");
         }
 
         DrawSectionHeader("Transport");
@@ -3625,7 +3661,7 @@ namespace MDSS
         ImGui::Checkbox("Inject mode", &bInjectMode);
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("Inject with Space at the crosshair hit.");
+            SetDescriptionTooltip("십자선이 가리키는 지점에 Space 키로 주입합니다.");
         }
         ImGui::TextDisabled("Crosshair hit → triangle → UV → simulation texel.");
 
@@ -3647,7 +3683,7 @@ namespace MDSS
             const bool         bStateOpen = BeginLabeledCombo("State", SelectedName.c_str());
             if (ImGui::IsItemHovered())
             {
-                SetDescriptionTooltip("Surface State channel to inject.");
+                SetDescriptionTooltip("주입할 Surface State 채널입니다.");
             }
             if (bStateOpen)
             {
@@ -3672,24 +3708,24 @@ namespace MDSS
         LabeledSliderFloat("Radius (world)", &InjectRadius, 0.01F, 2.0F, "%.2f");
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("World-space radius of the injected contact.");
+            SetDescriptionTooltip("주입 접촉의 월드 공간 반경입니다.");
         }
         LabeledSliderFloat("Strength", &InjectStrength, 0.0F, 2.0F, "%.2f");
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("Input per reference area. The affected world area determines the total amount.");
+            SetDescriptionTooltip("기준 면적당 입력량입니다. 총량은 영향을 받는 월드 면적에 따라 결정됩니다.");
         }
         LabeledSliderFloat("Falloff", &InjectFalloff, 0.0F, 4.0F, "%.2f");
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("Controls how injection strength fades toward the radius edge.");
+            SetDescriptionTooltip("반경 가장자리로 갈수록 주입 강도가 감소하는 정도를 조절합니다.");
         }
         BeginLabeledControlRow("Texel search");
         ImGui::SetNextItemWidth(-1.0F);
         SliderIntWithDoubleClickInput("##InjectTexelSearchRadius", &InjectTexelSearchRadius, 0, 16, "%d texels");
         if (ImGui::IsItemHovered())
         {
-            SetDescriptionTooltip("Same-triangle UV fallback range per axis. Default: 2; 0 disables fallback.");
+            SetDescriptionTooltip("같은 삼각형 안에서 UV 대체 검색을 수행할 축별 범위입니다. 기본값은 2이며, 0이면 대체 검색을 사용하지 않습니다.");
         }
     }
 
@@ -3864,7 +3900,7 @@ namespace MDSS
         bChanged |= LabeledDragFloat("Thickness per amount", &ParameterDraft.ThicknessPerAmount,
                                      0.001F, 0.0F, 100.0F, "%.4f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("기준 면적당 누적량을 월드 길이 단위의 두께로 환산하는 값입니다. 피드백이 활성화되면 시뮬레이션 형상에 반영됩니다.");
+            SetDescriptionTooltip("기준 면적당 누적량을 표면 위 적층 두께(월드 길이)로 환산합니다. 0이면 표면 위 적층과 cavity 초과분의 두께는 0이지만, 기존 cavity를 채우는 높이에는 영향을 주지 않습니다.");
         if (bChanged)
         {
             bParameterDraftDirty = true;

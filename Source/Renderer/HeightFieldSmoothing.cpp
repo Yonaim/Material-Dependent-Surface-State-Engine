@@ -43,7 +43,7 @@ namespace MDSS
         try
         {
             const std::array<VkDescriptorSetLayout, 3> Layouts{SurfaceLayout, HeightLayout, HeightLayout};
-            const VkPushConstantRange Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 16};
+            const VkPushConstantRange Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 20};
             VkPipelineLayoutCreateInfo LayoutInfo{};
             LayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             LayoutInfo.setLayoutCount = static_cast<std::uint32_t>(Layouts.size());
@@ -111,10 +111,16 @@ namespace MDSS
         return Outputs.at({Instance, Channel}).Set;
     }
 
+    const TGPUBuffer& THeightFieldSmoothing::GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const
+    {
+        return *Outputs.at({Instance, Channel}).Buffer;
+    }
+
     void THeightFieldSmoothing::Record(VkCommandBuffer Command, std::size_t Instance, std::uint32_t Channel,
         std::uint32_t Channels, std::uint32_t TexelCount,
         const TSurfaceStateDescriptorResources& StateDescriptors,
-        VkDescriptorSet InputSet, const TGPUBuffer& InputBuffer, bool bStateAB)
+        VkDescriptorSet InputSet, const TGPUBuffer& InputBuffer, bool bStateAB,
+        float AccumulationDisplayScale)
     {
         const auto Bytes = GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4),
                                                        Limits.maxStorageBufferRange);
@@ -168,11 +174,17 @@ namespace MDSS
 
         const std::array<VkDescriptorSet, 3> Sets{
             bStateAB ? StateDescriptors.GetABSet() : StateDescriptors.GetBASet(), InputSet, It->second.Set};
-        const std::array<std::uint32_t, 4> Push{TexelCount, Channel, Channels, 0U};
+        struct TPush
+        {
+            std::uint32_t Texels, Channel, Channels, Padding;
+            float DisplayScale;
+        };
+        static_assert(sizeof(TPush) == 20);
+        const TPush Push{TexelCount, Channel, Channels, 0U, AccumulationDisplayScale};
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
         vkCmdBindDescriptorSets(Command, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0,
                                 static_cast<std::uint32_t>(Sets.size()), Sets.data(), 0, nullptr);
-        vkCmdPushConstants(Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), Push.data());
+        vkCmdPushConstants(Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), &Push);
         const std::uint32_t GroupCount = (TexelCount - 1U) / 64U + 1U;
         const std::uint32_t GroupsX = std::min(GroupCount, Limits.maxComputeWorkGroupCount[0]);
         const std::uint32_t GroupsY = (GroupCount - 1U) / GroupsX + 1U;

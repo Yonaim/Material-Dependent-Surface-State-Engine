@@ -32,6 +32,7 @@ namespace MDSS::Tests
 {
     void TestSurfaceDebugRendering(const TVulkanContext& Context);
     void TestOverlaySideCompaction(const TVulkanContext& Context);
+    void TestCavityFillDisplayBound(const TVulkanContext& Context);
 }
 
 namespace
@@ -591,6 +592,12 @@ int main(int Argc, char* Argv[])
     }
     try
     {
+        if (Argc == 2 && std::string_view(Argv[1]) == "--cavity-fill-bound")
+        {
+            MDSS::Tests::TestCavityFillDisplayBound(*Context);
+            std::cout << "Cavity fill display bound checks passed.\n";
+            return 0;
+        }
         if (Argc == 2 && std::string_view(Argv[1]) == "--lava-scene")
         {
             TAssetManager LavaAssets(*Context);
@@ -657,6 +664,24 @@ int main(int Argc, char* Argv[])
                 TDebugUI OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets);
                 ImGui::GetIO().IniFilename = nullptr;
                 OverlayRenderer.SetRenderViewMode(TRenderViewMode::Lit);
+                Check(OverlayRenderer.IsLitTexelMeshBaseRendered(OverlayScene, 0),
+                      "An active Lit accumulation layer must draw its base with the texel mesh.");
+                OverlayRenderer.SetRenderViewMode(TRenderViewMode::MacroGeometry);
+                Check(!OverlayRenderer.IsLitTexelMeshBaseRendered(OverlayScene, 0),
+                      "Base Geometry view must not report Lit texel mesh rendering.");
+                OverlayRenderer.SetRenderViewMode(TRenderViewMode::Lit);
+                auto DisabledEffects = OverlayRenderer.GetDemoSurfaceEffectSettings();
+                DisabledEffects.bMudDisplacement = false;
+                OverlayRenderer.SetDemoSurfaceEffectSettings(DisabledEffects);
+                Check(!OverlayRenderer.IsLitTexelMeshBaseRendered(OverlayScene, 0),
+                      "The notice must hide when its only accumulation layer is disabled.");
+                DisabledEffects.bMudDisplacement = true;
+                DisabledEffects.bEnabled = false;
+                OverlayRenderer.SetDemoSurfaceEffectSettings(DisabledEffects);
+                Check(!OverlayRenderer.IsLitTexelMeshBaseRendered(OverlayScene, 0),
+                      "The notice must hide when Lit effects are disabled.");
+                DisabledEffects.bEnabled = true;
+                OverlayRenderer.SetDemoSurfaceEffectSettings(DisabledEffects);
                 Window->PollEvents();
                 OverlayUI.BeginFrame(OverlayScene);
                 OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 0.0F);

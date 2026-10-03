@@ -12,14 +12,15 @@ struct TDebugAccumulation
     float State; float Capacity; float Saturation; float ReferenceAmount;
     float Factor; float CavityFactor; float MesoHeight; float CavityDepth;
     float Fill; float Excess; float CavityHeight; float FollowingHeight;
-    float Height; float Area; float AreaScale; float ThicknessPerAmount; float WorldToLocalHeight;
+    float Height; float CapacityCavityHeight; float CapacityFollowingHeight; float CapacityHeight;
+    float Area; float AreaScale; float ThicknessPerAmount; float WorldToLocalHeight;
     uint Status; // 0 invalid, 1 unassigned, 2 unsupported, 3 valid, 4 nonfinite/invalid area
 };
 
 TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
                                     float AccumulationDisplayScale, mat3 NormalMatrix)
 {
-    TDebugAccumulation D = TDebugAccumulation(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0u);
+    TDebugAccumulation D = TDebugAccumulation(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0u);
     if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
         TexelSurfaceIndices.Values[Texel] == 0xffffffffu || Texel >= uint(GeometryScalars.Values.length())) return D;
     D.MesoHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
@@ -66,11 +67,22 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
     float CavityAmount = Amount * D.CavityFactor;
     D.Fill = min(CavityAmount, 1.0);
     D.Excess = max(CavityAmount - 1.0, 0.0);
-    D.CavityHeight = D.Fill * D.CavityDepth * AccumulationDisplayScale;
+    // Display exaggeration must not raise cavity fill above the macro surface.
+    D.CavityHeight = min(D.Fill * AccumulationDisplayScale, 1.0) * D.CavityDepth;
     D.FollowingHeight = (Amount * (1.0 - D.CavityFactor) + D.Excess) *
                         D.ThicknessPerAmount * D.WorldToLocalHeight * AccumulationDisplayScale;
     D.Height = D.CavityHeight + D.FollowingHeight;
-    if (isnan(D.Height) || isinf(D.Height) || isnan(D.Saturation) || isinf(D.Saturation)) return D;
+    float CapacityAmount = (D.Capacity / D.AreaScale) * D.Factor;
+    float CapacityCavityAmount = CapacityAmount * D.CavityFactor;
+    float CapacityFill = min(CapacityCavityAmount, 1.0);
+    float CapacityExcess = max(CapacityCavityAmount - 1.0, 0.0);
+    D.CapacityCavityHeight = min(CapacityFill * AccumulationDisplayScale, 1.0) * D.CavityDepth;
+    D.CapacityFollowingHeight =
+        (CapacityAmount * (1.0 - D.CavityFactor) + CapacityExcess) * D.ThicknessPerAmount *
+        D.WorldToLocalHeight * AccumulationDisplayScale;
+    D.CapacityHeight = D.CapacityCavityHeight + D.CapacityFollowingHeight;
+    if (isnan(D.Height) || isinf(D.Height) || isnan(D.Saturation) || isinf(D.Saturation) ||
+        isnan(D.CapacityHeight) || isinf(D.CapacityHeight)) return D;
     D.Status = 3u;
     return D;
 }

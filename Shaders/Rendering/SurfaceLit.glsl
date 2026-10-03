@@ -19,8 +19,12 @@ void main()
 {
     vec3 N = normalize(FragNormal);
 #ifdef TEXEL_LIT
-    // Use the displaced geometric normal as the basis, then restore the material's tangent-space detail.
+#ifndef BASE_SURFACE_LIT
+    // The regular texel-lit view adds material detail to the displaced normal.
     N = normalize(FragMesoNormalWS);
+#endif
+    // The base pass already displaces geometry using this normal map's integrated height.
+    // Shade it from the macro normal so the same normal map is not applied twice.
     vec3 PositionDx = dFdx(FragWorldPosition);
     vec3 PositionDy = dFdy(FragWorldPosition);
     vec2 UVDx = dFdx(FragUV);

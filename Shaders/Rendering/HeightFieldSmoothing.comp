@@ -13,9 +13,23 @@ layout(push_constant) uniform TPush
     uint Channel;
     uint Channels;
     uint Padding;
+    float AccumulationDisplayScale;
 } Push;
 
 const float CoverageCutoff = 0.02;
+
+float DisplayedCavityFill(uint Texel, uint Surface)
+{
+    if (Texel >= uint(TexelProfileIndices.Values.length())) return 0.0;
+    uint Profile = TexelProfileIndices.Values[Texel];
+    if (Push.Channels == 0u || Push.Channel >= Push.Channels ||
+        Profile >= uint(ProfileParameters.Values.length()) / Push.Channels) return 0.0;
+    TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[Profile * Push.Channels + Push.Channel];
+    float ReferenceAmount = StateSaturation(Texel, Push.Channel, Push.Channels, Surface) *
+                            Parameters.CapacityInputAndTransfer.x;
+    float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
+    return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
+}
 
 void main()
 {
@@ -39,7 +53,8 @@ void main()
     ivec2 Center = ivec2(int(Local % Range.y), int(Local / Range.y));
     uint Chart = TexelChartIndices.Values[T];
     uint Profile = TexelProfileIndices.Values[T];
-    float WeightedHeight = 0.0;
+    float WeightedCavityFill = 0.0;
+    float WeightedFollowingHeight = 0.0;
     vec3 WeightedNormal = vec3(0.0);
     float WeightSum = 0.0;
     for (int Y = -1; Y <= 1; ++Y)
@@ -62,15 +77,21 @@ void main()
         if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
         float AccumulationHeight = InputGeometry.Values[N].HeightAndNormal.x - Meso;
         if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
+        float CavityDepth = max(-Meso, 0.0);
+        float CavityFill = CavityDepth > 0.0 ? DisplayedCavityFill(N, Surface) : 0.0;
+        float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
         float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
-        WeightedHeight += Weight * AccumulationHeight;
+        WeightedCavityFill += Weight * CavityFill;
+        WeightedFollowingHeight += Weight * FollowingHeight;
         WeightedNormal += Weight * InputGeometry.Values[N].HeightAndNormal.yzw;
         WeightSum += Weight;
     }
     if (WeightSum <= 0.0) return;
     float CenterMeso = GeometryScalars.Values[T].MesoVirtualHeight;
     if (isnan(CenterMeso) || isinf(CenterMeso)) CenterMeso = 0.0;
-    float Height = CenterMeso + WeightedHeight / WeightSum;
+    float CenterCavityDepth = max(-CenterMeso, 0.0);
+    float Height = CenterMeso + min(WeightedCavityFill / WeightSum, 1.0) * CenterCavityDepth +
+                   WeightedFollowingHeight / WeightSum;
     OutputGeometry.Values[T].HeightAndNormal.x = Height;
     if (dot(WeightedNormal, WeightedNormal) > 1e-12)
         OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(WeightedNormal);

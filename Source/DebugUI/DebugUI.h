@@ -97,6 +97,7 @@ namespace MDSS
         void DrawSelectedObjectWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
         void DrawViewportPanels(TScene& SceneData);
+        void DrawBrickCubeTexelMeshNotice(const TScene& SceneData);
         void DrawRenderOptionsWindow(TScene& SceneData);
         void DrawRenderSettingsWindow(TScene& SceneData);
         void DrawViewportStatsOverlay();

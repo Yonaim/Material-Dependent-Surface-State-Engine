@@ -43,6 +43,7 @@ void main()
     FragUV = InUVSurface.xy;
     FragSurfaceIndex = uint(InUVSurface.w);
     vec3 Position = InPosition + InDisplacementNormal * Height;
-    FragWorldPosition = vec3(Push.Model * vec4(Position, 1.0));
-    gl_Position = Push.ViewProjection * Push.Model * vec4(Position, 1.0);
+    vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
+    FragWorldPosition = WorldPosition.xyz;
+    gl_Position = Push.ViewProjection * WorldPosition;
 }
