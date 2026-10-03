@@ -62,7 +62,8 @@ namespace
                                     112, 142, 255, 255, 136, 138, 255, 255}};
         for (auto& T : Geometry.GetTexels())
         {
-            T.HasTransferNormal = BuildNormalMapTransferNormal(T, Mesh.Vertices, Mesh.Triangles, NormalMap, T.TransferNormal);
+            T.HasTransferNormal = BuildNormalMapTransferNormal(T, Mesh.Vertices, Mesh.Triangles, NormalMap,
+                                                               T.TransferNormal, true);
         }
         const auto Report = BuildMesoGeometry(Geometry);
         Check(Report.ActiveTexelCount > 0, "test input generates active Meso geometry");
@@ -108,8 +109,72 @@ namespace
               "cached geometry gives identical TransferWeights under nonuniform scale");
     }
 
+    void TestBrickCubeMesoHeightSign()
+    {
+        const auto AssetDirectory = std::filesystem::path(MDSS_TEST_FIXTURE_DIR).parent_path().parent_path() /
+                                    "Assets/Meshes/BrickCube";
+        const auto Mesh = TOBJLoader::Load(AssetDirectory / "BrickCube.obj");
+        const auto NormalMap = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeNormal.png");
+        const auto Albedo = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeAlbedo.png");
+        std::vector<TSurfaceDefinition> Surfaces;
+        for (const auto& Triangle : Mesh.Triangles)
+        {
+            while (Surfaces.size() <= Triangle.Surface)
+                Surfaces.push_back({static_cast<TSurfaceLocalID>(Surfaces.size()), {64, 64}});
+        }
+        const auto Mapping = TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, Surfaces);
+        std::vector<TSurfaceProfileIndex> Profiles(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
+        for (std::size_t I = 0; I < Mapping.Texels.size(); ++I)
+            if (Mapping.Texels[I].IsValid()) Profiles[I] = 0;
+        auto Geometry = TSurfaceGeometryBuilder::Build(Mapping, std::move(Profiles), 1);
+        for (auto& Texel : Geometry.GetTexels())
+        {
+            if (!Texel.IsValid()) continue;
+            Texel.HasTransferNormal = BuildNormalMapTransferNormal(
+                Texel, Mesh.Vertices, Mesh.Triangles, NormalMap, Texel.TransferNormal, true);
+        }
+        const auto Report = BuildMesoGeometry(Geometry);
+        Check(Report.ActiveTexelCount > 0, "BrickCube generates Meso heights");
+
+        double BrickHeight = 0.0, MortarHeight = 0.0;
+        std::size_t BrickCount = 0, MortarCount = 0;
+        for (const auto& Texel : Geometry.GetTexels())
+        {
+            if (!Texel.IsValid() || !Texel.HasTransferNormal) continue;
+            const auto& Triangle = Mesh.Triangles[Texel.Triangle];
+            const auto UV = Texel.Barycentric.x * Mesh.Vertices[Triangle.RenderVertexIndices[0]].UV +
+                            Texel.Barycentric.y * Mesh.Vertices[Triangle.RenderVertexIndices[1]].UV +
+                            Texel.Barycentric.z * Mesh.Vertices[Triangle.RenderVertexIndices[2]].UV;
+            const auto X = std::min(static_cast<std::uint32_t>(UV.x * Albedo.Width), Albedo.Width - 1U);
+            const auto Y = std::min(static_cast<std::uint32_t>(UV.y * Albedo.Height), Albedo.Height - 1U);
+            const auto Pixel = (static_cast<std::size_t>(Y) * Albedo.Width + X) * 4U;
+            const float Red = Albedo.Pixels[Pixel];
+            const float Green = Albedo.Pixels[Pixel + 1U];
+            const float Blue = Albedo.Pixels[Pixel + 2U];
+            if (Red > 1.35F * Green && Red > 1.20F * Blue)
+            {
+                BrickHeight += Texel.Geometry.MesoVirtualHeight;
+                ++BrickCount;
+            }
+            else if (Red < 1.22F * Green && Green > 1.05F * Blue)
+            {
+                MortarHeight += Texel.Geometry.MesoVirtualHeight;
+                ++MortarCount;
+            }
+        }
+        Check(BrickCount > 100 && MortarCount > 100, "BrickCube samples both brick and mortar texels");
+        if (BrickCount > 0 && MortarCount > 0)
+        {
+            const double MeanBrick = BrickHeight / BrickCount;
+            const double MeanMortar = MortarHeight / MortarCount;
+            Check(MeanBrick > 0.0 && MeanMortar < 0.0 && MeanBrick > MeanMortar,
+                  "BrickCube mortar reconstructs as negative height below the brick faces");
+        }
+    }
+
     void Tests()
     {
+        TestBrickCubeMesoHeightSign();
         TTemporaryDirectory Temp;
         const auto Distribution = Temp.Path / "Input.SurfaceProfileMap";
         const auto Profile = Temp.Path / "Input.SRProfile";

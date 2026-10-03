@@ -66,7 +66,8 @@ namespace MDSS
                                       const std::vector<TVertex>&             Vertices,
                                       const std::vector<TMeshTriangleSource>& Triangles,
                                       const TextureData&                      NormalMap,
-                                      glm::vec3&                              OutTransferNormal)
+                                      glm::vec3&                              OutTransferNormal,
+                                      bool                                    bFlipNormalY)
     {
         if (!Texel.IsValid() || Texel.Triangle >= Triangles.size())
         {
@@ -109,6 +110,10 @@ namespace MDSS
         if (!SampleNormalMapLinearRepeat(NormalMap, UV, NormalTS))
         {
             return false;
+        }
+        if (bFlipNormalY)
+        {
+            NormalTS.y = -NormalTS.y;
         }
 
         const glm::vec3 NormalLocal = Tangent * NormalTS.x + Bitangent * NormalTS.y + Normal * NormalTS.z;

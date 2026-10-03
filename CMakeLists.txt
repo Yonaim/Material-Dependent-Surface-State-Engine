@@ -250,6 +250,7 @@ if(BUILD_TESTING)
         Tests/SurfaceCacheTests.cpp
         Source/AssetManager/Loaders/MTLLoader.cpp
         Source/AssetManager/Loaders/OBJLoader.cpp
+        Source/AssetManager/Loaders/TextureLoader.cpp
         Source/Logger/Logger.cpp
         Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
         Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp

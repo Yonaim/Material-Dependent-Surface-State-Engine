@@ -276,7 +276,7 @@ namespace MDSS
                 glm::vec3  TransferNormal{};
                 if (TextureIt != NormalMapPixels.end() &&
                     BuildNormalMapTransferNormal(
-                        Texel, Mesh.GetVertices(), Mesh.GetTriangles(), TextureIt->second, TransferNormal))
+                        Texel, Mesh.GetVertices(), Mesh.GetTriangles(), TextureIt->second, TransferNormal, true))
                 {
                     Texel.TransferNormal = TransferNormal;
                     Texel.HasTransferNormal = true;

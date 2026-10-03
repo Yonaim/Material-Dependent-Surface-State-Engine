@@ -84,12 +84,12 @@ namespace
         glm::vec3                              Result{};
 
         const TextureData Flat = MakeTexture(1, 1, {{{128, 128, 255, 255}}});
-        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, Flat, Result),
+        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, Flat, Result, false),
               "flat normal map should produce a transfer normal");
         Check(Near(Result, {0.0F, 0.0F, 1.0F}), "flat normal map should match the geometric normal");
 
         const TextureData Tilted = MakeTexture(1, 1, {{{255, 128, 128, 255}}});
-        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, Tilted, Result),
+        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, Tilted, Result, false),
               "tilted normal map should produce a transfer normal");
         Check(Result.x > 0.99F && std::abs(Result.z) < 0.02F,
               "tangent-space +X normal should map to the mesh tangent direction");
@@ -114,16 +114,16 @@ namespace
 
         glm::vec3 First{};
         glm::vec3 Second{};
-        Check(BuildNormalMapTransferNormal(MakeTexel(0), Vertices, Triangles, Map, First),
+        Check(BuildNormalMapTransferNormal(MakeTexel(0), Vertices, Triangles, Map, First, false),
               "first UV chart should sample successfully");
-        Check(BuildNormalMapTransferNormal(MakeTexel(1), Vertices, Triangles, Map, Second),
+        Check(BuildNormalMapTransferNormal(MakeTexel(1), Vertices, Triangles, Map, Second, false),
               "second UV chart should sample successfully");
         Check(First.z > 0.99F && Second.x > 0.99F,
               "each texel should sample using its mapped triangle UV, including across a UV seam");
 
         const glm::vec3 MidBarycentric{0.5F, 0.5F, 0.0F};
         glm::vec3       Mid{};
-        Check(BuildNormalMapTransferNormal(MakeTexel(0, 0, MidBarycentric), Vertices, Triangles, Map, Mid),
+        Check(BuildNormalMapTransferNormal(MakeTexel(0, 0, MidBarycentric), Vertices, Triangles, Map, Mid, false),
               "barycentrically interpolated UV should sample successfully");
         Check(Mid.x > 0.6F && Mid.z > 0.6F,
               "normal map sample should use barycentric UV interpolation (result: " + std::to_string(Mid.x) + ", " +
@@ -137,9 +137,14 @@ namespace
         const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0)};
         const TextureData                      PositiveY = MakeTexture(1, 1, {{{128, 255, 128, 255}}});
         glm::vec3                              Positive{};
-        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, PositiveY, Positive),
+        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, PositiveY, Positive, false),
               "positive-handed tangent frame should produce a normal");
         Check(Positive.y > 0.99F, "positive tangent handedness should preserve tangent-space +Y");
+
+        glm::vec3 Flipped{};
+        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, PositiveY, Flipped, true),
+              "flipped normal-map Y should produce a normal");
+        Check(Flipped.y < -0.99F, "Y flip should match the rendered normal-map convention");
 
         for (TVertex& Vertex : Vertices)
         {
@@ -147,7 +152,7 @@ namespace
             Vertex.UV.x = -0.25F; // repeat addressing wraps this coordinate into the one-pixel texture
         }
         glm::vec3 Mirrored{};
-        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, PositiveY, Mirrored),
+        Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, PositiveY, Mirrored, false),
               "mirrored tangent frame and repeated UV should produce a normal");
         Check(Mirrored.y < -0.99F, "negative tangent handedness should flip the bitangent direction");
     }
@@ -165,11 +170,11 @@ namespace
         {
             Vertex.Tangent = {0.0F, 0.0F, 1.0F, 1.0F};
         }
-        Check(!BuildNormalMapTransferNormal(MakeTexel(), DegenerateTangent, Triangles, Flat, Result),
+        Check(!BuildNormalMapTransferNormal(MakeTexel(), DegenerateTangent, Triangles, Flat, Result, false),
               "degenerate tangent should request geometric-normal fallback");
 
         const TextureData InvalidTexture{};
-        Check(!BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, InvalidTexture, Result),
+        Check(!BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, InvalidTexture, Result, false),
               "missing or malformed texture data should request geometric-normal fallback");
         std::vector<TVertex> MidUVVertices = Vertices;
         for (TVertex& Vertex : MidUVVertices)
@@ -179,11 +184,11 @@ namespace
         const TextureData ZeroLengthSample =
             MakeTexture(2, 1, {{{127, 127, 127, 255}}, {{128, 128, 128, 255}}});
         Check(!BuildNormalMapTransferNormal(
-                  MakeTexel(), MidUVVertices, Triangles, ZeroLengthSample, Result),
+                  MakeTexel(), MidUVVertices, Triangles, ZeroLengthSample, Result, false),
               "zero-length filtered normal sample should request geometric-normal fallback");
-        Check(!BuildNormalMapTransferNormal(MakeTexel(1), Vertices, Triangles, Flat, Result),
+        Check(!BuildNormalMapTransferNormal(MakeTexel(1), Vertices, Triangles, Flat, Result, false),
               "missing triangle mapping should request geometric-normal fallback");
-        Check(!BuildNormalMapTransferNormal(MakeTexel(0, 1), Vertices, Triangles, Flat, Result),
+        Check(!BuildNormalMapTransferNormal(MakeTexel(0, 1), Vertices, Triangles, Flat, Result, false),
               "surface mismatch should request geometric-normal fallback");
     }
 } // namespace
