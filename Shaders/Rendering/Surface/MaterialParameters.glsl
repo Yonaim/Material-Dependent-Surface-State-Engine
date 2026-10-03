@@ -1,4 +1,7 @@
-// 렌더링 pass들이 공유하는 material 및 demo 효과 파라미터 layout이다.
+/**
+ * @file MaterialParameters.glsl
+ * @brief 렌더링 pass들이 공유하는 material 및 demo 효과 파라미터 layout이다.
+ */
 #ifndef MDSS_MATERIAL_PARAMETERS
 #define MDSS_MATERIAL_PARAMETERS
 layout(set = 0, binding = 2) uniform MaterialParameters

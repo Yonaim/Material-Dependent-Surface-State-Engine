@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateSystem.cpp
- * @brief Scene-level owner and step recorder for Surface State simulation.
+ * @brief SurfaceStateSystem의 구현을 제공한다.
  */
 
 #include "SurfaceStateSystem/SurfaceStateSystem.h"

@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateRegistry.h
- * @brief Deterministic runtime State IDs built from loaded SRProfiles.
+ * @brief 로드된 SRProfile 기반 Runtime State registry 인터페이스를 선언한다.
  */
 
 #pragma once

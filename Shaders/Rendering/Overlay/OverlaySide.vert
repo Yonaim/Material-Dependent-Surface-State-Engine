@@ -1,4 +1,7 @@
-// compute pass가 만든 옆면 segment를 6개 정점으로 펼쳐 world-space 조명 입력을 만든다.
+/**
+ * @file OverlaySide.vert
+ * @brief compute pass가 만든 옆면 segment를 6개 정점으로 펼쳐 world-space 조명 입력을 만든다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 struct TSideSegment

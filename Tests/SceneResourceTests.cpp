@@ -1,5 +1,6 @@
-/** @file SceneResourceTests.cpp
- * @brief Scene Registry replacement, shared Profile GPU table, rollback and input isolation.
+/**
+ * @file SceneResourceTests.cpp
+ * @brief Scene 교체, 공유 Profile GPU table, rollback과 입력 격리를 검증한다.
  */
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"

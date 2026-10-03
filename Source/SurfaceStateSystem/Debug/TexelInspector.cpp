@@ -1,3 +1,7 @@
+/**
+ * @file TexelInspector.cpp
+ * @brief 선택한 texel의 진단 snapshot을 생성하고 조회한다.
+ */
 #include "SurfaceStateSystem/Debug/TexelInspector.h"
 
 #include <fstream>

@@ -1,3 +1,7 @@
+/**
+ * @file TexelInspector.h
+ * @brief 선택한 texel의 진단 데이터를 조회하는 인터페이스를 선언한다.
+ */
 #pragma once
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"

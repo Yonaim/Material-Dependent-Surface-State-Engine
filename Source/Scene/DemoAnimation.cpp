@@ -1,6 +1,6 @@
 /**
  * @file DemoAnimation.cpp
- * @brief Read JSON keyframes and evaluate Scene object/camera animation.
+ * @brief JSON keyframe을 읽고 Scene 객체와 카메라 animation을 평가한다.
  */
 
 #include "Scene/DemoAnimation.h"

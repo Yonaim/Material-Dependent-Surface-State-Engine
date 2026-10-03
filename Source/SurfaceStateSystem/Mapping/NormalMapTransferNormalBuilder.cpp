@@ -1,6 +1,6 @@
 /**
  * @file NormalMapTransferNormalBuilder.cpp
- * @brief CPU Normal Map sampling and tangent-frame conversion for solver weights.
+ * @brief Normal Map sample과 tangent frame 변환으로 solver 전달 normal을 계산한다.
  */
 
 #include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"

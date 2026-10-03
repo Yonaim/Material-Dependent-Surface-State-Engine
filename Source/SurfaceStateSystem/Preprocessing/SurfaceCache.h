@@ -1,6 +1,6 @@
 /**
  * @file SurfaceCache.h
- * @brief Versioned, resolution-specific persistent cache of final CPU Surface geometry.
+ * @brief 버전 및 해상도별 최종 CPU Surface geometry cache 인터페이스를 선언한다.
  */
 
 #pragma once

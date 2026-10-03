@@ -1,5 +1,7 @@
-// GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다.
-// 표준식 참고: https://google.github.io/filament/main/filament.html
+/**
+ * @file Lighting.glsl
+ * @brief GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다. 표준식 참고: https://google.github.io/filament/main/filament.html.
+ */
 float EvaluateSpecularLobe(vec3 N, vec3 V, vec3 L, float PerceptualRoughness, float F0)
 {
     // 미세면 분포(D), 가시성(V), Fresnel(F)을 계산해 specular 기여도를 구한다.

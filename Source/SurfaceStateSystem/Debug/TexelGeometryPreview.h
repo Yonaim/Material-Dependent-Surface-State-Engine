@@ -1,3 +1,7 @@
+/**
+ * @file TexelGeometryPreview.h
+ * @brief 진단용 texel geometry 미리보기 및 cache 인터페이스를 선언한다.
+ */
 #pragma once
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"

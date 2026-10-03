@@ -1,3 +1,7 @@
+/**
+ * @file HeightFieldSmoothing.h
+ * @brief 표시용 height field smoothing pass의 인터페이스를 선언한다.
+ */
 #pragma once
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"

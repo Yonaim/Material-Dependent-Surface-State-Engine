@@ -1,6 +1,6 @@
 /**
  * @file InputSystem.h
- * @brief Device/debug input adapters that produce Surface contact events.
+ * @brief 장치 입력 및 디버그 입력에서 Surface 접촉 이벤트를 만드는 인터페이스를 선언한다.
  */
 
 #pragma once

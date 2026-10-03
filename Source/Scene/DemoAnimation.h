@@ -1,6 +1,6 @@
 /**
  * @file DemoAnimation.h
- * @brief Versioned Scene demo animation data and keyframe evaluation.
+ * @brief 버전이 지정된 Scene demo animation 자료형과 keyframe 평가 인터페이스를 선언한다.
  */
 
 #pragma once

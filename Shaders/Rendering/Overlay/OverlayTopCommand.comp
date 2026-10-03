@@ -1,4 +1,7 @@
-// 옆면 생성 결과가 있을 때에만 상단 overlay draw command를 활성화한다.
+/**
+ * @file OverlayTopCommand.comp
+ * @brief 옆면 생성 결과가 있을 때에만 상단 overlay draw command를 활성화한다.
+ */
 #version 450
 
 layout(local_size_x = 64) in;

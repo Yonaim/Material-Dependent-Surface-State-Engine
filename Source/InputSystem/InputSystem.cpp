@@ -1,6 +1,6 @@
 /**
  * @file InputSystem.cpp
- * @brief Device/debug input adapters that produce Surface contact events.
+ * @brief 장치 입력과 디버그 입력을 Surface 접촉 이벤트로 변환한다.
  */
 
 #include "InputSystem/InputSystem.h"

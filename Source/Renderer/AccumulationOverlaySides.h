@@ -1,3 +1,7 @@
+/**
+ * @file AccumulationOverlaySides.h
+ * @brief 누적 상태 overlay geometry 생성에 필요한 자료형과 함수를 선언한다.
+ */
 #pragma once
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"

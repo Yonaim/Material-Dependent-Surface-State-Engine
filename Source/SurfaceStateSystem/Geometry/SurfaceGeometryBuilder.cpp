@@ -1,6 +1,6 @@
 /**
  * @file SurfaceGeometryBuilder.cpp
- * @brief Build shared CPU geometry and texel Profile mapping from Surface mapping.
+ * @brief Surface mapping에서 공유 geometry와 texel Profile mapping을 구성한다.
  */
 
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"

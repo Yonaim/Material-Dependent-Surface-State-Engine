@@ -1,4 +1,7 @@
-// Lava, water, mud overlay fragment shader들이 공유하는 coverage 기반 조명 경로다.
+/**
+ * @file OverlaySurface.glsl
+ * @brief Lava, water, mud overlay fragment shader들이 공유하는 coverage 기반 조명 경로다.
+ */
 #ifndef MDSS_OVERLAY_SURFACE
 #define MDSS_OVERLAY_SURFACE
 #include "Rendering/Surface/MaterialParameters.glsl"

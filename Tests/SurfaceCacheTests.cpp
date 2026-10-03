@@ -1,5 +1,6 @@
-/** @file SurfaceCacheTests.cpp
- *  @brief Final geometry round-trip, input invalidation and malformed cache recovery.
+/**
+ * @file SurfaceCacheTests.cpp
+ * @brief 최종 geometry cache 왕복, 입력 무효화와 손상 복구를 검증한다.
  */
 #include "AssetManager/Loaders/OBJLoader.h"
 #include "AssetManager/Loaders/TextureLoader.h"

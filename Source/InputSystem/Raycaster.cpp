@@ -1,6 +1,6 @@
 /**
  * @file Raycaster.cpp
- * @brief CPU ray queries against static mesh instances in a scene.
+ * @brief Scene의 정적 mesh instance를 대상으로 CPU ray query를 수행한다.
  */
 
 #include "InputSystem/Raycaster.h"

@@ -1,6 +1,6 @@
 /**
  * @file SurfaceProfileDistributionLoader.h
- * @brief Load sidecar mapping from Mesh Surface IDs to ordered SRProfile assets.
+ * @brief Mesh Surface별 SRProfile 분포 sidecar 로더 인터페이스를 선언한다.
  */
 
 #pragma once

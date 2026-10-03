@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateSolver.h
- * @brief Record optional accumulation geometry updates and the two Surface State solver passes.
+ * @brief 동적 형상 갱신과 두 Surface State solver pass 기록 인터페이스를 선언한다.
  */
 
 #pragma once

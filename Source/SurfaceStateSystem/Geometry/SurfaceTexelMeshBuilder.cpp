@@ -1,3 +1,7 @@
+/**
+ * @file SurfaceTexelMeshBuilder.cpp
+ * @brief 원본 mesh topology를 보존하는 texel 기반 표시 mesh를 생성한다.
+ */
 #include "SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.h"
 
 #include <algorithm>

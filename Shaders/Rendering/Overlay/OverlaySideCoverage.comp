@@ -1,4 +1,7 @@
-// overlay mesh 정점마다 활성 tile을 확인하고 해당 위치의 State coverage를 저장한다.
+/**
+ * @file OverlaySideCoverage.comp
+ * @brief overlay mesh 정점마다 활성 tile을 확인하고 해당 위치의 State coverage를 저장한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0

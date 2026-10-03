@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateSystem.h
- * @brief Own Surface GPU resources and record one solver step for a scene.
+ * @brief SurfaceStateSystem의 자료형과 인터페이스를 선언한다.
  */
 
 #pragma once

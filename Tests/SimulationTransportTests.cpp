@@ -1,3 +1,7 @@
+/**
+ * @file SimulationTransportTests.cpp
+ * @brief 2-pass Surface solver의 입력, flux, 감쇠와 상태 보존 계약을 검증한다.
+ */
 #include "SurfaceStateSystem/State/SimulationClock.h"
 #include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
 #include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"

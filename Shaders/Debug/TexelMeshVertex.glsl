@@ -1,4 +1,7 @@
-// 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
+/**
+ * @file TexelMeshVertex.glsl
+ * @brief 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
+ */
 #include "Surface/SurfaceStateData.glsl"
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;

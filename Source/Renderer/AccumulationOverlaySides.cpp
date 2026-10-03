@@ -1,3 +1,7 @@
+/**
+ * @file AccumulationOverlaySides.cpp
+ * @brief 누적 상태 overlay의 상단과 경계 옆면 geometry 생성을 구성한다.
+ */
 #include "Renderer/AccumulationOverlaySides.h"
 
 #include <algorithm>

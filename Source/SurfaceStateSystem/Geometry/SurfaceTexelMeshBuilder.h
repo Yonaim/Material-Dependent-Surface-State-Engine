@@ -1,3 +1,7 @@
+/**
+ * @file SurfaceTexelMeshBuilder.h
+ * @brief texel 기반 표시 mesh 생성에 필요한 자료형과 함수를 선언한다.
+ */
 #pragma once
 
 #include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"

@@ -1,4 +1,5 @@
-/** @file EngineConfig.h
+/**
+ * @file EngineConfig.h
  * @brief 실행 위치와 무관한 설정 경로 및 시작 Scene 선택.
  */
 #pragma once

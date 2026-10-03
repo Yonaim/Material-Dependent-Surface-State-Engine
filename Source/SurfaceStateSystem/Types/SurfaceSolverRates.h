@@ -1,4 +1,7 @@
-/** @brief Shared C++/GLSL transfer-rate constants; Profile factors remain in [0, 1]. */
+/**
+ * @file SurfaceSolverRates.h
+ * @brief C++와 GLSL이 공유하는 전달 속도 상수를 정의하며 Profile 계수 범위는 [0, 1]이다.
+ */
 #ifndef MDSS_SURFACE_SOLVER_RATES_H
 #define MDSS_SURFACE_SOLVER_RATES_H
 

@@ -1,4 +1,7 @@
-// State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
+/**
+ * @file TexelGeometryBaseline.comp
+ * @brief State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0

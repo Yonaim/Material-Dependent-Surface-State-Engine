@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateContractTests.cpp
- * @brief Dynamic State Registry, Profile, shared Surface and Runtime preprocessing contracts.
+ * @brief 동적 State registry, Profile, 공유 Surface와 Runtime preprocessing 계약을 검증한다.
  */
 
 #include "AssetManager/Assets/SRProfileAsset.h"

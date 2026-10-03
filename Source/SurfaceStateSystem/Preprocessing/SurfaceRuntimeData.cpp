@@ -1,6 +1,6 @@
 /**
  * @file SurfaceRuntimeData.cpp
- * @brief Runtime-only construction of shared static Surface data.
+ * @brief Runtime에서 공유 정적 Surface 데이터를 구성한다.
  */
 
 #include "SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.h"

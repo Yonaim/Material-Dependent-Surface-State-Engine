@@ -1,6 +1,6 @@
 /**
  * @file SurfaceCache.cpp
- * @brief Portable .Surface serialization, input fingerprinting and corruption checks.
+ * @brief 최종 Surface 데이터의 직렬화, 입력 fingerprint와 cache 손상을 검증한다.
  */
 
 #include "SurfaceStateSystem/Preprocessing/SurfaceCache.h"

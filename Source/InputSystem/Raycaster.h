@@ -1,6 +1,6 @@
 /**
  * @file Raycaster.h
- * @brief CPU ray queries against static mesh instances in a scene.
+ * @brief Scene 정적 mesh를 대상으로 하는 CPU ray query 인터페이스를 선언한다.
  */
 
 #pragma once

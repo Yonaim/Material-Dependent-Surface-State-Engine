@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateRegistry.cpp
- * @brief Deterministic runtime State IDs built from loaded SRProfiles.
+ * @brief 로드된 SRProfile에서 결정적인 Runtime State ID를 구성한다.
  */
 
 #include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"

@@ -1,6 +1,6 @@
 /**
  * @file NormalMapTransferTests.cpp
- * @brief Normal Map sample, barycentric UV and tangent frame contract tests.
+ * @brief Normal Map sample, barycentric UV와 tangent frame 계약을 검증한다.
  */
 
 #include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"

@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateSolver.cpp
- * @brief Optional dynamic geometry preparation and two-pass GPU Surface State update.
+ * @brief 선택적 동적 형상 갱신과 2-pass GPU Surface State solver를 기록한다.
  */
 
 #include "SurfaceStateSystem/State/SurfaceStateSolver.h"

@@ -1,3 +1,7 @@
+/**
+ * @file TexelGeometryPreview.cpp
+ * @brief 진단용 texel geometry cache와 높이 미리보기 계산을 관리한다.
+ */
 #include "SurfaceStateSystem/Debug/TexelGeometryPreview.h"
 
 #include <algorithm>

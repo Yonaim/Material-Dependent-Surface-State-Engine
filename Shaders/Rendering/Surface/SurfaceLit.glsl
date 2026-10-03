@@ -1,4 +1,7 @@
-// Static mesh와 texel mesh가 공유하는 PBR 조명 및 demo State 효과 경로다.
+/**
+ * @file SurfaceLit.glsl
+ * @brief Static mesh와 texel mesh가 공유하는 PBR 조명 및 demo State 효과 경로다.
+ */
 #include "Rendering/Surface/MaterialParameters.glsl"
 #include "Rendering/Surface/StateSampling.glsl"
 #include "Rendering/Surface/Effects/Mud.glsl"

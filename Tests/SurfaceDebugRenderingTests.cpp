@@ -1,4 +1,5 @@
-/** @file SurfaceDebugRenderingTests.cpp
+/**
+ * @file SurfaceDebugRenderingTests.cpp
  * @brief 실제 fragment 출력으로 면적 비율과 격자의 해상도·축소 동작을 검증한다.
  */
 #include "AssetManager/Assets/MeshSourceData.h"

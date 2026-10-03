@@ -1,4 +1,7 @@
-// chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
+/**
+ * @file HeightFieldSmoothing.comp
+ * @brief chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0

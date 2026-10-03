@@ -1,6 +1,6 @@
 /**
  * @file SurfaceGPUResourceTests.cpp
- * @brief Vulkan resource layout, initialization, and descriptor wiring tests.
+ * @brief Vulkan resource layout, 초기화와 descriptor 연결을 검증한다.
  */
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"

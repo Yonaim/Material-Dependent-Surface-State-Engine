@@ -1,4 +1,7 @@
-// 선택한 texel과 channel의 누적량, 높이 분해, normal을 CPU 진단용 snapshot으로 복사한다.
+/**
+ * @file TexelInspector.comp
+ * @brief 선택한 texel과 channel의 누적량, 높이 분해, normal을 CPU 진단용 snapshot으로 복사한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0

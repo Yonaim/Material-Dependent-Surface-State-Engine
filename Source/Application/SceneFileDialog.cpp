@@ -1,3 +1,7 @@
+/**
+ * @file SceneFileDialog.cpp
+ * @brief 운영체제 파일 선택 창을 열어 Scene 경로를 반환한다.
+ */
 #include "Application/SceneFileDialog.h"
 
 #include <cstdio>

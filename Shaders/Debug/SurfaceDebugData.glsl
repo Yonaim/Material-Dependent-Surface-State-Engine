@@ -1,5 +1,7 @@
-// 높이 미리보기, heatmap, Texel Inspector가 공유하는 GPU 계산이다.
-// 진단용 형상 계산이며 solver가 사용하는 누적 형상과는 별도로 평가한다.
+/**
+ * @file SurfaceDebugData.glsl
+ * @brief 높이 미리보기, heatmap, Texel Inspector가 공유하는 GPU 계산이다. 진단용 형상 계산이며 solver가 사용하는 누적 형상과는 별도로 평가한다.
+ */
 #ifndef MDSS_SURFACE_DEBUG_DATA
 #define MDSS_SURFACE_DEBUG_DATA
 #ifndef SURFACE_DEBUG_SET

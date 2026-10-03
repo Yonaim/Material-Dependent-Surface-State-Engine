@@ -1,5 +1,7 @@
-// texel 면적과 profile 지원 여부를 반영해 State를 읽는 공통 함수다.
-// 할당되지 않았거나 지원되지 않는 State는 0으로 처리한다.
+/**
+ * @file StateSampling.glsl
+ * @brief texel 면적과 profile 지원 여부를 반영해 State를 읽는 공통 함수다. 할당되지 않았거나 지원되지 않는 State는 0으로 처리한다.
+ */
 #include "Surface/SurfaceStateData.glsl"
 layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTexelChartIndices { uint Values[]; } TexelChartIndices;
 float StateSaturation(uint Texel, uint Channel, uint Channels, uint Surface)

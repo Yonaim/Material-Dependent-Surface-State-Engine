@@ -1,5 +1,7 @@
-// State 진단과 appearance sampling에서 함께 사용하는 읽기 전용 GPU 데이터다.
-// binding 번호와 구조체 배치는 CPU에서 업로드하는 데이터 정의와 일치해야 한다.
+/**
+ * @file SurfaceStateData.glsl
+ * @brief State 진단과 appearance sampling에서 함께 사용하는 읽기 전용 GPU 데이터다. binding 번호와 구조체 배치는 CPU에서 업로드하는 데이터 정의와 일치해야 한다.
+ */
 #ifndef MDSS_SURFACE_STATE_DATA
 #define MDSS_SURFACE_STATE_DATA
 #ifndef SURFACE_DEBUG_SET

@@ -1,4 +1,7 @@
-// 표시용 높이와 normal을 계산하며, 변경되지 않은 tile은 baseline cache를 재사용한다.
+/**
+ * @file TexelGeometry.comp
+ * @brief 표시용 높이와 normal을 계산하며, 변경되지 않은 tile은 baseline cache를 재사용한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0

@@ -1,4 +1,7 @@
-// overlay 상단 mesh에 texel 높이, normal, coverage를 보간해 표면 위에 배치한다.
+/**
+ * @file OverlayTop.vert
+ * @brief overlay 상단 mesh에 texel 높이, normal, coverage를 보간해 표면 위에 배치한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #include "Rendering/Surface/StateSampling.glsl"

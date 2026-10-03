@@ -1,3 +1,7 @@
+/**
+ * @file EngineConfig.cpp
+ * @brief 실행 위치와 무관하게 설정 경로를 찾고 시작 Scene을 선택한다.
+ */
 #include "Application/EngineConfig.h"
 #include "Logger/Logger.h"
 #include <fstream>

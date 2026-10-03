@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateTypes.cpp
- * @brief Data-driven state profile validation and name normalization.
+ * @brief 데이터 기반 State profile 검증과 이름 정규화를 수행한다.
  */
 
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"

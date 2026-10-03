@@ -1,4 +1,7 @@
-// 선택적으로 사용하는 Lava 상태를 밝은 용융층 색과 emission으로 표현한다.
+/**
+ * @file Lava.glsl
+ * @brief 선택적으로 사용하는 Lava 상태를 밝은 용융층 색과 emission으로 표현한다.
+ */
 vec3 LavaColor(float Coverage)
 {
     // coverage가 커질수록 주황빛이 강해진다.

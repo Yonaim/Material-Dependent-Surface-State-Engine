@@ -1,6 +1,6 @@
 /**
  * @file SurfaceRuntimeData.h
- * @brief In-memory static Surface data generated during Runtime loading.
+ * @brief Runtime 로딩 중 생성되는 메모리 상주 정적 Surface 데이터를 선언한다.
  */
 
 #pragma once

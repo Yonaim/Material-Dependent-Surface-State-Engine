@@ -1,8 +1,4 @@
 /**
  * @file SurfaceGeometryUpdate.cpp
- * @brief CPU geometry update utilities are not required; the runtime update is GPU compute.
- *
- * Per-instance accumulation positions/normals are written by
- * Shaders/Simulation/SurfaceAccumulation.comp, followed by dynamic edge weights in
- * Shaders/Simulation/SurfaceGeometryUpdate.comp.
+ * @brief GPU compute shader에서 instance별 누적 위치·normal과 dynamic edge weight를 갱신한다.
  */

@@ -1,6 +1,6 @@
 /**
  * @file SurfaceGeometryBuilder.h
- * @brief Build shared CPU geometry and texel Profile mapping from Surface mapping.
+ * @brief Surface mapping 기반 공유 geometry 구성 인터페이스를 선언한다.
  */
 
 #pragma once

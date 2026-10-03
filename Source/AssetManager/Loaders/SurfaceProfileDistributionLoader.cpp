@@ -1,6 +1,6 @@
 /**
  * @file SurfaceProfileDistributionLoader.cpp
- * @brief Load sidecar mapping from Mesh Surface IDs to ordered SRProfile assets.
+ * @brief Mesh Surface ID와 정렬된 SRProfile 에셋을 sidecar 파일에서 읽는다.
  */
 
 #include "AssetManager/Loaders/SurfaceProfileDistributionLoader.h"

@@ -1,3 +1,7 @@
+/**
+ * @file SimulationClock.h
+ * @brief Surface simulation step의 시간 간격과 누적 시간을 관리하는 자료형을 선언한다.
+ */
 #pragma once
 
 #include <algorithm>

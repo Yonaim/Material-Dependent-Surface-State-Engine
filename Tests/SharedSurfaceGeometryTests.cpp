@@ -1,6 +1,6 @@
 /**
  * @file SharedSurfaceGeometryTests.cpp
- * @brief Shared geometry construction and Runtime preprocessing tests.
+ * @brief 공유 geometry 구성과 Runtime preprocessing을 검증한다.
  */
 
 #include "AssetManager/Loaders/OBJLoader.h"

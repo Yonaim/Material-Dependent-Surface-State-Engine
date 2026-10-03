@@ -1,5 +1,6 @@
-/** @file DemoSurfaceEffects.h
- * @brief Demo appearance adapter; runtime State IDs remain defined by loaded profiles.
+/**
+ * @file DemoSurfaceEffects.h
+ * @brief demo appearance와 Runtime State ID 연결을 제공하며, ID는 로드된 Profile이 결정한다.
  */
 #pragma once
 #include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"

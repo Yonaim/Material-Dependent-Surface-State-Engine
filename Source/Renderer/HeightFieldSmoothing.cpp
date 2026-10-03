@@ -1,3 +1,7 @@
+/**
+ * @file HeightFieldSmoothing.cpp
+ * @brief 표시용 height field smoothing compute pass를 기록한다.
+ */
 #include "Renderer/HeightFieldSmoothing.h"
 
 #include <algorithm>

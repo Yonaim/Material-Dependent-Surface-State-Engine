@@ -1,4 +1,7 @@
-// texel 높이를 진단 cache에 기록하고, 유효하지 않은 이웃은 NaN으로 표시한다.
+/**
+ * @file TexelGeometryHeight.comp
+ * @brief texel 높이를 진단 cache에 기록하고, 유효하지 않은 이웃은 NaN으로 표시한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0

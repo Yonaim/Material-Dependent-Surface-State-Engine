@@ -1,4 +1,7 @@
-// 삼각형 내부 coverage 경계와 mesh 외곽선을 따라 overlay의 수직 옆면 segment를 생성한다.
+/**
+ * @file OverlaySideBoundary.comp
+ * @brief 삼각형 내부 coverage 경계와 mesh 외곽선을 따라 overlay의 수직 옆면 segment를 생성한다.
+ */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0

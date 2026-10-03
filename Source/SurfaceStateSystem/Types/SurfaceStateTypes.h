@@ -1,6 +1,6 @@
 /**
  * @file SurfaceStateTypes.h
- * @brief Data-driven state profile and registry contracts.
+ * @brief 데이터 기반 State profile 및 registry 계약 자료형을 선언한다.
  */
 
 #pragma once
