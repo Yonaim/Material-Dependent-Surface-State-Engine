@@ -92,7 +92,7 @@ namespace MDSS
             const auto CreatePipeline = [&](const char* ShaderName, VkPipelineLayout SelectedLayout,
                                             VkPipeline& Destination)
             {
-                std::ifstream File(std::string(MDSS_SHADER_DIR) + "/Rendering/" + ShaderName + ".spv",
+                std::ifstream File(std::string(MDSS_SHADER_DIR) + "/Rendering/Overlay/" + ShaderName + ".spv",
                                    std::ios::binary | std::ios::ate);
                 if (!File) throw std::runtime_error(std::string("Cannot open ") + ShaderName + " compute shader.");
                 const auto Size = File.tellg();

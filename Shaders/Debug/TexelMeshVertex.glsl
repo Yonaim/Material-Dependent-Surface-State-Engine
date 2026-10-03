@@ -1,4 +1,4 @@
-// Static topology preserves the source mesh; only sampled display heights are dynamic.
+// 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
 #include "Surface/SurfaceStateData.glsl"
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -29,7 +29,7 @@ void main()
         uint T = InSamples[K];
         if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length())) continue;
         Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
-        // Retain authored smooth/hard normals at source corners, adding the sampled Meso/height change.
+        // 원본 정점의 smooth/hard normal을 유지하면서 샘플된 Meso/높이 변화량만 더한다.
         NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
         Weight += InWeights[K];
     }

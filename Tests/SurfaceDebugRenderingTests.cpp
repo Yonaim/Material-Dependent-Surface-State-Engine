@@ -767,8 +767,8 @@ namespace MDSS::Tests
             std::vector<float>(9 * SurfaceNeighborCount, 0), {}, std::vector<float>(9, SurfaceStateReferenceArea));
         TSurfaceStateDescriptorResources LitDescriptors(Device, GridShared, LitProfiles, LitInstance);
         auto LitConfig = GridConfig;
-        LitConfig.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.vert.spv";
-        LitConfig.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.frag.spv";
+        LitConfig.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.vert.spv";
+        LitConfig.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.frag.spv";
         TGraphicsPipeline LitPipeline(Device, Handles.Pass, LitConfig);
 
         TGPUBuffer VertexReadback(Context.GetPhysicalDevice(), Device, 9 * sizeof(TTexelGeometryVertex),

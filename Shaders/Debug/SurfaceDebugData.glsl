@@ -1,5 +1,5 @@
-// Shared GPU evaluation for height previews, heatmaps and the Texel Inspector.
-// These previews are diagnostic; optional solver feedback builds its own aggregate geometry.
+// 높이 미리보기, heatmap, Texel Inspector가 공유하는 GPU 계산이다.
+// 진단용 형상 계산이며 solver가 사용하는 누적 형상과는 별도로 평가한다.
 #ifndef MDSS_SURFACE_DEBUG_DATA
 #define MDSS_SURFACE_DEBUG_DATA
 #ifndef SURFACE_DEBUG_SET
@@ -60,14 +60,14 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
         D.Status = 3u;
         return D;
     }
-    // State is total texel amount. Convert to fixed-reference-area amount for thickness.
-    // Capacity bounds the geometry contribution, while the State buffer retains excess for transport.
+    // State는 texel 전체 보유량이므로 두께 계산 전에 고정 기준 면적 단위로 환산한다.
+    // 형상 기여량은 Capacity로 제한하지만 초과분은 전달을 위해 State buffer에 남긴다.
     D.ReferenceAmount = min(D.State, D.Capacity) / D.AreaScale;
     float Amount = D.ReferenceAmount * D.Factor;
     float CavityAmount = Amount * D.CavityFactor;
     D.Fill = min(CavityAmount, 1.0);
     D.Excess = max(CavityAmount - 1.0, 0.0);
-    // Display exaggeration must not raise cavity fill above the macro surface.
+    // 표시 배율을 높여도 cavity fill이 macro 표면 위로 넘치지 않도록 제한한다.
     D.CavityHeight = min(D.Fill * AccumulationDisplayScale, 1.0) * D.CavityDepth;
     D.FollowingHeight = (Amount * (1.0 - D.CavityFactor) + D.Excess) *
                         D.ThicknessPerAmount * D.WorldToLocalHeight * AccumulationDisplayScale;
@@ -87,7 +87,7 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
     return D;
 }
 
-// Least-squares height gradient in the macro tangent plane. Seam neighbors use mesh-local positions.
+// macro tangent plane에서 least-squares로 높이 기울기를 구한다. seam 이웃 간 위치 차는 mesh-local 기준이다.
 vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float AccumulationDisplayScale,
                       mat3 NormalMatrix, float HeightScale)
 {

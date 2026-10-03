@@ -4,8 +4,8 @@
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
-#include "Rendering/MaterialParameters.glsl"
-#include "Rendering/Lighting.glsl"
+#include "Rendering/Surface/MaterialParameters.glsl"
+#include "Rendering/Surface/Lighting.glsl"
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -33,6 +33,7 @@ vec3 VisualizeNormal(vec3 Normal)
 
 void main()
 {
+    // tangent-space normal map을 world-space normal로 변환한 뒤 선택된 진단 모드로 출력한다.
     vec3 normalWS = normalize(FragNormal);
     vec3 tangentWS = normalize(FragTangent - normalWS * dot(normalWS, FragTangent));
     vec3 bitangentWS = normalize(cross(normalWS, tangentWS)) * FragTangentSign;
@@ -50,6 +51,7 @@ void main()
     if (!gl_FrontFacing) mappedNormalWS = -mappedNormalWS;
     vec4 albedo = texture(BaseColorTexture, FragUV) * Material.BaseColor;
 
+    // 진단 모드는 색상과 각 좌표계 normal을 시각화해 입력 문제를 구분해 볼 수 있다.
     if (Material.RenderMode == RENDER_MODE_BASE_COLOR)
     {
         OutColor = albedo;

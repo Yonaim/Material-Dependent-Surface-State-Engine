@@ -52,7 +52,7 @@ namespace MDSS
             LayoutInfo.pPushConstantRanges = &Push;
             RequireVk(vkCreatePipelineLayout(Device, &LayoutInfo, nullptr, &PipelineLayout));
 
-            std::ifstream File(std::string(MDSS_SHADER_DIR) + "/Rendering/HeightFieldSmoothing.comp.spv",
+            std::ifstream File(std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/HeightFieldSmoothing.comp.spv",
                                std::ios::binary | std::ios::ate);
             if (!File) throw std::runtime_error("Cannot open height-field smoothing compute shader.");
             const auto Size = File.tellg();

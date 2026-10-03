@@ -11,6 +11,7 @@ layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
+    // 각 texel/channel에서 모든 이웃 방향으로 보낼 원시 flux를 계산한다.
     uint TexelIndex = gl_GlobalInvocationID.x;
     if (TexelIndex >= Solver.LocalTexelCount)
     {
@@ -43,6 +44,7 @@ void main()
             SourceGeometryPrepared = true;
         }
         float RawOutgoing = 0.0;
+        // 아직 source 전체 제한 계수를 적용하지 않은 방향별 flux를 합산한다.
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);

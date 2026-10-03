@@ -1,8 +1,9 @@
+// Lava, water, mud overlay fragment shader들이 공유하는 coverage 기반 조명 경로다.
 #ifndef MDSS_OVERLAY_SURFACE
 #define MDSS_OVERLAY_SURFACE
-#include "Rendering/MaterialParameters.glsl"
-#include "Rendering/Lighting.glsl"
-#include "Rendering/Effects/Lava.glsl"
+#include "Rendering/Surface/MaterialParameters.glsl"
+#include "Rendering/Surface/Lighting.glsl"
+#include "Rendering/Surface/Effects/Lava.glsl"
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec2 FragUV;
 layout(location = 2) flat in uint FragSurfaceIndex;
@@ -11,6 +12,7 @@ layout(location = 4) in float FragCoverage;
 layout(location = 0) out vec4 OutColor;
 void main()
 {
+    // 아주 낮은 coverage는 버리고 재질별 branch에서 색, 조명, 투명도를 정한다.
     const float Cutoff = 0.02;
     if (FragCoverage <= Cutoff) discard;
     vec3 N = normalize(FragNormal);

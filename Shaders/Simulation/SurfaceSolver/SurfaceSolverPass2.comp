@@ -22,7 +22,7 @@ void main()
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
         if (!supportsChannel(TexelIndex, ChannelIndex))
         {
-            // A collapsed instance has no transport area, but its existing total amount is retained.
+            // 면적이 0인 instance에서는 전달을 멈추되, 기존 총량과 새 입력은 보존한다.
             bool SupportedProfile = isValidTexel(TexelIndex) &&
                 ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
             NextState.Values[StateValueIndex] = SupportedProfile ?
@@ -32,6 +32,7 @@ void main()
         }
 
         float Incoming = 0.0;
+        // 이웃의 역방향 slot을 사용해 각 이웃 source의 유출량을 현재 texel로 모은다.
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);

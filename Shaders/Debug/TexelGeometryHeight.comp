@@ -1,3 +1,4 @@
+// texel 높이를 진단 cache에 기록하고, 유효하지 않은 이웃은 NaN으로 표시한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -36,7 +37,7 @@ void main()
                              Push.NormalMatrixColumns[2].xyz);
     TDebugAccumulation D = DebugAccumulation(T, Push.Channel, Push.Channels,
                                             Push.AccumulationDisplayScale, NormalMatrix);
-    // NaN marks neighbors that DebugFinalNormal previously excluded (status 0 or 4).
+    // status 0 또는 4인 이웃은 DebugFinalNormal에서 제외되도록 NaN으로 기록한다.
     GeometryCache.Values[T] = D.Status == 0u || D.Status == 4u
         ? 0x7fc00000u : floatBitsToUint(D.MesoHeight + D.Height);
 }

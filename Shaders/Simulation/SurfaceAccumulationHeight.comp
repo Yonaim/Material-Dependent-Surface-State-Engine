@@ -1,6 +1,6 @@
 /**
  * @file SurfaceAccumulationHeight.comp
- * @brief Compute one accumulation height per texel for the current solver step.
+ * @brief 현재 solver step에서 texel별 누적 높이와 형상 갱신 필요 여부를 계산한다.
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
@@ -14,31 +14,38 @@ void main()
 {
     uint Texel = gl_GlobalInvocationID.x;
     bool Dirty = false;
-    // A zero-workgroup indirect dispatch skips the geometry pass entirely.
-    // Clear its per-texel output here so diagnostics never retain old dirt.
+    // Values 배열은 texel 단위 plane으로 나뉜다.
+    // [0, N): 높이, [N, 2N): 높이 변경 표시,
+    // [2N, 3N): 형상 재계산 표시, 이후: workgroup별 변경 표시다.
+    // 간접 dispatch가 0 workgroup이면 geometry pass 자체가 생략된다.
+    // 간접 dispatch에 workgroup이 없더라도 이전 실행의 표시 값이 남지 않도록 초기화한다.
     if (Texel < Solver.LocalTexelCount)
         AccumulationHeights.Values[2u * Solver.LocalTexelCount + Texel] = 0.0;
     if (Texel < Solver.LocalTexelCount && !isValidTexel(Texel))
     {
+        // 유효하지 않은 texel은 높이와 높이 변경 표시를 모두 0으로 정리한다.
         AccumulationHeights.Values[Solver.LocalTexelCount + Texel] = 0.0;
         AccumulationHeights.Values[Texel] = 0.0;
     }
     else if (Texel < Solver.LocalTexelCount)
     {
+        // 새 누적 높이를 계산하고, 이전에 만든 동적 형상과 비교한다.
         float Height = accumulationHeight(Texel);
         float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
         vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
-        // Rendering may refresh the displayed height without rebuilding geometry.
+        // 렌더링용 높이만 갱신된 경우도 있으므로 높이 차이와 저장 normal의 유효성을 함께 확인한다.
         Dirty = Height != BuiltHeight || any(isnan(BuiltNormal)) ||
             any(isinf(BuiltNormal)) || dot(BuiltNormal, BuiltNormal) < 0.5;
         AccumulationHeights.Values[Solver.LocalTexelCount + Texel] = Dirty ? 1.0 : 0.0;
         AccumulationHeights.Values[Texel] = Height;
     }
 
+    // workgroup 안에서 하나라도 Dirty인 texel이 있는지 합친다.
     if (gl_LocalInvocationIndex == 0u) WorkgroupDirty = 0u;
     barrier();
     if (Dirty) atomicOr(WorkgroupDirty, 1u);
     barrier();
+    // 다음 단계의 간접 실행 판단에 사용할 workgroup별 요약값을 기록한다.
     if (gl_LocalInvocationIndex == 0u)
         AccumulationHeights.Values[3u * Solver.LocalTexelCount + gl_WorkGroupID.x] = float(WorkgroupDirty);
 }

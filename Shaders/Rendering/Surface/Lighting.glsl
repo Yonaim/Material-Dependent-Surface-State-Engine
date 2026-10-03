@@ -1,7 +1,8 @@
-// GGX distribution + correlated Smith visibility + Schlick Fresnel.
-// Reference: https://google.github.io/filament/main/filament.html (standard model).
+// GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다.
+// 표준식 참고: https://google.github.io/filament/main/filament.html
 float EvaluateSpecularLobe(vec3 N, vec3 V, vec3 L, float PerceptualRoughness, float F0)
 {
+    // 미세면 분포(D), 가시성(V), Fresnel(F)을 계산해 specular 기여도를 구한다.
     vec3 Sum = V + L;
     vec3 H = Sum * inversesqrt(max(dot(Sum, Sum), 1e-12));
     float NoV = max(dot(N,V), 1e-4), NoL = max(dot(N,L), 0.0);
@@ -20,6 +21,7 @@ float EvaluateSpecularLobe(vec3 N, vec3 V, vec3 L, float PerceptualRoughness, fl
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
                   float WetnessCoverage, float WaterFilmCoverage, float WetnessSpecularStrength)
 {
+    // 고정 key light와 ambient 항에 wetness 및 film 반사를 더한다.
     vec3 V = ViewVector * inversesqrt(max(dot(ViewVector, ViewVector), 1e-12));
     vec3 L = normalize(vec3(0.35, 0.55, 1.0));
     vec3 Sum = V + L;
@@ -42,12 +44,12 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
     float FilmHighlight = EvaluateSpecularLobe(N, V, L, PerceptualRoughness, 0.14);
     Direct += vec3(WetHighlight * Wet * 0.65 * WetnessSpecularStrength + FilmHighlight * Film * 0.9);
 
-    // A restrained view-angle reflection hint keeps wet edges legible without an environment map.
+    // environment map 없이도 비스듬한 각도의 젖은 가장자리가 보이도록 약한 반사를 더한다.
     float Grazing = pow(1.0 - max(dot(N, V), 0.0), 5.0);
     vec3 SoftWetReflection = vec3(0.12, 0.15, 0.18) * (Wet * Grazing * 0.45 * WetnessSpecularStrength);
     vec3 FilmEdgeReflection = vec3(0.22, 0.27, 0.32) * (Film * Grazing * 0.8);
 
-    // Existing ambient control, fixed white key light; no environment map or tone mapper.
+    // 기존 ambient 조절과 고정된 흰 key light를 사용한다. environment map과 tone mapper는 없다.
     return Albedo * Ambient + Direct * (1.0-Ambient) + SoftWetReflection + FilmEdgeReflection;
 }
 

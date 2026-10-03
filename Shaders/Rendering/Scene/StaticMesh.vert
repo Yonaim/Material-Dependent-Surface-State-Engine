@@ -23,6 +23,7 @@ layout(location = 4) out vec3 FragWorldPosition;
 
 void main()
 {
+    // normal에는 inverse-transpose를, tangent에는 model의 선형 변환을 적용한다.
     mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
     FragNormal = normalize(NormalMatrix * InNormal);
     FragTangent = normalize(mat3(Push.Model) * InTangent.xyz);

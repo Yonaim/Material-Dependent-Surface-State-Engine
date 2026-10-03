@@ -1,3 +1,4 @@
+// 표시용 높이와 normal을 계산하며, 변경되지 않은 tile은 baseline cache를 재사용한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -36,8 +37,8 @@ vec3 CachedFinalNormal(uint Texel)
         Texel >= uint(Normals.Values.length()) || Texel >= uint(NeighborIndices.Values.length())) return Fallback;
     float CenterHeight = DisplayHeight(Texel);
     if (isnan(CenterHeight)) return Fallback;
-    // The cached baseline uses this same least-squares fit with meso heights only.
-    // Skip it for TotalHeight, whose invalid-neighbor rules differ from the preview.
+    // baseline cache도 Meso 높이에 같은 least-squares fitting을 적용해 만든 값이다.
+    // TotalHeight는 이웃 제외 규칙이 다르므로 해당 cache를 재사용하지 않는다.
     if (Push.UseBaseline != 0u && Texel < Push.TexelCount &&
         Texel < uint(GeometryScalars.Values.length()) &&
         CenterHeight == GeometryScalars.Values[Texel].MesoVirtualHeight)
@@ -97,12 +98,14 @@ vec3 CachedFinalNormal(uint Texel)
 
 void main()
 {
+    // 2D dispatch 좌표를 1D texel 번호로 바꾼다.
     uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     if (T >= Push.TexelCount) return;
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
     uint TileFlag = GeometryCache.Values[Push.TexelCount * 4u + T / TilePixels];
     if (TileFlag == 0u)
     {
+        // tile 내 State가 바뀌지 않았으면 비싼 높이장 normal 계산을 생략한다.
         float BaseHeight = GeometryScalars.Values[T].MesoVirtualHeight;
         if (isnan(BaseHeight) || isinf(BaseHeight)) BaseHeight = 0.0;
         vec3 BaseNormal = MesoNormals.Values[T].xyz;

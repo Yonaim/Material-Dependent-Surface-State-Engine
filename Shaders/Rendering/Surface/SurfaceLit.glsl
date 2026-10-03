@@ -1,10 +1,11 @@
-#include "Rendering/MaterialParameters.glsl"
-#include "Rendering/StateSampling.glsl"
-#include "Rendering/Effects/Mud.glsl"
-#include "Rendering/Effects/Wetness.glsl"
-#include "Rendering/Effects/WaterFilm.glsl"
-#include "Rendering/Effects/Lava.glsl"
-#include "Rendering/Lighting.glsl"
+// Static mesh와 texel mesh가 공유하는 PBR 조명 및 demo State 효과 경로다.
+#include "Rendering/Surface/MaterialParameters.glsl"
+#include "Rendering/Surface/StateSampling.glsl"
+#include "Rendering/Surface/Effects/Mud.glsl"
+#include "Rendering/Surface/Effects/Wetness.glsl"
+#include "Rendering/Surface/Effects/WaterFilm.glsl"
+#include "Rendering/Surface/Effects/Lava.glsl"
+#include "Rendering/Surface/Lighting.glsl"
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
 layout(location = 2) in float FragTangentSign;
@@ -20,11 +21,12 @@ void main()
     vec3 N = normalize(FragNormal);
 #ifdef TEXEL_LIT
 #ifndef BASE_SURFACE_LIT
-    // The regular texel-lit view adds material detail to the displaced normal.
+    // 일반 texel-lit view는 변위 normal 위에 material 세부 normal을 더한다.
     N = normalize(FragMesoNormalWS);
 #endif
-    // The base pass already displaces geometry using this normal map's integrated height.
-    // Shade it from the macro normal so the same normal map is not applied twice.
+    // base pass가 normal map의 적분 높이로 이미 geometry를 변위시켰다.
+    // 같은 normal map을 두 번 적용하지 않도록 macro normal에서 출발한다.
+    // texel mesh에는 정점 tangent가 없으므로 위치와 UV의 screen derivative에서 tangent basis를 복원한다.
     vec3 PositionDx = dFdx(FragWorldPosition);
     vec3 PositionDy = dFdy(FragWorldPosition);
     vec2 UVDx = dFdx(FragUV);
@@ -47,6 +49,7 @@ void main()
         }
     }
 #else
+    // 일반 mesh는 정점에서 전달된 tangent와 handedness로 tangent-to-world 변환을 구성한다.
     vec3 T = normalize(FragTangent - N * dot(N, FragTangent));
     vec3 B = normalize(cross(N,T)) * FragTangentSign;
     vec3 MapN = texture(NormalTexture, FragUV).xyz * 2.0 - 1.0;
@@ -62,11 +65,13 @@ void main()
     float Lava = 0.0;
     if (Material.DemoStateChannels.w != 0u)
     {
+        // demo channel ID는 동적으로 지정되며, 모든 상태를 공통 saturation sampling 경로로 읽는다.
         Wetness = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.x, Material.StateChannelCount);
         float Mud = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.y, Material.StateChannelCount);
         WaterFilm = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.z, Material.StateChannelCount);
         Lava = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoExtraStateChannels.x, Material.StateChannelCount);
 #ifndef BASE_SURFACE_LIT
+        // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.
         ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
         ApplyLava(Lava, Color.rgb, Roughness);
 #endif

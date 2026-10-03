@@ -198,6 +198,7 @@ void main()
         return;
     }
 
+    // texel grid와 면적 모드는 simulation data 없이 UV와 화면 미분값으로 바로 진단한다.
     if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
     {
         OutColor = vec4(TexelGridColor(FragUV * vec2(Range.yz), UVFootprint * vec2(Range.yz)), 1.0);
@@ -219,6 +220,7 @@ void main()
     bool bSimulationEnabled = bGeometryValid &&
                               TexelProfileIndices.Values[TexelIndex] != InvalidIndex;
 
+    // geometry 유효성은 Surface 소속 여부, simulation 활성 여부는 profile 할당 여부로 구분한다.
     if (Material.RenderMode == RENDER_MODE_SURFACE_VALIDITY)
     {
         vec3 Color = !bGeometryValid ? vec3(0.86, 0.12, 0.08) :
@@ -226,7 +228,7 @@ void main()
         OutColor = vec4(Color, 1.0);
         return;
     }
-    // Refined source boundary faces remain visible even where UV cells have no center sample.
+    // UV cell 중심 샘플이 없는 곳도 세밀하게 만든 source boundary 면은 계속 표시한다.
     if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY ||
         Material.RenderMode == RENDER_MODE_TOTAL_SIMULATION_HEIGHT)
     {
@@ -241,6 +243,7 @@ void main()
         return;
     }
 
+    // 이후 모드는 texel에 대응하는 solver 데이터를 확인한 뒤 각 buffer를 읽는다.
     if (Material.RenderMode == RENDER_MODE_OUTGOING_FLUX_SCALE)
     {
         if (Material.StateChannelCount == 0u || Material.DebugStateChannel >= Material.StateChannelCount)
@@ -342,6 +345,7 @@ void main()
 
     if (Material.RenderMode == RENDER_MODE_ACCUMULATION)
     {
+        // 누적 높이를 cavity fill, cavity 초과분, 표면 위 적층 높이로 나눠 표시한다.
         TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel,
                                                 Material.StateChannelCount, Material.DebugOptions.z,
                                                 AccumulationNormalMatrix());
@@ -404,6 +408,7 @@ void main()
         return;
     }
 
+    // 기본 heatmap은 현재 State를 profile capacity로 나눈 포화도를 색으로 나타낸다.
     TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel,
                                             Material.StateChannelCount, Material.DebugOptions.z,
                                             AccumulationNormalMatrix());

@@ -1,7 +1,8 @@
+// chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
-#include "Rendering/StateSampling.glsl"
+#include "Rendering/Surface/StateSampling.glsl"
 #include "Debug/TexelGeometryData.glsl"
 
 layout(local_size_x = 64) in;
@@ -33,6 +34,7 @@ float DisplayedCavityFill(uint Texel, uint Surface)
 
 void main()
 {
+    // 각 texel을 중심으로 한 3x3 이웃만 사용해 경계를 보존하며 smoothing한다.
     uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     if (T >= Push.TexelCount) return;
     TTexelGeometryVertex Original = InputGeometry.Values[T];

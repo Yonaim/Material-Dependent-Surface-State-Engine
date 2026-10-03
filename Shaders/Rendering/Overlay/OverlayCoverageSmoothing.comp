@@ -1,7 +1,8 @@
+// overlay 정점 coverage를 주변 simulation texel에서 샘플해 부드럽게 만든다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
-#include "Rendering/StateSampling.glsl"
+#include "Rendering/Surface/StateSampling.glsl"
 
 layout(local_size_x = 64) in;
 
@@ -57,6 +58,7 @@ bool IsTileActive(TOverlayVertex Vertex)
 
 void main()
 {
+    // 비활성 tile은 이전 실행값이 남지 않도록 정점 coverage를 0으로 초기화한다.
     if (GeometryCache.Values.length() == 0 || GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u)
         return;
 

@@ -1,6 +1,6 @@
 /**
  * @file SurfaceAccumulation.comp
- * @brief Build instance-local displaced positions and accumulation-aware normals for one solver step.
+ * @brief 현재 solver step의 누적 높이를 반영해 instance별 위치와 normal을 갱신한다.
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
@@ -16,6 +16,8 @@ void main()
 {
     uint Texel = gl_GlobalInvocationID.x;
     if (Texel >= Solver.LocalTexelCount) return;
+
+    // 전체 재계산 요청이 있거나, 이 texel 또는 인접 texel의 높이가 바뀌면 형상을 다시 만든다.
     bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
                  AccumulationHeights.Values[Solver.LocalTexelCount + Texel] != 0.0;
     for (uint Slot = 0u; Slot < SurfaceNeighborCount && !Dirty; ++Slot)
@@ -26,16 +28,19 @@ void main()
     }
     AccumulationHeights.Values[2u * Solver.LocalTexelCount + Texel] = Dirty ? 1.0 : 0.0;
     if (!Dirty) return;
+
+    // 기본 meso 형상 위에 누적 높이를 반영한 위치와 normal을 구한다.
     uint PositionIndex = Texel * 2u;
     vec3 Position = effectiveLocalPosition(Texel);
     vec3 Normal = effectiveLocalNormal(Texel);
+    // 입력 데이터가 비정상일 때는 원래 texel 형상으로 되돌려 NaN 전파를 막는다.
     if (any(isnan(Position)) || any(isinf(Position)))
         Position = Positions.Values[Texel].xyz + Normals.Values[Texel].xyz * GeometryScalars.Values[Texel].MesoVirtualHeight;
     if (any(isnan(Normal)) || any(isinf(Normal)) || dot(Normal, Normal) < 1.0e-12)
         Normal = MesoNormals.Values[Texel].xyz;
-    // Cache the world-space mean once per texel. Transfer weights need the
-    // source and target means, so rebuilding each target's eight distances in
-    // every source edge would repeat the same work up to eight times.
+
+    // transfer weight 계산에 쓰는 이웃 평균 거리를 texel마다 한 번 계산해 캐시한다.
+    // 평균 거리는 world space 기준이며, 이웃 간 거리를 각 source edge에서 반복 계산하지 않는다.
     float MeanDistance = 0.0;
     if (isValidTexel(Texel) && (Solver.Flags & (1u << 7u)) != 0u)
     {
@@ -61,6 +66,8 @@ void main()
         }
         if (Count > 0u) MeanDistance /= float(Count);
     }
+
+    // DynamicGeometry의 두 vec4에는 각각 위치+평균거리, normal+마지막 생성 높이를 저장한다.
     DynamicGeometry.Values[PositionIndex] = vec4(Position, MeanDistance);
     DynamicGeometry.Values[PositionIndex + 1u] = vec4(normalize(Normal), AccumulationHeights.Values[Texel]);
 }

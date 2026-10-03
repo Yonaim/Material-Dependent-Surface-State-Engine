@@ -1,3 +1,4 @@
+// 삼각형 내부 coverage 경계와 mesh 외곽선을 따라 overlay의 수직 옆면 segment를 생성한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -94,6 +95,7 @@ struct TPoint
 
 TPoint ReadGeometryPoint(uint Index)
 {
+    // mesh 정점의 최대 네 texel 샘플을 보간해 밑면(Meso)과 윗면(누적 높이)을 만든다.
     TOverlayVertex V = MeshVertices.Values[Index];
     TPoint P;
     P.UV = V.UVSurface.xy;
@@ -124,6 +126,7 @@ TPoint Interpolate(TPoint A, TPoint B, float T)
 
 void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface)
 {
+    // 한 segment는 두 삼각형, 즉 정점 6개로 그릴 수 있도록 draw command와 segment buffer를 갱신한다.
     uint LocalVertex = atomicAdd(DrawCommands.Values[Group].VertexCount, 6u);
     uint Segment = DrawCommands.Values[Group].FirstVertex / 6u + LocalVertex / 6u;
     Segments.Values[Segment].BaseA = vec4(A.Base, A.UV.x);
@@ -135,6 +138,7 @@ void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface)
 
 void main()
 {
+    // coverage 경계를 넘는 삼각형 변과 mesh boundary edge를 같은 segment 형식으로 저장한다.
     if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u) return;
     uint Slot = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     const float Cutoff = 0.02;
@@ -146,6 +150,7 @@ void main()
     bool ValidTriangle = false;
     if (Slot < Push.TriangleCount)
     {
+        // 삼각형의 세 꼭짓점 coverage를 cutoff와 비교해 교차점 두 개를 찾는다.
         uint Offset = Slot * 3u;
         if (Offset + 2u < uint(MeshIndices.Values.length()))
         {
@@ -211,6 +216,7 @@ void main()
         return;
     }
 
+    // 삼각형 샘플만으로 놓칠 수 있는 UV 외곽 경계도 별도로 잘라낸다.
     uvec4 Edge = BoundaryEdges.Values[Slot - Push.TriangleCount];
     if (Edge.x >= uint(Coverage.Values.length()) || Edge.y >= uint(Coverage.Values.length())) return;
     if (!IsTileActive(Edge.x) && !IsTileActive(Edge.y)) return;

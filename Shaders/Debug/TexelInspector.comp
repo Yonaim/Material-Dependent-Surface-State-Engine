@@ -1,3 +1,4 @@
+// 선택한 texel과 channel의 누적량, 높이 분해, normal을 CPU 진단용 snapshot으로 복사한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -11,6 +12,7 @@ layout(push_constant) uniform TSelection
 layout(std430, set = 1, binding = 0) writeonly buffer TSnapshot { vec4 Values[6]; } Snapshot;
 void main()
 {
+    // snapshot은 고정된 여섯 vec4 슬롯에 계산 중간값을 묶어 기록한다.
     mat3 NormalMatrix = mat3(Selection.NormalMatrixColumns[0].xyz,
                              Selection.NormalMatrixColumns[1].xyz,
                              Selection.NormalMatrixColumns[2].xyz);

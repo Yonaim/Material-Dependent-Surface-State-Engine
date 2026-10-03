@@ -90,7 +90,7 @@ namespace MDSS
             CreatePipeline("Debug", "TexelGeometryBaseline.comp", BaselinePipeline);
             CreatePipeline("Debug", "TexelGeometry.comp", Pipeline);
             if (bEnableOccupancyScan)
-                CreatePipeline("Rendering", "OverlayOccupancyScan.comp", OccupancyPipeline);
+                CreatePipeline("Rendering/Overlay", "OverlayOccupancyScan.comp", OccupancyPipeline);
             const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             static_cast<std::uint32_t>(MaxInstances * 2U)};
             VkDescriptorPoolCreateInfo PoolInfo{};

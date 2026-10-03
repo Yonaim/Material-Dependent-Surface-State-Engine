@@ -1,7 +1,8 @@
+// overlay 상단 mesh에 texel 높이, normal, coverage를 보간해 표면 위에 배치한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
-#include "Rendering/StateSampling.glsl"
-#include "Rendering/MaterialParameters.glsl"
+#include "Rendering/Surface/StateSampling.glsl"
+#include "Rendering/Surface/MaterialParameters.glsl"
 #include "Debug/TexelGeometryData.glsl"
 
 layout(location = 0) in vec3 InPosition;
@@ -28,6 +29,7 @@ layout(location = 4) out float FragCoverage;
 
 void main()
 {
+    // 각 mesh 정점이 참조하는 최대 네 texel의 형상을 bilinear weight로 보간한다.
     float Height = 0.0;
     vec3 NormalOffset = vec3(0.0);
     float Weight = 0.0;

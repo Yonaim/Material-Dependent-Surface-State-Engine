@@ -10,6 +10,7 @@ layout(location = 0) out vec4 OutColor;
 
 void main()
 {
+    // grid 선분에만 edge fade를 적용하고 axis 정점은 전달된 색과 alpha를 그대로 쓴다.
     if (EdgeCoordinate < -1.5)
     {
         OutColor = FragColor;

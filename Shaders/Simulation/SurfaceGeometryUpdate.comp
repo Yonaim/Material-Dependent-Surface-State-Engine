@@ -1,6 +1,6 @@
 /**
  * @file SurfaceGeometryUpdate.comp
- * @brief Rebuild edge transfer weights from the current accumulation geometry.
+ * @brief 현재 누적 형상으로 이웃 edge별 transfer weight를 다시 계산한다.
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
@@ -37,6 +37,7 @@ void main()
 {
     uint Source = gl_GlobalInvocationID.x;
     if (Source >= Solver.LocalTexelCount) return;
+    // 높이 변경 표시가 있는 source 또는 이웃에 대해서만 관련 transfer weight를 다시 만든다.
     bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
                  AccumulationHeights.Values[2u * Solver.LocalTexelCount + Source] != 0.0;
     for (uint Slot = 0u; Slot < SurfaceNeighborCount && !Dirty; ++Slot)
@@ -55,6 +56,7 @@ void main()
     uint Base = Source * SurfaceNeighborCount;
     if (!isValidTexel(Source))
     {
+        // 유효하지 않은 source에서는 모든 방향의 전달을 막는다.
         for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
             TransferWeights.Values[Base + Slot] = 0.0;
         return;
@@ -69,6 +71,7 @@ void main()
 
     for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
     {
+        // 기본 weight 1에서 시작해 설정된 거리, normal, profile 경계 보정을 곱한다.
         uint Target = neighborIndex(Source, Slot);
         float Weight = 0.0;
         if (Target != InvalidTexelIndex && Target < Solver.LocalTexelCount && isValidTexel(Target))

@@ -318,8 +318,8 @@ namespace MDSS
         {
             TGraphicsPipelineConfig Config{};
             Config.ShaderStages = {
-                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/StaticMesh.vert.spv", "main"},
-                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/StaticMesh.frag.spv", "main"},
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Scene/StaticMesh.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Scene/StaticMesh.frag.spv", "main"},
             };
             Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             // Demo meshes can turn fully upside down; both sides must remain visible.
@@ -417,12 +417,12 @@ namespace MDSS
                                                                VkDescriptorSetLayout OutputLayout = VK_NULL_HANDLE)
         {
             auto Config = BuildSurfaceDebugPipelineConfig(MaterialLayout, SurfaceLayout);
-            Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/SurfaceLit.vert.spv";
-            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/SurfaceLit.frag.spv";
+            Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.vert.spv";
+            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.frag.spv";
             if (OutputLayout != VK_NULL_HANDLE)
             {
-                Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.vert.spv";
-                Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/TexelSurfaceLit.frag.spv";
+                Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.vert.spv";
+                Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.frag.spv";
                 SetTexelMeshVertexLayout(Config);
                 Config.DescriptorSetLayouts.push_back(OutputLayout);
             }
@@ -434,7 +434,7 @@ namespace MDSS
                                                                    VkDescriptorSetLayout OutputLayout)
         {
             auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, OutputLayout);
-            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/BaseSurfaceLit.frag.spv";
+            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/BaseSurfaceLit.frag.spv";
             return Config;
         }
 
@@ -444,10 +444,10 @@ namespace MDSS
         {
             auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, ComputedLayout);
             Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) +
-                (bSide ? "/Rendering/OverlaySide.vert.spv" : "/Rendering/OverlayTop.vert.spv");
+                (bSide ? "/Rendering/Overlay/OverlaySide.vert.spv" : "/Rendering/Overlay/OverlayTop.vert.spv");
             Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) +
-                (bLava ? "/Rendering/OverlayLava.frag.spv" :
-                 bWater ? "/Rendering/OverlayWater.frag.spv" : "/Rendering/OverlayMud.frag.spv");
+                (bLava ? "/Rendering/Overlay/OverlayLava.frag.spv" :
+                 bWater ? "/Rendering/Overlay/OverlayWater.frag.spv" : "/Rendering/Overlay/OverlayMud.frag.spv");
             Config.CullMode = VK_CULL_MODE_NONE;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             Config.bDepthWriteEnabled = !bWater;
@@ -481,8 +481,8 @@ namespace MDSS
         {
             TGraphicsPipelineConfig Config{};
             Config.ShaderStages = {
-                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Gizmo.vert.spv", "main"},
-                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Gizmo.frag.spv", "main"},
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Scene/Gizmo.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Scene/Gizmo.frag.spv", "main"},
             };
             Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             Config.CullMode = VK_CULL_MODE_NONE;
@@ -517,8 +517,8 @@ namespace MDSS
         {
             TGraphicsPipelineConfig Config = BuildGizmoPipelineConfig();
             Config.ShaderStages = {
-                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/WorldReference.vert.spv", "main"},
-                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/WorldReference.frag.spv", "main"},
+                {VK_SHADER_STAGE_VERTEX_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Scene/WorldReference.vert.spv", "main"},
+                {VK_SHADER_STAGE_FRAGMENT_BIT, std::string(MDSS_SHADER_DIR) + "/Rendering/Scene/WorldReference.frag.spv", "main"},
             };
             VkVertexInputAttributeDescription EdgeCoordinate{};
             EdgeCoordinate.location = 2;

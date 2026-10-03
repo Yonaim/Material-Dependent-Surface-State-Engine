@@ -1,3 +1,4 @@
+// State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -60,6 +61,7 @@ vec3 BaselineNormal(uint Texel)
 
 void main()
 {
+    // 각 invocation은 한 texel의 기준 normal을 계산해 3개 uint plane에 보관한다.
     uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     if (T >= Push.TexelCount) return;
     vec3 Normal = BaselineNormal(T);

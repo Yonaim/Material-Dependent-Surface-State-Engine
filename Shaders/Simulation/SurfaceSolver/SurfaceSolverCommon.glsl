@@ -7,6 +7,7 @@
 
 const uint InvalidSurfaceId = 0xffffffffu;
 const uint InvalidTexelIndex = 0xffffffffu;
+// simulation topology는 texel마다 최대 8개 방향 slot을 사용하며, 없는 이웃은 sentinel로 표시한다.
 const uint SurfaceNeighborCount = 8u;
 layout(constant_id = 0) const bool UseRawFluxCache = false;
 
@@ -26,6 +27,7 @@ struct TSurfaceGPUGeometryScalar
     float MesoGaussianCurvature;
 };
 
+// set 0의 binding은 CPU solver와 공유하는 데이터 계약이다. state 배열은 texel-major/channel-minor 순서다.
 layout(std430, set = 0, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
 {
     uint Values[];
@@ -105,6 +107,7 @@ layout(std430, set = 0, binding = 20) readonly buffer TSurfaceWorldTexelAreas
 {
     float Values[];
 } WorldTexelAreas;
+// dynamic geometry의 texel당 두 vec4: 위치+평균 이웃 거리, local normal+마지막 생성 높이.
 layout(std430, set = 0, binding = 21) buffer TSurfaceDynamicGeometry
 {
     vec4 Values[]; // displaced position + mean distance, local normal + last built height
@@ -119,6 +122,7 @@ layout(std430, set = 0, binding = 22) readonly buffer TSurfaceAccumulationHeight
 } AccumulationHeights;
 
 const float StateReferenceArea = 1.0 / (256.0 * 256.0);
+// world texel 면적을 solver profile의 고정 기준 면적 단위로 변환한다.
 float texelAreaScale(uint TexelIndex) { return WorldTexelAreas.Values[TexelIndex] / StateReferenceArea; }
 
 layout(push_constant) uniform TSurfaceSolverPushConstants
@@ -139,7 +143,7 @@ bool rawFluxCacheEnabled()
 
 const float GeometryEpsilon = 1.0e-6;
 // Profile은 [0, 1] 무차원 계수를 저장하며 실제 속도는 여기서 계산한다.
-// Share the calibration with the CPU transport step bound (ADR 0033).
+// CPU transport step bound와 동일한 보정값을 사용한다 (ADR 0033).
 #include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
 const float BaseSaturationTransferRate = MDSS_BASE_SATURATION_TRANSFER_RATE; // State / second
 const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // State / (world-length * second)
@@ -206,7 +210,7 @@ float accumulationHeight(uint TexelIndex)
             isnan(Factor) || isinf(Factor) || Factor <= 0.0 ||
             isnan(CavityFactor) || isinf(CavityFactor) ||
             isnan(ThicknessPerAmount) || isinf(ThicknessPerAmount) || ThicknessPerAmount < 0.0) continue;
-        // Capacity bounds the geometry contribution, while the State buffer retains excess for transport.
+        // 형상에 반영되는 양은 Capacity로 제한하고, 초과량은 전달 계산을 위해 State에 유지한다.
         float Capacity = P.CapacityInputAndTransfer.x * AreaScale;
         if (isnan(Capacity) || isinf(Capacity) || Capacity <= 0.0) continue;
         State = min(State, Capacity);
@@ -218,14 +222,14 @@ float accumulationHeight(uint TexelIndex)
     }
     float MesoHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
     float CavityHeight = min(CavityAmount, 1.0) * max(-MesoHeight, 0.0);
-    // Above-capacity cavity contributions join the surface in proportion to each State's cavity share.
+    // cavity 용량을 초과한 기여는 각 State의 cavity 비중에 따른 두께로 표면 위에 쌓인다.
     if (CavityAmount > 1.0)
         FollowingHeightWorld += (CavityAmount - 1.0) * (CavityThicknessWeighted / CavityAmount);
     mat3 NormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
                              Solver.NormalMatrixAndUpColumns[1].xyz,
                              Solver.NormalMatrixAndUpColumns[2].xyz);
     vec3 LocalNormal = normalize(Normals.Values[TexelIndex].xyz);
-    // Local-normal displacement projects to the requested thickness along the world geometric normal.
+    // local normal 방향 변위를 world geometric normal 방향의 요청 두께와 맞춘다.
     float WorldToLocalHeight = length(NormalMatrix * LocalNormal);
     float FollowingHeight = FollowingHeightWorld * WorldToLocalHeight;
     float Height = CavityHeight + FollowingHeight;
@@ -234,6 +238,7 @@ float accumulationHeight(uint TexelIndex)
 
 vec3 effectiveLocalPosition(uint TexelIndex)
 {
+    // 기본 Meso offset에 accumulation height를 선택적으로 더한 local-space 위치다.
     vec3 Position = Positions.Values[TexelIndex].xyz +
                     Normals.Values[TexelIndex].xyz * GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
     if ((Solver.Flags & (1u << 6u)) != 0u)
@@ -243,6 +248,7 @@ vec3 effectiveLocalPosition(uint TexelIndex)
 
 vec3 effectiveLocalNormal(uint TexelIndex)
 {
+    // accumulation 형상이 켜져 있으면 이웃 높이의 least-squares gradient로 normal을 보정한다.
     if ((Solver.Flags & (1u << 6u)) == 0u) return MesoNormals.Values[TexelIndex].xyz;
     vec3 Fallback = MesoNormals.Values[TexelIndex].xyz;
     vec3 N = normalize(Normals.Values[TexelIndex].xyz);
@@ -274,6 +280,7 @@ vec3 effectiveLocalNormal(uint TexelIndex)
 
 float concavityWeight(uint TexelIndex)
 {
+    // accumulation 형상이 꺼져 있으면 사전 계산된 weight를 그대로 사용한다.
     float StaticWeight = GeometryScalars.Values[TexelIndex].ConcavityWeight;
     if ((Solver.Flags & (1u << 6u)) == 0u) return StaticWeight;
 
@@ -323,6 +330,7 @@ float concavityWeight(uint TexelIndex)
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex)
 {
+    // 유효 texel이고 양의 면적이며, 해당 texel의 profile이 channel을 지원해야 한다.
     if (!isValidTexel(TexelIndex) || ChannelIndex >= Solver.StateChannelCount)
     {
         return false;
@@ -362,7 +370,7 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
 }
 
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.
-// RawFlux cache를 쓰지 않는 Pass 2에서는 유입 source의 형상 데이터를 준비한 뒤 방향별 flux를 다시 계산한다.
+// RawFlux cache를 쓰지 않는 Pass 2는 유입 source의 형상을 준비해 방향별 flux를 다시 계산한다.
 mat3 SolverModelLinear;
 vec3 SolverUp;
 vec3 SourcePosition;
@@ -371,6 +379,7 @@ bool SourceGeometryValid;
 
 void prepareSourceGeometry(uint SourceTexel)
 {
+    // 중력의 표면 접선 성분과 source 위치를 한 번 계산해 이웃별 geometry drive에 재사용한다.
     SourceGeometryValid = false;
     if ((Solver.Flags & (1u << 0u)) != 0u)
     {
@@ -436,6 +445,7 @@ float geometryDrive(uint TargetTexel)
 float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
               TSurfaceGPUProfileParameters SourceParameters, float SourceSaturation)
 {
+    // 포화도 차이와 경사 방향 이동량을 합쳐 source에서 target으로의 양을 계산한다.
     if (CachedTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0 ||
         !supportsChannel(TargetTexel, ChannelIndex))
     {

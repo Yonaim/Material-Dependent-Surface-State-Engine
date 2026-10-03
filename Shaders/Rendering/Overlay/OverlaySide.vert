@@ -1,3 +1,4 @@
+// compute pass가 만든 옆면 segment를 6개 정점으로 펼쳐 world-space 조명 입력을 만든다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 struct TSideSegment
@@ -17,6 +18,7 @@ layout(location = 3) out vec3 FragWorldPosition;
 layout(location = 4) out float FragCoverage;
 void main()
 {
+    // 각 정점은 segment 내 corner 번호로 결정되며, 무효 segment는 clip space 밖으로 보낸다.
     uint SegmentIndex = uint(gl_VertexIndex) / 6u;
     uint Corner = uint(gl_VertexIndex) % 6u;
     TSideSegment S = Segments.Values[SegmentIndex];
@@ -38,6 +40,7 @@ void main()
     vec3 Edge = BaseB - BaseA;
     vec3 Up = 0.5 * (TopA + TopB - BaseA - BaseB);
     vec3 N = cross(Edge, Up);
+    // 높이가 거의 0인 면에서도 가능한 normal을 만들고 안쪽 방향을 기준으로 뒤집는다.
     if (dot(N, N) < 1e-16) N = cross(Edge, TopA - BaseA);
     if (dot(N, N) < 1e-16) N = vec3(0.0, 0.0, 1.0);
     N = normalize(N);
