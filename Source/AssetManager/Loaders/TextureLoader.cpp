@@ -36,8 +36,8 @@ namespace MDSS
 
         stbi_image_free(Pixels);
         TLogger::Debug("TextureLoader",
-                      "Decoded '" + Path.filename().string() + "' as RGBA8 (" + std::to_string(Data.Width) + "x" +
-                          std::to_string(Data.Height) + ", source channels=" + std::to_string(Channels) + ").");
+                       "Decoded '" + Path.filename().string() + "' as RGBA8 (" + std::to_string(Data.Width) + "x" +
+                           std::to_string(Data.Height) + ", source channels=" + std::to_string(Channels) + ").");
         return Data;
     }
 } // namespace MDSS

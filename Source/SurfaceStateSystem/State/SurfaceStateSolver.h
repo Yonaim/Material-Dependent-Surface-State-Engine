@@ -40,8 +40,8 @@ namespace MDSS
 
     struct TSurfaceSolverDebugSettings
     {
-        bool bRawFluxCacheEnabled = false;
-        bool bAccumulationFeedbackEnabled = false;
+        bool                                                                  bRawFluxCacheEnabled = false;
+        bool                                                                  bAccumulationFeedbackEnabled = false;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, true};
 
@@ -67,37 +67,37 @@ namespace MDSS
         TSurfaceStateSolver(TSurfaceStateSolver&&) = delete;
         TSurfaceStateSolver& operator=(TSurfaceStateSolver&&) = delete;
 
-        void RecordStep(VkCommandBuffer CommandBuffer,
+        void RecordStep(VkCommandBuffer                         CommandBuffer,
                         const TSurfaceStateDescriptorResources& Descriptors,
-                        bool bCurrentStateAB,
-                        std::size_t TexelCount,
-                        std::size_t ChannelCount,
-                        float DeltaTime,
-                        const glm::mat4& ModelMatrix,
-                        const glm::vec3& GravityWorld,
-                        std::uint32_t SolverFlags = 0U,
-                        VkQueryPool TimestampQueryPool = VK_NULL_HANDLE,
-                        std::uint32_t FirstPassQuery = 0U) const;
-        void RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer,
+                        bool                                    bCurrentStateAB,
+                        std::size_t                             TexelCount,
+                        std::size_t                             ChannelCount,
+                        float                                   DeltaTime,
+                        const glm::mat4&                        ModelMatrix,
+                        const glm::vec3&                        GravityWorld,
+                        std::uint32_t                           SolverFlags = 0U,
+                        VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
+                        std::uint32_t                           FirstPassQuery = 0U) const;
+        void RecordCurrentAccumulationHeight(VkCommandBuffer                         CommandBuffer,
                                              const TSurfaceStateDescriptorResources& Descriptors,
-                                             bool bCurrentStateAB,
-                                             std::size_t TexelCount,
-                                             std::size_t ChannelCount,
-                                             const glm::mat4& ModelMatrix) const;
+                                             bool                                    bCurrentStateAB,
+                                             std::size_t                             TexelCount,
+                                             std::size_t                             ChannelCount,
+                                             const glm::mat4&                        ModelMatrix) const;
 
     private:
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
-        static VkPipeline CreateComputePipeline(VkDevice Device,
-                                                VkPipelineLayout Layout,
-                                                const char* ShaderPath,
-                                                bool bRawFluxCacheEnabled);
+        static VkPipeline     CreateComputePipeline(VkDevice         Device,
+                                                    VkPipelineLayout Layout,
+                                                    const char*      ShaderPath,
+                                                    bool             bRawFluxCacheEnabled);
 
-        VkDevice         Device = VK_NULL_HANDLE;
-        VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
-        VkPipeline AccumulationHeightPipeline = VK_NULL_HANDLE;
-        VkPipeline DirtyDispatchPipeline = VK_NULL_HANDLE;
-        VkPipeline AccumulationGeometryPipeline = VK_NULL_HANDLE;
-        VkPipeline DynamicTransferWeightPipeline = VK_NULL_HANDLE;
+        VkDevice                  Device = VK_NULL_HANDLE;
+        VkPipelineLayout          PipelineLayout = VK_NULL_HANDLE;
+        VkPipeline                AccumulationHeightPipeline = VK_NULL_HANDLE;
+        VkPipeline                DirtyDispatchPipeline = VK_NULL_HANDLE;
+        VkPipeline                AccumulationGeometryPipeline = VK_NULL_HANDLE;
+        VkPipeline                DynamicTransferWeightPipeline = VK_NULL_HANDLE;
         std::array<VkPipeline, 2> Pass1Pipelines{};
         std::array<VkPipeline, 2> Pass2Pipelines{};
     };

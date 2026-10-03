@@ -28,7 +28,7 @@ namespace MDSS
     public:
         /** @brief Build in-memory shared geometry from a Runtime mapping and its texel Profile map. */
         [[nodiscard]] static TSurfaceRuntimeData Build(const TSurfaceMappingData&        Mapping,
-                                                      std::vector<TSurfaceProfileIndex> ProfileMap,
-                                                      std::uint32_t                    ProfileCount);
+                                                       std::vector<TSurfaceProfileIndex> ProfileMap,
+                                                       std::uint32_t                     ProfileCount);
     };
 } // namespace MDSS

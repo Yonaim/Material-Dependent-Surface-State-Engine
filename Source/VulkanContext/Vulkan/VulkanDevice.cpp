@@ -50,8 +50,8 @@ namespace MDSS
         PhysicalDevice = *Selected;
 
         const TQueueFamilyIndices QueueFamilies = TVulkanQueue::FindFamilies(PhysicalDevice, Surface);
-        std::set<std::uint32_t>  UniqueQueueFamilies = {QueueFamilies.GraphicsFamily.value(),
-                                                        QueueFamilies.PresentFamily.value()};
+        std::set<std::uint32_t>   UniqueQueueFamilies = {QueueFamilies.GraphicsFamily.value(),
+                                                         QueueFamilies.PresentFamily.value()};
 
         constexpr float                      QueuePriority = 1.0F;
         std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
@@ -96,15 +96,15 @@ namespace MDSS
 
         TLogger::Info("Vulkan", std::string("Physical device selected: ") + Properties.deviceName + ".");
         TLogger::Debug("Vulkan",
-                      "GPU Vulkan API version=" + std::to_string(VK_API_VERSION_MAJOR(Properties.apiVersion)) + "." +
-                          std::to_string(VK_API_VERSION_MINOR(Properties.apiVersion)) + "." +
-                          std::to_string(VK_API_VERSION_PATCH(Properties.apiVersion)) + ".");
+                       "GPU Vulkan API version=" + std::to_string(VK_API_VERSION_MAJOR(Properties.apiVersion)) + "." +
+                           std::to_string(VK_API_VERSION_MINOR(Properties.apiVersion)) + "." +
+                           std::to_string(VK_API_VERSION_PATCH(Properties.apiVersion)) + ".");
         TLogger::Info("Vulkan",
-                     "Logical device created with " + std::to_string(DeviceExtensions.size()) +
-                         " required device extension(s).");
+                      "Logical device created with " + std::to_string(DeviceExtensions.size()) +
+                          " required device extension(s).");
         TLogger::Info("Vulkan",
-                     std::string("Geometry shader support: ") +
-                         (bGeometryShaderSupported ? "yes." : "no (optional stage will require fallback)."));
+                      std::string("Geometry shader support: ") +
+                          (bGeometryShaderSupported ? "yes." : "no (optional stage will require fallback)."));
     }
 
     TVulkanDevice::~TVulkanDevice()

@@ -45,7 +45,9 @@ namespace MDSS
         }
     } // namespace
 
-    TGraphicsPipeline::TGraphicsPipeline(VkDevice Device, VkRenderPass TRenderPass, const TGraphicsPipelineConfig& Config)
+    TGraphicsPipeline::TGraphicsPipeline(VkDevice                       Device,
+                                         VkRenderPass                   TRenderPass,
+                                         const TGraphicsPipelineConfig& Config)
         : Device(Device)
     {
         if (Config.ShaderStages.empty())
@@ -68,8 +70,8 @@ namespace MDSS
                 }
 
                 TLogger::Debug("TRenderer",
-                              "Loading shader stage " + std::to_string(static_cast<int>(StageConfig.Stage)) + ": " +
-                                  StageConfig.ShaderPath);
+                               "Loading shader stage " + std::to_string(static_cast<int>(StageConfig.Stage)) + ": " +
+                                   StageConfig.ShaderPath);
                 const VkShaderModule Module = CreateShaderModule(Device, StageConfig.ShaderPath.c_str());
                 ShaderModules.push_back(Module);
 
@@ -145,7 +147,7 @@ namespace MDSS
             {
                 DynamicStates.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
             }
-            VkPipelineDynamicStateCreateInfo    DynamicState{};
+            VkPipelineDynamicStateCreateInfo DynamicState{};
             DynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             DynamicState.dynamicStateCount = static_cast<std::uint32_t>(DynamicStates.size());
             DynamicState.pDynamicStates = DynamicStates.data();
@@ -185,8 +187,8 @@ namespace MDSS
             }
 
             TLogger::Info("TRenderer",
-                         "Graphics pipeline created with " + std::to_string(ShaderStageInfos.size()) +
-                             " shader stage(s).");
+                          "Graphics pipeline created with " + std::to_string(ShaderStageInfos.size()) +
+                              " shader stage(s).");
         }
         catch (...)
         {

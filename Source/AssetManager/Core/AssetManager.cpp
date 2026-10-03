@@ -32,7 +32,7 @@ namespace MDSS
     {
         std::string MakeRuntimeSurfaceKey(const std::filesystem::path& MeshPath,
                                           const std::filesystem::path& DistributionPath,
-                                          std::uint32_t Resolution)
+                                          std::uint32_t                Resolution)
         {
             const std::string MeshKey = std::filesystem::absolute(MeshPath).lexically_normal().generic_string();
             const std::string DistributionKey =
@@ -140,9 +140,10 @@ namespace MDSS
 
     TSurfaceRuntimeDataHandle TAssetManager::LoadSurfaceData(TMeshAssetHandle             MeshHandle,
                                                              const std::filesystem::path& RequestedDistributionPath,
-                                                             std::uint32_t Resolution)
+                                                             std::uint32_t                Resolution)
     {
-        if (Resolution == 0) Resolution = SimulationResolution;
+        if (Resolution == 0)
+            Resolution = SimulationResolution;
         if (!IsSurfaceSimulationResolution(Resolution))
         {
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
@@ -157,7 +158,7 @@ namespace MDSS
         }
         const TMeshAsset&           Mesh = *Meshes[MeshHandle];
         const std::filesystem::path DistributionPath = RequestedDistributionPath;
-        const std::string           RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath, Resolution);
+        const std::string RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath, Resolution);
         if (const auto Found = RuntimeSurfaceAssetsByInputs.find(RuntimeKey);
             Found != RuntimeSurfaceAssetsByInputs.end())
         {
@@ -215,24 +216,30 @@ namespace MDSS
             throw std::runtime_error("Mesh Surface IDs must be dense and have a material section.");
         }
 
-        const auto CacheStart = std::chrono::steady_clock::now();
-        const TSurfaceCacheDescriptor CacheDescriptor = TSurfaceCache::Describe(
-            Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions, NormalMapPaths, DistributionPath,
-            Distribution.ProfilePaths, Distribution.ProfileIndicesBySurface);
-        const std::filesystem::path CachePath = TSurfaceCache::GetPath(
-            MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
+        const auto                    CacheStart = std::chrono::steady_clock::now();
+        const TSurfaceCacheDescriptor CacheDescriptor = TSurfaceCache::Describe(Mesh.GetVertices(),
+                                                                                Mesh.GetTriangles(),
+                                                                                SurfaceDefinitions,
+                                                                                NormalMapPaths,
+                                                                                DistributionPath,
+                                                                                Distribution.ProfilePaths,
+                                                                                Distribution.ProfileIndicesBySurface);
+        const std::filesystem::path   CachePath =
+            TSurfaceCache::GetPath(MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
         std::string CacheDiagnostic;
-        auto CachedGeometry = TSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
+        auto        CachedGeometry = TSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
         if (CachedGeometry)
         {
-            const double LoadMilliseconds = std::chrono::duration<double, std::milli>(
-                std::chrono::steady_clock::now() - CacheStart).count();
-            TLogger::Info("TAssetManager", "Loaded .Surface cache: " + CachePath.string() + " (" +
-                          std::to_string(LoadMilliseconds) + " ms, including input fingerprint).");
+            const double LoadMilliseconds =
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
+            TLogger::Info("TAssetManager",
+                          "Loaded .Surface cache: " + CachePath.string() + " (" + std::to_string(LoadMilliseconds) +
+                              " ms, including input fingerprint).");
         }
         else
         {
-            TLogger::Info("TAssetManager", "Rebuilding .Surface cache (" + CacheDiagnostic + "): " + CachePath.string());
+            TLogger::Info("TAssetManager",
+                          "Rebuilding .Surface cache (" + CacheDiagnostic + "): " + CachePath.string());
             const TSurfaceMappingData Mapping =
                 TSurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
             for (const std::string& MappingWarning : Mapping.Warnings)
@@ -297,15 +304,16 @@ namespace MDSS
             try
             {
                 TSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
-                const double BuildMilliseconds = std::chrono::duration<double, std::milli>(
-                    std::chrono::steady_clock::now() - CacheStart).count();
-                TLogger::Info("TAssetManager", "Saved .Surface cache: " + CachePath.string() + " (" +
-                              std::to_string(BuildMilliseconds) + " ms, including preprocessing and save).");
+                const double BuildMilliseconds =
+                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
+                TLogger::Info("TAssetManager",
+                              "Saved .Surface cache: " + CachePath.string() + " (" + std::to_string(BuildMilliseconds) +
+                                  " ms, including preprocessing and save).");
             }
             catch (const std::exception& Error)
             {
-                TLogger::Warning("TAssetManager", "Unable to save .Surface cache; using Runtime data: " +
-                                 std::string(Error.what()));
+                TLogger::Warning("TAssetManager",
+                                 "Unable to save .Surface cache; using Runtime data: " + std::string(Error.what()));
             }
         }
         TSurfaceRuntimeData Built(std::move(*CachedGeometry));
@@ -322,18 +330,20 @@ namespace MDSS
         RuntimeAsset.DistributionPath = DistributionPath;
         RuntimeSurfaceAssets.push_back(std::move(RuntimeAsset));
         RuntimeSurfaceAssetsByInputs.emplace(RuntimeKey, RuntimeHandle);
-        TLogger::Info("TAssetManager", "Registered Runtime Surface data (" + std::to_string(Resolution) + " x " +
-                      std::to_string(Resolution) + ") for Mesh: " + Mesh.GetSourcePath().string());
+        TLogger::Info("TAssetManager",
+                      "Registered Runtime Surface data (" + std::to_string(Resolution) + " x " +
+                          std::to_string(Resolution) + ") for Mesh: " + Mesh.GetSourcePath().string());
         return RuntimeHandle;
     }
 
     TSurfaceRuntimeDataHandle TAssetManager::LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
-                                                                        std::uint32_t Resolution)
+                                                                         std::uint32_t             Resolution)
     {
-        if (!HasSurfaceData(Handle)) throw std::out_of_range("Invalid Runtime Surface Data handle.");
+        if (!HasSurfaceData(Handle))
+            throw std::out_of_range("Invalid Runtime Surface Data handle.");
         // Copy before LoadSurfaceData can grow RuntimeSurfaceAssets and invalidate references.
         const TMeshAssetHandle Mesh = RuntimeSurfaceAssets[Handle].Mesh;
-        const auto DistributionPath = RuntimeSurfaceAssets[Handle].DistributionPath;
+        const auto             DistributionPath = RuntimeSurfaceAssets[Handle].DistributionPath;
         return LoadSurfaceData(Mesh, DistributionPath, Resolution);
     }
 

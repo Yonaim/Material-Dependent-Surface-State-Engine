@@ -21,12 +21,12 @@ namespace MDSS
     struct TSurfaceMappingTexel
     {
         TSurfaceLocalID                                    Surface = InvalidSurfaceID;
-        std::uint32_t                                     Triangle = InvalidTriangleID;
-        std::uint32_t                                     Chart = InvalidChartID;
-        glm::vec3                                         Barycentric{0.0F};
-        glm::vec3                                         Position{0.0F};
-        glm::vec3                                         AreaVector{0.0F};
-        glm::vec3                                         Normal{0.0F, 0.0F, 1.0F};
+        std::uint32_t                                      Triangle = InvalidTriangleID;
+        std::uint32_t                                      Chart = InvalidChartID;
+        glm::vec3                                          Barycentric{0.0F};
+        glm::vec3                                          Position{0.0F};
+        glm::vec3                                          AreaVector{0.0F};
+        glm::vec3                                          Normal{0.0F, 0.0F, 1.0F};
         std::array<TLocalTexelIndex, SurfaceNeighborCount> Neighbors = {
             InvalidTexelIndex,
             InvalidTexelIndex,
@@ -48,6 +48,6 @@ namespace MDSS
     {
         std::vector<TSurfaceTexelRange>   Surfaces;
         std::vector<TSurfaceMappingTexel> Texels;
-        std::vector<std::string>         Warnings;
+        std::vector<std::string>          Warnings;
     };
 } // namespace MDSS

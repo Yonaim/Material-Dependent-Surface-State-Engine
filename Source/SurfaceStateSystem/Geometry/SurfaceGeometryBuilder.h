@@ -20,8 +20,8 @@ namespace MDSS
          * @brief Copy validated mapping samples into shared geometry and attach their Profile indices.
          * @throws std::invalid_argument for invalid geometry, Profile assignments, or texel values.
          */
-        [[nodiscard]] static TSharedSurfaceGeometryData Build(const TSurfaceMappingData&              Mapping,
-                                                             std::vector<TSurfaceProfileIndex>       ProfileMap,
-                                                             std::uint32_t                          ProfileCount);
+        [[nodiscard]] static TSharedSurfaceGeometryData Build(const TSurfaceMappingData&        Mapping,
+                                                              std::vector<TSurfaceProfileIndex> ProfileMap,
+                                                              std::uint32_t                     ProfileCount);
     };
 } // namespace MDSS

@@ -43,12 +43,14 @@ namespace
 
     void Check(bool Condition, const char* Message)
     {
-        if (!Condition) throw std::runtime_error(Message);
+        if (!Condition)
+            throw std::runtime_error(Message);
     }
 
     struct TFixtures
     {
-        std::filesystem::path Root = std::filesystem::temp_directory_path() /
+        std::filesystem::path Root =
+            std::filesystem::temp_directory_path() /
             ("mdss-scene-resources-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
         TFixtures()
         {
@@ -65,9 +67,11 @@ namespace
             WriteMap("MudWet", {"Mud.SRProfile", "Wet.SRProfile"}, 1);
             WriteScene("Wet", {{"A.obj", "Wet.SurfaceProfileMap"}}, 128);
             WriteScene("Mud", {{"B.obj", "Mud.SurfaceProfileMap"}}, 128);
-            WriteScene("Mixed", {{"A.obj", "WetMud.SurfaceProfileMap"},
-                                  {"B.obj", "MudWet.SurfaceProfileMap"},
-                                  {"A.obj", "Mud.SurfaceProfileMap"}}, 128);
+            WriteScene("Mixed",
+                       {{"A.obj", "WetMud.SurfaceProfileMap"},
+                        {"B.obj", "MudWet.SurfaceProfileMap"},
+                        {"A.obj", "Mud.SurfaceProfileMap"}},
+                       128);
             WriteScene("Empty", {});
         }
         ~TFixtures()
@@ -84,87 +88,113 @@ namespace
             TJson Entries = TJson::object();
             for (const auto& State : States)
             {
-                Entries[State] = {{"stateCapacity", 1.0}, {"inputFactor", InputFactor},
-                    {"saturationSpreadFactor", 0.0}, {"gravityFlowFactor", 0.0}, {"decayRate", 0.0},
-                    {"cavityDecayProtectionFactor", 0.0}, {"accumulationFactor", 0.0},
-                    {"cavityFillFactor", 0.0}, {"thicknessPerAmount", 0.01}};
+                Entries[State] = {{"stateCapacity", 1.0},
+                                  {"inputFactor", InputFactor},
+                                  {"saturationSpreadFactor", 0.0},
+                                  {"gravityFlowFactor", 0.0},
+                                  {"decayRate", 0.0},
+                                  {"cavityDecayProtectionFactor", 0.0},
+                                  {"accumulationFactor", 0.0},
+                                  {"cavityFillFactor", 0.0},
+                                  {"thicknessPerAmount", 0.01}};
             }
-            Write(Name + ".SRProfile", {{"type", "SurfaceResponseProfile"}, {"version", 4}, {"name", Name},
-                                       {"states", Entries}, {"transitions", TJson::array()}});
+            Write(Name + ".SRProfile",
+                  {{"type", "SurfaceResponseProfile"},
+                   {"version", 4},
+                   {"name", Name},
+                   {"states", Entries},
+                   {"transitions", TJson::array()}});
         }
         void WriteMap(const std::string& Name, const std::vector<std::string>& Profiles, int Index) const
         {
-            Write(Name + ".SurfaceProfileMap", {{"type", "SurfaceProfileMap"}, {"version", 1}, {"profiles", Profiles},
-                {"surfaces", TJson::array({{{"surfaceId", 0}, {"profileIndex", Index}}})}});
+            Write(Name + ".SurfaceProfileMap",
+                  {{"type", "SurfaceProfileMap"},
+                   {"version", 1},
+                   {"profiles", Profiles},
+                   {"surfaces", TJson::array({{{"surfaceId", 0}, {"profileIndex", Index}}})}});
         }
-        void WriteScene(const std::string& Name, const std::vector<std::pair<std::string, std::string>>& Inputs,
+        void WriteScene(const std::string&                                      Name,
+                        const std::vector<std::pair<std::string, std::string>>& Inputs,
                         std::uint32_t Resolution = SurfaceSimulationResolution) const
         {
             TJson Objects = TJson::array();
-            for (const auto& [Mesh, Map] : Inputs) Objects.push_back({{"mesh", Mesh}, {"surfaceProfileMap", Map}});
-            Write(Name + ".Scene", {{"type", "TScene"}, {"version", 1},
-                                   {"simulationResolution", Resolution}, {"objects", Objects}});
+            for (const auto& [Mesh, Map] : Inputs)
+                Objects.push_back({{"mesh", Mesh}, {"surfaceProfileMap", Map}});
+            Write(Name + ".Scene",
+                  {{"type", "TScene"}, {"version", 1}, {"simulationResolution", Resolution}, {"objects", Objects}});
         }
     };
 
-    float GetProfileInputFactor(const TSurfaceGPUResourceManager& GPU, const TAssetManager& Assets,
-                                const TScene& Scene, TSRProfileAssetHandle Profile, TStateId State)
+    float GetProfileInputFactor(const TSurfaceGPUResourceManager& GPU,
+                                const TAssetManager&              Assets,
+                                const TScene&                     Scene,
+                                TSRProfileAssetHandle             Profile,
+                                TStateId                          State)
     {
         const auto Handles = Assets.GetSceneSurfaceProfiles(Scene);
         const auto Found = std::find(Handles.begin(), Handles.end(), Profile);
         Check(Found != Handles.end(), "requested Profile must belong to the Scene");
         const auto* Descriptor = GPU.GetAnyInstanceDescriptors();
         Check(Descriptor != nullptr, "simulated Scene must have descriptors");
-        const auto ProfileIndex = static_cast<std::size_t>(Found - Handles.begin());
+        const auto                   ProfileIndex = static_cast<std::size_t>(Found - Handles.begin());
         TSurfaceGPUProfileParameters Parameters{};
-        const auto Offset = GetSurfaceGPUProfileRecordIndex(ProfileIndex, State,
-            Assets.GetSurfaceStateRegistry().GetStateCount()) * sizeof(Parameters);
+        const auto                   Offset =
+            GetSurfaceGPUProfileRecordIndex(ProfileIndex, State, Assets.GetSurfaceStateRegistry().GetStateCount()) *
+            sizeof(Parameters);
         GPU.GetSceneProfileParametersBuffer().Download(&Parameters, sizeof(Parameters), Offset);
         return Parameters.CapacityInputAndTransfer[1];
     }
 
     void TestDemoAnimation(const TVulkanContext& Context, const TFixtures& Fixtures)
     {
-        Fixtures.Write("Animated.DemoAnim", {
-            {"version", 1}, {"durationSeconds", 2.0}, {"loop", true},
-            {"tracks", TJson::array({
-                {{"target", "object"}, {"property", "position"},
-                 {"keys", TJson::array({{{"time", 0.0}, {"value", {0, 0, 0}}},
-                                         {{"time", 2.0}, {"value", {2, 0, 0}}}})}},
-                {{"target", "object"}, {"property", "rotation"},
-                 {"keys", TJson::array({{{"time", 0.0}, {"value", {0, 0, 0, 1}}},
-                                         {{"time", 2.0}, {"value", {0, 0, 1, 0}}}})}},
-                {{"target", "camera"}, {"property", "target"},
-                 {"keys", TJson::array({{{"time", 0.0}, {"value", {0, 0, 0}}},
-                                         {{"time", 2.0}, {"value", {2, 0, 0}}}})}}
-            })}
-        });
-        Fixtures.Write("Animated.Scene", {{"type", "TScene"}, {"version", 1},
-            {"animation", "Animated.DemoAnim"},
-            {"objects", TJson::array({{{"id", "object"}, {"mesh", "A.obj"}}})}});
+        Fixtures.Write(
+            "Animated.DemoAnim",
+            {{"version", 1},
+             {"durationSeconds", 2.0},
+             {"loop", true},
+             {"tracks",
+              TJson::array(
+                  {{{"target", "object"},
+                    {"property", "position"},
+                    {"keys",
+                     TJson::array({{{"time", 0.0}, {"value", {0, 0, 0}}}, {{"time", 2.0}, {"value", {2, 0, 0}}}})}},
+                   {{"target", "object"},
+                    {"property", "rotation"},
+                    {"keys",
+                     TJson::array(
+                         {{{"time", 0.0}, {"value", {0, 0, 0, 1}}}, {{"time", 2.0}, {"value", {0, 0, 1, 0}}}})}},
+                   {{"target", "camera"},
+                    {"property", "target"},
+                    {"keys",
+                     TJson::array(
+                         {{{"time", 0.0}, {"value", {0, 0, 0}}}, {{"time", 2.0}, {"value", {2, 0, 0}}}})}}})}});
+        Fixtures.Write("Animated.Scene",
+                       {{"type", "TScene"},
+                        {"version", 1},
+                        {"animation", "Animated.DemoAnim"},
+                        {"objects", TJson::array({{{"id", "object"}, {"mesh", "A.obj"}}})}});
         TAssetManager Assets(Context);
-        TScene Scene = TSceneLoader::Load(Fixtures.Root / "Animated.Scene", Assets);
+        TScene        Scene = TSceneLoader::Load(Fixtures.Root / "Animated.Scene", Assets);
         Check(Scene.HasDemoAnimation() && !Scene.IsDemoAnimationPlaying(),
               "Scene animation should load paused independently of simulation");
         Scene.PlayDemoAnimation();
         Scene.AdvanceDemoAnimation(1.0F);
         const auto& Transform = Scene.GetStaticMeshInstances()[0].GetTransform();
         Check(std::abs(Transform.Position.x - 1.0F) < 1.0e-5F &&
-              std::abs(Transform.RotationDegrees.z - 90.0F) < 1.0e-3F &&
-              std::abs(Scene.GetMainCamera().GetTarget().x - 1.0F) < 1.0e-5F,
+                  std::abs(Transform.RotationDegrees.z - 90.0F) < 1.0e-3F &&
+                  std::abs(Scene.GetMainCamera().GetTarget().x - 1.0F) < 1.0e-5F,
               "animation should interpolate object and camera tracks at half time");
         Scene.PauseDemoAnimation();
         Scene.AdvanceDemoAnimation(0.5F);
-        Check(Scene.GetDemoAnimationTime() == 1.0F,
-              "paused animation must not advance its own clock");
+        Check(Scene.GetDemoAnimationTime() == 1.0F, "paused animation must not advance its own clock");
         Scene.PlayDemoAnimation();
         Scene.AdvanceDemoAnimation(1.5F);
         Check(std::abs(Scene.GetDemoAnimationTime() - 0.5F) < 1.0e-5F &&
-              std::abs(Transform.Position.x - 0.5F) < 1.0e-5F,
+                  std::abs(Transform.Position.x - 0.5F) < 1.0e-5F,
               "looping animation should wrap and evaluate the new time");
         Scene.RestartDemoAnimation();
-        Check(!Scene.IsDemoAnimationPlaying() && Scene.GetDemoAnimationTime() == 0.0F &&
-              Transform.Position.x == 0.0F, "restart should restore the first pose without starting playback");
+        Check(!Scene.IsDemoAnimationPlaying() && Scene.GetDemoAnimationTime() == 0.0F && Transform.Position.x == 0.0F,
+              "restart should restore the first pose without starting playback");
         TSceneLoader::Save(Scene, Fixtures.Root / "AnimatedSaved.Scene");
         const TScene Saved = TSceneLoader::Load(Fixtures.Root / "AnimatedSaved.Scene", Assets);
         Check(Saved.HasDemoAnimation() && Saved.GetStaticMeshInstances()[0].GetId() == "object",
@@ -173,10 +203,9 @@ namespace
         TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
         Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(SurfaceScene));
         TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceScene);
-        auto& SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
-        const auto& GPU = SurfaceStates.GetGPUResources();
-        Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform),
-              "new Surface cache should be valid");
+        auto&               SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
+        const auto&         GPU = SurfaceStates.GetGPUResources();
+        Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform), "new Surface cache should be valid");
         SurfaceTransform.RotationDegrees.x = 35.0F;
         SurfaceTransform.Position.y = 2.0F;
         Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform),
@@ -187,7 +216,7 @@ namespace
         SurfaceTransform.Scale.x = 1.0F;
         SurfaceTransform.RotationDegrees.x = 0.0F;
         const auto WetProfile = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
-        auto Flow = Assets.GetSRProfile(WetProfile).GetData().States.at("wetness");
+        auto       Flow = Assets.GetSRProfile(WetProfile).GetData().States.at("wetness");
         Flow.GeometryTransferFactor = 1.0F;
         const auto WetState = Assets.GetSurfaceStateRegistry().GetStateId("wetness");
         SurfaceStates.SetDebugProfileParameters(WetProfile, WetState, Flow);
@@ -201,26 +230,28 @@ namespace
         {
             TScene RealScene = TSceneLoader::Load(
                 std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (std::string(Name) + ".Scene"), Assets);
-            const auto Handle = RealScene.GetStaticMeshInstances().front().GetSurfaceData();
+            const auto  Handle = RealScene.GetStaticMeshInstances().front().GetSurfaceData();
             const auto& Texels = Assets.GetSurfaceData(Handle).GetSharedGeometry()->GetTexels();
-            const auto Positive = std::count_if(Texels.begin(), Texels.end(), [](const auto& Texel)
-            {
-                return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.01F;
-            });
+            const auto  Positive = std::count_if(Texels.begin(),
+                                                Texels.end(),
+                                                [](const auto& Texel)
+                                                { return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.01F; });
             Check(Positive > 0, "Mountain and Bunny must contain Macro concavity without normal maps");
             if (std::string_view(Name) == "Mountain")
             {
                 Check(RealScene.GetStaticMeshInstances().size() == 4 &&
-                      RealScene.GetStaticMeshInstances()[3].GetId() == "mountain_mud_inverted" &&
-                      RealScene.GetStaticMeshInstances()[3].GetTransform().Position.z == 1.0F &&
-                      RealScene.GetStaticMeshInstances()[3].GetTransform().RotationDegrees.x == 270.0F,
+                          RealScene.GetStaticMeshInstances()[3].GetId() == "mountain_mud_inverted" &&
+                          RealScene.GetStaticMeshInstances()[3].GetTransform().Position.z == 1.0F &&
+                          RealScene.GetStaticMeshInstances()[3].GetTransform().RotationDegrees.x == 270.0F,
                       "Mountain Scene should have a fixed inverted Mud mountain above the original");
             }
             RealScene.PlayDemoAnimation();
             RealScene.AdvanceDemoAnimation(3.0F);
             const auto& Objects = RealScene.GetStaticMeshInstances();
-            Check(std::abs(Objects[0].GetTransform().RotationDegrees.x - Objects[1].GetTransform().RotationDegrees.x) < 1.0e-4F &&
-                  std::abs(Objects[1].GetTransform().RotationDegrees.x - Objects[2].GetTransform().RotationDegrees.x) < 1.0e-4F,
+            Check(std::abs(Objects[0].GetTransform().RotationDegrees.x - Objects[1].GetTransform().RotationDegrees.x) <
+                          1.0e-4F &&
+                      std::abs(Objects[1].GetTransform().RotationDegrees.x -
+                               Objects[2].GetTransform().RotationDegrees.x) < 1.0e-4F,
                   "matching objects in one Scene must reach the same rotation at the same time");
             if (std::string_view(Name) == "Mountain")
             {
@@ -229,36 +260,35 @@ namespace
                       "rotating Mountains must stay upright beneath the fixed inverted Mountain");
             }
             RealScene.AdvanceDemoAnimation(3.0F);
-            Check(std::abs(Objects[0].GetTransform().RotationDegrees.x - Objects[2].GetTransform().RotationDegrees.x) < 1.0e-4F,
+            Check(std::abs(Objects[0].GetTransform().RotationDegrees.x - Objects[2].GetTransform().RotationDegrees.x) <
+                      1.0e-4F,
                   "matching objects must remain synchronized through the full turn");
             if (std::string_view(Name) == "Mountain")
                 Check(Objects[3].GetTransform().Position.z == 1.0F &&
-                      Objects[3].GetTransform().RotationDegrees.x == 270.0F,
+                          Objects[3].GetTransform().RotationDegrees.x == 270.0F,
                       "the inverted Mud mountain must remain stationary during animation");
         }
-        constexpr std::array<std::pair<std::string_view, std::string_view>, 4> Effects{{
-            {"Wetness", "wetness"}, {"WaterFilm", "waterfilm"}, {"Mud", "mud"}, {"Lava", "lava"}
-        }};
+        constexpr std::array<std::pair<std::string_view, std::string_view>, 4> Effects{
+            {{"Wetness", "wetness"}, {"WaterFilm", "waterfilm"}, {"Mud", "mud"}, {"Lava", "lava"}}};
         for (const std::string_view Shape : {"Cube", "Bunny", "Mountain"})
         {
             glm::vec3 ReferencePosition(0.0F);
             glm::vec3 ReferenceRotation(0.0F);
             glm::vec3 ReferenceScale(0.0F);
             glm::vec3 ReferenceAnimatedRotation(0.0F);
-            bool bFirstEffect = true;
+            bool      bFirstEffect = true;
             for (const auto& [Effect, State] : Effects)
             {
                 const std::string Stem = std::string(Shape) + "_" + std::string(Effect);
-                TScene Isolated = TSceneLoader::Load(
-                    std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (Stem + ".Scene"), Assets);
-                Check(Isolated.GetStaticMeshInstances().size() == 1 &&
-                      Isolated.GetInitialContacts().size() == 1 && Isolated.HasDemoAnimation() &&
-                      Isolated.GetSimulationResolution() == 256,
+                TScene            Isolated =
+                    TSceneLoader::Load(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (Stem + ".Scene"), Assets);
+                Check(Isolated.GetStaticMeshInstances().size() == 1 && Isolated.GetInitialContacts().size() == 1 &&
+                          Isolated.HasDemoAnimation() && Isolated.GetSimulationResolution() == 256,
                       "isolated Scene must have one object, one contact, one animation and fixed resolution");
                 const auto& Object = Isolated.GetStaticMeshInstances()[0];
                 const auto& Contact = Isolated.GetInitialContacts()[0];
-                Check(Contact.Target == Object.GetId() && Contact.State == State &&
-                      Contact.Radius == 0.42F && Contact.Strength == 1.5F && Contact.Falloff == 1.0F,
+                Check(Contact.Target == Object.GetId() && Contact.State == State && Contact.Radius == 0.42F &&
+                          Contact.Strength == 1.5F && Contact.Falloff == 1.0F,
                       "isolated Scene contact must target its only effect with common input parameters");
                 const auto Registry = Assets.BuildSurfaceStateRegistry(Isolated);
                 Check(Registry.GetStateCount() == 1 && Registry.GetStateName(0) == State,
@@ -273,17 +303,21 @@ namespace
                 else
                 {
                     Check(glm::length(Transform.Position - ReferencePosition) < 1.0e-5F &&
-                          glm::length(Transform.RotationDegrees - ReferenceRotation) < 1.0e-5F &&
-                          glm::length(Transform.Scale - ReferenceScale) < 1.0e-5F,
+                              glm::length(Transform.RotationDegrees - ReferenceRotation) < 1.0e-5F &&
+                              glm::length(Transform.Scale - ReferenceScale) < 1.0e-5F,
                           "all effects of one shape must start with the same transform");
                 }
                 const auto& Texels = Assets.GetSurfaceData(Object.GetSurfaceData()).GetSharedGeometry()->GetTexels();
                 const glm::mat4 Model = Transform.GetMatrix();
-                Check(std::any_of(Texels.begin(), Texels.end(), [&](const auto& Texel)
-                {
-                    return Texel.IsValid() && glm::length(
-                        glm::vec3(Model * glm::vec4(Texel.Position, 1.0F)) - Contact.WorldPosition) < Contact.Radius;
-                }), "isolated Scene initial contact must reach valid surface texels");
+                Check(std::any_of(Texels.begin(),
+                                  Texels.end(),
+                                  [&](const auto& Texel)
+                                  {
+                                      return Texel.IsValid() &&
+                                             glm::length(glm::vec3(Model * glm::vec4(Texel.Position, 1.0F)) -
+                                                         Contact.WorldPosition) < Contact.Radius;
+                                  }),
+                      "isolated Scene initial contact must reach valid surface texels");
                 Isolated.PlayDemoAnimation();
                 Isolated.AdvanceDemoAnimation(3.0F);
                 const glm::vec3 AnimatedRotation = Object.GetTransform().RotationDegrees;
@@ -299,37 +333,39 @@ namespace
                           "all effects of one shape must use the same animation phase");
             }
         }
-        TScene LavaScene = TSceneLoader::Load(
-            std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", Assets);
+        TScene LavaScene =
+            TSceneLoader::Load(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", Assets);
         Check(LavaScene.GetStaticMeshInstances().size() == 1 &&
-              LavaScene.GetStaticMeshInstances()[0].GetId() == "mountain_lava" &&
-              LavaScene.GetInitialContacts().size() == 1 &&
-              LavaScene.GetInitialContacts()[0].State == "lava",
+                  LavaScene.GetStaticMeshInstances()[0].GetId() == "mountain_lava" &&
+                  LavaScene.GetInitialContacts().size() == 1 && LavaScene.GetInitialContacts()[0].State == "lava",
               "Lava Scene must load its Mountain and initial Lava input");
         const auto& LavaObject = LavaScene.GetStaticMeshInstances()[0];
         const auto& LavaContact = LavaScene.GetInitialContacts()[0];
         const auto& LavaTexels = Assets.GetSurfaceData(LavaObject.GetSurfaceData()).GetSharedGeometry()->GetTexels();
         const glm::mat4 LavaModel = LavaObject.GetTransform().GetMatrix();
-        const auto ContactedCavityCount = std::count_if(LavaTexels.begin(), LavaTexels.end(), [&](const auto& Texel)
-        {
-            return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.1F &&
-                glm::length(glm::vec3(LavaModel * glm::vec4(Texel.Position, 1.0F)) - LavaContact.WorldPosition) <
-                    LavaContact.Radius;
-        });
+        const auto      ContactedCavityCount =
+            std::count_if(LavaTexels.begin(),
+                          LavaTexels.end(),
+                          [&](const auto& Texel)
+                          {
+                              return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.1F &&
+                                     glm::length(glm::vec3(LavaModel * glm::vec4(Texel.Position, 1.0F)) -
+                                                 LavaContact.WorldPosition) < LavaContact.Radius;
+                          });
         Check(ContactedCavityCount > 0, "Lava initial contact must reach concave Mountain texels");
-        const auto LavaProfile = Assets.LoadSRProfile(
-            std::filesystem::path(MDSS_ASSET_DIR) / "SurfaceProfiles/DemoLava.SRProfile");
+        const auto LavaProfile =
+            Assets.LoadSRProfile(std::filesystem::path(MDSS_ASSET_DIR) / "SurfaceProfiles/DemoLava.SRProfile");
         const auto& Lava = Assets.GetSRProfile(LavaProfile).GetData().States.at("lava");
         Check(Lava.GeometryTransferFactor < 0.01F && Lava.SaturationTransferFactor < 0.01F &&
-              Lava.CavityTransportRetentionFactor > 0.95F && Lava.DecayRate == 0.0F,
+                  Lava.CavityTransportRetentionFactor > 0.95F && Lava.DecayRate == 0.0F,
               "Lava should move slowly and resist leaving cavities without evaporating");
         const auto LavaRegistry = Assets.BuildSurfaceStateRegistry(LavaScene);
         Check(ResolveDemoSurfaceStates(LavaRegistry).Lava == LavaRegistry.GetStateId("lava"),
               "Lava rendering channel must resolve from the loaded profile");
         LavaScene.PlayDemoAnimation();
         LavaScene.AdvanceDemoAnimation(9.0F);
-        const glm::vec3 LavaUp = glm::mat3(LavaScene.GetStaticMeshInstances()[0].GetTransform().GetMatrix()) *
-            glm::vec3(0, 1, 0);
+        const glm::vec3 LavaUp =
+            glm::mat3(LavaScene.GetStaticMeshInstances()[0].GetTransform().GetMatrix()) * glm::vec3(0, 1, 0);
         Check(LavaUp.z < 0.0F, "Lava Mountain animation must turn its basin upside down");
     }
 
@@ -340,9 +376,10 @@ namespace
         TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
         Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(Scene));
         TSurfaceStateSystem SurfaceStates(Context, Assets, Scene);
-        TRenderer Renderer(Context, Window, Assets, Scene, SurfaceStates);
+        TRenderer           Renderer(Context, Window, Assets, Scene, SurfaceStates);
         Check(Renderer.GetDemoSurfaceStateBindings().Wetness == 0 &&
-              Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId, "Wet Scene demo bindings must resolve optional names.");
+                  Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId,
+              "Wet Scene demo bindings must resolve optional names.");
         {
             TDebugUI UI(Context, Window, Renderer, Assets);
             Check(UI.IsFixedSimulationTimestep() && !UI.IsAutoSubsteppingEnabled(),
@@ -351,7 +388,8 @@ namespace
             ImGui::GetIO().IniFilename = nullptr;
             Renderer.SetTexelGridBlockSize(16);
             Renderer.SetTexelAreaReference(1.0F / (128.0F * 128.0F));
-            for (auto Mode : {TRenderViewMode::Lit, TRenderViewMode::SurfaceTexelGrid,
+            for (auto Mode : {TRenderViewMode::Lit,
+                              TRenderViewMode::SurfaceTexelGrid,
                               TRenderViewMode::SurfaceTexelArea,
                               TRenderViewMode::SolverTransferWeight,
                               TRenderViewMode::MesoHeight,
@@ -368,7 +406,7 @@ namespace
             UI.BeginFrame(Scene);
             Renderer.RenderFrame(Scene, UI, 1.0F / 15.0F);
             Check(Renderer.GetLastSimulationStepCount() == 4 &&
-                  std::abs(Renderer.GetSimulatedSeconds() - 1.0 / 15.0) < 1e-6,
+                      std::abs(Renderer.GetSimulatedSeconds() - 1.0 / 15.0) < 1e-6,
                   "the Renderer must run four fixed steps for a 15 FPS frame with the default policy");
             Check(Renderer.InspectTexel(Scene, 0, 0, {0.2F, 0.2F}),
                   "Macro mesh hit must resolve an inspectable texel.");
@@ -401,9 +439,10 @@ namespace
             vkDeviceWaitIdle(Context.GetDevice());
         }
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-              Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness", "cached foreign States must be excluded");
+                  Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+              "cached foreign States must be excluded");
         const auto WetHandle = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
-        auto Parameters = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
+        auto       Parameters = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
         Parameters.InputFactor = 2.5F;
         Renderer.SetDebugProfileParameters(WetHandle, 0, Parameters);
 
@@ -412,21 +451,31 @@ namespace
             TScene Loaded = TSceneLoader::Load(Fixtures.Root / (Name + ".Scene"), Assets);
             TScene Previous = Scene;
             Scene = std::move(Loaded);
-            try { Renderer.ReloadSceneResources(Scene); }
-            catch (...) { Scene = std::move(Previous); throw; }
+            try
+            {
+                Renderer.ReloadSceneResources(Scene);
+            }
+            catch (...)
+            {
+                Scene = std::move(Previous);
+                throw;
+            }
         };
         TScene Mud = TSceneLoader::Load(Fixtures.Root / "Mud.Scene", Assets);
-        Check(Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness", "loading prospective assets must preserve active IDs");
+        Check(Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+              "loading prospective assets must preserve active IDs");
         SwitchScene("Mud");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-              Assets.GetSurfaceStateRegistry().GetStateName(0) == "mud", "Scene switch must replace the Registry");
+                  Assets.GetSurfaceStateRegistry().GetStateName(0) == "mud",
+              "Scene switch must replace the Registry");
         Check(Renderer.GetDemoSurfaceStateBindings().Mud == 0 &&
-              Renderer.GetDemoSurfaceStateBindings().Wetness == InvalidStateId, "Mud Scene must discard the former Wetness ID.");
+                  Renderer.GetDemoSurfaceStateBindings().Wetness == InvalidStateId,
+              "Mud Scene must discard the former Wetness ID.");
         {
             TDebugUI UI(Context, Window, Renderer, Assets);
             ImGui::GetIO().IniFilename = nullptr;
             Renderer.SetRenderViewMode(TRenderViewMode::Lit);
-            const auto MudState = Assets.GetSurfaceStateRegistry().GetStateId("mud");
+            const auto           MudState = Assets.GetSurfaceStateRegistry().GetStateId("mud");
             TSurfaceContactInput Contact;
             Contact.TargetInstance = 0;
             Contact.State = MudState;
@@ -442,16 +491,17 @@ namespace
                 Renderer.SetDemoSurfaceEffectSettings(Effects);
                 Window.PollEvents();
                 UI.BeginFrame(Scene);
-                Renderer.RenderFrame(Scene, UI, 1.0F/60.0F);
+                Renderer.RenderFrame(Scene, UI, 1.0F / 60.0F);
             }
             Renderer.SetDemoSurfaceEffectSettings({});
         }
 
         SwitchScene("Mixed");
-        const auto& Registry = Assets.GetSurfaceStateRegistry();
+        const auto&    Registry = Assets.GetSurfaceStateRegistry();
         const TStateId WetState = Registry.GetStateId("wetness");
         Check(Renderer.GetDemoSurfaceStateBindings().Wetness == WetState &&
-              Renderer.GetDemoSurfaceStateBindings().Mud == Registry.GetStateId("mud"), "Scene reload must resolve changed demo IDs.");
+                  Renderer.GetDemoSurfaceStateBindings().Mud == Registry.GetStateId("mud"),
+              "Scene reload must resolve changed demo IDs.");
         Check(Registry.GetStateCount() == 2, "mixed Scene must use exactly its two States");
         const auto& GPU = Renderer.GetSurfaceGPUResources();
         Check(GPU.GetSceneProfileCount() == 2 && GPU.GetSharedSurfaceDataCount() == 3,
@@ -459,14 +509,16 @@ namespace
         const auto* A = GPU.GetInstanceDescriptors(0);
         const auto* B = GPU.GetInstanceDescriptors(1);
         const auto* C = GPU.GetInstanceDescriptors(2);
-        for (auto Binding : {TSurfaceGPUDescriptorBinding::ProfileParameters, TSurfaceGPUDescriptorBinding::ProfileSupported})
+        for (auto Binding :
+             {TSurfaceGPUDescriptorBinding::ProfileParameters, TSurfaceGPUDescriptorBinding::ProfileSupported})
         {
             Check(A->GetBoundBufferHandle(Binding, true) == B->GetBoundBufferHandle(Binding, false) &&
-                  A->GetBoundBufferHandle(Binding, true) == C->GetBoundBufferHandle(Binding, true),
+                      A->GetBoundBufferHandle(Binding, true) == C->GetBoundBufferHandle(Binding, true),
                   "all Meshes must bind the same Profile GPU buffers");
         }
         Check(A->GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::CurrentState, true) !=
-              B->GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::CurrentState, true), "instance State must stay independent");
+                  B->GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::CurrentState, true),
+              "instance State must stay independent");
         Check(std::abs(GetProfileInputFactor(GPU, Assets, Scene, WetHandle, WetState) - 0.75F) < 1e-6F,
               "Scene switch must discard old numeric-ID overrides");
         Renderer.SetDebugStateChannel(WetState);
@@ -493,7 +545,7 @@ namespace
             Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
             for (std::size_t Index = 0; Index < 3; ++Index)
             {
-                const auto& Resources = System.GetGPUResources();
+                const auto&        Resources = System.GetGPUResources();
                 std::vector<float> Values(Resources.GetInstanceTexelCount(Index) * Registry.GetStateCount());
                 Resources.GetInstanceCurrentStateBuffer(Index).Download(Values.data(), Values.size() * sizeof(float));
                 const float Sum = std::accumulate(Values.begin(), Values.end(), 0.0F);
@@ -503,7 +555,8 @@ namespace
                 {
                     const auto& MeshInstance = Scene.GetStaticMeshInstances()[Index];
                     const auto& Geometry = *Assets.GetSurfaceData(MeshInstance.GetSurfaceData()).GetSharedGeometry();
-                    const auto Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, MeshInstance.GetTransform().GetMatrix());
+                    const auto  Areas =
+                        BuildSurfaceGPUWorldTexelAreas(Geometry, MeshInstance.GetTransform().GetMatrix());
                     for (std::size_t Texel = 0; Texel < Areas.size(); ++Texel)
                     {
                         const float Expected = 0.75F * Areas[Texel] / SurfaceStateReferenceArea;
@@ -514,17 +567,18 @@ namespace
             }
         }
         Renderer.SetSimulationResolution(Scene, 256);
-        Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) - 1.25F) < 1e-6F,
+        Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) -
+                       1.25F) < 1e-6F,
               "resolution change must preserve current Scene tuning");
 
         {
             // A vertical unit triangle must reduce dt with the new rate, including runtime overrides.
-            auto& Transform = Scene.GetStaticMeshInstances()[0].GetTransform();
+            auto&      Transform = Scene.GetStaticMeshInstances()[0].GetTransform();
             const auto PreviousRotation = Transform.RotationDegrees;
             Transform.RotationDegrees = {90, 0, 0};
             {
                 TSurfaceStateSystem System(Context, Assets, Scene);
-                auto Flow = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
+                auto                Flow = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
                 Flow.GeometryTransferFactor = 0.5F;
                 System.SetDebugProfileParameters(WetHandle, WetState, Flow);
                 const float HalfFactorStep = System.GetMaximumStableDeltaTime();
@@ -545,40 +599,53 @@ namespace
         // Force a resource-size failure after installing a valid new Registry, before any State allocation.
         VkPhysicalDeviceProperties Limits{};
         vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &Limits);
-        const std::size_t Count = Limits.limits.maxStorageBufferRange / (256U * 256U * SurfaceNeighborCount * sizeof(float)) + 1U;
+        const std::size_t Count =
+            Limits.limits.maxStorageBufferRange / (256U * 256U * SurfaceNeighborCount * sizeof(float)) + 1U;
         std::vector<std::string> OversizedStates;
-        for (std::size_t Index = 0; Index < Count; ++Index) OversizedStates.push_back("new_" + std::to_string(Index));
+        for (std::size_t Index = 0; Index < Count; ++Index)
+            OversizedStates.push_back("new_" + std::to_string(Index));
         Fixtures.WriteProfile("Oversized", OversizedStates, 1.0F);
         Fixtures.WriteMap("Oversized", {"Oversized.SRProfile"}, 0);
         Fixtures.WriteScene("Oversized", {{"A.obj", "Oversized.SurfaceProfileMap"}});
-        const VkBuffer PreviousState = Renderer.GetSurfaceGPUResources().GetInstanceDescriptors(0)->
-            GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::CurrentState, true);
+        const VkBuffer PreviousState =
+            Renderer.GetSurfaceGPUResources().GetInstanceDescriptors(0)->GetBoundBufferHandle(
+                TSurfaceGPUDescriptorBinding::CurrentState, true);
         bool bFailed = false;
-        try { SwitchScene("Oversized"); }
-        catch (const std::length_error&) { bFailed = true; }
+        try
+        {
+            SwitchScene("Oversized");
+        }
+        catch (const std::length_error&)
+        {
+            bFailed = true;
+        }
         Check(bFailed, "oversized Scene must fail GPU resource construction");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 2 &&
-              Assets.GetSurfaceStateRegistry().GetStateId("wetness") == WetState,
+                  Assets.GetSurfaceStateRegistry().GetStateId("wetness") == WetState,
               "failed resource rebuild must restore the previous Registry");
-        Check(Renderer.GetSurfaceGPUResources().GetInstanceDescriptors(0)->
-            GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::CurrentState, true) == PreviousState,
-            "failed Scene switch must retain previous GPU resources");
-        Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) - 1.25F) < 1e-6F,
+        Check(Renderer.GetSurfaceGPUResources().GetInstanceDescriptors(0)->GetBoundBufferHandle(
+                  TSurfaceGPUDescriptorBinding::CurrentState, true) == PreviousState,
+              "failed Scene switch must retain previous GPU resources");
+        Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) -
+                       1.25F) < 1e-6F,
               "failed switch must retain previous tuning");
         SwitchScene("Empty");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 0 &&
-              Renderer.GetSurfaceGPUResources().GetManagedInstanceCount() == 0, "empty Scene must have no State channels or resources");
+                  Renderer.GetSurfaceGPUResources().GetManagedInstanceCount() == 0,
+              "empty Scene must have no State channels or resources");
         Check(Renderer.GetDemoSurfaceStateBindings().Wetness == InvalidStateId &&
-              Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId, "Empty Registry must resolve both demo States as absent.");
+                  Renderer.GetDemoSurfaceStateBindings().Mud == InvalidStateId,
+              "Empty Registry must resolve both demo States as absent.");
         SwitchScene("Wet");
         Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-              Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness", "switching back must exclude cached failed Scene States");
+                  Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+              "switching back must exclude cached failed Scene States");
     }
 }
 
 int main(int Argc, char* Argv[])
 {
-    std::unique_ptr<MDSS::TWindow> Window;
+    std::unique_ptr<MDSS::TWindow>        Window;
     std::unique_ptr<MDSS::TVulkanContext> Context;
     try
     {
@@ -602,12 +669,12 @@ int main(int Argc, char* Argv[])
         if (Argc == 2 && std::string_view(Argv[1]) == "--lava-scene")
         {
             TAssetManager LavaAssets(*Context);
-            TScene LavaScene = TSceneLoader::Load(
-                std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", LavaAssets);
+            TScene        LavaScene =
+                TSceneLoader::Load(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", LavaAssets);
             LavaAssets.ExchangeSurfaceStateRegistry(LavaAssets.BuildSurfaceStateRegistry(LavaScene));
             TSurfaceStateSystem LavaStates(*Context, LavaAssets, LavaScene);
-            TRenderer LavaRenderer(*Context, *Window, LavaAssets, LavaScene, LavaStates);
-            TDebugUI LavaUI(*Context, *Window, LavaRenderer, LavaAssets);
+            TRenderer           LavaRenderer(*Context, *Window, LavaAssets, LavaScene, LavaStates);
+            TDebugUI            LavaUI(*Context, *Window, LavaRenderer, LavaAssets);
             ImGui::GetIO().IniFilename = nullptr;
             LavaRenderer.SetRenderViewMode(TRenderViewMode::Lit);
             Check(LavaRenderer.GetDemoSurfaceStateBindings().Lava != InvalidStateId,
@@ -616,7 +683,7 @@ int main(int Argc, char* Argv[])
             LavaUI.BeginFrame(LavaScene);
             LavaRenderer.RenderFrame(LavaScene, LavaUI, 1.0F / 60.0F);
             vkDeviceWaitIdle(Context->GetDevice());
-            const auto& StateBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
+            const auto&        StateBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
             std::vector<float> StateValues(StateBuffer.GetSize() / sizeof(float));
             StateBuffer.Download(StateValues.data(), StateBuffer.GetSize());
             Check(std::any_of(StateValues.begin(), StateValues.end(), [](float Value) { return Value > 0.0F; }),
@@ -629,19 +696,20 @@ int main(int Argc, char* Argv[])
             vkDeviceWaitIdle(Context->GetDevice());
             LavaUI.RestartScene(LavaScene);
             Check(LavaScene.GetDemoAnimationTime() == 0.0F && !LavaScene.IsDemoAnimationPlaying() &&
-                  LavaScene.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x == 90.0F &&
-                  LavaRenderer.GetSimulatedSeconds() == 0.0,
+                      LavaScene.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x == 90.0F &&
+                      LavaRenderer.GetSimulatedSeconds() == 0.0,
                   "Restart Scene must restore saved pose, animation and simulation clock");
-            const auto& RestartedBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
+            const auto&        RestartedBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
             std::vector<float> RestartedValues(RestartedBuffer.GetSize() / sizeof(float));
             RestartedBuffer.Download(RestartedValues.data(), RestartedBuffer.GetSize());
-            Check(std::all_of(RestartedValues.begin(), RestartedValues.end(), [](float Value) { return Value == 0.0F; }),
-                  "Restart Scene must clear the previous Lava State before replaying initial contact");
+            Check(
+                std::all_of(RestartedValues.begin(), RestartedValues.end(), [](float Value) { return Value == 0.0F; }),
+                "Restart Scene must clear the previous Lava State before replaying initial contact");
             Window->PollEvents();
             LavaUI.BeginFrame(LavaScene);
             LavaRenderer.RenderFrame(LavaScene, LavaUI, 1.0F / 60.0F);
             vkDeviceWaitIdle(Context->GetDevice());
-            const auto& ReplayedBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
+            const auto&        ReplayedBuffer = LavaStates.GetGPUResources().GetInstanceCurrentStateBuffer(0);
             std::vector<float> ReplayedValues(ReplayedBuffer.GetSize() / sizeof(float));
             ReplayedBuffer.Download(ReplayedValues.data(), ReplayedBuffer.GetSize());
             Check(std::any_of(ReplayedValues.begin(), ReplayedValues.end(), [](float Value) { return Value > 0.0F; }),
@@ -656,13 +724,13 @@ int main(int Argc, char* Argv[])
         {
             MDSS::Tests::TestOverlaySideCompaction(*Context);
             {
-                TFixtures OverlayFixtures;
+                TFixtures     OverlayFixtures;
                 TAssetManager OverlayAssets(*Context);
-                TScene OverlayScene = TSceneLoader::Load(OverlayFixtures.Root / "Mud.Scene", OverlayAssets);
+                TScene        OverlayScene = TSceneLoader::Load(OverlayFixtures.Root / "Mud.Scene", OverlayAssets);
                 OverlayAssets.ExchangeSurfaceStateRegistry(OverlayAssets.BuildSurfaceStateRegistry(OverlayScene));
                 TSurfaceStateSystem OverlayStates(*Context, OverlayAssets, OverlayScene);
-                TRenderer OverlayRenderer(*Context, *Window, OverlayAssets, OverlayScene, OverlayStates);
-                TDebugUI OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets);
+                TRenderer           OverlayRenderer(*Context, *Window, OverlayAssets, OverlayScene, OverlayStates);
+                TDebugUI            OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets);
                 ImGui::GetIO().IniFilename = nullptr;
                 OverlayRenderer.SetRenderViewMode(TRenderViewMode::Lit);
                 Check(OverlayRenderer.IsLitTexelMeshBaseRendered(OverlayScene, 0),
@@ -704,7 +772,7 @@ int main(int Argc, char* Argv[])
             Window.reset();
             for (const auto& Entry : MDSS::TLogger::GetEntries())
                 Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::TLogLevel::Error,
-                    "Overlay side compaction must have no Vulkan validation errors");
+                      "Overlay side compaction must have no Vulkan validation errors");
             std::cout << "Overlay side compaction checks passed.\n";
             return 0;
         }
@@ -720,7 +788,8 @@ int main(int Argc, char* Argv[])
         Window.reset();
         for (const auto& Entry : MDSS::TLogger::GetEntries())
         {
-            Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::TLogLevel::Error, "Vulkan validation must have no errors");
+            Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::TLogLevel::Error,
+                  "Vulkan validation must have no errors");
         }
         std::cout << "Scene resource checks passed.\n";
         return 0;

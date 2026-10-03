@@ -12,8 +12,8 @@
 namespace MDSS
 {
     TSurfaceInstanceStateData::TSurfaceInstanceStateData(TSurfaceInstanceID                                ID,
-                                                       std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
-                                                       std::size_t                                      StateCount)
+                                                         std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
+                                                         std::size_t                                       StateCount)
         : ID(ID), Geometry(std::move(Geometry))
     {
         if (ID == InvalidSurfaceInstanceID)

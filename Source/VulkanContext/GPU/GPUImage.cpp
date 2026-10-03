@@ -12,12 +12,12 @@
 namespace MDSS
 {
     TGPUImage::TGPUImage(VkPhysicalDevice      PhysicalDevice,
-                       VkDevice              Device,
-                       VkExtent2D            Extent,
-                       VkFormat              Format,
-                       VkImageTiling         Tiling,
-                       VkImageUsageFlags     Usage,
-                       VkMemoryPropertyFlags MemoryProperties)
+                         VkDevice              Device,
+                         VkExtent2D            Extent,
+                         VkFormat              Format,
+                         VkImageTiling         Tiling,
+                         VkImageUsageFlags     Usage,
+                         VkMemoryPropertyFlags MemoryProperties)
         : Device(Device)
     {
         Create(PhysicalDevice, Extent, Format, Tiling, Usage, MemoryProperties);
@@ -29,11 +29,11 @@ namespace MDSS
     }
 
     void TGPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
-                            VkExtent2D            NewExtent,
-                            VkFormat              NewFormat,
-                            VkImageTiling         Tiling,
-                            VkImageUsageFlags     Usage,
-                            VkMemoryPropertyFlags MemoryProperties)
+                             VkExtent2D            NewExtent,
+                             VkFormat              NewFormat,
+                             VkImageTiling         Tiling,
+                             VkImageUsageFlags     Usage,
+                             VkMemoryPropertyFlags MemoryProperties)
     {
         Reset();
         Create(PhysicalDevice, NewExtent, NewFormat, Tiling, Usage, MemoryProperties);
@@ -58,11 +58,11 @@ namespace MDSS
     }
 
     void TGPUImage::Create(VkPhysicalDevice      PhysicalDevice,
-                          VkExtent2D            NewExtent,
-                          VkFormat              NewFormat,
-                          VkImageTiling         Tiling,
-                          VkImageUsageFlags     Usage,
-                          VkMemoryPropertyFlags MemoryProperties)
+                           VkExtent2D            NewExtent,
+                           VkFormat              NewFormat,
+                           VkImageTiling         Tiling,
+                           VkImageUsageFlags     Usage,
+                           VkMemoryPropertyFlags MemoryProperties)
     {
         if (NewExtent.width == 0 || NewExtent.height == 0)
         {
@@ -118,8 +118,8 @@ namespace MDSS
         }
 
         TLogger::Verbose("Vulkan",
-                        "TGPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
-                            ", format=" + std::to_string(static_cast<int>(Format)) + ").");
+                         "TGPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
+                             ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
     VkImage TGPUImage::GetHandle() const noexcept
@@ -138,8 +138,8 @@ namespace MDSS
     }
 
     std::uint32_t TGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
-                                           std::uint32_t         TypeFilter,
-                                           VkMemoryPropertyFlags RequiredProperties)
+                                            std::uint32_t         TypeFilter,
+                                            VkMemoryPropertyFlags RequiredProperties)
     {
         VkPhysicalDeviceMemoryProperties Properties{};
         vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &Properties);

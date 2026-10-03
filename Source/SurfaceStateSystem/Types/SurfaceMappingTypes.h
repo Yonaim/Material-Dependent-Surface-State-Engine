@@ -27,18 +27,19 @@ namespace MDSS
 
     struct TSurfaceSimulationResolutionPreset
     {
-        const char* Label;
+        const char*   Label;
         std::uint32_t Resolution;
     };
 
-    inline constexpr std::array<TSurfaceSimulationResolutionPreset, 3> SurfaceSimulationResolutionPresets{{
-        {"Low", 128}, {"Medium", 256}, {"High", 512}}};
+    inline constexpr std::array<TSurfaceSimulationResolutionPreset, 3> SurfaceSimulationResolutionPresets{
+        {{"Low", 128}, {"Medium", 256}, {"High", 512}}};
 
     [[nodiscard]] constexpr bool IsSurfaceSimulationResolution(std::uint32_t Resolution) noexcept
     {
         for (const auto& Preset : SurfaceSimulationResolutionPresets)
         {
-            if (Preset.Resolution == Resolution) return true;
+            if (Preset.Resolution == Resolution)
+                return true;
         }
         return false;
     }
@@ -97,12 +98,12 @@ namespace MDSS
         glm::vec3       Barycentric{0.0F};
         glm::vec3       Position{0.0F};
         // Oriented mesh-local UV texel footprint; transforms with the linear cofactor matrix.
-        glm::vec3       AreaVector{0.0F};
-        glm::vec3       Normal{0.0F, 0.0F, 1.0F};
+        glm::vec3 AreaVector{0.0F};
+        glm::vec3 Normal{0.0F, 0.0F, 1.0F};
         /** @brief TransferWeight용으로 mesh-local 변환한 Normal Map normal. 없으면 기하 normal을 사용한다.
          */
-        glm::vec3                                          TransferNormal{0.0F, 0.0F, 1.0F};
-        bool                                               HasTransferNormal = false;
+        glm::vec3 TransferNormal{0.0F, 0.0F, 1.0F};
+        bool      HasTransferNormal = false;
         /** @brief 높이 미분에서 구한 mesh-local 표면 normal. 없으면 TransferNormal을 사용한다. */
         glm::vec3                                          MesoNormal{0.0F, 0.0F, 1.0F};
         bool                                               HasMesoNormal = false;

@@ -18,28 +18,28 @@ namespace MDSS
     public:
         TStaticMeshInstance() = default;
         TStaticMeshInstance(TMeshAssetHandle Mesh, TTransform InstanceTransform = {});
-        TStaticMeshInstance(TMeshAssetHandle Mesh,
+        TStaticMeshInstance(TMeshAssetHandle          Mesh,
                             TSurfaceRuntimeDataHandle SurfaceData,
-                            TTransform InstanceTransform,
-                            std::filesystem::path MeshPath = {},
-                            std::filesystem::path ProfileMapPath = {},
-                            std::string ObjectId = {});
+                            TTransform                InstanceTransform,
+                            std::filesystem::path     MeshPath = {},
+                            std::filesystem::path     ProfileMapPath = {},
+                            std::string               ObjectId = {});
 
-        [[nodiscard]] TTransform&                GetTransform() noexcept;
-        [[nodiscard]] const TTransform&          GetTransform() const noexcept;
-        [[nodiscard]] TMeshAssetHandle           GetMesh() const noexcept;
-        [[nodiscard]] TSurfaceRuntimeDataHandle GetSurfaceData() const noexcept;
-        void SetSurfaceData(TSurfaceRuntimeDataHandle Handle) noexcept;
+        [[nodiscard]] TTransform&                  GetTransform() noexcept;
+        [[nodiscard]] const TTransform&            GetTransform() const noexcept;
+        [[nodiscard]] TMeshAssetHandle             GetMesh() const noexcept;
+        [[nodiscard]] TSurfaceRuntimeDataHandle    GetSurfaceData() const noexcept;
+        void                                       SetSurfaceData(TSurfaceRuntimeDataHandle Handle) noexcept;
         [[nodiscard]] const std::filesystem::path& GetMeshPath() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetProfileMapPath() const noexcept;
-        [[nodiscard]] const std::string& GetId() const noexcept;
+        [[nodiscard]] const std::string&           GetId() const noexcept;
 
     private:
-        TMeshAssetHandle Mesh = InvalidAssetHandle;
+        TMeshAssetHandle          Mesh = InvalidAssetHandle;
         TSurfaceRuntimeDataHandle SurfaceData = InvalidSurfaceRuntimeDataHandle;
-        TTransform       InstanceTransform;
-        std::filesystem::path SourceMeshPath;
-        std::filesystem::path SourceProfileMapPath;
-        std::string Id;
+        TTransform                InstanceTransform;
+        std::filesystem::path     SourceMeshPath;
+        std::filesystem::path     SourceProfileMapPath;
+        std::string               Id;
     };
 } // namespace MDSS

@@ -9,12 +9,11 @@
 #include "Scene/StaticMeshInstance.h"
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
-#include <nlohmann/json.hpp>
-
 #include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -66,7 +65,7 @@ namespace MDSS
         std::uint32_t ReadSimulationResolution(const TJson& Value)
         {
             constexpr const char* Error = "Scene simulationResolution must be the integer 128, 256 or 512.";
-            std::uint64_t Number = 0;
+            std::uint64_t         Number = 0;
             if (Value.is_number_unsigned())
             {
                 Number = Value.get<std::uint64_t>();
@@ -74,7 +73,8 @@ namespace MDSS
             else if (Value.is_number_integer())
             {
                 const auto SignedNumber = Value.get<std::int64_t>();
-                if (SignedNumber < 0) throw std::runtime_error(Error);
+                if (SignedNumber < 0)
+                    throw std::runtime_error(Error);
                 Number = static_cast<std::uint64_t>(SignedNumber);
             }
             else
@@ -83,7 +83,8 @@ namespace MDSS
             }
             for (const auto& Preset : SurfaceSimulationResolutionPresets)
             {
-                if (Number == Preset.Resolution) return Preset.Resolution;
+                if (Number == Preset.Resolution)
+                    return Preset.Resolution;
             }
             throw std::runtime_error(Error);
         }
@@ -95,7 +96,7 @@ namespace MDSS
                 throw std::runtime_error(Context + " must be a number.");
             }
             const double Number = Value.get<double>();
-            const float Result = static_cast<float>(Number);
+            const float  Result = static_cast<float>(Number);
             if (!std::isfinite(Number) || !std::isfinite(Result))
             {
                 throw std::runtime_error(Context + " must be finite.");
@@ -142,9 +143,9 @@ namespace MDSS
         }
 
         std::filesystem::path ResolveScenePath(const std::filesystem::path& SceneDirectory,
-                                               const std::string& PathText,
-                                               const std::string& Field,
-                                               const char* ExpectedExtension)
+                                               const std::string&           PathText,
+                                               const std::string&           Field,
+                                               const char*                  ExpectedExtension)
         {
             const std::filesystem::path RelativePath(PathText);
             if (RelativePath.is_absolute())
@@ -192,7 +193,7 @@ namespace MDSS
         }
 
         const std::filesystem::path SceneDirectory = std::filesystem::absolute(Path).parent_path();
-        TScene Scene;
+        TScene                      Scene;
         Scene.SetSourcePath(std::filesystem::absolute(Path).lexically_normal());
         if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
         {
@@ -207,11 +208,11 @@ namespace MDSS
             if (!Camera->is_object())
                 throw std::runtime_error("Scene.camera must be an object.");
             const std::string Context = "Scene.camera";
-            TCamera& MainCamera = Scene.GetMainCamera();
+            TCamera&          MainCamera = Scene.GetMainCamera();
             MainCamera.SetPosition(ReadVector3(RequireMember(*Camera, "position", Context), Context + ".position"));
             MainCamera.SetTarget(ReadVector3(RequireMember(*Camera, "target", Context), Context + ".target"));
-            const float FieldOfView = ReadFiniteFloat(
-                RequireMember(*Camera, "verticalFieldOfViewDegrees", Context), Context + ".verticalFieldOfViewDegrees");
+            const float FieldOfView = ReadFiniteFloat(RequireMember(*Camera, "verticalFieldOfViewDegrees", Context),
+                                                      Context + ".verticalFieldOfViewDegrees");
             if (FieldOfView <= 0.0F || FieldOfView >= 180.0F)
                 throw std::runtime_error("Scene.camera.verticalFieldOfViewDegrees must be between 0 and 180.");
             MainCamera.SetVerticalFieldOfViewDegrees(FieldOfView);
@@ -219,21 +220,21 @@ namespace MDSS
         std::unordered_set<std::string> ObjectIds;
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
-            const TJson& Object = Objects[Index];
+            const TJson&      Object = Objects[Index];
             const std::string Context = "Scene objects[" + std::to_string(Index) + "]";
-            std::string ObjectId;
+            std::string       ObjectId;
             if (const auto Id = Object.find("id"); Id != Object.end())
             {
                 ObjectId = ReadString(Object, "id", Context);
                 if (ObjectId == "camera" || !ObjectIds.insert(ObjectId).second)
                     throw std::runtime_error(Context + ".id must be unique and cannot be 'camera'.");
             }
-            const std::filesystem::path MeshPath = ResolveScenePath(
-                SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
+            const std::filesystem::path MeshPath =
+                ResolveScenePath(SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
             const TMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
 
             TSurfaceRuntimeDataHandle SurfaceDataHandle = InvalidSurfaceRuntimeDataHandle;
-            std::filesystem::path DistributionPath;
+            std::filesystem::path     DistributionPath;
             if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
             {
                 if (!Distribution->is_string() || Distribution->get_ref<const std::string&>().empty())
@@ -242,7 +243,8 @@ namespace MDSS
                 }
                 DistributionPath = ResolveScenePath(
                     SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
-                SurfaceDataHandle = Assets.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
+                SurfaceDataHandle =
+                    Assets.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
             }
 
             TTransform Transform;
@@ -250,12 +252,8 @@ namespace MDSS
             {
                 Transform = ReadTransform(*TransformJson, Context + ".transform");
             }
-            Scene.AddStaticMeshInstance(TStaticMeshInstance(MeshHandle,
-                                                            SurfaceDataHandle,
-                                                            Transform,
-                                                            MeshPath,
-                                                            DistributionPath,
-                                                            std::move(ObjectId)));
+            Scene.AddStaticMeshInstance(TStaticMeshInstance(
+                MeshHandle, SurfaceDataHandle, Transform, MeshPath, DistributionPath, std::move(ObjectId)));
         }
         if (const auto Contacts = Root.find("initialContacts"); Contacts != Root.end())
         {
@@ -263,8 +261,8 @@ namespace MDSS
                 throw std::runtime_error("Scene.initialContacts must be an array.");
             for (std::size_t Index = 0; Index < Contacts->size(); ++Index)
             {
-                const TJson& Contact = (*Contacts)[Index];
-                const std::string Context = "Scene.initialContacts[" + std::to_string(Index) + "]";
+                const TJson&         Contact = (*Contacts)[Index];
+                const std::string    Context = "Scene.initialContacts[" + std::to_string(Index) + "]";
                 TSceneInitialContact Initial;
                 Initial.Target = ReadString(Contact, "target", Context);
                 Initial.State = ReadString(Contact, "state", Context);
@@ -272,7 +270,8 @@ namespace MDSS
                     throw std::runtime_error(Context + ".target must name a Scene object with an id.");
                 if (NormalizeSurfaceStateName(Initial.State) != Initial.State)
                     throw std::runtime_error(Context + ".state must be a normalized State name.");
-                Initial.WorldPosition = ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
+                Initial.WorldPosition =
+                    ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
                 Initial.Radius = ReadFiniteFloat(RequireMember(Contact, "radius", Context), Context + ".radius");
                 Initial.Strength = ReadFiniteFloat(RequireMember(Contact, "strength", Context), Context + ".strength");
                 if (const auto Falloff = Contact.find("falloff"); Falloff != Contact.end())
@@ -284,8 +283,8 @@ namespace MDSS
         }
         if (const auto Animation = Root.find("animation"); Animation != Root.end())
         {
-            const std::filesystem::path AnimationPath = ResolveScenePath(
-                SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
+            const std::filesystem::path AnimationPath =
+                ResolveScenePath(SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
             Scene.SetDemoAnimation(AnimationPath, LoadDemoAnimation(AnimationPath, Scene));
         }
         Scene.CaptureInitialState();
@@ -296,12 +295,12 @@ namespace MDSS
     {
         const std::filesystem::path AbsolutePath = std::filesystem::absolute(Path).lexically_normal();
         const std::filesystem::path Directory = AbsolutePath.parent_path();
-        TJson Root;
+        TJson                       Root;
         Root["type"] = "TScene";
         Root["version"] = 1;
         Root["simulationResolution"] = Scene.GetSimulationResolution();
         Root["litHeightDisplayScale"] = Scene.GetLitHeightDisplayScale();
-        const TCamera& Camera = Scene.GetMainCamera();
+        const TCamera&   Camera = Scene.GetMainCamera();
         const glm::vec3& CameraPosition = Camera.GetPosition();
         const glm::vec3& CameraTarget = Camera.GetTarget();
         Root["camera"] = {{"position", {CameraPosition.x, CameraPosition.y, CameraPosition.z}},
@@ -313,9 +312,13 @@ namespace MDSS
         {
             Root["initialContacts"] = TJson::array();
             for (const auto& Contact : Scene.GetInitialContacts())
-                Root["initialContacts"].push_back({{"target", Contact.Target}, {"state", Contact.State},
-                    {"worldPosition", {Contact.WorldPosition.x, Contact.WorldPosition.y, Contact.WorldPosition.z}},
-                    {"radius", Contact.Radius}, {"strength", Contact.Strength}, {"falloff", Contact.Falloff}});
+                Root["initialContacts"].push_back(
+                    {{"target", Contact.Target},
+                     {"state", Contact.State},
+                     {"worldPosition", {Contact.WorldPosition.x, Contact.WorldPosition.y, Contact.WorldPosition.z}},
+                     {"radius", Contact.Radius},
+                     {"strength", Contact.Strength},
+                     {"falloff", Contact.Falloff}});
         }
         Root["objects"] = TJson::array();
         for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
@@ -325,19 +328,20 @@ namespace MDSS
                 throw std::runtime_error("Cannot save Scene object without its source Mesh path.");
             }
             const TTransform& Transform = Instance.GetTransform();
-            TJson Object;
-            if (!Instance.GetId().empty()) Object["id"] = Instance.GetId();
+            TJson             Object;
+            if (!Instance.GetId().empty())
+                Object["id"] = Instance.GetId();
             Object["mesh"] = Instance.GetMeshPath().lexically_relative(Directory).generic_string();
             if (!Instance.GetProfileMapPath().empty())
             {
                 Object["surfaceProfileMap"] =
                     Instance.GetProfileMapPath().lexically_relative(Directory).generic_string();
             }
-            Object["transform"] = {{"position", {Transform.Position.x, Transform.Position.y, Transform.Position.z}},
-                                    {"rotationDegrees", {Transform.RotationDegrees.x,
-                                                          Transform.RotationDegrees.y,
-                                                          Transform.RotationDegrees.z}},
-                                    {"scale", {Transform.Scale.x, Transform.Scale.y, Transform.Scale.z}}};
+            Object["transform"] = {
+                {"position", {Transform.Position.x, Transform.Position.y, Transform.Position.z}},
+                {"rotationDegrees",
+                 {Transform.RotationDegrees.x, Transform.RotationDegrees.y, Transform.RotationDegrees.z}},
+                {"scale", {Transform.Scale.x, Transform.Scale.y, Transform.Scale.z}}};
             Root["objects"].push_back(std::move(Object));
         }
 

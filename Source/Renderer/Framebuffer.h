@@ -17,10 +17,10 @@ namespace MDSS
     public:
         /** @brief 각 color image view에 대응하는 depth view를 연결한 framebuffer를 생성한다. */
         TFramebuffer(VkDevice                        Device,
-                    VkRenderPass                    TRenderPass,
-                    VkExtent2D                      Extent,
-                    const std::vector<VkImageView>& ColorImageViews,
-                    const std::vector<VkImageView>& DepthImageViews);
+                     VkRenderPass                    TRenderPass,
+                     VkExtent2D                      Extent,
+                     const std::vector<VkImageView>& ColorImageViews,
+                     const std::vector<VkImageView>& DepthImageViews);
         ~TFramebuffer();
 
         TFramebuffer(const TFramebuffer&) = delete;

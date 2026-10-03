@@ -7,8 +7,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include <cstdint>
 #include <atomic>
+#include <cstdint>
 
 namespace MDSS
 {
@@ -20,10 +20,10 @@ namespace MDSS
          * @throws std::runtime_error buffer 또는 memory 생성에 실패한 경우.
          */
         TGPUBuffer(VkPhysicalDevice      PhysicalDevice,
-                  VkDevice              Device,
-                  VkDeviceSize          Size,
-                  VkBufferUsageFlags    Usage,
-                  VkMemoryPropertyFlags MemoryProperties);
+                   VkDevice              Device,
+                   VkDeviceSize          Size,
+                   VkBufferUsageFlags    Usage,
+                   VkMemoryPropertyFlags MemoryProperties);
         ~TGPUBuffer();
 
         TGPUBuffer(const TGPUBuffer&) = delete;
@@ -42,8 +42,8 @@ namespace MDSS
         /** @brief host-visible/coherent buffer memory에서 바이트 범위를 읽는다. */
         void Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
 
-        [[nodiscard]] VkBuffer     GetHandle() const noexcept;
-        [[nodiscard]] VkDeviceSize GetSize() const noexcept;
+        [[nodiscard]] VkBuffer      GetHandle() const noexcept;
+        [[nodiscard]] VkDeviceSize  GetSize() const noexcept;
         [[nodiscard]] std::uint64_t GetUploadRevision() const noexcept;
 
     private:
@@ -51,11 +51,11 @@ namespace MDSS
                                             std::uint32_t         TypeFilter,
                                             VkMemoryPropertyFlags RequiredProperties);
 
-        VkDevice              Device = VK_NULL_HANDLE;
-        VkBuffer              Handle = VK_NULL_HANDLE;
-        VkDeviceMemory        Memory = VK_NULL_HANDLE;
-        VkDeviceSize          Size = 0;
-        VkMemoryPropertyFlags MemoryProperties = 0;
+        VkDevice                           Device = VK_NULL_HANDLE;
+        VkBuffer                           Handle = VK_NULL_HANDLE;
+        VkDeviceMemory                     Memory = VK_NULL_HANDLE;
+        VkDeviceSize                       Size = 0;
+        VkMemoryPropertyFlags              MemoryProperties = 0;
         mutable std::atomic<std::uint64_t> UploadRevision{0};
     };
 } // namespace MDSS

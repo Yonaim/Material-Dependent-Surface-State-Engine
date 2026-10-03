@@ -49,8 +49,8 @@ namespace MDSS
         }
 
         TLogger::Info("TRenderer",
-                     "Frame synchronization initialized with " + std::to_string(MaxFramesInFlight) +
-                         " frames in flight.");
+                      "Frame synchronization initialized with " + std::to_string(MaxFramesInFlight) +
+                          " frames in flight.");
     }
 
     TRenderContext::~TRenderContext()

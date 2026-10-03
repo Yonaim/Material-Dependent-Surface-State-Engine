@@ -4,10 +4,10 @@
  */
 
 #include "Application/Application.h"
-#include "Application/EngineConfig.h"
 
-#include "DebugUI/DebugUI.h"
+#include "Application/EngineConfig.h"
 #include "AssetManager/Loaders/SceneLoader.h"
+#include "DebugUI/DebugUI.h"
 #include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
 #include "Renderer/Renderer.h"
@@ -17,10 +17,10 @@
 #include <filesystem>
 #include <stdexcept>
 
-
 namespace MDSS
 {
-    TApplication::TApplication() : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), MainScene()
+    TApplication::TApplication()
+        : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), MainScene()
     {
         TLogger::Info("TApplication", "Initializing MDSS Engine.");
 
@@ -60,17 +60,17 @@ namespace MDSS
         {
             MainWindow.PollEvents();
             DebugInterface->BeginFrame(MainScene);
-            if (const std::optional<TSurfaceContactInput> Contact = InputInterface->PollDebugContact(
-                    MainScene,
-                    Assets,
-                    DebugInterface->GetActiveViewportCamera(MainScene),
-                    DebugInterface->IsInjectModeEnabled(),
-                    DebugInterface->GetInjectState(),
-                    DebugInterface->GetInjectStrength(),
-                    DebugInterface->GetInjectRadius(),
-                    DebugInterface->GetInjectFalloff(),
-                    DebugInterface->GetInjectTexelSearchRadius(),
-                    DebugInterface->ShouldSuppressDebugHotkey()))
+            if (const std::optional<TSurfaceContactInput> Contact =
+                    InputInterface->PollDebugContact(MainScene,
+                                                     Assets,
+                                                     DebugInterface->GetActiveViewportCamera(MainScene),
+                                                     DebugInterface->IsInjectModeEnabled(),
+                                                     DebugInterface->GetInjectState(),
+                                                     DebugInterface->GetInjectStrength(),
+                                                     DebugInterface->GetInjectRadius(),
+                                                     DebugInterface->GetInjectFalloff(),
+                                                     DebugInterface->GetInjectTexelSearchRadius(),
+                                                     DebugInterface->ShouldSuppressDebugHotkey()))
             {
                 SurfaceStates->SubmitContact(*Contact);
                 TLogger::Info("TInputSystem",
@@ -78,10 +78,10 @@ namespace MDSS
                                   ", instance=" + std::to_string(Contact->TargetInstance) +
                                   ", strength=" + std::to_string(Contact->Strength) + ").");
             }
-            const auto  CurrentFrameTime = std::chrono::steady_clock::now();
+            const auto CurrentFrameTime = std::chrono::steady_clock::now();
             // Settings and file dialogs can block inside BeginFrame. Exclude
             // their elapsed time from the interactive simulation clock.
-            const bool bSuspendSimulationClock = DebugInterface->ConsumeFrameTimeResetRequest();
+            const bool  bSuspendSimulationClock = DebugInterface->ConsumeFrameTimeResetRequest();
             const float DeltaTime = bSuspendSimulationClock
                                         ? 0.0F
                                         : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();

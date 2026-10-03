@@ -22,8 +22,8 @@ namespace MDSS
     }
 
     TSurfaceRuntimeData TSurfacePreprocessor::Build(const TSurfaceMappingData&        Mapping,
-                                                  std::vector<TSurfaceProfileIndex> ProfileMap,
-                                                  std::uint32_t                    ProfileCount)
+                                                    std::vector<TSurfaceProfileIndex> ProfileMap,
+                                                    std::uint32_t                     ProfileCount)
     {
         return TSurfaceRuntimeData(TSurfaceGeometryBuilder::Build(Mapping, std::move(ProfileMap), ProfileCount));
     }

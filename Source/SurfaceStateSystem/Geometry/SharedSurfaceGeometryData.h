@@ -26,7 +26,8 @@ namespace MDSS
          * @throws std::overflow_error 전체 texel 수가 지원 범위를 넘는 경우.
          */
         explicit TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition> Surfaces);
-        TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition> Surfaces, std::vector<TSurfaceProfileIndex> ProfileMap);
+        TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition>   Surfaces,
+                                   std::vector<TSurfaceProfileIndex> ProfileMap);
 
         [[nodiscard]] const std::vector<TSurfaceTexelRange>& GetSurfaces() const noexcept;
         /** @brief 전처리 코드가 채우는 mesh-local texel geometry 배열에 접근한다. */
@@ -35,9 +36,9 @@ namespace MDSS
         [[nodiscard]] std::vector<TSurfaceTexelGeometry>&      GetTexels() noexcept;
         [[nodiscard]] const std::vector<TSurfaceProfileIndex>& GetProfileMap() const noexcept;
         /** @brief Install the static texel-to-profile map after Geometry has been populated. */
-        void                              SetProfileMap(std::vector<TSurfaceProfileIndex> ProfileMap);
+        void                               SetProfileMap(std::vector<TSurfaceProfileIndex> ProfileMap);
         [[nodiscard]] TSurfaceProfileIndex GetProfileIndex(TLocalTexelIndex Texel) const;
-        [[nodiscard]] std::size_t         GetTexelCount() const noexcept;
+        [[nodiscard]] std::size_t          GetTexelCount() const noexcept;
         /**
          * @brief ID에 해당하는 Surface의 연속 texel range를 반환한다.
          * @throws std::out_of_range Surface ID가 이 Mesh에 없는 경우.

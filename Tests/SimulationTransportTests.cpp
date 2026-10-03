@@ -2,10 +2,11 @@
  * @file SimulationTransportTests.cpp
  * @brief 2-pass Surface solver의 입력, flux, 감쇠와 상태 보존 계약을 검증한다.
  */
-#include "SurfaceStateSystem/State/SimulationClock.h"
-#include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
-#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
+#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
+#include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
+#include "SurfaceStateSystem/State/SimulationClock.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <numeric>
@@ -15,7 +16,8 @@ namespace
 {
     void Check(bool Condition, const char* Message)
     {
-        if (!Condition) throw std::runtime_error(Message);
+        if (!Condition)
+            throw std::runtime_error(Message);
     }
 
     void TestClock()
@@ -26,7 +28,7 @@ namespace
         for (int FPS : {15, 30, 60, 120})
         {
             TSimulationClock Clock;
-            std::size_t Steps = 0;
+            std::size_t      Steps = 0;
             for (int Frame = 0; Frame < FPS; ++Frame)
             {
                 Clock.Accumulate(1.0 / FPS, 1.0, false);
@@ -34,7 +36,8 @@ namespace
                       "normal 15/30/60/120 FPS playback must not skip simulation time");
                 const auto FrameSteps = Clock.Consume(0.001F, true, false, false, false);
                 for (float Step : FrameSteps)
-                    Check(Step == FixedSimulationStepSeconds, "fixed dt must ignore the transport limit when auto is off");
+                    Check(Step == FixedSimulationStepSeconds,
+                          "fixed dt must ignore the transport limit when auto is off");
                 Steps += FrameSteps.size();
             }
             Check(Steps == 60 && std::abs(Clock.GetSimulatedSeconds() - 1.0) < 1.0e-6,
@@ -96,14 +99,14 @@ namespace
         Clock.Accumulate(0.005, 1.0, false);
         const auto VariableSubsteps = Clock.Consume(0.001F, false, true, false, false);
         Check(VariableSubsteps.size() == 5 && Clock.GetPendingSeconds() == 0 &&
-              std::abs(Clock.GetSimulatedSeconds() - 0.005) < 1e-8,
+                  std::abs(Clock.GetSimulatedSeconds() - 0.005) < 1e-8,
               "variable auto mode must split elapsed time including its final remainder");
 
         Clock.Reset();
         Clock.Accumulate(FixedSimulationStepSeconds, 1.0, false);
         const auto Uneven = Clock.Consume(0.01F, true, true, false, false);
         Check(Uneven.size() == 2 && Uneven[0] == 0.01F && Uneven[1] < 0.01F &&
-              std::abs(Clock.GetSimulatedSeconds() - FixedSimulationStepSeconds) < 1e-8,
+                  std::abs(Clock.GetSimulatedSeconds() - FixedSimulationStepSeconds) < 1e-8,
               "fixed auto mode must finish the tick with a shorter last substep");
 
         Clock.Reset();
@@ -120,18 +123,17 @@ namespace
         Clock.Accumulate(FixedSimulationStepSeconds, 1.0, false);
         (void)Clock.Consume(SmallStep, true, true, false, false);
         const double TransitionRemainder = Clock.GetPendingSeconds();
-        const auto Finish = Clock.Consume(SmallStep, true, false, false, false);
-        Check(Finish.size() == 1 && std::abs(Finish[0] - TransitionRemainder) < 1e-8 &&
-              Clock.GetPendingSeconds() == 0,
+        const auto   Finish = Clock.Consume(SmallStep, true, false, false, false);
+        Check(Finish.size() == 1 && std::abs(Finish[0] - TransitionRemainder) < 1e-8 && Clock.GetPendingSeconds() == 0,
               "disabling auto during a tick must finish its remainder without resetting time");
 
         Clock.Reset();
         Clock.Accumulate(FixedSimulationStepSeconds, 1.0, false);
         (void)Clock.Consume(SmallStep, true, true, false, false);
         const double VariableRemainder = Clock.GetPendingSeconds();
-        const auto FinishVariable = Clock.Consume(SmallStep, false, false, false, false);
+        const auto   FinishVariable = Clock.Consume(SmallStep, false, false, false, false);
         Check(FinishVariable.size() == 1 && std::abs(FinishVariable[0] - VariableRemainder) < 1e-8 &&
-              Clock.GetPendingSeconds() == 0,
+                  Clock.GetPendingSeconds() == 0,
               "switching both options off must consume the remaining budget exactly once");
         Clock.Accumulate(FixedSimulationStepSeconds, 1.0, false);
         Check(Clock.Consume(SmallStep, true, false, false, false) == std::vector<float>{FixedSimulationStepSeconds},
@@ -149,21 +151,21 @@ namespace
     void TestArea()
     {
         using namespace MDSS;
-        const std::vector<TVertex> Vertices{
-            {{0,0,0}, {0,0,1}, {0,0}}, {{2,0,0}, {0,0,1}, {1,0}},
-            {{2,3,1}, {0,0,1}, {1,1}}, {{0,3,1}, {0,0,1}, {0,1}}};
-        const std::vector<TMeshTriangleSource> Triangles{
-            {{0,1,2}, {0,1,2}, {0,1,2}, 0}, {{0,2,3}, {0,2,3}, {0,2,3}, 0}};
-        const glm::mat4 Model = glm::scale(glm::mat4(1), glm::vec3(2,3,4));
-        const double Expected = glm::length(glm::cross(glm::vec3(4,0,0), glm::vec3(0,9,4)));
-        double PreviousCapacity = 0.0;
+        const std::vector<TVertex>             Vertices{{{0, 0, 0}, {0, 0, 1}, {0, 0}},
+                                                        {{2, 0, 0}, {0, 0, 1}, {1, 0}},
+                                                        {{2, 3, 1}, {0, 0, 1}, {1, 1}},
+                                                        {{0, 3, 1}, {0, 0, 1}, {0, 1}}};
+        const std::vector<TMeshTriangleSource> Triangles{{{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, 0},
+                                                         {{0, 2, 3}, {0, 2, 3}, {0, 2, 3}, 0}};
+        const glm::mat4                        Model = glm::scale(glm::mat4(1), glm::vec3(2, 3, 4));
+        const double Expected = glm::length(glm::cross(glm::vec3(4, 0, 0), glm::vec3(0, 9, 4)));
+        double       PreviousCapacity = 0.0;
         for (std::uint32_t Resolution : {128U, 256U, 512U})
         {
-            const auto Mapping = TSurfaceMappingBuilder::Build(Vertices, Triangles,
-                {{0, {Resolution, Resolution}}});
-            auto Geometry = TSurfaceGeometryBuilder::Build(Mapping,
-                std::vector<TSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
-            const auto Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, Model);
+            const auto Mapping = TSurfaceMappingBuilder::Build(Vertices, Triangles, {{0, {Resolution, Resolution}}});
+            auto       Geometry =
+                TSurfaceGeometryBuilder::Build(Mapping, std::vector<TSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
+            const auto   Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, Model);
             const double TotalArea = std::accumulate(Areas.begin(), Areas.end(), 0.0);
             Check(std::abs(TotalArea - Expected) < Expected * 1.0e-5,
                   "tilted UV plane must retain world area at 128/256/512 including nonuniform scale");
@@ -172,14 +174,25 @@ namespace
                 Check(std::abs(TotalCapacity - PreviousCapacity) < PreviousCapacity * 1.0e-5,
                       "same surface must have the same integrated Capacity");
             PreviousCapacity = TotalCapacity;
-            Check(std::abs(GetSurfaceWorldTexelArea(Geometry.GetTexels()[0], glm::scale(Model, glm::vec3(-1,1,1))) -
-                           Areas[0]) < Areas[0] * 1.0e-5F, "reflection must retain positive physical area");
+            Check(std::abs(GetSurfaceWorldTexelArea(Geometry.GetTexels()[0], glm::scale(Model, glm::vec3(-1, 1, 1))) -
+                           Areas[0]) < Areas[0] * 1.0e-5F,
+                  "reflection must retain positive physical area");
         }
     }
 }
 
 int main()
 {
-    try { TestClock(); TestArea(); std::cout << "Simulation clock and world-area tests passed\n"; return 0; }
-    catch (const std::exception& Error) { std::cerr << Error.what() << '\n'; return 1; }
+    try
+    {
+        TestClock();
+        TestArea();
+        std::cout << "Simulation clock and world-area tests passed\n";
+        return 0;
+    }
+    catch (const std::exception& Error)
+    {
+        std::cerr << Error.what() << '\n';
+        return 1;
+    }
 }

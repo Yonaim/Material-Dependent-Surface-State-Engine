@@ -30,11 +30,11 @@ namespace MDSS
         TVulkanContext(TVulkanContext&&) = delete;
         TVulkanContext& operator=(TVulkanContext&&) = delete;
 
-        [[nodiscard]] VkInstance           GetInstance() const noexcept;
-        [[nodiscard]] VkSurfaceKHR         GetSurface() const noexcept;
-        [[nodiscard]] VkPhysicalDevice     GetPhysicalDevice() const noexcept;
-        [[nodiscard]] VkDevice             GetDevice() const noexcept;
-        [[nodiscard]] bool                 SupportsGeometryShader() const noexcept;
+        [[nodiscard]] VkInstance            GetInstance() const noexcept;
+        [[nodiscard]] VkSurfaceKHR          GetSurface() const noexcept;
+        [[nodiscard]] VkPhysicalDevice      GetPhysicalDevice() const noexcept;
+        [[nodiscard]] VkDevice              GetDevice() const noexcept;
+        [[nodiscard]] bool                  SupportsGeometryShader() const noexcept;
         [[nodiscard]] const TVulkanQueue&   GetQueues() const noexcept;
         [[nodiscard]] const TVulkanCommand& GetCommands() const noexcept;
 
@@ -45,7 +45,7 @@ namespace MDSS
         static VkSurfaceKHR CreateSurface(VkInstance Instance, const TWindow& TWindow);
 
         TVulkanInstance Instance;
-        VkSurfaceKHR   Surface = VK_NULL_HANDLE;
+        VkSurfaceKHR    Surface = VK_NULL_HANDLE;
         TVulkanDevice   Device;
         TVulkanQueue    Queues;
         TVulkanCommand  Commands;

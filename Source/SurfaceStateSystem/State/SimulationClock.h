@@ -13,20 +13,20 @@
 namespace MDSS
 {
     inline constexpr std::uint32_t MaxSimulationStepsPerFrame = 8;
-    inline constexpr double MaxRealtimePendingTicks = 4.0;
-    inline constexpr float FixedSimulationStepSeconds = 1.0F / 60.0F;
-    inline constexpr bool DefaultFixedSimulationTimestep = true;
-    inline constexpr bool DefaultAutoSubstepping = false;
+    inline constexpr double        MaxRealtimePendingTicks = 4.0;
+    inline constexpr float         FixedSimulationStepSeconds = 1.0F / 60.0F;
+    inline constexpr bool          DefaultFixedSimulationTimestep = true;
+    inline constexpr bool          DefaultAutoSubstepping = false;
 
     class TSimulationClock
     {
     public:
         void Accumulate(double ElapsedSeconds, double TimeScale, bool bPaused)
         {
-            if (!std::isfinite(ElapsedSeconds) || ElapsedSeconds < 0.0 ||
-                !std::isfinite(TimeScale) || TimeScale < 0.0)
+            if (!std::isfinite(ElapsedSeconds) || ElapsedSeconds < 0.0 || !std::isfinite(TimeScale) || TimeScale < 0.0)
                 throw std::invalid_argument("Invalid simulation elapsed time or time scale.");
-            if (!bPaused) PendingSeconds += ElapsedSeconds * TimeScale;
+            if (!bPaused)
+                PendingSeconds += ElapsedSeconds * TimeScale;
         }
 
         // Interactive playback drops elapsed time that cannot fit in the frame's
@@ -42,8 +42,8 @@ namespace MDSS
             return DroppedSeconds;
         }
 
-        [[nodiscard]] std::vector<float> Consume(float TransportMaximumStep, bool bFixed, bool bAutoSubstepping,
-                                                bool bPaused, bool bSingleStep)
+        [[nodiscard]] std::vector<float>
+        Consume(float TransportMaximumStep, bool bFixed, bool bAutoSubstepping, bool bPaused, bool bSingleStep)
         {
             if (bAutoSubstepping && (!std::isfinite(TransportMaximumStep) || TransportMaximumStep <= 0.0F))
                 throw std::invalid_argument("Invalid simulation step limit.");
@@ -52,11 +52,13 @@ namespace MDSS
             std::vector<float> Steps;
             if (bPaused)
             {
-                if (bSingleStep) Steps.push_back(static_cast<float>(MaximumStep));
+                if (bSingleStep)
+                    Steps.push_back(static_cast<float>(MaximumStep));
             }
             else
             {
-                if (!bFixed) FixedTickRemainingSeconds = 0.0;
+                if (!bFixed)
+                    FixedTickRemainingSeconds = 0.0;
                 const double StepTolerance = FixedStep * 1.0e-5;
                 while (Steps.size() < MaxSimulationStepsPerFrame && PendingSeconds > 0.0)
                 {
@@ -66,11 +68,12 @@ namespace MDSS
                         if (FixedTickRemainingSeconds == 0.0)
                         {
                             // A fixed tick starts only when its full time budget has accumulated.
-                            if (PendingSeconds + StepTolerance < FixedStep) break;
+                            if (PendingSeconds + StepTolerance < FixedStep)
+                                break;
                             FixedTickRemainingSeconds = FixedStep;
                         }
-                        BudgetStep = bAutoSubstepping ? std::min(FixedTickRemainingSeconds, MaximumStep) :
-                            FixedTickRemainingSeconds;
+                        BudgetStep = bAutoSubstepping ? std::min(FixedTickRemainingSeconds, MaximumStep)
+                                                      : FixedTickRemainingSeconds;
                         FixedTickRemainingSeconds = std::max(0.0, FixedTickRemainingSeconds - BudgetStep);
                     }
                     else
@@ -80,7 +83,8 @@ namespace MDSS
                     PendingSeconds = std::max(0.0, PendingSeconds - BudgetStep);
                 }
             }
-            for (float Step : Steps) SimulatedSeconds += Step;
+            for (float Step : Steps)
+                SimulatedSeconds += Step;
             return Steps;
         }
 
@@ -90,8 +94,14 @@ namespace MDSS
             SimulatedSeconds = 0.0;
             FixedTickRemainingSeconds = 0.0;
         }
-        [[nodiscard]] double GetPendingSeconds() const noexcept { return PendingSeconds; }
-        [[nodiscard]] double GetSimulatedSeconds() const noexcept { return SimulatedSeconds; }
+        [[nodiscard]] double GetPendingSeconds() const noexcept
+        {
+            return PendingSeconds;
+        }
+        [[nodiscard]] double GetSimulatedSeconds() const noexcept
+        {
+            return SimulatedSeconds;
+        }
 
     private:
         double PendingSeconds = 0.0;

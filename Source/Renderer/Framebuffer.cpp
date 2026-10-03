@@ -14,10 +14,10 @@
 namespace MDSS
 {
     TFramebuffer::TFramebuffer(VkDevice                        Device,
-                             VkRenderPass                    TRenderPass,
-                             VkExtent2D                      Extent,
-                             const std::vector<VkImageView>& ColorImageViews,
-                             const std::vector<VkImageView>& DepthImageViews)
+                               VkRenderPass                    TRenderPass,
+                               VkExtent2D                      Extent,
+                               const std::vector<VkImageView>& ColorImageViews,
+                               const std::vector<VkImageView>& DepthImageViews)
         : Device(Device)
     {
         Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
@@ -29,9 +29,9 @@ namespace MDSS
     }
 
     void TFramebuffer::Recreate(VkRenderPass                    TRenderPass,
-                               VkExtent2D                      Extent,
-                               const std::vector<VkImageView>& ColorImageViews,
-                               const std::vector<VkImageView>& DepthImageViews)
+                                VkExtent2D                      Extent,
+                                const std::vector<VkImageView>& ColorImageViews,
+                                const std::vector<VkImageView>& DepthImageViews)
     {
         Reset();
         Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
@@ -50,9 +50,9 @@ namespace MDSS
     }
 
     void TFramebuffer::Create(VkRenderPass                    TRenderPass,
-                             VkExtent2D                      Extent,
-                             const std::vector<VkImageView>& ColorImageViews,
-                             const std::vector<VkImageView>& DepthImageViews)
+                              VkExtent2D                      Extent,
+                              const std::vector<VkImageView>& ColorImageViews,
+                              const std::vector<VkImageView>& DepthImageViews)
     {
         if (ColorImageViews.size() != DepthImageViews.size() || ColorImageViews.empty())
             throw std::invalid_argument("Framebuffer color and depth image view counts must match.");
@@ -83,8 +83,8 @@ namespace MDSS
         }
 
         TLogger::Debug("TRenderer",
-                      "Framebuffers created: " + std::to_string(Handles.size()) + " at " +
-                          std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ".");
+                       "Framebuffers created: " + std::to_string(Handles.size()) + " at " +
+                           std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ".");
     }
 
     VkFramebuffer TFramebuffer::Get(std::size_t Index) const

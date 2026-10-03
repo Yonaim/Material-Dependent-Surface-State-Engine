@@ -86,7 +86,7 @@ namespace MDSS
         for (std::size_t Index = 0; Index < Data.Transitions.size(); ++Index)
         {
             const TSurfaceStateTransition& Transition = Data.Transitions[Index];
-            const std::string             Prefix = "transitions[" + std::to_string(Index) + "].";
+            const std::string              Prefix = "transitions[" + std::to_string(Index) + "].";
             if (Transition.Source.empty() || NormalizeSurfaceStateName(Transition.Source) != Transition.Source)
             {
                 throw std::invalid_argument(Prefix + "source must be non-empty and normalized.");

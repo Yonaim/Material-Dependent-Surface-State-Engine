@@ -9,12 +9,12 @@
 
 namespace MDSS
 {
-    TMaterialAsset::TMaterialAsset(TAssetID               ID,
-                                 std::string           Name,
-                                 std::filesystem::path SourcePath,
-                                 glm::vec4             BaseColor,
-                                 TextureAssetHandle    BaseColorTexture,
-                                 TextureAssetHandle    NormalTexture)
+    TMaterialAsset::TMaterialAsset(TAssetID              ID,
+                                   std::string           Name,
+                                   std::filesystem::path SourcePath,
+                                   glm::vec4             BaseColor,
+                                   TextureAssetHandle    BaseColorTexture,
+                                   TextureAssetHandle    NormalTexture)
         : TAsset(ID, std::move(Name), std::move(SourcePath)), BaseColor(BaseColor), BaseColorTexture(BaseColorTexture),
           NormalTexture(NormalTexture)
     {

@@ -16,7 +16,6 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/geometric.hpp>
-
 #include <limits>
 
 namespace MDSS
@@ -25,7 +24,7 @@ namespace MDSS
     {
     }
 
-    std::optional<TSurfaceContactInput> TInputSystem::PollDebugContact(const TScene&       Scene,
+    std::optional<TSurfaceContactInput> TInputSystem::PollDebugContact(const TScene&        Scene,
                                                                        const TAssetManager& Assets,
                                                                        const TCamera&       Camera,
                                                                        bool                 bInjectMode,
@@ -46,7 +45,8 @@ namespace MDSS
         }
         if (State == InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
         {
-            TLogger::Warning("TInputSystem", "Ignored debug contact because State, Strength, radius, or falloff is invalid.");
+            TLogger::Warning("TInputSystem",
+                             "Ignored debug contact because State, Strength, radius, or falloff is invalid.");
             return std::nullopt;
         }
 

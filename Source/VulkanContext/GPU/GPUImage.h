@@ -16,12 +16,12 @@ namespace MDSS
     public:
         /** @brief 이미지와 backing memory를 생성한다. 실패하면 std::runtime_error를 던진다. */
         TGPUImage(VkPhysicalDevice      PhysicalDevice,
-                 VkDevice              Device,
-                 VkExtent2D            Extent,
-                 VkFormat              Format,
-                 VkImageTiling         Tiling,
-                 VkImageUsageFlags     Usage,
-                 VkMemoryPropertyFlags MemoryProperties);
+                  VkDevice              Device,
+                  VkExtent2D            Extent,
+                  VkFormat              Format,
+                  VkImageTiling         Tiling,
+                  VkImageUsageFlags     Usage,
+                  VkMemoryPropertyFlags MemoryProperties);
         ~TGPUImage();
 
         TGPUImage(const TGPUImage&) = delete;

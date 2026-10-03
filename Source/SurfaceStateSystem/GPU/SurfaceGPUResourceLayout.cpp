@@ -31,9 +31,8 @@ namespace MDSS
         }
     } // 내부 네임스페이스
 
-    TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(
-        const TSharedSurfaceGeometryData& Geometry,
-        std::span<const TSurfaceProfileIndex> ProfileIndexRemap)
+    TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData&     Geometry,
+                                                              std::span<const TSurfaceProfileIndex> ProfileIndexRemap)
     {
         const std::size_t TexelCount = Geometry.GetTexelCount();
         if (TexelCount == 0)
@@ -120,31 +119,32 @@ namespace MDSS
         return Result;
     }
 
-    float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel,
-                                     const glm::mat4& ModelMatrix) noexcept
+    float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel, const glm::mat4& ModelMatrix) noexcept
     {
-        if (!Texel.IsValid()) return 0.0F;
+        if (!Texel.IsValid())
+            return 0.0F;
         const glm::mat3 L(ModelMatrix);
         const glm::mat3 Cofactor(glm::cross(L[1], L[2]), glm::cross(L[2], L[0]), glm::cross(L[0], L[1]));
-        const float Area = glm::length(Cofactor * Texel.AreaVector);
+        const float     Area = glm::length(Cofactor * Texel.AreaVector);
         return std::isfinite(Area) && Area > 0.0F ? Area : 0.0F;
     }
 
     std::vector<float> BuildSurfaceGPUWorldTexelAreas(const TSharedSurfaceGeometryData& Geometry,
-                                                       const glm::mat4& ModelMatrix)
+                                                      const glm::mat4&                  ModelMatrix)
     {
         std::vector<float> Areas;
         Areas.reserve(Geometry.GetTexelCount());
-        for (const auto& Texel : Geometry.GetTexels()) Areas.push_back(GetSurfaceWorldTexelArea(Texel, ModelMatrix));
+        for (const auto& Texel : Geometry.GetTexels())
+            Areas.push_back(GetSurfaceWorldTexelArea(Texel, ModelMatrix));
         return Areas;
     }
 
     std::vector<float> BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
                                                       const glm::mat4&                  ModelMatrix,
                                                       std::vector<TSurfaceGPUVec4>*     OutDebugAverages,
-                                                      bool                             bUseNormalWeight,
-                                                      bool                             bUseDistanceWeight,
-                                                      bool                             bUseProfileBoundaryWeight)
+                                                      bool                              bUseNormalWeight,
+                                                      bool                              bUseDistanceWeight,
+                                                      bool                              bUseProfileBoundaryWeight)
     {
         const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
         const std::vector<TSurfaceProfileIndex>&  Profiles = Geometry.GetProfileMap();
@@ -258,9 +258,8 @@ namespace MDSS
                     bUseNormalWeight
                         ? std::clamp(glm::dot(WorldNormals[Index], WorldNormals[NeighborIndex]), 0.0F, 1.0F)
                         : 1.0F;
-                const float ProfileBoundaryWeight = !bUseProfileBoundaryWeight || Profiles[Index] == Profiles[NeighborIndex]
-                                                        ? 1.0F
-                                                        : 0.5F;
+                const float ProfileBoundaryWeight =
+                    !bUseProfileBoundaryWeight || Profiles[Index] == Profiles[NeighborIndex] ? 1.0F : 0.5F;
                 const float TransferWeight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
                 Result[Index * SurfaceNeighborCount + Slot] = TransferWeight;
                 DebugSums[Index][0] += TransferWeight;
@@ -325,17 +324,16 @@ namespace MDSS
                 }
 
                 const TSurfaceStateParameters& Parameters = *Resolved.States[ChannelIndex];
-                Result.Parameters[RecordIndex] = {{Parameters.StateCapacity,
-                                                   Parameters.InputFactor,
-                                                   Parameters.SaturationTransferFactor,
-                                                   Parameters.GeometryTransferFactor},
-                                                  {Parameters.DecayRate,
-                                                   Parameters.CavityRetentionFactor,
-                                                   Parameters.AccumulationFactor,
-                                                   Parameters.CavityFillFactor},
-                                                  {Parameters.ThicknessPerAmount,
-                                                   Parameters.CavityTransportRetentionFactor,
-                                                   0.0F, 0.0F}};
+                Result.Parameters[RecordIndex] = {
+                    {Parameters.StateCapacity,
+                     Parameters.InputFactor,
+                     Parameters.SaturationTransferFactor,
+                     Parameters.GeometryTransferFactor},
+                    {Parameters.DecayRate,
+                     Parameters.CavityRetentionFactor,
+                     Parameters.AccumulationFactor,
+                     Parameters.CavityFillFactor},
+                    {Parameters.ThicknessPerAmount, Parameters.CavityTransportRetentionFactor, 0.0F, 0.0F}};
                 Result.Supported[RecordIndex] = 1U;
             }
         }

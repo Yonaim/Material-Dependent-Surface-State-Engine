@@ -14,10 +14,10 @@ namespace MDSS
     public:
         TCamera() = default;
         TCamera(glm::vec3 Position,
-               glm::vec3 Target,
-               float     VerticalFieldOfViewDegrees = 60.0F,
-               float     NearPlane = 0.1F,
-               float     FarPlane = 100.0F);
+                glm::vec3 Target,
+                float     VerticalFieldOfViewDegrees = 60.0F,
+                float     NearPlane = 0.1F,
+                float     FarPlane = 100.0F);
 
         [[nodiscard]] glm::mat4 GetViewMatrix() const;
         /** @brief 수직 FOV와 aspect ratio를 사용해 Vulkan용 projection을 계산한다. */

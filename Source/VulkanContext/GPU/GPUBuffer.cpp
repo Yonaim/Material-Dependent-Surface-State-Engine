@@ -13,10 +13,10 @@
 namespace MDSS
 {
     TGPUBuffer::TGPUBuffer(VkPhysicalDevice      PhysicalDevice,
-                         VkDevice              Device,
-                         VkDeviceSize          Size,
-                         VkBufferUsageFlags    Usage,
-                         VkMemoryPropertyFlags MemoryProperties)
+                           VkDevice              Device,
+                           VkDeviceSize          Size,
+                           VkBufferUsageFlags    Usage,
+                           VkMemoryPropertyFlags MemoryProperties)
         : Device(Device), Size(Size), MemoryProperties(MemoryProperties)
     {
         if (Size == 0)
@@ -71,8 +71,8 @@ namespace MDSS
             throw;
         }
 
-        TLogger::Verbose("Vulkan",
-                        "TGPUBuffer created (size=" + std::to_string(Size) + ", usage=" + std::to_string(Usage) + ").");
+        TLogger::Verbose(
+            "Vulkan", "TGPUBuffer created (size=" + std::to_string(Size) + ", usage=" + std::to_string(Usage) + ").");
     }
 
     TGPUBuffer::~TGPUBuffer()
@@ -167,8 +167,8 @@ namespace MDSS
     }
 
     std::uint32_t TGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
-                                            std::uint32_t         TypeFilter,
-                                            VkMemoryPropertyFlags RequiredProperties)
+                                             std::uint32_t         TypeFilter,
+                                             VkMemoryPropertyFlags RequiredProperties)
     {
         VkPhysicalDeviceMemoryProperties Properties{};
         vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &Properties);

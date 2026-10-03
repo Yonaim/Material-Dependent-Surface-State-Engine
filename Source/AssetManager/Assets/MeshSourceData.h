@@ -27,6 +27,6 @@ namespace MDSS
         std::array<std::uint32_t, 3> RenderVertexIndices{};
         std::array<std::int32_t, 3>  OriginalPositionIndices{};
         std::array<std::int32_t, 3>  OriginalUVIndices{};
-        TSurfaceLocalID               Surface = InvalidSurfaceID;
+        TSurfaceLocalID              Surface = InvalidSurfaceID;
     };
 } // namespace MDSS

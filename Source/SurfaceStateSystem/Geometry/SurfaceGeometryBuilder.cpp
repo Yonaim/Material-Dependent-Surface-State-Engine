@@ -22,8 +22,8 @@ namespace MDSS
     } // namespace
 
     TSharedSurfaceGeometryData TSurfaceGeometryBuilder::Build(const TSurfaceMappingData&        Mapping,
-                                                            std::vector<TSurfaceProfileIndex> ProfileMap,
-                                                            std::uint32_t                    ProfileCount)
+                                                              std::vector<TSurfaceProfileIndex> ProfileMap,
+                                                              std::uint32_t                     ProfileCount)
     {
         ValidateSurfaceMapping(Mapping);
         if (Mapping.Surfaces.empty())
@@ -46,7 +46,7 @@ namespace MDSS
             Definitions.push_back({Surface.Surface, Surface.Resolution});
         }
 
-        TSharedSurfaceGeometryData Geometry(std::move(Definitions));
+        TSharedSurfaceGeometryData          Geometry(std::move(Definitions));
         std::vector<TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {

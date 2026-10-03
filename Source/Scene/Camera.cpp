@@ -76,9 +76,7 @@ namespace MDSS
         const float Pitch = glm::radians(PitchDegrees);
         const float Yaw = glm::radians(YawDegrees);
 
-        const glm::vec3 Forward{std::cos(Pitch) * std::cos(Yaw),
-                                std::cos(Pitch) * std::sin(Yaw),
-                                std::sin(Pitch)};
+        const glm::vec3 Forward{std::cos(Pitch) * std::cos(Yaw), std::cos(Pitch) * std::sin(Yaw), std::sin(Pitch)};
         Target = Position + glm::normalize(Forward) * Distance;
     }
 

@@ -5,23 +5,22 @@
 
 #include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
 #include "SurfaceStateSystem/State/SurfaceStateSolver.h"
-#include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
 #include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
+#include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <functional>
+#include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <limits>
-#include <functional>
 #include <numeric>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <vector>
-
-#include <glm/gtc/matrix_transform.hpp>
 
 namespace
 {
@@ -103,7 +102,7 @@ namespace
                 throw TVulkanUnavailable("No compute-capable Vulkan queue is available for GPU resource tests.");
             }
 
-            constexpr float QueuePriority = 1.0F;
+            constexpr float         QueuePriority = 1.0F;
             VkDeviceQueueCreateInfo QueueInfo{};
             QueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             QueueInfo.queueFamilyIndex = QueueFamily;
@@ -111,7 +110,7 @@ namespace
             QueueInfo.pQueuePriorities = &QueuePriority;
 
             std::vector<const char*> DeviceExtensions;
-            std::uint32_t ExtensionCount = 0;
+            std::uint32_t            ExtensionCount = 0;
             vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, nullptr);
             std::vector<VkExtensionProperties> AvailableExtensions(ExtensionCount);
             vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, AvailableExtensions.data());
@@ -138,8 +137,8 @@ namespace
             vkGetDeviceQueue(Device, QueueFamily, 0, &Queue);
             VkCommandPoolCreateInfo CommandPoolInfo{};
             CommandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-            CommandPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
-                                    VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            CommandPoolInfo.flags =
+                VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             CommandPoolInfo.queueFamilyIndex = QueueFamily;
             if (vkCreateCommandPool(Device, &CommandPoolInfo, nullptr, &CommandPool) != VK_SUCCESS)
             {
@@ -167,8 +166,14 @@ namespace
         TVulkanTestDevice(const TVulkanTestDevice&) = delete;
         TVulkanTestDevice& operator=(const TVulkanTestDevice&) = delete;
 
-        [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const noexcept { return PhysicalDevice; }
-        [[nodiscard]] VkDevice GetDevice() const noexcept { return Device; }
+        [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const noexcept
+        {
+            return PhysicalDevice;
+        }
+        [[nodiscard]] VkDevice GetDevice() const noexcept
+        {
+            return Device;
+        }
 
         void Execute(const std::function<void(VkCommandBuffer)>& Record)
         {
@@ -212,12 +217,12 @@ namespace
         }
 
     private:
-        VkInstance Instance = VK_NULL_HANDLE;
+        VkInstance       Instance = VK_NULL_HANDLE;
         VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
-        std::uint32_t QueueFamily = 0;
-        VkDevice Device = VK_NULL_HANDLE;
-        VkQueue Queue = VK_NULL_HANDLE;
-        VkCommandPool CommandPool = VK_NULL_HANDLE;
+        std::uint32_t    QueueFamily = 0;
+        VkDevice         Device = VK_NULL_HANDLE;
+        VkQueue          Queue = VK_NULL_HANDLE;
+        VkCommandPool    CommandPool = VK_NULL_HANDLE;
     };
 
     MDSS::TSharedSurfaceGeometryData BuildGeometry()
@@ -260,26 +265,23 @@ namespace
         }
 
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Parameters{};
+        TSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 3.0F;
         Parameters.InputFactor = 0.75F;
         Parameters.SaturationTransferFactor = 0.2F;
         Parameters.GeometryTransferFactor = 0.5F;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
-        const TSurfaceStateRegistry Registry(ProfileTable);
-        TSharedSurfaceGeometryData Geometry = BuildGeometry();
+        const TSurfaceStateRegistry                    Registry(ProfileTable);
+        TSharedSurfaceGeometryData                     Geometry = BuildGeometry();
 
-        TSurfaceSharedGeometryGPUResources SharedGeometry(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        const std::vector<float> GeometryWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
+        TSurfaceSharedGeometryGPUResources SharedGeometry(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources  Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        const std::vector<float>     GeometryWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
         TSurfaceInstanceGPUResources InstanceA(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, GeometryWeights);
         TSurfaceInstanceGPUResources InstanceB(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, GeometryWeights);
-        TSurfaceStateDescriptorResources DescriptorsA(
-            Vulkan.GetDevice(), SharedGeometry, Profiles, InstanceA);
-        TSurfaceStateDescriptorResources DescriptorsB(
-            Vulkan.GetDevice(), SharedGeometry, Profiles, InstanceB);
+        TSurfaceStateDescriptorResources DescriptorsA(Vulkan.GetDevice(), SharedGeometry, Profiles, InstanceA);
+        TSurfaceStateDescriptorResources DescriptorsB(Vulkan.GetDevice(), SharedGeometry, Profiles, InstanceB);
 
         Check(SharedGeometry.GetTexelCount() == 4, "shared Geometry should retain four texels");
         Check(SharedGeometry.GetNeighborIndexBuffer().GetSize() == 4U * sizeof(TSurfaceGPUNeighborIndices),
@@ -289,9 +291,8 @@ namespace
         Check(DescriptorsB.GetABSet() != VK_NULL_HANDLE && DescriptorsB.GetBASet() != VK_NULL_HANDLE,
               "each instance should own its descriptor sets");
 
-        const auto Bound = [](const TSurfaceStateDescriptorResources& Descriptors,
-                              TSurfaceGPUDescriptorBinding Binding,
-                              bool bAB)
+        const auto Bound =
+            [](const TSurfaceStateDescriptorResources& Descriptors, TSurfaceGPUDescriptorBinding Binding, bool bAB)
         { return Descriptors.GetBoundBufferHandle(Binding, bAB); };
         Check(Bound(DescriptorsA, TSurfaceGPUDescriptorBinding::TexelSurfaceIndices, true) ==
                   SharedGeometry.GetTexelSurfaceIndexBuffer().GetHandle(),
@@ -312,9 +313,9 @@ namespace
                   InstanceA.GetStateABuffer().GetHandle(),
               "BA descriptor should write State A");
         Check(Bound(DescriptorsA, TSurfaceGPUDescriptorBinding::TransferWeights, true) ==
-                  InstanceA.GetTransferWeightBuffer().GetHandle() &&
+                      InstanceA.GetTransferWeightBuffer().GetHandle() &&
                   Bound(DescriptorsA, TSurfaceGPUDescriptorBinding::RawOutgoing, true) ==
-                  InstanceA.GetRawOutgoingBuffer().GetHandle(),
+                      InstanceA.GetRawOutgoingBuffer().GetHandle(),
               "instance descriptors should bind the TransferWeight and RawOutgoing caches");
         Check(InstanceA.GetStateABuffer().GetHandle() != InstanceB.GetStateABuffer().GetHandle() &&
                   InstanceA.GetStateBBuffer().GetHandle() != InstanceB.GetStateBBuffer().GetHandle(),
@@ -356,8 +357,7 @@ namespace
 
         std::array<TSurfaceGPUNeighborIndices, 4> UploadedNeighbors{};
         SharedGeometry.GetNeighborIndexBuffer().Download(UploadedNeighbors.data(), sizeof(UploadedNeighbors));
-        Check(UploadedNeighbors[2].Indices[0] == 3U,
-              "neighbor upload should preserve the local neighbor index");
+        Check(UploadedNeighbors[2].Indices[0] == 3U, "neighbor upload should preserve the local neighbor index");
 
         std::array<TSurfaceGPUProfileParameters, 1> UploadedProfiles{};
         Profiles.GetParametersBuffer().Download(UploadedProfiles.data(), sizeof(UploadedProfiles));
@@ -462,8 +462,7 @@ namespace
         for (std::size_t I = 0; I < Flux.size(); ++I)
         {
             float Expected = 0.0F;
-            if (I == 7U * Initial.size() + Index(1, WaterChannel) ||
-                I == 3U * Initial.size() + Index(2, WaterChannel))
+            if (I == 7U * Initial.size() + Index(1, WaterChannel) || I == 3U * Initial.size() + Index(2, WaterChannel))
             {
                 Expected = 2.2F;
             }
@@ -471,7 +470,8 @@ namespace
             {
                 Expected = 0.5F;
             }
-            Check(CachedAlpha[I % Initial.size()] == 0.0F ? std::isnan(Flux[I]) : std::abs(Flux[I] - Expected) < 1.0e-5F,
+            Check(CachedAlpha[I % Initial.size()] == 0.0F ? std::isnan(Flux[I])
+                                                          : std::abs(Flux[I] - Expected) < 1.0e-5F,
                   "active sources must overwrite every slot; alpha-zero sources must preserve scratch");
         }
         const auto CachedResult = Result;
@@ -479,10 +479,19 @@ namespace
         Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
         std::fill(Flux.begin(), Flux.end(), 123.0F);
         Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
-        Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F),
-                              SurfaceSolverDisableRawFluxCacheFlag);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
+                Solver.RecordStep(Commands,
+                                  Descriptors,
+                                  true,
+                                  4,
+                                  2,
+                                  5.0F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F),
+                                  SurfaceSolverDisableRawFluxCacheFlag);
+            });
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
         std::array<float, 8> UncachedAlpha{}, UncachedOutgoing{};
         Instance.GetOutgoingFluxScaleBuffer().Download(UncachedAlpha.data(), sizeof(UncachedAlpha));
@@ -505,20 +514,32 @@ namespace
         {
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
             Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
-            Vulkan.Execute([&](VkCommandBuffer Commands) {
-                for (std::uint32_t Step = 0; Step < 6U; ++Step)
+            Vulkan.Execute(
+                [&](VkCommandBuffer Commands)
                 {
-                    const auto Flags = MixedModes && (Step == 1U || Step == 2U || Step == 4U)
-                        ? SurfaceSolverDisableRawFluxCacheFlag : 0U;
-                    Solver.RecordStep(Commands, Descriptors, Step % 2U == 0U, 4, 2,
-                                      Step == 2U ? 0.0F : 5.0F, glm::mat4(1.0F), glm::vec3(0.0F), Flags);
-                }
-            });
+                    for (std::uint32_t Step = 0; Step < 6U; ++Step)
+                    {
+                        const auto Flags = MixedModes && (Step == 1U || Step == 2U || Step == 4U)
+                                               ? SurfaceSolverDisableRawFluxCacheFlag
+                                               : 0U;
+                        Solver.RecordStep(Commands,
+                                          Descriptors,
+                                          Step % 2U == 0U,
+                                          4,
+                                          2,
+                                          Step == 2U ? 0.0F : 5.0F,
+                                          glm::mat4(1.0F),
+                                          glm::vec3(0.0F),
+                                          Flags);
+                    }
+                });
             Instance.GetStateABuffer().Download(Result.data(), sizeof(Result));
-            if (!MixedModes) Reference = Result;
-            else for (std::size_t I = 0; I < Result.size(); ++I)
-                Check(std::abs(Result[I] - Reference[I]) < 1.0e-5F,
-                      "ON/OFF/ON sequences must match all-cached steps without stale flux");
+            if (!MixedModes)
+                Reference = Result;
+            else
+                for (std::size_t I = 0; I < Result.size(); ++I)
+                    Check(std::abs(Result[I] - Reference[I]) < 1.0e-5F,
+                          "ON/OFF/ON sequences must match all-cached steps without stale flux");
         }
         Instance.GetStateBBuffer().Upload(CachedResult.data(), sizeof(CachedResult));
         Water.SaturationTransferFactor = 0.0F;
@@ -531,9 +552,7 @@ namespace
         Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
-            {
-                Solver.RecordStep(Commands, Descriptors, false, 4, 2, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F));
-            });
+            { Solver.RecordStep(Commands, Descriptors, false, 4, 2, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F)); });
         Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
         for (const float Value : Flux)
             Check(Value == 123.0F, "zero timestep must preserve stale cache in every slot");
@@ -541,9 +560,7 @@ namespace
         CheckZeroBuffer(Instance.GetRawOutgoingBuffer(), Initial.size(), "zero timestep RawOutgoing");
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
-            {
-                Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F));
-            });
+            { Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F)); });
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
         Check(std::abs(Result[Index(0, WaterChannel)] - 5.05F) < 1.0e-5F &&
                   std::abs(Result[Index(2, WaterChannel)] - 1.4F) < 1.0e-5F &&
@@ -565,8 +582,8 @@ namespace
         TSurfaceResponseProfileData Profile;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> Table{Profile};
-        const TSurfaceStateRegistry Registry(Table);
-        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        const TSurfaceStateRegistry                    Registry(Table);
+        TSharedSurfaceGeometryData                     Geometry({{0, {2, 1}}});
         for (std::size_t I = 0; I < 2; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -578,21 +595,21 @@ namespace
         Geometry.GetTexels()[0].Geometry.ConcavityWeight = 1.0F;
         Geometry.SetProfileMap({0, 0});
         TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
+        TSurfaceProfileGPUResources        Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+        TSurfaceInstanceGPUResources       Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              2,
+                                              1,
                                               BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const auto Run = [&](std::array<float, 2> Initial,
-                             const glm::mat4& Model = glm::mat4(1.0F),
-                             glm::vec3 Gravity = glm::vec3(0.0F))
+        TSurfaceStateDescriptorResources   Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver                Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const auto                         Run = [&](std::array<float, 2> Initial,
+                             const glm::mat4&     Model = glm::mat4(1.0F),
+                             glm::vec3            Gravity = glm::vec3(0.0F))
         {
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
             Vulkan.Execute([&](VkCommandBuffer Command)
-            {
-                Solver.RecordStep(Command, Descriptors, true, 2, 1, 0.25F, Model,
-                                  Gravity, CacheFlags);
-            });
+                           { Solver.RecordStep(Command, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags); });
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             return Result;
@@ -613,7 +630,7 @@ namespace
         Parameters.CavityTransportRetentionFactor = 0.98F;
         Profiles.UpdateParameters(0, 0, Parameters);
         const glm::mat4 Inverted = glm::rotate(glm::mat4(1.0F), glm::radians(180.0F), glm::vec3(1, 0, 0));
-        const auto Retained = Run({1.0F, 0.0F}, Inverted, glm::vec3(1.0F, 0.0F, 0.0F));
+        const auto      Retained = Run({1.0F, 0.0F}, Inverted, glm::vec3(1.0F, 0.0F, 0.0F));
         Parameters.CavityTransportRetentionFactor = 0.0F;
         Profiles.UpdateParameters(0, 0, Parameters);
         const auto Unretained = Run({1.0F, 0.0F}, Inverted, glm::vec3(1.0F, 0.0F, 0.0F));
@@ -625,12 +642,12 @@ namespace
     {
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Parameters{};
+        TSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 1.0F;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
-        const TSurfaceStateRegistry Registry(ProfileTable);
+        const TSurfaceStateRegistry                    Registry(ProfileTable);
 
         TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
@@ -644,35 +661,35 @@ namespace
         }
         Geometry.SetProfileMap({0, 0});
 
-        TSurfaceSharedGeometryGPUResources SharedGeometry(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
+        TSurfaceSharedGeometryGPUResources SharedGeometry(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources  Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              2,
+                                              1,
                                               BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        TSurfaceStateDescriptorResources Descriptors(
-            Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
+        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
         const std::array<float, 2> Input{1.0F, 0.0F};
         Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
-        auto DispatchAndRead = [&](bool bCurrentStateAB, std::array<float, 2>& State,
-                                   std::array<float, 2>& RemainingInput)
+        auto DispatchAndRead =
+            [&](bool bCurrentStateAB, std::array<float, 2>& State, std::array<float, 2>& RemainingInput)
         {
-            Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-            {
-                Solver.RecordStep(CommandBuffer,
-                                  Descriptors,
-                                  bCurrentStateAB,
-                                  2,
-                                  1,
-                                  0.25F,
-                                  glm::mat4(1.0F),
-                                  glm::vec3(0.0F, -1.0F, 0.0F), CacheFlags);
-            });
-            const TGPUBuffer& StateBuffer = bCurrentStateAB
-                ? Instance.GetStateBBuffer()
-                : Instance.GetStateABuffer();
+            Vulkan.Execute(
+                [&](VkCommandBuffer CommandBuffer)
+                {
+                    Solver.RecordStep(CommandBuffer,
+                                      Descriptors,
+                                      bCurrentStateAB,
+                                      2,
+                                      1,
+                                      0.25F,
+                                      glm::mat4(1.0F),
+                                      glm::vec3(0.0F, -1.0F, 0.0F),
+                                      CacheFlags);
+                });
+            const TGPUBuffer& StateBuffer = bCurrentStateAB ? Instance.GetStateBBuffer() : Instance.GetStateABuffer();
             StateBuffer.Download(State.data(), sizeof(State));
             Instance.GetInputDeltaBuffer().Download(RemainingInput.data(), sizeof(RemainingInput));
         };
@@ -706,8 +723,8 @@ namespace
         TSurfaceResponseProfileData Profile;
         Profile.States.emplace("test_flow", Parameters);
         const std::vector<TSurfaceResponseProfileData> Table{Profile};
-        const TSurfaceStateRegistry Registry(Table);
-        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        const TSurfaceStateRegistry                    Registry(Table);
+        TSharedSurfaceGeometryData                     Geometry({{0, {2, 1}}});
         for (std::size_t I = 0; I < 2; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -719,20 +736,26 @@ namespace
         }
         Geometry.SetProfileMap({0, 0});
         TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
-            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)), {},
-            {2 * SurfaceStateReferenceArea, 4 * SurfaceStateReferenceArea});
-        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const std::uint32_t Flags = CacheFlags | (1U << 1U);
-        auto Run = [&](std::array<float, 2> Initial, std::uint32_t ExtraFlags = 0U)
+        TSurfaceProfileGPUResources        Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+        TSurfaceInstanceGPUResources       Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              2,
+                                              1,
+                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)),
+                                                    {},
+                                                    {2 * SurfaceStateReferenceArea, 4 * SurfaceStateReferenceArea});
+        TSurfaceStateDescriptorResources   Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver                Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const std::uint32_t                Flags = CacheFlags | (1U << 1U);
+        auto                               Run = [&](std::array<float, 2> Initial, std::uint32_t ExtraFlags = 0U)
         {
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-            Vulkan.Execute([&](VkCommandBuffer Commands) {
-                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1),
-                                  glm::vec3(0, 0, -1), Flags | ExtraFlags);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer Commands)
+                {
+                    Solver.RecordStep(
+                        Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0, 0, -1), Flags | ExtraFlags);
+                });
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             return Result;
@@ -740,7 +763,8 @@ namespace
         const auto A = Run({4, 0}); // Capacity=2, source saturation=2.
         const auto B = Run({8, 0}); // source saturation=4, no upper clamp.
         Check(std::abs(A[1] - 0.2F) < 1e-5F && std::abs(B[1] - 0.4F) < 1e-5F,
-              "Geometry must use area-adjusted Capacity and remain proportional above saturation one, with SaturationDrive OFF");
+              "Geometry must use area-adjusted Capacity and remain proportional above saturation one, with "
+              "SaturationDrive OFF");
         Check(std::abs(A[0] + A[1] - 4) < 1e-5F && std::abs(B[0] + B[1] - 8) < 1e-5F,
               "Geometry mobility must conserve the total amount");
         Parameters.GeometryTransferFactor = 0;
@@ -749,10 +773,12 @@ namespace
         // Re-enable SaturationDrive explicitly for unequal area at equal saturation.
         const std::array<float, 2> EqualInitial{2, 4};
         Instance.GetStateABuffer().Upload(EqualInitial.data(), sizeof(EqualInitial));
-        Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1),
-                              glm::vec3(0, 0, -1), CacheFlags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
+                Solver.RecordStep(
+                    Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0, 0, -1), CacheFlags);
+            });
         std::array<float, 2> Result{};
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
         Check(Result == EqualInitial, "unequal amounts at equal area-adjusted saturation must not diffuse");
@@ -768,22 +794,24 @@ namespace
         const std::array<float, 2> Input{0.3F, 0};
         Instance.GetStateABuffer().Upload(Empty.data(), sizeof(Empty));
         Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
-        Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0,0,-1), Flags);
-            Solver.RecordStep(Commands, Descriptors, false, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0,0,-1), Flags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
+                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0, 0, -1), Flags);
+                Solver.RecordStep(Commands, Descriptors, false, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0, 0, -1), Flags);
+            });
         Instance.GetStateABuffer().Download(Result.data(), sizeof(Result));
         Check(std::abs(Result[1] - 0.015F) < 1e-5F && std::abs(Result[0] + Result[1] - 0.3F) < 1e-5F,
               "substeps in one command buffer must use updated State and apply input exactly once");
         for (float Resolution : {128.0F, 256.0F, 512.0F})
         {
             // Local one-edge scaling check, distinct from an entire-scene resolution comparison.
-            const float H = 1.0F / Resolution;
-            const std::array<TSurfaceGPUVec4, 2> Positions{{{0,0,H,0}, {0,0,0,0}}};
+            const float                          H = 1.0F / Resolution;
+            const std::array<TSurfaceGPUVec4, 2> Positions{{{0, 0, H, 0}, {0, 0, 0, 0}}};
             Shared.GetPositionBuffer().Upload(Positions.data(), sizeof(Positions));
             Instance.UpdateWorldTexelAreas({H * H, H * H});
             const float Mass = H * H / SurfaceStateReferenceArea;
-            const auto Scaled = Run({Mass, 0});
+            const auto  Scaled = Run({Mass, 0});
             const float WorldDisplacement = Scaled[1] * H / Mass;
             const float ExpectedDisplacement = 0.1F * SurfaceStateReferenceArea;
             Check(std::abs(WorldDisplacement - ExpectedDisplacement) < ExpectedDisplacement * 1e-4F,
@@ -793,23 +821,24 @@ namespace
         }
         Instance.UpdateWorldTexelAreas({0, 0});
         const auto Collapsed = Run({3, 7});
-        Check(Collapsed == std::array<float, 2>{3,7}, "zero area must freeze transport while retaining existing amounts");
+        Check(Collapsed == std::array<float, 2>{3, 7},
+              "zero area must freeze transport while retaining existing amounts");
     }
 
     void TestCalibratedGeometrySpeed(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags)
     {
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Parameters{};
+        TSurfaceStateParameters     Parameters{};
         Parameters.GeometryTransferFactor = 0.5F;
         Profile.States.emplace("flow", Parameters);
         const std::vector<TSurfaceResponseProfileData> Table{Profile};
-        const TSurfaceStateRegistry Registry(Table);
-        constexpr std::size_t Width = 5, Count = Width * Width, Source = Count / 2;
-        constexpr float Dt = 0.001F;
+        const TSurfaceStateRegistry                    Registry(Table);
+        constexpr std::size_t                          Width = 5, Count = Width * Width, Source = Count / 2;
+        constexpr float                                Dt = 0.001F;
         for (float Resolution : {128.0F, 256.0F, 512.0F})
         {
-            const float H = 1.0F / Resolution;
+            const float                H = 1.0F / Resolution;
             TSharedSurfaceGeometryData Geometry({{0, {Width, Width}}});
             for (int Y = 0; Y < int(Width); ++Y)
                 for (int X = 0; X < int(Width); ++X)
@@ -824,7 +853,8 @@ namespace
                     for (int DY = -1; DY <= 1; ++DY)
                         for (int DX = -1; DX <= 1; ++DX)
                         {
-                            if (DX == 0 && DY == 0) continue;
+                            if (DX == 0 && DY == 0)
+                                continue;
                             if (X + DX >= 0 && X + DX < int(Width) && Y + DY >= 0 && Y + DY < int(Width))
                                 Texel.NeighborIndices[Slot] = static_cast<TLocalTexelIndex>((Y + DY) * Width + X + DX);
                             ++Slot;
@@ -832,20 +862,26 @@ namespace
                 }
             Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(Count, 0));
             TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-            TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-            TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Count, 1,
-                BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)), {},
-                BuildSurfaceGPUWorldTexelAreas(Geometry, glm::mat4(1)));
+            TSurfaceProfileGPUResources      Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+            TSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+                                                  Vulkan.GetDevice(),
+                                                  Count,
+                                                  1,
+                                                  BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)),
+                                                      {},
+                                                  BuildSurfaceGPUWorldTexelAreas(Geometry, glm::mat4(1)));
             TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-            TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-            std::array<float, Count> Initial{}, Result{};
+            TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+            std::array<float, Count>         Initial{}, Result{};
             const double Mass = 2.0 * H * H / SurfaceStateReferenceArea; // Saturation=2, deliberately above 1.
             Initial[Source] = static_cast<float>(Mass);
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-            Vulkan.Execute([&](VkCommandBuffer Commands) {
-                Solver.RecordStep(Commands, Descriptors, true, Count, 1, Dt, glm::mat4(1),
-                                  glm::vec3(0, 0, -1), CacheFlags);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer Commands)
+                {
+                    Solver.RecordStep(
+                        Commands, Descriptors, true, Count, 1, Dt, glm::mat4(1), glm::vec3(0, 0, -1), CacheFlags);
+                });
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             double Total = 0, DownwardMoment = 0;
             for (std::size_t I = 0; I < Count; ++I)
@@ -858,8 +894,8 @@ namespace
             Check(std::abs(Speed - 0.101033333) < 1e-5,
                   "factor 0.5 must produce about 0.101 world units/s at 128/256/512 with the calibrated rate");
             Check(std::abs(Total - Mass) < Mass * 1e-6, "calibrated flow must conserve total amount");
-            std::cout << "Calibrated Geometry R=" << Resolution << ", cache=" << (CacheFlags ? "OFF" : "ON")
-                      << ": " << Speed << " world units/s\n";
+            std::cout << "Calibrated Geometry R=" << Resolution << ", cache=" << (CacheFlags ? "OFF" : "ON") << ": "
+                      << Speed << " world units/s\n";
         }
     }
 
@@ -868,13 +904,13 @@ namespace
         using namespace MDSS;
 
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Parameters{};
+        TSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 0.0F;
         Parameters.GeometryTransferFactor = 8.0F / BaseGeometryTransferRate;
         Profile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
-        const TSurfaceStateRegistry Registry(ProfileTable);
+        const TSurfaceStateRegistry                    Registry(ProfileTable);
 
         TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
@@ -888,32 +924,26 @@ namespace
         }
         Geometry.SetProfileMap({0, 0});
 
-        TSurfaceSharedGeometryGPUResources SharedGeometry(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
+        TSurfaceSharedGeometryGPUResources SharedGeometry(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources  Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              2,
+                                              1,
                                               BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        TSurfaceStateDescriptorResources Descriptors(
-            Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
+        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
-        const glm::mat4 ModelMatrix = glm::rotate(
-            glm::mat4(1.0F), glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-        auto Run = [&](std::array<float, 2> InitialState, glm::vec3 Gravity, float DeltaTime)
+        const glm::mat4 ModelMatrix = glm::rotate(glm::mat4(1.0F), glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+        auto            Run = [&](std::array<float, 2> InitialState, glm::vec3 Gravity, float DeltaTime)
         {
             Instance.GetStateABuffer().Upload(InitialState.data(), sizeof(InitialState));
-            Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-            {
-                Solver.RecordStep(CommandBuffer,
-                                  Descriptors,
-                                  true,
-                                  2,
-                                  1,
-                                  DeltaTime,
-                                  ModelMatrix,
-                                  Gravity, CacheFlags);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer CommandBuffer)
+                {
+                    Solver.RecordStep(
+                        CommandBuffer, Descriptors, true, 2, 1, DeltaTime, ModelMatrix, Gravity, CacheFlags);
+                });
 
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
@@ -939,13 +969,13 @@ namespace
     {
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Parameters{};
+        TSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         Profile.States.emplace("deposit", Parameters);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
-        const TSurfaceStateRegistry Registry(ProfileTable);
-        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        const TSurfaceStateRegistry                    Registry(ProfileTable);
+        TSharedSurfaceGeometryData                     Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < 2; ++Index)
         {
             auto& Texel = Geometry.GetTexels()[Index];
@@ -960,22 +990,34 @@ namespace
         }
         Geometry.SetProfileMap({0, 0});
         TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
-            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+        TSurfaceProfileGPUResources  Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              2,
+                                              1,
+                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
         TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const std::array<float, 2> EmptyState{0.0F, 0.0F};
-        const std::array<float, 2> EventInput{0.125F, 0.0F};
+        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const std::array<float, 2>       EmptyState{0.0F, 0.0F};
+        const std::array<float, 2>       EventInput{0.125F, 0.0F};
         Instance.GetStateABuffer().Upload(EmptyState.data(), sizeof(EmptyState));
         Instance.GetInputDeltaBuffer().Upload(EventInput.data(), sizeof(EventInput));
         std::array<float, 2 * SurfaceNeighborCount> PoisonedFlux{};
         PoisonedFlux.fill(std::numeric_limits<float>::quiet_NaN());
         Instance.GetRawFluxBuffer().Upload(PoisonedFlux.data(), sizeof(PoisonedFlux));
-        Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, glm::mat4(1.0F),
-                              glm::vec3(0.0F, 0.0F, -1.0F), CacheFlags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
+                Solver.RecordStep(Commands,
+                                  Descriptors,
+                                  true,
+                                  2,
+                                  1,
+                                  0.25F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, 0.0F, -1.0F),
+                                  CacheFlags);
+            });
         std::array<float, 2> EventResult{};
         Instance.GetStateBBuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(std::abs(EventResult[0] - EventInput[0]) < 1.0e-5F && EventResult[1] == 0.0F,
@@ -990,10 +1032,19 @@ namespace
                 Check(std::isnan(Value), "inactive sources must preserve poisoned scratch in either cache mode");
         }
         CheckZeroBuffer(Instance.GetOutgoingFluxScaleBuffer(), 2, "empty source alpha");
-        Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, false, 2, 1, 0.25F, glm::mat4(1.0F),
-                              glm::vec3(0.0F, 0.0F, -1.0F), CacheFlags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
+                Solver.RecordStep(Commands,
+                                  Descriptors,
+                                  false,
+                                  2,
+                                  1,
+                                  0.25F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, 0.0F, -1.0F),
+                                  CacheFlags);
+            });
         Instance.GetStateABuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(EventResult[1] > 0.0F && std::abs(EventResult[0] + EventResult[1] - EventInput[0]) < 1.0e-5F,
               "a previously empty target must receive neighbor flux and transport the previous step's event input");
@@ -1005,7 +1056,8 @@ namespace
             for (std::size_t Slot = 0; Slot < SurfaceNeighborCount; ++Slot)
             {
                 Check(std::isfinite(RefreshedFlux[Slot * 2U]), "reactivated source must refresh every slot");
-                Check(std::isnan(RefreshedFlux[Slot * 2U + 1U]), "empty receiving target must preserve its own scratch");
+                Check(std::isnan(RefreshedFlux[Slot * 2U + 1U]),
+                      "empty receiving target must preserve its own scratch");
             }
         }
 
@@ -1016,10 +1068,19 @@ namespace
         Instance.GetStateABuffer().Upload(DepletedState.data(), sizeof(DepletedState));
         Instance.GetInputDeltaBuffer().Upload(DepletedInput.data(), sizeof(DepletedInput));
         Instance.GetRawFluxBuffer().Upload(PoisonedFlux.data(), sizeof(PoisonedFlux));
-        Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, glm::mat4(1.0F),
-                              glm::vec3(0.0F, 0.0F, -1.0F), CacheFlags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
+                Solver.RecordStep(Commands,
+                                  Descriptors,
+                                  true,
+                                  2,
+                                  1,
+                                  0.25F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, 0.0F, -1.0F),
+                                  CacheFlags);
+            });
         Instance.GetStateBBuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(std::abs(EventResult[0] - DepletedInput[0]) < 1.0e-5F &&
                   std::abs(EventResult[1] - DepletedInput[1]) < 1.0e-5F,
@@ -1036,39 +1097,43 @@ namespace
         Check(TSurfaceSolverDebugSettings{}.IsEnabled(TSurfaceSolverTerm::MesoDirectionNormal),
               "Meso direction normal should be enabled by default");
         const glm::vec3 Gravity(0.0F, 0.0F, -1.0F);
-        for (const glm::mat4 Model : {glm::mat4(1.0F),
-             glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 0.5F)),
-             glm::translate(glm::rotate(glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 0.5F)),
-                                       0.25F, glm::vec3(0.0F, 0.0F, 1.0F)), glm::vec3(3.0F, -2.0F, 5.0F))})
+        for (const glm::mat4 Model :
+             {glm::mat4(1.0F),
+              glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 0.5F)),
+              glm::translate(glm::rotate(glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 0.5F)),
+                                         0.25F,
+                                         glm::vec3(0.0F, 0.0F, 1.0F)),
+                             glm::vec3(3.0F, -2.0F, 5.0F))})
         {
             Instance.UpdateTransferWeights(BuildSurfaceGPUTransferWeights(Geometry, Model));
             const std::array<float, 2> Initial{1.0F, 0.0F};
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-            Vulkan.Execute([&](VkCommandBuffer Commands) {
-                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer Commands)
+                { Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags); });
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
-            const glm::vec3 Normal = glm::normalize(glm::transpose(glm::inverse(glm::mat3(Model))) *
-                                                   Geometry.GetTexels()[0].MesoNormal);
+            const glm::vec3 Normal =
+                glm::normalize(glm::transpose(glm::inverse(glm::mat3(Model))) * Geometry.GetTexels()[0].MesoNormal);
             const glm::vec3 SurfaceGravity = Gravity - Normal * glm::dot(Gravity, Normal);
             const glm::vec3 Edge = glm::mat3(Model) * glm::vec3(-1.0F, 0.0F, -0.2F);
-            const float Expected = 0.25F * std::abs(Edge.z) *
-                std::max(glm::dot(glm::normalize(SurfaceGravity), glm::normalize(Edge)), 0.0F);
+            const float     Expected = 0.25F * std::abs(Edge.z) *
+                                   std::max(glm::dot(glm::normalize(SurfaceGravity), glm::normalize(Edge)), 0.0F);
             Check(Expected > 0.0F && std::abs(Result[1] - Expected) < 1.0e-5F &&
                       std::abs(Result[0] + Result[1] - 1.0F) < 1.0e-5F,
                   "both passes should use Meso height and inverse-transpose Meso normal under instance scaling");
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-            Vulkan.Execute([&](VkCommandBuffer Commands) {
-                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, 1U << 4U | CacheFlags);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer Commands)
+                {
+                    Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, 1U << 4U | CacheFlags);
+                });
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
-            Check(std::abs(Result[0] - Initial[0]) < 1.0e-5F &&
-                      std::abs(Result[1] - Initial[1]) < 1.0e-5F,
+            Check(std::abs(Result[0] - Initial[0]) < 1.0e-5F && std::abs(Result[1] - Initial[1]) < 1.0e-5F,
                   "macro direction normal should suppress geometry flux on a horizontal base surface in both passes");
-            Vulkan.Execute([&](VkCommandBuffer Commands) {
-                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer Commands)
+                { Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags); });
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             Check(std::abs(Result[1] - Expected) < 1.0e-5F,
                   "re-enabling Meso direction normal should restore geometry flux from the same initial state");
@@ -1081,9 +1146,11 @@ namespace
         {
             const std::array<float, 2> Initial{1.0F, 0.0F};
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-            Vulkan.Execute([&](VkCommandBuffer Commands) {
-                Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, TestGravity, Flags | CacheFlags);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer Commands)
+                {
+                    Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, TestGravity, Flags | CacheFlags);
+                });
             Instance.GetStateBBuffer().Download(EventResult.data(), sizeof(EventResult));
             Check(std::abs(EventResult[0] - 1.0F) < 1.0e-5F && EventResult[1] == 0.0F,
                   "CPU geometry constants must suppress singular transforms, invalid gravity and disabled geometry");
@@ -1094,7 +1161,7 @@ namespace
     {
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Static{}, Flow{}, FastFlow{};
+        TSurfaceStateParameters     Static{}, Flow{}, FastFlow{};
         Flow.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         FastFlow.GeometryTransferFactor = 2.0F / BaseGeometryTransferRate;
         FastFlow.StateCapacity = 2.0F;
@@ -1102,11 +1169,11 @@ namespace
         Profile.States.emplace("b_flow", Flow);
         Profile.States.emplace("c_flow", FastFlow);
         const std::vector<TSurfaceResponseProfileData> Table{Profile};
-        const TSurfaceStateRegistry Registry(Table);
-        const auto StaticChannel = Registry.GetStateId("a_static");
-        const auto FlowChannel = Registry.GetStateId("b_flow");
-        const auto FastChannel = Registry.GetStateId("c_flow");
-        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        const TSurfaceStateRegistry                    Registry(Table);
+        const auto                                     StaticChannel = Registry.GetStateId("a_static");
+        const auto                                     FlowChannel = Registry.GetStateId("b_flow");
+        const auto                                     FastChannel = Registry.GetStateId("c_flow");
+        TSharedSurfaceGeometryData                     Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < 2; ++Index)
         {
             auto& Texel = Geometry.GetTexels()[Index];
@@ -1120,26 +1187,33 @@ namespace
         }
         Geometry.SetProfileMap({0, 0});
         TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 3,
-            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        std::array<float, 6> Initial{};
+        TSurfaceProfileGPUResources        Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+        TSurfaceInstanceGPUResources       Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              2,
+                                              3,
+                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+        TSurfaceStateDescriptorResources   Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver                Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        std::array<float, 6>               Initial{};
         Initial[StaticChannel] = 0.7F;
         Initial[FlowChannel] = 0.5F;
         Initial[FastChannel] = 1.0F;
         Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-        Vulkan.Execute([&](VkCommandBuffer Commands) {
-            Solver.RecordStep(Commands, Descriptors, true, 2, 3, 0.25F, glm::mat4(1.0F), glm::vec3(0, 0, -1), CacheFlags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Commands)
+            {
+                Solver.RecordStep(
+                    Commands, Descriptors, true, 2, 3, 0.25F, glm::mat4(1.0F), glm::vec3(0, 0, -1), CacheFlags);
+            });
         std::array<float, 6> Result{};
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
         const glm::vec3 Normal = Geometry.GetTexels()[0].MesoNormal;
         const glm::vec3 Gravity(0, 0, -1);
         const glm::vec3 ProjectedGravity = Gravity - Normal * glm::dot(Gravity, Normal);
-        const float Expected = 0.25F * 0.2F * std::max(
-            glm::dot(glm::normalize(ProjectedGravity), glm::normalize(glm::vec3(-1, 0, -0.2F))), 0.0F);
+        const float     Expected =
+            0.25F * 0.2F *
+            std::max(glm::dot(glm::normalize(ProjectedGravity), glm::normalize(glm::vec3(-1, 0, -0.2F))), 0.0F);
         Check(std::abs(Result[StaticChannel] - 0.7F) < 1.0e-5F && Result[3 + StaticChannel] == 0.0F,
               "a geometry-disabled channel before active channels must retain its independent state");
         Check(std::abs(Result[3 + FlowChannel] - 0.5F * Expected) < 1.0e-5F &&
@@ -1154,20 +1228,18 @@ namespace
         using namespace MDSS;
 
         TSurfaceResponseProfileData ProfileA;
-        TSurfaceStateParameters Parameters{};
+        TSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 1.0F;
         ProfileA.States.emplace("wetness", Parameters);
-        TSurfaceResponseProfileData ProfileB = ProfileA;
-        TSurfaceResponseProfileData ProfileWithoutWetness;
+        TSurfaceResponseProfileData                    ProfileB = ProfileA;
+        TSurfaceResponseProfileData                    ProfileWithoutWetness;
         const std::vector<TSurfaceResponseProfileData> ProfileTable{ProfileA, ProfileB, ProfileWithoutWetness};
-        const TSurfaceStateRegistry Registry(ProfileTable);
+        const TSurfaceStateRegistry                    Registry(ProfileTable);
 
-        TSharedSurfaceGeometryData Geometry({{0, {3, 1}}});
+        TSharedSurfaceGeometryData     Geometry({{0, {3, 1}}});
         const std::array<glm::vec3, 3> Positions{
-            glm::vec3(0.0F, 0.0F, 0.0F),
-            glm::vec3(4.0F, 0.0F, 0.0F),
-            glm::vec3(1.0F, 0.0F, 0.0F)};
+            glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(4.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F)};
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
             TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
@@ -1183,44 +1255,52 @@ namespace
         Geometry.SetProfileMap({0, 1, 2});
 
         const std::vector<float> CachedWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
-        const float ExpectedLongEdgeWeight = (3.25F / 4.0F) * 0.5F;
+        const float              ExpectedLongEdgeWeight = (3.25F / 4.0F) * 0.5F;
         Check(std::abs(CachedWeights[0] - ExpectedLongEdgeWeight) < 1.0e-5F &&
                   std::abs(CachedWeights[SurfaceNeighborCount] - ExpectedLongEdgeWeight) < 1.0e-5F,
               "directed cache slots should preserve the symmetric edge weight in both directions");
 
-        TSurfaceSharedGeometryGPUResources SharedGeometry(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 3, 1,
+        TSurfaceSharedGeometryGPUResources SharedGeometry(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources  Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              3,
+                                              1,
                                               BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        TSurfaceStateDescriptorResources Descriptors(
-            Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
+        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
         const std::array<float, 3> InitialState{1.0F, 0.0F, 0.0F};
         Instance.GetStateABuffer().Upload(InitialState.data(), sizeof(InitialState));
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordStep(CommandBuffer, Descriptors, true, 3, 1, 0.25F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, -1.0F, 0.0F), CacheFlags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(CommandBuffer,
+                                  Descriptors,
+                                  true,
+                                  3,
+                                  1,
+                                  0.25F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, -1.0F, 0.0F),
+                                  CacheFlags);
+            });
 
         std::array<float, 3> Result{};
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
         // dRef = ((4 + 1) / 2 + 4) / 2 = 3.25, so the long edge weight is 3.25 / 4.
         // The Profile boundary halves that flux; the unsupported third Profile receives none.
         const float ExpectedTransfer = 0.25F * (3.25F / 4.0F) * 0.5F;
-        Check(std::abs(Result[0] - (1.0F - ExpectedTransfer)) < 1.0e-4F &&
-                  std::abs(Result[1] - ExpectedTransfer) < 1.0e-4F &&
-                  std::abs(Result[2]) < 1.0e-5F,
-              "distance and Profile boundary weights should scale flux and unsupported channels should remain unchanged");
+        Check(
+            std::abs(Result[0] - (1.0F - ExpectedTransfer)) < 1.0e-4F &&
+                std::abs(Result[1] - ExpectedTransfer) < 1.0e-4F && std::abs(Result[2]) < 1.0e-5F,
+            "distance and Profile boundary weights should scale flux and unsupported channels should remain unchanged");
 
         TSurfaceResponseProfileData NormalProfile;
         NormalProfile.States.emplace("wetness", Parameters);
         const std::vector<TSurfaceResponseProfileData> NormalProfileTable{NormalProfile};
-        const TSurfaceStateRegistry NormalRegistry(NormalProfileTable);
-        TSharedSurfaceGeometryData NormalGeometry({{0, {2, 1}}});
+        const TSurfaceStateRegistry                    NormalRegistry(NormalProfileTable);
+        TSharedSurfaceGeometryData                     NormalGeometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < NormalGeometry.GetTexelCount(); ++Index)
         {
             TSurfaceTexelGeometry& Texel = NormalGeometry.GetTexels()[Index];
@@ -1240,9 +1320,8 @@ namespace
         Check(std::abs(MappedNormalWeights[0] - 0.5F) < 1.0e-5F &&
                   std::abs(MappedNormalWeights[SurfaceNeighborCount] - 0.5F) < 1.0e-5F,
               "precomputed Normal Map transfer normals should drive the cached NormalWeight");
-        const glm::mat4 NonUniformScale = glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 1.0F));
-        const std::vector<float> ScaledMappedWeights =
-            BuildSurfaceGPUTransferWeights(NormalGeometry, NonUniformScale);
+        const glm::mat4          NonUniformScale = glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 1.0F));
+        const std::vector<float> ScaledMappedWeights = BuildSurfaceGPUTransferWeights(NormalGeometry, NonUniformScale);
         Check(std::abs(ScaledMappedWeights[0] - (1.0F / std::sqrt(1.75F))) < 1.0e-5F,
               "Normal Map transfer normals should use the instance inverse-transpose under non-uniform scale");
         const std::vector<float> NormalWeightDisabled =
@@ -1266,24 +1345,34 @@ namespace
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), NormalGeometry);
         TSurfaceProfileGPUResources NormalProfiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), NormalProfileTable, NormalRegistry);
-        TSurfaceInstanceGPUResources NormalInstance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 2, 1,
-            BuildSurfaceGPUTransferWeights(NormalGeometry, glm::mat4(1.0F)));
+        TSurfaceInstanceGPUResources     NormalInstance(Vulkan.GetPhysicalDevice(),
+                                                    Vulkan.GetDevice(),
+                                                    2,
+                                                    1,
+                                                    BuildSurfaceGPUTransferWeights(NormalGeometry, glm::mat4(1.0F)));
         TSurfaceStateDescriptorResources NormalDescriptors(
             Vulkan.GetDevice(), NormalSharedGeometry, NormalProfiles, NormalInstance);
         TSurfaceStateSolver NormalSolver(Vulkan.GetDevice(), NormalDescriptors.GetLayout());
 
         const std::array<float, 2> NormalInitialState{1.0F, 0.0F};
         NormalInstance.GetStateABuffer().Upload(NormalInitialState.data(), sizeof(NormalInitialState));
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            NormalSolver.RecordStep(CommandBuffer, NormalDescriptors, true, 2, 1, 0.25F,
-                                    glm::mat4(1.0F), glm::vec3(0.0F, -1.0F, 0.0F), CacheFlags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                NormalSolver.RecordStep(CommandBuffer,
+                                        NormalDescriptors,
+                                        true,
+                                        2,
+                                        1,
+                                        0.25F,
+                                        glm::mat4(1.0F),
+                                        glm::vec3(0.0F, -1.0F, 0.0F),
+                                        CacheFlags);
+            });
 
         std::array<float, 2> NormalResult{};
         NormalInstance.GetStateBBuffer().Download(NormalResult.data(), sizeof(NormalResult));
-        Check(std::abs(NormalResult[0] - 0.875F) < 1.0e-4F &&
-                  std::abs(NormalResult[1] - 0.125F) < 1.0e-4F,
+        Check(std::abs(NormalResult[0] - 0.875F) < 1.0e-4F && std::abs(NormalResult[1] - 0.125F) < 1.0e-4F,
               "GPU solver flux should use the Normal Map-derived NormalWeight from the cache");
     }
 
@@ -1291,7 +1380,7 @@ namespace
     {
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Layer{};
+        TSurfaceStateParameters     Layer{};
         Layer.StateCapacity = 1.0F;
         Layer.AccumulationFactor = 10.0F;
         Layer.CavityFillFactor = 0.0F;
@@ -1301,13 +1390,13 @@ namespace
         FilmLayer.ThicknessPerAmount = 0.002F;
         Profile.States.emplace("waterfilm", FilmLayer);
         const std::vector<TSurfaceResponseProfileData> ProfileTable{Profile};
-        const TSurfaceStateRegistry Registry(ProfileTable);
-        const TStateId Mud = Registry.GetStateId("mud");
-        const TStateId WaterFilm = Registry.GetStateId("waterfilm");
+        const TSurfaceStateRegistry                    Registry(ProfileTable);
+        const TStateId                                 Mud = Registry.GetStateId("mud");
+        const TStateId                                 WaterFilm = Registry.GetStateId("waterfilm");
         Check(Mud != InvalidStateId && WaterFilm != InvalidStateId && Mud != WaterFilm,
               "feedback fixture should resolve two independent accumulation states");
 
-        TSharedSurfaceGeometryData Geometry({{0, {3, 1}}});
+        TSharedSurfaceGeometryData     Geometry({{0, {3, 1}}});
         const std::array<glm::vec3, 3> Positions{
             glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F)};
         const std::array<std::array<TLocalTexelIndex, 2>, 3> Neighbors{{{{1, 2}}, {{0, 2}}, {{0, 1}}}};
@@ -1323,49 +1412,57 @@ namespace
         }
         Geometry.SetProfileMap({0, 0, 0});
 
-        TSurfaceSharedGeometryGPUResources SharedGeometry(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources Profiles(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        const auto StaticWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
+        TSurfaceSharedGeometryGPUResources SharedGeometry(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources  Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
+        const auto                   StaticWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
         TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 3, 2, StaticWeights);
-        TSurfaceStateDescriptorResources Descriptors(
-            Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
+        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
         std::array<float, 6> InitialState{};
         InitialState[Mud] = 0.5F;
         InitialState[WaterFilm] = 0.5F;
         Instance.GetStateABuffer().Upload(InitialState.data(), sizeof(InitialState));
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordStep(CommandBuffer, Descriptors, true, 3, 2, 0.01F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), 0U);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(
+                    CommandBuffer, Descriptors, true, 3, 2, 0.01F, glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), 0U);
+            });
         std::vector<float> WeightsWithFeedbackOff(StaticWeights.size(), 0.0F);
-        Instance.GetTransferWeightBuffer().Download(WeightsWithFeedbackOff.data(),
-            static_cast<VkDeviceSize>(WeightsWithFeedbackOff.size() * sizeof(float)));
+        Instance.GetTransferWeightBuffer().Download(
+            WeightsWithFeedbackOff.data(), static_cast<VkDeviceSize>(WeightsWithFeedbackOff.size() * sizeof(float)));
         std::array<TSurfaceGPUVec4, 6> GeometryWithFeedbackOff{};
         Instance.GetDynamicGeometryBuffer().Download(GeometryWithFeedbackOff.data(), sizeof(GeometryWithFeedbackOff));
-        Check(std::equal(StaticWeights.begin(), StaticWeights.end(), WeightsWithFeedbackOff.begin(),
+        Check(std::equal(StaticWeights.begin(),
+                         StaticWeights.end(),
+                         WeightsWithFeedbackOff.begin(),
                          [](float A, float B) { return std::abs(A - B) < 1.0e-6F; }) &&
                   std::abs(GeometryWithFeedbackOff[0].Z) < 1.0e-7F,
               "feedback OFF should retain the static transfer cache and skip dynamic geometry prepasses");
         std::array<float, 6> StateWithFeedbackOff{};
         Instance.GetStateBBuffer().Download(StateWithFeedbackOff.data(), sizeof(StateWithFeedbackOff));
-        Check(std::equal(InitialState.begin(), InitialState.end(), StateWithFeedbackOff.begin(),
+        Check(std::equal(InitialState.begin(),
+                         InitialState.end(),
+                         StateWithFeedbackOff.begin(),
                          [](float A, float B) { return std::abs(A - B) < 1.0e-6F; }),
               "the static flat geometry should produce no geometry-driven movement in the feedback-OFF run");
 
-        std::uint32_t Flags = SurfaceSolverAccumulationFeedbackFlag |
-                              SurfaceSolverDistanceWeightFlag |
-                              SurfaceSolverNormalWeightFlag |
-                              SurfaceSolverProfileBoundaryWeightFlag;
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordStep(CommandBuffer, Descriptors, false, 3, 2, 0.0001F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
-        });
+        std::uint32_t Flags = SurfaceSolverAccumulationFeedbackFlag | SurfaceSolverDistanceWeightFlag |
+                              SurfaceSolverNormalWeightFlag | SurfaceSolverProfileBoundaryWeightFlag;
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(CommandBuffer,
+                                  Descriptors,
+                                  false,
+                                  3,
+                                  2,
+                                  0.0001F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, 0.0F, -1.0F),
+                                  Flags);
+            });
 
         std::array<TSurfaceGPUVec4, 6> DynamicGeometry{};
         Instance.GetDynamicGeometryBuffer().Download(DynamicGeometry.data(), sizeof(DynamicGeometry));
@@ -1373,15 +1470,15 @@ namespace
         Instance.GetAccumulationHeightBuffer().Download(CachedHeights.data(), sizeof(CachedHeights));
         std::vector<float> DynamicWeights(StaticWeights.size(), 0.0F);
         Instance.GetTransferWeightBuffer().Download(DynamicWeights.data(),
-            static_cast<VkDeviceSize>(DynamicWeights.size() * sizeof(float)));
+                                                    static_cast<VkDeviceSize>(DynamicWeights.size() * sizeof(float)));
         std::array<float, 6> ResultingState{};
         Instance.GetStateABuffer().Download(ResultingState.data(), sizeof(ResultingState));
 
         Check(std::abs(DynamicGeometry[0].Z - 0.06F) < 1.0e-5F,
               "feedback geometry should add State-specific Profile thickness from all supported accumulation states");
         Check(std::abs(CachedHeights[0] - 0.06F) < 1.0e-5F &&
-                  std::abs(CachedHeights[0] - DynamicGeometry[0].Z) < 1.0e-6F &&
-                  std::abs(CachedHeights[1]) < 1.0e-6F && std::abs(CachedHeights[2]) < 1.0e-6F,
+                  std::abs(CachedHeights[0] - DynamicGeometry[0].Z) < 1.0e-6F && std::abs(CachedHeights[1]) < 1.0e-6F &&
+                  std::abs(CachedHeights[2]) < 1.0e-6F,
               "feedback height pass should cache one combined height per texel for geometry and solver reads");
         Check(DynamicGeometry[1].X > 0.0F && DynamicGeometry[1].Y > 0.0F && DynamicGeometry[1].Z > 0.99F,
               "feedback geometry should rebuild the local normal from the accumulated height gradient");
@@ -1391,12 +1488,13 @@ namespace
         Check(std::abs(DynamicGeometry[0].W - ExpectedMean0) < 1.0e-5F &&
                   std::abs(DynamicGeometry[2].W - ExpectedMean1) < 1.0e-5F,
               "feedback geometry should cache each texel's displaced mean neighbor distance");
-        const float NormalDot01 = std::clamp(
-            DynamicGeometry[1].X * DynamicGeometry[3].X +
-            DynamicGeometry[1].Y * DynamicGeometry[3].Y +
-            DynamicGeometry[1].Z * DynamicGeometry[3].Z, 0.0F, 1.0F);
-        const float ExpectedWeight01 = std::clamp(0.5F * (ExpectedMean0 + ExpectedMean1) / Edge01,
-                                                  0.0F, 1.0F) * NormalDot01;
+        const float NormalDot01 =
+            std::clamp(DynamicGeometry[1].X * DynamicGeometry[3].X + DynamicGeometry[1].Y * DynamicGeometry[3].Y +
+                           DynamicGeometry[1].Z * DynamicGeometry[3].Z,
+                       0.0F,
+                       1.0F);
+        const float ExpectedWeight01 =
+            std::clamp(0.5F * (ExpectedMean0 + ExpectedMean1) / Edge01, 0.0F, 1.0F) * NormalDot01;
         Check(std::abs(DynamicWeights[0] - ExpectedWeight01) < 1.0e-5F,
               "feedback transfer weight should use the cached mean without changing the edge formula");
         Check(std::abs(DynamicWeights[9] - StaticWeights[9]) > 1.0e-4F,
@@ -1412,28 +1510,36 @@ namespace
         // The same current State must leave both geometry passes untouched on
         // a subsequent step; this also covers a renderer height refresh in
         // between, which must not become the geometry change baseline.
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordCurrentAccumulationHeight(CommandBuffer, Descriptors, false, 3, 2,
-                                                   glm::mat4(1.0F));
-            Solver.RecordStep(CommandBuffer, Descriptors, false, 3, 2, 0.0F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordCurrentAccumulationHeight(CommandBuffer, Descriptors, false, 3, 2, glm::mat4(1.0F));
+                Solver.RecordStep(CommandBuffer,
+                                  Descriptors,
+                                  false,
+                                  3,
+                                  2,
+                                  0.0F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, 0.0F, -1.0F),
+                                  Flags);
+            });
         std::array<float, 3> StableHeightDirty{};
         std::array<float, 3> StableGeometryDirty{};
-        Instance.GetAccumulationHeightBuffer().Download(StableHeightDirty.data(), sizeof(StableHeightDirty),
-                                                        sizeof(StableHeightDirty));
-        Instance.GetAccumulationHeightBuffer().Download(StableGeometryDirty.data(), sizeof(StableGeometryDirty),
-                                                        sizeof(StableHeightDirty) * 2U);
+        Instance.GetAccumulationHeightBuffer().Download(
+            StableHeightDirty.data(), sizeof(StableHeightDirty), sizeof(StableHeightDirty));
+        Instance.GetAccumulationHeightBuffer().Download(
+            StableGeometryDirty.data(), sizeof(StableGeometryDirty), sizeof(StableHeightDirty) * 2U);
         std::array<std::uint32_t, 3> StableDispatch{};
-        Instance.GetAccumulationHeightBuffer().Download(StableDispatch.data(), sizeof(StableDispatch),
-                                                        (3U * 3U + 1U) * sizeof(float));
+        Instance.GetAccumulationHeightBuffer().Download(
+            StableDispatch.data(), sizeof(StableDispatch), (3U * 3U + 1U) * sizeof(float));
         std::vector<float> StableWeights(StaticWeights.size(), 0.0F);
         Instance.GetTransferWeightBuffer().Download(StableWeights.data(),
-            static_cast<VkDeviceSize>(StableWeights.size() * sizeof(float)));
-        Check(std::all_of(StableHeightDirty.begin(), StableHeightDirty.end(), [](float V) { return V == 0.0F; }) &&
-                  std::all_of(StableGeometryDirty.begin(), StableGeometryDirty.end(), [](float V) { return V == 0.0F; }),
-              "unchanged accumulation heights should skip geometry and transfer-weight rebuilds");
+                                                    static_cast<VkDeviceSize>(StableWeights.size() * sizeof(float)));
+        Check(
+            std::all_of(StableHeightDirty.begin(), StableHeightDirty.end(), [](float V) { return V == 0.0F; }) &&
+                std::all_of(StableGeometryDirty.begin(), StableGeometryDirty.end(), [](float V) { return V == 0.0F; }),
+            "unchanged accumulation heights should skip geometry and transfer-weight rebuilds");
         Check(StableDispatch == std::array<std::uint32_t, 3>{0U, 1U, 1U},
               "unchanged feedback should dispatch no geometry or transfer-weight workgroups");
         Check(std::equal(DynamicWeights.begin(), DynamicWeights.end(), StableWeights.begin()),
@@ -1442,23 +1548,31 @@ namespace
         auto ChangedState = InitialState;
         ChangedState[Mud] += 0.1F;
         Instance.GetStateBBuffer().Upload(ChangedState.data(), sizeof(ChangedState));
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordStep(CommandBuffer, Descriptors, false, 3, 2, 0.0F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(CommandBuffer,
+                                  Descriptors,
+                                  false,
+                                  3,
+                                  2,
+                                  0.0F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, 0.0F, -1.0F),
+                                  Flags);
+            });
         std::array<float, 3> ChangedHeightDirty{};
         std::array<float, 3> ChangedGeometryDirty{};
-        Instance.GetAccumulationHeightBuffer().Download(ChangedHeightDirty.data(), sizeof(ChangedHeightDirty),
-                                                        sizeof(ChangedHeightDirty));
-        Instance.GetAccumulationHeightBuffer().Download(ChangedGeometryDirty.data(), sizeof(ChangedGeometryDirty),
-                                                        sizeof(ChangedHeightDirty) * 2U);
+        Instance.GetAccumulationHeightBuffer().Download(
+            ChangedHeightDirty.data(), sizeof(ChangedHeightDirty), sizeof(ChangedHeightDirty));
+        Instance.GetAccumulationHeightBuffer().Download(
+            ChangedGeometryDirty.data(), sizeof(ChangedGeometryDirty), sizeof(ChangedHeightDirty) * 2U);
         std::array<std::uint32_t, 3> ChangedDispatch{};
-        Instance.GetAccumulationHeightBuffer().Download(ChangedDispatch.data(), sizeof(ChangedDispatch),
-                                                        (3U * 3U + 1U) * sizeof(float));
+        Instance.GetAccumulationHeightBuffer().Download(
+            ChangedDispatch.data(), sizeof(ChangedDispatch), (3U * 3U + 1U) * sizeof(float));
         Check(ChangedHeightDirty[0] == 1.0F && ChangedHeightDirty[1] == 0.0F && ChangedHeightDirty[2] == 0.0F &&
-                  std::all_of(ChangedGeometryDirty.begin(), ChangedGeometryDirty.end(),
-                              [](float V) { return V == 1.0F; }),
+                  std::all_of(
+                      ChangedGeometryDirty.begin(), ChangedGeometryDirty.end(), [](float V) { return V == 1.0F; }),
               "a changed texel should rebuild geometry across its neighbor halo");
         Check(ChangedDispatch == std::array<std::uint32_t, 3>{1U, 1U, 1U},
               "changed feedback should dispatch geometry and transfer-weight workgroups");
@@ -1468,14 +1582,14 @@ namespace
     {
         using namespace MDSS;
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Layer{};
+        TSurfaceStateParameters     Layer{};
         Layer.StateCapacity = 1.0F;
         Layer.AccumulationFactor = 1.0F;
         Layer.ThicknessPerAmount = 0.1F;
         Profile.States.emplace("mud", Layer);
         const std::vector<TSurfaceResponseProfileData> Profiles{Profile};
-        const TSurfaceStateRegistry Registry(Profiles);
-        TSharedSurfaceGeometryData Geometry({{0, {6, 1}}});
+        const TSurfaceStateRegistry                    Registry(Profiles);
+        TSharedSurfaceGeometryData                     Geometry({{0, {6, 1}}});
         for (std::size_t I = 0; I < 6; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -1483,58 +1597,72 @@ namespace
             Texel.Triangle = 0;
             Texel.Position = glm::vec3(static_cast<float>(I), 0.0F, 0.0F);
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
-            if (I > 0) Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(I - 1);
-            if (I + 1 < 6) Texel.NeighborIndices[1] = static_cast<TLocalTexelIndex>(I + 1);
+            if (I > 0)
+                Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(I - 1);
+            if (I + 1 < 6)
+                Texel.NeighborIndices[1] = static_cast<TLocalTexelIndex>(I + 1);
         }
         Geometry.SetProfileMap({0, 0, 0, 0, 0, 0});
         TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources GPUProfiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 6, 1,
-            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+        TSurfaceProfileGPUResources  GPUProfiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              6,
+                                              1,
+                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
         TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const std::uint32_t Flags = SurfaceSolverAccumulationFeedbackFlag |
-                                    SurfaceSolverDistanceWeightFlag | SurfaceSolverNormalWeightFlag;
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordStep(CommandBuffer, Descriptors, true, 6, 1, 0.0F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
-        });
+        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const std::uint32_t              Flags =
+            SurfaceSolverAccumulationFeedbackFlag | SurfaceSolverDistanceWeightFlag | SurfaceSolverNormalWeightFlag;
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(
+                    CommandBuffer, Descriptors, true, 6, 1, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
+            });
 
         // A distant cached edge must survive a local height change unchanged.
         constexpr float Sentinel = 0.123F;
-        Instance.GetTransferWeightBuffer().Upload(&Sentinel, sizeof(Sentinel), 4U * SurfaceNeighborCount * sizeof(float));
+        Instance.GetTransferWeightBuffer().Upload(
+            &Sentinel, sizeof(Sentinel), 4U * SurfaceNeighborCount * sizeof(float));
         const std::array<float, 6> ChangedState{0.5F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F};
         Instance.GetStateABuffer().Upload(ChangedState.data(), sizeof(ChangedState));
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordStep(CommandBuffer, Descriptors, true, 6, 1, 0.0F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(
+                    CommandBuffer, Descriptors, true, 6, 1, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
+            });
         std::array<float, 6> HeightDirty{};
         std::array<float, 6> GeometryDirty{};
         Instance.GetAccumulationHeightBuffer().Download(HeightDirty.data(), sizeof(HeightDirty), sizeof(HeightDirty));
-        Instance.GetAccumulationHeightBuffer().Download(GeometryDirty.data(), sizeof(GeometryDirty),
-                                                        sizeof(HeightDirty) * 2U);
+        Instance.GetAccumulationHeightBuffer().Download(
+            GeometryDirty.data(), sizeof(GeometryDirty), sizeof(HeightDirty) * 2U);
         float FarWeight = 0.0F;
-        Instance.GetTransferWeightBuffer().Download(&FarWeight, sizeof(FarWeight),
-            4U * SurfaceNeighborCount * sizeof(float));
+        Instance.GetTransferWeightBuffer().Download(
+            &FarWeight, sizeof(FarWeight), 4U * SurfaceNeighborCount * sizeof(float));
         Check(HeightDirty == std::array<float, 6>{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F} &&
                   GeometryDirty == std::array<float, 6>{1.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F},
               "sparse feedback should update the changed texel and its geometry neighbor only");
-        Check(FarWeight == Sentinel,
-              "sparse feedback should retain distant transfer weights without rewriting them");
-        Vulkan.Execute([&](VkCommandBuffer CommandBuffer)
-        {
-            Solver.RecordStep(CommandBuffer, Descriptors, true, 6, 1, 0.0F,
-                              glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F),
-                              Flags | SurfaceSolverForceFullGeometryFlag);
-        });
+        Check(FarWeight == Sentinel, "sparse feedback should retain distant transfer weights without rewriting them");
+        Vulkan.Execute(
+            [&](VkCommandBuffer CommandBuffer)
+            {
+                Solver.RecordStep(CommandBuffer,
+                                  Descriptors,
+                                  true,
+                                  6,
+                                  1,
+                                  0.0F,
+                                  glm::mat4(1.0F),
+                                  glm::vec3(0.0F, 0.0F, -1.0F),
+                                  Flags | SurfaceSolverForceFullGeometryFlag);
+            });
         std::array<std::uint32_t, 3> ForcedDispatch{};
-        Instance.GetAccumulationHeightBuffer().Download(ForcedDispatch.data(), sizeof(ForcedDispatch),
-                                                        (3U * 6U + 1U) * sizeof(float));
-        Instance.GetTransferWeightBuffer().Download(&FarWeight, sizeof(FarWeight),
-            4U * SurfaceNeighborCount * sizeof(float));
+        Instance.GetAccumulationHeightBuffer().Download(
+            ForcedDispatch.data(), sizeof(ForcedDispatch), (3U * 6U + 1U) * sizeof(float));
+        Instance.GetTransferWeightBuffer().Download(
+            &FarWeight, sizeof(FarWeight), 4U * SurfaceNeighborCount * sizeof(float));
         Check(ForcedDispatch == std::array<std::uint32_t, 3>{1U, 1U, 1U},
               "forced full geometry should dispatch even when heights are unchanged");
         Check(std::abs(FarWeight - 1.0F) < 1.0e-5F,

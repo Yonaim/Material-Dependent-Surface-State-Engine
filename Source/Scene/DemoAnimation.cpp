@@ -8,13 +8,12 @@
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
 
-#include <glm/common.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <nlohmann/json.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <glm/common.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -42,9 +41,10 @@ namespace MDSS
 
         float Float(const TJson& Value, const std::string& Context)
         {
-            if (!Value.is_number()) throw std::runtime_error(Context + " must be numeric.");
+            if (!Value.is_number())
+                throw std::runtime_error(Context + " must be numeric.");
             const double Number = Value.get<double>();
-            const float Result = static_cast<float>(Number);
+            const float  Result = static_cast<float>(Number);
             if (!std::isfinite(Number) || !std::isfinite(Result))
                 throw std::runtime_error(Context + " must be finite.");
             return Result;
@@ -54,14 +54,19 @@ namespace MDSS
         {
             if (Target == "camera")
             {
-                if (Name == "position") return EDemoAnimationProperty::CameraPosition;
-                if (Name == "target") return EDemoAnimationProperty::CameraTarget;
+                if (Name == "position")
+                    return EDemoAnimationProperty::CameraPosition;
+                if (Name == "target")
+                    return EDemoAnimationProperty::CameraTarget;
             }
             else
             {
-                if (Name == "position") return EDemoAnimationProperty::Position;
-                if (Name == "rotation") return EDemoAnimationProperty::Rotation;
-                if (Name == "scale") return EDemoAnimationProperty::Scale;
+                if (Name == "position")
+                    return EDemoAnimationProperty::Position;
+                if (Name == "rotation")
+                    return EDemoAnimationProperty::Rotation;
+                if (Name == "scale")
+                    return EDemoAnimationProperty::Scale;
             }
             throw std::runtime_error("Demo animation property '" + Name + "' is invalid for target '" + Target + "'.");
         }
@@ -77,7 +82,8 @@ namespace MDSS
             if (bRotation)
             {
                 const float Length = glm::length(Result);
-                if (Length <= 1.0e-6F) throw std::runtime_error(Context + " quaternion must have non-zero length.");
+                if (Length <= 1.0e-6F)
+                    throw std::runtime_error(Context + " quaternion must have non-zero length.");
                 Result /= Length;
             }
             return Result;
@@ -85,13 +91,18 @@ namespace MDSS
 
         glm::vec4 Sample(const TDemoAnimationTrack& Track, float Time)
         {
-            if (Time <= Track.Keys.front().Time) return Track.Keys.front().Value;
-            if (Time >= Track.Keys.back().Time) return Track.Keys.back().Value;
-            const auto Upper = std::upper_bound(Track.Keys.begin(), Track.Keys.end(), Time,
-                [](float T, const TDemoAnimationKey& Key) { return T < Key.Time; });
+            if (Time <= Track.Keys.front().Time)
+                return Track.Keys.front().Value;
+            if (Time >= Track.Keys.back().Time)
+                return Track.Keys.back().Value;
+            const auto               Upper = std::upper_bound(Track.Keys.begin(),
+                                                Track.Keys.end(),
+                                                Time,
+                                                [](float T, const TDemoAnimationKey& Key) { return T < Key.Time; });
             const TDemoAnimationKey& B = *Upper;
             const TDemoAnimationKey& A = *(Upper - 1);
-            if (Track.Interpolation == EDemoAnimationInterpolation::Step) return A.Value;
+            if (Track.Interpolation == EDemoAnimationInterpolation::Step)
+                return A.Value;
             const float Blend = (Time - A.Time) / (B.Time - A.Time);
             if (Track.Interpolation == EDemoAnimationInterpolation::Slerp)
             {
@@ -109,9 +120,8 @@ namespace MDSS
             // TTransform composes rotations as Rx * Ry * Rz.
             const float Y = std::asin(glm::clamp(R[2][0], -1.0F, 1.0F));
             const float CosY = std::cos(Y);
-            const float X = std::abs(CosY) > 1.0e-5F
-                ? std::atan2(-R[2][1], R[2][2])
-                : std::atan2(std::copysign(1.0F, Y) * R[0][1], R[1][1]);
+            const float X = std::abs(CosY) > 1.0e-5F ? std::atan2(-R[2][1], R[2][2])
+                                                     : std::atan2(std::copysign(1.0F, Y) * R[0][1], R[1][1]);
             const float Z = std::abs(CosY) > 1.0e-5F ? std::atan2(-R[1][0], R[0][0]) : 0.0F;
             return glm::degrees(glm::vec3(X, Y, Z));
         }
@@ -120,9 +130,13 @@ namespace MDSS
     TDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const TScene& Scene)
     {
         std::ifstream Input(Path);
-        if (!Input) throw std::runtime_error("Unable to open Demo Animation: " + Path.string());
+        if (!Input)
+            throw std::runtime_error("Unable to open Demo Animation: " + Path.string());
         TJson Root;
-        try { Input >> Root; }
+        try
+        {
+            Input >> Root;
+        }
         catch (const TJson::exception& Error)
         {
             throw std::runtime_error("Invalid Demo Animation JSON in '" + Path.string() + "': " + Error.what());
@@ -132,10 +146,12 @@ namespace MDSS
             throw std::runtime_error("Demo Animation version must be 1.");
         TDemoAnimationClip Clip;
         Clip.DurationSeconds = Float(Required(Root, "durationSeconds", "Demo Animation"), "durationSeconds");
-        if (Clip.DurationSeconds <= 0.0F) throw std::runtime_error("Demo Animation duration must be positive.");
+        if (Clip.DurationSeconds <= 0.0F)
+            throw std::runtime_error("Demo Animation duration must be positive.");
         if (const auto Loop = Root.find("loop"); Loop != Root.end())
         {
-            if (!Loop->is_boolean()) throw std::runtime_error("Demo Animation loop must be a boolean.");
+            if (!Loop->is_boolean())
+                throw std::runtime_error("Demo Animation loop must be a boolean.");
             Clip.bLoop = Loop->get<bool>();
         }
         const TJson& Tracks = Required(Root, "tracks", "Demo Animation");
@@ -145,8 +161,8 @@ namespace MDSS
         Clip.Tracks.reserve(Tracks.size());
         for (std::size_t TrackIndex = 0; TrackIndex < Tracks.size(); ++TrackIndex)
         {
-            const TJson& JsonTrack = Tracks[TrackIndex];
-            const std::string Context = "tracks[" + std::to_string(TrackIndex) + "]";
+            const TJson&        JsonTrack = Tracks[TrackIndex];
+            const std::string   Context = "tracks[" + std::to_string(TrackIndex) + "]";
             TDemoAnimationTrack Track;
             Track.Target = String(JsonTrack, "target", Context);
             const std::string PropertyName = String(JsonTrack, "property", Context);
@@ -154,35 +170,41 @@ namespace MDSS
             if (Track.Target != "camera")
             {
                 const auto& Objects = Scene.GetStaticMeshInstances();
-                const bool bFound = std::any_of(Objects.begin(), Objects.end(),
-                    [&Track](const TStaticMeshInstance& Object) { return Object.GetId() == Track.Target; });
-                if (!bFound) throw std::runtime_error(Context + " targets an unknown Scene object ID.");
+                const bool  bFound =
+                    std::any_of(Objects.begin(),
+                                Objects.end(),
+                                [&Track](const TStaticMeshInstance& Object) { return Object.GetId() == Track.Target; });
+                if (!bFound)
+                    throw std::runtime_error(Context + " targets an unknown Scene object ID.");
             }
             if (!UsedProperties.insert(Track.Target + "\n" + PropertyName).second)
                 throw std::runtime_error(Context + " duplicates an earlier target/property track.");
-            const bool bRotation = Track.Property == EDemoAnimationProperty::Rotation;
+            const bool        bRotation = Track.Property == EDemoAnimationProperty::Rotation;
             const std::string Interpolation = JsonTrack.contains("interpolation")
-                ? String(JsonTrack, "interpolation", Context) : (bRotation ? "slerp" : "linear");
-            if (Interpolation == "step") Track.Interpolation = EDemoAnimationInterpolation::Step;
+                                                  ? String(JsonTrack, "interpolation", Context)
+                                                  : (bRotation ? "slerp" : "linear");
+            if (Interpolation == "step")
+                Track.Interpolation = EDemoAnimationInterpolation::Step;
             else if (Interpolation == "linear" && !bRotation)
                 Track.Interpolation = EDemoAnimationInterpolation::Linear;
             else if (Interpolation == "slerp" && bRotation)
                 Track.Interpolation = EDemoAnimationInterpolation::Slerp;
-            else throw std::runtime_error(Context + " uses an unsupported interpolation for its property.");
+            else
+                throw std::runtime_error(Context + " uses an unsupported interpolation for its property.");
             const TJson& Keys = Required(JsonTrack, "keys", Context);
-            if (!Keys.is_array() || Keys.empty()) throw std::runtime_error(Context + ".keys must be non-empty.");
+            if (!Keys.is_array() || Keys.empty())
+                throw std::runtime_error(Context + ".keys must be non-empty.");
             Track.Keys.reserve(Keys.size());
             for (std::size_t KeyIndex = 0; KeyIndex < Keys.size(); ++KeyIndex)
             {
                 const std::string KeyContext = Context + ".keys[" + std::to_string(KeyIndex) + "]";
-                const TJson& Key = Keys[KeyIndex];
-                const float Time = Float(Required(Key, "time", KeyContext), KeyContext + ".time");
+                const TJson&      Key = Keys[KeyIndex];
+                const float       Time = Float(Required(Key, "time", KeyContext), KeyContext + ".time");
                 if (Time < 0.0F || Time > Clip.DurationSeconds ||
-                    (!Track.Keys.empty() && Time <= Track.Keys.back().Time) ||
-                    (Track.Keys.empty() && Time != 0.0F))
+                    (!Track.Keys.empty() && Time <= Track.Keys.back().Time) || (Track.Keys.empty() && Time != 0.0F))
                     throw std::runtime_error(KeyContext + ".time must start at 0 and increase within duration.");
-                Track.Keys.push_back({Time, ReadValue(Required(Key, "value", KeyContext), bRotation,
-                                                      KeyContext + ".value")});
+                Track.Keys.push_back(
+                    {Time, ReadValue(Required(Key, "value", KeyContext), bRotation, KeyContext + ".value")});
             }
             Clip.Tracks.push_back(std::move(Track));
         }
@@ -204,16 +226,23 @@ namespace MDSS
             }
             for (TStaticMeshInstance& Object : Scene.GetStaticMeshInstances())
             {
-                if (Object.GetId() != Track.Target) continue;
+                if (Object.GetId() != Track.Target)
+                    continue;
                 TTransform& Transform = Object.GetTransform();
                 switch (Track.Property)
                 {
-                    case EDemoAnimationProperty::Position: Transform.Position = glm::vec3(Value); break;
+                    case EDemoAnimationProperty::Position:
+                        Transform.Position = glm::vec3(Value);
+                        break;
                     case EDemoAnimationProperty::Rotation:
-                        Transform.RotationDegrees = QuaternionToTransformEuler(Value); break;
-                    case EDemoAnimationProperty::Scale: Transform.Scale = glm::vec3(Value); break;
+                        Transform.RotationDegrees = QuaternionToTransformEuler(Value);
+                        break;
+                    case EDemoAnimationProperty::Scale:
+                        Transform.Scale = glm::vec3(Value);
+                        break;
                     case EDemoAnimationProperty::CameraPosition:
-                    case EDemoAnimationProperty::CameraTarget: break;
+                    case EDemoAnimationProperty::CameraTarget:
+                        break;
                 }
                 break;
             }

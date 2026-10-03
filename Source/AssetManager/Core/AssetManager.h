@@ -38,14 +38,14 @@ namespace MDSS
          * @param Mesh Mesh asset handle.
          * @param DistributionPath Scene에서 지정한 `.SurfaceProfileMap` 경로.
          */
-        [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceData(TMeshAssetHandle Mesh,
+        [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceData(TMeshAssetHandle             Mesh,
                                                                 const std::filesystem::path& DistributionPath,
-                                                                std::uint32_t Resolution = 0);
+                                                                std::uint32_t                Resolution = 0);
         [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
-                                                                           std::uint32_t Resolution);
+                                                                            std::uint32_t             Resolution);
         /** @brief 현재 GPU Scene에 적용된 해상도. Scene load 후보의 해상도는 명시적으로 전달한다. */
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
-        void SetSimulationResolution(std::uint32_t Resolution);
+        void                        SetSimulationResolution(std::uint32_t Resolution);
         /** @brief Call after replacing GPU resources; retained Scene handles remain valid. */
         void ReleaseUnusedSurfaceData(const std::vector<TSurfaceRuntimeDataHandle>& RetainedHandles);
 
@@ -56,8 +56,8 @@ namespace MDSS
         /** @throws std::out_of_range Handle이 현재 등록된 Texture 범위를 벗어난 경우. */
         [[nodiscard]] const TextureAsset& GetTexture(TextureAssetHandle Handle) const;
         /** @throws std::out_of_range Handle이 현재 등록된 Profile 범위를 벗어난 경우. */
-        [[nodiscard]] const TSRProfileAsset& GetSRProfile(TSRProfileAssetHandle Handle) const;
-        [[nodiscard]] bool                  HasSurfaceData(TSurfaceRuntimeDataHandle Handle) const noexcept;
+        [[nodiscard]] const TSRProfileAsset&     GetSRProfile(TSRProfileAssetHandle Handle) const;
+        [[nodiscard]] bool                       HasSurfaceData(TSurfaceRuntimeDataHandle Handle) const noexcept;
         [[nodiscard]] const TSurfaceRuntimeData& GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const;
         /** @brief Profile table order used by this Runtime Surface Data's per-texel Profile indices. */
         [[nodiscard]] const std::vector<TSRProfileAssetHandle>&
@@ -75,38 +75,38 @@ namespace MDSS
         [[nodiscard]] TMaterialAssetHandle GetDefaultMaterialHandle() const noexcept;
 
     private:
-        TextureAssetHandle  LoadTexture(const std::filesystem::path& Path, bool bSRGB);
-        TextureAssetHandle  CreateSolidTexture(std::string Name, const std::vector<std::uint8_t>& RGBA, bool bSRGB);
+        TextureAssetHandle   LoadTexture(const std::filesystem::path& Path, bool bSRGB);
+        TextureAssetHandle   CreateSolidTexture(std::string Name, const std::vector<std::uint8_t>& RGBA, bool bSRGB);
         TMaterialAssetHandle CreateMaterial(std::string                  Name,
-                                           const std::filesystem::path& SourcePath,
-                                           glm::vec4                    BaseColor,
-                                           TextureAssetHandle           BaseColorTexture,
-                                           TextureAssetHandle           NormalTexture);
+                                            const std::filesystem::path& SourcePath,
+                                            glm::vec4                    BaseColor,
+                                            TextureAssetHandle           BaseColorTexture,
+                                            TextureAssetHandle           NormalTexture);
 
         const TVulkanContext& Context;
 
         struct TRuntimeSurfaceAsset
         {
             std::shared_ptr<const TSurfaceRuntimeData> Data;
-            std::vector<TSRProfileAssetHandle> ProfileTable;
-            TMeshAssetHandle Mesh = InvalidAssetHandle;
-            std::filesystem::path DistributionPath;
+            std::vector<TSRProfileAssetHandle>         ProfileTable;
+            TMeshAssetHandle                           Mesh = InvalidAssetHandle;
+            std::filesystem::path                      DistributionPath;
         };
 
-        std::vector<std::unique_ptr<TMeshAsset>>                Meshes;
-        std::vector<std::unique_ptr<TMaterialAsset>>            Materials;
-        std::vector<std::unique_ptr<TSRProfileAsset>>           SRProfiles;
-        std::vector<std::unique_ptr<TextureAsset>>             Textures;
-        std::unordered_map<std::string, TMeshAssetHandle>       MeshAssetsByPath;
-        std::unordered_map<std::string, TextureAssetHandle>    TextureCache;
-        std::unordered_map<std::string, TSRProfileAssetHandle>  SRProfileCache;
-        std::vector<TRuntimeSurfaceAsset>                       RuntimeSurfaceAssets;
+        std::vector<std::unique_ptr<TMeshAsset>>                   Meshes;
+        std::vector<std::unique_ptr<TMaterialAsset>>               Materials;
+        std::vector<std::unique_ptr<TSRProfileAsset>>              SRProfiles;
+        std::vector<std::unique_ptr<TextureAsset>>                 Textures;
+        std::unordered_map<std::string, TMeshAssetHandle>          MeshAssetsByPath;
+        std::unordered_map<std::string, TextureAssetHandle>        TextureCache;
+        std::unordered_map<std::string, TSRProfileAssetHandle>     SRProfileCache;
+        std::vector<TRuntimeSurfaceAsset>                          RuntimeSurfaceAssets;
         std::unordered_map<std::string, TSurfaceRuntimeDataHandle> RuntimeSurfaceAssetsByInputs;
         TSurfaceStateRegistry StateRegistry{std::vector<TSurfaceResponseProfileData>{}};
-        std::uint32_t SimulationResolution = SurfaceSimulationResolution;
+        std::uint32_t         SimulationResolution = SurfaceSimulationResolution;
 
-        TextureAssetHandle  DefaultBaseColorTexture = InvalidAssetHandle;
-        TextureAssetHandle  DefaultNormalTexture = InvalidAssetHandle;
+        TextureAssetHandle   DefaultBaseColorTexture = InvalidAssetHandle;
+        TextureAssetHandle   DefaultNormalTexture = InvalidAssetHandle;
         TMaterialAssetHandle DefaultMaterial = InvalidAssetHandle;
     };
 } // namespace MDSS

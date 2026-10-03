@@ -11,8 +11,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <span>
 #include <glm/glm.hpp>
+#include <span>
 #include <vector>
 
 namespace MDSS
@@ -55,11 +55,11 @@ namespace MDSS
 
     struct alignas(16) TSurfaceSolverPushConstants
     {
-        float                        DeltaTime = 0.0F;
-        std::uint32_t                StateChannelCount = 0;
-        std::uint32_t                LocalTexelCount = 0;
-        std::uint32_t                Flags = 0;
-        std::array<float, 4>         GravityWorld{};
+        float                               DeltaTime = 0.0F;
+        std::uint32_t                       StateChannelCount = 0;
+        std::uint32_t                       LocalTexelCount = 0;
+        std::uint32_t                       Flags = 0;
+        std::array<float, 4>                GravityWorld{};
         std::array<std::array<float, 4>, 3> ModelLinearColumns{};
         // xyz: inverse-transpose columns, w: corresponding component of the gravity up axis.
         std::array<std::array<float, 4>, 3> NormalMatrixAndUpColumns{};
@@ -67,17 +67,17 @@ namespace MDSS
 
     struct TSurfaceGPUSharedGeometryUpload
     {
-        std::vector<std::uint32_t>               TexelSurfaceIndices;
-        std::vector<std::uint32_t>               TexelProfileIndices;
-        std::vector<TSurfaceGPUVec4>              Positions;
-        std::vector<TSurfaceGPUVec4>              Normals;
+        std::vector<std::uint32_t>              TexelSurfaceIndices;
+        std::vector<std::uint32_t>              TexelProfileIndices;
+        std::vector<TSurfaceGPUVec4>            Positions;
+        std::vector<TSurfaceGPUVec4>            Normals;
         std::vector<TSurfaceGPUVec4>            MesoNormals;
-        std::vector<TSurfaceGPUGeometryScalar>     GeometryScalars;
-        std::vector<TSurfaceGPUNeighborIndices>    NeighborIndices;
+        std::vector<TSurfaceGPUGeometryScalar>  GeometryScalars;
+        std::vector<TSurfaceGPUNeighborIndices> NeighborIndices;
         // Eight 4-bit reverse slots per texel; 0xf means no reciprocal neighbor.
-        std::vector<std::uint32_t>                 ReverseNeighborSlots;
-        std::vector<TSurfaceGPUSurfaceRange>       SurfaceRanges;
-        std::vector<std::uint32_t>                 TexelChartIndices;
+        std::vector<std::uint32_t>           ReverseNeighborSlots;
+        std::vector<TSurfaceGPUSurfaceRange> SurfaceRanges;
+        std::vector<std::uint32_t>           TexelChartIndices;
     };
 
     struct TSurfaceGPUProfileUpload
@@ -107,26 +107,26 @@ namespace MDSS
     static_assert(offsetof(TSurfaceSolverPushConstants, NormalMatrixAndUpColumns) == 80);
 
     /** @brief Optional Runtime-local → Scene Profile index remap; CPU Geometry remains unchanged. */
-    [[nodiscard]] TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(
-        const TSharedSurfaceGeometryData& Geometry,
-        std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
+    [[nodiscard]] TSurfaceGPUSharedGeometryUpload
+    PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData&     Geometry,
+                              std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
 
-    [[nodiscard]] float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel,
-                                                  const glm::mat4& ModelMatrix) noexcept;
-    [[nodiscard]] std::vector<float> BuildSurfaceGPUWorldTexelAreas(
-        const TSharedSurfaceGeometryData& Geometry, const glm::mat4& ModelMatrix);
+    [[nodiscard]] float              GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel,
+                                                              const glm::mat4&             ModelMatrix) noexcept;
+    [[nodiscard]] std::vector<float> BuildSurfaceGPUWorldTexelAreas(const TSharedSurfaceGeometryData& Geometry,
+                                                                    const glm::mat4&                  ModelMatrix);
 
     /** @brief 대칭 TransferWeight 규칙을 각 텍셀의 이웃 슬롯별 cache로 만든다. */
     [[nodiscard]] std::vector<float>
     BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
-        const glm::mat4& ModelMatrix,
-        std::vector<TSurfaceGPUVec4>* OutDebugAverages = nullptr,
-        bool bUseNormalWeight = true,
-        bool bUseDistanceWeight = true,
-        bool bUseProfileBoundaryWeight = true);
+                                   const glm::mat4&                  ModelMatrix,
+                                   std::vector<TSurfaceGPUVec4>*     OutDebugAverages = nullptr,
+                                   bool                              bUseNormalWeight = true,
+                                   bool                              bUseDistanceWeight = true,
+                                   bool                              bUseProfileBoundaryWeight = true);
 
     [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
-        const TSurfaceStateRegistry& Registry);
+                                                               const TSurfaceStateRegistry& Registry);
 
     [[nodiscard]] std::size_t
     GetSurfaceGPUStateValueIndex(std::size_t TexelIndex, std::size_t ChannelIndex, std::size_t ChannelCount);

@@ -22,9 +22,8 @@ int main(int Argc, char* Argv[])
     if (Argc == 3 && std::string_view(Argv[1]) == "--frames")
     {
         const std::string_view FrameArgument(Argv[2]);
-        const auto [End, Error] = std::from_chars(FrameArgument.data(),
-                                                  FrameArgument.data() + FrameArgument.size(),
-                                                  FrameLimit);
+        const auto [End, Error] =
+            std::from_chars(FrameArgument.data(), FrameArgument.data() + FrameArgument.size(), FrameLimit);
         if (Error != std::errc{} || End != FrameArgument.data() + FrameArgument.size() || FrameLimit == 0)
         {
             std::cerr << "--frames requires a positive integer.\n";

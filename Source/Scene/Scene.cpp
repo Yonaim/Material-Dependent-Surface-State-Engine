@@ -103,10 +103,22 @@ namespace MDSS
         bDemoAnimationPlaying = false;
     }
 
-    const std::filesystem::path& TScene::GetDemoAnimationPath() const noexcept { return DemoAnimationPath; }
-    bool TScene::HasDemoAnimation() const noexcept { return DemoAnimation.has_value(); }
-    bool TScene::IsDemoAnimationPlaying() const noexcept { return bDemoAnimationPlaying; }
-    float TScene::GetDemoAnimationTime() const noexcept { return DemoAnimationTime; }
+    const std::filesystem::path& TScene::GetDemoAnimationPath() const noexcept
+    {
+        return DemoAnimationPath;
+    }
+    bool TScene::HasDemoAnimation() const noexcept
+    {
+        return DemoAnimation.has_value();
+    }
+    bool TScene::IsDemoAnimationPlaying() const noexcept
+    {
+        return bDemoAnimationPlaying;
+    }
+    float TScene::GetDemoAnimationTime() const noexcept
+    {
+        return DemoAnimationTime;
+    }
     float TScene::GetDemoAnimationDuration() const noexcept
     {
         return DemoAnimation ? DemoAnimation->DurationSeconds : 0.0F;
@@ -114,12 +126,17 @@ namespace MDSS
 
     void TScene::PlayDemoAnimation()
     {
-        if (!DemoAnimation) return;
-        if (DemoAnimationTime >= DemoAnimation->DurationSeconds) RestartDemoAnimation();
+        if (!DemoAnimation)
+            return;
+        if (DemoAnimationTime >= DemoAnimation->DurationSeconds)
+            RestartDemoAnimation();
         bDemoAnimationPlaying = true;
     }
 
-    void TScene::PauseDemoAnimation() noexcept { bDemoAnimationPlaying = false; }
+    void TScene::PauseDemoAnimation() noexcept
+    {
+        bDemoAnimationPlaying = false;
+    }
 
     void TScene::AddInitialContact(TSceneInitialContact Contact)
     {
@@ -133,7 +150,8 @@ namespace MDSS
 
     void TScene::RestartDemoAnimation()
     {
-        if (!DemoAnimation) return;
+        if (!DemoAnimation)
+            return;
         bDemoAnimationPlaying = false;
         DemoAnimationTime = 0.0F;
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
@@ -141,7 +159,8 @@ namespace MDSS
 
     void TScene::AdvanceDemoAnimation(float DeltaTime)
     {
-        if (!DemoAnimation || !bDemoAnimationPlaying || !std::isfinite(DeltaTime) || DeltaTime <= 0.0F) return;
+        if (!DemoAnimation || !bDemoAnimationPlaying || !std::isfinite(DeltaTime) || DeltaTime <= 0.0F)
+            return;
         DemoAnimationTime += DeltaTime;
         if (DemoAnimation->bLoop)
             DemoAnimationTime = std::fmod(DemoAnimationTime, DemoAnimation->DurationSeconds);
@@ -157,9 +176,9 @@ namespace MDSS
     {
         StaticMeshInstances.push_back(std::move(Instance));
         InitialTransforms.push_back(StaticMeshInstances.back().GetTransform());
-        TLogger::Debug("TScene",
-                      "Static mesh instance added. TScene instance count=" + std::to_string(StaticMeshInstances.size()) +
-                          ".");
+        TLogger::Debug(
+            "TScene",
+            "Static mesh instance added. TScene instance count=" + std::to_string(StaticMeshInstances.size()) + ".");
     }
 
     std::vector<TStaticMeshInstance>& TScene::GetStaticMeshInstances() noexcept

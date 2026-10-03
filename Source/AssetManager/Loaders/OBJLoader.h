@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "AssetManager/Loaders/MTLLoader.h"
 #include "AssetManager/Assets/MeshSourceData.h"
+#include "AssetManager/Loaders/MTLLoader.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -16,16 +16,16 @@ namespace MDSS
 {
     struct TOBJMeshSectionData
     {
-        std::uint32_t  FirstIndex = 0;
-        std::uint32_t  IndexCount = 0;
-        std::int32_t   MaterialIndex = -1;
+        std::uint32_t   FirstIndex = 0;
+        std::uint32_t   IndexCount = 0;
+        std::int32_t    MaterialIndex = -1;
         TSurfaceLocalID Surface = InvalidSurfaceID;
     };
 
     struct TOBJLoadResult
     {
         std::vector<TVertex>             Vertices;
-        std::vector<std::uint32_t>      Indices;
+        std::vector<std::uint32_t>       Indices;
         std::vector<TOBJMeshSectionData> Sections;
         std::vector<TMaterialSourceData> Materials;
         std::vector<TMeshTriangleSource> Triangles;

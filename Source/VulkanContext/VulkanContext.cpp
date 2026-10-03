@@ -22,11 +22,10 @@ namespace MDSS
           Commands(Device.GetHandle(), Queues.GetFamilyIndices().GraphicsFamily.value())
     {
         const auto& Families = Queues.GetFamilyIndices();
-        TLogger::Info(
-            "Vulkan",
-            "Graphics/compute/present queues acquired (graphics family=" +
-                std::to_string(Families.GraphicsFamily.value()) +
-                ", present family=" + std::to_string(Families.PresentFamily.value()) + ").");
+        TLogger::Info("Vulkan",
+                      "Graphics/compute/present queues acquired (graphics family=" +
+                          std::to_string(Families.GraphicsFamily.value()) +
+                          ", present family=" + std::to_string(Families.PresentFamily.value()) + ").");
         TLogger::Info("Vulkan", "Graphics command pool created.");
     }
 

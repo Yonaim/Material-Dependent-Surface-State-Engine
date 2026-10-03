@@ -4,8 +4,8 @@
  */
 #include "SurfaceStateSystem/Debug/TexelInspector.h"
 
-#include <fstream>
 #include <cmath>
+#include <fstream>
 #include <stdexcept>
 
 #ifndef MDSS_SHADER_DIR
@@ -152,14 +152,14 @@ namespace MDSS
         auto& Frame = Frames.at(FrameIndex);
         struct TPush
         {
-            std::uint32_t Texel, Channel, Channels;
-            float AccumulationDisplayScale;
+            std::uint32_t            Texel, Channel, Channels;
+            float                    AccumulationDisplayScale;
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
         static_assert(sizeof(TPush) == 64);
-        glm::mat3 NormalMatrix(0.0F);
+        glm::mat3       NormalMatrix(0.0F);
         const glm::mat3 ModelLinear(ModelMatrix);
-        const float Determinant = glm::determinant(ModelLinear);
+        const float     Determinant = glm::determinant(ModelLinear);
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
         TPush Push{Selection.Texel, Channel, Channels, AccumulationDisplayScale, {}};

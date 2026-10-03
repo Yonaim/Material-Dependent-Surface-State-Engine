@@ -12,13 +12,13 @@
 #include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
 
 #include <vulkan/vulkan.h>
-#include <glm/glm.hpp>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <filesystem>
+#include <glm/glm.hpp>
 #include <map>
 #include <optional>
 #include <set>
@@ -40,10 +40,7 @@ namespace MDSS
     class TDebugUI
     {
     public:
-        TDebugUI(const TVulkanContext& Context,
-                 const TWindow&      TWindow,
-                 TRenderer&          TRenderer,
-                 TAssetManager&      Assets);
+        TDebugUI(const TVulkanContext& Context, const TWindow& TWindow, TRenderer& TRenderer, TAssetManager& Assets);
         ~TDebugUI();
 
         TDebugUI(const TDebugUI&) = delete;
@@ -63,174 +60,180 @@ namespace MDSS
         /** @brief swapchain 재생성 후 ImGui Vulkan backend의 image count를 갱신한다. */
         void OnSwapchainRecreated(const TVulkanContext& Context, const TRenderer& TRenderer);
 
-        [[nodiscard]] bool IsInjectModeEnabled() const noexcept;
-        [[nodiscard]] TStateId GetInjectState() const noexcept;
-        [[nodiscard]] float GetInjectStrength() const noexcept;
-        [[nodiscard]] float GetInjectRadius() const noexcept;
-        [[nodiscard]] float GetInjectFalloff() const noexcept;
+        [[nodiscard]] bool          IsInjectModeEnabled() const noexcept;
+        [[nodiscard]] TStateId      GetInjectState() const noexcept;
+        [[nodiscard]] float         GetInjectStrength() const noexcept;
+        [[nodiscard]] float         GetInjectRadius() const noexcept;
+        [[nodiscard]] float         GetInjectFalloff() const noexcept;
         [[nodiscard]] std::uint32_t GetInjectTexelSearchRadius() const noexcept;
-        [[nodiscard]] float GetAnimationTimeScale() const noexcept;
-        [[nodiscard]] float GetSimulationTimeScale() const noexcept;
-        [[nodiscard]] bool IsSimulationPaused() const noexcept;
-        [[nodiscard]] bool IsFixedSimulationTimestep() const noexcept { return bFixedSimulationTimestep; }
-        [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept { return bAutoSubstepping; }
+        [[nodiscard]] float         GetAnimationTimeScale() const noexcept;
+        [[nodiscard]] float         GetSimulationTimeScale() const noexcept;
+        [[nodiscard]] bool          IsSimulationPaused() const noexcept;
+        [[nodiscard]] bool          IsFixedSimulationTimestep() const noexcept
+        {
+            return bFixedSimulationTimestep;
+        }
+        [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept
+        {
+            return bAutoSubstepping;
+        }
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
         /** @brief 설정 준비나 파일 대화상자가 포함된 frame의 경과 시간을 한 번 제외한다. */
-        [[nodiscard]] bool ConsumeFrameTimeResetRequest() noexcept;
-        [[nodiscard]] std::size_t GetViewportCount() const noexcept;
-        [[nodiscard]] glm::vec4 GetViewportRectNormalized(std::size_t Index) const noexcept;
+        [[nodiscard]] bool           ConsumeFrameTimeResetRequest() noexcept;
+        [[nodiscard]] std::size_t    GetViewportCount() const noexcept;
+        [[nodiscard]] glm::vec4      GetViewportRectNormalized(std::size_t Index) const noexcept;
         [[nodiscard]] const TCamera& GetViewportCamera(const TScene& SceneData, std::size_t Index) const noexcept;
         [[nodiscard]] const TCamera& GetActiveViewportCamera(const TScene& SceneData) const noexcept;
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
-        [[nodiscard]] int GetHoveredGizmoAxis() const noexcept;
-        [[nodiscard]] bool IsRotationGizmoMode() const noexcept;
-        [[nodiscard]] TStateId GetDebugState() const noexcept;
-        [[nodiscard]] bool ShouldSuppressDebugHotkey() const noexcept;
+        [[nodiscard]] int                        GetHoveredGizmoAxis() const noexcept;
+        [[nodiscard]] bool                       IsRotationGizmoMode() const noexcept;
+        [[nodiscard]] TStateId                   GetDebugState() const noexcept;
+        [[nodiscard]] bool                       ShouldSuppressDebugHotkey() const noexcept;
 
     private:
-        void ProcessCameraInput(TScene& SceneData);
-        void ProcessSelectionAndGizmo(TScene& SceneData);
-        void DrawSceneWindow(TScene& SceneData);
-        void ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path);
-        void DrawAnimationWindow(TScene& SceneData);
-        void DrawSelectedObjectWindow(TScene& SceneData);
-        void DrawCameraWindow(TScene& SceneData);
-        void DrawViewportPanels(TScene& SceneData);
-        void DrawBrickCubeTexelMeshNotice(const TScene& SceneData);
-        void DrawRenderOptionsWindow(TScene& SceneData);
-        void DrawRenderSettingsWindow(TScene& SceneData);
-        void DrawViewportStatsOverlay();
-        void DrawTotalHeightCacheOverlay();
-        void ResetProfilingAverages() noexcept;
-        void ResetSurfaceStateSettings();
-        void DrawSimulationDebugWindow(TScene& SceneData);
-        void DrawSimulationCommonControls();
-        void DrawSolverTab();
-        void DrawTexelInspectorTab();
-        void DrawDebugStateSelector();
-        void DrawContactInputTab();
-        void DrawProfileTuningTab(TScene& SceneData);
-        void DrawGlobalSettingsTab(TScene& SceneData);
-        void DrawLogWindow();
-        void SetupDockspace();
-        void ApplyCameraViewPreset(TScene& SceneData, std::size_t Index);
-        [[nodiscard]] TCamera& GetViewportCamera(TScene& SceneData, std::size_t Index) noexcept;
+        void                      ProcessCameraInput(TScene& SceneData);
+        void                      ProcessSelectionAndGizmo(TScene& SceneData);
+        void                      DrawSceneWindow(TScene& SceneData);
+        void                      ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path);
+        void                      DrawAnimationWindow(TScene& SceneData);
+        void                      DrawSelectedObjectWindow(TScene& SceneData);
+        void                      DrawCameraWindow(TScene& SceneData);
+        void                      DrawViewportPanels(TScene& SceneData);
+        void                      DrawBrickCubeTexelMeshNotice(const TScene& SceneData);
+        void                      DrawRenderOptionsWindow(TScene& SceneData);
+        void                      DrawRenderSettingsWindow(TScene& SceneData);
+        void                      DrawViewportStatsOverlay();
+        void                      DrawTotalHeightCacheOverlay();
+        void                      ResetProfilingAverages() noexcept;
+        void                      ResetSurfaceStateSettings();
+        void                      DrawSimulationDebugWindow(TScene& SceneData);
+        void                      DrawSimulationCommonControls();
+        void                      DrawSolverTab();
+        void                      DrawTexelInspectorTab();
+        void                      DrawDebugStateSelector();
+        void                      DrawContactInputTab();
+        void                      DrawProfileTuningTab(TScene& SceneData);
+        void                      DrawGlobalSettingsTab(TScene& SceneData);
+        void                      DrawLogWindow();
+        void                      SetupDockspace();
+        void                      ApplyCameraViewPreset(TScene& SceneData, std::size_t Index);
+        [[nodiscard]] TCamera&    GetViewportCamera(TScene& SceneData, std::size_t Index) noexcept;
         [[nodiscard]] std::size_t GetActiveViewportIndex() const noexcept;
-        static constexpr float SectionHeaderTopPadding = 8.0F;
-        void DrawSectionHeader(const char* Title,
-                               float TopPadding = SectionHeaderTopPadding,
-                               float BottomPadding = 4.0F) const;
+        static constexpr float    SectionHeaderTopPadding = 8.0F;
+        void                      DrawSectionHeader(const char* Title,
+                                                    float       TopPadding = SectionHeaderTopPadding,
+                                                    float       BottomPadding = 4.0F) const;
 
-        VkDevice    Device = VK_NULL_HANDLE;
-        GLFWwindow* NativeWindow = nullptr;
-        TRenderer*   FrameRenderer = nullptr;
-        TAssetManager* AssetManager = nullptr;
-        bool        bRotatingCamera = false;
-        float       CameraZoomSpeed = 12.0F;
-        float       CameraMoveSpeed = 2.5F;
-        bool        bDockLayoutInitialized = false;
-        bool        bInjectMode = false;
-        TStateId    InjectState = 0;
-        TStateId    DebugState = 0;
-        float       InjectStrength = 1.0F;
-        float       InjectRadius = 0.25F;
-        float       InjectFalloff = 1.0F;
-        int         InjectTexelSearchRadius = 2;
-        float       AnimationTimeScale = 1.0F;
-        float       SimulationTimeScale = 1.0F;
-        bool        bFixedSimulationTimestep = DefaultFixedSimulationTimestep;
-        bool        bAutoSubstepping = DefaultAutoSubstepping;
-        bool        bSimulationPaused = false;
-        bool        bSolverStepRequested = false;
-        bool        bSolverResetRequested = false;
-        bool        bFrameTimeResetRequested = false;
-        TSRProfileAssetHandle DebugParameterProfile = InvalidAssetHandle;
-        TStateId DebugParameterState = 0;
+        VkDevice                                   Device = VK_NULL_HANDLE;
+        GLFWwindow*                                NativeWindow = nullptr;
+        TRenderer*                                 FrameRenderer = nullptr;
+        TAssetManager*                             AssetManager = nullptr;
+        bool                                       bRotatingCamera = false;
+        float                                      CameraZoomSpeed = 12.0F;
+        float                                      CameraMoveSpeed = 2.5F;
+        bool                                       bDockLayoutInitialized = false;
+        bool                                       bInjectMode = false;
+        TStateId                                   InjectState = 0;
+        TStateId                                   DebugState = 0;
+        float                                      InjectStrength = 1.0F;
+        float                                      InjectRadius = 0.25F;
+        float                                      InjectFalloff = 1.0F;
+        int                                        InjectTexelSearchRadius = 2;
+        float                                      AnimationTimeScale = 1.0F;
+        float                                      SimulationTimeScale = 1.0F;
+        bool                                       bFixedSimulationTimestep = DefaultFixedSimulationTimestep;
+        bool                                       bAutoSubstepping = DefaultAutoSubstepping;
+        bool                                       bSimulationPaused = false;
+        bool                                       bSolverStepRequested = false;
+        bool                                       bSolverResetRequested = false;
+        bool                                       bFrameTimeResetRequested = false;
+        TSRProfileAssetHandle                      DebugParameterProfile = InvalidAssetHandle;
+        TStateId                                   DebugParameterState = 0;
         std::pair<TSRProfileAssetHandle, TStateId> ParameterDraftKey{InvalidAssetHandle, InvalidStateId};
-        TSurfaceStateParameters ParameterDraft{};
+        TSurfaceStateParameters                    ParameterDraft{};
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
         std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> ParameterDrafts;
-        std::set<std::pair<TSRProfileAssetHandle, TStateId>> DirtyParameterDrafts;
-        bool bParameterDraftAvailable = false;
-        bool bParameterDraftDirty = false;
-        std::string ParameterStatus;
-        std::string ResolutionStatus;
-        std::optional<std::size_t> SelectedObject;
-        int         ActiveGizmoAxis = -1;
-        int         HoveredGizmoAxis = -1;
-        bool        bRotationGizmoMode = false;
-        glm::vec2   GizmoDragStartMouse{0.0F};
-        glm::vec2   GizmoDragScreenAxis{0.0F};
-        glm::vec3   GizmoDragStartPosition{0.0F};
-        glm::vec3   GizmoDragStartRotation{0.0F};
-        float       GizmoDragLastAngle = 0.0F;
-        float       GizmoDragAccumulatedAngle = 0.0F;
-        float       GizmoDragWorldScale = 0.0F;
-        float       GizmoDragPixelLength = 0.0F;
-        std::string SceneStatus;
-        std::string EditorLayoutPath;
-        std::uint32_t DockspaceID = 0;
-        ImFont* SectionHeaderFont = nullptr;
+        std::set<std::pair<TSRProfileAssetHandle, TStateId>>                          DirtyParameterDrafts;
+        bool                                                                          bParameterDraftAvailable = false;
+        bool                                                                          bParameterDraftDirty = false;
+        std::string                                                                   ParameterStatus;
+        std::string                                                                   ResolutionStatus;
+        std::optional<std::size_t>                                                    SelectedObject;
+        int                                                                           ActiveGizmoAxis = -1;
+        int                                                                           HoveredGizmoAxis = -1;
+        bool                                                                          bRotationGizmoMode = false;
+        glm::vec2                                                                     GizmoDragStartMouse{0.0F};
+        glm::vec2                                                                     GizmoDragScreenAxis{0.0F};
+        glm::vec3                                                                     GizmoDragStartPosition{0.0F};
+        glm::vec3                                                                     GizmoDragStartRotation{0.0F};
+        float                                                                         GizmoDragLastAngle = 0.0F;
+        float                                                                         GizmoDragAccumulatedAngle = 0.0F;
+        float                                                                         GizmoDragWorldScale = 0.0F;
+        float                                                                         GizmoDragPixelLength = 0.0F;
+        std::string                                                                   SceneStatus;
+        std::string                                                                   EditorLayoutPath;
+        std::uint32_t                                                                 DockspaceID = 0;
+        ImFont*                                                                       SectionHeaderFont = nullptr;
         struct TViewportPanel
         {
             std::uint32_t Id = 0;
-            TCamera Camera;
-            glm::vec4 RectNormalized{0.0F};
+            TCamera       Camera;
+            glm::vec4     RectNormalized{0.0F};
         };
         std::vector<TViewportPanel> ViewportPanels{TViewportPanel{1U, TCamera{}, glm::vec4(0.0F)}};
-        std::uint32_t NextViewportId = 2;
-        std::uint32_t ActiveViewportId = 1;
-        std::uint32_t HoveredViewportId = 0;
-        bool bMouseOverViewportOverlay = false;
-        glm::vec4 ViewportWorkspaceRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
-        int ViewportLayout = 0; // 0: grid, 1: horizontal, 2: vertical
+        std::uint32_t               NextViewportId = 2;
+        std::uint32_t               ActiveViewportId = 1;
+        std::uint32_t               HoveredViewportId = 0;
+        bool                        bMouseOverViewportOverlay = false;
+        glm::vec4                   ViewportWorkspaceRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
+        int                         ViewportLayout = 0; // 0: grid, 1: horizontal, 2: vertical
 
         std::array<bool, static_cast<std::size_t>(TLogLevel::Count)> LogLevelFilters{true, true, true, true, true};
-        std::array<char, 128>                                     LogSearch{};
+        std::array<char, 128>                                        LogSearch{};
         std::vector<TLogEntry>                                       CachedLogEntries;
-        std::uint64_t                                               LastSeenLogRevision = 0;
-        bool                                                        bScrollLogToBottom = true;
-        float                                                       LogWindowHeight = 540.0F;
+        std::uint64_t                                                LastSeenLogRevision = 0;
+        bool                                                         bScrollLogToBottom = true;
+        float                                                        LogWindowHeight = 540.0F;
         struct TProfilingSample
         {
-            double TimeSeconds = 0.0;
+            double                TimeSeconds = 0.0;
             std::array<float, 43> Values{};
         };
-        double                                                      ProfilingWindowElapsed = 0.0;
-        double                                                      ProfilingElapsedSeconds = 0.0;
-        double                                                      ProfilingFpsSum = 0.0;
-        double                                                      ProfilingFrameTimeSum = 0.0;
-        std::uint32_t                                               ProfilingFrameSamples = 0;
-        std::array<double, 40>                                      ProfilingMetricSums{};
-        std::array<std::uint32_t, 40>                               ProfilingMetricSamples{};
-        std::array<float, 43>                                       ProfilingAverages{};
-        std::array<float, 43>                                       ProfilingMaximums = []
+        double                        ProfilingWindowElapsed = 0.0;
+        double                        ProfilingElapsedSeconds = 0.0;
+        double                        ProfilingFpsSum = 0.0;
+        double                        ProfilingFrameTimeSum = 0.0;
+        std::uint32_t                 ProfilingFrameSamples = 0;
+        std::array<double, 40>        ProfilingMetricSums{};
+        std::array<std::uint32_t, 40> ProfilingMetricSamples{};
+        std::array<float, 43>         ProfilingAverages{};
+        std::array<float, 43>         ProfilingMaximums = []
         {
             std::array<float, 43> Values{};
             Values.fill(-1.0F);
             return Values;
         }();
-        std::array<float, 43>                                       ProfilingWindowMaximums = []
+        std::array<float, 43> ProfilingWindowMaximums = []
         {
             std::array<float, 43> Values{};
             Values.fill(-1.0F);
             return Values;
         }();
-        std::array<float, 43>                                       ProfilingRecent100msAverages = []
+        std::array<float, 43> ProfilingRecent100msAverages = []
         {
             std::array<float, 43> Values{};
             Values.fill(-1.0F);
             return Values;
         }();
-        std::deque<TProfilingSample>                                ProfilingRecentSamples;
-        bool                                                        bProfilingAverageAvailable = false;
-        bool                                                        bShowProfilingAverage = true;
-        bool                                                        bShowProfilingMaximum = false;
-        bool                                                        bShowProfilingPast100ms = false;
-        bool                                                        bShowDetailedProfiling = true;
-        bool                                                        bSolverMetricsPerStep = false;
-        bool                                                        bProfiledRawFluxCacheEnabled = false;
-        bool                                                        bViewportOverlaysVisible = true;
+        std::deque<TProfilingSample> ProfilingRecentSamples;
+        bool                         bProfilingAverageAvailable = false;
+        bool                         bShowProfilingAverage = true;
+        bool                         bShowProfilingMaximum = false;
+        bool                         bShowProfilingPast100ms = false;
+        bool                         bShowDetailedProfiling = true;
+        bool                         bSolverMetricsPerStep = false;
+        bool                         bProfiledRawFluxCacheEnabled = false;
+        bool                         bViewportOverlaysVisible = true;
     };
 } // namespace MDSS

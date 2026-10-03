@@ -21,7 +21,7 @@ namespace MDSS
          * @throws std::runtime_error UV overlap 또는 texel당 이웃 수 제한을 위반한 경우.
          */
         [[nodiscard]] static TSurfaceMappingData Build(const std::vector<TVertex>&             Vertices,
-                                                      const std::vector<TMeshTriangleSource>& Triangles,
-                                                      const std::vector<TSurfaceDefinition>&  Surfaces);
+                                                       const std::vector<TMeshTriangleSource>& Triangles,
+                                                       const std::vector<TSurfaceDefinition>&  Surfaces);
     };
 } // namespace MDSS

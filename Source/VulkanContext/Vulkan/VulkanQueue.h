@@ -28,8 +28,8 @@ namespace MDSS
     public:
         TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface);
 
-        [[nodiscard]] VkQueue                   GetGraphics() const noexcept;
-        [[nodiscard]] VkQueue                   GetPresent() const noexcept;
+        [[nodiscard]] VkQueue                    GetGraphics() const noexcept;
+        [[nodiscard]] VkQueue                    GetPresent() const noexcept;
         [[nodiscard]] const TQueueFamilyIndices& GetFamilyIndices() const noexcept;
 
         /** @brief graphics/compute와 surface presentation에 필요한 queue family를 찾는다. */
@@ -37,7 +37,7 @@ namespace MDSS
 
     private:
         TQueueFamilyIndices FamilyIndices;
-        VkQueue            GraphicsQueue = VK_NULL_HANDLE;
-        VkQueue            PresentQueue = VK_NULL_HANDLE;
+        VkQueue             GraphicsQueue = VK_NULL_HANDLE;
+        VkQueue             PresentQueue = VK_NULL_HANDLE;
     };
 } // namespace MDSS

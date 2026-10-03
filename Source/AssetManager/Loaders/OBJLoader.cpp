@@ -106,8 +106,8 @@ namespace MDSS
         }
 
         TLogger::Debug("TOBJLoader",
-                      "Parsed '" + Path.filename().string() + "': shapes=" + std::to_string(Shapes.size()) +
-                          ", materials=" + std::to_string(Materials.size()) + ".");
+                       "Parsed '" + Path.filename().string() + "': shapes=" + std::to_string(Shapes.size()) +
+                           ", materials=" + std::to_string(Materials.size()) + ".");
 
         TOBJLoadResult Result{};
         Result.Materials.reserve(Materials.size());
@@ -117,8 +117,8 @@ namespace MDSS
         }
 
         std::unordered_map<TVertexKey, std::uint32_t, TVertexKeyHash> UniqueVertices;
-        std::vector<glm::vec3>                                      GeneratedNormalAccumulator;
-        std::unordered_map<std::int32_t, TSurfaceLocalID>            MaterialSurfaces;
+        std::vector<glm::vec3>                                        GeneratedNormalAccumulator;
+        std::unordered_map<std::int32_t, TSurfaceLocalID>             MaterialSurfaces;
 
         auto GetSurface = [&](std::int32_t MaterialIndex) -> TSurfaceLocalID
         {
@@ -237,9 +237,9 @@ namespace MDSS
         }
 
         TLogger::Info("TOBJLoader",
-                     "Generated mesh data: vertices=" + std::to_string(Result.Vertices.size()) +
-                         ", indices=" + std::to_string(Result.Indices.size()) +
-                         ", sections=" + std::to_string(Result.Sections.size()) + ".");
+                      "Generated mesh data: vertices=" + std::to_string(Result.Vertices.size()) +
+                          ", indices=" + std::to_string(Result.Indices.size()) +
+                          ", sections=" + std::to_string(Result.Sections.size()) + ".");
         return Result;
     }
 

@@ -14,12 +14,12 @@ namespace MDSS
     {
     }
 
-    TStaticMeshInstance::TStaticMeshInstance(TMeshAssetHandle Mesh,
+    TStaticMeshInstance::TStaticMeshInstance(TMeshAssetHandle          Mesh,
                                              TSurfaceRuntimeDataHandle SurfaceData,
-                                             TTransform InstanceTransform,
-                                             std::filesystem::path MeshPath,
-                                             std::filesystem::path ProfileMapPath,
-                                             std::string ObjectId)
+                                             TTransform                InstanceTransform,
+                                             std::filesystem::path     MeshPath,
+                                             std::filesystem::path     ProfileMapPath,
+                                             std::string               ObjectId)
         : Mesh(Mesh), SurfaceData(SurfaceData), InstanceTransform(std::move(InstanceTransform)),
           SourceMeshPath(std::move(MeshPath)), SourceProfileMapPath(std::move(ProfileMapPath)), Id(std::move(ObjectId))
     {

@@ -167,15 +167,15 @@ namespace
               std::pair{&TSurfaceStateParameters::GeometryTransferFactor, "gravityFlowFactor"}})
         {
             TSurfaceResponseProfileData Profile;
-            auto& Parameters = Profile.States["wetness"];
+            auto&                       Parameters = Profile.States["wetness"];
             for (float Value : {0.0F, 0.5F, 1.0F})
             {
                 Parameters.*Member = Value;
                 CheckDoesNotThrow([&] { ValidateSurfaceResponseProfileData(Profile); },
                                   std::string(Name) + " valid normalized factor");
             }
-            for (float Value : {-0.1F, 1.1F, std::numeric_limits<float>::quiet_NaN(),
-                                std::numeric_limits<float>::infinity()})
+            for (float Value :
+                 {-0.1F, 1.1F, std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity()})
             {
                 Parameters.*Member = Value;
                 CheckThrows([&] { ValidateSurfaceResponseProfileData(Profile); },

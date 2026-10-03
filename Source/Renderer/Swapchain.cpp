@@ -68,7 +68,7 @@ namespace MDSS
 
         const auto&                        QueueFamilies = Context.GetQueues().GetFamilyIndices();
         const std::array<std::uint32_t, 2> TQueueFamilyIndices = {QueueFamilies.GraphicsFamily.value(),
-                                                                 QueueFamilies.PresentFamily.value()};
+                                                                  QueueFamilies.PresentFamily.value()};
 
         if (TQueueFamilyIndices[0] != TQueueFamilyIndices[1])
         {
@@ -111,11 +111,11 @@ namespace MDSS
         }
 
         TLogger::Info("TRenderer",
-                     "TSwapchain created: " + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ", " +
-                         std::to_string(Images.size()) + " images.");
+                      "TSwapchain created: " + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
+                          ", " + std::to_string(Images.size()) + " images.");
         TLogger::Debug("TRenderer",
-                      "TSwapchain format=" + std::to_string(static_cast<int>(ImageFormat)) +
-                          ", present mode=" + std::to_string(static_cast<int>(PresentMode)) + ".");
+                       "TSwapchain format=" + std::to_string(static_cast<int>(ImageFormat)) +
+                           ", present mode=" + std::to_string(static_cast<int>(PresentMode)) + ".");
     }
 
     void TSwapchain::Destroy()

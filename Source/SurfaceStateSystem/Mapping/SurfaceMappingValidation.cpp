@@ -48,7 +48,7 @@ namespace MDSS
         {
             const TSurfaceMappingTexel&                        Texel = Mapping.Texels[Index];
             std::array<TLocalTexelIndex, SurfaceNeighborCount> Seen{};
-            std::size_t                                       SeenCount = 0;
+            std::size_t                                        SeenCount = 0;
 
             for (const TLocalTexelIndex Neighbor : Texel.Neighbors)
             {

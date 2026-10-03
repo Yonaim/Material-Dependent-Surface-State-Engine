@@ -18,7 +18,7 @@ namespace MDSS
     {
         std::vector<std::filesystem::path> ProfilePaths;
         /** @brief Per-Surface Profile index; InvalidSurfaceProfileIndex means render-only/no simulation. */
-        std::vector<TSurfaceProfileIndex>    ProfileIndicesBySurface;
+        std::vector<TSurfaceProfileIndex> ProfileIndicesBySurface;
 
         /** @brief Expand one Profile assignment per Surface to one index per mapping texel. */
         [[nodiscard]] std::vector<TSurfaceProfileIndex> BuildTexelProfileMap(const TSurfaceMappingData& Mapping) const;

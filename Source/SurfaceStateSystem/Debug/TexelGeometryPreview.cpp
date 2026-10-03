@@ -21,13 +21,16 @@ namespace MDSS
     {
         void RequireVk(VkResult Result)
         {
-            if (Result != VK_SUCCESS) throw std::runtime_error("Failed to create texel geometry preview resources.");
+            if (Result != VK_SUCCESS)
+                throw std::runtime_error("Failed to create texel geometry preview resources.");
         }
     }
 
-    TTexelGeometryPreview::TTexelGeometryPreview(VkPhysicalDevice PhysicalDevice, VkDevice Device,
-                                                VkDescriptorSetLayout SurfaceLayout, std::size_t MaxInstances,
-                                                bool bEnableOccupancyScan)
+    TTexelGeometryPreview::TTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
+                                                 VkDevice              Device,
+                                                 VkDescriptorSetLayout SurfaceLayout,
+                                                 std::size_t           MaxInstances,
+                                                 bool                  bEnableOccupancyScan)
         : PhysicalDevice(PhysicalDevice), Device(Device), bEnableOccupancyScan(bEnableOccupancyScan)
     {
         if (!SurfaceLayout || MaxInstances == 0 || MaxInstances > std::numeric_limits<std::uint32_t>::max() / 2U)
@@ -43,18 +46,21 @@ namespace MDSS
         VkShaderModule Module = VK_NULL_HANDLE;
         try
         {
-            const std::array<VkDescriptorSetLayoutBinding, 2> Bindings{{
-                {0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1,
-                    VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT, nullptr},
-                {1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr}}};
+            const std::array<VkDescriptorSetLayoutBinding, 2> Bindings{
+                {{0,
+                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                  1,
+                  VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+                  nullptr},
+                 {1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr}}};
             VkDescriptorSetLayoutCreateInfo OutputInfo{};
             OutputInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             OutputInfo.bindingCount = static_cast<std::uint32_t>(Bindings.size());
             OutputInfo.pBindings = Bindings.data();
             RequireVk(vkCreateDescriptorSetLayout(Device, &OutputInfo, nullptr, &OutputLayout));
             const std::array<VkDescriptorSetLayout, 2> Layouts{SurfaceLayout, OutputLayout};
-            const VkPushConstantRange Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 96};
-            VkPipelineLayoutCreateInfo Info{};
+            const VkPushConstantRange                  Push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 96};
+            VkPipelineLayoutCreateInfo                 Info{};
             Info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             Info.setLayoutCount = Layouts.size();
             Info.pSetLayouts = Layouts.data();
@@ -64,14 +70,17 @@ namespace MDSS
             const auto CreatePipeline = [&](const char* Directory, const char* ShaderName, VkPipeline& Destination)
             {
                 std::ifstream File(std::string(MDSS_SHADER_DIR) + "/" + Directory + "/" + ShaderName + ".spv",
-                    std::ios::binary | std::ios::ate);
-                if (!File) throw std::runtime_error("Cannot open texel geometry preview shader.");
+                                   std::ios::binary | std::ios::ate);
+                if (!File)
+                    throw std::runtime_error("Cannot open texel geometry preview shader.");
                 const auto Size = File.tellg();
-                if (Size <= 0 || Size % 4 != 0) throw std::runtime_error("Invalid texel geometry preview SPIR-V.");
+                if (Size <= 0 || Size % 4 != 0)
+                    throw std::runtime_error("Invalid texel geometry preview SPIR-V.");
                 std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
                 File.seekg(0);
                 File.read(reinterpret_cast<char*>(Code.data()), Size);
-                if (!File) throw std::runtime_error("Cannot read texel geometry preview shader.");
+                if (!File)
+                    throw std::runtime_error("Cannot read texel geometry preview shader.");
                 VkShaderModuleCreateInfo ModuleInfo{};
                 ModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
                 ModuleInfo.codeSize = static_cast<std::size_t>(Size);
@@ -84,8 +93,8 @@ namespace MDSS
                 PipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
                 PipelineInfo.stage.module = Module;
                 PipelineInfo.stage.pName = "main";
-                const VkResult Result = vkCreateComputePipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo,
-                    nullptr, &Destination);
+                const VkResult Result =
+                    vkCreateComputePipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Destination);
                 vkDestroyShaderModule(Device, Module, nullptr);
                 Module = VK_NULL_HANDLE;
                 RequireVk(Result);
@@ -96,7 +105,7 @@ namespace MDSS
             if (bEnableOccupancyScan)
                 CreatePipeline("Rendering/Overlay", "OverlayOccupancyScan.comp", OccupancyPipeline);
             const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            static_cast<std::uint32_t>(MaxInstances * 2U)};
+                                                static_cast<std::uint32_t>(MaxInstances * 2U)};
             VkDescriptorPoolCreateInfo PoolInfo{};
             PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
             PoolInfo.maxSets = static_cast<std::uint32_t>(MaxInstances);
@@ -106,26 +115,43 @@ namespace MDSS
         }
         catch (...)
         {
-            if (Module) vkDestroyShaderModule(Device, Module, nullptr);
+            if (Module)
+                vkDestroyShaderModule(Device, Module, nullptr);
             Destroy();
             throw;
         }
     }
 
-    TTexelGeometryPreview::~TTexelGeometryPreview() { Destroy(); }
+    TTexelGeometryPreview::~TTexelGeometryPreview()
+    {
+        Destroy();
+    }
     void TTexelGeometryPreview::Destroy() noexcept
     {
-        if (Pipeline) vkDestroyPipeline(Device, Pipeline, nullptr);
-        if (HeightPipeline) vkDestroyPipeline(Device, HeightPipeline, nullptr);
-        if (BaselinePipeline) vkDestroyPipeline(Device, BaselinePipeline, nullptr);
-        if (OccupancyPipeline) vkDestroyPipeline(Device, OccupancyPipeline, nullptr);
-        if (Layout) vkDestroyPipelineLayout(Device, Layout, nullptr);
-        if (Pool) vkDestroyDescriptorPool(Device, Pool, nullptr);
+        if (Pipeline)
+            vkDestroyPipeline(Device, Pipeline, nullptr);
+        if (HeightPipeline)
+            vkDestroyPipeline(Device, HeightPipeline, nullptr);
+        if (BaselinePipeline)
+            vkDestroyPipeline(Device, BaselinePipeline, nullptr);
+        if (OccupancyPipeline)
+            vkDestroyPipeline(Device, OccupancyPipeline, nullptr);
+        if (Layout)
+            vkDestroyPipelineLayout(Device, Layout, nullptr);
+        if (Pool)
+            vkDestroyDescriptorPool(Device, Pool, nullptr);
         Outputs.clear();
-        if (OutputLayout) vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
+        if (OutputLayout)
+            vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
     }
-    VkDescriptorSet TTexelGeometryPreview::GetOutputSet(std::size_t Instance) const { return Outputs.at(Instance).Set; }
-    const TGPUBuffer& TTexelGeometryPreview::GetOutputBuffer(std::size_t Instance) const { return *Outputs.at(Instance).Buffer; }
+    VkDescriptorSet TTexelGeometryPreview::GetOutputSet(std::size_t Instance) const
+    {
+        return Outputs.at(Instance).Set;
+    }
+    const TGPUBuffer& TTexelGeometryPreview::GetOutputBuffer(std::size_t Instance) const
+    {
+        return *Outputs.at(Instance).Buffer;
+    }
     void TTexelGeometryPreview::SetOccupancyTileSize(std::uint32_t TileSize)
     {
         if (TileSize != 16U && TileSize != 32U)
@@ -133,37 +159,52 @@ namespace MDSS
         OccupancyTileSize = TileSize;
     }
 
-    void TTexelGeometryPreview::Record(VkCommandBuffer Command, std::size_t Instance,
-                                      const TSurfaceStateDescriptorResources& Descriptors, std::uint32_t TexelCount,
-                                      std::uint32_t Channel, std::uint32_t Channels, float AccumulationDisplayScale,
-                                      float GeometryDisplayScale, const glm::mat4& ModelMatrix,
-                                      bool bStateAB, bool bAccumulation,
-                                      VkQueryPool TimestampQueryPool, std::uint32_t HeightCompleteQuery,
-                                      bool bTotalHeight)
+    void TTexelGeometryPreview::Record(VkCommandBuffer                         Command,
+                                       std::size_t                             Instance,
+                                       const TSurfaceStateDescriptorResources& Descriptors,
+                                       std::uint32_t                           TexelCount,
+                                       std::uint32_t                           Channel,
+                                       std::uint32_t                           Channels,
+                                       float                                   AccumulationDisplayScale,
+                                       float                                   GeometryDisplayScale,
+                                       const glm::mat4&                        ModelMatrix,
+                                       bool                                    bStateAB,
+                                       bool                                    bAccumulation,
+                                       VkQueryPool                             TimestampQueryPool,
+                                       std::uint32_t                           HeightCompleteQuery,
+                                       bool                                    bTotalHeight)
     {
-        const auto Bytes = GetSurfaceGPUBufferByteSize(TexelCount, sizeof(TTexelGeometryVertex), Limits.maxStorageBufferRange);
-        const auto BaseCacheBytes = GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
+        const auto Bytes =
+            GetSurfaceGPUBufferByteSize(TexelCount, sizeof(TTexelGeometryVertex), Limits.maxStorageBufferRange);
+        const auto BaseCacheBytes =
+            GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
         const auto MaxTileCount = (TexelCount - 1U) / (16U * 16U) + 1U;
         const auto OccupancyBytes = (static_cast<std::size_t>(MaxTileCount) + 1U) * sizeof(std::uint32_t);
         const auto CacheBytes = BaseCacheBytes + OccupancyBytes;
-        auto It = Outputs.find(Instance);
+        auto       It = Outputs.find(Instance);
         if (It == Outputs.end())
         {
             TOutput Output;
-            Output.Buffer = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, Bytes,
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            Output.GeometryCache = std::make_unique<TGPUBuffer>(PhysicalDevice, Device, CacheBytes,
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            Output.Buffer =
+                std::make_unique<TGPUBuffer>(PhysicalDevice,
+                                             Device,
+                                             Bytes,
+                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            Output.GeometryCache =
+                std::make_unique<TGPUBuffer>(PhysicalDevice,
+                                             Device,
+                                             CacheBytes,
+                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;
             Allocate.descriptorSetCount = 1;
             Allocate.pSetLayouts = &OutputLayout;
             RequireVk(vkAllocateDescriptorSets(Device, &Allocate, &Output.Set));
-            const std::array<VkDescriptorBufferInfo, 2> DescriptorBuffers{{
-                {Output.Buffer->GetHandle(), 0, Bytes},
-                {Output.GeometryCache->GetHandle(), 0, CacheBytes}}};
+            const std::array<VkDescriptorBufferInfo, 2> DescriptorBuffers{
+                {{Output.Buffer->GetHandle(), 0, Bytes}, {Output.GeometryCache->GetHandle(), 0, CacheBytes}}};
             std::array<VkWriteDescriptorSet, 2> Writes{};
             for (std::uint32_t Binding = 0; Binding < Writes.size(); ++Binding)
             {
@@ -193,18 +234,38 @@ namespace MDSS
         OccupancyBarrier.size = OccupancyBytes;
         const auto PrepareOccupancy = [&]()
         {
-            if (!bEnableOccupancyScan && It->second.bOccupancyInitialized) return;
+            if (!bEnableOccupancyScan && It->second.bOccupancyInitialized)
+                return;
             OccupancyBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             OccupancyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &OccupancyBarrier, 0, nullptr);
-            vkCmdFillBuffer(Command, It->second.GeometryCache->GetHandle(), OccupancyBarrier.offset,
-                            OccupancyBarrier.size, bEnableOccupancyScan ? 0U : 0xffffffffU);
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &OccupancyBarrier,
+                                 0,
+                                 nullptr);
+            vkCmdFillBuffer(Command,
+                            It->second.GeometryCache->GetHandle(),
+                            OccupancyBarrier.offset,
+                            OccupancyBarrier.size,
+                            bEnableOccupancyScan ? 0U : 0xffffffffU);
             OccupancyBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            OccupancyBarrier.dstAccessMask = bEnableOccupancyScan
-                ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_SHADER_READ_BIT;
-            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &OccupancyBarrier, 0, nullptr);
+            OccupancyBarrier.dstAccessMask =
+                bEnableOccupancyScan ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_SHADER_READ_BIT;
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &OccupancyBarrier,
+                                 0,
+                                 nullptr);
             It->second.bOccupancyInitialized = true;
         };
         PrepareOccupancy();
@@ -218,15 +279,29 @@ namespace MDSS
             OccupancyPush[2] = Channels;
             OccupancyPush[3] = OccupancyTileSize;
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, OccupancyPipeline);
-            vkCmdBindDescriptorSets(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Layout, 0,
-                static_cast<std::uint32_t>(OccupancySets.size()), OccupancySets.data(), 0, nullptr);
-            vkCmdPushConstants(Command, Layout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                sizeof(OccupancyPush), OccupancyPush.data());
+            vkCmdBindDescriptorSets(Command,
+                                    VK_PIPELINE_BIND_POINT_COMPUTE,
+                                    Layout,
+                                    0,
+                                    static_cast<std::uint32_t>(OccupancySets.size()),
+                                    OccupancySets.data(),
+                                    0,
+                                    nullptr);
+            vkCmdPushConstants(
+                Command, Layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(OccupancyPush), OccupancyPush.data());
             vkCmdDispatch(Command, GroupsX, GroupsY, 1);
             OccupancyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
             OccupancyBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &OccupancyBarrier, 0, nullptr);
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &OccupancyBarrier,
+                                 0,
+                                 nullptr);
         }
         // One GPU-only buffer per Scene instance. A queue barrier protects reuse across frames.
         VkBufferMemoryBarrier Barrier{};
@@ -236,20 +311,28 @@ namespace MDSS
         Barrier.srcQueueFamilyIndex = Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         Barrier.buffer = It->second.Buffer->GetHandle();
         Barrier.size = VK_WHOLE_SIZE;
-        vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &Barrier, 0, nullptr);
+        vkCmdPipelineBarrier(Command,
+                             VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             0,
+                             0,
+                             nullptr,
+                             1,
+                             &Barrier,
+                             0,
+                             nullptr);
         struct TPush
         {
-            std::uint32_t Texels, Channel, Channels, Accumulation;
-            float AccumulationDisplayScale, GeometryDisplayScale;
-            std::uint32_t TotalHeight, UseBaseline, TileSize, Padding[3];
+            std::uint32_t            Texels, Channel, Channels, Accumulation;
+            float                    AccumulationDisplayScale, GeometryDisplayScale;
+            std::uint32_t            TotalHeight, UseBaseline, TileSize, Padding[3];
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
         static_assert(offsetof(TPush, NormalMatrixColumns) == 48);
         static_assert(sizeof(TPush) == 96);
-        glm::mat3 NormalMatrix(0.0F);
+        glm::mat3       NormalMatrix(0.0F);
         const glm::mat3 ModelLinear(ModelMatrix);
-        const float Determinant = glm::determinant(ModelLinear);
+        const float     Determinant = glm::determinant(ModelLinear);
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
         bool bBuildBaseline = false;
@@ -270,14 +353,23 @@ namespace MDSS
                 It->second.bBaselineReady = true;
             }
         }
-        TPush Push{TexelCount, Channel, Channels, bAccumulation ? 1U : 0U,
-                   AccumulationDisplayScale, GeometryDisplayScale, bTotalHeight ? 1U : 0U,
+        TPush Push{TexelCount,
+                   Channel,
+                   Channels,
+                   bAccumulation ? 1U : 0U,
+                   AccumulationDisplayScale,
+                   GeometryDisplayScale,
+                   bTotalHeight ? 1U : 0U,
                    bAccumulation && !bTotalHeight && It->second.bBaselineReady ? 1U : 0U,
-                   OccupancyTileSize, {0U, 0U, 0U}, {}};
+                   OccupancyTileSize,
+                   {0U, 0U, 0U},
+                   {}};
         for (int Column = 0; Column < 3; ++Column)
             Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);
-        const std::array<VkDescriptorSet, 2> Sets{bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(), It->second.Set};
-        vkCmdBindDescriptorSets(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Layout, 0, Sets.size(), Sets.data(), 0, nullptr);
+        const std::array<VkDescriptorSet, 2> Sets{bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(),
+                                                  It->second.Set};
+        vkCmdBindDescriptorSets(
+            Command, VK_PIPELINE_BIND_POINT_COMPUTE, Layout, 0, Sets.size(), Sets.data(), 0, nullptr);
         vkCmdPushConstants(Command, Layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), &Push);
         if (bBuildBaseline)
         {
@@ -288,14 +380,30 @@ namespace MDSS
             BaselineBarrier.srcQueueFamilyIndex = BaselineBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             BaselineBarrier.buffer = It->second.GeometryCache->GetHandle();
             BaselineBarrier.size = VK_WHOLE_SIZE;
-            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &BaselineBarrier, 0, nullptr);
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &BaselineBarrier,
+                                 0,
+                                 nullptr);
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, BaselinePipeline);
             vkCmdDispatch(Command, GroupsX, GroupsY, 1);
             BaselineBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
             BaselineBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &BaselineBarrier, 0, nullptr);
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &BaselineBarrier,
+                                 0,
+                                 nullptr);
         }
         if (bAccumulation && !bTotalHeight)
         {
@@ -306,24 +414,46 @@ namespace MDSS
             HeightBarrier.srcQueueFamilyIndex = HeightBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             HeightBarrier.buffer = It->second.GeometryCache->GetHandle();
             HeightBarrier.size = VK_WHOLE_SIZE;
-            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &HeightBarrier, 0, nullptr);
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &HeightBarrier,
+                                 0,
+                                 nullptr);
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, HeightPipeline);
             vkCmdDispatch(Command, GroupsX, GroupsY, 1);
             HeightBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
             HeightBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &HeightBarrier, 0, nullptr);
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &HeightBarrier,
+                                 0,
+                                 nullptr);
         }
         if (TimestampQueryPool != VK_NULL_HANDLE)
-            vkCmdWriteTimestamp(Command, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                TimestampQueryPool, HeightCompleteQuery);
+            vkCmdWriteTimestamp(Command, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, HeightCompleteQuery);
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
         vkCmdDispatch(Command, GroupsX, GroupsY, 1);
         Barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        vkCmdPipelineBarrier(Command,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                             0, 0, nullptr, 1, &Barrier, 0, nullptr);
+                             0,
+                             0,
+                             nullptr,
+                             1,
+                             &Barrier,
+                             0,
+                             nullptr);
     }
 }

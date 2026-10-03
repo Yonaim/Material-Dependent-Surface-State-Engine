@@ -69,19 +69,24 @@ namespace MDSS
             return Result;
         }
 
-        TSurfaceStateParameters ReadStateParameters(const TJson& State, const std::string& StateName, std::int64_t Version)
+        TSurfaceStateParameters
+        ReadStateParameters(const TJson& State, const std::string& StateName, std::int64_t Version)
         {
             const std::string JsonPath = "states." + StateName;
-            const bool bCurrentSchema = Version == 4;
-            const char* SaturationKey = bCurrentSchema ? "saturationSpreadFactor" : "saturationTransferFactor";
-            const char* GravityKey = bCurrentSchema ? "gravityFlowFactor" : "geometryTransferFactor";
+            const bool        bCurrentSchema = Version == 4;
+            const char*       SaturationKey = bCurrentSchema ? "saturationSpreadFactor" : "saturationTransferFactor";
+            const char*       GravityKey = bCurrentSchema ? "gravityFlowFactor" : "geometryTransferFactor";
             const char* ExitKey = bCurrentSchema ? "cavityExitResistanceFactor" : "cavityTransportRetentionFactor";
             const char* DecayProtectionKey = bCurrentSchema ? "cavityDecayProtectionFactor" : "cavityRetentionFactor";
-            const std::array<const char*, 4> WrongVersionKeys = bCurrentSchema
-                ? std::array<const char*, 4>{"saturationTransferFactor", "geometryTransferFactor",
-                                             "cavityTransportRetentionFactor", "cavityRetentionFactor"}
-                : std::array<const char*, 4>{"saturationSpreadFactor", "gravityFlowFactor",
-                                             "cavityExitResistanceFactor", "cavityDecayProtectionFactor"};
+            const std::array<const char*, 4> WrongVersionKeys =
+                bCurrentSchema ? std::array<const char*, 4>{"saturationTransferFactor",
+                                                            "geometryTransferFactor",
+                                                            "cavityTransportRetentionFactor",
+                                                            "cavityRetentionFactor"}
+                               : std::array<const char*, 4>{"saturationSpreadFactor",
+                                                            "gravityFlowFactor",
+                                                            "cavityExitResistanceFactor",
+                                                            "cavityDecayProtectionFactor"};
             for (const char* Key : WrongVersionKeys)
             {
                 if (State.contains(Key))
@@ -178,7 +183,7 @@ namespace MDSS
             Data.Transitions.reserve(Transitions.size());
             for (std::size_t Index = 0; Index < Transitions.size(); ++Index)
             {
-                const TJson&       Transition = Transitions[Index];
+                const TJson&      Transition = Transitions[Index];
                 const std::string JsonPath = "transitions[" + std::to_string(Index) + "]";
                 const std::string SourceName = NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
                 const std::string TargetName = NormalizeSurfaceStateName(ReadString(Transition, "target", JsonPath));
@@ -209,7 +214,7 @@ namespace MDSS
         try
         {
             const TJson                 Root = TJson::parse(File);
-            std::string                Name;
+            std::string                 Name;
             TSurfaceResponseProfileData Data = ParseProfile(Root, Name);
             return std::make_unique<TSRProfileAsset>(ID, std::move(Name), Path, std::move(Data));
         }

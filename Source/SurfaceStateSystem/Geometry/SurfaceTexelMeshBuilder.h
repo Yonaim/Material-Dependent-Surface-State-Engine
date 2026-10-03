@@ -4,8 +4,8 @@
  */
 #pragma once
 
-#include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
 #include "AssetManager/Assets/MeshSourceData.h"
+#include "SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.h"
 
 #include <span>
 
@@ -14,12 +14,12 @@ namespace MDSS
     // Static render vertex. Seam copies retain their own UV/normal but share displacement data.
     struct TSurfaceTexelMeshVertex
     {
-        glm::vec4 Position{0};
-        glm::vec4 Normal{0, 0, 1, 0};
-        glm::vec4 UVSurface{0}; // xy: UV, w: Surface ID
-        glm::vec4 DisplacementNormal{0, 0, 1, 0};
+        glm::vec4  Position{0};
+        glm::vec4  Normal{0, 0, 1, 0};
+        glm::vec4  UVSurface{0}; // xy: UV, w: Surface ID
+        glm::vec4  DisplacementNormal{0, 0, 1, 0};
         glm::uvec4 Samples{InvalidTexelIndex};
-        glm::vec4 Weights{0};
+        glm::vec4  Weights{0};
     };
     static_assert(sizeof(TSurfaceTexelMeshVertex) == 96);
 
@@ -32,15 +32,16 @@ namespace MDSS
     struct TSurfaceTexelMesh
     {
         std::vector<TSurfaceTexelMeshVertex> Vertices;
-        std::vector<std::uint32_t> Indices;
+        std::vector<std::uint32_t>           Indices;
         // x/y: render edge endpoints, z: incident triangle's third vertex.
-        std::vector<glm::uvec4> BoundaryEdges;
+        std::vector<glm::uvec4>             BoundaryEdges;
         std::vector<TSurfaceTexelMeshRange> Surfaces;
     };
 
     /** @brief Refine source triangles with texel centers; preserve and weld source seam boundaries.
      *  Without source topology, connect the supplied same-chart grid (synthetic geometry fixtures).
      */
-    [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData& Geometry,
-        std::span<const TVertex> Vertices = {}, std::span<const TMeshTriangleSource> Triangles = {});
+    [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&    Geometry,
+                                                          std::span<const TVertex>             Vertices = {},
+                                                          std::span<const TMeshTriangleSource> Triangles = {});
 }

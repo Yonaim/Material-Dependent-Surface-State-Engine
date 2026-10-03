@@ -4,6 +4,7 @@
  */
 
 #include "SurfaceStateSystem/State/SurfaceStateSolver.h"
+
 #include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
 
 #include <array>
@@ -46,7 +47,7 @@ namespace MDSS
             return Code;
         }
 
-        VkBufferMemoryBarrier MakeComputeBufferBarrier(VkBuffer Buffer,
+        VkBufferMemoryBarrier MakeComputeBufferBarrier(VkBuffer      Buffer,
                                                        VkAccessFlags DestinationAccess,
                                                        VkAccessFlags SourceAccess = VK_ACCESS_SHADER_WRITE_BIT)
         {
@@ -102,9 +103,15 @@ namespace MDSS
             for (std::size_t Mode = 0; Mode < Pass1Pipelines.size(); ++Mode)
             {
                 Pass1Pipelines[Mode] = CreateComputePipeline(
-                    Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1.comp.spv").c_str(), Mode == 0);
+                    Device,
+                    PipelineLayout,
+                    (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1.comp.spv").c_str(),
+                    Mode == 0);
                 Pass2Pipelines[Mode] = CreateComputePipeline(
-                    Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2.comp.spv").c_str(), Mode == 0);
+                    Device,
+                    PipelineLayout,
+                    (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2.comp.spv").c_str(),
+                    Mode == 0);
             }
         }
         catch (...)
@@ -118,9 +125,11 @@ namespace MDSS
             if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
                 vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
             for (const auto Pipeline : Pass1Pipelines)
-                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+                if (Pipeline != VK_NULL_HANDLE)
+                    vkDestroyPipeline(Device, Pipeline, nullptr);
             for (const auto Pipeline : Pass2Pipelines)
-                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+                if (Pipeline != VK_NULL_HANDLE)
+                    vkDestroyPipeline(Device, Pipeline, nullptr);
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
             PipelineLayout = VK_NULL_HANDLE;
             throw;
@@ -138,26 +147,28 @@ namespace MDSS
         if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
             vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
         for (const auto Pipeline : Pass1Pipelines)
-            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pipeline, nullptr);
         for (const auto Pipeline : Pass2Pipelines)
-            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pipeline, nullptr);
         if (PipelineLayout != VK_NULL_HANDLE)
         {
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
         }
     }
 
-    void TSurfaceStateSolver::RecordStep(VkCommandBuffer CommandBuffer,
+    void TSurfaceStateSolver::RecordStep(VkCommandBuffer                         CommandBuffer,
                                          const TSurfaceStateDescriptorResources& Descriptors,
-                                         bool bCurrentStateAB,
-                                         std::size_t TexelCount,
-                                         std::size_t ChannelCount,
-                                         float DeltaTime,
-                                         const glm::mat4& ModelMatrix,
-                                         const glm::vec3& GravityWorld,
-                                         std::uint32_t SolverFlags,
-                                         VkQueryPool TimestampQueryPool,
-                                         std::uint32_t FirstPassQuery) const
+                                         bool                                    bCurrentStateAB,
+                                         std::size_t                             TexelCount,
+                                         std::size_t                             ChannelCount,
+                                         float                                   DeltaTime,
+                                         const glm::mat4&                        ModelMatrix,
+                                         const glm::vec3&                        GravityWorld,
+                                         std::uint32_t                           SolverFlags,
+                                         VkQueryPool                             TimestampQueryPool,
+                                         std::uint32_t                           FirstPassQuery) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || TexelCount == 0 || ChannelCount == 0 ||
             TexelCount > std::numeric_limits<std::uint32_t>::max() ||
@@ -170,7 +181,7 @@ namespace MDSS
             throw std::length_error("Surface State solver dispatch exceeds Vulkan's minimum X workgroup limit.");
         }
 
-        const VkDescriptorSet DescriptorSet = bCurrentStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet();
+        const VkDescriptorSet       DescriptorSet = bCurrentStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet();
         TSurfaceSolverPushConstants Constants{};
         Constants.DeltaTime = DeltaTime;
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
@@ -180,9 +191,9 @@ namespace MDSS
         // All texels in this dispatch share these values. Stay within Vulkan's minimum 128-byte budget.
         constexpr float GeometryEpsilon = 1.0e-6F;
         const glm::mat3 ModelLinear(ModelMatrix);
-        glm::mat3 NormalMatrix(0.0F);
-        glm::vec3 Up(0.0F);
-        const float Determinant = glm::determinant(ModelLinear);
+        glm::mat3       NormalMatrix(0.0F);
+        glm::vec3       Up(0.0F);
+        const float     Determinant = glm::determinant(ModelLinear);
         if (std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
         const float GravityLength = glm::length(GravityWorld);
@@ -206,8 +217,8 @@ namespace MDSS
         // Order those reads before this step reuses the buffers as compute outputs.
         VkMemoryBarrier ReadCompletion{};
         ReadCompletion.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-        ReadCompletion.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                                       VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+        ReadCompletion.srcAccessMask =
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
         ReadCompletion.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         vkCmdPipelineBarrier(CommandBuffer,
                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
@@ -221,49 +232,53 @@ namespace MDSS
                              0,
                              nullptr);
 
-        const std::size_t CacheMode = (SolverFlags & SurfaceSolverDisableRawFluxCacheFlag) == 0U ? 0U : 1U;
+        const std::size_t   CacheMode = (SolverFlags & SurfaceSolverDisableRawFluxCacheFlag) == 0U ? 0U : 1U;
         const std::uint32_t WorkgroupCount = static_cast<std::uint32_t>((TexelCount + 63U) / 64U);
-        vkCmdBindDescriptorSets(CommandBuffer,
-                                VK_PIPELINE_BIND_POINT_COMPUTE,
-                                PipelineLayout,
-                                0,
-                                1,
-                                &DescriptorSet,
-                                0,
-                                nullptr);
-        vkCmdPushConstants(CommandBuffer,
-                           PipelineLayout,
-                           VK_SHADER_STAGE_COMPUTE_BIT,
-                           0,
-                           sizeof(Constants),
-                           &Constants);
+        vkCmdBindDescriptorSets(
+            CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &DescriptorSet, 0, nullptr);
+        vkCmdPushConstants(
+            CommandBuffer, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Constants), &Constants);
 
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery);
         }
         if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) != 0U)
         {
-            const VkBuffer HeightBuffer = Descriptors.GetBoundBufferHandle(
-                TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB);
-            const VkDeviceSize IndirectOffset = static_cast<VkDeviceSize>(
-                (3U * TexelCount + WorkgroupCount) * sizeof(float));
+            const VkBuffer HeightBuffer =
+                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB);
+            const VkDeviceSize IndirectOffset =
+                static_cast<VkDeviceSize>((3U * TexelCount + WorkgroupCount) * sizeof(float));
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationHeightPipeline);
             vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
-            const VkBufferMemoryBarrier HeightBarrier = MakeComputeBufferBarrier(
-                HeightBuffer,
-                VK_ACCESS_SHADER_READ_BIT);
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr,
-                                 1, &HeightBarrier, 0, nullptr);
+            const VkBufferMemoryBarrier HeightBarrier =
+                MakeComputeBufferBarrier(HeightBuffer, VK_ACCESS_SHADER_READ_BIT);
+            vkCmdPipelineBarrier(CommandBuffer,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &HeightBarrier,
+                                 0,
+                                 nullptr);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DirtyDispatchPipeline);
             vkCmdDispatch(CommandBuffer, 1, 1, 1);
-            const VkBufferMemoryBarrier IndirectBarrier = MakeComputeBufferBarrier(
-                HeightBuffer, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, nullptr,
-                                 1, &IndirectBarrier, 0, nullptr);
+            const VkBufferMemoryBarrier IndirectBarrier =
+                MakeComputeBufferBarrier(HeightBuffer, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
+            vkCmdPipelineBarrier(CommandBuffer,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &IndirectBarrier,
+                                 0,
+                                 nullptr);
 
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationGeometryPipeline);
             vkCmdDispatchIndirect(CommandBuffer, HeightBuffer, IndirectOffset);
@@ -271,57 +286,67 @@ namespace MDSS
                 MakeComputeBufferBarrier(
                     Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::DynamicGeometry, bCurrentStateAB),
                     VK_ACCESS_SHADER_READ_BIT),
-                MakeComputeBufferBarrier(
-                    Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB),
-                    VK_ACCESS_SHADER_READ_BIT)};
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr,
-                                 static_cast<std::uint32_t>(GeometryBarriers.size()), GeometryBarriers.data(), 0, nullptr);
+                MakeComputeBufferBarrier(Descriptors.GetBoundBufferHandle(
+                                             TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB),
+                                         VK_ACCESS_SHADER_READ_BIT)};
+            vkCmdPipelineBarrier(CommandBuffer,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 static_cast<std::uint32_t>(GeometryBarriers.size()),
+                                 GeometryBarriers.data(),
+                                 0,
+                                 nullptr);
 
             if (TimestampQueryPool != VK_NULL_HANDLE)
             {
-                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
-                                    FirstPassQuery + 1U);
-                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
-                                    FirstPassQuery + 2U);
+                vkCmdWriteTimestamp(
+                    CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 1U);
+                vkCmdWriteTimestamp(
+                    CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 2U);
             }
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DynamicTransferWeightPipeline);
             vkCmdDispatchIndirect(CommandBuffer, HeightBuffer, IndirectOffset);
             const VkBufferMemoryBarrier TransferWeightBarrier = MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::TransferWeights, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT);
-            vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1,
-                                 &TransferWeightBarrier, 0, nullptr);
+            vkCmdPipelineBarrier(CommandBuffer,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &TransferWeightBarrier,
+                                 0,
+                                 nullptr);
         }
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) == 0U)
             {
-                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
-                                    FirstPassQuery + 1U);
-                vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
-                                    FirstPassQuery + 2U);
+                vkCmdWriteTimestamp(
+                    CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 1U);
+                vkCmdWriteTimestamp(
+                    CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 2U);
             }
-            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool,
-                                FirstPassQuery + 3U);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 3U);
         }
 
         vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[CacheMode]);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                TimestampQueryPool,
-                                FirstPassQuery + 4U);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 4U);
         }
         vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                TimestampQueryPool,
-                                FirstPassQuery + 5U);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 5U);
         }
 
         const std::array<VkBufferMemoryBarrier, 3> Pass1Barriers = {
@@ -348,18 +373,14 @@ namespace MDSS
         vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipelines[CacheMode]);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                TimestampQueryPool,
-                                FirstPassQuery + 6U);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 6U);
         }
         vkCmdDispatch(CommandBuffer, WorkgroupCount, 1, 1);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            vkCmdWriteTimestamp(CommandBuffer,
-                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                TimestampQueryPool,
-                                FirstPassQuery + 7U);
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 7U);
         }
 
         const std::array<VkBufferMemoryBarrier, 5> NextStepBarriers = {
@@ -395,10 +416,12 @@ namespace MDSS
                              nullptr);
     }
 
-    void TSurfaceStateSolver::RecordCurrentAccumulationHeight(
-        VkCommandBuffer CommandBuffer, const TSurfaceStateDescriptorResources& Descriptors,
-        bool bCurrentStateAB, std::size_t TexelCount, std::size_t ChannelCount,
-        const glm::mat4& ModelMatrix) const
+    void TSurfaceStateSolver::RecordCurrentAccumulationHeight(VkCommandBuffer                         CommandBuffer,
+                                                              const TSurfaceStateDescriptorResources& Descriptors,
+                                                              bool                                    bCurrentStateAB,
+                                                              std::size_t                             TexelCount,
+                                                              std::size_t                             ChannelCount,
+                                                              const glm::mat4&                        ModelMatrix) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || TexelCount == 0 || ChannelCount == 0 ||
             TexelCount > static_cast<std::size_t>(65535U) * 64U ||
@@ -410,8 +433,8 @@ namespace MDSS
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
         const glm::mat3 ModelLinear(ModelMatrix);
-        const float Determinant = glm::determinant(ModelLinear);
-        glm::mat3 NormalMatrix(0.0F);
+        const float     Determinant = glm::determinant(ModelLinear);
+        glm::mat3       NormalMatrix(0.0F);
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1.0e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
         for (std::size_t Column = 0; Column < 3; ++Column)
@@ -424,30 +447,43 @@ namespace MDSS
         Before.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
         Before.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
         vkCmdPipelineBarrier(CommandBuffer,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &Before, 0, nullptr, 0, nullptr);
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             0,
+                             1,
+                             &Before,
+                             0,
+                             nullptr,
+                             0,
+                             nullptr);
 
         const VkDescriptorSet Set = bCurrentStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet();
-        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout,
-                                0, 1, &Set, 0, nullptr);
-        vkCmdPushConstants(CommandBuffer, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
-                           0, sizeof(Constants), &Constants);
+        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &Set, 0, nullptr);
+        vkCmdPushConstants(
+            CommandBuffer, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Constants), &Constants);
         vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationHeightPipeline);
         vkCmdDispatch(CommandBuffer, static_cast<std::uint32_t>((TexelCount + 63U) / 64U), 1, 1);
 
         const VkBufferMemoryBarrier HeightBarrier = MakeComputeBufferBarrier(
             Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB),
             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
-        vkCmdPipelineBarrier(CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-            0, 0, nullptr, 1, &HeightBarrier, 0, nullptr);
+        vkCmdPipelineBarrier(CommandBuffer,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+                             0,
+                             0,
+                             nullptr,
+                             1,
+                             &HeightBarrier,
+                             0,
+                             nullptr);
     }
 
     VkShaderModule TSurfaceStateSolver::CreateShaderModule(VkDevice Device, const char* Path)
     {
         const std::vector<std::uint32_t> Code = ReadSpirvFile(Path);
-        VkShaderModuleCreateInfo CreateInfo{};
+        VkShaderModuleCreateInfo         CreateInfo{};
         CreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         CreateInfo.codeSize = Code.size() * sizeof(std::uint32_t);
         CreateInfo.pCode = Code.data();
@@ -460,20 +496,20 @@ namespace MDSS
         return Module;
     }
 
-    VkPipeline TSurfaceStateSolver::CreateComputePipeline(VkDevice Device,
-                                                           VkPipelineLayout Layout,
-                                                           const char* ShaderPath,
-                                                           bool bRawFluxCacheEnabled)
+    VkPipeline TSurfaceStateSolver::CreateComputePipeline(VkDevice         Device,
+                                                          VkPipelineLayout Layout,
+                                                          const char*      ShaderPath,
+                                                          bool             bRawFluxCacheEnabled)
     {
-        const VkShaderModule Module = CreateShaderModule(Device, ShaderPath);
+        const VkShaderModule            Module = CreateShaderModule(Device, ShaderPath);
         VkPipelineShaderStageCreateInfo Stage{};
         Stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         Stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
         Stage.module = Module;
         Stage.pName = "main";
-        const VkBool32 CacheEnabled = bRawFluxCacheEnabled ? VK_TRUE : VK_FALSE;
+        const VkBool32                 CacheEnabled = bRawFluxCacheEnabled ? VK_TRUE : VK_FALSE;
         const VkSpecializationMapEntry CacheEntry{0U, 0U, sizeof(CacheEnabled)};
-        const VkSpecializationInfo Specialization{1U, &CacheEntry, sizeof(CacheEnabled), &CacheEnabled};
+        const VkSpecializationInfo     Specialization{1U, &CacheEntry, sizeof(CacheEnabled), &CacheEnabled};
         Stage.pSpecializationInfo = &Specialization;
 
         VkComputePipelineCreateInfo PipelineInfo{};
@@ -481,12 +517,13 @@ namespace MDSS
         PipelineInfo.stage = Stage;
         PipelineInfo.layout = Layout;
 
-        VkPipeline Pipeline = VK_NULL_HANDLE;
+        VkPipeline     Pipeline = VK_NULL_HANDLE;
         const VkResult Result = vkCreateComputePipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline);
         vkDestroyShaderModule(Device, Module, nullptr);
         if (Result != VK_SUCCESS)
         {
-            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pipeline, nullptr);
             throw std::runtime_error(std::string("Failed to create Surface State compute pipeline: ") + ShaderPath);
         }
         return Pipeline;

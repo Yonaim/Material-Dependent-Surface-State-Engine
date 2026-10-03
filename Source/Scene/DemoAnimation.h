@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include <glm/vec4.hpp>
-
 #include <cstdint>
 #include <filesystem>
+#include <glm/vec4.hpp>
 #include <string>
 #include <vector>
 
@@ -34,22 +33,22 @@ namespace MDSS
 
     struct TDemoAnimationKey
     {
-        float Time = 0.0F;
+        float     Time = 0.0F;
         glm::vec4 Value{0.0F};
     };
 
     struct TDemoAnimationTrack
     {
-        std::string Target;
-        EDemoAnimationProperty Property = EDemoAnimationProperty::Position;
-        EDemoAnimationInterpolation Interpolation = EDemoAnimationInterpolation::Linear;
+        std::string                    Target;
+        EDemoAnimationProperty         Property = EDemoAnimationProperty::Position;
+        EDemoAnimationInterpolation    Interpolation = EDemoAnimationInterpolation::Linear;
         std::vector<TDemoAnimationKey> Keys;
     };
 
     struct TDemoAnimationClip
     {
-        float DurationSeconds = 0.0F;
-        bool bLoop = false;
+        float                            DurationSeconds = 0.0F;
+        bool                             bLoop = false;
         std::vector<TDemoAnimationTrack> Tracks;
     };
 

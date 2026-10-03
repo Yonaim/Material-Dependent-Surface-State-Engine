@@ -10,9 +10,9 @@
 namespace MDSS
 {
     TSRProfileAsset::TSRProfileAsset(TAssetID                    ID,
-                                   std::string                Name,
-                                   std::filesystem::path      SourcePath,
-                                   TSurfaceResponseProfileData Data)
+                                     std::string                 Name,
+                                     std::filesystem::path       SourcePath,
+                                     TSurfaceResponseProfileData Data)
         : TAsset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
     {
         ValidateSurfaceResponseProfileData(this->Data);

@@ -29,12 +29,12 @@ namespace MDSS
          * @throws std::invalid_argument ID, geometry 또는 Surface/Profile 대응이 잘못된 경우.
          */
         TSurfaceInstanceStateData(TSurfaceInstanceID                                ID,
-                                 std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
-                                 std::size_t                                      StateCount);
+                                  std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
+                                  std::size_t                                       StateCount);
 
         [[nodiscard]] TSurfaceInstanceID                      GetID() const noexcept;
         [[nodiscard]] const TSharedSurfaceGeometryData&       GetGeometry() const noexcept;
-        [[nodiscard]] std::size_t                            GetStateCount() const noexcept;
+        [[nodiscard]] std::size_t                             GetStateCount() const noexcept;
         [[nodiscard]] const std::vector<TSurfaceStateValues>& GetStates() const noexcept;
         /** @brief Solver가 Instance별 상태 채널을 갱신할 mutable state 배열을 반환한다. */
         [[nodiscard]] std::vector<TSurfaceStateValues>& GetStates() noexcept;

@@ -43,7 +43,7 @@ namespace MDSS
 
         /** @brief physical device와 surface의 capabilities, formats, present modes를 조회한다. */
         [[nodiscard]] static TSwapchainSupportDetails QuerySupport(VkPhysicalDevice PhysicalDevice,
-                                                                  VkSurfaceKHR     Surface);
+                                                                   VkSurfaceKHR     Surface);
 
     private:
         static VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& Formats);

@@ -69,7 +69,7 @@ namespace MDSS
     }
 
     TSharedSurfaceGeometryData::TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition>   SurfaceDefinitions,
-                                                         std::vector<TSurfaceProfileIndex> ProfileIndices)
+                                                           std::vector<TSurfaceProfileIndex> ProfileIndices)
         : TSharedSurfaceGeometryData(std::move(SurfaceDefinitions))
     {
         SetProfileMap(std::move(ProfileIndices));

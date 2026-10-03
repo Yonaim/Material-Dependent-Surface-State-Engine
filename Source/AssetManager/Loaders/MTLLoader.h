@@ -29,6 +29,6 @@ namespace MDSS
     public:
         /** @brief tinyobj material을 엔진 값과 OBJ 기준 texture 경로로 변환한다. */
         [[nodiscard]] static TMaterialSourceData Convert(const tinyobj::material_t&   Material,
-                                                        const std::filesystem::path& TextureBaseDirectory);
+                                                         const std::filesystem::path& TextureBaseDirectory);
     };
 } // namespace MDSS

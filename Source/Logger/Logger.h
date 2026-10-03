@@ -25,7 +25,7 @@ namespace MDSS
     struct TLogEntry
     {
         std::uint64_t Sequence = 0;
-        TLogLevel      Level = TLogLevel::Info;
+        TLogLevel     Level = TLogLevel::Info;
         std::string   Module;
         std::string   Message;
         std::string   Formatted;

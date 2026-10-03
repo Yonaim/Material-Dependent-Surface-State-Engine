@@ -181,10 +181,8 @@ namespace
         {
             Vertex.UV.x = 0.5F;
         }
-        const TextureData ZeroLengthSample =
-            MakeTexture(2, 1, {{{127, 127, 127, 255}}, {{128, 128, 128, 255}}});
-        Check(!BuildNormalMapTransferNormal(
-                  MakeTexel(), MidUVVertices, Triangles, ZeroLengthSample, Result, false),
+        const TextureData ZeroLengthSample = MakeTexture(2, 1, {{{127, 127, 127, 255}}, {{128, 128, 128, 255}}});
+        Check(!BuildNormalMapTransferNormal(MakeTexel(), MidUVVertices, Triangles, ZeroLengthSample, Result, false),
               "zero-length filtered normal sample should request geometric-normal fallback");
         Check(!BuildNormalMapTransferNormal(MakeTexel(1), Vertices, Triangles, Flat, Result, false),
               "missing triangle mapping should request geometric-normal fallback");

@@ -3,12 +3,11 @@
  * @brief Scene별 공유 Surface와 instance별 GPU resource 수명 주기.
  */
 
-#include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
-
 #include "AssetManager/Core/AssetManager.h"
 #include "Logger/Logger.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
+#include "SurfaceStateSystem/GPU/SurfaceGPUResources.h"
 #include "VulkanContext/VulkanContext.h"
 
 #include <algorithm>
@@ -26,13 +25,13 @@ namespace MDSS
     } // namespace
 
     TSurfaceGPUResourceManager::TSurfaceGPUResourceManager(const TVulkanContext& Context,
-                                                           const TAssetManager& Assets,
-                                                           const TScene& Scene)
+                                                           const TAssetManager&  Assets,
+                                                           const TScene&         Scene)
     {
-        const VkPhysicalDevice PhysicalDevice = Context.GetPhysicalDevice();
-        const VkDevice         Device = Context.GetDevice();
+        const VkPhysicalDevice       PhysicalDevice = Context.GetPhysicalDevice();
+        const VkDevice               Device = Context.GetDevice();
         const TSurfaceStateRegistry& Registry = Assets.GetSurfaceStateRegistry();
-        bool bDescriptorLimitsChecked = false;
+        bool                         bDescriptorLimitsChecked = false;
         SceneProfileHandles = Assets.GetSceneSurfaceProfiles(Scene);
         if (SceneProfileHandles.size() >= InvalidSurfaceProfileIndex)
         {
@@ -53,7 +52,7 @@ namespace MDSS
         for (const TStaticMeshInstance& MeshInstance : Scene.GetStaticMeshInstances())
         {
             std::unique_ptr<TInstanceResources> Instance;
-            const TSurfaceRuntimeDataHandle SurfaceDataHandle = MeshInstance.GetSurfaceData();
+            const TSurfaceRuntimeDataHandle     SurfaceDataHandle = MeshInstance.GetSurfaceData();
             if (Assets.HasSurfaceData(SurfaceDataHandle) && SceneProfiles != nullptr)
             {
                 if (!bDescriptorLimitsChecked)
@@ -72,34 +71,37 @@ namespace MDSS
                 auto SharedIt = SharedSurfaceData.find(SurfaceDataHandle);
                 if (SharedIt == SharedSurfaceData.end())
                 {
-                    const TSurfaceRuntimeData& RuntimeData = Assets.GetSurfaceData(SurfaceDataHandle);
+                    const TSurfaceRuntimeData&                RuntimeData = Assets.GetSurfaceData(SurfaceDataHandle);
                     const std::vector<TSRProfileAssetHandle>& ProfileHandles =
                         Assets.GetSurfaceProfileTable(SurfaceDataHandle);
                     TSharedSurfaceResources Resources;
                     Resources.SceneProfileIndices.reserve(ProfileHandles.size());
                     for (TSRProfileAssetHandle ProfileHandle : ProfileHandles)
                     {
-                        const auto Found = std::lower_bound(
-                            SceneProfileHandles.begin(), SceneProfileHandles.end(), ProfileHandle);
+                        const auto Found =
+                            std::lower_bound(SceneProfileHandles.begin(), SceneProfileHandles.end(), ProfileHandle);
                         if (Found == SceneProfileHandles.end() || *Found != ProfileHandle)
                         {
                             throw std::logic_error("Runtime Surface Profile is missing from the Scene table.");
                         }
-                        Resources.SceneProfileIndices.push_back(static_cast<TSurfaceProfileIndex>(
-                            std::distance(SceneProfileHandles.begin(), Found)));
+                        Resources.SceneProfileIndices.push_back(
+                            static_cast<TSurfaceProfileIndex>(std::distance(SceneProfileHandles.begin(), Found)));
                     }
                     Resources.Geometry = std::make_unique<TSurfaceSharedGeometryGPUResources>(
-                        PhysicalDevice, Device, *RuntimeData.GetSharedGeometry(), Resources.SceneProfileIndices,
+                        PhysicalDevice,
+                        Device,
+                        *RuntimeData.GetSharedGeometry(),
+                        Resources.SceneProfileIndices,
                         Assets.GetMesh(MeshInstance.GetMesh()).GetVertices(),
                         Assets.GetMesh(MeshInstance.GetMesh()).GetTriangles());
                     Resources.CPUGeometry = RuntimeData.GetSharedGeometry().get();
                     SharedIt = SharedSurfaceData.emplace(SurfaceDataHandle, std::move(Resources)).first;
                 }
 
-                const std::size_t TexelCount = SharedIt->second.Geometry->GetTexelCount();
-                const glm::mat4 ModelMatrix = MeshInstance.GetTransform().GetMatrix();
+                const std::size_t            TexelCount = SharedIt->second.Geometry->GetTexelCount();
+                const glm::mat4              ModelMatrix = MeshInstance.GetTransform().GetMatrix();
                 std::vector<TSurfaceGPUVec4> TransferWeightDebugAverages;
-                const std::vector<float> TransferWeights = BuildSurfaceGPUTransferWeights(
+                const std::vector<float>     TransferWeights = BuildSurfaceGPUTransferWeights(
                     *SharedIt->second.CPUGeometry, ModelMatrix, &TransferWeightDebugAverages);
                 auto State = std::make_unique<TSurfaceInstanceGPUResources>(
                     PhysicalDevice,
@@ -116,10 +118,10 @@ namespace MDSS
                 Instance->State = std::move(State);
                 Instance->Descriptors = std::move(Descriptors);
                 Instance->SurfaceDataHandle = SurfaceDataHandle;
-                Instance->ValidTexelCount = static_cast<std::size_t>(std::count_if(
-                    SharedIt->second.CPUGeometry->GetTexels().begin(),
-                    SharedIt->second.CPUGeometry->GetTexels().end(),
-                    [](const TSurfaceTexelGeometry& Texel) { return Texel.IsValid(); }));
+                Instance->ValidTexelCount = static_cast<std::size_t>(
+                    std::count_if(SharedIt->second.CPUGeometry->GetTexels().begin(),
+                                  SharedIt->second.CPUGeometry->GetTexels().end(),
+                                  [](const TSurfaceTexelGeometry& Texel) { return Texel.IsValid(); }));
                 Instance->TransferWeightScale = MeshInstance.GetTransform().Scale;
                 Instance->bTransferWeightCacheValid = true;
             }
@@ -128,18 +130,17 @@ namespace MDSS
 
         TLogger::Info("TSurfaceGPUResourceManager",
                       "Created resources for " + std::to_string(GetSharedSurfaceDataCount()) +
-                          " Surface data variant(s) and " +
-                          std::to_string(GetManagedInstanceCount()) + " Surface instances; one Scene Profile table with " +
-                          std::to_string(GetSceneProfileCount()) + " unique Profile(s), " +
-                          std::to_string(Registry.GetStateCount()) + " State channel(s).");
+                          " Surface data variant(s) and " + std::to_string(GetManagedInstanceCount()) +
+                          " Surface instances; one Scene Profile table with " + std::to_string(GetSceneProfileCount()) +
+                          " unique Profile(s), " + std::to_string(Registry.GetStateCount()) + " State channel(s).");
     }
 
     TSurfaceGPUResourceManager::~TSurfaceGPUResourceManager()
     {
         TLogger::Debug("TSurfaceGPUResourceManager",
                        "Releasing resources for " + std::to_string(GetSharedSurfaceDataCount()) +
-                           " Surface data variant(s) and " +
-                           std::to_string(GetManagedInstanceCount()) + " Surface instances.");
+                           " Surface data variant(s) and " + std::to_string(GetManagedInstanceCount()) +
+                           " Surface instances.");
     }
 
     std::size_t TSurfaceGPUResourceManager::GetManagedInstanceCount() const noexcept
@@ -167,7 +168,8 @@ namespace MDSS
         TSurfaceRawFluxMemoryUsage Usage;
         for (const auto& Instance : InstanceResources)
         {
-            if (Instance) Usage.InstanceRawFluxBytes += Instance->State->GetRawFluxBuffer().GetSize();
+            if (Instance)
+                Usage.InstanceRawFluxBytes += Instance->State->GetRawFluxBuffer().GetSize();
         }
         for (const auto& [Handle, Shared] : SharedSurfaceData)
         {
@@ -239,9 +241,9 @@ namespace MDSS
         return SceneProfiles->GetParametersBuffer();
     }
 
-    bool TSurfaceGPUResourceManager::UpdateProfileParameters(TSRProfileAssetHandle ProfileHandle,
-                                                              TStateId State,
-                                                              const TSurfaceStateParameters& Parameters)
+    bool TSurfaceGPUResourceManager::UpdateProfileParameters(TSRProfileAssetHandle          ProfileHandle,
+                                                             TStateId                       State,
+                                                             const TSurfaceStateParameters& Parameters)
     {
         const auto Found = std::lower_bound(SceneProfileHandles.begin(), SceneProfileHandles.end(), ProfileHandle);
         if (SceneProfiles == nullptr || Found == SceneProfileHandles.end() || *Found != ProfileHandle)
@@ -303,10 +305,10 @@ namespace MDSS
                 throw std::logic_error("Surface GPU instance lost its shared CPU geometry during reset.");
             }
 
-            const TSharedSurfaceGeometryData& Geometry = *SharedIt->second.CPUGeometry;
+            const TSharedSurfaceGeometryData&  Geometry = *SharedIt->second.CPUGeometry;
             const TSurfaceProfileGPUResources& Profiles = *SceneProfiles;
-            const std::size_t ChannelCount = Instance->State->GetChannelCount();
-            std::vector<float> InitialOutgoingFluxScale(Geometry.GetTexelCount() * ChannelCount, 0.0F);
+            const std::size_t                  ChannelCount = Instance->State->GetChannelCount();
+            std::vector<float>                 InitialOutgoingFluxScale(Geometry.GetTexelCount() * ChannelCount, 0.0F);
             const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
             for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
             {
@@ -334,8 +336,8 @@ namespace MDSS
         }
     }
 
-    bool TSurfaceGPUResourceManager::NeedsTransferWeightCacheUpdate(std::size_t SceneIndex,
-                                                                     const TTransform& Transform) const
+    bool TSurfaceGPUResourceManager::NeedsTransferWeightCacheUpdate(std::size_t       SceneIndex,
+                                                                    const TTransform& Transform) const
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
@@ -351,33 +353,33 @@ namespace MDSS
                Instance.TransferWeightScale.z != Transform.Scale.z;
     }
 
-    void TSurfaceGPUResourceManager::UpdateTransferWeightCache(std::size_t SceneIndex,
-                                                                const TTransform& Transform,
-                                                                bool bUseNormalWeight,
-                                                                bool bUseDistanceWeight,
-                                                                bool bUseProfileBoundaryWeight)
+    void TSurfaceGPUResourceManager::UpdateTransferWeightCache(std::size_t       SceneIndex,
+                                                               const TTransform& Transform,
+                                                               bool              bUseNormalWeight,
+                                                               bool              bUseDistanceWeight,
+                                                               bool              bUseProfileBoundaryWeight)
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
             throw std::out_of_range("Scene instance has no Surface GPU State resources.");
         }
         TInstanceResources& Instance = *InstanceResources[SceneIndex];
-        auto SharedIt = SharedSurfaceData.find(Instance.SurfaceDataHandle);
+        auto                SharedIt = SharedSurfaceData.find(Instance.SurfaceDataHandle);
         if (SharedIt == SharedSurfaceData.end() || SharedIt->second.CPUGeometry == nullptr)
         {
             throw std::logic_error("Surface TransferWeight cache has no source Geometry.");
         }
-        const glm::mat4 ModelMatrix = Transform.GetMatrix();
+        const glm::mat4              ModelMatrix = Transform.GetMatrix();
         std::vector<TSurfaceGPUVec4> TransferWeightDebugAverages;
-        const std::vector<float> TransferWeights =
-            BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry,
-                                           ModelMatrix,
-                                           &TransferWeightDebugAverages,
-                                           bUseNormalWeight,
-                                           bUseDistanceWeight,
-                                           bUseProfileBoundaryWeight);
+        const std::vector<float>     TransferWeights = BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry,
+                                                                                  ModelMatrix,
+                                                                                  &TransferWeightDebugAverages,
+                                                                                  bUseNormalWeight,
+                                                                                  bUseDistanceWeight,
+                                                                                  bUseProfileBoundaryWeight);
         Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages);
-        Instance.State->UpdateWorldTexelAreas(BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));
+        Instance.State->UpdateWorldTexelAreas(
+            BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));
         Instance.TransferWeightScale = Transform.Scale;
         Instance.bTransferWeightCacheValid = true;
     }

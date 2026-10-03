@@ -42,7 +42,7 @@ namespace MDSS
         glfwSetFramebufferSizeCallback(Handle, FramebufferSizeCallback);
 
         TLogger::Info("TApplication",
-                     "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
+                      "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
     }
 
     TWindow::~TWindow()
@@ -114,8 +114,8 @@ namespace MDSS
 
         WindowInstance->bFramebufferResized = true;
         TLogger::Debug("TApplication",
-                      "TFramebuffer resize requested: " + std::to_string(std::max(Width, 0)) + "x" +
-                          std::to_string(std::max(Height, 0)) + ".");
+                       "TFramebuffer resize requested: " + std::to_string(std::max(Width, 0)) + "x" +
+                           std::to_string(std::max(Height, 0)) + ".");
     }
 
     void TWindow::InitializeGLFW()

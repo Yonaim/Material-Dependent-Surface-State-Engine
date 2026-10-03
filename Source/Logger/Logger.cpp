@@ -23,10 +23,10 @@ namespace MDSS
     {
         struct TLoggerStorage
         {
-            std::mutex            Mutex;
+            std::mutex             Mutex;
             std::vector<TLogEntry> Entries;
-            std::uint64_t         NextSequence = 1;
-            std::uint64_t         Revision = 0;
+            std::uint64_t          NextSequence = 1;
+            std::uint64_t          Revision = 0;
         };
 
         TLoggerStorage& GetStorage()
@@ -110,7 +110,7 @@ namespace MDSS
         const std::string MessageText(Message);
         const std::string Formatted = "[" + std::string(GetLevelName(Level)) + "] [" + ModuleText + "] " + MessageText;
 
-        TLoggerStorage&   Storage = GetStorage();
+        TLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
 
         // Keep terminal output and TDebugUI backed by the exact same formatted entry.
@@ -137,21 +137,21 @@ namespace MDSS
 
     std::vector<TLogEntry> TLogger::GetEntries()
     {
-        TLoggerStorage&   Storage = GetStorage();
+        TLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
         return Storage.Entries;
     }
 
     std::uint64_t TLogger::GetRevision()
     {
-        TLoggerStorage&   Storage = GetStorage();
+        TLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
         return Storage.Revision;
     }
 
     void TLogger::Clear()
     {
-        TLoggerStorage&   Storage = GetStorage();
+        TLoggerStorage&  Storage = GetStorage();
         std::scoped_lock Lock(Storage.Mutex);
         Storage.Entries.clear();
         ++Storage.Revision;

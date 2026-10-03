@@ -34,13 +34,13 @@ namespace MDSS
         void MainLoop(std::size_t FrameLimit);
 
         // Declaration order is intentional: resources are destroyed in reverse order.
-        TWindow                    MainWindow;
-        TVulkanContext             Context;
-        TAssetManager              Assets;
-        TScene                     MainScene;
+        TWindow                              MainWindow;
+        TVulkanContext                       Context;
+        TAssetManager                        Assets;
+        TScene                               MainScene;
         std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
-        std::unique_ptr<TRenderer> FrameRenderer;
-        std::unique_ptr<TDebugUI>  DebugInterface;
-        std::unique_ptr<TInputSystem> InputInterface;
+        std::unique_ptr<TRenderer>           FrameRenderer;
+        std::unique_ptr<TDebugUI>            DebugInterface;
+        std::unique_ptr<TInputSystem>        InputInterface;
     };
 } // namespace MDSS

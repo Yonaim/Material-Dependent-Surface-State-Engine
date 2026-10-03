@@ -16,12 +16,12 @@ namespace MDSS
     class TMaterialAsset final : public TAsset
     {
     public:
-        TMaterialAsset(TAssetID               ID,
-                      std::string           Name,
-                      std::filesystem::path SourcePath,
-                      glm::vec4             BaseColor,
-                      TextureAssetHandle    BaseColorTexture,
-                      TextureAssetHandle    NormalTexture);
+        TMaterialAsset(TAssetID              ID,
+                       std::string           Name,
+                       std::filesystem::path SourcePath,
+                       glm::vec4             BaseColor,
+                       TextureAssetHandle    BaseColorTexture,
+                       TextureAssetHandle    NormalTexture);
 
         [[nodiscard]] const glm::vec4&   GetBaseColor() const noexcept;
         [[nodiscard]] TextureAssetHandle GetBaseColorTexture() const noexcept;
