@@ -265,7 +265,7 @@ if(BUILD_TESTING)
         Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
     )
     target_include_directories(MDSS_SurfaceCacheTests PRIVATE Source)
-    target_include_directories(MDSS_SurfaceCacheTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")
+    target_include_directories(MDSS_SurfaceCacheTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
     target_link_libraries(MDSS_SurfaceCacheTests PRIVATE glm::glm)
     target_compile_definitions(MDSS_SurfaceCacheTests PRIVATE
         MDSS_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Tests/Fixtures"
