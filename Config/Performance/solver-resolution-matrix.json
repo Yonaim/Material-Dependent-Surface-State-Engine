@@ -5,7 +5,7 @@
   "resolutions": [128, 256, 512],
   "warmup_frames": 30,
   "measurement_frames": 180,
-  "repeats": 3,
+  "repeats": 2,
   "order_seed": 42017,
   "build_before_run": true,
   "build_type": "Release",

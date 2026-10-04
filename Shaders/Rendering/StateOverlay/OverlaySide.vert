@@ -4,6 +4,7 @@
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
+
 struct TSideSegment
 {
     vec4 BaseA;
@@ -12,13 +13,21 @@ struct TSideSegment
     vec4 TopB;
     vec4 Inside;
 };
+
 layout(set = 3, binding = 3, std430) readonly buffer TSegments { TSideSegment Values[]; } Segments;
+
 layout(push_constant) uniform TPush { mat4 Model; mat4 ViewProjection; } Push;
+
 layout(location = 0) out vec3 FragNormal;
+
 layout(location = 1) out vec2 FragUV;
+
 layout(location = 2) flat out uint FragSurfaceIndex;
+
 layout(location = 3) out vec3 FragWorldPosition;
+
 layout(location = 4) out float FragCoverage;
+
 void main()
 {
     // 각 정점은 segment 내 corner 번호로 결정되며, 무효 segment는 clip space 밖으로 보낸다.

@@ -8,6 +8,7 @@
 #include "Rendering/Surface/StateSampling.glsl"
 
 layout(local_size_x = 64) in;
+
 struct TOverlayVertex
 {
     vec4 Position;
@@ -17,18 +18,22 @@ struct TOverlayVertex
     uvec4 Samples;
     vec4 Weights;
 };
+
 layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
 {
     TOverlayVertex Values[];
 } MeshVertices;
+
 layout(set = 2, binding = 4, std430) writeonly buffer TCoverageValues
 {
     float Values[];
 } Coverage;
+
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
 {
     uint Values[];
 } GeometryCache;
+
 layout(push_constant) uniform TPush
 {
     uint VertexCount;

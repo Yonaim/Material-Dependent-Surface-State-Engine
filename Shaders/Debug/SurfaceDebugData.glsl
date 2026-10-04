@@ -122,6 +122,7 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float Accumulatio
     vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
+
 vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float AccumulationDisplayScale, mat3 NormalMatrix)
 {
     return DebugFinalNormal(Texel, Channel, Channels, AccumulationDisplayScale, NormalMatrix, 1.0);

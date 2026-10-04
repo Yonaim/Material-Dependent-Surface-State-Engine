@@ -39,7 +39,9 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
     vec3 CenterPosition = localPosition(Texel);
     // DynamicGeometryUpdate는 두 번째 vec4에 정규화된 local normal을 저장한다.
     vec3 N = localNormal(Texel);
+#if MDSS_GPU_VALIDATION
     if (any(isnan(N)) || any(isinf(N))) return StaticWeight;
+#endif
     vec3 Axis = abs(N.z) < 0.85 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
     vec3 T = normalize(cross(Axis, N));
     vec3 B = cross(N, T);
@@ -53,11 +55,19 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
         if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other)) continue;
         vec3 OtherPosition = localPosition(Other);
         vec3 OtherNormal = localNormal(Other);
+#if MDSS_GPU_VALIDATION
         if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05) continue;
+#else
+        if (dot(N, OtherNormal) <= 0.05) continue;
+#endif
         vec3 Delta = OtherPosition - CenterPosition;
         float X = dot(Delta, T), Y = dot(Delta, B);
         float DistanceSquared = X * X + Y * Y;
+#if MDSS_GPU_VALIDATION
         if (DistanceSquared <= 1.0e-12 || isnan(DistanceSquared) || isinf(DistanceSquared)) continue;
+#else
+        if (DistanceSquared <= 1.0e-12) continue;
+#endif
         float Weight = 1.0 / DistanceSquared;
         vec3 NormalDelta = OtherNormal - N;
         float DU = -dot(NormalDelta, T), DV = -dot(NormalDelta, B);
@@ -78,7 +88,11 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
     float Positive = max(A, 0.0) + max(C, 0.0);
     float Negative = max(-A, 0.0) + max(-C, 0.0);
     float Score = 8.0 * (SpacingSum / float(SampleCount)) * max(Positive - 2.0 * Negative, 0.0);
+#if MDSS_GPU_VALIDATION
     return isnan(Score) || isinf(Score) ? StaticWeight : clamp(Score, 0.0, 1.0);
+#else
+    return clamp(Score, 0.0, 1.0);
+#endif
 }
 
 void main()
@@ -119,8 +133,10 @@ void main()
     vec3 SourceNormal = worldNormal(Source);
     float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u
         ? DynamicGeometry.Values[Source * 2u].w : 1.0;
-    bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5 &&
-                             !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
+    bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5;
+#if MDSS_GPU_VALIDATION
+    SourceNormalValid = SourceNormalValid && !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
+#endif
 
     for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
     {
@@ -131,8 +147,10 @@ void main()
         {
             vec3 TargetWorld = worldPosition(Target);
             vec3 TargetNormal = worldNormal(Target);
-            bool TargetNormalValid = dot(TargetNormal, TargetNormal) > 0.5 &&
-                                     !any(isnan(TargetNormal)) && !any(isinf(TargetNormal));
+            bool TargetNormalValid = dot(TargetNormal, TargetNormal) > 0.5;
+#if MDSS_GPU_VALIDATION
+            TargetNormalValid = TargetNormalValid && !any(isnan(TargetNormal)) && !any(isinf(TargetNormal));
+#endif
             float DistanceWeight = 1.0;
             bool Valid = true;
             if ((Solver.Flags & (1u << 7u)) != 0u)
@@ -142,9 +160,11 @@ void main()
                 float ReferenceDistance = 0.5 * (SourceMeanDistance + TargetMeanDistance);
                 Valid = SourceMeanDistance > DynamicGeometryEpsilon &&
                         TargetMeanDistance > DynamicGeometryEpsilon &&
-                        EdgeDistance > DynamicGeometryEpsilon && ReferenceDistance > DynamicGeometryEpsilon &&
-                        !isnan(EdgeDistance) && !isinf(EdgeDistance) &&
+                        EdgeDistance > DynamicGeometryEpsilon && ReferenceDistance > DynamicGeometryEpsilon;
+#if MDSS_GPU_VALIDATION
+                Valid = Valid && !isnan(EdgeDistance) && !isinf(EdgeDistance) &&
                         !isnan(ReferenceDistance) && !isinf(ReferenceDistance);
+#endif
                 if (Valid) DistanceWeight = clamp(ReferenceDistance / EdgeDistance, 0.0, 1.0);
             }
 

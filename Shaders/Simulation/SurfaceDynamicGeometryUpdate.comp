@@ -34,9 +34,9 @@ void main()
     vec3 Position = effectiveLocalPosition(Texel);
     vec3 Normal = effectiveLocalNormal(Texel);
     // 입력 데이터가 비정상일 때는 원래 texel 형상으로 되돌려 NaN 전파를 막는다.
-    if (any(isnan(Position)) || any(isinf(Position)))
+    if (!solverFinite(Position))
         Position = Positions.Values[Texel].xyz + Normals.Values[Texel].xyz * GeometryScalars.Values[Texel].MesoVirtualHeight;
-    if (any(isnan(Normal)) || any(isinf(Normal)) || dot(Normal, Normal) < 1.0e-12)
+    if (!solverFinite(Normal) || dot(Normal, Normal) < 1.0e-12)
         Normal = MesoNormals.Values[Texel].xyz;
 
     // transfer weight 계산에 쓰는 이웃 평균 거리를 texel마다 한 번 계산해 캐시한다.
@@ -54,11 +54,11 @@ void main()
             if (Neighbor == InvalidTexelIndex || Neighbor >= Solver.LocalTexelCount || !isValidTexel(Neighbor))
                 continue;
             vec3 NeighborPosition = effectiveLocalPosition(Neighbor);
-            if (any(isnan(NeighborPosition)) || any(isinf(NeighborPosition)))
+            if (!solverFinite(NeighborPosition))
                 NeighborPosition = Positions.Values[Neighbor].xyz +
                                    Normals.Values[Neighbor].xyz * GeometryScalars.Values[Neighbor].MesoVirtualHeight;
             float Distance = length(ModelLinear * (NeighborPosition - Position));
-            if (!isnan(Distance) && !isinf(Distance) && Distance > DynamicGeometryEpsilon)
+            if (solverFinite(Distance) && Distance > DynamicGeometryEpsilon)
             {
                 MeanDistance += Distance;
                 ++Count;

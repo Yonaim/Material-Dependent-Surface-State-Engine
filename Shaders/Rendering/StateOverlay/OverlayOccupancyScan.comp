@@ -5,8 +5,11 @@
 #version 450
 
 layout(local_size_x = 64) in;
+
 layout(set = 0, binding = 8, std430) readonly buffer TCurrentState { float Values[]; } CurrentState;
+
 layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
+
 layout(push_constant) uniform TPush
 {
     uint Texels;

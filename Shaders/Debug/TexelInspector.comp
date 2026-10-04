@@ -6,13 +6,17 @@
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
 #include "Debug/SurfaceDebugData.glsl"
+
 layout(local_size_x = 1) in;
+
 layout(push_constant) uniform TSelection
 {
     uint Texel; uint Channel; uint Channels; float AccumulationDisplayScale;
     vec4 NormalMatrixColumns[3];
 } Selection;
+
 layout(std430, set = 1, binding = 0) writeonly buffer TSnapshot { vec4 Values[6]; } Snapshot;
+
 void main()
 {
     // snapshot은 고정된 여섯 vec4 슬롯에 계산 중간값을 묶어 기록한다.

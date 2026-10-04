@@ -9,25 +9,37 @@
 #include "Debug/TexelGeometryData.glsl"
 
 layout(location = 0) in vec3 InPosition;
+
 layout(location = 1) in vec3 InNormal;
+
 layout(location = 2) in vec4 InUVSurface;
+
 layout(location = 3) in vec3 InDisplacementNormal;
+
 layout(location = 4) in uvec4 InSamples;
+
 layout(location = 5) in vec4 InWeights;
+
 layout(set = 2, binding = 0, std430) readonly buffer TComputedVertices
 {
     TTexelGeometryVertex Values[];
 } Computed;
+
 layout(set = 3, binding = 4, std430) readonly buffer TCoverageValues
 {
     float Values[];
 } Coverage;
+
 layout(push_constant) uniform TPush { mat4 Model; mat4 ViewProjection; } Push;
 
 layout(location = 0) out vec3 FragNormal;
+
 layout(location = 1) out vec2 FragUV;
+
 layout(location = 2) flat out uint FragSurfaceIndex;
+
 layout(location = 3) out vec3 FragWorldPosition;
+
 layout(location = 4) out float FragCoverage;
 
 void main()

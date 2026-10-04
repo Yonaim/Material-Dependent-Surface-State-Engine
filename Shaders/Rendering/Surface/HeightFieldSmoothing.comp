@@ -9,8 +9,11 @@
 #include "Debug/TexelGeometryData.glsl"
 
 layout(local_size_x = 64) in;
+
 layout(set = 1, binding = 0, std430) readonly buffer TInput { TTexelGeometryVertex Values[]; } InputGeometry;
+
 layout(set = 2, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } OutputGeometry;
+
 layout(push_constant) uniform TPush
 {
     uint TexelCount;
@@ -24,8 +27,10 @@ const float CoverageCutoff = 0.02;
 
 float DisplayedCavityFill(uint Texel, uint Profile)
 {
-    if (Push.Channels == 0u || Push.Channel >= Push.Channels ||
-        Profile >= uint(ProfileParameters.Values.length()) / Push.Channels) return 0.0;
+    if (Push.Channels == 0u || Push.Channel >= Push.Channels) return 0.0;
+#if MDSS_GPU_VALIDATION
+    if (Profile >= uint(ProfileParameters.Values.length()) / Push.Channels) return 0.0;
+#endif
     TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[Profile * Push.Channels + Push.Channel];
     float ReferenceAmount = StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) *
                             Parameters.CapacityInputAndTransfer.x;
@@ -38,17 +43,24 @@ void main()
     // 각 texel을 중심으로 한 3x3 이웃만 사용해 경계를 보존하며 smoothing한다.
     uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     if (T >= Push.TexelCount) return;
+#if MDSS_GPU_VALIDATION
+    if (T >= uint(InputGeometry.Values.length())) return;
+#endif
     TTexelGeometryVertex Original = InputGeometry.Values[T];
     OutputGeometry.Values[T] = Original;
+#if MDSS_GPU_VALIDATION
     if (T >= uint(TexelSurfaceIndices.Values.length()) ||
         T >= uint(TexelProfileIndices.Values.length()) ||
         T >= uint(TexelChartIndices.Values.length()) ||
         T >= uint(GeometryScalars.Values.length()) ||
         T >= uint(Positions.Values.length()) || T >= uint(Normals.Values.length())) return;
+#endif
 
     uint Surface = TexelSurfaceIndices.Values[T];
-    if (Surface >= uint(SurfaceRanges.Values.length()) ||
-        StateSaturation(T, Push.Channel, Push.Channels, Surface) <= CoverageCutoff) return;
+#if MDSS_GPU_VALIDATION
+    if (Surface >= uint(SurfaceRanges.Values.length())) return;
+#endif
+    if (StateSaturation(T, Push.Channel, Push.Channels, Surface) <= CoverageCutoff) return;
     uvec4 Range = SurfaceRanges.Values[Surface];
     if (Range.y == 0u || Range.z == 0u || T < Range.x) return;
     uint Local = T - Range.x;
@@ -66,20 +78,27 @@ void main()
         ivec2 XY = Center + ivec2(X, Y);
         if (XY.x < 0 || XY.y < 0 || XY.x >= int(Range.y) || XY.y >= int(Range.z)) continue;
         uint N = Range.x + uint(XY.y) * Range.y + uint(XY.x);
-        if (N >= Push.TexelCount || N >= uint(InputGeometry.Values.length()) ||
+        if (N >= Push.TexelCount) continue;
+#if MDSS_GPU_VALIDATION
+        if (N >= uint(InputGeometry.Values.length()) ||
             N >= uint(GeometryScalars.Values.length()) ||
             N >= uint(TexelSurfaceIndices.Values.length()) ||
             N >= uint(TexelProfileIndices.Values.length()) ||
-            N >= uint(TexelChartIndices.Values.length()) ||
-            TexelSurfaceIndices.Values[N] != Surface ||
+            N >= uint(TexelChartIndices.Values.length())) continue;
+#endif
+        if (TexelSurfaceIndices.Values[N] != Surface ||
             TexelProfileIndices.Values[N] != Profile ||
             TexelChartIndices.Values[N] != Chart ||
             StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) <= CoverageCutoff) continue;
 
         float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
+#if MDSS_GPU_VALIDATION
         if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
+#endif
         float AccumulationHeight = InputGeometry.Values[N].HeightAndNormal.x - Meso;
+#if MDSS_GPU_VALIDATION
         if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
+#endif
         float CavityDepth = max(-Meso, 0.0);
         float CavityFill = CavityDepth > 0.0 ? DisplayedCavityFill(N, Profile) : 0.0;
         float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
@@ -91,7 +110,9 @@ void main()
     }
     if (WeightSum <= 0.0) return;
     float CenterMeso = GeometryScalars.Values[T].MesoVirtualHeight;
+#if MDSS_GPU_VALIDATION
     if (isnan(CenterMeso) || isinf(CenterMeso)) CenterMeso = 0.0;
+#endif
     float CenterCavityDepth = max(-CenterMeso, 0.0);
     float Height = CenterMeso + min(WeightedCavityFill / WeightSum, 1.0) * CenterCavityDepth +
                    WeightedFollowingHeight / WeightSum;

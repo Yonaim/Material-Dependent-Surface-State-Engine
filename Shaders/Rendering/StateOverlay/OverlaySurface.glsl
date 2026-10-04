@@ -7,12 +7,19 @@
 #include "Rendering/Surface/MaterialParameters.glsl"
 #include "Rendering/Surface/Lighting.glsl"
 #include "Rendering/Surface/Effects/Lava.glsl"
+
 layout(location = 0) in vec3 FragNormal;
+
 layout(location = 1) in vec2 FragUV;
+
 layout(location = 2) flat in uint FragSurfaceIndex;
+
 layout(location = 3) in vec3 FragWorldPosition;
+
 layout(location = 4) in float FragCoverage;
+
 layout(location = 0) out vec4 OutColor;
+
 void main()
 {
     // 아주 낮은 coverage는 버리고 재질별 branch에서 색, 조명, 투명도를 정한다.

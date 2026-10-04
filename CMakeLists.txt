@@ -143,7 +143,9 @@ file(GLOB_RECURSE MDSS_SHADER_INCLUDES CONFIGURE_DEPENDS
 # Reconfigure when a placeholder shader receives its first implementation.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MDSS_SHADER_SOURCES})
 
-set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders")
+# Keep shader binaries configuration-specific so Debug validation SPIR-V cannot
+# be reused by a Release build (or vice versa).
+set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders/$<CONFIG>")
 set(MDSS_SHADER_BINARIES)
 
 foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
@@ -169,6 +171,7 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
         COMMAND "${Vulkan_GLSLC_EXECUTABLE}"
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Source"
+                "-DMDSS_GPU_VALIDATION=$<IF:$<CONFIG:Debug>,1,0>"
                 "${ShaderSource}"
                 -o "${ShaderBinary}"
         DEPENDS "${ShaderSource}" ${MDSS_SHADER_INCLUDES}

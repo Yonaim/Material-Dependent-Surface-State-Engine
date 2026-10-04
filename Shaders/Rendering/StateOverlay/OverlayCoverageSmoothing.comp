@@ -23,10 +23,12 @@ layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
 {
     TOverlayVertex Values[];
 } MeshVertices;
+
 layout(set = 2, binding = 4, std430) writeonly buffer TCoverageValues
 {
     float Values[];
 } Coverage;
+
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
 {
     uint Values[];
@@ -56,18 +58,27 @@ bool IsTileActive(TOverlayVertex Vertex)
     if (Texel == 0xffffffffu || Push.TileSize == 0u) return true;
     uint Tile = Texel / (Push.TileSize * Push.TileSize);
     uint Flag = Push.TexelCount * 4u + Tile;
+#if MDSS_GPU_VALIDATION
     return Flag < uint(GeometryCache.Values.length()) && GeometryCache.Values[Flag] != 0u;
+#else
+    return GeometryCache.Values[Flag] != 0u;
+#endif
 }
 
 void main()
 {
     // 비활성 tile은 이전 실행값이 남지 않도록 정점 coverage를 0으로 초기화한다.
-    if (GeometryCache.Values.length() == 0 || GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u)
+#if MDSS_GPU_VALIDATION
+    if (GeometryCache.Values.length() == 0) return;
+#endif
+    if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u)
         return;
 
     uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
-    if (Index >= Push.VertexCount || Index >= uint(MeshVertices.Values.length()) ||
-        Index >= uint(Coverage.Values.length())) return;
+    if (Index >= Push.VertexCount) return;
+#if MDSS_GPU_VALIDATION
+    if (Index >= uint(MeshVertices.Values.length()) || Index >= uint(Coverage.Values.length())) return;
+#endif
 
     TOverlayVertex Vertex = MeshVertices.Values[Index];
     if (!IsTileActive(Vertex))
@@ -77,12 +88,18 @@ void main()
     }
 
     uint Surface = uint(max(Vertex.UVSurface.w, 0.0));
-    if (Surface >= uint(SurfaceRanges.Values.length()) || Push.Channels == 0u ||
-        Push.Channel >= Push.Channels)
+    if (Push.Channels == 0u || Push.Channel >= Push.Channels)
     {
         Coverage.Values[Index] = 0.0;
         return;
     }
+#if MDSS_GPU_VALIDATION
+    if (Surface >= uint(SurfaceRanges.Values.length()))
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#endif
 
     uvec4 Range = SurfaceRanges.Values[Surface];
     if (Range.y == 0u || Range.z == 0u)
@@ -94,10 +111,21 @@ void main()
     vec2 UV = clamp(Vertex.UVSurface.xy, 0.0, 1.0);
     uvec2 CenterXY = min(uvec2(UV * vec2(Range.yz)), Range.yz - 1u);
     uint Center = Range.x + CenterXY.y * Range.y + CenterXY.x;
-    if (Center >= Push.TexelCount || Center >= uint(NeighborIndices.Values.length()) ||
+    if (Center >= Push.TexelCount)
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#if MDSS_GPU_VALIDATION
+    if (Center >= uint(NeighborIndices.Values.length()) ||
         Center >= uint(TexelSurfaceIndices.Values.length()) ||
-        Center >= uint(TexelProfileIndices.Values.length()) || Center >= uint(TexelChartIndices.Values.length()) ||
-        TexelSurfaceIndices.Values[Center] != Surface)
+        Center >= uint(TexelProfileIndices.Values.length()) || Center >= uint(TexelChartIndices.Values.length()))
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#endif
+    if (TexelSurfaceIndices.Values[Center] != Surface)
     {
         Coverage.Values[Index] = 0.0;
         return;
@@ -105,10 +133,16 @@ void main()
 
     uint Profile = TexelProfileIndices.Values[Center];
     uint Chart = TexelChartIndices.Values[Center];
-    uint ProfileRecord = Profile * Push.Channels + Push.Channel;
+#if MDSS_GPU_VALIDATION
     if (Profile >= uint(ProfileSupported.Values.length()) / Push.Channels ||
-        Profile >= uint(ProfileParameters.Values.length()) / Push.Channels ||
-        ProfileSupported.Values[ProfileRecord] == 0u)
+        Profile >= uint(ProfileParameters.Values.length()) / Push.Channels)
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#endif
+    uint ProfileRecord = Profile * Push.Channels + Push.Channel;
+    if (ProfileSupported.Values[ProfileRecord] == 0u)
     {
         Coverage.Values[Index] = 0.0;
         return;
@@ -126,9 +160,13 @@ void main()
             int X = int(CenterXY.x) + OffsetX;
             if (X < 0 || X >= int(Range.y)) continue;
             uint Texel = Range.x + uint(Y) * Range.y + uint(X);
-            if (Texel >= Push.TexelCount || Texel >= uint(TexelSurfaceIndices.Values.length()) ||
-                Texel >= uint(TexelProfileIndices.Values.length()) || Texel >= uint(TexelChartIndices.Values.length()) ||
-                TexelSurfaceIndices.Values[Texel] != Surface ||
+            if (Texel >= Push.TexelCount) continue;
+#if MDSS_GPU_VALIDATION
+            if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
+                Texel >= uint(TexelProfileIndices.Values.length()) || Texel >= uint(TexelChartIndices.Values.length()))
+                continue;
+#endif
+            if (TexelSurfaceIndices.Values[Texel] != Surface ||
                 TexelProfileIndices.Values[Texel] != Profile || TexelChartIndices.Values[Texel] != Chart)
                 continue;
 

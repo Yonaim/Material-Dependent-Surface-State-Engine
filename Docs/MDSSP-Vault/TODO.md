@@ -41,7 +41,7 @@ SurfaceDirtyDispatch.comp → SurfaceDynamicUpdateDispatch.comp
 
 
 
-### ADR 
+### Decision 
 - capacity가 필요한 이유
 	- (그냥 state를 정규화하면 되지 않냐?에 대한 반박)
 	- 재질에 다른 면 사이에서 state가 전파되는 경우, 해당 재질의 포화 기준량에 따라 농도가 다르게 표현되어야함

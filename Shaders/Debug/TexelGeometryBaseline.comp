@@ -8,7 +8,9 @@
 #include "Surface/SurfaceStateData.glsl"
 
 layout(local_size_x = 64) in;
+
 layout(set = 1, binding = 1, std430) writeonly buffer TGeometryCache { uint Values[]; } GeometryCache;
+
 layout(push_constant) uniform TPush
 {
     uint TexelCount;

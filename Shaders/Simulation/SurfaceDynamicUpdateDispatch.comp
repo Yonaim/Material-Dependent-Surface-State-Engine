@@ -23,6 +23,7 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
 } Solver;
 
 layout(local_size_x = 64) in;
+
 shared uint AnyDirty[64];
 
 void main()

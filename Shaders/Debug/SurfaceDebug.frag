@@ -6,11 +6,17 @@
 #extension GL_GOOGLE_include_directive : require
 
 layout(location = 0) in vec3 FragNormal;
+
 layout(location = 1) in vec3 FragTangent;
+
 layout(location = 2) in float FragTangentSign;
+
 layout(location = 3) in vec2 FragUV;
+
 layout(location = 4) flat in uint FragSurfaceIndex;
+
 layout(location = 5) in vec3 FragMesoNormalWS;
+
 layout(location = 6) in vec3 FragWorldPosition;
 
 layout(set = 0, binding = 2) uniform MaterialParameters
@@ -31,6 +37,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
 layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
 
 #include "Debug/SurfaceDebugData.glsl"
+
 layout(push_constant) uniform TStaticMeshPushConstants
 {
     mat4 Model;
@@ -46,32 +53,50 @@ layout(std430, set = 1, binding = 10) readonly buffer TSurfaceOutgoingFluxScale
 {
     float Values[];
 } OutgoingFluxScale;
+
 layout(std430, set = 1, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
     uint Values[];
 } TexelChartIndices;
+
 layout(std430, set = 1, binding = 16) readonly buffer TSurfaceTransferWeightDebugAverages
 {
     vec4 Values[];
 } TransferWeightDebugAverages;
+
 layout(location = 0) out vec4 OutColor;
 
 const uint InvalidIndex = 0xffffffffu;
+
 // 값은 TRenderViewMode enum의 항목과 일치해야 한다.
 const uint RENDER_MODE_SURFACE_STATE_HEATMAP = 6u;
+
 const uint RENDER_MODE_SURFACE_VALIDITY = 7u;
+
 const uint RENDER_MODE_SURFACE_ID = 8u;
+
 const uint RENDER_MODE_NEIGHBOR_COUNT = 9u;
+
 const uint RENDER_MODE_SURFACE_SEAM = 10u;
+
 const uint RENDER_MODE_OUTGOING_FLUX_SCALE = 11u;
+
 const uint RENDER_MODE_SOLVER_TRANSFER_WEIGHT = 12u;
+
 const uint RENDER_MODE_MESO_HEIGHT = 13u;
+
 const uint RENDER_MODE_MESO_OFFSET = 14u;
+
 const uint RENDER_MODE_MACRO_GEOMETRY = 15u;
+
 const uint RENDER_MODE_SURFACE_TEXEL_GRID = 16u;
+
 const uint RENDER_MODE_SURFACE_TEXEL_AREA = 17u;
+
 const uint RENDER_MODE_ACCUMULATION = 18u;
+
 const uint RENDER_MODE_FINAL_GEOMETRY = 19u;
+
 const uint RENDER_MODE_TOTAL_SIMULATION_HEIGHT = 21u;
 
 float GridLines(vec2 Coordinate, vec2 PixelFootprint, float LineWidth)

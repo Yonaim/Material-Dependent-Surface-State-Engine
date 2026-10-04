@@ -7,7 +7,9 @@
 #define SURFACE_DEBUG_SET 0
 #include "Surface/SurfaceStateData.glsl"
 #include "Debug/TexelGeometryData.glsl"
+
 layout(local_size_x = 64) in;
+
 shared uint ActiveTrianglesInGroup;
 
 struct TOverlayVertex
@@ -19,6 +21,7 @@ struct TOverlayVertex
     uvec4 Samples;
     vec4 Weights;
 };
+
 struct TSideSegment
 {
     vec4 BaseA;
@@ -27,6 +30,7 @@ struct TSideSegment
     vec4 TopB;
     vec4 Inside;
 };
+
 struct TDrawCommand
 {
     uint VertexCount;
@@ -34,38 +38,47 @@ struct TDrawCommand
     uint FirstVertex;
     uint FirstInstance;
 };
+
 layout(set = 1, binding = 0, std430) readonly buffer TComputed
 {
     TTexelGeometryVertex Values[];
 } Computed;
+
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
 {
     uint Values[];
 } GeometryCache;
+
 layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
 {
     TOverlayVertex Values[];
 } MeshVertices;
+
 layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices
 {
     uint Values[];
 } MeshIndices;
+
 layout(set = 2, binding = 2, std430) readonly buffer TBoundaryEdges
 {
     uvec4 Values[];
 } BoundaryEdges;
+
 layout(set = 2, binding = 3, std430) writeonly buffer TSegments
 {
     TSideSegment Values[];
 } Segments;
+
 layout(set = 2, binding = 4, std430) readonly buffer TCoverageValues
 {
     float Values[];
 } Coverage;
+
 layout(set = 2, binding = 5, std430) buffer TDrawCommands
 {
     TDrawCommand Values[];
 } DrawCommands;
+
 layout(push_constant) uniform TPush
 {
     uint TriangleCount;

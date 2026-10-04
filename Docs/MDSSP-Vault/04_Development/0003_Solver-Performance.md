@@ -288,7 +288,7 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 
 - 작업일: 2026-10-05 (KST)
 - 범위: Solver Pass 2, stencil State 샘플링, 동적 concavity, surface lighting
-- 상태: 구현 및 셰이더 컴파일 확인 완료. Shared-memory 타일 및 렌더링용 State texture는 후속 검토 항목이다.
+- 상태: 당시 구현 및 셰이더 컴파일 확인 완료. Shared-memory 타일과 렌더링용 State texture는 이 단계에서 후속 검토 항목이었다.
 
 ### 반영한 변경
 
@@ -325,6 +325,24 @@ ON:       Pass 1의 방향별 RawFlux를 gather; OFF 재평가 전용 값은 필
 
 관련 구현: [SurfaceDynamicWeightsUpdate.comp](../../../Shaders/Simulation/SurfaceDynamicWeightsUpdate.comp), [Lighting.glsl](../../../Shaders/Rendering/Surface/Lighting.glsl)
 
+#### Release GPU validation
+
+- CMake Debug configuration은 `MDSS_GPU_VALIDATION=1`, 그 외 configuration은 `0`으로 모든 shader를 컴파일한다. Debug와 Release SPIR-V는 `bin/Shaders/<CONFIG>/`에 따로 두어 한 configuration의 결과물을 다른 configuration이 재사용하지 않게 한다.
+- production hot paths의 buffer bounds용 `.length()` 확인과 capacity/amount·geometry의 NaN/Inf 방어 검사는 Debug shader에서 수행한다. 대상은 `StateSampling`, 3×3/5×5 smoothing, Solver common geometry와 동적 형상/가중치 계산이다. Release shader는 CPU 전처리와 GPU resource layout이 보장하는 index·유한값 계약을 전제로 이 반복 검사를 컴파일 단계에서 제거한다. Overlay의 마지막 occupancy flag처럼 실제 element index를 계산하기 위한 `.length()` 조회는 남긴다.
+- 지원 channel, Surface·chart/Profile 경계, 0 이하 capacity/amount, stencil 범위처럼 결과 의미를 정하는 분기는 Release에서도 유지한다. 진단용 Debug shader도 항상 검사를 유지하며 Vulkan validation layer 설정과는 별도다.
+- 이 경로는 resource descriptor나 CPU 검증을 대신하지 않는다. Release에서 buffer 계약이 깨진 경우 out-of-bounds access가 날 수 있으므로 입력·ABI 검증은 유지해야 한다.
+
+관련 구현: `CMakeLists.txt`, [StateSampling.glsl](../../../Shaders/Rendering/Surface/StateSampling.glsl), [SurfaceSolverCommon.glsl](../../../Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl), [SurfaceDynamicGeometryUpdate.comp](../../../Shaders/Simulation/SurfaceDynamicGeometryUpdate.comp)
+
+#### Dirty height tolerance
+
+- `SurfaceAccumulationHeight.comp`는 현재 높이와 마지막 geometry build 높이의 차이가 tolerance 이하이면 geometry를 dirty로 표시하지 않는다.
+- 기준은 local-space 높이 단위의 `max(1e-5, 1e-3 × max(abs(Height), abs(BuiltHeight)))`다. 즉 절대 하한 `1e-5`, 상대 허용 변화 `0.1%` 중 큰 값을 쓴다.
+- 비교 기준은 매 step의 직전 높이가 아니라 마지막으로 생성한 `BuiltHeight`다. 작은 step 변화가 계속 같은 방향으로 쌓이면 누적 차이가 tolerance를 넘는 시점에 갱신된다.
+- 이 최적화는 임계값 이하의 형상 변화를 바로 반영하지 않으므로 정확히 같은 형상을 보장하지 않는다. 큰 높이 변화와 normal 길이가 유효하지 않은 경우 dirty 처리한다. Debug에서는 저장 높이/normal의 NaN·Inf도 dirty로 처리하며 Release는 유한한 GPU 입력 계약을 따른다.
+
+관련 구현: [SurfaceAccumulationHeight.comp](../../../Shaders/Simulation/SurfaceAccumulationHeight.comp)
+
 ### 캐시 비교 UI
 
 RawFlux Cache ON/OFF는 이번 셰이더 변경으로 새로 도입한 UI가 아니다. 기존 Debug UI의 `Cache Comparison > RawFlux Cache` 체크박스와 specialization pipeline 전환을 확인했다. OFF는 Pass 2에서 flux를 재계산하고, ON은 Pass 1의 방향별 flux를 재사용한다. 비교 옵션은 유지한다.
@@ -334,14 +352,16 @@ RawFlux Cache ON/OFF는 이번 셰이더 변경으로 새로 도입한 UI가 아
 ### 검증 및 성능 기록
 
 - 수정한 Pass 1/2, dynamic weights, SurfaceLit, HeightFieldSmoothing, OverlayCoverageSmoothing 셰이더를 `glslc`로 컴파일했고, 이후 Pass 2 helper signature와 Overlay 중심 지원 검증을 보완한 뒤 Pass 1/2 및 Overlay 셰이더도 다시 컴파일했다. `git diff --check`도 통과했다.
+- `MDSS_GPU_VALIDATION=1/0` 양쪽으로 production shader variant를 수동 컴파일했다. Release CMake configure와 전체 `MDSS_Shaders` target도 통과했으며, SPIR-V 확인에서 Release `SurfaceLit`/`SurfaceAccumulationHeight`에는 검증용 `OpIsNan`·`OpIsInf`가 없고 Debug variant에는 남아 있다.
+- GPU validation을 끄는 것은 Release의 fast path에서 CPU·resource 계약 기반의 bounds/finiteness 검사를 제거하는 것이며, Vulkan validation layer를 끄는 변경은 아니다.
 - 이 노트 작성 시점에는 테스트 suite를 실행하지 않았다.
 - 2026-10-04 23:54 결과는 직전 23:20 결과와 비교해 여섯 Scene/resolution 조합 모두 Solver median이 낮았으며 감소폭은 약 39–49%였다. 다만 두 실행 모두 dirty working tree였고 revision도 다르므로, 이 수치를 이번 셰이더 변경만의 효과로 해석하지 않는다. 상세값과 실행 protocol은 [[20261004-235404-solver-resolution/summary|23:54 solver-resolution 결과]] 및 [[20261004-232011-solver-resolution/summary|23:20 직전 결과]]를 참조한다.
 
 ### 후속 검토
 
 - `HeightFieldSmoothing`의 2D shared-memory tile은 dispatch 좌표와 경계 조건을 함께 검토하는 별도 실험으로 둔다. `local_size_x = 64`를 단독으로 `8×8`로 바꾸는 것은 적용하지 않았다.
-- SurfaceLit용 State texture 변환은 추가 GPU resource, 동기화, channel packing과 정밀도 검토가 필요하다. 이번에는 SSBO 경로를 유지했다.
-- Dirty height epsilon은 형상 갱신을 억제해 시뮬레이션 결과를 바꿀 수 있으므로 도입하지 않았다. epsilon은 Scene 단위 오차 기준을 정하고 별도 비교한 뒤 결정한다.
+- 이 단계에서는 SurfaceLit용 State texture 변환을 보류하고 SSBO 경로를 유지했다. 후속 구현은 아래에 기록한다.
+- Tolerance에 따른 형상 오차와 갱신 빈도의 Scene별 영향은 측정하지 않았다. 상대 기준과 절대 하한은 구현된 시작값이며, 장면 스케일별 품질·성능 비교가 필요하다.
 - GPU timestamp 비교를 통해 개별 변경의 효과를 분리할 수 있는 benchmark run이 필요하다.
 
 ### 관련 문서
@@ -349,3 +369,14 @@ RawFlux Cache ON/OFF는 이번 셰이더 변경으로 새로 도입한 UI가 아
 - Simulation Optimization
 - Rendering
 - Directional RawFlux Cache
+
+## 2026-10-05 렌더링용 State texture
+
+- 현재 결정은 Lit 경로의 demo State 네 개를 Surface별 RGBA16F 배열 texture로 변환해 샘플링하는 것이다. 채널 ID는 `.SRProfile`에서 로드한 Registry에 따라 정해지며, 매 프레임 현재 AB/BA State 버퍼와 선택된 demo 채널 ID를 compute pass에 전달한다.
+- 배열의 layer는 Surface ID에 대응한다. 인스턴스별 이미지의 가로·세로 크기는 해당 인스턴스 Surface들의 최대 해상도이며, 각 layer의 유효 영역만 쓴다. Surface 경계에서 bilinear filter가 padding을 섞지 않도록 sampling 좌표를 유효 영역의 texel center 범위로 제한한다.
+- chart/Profile 경계에 인접하지 않은 texel은 fragment에서 하드웨어 bilinear RGBA fetch 한 번으로 네 상태를 읽는다. 경계 texel은 공유 Geometry에 저장한 정적 flag를 보고 기존 2×2 SSBO 샘플링을 사용한다. 이는 경계에서 다른 chart/Profile의 값이 섞이지 않는 기존 의미를 보존한다.
+- compute write와 fragment sample 사이에 image barrier를 둔다. 매 Lit 프레임 texture를 다시 생성하므로 solver step이 없는 프레임의 Profile 파라미터 변경과 State reset도 반영된다.
+- 메모리 계산은 인스턴스별 RGBA16F 배열 이미지가 `8 × maxWidth × maxHeight × SurfaceCount` byte(이미지 padding·alignment 제외), 공유 Geometry의 경계 flag가 `uint32` 기준 `4 × TexelCount` byte라는 가정이다. State의 원본 SSBO는 시뮬레이션과 경계 fallback용으로 유지한다.
+- Release 셰이더 및 MDSS 실행 파일 빌드, Debug/Release SPIR-V 검증과 Mountain `.Scene`의 2프레임 실행을 확인했다. 해당 실행은 Apple M1/MoltenVK에서 종료 코드 0이며 Vulkan validation 오류를 출력하지 않았다. 실제 GPU 시간과 경계 fallback 비율은 아직 측정하지 않았다. RGBA16F의 `[0,1]` 양자화 오차는 float SSBO 경로와 같지 않으므로 외관 비교가 필요하다.
+
+관련 구현: [RenderStateTexture.cpp](../../../Source/Rendering/RenderStateTexture.cpp), [RenderStateTexture.comp](../../../Shaders/Rendering/Surface/RenderStateTexture.comp), [RenderStateSampling.glsl](../../../Shaders/Rendering/Surface/RenderStateSampling.glsl)

@@ -6,8 +6,11 @@
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
 #include "Debug/SurfaceDebugData.glsl"
+
 layout(local_size_x = 64) in;
+
 layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
+
 layout(push_constant) uniform TPush
 {
     uint TexelCount;
