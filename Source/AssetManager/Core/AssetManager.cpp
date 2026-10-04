@@ -11,12 +11,12 @@
 #include "AssetManager/Loaders/TextureLoader.h"
 #include "Logger/Logger.h"
 #include "Scene/Scene.h"
-#include "SurfaceStateSystem/Geometry/MesoGeometryBuilder.h"
-#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
-#include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"
-#include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
-#include "SurfaceStateSystem/Preprocessing/SurfaceCache.h"
-#include "VulkanContext/VulkanContext.h"
+#include "SurfaceState/Geometry/MesoGeometryBuilder.h"
+#include "SurfaceState/Geometry/SurfaceGeometryBuilder.h"
+#include "SurfaceState/Mapping/NormalMapTransferNormalBuilder.h"
+#include "SurfaceState/Mapping/SurfaceMappingBuilder.h"
+#include "SurfaceState/Preprocessing/SurfaceCache.h"
+#include "GPU/Vulkan/VulkanContext.h"
 
 #include <algorithm>
 #include <chrono>
@@ -26,7 +26,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     namespace
     {
@@ -42,7 +42,7 @@ namespace MDSS
 
     } // 내부 네임스페이스
 
-    TAssetManager::TAssetManager(const TVulkanContext& Context) : Context(Context)
+    TAssetManager::TAssetManager(const GPU::TVulkanContext& Context) : Context(Context)
     {
         TLogger::Info("TAssetManager", "Initializing default material resources.");
         DefaultBaseColorTexture = CreateSolidTexture("DefaultWhite", {255, 255, 255, 255}, true);
@@ -144,7 +144,7 @@ namespace MDSS
     {
         if (Resolution == 0)
             Resolution = SimulationResolution;
-        if (!IsSurfaceSimulationResolution(Resolution))
+        if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
         {
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         }
@@ -173,27 +173,27 @@ namespace MDSS
             ProfileTable.push_back(LoadSRProfile(ProfilePath));
         }
 
-        TSurfaceLocalID SurfaceCount = 0;
+        SurfaceState::TSurfaceLocalID SurfaceCount = 0;
         for (const TMeshSection& Section : Mesh.GetSections())
         {
-            if (Section.Surface == InvalidSurfaceID)
+            if (Section.Surface == SurfaceState::InvalidSurfaceID)
             {
                 throw std::runtime_error("Mesh section has an invalid Surface ID.");
             }
-            if (Section.Surface == std::numeric_limits<TSurfaceLocalID>::max() - 1U)
+            if (Section.Surface == std::numeric_limits<SurfaceState::TSurfaceLocalID>::max() - 1U)
             {
                 throw std::overflow_error("Mesh Surface count exceeds the supported range.");
             }
-            SurfaceCount = std::max(SurfaceCount, static_cast<TSurfaceLocalID>(Section.Surface + 1U));
+            SurfaceCount = std::max(SurfaceCount, static_cast<SurfaceState::TSurfaceLocalID>(Section.Surface + 1U));
         }
         if (SurfaceCount == 0)
         {
             throw std::runtime_error("Mesh contains no Surface sections to preprocess.");
         }
 
-        std::vector<TSurfaceDefinition> SurfaceDefinitions;
+        std::vector<SurfaceState::TSurfaceDefinition> SurfaceDefinitions;
         SurfaceDefinitions.reserve(SurfaceCount);
-        for (TSurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
+        for (SurfaceState::TSurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
         {
             SurfaceDefinitions.push_back({Surface, {Resolution, Resolution}});
         }
@@ -217,7 +217,7 @@ namespace MDSS
         }
 
         const auto                    CacheStart = std::chrono::steady_clock::now();
-        const TSurfaceCacheDescriptor CacheDescriptor = TSurfaceCache::Describe(Mesh.GetVertices(),
+        const SurfaceState::TSurfaceCacheDescriptor CacheDescriptor = SurfaceState::TSurfaceCache::Describe(Mesh.GetVertices(),
                                                                                 Mesh.GetTriangles(),
                                                                                 SurfaceDefinitions,
                                                                                 NormalMapPaths,
@@ -225,9 +225,9 @@ namespace MDSS
                                                                                 Distribution.ProfilePaths,
                                                                                 Distribution.ProfileIndicesBySurface);
         const std::filesystem::path   CachePath =
-            TSurfaceCache::GetPath(MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
+            SurfaceState::TSurfaceCache::GetPath(MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
         std::string CacheDiagnostic;
-        auto        CachedGeometry = TSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
+        auto        CachedGeometry = SurfaceState::TSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
         if (CachedGeometry)
         {
             const double LoadMilliseconds =
@@ -240,8 +240,8 @@ namespace MDSS
         {
             TLogger::Info("TAssetManager",
                           "Rebuilding .Surface cache (" + CacheDiagnostic + "): " + CachePath.string());
-            const TSurfaceMappingData Mapping =
-                TSurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
+            const SurfaceState::TSurfaceMappingData Mapping =
+                SurfaceState::TSurfaceMappingBuilder::Build(Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
             for (const std::string& MappingWarning : Mapping.Warnings)
             {
                 if (MappingWarning.starts_with("UV seam texel links were dropped:"))
@@ -249,10 +249,10 @@ namespace MDSS
                     TLogger::Warning("TAssetManager", MappingWarning);
                 }
             }
-            std::vector<TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
-            CachedGeometry.emplace(TSurfaceGeometryBuilder::Build(
+            std::vector<SurfaceState::TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+            CachedGeometry.emplace(SurfaceState::TSurfaceGeometryBuilder::Build(
                 Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size())));
-            TSharedSurfaceGeometryData& Geometry = *CachedGeometry;
+            SurfaceState::TSharedSurfaceGeometryData& Geometry = *CachedGeometry;
 
             std::unordered_map<std::string, TextureData> NormalMapPixels;
             for (const std::filesystem::path& NormalMapPath : NormalMapPaths)
@@ -269,8 +269,8 @@ namespace MDSS
             }
 
             std::size_t                         MappedNormalCount = 0;
-            std::vector<TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
-            for (TSurfaceTexelGeometry& Texel : GeometryTexels)
+            std::vector<SurfaceState::TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
+            for (SurfaceState::TSurfaceTexelGeometry& Texel : GeometryTexels)
             {
                 if (!Texel.IsValid() || Texel.Surface >= NormalMapPaths.size() || NormalMapPaths[Texel.Surface].empty())
                 {
@@ -295,7 +295,7 @@ namespace MDSS
                           "Precomputed Normal Map transfer normals for " + std::to_string(MappedNormalCount) + "/" +
                               std::to_string(Geometry.GetTexelCount()) + " Simulation texels.");
             // 노멀 맵의 텍셀 노멀을 준비한 뒤 공유 형상의 높이와 파생 형상을 전처리한다.
-            const TMesoGeometryBuildReport MesoReport = BuildMesoGeometry(Geometry);
+            const SurfaceState::TMesoGeometryBuildReport MesoReport = SurfaceState::BuildMesoGeometry(Geometry);
             TLogger::Info("TAssetManager",
                           "Integrated Normal Map meso geometry for " + std::to_string(MesoReport.ActiveTexelCount) +
                               " texels across " + std::to_string(MesoReport.ComponentCount) + " connected charts (" +
@@ -303,7 +303,7 @@ namespace MDSS
                               std::to_string(MesoReport.RelativeEdgeResidual) + ").");
             try
             {
-                TSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
+                SurfaceState::TSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
                 const double BuildMilliseconds =
                     std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
                 TLogger::Info("TAssetManager",
@@ -316,7 +316,7 @@ namespace MDSS
                                  "Unable to save .Surface cache; using Runtime data: " + std::string(Error.what()));
             }
         }
-        TSurfaceRuntimeData Built(std::move(*CachedGeometry));
+        SurfaceState::TSurfaceRuntimeData Built(std::move(*CachedGeometry));
         if (RuntimeSurfaceAssets.size() >= InvalidSurfaceRuntimeDataHandle)
         {
             throw std::overflow_error("Runtime Surface Data handle range is exhausted.");
@@ -324,7 +324,7 @@ namespace MDSS
         const TSurfaceRuntimeDataHandle RuntimeHandle =
             static_cast<TSurfaceRuntimeDataHandle>(RuntimeSurfaceAssets.size());
         TRuntimeSurfaceAsset RuntimeAsset;
-        RuntimeAsset.Data = std::make_shared<const TSurfaceRuntimeData>(std::move(Built));
+        RuntimeAsset.Data = std::make_shared<const SurfaceState::TSurfaceRuntimeData>(std::move(Built));
         RuntimeAsset.ProfileTable = std::move(ProfileTable);
         RuntimeAsset.Mesh = MeshHandle;
         RuntimeAsset.DistributionPath = DistributionPath;
@@ -354,7 +354,7 @@ namespace MDSS
 
     void TAssetManager::SetSimulationResolution(std::uint32_t Resolution)
     {
-        if (!IsSurfaceSimulationResolution(Resolution))
+        if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         SimulationResolution = Resolution;
     }
@@ -415,7 +415,7 @@ namespace MDSS
         return Handle < RuntimeSurfaceAssets.size() && static_cast<bool>(RuntimeSurfaceAssets[Handle].Data);
     }
 
-    const TSurfaceRuntimeData& TAssetManager::GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const
+    const SurfaceState::TSurfaceRuntimeData& TAssetManager::GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const
     {
         if (!HasSurfaceData(Handle))
         {
@@ -450,23 +450,23 @@ namespace MDSS
         return Handles;
     }
 
-    TSurfaceStateRegistry TAssetManager::BuildSurfaceStateRegistry(const TScene& Scene) const
+    SurfaceState::TSurfaceStateRegistry TAssetManager::BuildSurfaceStateRegistry(const TScene& Scene) const
     {
-        std::vector<TSurfaceResponseProfileData> Profiles;
+        std::vector<SurfaceState::TSurfaceResponseProfileData> Profiles;
         for (TSRProfileAssetHandle Handle : GetSceneSurfaceProfiles(Scene))
         {
             Profiles.push_back(GetSRProfile(Handle).GetData());
         }
-        return TSurfaceStateRegistry(Profiles);
+        return SurfaceState::TSurfaceStateRegistry(Profiles);
     }
 
-    TSurfaceStateRegistry TAssetManager::ExchangeSurfaceStateRegistry(TSurfaceStateRegistry Registry) noexcept
+    SurfaceState::TSurfaceStateRegistry TAssetManager::ExchangeSurfaceStateRegistry(SurfaceState::TSurfaceStateRegistry Registry) noexcept
     {
         std::swap(StateRegistry, Registry);
         return Registry;
     }
 
-    const TSurfaceStateRegistry& TAssetManager::GetSurfaceStateRegistry() const noexcept
+    const SurfaceState::TSurfaceStateRegistry& TAssetManager::GetSurfaceStateRegistry() const noexcept
     {
         return StateRegistry;
     }

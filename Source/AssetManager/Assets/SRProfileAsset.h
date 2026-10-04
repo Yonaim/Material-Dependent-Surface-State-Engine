@@ -6,12 +6,12 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
-#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
+#include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <filesystem>
 #include <string>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     class TSRProfileAsset final : public TAsset
     {
@@ -20,11 +20,11 @@ namespace MDSS
         TSRProfileAsset(TAssetID                    ID,
                         std::string                 Name,
                         std::filesystem::path       SourcePath,
-                        TSurfaceResponseProfileData Data);
+                        SurfaceState::TSurfaceResponseProfileData Data);
 
-        [[nodiscard]] const TSurfaceResponseProfileData& GetData() const noexcept;
+        [[nodiscard]] const SurfaceState::TSurfaceResponseProfileData& GetData() const noexcept;
 
     private:
-        TSurfaceResponseProfileData Data;
+        SurfaceState::TSurfaceResponseProfileData Data;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

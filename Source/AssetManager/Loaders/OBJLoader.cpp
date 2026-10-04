@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     namespace
     {
@@ -118,15 +118,15 @@ namespace MDSS
 
         std::unordered_map<TVertexKey, std::uint32_t, TVertexKeyHash> UniqueVertices;
         std::vector<glm::vec3>                                        GeneratedNormalAccumulator;
-        std::unordered_map<std::int32_t, TSurfaceLocalID>             MaterialSurfaces;
+        std::unordered_map<std::int32_t, SurfaceState::TSurfaceLocalID>             MaterialSurfaces;
 
-        auto GetSurface = [&](std::int32_t MaterialIndex) -> TSurfaceLocalID
+        auto GetSurface = [&](std::int32_t MaterialIndex) -> SurfaceState::TSurfaceLocalID
         {
             if (const auto Existing = MaterialSurfaces.find(MaterialIndex); Existing != MaterialSurfaces.end())
             {
                 return Existing->second;
             }
-            const TSurfaceLocalID Surface = static_cast<TSurfaceLocalID>(MaterialSurfaces.size());
+            const SurfaceState::TSurfaceLocalID Surface = static_cast<SurfaceState::TSurfaceLocalID>(MaterialSurfaces.size());
             MaterialSurfaces.emplace(MaterialIndex, Surface);
             return Surface;
         };
@@ -164,7 +164,7 @@ namespace MDSS
 
                 const std::int32_t MaterialIndex =
                     Face < Shape.mesh.material_ids.size() ? Shape.mesh.material_ids[Face] : -1;
-                const TSurfaceLocalID Surface = GetSurface(MaterialIndex);
+                const SurfaceState::TSurfaceLocalID Surface = GetSurface(MaterialIndex);
 
                 if (Result.Sections.empty() || Result.Sections.back().MaterialIndex != MaterialIndex)
                 {
@@ -297,4 +297,4 @@ namespace MDSS
             Vertices[Index].Tangent = glm::vec4(Tangent, Handedness);
         }
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

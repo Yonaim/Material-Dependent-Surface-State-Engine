@@ -9,13 +9,13 @@
 
 namespace MDSS
 {
-    TStaticMeshInstance::TStaticMeshInstance(TMeshAssetHandle Mesh, TTransform InstanceTransform)
-        : TStaticMeshInstance(Mesh, InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
+    TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform)
+        : TStaticMeshInstance(Mesh, Asset::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
     {
     }
 
-    TStaticMeshInstance::TStaticMeshInstance(TMeshAssetHandle          Mesh,
-                                             TSurfaceRuntimeDataHandle SurfaceData,
+    TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle          Mesh,
+                                             Asset::TSurfaceRuntimeDataHandle SurfaceData,
                                              TTransform                InstanceTransform,
                                              std::filesystem::path     MeshPath,
                                              std::filesystem::path     ProfileMapPath,
@@ -35,17 +35,17 @@ namespace MDSS
         return InstanceTransform;
     }
 
-    TMeshAssetHandle TStaticMeshInstance::GetMesh() const noexcept
+    Asset::TMeshAssetHandle TStaticMeshInstance::GetMesh() const noexcept
     {
         return Mesh;
     }
 
-    TSurfaceRuntimeDataHandle TStaticMeshInstance::GetSurfaceData() const noexcept
+    Asset::TSurfaceRuntimeDataHandle TStaticMeshInstance::GetSurfaceData() const noexcept
     {
         return SurfaceData;
     }
 
-    void TStaticMeshInstance::SetSurfaceData(TSurfaceRuntimeDataHandle Handle) noexcept
+    void TStaticMeshInstance::SetSurfaceData(Asset::TSurfaceRuntimeDataHandle Handle) noexcept
     {
         SurfaceData = Handle;
     }

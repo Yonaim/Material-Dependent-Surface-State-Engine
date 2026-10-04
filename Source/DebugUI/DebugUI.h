@@ -8,8 +8,8 @@
 #include "AssetManager/Core/Asset.h"
 #include "Logger/Logger.h"
 #include "Scene/Camera.h"
-#include "SurfaceStateSystem/State/SimulationClock.h"
-#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
+#include "SurfaceState/State/SimulationClock.h"
+#include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <vulkan/vulkan.h>
 
@@ -29,18 +29,21 @@
 struct GLFWwindow;
 struct ImFont;
 
+namespace MDSS::Asset { class TAssetManager; }
+namespace MDSS::GPU { class TVulkanContext; }
+namespace MDSS::Rendering { class TRenderer; }
+
+namespace MDSS { class TWindow; }
+
 namespace MDSS
 {
-    class TRenderer;
+
     class TScene;
-    class TAssetManager;
-    class TVulkanContext;
-    class TWindow;
 
     class TDebugUI
     {
     public:
-        TDebugUI(const TVulkanContext& Context, const TWindow& TWindow, TRenderer& TRenderer, TAssetManager& Assets);
+        TDebugUI(const GPU::TVulkanContext& Context, const TWindow& TWindow, Rendering::TRenderer& Renderer, Asset::TAssetManager& Assets);
         ~TDebugUI();
 
         TDebugUI(const TDebugUI&) = delete;
@@ -58,10 +61,10 @@ namespace MDSS
         void Render(VkCommandBuffer CommandBuffer) const;
 
         /** @brief swapchain 재생성 후 ImGui Vulkan backend의 image count를 갱신한다. */
-        void OnSwapchainRecreated(const TVulkanContext& Context, const TRenderer& TRenderer);
+        void OnSwapchainRecreated(const GPU::TVulkanContext& Context, const Rendering::TRenderer& Renderer);
 
         [[nodiscard]] bool          IsInjectModeEnabled() const noexcept;
-        [[nodiscard]] TStateId      GetInjectState() const noexcept;
+        [[nodiscard]] SurfaceState::TStateId      GetInjectState() const noexcept;
         [[nodiscard]] float         GetInjectStrength() const noexcept;
         [[nodiscard]] float         GetInjectRadius() const noexcept;
         [[nodiscard]] float         GetInjectFalloff() const noexcept;
@@ -88,7 +91,7 @@ namespace MDSS
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] int                        GetHoveredGizmoAxis() const noexcept;
         [[nodiscard]] bool                       IsRotationGizmoMode() const noexcept;
-        [[nodiscard]] TStateId                   GetDebugState() const noexcept;
+        [[nodiscard]] SurfaceState::TStateId                   GetDebugState() const noexcept;
         [[nodiscard]] bool                       ShouldSuppressDebugHotkey() const noexcept;
 
     private:
@@ -127,34 +130,34 @@ namespace MDSS
 
         VkDevice                                   Device = VK_NULL_HANDLE;
         GLFWwindow*                                NativeWindow = nullptr;
-        TRenderer*                                 FrameRenderer = nullptr;
-        TAssetManager*                             AssetManager = nullptr;
+        Rendering::TRenderer*                                 FrameRenderer = nullptr;
+        Asset::TAssetManager*                             AssetManager = nullptr;
         bool                                       bRotatingCamera = false;
         float                                      CameraZoomSpeed = 12.0F;
         float                                      CameraMoveSpeed = 2.5F;
         bool                                       bDockLayoutInitialized = false;
         bool                                       bInjectMode = false;
-        TStateId                                   InjectState = 0;
-        TStateId                                   DebugState = 0;
+        SurfaceState::TStateId                                   InjectState = 0;
+        SurfaceState::TStateId                                   DebugState = 0;
         float                                      InjectStrength = 1.0F;
         float                                      InjectRadius = 0.25F;
         float                                      InjectFalloff = 1.0F;
         int                                        InjectTexelSearchRadius = 2;
         float                                      AnimationTimeScale = 1.0F;
         float                                      SimulationTimeScale = 1.0F;
-        bool                                       bFixedSimulationTimestep = DefaultFixedSimulationTimestep;
-        bool                                       bAutoSubstepping = DefaultAutoSubstepping;
+        bool                                       bFixedSimulationTimestep = SurfaceState::DefaultFixedSimulationTimestep;
+        bool                                       bAutoSubstepping = SurfaceState::DefaultAutoSubstepping;
         bool                                       bSimulationPaused = false;
         bool                                       bSolverStepRequested = false;
         bool                                       bSolverResetRequested = false;
         bool                                       bFrameTimeResetRequested = false;
-        TSRProfileAssetHandle                      DebugParameterProfile = InvalidAssetHandle;
-        TStateId                                   DebugParameterState = 0;
-        std::pair<TSRProfileAssetHandle, TStateId> ParameterDraftKey{InvalidAssetHandle, InvalidStateId};
-        TSurfaceStateParameters                    ParameterDraft{};
-        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
-        std::map<std::pair<TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> ParameterDrafts;
-        std::set<std::pair<TSRProfileAssetHandle, TStateId>>                          DirtyParameterDrafts;
+        Asset::TSRProfileAssetHandle                      DebugParameterProfile = Asset::InvalidAssetHandle;
+        SurfaceState::TStateId                                   DebugParameterState = 0;
+        std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> ParameterDraftKey{Asset::InvalidAssetHandle, SurfaceState::InvalidStateId};
+        SurfaceState::TSurfaceStateParameters                    ParameterDraft{};
+        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters> RuntimeProfileOverrides;
+        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters> ParameterDrafts;
+        std::set<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>>                          DirtyParameterDrafts;
         bool                                                                          bParameterDraftAvailable = false;
         bool                                                                          bParameterDraftDirty = false;
         std::string                                                                   ParameterStatus;

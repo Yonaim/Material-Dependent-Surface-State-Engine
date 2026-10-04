@@ -11,7 +11,7 @@
 #include <glm/glm.hpp>
 #include <string>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     class TMaterialAsset final : public TAsset
     {
@@ -32,4 +32,4 @@ namespace MDSS
         TextureAssetHandle BaseColorTexture = InvalidAssetHandle;
         TextureAssetHandle NormalTexture = InvalidAssetHandle;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

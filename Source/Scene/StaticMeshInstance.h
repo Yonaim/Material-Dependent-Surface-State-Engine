@@ -17,9 +17,9 @@ namespace MDSS
     {
     public:
         TStaticMeshInstance() = default;
-        TStaticMeshInstance(TMeshAssetHandle Mesh, TTransform InstanceTransform = {});
-        TStaticMeshInstance(TMeshAssetHandle          Mesh,
-                            TSurfaceRuntimeDataHandle SurfaceData,
+        TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform = {});
+        TStaticMeshInstance(Asset::TMeshAssetHandle          Mesh,
+                            Asset::TSurfaceRuntimeDataHandle SurfaceData,
                             TTransform                InstanceTransform,
                             std::filesystem::path     MeshPath = {},
                             std::filesystem::path     ProfileMapPath = {},
@@ -27,16 +27,16 @@ namespace MDSS
 
         [[nodiscard]] TTransform&                  GetTransform() noexcept;
         [[nodiscard]] const TTransform&            GetTransform() const noexcept;
-        [[nodiscard]] TMeshAssetHandle             GetMesh() const noexcept;
-        [[nodiscard]] TSurfaceRuntimeDataHandle    GetSurfaceData() const noexcept;
-        void                                       SetSurfaceData(TSurfaceRuntimeDataHandle Handle) noexcept;
+        [[nodiscard]] Asset::TMeshAssetHandle             GetMesh() const noexcept;
+        [[nodiscard]] Asset::TSurfaceRuntimeDataHandle    GetSurfaceData() const noexcept;
+        void                                       SetSurfaceData(Asset::TSurfaceRuntimeDataHandle Handle) noexcept;
         [[nodiscard]] const std::filesystem::path& GetMeshPath() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetProfileMapPath() const noexcept;
         [[nodiscard]] const std::string&           GetId() const noexcept;
 
     private:
-        TMeshAssetHandle          Mesh = InvalidAssetHandle;
-        TSurfaceRuntimeDataHandle SurfaceData = InvalidSurfaceRuntimeDataHandle;
+        Asset::TMeshAssetHandle          Mesh = Asset::InvalidAssetHandle;
+        Asset::TSurfaceRuntimeDataHandle SurfaceData = Asset::InvalidSurfaceRuntimeDataHandle;
         TTransform                InstanceTransform;
         std::filesystem::path     SourceMeshPath;
         std::filesystem::path     SourceProfileMapPath;

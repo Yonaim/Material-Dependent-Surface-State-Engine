@@ -51,7 +51,7 @@ namespace MDSS
 
     void TScene::SetSimulationResolution(std::uint32_t Resolution)
     {
-        if (!IsSurfaceSimulationResolution(Resolution))
+        if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
         {
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         }

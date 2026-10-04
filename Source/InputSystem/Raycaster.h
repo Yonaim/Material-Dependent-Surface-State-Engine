@@ -9,9 +9,11 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
+namespace MDSS::Asset { class TAssetManager; }
+
 namespace MDSS
 {
-    class TAssetManager;
+
     class TScene;
 
     struct TSurfaceRayHit
@@ -30,6 +32,6 @@ namespace MDSS
     public:
         /** @brief Return the nearest front-facing mesh triangle hit by a normalized world-space ray. */
         [[nodiscard]] static TSurfaceRayHit
-        Cast(const TScene& Scene, const TAssetManager& Assets, glm::vec3 WorldOrigin, glm::vec3 WorldDirection);
+        Cast(const TScene& Scene, const Asset::TAssetManager& Assets, glm::vec3 WorldOrigin, glm::vec3 WorldDirection);
     };
 } // namespace MDSS

@@ -5,13 +5,13 @@
 
 #pragma once
 
-#include "SurfaceStateSystem/Types/SurfaceMappingTypes.h"
+#include "SurfaceState/Types/SurfaceMappingTypes.h"
 
 #include <array>
 #include <cstdint>
 #include <glm/glm.hpp>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     struct TVertex
     {
@@ -27,6 +27,6 @@ namespace MDSS
         std::array<std::uint32_t, 3> RenderVertexIndices{};
         std::array<std::int32_t, 3>  OriginalPositionIndices{};
         std::array<std::int32_t, 3>  OriginalUVIndices{};
-        TSurfaceLocalID              Surface = InvalidSurfaceID;
+        SurfaceState::TSurfaceLocalID              Surface = SurfaceState::InvalidSurfaceID;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

@@ -9,7 +9,7 @@
 
 #include <filesystem>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     class TAssetManager;
 
@@ -20,4 +20,4 @@ namespace MDSS
         [[nodiscard]] static TScene Load(const std::filesystem::path& Path, TAssetManager& Assets);
         static void                 Save(const TScene& Scene, const std::filesystem::path& Path);
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

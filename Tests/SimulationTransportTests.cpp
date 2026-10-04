@@ -2,10 +2,10 @@
  * @file SimulationTransportTests.cpp
  * @brief 2-pass Surface solver의 입력, flux, 감쇠와 상태 보존 계약을 검증한다.
  */
-#include "SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.h"
-#include "SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.h"
-#include "SurfaceStateSystem/Mapping/SurfaceMappingBuilder.h"
-#include "SurfaceStateSystem/State/SimulationClock.h"
+#include "SurfaceState/GPU/SurfaceGPUResourceLayout.h"
+#include "SurfaceState/Geometry/SurfaceGeometryBuilder.h"
+#include "SurfaceState/Mapping/SurfaceMappingBuilder.h"
+#include "SurfaceState/State/SimulationClock.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -23,6 +23,8 @@ namespace
     void TestClock()
     {
         using namespace MDSS;
+        using namespace MDSS::Asset;
+        using namespace MDSS::SurfaceState;
         Check(DefaultFixedSimulationTimestep && !DefaultAutoSubstepping,
               "default policy must be fixed ticks with auto substepping disabled");
         for (int FPS : {15, 30, 60, 120})
@@ -151,6 +153,8 @@ namespace
     void TestArea()
     {
         using namespace MDSS;
+        using namespace MDSS::Asset;
+        using namespace MDSS::SurfaceState;
         const std::vector<TVertex>             Vertices{{{0, 0, 0}, {0, 0, 1}, {0, 0}},
                                                         {{2, 0, 0}, {0, 0, 1}, {1, 0}},
                                                         {{2, 3, 1}, {0, 0, 1}, {1, 1}},
@@ -162,9 +166,9 @@ namespace
         double       PreviousCapacity = 0.0;
         for (std::uint32_t Resolution : {128U, 256U, 512U})
         {
-            const auto Mapping = TSurfaceMappingBuilder::Build(Vertices, Triangles, {{0, {Resolution, Resolution}}});
+            const auto Mapping = SurfaceState::TSurfaceMappingBuilder::Build(Vertices, Triangles, {{0, {Resolution, Resolution}}});
             auto       Geometry =
-                TSurfaceGeometryBuilder::Build(Mapping, std::vector<TSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
+                SurfaceState::TSurfaceGeometryBuilder::Build(Mapping, std::vector<SurfaceState::TSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
             const auto   Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, Model);
             const double TotalArea = std::accumulate(Areas.begin(), Areas.end(), 0.0);
             Check(std::abs(TotalArea - Expected) < Expected * 1.0e-5,

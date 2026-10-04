@@ -144,7 +144,7 @@ bool rawFluxCacheEnabled()
 const float GeometryEpsilon = 1.0e-6;
 // Profile은 [0, 1] 무차원 계수를 저장하며 실제 속도는 여기서 계산한다.
 // CPU transport step bound와 동일한 보정값을 사용한다 (ADR 0033).
-#include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
+#include "SurfaceState/Types/SurfaceSolverRates.h"
 const float BaseSaturationTransferRate = MDSS_BASE_SATURATION_TRANSFER_RATE; // State / second
 const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // State / (world-length * second)
 

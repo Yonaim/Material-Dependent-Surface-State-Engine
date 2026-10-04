@@ -7,19 +7,19 @@
 
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     TSRProfileAsset::TSRProfileAsset(TAssetID                    ID,
                                      std::string                 Name,
                                      std::filesystem::path       SourcePath,
-                                     TSurfaceResponseProfileData Data)
+                                     SurfaceState::TSurfaceResponseProfileData Data)
         : TAsset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
     {
         ValidateSurfaceResponseProfileData(this->Data);
     }
 
-    const TSurfaceResponseProfileData& TSRProfileAsset::GetData() const noexcept
+    const SurfaceState::TSurfaceResponseProfileData& TSRProfileAsset::GetData() const noexcept
     {
         return Data;
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

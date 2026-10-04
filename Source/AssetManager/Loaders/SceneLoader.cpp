@@ -7,7 +7,7 @@
 
 #include "AssetManager/Core/AssetManager.h"
 #include "Scene/StaticMeshInstance.h"
-#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
+#include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <cmath>
 #include <cstdint>
@@ -18,7 +18,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     namespace
     {
@@ -81,7 +81,7 @@ namespace MDSS
             {
                 throw std::runtime_error(Error);
             }
-            for (const auto& Preset : SurfaceSimulationResolutionPresets)
+            for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
             {
                 if (Number == Preset.Resolution)
                     return Preset.Resolution;
@@ -268,7 +268,7 @@ namespace MDSS
                 Initial.State = ReadString(Contact, "state", Context);
                 if (!ObjectIds.contains(Initial.Target))
                     throw std::runtime_error(Context + ".target must name a Scene object with an id.");
-                if (NormalizeSurfaceStateName(Initial.State) != Initial.State)
+                if (SurfaceState::NormalizeSurfaceStateName(Initial.State) != Initial.State)
                     throw std::runtime_error(Context + ".state must be a normalized State name.");
                 Initial.WorldPosition =
                     ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
@@ -356,4 +356,4 @@ namespace MDSS
             throw std::runtime_error("Failed while writing Scene file: " + AbsolutePath.string());
         }
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

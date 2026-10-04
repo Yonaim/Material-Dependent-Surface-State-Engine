@@ -5,23 +5,23 @@
 
 #pragma once
 
-#include "SurfaceStateSystem/Mapping/SurfaceMappingData.h"
-#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
+#include "SurfaceState/Mapping/SurfaceMappingData.h"
+#include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <cstdint>
 #include <filesystem>
 #include <vector>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     struct TSurfaceProfileDistribution
     {
         std::vector<std::filesystem::path> ProfilePaths;
-        /** @brief Per-Surface Profile index; InvalidSurfaceProfileIndex means render-only/no simulation. */
-        std::vector<TSurfaceProfileIndex> ProfileIndicesBySurface;
+        /** @brief Per-Surface Profile index; SurfaceState::InvalidSurfaceProfileIndex means render-only/no simulation. */
+        std::vector<SurfaceState::TSurfaceProfileIndex> ProfileIndicesBySurface;
 
         /** @brief Expand one Profile assignment per Surface to one index per mapping texel. */
-        [[nodiscard]] std::vector<TSurfaceProfileIndex> BuildTexelProfileMap(const TSurfaceMappingData& Mapping) const;
+        [[nodiscard]] std::vector<SurfaceState::TSurfaceProfileIndex> BuildTexelProfileMap(const SurfaceState::TSurfaceMappingData& Mapping) const;
     };
 
     class TSurfaceProfileDistributionLoader final
@@ -33,4 +33,4 @@ namespace MDSS
          */
         [[nodiscard]] static TSurfaceProfileDistribution Load(const std::filesystem::path& Path);
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

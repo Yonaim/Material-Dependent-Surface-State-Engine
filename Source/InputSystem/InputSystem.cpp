@@ -24,11 +24,11 @@ namespace MDSS
     {
     }
 
-    std::optional<TSurfaceContactInput> TInputSystem::PollDebugContact(const TScene&        Scene,
-                                                                       const TAssetManager& Assets,
+    std::optional<SurfaceState::TSurfaceContactInput> TInputSystem::PollDebugContact(const TScene&        Scene,
+                                                                       const Asset::TAssetManager& Assets,
                                                                        const TCamera&       Camera,
                                                                        bool                 bInjectMode,
-                                                                       TStateId             State,
+                                                                       SurfaceState::TStateId             State,
                                                                        float                Strength,
                                                                        float                Radius,
                                                                        float                Falloff,
@@ -43,7 +43,7 @@ namespace MDSS
         {
             return std::nullopt;
         }
-        if (State == InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
+        if (State == SurfaceState::InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
         {
             TLogger::Warning("TInputSystem",
                              "Ignored debug contact because State, Strength, radius, or falloff is invalid.");
@@ -64,7 +64,7 @@ namespace MDSS
             return std::nullopt;
         }
         if (Hit.InstanceIndex >= Scene.GetStaticMeshInstances().size() ||
-            Hit.InstanceIndex >= static_cast<std::size_t>(InvalidSurfaceInstanceID))
+            Hit.InstanceIndex >= static_cast<std::size_t>(SurfaceState::InvalidSurfaceInstanceID))
         {
             TLogger::Error("TInputSystem", "Raycast returned an invalid Surface instance index.");
             return std::nullopt;
@@ -77,8 +77,8 @@ namespace MDSS
             return std::nullopt;
         }
 
-        TSurfaceContactInput Contact;
-        Contact.TargetInstance = static_cast<TSurfaceInstanceID>(Hit.InstanceIndex);
+        SurfaceState::TSurfaceContactInput Contact;
+        Contact.TargetInstance = static_cast<SurfaceState::TSurfaceInstanceID>(Hit.InstanceIndex);
         Contact.State = State;
         Contact.WorldPosition = Hit.WorldPosition;
         Contact.WorldDirection = glm::normalize(Direction);

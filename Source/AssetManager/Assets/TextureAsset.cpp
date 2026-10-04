@@ -6,18 +6,18 @@
 #include "AssetManager/Assets/TextureAsset.h"
 
 #include "Logger/Logger.h"
-#include "VulkanContext/GPU/GPUBuffer.h"
-#include "VulkanContext/VulkanContext.h"
+#include "GPU/Vulkan/Resource/GPUBuffer.h"
+#include "GPU/Vulkan/VulkanContext.h"
 
 #include <stdexcept>
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     TextureAsset::TextureAsset(TAssetID                         ID,
                                std::string                      Name,
                                std::filesystem::path            SourcePath,
-                               const TVulkanContext&            Context,
+                               const GPU::TVulkanContext&            Context,
                                std::uint32_t                    Width,
                                std::uint32_t                    Height,
                                const std::vector<std::uint8_t>& RGBA8Pixels,
@@ -30,14 +30,14 @@ namespace MDSS
         }
 
         const VkDeviceSize ByteCount = static_cast<VkDeviceSize>(RGBA8Pixels.size());
-        TGPUBuffer         StagingBuffer(Context.GetPhysicalDevice(),
+        GPU::TGPUBuffer         StagingBuffer(Context.GetPhysicalDevice(),
                                  Context.GetDevice(),
                                  ByteCount,
                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         StagingBuffer.Upload(RGBA8Pixels.data(), ByteCount);
 
-        Image = std::make_unique<TGPUImage>(Context.GetPhysicalDevice(),
+        Image = std::make_unique<GPU::TGPUImage>(Context.GetPhysicalDevice(),
                                             Context.GetDevice(),
                                             VkExtent2D{Width, Height},
                                             Format,
@@ -54,8 +54,8 @@ namespace MDSS
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         ImageView =
-            std::make_unique<TGPUImageView>(Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
-        Sampler = std::make_unique<TGPUSampler>(Context.GetDevice());
+            std::make_unique<GPU::TGPUImageView>(Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
+        Sampler = std::make_unique<GPU::TGPUSampler>(Context.GetDevice());
         TLogger::Debug("TAssetManager",
                        "Uploaded TextureAsset '" + GetName() + "' to GPU (" + std::to_string(Width) + "x" +
                            std::to_string(Height) + ", format=" + std::to_string(static_cast<int>(Format)) + ").");
@@ -86,7 +86,7 @@ namespace MDSS
         return Sampler->GetHandle();
     }
 
-    void TextureAsset::TransitionImageLayout(const TVulkanContext& Context,
+    void TextureAsset::TransitionImageLayout(const GPU::TVulkanContext& Context,
                                              VkImage               Image,
                                              VkImageLayout         OldLayout,
                                              VkImageLayout         NewLayout)
@@ -136,7 +136,7 @@ namespace MDSS
     }
 
     void TextureAsset::CopyBufferToImage(
-        const TVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height)
+        const GPU::TVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height)
     {
         VkCommandBuffer CommandBuffer = Context.GetCommands().BeginSingleTime();
 
@@ -154,4 +154,4 @@ namespace MDSS
         vkCmdCopyBufferToImage(CommandBuffer, Buffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
         Context.GetCommands().EndSingleTime(CommandBuffer, Context.GetQueues().GetGraphics());
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

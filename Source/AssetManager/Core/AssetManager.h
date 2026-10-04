@@ -10,8 +10,8 @@
 #include "AssetManager/Assets/SRProfileAsset.h"
 #include "AssetManager/Assets/TextureAsset.h"
 #include "AssetManager/Core/Asset.h"
-#include "SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.h"
-#include "SurfaceStateSystem/Types/SurfaceStateRegistry.h"
+#include "SurfaceState/Preprocessing/SurfaceRuntimeData.h"
+#include "SurfaceState/Types/SurfaceStateRegistry.h"
 
 #include <filesystem>
 #include <memory>
@@ -19,15 +19,17 @@
 #include <unordered_map>
 #include <vector>
 
-namespace MDSS
+namespace MDSS::GPU { class TVulkanContext; }
+
+namespace MDSS { class TScene; }
+
+namespace MDSS::Asset
 {
-    class TVulkanContext;
-    class TScene;
 
     class TAssetManager
     {
     public:
-        explicit TAssetManager(const TVulkanContext& Context);
+        explicit TAssetManager(const GPU::TVulkanContext& Context);
 
         /** @brief OBJ와 참조된 material·texture만 로드한다. Profile Distribution은 Scene이 별도로 선택한다. */
         [[nodiscard]] TMeshAssetHandle LoadOBJ(const std::filesystem::path& Path);
@@ -58,17 +60,17 @@ namespace MDSS
         /** @throws std::out_of_range Handle이 현재 등록된 Profile 범위를 벗어난 경우. */
         [[nodiscard]] const TSRProfileAsset&     GetSRProfile(TSRProfileAssetHandle Handle) const;
         [[nodiscard]] bool                       HasSurfaceData(TSurfaceRuntimeDataHandle Handle) const noexcept;
-        [[nodiscard]] const TSurfaceRuntimeData& GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const;
+        [[nodiscard]] const SurfaceState::TSurfaceRuntimeData& GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const;
         /** @brief Profile table order used by this Runtime Surface Data's per-texel Profile indices. */
         [[nodiscard]] const std::vector<TSRProfileAssetHandle>&
         GetSurfaceProfileTable(TSurfaceRuntimeDataHandle Handle) const;
         /** @brief Unique, sorted Profile handles referenced by the Scene's Runtime Surface tables. */
         [[nodiscard]] std::vector<TSRProfileAssetHandle> GetSceneSurfaceProfiles(const TScene& Scene) const;
         /** @brief Build a Registry from this Scene only; loading cached assets does not change the active Registry. */
-        [[nodiscard]] TSurfaceStateRegistry BuildSurfaceStateRegistry(const TScene& Scene) const;
+        [[nodiscard]] SurfaceState::TSurfaceStateRegistry BuildSurfaceStateRegistry(const TScene& Scene) const;
         /** @brief Install a Scene Registry and return the previous one for resource-reload rollback. */
-        TSurfaceStateRegistry ExchangeSurfaceStateRegistry(TSurfaceStateRegistry Registry) noexcept;
-        [[nodiscard]] const TSurfaceStateRegistry& GetSurfaceStateRegistry() const noexcept;
+        SurfaceState::TSurfaceStateRegistry ExchangeSurfaceStateRegistry(SurfaceState::TSurfaceStateRegistry Registry) noexcept;
+        [[nodiscard]] const SurfaceState::TSurfaceStateRegistry& GetSurfaceStateRegistry() const noexcept;
 
         [[nodiscard]] std::size_t          GetMaterialCount() const noexcept;
         [[nodiscard]] std::size_t          GetSRProfileCount() const noexcept;
@@ -83,11 +85,11 @@ namespace MDSS
                                             TextureAssetHandle           BaseColorTexture,
                                             TextureAssetHandle           NormalTexture);
 
-        const TVulkanContext& Context;
+        const GPU::TVulkanContext& Context;
 
         struct TRuntimeSurfaceAsset
         {
-            std::shared_ptr<const TSurfaceRuntimeData> Data;
+            std::shared_ptr<const SurfaceState::TSurfaceRuntimeData> Data;
             std::vector<TSRProfileAssetHandle>         ProfileTable;
             TMeshAssetHandle                           Mesh = InvalidAssetHandle;
             std::filesystem::path                      DistributionPath;
@@ -102,11 +104,11 @@ namespace MDSS
         std::unordered_map<std::string, TSRProfileAssetHandle>     SRProfileCache;
         std::vector<TRuntimeSurfaceAsset>                          RuntimeSurfaceAssets;
         std::unordered_map<std::string, TSurfaceRuntimeDataHandle> RuntimeSurfaceAssetsByInputs;
-        TSurfaceStateRegistry StateRegistry{std::vector<TSurfaceResponseProfileData>{}};
-        std::uint32_t         SimulationResolution = SurfaceSimulationResolution;
+        SurfaceState::TSurfaceStateRegistry StateRegistry{std::vector<SurfaceState::TSurfaceResponseProfileData>{}};
+        std::uint32_t         SimulationResolution = SurfaceState::SurfaceSimulationResolution;
 
         TextureAssetHandle   DefaultBaseColorTexture = InvalidAssetHandle;
         TextureAssetHandle   DefaultNormalTexture = InvalidAssetHandle;
         TMaterialAssetHandle DefaultMaterial = InvalidAssetHandle;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

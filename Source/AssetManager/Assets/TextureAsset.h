@@ -6,9 +6,9 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
-#include "VulkanContext/GPU/GPUImage.h"
-#include "VulkanContext/GPU/GPUImageView.h"
-#include "VulkanContext/GPU/GPUSampler.h"
+#include "GPU/Vulkan/Resource/GPUImage.h"
+#include "GPU/Vulkan/Resource/GPUImageView.h"
+#include "GPU/Vulkan/Resource/GPUSampler.h"
 
 #include <vulkan/vulkan.h>
 
@@ -18,9 +18,10 @@
 #include <string>
 #include <vector>
 
-namespace MDSS
+namespace MDSS::GPU { class TVulkanContext; }
+
+namespace MDSS::Asset
 {
-    class TVulkanContext;
 
     class TextureAsset final : public TAsset
     {
@@ -32,7 +33,7 @@ namespace MDSS
         TextureAsset(TAssetID                         ID,
                      std::string                      Name,
                      std::filesystem::path            SourcePath,
-                     const TVulkanContext&            Context,
+                     const GPU::TVulkanContext&            Context,
                      std::uint32_t                    Width,
                      std::uint32_t                    Height,
                      const std::vector<std::uint8_t>& RGBA8Pixels,
@@ -46,19 +47,19 @@ namespace MDSS
 
     private:
         /** @brief one-time command buffer로 지정된 image layout 전환을 실행한다. */
-        static void TransitionImageLayout(const TVulkanContext& Context,
+        static void TransitionImageLayout(const GPU::TVulkanContext& Context,
                                           VkImage               Image,
                                           VkImageLayout         OldLayout,
                                           VkImageLayout         NewLayout);
         /** @brief staging buffer의 pixel data를 image의 color subresource로 복사한다. */
         static void CopyBufferToImage(
-            const TVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height);
+            const GPU::TVulkanContext& Context, VkBuffer Buffer, VkImage Image, std::uint32_t Width, std::uint32_t Height);
 
         std::uint32_t                  Width = 0;
         std::uint32_t                  Height = 0;
         VkFormat                       Format = VK_FORMAT_UNDEFINED;
-        std::unique_ptr<TGPUImage>     Image;
-        std::unique_ptr<TGPUImageView> ImageView;
-        std::unique_ptr<TGPUSampler>   Sampler;
+        std::unique_ptr<GPU::TGPUImage>     Image;
+        std::unique_ptr<GPU::TGPUImageView> ImageView;
+        std::unique_ptr<GPU::TGPUSampler>   Sampler;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

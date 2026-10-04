@@ -10,7 +10,7 @@
 #include <limits>
 #include <string>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     using TAssetID = std::uint32_t;
     using TMeshAssetHandle = std::uint32_t;
@@ -38,4 +38,4 @@ namespace MDSS
         std::string           Name;
         std::filesystem::path SourcePath;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

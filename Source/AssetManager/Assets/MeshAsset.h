@@ -7,8 +7,8 @@
 
 #include "AssetManager/Assets/MeshSourceData.h"
 #include "AssetManager/Core/Asset.h"
-#include "SurfaceStateSystem/Types/SurfaceMappingTypes.h"
-#include "VulkanContext/GPU/GPUBuffer.h"
+#include "SurfaceState/Types/SurfaceMappingTypes.h"
+#include "GPU/Vulkan/Resource/GPUBuffer.h"
 
 #include <cstdint>
 #include <filesystem>
@@ -17,16 +17,17 @@
 #include <string>
 #include <vector>
 
-namespace MDSS
+namespace MDSS::GPU { class TVulkanContext; }
+
+namespace MDSS::Asset
 {
-    class TVulkanContext;
 
     struct TMeshSection
     {
         std::uint32_t        FirstIndex = 0;
         std::uint32_t        IndexCount = 0;
         TMaterialAssetHandle Material = InvalidAssetHandle;
-        TSurfaceLocalID      Surface = InvalidSurfaceID;
+        SurfaceState::TSurfaceLocalID      Surface = SurfaceState::InvalidSurfaceID;
     };
 
     class TMeshAsset final : public TAsset
@@ -39,7 +40,7 @@ namespace MDSS
         TMeshAsset(TAssetID                         ID,
                    std::string                      Name,
                    std::filesystem::path            SourcePath,
-                   const TVulkanContext&            Context,
+                   const GPU::TVulkanContext&            Context,
                    std::vector<TVertex>             Vertices,
                    std::vector<std::uint32_t>       Indices,
                    std::vector<TMeshSection>        Sections,
@@ -49,15 +50,15 @@ namespace MDSS
         [[nodiscard]] const std::vector<std::uint32_t>&       GetIndices() const noexcept;
         [[nodiscard]] const std::vector<TMeshSection>&        GetSections() const noexcept;
         [[nodiscard]] const std::vector<TMeshTriangleSource>& GetTriangles() const noexcept;
-        [[nodiscard]] const TGPUBuffer&                       GetVertexBuffer() const noexcept;
-        [[nodiscard]] const TGPUBuffer&                       GetIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::TGPUBuffer&                       GetVertexBuffer() const noexcept;
+        [[nodiscard]] const GPU::TGPUBuffer&                       GetIndexBuffer() const noexcept;
 
     private:
         std::vector<TVertex>             Vertices;
         std::vector<std::uint32_t>       Indices;
         std::vector<TMeshSection>        Sections;
         std::vector<TMeshTriangleSource> Triangles;
-        std::unique_ptr<TGPUBuffer>      VertexBuffer;
-        std::unique_ptr<TGPUBuffer>      IndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>      VertexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>      IndexBuffer;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

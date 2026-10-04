@@ -8,17 +8,19 @@
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "Scene/Scene.h"
-#include "VulkanContext/VulkanContext.h"
+#include "GPU/Vulkan/VulkanContext.h"
 
 #include <cstddef>
 #include <memory>
+
+namespace MDSS::Rendering { class TRenderer; }
+namespace MDSS::SurfaceState { class TSurfaceStateSystem; }
 
 namespace MDSS
 {
     class TDebugUI;
     class TInputSystem;
-    class TRenderer;
-    class TSurfaceStateSystem;
+
 
     class TApplication
     {
@@ -35,11 +37,11 @@ namespace MDSS
 
         // Declaration order is intentional: resources are destroyed in reverse order.
         TWindow                              MainWindow;
-        TVulkanContext                       Context;
-        TAssetManager                        Assets;
+        GPU::TVulkanContext                       Context;
+        Asset::TAssetManager                        Assets;
         TScene                               MainScene;
-        std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
-        std::unique_ptr<TRenderer>           FrameRenderer;
+        std::unique_ptr<SurfaceState::TSurfaceStateSystem> SurfaceStates;
+        std::unique_ptr<Rendering::TRenderer>           FrameRenderer;
         std::unique_ptr<TDebugUI>            DebugInterface;
         std::unique_ptr<TInputSystem>        InputInterface;
     };
