@@ -147,7 +147,7 @@ Profile version 2의 `GeometryTransferFactor × BaseGeometryTransferRate(6000)`�
 - **표면을 따라가는 경로:** 월드 공간에서 직선으로 되돌아가면 Mesh 밖으로 벗어날 수 있다. Surface 사이 이동, UV seam과 재질 경계를 처리해야 한다.
 - **먼 출발점 조회:** 현재 8-neighbor graph와 역방향 direction index만으로 임의의 먼 위치를 바로 찾을 수는 없다.
 - **보존과 경계:** 기존 source alpha만으로 원거리 조회의 총량 보존을 보장하지 못한다. invalid texel과 지원하지 않는 channel을 통과하지 않도록 해야 한다.
-- **실행 비용:** 현재 RawFlux cache는 인접 8방향용이다. 원거리 이동에서도 같은 표현을 그대로 재사용할 수 있다고 가정하지 않는다. 이웃을 계속 따라 출발점을 찾으면 이동 거리에 따라 비용도 늘어난다.
+- **실행 비용:** 이전 RawFlux cache 구현은 인접 8방향용이었다. 방향별 cache는 Decision 0025에서 제거됐다. 원거리 이동에서도 같은 표현을 그대로 재사용할 수 있다고 가정하지 않는다. 이웃을 계속 따라 출발점을 찾으면 이동 거리에 따라 비용도 늘어난다.
 
 ## 8. 논문에서 확인한 범위
 

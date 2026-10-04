@@ -28,7 +28,7 @@ RawFlux_i→j = [SatRate_i × max(sigma_i - sigma_j, 0)
 - 같은 포화도라도 경사에서는 Geometry 전달이 생기고, 평평하지만 포화도가 다르면 Saturation 전달이 생긴다.
 - SaturationDrive OFF에서도 Geometry mobility를 계산한다. GeometryDrive OFF에서도 SaturationDrive는 유지한다.
 - `GeometryDrive = HeightDrive × DirectionDrive`의 정의를 유지한다. HeightDrive는 절대 월드 높이차, DistanceWeight는 `clamp(dRef/d,0,1)` 상대 거리 감쇠다. 높이차/거리 또는 추가 `1/d`로 바꾸지 않는다.
-- source alpha, 2-Pass, RawFlux cache ON/OFF, 입력의 다음 step 재전달은 유지한다. 새 pass·mobility buffer는 없다.
+- source alpha, 2-Pass, 입력의 다음 step 재전달은 유지한다. 당시 유지한 RawFlux cache ON/OFF는 후속 Decision 0025에서 제거했다. 새 pass·mobility buffer는 없다.
 
 ## Alternatives Considered — 다른 방법
 

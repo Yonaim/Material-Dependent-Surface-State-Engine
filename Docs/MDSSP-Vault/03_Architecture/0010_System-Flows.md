@@ -58,7 +58,7 @@ flowchart TD
   Current["Current State A/B"] --> Pass1["Pass 1<br/>Decay + RawFlux + source scale"]
   Geometry["Geometry + Neighbors"] --> Pass1
   Profile["Profile Parameters"] --> Pass1
-  Pass1 --> Scratch["RawOutgoing / scale / optional RawFlux cache"]
+  Pass1 --> Scratch["RawOutgoing / scale"]
   Scratch --> Barrier["Compute barrier"]
   Current --> Pass2["Pass 2<br/>Gather Incoming + write Next"]
   Input["InputDelta"] --> Pass2

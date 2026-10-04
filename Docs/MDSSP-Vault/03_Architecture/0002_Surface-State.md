@@ -131,7 +131,7 @@ State별로 현재 상태와 Solver 계산 과정의 임시값을 각각 스칼�
 | 항목 | 저장 단위 | 범위 | 의미 |
 |---|---|---|---|
 | `State` | Texel·Registry 채널별 | finite, `≥ 0`; Capacity 초과 허용 | 초과량까지 포함한 전체 상태량 |
-| Solver scratch | 목적별 | GPU resource 설계에 따름 | 현재는 `OutgoingFluxScale`, `RawOutgoing`, `InputDelta`, 선택적 `RawFlux` 등으로 나눈다. 단일 `TempState` buffer는 두지 않는다. |
+| Solver scratch | 목적별 | GPU resource 설계에 따름 | 현재는 `OutgoingFluxScale`, `RawOutgoing`, `InputDelta` 등으로 나눈다. 방향별 RawFlux buffer와 단일 `TempState` buffer는 두지 않는다. |
 
 - 초기 자료의 `TempState`는 Solver 중간 데이터의 일반 개념이며 현재 buffer 이름이 아니다.
 - Capacity 초과량은 전체 State에 포함한다. 별도 임시값으로 저장하지 않는다.

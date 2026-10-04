@@ -1,15 +1,15 @@
 # Decision 0005 — 비활성 source의 RawFlux 쓰기 생략
 
-> **한 줄 요약:** 이동량이 없는 texel은 방향별 flux 값을 쓰지 않아 GPU 쓰기를 줄인다.
+> **한 줄 요약:** 방향별 RawFlux 캐시가 있던 시기의 비활성 source 쓰기 최적화 기록이다.
 
 - 분류: **Simulation**
-- Status: **Accepted · 구현 및 GPU 회귀 검증 완료**
+- Status: **Superseded by Decision 0025**
 - Date: 2026-09-28
 - 관련 문서: Directional RawFlux Cache, Pass 1 source 재사용, RawFlux 캐시 비교 실험
 
 ## 쉽게 읽기
 
-보낼 양이 없는 source는 방향별 RawFlux를 기록하지 않는다. 다음 단계는 alpha가 0인 source의 캐시를 읽지 않으므로, 불필요한 메모리 쓰기를 줄인다.
+Decision 0025에서 방향별 RawFlux buffer와 해당 비교 경로를 제거했다. 아래 결정·측정·검증은 캐시가 구현돼 있던 시점의 역사 기록이며 현재 실행 경로를 설명하지 않는다.
 
 ## Context — 왜 필요했나
 

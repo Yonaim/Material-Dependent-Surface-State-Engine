@@ -27,7 +27,7 @@
 
 ## Implementation — 현재 구현
 
-최초 구현은 `.SRProfile` v3의 선택 필드 `cavityTransportRetentionFactor`를 사용했다. 현재 v4는 `cavityExitResistanceFactor`를 사용하며 v3 파일은 loader가 이전 키로 호환해 읽는다 (Decision 0024). 기존 48바이트 GPU Profile 레코드의 `AccumulationThickness.y`에 저장하고 UI에서 조절한다. 두 Solver pass의 raw flux에 `1 − factor × max(sourceConcavity − targetConcavity, 0)`을 적용한다. GPU 검사는 홈 이탈 억제·진입 허용·총량 보존·계수 0 호환을 cache ON/OFF에서 확인했다. 실제 데모의 형상별 강도는 시각 조정 대상이다.
+최초 구현은 `.SRProfile` v3의 선택 필드 `cavityTransportRetentionFactor`를 사용했다. 현재 v4는 `cavityExitResistanceFactor`를 사용하며 v3 파일은 loader가 이전 키로 호환해 읽는다 (Decision 0024). 기존 48바이트 GPU Profile 레코드의 `AccumulationThickness.y`에 저장하고 UI에서 조절한다. 두 Solver pass의 raw flux에 `1 − factor × max(sourceConcavity − targetConcavity, 0)`을 적용한다. 당시 GPU 검사는 홈 이탈 억제·진입 허용·총량 보존·계수 0 호환을 cache ON/OFF에서 확인했다. Decision 0025 이후 재계산 경로만 남는다. 실제 데모의 형상별 강도는 시각 조정 대상이다.
 
 ## Alternatives Considered — 다른 방법
 

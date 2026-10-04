@@ -15,7 +15,7 @@ State / Capacity / Saturation은 [[05_Decisions/0004_State-Overcapacity-Transpor
 | **stateCapacity** | 특정 State의 포화 기준량. 유한한 양수인 상태별 독립 프로필 파라미터이며 저장 상한이 아니다. | [[03_Architecture/0002_Surface-State\|표면 상태]] |
 | **Saturation** | `State / stateCapacity`로 계산하는 런타임 파생값. Transport에서는 1 초과를 허용하며 표시용 clamp와 구분한다. | [[03_Architecture/0002_Surface-State\|표면 상태]] |
 | **State** | 초과량까지 포함한 전체 상태량. finite, `State ≥ 0`이며 Capacity를 넘을 수 있다. | [[03_Architecture/0002_Surface-State\|표면 상태]] |
-| **TempState** | 초기 문서의 일반적인 Solver 중간값 이름이다. 현재 GPU 배치에는 이 이름의 단일 버퍼가 없고, `OutgoingFluxScale`, `RawOutgoing`, `InputDelta`, 선택적 `RawFlux`처럼 목적별 scratch로 나뉜다. Capacity 초과량은 State에 포함한다. | [[03_Architecture/0007_Surface-GPU-Data-Layout\|GPU Resource]] |
+| **TempState** | 초기 문서의 일반적인 Solver 중간값 이름이다. 현재 GPU 배치에는 이 이름의 단일 버퍼가 없고, `OutgoingFluxScale`, `RawOutgoing`, `InputDelta`처럼 목적별 scratch로 나뉜다. Capacity 초과량은 State에 포함한다. | [[03_Architecture/0007_Surface-GPU-Data-Layout\|GPU Resource]] |
 | **Shared Surface Geometry Data** | 같은 Mesh + Normal Map을 사용하는 인스턴스가 공유할 수 있는 정적 형상 데이터. | [[03_Architecture/0004_Surface-Geometry\|형상 정보]] |
 | **Surface Instance State Data** | 특정 Mesh Instance가 개별적으로 가지는 동적 State 데이터. | [[03_Architecture/0002_Surface-State\|표면 상태]] |
 | **SaturationDrive** | 보내는 texel과 받는 texel의 Saturation 차이에 의해 발생하는 전달 구동력. | [[03_Architecture/0006_Surface-State-Update\|Solver]] |

@@ -44,7 +44,7 @@
 | E | 15·30·60·120 FPS cadence, 같은 실제 경과 시간, Fixed·Auto 네 조합 | 누적 시간·진행 시간·잔여 시간·Solver step 수 |
 | F | 동일 월드 반경의 사건 입력, falloff 0/1 | 입력 총량의 해상도 의존과 부분 texel 오차 |
 | G | 비균일 면적·UV 왜곡·seam·Profile 경계·비균일 scale | 단순 평면에서 벗어난 조건 |
-| H | Cube Wetness Scene, 세 해상도·cache ON/OFF | 실제 분포와 GPU·메모리 비용 |
+| H | Cube Wetness Scene, 세 해상도·과거 cache ON/OFF | 실제 분포와 GPU·메모리 비용 (Decision 0025 이전 기록) |
 
 각 비교의 **실제 실행한 Solver 시간 합**을 맞춘다. 큰 dt 한 번과 작은 dt 여러 번을 같다고 가정하지 않는다. 반복 한도로 backlog가 남으면 같은 시뮬레이션 시간까지 추가로 소비한 비용도 기록한다.
 
@@ -116,7 +116,7 @@ State는 texel 총량이다. Capacity·입력·Decay는 `AreaScale=WorldArea/(1/
 | GPU 면적 0 | 기존 State 3,7 유지 | 전달·감쇠 없이 총량 유지 |
 | 실제 접촉 경로 | Scene fixture의 균일 falloff 입력 | 지원 texel의 양이 InputFactor×AreaScale과 일치, 미지원 channel 제외 |
 
-GPU 검사는 RawFlux cache ON/OFF 양쪽에서 같은 기대값을 사용한다. 국소 해상도 검사는 2-texel fixture에서 공간 계수의 스케일을 확인하는 검사이며 전체 초기 분포의 이동·퍼짐 검증은 아니다.
+기존 GPU 검사는 RawFlux cache ON/OFF 양쪽에서 같은 기대값을 확인했다. Decision 0025 이후 GPU suite는 단일 재계산 경로를 대상으로 한다. 국소 해상도 검사는 2-texel fixture에서 공간 계수의 스케일을 확인하는 검사이며 전체 초기 분포의 이동·퍼짐 검증은 아니다.
 
 Geometry 기준값 6000 재보정 후에도 위 검사의 목표 실제 Rate는 유지한다. 새 기본 Factor 0.5와 8-neighbor 국소 이동률 검사는 [[0004_Solver-Validation#검증 — Geometry 전달 기준값 재보정|Geometry 재보정 검증]]에 별도로 기록한다.
 

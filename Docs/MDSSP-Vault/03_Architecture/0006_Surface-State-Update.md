@@ -195,7 +195,7 @@ $$
 | `BaseSaturationTransferRate` | `1.0` | `State / second` |
 | `BaseGeometryTransferRate` | `6000.0` | `State / (world-length · second)` |
 
-초기 Geometry 기준값은 100이었으며 면적·총량 모델의 흐름을 재보정해 6000으로 변경했다 ([[05_Decisions/0012_Geometry-Rate-Recalibration|Decision 0012]]). `State` 단위는 Registry에 등록된 해당 State의 시뮬레이션 상태량 단위이며, 기준 상수는 모든 channel의 해당 전달 경로에 공통 적용한다. 두 상수는 C++/GLSL 공용 `SurfaceSolverRates.h`에 정의해 cache ON/OFF·Pass 1/2와 CPU 안전 시간 간격 계산에 동일하게 적용한다. 프로파일 계수의 정규화는 Saturation 상한 clamp나 높이차의 거리 정규화를 추가하지 않는다.
+초기 Geometry 기준값은 100이었으며 면적·총량 모델의 흐름을 재보정해 6000으로 변경했다 ([[05_Decisions/0012_Geometry-Rate-Recalibration|Decision 0012]]). `State` 단위는 Registry에 등록된 해당 State의 시뮬레이션 상태량 단위이며, 기준 상수는 모든 channel의 해당 전달 경로에 공통 적용한다. 두 상수는 C++/GLSL 공용 `SurfaceSolverRates.h`에 정의해 Pass 1/2와 CPU 안전 시간 간격 계산에 동일하게 적용한다. 프로파일 계수의 정규화는 Saturation 상한 clamp나 높이차의 거리 정규화를 추가하지 않는다.
 
 현재 구현은 `SaturationDrive`와 `GeometryDrive`에 의한 전달을 독립적으로 계산한 뒤 합친다.
 
@@ -293,8 +293,7 @@ $$
 
 - 유효 이웃 간격이나 endpoint 거리가 epsilon 이하이거나 유한하지 않으면 가중치를 0으로 둔다.
 - 거리는 MesoVirtualHeight와 향후 AccumulationHeight를 반영한 최신 유효 Position과 Neighbor 관계에서 계산한다.
-- 초기 구현은 매번 계산했다. 현재는 간선별 TransferWeight, Pass 1의 RawOutgoing, 방향별 RawFlux를 저장해 재사용한다 ([[0006_Surface-State-Update#Solver 최적화 구조|Solver 최적화 구조]]).
-- RawFlux cache는 기본 OFF이다. ON에서는 Pass 1의 방향별 flux를 저장하고 Pass 2에서 재사용한다. OFF에서는 같은 전달 수식을 Pass 2에서 재평가한다.
+- 간선별 TransferWeight와 Pass 1의 `RawOutgoing` 합계는 저장해 재사용한다. 방향별 RawFlux는 Pass 1에서 합산하고 Pass 2에서 재평가한다 ([[0006_Surface-State-Update#Solver 최적화 구조|Solver 최적화 구조]], [[05_Decisions/0025_RawFlux-Cache-Removal|Decision 0025]]).
 
 $$
 NormalWeight_{i\rightarrow j} = clamp\left(NormalWorld_i \cdot NormalWorld_j, 0, 1\right)
@@ -398,14 +397,15 @@ Decay 식은 현재 texel의 `[0,1]` `ConcavityWeight`로 감소량을 줄인다
 |---|---|---|
 | TransferWeight | Instance별로 준비한다. 정적 형상에서 순수 translation·rotation은 재사용하고 scale·가중치 설정이 바뀔 때 갱신한다. Scene 형상 교체는 새 resource를 만든다. | RawFlux 내부의 반복 `DistanceWeight`·`NormalWeight` 계산 |
 | RawOutgoing | Pass 1 합계를 저장하여 Pass 2가 재사용 | 자기 outgoing 합계의 재계산 |
-| 방향별 RawFlux | 선택적으로 ON에서 활성 source의 8개 방향 인덱스를 저장하고 Pass 2가 이웃 source의 역방향 값을 읽음. 기본값은 OFF | incoming의 RawFlux·GeometryDrive 재평가 |
+| 방향별 RawFlux | 저장하지 않는다. Pass 1은 방향 flux 합만 RawOutgoing에 더하고 Pass 2가 이웃 source의 역방향 slot으로 flux를 재평가한다. | 방향별 scratch 쓰기·읽기와 `texel × channel × 8` 메모리 |
 | Pass 1 source 계산 | 지원 여부·Profile·Saturation은 channel당 준비, source 법선 변환·중력 투영·위치는 geometry를 쓰는 invocation당 한 번 준비 | 같은 source를 이웃 8개·여러 채널에서 반복 준비하는 비용 |
 | instance 계산 | CPU가 solver dispatch당 선형 행렬·inverse-transpose·gravity up을 준비해 128-byte push constant로 전달 | 텍셀별 공통 행렬 계산 |
-| 비활성 source | unsupported/invalid, 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록 | outgoing 평가와 8개 방향 RawFlux entry의 불필요한 0 쓰기 |
+| 동적 source Geometry | DynamicGeometry에 저장한 위치와 local normal을 Solver에서 다시 읽는다. normal fitting은 geometry update pass에서 수행한다. | Pass 2 유입 source의 이웃 순회 least-squares normal 재계산 |
+| 비활성 source | unsupported/invalid, 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록 | outgoing 평가 |
 | 시뮬레이션 해상도 | Low 128, Medium 256, High 512, 기본 Medium | Surface별 texel 수와 이에 비례하는 작업·버퍼 payload |
 
 - 모든 texel은 dispatch 대상이며 invocation 분기로 비싼 source 계산을 생략한다.
 - 빈 target도 Pass 2에서 incoming·InputDelta·Next를 처리한다. 별도 활동 mask나 추가 pass는 없다.
-- 캐시 ON/OFF와 해상도 선택 UI는 [[03_Architecture/0009_UI-Interface|UI Interface]]를 따른다.
+- 해상도 선택 UI는 [[03_Architecture/0009_UI-Interface|UI Interface]]를 따른다.
 - Buffer 배치와 유효성은 [[03_Architecture/0007_Surface-GPU-Data-Layout|GPU Data Layout]]을 따른다.
-- 성능 개선률은 State 분포와 GPU에 따라 달라진다. 측정 기록은 Pass 1 비용 분석, 초기 ON/OFF 비교, [[05_Decisions/0005_Inactive-RawFlux-Write-Elision|비활성 쓰기 생략의 전후 검증]]에 조건별로 정리한다.
+- 성능은 State 분포와 GPU에 따라 달라진다. 기존 ON/OFF 측정은 방향별 RawFlux 제거 이전의 역사적 기록이다. 현재 경로의 비용은 Pass 1·Pass 2 타임스탬프로 별도 측정한다.

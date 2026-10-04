@@ -46,7 +46,7 @@
 | --- | --- | --- |
 | [[05_Decisions/0003_Normal-Map-Meso-Geometry|Decision 0003]] | Normal Map 기반 Virtual Meso Geometry 복원 | Normal Map의 기울기에서 가상의 세부 높이를 복원하는 방법을 정한다. 이 문서의 오목도 생성 방식은 후속 결정 0022로 바뀌었고, 높이 복원과 Meso 곡률 데이터는 계속 사용한다. |
 | [[05_Decisions/0004_State-Overcapacity-Transport|Decision 0004]] | State A/B에 초과량을 보존하는 Transport | State가 Capacity를 넘어도 초과분을 버리지 않고 다음 계산에 남긴다. Capacity는 저장 한도가 아니라 포화도를 재는 기준이며, 실제 유출량은 기존 source 제한으로 제어한다. |
-| [[05_Decisions/0005_Inactive-RawFlux-Write-Elision|Decision 0005]] | 비활성 source의 RawFlux 쓰기 생략 | 보낼 양이 없는 source는 방향별 RawFlux를 기록하지 않는다. 다음 단계는 alpha가 0인 source의 캐시를 읽지 않으므로, 불필요한 메모리 쓰기를 줄인다. |
+| [[05_Decisions/0005_Inactive-RawFlux-Write-Elision|Decision 0005 · superseded]] | 비활성 source의 RawFlux 쓰기 생략 | 방향별 RawFlux 캐시가 존재하던 시기의 구현 결정을 기록한다. Decision 0025에서 해당 캐시를 제거했다. |
 | [[05_Decisions/0008_Normalized-Transport-Factors|Decision 0008]] | 정규화된 Transport Factor와 Solver 기준 속도 | Profile에는 0–1 범위의 이동 계수를 저장하고, 공통 기준 속도는 Solver가 곱한다. 기준 속도는 Decision 0012에서 다시 조정됐으므로 이 문서의 최초 수치는 역사적 기록이다. |
 | [[05_Decisions/0009_Texel-Area-and-State-Amounts|Decision 0009]] | 텍셀 면적과 State 총량 | 각 texel에는 총 State 양을 저장하고, texel의 실제 월드 면적에 맞춰 Capacity·입력·감쇠를 계산한다. 그래서 격자 해상도만으로 총량이 불어나지 않게 한다. |
 | [[05_Decisions/0010_Geometry-Transport-Mobility|Decision 0010]] | 출발 포화도에 비례하는 Geometry 전달 | 기울기에 따른 Geometry 이동량을 출발점의 State/Capacity에 비례시킨다. 포화도 차이로 퍼지는 경로는 별도로 유지한다. |
@@ -57,3 +57,4 @@
 | [[05_Decisions/0022_Macro-Meso-Concavity-Field|Decision 0022]] | Macro Mesh와 Normal Map을 반영한 텍셀 오목도 | Mesh의 큰 굴곡과 Normal Map의 작은 굴곡을 합친 표면에서 오목도를 계산한다. 같은 오목도 값을 자연 감소와 방향별 이동 억제에 제공한다. |
 | [[05_Decisions/0023_Directional-Cavity-Transport-Retention|Decision 0023]] | 방향별 홈 이탈 억제와 Decay 계수 분리 | 오목한 곳에서 밖으로 나가는 흐름을 줄이는 State별 계수를 자연 감소 계수와 분리한 초기 결정을 기록한다. 현재 필드명과 곡률 감쇠 정책은 Decision 0024을 따른다. |
 | [[05_Decisions/0024_Transport-Role-Names-and-Curvature-Removal|Decision 0024]] | Transport 역할별 Profile 키와 곡률 감쇠 제거 | 이동 확산·중력 이동·홈 이탈 저항·자연 감소를 이름과 설정에서 구별한다. 양방향 곡률 감쇠를 제거하고 Profile v4 키를 쓰며 v3 파일은 호환해 읽는다. |
+| [[05_Decisions/0025_RawFlux-Cache-Removal|Decision 0025]] | 방향별 RawFlux 캐시 제거 | 방향별 flux scratch와 ON/OFF 경로를 없애고 Pass 2에서 재계산한다. |

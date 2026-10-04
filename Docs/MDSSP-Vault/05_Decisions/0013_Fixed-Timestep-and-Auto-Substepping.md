@@ -35,7 +35,7 @@
 
 - frame당 최대 8 **Solver 실행**을 유지한다. 일반 frame에서는 미완료 고정 구간의 잔여 시간을 다음 frame에서 재개한다. 별도 시간 budget을 중복 누적하지 않는다.
 - 인터랙티브 실행의 pending은 배속 1×에서 최대 고정 구간 4개(약 66.67 ms)로 제한한다. 배속이 4×를 넘으면 최소한 해당 배속의 60 Hz frame에 필요한 tick 수만큼 허용한다. 초과 시간은 폐기하고 UI의 `Time skipped`에 표시한다. 15/30/60/120 FPS의 정상 frame 및 60 FPS의 4× 배속은 이 제한으로 시간을 잃지 않는다.
-- UI에서 Fixed/Auto·Solver 항목·Accumulation Geometry Update·RawFlux cache·Profile override·해상도·overlay tile을 변경하거나 Scene 파일 대화상자를 열면 해당 frame의 시간을 누적하지 않고 기존 pending을 비운다. 설정 변경으로 무효화된 TransferWeight cache는 그 frame에 준비하고, 해당 frame의 GPU 작업 완료를 기다린 뒤 시계 기준을 다시 잡는다. State와 누적 시뮬레이션 진행 시간은 설정 변경만으로 초기화하지 않는다.
+- UI에서 Fixed/Auto·Solver 항목·Accumulation Geometry Update·Profile override·해상도·overlay tile을 변경하거나 Scene 파일 대화상자를 열면 해당 frame의 시간을 누적하지 않고 기존 pending을 비운다. 설정 변경으로 무효화된 TransferWeight cache는 그 frame에 준비하고, 해당 frame의 GPU 작업 완료를 기다린 뒤 시계 기준을 다시 잡는다. State와 누적 시뮬레이션 진행 시간은 설정 변경만으로 초기화하지 않는다.
 - 초기안은 옵션 변경 중 진행 중인 고정 구간을 보존했으며, 현재 UI 설정 변경 경로는 그 잔여 시간도 비운다. 설정 변경 없이 Auto OFF로 전환하는 저수준 clock 호출은 기존 구간을 마무리한다.
 - Pause는 시간을 누적·소비하지 않는다. 수동 Step은 Solver 한 번이며 Auto OFF는 1/60초, ON은 현재 Transport 상한이다. 기존 backlog와 미완료 고정 구간은 수동 실행으로 소비하지 않는다.
 - Reset·Scene·해상도 변경은 clock와 미완료 고정 구간을 초기화한다. 입력 한 번 소비, 갱신된 State로 후속 반복, alpha, timestamp 합산 계약은 유지한다.

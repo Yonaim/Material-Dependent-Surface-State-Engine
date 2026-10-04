@@ -52,7 +52,7 @@ RawFlux(i→j) = (SaturationDrive(i→j) × SaturationTransferRate_i
               × TransferWeight(i→j) × Δt
 ```
 
-두 기준 속도는 Pass 1과 cache OFF의 Pass 2가 공유하는 `rawFlux` 안에서 적용한다. CPU pack 단계에서는 적용하지 않는다.
+두 기준 속도는 Pass 1과 현재 Pass 2 재계산 경로가 공유하는 `rawFlux` 안에서 적용한다. CPU pack 단계에서는 적용하지 않는다.
 
 ### 자산 변환
 

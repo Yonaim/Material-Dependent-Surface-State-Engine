@@ -41,7 +41,7 @@ Build/bin/MDSS --benchmark-scene Assets/Scenes/BrickCube.Scene \
 
 각 run set의 `manifest.json`, `raw/*.jsonl`, 앱 로그, `summary.md`는 `Performance-Results/`에 보존한다. 이 파일들은 **재현용 원자료**이고, 가설과 결론은 아래 실험 기록에 적는다.
 
-> **한 줄 요약:** Solver pass, GeometryDrive, RawFlux cache와 셰이더 핫패스의 비용을 한 문서에서 비교한다.
+> **한 줄 요약:** Solver pass, GeometryDrive와 셰이더 핫패스의 비용을 한 문서에서 비교한다. 아래 RawFlux cache ON/OFF 결과는 제거 전의 역사 기록이다.
 
 ## 실험 — Solver Pass 비교
 
@@ -141,17 +141,19 @@ CMake 전체 build 및 CTest의 5개 테스트를 실행한다. 새 검증은 Vi
 
 Pass 2는 source Current State가 0 이하, alpha가 0 이하, 또는 간선 가중치가 0 이하이면 incoming rawFlux 평가를 생략한다. inverse-transpose 준비도 첫 실제 incoming 평가까지 지연한다. Pass 1의 RawOutgoing/alpha scratch 값과 최종 갱신 식은 유지한다. 빈 source의 입력 이벤트가 소실되지 않고 다음 step부터 전달되며 InputDelta가 한 번 소비되는 GPU regression을 추가했다. 전체 build 및 CTest 5개가 통과했다. 실제 Scene FPS 개선은 아직 측정되지 않았다.
 
-후속 비교는 동일 카메라·해상도·State에서 Pause/Run의 frame time, pass별 GPU 시간, Render GPU를 기록한다. Simulation resolution 512→256은 Surface당 texel 수를 262,144→65,536으로 줄이지만 공간 정밀도와 현행 전달 이산화 결과에 영향을 준다. 기본 해상도를 조용히 변경하지 않는다. 512를 유지하는 후보는 Pass 1의 방향별·채널별 rawFlux 저장과 Pass 2의 역방향 인덱스 gather이며 추가 buffer·대역폭 비용을 별도 측정해야 한다.
+후속 비교는 동일 카메라·해상도·State에서 Pause/Run의 frame time, pass별 GPU 시간, Render GPU를 기록한다. Simulation resolution 512→256은 Surface당 texel 수를 262,144→65,536으로 줄이지만 공간 정밀도와 현행 전달 이산화 결과에 영향을 준다. 기본 해상도를 조용히 변경하지 않는다. 당시 512를 유지하는 후보로 평가한 Pass 1의 방향별·채널별 rawFlux 저장은 Decision 0025에서 제거했다.
 
-### 방향별 RawFlux 캐시 후속 구현
+### 방향별 RawFlux 캐시의 이전 구현 기록
 
-Directional RawFlux Cache에서 마지막 후보를 채택했다. Pass 1의 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 인덱스으로 gather한다. 기존의 Pass 2 RawFlux·GeometryDrive 재평가는 제거했다. 위 측정과 빈 source 최적화 설명은 방향별 캐시 적용 이전 기록이다. 새 측정과 메모리 가정은 Decision 0021에 기록한다.
+이 방식은 Decision 0025로 superseded됐다. 아래는 채택 당시의 프로젝트 진화를 기록한다.
+
+당시 Pass 1은 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 인덱스로 gather했다. 그 구현은 Pass 2 RawFlux·GeometryDrive 재평가를 없앴다. Decision 0025 이후 현재 경로는 Pass 2에서 RawFlux를 재평가하며 역방향 인덱스는 유지한다. 이전 측정과 메모리 가정은 역사 기록이다.
 
 ## 실험 — Pass 1 비용 분리
 
 - Date: 2026-09-28
 - 상태: **원인 분리 및 Decision 0022 적용 완료 · 합성 성능/GPU 회귀 검증 완료**
-- 관련: Directional RawFlux Cache, Simulation Optimization
+- 관련: [[05_Decisions/0025_RawFlux-Cache-Removal|Decision 0025]], Simulation Optimization
 
 > **파라미터 표현과 기준값 변경:** 아래 Rate 수치는 측정 당시의 전달량 계수다. Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장한다. 초기 기준 Geometry Rate 100에서는 Rate `50`, `1`이 Factor `0.5`, `0.01`에 대응했다 ([[05_Decisions/0008_Normalized-Transport-Factors|Decision 0008]]). 현재 기준값은 6000으로 재보정되어 Factor `0.5`의 Rate는 3000이다 ([[0012_Geometry-Rate-Recalibration|Decision 0012]]). 아래 과거 측정 결과는 새 기준값으로 재측정한 결과가 아니다.
 
@@ -277,7 +279,7 @@ Pass 2는 계속 이웃 source의 캐시를 gather하고 InputDelta를 소비해
 
 ### 실제 Scene에서 비교
 
-1. Solver 탭의 Cache Comparison을 펼쳐 RawFlux Cache를 선택한다. 이 실험 당시 기본값은 ON이었으며 현재 기본값은 OFF다.
+1. 당시 Solver 탭의 Cache Comparison을 펼쳐 RawFlux Cache를 선택했다. 이 기능은 Decision 0025에서 제거됐다.
 2. 동일한 해상도·다른 Solver 항목·Profile·transform을 유지하고 맨 오른쪽 Global Settings 탭에서 Fixed timestep ON·Auto substepping OFF를 사용한다. 양쪽에서 같은 Time scale을 사용한다. Solver step당 1/60초이며 배속은 누적 시간에 적용된다. frame당 Solver 반복 수와 backlog도 함께 기록한다.
 3. 각 모드에서 Reset State 후 같은 입력을 재현한다. 같은 초기 State 없이 실행 중 토글한 숫자는 동등한 조건의 A/B 측정으로 해석하지 않는다. 입력 위치·강도·횟수와 경과 step을 맞춰야 한다.
 4. warmup과 전환 직후 첫 평균을 지나서 Pass 1·Pass 2·Solver GPU를 읽는다. 화면의 모드 표시와 cache buffer MiB를 함께 기록한다. OFF에서도 할당은 유지되며 추가 VRAM 절감은 발생하지 않는다.
@@ -294,15 +296,15 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 
 #### Solver Pass 2
 
-- Pass 2는 이웃 flux를 모으기 전에 현재 texel/channel이 지원되는지 이미 확인한다. OFF 재계산 경로는 이 결과를 전제로 하여 이웃별 `rawFlux` 안의 중복 `supportsChannel(target)` 확인을 없앴다.
+- Pass 2는 이웃 flux를 모으기 전에 현재 texel/channel이 지원되는지 확인한다. 이 결과를 전제로 이웃별 `rawFlux` 안의 중복 `supportsChannel(target)` 확인을 없앴다.
 - 현재 texel의 포화도, concavity, effective position은 모든 이웃 flux가 공통으로 참조하므로 이웃 loop 전에 한 번 계산해 재평가 함수에 넘긴다. 이웃 source의 Profile, saturation, transfer weight와 source geometry는 방향마다 달라지므로 source 측 계산은 계속 이웃별로 한다.
 - texel의 8개 packed reverse-direction index를 나타내는 `uint`를 loop 전에 한 번 읽고, loop 안에서는 shift/mask만 수행한다.
-- RawFlux cache ON 분기에서는 이 값들이 재계산 경로에서만 쓰이므로 specialization된 cache 파이프라인에서 재계산 경로를 분리할 수 있다.
+- Directional RawFlux cache 분기가 있던 시기의 specialization 최적화 기록이다. Decision 0025 이후 재계산 경로만 남는다.
 
 ```text
 기존 OFF: 이웃마다 target 지원 검사 + target saturation/concavity/position 조회 + reverse index word 읽기
 현재 OFF: 앞선 target channel guard 재사용 + target 공통값 한 번 준비 + reverse index word 한 번 읽기
-ON:       Pass 1의 방향별 RawFlux를 gather; OFF 재평가 전용 값은 필요하지 않음
+현재:     Pass 1은 방향별 flux 합계만 저장하고 Pass 2가 incoming flux를 재평가
 ```
 
 각 방향의 source flux 수식과 Pass 1/Pass 2 역할, Current/Next State 계산은 유지한다. 재사용 대상은 모든 incoming edge에서 같은 target 항목이고, 서로 다른 source가 요구하는 값은 합치지 않는다.
@@ -343,9 +345,9 @@ ON:       Pass 1의 방향별 RawFlux를 gather; OFF 재평가 전용 값은 필
 
 관련 구현: [SurfaceAccumulationHeight.comp](../../../Shaders/Simulation/SurfaceAccumulationHeight.comp)
 
-### 캐시 비교 UI
+### 캐시 비교 UI — 제거 전 기록
 
-RawFlux Cache ON/OFF는 이번 셰이더 변경으로 새로 도입한 UI가 아니다. 기존 Debug UI의 `Cache Comparison > RawFlux Cache` 체크박스와 specialization pipeline 전환을 확인했다. OFF는 Pass 2에서 flux를 재계산하고, ON은 Pass 1의 방향별 flux를 재사용한다. 비교 옵션은 유지한다.
+이 셰이더 기록 시점에는 Debug UI에 `Cache Comparison > RawFlux Cache` 체크박스와 specialization pipeline 전환이 있었다. 이후 Decision 0025에서 방향별 cache와 비교 UI를 제거했다. 이 절은 과거 구현만 기록한다.
 
 관련 구현: `Source/DebugUI/DebugUI.cpp`, `Source/SurfaceState/State/SurfaceStateSolver.cpp`; Directional RawFlux Cache
 
@@ -368,7 +370,7 @@ RawFlux Cache ON/OFF는 이번 셰이더 변경으로 새로 도입한 UI가 아
 
 - Simulation Optimization
 - Rendering
-- Directional RawFlux Cache
+- [[05_Decisions/0025_RawFlux-Cache-Removal|Decision 0025 — 방향별 RawFlux 캐시 제거]]
 
 ## 2026-10-05 렌더링용 State texture
 

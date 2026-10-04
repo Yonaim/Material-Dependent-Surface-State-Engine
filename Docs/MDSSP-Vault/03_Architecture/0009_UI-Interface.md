@@ -128,7 +128,7 @@ Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인�
   - Transport: `Saturation spreading` (`SaturationDrive`), `Gravity-guided flow` (`GeometryDrive`), DirectionDrive: MesoNormal, DistanceWeight, NormalWeight, ProfileBoundaryWeight
   - Decay: Decay, `Cavity decay protection` (`ConcavityRetention`)
   - Lit Demo Effects의 `Lit height display scale`은 Lit과 디버그 미리보기에서 공유하는 렌더링 전용 설정이며 Simulation이 읽지 않는다.
-- `Cache Comparison`은 기본 접힘이다. RawFlux Cache ON/OFF, 실제 cache buffer 크기와 비교 조건을 표시한다. Fixed timestep과 Auto substepping은 `Global Settings` 탭에서 조절한다.
+- Solver 설정에는 방향별 RawFlux cache 전환 항목이 없다. Solver는 항상 Pass 2에서 방향 flux를 재평가한다. Fixed timestep과 Auto substepping은 `Global Settings` 탭에서 조절한다.
 - `Diagnostics`는 기본 접힘이다. 전체 texel 수와 유효 texel 비율을 표시하며, Paused에서는 다음 read buffer와 최근 Solver GPU 시간도 표시한다.
 
 ## Contact Input과 Profile Tuning

@@ -23,7 +23,7 @@ Geometry Factor 0.5·기준 Rate 100은 실제 Rate 50이다. 이 숫자는 월�
 - `Source/SurfaceState/Types/SurfaceSolverRates.h`를 C++/GLSL 공용 상수 정의로 사용한다. Shader include 경로와 빌드 의존성에 이 파일을 포함한다.
 - CPU의 안전 transport 간격 계산도 같은 Geometry 기준값을 사용한다. 한쪽에 별도의 숫자 100이나 6000을 하드코딩하지 않는다.
 - State는 총량, Capacity·입력·Decay는 면적 환산을 유지한다. 출발 `State/Capacity`를 1에서 자르지 않고 SaturationDrive를 별도로 유지한다.
-- HeightDrive·DirectionDrive·DistanceWeight·source alpha·2-Pass·cache ON/OFF와 시간 누적 정책은 유지한다.
+- HeightDrive·DirectionDrive·DistanceWeight·source alpha·2-Pass와 시간 누적 정책은 유지한다. 당시 cache ON/OFF도 유지했으며 후속 Decision 0025에서 제거했다.
 
 | Profile | Factor | 초기 Geometry Rate | 재보정 Geometry Rate |
 |---|---:|---:|---:|

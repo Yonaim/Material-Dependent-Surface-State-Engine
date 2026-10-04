@@ -42,7 +42,7 @@ RemainingSurfaceWater = NewSurfaceWater - DepositedWetness
 
 ### 목표와 현재 경로
 
-정적 Mesh도 회전하면 이웃 간 월드 높이 차와 표면에 투영된 중력 방향이 변한다. 현재 Solver는 instance model 행렬과 World Gravity를 push constant로 받아 GPU에서 GeometryDrive의 HeightDrive × DirectionDrive를 매 step 계산한다. RawFlux cache가 ON이면 Pass 1에서 만든 방향별 flux를 Pass 2가 재사용한다. 이 경로의 실측 GPU 비용 없이 사전 계산 방식의 이득을 가정하지 않는다.
+정적 Mesh도 회전하면 이웃 간 월드 높이 차와 표면에 투영된 중력 방향이 변한다. 현재 Solver는 instance model 행렬과 World Gravity를 push constant로 받아 GPU에서 GeometryDrive의 HeightDrive × DirectionDrive를 매 step 계산한다. Directional RawFlux cache 제거 이후 Pass 2는 incoming flux를 재평가한다. 이 경로의 GPU 비용은 별도 측정으로 확인한다.
 
 [[05_Decisions/0021_Rotation-Invariant-Transfer-Cache|Decision 0021]]의 순수 회전 TransferWeight buffer 갱신 제거가 선행한다. 이 후속 작업은 불필요한 GPU queue 대기를 해결하는 수단이 아니라, 남아 있는 GPU 중력 계산을 조회로 바꿀지 평가하는 별도 최적화다.
 

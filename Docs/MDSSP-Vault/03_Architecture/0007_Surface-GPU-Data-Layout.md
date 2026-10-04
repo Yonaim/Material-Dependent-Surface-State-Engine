@@ -123,10 +123,9 @@ vec4[2] = ThicknessPerAmount, CavityTransportRetentionFactor, 0, 0
 | `InputDelta` | `float32` | `texelCount × channelCount` | `4 × channelCount` B | `4 × texelCount × channelCount` B |
 | `TransferWeights` | `float32` | `texelCount × 8` | 32 B | `32 × texelCount` B |
 | `RawOutgoing` | `float32` | `texelCount × channelCount` | `4 × channelCount` B | `4 × texelCount × channelCount` B |
-| `RawFlux` | `float32` | `texelCount × channelCount × 8` | `32 × channelCount` B | `32 × texelCount × channelCount` B |
 | `WorldTexelAreas` | `float32` | `texelCount` | 4 B | `4 × texelCount` B |
 
-면적 buffer는 instance별 binding 20이며 Capacity·Decay 계산과 State heatmap에 사용한다. CPU shared AreaVector를 world로 변환한 값이고 선형 transform 변경 시 갱신한다. Profile Capacity는 기준 면적의 양이며 shader가 `WorldTexelArea / ReferenceArea`를 곱한다. [[05_Decisions/0009_Texel-Area-and-State-Amounts|Decision 0009]]
+면적 buffer는 instance별 binding 19이며 Capacity·Decay 계산과 State heatmap에 사용한다. CPU shared AreaVector를 world로 변환한 값이고 선형 transform 변경 시 갱신한다. Profile Capacity는 기준 면적의 양이며 shader가 `WorldTexelArea / ReferenceArea`를 곱한다. [[05_Decisions/0009_Texel-Area-and-State-Amounts|Decision 0009]]
 
 State 배열은 texel-major AoS다. 한 texel에 속한 channel 값들이 연속으로 저장되며, 원소 위치는 다음 산식으로 구한다. 채널 padding은 두지 않는다.
 
@@ -156,26 +155,18 @@ State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량�
 - Direction index 위치: `texelIndex × 8 + neighborDirectionIndex`
 - 저장값: 해당 direction index의 DistanceWeight × NormalWeight × ProfileBoundaryWeight
 - 각 direction index의 가중치를 따로 저장한다. 대칭 식을 무방향 edge 저장으로 압축하는 최적화는 후속 작업이다.
-- Cache는 RawFlux 계산에서 평균 이웃 거리를 반복 계산하지 않게 한다.
+- TransferWeight cache는 매 Solver step의 RawFlux 계산에서 평균 이웃 거리를 반복 계산하지 않게 한다.
 - **현재 구현:** CPU builder는 resource 생성 시와 instance scale 또는 Weight 토글이 바뀔 때 갱신한다. 순수 translation·rotation은 TransferWeights 및 WorldTexelAreas의 cache invalidation을 일으키지 않는다. GPU GeometryDrive는 회전 후에도 최신 중력과 model 행렬을 매 step 사용한다 ([[05_Decisions/0021_Rotation-Invariant-Transfer-Cache|Decision 0021]]).
 - 동적 적층 형상 갱신은 별도 GPU pass에서 현재 형상의 edge weight를 갱신한다. 향후 정적 Geometry나 topology를 런타임 수정하는 경로가 추가되면 공유 resource 재구성과 무효화 정책을 함께 정의해야 한다.
 
 - `RawOutgoing`은 Pass 1이 Current State와 TransferWeights로 계산하는 texel·channel별 제한 전 outgoing 합계다.
 - Pass 1은 매 step 모든 항목을 덮어쓴다. Pass 2는 자기 outgoing을 재계산하지 않고 읽는다.
 - Invalid/unsupported 항목은 0으로 기록한다.
-- 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록하고 RawFlux 평가·쓰기를 생략한다. 실제 outgoing은 0이며 Pass 2의 Incoming·Input·Next 갱신은 계속 수행한다.
-- Pass 1 뒤 `OutgoingFluxScale`·`RawOutgoing`에 compute write→read barrier를 적용한다. Cache ON일 때만 RawFlux를 포함한다.
-- Pass 2 read 뒤 다음 step의 Pass 1 write 전에 재사용 barrier를 둔다. Cache OFF에서는 RawFlux를 제외한다.
-
-`RawFlux` 저장 위치는 `neighborDirectionIndex × texelCount × channelCount + texelIndex × channelCount + channelIndex`다.
-
-- 캐시 ON에서는 활성 source의 모든 방향 인덱스를 갱신한다. Invalid 이웃이나 rate/weight가 0인 간선은 0으로 덮어쓴다.
-- Unsupported/invalid, 가용량=0 또는 dt=0인 source 항목은 갱신하지 않아 stale·미초기화 값이 남을 수 있다. 생성·reset 시 clear는 필요 없다.
-- Pass 2는 source alpha를 먼저 확인한다. alpha가 0이면 RawFlux를 읽지 않는다.
-- alpha가 양수이면 `ReverseNeighborDirectionIndices[texel]`에서 `(packed >> (directionIndex × 4)) & 0xf`로 역방향 source direction index를 찾고 저장값에 source alpha를 곱한다. `0xf`는 invalid이며 0–7만 조회한다.
-- 역방향 direction index는 Geometry와 공유하고 topology 변경 때 다시 준비한다. RawFlux는 instance별이며 AB/BA가 같은 scratch를 참조한다.
-- 캐시 OFF에서는 RawFlux 읽기·쓰기를 생략하지만 buffer와 descriptor 할당은 유지한다.
-- direction index 배치와 유효성은 각각 결정에 따른다 (Directional RawFlux Cache, [[05_Decisions/0005_Inactive-RawFlux-Write-Elision|Decision 0005]]).
+- 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록하고 방향별 RawFlux 평가를 생략한다. 실제 outgoing은 0이며 Pass 2의 Incoming·Input·Next 갱신은 계속 수행한다.
+- Pass 1 뒤 `OutgoingFluxScale`·`RawOutgoing`에 compute write→read barrier를 적용한다.
+- Pass 2 read 뒤 다음 step의 Pass 1 write 전에 이 두 scratch buffer의 재사용 barrier를 둔다.
+- Pass 2는 유입 source의 역방향 neighbor slot을 찾아 TransferWeight와 RawFlux를 재계산한다. 역방향 direction index는 Geometry와 공유하며 topology 변경 때 준비한다.
+- 방향별 RawFlux 캐시와 해당 ON/OFF 분기는 Decision 0025에서 제거했다. 역방향 direction index는 재계산 경로에서 쓰므로 유지한다.
 
 ## CPU와 GPU 데이터 형식
 
@@ -203,7 +194,7 @@ flowchart LR
 
 ## Solver 캐시 buffer descriptor binding
 
-각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver cache는 14·15·19·23을 사용하며 공유 역방향 direction index는 18을 사용한다. 전체 descriptor binding count는 24이며 기존 device limit 검증에도 적용한다.
+각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver 전용 자원은 binding 14–22를 사용한다. 전체 descriptor binding count는 23이며 기존 device limit 검증에도 적용한다.
 
 | set 0 binding | Buffer | 소유 범위 | 원소 / 인덱스 |
 |---:|---|---|---|
@@ -216,11 +207,10 @@ flowchart LR
 | 16 | TransferWeightDebugAverages | instance | texel별 vec4 |
 | 17 | MesoNormals | Shared Geometry | texel별 vec4 |
 | 18 | ReverseNeighborDirectionIndices | Shared Geometry | texel별 uint32 (8 × 4 bit) |
-| 19 | RawFlux | instance | `neighborDirectionIndex × texelCount × channelCount + texel × channelCount + channel` |
-| 20 | WorldTexelAreas | instance | texel별 float32, stride 4 B |
-| 21 | DynamicGeometry | instance | texel별 위치+평균거리 vec4, normal+마지막 생성 높이 vec4 |
-| 22 | AccumulationHeights | instance | texel별 높이·dirty planes와 workgroup/indirect dispatch data |
-| 23 | DynamicConcavityWeights | instance | texel별 float32 |
+| 19 | WorldTexelAreas | instance | texel별 float32, stride 4 B |
+| 20 | DynamicGeometry | instance | texel별 위치+평균거리 vec4, normal+마지막 생성 높이 vec4 |
+| 21 | AccumulationHeights | instance | texel별 높이·dirty planes와 workgroup/indirect dispatch data |
+| 22 | DynamicConcavityWeights | instance | texel별 float32 |
 
 DynamicConcavityWeights는 Surface 6개 × 512×512에서 float32, texel당 4 B, 원소 padding 없음 기준으로 instance당 6 MiB다. Dynamic geometry update가 변경된 texel의 값을 갱신한다.
 
@@ -228,10 +218,7 @@ DynamicConcavityWeights는 Surface 6개 × 512×512에서 float32, texel당 4 B,
 - 6×512×512 texel·1 channel 예시의 추가 payload: TransferWeights 48 MiB, RawOutgoing 6 MiB
 - CPU preparation의 world position·world normal·mean-neighbor-distance scratch는 cache rebuild 중에만 유지하며 GPU payload에는 포함하지 않는다.
 
-방향별 RawFlux 캐시의 증가분은 6 Surface × 512×512·1채널·8방향 이웃 기준으로 인스턴스당 48 MiB, 역방향 인덱스 공유 Geometry당 6 MiB다 (Directional RawFlux Cache).
-
 - Scalar 원소 padding은 없으며 allocator overhead는 제외한다.
-- RawFlux는 byte-size overflow, uint32 shader 인덱스 범위, `maxStorageBufferRange`를 검증한다. 한도를 넘으면 명시적으로 거부한다.
 
 Solver push constant는 128 byte다.
 
@@ -242,12 +229,10 @@ Solver push constant는 128 byte다.
 - 마지막 3개 column의 xyz는 normal matrix, w는 gravity up의 x/y/z다.
 - CPU가 dispatch당 한 번 계산하며 크기·offset은 `static_assert`로 검증한다.
 - Translation은 edge 차이에서 상쇄되므로 Solver에 전달하지 않는다.
-- SolverFlags bit 5는 CPU에서 RawFlux cache OFF pipeline을 선택한다. 두 pass의 specialization constant 0을 false로 설정한다.
-- Push constant와 descriptor 배치는 ON/OFF에서 같다.
+- SolverFlags bit 5는 사용하지 않는다. Solver는 두 pass에서 항상 방향별 RawFlux를 재계산한다.
 
 기본 Surface grid는 Medium 256×256이며 Low 128×128, High 512×512를 선택할 수 있다 (Simulation Resolution Presets). 위 512 메모리 예시는 High 기준이다.
 
-- float32·8방향 이웃·1채널·원소 padding 없음에서 Medium RawFlux는 instance당 12 MiB다.
 - uint32 역방향 direction index는 공유 Geometry당 1.5 MiB다.
 - 이 추정은 6개 Surface와 allocator overhead 제외를 가정한다.
 - 해상도 변경 시 mapping·geometry·GPU buffer·descriptor·Solver를 재생성하고 State를 초기화한다.
@@ -271,7 +256,7 @@ CPU와 GLSL 사이에서 직접 맞물리는 이름은 아래 의미로 읽는�
 ### 이름만으로 의미가 덜 드러나는 항목
 
 - `RawOutgoingBuffer`: texel/channel별 **방향 합계**이고, `RawFlux`와 다른 값이다.
-- `RawFluxBuffer`: texel/channel/direction별 raw flux cache다.
+- Pass 1과 Pass 2는 같은 RawFlux 식을 각자 평가한다. Pass 1은 제한 전 방향 합계만 `RawOutgoing`에 저장하고, 방향별 RawFlux scratch는 두지 않는다.
 - `AccumulationHeights`: 높이뿐 아니라 같은 GPU allocation의 dirty/workgroup/indirect-dispatch 메타데이터도 포함한다.
 - `CurrentState` / `NextState`: 정규화 비율이 아니라 Capacity 초과량까지 보존하는 **실제 State amount**다.
 - `StateValueIndex = TexelIndex * StateChannelCount + ChannelIndex`를 사용한다.
