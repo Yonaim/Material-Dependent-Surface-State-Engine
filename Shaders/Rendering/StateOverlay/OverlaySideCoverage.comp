@@ -19,6 +19,23 @@ struct TOverlayVertex
     vec4 Weights;
 };
 
+struct TDrawCommand
+{
+    uint VertexCount;
+    uint InstanceCount;
+    uint FirstVertex;
+    uint FirstInstance;
+};
+
+struct TTopDrawCommand
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int VertexOffset;
+    uint FirstInstance;
+};
+
 layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
 {
     TOverlayVertex Values[];
@@ -28,6 +45,16 @@ layout(set = 2, binding = 4, std430) writeonly buffer TCoverageValues
 {
     float Values[];
 } Coverage;
+
+layout(set = 2, binding = 5, std430) buffer TDrawCommands
+{
+    TDrawCommand Values[];
+} DrawCommands;
+
+layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
+{
+    TTopDrawCommand Values[];
+} TopDrawCommands;
 
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
 {
@@ -46,20 +73,47 @@ layout(push_constant) uniform TPush
 
 bool IsTileActive(TOverlayVertex Vertex)
 {
-    uint Texel = 0xffffffffu;
-    for (uint K = 0u; K < 4u; ++K)
-        if (Vertex.Weights[K] > 0.0) { Texel = Vertex.Samples[K]; break; }
-    if (Texel == 0xffffffffu || Push.TileSize == 0u) return true;
-    uint Tile = Texel / (Push.TileSize * Push.TileSize);
-    uint Flag = Push.TexelCount * 4u + Tile;
-    return Flag < uint(GeometryCache.Values.length()) && GeometryCache.Values[Flag] != 0u;
+    if (Push.TileSize == 0u) return true;
+    uint Surface = uint(max(Vertex.UVSurface.w, 0.0));
+#if MDSS_GPU_VALIDATION
+    if (Surface >= uint(SurfaceRanges.Values.length())) return false;
+#endif
+    uvec4 Range = SurfaceRanges.Values[Surface];
+    if (Range.y == 0u || Range.z == 0u) return false;
+
+    vec2 UV = clamp(Vertex.UVSurface.xy, 0.0, 1.0);
+    uvec2 XY = min(uvec2(UV * vec2(Range.yz)), Range.yz - 1u);
+
+    uint CandidateBase = 0u;
+    for (uint S = 0u; S < Surface; ++S)
+    {
+        uvec4 Other = SurfaceRanges.Values[S];
+        CandidateBase += ((Other.y + Push.TileSize - 1u) / Push.TileSize) *
+                         ((Other.z + Push.TileSize - 1u) / Push.TileSize);
+    }
+    uint TilesX = (Range.y + Push.TileSize - 1u) / Push.TileSize;
+    uint Candidate = CandidateBase + (XY.y / Push.TileSize) * TilesX + (XY.x / Push.TileSize);
+    uint Flag = Push.TexelCount * 4u + Candidate;
+#if MDSS_GPU_VALIDATION
+    return Flag < uint(GeometryCache.Values.length()) && (GeometryCache.Values[Flag] & 1u) != 0u;
+#else
+    return (GeometryCache.Values[Flag] & 1u) != 0u;
+#endif
 }
 
 void main()
 {
+    uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
+    // The static fields of the indirect commands are initialized once by the CPU. Only the
+    // per-frame counters are reset here, before the boundary pass consumes them.
+    if (Index < uint(DrawCommands.Values.length()))
+        DrawCommands.Values[Index].VertexCount = 0u;
+    if (Index < uint(TopDrawCommands.Values.length()))
+        TopDrawCommands.Values[Index].InstanceCount = 0u;
+
     // tile이 비활성인 경우 sampling을 건너뛰고 coverage를 0으로 만든다.
     if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u) return;
-    uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
     if (Index >= Push.VertexCount || Index >= uint(MeshVertices.Values.length()) ||
         Index >= uint(Coverage.Values.length())) return;
 

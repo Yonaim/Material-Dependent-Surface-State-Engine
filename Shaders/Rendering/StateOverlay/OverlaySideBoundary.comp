@@ -39,6 +39,15 @@ struct TDrawCommand
     uint FirstInstance;
 };
 
+struct TTopDrawCommand
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int VertexOffset;
+    uint FirstInstance;
+};
+
 layout(set = 1, binding = 0, std430) readonly buffer TComputed
 {
     TTexelGeometryVertex Values[];
@@ -79,6 +88,11 @@ layout(set = 2, binding = 5, std430) buffer TDrawCommands
     TDrawCommand Values[];
 } DrawCommands;
 
+layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
+{
+    TTopDrawCommand Values[];
+} TopDrawCommands;
+
 layout(push_constant) uniform TPush
 {
     uint TriangleCount;
@@ -88,19 +102,6 @@ layout(push_constant) uniform TPush
     uint TexelCount;
     uint TileSize;
 } Push;
-
-bool IsTileActive(uint Index)
-{
-    if (Index >= uint(MeshVertices.Values.length()) || Push.TileSize == 0u) return true;
-    TOverlayVertex Vertex = MeshVertices.Values[Index];
-    uint Texel = 0xffffffffu;
-    for (uint K = 0u; K < 4u; ++K)
-        if (Vertex.Weights[K] > 0.0) { Texel = Vertex.Samples[K]; break; }
-    if (Texel == 0xffffffffu) return true;
-    uint Tile = Texel / (Push.TileSize * Push.TileSize);
-    uint Flag = Push.TexelCount * 4u + Tile;
-    return Flag < uint(GeometryCache.Values.length()) && GeometryCache.Values[Flag] != 0u;
-}
 
 struct TPoint
 {
@@ -177,15 +178,23 @@ void main()
                             Indices.z < uint(Coverage.Values.length());
             if (ValidTriangle)
             {
-                if (!IsTileActive(Indices.x) && !IsTileActive(Indices.y) && !IsTileActive(Indices.z))
-                    ValidTriangle = false;
-            }
-            if (ValidTriangle)
-            {
+                // Coverage already maps inactive tiles to zero. Reject the common inactive
+                // case before loading the much larger overlay vertex records.
                 VertexCoverage = vec3(Coverage.Values[Indices.x], Coverage.Values[Indices.y],
                                       Coverage.Values[Indices.z]);
-                if (any(greaterThan(VertexCoverage, vec3(Cutoff))))
+                if (!any(greaterThan(VertexCoverage, vec3(Cutoff))))
+                {
+                    ValidTriangle = false;
+                }
+                else
+                {
                     atomicAdd(ActiveTrianglesInGroup, 1u);
+
+                    // Enable only the surface touched by this active triangle.
+                    uint Surface = uint(MeshVertices.Values[Indices.x].UVSurface.w);
+                    if (Surface < uint(TopDrawCommands.Values.length()))
+                        atomicExchange(TopDrawCommands.Values[Surface].InstanceCount, 1u);
+                }
             }
         }
     }
@@ -235,7 +244,7 @@ void main()
     // 삼각형 샘플만으로 놓칠 수 있는 UV 외곽 경계도 별도로 잘라낸다.
     uvec4 Edge = BoundaryEdges.Values[Slot - Push.TriangleCount];
     if (Edge.x >= uint(Coverage.Values.length()) || Edge.y >= uint(Coverage.Values.length())) return;
-    if (!IsTileActive(Edge.x) && !IsTileActive(Edge.y)) return;
+    // Coverage already contains the tile-occupancy result, so do the cheap test first.
     float CoverageA = Coverage.Values[Edge.x];
     float CoverageB = Coverage.Values[Edge.y];
     bool AActive = CoverageA > Cutoff;

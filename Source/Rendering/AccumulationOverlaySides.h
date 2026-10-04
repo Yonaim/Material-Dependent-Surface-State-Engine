@@ -70,7 +70,6 @@ namespace MDSS::Rendering
             std::unique_ptr<GPU::TGPUBuffer> Segments;
             std::unique_ptr<GPU::TGPUBuffer> DrawCommands;
             std::unique_ptr<GPU::TGPUBuffer> TopDrawCommands;
-            VkDescriptorSet                  TopCommandSet = VK_NULL_HANDLE;
             std::array<std::unique_ptr<GPU::TGPUBuffer>, TRenderContext::MaxFramesInFlight> ActivityReadbacks;
             std::array<bool, TRenderContext::MaxFramesInFlight>                             ActivityPending{};
             VkDescriptorSet                                                                 Set = VK_NULL_HANDLE;
@@ -85,15 +84,11 @@ namespace MDSS::Rendering
         VkDevice                                                 Device;
         VkPhysicalDeviceLimits                                   Limits{};
         VkDescriptorSetLayout                                    OutputLayout = VK_NULL_HANDLE;
-        VkDescriptorSetLayout                                    TopCommandSetLayout = VK_NULL_HANDLE;
         VkPipelineLayout                                         PipelineLayout = VK_NULL_HANDLE;
-        VkPipelineLayout                                         TopCommandLayout = VK_NULL_HANDLE;
         VkPipeline                                               CoveragePipeline = VK_NULL_HANDLE;
         VkPipeline                                               CoverageSmoothingPipeline = VK_NULL_HANDLE;
         VkPipeline                                               BoundaryPipeline = VK_NULL_HANDLE;
-        VkPipeline                                               TopCommandPipeline = VK_NULL_HANDLE;
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;
-        VkDescriptorPool                                         TopCommandPool = VK_NULL_HANDLE;
         std::vector<std::unique_ptr<GPU::TGPUBuffer>>            CoveragePages;
         std::vector<VkDeviceSize>                                CoveragePageUsed;
         std::map<std::tuple<std::size_t, std::uint32_t, std::uint32_t>, TOutput> Outputs;

@@ -3122,7 +3122,10 @@ namespace MDSS
                             DrawMetric(24, "  Total dispatches", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(31, "    Coverage sample", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(28, "    Boundary + segment", {0.82F, 0.87F, 0.94F, 1.0F});
-                            DrawMetric(29, "    Top draw command", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(29,
+                                       "    Top command (merged)",
+                                       {0.82F, 0.87F, 0.94F, 1.0F},
+                                       "Top surface activation now runs inside Boundary + segment; this slot should be near zero.");
                             DrawMetric(30, "    Coverage barrier", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(25,
                                        "  Pre-draw sync",

@@ -46,7 +46,7 @@ namespace MDSS::Rendering
         : PhysicalDevice(PhysicalDevice), Device(Device)
     {
         constexpr std::uint32_t SetsPerInstance = MaxOverlayLayersPerInstance * MaxOverlayMeshResolutions;
-        constexpr std::uint32_t StorageDescriptorsPerInstance = SetsPerInstance * 6U;
+        constexpr std::uint32_t StorageDescriptorsPerInstance = SetsPerInstance * 7U;
         if (!SurfaceLayout || !ComputedLayout || MaxInstances == 0 ||
             MaxInstances > std::numeric_limits<std::uint32_t>::max() / StorageDescriptorsPerInstance)
             throw std::invalid_argument("Accumulation overlay sides require valid layouts and instance slots.");
@@ -54,7 +54,7 @@ namespace MDSS::Rendering
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
         Limits = Properties.limits;
         const auto StorageBindings =
-            static_cast<std::uint32_t>(SurfaceState::TSurfaceGPUDescriptorBinding::Count) - 1U + 8U;
+            static_cast<std::uint32_t>(SurfaceState::TSurfaceGPUDescriptorBinding::Count) - 1U + 9U;
         if (Limits.maxPerStageDescriptorStorageBuffers < StorageBindings ||
             Limits.maxDescriptorSetStorageBuffers < StorageBindings || Limits.maxComputeWorkGroupInvocations < 64 ||
             Limits.maxComputeWorkGroupSize[0] < 64)
@@ -63,7 +63,7 @@ namespace MDSS::Rendering
         VkShaderModule Module = VK_NULL_HANDLE;
         try
         {
-            std::array<VkDescriptorSetLayoutBinding, 6> Bindings{};
+            std::array<VkDescriptorSetLayoutBinding, 7> Bindings{};
             for (std::uint32_t I = 0; I < Bindings.size(); ++I)
             {
                 Bindings[I].binding = I;
@@ -87,20 +87,6 @@ namespace MDSS::Rendering
             LayoutInfo.pushConstantRangeCount = 1;
             LayoutInfo.pPushConstantRanges = &Push;
             RequireVk(vkCreatePipelineLayout(Device, &LayoutInfo, nullptr, &PipelineLayout));
-
-            const std::array<VkDescriptorSetLayoutBinding, 2> TopBindings{
-                {{0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr},
-                 {1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr}}};
-            VkDescriptorSetLayoutCreateInfo TopSetInfo{};
-            TopSetInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            TopSetInfo.bindingCount = static_cast<std::uint32_t>(TopBindings.size());
-            TopSetInfo.pBindings = TopBindings.data();
-            RequireVk(vkCreateDescriptorSetLayout(Device, &TopSetInfo, nullptr, &TopCommandSetLayout));
-            VkPipelineLayoutCreateInfo TopLayoutInfo{};
-            TopLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            TopLayoutInfo.setLayoutCount = 1;
-            TopLayoutInfo.pSetLayouts = &TopCommandSetLayout;
-            RequireVk(vkCreatePipelineLayout(Device, &TopLayoutInfo, nullptr, &TopCommandLayout));
 
             const auto CreatePipeline =
                 [&](const char* ShaderName, VkPipelineLayout SelectedLayout, VkPipeline& Destination)
@@ -138,20 +124,16 @@ namespace MDSS::Rendering
             CreatePipeline("OverlaySideCoverage.comp", PipelineLayout, CoveragePipeline);
             CreatePipeline("OverlayCoverageSmoothing.comp", PipelineLayout, CoverageSmoothingPipeline);
             CreatePipeline("OverlaySideBoundary.comp", PipelineLayout, BoundaryPipeline);
-            CreatePipeline("OverlayTopCommand.comp", TopCommandLayout, TopCommandPipeline);
 
             // Keep one output set per instance, overlay layer, and selectable mesh resolution.
             const std::uint32_t SetCount = static_cast<std::uint32_t>(MaxInstances) * SetsPerInstance;
-            const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SetCount * 6U};
+            const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SetCount * 7U};
             VkDescriptorPoolCreateInfo PoolInfo{};
             PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
             PoolInfo.maxSets = SetCount;
             PoolInfo.poolSizeCount = 1;
             PoolInfo.pPoolSizes = &PoolSize;
             RequireVk(vkCreateDescriptorPool(Device, &PoolInfo, nullptr, &Pool));
-            const VkDescriptorPoolSize TopPoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SetCount * 2U};
-            PoolInfo.pPoolSizes = &TopPoolSize;
-            RequireVk(vkCreateDescriptorPool(Device, &PoolInfo, nullptr, &TopCommandPool));
         }
         catch (...)
         {
@@ -159,24 +141,16 @@ namespace MDSS::Rendering
                 vkDestroyShaderModule(Device, Module, nullptr);
             if (Pool)
                 vkDestroyDescriptorPool(Device, Pool, nullptr);
-            if (TopCommandPool)
-                vkDestroyDescriptorPool(Device, TopCommandPool, nullptr);
             if (CoveragePipeline)
                 vkDestroyPipeline(Device, CoveragePipeline, nullptr);
             if (CoverageSmoothingPipeline)
                 vkDestroyPipeline(Device, CoverageSmoothingPipeline, nullptr);
             if (BoundaryPipeline)
                 vkDestroyPipeline(Device, BoundaryPipeline, nullptr);
-            if (TopCommandPipeline)
-                vkDestroyPipeline(Device, TopCommandPipeline, nullptr);
             if (PipelineLayout)
                 vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
-            if (TopCommandLayout)
-                vkDestroyPipelineLayout(Device, TopCommandLayout, nullptr);
             if (OutputLayout)
                 vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
-            if (TopCommandSetLayout)
-                vkDestroyDescriptorSetLayout(Device, TopCommandSetLayout, nullptr);
             throw;
         }
     }
@@ -186,24 +160,16 @@ namespace MDSS::Rendering
         Outputs.clear();
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
-        if (TopCommandPool)
-            vkDestroyDescriptorPool(Device, TopCommandPool, nullptr);
         if (CoveragePipeline)
             vkDestroyPipeline(Device, CoveragePipeline, nullptr);
         if (CoverageSmoothingPipeline)
             vkDestroyPipeline(Device, CoverageSmoothingPipeline, nullptr);
         if (BoundaryPipeline)
             vkDestroyPipeline(Device, BoundaryPipeline, nullptr);
-        if (TopCommandPipeline)
-            vkDestroyPipeline(Device, TopCommandPipeline, nullptr);
         if (PipelineLayout)
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
-        if (TopCommandLayout)
-            vkDestroyPipelineLayout(Device, TopCommandLayout, nullptr);
         if (OutputLayout)
             vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
-        if (TopCommandSetLayout)
-            vkDestroyDescriptorSetLayout(Device, TopCommandSetLayout, nullptr);
     }
 
     VkDescriptorSet TAccumulationOverlaySides::GetSet(std::size_t Instance,
@@ -357,8 +323,42 @@ namespace MDSS::Rendering
                 Device,
                 TopDrawBytes,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+            // Indirect command topology is immutable for this overlay mesh. Upload those static
+            // fields once; per-frame VertexCount/InstanceCount values are reset by the coverage
+            // compute pass before the boundary pass runs.
+            std::vector<VkDrawIndirectCommand> InitialDrawCommands(SurfaceCount + 2U);
+            for (std::uint32_t Surface = 0; Surface < SurfaceCount; ++Surface)
+            {
+                const auto& Range = Mesh.Ranges[Surface];
+                InitialDrawCommands[Surface] = {0U, 1U, Range.FirstIndex * 2U, 0U};
+            }
+            InitialDrawCommands[SurfaceCount] = {0U, 1U, Triangles * 6U, 0U};
+
+            std::vector<VkDrawIndexedIndirectCommand> InitialTopDrawCommands(SurfaceCount);
+            for (std::uint32_t Surface = 0; Surface < SurfaceCount; ++Surface)
+            {
+                const auto& Range = Mesh.Ranges[Surface];
+                // OverlayTop.vert does not use gl_InstanceIndex; zero also supports devices
+                // without indirect firstInstance.
+                InitialTopDrawCommands[Surface] = {Range.IndexCount, 0U, Range.FirstIndex, 0, 0U};
+            }
+
+            constexpr VkDeviceSize MaxUpdateBytes = 65536U;
+            for (VkDeviceSize Offset = 0; Offset < DrawBytes; Offset += MaxUpdateBytes)
+                vkCmdUpdateBuffer(Command,
+                                  Output.DrawCommands->GetHandle(),
+                                  Offset,
+                                  std::min(MaxUpdateBytes, DrawBytes - Offset),
+                                  reinterpret_cast<const std::uint8_t*>(InitialDrawCommands.data()) + Offset);
+            for (VkDeviceSize Offset = 0; Offset < TopDrawBytes; Offset += MaxUpdateBytes)
+                vkCmdUpdateBuffer(Command,
+                                  Output.TopDrawCommands->GetHandle(),
+                                  Offset,
+                                  std::min(MaxUpdateBytes, TopDrawBytes - Offset),
+                                  reinterpret_cast<const std::uint8_t*>(InitialTopDrawCommands.data()) + Offset);
             for (auto& Readback : Output.ActivityReadbacks)
                 Readback = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
                                                              Device,
@@ -374,14 +374,15 @@ namespace MDSS::Rendering
             Allocate.descriptorSetCount = 1;
             Allocate.pSetLayouts = &OutputLayout;
             RequireVk(vkAllocateDescriptorSets(Device, &Allocate, &Output.Set));
-            const std::array<VkDescriptorBufferInfo, 6> Buffers{
+            const std::array<VkDescriptorBufferInfo, 7> Buffers{
                 {{Mesh.VertexBuffer->GetHandle(), 0, VK_WHOLE_SIZE},
                  {Mesh.IndexBuffer->GetHandle(), 0, VK_WHOLE_SIZE},
                  {Mesh.BoundaryBuffer->GetHandle(), 0, VK_WHOLE_SIZE},
                  {Output.Segments->GetHandle(), 0, VK_WHOLE_SIZE},
                  {CoveragePages[CoveragePage]->GetHandle(), CoverageOffset, CoverageBytes},
-                 {Output.DrawCommands->GetHandle(), 0, DrawBytes}}};
-            std::array<VkWriteDescriptorSet, 6> Writes{};
+                 {Output.DrawCommands->GetHandle(), 0, DrawBytes},
+                 {Output.TopDrawCommands->GetHandle(), 0, TopDrawBytes}}};
+            std::array<VkWriteDescriptorSet, 7> Writes{};
             for (std::uint32_t I = 0; I < Writes.size(); ++I)
             {
                 Writes[I].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -392,23 +393,6 @@ namespace MDSS::Rendering
                 Writes[I].pBufferInfo = &Buffers[I];
             }
             vkUpdateDescriptorSets(Device, static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
-            Allocate.descriptorPool = TopCommandPool;
-            Allocate.pSetLayouts = &TopCommandSetLayout;
-            RequireVk(vkAllocateDescriptorSets(Device, &Allocate, &Output.TopCommandSet));
-            const std::array<VkDescriptorBufferInfo, 2> TopBuffers{
-                {{Output.DrawCommands->GetHandle(), 0, DrawBytes},
-                 {Output.TopDrawCommands->GetHandle(), 0, TopDrawBytes}}};
-            std::array<VkWriteDescriptorSet, 2> TopWrites{};
-            for (std::uint32_t I = 0; I < TopWrites.size(); ++I)
-            {
-                TopWrites[I].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                TopWrites[I].dstSet = Output.TopCommandSet;
-                TopWrites[I].dstBinding = I;
-                TopWrites[I].descriptorCount = 1;
-                TopWrites[I].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                TopWrites[I].pBufferInfo = &TopBuffers[I];
-            }
-            vkUpdateDescriptorSets(Device, static_cast<std::uint32_t>(TopWrites.size()), TopWrites.data(), 0, nullptr);
             Output.VertexCount = Vertices;
             Output.TriangleCount = Triangles;
             Output.BoundaryCount = Boundaries;
@@ -420,79 +404,34 @@ namespace MDSS::Rendering
             It->second.BoundaryCount != Boundaries || It->second.SurfaceCount != SurfaceCount)
             throw std::logic_error("Overlay topology changed without rebuilding Scene resources.");
 
-        std::vector<VkDrawIndirectCommand> DrawCommands(SurfaceCount + 2U);
-        for (std::uint32_t Surface = 0; Surface < SurfaceCount; ++Surface)
-        {
-            const auto& Range = Mesh.Ranges[Surface];
-            DrawCommands[Surface] = {0U, 1U, Range.FirstIndex * 2U, 0U};
-        }
-        DrawCommands[SurfaceCount] = {0U, 1U, Triangles * 6U, 0U};
-        std::vector<VkDrawIndexedIndirectCommand> TopDrawCommands(SurfaceCount);
-        for (std::uint32_t Surface = 0; Surface < SurfaceCount; ++Surface)
-        {
-            const auto& Range = Mesh.Ranges[Surface];
-            // OverlayTop.vert does not use gl_InstanceIndex; zero also supports devices without indirect firstInstance.
-            TopDrawCommands[Surface] = {Range.IndexCount, 0U, Range.FirstIndex, 0, 0U};
-        }
-        VkBufferMemoryBarrier DrawReuse{};
-        DrawReuse.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        DrawReuse.srcAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-        DrawReuse.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        DrawReuse.srcQueueFamilyIndex = DrawReuse.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        DrawReuse.buffer = It->second.DrawCommands->GetHandle();
-        DrawReuse.size = DrawBytes;
-        VkBufferMemoryBarrier TopDrawReuse = DrawReuse;
-        TopDrawReuse.buffer = It->second.TopDrawCommands->GetHandle();
-        TopDrawReuse.size = TopDrawBytes;
-        const std::array<VkBufferMemoryBarrier, 2> ReuseBarriers{DrawReuse, TopDrawReuse};
-        vkCmdPipelineBarrier(Command,
-                             VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
-                             VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             0,
-                             0,
-                             nullptr,
-                             static_cast<std::uint32_t>(ReuseBarriers.size()),
-                             ReuseBarriers.data(),
-                             0,
-                             nullptr);
-        constexpr VkDeviceSize MaxUpdateBytes = 65536U;
-        for (VkDeviceSize Offset = 0; Offset < DrawBytes; Offset += MaxUpdateBytes)
-            vkCmdUpdateBuffer(Command,
-                              It->second.DrawCommands->GetHandle(),
-                              Offset,
-                              std::min(MaxUpdateBytes, DrawBytes - Offset),
-                              reinterpret_cast<const std::uint8_t*>(DrawCommands.data()) + Offset);
-        for (VkDeviceSize Offset = 0; Offset < TopDrawBytes; Offset += MaxUpdateBytes)
-            vkCmdUpdateBuffer(Command,
-                              It->second.TopDrawCommands->GetHandle(),
-                              Offset,
-                              std::min(MaxUpdateBytes, TopDrawBytes - Offset),
-                              reinterpret_cast<const std::uint8_t*>(TopDrawCommands.data()) + Offset);
-
         std::array<VkBufferMemoryBarrier, 4> Barriers{};
         for (auto& Barrier : Barriers)
         {
             Barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-            Barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-            Barrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
             Barrier.srcQueueFamilyIndex = Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             Barrier.size = VK_WHOLE_SIZE;
         }
         Barriers[0].buffer = It->second.Segments->GetHandle();
+        Barriers[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+        Barriers[0].dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         Barriers[1].buffer = CoveragePages[It->second.CoveragePage]->GetHandle();
         Barriers[1].offset = It->second.CoverageOffset;
         Barriers[1].size = CoverageBytes;
+        Barriers[1].srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+        Barriers[1].dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         Barriers[2].buffer = It->second.DrawCommands->GetHandle();
-        Barriers[2].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        Barriers[2].srcAccessMask =
+            VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
         Barriers[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
         Barriers[2].size = DrawBytes;
         Barriers[3].buffer = It->second.TopDrawCommands->GetHandle();
-        Barriers[3].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        Barriers[3].srcAccessMask =
+            VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
         Barriers[3].dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         Barriers[3].size = TopDrawBytes;
         vkCmdPipelineBarrier(Command,
                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                              0,
                              0,
@@ -528,22 +467,35 @@ namespace MDSS::Rendering
         };
         vkCmdBindPipeline(
             Command, VK_PIPELINE_BIND_POINT_COMPUTE, bSmoothCoverage ? CoverageSmoothingPipeline : CoveragePipeline);
-        Dispatch(Vertices);
+        Dispatch(std::max(Vertices, SurfaceCount + 2U));
         WriteStageTimestamp(2U);
 
-        Barriers[0].buffer = CoveragePages[It->second.CoveragePage]->GetHandle();
-        Barriers[0].offset = It->second.CoverageOffset;
-        Barriers[0].size = CoverageBytes;
-        Barriers[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-        Barriers[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        std::array<VkBufferMemoryBarrier, 3> CoverageToBoundaryBarriers{};
+        CoverageToBoundaryBarriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        CoverageToBoundaryBarriers[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        CoverageToBoundaryBarriers[0].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        CoverageToBoundaryBarriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        CoverageToBoundaryBarriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        CoverageToBoundaryBarriers[0].buffer = CoveragePages[It->second.CoveragePage]->GetHandle();
+        CoverageToBoundaryBarriers[0].offset = It->second.CoverageOffset;
+        CoverageToBoundaryBarriers[0].size = CoverageBytes;
+        CoverageToBoundaryBarriers[1] = CoverageToBoundaryBarriers[0];
+        CoverageToBoundaryBarriers[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+        CoverageToBoundaryBarriers[1].buffer = It->second.DrawCommands->GetHandle();
+        CoverageToBoundaryBarriers[1].offset = 0;
+        CoverageToBoundaryBarriers[1].size = DrawBytes;
+        CoverageToBoundaryBarriers[2] = CoverageToBoundaryBarriers[1];
+        CoverageToBoundaryBarriers[2].dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        CoverageToBoundaryBarriers[2].buffer = It->second.TopDrawCommands->GetHandle();
+        CoverageToBoundaryBarriers[2].size = TopDrawBytes;
         vkCmdPipelineBarrier(Command,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                              0,
                              0,
                              nullptr,
-                             1,
-                             Barriers.data(),
+                             static_cast<std::uint32_t>(CoverageToBoundaryBarriers.size()),
+                             CoverageToBoundaryBarriers.data(),
                              0,
                              nullptr);
         WriteStageTimestamp(3U);
@@ -568,14 +520,14 @@ namespace MDSS::Rendering
         VkBufferMemoryBarrier CounterBarrier{};
         CounterBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         CounterBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-        CounterBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_SHADER_READ_BIT;
+        CounterBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         CounterBarrier.srcQueueFamilyIndex = CounterBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         CounterBarrier.buffer = It->second.DrawCommands->GetHandle();
         CounterBarrier.offset = static_cast<VkDeviceSize>(SurfaceCount + 1U) * sizeof(VkDrawIndirectCommand);
         CounterBarrier.size = sizeof(std::uint32_t);
         vkCmdPipelineBarrier(Command,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                             VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
                              0,
                              0,
                              nullptr,
@@ -584,10 +536,8 @@ namespace MDSS::Rendering
                              0,
                              nullptr);
         WriteStageTimestamp(5U);
-        vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, TopCommandPipeline);
-        vkCmdBindDescriptorSets(
-            Command, VK_PIPELINE_BIND_POINT_COMPUTE, TopCommandLayout, 0, 1, &It->second.TopCommandSet, 0, nullptr);
-        Dispatch(SurfaceCount);
+        // Surface-specific top commands are now activated directly by OverlaySideBoundary.comp.
+        // Keep the legacy profiling slot so existing UI/query indexing remains stable.
         WriteStageTimestamp(6U);
         VkBufferCopy CounterCopy{};
         CounterCopy.srcOffset = CounterBarrier.offset;
