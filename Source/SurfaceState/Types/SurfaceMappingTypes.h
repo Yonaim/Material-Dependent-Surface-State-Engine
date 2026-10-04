@@ -34,6 +34,17 @@ namespace MDSS::SurfaceState
     inline constexpr std::array<TSurfaceSimulationResolutionPreset, 3> SurfaceSimulationResolutionPresets{
         {{"Low", 128}, {"Medium", 256}, {"High", 512}}};
 
+    inline constexpr std::array<TSurfaceSimulationResolutionPreset, 4> SurfaceRenderMeshResolutionPresets{
+        {{"64", 64}, {"128", 128}, {"256", 256}, {"512", 512}}};
+
+    [[nodiscard]] constexpr bool IsSurfaceRenderMeshResolution(std::uint32_t Resolution) noexcept
+    {
+        for (const auto& Preset : SurfaceRenderMeshResolutionPresets)
+            if (Preset.Resolution == Resolution)
+                return true;
+        return false;
+    }
+
     [[nodiscard]] constexpr bool IsSurfaceSimulationResolution(std::uint32_t Resolution) noexcept
     {
         for (const auto& Preset : SurfaceSimulationResolutionPresets)

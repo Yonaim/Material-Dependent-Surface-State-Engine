@@ -126,6 +126,8 @@ namespace MDSS::Rendering
         std::uint64_t             SimulationTexels = 0;
         std::uint32_t             StateChannels = 0;
         std::uint32_t             SimulationResolution = 0;
+        std::uint32_t             SurfaceTexelMeshResolution = 0;
+        std::uint32_t             OverlayTexelMeshResolution = 0;
         std::uint64_t             OverlayActiveTopTriangles = 0;
         std::uint64_t             OverlayTotalTopTriangles = 0;
         TOverlayDrawProfilingMode OverlayDrawMode = TOverlayDrawProfilingMode::Both;
@@ -222,6 +224,16 @@ namespace MDSS::Rendering
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         /** @brief Rebuild Surface mapping and GPU resources, resetting State on success. */
         void SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);
+        [[nodiscard]] std::uint32_t GetSurfaceTexelMeshResolution() const noexcept
+        {
+            return SurfaceTexelMeshResolution;
+        }
+        void SetSurfaceTexelMeshResolution(std::uint32_t Resolution);
+        [[nodiscard]] std::uint32_t GetOverlayTexelMeshResolution() const noexcept
+        {
+            return OverlayTexelMeshResolution;
+        }
+        void SetOverlayTexelMeshResolution(std::uint32_t Resolution);
         void SetDebugProfileParameters(Asset::TSRProfileAssetHandle                 Profile,
                                        SurfaceState::TStateId                       State,
                                        const SurfaceState::TSurfaceStateParameters& Parameters,
@@ -334,9 +346,6 @@ namespace MDSS::Rendering
         void               SetDebugNormalWeightEnabled(bool bEnabled);
         [[nodiscard]] bool IsDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term) const noexcept;
         void               SetDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term, bool bEnabled);
-        [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
-        /** @brief Preserve State and allocations, but discard timings from the previous mode. */
-        void               SetRawFluxCacheEnabled(bool bEnabled);
         [[nodiscard]] bool IsAccumulationGeometryUpdateEnabled() const noexcept;
         void               SetAccumulationGeometryUpdateEnabled(bool bEnabled);
 
@@ -355,6 +364,8 @@ namespace MDSS::Rendering
             std::uint64_t FrameIndex = std::numeric_limits<std::uint64_t>::max();
             std::uint32_t SimulationSteps = 0;
             std::uint32_t Resolution = 0;
+            std::uint32_t SurfaceMeshResolution = 0;
+            std::uint32_t OverlayMeshResolution = 0;
             std::uint32_t Instances = 0;
             std::uint32_t StateChannels = 0;
             std::uint64_t Texels = 0;
@@ -465,6 +476,8 @@ namespace MDSS::Rendering
         TDemoSurfaceEffectSettings                           DemoEffects;
         TOverlayDrawProfilingMode                            OverlayDrawProfilingMode = TOverlayDrawProfilingMode::Both;
         TOverlayOccupancyTileSize OverlayOccupancyTileSize = TOverlayOccupancyTileSize::Tile16;
+        std::uint32_t             SurfaceTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
+        std::uint32_t             OverlayTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
         std::optional<SurfaceState::TSurfaceTexelSelection> InspectedTexel;
         std::unique_ptr<SurfaceState::TTexelInspector>      TexelInspector;
         std::uint64_t                                       SimulationStepSerial = 0;

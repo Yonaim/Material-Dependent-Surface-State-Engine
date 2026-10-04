@@ -167,35 +167,47 @@ namespace MDSS::SurfaceState
         RenderSamplingBoundaryFlagBuffer = CreateUploadedBuffer(PhysicalDevice, Device,
                                                                  BoundaryFlags.data(), BoundaryFlags.size(),
                                                                  sizeof(std::uint32_t), MaxRange);
-        auto Mesh = BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles);
-        TexelMeshRanges = std::move(Mesh.Surfaces);
-        TexelMeshVertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
-        TexelMeshBoundaryCount = static_cast<std::uint32_t>(Mesh.BoundaryEdges.size());
-        if (!Mesh.Indices.empty())
+        SimulationResolution = Geometry.GetSurfaces().empty() ? 0U : Geometry.GetSurfaces().front().Resolution.Width;
+        const auto UploadTexelMesh = [&](TSurfaceTexelMesh Mesh, TSurfaceTexelMeshGPUVariant& Output)
         {
+            Output.Ranges = std::move(Mesh.Surfaces);
+            Output.VertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
+            Output.BoundaryCount = static_cast<std::uint32_t>(Mesh.BoundaryEdges.size());
+            if (Mesh.Indices.empty())
+                return;
             const auto Bytes = static_cast<VkDeviceSize>(Mesh.Indices.size() * sizeof(std::uint32_t));
-            TexelMeshIndexBuffer =
+            Output.IndexBuffer =
                 std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
                                                   Device,
                                                   Bytes,
                                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                   UploadMemory);
-            TexelMeshIndexBuffer->Upload(Mesh.Indices.data(), Bytes);
+            Output.IndexBuffer->Upload(Mesh.Indices.data(), Bytes);
             const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(TSurfaceTexelMeshVertex));
-            TexelMeshVertexBuffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                                                      Device,
-                                                                      VertexBytes,
-                                                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-                                                                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                                                      UploadMemory);
-            TexelMeshVertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
+            Output.VertexBuffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                                                                    Device,
+                                                                    VertexBytes,
+                                                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                                                    UploadMemory);
+            Output.VertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
             const glm::uvec4 EmptyEdge{0};
             const auto*      Edges = Mesh.BoundaryEdges.empty() ? &EmptyEdge : Mesh.BoundaryEdges.data();
             const auto       BoundaryBytes =
                 static_cast<VkDeviceSize>(std::max<std::size_t>(Mesh.BoundaryEdges.size(), 1) * sizeof(glm::uvec4));
-            TexelMeshBoundaryBuffer = std::make_unique<GPU::TGPUBuffer>(
+            Output.BoundaryBuffer = std::make_unique<GPU::TGPUBuffer>(
                 PhysicalDevice, Device, BoundaryBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, UploadMemory);
-            TexelMeshBoundaryBuffer->Upload(Edges, BoundaryBytes);
+            Output.BoundaryBuffer->Upload(Edges, BoundaryBytes);
+        };
+        UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles), FullTexelMesh);
+        for (const auto& Preset : SurfaceRenderMeshResolutionPresets)
+        {
+            if (Preset.Resolution == SimulationResolution)
+                continue;
+            TSurfaceTexelMeshGPUVariant Variant;
+            UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles, Preset.Resolution),
+                            Variant);
+            TexelMeshVariants.emplace(Preset.Resolution, std::move(Variant));
         }
     }
 
@@ -368,12 +380,6 @@ namespace MDSS::SurfaceState
             throw std::invalid_argument("World texel areas must be finite, nonnegative and match texel count.");
         ScalarCount = TexelCount * ChannelCount;
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
-        if (ScalarCount > std::numeric_limits<std::uint32_t>::max() / SurfaceNeighborCount)
-        {
-            throw std::length_error("Surface RawFlux indices exceed the shader uint32 range.");
-        }
-        const std::size_t RawFluxByteSize =
-            GetSurfaceGPUBufferByteSize(ScalarCount, SurfaceNeighborCount * sizeof(float), MaxRange);
         WorldTexelAreaBuffer =
             CreateUploadedBuffer(PhysicalDevice, Device, Areas.data(), Areas.size(), sizeof(float), MaxRange);
         std::vector<TSurfaceGPUVec4> ZeroDynamicGeometry(TexelCount * 2U);
@@ -416,9 +422,6 @@ namespace MDSS::SurfaceState
         TransferWeightDebugAverageBuffer = CreateUploadedBuffer(
             PhysicalDevice, Device, DebugAverages->data(), DebugAverages->size(), sizeof(TSurfaceGPUVec4), MaxRange);
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
-        // Pass 1 overwrites all direction entries for active sources; alpha=0 guards untouched inactive scratch.
-        RawFluxBuffer = std::make_unique<GPU::TGPUBuffer>(
-            PhysicalDevice, Device, static_cast<VkDeviceSize>(RawFluxByteSize), StorageUsage, UploadMemory);
     }
 
     const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetStateABuffer() const noexcept
@@ -454,11 +457,6 @@ namespace MDSS::SurfaceState
     const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetRawOutgoingBuffer() const noexcept
     {
         return *RawOutgoingBuffer;
-    }
-
-    const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetRawFluxBuffer() const noexcept
-    {
-        return *RawFluxBuffer;
     }
 
     const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetWorldTexelAreaBuffer() const noexcept
@@ -531,7 +529,6 @@ namespace MDSS::SurfaceState
         StateBBuffer->Upload(Zeros.data(), ByteSize);
         InputDeltaBuffer->Upload(Zeros.data(), ByteSize);
         RawOutgoingBuffer->Upload(Zeros.data(), ByteSize);
-        // RawFlux needs no reset: Pass 1 refreshes active sources and alpha=0 guards inactive ones.
         OutgoingFluxScaleBuffer->Upload(ResetOutgoingFluxScale.data(), ByteSize);
     }
 
@@ -621,7 +618,6 @@ namespace MDSS::SurfaceState
             // 바인딩 17에는 공유 Meso 노멀 버퍼를 연결한다.
             &SharedGeometry.GetMesoNormalBuffer(),
             &SharedGeometry.GetReverseNeighborDirectionIndexBuffer(),
-            &Instance.GetRawFluxBuffer(),
             &Instance.GetWorldTexelAreaBuffer(),
             &Instance.GetDynamicGeometryBuffer(),
             &Instance.GetAccumulationHeightBuffer(),

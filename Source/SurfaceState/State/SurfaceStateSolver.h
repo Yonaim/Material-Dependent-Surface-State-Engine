@@ -18,7 +18,6 @@
 
 namespace MDSS::SurfaceState
 {
-    inline constexpr std::uint32_t SurfaceSolverDisableRawFluxCacheFlag = 1U << 5U;
     inline constexpr std::uint32_t SurfaceSolverAccumulationGeometryUpdateFlag = 1U << 6U;
     inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
@@ -40,7 +39,6 @@ namespace MDSS::SurfaceState
 
     struct TSurfaceSolverDebugSettings
     {
-        bool                                                                  bRawFluxCacheEnabled = false;
         bool                                                                  bAccumulationGeometryUpdateEnabled = false;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, true};
@@ -89,8 +87,7 @@ namespace MDSS::SurfaceState
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
         static VkPipeline     CreateComputePipeline(VkDevice         Device,
                                                     VkPipelineLayout Layout,
-                                                    const char*      ShaderPath,
-                                                    bool             bRawFluxCacheEnabled);
+                                                    const char*      ShaderPath);
 
         VkDevice                  Device = VK_NULL_HANDLE;
         VkPipelineLayout          PipelineLayout = VK_NULL_HANDLE;
@@ -98,7 +95,7 @@ namespace MDSS::SurfaceState
         VkPipeline                DirtyDispatchPipeline = VK_NULL_HANDLE;
         VkPipeline                AccumulationGeometryPipeline = VK_NULL_HANDLE;
         VkPipeline                DynamicTransferWeightPipeline = VK_NULL_HANDLE;
-        std::array<VkPipeline, 2> Pass1Pipelines{};
-        std::array<VkPipeline, 2> Pass2Pipelines{};
+        VkPipeline                Pass1Pipeline = VK_NULL_HANDLE;
+        VkPipeline                Pass2Pipeline = VK_NULL_HANDLE;
     };
 } // namespace MDSS::SurfaceState

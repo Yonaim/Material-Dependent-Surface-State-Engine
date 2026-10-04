@@ -92,36 +92,23 @@ namespace MDSS::SurfaceState
         {
             const std::string ShaderRoot = MDSS_SHADER_DIR;
             AccumulationHeightPipeline = CreateComputePipeline(
-                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulationHeight.comp.spv").c_str(), false);
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulationHeight.comp.spv").c_str());
             DirtyDispatchPipeline = CreateComputePipeline(
                 Device,
                 PipelineLayout,
-                (ShaderRoot + "/Simulation/SurfaceDynamicUpdateDispatch.comp.spv").c_str(),
-                false);
+                (ShaderRoot + "/Simulation/SurfaceDynamicUpdateDispatch.comp.spv").c_str());
             AccumulationGeometryPipeline = CreateComputePipeline(
                 Device,
                 PipelineLayout,
-                (ShaderRoot + "/Simulation/SurfaceDynamicGeometryUpdate.comp.spv").c_str(),
-                false);
+                (ShaderRoot + "/Simulation/SurfaceDynamicGeometryUpdate.comp.spv").c_str());
             DynamicTransferWeightPipeline = CreateComputePipeline(
                 Device,
                 PipelineLayout,
-                (ShaderRoot + "/Simulation/SurfaceDynamicWeightsUpdate.comp.spv").c_str(),
-                false);
-            // Specialize both modes so the cached shader does not retain the recomputation path.
-            for (std::size_t Mode = 0; Mode < Pass1Pipelines.size(); ++Mode)
-            {
-                Pass1Pipelines[Mode] = CreateComputePipeline(
-                    Device,
-                    PipelineLayout,
-                    (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1.comp.spv").c_str(),
-                    Mode == 0);
-                Pass2Pipelines[Mode] = CreateComputePipeline(
-                    Device,
-                    PipelineLayout,
-                    (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2.comp.spv").c_str(),
-                    Mode == 0);
-            }
+                (ShaderRoot + "/Simulation/SurfaceDynamicWeightsUpdate.comp.spv").c_str());
+            Pass1Pipeline = CreateComputePipeline(
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1.comp.spv").c_str());
+            Pass2Pipeline = CreateComputePipeline(
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2.comp.spv").c_str());
         }
         catch (...)
         {
@@ -133,12 +120,10 @@ namespace MDSS::SurfaceState
                 vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
             if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
                 vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
-            for (const auto Pipeline : Pass1Pipelines)
-                if (Pipeline != VK_NULL_HANDLE)
-                    vkDestroyPipeline(Device, Pipeline, nullptr);
-            for (const auto Pipeline : Pass2Pipelines)
-                if (Pipeline != VK_NULL_HANDLE)
-                    vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pass1Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pass1Pipeline, nullptr);
+            if (Pass2Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pass2Pipeline, nullptr);
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
             PipelineLayout = VK_NULL_HANDLE;
             throw;
@@ -155,12 +140,10 @@ namespace MDSS::SurfaceState
             vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
         if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
             vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
-        for (const auto Pipeline : Pass1Pipelines)
-            if (Pipeline != VK_NULL_HANDLE)
-                vkDestroyPipeline(Device, Pipeline, nullptr);
-        for (const auto Pipeline : Pass2Pipelines)
-            if (Pipeline != VK_NULL_HANDLE)
-                vkDestroyPipeline(Device, Pipeline, nullptr);
+        if (Pass1Pipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(Device, Pass1Pipeline, nullptr);
+        if (Pass2Pipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(Device, Pass2Pipeline, nullptr);
         if (PipelineLayout != VK_NULL_HANDLE)
         {
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
@@ -241,7 +224,6 @@ namespace MDSS::SurfaceState
                              0,
                              nullptr);
 
-        const std::size_t   CacheMode = (SolverFlags & SurfaceSolverDisableRawFluxCacheFlag) == 0U ? 0U : 1U;
         const std::uint32_t WorkgroupCount = static_cast<std::uint32_t>((TexelCount + 63U) / 64U);
         vkCmdBindDescriptorSets(
             CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &DescriptorSet, 0, nullptr);
@@ -349,7 +331,7 @@ namespace MDSS::SurfaceState
                 CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 3U);
         }
 
-        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[CacheMode]);
+        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipeline);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdWriteTimestamp(
@@ -362,15 +344,12 @@ namespace MDSS::SurfaceState
                 CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 5U);
         }
 
-        const std::array<VkBufferMemoryBarrier, 3> Pass1Barriers = {
+        const std::array<VkBufferMemoryBarrier, 2> Pass1Barriers = {
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::OutgoingFluxScale, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT),
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::RawOutgoing, bCurrentStateAB),
-                VK_ACCESS_SHADER_READ_BIT),
-            MakeComputeBufferBarrier(
-                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::RawFlux, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT)};
         vkCmdPipelineBarrier(CommandBuffer,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -378,12 +357,12 @@ namespace MDSS::SurfaceState
                              0,
                              0,
                              nullptr,
-                             (SolverFlags & SurfaceSolverDisableRawFluxCacheFlag) == 0U ? 3U : 2U,
+                             static_cast<std::uint32_t>(Pass1Barriers.size()),
                              Pass1Barriers.data(),
                              0,
                              nullptr);
 
-        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipelines[CacheMode]);
+        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipeline);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdWriteTimestamp(
@@ -396,7 +375,7 @@ namespace MDSS::SurfaceState
                 CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 7U);
         }
 
-        const std::array<VkBufferMemoryBarrier, 5> NextStepBarriers = {
+        const std::array<VkBufferMemoryBarrier, 4> NextStepBarriers = {
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::NextState, bCurrentStateAB),
                 VK_ACCESS_SHADER_READ_BIT),
@@ -411,10 +390,6 @@ namespace MDSS::SurfaceState
             MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::OutgoingFluxScale, bCurrentStateAB),
                 VK_ACCESS_SHADER_WRITE_BIT,
-                VK_ACCESS_SHADER_READ_BIT),
-            MakeComputeBufferBarrier(
-                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::RawFlux, bCurrentStateAB),
-                VK_ACCESS_SHADER_WRITE_BIT,
                 VK_ACCESS_SHADER_READ_BIT)};
         vkCmdPipelineBarrier(CommandBuffer,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -423,7 +398,7 @@ namespace MDSS::SurfaceState
                              0,
                              0,
                              nullptr,
-                             (SolverFlags & SurfaceSolverDisableRawFluxCacheFlag) == 0U ? 5U : 4U,
+                             static_cast<std::uint32_t>(NextStepBarriers.size()),
                              NextStepBarriers.data(),
                              0,
                              nullptr);
@@ -511,8 +486,7 @@ namespace MDSS::SurfaceState
 
     VkPipeline TSurfaceStateSolver::CreateComputePipeline(VkDevice         Device,
                                                           VkPipelineLayout Layout,
-                                                          const char*      ShaderPath,
-                                                          bool             bRawFluxCacheEnabled)
+                                                          const char*      ShaderPath)
     {
         const VkShaderModule            Module = CreateShaderModule(Device, ShaderPath);
         VkPipelineShaderStageCreateInfo Stage{};
@@ -520,11 +494,6 @@ namespace MDSS::SurfaceState
         Stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
         Stage.module = Module;
         Stage.pName = "main";
-        const VkBool32                 CacheEnabled = bRawFluxCacheEnabled ? VK_TRUE : VK_FALSE;
-        const VkSpecializationMapEntry CacheEntry{0U, 0U, sizeof(CacheEnabled)};
-        const VkSpecializationInfo     Specialization{1U, &CacheEntry, sizeof(CacheEnabled), &CacheEnabled};
-        Stage.pSpecializationInfo = &Specialization;
-
         VkComputePipelineCreateInfo PipelineInfo{};
         PipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
         PipelineInfo.stage = Stage;

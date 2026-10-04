@@ -12,8 +12,6 @@ const uint InvalidTexelIndex = 0xffffffffu;
 // simulation topology는 texel마다 최대 8개 방향 slot을 사용하며, 없는 이웃은 sentinel로 표시한다.
 const uint SurfaceNeighborCount = 8u;
 
-layout(constant_id = 0) const bool UseRawFluxCache = false;
-
 struct TSurfaceGPUProfileParameters
 {
     vec4 CapacityInputAndTransfer;
@@ -114,33 +112,28 @@ layout(std430, set = 0, binding = 18) readonly buffer TSurfaceReverseNeighborDir
     uint Values[];
 } ReverseNeighborDirectionIndices;
 
-layout(std430, set = 0, binding = 19) buffer TSurfaceRawFlux
-{
-    float Values[];
-} RawFluxBuffer;
-
-layout(std430, set = 0, binding = 20) readonly buffer TSurfaceWorldTexelAreas
+layout(std430, set = 0, binding = 19) readonly buffer TSurfaceWorldTexelAreas
 {
     float Values[];
 } WorldTexelAreas;
 
 // dynamic geometry의 texel당 두 vec4: 위치+평균 이웃 거리, local normal+마지막 생성 높이.
-layout(std430, set = 0, binding = 21) buffer TSurfaceDynamicGeometry
+layout(std430, set = 0, binding = 20) buffer TSurfaceDynamicGeometry
 {
     vec4 Values[]; // displaced position + mean distance, local normal + last built height
 } DynamicGeometry;
 #if defined(SURFACE_ACCUMULATION_HEIGHT_WRITE) || defined(SURFACE_GEOMETRY_DIRTY_WRITE)
-layout(std430, set = 0, binding = 22) buffer TSurfaceAccumulationHeights
+layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationHeights
 #else
-layout(std430, set = 0, binding = 22) readonly buffer TSurfaceAccumulationHeights
+layout(std430, set = 0, binding = 21) readonly buffer TSurfaceAccumulationHeights
 #endif
 {
     float Values[]; // height, dirty planes, workgroup flags, indirect command bits
 } AccumulationHeights;
 #if defined(SURFACE_CONCAVITY_WEIGHT_WRITE)
-layout(std430, set = 0, binding = 23) buffer TSurfaceDynamicConcavityWeights
+layout(std430, set = 0, binding = 22) buffer TSurfaceDynamicConcavityWeights
 #else
-layout(std430, set = 0, binding = 23) readonly buffer TSurfaceDynamicConcavityWeights
+layout(std430, set = 0, binding = 22) readonly buffer TSurfaceDynamicConcavityWeights
 #endif
 {
     float Values[];
@@ -161,11 +154,6 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
     vec4 ModelLinearColumns[3];
     vec4 NormalMatrixAndUpColumns[3];
 } Solver;
-
-bool rawFluxCacheEnabled()
-{
-    return UseRawFluxCache;
-}
 
 const float GeometryEpsilon = 1.0e-6;
 
@@ -219,13 +207,6 @@ uint neighborIndex(uint TexelIndex, uint DirectionIndex)
 uint reverseNeighborDirectionIndex(uint TexelIndex, uint DirectionIndex)
 {
     return (ReverseNeighborDirectionIndices.Values[TexelIndex] >> (DirectionIndex * 4u)) & 0xfu;
-}
-
-uint rawFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
-{
-    // Direction slot별 plane으로 나눠 인접 invocation의 저장 위치를 연속시킨다.
-    return DirectionIndex * (Solver.LocalTexelCount * Solver.StateChannelCount) +
-           stateIndex(TexelIndex, ChannelIndex);
 }
 
 float transferWeight(uint SourceTexel, uint DirectionIndex)
@@ -374,7 +355,7 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
 }
 
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.
-// RawFlux cache를 쓰지 않는 Pass 2는 유입 source의 형상을 준비해 방향별 flux를 다시 계산한다.
+// Pass 2는 유입 source의 형상을 준비해 방향별 flux를 다시 계산한다.
 mat3 SolverModelLinear;
 vec3 SolverUp;
 vec3 SourcePosition;
@@ -402,8 +383,9 @@ void prepareSourceGeometry(uint SourceTexel)
     mat3 SolverNormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
                                    Solver.NormalMatrixAndUpColumns[1].xyz,
                                    Solver.NormalMatrixAndUpColumns[2].xyz);
-    vec3 LocalNormal = (Solver.Flags & (1u << 6u)) != 0u
-                           ? effectiveLocalNormal(SourceTexel)
+    bool DynamicGeometryEnabled = (Solver.Flags & (1u << 6u)) != 0u;
+    vec3 LocalNormal = DynamicGeometryEnabled
+                           ? DynamicGeometry.Values[SourceTexel * 2u + 1u].xyz
                            : ((Solver.Flags & (1u << 4u)) != 0u
                                   ? Normals.Values[SourceTexel].xyz
                                   : MesoNormals.Values[SourceTexel].xyz);
@@ -422,7 +404,9 @@ void prepareSourceGeometry(uint SourceTexel)
         return;
     }
     SourceGravityDirection = GravityOnSurface / SurfaceGravityLength;
-    SourcePosition = effectiveLocalPosition(SourceTexel);
+    SourcePosition = DynamicGeometryEnabled
+                         ? DynamicGeometry.Values[SourceTexel * 2u].xyz
+                         : effectiveLocalPosition(SourceTexel);
     SourceGeometryValid = true;
 }
 

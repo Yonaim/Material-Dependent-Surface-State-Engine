@@ -355,7 +355,6 @@ namespace MDSS
           AssetManager(&Assets), SurfaceDataManager(&SurfaceData)
     {
         ResetProfilingAverages();
-        bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -2744,11 +2743,6 @@ namespace MDSS
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
         if (ImGui::Begin("Profiling##Overlay", nullptr, Flags))
         {
-            if (bProfiledRawFluxCacheEnabled != FrameRenderer->IsRawFluxCacheEnabled())
-            {
-                ResetProfilingAverages();
-                bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
-            }
             const ImGuiIO&                            IO = ImGui::GetIO();
             const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
             const Rendering::TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
@@ -3065,7 +3059,8 @@ namespace MDSS
                                     static_cast<unsigned long long>(Stats.SimulationTexels),
                                     Stats.StateChannels);
                         AddStateRow("Resolution", "%u x %u", Stats.SimulationResolution, Stats.SimulationResolution);
-                        AddStateRow("RawFlux Cache", "%s", FrameRenderer->IsRawFluxCacheEnabled() ? "ON" : "OFF");
+                        AddStateRow("Surface mesh", "%u", Stats.SurfaceTexelMeshResolution);
+                        AddStateRow("Overlay mesh", "%u", Stats.OverlayTexelMeshResolution);
                         AddStateRow(
                             "Accumulation Geometry Update",
                             "%s",
@@ -3558,6 +3553,39 @@ namespace MDSS
             }
         }
 
+        const auto DrawTexelMeshResolutionControl = [&](const char* Label,
+                                                        std::uint32_t ActiveResolution,
+                                                        auto&& SetResolution)
+        {
+            const std::string Preview = std::to_string(ActiveResolution);
+            if (BeginLabeledCombo(Label, Preview.c_str()))
+            {
+                for (const auto& Preset : SurfaceState::SurfaceRenderMeshResolutionPresets)
+                {
+                    const bool Selected = Preset.Resolution == ActiveResolution;
+                    if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
+                    {
+                        SetResolution(Preset.Resolution);
+                        bFrameTimeResetRequested = true;
+                        ResetProfilingAverages();
+                    }
+                    if (Selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                EndLabeledCombo();
+            }
+        };
+        DrawTexelMeshResolutionControl("Surface mesh",
+                                       FrameRenderer->GetSurfaceTexelMeshResolution(),
+                                       [&](std::uint32_t Resolution)
+                                       { FrameRenderer->SetSurfaceTexelMeshResolution(Resolution); });
+        TextDescriptionWrapped("Texel Mesh resolution used to draw the surface when overlays are active.");
+        DrawTexelMeshResolutionControl("Overlay mesh",
+                                       FrameRenderer->GetOverlayTexelMeshResolution(),
+                                       [&](std::uint32_t Resolution)
+                                       { FrameRenderer->SetOverlayTexelMeshResolution(Resolution); });
+        TextDescriptionWrapped("Texel Mesh resolution used by state overlays; changing it keeps simulation State.");
+
         if (ImGui::Checkbox("Fixed timestep", &bFixedSimulationTimestep))
         {
             bFrameTimeResetRequested = true;
@@ -3656,38 +3684,7 @@ namespace MDSS
                        "OFF: Decay 보유율을 1.0으로 설정합니다.");
 
         ImGui::Spacing();
-        if (ImGui::CollapsingHeader("Cache Comparison"))
-        {
-            bool bCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
-            if (ImGui::Checkbox("RawFlux Cache", &bCacheEnabled))
-            {
-                bFrameTimeResetRequested = true;
-                FrameRenderer->SetRawFluxCacheEnabled(bCacheEnabled);
-                ResetProfilingAverages();
-            }
-            ImGui::TextDisabled("%s", bCacheEnabled ? "ON: reuse Pass 1 flux" : "OFF: recompute in Pass 2");
-            const auto       Memory = FrameRenderer->GetSurfaceGPUResources().GetRawFluxMemoryUsage();
-            constexpr double MiB = 1024.0 * 1024.0;
-            ImGui::Text("Cache buffers: %.2f MiB",
-                        static_cast<double>(Memory.InstanceRawFluxBytes +
-                                            Memory.SharedReverseNeighborDirectionIndexBytes) /
-                        MiB);
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::Text("RawFlux (all instances): %.2f MiB",
-                            static_cast<double>(Memory.InstanceRawFluxBytes) / MiB);
-                ImGui::Text("Reverse neighbor direction indices (shared once): %.2f MiB",
-                            static_cast<double>(Memory.SharedReverseNeighborDirectionIndexBytes) / MiB);
-                ImGui::TextDisabled("Buffer sizes; excludes allocator overhead.");
-                ImGui::EndTooltip();
-            }
-            TextDescriptionWrapped("State is preserved. Buffers stay allocated while OFF.");
-            TextDescriptionWrapped("Fixed timestep and Auto substepping are available in the Global Settings tab.");
-            TextDescriptionWrapped(
-                "Compare with the same resolution, time scale and starting State. Reset and replay the "
-                "same input for each mode; allow warmup before reading averages.");
-        }
+        TextDescriptionWrapped("Fixed timestep and Auto substepping are available in the Global Settings tab.");
         ImGui::Spacing();
         if (ImGui::CollapsingHeader("Diagnostics"))
         {

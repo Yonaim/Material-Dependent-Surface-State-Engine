@@ -40,82 +40,184 @@ namespace MDSS::SurfaceState
                 Mesh.BoundaryEdges.push_back(Occurrence.Edge);
     }
 
-    static TSurfaceTexelMesh BuildGridMesh(const TSharedSurfaceGeometryData& Geometry)
+    static TSurfaceTexelMesh SubdivideMesh(const TSurfaceTexelMesh& Source, std::uint32_t Levels)
+    {
+        TSurfaceTexelMesh Mesh = Source;
+        for (std::uint32_t Level = 0; Level < Levels; ++Level)
+        {
+            std::map<std::pair<std::uint32_t, std::uint32_t>, std::uint32_t> Midpoints;
+            const auto Midpoint = [&](std::uint32_t A, std::uint32_t B)
+            {
+                const auto Key = std::minmax(A, B);
+                if (const auto Found = Midpoints.find({Key.first, Key.second}); Found != Midpoints.end())
+                    return Found->second;
+                if (Mesh.Vertices.size() >= std::numeric_limits<std::uint32_t>::max())
+                    throw std::overflow_error("Subdivided texel mesh exceeds the vertex index range.");
+                const auto& VA = Mesh.Vertices[A];
+                const auto& VB = Mesh.Vertices[B];
+                TSurfaceTexelMeshVertex V;
+                V.Position = (VA.Position + VB.Position) * 0.5F;
+                V.Normal = (VA.Normal + VB.Normal) * 0.5F;
+                const auto NormalLength = glm::length(glm::vec3(V.Normal));
+                if (NormalLength > 1e-8F)
+                    V.Normal = glm::vec4(glm::vec3(V.Normal) / NormalLength, 0.0F);
+                V.DisplacementNormal = (VA.DisplacementNormal + VB.DisplacementNormal) * 0.5F;
+                const auto DisplacementLength = glm::length(glm::vec3(V.DisplacementNormal));
+                if (DisplacementLength > 1e-8F)
+                    V.DisplacementNormal = glm::vec4(glm::vec3(V.DisplacementNormal) / DisplacementLength, 0.0F);
+                V.UVSurface = (VA.UVSurface + VB.UVSurface) * 0.5F;
+                std::map<std::uint32_t, float> SampleWeights;
+                for (std::size_t Slot = 0; Slot < 4; ++Slot)
+                {
+                    if (VA.Samples[Slot] != InvalidTexelIndex && VA.Weights[Slot] > 0.0F)
+                        SampleWeights[VA.Samples[Slot]] += 0.5F * VA.Weights[Slot];
+                    if (VB.Samples[Slot] != InvalidTexelIndex && VB.Weights[Slot] > 0.0F)
+                        SampleWeights[VB.Samples[Slot]] += 0.5F * VB.Weights[Slot];
+                }
+                std::vector<std::pair<std::uint32_t, float>> OrderedSamples(SampleWeights.begin(), SampleWeights.end());
+                std::sort(OrderedSamples.begin(), OrderedSamples.end(), [](const auto& A, const auto& B)
+                          { return A.second > B.second; });
+                float WeightSum = 0.0F;
+                for (std::size_t Slot = 0; Slot < std::min<std::size_t>(4, OrderedSamples.size()); ++Slot)
+                    WeightSum += OrderedSamples[Slot].second;
+                if (WeightSum > 0.0F)
+                    for (std::size_t Slot = 0; Slot < std::min<std::size_t>(4, OrderedSamples.size()); ++Slot)
+                    {
+                        V.Samples[Slot] = OrderedSamples[Slot].first;
+                        V.Weights[Slot] = OrderedSamples[Slot].second / WeightSum;
+                    }
+                const auto Index = static_cast<std::uint32_t>(Mesh.Vertices.size());
+                Mesh.Vertices.push_back(V);
+                Midpoints.emplace(std::make_pair(Key.first, Key.second), Index);
+                return Index;
+            };
+
+            std::vector<std::uint32_t> RefinedIndices;
+            RefinedIndices.reserve(Mesh.Indices.size() * 4U);
+            for (auto& Range : Mesh.Surfaces)
+            {
+                const auto First = static_cast<std::uint32_t>(RefinedIndices.size());
+                const auto End = static_cast<std::size_t>(Range.FirstIndex) + Range.IndexCount;
+                for (std::size_t I = Range.FirstIndex; I + 2 < End; I += 3)
+                {
+                    const auto A = Mesh.Indices[I];
+                    const auto B = Mesh.Indices[I + 1];
+                    const auto C = Mesh.Indices[I + 2];
+                    const auto AB = Midpoint(A, B);
+                    const auto BC = Midpoint(B, C);
+                    const auto CA = Midpoint(C, A);
+                    RefinedIndices.insert(RefinedIndices.end(),
+                                          {A, AB, CA, AB, B, BC, CA, BC, C, AB, BC, CA});
+                }
+                Range = {First, static_cast<std::uint32_t>(RefinedIndices.size()) - First};
+            }
+
+            std::vector<glm::uvec4> RefinedBoundaries;
+            RefinedBoundaries.reserve(Mesh.BoundaryEdges.size() * 2U);
+            for (const auto& Edge : Mesh.BoundaryEdges)
+            {
+                const auto AB = Midpoint(Edge.x, Edge.y);
+                const auto AC = Midpoint(Edge.x, Edge.z);
+                const auto BC = Midpoint(Edge.y, Edge.z);
+                RefinedBoundaries.push_back({Edge.x, AB, AC, 0U});
+                RefinedBoundaries.push_back({AB, Edge.y, BC, 0U});
+            }
+            Mesh.Indices = std::move(RefinedIndices);
+            Mesh.BoundaryEdges = std::move(RefinedBoundaries);
+        }
+        return Mesh;
+    }
+
+    static TSurfaceTexelMesh BuildGridMesh(const TSharedSurfaceGeometryData& Geometry, std::uint32_t RenderResolution)
     {
         TSurfaceTexelMesh Result;
         const auto&       Texels = Geometry.GetTexels();
-        Result.Vertices.resize(Texels.size());
-        for (const auto& Range : Geometry.GetSurfaces())
-            for (std::uint32_t Local = 0; Local < Range.TexelCount; ++Local)
-            {
-                const auto T = Range.FirstTexel + Local;
-                auto&      V = Result.Vertices[T];
-                V.Position = glm::vec4(Texels[T].Position, 1);
-                V.Normal = V.DisplacementNormal = glm::vec4(Texels[T].Normal, 0);
-                V.UVSurface = {(float(Local % Range.Resolution.Width) + 0.5F) / Range.Resolution.Width,
-                               (float(Local / Range.Resolution.Width) + 0.5F) / Range.Resolution.Height,
-                               0,
-                               float(Range.Surface)};
-                V.Samples.x = T;
-                V.Weights.x = 1;
-            }
-        const auto Finite = [](glm::vec3 V) { return std::isfinite(V.x) && std::isfinite(V.y) && std::isfinite(V.z); };
-        const auto Emit = [&](std::uint32_t A, std::uint32_t B, std::uint32_t C, TSurfaceLocalID Surface)
-        {
-            const auto& X = Texels[A];
-            const auto& Y = Texels[B];
-            const auto& Z = Texels[C];
-            for (const auto* Texel : {&X, &Y, &Z})
-                if (!Texel->IsValid() || Texel->Surface != Surface ||
-                    Texel->Chart == std::numeric_limits<std::uint32_t>::max() || !Finite(Texel->Position) ||
-                    !Finite(Texel->Normal))
-                    return;
-            if (X.Chart != Y.Chart || X.Chart != Z.Chart)
-                return;
-            const glm::vec3 AB = Y.Position - X.Position, AC = Z.Position - X.Position;
-            const glm::vec3 Cross = glm::cross(AB, AC);
-            const double    AreaSquared = glm::dot(glm::dvec3(Cross), glm::dvec3(Cross));
-            const double    EdgeProduct =
-                glm::dot(glm::dvec3(AB), glm::dvec3(AB)) * glm::dot(glm::dvec3(AC), glm::dvec3(AC));
-            if (EdgeProduct <= 0.0 || AreaSquared <= 1e-12 * EdgeProduct)
-                return;
-            // A mirrored UV chart must retain the geometric front-face winding.
-            if (glm::dot(Cross, X.Normal + Y.Normal + Z.Normal) < 0.0F)
-                std::swap(B, C);
-            if (Result.Indices.size() > std::numeric_limits<std::uint32_t>::max() - 3U)
-                throw std::overflow_error("Texel mesh exceeds the Vulkan index-count range.");
-            Result.Indices.insert(Result.Indices.end(), {A, B, C});
-        };
+        std::vector<std::uint32_t> VertexCharts;
         for (const auto& Range : Geometry.GetSurfaces())
         {
-            const auto First = static_cast<std::uint32_t>(Result.Indices.size());
-            for (std::uint32_t Y = 0; Y + 1 < Range.Resolution.Height; ++Y)
-                for (std::uint32_t X = 0; X + 1 < Range.Resolution.Width; ++X)
+            const std::uint32_t Step = RenderResolution > 0 && RenderResolution < Range.Resolution.Width
+                                           ? std::max(1U, Range.Resolution.Width / RenderResolution)
+                                           : 1U;
+            const std::uint32_t Offset = Step > 1 ? Step / 2U : 0U;
+            const std::uint32_t First = static_cast<std::uint32_t>(Result.Indices.size());
+            const std::uint32_t GridWidth = Range.Resolution.Width > Offset
+                                                ? (Range.Resolution.Width - Offset + Step - 1U) / Step
+                                                : 0U;
+            const std::uint32_t GridHeight = Range.Resolution.Height > Offset
+                                                 ? (Range.Resolution.Height - Offset + Step - 1U) / Step
+                                                 : 0U;
+            std::vector<std::uint32_t> GridVertices(static_cast<std::size_t>(GridWidth) * GridHeight,
+                                                    InvalidTexelIndex);
+            for (std::uint32_t Y = 0; Y < GridHeight; ++Y)
+                for (std::uint32_t X = 0; X < GridWidth; ++X)
                 {
-                    const std::uint32_t A = Range.FirstTexel + Y * Range.Resolution.Width + X;
-                    const std::uint32_t B = A + 1, D = A + Range.Resolution.Width, C = D + 1;
-                    // Prefer the diagonal that retains more valid, same-chart triangles.
+                    const std::uint32_t TexelX = Offset + X * Step;
+                    const std::uint32_t TexelY = Offset + Y * Step;
+                    if (TexelX >= Range.Resolution.Width || TexelY >= Range.Resolution.Height)
+                        continue;
+                    const std::uint32_t T = Range.FirstTexel + TexelY * Range.Resolution.Width + TexelX;
+                    const auto& Texel = Texels[T];
+                    if (!Texel.IsValid() || !std::isfinite(Texel.Position.x) || !std::isfinite(Texel.Position.y) ||
+                        !std::isfinite(Texel.Position.z) || !std::isfinite(Texel.Normal.x) ||
+                        !std::isfinite(Texel.Normal.y) || !std::isfinite(Texel.Normal.z))
+                        continue;
+                    TSurfaceTexelMeshVertex V;
+                    V.Position = glm::vec4(Texel.Position, 1);
+                    V.Normal = V.DisplacementNormal = glm::vec4(Texel.Normal, 0);
+                    V.UVSurface = {(float(TexelX) + 0.5F) / Range.Resolution.Width,
+                                   (float(TexelY) + 0.5F) / Range.Resolution.Height,
+                                   0,
+                                   float(Range.Surface)};
+                    V.Samples.x = T;
+                    V.Weights.x = 1;
+                    const auto GridIndex = static_cast<std::size_t>(Y) * GridWidth + X;
+                    GridVertices[GridIndex] = static_cast<std::uint32_t>(Result.Vertices.size());
+                    Result.Vertices.push_back(V);
+                    VertexCharts.push_back(Texel.Chart);
+                }
+            const auto Emit = [&](std::uint32_t A, std::uint32_t B, std::uint32_t C)
+            {
+                if (A == InvalidTexelIndex || B == InvalidTexelIndex || C == InvalidTexelIndex)
+                    return;
+                if (VertexCharts[A] != VertexCharts[B] || VertexCharts[A] != VertexCharts[C])
+                    return;
+                const auto P0 = glm::vec3(Result.Vertices[A].Position);
+                const auto P1 = glm::vec3(Result.Vertices[B].Position);
+                const auto P2 = glm::vec3(Result.Vertices[C].Position);
+                const auto Cross = glm::cross(P1 - P0, P2 - P0);
+                if (glm::dot(Cross, Cross) <= 1e-16F)
+                    return;
+                const auto Normal = glm::vec3(Result.Vertices[A].Normal) + glm::vec3(Result.Vertices[B].Normal) +
+                                    glm::vec3(Result.Vertices[C].Normal);
+                if (glm::dot(Cross, Normal) < 0.0F)
+                    std::swap(B, C);
+                if (Result.Indices.size() > std::numeric_limits<std::uint32_t>::max() - 3U)
+                    throw std::overflow_error("Texel mesh exceeds the Vulkan index-count range.");
+                Result.Indices.insert(Result.Indices.end(), {A, B, C});
+            };
+            for (std::uint32_t Y = 0; Y + 1 < GridHeight; ++Y)
+                for (std::uint32_t X = 0; X + 1 < GridWidth; ++X)
+                {
+                    const auto A = GridVertices[static_cast<std::size_t>(Y) * GridWidth + X];
+                    const auto B = GridVertices[static_cast<std::size_t>(Y) * GridWidth + X + 1U];
+                    const auto D = GridVertices[static_cast<std::size_t>(Y + 1U) * GridWidth + X];
+                    const auto C = GridVertices[static_cast<std::size_t>(Y + 1U) * GridWidth + X + 1U];
                     const auto Compatible = [&](std::uint32_t I, std::uint32_t J, std::uint32_t K)
                     {
-                        return Texels[I].IsValid() && Texels[J].IsValid() && Texels[K].IsValid() &&
-                               Texels[I].Chart == Texels[J].Chart && Texels[I].Chart == Texels[K].Chart;
+                        return I != InvalidTexelIndex && J != InvalidTexelIndex && K != InvalidTexelIndex &&
+                               VertexCharts[I] == VertexCharts[J] && VertexCharts[I] == VertexCharts[K];
                     };
-                    const int  ACCount = int(Compatible(A, B, C)) + int(Compatible(A, C, D));
-                    const int  BDCount = int(Compatible(A, B, D)) + int(Compatible(B, C, D));
-                    const auto DistanceSquared = [&](std::uint32_t I, std::uint32_t J)
+                    const int ACCount = int(Compatible(A, B, C)) + int(Compatible(A, C, D));
+                    const int BDCount = int(Compatible(A, B, D)) + int(Compatible(B, C, D));
+                    if (BDCount > ACCount)
                     {
-                        const auto Delta = Texels[I].Position - Texels[J].Position;
-                        return glm::dot(Delta, Delta);
-                    };
-                    if (BDCount > ACCount || (BDCount == ACCount && DistanceSquared(B, D) < DistanceSquared(A, C)))
-                    {
-                        Emit(A, B, D, Range.Surface);
-                        Emit(B, C, D, Range.Surface);
+                        Emit(A, B, D);
+                        Emit(B, C, D);
                     }
                     else
                     {
-                        Emit(A, B, C, Range.Surface);
-                        Emit(A, C, D, Range.Surface);
+                        Emit(A, B, C);
+                        Emit(A, C, D);
                     }
                 }
             Result.Surfaces.push_back({First, static_cast<std::uint32_t>(Result.Indices.size()) - First});
@@ -129,13 +231,42 @@ namespace MDSS::SurfaceState
 
     TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
                                             std::span<const Asset::TVertex>             Vertices,
-                                            std::span<const Asset::TMeshTriangleSource> Triangles)
+                                            std::span<const Asset::TMeshTriangleSource> Triangles,
+                                            std::uint32_t                                RenderResolution)
     {
         if (Vertices.empty() && Triangles.empty())
-            return BuildGridMesh(Geometry);
+        {
+            auto Mesh = BuildGridMesh(Geometry, RenderResolution);
+            if (RenderResolution > 0 && !Geometry.GetSurfaces().empty())
+            {
+                std::uint32_t SourceResolution = Geometry.GetSurfaces().front().Resolution.Width;
+                std::uint32_t Levels = 0;
+                while (SourceResolution > 0 && SourceResolution <= RenderResolution / 2U)
+                {
+                    SourceResolution *= 2U;
+                    ++Levels;
+                }
+                if (Levels > 0)
+                    Mesh = SubdivideMesh(Mesh, Levels);
+            }
+            return Mesh;
+        }
         if (Vertices.empty() || Triangles.empty())
             throw std::invalid_argument("Texel mesh requires both source vertices and triangles.");
         const auto&                             Texels = Geometry.GetTexels();
+        const auto IsSelectedRenderTexel = [&](std::uint32_t TexelIndex)
+        {
+            if (RenderResolution == 0)
+                return true;
+            const auto& Surface = Geometry.GetSurface(Texels[TexelIndex].Surface);
+            if (RenderResolution >= Surface.Resolution.Width)
+                return true;
+            const std::uint32_t Step = std::max(1U, Surface.Resolution.Width / RenderResolution);
+            const std::uint32_t X = (TexelIndex - Surface.FirstTexel) % Surface.Resolution.Width;
+            const std::uint32_t Y = (TexelIndex - Surface.FirstTexel) / Surface.Resolution.Width;
+            const std::uint32_t CenterOffset = Step / 2U;
+            return X % Step == CenterOffset && Y % Step == CenterOffset;
+        };
         std::vector<std::vector<std::uint32_t>> TriangleTexels(Triangles.size());
         for (std::uint32_t T = 0; T < Texels.size(); ++T)
             if (Texels[T].IsValid())
@@ -242,6 +373,8 @@ namespace MDSS::SurfaceState
         for (std::size_t I = 0; I < Triangles.size(); ++I)
             for (const auto T : TriangleTexels[I])
             {
+                if (!IsSelectedRenderTexel(T))
+                    continue;
                 const auto& Bary = Texels[T].Barycentric;
                 const auto  Opposite = Bary.x < Bary.y ? (Bary.x < Bary.z ? 0U : 2U) : (Bary.y < Bary.z ? 1U : 2U);
                 if (Bary[Opposite] > 1e-6F)
@@ -360,6 +493,8 @@ namespace MDSS::SurfaceState
                 // Boundary samples are represented by the common source edge vertices above.
                 if (std::min({Texel.Barycentric.x, Texel.Barycentric.y, Texel.Barycentric.z}) <= 1e-6F)
                     continue;
+                if (!IsSelectedRenderTexel(T))
+                    continue;
                 if (Result.Vertices.size() >= std::numeric_limits<std::uint32_t>::max())
                     throw std::overflow_error("Texel render vertex count exceeds index range.");
                 Points.push_back(static_cast<std::uint32_t>(Result.Vertices.size()));
@@ -410,6 +545,18 @@ namespace MDSS::SurfaceState
             Result.Indices.insert(Result.Indices.end(), Indices.begin(), Indices.end());
         }
         BuildBoundaryEdges(Result, TopologyIDs);
+        if (RenderResolution > 0 && !Geometry.GetSurfaces().empty())
+        {
+            std::uint32_t SourceResolution = Geometry.GetSurfaces().front().Resolution.Width;
+            std::uint32_t Levels = 0;
+            while (SourceResolution > 0 && SourceResolution <= RenderResolution / 2U)
+            {
+                SourceResolution *= 2U;
+                ++Levels;
+            }
+            if (Levels > 0)
+                Result = SubdivideMesh(Result, Levels);
+        }
         return Result;
     }
 }

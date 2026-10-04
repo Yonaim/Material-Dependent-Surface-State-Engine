@@ -43,5 +43,6 @@ namespace MDSS::SurfaceState
      */
     [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
                                                           std::span<const Asset::TVertex>             Vertices = {},
-                                                          std::span<const Asset::TMeshTriangleSource> Triangles = {});
+                                                          std::span<const Asset::TMeshTriangleSource> Triangles = {},
+                                                          std::uint32_t                                RenderResolution = 0);
 }

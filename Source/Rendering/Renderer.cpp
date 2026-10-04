@@ -791,6 +791,8 @@ namespace MDSS::Rendering
             TLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
         }
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
+        SurfaceTexelMeshResolution = Scene.GetSimulationResolution();
+        OverlayTexelMeshResolution = Scene.GetSimulationResolution();
         TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
         TLogger::Debug("TRenderer",
                        "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
@@ -1087,6 +1089,8 @@ namespace MDSS::Rendering
         ProfilingStats.SimulationTexels = 0;
         ProfilingStats.StateChannels = 0;
         ProfilingStats.SimulationResolution = GetSimulationResolution();
+        ProfilingStats.SurfaceTexelMeshResolution = SurfaceTexelMeshResolution;
+        ProfilingStats.OverlayTexelMeshResolution = OverlayTexelMeshResolution;
         const auto& GPUResources = SurfaceStates.GetGPUResources();
         for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
         {
@@ -1110,6 +1114,8 @@ namespace MDSS::Rendering
                 BenchmarkSubmissions[FrameIndex] = {NextBenchmarkFrameIndex++,
                                                      LastSimulationStepCount,
                                                      ProfilingStats.SimulationResolution,
+                                                     ProfilingStats.SurfaceTexelMeshResolution,
+                                                     ProfilingStats.OverlayTexelMeshResolution,
                                                      ProfilingStats.SimulationInstances,
                                                      ProfilingStats.StateChannels,
                                                      ProfilingStats.SimulationTexels,
@@ -1231,6 +1237,8 @@ namespace MDSS::Rendering
             {"schema_version", 1},
             {"frame_index", Submitted.FrameIndex},
             {"resolution", Submitted.Resolution},
+            {"surface_mesh_resolution", Submitted.SurfaceMeshResolution},
+            {"overlay_mesh_resolution", Submitted.OverlayMeshResolution},
             {"simulation_steps", Submitted.SimulationSteps},
             {"simulated_seconds", Submitted.SimulatedSeconds},
             {"instances", Submitted.Instances},
@@ -1281,7 +1289,6 @@ namespace MDSS::Rendering
         try
         {
             Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene);
-            Replacement->SetRawFluxCacheEnabled(DebugSolverSettings.bRawFluxCacheEnabled);
             Replacement->SetAccumulationGeometryUpdateEnabled(DebugSolverSettings.bAccumulationGeometryUpdateEnabled);
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
@@ -1500,6 +1507,26 @@ namespace MDSS::Rendering
     std::uint32_t TRenderer::GetSimulationResolution() const noexcept
     {
         return SurfaceData.GetSimulationResolution();
+    }
+
+    void TRenderer::SetSurfaceTexelMeshResolution(std::uint32_t Resolution)
+    {
+        if (!SurfaceState::IsSurfaceRenderMeshResolution(Resolution))
+            throw std::invalid_argument("Surface Texel Mesh resolution must be 64, 128, 256 or 512.");
+        if (SurfaceTexelMeshResolution == Resolution)
+            return;
+        SurfaceTexelMeshResolution = Resolution;
+        LastRenderGpuMilliseconds = -1.0F;
+    }
+
+    void TRenderer::SetOverlayTexelMeshResolution(std::uint32_t Resolution)
+    {
+        if (!SurfaceState::IsSurfaceRenderMeshResolution(Resolution))
+            throw std::invalid_argument("Overlay Texel Mesh resolution must be 64, 128, 256 or 512.");
+        if (OverlayTexelMeshResolution == Resolution)
+            return;
+        OverlayTexelMeshResolution = Resolution;
+        LastRenderGpuMilliseconds = -1.0F;
     }
 
     void TRenderer::SetSimulationResolution(TScene& Scene, std::uint32_t Resolution)
@@ -1911,28 +1938,6 @@ namespace MDSS::Rendering
     {
         DebugSolverSettings.SetEnabled(Term, bEnabled);
         SurfaceStates.SetDebugSolverTermEnabled(Term, bEnabled);
-    }
-
-    bool TRenderer::IsRawFluxCacheEnabled() const noexcept
-    {
-        return DebugSolverSettings.bRawFluxCacheEnabled;
-    }
-
-    void TRenderer::SetRawFluxCacheEnabled(bool bEnabled)
-    {
-        if (IsRawFluxCacheEnabled() == bEnabled)
-            return;
-        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to wait for GPU before changing RawFlux cache mode.");
-        }
-        DebugSolverSettings.bRawFluxCacheEnabled = bEnabled;
-        SurfaceStates.SetRawFluxCacheEnabled(bEnabled);
-        bTimestampQueriesSubmitted.fill(false);
-        SolverTimestampStepsSubmitted.fill(0);
-        OverlayTimestampLayersSubmitted.fill(0);
-        LastRenderGpuMilliseconds = LastSolverGpuMilliseconds = -1.0F;
-        LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = -1.0F;
     }
 
     void TRenderer::SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size)
@@ -2490,6 +2495,7 @@ namespace MDSS::Rendering
                                          Instance,
                                          Channel,
                                          ChannelCount,
+                                         OverlayTexelMeshResolution,
                                          *Shared,
                                          *Descriptors,
                                          GeometrySet,
@@ -2626,6 +2632,9 @@ namespace MDSS::Rendering
                 {
                     if (!Shared || !Shared->GetTexelMeshIndexBuffer())
                         continue;
+                    const auto& SurfaceMesh = Shared->GetTexelMeshVariant(SurfaceTexelMeshResolution);
+                    if (!bTexelGeometry && (!SurfaceMesh.IndexBuffer || !SurfaceMesh.VertexBuffer))
+                        continue;
                     const auto& Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipeline;
                     vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline->GetHandle());
                     const auto                     Layout = Pipeline->GetLayout();
@@ -2636,11 +2645,15 @@ namespace MDSS::Rendering
                                        0,
                                        sizeof(Push),
                                        &Push);
-                    const VkBuffer     TexelVertices = Shared->GetTexelMeshVertexBuffer()->GetHandle();
+                    const VkBuffer     TexelVertices = bTexelGeometry
+                                                           ? Shared->GetTexelMeshVertexBuffer()->GetHandle()
+                                                           : SurfaceMesh.VertexBuffer->GetHandle();
                     const VkDeviceSize TexelOffset = 0;
                     vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &TexelVertices, &TexelOffset);
-                    vkCmdBindIndexBuffer(
-                        CommandBuffer, Shared->GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+                    const VkBuffer TexelIndices = bTexelGeometry
+                                                      ? Shared->GetTexelMeshIndexBuffer()->GetHandle()
+                                                      : SurfaceMesh.IndexBuffer->GetHandle();
+                    vkCmdBindIndexBuffer(CommandBuffer, TexelIndices, 0, VK_INDEX_TYPE_UINT32);
                     const std::array<VkDescriptorSet, 2> Sets{SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex)
                                                                   ? SurfaceDescriptors->GetABSet()
                                                                   : SurfaceDescriptors->GetBASet(),
@@ -2662,9 +2675,11 @@ namespace MDSS::Rendering
                     for (const auto& Section : Mesh.GetSections())
                     {
                         if (Section.Material >= MaterialResources.size() ||
-                            Section.Surface >= Shared->GetTexelMeshRanges().size())
+                            Section.Surface >= (bTexelGeometry ? Shared->GetTexelMeshRanges().size()
+                                                               : SurfaceMesh.Ranges.size()))
                             continue;
-                        const auto& Range = Shared->GetTexelMeshRanges()[Section.Surface];
+                        const auto& Range = bTexelGeometry ? Shared->GetTexelMeshRanges()[Section.Surface]
+                                                           : SurfaceMesh.Ranges[Section.Surface];
                         if (Range.IndexCount == 0)
                             continue;
                         const auto MaterialSet = MaterialResources[Section.Material].DescriptorSets[FrameIndex];
@@ -2792,7 +2807,10 @@ namespace MDSS::Rendering
                         const auto& Mesh = Assets.GetMesh(Instance.GetMesh());
                         const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(I);
                         const auto* Descriptors = SurfaceGPU.GetInstanceDescriptors(I);
-                        if (!Shared || !Descriptors || !Shared->GetTexelMeshIndexBuffer())
+                        if (!Shared || !Descriptors)
+                            continue;
+                        const auto& OverlayMesh = Shared->GetTexelMeshVariant(OverlayTexelMeshResolution);
+                        if (!OverlayMesh.IndexBuffer || !OverlayMesh.VertexBuffer)
                             continue;
                         const VkDescriptorSet StateSet =
                             SurfaceGPU.IsCurrentStateAB(I) ? Descriptors->GetABSet() : Descriptors->GetBASet();
@@ -2809,13 +2827,12 @@ namespace MDSS::Rendering
                                            0,
                                            sizeof(Push),
                                            &Push);
-                        const VkBuffer     Vertices = Shared->GetTexelMeshVertexBuffer()->GetHandle();
+                        const VkBuffer     Vertices = OverlayMesh.VertexBuffer->GetHandle();
                         const VkDeviceSize Offset = 0;
                         vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &Vertices, &Offset);
-                        vkCmdBindIndexBuffer(
-                            CommandBuffer, Shared->GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+                        vkCmdBindIndexBuffer(CommandBuffer, OverlayMesh.IndexBuffer->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
                         const std::array<VkDescriptorSet, 3> TopSets{
-                            StateSet, ComputedSet, OverlaySides->GetSet(I, Channel)};
+                            StateSet, ComputedSet, OverlaySides->GetSet(I, Channel, OverlayTexelMeshResolution)};
                         vkCmdBindDescriptorSets(CommandBuffer,
                                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                                 TopLayout,
@@ -2824,15 +2841,16 @@ namespace MDSS::Rendering
                                                 TopSets.data(),
                                                 0,
                                                 nullptr);
-                        const VkBuffer TopDrawBuffer = OverlaySides->GetTopDrawBuffer(I, Channel);
+                        const VkBuffer TopDrawBuffer =
+                            OverlaySides->GetTopDrawBuffer(I, Channel, OverlayTexelMeshResolution);
                         if (OverlayDrawProfilingMode != TOverlayDrawProfilingMode::SidesOnly)
                         {
                             for (const auto& Section : Mesh.GetSections())
                             {
                                 if (Section.Material >= MaterialResources.size() ||
-                                    Section.Surface >= Shared->GetTexelMeshRanges().size())
+                                    Section.Surface >= OverlayMesh.Ranges.size())
                                     continue;
-                                const auto& Range = Shared->GetTexelMeshRanges()[Section.Surface];
+                                const auto& Range = OverlayMesh.Ranges[Section.Surface];
                                 if (Range.IndexCount == 0)
                                     continue;
                                 const VkDescriptorSet MaterialSet =
@@ -2863,7 +2881,7 @@ namespace MDSS::Rendering
                                            sizeof(Push),
                                            &Push);
                         const std::array<VkDescriptorSet, 3> SideSets{
-                            StateSet, ComputedSet, OverlaySides->GetSet(I, Channel)};
+                            StateSet, ComputedSet, OverlaySides->GetSet(I, Channel, OverlayTexelMeshResolution)};
                         vkCmdBindDescriptorSets(CommandBuffer,
                                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                                 SideLayout,
@@ -2872,15 +2890,16 @@ namespace MDSS::Rendering
                                                 SideSets.data(),
                                                 0,
                                                 nullptr);
-                        const VkBuffer SideDrawBuffer = OverlaySides->GetDrawBuffer(I, Channel);
+                        const VkBuffer SideDrawBuffer =
+                            OverlaySides->GetDrawBuffer(I, Channel, OverlayTexelMeshResolution);
                         if (OverlayDrawProfilingMode != TOverlayDrawProfilingMode::TopOnly)
                         {
                             for (const auto& Section : Mesh.GetSections())
                             {
                                 if (Section.Material >= MaterialResources.size() ||
-                                    Section.Surface >= Shared->GetTexelMeshRanges().size())
+                                    Section.Surface >= OverlayMesh.Ranges.size())
                                     continue;
-                                const auto& Range = Shared->GetTexelMeshRanges()[Section.Surface];
+                                const auto& Range = OverlayMesh.Ranges[Section.Surface];
                                 if (Range.IndexCount == 0)
                                     continue;
                                 const VkDescriptorSet MaterialSet =
@@ -2902,7 +2921,8 @@ namespace MDSS::Rendering
                             }
                         }
                         if (OverlayDrawProfilingMode != TOverlayDrawProfilingMode::TopOnly &&
-                            OverlaySides->GetBoundaryCount(I, Channel) > 0 && !Mesh.GetSections().empty())
+                            OverlaySides->GetBoundaryCount(I, Channel, OverlayTexelMeshResolution) > 0 &&
+                            !Mesh.GetSections().empty())
                         {
                             const auto Material = Mesh.GetSections().front().Material;
                             if (Material < MaterialResources.size())
@@ -2919,7 +2939,7 @@ namespace MDSS::Rendering
                                                         &MaterialUniformOffset);
                                 vkCmdDrawIndirect(CommandBuffer,
                                                   SideDrawBuffer,
-                                                  static_cast<VkDeviceSize>(Shared->GetTexelMeshRanges().size()) *
+                                                  static_cast<VkDeviceSize>(OverlayMesh.Ranges.size()) *
                                                       sizeof(VkDrawIndirectCommand),
                                                   1,
                                                   0);

@@ -20,6 +20,8 @@ namespace MDSS::Rendering
     namespace
     {
         constexpr std::uint32_t MaxOverlayLayersPerInstance = 3;
+        constexpr std::uint32_t MaxOverlayMeshResolutions =
+            static_cast<std::uint32_t>(SurfaceState::SurfaceRenderMeshResolutionPresets.size());
 
         struct alignas(16) TSideSegment
         {
@@ -43,8 +45,10 @@ namespace MDSS::Rendering
                                                          std::size_t           MaxInstances)
         : PhysicalDevice(PhysicalDevice), Device(Device)
     {
+        constexpr std::uint32_t SetsPerInstance = MaxOverlayLayersPerInstance * MaxOverlayMeshResolutions;
+        constexpr std::uint32_t StorageDescriptorsPerInstance = SetsPerInstance * 6U;
         if (!SurfaceLayout || !ComputedLayout || MaxInstances == 0 ||
-            MaxInstances > std::numeric_limits<std::uint32_t>::max() / MaxOverlayLayersPerInstance)
+            MaxInstances > std::numeric_limits<std::uint32_t>::max() / StorageDescriptorsPerInstance)
             throw std::invalid_argument("Accumulation overlay sides require valid layouts and instance slots.");
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
@@ -136,8 +140,8 @@ namespace MDSS::Rendering
             CreatePipeline("OverlaySideBoundary.comp", PipelineLayout, BoundaryPipeline);
             CreatePipeline("OverlayTopCommand.comp", TopCommandLayout, TopCommandPipeline);
 
-            // Each instance may have Mud, WaterFilm, and Lava overlay outputs.
-            const std::uint32_t SetCount = static_cast<std::uint32_t>(MaxInstances * MaxOverlayLayersPerInstance);
+            // Keep one output set per instance, overlay layer, and selectable mesh resolution.
+            const std::uint32_t SetCount = static_cast<std::uint32_t>(MaxInstances) * SetsPerInstance;
             const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, SetCount * 6U};
             VkDescriptorPoolCreateInfo PoolInfo{};
             PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -202,22 +206,30 @@ namespace MDSS::Rendering
             vkDestroyDescriptorSetLayout(Device, TopCommandSetLayout, nullptr);
     }
 
-    VkDescriptorSet TAccumulationOverlaySides::GetSet(std::size_t Instance, std::uint32_t Channel) const
+    VkDescriptorSet TAccumulationOverlaySides::GetSet(std::size_t Instance,
+                                                       std::uint32_t Channel,
+                                                       std::uint32_t MeshResolution) const
     {
-        return Outputs.at({Instance, Channel}).Set;
+        return Outputs.at({Instance, Channel, MeshResolution}).Set;
     }
-    std::uint32_t TAccumulationOverlaySides::GetBoundaryCount(std::size_t Instance, std::uint32_t Channel) const
+    std::uint32_t TAccumulationOverlaySides::GetBoundaryCount(std::size_t Instance,
+                                                               std::uint32_t Channel,
+                                                               std::uint32_t MeshResolution) const
     {
-        return Outputs.at({Instance, Channel}).BoundaryCount;
+        return Outputs.at({Instance, Channel, MeshResolution}).BoundaryCount;
     }
-    VkBuffer TAccumulationOverlaySides::GetDrawBuffer(std::size_t Instance, std::uint32_t Channel) const
+    VkBuffer TAccumulationOverlaySides::GetDrawBuffer(std::size_t Instance,
+                                                       std::uint32_t Channel,
+                                                       std::uint32_t MeshResolution) const
     {
-        return Outputs.at({Instance, Channel}).DrawCommands->GetHandle();
+        return Outputs.at({Instance, Channel, MeshResolution}).DrawCommands->GetHandle();
     }
 
-    VkBuffer TAccumulationOverlaySides::GetTopDrawBuffer(std::size_t Instance, std::uint32_t Channel) const
+    VkBuffer TAccumulationOverlaySides::GetTopDrawBuffer(std::size_t Instance,
+                                                          std::uint32_t Channel,
+                                                          std::uint32_t MeshResolution) const
     {
-        return Outputs.at({Instance, Channel}).TopDrawCommands->GetHandle();
+        return Outputs.at({Instance, Channel, MeshResolution}).TopDrawCommands->GetHandle();
     }
 
     TAccumulationOverlaySides::TTriangleActivity TAccumulationOverlaySides::CompleteFrame(std::size_t FrameIndex)
@@ -242,6 +254,7 @@ namespace MDSS::Rendering
                                            std::size_t                                             Instance,
                                            std::uint32_t                                           Channel,
                                            std::uint32_t                                           Channels,
+                                           std::uint32_t                                           MeshResolution,
                                            const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
                                            const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
                                            VkDescriptorSet                                         ComputedSet,
@@ -272,16 +285,16 @@ namespace MDSS::Rendering
             WriteStageTimestamp(6U);
             WriteStageTimestamp(7U);
         };
-        if (!Geometry.GetTexelMeshIndexBuffer() || !Geometry.GetTexelMeshVertexBuffer() ||
-            !Geometry.GetTexelMeshBoundaryBuffer())
+        const auto& Mesh = Geometry.GetTexelMeshVariant(MeshResolution);
+        if (!Mesh.IndexBuffer || !Mesh.VertexBuffer || !Mesh.BoundaryBuffer)
         {
             WriteEmptyStageTimestamps();
             return;
         }
         const auto Triangles =
-            static_cast<std::uint32_t>(Geometry.GetTexelMeshIndexBuffer()->GetSize() / (3U * sizeof(std::uint32_t)));
-        const auto          Vertices = Geometry.GetTexelMeshVertexCount();
-        const auto          Boundaries = Geometry.GetTexelMeshBoundaryCount();
+            static_cast<std::uint32_t>(Mesh.IndexBuffer->GetSize() / (3U * sizeof(std::uint32_t)));
+        const auto          Vertices = Mesh.VertexCount;
+        const auto          Boundaries = Mesh.BoundaryCount;
         const std::uint32_t SegmentCount = Triangles + Boundaries;
         if (SegmentCount == 0 || Vertices == 0)
         {
@@ -292,14 +305,14 @@ namespace MDSS::Rendering
             SurfaceState::GetSurfaceGPUBufferByteSize(SegmentCount, sizeof(TSideSegment), Limits.maxStorageBufferRange);
         const auto CoverageBytes =
             SurfaceState::GetSurfaceGPUBufferByteSize(Vertices, sizeof(float), Limits.maxStorageBufferRange);
-        const auto SurfaceCount = static_cast<std::uint32_t>(Geometry.GetTexelMeshRanges().size());
+        const auto SurfaceCount = static_cast<std::uint32_t>(Mesh.Ranges.size());
         const auto DrawBytes = SurfaceState::GetSurfaceGPUBufferByteSize(
             static_cast<std::size_t>(SurfaceCount) + 2U, sizeof(VkDrawIndirectCommand), Limits.maxStorageBufferRange);
         const auto TopDrawBytes = SurfaceState::GetSurfaceGPUBufferByteSize(
             SurfaceCount, sizeof(VkDrawIndexedIndirectCommand), Limits.maxStorageBufferRange);
         if (SegmentCount > std::numeric_limits<std::uint32_t>::max() / 6U)
             throw std::overflow_error("Overlay side vertex count exceeds the draw range.");
-        const auto Key = std::make_pair(Instance, Channel);
+        const auto Key = std::make_tuple(Instance, Channel, MeshResolution);
         auto       It = Outputs.find(Key);
         if (It == Outputs.end())
         {
@@ -362,9 +375,9 @@ namespace MDSS::Rendering
             Allocate.pSetLayouts = &OutputLayout;
             RequireVk(vkAllocateDescriptorSets(Device, &Allocate, &Output.Set));
             const std::array<VkDescriptorBufferInfo, 6> Buffers{
-                {{Geometry.GetTexelMeshVertexBuffer()->GetHandle(), 0, VK_WHOLE_SIZE},
-                 {Geometry.GetTexelMeshIndexBuffer()->GetHandle(), 0, VK_WHOLE_SIZE},
-                 {Geometry.GetTexelMeshBoundaryBuffer()->GetHandle(), 0, VK_WHOLE_SIZE},
+                {{Mesh.VertexBuffer->GetHandle(), 0, VK_WHOLE_SIZE},
+                 {Mesh.IndexBuffer->GetHandle(), 0, VK_WHOLE_SIZE},
+                 {Mesh.BoundaryBuffer->GetHandle(), 0, VK_WHOLE_SIZE},
                  {Output.Segments->GetHandle(), 0, VK_WHOLE_SIZE},
                  {CoveragePages[CoveragePage]->GetHandle(), CoverageOffset, CoverageBytes},
                  {Output.DrawCommands->GetHandle(), 0, DrawBytes}}};
@@ -410,14 +423,14 @@ namespace MDSS::Rendering
         std::vector<VkDrawIndirectCommand> DrawCommands(SurfaceCount + 2U);
         for (std::uint32_t Surface = 0; Surface < SurfaceCount; ++Surface)
         {
-            const auto& Range = Geometry.GetTexelMeshRanges()[Surface];
+            const auto& Range = Mesh.Ranges[Surface];
             DrawCommands[Surface] = {0U, 1U, Range.FirstIndex * 2U, 0U};
         }
         DrawCommands[SurfaceCount] = {0U, 1U, Triangles * 6U, 0U};
         std::vector<VkDrawIndexedIndirectCommand> TopDrawCommands(SurfaceCount);
         for (std::uint32_t Surface = 0; Surface < SurfaceCount; ++Surface)
         {
-            const auto& Range = Geometry.GetTexelMeshRanges()[Surface];
+            const auto& Range = Mesh.Ranges[Surface];
             // OverlayTop.vert does not use gl_InstanceIndex; zero also supports devices without indirect firstInstance.
             TopDrawCommands[Surface] = {Range.IndexCount, 0U, Range.FirstIndex, 0, 0U};
         }

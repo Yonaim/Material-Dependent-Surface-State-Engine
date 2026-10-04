@@ -119,14 +119,14 @@ readonly buffer TSurfaceMesoNormals
     vec4 Values[];
 } MesoNormals;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 20)
+layout(std430, set = SURFACE_DEBUG_SET, binding = 19)
 
 readonly buffer TSurfaceWorldTexelAreas
 {
     float Values[];
 } WorldTexelAreas;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 22)
+layout(std430, set = SURFACE_DEBUG_SET, binding = 21)
 
 readonly buffer TSurfaceAccumulationHeights
 {

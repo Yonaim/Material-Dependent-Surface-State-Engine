@@ -11,6 +11,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <tuple>
 #include <utility>
 
 namespace MDSS::Rendering
@@ -38,16 +39,21 @@ namespace MDSS::Rendering
         {
             return OutputLayout;
         }
-        [[nodiscard]] VkDescriptorSet GetSet(std::size_t Instance, std::uint32_t Channel) const;
-        [[nodiscard]] std::uint32_t   GetBoundaryCount(std::size_t Instance, std::uint32_t Channel) const;
-        [[nodiscard]] VkBuffer        GetDrawBuffer(std::size_t Instance, std::uint32_t Channel) const;
-        [[nodiscard]] VkBuffer        GetTopDrawBuffer(std::size_t Instance, std::uint32_t Channel) const;
+        [[nodiscard]] VkDescriptorSet GetSet(std::size_t Instance, std::uint32_t Channel,
+                                             std::uint32_t MeshResolution) const;
+        [[nodiscard]] std::uint32_t   GetBoundaryCount(std::size_t Instance, std::uint32_t Channel,
+                                                       std::uint32_t MeshResolution) const;
+        [[nodiscard]] VkBuffer        GetDrawBuffer(std::size_t Instance, std::uint32_t Channel,
+                                                    std::uint32_t MeshResolution) const;
+        [[nodiscard]] VkBuffer        GetTopDrawBuffer(std::size_t Instance, std::uint32_t Channel,
+                                                       std::uint32_t MeshResolution) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
         [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
         void                            Record(VkCommandBuffer                                         Command,
                                                std::size_t                                             Instance,
                                                std::uint32_t                                           Channel,
                                                std::uint32_t                                           Channels,
+                                               std::uint32_t                                           MeshResolution,
                                                const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
                                                const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
                                                VkDescriptorSet                                         ComputedSet,
@@ -90,6 +96,6 @@ namespace MDSS::Rendering
         VkDescriptorPool                                         TopCommandPool = VK_NULL_HANDLE;
         std::vector<std::unique_ptr<GPU::TGPUBuffer>>            CoveragePages;
         std::vector<VkDeviceSize>                                CoveragePageUsed;
-        std::map<std::pair<std::size_t, std::uint32_t>, TOutput> Outputs;
+        std::map<std::tuple<std::size_t, std::uint32_t, std::uint32_t>, TOutput> Outputs;
     };
 }

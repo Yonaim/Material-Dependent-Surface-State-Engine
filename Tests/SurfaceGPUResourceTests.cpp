@@ -347,14 +347,6 @@ namespace
         CheckZeroBuffer(InstanceB.GetRawOutgoingBuffer(), 4, "second instance RawOutgoing");
         Check(InstanceA.GetTransferWeightBuffer().GetSize() == 4U * SurfaceNeighborCount * sizeof(float),
               "TransferWeight cache should store one float per texel neighbor direction index");
-        Check(InstanceA.GetRawFluxBuffer().GetSize() == 4U * SurfaceNeighborCount * sizeof(float),
-              "RawFlux scratch should store one float per texel, channel and neighbor direction index");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::RawFlux, true) ==
-                      InstanceA.GetRawFluxBuffer().GetHandle() &&
-                  Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::RawFlux, false) ==
-                      InstanceA.GetRawFluxBuffer().GetHandle() &&
-                  InstanceA.GetRawFluxBuffer().GetHandle() != InstanceB.GetRawFluxBuffer().GetHandle(),
-              "RawFlux scratch should be instance-owned and shared by the AB/BA sets");
         Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::ReverseNeighborDirectionIndices, true) ==
                       SharedGeometry.GetReverseNeighborDirectionIndexBuffer().GetHandle() &&
                   Bound(DescriptorsB,
@@ -362,6 +354,9 @@ namespace
                         false) ==
                       SharedGeometry.GetReverseNeighborDirectionIndexBuffer().GetHandle(),
               "reverse direction indices should be shared with Geometry across instances and AB/BA sets");
+        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::WorldTexelAreas, true) ==
+                      InstanceA.GetWorldTexelAreaBuffer().GetHandle(),
+              "WorldTexelAreas should follow the retained reverse-direction binding without a RawFlux binding");
 
         std::array<SurfaceState::TSurfaceGPUVec4, 4> UploadedPositions{};
         SharedGeometry.GetPositionBuffer().Download(UploadedPositions.data(), sizeof(UploadedPositions));
@@ -384,214 +379,7 @@ namespace
         Check(ProfileSupported[0] == 1U, "defined Profile channel should be marked supported");
     }
 
-    void TestCachedDirectionalFlux(TVulkanTestDevice& Vulkan)
-    {
-        using namespace MDSS;
-        using namespace MDSS::Asset;
-        using namespace MDSS::SurfaceState;
-        // Scale the former rates and decay by 1/10 and dt by 10 to retain the limiter fixture.
-        SurfaceState::TSurfaceStateParameters Water{};
-        Water.SaturationTransferFactor = 0.4F;
-        Water.DecayRate = 0.02F;
-        SurfaceState::TSurfaceStateParameters Heat{};
-        Heat.StateCapacity = 2.0F;
-        Heat.SaturationTransferFactor = 0.1F;
-        SurfaceState::TSurfaceResponseProfileData ProfileA;
-        ProfileA.States.emplace("wetness", Water);
-        ProfileA.States.emplace("heat", Heat);
-        SurfaceState::TSurfaceResponseProfileData ProfileB;
-        SurfaceState::TSurfaceStateParameters     OtherWater = Water;
-        OtherWater.StateCapacity = 2.0F;
-        OtherWater.SaturationTransferFactor = 0.8F;
-        OtherWater.DecayRate = 0.04F;
-        ProfileB.States.emplace("wetness", OtherWater);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{ProfileA, ProfileB};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(ProfileTable);
-        const std::size_t                                            WaterChannel = Registry.GetStateId("wetness");
-        const std::size_t                                            HeatChannel = Registry.GetStateId("heat");
-        TSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}, {1, {2, 1}}});
-        for (std::size_t Index = 0; Index < 3; ++Index)
-        {
-            auto& Texel = Geometry.GetTexels()[Index];
-            Texel.Surface = Index < 2 ? 0 : 1;
-            Texel.Triangle = 0;
-            Texel.Chart = static_cast<std::uint32_t>(Index);
-            Texel.Position = {static_cast<float>(Index), 0.0F, 0.0F};
-            Texel.Normal = {0.0F, 0.0F, 1.0F};
-        }
-        // Different source/target direction indices across charts and Surface ranges, including direction index 7.
-        Geometry.GetTexels()[0].NeighborIndices[0] = 1;
-        Geometry.GetTexels()[0].NeighborIndices[5] = 2;
-        Geometry.GetTexels()[1].NeighborIndices[7] = 0;
-        Geometry.GetTexels()[2].NeighborIndices[3] = 0;
-        Geometry.SetProfileMap({0, 0, 1, SurfaceState::InvalidSurfaceProfileIndex});
-        const auto Packed = PackSharedSurfaceGeometry(Geometry);
-        Check((Packed.ReverseNeighborDirectionIndices[0] & 0xfU) == 7U &&
-                  ((Packed.ReverseNeighborDirectionIndices[0] >> 20U) & 0xfU) == 3U &&
-                  ((Packed.ReverseNeighborDirectionIndices[1] >> 28U) & 0xfU) == 0U &&
-                  ((Packed.ReverseNeighborDirectionIndices[2] >> 12U) & 0xfU) == 5U &&
-                  Packed.ReverseNeighborDirectionIndices[3] == UINT32_MAX,
-              "packed reverse direction indices should resolve seams and preserve invalid sentinels");
-        SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(
-            Vulkan.GetPhysicalDevice(),
-            Vulkan.GetDevice(),
-            4,
-            2,
-            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F), nullptr, true, false));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const auto           Index = [](std::size_t Texel, std::size_t Channel) { return Texel * 2U + Channel; };
-        std::array<float, 8> Initial{};
-        Initial[Index(0, WaterChannel)] = 0.9F;
-        Initial[Index(1, WaterChannel)] = 2.0F;
-        Initial[Index(2, WaterChannel)] = 4.0F;
-        Initial[Index(1, HeatChannel)] = 2.0F;
-        Initial[Index(2, HeatChannel)] = 5.0F;  // Unsupported channel must be discarded.
-        Initial[Index(3, WaterChannel)] = 5.0F; // Invalid texel must be discarded.
-        Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-        std::array<float, 8> Input{};
-        Input[Index(0, WaterChannel)] = 0.25F;
-        Input[Index(2, HeatChannel)] = 0.25F;
-        Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
-        std::vector<float> Flux(4U * 2U * SurfaceNeighborCount, std::numeric_limits<float>::quiet_NaN());
-        Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
-        Vulkan.Execute(
-            [&](VkCommandBuffer Commands)
-            { Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F)); });
-        std::array<float, 8> Result{};
-        Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
-        Check(std::abs(Result[Index(0, WaterChannel)] - 5.15F) < 1.0e-5F &&
-                  std::abs(Result[Index(1, WaterChannel)]) < 1.0e-5F &&
-                  std::abs(Result[Index(2, WaterChannel)] - 1.6F) < 1.0e-5F,
-              "cached incoming should preserve unequal capacities, source alpha, decay, overcapacity and input");
-        Check(std::abs(Result[Index(0, HeatChannel)] - 0.5F) < 1.0e-5F &&
-                  std::abs(Result[Index(1, HeatChannel)] - 1.5F) < 1.0e-5F && Result[Index(2, HeatChannel)] == 0.0F &&
-                  Result[Index(3, WaterChannel)] == 0.0F,
-              "cached flux should isolate Registry channels and zero unsupported/invalid states");
-        CheckZeroBuffer(Instance.GetInputDeltaBuffer(), 8, "consumed multichannel InputDelta");
-        std::array<float, 8> CachedAlpha{}, CachedOutgoing{};
-        Instance.GetOutgoingFluxScaleBuffer().Download(CachedAlpha.data(), sizeof(CachedAlpha));
-        Instance.GetRawOutgoingBuffer().Download(CachedOutgoing.data(), sizeof(CachedOutgoing));
-        Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
-        for (std::size_t I = 0; I < Flux.size(); ++I)
-        {
-            float Expected = 0.0F;
-            if (I == 7U * Initial.size() + Index(1, WaterChannel) || I == 3U * Initial.size() + Index(2, WaterChannel))
-            {
-                Expected = 2.2F;
-            }
-            else if (I == 7U * Initial.size() + Index(1, HeatChannel))
-            {
-                Expected = 0.5F;
-            }
-            Check(CachedAlpha[I % Initial.size()] == 0.0F ? std::isnan(Flux[I])
-                                                          : std::abs(Flux[I] - Expected) < 1.0e-5F,
-                  "active sources must overwrite every direction entry; alpha-zero sources must preserve scratch");
-        }
-        const auto CachedResult = Result;
-        Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-        Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
-        std::fill(Flux.begin(), Flux.end(), 123.0F);
-        Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
-        Vulkan.Execute(
-            [&](VkCommandBuffer Commands)
-            {
-                Solver.RecordStep(Commands,
-                                  Descriptors,
-                                  true,
-                                  4,
-                                  2,
-                                  5.0F,
-                                  glm::mat4(1.0F),
-                                  glm::vec3(0.0F),
-                                  SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
-            });
-        Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
-        std::array<float, 8> UncachedAlpha{}, UncachedOutgoing{};
-        Instance.GetOutgoingFluxScaleBuffer().Download(UncachedAlpha.data(), sizeof(UncachedAlpha));
-        Instance.GetRawOutgoingBuffer().Download(UncachedOutgoing.data(), sizeof(UncachedOutgoing));
-        for (std::size_t I = 0; I < Result.size(); ++I)
-        {
-            Check(std::abs(Result[I] - CachedResult[I]) < 1.0e-5F &&
-                      std::abs(UncachedAlpha[I] - CachedAlpha[I]) < 1.0e-5F &&
-                      std::abs(UncachedOutgoing[I] - CachedOutgoing[I]) < 1.0e-5F,
-                  "cache OFF must match ON for source weights, capacities, channels, input and decay");
-        }
-        Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
-        for (const float Value : Flux)
-            Check(Value == 123.0F, "cache OFF must neither write the poisoned RawFlux buffer nor use its values");
-        CheckZeroBuffer(Instance.GetInputDeltaBuffer(), 8, "uncached consumed InputDelta");
-
-        // Consecutive ON/OFF transitions exercise stale scratch and synchronization across AB/BA sets.
-        std::array<float, 8> Reference{};
-        for (bool MixedModes : {false, true})
-        {
-            Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
-            Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
-            Vulkan.Execute(
-                [&](VkCommandBuffer Commands)
-                {
-                    for (std::uint32_t Step = 0; Step < 6U; ++Step)
-                    {
-                        const auto Flags = MixedModes && (Step == 1U || Step == 2U || Step == 4U)
-                                               ? SurfaceState::SurfaceSolverDisableRawFluxCacheFlag
-                                               : 0U;
-                        Solver.RecordStep(Commands,
-                                          Descriptors,
-                                          Step % 2U == 0U,
-                                          4,
-                                          2,
-                                          Step == 2U ? 0.0F : 5.0F,
-                                          glm::mat4(1.0F),
-                                          glm::vec3(0.0F),
-                                          Flags);
-                    }
-                });
-            Instance.GetStateABuffer().Download(Result.data(), sizeof(Result));
-            if (!MixedModes)
-                Reference = Result;
-            else
-                for (std::size_t I = 0; I < Result.size(); ++I)
-                    Check(std::abs(Result[I] - Reference[I]) < 1.0e-5F,
-                          "ON/OFF/ON sequences must match all-cached steps without stale flux");
-        }
-        Instance.GetStateBBuffer().Upload(CachedResult.data(), sizeof(CachedResult));
-        Water.SaturationTransferFactor = 0.0F;
-        OtherWater.SaturationTransferFactor = 0.0F;
-        Heat.SaturationTransferFactor = 0.0F;
-        Profiles.UpdateParameters(0, WaterChannel, Water);
-        Profiles.UpdateParameters(1, WaterChannel, OtherWater);
-        Profiles.UpdateParameters(0, HeatChannel, Heat);
-        std::fill(Flux.begin(), Flux.end(), 123.0F);
-        Instance.GetRawFluxBuffer().Upload(Flux.data(), Flux.size() * sizeof(float));
-        Vulkan.Execute(
-            [&](VkCommandBuffer Commands)
-            { Solver.RecordStep(Commands, Descriptors, false, 4, 2, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F)); });
-        Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
-        for (const float Value : Flux)
-            Check(Value == 123.0F, "zero timestep must preserve stale cache in every direction entry");
-        CheckZeroBuffer(Instance.GetOutgoingFluxScaleBuffer(), Initial.size(), "zero timestep alpha");
-        CheckZeroBuffer(Instance.GetRawOutgoingBuffer(), Initial.size(), "zero timestep RawOutgoing");
-        Vulkan.Execute(
-            [&](VkCommandBuffer Commands)
-            { Solver.RecordStep(Commands, Descriptors, true, 4, 2, 5.0F, glm::mat4(1.0F), glm::vec3(0.0F)); });
-        Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
-        Check(std::abs(Result[Index(0, WaterChannel)] - 5.05F) < 1.0e-5F &&
-                  std::abs(Result[Index(2, WaterChannel)] - 1.4F) < 1.0e-5F &&
-                  std::abs(Result[Index(0, HeatChannel)] - 0.5F) < 1.0e-5F,
-              "zero timestep and edited rates must not reuse stale flux or consumed event input");
-        Instance.GetOutgoingFluxScaleBuffer().Download(UncachedAlpha.data(), sizeof(UncachedAlpha));
-        Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
-        for (std::size_t I = 0; I < Flux.size(); ++I)
-            Check(Flux[I] == (UncachedAlpha[I % Initial.size()] == 0.0F ? 123.0F : 0.0F),
-                  "active sources with edited zero rates must clear stale flux while inactive sources preserve it");
-    }
-
-    void TestDirectionalCavityRetention(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags)
+    void TestDirectionalCavityRetention(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -631,7 +419,7 @@ namespace
         {
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
             Vulkan.Execute([&](VkCommandBuffer Command)
-                           { Solver.RecordStep(Command, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags); });
+                           { Solver.RecordStep(Command, Descriptors, true, 2, 1, 0.25F, Model, Gravity); });
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             return Result;
@@ -660,7 +448,7 @@ namespace
               "inverted Lava-like cavity must strongly resist downhill exit");
     }
 
-    void TestGPUSolver(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
+    void TestGPUSolver(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -713,8 +501,7 @@ namespace
                                       1,
                                       0.25F,
                                       glm::mat4(1.0F),
-                                      glm::vec3(0.0F, -1.0F, 0.0F),
-                                      CacheFlags);
+                                      glm::vec3(0.0F, -1.0F, 0.0F));
                 });
             const GPU::TGPUBuffer& StateBuffer =
                 bCurrentStateAB ? Instance.GetStateBBuffer() : Instance.GetStateABuffer();
@@ -741,7 +528,7 @@ namespace
               "third solver step should continue deterministic diffusion");
     }
 
-    void TestAreaAndMobility(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags)
+    void TestAreaAndMobility(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -779,7 +566,7 @@ namespace
             {2 * SurfaceStateReferenceArea, 4 * SurfaceStateReferenceArea});
         SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
         SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const std::uint32_t                            Flags = CacheFlags | (1U << 1U);
+        const std::uint32_t                            Flags = (1U << 1U);
         auto Run = [&](std::array<float, 2> Initial, std::uint32_t ExtraFlags = 0U)
         {
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
@@ -810,7 +597,7 @@ namespace
             [&](VkCommandBuffer Commands)
             {
                 Solver.RecordStep(
-                    Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0, 0, -1), CacheFlags);
+                    Commands, Descriptors, true, 2, 1, 0.1F, glm::mat4(1), glm::vec3(0, 0, -1));
             });
         std::array<float, 2> Result{};
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
@@ -858,7 +645,7 @@ namespace
               "zero area must freeze transport while retaining existing amounts");
     }
 
-    void TestCalibratedGeometrySpeed(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags)
+    void TestCalibratedGeometrySpeed(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -917,7 +704,7 @@ namespace
                 [&](VkCommandBuffer Commands)
                 {
                     Solver.RecordStep(
-                        Commands, Descriptors, true, Count, 1, Dt, glm::mat4(1), glm::vec3(0, 0, -1), CacheFlags);
+                        Commands, Descriptors, true, Count, 1, Dt, glm::mat4(1), glm::vec3(0, 0, -1));
                 });
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             double Total = 0, DownwardMoment = 0;
@@ -931,12 +718,11 @@ namespace
             Check(std::abs(Speed - 0.101033333) < 1e-5,
                   "factor 0.5 must produce about 0.101 world units/s at 128/256/512 with the calibrated rate");
             Check(std::abs(Total - Mass) < Mass * 1e-6, "calibrated flow must conserve total amount");
-            std::cout << "Calibrated Geometry R=" << Resolution << ", cache=" << (CacheFlags ? "OFF" : "ON") << ": "
-                      << Speed << " world units/s\n";
+            std::cout << "Calibrated Geometry R=" << Resolution << ": " << Speed << " world units/s\n";
         }
     }
 
-    void TestGeometryDrivenSolver(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
+    void TestGeometryDrivenSolver(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -984,7 +770,7 @@ namespace
                 [&](VkCommandBuffer CommandBuffer)
                 {
                     Solver.RecordStep(
-                        CommandBuffer, Descriptors, true, 2, 1, DeltaTime, ModelMatrix, Gravity, CacheFlags);
+                        CommandBuffer, Descriptors, true, 2, 1, DeltaTime, ModelMatrix, Gravity);
                 });
 
             std::array<float, 2> Result{};
@@ -1007,7 +793,7 @@ namespace
               "유출은 source 보유량으로 제한하고 target의 Capacity 초과량은 보존해야 한다.");
     }
 
-    void TestMesoGeometryDrive(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
+    void TestMesoGeometryDrive(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -1048,9 +834,6 @@ namespace
         const std::array<float, 2>                     EventInput{0.125F, 0.0F};
         Instance.GetStateABuffer().Upload(EmptyState.data(), sizeof(EmptyState));
         Instance.GetInputDeltaBuffer().Upload(EventInput.data(), sizeof(EventInput));
-        std::array<float, 2 * SurfaceNeighborCount> PoisonedFlux{};
-        PoisonedFlux.fill(std::numeric_limits<float>::quiet_NaN());
-        Instance.GetRawFluxBuffer().Upload(PoisonedFlux.data(), sizeof(PoisonedFlux));
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
             {
@@ -1061,8 +844,7 @@ namespace
                                   1,
                                   0.25F,
                                   glm::mat4(1.0F),
-                                  glm::vec3(0.0F, 0.0F, -1.0F),
-                                  CacheFlags);
+                                  glm::vec3(0.0F, 0.0F, -1.0F));
             });
         std::array<float, 2> EventResult{};
         Instance.GetStateBBuffer().Download(EventResult.data(), sizeof(EventResult));
@@ -1071,12 +853,6 @@ namespace
         Instance.GetInputDeltaBuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(EventResult[0] == 0.0F && EventResult[1] == 0.0F,
               "empty source skipping should still consume event input exactly once");
-        {
-            auto UntouchedFlux = PoisonedFlux;
-            Instance.GetRawFluxBuffer().Download(UntouchedFlux.data(), sizeof(UntouchedFlux));
-            for (const float Value : UntouchedFlux)
-                Check(std::isnan(Value), "inactive sources must preserve poisoned scratch in either cache mode");
-        }
         CheckZeroBuffer(Instance.GetOutgoingFluxScaleBuffer(), 2, "empty source alpha");
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
@@ -1088,25 +864,11 @@ namespace
                                   1,
                                   0.25F,
                                   glm::mat4(1.0F),
-                                  glm::vec3(0.0F, 0.0F, -1.0F),
-                                  CacheFlags);
+                                  glm::vec3(0.0F, 0.0F, -1.0F));
             });
         Instance.GetStateABuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(EventResult[1] > 0.0F && std::abs(EventResult[0] + EventResult[1] - EventInput[0]) < 1.0e-5F,
               "a previously empty target must receive neighbor flux and transport the previous step's event input");
-        if (CacheFlags == 0U)
-        {
-            auto RefreshedFlux = PoisonedFlux;
-            Instance.GetRawFluxBuffer().Download(RefreshedFlux.data(), sizeof(RefreshedFlux));
-            // The source activated by InputDelta overwrites all eight direction entries before gather.
-            for (std::size_t DirectionIndex = 0; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-            {
-                Check(std::isfinite(RefreshedFlux[DirectionIndex * 2U]),
-                      "reactivated source must refresh every direction entry");
-                Check(std::isnan(RefreshedFlux[DirectionIndex * 2U + 1U]),
-                      "empty receiving target must preserve its own scratch");
-            }
-        }
 
         Parameters.DecayRate = 4.0F;
         Profiles.UpdateParameters(0, 0, Parameters);
@@ -1114,7 +876,6 @@ namespace
         const std::array<float, 2> DepletedInput{0.125F, 0.25F};
         Instance.GetStateABuffer().Upload(DepletedState.data(), sizeof(DepletedState));
         Instance.GetInputDeltaBuffer().Upload(DepletedInput.data(), sizeof(DepletedInput));
-        Instance.GetRawFluxBuffer().Upload(PoisonedFlux.data(), sizeof(PoisonedFlux));
         Vulkan.Execute(
             [&](VkCommandBuffer Commands)
             {
@@ -1125,19 +886,12 @@ namespace
                                   1,
                                   0.25F,
                                   glm::mat4(1.0F),
-                                  glm::vec3(0.0F, 0.0F, -1.0F),
-                                  CacheFlags);
+                                  glm::vec3(0.0F, 0.0F, -1.0F));
             });
         Instance.GetStateBBuffer().Download(EventResult.data(), sizeof(EventResult));
         Check(std::abs(EventResult[0] - DepletedInput[0]) < 1.0e-5F &&
                   std::abs(EventResult[1] - DepletedInput[1]) < 1.0e-5F,
               "decay-depleted sources must skip outgoing but still apply external input to both texels");
-        {
-            auto UntouchedFlux = PoisonedFlux;
-            Instance.GetRawFluxBuffer().Download(UntouchedFlux.data(), sizeof(UntouchedFlux));
-            for (const float Value : UntouchedFlux)
-                Check(std::isnan(Value), "inactive sources must preserve poisoned scratch in either cache mode");
-        }
         Parameters.DecayRate = 0.0F;
         Profiles.UpdateParameters(0, 0, Parameters);
 
@@ -1158,7 +912,7 @@ namespace
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
             Vulkan.Execute(
                 [&](VkCommandBuffer Commands)
-                { Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags); });
+                { Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity); });
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             const glm::vec3 Normal =
@@ -1174,14 +928,14 @@ namespace
             Vulkan.Execute(
                 [&](VkCommandBuffer Commands)
                 {
-                    Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, 1U << 4U | CacheFlags);
+                    Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, 1U << 4U);
                 });
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             Check(std::abs(Result[0] - Initial[0]) < 1.0e-5F && std::abs(Result[1] - Initial[1]) < 1.0e-5F,
                   "macro direction normal should suppress geometry flux on a horizontal base surface in both passes");
             Vulkan.Execute(
                 [&](VkCommandBuffer Commands)
-                { Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity, CacheFlags); });
+                { Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, Gravity); });
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             Check(std::abs(Result[1] - Expected) < 1.0e-5F,
                   "re-enabling Meso direction normal should restore geometry flux from the same initial state");
@@ -1197,7 +951,7 @@ namespace
             Vulkan.Execute(
                 [&](VkCommandBuffer Commands)
                 {
-                    Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, TestGravity, Flags | CacheFlags);
+                    Solver.RecordStep(Commands, Descriptors, true, 2, 1, 0.25F, Model, TestGravity, Flags);
                 });
             Instance.GetStateBBuffer().Download(EventResult.data(), sizeof(EventResult));
             Check(std::abs(EventResult[0] - 1.0F) < 1.0e-5F && EventResult[1] == 0.0F,
@@ -1205,7 +959,7 @@ namespace
         }
     }
 
-    void TestSourceGeometryChannelReuse(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
+    void TestSourceGeometryChannelReuse(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -1256,7 +1010,7 @@ namespace
             [&](VkCommandBuffer Commands)
             {
                 Solver.RecordStep(
-                    Commands, Descriptors, true, 2, 3, 0.25F, glm::mat4(1.0F), glm::vec3(0, 0, -1), CacheFlags);
+                    Commands, Descriptors, true, 2, 3, 0.25F, glm::mat4(1.0F), glm::vec3(0, 0, -1));
             });
         std::array<float, 6> Result{};
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
@@ -1275,7 +1029,7 @@ namespace
               "shared source geometry must preserve distinct Registry channel rates, capacities and conservation");
     }
 
-    void TestTransferWeightSolver(TVulkanTestDevice& Vulkan, std::uint32_t CacheFlags = 0U)
+    void TestTransferWeightSolver(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -1340,8 +1094,7 @@ namespace
                                   1,
                                   0.25F,
                                   glm::mat4(1.0F),
-                                  glm::vec3(0.0F, -1.0F, 0.0F),
-                                  CacheFlags);
+                                  glm::vec3(0.0F, -1.0F, 0.0F));
             });
 
         std::array<float, 3> Result{};
@@ -1425,8 +1178,7 @@ namespace
                                         1,
                                         0.25F,
                                         glm::mat4(1.0F),
-                                        glm::vec3(0.0F, -1.0F, 0.0F),
-                                        CacheFlags);
+                                        glm::vec3(0.0F, -1.0F, 0.0F));
             });
 
         std::array<float, 2> NormalResult{};
@@ -1748,22 +1500,13 @@ int main()
         TVulkanTestDevice Vulkan;
         TestGPUResources(Vulkan);
         TestGPUSolver(Vulkan);
-        TestGPUSolver(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
-        TestDirectionalCavityRetention(Vulkan, 0U);
-        TestDirectionalCavityRetention(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
-        TestCachedDirectionalFlux(Vulkan);
-        TestAreaAndMobility(Vulkan, 0U);
-        TestAreaAndMobility(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
-        TestCalibratedGeometrySpeed(Vulkan, 0U);
-        TestCalibratedGeometrySpeed(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
+        TestDirectionalCavityRetention(Vulkan);
+        TestAreaAndMobility(Vulkan);
+        TestCalibratedGeometrySpeed(Vulkan);
         TestGeometryDrivenSolver(Vulkan);
-        TestGeometryDrivenSolver(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
         TestMesoGeometryDrive(Vulkan);
-        TestMesoGeometryDrive(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
         TestSourceGeometryChannelReuse(Vulkan);
-        TestSourceGeometryChannelReuse(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
         TestTransferWeightSolver(Vulkan);
-        TestTransferWeightSolver(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
         TestAccumulationGeometryUpdate(Vulkan);
         TestSparseGeometryUpdateWeights(Vulkan);
     }

@@ -165,22 +165,6 @@ namespace MDSS::SurfaceState
         return SceneProfiles != nullptr ? SceneProfiles->GetProfileCount() : 0;
     }
 
-    TSurfaceRawFluxMemoryUsage TSurfaceGPUResourceManager::GetRawFluxMemoryUsage() const noexcept
-    {
-        TSurfaceRawFluxMemoryUsage Usage;
-        for (const auto& Instance : InstanceResources)
-        {
-            if (Instance)
-                Usage.InstanceRawFluxBytes += Instance->State->GetRawFluxBuffer().GetSize();
-        }
-        for (const auto& [Handle, Shared] : SharedSurfaceData)
-        {
-            Usage.SharedReverseNeighborDirectionIndexBytes +=
-                Shared.Geometry->GetReverseNeighborDirectionIndexBuffer().GetSize();
-        }
-        return Usage;
-    }
-
     std::size_t TSurfaceGPUResourceManager::GetSceneInstanceCount() const noexcept
     {
         return InstanceResources.size();

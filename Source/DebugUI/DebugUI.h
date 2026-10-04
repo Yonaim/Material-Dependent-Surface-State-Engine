@@ -271,7 +271,6 @@ namespace MDSS
         bool                         bShowProfilingPast100ms = false;
         bool                         bShowDetailedProfiling = true;
         bool                         bSolverMetricsPerStep = false;
-        bool                         bProfiledRawFluxCacheEnabled = false;
         bool                         bViewportOverlaysVisible = true;
     };
 } // namespace MDSS
