@@ -338,6 +338,8 @@ namespace MDSS::SurfaceState
                                                      ZeroDynamicGeometry.size(),
                                                      sizeof(TSurfaceGPUVec4),
                                                      MaxRange);
+        DynamicConcavityWeightBuffer =
+            CreateZeroedScalarBuffer(PhysicalDevice, Device, TexelCount, MaxRange);
         const std::size_t WorkgroupCount = TexelCount / 64U + (TexelCount % 64U != 0U);
         if (WorkgroupCount > std::numeric_limits<std::size_t>::max() - 3U ||
             TexelCount > (std::numeric_limits<std::size_t>::max() - WorkgroupCount - 3U) / 3U)
@@ -422,6 +424,11 @@ namespace MDSS::SurfaceState
     const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetDynamicGeometryBuffer() const noexcept
     {
         return *DynamicGeometryBuffer;
+    }
+
+    const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetDynamicConcavityWeightBuffer() const noexcept
+    {
+        return *DynamicConcavityWeightBuffer;
     }
 
     const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetAccumulationHeightBuffer() const noexcept
@@ -570,7 +577,8 @@ namespace MDSS::SurfaceState
             &Instance.GetRawFluxBuffer(),
             &Instance.GetWorldTexelAreaBuffer(),
             &Instance.GetDynamicGeometryBuffer(),
-            &Instance.GetAccumulationHeightBuffer()};
+            &Instance.GetAccumulationHeightBuffer(),
+            &Instance.GetDynamicConcavityWeightBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

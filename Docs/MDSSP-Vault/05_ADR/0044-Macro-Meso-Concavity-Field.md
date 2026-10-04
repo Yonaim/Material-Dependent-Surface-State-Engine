@@ -24,7 +24,7 @@
 
 ## Implementation
 
-`BuildMesoGeometry`의 최종 단계에서 Macro 위치·법선과 복원한 Meso 높이·법선을 결합한 유효 표면의 이웃 법선 변화로 H·K 및 주곡률을 구한다. 이웃 간격을 곱한 양의 주곡률 합에서 음의 주곡률 합의 두 배를 뺀 뒤 gain 8과 `[0,1]` clamp를 적용한다. 기존 Meso 전용 H·K 필드는 그대로 둔다. `.Surface` cache preprocess version을 3으로 높였다. 적층 feedback이 켜지면 Solver가 현재 DynamicGeometry에서 signed 오목도를 다시 평가한다. 평면·그릇·긴 홈·돔·안장형 합성 Mesh 검사를 통과했다.
+`BuildMesoGeometry`의 최종 단계에서 Macro 위치·법선과 복원한 Meso 높이·법선을 결합한 유효 표면의 이웃 법선 변화로 H·K 및 주곡률을 구한다. 이웃 간격을 곱한 양의 주곡률 합에서 음의 주곡률 합의 두 배를 뺀 뒤 gain 8과 `[0,1]` clamp를 적용한다. 기존 Meso 전용 H·K 필드는 그대로 둔다. `.Surface` cache preprocess version을 3으로 높였다. 적층 feedback이 켜지면 `SurfaceGeometryUpdate.comp`가 변경된 texel별 signed 오목도를 계산해 instance별 float32 cache에 기록하고 Solver가 이를 읽는다. 정적 cache 값은 갱신 불가한 동적 이웃 추정의 fallback이다. 평면·그릇·긴 홈·돔·안장형 합성 Mesh 검사를 통과했다.
 
 ## Alternatives Considered
 
@@ -37,7 +37,7 @@
 - Bunny·Mountain처럼 Normal Map이 없는 Mesh에서도 Decay의 오목함 보정이 나타날 수 있다. 실제 세기는 Profile의 decayRate·cavityRetentionFactor와 새 오목도 분포에 따라 달라진다.
 - 기존 .Surface 전처리 캐시는 오목도 생성 알고리즘 변경 시 fingerprint 또는 버전을 갱신해 다시 만들어야 한다. GPU GeometryScalar의 기존 ConcavityWeight 슬롯은 유지한다.
 - Normal Map이 있는 BrickCube와 없는 Bunny·Mountain에서 동일한 부호 계약을 확인한다. 평면, 오목한 그릇, 한 방향 홈, 볼록한 돔, 안장형, UV seam 및 서로 다른 해상도를 검증한다.
-- 적층 feedback의 signed 오목도 갱신은 성능과 GPU 동기화를 검증해야 하며, 구현 전에는 정적 형상 결과와 동적 결과를 혼동해 표시하지 않는다.
+- 동적 cache는 texel별 float32 한 개이며 instance 소유다. Surface 6개 × 512×512, 추가 원소 padding 없는 가정에서는 instance당 6 MiB다. cache는 dynamic geometry pass가 변경 texel과 그 이웃에 대해 다시 기록하며, 그 뒤 compute write→read barrier로 Solver에 공개된다.
 - ADR 0018의 Meso 전용 ConcavityWeight 생성 규칙을 통합 필드의 최종 생성 규칙으로 대체한다. Virtual Meso Height 복원과 MesoMean/Gaussian 데이터 자체는 유지한다.
 
 ## Related

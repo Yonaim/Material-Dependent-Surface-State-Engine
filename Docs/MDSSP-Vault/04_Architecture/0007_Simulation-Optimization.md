@@ -96,6 +96,7 @@ flowchart LR
 | 값 | 원소 타입·인덱스 | 갱신 조건 | 소비 위치 |
 |---|---|---|---|
 | TransferWeight | float32, `texel × 8 + slot` | 최초 생성, MesoVirtualHeight/AccumulationHeight를 반영한 유효 위치·normal revision, 이웃·Surface/Profile 배치, instance 선형 변환, weight 규칙 변경 | Pass 1 rawFlux |
+| DynamicConcavityWeight | float32, `texel` | Accumulation Geometry Update에서 해당 texel 또는 이웃 형상이 변경될 때, 전체 재계산 요청 때 | Decay와 방향별 cavity transport |
 
 ### 인스턴스별 step 임시 결과
 
@@ -159,6 +160,8 @@ flowchart TD
     P2 --> Apply[Next State 기록과 InputDelta 소비]
     Apply --> Swap[후속 barrier와 State A/B 전환]
 ```
+
+Accumulation Geometry Update는 동적 위치·normal을 기록한 뒤 같은 dirty 대상에서 texel별 concavity를 한 번 계산해 cache에 쓴다. Solver는 dynamic feedback이 켜진 동안 그 값을 읽으며, 꺼진 동안에는 공유 정적 GeometryScalar 값을 읽는다.
 
 Pass 1은 source의 감쇠 후 가용량을 먼저 확인한다. 비활성 source는 RawOutgoing·alpha만 0으로 갱신하고 RawFlux 평가·기록을 생략한다. 활성 source는 RawFlux 합과 가용량으로 alpha를 구한다. Pass 2는 모든 유효 target에서 저장된 RawOutgoing·alpha로 outgoing을 계산하고 incoming·입력·감쇠를 반영한다.
 

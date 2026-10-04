@@ -67,6 +67,7 @@ namespace MDSS::SurfaceState
         WorldTexelAreas,
         DynamicGeometry,
         AccumulationHeights,
+        DynamicConcavityWeights,
         Count
     };
 
@@ -181,6 +182,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetRawFluxBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
+        [[nodiscard]] const GPU::TGPUBuffer& GetDynamicConcavityWeightBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
         void                                 UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void                                 UpdateTransferWeights(const std::vector<float>&           TransferWeights,
@@ -203,6 +205,7 @@ namespace MDSS::SurfaceState
         std::unique_ptr<GPU::TGPUBuffer> RawFluxBuffer;
         std::unique_ptr<GPU::TGPUBuffer> WorldTexelAreaBuffer;
         std::unique_ptr<GPU::TGPUBuffer> DynamicGeometryBuffer;
+        std::unique_ptr<GPU::TGPUBuffer> DynamicConcavityWeightBuffer;
         std::unique_ptr<GPU::TGPUBuffer> AccumulationHeightBuffer;
     };
 

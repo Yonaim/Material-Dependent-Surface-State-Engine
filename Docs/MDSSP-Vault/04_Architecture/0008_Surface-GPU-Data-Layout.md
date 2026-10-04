@@ -203,7 +203,7 @@ flowchart LR
 
 ## Solver 캐시 buffer descriptor binding
 
-각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver cache는 14·15·19를 사용하고 공유 역방향 슬롯은 18을 사용한다. 전체 descriptor binding count는 21이며 기존 device limit 검증에도 적용한다.
+각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver cache는 14·15·19·23을 사용하며 공유 역방향 슬롯은 18을 사용한다. 전체 descriptor binding count는 24이며 기존 device limit 검증에도 적용한다.
 
 | set 0 binding | Buffer | 소유 범위 | 원소 / 인덱스 |
 |---:|---|---|---|
@@ -218,6 +218,11 @@ flowchart LR
 | 18 | ReverseNeighborSlots | Shared Geometry | texel별 uint32 (8 × 4 bit) |
 | 19 | RawFlux | instance | `neighborSlot × texelCount × channelCount + texel × channelCount + channel` |
 | 20 | WorldTexelAreas | instance | texel별 float32, stride 4 B |
+| 21 | DynamicGeometry | instance | texel별 위치+평균거리 vec4, normal+마지막 생성 높이 vec4 |
+| 22 | AccumulationHeights | instance | texel별 높이·dirty planes와 workgroup/indirect dispatch data |
+| 23 | DynamicConcavityWeights | instance | texel별 float32 |
+
+DynamicConcavityWeights는 Surface 6개 × 512×512에서 float32, texel당 4 B, 원소 padding 없음 기준으로 instance당 6 MiB다. Dynamic geometry update가 변경된 texel의 값을 갱신한다.
 
 - AB와 BA descriptor set은 같은 instance cache와 Shared Geometry/Profile buffer를 참조한다. Current/Next만 서로 바뀐다.
 - 6×512×512 texel·1 channel 예시의 추가 payload: TransferWeights 48 MiB, RawOutgoing 6 MiB

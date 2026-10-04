@@ -309,17 +309,21 @@ namespace MDSS::SurfaceState
             }
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DynamicTransferWeightPipeline);
             vkCmdDispatchIndirect(CommandBuffer, HeightBuffer, IndirectOffset);
-            const VkBufferMemoryBarrier TransferWeightBarrier = MakeComputeBufferBarrier(
-                Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::TransferWeights, bCurrentStateAB),
-                VK_ACCESS_SHADER_READ_BIT);
+            const std::array<VkBufferMemoryBarrier, 2> GeometryUpdateBarriers = {
+                MakeComputeBufferBarrier(
+                    Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::TransferWeights, bCurrentStateAB),
+                    VK_ACCESS_SHADER_READ_BIT),
+                MakeComputeBufferBarrier(Descriptors.GetBoundBufferHandle(
+                                             TSurfaceGPUDescriptorBinding::DynamicConcavityWeights, bCurrentStateAB),
+                                         VK_ACCESS_SHADER_READ_BIT)};
             vkCmdPipelineBarrier(CommandBuffer,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  0,
                                  0,
                                  nullptr,
-                                 1,
-                                 &TransferWeightBarrier,
+                                 static_cast<std::uint32_t>(GeometryUpdateBarriers.size()),
+                                 GeometryUpdateBarriers.data(),
                                  0,
                                  nullptr);
         }
