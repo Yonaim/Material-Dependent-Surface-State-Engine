@@ -1,5 +1,5 @@
 /**
- * @file SurfaceGeometryUpdate.comp
+ * @file SurfaceDynamicWeightsUpdate.comp
  * @brief 현재 누적 형상으로 texel별 concavity와 edge별 transfer weight를 갱신한다.
  */
 #version 450
@@ -46,9 +46,9 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
     float UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
     float SpacingSum = 0.0;
     uint SampleCount = 0u;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
+    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
     {
-        uint Other = neighborIndex(Texel, Slot);
+        uint Other = neighborIndex(Texel, DirectionIndex);
         if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other)) continue;
         vec3 OtherPosition = localPosition(Other);
         vec3 OtherNormal = normalize(localNormal(Other));
@@ -87,9 +87,9 @@ void main()
     // 높이 변경 표시가 있는 source 또는 이웃에 대해서만 관련 transfer weight를 다시 만든다.
     bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
                  AccumulationHeights.Values[2u * Solver.LocalTexelCount + Source] != 0.0;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount && !Dirty; ++Slot)
+    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount && !Dirty; ++DirectionIndex)
     {
-        uint Neighbor = neighborIndex(Source, Slot);
+        uint Neighbor = neighborIndex(Source, DirectionIndex);
         Dirty = Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount &&
                 AccumulationHeights.Values[2u * Solver.LocalTexelCount + Neighbor] != 0.0;
     }
@@ -105,8 +105,8 @@ void main()
     {
         // 유효하지 않은 source에서는 모든 방향의 전달을 막는다.
         DynamicConcavityWeights.Values[Source] = 0.0;
-        for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
-            TransferWeights.Values[Base + Slot] = 0.0;
+        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+            TransferWeights.Values[Base + DirectionIndex] = 0.0;
         return;
     }
 
@@ -121,10 +121,10 @@ void main()
     bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5 &&
                              !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
 
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
+    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
     {
         // 기본 weight 1에서 시작해 설정된 거리, normal, profile 경계 보정을 곱한다.
-        uint Target = neighborIndex(Source, Slot);
+        uint Target = neighborIndex(Source, DirectionIndex);
         float Weight = 0.0;
         if (Target != InvalidTexelIndex && Target < Solver.LocalTexelCount && isValidTexel(Target))
         {
@@ -160,6 +160,6 @@ void main()
                 ProfileBoundaryWeight = 0.5;
             if (Valid) Weight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
         }
-        TransferWeights.Values[Base + Slot] = Weight;
+        TransferWeights.Values[Base + DirectionIndex] = Weight;
     }
 }

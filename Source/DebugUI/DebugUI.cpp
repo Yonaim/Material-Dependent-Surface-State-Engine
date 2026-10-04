@@ -3666,14 +3666,16 @@ namespace MDSS
             const auto       Memory = FrameRenderer->GetSurfaceGPUResources().GetRawFluxMemoryUsage();
             constexpr double MiB = 1024.0 * 1024.0;
             ImGui::Text("Cache buffers: %.2f MiB",
-                        static_cast<double>(Memory.InstanceRawFluxBytes + Memory.SharedReverseSlotBytes) / MiB);
+                        static_cast<double>(Memory.InstanceRawFluxBytes +
+                                            Memory.SharedReverseNeighborDirectionIndexBytes) /
+                        MiB);
             if (ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();
                 ImGui::Text("RawFlux (all instances): %.2f MiB",
                             static_cast<double>(Memory.InstanceRawFluxBytes) / MiB);
-                ImGui::Text("Reverse slots (shared once): %.2f MiB",
-                            static_cast<double>(Memory.SharedReverseSlotBytes) / MiB);
+                ImGui::Text("Reverse neighbor direction indices (shared once): %.2f MiB",
+                            static_cast<double>(Memory.SharedReverseNeighborDirectionIndexBytes) / MiB);
                 ImGui::TextDisabled("Buffer sizes; excludes allocator overhead.");
                 ImGui::EndTooltip();
             }

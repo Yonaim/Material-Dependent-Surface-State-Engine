@@ -179,11 +179,11 @@ namespace MDSS::SurfaceState
                     return;
                 }
             }
-            for (TLocalTexelIndex& Slot : Texel.Neighbors)
+            for (TLocalTexelIndex& NeighborIndex : Texel.Neighbors)
             {
-                if (Slot == InvalidTexelIndex)
+                if (NeighborIndex == InvalidTexelIndex)
                 {
-                    Slot = Target;
+                    NeighborIndex = Target;
                     return;
                 }
             }

@@ -13,7 +13,7 @@
 
 ## Decision
 
-1. Pass 1은 texel·Registry channel별 가용량 `max(Current - Decay, 0)`을 먼저 계산한다. unsupported/invalid, 가용량=0 또는 dt=0이면 RawOutgoing·alpha를 0으로 덮어쓰고 평가를 생략한다. 초기 구현은 RawFlux의 8개 슬롯도 0으로 기록했으나 [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]]에서 불필요한 쓰기를 제거했다. 별도 활동 마스크는 두지 않는다.
+1. Pass 1은 texel·Registry channel별 가용량 `max(Current - Decay, 0)`을 먼저 계산한다. unsupported/invalid, 가용량=0 또는 dt=0이면 RawOutgoing·alpha를 0으로 덮어쓰고 평가를 생략한다. 초기 구현은 RawFlux의 8개 방향 인덱스도 0으로 기록했으나 [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]]에서 불필요한 쓰기를 제거했다. 별도 활동 마스크는 두지 않는다.
 2. Pass 2의 Incoming gather·InputDelta 소비·Decay·Next 갱신은 유지한다. 빈 텍셀도 유입을 받으며 이번 step의 유입·입력은 다음 step부터 outgoing 대상이다.
 3. source 지원 확인·프로파일 파라미터·Saturation은 channel당 준비하여 이웃 평가가 재사용한다. target의 지원 여부·Saturation과 edge 방향·길이는 이웃별로 평가한다.
 4. source 법선의 world 변환·정규화, 중력 투영의 정규화된 방향, displaced source 위치는 geometry rate가 양수인 활성 채널이 있을 때 invocation당 한 번 준비한다. 여러 채널도 이 source 형상을 공유한다. 채널별 edge 배열은 추가하지 않는다.
@@ -29,7 +29,7 @@
 
 ## Consequences
 
-- State가 빈 영역은 큰 형상·Saturation 계산을 건너뛴다. 초기 slot-major cache zero store는 ADR 0025 이후 생략하며, alpha=0인 source의 RawFlux 값은 미정이다. Dispatch 수와 Pass 2의 target 갱신은 그대로다.
+- State가 빈 영역은 큰 형상·Saturation 계산을 건너뛴다. 초기 direction-index-major cache zero store는 ADR 0025 이후 생략하며, alpha=0인 source의 RawFlux 값은 미정이다. Dispatch 수와 Pass 2의 target 갱신은 그대로다.
 - 추가 storage buffer payload는 0 B다. source 재사용 값은 invocation-local이며 push constant만 초기 96→128 B로 변경한다.
 - 가용량=0 또는 dt=0 경로의 제한 전 RawOutgoing과 alpha 디버그 값은 초기 구현과 다를 수 있다. 실제 outgoing과 Next State 계약은 보존한다.
 - source 공통 계산 재사용은 동일 해상도에서도 효과가 있으며 해상도 축소에 의한 작업량 감소와 구분한다.

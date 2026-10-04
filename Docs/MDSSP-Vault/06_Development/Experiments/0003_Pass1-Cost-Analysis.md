@@ -22,7 +22,7 @@
 - `initializeGeometryDrive`는 각 유효 texel invocation에서 instance 공통 inverse-transpose와 gravity up 축을 준비한다. 실제 기계 명령 수는 compiler 최적화에 따라 달라진다.
 - `geometryDrive(source,target)`는 이웃마다 source 법선 읽기·행렬 변환·길이·정규화, source 중력 투영·길이, source displaced position을 다시 계산한다. source가 같으면 이 값들은 이웃마다 동일하다. target 위치·edge 길이·방향·높이 차이는 이웃별 계산이 필요하다.
 - ADR 0021은 Pass 2의 RawFlux 재평가를 없앴다. 위 Pass 1 계산은 유지되며 RawFlux 저장 쓰기가 추가됐다.
-- RawFlux 쓰기는 instance별 float32, slot-major plane, 6×512×512·1채널·8슬롯, scalar 원소 padding 없음에서 instance당 48 MiB/step이다. 4 instances는 192 MiB/step의 payload store다. allocator padding 및 다른 buffer 접근은 제외하며 실제 DRAM transaction 양과 동일시하지 않는다.
+- RawFlux 쓰기는 instance별 float32, direction-index-major plane, 6×512×512·1채널·8개 방향 이웃, scalar 원소 padding 없음에서 instance당 48 MiB/step이다. 4 instances는 192 MiB/step의 payload store다. allocator padding 및 다른 buffer 접근은 제외하며 실제 DRAM transaction 양과 동일시하지 않는다.
 - 측정 당시 DemoWetness의 GeometryTransferRate=50은 곱셈 계수로, 그 값만으로 한 dispatch의 이웃 반복 횟수가 늘지 않았다. 현재 Auto substepping ON에서는 Rate 증가가 안전 step 간격을 줄여 frame당 Solver 반복 수를 늘릴 수 있다. 기본 Auto OFF·Fixed ON의 dt=1/60초는 계수로 바뀌지 않는다 ([[../../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]]).
 
 ## 합성 분리 측정
@@ -55,7 +55,7 @@ Apple M1, 한 instance에 6개 Surface × 512×512, 1채널, 모든 texel 유효
 | dry / run 1 | 13.808 | 12.813 | 1.40e-9 |
 | dry / run 2 | 14.106 | 13.262 | 1.40e-9 |
 
-임시 후보 shader로 기존 Surface GPU resource/solver 회귀 검사도 통과했다. Virtual Height·normal, 비균일 scale, 중력 반전, term toggle, 여러 channel·seam 슬롯·초과량 보존·입력 소비 fixture를 포함하며 validation 오류가 없었다.
+임시 후보 shader로 기존 Surface GPU resource/solver 회귀 검사도 통과했다. Virtual Height·normal, 비균일 scale, 중력 반전, term toggle, 여러 channel·seam direction index·초과량 보존·입력 소비 fixture를 포함하며 validation 오류가 없었다.
 
 source 재사용의 개선은 전체 State 조건에서 약 32–38%, dry에서 약 6–7%다. 시간 편차와 위 다른 실험 run을 섞지 않으며 실제 Scene 성능 개선률로 환산하지 않는다. 여러 Profile/channel의 GeometryTransferRate=0 경로에서는 불필요한 source 준비를 피하도록 실제 적용 시 준비 시점을 검토한다.
 
@@ -65,7 +65,7 @@ source 재사용의 개선은 전체 State 조건에서 약 32–38%, dry에서 
 
 Pass 2는 계속 이웃 source의 캐시를 gather하고 InputDelta를 소비해 `Next = max(Current + Input + Incoming - Outgoing - Decay, 0)`를 기록한다. 자기 가용량이 0이어도 이웃 유입이나 외부 입력을 받을 수 있다. 이번 step에 받은 양은 다음 step의 Current가 되므로 다음 step부터 outgoing 평가 대상이다. 여러 Registry channel 중 하나의 가용량이 0인 경우에도 다른 channel은 독립적으로 처리한다.
 
-생략 경로에서도 재사용 scratch의 이전 값이 남지 않도록 해당 channel의 8개 RawFlux 슬롯과 RawOutgoing·alpha를 0으로 덮어써야 한다. 이는 Next State와 실제 전달량을 보존하지만, 가용량이 0일 때의 제한 전 RawOutgoing과 alpha 디버그 값은 초기 구현과 달라질 수 있다. 후속 ADR 0022에서 이 경로를 runtime shader에 적용했다.
+생략 경로에서도 재사용 scratch의 이전 값이 남지 않도록 해당 channel의 RawFlux의 8개 방향별 항목과 RawOutgoing·alpha를 0으로 덮어써야 한다. 이는 Next State와 실제 전달량을 보존하지만, 가용량이 0일 때의 제한 전 RawOutgoing과 alpha 디버그 값은 초기 구현과 달라질 수 있다. 후속 ADR 0022에서 이 경로를 runtime shader에 적용했다.
 
 ## 추가 중복 연산 검토 — ADR 0022 적용 전
 

@@ -84,7 +84,7 @@ ADR의 주제별 분류와 각 문서의 요약을 한 곳에서 살펴볼 수 �
 | [[0022-Pass1-Source-Reuse|ADR 0022]] | Pass 1 source 재사용과 가용량 0 생략 | Pass 1에서 source별 계산값을 재사용하고 가용량이 0인 source의 계산을 생략한다. |
 | [[0023-Simulation-Resolution-Presets|ADR 0023]] | 시뮬레이션 해상도 프리셋 | Surface simulation 해상도를 Low, Medium, High 프리셋으로 선택한다. |
 | [[0024-RawFlux-Cache-Comparison|ADR 0024]] | RawFlux 캐시 ON/OFF 비교 | 방향별 RawFlux 캐시의 ON/OFF 성능과 메모리 비용을 비교하는 기준을 정한다. |
-| [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]] | 비활성 source의 RawFlux 쓰기 생략 | 가용량이 없는 비활성 source는 RawFlux 슬롯을 갱신하지 않는다. |
+| [[0025-Inactive-RawFlux-Write-Elision|ADR 0025]] | 비활성 source의 RawFlux 쓰기 생략 | 가용량이 없는 비활성 source는 RawFlux 방향별 항목을 갱신하지 않는다. |
 | [[0029-Normalized-Transport-Factors|ADR 0029]] | 정규화된 Transport Factor와 Solver 기준 속도 | Profile은 `[0,1]` 계수를 저장하고 Solver가 기준 속도 `1.0`, `100.0`을 곱한다. |
 | [[0030-Texel-Area-and-State-Amounts|ADR 0030]] | 텍셀 면적과 State 총량 | 총량을 저장하고 Capacity, 입력, 감쇠를 월드 texel 면적으로 환산한다. |
 | [[0031-Geometry-Transport-Mobility|ADR 0031]] | 출발 포화도에 비례하는 Geometry 전달 | Geometry에 상한 없는 출발 State/Capacity를 곱하고 SaturationDrive를 유지한다. |

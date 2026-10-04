@@ -74,8 +74,8 @@ namespace MDSS::SurfaceState
         std::vector<TSurfaceGPUVec4>            MesoNormals;
         std::vector<TSurfaceGPUGeometryScalar>  GeometryScalars;
         std::vector<TSurfaceGPUNeighborIndices> NeighborIndices;
-        // Eight 4-bit reverse slots per texel; 0xf means no reciprocal neighbor.
-        std::vector<std::uint32_t>           ReverseNeighborSlots;
+        // Eight 4-bit reverse direction indices per texel; 0xf means no reciprocal neighbor.
+        std::vector<std::uint32_t>           ReverseNeighborDirectionIndices;
         std::vector<TSurfaceGPUSurfaceRange> SurfaceRanges;
         std::vector<std::uint32_t>           TexelChartIndices;
     };
@@ -116,7 +116,7 @@ namespace MDSS::SurfaceState
     [[nodiscard]] std::vector<float> BuildSurfaceGPUWorldTexelAreas(const TSharedSurfaceGeometryData& Geometry,
                                                                     const glm::mat4&                  ModelMatrix);
 
-    /** @brief 대칭 TransferWeight 규칙을 각 텍셀의 이웃 슬롯별 cache로 만든다. */
+    /** @brief 대칭 TransferWeight 규칙을 각 텍셀의 이웃 방향 인덱스별 cache로 만든다. */
     [[nodiscard]] std::vector<float>
     BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
                                    const glm::mat4&                  ModelMatrix,

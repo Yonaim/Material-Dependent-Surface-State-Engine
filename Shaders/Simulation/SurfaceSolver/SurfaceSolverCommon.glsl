@@ -94,10 +94,10 @@ layout(std430, set = 0, binding = 17) readonly buffer TSurfaceMesoNormals
     vec4 Values[];
 } MesoNormals;
 
-layout(std430, set = 0, binding = 18) readonly buffer TSurfaceReverseNeighborSlots
+layout(std430, set = 0, binding = 18) readonly buffer TSurfaceReverseNeighborDirectionIndices
 {
     uint Values[];
-} ReverseNeighborSlots;
+} ReverseNeighborDirectionIndices;
 layout(std430, set = 0, binding = 19) buffer TSurfaceRawFlux
 {
     float Values[];
@@ -178,9 +178,9 @@ uint neighborIndex(uint TexelIndex, uint DirectionIndex)
     return NeighborIndices.Values[TexelIndex * SurfaceNeighborCount + DirectionIndex];
 }
 
-uint reverseNeighborSlot(uint TexelIndex, uint DirectionIndex)
+uint reverseNeighborDirectionIndex(uint TexelIndex, uint DirectionIndex)
 {
-    return (ReverseNeighborSlots.Values[TexelIndex] >> (DirectionIndex * 4u)) & 0xfu;
+    return (ReverseNeighborDirectionIndices.Values[TexelIndex] >> (DirectionIndex * 4u)) & 0xfu;
 }
 
 uint rawFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
@@ -264,9 +264,9 @@ vec3 effectiveLocalNormal(uint TexelIndex)
     vec3 V = cross(N, U);
     float CenterHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight + AccumulationHeights.Values[TexelIndex];
     float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
+    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
     {
-        uint Other = neighborIndex(TexelIndex, Slot);
+        uint Other = neighborIndex(TexelIndex, DirectionIndex);
         if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other) ||
             dot(N, Normals.Values[Other].xyz) < 0.5) continue;
         vec3 Delta = Positions.Values[Other].xyz - Positions.Values[TexelIndex].xyz;

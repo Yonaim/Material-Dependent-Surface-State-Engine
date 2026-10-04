@@ -109,9 +109,9 @@ namespace MDSS::Tests
             G.Surface = Texel / 4;
             G.Triangle = G.Chart = 0;
             G.Position = {float(Texel % 2) + 2.0F * float(Texel / 4), float((Texel / 2) % 2), 0};
-            for (std::uint32_t Other = 0, Slot = 0; Other < 4; ++Other)
+            for (std::uint32_t Other = 0, DirectionIndex = 0; Other < 4; ++Other)
                 if (Other != Texel % 4)
-                    G.NeighborIndices[Slot++] = 4 * (Texel / 4) + Other;
+                    G.NeighborIndices[DirectionIndex++] = 4 * (Texel / 4) + Other;
         }
         Geometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(8, 0));
         SurfaceState::TSurfaceResponseProfileData Profile;
@@ -280,9 +280,9 @@ namespace MDSS::Tests
             G.Surface = G.Triangle = G.Chart = 0;
             G.Position = {float(Texel % 2), float(Texel / 2), 0.0F};
             G.Geometry.MesoVirtualHeight = -0.02F;
-            for (std::uint32_t Other = 0, Slot = 0; Other < 4; ++Other)
+            for (std::uint32_t Other = 0, DirectionIndex = 0; Other < 4; ++Other)
                 if (Other != Texel)
-                    G.NeighborIndices[Slot++] = Other;
+                    G.NeighborIndices[DirectionIndex++] = Other;
         }
         Geometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(4, 0));
         SurfaceState::TSurfaceStateParameters Parameters;
@@ -676,9 +676,9 @@ namespace MDSS::Tests
             Normals[Index] = {0, 0, 1, 0};
             Positions[Index] = {float(Index % 2), float(Index / 2), 0, 0};
             Neighbors[Index].Indices.fill(UINT32_MAX);
-            for (std::uint32_t Other = 0, Slot = 0; Other < 4; ++Other)
+            for (std::uint32_t Other = 0, DirectionIndex = 0; Other < 4; ++Other)
                 if (Other != Index)
-                    Neighbors[Index].Indices[Slot++] = Other;
+                    Neighbors[Index].Indices[DirectionIndex++] = Other;
         }
         Shared.GetNormalBuffer().Upload(Normals.data(), sizeof(Normals));
         Shared.GetMesoNormalBuffer().Upload(Normals.data(), sizeof(Normals));
@@ -795,11 +795,11 @@ namespace MDSS::Tests
             auto& G = GridGeometry.GetTexels()[T];
             G.Surface = G.Triangle = G.Chart = 0;
             G.Position = {float(T % 3) * 0.5F - 0.5F, float(T / 3) * 0.5F - 0.5F, 0};
-            std::size_t Slot = 0;
+            std::size_t DirectionIndex = 0;
             for (std::uint32_t Other = 0; Other < 9; ++Other)
                 if (Other != T && std::abs(int(Other % 3) - int(T % 3)) <= 1 &&
                     std::abs(int(Other / 3) - int(T / 3)) <= 1)
-                    G.NeighborIndices[Slot++] = Other;
+                    G.NeighborIndices[DirectionIndex++] = Other;
         }
         GridGeometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(9, 0));
         SurfaceState::TSurfaceSharedGeometryGPUResources GridShared(Context.GetPhysicalDevice(), Device, GridGeometry);

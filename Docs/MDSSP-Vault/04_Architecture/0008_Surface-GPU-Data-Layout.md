@@ -55,7 +55,7 @@ Shared Geometry는 Mesh와 Profile Distribution 조합에 대해 전처리한 te
 | `GeometryScalar`    | 네 `float32` (`MesoVirtualHeight`, `ConcavityWeight`, Mean K, Gaussian K) | `texelCount` | 16 B | `16 × texelCount` B |
 | `MesoNormal`        | `vec4`                                                | `texelCount` | 16 B | `16 × texelCount` B |
 | `NeighborIndex`     | `uvec4[2]`                                           | `texelCount` |      32 B | `32 × texelCount` B |
-| `ReverseNeighborSlots` | `uint32` (8 × 4 bit packed) | `texelCount` | 4 B | `4 × texelCount` B |
+| `ReverseNeighborDirectionIndices` | `uint32` (8 × 4 bit packed) | `texelCount` | 4 B | `4 × texelCount` B |
 
 디버그 Fragment shader가 Surface grid와 UV chart를 조회하기 위해 아래 보조 buffer도 함께 사용한다. 이 값들은 Solver의 전달 계산 입력이 아니다.
 
@@ -63,7 +63,7 @@ Shared Geometry는 Mesh와 Profile Distribution 조합에 대해 전처리한 te
 |---|---|---:|---:|---:|---|
 | `SurfaceRanges` | `uvec4` (`firstTexel`, `width`, `height`, `texelCount`) | `surfaceCount` | 16 B | `16 × surfaceCount` B | Fragment의 Surface UV를 해당 grid의 local texel index로 변환 |
 | `TexelChartIndices` | `uint32` | `texelCount` | 4 B | `4 × texelCount` B | Neighbor가 다른 UV chart를 가로지르는지 seam view에서 판별 |
-GeometryScalar에는 mean/Gaussian curvature가 포함되어 texel당 16 B다 ([[../05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]). `MesoNormal` 별도 buffer와 역방향 슬롯 buffer를 포함한 공유 geometry payload는 texel당 108 B다. 현재 복원 normal은 CPU shared geometry 전처리에서 만들며, GPU normal buffer는 렌더링과 geometry/cache 소비자가 같은 결과를 읽도록 보관한다.
+GeometryScalar에는 mean/Gaussian curvature가 포함되어 texel당 16 B다 ([[../05_ADR/0018-Normal-Map-Meso-Geometry|ADR 0018]]). `MesoNormal` 별도 buffer와 역방향 인덱스 buffer를 포함한 공유 geometry payload는 texel당 108 B다. 현재 복원 normal은 CPU shared geometry 전처리에서 만들며, GPU normal buffer는 렌더링과 geometry/cache 소비자가 같은 결과를 읽도록 보관한다.
 
 - 각 배열의 원소 번호는 Geometry의 local texel index와 일치한다.
 - `TexelSurfaceIndex`의 `InvalidSurfaceID`는 Mesh 표면에 대응하지 않는 UV texel을 표시하므로 별도 ValidMask가 필요하지 않다.
@@ -113,7 +113,7 @@ vec4[2] = ThicknessPerAmount, CavityTransportRetentionFactor, 0, 0
 
 ## Instance State
 
-각 instance는 같은 Mesh와 Profile을 사용하더라도 시뮬레이션 상태를 독립적으로 가져야 한다. State와 channel별 임시 버퍼는 텍셀×실제 channel 수로 구성한다. TransferWeight는 channel과 무관하게 texel×8 이웃 슬롯, WorldTexelAreas는 texel별 한 값으로 구성한다.
+각 instance는 같은 Mesh와 Profile을 사용하더라도 시뮬레이션 상태를 독립적으로 가져야 한다. State와 channel별 임시 버퍼는 텍셀×실제 channel 수로 구성한다. TransferWeight는 channel과 무관하게 texel×8 neighbor 방향별 항목, WorldTexelAreas는 texel별 한 값으로 구성한다.
 
 | Buffer       | GPU 원소 타입 |                          개수 |           텍셀당 stride |                         총 payload |
 | ------------ | --------- | --------------------------: | -------------------: | --------------------------------: |
@@ -153,9 +153,9 @@ State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량�
 - State A/B의 시작값은 0이다.
 
 - `TransferWeights`는 유효 Geometry와 instance 선형 변환으로 준비하는 edge cache다.
-- Slot 위치: `texelIndex × 8 + neighborSlot`
-- 저장값: 해당 slot의 DistanceWeight × NormalWeight × ProfileBoundaryWeight
-- 방향별 slot을 각각 저장한다. 대칭 식을 무방향 edge 저장으로 압축하는 최적화는 후속 작업이다.
+- Direction index 위치: `texelIndex × 8 + neighborDirectionIndex`
+- 저장값: 해당 direction index의 DistanceWeight × NormalWeight × ProfileBoundaryWeight
+- 각 direction index의 가중치를 따로 저장한다. 대칭 식을 무방향 edge 저장으로 압축하는 최적화는 후속 작업이다.
 - Cache는 RawFlux 계산에서 평균 이웃 거리를 반복 계산하지 않게 한다.
 - **현재 구현:** CPU builder는 resource 생성 시와 instance scale 또는 Weight 토글이 바뀔 때 갱신한다. 순수 translation·rotation은 TransferWeights 및 WorldTexelAreas의 cache invalidation을 일으키지 않는다. GPU GeometryDrive는 회전 후에도 최신 중력과 model 행렬을 매 step 사용한다 ([[../05_ADR/0043-Rotation-Invariant-Transfer-Cache|ADR 0043]]).
 - 동적 적층 feedback은 별도 GPU pass에서 현재 형상의 edge weight를 갱신한다. 향후 정적 Geometry나 topology를 런타임 수정하는 경로가 추가되면 공유 resource 재구성과 무효화 정책을 함께 정의해야 한다.
@@ -167,15 +167,15 @@ State A/B는 Capacity 초과량을 포함한 전체 finite·비음수 상태량�
 - Pass 1 뒤 `OutgoingFluxScale`·`RawOutgoing`에 compute write→read barrier를 적용한다. Cache ON일 때만 RawFlux를 포함한다.
 - Pass 2 read 뒤 다음 step의 Pass 1 write 전에 재사용 barrier를 둔다. Cache OFF에서는 RawFlux를 제외한다.
 
-`RawFlux` 저장 위치는 `neighborSlot × texelCount × channelCount + texelIndex × channelCount + channelIndex`다.
+`RawFlux` 저장 위치는 `neighborDirectionIndex × texelCount × channelCount + texelIndex × channelCount + channelIndex`다.
 
-- 캐시 ON에서는 활성 source의 모든 슬롯을 갱신한다. Invalid 이웃이나 rate/weight가 0인 간선은 0으로 덮어쓴다.
-- Unsupported/invalid, 가용량=0 또는 dt=0인 source 슬롯은 갱신하지 않아 stale·미초기화 값이 남을 수 있다. 생성·reset 시 clear는 필요 없다.
+- 캐시 ON에서는 활성 source의 모든 방향 인덱스를 갱신한다. Invalid 이웃이나 rate/weight가 0인 간선은 0으로 덮어쓴다.
+- Unsupported/invalid, 가용량=0 또는 dt=0인 source 항목은 갱신하지 않아 stale·미초기화 값이 남을 수 있다. 생성·reset 시 clear는 필요 없다.
 - Pass 2는 source alpha를 먼저 확인한다. alpha가 0이면 RawFlux를 읽지 않는다.
-- alpha가 양수이면 `ReverseNeighborSlots[texel]`에서 `(packed >> (slot × 4)) & 0xf`로 역방향 source 슬롯을 찾고 저장값에 source alpha를 곱한다. `0xf`는 invalid이며 0–7만 조회한다.
-- 역방향 슬롯은 Geometry와 공유하고 topology 변경 때 다시 준비한다. RawFlux는 instance별이며 AB/BA가 같은 scratch를 참조한다.
+- alpha가 양수이면 `ReverseNeighborDirectionIndices[texel]`에서 `(packed >> (directionIndex × 4)) & 0xf`로 역방향 source direction index를 찾고 저장값에 source alpha를 곱한다. `0xf`는 invalid이며 0–7만 조회한다.
+- 역방향 direction index는 Geometry와 공유하고 topology 변경 때 다시 준비한다. RawFlux는 instance별이며 AB/BA가 같은 scratch를 참조한다.
 - 캐시 OFF에서는 RawFlux 읽기·쓰기를 생략하지만 buffer와 descriptor 할당은 유지한다.
-- 슬롯 배치와 유효성은 각각 결정에 따른다 ([[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]], [[05_ADR/0025-Inactive-RawFlux-Write-Elision|ADR 0025]]).
+- direction index 배치와 유효성은 각각 결정에 따른다 ([[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]], [[05_ADR/0025-Inactive-RawFlux-Write-Elision|ADR 0025]]).
 
 ## CPU와 GPU 데이터 형식
 
@@ -203,7 +203,7 @@ flowchart LR
 
 ## Solver 캐시 buffer descriptor binding
 
-각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver cache는 14·15·19·23을 사용하며 공유 역방향 슬롯은 18을 사용한다. 전체 descriptor binding count는 24이며 기존 device limit 검증에도 적용한다.
+각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver cache는 14·15·19·23을 사용하며 공유 역방향 direction index는 18을 사용한다. 전체 descriptor binding count는 24이며 기존 device limit 검증에도 적용한다.
 
 | set 0 binding | Buffer | 소유 범위 | 원소 / 인덱스 |
 |---:|---|---|---|
@@ -211,12 +211,12 @@ flowchart LR
 | 6–7 | ProfileParameters, ProfileSupported | Profile table | `profile × channel + channel` |
 | 8–11 | CurrentState, NextState, OutgoingFluxScale, InputDelta | instance | `texel × channelCount + channel` |
 | 12–13 | SurfaceRanges, TexelChartIndices | Shared Geometry debug data | Surface / texel |
-| 14 | TransferWeights | instance | `texel × 8 + neighborSlot` |
+| 14 | TransferWeights | instance | `texel × 8 + neighborDirectionIndex` |
 | 15 | RawOutgoing | instance | `texel × channelCount + channel` |
 | 16 | TransferWeightDebugAverages | instance | texel별 vec4 |
 | 17 | MesoNormals | Shared Geometry | texel별 vec4 |
-| 18 | ReverseNeighborSlots | Shared Geometry | texel별 uint32 (8 × 4 bit) |
-| 19 | RawFlux | instance | `neighborSlot × texelCount × channelCount + texel × channelCount + channel` |
+| 18 | ReverseNeighborDirectionIndices | Shared Geometry | texel별 uint32 (8 × 4 bit) |
+| 19 | RawFlux | instance | `neighborDirectionIndex × texelCount × channelCount + texel × channelCount + channel` |
 | 20 | WorldTexelAreas | instance | texel별 float32, stride 4 B |
 | 21 | DynamicGeometry | instance | texel별 위치+평균거리 vec4, normal+마지막 생성 높이 vec4 |
 | 22 | AccumulationHeights | instance | texel별 높이·dirty planes와 workgroup/indirect dispatch data |
@@ -228,7 +228,7 @@ DynamicConcavityWeights는 Surface 6개 × 512×512에서 float32, texel당 4 B,
 - 6×512×512 texel·1 channel 예시의 추가 payload: TransferWeights 48 MiB, RawOutgoing 6 MiB
 - CPU preparation의 world position·world normal·mean-neighbor-distance scratch는 cache rebuild 중에만 유지하며 GPU payload에는 포함하지 않는다.
 
-방향별 RawFlux 캐시의 증가분은 6 Surface × 512×512·1채널·8슬롯 기준으로 인스턴스당 48 MiB, 역방향 슬롯 공유 Geometry당 6 MiB다 ([[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]).
+방향별 RawFlux 캐시의 증가분은 6 Surface × 512×512·1채널·8방향 이웃 기준으로 인스턴스당 48 MiB, 역방향 인덱스 공유 Geometry당 6 MiB다 ([[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]).
 
 - Scalar 원소 padding은 없으며 allocator overhead는 제외한다.
 - RawFlux는 byte-size overflow, uint32 shader 인덱스 범위, `maxStorageBufferRange`를 검증한다. 한도를 넘으면 명시적으로 거부한다.
@@ -247,7 +247,7 @@ Solver push constant는 128 byte다.
 
 기본 Surface grid는 Medium 256×256이며 Low 128×128, High 512×512를 선택할 수 있다 ([[05_ADR/0023-Simulation-Resolution-Presets|ADR 0023]]). 위 512 메모리 예시는 High 기준이다.
 
-- float32·8슬롯·1채널·원소 padding 없음에서 Medium RawFlux는 instance당 12 MiB다.
-- uint32 역방향 슬롯은 공유 Geometry당 1.5 MiB다.
+- float32·8방향 이웃·1채널·원소 padding 없음에서 Medium RawFlux는 instance당 12 MiB다.
+- uint32 역방향 direction index는 공유 Geometry당 1.5 MiB다.
 - 이 추정은 6개 Surface와 allocator overhead 제외를 가정한다.
 - 해상도 변경 시 mapping·geometry·GPU buffer·descriptor·Solver를 재생성하고 State를 초기화한다.

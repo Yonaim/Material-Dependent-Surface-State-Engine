@@ -19,7 +19,7 @@
 
 ## 비용과 결정 기준
 
-- 예시 메모리 가정: Surface 하나가 256×256 texel이고 texel당 8 이웃 슬롯, 표본·간선당 float32 값 하나를 padding 없이 저장하며 instance별 GPU buffer로 복제한다. 이때 각도 표본 하나는 256×256×8×4 byte = 2 MiB, 16개는 instance당 32 MiB다. 6 Surface인 같은 해상도 Cube 한 instance면 16개 표본에 192 MiB다. buffer allocation overhead, 보간 인덱스, 높이·방향을 별도 저장할 경우의 추가분은 제외한다.
+- 예시 메모리 가정: Surface 하나가 256×256 texel이고 texel당 8개 이웃 방향, 표본·간선당 float32 값 하나를 padding 없이 저장하며 instance별 GPU buffer로 복제한다. 이때 각도 표본 하나는 256×256×8×4 byte = 2 MiB, 16개는 instance당 32 MiB다. 6 Surface인 같은 해상도 Cube 한 instance면 16개 표본에 192 MiB다. buffer allocation overhead, 보간 인덱스, 높이·방향을 별도 저장할 경우의 추가분은 제외한다.
 - 먼저 ADR 0043을 반영한 뒤 기존 GPU 경로의 Pass 1 시간, 회전 중 frame time, CPU 대기 시간을 반복 측정한다.
 - 표본 생성 시간, GPU 메모리, buffer 읽기 대 산술 연산, 보간 오차와 시각적 연속성을 기존 경로와 비교한다. 조회가 빨라지지 않거나 메모리 비용이 과도하면 기존 GPU 직접 계산을 유지한다.
 - Flat·경사·오목한 홈, 0°·90°·180° 및 표본 사이 각도에서 직접 계산과 조회 결과를 비교한다. State 양 보존과 방향 부호가 바뀌는 구간을 포함한다.

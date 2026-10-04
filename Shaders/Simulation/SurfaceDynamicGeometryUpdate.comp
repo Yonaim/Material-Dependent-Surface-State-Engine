@@ -1,5 +1,5 @@
 /**
- * @file SurfaceAccumulation.comp
+ * @file SurfaceDynamicGeometryUpdate.comp
  * @brief 현재 solver step의 누적 높이를 반영해 instance별 위치와 normal을 갱신한다.
  */
 #version 450
@@ -20,9 +20,9 @@ void main()
     // 전체 재계산 요청이 있거나, 이 texel 또는 인접 texel의 높이가 바뀌면 형상을 다시 만든다.
     bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
                  AccumulationHeights.Values[Solver.LocalTexelCount + Texel] != 0.0;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount && !Dirty; ++Slot)
+    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount && !Dirty; ++DirectionIndex)
     {
-        uint Neighbor = neighborIndex(Texel, Slot);
+        uint Neighbor = neighborIndex(Texel, DirectionIndex);
         Dirty = Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount &&
                 AccumulationHeights.Values[Solver.LocalTexelCount + Neighbor] != 0.0;
     }
@@ -48,9 +48,9 @@ void main()
                                 Solver.ModelLinearColumns[1].xyz,
                                 Solver.ModelLinearColumns[2].xyz);
         uint Count = 0u;
-        for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
+        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
-            uint Neighbor = neighborIndex(Texel, Slot);
+            uint Neighbor = neighborIndex(Texel, DirectionIndex);
             if (Neighbor == InvalidTexelIndex || Neighbor >= Solver.LocalTexelCount || !isValidTexel(Neighbor))
                 continue;
             vec3 NeighborPosition = effectiveLocalPosition(Neighbor);

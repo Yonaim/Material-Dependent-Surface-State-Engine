@@ -7,7 +7,7 @@
 
 ---
 
-초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용하며, 방향·채널별 RawFlux와 공유 역방향 슬롯 정보도 보관한다 ([[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]). 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
+초기 Solver는 간선 가중치와 RawOutgoing 합계를 즉시 계산하고 재사용하지 않았다. 현재 Solver는 TransferWeight cache와 Pass 1의 RawOutgoing 합계를 재사용하며, 방향·채널별 RawFlux와 공유 역방향 인덱스 정보도 보관한다 ([[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]). 수식은 [[04_Architecture/0006_Surface-State-Update|Surface State Update]]를 유지한다.
 
 ## 현재 적용된 성능 최적화
 
@@ -15,10 +15,10 @@
 |---|---|---|
 | TransferWeight | Instance별로 준비한다. 정적 형상에서 순수 translation·rotation은 재사용하고 scale·가중치 설정이 바뀔 때 갱신한다. Scene 형상 교체는 새 resource를 만든다. | RawFlux 내부의 반복 `DistanceWeight`·`NormalWeight` 계산 |
 | RawOutgoing | Pass 1 합계를 저장하여 Pass 2가 재사용 | 자기 outgoing 합계의 재계산 |
-| 방향별 RawFlux | 선택적으로 ON에서 활성 source의 8개 슬롯을 저장하고 Pass 2가 이웃 source의 역방향 값을 읽음. 기본값은 OFF | incoming의 RawFlux·GeometryDrive 재평가 |
+| 방향별 RawFlux | 선택적으로 ON에서 활성 source의 8개 방향 인덱스를 저장하고 Pass 2가 이웃 source의 역방향 값을 읽음. 기본값은 OFF | incoming의 RawFlux·GeometryDrive 재평가 |
 | Pass 1 source 계산 | 지원 여부·Profile·Saturation은 channel당 준비, source 법선 변환·중력 투영·위치는 geometry를 쓰는 invocation당 한 번 준비 | 같은 source를 이웃 8개·여러 채널에서 반복 준비하는 비용 |
 | instance 계산 | CPU가 solver dispatch당 선형 행렬·inverse-transpose·gravity up을 준비해 128-byte push constant로 전달 | 텍셀별 공통 행렬 계산 |
-| 비활성 source | unsupported/invalid, 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록 | outgoing 평가와 8개 RawFlux 슬롯의 불필요한 0 쓰기 |
+| 비활성 source | unsupported/invalid, 감쇠 후 가용량=0 또는 dt=0이면 RawOutgoing·alpha만 0으로 기록 | outgoing 평가와 8개 방향 RawFlux entry의 불필요한 0 쓰기 |
 | 시뮬레이션 해상도 | Low 128, Medium 256, High 512, 기본 Medium | Surface별 texel 수와 이에 비례하는 작업·버퍼 payload |
 
 - 모든 texel은 dispatch 대상이며 invocation 분기로 비싼 source 계산을 생략한다.
@@ -95,25 +95,25 @@ flowchart LR
 
 | 값 | 원소 타입·인덱스 | 갱신 조건 | 소비 위치 |
 |---|---|---|---|
-| TransferWeight | float32, `texel × 8 + slot` | 최초 생성, MesoVirtualHeight/AccumulationHeight를 반영한 유효 위치·normal revision, 이웃·Surface/Profile 배치, instance 선형 변환, weight 규칙 변경 | Pass 1 rawFlux |
+| TransferWeight | float32, `texel × 8 + directionIndex` | 최초 생성, MesoVirtualHeight/AccumulationHeight를 반영한 유효 위치·normal revision, 이웃·Surface/Profile 배치, instance 선형 변환, weight 규칙 변경 | Pass 1 rawFlux |
 | DynamicConcavityWeight | float32, `texel` | Accumulation Geometry Update에서 해당 texel 또는 이웃 형상이 변경될 때, 전체 재계산 요청 때 | Decay와 방향별 cavity transport |
 
 ### 인스턴스별 step 임시 결과
 
 | 값 | 원소 타입·인덱스 | 갱신 조건 | 소비 위치 |
 |---|---|---|---|
-| RawFlux | float32, `slot × TexelCount × ChannelCount + texel × ChannelCount + channel` | 캐시 ON의 활성 source에 대해 Pass 1이 매 step 모든 슬롯 갱신 | Pass 2가 alpha>0인 이웃 source의 역방향 incoming 조회 |
+| RawFlux | float32, `directionIndex × TexelCount × ChannelCount + texel × ChannelCount + channel` | 캐시 ON의 활성 source에 대해 Pass 1이 매 step 모든 방향 인덱스 갱신 | Pass 2가 alpha>0인 이웃 source의 역방향 incoming 조회 |
 | RawOutgoing | float32, `texel × ChannelCount + channel` | 매 실행 step의 Pass 1 | Pass 2 자신의 outgoing 계산 |
 | OutgoingFluxScale | 기존 float32, 동일 인덱스 | 매 실행 step의 Pass 1 | Pass 2 자신의 outgoing와 이웃 incoming 제한 |
 
-비활성 texel-channel의 RawOutgoing·alpha는 Pass 1에서 0으로 기록하며 RawFlux는 갱신하지 않는다. 활성 source는 캐시 ON에서 8개 슬롯을 모두 기록하며 invalid 이웃이나 rate/weight=0인 간선은 0으로 덮어쓴다. 특히 활성 source의 RawOutgoing=0 경로는 alpha=1이므로 해당 0 쓰기를 유지한다.
+비활성 texel-channel의 RawOutgoing·alpha는 Pass 1에서 0으로 기록하며 RawFlux는 갱신하지 않는다. 활성 source는 캐시 ON에서 8개 방향 인덱스를 모두 기록하며 invalid 이웃이나 rate/weight=0인 간선은 0으로 덮어쓴다. 특히 활성 source의 RawOutgoing=0 경로는 alpha=1이므로 해당 0 쓰기를 유지한다.
 
 - RawFlux는 생성·reset 시 clear하지 않는다.
-- Pass 2는 **RawFlux를 읽기 전에 source alpha를 검사**한다. alpha=0이면 stale·미초기화 슬롯을 읽지 않는다.
+- Pass 2는 **RawFlux를 읽기 전에 source alpha를 검사**한다. alpha=0이면 stale·미초기화 RawFlux 미초기화 항목을 읽지 않는다.
 - 값을 먼저 읽고 0을 곱하는 방식은 NaN에 안전하지 않으므로 alpha 검사를 유지한다.
-- 다시 활성화된 source는 다음 Pass 1이 모든 슬롯을 새로 기록한다.
-- 공유 `ReverseNeighborSlots`는 texel당 uint32 하나에 슬롯별 4 bit를 사용한다. 이웃에서 자신을 가리키는 슬롯 0–7 또는 invalid `0xf`를 보관한다.
-- Topology 생성 때 CPU에서 역방향 슬롯을 준비하므로 UV seam에서도 고정 반대 방향을 가정하지 않는다.
+- 다시 활성화된 source는 다음 Pass 1이 모든 방향별 RawFlux 항목을 새로 기록한다.
+- 공유 `ReverseNeighborDirectionIndices`는 texel당 uint32 하나에 direction index별 4 bit를 사용한다. 이웃에서 자신을 가리키는 direction index 0–7 또는 invalid `0xf`를 보관한다.
+- Topology 생성 때 CPU에서 역방향 인덱스를 준비하므로 UV seam에서도 고정 반대 방향을 가정하지 않는다.
 - RawOutgoing·alpha는 매 step 덮어쓴다. Pause 중에는 직전 step 값이며 다음 Pass 1 전에는 현재 step 값으로 소비하지 않는다.
 
 ### TransferWeight cache builder의 준비용 계산값
@@ -126,7 +126,7 @@ flowchart LR
 
 - Cache builder는 공유 Geometry의 유효 local position `Position + Normal × MesoVirtualHeight`에 instance transform을 적용해 world position을 만든다.
 - Instance inverse-transpose로 world normal을 계산한다.
-- Texel마다 유효 이웃까지의 평균 거리를 한 번 구한 뒤 슬롯별 TransferWeight를 만든다.
+- Texel마다 유효 이웃까지의 평균 거리를 한 번 구한 뒤 방향 인덱스별 TransferWeight를 만든다.
 - CPU scratch: WorldPositions, WorldNormals, MeanNeighborDistances, validity flags
 - AccumulationHeight와 동적 normal 갱신은 아직 Runtime에 없다. 구현 시 cache builder 입력과 invalidation에 연결한다.
 
@@ -165,18 +165,18 @@ Accumulation Geometry Update는 동적 위치·normal을 기록한 뒤 같은 di
 
 Pass 1은 source의 감쇠 후 가용량을 먼저 확인한다. 비활성 source는 RawOutgoing·alpha만 0으로 갱신하고 RawFlux 평가·기록을 생략한다. 활성 source는 RawFlux 합과 가용량으로 alpha를 구한다. Pass 2는 모든 유효 target에서 저장된 RawOutgoing·alpha로 outgoing을 계산하고 incoming·입력·감쇠를 반영한다.
 
-- Cache ON은 활성 source의 RawFlux를 저장한다. Pass 2는 이웃 alpha가 양수일 때 공유 역방향 슬롯으로 저장값을 읽는다.
+- Cache ON은 활성 source의 RawFlux를 저장한다. Pass 2는 이웃 alpha가 양수일 때 공유 역방향 인덱스으로 저장값을 읽는다.
 - Cache ON에서는 incoming의 RawFlux·GeometryDrive를 재계산하지 않는다.
 - Cache OFF는 RawFlux 읽기·쓰기를 생략하고 Pass 2에서 같은 source→target 값을 재평가한다.
-- 두 모드 모두 실제 source의 역방향 슬롯에 대응하는 TransferWeight를 사용한다.
+- 두 모드 모두 실제 source의 역방향 인덱스에 대응하는 TransferWeight를 사용한다.
 - Saturation과 GeometryDrive 방향 때문에 RawFlux의 양방향 값은 달라질 수 있다.
-- 상호 이웃 연결은 Mapping validation 계약이다. 역방향 슬롯이 invalid이면 gather를 건너뛴다.
+- 상호 이웃 연결은 Mapping validation 계약이다. 역방향 인덱스이 invalid이면 gather를 건너뛴다.
 
 ```text
 RawOutgoing_i = inactive_i ? 0 : Σ RawFlux(i→j)     // Pass 1
 alpha_i = inactive_i ? 0 : (RawOutgoing_i > 0 ? min(1, Available_i / RawOutgoing_i) : 1)
 Outgoing_i = StoredRawOutgoing_i × alpha_i          // Pass 2
-Incoming_i = Σ_{j: alpha_j > 0} StoredRawFlux(j, channel, ReverseSlot(i→j)) × alpha_j
+Incoming_i = Σ_{j: alpha_j > 0} StoredRawFlux(j, channel, ReverseDirectionIndex(i→j)) × alpha_j
 Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 ```
 
@@ -193,7 +193,7 @@ Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 - 전환 전에 이전 GPU 작업 완료를 기다린 뒤 모드를 바꾸고 기존 timestamp·UI 평균을 폐기한다.
 - State·A/B 방향·입력·buffer 할당은 유지한다. Scene resource 재구성 뒤에도 모드를 다시 적용한다.
-- OFF에서도 RawFlux와 공유 역방향 슬롯 메모리는 유지한다. VRAM 절감 기능이 아니라 실행 비용 비교 기능이다.
+- OFF에서도 RawFlux와 공유 역방향 인덱스 메모리는 유지한다. VRAM 절감 기능이 아니라 실행 비용 비교 기능이다.
 - 고정 시간 간격, 같은 initial State·입력·설정·warmup 조건으로 비교한다.
 
 ## Virtual Geometry 경계
@@ -217,15 +217,15 @@ Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 | TransferWeight 캐시 | 구현 | 인스턴스당 48 MiB | 생성, 선형 transform 변경, 명시적 geometry invalidation | cache가 유지되는 동안 Solver 내 중첩 평균 거리 순회를 제거. CPU rebuild당 텍셀별 평균 거리 계산 1회 |
 | RawOutgoing 저장 | 구현 | 인스턴스당 채널당 6 MiB | 매 step | rawFlux 상한 24→16회/텍셀·채널 |
 | 간선별 RawFlux | 구현 | 인스턴스당 채널당 48 MiB | 매 step | 직전 구현의 rawFlux 16→8회/텍셀·채널, Pass 2 재평가 제거 |
-| 역방향 슬롯 | 구현 | 공유 Geometry당 6 MiB | topology 생성 때 | 매 step 이웃의 역방향 슬롯 탐색 제거 |
+| 역방향 인덱스 | 구현 | 공유 Geometry당 6 MiB | topology 생성 때 | 매 step 이웃의 역방향 인덱스 탐색 제거 |
 | DynamicGeometry | feedback ON | 인스턴스당 32 B × texel 수 | 매 step | Meso+적층 position/normal, geometry 및 edge-weight compute dispatch 2회 |
 
 - 메모리 추정 가정: 6 Surface × 512×512, 이웃 8개, float32, 원소 padding 없음
 - DynamicGeometry는 local position·normal 각 16-byte `vec4`, texel당 32 byte이며 instance별이다. 256×256 texel의 단일 instance는 2 MiB, 512×512은 8 MiB다. 옵션 OFF에서도 descriptor 계약을 위해 buffer는 할당 상태로 유지한다.
 - Registry가 채널 수를 결정하며 데모 측정은 1채널이다.
 - TransferWeight·RawOutgoing·RawFlux payload는 인스턴스당 총 102 MiB다.
-- 역방향 슬롯은 uint32 원소에 8개 슬롯의 4 bit를 pack한다. 공유 Geometry당 6 MiB를 추가한다.
-- 이번 변경의 증가분은 인스턴스·채널당 48 MiB와 공유 Geometry당 6 MiB다. Allocator alignment와 CPU scratch는 제외하며 invalid 슬롯도 할당한다.
+- 역방향 인덱스는 uint32 원소에 8개 방향 인덱스의 4 bit를 pack한다. 공유 Geometry당 6 MiB를 추가한다.
+- 이번 변경의 증가분은 인스턴스·채널당 48 MiB와 공유 Geometry당 6 MiB다. Allocator alignment와 CPU scratch는 제외하며 invalid 방향별 항목도 할당한다.
 - Cache 준비 시 최신 유효 위치로 평균 이웃 거리를 texel당 한 번 계산하고, edge별 weight를 최대 8개 계산한다.
 - Feedback ON에서는 cache 입력에 MesoVirtualHeight와 모든 지원 State의 AccumulationHeight를 사용한다.
 - 이로써 매 step마다 하던 endpoint별 평균 거리 재계산을 cache 준비 시 texel당 한 번으로 줄인다.
@@ -235,7 +235,7 @@ Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 ## 후속 최적화 후보: 대칭 TransferWeight의 공유 저장
 
-현재 설계는 `texel × neighborSlot`마다 TransferWeight를 저장한다. 양방향 슬롯에 같은 값을 각각 보관하므로 payload는 약 48 MiB다. 현재 식은 endpoint 순서를 바꾸어도 대칭이다.
+현재 설계는 `texel × neighborDirectionIndex`마다 TransferWeight를 저장한다. 양방향 각 방향 인덱스에 같은 값을 각각 보관하므로 payload는 약 48 MiB다. 현재 식은 endpoint 순서를 바꾸어도 대칭이다.
 
 - DistanceWeight는 endpoint 거리와 양 endpoint의 평균 간격으로 계산한다.
 - NormalWeight는 normal 내적으로 계산한다.
@@ -245,10 +245,10 @@ Next_i = max(Current_i + InputDelta_i + Incoming_i - Outgoing_i - Decay_i, 0)
 후속 최적화에서는 무방향 edge당 weight 하나를 저장해 양방향 flux가 공유할 수 있다. RawFlux는 Saturation 차이와 GeometryDrive 방향에 따라 달라질 수 있어 공유하지 않는다. 결과 수식은 유지하고 cache 주소 표현만 바꾸는 변경이다.
 
 - 무방향 edge array를 읽으려면 edge mapping이 필요하다.
-- 모든 neighbor slot에 32-bit edge ID를 추가하면 index buffer가 커져 weight 절감분을 상쇄할 수 있다.
+- 모든 neighbor direction index에 32-bit edge ID를 추가하면 index buffer가 커져 weight 절감분을 상쇄할 수 있다.
 - 압축 순번과 texel별 시작 offset은 가능한 주소 방식의 예이며 현재 구현 계약은 아니다.
 - 주소 계산 비용, 유효 edge 수, buffer 크기, Solver GPU 시간을 측정한 뒤 적용 여부를 결정한다.
-- 이번 브랜치에서는 방향별 slot cache를 사용하고 무방향 공유 저장은 보류한다.
+- 이번 브랜치에서는 방향 인덱스별 cache를 사용하고 무방향 공유 저장은 보류한다.
 
 ## 검증 계약
 
@@ -283,7 +283,7 @@ DistanceWeight·NormalWeight·ProfileBoundaryWeight 옵션 변경은 TransferWei
 
 Pass 2는 RawFlux를 재평가하는 대신 저장된 값을 gather한다 ([[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]). alpha가 0 이하인 source는 gather를 생략한다. 이벤트 입력 소비 시점은 유지하며 빈 source의 새 입력은 다음 step에서 이동한다.
 
-초기 구현은 texel·channel의 감쇠 후 가용량이 0이거나 dt=0이면 RawFlux 평가를 생략하고 8개 RawFlux 슬롯·RawOutgoing·alpha를 0으로 기록했다 ([[05_ADR/0022-Pass1-Source-Reuse|ADR 0022]]). 이후 unsupported/invalid, 가용량=0 또는 dt=0 경로에서 RawOutgoing·alpha만 0으로 기록하고 RawFlux 쓰기는 생략하도록 바꿨다 ([[05_ADR/0025-Inactive-RawFlux-Write-Elision|ADR 0025]]).
+초기 구현은 texel·channel의 감쇠 후 가용량이 0이거나 dt=0이면 RawFlux 평가를 생략하고 8개 방향 RawFlux entry·RawOutgoing·alpha를 0으로 기록했다 ([[05_ADR/0022-Pass1-Source-Reuse|ADR 0022]]). 이후 unsupported/invalid, 가용량=0 또는 dt=0 경로에서 RawOutgoing·alpha만 0으로 기록하고 RawFlux 쓰기는 생략하도록 바꿨다 ([[05_ADR/0025-Inactive-RawFlux-Write-Elision|ADR 0025]]).
 
 - RawFlux는 alpha가 양수인 source에 대해서만 현재 step 값이 보장된다.
 - Pass 2의 이웃 유입·이벤트 입력·Next 갱신은 계속 수행한다.

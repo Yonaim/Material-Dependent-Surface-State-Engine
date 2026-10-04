@@ -31,7 +31,7 @@ Surface simulation grid가 512×512로 고정되어 기본 Cube Scene에서도 �
 ## Consequences
 
 - Surface 수가 같을 때 Medium은 High의 1/4, Low는 High의 1/16 텍셀을 사용한다. 이는 texel 수 비율이며 FPS 비율이 아니다. 해상도별 이산화와 Virtual Meso Geometry 복원 결과는 달라질 수 있다.
-- 6 Surface·1 Registry channel·8슬롯·원소 padding 없는 float32 RawFlux에서 instance당 payload는 Low 3 MiB, Medium 12 MiB, High 48 MiB다. uint32 역방향 슬롯은 공유 Geometry당 각각 0.375/1.5/6 MiB다. allocator overhead와 다른 buffer는 제외한다.
+- 6 Surface·1 Registry channel·8개 방향 이웃·원소 padding 없는 float32 RawFlux에서 instance당 payload는 Low 3 MiB, Medium 12 MiB, High 48 MiB다. uint32 역방향 인덱스는 공유 Geometry당 각각 0.375/1.5/6 MiB다. allocator overhead와 다른 buffer는 제외한다.
 - 해상도 전환은 CPU cache load/검증 또는 miss 전처리와 GPU 생성이 끝날 때까지 동기적으로 처리되어 잠시 멈출 수 있다. 이전 자원은 새 준비가 끝날 때까지 살아 있으므로 전환 중 peak memory는 steady-state보다 크다.
 - GPU addressing/`maxStorageBufferRange` 한도 검사는 선택값에도 유지한다. 실패를 숨겨 임의 해상도로 낮추지 않는다.
 

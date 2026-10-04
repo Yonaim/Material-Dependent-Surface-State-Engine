@@ -72,7 +72,7 @@ Shared Geometry의 `NeighborIndex`는 Geometry 내부 local texel index다. inst
 channelIndex = registry.GetChannelIndex(stateId)
 stateIndex = getStateIndex(instance, localTexelIndex, channelIndex)
 neighborStateIndex = getStateIndex(
-    instance, NeighborIndex[localTexelIndex][slot], channelIndex)
+    instance, NeighborIndex[localTexelIndex][directionIndex], channelIndex)
 ```
 
 `getStateIndex`는 ADR 0010의 AoS 산식을 감추는 helper다. 자기 texel과 이웃 texel에서 같은 `ChannelIndex` 규칙을 사용해야 한다.

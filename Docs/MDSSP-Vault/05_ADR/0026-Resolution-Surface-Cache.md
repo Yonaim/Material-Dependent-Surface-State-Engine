@@ -27,7 +27,7 @@
 5. Format version 3으로 명시적 little-endian 정수와 IEEE-754 float32를 기록한다. C++ 구조체 dump를 사용하지 않는다. 이전 v1/v2는 재생성한다. 파일은 header, Surface 정의, 순서 있는 Profile 경로, padding 없는 128-byte texel 레코드로 구성한다.
 6. 예상 파일 길이·개수, magic/version/fingerprint, payload checksum, Profile table, 유한 값·법선·sentinel 및 이웃 범위·중복·양방향 관계를 검증한 결과만 등록한다. Missing/stale/corrupt/unreadable cache는 Runtime 전처리로 대체한다. 원본 입력 오류는 load 실패로 유지한다.
 7. 저장은 고유 임시 파일의 write/flush/close 후 rename으로 게시한다. 실패 시 임시 파일을 제거하고 기존 완성 파일을 보존한다. 저장 오류는 경고로 남기고 새 Runtime Geometry로 계속 진행한다.
-8. 같은 Mesh·Map·해상도의 Runtime 메모리 공유를 유지한다. World transform/옵션 의존 TransferWeight, GPU packing의 역방향 슬롯과 자원 handle, State 및 step scratch는 캐시에 넣지 않는다. `.Scene`은 계속 원본 Mesh와 `.SurfaceProfileMap`을 참조한다.
+8. 같은 Mesh·Map·해상도의 Runtime 메모리 공유를 유지한다. World transform/옵션 의존 TransferWeight, GPU packing의 역방향 인덱스과 자원 handle, State 및 step scratch는 캐시에 넣지 않는다. `.Scene`은 계속 원본 Mesh와 `.SurfaceProfileMap`을 참조한다.
 9. 해상도 전환은 캐시를 먼저 확인하되 GPU 재생성과 State 초기화는 ADR 0023을 유지한다. 별도 Asset Build 도구, 압축/streaming, cache eviction 및 source hot reload는 후속 기능이다.
 
 ## Alternatives Considered
@@ -47,7 +47,7 @@
 
 ### Validation
 
-전체 빌드와 CTest 6개가 통과했다. 새 `MDSS_SurfaceCache`는 Meso 적분 후 모든 texel 필드의 정확한 round-trip, invalid/render-only sentinel, seam graph, 복원 전후 GPU 역방향 슬롯과 비균일 scale의 TransferWeight 동등성을 검사한다. Missing/stale/version mismatch/checksum failure/truncation/trailing bytes의 재생성 사유, 입력 내용 변경과 동일 size/mtime의 Normal Map 변경, `.SRProfile` 수치 변경 시 재사용, Map별 경로 분리와 해상도 변형 공존, 잘못된 저장의 기존 파일 보존 및 IO 실패를 검사한다.
+전체 빌드와 CTest 6개가 통과했다. 새 `MDSS_SurfaceCache`는 Meso 적분 후 모든 texel 필드의 정확한 round-trip, invalid/render-only sentinel, seam graph, 복원 전후 GPU 역방향 인덱스과 비균일 scale의 TransferWeight 동등성을 검사한다. Missing/stale/version mismatch/checksum failure/truncation/trailing bytes의 재생성 사유, 입력 내용 변경과 동일 size/mtime의 Normal Map 변경, `.SRProfile` 수치 변경 시 재사용, Map별 경로 분리와 해상도 변형 공존, 잘못된 저장의 기존 파일 보존 및 IO 실패를 검사한다.
 
 실제 `Demo_Cubes_Wetness.Scene`의 기본 256 grid에서 최초 실행은 두 `.Surface` 파일을 저장하고 다음 실행은 두 파일을 로드해 Mapping·Meso 전처리 로그 없이 같은 Scene을 실행했다. 측정은 현재 로컬 build(`CMAKE_BUILD_TYPE` 미지정)와 Vulkan validation을 켠 단일 cold/warm 실행이며 성능 보장이나 FPS 개선률로 해석하지 않는다.
 

@@ -114,10 +114,10 @@ namespace MDSS::SurfaceState
                                                    Upload.NeighborIndices.size(),
                                                    sizeof(TSurfaceGPUNeighborIndices),
                                                    MaxRange);
-        ReverseNeighborSlotBuffer = CreateUploadedBuffer(PhysicalDevice,
+        ReverseNeighborDirectionIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                          Device,
-                                                         Upload.ReverseNeighborSlots.data(),
-                                                         Upload.ReverseNeighborSlots.size(),
+                                                         Upload.ReverseNeighborDirectionIndices.data(),
+                                                         Upload.ReverseNeighborDirectionIndices.size(),
                                                          sizeof(std::uint32_t),
                                                          MaxRange);
         SurfaceRangeBuffer = CreateUploadedBuffer(PhysicalDevice,
@@ -199,9 +199,9 @@ namespace MDSS::SurfaceState
         return *NeighborIndexBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetReverseNeighborSlotBuffer() const noexcept
+    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetReverseNeighborDirectionIndexBuffer() const noexcept
     {
-        return *ReverseNeighborSlotBuffer;
+        return *ReverseNeighborDirectionIndexBuffer;
     }
 
     const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetSurfaceRangeBuffer() const noexcept
@@ -371,7 +371,7 @@ namespace MDSS::SurfaceState
         TransferWeightDebugAverageBuffer = CreateUploadedBuffer(
             PhysicalDevice, Device, DebugAverages->data(), DebugAverages->size(), sizeof(TSurfaceGPUVec4), MaxRange);
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
-        // Pass 1 overwrites all slots of active sources; alpha=0 guards untouched inactive scratch.
+        // Pass 1 overwrites all direction entries for active sources; alpha=0 guards untouched inactive scratch.
         RawFluxBuffer = std::make_unique<GPU::TGPUBuffer>(
             PhysicalDevice, Device, static_cast<VkDeviceSize>(RawFluxByteSize), StorageUsage, UploadMemory);
     }
@@ -573,7 +573,7 @@ namespace MDSS::SurfaceState
             &Instance.GetTransferWeightDebugAverageBuffer(),
             // 바인딩 17에는 공유 Meso 노멀 버퍼를 연결한다.
             &SharedGeometry.GetMesoNormalBuffer(),
-            &SharedGeometry.GetReverseNeighborSlotBuffer(),
+            &SharedGeometry.GetReverseNeighborDirectionIndexBuffer(),
             &Instance.GetRawFluxBuffer(),
             &Instance.GetWorldTexelAreaBuffer(),
             &Instance.GetDynamicGeometryBuffer(),

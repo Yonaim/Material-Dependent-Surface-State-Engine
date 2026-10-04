@@ -175,7 +175,8 @@ namespace MDSS::SurfaceState
         }
         for (const auto& [Handle, Shared] : SharedSurfaceData)
         {
-            Usage.SharedReverseSlotBytes += Shared.Geometry->GetReverseNeighborSlotBuffer().GetSize();
+            Usage.SharedReverseNeighborDirectionIndexBytes +=
+                Shared.Geometry->GetReverseNeighborDirectionIndexBuffer().GetSize();
         }
         return Usage;
     }

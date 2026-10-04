@@ -68,7 +68,7 @@ namespace MDSS::SurfaceState
         Result.GeometryScalars.reserve(TexelCount);
         Result.NeighborIndices.reserve(TexelCount);
         static_assert(SurfaceNeighborCount == 8);
-        Result.ReverseNeighborSlots.assign(TexelCount, UINT32_MAX);
+        Result.ReverseNeighborDirectionIndices.assign(TexelCount, UINT32_MAX);
         Result.TexelChartIndices.reserve(TexelCount);
         Result.SurfaceRanges.reserve(Geometry.GetSurfaces().size());
         for (const TSurfaceTexelRange& Range : Geometry.GetSurfaces())
@@ -93,22 +93,25 @@ namespace MDSS::SurfaceState
                                              : (Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal);
             Result.MesoNormals.push_back(ToGPUVec4(MesoNormal));
             Result.NeighborIndices.push_back({Texel.NeighborIndices});
-            for (std::size_t Slot = 0; Slot < SurfaceNeighborCount; ++Slot)
+            for (std::size_t DirectionIndex = 0; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
             {
-                const TLocalTexelIndex Neighbor = Texel.NeighborIndices[Slot];
+                const TLocalTexelIndex Neighbor = Texel.NeighborIndices[DirectionIndex];
                 if (Neighbor >= TexelCount)
                 {
                     continue;
                 }
-                const auto& NeighborSlots = Geometry.GetTexels()[Neighbor].NeighborIndices;
-                for (std::uint32_t ReverseSlot = 0; ReverseSlot < SurfaceNeighborCount; ++ReverseSlot)
+                const auto& NeighborTexelIndices = Geometry.GetTexels()[Neighbor].NeighborIndices;
+                for (std::uint32_t ReverseDirectionIndex = 0;
+                     ReverseDirectionIndex < SurfaceNeighborCount;
+                     ++ReverseDirectionIndex)
                 {
-                    if (NeighborSlots[ReverseSlot] == TexelIndex)
+                    if (NeighborTexelIndices[ReverseDirectionIndex] == TexelIndex)
                     {
-                        // UV seam connections have no fixed opposite direction slot.
-                        const std::uint32_t Shift = static_cast<std::uint32_t>(Slot * 4U);
-                        Result.ReverseNeighborSlots[TexelIndex] =
-                            (Result.ReverseNeighborSlots[TexelIndex] & ~(0xfU << Shift)) | (ReverseSlot << Shift);
+                        // UV seam connections have no fixed opposite direction index.
+                        const std::uint32_t Shift = static_cast<std::uint32_t>(DirectionIndex * 4U);
+                        Result.ReverseNeighborDirectionIndices[TexelIndex] =
+                            (Result.ReverseNeighborDirectionIndices[TexelIndex] & ~(0xfU << Shift)) |
+                            (ReverseDirectionIndex << Shift);
                         break;
                     }
                 }
@@ -230,9 +233,9 @@ namespace MDSS::SurfaceState
             {
                 continue;
             }
-            for (std::size_t Slot = 0; Slot < SurfaceNeighborCount; ++Slot)
+            for (std::size_t DirectionIndex = 0; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
             {
-                const TLocalTexelIndex NeighborIndex = Texels[Index].NeighborIndices[Slot];
+                const TLocalTexelIndex NeighborIndex = Texels[Index].NeighborIndices[DirectionIndex];
                 if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount ||
                     !bValidPosition[NeighborIndex] || (bUseNormalWeight && !bValidNormal[NeighborIndex]) ||
                     (bUseDistanceWeight && MeanNeighborDistances[NeighborIndex] <= GeometryEpsilon))
@@ -261,7 +264,7 @@ namespace MDSS::SurfaceState
                 const float ProfileBoundaryWeight =
                     !bUseProfileBoundaryWeight || Profiles[Index] == Profiles[NeighborIndex] ? 1.0F : 0.5F;
                 const float TransferWeight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
-                Result[Index * SurfaceNeighborCount + Slot] = TransferWeight;
+                Result[Index * SurfaceNeighborCount + DirectionIndex] = TransferWeight;
                 DebugSums[Index][0] += TransferWeight;
                 DebugSums[Index][1] += DistanceWeight;
                 DebugSums[Index][2] += NormalWeight;

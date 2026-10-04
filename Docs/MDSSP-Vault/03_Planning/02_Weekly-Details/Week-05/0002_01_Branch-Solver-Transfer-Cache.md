@@ -33,7 +33,7 @@ Branch 2의 전달 수식을 유지하며 중복 Geometry 계산과 Pass 2의 �
 
 ## 예상 비용
 
-가정: 6 Surface × 512×512, float32 4 byte, 이웃 8슬롯, 원소 padding 없음, 인스턴스별 소유. weight 48 MiB + 채널당 합계 6 MiB의 payload가 추가된다. 데모 1채널에서는 54 MiB이며 scratch/할당 overhead는 별도다. rawFlux 호출 상한은 24→16회로 줄고, 캐시 유효 시 평균 거리용 중첩 순회는 없어지며 실제 실행 시간 개선율은 측정한다.
+가정: 6 Surface × 512×512, float32 4 byte, 이웃 8개 방향 이웃, 원소 padding 없음, 인스턴스별 소유. weight 48 MiB + 채널당 합계 6 MiB의 payload가 추가된다. 데모 1채널에서는 54 MiB이며 scratch/할당 overhead는 별도다. rawFlux 호출 상한은 24→16회로 줄고, 캐시 유효 시 평균 거리용 중첩 순회는 없어지며 실제 실행 시간 개선율은 측정한다.
 
 ## 검증과 완료 조건
 

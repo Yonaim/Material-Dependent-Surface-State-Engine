@@ -14,7 +14,7 @@
 - dense는 모든 source의 State가 `0.25 + 0.5 × (global index % 31)/30`이다. sparse는 `global index % 1024 < 16`에만 같은 양수를 넣고 나머지는 0이다. dry는 전체 0이다.
 - 각 모드의 측정 전 동일한 initial State를 A에 업로드한다. 모든 dispatch는 같은 A를 읽고 B에 기록하여 시뮬레이션 진행에 따른 조건 변화를 제거한다. 5회 warmup 후 30회 GPU timestamp의 중앙값을 구한다. 두 번째 반복에서는 OFF→ON으로 순서를 뒤집는다.
 - CPU 준비·업로드·pipeline 생성·download는 시간 측정 밖이다. 전체 구간은 Pass 1 시작부터 Pass 2 종료까지이며 중간 barrier 구간을 포함한다. UI의 Solver GPU 값은 두 pass 구간 합을 평균하므로 이 전체 중앙값과 집계 방식이 다르다.
-- 비교 fixture의 버퍼 payload는 RawFlux float32 `1,572,864 × 1 × 8 × 4 B` = 48 MiB, 공유 reverse slots uint32 `1,572,864 × 4 B` = 6 MiB로 합계 54 MiB다. 두 배열은 원소당 4 B이며 추가 원소 padding이 없다. ON/OFF 모두 동일하게 할당한다. allocator overhead, pipeline 메모리 및 기존 State·형상 버퍼는 제외한다. 실제 Scene의 instance·공유 조합 수와 구분한다.
+- 비교 fixture의 버퍼 payload는 RawFlux float32 `1,572,864 × 1 × 8 × 4 B` = 48 MiB, 공유 reverse direction indices uint32 `1,572,864 × 4 B` = 6 MiB로 합계 54 MiB다. 두 배열은 원소당 4 B이며 추가 원소 padding이 없다. ON/OFF 모두 동일하게 할당한다. allocator overhead, pipeline 메모리 및 기존 State·형상 버퍼는 제외한다. 실제 Scene의 instance·공유 조합 수와 구분한다.
 
 ## 결과
 

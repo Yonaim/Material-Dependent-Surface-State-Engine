@@ -467,11 +467,11 @@ namespace MDSS::Rendering
             auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, ComputedLayout);
             Config.ShaderStages[0].ShaderPath =
                 std::string(MDSS_SHADER_DIR) +
-                (bSide ? "/Rendering/Overlay/OverlaySide.vert.spv" : "/Rendering/Overlay/OverlayTop.vert.spv");
+                (bSide ? "/Rendering/StateOverlay/OverlaySide.vert.spv" : "/Rendering/StateOverlay/OverlayTop.vert.spv");
             Config.ShaderStages[1].ShaderPath =
-                std::string(MDSS_SHADER_DIR) + (bLava    ? "/Rendering/Overlay/OverlayLava.frag.spv"
-                                                : bWater ? "/Rendering/Overlay/OverlayWater.frag.spv"
-                                                         : "/Rendering/Overlay/OverlayMud.frag.spv");
+                std::string(MDSS_SHADER_DIR) + (bLava    ? "/Rendering/StateOverlay/OverlayLava.frag.spv"
+                                                : bWater ? "/Rendering/StateOverlay/OverlayWater.frag.spv"
+                                                         : "/Rendering/StateOverlay/OverlayMud.frag.spv");
             Config.CullMode = VK_CULL_MODE_NONE;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             Config.bDepthWriteEnabled = !bWater;

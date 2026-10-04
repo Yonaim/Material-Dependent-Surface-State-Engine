@@ -125,7 +125,8 @@ namespace
         Check(Equal, "all final texel fields round-trip exactly");
         const auto PackedA = PackSharedSurfaceGeometry(A);
         const auto PackedB = PackSharedSurfaceGeometry(B);
-        Check(PackedA.ReverseNeighborSlots == PackedB.ReverseNeighborSlots, "GPU reverse slots match after cache load");
+        Check(PackedA.ReverseNeighborDirectionIndices == PackedB.ReverseNeighborDirectionIndices,
+              "GPU reverse direction indices match after cache load");
         const auto Model = glm::scale(glm::rotate(glm::mat4(1), 0.7F, glm::vec3(0, 1, 0)), glm::vec3(2, 1, 3));
         Check(BuildSurfaceGPUTransferWeights(A, Model, nullptr, true, true, true) ==
                   BuildSurfaceGPUTransferWeights(B, Model, nullptr, true, true, true),

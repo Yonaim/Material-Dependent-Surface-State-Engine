@@ -50,8 +50,8 @@ void main()
             {
                 continue;
             }
-            uint ReverseSlot = reverseNeighborSlot(TexelIndex, DirectionIndex);
-            if (ReverseSlot >= SurfaceNeighborCount)
+            uint ReverseDirectionIndex = reverseNeighborDirectionIndex(TexelIndex, DirectionIndex);
+            if (ReverseDirectionIndex >= SurfaceNeighborCount)
             {
                 continue;
             }
@@ -59,7 +59,7 @@ void main()
             if (rawFluxCacheEnabled())
             {
                 NeighborRawIncoming =
-                    RawFluxBuffer.Values[rawFluxIndex(NeighborTexel, ChannelIndex, ReverseSlot)];
+                    RawFluxBuffer.Values[rawFluxIndex(NeighborTexel, ChannelIndex, ReverseDirectionIndex)];
             }
             else
             {
@@ -72,7 +72,7 @@ void main()
                 }
                 // source 쪽 transfer weight를 포함해 cache 사용 시와 같은 방향의 edge flux를 다시 계산한다.
                 NeighborRawIncoming = rawFlux(NeighborTexel, TexelIndex, ChannelIndex,
-                    transferWeight(NeighborTexel, ReverseSlot), SourceParameters, SourceSaturation);
+                    transferWeight(NeighborTexel, ReverseDirectionIndex), SourceParameters, SourceSaturation);
             }
             Incoming += NeighborRawIncoming * NeighborScale;
         }

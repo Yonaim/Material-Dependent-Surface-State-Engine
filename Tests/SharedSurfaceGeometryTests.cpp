@@ -357,11 +357,11 @@ namespace
                     Texel.Surface = Texel.Triangle = Texel.Chart = 0;
                     Texel.Position = {DX, DY, CurvatureX * DX * DX + CurvatureY * DY * DY};
                     Texel.Normal = glm::normalize(glm::vec3(-2.0F * CurvatureX * DX, -2.0F * CurvatureY * DY, 1.0F));
-                    std::size_t Slot = 0;
+                    std::size_t DirectionIndex = 0;
                     for (int NY = std::max(0, Y - 1); NY <= std::min(4, Y + 1); ++NY)
                         for (int NX = std::max(0, X - 1); NX <= std::min(4, X + 1); ++NX)
                             if (NX != X || NY != Y)
-                                Texel.NeighborIndices[Slot++] = NY * 5 + NX;
+                                Texel.NeighborIndices[DirectionIndex++] = NY * 5 + NX;
                 }
             (void)BuildMesoGeometry(Geometry);
             return Texels[12].Geometry.ConcavityWeight;

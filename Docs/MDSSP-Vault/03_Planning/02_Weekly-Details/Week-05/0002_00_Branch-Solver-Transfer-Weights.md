@@ -25,7 +25,7 @@ TransferWeight 계산과 flux 적용은 Branch 2.1의 캐시 구현에 포함되
 | CurvatureWeight              | 중립값 `1.0`을 사용한다.                                                                         |
 | ProfileBoundaryWeight        | 동일 Profile은 `1.0`, 다른 Profile은 `0.5`를 사용한다.                                              |
 | Flux 적용                      | `rawFlux`가 cache 가중치를 읽으며 Pass 1/2 모두 같은 규칙을 적용한다. 양방향 incoming은 대칭인 cache 가중치를 공유해 읽는다. |
-| State 미지원 / invalid geometry | State 지원 검사에서 flux를 0으로 처리하며, invalid 이웃 슬롯의 cache 값은 0이다.                               |
+| State 미지원 / invalid geometry | State 지원 검사에서 flux를 0으로 처리하며, invalid 이웃 direction index의 cache 값은 0이다.                               |
 
 주 구현은 `BuildSurfaceGPUTransferWeights`와 `SurfaceSolverCommon.glsl`에 있다. `Tests/SurfaceGPUResourceTests.cpp`에는 `DistanceWeight`·`ProfileBoundaryWeight`·`NormalWeight`의 GPU flux 사례가 추가되어 있다.
 

@@ -307,9 +307,9 @@ void main()
         uint NeighborCount = 0u;
         bool bHasCrossChartNeighbor = false;
         uint Chart = TexelChartIndices.Values[TexelIndex];
-        for (uint Slot = 0u; Slot < 8u; ++Slot)
+        for (uint DirectionIndex = 0u; DirectionIndex < 8u; ++DirectionIndex)
         {
-            uint Neighbor = NeighborIndices.Values[TexelIndex].Indices[Slot];
+            uint Neighbor = NeighborIndices.Values[TexelIndex].Indices[DirectionIndex];
             if (Neighbor == InvalidIndex || Neighbor >= uint(TexelChartIndices.Values.length())) continue;
             ++NeighborCount;
             uint NeighborChart = TexelChartIndices.Values[Neighbor];

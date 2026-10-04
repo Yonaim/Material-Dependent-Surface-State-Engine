@@ -62,7 +62,7 @@ namespace MDSS::SurfaceState
         RawOutgoing,
         TransferWeightDebugAverages,
         MesoNormals,
-        ReverseNeighborSlots,
+        ReverseNeighborDirectionIndices,
         RawFlux,
         WorldTexelAreas,
         DynamicGeometry,
@@ -88,7 +88,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetMesoNormalBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetGeometryScalarBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetNeighborIndexBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetReverseNeighborSlotBuffer() const noexcept;
+        [[nodiscard]] const GPU::TGPUBuffer& GetReverseNeighborDirectionIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
@@ -126,7 +126,7 @@ namespace MDSS::SurfaceState
         std::unique_ptr<GPU::TGPUBuffer>    MesoNormalBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    GeometryScalarBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    NeighborIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    ReverseNeighborSlotBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    ReverseNeighborDirectionIndexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    SurfaceRangeBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    TexelChartIndexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    TexelMeshIndexBuffer;
@@ -242,7 +242,7 @@ namespace MDSS::SurfaceState
     struct TSurfaceRawFluxMemoryUsage
     {
         VkDeviceSize InstanceRawFluxBytes = 0;
-        VkDeviceSize SharedReverseSlotBytes = 0;
+        VkDeviceSize SharedReverseNeighborDirectionIndexBytes = 0;
     };
 
     /**

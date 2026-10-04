@@ -158,7 +158,7 @@ Macro footprint 근사이며 Meso 요철·적층의 추가 표면적은 포함�
 | `TransferNormal`, `MesoNormal` | 각각 `float32 × 3` | 샘플 Normal Map 법선과 높이에서 유도한 mesh-local 법선 |
 | `HasTransferNormal`, `HasMesoNormal` | 하나의 `uint32`에 두 bit | 기존 법선 fallback 규칙 보존 |
 | `MesoVirtualHeight`, `ConcavityWeight`, `MesoMeanCurvature`, `MesoGaussianCurvature` | 각각 `float32` | 최종 상대 높이·오목함·두 곡률 |
-| `NeighborIndices[8]` | `uint32 × 8` | seam을 포함한 최종 이웃 graph. invalid 슬롯 포함 |
+| `NeighborIndices[8]` | `uint32 × 8` | seam을 포함한 최종 이웃 graph. invalid entry 포함 |
 | texel `ProfileIndex` | `uint32` | 별도 순서 있는 Profile table 참조. render-only sentinel 포함 |
 | `AreaVector` | `float32 × 3`, 레코드 끝 | mesh-local texel footprint 면적 벡터 |
 
@@ -177,7 +177,7 @@ Macro footprint 근사이며 Meso 요철·적층의 추가 표면적은 포함�
 
 - Normal Map image decode 결과, tangent basis, PCG의 RHS·탐색 벡터·잔차 등 전처리 임시값.
 - 이웃 Distance와 간선별 Height Difference. 저장한 Position·Normal·Virtual Height에서 계산한다.
-- GPU packing으로 생성하는 `ReverseNeighborSlots`, GPU buffer·descriptor handle.
+- GPU packing으로 생성하는 `ReverseNeighborDirectionIndices`, GPU buffer·descriptor handle.
 - instance의 월드 위치·법선, transform/옵션에 의존하는 `TransferWeight` 및 debug averages. Geometry를 로드한 뒤 instance마다 계산한다.
 - State A/B, InputDelta, RawOutgoing·RawFlux·OutgoingFluxScale 등 매 실행/step의 동적 데이터와 `.SRProfile` 반응 파라미터.
 

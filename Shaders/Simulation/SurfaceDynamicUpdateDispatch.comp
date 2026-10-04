@@ -1,5 +1,5 @@
 /**
- * @file SurfaceDirtyDispatch.comp
+ * @file SurfaceDynamicUpdateDispatch.comp
  * @brief 모든 높이 workgroup이 그대로면 geometry와 weight dispatch를 생략한다.
  */
 #version 450

@@ -94,11 +94,20 @@ namespace MDSS::SurfaceState
             AccumulationHeightPipeline = CreateComputePipeline(
                 Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulationHeight.comp.spv").c_str(), false);
             DirtyDispatchPipeline = CreateComputePipeline(
-                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceDirtyDispatch.comp.spv").c_str(), false);
+                Device,
+                PipelineLayout,
+                (ShaderRoot + "/Simulation/SurfaceDynamicUpdateDispatch.comp.spv").c_str(),
+                false);
             AccumulationGeometryPipeline = CreateComputePipeline(
-                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulation.comp.spv").c_str(), false);
+                Device,
+                PipelineLayout,
+                (ShaderRoot + "/Simulation/SurfaceDynamicGeometryUpdate.comp.spv").c_str(),
+                false);
             DynamicTransferWeightPipeline = CreateComputePipeline(
-                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceGeometryUpdate.comp.spv").c_str(), false);
+                Device,
+                PipelineLayout,
+                (ShaderRoot + "/Simulation/SurfaceDynamicWeightsUpdate.comp.spv").c_str(),
+                false);
             // Specialize both modes so the cached shader does not retain the recomputation path.
             for (std::size_t Mode = 0; Mode < Pass1Pipelines.size(); ++Mode)
             {

@@ -133,7 +133,7 @@ Distance(i, j) = max(length(Position[j] - Position[i]), distanceEpsilon)
 
 `Distance` 식은 저장 배열이 아니라 Solver에서 이웃을 처리할 때 계산하는 값이다. 4주차에는 Mesh local space의 chord length를 사용한다. 곡면을 따른 geodesic distance는 필요성이 확인된 뒤 검토한다.
 
-이웃 slot은 저장 위치일 뿐, seam 이후에도 동·서·남·북 같은 전역 방향을 뜻하지 않는다. `DirectionDrive`는 slot 번호가 아니라 `Position[j] - Position[i]`로 계산한다.
+이웃 direction index는 이웃 배열의 저장 위치이며, seam 이후에는 동·서·남·북 같은 전역 방향을 뜻하지 않는다. `DirectionDrive`는 direction index가 아니라 `Position[j] - Position[i]`로 계산한다.
 
 ## 5. UV Seam 연결
 
@@ -153,7 +153,7 @@ UV seam은 UV에서는 분리됐지만 Mesh topology에서는 같은 edge를 공
 3. 각 texel의 edge 위 최근접점에서 `t`를 구한다.
 4. 반대쪽 edge에서 같은 `t`에 가장 가까운 valid texel을 찾는다.
 5. 3D 거리와 Surface topology를 검사한다.
-6. 기존 invalid neighbor slot을 seam 상대 texel로 교체하고 양방향으로 등록한다.
+6. 기존 invalid neighbor direction index를 seam 상대 texel로 교체하고 양방향으로 등록한다.
 
 최종 GPU 데이터에는 seam을 별도로 표시하지 않는다. 일반 이웃과 동일한 `NeighborIndex[8]`에 병합한다. seam 쌍의 거리는 다른 이웃과 동일하게 위치 차이에서 계산한다.
 

@@ -149,25 +149,25 @@ Step N + 1: B = Current, A = Next
 OutgoingFluxScale[i].channel = alpha[i].channel
 ```
 
-Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. Pass 2는 이웃의 `OutgoingFluxScale`과 `RawFluxBuffer`의 `j → i` 방향 슬롯을 읽는다. 자신의 outgoing 합계는 `RawOutgoingBuffer`에서 재사용한다. [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]에서 방향·채널별 raw flux 저장을 추가했다.
+Pass 1은 raw outgoing 합으로 `OutgoingFluxScale`을 계산해 저장한다. Pass 2는 이웃의 `OutgoingFluxScale`과 `RawFluxBuffer`의 `j → i` 방향 인덱스를 읽는다. 자신의 outgoing 합계는 `RawOutgoingBuffer`에서 재사용한다. [[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]에서 방향·채널별 raw flux 저장을 추가했다.
 
 ### TransferWeights
 
-`TransferWeightsBuffer`는 `texel × 8 + neighborSlot` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 선택적 CurvatureWeight(기본 1.0; [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]) × ProfileBoundaryWeight를 각 슬롯에 기록한다. Profile이 같으면 `ProfileBoundaryWeight`는 1.0, 다르면 0.5다.
+`TransferWeightsBuffer`는 `texel × 8 + neighborDirectionIndex` 순서의 float 배열이다. CPU cache builder는 `Position + Normal × MesoVirtualHeight`와 instance transform으로 유효 world position, inverse-transpose normal을 만들고 MeanNeighborDistance를 텍셀별 한 번 계산한다. 그 뒤 DistanceWeight × NormalWeight × 선택적 CurvatureWeight(기본 1.0; [[05_ADR/0019-Optional-Curvature-Transfer-Weight|ADR 0019]]) × ProfileBoundaryWeight를 각 direction index에 기록한다. Profile이 같으면 `ProfileBoundaryWeight`는 1.0, 다르면 0.5다.
 
 초기 cache는 instance GPU resource 생성 시 준비한다. 현재 `TSurfaceStateSystem::RecordStep`은 scale 또는 TransferWeight 설정 변경 시 Graphics queue 완료를 기다린 뒤 정적 cache를 다시 계산·업로드한다. 순수 translation과 회전은 현재 거리·normal 내적의 값에 영향을 주지 않는다. Geometry feedback OFF에서는 이 정적 cache를 재사용한다.
 
-Geometry feedback ON에서는 매 Solver step의 높이를 마지막 형상 build에 사용한 높이와 비교해 instance별 `HeightDirty`를 기록한다. 바뀐 텍셀과 `NeighborIndex`로 연결된 1-hop 이웃만 Position·Normal·MeanNeighborDistance를 다시 만들고 `GeometryDirty`로 표시한다. TransferWeight는 GeometryDirty 텍셀과 그 1-hop 이웃에서만 다시 계산해 2-hop 영향 범위까지 포함한다. 나머지 슬롯은 이전 값을 유지한다. MeanNeighborDistance는 동적 Position 레코드의 `w`에 텍셀당 한 번 저장하며, 마지막 build 높이는 동적 Normal 레코드의 `w`에 보관한다. `HeightDirty`와 `GeometryDirty`는 기존 instance별 `AccumulationHeights` SSBO에서 높이 평면 뒤에 각각 texel당 `float32` 1개씩 두 평면으로 저장한다. 높이 pass는 `GeometryDirty`를 먼저 0으로 지워, 형상 pass가 생략된 step에도 지난 표시가 남지 않게 한다. 추가 크기는 8 bytes/texel이며 allocator overhead는 제외한다. 같은 buffer에 64개 선형 텍셀 작업그룹마다 `float32` 변경 요약과 12-byte indirect dispatch 명령을 더 둔다. 요약 전체가 0이면 형상·가중치 workgroup 수를 0으로 설정해 두 pass를 건너뛴다. 변경이 하나라도 있으면 현재는 두 pass 모두 전체 텍셀 범위를 dispatch하고, 각 invocation이 이웃 변경 여부를 확인해 필요한 결과만 갱신한다. 따라서 이 단계는 변경이 전혀 없는 step의 broad phase이며 희소 타일 압축은 아직 아니다. 기존 descriptor binding을 공유해 overlay와 렌더 파이프라인의 기기별 storage-buffer 한도를 지킨다. scale·가중치 설정·feedback 토글 후에는 전체 형상/가중치를 한 번 다시 만든다. 이 dirty 판정은 렌더링의 16/32 활성 타일과 별개다. 현재 Geometry scalar/topology를 runtime에서 수정하는 경로는 없으며, 추후 추가할 때 resource manager의 `InvalidateTransferWeightCache`를 호출해야 한다. 실제 GPU 시간 이득은 장면별 변경 텍셀 비율과 함께 측정한다.
+Geometry feedback ON에서는 매 Solver step의 높이를 마지막 형상 build에 사용한 높이와 비교해 instance별 `HeightDirty`를 기록한다. 바뀐 텍셀과 `NeighborIndex`로 연결된 1-hop 이웃만 Position·Normal·MeanNeighborDistance를 다시 만들고 `GeometryDirty`로 표시한다. TransferWeight는 GeometryDirty 텍셀과 그 1-hop 이웃에서만 다시 계산해 2-hop 영향 범위까지 포함한다. 나머지 방향별 항목는 이전 값을 유지한다. MeanNeighborDistance는 동적 Position 레코드의 `w`에 텍셀당 한 번 저장하며, 마지막 build 높이는 동적 Normal 레코드의 `w`에 보관한다. `HeightDirty`와 `GeometryDirty`는 기존 instance별 `AccumulationHeights` SSBO에서 높이 평면 뒤에 각각 texel당 `float32` 1개씩 두 평면으로 저장한다. 높이 pass는 `GeometryDirty`를 먼저 0으로 지워, 형상 pass가 생략된 step에도 지난 표시가 남지 않게 한다. 추가 크기는 8 bytes/texel이며 allocator overhead는 제외한다. 같은 buffer에 64개 선형 텍셀 작업그룹마다 `float32` 변경 요약과 12-byte indirect dispatch 명령을 더 둔다. 요약 전체가 0이면 형상·가중치 workgroup 수를 0으로 설정해 두 pass를 건너뛴다. 변경이 하나라도 있으면 현재는 두 pass 모두 전체 텍셀 범위를 dispatch하고, 각 invocation이 이웃 변경 여부를 확인해 필요한 결과만 갱신한다. 따라서 이 단계는 변경이 전혀 없는 step의 broad phase이며 희소 타일 압축은 아직 아니다. 기존 descriptor binding을 공유해 overlay와 렌더 파이프라인의 기기별 storage-buffer 한도를 지킨다. scale·가중치 설정·feedback 토글 후에는 전체 형상/가중치를 한 번 다시 만든다. 이 dirty 판정은 렌더링의 16/32 활성 타일과 별개다. 현재 Geometry scalar/topology를 runtime에서 수정하는 경로는 없으며, 추후 추가할 때 resource manager의 `InvalidateTransferWeightCache`를 호출해야 한다. 실제 GPU 시간 이득은 장면별 변경 텍셀 비율과 함께 측정한다.
 
-동일한 edge의 양 방향 슬롯은 현재 대칭 가중치 식에서 같은 값을 갖지만 각 방향 슬롯을 별도로 저장한다. 무방향 edge 저장으로 압축하는 방식은 후속 최적화 후보로만 남아 있다.
+동일한 edge의 양쪽 방향 인덱스는 현재 대칭 가중치 식에서 같은 값을 갖지만 각 방향의 인덱스를 별도로 저장한다. 무방향 edge 저장으로 압축하는 방식은 후속 최적화 후보로만 남아 있다.
 
 ### RawOutgoing
 
 `RawOutgoingBuffer`는 `texel × channelCount + channel` 위치에 Pass 1의 유출 합계를 저장한다. 모든 지원되지 않는 texel/channel에는 0을 기록한다. 매 실행 step에 Pass 1이 전체 유효 범위를 덮어쓰므로 초기 clear는 필요 없고, Pass 2는 자신의 outgoing 합계를 다시 계산하지 않는다. 초기 합계 저장은 rawFlux 평가 상한을 텍셀·채널당 24→16회로 줄였다. 현재는 방향별 RawFlux도 저장해 Pass 2 재계산을 제거하므로 상한은 8회다.
 
-### RawFlux와 역방향 슬롯
+### RawFlux와 역방향 인덱스
 
-`RawFluxBuffer`는 instance별 float32 scratch이며 `slot × texelCount × channelCount + texel × channelCount + channel`로 조회한다. Pass 1이 모든 슬롯을 매 step 덮어쓰므로 생성·reset 시 clear하지 않는다. invalid 이웃·지원되지 않는 채널·invalid texel은 0을 기록한다. Pass 2는 공유 uint32 `ReverseNeighborSlots`에서 이웃 source의 역방향 슬롯을 읽어 flux에 source alpha를 곱한다. 8개 슬롯 번호는 4 bit씩 packed하며 0xf가 invalid다. UV seam도 실제 이웃 배열에서 역방향을 찾아 CPU pack 단계에 준비한다. Pass 1 write→Pass 2 read와 Pass 2 read→다음 Pass 1 write의 barrier에 RawFlux를 포함한다. 6×512×512·1채널·8슬롯·scalar padding 없음에서 RawFlux 인스턴스당 48 MiB, 역방향 슬롯 공유 Geometry당 6 MiB가 추가되며 allocator overhead는 제외한다.
+`RawFluxBuffer`는 instance별 float32 scratch이며 `directionIndex × texelCount × channelCount + texel × channelCount + channel`로 조회한다. Pass 1이 모든 방향 항목을 매 step 덮어쓰므로 생성·reset 시 clear하지 않는다. invalid 이웃·지원되지 않는 채널·invalid texel은 0을 기록한다. Pass 2는 공유 uint32 `ReverseNeighborDirectionIndices`에서 이웃 source의 역방향 방향 인덱스를 읽어 flux에 source alpha를 곱한다. 8개 방향별 인덱스 값은 4 bit씩 packed하며 0xf가 invalid다. UV seam도 실제 이웃 배열에서 역방향을 찾아 CPU pack 단계에 준비한다. Pass 1 write→Pass 2 read와 Pass 2 read→다음 Pass 1 write의 barrier에 RawFlux를 포함한다. 6×512×512·1채널·8방향·scalar padding 없음에서 RawFlux 인스턴스당 48 MiB, 역방향 방향 인덱스 buffer는 공유 Geometry당 6 MiB가 추가되며 allocator overhead는 제외한다.
 
 ### InputDelta
 
@@ -211,12 +211,12 @@ Descriptor layout은 아래 binding을 각각 별도의 storage buffer로 연결
 | 11 | `InputDeltaBuffer` | packed `float[]` | Pass 2 read/write; consume then clear |
 | 12 | `SurfaceRangesBuffer` | packed `uvec4[]` | debug fragment Surface grid lookup |
 | 13 | `TexelChartIndicesBuffer` | packed `uint[]` | debug fragment UV chart lookup |
-| 14 | `TransferWeightsBuffer` | packed `float[]`, `texel × 8 + neighborSlot` | cache preparation / Pass 1 read |
+| 14 | `TransferWeightsBuffer` | packed `float[]`, `texel × 8 + neighborDirectionIndex` | cache preparation / Pass 1 read |
 | 15 | `RawOutgoingBuffer` | packed `float[]`, `texel × channelCount + channel` | Pass 1 write / Pass 2 read |
 | 16 | `TransferWeightDebugAverageBuffer` | texel당 `vec4` | fragment read-only |
 | 17 | `MesoNormalBuffer` | texel당 `vec4[]` | vertex / fragment / compute read-only |
-| 18 | `ReverseNeighborSlotBuffer` | texel당 `uint32`, 8 × 4 bit packed | Shared Geometry / Pass 2 read |
-| 19 | `RawFluxBuffer` | packed `float[]`, slot-major·texel/channel 순서 | instance / Pass 1 write / Pass 2 read |
+| 18 | `ReverseNeighborDirectionIndexBuffer` | texel당 `uint32`, 8 × 4 bit packed | Shared Geometry / Pass 2 read |
+| 19 | `RawFluxBuffer` | packed `float[]`, direction-index-major·texel/channel 순서 | instance / Pass 1 write / Pass 2 read |
 
 각 binding의 descriptor type은 `VK_DESCRIPTOR_TYPE_STORAGE_BUFFER`, descriptor count는 1이다. AB와 BA descriptor set을 함께 생성해 Current/Next State의 반대 방향 연결을 제공한다. set은 해당 instance의 State/cache buffers와 Mesh의 공유 Geometry/Profile buffers를 참조한다.
 

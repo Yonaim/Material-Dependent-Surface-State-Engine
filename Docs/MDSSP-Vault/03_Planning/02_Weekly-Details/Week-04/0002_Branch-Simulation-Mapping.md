@@ -143,7 +143,7 @@ TEdgeKey = sort(originalPositionIndexA, originalPositionIndexB)
 - incident triangle 2개 + UV edge 불일치: seam
 - incident triangle 3개 이상: non-manifold 오류 또는 명시적 제외
 
-seam 양쪽 boundary texel을 edge parameter `t`로 대응시킨다. 상대 texel은 기존 invalid neighbor slot에 넣고 반드시 양방향으로 등록한다.
+seam 양쪽 boundary texel을 edge parameter `t`로 대응시킨다. 상대 texel은 기존 invalid neighbor direction index에 넣고 반드시 양방향으로 등록한다.
 
 4주차에는 한 seam edge에서 대응 후보가 8-neighbor 제한을 넘으면 오류로 보고하고 해당 Asset을 테스트 대상에서 제외한다. 임의로 먼 이웃을 제거하지 않는다.
 

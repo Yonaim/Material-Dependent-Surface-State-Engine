@@ -346,20 +346,22 @@ namespace
         CheckZeroBuffer(InstanceB.GetInputDeltaBuffer(), 4, "second instance InputDelta");
         CheckZeroBuffer(InstanceB.GetRawOutgoingBuffer(), 4, "second instance RawOutgoing");
         Check(InstanceA.GetTransferWeightBuffer().GetSize() == 4U * SurfaceNeighborCount * sizeof(float),
-              "TransferWeight cache should store one float per texel neighbor slot");
+              "TransferWeight cache should store one float per texel neighbor direction index");
         Check(InstanceA.GetRawFluxBuffer().GetSize() == 4U * SurfaceNeighborCount * sizeof(float),
-              "RawFlux scratch should store one float per texel, channel and neighbor slot");
+              "RawFlux scratch should store one float per texel, channel and neighbor direction index");
         Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::RawFlux, true) ==
                       InstanceA.GetRawFluxBuffer().GetHandle() &&
                   Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::RawFlux, false) ==
                       InstanceA.GetRawFluxBuffer().GetHandle() &&
                   InstanceA.GetRawFluxBuffer().GetHandle() != InstanceB.GetRawFluxBuffer().GetHandle(),
               "RawFlux scratch should be instance-owned and shared by the AB/BA sets");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::ReverseNeighborSlots, true) ==
-                      SharedGeometry.GetReverseNeighborSlotBuffer().GetHandle() &&
-                  Bound(DescriptorsB, SurfaceState::TSurfaceGPUDescriptorBinding::ReverseNeighborSlots, false) ==
-                      SharedGeometry.GetReverseNeighborSlotBuffer().GetHandle(),
-              "reverse slots should be shared with Geometry across instances and AB/BA sets");
+        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::ReverseNeighborDirectionIndices, true) ==
+                      SharedGeometry.GetReverseNeighborDirectionIndexBuffer().GetHandle() &&
+                  Bound(DescriptorsB,
+                        SurfaceState::TSurfaceGPUDescriptorBinding::ReverseNeighborDirectionIndices,
+                        false) ==
+                      SharedGeometry.GetReverseNeighborDirectionIndexBuffer().GetHandle(),
+              "reverse direction indices should be shared with Geometry across instances and AB/BA sets");
 
         std::array<SurfaceState::TSurfaceGPUVec4, 4> UploadedPositions{};
         SharedGeometry.GetPositionBuffer().Download(UploadedPositions.data(), sizeof(UploadedPositions));
@@ -417,18 +419,19 @@ namespace
             Texel.Position = {static_cast<float>(Index), 0.0F, 0.0F};
             Texel.Normal = {0.0F, 0.0F, 1.0F};
         }
-        // Different source/target slots across charts and Surface ranges, including slot 7.
+        // Different source/target direction indices across charts and Surface ranges, including direction index 7.
         Geometry.GetTexels()[0].NeighborIndices[0] = 1;
         Geometry.GetTexels()[0].NeighborIndices[5] = 2;
         Geometry.GetTexels()[1].NeighborIndices[7] = 0;
         Geometry.GetTexels()[2].NeighborIndices[3] = 0;
         Geometry.SetProfileMap({0, 0, 1, SurfaceState::InvalidSurfaceProfileIndex});
         const auto Packed = PackSharedSurfaceGeometry(Geometry);
-        Check((Packed.ReverseNeighborSlots[0] & 0xfU) == 7U && ((Packed.ReverseNeighborSlots[0] >> 20U) & 0xfU) == 3U &&
-                  ((Packed.ReverseNeighborSlots[1] >> 28U) & 0xfU) == 0U &&
-                  ((Packed.ReverseNeighborSlots[2] >> 12U) & 0xfU) == 5U &&
-                  Packed.ReverseNeighborSlots[3] == UINT32_MAX,
-              "packed reverse slots should resolve seams and preserve invalid slot sentinels");
+        Check((Packed.ReverseNeighborDirectionIndices[0] & 0xfU) == 7U &&
+                  ((Packed.ReverseNeighborDirectionIndices[0] >> 20U) & 0xfU) == 3U &&
+                  ((Packed.ReverseNeighborDirectionIndices[1] >> 28U) & 0xfU) == 0U &&
+                  ((Packed.ReverseNeighborDirectionIndices[2] >> 12U) & 0xfU) == 5U &&
+                  Packed.ReverseNeighborDirectionIndices[3] == UINT32_MAX,
+              "packed reverse direction indices should resolve seams and preserve invalid sentinels");
         SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         SurfaceState::TSurfaceProfileGPUResources Profiles(
@@ -487,7 +490,7 @@ namespace
             }
             Check(CachedAlpha[I % Initial.size()] == 0.0F ? std::isnan(Flux[I])
                                                           : std::abs(Flux[I] - Expected) < 1.0e-5F,
-                  "active sources must overwrite every slot; alpha-zero sources must preserve scratch");
+                  "active sources must overwrite every direction entry; alpha-zero sources must preserve scratch");
         }
         const auto CachedResult = Result;
         Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
@@ -570,7 +573,7 @@ namespace
             { Solver.RecordStep(Commands, Descriptors, false, 4, 2, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F)); });
         Instance.GetRawFluxBuffer().Download(Flux.data(), Flux.size() * sizeof(float));
         for (const float Value : Flux)
-            Check(Value == 123.0F, "zero timestep must preserve stale cache in every slot");
+            Check(Value == 123.0F, "zero timestep must preserve stale cache in every direction entry");
         CheckZeroBuffer(Instance.GetOutgoingFluxScaleBuffer(), Initial.size(), "zero timestep alpha");
         CheckZeroBuffer(Instance.GetRawOutgoingBuffer(), Initial.size(), "zero timestep RawOutgoing");
         Vulkan.Execute(
@@ -881,15 +884,15 @@ namespace
                     Texel.Position = {0, (X - 2) * H, (2 - Y) * H};
                     Texel.Normal = {1, 0, 0};
                     Texel.AreaVector = {H * H, 0, 0};
-                    std::size_t Slot = 0;
+                    std::size_t DirectionIndex = 0;
                     for (int DY = -1; DY <= 1; ++DY)
                         for (int DX = -1; DX <= 1; ++DX)
                         {
                             if (DX == 0 && DY == 0)
                                 continue;
                             if (X + DX >= 0 && X + DX < int(Width) && Y + DY >= 0 && Y + DY < int(Width))
-                                Texel.NeighborIndices[Slot] = static_cast<TLocalTexelIndex>((Y + DY) * Width + X + DX);
-                            ++Slot;
+                                Texel.NeighborIndices[DirectionIndex] = static_cast<TLocalTexelIndex>((Y + DY) * Width + X + DX);
+                            ++DirectionIndex;
                         }
                 }
             Geometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(Count, 0));
@@ -1095,11 +1098,12 @@ namespace
         {
             auto RefreshedFlux = PoisonedFlux;
             Instance.GetRawFluxBuffer().Download(RefreshedFlux.data(), sizeof(RefreshedFlux));
-            // The source activated by InputDelta overwrites all eight slots before gather.
-            for (std::size_t Slot = 0; Slot < SurfaceNeighborCount; ++Slot)
+            // The source activated by InputDelta overwrites all eight direction entries before gather.
+            for (std::size_t DirectionIndex = 0; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
             {
-                Check(std::isfinite(RefreshedFlux[Slot * 2U]), "reactivated source must refresh every slot");
-                Check(std::isnan(RefreshedFlux[Slot * 2U + 1U]),
+                Check(std::isfinite(RefreshedFlux[DirectionIndex * 2U]),
+                      "reactivated source must refresh every direction entry");
+                Check(std::isnan(RefreshedFlux[DirectionIndex * 2U + 1U]),
                       "empty receiving target must preserve its own scratch");
             }
         }
@@ -1309,7 +1313,7 @@ namespace
         const float              ExpectedLongEdgeWeight = (3.25F / 4.0F) * 0.5F;
         Check(std::abs(CachedWeights[0] - ExpectedLongEdgeWeight) < 1.0e-5F &&
                   std::abs(CachedWeights[SurfaceNeighborCount] - ExpectedLongEdgeWeight) < 1.0e-5F,
-              "directed cache slots should preserve the symmetric edge weight in both directions");
+              "directed cache entries should preserve the symmetric edge weight in both directions");
 
         SurfaceState::TSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);

@@ -65,7 +65,7 @@ Capacity 1, SaturationTransferRate 0.5, GeometryTransferRate 1, DecayRate 0.01, 
 - Next State의 event Input, saturation/geometry transport, alpha 보유량 제한, Decay/ConcavityRetention, Capacity clamp, InputDelta 소비 및 A/B swap은 구현되어 있다.
 - HeightDrive와 DirectionDrive는 같은 공통 함수로 양 pass에 적용한다. Virtual Height와 MesoNormal은 연결되어 있으며 non-uniform instance scale GPU 검증을 추가했다.
 - Virtual Height에서 유도한 mean/Gaussian curvature는 전처리된다. 독립 Macro curvature field는 없으며 Gaussian curvature는 Transport에 연결하지 않는다.
-- AccumulationFactor/CavityFillFactor는 Profile/GPU record에 존재하지만 SurfaceAccumulation.comp와 SurfaceGeometryUpdate가 placeholder다. Cavity Filling, Surface Following, AccumulationHeight, 적층 후 normal/distance/curvature 갱신은 미구현이다.
+- AccumulationFactor/CavityFillFactor는 Profile/GPU record에 존재하지만 SurfaceDynamicGeometryUpdate.comp와 SurfaceDynamicWeightsUpdate.comp는 placeholder다. Cavity Filling, Surface Following, AccumulationHeight, 적층 후 normal/distance/curvature 갱신은 미구현이다.
 - Curvature UI는 OFF=1.0, ON=Virtual Height에서 유도한 mean curvature 기반 cache 감쇠이며 기본 OFF다. 물리 응집·응결 구현의 완성을 뜻하지 않는다.
 
 ## 검증
@@ -78,8 +78,8 @@ CMake 전체 build 및 CTest의 5개 테스트를 실행한다. 새 검증은 Vi
 
 Pass 2는 source Current State가 0 이하, alpha가 0 이하, 또는 간선 가중치가 0 이하이면 incoming rawFlux 평가를 생략한다. inverse-transpose 준비도 첫 실제 incoming 평가까지 지연한다. Pass 1의 RawOutgoing/alpha scratch 값과 최종 갱신 식은 유지한다. 빈 source의 입력 이벤트가 소실되지 않고 다음 step부터 전달되며 InputDelta가 한 번 소비되는 GPU regression을 추가했다. 전체 build 및 CTest 5개가 통과했다. 실제 Scene FPS 개선은 아직 측정되지 않았다.
 
-후속 비교는 동일 카메라·해상도·State에서 Pause/Run의 frame time, pass별 GPU 시간, Render GPU를 기록한다. Simulation resolution 512→256은 Surface당 texel 수를 262,144→65,536으로 줄이지만 공간 정밀도와 현행 전달 이산화 결과에 영향을 준다. 기본 해상도를 조용히 변경하지 않는다. 512를 유지하는 후보는 Pass 1의 방향별·채널별 rawFlux 저장과 Pass 2의 역방향 슬롯 gather이며 추가 buffer·대역폭 비용을 별도 측정해야 한다.
+후속 비교는 동일 카메라·해상도·State에서 Pause/Run의 frame time, pass별 GPU 시간, Render GPU를 기록한다. Simulation resolution 512→256은 Surface당 texel 수를 262,144→65,536으로 줄이지만 공간 정밀도와 현행 전달 이산화 결과에 영향을 준다. 기본 해상도를 조용히 변경하지 않는다. 512를 유지하는 후보는 Pass 1의 방향별·채널별 rawFlux 저장과 Pass 2의 역방향 인덱스 gather이며 추가 buffer·대역폭 비용을 별도 측정해야 한다.
 
 ## 방향별 RawFlux 캐시 후속 구현
 
-[[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]에서 마지막 후보를 채택했다. Pass 1의 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 슬롯으로 gather한다. 기존의 Pass 2 RawFlux·GeometryDrive 재평가는 제거했다. 위 측정과 빈 source 최적화 설명은 방향별 캐시 적용 이전 기록이다. 새 측정과 메모리 가정은 ADR 0021에 기록한다.
+[[05_ADR/0021-Directional-RawFlux-Cache|ADR 0021]]에서 마지막 후보를 채택했다. Pass 1의 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 인덱스으로 gather한다. 기존의 Pass 2 RawFlux·GeometryDrive 재평가는 제거했다. 위 측정과 빈 source 최적화 설명은 방향별 캐시 적용 이전 기록이다. 새 측정과 메모리 가정은 ADR 0021에 기록한다.

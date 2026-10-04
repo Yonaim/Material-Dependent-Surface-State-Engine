@@ -101,9 +101,9 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float Accumulatio
     vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0), N));
     vec3 V = cross(N, U);
     float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
-    for (uint Slot = 0u; Slot < 8u; ++Slot)
+    for (uint DirectionIndex = 0u; DirectionIndex < 8u; ++DirectionIndex)
     {
-        uint Other = NeighborIndices.Values[Texel].Indices[Slot];
+        uint Other = NeighborIndices.Values[Texel].Indices[DirectionIndex];
         if (Other >= uint(Positions.Values.length()) || Other >= uint(Normals.Values.length()) ||
             dot(N, Normals.Values[Other].xyz) < 0.5) continue;
         TDebugAccumulation Neighbor = DebugAccumulation(Other, Channel, Channels, AccumulationDisplayScale, NormalMatrix);
