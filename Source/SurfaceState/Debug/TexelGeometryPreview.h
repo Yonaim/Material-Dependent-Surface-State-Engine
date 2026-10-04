@@ -16,7 +16,7 @@ namespace MDSS::SurfaceState
     };
     static_assert(sizeof(TTexelGeometryVertex) == 16);
 
-    /** @brief Read-only State projection. Output is display geometry, never Solver feedback. */
+    /** @brief Read-only State projection. Output is display geometry, never Accumulation Geometry Update. */
     class TTexelGeometryPreview final
     {
     public:

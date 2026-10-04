@@ -2753,7 +2753,7 @@ namespace MDSS
             const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
             const Rendering::TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
             const bool  bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
-            const float FeedbackGpuMilliseconds =
+            const float AccumulationGeometryUpdateGpuMilliseconds =
                 Stats.AccumulationGeometryGpuMilliseconds >= 0.0F && Stats.TransferWeightGpuMilliseconds >= 0.0F
                     ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds
                     : -1.0F;
@@ -2769,7 +2769,7 @@ namespace MDSS
                 Stats.RenderPreparationGpuMilliseconds + Stats.SceneDrawGpuMilliseconds +
                     (bFineRenderTimings ? Stats.UIDrawGpuMilliseconds + Stats.RenderPassEndGpuMilliseconds : 0.0F),
                 SolverMetric(Stats.SolverGpuMilliseconds),
-                SolverMetric(FeedbackGpuMilliseconds),
+                SolverMetric(AccumulationGeometryUpdateGpuMilliseconds),
                 SolverMetric(Stats.SolverPass1GpuMilliseconds),
                 SolverMetric(Stats.SolverPass2GpuMilliseconds),
                 Stats.RenderPreparationGpuMilliseconds,
@@ -3023,7 +3023,8 @@ namespace MDSS
                     if (SetupMetricTable("ViewportProfilingSimulation"))
                     {
                         DrawMetric(2,
-                                   bSolverMetricsPerStep ? "Geometry feedback / step" : "Geometry feedback / frame",
+                                   bSolverMetricsPerStep ? "Accumulation Geometry Update / step"
+                                                         : "Accumulation Geometry Update / frame",
                                    {0.82F, 0.87F, 0.94F, 1.0F});
                         DrawMetric(
                             3, bSolverMetricsPerStep ? "Pass 1 / step" : "Pass 1 / frame", {0.72F, 0.78F, 0.87F, 1.0F});
@@ -3066,7 +3067,9 @@ namespace MDSS
                         AddStateRow("Resolution", "%u x %u", Stats.SimulationResolution, Stats.SimulationResolution);
                         AddStateRow("RawFlux Cache", "%s", FrameRenderer->IsRawFluxCacheEnabled() ? "ON" : "OFF");
                         AddStateRow(
-                            "Geometry Feedback", "%s", FrameRenderer->IsAccumulationFeedbackEnabled() ? "ON" : "OFF");
+                            "Accumulation Geometry Update",
+                            "%s",
+                            FrameRenderer->IsAccumulationGeometryUpdateEnabled() ? "ON" : "OFF");
                         AddStateRow("Fixed timestep", "%s", bFixedSimulationTimestep ? "ON" : "OFF");
                         AddStateRow("Auto substepping", "%s", bAutoSubstepping ? "ON" : "OFF");
                         AddStateRow("Time scale", "%.2fx", SimulationTimeScale);
@@ -3600,12 +3603,12 @@ namespace MDSS
             }
         };
 
-        DrawSectionHeader("Geometry Feedback");
-        bool bAccumulationFeedback = FrameRenderer->IsAccumulationFeedbackEnabled();
-        if (ImGui::Checkbox("Accumulation feedback", &bAccumulationFeedback))
+        DrawSectionHeader("Accumulation Geometry Update");
+        bool bAccumulationGeometryUpdate = FrameRenderer->IsAccumulationGeometryUpdateEnabled();
+        if (ImGui::Checkbox("Accumulation Geometry Update", &bAccumulationGeometryUpdate))
         {
             bFrameTimeResetRequested = true;
-            FrameRenderer->SetAccumulationFeedbackEnabled(bAccumulationFeedback);
+            FrameRenderer->SetAccumulationGeometryUpdateEnabled(bAccumulationGeometryUpdate);
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())

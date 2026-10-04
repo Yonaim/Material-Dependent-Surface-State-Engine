@@ -336,8 +336,8 @@ namespace MDSS::Rendering
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
         /** @brief Preserve State and allocations, but discard timings from the previous mode. */
         void               SetRawFluxCacheEnabled(bool bEnabled);
-        [[nodiscard]] bool IsAccumulationFeedbackEnabled() const noexcept;
-        void               SetAccumulationFeedbackEnabled(bool bEnabled);
+        [[nodiscard]] bool IsAccumulationGeometryUpdateEnabled() const noexcept;
+        void               SetAccumulationGeometryUpdateEnabled(bool bEnabled);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);

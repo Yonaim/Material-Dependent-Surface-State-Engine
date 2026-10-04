@@ -1270,7 +1270,7 @@ namespace MDSS::Rendering
         {
             Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene);
             Replacement->SetRawFluxCacheEnabled(DebugSolverSettings.bRawFluxCacheEnabled);
-            Replacement->SetAccumulationFeedbackEnabled(DebugSolverSettings.bAccumulationFeedbackEnabled);
+            Replacement->SetAccumulationGeometryUpdateEnabled(DebugSolverSettings.bAccumulationGeometryUpdateEnabled);
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
                 Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::TSurfaceSolverTerm>(Index),
@@ -1934,15 +1934,15 @@ namespace MDSS::Rendering
             LavaLayerGeometry->SetOccupancyTileSize(Tile);
     }
 
-    bool TRenderer::IsAccumulationFeedbackEnabled() const noexcept
+    bool TRenderer::IsAccumulationGeometryUpdateEnabled() const noexcept
     {
-        return DebugSolverSettings.bAccumulationFeedbackEnabled;
+        return DebugSolverSettings.bAccumulationGeometryUpdateEnabled;
     }
 
-    void TRenderer::SetAccumulationFeedbackEnabled(bool bEnabled)
+    void TRenderer::SetAccumulationGeometryUpdateEnabled(bool bEnabled)
     {
-        DebugSolverSettings.bAccumulationFeedbackEnabled = bEnabled;
-        SurfaceStates.SetAccumulationFeedbackEnabled(bEnabled);
+        DebugSolverSettings.bAccumulationGeometryUpdateEnabled = bEnabled;
+        SurfaceStates.SetAccumulationGeometryUpdateEnabled(bEnabled);
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept

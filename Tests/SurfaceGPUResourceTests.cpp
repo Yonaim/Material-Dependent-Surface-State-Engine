@@ -1435,7 +1435,7 @@ namespace
               "GPU solver flux should use the Normal Map-derived NormalWeight from the cache");
     }
 
-    void TestAccumulationGeometryFeedback(TVulkanTestDevice& Vulkan)
+    void TestAccumulationGeometryUpdate(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -1455,7 +1455,7 @@ namespace
         const SurfaceState::TStateId                                 Mud = Registry.GetStateId("mud");
         const SurfaceState::TStateId                                 WaterFilm = Registry.GetStateId("waterfilm");
         Check(Mud != SurfaceState::InvalidStateId && WaterFilm != SurfaceState::InvalidStateId && Mud != WaterFilm,
-              "feedback fixture should resolve two independent accumulation states");
+              "geometry update fixture should resolve two independent accumulation states");
 
         TSharedSurfaceGeometryData     Geometry({{0, {3, 1}}});
         const std::array<glm::vec3, 3> Positions{
@@ -1494,27 +1494,27 @@ namespace
                 Solver.RecordStep(
                     CommandBuffer, Descriptors, true, 3, 2, 0.01F, glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), 0U);
             });
-        std::vector<float> WeightsWithFeedbackOff(StaticWeights.size(), 0.0F);
+        std::vector<float> WeightsWithGeometryUpdateOff(StaticWeights.size(), 0.0F);
         Instance.GetTransferWeightBuffer().Download(
-            WeightsWithFeedbackOff.data(), static_cast<VkDeviceSize>(WeightsWithFeedbackOff.size() * sizeof(float)));
-        std::array<SurfaceState::TSurfaceGPUVec4, 6> GeometryWithFeedbackOff{};
-        Instance.GetDynamicGeometryBuffer().Download(GeometryWithFeedbackOff.data(), sizeof(GeometryWithFeedbackOff));
+            WeightsWithGeometryUpdateOff.data(), static_cast<VkDeviceSize>(WeightsWithGeometryUpdateOff.size() * sizeof(float)));
+        std::array<SurfaceState::TSurfaceGPUVec4, 6> GeometryWithGeometryUpdateOff{};
+        Instance.GetDynamicGeometryBuffer().Download(GeometryWithGeometryUpdateOff.data(), sizeof(GeometryWithGeometryUpdateOff));
         Check(std::equal(StaticWeights.begin(),
                          StaticWeights.end(),
-                         WeightsWithFeedbackOff.begin(),
+                         WeightsWithGeometryUpdateOff.begin(),
                          [](float A, float B) { return std::abs(A - B) < 1.0e-6F; }) &&
-                  std::abs(GeometryWithFeedbackOff[0].Z) < 1.0e-7F,
-              "feedback OFF should retain the static transfer cache and skip dynamic geometry prepasses");
-        std::array<float, 6> StateWithFeedbackOff{};
-        Instance.GetStateBBuffer().Download(StateWithFeedbackOff.data(), sizeof(StateWithFeedbackOff));
+                  std::abs(GeometryWithGeometryUpdateOff[0].Z) < 1.0e-7F,
+              "Accumulation Geometry Update가 꺼진 상태 should retain the static transfer cache and skip dynamic geometry prepasses");
+        std::array<float, 6> StateWithGeometryUpdateOff{};
+        Instance.GetStateBBuffer().Download(StateWithGeometryUpdateOff.data(), sizeof(StateWithGeometryUpdateOff));
         Check(std::equal(InitialState.begin(),
                          InitialState.end(),
-                         StateWithFeedbackOff.begin(),
+                         StateWithGeometryUpdateOff.begin(),
                          [](float A, float B) { return std::abs(A - B) < 1.0e-6F; }),
-              "the static flat geometry should produce no geometry-driven movement in the feedback-OFF run");
+              "the static flat geometry should produce no geometry-driven movement in the 형상 갱신 OFF run");
 
         std::uint32_t Flags =
-            SurfaceState::SurfaceSolverAccumulationFeedbackFlag | SurfaceState::SurfaceSolverDistanceWeightFlag |
+            SurfaceState::SurfaceSolverAccumulationGeometryUpdateFlag | SurfaceState::SurfaceSolverDistanceWeightFlag |
             SurfaceState::SurfaceSolverNormalWeightFlag | SurfaceState::SurfaceSolverProfileBoundaryWeightFlag;
         Vulkan.Execute(
             [&](VkCommandBuffer CommandBuffer)
@@ -1541,19 +1541,19 @@ namespace
         Instance.GetStateABuffer().Download(ResultingState.data(), sizeof(ResultingState));
 
         Check(std::abs(DynamicGeometry[0].Z - 0.06F) < 1.0e-5F,
-              "feedback geometry should add State-specific Profile thickness from all supported accumulation states");
+              "updated geometry should add State-specific Profile thickness from all supported accumulation states");
         Check(std::abs(CachedHeights[0] - 0.06F) < 1.0e-5F &&
                   std::abs(CachedHeights[0] - DynamicGeometry[0].Z) < 1.0e-6F && std::abs(CachedHeights[1]) < 1.0e-6F &&
                   std::abs(CachedHeights[2]) < 1.0e-6F,
-              "feedback height pass should cache one combined height per texel for geometry and solver reads");
+              "geometry update height pass should cache one combined height per texel for geometry and solver reads");
         Check(DynamicGeometry[1].X > 0.0F && DynamicGeometry[1].Y > 0.0F && DynamicGeometry[1].Z > 0.99F,
-              "feedback geometry should rebuild the local normal from the accumulated height gradient");
+              "updated geometry should rebuild the local normal from the accumulated height gradient");
         const float Edge01 = std::sqrt(1.0F + 0.06F * 0.06F);
         const float ExpectedMean0 = Edge01;
         const float ExpectedMean1 = 0.5F * (Edge01 + std::sqrt(2.0F));
         Check(std::abs(DynamicGeometry[0].W - ExpectedMean0) < 1.0e-5F &&
                   std::abs(DynamicGeometry[2].W - ExpectedMean1) < 1.0e-5F,
-              "feedback geometry should cache each texel's displaced mean neighbor distance");
+              "updated geometry should cache each texel's displaced mean neighbor distance");
         const float NormalDot01 =
             std::clamp(DynamicGeometry[1].X * DynamicGeometry[3].X + DynamicGeometry[1].Y * DynamicGeometry[3].Y +
                            DynamicGeometry[1].Z * DynamicGeometry[3].Z,
@@ -1562,16 +1562,16 @@ namespace
         const float ExpectedWeight01 =
             std::clamp(0.5F * (ExpectedMean0 + ExpectedMean1) / Edge01, 0.0F, 1.0F) * NormalDot01;
         Check(std::abs(DynamicWeights[0] - ExpectedWeight01) < 1.0e-5F,
-              "feedback transfer weight should use the cached mean without changing the edge formula");
+              "updated geometry transfer weight should use the cached mean without changing the edge formula");
         Check(std::abs(DynamicWeights[9] - StaticWeights[9]) > 1.0e-4F,
-              "feedback should rebuild edge weights using displaced distances and updated normals");
+              "geometry update should rebuild edge weights using displaced distances and updated normals");
         const float InitialTotal = std::accumulate(InitialState.begin(), InitialState.end(), 0.0F);
         const float ResultTotal = std::accumulate(ResultingState.begin(), ResultingState.end(), 0.0F);
         Check(ResultingState[Mud] < InitialState[Mud] && ResultingState[WaterFilm] < InitialState[WaterFilm] &&
                   (ResultingState[4U + Mud] + ResultingState[4U + WaterFilm]) > 0.0F,
               "accumulation geometry should change subsequent GeometryDrive transport toward the downhill neighbor");
         Check(std::abs(InitialTotal - ResultTotal) < 1.0e-5F,
-              "accumulation feedback transport should conserve State in the no-decay fixture");
+              "accumulation geometry update transport should conserve State in the no-decay fixture");
 
         // The same current State must leave both geometry passes untouched on
         // a subsequent step; this also covers a renderer height refresh in
@@ -1607,9 +1607,9 @@ namespace
                 std::all_of(StableGeometryDirty.begin(), StableGeometryDirty.end(), [](float V) { return V == 0.0F; }),
             "unchanged accumulation heights should skip geometry and transfer-weight rebuilds");
         Check(StableDispatch == std::array<std::uint32_t, 3>{0U, 1U, 1U},
-              "unchanged feedback should dispatch no geometry or transfer-weight workgroups");
+              "unchanged geometry update should dispatch no geometry or transfer-weight workgroups");
         Check(std::equal(DynamicWeights.begin(), DynamicWeights.end(), StableWeights.begin()),
-              "unchanged feedback geometry should preserve the cached transfer weights");
+              "unchanged updated geometry should preserve the cached transfer weights");
 
         auto ChangedState = InitialState;
         ChangedState[Mud] += 0.1F;
@@ -1641,10 +1641,10 @@ namespace
                       ChangedGeometryDirty.begin(), ChangedGeometryDirty.end(), [](float V) { return V == 1.0F; }),
               "a changed texel should rebuild geometry across its neighbor halo");
         Check(ChangedDispatch == std::array<std::uint32_t, 3>{1U, 1U, 1U},
-              "changed feedback should dispatch geometry and transfer-weight workgroups");
+              "changed geometry update should dispatch geometry and transfer-weight workgroups");
     }
 
-    void TestSparseFeedbackWeights(TVulkanTestDevice& Vulkan)
+    void TestSparseGeometryUpdateWeights(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -1682,7 +1682,7 @@ namespace
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
         SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
         SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const std::uint32_t                            Flags = SurfaceState::SurfaceSolverAccumulationFeedbackFlag |
+        const std::uint32_t                            Flags = SurfaceState::SurfaceSolverAccumulationGeometryUpdateFlag |
                                     SurfaceState::SurfaceSolverDistanceWeightFlag |
                                     SurfaceState::SurfaceSolverNormalWeightFlag;
         Vulkan.Execute(
@@ -1714,8 +1714,8 @@ namespace
             &FarWeight, sizeof(FarWeight), 4U * SurfaceNeighborCount * sizeof(float));
         Check(HeightDirty == std::array<float, 6>{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F} &&
                   GeometryDirty == std::array<float, 6>{1.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F},
-              "sparse feedback should update the changed texel and its geometry neighbor only");
-        Check(FarWeight == Sentinel, "sparse feedback should retain distant transfer weights without rewriting them");
+              "sparse geometry update should update the changed texel and its geometry neighbor only");
+        Check(FarWeight == Sentinel, "sparse geometry update should retain distant transfer weights without rewriting them");
         Vulkan.Execute(
             [&](VkCommandBuffer CommandBuffer)
             {
@@ -1764,8 +1764,8 @@ int main()
         TestSourceGeometryChannelReuse(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
         TestTransferWeightSolver(Vulkan);
         TestTransferWeightSolver(Vulkan, MDSS::SurfaceState::SurfaceSolverDisableRawFluxCacheFlag);
-        TestAccumulationGeometryFeedback(Vulkan);
-        TestSparseFeedbackWeights(Vulkan);
+        TestAccumulationGeometryUpdate(Vulkan);
+        TestSparseGeometryUpdateWeights(Vulkan);
     }
     catch (const TVulkanUnavailable& Exception)
     {

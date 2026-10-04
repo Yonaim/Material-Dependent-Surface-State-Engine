@@ -657,9 +657,9 @@ namespace MDSS::SurfaceState
             {
                 SolverFlags |= 1U << 4U;
             }
-            if (DebugSolverSettings.bAccumulationFeedbackEnabled)
+            if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled)
             {
-                SolverFlags |= SurfaceSolverAccumulationFeedbackFlag;
+                SolverFlags |= SurfaceSolverAccumulationGeometryUpdateFlag;
                 if (bRebuildStaticWeights || bForceFullGeometryOnNextStep)
                     SolverFlags |= SurfaceSolverForceFullGeometryFlag;
                 if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight))
@@ -724,11 +724,11 @@ namespace MDSS::SurfaceState
         DebugSolverSettings.bRawFluxCacheEnabled = bEnabled;
     }
 
-    void TSurfaceStateSystem::SetAccumulationFeedbackEnabled(bool bEnabled) noexcept
+    void TSurfaceStateSystem::SetAccumulationGeometryUpdateEnabled(bool bEnabled) noexcept
     {
-        if (DebugSolverSettings.bAccumulationFeedbackEnabled != bEnabled)
+        if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled != bEnabled)
             bTransferWeightSettingsDirty = true;
-        DebugSolverSettings.bAccumulationFeedbackEnabled = bEnabled;
+        DebugSolverSettings.bAccumulationGeometryUpdateEnabled = bEnabled;
     }
 
     void TSurfaceStateSystem::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept

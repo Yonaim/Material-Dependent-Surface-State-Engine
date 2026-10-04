@@ -776,18 +776,18 @@ int main(int Argc, char* Argv[])
                 Window->PollEvents();
                 OverlayUI.BeginFrame(OverlayScene);
                 OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 0.0F);
-                OverlayRenderer.SetAccumulationFeedbackEnabled(true);
+                OverlayRenderer.SetAccumulationGeometryUpdateEnabled(true);
                 Window->PollEvents();
                 OverlayUI.BeginFrame(OverlayScene);
                 OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 1.0F / 60.0F, true);
                 Check(OverlayRenderer.GetLastSimulationStepCount() == 0 &&
                           OverlayRenderer.GetPendingSimulationSeconds() == 0.0,
-                      "changing feedback must prepare resources without advancing simulation time");
+                      "changing geometry update toggle must prepare resources without advancing simulation time");
                 Window->PollEvents();
                 OverlayUI.BeginFrame(OverlayScene);
                 OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 1.0F / 60.0F);
                 Check(OverlayRenderer.GetLastSimulationStepCount() == 1,
-                      "simulation must resume with one normal tick after feedback preparation");
+                      "simulation must resume with one normal tick after geometry update preparation");
                 vkDeviceWaitIdle(Context->GetDevice());
             }
             Context.reset();

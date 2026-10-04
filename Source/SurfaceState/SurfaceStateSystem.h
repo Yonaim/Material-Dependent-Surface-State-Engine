@@ -65,7 +65,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const TSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
         void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
         void SetRawFluxCacheEnabled(bool bEnabled) noexcept;
-        void SetAccumulationFeedbackEnabled(bool bEnabled) noexcept;
+        void SetAccumulationGeometryUpdateEnabled(bool bEnabled) noexcept;
         void SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
         void SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
         void SubmitContact(TSurfaceContactInput Contact);

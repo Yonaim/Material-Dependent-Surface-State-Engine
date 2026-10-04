@@ -19,7 +19,7 @@
 namespace MDSS::SurfaceState
 {
     inline constexpr std::uint32_t SurfaceSolverDisableRawFluxCacheFlag = 1U << 5U;
-    inline constexpr std::uint32_t SurfaceSolverAccumulationFeedbackFlag = 1U << 6U;
+    inline constexpr std::uint32_t SurfaceSolverAccumulationGeometryUpdateFlag = 1U << 6U;
     inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
     inline constexpr std::uint32_t SurfaceSolverProfileBoundaryWeightFlag = 1U << 9U;
@@ -41,7 +41,7 @@ namespace MDSS::SurfaceState
     struct TSurfaceSolverDebugSettings
     {
         bool                                                                  bRawFluxCacheEnabled = false;
-        bool                                                                  bAccumulationFeedbackEnabled = false;
+        bool                                                                  bAccumulationGeometryUpdateEnabled = false;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, true};
 

@@ -253,7 +253,7 @@ namespace MDSS::SurfaceState
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery);
         }
-        if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) != 0U)
+        if ((SolverFlags & SurfaceSolverAccumulationGeometryUpdateFlag) != 0U)
         {
             const VkBuffer HeightBuffer =
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::AccumulationHeights, bCurrentStateAB);
@@ -338,7 +338,7 @@ namespace MDSS::SurfaceState
         }
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
-            if ((SolverFlags & SurfaceSolverAccumulationFeedbackFlag) == 0U)
+            if ((SolverFlags & SurfaceSolverAccumulationGeometryUpdateFlag) == 0U)
             {
                 vkCmdWriteTimestamp(
                     CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstPassQuery + 1U);
