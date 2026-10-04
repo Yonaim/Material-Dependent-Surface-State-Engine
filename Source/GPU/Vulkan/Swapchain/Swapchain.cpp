@@ -6,8 +6,8 @@
 #include "GPU/Vulkan/Swapchain/Swapchain.h"
 
 #include "Application/Window.h"
-#include "Logger/Logger.h"
 #include "GPU/Vulkan/VulkanContext.h"
+#include "Logger/Logger.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>

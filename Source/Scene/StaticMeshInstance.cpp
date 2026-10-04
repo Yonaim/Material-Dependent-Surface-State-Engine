@@ -10,16 +10,16 @@
 namespace MDSS
 {
     TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform)
-        : TStaticMeshInstance(Mesh, Asset::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
+        : TStaticMeshInstance(Mesh, SurfaceState::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
     {
     }
 
-    TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle          Mesh,
-                                             Asset::TSurfaceRuntimeDataHandle SurfaceData,
-                                             TTransform                InstanceTransform,
-                                             std::filesystem::path     MeshPath,
-                                             std::filesystem::path     ProfileMapPath,
-                                             std::string               ObjectId)
+    TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle                 Mesh,
+                                             SurfaceState::TSurfaceRuntimeDataHandle SurfaceData,
+                                             TTransform                              InstanceTransform,
+                                             std::filesystem::path                   MeshPath,
+                                             std::filesystem::path                   ProfileMapPath,
+                                             std::string                             ObjectId)
         : Mesh(Mesh), SurfaceData(SurfaceData), InstanceTransform(std::move(InstanceTransform)),
           SourceMeshPath(std::move(MeshPath)), SourceProfileMapPath(std::move(ProfileMapPath)), Id(std::move(ObjectId))
     {
@@ -40,12 +40,12 @@ namespace MDSS
         return Mesh;
     }
 
-    Asset::TSurfaceRuntimeDataHandle TStaticMeshInstance::GetSurfaceData() const noexcept
+    SurfaceState::TSurfaceRuntimeDataHandle TStaticMeshInstance::GetSurfaceData() const noexcept
     {
         return SurfaceData;
     }
 
-    void TStaticMeshInstance::SetSurfaceData(Asset::TSurfaceRuntimeDataHandle Handle) noexcept
+    void TStaticMeshInstance::SetSurfaceData(SurfaceState::TSurfaceRuntimeDataHandle Handle) noexcept
     {
         SurfaceData = Handle;
     }

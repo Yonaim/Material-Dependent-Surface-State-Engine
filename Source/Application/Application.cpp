@@ -6,11 +6,11 @@
 #include "Application/Application.h"
 
 #include "Application/EngineConfig.h"
-#include "AssetManager/Loaders/SceneLoader.h"
 #include "DebugUI/DebugUI.h"
 #include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
 #include "Rendering/Renderer.h"
+#include "Scene/SceneLoader.h"
 #include "SurfaceState/SurfaceStateSystem.h"
 
 #include <chrono>
@@ -20,18 +20,19 @@
 namespace MDSS
 {
     TApplication::TApplication()
-        : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), MainScene()
+        : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), SurfaceData(Assets), MainScene()
     {
         TLogger::Info("TApplication", "Initializing MDSS Engine.");
 
         const auto StartupScenePath = LoadStartupScenePath(GetEngineConfigDirectory() / "Engine.ini");
         TLogger::Info("TApplication", "Startup Scene: " + StartupScenePath.string());
-        MainScene = Asset::TSceneLoader::Load(StartupScenePath, Assets);
+        MainScene = TSceneLoader::Load(StartupScenePath, Assets, SurfaceData);
 
-        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(MainScene));
-        SurfaceStates = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, MainScene);
-        FrameRenderer = std::make_unique<Rendering::TRenderer>(Context, MainWindow, Assets, MainScene, *SurfaceStates);
-        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets);
+        SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(MainScene));
+        SurfaceStates = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
+        FrameRenderer =
+            std::make_unique<Rendering::TRenderer>(Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStates);
+        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
         InputInterface = std::make_unique<TInputSystem>(MainWindow.GetNativeHandle());
         TLogger::Info("TApplication", "Surface State System, renderer, scene, asset system, and Debug UI are ready.");
     }
@@ -63,6 +64,7 @@ namespace MDSS
             if (const std::optional<SurfaceState::TSurfaceContactInput> Contact =
                     InputInterface->PollDebugContact(MainScene,
                                                      Assets,
+                                                     SurfaceData,
                                                      DebugInterface->GetActiveViewportCamera(MainScene),
                                                      DebugInterface->IsInjectModeEnabled(),
                                                      DebugInterface->GetInjectState(),

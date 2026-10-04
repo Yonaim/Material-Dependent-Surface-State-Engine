@@ -24,9 +24,9 @@ namespace MDSS::Asset
     /** @brief Render vertex와 OBJ 원본 position topology를 함께 보존한 triangle. */
     struct TMeshTriangleSource
     {
-        std::array<std::uint32_t, 3> RenderVertexIndices{};
-        std::array<std::int32_t, 3>  OriginalPositionIndices{};
-        std::array<std::int32_t, 3>  OriginalUVIndices{};
-        SurfaceState::TSurfaceLocalID              Surface = SurfaceState::InvalidSurfaceID;
+        std::array<std::uint32_t, 3>  RenderVertexIndices{};
+        std::array<std::int32_t, 3>   OriginalPositionIndices{};
+        std::array<std::int32_t, 3>   OriginalUVIndices{};
+        SurfaceState::TSurfaceLocalID Surface = SurfaceState::InvalidSurfaceID;
     };
 } // namespace MDSS::Asset

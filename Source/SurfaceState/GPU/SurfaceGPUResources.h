@@ -6,9 +6,10 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
+#include "GPU/Vulkan/Resource/GPUBuffer.h"
 #include "SurfaceState/GPU/SurfaceGPUResourceLayout.h"
 #include "SurfaceState/Geometry/SurfaceTexelMeshBuilder.h"
-#include "GPU/Vulkan/Resource/GPUBuffer.h"
+#include "SurfaceState/Preprocessing/SurfaceRuntimeData.h"
 
 #include <vulkan/vulkan.h>
 
@@ -20,10 +21,24 @@
 #include <unordered_map>
 #include <vector>
 
-namespace MDSS::Asset { class TAssetManager; }
-namespace MDSS::GPU { class TVulkanContext; }
+namespace MDSS::Asset
+{
+    class TAssetManager;
+}
+namespace MDSS::SurfaceState
+{
+    class TSurfaceDataManager;
+}
+namespace MDSS::GPU
+{
+    class TVulkanContext;
+}
 
-namespace MDSS { struct TTransform; class TScene; }
+namespace MDSS
+{
+    struct TTransform;
+    class TScene;
+}
 
 namespace MDSS::SurfaceState
 {
@@ -58,12 +73,12 @@ namespace MDSS::SurfaceState
     class TSurfaceSharedGeometryGPUResources final
     {
     public:
-        TSurfaceSharedGeometryGPUResources(VkPhysicalDevice                      PhysicalDevice,
-                                           VkDevice                              Device,
-                                           const TSharedSurfaceGeometryData&     Geometry,
-                                           std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {},
-                                           std::span<const Asset::TVertex>              SourceVertices = {},
-                                           std::span<const Asset::TMeshTriangleSource>  SourceTriangles = {});
+        TSurfaceSharedGeometryGPUResources(VkPhysicalDevice                            PhysicalDevice,
+                                           VkDevice                                    Device,
+                                           const TSharedSurfaceGeometryData&           Geometry,
+                                           std::span<const TSurfaceProfileIndex>       ProfileIndexRemap = {},
+                                           std::span<const Asset::TVertex>             SourceVertices = {},
+                                           std::span<const Asset::TMeshTriangleSource> SourceTriangles = {});
 
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
@@ -75,7 +90,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetReverseNeighborSlotBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
-        [[nodiscard]] std::size_t       GetTexelCount() const noexcept;
+        [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept
         {
             return TexelMeshIndexBuffer.get();
@@ -103,19 +118,19 @@ namespace MDSS::SurfaceState
 
     private:
         std::size_t                         TexelCount = 0;
-        std::unique_ptr<GPU::TGPUBuffer>         TexelSurfaceIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         TexelProfileIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         PositionBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         NormalBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         MesoNormalBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         GeometryScalarBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         NeighborIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         ReverseNeighborSlotBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         SurfaceRangeBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         TexelChartIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         TexelMeshIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         TexelMeshVertexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         TexelMeshBoundaryBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    TexelSurfaceIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    TexelProfileIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    PositionBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    NormalBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    MesoNormalBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    GeometryScalarBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    NeighborIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    ReverseNeighborSlotBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    SurfaceRangeBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    TexelChartIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    TexelMeshIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    TexelMeshVertexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    TexelMeshBoundaryBuffer;
         std::uint32_t                       TexelMeshVertexCount = 0;
         std::uint32_t                       TexelMeshBoundaryCount = 0;
         std::vector<TSurfaceTexelMeshRange> TexelMeshRanges;
@@ -131,16 +146,16 @@ namespace MDSS::SurfaceState
 
         [[nodiscard]] const GPU::TGPUBuffer& GetParametersBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetSupportedBuffer() const noexcept;
-        [[nodiscard]] std::size_t       GetProfileCount() const noexcept;
-        [[nodiscard]] std::size_t       GetChannelCount() const noexcept;
-        [[nodiscard]] bool              IsSupported(std::size_t ProfileIndex, std::size_t ChannelIndex) const noexcept;
+        [[nodiscard]] std::size_t            GetProfileCount() const noexcept;
+        [[nodiscard]] std::size_t            GetChannelCount() const noexcept;
+        [[nodiscard]] bool IsSupported(std::size_t ProfileIndex, std::size_t ChannelIndex) const noexcept;
         void
         UpdateParameters(std::size_t ProfileIndex, std::size_t ChannelIndex, const TSurfaceStateParameters& Parameters);
 
     private:
-        std::size_t                 ProfileCount = 0;
-        std::size_t                 ChannelCount = 0;
-        std::vector<std::uint32_t>  SupportedChannels;
+        std::size_t                      ProfileCount = 0;
+        std::size_t                      ChannelCount = 0;
+        std::vector<std::uint32_t>       SupportedChannels;
         std::unique_ptr<GPU::TGPUBuffer> ParametersBuffer;
         std::unique_ptr<GPU::TGPUBuffer> SupportedBuffer;
     };
@@ -167,17 +182,17 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
-        void                            UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
-        void                            UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                                              const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
-        [[nodiscard]] std::size_t       GetTexelCount() const noexcept;
-        [[nodiscard]] std::size_t       GetChannelCount() const noexcept;
-        void                            ResetState(const std::vector<float>& OutgoingFluxScale);
+        void                                 UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
+        void                                 UpdateTransferWeights(const std::vector<float>&           TransferWeights,
+                                                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
+        [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
+        [[nodiscard]] std::size_t            GetChannelCount() const noexcept;
+        void                                 ResetState(const std::vector<float>& OutgoingFluxScale);
 
     private:
-        std::size_t                 TexelCount = 0;
-        std::size_t                 ChannelCount = 0;
-        std::size_t                 ScalarCount = 0;
+        std::size_t                      TexelCount = 0;
+        std::size_t                      ChannelCount = 0;
+        std::size_t                      ScalarCount = 0;
         std::unique_ptr<GPU::TGPUBuffer> StateABuffer;
         std::unique_ptr<GPU::TGPUBuffer> StateBBuffer;
         std::unique_ptr<GPU::TGPUBuffer> OutgoingFluxScaleBuffer;
@@ -233,7 +248,10 @@ namespace MDSS::SurfaceState
     class TSurfaceGPUResourceManager final
     {
     public:
-        TSurfaceGPUResourceManager(const GPU::TVulkanContext& Context, const Asset::TAssetManager& Assets, const TScene& Scene);
+        TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
+                                   const Asset::TAssetManager& Assets,
+                                   const TSurfaceDataManager&  SurfaceData,
+                                   const TScene&               Scene);
         ~TSurfaceGPUResourceManager();
 
         TSurfaceGPUResourceManager(const TSurfaceGPUResourceManager&) = delete;
@@ -254,14 +272,14 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetSceneProfileParametersBuffer() const;
-        [[nodiscard]] bool              UpdateProfileParameters(Asset::TSRProfileAssetHandle          ProfileHandle,
-                                                                TStateId                       State,
-                                                                const TSurfaceStateParameters& Parameters);
-        [[nodiscard]] std::size_t       GetInstanceTexelCount(std::size_t SceneIndex) const;
-        [[nodiscard]] std::size_t       GetInstanceValidTexelCount(std::size_t SceneIndex) const;
-        [[nodiscard]] std::size_t       GetInstanceChannelCount(std::size_t SceneIndex) const;
-        [[nodiscard]] bool              IsCurrentStateAB(std::size_t SceneIndex) const;
-        void                            ResetStates();
+        [[nodiscard]] bool                   UpdateProfileParameters(Asset::TSRProfileAssetHandle   ProfileHandle,
+                                                                     TStateId                       State,
+                                                                     const TSurfaceStateParameters& Parameters);
+        [[nodiscard]] std::size_t            GetInstanceTexelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] std::size_t            GetInstanceValidTexelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] std::size_t            GetInstanceChannelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] bool                   IsCurrentStateAB(std::size_t SceneIndex) const;
+        void                                 ResetStates();
         [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const TTransform& Transform) const;
         void               UpdateTransferWeightCache(std::size_t       SceneIndex,
                                                      const TTransform& Transform,
@@ -284,7 +302,7 @@ namespace MDSS::SurfaceState
             std::unique_ptr<TSurfaceInstanceGPUResources> State;
             // 디스크립터가 참조하는 버퍼보다 디스크립터 세트와 레이아웃을 먼저 파괴한다.
             std::unique_ptr<TSurfaceStateDescriptorResources> Descriptors;
-            Asset::TSurfaceRuntimeDataHandle                         SurfaceDataHandle{};
+            TSurfaceRuntimeDataHandle                         SurfaceDataHandle{};
             std::size_t                                       ValidTexelCount = 0;
             glm::vec3                                         TransferWeightScale{1.0F};
             bool                                              bTransferWeightCacheValid = false;
@@ -292,9 +310,9 @@ namespace MDSS::SurfaceState
         };
 
         // Reverse destruction order: descriptors → Geometry → Scene Profile buffers.
-        std::vector<Asset::TSRProfileAssetHandle>                                     SceneProfileHandles;
+        std::vector<Asset::TSRProfileAssetHandle>                              SceneProfileHandles;
         std::unique_ptr<TSurfaceProfileGPUResources>                           SceneProfiles;
-        std::unordered_map<Asset::TSurfaceRuntimeDataHandle, TSharedSurfaceResources> SharedSurfaceData;
+        std::unordered_map<TSurfaceRuntimeDataHandle, TSharedSurfaceResources> SharedSurfaceData;
         std::vector<std::unique_ptr<TInstanceResources>>                       InstanceResources;
     };
 } // MDSS 네임스페이스

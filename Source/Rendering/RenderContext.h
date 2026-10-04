@@ -12,7 +12,10 @@
 #include <cstdint>
 #include <vector>
 
-namespace MDSS::GPU { class TVulkanContext; }
+namespace MDSS::GPU
+{
+    class TVulkanContext;
+}
 
 namespace MDSS::Rendering
 {

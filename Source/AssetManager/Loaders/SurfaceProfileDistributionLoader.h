@@ -17,11 +17,13 @@ namespace MDSS::Asset
     struct TSurfaceProfileDistribution
     {
         std::vector<std::filesystem::path> ProfilePaths;
-        /** @brief Per-Surface Profile index; SurfaceState::InvalidSurfaceProfileIndex means render-only/no simulation. */
+        /** @brief Per-Surface Profile index; SurfaceState::InvalidSurfaceProfileIndex means render-only/no simulation.
+         */
         std::vector<SurfaceState::TSurfaceProfileIndex> ProfileIndicesBySurface;
 
         /** @brief Expand one Profile assignment per Surface to one index per mapping texel. */
-        [[nodiscard]] std::vector<SurfaceState::TSurfaceProfileIndex> BuildTexelProfileMap(const SurfaceState::TSurfaceMappingData& Mapping) const;
+        [[nodiscard]] std::vector<SurfaceState::TSurfaceProfileIndex>
+        BuildTexelProfileMap(const SurfaceState::TSurfaceMappingData& Mapping) const;
     };
 
     class TSurfaceProfileDistributionLoader final

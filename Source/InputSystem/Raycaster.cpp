@@ -68,8 +68,10 @@ namespace MDSS
         }
     } // namespace
 
-    TSurfaceRayHit
-    TRaycaster::Cast(const TScene& Scene, const Asset::TAssetManager& Assets, glm::vec3 WorldOrigin, glm::vec3 WorldDirection)
+    TSurfaceRayHit TRaycaster::Cast(const TScene&               Scene,
+                                    const Asset::TAssetManager& Assets,
+                                    glm::vec3                   WorldOrigin,
+                                    glm::vec3                   WorldDirection)
     {
         TSurfaceRayHit Result;
         const float    DirectionLengthSquared = glm::dot(WorldDirection, WorldDirection);
@@ -91,15 +93,15 @@ namespace MDSS
 
             const Asset::TMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
             const std::vector<Asset::TVertex>&             Vertices = Mesh.GetVertices();
-            const glm::mat4                         Model = Instance.GetTransform().GetMatrix();
+            const glm::mat4                                Model = Instance.GetTransform().GetMatrix();
             const std::vector<Asset::TMeshTriangleSource>& Triangles = Mesh.GetTriangles();
 
             for (std::size_t TriangleIndex = 0; TriangleIndex < Triangles.size(); ++TriangleIndex)
             {
                 const Asset::TMeshTriangleSource& Triangle = Triangles[TriangleIndex];
-                const std::uint32_t        IA = Triangle.RenderVertexIndices[0];
-                const std::uint32_t        IB = Triangle.RenderVertexIndices[1];
-                const std::uint32_t        IC = Triangle.RenderVertexIndices[2];
+                const std::uint32_t               IA = Triangle.RenderVertexIndices[0];
+                const std::uint32_t               IB = Triangle.RenderVertexIndices[1];
+                const std::uint32_t               IC = Triangle.RenderVertexIndices[2];
                 if (IA >= Vertices.size() || IB >= Vertices.size() || IC >= Vertices.size())
                 {
                     continue;

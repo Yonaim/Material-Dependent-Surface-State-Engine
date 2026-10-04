@@ -4,8 +4,8 @@
  */
 #pragma once
 
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
 #include "GPU/Vulkan/Resource/GPUBuffer.h"
+#include "SurfaceState/GPU/SurfaceGPUResources.h"
 
 #include <map>
 #include <memory>
@@ -26,24 +26,24 @@ namespace MDSS::Rendering
         THeightFieldSmoothing(const THeightFieldSmoothing&) = delete;
         THeightFieldSmoothing& operator=(const THeightFieldSmoothing&) = delete;
 
-        [[nodiscard]] VkDescriptorSet   GetOutputSet(std::size_t Instance, std::uint32_t Channel) const;
+        [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance, std::uint32_t Channel) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const;
-        void                            Record(VkCommandBuffer                         Command,
-                                               std::size_t                             Instance,
-                                               std::uint32_t                           Channel,
-                                               std::uint32_t                           Channels,
-                                               std::uint32_t                           TexelCount,
-                                               const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
-                                               VkDescriptorSet                         InputSet,
-                                               const GPU::TGPUBuffer&                       InputBuffer,
-                                               bool                                    bStateAB,
-                                               float                                   AccumulationDisplayScale);
+        void                                 Record(VkCommandBuffer                                       Command,
+                                                    std::size_t                                           Instance,
+                                                    std::uint32_t                                         Channel,
+                                                    std::uint32_t                                         Channels,
+                                                    std::uint32_t                                         TexelCount,
+                                                    const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
+                                                    VkDescriptorSet                                       InputSet,
+                                                    const GPU::TGPUBuffer&                                InputBuffer,
+                                                    bool                                                  bStateAB,
+                                                    float                                                 AccumulationDisplayScale);
 
     private:
         struct TOutput
         {
             std::unique_ptr<GPU::TGPUBuffer> Buffer;
-            VkDescriptorSet             Set = VK_NULL_HANDLE;
+            VkDescriptorSet                  Set = VK_NULL_HANDLE;
         };
         VkPhysicalDevice                                         PhysicalDevice;
         VkDevice                                                 Device;

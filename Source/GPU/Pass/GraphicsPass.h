@@ -21,12 +21,12 @@ namespace MDSS::GPU
         explicit TGraphicsPass(const TRenderPass& RenderPass) noexcept;
 
         /** @brief 지정한 framebuffer로 render pass 기록을 시작한다. */
-        void Begin(VkCommandBuffer             CommandBuffer,
-                   const TFramebuffer&         Framebuffers,
-                   std::size_t                 FramebufferIndex,
-                   VkExtent2D                  RenderExtent,
+        void Begin(VkCommandBuffer               CommandBuffer,
+                   const TFramebuffer&           Framebuffers,
+                   std::size_t                   FramebufferIndex,
+                   VkExtent2D                    RenderExtent,
                    std::span<const VkClearValue> ClearValues,
-                   VkSubpassContents           Contents = VK_SUBPASS_CONTENTS_INLINE) const;
+                   VkSubpassContents             Contents = VK_SUBPASS_CONTENTS_INLINE) const;
         /** @brief 현재 render pass 기록을 종료한다. */
         void End(VkCommandBuffer CommandBuffer) const;
 

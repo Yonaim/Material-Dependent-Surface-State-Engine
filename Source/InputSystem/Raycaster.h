@@ -9,7 +9,10 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
-namespace MDSS::Asset { class TAssetManager; }
+namespace MDSS::Asset
+{
+    class TAssetManager;
+}
 
 namespace MDSS
 {

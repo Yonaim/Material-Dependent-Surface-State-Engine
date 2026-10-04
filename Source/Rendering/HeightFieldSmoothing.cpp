@@ -134,18 +134,19 @@ namespace MDSS::Rendering
         return *Outputs.at({Instance, Channel}).Buffer;
     }
 
-    void THeightFieldSmoothing::Record(VkCommandBuffer                         Command,
-                                       std::size_t                             Instance,
-                                       std::uint32_t                           Channel,
-                                       std::uint32_t                           Channels,
-                                       std::uint32_t                           TexelCount,
+    void THeightFieldSmoothing::Record(VkCommandBuffer                                       Command,
+                                       std::size_t                                           Instance,
+                                       std::uint32_t                                         Channel,
+                                       std::uint32_t                                         Channels,
+                                       std::uint32_t                                         TexelCount,
                                        const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
-                                       VkDescriptorSet                         InputSet,
-                                       const GPU::TGPUBuffer&                       InputBuffer,
-                                       bool                                    bStateAB,
-                                       float                                   AccumulationDisplayScale)
+                                       VkDescriptorSet                                       InputSet,
+                                       const GPU::TGPUBuffer&                                InputBuffer,
+                                       bool                                                  bStateAB,
+                                       float                                                 AccumulationDisplayScale)
     {
-        const auto Bytes = SurfaceState::GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
+        const auto Bytes =
+            SurfaceState::GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
         if (!InputSet || InputBuffer.GetSize() != Bytes)
             throw std::invalid_argument("Height-field smoothing input does not match the texel geometry.");
         const auto Key = std::make_pair(Instance, Channel);

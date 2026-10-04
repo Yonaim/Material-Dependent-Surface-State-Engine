@@ -5,8 +5,8 @@
 
 #include "GPU/Vulkan/VulkanDevice.h"
 
-#include "Logger/Logger.h"
 #include "GPU/Vulkan/VulkanQueue.h"
+#include "Logger/Logger.h"
 
 #include <algorithm>
 #include <cstdint>

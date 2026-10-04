@@ -11,6 +11,7 @@
 #include "Scene/Camera.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -24,16 +25,18 @@ namespace MDSS
     {
     }
 
-    std::optional<SurfaceState::TSurfaceContactInput> TInputSystem::PollDebugContact(const TScene&        Scene,
-                                                                       const Asset::TAssetManager& Assets,
-                                                                       const TCamera&       Camera,
-                                                                       bool                 bInjectMode,
-                                                                       SurfaceState::TStateId             State,
-                                                                       float                Strength,
-                                                                       float                Radius,
-                                                                       float                Falloff,
-                                                                       std::uint32_t        TexelSearchRadius,
-                                                                       bool                 bHotkeySuppressed)
+    std::optional<SurfaceState::TSurfaceContactInput>
+    TInputSystem::PollDebugContact(const TScene&                            Scene,
+                                   const Asset::TAssetManager&              Assets,
+                                   const SurfaceState::TSurfaceDataManager& SurfaceData,
+                                   const TCamera&                           Camera,
+                                   bool                                     bInjectMode,
+                                   SurfaceState::TStateId                   State,
+                                   float                                    Strength,
+                                   float                                    Radius,
+                                   float                                    Falloff,
+                                   std::uint32_t                            TexelSearchRadius,
+                                   bool                                     bHotkeySuppressed)
     {
         const bool bSpaceDown = Window != nullptr && glfwGetKey(Window, GLFW_KEY_SPACE) == GLFW_PRESS;
         const bool bSpacePressed = bSpaceDown && !bWasSpaceDown;
@@ -71,7 +74,7 @@ namespace MDSS
         }
 
         const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[Hit.InstanceIndex];
-        if (!Assets.HasSurfaceData(Instance.GetSurfaceData()))
+        if (!SurfaceData.HasSurfaceData(Instance.GetSurfaceData()))
         {
             TLogger::Warning("TInputSystem", "Raycast hit a Mesh instance without Surface simulation data.");
             return std::nullopt;

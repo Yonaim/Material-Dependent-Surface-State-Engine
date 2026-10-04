@@ -8,14 +8,15 @@
 #include "AssetManager/Assets/MeshAsset.h"
 #include "AssetManager/Assets/SRProfileAsset.h"
 #include "AssetManager/Core/AssetManager.h"
+#include "GPU/Vulkan/VulkanContext.h"
 #include "Logger/Logger.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
 #include "SurfaceState/GPU/SurfaceGPUResourceLayout.h"
 #include "SurfaceState/Geometry/SharedSurfaceGeometryData.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 #include "SurfaceState/Preprocessing/SurfaceRuntimeData.h"
 #include "SurfaceState/Types/SurfaceSolverRates.h"
-#include "GPU/Vulkan/VulkanContext.h"
 
 #include <algorithm>
 #include <cmath>
@@ -29,11 +30,12 @@
 
 namespace MDSS::SurfaceState
 {
-    TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext& Context,
-                                             const Asset::TAssetManager&  Assets,
-                                             const TScene&         Scene)
-        : Context(Context), Assets(Assets), Scene(Scene),
-          GPUResources(std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, Scene))
+    TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
+                                             const Asset::TAssetManager& Assets,
+                                             const TSurfaceDataManager&  SurfaceData,
+                                             const TScene&               Scene)
+        : Context(Context), Assets(Assets), SurfaceData(SurfaceData), Scene(Scene),
+          GPUResources(std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene))
     {
         if (const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
         {
@@ -55,7 +57,7 @@ namespace MDSS::SurfaceState
                 throw std::invalid_argument("Initial contact target is not in Scene: " + Initial.Target);
             TSurfaceContactInput Contact;
             Contact.TargetInstance = static_cast<TSurfaceInstanceID>(std::distance(Instances.begin(), Target));
-            Contact.State = Assets.GetSurfaceStateRegistry().GetStateId(Initial.State);
+            Contact.State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Initial.State);
             Contact.WorldPosition = Initial.WorldPosition;
             Contact.Radius = Initial.Radius;
             Contact.Strength = Initial.Strength;
@@ -108,12 +110,12 @@ namespace MDSS::SurfaceState
         bForceFullGeometryOnNextStep = true;
     }
 
-    void TSurfaceStateSystem::SetDebugProfileParameters(Asset::TSRProfileAssetHandle          Profile,
+    void TSurfaceStateSystem::SetDebugProfileParameters(Asset::TSRProfileAssetHandle   Profile,
                                                         TStateId                       State,
                                                         const TSurfaceStateParameters& Parameters,
                                                         bool                           bKeepRuntimeOverride)
     {
-        const TSurfaceStateRegistry& Registry = Assets.GetSurfaceStateRegistry();
+        const TSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
         if (State >= Registry.GetStateCount())
         {
             throw std::out_of_range("Debug Profile override State is outside the Registry.");
@@ -152,7 +154,7 @@ namespace MDSS::SurfaceState
         }
 
         const std::size_t InstanceCount = Scene.GetStaticMeshInstances().size();
-        const std::size_t ChannelCount = Assets.GetSurfaceStateRegistry().GetStateCount();
+        const std::size_t ChannelCount = SurfaceData.GetSurfaceStateRegistry().GetStateCount();
         if (ChannelCount == 0)
         {
             PendingContacts.clear();
@@ -186,8 +188,8 @@ namespace MDSS::SurfaceState
             }
 
             const TStaticMeshInstance&      Instance = Scene.GetStaticMeshInstances()[InstanceIndex];
-            const Asset::TSurfaceRuntimeDataHandle SurfaceDataHandle = Instance.GetSurfaceData();
-            if (!Assets.HasSurfaceData(SurfaceDataHandle))
+            const TSurfaceRuntimeDataHandle SurfaceDataHandle = Instance.GetSurfaceData();
+            if (!SurfaceData.HasSurfaceData(SurfaceDataHandle))
             {
                 Diagnose("Rejected contact for an instance without Surface simulation data.");
                 continue;
@@ -200,7 +202,7 @@ namespace MDSS::SurfaceState
                 continue;
             }
 
-            const TSurfaceRuntimeData&                RuntimeData = Assets.GetSurfaceData(SurfaceDataHandle);
+            const TSurfaceRuntimeData&                RuntimeData = SurfaceData.GetSurfaceData(SurfaceDataHandle);
             const TSharedSurfaceGeometryData&         Geometry = *RuntimeData.GetSharedGeometry();
             const std::size_t                         TexelCount = Geometry.GetTexelCount();
             const std::size_t                         ScalarCount = TexelCount * ChannelCount;
@@ -365,13 +367,15 @@ namespace MDSS::SurfaceState
                 InputDeltas[InstanceIndex].assign(ScalarCount, 0.0F);
             }
 
-            const std::vector<Asset::TSRProfileAssetHandle>& ProfileHandles = Assets.GetSurfaceProfileTable(SurfaceDataHandle);
-            std::vector<float>                        InputFactors(ProfileHandles.size(), 0.0F);
-            std::vector<bool>                         bProfileSupportsState(ProfileHandles.size(), false);
+            const std::vector<Asset::TSRProfileAssetHandle>& ProfileHandles =
+                SurfaceData.GetSurfaceProfileTable(SurfaceDataHandle);
+            std::vector<float> InputFactors(ProfileHandles.size(), 0.0F);
+            std::vector<bool>  bProfileSupportsState(ProfileHandles.size(), false);
             for (std::size_t ProfileIndex = 0; ProfileIndex < ProfileHandles.size(); ++ProfileIndex)
             {
-                const TRegisteredSurfaceResponseProfileData Resolved = Assets.GetSurfaceStateRegistry().ResolveProfile(
-                    Assets.GetSRProfile(ProfileHandles[ProfileIndex]).GetData());
+                const TRegisteredSurfaceResponseProfileData Resolved =
+                    SurfaceData.GetSurfaceStateRegistry().ResolveProfile(
+                        Assets.GetSRProfile(ProfileHandles[ProfileIndex]).GetData());
                 if (Contact.State < Resolved.States.size() && Resolved.States[Contact.State].has_value())
                 {
                     InputFactors[ProfileIndex] = Resolved.States[Contact.State]->InputFactor;
@@ -431,11 +435,11 @@ namespace MDSS::SurfaceState
 
             if (bAppliedToAnyTexel)
             {
-                TLogger::Info(
-                    "TSurfaceStateSystem",
-                    "Contact input applied (state=" + Assets.GetSurfaceStateRegistry().GetStateName(Contact.State) +
-                        ", instance=" + std::to_string(InstanceIndex) +
-                        ", texels=" + std::to_string(AppliedTexelCount) + ").");
+                TLogger::Info("TSurfaceStateSystem",
+                              "Contact input applied (state=" +
+                                  SurfaceData.GetSurfaceStateRegistry().GetStateName(Contact.State) +
+                                  ", instance=" + std::to_string(InstanceIndex) +
+                                  ", texels=" + std::to_string(AppliedTexelCount) + ").");
             }
             if (bUnsupportedProfile)
             {
@@ -461,7 +465,7 @@ namespace MDSS::SurfaceState
             {
                 continue;
             }
-            const GPU::TGPUBuffer&         InputDeltaBuffer = GPUResources->GetInstanceInputDeltaBuffer(InstanceIndex);
+            const GPU::TGPUBuffer&    InputDeltaBuffer = GPUResources->GetInstanceInputDeltaBuffer(InstanceIndex);
             const std::vector<float>& InputDelta = InputDeltas[InstanceIndex];
             const VkDeviceSize        ByteSize = static_cast<VkDeviceSize>(InputDelta.size() * sizeof(float));
             if (ByteSize != InputDeltaBuffer.GetSize())
@@ -499,9 +503,9 @@ namespace MDSS::SurfaceState
             if (!GPUResources->GetInstanceDescriptors(I))
                 continue;
             const auto      Handle = Instances[I].GetSurfaceData();
-            const auto&     Geometry = *Assets.GetSurfaceData(Handle).GetSharedGeometry();
+            const auto&     Geometry = *SurfaceData.GetSurfaceData(Handle).GetSharedGeometry();
             const auto&     Texels = Geometry.GetTexels();
-            const auto&     Profiles = Assets.GetSurfaceProfileTable(Handle);
+            const auto&     Profiles = SurfaceData.GetSurfaceProfileTable(Handle);
             const glm::mat4 Model = Instances[I].GetTransform().GetMatrix();
             const glm::mat3 Linear(Model);
             const auto      Weights = BuildSurfaceGPUTransferWeights(
@@ -535,7 +539,7 @@ namespace MDSS::SurfaceState
                 }
                 for (const auto& [Name, Original] : Assets.GetSRProfile(Profiles[Profile]).GetData().States)
                 {
-                    const TStateId State = Assets.GetSurfaceStateRegistry().GetStateId(Name);
+                    const TStateId State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Name);
                     const auto     Override = RuntimeProfileOverrides.find({Profiles[Profile], State});
                     const auto&    P = Override == RuntimeProfileOverrides.end() ? Original : Override->second;
                     // SaturationDrive <= source saturation; Geometry uses the same unclamped mobility.

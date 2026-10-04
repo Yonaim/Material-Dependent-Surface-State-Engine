@@ -14,7 +14,10 @@
 
 #include <vector>
 
-namespace MDSS { class TWindow; }
+namespace MDSS
+{
+    class TWindow;
+}
 
 namespace MDSS::GPU
 {

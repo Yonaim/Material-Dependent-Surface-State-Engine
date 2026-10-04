@@ -7,20 +7,26 @@
 
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
-#include "Scene/Scene.h"
 #include "GPU/Vulkan/VulkanContext.h"
+#include "Scene/Scene.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #include <cstddef>
 #include <memory>
 
-namespace MDSS::Rendering { class TRenderer; }
-namespace MDSS::SurfaceState { class TSurfaceStateSystem; }
+namespace MDSS::Rendering
+{
+    class TRenderer;
+}
+namespace MDSS::SurfaceState
+{
+    class TSurfaceStateSystem;
+}
 
 namespace MDSS
 {
     class TDebugUI;
     class TInputSystem;
-
 
     class TApplication
     {
@@ -36,13 +42,14 @@ namespace MDSS
         void MainLoop(std::size_t FrameLimit);
 
         // Declaration order is intentional: resources are destroyed in reverse order.
-        TWindow                              MainWindow;
-        GPU::TVulkanContext                       Context;
-        Asset::TAssetManager                        Assets;
-        TScene                               MainScene;
+        TWindow                                            MainWindow;
+        GPU::TVulkanContext                                Context;
+        Asset::TAssetManager                               Assets;
+        SurfaceState::TSurfaceDataManager                  SurfaceData;
+        TScene                                             MainScene;
         std::unique_ptr<SurfaceState::TSurfaceStateSystem> SurfaceStates;
-        std::unique_ptr<Rendering::TRenderer>           FrameRenderer;
-        std::unique_ptr<TDebugUI>            DebugInterface;
-        std::unique_ptr<TInputSystem>        InputInterface;
+        std::unique_ptr<Rendering::TRenderer>              FrameRenderer;
+        std::unique_ptr<TDebugUI>                          DebugInterface;
+        std::unique_ptr<TInputSystem>                      InputInterface;
     };
 } // namespace MDSS

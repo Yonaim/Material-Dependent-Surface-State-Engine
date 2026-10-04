@@ -16,9 +16,9 @@ namespace MDSS::Asset
 {
     struct TOBJMeshSectionData
     {
-        std::uint32_t   FirstIndex = 0;
-        std::uint32_t   IndexCount = 0;
-        std::int32_t    MaterialIndex = -1;
+        std::uint32_t                 FirstIndex = 0;
+        std::uint32_t                 IndexCount = 0;
+        std::int32_t                  MaterialIndex = -1;
         SurfaceState::TSurfaceLocalID Surface = SurfaceState::InvalidSurfaceID;
     };
 

@@ -57,7 +57,8 @@ namespace
         return Vertices;
     }
 
-    MDSS::Asset::TMeshTriangleSource MakeTriangle(std::uint32_t FirstVertex, MDSS::SurfaceState::TSurfaceLocalID Surface = 0)
+    MDSS::Asset::TMeshTriangleSource MakeTriangle(std::uint32_t                       FirstVertex,
+                                                  MDSS::SurfaceState::TSurfaceLocalID Surface = 0)
     {
         MDSS::Asset::TMeshTriangleSource Triangle;
         Triangle.RenderVertexIndices = {FirstVertex, FirstVertex + 1, FirstVertex + 2};
@@ -65,8 +66,9 @@ namespace
         return Triangle;
     }
 
-    MDSS::SurfaceState::TSurfaceTexelGeometry
-    MakeTexel(std::uint32_t Triangle = 0, MDSS::SurfaceState::TSurfaceLocalID Surface = 0, glm::vec3 Barycentric = {1.0F, 0.0F, 0.0F})
+    MDSS::SurfaceState::TSurfaceTexelGeometry MakeTexel(std::uint32_t                       Triangle = 0,
+                                                        MDSS::SurfaceState::TSurfaceLocalID Surface = 0,
+                                                        glm::vec3 Barycentric = {1.0F, 0.0F, 0.0F})
     {
         MDSS::SurfaceState::TSurfaceTexelGeometry Texel;
         Texel.Surface = Surface;

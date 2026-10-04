@@ -5,9 +5,9 @@
 
 #include "AssetManager/Assets/TextureAsset.h"
 
-#include "Logger/Logger.h"
 #include "GPU/Vulkan/Resource/GPUBuffer.h"
 #include "GPU/Vulkan/VulkanContext.h"
+#include "Logger/Logger.h"
 
 #include <stdexcept>
 #include <utility>
@@ -17,7 +17,7 @@ namespace MDSS::Asset
     TextureAsset::TextureAsset(TAssetID                         ID,
                                std::string                      Name,
                                std::filesystem::path            SourcePath,
-                               const GPU::TVulkanContext&            Context,
+                               const GPU::TVulkanContext&       Context,
                                std::uint32_t                    Width,
                                std::uint32_t                    Height,
                                const std::vector<std::uint8_t>& RGBA8Pixels,
@@ -30,20 +30,20 @@ namespace MDSS::Asset
         }
 
         const VkDeviceSize ByteCount = static_cast<VkDeviceSize>(RGBA8Pixels.size());
-        GPU::TGPUBuffer         StagingBuffer(Context.GetPhysicalDevice(),
-                                 Context.GetDevice(),
-                                 ByteCount,
-                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        GPU::TGPUBuffer    StagingBuffer(Context.GetPhysicalDevice(),
+                                      Context.GetDevice(),
+                                      ByteCount,
+                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         StagingBuffer.Upload(RGBA8Pixels.data(), ByteCount);
 
         Image = std::make_unique<GPU::TGPUImage>(Context.GetPhysicalDevice(),
-                                            Context.GetDevice(),
-                                            VkExtent2D{Width, Height},
-                                            Format,
-                                            VK_IMAGE_TILING_OPTIMAL,
-                                            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                                                 Context.GetDevice(),
+                                                 VkExtent2D{Width, Height},
+                                                 Format,
+                                                 VK_IMAGE_TILING_OPTIMAL,
+                                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         TransitionImageLayout(
             Context, Image->GetHandle(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -53,8 +53,8 @@ namespace MDSS::Asset
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        ImageView =
-            std::make_unique<GPU::TGPUImageView>(Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
+        ImageView = std::make_unique<GPU::TGPUImageView>(
+            Context.GetDevice(), Image->GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
         Sampler = std::make_unique<GPU::TGPUSampler>(Context.GetDevice());
         TLogger::Debug("TAssetManager",
                        "Uploaded TextureAsset '" + GetName() + "' to GPU (" + std::to_string(Width) + "x" +
@@ -87,9 +87,9 @@ namespace MDSS::Asset
     }
 
     void TextureAsset::TransitionImageLayout(const GPU::TVulkanContext& Context,
-                                             VkImage               Image,
-                                             VkImageLayout         OldLayout,
-                                             VkImageLayout         NewLayout)
+                                             VkImage                    Image,
+                                             VkImageLayout              OldLayout,
+                                             VkImageLayout              NewLayout)
     {
         VkCommandBuffer CommandBuffer = Context.GetCommands().BeginSingleTime();
 

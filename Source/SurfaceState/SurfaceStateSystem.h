@@ -15,10 +15,23 @@
 #include <utility>
 #include <vector>
 
-namespace MDSS::Asset { class TAssetManager; }
-namespace MDSS::GPU { class TVulkanContext; }
+namespace MDSS::Asset
+{
+    class TAssetManager;
+}
+namespace MDSS::SurfaceState
+{
+    class TSurfaceDataManager;
+}
+namespace MDSS::GPU
+{
+    class TVulkanContext;
+}
 
-namespace MDSS { class TScene; }
+namespace MDSS
+{
+    class TScene;
+}
 
 namespace MDSS::SurfaceState
 {
@@ -26,7 +39,10 @@ namespace MDSS::SurfaceState
     class TSurfaceStateSystem final
     {
     public:
-        TSurfaceStateSystem(const GPU::TVulkanContext& Context, const Asset::TAssetManager& Assets, const TScene& Scene);
+        TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
+                            const Asset::TAssetManager& Assets,
+                            const TSurfaceDataManager&  SurfaceData,
+                            const TScene&               Scene);
         ~TSurfaceStateSystem();
 
         TSurfaceStateSystem(const TSurfaceStateSystem&) = delete;
@@ -53,7 +69,7 @@ namespace MDSS::SurfaceState
         void SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
         void SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
         void SubmitContact(TSurfaceContactInput Contact);
-        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle          Profile,
+        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle   Profile,
                                        TStateId                       State,
                                        const TSurfaceStateParameters& Parameters,
                                        bool                           bKeepRuntimeOverride = true);
@@ -63,8 +79,9 @@ namespace MDSS::SurfaceState
         void QueueInitialContacts();
         void ApplyPendingContacts();
 
-        const GPU::TVulkanContext&                       Context;
-        const Asset::TAssetManager&                        Assets;
+        const GPU::TVulkanContext&                  Context;
+        const Asset::TAssetManager&                 Assets;
+        const TSurfaceDataManager&                  SurfaceData;
         const TScene&                               Scene;
         std::unique_ptr<TSurfaceGPUResourceManager> GPUResources;
         std::unique_ptr<TSurfaceStateSolver>        Solver;

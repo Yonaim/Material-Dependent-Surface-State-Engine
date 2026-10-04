@@ -52,12 +52,14 @@ namespace
     MDSS::SurfaceState::TSurfaceMappingData BuildFixture(const char* FileName, std::uint32_t Resolution = 16)
     {
         const MDSS::Asset::TOBJLoadResult Mesh = MDSS::Asset::TOBJLoader::Load(GetMappingFixturePath(FileName));
-        return MDSS::SurfaceState::TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {Resolution, Resolution}}});
+        return MDSS::SurfaceState::TSurfaceMappingBuilder::Build(
+            Mesh.Vertices, Mesh.Triangles, {{0, {Resolution, Resolution}}});
     }
 
     std::size_t CountValidTexels(const MDSS::SurfaceState::TSurfaceMappingData& Mapping)
     {
-        return static_cast<std::size_t>(std::ranges::count_if(Mapping.Texels, &MDSS::SurfaceState::TSurfaceMappingTexel::IsValid));
+        return static_cast<std::size_t>(
+            std::ranges::count_if(Mapping.Texels, &MDSS::SurfaceState::TSurfaceMappingTexel::IsValid));
     }
 
     bool HasCrossTriangleNeighbor(const MDSS::SurfaceState::TSurfaceMappingData& Mapping, bool RequireDifferentChart)
@@ -225,7 +227,8 @@ namespace
         MDSS::SurfaceState::TSurfaceMappingData Mapping = BuildFixture("QuadNoSeam.obj");
         MDSS::SurfaceState::TLocalTexelIndex    Source = MDSS::SurfaceState::InvalidTexelIndex;
         MDSS::SurfaceState::TLocalTexelIndex    Target = MDSS::SurfaceState::InvalidTexelIndex;
-        for (std::size_t Index = 0; Index < Mapping.Texels.size() && Source == MDSS::SurfaceState::InvalidTexelIndex; ++Index)
+        for (std::size_t Index = 0; Index < Mapping.Texels.size() && Source == MDSS::SurfaceState::InvalidTexelIndex;
+             ++Index)
         {
             for (const MDSS::SurfaceState::TLocalTexelIndex Neighbor : Mapping.Texels[Index].Neighbors)
             {
@@ -251,7 +254,9 @@ namespace
                 break;
             }
         }
-        CheckThrows([&] { MDSS::SurfaceState::ValidateSurfaceMapping(Mapping); }, "bidirectional", "one-way neighbor relationship");
+        CheckThrows([&] { MDSS::SurfaceState::ValidateSurfaceMapping(Mapping); },
+                    "bidirectional",
+                    "one-way neighbor relationship");
     }
 } // namespace
 

@@ -62,12 +62,12 @@ namespace MDSS::SurfaceState
         }
     } // namespace
 
-    bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&            Texel,
+    bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&                   Texel,
                                       const std::vector<Asset::TVertex>&             Vertices,
                                       const std::vector<Asset::TMeshTriangleSource>& Triangles,
                                       const Asset::TextureData&                      NormalMap,
-                                      glm::vec3&                              OutTransferNormal,
-                                      bool                                    bFlipNormalY)
+                                      glm::vec3&                                     OutTransferNormal,
+                                      bool                                           bFlipNormalY)
     {
         if (!Texel.IsValid() || Texel.Triangle >= Triangles.size())
         {
@@ -75,16 +75,16 @@ namespace MDSS::SurfaceState
         }
 
         const Asset::TMeshTriangleSource& Triangle = Triangles[Texel.Triangle];
-        const auto&                VertexIndices = Triangle.RenderVertexIndices;
+        const auto&                       VertexIndices = Triangle.RenderVertexIndices;
         if (Triangle.Surface != Texel.Surface || VertexIndices[0] >= Vertices.size() ||
             VertexIndices[1] >= Vertices.size() || VertexIndices[2] >= Vertices.size())
         {
             return false;
         }
 
-        const Asset::TVertex&  V0 = Vertices[VertexIndices[0]];
-        const Asset::TVertex&  V1 = Vertices[VertexIndices[1]];
-        const Asset::TVertex&  V2 = Vertices[VertexIndices[2]];
+        const Asset::TVertex& V0 = Vertices[VertexIndices[0]];
+        const Asset::TVertex& V1 = Vertices[VertexIndices[1]];
+        const Asset::TVertex& V2 = Vertices[VertexIndices[2]];
         const glm::vec2 UV = Texel.Barycentric.x * V0.UV + Texel.Barycentric.y * V1.UV + Texel.Barycentric.z * V2.UV;
         if (!std::isfinite(UV.x) || !std::isfinite(UV.y))
         {

@@ -21,9 +21,8 @@ namespace MDSS::GPU
                               std::span<const VkClearValue> ClearValues,
                               VkSubpassContents             Contents) const
     {
-        if (CommandBuffer == VK_NULL_HANDLE || RenderPass == nullptr ||
-            RenderExtent.width == 0 || RenderExtent.height == 0 ||
-            ClearValues.size() > std::numeric_limits<std::uint32_t>::max())
+        if (CommandBuffer == VK_NULL_HANDLE || RenderPass == nullptr || RenderExtent.width == 0 ||
+            RenderExtent.height == 0 || ClearValues.size() > std::numeric_limits<std::uint32_t>::max())
         {
             throw std::invalid_argument("Graphics pass begin received invalid command or render-area parameters.");
         }

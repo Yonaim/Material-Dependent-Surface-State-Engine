@@ -116,9 +116,9 @@ namespace MDSS::Asset
             Result.Materials.push_back(TMTLLoader::Convert(Material, BaseDirectory));
         }
 
-        std::unordered_map<TVertexKey, std::uint32_t, TVertexKeyHash> UniqueVertices;
-        std::vector<glm::vec3>                                        GeneratedNormalAccumulator;
-        std::unordered_map<std::int32_t, SurfaceState::TSurfaceLocalID>             MaterialSurfaces;
+        std::unordered_map<TVertexKey, std::uint32_t, TVertexKeyHash>   UniqueVertices;
+        std::vector<glm::vec3>                                          GeneratedNormalAccumulator;
+        std::unordered_map<std::int32_t, SurfaceState::TSurfaceLocalID> MaterialSurfaces;
 
         auto GetSurface = [&](std::int32_t MaterialIndex) -> SurfaceState::TSurfaceLocalID
         {
@@ -126,7 +126,8 @@ namespace MDSS::Asset
             {
                 return Existing->second;
             }
-            const SurfaceState::TSurfaceLocalID Surface = static_cast<SurfaceState::TSurfaceLocalID>(MaterialSurfaces.size());
+            const SurfaceState::TSurfaceLocalID Surface =
+                static_cast<SurfaceState::TSurfaceLocalID>(MaterialSurfaces.size());
             MaterialSurfaces.emplace(MaterialIndex, Surface);
             return Surface;
         };

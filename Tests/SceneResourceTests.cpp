@@ -4,13 +4,14 @@
  */
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
-#include "AssetManager/Loaders/SceneLoader.h"
 #include "DebugUI/DebugUI.h"
+#include "GPU/Vulkan/VulkanContext.h"
 #include "Logger/Logger.h"
 #include "Rendering/Renderer.h"
+#include "Scene/SceneLoader.h"
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 #include "SurfaceState/SurfaceStateSystem.h"
-#include "GPU/Vulkan/VulkanContext.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -45,8 +46,8 @@ namespace
     using namespace MDSS;
     using namespace MDSS::GPU;
     using namespace MDSS::Rendering;
-        using namespace MDSS::Asset;
-        using namespace MDSS::SurfaceState;
+    using namespace MDSS::Asset;
+    using namespace MDSS::SurfaceState;
     using TJson = nlohmann::json;
 
     void Check(bool Condition, const char* Message)
@@ -134,21 +135,21 @@ namespace
     };
 
     float GetProfileInputFactor(const SurfaceState::TSurfaceGPUResourceManager& GPU,
-                                const Asset::TAssetManager&              Assets,
-                                const TScene&                     Scene,
-                                Asset::TSRProfileAssetHandle             Profile,
+                                const SurfaceState::TSurfaceDataManager&        SurfaceData,
+                                const TScene&                                   Scene,
+                                Asset::TSRProfileAssetHandle                    Profile,
                                 SurfaceState::TStateId                          State)
     {
-        const auto Handles = Assets.GetSceneSurfaceProfiles(Scene);
+        const auto Handles = SurfaceData.GetSceneSurfaceProfiles(Scene);
         const auto Found = std::find(Handles.begin(), Handles.end(), Profile);
         Check(Found != Handles.end(), "requested Profile must belong to the Scene");
         const auto* Descriptor = GPU.GetAnyInstanceDescriptors();
         Check(Descriptor != nullptr, "simulated Scene must have descriptors");
-        const auto                   ProfileIndex = static_cast<std::size_t>(Found - Handles.begin());
+        const auto                                 ProfileIndex = static_cast<std::size_t>(Found - Handles.begin());
         SurfaceState::TSurfaceGPUProfileParameters Parameters{};
-        const auto                   Offset =
-            GetSurfaceGPUProfileRecordIndex(ProfileIndex, State, Assets.GetSurfaceStateRegistry().GetStateCount()) *
-            sizeof(Parameters);
+        const auto                                 Offset = GetSurfaceGPUProfileRecordIndex(
+                                ProfileIndex, State, SurfaceData.GetSurfaceStateRegistry().GetStateCount()) *
+                            sizeof(Parameters);
         GPU.GetSceneProfileParametersBuffer().Download(&Parameters, sizeof(Parameters), Offset);
         return Parameters.CapacityInputAndTransfer[1];
     }
@@ -181,8 +182,9 @@ namespace
                         {"version", 1},
                         {"animation", "Animated.DemoAnim"},
                         {"objects", TJson::array({{{"id", "object"}, {"mesh", "A.obj"}}})}});
-        Asset::TAssetManager Assets(Context);
-        TScene        Scene = TSceneLoader::Load(Fixtures.Root / "Animated.Scene", Assets);
+        Asset::TAssetManager              Assets(Context);
+        SurfaceState::TSurfaceDataManager SurfaceData(Assets);
+        TScene Scene = TSceneLoader::Load(Fixtures.Root / "Animated.Scene", Assets, SurfaceData);
         Check(Scene.HasDemoAnimation() && !Scene.IsDemoAnimationPlaying(),
               "Scene animation should load paused independently of simulation");
         Scene.PlayDemoAnimation();
@@ -204,15 +206,15 @@ namespace
         Check(!Scene.IsDemoAnimationPlaying() && Scene.GetDemoAnimationTime() == 0.0F && Transform.Position.x == 0.0F,
               "restart should restore the first pose without starting playback");
         TSceneLoader::Save(Scene, Fixtures.Root / "AnimatedSaved.Scene");
-        const TScene Saved = TSceneLoader::Load(Fixtures.Root / "AnimatedSaved.Scene", Assets);
+        const TScene Saved = TSceneLoader::Load(Fixtures.Root / "AnimatedSaved.Scene", Assets, SurfaceData);
         Check(Saved.HasDemoAnimation() && Saved.GetStaticMeshInstances()[0].GetId() == "object",
               "Scene save and load should preserve animation reference and object IDs");
 
-        TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
-        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(SurfaceScene));
-        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceScene);
-        auto&               SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
-        const auto&         GPU = SurfaceStates.GetGPUResources();
+        TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets, SurfaceData);
+        SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(SurfaceScene));
+        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, SurfaceScene);
+        auto&                             SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
+        const auto&                       GPU = SurfaceStates.GetGPUResources();
         Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform), "new Surface cache should be valid");
         SurfaceTransform.RotationDegrees.x = 35.0F;
         SurfaceTransform.Position.y = 2.0F;
@@ -226,7 +228,7 @@ namespace
         const auto WetProfile = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
         auto       Flow = Assets.GetSRProfile(WetProfile).GetData().States.at("wetness");
         Flow.GeometryTransferFactor = 1.0F;
-        const auto WetState = Assets.GetSurfaceStateRegistry().GetStateId("wetness");
+        const auto WetState = SurfaceData.GetSurfaceStateRegistry().GetStateId("wetness");
         SurfaceStates.SetDebugProfileParameters(WetProfile, WetState, Flow);
         const float FlatBound = SurfaceStates.GetMaximumStableDeltaTime();
         SurfaceTransform.RotationDegrees.x = 90.0F;
@@ -237,9 +239,9 @@ namespace
         for (const char* Name : {"Mountain", "Bunny"})
         {
             TScene RealScene = TSceneLoader::Load(
-                std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (std::string(Name) + ".Scene"), Assets);
+                std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (std::string(Name) + ".Scene"), Assets, SurfaceData);
             const auto  Handle = RealScene.GetStaticMeshInstances().front().GetSurfaceData();
-            const auto& Texels = Assets.GetSurfaceData(Handle).GetSharedGeometry()->GetTexels();
+            const auto& Texels = SurfaceData.GetSurfaceData(Handle).GetSharedGeometry()->GetTexels();
             const auto  Positive = std::count_if(Texels.begin(),
                                                 Texels.end(),
                                                 [](const auto& Texel)
@@ -288,8 +290,8 @@ namespace
             for (const auto& [Effect, State] : Effects)
             {
                 const std::string Stem = std::string(Shape) + "_" + std::string(Effect);
-                TScene            Isolated =
-                    TSceneLoader::Load(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (Stem + ".Scene"), Assets);
+                TScene            Isolated = TSceneLoader::Load(
+                    std::filesystem::path(MDSS_ASSET_DIR) / "Scenes" / (Stem + ".Scene"), Assets, SurfaceData);
                 Check(Isolated.GetStaticMeshInstances().size() == 1 && Isolated.GetInitialContacts().size() == 1 &&
                           Isolated.HasDemoAnimation() && Isolated.GetSimulationResolution() == 256,
                       "isolated Scene must have one object, one contact, one animation and fixed resolution");
@@ -298,7 +300,7 @@ namespace
                 Check(Contact.Target == Object.GetId() && Contact.State == State && Contact.Radius == 0.42F &&
                           Contact.Strength == 1.5F && Contact.Falloff == 1.0F,
                       "isolated Scene contact must target its only effect with common input parameters");
-                const auto Registry = Assets.BuildSurfaceStateRegistry(Isolated);
+                const auto Registry = SurfaceData.BuildSurfaceStateRegistry(Isolated);
                 Check(Registry.GetStateCount() == 1 && Registry.GetStateName(0) == State,
                       "isolated Scene must expose exactly its selected Surface State");
                 const auto& Transform = Object.GetTransform();
@@ -315,7 +317,8 @@ namespace
                               glm::length(Transform.Scale - ReferenceScale) < 1.0e-5F,
                           "all effects of one shape must start with the same transform");
                 }
-                const auto& Texels = Assets.GetSurfaceData(Object.GetSurfaceData()).GetSharedGeometry()->GetTexels();
+                const auto& Texels =
+                    SurfaceData.GetSurfaceData(Object.GetSurfaceData()).GetSharedGeometry()->GetTexels();
                 const glm::mat4 Model = Transform.GetMatrix();
                 Check(std::any_of(Texels.begin(),
                                   Texels.end(),
@@ -341,15 +344,16 @@ namespace
                           "all effects of one shape must use the same animation phase");
             }
         }
-        TScene LavaScene =
-            TSceneLoader::Load(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", Assets);
+        TScene LavaScene = TSceneLoader::Load(
+            std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", Assets, SurfaceData);
         Check(LavaScene.GetStaticMeshInstances().size() == 1 &&
                   LavaScene.GetStaticMeshInstances()[0].GetId() == "mountain_lava" &&
                   LavaScene.GetInitialContacts().size() == 1 && LavaScene.GetInitialContacts()[0].State == "lava",
               "Lava Scene must load its Mountain and initial Lava input");
         const auto& LavaObject = LavaScene.GetStaticMeshInstances()[0];
         const auto& LavaContact = LavaScene.GetInitialContacts()[0];
-        const auto& LavaTexels = Assets.GetSurfaceData(LavaObject.GetSurfaceData()).GetSharedGeometry()->GetTexels();
+        const auto& LavaTexels =
+            SurfaceData.GetSurfaceData(LavaObject.GetSurfaceData()).GetSharedGeometry()->GetTexels();
         const glm::mat4 LavaModel = LavaObject.GetTransform().GetMatrix();
         const auto      ContactedCavityCount =
             std::count_if(LavaTexels.begin(),
@@ -367,7 +371,7 @@ namespace
         Check(Lava.GeometryTransferFactor < 0.01F && Lava.SaturationTransferFactor < 0.01F &&
                   Lava.CavityTransportRetentionFactor > 0.95F && Lava.DecayRate == 0.0F,
               "Lava should move slowly and resist leaving cavities without evaporating");
-        const auto LavaRegistry = Assets.BuildSurfaceStateRegistry(LavaScene);
+        const auto LavaRegistry = SurfaceData.BuildSurfaceStateRegistry(LavaScene);
         Check(ResolveDemoSurfaceStates(LavaRegistry).Lava == LavaRegistry.GetStateId("lava"),
               "Lava rendering channel must resolve from the loaded profile");
         LavaScene.PlayDemoAnimation();
@@ -379,17 +383,18 @@ namespace
 
     void TestSceneResources(TWindow& Window, const GPU::TVulkanContext& Context, const TFixtures& Fixtures)
     {
-        Asset::TAssetManager Assets(Context);
+        Asset::TAssetManager              Assets(Context);
+        SurfaceState::TSurfaceDataManager SurfaceData(Assets);
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
-        TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets);
-        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(Scene));
-        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, Scene);
-        Rendering::TRenderer           Renderer(Context, Window, Assets, Scene, SurfaceStates);
+        TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets, SurfaceData);
+        SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
+        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, Scene);
+        Rendering::TRenderer              Renderer(Context, Window, Assets, SurfaceData, Scene, SurfaceStates);
         Check(Renderer.GetDemoSurfaceStateBindings().Wetness == 0 &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == SurfaceState::InvalidStateId,
               "Wet Scene demo bindings must resolve optional names.");
         {
-            TDebugUI UI(Context, Window, Renderer, Assets);
+            TDebugUI UI(Context, Window, Renderer, Assets, SurfaceData);
             Check(UI.IsFixedSimulationTimestep() && !UI.IsAutoSubsteppingEnabled(),
                   "the actual UI must default to Fixed ON and Auto substepping OFF");
             // Keep the hidden test window from reading or overwriting the editor docking layout.
@@ -446,8 +451,8 @@ namespace
             Renderer.SetSimulationResolution(Scene, 128);
             vkDeviceWaitIdle(Context.GetDevice());
         }
-        Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-                  Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+        Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 1 &&
+                  SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
               "cached foreign States must be excluded");
         const auto WetHandle = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
         auto       Parameters = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
@@ -456,7 +461,7 @@ namespace
 
         auto SwitchScene = [&](const std::string& Name)
         {
-            TScene Loaded = TSceneLoader::Load(Fixtures.Root / (Name + ".Scene"), Assets);
+            TScene Loaded = TSceneLoader::Load(Fixtures.Root / (Name + ".Scene"), Assets, SurfaceData);
             TScene Previous = Scene;
             Scene = std::move(Loaded);
             try
@@ -469,21 +474,21 @@ namespace
                 throw;
             }
         };
-        TScene Mud = TSceneLoader::Load(Fixtures.Root / "Mud.Scene", Assets);
-        Check(Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+        TScene Mud = TSceneLoader::Load(Fixtures.Root / "Mud.Scene", Assets, SurfaceData);
+        Check(SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
               "loading prospective assets must preserve active IDs");
         SwitchScene("Mud");
-        Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-                  Assets.GetSurfaceStateRegistry().GetStateName(0) == "mud",
+        Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 1 &&
+                  SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "mud",
               "Scene switch must replace the Registry");
         Check(Renderer.GetDemoSurfaceStateBindings().Mud == 0 &&
                   Renderer.GetDemoSurfaceStateBindings().Wetness == SurfaceState::InvalidStateId,
               "Mud Scene must discard the former Wetness ID.");
         {
-            TDebugUI UI(Context, Window, Renderer, Assets);
+            TDebugUI UI(Context, Window, Renderer, Assets, SurfaceData);
             ImGui::GetIO().IniFilename = nullptr;
             Renderer.SetRenderViewMode(TRenderViewMode::Lit);
-            const auto           MudState = Assets.GetSurfaceStateRegistry().GetStateId("mud");
+            const auto                         MudState = SurfaceData.GetSurfaceStateRegistry().GetStateId("mud");
             SurfaceState::TSurfaceContactInput Contact;
             Contact.TargetInstance = 0;
             Contact.State = MudState;
@@ -505,7 +510,7 @@ namespace
         }
 
         SwitchScene("Mixed");
-        const auto&    Registry = Assets.GetSurfaceStateRegistry();
+        const auto&                  Registry = SurfaceData.GetSurfaceStateRegistry();
         const SurfaceState::TStateId WetState = Registry.GetStateId("wetness");
         Check(Renderer.GetDemoSurfaceStateBindings().Wetness == WetState &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == Registry.GetStateId("mud"),
@@ -517,8 +522,8 @@ namespace
         const auto* A = GPU.GetInstanceDescriptors(0);
         const auto* B = GPU.GetInstanceDescriptors(1);
         const auto* C = GPU.GetInstanceDescriptors(2);
-        for (auto Binding :
-             {SurfaceState::TSurfaceGPUDescriptorBinding::ProfileParameters, SurfaceState::TSurfaceGPUDescriptorBinding::ProfileSupported})
+        for (auto Binding : {SurfaceState::TSurfaceGPUDescriptorBinding::ProfileParameters,
+                             SurfaceState::TSurfaceGPUDescriptorBinding::ProfileSupported})
         {
             Check(A->GetBoundBufferHandle(Binding, true) == B->GetBoundBufferHandle(Binding, false) &&
                       A->GetBoundBufferHandle(Binding, true) == C->GetBoundBufferHandle(Binding, true),
@@ -527,16 +532,16 @@ namespace
         Check(A->GetBoundBufferHandle(SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true) !=
                   B->GetBoundBufferHandle(SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true),
               "instance State must stay independent");
-        Check(std::abs(GetProfileInputFactor(GPU, Assets, Scene, WetHandle, WetState) - 0.75F) < 1e-6F,
+        Check(std::abs(GetProfileInputFactor(GPU, SurfaceData, Scene, WetHandle, WetState) - 0.75F) < 1e-6F,
               "Scene switch must discard old numeric-ID overrides");
         Renderer.SetDebugStateChannel(WetState);
         Parameters.InputFactor = 1.25F;
         Renderer.SetDebugProfileParameters(WetHandle, WetState, Parameters);
-        Check(std::abs(GetProfileInputFactor(GPU, Assets, Scene, WetHandle, WetState) - 1.25F) < 1e-6F,
+        Check(std::abs(GetProfileInputFactor(GPU, SurfaceData, Scene, WetHandle, WetState) - 1.25F) < 1e-6F,
               "Profile update must target the single shared table");
 
         {
-            SurfaceState::TSurfaceStateSystem System(Context, Assets, Scene);
+            SurfaceState::TSurfaceStateSystem System(Context, Assets, SurfaceData, Scene);
             System.ResetState();
             for (SurfaceState::TSurfaceInstanceID Target : {0U, 1U, 2U})
             {
@@ -562,8 +567,9 @@ namespace
                 if (Index < 2)
                 {
                     const auto& MeshInstance = Scene.GetStaticMeshInstances()[Index];
-                    const auto& Geometry = *Assets.GetSurfaceData(MeshInstance.GetSurfaceData()).GetSharedGeometry();
-                    const auto  Areas =
+                    const auto& Geometry =
+                        *SurfaceData.GetSurfaceData(MeshInstance.GetSurfaceData()).GetSharedGeometry();
+                    const auto Areas =
                         BuildSurfaceGPUWorldTexelAreas(Geometry, MeshInstance.GetTransform().GetMatrix());
                     for (std::size_t Texel = 0; Texel < Areas.size(); ++Texel)
                     {
@@ -575,9 +581,10 @@ namespace
             }
         }
         Renderer.SetSimulationResolution(Scene, 256);
-        Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) -
-                       1.25F) < 1e-6F,
-              "resolution change must preserve current Scene tuning");
+        Check(
+            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, WetHandle, WetState) -
+                     1.25F) < 1e-6F,
+            "resolution change must preserve current Scene tuning");
 
         {
             // A vertical unit triangle must reduce dt with the new rate, including runtime overrides.
@@ -585,8 +592,8 @@ namespace
             const auto PreviousRotation = Transform.RotationDegrees;
             Transform.RotationDegrees = {90, 0, 0};
             {
-                SurfaceState::TSurfaceStateSystem System(Context, Assets, Scene);
-                auto                Flow = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
+                SurfaceState::TSurfaceStateSystem System(Context, Assets, SurfaceData, Scene);
+                auto                              Flow = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
                 Flow.GeometryTransferFactor = 0.5F;
                 System.SetDebugProfileParameters(WetHandle, WetState, Flow);
                 const float HalfFactorStep = System.GetMaximumStableDeltaTime();
@@ -628,32 +635,33 @@ namespace
             bFailed = true;
         }
         Check(bFailed, "oversized Scene must fail GPU resource construction");
-        Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 2 &&
-                  Assets.GetSurfaceStateRegistry().GetStateId("wetness") == WetState,
+        Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 2 &&
+                  SurfaceData.GetSurfaceStateRegistry().GetStateId("wetness") == WetState,
               "failed resource rebuild must restore the previous Registry");
         Check(Renderer.GetSurfaceGPUResources().GetInstanceDescriptors(0)->GetBoundBufferHandle(
                   SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true) == PreviousState,
               "failed Scene switch must retain previous GPU resources");
-        Check(std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), Assets, Scene, WetHandle, WetState) -
-                       1.25F) < 1e-6F,
-              "failed switch must retain previous tuning");
+        Check(
+            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, WetHandle, WetState) -
+                     1.25F) < 1e-6F,
+            "failed switch must retain previous tuning");
         SwitchScene("Empty");
-        Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 0 &&
+        Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 0 &&
                   Renderer.GetSurfaceGPUResources().GetManagedInstanceCount() == 0,
               "empty Scene must have no State channels or resources");
         Check(Renderer.GetDemoSurfaceStateBindings().Wetness == SurfaceState::InvalidStateId &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == SurfaceState::InvalidStateId,
               "Empty Registry must resolve both demo States as absent.");
         SwitchScene("Wet");
-        Check(Assets.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-                  Assets.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+        Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 1 &&
+                  SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
               "switching back must exclude cached failed Scene States");
     }
 }
 
 int main(int Argc, char* Argv[])
 {
-    std::unique_ptr<MDSS::TWindow>        Window;
+    std::unique_ptr<MDSS::TWindow>             Window;
     std::unique_ptr<MDSS::GPU::TVulkanContext> Context;
     try
     {
@@ -676,13 +684,14 @@ int main(int Argc, char* Argv[])
         }
         if (Argc == 2 && std::string_view(Argv[1]) == "--lava-scene")
         {
-            Asset::TAssetManager LavaAssets(*Context);
-            TScene        LavaScene =
-                TSceneLoader::Load(std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", LavaAssets);
-            LavaAssets.ExchangeSurfaceStateRegistry(LavaAssets.BuildSurfaceStateRegistry(LavaScene));
-            SurfaceState::TSurfaceStateSystem LavaStates(*Context, LavaAssets, LavaScene);
-            Rendering::TRenderer           LavaRenderer(*Context, *Window, LavaAssets, LavaScene, LavaStates);
-            TDebugUI            LavaUI(*Context, *Window, LavaRenderer, LavaAssets);
+            Asset::TAssetManager              LavaAssets(*Context);
+            SurfaceState::TSurfaceDataManager LavaSurfaceData(LavaAssets);
+            TScene                            LavaScene = TSceneLoader::Load(
+                std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", LavaAssets, LavaSurfaceData);
+            LavaSurfaceData.ExchangeSurfaceStateRegistry(LavaSurfaceData.BuildSurfaceStateRegistry(LavaScene));
+            SurfaceState::TSurfaceStateSystem LavaStates(*Context, LavaAssets, LavaSurfaceData, LavaScene);
+            Rendering::TRenderer LavaRenderer(*Context, *Window, LavaAssets, LavaSurfaceData, LavaScene, LavaStates);
+            TDebugUI             LavaUI(*Context, *Window, LavaRenderer, LavaAssets, LavaSurfaceData);
             ImGui::GetIO().IniFilename = nullptr;
             LavaRenderer.SetRenderViewMode(TRenderViewMode::Lit);
             Check(LavaRenderer.GetDemoSurfaceStateBindings().Lava != SurfaceState::InvalidStateId,
@@ -732,13 +741,18 @@ int main(int Argc, char* Argv[])
         {
             MDSS::Tests::TestOverlaySideCompaction(*Context);
             {
-                TFixtures     OverlayFixtures;
-                Asset::TAssetManager OverlayAssets(*Context);
-                TScene        OverlayScene = TSceneLoader::Load(OverlayFixtures.Root / "Mud.Scene", OverlayAssets);
-                OverlayAssets.ExchangeSurfaceStateRegistry(OverlayAssets.BuildSurfaceStateRegistry(OverlayScene));
-                SurfaceState::TSurfaceStateSystem OverlayStates(*Context, OverlayAssets, OverlayScene);
-                Rendering::TRenderer           OverlayRenderer(*Context, *Window, OverlayAssets, OverlayScene, OverlayStates);
-                TDebugUI            OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets);
+                TFixtures                         OverlayFixtures;
+                Asset::TAssetManager              OverlayAssets(*Context);
+                SurfaceState::TSurfaceDataManager OverlaySurfaceData(OverlayAssets);
+                TScene                            OverlayScene =
+                    TSceneLoader::Load(OverlayFixtures.Root / "Mud.Scene", OverlayAssets, OverlaySurfaceData);
+                OverlaySurfaceData.ExchangeSurfaceStateRegistry(
+                    OverlaySurfaceData.BuildSurfaceStateRegistry(OverlayScene));
+                SurfaceState::TSurfaceStateSystem OverlayStates(
+                    *Context, OverlayAssets, OverlaySurfaceData, OverlayScene);
+                Rendering::TRenderer OverlayRenderer(
+                    *Context, *Window, OverlayAssets, OverlaySurfaceData, OverlayScene, OverlayStates);
+                TDebugUI OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets, OverlaySurfaceData);
                 ImGui::GetIO().IniFilename = nullptr;
                 OverlayRenderer.SetRenderViewMode(TRenderViewMode::Lit);
                 Check(OverlayRenderer.IsLitTexelMeshBaseRendered(OverlayScene, 0),

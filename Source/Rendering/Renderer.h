@@ -6,22 +6,22 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
+#include "GPU/Pass/GraphicsPass.h"
+#include "GPU/Vulkan/Pipeline/GraphicsPipeline.h"
+#include "GPU/Vulkan/Render/Framebuffer.h"
+#include "GPU/Vulkan/Render/RenderPass.h"
+#include "GPU/Vulkan/Resource/GPUBuffer.h"
+#include "GPU/Vulkan/Resource/GPUImage.h"
+#include "GPU/Vulkan/Resource/GPUImageView.h"
+#include "GPU/Vulkan/Swapchain/Swapchain.h"
 #include "Rendering/AccumulationOverlaySides.h"
 #include "Rendering/DemoSurfaceEffects.h"
-#include "GPU/Vulkan/Render/Framebuffer.h"
-#include "GPU/Vulkan/Pipeline/GraphicsPipeline.h"
 #include "Rendering/HeightFieldSmoothing.h"
 #include "Rendering/RenderContext.h"
-#include "GPU/Vulkan/Render/RenderPass.h"
-#include "GPU/Pass/GraphicsPass.h"
-#include "GPU/Vulkan/Swapchain/Swapchain.h"
 #include "SurfaceState/Debug/TexelGeometryPreview.h"
 #include "SurfaceState/Debug/TexelInspector.h"
 #include "SurfaceState/State/SimulationClock.h"
 #include "SurfaceState/SurfaceStateSystem.h"
-#include "GPU/Vulkan/Resource/GPUBuffer.h"
-#include "GPU/Vulkan/Resource/GPUImage.h"
-#include "GPU/Vulkan/Resource/GPUImageView.h"
 
 #include <vulkan/vulkan.h>
 
@@ -33,12 +33,30 @@
 #include <utility>
 #include <vector>
 
-namespace MDSS::Asset { class TAssetManager; }
-namespace MDSS::GPU { class TVulkanContext; }
+namespace MDSS::Asset
+{
+    class TAssetManager;
+}
+namespace MDSS::SurfaceState
+{
+    class TSurfaceDataManager;
+}
+namespace MDSS::GPU
+{
+    class TVulkanContext;
+}
 
-namespace MDSS { class TWindow; }
+namespace MDSS
+{
+    class TWindow;
+}
 
-namespace MDSS { class TScene; class TDebugUI; class TStaticMeshInstance; }
+namespace MDSS
+{
+    class TScene;
+    class TDebugUI;
+    class TStaticMeshInstance;
+}
 
 namespace MDSS::Rendering
 {
@@ -158,11 +176,12 @@ namespace MDSS::Rendering
     class TRenderer
     {
     public:
-        TRenderer(const GPU::TVulkanContext& Context,
-                  TWindow&              TWindow,
-                  Asset::TAssetManager&        Assets,
-                  const TScene&         Scene,
-                  SurfaceState::TSurfaceStateSystem&  SurfaceStates);
+        TRenderer(const GPU::TVulkanContext&         Context,
+                  TWindow&                           TWindow,
+                  Asset::TAssetManager&              Assets,
+                  SurfaceState::TSurfaceDataManager& SurfaceData,
+                  const TScene&                      Scene,
+                  SurfaceState::TSurfaceStateSystem& SurfaceStates);
         ~TRenderer();
 
         TRenderer(const TRenderer&) = delete;
@@ -198,13 +217,13 @@ namespace MDSS::Rendering
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         /** @brief Rebuild Surface mapping and GPU resources, resetting State on success. */
         void SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);
-        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle          Profile,
+        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle                 Profile,
                                        SurfaceState::TStateId                       State,
                                        const SurfaceState::TSurfaceStateParameters& Parameters,
-                                       bool                           bKeepRuntimeOverride = true);
+                                       bool                                         bKeepRuntimeOverride = true);
 
-        [[nodiscard]] const GPU::TSwapchain&                 GetSwapchain() const noexcept;
-        [[nodiscard]] VkRenderPass                      GetRenderPassHandle() const noexcept;
+        [[nodiscard]] const GPU::TSwapchain&                          GetSwapchain() const noexcept;
+        [[nodiscard]] VkRenderPass                                    GetRenderPassHandle() const noexcept;
         [[nodiscard]] const SurfaceState::TSurfaceGPUResourceManager& GetSurfaceGPUResources() const noexcept;
         /** @brief 마지막 완료 프레임에서 측정한 GPU Solver 시간(ms), 미지원 시 -1. */
         [[nodiscard]] float                          GetLastSolverGpuMilliseconds() const noexcept;
@@ -294,11 +313,11 @@ namespace MDSS::Rendering
             return InspectedTexel;
         }
         [[nodiscard]] const std::optional<SurfaceState::TSurfaceTexelSnapshot>& GetTexelSnapshot() const noexcept;
-        [[nodiscard]] TSolverTransferWeightView                   GetSolverTransferWeightView() const noexcept;
-        void                        SetSolverTransferWeightView(TSolverTransferWeightView View);
-        [[nodiscard]] std::uint32_t GetTexelGridBlockSize() const noexcept;
-        void                        SetTexelGridBlockSize(std::uint32_t Size);
-        [[nodiscard]] float         GetTexelAreaReference() const noexcept;
+        [[nodiscard]] TSolverTransferWeightView GetSolverTransferWeightView() const noexcept;
+        void                                    SetSolverTransferWeightView(TSolverTransferWeightView View);
+        [[nodiscard]] std::uint32_t             GetTexelGridBlockSize() const noexcept;
+        void                                    SetTexelGridBlockSize(std::uint32_t Size);
+        [[nodiscard]] float                     GetTexelAreaReference() const noexcept;
         /** @brief 해상도·Scene 전환과 독립적인 기준 면적(world units²/texel)을 설정한다. */
         void               SetTexelAreaReference(float Area);
         [[nodiscard]] bool IsDebugGeometryDriveEnabled() const noexcept;
@@ -334,7 +353,7 @@ namespace MDSS::Rendering
         struct TMaterialRenderResource
         {
             std::array<std::unique_ptr<GPU::TGPUBuffer>, TRenderContext::MaxFramesInFlight> UniformBuffers;
-            std::array<VkDescriptorSet, TRenderContext::MaxFramesInFlight>             DescriptorSets{};
+            std::array<VkDescriptorSet, TRenderContext::MaxFramesInFlight>                  DescriptorSets{};
         };
 
         static VkFormat              FindDepthFormat(VkPhysicalDevice PhysicalDevice);
@@ -345,104 +364,107 @@ namespace MDSS::Rendering
                                                          VkFormatFeatureFlags Features);
         static VkDescriptorSetLayout CreateMaterialDescriptorSetLayout(VkDevice Device);
 
-        void                              CreateMaterialDescriptorResources();
-        void                              CreateRenderFinishedSemaphores();
-        void                              DestroyRenderFinishedSemaphores() noexcept;
-        void                              CreateTimestampQueryPool(std::size_t SolverInstanceCount);
-        void                              UploadMaterialUniforms(std::uint32_t   Frame,
-                                                                 const TScene&   SceneData,
-                                                                 const TDebugUI& DebugInterface,
-                                                                 float           LitHeightDisplayScale);
-        [[nodiscard]] float               GetDebugViewParameter() const noexcept;
-        [[nodiscard]] bool                CanRenderLitOverlays() const noexcept;
-        [[nodiscard]] std::array<bool, 3> GetLitOverlayActivity(const TStaticMeshInstance&                Instance,
-                                                                const SurfaceState::TSurfaceSharedGeometryGPUResources* Shared,
-                                                                const TDemoSurfaceStateBindings& Bindings) const;
-        void                              RecreateSwapchain(TDebugUI& DebugInterface);
-        void                              RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
-                                                              std::uint32_t          ImageIndex,
-                                                              const TScene&          SceneData,
-                                                              const TDebugUI&        DebugInterface,
-                                                              std::span<const float> SimulationSteps);
+        void                CreateMaterialDescriptorResources();
+        void                CreateRenderFinishedSemaphores();
+        void                DestroyRenderFinishedSemaphores() noexcept;
+        void                CreateTimestampQueryPool(std::size_t SolverInstanceCount);
+        void                UploadMaterialUniforms(std::uint32_t   Frame,
+                                                   const TScene&   SceneData,
+                                                   const TDebugUI& DebugInterface,
+                                                   float           LitHeightDisplayScale);
+        [[nodiscard]] float GetDebugViewParameter() const noexcept;
+        [[nodiscard]] bool  CanRenderLitOverlays() const noexcept;
+        [[nodiscard]] std::array<bool, 3>
+             GetLitOverlayActivity(const TStaticMeshInstance&                              Instance,
+                                   const SurfaceState::TSurfaceSharedGeometryGPUResources* Shared,
+                                   const TDemoSurfaceStateBindings&                        Bindings) const;
+        void RecreateSwapchain(TDebugUI& DebugInterface);
+        void RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
+                                 std::uint32_t          ImageIndex,
+                                 const TScene&          SceneData,
+                                 const TDebugUI&        DebugInterface,
+                                 std::span<const float> SimulationSteps);
 
-        const GPU::TVulkanContext& Context;
-        TWindow&              TargetWindow;
-        Asset::TAssetManager&        Assets;
+        const GPU::TVulkanContext&         Context;
+        TWindow&                           TargetWindow;
+        Asset::TAssetManager&              Assets;
+        SurfaceState::TSurfaceDataManager& SurfaceData;
         /** @brief Application이 소유하며 Renderer는 compute 기록과 렌더링 동안만 참조한다. */
-        SurfaceState::TSurfaceStateSystem&                        SurfaceStates;
-        GPU::TSwapchain                                  SwapchainData;
-        VkFormat                                    DepthFormat = VK_FORMAT_UNDEFINED;
-        std::vector<std::unique_ptr<GPU::TGPUImage>>     DepthImages;
-        std::vector<std::unique_ptr<GPU::TGPUImageView>> DepthImageViews;
-        GPU::TRenderPass                                 MainRenderPass;
-        GPU::TGraphicsPass                               MainGraphicsPass;
-        VkDescriptorSetLayout                       MaterialDescriptorSetLayout = VK_NULL_HANDLE;
-        GPU::TGraphicsPipeline                           StaticMeshPipeline;
-        GPU::TGraphicsPipeline                           WireframePipeline;
-        GPU::TGraphicsPipeline                           GizmoPipeline;
-        GPU::TGraphicsPipeline                           WorldReferencePipeline;
-        std::unique_ptr<GPU::TGPUBuffer>                 GizmoVertexBuffer;
-        std::uint32_t                               WorldGridVertexCount = 0;
-        std::uint32_t                               WorldAxisVertexCount = 0;
-        std::uint32_t                               TranslateGizmoVertexCount = 0;
-        std::uint32_t                               RotateGizmoVertexCount = 0;
-        bool                                        bWorldGridVisible = true;
-        bool                                        bWorldAxisVisible = true;
-        std::unique_ptr<GPU::TGraphicsPipeline>          SurfaceDebugPipeline;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>      TexelGeometryPreview;
-        std::unique_ptr<GPU::TGraphicsPipeline>          TexelGeometryPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>          SurfaceLitPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>          BaseSurfaceLitPipeline;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>      MudLayerGeometry;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>      WaterLayerGeometry;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>      LavaLayerGeometry;
-        std::unique_ptr<THeightFieldSmoothing>      HeightFieldSmoothing;
-        std::unique_ptr<TAccumulationOverlaySides>  OverlaySides;
-        std::unique_ptr<GPU::TGraphicsPipeline>          MudOverlayTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>          MudOverlaySidePipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>          WaterOverlayTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>          WaterOverlaySidePipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>          LavaOverlayTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>          LavaOverlaySidePipeline;
-        GPU::TFramebuffer                                MainFramebuffers;
-        TRenderContext                              FrameContext;
-        VkDescriptorPool                            MaterialDescriptorPool = VK_NULL_HANDLE;
-        std::vector<TMaterialRenderResource>        MaterialResources;
-        VkDeviceSize                                MaterialUniformStride = 0;
-        std::size_t                                 MaterialViewportCapacity = 1;
-        TRenderViewMode                             ViewMode = TRenderViewMode::Lit;
-        bool                                        bWireframeUniformWhite = true;
-        bool                                        bSupportsWireframeLineWidth = false;
-        float                                       WireframeLineWidth = 2.0F;
-        float                                       WireframeLineWidthMin = 1.0F;
-        float                                       WireframeLineWidthMax = 1.0F;
-        std::uint32_t                               DebugStateChannel = 0;
-        bool                                        bStateHeatmapReliefShadingEnabled = true;
-        TSurfaceDebugDisplaySettings                SurfaceDebugSettings;
-        TDemoSurfaceEffectSettings                  DemoEffects;
-        TOverlayDrawProfilingMode                   OverlayDrawProfilingMode = TOverlayDrawProfilingMode::Both;
-        TOverlayOccupancyTileSize                   OverlayOccupancyTileSize = TOverlayOccupancyTileSize::Tile16;
-        std::optional<SurfaceState::TSurfaceTexelSelection>       InspectedTexel;
-        std::unique_ptr<SurfaceState::TTexelInspector>            TexelInspector;
-        std::uint64_t                               SimulationStepSerial = 0;
-        std::uint64_t                               TotalHeightProfileRevision = 0;
-        std::vector<TTotalHeightCacheEntry>         TotalHeightCacheEntries;
-        bool                                        bTotalHeightCacheHit = false;
-        TSolverTransferWeightView                   SolverTransferWeightView = TSolverTransferWeightView::Combined;
-        std::uint32_t                               TexelGridBlockSize = 8;
-        float                                       TexelAreaReference = 1.0e-4F;
-        SurfaceState::TSurfaceSolverDebugSettings                 DebugSolverSettings;
-        bool                                        bFlipNormalY = true;
-        float                                       NormalStrength = 1.0F;
-        float                                       AmbientLight = 0.25F;
-        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters> DebugProfileParameterOverrides;
-        std::vector<VkSemaphore>                                                      RenderFinishedSemaphores;
+        SurfaceState::TSurfaceStateSystem&                   SurfaceStates;
+        GPU::TSwapchain                                      SwapchainData;
+        VkFormat                                             DepthFormat = VK_FORMAT_UNDEFINED;
+        std::vector<std::unique_ptr<GPU::TGPUImage>>         DepthImages;
+        std::vector<std::unique_ptr<GPU::TGPUImageView>>     DepthImageViews;
+        GPU::TRenderPass                                     MainRenderPass;
+        GPU::TGraphicsPass                                   MainGraphicsPass;
+        VkDescriptorSetLayout                                MaterialDescriptorSetLayout = VK_NULL_HANDLE;
+        GPU::TGraphicsPipeline                               StaticMeshPipeline;
+        GPU::TGraphicsPipeline                               WireframePipeline;
+        GPU::TGraphicsPipeline                               GizmoPipeline;
+        GPU::TGraphicsPipeline                               WorldReferencePipeline;
+        std::unique_ptr<GPU::TGPUBuffer>                     GizmoVertexBuffer;
+        std::uint32_t                                        WorldGridVertexCount = 0;
+        std::uint32_t                                        WorldAxisVertexCount = 0;
+        std::uint32_t                                        TranslateGizmoVertexCount = 0;
+        std::uint32_t                                        RotateGizmoVertexCount = 0;
+        bool                                                 bWorldGridVisible = true;
+        bool                                                 bWorldAxisVisible = true;
+        std::unique_ptr<GPU::TGraphicsPipeline>              SurfaceDebugPipeline;
+        std::unique_ptr<SurfaceState::TTexelGeometryPreview> TexelGeometryPreview;
+        std::unique_ptr<GPU::TGraphicsPipeline>              TexelGeometryPipeline;
+        std::unique_ptr<GPU::TGraphicsPipeline>              SurfaceLitPipeline;
+        std::unique_ptr<GPU::TGraphicsPipeline>              BaseSurfaceLitPipeline;
+        std::unique_ptr<SurfaceState::TTexelGeometryPreview> MudLayerGeometry;
+        std::unique_ptr<SurfaceState::TTexelGeometryPreview> WaterLayerGeometry;
+        std::unique_ptr<SurfaceState::TTexelGeometryPreview> LavaLayerGeometry;
+        std::unique_ptr<THeightFieldSmoothing>               HeightFieldSmoothing;
+        std::unique_ptr<TAccumulationOverlaySides>           OverlaySides;
+        std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlayTopPipeline;
+        std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlaySidePipeline;
+        std::unique_ptr<GPU::TGraphicsPipeline>              WaterOverlayTopPipeline;
+        std::unique_ptr<GPU::TGraphicsPipeline>              WaterOverlaySidePipeline;
+        std::unique_ptr<GPU::TGraphicsPipeline>              LavaOverlayTopPipeline;
+        std::unique_ptr<GPU::TGraphicsPipeline>              LavaOverlaySidePipeline;
+        GPU::TFramebuffer                                    MainFramebuffers;
+        TRenderContext                                       FrameContext;
+        VkDescriptorPool                                     MaterialDescriptorPool = VK_NULL_HANDLE;
+        std::vector<TMaterialRenderResource>                 MaterialResources;
+        VkDeviceSize                                         MaterialUniformStride = 0;
+        std::size_t                                          MaterialViewportCapacity = 1;
+        TRenderViewMode                                      ViewMode = TRenderViewMode::Lit;
+        bool                                                 bWireframeUniformWhite = true;
+        bool                                                 bSupportsWireframeLineWidth = false;
+        float                                                WireframeLineWidth = 2.0F;
+        float                                                WireframeLineWidthMin = 1.0F;
+        float                                                WireframeLineWidthMax = 1.0F;
+        std::uint32_t                                        DebugStateChannel = 0;
+        bool                                                 bStateHeatmapReliefShadingEnabled = true;
+        TSurfaceDebugDisplaySettings                         SurfaceDebugSettings;
+        TDemoSurfaceEffectSettings                           DemoEffects;
+        TOverlayDrawProfilingMode                            OverlayDrawProfilingMode = TOverlayDrawProfilingMode::Both;
+        TOverlayOccupancyTileSize OverlayOccupancyTileSize = TOverlayOccupancyTileSize::Tile16;
+        std::optional<SurfaceState::TSurfaceTexelSelection> InspectedTexel;
+        std::unique_ptr<SurfaceState::TTexelInspector>      TexelInspector;
+        std::uint64_t                                       SimulationStepSerial = 0;
+        std::uint64_t                                       TotalHeightProfileRevision = 0;
+        std::vector<TTotalHeightCacheEntry>                 TotalHeightCacheEntries;
+        bool                                                bTotalHeightCacheHit = false;
+        TSolverTransferWeightView                 SolverTransferWeightView = TSolverTransferWeightView::Combined;
+        std::uint32_t                             TexelGridBlockSize = 8;
+        float                                     TexelAreaReference = 1.0e-4F;
+        SurfaceState::TSurfaceSolverDebugSettings DebugSolverSettings;
+        bool                                      bFlipNormalY = true;
+        float                                     NormalStrength = 1.0F;
+        float                                     AmbientLight = 0.25F;
+        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters>
+                                                                                 DebugProfileParameterOverrides;
+        std::vector<VkSemaphore>                                                 RenderFinishedSemaphores;
         VkQueryPool                                                              TimestampQueryPool = VK_NULL_HANDLE;
         std::array<bool, TRenderContext::MaxFramesInFlight>                      bTimestampQueriesSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             SolverTimestampStepsSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             OverlayTimestampLayersSubmitted{};
         std::array<TOverlayDrawProfilingMode, TRenderContext::MaxFramesInFlight> OverlayDrawModesSubmitted{};
-        SurfaceState::TSimulationClock                                                         SimulationClock;
+        SurfaceState::TSimulationClock                                           SimulationClock;
         std::uint32_t                                                            LastSimulationStepCount = 0;
         float                   MaximumSimulationStep = SurfaceState::FixedSimulationStepSeconds;
         std::uint32_t           TimestampQueriesPerFrame = 21;

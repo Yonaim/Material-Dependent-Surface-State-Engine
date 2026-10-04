@@ -9,16 +9,17 @@
 #include "Application/SceneFileDialog.h"
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
-#include "AssetManager/Loaders/SceneLoader.h"
+#include "GPU/Vulkan/Swapchain/Swapchain.h"
+#include "GPU/Vulkan/VulkanContext.h"
+#include "GPU/Vulkan/VulkanQueue.h"
 #include "InputSystem/Raycaster.h"
 #include "Logger/Logger.h"
 #include "Rendering/Renderer.h"
-#include "GPU/Vulkan/Swapchain/Swapchain.h"
 #include "Scene/Camera.h"
 #include "Scene/Scene.h"
+#include "Scene/SceneLoader.h"
 #include "Scene/StaticMeshInstance.h"
-#include "GPU/Vulkan/VulkanQueue.h"
-#include "GPU/Vulkan/VulkanContext.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -345,12 +346,13 @@ namespace MDSS
         }
     } // 내부 네임스페이스
 
-    TDebugUI::TDebugUI(const GPU::TVulkanContext& Context,
-                       const TWindow&        TWindow,
-                       Rendering::TRenderer&            Renderer,
-                       Asset::TAssetManager&        Assets)
+    TDebugUI::TDebugUI(const GPU::TVulkanContext&         Context,
+                       const TWindow&                     TWindow,
+                       Rendering::TRenderer&              Renderer,
+                       Asset::TAssetManager&              Assets,
+                       SurfaceState::TSurfaceDataManager& SurfaceData)
         : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&Renderer),
-          AssetManager(&Assets)
+          AssetManager(&Assets), SurfaceDataManager(&SurfaceData)
     {
         ResetProfilingAverages();
         bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
@@ -826,7 +828,7 @@ namespace MDSS
 
     void TDebugUI::ResetSurfaceStateSettings()
     {
-        const bool bHasStates = AssetManager->GetSurfaceStateRegistry().GetStateCount() != 0;
+        const bool bHasStates = SurfaceDataManager->GetSurfaceStateRegistry().GetStateCount() != 0;
         InjectState = bHasStates ? 0 : SurfaceState::InvalidStateId;
         DebugState = InjectState;
         DebugParameterState = InjectState;
@@ -849,7 +851,7 @@ namespace MDSS
 
     void TDebugUI::ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path)
     {
-        TScene Loaded = Asset::TSceneLoader::Load(Path, *AssetManager);
+        TScene Loaded = TSceneLoader::Load(Path, *AssetManager, *SurfaceDataManager);
         TScene PreviousScene = SceneData;
         SceneData = std::move(Loaded);
         try
@@ -927,7 +929,7 @@ namespace MDSS
                     {
                         SavePath += ".Scene";
                     }
-                    Asset::TSceneLoader::Save(SceneData, SavePath);
+                    TSceneLoader::Save(SceneData, SavePath);
                     SceneData.SetSourcePath(std::filesystem::absolute(SavePath).lexically_normal());
                     SceneData.CaptureInitialState();
                     SceneStatus = "Saved: " + SavePath.filename().string();
@@ -1665,7 +1667,7 @@ namespace MDSS
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
                                            ImGuiWindowFlags_NoNavFocus;
         Rendering::TRenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode();
-        const auto      GetViewGeometryDescription = [](Rendering::TRenderViewMode Mode) -> const char*
+        const auto                 GetViewGeometryDescription = [](Rendering::TRenderViewMode Mode) -> const char*
         {
             switch (Mode)
             {
@@ -1720,8 +1722,8 @@ namespace MDSS
             else if (CurrentMode >= Rendering::TRenderViewMode::SurfaceStateHeatmap &&
                      CurrentMode < Rendering::TRenderViewMode::SolverTransferWeight)
             {
-                CurrentName =
-                    SurfaceDebugViewNames[CurrentIndex - static_cast<int>(Rendering::TRenderViewMode::SurfaceStateHeatmap)];
+                CurrentName = SurfaceDebugViewNames[CurrentIndex -
+                                                    static_cast<int>(Rendering::TRenderViewMode::SurfaceStateHeatmap)];
             }
             else if (CurrentMode == Rendering::TRenderViewMode::SurfaceAccumulation)
                 CurrentName = "State Height Heatmap";
@@ -1729,7 +1731,8 @@ namespace MDSS
                 CurrentName = "Meso + State Geometry";
             else if (CurrentMode == Rendering::TRenderViewMode::TotalSimulationHeight)
                 CurrentName = "Total Simulation Height";
-            else if (CurrentMode == Rendering::TRenderViewMode::MesoHeight || CurrentMode == Rendering::TRenderViewMode::MesoOffset)
+            else if (CurrentMode == Rendering::TRenderViewMode::MesoHeight ||
+                     CurrentMode == Rendering::TRenderViewMode::MesoOffset)
             {
                 CurrentName = "Meso Geometry";
             }
@@ -1801,9 +1804,9 @@ namespace MDSS
                 const auto SelectDebugView =
                     [&](const char* Name, Rendering::TRenderViewMode Mode, const char* Description = nullptr)
                 {
-                    const bool bMesoGeometry =
-                        Mode == Rendering::TRenderViewMode::MesoHeight &&
-                        (CurrentMode == Rendering::TRenderViewMode::MesoHeight || CurrentMode == Rendering::TRenderViewMode::MesoOffset);
+                    const bool bMesoGeometry = Mode == Rendering::TRenderViewMode::MesoHeight &&
+                                               (CurrentMode == Rendering::TRenderViewMode::MesoHeight ||
+                                                CurrentMode == Rendering::TRenderViewMode::MesoOffset);
                     const bool bSelected = CurrentMode == Mode || bMesoGeometry;
                     const bool bClicked = ImGui::MenuItem(Name);
                     DrawSelectionMark(bSelected);
@@ -1898,7 +1901,7 @@ namespace MDSS
             {
                 ImGui::SameLine(0.0F, 8.0F);
                 const SurfaceState::TSurfaceStateRegistry* Registry =
-                    AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+                    AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
                 const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
                 if (StateCount == 0)
                 {
@@ -1922,7 +1925,7 @@ namespace MDSS
                         for (std::size_t Index = 0; Index < StateCount; ++Index)
                         {
                             const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
-                            const bool     bSelected = State == DebugState;
+                            const bool                   bSelected = State == DebugState;
                             if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                             {
                                 DebugState = State;
@@ -2276,11 +2279,12 @@ namespace MDSS
                         BeginViewContext("OUTGOING FLUX SCALE",
                                          "선택 State 채널의 유출 제한값: 0은 제한, 1은 제한 없음.");
                         const SurfaceState::TSurfaceStateRegistry* Registry =
-                            AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+                            AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
                         if (Registry != nullptr && Registry->GetStateCount() > 0)
                         {
                             const std::size_t StateCount = Registry->GetStateCount();
-                            DebugState = std::min<SurfaceState::TStateId>(DebugState, static_cast<SurfaceState::TStateId>(StateCount - 1));
+                            DebugState = std::min<SurfaceState::TStateId>(
+                                DebugState, static_cast<SurfaceState::TStateId>(StateCount - 1));
                             ImGui::AlignTextToFramePadding();
                             ImGui::TextUnformatted("State");
                             ImGui::SameLine(0.0F, 6.0F);
@@ -2290,7 +2294,7 @@ namespace MDSS
                                 for (std::size_t Index = 0; Index < StateCount; ++Index)
                                 {
                                     const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
-                                    const bool     bSelected = State == DebugState;
+                                    const bool                   bSelected = State == DebugState;
                                     if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                                     {
                                         DebugState = State;
@@ -2383,8 +2387,8 @@ namespace MDSS
                         ImGui::SetNextItemWidth(150.0F);
                         if (ImGui::Combo("Representation", &Representation, "Height Color\0Displacement\0"))
                         {
-                            CurrentMode =
-                                Representation == 0 ? Rendering::TRenderViewMode::MesoHeight : Rendering::TRenderViewMode::MesoOffset;
+                            CurrentMode = Representation == 0 ? Rendering::TRenderViewMode::MesoHeight
+                                                              : Rendering::TRenderViewMode::MesoOffset;
                             FrameRenderer->SetRenderViewMode(CurrentMode);
                         }
                         if (CurrentMode == Rendering::TRenderViewMode::MesoHeight)
@@ -2676,7 +2680,8 @@ namespace MDSS
 
     void TDebugUI::DrawTotalHeightCacheOverlay()
     {
-        if (FrameRenderer == nullptr || FrameRenderer->GetRenderViewMode() != Rendering::TRenderViewMode::TotalSimulationHeight ||
+        if (FrameRenderer == nullptr ||
+            FrameRenderer->GetRenderViewMode() != Rendering::TRenderViewMode::TotalSimulationHeight ||
             !FrameRenderer->WasTotalHeightCacheHit())
             return;
 
@@ -2744,14 +2749,14 @@ namespace MDSS
                 ResetProfilingAverages();
                 bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
             }
-            const ImGuiIO&                 IO = ImGui::GetIO();
-            const double                   FrameSeconds = static_cast<double>(IO.DeltaTime);
+            const ImGuiIO&                            IO = ImGui::GetIO();
+            const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
             const Rendering::TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
-            const bool                     bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
-            const float                    FeedbackGpuMilliseconds =
+            const bool  bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
+            const float FeedbackGpuMilliseconds =
                 Stats.AccumulationGeometryGpuMilliseconds >= 0.0F && Stats.TransferWeightGpuMilliseconds >= 0.0F
-                                       ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds
-                                       : -1.0F;
+                    ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds
+                    : -1.0F;
             const auto SolverMetric = [&](float Milliseconds)
             {
                 if (!bSolverMetricsPerStep)
@@ -2894,14 +2899,16 @@ namespace MDSS
                 ImGui::SetNextItemWidth(125.0F);
                 if (ImGui::Combo("##OverlayDrawTest", &OverlayDrawMode, "Both\0Top only\0Sides only\0"))
                 {
-                    FrameRenderer->SetOverlayDrawProfilingMode(static_cast<Rendering::TOverlayDrawProfilingMode>(OverlayDrawMode));
+                    FrameRenderer->SetOverlayDrawProfilingMode(
+                        static_cast<Rendering::TOverlayDrawProfilingMode>(OverlayDrawMode));
                     ResetProfilingAverages();
                 }
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("오버레이 그리기 호출만 바뀌며 렌더 준비는 계속 수행됩니다. "
                                       "각 모드에서 새 평균을 수집한 뒤 Render 패스를 비교하세요.");
                 int OccupancyTile =
-                    FrameRenderer->GetOverlayOccupancyTileSize() == Rendering::TOverlayOccupancyTileSize::Tile32 ? 1 : 0;
+                    FrameRenderer->GetOverlayOccupancyTileSize() == Rendering::TOverlayOccupancyTileSize::Tile32 ? 1
+                                                                                                                 : 0;
                 ImGui::TextDisabled("Active tile");
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(125.0F);
@@ -2911,8 +2918,9 @@ namespace MDSS
                                  "32 x 32\0"))
                 {
                     bFrameTimeResetRequested = true;
-                    FrameRenderer->SetOverlayOccupancyTileSize(OccupancyTile == 1 ? Rendering::TOverlayOccupancyTileSize::Tile32
-                                                                                  : Rendering::TOverlayOccupancyTileSize::Tile16);
+                    FrameRenderer->SetOverlayOccupancyTileSize(OccupancyTile == 1
+                                                                   ? Rendering::TOverlayOccupancyTileSize::Tile32
+                                                                   : Rendering::TOverlayOccupancyTileSize::Tile16);
                     ResetProfilingAverages();
                 }
                 if (ImGui::IsItemHovered())
@@ -3331,7 +3339,7 @@ namespace MDSS
 
     void TDebugUI::DrawDebugStateSelector()
     {
-        const auto& Registry = AssetManager->GetSurfaceStateRegistry();
+        const auto& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
         if (Registry.GetStateCount() == 0)
         {
             ImGui::TextDisabled("등록된 State 없음");
@@ -3576,7 +3584,8 @@ namespace MDSS
 
     void TDebugUI::DrawSolverTab()
     {
-        const auto DrawSolverTerm = [this](SurfaceState::TSurfaceSolverTerm Term, const char* Label, const char* Description)
+        const auto DrawSolverTerm =
+            [this](SurfaceState::TSurfaceSolverTerm Term, const char* Label, const char* Description)
         {
             bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
             if (ImGui::Checkbox(Label, &bEnabled))
@@ -3678,10 +3687,10 @@ namespace MDSS
         if (ImGui::CollapsingHeader("Diagnostics"))
         {
             const SurfaceState::TSurfaceGPUResourceManager& GPUResources = FrameRenderer->GetSurfaceGPUResources();
-            std::size_t                       TotalTexels = 0;
-            std::size_t                       ValidTexels = 0;
-            std::optional<bool>               FirstCurrentAB;
-            bool                              bMixedCurrentBuffers = false;
+            std::size_t                                     TotalTexels = 0;
+            std::size_t                                     ValidTexels = 0;
+            std::optional<bool>                             FirstCurrentAB;
+            bool                                            bMixedCurrentBuffers = false;
             for (std::size_t SceneIndex = 0; SceneIndex < GPUResources.GetSceneInstanceCount(); ++SceneIndex)
             {
                 if (GPUResources.GetInstanceDescriptors(SceneIndex) == nullptr)
@@ -3735,7 +3744,7 @@ namespace MDSS
         ImGui::TextDisabled("Crosshair hit → triangle → UV → simulation texel.");
 
         const SurfaceState::TSurfaceStateRegistry* InjectRegistry =
-            AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+            AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
         const std::size_t InjectStateCount = InjectRegistry != nullptr ? InjectRegistry->GetStateCount() : 0;
         if (InjectStateCount == 0)
         {
@@ -3758,9 +3767,9 @@ namespace MDSS
             {
                 for (std::size_t Index = 0; Index < InjectStateCount; ++Index)
                 {
-                    const SurfaceState::TStateId     State = static_cast<SurfaceState::TStateId>(Index);
-                    const std::string& Name = InjectRegistry->GetStateName(State);
-                    const bool         bSelected = State == InjectState;
+                    const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                    const std::string&           Name = InjectRegistry->GetStateName(State);
+                    const bool                   bSelected = State == InjectState;
                     if (ImGui::Selectable(Name.c_str(), bSelected))
                     {
                         InjectState = State;
@@ -3805,12 +3814,12 @@ namespace MDSS
         std::vector<Asset::TSRProfileAssetHandle> SceneProfiles;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
-            const Asset::TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
-            if (!AssetManager->HasSurfaceData(SurfaceData))
+            const SurfaceState::TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
+            if (!SurfaceDataManager->HasSurfaceData(SurfaceData))
             {
                 continue;
             }
-            for (Asset::TSRProfileAssetHandle Profile : AssetManager->GetSurfaceProfileTable(SurfaceData))
+            for (Asset::TSRProfileAssetHandle Profile : SurfaceDataManager->GetSurfaceProfileTable(SurfaceData))
             {
                 if (std::find(SceneProfiles.begin(), SceneProfiles.end(), Profile) == SceneProfiles.end())
                 {
@@ -3852,8 +3861,8 @@ namespace MDSS
             EndLabeledCombo();
         }
 
-        const SurfaceState::TSurfaceStateRegistry& Registry = AssetManager->GetSurfaceStateRegistry();
-        const std::size_t            StateCount = Registry.GetStateCount();
+        const SurfaceState::TSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
+        const std::size_t                          StateCount = Registry.GetStateCount();
         if (StateCount == 0)
         {
             ImGui::TextDisabled("No State channels are registered.");
@@ -3871,9 +3880,9 @@ namespace MDSS
         {
             for (std::size_t Index = 0; Index < StateCount; ++Index)
             {
-                const SurfaceState::TStateId     State = static_cast<SurfaceState::TStateId>(Index);
-                const std::string& Name = Registry.GetStateName(State);
-                const bool         bSelected = State == DebugParameterState;
+                const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                const std::string&           Name = Registry.GetStateName(State);
+                const bool                   bSelected = State == DebugParameterState;
                 if (ImGui::Selectable(Name.c_str(), bSelected))
                 {
                     DebugParameterState = State;
@@ -3886,7 +3895,8 @@ namespace MDSS
             EndLabeledCombo();
         }
 
-        const std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> Key{DebugParameterProfile, DebugParameterState};
+        const std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> Key{DebugParameterProfile,
+                                                                                  DebugParameterState};
         if (ParameterDraftKey != Key)
         {
             ParameterStatus.clear();

@@ -3,10 +3,11 @@
  * @brief TScene JSON 파싱, 경로 해석과 Asset 연결.
  */
 
-#include "AssetManager/Loaders/SceneLoader.h"
+#include "Scene/SceneLoader.h"
 
 #include "AssetManager/Core/AssetManager.h"
 #include "Scene/StaticMeshInstance.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 #include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <cmath>
@@ -18,7 +19,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace MDSS::Asset
+namespace MDSS
 {
     namespace
     {
@@ -160,7 +161,9 @@ namespace MDSS::Asset
         }
     } // namespace
 
-    TScene TSceneLoader::Load(const std::filesystem::path& Path, TAssetManager& Assets)
+    TScene TSceneLoader::Load(const std::filesystem::path&       Path,
+                              Asset::TAssetManager&              Assets,
+                              SurfaceState::TSurfaceDataManager& SurfaceData)
     {
         std::ifstream Input(Path);
         if (!Input)
@@ -231,10 +234,10 @@ namespace MDSS::Asset
             }
             const std::filesystem::path MeshPath =
                 ResolveScenePath(SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
-            const TMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
+            const Asset::TMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
 
-            TSurfaceRuntimeDataHandle SurfaceDataHandle = InvalidSurfaceRuntimeDataHandle;
-            std::filesystem::path     DistributionPath;
+            SurfaceState::TSurfaceRuntimeDataHandle SurfaceDataHandle = SurfaceState::InvalidSurfaceRuntimeDataHandle;
+            std::filesystem::path                   DistributionPath;
             if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
             {
                 if (!Distribution->is_string() || Distribution->get_ref<const std::string&>().empty())
@@ -244,7 +247,7 @@ namespace MDSS::Asset
                 DistributionPath = ResolveScenePath(
                     SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
                 SurfaceDataHandle =
-                    Assets.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
+                    SurfaceData.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
             }
 
             TTransform Transform;
@@ -356,4 +359,4 @@ namespace MDSS::Asset
             throw std::runtime_error("Failed while writing Scene file: " + AbsolutePath.string());
         }
     }
-} // namespace MDSS::Asset
+} // namespace MDSS

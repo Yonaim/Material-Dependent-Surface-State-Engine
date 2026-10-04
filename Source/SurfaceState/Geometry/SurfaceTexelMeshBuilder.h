@@ -41,7 +41,7 @@ namespace MDSS::SurfaceState
     /** @brief Refine source triangles with texel centers; preserve and weld source seam boundaries.
      *  Without source topology, connect the supplied same-chart grid (synthetic geometry fixtures).
      */
-    [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&    Geometry,
+    [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
                                                           std::span<const Asset::TVertex>             Vertices = {},
                                                           std::span<const Asset::TMeshTriangleSource> Triangles = {});
 }

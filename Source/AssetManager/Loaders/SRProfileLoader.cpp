@@ -185,8 +185,10 @@ namespace MDSS::Asset
             {
                 const TJson&      Transition = Transitions[Index];
                 const std::string JsonPath = "transitions[" + std::to_string(Index) + "]";
-                const std::string SourceName = SurfaceState::NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
-                const std::string TargetName = SurfaceState::NormalizeSurfaceStateName(ReadString(Transition, "target", JsonPath));
+                const std::string SourceName =
+                    SurfaceState::NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
+                const std::string TargetName =
+                    SurfaceState::NormalizeSurfaceStateName(ReadString(Transition, "target", JsonPath));
                 if (SourceName.empty() || TargetName.empty())
                 {
                     throw std::invalid_argument(JsonPath + " source and target must not be empty.");
@@ -213,8 +215,8 @@ namespace MDSS::Asset
 
         try
         {
-            const TJson                 Root = TJson::parse(File);
-            std::string                 Name;
+            const TJson                               Root = TJson::parse(File);
+            std::string                               Name;
             SurfaceState::TSurfaceResponseProfileData Data = ParseProfile(Root, Name);
             return std::make_unique<TSRProfileAsset>(ID, std::move(Name), Path, std::move(Data));
         }

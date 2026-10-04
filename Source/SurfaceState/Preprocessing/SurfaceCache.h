@@ -35,13 +35,13 @@ namespace MDSS::SurfaceState
          * SRProfile response parameters and Registry channels are deliberately excluded.
          */
         [[nodiscard]] static TSurfaceCacheDescriptor
-        Describe(std::span<const Asset::TVertex>               Vertices,
-                 std::span<const Asset::TMeshTriangleSource>   Triangles,
-                 std::vector<TSurfaceDefinition>        Surfaces,
-                 std::span<const std::filesystem::path> NormalMapPaths,
-                 const std::filesystem::path&           DistributionPath,
-                 std::vector<std::filesystem::path>     ProfilePaths,
-                 std::span<const TSurfaceProfileIndex>  ProfileIndicesBySurface);
+        Describe(std::span<const Asset::TVertex>             Vertices,
+                 std::span<const Asset::TMeshTriangleSource> Triangles,
+                 std::vector<TSurfaceDefinition>             Surfaces,
+                 std::span<const std::filesystem::path>      NormalMapPaths,
+                 const std::filesystem::path&                DistributionPath,
+                 std::vector<std::filesystem::path>          ProfilePaths,
+                 std::span<const TSurfaceProfileIndex>       ProfileIndicesBySurface);
 
         /** @brief Stable Mesh/Map identity directory; retain separate resolution variants. */
         [[nodiscard]] static std::filesystem::path GetPath(const std::filesystem::path& CacheRoot,

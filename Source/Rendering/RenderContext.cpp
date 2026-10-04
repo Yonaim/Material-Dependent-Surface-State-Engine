@@ -5,8 +5,8 @@
 
 #include "Rendering/RenderContext.h"
 
-#include "Logger/Logger.h"
 #include "GPU/Vulkan/VulkanContext.h"
+#include "Logger/Logger.h"
 
 #include <limits>
 #include <stdexcept>

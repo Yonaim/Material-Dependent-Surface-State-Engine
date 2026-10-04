@@ -66,7 +66,7 @@ namespace MDSS::SurfaceState
         void Destroy() noexcept;
         struct TFrame
         {
-            std::unique_ptr<GPU::TGPUBuffer>          Buffer;
+            std::unique_ptr<GPU::TGPUBuffer>     Buffer;
             VkDescriptorSet                      Set = VK_NULL_HANDLE;
             std::optional<TSurfaceTexelSnapshot> Pending;
             std::uint64_t                        Generation = 0;

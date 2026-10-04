@@ -4,16 +4,16 @@
  */
 #include "AssetManager/Assets/MeshSourceData.h"
 #include "AssetManager/Assets/TextureAsset.h"
-#include "Rendering/AccumulationOverlaySides.h"
 #include "GPU/Vulkan/Pipeline/GraphicsPipeline.h"
+#include "GPU/Vulkan/Resource/GPUImage.h"
+#include "GPU/Vulkan/Resource/GPUImageView.h"
+#include "GPU/Vulkan/VulkanContext.h"
+#include "Rendering/AccumulationOverlaySides.h"
 #include "Rendering/HeightFieldSmoothing.h"
 #include "Rendering/Renderer.h"
 #include "SurfaceState/Debug/TexelGeometryPreview.h"
 #include "SurfaceState/Debug/TexelInspector.h"
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
-#include "GPU/Vulkan/Resource/GPUImage.h"
-#include "GPU/Vulkan/Resource/GPUImageView.h"
-#include "GPU/Vulkan/VulkanContext.h"
 
 #include <algorithm>
 #include <array>
@@ -80,13 +80,14 @@ namespace MDSS::Tests
             float         ReliefShadingEnabled = 0.0F;
             glm::vec4     DebugOptions{4.0F, 0.01F, 1.0F, 1.0F};
             glm::uvec4    DebugFlags{0};
-            glm::uvec4    DemoStateChannels{SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 1U};
-            glm::vec4     DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
-            glm::vec4     DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
-            glm::vec4     WetnessTint{0.44F, 0.56F, 0.68F, 1.0F};
-            glm::vec4     WaterFilmTint{0.35F, 0.53F, 0.68F, 1.0F};
-            glm::uvec4    DemoExtraStateChannels{SurfaceState::InvalidStateId, 0U, 0U, 0U};
-            glm::vec4     CameraPosition{-0.35F, -0.55F, 1.0F, 1.0F};
+            glm::uvec4    DemoStateChannels{
+                SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 1U};
+            glm::vec4  DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
+            glm::vec4  DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
+            glm::vec4  WetnessTint{0.44F, 0.56F, 0.68F, 1.0F};
+            glm::vec4  WaterFilmTint{0.35F, 0.53F, 0.68F, 1.0F};
+            glm::uvec4 DemoExtraStateChannels{SurfaceState::InvalidStateId, 0U, 0U, 0U};
+            glm::vec4  CameraPosition{-0.35F, -0.55F, 1.0F, 1.0F};
         };
         static_assert(sizeof(TUniform) == 192);
 
@@ -114,32 +115,32 @@ namespace MDSS::Tests
         }
         Geometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(8, 0));
         SurfaceState::TSurfaceResponseProfileData Profile;
-        auto                        Parameters = SurfaceState::TSurfaceStateParameters{};
+        auto                                      Parameters = SurfaceState::TSurfaceStateParameters{};
         Parameters.AccumulationFactor = 1.0F;
         Profile.States.emplace("test", Parameters);
         const SurfaceState::TSurfaceStateRegistry        Registry({Profile});
         SurfaceState::TSurfaceSharedGeometryGPUResources Shared(Context.GetPhysicalDevice(), Device, Geometry);
-        SurfaceState::TSurfaceProfileGPUResources        Profiles(Context.GetPhysicalDevice(), Device, {Profile}, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources       Instance(Context.GetPhysicalDevice(),
-                                              Device,
-                                              8,
-                                              1,
-                                              std::vector<float>(8 * SurfaceNeighborCount, 0.0F),
-                                                    {},
-                                              std::vector<float>(8, SurfaceStateReferenceArea));
-        SurfaceState::TSurfaceStateDescriptorResources   Descriptors(Device, Shared, Profiles, Instance);
+        SurfaceState::TSurfaceProfileGPUResources  Profiles(Context.GetPhysicalDevice(), Device, {Profile}, Registry);
+        SurfaceState::TSurfaceInstanceGPUResources Instance(Context.GetPhysicalDevice(),
+                                                            Device,
+                                                            8,
+                                                            1,
+                                                            std::vector<float>(8 * SurfaceNeighborCount, 0.0F),
+                                                            {},
+                                                            std::vector<float>(8, SurfaceStateReferenceArea));
+        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Device, Shared, Profiles, Instance);
         TTexelGeometryPreview     Preview(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1, true);
         TAccumulationOverlaySides Sides(
             Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), Preview.GetOutputLayout(), 1);
         std::array<VkDrawIndirectCommand, 3> Draws{};
-        GPU::TGPUBuffer                           Readback(
+        GPU::TGPUBuffer                      Readback(
             Context.GetPhysicalDevice(), Device, sizeof(Draws), VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
         std::array<VkDrawIndexedIndirectCommand, 2> TopDraws{};
-        GPU::TGPUBuffer                                  TopReadback(
+        GPU::TGPUBuffer                             TopReadback(
             Context.GetPhysicalDevice(), Device, sizeof(TopDraws), VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
         std::array<TTexelGeometryVertex, 8>          Computed{};
         TAccumulationOverlaySides::TTriangleActivity Activity{};
-        GPU::TGPUBuffer                                   GeometryReadback(
+        GPU::TGPUBuffer                              GeometryReadback(
             Context.GetPhysicalDevice(), Device, sizeof(Computed), VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostMemory);
         const auto Run = [&](const std::array<float, 8>& State)
         {
@@ -293,18 +294,18 @@ namespace MDSS::Tests
         Profile.States.emplace("mud", Parameters);
         const SurfaceState::TSurfaceStateRegistry        Registry({Profile});
         SurfaceState::TSurfaceSharedGeometryGPUResources Shared(Context.GetPhysicalDevice(), Device, Geometry);
-        SurfaceState::TSurfaceProfileGPUResources        Profiles(Context.GetPhysicalDevice(), Device, {Profile}, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources       Instance(Context.GetPhysicalDevice(),
-                                              Device,
-                                              4,
-                                              1,
-                                              std::vector<float>(4 * SurfaceNeighborCount, 0.0F),
-                                                    {},
-                                              std::vector<float>(4, SurfaceStateReferenceArea));
-        SurfaceState::TSurfaceStateDescriptorResources   Descriptors(Device, Shared, Profiles, Instance);
-        TTexelInspector                    Inspector(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1);
-        const SurfaceState::TSurfaceTexelSelection       Selection{0, 0, 0, 0, {0, 0}, "mud"};
-        const auto                         Sample = [&](float DisplayScale)
+        SurfaceState::TSurfaceProfileGPUResources  Profiles(Context.GetPhysicalDevice(), Device, {Profile}, Registry);
+        SurfaceState::TSurfaceInstanceGPUResources Instance(Context.GetPhysicalDevice(),
+                                                            Device,
+                                                            4,
+                                                            1,
+                                                            std::vector<float>(4 * SurfaceNeighborCount, 0.0F),
+                                                            {},
+                                                            std::vector<float>(4, SurfaceStateReferenceArea));
+        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Device, Shared, Profiles, Instance);
+        TTexelInspector Inspector(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1);
+        const SurfaceState::TSurfaceTexelSelection Selection{0, 0, 0, 0, {0, 0}, "mud"};
+        const auto                                 Sample = [&](float DisplayScale)
         {
             auto Command = Context.GetCommands().BeginSingleTime();
             Inspector.Record(Command, 0, Descriptors, Selection, 0, 1, DisplayScale, glm::mat4(1.0F), true, 1);
@@ -350,15 +351,15 @@ namespace MDSS::Tests
         for (std::size_t I = 1; I < Scalars.size(); ++I)
             Scalars[I].MesoVirtualHeight = -0.02F;
         Shared.GetGeometryScalarBuffer().Upload(Scalars.data(), sizeof(Scalars));
-        TTexelGeometryPreview Preview(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1, true);
+        TTexelGeometryPreview            Preview(Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), 1, true);
         Rendering::THeightFieldSmoothing Smoothing(
             Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), Preview.GetOutputLayout(), 1);
         std::array<TTexelGeometryVertex, 4> Smoothed{};
-        GPU::TGPUBuffer                          Readback(Context.GetPhysicalDevice(),
-                            Device,
-                            sizeof(Smoothed),
-                            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        GPU::TGPUBuffer                     Readback(Context.GetPhysicalDevice(),
+                                 Device,
+                                 sizeof(Smoothed),
+                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         auto                                Command = Context.GetCommands().BeginSingleTime();
         Preview.Record(Command, 0, Descriptors, 4, 0, 1, 4.0F, 1.0F, glm::mat4(1.0F), true, true);
         Smoothing.Record(
@@ -411,38 +412,40 @@ namespace MDSS::Tests
         constexpr VkExtent2D Extent{256, 256};
         constexpr VkFormat   Format = VK_FORMAT_R32G32B32A32_SFLOAT;
         constexpr auto       HostMemory = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        GPU::TGPUImage            Image(Context.GetPhysicalDevice(),
-                        Device,
-                        Extent,
-                        Format,
-                        VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        GPU::TGPUImageView        View(Device, Image.GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
-        GPU::TGPUBuffer           Readback(Context.GetPhysicalDevice(),
-                            Device,
-                            Extent.width * Extent.height * sizeof(glm::vec4),
-                            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                            HostMemory);
-        GPU::TGPUBuffer           UniformBuffer(
+        GPU::TGPUImage       Image(Context.GetPhysicalDevice(),
+                             Device,
+                             Extent,
+                             Format,
+                             VK_IMAGE_TILING_OPTIMAL,
+                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        GPU::TGPUImageView   View(Device, Image.GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
+        GPU::TGPUBuffer      Readback(Context.GetPhysicalDevice(),
+                                 Device,
+                                 Extent.width * Extent.height * sizeof(glm::vec4),
+                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                 HostMemory);
+        GPU::TGPUBuffer      UniformBuffer(
             Context.GetPhysicalDevice(), Device, sizeof(TUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, HostMemory);
         GPU::TGPUBuffer Vertices(
             Context.GetPhysicalDevice(), Device, 6 * sizeof(TVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, HostMemory);
 
         // Deliberately use invalid simulation texels: geometric diagnostics must still show the mesh.
         TSharedSurfaceGeometryData Geometry({{0, {2, 2}}});
-        Geometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(4, SurfaceState::InvalidSurfaceProfileIndex));
+        Geometry.SetProfileMap(
+            std::vector<SurfaceState::TSurfaceProfileIndex>(4, SurfaceState::InvalidSurfaceProfileIndex));
         SurfaceState::TSurfaceResponseProfileData Profile;
         Profile.States.emplace("test", SurfaceState::TSurfaceStateParameters{});
         const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{Profile};
         const SurfaceState::TSurfaceStateRegistry                    Registry(ProfileTable);
-        SurfaceState::TSurfaceSharedGeometryGPUResources             Shared(Context.GetPhysicalDevice(), Device, Geometry);
-        SurfaceState::TSurfaceProfileGPUResources  Profiles(Context.GetPhysicalDevice(), Device, ProfileTable, Registry);
+        SurfaceState::TSurfaceSharedGeometryGPUResources Shared(Context.GetPhysicalDevice(), Device, Geometry);
+        SurfaceState::TSurfaceProfileGPUResources Profiles(Context.GetPhysicalDevice(), Device, ProfileTable, Registry);
         SurfaceState::TSurfaceInstanceGPUResources Instance(
             Context.GetPhysicalDevice(), Device, 4, 1, std::vector<float>(4 * SurfaceNeighborCount, 0.0F));
         SurfaceState::TSurfaceStateDescriptorResources SurfaceDescriptors(Device, Shared, Profiles, Instance);
-        Asset::TextureAsset   WhiteTexture(0, "white", {}, Context, 1, 1, {255, 255, 255, 255}, VK_FORMAT_R8G8B8A8_UNORM);
-        Asset::TextureAsset   FlatNormalTexture(1, "flat", {}, Context, 1, 1, {128, 128, 255, 255}, VK_FORMAT_R8G8B8A8_UNORM);
+        Asset::TextureAsset WhiteTexture(0, "white", {}, Context, 1, 1, {255, 255, 255, 255}, VK_FORMAT_R8G8B8A8_UNORM);
+        Asset::TextureAsset FlatNormalTexture(
+            1, "flat", {}, Context, 1, 1, {128, 128, 255, 255}, VK_FORMAT_R8G8B8A8_UNORM);
         TRenderHandles Handles{Device};
 
         VkAttachmentDescription Attachment{};
@@ -723,9 +726,9 @@ namespace MDSS::Tests
         Require(Near(Pixel(FillView), Pixel(Render(TRenderViewMode::SurfaceAccumulation, 2, 0))),
                 "Cavity Fill must keep a fixed 0-1 range independent of height range.");
 
-        TTexelInspector              Inspector(Context.GetPhysicalDevice(), Device, SurfaceDescriptors.GetLayout(), 2);
+        TTexelInspector Inspector(Context.GetPhysicalDevice(), Device, SurfaceDescriptors.GetLayout(), 2);
         const SurfaceState::TSurfaceTexelSelection Selection{0, 0, 0, 0, {0, 0}, "test"};
-        const auto                   Sample =
+        const auto                                 Sample =
             [&](bool bAB = true, std::uint32_t Channel = 0, float DisplayScale = 1.0F, std::uint64_t Step = 1)
         {
             auto Command = Context.GetCommands().BeginSingleTime();
@@ -801,15 +804,15 @@ namespace MDSS::Tests
         GridGeometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(9, 0));
         SurfaceState::TSurfaceSharedGeometryGPUResources GridShared(Context.GetPhysicalDevice(), Device, GridGeometry);
         SurfaceState::TSurfaceInstanceGPUResources       GridInstance(Context.GetPhysicalDevice(),
-                                                  Device,
-                                                  9,
-                                                  1,
-                                                  std::vector<float>(9 * SurfaceNeighborCount, 0),
-                                                        {},
-                                                  std::vector<float>(9, SurfaceStateReferenceArea));
+                                                                Device,
+                                                                9,
+                                                                1,
+                                                                std::vector<float>(9 * SurfaceNeighborCount, 0),
+                                                                      {},
+                                                                std::vector<float>(9, SurfaceStateReferenceArea));
         SurfaceState::TSurfaceStateDescriptorResources   GridDescriptors(Device, GridShared, Profiles, GridInstance);
-        TTexelGeometryPreview              Preview(Context.GetPhysicalDevice(), Device, GridDescriptors.GetLayout(), 1);
-        auto                               GridConfig = Config;
+        TTexelGeometryPreview Preview(Context.GetPhysicalDevice(), Device, GridDescriptors.GetLayout(), 1);
+        auto                  GridConfig = Config;
         GridConfig.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Debug/TexelGeometry.vert.spv";
         using V = SurfaceState::TSurfaceTexelMeshVertex;
         GridConfig.VertexBindings = {{0, sizeof(V), VK_VERTEX_INPUT_RATE_VERTEX}};
@@ -832,19 +835,20 @@ namespace MDSS::Tests
         LitProfile.States.emplace("mud", LitParameters);
         LitProfile.States.emplace("wetness", LitParameters);
         const SurfaceState::TSurfaceStateRegistry LitRegistry({LitProfile});
-        const auto                  LitBindings = ResolveDemoSurfaceStates(LitRegistry);
+        const auto                                LitBindings = ResolveDemoSurfaceStates(LitRegistry);
         Require(LitBindings.Mud == 1 && LitBindings.Wetness == 2,
                 "Demo bindings must follow dynamically assigned Registry IDs.");
-        SurfaceState::TSurfaceProfileGPUResources      LitProfiles(Context.GetPhysicalDevice(), Device, {LitProfile}, LitRegistry);
+        SurfaceState::TSurfaceProfileGPUResources LitProfiles(
+            Context.GetPhysicalDevice(), Device, {LitProfile}, LitRegistry);
         SurfaceState::TSurfaceInstanceGPUResources     LitInstance(Context.GetPhysicalDevice(),
-                                                 Device,
-                                                 9,
-                                                 3,
-                                                 std::vector<float>(9 * SurfaceNeighborCount, 0),
-                                                     {},
-                                                 std::vector<float>(9, SurfaceStateReferenceArea));
+                                                               Device,
+                                                               9,
+                                                               3,
+                                                               std::vector<float>(9 * SurfaceNeighborCount, 0),
+                                                                   {},
+                                                               std::vector<float>(9, SurfaceStateReferenceArea));
         SurfaceState::TSurfaceStateDescriptorResources LitDescriptors(Device, GridShared, LitProfiles, LitInstance);
-        auto                             LitConfig = GridConfig;
+        auto                                           LitConfig = GridConfig;
         LitConfig.ShaderStages[0].ShaderPath =
             std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.vert.spv";
         LitConfig.ShaderStages[1].ShaderPath =
@@ -852,10 +856,10 @@ namespace MDSS::Tests
         GPU::TGraphicsPipeline LitPipeline(Device, Handles.Pass, LitConfig);
 
         GPU::TGPUBuffer VertexReadback(Context.GetPhysicalDevice(),
-                                  Device,
-                                  9 * sizeof(TTexelGeometryVertex),
-                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                  HostMemory);
+                                       Device,
+                                       9 * sizeof(TTexelGeometryVertex),
+                                       VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                       HostMemory);
         Parameters.AccumulationFactor = 1;
         Parameters.CavityFillFactor = 0;
         Parameters.ThicknessPerAmount = 0.1F;

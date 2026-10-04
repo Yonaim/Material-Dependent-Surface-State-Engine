@@ -34,11 +34,11 @@ namespace MDSS::SurfaceState
         }
 
         std::unique_ptr<GPU::TGPUBuffer> CreateUploadedBuffer(VkPhysicalDevice PhysicalDevice,
-                                                         VkDevice         Device,
-                                                         const void*      Data,
-                                                         std::size_t      ElementCount,
-                                                         std::size_t      ElementStride,
-                                                         std::size_t      MaxStorageBufferRange)
+                                                              VkDevice         Device,
+                                                              const void*      Data,
+                                                              std::size_t      ElementCount,
+                                                              std::size_t      ElementStride,
+                                                              std::size_t      MaxStorageBufferRange)
         {
             const std::size_t ByteSize =
                 GetSurfaceGPUBufferByteSize(ElementCount, ElementStride, MaxStorageBufferRange);
@@ -49,10 +49,10 @@ namespace MDSS::SurfaceState
         }
 
         std::unique_ptr<GPU::TGPUBuffer> CreateZeroedScalarBuffer(VkPhysicalDevice   PhysicalDevice,
-                                                             VkDevice           Device,
-                                                             std::size_t        ScalarCount,
-                                                             std::size_t        MaxStorageBufferRange,
-                                                             VkBufferUsageFlags Usage = StorageUsage)
+                                                                  VkDevice           Device,
+                                                                  std::size_t        ScalarCount,
+                                                                  std::size_t        MaxStorageBufferRange,
+                                                                  VkBufferUsageFlags Usage = StorageUsage)
         {
             const std::size_t ByteSize = GetSurfaceGPUBufferByteSize(ScalarCount, sizeof(float), MaxStorageBufferRange);
             std::vector<float> Zeros(ScalarCount, 0.0F);
@@ -65,12 +65,12 @@ namespace MDSS::SurfaceState
     } // 내부 네임스페이스
 
     TSurfaceSharedGeometryGPUResources::TSurfaceSharedGeometryGPUResources(
-        VkPhysicalDevice                      PhysicalDevice,
-        VkDevice                              Device,
-        const TSharedSurfaceGeometryData&     Geometry,
-        std::span<const TSurfaceProfileIndex> ProfileIndexRemap,
-        std::span<const Asset::TVertex>              SourceVertices,
-        std::span<const Asset::TMeshTriangleSource>  SourceTriangles)
+        VkPhysicalDevice                            PhysicalDevice,
+        VkDevice                                    Device,
+        const TSharedSurfaceGeometryData&           Geometry,
+        std::span<const TSurfaceProfileIndex>       ProfileIndexRemap,
+        std::span<const Asset::TVertex>             SourceVertices,
+        std::span<const Asset::TMeshTriangleSource> SourceTriangles)
         : TexelCount(Geometry.GetTexelCount())
     {
         const std::size_t                     MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
@@ -141,18 +141,18 @@ namespace MDSS::SurfaceState
             const auto Bytes = static_cast<VkDeviceSize>(Mesh.Indices.size() * sizeof(std::uint32_t));
             TexelMeshIndexBuffer =
                 std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                             Device,
-                                             Bytes,
-                                             VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                             UploadMemory);
+                                                  Device,
+                                                  Bytes,
+                                                  VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                                  UploadMemory);
             TexelMeshIndexBuffer->Upload(Mesh.Indices.data(), Bytes);
             const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(TSurfaceTexelMeshVertex));
-            TexelMeshVertexBuffer =
-                std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                             Device,
-                                             VertexBytes,
-                                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                             UploadMemory);
+            TexelMeshVertexBuffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                                                                      Device,
+                                                                      VertexBytes,
+                                                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                                                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                                                      UploadMemory);
             TexelMeshVertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
             const glm::uvec4 EmptyEdge{0};
             const auto*      Edges = Mesh.BoundaryEdges.empty() ? &EmptyEdge : Mesh.BoundaryEdges.data();
@@ -574,7 +574,7 @@ namespace MDSS::SurfaceState
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {
-            const bool        bAB = SetIndex == 0;
+            const bool             bAB = SetIndex == 0;
             const GPU::TGPUBuffer* StateCurrent = bAB ? &Instance.GetStateABuffer() : &Instance.GetStateBBuffer();
             const GPU::TGPUBuffer* StateNext = bAB ? &Instance.GetStateBBuffer() : &Instance.GetStateABuffer();
             std::array<VkDescriptorBufferInfo, DescriptorBindingCount> BufferInfos{};
@@ -582,7 +582,7 @@ namespace MDSS::SurfaceState
             for (std::uint32_t BindingNumber = 0; BindingNumber < DescriptorBindingCount; ++BindingNumber)
             {
                 const TSurfaceGPUDescriptorBinding Binding = static_cast<TSurfaceGPUDescriptorBinding>(BindingNumber);
-                const GPU::TGPUBuffer*                  Buffer = SharedAndProfileBuffers[BindingNumber];
+                const GPU::TGPUBuffer*             Buffer = SharedAndProfileBuffers[BindingNumber];
                 if (Binding == TSurfaceGPUDescriptorBinding::CurrentState)
                 {
                     Buffer = StateCurrent;

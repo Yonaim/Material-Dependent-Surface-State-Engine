@@ -22,8 +22,8 @@
 namespace
 {
     using namespace MDSS;
-        using namespace MDSS::Asset;
-        using namespace MDSS::SurfaceState;
+    using namespace MDSS::Asset;
+    using namespace MDSS::SurfaceState;
     int  Failures = 0;
     void Check(bool Condition, const std::string& Name)
     {
@@ -70,8 +70,10 @@ namespace
 
     TSharedSurfaceGeometryData Build(const TOBJLoadResult& Mesh, std::uint32_t Resolution)
     {
-        auto Mapping = SurfaceState::TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {Resolution, Resolution}}});
-        std::vector<SurfaceState::TSurfaceProfileIndex> Profiles(Mapping.Texels.size(), SurfaceState::InvalidSurfaceProfileIndex);
+        auto Mapping =
+            SurfaceState::TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {Resolution, Resolution}}});
+        std::vector<SurfaceState::TSurfaceProfileIndex> Profiles(Mapping.Texels.size(),
+                                                                 SurfaceState::InvalidSurfaceProfileIndex);
         for (std::size_t I = 0; I < Mapping.Texels.size(); ++I)
             if (Mapping.Texels[I].IsValid())
                 Profiles[I] = 0;
@@ -134,9 +136,9 @@ namespace
     {
         const auto AssetDirectory =
             std::filesystem::path(MDSS_TEST_FIXTURE_DIR).parent_path().parent_path() / "Assets/Meshes/BrickCube";
-        const auto                      Mesh = TOBJLoader::Load(AssetDirectory / "BrickCube.obj");
-        const auto                      NormalMap = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeNormal.png");
-        const auto                      Albedo = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeAlbedo.png");
+        const auto Mesh = TOBJLoader::Load(AssetDirectory / "BrickCube.obj");
+        const auto NormalMap = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeNormal.png");
+        const auto Albedo = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeAlbedo.png");
         std::vector<SurfaceState::TSurfaceDefinition> Surfaces;
         for (const auto& Triangle : Mesh.Triangles)
         {
@@ -144,7 +146,8 @@ namespace
                 Surfaces.push_back({static_cast<SurfaceState::TSurfaceLocalID>(Surfaces.size()), {64, 64}});
         }
         const auto Mapping = SurfaceState::TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, Surfaces);
-        std::vector<SurfaceState::TSurfaceProfileIndex> Profiles(Mapping.Texels.size(), SurfaceState::InvalidSurfaceProfileIndex);
+        std::vector<SurfaceState::TSurfaceProfileIndex> Profiles(Mapping.Texels.size(),
+                                                                 SurfaceState::InvalidSurfaceProfileIndex);
         for (std::size_t I = 0; I < Mapping.Texels.size(); ++I)
             if (Mapping.Texels[I].IsValid())
                 Profiles[I] = 0;
@@ -210,12 +213,12 @@ namespace
         auto Describe = [&](std::uint32_t Resolution = 8)
         {
             return SurfaceState::TSurfaceCache::Describe(Mesh.Vertices,
-                                           Mesh.Triangles,
-                                           {{0, {Resolution, Resolution}}},
-                                           std::vector<std::filesystem::path>{Normal},
-                                           Distribution,
-                                           {Profile},
-                                           std::vector<SurfaceState::TSurfaceProfileIndex>{0});
+                                                         Mesh.Triangles,
+                                                         {{0, {Resolution, Resolution}}},
+                                                         std::vector<std::filesystem::path>{Normal},
+                                                         Distribution,
+                                                         {Profile},
+                                                         std::vector<SurfaceState::TSurfaceProfileIndex>{0});
         };
         const auto  Descriptor = Describe();
         const auto  Cache = SurfaceState::TSurfaceCache::GetPath(Temp.Path / "Cache", "Cube.obj", Distribution, 8);
@@ -232,13 +235,15 @@ namespace
 
         auto Changed = Descriptor;
         ++Changed.Fingerprint;
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic), "input fingerprint mismatch requests rebuild");
+        Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic),
+              "input fingerprint mismatch requests rebuild");
         Changed = Descriptor;
         Changed.Surfaces[0].Resolution = {4, 4};
         Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic), "resolution mismatch requests rebuild");
         Changed = Descriptor;
         Changed.ProfilePaths[0] = Temp.Path / "Other.SRProfile";
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic), "Profile table binding mismatch requests rebuild");
+        Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic),
+              "Profile table binding mismatch requests rebuild");
 
         // Stale versions, corrupt payload, truncation and trailing bytes never become Runtime data.
         for (const std::size_t Offset : {std::size_t(0), std::size_t(8), std::size_t(12), GoodBytes.size() - 1})
@@ -246,7 +251,8 @@ namespace
             auto Bad = GoodBytes;
             Bad[Offset] ^= 0x40;
             WriteBytes(Cache, Bad);
-            Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic), "corrupt/versioned cache requests rebuild");
+            Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic),
+                  "corrupt/versioned cache requests rebuild");
         }
         auto Bad = GoodBytes;
         Bad.resize(20);
@@ -326,8 +332,8 @@ namespace
         Check(Cache != Cache4 && SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic).has_value() &&
                   SurfaceState::TSurfaceCache::Load(Cache4, Describe(4), Diagnostic).has_value(),
               "resolution variants coexist and reload");
-        Check(SurfaceState::TSurfaceCache::GetPath(Temp.Path / "Cache", "Cube.obj", Temp.Path / "Other.SurfaceProfileMap", 8) !=
-                  Cache,
+        Check(SurfaceState::TSurfaceCache::GetPath(
+                  Temp.Path / "Cache", "Cube.obj", Temp.Path / "Other.SurfaceProfileMap", 8) != Cache,
               "different Profile maps have separate identity directories");
         Check(SurfaceState::TSurfaceCache::GetPath(Temp.Path / "Cache", "./Cube.obj", Distribution, 8) == Cache,
               "normalized Mesh paths share an identity");
@@ -355,20 +361,21 @@ namespace
         Mesh.Vertices[0].Position.x += 0.5F;
         Check(Describe().Fingerprint != Descriptor.Fingerprint, "mesh positions affect fingerprint");
         Mesh.Vertices[0].Position = OriginalPosition;
-        const auto Reordered = SurfaceState::TSurfaceCache::Describe(Mesh.Vertices,
-                                                       Mesh.Triangles,
-                                                       {{0, {8, 8}}},
-                                                       std::vector<std::filesystem::path>{Normal},
-                                                       Distribution,
-                                                       {Profile, Temp.Path / "Second.SRProfile"},
-                                                       std::vector<SurfaceState::TSurfaceProfileIndex>{0});
+        const auto Reordered =
+            SurfaceState::TSurfaceCache::Describe(Mesh.Vertices,
+                                                  Mesh.Triangles,
+                                                  {{0, {8, 8}}},
+                                                  std::vector<std::filesystem::path>{Normal},
+                                                  Distribution,
+                                                  {Profile, Temp.Path / "Second.SRProfile"},
+                                                  std::vector<SurfaceState::TSurfaceProfileIndex>{0});
         const auto Reversed = SurfaceState::TSurfaceCache::Describe(Mesh.Vertices,
-                                                      Mesh.Triangles,
-                                                      {{0, {8, 8}}},
-                                                      std::vector<std::filesystem::path>{Normal},
-                                                      Distribution,
-                                                      {Temp.Path / "Second.SRProfile", Profile},
-                                                      std::vector<SurfaceState::TSurfaceProfileIndex>{1});
+                                                                    Mesh.Triangles,
+                                                                    {{0, {8, 8}}},
+                                                                    std::vector<std::filesystem::path>{Normal},
+                                                                    Distribution,
+                                                                    {Temp.Path / "Second.SRProfile", Profile},
+                                                                    std::vector<SurfaceState::TSurfaceProfileIndex>{1});
         Check(Reordered.Fingerprint != Reversed.Fingerprint,
               "ordered Profile table and assignments affect fingerprint");
         Mesh.Triangles[0].OriginalPositionIndices[0] += 10;
@@ -376,14 +383,15 @@ namespace
 
         // A seam graph survives serialization, preserving reciprocal links and GPU transfer behavior.
         auto       SeamMesh = TOBJLoader::Load(std::filesystem::path(MDSS_TEST_FIXTURE_DIR) / "Mapping/QuadSeam.obj");
-        const auto SeamDescriptor = SurfaceState::TSurfaceCache::Describe(SeamMesh.Vertices,
-                                                            SeamMesh.Triangles,
-                                                            {{0, {8, 8}}},
-                                                            std::vector<std::filesystem::path>{Normal},
-                                                            Distribution,
-                                                            {Profile},
-                                                            std::vector<SurfaceState::TSurfaceProfileIndex>{0});
-        auto       SeamGeometry = Build(SeamMesh, 8);
+        const auto SeamDescriptor =
+            SurfaceState::TSurfaceCache::Describe(SeamMesh.Vertices,
+                                                  SeamMesh.Triangles,
+                                                  {{0, {8, 8}}},
+                                                  std::vector<std::filesystem::path>{Normal},
+                                                  Distribution,
+                                                  {Profile},
+                                                  std::vector<SurfaceState::TSurfaceProfileIndex>{0});
+        auto SeamGeometry = Build(SeamMesh, 8);
         SurfaceState::TSurfaceCache::Save(Cache, SeamDescriptor, SeamGeometry);
         Loaded = SurfaceState::TSurfaceCache::Load(Cache, SeamDescriptor, Diagnostic);
         Check(Loaded.has_value(), "atomic overwrite loads new seam geometry");

@@ -17,9 +17,9 @@ namespace MDSS::Asset
     {
     public:
         /** @brief Profile 데이터를 보관하고 생성 시 전체 데이터 계약을 검증한다. */
-        TSRProfileAsset(TAssetID                    ID,
-                        std::string                 Name,
-                        std::filesystem::path       SourcePath,
+        TSRProfileAsset(TAssetID                                  ID,
+                        std::string                               Name,
+                        std::filesystem::path                     SourcePath,
                         SurfaceState::TSurfaceResponseProfileData Data);
 
         [[nodiscard]] const SurfaceState::TSurfaceResponseProfileData& GetData() const noexcept;

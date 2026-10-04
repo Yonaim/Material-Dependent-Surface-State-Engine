@@ -262,13 +262,13 @@ namespace MDSS::SurfaceState
         }
     } // namespace
 
-    TSurfaceCacheDescriptor TSurfaceCache::Describe(std::span<const Asset::TVertex>               Vertices,
-                                                    std::span<const Asset::TMeshTriangleSource>   Triangles,
-                                                    std::vector<TSurfaceDefinition>        Surfaces,
-                                                    std::span<const std::filesystem::path> NormalMapPaths,
-                                                    const std::filesystem::path&           DistributionPath,
-                                                    std::vector<std::filesystem::path>     ProfilePaths,
-                                                    std::span<const TSurfaceProfileIndex>  ProfileIndicesBySurface)
+    TSurfaceCacheDescriptor TSurfaceCache::Describe(std::span<const Asset::TVertex>             Vertices,
+                                                    std::span<const Asset::TMeshTriangleSource> Triangles,
+                                                    std::vector<TSurfaceDefinition>             Surfaces,
+                                                    std::span<const std::filesystem::path>      NormalMapPaths,
+                                                    const std::filesystem::path&                DistributionPath,
+                                                    std::vector<std::filesystem::path>          ProfilePaths,
+                                                    std::span<const TSurfaceProfileIndex>       ProfileIndicesBySurface)
     {
         if (Triangles.size() > UINT32_MAX || NormalMapPaths.size() != Surfaces.size() ||
             ProfileIndicesBySurface.size() != Surfaces.size())

@@ -166,9 +166,10 @@ namespace
         double       PreviousCapacity = 0.0;
         for (std::uint32_t Resolution : {128U, 256U, 512U})
         {
-            const auto Mapping = SurfaceState::TSurfaceMappingBuilder::Build(Vertices, Triangles, {{0, {Resolution, Resolution}}});
-            auto       Geometry =
-                SurfaceState::TSurfaceGeometryBuilder::Build(Mapping, std::vector<SurfaceState::TSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
+            const auto Mapping =
+                SurfaceState::TSurfaceMappingBuilder::Build(Vertices, Triangles, {{0, {Resolution, Resolution}}});
+            auto Geometry = SurfaceState::TSurfaceGeometryBuilder::Build(
+                Mapping, std::vector<SurfaceState::TSurfaceProfileIndex>(Mapping.Texels.size(), 0), 1);
             const auto   Areas = BuildSurfaceGPUWorldTexelAreas(Geometry, Model);
             const double TotalArea = std::accumulate(Areas.begin(), Areas.end(), 0.0);
             Check(std::abs(TotalArea - Expected) < Expected * 1.0e-5,

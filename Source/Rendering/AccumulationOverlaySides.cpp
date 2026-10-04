@@ -237,19 +237,19 @@ namespace MDSS::Rendering
         return Activity;
     }
 
-    void TAccumulationOverlaySides::Record(VkCommandBuffer                           Command,
-                                           std::size_t                               Instance,
-                                           std::uint32_t                             Channel,
-                                           std::uint32_t                             Channels,
+    void TAccumulationOverlaySides::Record(VkCommandBuffer                                         Command,
+                                           std::size_t                                             Instance,
+                                           std::uint32_t                                           Channel,
+                                           std::uint32_t                                           Channels,
                                            const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
                                            const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
-                                           VkDescriptorSet                           ComputedSet,
-                                           bool                                      bStateAB,
-                                           std::size_t                               FrameIndex,
-                                           VkQueryPool                               TimestampQueryPool,
-                                           std::uint32_t                             FirstSideTimestampQuery,
-                                           std::uint32_t                             OccupancyTileSize,
-                                           bool                                      bSmoothCoverage)
+                                           VkDescriptorSet                                         ComputedSet,
+                                           bool                                                    bStateAB,
+                                           std::size_t                                             FrameIndex,
+                                           VkQueryPool                                             TimestampQueryPool,
+                                           std::uint32_t FirstSideTimestampQuery,
+                                           std::uint32_t OccupancyTileSize,
+                                           bool          bSmoothCoverage)
     {
         if (FrameIndex >= TRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Overlay activity frame slot is invalid.");
@@ -289,7 +289,8 @@ namespace MDSS::Rendering
         }
         const auto Bytes =
             SurfaceState::GetSurfaceGPUBufferByteSize(SegmentCount, sizeof(TSideSegment), Limits.maxStorageBufferRange);
-        const auto CoverageBytes = SurfaceState::GetSurfaceGPUBufferByteSize(Vertices, sizeof(float), Limits.maxStorageBufferRange);
+        const auto CoverageBytes =
+            SurfaceState::GetSurfaceGPUBufferByteSize(Vertices, sizeof(float), Limits.maxStorageBufferRange);
         const auto SurfaceCount = static_cast<std::uint32_t>(Geometry.GetTexelMeshRanges().size());
         const auto DrawBytes = SurfaceState::GetSurfaceGPUBufferByteSize(
             static_cast<std::size_t>(SurfaceCount) + 2U, sizeof(VkDrawIndirectCommand), Limits.maxStorageBufferRange);
@@ -317,10 +318,10 @@ namespace MDSS::Rendering
             {
                 const VkDeviceSize PageCapacity = std::max(CoveragePageSize, AlignCoverageOffset(CoverageBytes));
                 CoveragePages.push_back(std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                                                     Device,
-                                                                     PageCapacity,
-                                                                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+                                                                          Device,
+                                                                          PageCapacity,
+                                                                          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
                 CoveragePageUsed.push_back(0U);
                 CoveragePage = CoveragePages.size() - 1U;
                 CoverageOffset = 0U;
@@ -330,27 +331,27 @@ namespace MDSS::Rendering
             TOutput Output;
             Output.Segments = std::make_unique<GPU::TGPUBuffer>(
                 PhysicalDevice, Device, Bytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            Output.DrawCommands =
-                std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                             Device,
-                                             DrawBytes,
-                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-                                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-            Output.TopDrawCommands =
-                std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                             Device,
-                                             TopDrawBytes,
-                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-                                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            Output.DrawCommands = std::make_unique<GPU::TGPUBuffer>(
+                PhysicalDevice,
+                Device,
+                DrawBytes,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            Output.TopDrawCommands = std::make_unique<GPU::TGPUBuffer>(
+                PhysicalDevice,
+                Device,
+                TopDrawBytes,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             for (auto& Readback : Output.ActivityReadbacks)
                 Readback = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                                        Device,
-                                                        sizeof(std::uint32_t),
-                                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                             Device,
+                                                             sizeof(std::uint32_t),
+                                                             VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             Output.CoveragePage = CoveragePage;
             Output.CoverageOffset = CoverageOffset;
             VkDescriptorSetAllocateInfo Allocate{};

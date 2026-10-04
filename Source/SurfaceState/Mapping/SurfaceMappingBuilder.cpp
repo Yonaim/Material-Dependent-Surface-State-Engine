@@ -140,7 +140,7 @@ namespace MDSS::SurfaceState
 
         glm::vec2 GetUVForOriginalPosition(const std::vector<Asset::TVertex>& Vertices,
                                            const Asset::TMeshTriangleSource&  Triangle,
-                                           std::int32_t                OriginalPosition)
+                                           std::int32_t                       OriginalPosition)
         {
             for (std::size_t Corner = 0; Corner < 3; ++Corner)
             {
@@ -159,7 +159,7 @@ namespace MDSS::SurfaceState
 
         bool HasMatchingUVEdge(const std::vector<Asset::TVertex>&             Vertices,
                                const std::vector<Asset::TMeshTriangleSource>& Triangles,
-                               const TEdgeRecord&                      Edge)
+                               const TEdgeRecord&                             Edge)
         {
             const Asset::TMeshTriangleSource& First = Triangles[Edge.Incidents[0].Triangle];
             const Asset::TMeshTriangleSource& Second = Triangles[Edge.Incidents[1].Triangle];
@@ -226,11 +226,11 @@ namespace MDSS::SurfaceState
             float            Parameter = 0.0F;
         };
 
-        std::vector<TSeamCandidate> GatherSeamCandidates(const TSurfaceMappingData&  Mapping,
+        std::vector<TSeamCandidate> GatherSeamCandidates(const TSurfaceMappingData&         Mapping,
                                                          const std::vector<Asset::TVertex>& Vertices,
                                                          const Asset::TMeshTriangleSource&  Triangle,
-                                                         std::uint32_t               TriangleIndex,
-                                                         const TEdgeKey&             Edge)
+                                                         std::uint32_t                      TriangleIndex,
+                                                         const TEdgeKey&                    Edge)
         {
             const TSurfaceTexelRange& Range = GetSurfaceRange(Mapping, Triangle.Surface);
             const glm::vec2           EdgeStartUV = GetUVForOriginalPosition(Vertices, Triangle, Edge.A);
@@ -282,7 +282,7 @@ namespace MDSS::SurfaceState
 
     TSurfaceMappingData TSurfaceMappingBuilder::Build(const std::vector<Asset::TVertex>&             Vertices,
                                                       const std::vector<Asset::TMeshTriangleSource>& Triangles,
-                                                      const std::vector<TSurfaceDefinition>&  Surfaces)
+                                                      const std::vector<TSurfaceDefinition>&         Surfaces)
     {
         if (Vertices.empty() || Triangles.empty() || Surfaces.empty())
         {
@@ -401,12 +401,12 @@ namespace MDSS::SurfaceState
 
         for (std::size_t TriangleIndex = 0; TriangleIndex < Triangles.size(); ++TriangleIndex)
         {
-            const Asset::TMeshTriangleSource&     Triangle = Triangles[TriangleIndex];
-            const TSurfaceTexelRange&      Range = GetSurfaceRange(Mapping, Triangle.Surface);
-            const std::array<glm::vec2, 3> UVs = GetTriangleUVs(Vertices, Triangle);
-            const glm::vec2                Scale(static_cast<float>(Range.Resolution.Width),
+            const Asset::TMeshTriangleSource& Triangle = Triangles[TriangleIndex];
+            const TSurfaceTexelRange&         Range = GetSurfaceRange(Mapping, Triangle.Surface);
+            const std::array<glm::vec2, 3>    UVs = GetTriangleUVs(Vertices, Triangle);
+            const glm::vec2                   Scale(static_cast<float>(Range.Resolution.Width),
                                   static_cast<float>(Range.Resolution.Height));
-            const std::array<glm::vec2, 3> TexelUVs = {UVs[0] * Scale, UVs[1] * Scale, UVs[2] * Scale};
+            const std::array<glm::vec2, 3>    TexelUVs = {UVs[0] * Scale, UVs[1] * Scale, UVs[2] * Scale};
 
             const float        MinX = std::min({TexelUVs[0].x, TexelUVs[1].x, TexelUVs[2].x});
             const float        MaxX = std::max({TexelUVs[0].x, TexelUVs[1].x, TexelUVs[2].x});
@@ -452,10 +452,10 @@ namespace MDSS::SurfaceState
                     const float BarycentricSum = Barycentric.x + Barycentric.y + Barycentric.z;
                     Barycentric /= BarycentricSum;
 
-                    const Asset::TVertex&  V0 = Vertices[Triangle.RenderVertexIndices[0]];
-                    const Asset::TVertex&  V1 = Vertices[Triangle.RenderVertexIndices[1]];
-                    const Asset::TVertex&  V2 = Vertices[Triangle.RenderVertexIndices[2]];
-                    const glm::vec3 Normal =
+                    const Asset::TVertex& V0 = Vertices[Triangle.RenderVertexIndices[0]];
+                    const Asset::TVertex& V1 = Vertices[Triangle.RenderVertexIndices[1]];
+                    const Asset::TVertex& V2 = Vertices[Triangle.RenderVertexIndices[2]];
+                    const glm::vec3       Normal =
                         Barycentric.x * V0.Normal + Barycentric.y * V1.Normal + Barycentric.z * V2.Normal;
 
                     Texel.Surface = Triangle.Surface;

@@ -187,16 +187,16 @@ namespace MDSS::SurfaceState
             TOutput Output;
             Output.Buffer =
                 std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                             Device,
-                                             Bytes,
-                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                                                  Device,
+                                                  Bytes,
+                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             Output.GeometryCache =
                 std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                             Device,
-                                             CacheBytes,
-                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                                                  Device,
+                                                  CacheBytes,
+                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;

@@ -4,11 +4,12 @@
  */
 
 #include "AssetManager/Core/AssetManager.h"
+#include "GPU/Vulkan/VulkanContext.h"
 #include "Logger/Logger.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
-#include "GPU/Vulkan/VulkanContext.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #include <algorithm>
 #include <iterator>
@@ -24,15 +25,16 @@ namespace MDSS::SurfaceState
             static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::Count);
     } // namespace
 
-    TSurfaceGPUResourceManager::TSurfaceGPUResourceManager(const GPU::TVulkanContext& Context,
-                                                           const Asset::TAssetManager&  Assets,
-                                                           const TScene&         Scene)
+    TSurfaceGPUResourceManager::TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
+                                                           const Asset::TAssetManager& Assets,
+                                                           const TSurfaceDataManager&  SurfaceData,
+                                                           const TScene&               Scene)
     {
         const VkPhysicalDevice       PhysicalDevice = Context.GetPhysicalDevice();
         const VkDevice               Device = Context.GetDevice();
-        const TSurfaceStateRegistry& Registry = Assets.GetSurfaceStateRegistry();
+        const TSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
         bool                         bDescriptorLimitsChecked = false;
-        SceneProfileHandles = Assets.GetSceneSurfaceProfiles(Scene);
+        SceneProfileHandles = SurfaceData.GetSceneSurfaceProfiles(Scene);
         if (SceneProfileHandles.size() >= InvalidSurfaceProfileIndex)
         {
             throw std::overflow_error("Scene Profile table exceeds the supported Profile index range.");
@@ -52,8 +54,8 @@ namespace MDSS::SurfaceState
         for (const TStaticMeshInstance& MeshInstance : Scene.GetStaticMeshInstances())
         {
             std::unique_ptr<TInstanceResources> Instance;
-            const Asset::TSurfaceRuntimeDataHandle     SurfaceDataHandle = MeshInstance.GetSurfaceData();
-            if (Assets.HasSurfaceData(SurfaceDataHandle) && SceneProfiles != nullptr)
+            const TSurfaceRuntimeDataHandle     SurfaceDataHandle = MeshInstance.GetSurfaceData();
+            if (SurfaceData.HasSurfaceData(SurfaceDataHandle) && SceneProfiles != nullptr)
             {
                 if (!bDescriptorLimitsChecked)
                 {
@@ -71,9 +73,9 @@ namespace MDSS::SurfaceState
                 auto SharedIt = SharedSurfaceData.find(SurfaceDataHandle);
                 if (SharedIt == SharedSurfaceData.end())
                 {
-                    const TSurfaceRuntimeData&                RuntimeData = Assets.GetSurfaceData(SurfaceDataHandle);
+                    const TSurfaceRuntimeData& RuntimeData = SurfaceData.GetSurfaceData(SurfaceDataHandle);
                     const std::vector<Asset::TSRProfileAssetHandle>& ProfileHandles =
-                        Assets.GetSurfaceProfileTable(SurfaceDataHandle);
+                        SurfaceData.GetSurfaceProfileTable(SurfaceDataHandle);
                     TSharedSurfaceResources Resources;
                     Resources.SceneProfileIndices.reserve(ProfileHandles.size());
                     for (Asset::TSRProfileAssetHandle ProfileHandle : ProfileHandles)
@@ -241,7 +243,7 @@ namespace MDSS::SurfaceState
         return SceneProfiles->GetParametersBuffer();
     }
 
-    bool TSurfaceGPUResourceManager::UpdateProfileParameters(Asset::TSRProfileAssetHandle          ProfileHandle,
+    bool TSurfaceGPUResourceManager::UpdateProfileParameters(Asset::TSRProfileAssetHandle   ProfileHandle,
                                                              TStateId                       State,
                                                              const TSurfaceStateParameters& Parameters)
     {

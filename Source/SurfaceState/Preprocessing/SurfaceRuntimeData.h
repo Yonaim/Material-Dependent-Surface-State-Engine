@@ -9,11 +9,16 @@
 #include "SurfaceState/Mapping/SurfaceMappingData.h"
 
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <vector>
 
 namespace MDSS::SurfaceState
 {
+    using TSurfaceRuntimeDataHandle = std::uint32_t;
+    inline constexpr TSurfaceRuntimeDataHandle InvalidSurfaceRuntimeDataHandle =
+        std::numeric_limits<TSurfaceRuntimeDataHandle>::max();
+
     /** @brief Shared static mapping output for a Mesh/Profile Distribution input pair. */
     struct TSurfaceRuntimeData
     {

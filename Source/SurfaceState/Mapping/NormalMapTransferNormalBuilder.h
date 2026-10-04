@@ -18,10 +18,10 @@ namespace MDSS::SurfaceState
      * @param bFlipNormalY 렌더 재질의 기본 Normal Map Y convention과 동일하게 적용한다.
      * @return sample과 tangent frame이 유효하면 true. false이면 호출자가 geometric normal fallback을 사용한다.
      */
-    [[nodiscard]] bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&            Texel,
+    [[nodiscard]] bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&                   Texel,
                                                     const std::vector<Asset::TVertex>&             Vertices,
                                                     const std::vector<Asset::TMeshTriangleSource>& Triangles,
                                                     const Asset::TextureData&                      NormalMap,
-                                                    glm::vec3&                              OutTransferNormal,
-                                                    bool                                    bFlipNormalY);
+                                                    glm::vec3&                                     OutTransferNormal,
+                                                    bool                                           bFlipNormalY);
 } // namespace MDSS::SurfaceState

@@ -22,6 +22,6 @@ namespace MDSS::SurfaceState
          */
         [[nodiscard]] static TSurfaceMappingData Build(const std::vector<Asset::TVertex>&             Vertices,
                                                        const std::vector<Asset::TMeshTriangleSource>& Triangles,
-                                                       const std::vector<TSurfaceDefinition>&  Surfaces);
+                                                       const std::vector<TSurfaceDefinition>&         Surfaces);
     };
 } // namespace MDSS::SurfaceState

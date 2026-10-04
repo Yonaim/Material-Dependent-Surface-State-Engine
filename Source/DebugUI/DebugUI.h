@@ -29,11 +29,27 @@
 struct GLFWwindow;
 struct ImFont;
 
-namespace MDSS::Asset { class TAssetManager; }
-namespace MDSS::GPU { class TVulkanContext; }
-namespace MDSS::Rendering { class TRenderer; }
+namespace MDSS::Asset
+{
+    class TAssetManager;
+}
+namespace MDSS::SurfaceState
+{
+    class TSurfaceDataManager;
+}
+namespace MDSS::GPU
+{
+    class TVulkanContext;
+}
+namespace MDSS::Rendering
+{
+    class TRenderer;
+}
 
-namespace MDSS { class TWindow; }
+namespace MDSS
+{
+    class TWindow;
+}
 
 namespace MDSS
 {
@@ -43,7 +59,11 @@ namespace MDSS
     class TDebugUI
     {
     public:
-        TDebugUI(const GPU::TVulkanContext& Context, const TWindow& TWindow, Rendering::TRenderer& Renderer, Asset::TAssetManager& Assets);
+        TDebugUI(const GPU::TVulkanContext&         Context,
+                 const TWindow&                     TWindow,
+                 Rendering::TRenderer&              Renderer,
+                 Asset::TAssetManager&              Assets,
+                 SurfaceState::TSurfaceDataManager& SurfaceData);
         ~TDebugUI();
 
         TDebugUI(const TDebugUI&) = delete;
@@ -63,16 +83,16 @@ namespace MDSS
         /** @brief swapchain 재생성 후 ImGui Vulkan backend의 image count를 갱신한다. */
         void OnSwapchainRecreated(const GPU::TVulkanContext& Context, const Rendering::TRenderer& Renderer);
 
-        [[nodiscard]] bool          IsInjectModeEnabled() const noexcept;
-        [[nodiscard]] SurfaceState::TStateId      GetInjectState() const noexcept;
-        [[nodiscard]] float         GetInjectStrength() const noexcept;
-        [[nodiscard]] float         GetInjectRadius() const noexcept;
-        [[nodiscard]] float         GetInjectFalloff() const noexcept;
-        [[nodiscard]] std::uint32_t GetInjectTexelSearchRadius() const noexcept;
-        [[nodiscard]] float         GetAnimationTimeScale() const noexcept;
-        [[nodiscard]] float         GetSimulationTimeScale() const noexcept;
-        [[nodiscard]] bool          IsSimulationPaused() const noexcept;
-        [[nodiscard]] bool          IsFixedSimulationTimestep() const noexcept
+        [[nodiscard]] bool                   IsInjectModeEnabled() const noexcept;
+        [[nodiscard]] SurfaceState::TStateId GetInjectState() const noexcept;
+        [[nodiscard]] float                  GetInjectStrength() const noexcept;
+        [[nodiscard]] float                  GetInjectRadius() const noexcept;
+        [[nodiscard]] float                  GetInjectFalloff() const noexcept;
+        [[nodiscard]] std::uint32_t          GetInjectTexelSearchRadius() const noexcept;
+        [[nodiscard]] float                  GetAnimationTimeScale() const noexcept;
+        [[nodiscard]] float                  GetSimulationTimeScale() const noexcept;
+        [[nodiscard]] bool                   IsSimulationPaused() const noexcept;
+        [[nodiscard]] bool                   IsFixedSimulationTimestep() const noexcept
         {
             return bFixedSimulationTimestep;
         }
@@ -91,7 +111,7 @@ namespace MDSS
         [[nodiscard]] std::optional<std::size_t> GetSelectedObject() const noexcept;
         [[nodiscard]] int                        GetHoveredGizmoAxis() const noexcept;
         [[nodiscard]] bool                       IsRotationGizmoMode() const noexcept;
-        [[nodiscard]] SurfaceState::TStateId                   GetDebugState() const noexcept;
+        [[nodiscard]] SurfaceState::TStateId     GetDebugState() const noexcept;
         [[nodiscard]] bool                       ShouldSuppressDebugHotkey() const noexcept;
 
     private:
@@ -128,56 +148,60 @@ namespace MDSS
                                                     float       TopPadding = SectionHeaderTopPadding,
                                                     float       BottomPadding = 4.0F) const;
 
-        VkDevice                                   Device = VK_NULL_HANDLE;
-        GLFWwindow*                                NativeWindow = nullptr;
-        Rendering::TRenderer*                                 FrameRenderer = nullptr;
-        Asset::TAssetManager*                             AssetManager = nullptr;
-        bool                                       bRotatingCamera = false;
-        float                                      CameraZoomSpeed = 12.0F;
-        float                                      CameraMoveSpeed = 2.5F;
-        bool                                       bDockLayoutInitialized = false;
-        bool                                       bInjectMode = false;
-        SurfaceState::TStateId                                   InjectState = 0;
-        SurfaceState::TStateId                                   DebugState = 0;
-        float                                      InjectStrength = 1.0F;
-        float                                      InjectRadius = 0.25F;
-        float                                      InjectFalloff = 1.0F;
-        int                                        InjectTexelSearchRadius = 2;
-        float                                      AnimationTimeScale = 1.0F;
-        float                                      SimulationTimeScale = 1.0F;
-        bool                                       bFixedSimulationTimestep = SurfaceState::DefaultFixedSimulationTimestep;
-        bool                                       bAutoSubstepping = SurfaceState::DefaultAutoSubstepping;
-        bool                                       bSimulationPaused = false;
-        bool                                       bSolverStepRequested = false;
-        bool                                       bSolverResetRequested = false;
-        bool                                       bFrameTimeResetRequested = false;
-        Asset::TSRProfileAssetHandle                      DebugParameterProfile = Asset::InvalidAssetHandle;
-        SurfaceState::TStateId                                   DebugParameterState = 0;
-        std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> ParameterDraftKey{Asset::InvalidAssetHandle, SurfaceState::InvalidStateId};
-        SurfaceState::TSurfaceStateParameters                    ParameterDraft{};
-        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters> RuntimeProfileOverrides;
-        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters> ParameterDrafts;
-        std::set<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>>                          DirtyParameterDrafts;
-        bool                                                                          bParameterDraftAvailable = false;
-        bool                                                                          bParameterDraftDirty = false;
-        std::string                                                                   ParameterStatus;
-        std::string                                                                   ResolutionStatus;
-        std::optional<std::size_t>                                                    SelectedObject;
-        int                                                                           ActiveGizmoAxis = -1;
-        int                                                                           HoveredGizmoAxis = -1;
-        bool                                                                          bRotationGizmoMode = false;
-        glm::vec2                                                                     GizmoDragStartMouse{0.0F};
-        glm::vec2                                                                     GizmoDragScreenAxis{0.0F};
-        glm::vec3                                                                     GizmoDragStartPosition{0.0F};
-        glm::vec3                                                                     GizmoDragStartRotation{0.0F};
-        float                                                                         GizmoDragLastAngle = 0.0F;
-        float                                                                         GizmoDragAccumulatedAngle = 0.0F;
-        float                                                                         GizmoDragWorldScale = 0.0F;
-        float                                                                         GizmoDragPixelLength = 0.0F;
-        std::string                                                                   SceneStatus;
-        std::string                                                                   EditorLayoutPath;
-        std::uint32_t                                                                 DockspaceID = 0;
-        ImFont*                                                                       SectionHeaderFont = nullptr;
+        VkDevice                           Device = VK_NULL_HANDLE;
+        GLFWwindow*                        NativeWindow = nullptr;
+        Rendering::TRenderer*              FrameRenderer = nullptr;
+        Asset::TAssetManager*              AssetManager = nullptr;
+        SurfaceState::TSurfaceDataManager* SurfaceDataManager = nullptr;
+        bool                               bRotatingCamera = false;
+        float                              CameraZoomSpeed = 12.0F;
+        float                              CameraMoveSpeed = 2.5F;
+        bool                               bDockLayoutInitialized = false;
+        bool                               bInjectMode = false;
+        SurfaceState::TStateId             InjectState = 0;
+        SurfaceState::TStateId             DebugState = 0;
+        float                              InjectStrength = 1.0F;
+        float                              InjectRadius = 0.25F;
+        float                              InjectFalloff = 1.0F;
+        int                                InjectTexelSearchRadius = 2;
+        float                              AnimationTimeScale = 1.0F;
+        float                              SimulationTimeScale = 1.0F;
+        bool                               bFixedSimulationTimestep = SurfaceState::DefaultFixedSimulationTimestep;
+        bool                               bAutoSubstepping = SurfaceState::DefaultAutoSubstepping;
+        bool                               bSimulationPaused = false;
+        bool                               bSolverStepRequested = false;
+        bool                               bSolverResetRequested = false;
+        bool                               bFrameTimeResetRequested = false;
+        Asset::TSRProfileAssetHandle       DebugParameterProfile = Asset::InvalidAssetHandle;
+        SurfaceState::TStateId             DebugParameterState = 0;
+        std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> ParameterDraftKey{Asset::InvalidAssetHandle,
+                                                                                          SurfaceState::InvalidStateId};
+        SurfaceState::TSurfaceStateParameters                           ParameterDraft{};
+        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters>
+            RuntimeProfileOverrides;
+        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters>
+                                                                                  ParameterDrafts;
+        std::set<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>> DirtyParameterDrafts;
+        bool                                                                      bParameterDraftAvailable = false;
+        bool                                                                      bParameterDraftDirty = false;
+        std::string                                                               ParameterStatus;
+        std::string                                                               ResolutionStatus;
+        std::optional<std::size_t>                                                SelectedObject;
+        int                                                                       ActiveGizmoAxis = -1;
+        int                                                                       HoveredGizmoAxis = -1;
+        bool                                                                      bRotationGizmoMode = false;
+        glm::vec2                                                                 GizmoDragStartMouse{0.0F};
+        glm::vec2                                                                 GizmoDragScreenAxis{0.0F};
+        glm::vec3                                                                 GizmoDragStartPosition{0.0F};
+        glm::vec3                                                                 GizmoDragStartRotation{0.0F};
+        float                                                                     GizmoDragLastAngle = 0.0F;
+        float                                                                     GizmoDragAccumulatedAngle = 0.0F;
+        float                                                                     GizmoDragWorldScale = 0.0F;
+        float                                                                     GizmoDragPixelLength = 0.0F;
+        std::string                                                               SceneStatus;
+        std::string                                                               EditorLayoutPath;
+        std::uint32_t                                                             DockspaceID = 0;
+        ImFont*                                                                   SectionHeaderFont = nullptr;
         struct TViewportPanel
         {
             std::uint32_t Id = 0;

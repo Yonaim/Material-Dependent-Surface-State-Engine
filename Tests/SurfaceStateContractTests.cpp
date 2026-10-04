@@ -171,7 +171,7 @@ namespace
               std::pair{&SurfaceState::TSurfaceStateParameters::GeometryTransferFactor, "gravityFlowFactor"}})
         {
             SurfaceState::TSurfaceResponseProfileData Profile;
-            auto&                       Parameters = Profile.States["wetness"];
+            auto&                                     Parameters = Profile.States["wetness"];
             for (float Value : {0.0F, 0.5F, 1.0F})
             {
                 Parameters.*Member = Value;
@@ -195,8 +195,8 @@ namespace
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
 
-        auto Geometry =
-            std::make_shared<TSharedSurfaceGeometryData>(std::vector<SurfaceState::TSurfaceDefinition>{{0, {2, 2}}, {1, {3, 1}}});
+        auto Geometry = std::make_shared<TSharedSurfaceGeometryData>(
+            std::vector<SurfaceState::TSurfaceDefinition>{{0, {2, 2}}, {1, {3, 1}}});
         Check(Geometry->GetTexelCount() == 7, "geometry texel count should sum Surface grids");
         Check(!Geometry->GetTexels()[0].IsValid(), "unmapped texels should start invalid");
 
@@ -212,17 +212,21 @@ namespace
         Check(Instance.GetStates().size() == 7, "instance should own one state vector per texel");
         for (const SurfaceState::TSurfaceStateValues& State : Instance.GetStates())
         {
-            Check(State == SurfaceState::TSurfaceStateValues(3, 0.0F), "all dynamic State channels should start at zero");
+            Check(State == SurfaceState::TSurfaceStateValues(3, 0.0F),
+                  "all dynamic State channels should start at zero");
         }
 
         CheckThrows([] { (void)TSharedSurfaceGeometryData({}); }, "at least one Surface", "empty Surface list");
         CheckThrows([] { (void)TSharedSurfaceGeometryData({{SurfaceState::InvalidSurfaceID, {1, 1}}}); },
                     "InvalidSurfaceID is reserved",
                     "reserved Surface sentinel");
-        CheckThrows([] { (void)SurfaceState::TSurfaceResolution{0, 8}.GetTexelCount(); }, "greater than zero", "zero resolution");
+        CheckThrows([] { (void)SurfaceState::TSurfaceResolution{0, 8}.GetTexelCount(); },
+                    "greater than zero",
+                    "zero resolution");
         CheckThrows([&] { (void)Instance.GetProfileIndex(7); }, "not present", "out-of-range texel profile lookup");
-        CheckThrows(
-            [&] { Geometry->SetProfileMap({SurfaceState::InvalidSurfaceProfileIndex}); }, "one entry per texel", "wrong map size");
+        CheckThrows([&] { Geometry->SetProfileMap({SurfaceState::InvalidSurfaceProfileIndex}); },
+                    "one entry per texel",
+                    "wrong map size");
 
         std::vector<SurfaceState::TSurfaceProfileIndex> NoSimulationMap(7, SurfaceState::InvalidSurfaceProfileIndex);
         Geometry->SetProfileMap(std::move(NoSimulationMap));
@@ -256,12 +260,14 @@ namespace
         Mapping.Texels[0].Position = {1.0F, 2.0F, 3.0F};
         Mapping.Texels[0].Normal = {0.0F, 0.0F, 1.0F};
 
-        const SurfaceState::TSurfaceRuntimeData Data = SurfaceState::TSurfacePreprocessor::Build(Mapping, {7, SurfaceState::InvalidSurfaceProfileIndex}, 8);
+        const SurfaceState::TSurfaceRuntimeData Data =
+            SurfaceState::TSurfacePreprocessor::Build(Mapping, {7, SurfaceState::InvalidSurfaceProfileIndex}, 8);
         Check(Data.Geometry->GetProfileIndex(0) == 7, "valid texel should retain its Profile index");
         Check(Data.Geometry->GetProfileIndex(1) == SurfaceState::InvalidSurfaceProfileIndex,
               "invalid texel should use reserved Profile sentinel");
 
-        const SurfaceState::TSurfaceRuntimeData Rebuilt = SurfaceState::TSurfacePreprocessor::Build(Mapping, {7, SurfaceState::InvalidSurfaceProfileIndex}, 8);
+        const SurfaceState::TSurfaceRuntimeData Rebuilt =
+            SurfaceState::TSurfacePreprocessor::Build(Mapping, {7, SurfaceState::InvalidSurfaceProfileIndex}, 8);
         Check(Rebuilt.Geometry->GetTexelCount() == Data.Geometry->GetTexelCount(),
               "Runtime preprocessing should be repeatable without a disk cache");
         Check(Rebuilt.Geometry->GetProfileMap() == Data.Geometry->GetProfileMap(),
@@ -272,9 +278,14 @@ namespace
         CheckThrows([&] { (void)SurfaceState::TSurfacePreprocessor::Build(Mapping, {7}, 8); },
                     "exactly one entry per mapping texel",
                     "profile map with wrong texel count");
-        CheckThrows([&] { (void)SurfaceState::TSurfacePreprocessor::Build(Mapping, {8, SurfaceState::InvalidSurfaceProfileIndex}, 8); },
-                    "outside the loaded Profile range",
-                    "profile map index outside registered profile range");
+        CheckThrows(
+            [&]
+            {
+                (void)SurfaceState::TSurfacePreprocessor::Build(
+                    Mapping, {8, SurfaceState::InvalidSurfaceProfileIndex}, 8);
+            },
+            "outside the loaded Profile range",
+            "profile map index outside registered profile range");
     }
 } // namespace
 

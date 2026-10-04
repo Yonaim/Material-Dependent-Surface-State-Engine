@@ -4,9 +4,9 @@
  */
 #pragma once
 
+#include "GPU/Vulkan/Resource/GPUBuffer.h"
 #include "Rendering/RenderContext.h"
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
-#include "GPU/Vulkan/Resource/GPUBuffer.h"
 
 #include <array>
 #include <map>
@@ -44,36 +44,36 @@ namespace MDSS::Rendering
         [[nodiscard]] VkBuffer        GetTopDrawBuffer(std::size_t Instance, std::uint32_t Channel) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
         [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
-        void                            Record(VkCommandBuffer                           Command,
-                                               std::size_t                               Instance,
-                                               std::uint32_t                             Channel,
-                                               std::uint32_t                             Channels,
+        void                            Record(VkCommandBuffer                                         Command,
+                                               std::size_t                                             Instance,
+                                               std::uint32_t                                           Channel,
+                                               std::uint32_t                                           Channels,
                                                const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
                                                const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
-                                               VkDescriptorSet                           ComputedSet,
-                                               bool                                      bStateAB,
-                                               std::size_t                               FrameIndex = 0,
-                                               VkQueryPool                               TimestampQueryPool = VK_NULL_HANDLE,
-                                               std::uint32_t                             FirstSideTimestampQuery = 0,
-                                               std::uint32_t                             OccupancyTileSize = 16U,
-                                               bool                                      bSmoothCoverage = false);
+                                               VkDescriptorSet                                         ComputedSet,
+                                               bool                                                    bStateAB,
+                                               std::size_t                                             FrameIndex = 0,
+                                               VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
+                                               std::uint32_t                                           FirstSideTimestampQuery = 0,
+                                               std::uint32_t                                           OccupancyTileSize = 16U,
+                                               bool                                                    bSmoothCoverage = false);
 
     private:
         struct TOutput
         {
-            std::unique_ptr<GPU::TGPUBuffer>                                                Segments;
-            std::unique_ptr<GPU::TGPUBuffer>                                                DrawCommands;
-            std::unique_ptr<GPU::TGPUBuffer>                                                TopDrawCommands;
-            VkDescriptorSet                                                            TopCommandSet = VK_NULL_HANDLE;
+            std::unique_ptr<GPU::TGPUBuffer> Segments;
+            std::unique_ptr<GPU::TGPUBuffer> DrawCommands;
+            std::unique_ptr<GPU::TGPUBuffer> TopDrawCommands;
+            VkDescriptorSet                  TopCommandSet = VK_NULL_HANDLE;
             std::array<std::unique_ptr<GPU::TGPUBuffer>, TRenderContext::MaxFramesInFlight> ActivityReadbacks;
-            std::array<bool, TRenderContext::MaxFramesInFlight>                        ActivityPending{};
-            VkDescriptorSet                                                            Set = VK_NULL_HANDLE;
-            std::size_t                                                                CoveragePage = 0;
-            VkDeviceSize                                                               CoverageOffset = 0;
-            std::uint32_t                                                              VertexCount = 0;
-            std::uint32_t                                                              TriangleCount = 0;
-            std::uint32_t                                                              BoundaryCount = 0;
-            std::uint32_t                                                              SurfaceCount = 0;
+            std::array<bool, TRenderContext::MaxFramesInFlight>                             ActivityPending{};
+            VkDescriptorSet                                                                 Set = VK_NULL_HANDLE;
+            std::size_t                                                                     CoveragePage = 0;
+            VkDeviceSize                                                                    CoverageOffset = 0;
+            std::uint32_t                                                                   VertexCount = 0;
+            std::uint32_t                                                                   TriangleCount = 0;
+            std::uint32_t                                                                   BoundaryCount = 0;
+            std::uint32_t                                                                   SurfaceCount = 0;
         };
         VkPhysicalDevice                                         PhysicalDevice;
         VkDevice                                                 Device;
@@ -88,7 +88,7 @@ namespace MDSS::Rendering
         VkPipeline                                               TopCommandPipeline = VK_NULL_HANDLE;
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;
         VkDescriptorPool                                         TopCommandPool = VK_NULL_HANDLE;
-        std::vector<std::unique_ptr<GPU::TGPUBuffer>>                 CoveragePages;
+        std::vector<std::unique_ptr<GPU::TGPUBuffer>>            CoveragePages;
         std::vector<VkDeviceSize>                                CoveragePageUsed;
         std::map<std::pair<std::size_t, std::uint32_t>, TOutput> Outputs;
     };
