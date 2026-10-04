@@ -37,7 +37,8 @@ vec3 worldNormal(uint Texel)
 float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
 {
     vec3 CenterPosition = localPosition(Texel);
-    vec3 N = normalize(localNormal(Texel));
+    // DynamicGeometryUpdate는 두 번째 vec4에 정규화된 local normal을 저장한다.
+    vec3 N = localNormal(Texel);
     if (any(isnan(N)) || any(isinf(N))) return StaticWeight;
     vec3 Axis = abs(N.z) < 0.85 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
     vec3 T = normalize(cross(Axis, N));
@@ -51,7 +52,7 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
         uint Other = neighborIndex(Texel, DirectionIndex);
         if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other)) continue;
         vec3 OtherPosition = localPosition(Other);
-        vec3 OtherNormal = normalize(localNormal(Other));
+        vec3 OtherNormal = localNormal(Other);
         if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05) continue;
         vec3 Delta = OtherPosition - CenterPosition;
         float X = dot(Delta, T), Y = dot(Delta, B);

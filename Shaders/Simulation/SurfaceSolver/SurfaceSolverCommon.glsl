@@ -408,6 +408,48 @@ float geometryDrive(uint TargetTexel)
     return HeightDrive * DirectionDrive;
 }
 
+float geometryDriveToPosition(vec3 TargetPosition)
+{
+    if (!SourceGeometryValid)
+    {
+        return 0.0;
+    }
+    // 위치 차이를 사용하므로 model translation은 높이 차와 이웃 방향 계산에서 상쇄된다.
+    vec3 NeighborDirection = SolverModelLinear * (TargetPosition - SourcePosition);
+    float NeighborLength = length(NeighborDirection);
+    if (NeighborLength <= GeometryEpsilon || isnan(NeighborLength) || isinf(NeighborLength))
+    {
+        return 0.0;
+    }
+    float HeightDrive = abs(dot(NeighborDirection, SolverUp));
+    float DirectionDrive = clamp(dot(SourceGravityDirection,
+                                    NeighborDirection / NeighborLength), 0.0, 1.0);
+    return HeightDrive * DirectionDrive;
+}
+
+float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
+              TSurfaceGPUProfileParameters SourceParameters, float SourceSaturation,
+              float TargetSaturation, float TargetConcavity, vec3 TargetPosition)
+{
+    if (CachedTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
+    {
+        return 0.0;
+    }
+
+    float SaturationTransferRate = SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
+    float SaturationDrive = (Solver.Flags & (1u << 1u)) != 0u
+                                ? 0.0
+                                : max(SourceSaturation - TargetSaturation, 0.0);
+    float GeometryTransferRate = SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
+    float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
+                              ? geometryDriveToPosition(TargetPosition)
+                              : 0.0;
+    float Exit = max(concavityWeight(SourceTexel) - TargetConcavity, 0.0);
+    float Retention = clamp(1.0 - SourceParameters.AccumulationThickness.y * Exit, 0.0, 1.0);
+    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
+           CachedTransferWeight * Retention * Solver.DeltaTime;
+}
+
 float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
               TSurfaceGPUProfileParameters SourceParameters, float SourceSaturation)
 {
@@ -418,20 +460,10 @@ float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float Cache
         return 0.0;
     }
 
-    float SaturationTransferRate = SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
-    float SaturationDrive = (Solver.Flags & (1u << 1u)) != 0u
-                                ? 0.0
-                                : max(SourceSaturation -
-                                          saturation(TargetTexel, ChannelIndex),
-                                      0.0);
-    float GeometryTransferRate = SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
-    float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
-                              ? geometryDrive(TargetTexel)
-                              : 0.0;
-    float Exit = max(concavityWeight(SourceTexel) - concavityWeight(TargetTexel), 0.0);
-    float Retention = clamp(1.0 - SourceParameters.AccumulationThickness.y * Exit, 0.0, 1.0);
-    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
-           CachedTransferWeight * Retention * Solver.DeltaTime;
+    return rawFlux(SourceTexel, TargetTexel, ChannelIndex, CachedTransferWeight,
+                   SourceParameters, SourceSaturation,
+                   saturation(TargetTexel, ChannelIndex), concavityWeight(TargetTexel),
+                   effectiveLocalPosition(TargetTexel));
 }
 
 #endif

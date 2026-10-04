@@ -32,6 +32,11 @@ void main()
         }
 
         float Incoming = 0.0;
+        // 위 channel 지원 검사를 통과했으므로 이웃 flux 재계산에서도 target은 지원 상태다.
+        float TargetSaturation = saturation(TexelIndex, ChannelIndex);
+        float TargetConcavity = concavityWeight(TexelIndex);
+        vec3 TargetPosition = effectiveLocalPosition(TexelIndex);
+        uint ReverseDirections = ReverseNeighborDirectionIndices.Values[TexelIndex];
         // 이웃의 역방향 slot을 사용해 각 이웃 source의 유출량을 현재 texel로 모은다.
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
@@ -50,7 +55,7 @@ void main()
             {
                 continue;
             }
-            uint ReverseDirectionIndex = reverseNeighborDirectionIndex(TexelIndex, DirectionIndex);
+            uint ReverseDirectionIndex = (ReverseDirections >> (DirectionIndex * 4u)) & 0xfu;
             if (ReverseDirectionIndex >= SurfaceNeighborCount)
             {
                 continue;
@@ -72,7 +77,8 @@ void main()
                 }
                 // source 쪽 transfer weight를 포함해 cache 사용 시와 같은 방향의 edge flux를 다시 계산한다.
                 NeighborRawIncoming = rawFlux(NeighborTexel, TexelIndex, ChannelIndex,
-                    transferWeight(NeighborTexel, ReverseDirectionIndex), SourceParameters, SourceSaturation);
+                    transferWeight(NeighborTexel, ReverseDirectionIndex), SourceParameters, SourceSaturation,
+                    TargetSaturation, TargetConcavity, TargetPosition);
             }
             Incoming += NeighborRawIncoming * NeighborScale;
         }
