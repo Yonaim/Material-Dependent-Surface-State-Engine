@@ -49,8 +49,8 @@
         "60e847407cf0ad33"
       ]
     },
-    "03_Planning": {
-      "icon": "lucide-calendar-check",
+    "03_Architecture": {
+      "icon": "lucide-pen-tool",
       "unsynced": [
         "60e847407cf0ad33"
       ]
@@ -62,6 +62,12 @@
         "60e847407cf0ad33"
       ]
     },
+    "04_Development": {
+      "icon": "experiment",
+      "unsynced": [
+        "60e847407cf0ad33"
+      ]
+    },
     "05_ADR": {
       "icon": "lucide-stamp",
       "unsynced": [
@@ -69,8 +75,14 @@
         "60e847407cf0ad33"
       ]
     },
+    "05_Decisions": {
+      "icon": "lucide-stamp",
+      "unsynced": [
+        "60e847407cf0ad33"
+      ]
+    },
     "06_Assets": {
-      "icon": "lucide-boxes",
+      "icon": "lucide-archive",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
@@ -104,19 +116,8 @@
         "60e847407cf0ad33"
       ]
     },
-    "07_Testing": {
-      "icon": "lucide-list-restart",
-      "unsynced": [
-        "60e847407cf0ad33"
-      ],
-      "color": "gray"
-    },
-    "08_Assets": {
-      "icon": "lucide-gem",
-      "unsynced": [
-        "60e847407cf0ad33"
-      ],
-      "color": "gray"
+    "Roadmap.md": {
+      "icon": "lucide-goal"
     },
     "TODO.md": {
       "icon": "lucide-check-circle",

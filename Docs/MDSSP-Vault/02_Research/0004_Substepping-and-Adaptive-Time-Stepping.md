@@ -14,7 +14,7 @@
 | 수치해석의 공식 문서 | PETSc, [TS: Scalable ODE and DAE Solvers — Error control via variable time-stepping](https://petsc.org/main/manual/ts/#error-control-via-variable-time-stepping) |
 | CFL에 따른 간격 조정 | Clawpack 5.11.x, [Specifying classic run-time parameters — dt_variable·cfl_desired](https://www.clawpack.org/v5.11.x/setrun.html) |
 | 확인 시점 | 2026-09-29. 온라인 문서는 갱신될 수 있으므로 특정 출판 연도로 표현하지 않는다. |
-| 프로젝트 결정 | [[../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]], [[../04_Architecture/0006_Surface-State-Update|State Update]] |
+| 프로젝트 결정 | [[05_Decisions/0013_Fixed-Timestep-and-Auto-Substepping|Decision 0013]], [[03_Architecture/0006_Surface-State-Update|State Update]] |
 
 ## 1. 두 이름은 무엇을 뜻하는가?
 
@@ -68,4 +68,4 @@ Fixed ON·Auto ON에서는 1/60초보다 적은 시간만 모였다고 먼저 �
 
 작은 step을 많이 쓰면 매번 2-Pass와 State 교환을 실행해야 하므로 GPU 비용이 늘어난다. 처리량이 부족하면 실제 시간을 모두 계산하지 못한 backlog가 증가한다. Auto OFF도 alpha 제한이 강해져 흐름이 느려지거나 시간 오차가 커질 수 있다. 어느 쪽이 적절한지는 같은 초기 분포와 같은 시뮬레이션 시간으로 비교한다.
 
-CPU 회귀 검사는 네 옵션 조합, FPS cadence, 고정 구간의 대기·마지막 substep, 반복 한도 이후 재개, pause·수동 step·reset·옵션 전환을 확인한다. 전체 Cube에서의 이동·분포·GPU 비용 비교는 [[../06_Development/Experiments/0005_Resolution-and-Timestep-Dependence|실험 초안]]을 따른다.
+CPU 회귀 검사는 네 옵션 조합, FPS cadence, 고정 구간의 대기·마지막 substep, 반복 한도 이후 재개, pause·수동 step·reset·옵션 전환을 확인한다. 전체 Cube에서의 이동·분포·GPU 비용 비교는 실험 초안을 따른다.

@@ -69,4 +69,4 @@ AccumulateInputDelta(TexelIndex, InputAmount);
 ## 관련 문서
 
 - [[01_Project-Policy/0002_Code_Style|Code Style]] — 코드 형식과 명명 규칙
-- [[00_Start/0001_Document-Writing-Guide|Document Writing Guide]] — 설계 및 개발 문서 작성 규칙
+- [[01_Project-Policy/0000_Documentation|Document Writing Guide]] — 설계 및 개발 문서 작성 규칙

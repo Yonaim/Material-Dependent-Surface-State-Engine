@@ -131,7 +131,7 @@ flowchart LR
 | 거리 | `DistanceWeight=clamp(dRef/d,0,1)`로 주변 평균 간격에 비해 긴 간선을 감쇠한다. 거리 보정은 이미 있다. |
 | 높이차 | `HeightDrive=abs(dot(NeighborDirection,Up))`로 월드 공간 높이차를 계산한다. |
 | Geometry mobility | 기존 높이차×방향에 상한 없는 source State/면적 환산 Capacity를 곱한다. SaturationDrive는 별도다. |
-| 시간 | `rawFlux`에서 `Solver.DeltaTime`을 곱한다. 실제 시간×배속을 누적한다. 기본 Fixed ON·Auto OFF는 1/60초 구간으로 계산하고 잔여 시간은 대기한다. Auto ON에서만 Transport 상한으로 세분화하며 Fixed OFF·Auto OFF는 누적 시간을 한 번에 계산한다. [[../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]] |
+| 시간 | `rawFlux`에서 `Solver.DeltaTime`을 곱한다. 실제 시간×배속을 누적한다. 기본 Fixed ON·Auto OFF는 1/60초 구간으로 계산하고 잔여 시간은 대기한다. Auto ON에서만 Transport 상한으로 세분화하며 Fixed OFF·Auto OFF는 누적 시간을 한 번에 계산한다. [[05_Decisions/0013_Fixed-Timestep-and-Auto-Substepping|Decision 0013]] |
 | 보유량 제한 | `alpha=min(1,Available/RawOutgoing)`로 가진 양보다 많이 보내는 것을 막는다. |
 | 보존 대상 | State는 texel 총량이다. 같은 Flux를 빼고 더하므로 보존 장부는 `ΣState`다. Capacity·입력·Decay는 실제 면적으로 환산한다. |
 | 외부 입력 | Strength × ContactWeight × InputFactor × AreaScale를 사건 한 번 적용한다. Strength는 고정 기준 면적의 양이고 전체 브러시 총량으로 정규화하지 않는다. |
@@ -139,11 +139,11 @@ flowchart LR
 
 거리 계산은 `Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp`, 전달 계산은 `Shaders/Simulation/SurfaceSolver/`의 공통 shader와 두 pass를 기준으로 확인했다.
 
-Profile version 2의 `GeometryTransferFactor × BaseGeometryTransferRate(6000)`은 **전달량 계수**다. DemoWetness의 factor `0.5`는 현재 Rate `3000`이다. 초기 기준값 100의 Rate 50에서 흐름을 재보정했다. [[../05_ADR/0033-Geometry-Rate-Recalibration|ADR 0033]] 단위는 `State/(world-length × second)`로, 출발점을 찾는 데 필요한 **이동 속도** `world-length/second`와 다르다. 이 값을 속도로 그대로 사용할 수는 없다. [[../05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]
+Profile version 2의 `GeometryTransferFactor × BaseGeometryTransferRate(6000)`은 **전달량 계수**다. DemoWetness의 factor `0.5`는 현재 Rate `3000`이다. 초기 기준값 100의 Rate 50에서 흐름을 재보정했다. [[05_Decisions/0012_Geometry-Rate-Recalibration|Decision 0012]] 단위는 `State/(world-length × second)`로, 출발점을 찾는 데 필요한 **이동 속도** `world-length/second`와 다르다. 이 값을 속도로 그대로 사용할 수는 없다. [[05_Decisions/0008_Normalized-Transport-Factors|Decision 0008]]
 
 적용 전에 필요한 검토는 다음과 같다.
 
-- **State의 의미:** 현재 결정은 texel 총량 저장과 면적 환산이다. Semi-Lagrangian 후보도 이 총량 장부를 유지해야 한다. [[../05_ADR/0030-Texel-Area-and-State-Amounts|ADR 0030]]
+- **State의 의미:** 현재 결정은 texel 총량 저장과 면적 환산이다. Semi-Lagrangian 후보도 이 총량 장부를 유지해야 한다. [[05_Decisions/0009_Texel-Area-and-State-Amounts|Decision 0009]]
 - **표면을 따라가는 경로:** 월드 공간에서 직선으로 되돌아가면 Mesh 밖으로 벗어날 수 있다. Surface 사이 이동, UV seam과 재질 경계를 처리해야 한다.
 - **먼 출발점 조회:** 현재 8-neighbor graph와 역방향 direction index만으로 임의의 먼 위치를 바로 찾을 수는 없다.
 - **보존과 경계:** 기존 source alpha만으로 원거리 조회의 총량 보존을 보장하지 못한다. invalid texel과 지원하지 않는 channel을 통과하지 않도록 해야 한다.
@@ -171,16 +171,16 @@ Profile version 2의 `GeometryTransferFactor × BaseGeometryTransferRate(6000)`�
 
 큰 시간 간격, 위치에 따라 다른 속도와 비균일 면적에서도 검사한다. 음수, NaN/Inf와 Capacity 초과량 처리도 확인한다.
 
-우선 [[../06_Development/Experiments/0005_Resolution-and-Timestep-Dependence|해상도·시간 간격 실험]]으로 현재 수식의 의존성을 분리한다. 평면 역추적 prototype과 보존 보정은 이후 별도 후보로 평가한다. 확산, 입력과 감쇠의 처리도 별도로 검토한다.
+우선 해상도·시간 간격 실험으로 현재 수식의 의존성을 분리한다. 평면 역추적 prototype과 보존 보정은 이후 별도 후보로 평가한다. 확산, 입력과 감쇠의 처리도 별도로 검토한다.
 
 ## 관련 문서
 
-- [[0000_Research-Index|연구 색인]]
-- [[0001_Bound-Preserving-Transport|Bound-Preserving Transport]]
-- [[../04_Architecture/0006_Surface-State-Update|State Update]]
-- [[../04_Architecture/0007_Simulation-Optimization|Simulation Optimization]]
-- [[../05_ADR/0015-Geometry-Driven-Transport|ADR 0015]]
-- [[../05_ADR/0016-Transport-Transfer-Weights|ADR 0016]]
-- [[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]
-- [[../05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]
-- [[../06_Development/Experiments/0005_Resolution-and-Timestep-Dependence|실험 초안]]
+- [[02_Research/0000_Research-Index|연구 색인]]
+- [[02_Research/0001_Bound-Preserving-Transport|Bound-Preserving Transport]]
+- [[03_Architecture/0006_Surface-State-Update|State Update]]
+- [[03_Architecture/0006_Surface-State-Update|Simulation Optimization]]
+- Geometry Driven Transport
+- Transport Transfer Weights
+- [[05_Decisions/0004_State-Overcapacity-Transport|Decision 0004]]
+- [[05_Decisions/0008_Normalized-Transport-Factors|Decision 0008]]
+- 실험 초안

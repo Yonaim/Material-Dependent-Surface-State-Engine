@@ -11,21 +11,21 @@
 | 위치 | 책임 |
 |---|---|
 | `02_Research/` | 외부 연구의 이해·비교·프로젝트 적용 검토 |
-| `08_Assets/Documents/` | 원본 PDF 등 참고 자료. 노트에서는 DOI·공개 원문 또는 로컬 원본을 링크 |
-| `04_Architecture/` | 프로젝트에 채택한 계약과 수식 |
-| [[05_ADR/README\|`05_ADR/`]] | 채택·보류·기각 이유와 대안, 주제별 색인 |
-| `06_Development/Experiments/` | 프로젝트 구현으로 수행한 실험 조건·측정 결과 |
-| `00_Start/Templates/0006_Research-Note.md` | 연구 노트 양식 |
+| `06_Assets/Documents/` | 원본 PDF 등 참고 자료. 노트에서는 DOI·공개 원문 또는 로컬 원본을 링크 |
+| `03_Architecture/` | 프로젝트에 채택한 계약과 수식 |
+| `05_Decisions/` | 채택·보류·기각 이유와 대안, 주제별 색인 |
+| `04_Development/` | 프로젝트 구현으로 수행한 실험 조건·측정 결과 |
+| `01_Project-Policy/Templates/0006_Research-Note.md` | 연구 노트 양식 |
 
-원문 설명과 프로젝트의 해석을 구분한다. 논문에서 증명한 조건을 프로젝트가 충족하지 않으면 해당 증명을 구현의 보장으로 인용하지 않는다. 적용 아이디어는 검토 상태로 두고 확정한 결정만 ADR/Architecture에 연결한다. 확인한 범위(초록·특정 절·전문)와 출처·버전·날짜를 기록한다.
+원문 설명과 프로젝트의 해석을 구분한다. 논문에서 증명한 조건을 프로젝트가 충족하지 않으면 해당 증명을 구현의 보장으로 인용하지 않는다. 적용 아이디어는 검토 상태로 두고 확정한 결정만 Decision/Architecture에 연결한다. 확인한 범위(초록·특정 절·전문)와 출처·버전·날짜를 기록한다.
 
 ## 연구 목록
 
 | 문서 | 프로젝트 연관 | 적용 상태 |
 |---|---|---|
-| [[0001_Bound-Preserving-Transport\|포화 상한을 보존하는 유한체적 전달 계산]] | State/Capacity 의미, Transport 보존·비음수, timestep 검증 | 검증 관점 참고. 상한 보존 방식은 ADR 0020에 직접 채택하지 않음 |
-| [[0002_Semi-Lagrangian-Transport\|Semi-Lagrangian Transport와 보존형 전달]] | 여러 텍셀에 걸친 이동, 총량 보존, Surface graph 적용 비용 | 적용 검토. 해상도·시간 간격 실험 계획과 연결, 알고리즘 채택 없음 |
-| [[0003_Conservative-Advection\|밀도·속도·유량과 보존형 이동]] | Clawpack Advection의 기본 원리, 월드 이동 속도, 거리·면적·시간의 역할 | 개념 조사·적용 검토. 현재 Solver 수식 변경 없음 |
+| [[02_Research/0001_Bound-Preserving-Transport\|포화 상한을 보존하는 유한체적 전달 계산]] | State/Capacity 의미, Transport 보존·비음수, timestep 검증 | 검증 관점 참고. 상한 보존 방식은 Decision 0004에 직접 채택하지 않음 |
+| [[02_Research/0002_Semi-Lagrangian-Transport\|Semi-Lagrangian Transport와 보존형 전달]] | 여러 텍셀에 걸친 이동, 총량 보존, Surface graph 적용 비용 | 적용 검토. 해상도·시간 간격 실험 계획과 연결, 알고리즘 채택 없음 |
+| [[02_Research/0003_Conservative-Advection\|밀도·속도·유량과 보존형 이동]] | Clawpack Advection의 기본 원리, 월드 이동 속도, 거리·면적·시간의 역할 | 개념 조사·적용 검토. 현재 Solver 수식 변경 없음 |
 
 ## 작성 흐름
 
@@ -33,13 +33,13 @@
 flowchart LR
   Source[논문 / 공식 연구 자료] --> Note[Research Note: 관계와 요지]
   Note --> Review[프로젝트 적용 검토]
-  Review --> ADR[ADR: 결정과 대안]
-  ADR --> Architecture[Architecture: 채택 계약]
+  Review --> Decision[Decision: 결정과 대안]
+  Decision --> Architecture[Architecture: 채택 계약]
   Architecture --> Implementation[구현]
   Implementation --> Experiment[프로젝트 실험 / 검증]
   Experiment --> Note
 ```
 
-[[../00_Start/Templates/0006_Research-Note|연구 노트 템플릿]]을 복사해 다음 번호로 추가하고 이 표에 연결한다. 상태·날짜·조사 범위 다음에 `References` 표를 두며, 연구 제목·저자·공개 연도 / 버전·공식 페이지 / 원문·개념 설명·보존식 배경 순서로 기록한다.
+[[01_Project-Policy/Templates/0006_Research-Note|연구 노트 템플릿]]을 복사해 다음 번호로 추가하고 이 표에 연결한다. 상태·날짜·조사 범위 다음에 `References` 표를 두며, 연구 제목·저자·공개 연도 / 버전·공식 페이지 / 원문·개념 설명·보존식 배경 순서로 기록한다.
 
 본문은 문제와 작은 숫자 예시에서 시작해 원리와 수식으로 이어지도록 쓴다. 설명용 계산, 원문의 보장과 실험, 프로젝트 적용 판단을 구분한다. 해상도 의존성을 이해하려면 `0003`을 먼저 읽고, 포화 상한과 역추적 이동의 대안은 각각 `0001`과 `0002`에서 비교할 수 있다.

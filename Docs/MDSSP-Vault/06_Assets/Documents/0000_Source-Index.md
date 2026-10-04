@@ -1,0 +1,29 @@
+# Source Index
+
+> **한 줄 요약:** PDF 원본 자료와 각 자료가 뒷받침하는 설계 주제를 찾아볼 수 있는 색인이다.
+
+설계 PDF는 검토·확정된 기준 내용을 판본 단위로 보존한다. 같은 판본을 작업 메모처럼 수시 수정하지 않지만, 이후 설계가 바뀌어 새 기준이 확정되면 PDF도 개정해 새 판본으로 갱신한다. Markdown의 Architecture·Decision·System Flows은 현재 의미와 구현 상태를 계속 갱신하며, 이 색인은 PDF와 현재 설계 사이의 차이 및 보완 항목을 추적한다. 날짜가 있는 회의록은 역사 자료로 보존하고, 후속 결정은 현재 설계 문서와 개정 PDF에 반영한다.
+
+| 파일 | 판본의 역할 | 현재 설계와 비교해 보완할 내용 |
+|---|---|---|
+| [[06_Assets/Documents/0001_Overall-Engine-Structure.pdf\|Overall-Engine-Structure.pdf]] | 엔진의 상위 모듈 구조 | 현재 C++의 소유 관계와 실행 순서 반영. `TApplication`이 `TSurfaceStateSystem`과 `TRenderer`를 각각 소유하고 Renderer는 Surface State System을 비소유 참조하는 구조, Scene별 Registry/GPU 자원 교체, Debug contact에서 Solver와 렌더 진단까지 이어지는 경로, 선택적 동적 Accumulation Geometry Update의 사전 GPU pass를 구분한다. 기준: [[03_Architecture/0001_Engine-Structure\|Engine Structure]], [[05_Decisions/0018_Application-Owned-Surface-State-System\|Decision 0018]], [[03_Architecture/0010_System-Flows\|Flow Maps]]. |
+| [[06_Assets/Documents/0002_Surface-System-Data.pdf\|Surface-System-Data.pdf]] | State/Profile와 공유·instance 데이터 기준 | `State ≤ Capacity` 상한을 폐기하고 초과량을 State에 보존한다. 단일 `TempState` 대신 목적별 scratch, Profile key로 생성되는 동적 State Registry, Scene 공유 Profile table, 고정 기준 면적에 따른 Capacity·Input·Decay 환산, 실제 GPU buffer/layout을 갱신한다. 기준: Decision 0004, 0007, 0009 및 [[03_Architecture/0002_Surface-State\|Surface State]]. |
+| [[06_Assets/Documents/0003_Asset-Structure.pdf\|Asset-Structure.pdf]] | 원본 Asset과 Scene 직렬화 기준 | 확장자 대소문자 `.Scene`·`.SRProfile`, MTL 이름 기반 직접 Profile 연결 대신 `.SurfaceProfileMap`, valid texel별 `ProfileIndex`, 해상도 128/256/512 기본 256, 해상도별 `.Surface` 생성 캐시와 stale/corrupt fallback을 반영한다. Material Profile 할당과 Runtime texel map의 역할도 구분한다. 기준: Decision 0006 및 [[03_Architecture/0003_Assets-and-Profiles\|Assets and Profiles]]. |
+| [[06_Assets/Documents/0004_Contact-Input.pdf\|Contact-Input.pdf]] | 접촉 입력 데이터와 라우팅 개념 | 고정 `SurfaceStateType` enum 대신 Profile에서 모은 Registry State를 쓴다. 공개 계약의 `Surface.SubmitContact(payload)`와 내부 instance 대상 식별자를 구분한다. 중심 texel의 same-triangle fallback, 별도 `texelSearchRadius`, 월드 반경/falloff, `InputDelta` 누적·업로드·1회 소비를 추가하고, Debug 경로는 연결됨·Collider/Physics adapter는 미연결로 표시한다. 기준: Decision 0002, [[03_Architecture/0005_Surface-Input\|Surface Contact Input]]. |
+| [[06_Assets/Documents/0005_Next-State-Calculation.pdf\|Next-State-Calculation.pdf]] | Input·Transport·Decay와 Solver 실행 방식 | 현재 기준식 하나로 정리한다. Capacity 상한 clamp를 제거하고, State/Capacity 초과 허용과 texel 면적 환산, `SaturationTransferFactor`·`GeometryTransferFactor`, `ProfileBoundaryWeight` 등 현재 용어·구동력/가중치 역할을 반영한다. 폐기된 1-pass와 예전 Height/Direction/Material Boundary weight를 현재안과 분리하고, 2-pass·선택 가능한 RawFlux cache·GPU barrier 및 검증 범위를 기록한다. 기준: Decision 0004·0005·0009·0012, [[03_Architecture/0006_Surface-State-Update\|Surface State Update]]. |
+| [[06_Assets/Documents/0006_Geometry-Integration.pdf\|Geometry-Integration.pdf]] | Macro/Meso Geometry, State 적층 및 렌더링 목표 | Static Normal Map 전처리의 PCG height 복원·normal/curvature 계산, 실행 간 `.Surface` 캐시와 WorldTexelArea/AreaScale를 설명한다. 이웃 거리는 Position에서 계산해 별도 저장하지 않는다. 초기 Surface별 `Meso_Height_Reference` 대신 현재 `.SRProfile`의 State별 `thicknessPerAmount`로 월드 기준 두께를 정하며, 선택 State 렌더 미리보기와 모든 적층 State를 합산하는 Solver의 `Accumulation Geometry Update` 옵션을 구분한다. 물리 재질별 layer 순서·상호작용은 후속 설계다. 기준: Decision 0003·0006·0009·0014–0017, [[03_Architecture/0004_Surface-Geometry\|Surface Geometry]], [[03_Architecture/0008_Rendering\|Rendering]]. |
+| [[06_Assets/Documents/0007_Target-Demos.pdf\|Target-Demos.pdf]] | 목표 시연 시나리오 | 목표와 현재 완료 기능이 혼동되지 않도록 구현 현황·MVP 범위·미연결 사례를 보탠다. Wetness/Mud/WaterFilm의 데모 외관·표시용 형상과 선택적 동적 Accumulation Geometry Update 경로는 연결되었지만, 옷의 Snow→Water→흡수, 실제 접촉 Physics, Heat→Burn 전이와 물리 재질별 layer 합성은 완성 시연으로 간주하지 않는다. 데모 범위가 바뀌면 PDF 목표 판본도 갱신한다. |
+| [[06_Assets/Documents/0008_2026-09-11-Meeting.pdf\|2026-09-11-Meeting.pdf]] | 당시 논의의 역사 기록 | 회의록 원문은 당시 발언과 상태를 보존한다. 현재 기준과 충돌하는 Capacity 상한 등은 회의록에서 지우지 않고, 후속 결정의 날짜·Decision 링크를 Source Index와 개정 설계 PDF에서 연결한다. |
+
+검토 기준일: **2026-09-30**. 이 표는 PDF 본문 갱신 시 반영할 항목을 정리한 검토안이며, PDF 파일 자체는 이 작업에서 변경하지 않았다.
+
+## PDF 이후 반영된 최신 설계
+
+- 초기 `State [0,stateCapacity]` 저장 상한은 [[05_Decisions/0004_State-Overcapacity-Transport|Decision 0004]]로 변경했다. 현재는 전체 State A/B에 초과량을 보존하고 Capacity를 포화 기준량으로 쓴다. 초기 문서의 `TempState`는 일반 중간값 개념이며 현재는 목적별 scratch buffer로 구분한다. Shader 변경과 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다.
+- `Saturation = State / Capacity`, 실제 texel Capacity에는 기준 면적 대비 WorldTexelArea를 반영한다. 전달 계산에서 1 초과를 허용하며 표시 정규화와 분리한다.
+- Transport는 `SaturationDrive + GeometryDrive` 구조.
+- `TransferWeight = Distance × Normal × Curvature × ProfileBoundary`.
+- `ProfileBoundaryWeight`는 Material 이름이 아니라 **SRProfile 경계** 기준.
+- `AccumulationAmount = State × accumulationFactor`.
+- Wetness는 내부 흡수 수분, SurfaceWater는 표면 위 물로 구분.
+- Simulation UV mapping, Meso Geometry 전처리와 GPU Resource Layout의 구현 상태·남은 한계를 별도 Markdown에서 추적한다.

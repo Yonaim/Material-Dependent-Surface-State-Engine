@@ -15,7 +15,7 @@
 | 공개 연도 / 버전 | 최초 공개 2021, 확인 원문 arXiv:2110.08186v3, 2023-01-14. 저널 출판 2023 |
 | 공식 페이지 / 원문 | [저널 / DOI](https://doi.org/10.1137/22M1488703), [arXiv 초록](https://arxiv.org/abs/2110.08186v3), [논문 PDF](https://arxiv.org/pdf/2110.08186v3) |
 | 개념 설명 | Randall J. LeVeque, [Finite Volume Methods for Hyperbolic Problems, §1.2](https://www.clawpack.org/fvmhp_materials/sample.pdf) |
-| 보존식 배경 | [Clawpack, Advection](https://www.clawpack.org/riemann_book/html/Advection.html), [[0003_Conservative-Advection\|밀도·속도·유량의 쉬운 설명]] |
+| 보존식 배경 | [Clawpack, Advection](https://www.clawpack.org/riemann_book/html/Advection.html), [[02_Research/0003_Conservative-Advection\|밀도·속도·유량의 쉬운 설명]] |
 
 ## 1. 이 연구가 막으려는 문제
 
@@ -117,7 +117,7 @@ $$
 
 ## 7. 현재 엔진과는 어떤 점이 다를까?
 
-**현재 엔진의 Capacity는 넘으면 버리는 저장 상한이 아니라 포화 기준량이다.** ADR 0020은 초과량을 같은 State에 보관한다. 따라서 이 논문의 상한 유지 모델을 그대로 구현한 상태는 아니다. [[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]
+**현재 엔진의 Capacity는 넘으면 버리는 저장 상한이 아니라 포화 기준량이다.** Decision 0004은 초과량을 같은 State에 보관한다. 따라서 이 논문의 상한 유지 모델을 그대로 구현한 상태는 아니다. [[05_Decisions/0004_State-Overcapacity-Transport|Decision 0004]]
 
 앞의 두 칸 예를 비교하면 차이가 드러난다.
 
@@ -129,7 +129,7 @@ $$
 
 두 번째 행은 논문의 암시적 해를 계산한 결과가 아니다. “전달량에서 제한하기”와 “전달 후 삭제하기”의 차이를 보여 주는 예시다.
 
-현재 Solver는 Current로 RawFlux를 계산하고 source `alpha`로 전체 유출을 제한한다. 받은 양은 Next에 저장한 뒤 다음 step부터 다시 전달한다. 목적지의 남은 공간을 강제하지 않고 `State / Capacity`는 1을 넘을 수 있다. [[../04_Architecture/0006_Surface-State-Update|갱신식]]
+현재 Solver는 Current로 RawFlux를 계산하고 source `alpha`로 전체 유출을 제한한다. 받은 양은 Next에 저장한 뒤 다음 step부터 다시 전달한다. 목적지의 남은 공간을 강제하지 않고 `State / Capacity`는 1을 넘을 수 있다. [[03_Architecture/0006_Surface-State-Update|갱신식]]
 
 현재 장부의 보존 대상은 **텍셀 State의 합**이다. 이를 면적당 값으로 해석하려면 면적을 곱한 총량을 별도로 따져야 한다. Registry에 여러 상태가 있다는 사실도 논문의 결합 다종 모델을 구현했다는 뜻은 아니다.
 
@@ -146,14 +146,14 @@ $$
 | 초과량이 후속 전달되는가? | 서로 다른 Capacity, 같은 포화도, 전달 계수·weight가 0인 조건 비교 |
 | 시간 간격에 따라 결과가 달라지는가? | 같은 초기조건·총 시뮬레이션 시간·외부 입력으로 1/30·1/60 비교 |
 
-초과량을 제한하는 다른 모델이나 암시적 Solver를 검토한다면, State 의미와 계산 비용부터 비교해야 한다. 원문의 보장이 현재 Surface graph, GeometryDrive, Profile 경계와 적층에도 성립한다고 가정하지 않는다. 결과는 `06_Development/Experiments/`에 기록한다.
+초과량을 제한하는 다른 모델이나 암시적 Solver를 검토한다면, State 의미와 계산 비용부터 비교해야 한다. 원문의 보장이 현재 Surface graph, GeometryDrive, Profile 경계와 적층에도 성립한다고 가정하지 않는다. 결과는 `04_Development/`에 기록한다.
 
 ## 관련 문서
 
-- [[0000_Research-Index|연구 색인]]
-- [[0002_Semi-Lagrangian-Transport|Semi-Lagrangian Transport]]
-- [[0003_Conservative-Advection|밀도·속도·유량과 보존형 이동]]
-- [[../04_Architecture/0002_Surface-State|State 계약]]
-- [[../04_Architecture/0006_Surface-State-Update|State Update]]
-- [[../05_ADR/0020-State-Overcapacity-Transport|ADR 0020]]
-- [[../06_Development/Experiments/0005_Resolution-and-Timestep-Dependence|해상도·시간 간격 실험 초안]]
+- [[02_Research/0000_Research-Index|연구 색인]]
+- [[02_Research/0002_Semi-Lagrangian-Transport|Semi-Lagrangian Transport]]
+- [[02_Research/0003_Conservative-Advection|밀도·속도·유량과 보존형 이동]]
+- [[03_Architecture/0002_Surface-State|State 계약]]
+- [[03_Architecture/0006_Surface-State-Update|State Update]]
+- [[05_Decisions/0004_State-Overcapacity-Transport|Decision 0004]]
+- 해상도·시간 간격 실험 초안
