@@ -4,6 +4,19 @@
  */
 #include "Surface/SurfaceStateData.glsl"
 layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTexelChartIndices { uint Values[]; } TexelChartIndices;
+float StateSaturationForProfile(uint Texel, uint Channel, uint Channels, uint Profile)
+{
+    // 호출자가 이미 검증한 Surface/Profile/chart mapping을 재사용하는 neighbor sampling 경로다.
+    if (Channels == 0u || Channel >= Channels || Texel >= uint(WorldTexelAreas.Values.length()) ||
+        Texel >= uint(CurrentState.Values.length()) / Channels ||
+        Profile >= uint(ProfileParameters.Values.length()) / Channels) return 0.0;
+    float Capacity = ProfileParameters.Values[Profile * Channels + Channel].CapacityInputAndTransfer.x *
+                     WorldTexelAreas.Values[Texel] * (256.0 * 256.0);
+    float Amount = CurrentState.Values[Texel * Channels + Channel];
+    if (Capacity <= 0.0 || isnan(Capacity) || isinf(Capacity) || Amount < 0.0 || isnan(Amount) || isinf(Amount)) return 0.0;
+    return clamp(Amount / Capacity, 0.0, 1.0);
+}
+
 float StateSaturation(uint Texel, uint Channel, uint Channels, uint Surface)
 {
     // 총량을 profile capacity로 나눠 [0, 1] 포화도로 변환한다.
@@ -15,10 +28,7 @@ float StateSaturation(uint Texel, uint Channel, uint Channels, uint Surface)
         Texel >= uint(CurrentState.Values.length()) / Channels || Texel >= uint(WorldTexelAreas.Values.length())) return 0.0;
     uint Record = Profile * Channels + Channel;
     if (ProfileSupported.Values[Record] == 0u) return 0.0;
-    float Capacity = ProfileParameters.Values[Record].CapacityInputAndTransfer.x * WorldTexelAreas.Values[Texel] * (256.0 * 256.0);
-    float Amount = CurrentState.Values[Texel * Channels + Channel];
-    if (Capacity <= 0.0 || isnan(Capacity) || isinf(Capacity) || Amount < 0.0 || isnan(Amount) || isinf(Amount)) return 0.0;
-    return clamp(Amount / Capacity, 0.0, 1.0);
+    return StateSaturationForProfile(Texel, Channel, Channels, Profile);
 }
 float SampleStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
 {
@@ -46,7 +56,7 @@ float SampleStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
         uint T = Range.x + uint(XY.y) * Range.y + uint(XY.x);
         if (T < uint(TexelChartIndices.Values.length()) && TexelChartIndices.Values[T] == Chart &&
             T < uint(TexelProfileIndices.Values.length()) && TexelProfileIndices.Values[T] == Profile)
-            Value += Weight * StateSaturation(T, Channel, Channels, Surface);
+            Value += Weight * StateSaturationForProfile(T, Channel, Channels, Profile);
     }
     return Value;
 }

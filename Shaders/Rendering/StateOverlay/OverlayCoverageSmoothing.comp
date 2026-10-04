@@ -105,6 +105,15 @@ void main()
 
     uint Profile = TexelProfileIndices.Values[Center];
     uint Chart = TexelChartIndices.Values[Center];
+    uint ProfileRecord = Profile * Push.Channels + Push.Channel;
+    if (Profile >= uint(ProfileSupported.Values.length()) / Push.Channels ||
+        Profile >= uint(ProfileParameters.Values.length()) / Push.Channels ||
+        ProfileSupported.Values[ProfileRecord] == 0u)
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+
     float Sum = 0.0;
     float WeightSum = 0.0;
     const int Kernel[5] = int[5](1, 4, 6, 4, 1);
@@ -124,7 +133,7 @@ void main()
                 continue;
 
             float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
-            Sum += Weight * StateSaturation(Texel, Push.Channel, Push.Channels, Surface);
+            Sum += Weight * StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile);
             WeightSum += Weight;
         }
     }

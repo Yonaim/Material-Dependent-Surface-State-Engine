@@ -22,14 +22,12 @@ layout(push_constant) uniform TPush
 
 const float CoverageCutoff = 0.02;
 
-float DisplayedCavityFill(uint Texel, uint Surface)
+float DisplayedCavityFill(uint Texel, uint Profile)
 {
-    if (Texel >= uint(TexelProfileIndices.Values.length())) return 0.0;
-    uint Profile = TexelProfileIndices.Values[Texel];
     if (Push.Channels == 0u || Push.Channel >= Push.Channels ||
         Profile >= uint(ProfileParameters.Values.length()) / Push.Channels) return 0.0;
     TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[Profile * Push.Channels + Push.Channel];
-    float ReferenceAmount = StateSaturation(Texel, Push.Channel, Push.Channels, Surface) *
+    float ReferenceAmount = StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) *
                             Parameters.CapacityInputAndTransfer.x;
     float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
     return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
@@ -76,14 +74,14 @@ void main()
             TexelSurfaceIndices.Values[N] != Surface ||
             TexelProfileIndices.Values[N] != Profile ||
             TexelChartIndices.Values[N] != Chart ||
-            StateSaturation(N, Push.Channel, Push.Channels, Surface) <= CoverageCutoff) continue;
+            StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) <= CoverageCutoff) continue;
 
         float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
         if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
         float AccumulationHeight = InputGeometry.Values[N].HeightAndNormal.x - Meso;
         if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
         float CavityDepth = max(-Meso, 0.0);
-        float CavityFill = CavityDepth > 0.0 ? DisplayedCavityFill(N, Surface) : 0.0;
+        float CavityFill = CavityDepth > 0.0 ? DisplayedCavityFill(N, Profile) : 0.0;
         float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
         float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
         WeightedCavityFill += Weight * CavityFill;

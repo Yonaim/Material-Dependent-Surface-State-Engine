@@ -2,13 +2,10 @@
  * @file Lighting.glsl
  * @brief GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다. 표준식 참고: https://google.github.io/filament/main/filament.html.
  */
-float EvaluateSpecularLobe(vec3 N, vec3 V, vec3 L, float PerceptualRoughness, float F0)
+float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH,
+                           float PerceptualRoughness, float F0)
 {
-    // 미세면 분포(D), 가시성(V), Fresnel(F)을 계산해 specular 기여도를 구한다.
-    vec3 Sum = V + L;
-    vec3 H = Sum * inversesqrt(max(dot(Sum, Sum), 1e-12));
-    float NoV = max(dot(N,V), 1e-4), NoL = max(dot(N,L), 0.0);
-    float NoH = max(dot(N,H), 0.0), VoH = max(dot(V,H), 0.0);
+    // 공통 방향 항은 ShadeSurface에서 계산하고, roughness별 분포와 visibility만 계산한다.
     float Alpha = max(PerceptualRoughness * PerceptualRoughness, 0.0025);
     float A2 = Alpha * Alpha;
     float Denom = NoH * NoH * (A2 - 1.0) + 1.0;
@@ -42,9 +39,13 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
 
     float Wet = clamp(WetnessCoverage, 0.0, 1.0);
     float Film = clamp(WaterFilmCoverage, 0.0, 1.0);
-    float WetHighlight = EvaluateSpecularLobe(N, V, L, 0.32, 0.08);
-    float FilmHighlight = EvaluateSpecularLobe(N, V, L, PerceptualRoughness, 0.14);
-    Direct += vec3(WetHighlight * Wet * 0.65 * WetnessSpecularStrength + FilmHighlight * Film * 0.9);
+    float StateHighlight = 0.0;
+    if (Wet > 0.0 && WetnessSpecularStrength > 0.0)
+        StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, 0.32, 0.08) *
+                          Wet * 0.65 * WetnessSpecularStrength;
+    if (Film > 0.0)
+        StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, PerceptualRoughness, 0.14) * Film * 0.9;
+    Direct += vec3(StateHighlight);
 
     // environment map 없이도 비스듬한 각도의 젖은 가장자리가 보이도록 약한 반사를 더한다.
     float Grazing = pow(1.0 - max(dot(N, V), 0.0), 5.0);
