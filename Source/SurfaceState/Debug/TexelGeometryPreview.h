@@ -59,6 +59,7 @@ namespace MDSS::SurfaceState
             std::unique_ptr<GPU::TGPUBuffer> GeometryCache;
             VkDescriptorSet                  Set = VK_NULL_HANDLE;
             bool                             bOccupancyInitialized = false;
+            bool                             bSparseReady = false;
             float                            BaselineScale = 0.0F;
             bool                             bBaselineReady = false;
             bool                             bInputsObserved = false;

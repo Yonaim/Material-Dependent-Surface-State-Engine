@@ -1,6 +1,6 @@
 /**
  * @file TexelGeometry.comp
- * @brief 표시용 높이와 normal을 계산하며, 변경되지 않은 tile은 baseline cache를 재사용한다.
+ * @brief 표시용 높이와 normal을 계산한다. Overlay sparse mode에서는 DirtyNormalTileList만 처리한다.
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
@@ -11,7 +11,6 @@
 layout(local_size_x = 64) in;
 
 layout(set = 1, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } Output;
-
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache { uint Values[]; } GeometryCache;
 
 layout(push_constant) uniform TPush
@@ -25,9 +24,88 @@ layout(push_constant) uniform TPush
     uint TotalHeight;
     uint UseBaseline;
     uint TileSize;
-    uint Padding[3];
+    uint UseActiveTileList;
+    uint Padding[2];
     vec4 NormalMatrixColumns[3];
 } Push;
+
+shared uint SparseTileValid;
+shared uint SparseCandidate;
+shared uint SparseRangeFirst;
+shared uint SparseRangeWidth;
+shared uint SparseRangeHeight;
+shared uint SparseTileX;
+shared uint SparseTileY;
+
+uint CapacityTileCount()
+{
+    return (Push.TexelCount + 255u) / 256u;
+}
+
+uint NormalListBase()
+{
+    // After the four texel planes:
+    // flags[N], builtState[Texels], heightScheduled[N], normalScheduled[N],
+    // heightCount, heightDispatch[3], heightList[N], normalCount, normalDispatch[3], normalList[N].
+    return Push.TexelCount * 5u + CapacityTileCount() * 4u + 8u;
+}
+
+bool ResolveCandidateTile(uint Candidate)
+{
+    uint Base = 0u;
+    for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
+    {
+        uvec4 Range = SurfaceRanges.Values[Surface];
+        uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
+        uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
+        uint Count = TilesX * TilesY;
+        if (Candidate < Base + Count)
+        {
+            uint Local = Candidate - Base;
+            SparseTileValid = 1u;
+            SparseCandidate = Candidate;
+            SparseRangeFirst = Range.x;
+            SparseRangeWidth = Range.y;
+            SparseRangeHeight = Range.z;
+            SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
+            SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+            return true;
+        }
+        Base += Count;
+    }
+    SparseTileValid = 0u;
+    return false;
+}
+
+uint ResolveTexel()
+{
+    if (Push.UseActiveTileList == 0u)
+        return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
+    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+    uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
+    uint ActiveSlot = gl_WorkGroupID.x / GroupsPerTile;
+    uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
+    uint Candidate = GeometryCache.Values[NormalListBase() + ActiveSlot];
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        SparseTileValid = 0u;
+        SparseCandidate = Candidate;
+        ResolveCandidateTile(Candidate);
+    }
+    barrier();
+    if (SparseTileValid == 0u) return Push.TexelCount;
+
+    uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    if (Local >= TilePixels) return Push.TexelCount;
+    uint LocalX = Local % Push.TileSize;
+    uint LocalY = Local / Push.TileSize;
+    uint X = SparseTileX * Push.TileSize + LocalX;
+    uint Y = SparseTileY * Push.TileSize + LocalY;
+    if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
+    return SparseRangeFirst + Y * SparseRangeWidth + X;
+}
 
 float DisplayHeight(uint Texel)
 {
@@ -61,8 +139,7 @@ vec3 CachedFinalNormal(uint Texel)
                 break;
             }
             float NeighborHeight = DisplayHeight(Other);
-            if (isnan(NeighborHeight) ||
-                NeighborHeight != GeometryScalars.Values[Other].MesoVirtualHeight)
+            if (isnan(NeighborHeight) || NeighborHeight != GeometryScalars.Values[Other].MesoVirtualHeight)
             {
                 Unchanged = false;
                 break;
@@ -84,8 +161,7 @@ vec3 CachedFinalNormal(uint Texel)
     {
         uint Other = NeighborIndices.Values[Texel].Indices[DirectionIndex];
         if (Other >= Push.TexelCount || Other >= uint(Positions.Values.length()) ||
-            Other >= uint(Normals.Values.length()) ||
-            dot(N, Normals.Values[Other].xyz) < 0.5) continue;
+            Other >= uint(Normals.Values.length()) || dot(N, Normals.Values[Other].xyz) < 0.5) continue;
         float NeighborHeight = DisplayHeight(Other);
         if (isnan(NeighborHeight)) continue;
         vec3 Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
@@ -105,22 +181,28 @@ vec3 CachedFinalNormal(uint Texel)
 
 void main()
 {
-    // 2D dispatch 좌표를 1D texel 번호로 바꾼다.
-    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    uint T = ResolveTexel();
     if (T >= Push.TexelCount) return;
+
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
-    uint TileFlag = GeometryCache.Values[Push.TexelCount * 4u + T / TilePixels];
-    if (TileFlag == 0u)
+    uint TileFlag = 1u;
+    if (Push.UseActiveTileList == 0u)
     {
-        // tile 내 State가 바뀌지 않았으면 비싼 높이장 normal 계산을 생략한다.
-        float BaseHeight = GeometryScalars.Values[T].MesoVirtualHeight;
-        if (isnan(BaseHeight) || isinf(BaseHeight)) BaseHeight = 0.0;
-        vec3 BaseNormal = MesoNormals.Values[T].xyz;
-        if (any(isnan(BaseNormal)) || any(isinf(BaseNormal)) || dot(BaseNormal, BaseNormal) < 1e-12)
-            BaseNormal = Normals.Values[T].xyz;
-        Output.Values[T].HeightAndNormal = vec4(BaseHeight * Push.GeometryDisplayScale, normalize(BaseNormal));
-        return;
+        uint Tile = T / TilePixels;
+        TileFlag = GeometryCache.Values[Push.TexelCount * 4u + Tile] & 1u;
+        if (TileFlag == 0u)
+        {
+            // Legacy/full-dispatch path: inactive tiles still receive their baseline output.
+            float BaseHeight = GeometryScalars.Values[T].MesoVirtualHeight;
+            if (isnan(BaseHeight) || isinf(BaseHeight)) BaseHeight = 0.0;
+            vec3 BaseNormal = MesoNormals.Values[T].xyz;
+            if (any(isnan(BaseNormal)) || any(isinf(BaseNormal)) || dot(BaseNormal, BaseNormal) < 1e-12)
+                BaseNormal = Normals.Values[T].xyz;
+            Output.Values[T].HeightAndNormal = vec4(BaseHeight * Push.GeometryDisplayScale, normalize(BaseNormal));
+            return;
+        }
     }
+
     vec3 N = Normals.Values[T].xyz;
     float H = GeometryScalars.Values[T].MesoVirtualHeight;
     if (isnan(H) || isinf(H)) H = 0.0;
@@ -129,6 +211,8 @@ void main()
     {
         float CachedHeight = DisplayHeight(T);
         if (!isnan(CachedHeight)) H = CachedHeight;
+        // Sparse mode schedules a one-tile halo around dirty tiles. Even if this tile is currently inactive, recomputing
+        // the normal lets an adjacent active tile bend the shared boundary continuously.
         FinalNormal = CachedFinalNormal(T);
     }
     if (any(isnan(FinalNormal)) || any(isinf(FinalNormal)) || dot(FinalNormal, FinalNormal) < 1e-12)

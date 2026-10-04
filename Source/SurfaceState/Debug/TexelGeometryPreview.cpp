@@ -156,7 +156,17 @@ namespace MDSS::SurfaceState
     {
         if (TileSize != 16U && TileSize != 32U)
             throw std::invalid_argument("Overlay occupancy tile size must be 16 or 32.");
+        if (OccupancyTileSize == TileSize)
+            return;
         OccupancyTileSize = TileSize;
+        // Packed tile flags are indexed by the selected tile size, so changing the size invalidates
+        // both the history bits and the compact dispatch list. The next Record performs a full sparse init.
+        for (auto& [Instance, Output] : Outputs)
+        {
+            (void)Instance;
+            Output.bOccupancyInitialized = false;
+            Output.bSparseReady = false;
+        }
     }
 
     void TTexelGeometryPreview::Record(VkCommandBuffer                         Command,
@@ -178,10 +188,38 @@ namespace MDSS::SurfaceState
             GetSurfaceGPUBufferByteSize(TexelCount, sizeof(TTexelGeometryVertex), Limits.maxStorageBufferRange);
         const auto BaseCacheBytes =
             GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
+
+        // Sparse overlay metadata is appended after the 4 uint planes used by the height/normal cache.
+        // Active occupancy and geometry dirtiness are intentionally separate. Active flags drive
+        // coverage/draw culling, while state deltas against the last built state drive geometry work.
+        // Layout after the base cache (uint words):
+        //   activeFlags[N]                                  persistent
+        //   builtState[TexelCount]                          persistent
+        //   heightScheduled[N], normalScheduled[N]          dynamic
+        //   heightCount, heightDispatch[3], heightList[N]   dynamic
+        //   normalCount, normalDispatch[3], normalList[N]   dynamic
+        //   globalAny                                       dynamic (last word)
+        // N is capacity for the smallest supported tile (16x16).
         const auto MaxTileCount = (TexelCount - 1U) / (16U * 16U) + 1U;
-        const auto OccupancyBytes = (static_cast<std::size_t>(MaxTileCount) + 1U) * sizeof(std::uint32_t);
-        const auto CacheBytes = BaseCacheBytes + OccupancyBytes;
-        auto       It = Outputs.find(Instance);
+        const auto SparseWordCount = static_cast<std::size_t>(TexelCount) +
+                                     static_cast<std::size_t>(MaxTileCount) * 5U + 9U;
+        const auto SparseBytes = SparseWordCount * sizeof(std::uint32_t);
+        const auto CacheBytes = BaseCacheBytes + SparseBytes;
+        const VkDeviceSize PersistentSparseBytes =
+            (static_cast<VkDeviceSize>(MaxTileCount) + static_cast<VkDeviceSize>(TexelCount)) *
+            sizeof(std::uint32_t);
+        const VkDeviceSize DynamicSparseOffset = BaseCacheBytes + PersistentSparseBytes;
+        const VkDeviceSize DynamicSparseBytes = SparseBytes - PersistentSparseBytes;
+        const VkDeviceSize HeightDispatchIndirectOffset =
+            BaseCacheBytes +
+            (static_cast<VkDeviceSize>(TexelCount) + static_cast<VkDeviceSize>(MaxTileCount) * 3U + 1U) *
+                sizeof(std::uint32_t);
+        const VkDeviceSize NormalDispatchIndirectOffset =
+            BaseCacheBytes +
+            (static_cast<VkDeviceSize>(TexelCount) + static_cast<VkDeviceSize>(MaxTileCount) * 4U + 5U) *
+                sizeof(std::uint32_t);
+
+        auto It = Outputs.find(Instance);
         if (It == Outputs.end())
         {
             TOutput Output;
@@ -195,7 +233,8 @@ namespace MDSS::SurfaceState
                 std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
                                                   Device,
                                                   CacheBytes,
-                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                                      VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -220,42 +259,52 @@ namespace MDSS::SurfaceState
         }
         if (It->second.Buffer->GetSize() != Bytes || It->second.GeometryCache->GetSize() != CacheBytes)
             throw std::logic_error("Texel geometry size changed without rebuilding Scene resources.");
+
         const std::uint32_t GroupCount = (TexelCount - 1U) / 64U + 1U;
         const std::uint32_t GroupsX = std::min(GroupCount, Limits.maxComputeWorkGroupCount[0]);
         const std::uint32_t GroupsY = (GroupCount - 1U) / GroupsX + 1U;
         if (GroupsY > Limits.maxComputeWorkGroupCount[1])
             throw std::overflow_error("Texel geometry dispatch exceeds Vulkan workgroup limits.");
 
-        VkBufferMemoryBarrier OccupancyBarrier{};
-        OccupancyBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        OccupancyBarrier.srcQueueFamilyIndex = OccupancyBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        OccupancyBarrier.buffer = It->second.GeometryCache->GetHandle();
-        OccupancyBarrier.offset = BaseCacheBytes;
-        OccupancyBarrier.size = OccupancyBytes;
-        const auto PrepareOccupancy = [&]()
+        const std::uint32_t TilePixels = OccupancyTileSize * OccupancyTileSize;
+        const std::uint32_t TileGroupCount = (TexelCount - 1U) / TilePixels + 1U;
+        const std::uint32_t TileGroupsX = std::min(TileGroupCount, Limits.maxComputeWorkGroupCount[0]);
+        const std::uint32_t TileGroupsY = (TileGroupCount - 1U) / TileGroupsX + 1U;
+        if (TileGroupsY > Limits.maxComputeWorkGroupCount[1])
+            throw std::overflow_error("Overlay occupancy dispatch exceeds Vulkan workgroup limits.");
+
+        VkBufferMemoryBarrier SparseBarrier{};
+        SparseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        SparseBarrier.srcQueueFamilyIndex = SparseBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        SparseBarrier.buffer = It->second.GeometryCache->GetHandle();
+
+        // Active flags and the per-texel state captured at the last geometry build survive across
+        // frames. Only schedules/counters/indirect args/lists are reset every frame. On creation or
+        // tile-size changes the complete sparse area is initialized.
+        if (!It->second.bOccupancyInitialized)
         {
-            if (!bEnableOccupancyScan && It->second.bOccupancyInitialized)
-                return;
-            OccupancyBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-            OccupancyBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            SparseBarrier.offset = BaseCacheBytes;
+            SparseBarrier.size = SparseBytes;
+            SparseBarrier.srcAccessMask =
+                VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+            SparseBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             vkCmdPipelineBarrier(Command,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
                                  VK_PIPELINE_STAGE_TRANSFER_BIT,
                                  0,
                                  0,
                                  nullptr,
                                  1,
-                                 &OccupancyBarrier,
+                                 &SparseBarrier,
                                  0,
                                  nullptr);
             vkCmdFillBuffer(Command,
                             It->second.GeometryCache->GetHandle(),
-                            OccupancyBarrier.offset,
-                            OccupancyBarrier.size,
+                            BaseCacheBytes,
+                            SparseBytes,
                             bEnableOccupancyScan ? 0U : 0xffffffffU);
-            OccupancyBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            OccupancyBarrier.dstAccessMask =
-                bEnableOccupancyScan ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_SHADER_READ_BIT;
+            SparseBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            SparseBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             vkCmdPipelineBarrier(Command,
                                  VK_PIPELINE_STAGE_TRANSFER_BIT,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -263,12 +312,53 @@ namespace MDSS::SurfaceState
                                  0,
                                  nullptr,
                                  1,
-                                 &OccupancyBarrier,
+                                 &SparseBarrier,
                                  0,
                                  nullptr);
             It->second.bOccupancyInitialized = true;
-        };
-        PrepareOccupancy();
+            It->second.bSparseReady = false;
+        }
+        else if (bEnableOccupancyScan)
+        {
+            SparseBarrier.offset = DynamicSparseOffset;
+            SparseBarrier.size = DynamicSparseBytes;
+            SparseBarrier.srcAccessMask =
+                VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+            SparseBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &SparseBarrier,
+                                 0,
+                                 nullptr);
+            vkCmdFillBuffer(Command,
+                            It->second.GeometryCache->GetHandle(),
+                            DynamicSparseOffset,
+                            DynamicSparseBytes,
+                            0U);
+            // The transfer reset touches only the dynamic tail, but the occupancy pass also reads
+            // builtState written by the previous frame. Cover the complete sparse region here so
+            // both the transfer reset and the persistent compute writes are visible to this scan.
+            SparseBarrier.offset = BaseCacheBytes;
+            SparseBarrier.size = SparseBytes;
+            SparseBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            SparseBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            vkCmdPipelineBarrier(Command,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0,
+                                 0,
+                                 nullptr,
+                                 1,
+                                 &SparseBarrier,
+                                 0,
+                                 nullptr);
+        }
+
         if (bEnableOccupancyScan)
         {
             const std::array<VkDescriptorSet, 2> OccupancySets{
@@ -278,6 +368,7 @@ namespace MDSS::SurfaceState
             OccupancyPush[1] = Channel;
             OccupancyPush[2] = Channels;
             OccupancyPush[3] = OccupancyTileSize;
+            OccupancyPush[4] = It->second.bSparseReady ? 0U : 1U;
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, OccupancyPipeline);
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -289,21 +380,26 @@ namespace MDSS::SurfaceState
                                     nullptr);
             vkCmdPushConstants(
                 Command, Layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(OccupancyPush), OccupancyPush.data());
-            vkCmdDispatch(Command, GroupsX, GroupsY, 1);
-            OccupancyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-            OccupancyBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            vkCmdDispatch(Command, TileGroupsX, TileGroupsY, 1);
+
+            SparseBarrier.offset = BaseCacheBytes;
+            SparseBarrier.size = SparseBytes;
+            SparseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            SparseBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
             vkCmdPipelineBarrier(Command,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
                                  0,
                                  0,
                                  nullptr,
                                  1,
-                                 &OccupancyBarrier,
+                                 &SparseBarrier,
                                  0,
                                  nullptr);
+            It->second.bSparseReady = true;
         }
-        // One GPU-only buffer per Scene instance. A queue barrier protects reuse across frames.
+
+        // One GPU-only output buffer per Scene instance. A queue barrier protects reuse across frames.
         VkBufferMemoryBarrier Barrier{};
         Barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         Barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
@@ -321,11 +417,12 @@ namespace MDSS::SurfaceState
                              &Barrier,
                              0,
                              nullptr);
+
         struct TPush
         {
             std::uint32_t            Texels, Channel, Channels, Accumulation;
             float                    AccumulationDisplayScale, GeometryDisplayScale;
-            std::uint32_t            TotalHeight, UseBaseline, TileSize, Padding[3];
+            std::uint32_t            TotalHeight, UseBaseline, TileSize, UseActiveTileList, Padding[2];
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
         static_assert(offsetof(TPush, NormalMatrixColumns) == 48);
@@ -335,6 +432,7 @@ namespace MDSS::SurfaceState
         const float     Determinant = glm::determinant(ModelLinear);
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
+
         bool bBuildBaseline = false;
         if (bAccumulation && !bTotalHeight)
         {
@@ -353,6 +451,7 @@ namespace MDSS::SurfaceState
                 It->second.bBaselineReady = true;
             }
         }
+
         TPush Push{TexelCount,
                    Channel,
                    Channels,
@@ -362,7 +461,8 @@ namespace MDSS::SurfaceState
                    bTotalHeight ? 1U : 0U,
                    bAccumulation && !bTotalHeight && It->second.bBaselineReady ? 1U : 0U,
                    OccupancyTileSize,
-                   {0U, 0U, 0U},
+                   bEnableOccupancyScan ? 1U : 0U,
+                   {0U, 0U},
                    {}};
         for (int Column = 0; Column < 3; ++Column)
             Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);
@@ -371,6 +471,7 @@ namespace MDSS::SurfaceState
         vkCmdBindDescriptorSets(
             Command, VK_PIPELINE_BIND_POINT_COMPUTE, Layout, 0, Sets.size(), Sets.data(), 0, nullptr);
         vkCmdPushConstants(Command, Layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), &Push);
+
         if (bBuildBaseline)
         {
             VkBufferMemoryBarrier BaselineBarrier{};
@@ -405,6 +506,7 @@ namespace MDSS::SurfaceState
                                  0,
                                  nullptr);
         }
+
         if (bAccumulation && !bTotalHeight)
         {
             VkBufferMemoryBarrier HeightBarrier{};
@@ -415,7 +517,7 @@ namespace MDSS::SurfaceState
             HeightBarrier.buffer = It->second.GeometryCache->GetHandle();
             HeightBarrier.size = VK_WHOLE_SIZE;
             vkCmdPipelineBarrier(Command,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  0,
                                  0,
@@ -425,7 +527,10 @@ namespace MDSS::SurfaceState
                                  0,
                                  nullptr);
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, HeightPipeline);
-            vkCmdDispatch(Command, GroupsX, GroupsY, 1);
+            if (bEnableOccupancyScan)
+                vkCmdDispatchIndirect(Command, It->second.GeometryCache->GetHandle(), HeightDispatchIndirectOffset);
+            else
+                vkCmdDispatch(Command, GroupsX, GroupsY, 1);
             HeightBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
             HeightBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
             vkCmdPipelineBarrier(Command,
@@ -439,10 +544,16 @@ namespace MDSS::SurfaceState
                                  0,
                                  nullptr);
         }
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(Command, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, HeightCompleteQuery);
+
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-        vkCmdDispatch(Command, GroupsX, GroupsY, 1);
+        if (bEnableOccupancyScan)
+            vkCmdDispatchIndirect(Command, It->second.GeometryCache->GetHandle(), NormalDispatchIndirectOffset);
+        else
+            vkCmdDispatch(Command, GroupsX, GroupsY, 1);
+
         Barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         Barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         vkCmdPipelineBarrier(Command,
