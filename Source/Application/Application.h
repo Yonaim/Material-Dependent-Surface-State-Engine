@@ -6,6 +6,7 @@
 #pragma once
 
 #include "Application/Window.h"
+#include "Application/BenchmarkOptions.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "GPU/Vulkan/VulkanContext.h"
 #include "Scene/Scene.h"
@@ -31,7 +32,7 @@ namespace MDSS
     class TApplication
     {
     public:
-        TApplication();
+        explicit TApplication(TBenchmarkOptions BenchmarkOptions = {});
         ~TApplication();
 
         /** @brief 엔진 main loop를 시작하고 종료 시 정상 정리를 수행한다. 0은 무제한 실행이다. */
@@ -51,5 +52,6 @@ namespace MDSS
         std::unique_ptr<Rendering::TRenderer>              FrameRenderer;
         std::unique_ptr<TDebugUI>                          DebugInterface;
         std::unique_ptr<TInputSystem>                      InputInterface;
+        TBenchmarkOptions                                  Benchmark;
     };
 } // namespace MDSS

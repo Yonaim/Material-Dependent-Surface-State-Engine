@@ -510,7 +510,9 @@ namespace MDSS::SurfaceState
             Bindings[Binding].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             Bindings[Binding].descriptorCount = 1;
             Bindings[Binding].stageFlags =
-                VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
+                Binding == static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::TransferWeightDebugAverages)
+                    ? VK_SHADER_STAGE_FRAGMENT_BIT
+                    : VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
         }
 
         VkDescriptorSetLayoutCreateInfo LayoutInfo{};

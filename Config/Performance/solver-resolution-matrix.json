@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "scene_set": "scene-set.json",
+  "scenes": ["brickcube", "mountain"],
+  "resolutions": [128, 256, 512],
+  "warmup_frames": 30,
+  "measurement_frames": 180,
+  "repeats": 3,
+  "order_seed": 42017,
+  "build_before_run": true,
+  "build_type": "Release",
+  "validation_layers": false
+}

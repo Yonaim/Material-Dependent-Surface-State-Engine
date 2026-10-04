@@ -27,6 +27,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <limits>
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -792,6 +793,12 @@ namespace MDSS::Rendering
         {
             vkDeviceWaitIdle(Context.GetDevice());
         }
+        if (BenchmarkOutput.is_open())
+        {
+            for (const std::string& Line : BenchmarkJsonLines)
+                BenchmarkOutput << Line << '\n';
+            BenchmarkOutput.flush();
+        }
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkDestroyQueryPool(Context.GetDevice(), TimestampQueryPool, nullptr);
@@ -979,6 +986,7 @@ namespace MDSS::Rendering
                                                        ProfilingStats.AccumulationGeometryGpuMilliseconds +
                                                        ProfilingStats.TransferWeightGpuMilliseconds;
                 LastSolverGpuMilliseconds = ProfilingStats.SolverGpuMilliseconds;
+                WriteBenchmarkSample(FrameIndex);
             }
             bTimestampQueriesSubmitted[FrameIndex] = false;
             SolverTimestampStepsSubmitted[FrameIndex] = 0;
@@ -1086,6 +1094,16 @@ namespace MDSS::Rendering
         {
             bTimestampQueriesSubmitted[FrameIndex] = true;
             SolverTimestampStepsSubmitted[FrameIndex] = LastSimulationStepCount;
+            if (bBenchmarkCaptureEnabled)
+            {
+                BenchmarkSubmissions[FrameIndex] = {NextBenchmarkFrameIndex++,
+                                                     LastSimulationStepCount,
+                                                     ProfilingStats.SimulationResolution,
+                                                     ProfilingStats.SimulationInstances,
+                                                     ProfilingStats.StateChannels,
+                                                     ProfilingStats.SimulationTexels,
+                                                     ProfilingStats.SimulatedThisFrameSeconds};
+            }
         }
 
         const VkSemaphore WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
@@ -1163,6 +1181,58 @@ namespace MDSS::Rendering
         {
             DebugProfileParameterOverrides.erase(Key);
         }
+    }
+
+    void TRenderer::ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
+                                              std::uint32_t                 WarmupFrames,
+                                              std::uint32_t                 MeasurementFrames)
+    {
+        if (TimestampQueryPool == VK_NULL_HANDLE)
+            throw std::runtime_error("Benchmark capture requires Vulkan timestamp query support.");
+        if (OutputPath.empty() || MeasurementFrames == 0)
+            throw std::invalid_argument("Benchmark capture requires an output path and measurement frames.");
+        const std::filesystem::path AbsoluteOutput = std::filesystem::absolute(OutputPath).lexically_normal();
+        if (AbsoluteOutput.has_parent_path())
+            std::filesystem::create_directories(AbsoluteOutput.parent_path());
+        BenchmarkOutput.open(AbsoluteOutput, std::ios::out | std::ios::trunc);
+        if (!BenchmarkOutput)
+            throw std::runtime_error("Unable to open benchmark output: " + AbsoluteOutput.string());
+        BenchmarkWarmupFrames = WarmupFrames;
+        BenchmarkMeasurementFrames = MeasurementFrames;
+        NextBenchmarkFrameIndex = 0;
+        BenchmarkJsonLines.clear();
+        bBenchmarkCaptureEnabled = true;
+    }
+
+    void TRenderer::WriteBenchmarkSample(std::uint32_t FrameSlot)
+    {
+        if (!bBenchmarkCaptureEnabled || FrameSlot >= BenchmarkSubmissions.size())
+            return;
+        const TBenchmarkFrameSubmission& Submitted = BenchmarkSubmissions[FrameSlot];
+        if (Submitted.FrameIndex == std::numeric_limits<std::uint64_t>::max() ||
+            Submitted.FrameIndex < BenchmarkWarmupFrames ||
+            Submitted.FrameIndex >= BenchmarkWarmupFrames + BenchmarkMeasurementFrames)
+            return;
+
+        const auto OptionalTiming = [](float Value) -> nlohmann::json
+        { return Value >= 0.0F && std::isfinite(Value) ? nlohmann::json(Value) : nlohmann::json(nullptr); };
+        const nlohmann::json Sample = {
+            {"schema_version", 1},
+            {"frame_index", Submitted.FrameIndex},
+            {"resolution", Submitted.Resolution},
+            {"simulation_steps", Submitted.SimulationSteps},
+            {"simulated_seconds", Submitted.SimulatedSeconds},
+            {"instances", Submitted.Instances},
+            {"texels", Submitted.Texels},
+            {"state_channels", Submitted.StateChannels},
+            {"solver_gpu_ms", OptionalTiming(ProfilingStats.SolverGpuMilliseconds)},
+            {"pass1_gpu_ms", OptionalTiming(ProfilingStats.SolverPass1GpuMilliseconds)},
+            {"pass2_gpu_ms", OptionalTiming(ProfilingStats.SolverPass2GpuMilliseconds)},
+            {"geometry_gpu_ms", OptionalTiming(ProfilingStats.AccumulationGeometryGpuMilliseconds)},
+            {"transfer_weight_gpu_ms", OptionalTiming(ProfilingStats.TransferWeightGpuMilliseconds)},
+            {"render_gpu_ms", OptionalTiming(LastRenderGpuMilliseconds)},
+        };
+        BenchmarkJsonLines.push_back(Sample.dump());
     }
 
     void TRenderer::ReloadSceneResources(const TScene& Scene, bool bResetStateSettings)

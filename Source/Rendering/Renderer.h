@@ -27,9 +27,13 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -234,6 +238,9 @@ namespace MDSS::Rendering
         {
             return ProfilingStats;
         }
+        void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
+                                       std::uint32_t WarmupFrames,
+                                       std::uint32_t MeasurementFrames);
         [[nodiscard]] TOverlayDrawProfilingMode GetOverlayDrawProfilingMode() const noexcept
         {
             return OverlayDrawProfilingMode;
@@ -342,6 +349,19 @@ namespace MDSS::Rendering
         void                SetAmbientLight(float Intensity);
 
     private:
+        struct TBenchmarkFrameSubmission
+        {
+            std::uint64_t FrameIndex = std::numeric_limits<std::uint64_t>::max();
+            std::uint32_t SimulationSteps = 0;
+            std::uint32_t Resolution = 0;
+            std::uint32_t Instances = 0;
+            std::uint32_t StateChannels = 0;
+            std::uint64_t Texels = 0;
+            float         SimulatedSeconds = 0.0F;
+        };
+
+        void WriteBenchmarkSample(std::uint32_t FrameSlot);
+
         struct TTotalHeightCacheEntry
         {
             glm::mat4     Model{1.0F};
@@ -464,6 +484,13 @@ namespace MDSS::Rendering
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             SolverTimestampStepsSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             OverlayTimestampLayersSubmitted{};
         std::array<TOverlayDrawProfilingMode, TRenderContext::MaxFramesInFlight> OverlayDrawModesSubmitted{};
+        std::array<TBenchmarkFrameSubmission, TRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
+        std::ofstream      BenchmarkOutput;
+        std::vector<std::string> BenchmarkJsonLines;
+        std::uint64_t      BenchmarkWarmupFrames = 0;
+        std::uint64_t      BenchmarkMeasurementFrames = 0;
+        std::uint64_t      NextBenchmarkFrameIndex = 0;
+        bool               bBenchmarkCaptureEnabled = false;
         SurfaceState::TSimulationClock                                           SimulationClock;
         std::uint32_t                                                            LastSimulationStepCount = 0;
         float                   MaximumSimulationStep = SurfaceState::FixedSimulationStepSeconds;

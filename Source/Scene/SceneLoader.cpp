@@ -163,7 +163,8 @@ namespace MDSS
 
     TScene TSceneLoader::Load(const std::filesystem::path&       Path,
                               Asset::TAssetManager&              Assets,
-                              SurfaceState::TSurfaceDataManager& SurfaceData)
+                              SurfaceState::TSurfaceDataManager& SurfaceData,
+                              std::optional<std::uint32_t>        ResolutionOverride)
     {
         std::ifstream Input(Path);
         if (!Input)
@@ -201,6 +202,10 @@ namespace MDSS
         if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
         {
             Scene.SetSimulationResolution(ReadSimulationResolution(*Resolution));
+        }
+        if (ResolutionOverride)
+        {
+            Scene.SetSimulationResolution(*ResolutionOverride);
         }
         if (const auto DisplayScale = Root.find("litHeightDisplayScale"); DisplayScale != Root.end())
         {

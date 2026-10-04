@@ -74,6 +74,17 @@ namespace MDSS
         /** @brief 새 ImGui frame을 시작해 진단 창을 갱신하고 draw data를 확정한다. */
         void BeginFrame(TScene& SceneData);
 
+        /** @brief 자동 benchmark에서 solver 조건을 fixed 1/60 s step으로 고정한다. */
+        void SetBenchmarkMode() noexcept
+        {
+            bFixedSimulationTimestep = true;
+            bAutoSubstepping = false;
+            bSimulationPaused = false;
+            bSolverStepRequested = false;
+            bSolverResetRequested = false;
+            SimulationTimeScale = 1.0F;
+        }
+
         /** @brief 저장된 .Scene을 다시 읽어 애니메이션, 상태, 초기 접촉 입력을 처음부터 시작한다. */
         void RestartScene(TScene& SceneData);
 

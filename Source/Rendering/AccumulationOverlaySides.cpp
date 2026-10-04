@@ -49,7 +49,8 @@ namespace MDSS::Rendering
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
         Limits = Properties.limits;
-        const auto StorageBindings = static_cast<std::uint32_t>(SurfaceState::TSurfaceGPUDescriptorBinding::Count) + 7U;
+        const auto StorageBindings =
+            static_cast<std::uint32_t>(SurfaceState::TSurfaceGPUDescriptorBinding::Count) - 1U + 8U;
         if (Limits.maxPerStageDescriptorStorageBuffers < StorageBindings ||
             Limits.maxDescriptorSetStorageBuffers < StorageBindings || Limits.maxComputeWorkGroupInvocations < 64 ||
             Limits.maxComputeWorkGroupSize[0] < 64)
