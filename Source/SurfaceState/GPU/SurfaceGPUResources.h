@@ -90,7 +90,9 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetNeighborIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetReverseNeighborDirectionIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
+        [[nodiscard]] const std::vector<TSurfaceGPUSurfaceRange>& GetSurfaceRanges() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::TGPUBuffer& GetRenderSamplingBoundaryFlagBuffer() const noexcept;
         [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept
         {
@@ -128,7 +130,9 @@ namespace MDSS::SurfaceState
         std::unique_ptr<GPU::TGPUBuffer>    NeighborIndexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    ReverseNeighborDirectionIndexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    SurfaceRangeBuffer;
+        std::vector<TSurfaceGPUSurfaceRange> SurfaceRanges;
         std::unique_ptr<GPU::TGPUBuffer>    TexelChartIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>    RenderSamplingBoundaryFlagBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    TexelMeshIndexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    TexelMeshVertexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    TexelMeshBoundaryBuffer;

@@ -17,6 +17,7 @@
 #include "Rendering/AccumulationOverlaySides.h"
 #include "Rendering/DemoSurfaceEffects.h"
 #include "Rendering/HeightFieldSmoothing.h"
+#include "Rendering/RenderStateTexture.h"
 #include "Rendering/RenderContext.h"
 #include "SurfaceState/Debug/TexelGeometryPreview.h"
 #include "SurfaceState/Debug/TexelInspector.h"
@@ -434,6 +435,7 @@ namespace MDSS::Rendering
         std::unique_ptr<GPU::TGraphicsPipeline>              TexelGeometryPipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              SurfaceLitPipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              BaseSurfaceLitPipeline;
+        std::unique_ptr<TRenderStateTexture>                  RenderStateTexture;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> MudLayerGeometry;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> WaterLayerGeometry;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> LavaLayerGeometry;

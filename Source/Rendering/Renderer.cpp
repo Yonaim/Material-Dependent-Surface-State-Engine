@@ -430,7 +430,8 @@ namespace MDSS::Rendering
 
         GPU::TGraphicsPipelineConfig BuildSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
                                                                    VkDescriptorSetLayout SurfaceLayout,
-                                                                   VkDescriptorSetLayout OutputLayout = VK_NULL_HANDLE)
+                                                                   VkDescriptorSetLayout OutputLayout = VK_NULL_HANDLE,
+                                                                   VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE)
         {
             auto Config = BuildSurfaceDebugPipelineConfig(MaterialLayout, SurfaceLayout);
             Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.vert.spv";
@@ -444,14 +445,18 @@ namespace MDSS::Rendering
                 SetTexelMeshVertexLayout(Config);
                 Config.DescriptorSetLayouts.push_back(OutputLayout);
             }
+            if (StateTextureLayout != VK_NULL_HANDLE)
+                Config.DescriptorSetLayouts.push_back(StateTextureLayout);
             return Config;
         }
 
         GPU::TGraphicsPipelineConfig BuildBaseSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
                                                                        VkDescriptorSetLayout SurfaceLayout,
-                                                                       VkDescriptorSetLayout OutputLayout)
+                                                                       VkDescriptorSetLayout OutputLayout,
+                                                                       VkDescriptorSetLayout StateTextureLayout)
         {
-            auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, OutputLayout);
+            auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, OutputLayout,
+                                                        StateTextureLayout);
             Config.ShaderStages[1].ShaderPath =
                 std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/BaseSurfaceLit.frag.spv";
             return Config;
@@ -665,15 +670,20 @@ namespace MDSS::Rendering
                 MainRenderPass.GetHandle(),
                 BuildTexelGeometryPipelineConfig(
                     MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
+            RenderStateTexture = std::make_unique<TRenderStateTexture>(
+                Context.GetPhysicalDevice(), Context.GetDevice(), Descriptors->GetLayout(),
+                SurfaceStates.GetGPUResources());
             SurfaceLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
                 Context.GetDevice(),
                 MainRenderPass.GetHandle(),
-                BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+                BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                                              VK_NULL_HANDLE, RenderStateTexture->GetLayout()));
             BaseSurfaceLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
                 Context.GetDevice(),
                 MainRenderPass.GetHandle(),
                 BuildBaseSurfaceLitPipelineConfig(
-                    MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
+                    MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout(),
+                    RenderStateTexture->GetLayout()));
             MudLayerGeometry =
                 std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
@@ -809,6 +819,7 @@ namespace MDSS::Rendering
         SurfaceDebugPipeline.reset();
         SurfaceLitPipeline.reset();
         BaseSurfaceLitPipeline.reset();
+        RenderStateTexture.reset();
         MudOverlayTopPipeline.reset();
         MudOverlaySidePipeline.reset();
         WaterOverlayTopPipeline.reset();
@@ -1255,6 +1266,7 @@ namespace MDSS::Rendering
         std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementGeometryPipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementLitPipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementBaseLitPipeline;
+        std::unique_ptr<TRenderStateTexture>                  ReplacementRenderStateTexture;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementMudGeometry;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementWaterGeometry;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementLavaGeometry;
@@ -1306,16 +1318,21 @@ namespace MDSS::Rendering
                     BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
                                                      Descriptors->GetLayout(),
                                                      ReplacementGeometryPreview->GetOutputLayout()));
+                ReplacementRenderStateTexture = std::make_unique<TRenderStateTexture>(
+                    Context.GetPhysicalDevice(), Context.GetDevice(), Descriptors->GetLayout(),
+                    Replacement->GetGPUResources());
                 ReplacementLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
-                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
+                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
+                                                  VK_NULL_HANDLE, ReplacementRenderStateTexture->GetLayout()));
                 ReplacementBaseLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
                                                       Descriptors->GetLayout(),
-                                                      ReplacementGeometryPreview->GetOutputLayout()));
+                                                      ReplacementGeometryPreview->GetOutputLayout(),
+                                                      ReplacementRenderStateTexture->GetLayout()));
                 ReplacementMudGeometry =
                     std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
@@ -1415,6 +1432,7 @@ namespace MDSS::Rendering
         SurfaceDebugPipeline.reset();
         SurfaceLitPipeline.reset();
         BaseSurfaceLitPipeline.reset();
+        RenderStateTexture.reset();
         MudOverlayTopPipeline.reset();
         MudOverlaySidePipeline.reset();
         WaterOverlayTopPipeline.reset();
@@ -1442,6 +1460,7 @@ namespace MDSS::Rendering
         TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
         SurfaceLitPipeline = std::move(ReplacementLitPipeline);
         BaseSurfaceLitPipeline = std::move(ReplacementBaseLitPipeline);
+        RenderStateTexture = std::move(ReplacementRenderStateTexture);
         MudLayerGeometry = std::move(ReplacementMudGeometry);
         WaterLayerGeometry = std::move(ReplacementWaterGeometry);
         LavaLayerGeometry = std::move(ReplacementLavaGeometry);
@@ -2342,6 +2361,11 @@ namespace MDSS::Rendering
         if (bTotalHeight)
             TotalHeightCacheEntries.resize(SceneData.GetStaticMeshInstances().size());
         const auto DemoBindings = GetDemoSurfaceStateBindings();
+        if (ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && RenderStateTexture)
+            RenderStateTexture->Record(
+                CommandBuffer, SurfaceStates.GetGPUResources(),
+                {DemoBindings.Wetness, DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
+                static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()));
         const bool bSurfaceLit = ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipeline;
         const bool bOverlayRendering = CanRenderLitOverlays();
         std::vector<std::array<bool, 3>> OverlayActive(SceneData.GetStaticMeshInstances().size(),
@@ -2629,6 +2653,12 @@ namespace MDSS::Rendering
                                             Sets.data(),
                                             0,
                                             nullptr);
+                    if (!bTexelGeometry)
+                    {
+                        const VkDescriptorSet RenderSet = RenderStateTexture->GetSet(CurrentSceneIndex);
+                        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                Layout, 3, 1, &RenderSet, 0, nullptr);
+                    }
                     for (const auto& Section : Mesh.GetSections())
                     {
                         if (Section.Material >= MaterialResources.size() ||
@@ -2698,6 +2728,12 @@ namespace MDSS::Rendering
                                                              : SurfaceDescriptors->GetBASet();
                         vkCmdBindDescriptorSets(
                             CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 1, 1, &StateSet, 0, nullptr);
+                    }
+                    if (bInstanceSurfaceLit)
+                    {
+                        const VkDescriptorSet RenderSet = RenderStateTexture->GetSet(CurrentSceneIndex);
+                        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                Layout, 2, 1, &RenderSet, 0, nullptr);
                     }
 
                     vkCmdDrawIndexed(CommandBuffer,

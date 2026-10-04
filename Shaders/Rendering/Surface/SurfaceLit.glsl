@@ -3,22 +3,33 @@
  * @brief Static mesh와 texel mesh가 공유하는 PBR 조명 및 demo State 효과 경로다.
  */
 #include "Rendering/Surface/MaterialParameters.glsl"
-#include "Rendering/Surface/StateSampling.glsl"
+#include "Rendering/Surface/RenderStateSampling.glsl"
 #include "Rendering/Surface/Effects/Mud.glsl"
 #include "Rendering/Surface/Effects/Wetness.glsl"
 #include "Rendering/Surface/Effects/WaterFilm.glsl"
 #include "Rendering/Surface/Effects/Lava.glsl"
 #include "Rendering/Surface/Lighting.glsl"
+
 layout(location = 0) in vec3 FragNormal;
+
 layout(location = 1) in vec3 FragTangent;
+
 layout(location = 2) in float FragTangentSign;
+
 layout(location = 3) in vec2 FragUV;
+
 layout(location = 4) flat in uint FragSurfaceIndex;
+
 layout(location = 5) in vec3 FragMesoNormalWS;
+
 layout(location = 6) in vec3 FragWorldPosition;
+
 layout(set = 0, binding = 0) uniform sampler2D BaseColorTexture;
+
 layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
+
 layout(location = 0) out vec4 OutColor;
+
 void main()
 {
     vec3 N = normalize(FragNormal);
@@ -68,11 +79,15 @@ void main()
     float Lava = 0.0;
     if (Material.DemoStateChannels.w != 0u)
     {
-        // demo channel ID는 동적으로 지정되며, 모든 상태를 공통 saturation sampling 경로로 읽는다.
-        Wetness = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.x, Material.StateChannelCount);
-        float Mud = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.y, Material.StateChannelCount);
-        WaterFilm = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoStateChannels.z, Material.StateChannelCount);
-        Lava = SampleStateSaturation(FragSurfaceIndex, FragUV, Material.DemoExtraStateChannels.x, Material.StateChannelCount);
+        // demo channel ID는 동적이며, 렌더 texture의 RGBA lane에 대응한다.
+        vec4 DemoStates = SampleRenderStates(
+            FragSurfaceIndex, FragUV,
+            uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
+            Material.StateChannelCount);
+        Wetness = DemoStates.x;
+        float Mud = DemoStates.y;
+        WaterFilm = DemoStates.z;
+        Lava = DemoStates.w;
 #ifndef BASE_SURFACE_LIT
         // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.
         ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);

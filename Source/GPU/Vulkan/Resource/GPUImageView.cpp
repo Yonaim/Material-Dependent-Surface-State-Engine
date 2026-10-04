@@ -11,10 +11,11 @@
 
 namespace MDSS::GPU
 {
-    TGPUImageView::TGPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
+    TGPUImageView::TGPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
+                                 std::uint32_t ArrayLayers, VkImageViewType ViewType)
         : Device(Device)
     {
-        Create(Image, Format, AspectMask);
+        Create(Image, Format, AspectMask, ArrayLayers, ViewType);
     }
 
     TGPUImageView::~TGPUImageView()
@@ -22,10 +23,11 @@ namespace MDSS::GPU
         Reset();
     }
 
-    void TGPUImageView::Recreate(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
+    void TGPUImageView::Recreate(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
+                                 std::uint32_t ArrayLayers, VkImageViewType ViewType)
     {
         Reset();
-        Create(Image, Format, AspectMask);
+        Create(Image, Format, AspectMask, ArrayLayers, ViewType);
     }
 
     void TGPUImageView::Reset()
@@ -37,18 +39,19 @@ namespace MDSS::GPU
         }
     }
 
-    void TGPUImageView::Create(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask)
+    void TGPUImageView::Create(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
+                               std::uint32_t ArrayLayers, VkImageViewType ViewType)
     {
         VkImageViewCreateInfo CreateInfo{};
         CreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         CreateInfo.image = Image;
-        CreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        CreateInfo.viewType = ViewType;
         CreateInfo.format = Format;
         CreateInfo.subresourceRange.aspectMask = AspectMask;
         CreateInfo.subresourceRange.baseMipLevel = 0;
         CreateInfo.subresourceRange.levelCount = 1;
         CreateInfo.subresourceRange.baseArrayLayer = 0;
-        CreateInfo.subresourceRange.layerCount = 1;
+        CreateInfo.subresourceRange.layerCount = ArrayLayers;
 
         if (vkCreateImageView(Device, &CreateInfo, nullptr, &Handle) != VK_SUCCESS)
         {

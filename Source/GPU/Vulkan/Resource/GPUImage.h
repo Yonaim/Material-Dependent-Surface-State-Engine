@@ -21,7 +21,8 @@ namespace MDSS::GPU
                   VkFormat              Format,
                   VkImageTiling         Tiling,
                   VkImageUsageFlags     Usage,
-                  VkMemoryPropertyFlags MemoryProperties);
+                  VkMemoryPropertyFlags MemoryProperties,
+                  std::uint32_t         ArrayLayers = 1);
         ~TGPUImage();
 
         TGPUImage(const TGPUImage&) = delete;
@@ -35,7 +36,8 @@ namespace MDSS::GPU
                       VkFormat              Format,
                       VkImageTiling         Tiling,
                       VkImageUsageFlags     Usage,
-                      VkMemoryPropertyFlags MemoryProperties);
+                      VkMemoryPropertyFlags MemoryProperties,
+                      std::uint32_t         ArrayLayers = 1);
         /** @brief image와 memory를 해제하고 객체를 빈 상태로 되돌린다. */
         void Reset();
 
@@ -52,7 +54,8 @@ namespace MDSS::GPU
                                     VkFormat              Format,
                                     VkImageTiling         Tiling,
                                     VkImageUsageFlags     Usage,
-                                    VkMemoryPropertyFlags MemoryProperties);
+                                    VkMemoryPropertyFlags MemoryProperties,
+                                    std::uint32_t         ArrayLayers);
 
         VkDevice       Device = VK_NULL_HANDLE;
         VkImage        Handle = VK_NULL_HANDLE;

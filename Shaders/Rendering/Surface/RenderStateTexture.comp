@@ -1,0 +1,37 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#define SURFACE_DEBUG_SET 0
+#include "Rendering/Surface/StateSampling.glsl"
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(rgba16f, set = 1, binding = 0) uniform writeonly image2DArray RenderStates;
+layout(push_constant) uniform TConversionPush
+{
+    uvec4 DemoChannels;
+    uint ChannelCount;
+} Push;
+
+void main()
+{
+    uint Surface = gl_GlobalInvocationID.z;
+    uvec4 Range = SurfaceRanges.Values[Surface];
+    uvec2 XY = gl_GlobalInvocationID.xy;
+    if (XY.x >= Range.y || XY.y >= Range.z) return;
+    uint Texel = Range.x + XY.y * Range.y + XY.x;
+    vec4 Values = vec4(0.0);
+    // 구멍 texel은 invalid Profile을 가질 수 있다. Release에서도 범위를 확인한다.
+    if (Push.ChannelCount != 0u &&
+        Texel < uint(TexelSurfaceIndices.Values.length()) &&
+        TexelSurfaceIndices.Values[Texel] == Surface &&
+        Texel < uint(TexelProfileIndices.Values.length()) &&
+        TexelProfileIndices.Values[Texel] < uint(ProfileSupported.Values.length()) / Push.ChannelCount &&
+        TexelProfileIndices.Values[Texel] < uint(ProfileParameters.Values.length()) / Push.ChannelCount &&
+        Texel < uint(CurrentState.Values.length()) / Push.ChannelCount &&
+        Texel < uint(WorldTexelAreas.Values.length()))
+    {
+        for (uint Index = 0u; Index < 4u; ++Index)
+            Values[Index] = StateSaturation(Texel, Push.DemoChannels[Index], Push.ChannelCount, Surface);
+    }
+    imageStore(RenderStates, ivec3(ivec2(XY), int(Surface)), Values);
+}

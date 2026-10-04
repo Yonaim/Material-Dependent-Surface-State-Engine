@@ -75,6 +75,7 @@ namespace MDSS::SurfaceState
     {
         const std::size_t                     MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         const TSurfaceGPUSharedGeometryUpload Upload = PackSharedSurfaceGeometry(Geometry, ProfileIndexRemap);
+        SurfaceRanges = Upload.SurfaceRanges;
         TexelSurfaceIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                        Device,
                                                        Upload.TexelSurfaceIndices.data(),
@@ -132,6 +133,40 @@ namespace MDSS::SurfaceState
                                                      Upload.TexelChartIndices.size(),
                                                      sizeof(std::uint32_t),
                                                      MaxRange);
+        std::vector<std::uint32_t> BoundaryFlags(TexelCount, 0U);
+        for (std::uint32_t Surface = 0; Surface < SurfaceRanges.size(); ++Surface)
+        {
+            const auto& Range = SurfaceRanges[Surface];
+            for (std::uint32_t Y = 0; Y < Range.Height; ++Y)
+                for (std::uint32_t X = 0; X < Range.Width; ++X)
+                {
+                    const std::size_t Center = Range.FirstTexel + std::size_t(Y) * Range.Width + X;
+                    const auto Profile = Upload.TexelProfileIndices[Center];
+                    const auto Chart = Upload.TexelChartIndices[Center];
+                    if (Upload.TexelSurfaceIndices[Center] != Surface)
+                    {
+                        BoundaryFlags[Center] = 1U;
+                        continue;
+                    }
+                    for (int OffsetY = -1; OffsetY <= 1; ++OffsetY)
+                        for (int OffsetX = -1; OffsetX <= 1; ++OffsetX)
+                        {
+                            const auto NeighborX = static_cast<std::uint32_t>(
+                                std::clamp<int>(static_cast<int>(X) + OffsetX, 0, static_cast<int>(Range.Width) - 1));
+                            const auto NeighborY = static_cast<std::uint32_t>(
+                                std::clamp<int>(static_cast<int>(Y) + OffsetY, 0, static_cast<int>(Range.Height) - 1));
+                            const std::size_t Neighbor =
+                                Range.FirstTexel + std::size_t(NeighborY) * Range.Width + NeighborX;
+                            if (Upload.TexelSurfaceIndices[Neighbor] != Surface ||
+                                Upload.TexelProfileIndices[Neighbor] != Profile ||
+                                Upload.TexelChartIndices[Neighbor] != Chart)
+                                BoundaryFlags[Center] = 1U;
+                        }
+                }
+        }
+        RenderSamplingBoundaryFlagBuffer = CreateUploadedBuffer(PhysicalDevice, Device,
+                                                                 BoundaryFlags.data(), BoundaryFlags.size(),
+                                                                 sizeof(std::uint32_t), MaxRange);
         auto Mesh = BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles);
         TexelMeshRanges = std::move(Mesh.Surfaces);
         TexelMeshVertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
@@ -209,9 +244,19 @@ namespace MDSS::SurfaceState
         return *SurfaceRangeBuffer;
     }
 
+    const std::vector<TSurfaceGPUSurfaceRange>& TSurfaceSharedGeometryGPUResources::GetSurfaceRanges() const noexcept
+    {
+        return SurfaceRanges;
+    }
+
     const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelChartIndexBuffer() const noexcept
     {
         return *TexelChartIndexBuffer;
+    }
+
+    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetRenderSamplingBoundaryFlagBuffer() const noexcept
+    {
+        return *RenderSamplingBoundaryFlagBuffer;
     }
 
     std::size_t TSurfaceSharedGeometryGPUResources::GetTexelCount() const noexcept

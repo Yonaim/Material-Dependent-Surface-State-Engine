@@ -17,10 +17,11 @@ namespace MDSS::GPU
                          VkFormat              Format,
                          VkImageTiling         Tiling,
                          VkImageUsageFlags     Usage,
-                         VkMemoryPropertyFlags MemoryProperties)
+                         VkMemoryPropertyFlags MemoryProperties,
+                         std::uint32_t         ArrayLayers)
         : Device(Device)
     {
-        Create(PhysicalDevice, Extent, Format, Tiling, Usage, MemoryProperties);
+        Create(PhysicalDevice, Extent, Format, Tiling, Usage, MemoryProperties, ArrayLayers);
     }
 
     TGPUImage::~TGPUImage()
@@ -33,10 +34,11 @@ namespace MDSS::GPU
                              VkFormat              NewFormat,
                              VkImageTiling         Tiling,
                              VkImageUsageFlags     Usage,
-                             VkMemoryPropertyFlags MemoryProperties)
+                             VkMemoryPropertyFlags MemoryProperties,
+                             std::uint32_t         ArrayLayers)
     {
         Reset();
-        Create(PhysicalDevice, NewExtent, NewFormat, Tiling, Usage, MemoryProperties);
+        Create(PhysicalDevice, NewExtent, NewFormat, Tiling, Usage, MemoryProperties, ArrayLayers);
     }
 
     void TGPUImage::Reset()
@@ -62,9 +64,10 @@ namespace MDSS::GPU
                            VkFormat              NewFormat,
                            VkImageTiling         Tiling,
                            VkImageUsageFlags     Usage,
-                           VkMemoryPropertyFlags MemoryProperties)
+                           VkMemoryPropertyFlags MemoryProperties,
+                           std::uint32_t         ArrayLayers)
     {
-        if (NewExtent.width == 0 || NewExtent.height == 0)
+        if (NewExtent.width == 0 || NewExtent.height == 0 || ArrayLayers == 0)
         {
             throw std::invalid_argument("GPU image extent must be non-zero.");
         }
@@ -79,7 +82,7 @@ namespace MDSS::GPU
         ImageInfo.extent.height = Extent.height;
         ImageInfo.extent.depth = 1;
         ImageInfo.mipLevels = 1;
-        ImageInfo.arrayLayers = 1;
+        ImageInfo.arrayLayers = ArrayLayers;
         ImageInfo.format = Format;
         ImageInfo.tiling = Tiling;
         ImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
