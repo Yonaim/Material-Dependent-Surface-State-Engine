@@ -1,13 +1,16 @@
 /**
  * @file TexelGeometryHeight.comp
- * @brief texel 높이를 진단 cache에 기록하고, 유효하지 않은 이웃은 NaN으로 표시한다.
+ * @brief texel 높이를 진단 cache에 기록한다. Overlay sparse mode에서는 DirtyHeightTileList만 처리한다.
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
 #include "Debug/SurfaceDebugData.glsl"
+
 layout(local_size_x = 64) in;
+
 layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
+
 layout(push_constant) uniform TPush
 {
     uint TexelCount;
@@ -19,22 +22,114 @@ layout(push_constant) uniform TPush
     uint TotalHeight;
     uint UseBaseline;
     uint TileSize;
-    uint Padding[3];
+    uint UseActiveTileList;
+    uint Padding[2];
     vec4 NormalMatrixColumns[3];
 } Push;
 
+shared uint SparseTileValid;
+shared uint SparseCandidate;
+shared uint SparseRangeFirst;
+shared uint SparseRangeWidth;
+shared uint SparseRangeHeight;
+shared uint SparseTileX;
+shared uint SparseTileY;
+
+uint CapacityTileCount()
+{
+    return (Push.TexelCount + 255u) / 256u;
+}
+
+uint HeightListBase()
+{
+    // After the four texel planes:
+    // flags[N], builtState[Texels], heightScheduled[N], normalScheduled[N],
+    // heightCount, heightDispatch[3], heightList[N], ...
+    return Push.TexelCount * 5u + CapacityTileCount() * 3u + 4u;
+}
+
+bool ResolveCandidateTile(uint Candidate)
+{
+    uint Base = 0u;
+    for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
+    {
+        uvec4 Range = SurfaceRanges.Values[Surface];
+        uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
+        uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
+        uint Count = TilesX * TilesY;
+        if (Candidate < Base + Count)
+        {
+            uint Local = Candidate - Base;
+            SparseTileValid = 1u;
+            SparseCandidate = Candidate;
+            SparseRangeFirst = Range.x;
+            SparseRangeWidth = Range.y;
+            SparseRangeHeight = Range.z;
+            SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
+            SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+            return true;
+        }
+        Base += Count;
+    }
+    SparseTileValid = 0u;
+    return false;
+}
+
+uint ResolveTexel()
+{
+    if (Push.UseActiveTileList == 0u)
+        return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
+    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+    uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
+    uint ActiveSlot = gl_WorkGroupID.x / GroupsPerTile;
+    uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
+    uint Candidate = GeometryCache.Values[HeightListBase() + ActiveSlot];
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        SparseTileValid = 0u;
+        SparseCandidate = Candidate;
+        ResolveCandidateTile(Candidate);
+    }
+    barrier();
+    if (SparseTileValid == 0u) return Push.TexelCount;
+
+    uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    if (Local >= TilePixels) return Push.TexelCount;
+    uint LocalX = Local % Push.TileSize;
+    uint LocalY = Local / Push.TileSize;
+    uint X = SparseTileX * Push.TileSize + LocalX;
+    uint Y = SparseTileY * Push.TileSize + LocalY;
+    if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
+    return SparseRangeFirst + Y * SparseRangeWidth + X;
+}
+
 void main()
 {
-    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    uint T = ResolveTexel();
     if (T >= Push.TexelCount) return;
+
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
-    uint TileFlag = GeometryCache.Values[Push.TexelCount * 4u + T / TilePixels];
+    uint TileFlag = 1u;
+    if (Push.UseActiveTileList == 0u)
+    {
+        // Legacy/full-dispatch path. Sparse overlay mode reaches only dirty height tiles via the list.
+        uint Tile = T / TilePixels;
+        TileFlag = GeometryCache.Values[Push.TexelCount * 4u + Tile] & 1u;
+    }
+    else
+    {
+        TileFlag = GeometryCache.Values[Push.TexelCount * 4u + SparseCandidate] & 1u;
+    }
+
     if (TileFlag == 0u)
     {
         float Meso = GeometryScalars.Values[T].MesoVirtualHeight;
         GeometryCache.Values[T] = isnan(Meso) || isinf(Meso) ? 0x7fc00000u : floatBitsToUint(Meso);
         return;
     }
+
     mat3 NormalMatrix = mat3(Push.NormalMatrixColumns[0].xyz,
                              Push.NormalMatrixColumns[1].xyz,
                              Push.NormalMatrixColumns[2].xyz);

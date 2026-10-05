@@ -143,7 +143,9 @@ file(GLOB_RECURSE MDSS_SHADER_INCLUDES CONFIGURE_DEPENDS
 # Reconfigure when a placeholder shader receives its first implementation.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MDSS_SHADER_SOURCES})
 
-set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders")
+# Keep shader binaries configuration-specific so Debug validation SPIR-V cannot
+# be reused by a Release build (or vice versa).
+set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders/$<CONFIG>")
 set(MDSS_SHADER_BINARIES)
 
 foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
@@ -169,10 +171,11 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
         COMMAND "${Vulkan_GLSLC_EXECUTABLE}"
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
                 -I "${CMAKE_CURRENT_SOURCE_DIR}/Source"
+                "-DMDSS_GPU_VALIDATION=$<IF:$<CONFIG:Debug>,1,0>"
                 "${ShaderSource}"
                 -o "${ShaderBinary}"
         DEPENDS "${ShaderSource}" ${MDSS_SHADER_INCLUDES}
-                "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceStateSystem/Types/SurfaceSolverRates.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceState/Types/SurfaceSolverRates.h"
         COMMENT "Compiling shader ${ShaderRelativePath}"
         VERBATIM
     )
@@ -206,13 +209,13 @@ include(CTest)
 if(BUILD_TESTING)
     add_executable(MDSS_SimulationTransportTests
         Tests/SimulationTransportTests.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
-        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
-        Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
+        Source/SurfaceState/GPU/SurfaceGPUResourceLayout.cpp
+        Source/SurfaceState/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceState/Types/SurfaceStateTypes.cpp
     )
     target_include_directories(MDSS_SimulationTransportTests PRIVATE Source)
     target_link_libraries(MDSS_SimulationTransportTests PRIVATE glm::glm)
@@ -253,16 +256,16 @@ if(BUILD_TESTING)
         Source/AssetManager/Loaders/OBJLoader.cpp
         Source/AssetManager/Loaders/TextureLoader.cpp
         Source/Logger/Logger.cpp
-        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
-        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
-        Source/SurfaceStateSystem/Geometry/MesoGeometryBuilder.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.cpp
-        Source/SurfaceStateSystem/Preprocessing/SurfaceCache.cpp
-        Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
+        Source/SurfaceState/Geometry/MesoGeometryBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp
+        Source/SurfaceState/Preprocessing/SurfaceCache.cpp
+        Source/SurfaceState/GPU/SurfaceGPUResourceLayout.cpp
+        Source/SurfaceState/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceState/Types/SurfaceStateTypes.cpp
     )
     target_include_directories(MDSS_SurfaceCacheTests PRIVATE Source)
     target_include_directories(MDSS_SurfaceCacheTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
@@ -282,13 +285,13 @@ if(BUILD_TESTING)
         Source/AssetManager/Core/Asset.cpp
         Source/AssetManager/Assets/SRProfileAsset.cpp
         Source/AssetManager/Loaders/SRProfileLoader.cpp
-        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
-        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.cpp
-        Source/SurfaceStateSystem/State/SurfaceInstanceStateData.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceState/Preprocessing/SurfaceRuntimeData.cpp
+        Source/SurfaceState/State/SurfaceInstanceStateData.cpp
+        Source/SurfaceState/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceState/Types/SurfaceStateTypes.cpp
     )
     target_include_directories(MDSS_SurfaceStateTests PRIVATE Source)
     target_link_libraries(MDSS_SurfaceStateTests PRIVATE glm::glm nlohmann_json::nlohmann_json)
@@ -307,9 +310,9 @@ if(BUILD_TESTING)
         Source/AssetManager/Loaders/MTLLoader.cpp
         Source/AssetManager/Loaders/OBJLoader.cpp
         Source/Logger/Logger.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
     )
     target_include_directories(MDSS_SurfaceMappingTests PRIVATE Source)
     target_include_directories(MDSS_SurfaceMappingTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")
@@ -326,8 +329,8 @@ if(BUILD_TESTING)
 
     add_executable(MDSS_NormalMapTransferTests
         Tests/NormalMapTransferTests.cpp
-        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
-        Source/SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.cpp
+        Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp
     )
     target_include_directories(MDSS_NormalMapTransferTests PRIVATE Source)
     target_link_libraries(MDSS_NormalMapTransferTests PRIVATE glm::glm)
@@ -340,17 +343,17 @@ if(BUILD_TESTING)
 
     add_executable(MDSS_SharedSurfaceGeometryTests
         Tests/SharedSurfaceGeometryTests.cpp
-        Source/SurfaceStateSystem/Geometry/MesoGeometryBuilder.cpp
-        Source/SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.cpp
+        Source/SurfaceState/Geometry/MesoGeometryBuilder.cpp
+        Source/SurfaceState/Geometry/SurfaceTexelMeshBuilder.cpp
         Source/AssetManager/Loaders/MTLLoader.cpp
         Source/AssetManager/Loaders/OBJLoader.cpp
         Source/AssetManager/Loaders/SurfaceProfileDistributionLoader.cpp
         Source/Logger/Logger.cpp
-        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
-        Source/SurfaceStateSystem/Geometry/SurfaceGeometryBuilder.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingBuilder.cpp
-        Source/SurfaceStateSystem/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceStateSystem/Preprocessing/SurfaceRuntimeData.cpp
+        Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
+        Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
+        Source/SurfaceState/Preprocessing/SurfaceRuntimeData.cpp
     )
     target_include_directories(MDSS_SharedSurfaceGeometryTests PRIVATE Source)
     target_include_directories(MDSS_SharedSurfaceGeometryTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")
@@ -367,15 +370,15 @@ if(BUILD_TESTING)
 
     add_executable(MDSS_SurfaceGPUResourceTests
         Tests/SurfaceGPUResourceTests.cpp
-        Source/SurfaceStateSystem/Geometry/SurfaceTexelMeshBuilder.cpp
+        Source/SurfaceState/Geometry/SurfaceTexelMeshBuilder.cpp
         Source/Logger/Logger.cpp
-        Source/SurfaceStateSystem/Geometry/SharedSurfaceGeometryData.cpp
-        Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp
-        Source/SurfaceStateSystem/GPU/SurfaceGPUResources.cpp
-        Source/SurfaceStateSystem/State/SurfaceStateSolver.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateRegistry.cpp
-        Source/SurfaceStateSystem/Types/SurfaceStateTypes.cpp
-        Source/VulkanContext/GPU/GPUBuffer.cpp
+        Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
+        Source/SurfaceState/GPU/SurfaceGPUResourceLayout.cpp
+        Source/SurfaceState/GPU/SurfaceGPUResources.cpp
+        Source/SurfaceState/State/SurfaceStateSolver.cpp
+        Source/SurfaceState/Types/SurfaceStateRegistry.cpp
+        Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/GPU/Vulkan/Resource/GPUBuffer.cpp
     )
     add_dependencies(MDSS_SurfaceGPUResourceTests MDSS_Shaders)
     target_include_directories(MDSS_SurfaceGPUResourceTests PRIVATE Source)

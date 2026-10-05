@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "set_id": "default-performance-scenes",
+  "description": "Default scene set for before/after performance comparisons.",
+  "comparison_rules": [
+    "Compare an optimization against its baseline within the same scene and workload settings.",
+    "Do not treat absolute timings from different scenes as a controlled A/B comparison.",
+    "Record the measured GPU scope, simulation step count, resolution, state channels, and initial-state procedure for every run."
+  ],
+  "scenes": [
+    {
+      "id": "brickcube",
+      "path": "../../Assets/Scenes/BrickCube.Scene",
+      "role": "single-instance multi-surface solver baseline",
+      "expected_instances": 1,
+      "surfaces_per_instance": 6,
+      "initial_contact_count": 1,
+      "default_resolution": 256,
+      "state_channels": ["wetness", "mud", "waterfilm", "lava"]
+    },
+    {
+      "id": "mountain",
+      "path": "../../Assets/Scenes/Mountain.Scene",
+      "role": "multi-instance solver workload",
+      "expected_instances": 3,
+      "surfaces_per_instance": 1,
+      "initial_contact_count": 3,
+      "default_resolution": 256,
+      "state_channels": ["wetness", "mud", "waterfilm", "lava"]
+    }
+  ]
+}

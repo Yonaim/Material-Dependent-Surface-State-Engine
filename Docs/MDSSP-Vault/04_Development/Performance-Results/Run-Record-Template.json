@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "run_id": "YYYYMMDD-HHMMSS-condition-name",
+  "experiment": "../Experiments/NNNN_Experiment-Name.md",
+  "captured_at": "YYYY-MM-DDTHH:MM:SS+09:00",
+  "capture_method": "ui_manual",
+  "revision": {
+    "git_commit": "",
+    "working_tree_dirty": null,
+    "diff_sha256": ""
+  },
+  "environment": {
+    "os": "",
+    "gpu": "",
+    "driver_or_vulkan_runtime": "",
+    "build_type": "Release",
+    "validation_layers": false
+  },
+  "workload": {
+    "scene": "",
+    "instance_count": null,
+    "resolution": null,
+    "state_channels": null,
+    "profile": "",
+    "state_distribution": "",
+    "cache_state": "warm",
+    "fixed_timestep": null,
+    "auto_substepping": null,
+    "solver_steps_per_frame": null,
+    "render_and_debug_options": ""
+  },
+  "protocol": {
+    "warmup_seconds": 5,
+    "measurement_seconds": 30,
+    "repeat_index": 1,
+    "condition_order": "",
+    "notes": ""
+  },
+  "measurements": {
+    "scope": "",
+    "units": "ms",
+    "frame_time_median": null,
+    "frame_time_p95": null,
+    "solver_gpu_median": null,
+    "solver_gpu_p95": null,
+    "pass1_gpu_median": null,
+    "pass1_gpu_p95": null,
+    "pass2_gpu_median": null,
+    "pass2_gpu_p95": null,
+    "samples": []
+  },
+  "correctness": {
+    "mass_or_state_error": null,
+    "distribution_error": null,
+    "nan_or_inf_count": null,
+    "validation_errors": null
+  },
+  "evidence": []
+}

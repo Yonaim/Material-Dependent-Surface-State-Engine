@@ -9,16 +9,18 @@
 #include "Application/SceneFileDialog.h"
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
-#include "AssetManager/Loaders/SceneLoader.h"
+#include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
+#include "GPU/Vulkan/Swapchain/Swapchain.h"
+#include "GPU/Vulkan/VulkanContext.h"
+#include "GPU/Vulkan/VulkanQueue.h"
 #include "InputSystem/Raycaster.h"
 #include "Logger/Logger.h"
-#include "Renderer/Renderer.h"
-#include "Renderer/Swapchain.h"
+#include "Rendering/Renderer.h"
 #include "Scene/Camera.h"
 #include "Scene/Scene.h"
+#include "Scene/SceneLoader.h"
 #include "Scene/StaticMeshInstance.h"
-#include "VulkanContext/Vulkan/VulkanQueue.h"
-#include "VulkanContext/VulkanContext.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -345,15 +347,15 @@ namespace MDSS
         }
     } // 내부 네임스페이스
 
-    TDebugUI::TDebugUI(const TVulkanContext& Context,
-                       const TWindow&        TWindow,
-                       TRenderer&            TRenderer,
-                       TAssetManager&        Assets)
-        : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&TRenderer),
-          AssetManager(&Assets)
+    TDebugUI::TDebugUI(const GPU::TVulkanContext&         Context,
+                       const TWindow&                     TWindow,
+                       Rendering::TRenderer&              Renderer,
+                       Asset::TAssetManager&              Assets,
+                       SurfaceState::TSurfaceDataManager& SurfaceData)
+        : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&Renderer),
+          AssetManager(&Assets), SurfaceDataManager(&SurfaceData)
     {
         ResetProfilingAverages();
-        bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -447,9 +449,9 @@ namespace MDSS
             throw std::runtime_error("Failed to initialize Dear ImGui GLFW backend.");
         }
 
-        const std::uint32_t ImageCount = static_cast<std::uint32_t>(TRenderer.GetSwapchain().GetImages().size());
-        const TSwapchainSupportDetails Support =
-            TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const std::uint32_t ImageCount = static_cast<std::uint32_t>(Renderer.GetSwapchain().GetImages().size());
+        const GPU::TSwapchainSupportDetails Support =
+            GPU::TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
         const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
 
         ImGui_ImplVulkan_InitInfo InitInfo{};
@@ -464,7 +466,7 @@ namespace MDSS
         InitInfo.MinImageCount = MinImageCount;
         InitInfo.ImageCount = ImageCount;
         InitInfo.PipelineCache = VK_NULL_HANDLE;
-        InitInfo.PipelineInfoMain.RenderPass = TRenderer.GetRenderPassHandle();
+        InitInfo.PipelineInfoMain.RenderPass = Renderer.GetRenderPassHandle();
         InitInfo.PipelineInfoMain.Subpass = 0;
         InitInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         InitInfo.UseDynamicRendering = false;
@@ -587,16 +589,16 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::OnSwapchainRecreated(const TVulkanContext& Context, const TRenderer& TRenderer)
+    void TDebugUI::OnSwapchainRecreated(const GPU::TVulkanContext& Context, const Rendering::TRenderer& Renderer)
     {
-        const TSwapchainSupportDetails Support =
-            TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const GPU::TSwapchainSupportDetails Support =
+            GPU::TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
         const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
         ImGui_ImplVulkan_SetMinImageCount(MinImageCount);
 
         TLogger::Debug("TDebugUI",
                        "ImGui Vulkan backend updated after swapchain recreation (images=" +
-                           std::to_string(TRenderer.GetSwapchain().GetImages().size()) + ").");
+                           std::to_string(Renderer.GetSwapchain().GetImages().size()) + ").");
     }
 
     bool TDebugUI::IsInjectModeEnabled() const noexcept
@@ -604,7 +606,7 @@ namespace MDSS
         return bInjectMode;
     }
 
-    TStateId TDebugUI::GetInjectState() const noexcept
+    SurfaceState::TStateId TDebugUI::GetInjectState() const noexcept
     {
         return InjectState;
     }
@@ -705,14 +707,14 @@ namespace MDSS
         glm::vec3   Target = Transform.Position;
         if (AssetManager != nullptr)
         {
-            const TMeshAsset& Mesh =
+            const Asset::TMeshAsset& Mesh =
                 AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*SelectedObject].GetMesh());
             const auto& Vertices = Mesh.GetVertices();
             if (!Vertices.empty())
             {
                 glm::vec3 Minimum(std::numeric_limits<float>::max());
                 glm::vec3 Maximum(std::numeric_limits<float>::lowest());
-                for (const TVertex& Vertex : Vertices)
+                for (const Asset::TVertex& Vertex : Vertices)
                 {
                     Minimum = glm::min(Minimum, Vertex.Position);
                     Maximum = glm::max(Maximum, Vertex.Position);
@@ -753,7 +755,7 @@ namespace MDSS
         return bRotationGizmoMode;
     }
 
-    TStateId TDebugUI::GetDebugState() const noexcept
+    SurfaceState::TStateId TDebugUI::GetDebugState() const noexcept
     {
         return DebugState;
     }
@@ -826,12 +828,12 @@ namespace MDSS
 
     void TDebugUI::ResetSurfaceStateSettings()
     {
-        const bool bHasStates = AssetManager->GetSurfaceStateRegistry().GetStateCount() != 0;
-        InjectState = bHasStates ? 0 : InvalidStateId;
+        const bool bHasStates = SurfaceDataManager->GetSurfaceStateRegistry().GetStateCount() != 0;
+        InjectState = bHasStates ? 0 : SurfaceState::InvalidStateId;
         DebugState = InjectState;
         DebugParameterState = InjectState;
-        DebugParameterProfile = InvalidAssetHandle;
-        ParameterDraftKey = {InvalidAssetHandle, InvalidStateId};
+        DebugParameterProfile = Asset::InvalidAssetHandle;
+        ParameterDraftKey = {Asset::InvalidAssetHandle, SurfaceState::InvalidStateId};
         ParameterDraft = {};
         bParameterDraftAvailable = false;
         bParameterDraftDirty = false;
@@ -849,7 +851,7 @@ namespace MDSS
 
     void TDebugUI::ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path)
     {
-        TScene Loaded = TSceneLoader::Load(Path, *AssetManager);
+        TScene Loaded = TSceneLoader::Load(Path, *AssetManager, *SurfaceDataManager);
         TScene PreviousScene = SceneData;
         SceneData = std::move(Loaded);
         try
@@ -886,7 +888,7 @@ namespace MDSS
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 155.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Scene", nullptr, Flags);
         const auto& SourcePath = SceneData.GetSourcePath();
@@ -979,6 +981,12 @@ namespace MDSS
         DrawDemoSceneButton("BrickCube", "BrickCube.Scene");
         ImGui::SameLine();
         DrawDemoSceneButton("Bunny", "Bunny.Scene");
+        ImGui::TextDisabled("Performance scenes:");
+        DrawDemoSceneButton("3 Cubes", "BrickCube_3.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("5 Cubes", "BrickCube_5.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("9 Cubes", "BrickCube_9.Scene");
         if (!SceneStatus.empty())
         {
             ImGui::TextWrapped("%s", SceneStatus.c_str());
@@ -1664,46 +1672,46 @@ namespace MDSS
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
                                            ImGuiWindowFlags_NoNavFocus;
-        TRenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode();
-        const auto      GetViewGeometryDescription = [](TRenderViewMode Mode) -> const char*
+        Rendering::TRenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode();
+        const auto                 GetViewGeometryDescription = [](Rendering::TRenderViewMode Mode) -> const char*
         {
             switch (Mode)
             {
-                case TRenderViewMode::Lit:
+                case Rendering::TRenderViewMode::Lit:
                     return "기본적으로 원본 메시를 렌더링합니다. Mud/WaterFilm/Lava 적층 레이어가 활성화된 물체는 "
                            "베이스 표면도 텍셀 메시로 그립니다.";
-                case TRenderViewMode::Unlit:
+                case Rendering::TRenderViewMode::Unlit:
                     return "원본 메시 위치에 조명 없이 재질색을 표시합니다. Meso와 State 적층 변위는 없습니다.";
-                case TRenderViewMode::Wireframe:
+                case Rendering::TRenderViewMode::Wireframe:
                     return "원본 메시 삼각형을 표시합니다. Meso와 State 적층 변위는 없습니다.";
-                case TRenderViewMode::VertexNormalWS:
+                case Rendering::TRenderViewMode::VertexNormalWS:
                     return "원본 메시 정점 노멀을 표시합니다. 형상 변위는 없습니다.";
-                case TRenderViewMode::NormalTextureTS:
+                case Rendering::TRenderViewMode::NormalTextureTS:
                     return "원본 메시의 노멀 텍스처를 표시합니다. 형상 변위는 없습니다.";
-                case TRenderViewMode::MappedNormalWS:
+                case Rendering::TRenderViewMode::MappedNormalWS:
                     return "원본 메시의 매핑된 노멀을 표시합니다. 형상 변위는 없습니다.";
-                case TRenderViewMode::SurfaceStateHeatmap:
+                case Rendering::TRenderViewMode::SurfaceStateHeatmap:
                     return "원본 메시 위에 State 데이터를 색으로 표시합니다. Relief 음영은 Meso 노멀을 쓸 수 있지만 "
                            "형상 변위는 없습니다.";
-                case TRenderViewMode::SurfaceValidity:
-                case TRenderViewMode::SurfaceID:
-                case TRenderViewMode::NeighborCount:
-                case TRenderViewMode::SurfaceSeam:
-                case TRenderViewMode::OutgoingFluxScale:
-                case TRenderViewMode::SolverTransferWeight:
-                case TRenderViewMode::SurfaceTexelGrid:
-                case TRenderViewMode::SurfaceTexelArea:
+                case Rendering::TRenderViewMode::SurfaceValidity:
+                case Rendering::TRenderViewMode::SurfaceID:
+                case Rendering::TRenderViewMode::NeighborCount:
+                case Rendering::TRenderViewMode::SurfaceSeam:
+                case Rendering::TRenderViewMode::OutgoingFluxScale:
+                case Rendering::TRenderViewMode::SolverTransferWeight:
+                case Rendering::TRenderViewMode::SurfaceTexelGrid:
+                case Rendering::TRenderViewMode::SurfaceTexelArea:
                     return "원본 메시 위에 진단 데이터를 표시합니다. Meso와 State 적층 변위는 없습니다.";
-                case TRenderViewMode::MesoHeight:
-                case TRenderViewMode::MesoOffset:
+                case Rendering::TRenderViewMode::MesoHeight:
+                case Rendering::TRenderViewMode::MesoOffset:
                     return "Meso 높이만 형상에 적용합니다. State 적층은 포함하지 않습니다.";
-                case TRenderViewMode::MacroGeometry:
+                case Rendering::TRenderViewMode::MacroGeometry:
                     return "원본 메시 형상입니다. Meso와 State 적층 변위는 없습니다.";
-                case TRenderViewMode::SurfaceAccumulation:
+                case Rendering::TRenderViewMode::SurfaceAccumulation:
                     return "Meso + 선택 State 전체 높이를 형상에 적용합니다. 색은 선택한 적층 성분을 표시합니다.";
-                case TRenderViewMode::SurfaceFinalGeometry:
+                case Rendering::TRenderViewMode::SurfaceFinalGeometry:
                     return "Meso + 선택 State 적층을 적용한 형상입니다. 모든 State를 합친 최종 형상은 아닙니다.";
-                case TRenderViewMode::TotalSimulationHeight:
+                case Rendering::TRenderViewMode::TotalSimulationHeight:
                     return "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.";
             }
             return "원본 메시 형상입니다.";
@@ -1717,31 +1725,32 @@ namespace MDSS
             {
                 CurrentName = RenderViewModeNames[CurrentIndex];
             }
-            else if (CurrentMode >= TRenderViewMode::SurfaceStateHeatmap &&
-                     CurrentMode < TRenderViewMode::SolverTransferWeight)
+            else if (CurrentMode >= Rendering::TRenderViewMode::SurfaceStateHeatmap &&
+                     CurrentMode < Rendering::TRenderViewMode::SolverTransferWeight)
             {
-                CurrentName =
-                    SurfaceDebugViewNames[CurrentIndex - static_cast<int>(TRenderViewMode::SurfaceStateHeatmap)];
+                CurrentName = SurfaceDebugViewNames[CurrentIndex -
+                                                    static_cast<int>(Rendering::TRenderViewMode::SurfaceStateHeatmap)];
             }
-            else if (CurrentMode == TRenderViewMode::SurfaceAccumulation)
+            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceAccumulation)
                 CurrentName = "State Height Heatmap";
-            else if (CurrentMode == TRenderViewMode::SurfaceFinalGeometry)
+            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceFinalGeometry)
                 CurrentName = "Meso + State Geometry";
-            else if (CurrentMode == TRenderViewMode::TotalSimulationHeight)
+            else if (CurrentMode == Rendering::TRenderViewMode::TotalSimulationHeight)
                 CurrentName = "Total Simulation Height";
-            else if (CurrentMode == TRenderViewMode::MesoHeight || CurrentMode == TRenderViewMode::MesoOffset)
+            else if (CurrentMode == Rendering::TRenderViewMode::MesoHeight ||
+                     CurrentMode == Rendering::TRenderViewMode::MesoOffset)
             {
                 CurrentName = "Meso Geometry";
             }
-            else if (CurrentMode == TRenderViewMode::MacroGeometry)
+            else if (CurrentMode == Rendering::TRenderViewMode::MacroGeometry)
             {
                 CurrentName = "Base Geometry";
             }
-            else if (CurrentMode == TRenderViewMode::SurfaceTexelGrid)
+            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceTexelGrid)
             {
                 CurrentName = "Texel Grid";
             }
-            else if (CurrentMode == TRenderViewMode::SurfaceTexelArea)
+            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceTexelArea)
             {
                 CurrentName = "Texel Area Heatmap";
             }
@@ -1772,7 +1781,7 @@ namespace MDSS
                 DrawSectionHeader("RENDER", 0.0F, 2.0F);
                 const auto SelectDisplayView = [&](int Index, const char* Description = nullptr)
                 {
-                    const auto Mode = static_cast<TRenderViewMode>(Index);
+                    const auto Mode = static_cast<Rendering::TRenderViewMode>(Index);
                     const bool bSelected = CurrentMode == Mode;
                     const bool bClicked = ImGui::MenuItem(RenderViewModeNames[Index]);
                     DrawSelectionMark(bSelected);
@@ -1799,11 +1808,11 @@ namespace MDSS
                 }
                 DrawSectionHeader("DEBUG", 12.0F, 2.0F);
                 const auto SelectDebugView =
-                    [&](const char* Name, TRenderViewMode Mode, const char* Description = nullptr)
+                    [&](const char* Name, Rendering::TRenderViewMode Mode, const char* Description = nullptr)
                 {
-                    const bool bMesoGeometry =
-                        Mode == TRenderViewMode::MesoHeight &&
-                        (CurrentMode == TRenderViewMode::MesoHeight || CurrentMode == TRenderViewMode::MesoOffset);
+                    const bool bMesoGeometry = Mode == Rendering::TRenderViewMode::MesoHeight &&
+                                               (CurrentMode == Rendering::TRenderViewMode::MesoHeight ||
+                                                CurrentMode == Rendering::TRenderViewMode::MesoOffset);
                     const bool bSelected = CurrentMode == Mode || bMesoGeometry;
                     const bool bClicked = ImGui::MenuItem(Name);
                     DrawSelectionMark(bSelected);
@@ -1822,62 +1831,62 @@ namespace MDSS
                 };
                 SelectDebugView(
                     SurfaceDebugViewNames[0],
-                    TRenderViewMode::SurfaceStateHeatmap,
+                    Rendering::TRenderViewMode::SurfaceStateHeatmap,
                     "원본 메시 위에 State/용량 비율을 색으로 표시합니다. Meso와 적층 변위는 적용하지 않습니다.");
                 if (ImGui::BeginMenu("Surface"))
                 {
                     SelectDebugView(SurfaceDebugViewNames[1],
-                                    TRenderViewMode::SurfaceValidity,
+                                    Rendering::TRenderViewMode::SurfaceValidity,
                                     "원본 메시 위에 텍셀의 유효성과 시뮬레이션 활성 상태를 표시합니다.");
                     SelectDebugView(SurfaceDebugViewNames[2],
-                                    TRenderViewMode::SurfaceID,
+                                    Rendering::TRenderViewMode::SurfaceID,
                                     "원본 메시 위에 Surface ID를 색으로 표시합니다.");
                     SelectDebugView(SurfaceDebugViewNames[3],
-                                    TRenderViewMode::NeighborCount,
+                                    Rendering::TRenderViewMode::NeighborCount,
                                     "원본 메시 위에 텍셀 이웃 수를 표시합니다.");
                     SelectDebugView(SurfaceDebugViewNames[4],
-                                    TRenderViewMode::SurfaceSeam,
+                                    Rendering::TRenderViewMode::SurfaceSeam,
                                     "원본 메시 위에 UV chart 사이의 텍셀 이웃 경계를 표시합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Texel"))
                 {
                     SelectDebugView("Texel Grid",
-                                    TRenderViewMode::SurfaceTexelGrid,
+                                    Rendering::TRenderViewMode::SurfaceTexelGrid,
                                     "원본 메시 표면에 시뮬레이션 텍셀 격자를 표시합니다.");
                     SelectDebugView("Texel Area Heatmap",
-                                    TRenderViewMode::SurfaceTexelArea,
+                                    Rendering::TRenderViewMode::SurfaceTexelArea,
                                     "원본 메시 표면에 텍셀별 월드 면적을 표시합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Geometry"))
                 {
                     SelectDebugView("Base Geometry",
-                                    TRenderViewMode::MacroGeometry,
+                                    Rendering::TRenderViewMode::MacroGeometry,
                                     "원본 메시 형상입니다. Meso 변위와 State 적층은 포함하지 않습니다.");
                     SelectDebugView("Meso Geometry",
-                                    TRenderViewMode::MesoHeight,
+                                    Rendering::TRenderViewMode::MesoHeight,
                                     "Meso 높이만 형상에 적용합니다. 표시 방식은 View Settings에서 선택합니다.");
                     SelectDebugView(
                         "State Height Heatmap",
-                        TRenderViewMode::SurfaceAccumulation,
+                        Rendering::TRenderViewMode::SurfaceAccumulation,
                         "Meso + 선택 State 전체 높이로 형상을 변위합니다. 색은 선택한 적층 성분을 표시합니다.");
                     SelectDebugView("Meso + State Geometry",
-                                    TRenderViewMode::SurfaceFinalGeometry,
+                                    Rendering::TRenderViewMode::SurfaceFinalGeometry,
                                     "Meso + 선택 State 적층을 적용한 형상입니다. 선택 State 미리보기이며 모든 State의 "
                                     "최종 합성이 아닙니다.");
                     SelectDebugView("Total Simulation Height",
-                                    TRenderViewMode::TotalSimulationHeight,
+                                    Rendering::TRenderViewMode::TotalSimulationHeight,
                                     "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Solver"))
                 {
                     SelectDebugView(SurfaceDebugViewNames[5],
-                                    TRenderViewMode::OutgoingFluxScale,
+                                    Rendering::TRenderViewMode::OutgoingFluxScale,
                                     "원본 메시 위에 State별 유출 제한값을 표시합니다.");
                     SelectDebugView("Solver Transfer Weights",
-                                    TRenderViewMode::SolverTransferWeight,
+                                    Rendering::TRenderViewMode::SolverTransferWeight,
                                     "원본 메시 위에 선택한 Solver 전달 가중치를 표시합니다.");
                     ImGui::EndMenu();
                 }
@@ -1892,13 +1901,13 @@ namespace MDSS
             ImGui::SameLine(0.0F, 10.0F);
             ImGui::TextDisabled("|");
 
-            if (CurrentMode == TRenderViewMode::SurfaceStateHeatmap ||
-                CurrentMode == TRenderViewMode::SurfaceAccumulation ||
-                CurrentMode == TRenderViewMode::SurfaceFinalGeometry)
+            if (CurrentMode == Rendering::TRenderViewMode::SurfaceStateHeatmap ||
+                CurrentMode == Rendering::TRenderViewMode::SurfaceAccumulation ||
+                CurrentMode == Rendering::TRenderViewMode::SurfaceFinalGeometry)
             {
                 ImGui::SameLine(0.0F, 8.0F);
-                const TSurfaceStateRegistry* Registry =
-                    AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+                const SurfaceState::TSurfaceStateRegistry* Registry =
+                    AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
                 const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
                 if (StateCount == 0)
                 {
@@ -1914,15 +1923,15 @@ namespace MDSS
                     ImGui::TextUnformatted("State");
                     ImGui::SameLine(0.0F, 6.0F);
                     ImGui::SetNextItemWidth(145.0F);
-                    const char* StateComboId = CurrentMode == TRenderViewMode::SurfaceStateHeatmap
+                    const char* StateComboId = CurrentMode == Rendering::TRenderViewMode::SurfaceStateHeatmap
                                                    ? "##ToolbarHeatmapState"
                                                    : "##ToolbarHeightState";
                     if (ImGui::BeginCombo(StateComboId, Registry->GetStateName(DebugState).c_str()))
                     {
                         for (std::size_t Index = 0; Index < StateCount; ++Index)
                         {
-                            const TStateId State = static_cast<TStateId>(Index);
-                            const bool     bSelected = State == DebugState;
+                            const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                            const bool                   bSelected = State == DebugState;
                             if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                             {
                                 DebugState = State;
@@ -1936,7 +1945,7 @@ namespace MDSS
                         ImGui::EndCombo();
                     }
                 }
-                if (CurrentMode == TRenderViewMode::SurfaceAccumulation)
+                if (CurrentMode == Rendering::TRenderViewMode::SurfaceAccumulation)
                 {
                     ImGui::SameLine(0.0F, 8.0F);
                     ImGui::AlignTextToFramePadding();
@@ -2105,13 +2114,13 @@ namespace MDSS
 
                 switch (CurrentMode)
                 {
-                    case TRenderViewMode::Lit:
+                    case Rendering::TRenderViewMode::Lit:
                         BeginViewContext("LIT", "재질색 × 조명(노멀 맵 포함).");
                         break;
-                    case TRenderViewMode::Unlit:
+                    case Rendering::TRenderViewMode::Unlit:
                         BeginViewContext("UNLIT", "조명 없이 재질색만 표시.");
                         break;
-                    case TRenderViewMode::Wireframe:
+                    case Rendering::TRenderViewMode::Wireframe:
                     {
                         BeginViewContext("WIREFRAME", "삼각형 와이어프레임으로 형상을 표시.");
                         bool bUniformWhite = FrameRenderer->IsWireframeUniformWhite();
@@ -2139,17 +2148,17 @@ namespace MDSS
                         }
                         break;
                     }
-                    case TRenderViewMode::VertexNormalWS:
+                    case Rendering::TRenderViewMode::VertexNormalWS:
                         BeginViewContext("VERTEX NORMAL", "RGB 채널은 월드 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                         break;
-                    case TRenderViewMode::NormalTextureTS:
+                    case Rendering::TRenderViewMode::NormalTextureTS:
                         BeginViewContext("NORMAL TEXTURE",
                                          "RGB 채널은 탄젠트 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                         break;
-                    case TRenderViewMode::MappedNormalWS:
+                    case Rendering::TRenderViewMode::MappedNormalWS:
                         BeginViewContext("MAPPED NORMAL", "RGB 채널은 월드 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                         break;
-                    case TRenderViewMode::SurfaceStateHeatmap:
+                    case Rendering::TRenderViewMode::SurfaceStateHeatmap:
                     {
                         BeginViewContext("STATE HEATMAP",
                                          "프로파일 용량 대비 State 비율을 표시합니다. 100% 초과는 주황색이며, 실제 "
@@ -2168,10 +2177,10 @@ namespace MDSS
                         DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
                         break;
                     }
-                    case TRenderViewMode::SurfaceAccumulation:
-                    case TRenderViewMode::SurfaceFinalGeometry:
+                    case Rendering::TRenderViewMode::SurfaceAccumulation:
+                    case Rendering::TRenderViewMode::SurfaceFinalGeometry:
                     {
-                        const bool bFinal = CurrentMode == TRenderViewMode::SurfaceFinalGeometry;
+                        const bool bFinal = CurrentMode == Rendering::TRenderViewMode::SurfaceFinalGeometry;
                         BeginViewContext(bFinal ? "MESO + STATE GEOMETRY" : "STATE HEIGHT HEATMAP",
                                          bFinal ? "Meso와 선택 State의 높이를 적용한 형상입니다. 선택 State "
                                                   "미리보기이며 모든 State의 최종 합성이 아닙니다."
@@ -2207,7 +2216,7 @@ namespace MDSS
                             {
                                 ImGui::SameLine();
                                 ImGui::TextDisabled(Settings.AccumulationComponent == 3
-                                                        ? "Cavity Fill: 0-100%; 초과 높이는 Following에 포함"
+                                                        ? "Cavity Fill: 0-100%%; 초과 높이는 Following에 포함"
                                                         : "채워진 cavity만 표시");
                             }
                         }
@@ -2233,7 +2242,7 @@ namespace MDSS
                         }
                         break;
                     }
-                    case TRenderViewMode::TotalSimulationHeight:
+                    case Rendering::TRenderViewMode::TotalSimulationHeight:
                     {
                         BeginViewContext("TOTAL SIMULATION HEIGHT",
                                          "Meso와 모든 State의 현재 높이를 적용한 형상입니다. "
@@ -2251,36 +2260,37 @@ namespace MDSS
                         DrawHeightGridControls();
                         break;
                     }
-                    case TRenderViewMode::SurfaceValidity:
+                    case Rendering::TRenderViewMode::SurfaceValidity:
                         BeginViewContext("VALIDITY", "Surface 텍셀 유효 여부와 시뮬레이션 적용 여부.");
                         DrawLegendColor({0.10F, 0.78F, 0.24F, 1.0F}, "유효·시뮬레이션 켜짐");
                         DrawLegendColor({0.18F, 0.48F, 0.82F, 1.0F}, "유효·시뮬레이션 꺼짐");
                         DrawLegendColor({0.86F, 0.12F, 0.08F, 1.0F}, "무효");
                         break;
-                    case TRenderViewMode::SurfaceID:
+                    case Rendering::TRenderViewMode::SurfaceID:
                         BeginViewContext("SURFACE ID",
                                          "색으로 Surface를 구분합니다. 색상 자체는 수치 의미가 없습니다.");
                         break;
-                    case TRenderViewMode::NeighborCount:
+                    case Rendering::TRenderViewMode::NeighborCount:
                         BeginViewContext("NEIGHBOR COUNT", "유효한 이웃 텍셀 개수.");
                         DrawLegendColor({0.08F, 0.10F, 0.18F, 1.0F}, "0개");
                         DrawLegendColor({0.95F, 0.72F, 0.12F, 1.0F}, "8개");
                         break;
-                    case TRenderViewMode::SurfaceSeam:
+                    case Rendering::TRenderViewMode::SurfaceSeam:
                         BeginViewContext("UV SEAM", "다른 UV chart로 이어지는 이웃 관계가 있는 경계.");
                         DrawLegendColor({1.0F, 0.18F, 0.72F, 1.0F}, "Seam 이웃 있음");
                         DrawLegendColor({0.12F, 0.16F, 0.22F, 1.0F}, "없음");
                         break;
-                    case TRenderViewMode::OutgoingFluxScale:
+                    case Rendering::TRenderViewMode::OutgoingFluxScale:
                     {
                         BeginViewContext("OUTGOING FLUX SCALE",
                                          "선택 State 채널의 유출 제한값: 0은 제한, 1은 제한 없음.");
-                        const TSurfaceStateRegistry* Registry =
-                            AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+                        const SurfaceState::TSurfaceStateRegistry* Registry =
+                            AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
                         if (Registry != nullptr && Registry->GetStateCount() > 0)
                         {
                             const std::size_t StateCount = Registry->GetStateCount();
-                            DebugState = std::min<TStateId>(DebugState, static_cast<TStateId>(StateCount - 1));
+                            DebugState = std::min<SurfaceState::TStateId>(
+                                DebugState, static_cast<SurfaceState::TStateId>(StateCount - 1));
                             ImGui::AlignTextToFramePadding();
                             ImGui::TextUnformatted("State");
                             ImGui::SameLine(0.0F, 6.0F);
@@ -2289,8 +2299,8 @@ namespace MDSS
                             {
                                 for (std::size_t Index = 0; Index < StateCount; ++Index)
                                 {
-                                    const TStateId State = static_cast<TStateId>(Index);
-                                    const bool     bSelected = State == DebugState;
+                                    const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                                    const bool                   bSelected = State == DebugState;
                                     if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                                     {
                                         DebugState = State;
@@ -2310,7 +2320,7 @@ namespace MDSS
                         DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "시뮬레이션 꺼짐");
                         break;
                     }
-                    case TRenderViewMode::SolverTransferWeight:
+                    case Rendering::TRenderViewMode::SolverTransferWeight:
                     {
                         BeginViewContext("TRANSFER WEIGHT", "선택 가중치 평균: 0은 차단, 1은 완전 전달.");
                         int SelectedWeightView = static_cast<int>(FrameRenderer->GetSolverTransferWeightView());
@@ -2321,7 +2331,7 @@ namespace MDSS
                                          static_cast<int>(SolverTransferWeightViewNames.size())))
                         {
                             FrameRenderer->SetSolverTransferWeightView(
-                                static_cast<TSolverTransferWeightView>(SelectedWeightView));
+                                static_cast<Rendering::TSolverTransferWeightView>(SelectedWeightView));
                         }
                         ImGui::SameLine(0.0F, 10.0F);
                         DrawLegendColor({0.16F, 0.035F, 0.24F, 1.0F}, "0 차단");
@@ -2329,7 +2339,7 @@ namespace MDSS
                         DrawLegendColor({0.18F, 0.94F, 0.98F, 1.0F}, "1 허용");
                         break;
                     }
-                    case TRenderViewMode::SurfaceTexelGrid:
+                    case Rendering::TRenderViewMode::SurfaceTexelGrid:
                     {
                         BeginViewContext("TEXEL GRID", "시뮬레이션 UV 격자. 확대하면 개별 텍셀 경계가 나타납니다.");
                         const std::uint32_t                  BlockSize = FrameRenderer->GetTexelGridBlockSize();
@@ -2351,7 +2361,7 @@ namespace MDSS
                         DrawLegendColor({0.72F, 0.88F, 0.98F, 1.0F}, "묶음 경계");
                         break;
                     }
-                    case TRenderViewMode::SurfaceTexelArea:
+                    case Rendering::TRenderViewMode::SurfaceTexelArea:
                     {
                         BeginViewContext("TEXEL AREA", "텍셀당 월드 면적. 해상도 변경에도 동일 색 기준.");
                         float Reference = FrameRenderer->GetTexelAreaReference();
@@ -2374,20 +2384,20 @@ namespace MDSS
                         DrawLegendColor({1.0F, 0.18F, 0.72F, 1.0F}, "면적 계산 불가");
                         break;
                     }
-                    case TRenderViewMode::MesoHeight:
-                    case TRenderViewMode::MesoOffset:
+                    case Rendering::TRenderViewMode::MesoHeight:
+                    case Rendering::TRenderViewMode::MesoOffset:
                     {
                         BeginViewContext("MESO GEOMETRY",
                                          "Meso 높이만 형상에 적용합니다. State 적층은 포함하지 않습니다.");
-                        int Representation = CurrentMode == TRenderViewMode::MesoHeight ? 0 : 1;
+                        int Representation = CurrentMode == Rendering::TRenderViewMode::MesoHeight ? 0 : 1;
                         ImGui::SetNextItemWidth(150.0F);
                         if (ImGui::Combo("Representation", &Representation, "Height Color\0Displacement\0"))
                         {
-                            CurrentMode =
-                                Representation == 0 ? TRenderViewMode::MesoHeight : TRenderViewMode::MesoOffset;
+                            CurrentMode = Representation == 0 ? Rendering::TRenderViewMode::MesoHeight
+                                                              : Rendering::TRenderViewMode::MesoOffset;
                             FrameRenderer->SetRenderViewMode(CurrentMode);
                         }
-                        if (CurrentMode == TRenderViewMode::MesoHeight)
+                        if (CurrentMode == Rendering::TRenderViewMode::MesoHeight)
                         {
                             ImGui::SameLine(0.0F, 10.0F);
                             DrawLegendColor({0.12F, 0.52F, 0.92F, 1.0F}, "음수");
@@ -2397,7 +2407,7 @@ namespace MDSS
                         DrawHeightGridControls();
                         break;
                     }
-                    case TRenderViewMode::MacroGeometry:
+                    case Rendering::TRenderViewMode::MacroGeometry:
                         BeginViewContext("BASE GEOMETRY",
                                          "원본 메시 형상입니다. Meso 변위와 State 적층은 포함하지 않습니다.");
                         break;
@@ -2487,7 +2497,7 @@ namespace MDSS
         for (std::size_t Index = 0; Index < Instances.size(); ++Index)
         {
             const auto Mesh = Instances[Index].GetMesh();
-            if (Mesh != InvalidAssetHandle && AssetManager->GetMesh(Mesh).GetName() == "BrickCube" &&
+            if (Mesh != Asset::InvalidAssetHandle && AssetManager->GetMesh(Mesh).GetName() == "BrickCube" &&
                 FrameRenderer->IsLitTexelMeshBaseRendered(SceneData, Index))
             {
                 bBrickCubeTexelMesh = true;
@@ -2676,7 +2686,8 @@ namespace MDSS
 
     void TDebugUI::DrawTotalHeightCacheOverlay()
     {
-        if (FrameRenderer == nullptr || FrameRenderer->GetRenderViewMode() != TRenderViewMode::TotalSimulationHeight ||
+        if (FrameRenderer == nullptr ||
+            FrameRenderer->GetRenderViewMode() != Rendering::TRenderViewMode::TotalSimulationHeight ||
             !FrameRenderer->WasTotalHeightCacheHit())
             return;
 
@@ -2739,19 +2750,14 @@ namespace MDSS
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
         if (ImGui::Begin("Profiling##Overlay", nullptr, Flags))
         {
-            if (bProfiledRawFluxCacheEnabled != FrameRenderer->IsRawFluxCacheEnabled())
-            {
-                ResetProfilingAverages();
-                bProfiledRawFluxCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
-            }
-            const ImGuiIO&                 IO = ImGui::GetIO();
-            const double                   FrameSeconds = static_cast<double>(IO.DeltaTime);
-            const TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
-            const bool                     bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
-            const float                    FeedbackGpuMilliseconds =
+            const ImGuiIO&                            IO = ImGui::GetIO();
+            const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
+            const Rendering::TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
+            const bool  bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
+            const float AccumulationGeometryUpdateGpuMilliseconds =
                 Stats.AccumulationGeometryGpuMilliseconds >= 0.0F && Stats.TransferWeightGpuMilliseconds >= 0.0F
-                                       ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds
-                                       : -1.0F;
+                    ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds
+                    : -1.0F;
             const auto SolverMetric = [&](float Milliseconds)
             {
                 if (!bSolverMetricsPerStep)
@@ -2764,7 +2770,7 @@ namespace MDSS
                 Stats.RenderPreparationGpuMilliseconds + Stats.SceneDrawGpuMilliseconds +
                     (bFineRenderTimings ? Stats.UIDrawGpuMilliseconds + Stats.RenderPassEndGpuMilliseconds : 0.0F),
                 SolverMetric(Stats.SolverGpuMilliseconds),
-                SolverMetric(FeedbackGpuMilliseconds),
+                SolverMetric(AccumulationGeometryUpdateGpuMilliseconds),
                 SolverMetric(Stats.SolverPass1GpuMilliseconds),
                 SolverMetric(Stats.SolverPass2GpuMilliseconds),
                 Stats.RenderPreparationGpuMilliseconds,
@@ -2878,7 +2884,7 @@ namespace MDSS
                 ProfilingWindowMaximums.fill(-1.0F);
             }
 
-            if (ImGui::CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen))
+            if (ImGui::CollapsingHeader("Time Profiling", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 const float  FPS = ProfilingAverages[0];
                 const ImVec4 FPSColor = FPS >= 55.0F   ? ImVec4(0.57F, 0.92F, 0.68F, 1.0F)
@@ -2894,14 +2900,16 @@ namespace MDSS
                 ImGui::SetNextItemWidth(125.0F);
                 if (ImGui::Combo("##OverlayDrawTest", &OverlayDrawMode, "Both\0Top only\0Sides only\0"))
                 {
-                    FrameRenderer->SetOverlayDrawProfilingMode(static_cast<TOverlayDrawProfilingMode>(OverlayDrawMode));
+                    FrameRenderer->SetOverlayDrawProfilingMode(
+                        static_cast<Rendering::TOverlayDrawProfilingMode>(OverlayDrawMode));
                     ResetProfilingAverages();
                 }
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("오버레이 그리기 호출만 바뀌며 렌더 준비는 계속 수행됩니다. "
                                       "각 모드에서 새 평균을 수집한 뒤 Render 패스를 비교하세요.");
                 int OccupancyTile =
-                    FrameRenderer->GetOverlayOccupancyTileSize() == TOverlayOccupancyTileSize::Tile32 ? 1 : 0;
+                    FrameRenderer->GetOverlayOccupancyTileSize() == Rendering::TOverlayOccupancyTileSize::Tile32 ? 1
+                                                                                                                 : 0;
                 ImGui::TextDisabled("Active tile");
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(125.0F);
@@ -2911,8 +2919,9 @@ namespace MDSS
                                  "32 x 32\0"))
                 {
                     bFrameTimeResetRequested = true;
-                    FrameRenderer->SetOverlayOccupancyTileSize(OccupancyTile == 1 ? TOverlayOccupancyTileSize::Tile32
-                                                                                  : TOverlayOccupancyTileSize::Tile16);
+                    FrameRenderer->SetOverlayOccupancyTileSize(OccupancyTile == 1
+                                                                   ? Rendering::TOverlayOccupancyTileSize::Tile32
+                                                                   : Rendering::TOverlayOccupancyTileSize::Tile16);
                     ResetProfilingAverages();
                 }
                 if (ImGui::IsItemHovered())
@@ -3015,7 +3024,8 @@ namespace MDSS
                     if (SetupMetricTable("ViewportProfilingSimulation"))
                     {
                         DrawMetric(2,
-                                   bSolverMetricsPerStep ? "Geometry feedback / step" : "Geometry feedback / frame",
+                                   bSolverMetricsPerStep ? "Accumulation Geometry Update / step"
+                                                         : "Accumulation Geometry Update / frame",
                                    {0.82F, 0.87F, 0.94F, 1.0F});
                         DrawMetric(
                             3, bSolverMetricsPerStep ? "Pass 1 / step" : "Pass 1 / frame", {0.72F, 0.78F, 0.87F, 1.0F});
@@ -3056,9 +3066,12 @@ namespace MDSS
                                     static_cast<unsigned long long>(Stats.SimulationTexels),
                                     Stats.StateChannels);
                         AddStateRow("Resolution", "%u x %u", Stats.SimulationResolution, Stats.SimulationResolution);
-                        AddStateRow("RawFlux Cache", "%s", FrameRenderer->IsRawFluxCacheEnabled() ? "ON" : "OFF");
+                        AddStateRow("Surface mesh", "%u", Stats.SurfaceTexelMeshResolution);
+                        AddStateRow("Overlay mesh", "%u", Stats.OverlayTexelMeshResolution);
                         AddStateRow(
-                            "Geometry Feedback", "%s", FrameRenderer->IsAccumulationFeedbackEnabled() ? "ON" : "OFF");
+                            "Accumulation Geometry Update",
+                            "%s",
+                            FrameRenderer->IsAccumulationGeometryUpdateEnabled() ? "ON" : "OFF");
                         AddStateRow("Fixed timestep", "%s", bFixedSimulationTimestep ? "ON" : "OFF");
                         AddStateRow("Auto substepping", "%s", bAutoSubstepping ? "ON" : "OFF");
                         AddStateRow("Time scale", "%.2fx", SimulationTimeScale);
@@ -3116,7 +3129,10 @@ namespace MDSS
                             DrawMetric(24, "  Total dispatches", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(31, "    Coverage sample", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(28, "    Boundary + segment", {0.82F, 0.87F, 0.94F, 1.0F});
-                            DrawMetric(29, "    Top draw command", {0.82F, 0.87F, 0.94F, 1.0F});
+                            DrawMetric(29,
+                                       "    Top command (merged)",
+                                       {0.82F, 0.87F, 0.94F, 1.0F},
+                                       "Top surface activation now runs inside Boundary + segment; this slot should be near zero.");
                             DrawMetric(30, "    Coverage barrier", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(25,
                                        "  Pre-draw sync",
@@ -3186,8 +3202,57 @@ namespace MDSS
         ImGui::End();
         ImGui::PopStyleVar(3);
 
+        ImGui::SetNextWindowPos({ViewportOrigin.x + 10.0F, RenderStateY}, ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints({OverlayWindowWidth, 0.0F}, {OverlayWindowWidth, 800.0F});
+        ImGui::SetNextWindowBgAlpha(0.84F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
+        if (ImGui::Begin("Memory Profiling##Overlay", nullptr, Flags) &&
+            ImGui::CollapsingHeader("Memory Profiling", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            const GPU::TGPUResourceMemorySnapshot Memory = GPU::TGPUResourceMemoryStats::GetSnapshot();
+            const auto DrawMemoryRow = [](const char* Label, std::uint64_t CurrentBytes, std::uint64_t PeakBytes)
+            {
+                constexpr double RowBytesPerMiB = 1024.0 * 1024.0;
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextDisabled("%s", Label);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%.2f MiB", static_cast<double>(CurrentBytes) / RowBytesPerMiB);
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%.2f MiB", static_cast<double>(PeakBytes) / RowBytesPerMiB);
+            };
+            if (ImGui::BeginTable("ViewportMemoryProfiling",
+                                  3,
+                                  ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
+            {
+                ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, 104.0F);
+                ImGui::TableSetupColumn("Current", ImGuiTableColumnFlags_WidthFixed, 82.0F);
+                ImGui::TableSetupColumn("Peak", ImGuiTableColumnFlags_WidthFixed, 82.0F);
+                ImGui::TableHeadersRow();
+                DrawMemoryRow("GPU total", Memory.CurrentTotalBytes, Memory.PeakTotalBytes);
+                DrawMemoryRow("Buffers", Memory.CurrentBufferBytes, Memory.PeakBufferBytes);
+                DrawMemoryRow("Images", Memory.CurrentImageBytes, Memory.PeakImageBytes);
+                ImGui::EndTable();
+            }
+            ImGui::TextDisabled("Tracked Vulkan allocations · MiB");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Tracks Vulkan memory requirements for app-owned TGPUBuffer and TGPUImage "
+                                  "allocations. Swapchain and driver allocations are excluded.");
+        }
+        const ImVec2 MemoryProfilePos = ImGui::GetWindowPos();
+        const ImVec2 MemoryProfileSize = ImGui::GetWindowSize();
+        const ImVec2 MemoryMouse = ImGui::GetIO().MousePos;
+        bMouseOverViewportOverlay |= MemoryMouse.x >= MemoryProfilePos.x && MemoryMouse.y >= MemoryProfilePos.y &&
+                                     MemoryMouse.x < MemoryProfilePos.x + MemoryProfileSize.x &&
+                                     MemoryMouse.y < MemoryProfilePos.y + MemoryProfileSize.y;
+        RenderStateY = MemoryProfilePos.y + MemoryProfileSize.y + 6.0F;
+        ImGui::End();
+        ImGui::PopStyleVar(3);
+
         const auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-        const bool bLitView = FrameRenderer->GetRenderViewMode() == TRenderViewMode::Lit;
+        const bool bLitView = FrameRenderer->GetRenderViewMode() == Rendering::TRenderViewMode::Lit;
         const bool bEffectsActive = bLitView && Effects.bEnabled;
         const auto StatusText = [](bool bEnabled, bool bActive)
         {
@@ -3331,7 +3396,7 @@ namespace MDSS
 
     void TDebugUI::DrawDebugStateSelector()
     {
-        const auto& Registry = AssetManager->GetSurfaceStateRegistry();
+        const auto& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
         if (Registry.GetStateCount() == 0)
         {
             ImGui::TextDisabled("등록된 State 없음");
@@ -3343,7 +3408,7 @@ namespace MDSS
         {
             for (std::size_t Index = 0; Index < Registry.GetStateCount(); ++Index)
             {
-                const auto State = static_cast<TStateId>(Index);
+                const auto State = static_cast<SurfaceState::TStateId>(Index);
                 if (ImGui::Selectable(Registry.GetStateName(State).c_str(), State == DebugState))
                 {
                     DebugState = State;
@@ -3504,12 +3569,12 @@ namespace MDSS
         ImGui::Dummy({0.0F, SectionHeaderTopPadding});
         const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
         const char*         CurrentLabel = "Medium";
-        for (const auto& Preset : SurfaceSimulationResolutionPresets)
+        for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
             if (Preset.Resolution == CurrentResolution)
                 CurrentLabel = Preset.Label;
         if (BeginLabeledCombo("Resolution", CurrentLabel))
         {
-            for (const auto& Preset : SurfaceSimulationResolutionPresets)
+            for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
             {
                 const bool Selected = Preset.Resolution == CurrentResolution;
                 if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
@@ -3547,6 +3612,39 @@ namespace MDSS
             }
         }
 
+        const auto DrawTexelMeshResolutionControl = [&](const char* Label,
+                                                        std::uint32_t ActiveResolution,
+                                                        auto&& SetResolution)
+        {
+            const std::string Preview = std::to_string(ActiveResolution);
+            if (BeginLabeledCombo(Label, Preview.c_str()))
+            {
+                for (const auto& Preset : SurfaceState::SurfaceRenderMeshResolutionPresets)
+                {
+                    const bool Selected = Preset.Resolution == ActiveResolution;
+                    if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
+                    {
+                        SetResolution(Preset.Resolution);
+                        bFrameTimeResetRequested = true;
+                        ResetProfilingAverages();
+                    }
+                    if (Selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                EndLabeledCombo();
+            }
+        };
+        DrawTexelMeshResolutionControl("Surface mesh",
+                                       FrameRenderer->GetSurfaceTexelMeshResolution(),
+                                       [&](std::uint32_t Resolution)
+                                       { FrameRenderer->SetSurfaceTexelMeshResolution(Resolution); });
+        TextDescriptionWrapped("Texel Mesh resolution used to draw the surface when overlays are active.");
+        DrawTexelMeshResolutionControl("Overlay mesh",
+                                       FrameRenderer->GetOverlayTexelMeshResolution(),
+                                       [&](std::uint32_t Resolution)
+                                       { FrameRenderer->SetOverlayTexelMeshResolution(Resolution); });
+        TextDescriptionWrapped("Texel Mesh resolution used by state overlays; changing it keeps simulation State.");
+
         if (ImGui::Checkbox("Fixed timestep", &bFixedSimulationTimestep))
         {
             bFrameTimeResetRequested = true;
@@ -3576,7 +3674,8 @@ namespace MDSS
 
     void TDebugUI::DrawSolverTab()
     {
-        const auto DrawSolverTerm = [this](TSurfaceSolverTerm Term, const char* Label, const char* Description)
+        const auto DrawSolverTerm =
+            [this](SurfaceState::TSurfaceSolverTerm Term, const char* Label, const char* Description)
         {
             bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
             if (ImGui::Checkbox(Label, &bEnabled))
@@ -3591,12 +3690,12 @@ namespace MDSS
             }
         };
 
-        DrawSectionHeader("Geometry Feedback");
-        bool bAccumulationFeedback = FrameRenderer->IsAccumulationFeedbackEnabled();
-        if (ImGui::Checkbox("Accumulation feedback", &bAccumulationFeedback))
+        DrawSectionHeader("Accumulation Geometry Update");
+        bool bAccumulationGeometryUpdate = FrameRenderer->IsAccumulationGeometryUpdateEnabled();
+        if (ImGui::Checkbox("Accumulation Geometry Update", &bAccumulationGeometryUpdate))
         {
             bFrameTimeResetRequested = true;
-            FrameRenderer->SetAccumulationFeedbackEnabled(bAccumulationFeedback);
+            FrameRenderer->SetAccumulationGeometryUpdateEnabled(bAccumulationGeometryUpdate);
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
@@ -3608,80 +3707,51 @@ namespace MDSS
         }
 
         DrawSectionHeader("Transport");
-        DrawSolverTerm(TSurfaceSolverTerm::SaturationDrive,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::SaturationDrive,
                        "Saturation spreading",
                        "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
                        "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
-        DrawSolverTerm(TSurfaceSolverTerm::GeometryDrive,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::GeometryDrive,
                        "Gravity-guided flow",
                        "ON: 높이와 중력 방향에 따른 전달에 출발 포화도를 곱합니다. 포화도는 1을 넘을 수 있습니다.\n"
                        "OFF: 기하 전달량을 0으로 설정합니다.");
-        DrawSolverTerm(TSurfaceSolverTerm::MesoDirectionNormal,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::MesoDirectionNormal,
                        "DirectionDrive: MesoNormal",
                        "ON: 중력을 표면에 투영할 때 복원된 MesoNormal을 사용합니다.\n"
                        "OFF: 중력을 표면에 투영할 때 기본 mesh normal을 사용합니다.");
-        DrawSolverTerm(TSurfaceSolverTerm::DistanceWeight,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::DistanceWeight,
                        "DistanceWeight",
                        "ON: 이웃 간 실제 표면 거리 기반 가중치를 적용합니다.\n"
                        "OFF: 거리 가중치를 1.0으로 설정합니다.");
-        DrawSolverTerm(TSurfaceSolverTerm::NormalWeight,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::NormalWeight,
                        "NormalWeight",
                        "ON: 이웃 표면 법선의 방향 일치도 가중치를 적용합니다.\n"
                        "OFF: 법선 가중치를 1.0으로 설정합니다.");
-        DrawSolverTerm(TSurfaceSolverTerm::ProfileBoundaryWeight,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::ProfileBoundaryWeight,
                        "ProfileBoundaryWeight",
                        "ON: 서로 다른 Profile 사이 전달 가중치를 0.5로 낮춥니다.\n"
                        "OFF: Profile 경계 가중치를 1.0으로 설정합니다.");
 
         DrawSectionHeader("Decay");
-        DrawSolverTerm(TSurfaceSolverTerm::Decay,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::Decay,
                        "Decay",
                        "ON: Profile DecayRate에 따른 State 감소를 적용합니다.\n"
                        "OFF: 감소량을 0으로 설정합니다.");
-        DrawSolverTerm(TSurfaceSolverTerm::ConcavityRetention,
+        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::ConcavityRetention,
                        "Cavity decay protection",
                        "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
                        "OFF: Decay 보유율을 1.0으로 설정합니다.");
 
         ImGui::Spacing();
-        if (ImGui::CollapsingHeader("Cache Comparison"))
-        {
-            bool bCacheEnabled = FrameRenderer->IsRawFluxCacheEnabled();
-            if (ImGui::Checkbox("RawFlux Cache", &bCacheEnabled))
-            {
-                bFrameTimeResetRequested = true;
-                FrameRenderer->SetRawFluxCacheEnabled(bCacheEnabled);
-                ResetProfilingAverages();
-            }
-            ImGui::TextDisabled("%s", bCacheEnabled ? "ON: reuse Pass 1 flux" : "OFF: recompute in Pass 2");
-            const auto       Memory = FrameRenderer->GetSurfaceGPUResources().GetRawFluxMemoryUsage();
-            constexpr double MiB = 1024.0 * 1024.0;
-            ImGui::Text("Cache buffers: %.2f MiB",
-                        static_cast<double>(Memory.InstanceRawFluxBytes + Memory.SharedReverseSlotBytes) / MiB);
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::Text("RawFlux (all instances): %.2f MiB",
-                            static_cast<double>(Memory.InstanceRawFluxBytes) / MiB);
-                ImGui::Text("Reverse slots (shared once): %.2f MiB",
-                            static_cast<double>(Memory.SharedReverseSlotBytes) / MiB);
-                ImGui::TextDisabled("Buffer sizes; excludes allocator overhead.");
-                ImGui::EndTooltip();
-            }
-            TextDescriptionWrapped("State is preserved. Buffers stay allocated while OFF.");
-            TextDescriptionWrapped("Fixed timestep and Auto substepping are available in the Global Settings tab.");
-            TextDescriptionWrapped(
-                "Compare with the same resolution, time scale and starting State. Reset and replay the "
-                "same input for each mode; allow warmup before reading averages.");
-        }
+        TextDescriptionWrapped("Fixed timestep and Auto substepping are available in the Global Settings tab.");
         ImGui::Spacing();
         if (ImGui::CollapsingHeader("Diagnostics"))
         {
-            const TSurfaceGPUResourceManager& GPUResources = FrameRenderer->GetSurfaceGPUResources();
-            std::size_t                       TotalTexels = 0;
-            std::size_t                       ValidTexels = 0;
-            std::optional<bool>               FirstCurrentAB;
-            bool                              bMixedCurrentBuffers = false;
+            const SurfaceState::TSurfaceGPUResourceManager& GPUResources = FrameRenderer->GetSurfaceGPUResources();
+            std::size_t                                     TotalTexels = 0;
+            std::size_t                                     ValidTexels = 0;
+            std::optional<bool>                             FirstCurrentAB;
+            bool                                            bMixedCurrentBuffers = false;
             for (std::size_t SceneIndex = 0; SceneIndex < GPUResources.GetSceneInstanceCount(); ++SceneIndex)
             {
                 if (GPUResources.GetInstanceDescriptors(SceneIndex) == nullptr)
@@ -3734,13 +3804,13 @@ namespace MDSS
         }
         ImGui::TextDisabled("Crosshair hit → triangle → UV → simulation texel.");
 
-        const TSurfaceStateRegistry* InjectRegistry =
-            AssetManager != nullptr ? &AssetManager->GetSurfaceStateRegistry() : nullptr;
+        const SurfaceState::TSurfaceStateRegistry* InjectRegistry =
+            AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
         const std::size_t InjectStateCount = InjectRegistry != nullptr ? InjectRegistry->GetStateCount() : 0;
         if (InjectStateCount == 0)
         {
             ImGui::TextDisabled("No Surface States are registered.");
-            InjectState = InvalidStateId;
+            InjectState = SurfaceState::InvalidStateId;
         }
         else
         {
@@ -3758,9 +3828,9 @@ namespace MDSS
             {
                 for (std::size_t Index = 0; Index < InjectStateCount; ++Index)
                 {
-                    const TStateId     State = static_cast<TStateId>(Index);
-                    const std::string& Name = InjectRegistry->GetStateName(State);
-                    const bool         bSelected = State == InjectState;
+                    const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                    const std::string&           Name = InjectRegistry->GetStateName(State);
+                    const bool                   bSelected = State == InjectState;
                     if (ImGui::Selectable(Name.c_str(), bSelected))
                     {
                         InjectState = State;
@@ -3802,15 +3872,15 @@ namespace MDSS
     void TDebugUI::DrawProfileTuningTab(TScene& SceneData)
     {
         DrawSectionHeader("Runtime Profile Parameters");
-        std::vector<TSRProfileAssetHandle> SceneProfiles;
+        std::vector<Asset::TSRProfileAssetHandle> SceneProfiles;
         for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
-            const TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
-            if (!AssetManager->HasSurfaceData(SurfaceData))
+            const SurfaceState::TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
+            if (!SurfaceDataManager->HasSurfaceData(SurfaceData))
             {
                 continue;
             }
-            for (TSRProfileAssetHandle Profile : AssetManager->GetSurfaceProfileTable(SurfaceData))
+            for (Asset::TSRProfileAssetHandle Profile : SurfaceDataManager->GetSurfaceProfileTable(SurfaceData))
             {
                 if (std::find(SceneProfiles.begin(), SceneProfiles.end(), Profile) == SceneProfiles.end())
                 {
@@ -3827,17 +3897,17 @@ namespace MDSS
         if (std::find(SceneProfiles.begin(), SceneProfiles.end(), DebugParameterProfile) == SceneProfiles.end())
         {
             DebugParameterProfile = SceneProfiles.front();
-            ParameterDraftKey = {InvalidAssetHandle, InvalidStateId};
+            ParameterDraftKey = {Asset::InvalidAssetHandle, SurfaceState::InvalidStateId};
         }
 
-        const auto GetProfileName = [this](TSRProfileAssetHandle Handle) -> const char*
+        const auto GetProfileName = [this](Asset::TSRProfileAssetHandle Handle) -> const char*
         { return AssetManager->GetSRProfile(Handle).GetName().c_str(); };
         const bool bProfileComboOpen = BeginLabeledCombo("Profile", GetProfileName(DebugParameterProfile));
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("현재 씬에 사용 중인 Surface Profile 중 조정할 프로필을 선택합니다.");
         if (bProfileComboOpen)
         {
-            for (TSRProfileAssetHandle Profile : SceneProfiles)
+            for (Asset::TSRProfileAssetHandle Profile : SceneProfiles)
             {
                 const bool bSelected = Profile == DebugParameterProfile;
                 if (ImGui::Selectable(GetProfileName(Profile), bSelected))
@@ -3852,8 +3922,8 @@ namespace MDSS
             EndLabeledCombo();
         }
 
-        const TSurfaceStateRegistry& Registry = AssetManager->GetSurfaceStateRegistry();
-        const std::size_t            StateCount = Registry.GetStateCount();
+        const SurfaceState::TSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
+        const std::size_t                          StateCount = Registry.GetStateCount();
         if (StateCount == 0)
         {
             ImGui::TextDisabled("No State channels are registered.");
@@ -3871,9 +3941,9 @@ namespace MDSS
         {
             for (std::size_t Index = 0; Index < StateCount; ++Index)
             {
-                const TStateId     State = static_cast<TStateId>(Index);
-                const std::string& Name = Registry.GetStateName(State);
-                const bool         bSelected = State == DebugParameterState;
+                const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                const std::string&           Name = Registry.GetStateName(State);
+                const bool                   bSelected = State == DebugParameterState;
                 if (ImGui::Selectable(Name.c_str(), bSelected))
                 {
                     DebugParameterState = State;
@@ -3886,7 +3956,8 @@ namespace MDSS
             EndLabeledCombo();
         }
 
-        const std::pair<TSRProfileAssetHandle, TStateId> Key{DebugParameterProfile, DebugParameterState};
+        const std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> Key{DebugParameterProfile,
+                                                                                  DebugParameterState};
         if (ParameterDraftKey != Key)
         {
             ParameterStatus.clear();
@@ -3906,7 +3977,7 @@ namespace MDSS
             }
             else
             {
-                const TRegisteredSurfaceResponseProfileData Resolved =
+                const SurfaceState::TRegisteredSurfaceResponseProfileData Resolved =
                     Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
                 if (DebugParameterState < Resolved.States.size() && Resolved.States[DebugParameterState].has_value())
                 {
@@ -3919,7 +3990,7 @@ namespace MDSS
             }
         }
 
-        const TRegisteredSurfaceResponseProfileData Resolved =
+        const SurfaceState::TRegisteredSurfaceResponseProfileData Resolved =
             Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
         const bool bProfileSupportsState =
             DebugParameterState < Resolved.States.size() && Resolved.States[DebugParameterState].has_value();
@@ -4005,7 +4076,7 @@ namespace MDSS
             bFrameTimeResetRequested = true;
             try
             {
-                TSurfaceResponseProfileData ValidationData;
+                SurfaceState::TSurfaceResponseProfileData ValidationData;
                 ValidationData.States.emplace(Registry.GetStateName(DebugParameterState), ParameterDraft);
                 ValidateSurfaceResponseProfileData(ValidationData);
                 FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, ParameterDraft);
@@ -4029,7 +4100,7 @@ namespace MDSS
         if (bRestoreProfileValues)
         {
             bFrameTimeResetRequested = true;
-            const TSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
+            const SurfaceState::TSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
             if (RuntimeProfileOverrides.contains(Key))
             {
                 FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, Original, false);

@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     TextureData TextureLoader::LoadRGBA8(const std::filesystem::path& Path)
     {
@@ -40,4 +40,4 @@ namespace MDSS
                            std::to_string(Data.Height) + ", source channels=" + std::to_string(Channels) + ").");
         return Data;
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

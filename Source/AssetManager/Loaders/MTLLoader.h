@@ -14,7 +14,7 @@ namespace tinyobj
     struct material_t;
 }
 
-namespace MDSS
+namespace MDSS::Asset
 {
     struct TMaterialSourceData
     {
@@ -31,4 +31,4 @@ namespace MDSS
         [[nodiscard]] static TMaterialSourceData Convert(const tinyobj::material_t&   Material,
                                                          const std::filesystem::path& TextureBaseDirectory);
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

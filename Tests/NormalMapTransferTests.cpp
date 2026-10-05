@@ -3,7 +3,7 @@
  * @brief Normal Map sample, barycentric UV와 tangent frame 계약을 검증한다.
  */
 
-#include "SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.h"
+#include "SurfaceState/Mapping/NormalMapTransferNormalBuilder.h"
 
 #include <array>
 #include <cmath>
@@ -30,10 +30,10 @@ namespace
         return glm::length(Actual - Expected) <= Epsilon;
     }
 
-    MDSS::TextureData
+    MDSS::Asset::TextureData
     MakeTexture(std::uint32_t Width, std::uint32_t Height, const std::vector<std::array<std::uint8_t, 4>>& Pixels)
     {
-        MDSS::TextureData Result;
+        MDSS::Asset::TextureData Result;
         Result.Width = Width;
         Result.Height = Height;
         for (const auto& Pixel : Pixels)
@@ -43,13 +43,13 @@ namespace
         return Result;
     }
 
-    std::vector<MDSS::TVertex> MakeVertices()
+    std::vector<MDSS::Asset::TVertex> MakeVertices()
     {
-        std::vector<MDSS::TVertex> Vertices(3);
+        std::vector<MDSS::Asset::TVertex> Vertices(3);
         Vertices[0].UV = {0.25F, 0.5F};
         Vertices[1].UV = {0.75F, 0.5F};
         Vertices[2].UV = {0.25F, 0.75F};
-        for (MDSS::TVertex& Vertex : Vertices)
+        for (MDSS::Asset::TVertex& Vertex : Vertices)
         {
             Vertex.Normal = {0.0F, 0.0F, 1.0F};
             Vertex.Tangent = {1.0F, 0.0F, 0.0F, 1.0F};
@@ -57,18 +57,20 @@ namespace
         return Vertices;
     }
 
-    MDSS::TMeshTriangleSource MakeTriangle(std::uint32_t FirstVertex, MDSS::TSurfaceLocalID Surface = 0)
+    MDSS::Asset::TMeshTriangleSource MakeTriangle(std::uint32_t                       FirstVertex,
+                                                  MDSS::SurfaceState::TSurfaceLocalID Surface = 0)
     {
-        MDSS::TMeshTriangleSource Triangle;
+        MDSS::Asset::TMeshTriangleSource Triangle;
         Triangle.RenderVertexIndices = {FirstVertex, FirstVertex + 1, FirstVertex + 2};
         Triangle.Surface = Surface;
         return Triangle;
     }
 
-    MDSS::TSurfaceTexelGeometry
-    MakeTexel(std::uint32_t Triangle = 0, MDSS::TSurfaceLocalID Surface = 0, glm::vec3 Barycentric = {1.0F, 0.0F, 0.0F})
+    MDSS::SurfaceState::TSurfaceTexelGeometry MakeTexel(std::uint32_t                       Triangle = 0,
+                                                        MDSS::SurfaceState::TSurfaceLocalID Surface = 0,
+                                                        glm::vec3 Barycentric = {1.0F, 0.0F, 0.0F})
     {
-        MDSS::TSurfaceTexelGeometry Texel;
+        MDSS::SurfaceState::TSurfaceTexelGeometry Texel;
         Texel.Surface = Surface;
         Texel.Triangle = Triangle;
         Texel.Barycentric = Barycentric;
@@ -79,6 +81,8 @@ namespace
     void TestFlatAndTiltedNormals()
     {
         using namespace MDSS;
+        using namespace MDSS::Asset;
+        using namespace MDSS::SurfaceState;
         const std::vector<TVertex>             Vertices = MakeVertices();
         const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0)};
         glm::vec3                              Result{};
@@ -98,6 +102,8 @@ namespace
     void TestBarycentricUVAndSeamCharts()
     {
         using namespace MDSS;
+        using namespace MDSS::Asset;
+        using namespace MDSS::SurfaceState;
         std::vector<TVertex>       Vertices = MakeVertices();
         const std::vector<TVertex> SecondChart = MakeVertices();
         Vertices.insert(Vertices.end(), SecondChart.begin(), SecondChart.end());
@@ -133,6 +139,8 @@ namespace
     void TestTangentHandednessAndRepeat()
     {
         using namespace MDSS;
+        using namespace MDSS::Asset;
+        using namespace MDSS::SurfaceState;
         std::vector<TVertex>                   Vertices = MakeVertices();
         const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0)};
         const TextureData                      PositiveY = MakeTexture(1, 1, {{{128, 255, 128, 255}}});
@@ -160,6 +168,8 @@ namespace
     void TestInvalidInputsUseFallbackSignal()
     {
         using namespace MDSS;
+        using namespace MDSS::Asset;
+        using namespace MDSS::SurfaceState;
         const std::vector<TVertex>             Vertices = MakeVertices();
         const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0)};
         const TextureData                      Flat = MakeTexture(1, 1, {{{128, 128, 255, 255}}});

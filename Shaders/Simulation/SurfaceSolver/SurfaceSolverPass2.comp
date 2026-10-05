@@ -32,7 +32,14 @@ void main()
         }
 
         float Incoming = 0.0;
-        // 이웃의 역방향 slot을 사용해 각 이웃 source의 유출량을 현재 texel로 모은다.
+        // 목표 texel 값은 실제 유입 후보가 있을 때만 준비한다.
+        float TargetSaturation = 0.0;
+        float TargetConcavity = 0.0;
+        vec3 TargetPosition = vec3(0.0);
+        bool TargetSaturationReady = false;
+        bool TargetConcavityReady = false;
+        bool TargetPositionReady = false;
+        // 이웃 source의 방향별 flux를 다시 계산해 현재 texel로 모은다.
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
@@ -44,36 +51,56 @@ void main()
             uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
             float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
             // Pass 1은 유효하지 않거나 해당 channel을 지원하지 않는 source의 OutgoingFluxScale을 0으로 기록한다.
-            // 비활성 source의 RawFlux slot에 이전 값이나 미초기화 값이 남아 있어도 0 scale로 읽기를 막는다.
             // Event Input은 flux 계산 후 반영하므로 비어 있던 source에 새로 들어온 양은 다음 step부터 전달된다.
             if (NeighborScale <= 0.0)
             {
                 continue;
             }
-            uint ReverseSlot = reverseNeighborSlot(TexelIndex, DirectionIndex);
-            if (ReverseSlot >= SurfaceNeighborCount)
+            uint ReverseDirectionIndex = reverseNeighborDirectionIndex(TexelIndex, DirectionIndex);
+            if (ReverseDirectionIndex >= SurfaceNeighborCount)
             {
                 continue;
             }
-            float NeighborRawIncoming;
-            if (rawFluxCacheEnabled())
+            float NeighborTransferWeight = transferWeight(NeighborTexel, ReverseDirectionIndex);
+            if (NeighborTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
             {
-                NeighborRawIncoming =
-                    RawFluxBuffer.Values[rawFluxIndex(NeighborTexel, ChannelIndex, ReverseSlot)];
+                continue;
             }
-            else
+
+            TSurfaceGPUProfileParameters SourceParameters =
+                ProfileParameters.Values[profileRecordIndex(NeighborTexel, ChannelIndex)];
+            float SourceSaturation = CurrentState.Values[NeighborStateValueIndex] / stateCapacity(NeighborTexel, ChannelIndex);
+            float SaturationTransferRate =
+                SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
+            float GeometryTransferRate =
+                SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
+            if (!TargetSaturationReady && (Solver.Flags & (1u << 1u)) == 0u &&
+                SaturationTransferRate != 0.0)
             {
-                TSurfaceGPUProfileParameters SourceParameters =
-                    ProfileParameters.Values[profileRecordIndex(NeighborTexel, ChannelIndex)];
-                float SourceSaturation = CurrentState.Values[NeighborStateValueIndex] / stateCapacity(NeighborTexel, ChannelIndex);
-                if (SourceParameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & 1u) == 0u)
-                {
-                    prepareSourceGeometry(NeighborTexel);
-                }
-                // source 쪽 transfer weight를 포함해 cache 사용 시와 같은 방향의 edge flux를 다시 계산한다.
-                NeighborRawIncoming = rawFlux(NeighborTexel, TexelIndex, ChannelIndex,
-                    transferWeight(NeighborTexel, ReverseSlot), SourceParameters, SourceSaturation);
+                TargetSaturation = saturation(TexelIndex, ChannelIndex);
+                TargetSaturationReady = true;
             }
+            if (!TargetConcavityReady && SourceParameters.AccumulationThickness.y != 0.0)
+            {
+                TargetConcavity = concavityWeight(TexelIndex);
+                TargetConcavityReady = true;
+            }
+            if (!TargetPositionReady && GeometryTransferRate > 0.0 &&
+                (Solver.Flags & 1u) == 0u)
+            {
+                TargetPosition = (Solver.Flags & (1u << 6u)) != 0u
+                                     ? DynamicGeometry.Values[TexelIndex * 2u].xyz
+                                     : effectiveLocalPosition(TexelIndex);
+                TargetPositionReady = true;
+            }
+            if (SourceParameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & 1u) == 0u)
+            {
+                prepareSourceGeometry(NeighborTexel);
+            }
+            // Pass 1과 동일한 식으로 source 방향 flux를 재평가한다.
+            float NeighborRawIncoming = rawFlux(NeighborTexel, TexelIndex, ChannelIndex,
+                NeighborTransferWeight, SourceParameters, SourceSaturation,
+                TargetSaturation, TargetConcavity, TargetPosition);
             Incoming += NeighborRawIncoming * NeighborScale;
         }
 

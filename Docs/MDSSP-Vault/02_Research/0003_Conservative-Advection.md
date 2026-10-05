@@ -82,7 +82,7 @@ $$
 
 원문은 `x-at=일정`인 경로를 **특성선(characteristic)**이라고 부른다. 이 일정 속도 모델에서는 경로를 따라 값이 유지된다. [Advection, 특성선](https://www.clawpack.org/riemann_book/html/Advection.html)
 
-예를 들어 x=4 cm에서 출발한 값은 1초 뒤 x=7 cm, 2초 뒤 x=10 cm에 있다. 목적지에서 경로를 거슬러 출발점을 찾는 생각이 [[0002_Semi-Lagrangian-Transport|Semi-Lagrangian 방식]]과 연결된다. 다만 원문의 정확한 연속 해와 실제 격자의 역추적·보간 결과는 구분해야 한다.
+예를 들어 x=4 cm에서 출발한 값은 1초 뒤 x=7 cm, 2초 뒤 x=10 cm에 있다. 목적지에서 경로를 거슬러 출발점을 찾는 생각이 [[02_Research/0002_Semi-Lagrangian-Transport|Semi-Lagrangian 방식]]과 연결된다. 다만 원문의 정확한 연속 해와 실제 격자의 역추적·보간 결과는 구분해야 한다.
 
 ### Riemann 문제는 왼쪽과 오른쪽 값이 다른 출발 조건이다
 
@@ -136,7 +136,7 @@ $$
 
 ## 7. 현재 엔진을 볼 때 주의할 점
 
-다음은 원문 주장이 아니라 현재 구현과의 비교다. 구체적인 구현 확인 내용은 [[0002_Semi-Lagrangian-Transport|Semi-Lagrangian 노트 §7]]과 Architecture에 기록되어 있다.
+다음은 원문 주장이 아니라 현재 구현과의 비교다. 구체적인 구현 확인 내용은 [[02_Research/0002_Semi-Lagrangian-Transport|Semi-Lagrangian 노트 §7]]과 Architecture에 기록되어 있다.
 
 | 현재 요소 | 이 문서의 속도 모델과 비교 |
 |---|---|
@@ -146,9 +146,9 @@ $$
 | source `alpha` | 가진 양보다 많이 보내는 것을 제한한다. 큰 계수를 사용해도 한 step의 이웃 전달 거리를 늘리는 장치는 아니다. |
 | State 합 보존 | 현재 State는 총량이며 보존 장부는 `ΣState`다. 밀도 `sᵢ=Stateᵢ/Aᵢ`로 표현하면 동일한 양이 `ΣAᵢsᵢ`다. |
 
-따라서 기존 이동량에 `1/d`만 추가하면 해결된다고 단정할 수 없다. 무엇을 밀도로 저장하고 어떤 값이 실제 이동 속도인지 정한 뒤, 전달량·면적·시간을 함께 맞춰야 한다. 현재 Geometry 전달 계수는 이 장의 속도 `a`와 단위부터 다르다. [[../05_ADR/0029-Normalized-Transport-Factors|ADR 0029]]
+따라서 기존 이동량에 `1/d`만 추가하면 해결된다고 단정할 수 없다. 무엇을 밀도로 저장하고 어떤 값이 실제 이동 속도인지 정한 뒤, 전달량·면적·시간을 함께 맞춰야 한다. 현재 Geometry 전달 계수는 이 장의 속도 `a`와 단위부터 다르다. [[05_Decisions/0008_Normalized-Transport-Factors|Decision 0008]]
 
-초기 Fixed ON은 렌더 frame마다 한 step이었다. 현재는 실제 시간×배속을 누적한다. 기본 Fixed ON·Auto OFF의 15 FPS·배속 1에서는 frame당 1/60초씩 4 step으로 실제 1초를 계산한다. Auto ON에서만 Transport 상한으로 구간을 세분화한다. 한 frame 8회 한도를 넘긴 시간과 미완료 구간은 이월하므로 GPU 과부하에서는 지연이 남을 수 있다. Δt를 곱하는 것과 실제 경과 시간을 따라잡는 실행 구조는 별개다. [[../05_ADR/0034-Fixed-Timestep-and-Auto-Substepping|ADR 0034]] [[../04_Architecture/0010_UI-Interface|시간 설정]] [[0004_Substepping-and-Adaptive-Time-Stepping|Substepping 용어 조사]]
+초기 Fixed ON은 렌더 frame마다 한 step이었다. 현재는 실제 시간×배속을 누적한다. 기본 Fixed ON·Auto OFF의 15 FPS·배속 1에서는 frame당 1/60초씩 4 step으로 실제 1초를 계산한다. Auto ON에서만 Transport 상한으로 구간을 세분화한다. 한 frame 8회 한도를 넘긴 시간과 미완료 구간은 이월하므로 GPU 과부하에서는 지연이 남을 수 있다. Δt를 곱하는 것과 실제 경과 시간을 따라잡는 실행 구조는 별개다. [[05_Decisions/0013_Fixed-Timestep-and-Auto-Substepping|Decision 0013]] [[03_Architecture/0009_UI-Interface|시간 설정]] [[02_Research/0004_Substepping-and-Adaptive-Time-Stepping|Substepping 용어 조사]]
 
 ## 8. 무엇을 실험으로 확인할까?
 
@@ -162,15 +162,15 @@ $$
 | 모양이 얼마나 퍼지는가? | 최대값·분포 폭과 총량 오차를 각각 확인 |
 | FPS가 결과에 섞이는가? | 실제 경과 시간과 실행한 Solver Δt 합을 함께 기록 |
 
-시험 조건과 지표는 [[../06_Development/Experiments/0005_Resolution-and-Timestep-Dependence|해상도·시간 간격 실험 초안]]에서 구체화한다. 이 노트만으로 보존형 속도 모델의 채택이나 성능 개선을 확정하지 않는다.
+시험 조건과 지표는 해상도·시간 간격 실험 초안에서 구체화한다. 이 노트만으로 보존형 속도 모델의 채택이나 성능 개선을 확정하지 않는다.
 
 ## 관련 문서
 
-- [[0000_Research-Index|연구 색인]]
-- [[0001_Bound-Preserving-Transport|포화 상한을 보존하는 전달 계산]]
-- [[0002_Semi-Lagrangian-Transport|Semi-Lagrangian Transport]]
-- [[../04_Architecture/0006_Surface-State-Update|State Update]]
-- [[../05_ADR/0015-Geometry-Driven-Transport|Geometry-Driven Transport]]
-- [[../05_ADR/0016-Transport-Transfer-Weights|Transfer Weights]]
-- [[../05_ADR/0029-Normalized-Transport-Factors|Normalized Transport Factors]]
-- [[../06_Development/Experiments/0005_Resolution-and-Timestep-Dependence|실험 초안]]
+- [[02_Research/0000_Research-Index|연구 색인]]
+- [[02_Research/0001_Bound-Preserving-Transport|포화 상한을 보존하는 전달 계산]]
+- [[02_Research/0002_Semi-Lagrangian-Transport|Semi-Lagrangian Transport]]
+- [[03_Architecture/0006_Surface-State-Update|State Update]]
+- Geometry-Driven Transport
+- Transfer Weights
+- [[05_Decisions/0008_Normalized-Transport-Factors|Normalized Transport Factors]]
+- 실험 초안

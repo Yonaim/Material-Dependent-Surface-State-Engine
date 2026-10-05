@@ -12,14 +12,14 @@
 #include <filesystem>
 #include <vector>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     struct TOBJMeshSectionData
     {
-        std::uint32_t   FirstIndex = 0;
-        std::uint32_t   IndexCount = 0;
-        std::int32_t    MaterialIndex = -1;
-        TSurfaceLocalID Surface = InvalidSurfaceID;
+        std::uint32_t                 FirstIndex = 0;
+        std::uint32_t                 IndexCount = 0;
+        std::int32_t                  MaterialIndex = -1;
+        SurfaceState::TSurfaceLocalID Surface = SurfaceState::InvalidSurfaceID;
     };
 
     struct TOBJLoadResult
@@ -46,4 +46,4 @@ namespace MDSS
         /** @brief 삼각형 UV gradient에서 각 정점의 tangent와 handedness를 계산한다. */
         static void GenerateTangents(std::vector<TVertex>& Vertices, const std::vector<std::uint32_t>& Indices);
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

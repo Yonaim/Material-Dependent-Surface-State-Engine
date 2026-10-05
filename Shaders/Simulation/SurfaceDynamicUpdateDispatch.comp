@@ -1,0 +1,53 @@
+/**
+ * @file SurfaceDynamicUpdateDispatch.comp
+ * @brief 모든 높이 workgroup이 그대로면 geometry와 weight dispatch를 생략한다.
+ */
+#version 450
+
+// 이 buffer는 vkCmdDispatchIndirect도 읽으므로 command word를 uint로 정확히 기록한다.
+// 작은 workgroup 수에서도 dispatch 인자 각 항목이 그대로 유지되어야 한다.
+layout(std430, set = 0, binding = 22) buffer TSurfaceAccumulationData
+{
+    uint Values[];
+} AccumulationData;
+
+layout(push_constant) uniform TSurfaceSolverPushConstants
+{
+    float DeltaTime;
+    uint StateChannelCount;
+    uint LocalTexelCount;
+    uint Flags;
+    vec4 GravityWorld;
+    vec4 ModelLinearColumns[3];
+    vec4 NormalMatrixAndUpColumns[3];
+} Solver;
+
+layout(local_size_x = 64) in;
+
+shared uint AnyDirty[64];
+
+void main()
+{
+    // 각 lane이 일부 workgroup flag를 확인한 뒤 shared memory에서 전체 변경 여부를 reduction한다.
+    uint Lane = gl_LocalInvocationIndex;
+    uint WorkgroupCount = (Solver.LocalTexelCount + 63u) / 64u;
+    uint FlagBase = 3u * Solver.LocalTexelCount;
+    uint Dirty = (Solver.Flags & (1u << 10u)) != 0u ? 1u : 0u;
+    for (uint Group = Lane; Group < WorkgroupCount && Dirty == 0u; Group += 64u)
+        Dirty |= AccumulationData.Values[FlagBase + Group] != 0u ? 1u : 0u;
+    AnyDirty[Lane] = Dirty;
+    barrier();
+    for (uint Stride = 32u; Stride > 0u; Stride >>= 1u)
+    {
+        if (Lane < Stride) AnyDirty[Lane] |= AnyDirty[Lane + Stride];
+        barrier();
+    }
+    if (Lane == 0u)
+    {
+        // 변경이 있을 때만 geometry/weight pass를 실행하도록 indirect command의 x 크기를 설정한다.
+        uint CommandBase = FlagBase + WorkgroupCount;
+        AccumulationData.Values[CommandBase] = AnyDirty[0] != 0u ? WorkgroupCount : 0u;
+        AccumulationData.Values[CommandBase + 1u] = 1u;
+        AccumulationData.Values[CommandBase + 2u] = 1u;
+    }
+}

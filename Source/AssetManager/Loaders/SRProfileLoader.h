@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <memory>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     class TSRProfileAsset;
 
@@ -25,4 +25,4 @@ namespace MDSS
          */
         [[nodiscard]] static std::unique_ptr<TSRProfileAsset> Load(TAssetID ID, const std::filesystem::path& Path);
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

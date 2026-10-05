@@ -2,6 +2,25 @@
 body {
   --inline-title-margin-bottom: 1em;
   --vault-heading-bottom-space: 0.5em;
+  --h1-size: 1.8em;
+  --h2-size: 1.45em;
+  --h3-size: 1.2em;
+}
+
+/* Make the first three heading levels easy to distinguish. */
+.markdown-rendered h1,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 {
+  font-size: var(--h1-size);
+}
+
+.markdown-rendered h2,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 {
+  font-size: var(--h2-size);
+}
+
+.markdown-rendered h3,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3 {
+  font-size: var(--h3-size);
 }
 
 /* Preserve the existing heading margins in reading view. */

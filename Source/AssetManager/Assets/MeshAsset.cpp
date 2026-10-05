@@ -5,18 +5,18 @@
 
 #include "AssetManager/Assets/MeshAsset.h"
 
+#include "GPU/Vulkan/VulkanContext.h"
 #include "Logger/Logger.h"
-#include "VulkanContext/VulkanContext.h"
 
 #include <stdexcept>
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     TMeshAsset::TMeshAsset(TAssetID                         ID,
                            std::string                      Name,
                            std::filesystem::path            SourcePath,
-                           const TVulkanContext&            Context,
+                           const GPU::TVulkanContext&       Context,
                            std::vector<TVertex>             Vertices,
                            std::vector<std::uint32_t>       Indices,
                            std::vector<TMeshSection>        Sections,
@@ -36,18 +36,18 @@ namespace MDSS
         const VkDeviceSize VertexBytes = sizeof(TVertex) * this->Vertices.size();
         const VkDeviceSize IndexBytes = sizeof(std::uint32_t) * this->Indices.size();
 
-        VertexBuffer =
-            std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
-                                         Context.GetDevice(),
-                                         VertexBytes,
-                                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        IndexBuffer =
-            std::make_unique<TGPUBuffer>(Context.GetPhysicalDevice(),
-                                         Context.GetDevice(),
-                                         IndexBytes,
-                                         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VertexBuffer = std::make_unique<GPU::TGPUBuffer>(Context.GetPhysicalDevice(),
+                                                         Context.GetDevice(),
+                                                         VertexBytes,
+                                                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        IndexBuffer = std::make_unique<GPU::TGPUBuffer>(Context.GetPhysicalDevice(),
+                                                        Context.GetDevice(),
+                                                        IndexBytes,
+                                                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         VertexBuffer->Upload(this->Vertices.data(), VertexBytes);
         IndexBuffer->Upload(this->Indices.data(), IndexBytes);
@@ -77,13 +77,13 @@ namespace MDSS
         return Triangles;
     }
 
-    const TGPUBuffer& TMeshAsset::GetVertexBuffer() const noexcept
+    const GPU::TGPUBuffer& TMeshAsset::GetVertexBuffer() const noexcept
     {
         return *VertexBuffer;
     }
 
-    const TGPUBuffer& TMeshAsset::GetIndexBuffer() const noexcept
+    const GPU::TGPUBuffer& TMeshAsset::GetIndexBuffer() const noexcept
     {
         return *IndexBuffer;
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

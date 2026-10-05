@@ -16,7 +16,7 @@
 #include <string_view>
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     namespace
     {
@@ -69,7 +69,7 @@ namespace MDSS
             return Result;
         }
 
-        TSurfaceStateParameters
+        SurfaceState::TSurfaceStateParameters
         ReadStateParameters(const TJson& State, const std::string& StateName, std::int64_t Version)
         {
             const std::string JsonPath = "states." + StateName;
@@ -120,7 +120,7 @@ namespace MDSS
         }
 
         /** @brief Profile JSON schema를 동적 State domain data로 변환한다. */
-        TSurfaceResponseProfileData ParseProfile(const TJson& Root, std::string& Name)
+        SurfaceState::TSurfaceResponseProfileData ParseProfile(const TJson& Root, std::string& Name)
         {
             if (!Root.is_object())
             {
@@ -153,7 +153,7 @@ namespace MDSS
             {
                 throw std::invalid_argument("$.states must be an object.");
             }
-            TSurfaceResponseProfileData Data;
+            SurfaceState::TSurfaceResponseProfileData Data;
             for (auto Iterator = States.begin(); Iterator != States.end(); ++Iterator)
             {
                 if (!Iterator.value().is_object())
@@ -161,7 +161,7 @@ namespace MDSS
                     throw std::invalid_argument("$.states." + Iterator.key() + " must be an object.");
                 }
 
-                const std::string CanonicalName = NormalizeSurfaceStateName(Iterator.key());
+                const std::string CanonicalName = SurfaceState::NormalizeSurfaceStateName(Iterator.key());
                 if (CanonicalName.empty())
                 {
                     throw std::invalid_argument("$.states contains an empty State name after normalization.");
@@ -185,8 +185,10 @@ namespace MDSS
             {
                 const TJson&      Transition = Transitions[Index];
                 const std::string JsonPath = "transitions[" + std::to_string(Index) + "]";
-                const std::string SourceName = NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
-                const std::string TargetName = NormalizeSurfaceStateName(ReadString(Transition, "target", JsonPath));
+                const std::string SourceName =
+                    SurfaceState::NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
+                const std::string TargetName =
+                    SurfaceState::NormalizeSurfaceStateName(ReadString(Transition, "target", JsonPath));
                 if (SourceName.empty() || TargetName.empty())
                 {
                     throw std::invalid_argument(JsonPath + " source and target must not be empty.");
@@ -213,9 +215,9 @@ namespace MDSS
 
         try
         {
-            const TJson                 Root = TJson::parse(File);
-            std::string                 Name;
-            TSurfaceResponseProfileData Data = ParseProfile(Root, Name);
+            const TJson                               Root = TJson::parse(File);
+            std::string                               Name;
+            SurfaceState::TSurfaceResponseProfileData Data = ParseProfile(Root, Name);
             return std::make_unique<TSRProfileAsset>(ID, std::move(Name), Path, std::move(Data));
         }
         catch (const std::exception& Exception)
@@ -223,4 +225,4 @@ namespace MDSS
             throw std::runtime_error("Failed to load SRProfile '" + Path.string() + "': " + Exception.what());
         }
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

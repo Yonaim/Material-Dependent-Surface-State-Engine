@@ -6,24 +6,33 @@
 #pragma once
 
 #include "Application/Window.h"
+#include "Application/BenchmarkOptions.h"
 #include "AssetManager/Core/AssetManager.h"
+#include "GPU/Vulkan/VulkanContext.h"
 #include "Scene/Scene.h"
-#include "VulkanContext/VulkanContext.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #include <cstddef>
 #include <memory>
+
+namespace MDSS::Rendering
+{
+    class TRenderer;
+}
+namespace MDSS::SurfaceState
+{
+    class TSurfaceStateSystem;
+}
 
 namespace MDSS
 {
     class TDebugUI;
     class TInputSystem;
-    class TRenderer;
-    class TSurfaceStateSystem;
 
     class TApplication
     {
     public:
-        TApplication();
+        explicit TApplication(TBenchmarkOptions BenchmarkOptions = {});
         ~TApplication();
 
         /** @brief 엔진 main loop를 시작하고 종료 시 정상 정리를 수행한다. 0은 무제한 실행이다. */
@@ -34,13 +43,15 @@ namespace MDSS
         void MainLoop(std::size_t FrameLimit);
 
         // Declaration order is intentional: resources are destroyed in reverse order.
-        TWindow                              MainWindow;
-        TVulkanContext                       Context;
-        TAssetManager                        Assets;
-        TScene                               MainScene;
-        std::unique_ptr<TSurfaceStateSystem> SurfaceStates;
-        std::unique_ptr<TRenderer>           FrameRenderer;
-        std::unique_ptr<TDebugUI>            DebugInterface;
-        std::unique_ptr<TInputSystem>        InputInterface;
+        TWindow                                            MainWindow;
+        GPU::TVulkanContext                                Context;
+        Asset::TAssetManager                               Assets;
+        SurfaceState::TSurfaceDataManager                  SurfaceData;
+        TScene                                             MainScene;
+        std::unique_ptr<SurfaceState::TSurfaceStateSystem> SurfaceStates;
+        std::unique_ptr<Rendering::TRenderer>              FrameRenderer;
+        std::unique_ptr<TDebugUI>                          DebugInterface;
+        std::unique_ptr<TInputSystem>                      InputInterface;
+        TBenchmarkOptions                                  Benchmark;
     };
 } // namespace MDSS

@@ -6,10 +6,11 @@
 #define MDSS_SURFACE_SOLVER_COMMON_GLSL
 
 const uint InvalidSurfaceId = 0xffffffffu;
+
 const uint InvalidTexelIndex = 0xffffffffu;
+
 // simulation topology는 texel마다 최대 8개 방향 slot을 사용하며, 없는 이웃은 sentinel로 표시한다.
 const uint SurfaceNeighborCount = 8u;
-layout(constant_id = 0) const bool UseRawFluxCache = false;
 
 struct TSurfaceGPUProfileParameters
 {
@@ -32,46 +33,57 @@ layout(std430, set = 0, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
 {
     uint Values[];
 } TexelSurfaceIndices;
+
 layout(std430, set = 0, binding = 1) readonly buffer TSurfaceTexelProfileIndices
 {
     uint Values[];
 } TexelProfileIndices;
+
 layout(std430, set = 0, binding = 2) readonly buffer TSurfacePositions
 {
     vec4 Values[];
 } Positions;
+
 layout(std430, set = 0, binding = 3) readonly buffer TSurfaceNormals
 {
     vec4 Values[];
 } Normals;
+
 layout(std430, set = 0, binding = 4) readonly buffer TSurfaceGeometryScalars
 {
     TSurfaceGPUGeometryScalar Values[];
 } GeometryScalars;
+
 layout(std430, set = 0, binding = 5) readonly buffer TSurfaceNeighborIndices
 {
     uint Values[];
 } NeighborIndices;
+
 layout(std430, set = 0, binding = 6) readonly buffer TSurfaceProfileParameters
 {
     TSurfaceGPUProfileParameters Values[];
 } ProfileParameters;
+
 layout(std430, set = 0, binding = 7) readonly buffer TSurfaceProfileSupported
 {
     uint Values[];
 } ProfileSupported;
+
 layout(std430, set = 0, binding = 8) readonly buffer TSurfaceCurrentState
 {
     float Values[];
 } CurrentState;
+
 layout(std430, set = 0, binding = 9) writeonly buffer TSurfaceNextState
 {
     float Values[];
 } NextState;
+
 layout(std430, set = 0, binding = 10) buffer TSurfaceOutgoingFluxScale
 {
     float Values[];
 } OutgoingFluxScale;
+
 layout(std430, set = 0, binding = 11) buffer TSurfaceInputDelta
 {
     float Values[];
@@ -84,6 +96,7 @@ layout(std430, set = 0, binding = 14) readonly buffer TSurfaceTransferWeights
 {
     float Values[];
 } TransferWeights;
+
 layout(std430, set = 0, binding = 15) buffer TSurfaceRawOutgoing
 {
     float Values[];
@@ -94,34 +107,40 @@ layout(std430, set = 0, binding = 17) readonly buffer TSurfaceMesoNormals
     vec4 Values[];
 } MesoNormals;
 
-layout(std430, set = 0, binding = 18) readonly buffer TSurfaceReverseNeighborSlots
+layout(std430, set = 0, binding = 18) readonly buffer TSurfaceReverseNeighborDirectionIndices
 {
     uint Values[];
-} ReverseNeighborSlots;
-layout(std430, set = 0, binding = 19) buffer TSurfaceRawFlux
-{
-    float Values[];
-} RawFluxBuffer;
+} ReverseNeighborDirectionIndices;
 
-layout(std430, set = 0, binding = 20) readonly buffer TSurfaceWorldTexelAreas
+layout(std430, set = 0, binding = 19) readonly buffer TSurfaceWorldTexelAreas
 {
     float Values[];
 } WorldTexelAreas;
+
 // dynamic geometry의 texel당 두 vec4: 위치+평균 이웃 거리, local normal+마지막 생성 높이.
-layout(std430, set = 0, binding = 21) buffer TSurfaceDynamicGeometry
+layout(std430, set = 0, binding = 20) buffer TSurfaceDynamicGeometry
 {
     vec4 Values[]; // displaced position + mean distance, local normal + last built height
 } DynamicGeometry;
 #if defined(SURFACE_ACCUMULATION_HEIGHT_WRITE) || defined(SURFACE_GEOMETRY_DIRTY_WRITE)
-layout(std430, set = 0, binding = 22) buffer TSurfaceAccumulationHeights
+layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationHeights
 #else
-layout(std430, set = 0, binding = 22) readonly buffer TSurfaceAccumulationHeights
+layout(std430, set = 0, binding = 21) readonly buffer TSurfaceAccumulationHeights
 #endif
 {
     float Values[]; // height, dirty planes, workgroup flags, indirect command bits
 } AccumulationHeights;
+#if defined(SURFACE_CONCAVITY_WEIGHT_WRITE)
+layout(std430, set = 0, binding = 22) buffer TSurfaceDynamicConcavityWeights
+#else
+layout(std430, set = 0, binding = 22) readonly buffer TSurfaceDynamicConcavityWeights
+#endif
+{
+    float Values[];
+} DynamicConcavityWeights;
 
 const float StateReferenceArea = 1.0 / (256.0 * 256.0);
+
 // world texel 면적을 solver profile의 고정 기준 면적 단위로 변환한다.
 float texelAreaScale(uint TexelIndex) { return WorldTexelAreas.Values[TexelIndex] / StateReferenceArea; }
 
@@ -136,16 +155,31 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
     vec4 NormalMatrixAndUpColumns[3];
 } Solver;
 
-bool rawFluxCacheEnabled()
+const float GeometryEpsilon = 1.0e-6;
+
+bool solverFinite(float Value)
 {
-    return UseRawFluxCache;
+#if MDSS_GPU_VALIDATION
+    return !isnan(Value) && !isinf(Value);
+#else
+    return true;
+#endif
 }
 
-const float GeometryEpsilon = 1.0e-6;
+bool solverFinite(vec3 Value)
+{
+#if MDSS_GPU_VALIDATION
+    return !any(isnan(Value)) && !any(isinf(Value));
+#else
+    return true;
+#endif
+}
 // Profile은 [0, 1] 무차원 계수를 저장하며 실제 속도는 여기서 계산한다.
 // CPU transport step bound와 동일한 보정값을 사용한다 (ADR 0033).
-#include "SurfaceStateSystem/Types/SurfaceSolverRates.h"
+#include "SurfaceState/Types/SurfaceSolverRates.h"
+
 const float BaseSaturationTransferRate = MDSS_BASE_SATURATION_TRANSFER_RATE; // State / second
+
 const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // State / (world-length * second)
 
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
@@ -170,16 +204,9 @@ uint neighborIndex(uint TexelIndex, uint DirectionIndex)
     return NeighborIndices.Values[TexelIndex * SurfaceNeighborCount + DirectionIndex];
 }
 
-uint reverseNeighborSlot(uint TexelIndex, uint DirectionIndex)
+uint reverseNeighborDirectionIndex(uint TexelIndex, uint DirectionIndex)
 {
-    return (ReverseNeighborSlots.Values[TexelIndex] >> (DirectionIndex * 4u)) & 0xfu;
-}
-
-uint rawFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
-{
-    // Direction slot별 plane으로 나눠 인접 invocation의 저장 위치를 연속시킨다.
-    return DirectionIndex * (Solver.LocalTexelCount * Solver.StateChannelCount) +
-           stateIndex(TexelIndex, ChannelIndex);
+    return (ReverseNeighborDirectionIndices.Values[TexelIndex] >> (DirectionIndex * 4u)) & 0xfu;
 }
 
 float transferWeight(uint SourceTexel, uint DirectionIndex)
@@ -193,7 +220,7 @@ float accumulationHeight(uint TexelIndex)
 {
     if (!isValidTexel(TexelIndex)) return 0.0;
     float AreaScale = texelAreaScale(TexelIndex);
-    if (AreaScale <= 0.0 || isnan(AreaScale) || isinf(AreaScale)) return 0.0;
+    if (AreaScale <= 0.0 || !solverFinite(AreaScale)) return 0.0;
     float CavityAmount = 0.0;
     float FollowingHeightWorld = 0.0;
     float CavityThicknessWeighted = 0.0;
@@ -206,13 +233,13 @@ float accumulationHeight(uint TexelIndex)
         float CavityFactor = P.DecayAndGeometry.w;
         float ThicknessPerAmount = P.AccumulationThickness.x;
         float State = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
-        if (isnan(State) || isinf(State) || State <= 0.0 ||
-            isnan(Factor) || isinf(Factor) || Factor <= 0.0 ||
-            isnan(CavityFactor) || isinf(CavityFactor) ||
-            isnan(ThicknessPerAmount) || isinf(ThicknessPerAmount) || ThicknessPerAmount < 0.0) continue;
+        if (!solverFinite(State) || State <= 0.0 ||
+            !solverFinite(Factor) || Factor <= 0.0 ||
+            !solverFinite(CavityFactor) ||
+            !solverFinite(ThicknessPerAmount) || ThicknessPerAmount < 0.0) continue;
         // 형상에 반영되는 양은 Capacity로 제한하고, 초과량은 전달 계산을 위해 State에 유지한다.
         float Capacity = P.CapacityInputAndTransfer.x * AreaScale;
-        if (isnan(Capacity) || isinf(Capacity) || Capacity <= 0.0) continue;
+        if (!solverFinite(Capacity) || Capacity <= 0.0) continue;
         State = min(State, Capacity);
         float Amount = (State / AreaScale) * Factor;
         float CavityContribution = Amount * clamp(CavityFactor, 0.0, 1.0);
@@ -233,7 +260,7 @@ float accumulationHeight(uint TexelIndex)
     float WorldToLocalHeight = length(NormalMatrix * LocalNormal);
     float FollowingHeight = FollowingHeightWorld * WorldToLocalHeight;
     float Height = CavityHeight + FollowingHeight;
-    return isnan(Height) || isinf(Height) ? 0.0 : max(Height, 0.0);
+    return !solverFinite(Height) ? 0.0 : max(Height, 0.0);
 }
 
 vec3 effectiveLocalPosition(uint TexelIndex)
@@ -256,9 +283,9 @@ vec3 effectiveLocalNormal(uint TexelIndex)
     vec3 V = cross(N, U);
     float CenterHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight + AccumulationHeights.Values[TexelIndex];
     float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
+    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
     {
-        uint Other = neighborIndex(TexelIndex, Slot);
+        uint Other = neighborIndex(TexelIndex, DirectionIndex);
         if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other) ||
             dot(N, Normals.Values[Other].xyz) < 0.5) continue;
         vec3 Delta = Positions.Values[Other].xyz - Positions.Values[TexelIndex].xyz;
@@ -275,57 +302,15 @@ vec3 effectiveLocalNormal(uint TexelIndex)
     if (Det <= 1.0e-6 * max(XX * YY, 1.0e-12)) return Fallback;
     vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
     vec3 Result = normalize(N - U * Gradient.x - V * Gradient.y);
-    return any(isnan(Result)) || any(isinf(Result)) ? Fallback : Result;
+    return !solverFinite(Result) ? Fallback : Result;
 }
 
 float concavityWeight(uint TexelIndex)
 {
-    // accumulation 형상이 꺼져 있으면 사전 계산된 weight를 그대로 사용한다.
-    float StaticWeight = GeometryScalars.Values[TexelIndex].ConcavityWeight;
-    if ((Solver.Flags & (1u << 6u)) == 0u) return StaticWeight;
-
-    vec3 CenterPosition = DynamicGeometry.Values[TexelIndex * 2u].xyz;
-    vec3 N = normalize(DynamicGeometry.Values[TexelIndex * 2u + 1u].xyz);
-    if (any(isnan(N)) || any(isinf(N))) return StaticWeight;
-    vec3 Axis = abs(N.z) < 0.85 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
-    vec3 T = normalize(cross(Axis, N));
-    vec3 B = cross(N, T);
-    float XX = 0.0, XY = 0.0, YY = 0.0;
-    float UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
-    float SpacingSum = 0.0;
-    uint SampleCount = 0u;
-    for (uint Slot = 0u; Slot < SurfaceNeighborCount; ++Slot)
-    {
-        uint Other = neighborIndex(TexelIndex, Slot);
-        if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other)) continue;
-        vec3 OtherPosition = DynamicGeometry.Values[Other * 2u].xyz;
-        vec3 OtherNormal = normalize(DynamicGeometry.Values[Other * 2u + 1u].xyz);
-        if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05) continue;
-        vec3 Delta = OtherPosition - CenterPosition;
-        float X = dot(Delta, T), Y = dot(Delta, B);
-        float DistanceSquared = X * X + Y * Y;
-        if (DistanceSquared <= 1.0e-12 || isnan(DistanceSquared) || isinf(DistanceSquared)) continue;
-        float Weight = 1.0 / DistanceSquared;
-        vec3 NormalDelta = OtherNormal - N;
-        float DU = -dot(NormalDelta, T), DV = -dot(NormalDelta, B);
-        XX += Weight * X * X; XY += Weight * X * Y; YY += Weight * Y * Y;
-        UX += Weight * X * DU; UY += Weight * Y * DU;
-        VX += Weight * X * DV; VY += Weight * Y * DV;
-        SpacingSum += sqrt(DistanceSquared);
-        ++SampleCount;
-    }
-    float Determinant = XX * YY - XY * XY;
-    if (SampleCount < 3u || Determinant <= 1.0e-6 * max(XX * YY, 1.0e-12)) return StaticWeight;
-    float Sxx = (YY * UX - XY * UY) / Determinant;
-    float Sxy = 0.5 * ((XX * UY - XY * UX) + (YY * VX - XY * VY)) / Determinant;
-    float Syy = (XX * VY - XY * VX) / Determinant;
-    float H = 0.5 * (Sxx + Syy), K = Sxx * Syy - Sxy * Sxy;
-    float Root = sqrt(max(H * H - K, 0.0));
-    float A = H + Root, C = H - Root;
-    float Positive = max(A, 0.0) + max(C, 0.0);
-    float Negative = max(-A, 0.0) + max(-C, 0.0);
-    float Score = 8.0 * (SpacingSum / float(SampleCount)) * max(Positive - 2.0 * Negative, 0.0);
-    return isnan(Score) || isinf(Score) ? StaticWeight : clamp(Score, 0.0, 1.0);
+    // 동적 형상이 꺼져 있으면 전처리 값을, 켜져 있으면 Geometry Update cache를 사용한다.
+    return (Solver.Flags & (1u << 6u)) != 0u
+               ? DynamicConcavityWeights.Values[TexelIndex]
+               : GeometryScalars.Values[TexelIndex].ConcavityWeight;
 }
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex)
@@ -370,7 +355,7 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
 }
 
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.
-// RawFlux cache를 쓰지 않는 Pass 2는 유입 source의 형상을 준비해 방향별 flux를 다시 계산한다.
+// Pass 2는 유입 source의 형상을 준비해 방향별 flux를 다시 계산한다.
 mat3 SolverModelLinear;
 vec3 SolverUp;
 vec3 SourcePosition;
@@ -398,14 +383,15 @@ void prepareSourceGeometry(uint SourceTexel)
     mat3 SolverNormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
                                    Solver.NormalMatrixAndUpColumns[1].xyz,
                                    Solver.NormalMatrixAndUpColumns[2].xyz);
-    vec3 LocalNormal = (Solver.Flags & (1u << 6u)) != 0u
-                           ? effectiveLocalNormal(SourceTexel)
+    bool DynamicGeometryEnabled = (Solver.Flags & (1u << 6u)) != 0u;
+    vec3 LocalNormal = DynamicGeometryEnabled
+                           ? DynamicGeometry.Values[SourceTexel * 2u + 1u].xyz
                            : ((Solver.Flags & (1u << 4u)) != 0u
                                   ? Normals.Values[SourceTexel].xyz
                                   : MesoNormals.Values[SourceTexel].xyz);
     vec3 Normal = SolverNormalMatrix * LocalNormal;
     float NormalLength = length(Normal);
-    if (NormalLength <= GeometryEpsilon || isnan(NormalLength) || isinf(NormalLength))
+    if (NormalLength <= GeometryEpsilon || !solverFinite(NormalLength))
     {
         return;
     }
@@ -413,12 +399,14 @@ void prepareSourceGeometry(uint SourceTexel)
     vec3 Gravity = Solver.GravityWorld.xyz;
     vec3 GravityOnSurface = Gravity - Normal * dot(Gravity, Normal);
     float SurfaceGravityLength = length(GravityOnSurface);
-    if (SurfaceGravityLength <= GeometryEpsilon || isnan(SurfaceGravityLength) || isinf(SurfaceGravityLength))
+    if (SurfaceGravityLength <= GeometryEpsilon || !solverFinite(SurfaceGravityLength))
     {
         return;
     }
     SourceGravityDirection = GravityOnSurface / SurfaceGravityLength;
-    SourcePosition = effectiveLocalPosition(SourceTexel);
+    SourcePosition = DynamicGeometryEnabled
+                         ? DynamicGeometry.Values[SourceTexel * 2u].xyz
+                         : effectiveLocalPosition(SourceTexel);
     SourceGeometryValid = true;
 }
 
@@ -432,7 +420,7 @@ float geometryDrive(uint TargetTexel)
     // 위치 차이를 사용하므로 model translation은 높이 차와 이웃 방향 계산에서 상쇄된다.
     vec3 NeighborDirection = SolverModelLinear * (TargetPosition - SourcePosition);
     float NeighborLength = length(NeighborDirection);
-    if (NeighborLength <= GeometryEpsilon || isnan(NeighborLength) || isinf(NeighborLength))
+    if (NeighborLength <= GeometryEpsilon || !solverFinite(NeighborLength))
     {
         return 0.0;
     }
@@ -440,6 +428,48 @@ float geometryDrive(uint TargetTexel)
     float DirectionDrive = clamp(dot(SourceGravityDirection,
                                     NeighborDirection / NeighborLength), 0.0, 1.0);
     return HeightDrive * DirectionDrive;
+}
+
+float geometryDriveToPosition(vec3 TargetPosition)
+{
+    if (!SourceGeometryValid)
+    {
+        return 0.0;
+    }
+    // 위치 차이를 사용하므로 model translation은 높이 차와 이웃 방향 계산에서 상쇄된다.
+    vec3 NeighborDirection = SolverModelLinear * (TargetPosition - SourcePosition);
+    float NeighborLength = length(NeighborDirection);
+    if (NeighborLength <= GeometryEpsilon || !solverFinite(NeighborLength))
+    {
+        return 0.0;
+    }
+    float HeightDrive = abs(dot(NeighborDirection, SolverUp));
+    float DirectionDrive = clamp(dot(SourceGravityDirection,
+                                    NeighborDirection / NeighborLength), 0.0, 1.0);
+    return HeightDrive * DirectionDrive;
+}
+
+float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
+              TSurfaceGPUProfileParameters SourceParameters, float SourceSaturation,
+              float TargetSaturation, float TargetConcavity, vec3 TargetPosition)
+{
+    if (CachedTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
+    {
+        return 0.0;
+    }
+
+    float SaturationTransferRate = SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
+    float SaturationDrive = (Solver.Flags & (1u << 1u)) != 0u
+                                ? 0.0
+                                : max(SourceSaturation - TargetSaturation, 0.0);
+    float GeometryTransferRate = SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
+    float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
+                              ? geometryDriveToPosition(TargetPosition)
+                              : 0.0;
+    float Exit = max(concavityWeight(SourceTexel) - TargetConcavity, 0.0);
+    float Retention = clamp(1.0 - SourceParameters.AccumulationThickness.y * Exit, 0.0, 1.0);
+    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
+           CachedTransferWeight * Retention * Solver.DeltaTime;
 }
 
 float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
@@ -452,20 +482,32 @@ float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float Cache
         return 0.0;
     }
 
-    float SaturationTransferRate = SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
-    float SaturationDrive = (Solver.Flags & (1u << 1u)) != 0u
-                                ? 0.0
-                                : max(SourceSaturation -
-                                          saturation(TargetTexel, ChannelIndex),
-                                      0.0);
-    float GeometryTransferRate = SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
-    float GeometryDrive = GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u
-                              ? geometryDrive(TargetTexel)
-                              : 0.0;
-    float Exit = max(concavityWeight(SourceTexel) - concavityWeight(TargetTexel), 0.0);
-    float Retention = clamp(1.0 - SourceParameters.AccumulationThickness.y * Exit, 0.0, 1.0);
-    return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
-           CachedTransferWeight * Retention * Solver.DeltaTime;
+    float SaturationTransferRate =
+        SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
+    float GeometryTransferRate =
+        SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
+    float TargetSaturation = 0.0;
+    float TargetConcavity = 0.0;
+    vec3 TargetPosition = vec3(0.0);
+
+    // 필요한 항만 준비한다. GLSL은 함수 인자를 호출 전에 평가하므로
+    // 아래 값을 무조건 인라인 인자로 넘기면 비활성 flux에서도 이웃 데이터를 읽게 된다.
+    if ((Solver.Flags & (1u << 1u)) == 0u && SaturationTransferRate != 0.0)
+    {
+        TargetSaturation = saturation(TargetTexel, ChannelIndex);
+    }
+    if (SourceParameters.AccumulationThickness.y != 0.0)
+    {
+        TargetConcavity = concavityWeight(TargetTexel);
+    }
+    if (GeometryTransferRate > 0.0 && (Solver.Flags & 1u) == 0u)
+    {
+        TargetPosition = effectiveLocalPosition(TargetTexel);
+    }
+
+    return rawFlux(SourceTexel, TargetTexel, ChannelIndex, CachedTransferWeight,
+                   SourceParameters, SourceSaturation,
+                   TargetSaturation, TargetConcavity, TargetPosition);
 }
 
 #endif

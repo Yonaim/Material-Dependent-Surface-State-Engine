@@ -6,8 +6,11 @@
 #extension GL_GOOGLE_include_directive : require
 
 layout(location = 0) in vec3 InPosition;
+
 layout(location = 1) in vec3 InNormal;
+
 layout(location = 2) in vec2 InUV;
+
 layout(location = 3) in vec4 InTangent;
 
 layout(set = 0, binding = 2) uniform MaterialParameters
@@ -34,11 +37,17 @@ layout(push_constant) uniform TStaticMeshPushConstants
 } Push;
 
 layout(location = 0) out vec3 FragNormal;
+
 layout(location = 1) out vec3 FragTangent;
+
 layout(location = 2) out float FragTangentSign;
+
 layout(location = 3) out vec2 FragUV;
+
 layout(location = 4) flat out uint FragSurfaceIndex;
+
 layout(location = 5) out vec3 FragMesoNormalWS;
+
 layout(location = 6) out vec3 FragWorldPosition;
 
 void main()

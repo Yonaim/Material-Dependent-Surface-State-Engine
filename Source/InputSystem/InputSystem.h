@@ -5,16 +5,25 @@
 
 #pragma once
 
-#include "SurfaceStateSystem/State/SurfaceInput.h"
+#include "SurfaceState/State/SurfaceInput.h"
 
 #include <cstdint>
 #include <optional>
 
 struct GLFWwindow;
 
-namespace MDSS
+namespace MDSS::Asset
 {
     class TAssetManager;
+}
+namespace MDSS::SurfaceState
+{
+    class TSurfaceDataManager;
+}
+
+namespace MDSS
+{
+
     class TCamera;
     class TScene;
 
@@ -24,16 +33,18 @@ namespace MDSS
         explicit TInputSystem(GLFWwindow* Window) noexcept;
 
         /** @brief Convert one Space press into a center-camera ray contact unless text entry or a UI drag is active. */
-        [[nodiscard]] std::optional<TSurfaceContactInput> PollDebugContact(const TScene&        Scene,
-                                                                           const TAssetManager& Assets,
-                                                                           const TCamera&       Camera,
-                                                                           bool                 bInjectMode,
-                                                                           TStateId             State,
-                                                                           float                Strength,
-                                                                           float                Radius,
-                                                                           float                Falloff,
-                                                                           std::uint32_t        TexelSearchRadius,
-                                                                           bool                 bHotkeySuppressed);
+        [[nodiscard]] std::optional<SurfaceState::TSurfaceContactInput>
+        PollDebugContact(const TScene&                            Scene,
+                         const Asset::TAssetManager&              Assets,
+                         const SurfaceState::TSurfaceDataManager& SurfaceData,
+                         const TCamera&                           Camera,
+                         bool                                     bInjectMode,
+                         SurfaceState::TStateId                   State,
+                         float                                    Strength,
+                         float                                    Radius,
+                         float                                    Falloff,
+                         std::uint32_t                            TexelSearchRadius,
+                         bool                                     bHotkeySuppressed);
 
     private:
         GLFWwindow* Window = nullptr;

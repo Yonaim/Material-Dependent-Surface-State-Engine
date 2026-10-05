@@ -1,0 +1,209 @@
+/**
+ * @file OverlayCoverageSmoothing.comp
+ * @brief overlay 정점 coverage를 주변 simulation texel에서 샘플해 부드럽게 만든다.
+ */
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#include "Rendering/StateOverlay/OverlayStateSampling.glsl"
+
+layout(local_size_x = 64) in;
+
+struct TOverlayVertex
+{
+    vec4 Position;
+    vec4 Normal;
+    vec4 UVSurface;
+    vec4 DisplacementNormal;
+    uvec4 Samples;
+    vec4 Weights;
+};
+
+struct TDrawCommand
+{
+    uint VertexCount;
+    uint InstanceCount;
+    uint FirstVertex;
+    uint FirstInstance;
+};
+
+struct TTopDrawCommand
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int VertexOffset;
+    uint FirstInstance;
+};
+
+layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
+{
+    TOverlayVertex Values[];
+} MeshVertices;
+
+layout(set = 2, binding = 4, std430) writeonly buffer TCoverageValues
+{
+    float Values[];
+} Coverage;
+
+layout(set = 2, binding = 5, std430) buffer TDrawCommands
+{
+    TDrawCommand Values[];
+} DrawCommands;
+
+layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
+{
+    TTopDrawCommand Values[];
+} TopDrawCommands;
+
+layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
+{
+    uint Values[];
+} GeometryCache;
+
+uint ConfigIndex() { return uint(DrawCommands.Values.length()) - 1u; }
+uint ConfigChannel() { return DrawCommands.Values[ConfigIndex()].InstanceCount & 0xffffu; }
+uint ConfigChannels() { return DrawCommands.Values[ConfigIndex()].InstanceCount >> 16u; }
+uint ConfigTexelCount() { return DrawCommands.Values[ConfigIndex()].FirstVertex; }
+uint ConfigTileSize()
+{
+    uint TileCode = DrawCommands.Values[ConfigIndex()].FirstInstance & 3u;
+    return TileCode == 1u ? 16u : TileCode == 2u ? 32u : 0u;
+}
+
+bool IsTileActive(TOverlayVertex Vertex)
+{
+    uint TileSize = ConfigTileSize();
+    if (TileSize == 0u) return true;
+    uint Surface = uint(max(Vertex.UVSurface.w, 0.0));
+#if MDSS_GPU_VALIDATION
+    if (Surface >= uint(OverlaySurfaceRanges.Values.length())) return false;
+#endif
+    uvec4 Range = OverlaySurfaceRanges.Values[Surface];
+    if (Range.y == 0u || Range.z == 0u) return false;
+
+    vec2 UV = clamp(Vertex.UVSurface.xy, 0.0, 1.0);
+    uvec2 XY = min(uvec2(UV * vec2(Range.yz)), Range.yz - 1u);
+
+    uint CandidateBase = 0u;
+    for (uint S = 0u; S < Surface; ++S)
+    {
+        uvec4 Other = OverlaySurfaceRanges.Values[S];
+        CandidateBase += ((Other.y + TileSize - 1u) / TileSize) *
+                         ((Other.z + TileSize - 1u) / TileSize);
+    }
+    uint TilesX = (Range.y + TileSize - 1u) / TileSize;
+    uint Candidate = CandidateBase + (XY.y / TileSize) * TilesX + (XY.x / TileSize);
+    uint Flag = ConfigTexelCount() * 4u + Candidate;
+#if MDSS_GPU_VALIDATION
+    return Flag < uint(GeometryCache.Values.length()) && (GeometryCache.Values[Flag] & 1u) != 0u;
+#else
+    return (GeometryCache.Values[Flag] & 1u) != 0u;
+#endif
+}
+
+void main()
+{
+    uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
+    // Reset only the dynamic compact index count. Static offsets/instance data stays resident.
+    if (Index < uint(DrawCommands.Values.length()))
+        DrawCommands.Values[Index].VertexCount = 0u;
+    if (Index < uint(TopDrawCommands.Values.length()))
+        TopDrawCommands.Values[Index].IndexCount = 0u;
+
+    // 비활성 tile은 이전 실행값이 남지 않도록 정점 coverage를 0으로 초기화한다.
+#if MDSS_GPU_VALIDATION
+    if (GeometryCache.Values.length() == 0) return;
+#endif
+    if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u)
+        return;
+
+    if (Index >= uint(MeshVertices.Values.length())) return;
+#if MDSS_GPU_VALIDATION
+    if (Index >= uint(MeshVertices.Values.length()) || Index >= uint(Coverage.Values.length())) return;
+#endif
+
+    TOverlayVertex Vertex = MeshVertices.Values[Index];
+    if (!IsTileActive(Vertex))
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+
+    uint Surface = uint(max(Vertex.UVSurface.w, 0.0));
+    uint Channels = ConfigChannels();
+    uint Channel = ConfigChannel();
+    uint TexelCount = ConfigTexelCount();
+    if (Channels == 0u || Channel >= Channels)
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#if MDSS_GPU_VALIDATION
+    if (Surface >= uint(OverlaySurfaceRanges.Values.length()))
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#endif
+
+    uvec4 Range = OverlaySurfaceRanges.Values[Surface];
+    if (Range.y == 0u || Range.z == 0u)
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+
+    vec2 UV = clamp(Vertex.UVSurface.xy, 0.0, 1.0);
+    uvec2 CenterXY = min(uvec2(UV * vec2(Range.yz)), Range.yz - 1u);
+    uint Center = Range.x + CenterXY.y * Range.y + CenterXY.x;
+    if (Center >= TexelCount)
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#if MDSS_GPU_VALIDATION
+    if (Center >= uint(OverlayTexelProfileIndices.Values.length()) ||
+        Center >= uint(OverlayTexelChartIndices.Values.length()))
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#endif
+    uint Profile = OverlayTexelProfileIndices.Values[Center];
+    uint Chart = OverlayTexelChartIndices.Values[Center];
+#if MDSS_GPU_VALIDATION
+    if (Profile >= uint(OverlayProfileParameters.Values.length()) / Channels)
+    {
+        Coverage.Values[Index] = 0.0;
+        return;
+    }
+#endif
+
+    float Sum = 0.0;
+    float WeightSum = 0.0;
+    const int Kernel[5] = int[5](1, 4, 6, 4, 1);
+    for (int OffsetY = -2; OffsetY <= 2; ++OffsetY)
+    {
+        int Y = int(CenterXY.y) + OffsetY;
+        if (Y < 0 || Y >= int(Range.z)) continue;
+        for (int OffsetX = -2; OffsetX <= 2; ++OffsetX)
+        {
+            int X = int(CenterXY.x) + OffsetX;
+            if (X < 0 || X >= int(Range.y)) continue;
+            uint Texel = Range.x + uint(Y) * Range.y + uint(X);
+            if (Texel >= TexelCount) continue;
+#if MDSS_GPU_VALIDATION
+            if (Texel >= uint(OverlayTexelProfileIndices.Values.length())) continue;
+            if (Texel >= uint(OverlayTexelChartIndices.Values.length())) continue;
+#endif
+            if (OverlayTexelProfileIndices.Values[Texel] != Profile ||
+                OverlayTexelChartIndices.Values[Texel] != Chart) continue;
+
+            float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
+            Sum += Weight * OverlayStateSaturation(Texel, Channel, Channels, Profile);
+            WeightSum += Weight;
+        }
+    }
+    Coverage.Values[Index] = WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : 0.0;
+}

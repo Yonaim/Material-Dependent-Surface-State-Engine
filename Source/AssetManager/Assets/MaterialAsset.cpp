@@ -7,7 +7,7 @@
 
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     TMaterialAsset::TMaterialAsset(TAssetID              ID,
                                    std::string           Name,
@@ -34,4 +34,4 @@ namespace MDSS
     {
         return NormalTexture;
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

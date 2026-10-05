@@ -1,0 +1,280 @@
+/**
+ * @file OverlaySideBoundary.comp
+ * @brief 삼각형 내부 coverage 경계와 mesh 외곽선을 따라 overlay의 수직 옆면 segment를 생성한다.
+ */
+#version 450
+#extension GL_GOOGLE_include_directive : require
+#define SURFACE_DEBUG_SET 0
+#include "Surface/SurfaceStateData.glsl"
+#include "Debug/TexelGeometryData.glsl"
+
+layout(local_size_x = 64) in;
+
+shared uint ActiveTrianglesInGroup;
+
+struct TOverlayVertex
+{
+    vec4 Position;
+    vec4 Normal;
+    vec4 UVSurface;
+    vec4 DisplacementNormal;
+    uvec4 Samples;
+    vec4 Weights;
+};
+
+struct TSideSegment
+{
+    vec4 BaseA;
+    vec4 TopA;
+    vec4 BaseB;
+    vec4 TopB;
+    vec4 Inside;
+};
+
+struct TDrawCommand
+{
+    uint VertexCount;
+    uint InstanceCount;
+    uint FirstVertex;
+    uint FirstInstance;
+};
+
+struct TTopDrawCommand
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int VertexOffset;
+    uint FirstInstance;
+};
+
+layout(set = 1, binding = 0, std430) readonly buffer TComputed
+{
+    TTexelGeometryVertex Values[];
+} Computed;
+
+layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
+{
+    uint Values[];
+} GeometryCache;
+
+layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
+{
+    TOverlayVertex Values[];
+} MeshVertices;
+
+layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices
+{
+    uint Values[];
+} MeshIndices;
+
+layout(set = 2, binding = 2, std430) readonly buffer TBoundaryEdges
+{
+    uvec4 Values[];
+} BoundaryEdges;
+
+layout(set = 2, binding = 3, std430) writeonly buffer TSegments
+{
+    TSideSegment Values[];
+} Segments;
+
+layout(set = 2, binding = 4, std430) buffer TCoverageAndIndices
+{
+    uint Values[];
+} Coverage;
+
+layout(set = 2, binding = 5, std430) buffer TDrawCommands
+{
+    TDrawCommand Values[];
+} DrawCommands;
+
+layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
+{
+    TTopDrawCommand Values[];
+} TopDrawCommands;
+
+struct TPoint
+{
+    vec3 Base;
+    vec3 Top;
+    vec2 UV;
+};
+
+TPoint ReadGeometryPoint(uint Index)
+{
+    // mesh 정점의 최대 네 texel 샘플을 보간해 밑면(Meso)과 윗면(누적 높이)을 만든다.
+    TOverlayVertex V = MeshVertices.Values[Index];
+    TPoint P;
+    P.UV = V.UVSurface.xy;
+    float Height = 0.0;
+    float MesoHeight = 0.0;
+    for (uint K = 0u; K < 4u; ++K)
+    {
+        uint Texel = V.Samples[K];
+        if (V.Weights[K] <= 0.0) continue;
+        if (Texel < uint(Computed.Values.length()))
+            Height += V.Weights[K] * Computed.Values[Texel].HeightAndNormal.x;
+        if (Texel < uint(GeometryScalars.Values.length()))
+            MesoHeight += V.Weights[K] * GeometryScalars.Values[Texel].MesoVirtualHeight;
+    }
+    P.Base = V.Position.xyz + V.DisplacementNormal.xyz * MesoHeight;
+    P.Top = V.Position.xyz + V.DisplacementNormal.xyz * Height;
+    return P;
+}
+
+TPoint Interpolate(TPoint A, TPoint B, float T)
+{
+    TPoint P;
+    P.Base = mix(A.Base, B.Base, T);
+    P.Top = mix(A.Top, B.Top, T);
+    P.UV = mix(A.UV, B.UV, T);
+    return P;
+}
+
+void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface)
+{
+    // 한 segment는 두 삼각형, 즉 정점 6개로 그릴 수 있도록 draw command와 segment buffer를 갱신한다.
+    uint LocalVertex = atomicAdd(DrawCommands.Values[Group].VertexCount, 6u);
+    uint Segment = DrawCommands.Values[Group].FirstVertex / 6u + LocalVertex / 6u;
+    Segments.Values[Segment].BaseA = vec4(A.Base, A.UV.x);
+    Segments.Values[Segment].TopA = vec4(A.Top, A.UV.y);
+    Segments.Values[Segment].BaseB = vec4(B.Base, B.UV.x);
+    Segments.Values[Segment].TopB = vec4(B.Top, B.UV.y);
+    Segments.Values[Segment].Inside = vec4(Inside, Surface);
+}
+
+void main()
+{
+    uint TriangleCount = uint(MeshIndices.Values.length()) / 3u;
+    uint BoundaryCount = DrawCommands.Values[uint(DrawCommands.Values.length()) - 1u].FirstInstance >> 2u;
+    // coverage 경계를 넘는 삼각형 변과 mesh boundary edge를 같은 segment 형식으로 저장한다.
+    if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u) return;
+    uint Slot = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    const float Cutoff = 0.02;
+    if (gl_LocalInvocationIndex == 0u) ActiveTrianglesInGroup = 0u;
+    barrier();
+
+    uvec3 Indices = uvec3(0u);
+    vec3 VertexCoverage = vec3(0.0);
+    bool ValidTriangle = false;
+    if (Slot < TriangleCount)
+    {
+        // 삼각형의 세 꼭짓점 coverage를 cutoff와 비교해 교차점 두 개를 찾는다.
+        uint Offset = Slot * 3u;
+        if (Offset + 2u < uint(MeshIndices.Values.length()))
+        {
+            Indices = uvec3(MeshIndices.Values[Offset], MeshIndices.Values[Offset + 1u],
+                            MeshIndices.Values[Offset + 2u]);
+            ValidTriangle = Indices.x < uint(MeshVertices.Values.length()) &&
+                            Indices.y < uint(MeshVertices.Values.length()) &&
+                            Indices.z < uint(MeshVertices.Values.length());
+            if (ValidTriangle)
+            {
+                // Coverage already maps inactive tiles to zero. Reject the common inactive
+                // case before loading the much larger overlay vertex records.
+                VertexCoverage = vec3(uintBitsToFloat(Coverage.Values[Indices.x]),
+                                      uintBitsToFloat(Coverage.Values[Indices.y]),
+                                      uintBitsToFloat(Coverage.Values[Indices.z]));
+                if (!any(greaterThan(VertexCoverage, vec3(Cutoff))))
+                {
+                    ValidTriangle = false;
+                }
+                else
+                {
+                    // Compact only active top triangles. Every surface owns a fixed region of the
+                    // compact index buffer whose FirstIndex matches the original mesh range.
+                    uint Surface = uint(MeshVertices.Values[Indices.x].UVSurface.w);
+                    if (Surface >= uint(TopDrawCommands.Values.length()))
+                    {
+                        ValidTriangle = false;
+                    }
+                    else
+                    {
+                        uint LocalIndex = atomicAdd(TopDrawCommands.Values[Surface].IndexCount, 3u);
+                        uint Destination = TopDrawCommands.Values[Surface].FirstIndex + LocalIndex;
+                        uint CompactOffset = uint(MeshVertices.Values.length()) + Destination;
+#if MDSS_GPU_VALIDATION
+                        if (CompactOffset + 2u >= uint(Coverage.Values.length()))
+                        {
+                            ValidTriangle = false;
+                        }
+                        else
+#endif
+                        {
+                            Coverage.Values[CompactOffset] = Indices.x;
+                            Coverage.Values[CompactOffset + 1u] = Indices.y;
+                            Coverage.Values[CompactOffset + 2u] = Indices.z;
+                            atomicAdd(ActiveTrianglesInGroup, 1u);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    barrier();
+    if (gl_LocalInvocationIndex == 0u && ActiveTrianglesInGroup != 0u)
+        atomicAdd(DrawCommands.Values[uint(DrawCommands.Values.length()) - 1u].VertexCount,
+                  ActiveTrianglesInGroup);
+    if (Slot >= TriangleCount + BoundaryCount) return;
+
+    if (Slot < TriangleCount)
+    {
+        if (!ValidTriangle) return;
+        uint CrossingEdges[2];
+        float CrossingParameters[2];
+        uint CrossingCount = 0u;
+        uint InsideVertex = 0u;
+        for (uint I = 0u; I < 3u; ++I)
+        {
+            uint J = (I + 1u) % 3u;
+            bool A = VertexCoverage[I] > Cutoff;
+            bool B = VertexCoverage[J] > Cutoff;
+            if (A) InsideVertex = I;
+            if (A != B && CrossingCount < 2u)
+            {
+                float Denominator = VertexCoverage[J] - VertexCoverage[I];
+                CrossingEdges[CrossingCount] = I;
+                CrossingParameters[CrossingCount] =
+                    clamp((Cutoff - VertexCoverage[I]) / Denominator, 0.0, 1.0);
+                ++CrossingCount;
+            }
+        }
+        if (CrossingCount != 2u) return;
+        uint Group = uint(MeshVertices.Values[Indices.x].UVSurface.w);
+        if (Group + 2u >= uint(DrawCommands.Values.length())) return;
+        TPoint P[3];
+        P[0] = ReadGeometryPoint(Indices.x);
+        P[1] = ReadGeometryPoint(Indices.y);
+        P[2] = ReadGeometryPoint(Indices.z);
+        uint EdgeA = CrossingEdges[0];
+        uint EdgeB = CrossingEdges[1];
+        TPoint A = Interpolate(P[EdgeA], P[(EdgeA + 1u) % 3u], CrossingParameters[0]);
+        TPoint B = Interpolate(P[EdgeB], P[(EdgeB + 1u) % 3u], CrossingParameters[1]);
+        WriteSegment(Group, A, B, P[InsideVertex].Base, MeshVertices.Values[Indices.x].UVSurface.w);
+        return;
+    }
+
+    // 삼각형 샘플만으로 놓칠 수 있는 UV 외곽 경계도 별도로 잘라낸다.
+    uvec4 Edge = BoundaryEdges.Values[Slot - TriangleCount];
+    if (Edge.x >= uint(MeshVertices.Values.length()) || Edge.y >= uint(MeshVertices.Values.length())) return;
+    // Coverage already contains the tile-occupancy result, so do the cheap test first.
+    float CoverageA = uintBitsToFloat(Coverage.Values[Edge.x]);
+    float CoverageB = uintBitsToFloat(Coverage.Values[Edge.y]);
+    bool AActive = CoverageA > Cutoff;
+    bool BActive = CoverageB > Cutoff;
+    if (!AActive && !BActive) return;
+    float ParameterA = 0.0;
+    float ParameterB = 1.0;
+    if (AActive != BActive)
+    {
+        float Crossing = clamp((Cutoff - CoverageA) / (CoverageB - CoverageA), 0.0, 1.0);
+        if (AActive) ParameterB = Crossing;
+        else ParameterA = Crossing;
+    }
+    TPoint EdgeA = ReadGeometryPoint(Edge.x);
+    TPoint EdgeB = ReadGeometryPoint(Edge.y);
+    TPoint A = Interpolate(EdgeA, EdgeB, ParameterA);
+    TPoint B = Interpolate(EdgeA, EdgeB, ParameterB);
+    WriteSegment(uint(DrawCommands.Values.length()) - 2u, A, B,
+                 ReadGeometryPoint(Edge.z).Base, MeshVertices.Values[Edge.x].UVSurface.w);
+}

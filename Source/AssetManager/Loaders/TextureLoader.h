@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <vector>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     struct TextureData
     {
@@ -27,4 +27,4 @@ namespace MDSS
          */
         [[nodiscard]] static TextureData LoadRGBA8(const std::filesystem::path& Path);
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

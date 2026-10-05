@@ -1,0 +1,242 @@
+/**
+ * @file OverlayOccupancyScan.comp
+ * @brief Builds two sparse tile lists for overlay geometry:
+ *        - dirty tiles for height updates
+ *        - dirty tiles plus a one-tile halo for normal/vertex updates
+ *
+ * Active occupancy (state exists) is tracked separately from dirty occupancy (state changed enough
+ * since the last geometry build). This keeps geometry cost tied to change, not to total spread.
+ */
+#version 450
+
+layout(local_size_x = 64) in;
+
+layout(set = 0, binding = 8, std430) readonly buffer TCurrentState { float Values[]; } CurrentState;
+layout(set = 0, binding = 12, std430) readonly buffer TSurfaceRanges { uvec4 Values[]; } SurfaceRanges;
+
+layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
+
+layout(push_constant) uniform TPush
+{
+    uint Texels;
+    uint Channel;
+    uint Channels;
+    uint TileSize;
+    uint ForceFullUpdate;
+} Push;
+
+shared uint AnyStateInTile;
+shared uint AnyDirtyInTile;
+shared uint TileDirty;
+shared uint TileValid;
+shared uint TileSurface;
+shared uint TileBaseIndex;
+shared uint TileX;
+shared uint TileY;
+shared uint TilesX;
+shared uint TilesY;
+shared uint RangeFirstTexel;
+shared uint RangeWidth;
+shared uint RangeHeight;
+
+// State is not geometry itself, but for a single overlay layer it is the source of the displayed
+// accumulation height. Keep tiny solver jitter from rebuilding geometry every frame. Because the
+// cached state is only advanced when the tile is actually rebuilt, sub-threshold changes accumulate
+// and eventually trigger an update instead of being lost forever.
+const float DirtyStateAbsoluteEpsilon = 1.0e-5;
+const float DirtyStateRelativeEpsilon = 1.0e-3;
+
+uint CapacityTileCount()
+{
+    // GeometryCache allocates enough sparse metadata for the smallest supported tile (16x16).
+    return (Push.Texels + 255u) / 256u;
+}
+
+// GeometryCache layout after the four texel-sized height/normal planes:
+// activeFlags[N]                                  (persistent)
+// builtState[Texels]                              (persistent)
+// heightScheduled[N], normalScheduled[N]          (dynamic)
+// heightCount, heightDispatch[3], heightList[N]   (dynamic)
+// normalCount, normalDispatch[3], normalList[N]   (dynamic)
+// globalAny                                       (dynamic, last word)
+uint FlagBase()             { return Push.Texels * 4u; }
+uint BuiltStateBase()       { return FlagBase() + CapacityTileCount(); }
+uint HeightScheduleBase()   { return BuiltStateBase() + Push.Texels; }
+uint NormalScheduleBase()   { return HeightScheduleBase() + CapacityTileCount(); }
+uint HeightCountIndex()     { return NormalScheduleBase() + CapacityTileCount(); }
+uint HeightDispatchBase()   { return HeightCountIndex() + 1u; }
+uint HeightListBase()       { return HeightDispatchBase() + 3u; }
+uint NormalCountIndex()     { return HeightListBase() + CapacityTileCount(); }
+uint NormalDispatchBase()   { return NormalCountIndex() + 1u; }
+uint NormalListBase()       { return NormalDispatchBase() + 3u; }
+uint GlobalAnyIndex()       { return uint(GeometryCache.Values.length()) - 1u; }
+
+bool ResolveCandidateTile(uint Candidate)
+{
+    uint Base = 0u;
+    for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
+    {
+        uvec4 Range = SurfaceRanges.Values[Surface];
+        uint X = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
+        uint Y = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
+        uint Count = X * Y;
+        if (Candidate < Base + Count)
+        {
+            uint Local = Candidate - Base;
+            TileValid = 1u;
+            TileSurface = Surface;
+            TileBaseIndex = Base;
+            TileX = X == 0u ? 0u : Local % X;
+            TileY = X == 0u ? 0u : Local / X;
+            TilesX = X;
+            TilesY = Y;
+            RangeFirstTexel = Range.x;
+            RangeWidth = Range.y;
+            RangeHeight = Range.z;
+            return true;
+        }
+        Base += Count;
+    }
+    TileValid = 0u;
+    return false;
+}
+
+float SanitizedState(uint Texel)
+{
+    if (Push.Channels == 0u || Push.Channel >= Push.Channels) return 0.0;
+    uint I = Texel * Push.Channels + Push.Channel;
+    if (I >= uint(CurrentState.Values.length())) return 0.0;
+    float State = CurrentState.Values[I];
+    return (isnan(State) || isinf(State) || State < 0.0) ? 0.0 : State;
+}
+
+bool StateChanged(float Current, float Built)
+{
+    if (isnan(Built) || isinf(Built)) return true;
+    float Tolerance = max(DirtyStateAbsoluteEpsilon,
+                          DirtyStateRelativeEpsilon * max(abs(Current), abs(Built)));
+    return abs(Current - Built) > Tolerance;
+}
+
+void ScheduleHeightCandidate(uint Candidate, uint GroupsPerTile)
+{
+    uint Capacity = CapacityTileCount();
+    if (Candidate >= Capacity) return;
+    if (atomicCompSwap(GeometryCache.Values[HeightScheduleBase() + Candidate], 0u, 1u) != 0u) return;
+
+    uint Slot = atomicAdd(GeometryCache.Values[HeightCountIndex()], 1u);
+    if (Slot >= Capacity) return;
+    GeometryCache.Values[HeightListBase() + Slot] = Candidate;
+    atomicAdd(GeometryCache.Values[HeightDispatchBase() + 0u], GroupsPerTile);
+    atomicOr(GeometryCache.Values[HeightDispatchBase() + 1u], 1u);
+    atomicOr(GeometryCache.Values[HeightDispatchBase() + 2u], 1u);
+}
+
+void ScheduleNormalCandidate(uint Candidate, uint GroupsPerTile)
+{
+    uint Capacity = CapacityTileCount();
+    if (Candidate >= Capacity) return;
+    if (atomicCompSwap(GeometryCache.Values[NormalScheduleBase() + Candidate], 0u, 1u) != 0u) return;
+
+    uint Slot = atomicAdd(GeometryCache.Values[NormalCountIndex()], 1u);
+    if (Slot >= Capacity) return;
+    GeometryCache.Values[NormalListBase() + Slot] = Candidate;
+    atomicAdd(GeometryCache.Values[NormalDispatchBase() + 0u], GroupsPerTile);
+    atomicOr(GeometryCache.Values[NormalDispatchBase() + 1u], 1u);
+    atomicOr(GeometryCache.Values[NormalDispatchBase() + 2u], 1u);
+}
+
+void main()
+{
+    uint Candidate = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        AnyStateInTile = 0u;
+        AnyDirtyInTile = 0u;
+        TileDirty = 0u;
+        TileValid = 0u;
+        ResolveCandidateTile(Candidate);
+    }
+    barrier();
+    if (TileValid == 0u || Push.TileSize == 0u) return;
+
+    uint TilePixels = Push.TileSize * Push.TileSize;
+    for (uint Local = gl_LocalInvocationID.x; Local < TilePixels; Local += gl_WorkGroupSize.x)
+    {
+        uint LocalX = Local % Push.TileSize;
+        uint LocalY = Local / Push.TileSize;
+        uint X = TileX * Push.TileSize + LocalX;
+        uint Y = TileY * Push.TileSize + LocalY;
+        if (X >= RangeWidth || Y >= RangeHeight) continue;
+
+        uint T = RangeFirstTexel + Y * RangeWidth + X;
+        if (T >= Push.Texels) continue;
+
+        float State = SanitizedState(T);
+        if (State > 0.0) atomicOr(AnyStateInTile, 1u);
+
+        float BuiltState = uintBitsToFloat(GeometryCache.Values[BuiltStateBase() + T]);
+        if (Push.ForceFullUpdate != 0u || StateChanged(State, BuiltState))
+            atomicOr(AnyDirtyInTile, 1u);
+    }
+    barrier();
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        uint CurrentActive = AnyStateInTile != 0u ? 1u : 0u;
+        GeometryCache.Values[FlagBase() + Candidate] = CurrentActive;
+        if (CurrentActive != 0u)
+            atomicOr(GeometryCache.Values[GlobalAnyIndex()], 1u);
+
+        TileDirty = (Push.ForceFullUpdate != 0u || AnyDirtyInTile != 0u) ? 1u : 0u;
+        if (TileDirty != 0u)
+        {
+            uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
+
+            // Height only needs the tile whose layer state actually changed.
+            ScheduleHeightCandidate(Candidate, GroupsPerTile);
+
+            // Normals depend on neighboring heights, so update a one-tile halo around dirty tiles.
+            if (Push.ForceFullUpdate != 0u)
+            {
+                ScheduleNormalCandidate(Candidate, GroupsPerTile);
+            }
+            else
+            {
+                for (int DY = -1; DY <= 1; ++DY)
+                {
+                    int NY = int(TileY) + DY;
+                    if (NY < 0 || NY >= int(TilesY)) continue;
+                    for (int DX = -1; DX <= 1; ++DX)
+                    {
+                        int NX = int(TileX) + DX;
+                        if (NX < 0 || NX >= int(TilesX)) continue;
+                        uint NeighborCandidate = TileBaseIndex + uint(NY) * TilesX + uint(NX);
+                        ScheduleNormalCandidate(NeighborCandidate, GroupsPerTile);
+                    }
+                }
+            }
+        }
+    }
+    barrier();
+
+    // Advance the comparison baseline only when geometry for this tile is actually rebuilt. This
+    // lets small per-frame state changes accumulate against the last built result until they become
+    // visually meaningful enough to cross the tolerance.
+    if (TileDirty != 0u)
+    {
+        for (uint Local = gl_LocalInvocationID.x; Local < TilePixels; Local += gl_WorkGroupSize.x)
+        {
+            uint LocalX = Local % Push.TileSize;
+            uint LocalY = Local / Push.TileSize;
+            uint X = TileX * Push.TileSize + LocalX;
+            uint Y = TileY * Push.TileSize + LocalY;
+            if (X >= RangeWidth || Y >= RangeHeight) continue;
+
+            uint T = RangeFirstTexel + Y * RangeWidth + X;
+            if (T >= Push.Texels) continue;
+            GeometryCache.Values[BuiltStateBase() + T] = floatBitsToUint(SanitizedState(T));
+        }
+    }
+}

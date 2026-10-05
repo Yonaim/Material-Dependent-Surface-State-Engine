@@ -8,7 +8,7 @@
 #include "Scene/Camera.h"
 #include "Scene/DemoAnimation.h"
 #include "Scene/StaticMeshInstance.h"
-#include "SurfaceStateSystem/Types/SurfaceMappingTypes.h"
+#include "SurfaceState/Types/SurfaceMappingTypes.h"
 
 #include <filesystem>
 #include <optional>
@@ -69,7 +69,7 @@ namespace MDSS
         TCamera                           MainCamera;
         std::vector<TStaticMeshInstance>  StaticMeshInstances;
         std::filesystem::path             SourcePath;
-        std::uint32_t                     SimulationResolution = SurfaceSimulationResolution;
+        std::uint32_t                     SimulationResolution = SurfaceState::SurfaceSimulationResolution;
         float                             LitHeightDisplayScale = 4.0F;
         std::filesystem::path             DemoAnimationPath;
         std::optional<TDemoAnimationClip> DemoAnimation;

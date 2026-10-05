@@ -9,7 +9,7 @@
 
 #include <tiny_obj_loader.h>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     namespace
     {
@@ -54,4 +54,4 @@ namespace MDSS
                            ".");
         return Result;
     }
-} // namespace MDSS
+} // namespace MDSS::Asset

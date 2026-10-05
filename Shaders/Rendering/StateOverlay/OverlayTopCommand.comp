@@ -1,0 +1,43 @@
+/**
+ * @file OverlayTopCommand.comp
+ * @brief 옆면 생성 결과가 있을 때에만 상단 overlay draw command를 활성화한다.
+ */
+#version 450
+
+layout(local_size_x = 64) in;
+
+struct TSideDrawCommand
+{
+    uint VertexCount;
+    uint InstanceCount;
+    uint FirstVertex;
+    uint FirstInstance;
+};
+
+struct TTopDrawCommand
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int VertexOffset;
+    uint FirstInstance;
+};
+
+layout(set = 0, binding = 0, std430) readonly buffer TSideDrawCommands
+{
+    TSideDrawCommand Values[];
+} SideDrawCommands;
+
+layout(set = 0, binding = 1, std430) buffer TTopDrawCommands
+{
+    TTopDrawCommand Values[];
+} TopDrawCommands;
+
+void main()
+{
+    // 마지막 side command는 전체 segment의 활성 여부를 담는 요약 command다.
+    uint Surface = gl_GlobalInvocationID.x;
+    if (Surface >= uint(TopDrawCommands.Values.length())) return;
+    bool AnyActive = SideDrawCommands.Values[uint(SideDrawCommands.Values.length()) - 1u].VertexCount != 0u;
+    TopDrawCommands.Values[Surface].InstanceCount = AnyActive ? 1u : 0u;
+}

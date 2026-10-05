@@ -11,6 +11,7 @@
 #include "Scene/Camera.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
+#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -24,16 +25,18 @@ namespace MDSS
     {
     }
 
-    std::optional<TSurfaceContactInput> TInputSystem::PollDebugContact(const TScene&        Scene,
-                                                                       const TAssetManager& Assets,
-                                                                       const TCamera&       Camera,
-                                                                       bool                 bInjectMode,
-                                                                       TStateId             State,
-                                                                       float                Strength,
-                                                                       float                Radius,
-                                                                       float                Falloff,
-                                                                       std::uint32_t        TexelSearchRadius,
-                                                                       bool                 bHotkeySuppressed)
+    std::optional<SurfaceState::TSurfaceContactInput>
+    TInputSystem::PollDebugContact(const TScene&                            Scene,
+                                   const Asset::TAssetManager&              Assets,
+                                   const SurfaceState::TSurfaceDataManager& SurfaceData,
+                                   const TCamera&                           Camera,
+                                   bool                                     bInjectMode,
+                                   SurfaceState::TStateId                   State,
+                                   float                                    Strength,
+                                   float                                    Radius,
+                                   float                                    Falloff,
+                                   std::uint32_t                            TexelSearchRadius,
+                                   bool                                     bHotkeySuppressed)
     {
         const bool bSpaceDown = Window != nullptr && glfwGetKey(Window, GLFW_KEY_SPACE) == GLFW_PRESS;
         const bool bSpacePressed = bSpaceDown && !bWasSpaceDown;
@@ -43,7 +46,7 @@ namespace MDSS
         {
             return std::nullopt;
         }
-        if (State == InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
+        if (State == SurfaceState::InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
         {
             TLogger::Warning("TInputSystem",
                              "Ignored debug contact because State, Strength, radius, or falloff is invalid.");
@@ -64,21 +67,21 @@ namespace MDSS
             return std::nullopt;
         }
         if (Hit.InstanceIndex >= Scene.GetStaticMeshInstances().size() ||
-            Hit.InstanceIndex >= static_cast<std::size_t>(InvalidSurfaceInstanceID))
+            Hit.InstanceIndex >= static_cast<std::size_t>(SurfaceState::InvalidSurfaceInstanceID))
         {
             TLogger::Error("TInputSystem", "Raycast returned an invalid Surface instance index.");
             return std::nullopt;
         }
 
         const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[Hit.InstanceIndex];
-        if (!Assets.HasSurfaceData(Instance.GetSurfaceData()))
+        if (!SurfaceData.HasSurfaceData(Instance.GetSurfaceData()))
         {
             TLogger::Warning("TInputSystem", "Raycast hit a Mesh instance without Surface simulation data.");
             return std::nullopt;
         }
 
-        TSurfaceContactInput Contact;
-        Contact.TargetInstance = static_cast<TSurfaceInstanceID>(Hit.InstanceIndex);
+        SurfaceState::TSurfaceContactInput Contact;
+        Contact.TargetInstance = static_cast<SurfaceState::TSurfaceInstanceID>(Hit.InstanceIndex);
         Contact.State = State;
         Contact.WorldPosition = Hit.WorldPosition;
         Contact.WorldDirection = glm::normalize(Direction);

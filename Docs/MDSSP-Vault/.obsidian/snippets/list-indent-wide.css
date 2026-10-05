@@ -4,14 +4,14 @@
   --list-indent: 2.5em;
 }
 
-/* Add a little breathing room between list items in reading and editing views. */
+/* Add clear breathing room between list items in reading and editing views. */
 .markdown-rendered li {
-  padding-block: 0.1em;
+  margin-block: 0.35em;
   padding-inline-start: 0.2em;
 }
 
 .markdown-source-view.mod-cm6 .HyperMD-list-line {
-  padding-block: 0.1em;
+  padding-block: 0.2em;
 }
 
 /* Keep the list marker visually separate from its text in Live Preview. */

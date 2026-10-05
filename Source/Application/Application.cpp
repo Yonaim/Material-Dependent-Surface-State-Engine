@@ -5,33 +5,53 @@
 
 #include "Application/Application.h"
 
+#include "Application/BenchmarkOptions.h"
 #include "Application/EngineConfig.h"
-#include "AssetManager/Loaders/SceneLoader.h"
 #include "DebugUI/DebugUI.h"
 #include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
-#include "Renderer/Renderer.h"
-#include "SurfaceStateSystem/SurfaceStateSystem.h"
+#include "Rendering/Renderer.h"
+#include "Scene/SceneLoader.h"
+#include "SurfaceState/SurfaceStateSystem.h"
+#include "SurfaceState/State/SimulationClock.h"
 
 #include <chrono>
 #include <filesystem>
+#include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace MDSS
 {
-    TApplication::TApplication()
-        : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), MainScene()
+    TApplication::TApplication(TBenchmarkOptions BenchmarkOptions)
+        : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), SurfaceData(Assets), MainScene(),
+          Benchmark(std::move(BenchmarkOptions))
     {
         TLogger::Info("TApplication", "Initializing MDSS Engine.");
 
-        const auto StartupScenePath = LoadStartupScenePath(GetEngineConfigDirectory() / "Engine.ini");
+        const auto StartupScenePath = Benchmark.Enabled
+                                          ? std::filesystem::absolute(Benchmark.ScenePath).lexically_normal()
+                                          : LoadStartupScenePath(GetEngineConfigDirectory() / "Engine.ini");
         TLogger::Info("TApplication", "Startup Scene: " + StartupScenePath.string());
-        MainScene = TSceneLoader::Load(StartupScenePath, Assets);
+        MainScene = TSceneLoader::Load(StartupScenePath,
+                                       Assets,
+                                       SurfaceData,
+                                       Benchmark.Enabled ? std::optional<std::uint32_t>(Benchmark.Resolution)
+                                                         : std::nullopt);
 
-        Assets.ExchangeSurfaceStateRegistry(Assets.BuildSurfaceStateRegistry(MainScene));
-        SurfaceStates = std::make_unique<TSurfaceStateSystem>(Context, Assets, MainScene);
-        FrameRenderer = std::make_unique<TRenderer>(Context, MainWindow, Assets, MainScene, *SurfaceStates);
-        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets);
+        SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(MainScene));
+        SurfaceStates = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
+        FrameRenderer =
+            std::make_unique<Rendering::TRenderer>(Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStates);
+        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
+        if (Benchmark.Enabled)
+        {
+            MainScene.PauseDemoAnimation();
+            DebugInterface->SetBenchmarkMode();
+            FrameRenderer->ConfigureBenchmarkCapture(Benchmark.OutputPath,
+                                                      Benchmark.WarmupFrames,
+                                                      Benchmark.MeasurementFrames);
+        }
         InputInterface = std::make_unique<TInputSystem>(MainWindow.GetNativeHandle());
         TLogger::Info("TApplication", "Surface State System, renderer, scene, asset system, and Debug UI are ready.");
     }
@@ -60,9 +80,10 @@ namespace MDSS
         {
             MainWindow.PollEvents();
             DebugInterface->BeginFrame(MainScene);
-            if (const std::optional<TSurfaceContactInput> Contact =
+            if (const std::optional<SurfaceState::TSurfaceContactInput> Contact =
                     InputInterface->PollDebugContact(MainScene,
                                                      Assets,
+                                                     SurfaceData,
                                                      DebugInterface->GetActiveViewportCamera(MainScene),
                                                      DebugInterface->IsInjectModeEnabled(),
                                                      DebugInterface->GetInjectState(),
@@ -82,9 +103,12 @@ namespace MDSS
             // Settings and file dialogs can block inside BeginFrame. Exclude
             // their elapsed time from the interactive simulation clock.
             const bool  bSuspendSimulationClock = DebugInterface->ConsumeFrameTimeResetRequest();
-            const float DeltaTime = bSuspendSimulationClock
-                                        ? 0.0F
-                                        : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
+            const float DeltaTime = Benchmark.Enabled
+                                        ? SurfaceState::FixedSimulationStepSeconds
+                                        : bSuspendSimulationClock
+                                              ? 0.0F
+                                              : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime)
+                                                    .count();
             PreviousFrameTime = CurrentFrameTime;
             MainScene.AdvanceDemoAnimation(DeltaTime * DebugInterface->GetAnimationTimeScale());
             FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime, bSuspendSimulationClock);

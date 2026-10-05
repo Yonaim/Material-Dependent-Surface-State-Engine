@@ -6,25 +6,25 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
-#include "SurfaceStateSystem/Types/SurfaceStateTypes.h"
+#include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <filesystem>
 #include <string>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     class TSRProfileAsset final : public TAsset
     {
     public:
         /** @brief Profile 데이터를 보관하고 생성 시 전체 데이터 계약을 검증한다. */
-        TSRProfileAsset(TAssetID                    ID,
-                        std::string                 Name,
-                        std::filesystem::path       SourcePath,
-                        TSurfaceResponseProfileData Data);
+        TSRProfileAsset(TAssetID                                  ID,
+                        std::string                               Name,
+                        std::filesystem::path                     SourcePath,
+                        SurfaceState::TSurfaceResponseProfileData Data);
 
-        [[nodiscard]] const TSurfaceResponseProfileData& GetData() const noexcept;
+        [[nodiscard]] const SurfaceState::TSurfaceResponseProfileData& GetData() const noexcept;
 
     private:
-        TSurfaceResponseProfileData Data;
+        SurfaceState::TSurfaceResponseProfileData Data;
     };
-} // namespace MDSS
+} // namespace MDSS::Asset

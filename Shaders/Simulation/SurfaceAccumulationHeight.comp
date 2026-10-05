@@ -8,7 +8,12 @@
 #include "Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
 
 layout(local_size_x = 64) in;
+
 shared uint WorkgroupDirty;
+
+const float DirtyHeightAbsoluteEpsilon = 1.0e-5;
+
+const float DirtyHeightRelativeEpsilon = 1.0e-3;
 
 void main()
 {
@@ -33,9 +38,18 @@ void main()
         float Height = accumulationHeight(Texel);
         float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
         vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
-        // 렌더링용 높이만 갱신된 경우도 있으므로 높이 차이와 저장 normal의 유효성을 함께 확인한다.
-        Dirty = Height != BuiltHeight || any(isnan(BuiltNormal)) ||
-            any(isinf(BuiltNormal)) || dot(BuiltNormal, BuiltNormal) < 0.5;
+        // 작은 float 흔들림은 무시한다. 비교 기준은 마지막 geometry build 값이므로 누적 변화가
+        // tolerance를 넘으면 갱신된다. 높이는 local-space 길이 단위다.
+        float HeightTolerance = max(DirtyHeightAbsoluteEpsilon,
+                                    DirtyHeightRelativeEpsilon * max(abs(Height), abs(BuiltHeight)));
+        bool BuiltHeightInvalid = false;
+        bool BuiltNormalInvalid = dot(BuiltNormal, BuiltNormal) < 0.5;
+#if MDSS_GPU_VALIDATION
+        BuiltHeightInvalid = isnan(BuiltHeight) || isinf(BuiltHeight);
+        BuiltNormalInvalid = BuiltNormalInvalid || any(isnan(BuiltNormal)) || any(isinf(BuiltNormal));
+#endif
+        // 저장 normal의 유효성도 함께 확인해 잘못된 동적 geometry를 복구한다.
+        Dirty = BuiltHeightInvalid || abs(Height - BuiltHeight) > HeightTolerance || BuiltNormalInvalid;
         AccumulationHeights.Values[Solver.LocalTexelCount + Texel] = Dirty ? 1.0 : 0.0;
         AccumulationHeights.Values[Texel] = Height;
     }

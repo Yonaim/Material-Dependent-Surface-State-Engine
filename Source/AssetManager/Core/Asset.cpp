@@ -7,7 +7,7 @@
 
 #include <utility>
 
-namespace MDSS
+namespace MDSS::Asset
 {
     TAsset::TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath)
         : ID(ID), Name(std::move(Name)), SourcePath(std::move(SourcePath))
@@ -28,4 +28,4 @@ namespace MDSS
     {
         return SourcePath;
     }
-} // namespace MDSS
+} // namespace MDSS::Asset
