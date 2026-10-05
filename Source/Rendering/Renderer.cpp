@@ -2870,7 +2870,11 @@ namespace MDSS::Rendering
                         const VkBuffer     Vertices = OverlayMesh.VertexBuffer->GetHandle();
                         const VkDeviceSize Offset = 0;
                         vkCmdBindVertexBuffers(CommandBuffer, 0, 1, &Vertices, &Offset);
-                        vkCmdBindIndexBuffer(CommandBuffer, OverlayMesh.IndexBuffer->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+                        vkCmdBindIndexBuffer(
+                            CommandBuffer,
+                            OverlaySides->GetTopIndexBuffer(I, Channel, OverlayTexelMeshResolution),
+                            OverlaySides->GetTopIndexOffset(I, Channel, OverlayTexelMeshResolution),
+                            VK_INDEX_TYPE_UINT32);
                         const std::array<VkDescriptorSet, 3> TopSets{
                             StateSet, ComputedSet, OverlaySides->GetSet(I, Channel, OverlayTexelMeshResolution)};
                         vkCmdBindDescriptorSets(CommandBuffer,

@@ -47,6 +47,10 @@ namespace MDSS::Rendering
                                                     std::uint32_t MeshResolution) const;
         [[nodiscard]] VkBuffer        GetTopDrawBuffer(std::size_t Instance, std::uint32_t Channel,
                                                        std::uint32_t MeshResolution) const;
+        [[nodiscard]] VkBuffer        GetTopIndexBuffer(std::size_t Instance, std::uint32_t Channel,
+                                                        std::uint32_t MeshResolution) const;
+        [[nodiscard]] VkDeviceSize   GetTopIndexOffset(std::size_t Instance, std::uint32_t Channel,
+                                                       std::uint32_t MeshResolution) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
         [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
         void                            Record(VkCommandBuffer                                         Command,
@@ -75,6 +79,7 @@ namespace MDSS::Rendering
             VkDescriptorSet                                                                 Set = VK_NULL_HANDLE;
             std::size_t                                                                     CoveragePage = 0;
             VkDeviceSize                                                                    CoverageOffset = 0;
+            VkDeviceSize                                                                    TopIndexOffset = 0;
             std::uint32_t                                                                   VertexCount = 0;
             std::uint32_t                                                                   TriangleCount = 0;
             std::uint32_t                                                                   BoundaryCount = 0;
