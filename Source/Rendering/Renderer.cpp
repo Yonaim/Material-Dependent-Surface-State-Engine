@@ -823,7 +823,7 @@ namespace MDSS::Rendering
         }
         if (TimestampValidBits > 0)
         {
-            CreateTimestampQueryPool(SurfaceStates.GetSolverTimestampSlotCount());
+            CreateTimestampQueryPool(SurfaceStates.GetSolverInstanceCount());
         }
         else
         {
@@ -922,7 +922,7 @@ namespace MDSS::Rendering
         {
             const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
             const std::uint32_t OverlayQueryOffset =
-                FixedTimestampQueryCount + SolverTimestampStepsSubmitted[FrameIndex] * SolverTimestampSlotCount * 8U;
+                FixedTimestampQueryCount + SolverTimestampStepsSubmitted[FrameIndex] * SolverTimestampGroupCount * 8U;
             const std::uint32_t QueryCount =
                 OverlayQueryOffset + OverlayTimestampLayersSubmitted[FrameIndex] * OverlayTimestampQueriesPerLayer;
             std::vector<std::uint64_t> Timestamps(QueryCount, 0U);
@@ -1019,7 +1019,7 @@ namespace MDSS::Rendering
                 if (SolverTimestampStepsSubmitted[FrameIndex] > 0U)
                 {
                     for (std::uint32_t Slot = 0;
-                         Slot < SolverTimestampSlotCount * SolverTimestampStepsSubmitted[FrameIndex];
+                         Slot < SolverTimestampGroupCount * SolverTimestampStepsSubmitted[FrameIndex];
                          ++Slot)
                     {
                         const std::uint32_t SlotQuery = FixedTimestampQueryCount + Slot * 8U;
@@ -1125,7 +1125,7 @@ namespace MDSS::Rendering
         for (const float StepSeconds : SimulationSteps)
             ProfilingStats.SimulatedThisFrameSeconds += StepSeconds;
         ProfilingStats.PendingSimulationSeconds = static_cast<float>(SimulationClock.GetPendingSeconds());
-        ProfilingStats.SimulationInstances = static_cast<std::uint32_t>(SurfaceStates.GetSolverTimestampSlotCount());
+        ProfilingStats.SimulationInstances = static_cast<std::uint32_t>(SurfaceStates.GetSolverInstanceCount());
         ProfilingStats.SimulationTexels = 0;
         ProfilingStats.StateChannels = 0;
         ProfilingStats.SimulationResolution = GetSimulationResolution();
@@ -1525,7 +1525,7 @@ namespace MDSS::Rendering
             DebugProfileParameterOverrides.clear();
             DebugStateChannel = 0;
         }
-        CreateTimestampQueryPool(SurfaceStates.GetSolverTimestampSlotCount());
+        CreateTimestampQueryPool(SurfaceStates.GetSolverInstanceCount());
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
         LastSolverPass1GpuMilliseconds = -1.0F;
@@ -2131,18 +2131,21 @@ namespace MDSS::Rendering
         {
             return;
         }
-        if (SolverInstanceCount >
-            (std::numeric_limits<std::uint32_t>::max() / TRenderContext::MaxFramesInFlight - FixedTimestampQueryCount) /
-                (8U * SurfaceState::MaxSimulationStepsPerFrame + 3U * OverlayTimestampQueriesPerLayer))
+        const std::uint64_t SolverQuerySlots = SolverInstanceCount > 0U ? 1U : 0U;
+        const std::uint64_t SolverQueryCount =
+            SolverQuerySlots * 8U * SurfaceState::MaxSimulationStepsPerFrame;
+        const std::uint64_t OverlayQueryCount =
+            static_cast<std::uint64_t>(SolverInstanceCount) * 3U * OverlayTimestampQueriesPerLayer;
+        const std::uint64_t QueriesPerFrame = FixedTimestampQueryCount + SolverQueryCount + OverlayQueryCount;
+        if (QueriesPerFrame > std::numeric_limits<std::uint32_t>::max() /
+                                  TRenderContext::MaxFramesInFlight)
         {
             TLogger::Warning("TRenderer", "GPU timing query count exceeds the supported range.");
             return;
         }
 
-        SolverTimestampSlotCount = static_cast<std::uint32_t>(SolverInstanceCount);
-        TimestampQueriesPerFrame =
-            FixedTimestampQueryCount + SolverTimestampSlotCount * (8U * SurfaceState::MaxSimulationStepsPerFrame +
-                                                                   3U * OverlayTimestampQueriesPerLayer);
+        SolverTimestampGroupCount = static_cast<std::uint32_t>(SolverQuerySlots);
+        TimestampQueriesPerFrame = static_cast<std::uint32_t>(QueriesPerFrame);
         VkQueryPoolCreateInfo QueryPoolInfo{};
         QueryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
         QueryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
@@ -2356,7 +2359,7 @@ namespace MDSS::Rendering
         const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
         const std::uint32_t OverlayQueryBase =
             QueryBase + FixedTimestampQueryCount +
-            static_cast<std::uint32_t>(SimulationSteps.size()) * SolverTimestampSlotCount * 8U;
+                                     static_cast<std::uint32_t>(SimulationSteps.size()) * SolverTimestampGroupCount * 8U;
         OverlayTimestampLayersSubmitted[FrameIndex] = 0;
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
@@ -2368,7 +2371,7 @@ namespace MDSS::Rendering
                                      SimulationSteps[Step],
                                      TimestampQueryPool,
                                      QueryBase + FixedTimestampQueryCount +
-                                         static_cast<std::uint32_t>(Step) * SolverTimestampSlotCount * 8U);
+                                         static_cast<std::uint32_t>(Step) * SolverTimestampGroupCount * 8U);
         }
 
         SimulationStepSerial += SimulationSteps.size();

@@ -55,10 +55,10 @@ namespace MDSS::SurfaceState
         void RecordStep(VkCommandBuffer CommandBuffer,
                         float           DeltaTime,
                         VkQueryPool     TimestampQueryPool = VK_NULL_HANDLE,
-                        std::uint32_t   FirstInstanceQuery = 0);
+                        std::uint32_t   FirstStepQuery = 0);
         void RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer, std::size_t SceneIndex);
         void PrepareTransferWeightCachesForSettingChange();
-        [[nodiscard]] std::size_t                        GetSolverTimestampSlotCount() const noexcept;
+        [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
         void                                             ResetState();
         void                                             RestartState();
         [[nodiscard]] float                              GetMaximumStableDeltaTime();

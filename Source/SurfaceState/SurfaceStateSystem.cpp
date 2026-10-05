@@ -583,7 +583,7 @@ namespace MDSS::SurfaceState
     void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
                                          float           DeltaTime,
                                          VkQueryPool     TimestampQueryPool,
-                                         std::uint32_t   FirstInstanceQuery)
+                                         std::uint32_t   FirstStepQuery)
     {
         ApplyPendingContacts();
         if (!Solver)
@@ -592,7 +592,6 @@ namespace MDSS::SurfaceState
         }
 
         bool          bHasDirtyTransferWeightCache = bTransferWeightSettingsDirty;
-        std::uint32_t SolverQuerySlot = 0U;
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             if (GPUResources->GetInstanceDescriptors(SceneIndex) == nullptr)
@@ -608,6 +607,10 @@ namespace MDSS::SurfaceState
             throw std::runtime_error("Failed to wait for the graphics queue before updating TransferWeight caches.");
         }
 
+        std::vector<TSurfaceSolverInstanceStep> InstanceSteps;
+        std::vector<std::size_t>                ActiveSceneIndices;
+        InstanceSteps.reserve(GPUResources->GetSceneInstanceCount());
+        ActiveSceneIndices.reserve(GPUResources->GetSceneInstanceCount());
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(SceneIndex);
@@ -665,20 +668,21 @@ namespace MDSS::SurfaceState
                 if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight))
                     SolverFlags |= SurfaceSolverProfileBoundaryWeightFlag;
             }
-            Solver->RecordStep(CommandBuffer,
-                               *Descriptors,
-                               bCurrentStateAB,
-                               GPUResources->GetInstanceTexelCount(SceneIndex),
-                               GPUResources->GetInstanceChannelCount(SceneIndex),
-                               DeltaTime,
-                               ModelMatrix,
-                               GravityWorld,
-                               SolverFlags,
-                               TimestampQueryPool,
-                               FirstInstanceQuery + SolverQuerySlot * 8U);
-            GPUResources->AdvanceCurrentState(SceneIndex);
-            ++SolverQuerySlot;
+            TSurfaceSolverInstanceStep Step;
+            Step.Descriptors = Descriptors;
+            Step.bCurrentStateAB = bCurrentStateAB;
+            Step.TexelCount = GPUResources->GetInstanceTexelCount(SceneIndex);
+            Step.ChannelCount = GPUResources->GetInstanceChannelCount(SceneIndex);
+            Step.DeltaTime = DeltaTime;
+            Step.ModelMatrix = ModelMatrix;
+            Step.GravityWorld = GravityWorld;
+            Step.SolverFlags = SolverFlags;
+            InstanceSteps.push_back(Step);
+            ActiveSceneIndices.push_back(SceneIndex);
         }
+        Solver->RecordSteps(CommandBuffer, InstanceSteps, TimestampQueryPool, FirstStepQuery);
+        for (const std::size_t SceneIndex : ActiveSceneIndices)
+            GPUResources->AdvanceCurrentState(SceneIndex);
         bTransferWeightSettingsDirty = false;
         bForceFullGeometryOnNextStep = false;
     }
@@ -696,18 +700,16 @@ namespace MDSS::SurfaceState
                                                 Scene.GetStaticMeshInstances()[SceneIndex].GetTransform().GetMatrix());
     }
 
-    std::size_t TSurfaceStateSystem::GetSolverTimestampSlotCount() const noexcept
+    std::size_t TSurfaceStateSystem::GetSolverInstanceCount() const noexcept
     {
         if (!GPUResources)
-        {
-            return 0;
-        }
-        std::size_t SlotCount = 0;
+            return 0U;
+        std::size_t InstanceCount = 0U;
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
-            SlotCount += GPUResources->GetInstanceDescriptors(SceneIndex) != nullptr ? 1U : 0U;
+            InstanceCount += GPUResources->GetInstanceDescriptors(SceneIndex) != nullptr ? 1U : 0U;
         }
-        return SlotCount;
+        return InstanceCount;
     }
 
     const TSurfaceSolverDebugSettings& TSurfaceStateSystem::GetDebugSolverSettings() const noexcept

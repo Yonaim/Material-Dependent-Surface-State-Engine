@@ -510,7 +510,7 @@ namespace MDSS::Rendering
         std::uint32_t                                                            LastSimulationStepCount = 0;
         float                   MaximumSimulationStep = SurfaceState::FixedSimulationStepSeconds;
         std::uint32_t           TimestampQueriesPerFrame = 21;
-        std::uint32_t           SolverTimestampSlotCount = 0;
+        std::uint32_t           SolverTimestampGroupCount = 0;
         float                   TimestampPeriodNanoseconds = 0.0F;
         std::uint32_t           TimestampValidBits = 0;
         bool                    bRenderPassSubstageTimingsReliable = true;

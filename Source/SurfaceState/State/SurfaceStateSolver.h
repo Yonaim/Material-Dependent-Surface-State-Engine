@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <span>
 
 namespace MDSS::SurfaceState
 {
@@ -54,6 +55,18 @@ namespace MDSS::SurfaceState
         }
     };
 
+    struct TSurfaceSolverInstanceStep
+    {
+        const TSurfaceStateDescriptorResources* Descriptors = nullptr;
+        bool                                    bCurrentStateAB = true;
+        std::size_t                             TexelCount = 0;
+        std::size_t                             ChannelCount = 0;
+        float                                   DeltaTime = 0.0F;
+        glm::mat4                               ModelMatrix{1.0F};
+        glm::vec3                               GravityWorld{0.0F, 0.0F, -1.0F};
+        std::uint32_t                           SolverFlags = 0U;
+    };
+
     class TSurfaceStateSolver final
     {
     public:
@@ -65,6 +78,10 @@ namespace MDSS::SurfaceState
         TSurfaceStateSolver(TSurfaceStateSolver&&) = delete;
         TSurfaceStateSolver& operator=(TSurfaceStateSolver&&) = delete;
 
+        void RecordSteps(VkCommandBuffer                         CommandBuffer,
+                         std::span<const TSurfaceSolverInstanceStep> InstanceSteps,
+                         VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
+                         std::uint32_t                           FirstStepQuery = 0U) const;
         void RecordStep(VkCommandBuffer                         CommandBuffer,
                         const TSurfaceStateDescriptorResources& Descriptors,
                         bool                                    bCurrentStateAB,

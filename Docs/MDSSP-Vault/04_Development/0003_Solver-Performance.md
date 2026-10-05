@@ -2,6 +2,12 @@
 
 > **한 줄 요약:** Solver의 병목 가설·비교 실험·측정 규칙과 결과 해석을 한 문서에서 관리한다. 원자료는 `Performance-Results/`에 둔다.
 
+## 현재 인스턴스 dispatch와 계측
+
+[[05_Decisions/0026_Instance-Batched-Solver-Dispatch|Decision 0026]]에 따라 한 simulation step에서 활성 인스턴스의 같은 Solver 단계를 모아 기록한다. Height, dirty command, dynamic geometry, transfer weight, Pass 1, Pass 2는 각각 인스턴스 전체 dispatch를 기록한 뒤 단계 간 데이터 의존성만 barrier로 연결한다. 서로 다른 인스턴스의 같은 단계에는 barrier를 넣지 않아 GPU가 함께 스케줄할 수 있게 한다. GPU가 실제로 동시에 실행하는지와 성능 이득은 측정으로 확인한다.
+
+현재 Solver GPU timestamp는 인스턴스별 구간 합이 아니라 단계별 인스턴스 묶음 구간이다. 이전 구현에서 수집한 instance-summed 값과 직접 비교하지 않는다. `SimulationInstances` 통계는 계측 슬롯 수가 아니라 활성 인스턴스 수를 표시한다.
+
 ## 성능 측정 규칙
 
 ### 기본 원칙
@@ -161,7 +167,7 @@ Pass 2는 source Current State가 0 이하, alpha가 0 이하, 또는 간선 가
 
 기본 Cube Wetness Scene의 관측은 Frame 13.4 FPS / 74.50 ms, Render GPU 0.38 ms, Solver GPU 74.01 ms, Pass 1 62.61 ms, Pass 2 11.40 ms다. Pass 1은 Solver 표시 시간의 약 84.6%다.
 
-`TRenderer::RenderFrame`은 모든 instance의 Pass 1 timestamp 구간을 합산한다. UI는 1초 동안 이 값을 평균한다. 따라서 62.61 ms는 단일 dispatch나 큐브 한 개의 값이 아니며, 4개 cube instance의 합계다. 균등 분할하면 cube당 평균 15.65 ms이고 각 cube 비용이 같다는 뜻은 아니다. 이전 6×512×512·1채널 합성 측정과 이 화면을 같은 표본으로 비교하지 않는다.
+**이전 인스턴스별 순차 dispatch의 역사 기록:** 당시 `TRenderer::RenderFrame`은 모든 instance의 Pass 1 timestamp 구간을 합산했다. UI는 1초 동안 이 값을 평균했다. 따라서 62.61 ms는 단일 dispatch나 큐브 한 개의 값이 아니며, 4개 cube instance의 합계다. 균등 분할하면 cube당 평균 15.65 ms이고 각 cube 비용이 같다는 뜻은 아니다. 현재 단계별 배치 timestamp와는 집계 기준이 다르며, 이전 6×512×512·1채널 합성 측정과도 같은 표본으로 비교하지 않는다.
 
 한 장의 화면으로 순간 급등이나 frame별 jitter를 판정하지 않는다. 지속적인 Pass 1의 높은 비용을 설명하는 코드와 합성 분리 결과를 아래에 기록한다.
 
