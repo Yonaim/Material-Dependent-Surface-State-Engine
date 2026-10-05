@@ -887,7 +887,7 @@ namespace MDSS
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({330.0F, 115.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 155.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Scene", nullptr, Flags);
         const auto& SourcePath = SceneData.GetSourcePath();
@@ -980,6 +980,12 @@ namespace MDSS
         DrawDemoSceneButton("BrickCube", "BrickCube.Scene");
         ImGui::SameLine();
         DrawDemoSceneButton("Bunny", "Bunny.Scene");
+        ImGui::TextDisabled("Performance scenes:");
+        DrawDemoSceneButton("3 Cubes", "BrickCube_3.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("5 Cubes", "BrickCube_5.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("9 Cubes", "BrickCube_9.Scene");
         if (!SceneStatus.empty())
         {
             ImGui::TextWrapped("%s", SceneStatus.c_str());
