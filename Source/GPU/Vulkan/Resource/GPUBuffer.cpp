@@ -4,6 +4,7 @@
  */
 
 #include "GPU/Vulkan/Resource/GPUBuffer.h"
+#include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
 
 #include "Logger/Logger.h"
 
@@ -43,6 +44,7 @@ namespace MDSS::GPU
             VkMemoryAllocateInfo AllocateInfo{};
             AllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             AllocateInfo.allocationSize = MemoryRequirements.size;
+            AllocationSize = MemoryRequirements.size;
             AllocateInfo.memoryTypeIndex =
                 FindMemoryType(PhysicalDevice, MemoryRequirements.memoryTypeBits, MemoryProperties);
 
@@ -55,6 +57,7 @@ namespace MDSS::GPU
             {
                 throw std::runtime_error("Failed to bind Vulkan buffer memory.");
             }
+            TGPUResourceMemoryStats::BufferAllocated(AllocationSize);
         }
         catch (...)
         {
@@ -68,6 +71,7 @@ namespace MDSS::GPU
                 vkDestroyBuffer(Device, Handle, nullptr);
                 Handle = VK_NULL_HANDLE;
             }
+            AllocationSize = 0;
             throw;
         }
 
@@ -85,9 +89,11 @@ namespace MDSS::GPU
 
         if (Memory != VK_NULL_HANDLE)
         {
+            TGPUResourceMemoryStats::BufferFreed(AllocationSize);
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
+        AllocationSize = 0;
     }
 
     void TGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const

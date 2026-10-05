@@ -60,6 +60,7 @@ namespace MDSS::GPU
         VkDevice       Device = VK_NULL_HANDLE;
         VkImage        Handle = VK_NULL_HANDLE;
         VkDeviceMemory Memory = VK_NULL_HANDLE;
+        VkDeviceSize   AllocationSize = 0;
         VkFormat       Format = VK_FORMAT_UNDEFINED;
         VkExtent2D     Extent{};
     };

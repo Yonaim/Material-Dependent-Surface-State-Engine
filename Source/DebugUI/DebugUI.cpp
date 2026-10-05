@@ -9,6 +9,7 @@
 #include "Application/SceneFileDialog.h"
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
+#include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
 #include "GPU/Vulkan/Swapchain/Swapchain.h"
 #include "GPU/Vulkan/VulkanContext.h"
 #include "GPU/Vulkan/VulkanQueue.h"
@@ -2883,7 +2884,7 @@ namespace MDSS
                 ProfilingWindowMaximums.fill(-1.0F);
             }
 
-            if (ImGui::CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen))
+            if (ImGui::CollapsingHeader("Time Profiling", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 const float  FPS = ProfilingAverages[0];
                 const ImVec4 FPSColor = FPS >= 55.0F   ? ImVec4(0.57F, 0.92F, 0.68F, 1.0F)
@@ -3198,6 +3199,55 @@ namespace MDSS
         bMouseOverViewportOverlay |= Mouse.x >= ProfilingPos.x && Mouse.y >= ProfilingPos.y &&
                                      Mouse.x < ProfilingPos.x + ProfilingSize.x &&
                                      Mouse.y < ProfilingPos.y + ProfilingSize.y;
+        ImGui::End();
+        ImGui::PopStyleVar(3);
+
+        ImGui::SetNextWindowPos({ViewportOrigin.x + 10.0F, RenderStateY}, ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints({OverlayWindowWidth, 0.0F}, {OverlayWindowWidth, 800.0F});
+        ImGui::SetNextWindowBgAlpha(0.84F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
+        if (ImGui::Begin("Memory Profiling##Overlay", nullptr, Flags) &&
+            ImGui::CollapsingHeader("Memory Profiling", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            const GPU::TGPUResourceMemorySnapshot Memory = GPU::TGPUResourceMemoryStats::GetSnapshot();
+            const auto DrawMemoryRow = [](const char* Label, std::uint64_t CurrentBytes, std::uint64_t PeakBytes)
+            {
+                constexpr double RowBytesPerMiB = 1024.0 * 1024.0;
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextDisabled("%s", Label);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%.2f MiB", static_cast<double>(CurrentBytes) / RowBytesPerMiB);
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%.2f MiB", static_cast<double>(PeakBytes) / RowBytesPerMiB);
+            };
+            if (ImGui::BeginTable("ViewportMemoryProfiling",
+                                  3,
+                                  ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
+            {
+                ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, 104.0F);
+                ImGui::TableSetupColumn("Current", ImGuiTableColumnFlags_WidthFixed, 82.0F);
+                ImGui::TableSetupColumn("Peak", ImGuiTableColumnFlags_WidthFixed, 82.0F);
+                ImGui::TableHeadersRow();
+                DrawMemoryRow("GPU total", Memory.CurrentTotalBytes, Memory.PeakTotalBytes);
+                DrawMemoryRow("Buffers", Memory.CurrentBufferBytes, Memory.PeakBufferBytes);
+                DrawMemoryRow("Images", Memory.CurrentImageBytes, Memory.PeakImageBytes);
+                ImGui::EndTable();
+            }
+            ImGui::TextDisabled("Tracked Vulkan allocations · MiB");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Tracks Vulkan memory requirements for app-owned TGPUBuffer and TGPUImage "
+                                  "allocations. Swapchain and driver allocations are excluded.");
+        }
+        const ImVec2 MemoryProfilePos = ImGui::GetWindowPos();
+        const ImVec2 MemoryProfileSize = ImGui::GetWindowSize();
+        const ImVec2 MemoryMouse = ImGui::GetIO().MousePos;
+        bMouseOverViewportOverlay |= MemoryMouse.x >= MemoryProfilePos.x && MemoryMouse.y >= MemoryProfilePos.y &&
+                                     MemoryMouse.x < MemoryProfilePos.x + MemoryProfileSize.x &&
+                                     MemoryMouse.y < MemoryProfilePos.y + MemoryProfileSize.y;
+        RenderStateY = MemoryProfilePos.y + MemoryProfileSize.y + 6.0F;
         ImGui::End();
         ImGui::PopStyleVar(3);
 

@@ -55,6 +55,7 @@ namespace MDSS::GPU
         VkBuffer                           Handle = VK_NULL_HANDLE;
         VkDeviceMemory                     Memory = VK_NULL_HANDLE;
         VkDeviceSize                       Size = 0;
+        VkDeviceSize                       AllocationSize = 0;
         VkMemoryPropertyFlags              MemoryProperties = 0;
         mutable std::atomic<std::uint64_t> UploadRevision{0};
     };

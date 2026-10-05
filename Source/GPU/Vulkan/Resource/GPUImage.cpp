@@ -4,6 +4,7 @@
  */
 
 #include "GPU/Vulkan/Resource/GPUImage.h"
+#include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
 
 #include "Logger/Logger.h"
 
@@ -51,10 +52,12 @@ namespace MDSS::GPU
 
         if (Memory != VK_NULL_HANDLE)
         {
+            TGPUResourceMemoryStats::ImageFreed(AllocationSize);
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
 
+        AllocationSize = 0;
         Format = VK_FORMAT_UNDEFINED;
         Extent = {};
     }
@@ -101,6 +104,7 @@ namespace MDSS::GPU
         VkMemoryAllocateInfo AllocateInfo{};
         AllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         AllocateInfo.allocationSize = MemoryRequirements.size;
+        AllocationSize = MemoryRequirements.size;
         AllocateInfo.memoryTypeIndex =
             FindMemoryType(PhysicalDevice, MemoryRequirements.memoryTypeBits, MemoryProperties);
 
@@ -108,6 +112,7 @@ namespace MDSS::GPU
         {
             vkDestroyImage(Device, Handle, nullptr);
             Handle = VK_NULL_HANDLE;
+            AllocationSize = 0;
             throw std::runtime_error("Failed to allocate Vulkan image memory.");
         }
 
@@ -117,8 +122,10 @@ namespace MDSS::GPU
             vkDestroyImage(Device, Handle, nullptr);
             Memory = VK_NULL_HANDLE;
             Handle = VK_NULL_HANDLE;
+            AllocationSize = 0;
             throw std::runtime_error("Failed to bind Vulkan image memory.");
         }
+        TGPUResourceMemoryStats::ImageAllocated(AllocationSize);
 
         TLogger::Verbose("Vulkan",
                          "TGPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
