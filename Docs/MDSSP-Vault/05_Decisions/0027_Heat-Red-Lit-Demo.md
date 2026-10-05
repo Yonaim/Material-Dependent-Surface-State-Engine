@@ -15,7 +15,7 @@
 1. Lit demo adapter는 현재 Registry에서 `heat` ID를 조회한다. 고정 channel index를 사용하지 않는다.
 2. 표시용 Heat 값은 기존 State sampling 및 Capacity/texel area 보정을 그대로 사용한다. 정규화된 값과 설정 세기를 곱해 원래 albedo를 기본 red tint와 보간한다.
 3. Heat 표시는 Wetness 전용 roughness 변화, wet specular lobe, grazing reflection을 적용하지 않는다. WaterFilm의 독립적인 외관과 반사는 유지한다.
-4. 기본 형상별 demo `.SRProfile`의 `wetness` State를 `heat`로 바꾸고 `DemoWetness.SRProfile`을 `DemoHeat.SRProfile`로 교체한다. 기존 transport 계수 구조는 유지한다. 이 결정은 Heat의 열역학적 물성 모델을 확정하지 않는다.
+4. 기본 형상별 demo `.SRProfile`의 `wetness` State를 `heat`로 바꾸고 `DemoWetness.SRProfile`을 `DemoHeat.SRProfile`로 교체한다. Heat의 `gravityFlowFactor`는 모든 demo Profile에서 `0.0`으로 설정해 표면 기울기·중력에 의한 이동을 막는다. 다른 transport 계수는 Profile에서 정하며, 이 결정은 Heat의 열역학적 물성 모델을 확정하지 않는다.
 5. Debug UI에서 Heat tint와 반응 세기를 조정한다. 렌더 설정은 Solver State나 Profile에 저장하지 않는다.
 
 ## Alternatives Considered

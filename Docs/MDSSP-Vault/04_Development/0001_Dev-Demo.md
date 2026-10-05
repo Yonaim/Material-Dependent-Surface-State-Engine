@@ -6,7 +6,7 @@
 
 ## 목적과 현재 구성
 
-초기안은 BrickCube와 MarbleCube의 Wetness·Mud 쌍, 그리고 Bunny·Mountain별 Wetness/Mud 쌍을 비교하는 12개 효과별 Scene 구성이었다. 현재 데모 방향은 Heat·Mud·WaterFilm·Lava이며, 상태별 Scene 조합은 구현하지 않았다. Heat saturation은 Lit albedo를 빨간색으로 점진적으로 바꾼다. 현재 세 Scene의 초기 접촉 입력은 Lava를 사용한다.
+초기안은 BrickCube와 MarbleCube의 Wetness·Mud 쌍, 그리고 Bunny·Mountain별 Wetness/Mud 쌍을 비교하는 12개 효과별 Scene 구성이었다. 현재 데모 방향은 Heat·Mud·WaterFilm·Lava이며, 상태별 Scene 조합은 구현하지 않았다. Heat saturation은 Lit albedo를 빨간색으로 점진적으로 바꾸며, Heat의 gravity flow는 모든 demo Profile에서 0이다. 현재 세 Scene의 초기 접촉 입력은 Lava를 사용한다.
 
 | Scene | 구성 | 초기 접촉 입력 | Animation |
 |---|---|---|---|
