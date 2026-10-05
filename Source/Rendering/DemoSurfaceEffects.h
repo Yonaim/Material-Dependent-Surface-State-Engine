@@ -41,7 +41,7 @@ namespace MDSS::Rendering
         bool      bHeightFieldSmoothing = false;
         bool      bWaterFilmSmoothing = false;
         bool      bMudSmoothing = false;
-        bool      bLavaSmoothing = false;
+        bool      bLavaSmoothing = true;
         float     DryRoughness = 0.65F;
         float     WetRoughness = 0.16F;
         float     MudRoughness = 0.48F;
