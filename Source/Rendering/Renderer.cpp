@@ -836,6 +836,7 @@ namespace MDSS::Rendering
         TLogger::Debug("TRenderer",
                        "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
                            ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
+        ConstructionCleanup.Release();
     }
 
     TRenderer::~TRenderer()
