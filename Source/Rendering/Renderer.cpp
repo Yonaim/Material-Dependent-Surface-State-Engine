@@ -574,6 +574,23 @@ namespace MDSS::Rendering
             Config.bBlendingEnabled = true;
             return Config;
         }
+
+        template <typename TCallback>
+        class TScopeExit final
+        {
+        public:
+            explicit TScopeExit(TCallback Callback) : Callback(std::move(Callback)) {}
+            ~TScopeExit()
+            {
+                if (bActive)
+                    Callback();
+            }
+            void Release() noexcept { bActive = false; }
+
+        private:
+            TCallback Callback;
+            bool      bActive = true;
+        };
     } // 내부 네임스페이스
 
     TRenderer::TRenderer(const GPU::TVulkanContext&         Context,
@@ -609,6 +626,28 @@ namespace MDSS::Rendering
                            GetDepthImageViewHandles(DepthImageViews)),
           FrameContext(Context)
     {
+        TScopeExit ConstructionCleanup([this]
+        {
+            // The TRenderer destructor is not called when construction fails. Release raw Vulkan
+            // handles owned by this object; RAII members clean themselves during stack unwinding.
+            if (TimestampQueryPool != VK_NULL_HANDLE)
+            {
+                vkDestroyQueryPool(this->Context.GetDevice(), TimestampQueryPool, nullptr);
+                TimestampQueryPool = VK_NULL_HANDLE;
+            }
+            DestroyRenderFinishedSemaphores();
+            if (MaterialDescriptorPool != VK_NULL_HANDLE)
+            {
+                vkDestroyDescriptorPool(this->Context.GetDevice(), MaterialDescriptorPool, nullptr);
+                MaterialDescriptorPool = VK_NULL_HANDLE;
+            }
+            MaterialResources.clear();
+            if (MaterialDescriptorSetLayout != VK_NULL_HANDLE)
+            {
+                vkDestroyDescriptorSetLayout(this->Context.GetDevice(), MaterialDescriptorSetLayout, nullptr);
+                MaterialDescriptorSetLayout = VK_NULL_HANDLE;
+            }
+        });
         VkPhysicalDeviceFeatures DeviceFeatures{};
         vkGetPhysicalDeviceFeatures(Context.GetPhysicalDevice(), &DeviceFeatures);
         VkPhysicalDeviceDriverProperties DriverProperties{};
