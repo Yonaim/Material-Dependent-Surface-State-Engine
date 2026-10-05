@@ -262,9 +262,9 @@ namespace MDSS::Rendering
             glm::uvec4    DebugFlags{0};
             glm::uvec4    DemoStateChannels{
                 SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 1U};
-            glm::vec4  DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
+            glm::vec4  DemoOptions{0.65F, 0.0F, 0.48F, 1.0F};
             glm::vec4  DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
-            glm::vec4  WetnessTint{0.44F, 0.56F, 0.68F, 1.0F};
+            glm::vec4  HeatTint{0.95F, 0.075F, 0.025F, 1.0F};
             glm::vec4  WaterFilmTint{0.35F, 0.53F, 0.68F, 1.0F};
             glm::uvec4 DemoExtraStateChannels{SurfaceState::InvalidStateId, 0U, 0U, 0U};
             glm::vec4  CameraPosition{0, 0, 1, 1};
@@ -1827,10 +1827,10 @@ namespace MDSS::Rendering
         const auto Roughness = [](float V) { return std::isfinite(V) && V >= 0.05F && V <= 1.0F; };
         const auto Unit = [](float V) { return std::isfinite(V) && V >= 0.0F && V <= 1.0F; };
         const auto Color = [&](const glm::vec3& V) { return Unit(V.r) && Unit(V.g) && Unit(V.b); };
-        if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.WetRoughness) ||
+        if (!Roughness(Settings.DryRoughness) ||
             !Roughness(Settings.MudRoughness) || !Roughness(Settings.WaterFilmRoughness) ||
-            !Unit(Settings.WetnessStrength) || !Unit(Settings.WetnessSpecularStrength) ||
-            !Unit(Settings.WaterFilmOpacity) || !Color(Settings.WetnessTint) || !Color(Settings.WaterFilmTint))
+            !Unit(Settings.HeatStrength) || !Unit(Settings.WaterFilmOpacity) ||
+            !Color(Settings.HeatTint) || !Color(Settings.WaterFilmTint))
             throw std::invalid_argument("Invalid demo surface effect settings.");
         DemoEffects = Settings;
     }
@@ -2320,13 +2320,13 @@ namespace MDSS::Rendering
                              SurfaceDebugSettings.AccumulationComponent,
                              SurfaceDebugSettings.HeightGridMode,
                              SurfaceDebugSettings.HeightGridBlockSize},
-                            {Bindings.Wetness, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
-                            {DemoEffects.DryRoughness, DemoEffects.WetRoughness, DemoEffects.MudRoughness, LitHeightDisplayScale},
-                            {DemoEffects.WetnessStrength,
-                             DemoEffects.WetnessSpecularStrength,
+                            {Bindings.Heat, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
+                            {DemoEffects.DryRoughness, 0.0F, DemoEffects.MudRoughness, LitHeightDisplayScale},
+                            {DemoEffects.HeatStrength,
+                             0.0F,
                              DemoEffects.WaterFilmOpacity,
                              DemoEffects.WaterFilmRoughness},
-                            {DemoEffects.WetnessTint, 1.0F},
+                            {DemoEffects.HeatTint, 1.0F},
                             {DemoEffects.WaterFilmTint, 1.0F},
                             {Bindings.Lava, 0U, 0U, 0U},
                 glm::vec4(0.0F)};
@@ -2412,7 +2412,7 @@ namespace MDSS::Rendering
         if (ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && RenderStateTexture)
             RenderStateTexture->Record(
                 CommandBuffer, SurfaceStates.GetGPUResources(),
-                {DemoBindings.Wetness, DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
+                {DemoBindings.Heat, DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
                 static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()));
         const bool bSurfaceLit = ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipeline;
         const bool bOverlayRendering = CanRenderLitOverlays();

@@ -1,9 +1,9 @@
 {
   "type": "SurfaceResponseProfile",
   "version": 4,
-  "name": "DemoWetness",
+  "name": "DemoHeat",
   "states": {
-    "wetness": {
+    "heat": {
       "stateCapacity": 1.0,
       "inputFactor": 1.0,
       "saturationSpreadFactor": 0.2,

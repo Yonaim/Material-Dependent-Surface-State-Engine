@@ -3,7 +3,7 @@
   "version": 4,
   "name": "Bunny",
   "states": {
-    "wetness": {
+    "heat": {
       "stateCapacity": 1.0,
       "inputFactor": 1.0,
       "saturationSpreadFactor": 0.2,

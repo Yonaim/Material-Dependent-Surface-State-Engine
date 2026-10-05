@@ -50,7 +50,7 @@
 - Wireframe 뷰 설명 상자에서 선을 흰색으로 통일할지 선택하고, GPU가 wide lines를 지원하면 선 굵기도 조절한다. 기본 굵기는 2 px다.
 - Meso·Accumulation·Final Geometry 뷰 설명 상자에서 `Height Surface Grid`의 Off / Overlay / Grid only와 셀당 texel 수를 조절한다. Grid only도 어두운 면으로 depth를 유지한다. 새 View Mode는 추가하지 않는다 ([[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]]).
 - 좌측 `Render Settings`: Normal strength, Ambient light, Normal Y 반전
-- `Lit Demo Effects`: Wetness/Mud/WaterFilm/Lava 반응, 적층 레이어 적용 여부, Dry/Wet/Mud roughness, Lit·선택 State 미리보기·Inspector가 공유하는 `Lit height display scale`. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
+- `Lit Demo Effects`: Heat/Mud/WaterFilm/Lava 반응, 적층 레이어 적용 여부, Heat red tint와 Mud roughness, Lit·선택 State 미리보기·Inspector가 공유하는 `Lit height display scale`. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
 - 선택한 뷰의 State·보조 옵션은 Viewport 상단에 표시한다.
 
 ## Scene 편집

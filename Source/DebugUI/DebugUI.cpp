@@ -2601,15 +2601,11 @@ namespace MDSS
                         ImGui::Separator();
                         DrawSectionHeader("Individual Effects", 6.0F, 6.0F);
 
-                        if (ImGui::CollapsingHeader("Wetness"))
+                        if (ImGui::CollapsingHeader("Heat"))
                         {
-                            EffectsChanged |= ImGui::ColorEdit3("Tint##Wetness", glm::value_ptr(Effects.WetnessTint));
+                            EffectsChanged |= ImGui::ColorEdit3("Red tint##Heat", glm::value_ptr(Effects.HeatTint));
                             EffectsChanged |=
-                                LabeledSliderFloat("Effect strength", &Effects.WetnessStrength, 0.0F, 1.0F, "%.2f");
-                            EffectsChanged |=
-                                LabeledSliderFloat("Wet roughness", &Effects.WetRoughness, 0.05F, 1.0F, "%.2f");
-                            EffectsChanged |= LabeledSliderFloat(
-                                "Specular strength", &Effects.WetnessSpecularStrength, 0.0F, 1.0F, "%.2f");
+                                LabeledSliderFloat("Effect strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
                         }
 
                         ImGui::Spacing();

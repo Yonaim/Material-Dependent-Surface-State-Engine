@@ -74,7 +74,7 @@ flowchart TD
 ```mermaid
 flowchart LR
   Mesh["Mesh + Material"] --> Base["Base Surface"]
-  State["Current Surface State"] --> Appearance["Wetness / Mud / WaterFilm response"]
+  State["Current Surface State"] --> Appearance["Heat / Mud / WaterFilm response"]
   State --> Height["Accumulation Height"]
   Height --> Overlay["Accumulation Overlay"]
   Runtime["Runtime Surface Geometry"] --> Debug["Surface / Geometry / Texel debug"]

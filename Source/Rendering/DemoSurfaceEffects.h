@@ -10,7 +10,7 @@ namespace MDSS::Rendering
 {
     struct TDemoSurfaceStateBindings
     {
-        SurfaceState::TStateId Wetness = SurfaceState::InvalidStateId;
+        SurfaceState::TStateId Heat = SurfaceState::InvalidStateId;
         SurfaceState::TStateId Mud = SurfaceState::InvalidStateId;
         SurfaceState::TStateId WaterFilm = SurfaceState::InvalidStateId;
         SurfaceState::TStateId Lava = SurfaceState::InvalidStateId;
@@ -21,8 +21,8 @@ namespace MDSS::Rendering
         for (SurfaceState::TStateId ID = 0; ID < Registry.GetStateCount(); ++ID)
         {
             const auto& Name = Registry.GetStateName(ID);
-            if (Name == "wetness")
-                Result.Wetness = ID;
+            if (Name == "heat")
+                Result.Heat = ID;
             else if (Name == "mud")
                 Result.Mud = ID;
             else if (Name == "waterfilm")
@@ -43,13 +43,11 @@ namespace MDSS::Rendering
         bool      bMudSmoothing = false;
         bool      bLavaSmoothing = true;
         float     DryRoughness = 0.65F;
-        float     WetRoughness = 0.16F;
+        float     HeatStrength = 1.0F;
         float     MudRoughness = 0.48F;
-        float     WetnessStrength = 1.0F;
-        float     WetnessSpecularStrength = 1.0F;
         float     WaterFilmOpacity = 1.0F;
         float     WaterFilmRoughness = 0.16F;
-        glm::vec3 WetnessTint{0.44F, 0.56F, 0.68F};
+        glm::vec3 HeatTint{0.95F, 0.075F, 0.025F};
         glm::vec3 WaterFilmTint{0.35F, 0.53F, 0.68F};
     };
 }

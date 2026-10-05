@@ -5,7 +5,7 @@
 #include "Rendering/Surface/MaterialParameters.glsl"
 #include "Rendering/Surface/RenderStateSampling.glsl"
 #include "Rendering/Surface/Effects/Mud.glsl"
-#include "Rendering/Surface/Effects/Wetness.glsl"
+#include "Rendering/Surface/Effects/Heat.glsl"
 #include "Rendering/Surface/Effects/WaterFilm.glsl"
 #include "Rendering/Surface/Effects/Lava.glsl"
 #include "Rendering/Surface/Lighting.glsl"
@@ -74,7 +74,7 @@ void main()
     if (!gl_FrontFacing) N = -N;
     vec4 Color = texture(BaseColorTexture, FragUV) * Material.BaseColor;
     float Roughness = Material.DemoOptions.x;
-    float Wetness = 0.0;
+    float Heat = 0.0;
     float WaterFilm = 0.0;
     float Lava = 0.0;
     if (Material.DemoStateChannels.w != 0u)
@@ -84,7 +84,7 @@ void main()
             FragSurfaceIndex, FragUV,
             uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
             Material.StateChannelCount);
-        Wetness = DemoStates.x;
+        Heat = DemoStates.x;
         float Mud = DemoStates.y;
         WaterFilm = DemoStates.z;
         Lava = DemoStates.w;
@@ -93,8 +93,7 @@ void main()
         ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
         ApplyLava(Lava, Color.rgb, Roughness);
 #endif
-        ApplyWetness(Wetness, Color.rgb, Roughness, Material.DemoOptions.y,
-                     Material.WetnessTint.rgb, Material.DemoEffectOptions.x);
+        ApplyHeat(Heat, Color.rgb, Material.HeatTint.rgb, Material.DemoEffectOptions.x);
 #ifndef BASE_SURFACE_LIT
         ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w,
                        Material.WaterFilmTint.rgb);
@@ -103,9 +102,7 @@ void main()
 #endif
     }
     OutColor = vec4(ShadeSurface(Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition,
-                               Roughness, Material.AmbientLight,
-                               Wetness * Material.DemoEffectOptions.x, WaterFilm,
-                               Material.DemoEffectOptions.y), Color.a);
+                               Roughness, Material.AmbientLight, WaterFilm), Color.a);
 #ifndef BASE_SURFACE_LIT
     if (Material.DemoStateChannels.w != 0u)
         OutColor.rgb = min(OutColor.rgb + LavaEmission(Lava), vec3(1.0));

@@ -34,12 +34,12 @@ void main()
 #elif defined(OVERLAY_WATER)
     float Fresnel = 0.04 + 0.96 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
     vec3 Color = ShadeSurface(Material.WaterFilmTint.rgb, N, V, Material.DemoEffectOptions.w,
-                              Material.AmbientLight, 0.0, FragCoverage);
+                              Material.AmbientLight, FragCoverage);
     OutColor = vec4(Color, clamp(Material.DemoEffectOptions.z *
                                  (0.16 + 0.38 * FragCoverage + 0.18 * Fresnel), 0.0, 0.75));
 #else
     vec3 Color = ShadeSurface(vec3(0.105, 0.060, 0.028), N, V, Material.DemoOptions.z,
-                              Material.AmbientLight, 0.0, 0.0);
+                              Material.AmbientLight, 0.0);
     OutColor = vec4(Color, 1.0);
 #endif
 }

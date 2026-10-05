@@ -19,9 +19,9 @@ float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH,
 }
 
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
-                  float WetnessCoverage, float WaterFilmCoverage, float WetnessSpecularStrength)
+                  float WaterFilmCoverage)
 {
-    // 고정 key light와 ambient 항에 wetness 및 film 반사를 더한다.
+    // 고정 key light와 ambient 항에 WaterFilm 반사를 더한다.
     vec3 V = ViewVector * inversesqrt(max(dot(ViewVector, ViewVector), 1e-12));
     vec3 L = normalize(vec3(0.35, 0.55, 1.0));
     vec3 Sum = V + L;
@@ -38,33 +38,21 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
     float F = 0.04 + 0.96 * pow(1.0 - VoH, 5.0);
     vec3 Direct = ((1.0-F) * Albedo + vec3(3.14159265 * D * Visibility * F)) * NoL;
 
-    float Wet = clamp(WetnessCoverage, 0.0, 1.0);
     float Film = clamp(WaterFilmCoverage, 0.0, 1.0);
     float StateHighlight = 0.0;
-    if (Wet > 0.0 && WetnessSpecularStrength > 0.0)
-        StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, 0.32, 0.08) *
-                          Wet * 0.65 * WetnessSpecularStrength;
     if (Film > 0.0)
         StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, PerceptualRoughness, 0.14) * Film * 0.9;
     Direct += vec3(StateHighlight);
 
-    // environment map 없이도 비스듬한 각도의 젖은 가장자리가 보이도록 약한 반사를 더한다.
+    // Environment map 없이도 비스듬한 가장자리에 약한 film 반사를 더한다.
     float Grazing = pow(1.0 - max(dot(N, V), 0.0), 5.0);
-    vec3 SoftWetReflection = vec3(0.12, 0.15, 0.18) * (Wet * Grazing * 0.45 * WetnessSpecularStrength);
     vec3 FilmEdgeReflection = vec3(0.22, 0.27, 0.32) * (Film * Grazing * 0.8);
 
     // 기존 ambient 조절과 고정된 흰 key light를 사용한다. environment map과 tone mapper는 없다.
-    return Albedo * Ambient + Direct * (1.0-Ambient) + SoftWetReflection + FilmEdgeReflection;
-}
-
-vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
-                  float WetnessCoverage, float WaterFilmCoverage)
-{
-    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient,
-                        WetnessCoverage, WaterFilmCoverage, 1.0);
+    return Albedo * Ambient + Direct * (1.0-Ambient) + FilmEdgeReflection;
 }
 
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient)
 {
-    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0, 0.0);
+    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0);
 }

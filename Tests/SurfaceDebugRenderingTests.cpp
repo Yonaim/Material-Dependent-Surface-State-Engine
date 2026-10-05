@@ -84,7 +84,7 @@ namespace MDSS::Tests
                 SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 1U};
             glm::vec4  DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
             glm::vec4  DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
-            glm::vec4  WetnessTint{0.44F, 0.56F, 0.68F, 1.0F};
+            glm::vec4  HeatTint{0.95F, 0.075F, 0.025F, 1.0F};
             glm::vec4  WaterFilmTint{0.35F, 0.53F, 0.68F, 1.0F};
             glm::uvec4 DemoExtraStateChannels{SurfaceState::InvalidStateId, 0U, 0U, 0U};
             glm::vec4  CameraPosition{-0.35F, -0.55F, 1.0F, 1.0F};
@@ -833,10 +833,10 @@ namespace MDSS::Tests
         LitParameters.ThicknessPerAmount = 0.1F;
         LitProfile.States.emplace("aaa", LitParameters);
         LitProfile.States.emplace("mud", LitParameters);
-        LitProfile.States.emplace("wetness", LitParameters);
+        LitProfile.States.emplace("heat", LitParameters);
         const SurfaceState::TSurfaceStateRegistry LitRegistry({LitProfile});
         const auto                                LitBindings = ResolveDemoSurfaceStates(LitRegistry);
-        Require(LitBindings.Mud == 1 && LitBindings.Wetness == 2,
+        Require(LitBindings.Mud == 1 && LitBindings.Heat == 2,
                 "Demo bindings must follow dynamically assigned Registry IDs.");
         SurfaceState::TSurfaceProfileGPUResources LitProfiles(
             Context.GetPhysicalDevice(), Device, {LitProfile}, LitRegistry);
@@ -1091,7 +1091,7 @@ namespace MDSS::Tests
         TUniform LitUniform;
         LitUniform.StateChannelCount = 3;
         LitUniform.BaseColor = {0.4F, 0.4F, 0.4F, 1};
-        LitUniform.DemoStateChannels = {LitBindings.Wetness, LitBindings.Mud, SurfaceState::InvalidStateId, 1};
+        LitUniform.DemoStateChannels = {LitBindings.Heat, LitBindings.Mud, SurfaceState::InvalidStateId, 1};
         std::array<float, 27> LitState{};
         auto UploadLitState = [&] { LitInstance.GetStateABuffer().Upload(LitState.data(), sizeof(LitState)); };
         auto RenderLit = [&](bool AB = true, bool Height = false)
@@ -1102,24 +1102,17 @@ namespace MDSS::Tests
             LitState[T * 3] = 500;
         UploadLitState();
         const auto UnrelatedLit = RenderLit();
-        Require(DryLit == UnrelatedLit, "An unrelated State must not affect Wetness or Mud appearance.");
+        Require(DryLit == UnrelatedLit, "An unrelated State must not affect Heat or Mud appearance.");
         for (std::size_t T = 0; T < 9; ++T)
-            LitState[T * 3 + LitBindings.Wetness] = 1;
+            LitState[T * 3 + LitBindings.Heat] = 1;
         UploadLitState();
-        const auto WetLit = RenderLit();
-        Require(WetLit[90 * Extent.width + 90].r < DryLit[90 * Extent.width + 90].r,
-                "Wetness must darken diffuse appearance away from the highlight.");
-        float DryPeak = 0, WetPeak = 0;
-        for (std::size_t P = 0; P < WetLit.size(); ++P)
-        {
-            Require(std::isfinite(WetLit[P].r), "Lit highlights must remain finite.");
-            DryPeak = std::max(DryPeak, DryLit[P].r);
-            WetPeak = std::max(WetPeak, WetLit[P].r);
-        }
-        Require(WetPeak > DryPeak + 0.1F, "Wet roughness must produce a stronger localized specular highlight.");
-        LitUniform.CameraPosition = {0.8F, 0.4F, 1, 1};
-        const auto MovedCameraLit = RenderLit();
-        Require(MovedCameraLit != WetLit, "Specular reflection must follow camera position.");
+        const auto HeatLit = RenderLit();
+        Require(HeatLit[90 * Extent.width + 90].r > DryLit[90 * Extent.width + 90].r &&
+                    HeatLit[90 * Extent.width + 90].g < DryLit[90 * Extent.width + 90].g,
+                "Heat saturation must gradually shift the surface toward red.");
+        for (const auto& Pixel : HeatLit)
+            Require(std::isfinite(Pixel.r), "Heat color must remain finite.");
+        const auto MovedCameraLit = HeatLit;
         // Equal saturation at half texel area must keep the same Lit appearance.
         LitInstance.UpdateWorldTexelAreas(std::vector<float>(9, SurfaceStateReferenceArea * 0.5F));
         for (auto& V : LitState)
@@ -1143,14 +1136,15 @@ namespace MDSS::Tests
         Require(MudPixel.r > MudPixel.g * 1.25F && MudPixel.g > MudPixel.b * 1.15F,
                 "Mud must replace the base color with a brown coating.");
         for (std::size_t T = 0; T < 9; ++T)
-            LitState[T * 3 + LitBindings.Wetness] = 1;
+            LitState[T * 3 + LitBindings.Heat] = 1;
         UploadLitState();
-        const auto WetMudLit = RenderLit();
-        Require(WetMudLit[90 * Extent.width + 90].r < MudPixel.r && WetMudLit[90 * Extent.width + 90].g < MudPixel.g,
-                "Wetness must also darken an existing Mud coating.");
+        const auto HeatMudLit = RenderLit();
+        Require(HeatMudLit[90 * Extent.width + 90].r > MudPixel.r &&
+                    HeatMudLit[90 * Extent.width + 90].g < MudPixel.g,
+                "Heat must tint an existing Mud coating red.");
         LitUniform.DemoStateChannels.x = LitUniform.DemoStateChannels.y = SurfaceState::InvalidStateId;
         Require(RenderLit() == DryLit, "Absent demo names must produce the dry base material.");
-        LitUniform.DemoStateChannels.x = LitBindings.Wetness;
+        LitUniform.DemoStateChannels.x = LitBindings.Heat;
         LitUniform.DemoStateChannels.y = LitBindings.Mud;
 
         LitInstance.GetStateBBuffer().Upload(std::array<float, 27>{}.data(), sizeof(LitState));
@@ -1159,7 +1153,7 @@ namespace MDSS::Tests
         LitProfiles.GetSupportedBuffer().Upload(Support.data(), sizeof(Support));
         LitState.fill(0);
         for (std::size_t T = 0; T < 9; ++T)
-            LitState[T * 3 + LitBindings.Wetness] = 1;
+            LitState[T * 3 + LitBindings.Heat] = 1;
         UploadLitState();
         Require(RenderLit() == DryLit,
                 "A profile-unsupported State must have no appearance even if its slot contains data.");
@@ -1196,7 +1190,7 @@ namespace MDSS::Tests
                 Require(File.good(), "GPU render artifact could not be saved.");
             };
             Capture("dry.ppm", DryLit);
-            Capture("wet.ppm", WetLit);
+            Capture("heat.ppm", HeatLit);
             Capture("mud.ppm", MudLit);
             Capture("mud-mound.ppm", LitMound);
             Capture("height-grid.ppm", GridOnly);
