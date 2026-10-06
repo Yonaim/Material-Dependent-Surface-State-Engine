@@ -177,7 +177,25 @@ namespace MDSS::SurfaceState
                                                                  BoundaryFlags.data(), BoundaryFlags.size(),
                                                                  sizeof(std::uint32_t), MaxRange);
         SimulationResolution = Geometry.GetSurfaces().empty() ? 0U : Geometry.GetSurfaces().front().Resolution.Width;
-        const auto UploadTexelMesh = [&](TSurfaceTexelMesh Mesh, TSurfaceTexelMeshGPUVariant& Output)
+        const auto MeshMemoryCategory = [](std::uint32_t Resolution)
+        {
+            switch (Resolution)
+            {
+                case 64:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh64;
+                case 128:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh128;
+                case 256:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh256;
+                case 512:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh512;
+                default:
+                    throw std::invalid_argument("Unsupported render mesh resolution for memory tracking.");
+            }
+        };
+        const auto UploadTexelMesh = [&](TSurfaceTexelMesh Mesh,
+                                         TSurfaceTexelMeshGPUVariant& Output,
+                                         GPU::TGPUBufferMemoryCategory Category)
         {
             Output.Ranges = std::move(Mesh.Surfaces);
             Output.VertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
@@ -191,7 +209,7 @@ namespace MDSS::SurfaceState
                                                   Bytes,
                                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                   UploadMemory,
-                                                  GPU::TGPUBufferMemoryCategory::SurfaceGeometry);
+                                                  Category);
             Output.IndexBuffer->Upload(Mesh.Indices.data(), Bytes);
             const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(TSurfaceTexelMeshVertex));
             Output.VertexBuffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
@@ -200,7 +218,7 @@ namespace MDSS::SurfaceState
                                                                         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
                                                                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                                     UploadMemory,
-                                                                    GPU::TGPUBufferMemoryCategory::SurfaceGeometry);
+                                                                    Category);
             Output.VertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
             // One immutable CSR vertex list per render tile size. Geometry shares these lists;
             // coverage and its history remain owned by each Scene instance.
@@ -260,17 +278,20 @@ namespace MDSS::SurfaceState
                 BoundaryBytes,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 UploadMemory,
-                GPU::TGPUBufferMemoryCategory::SurfaceGeometry);
+                Category);
             Output.BoundaryBuffer->Upload(Edges, BoundaryBytes);
         };
-        UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles), FullTexelMesh);
+        UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles),
+                        FullTexelMesh,
+                        MeshMemoryCategory(SimulationResolution));
         for (const auto& Preset : SurfaceRenderMeshResolutionPresets)
         {
             if (Preset.Resolution == SimulationResolution)
                 continue;
             TSurfaceTexelMeshGPUVariant Variant;
             UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles, Preset.Resolution),
-                            Variant);
+                            Variant,
+                            MeshMemoryCategory(Preset.Resolution));
             TexelMeshVariants.emplace(Preset.Resolution, std::move(Variant));
         }
     }

@@ -13,7 +13,7 @@
 |---|---|
 | 가운데 3D Viewport | Scene 표시, object 선택, 렌더·Surface 진단 뷰 선택 |
 | 좌측 패널 | 상단 `Scene`·`Animation` 탭, Camera, 선택 object Transform, 렌더 설정 |
-| 우측 패널 | 상단 공통 실행 제어, 하단 `Solver`, `Contact Input`, `Profile Tuning`, `Inspector`, `Global Settings` 탭 |
+| 우측 패널 | 상단 공통 실행 제어, 하단 `Solver`, `Contact Input`, `Profile Tuning`, `Performance` 탭 |
 | Viewport 상단 | FPS, GPU Render·Solver 성능 표시 |
 | 하단 `Log` | 로그 level 필터, 검색, 복사·삭제 |
 
@@ -45,7 +45,7 @@
 
 - State Heatmap은 용량 기준 0–100%를 표시하고 초과량은 주황색으로 표시한다. 실제 총량은 Texel Inspector에서 확인한다. 표시 결과는 Solver에 입력되지 않는다.
 - Accumulation 높이 색은 선택 Profile의 Capacity로 제한된 높이를 100% 기준으로 정규화한다. Total/Cavity/Following은 각 성분의 기준 높이를 사용하며, Cavity Fill은 cavity depth 대비 0–100%다. `Display scale`은 형상 표시만 과장하며 색상 기준과 Solver 형상에는 반영하지 않는다.
-- 적층 뷰는 선택 State를 따로 미리보기한다. Simulation의 `Accumulation Geometry Update`은 지원되는 모든 적층 State를 합산하는 별도 Solver 옵션이다 ([[05_Decisions/0014_Accumulation-Debug-and-Texel-Inspector|Decision 0014]]).
+- 적층 뷰는 선택 State를 따로 미리보기한다. Solver의 `Use Accumulated Surface`는 지원되는 모든 적층 State를 합산해 이후 흐름 계산에 반영하는 별도 옵션이다 ([[05_Decisions/0014_Accumulation-Debug-and-Texel-Inspector|Decision 0014]]).
 - Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[05_Decisions/0015_Texel-Geometry-Preview|Decision 0015]]).
 - Wireframe 뷰 설명 상자에서 선을 흰색으로 통일할지 선택하고, GPU가 wide lines를 지원하면 선 굵기도 조절한다. 기본 굵기는 2 px다.
 - Meso·Accumulation·Final Geometry 뷰 설명 상자에서 `Height Surface Grid`의 Off / Overlay / Grid only와 셀당 texel 수를 조절한다. Grid only도 어두운 면으로 depth를 유지한다. 새 View Mode는 추가하지 않는다 ([[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]]).
@@ -87,7 +87,7 @@
 
 ## 공통 Simulation 제어
 
-초기 UI는 실행 제어와 Solver 설정을 `Simulation` 탭에 함께 배치했다. 현재는 자주 사용하는 실행 제어를 탭 위에 두고, 세부 기능을 `Solver`, `Contact Input`, `Profile Tuning`, `Inspector`, `Global Settings` 탭으로 나눈다.
+초기 UI는 실행 제어와 Solver 설정을 `Simulation` 탭에 함께 배치했다. 현재는 자주 사용하는 실행 제어를 탭 위에 두고 세부 기능을 `Solver`, `Contact Input`, `Profile Tuning`, `Performance`로 나눈다. 시뮬레이션 설정과 Solver 항목은 `Solver`에 모으고, 화면 품질과 성능 비교 옵션은 `Performance`에 둔다. Texel Inspector 탭은 임시로 숨겼다.
 
 - Running/Paused, Step, Reset State와 Speed 프리셋·조절기는 항상 표시한다.
 - Playback과 Controls는 일반 텍스트 라벨을 왼쪽에, 조절 위젯을 오른쪽에 정렬한다. Speed는 프리셋과 배속 조절기를 한 행에 둔다. 패널 폭이 좁으면 같은 조절 열에서 다음 줄로 이어진다.
@@ -102,15 +102,16 @@
 | Reset State | State, 누적 입력, 진행·대기 시간 초기화. Profile override 복원과 별개 |
 | Speed | 실제 누적 시간에 곱하는 배속. 프리셋 또는 슬라이더로 조절하며, 슬라이더 더블클릭으로 값을 직접 입력한다. 고정 기본 구간 1/60초는 유지 |
 
-## Global Settings 탭
+## Solver 탭 — Simulation 설정
 
-탭 순서는 `Solver → Contact Input → Profile Tuning → Inspector → Global Settings`다. `Global Settings`는 맨 오른쪽 탭이며 Simulation Resolution, Fixed timestep, Auto substepping을 포함한다.
+Solver 탭 상단의 `Simulation Setup`에는 해상도와 시간 간격처럼 시뮬레이션 자체에 영향을 주는 설정을 모은다.
 
 | 설정 | 동작 |
 |---|---|
 | Simulation Resolution | Low `128 × 128`, Medium `256 × 256`, High `512 × 512` |
 | Fixed timestep | 기본 ON. 실제 시간×배속을 누적하고 1/60초 구간이 모일 때 계산. Auto OFF이면 dt는 정확히 1/60초 |
 | Auto substepping | 기본 OFF. ON에서만 Transport 상한에 맞춰 구간을 작은 Solver step으로 나눔. Fixed OFF·Auto OFF는 누적 시간을 한 번에 계산 |
+| Use Accumulated Surface | 기본 ON. 적층으로 바뀐 높이와 표면 방향을 갱신해 이후 흐름 계산에 반영 |
 
 - Scene에 해상도가 없으면 Medium을 사용한다.
 - 해상도 변경 시 Surface 데이터와 GPU 자원을 다시 준비하고 State·입력을 초기화한다.
@@ -118,17 +119,23 @@
 
 한 frame 최대 8 Solver step을 실행하며 남은 시간은 버리지 않고 이월한다. Fixed ON·Auto ON에서는 1/60초가 모인 뒤 세분화하며 미완료 구간도 다음 frame에서 재개한다. 옵션 변경은 State와 누적 시간을 유지한다. Auto OFF로 전환 시 진행 중인 구간의 잔여 길이를 한 번 마무리한 뒤 새 구간부터 1/60초를 사용한다.
 
-Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인한다. Pause 중에는 시간을 누적하지 않고 Step은 Solver 한 번이다. 수동 실행 dt는 Auto OFF에서 1/60초, ON에서 현재 Transport 상한이다. 지속 GPU 과부하에서는 backlog가 늘 수 있다. [[05_Decisions/0013_Fixed-Timestep-and-Auto-Substepping|Decision 0013]], [[02_Research/0004_Substepping-and-Adaptive-Time-Stepping|용어와 공식 문서]]
+Simulation 상태 overlay에서 step 수, step 간격, 진행 시간과 backlog를 확인한다. Pause 중에는 시간을 누적하지 않고 Step은 Solver 한 번이다. 수동 실행 dt는 Auto OFF에서 1/60초, ON에서 현재 Transport 상한이다. 지속 GPU 과부하에서는 backlog가 늘 수 있다. [[05_Decisions/0013_Fixed-Timestep-and-Auto-Substepping|Decision 0013]], [[02_Research/0004_Substepping-and-Adaptive-Time-Stepping|용어와 공식 문서]]
 
-## Solver 탭
+## Performance 탭
 
-- Solver debug terms를 runtime에 켜고 끌 수 있다:
-  - Accumulation Geometry Update: 이 옵션은 기본 OFF이며, ON에서 모든 적층 State의 Profile별 `thicknessPerAmount`로 계산한 위치·갱신 normal·이웃 거리를 다음 Solver step에 반영한다.
-  - ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
+- `Rendering Setup`은 접힌 상태로 시작하며 Surface/Overlay mesh 해상도, Base/Overlay draw, tile culling과 tile 크기를 모은다.
+- `Rendering Quality`에는 기본 ON인 Height smoothing과 Coverage smoothing을 둔다.
+- `Simulation Performance`에는 Raw Flux Cache를 둔다. `Advanced Performance` 안의 Simulation A/B와 Rendering A/B는 세부 구현 경로 비교 옵션을 접어서 표시한다.
+- FP16 옵션 옆과 Memory Profiling overlay에 현재 Scene instance 기준의 컴팩트 재할당 예상 절감량을 표시한다. 이는 실제 Vulkan 할당량이 아니며 실제 할당량은 별도 `Current` 값에 표시한다.
+
+## Solver 항목
+
+- Solver debug terms는 접힌 `Transport Terms`와 `Decay Terms`에서 runtime에 켜고 끌 수 있다:
+  - `Use Accumulated Surface`는 탭 상단 `Simulation Setup`에서 설정한다. ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
   - Transport: `Saturation spreading` (`SaturationDrive`), `Gravity-guided flow` (`GeometryDrive`), DirectionDrive: MesoNormal, DistanceWeight, NormalWeight, ProfileBoundaryWeight
   - Decay: Decay, `Cavity decay protection` (`ConcavityRetention`)
   - Lit Demo Effects의 `Lit height display scale`은 Lit과 디버그 미리보기에서 공유하는 렌더링 전용 설정이며 Simulation이 읽지 않는다.
-- Solver 설정에는 방향별 RawFlux cache 전환 항목이 없다. Solver는 항상 Pass 2에서 방향 flux를 재평가한다. Fixed timestep과 Auto substepping은 `Global Settings` 탭에서 조절한다.
+- Raw Flux Cache와 성능 A/B 옵션은 `Performance` 탭에서 조절한다. Fixed timestep과 Auto substepping은 Solver 탭의 `Simulation Setup`에 둔다.
 - `Diagnostics`는 기본 접힘이다. 전체 texel 수와 유효 texel 비율을 표시하며, Paused에서는 다음 read buffer와 최근 Solver GPU 시간도 표시한다.
 
 ## Contact Input과 Profile Tuning
@@ -151,7 +158,7 @@ Global Settings에서 step 수, step 간격, 진행 시간과 backlog를 확인�
 
 ## Texel Inspector
 
-- Simulation Debug의 `Inspector` 탭에서 사용한다. View Mode는 추가하지 않는다.
+- Simulation Debug의 Inspector 탭은 현재 임시로 숨겨져 있다. View Mode는 추가하지 않는다.
 - 어느 뷰에서든 `Shift + 왼쪽 클릭`으로 Macro mesh의 표면 texel을 선택한다. 클릭은 gizmo 조작·object 선택 대신 검사에 사용되며 Inject 모드에서도 동작한다. 변위된 실루엣을 대상으로 raycast하지 않는다.
 - Instance·Surface·texel 좌표·hit triangle·Profile과 선택 State를 표시한다. State 선택은 State Heatmap/Accumulation/Final Geometry와 공유한다.
 - GPU snapshot은 Raw State, texel Capacity, 상한 없는 Saturation, 기준면적 환산량, world area, 적층 파라미터, Meso 높이, Profile 두께값, 렌더 표시 배율, Cavity depth/fill/excess, 각 높이 항목과 최종 mesh-local normal을 표시한다.

@@ -21,6 +21,10 @@ namespace MDSS::GPU
         Rendering,
         Debug,
         Other,
+        RenderMesh64,
+        RenderMesh128,
+        RenderMesh256,
+        RenderMesh512,
         Count
     };
 

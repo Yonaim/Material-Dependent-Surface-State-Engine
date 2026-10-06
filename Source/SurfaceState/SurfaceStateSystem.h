@@ -117,7 +117,7 @@ namespace MDSS::SurfaceState
         bool                                        bStableDeltaTimeDirty = true;
         bool                                        bRawFluxCacheEnabled = true;
         bool                                        bCoalescedRawFluxLayoutEnabled = true;
-        bool                                        bHalfRawFluxCacheEnabled = false;
+        bool                                        bHalfRawFluxCacheEnabled = true;
         bool                                        bHalfDynamicWeightsEnabled = false;
         bool                                        bSparseSolverEnabled = true;
         bool                                        bSparseAccumulationHeightEnabled = true;

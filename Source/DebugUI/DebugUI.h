@@ -156,7 +156,7 @@ namespace MDSS
         void                      DrawDebugStateSelector();
         void                      DrawContactInputTab();
         void                      DrawProfileTuningTab(TScene& SceneData);
-        void                      DrawGlobalSettingsTab(TScene& SceneData);
+        void                      DrawSimulationSettingsTab(TScene& SceneData);
         void                      DrawPerformanceTab();
         void                      DrawLogWindow();
 

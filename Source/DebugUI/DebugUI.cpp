@@ -345,6 +345,30 @@ namespace MDSS
                                           std::tolower(static_cast<unsigned char>(Right));
                                }) != Text.end();
         }
+
+        struct THalfPrecisionMemoryEstimate
+        {
+            double RawFluxBytes = 0.0;
+            double DynamicWeightBytes = 0.0;
+        };
+
+        THalfPrecisionMemoryEstimate EstimateHalfPrecisionMemorySavings(
+            const SurfaceState::TSurfaceGPUResourceManager& GPUResources)
+        {
+            THalfPrecisionMemoryEstimate Estimate;
+            for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
+            {
+                if (GPUResources.GetInstanceDescriptors(Instance) == nullptr)
+                    continue;
+                const double Texels = static_cast<double>(GPUResources.GetInstanceTexelCount(Instance));
+                const double Channels = static_cast<double>(GPUResources.GetInstanceChannelCount(Instance));
+                // Eight directional float values become eight 16-bit values.
+                Estimate.RawFluxBytes += Texels * Channels * 16.0;
+                // Eight float TransferWeights become four packed uint words per texel.
+                Estimate.DynamicWeightBytes += Texels * 16.0;
+            }
+            return Estimate;
+        }
     } // 내부 네임스페이스
 
 #pragma region Debug_UI_Lifecycle
@@ -905,7 +929,7 @@ namespace MDSS
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({330.0F, 155.0F}, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize({330.0F, 180.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Scene", nullptr, Flags);
         const auto& SourcePath = SceneData.GetSourcePath();
@@ -1004,6 +1028,8 @@ namespace MDSS
         DrawDemoSceneButton("5 Cubes", "BrickCube_5.Scene");
         ImGui::SameLine();
         DrawDemoSceneButton("9 Cubes", "BrickCube_9.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("Cube 512", "BrickCube_512.Scene");
         if (!SceneStatus.empty())
         {
             ImGui::TextWrapped("%s", SceneStatus.c_str());
@@ -2570,6 +2596,7 @@ namespace MDSS
                                           ImGuiChildFlags_None,
                                           ImGuiWindowFlags_NoBackground))
                     {
+                        ImGui::Dummy({0.0F, 12.0F});
                         float AmbientLight = FrameRenderer->GetAmbientLight();
                         if (LabeledSliderFloat("Ambient / direct mix", &AmbientLight, 0.0F, 1.0F, "%.2f"))
                         {
@@ -2606,68 +2633,52 @@ namespace MDSS
                     if (ImGui::BeginChild(
                             "EffectSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
+                        ImGui::Dummy({0.0F, 12.0F});
                         auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-                        bool EffectsChanged = ImGui::Checkbox("Enable Lit effects", &Effects.bEnabled);
-                        const auto DrawColorMapping = [&](const char* ID, Rendering::TDemoStateColorMapping& Mapping)
-                        {
-                            ImGui::PushID(ID);
-                            bool Changed = false;
-                            TextDescriptionWrapped(
-                                "State 포화도는 0~1 값입니다. Ramp start 이하에서는 낮은 포화도 색, Ramp end 이상에서는 높은 포화도를 사용하고, 두 값 사이는 색을 선형 보간합니다. 따라서 두 슬라이더로 색이 바뀌기 시작하고 끝나는 포화도를 정합니다.");
-                            Changed |= ImGui::ColorEdit3("Low saturation color",
-                                                         glm::value_ptr(Mapping.LowSaturationColor));
-                            Changed |= ImGui::ColorEdit3("High saturation color",
-                                                         glm::value_ptr(Mapping.HighSaturationColor));
-                            Changed |= LabeledSliderFloat("Ramp start", &Mapping.RampStart, 0.0F,
-                                                          std::max(0.0F, Mapping.RampEnd - 0.01F), "%.2f");
-                            Changed |= LabeledSliderFloat("Ramp end", &Mapping.RampEnd,
-                                                          std::min(1.0F, Mapping.RampStart + 0.01F), 1.0F, "%.2f");
-                            ImGui::PopID();
-                            return Changed;
-                        };
-                        if (ImGui::CollapsingHeader("Heat"))
+                        bool EffectsChanged = false;
+
+                        EffectsChanged |= ImGui::Checkbox("Heat##EffectToggle", &Effects.bHeatLayer);
+                        ImGui::Dummy({0.0F, 4.0F});
+                        EffectsChanged |= ImGui::Checkbox("WaterFilm##EffectToggle", &Effects.bWaterFilmDisplacement);
+                        ImGui::Dummy({0.0F, 4.0F});
+                        EffectsChanged |= ImGui::Checkbox("Mud##EffectToggle", &Effects.bMudDisplacement);
+                        ImGui::Dummy({0.0F, 4.0F});
+                        EffectsChanged |= ImGui::Checkbox("Lava##EffectToggle", &Effects.bLavaDisplacement);
+                        ImGui::Dummy({0.0F, 6.0F});
+                        EffectsChanged |= LabeledSliderFloat(
+                            "Low amount height threshold", &Effects.LowAmountHeightFade, 0.0F, 0.5F, "%.2f");
+                        if (ImGui::IsItemHovered())
+                            SetDescriptionTooltip(
+                                "0이면 기존 높이를 그대로 표시합니다. 기준값을 높이면 그보다 농도가 낮은 쌓임 효과의 화면 높이를 부드럽게 줄입니다. 시뮬레이션 상태와 이동에는 영향을 주지 않습니다.");
+
+                        ImGui::Dummy({0.0F, 8.0F});
+                        if (Effects.bHeatLayer && ImGui::CollapsingHeader("Heat"))
                         {
                             ImGui::PushID("HeatEffect");
                             TextDescriptionWrapped("Heat 포화도에 따라 표면 기본색을 색상 램프와 섞습니다. 현재 Heat 프로필은 높이를 쌓지 않습니다.");
-                            EffectsChanged |= ImGui::Checkbox("Enable layer", &Effects.bHeatLayer);
-                            EffectsChanged |= DrawColorMapping("Heat mapping", Effects.HeatColorMap);
-                            EffectsChanged |=
-                                LabeledSliderFloat("Effect strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
                             ImGui::PopID();
                         }
 
-                        ImGui::Spacing();
-                        if (ImGui::CollapsingHeader("WaterFilm"))
+                        ImGui::Dummy({0.0F, 6.0F});
+                        if (Effects.bWaterFilmDisplacement && ImGui::CollapsingHeader("WaterFilm"))
                         {
                             ImGui::PushID("WaterFilmEffect");
                             TextDescriptionWrapped("표면에 색조와 광택을 입히며 공통 accumulation 윗면에서 얇은 막 재질로 합성합니다.");
-                            EffectsChanged |= ImGui::Checkbox("Enable layer", &Effects.bWaterFilmDisplacement);
-                            EffectsChanged |= DrawColorMapping("WaterFilm mapping", Effects.WaterFilmColorMap);
-                            EffectsChanged |=
-                                LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
-                            EffectsChanged |=
-                                LabeledSliderFloat("Roughness", &Effects.WaterFilmRoughness, 0.05F, 1.0F, "%.2f");
                             ImGui::PopID();
                         }
 
-                        ImGui::Spacing();
-                        if (ImGui::CollapsingHeader("Mud"))
+                        ImGui::Dummy({0.0F, 6.0F});
+                        if (Effects.bMudDisplacement && ImGui::CollapsingHeader("Mud"))
                         {
                             ImGui::PushID("MudEffect");
                             TextDescriptionWrapped("공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.");
-                            EffectsChanged |= ImGui::Checkbox("Enable layer##Mud", &Effects.bMudDisplacement);
-                            EffectsChanged |= DrawColorMapping("Mud mapping", Effects.MudColorMap);
-                            EffectsChanged |=
-                                LabeledSliderFloat("Mud roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
                             ImGui::PopID();
                         }
-                        ImGui::Spacing();
-                        if (ImGui::CollapsingHeader("Lava"))
+                        ImGui::Dummy({0.0F, 6.0F});
+                        if (Effects.bLavaDisplacement && ImGui::CollapsingHeader("Lava"))
                         {
                             ImGui::PushID("LavaEffect");
                             TextDescriptionWrapped("공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.");
-                            EffectsChanged |= ImGui::Checkbox("Enable layer##Lava", &Effects.bLavaDisplacement);
-                            EffectsChanged |= DrawColorMapping("Lava mapping", Effects.LavaColorMap);
                             ImGui::PopID();
                         }
                         if (EffectsChanged)
@@ -2682,6 +2693,7 @@ namespace MDSS
                     if (ImGui::BeginChild(
                             "DebugSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
+                        ImGui::Dummy({0.0F, 12.0F});
                         bool OverlayOnly = FrameRenderer->IsOverlayOnlyDebugEnabled();
                         if (ImGui::Checkbox("Overlay only", &OverlayOnly))
                         {
@@ -2705,6 +2717,30 @@ namespace MDSS
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip("Overlay 전체, 윗면만, 또는 옆면만 표시합니다.");
                         }
+
+                        DrawSectionHeader("Visibility", 8.0F, 2.0F);
+                        bool bBaseMeshDraw = FrameRenderer->IsBaseMeshDrawEnabled();
+                        if (ImGui::Checkbox("Base Mesh draw", &bBaseMeshDraw))
+                        {
+                            FrameRenderer->SetBaseMeshDrawEnabled(bBaseMeshDraw);
+                            bFrameTimeResetRequested = true;
+                            ResetProfilingAverages();
+                        }
+                        bool bOverlayTopDraw = FrameRenderer->IsOverlayTopDrawEnabled();
+                        if (ImGui::Checkbox("Overlay Top draw", &bOverlayTopDraw))
+                        {
+                            FrameRenderer->SetOverlayTopDrawEnabled(bOverlayTopDraw);
+                            bFrameTimeResetRequested = true;
+                            ResetProfilingAverages();
+                        }
+                        bool bOverlaySidesDraw = FrameRenderer->IsOverlaySidesDrawEnabled();
+                        if (ImGui::Checkbox("Overlay Sides draw", &bOverlaySidesDraw))
+                        {
+                            FrameRenderer->SetOverlaySidesDrawEnabled(bOverlaySidesDraw);
+                            bFrameTimeResetRequested = true;
+                            ResetProfilingAverages();
+                        }
+
                         float LitHeightDisplayScale = SceneData.GetLitHeightDisplayScale();
                         if (LabeledSliderFloat("Lit height display scale", &LitHeightDisplayScale,
                                                0.0F, 10.0F, "%.2f"))
@@ -3067,7 +3103,7 @@ namespace MDSS
                         AddStateRow("Surface mesh", "%u", Stats.SurfaceTexelMeshResolution);
                         AddStateRow("Overlay mesh", "%u", Stats.OverlayTexelMeshResolution);
                         AddStateRow(
-                            "Accumulation Geometry Update",
+                            "Use Accumulated Surface",
                             "%s",
                             FrameRenderer->IsAccumulationGeometryUpdateEnabled() ? "ON" : "OFF");
                         AddStateRow("Fixed timestep", "%s", bFixedSimulationTimestep ? "ON" : "OFF");
@@ -3222,41 +3258,91 @@ namespace MDSS
             ImGui::CollapsingHeader("Memory Profiling", ImGuiTreeNodeFlags_DefaultOpen))
         {
             const GPU::TGPUResourceMemorySnapshot Memory = GPU::TGPUResourceMemoryStats::GetSnapshot();
-            const auto DrawMemoryRow = [](const char* Label, std::uint64_t CurrentBytes, std::uint64_t PeakBytes)
+            const auto PrecisionMemory = EstimateHalfPrecisionMemorySavings(FrameRenderer->GetSurfaceGPUResources());
+            constexpr double BytesPerMiB = 1024.0 * 1024.0;
+            const ImVec4 TotalColor{1.0F, 0.78F, 0.24F, 1.0F};
+            const ImVec4 GroupColor{0.60F, 0.80F, 0.98F, 1.0F};
+            const auto DrawMemoryRow = [&](const char* Label, std::uint64_t CurrentBytes)
             {
-                constexpr double RowBytesPerMiB = 1024.0 * 1024.0;
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 ImGui::TextDisabled("%s", Label);
                 ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%.2f MiB", static_cast<double>(CurrentBytes) / RowBytesPerMiB);
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%.2f MiB", static_cast<double>(PeakBytes) / RowBytesPerMiB);
+                ImGui::Text("%.2f MiB", static_cast<double>(CurrentBytes) / BytesPerMiB);
+            };
+            const auto DrawMemoryTotalRow = [&](const char* Label, std::uint64_t CurrentBytes, ImVec4 Color)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(Color, "%s", Label);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextColored(Color, "%.2f MiB", static_cast<double>(CurrentBytes) / BytesPerMiB);
+            };
+            const auto DrawMemoryTreeRow = [&](const char* Label, std::uint64_t CurrentBytes)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::PushStyleColor(ImGuiCol_Text, GroupColor);
+                const bool bOpen = ImGui::TreeNodeEx(Label, ImGuiTreeNodeFlags_SpanAvailWidth);
+                ImGui::PopStyleColor();
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextColored(GroupColor, "%.2f MiB", static_cast<double>(CurrentBytes) / BytesPerMiB);
+                return bOpen;
             };
             if (ImGui::BeginTable("ViewportMemoryProfiling",
-                                  3,
+                                  2,
                                   ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
             {
-                ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, 104.0F);
-                ImGui::TableSetupColumn("Current", ImGuiTableColumnFlags_WidthFixed, 82.0F);
-                ImGui::TableSetupColumn("Peak", ImGuiTableColumnFlags_WidthFixed, 82.0F);
-                ImGui::TableHeadersRow();
-                DrawMemoryRow("GPU total", Memory.CurrentTotalBytes, Memory.PeakTotalBytes);
-                DrawMemoryRow("Buffers", Memory.CurrentBufferBytes, Memory.PeakBufferBytes);
-                static constexpr std::array<const char*, GPU::GPUBufferMemoryCategoryCount> BufferCategoryLabels{
-                    "Surface State",
-                    "Surface Geometry",
-                    "Profile Tables",
-                    "Mesh Assets",
-                    "Render / Compute",
-                    "Debug",
-                    "Other / Staging",
+                ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, 154.0F);
+                ImGui::TableSetupColumn("Current", ImGuiTableColumnFlags_WidthFixed, 104.0F);
+                const auto CategoryBytes = [&](GPU::TGPUBufferMemoryCategory Category)
+                {
+                    return Memory.BufferCategoryCurrentBytes[static_cast<std::size_t>(Category)];
                 };
-                for (std::size_t Index = 0; Index < BufferCategoryLabels.size(); ++Index)
-                    DrawMemoryRow(BufferCategoryLabels[Index],
-                                  Memory.BufferCategoryCurrentBytes[Index],
-                                  Memory.BufferCategoryPeakBytes[Index]);
-                DrawMemoryRow("Images", Memory.CurrentImageBytes, Memory.PeakImageBytes);
+                const std::uint64_t RenderMeshBytes = CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh64) +
+                                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh128) +
+                                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh256) +
+                                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh512);
+                const std::uint64_t SurfaceResourceBytes =
+                    CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceState) +
+                    CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceGeometry) +
+                    CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceProfile);
+                const std::uint64_t OtherBufferBytes = CategoryBytes(GPU::TGPUBufferMemoryCategory::MeshAsset) +
+                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::Rendering) +
+                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::Debug) +
+                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::Other);
+
+                DrawMemoryTotalRow("GPU total", Memory.CurrentTotalBytes, TotalColor);
+                ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
+                if (DrawMemoryTreeRow("Buffers", Memory.CurrentBufferBytes))
+                {
+                    if (DrawMemoryTreeRow("Render meshes", RenderMeshBytes))
+                    {
+                        DrawMemoryRow("512 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh512));
+                        DrawMemoryRow("256 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh256));
+                        DrawMemoryRow("128 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh128));
+                        DrawMemoryRow("64 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh64));
+                        ImGui::TreePop();
+                    }
+                    if (DrawMemoryTreeRow("Surface resources", SurfaceResourceBytes))
+                    {
+                        DrawMemoryRow("Surface State", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceState));
+                        DrawMemoryRow("Surface Geometry", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceGeometry));
+                        DrawMemoryRow("Profile Tables", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceProfile));
+                        ImGui::TreePop();
+                    }
+                    if (DrawMemoryTreeRow("Other buffers", OtherBufferBytes))
+                    {
+                        DrawMemoryRow("Mesh Assets", CategoryBytes(GPU::TGPUBufferMemoryCategory::MeshAsset));
+                        DrawMemoryRow("Render / Compute", CategoryBytes(GPU::TGPUBufferMemoryCategory::Rendering));
+                        DrawMemoryRow("Debug", CategoryBytes(GPU::TGPUBufferMemoryCategory::Debug));
+                        DrawMemoryRow("Other / Staging", CategoryBytes(GPU::TGPUBufferMemoryCategory::Other));
+                        ImGui::TreePop();
+                    }
+                    ImGui::TreePop();
+                }
+                ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
+                DrawMemoryTotalRow("Images", Memory.CurrentImageBytes, GroupColor);
                 ImGui::EndTable();
             }
             ImGui::TextDisabled("Tracked Vulkan allocations · MiB");
@@ -3264,6 +3350,12 @@ namespace MDSS
                 ImGui::SetTooltip("Buffer rows are grouped by resource purpose. Values use Vulkan memory requirements "
                                   "for app-owned TGPUBuffer and TGPUImage allocations. Swapchain and driver "
                                   "allocations are excluded; Other includes transient staging buffers.");
+            ImGui::TextDisabled("FP16 compact allocation estimate");
+            ImGui::Text("Raw Flux: %.2f MiB", PrecisionMemory.RawFluxBytes / BytesPerMiB);
+            ImGui::Text("TransferWeight: %.2f MiB", PrecisionMemory.DynamicWeightBytes / BytesPerMiB);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Estimate from the loaded instances' texel and channel counts. These bytes are not "
+                                  "subtracted from Current because the A/B buffers retain their full allocations.");
         }
         const ImVec2 MemoryProfilePos = ImGui::GetWindowPos();
         const ImVec2 MemoryProfileSize = ImGui::GetWindowSize();
@@ -3347,7 +3439,7 @@ namespace MDSS
         }
 
         ImGuiViewport*  Viewport = ImGui::GetMainViewport();
-        constexpr float Width = 310.0F;
+        constexpr float Width = 360.0F;
         const ImVec2    WindowSize{Width, 520.0F};
         const ImVec2    WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
                                     Viewport->WorkPos.y + 150.0F};
@@ -3367,6 +3459,16 @@ namespace MDSS
             // 본문 배경은 부모 패널을 그대로 사용하고, 각 탭의 본문만 스크롤한다.
             if (ImGui::BeginTabBar("SimulationTabs"))
             {
+                if (ImGui::BeginTabItem("Setup"))
+                {
+                    if (ImGui::BeginChild(
+                            "SimulationSetupContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+                    {
+                        DrawSimulationSettingsTab(SceneData);
+                    }
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
+                }
                 if (ImGui::BeginTabItem("Solver"))
                 {
                     if (ImGui::BeginChild(
@@ -3377,7 +3479,7 @@ namespace MDSS
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
-                if (ImGui::BeginTabItem("Contact Input"))
+                if (ImGui::BeginTabItem("Input"))
                 {
                     if (ImGui::BeginChild(
                             "ContactInputContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
@@ -3387,32 +3489,12 @@ namespace MDSS
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
-                if (ImGui::BeginTabItem("Profile Tuning"))
+                if (ImGui::BeginTabItem("Profiles"))
                 {
                     if (ImGui::BeginChild(
                             "ProfileTuningContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
                         DrawProfileTuningTab(SceneData);
-                    }
-                    ImGui::EndChild();
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Inspector"))
-                {
-                    if (ImGui::BeginChild(
-                            "InspectorContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        DrawTexelInspectorTab();
-                    }
-                    ImGui::EndChild();
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Global Settings"))
-                {
-                    if (ImGui::BeginChild(
-                            "GlobalSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        DrawGlobalSettingsTab(SceneData);
                     }
                     ImGui::EndChild();
                     ImGui::EndTabItem();
@@ -3602,10 +3684,9 @@ namespace MDSS
         SliderFloatWithDoubleClickInput("##Speed", &SimulationTimeScale, 0.05F, 8.0F, "%.2fx");
     }
 
-    void TDebugUI::DrawGlobalSettingsTab(TScene& SceneData)
+    void TDebugUI::DrawSimulationSettingsTab(TScene& SceneData)
     {
-        // Keep the first control aligned with the standard section-header top margin.
-        ImGui::Dummy({0.0F, SectionHeaderTopPadding});
+        DrawSectionHeader("Simulation Setup");
         const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
         const char*         CurrentLabel = "Medium";
         for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
@@ -3653,107 +3734,6 @@ namespace MDSS
             }
         }
 
-        const auto DrawTexelMeshResolutionControl = [&](const char* Label,
-                                                        std::uint32_t ActiveResolution,
-                                                        auto&& SetResolution)
-        {
-            const std::string Preview = std::to_string(ActiveResolution);
-            const bool bOpen = BeginLabeledCombo(Label, Preview.c_str());
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip(std::string_view(Label) == "Surface mesh"
-                                          ? "Overlay가 켜져 있을 때 표면을 그리는 Texel Mesh 해상도입니다."
-                                          : "State overlay를 그리는 Texel Mesh 해상도입니다. 바꾸면 시뮬레이션 State는 유지됩니다.");
-            if (bOpen)
-            {
-                for (const auto& Preset : SurfaceState::SurfaceRenderMeshResolutionPresets)
-                {
-                    const bool Selected = Preset.Resolution == ActiveResolution;
-                    if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
-                    {
-                        SetResolution(Preset.Resolution);
-                        bFrameTimeResetRequested = true;
-                        ResetProfilingAverages();
-                    }
-                    if (Selected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                EndLabeledCombo();
-            }
-        };
-        DrawTexelMeshResolutionControl("Surface mesh",
-                                       FrameRenderer->GetSurfaceTexelMeshResolution(),
-                                       [&](std::uint32_t Resolution)
-                                       { FrameRenderer->SetSurfaceTexelMeshResolution(Resolution); });
-        DrawTexelMeshResolutionControl("Overlay mesh",
-                                       FrameRenderer->GetOverlayTexelMeshResolution(),
-                                       [&](std::uint32_t Resolution)
-                                       { FrameRenderer->SetOverlayTexelMeshResolution(Resolution); });
-
-        bool bBaseMeshDraw = FrameRenderer->IsBaseMeshDrawEnabled();
-        if (ImGui::Checkbox("Base Mesh draw", &bBaseMeshDraw))
-        {
-            FrameRenderer->SetBaseMeshDrawEnabled(bBaseMeshDraw);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        bool bOverlayTopDraw = FrameRenderer->IsOverlayTopDrawEnabled();
-        if (ImGui::Checkbox("Overlay Top draw", &bOverlayTopDraw))
-        {
-            FrameRenderer->SetOverlayTopDrawEnabled(bOverlayTopDraw);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        bool bOverlaySidesDraw = FrameRenderer->IsOverlaySidesDrawEnabled();
-        if (ImGui::Checkbox("Overlay Sides draw", &bOverlaySidesDraw))
-        {
-            FrameRenderer->SetOverlaySidesDrawEnabled(bOverlaySidesDraw);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-
-        bool bOverlayTileCullingEnabled = FrameRenderer->IsOverlayTileCullingEnabled();
-        if (ImGui::Checkbox("Overlay tile culling", &bOverlayTileCullingEnabled))
-        {
-            FrameRenderer->SetOverlayTileCullingEnabled(bOverlayTileCullingEnabled);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Coverage를 변경된 render tile 목록으로 indirect dispatch합니다. 끄면 매 프레임 전체 정점을 계산합니다.");
-
-        const auto OccupancyTileSize = FrameRenderer->GetOverlayOccupancyTileSize();
-        const char* OccupancyTileLabel = OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile8
-                                             ? "8 x 8"
-                                             : OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile16
-                                                   ? "16 x 16"
-                                                   : "32 x 32";
-        ImGui::BeginDisabled(!bOverlayTileCullingEnabled);
-        const bool bOccupancyTileOpen = BeginLabeledCombo("Render tile size", OccupancyTileLabel);
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Occupancy, Height, Normal, smoothing, Coverage가 함께 사용하는 render tile 크기입니다.");
-        if (bOccupancyTileOpen)
-        {
-            const std::array<std::pair<const char*, Rendering::TOverlayOccupancyTileSize>, 3> TileOptions{{
-                {"8 x 8", Rendering::TOverlayOccupancyTileSize::Tile8},
-                {"16 x 16", Rendering::TOverlayOccupancyTileSize::Tile16},
-                {"32 x 32", Rendering::TOverlayOccupancyTileSize::Tile32},
-            }};
-            for (const auto& [Label, Size] : TileOptions)
-            {
-                const bool bSelected = OccupancyTileSize == Size;
-                if (ImGui::Selectable(Label, bSelected) && !bSelected)
-                {
-                    FrameRenderer->SetOverlayOccupancyTileSize(Size);
-                    bFrameTimeResetRequested = true;
-                    ResetProfilingAverages();
-                }
-                if (bSelected)
-                    ImGui::SetItemDefaultFocus();
-            }
-            EndLabeledCombo();
-        }
-        ImGui::EndDisabled();
-
         if (ImGui::Checkbox("Fixed timestep", &bFixedSimulationTimestep))
         {
             bFrameTimeResetRequested = true;
@@ -3775,6 +3755,101 @@ namespace MDSS
 
     void TDebugUI::DrawPerformanceTab()
     {
+        const auto       PrecisionMemory = EstimateHalfPrecisionMemorySavings(FrameRenderer->GetSurfaceGPUResources());
+        constexpr double BytesPerMiB = 1024.0 * 1024.0;
+        auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
+        bool EffectsChanged = false;
+        DrawSectionHeader("Rendering");
+        {
+            const auto DrawTexelMeshResolutionControl =
+                [&](const char* Label, std::uint32_t ActiveResolution, auto&& SetResolution)
+            {
+                const std::string Preview = std::to_string(ActiveResolution);
+                const bool        bOpen = BeginLabeledCombo(Label, Preview.c_str());
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip(
+                        std::string_view(Label) == "Surface mesh"
+                            ? "Overlay가 켜져 있을 때 표면을 그리는 Texel Mesh 해상도입니다."
+                            : "State overlay를 그리는 Texel Mesh 해상도입니다. 바꾸면 시뮬레이션 State는 유지됩니다.");
+                if (bOpen)
+                {
+                    for (const auto& Preset : SurfaceState::SurfaceRenderMeshResolutionPresets)
+                    {
+                        const bool Selected = Preset.Resolution == ActiveResolution;
+                        if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
+                        {
+                            SetResolution(Preset.Resolution);
+                            bFrameTimeResetRequested = true;
+                            ResetProfilingAverages();
+                        }
+                        if (Selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    EndLabeledCombo();
+                }
+            };
+            DrawTexelMeshResolutionControl("Surface mesh",
+                                           FrameRenderer->GetSurfaceTexelMeshResolution(),
+                                           [&](std::uint32_t Resolution)
+                                           { FrameRenderer->SetSurfaceTexelMeshResolution(Resolution); });
+            DrawTexelMeshResolutionControl("Overlay mesh",
+                                           FrameRenderer->GetOverlayTexelMeshResolution(),
+                                           [&](std::uint32_t Resolution)
+                                           { FrameRenderer->SetOverlayTexelMeshResolution(Resolution); });
+
+            bool bOverlayTileCullingEnabled = FrameRenderer->IsOverlayTileCullingEnabled();
+            if (ImGui::Checkbox("Overlay tile culling", &bOverlayTileCullingEnabled))
+            {
+                FrameRenderer->SetOverlayTileCullingEnabled(bOverlayTileCullingEnabled);
+                bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("Coverage를 변경된 render tile 목록으로 indirect dispatch합니다. 끄면 매 프레임 "
+                                      "전체 정점을 계산합니다.");
+
+            const auto  OccupancyTileSize = FrameRenderer->GetOverlayOccupancyTileSize();
+            const char* OccupancyTileLabel = OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile8 ? "8 x 8"
+                                             : OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile16
+                                                 ? "16 x 16"
+                                                 : "32 x 32";
+            ImGui::BeginDisabled(!bOverlayTileCullingEnabled);
+            const bool bOccupancyTileOpen = BeginLabeledCombo("Render tile size", OccupancyTileLabel);
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(
+                    "Occupancy, Height, Normal, smoothing, Coverage가 함께 사용하는 render tile 크기입니다.");
+            if (bOccupancyTileOpen)
+            {
+                const std::array<std::pair<const char*, Rendering::TOverlayOccupancyTileSize>, 3> TileOptions{{
+                    {"8 x 8", Rendering::TOverlayOccupancyTileSize::Tile8},
+                    {"16 x 16", Rendering::TOverlayOccupancyTileSize::Tile16},
+                    {"32 x 32", Rendering::TOverlayOccupancyTileSize::Tile32},
+                }};
+                for (const auto& [Label, Size] : TileOptions)
+                {
+                    const bool bSelected = OccupancyTileSize == Size;
+                    if (ImGui::Selectable(Label, bSelected) && !bSelected)
+                    {
+                        FrameRenderer->SetOverlayOccupancyTileSize(Size);
+                        bFrameTimeResetRequested = true;
+                        ResetProfilingAverages();
+                    }
+                    if (bSelected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                EndLabeledCombo();
+            }
+            ImGui::EndDisabled();
+            ImGui::Dummy({0.0F, 6.0F});
+            EffectsChanged |= ImGui::Checkbox("Height smoothing", &Effects.bHeightFieldSmoothing);
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("Mud/Water/Lava 적층 높이와 normal을 렌더링 전용 3x3 필터로 부드럽게 합니다.");
+            EffectsChanged |= ImGui::Checkbox("Coverage smoothing", &Effects.bCoverageSmoothing);
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(
+                    "State coverage의 시각적 경계를 5x5 Gaussian으로 부드럽게 합니다. Simulation State는 바꾸지 않습니다.");
+        }
+
         DrawSectionHeader("Simulation");
         bool bRawFluxCache = FrameRenderer->IsRawFluxCacheEnabled();
         if (ImGui::Checkbox("Raw Flux Cache", &bRawFluxCache))
@@ -3784,167 +3859,158 @@ namespace MDSS
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Pass 1의 8방향 raw flux를 저장해 Pass 2 재계산을 제거합니다. "
-                                  "연산량은 줄지만 Texel x State x 8 float만큼 GPU 메모리/대역폭을 추가 사용합니다.");
+            SetDescriptionTooltip(
+                "Pass 1의 8방향 raw flux를 저장해 Pass 2 재계산을 줄입니다. 추가 메모리를 사용합니다.");
 
-        ImGui::Indent();
-        bool bCoalescedRawFluxLayout = FrameRenderer->IsCoalescedRawFluxLayoutEnabled();
-        ImGui::BeginDisabled(!bRawFluxCache);
-        if (ImGui::Checkbox("Coalesced Raw Flux Layout", &bCoalescedRawFluxLayout))
+        DrawSectionHeader("Advanced");
         {
-            FrameRenderer->SetCoalescedRawFluxLayoutEnabled(bCoalescedRawFluxLayout);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("RawEdgeFlux를 [channel][direction][texel] 순서로 배치해 같은 wave의 Pass 1 write를 "
-                                  "연속 주소로 만드는 A/B 옵션입니다. OFF는 기존 [texel][channel][direction] layout입니다.");
+            if (ImGui::CollapsingHeader("Simulation A/B"))
+            {
+                ImGui::Indent();
+                bool bCoalescedRawFluxLayout = FrameRenderer->IsCoalescedRawFluxLayoutEnabled();
+                ImGui::BeginDisabled(!bRawFluxCache);
+                if (ImGui::Checkbox("Coalesced Raw Flux Layout", &bCoalescedRawFluxLayout))
+                {
+                    FrameRenderer->SetCoalescedRawFluxLayoutEnabled(bCoalescedRawFluxLayout);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip(
+                        "flux 저장 순서를 바꿔 Pass 1의 연속 write를 비교합니다. 메모리 크기는 바뀌지 않습니다.");
 
-        bool bHalfRawFlux = FrameRenderer->IsHalfRawFluxCacheEnabled();
-        if (ImGui::Checkbox("Half Precision Raw Flux", &bHalfRawFlux))
-        {
-            FrameRenderer->SetHalfRawFluxCacheEnabled(bHalfRawFlux);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("8개 RawEdgeFlux를 FP16 두 개씩 pack해 Pass 1 write / Pass 2 read bandwidth를 줄입니다. "
-                                  "런타임 A/B를 위해 버퍼 할당 크기는 그대로 유지되며, 정밀도 차이를 함께 확인해야 합니다.");
-        ImGui::EndDisabled();
-        ImGui::Unindent();
+                bool bHalfRawFlux = FrameRenderer->IsHalfRawFluxCacheEnabled();
+                if (ImGui::Checkbox("Half Precision Raw Flux", &bHalfRawFlux))
+                {
+                    FrameRenderer->SetHalfRawFluxCacheEnabled(bHalfRawFlux);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("8방향 flux를 FP16으로 pack해 읽기·쓰기 대역폭을 줄입니다. 기본 ON이며 현재 "
+                                          "버퍼 할당량은 유지됩니다.");
+                ImGui::TextDisabled("컴팩트 재할당 시 예상 절감: %.2f MiB", PrecisionMemory.RawFluxBytes / BytesPerMiB);
+                ImGui::EndDisabled();
 
-        bool bHalfDynamicWeights = FrameRenderer->IsHalfDynamicWeightsEnabled();
-        if (ImGui::Checkbox("Half Precision Dynamic Weights", &bHalfDynamicWeights))
-        {
-            FrameRenderer->SetHalfDynamicWeightsEnabled(bHalfDynamicWeights);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("TransferWeight 8방향 값을 FP16 두 개/uint로 pack합니다. static cache와 dynamic feedback weight를 모두 "
-                                  "같은 표현으로 재생성하며 Solver read bandwidth를 줄이는 A/B 옵션입니다.");
+                bool bHalfDynamicWeights = FrameRenderer->IsHalfDynamicWeightsEnabled();
+                if (ImGui::Checkbox("Half Precision Dynamic Weights", &bHalfDynamicWeights))
+                {
+                    FrameRenderer->SetHalfDynamicWeightsEnabled(bHalfDynamicWeights);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("8방향 TransferWeight를 FP16으로 pack해 Solver 읽기 대역폭을 비교합니다.");
+                ImGui::TextDisabled("컴팩트 재할당 시 예상 절감: %.2f MiB",
+                                    PrecisionMemory.DynamicWeightBytes / BytesPerMiB);
 
-        bool bSparseSolver = FrameRenderer->IsSparseSolverEnabled();
-        if (ImGui::Checkbox("Sparse Solver", &bSparseSolver))
-        {
-            FrameRenderer->SetSparseSolverEnabled(bSparseSolver);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Pass2가 다음 A/B State의 active workgroup + topology 1-hop list를 직접 만들고 다음 step이 "
-                                  "vkCmdDispatchIndirect로 소비합니다. 전체 State Active Scan은 제거되었고 새 CPU contact group만 fused reset pass에서 병합합니다.");
+                bool bSparseSolver = FrameRenderer->IsSparseSolverEnabled();
+                if (ImGui::Checkbox("Sparse Solver", &bSparseSolver))
+                {
+                    FrameRenderer->SetSparseSolverEnabled(bSparseSolver);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("활성 workgroup 목록을 만들어 다음 Solver 단계를 간접 dispatch합니다.");
 
-        bool bSparseAccumulationHeight = FrameRenderer->IsSparseAccumulationHeightEnabled();
-        if (ImGui::Checkbox("Sparse Accumulation Height", &bSparseAccumulationHeight))
-        {
-            FrameRenderer->SetSparseAccumulationHeightEnabled(bSparseAccumulationHeight);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Pass2에서 실제 accumulation 기여량이 변한 texel group만 기록하고, Height pass를 indirect dispatch합니다. "
-                                  "Force-full rebuild에서는 자동으로 전체 texel을 갱신합니다.");
+                bool bSparseAccumulationHeight = FrameRenderer->IsSparseAccumulationHeightEnabled();
+                if (ImGui::Checkbox("Sparse Accumulation Height", &bSparseAccumulationHeight))
+                {
+                    FrameRenderer->SetSparseAccumulationHeightEnabled(bSparseAccumulationHeight);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("실제 적층량이 바뀐 texel group만 Height 갱신에 전달합니다.");
 
-        bool bActiveChannelMask = FrameRenderer->IsActiveChannelMaskEnabled();
-        if (ImGui::Checkbox("Active Channel Mask", &bActiveChannelMask))
-        {
-            FrameRenderer->SetActiveChannelMaskEnabled(bActiveChannelMask);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Pass2가 다음 step의 active channel mask를 persistent A/B metadata에 직접 만들고, 새 CPU input channel은 "
-                                  "fused reset/input-merge에서 현재 mask에 추가합니다. 32개 초과 channel은 안전하게 항상 활성로 처리합니다.");
+                bool bActiveChannelMask = FrameRenderer->IsActiveChannelMaskEnabled();
+                if (ImGui::Checkbox("Active Channel Mask", &bActiveChannelMask))
+                {
+                    FrameRenderer->SetActiveChannelMaskEnabled(bActiveChannelMask);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("다음 Solver 단계에서 활성 상태 channel만 처리하도록 표시합니다.");
 
-        bool bPerWorkgroupChannelMask = FrameRenderer->IsPerWorkgroupChannelMaskEnabled();
-        ImGui::BeginDisabled(!bActiveChannelMask);
-        if (ImGui::Checkbox("Per-WG Active Channel Mask", &bPerWorkgroupChannelMask))
-        {
-            FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("64-texel WG마다 이번 step에서 처리할 channel을 제한합니다. 이웃에서 들어오는 State와 "
-                                  "A/B buffer 정리를 위한 한 세대 유지도 포함합니다.");
-        ImGui::EndDisabled();
+                bool bPerWorkgroupChannelMask = FrameRenderer->IsPerWorkgroupChannelMaskEnabled();
+                ImGui::BeginDisabled(!bActiveChannelMask);
+                if (ImGui::Checkbox("Per-WG Active Channel Mask", &bPerWorkgroupChannelMask))
+                {
+                    FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("64-texel workgroup마다 처리할 channel을 제한합니다.");
+                ImGui::EndDisabled();
 
-        bool bSparseSimulation = FrameRenderer->IsSparseSimulationGeometryEnabled();
-        if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))
-        {
-            FrameRenderer->SetSparseSimulationGeometryEnabled(bSparseSimulation);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Accumulation Height pass가 dirty texel의 geometry/transfer-weight topology halo를 직접 compact해 "
-                                  "vkCmdDispatchIndirect로 실행합니다. 별도 dirty-scan pass 없이 dense/full 경로와 비교할 수 있습니다.");
+                bool bSparseSimulation = FrameRenderer->IsSparseSimulationGeometryEnabled();
+                if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))
+                {
+                    FrameRenderer->SetSparseSimulationGeometryEnabled(bSparseSimulation);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("변경된 geometry와 topology halo만 모아 indirect dispatch합니다.");
+                ImGui::Unindent();
+            }
 
-        DrawSectionHeader("Rendering smoothing");
-        auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-        bool EffectsChanged = false;
-        EffectsChanged |= ImGui::Checkbox("Height smoothing", &Effects.bHeightFieldSmoothing);
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Mud/Water/Lava 적층 높이와 normal을 렌더링 전용 3x3 필터로 부드럽게 합니다. "
-                                  "OFF 전환 시 lazily allocated smoothing output도 회수합니다.");
-        ImGui::Indent();
-        bool bSparseHeight = FrameRenderer->IsSparseHeightSmoothingEnabled();
-        ImGui::BeginDisabled(!Effects.bHeightFieldSmoothing);
-        if (ImGui::Checkbox("Sparse Height Smoothing", &bSparseHeight))
-        {
-            FrameRenderer->SetSparseHeightSmoothingEnabled(bSparseHeight);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Dirty Normal tile list만 smoothing합니다. OFF는 기존 전체 texel dispatch 경로입니다.");
-        ImGui::EndDisabled();
-        ImGui::Unindent();
+            if (ImGui::CollapsingHeader("Rendering A/B"))
+            {
+                ImGui::Indent();
+                bool bSparseHeight = FrameRenderer->IsSparseHeightSmoothingEnabled();
+                ImGui::BeginDisabled(!Effects.bHeightFieldSmoothing);
+                if (ImGui::Checkbox("Sparse Height Smoothing", &bSparseHeight))
+                {
+                    FrameRenderer->SetSparseHeightSmoothingEnabled(bSparseHeight);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("변경된 Normal tile만 처리합니다.");
+                ImGui::EndDisabled();
 
-        EffectsChanged |= ImGui::Checkbox("Coverage smoothing", &Effects.bCoverageSmoothing);
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("State coverage의 시각적 경계를 5x5 Gaussian으로 부드럽게 합니다. Simulation State는 바꾸지 않습니다. "
-                                  "ON/OFF 전환 시 이전 frames-in-flight를 한 번 drain해 A/B 측정이 섞이지 않게 합니다.");
+                bool bPrecompute = FrameRenderer->IsPrecomputeCoverageSmoothingEnabled();
+                ImGui::BeginDisabled(!Effects.bCoverageSmoothing);
+                if (ImGui::Checkbox("Precompute Coverage Smoothing", &bPrecompute))
+                {
+                    FrameRenderer->SetPrecomputeCoverageSmoothingEnabled(bPrecompute);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("State texture를 compute에서 미리 smoothing해 fragment 샘플을 줄입니다.");
 
-        ImGui::Indent();
-        bool bPrecompute = FrameRenderer->IsPrecomputeCoverageSmoothingEnabled();
-        ImGui::BeginDisabled(!Effects.bCoverageSmoothing);
-        if (ImGui::Checkbox("Precompute Coverage Smoothing", &bPrecompute))
-        {
-            FrameRenderer->SetPrecomputeCoverageSmoothingEnabled(bPrecompute);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("ON: State texture를 compute에서 미리 smoothing하고 fragment는 texture를 한 번 읽습니다. "
-                                  "OFF: fragment가 기존 5x5 State sampling을 직접 수행합니다.");
+                bool bSeparable = FrameRenderer->IsSeparableCoverageSmoothingEnabled();
+                ImGui::BeginDisabled(!bPrecompute);
+                if (ImGui::Checkbox("Separable Coverage Smoothing", &bSeparable))
+                {
+                    FrameRenderer->SetSeparableCoverageSmoothingEnabled(bSeparable);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip(
+                        "5x5 필터를 가로·세로 두 pass로 처리합니다. 경계에서 결과가 조금 달라질 수 있습니다.");
+                ImGui::EndDisabled();
+                ImGui::EndDisabled();
 
-        bool bSeparable = FrameRenderer->IsSeparableCoverageSmoothingEnabled();
-        ImGui::BeginDisabled(!bPrecompute);
-        if (ImGui::Checkbox("Separable Coverage Smoothing", &bSeparable))
-        {
-            FrameRenderer->SetSeparableCoverageSmoothingEnabled(bSeparable);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
+                bool bRenderStateTexture = FrameRenderer->IsRenderStateTextureSamplingEnabled();
+                if (ImGui::Checkbox("Render State Texture Sampling", &bRenderStateTexture))
+                {
+                    FrameRenderer->SetRenderStateTextureSamplingEnabled(bRenderStateTexture);
+                    bFrameTimeResetRequested = true;
+                    ResetProfilingAverages();
+                }
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip(
+                        "fragment의 RenderStateTexture 샘플링과 Simulation SSBO bilinear sampling을 비교합니다.");
+                ImGui::Unindent();
+            }
         }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Precompute 경로에서 직접 5x5(25 sample) 대신 horizontal 5 + vertical 5 두 pass를 사용합니다. "
-                                  "chart/profile 경계에서는 결과가 미세하게 달라질 수 있습니다.");
-        ImGui::EndDisabled();
-        ImGui::EndDisabled();
-        ImGui::Unindent();
-
-        bool bRenderStateTexture = FrameRenderer->IsRenderStateTextureSamplingEnabled();
-        if (ImGui::Checkbox("Render State Texture Sampling", &bRenderStateTexture))
-        {
-            FrameRenderer->SetRenderStateTextureSamplingEnabled(bRenderStateTexture);
-            bFrameTimeResetRequested = true;
-            ResetProfilingAverages();
-        }
-        if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("ON: fragment가 RGBA RenderStateTexture를 사용합니다. OFF: simulation SSBO를 직접 bilinear sampling합니다. "
-                                  "Precompute Coverage Smoothing은 texture 경로를 강제로 사용합니다.");
 
         if (EffectsChanged)
         {
@@ -3972,21 +4038,19 @@ namespace MDSS
             }
         };
 
-        DrawSectionHeader("Accumulation Geometry Update");
+        DrawSectionHeader("Accumulation Geometry");
         bool bAccumulationGeometryUpdate = FrameRenderer->IsAccumulationGeometryUpdateEnabled();
-        if (ImGui::Checkbox("Accumulation Geometry Update", &bAccumulationGeometryUpdate))
+        if (ImGui::Checkbox("Use Accumulated Surface", &bAccumulationGeometryUpdate))
         {
             bFrameTimeResetRequested = true;
             FrameRenderer->SetAccumulationGeometryUpdateEnabled(bAccumulationGeometryUpdate);
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-        {
             SetDescriptionTooltip(
-                "켜짐: 적층 높이가 있는 모든 State를 합산해 이후 수송의 위치·법선·거리 계산에 반영합니다.\n"
-                "꺼짐: 기존 정적 지형으로 수송합니다. 시뮬레이션 두께는 .SRProfile의 thicknessPerAmount를 사용하며,\n"
-                "렌더 옵션의 표시 배율은 렌더링 전용입니다. 켜짐 상태에서는 단계마다 GPU 작업이 추가됩니다.");
-        }
+                "켜짐: 적층 높이가 있는 모든 State를 합산해 이후 수송의 위치·법선·거리 계산에 반영합니다. "
+                "꺼짐: 기존 정적 지형으로 수송합니다. 시뮬레이션 두께는 .SRProfile의 thicknessPerAmount를 사용합니다.");
+        ImGui::Dummy({0.0F, 6.0F});
 
         DrawSectionHeader("Transport");
         DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::SaturationDrive,
@@ -4024,56 +4088,6 @@ namespace MDSS
                        "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
                        "OFF: Decay 보유율을 1.0으로 설정합니다.");
 
-        ImGui::Spacing();
-        TextDescriptionWrapped("Fixed timestep and Auto substepping are available in the Global Settings tab.");
-        ImGui::Spacing();
-        if (ImGui::CollapsingHeader("Diagnostics"))
-        {
-            const SurfaceState::TSurfaceGPUResourceManager& GPUResources = FrameRenderer->GetSurfaceGPUResources();
-            std::size_t                                     TotalTexels = 0;
-            std::size_t                                     ValidTexels = 0;
-            std::optional<bool>                             FirstCurrentAB;
-            bool                                            bMixedCurrentBuffers = false;
-            for (std::size_t SceneIndex = 0; SceneIndex < GPUResources.GetSceneInstanceCount(); ++SceneIndex)
-            {
-                if (GPUResources.GetInstanceDescriptors(SceneIndex) == nullptr)
-                {
-                    continue;
-                }
-                TotalTexels += GPUResources.GetInstanceTexelCount(SceneIndex);
-                ValidTexels += GPUResources.GetInstanceValidTexelCount(SceneIndex);
-                const bool bCurrentAB = GPUResources.IsCurrentStateAB(SceneIndex);
-                if (!FirstCurrentAB.has_value())
-                {
-                    FirstCurrentAB = bCurrentAB;
-                }
-                else if (*FirstCurrentAB != bCurrentAB)
-                {
-                    bMixedCurrentBuffers = true;
-                }
-            }
-            const float ValidRatio =
-                TotalTexels > 0 ? 100.0F * static_cast<float>(ValidTexels) / static_cast<float>(TotalTexels) : 0.0F;
-            ImGui::Text("Texels: %zu", TotalTexels);
-            ImGui::Text("Valid: %zu (%.1f%%)", ValidTexels, ValidRatio);
-            const char* CurrentBuffer = bMixedCurrentBuffers          ? "Mixed"
-                                        : !FirstCurrentAB.has_value() ? "N/A"
-                                        : *FirstCurrentAB             ? "A"
-                                                                      : "B";
-            if (bSimulationPaused)
-            {
-                ImGui::Text("Next read buffer: %s", CurrentBuffer);
-                const float SolverMilliseconds = FrameRenderer->GetLastSolverGpuMilliseconds();
-                if (SolverMilliseconds >= 0.0F)
-                {
-                    ImGui::Text("Recent Solver GPU: %.2f ms", SolverMilliseconds);
-                }
-                else
-                {
-                    ImGui::TextDisabled("Recent Solver GPU: N/A");
-                }
-            }
-        }
     }
 
     void TDebugUI::DrawContactInputTab()
