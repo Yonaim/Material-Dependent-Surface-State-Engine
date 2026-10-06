@@ -26,6 +26,8 @@ namespace MDSS
     struct TApplicationLaunchOptions
     {
         std::size_t       FrameLimit = 0;
+        std::uint32_t     RenderTileSize = 16;
+        bool              bPerWorkgroupChannelMask = false;
         TBenchmarkOptions Benchmark;
     };
 

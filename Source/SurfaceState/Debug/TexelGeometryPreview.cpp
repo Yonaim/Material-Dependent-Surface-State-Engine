@@ -183,8 +183,8 @@ namespace MDSS::SurfaceState
     }
     void TTexelGeometryPreview::SetOccupancyTileSize(std::uint32_t TileSize)
     {
-        if (TileSize != 16U && TileSize != 32U)
-            throw std::invalid_argument("Overlay occupancy tile size must be 16 or 32.");
+        if (TileSize != 8U && TileSize != 16U && TileSize != 32U)
+            throw std::invalid_argument("Overlay occupancy tile size must be 8, 16, or 32.");
         if (OccupancyTileSize == TileSize)
             return;
         OccupancyTileSize = TileSize;
@@ -215,7 +215,9 @@ namespace MDSS::SurfaceState
                                        VkQueryPool                             TimestampQueryPool,
                                        std::uint32_t                           HeightCompleteQuery,
                                        bool                                    bTotalHeight,
-                                       std::size_t                             FrameIndex)
+                                       std::size_t                             FrameIndex,
+                                       std::array<std::uint32_t, 3>           MaterialChannels,
+                                       std::uint32_t                           ActiveMaterialMask)
     {
         if (FrameIndex >= Rendering::TRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Occupancy frame slot is invalid.");
@@ -229,29 +231,43 @@ namespace MDSS::SurfaceState
         // coverage/draw culling, while input deltas against the last built input drive geometry work.
         // Layout after the base cache (uint words):
         //   activeFlags[N]                                  persistent
-        //   builtState[TexelCount]                          persistent
-        //   heightScheduled[N], normalScheduled[N]          dynamic
+        //   builtState[TexelCount], builtCoverage[TexelCount] persistent
+        //   height/normal/coverageScheduled[N]              dynamic
         //   heightCount, heightDispatch[3], heightList[N]   dynamic
         //   normalCount, normalDispatch[3], normalList[N]   dynamic
+        //   coverageCount, coverageDispatch[3], coverageList[N] dynamic
         //   globalAny, activeTileCount                      dynamic (last two words)
-        // N is capacity for the smallest supported tile (16x16).
-        const auto MaxTileCount = (TexelCount - 1U) / (16U * 16U) + 1U;
-        const auto SparseWordCount = static_cast<std::size_t>(TexelCount) +
-                                     static_cast<std::size_t>(MaxTileCount) * 5U + 10U;
+        // N includes padding at every surface edge for the smallest supported tile (8x8).
+        const auto& SurfaceRanges = Descriptors.GetSharedGeometry().GetSurfaceRanges();
+        const auto CountTiles = [&SurfaceRanges](std::uint32_t TileSize)
+        {
+            std::size_t Count = 0;
+            for (const auto& Range : SurfaceRanges)
+                Count += ((static_cast<std::size_t>(Range.Width) + TileSize - 1U) / TileSize) *
+                         ((static_cast<std::size_t>(Range.Height) + TileSize - 1U) / TileSize);
+            return Count;
+        };
+        const auto MaxTileCount = CountTiles(8U);
+        const auto SelectedTileCount = CountTiles(OccupancyTileSize);
+        if (MaxTileCount == 0 || MaxTileCount > Limits.maxComputeWorkGroupCount[0] ||
+            MaxTileCount > std::numeric_limits<std::uint32_t>::max())
+            throw std::overflow_error("Overlay tile capacity exceeds Vulkan workgroup limits.");
+        const auto SparseWordCount = static_cast<std::size_t>(TexelCount) * 2U +
+                                     static_cast<std::size_t>(MaxTileCount) * 7U + 14U;
         const auto SparseBytes = SparseWordCount * sizeof(std::uint32_t);
         const auto CacheBytes = BaseCacheBytes + SparseBytes;
         const VkDeviceSize PersistentSparseBytes =
-            (static_cast<VkDeviceSize>(MaxTileCount) + static_cast<VkDeviceSize>(TexelCount)) *
+            (static_cast<VkDeviceSize>(MaxTileCount) + static_cast<VkDeviceSize>(TexelCount) * 2U) *
             sizeof(std::uint32_t);
         const VkDeviceSize DynamicSparseOffset = BaseCacheBytes + PersistentSparseBytes;
         const VkDeviceSize DynamicSparseBytes = SparseBytes - PersistentSparseBytes;
         const VkDeviceSize HeightDispatchIndirectOffset =
             BaseCacheBytes +
-            (static_cast<VkDeviceSize>(TexelCount) + static_cast<VkDeviceSize>(MaxTileCount) * 3U + 1U) *
+            (static_cast<VkDeviceSize>(TexelCount) * 2U + static_cast<VkDeviceSize>(MaxTileCount) * 4U + 1U) *
                 sizeof(std::uint32_t);
         const VkDeviceSize NormalDispatchIndirectOffset =
             BaseCacheBytes +
-            (static_cast<VkDeviceSize>(TexelCount) + static_cast<VkDeviceSize>(MaxTileCount) * 4U + 5U) *
+            (static_cast<VkDeviceSize>(TexelCount) * 2U + static_cast<VkDeviceSize>(MaxTileCount) * 5U + 5U) *
                 sizeof(std::uint32_t);
 
         auto It = Outputs.find(Instance);
@@ -312,8 +328,7 @@ namespace MDSS::SurfaceState
         if (GroupsY > Limits.maxComputeWorkGroupCount[1])
             throw std::overflow_error("Texel geometry dispatch exceeds Vulkan workgroup limits.");
 
-        const std::uint32_t TilePixels = OccupancyTileSize * OccupancyTileSize;
-        const std::uint32_t TileGroupCount = (TexelCount - 1U) / TilePixels + 1U;
+        const std::uint32_t TileGroupCount = static_cast<std::uint32_t>(SelectedTileCount);
         const std::uint32_t TileGroupsX = std::min(TileGroupCount, Limits.maxComputeWorkGroupCount[0]);
         const std::uint32_t TileGroupsY = (TileGroupCount - 1U) / TileGroupsX + 1U;
         if (TileGroupsY > Limits.maxComputeWorkGroupCount[1])
@@ -407,7 +422,7 @@ namespace MDSS::SurfaceState
 
         if (bEnableOccupancyScan)
         {
-            It->second.OccupancyTotalTiles = (TexelCount + TilePixels - 1U) / TilePixels;
+            It->second.OccupancyTotalTiles = TileGroupCount;
             const std::array<VkDescriptorSet, 2> OccupancySets{
                 bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(), It->second.Set};
             std::array<std::uint32_t, 24> OccupancyPush{};
@@ -416,6 +431,10 @@ namespace MDSS::SurfaceState
             OccupancyPush[2] = Channels;
             OccupancyPush[3] = OccupancyTileSize;
             OccupancyPush[4] = It->second.bSparseReady ? 0U : 1U;
+            OccupancyPush[5] = MaterialChannels[0];
+            OccupancyPush[6] = MaterialChannels[1];
+            OccupancyPush[7] = MaterialChannels[2];
+            OccupancyPush[8] = ActiveMaterialMask & 0x7U;
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, OccupancyPipeline);
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,

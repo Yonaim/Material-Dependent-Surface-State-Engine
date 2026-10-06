@@ -37,13 +37,13 @@ shared uint SparseTileY;
 
 uint CapacityTileCount()
 {
-    return (Push.TexelCount + 255u) / 256u;
+    return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
 }
 
 uint NormalListBase()
 {
     // GeometryCache sparse layout matches TexelGeometry/OverlayOccupancyScan.
-    return Push.TexelCount * 5u + CapacityTileCount() * 4u + 8u;
+    return Push.TexelCount * 6u + CapacityTileCount() * 5u + 8u;
 }
 
 bool ResolveCandidateTile(uint Candidate)

@@ -66,7 +66,10 @@ namespace MDSS::SurfaceState
                                                     VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
                                                     std::uint32_t                           HeightCompleteQuery = 0U,
                                                     bool                                    bTotalHeight = false,
-                                                    std::size_t                             FrameIndex = 0U);
+                                                    std::size_t                             FrameIndex = 0U,
+                                                    std::array<std::uint32_t, 3>           MaterialChannels = {
+                                                        0xffffffffU, 0xffffffffU, 0xffffffffU},
+                                                    std::uint32_t                           ActiveMaterialMask = 0U);
 
     private:
         // Resource cleanup

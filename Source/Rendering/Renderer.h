@@ -74,6 +74,7 @@ namespace MDSS::Rendering
 
     enum class TOverlayOccupancyTileSize : std::uint32_t
     {
+        Tile8 = 8,
         Tile16 = 16,
         Tile32 = 32
     };
@@ -294,6 +295,12 @@ namespace MDSS::Rendering
         {
             bOverlayTileCullingEnabled = bEnabled;
         }
+        [[nodiscard]] bool IsBaseMeshDrawEnabled() const noexcept { return bBaseMeshDrawEnabled; }
+        void SetBaseMeshDrawEnabled(bool bEnabled) noexcept { bBaseMeshDrawEnabled = bEnabled; }
+        [[nodiscard]] bool IsOverlayTopDrawEnabled() const noexcept { return bOverlayTopDrawEnabled; }
+        void SetOverlayTopDrawEnabled(bool bEnabled) noexcept { bOverlayTopDrawEnabled = bEnabled; }
+        [[nodiscard]] bool IsOverlaySidesDrawEnabled() const noexcept { return bOverlaySidesDrawEnabled; }
+        void SetOverlaySidesDrawEnabled(bool bEnabled) noexcept { bOverlaySidesDrawEnabled = bEnabled; }
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
         void SetRawFluxCacheEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept;
@@ -308,6 +315,8 @@ namespace MDSS::Rendering
         void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept;
         void SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsPerWorkgroupChannelMaskEnabled() const noexcept;
+        void SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept;
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseHeightSmoothingEnabled() const noexcept { return bSparseHeightSmoothingEnabled; }
@@ -513,6 +522,9 @@ namespace MDSS::Rendering
         TOverlayDisplayMode                                  OverlayDisplayMode = TOverlayDisplayMode::Both;
         bool                                                 bOverlayOnlyDebug = false;
         bool                                                 bOverlayTileCullingEnabled = true;
+        bool                                                 bBaseMeshDrawEnabled = true;
+        bool                                                 bOverlayTopDrawEnabled = true;
+        bool                                                 bOverlaySidesDrawEnabled = true;
         bool                                                 bSparseHeightSmoothingEnabled = true;
         bool                                                 bPrecomputeCoverageSmoothingEnabled = true;
         bool                                                 bRenderStateTextureSamplingEnabled = true;

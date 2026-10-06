@@ -126,6 +126,7 @@ namespace MDSS::Rendering
             };
             CreatePipeline("OverlaySideCoverage.comp", PipelineLayout, CoveragePipeline);
             CreatePipeline("OverlayCoverageSmoothing.comp", PipelineLayout, CoverageSmoothingPipeline);
+            CreatePipeline("OverlayDrawReset.comp", PipelineLayout, DrawResetPipeline);
             CreatePipeline("OverlaySideBoundary.comp", PipelineLayout, BoundaryPipeline);
 
             // Keep one output set per instance, overlay layer, and selectable mesh resolution.
@@ -148,6 +149,8 @@ namespace MDSS::Rendering
                 vkDestroyPipeline(Device, CoveragePipeline, nullptr);
             if (CoverageSmoothingPipeline)
                 vkDestroyPipeline(Device, CoverageSmoothingPipeline, nullptr);
+            if (DrawResetPipeline)
+                vkDestroyPipeline(Device, DrawResetPipeline, nullptr);
             if (BoundaryPipeline)
                 vkDestroyPipeline(Device, BoundaryPipeline, nullptr);
             if (PipelineLayout)
@@ -167,6 +170,8 @@ namespace MDSS::Rendering
             vkDestroyPipeline(Device, CoveragePipeline, nullptr);
         if (CoverageSmoothingPipeline)
             vkDestroyPipeline(Device, CoverageSmoothingPipeline, nullptr);
+        if (DrawResetPipeline)
+            vkDestroyPipeline(Device, DrawResetPipeline, nullptr);
         if (BoundaryPipeline)
             vkDestroyPipeline(Device, BoundaryPipeline, nullptr);
         if (PipelineLayout)
@@ -250,6 +255,7 @@ namespace MDSS::Rendering
                                            const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
                                            const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
                                            VkDescriptorSet                                         ComputedSet,
+                                           const GPU::TGPUBuffer&                                  GeometryCacheBuffer,
                                            bool                                                    bStateAB,
                                            std::size_t                                             FrameIndex,
                                            VkQueryPool                                             TimestampQueryPool,
@@ -297,6 +303,13 @@ namespace MDSS::Rendering
             WriteEmptyStageTimestamps();
             return;
         }
+        if (OccupancyTileSize != 0U && OccupancyTileSize != 8U && OccupancyTileSize != 16U &&
+            OccupancyTileSize != 32U)
+            throw std::invalid_argument("Overlay occupancy tile size must be 0, 8, 16, or 32.");
+        const std::uint32_t MappingTileSize = OccupancyTileSize == 0U ? 16U : OccupancyTileSize;
+        const auto Mapping = Mesh.TileVertexLists.find(MappingTileSize);
+        if (Mapping == Mesh.TileVertexLists.end() || Mapping->second.Words.empty())
+            throw std::logic_error("Overlay tile-to-vertex mapping is missing.");
         const auto Bytes =
             SurfaceState::GetSurfaceGPUBufferByteSize(SegmentCount, sizeof(TSideSegment), Limits.maxStorageBufferRange);
         const auto CoverageVertexBytes =
@@ -307,9 +320,15 @@ namespace MDSS::Rendering
         const auto TopDrawBytes = SurfaceState::GetSurfaceGPUBufferByteSize(
             SurfaceCount, sizeof(VkDrawIndexedIndirectCommand), Limits.maxStorageBufferRange);
         const VkDeviceSize CompactTopIndexBytes = Mesh.IndexBuffer->GetSize();
-        if (CompactTopIndexBytes == 0 || CompactTopIndexBytes > Limits.maxStorageBufferRange - CoverageVertexBytes)
-            throw std::length_error("Overlay compact top index buffer exceeds maxStorageBufferRange.");
-        const VkDeviceSize CoverageBytes = CoverageVertexBytes + CompactTopIndexBytes;
+        const auto MaxMapping = Mesh.TileVertexLists.find(8U);
+        if (MaxMapping == Mesh.TileVertexLists.end())
+            throw std::logic_error("Overlay 8x8 tile-to-vertex mapping is missing.");
+        const VkDeviceSize MaxMappingBytes = MaxMapping->second.Words.size() * sizeof(std::uint32_t);
+        if (CompactTopIndexBytes == 0 || CompactTopIndexBytes > Limits.maxStorageBufferRange - CoverageVertexBytes ||
+            MaxMappingBytes > Limits.maxStorageBufferRange - CoverageVertexBytes - CompactTopIndexBytes)
+            throw std::length_error("Overlay coverage, indices, and tile map exceed maxStorageBufferRange.");
+        const VkDeviceSize MappingRelativeOffset = CoverageVertexBytes + CompactTopIndexBytes;
+        const VkDeviceSize CoverageBytes = MappingRelativeOffset + MaxMappingBytes;
         if (SegmentCount > std::numeric_limits<std::uint32_t>::max() / 6U)
             throw std::overflow_error("Overlay side vertex count exceeds the draw range.");
         const auto Key = std::make_tuple(Instance, Channel, MeshResolution);
@@ -336,7 +355,8 @@ namespace MDSS::Rendering
                                                                           Device,
                                                                           PageCapacity,
                                                                           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                                                              VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                                                              VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                                                                              VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                                           GPU::TGPUBufferMemoryCategory::Rendering));
                 CoveragePageUsed.push_back(0U);
@@ -453,8 +473,27 @@ namespace MDSS::Rendering
             It->second.BoundaryCount != Boundaries || It->second.SurfaceCount != SurfaceCount)
             throw std::logic_error("Overlay topology changed without rebuilding Scene resources.");
 
-        if (OccupancyTileSize != 0U && OccupancyTileSize != 16U && OccupancyTileSize != 32U)
-            throw std::invalid_argument("Overlay occupancy tile size must be 0, 16, or 32.");
+        const bool bMappingUpload = It->second.LastTileSize != MappingTileSize;
+        const auto GeometryRevisions = StateDescriptors.GetGeometryInputRevisions();
+        const auto ProfileRevision = StateDescriptors.GetProfileParameterRevision();
+        const bool bFullCoverageUpdate = OccupancyTileSize == 0U || !It->second.bCoverageInitialized ||
+            It->second.LastTileSize != MappingTileSize ||
+            It->second.LastMaterialChannels != MaterialChannels ||
+            It->second.LastMaterialMask != (ActiveMaterialMask & 0x7U) ||
+            It->second.LastGeometryRevisions != GeometryRevisions ||
+            It->second.LastProfileRevision != ProfileRevision ||
+            It->second.LastHeightDisplayScale != HeightDisplayScale ||
+            It->second.bLastSmoothCoverage != bSmoothCoverage ||
+            It->second.bLastUseOpaqueBase != bUseOpaqueBase;
+        const VkDeviceSize CacheWords = GeometryCacheBuffer.GetSize() / sizeof(std::uint32_t);
+        const VkDeviceSize Texels = Geometry.GetTexelCount();
+        if (CacheWords < Texels * 6U + 14U || (CacheWords - Texels * 6U - 14U) % 7U != 0U)
+            throw std::logic_error("Overlay coverage geometry cache layout is invalid.");
+        const VkDeviceSize TileCapacity = (CacheWords - Texels * 6U - 14U) / 7U;
+        const VkDeviceSize CoverageDispatchIndirectOffset =
+            (Texels * 6U + TileCapacity * 6U + 9U) * sizeof(std::uint32_t);
+        if (CoverageDispatchIndirectOffset + 3U * sizeof(std::uint32_t) > GeometryCacheBuffer.GetSize())
+            throw std::logic_error("Overlay coverage indirect metadata is outside geometry cache.");
 
         struct TOverlayPush
         {
@@ -483,7 +522,7 @@ namespace MDSS::Rendering
                                 Boundaries,
                                 HeightDisplayScale,
                                 bUseOpaqueBase ? 1U : 0U,
-                                0U};
+                                (Mapping->second.TileCount << 1U) | (bFullCoverageUpdate ? 1U : 0U)};
 
         std::array<VkBufferMemoryBarrier, 4> Barriers{};
         for (auto& Barrier : Barriers)
@@ -500,7 +539,7 @@ namespace MDSS::Rendering
         Barriers[1].size = CoverageBytes;
         Barriers[1].srcAccessMask =
             VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_INDEX_READ_BIT;
-        Barriers[1].dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        Barriers[1].dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
         Barriers[2].buffer = It->second.DrawCommands->GetHandle();
         Barriers[2].srcAccessMask =
             VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
@@ -519,7 +558,7 @@ namespace MDSS::Rendering
             (bStaticCommandUpload ? VK_PIPELINE_STAGE_TRANSFER_BIT : 0U);
         vkCmdPipelineBarrier(Command,
                              ReuseSrcStages,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
                              0,
                              0,
                              nullptr,
@@ -527,6 +566,29 @@ namespace MDSS::Rendering
                              Barriers.data(),
                              0,
                              nullptr);
+        if (bMappingUpload)
+        {
+            const VkDeviceSize MappingBytes = Mapping->second.Words.size() * sizeof(std::uint32_t);
+            constexpr VkDeviceSize MaxUpdateBytes = 65536U;
+            const auto* MappingData = reinterpret_cast<const std::uint8_t*>(Mapping->second.Words.data());
+            for (VkDeviceSize Offset = 0; Offset < MappingBytes; Offset += MaxUpdateBytes)
+                vkCmdUpdateBuffer(Command,
+                                  CoveragePages[It->second.CoveragePage]->GetHandle(),
+                                  It->second.CoverageOffset + MappingRelativeOffset + Offset,
+                                  std::min(MaxUpdateBytes, MappingBytes - Offset),
+                                  MappingData + Offset);
+            VkBufferMemoryBarrier MappingBarrier{};
+            MappingBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            MappingBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            MappingBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            MappingBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            MappingBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            MappingBarrier.buffer = CoveragePages[It->second.CoveragePage]->GetHandle();
+            MappingBarrier.offset = It->second.CoverageOffset + MappingRelativeOffset;
+            MappingBarrier.size = MappingBytes;
+            vkCmdPipelineBarrier(Command, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 0, 0, nullptr, 1, &MappingBarrier, 0, nullptr);
+        }
         WriteStageTimestamp(1U);
 
         const std::array<VkDescriptorSet, 3> Sets{
@@ -548,11 +610,25 @@ namespace MDSS::Rendering
                 throw std::overflow_error("Overlay side dispatch exceeds Vulkan workgroup limits.");
             vkCmdDispatch(Command, GroupsX, GroupsY, 1);
         };
+        vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, DrawResetPipeline);
+        Dispatch(std::max(SurfaceCount + 2U, SurfaceCount));
         vkCmdBindPipeline(
             Command, VK_PIPELINE_BIND_POINT_COMPUTE, bSmoothCoverage ? CoverageSmoothingPipeline : CoveragePipeline);
         vkCmdPushConstants(
             Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), &Push);
-        Dispatch(std::max(Vertices, SurfaceCount + 2U));
+        if (bFullCoverageUpdate)
+            Dispatch(Vertices);
+        else
+            vkCmdDispatchIndirect(Command, GeometryCacheBuffer.GetHandle(), CoverageDispatchIndirectOffset);
+        It->second.LastTileSize = MappingTileSize;
+        It->second.LastMaterialChannels = MaterialChannels;
+        It->second.LastMaterialMask = ActiveMaterialMask & 0x7U;
+        It->second.LastGeometryRevisions = GeometryRevisions;
+        It->second.LastProfileRevision = ProfileRevision;
+        It->second.LastHeightDisplayScale = HeightDisplayScale;
+        It->second.bLastSmoothCoverage = bSmoothCoverage;
+        It->second.bLastUseOpaqueBase = bUseOpaqueBase;
+        It->second.bCoverageInitialized = true;
         WriteStageTimestamp(2U);
 
         std::array<VkBufferMemoryBarrier, 3> CoverageToBoundaryBarriers{};

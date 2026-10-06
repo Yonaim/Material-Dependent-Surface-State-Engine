@@ -33,7 +33,9 @@ int main(int Argc, char* Argv[])
 
     try
     {
-        MDSS::TApplication TApplication(std::move(LaunchOptions.Benchmark));
+        MDSS::TApplication TApplication(std::move(LaunchOptions.Benchmark),
+                                        LaunchOptions.RenderTileSize,
+                                        LaunchOptions.bPerWorkgroupChannelMask);
         TApplication.Run(LaunchOptions.FrameLimit);
     }
     catch (const std::exception& Exception)

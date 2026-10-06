@@ -184,8 +184,8 @@ namespace MDSS::Rendering
             SurfaceState::GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
         if (!InputSet || InputBuffer.GetSize() != Bytes)
             throw std::invalid_argument("Height-field smoothing input does not match the texel geometry.");
-        if (OccupancyTileSize != 16U && OccupancyTileSize != 32U)
-            throw std::invalid_argument("Height-field smoothing sparse tile size must be 16 or 32.");
+        if (OccupancyTileSize != 8U && OccupancyTileSize != 16U && OccupancyTileSize != 32U)
+            throw std::invalid_argument("Height-field smoothing sparse tile size must be 8, 16, or 32.");
         const auto Key = std::make_pair(Instance, Channel);
         auto       It = Outputs.find(Key);
         if (It == Outputs.end())
@@ -247,12 +247,17 @@ namespace MDSS::Rendering
 
         const std::array<VkDescriptorSet, 3> Sets{
             bStateAB ? StateDescriptors.GetABSet() : StateDescriptors.GetBASet(), InputSet, It->second.Set};
-        const auto MaxTileCount = (TexelCount - 1U) / (16U * 16U) + 1U;
+        const VkDeviceSize CacheWords = GeometryCacheBuffer.GetSize() / sizeof(std::uint32_t);
+        if (CacheWords < static_cast<VkDeviceSize>(TexelCount) * 6U + 14U ||
+            (CacheWords - static_cast<VkDeviceSize>(TexelCount) * 6U - 14U) % 7U != 0U)
+            throw std::invalid_argument("Height-field smoothing geometry cache layout is invalid.");
+        const auto MaxTileCount =
+            (CacheWords - static_cast<VkDeviceSize>(TexelCount) * 6U - 14U) / 7U;
         const VkDeviceSize BaseCacheBytes =
             static_cast<VkDeviceSize>(TexelCount) * sizeof(glm::vec4);
         const VkDeviceSize NormalDispatchIndirectOffset =
             BaseCacheBytes +
-            (static_cast<VkDeviceSize>(TexelCount) + static_cast<VkDeviceSize>(MaxTileCount) * 4U + 5U) *
+            (static_cast<VkDeviceSize>(TexelCount) * 2U + static_cast<VkDeviceSize>(MaxTileCount) * 5U + 5U) *
                 sizeof(std::uint32_t);
         if (GeometryCacheBuffer.GetSize() < NormalDispatchIndirectOffset + 3U * sizeof(std::uint32_t))
             throw std::invalid_argument("Height-field smoothing geometry cache is missing sparse dispatch metadata.");

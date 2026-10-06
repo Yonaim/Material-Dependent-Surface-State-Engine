@@ -45,12 +45,18 @@ namespace MDSS::SurfaceState
 {
     struct TSurfaceTexelMeshGPUVariant
     {
+        struct TTileVertexList
+        {
+            std::vector<std::uint32_t> Words;
+            std::uint32_t TileCount = 0;
+        };
         std::unique_ptr<GPU::TGPUBuffer>    IndexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    VertexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    BoundaryBuffer;
         std::uint32_t                       VertexCount = 0;
         std::uint32_t                       BoundaryCount = 0;
         std::vector<TSurfaceTexelMeshRange> Ranges;
+        std::map<std::uint32_t, TTileVertexList> TileVertexLists;
     };
 
     enum class TSurfaceGPUDescriptorBinding : std::uint32_t
@@ -253,10 +259,19 @@ namespace MDSS::SurfaceState
         [[nodiscard]] VkDescriptorSet       GetBASet() const noexcept;
         [[nodiscard]] VkBuffer              GetBoundBufferHandle(TSurfaceGPUDescriptorBinding Binding, bool bAB) const;
         [[nodiscard]] std::array<std::uint64_t, 6> GetGeometryInputRevisions() const noexcept;
+        [[nodiscard]] std::uint64_t GetProfileParameterRevision() const noexcept
+        {
+            return ProfileResources->GetParametersBuffer().GetUploadRevision();
+        }
+        [[nodiscard]] const TSurfaceSharedGeometryGPUResources& GetSharedGeometry() const noexcept
+        {
+            return *SharedGeometryResources;
+        }
 
     private:
         VkDevice                                  Device = VK_NULL_HANDLE;
         const TSurfaceSharedGeometryGPUResources* SharedGeometryResources = nullptr;
+        const TSurfaceProfileGPUResources*        ProfileResources = nullptr;
         VkDescriptorSetLayout                     Layout = VK_NULL_HANDLE;
         VkDescriptorPool                          Pool = VK_NULL_HANDLE;
         std::array<VkDescriptorSet, 2>            Sets{VK_NULL_HANDLE, VK_NULL_HANDLE};

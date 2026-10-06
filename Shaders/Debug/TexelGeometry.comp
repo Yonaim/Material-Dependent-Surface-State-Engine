@@ -39,15 +39,15 @@ shared uint SparseTileY;
 
 uint CapacityTileCount()
 {
-    return (Push.TexelCount + 255u) / 256u;
+    return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
 }
 
 uint NormalListBase()
 {
     // After the four texel planes:
-    // flags[N], builtState[Texels], heightScheduled[N], normalScheduled[N],
+    // flags[N], builtState[Texels], builtCoverage[Texels], three scheduled-flag planes,
     // heightCount, heightDispatch[3], heightList[N], normalCount, normalDispatch[3], normalList[N].
-    return Push.TexelCount * 5u + CapacityTileCount() * 4u + 8u;
+    return Push.TexelCount * 6u + CapacityTileCount() * 5u + 8u;
 }
 
 bool ResolveCandidateTile(uint Candidate)

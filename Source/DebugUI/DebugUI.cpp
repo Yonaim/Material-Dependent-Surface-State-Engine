@@ -3689,6 +3689,28 @@ namespace MDSS
                                        [&](std::uint32_t Resolution)
                                        { FrameRenderer->SetOverlayTexelMeshResolution(Resolution); });
 
+        bool bBaseMeshDraw = FrameRenderer->IsBaseMeshDrawEnabled();
+        if (ImGui::Checkbox("Base Mesh draw", &bBaseMeshDraw))
+        {
+            FrameRenderer->SetBaseMeshDrawEnabled(bBaseMeshDraw);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        bool bOverlayTopDraw = FrameRenderer->IsOverlayTopDrawEnabled();
+        if (ImGui::Checkbox("Overlay Top draw", &bOverlayTopDraw))
+        {
+            FrameRenderer->SetOverlayTopDrawEnabled(bOverlayTopDraw);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        bool bOverlaySidesDraw = FrameRenderer->IsOverlaySidesDrawEnabled();
+        if (ImGui::Checkbox("Overlay Sides draw", &bOverlaySidesDraw))
+        {
+            FrameRenderer->SetOverlaySidesDrawEnabled(bOverlaySidesDraw);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+
         bool bOverlayTileCullingEnabled = FrameRenderer->IsOverlayTileCullingEnabled();
         if (ImGui::Checkbox("Overlay tile culling", &bOverlayTileCullingEnabled))
         {
@@ -3697,20 +3719,22 @@ namespace MDSS
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("활성 State가 없는 타일의 overlay coverage 계산을 건너뜁니다. 끄면 전체 overlay mesh를 검사합니다.");
+            SetDescriptionTooltip("Coverage를 변경된 render tile 목록으로 indirect dispatch합니다. 끄면 매 프레임 전체 정점을 계산합니다.");
 
         const auto OccupancyTileSize = FrameRenderer->GetOverlayOccupancyTileSize();
-        const char* OccupancyTileLabel = OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile16
-                                             ? "16 x 16"
-                                             : "32 x 32";
+        const char* OccupancyTileLabel = OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile8
+                                             ? "8 x 8"
+                                             : OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile16
+                                                   ? "16 x 16"
+                                                   : "32 x 32";
         ImGui::BeginDisabled(!bOverlayTileCullingEnabled);
-        const bool bOccupancyTileOpen = BeginLabeledCombo("Overlay culling tile", OccupancyTileLabel);
+        const bool bOccupancyTileOpen = BeginLabeledCombo("Render tile size", OccupancyTileLabel);
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("활성 State 영역을 거르는 overlay culling 타일 크기입니다. 작은 타일은 더 촘촘히 거르고, "
-                                  "큰 타일은 검사 오버헤드를 줄입니다.");
+            SetDescriptionTooltip("Occupancy, Height, Normal, smoothing, Coverage가 함께 사용하는 render tile 크기입니다.");
         if (bOccupancyTileOpen)
         {
-            const std::array<std::pair<const char*, Rendering::TOverlayOccupancyTileSize>, 2> TileOptions{{
+            const std::array<std::pair<const char*, Rendering::TOverlayOccupancyTileSize>, 3> TileOptions{{
+                {"8 x 8", Rendering::TOverlayOccupancyTileSize::Tile8},
                 {"16 x 16", Rendering::TOverlayOccupancyTileSize::Tile16},
                 {"32 x 32", Rendering::TOverlayOccupancyTileSize::Tile32},
             }};
@@ -3832,6 +3856,19 @@ namespace MDSS
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("Pass2가 다음 step의 active channel mask를 persistent A/B metadata에 직접 만들고, 새 CPU input channel은 "
                                   "fused reset/input-merge에서 현재 mask에 추가합니다. 32개 초과 channel은 안전하게 항상 활성로 처리합니다.");
+
+        bool bPerWorkgroupChannelMask = FrameRenderer->IsPerWorkgroupChannelMaskEnabled();
+        ImGui::BeginDisabled(!bActiveChannelMask);
+        if (ImGui::Checkbox("Per-WG Active Channel Mask", &bPerWorkgroupChannelMask))
+        {
+            FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("64-texel WG마다 이번 step에서 처리할 channel을 제한합니다. 이웃에서 들어오는 State와 "
+                                  "A/B buffer 정리를 위한 한 세대 유지도 포함합니다.");
+        ImGui::EndDisabled();
 
         bool bSparseSimulation = FrameRenderer->IsSparseSimulationGeometryEnabled();
         if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))

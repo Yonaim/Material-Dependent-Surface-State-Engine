@@ -25,7 +25,9 @@ namespace MDSS
 {
 #pragma region Lifecycle
 
-    TApplication::TApplication(TBenchmarkOptions BenchmarkOptions)
+    TApplication::TApplication(TBenchmarkOptions BenchmarkOptions,
+                               std::uint32_t RenderTileSize,
+                               bool bPerWorkgroupChannelMask)
         : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), SurfaceData(Assets), MainScene(),
           Benchmark(std::move(BenchmarkOptions))
     {
@@ -45,6 +47,8 @@ namespace MDSS
         SurfaceStates = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
         FrameRenderer =
             std::make_unique<Rendering::TRenderer>(Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStates);
+        FrameRenderer->SetOverlayOccupancyTileSize(static_cast<Rendering::TOverlayOccupancyTileSize>(RenderTileSize));
+        FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
         DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
         if (Benchmark.Enabled)
         {

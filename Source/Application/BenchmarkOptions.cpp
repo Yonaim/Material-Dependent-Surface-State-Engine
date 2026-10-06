@@ -74,6 +74,17 @@ namespace MDSS
                 Options.FrameLimit = ParsePositiveInteger(ReadValue(), Argument);
                 HasFrameLimit = true;
             }
+            else if (Argument == "--render-tile-size")
+            {
+                Options.RenderTileSize = ParsePositiveInteger(ReadValue(), Argument);
+                if (Options.RenderTileSize != 8U && Options.RenderTileSize != 16U &&
+                    Options.RenderTileSize != 32U)
+                    throw std::invalid_argument("--render-tile-size must be 8, 16, or 32.");
+            }
+            else if (Argument == "--per-wg-channel-mask")
+            {
+                Options.bPerWorkgroupChannelMask = true;
+            }
             else if (Argument == "--benchmark-scene")
             {
                 Options.Benchmark.ScenePath = std::filesystem::path(std::string(ReadValue()));
@@ -133,8 +144,10 @@ namespace MDSS
 
     const char* GetApplicationUsage() noexcept
     {
-        return "Usage: MDSS [--frames COUNT] | MDSS --benchmark-scene PATH --benchmark-resolution {128|256|512} "
-               "--benchmark-warmup-frames COUNT --benchmark-measure-frames COUNT --benchmark-output PATH";
+        return "Usage: MDSS [--frames COUNT] [--render-tile-size {8|16|32}] [--per-wg-channel-mask] | "
+               "MDSS --benchmark-scene PATH --benchmark-resolution {128|256|512} "
+               "--benchmark-warmup-frames COUNT --benchmark-measure-frames COUNT --benchmark-output PATH "
+               "[--render-tile-size {8|16|32}] [--per-wg-channel-mask]";
     }
 #pragma endregion
 } // namespace MDSS

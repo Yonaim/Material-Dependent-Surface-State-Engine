@@ -1299,6 +1299,7 @@ namespace MDSS::Rendering
             Replacement->SetSparseSolverEnabled(SurfaceStates.IsSparseSolverEnabled());
             Replacement->SetSparseAccumulationHeightEnabled(SurfaceStates.IsSparseAccumulationHeightEnabled());
             Replacement->SetActiveChannelMaskEnabled(SurfaceStates.IsActiveChannelMaskEnabled());
+            Replacement->SetPerWorkgroupChannelMaskEnabled(SurfaceStates.IsPerWorkgroupChannelMaskEnabled());
             Replacement->SetSparseSimulationGeometryEnabled(SurfaceStates.IsSparseSimulationGeometryEnabled());
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
@@ -1932,8 +1933,9 @@ namespace MDSS::Rendering
 
     void TRenderer::SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size)
     {
-        if (Size != TOverlayOccupancyTileSize::Tile16 && Size != TOverlayOccupancyTileSize::Tile32)
-            throw std::invalid_argument("Overlay occupancy tile size must be 16 or 32.");
+        if (Size != TOverlayOccupancyTileSize::Tile8 && Size != TOverlayOccupancyTileSize::Tile16 &&
+            Size != TOverlayOccupancyTileSize::Tile32)
+            throw std::invalid_argument("Overlay occupancy tile size must be 8, 16, or 32.");
         if (OverlayOccupancyTileSize == Size)
             return;
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
@@ -2012,6 +2014,16 @@ namespace MDSS::Rendering
     void TRenderer::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
     {
         SurfaceStates.SetActiveChannelMaskEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsPerWorkgroupChannelMaskEnabled() const noexcept
+    {
+        return SurfaceStates.IsPerWorkgroupChannelMaskEnabled();
+    }
+
+    void TRenderer::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetPerWorkgroupChannelMaskEnabled(bEnabled);
     }
 
     bool TRenderer::IsSparseSimulationGeometryEnabled() const noexcept
@@ -2546,7 +2558,9 @@ namespace MDSS::Rendering
                                    TimestampQueryPool,
                                    LayerQuery + 12U,
                                    true,
-                                   FrameIndex);
+                                   FrameIndex,
+                                   {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
+                                   (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U));
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                     {
                         vkCmdWriteTimestamp(
@@ -2599,6 +2613,7 @@ namespace MDSS::Rendering
                                          *Shared,
                                          *Descriptors,
                                          GeometrySet,
+                                         Preview.GetGeometryCacheBuffer(Instance),
                                          bStateAB,
                                          FrameIndex,
                                          TimestampQueryPool,
@@ -2733,6 +2748,8 @@ namespace MDSS::Rendering
                     bOverlayRendering && (OverlayActive[CurrentSceneIndex][0] || OverlayActive[CurrentSceneIndex][1] ||
                                           OverlayActive[CurrentSceneIndex][2]);
                 if (bOverlayOnlyDebug && bOverlayRendering)
+                    continue;
+                if (!bBaseMeshDrawEnabled)
                     continue;
                 if (bTexelGeometry || bInstanceOverlay)
                 {
@@ -2929,7 +2946,7 @@ namespace MDSS::Rendering
                                                 TopLayout, 4, 1, &RenderSet, 0, nullptr);
                         const VkBuffer TopDrawBuffer =
                             OverlaySides->GetTopDrawBuffer(I, Channel, OverlayTexelMeshResolution);
-                        if (OverlayDisplayMode != TOverlayDisplayMode::SidesOnly)
+                        if (bOverlayTopDrawEnabled && OverlayDisplayMode != TOverlayDisplayMode::SidesOnly)
                         {
                             for (const auto& Section : Mesh.GetSections())
                             {
@@ -2980,7 +2997,7 @@ namespace MDSS::Rendering
                                                 SideLayout, 4, 1, &RenderSet, 0, nullptr);
                         const VkBuffer SideDrawBuffer =
                             OverlaySides->GetDrawBuffer(I, Channel, OverlayTexelMeshResolution);
-                        if (OverlayDisplayMode != TOverlayDisplayMode::TopOnly)
+                        if (bOverlaySidesDrawEnabled && OverlayDisplayMode != TOverlayDisplayMode::TopOnly)
                         {
                             for (const auto& Section : Mesh.GetSections())
                             {
@@ -3008,7 +3025,7 @@ namespace MDSS::Rendering
                                                   0);
                             }
                         }
-                        if (OverlayDisplayMode != TOverlayDisplayMode::TopOnly &&
+                        if (bOverlaySidesDrawEnabled && OverlayDisplayMode != TOverlayDisplayMode::TopOnly &&
                             OverlaySides->GetBoundaryCount(I, Channel, OverlayTexelMeshResolution) > 0 &&
                             !Mesh.GetSections().empty())
                         {

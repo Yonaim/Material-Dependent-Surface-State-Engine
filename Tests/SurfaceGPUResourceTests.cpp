@@ -294,6 +294,41 @@ namespace
             Vulkan.GetDevice(), SharedGeometry, Profiles, InstanceB);
 
         Check(SharedGeometry.GetTexelCount() == 4, "shared Geometry should retain four texels");
+        const auto SparseLayout = GetSurfaceSparseMetadataLayout(4);
+        Check(SparseLayout.SolverAWorkgroupMaskWord == SparseLayout.SolverAMaskWord + 1U &&
+                  SparseLayout.SolverBWorkgroupMaskWord == SparseLayout.SolverBMaskWord + 1U &&
+                  SparseLayout.InputGroupMaskWord == SparseLayout.InputListWord + SparseLayout.WorkgroupCount &&
+                  SparseLayout.AccumulationCommandWord ==
+                      SparseLayout.InputGroupMaskWord + SparseLayout.WorkgroupCount,
+              "per-WG A/B masks and compact input masks should not overlap other sparse metadata");
+        auto MappingGeometry = BuildGeometry();
+        for (std::size_t Index = 0; Index < MappingGeometry.GetTexels().size(); ++Index)
+            MappingGeometry.GetTexels()[Index].Position =
+                {float(Index % 2U), float(Index / 2U), 0.0F};
+        TSurfaceSharedGeometryGPUResources MappingShared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(),
+                                                         MappingGeometry);
+        const auto& RenderMesh = MappingShared.GetTexelMeshVariant(2U);
+        Check(RenderMesh.IndexBuffer != nullptr, "nondegenerate test surface should produce overlay triangles");
+        if (RenderMesh.IndexBuffer)
+        for (const std::uint32_t TileSize : {8U, 16U, 32U})
+        {
+            const auto& Mapping = RenderMesh.TileVertexLists.at(TileSize);
+            const auto& Words = Mapping.Words;
+            Check(Words.size() == static_cast<std::size_t>(Mapping.TileCount) + 1U + RenderMesh.VertexCount,
+                  "tile-to-vertex map should contain offsets followed by every mesh vertex");
+            std::vector<std::uint32_t> Seen(RenderMesh.VertexCount, 0U);
+            for (std::uint32_t Tile = 0; Tile < Mapping.TileCount; ++Tile)
+            {
+                const auto Begin = Words[Tile];
+                const auto End = Words[Tile + 1U];
+                Check(Begin >= Mapping.TileCount + 1U && End >= Begin && End <= Words.size(),
+                      "tile-to-vertex offsets should remain inside the packed map");
+                for (std::size_t Offset = Begin; Offset < End && Offset < Words.size(); ++Offset)
+                    if (Words[Offset] < Seen.size()) ++Seen[Words[Offset]];
+            }
+            for (const auto Count : Seen)
+                Check(Count == 1U, "each overlay vertex should belong to exactly one render tile");
+        }
         Check(SharedGeometry.GetNeighborIndexBuffer().GetSize() ==
                   4U * sizeof(SurfaceState::TSurfaceGPUNeighborIndices),
               "neighbor buffer should use the expected per-texel stride");
@@ -526,6 +561,93 @@ namespace
         DispatchAndRead(true, State, RemainingInput);
         Check(std::abs(State[0] - 0.625F) < 1.0e-4F && std::abs(State[1] - 0.375F) < 1.0e-4F,
               "third solver step should continue deterministic diffusion");
+    }
+
+    void TestPerWorkgroupChannelMask(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS;
+        using namespace MDSS::SurfaceState;
+        TSurfaceStateParameters Parameters{};
+        Parameters.StateCapacity = 1.0F;
+        Parameters.SaturationTransferFactor = 1.0F;
+        TSurfaceResponseProfileData Profile;
+        Profile.States.emplace("mud", Parameters);
+        Profile.States.emplace("heat", Parameters);
+        const std::vector<TSurfaceResponseProfileData> Table{Profile};
+        const TSurfaceStateRegistry Registry(Table);
+        constexpr std::uint32_t Texels = 65U;
+        const auto Channels = static_cast<std::uint32_t>(Registry.GetStateCount());
+        const auto Mud = Registry.GetStateId("mud");
+        const auto Heat = Registry.GetStateId("heat");
+        TSharedSurfaceGeometryData Geometry({{0, {Texels, 1}}});
+        for (std::uint32_t I = 0; I < Texels; ++I)
+        {
+            auto& Texel = Geometry.GetTexels()[I];
+            Texel.Surface = Texel.Triangle = Texel.Chart = 0;
+            Texel.Position = {float(I), 0.0F, 0.0F};
+            Texel.Normal = {0.0F, 0.0F, 1.0F};
+        }
+        Geometry.GetTexels()[63].NeighborIndices[0] = 64;
+        Geometry.GetTexels()[64].NeighborIndices[0] = 63;
+        Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(Texels, 0U));
+        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Texels, Channels,
+                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        std::vector<float> Initial(static_cast<std::size_t>(Texels) * Channels, 0.0F);
+        Initial[63U * Channels + Mud] = 1.0F;
+        Initial[Heat] = 1.0F;
+        Instance.GetStateABuffer().Upload(Initial.data(), Initial.size() * sizeof(float));
+        const std::uint32_t Flags = SurfaceSolverSparseSolverFlag | SurfaceSolverActiveChannelMaskFlag |
+                                    SurfaceSolverPerWorkgroupChannelMaskFlag;
+        Vulkan.Execute([&](VkCommandBuffer Command)
+        {
+            Solver.RecordStep(Command, Descriptors, true, Texels, Channels, 0.0F, glm::mat4(1.0F),
+                              glm::vec3(0.0F), Flags | SurfaceSolverSeedPersistentActivityFlag);
+        });
+        const auto Layout = GetSurfaceSparseMetadataLayout(Texels);
+        std::array<std::uint32_t, 2> NextGroupMasks{};
+        Instance.GetAccumulationHeightBuffer().Download(
+            NextGroupMasks.data(), sizeof(NextGroupMasks),
+            Layout.SolverBWorkgroupMaskWord * sizeof(std::uint32_t));
+        Check((NextGroupMasks[0] & (1U << Mud)) != 0U &&
+                  (NextGroupMasks[0] & (1U << Heat)) != 0U &&
+                  NextGroupMasks[1] == (1U << Mud),
+              "per-WG mask should extend Mud one hop across the WG boundary without extending unrelated Heat");
+        Vulkan.Execute([&](VkCommandBuffer Command)
+        {
+            Solver.RecordStep(Command, Descriptors, false, Texels, Channels, 0.25F, glm::mat4(1.0F),
+                              glm::vec3(0.0F), Flags);
+        });
+        std::vector<float> Result(Initial.size(), 0.0F);
+        Instance.GetStateABuffer().Download(Result.data(), Result.size() * sizeof(float));
+        Check(Result[64U * Channels + Mud] > 0.0F,
+              "per-WG mask should permit incoming transport into an initially empty WG");
+        Parameters.DecayRate = 100.0F;
+        Profiles.UpdateParameters(0U, Mud, Parameters);
+        Vulkan.Execute([&](VkCommandBuffer Command)
+        {
+            Solver.RecordStep(Command, Descriptors, true, Texels, Channels, 1.0F, glm::mat4(1.0F),
+                              glm::vec3(0.0F), Flags);
+        });
+        Instance.GetStateBBuffer().Download(Result.data(), Result.size() * sizeof(float));
+        Check(Result[64U * Channels + Mud] == 0.0F,
+              "decay should make the destination WG empty before ping-pong cleanup");
+        Instance.GetAccumulationHeightBuffer().Download(
+            NextGroupMasks.data(), sizeof(NextGroupMasks),
+            Layout.SolverBWorkgroupMaskWord * sizeof(std::uint32_t));
+        Check((NextGroupMasks[1] & (1U << Mud)) != 0U,
+              "per-WG mask should retain a channel for one cleanup generation after it reaches zero");
+        Vulkan.Execute([&](VkCommandBuffer Command)
+        {
+            Solver.RecordStep(Command, Descriptors, false, Texels, Channels, 0.0F, glm::mat4(1.0F),
+                              glm::vec3(0.0F), Flags);
+        });
+        Instance.GetStateABuffer().Download(Result.data(), Result.size() * sizeof(float));
+        Check(Result[64U * Channels + Mud] == 0.0F,
+              "per-WG cleanup should overwrite stale state in the opposite ping-pong buffer");
     }
 
     void TestAreaAndMobility(TVulkanTestDevice& Vulkan)
@@ -1498,6 +1620,7 @@ int main()
         TVulkanTestDevice Vulkan;
         TestGPUResources(Vulkan);
         TestGPUSolver(Vulkan);
+        TestPerWorkgroupChannelMask(Vulkan);
         TestDirectionalCavityRetention(Vulkan);
         TestAreaAndMobility(Vulkan);
         TestCalibratedGeometrySpeed(Vulkan);

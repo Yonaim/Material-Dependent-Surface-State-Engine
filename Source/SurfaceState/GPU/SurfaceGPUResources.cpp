@@ -8,6 +8,7 @@
 #include <glm/gtc/packing.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -201,6 +202,54 @@ namespace MDSS::SurfaceState
                                                                     UploadMemory,
                                                                     GPU::TGPUBufferMemoryCategory::SurfaceGeometry);
             Output.VertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
+            // One immutable CSR vertex list per render tile size. Geometry shares these lists;
+            // coverage and its history remain owned by each Scene instance.
+            for (const std::uint32_t TileSize : {8U, 16U, 32U})
+            {
+                std::vector<std::uint32_t> SurfaceTileBases(SurfaceRanges.size() + 1U, 0U);
+                for (std::size_t Surface = 0; Surface < SurfaceRanges.size(); ++Surface)
+                {
+                    const auto& Range = SurfaceRanges[Surface];
+                    const std::size_t Tiles =
+                        ((static_cast<std::size_t>(Range.Width) + TileSize - 1U) / TileSize) *
+                        ((static_cast<std::size_t>(Range.Height) + TileSize - 1U) / TileSize);
+                    if (Tiles > std::numeric_limits<std::uint32_t>::max() - SurfaceTileBases[Surface])
+                        throw std::overflow_error("Overlay tile count exceeds uint32 range.");
+                    SurfaceTileBases[Surface + 1U] = SurfaceTileBases[Surface] + static_cast<std::uint32_t>(Tiles);
+                }
+                const std::uint32_t TileCount = SurfaceTileBases.back();
+                std::vector<std::vector<std::uint32_t>> TileVertices(TileCount);
+                for (std::uint32_t Vertex = 0; Vertex < Mesh.Vertices.size(); ++Vertex)
+                {
+                    const auto& UVSurface = Mesh.Vertices[Vertex].UVSurface;
+                    if (!std::isfinite(UVSurface.x) || !std::isfinite(UVSurface.y) ||
+                        !std::isfinite(UVSurface.w) || UVSurface.w < 0.0F ||
+                        UVSurface.w >= static_cast<float>(SurfaceRanges.size()))
+                        throw std::runtime_error("Overlay vertex has an invalid surface or UV.");
+                    const auto Surface = static_cast<std::uint32_t>(UVSurface.w);
+                    const auto& Range = SurfaceRanges[Surface];
+                    if (Range.Width == 0U || Range.Height == 0U)
+                        throw std::runtime_error("Overlay vertex belongs to an empty surface range.");
+                    const auto X = std::min(static_cast<std::uint32_t>(
+                        std::clamp(UVSurface.x, 0.0F, 1.0F) * Range.Width), Range.Width - 1U);
+                    const auto Y = std::min(static_cast<std::uint32_t>(
+                        std::clamp(UVSurface.y, 0.0F, 1.0F) * Range.Height), Range.Height - 1U);
+                    const auto TilesX = (Range.Width + TileSize - 1U) / TileSize;
+                    const auto Candidate = SurfaceTileBases[Surface] + (Y / TileSize) * TilesX + X / TileSize;
+                    TileVertices[Candidate].push_back(Vertex);
+                }
+                std::vector<std::uint32_t> Packed(TileCount + 1U, 0U);
+                for (std::uint32_t Tile = 0; Tile < TileCount; ++Tile)
+                {
+                    Packed[Tile] = static_cast<std::uint32_t>(Packed.size());
+                    Packed.insert(Packed.end(), TileVertices[Tile].begin(), TileVertices[Tile].end());
+                }
+                Packed[TileCount] = static_cast<std::uint32_t>(Packed.size());
+                TSurfaceTexelMeshGPUVariant::TTileVertexList List;
+                List.TileCount = TileCount;
+                List.Words = std::move(Packed);
+                Output.TileVertexLists.emplace(TileSize, std::move(List));
+            }
             const glm::uvec4 EmptyEdge{0};
             const auto*      Edges = Mesh.BoundaryEdges.empty() ? &EmptyEdge : Mesh.BoundaryEdges.data();
             const auto       BoundaryBytes =
@@ -644,7 +693,7 @@ namespace MDSS::SurfaceState
         const TSurfaceSharedGeometryGPUResources& SharedGeometry,
         const TSurfaceProfileGPUResources&        Profiles,
         const TSurfaceInstanceGPUResources&       Instance)
-        : Device(Device), SharedGeometryResources(&SharedGeometry)
+        : Device(Device), SharedGeometryResources(&SharedGeometry), ProfileResources(&Profiles)
     {
         if (SharedGeometry.GetTexelCount() != Instance.GetTexelCount() ||
             Profiles.GetChannelCount() != Instance.GetChannelCount())

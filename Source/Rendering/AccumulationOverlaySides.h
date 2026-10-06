@@ -64,6 +64,7 @@ namespace MDSS::Rendering
                                                const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
                                                const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
                                                VkDescriptorSet                                         ComputedSet,
+                                               const GPU::TGPUBuffer&                                  GeometryCacheBuffer,
                                                bool                                                    bStateAB,
                                                std::size_t                                             FrameIndex = 0,
                                                VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
@@ -92,6 +93,15 @@ namespace MDSS::Rendering
             std::uint32_t                                                                   TriangleCount = 0;
             std::uint32_t                                                                   BoundaryCount = 0;
             std::uint32_t                                                                   SurfaceCount = 0;
+            std::uint32_t                                                                   LastTileSize = 0;
+            std::array<std::uint32_t, 3>                                                   LastMaterialChannels{};
+            std::uint32_t                                                                   LastMaterialMask = 0;
+            std::array<std::uint64_t, 6>                                                   LastGeometryRevisions{};
+            std::uint64_t                                                                   LastProfileRevision = 0;
+            float                                                                           LastHeightDisplayScale = 0.0F;
+            bool                                                                            bLastSmoothCoverage = false;
+            bool                                                                            bLastUseOpaqueBase = false;
+            bool                                                                            bCoverageInitialized = false;
         };
         VkPhysicalDevice                                         PhysicalDevice;
         VkDevice                                                 Device;
@@ -100,6 +110,7 @@ namespace MDSS::Rendering
         VkPipelineLayout                                         PipelineLayout = VK_NULL_HANDLE;
         VkPipeline                                               CoveragePipeline = VK_NULL_HANDLE;
         VkPipeline                                               CoverageSmoothingPipeline = VK_NULL_HANDLE;
+        VkPipeline                                               DrawResetPipeline = VK_NULL_HANDLE;
         VkPipeline                                               BoundaryPipeline = VK_NULL_HANDLE;
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;
         std::vector<std::unique_ptr<GPU::TGPUBuffer>>            CoveragePages;
