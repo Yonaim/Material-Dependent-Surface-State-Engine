@@ -157,7 +157,7 @@ namespace MDSS
         void                      DrawContactInputTab();
         void                      DrawProfileTuningTab(TScene& SceneData);
         void                      DrawSimulationSettingsTab(TScene& SceneData);
-        void                      DrawPerformanceTab();
+        void                      DrawPerformanceTab(bool bRendering);
         void                      DrawLogWindow();
 
         // Shared layout helpers
@@ -227,16 +227,15 @@ namespace MDSS
         struct TViewportPanel
         {
             std::uint32_t Id = 0;
-            TCamera       Camera;
             glm::vec4     RectNormalized{0.0F};
         };
-        std::vector<TViewportPanel> ViewportPanels{TViewportPanel{1U, TCamera{}, glm::vec4(0.0F)}};
+        std::vector<TViewportPanel> ViewportPanels{TViewportPanel{1U, glm::vec4(0.0F)}};
         std::uint32_t               NextViewportId = 2;
         std::uint32_t               ActiveViewportId = 1;
         std::uint32_t               HoveredViewportId = 0;
         bool                        bMouseOverViewportOverlay = false;
         glm::vec4                   ViewportWorkspaceRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
-        int                         ViewportLayout = 0; // 0: grid, 1: horizontal, 2: vertical
+        int                         ViewportLayout = 2; // 0: grid, 1: horizontal, 2: vertical
 
         std::array<bool, static_cast<std::size_t>(TLogLevel::Count)> LogLevelFilters{true, true, true, true, true};
         std::array<char, 128>                                        LogSearch{};
@@ -277,11 +276,6 @@ namespace MDSS
         }();
         std::deque<TProfilingSample> ProfilingRecentSamples;
         bool                         bProfilingAverageAvailable = false;
-        bool                         bShowProfilingAverage = true;
-        bool                         bShowProfilingMaximum = false;
-        bool                         bShowProfilingPast100ms = false;
-        bool                         bShowDetailedProfiling = true;
-        bool                         bSolverMetricsPerStep = false;
         bool                         bViewportOverlaysVisible = true;
     };
 } // namespace MDSS

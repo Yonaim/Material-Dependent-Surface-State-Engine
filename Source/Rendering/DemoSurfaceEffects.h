@@ -53,6 +53,7 @@ namespace MDSS::Rendering
         bool      bCoverageSmoothing = true;
         float     DryRoughness = 0.65F;
         float     HeatStrength = 1.0F;
+        float     LavaThreshold = 0.02F;
         float     MudRoughness = 0.48F;
         float     WaterFilmOpacity = 1.0F;
         float     WaterFilmRoughness = 0.16F;

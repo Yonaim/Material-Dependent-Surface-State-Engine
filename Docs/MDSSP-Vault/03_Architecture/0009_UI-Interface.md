@@ -12,8 +12,8 @@
 | 영역 | 기능 |
 |---|---|
 | 가운데 3D Viewport | Scene 표시, object 선택, 렌더·Surface 진단 뷰 선택 |
-| 좌측 패널 | 상단 `Scene`·`Animation` 탭, Camera, 선택 object Transform, 렌더 설정 |
-| 우측 패널 | 상단 공통 실행 제어, 하단 `Solver`, `Contact Input`, `Profile Tuning`, `Performance` 탭 |
+| 좌측 패널 | 상단 `Scene`·`Animation` 탭, Camera, 선택 object Transform, `Render Debug`의 `Visual`·`Display`·`Performance` 탭 |
+| 우측 패널 | `Simulation Debug`의 상단 공통 실행 제어, 하단 `Settings`·`Solver`·`Input`·`Profiles` 탭 |
 | Viewport 상단 | FPS, GPU Render·Solver 성능 표시 |
 | 하단 `Log` | 로그 level 필터, 검색, 복사·삭제 |
 
@@ -23,12 +23,13 @@
 ## UI 표시 규칙
 
 - 설명·보조 정보는 전역 `TextDisabled` 색을 사용하며 일반 라벨·값보다 어두운 회색으로 표시한다. 줄바꿈 설명과 설명 Tooltip에도 같은 색을 적용한다.
-- 체크박스는 모든 패널에서 `체크박스 → 라벨` 순서로 왼쪽에 배치한다. 슬라이더·드롭다운의 라벨과 값 열 정렬은 별도 규칙이다.
+- 체크박스는 모든 패널에서 `체크박스 → 라벨` 순서로 왼쪽에 배치한다. 슬라이더·드롭다운의 라벨과 값 열 정렬은 별도 규칙이다. 상위 옵션이 꺼졌거나 필요한 State가 로드되지 않은 하위 조작부는 비활성 색으로 표시한다.
 
 ## Viewport와 렌더 설정
 
-- `Render Options`에서 한 번에 하나의 뷰를 선택한다.
-- 전역 렌더 설정은 `Render Settings`에 둔다. 선택한 뷰에만 적용되는 조절기와 설명은 Viewport의 선택 뷰 설명 상자에 표시한다.
+- 기본은 단일 Viewport다. 상단 `Render Options`의 `+ View`로 두 번째 Viewport를 추가하면 작업 영역을 위·아래로 반씩 나눈다. 새 Viewport의 기본 모드는 `State Heatmap`이며 `Remove View`로 보조 Viewport를 닫는다.
+- 두 Viewport는 같은 Scene camera를 공유하고 각자 Render View Mode를 유지한다. Viewport를 클릭해 활성 화면을 고른 뒤 상단 `View` 메뉴에서 해당 화면의 모드를 바꾼다. State 선택 등 뷰 설정은 두 화면이 공유한다.
+- 전역 렌더 설정은 좌측 `Render Debug`에 둔다. 선택한 뷰에만 적용되는 조절기와 설명은 Viewport의 선택 뷰 설명 상자에 표시한다.
 - **Display:** Lit, Unlit, Vertex Normal, Normal Texture, Mapped Normal
 - **Debug:** Surface, Geometry, Texel, Solver 하위 메뉴로 구분한다.
 
@@ -49,8 +50,8 @@
 - Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[05_Decisions/0015_Texel-Geometry-Preview|Decision 0015]]).
 - Wireframe 뷰 설명 상자에서 선을 흰색으로 통일할지 선택하고, GPU가 wide lines를 지원하면 선 굵기도 조절한다. 기본 굵기는 2 px다.
 - Meso·Accumulation·Final Geometry 뷰 설명 상자에서 `Height Surface Grid`의 Off / Overlay / Grid only와 셀당 texel 수를 조절한다. Grid only도 어두운 면으로 depth를 유지한다. 새 View Mode는 추가하지 않는다 ([[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]]).
-- 좌측 `Render Settings`: Normal strength, Ambient light, Normal Y 반전
-- `Lit Demo Effects`: Heat/Mud/WaterFilm/Lava 반응, 적층 표시 여부, WaterFilm의 `Transparent surface` 옵션, Heat red tint와 Mud roughness, Lit·선택 State 미리보기·Inspector가 공유하는 `Lit height display scale`. 기본은 공통 윗면의 얇은 막 합성이며 투명 옵션은 최종 높이에 물 윗면을 추가한다. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
+- 좌측 `Render Debug`의 `Visual`: Heat/WaterFilm/Mud/Lava 활성화 체크박스를 먼저 나열한다. 켜진 효과만 아래에 접을 수 있는 설정 제목을 표시한다. 각 효과는 하나의 `Color ramp` 범위 슬라이더로 포화도별 색 전환 시작점과 끝점을 조절한다. Heat에는 `Strength`, Lava에는 `Lava threshold`를 제공해 낮은 포화도에서 Lava 색과 발광을 억제한다. 공통 `Height fade threshold`는 낮은 State 포화도의 적층 형상을 화면에서 부드럽게 줄인다. 관련 State가 로드되지 않은 효과는 비활성 색으로 표시한다. 하단의 기본 접힘 `Shading`에는 Ambient/direct mix, Dry surface roughness, Normal Strength, Flip Y를 둔다. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
+- `Render Debug`의 `Display`: `Overlay only`, 해당 모드에서 고르는 `Overlay display`, Base Mesh/Overlay Top/Overlay Sides draw, `Lit height display scale`. 표시 배율은 렌더링 전용이며 시뮬레이션 데이터를 바꾸지 않는다.
 - 선택한 뷰의 State·보조 옵션은 Viewport 상단에 표시한다.
 
 ## Scene 편집
@@ -87,13 +88,14 @@
 
 ## 공통 Simulation 제어
 
-초기 UI는 실행 제어와 Solver 설정을 `Simulation` 탭에 함께 배치했다. 현재는 자주 사용하는 실행 제어를 탭 위에 두고 세부 기능을 `Solver`, `Contact Input`, `Profile Tuning`, `Performance`로 나눈다. 시뮬레이션 설정과 Solver 항목은 `Solver`에 모으고, 화면 품질과 성능 비교 옵션은 `Performance`에 둔다. Texel Inspector 탭은 임시로 숨겼다.
+`Simulation Debug`는 자주 사용하는 실행 제어를 탭 위에 두고, 세부 기능을 `Settings`, `Solver`, `Input`, `Profiles`로 나눈다. 렌더링 설정은 좌측 `Render Debug`에 둔다. Texel Inspector 탭은 임시로 숨겼다.
 
 - Running/Paused, Step, Reset State와 Speed 프리셋·조절기는 항상 표시한다.
 - Playback과 Controls는 일반 텍스트 라벨을 왼쪽에, 조절 위젯을 오른쪽에 정렬한다. Speed는 프리셋과 배속 조절기를 한 행에 둔다. 패널 폭이 좁으면 같은 조절 열에서 다음 줄로 이어진다.
 - 슬라이더는 더블클릭으로 수치를 직접 입력할 수 있다.
 - 공통 제어와 탭 바는 고정하고, 선택한 탭의 본문만 스크롤한다.
 - 공통 제어와 탭 사이 구분선 위아래에 추가 여백을 둔다. 탭 본문은 별도 배경을 그리지 않고 부모 패널의 배경을 그대로 사용한다.
+- 양쪽 Debug 창은 같은 창 제목 스타일을 사용한다. 탭 바로 아래에는 12 px의 여백을 두고, 탭 이름을 되풀이하는 본문 제목은 표시하지 않는다.
 
 | 설정 | 동작 |
 |---|---|
@@ -102,16 +104,15 @@
 | Reset State | State, 누적 입력, 진행·대기 시간 초기화. Profile override 복원과 별개 |
 | Speed | 실제 누적 시간에 곱하는 배속. 프리셋 또는 슬라이더로 조절하며, 슬라이더 더블클릭으로 값을 직접 입력한다. 고정 기본 구간 1/60초는 유지 |
 
-## Solver 탭 — Simulation 설정
+## Settings 탭
 
-Solver 탭 상단의 `Simulation Setup`에는 해상도와 시간 간격처럼 시뮬레이션 자체에 영향을 주는 설정을 모은다.
+`Resolution & Time`에는 시뮬레이션 해상도와 시간 간격 설정을 둔다.
 
 | 설정 | 동작 |
 |---|---|
-| Simulation Resolution | Low `128 × 128`, Medium `256 × 256`, High `512 × 512` |
+| Resolution | `128 × 128`, `256 × 256`, `512 × 512`를 숫자로 선택. 선택값 아래의 중복 해상도 설명은 표시하지 않음 |
 | Fixed timestep | 기본 ON. 실제 시간×배속을 누적하고 1/60초 구간이 모일 때 계산. Auto OFF이면 dt는 정확히 1/60초 |
 | Auto substepping | 기본 OFF. ON에서만 Transport 상한에 맞춰 구간을 작은 Solver step으로 나눔. Fixed OFF·Auto OFF는 누적 시간을 한 번에 계산 |
-| Use Accumulated Surface | 기본 ON. 적층으로 바뀐 높이와 표면 방향을 갱신해 이후 흐름 계산에 반영 |
 
 - Scene에 해상도가 없으면 Medium을 사용한다.
 - 해상도 변경 시 Surface 데이터와 GPU 자원을 다시 준비하고 State·입력을 초기화한다.
@@ -121,33 +122,32 @@ Solver 탭 상단의 `Simulation Setup`에는 해상도와 시간 간격처럼 �
 
 Simulation 상태 overlay에서 step 수, step 간격, 진행 시간과 backlog를 확인한다. Pause 중에는 시간을 누적하지 않고 Step은 Solver 한 번이다. 수동 실행 dt는 Auto OFF에서 1/60초, ON에서 현재 Transport 상한이다. 지속 GPU 과부하에서는 backlog가 늘 수 있다. [[05_Decisions/0013_Fixed-Timestep-and-Auto-Substepping|Decision 0013]], [[02_Research/0004_Substepping-and-Adaptive-Time-Stepping|용어와 공식 문서]]
 
-## Performance 탭
+`Cache & Precision`에는 Raw Flux Cache, Coalesced Raw Flux Layout, FP16 Raw Flux, FP16 Weights를 둔다. Raw Flux Cache와 Sparse Execution의 metadata 옵션 옆에는 해당 기능에 대응하는 사전 예약 영역의 추정 크기를 표시한다. FP16 옵션 옆과 Memory Profiling overlay에는 현재 Scene instance 기준의 컴팩트 재할당 예상 절감량을 표시한다. FP16 Weights는 Dynamic TransferWeight의 FP16 옵션이다. Vulkan 버퍼는 기능 토글과 무관하게 전체 크기로 미리 할당되므로 옵션을 꺼도 `Current` GPU total은 바뀌지 않는다. 실제 메모리 절감에는 버퍼 재할당이 필요하다.
 
-- `Rendering Setup`은 접힌 상태로 시작하며 Surface/Overlay mesh 해상도, Base/Overlay draw, tile culling과 tile 크기를 모은다.
-- `Rendering Quality`에는 기본 ON인 Height smoothing과 Coverage smoothing을 둔다.
-- `Simulation Performance`에는 Raw Flux Cache를 둔다. `Advanced Performance` 안의 Simulation A/B와 Rendering A/B는 세부 구현 경로 비교 옵션을 접어서 표시한다.
-- FP16 옵션 옆과 Memory Profiling overlay에 현재 Scene instance 기준의 컴팩트 재할당 예상 절감량을 표시한다. 이는 실제 Vulkan 할당량이 아니며 실제 할당량은 별도 `Current` 값에 표시한다.
+`Sparse Execution`은 더 큰 글씨와 여백으로 구분한 `Active`와 `Dirty` 소제목을 둔다. Active에는 active workgroup 기반 `Sparse Solver Workgroup Scheduling`, Active Channel Mask, Per-WG Active Channel Mask를 둔다. Dirty에는 값이 바뀐 누적 높이 group만 갱신하는 Sparse Accumulation Height와 built geometry와 높이/normal이 달라진 group 및 topology 이웃을 갱신하는 Sparse Simulation Geometry를 둔다. 각 옵션 옆에는 공유 metadata buffer에서 해당 기능에 대응하는 예약 영역의 추정 크기를 표시하며, 옵션을 끄더라도 버퍼 할당은 유지된다.
+
+## Rendering Performance
+
+- 좌측 `Render Debug > Performance`에는 Surface/Overlay mesh 해상도, Overlay tile culling과 tile 크기, 기본 ON인 Height/Coverage smoothing을 둔다. `Advanced` 제목 아래 Sparse Height Smoothing, Precompute/Separable Coverage Smoothing, Render State Texture Sampling을 바로 나열한다.
 
 ## Solver 항목
 
-- Solver debug terms는 접힌 `Transport Terms`와 `Decay Terms`에서 runtime에 켜고 끌 수 있다:
-  - `Use Accumulated Surface`는 탭 상단 `Simulation Setup`에서 설정한다. ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
+- Solver debug terms는 `Transport`와 `Decay` 제목 아래에서 runtime에 켜고 끌 수 있다:
+  - 탭 상단 `Accumulation Geometry`의 `Use Accumulated Surface`는 기본 ON이다. ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
   - Transport: `Saturation spreading` (`SaturationDrive`), `Gravity-guided flow` (`GeometryDrive`), DirectionDrive: MesoNormal, DistanceWeight, NormalWeight, ProfileBoundaryWeight
   - Decay: Decay, `Cavity decay protection` (`ConcavityRetention`)
-  - Lit Demo Effects의 `Lit height display scale`은 Lit과 디버그 미리보기에서 공유하는 렌더링 전용 설정이며 Simulation이 읽지 않는다.
-- Raw Flux Cache와 성능 A/B 옵션은 `Performance` 탭에서 조절한다. Fixed timestep과 Auto substepping은 Solver 탭의 `Simulation Setup`에 둔다.
-- `Diagnostics`는 기본 접힘이다. 전체 texel 수와 유효 texel 비율을 표시하며, Paused에서는 다음 read buffer와 최근 Solver GPU 시간도 표시한다.
+- Raw Flux Cache와 시뮬레이션 최적화 옵션은 우측 `Settings` 탭에서 조절한다. Fixed timestep과 Auto substepping도 같은 탭의 `Resolution & Time`에 둔다.
 
-## Contact Input과 Profile Tuning
+## Input과 Profiles
 
-**Contact Input**
+**Input**
 
 - 설정: State, World radius, Strength, Falloff
 - Inject가 켜진 상태에서 Space를 새로 누르면 카메라 방향 Raycast로 접촉을 생성한다.
 - ImGui가 키보드 입력을 처리 중이면 접촉을 생성하지 않는다.
 - 게임 Physics 입력 어댑터는 아직 제공하지 않는다. 계약: [[03_Architecture/0005_Surface-Input|Surface Contact Input]]
 
-**Profile Tuning**
+**Profiles**
 
 - 현재 Scene에서 참조하는 `.SRProfile`과 State를 선택한다.
 - 지원 parameter: StateCapacity, InputFactor, SaturationTransferFactor, GeometryTransferFactor, DecayRate, CavityRetentionFactor, CavityTransportRetentionFactor, AccumulationFactor, CavityFillFactor, ThicknessPerAmount

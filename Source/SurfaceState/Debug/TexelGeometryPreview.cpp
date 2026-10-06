@@ -35,7 +35,9 @@ namespace MDSS::SurfaceState
                                                  bool                  bEnableOccupancyScan)
         : PhysicalDevice(PhysicalDevice), Device(Device), bEnableOccupancyScan(bEnableOccupancyScan)
     {
-        if (!SurfaceLayout || MaxInstances == 0 || MaxInstances > std::numeric_limits<std::uint32_t>::max() / 2U)
+        constexpr std::size_t OutputSlots = 3U;
+        if (!SurfaceLayout || MaxInstances == 0 ||
+            MaxInstances > std::numeric_limits<std::uint32_t>::max() / (OutputSlots * 2U))
             throw std::invalid_argument("Texel geometry preview requires Surface resources and instance slots.");
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
@@ -107,10 +109,10 @@ namespace MDSS::SurfaceState
             if (bEnableOccupancyScan)
                 CreatePipeline("Rendering/StateOverlay", "OverlayOccupancyScan.comp", OccupancyPipeline);
             const VkDescriptorPoolSize PoolSize{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                                static_cast<std::uint32_t>(MaxInstances * 2U)};
+                                                static_cast<std::uint32_t>(MaxInstances * OutputSlots * 2U)};
             VkDescriptorPoolCreateInfo PoolInfo{};
             PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            PoolInfo.maxSets = static_cast<std::uint32_t>(MaxInstances);
+            PoolInfo.maxSets = static_cast<std::uint32_t>(MaxInstances * OutputSlots);
             PoolInfo.poolSizeCount = 1;
             PoolInfo.pPoolSizes = &PoolSize;
             RequireVk(vkCreateDescriptorPool(Device, &PoolInfo, nullptr, &Pool));
@@ -150,17 +152,18 @@ namespace MDSS::SurfaceState
 
 #pragma region Preview_Accessors_and_Settings
 
-    VkDescriptorSet TTexelGeometryPreview::GetOutputSet(std::size_t Instance) const
+    VkDescriptorSet TTexelGeometryPreview::GetOutputSet(std::size_t Instance, std::size_t OutputSlot) const
     {
-        return Outputs.at(Instance).Set;
+        return Outputs.at({Instance, OutputSlot}).Set;
     }
-    const GPU::TGPUBuffer& TTexelGeometryPreview::GetOutputBuffer(std::size_t Instance) const
+    const GPU::TGPUBuffer& TTexelGeometryPreview::GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot) const
     {
-        return *Outputs.at(Instance).Buffer;
+        return *Outputs.at({Instance, OutputSlot}).Buffer;
     }
-    const GPU::TGPUBuffer& TTexelGeometryPreview::GetGeometryCacheBuffer(std::size_t Instance) const
+    const GPU::TGPUBuffer& TTexelGeometryPreview::GetGeometryCacheBuffer(std::size_t Instance,
+                                                                         std::size_t OutputSlot) const
     {
-        return *Outputs.at(Instance).GeometryCache;
+        return *Outputs.at({Instance, OutputSlot}).GeometryCache;
     }
 
     TTexelGeometryPreview::TTileActivity TTexelGeometryPreview::CompleteOccupancyFrame(std::size_t FrameIndex)
@@ -238,7 +241,8 @@ namespace MDSS::SurfaceState
                                        bool                                    bTotalHeight,
                                        std::size_t                             FrameIndex,
                                        std::array<std::uint32_t, 3>           MaterialChannels,
-                                       std::uint32_t                           ActiveMaterialMask)
+                                                    std::uint32_t                           ActiveMaterialMask,
+                                                    std::size_t                             OutputSlot)
     {
         if (FrameIndex >= Rendering::TRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Occupancy frame slot is invalid.");
@@ -291,7 +295,8 @@ namespace MDSS::SurfaceState
             (static_cast<VkDeviceSize>(TexelCount) * 2U + static_cast<VkDeviceSize>(MaxTileCount) * 5U + 5U) *
                 sizeof(std::uint32_t);
 
-        auto It = Outputs.find(Instance);
+        const auto OutputKey = std::pair{Instance, OutputSlot};
+        auto       It = Outputs.find(OutputKey);
         if (It == Outputs.end())
         {
             TOutput Output;
@@ -338,7 +343,7 @@ namespace MDSS::SurfaceState
                 Writes[Binding].pBufferInfo = &DescriptorBuffers[Binding];
             }
             vkUpdateDescriptorSets(Device, static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
-            It = Outputs.emplace(Instance, std::move(Output)).first;
+            It = Outputs.emplace(OutputKey, std::move(Output)).first;
         }
         if (It->second.Buffer->GetSize() != Bytes || It->second.GeometryCache->GetSize() != CacheBytes)
             throw std::logic_error("Texel geometry size changed without rebuilding Scene resources.");

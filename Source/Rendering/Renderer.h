@@ -334,7 +334,9 @@ namespace MDSS::Rendering
 
         // Render view and debug settings
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
+        [[nodiscard]] TRenderViewMode GetRenderViewMode(std::size_t ViewportIndex) const noexcept;
         void               SetRenderViewMode(TRenderViewMode Mode);
+        void               SetRenderViewMode(std::size_t ViewportIndex, TRenderViewMode Mode);
         [[nodiscard]] bool IsWireframeUniformWhite() const noexcept
         {
             return bWireframeUniformWhite;
@@ -455,7 +457,7 @@ namespace MDSS::Rendering
                                                    const TScene&   SceneData,
                                                    const TDebugUI& DebugInterface,
                                                    float           LitHeightDisplayScale);
-        [[nodiscard]] float GetDebugViewParameter() const noexcept;
+        [[nodiscard]] float GetDebugViewParameter(TRenderViewMode Mode) const noexcept;
         [[nodiscard]] bool  CanRenderLitOverlays() const noexcept;
         [[nodiscard]] std::array<bool, 3>
              GetLitOverlayActivity(const TStaticMeshInstance&                              Instance,
@@ -509,7 +511,7 @@ namespace MDSS::Rendering
         std::vector<TMaterialRenderResource>                 MaterialResources;
         VkDeviceSize                                         MaterialUniformStride = 0;
         std::size_t                                          MaterialViewportCapacity = 1;
-        TRenderViewMode                                      ViewMode = TRenderViewMode::Lit;
+        std::vector<TRenderViewMode>                         ViewModes{TRenderViewMode::Lit};
         bool                                                 bWireframeUniformWhite = true;
         bool                                                 bSupportsWireframeLineWidth = false;
         float                                                WireframeLineWidth = 2.0F;

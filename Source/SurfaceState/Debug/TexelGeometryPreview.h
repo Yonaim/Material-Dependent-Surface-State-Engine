@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <utility>
 
 namespace MDSS::SurfaceState
 {
@@ -44,9 +45,10 @@ namespace MDSS::SurfaceState
         {
             return OutputLayout;
         }
-        [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetGeometryCacheBuffer(std::size_t Instance) const;
+        [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance, std::size_t OutputSlot = 0U) const;
+        [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot = 0U) const;
+        [[nodiscard]] const GPU::TGPUBuffer& GetGeometryCacheBuffer(std::size_t Instance,
+                                                                    std::size_t OutputSlot = 0U) const;
         /** @brief Read active-tile counters after the corresponding frame slot fence has signaled. */
         [[nodiscard]] TTileActivity CompleteOccupancyFrame(std::size_t FrameIndex);
         void                                 SetOccupancyTileSize(std::uint32_t TileSize);
@@ -71,7 +73,8 @@ namespace MDSS::SurfaceState
                                                     std::size_t                             FrameIndex = 0U,
                                                     std::array<std::uint32_t, 3>           MaterialChannels = {
                                                         0xffffffffU, 0xffffffffU, 0xffffffffU},
-                                                    std::uint32_t                           ActiveMaterialMask = 0U);
+                                                    std::uint32_t                           ActiveMaterialMask = 0U,
+                                                    std::size_t                             OutputSlot = 0U);
 
     private:
         // Resource cleanup
@@ -105,6 +108,6 @@ namespace MDSS::SurfaceState
         bool                           bEnableOccupancyScan = false;
         std::uint32_t                  OccupancyTileSize = 16U;
         float                          LowAmountHeightFade = 0.05F;
-        std::map<std::size_t, TOutput> Outputs;
+        std::map<std::pair<std::size_t, std::size_t>, TOutput> Outputs;
     };
 }
