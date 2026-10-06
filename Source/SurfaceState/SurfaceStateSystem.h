@@ -93,6 +93,8 @@ namespace MDSS::SurfaceState
         void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept { bSparseAccumulationHeightEnabled = bEnabled; }
         [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept { return bActiveChannelMaskEnabled; }
         void SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsPerWorkgroupChannelMaskEnabled() const noexcept { return bPerWorkgroupChannelMaskEnabled; }
+        void SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept { return bSparseSimulationGeometryEnabled; }
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept { bSparseSimulationGeometryEnabled = bEnabled; }
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
@@ -120,6 +122,7 @@ namespace MDSS::SurfaceState
         bool                                        bSparseSolverEnabled = true;
         bool                                        bSparseAccumulationHeightEnabled = true;
         bool                                        bActiveChannelMaskEnabled = true;
+        bool                                        bPerWorkgroupChannelMaskEnabled = false;
         bool                                        bSparseSimulationGeometryEnabled = true;
         bool                                        bSeedPersistentActivityOnNextStep = true;
         std::vector<bool>                           PendingInputActivation;

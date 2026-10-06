@@ -8,6 +8,7 @@
 #include "Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+shared uint GroupNextMask;
 
 bool accumulationContributionChanged(uint TexelIndex,
                                      uint ChannelIndex,
@@ -40,12 +41,15 @@ void main()
 {
     uint OriginalGroup = solverOriginalGroup();
     uint TexelIndex = OriginalGroup * 64u + gl_LocalInvocationID.x;
-    if (TexelIndex >= Solver.LocalTexelCount)
-        return;
+    uint LocalNextMask = 0u;
+    bool LocalNeedsNext = false;
+    if (gl_LocalInvocationIndex == 0u) GroupNextMask = 0u;
+    barrier();
 
+    if (TexelIndex < Solver.LocalTexelCount)
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
-        if (!isChannelActive(ChannelIndex))
+        if (!isChannelActive(ChannelIndex, OriginalGroup))
             continue;
 
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
@@ -64,7 +68,10 @@ void main()
             // The destination ping-pong buffer may still contain an older value; scheduling one more
             // step guarantees that buffer is explicitly overwritten with zero before the group retires.
             if (Current > 0.0 || NewState > 0.0)
-                scheduleNextSolverTexel(TexelIndex, ChannelIndex);
+            {
+                LocalNeedsNext = true;
+                if (ChannelIndex < 32u) LocalNextMask |= 1u << ChannelIndex;
+            }
             if (accumulationContributionChanged(TexelIndex, ChannelIndex, Current, NewState))
                 scheduleAccumulationGroup(TexelIndex / 64u);
             continue;
@@ -165,8 +172,21 @@ void main()
         // Current>0 also schedules one cleanup generation so the opposite ping-pong state buffer
         // cannot retain a stale non-zero value after this state reaches zero.
         if (Current > 0.0 || NewState > 0.0)
-            scheduleNextSolverTexel(TexelIndex, ChannelIndex);
+        {
+            LocalNeedsNext = true;
+            if (ChannelIndex < 32u) LocalNextMask |= 1u << ChannelIndex;
+        }
         if (accumulationContributionChanged(TexelIndex, ChannelIndex, Current, NewState))
             scheduleAccumulationGroup(TexelIndex / 64u);
+    }
+    if (LocalNextMask != 0u) atomicOr(GroupNextMask, LocalNextMask);
+    if (LocalNeedsNext) scheduleNextSolverTexel(TexelIndex, LocalNextMask);
+    barrier();
+    if (gl_LocalInvocationIndex == 0u && GroupNextMask != 0u)
+    {
+        if (useActiveChannelMask())
+            atomicOr(AccumulationHeights.Values[solverNextMaskIndex()], GroupNextMask);
+        if (usePerWorkgroupChannelMask())
+            atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase() + OriginalGroup], GroupNextMask);
     }
 }

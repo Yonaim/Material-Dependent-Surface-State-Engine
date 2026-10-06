@@ -48,7 +48,7 @@ void main()
 
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
-        if (!isChannelActive(ChannelIndex))
+        if (!isChannelActive(ChannelIndex, OriginalGroup))
             continue;
 
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);

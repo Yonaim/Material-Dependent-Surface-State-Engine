@@ -187,6 +187,7 @@ namespace MDSS::SurfaceState
 
         std::vector<std::vector<float>>        InputDeltas(InstanceCount);
         std::vector<std::vector<std::uint8_t>> InputGroupFlags(InstanceCount);
+        std::vector<std::vector<std::uint32_t>> InputGroupMasks(InstanceCount);
         std::vector<std::uint32_t>              InputChannelMasks(InstanceCount, 0U);
         std::vector<bool>                       bInstanceHasInput(InstanceCount, false);
 
@@ -392,6 +393,7 @@ namespace MDSS::SurfaceState
             {
                 InputDeltas[InstanceIndex].assign(ScalarCount, 0.0F);
                 InputGroupFlags[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
+                InputGroupMasks[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
             }
 
             const std::vector<Asset::TSRProfileAssetHandle>& ProfileHandles =
@@ -460,7 +462,11 @@ namespace MDSS::SurfaceState
                 {
                     InputGroupFlags[InstanceIndex][TexelIndex / 64U] = 1U;
                     if (StateChannel < 32U)
+                    {
                         InputChannelMasks[InstanceIndex] |= (1U << static_cast<std::uint32_t>(StateChannel));
+                        InputGroupMasks[InstanceIndex][TexelIndex / 64U] |=
+                            (1U << static_cast<std::uint32_t>(StateChannel));
+                    }
                 }
                 bAppliedToAnyTexel = true;
                 ++AppliedTexelCount;
@@ -512,10 +518,15 @@ namespace MDSS::SurfaceState
             const std::size_t TexelCount = GPUResources->GetInstanceTexelCount(InstanceIndex);
             const TSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
             std::vector<std::uint32_t> InputGroups;
+            std::vector<std::uint32_t> CompactInputGroupMasks;
             InputGroups.reserve(InputGroupFlags[InstanceIndex].size());
+            CompactInputGroupMasks.reserve(InputGroupFlags[InstanceIndex].size());
             for (std::size_t Group = 0; Group < InputGroupFlags[InstanceIndex].size(); ++Group)
                 if (InputGroupFlags[InstanceIndex][Group] != 0U)
+                {
                     InputGroups.push_back(static_cast<std::uint32_t>(Group));
+                    CompactInputGroupMasks.push_back(InputGroupMasks[InstanceIndex][Group]);
+                }
 
             if (!InputGroups.empty())
             {
@@ -530,6 +541,9 @@ namespace MDSS::SurfaceState
                 AccumulationBuffer.Upload(InputGroups.data(),
                     static_cast<VkDeviceSize>(InputGroups.size() * sizeof(std::uint32_t)),
                     static_cast<VkDeviceSize>(SparseLayout.InputListWord * sizeof(std::uint32_t)));
+                AccumulationBuffer.Upload(CompactInputGroupMasks.data(),
+                    static_cast<VkDeviceSize>(CompactInputGroupMasks.size() * sizeof(std::uint32_t)),
+                    static_cast<VkDeviceSize>(SparseLayout.InputGroupMaskWord * sizeof(std::uint32_t)));
                 if (InstanceIndex >= PendingInputActivation.size())
                     PendingInputActivation.resize(InstanceCount, false);
                 PendingInputActivation[InstanceIndex] = true;
@@ -738,7 +752,8 @@ namespace MDSS::SurfaceState
             }
             if (bHalfDynamicWeightsEnabled)
                 SolverFlags |= SurfaceSolverHalfDynamicWeightsFlag;
-            if (bSeedPersistentActivityOnNextStep && (bSparseSolverEnabled || bActiveChannelMaskEnabled))
+            if (bSeedPersistentActivityOnNextStep &&
+                (bSparseSolverEnabled || bActiveChannelMaskEnabled || bPerWorkgroupChannelMaskEnabled))
                 SolverFlags |= SurfaceSolverSeedPersistentActivityFlag;
             if (bSparseSolverEnabled)
                 SolverFlags |= SurfaceSolverSparseSolverFlag;
@@ -746,6 +761,8 @@ namespace MDSS::SurfaceState
                 SolverFlags |= SurfaceSolverSparseAccumulationHeightFlag;
             if (bActiveChannelMaskEnabled)
                 SolverFlags |= SurfaceSolverActiveChannelMaskFlag;
+            if (bPerWorkgroupChannelMaskEnabled)
+                SolverFlags |= SurfaceSolverPerWorkgroupChannelMaskFlag;
             if (bSparseSimulationGeometryEnabled)
                 SolverFlags |= SurfaceSolverSparseGeometryFlag;
 
@@ -836,6 +853,15 @@ namespace MDSS::SurfaceState
         if (bActiveChannelMaskEnabled == bEnabled)
             return;
         bActiveChannelMaskEnabled = bEnabled;
+        if (bEnabled)
+            bSeedPersistentActivityOnNextStep = true;
+    }
+
+    void TSurfaceStateSystem::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
+    {
+        if (bPerWorkgroupChannelMaskEnabled == bEnabled)
+            return;
+        bPerWorkgroupChannelMaskEnabled = bEnabled;
         if (bEnabled)
             bSeedPersistentActivityOnNextStep = true;
     }

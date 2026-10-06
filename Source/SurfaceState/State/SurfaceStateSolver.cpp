@@ -329,7 +329,8 @@ namespace MDSS::SurfaceState
                                                SurfaceSolverSparseSolverFlag);
 
             const bool bSparseSolver = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U;
-            const bool bActiveChannelMask = (Item.Constants.Flags & SurfaceSolverActiveChannelMaskFlag) != 0U;
+            const bool bActiveChannelMask = (Item.Constants.Flags &
+                (SurfaceSolverActiveChannelMaskFlag | SurfaceSolverPerWorkgroupChannelMaskFlag)) != 0U;
             const bool bSparseHeight = (Item.Constants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U;
             // One fused reset pass clears only the destination persistent set, Height/Geometry schedules,
             // and merges any CPU-known input groups into the current persistent set. No full-state scan remains.

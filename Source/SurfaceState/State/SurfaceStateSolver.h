@@ -46,6 +46,7 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t SurfaceSolverCurrentStateABFlag = 1U << 21U;
     /** @brief persistent active set bootstrap step에서는 full dispatch/channel scan을 사용하면서 next set을 생성한다. */
     inline constexpr std::uint32_t SurfaceSolverSeedPersistentActivityFlag = 1U << 22U;
+    inline constexpr std::uint32_t SurfaceSolverPerWorkgroupChannelMaskFlag = 1U << 23U;
 
     enum class TSurfaceSolverTerm : std::uint8_t
     {

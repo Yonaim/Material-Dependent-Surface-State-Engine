@@ -11,6 +11,7 @@ const uint SparseAccumulationHeightFlag = 1u << 16u;
 const uint ActiveChannelMaskFlag = 1u << 17u;
 const uint PrepareAccumulationHeightFlag = 1u << 18u;
 const uint CurrentStateABFlag = 1u << 21u;
+const uint PerWorkgroupChannelMaskFlag = 1u << 23u;
 
 layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationData
 {
@@ -34,19 +35,21 @@ shared uint InputCount;
 shared uint InputMask;
 
 uint WorkgroupCount() { return (Solver.LocalTexelCount + 63u) / 64u; }
-uint SolverBlockWords() { return WorkgroupCount() * 2u + 4u; }
+uint SolverBlockWords() { return WorkgroupCount() * 3u + 4u; }
 uint SolverACommandBase() { return 3u * Solver.LocalTexelCount; }
 uint SolverBCommandBase() { return SolverACommandBase() + SolverBlockWords(); }
 uint SolverCommandBase(bool AB) { return AB ? SolverACommandBase() : SolverBCommandBase(); }
 uint SolverFlagBase(bool AB) { return SolverCommandBase(AB) + 3u; }
 uint SolverListBase(bool AB) { return SolverFlagBase(AB) + WorkgroupCount(); }
 uint SolverMaskIndex(bool AB) { return SolverListBase(AB) + WorkgroupCount(); }
+uint SolverWorkgroupMaskBase(bool AB) { return SolverMaskIndex(AB) + 1u; }
 bool CurrentAB() { return (Solver.Flags & CurrentStateABFlag) != 0u; }
 
 uint InputCountIndex() { return SolverBCommandBase() + SolverBlockWords(); }
 uint InputMaskIndex() { return InputCountIndex() + 1u; }
 uint InputListBase() { return InputMaskIndex() + 1u; }
-uint AccumulationCommandBase() { return InputListBase() + WorkgroupCount(); }
+uint InputGroupMaskBase() { return InputListBase() + WorkgroupCount(); }
+uint AccumulationCommandBase() { return InputGroupMaskBase() + WorkgroupCount(); }
 uint AccumulationFlagBase() { return AccumulationCommandBase() + 3u; }
 uint AccumulationListBase() { return AccumulationFlagBase() + WorkgroupCount(); }
 uint GeometryCommandBase() { return AccumulationListBase() + WorkgroupCount(); }
@@ -80,6 +83,7 @@ void main()
 
     bool NeedSparseSolver = (Solver.Flags & SparseSolverFlag) != 0u;
     bool NeedActiveMask = (Solver.Flags & ActiveChannelMaskFlag) != 0u;
+    bool NeedWorkgroupMask = (Solver.Flags & PerWorkgroupChannelMaskFlag) != 0u;
     bool NeedSparseAccumulation = (Solver.Flags & SparseAccumulationHeightFlag) != 0u &&
                                   (Solver.Flags & PrepareAccumulationHeightFlag) != 0u;
     bool NeedGeometry = (Solver.Flags & AccumulationGeometryUpdateFlag) != 0u;
@@ -91,6 +95,8 @@ void main()
     {
         if (NeedSparseSolver)
             AccumulationData.Values[SolverFlagBase(Next) + Group] = 0u;
+        if (NeedWorkgroupMask)
+            AccumulationData.Values[SolverWorkgroupMaskBase(Next) + Group] = 0u;
         if (NeedSparseAccumulation)
             AccumulationData.Values[AccumulationFlagBase() + Group] = 0u;
         if (NeedSparseGeometry)
@@ -119,7 +125,13 @@ void main()
 
     // CPU contact distribution already knows the touched groups; merge only those instead of scanning every texel.
     for (uint Index = Lane; Index < InputCount; Index += 64u)
-        ScheduleCurrentSolverGroup(AccumulationData.Values[InputListBase() + Index]);
+    {
+        uint Group = AccumulationData.Values[InputListBase() + Index];
+        ScheduleCurrentSolverGroup(Group);
+        if (NeedWorkgroupMask && Group < Groups)
+            atomicOr(AccumulationData.Values[SolverWorkgroupMaskBase(Current) + Group],
+                     AccumulationData.Values[InputGroupMaskBase() + Index]);
+    }
 
     if (Lane == 0u && (Solver.Flags & ActiveChannelMaskFlag) != 0u)
         atomicOr(AccumulationData.Values[SolverMaskIndex(Current)], InputMask);

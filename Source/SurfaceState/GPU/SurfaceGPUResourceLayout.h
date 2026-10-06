@@ -93,13 +93,16 @@ namespace MDSS::SurfaceState
         std::size_t SolverAFlagWord = 0;
         std::size_t SolverAListWord = 0;
         std::size_t SolverAMaskWord = 0;
+        std::size_t SolverAWorkgroupMaskWord = 0;
         std::size_t SolverBCommandWord = 0;
         std::size_t SolverBFlagWord = 0;
         std::size_t SolverBListWord = 0;
         std::size_t SolverBMaskWord = 0;
+        std::size_t SolverBWorkgroupMaskWord = 0;
         std::size_t InputCountWord = 0;
         std::size_t InputMaskWord = 0;
         std::size_t InputListWord = 0;
+        std::size_t InputGroupMaskWord = 0;
         std::size_t AccumulationCommandWord = 0;
         std::size_t AccumulationFlagWord = 0;
         std::size_t AccumulationListWord = 0;

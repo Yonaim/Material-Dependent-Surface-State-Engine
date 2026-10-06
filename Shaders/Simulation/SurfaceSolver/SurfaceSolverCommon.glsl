@@ -218,6 +218,7 @@ const uint SurfaceSolverHalfRawFluxCacheFlag = 1u << 19u;
 const uint SurfaceSolverHalfDynamicWeightsFlag = 1u << 20u;
 const uint SurfaceSolverCurrentStateABFlag = 1u << 21u;
 const uint SurfaceSolverSeedPersistentActivityFlag = 1u << 22u;
+const uint SurfaceSolverPerWorkgroupChannelMaskFlag = 1u << 23u;
 
 bool useRawFluxCache() { return (Solver.Flags & SurfaceSolverRawFluxCacheFlag) != 0u; }
 bool useSparseSimulationGeometry() { return (Solver.Flags & SurfaceSolverSparseGeometryFlag) != 0u; }
@@ -230,6 +231,7 @@ bool useHalfRawFluxCache() { return useRawFluxCache() && (Solver.Flags & Surface
 bool useHalfDynamicWeights() { return (Solver.Flags & SurfaceSolverHalfDynamicWeightsFlag) != 0u; }
 bool currentStateIsAB() { return (Solver.Flags & SurfaceSolverCurrentStateABFlag) != 0u; }
 bool seedPersistentActivity() { return (Solver.Flags & SurfaceSolverSeedPersistentActivityFlag) != 0u; }
+bool usePerWorkgroupChannelMask() { return (Solver.Flags & SurfaceSolverPerWorkgroupChannelMaskFlag) != 0u; }
 
 uint sparseWorkgroupCount()
 {
@@ -240,33 +242,36 @@ uint neighborIndex(uint TexelIndex, uint DirectionIndex);
 
 // AccumulationHeights metadata layout (uint words):
 // [3*N]
-// solver A:     [dispatch 3][scheduled flags G][scheduled list G][active channel mask 1]
-// solver B:     [dispatch 3][scheduled flags G][scheduled list G][active channel mask 1]
-// input merge:  [count 1][channel mask 1][group list G]
+// solver A/B:   [dispatch 3][scheduled flags G][scheduled list G][global mask 1][WG masks G]
+// input merge:  [count 1][channel mask 1][group list G][group channel masks G]
 // accumulation: [dispatch 3][scheduled flags G][scheduled list G]
 // geometry:     [dispatch 3][scheduled flags G][scheduled list G]
-uint solverScheduleBlockWords() { return sparseWorkgroupCount() * 2u + 4u; }
+uint solverScheduleBlockWords() { return sparseWorkgroupCount() * 3u + 4u; }
 uint solverAScheduleCommandBase() { return 3u * Solver.LocalTexelCount; }
 uint solverBScheduleCommandBase() { return solverAScheduleCommandBase() + solverScheduleBlockWords(); }
 uint solverScheduleCommandBase(bool AB) { return AB ? solverAScheduleCommandBase() : solverBScheduleCommandBase(); }
 uint solverScheduleFlagBase(bool AB) { return solverScheduleCommandBase(AB) + 3u; }
 uint solverScheduleListBase(bool AB) { return solverScheduleFlagBase(AB) + sparseWorkgroupCount(); }
 uint solverActiveChannelMaskIndex(bool AB) { return solverScheduleListBase(AB) + sparseWorkgroupCount(); }
+uint solverWorkgroupMaskBase(bool AB) { return solverActiveChannelMaskIndex(AB) + 1u; }
 
 uint solverCurrentCommandBase() { return solverScheduleCommandBase(currentStateIsAB()); }
 uint solverCurrentFlagBase() { return solverScheduleFlagBase(currentStateIsAB()); }
 uint solverCurrentListBase() { return solverScheduleListBase(currentStateIsAB()); }
 uint solverCurrentMaskIndex() { return solverActiveChannelMaskIndex(currentStateIsAB()); }
+uint solverCurrentWorkgroupMaskBase() { return solverWorkgroupMaskBase(currentStateIsAB()); }
 uint solverNextCommandBase() { return solverScheduleCommandBase(!currentStateIsAB()); }
 uint solverNextFlagBase() { return solverScheduleFlagBase(!currentStateIsAB()); }
 uint solverNextListBase() { return solverScheduleListBase(!currentStateIsAB()); }
 uint solverNextMaskIndex() { return solverActiveChannelMaskIndex(!currentStateIsAB()); }
+uint solverNextWorkgroupMaskBase() { return solverWorkgroupMaskBase(!currentStateIsAB()); }
 
 uint inputScheduleCountIndex() { return solverBScheduleCommandBase() + solverScheduleBlockWords(); }
 uint inputScheduleMaskIndex() { return inputScheduleCountIndex() + 1u; }
 uint inputScheduleListBase() { return inputScheduleMaskIndex() + 1u; }
+uint inputScheduleGroupMaskBase() { return inputScheduleListBase() + sparseWorkgroupCount(); }
 
-uint accumulationScheduleCommandBase() { return inputScheduleListBase() + sparseWorkgroupCount(); }
+uint accumulationScheduleCommandBase() { return inputScheduleGroupMaskBase() + sparseWorkgroupCount(); }
 uint accumulationScheduleFlagBase() { return accumulationScheduleCommandBase() + 3u; }
 uint accumulationScheduleListBase() { return accumulationScheduleFlagBase() + sparseWorkgroupCount(); }
 
@@ -292,11 +297,14 @@ uint geometryOriginalGroup()
     return AccumulationHeights.Values[geometryScheduleListBase() + gl_WorkGroupID.x];
 }
 
-bool isChannelActive(uint ChannelIndex)
+bool isChannelActive(uint ChannelIndex, uint OriginalGroup)
 {
     if (!useActiveChannelMask() || seedPersistentActivity() || ChannelIndex >= 32u) return true;
     uint Mask = AccumulationHeights.Values[solverCurrentMaskIndex()];
-    return (Mask & (1u << ChannelIndex)) != 0u;
+    if ((Mask & (1u << ChannelIndex)) == 0u) return false;
+    if (!usePerWorkgroupChannelMask()) return true;
+    uint GroupMask = AccumulationHeights.Values[solverCurrentWorkgroupMaskBase() + OriginalGroup];
+    return (GroupMask & (1u << ChannelIndex)) != 0u;
 }
 
 void scheduleNextSolverGroup(uint Group)
@@ -311,18 +319,21 @@ void scheduleNextSolverGroup(uint Group)
     }
 }
 
-void scheduleNextSolverTexel(uint TexelIndex, uint ChannelIndex)
+void scheduleNextSolverTexel(uint TexelIndex, uint ChannelMask)
 {
-    if (useActiveChannelMask() && ChannelIndex < 32u)
-        atomicOr(AccumulationHeights.Values[solverNextMaskIndex()], 1u << ChannelIndex);
-    if (!useSparseSolver()) return;
-    scheduleNextSolverGroup(TexelIndex / 64u);
+    if (!useSparseSolver() && !usePerWorkgroupChannelMask()) return;
+    uint OwnGroup = TexelIndex / 64u;
+    scheduleNextSolverGroup(OwnGroup);
     // Pass2 is a gather pass: target groups adjacent to an active source must also run next step.
     for (uint Direction = 0u; Direction < SurfaceNeighborCount; ++Direction)
     {
         uint Neighbor = neighborIndex(TexelIndex, Direction);
-        if (Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount)
-            scheduleNextSolverGroup(Neighbor / 64u);
+        if (Neighbor == InvalidTexelIndex || Neighbor >= Solver.LocalTexelCount) continue;
+        uint NeighborGroup = Neighbor / 64u;
+        if (NeighborGroup == OwnGroup) continue;
+        scheduleNextSolverGroup(NeighborGroup);
+        if (usePerWorkgroupChannelMask() && ChannelMask != 0u)
+            atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase() + NeighborGroup], ChannelMask);
     }
 }
 
