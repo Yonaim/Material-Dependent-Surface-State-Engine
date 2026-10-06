@@ -75,13 +75,16 @@ void main()
     if (WaterCoat > 0.0)
         ApplyWaterFilm(WaterCoat, Albedo, Roughness, Material.DemoEffectOptions.w);
     if ((EnabledEffects & 8u) != 0u)
-        ApplyLava(States.w, Albedo, Roughness);
+        ApplyLava(States.w, Material.DemoOptions.y, Albedo, Roughness);
     vec3 Color = ShadeSurface(Albedo, N, V, Roughness, Material.AmbientLight, WaterCoat);
-    vec3 Emission = (EnabledEffects & 8u) != 0u && States.w > 0.02 ? LavaEmission(States.w) : vec3(0.0);
+    vec3 Emission = (EnabledEffects & 8u) != 0u
+                        ? LavaEmission(States.w, Material.DemoOptions.y)
+                        : vec3(0.0);
     OutColor = vec4(min(Color + Emission, vec3(1.0)), 1.0);
 #elif defined(OVERLAY_LAVA)
+    if (FragCoverage <= Material.DemoOptions.y) discard;
     vec3 Color = ShadeSurface(LavaColor(FragCoverage), N, V, 0.34, Material.AmbientLight);
-    OutColor = vec4(min(Color + LavaEmission(FragCoverage), vec3(1.0)), 1.0);
+    OutColor = vec4(min(Color + LavaEmission(FragCoverage, Material.DemoOptions.y), vec3(1.0)), 1.0);
 #elif defined(OVERLAY_WATER)
     float Fresnel = 0.04 + 0.96 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
     vec3 Color = ShadeSurface(MapEffectColor(2u, FragCoverage), N, V, Material.DemoEffectOptions.w,

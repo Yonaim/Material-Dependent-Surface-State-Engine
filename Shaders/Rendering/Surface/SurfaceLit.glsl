@@ -120,7 +120,7 @@ void main()
         if ((EnabledEffects & 2u) != 0u)
             ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
         if ((EnabledEffects & 8u) != 0u)
-            ApplyLava(Lava, Color.rgb, Roughness);
+            ApplyLava(Lava, Material.DemoOptions.y, Color.rgb, Roughness);
 #endif
         if ((EnabledEffects & 1u) != 0u)
             ApplyHeat(Heat, Color.rgb, Material.DemoEffectOptions.x);
@@ -137,7 +137,7 @@ void main()
     if (Material.DemoStateChannels.w != 0u &&
         (Material.DemoExtraStateChannels.w & 8u) != 0u)
     {
-        vec3 Emission = Lava > 0.02 ? LavaEmission(Lava) : vec3(0.0);
+        vec3 Emission = LavaEmission(Lava, Material.DemoOptions.y);
         OutColor.rgb = min(OutColor.rgb + Emission, vec3(1.0));
     }
 #endif
