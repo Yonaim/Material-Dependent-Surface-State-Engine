@@ -88,8 +88,38 @@ layout(std430, set = SURFACE_DEBUG_SET, binding = 6)
 
 readonly buffer TSurfaceProfileParameters
 {
-    TSurfaceGPUProfileParameters Values[];
+    // 3-plane vec4 SoA: capacity/input/transfer, decay/geometry, accumulation/thickness.
+    vec4 Values[];
 } ProfileParameters;
+
+uint SurfaceProfileRecordCount()
+{
+    return uint(ProfileParameters.Values.length()) / 3u;
+}
+
+vec4 SurfaceProfileCapacityInputAndTransfer(uint Record)
+{
+    return ProfileParameters.Values[Record];
+}
+
+vec4 SurfaceProfileDecayAndGeometry(uint Record)
+{
+    return ProfileParameters.Values[SurfaceProfileRecordCount() + Record];
+}
+
+vec4 SurfaceProfileAccumulationThickness(uint Record)
+{
+    return ProfileParameters.Values[SurfaceProfileRecordCount() * 2u + Record];
+}
+
+TSurfaceGPUProfileParameters LoadSurfaceProfileParameters(uint Record)
+{
+    TSurfaceGPUProfileParameters P;
+    P.CapacityInputAndTransfer = SurfaceProfileCapacityInputAndTransfer(Record);
+    P.DecayAndGeometry = SurfaceProfileDecayAndGeometry(Record);
+    P.AccumulationThickness = SurfaceProfileAccumulationThickness(Record);
+    return P;
+}
 
 layout(std430, set = SURFACE_DEBUG_SET, binding = 7)
 

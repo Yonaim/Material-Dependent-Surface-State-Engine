@@ -86,6 +86,32 @@ namespace MDSS::SurfaceState
         std::vector<std::uint32_t>                Supported;
     };
 
+    struct TSurfaceSparseMetadataLayout
+    {
+        std::size_t WorkgroupCount = 0;
+        std::size_t SolverACommandWord = 0;
+        std::size_t SolverAFlagWord = 0;
+        std::size_t SolverAListWord = 0;
+        std::size_t SolverAMaskWord = 0;
+        std::size_t SolverBCommandWord = 0;
+        std::size_t SolverBFlagWord = 0;
+        std::size_t SolverBListWord = 0;
+        std::size_t SolverBMaskWord = 0;
+        std::size_t InputCountWord = 0;
+        std::size_t InputMaskWord = 0;
+        std::size_t InputListWord = 0;
+        std::size_t AccumulationCommandWord = 0;
+        std::size_t AccumulationFlagWord = 0;
+        std::size_t AccumulationListWord = 0;
+        std::size_t GeometryCommandWord = 0;
+        std::size_t GeometryFlagWord = 0;
+        std::size_t GeometryListWord = 0;
+        std::size_t TotalWordCount = 0;
+    };
+
+    /** @brief Accumulation-height 뒤에 붙는 persistent solver/sparse scheduling metadata의 word layout을 계산한다. */
+    [[nodiscard]] TSurfaceSparseMetadataLayout GetSurfaceSparseMetadataLayout(std::size_t TexelCount);
+
     static_assert(sizeof(TSurfaceGPUVec4) == 16);
     static_assert(alignof(TSurfaceGPUVec4) == 16);
     static_assert(offsetof(TSurfaceGPUVec4, W) == 12);

@@ -40,6 +40,12 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t SurfaceSolverPrepareAccumulationHeightFlag = 1U << 18U;
     /** @brief RawEdgeFlux cache를 두 fp16 값/uint word로 pack해 write/read bandwidth를 줄인다. */
     inline constexpr std::uint32_t SurfaceSolverHalfRawFluxCacheFlag = 1U << 19U;
+    /** @brief Dynamic/static TransferWeight를 두 fp16 값/uint word로 pack한다. */
+    inline constexpr std::uint32_t SurfaceSolverHalfDynamicWeightsFlag = 1U << 20U;
+    /** @brief 현재 descriptor의 CurrentState가 A buffer임을 persistent activity metadata에 알려준다. */
+    inline constexpr std::uint32_t SurfaceSolverCurrentStateABFlag = 1U << 21U;
+    /** @brief persistent active set bootstrap step에서는 full dispatch/channel scan을 사용하면서 next set을 생성한다. */
+    inline constexpr std::uint32_t SurfaceSolverSeedPersistentActivityFlag = 1U << 22U;
 
     enum class TSurfaceSolverTerm : std::uint8_t
     {
@@ -83,6 +89,8 @@ namespace MDSS::SurfaceState
         std::uint32_t                           SolverFlags = 0U;
         // Feedback ON이면 매 substep에서 height가 필요하고, OFF이면 렌더 직전 step에서만 true면 된다.
         bool                                    bPrepareAccumulationHeight = true;
+        // CPU contact distribution이 sparse input group list를 업로드한 경우 reset/merge pass를 반드시 기록한다.
+        bool                                    bHasInputActivation = false;
     };
 
     class TSurfaceStateSolver final
@@ -126,7 +134,6 @@ namespace MDSS::SurfaceState
         VkPipelineLayout          PipelineLayout = VK_NULL_HANDLE;
         VkPipeline                AccumulationHeightPipeline = VK_NULL_HANDLE;
         VkPipeline                SparseScheduleResetPipeline = VK_NULL_HANDLE;
-        VkPipeline                SolverActiveScanPipeline = VK_NULL_HANDLE;
         VkPipeline                AccumulationGeometryPipeline = VK_NULL_HANDLE;
         VkPipeline                DynamicTransferWeightPipeline = VK_NULL_HANDLE;
         VkPipeline                Pass1Pipeline = VK_NULL_HANDLE;

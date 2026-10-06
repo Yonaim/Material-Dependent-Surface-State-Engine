@@ -68,7 +68,7 @@ void main()
         }
 
         // Profile도 이 channel에서 한 번만 읽고 decay/capacity/rawFlux가 재사용한다.
-        TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[SourceProfileRecord];
+        TSurfaceGPUProfileParameters Parameters = loadProfileParameters(SourceProfileRecord);
         float AvailableState = max(
             Current - decayAmountPrepared(TexelIndex, Current, Parameters, SourceAreaScale), 0.0);
         if (AvailableState <= 0.0)

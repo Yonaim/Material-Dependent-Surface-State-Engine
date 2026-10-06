@@ -17,13 +17,14 @@ bool accumulationContributionChanged(uint TexelIndex,
     if (!useSparseAccumulationHeight() || !prepareAccumulationHeight())
         return false;
 
-    TSurfaceGPUProfileParameters P = ProfileParameters.Values[profileRecordIndex(TexelIndex, ChannelIndex)];
-    float Factor = P.DecayAndGeometry.z;
+    uint Record = profileRecordIndex(TexelIndex, ChannelIndex);
+    // Sparse-height scheduling only needs capacity and accumulation factor: fetch two SoA planes, not all 3 vec4s.
+    float Factor = profileDecayAndGeometry(Record).z;
     if (!solverFinite(Factor) || Factor <= 0.0)
         return false;
 
     float AreaScale = texelAreaScale(TexelIndex);
-    float Capacity = P.CapacityInputAndTransfer.x * AreaScale;
+    float Capacity = profileCapacityInputAndTransfer(Record).x * AreaScale;
     if (!solverFinite(Capacity) || Capacity <= 0.0)
         return false;
 
@@ -53,10 +54,19 @@ void main()
             // 면적이 0인 instance에서는 전달을 멈추되, 기존 총량과 새 입력은 보존한다.
             bool SupportedProfile = isValidTexel(TexelIndex) &&
                 ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
-            NextState.Values[StateValueIndex] = SupportedProfile
-                ? max(CurrentState.Values[StateValueIndex] + InputDelta.Values[StateValueIndex], 0.0)
+            float Current = CurrentState.Values[StateValueIndex];
+            float NewState = SupportedProfile
+                ? max(Current + InputDelta.Values[StateValueIndex], 0.0)
                 : 0.0;
+            NextState.Values[StateValueIndex] = NewState;
             InputDelta.Values[StateValueIndex] = 0.0;
+            // Keep one retirement generation when Current was non-zero.
+            // The destination ping-pong buffer may still contain an older value; scheduling one more
+            // step guarantees that buffer is explicitly overwritten with zero before the group retires.
+            if (Current > 0.0 || NewState > 0.0)
+                scheduleNextSolverTexel(TexelIndex, ChannelIndex);
+            if (accumulationContributionChanged(TexelIndex, ChannelIndex, Current, NewState))
+                scheduleAccumulationGroup(TexelIndex / 64u);
             continue;
         }
 
@@ -102,7 +112,7 @@ void main()
                 continue;
 
             TSurfaceGPUProfileParameters SourceParameters =
-                ProfileParameters.Values[profileRecordIndex(NeighborTexel, ChannelIndex)];
+                loadProfileParameters(profileRecordIndex(NeighborTexel, ChannelIndex));
             float SourceSaturation = NeighborCurrent / stateCapacity(NeighborTexel, ChannelIndex);
             float SaturationTransferRate =
                 SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
@@ -151,6 +161,11 @@ void main()
         float NewState = max(Current + EventInput + Incoming - Outgoing - Decay, 0.0);
         NextState.Values[StateValueIndex] = NewState;
 
+        // Persistent active-set handoff: Pass2 directly builds the schedule/mask consumed after the A/B swap.
+        // Current>0 also schedules one cleanup generation so the opposite ping-pong state buffer
+        // cannot retain a stale non-zero value after this state reaches zero.
+        if (Current > 0.0 || NewState > 0.0)
+            scheduleNextSolverTexel(TexelIndex, ChannelIndex);
         if (accumulationContributionChanged(TexelIndex, ChannelIndex, Current, NewState))
             scheduleAccumulationGroup(TexelIndex / 64u);
     }

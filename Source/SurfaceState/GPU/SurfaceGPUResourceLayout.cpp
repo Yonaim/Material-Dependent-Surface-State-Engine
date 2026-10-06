@@ -303,6 +303,43 @@ namespace MDSS::SurfaceState
 
 #pragma region Profile_and_Buffer_Layouts
 
+
+    TSurfaceSparseMetadataLayout GetSurfaceSparseMetadataLayout(std::size_t TexelCount)
+    {
+        if (TexelCount == 0)
+            throw std::invalid_argument("Sparse metadata requires a non-zero texel count.");
+
+        TSurfaceSparseMetadataLayout L{};
+        L.WorkgroupCount = TexelCount / 64U + (TexelCount % 64U != 0U);
+        const std::size_t G = L.WorkgroupCount;
+        const std::size_t Base = TexelCount * 3U;
+        const std::size_t SolverBlockWords = 2U * G + 4U; // dispatch3 + flags G + list G + channel mask
+
+        L.SolverACommandWord = Base;
+        L.SolverAFlagWord = L.SolverACommandWord + 3U;
+        L.SolverAListWord = L.SolverAFlagWord + G;
+        L.SolverAMaskWord = L.SolverAListWord + G;
+
+        L.SolverBCommandWord = Base + SolverBlockWords;
+        L.SolverBFlagWord = L.SolverBCommandWord + 3U;
+        L.SolverBListWord = L.SolverBFlagWord + G;
+        L.SolverBMaskWord = L.SolverBListWord + G;
+
+        L.InputCountWord = Base + SolverBlockWords * 2U;
+        L.InputMaskWord = L.InputCountWord + 1U;
+        L.InputListWord = L.InputMaskWord + 1U;
+
+        L.AccumulationCommandWord = L.InputListWord + G;
+        L.AccumulationFlagWord = L.AccumulationCommandWord + 3U;
+        L.AccumulationListWord = L.AccumulationFlagWord + G;
+
+        L.GeometryCommandWord = L.AccumulationListWord + G;
+        L.GeometryFlagWord = L.GeometryCommandWord + 3U;
+        L.GeometryListWord = L.GeometryFlagWord + G;
+        L.TotalWordCount = L.GeometryListWord + G;
+        return L;
+    }
+
     TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
                                                  const TSurfaceStateRegistry&                    Registry)
     {

@@ -1295,6 +1295,7 @@ namespace MDSS::Rendering
             Replacement->SetRawFluxCacheEnabled(SurfaceStates.IsRawFluxCacheEnabled());
             Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStates.IsCoalescedRawFluxLayoutEnabled());
             Replacement->SetHalfRawFluxCacheEnabled(SurfaceStates.IsHalfRawFluxCacheEnabled());
+            Replacement->SetHalfDynamicWeightsEnabled(SurfaceStates.IsHalfDynamicWeightsEnabled());
             Replacement->SetSparseSolverEnabled(SurfaceStates.IsSparseSolverEnabled());
             Replacement->SetSparseAccumulationHeightEnabled(SurfaceStates.IsSparseAccumulationHeightEnabled());
             Replacement->SetActiveChannelMaskEnabled(SurfaceStates.IsActiveChannelMaskEnabled());
@@ -1971,6 +1972,16 @@ namespace MDSS::Rendering
     void TRenderer::SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
     {
         SurfaceStates.SetHalfRawFluxCacheEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsHalfDynamicWeightsEnabled() const noexcept
+    {
+        return SurfaceStates.IsHalfDynamicWeightsEnabled();
+    }
+
+    void TRenderer::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetHalfDynamicWeightsEnabled(bEnabled);
     }
 
     bool TRenderer::IsSparseSolverEnabled() const noexcept

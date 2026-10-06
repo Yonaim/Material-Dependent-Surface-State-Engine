@@ -13,9 +13,9 @@ float StateSaturationForProfile(uint Texel, uint Channel, uint Channels, uint Pr
 #if MDSS_GPU_VALIDATION
     if (Texel >= uint(WorldTexelAreas.Values.length()) ||
         Texel >= uint(CurrentState.Values.length()) / Channels ||
-        Profile >= uint(ProfileParameters.Values.length()) / Channels) return 0.0;
+        Profile >= SurfaceProfileRecordCount() / Channels) return 0.0;
 #endif
-    float Capacity = ProfileParameters.Values[Profile * Channels + Channel].CapacityInputAndTransfer.x *
+    float Capacity = SurfaceProfileCapacityInputAndTransfer(Profile * Channels + Channel).x *
                      WorldTexelAreas.Values[Texel] * (256.0 * 256.0);
     float Amount = CurrentState.Values[Texel * Channels + Channel];
 #if MDSS_GPU_VALIDATION
@@ -38,7 +38,7 @@ float StateSaturation(uint Texel, uint Channel, uint Channels, uint Surface)
     uint Profile = TexelProfileIndices.Values[Texel];
 #if MDSS_GPU_VALIDATION
     if (Profile >= uint(ProfileSupported.Values.length()) / Channels ||
-        Profile >= uint(ProfileParameters.Values.length()) / Channels ||
+        Profile >= SurfaceProfileRecordCount() / Channels ||
         Texel >= uint(CurrentState.Values.length()) / Channels || Texel >= uint(WorldTexelAreas.Values.length())) return 0.0;
 #endif
     uint Record = Profile * Channels + Channel;
@@ -112,7 +112,7 @@ float SampleSmoothedStateSaturation(uint Surface, vec2 UV, uint Channel, uint Ch
     uint Chart = TexelChartIndices.Values[Center];
 #if MDSS_GPU_VALIDATION
     if (Profile >= uint(ProfileSupported.Values.length()) / Channels ||
-        Profile >= uint(ProfileParameters.Values.length()) / Channels ||
+        Profile >= SurfaceProfileRecordCount() / Channels ||
         ProfileSupported.Values[Profile * Channels + Channel] == 0u) return 0.0;
 #else
     if (ProfileSupported.Values[Profile * Channels + Channel] == 0u) return 0.0;
@@ -156,7 +156,7 @@ vec4 StateSaturationsForProfile(uint Texel, uint Channels, uint Profile, uvec4 S
         if (Channel >= Channels) continue;
 #if MDSS_GPU_VALIDATION
         if (Profile >= uint(ProfileSupported.Values.length()) / Channels ||
-            Profile >= uint(ProfileParameters.Values.length()) / Channels ||
+            Profile >= SurfaceProfileRecordCount() / Channels ||
             Texel >= uint(CurrentState.Values.length()) / Channels ||
             Texel >= uint(WorldTexelAreas.Values.length())) continue;
 #endif

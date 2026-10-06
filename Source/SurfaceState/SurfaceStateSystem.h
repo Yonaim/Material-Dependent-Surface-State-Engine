@@ -85,12 +85,14 @@ namespace MDSS::SurfaceState
         void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept { bCoalescedRawFluxLayoutEnabled = bEnabled; }
         [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept { return bHalfRawFluxCacheEnabled; }
         void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept { bHalfRawFluxCacheEnabled = bEnabled; }
+        [[nodiscard]] bool IsHalfDynamicWeightsEnabled() const noexcept { return bHalfDynamicWeightsEnabled; }
+        void SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept { return bSparseSolverEnabled; }
-        void SetSparseSolverEnabled(bool bEnabled) noexcept { bSparseSolverEnabled = bEnabled; }
+        void SetSparseSolverEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept { return bSparseAccumulationHeightEnabled; }
         void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept { bSparseAccumulationHeightEnabled = bEnabled; }
         [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept { return bActiveChannelMaskEnabled; }
-        void SetActiveChannelMaskEnabled(bool bEnabled) noexcept { bActiveChannelMaskEnabled = bEnabled; }
+        void SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept { return bSparseSimulationGeometryEnabled; }
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept { bSparseSimulationGeometryEnabled = bEnabled; }
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
@@ -114,10 +116,13 @@ namespace MDSS::SurfaceState
         bool                                        bRawFluxCacheEnabled = true;
         bool                                        bCoalescedRawFluxLayoutEnabled = true;
         bool                                        bHalfRawFluxCacheEnabled = false;
+        bool                                        bHalfDynamicWeightsEnabled = false;
         bool                                        bSparseSolverEnabled = true;
         bool                                        bSparseAccumulationHeightEnabled = true;
         bool                                        bActiveChannelMaskEnabled = true;
         bool                                        bSparseSimulationGeometryEnabled = true;
+        bool                                        bSeedPersistentActivityOnNextStep = true;
+        std::vector<bool>                           PendingInputActivation;
         float                                       CachedMaximumStableDeltaTime = 1.0F / 60.0F;
         std::vector<glm::mat3>                      StableDeltaTimeModelMatrices;
         std::map<std::pair<Asset::TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;

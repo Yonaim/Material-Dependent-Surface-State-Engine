@@ -61,8 +61,38 @@ layout(std430, set = 0, binding = 5) readonly buffer TSurfaceNeighborIndices
 
 layout(std430, set = 0, binding = 6) readonly buffer TSurfaceProfileParameters
 {
-    TSurfaceGPUProfileParameters Values[];
+    // 3-plane vec4 SoA; keeps one descriptor while reducing unused profile-field traffic.
+    vec4 Values[];
 } ProfileParameters;
+
+uint profileParameterRecordCount()
+{
+    return uint(ProfileParameters.Values.length()) / 3u;
+}
+
+vec4 profileCapacityInputAndTransfer(uint Record)
+{
+    return ProfileParameters.Values[Record];
+}
+
+vec4 profileDecayAndGeometry(uint Record)
+{
+    return ProfileParameters.Values[profileParameterRecordCount() + Record];
+}
+
+vec4 profileAccumulationThickness(uint Record)
+{
+    return ProfileParameters.Values[profileParameterRecordCount() * 2u + Record];
+}
+
+TSurfaceGPUProfileParameters loadProfileParameters(uint Record)
+{
+    TSurfaceGPUProfileParameters P;
+    P.CapacityInputAndTransfer = profileCapacityInputAndTransfer(Record);
+    P.DecayAndGeometry = profileDecayAndGeometry(Record);
+    P.AccumulationThickness = profileAccumulationThickness(Record);
+    return P;
+}
 
 layout(std430, set = 0, binding = 7) readonly buffer TSurfaceProfileSupported
 {
@@ -94,7 +124,8 @@ layout(std430, set = 0, binding = 14) buffer TSurfaceTransferWeights
 layout(std430, set = 0, binding = 14) readonly buffer TSurfaceTransferWeights
 #endif
 {
-    float Values[];
+    // FP32 mode stores float bits one-per-word; FP16 mode packs direction pairs into one word.
+    uint Values[];
 } TransferWeights;
 
 layout(std430, set = 0, binding = 15) buffer TSurfaceRawOutgoing
@@ -184,6 +215,9 @@ const uint SurfaceSolverSparseAccumulationHeightFlag = 1u << 16u;
 const uint SurfaceSolverActiveChannelMaskFlag = 1u << 17u;
 const uint SurfaceSolverPrepareAccumulationHeightFlag = 1u << 18u;
 const uint SurfaceSolverHalfRawFluxCacheFlag = 1u << 19u;
+const uint SurfaceSolverHalfDynamicWeightsFlag = 1u << 20u;
+const uint SurfaceSolverCurrentStateABFlag = 1u << 21u;
+const uint SurfaceSolverSeedPersistentActivityFlag = 1u << 22u;
 
 bool useRawFluxCache() { return (Solver.Flags & SurfaceSolverRawFluxCacheFlag) != 0u; }
 bool useSparseSimulationGeometry() { return (Solver.Flags & SurfaceSolverSparseGeometryFlag) != 0u; }
@@ -193,23 +227,46 @@ bool useSparseAccumulationHeight() { return (Solver.Flags & SurfaceSolverSparseA
 bool useActiveChannelMask() { return (Solver.Flags & SurfaceSolverActiveChannelMaskFlag) != 0u; }
 bool prepareAccumulationHeight() { return (Solver.Flags & SurfaceSolverPrepareAccumulationHeightFlag) != 0u; }
 bool useHalfRawFluxCache() { return useRawFluxCache() && (Solver.Flags & SurfaceSolverHalfRawFluxCacheFlag) != 0u; }
+bool useHalfDynamicWeights() { return (Solver.Flags & SurfaceSolverHalfDynamicWeightsFlag) != 0u; }
+bool currentStateIsAB() { return (Solver.Flags & SurfaceSolverCurrentStateABFlag) != 0u; }
+bool seedPersistentActivity() { return (Solver.Flags & SurfaceSolverSeedPersistentActivityFlag) != 0u; }
 
 uint sparseWorkgroupCount()
 {
     return (Solver.LocalTexelCount + 63u) / 64u;
 }
 
+uint neighborIndex(uint TexelIndex, uint DirectionIndex);
+
 // AccumulationHeights metadata layout (uint words):
 // [3*N]
-// solver:       [dispatch 3][scheduled flags G][scheduled list G][active channel mask 1]
+// solver A:     [dispatch 3][scheduled flags G][scheduled list G][active channel mask 1]
+// solver B:     [dispatch 3][scheduled flags G][scheduled list G][active channel mask 1]
+// input merge:  [count 1][channel mask 1][group list G]
 // accumulation: [dispatch 3][scheduled flags G][scheduled list G]
 // geometry:     [dispatch 3][scheduled flags G][scheduled list G]
-uint solverScheduleCommandBase() { return 3u * Solver.LocalTexelCount; }
-uint solverScheduleFlagBase() { return solverScheduleCommandBase() + 3u; }
-uint solverScheduleListBase() { return solverScheduleFlagBase() + sparseWorkgroupCount(); }
-uint solverActiveChannelMaskIndex() { return solverScheduleListBase() + sparseWorkgroupCount(); }
+uint solverScheduleBlockWords() { return sparseWorkgroupCount() * 2u + 4u; }
+uint solverAScheduleCommandBase() { return 3u * Solver.LocalTexelCount; }
+uint solverBScheduleCommandBase() { return solverAScheduleCommandBase() + solverScheduleBlockWords(); }
+uint solverScheduleCommandBase(bool AB) { return AB ? solverAScheduleCommandBase() : solverBScheduleCommandBase(); }
+uint solverScheduleFlagBase(bool AB) { return solverScheduleCommandBase(AB) + 3u; }
+uint solverScheduleListBase(bool AB) { return solverScheduleFlagBase(AB) + sparseWorkgroupCount(); }
+uint solverActiveChannelMaskIndex(bool AB) { return solverScheduleListBase(AB) + sparseWorkgroupCount(); }
 
-uint accumulationScheduleCommandBase() { return solverActiveChannelMaskIndex() + 1u; }
+uint solverCurrentCommandBase() { return solverScheduleCommandBase(currentStateIsAB()); }
+uint solverCurrentFlagBase() { return solverScheduleFlagBase(currentStateIsAB()); }
+uint solverCurrentListBase() { return solverScheduleListBase(currentStateIsAB()); }
+uint solverCurrentMaskIndex() { return solverActiveChannelMaskIndex(currentStateIsAB()); }
+uint solverNextCommandBase() { return solverScheduleCommandBase(!currentStateIsAB()); }
+uint solverNextFlagBase() { return solverScheduleFlagBase(!currentStateIsAB()); }
+uint solverNextListBase() { return solverScheduleListBase(!currentStateIsAB()); }
+uint solverNextMaskIndex() { return solverActiveChannelMaskIndex(!currentStateIsAB()); }
+
+uint inputScheduleCountIndex() { return solverBScheduleCommandBase() + solverScheduleBlockWords(); }
+uint inputScheduleMaskIndex() { return inputScheduleCountIndex() + 1u; }
+uint inputScheduleListBase() { return inputScheduleMaskIndex() + 1u; }
+
+uint accumulationScheduleCommandBase() { return inputScheduleListBase() + sparseWorkgroupCount(); }
 uint accumulationScheduleFlagBase() { return accumulationScheduleCommandBase() + 3u; }
 uint accumulationScheduleListBase() { return accumulationScheduleFlagBase() + sparseWorkgroupCount(); }
 
@@ -219,8 +276,8 @@ uint geometryScheduleListBase() { return geometryScheduleFlagBase() + sparseWork
 
 uint solverOriginalGroup()
 {
-    if (!useSparseSolver()) return gl_WorkGroupID.x;
-    return AccumulationHeights.Values[solverScheduleListBase() + gl_WorkGroupID.x];
+    if (!useSparseSolver() || seedPersistentActivity()) return gl_WorkGroupID.x;
+    return AccumulationHeights.Values[solverCurrentListBase() + gl_WorkGroupID.x];
 }
 
 uint accumulationOriginalGroup()
@@ -237,9 +294,36 @@ uint geometryOriginalGroup()
 
 bool isChannelActive(uint ChannelIndex)
 {
-    if (!useActiveChannelMask() || ChannelIndex >= 32u) return true;
-    uint Mask = AccumulationHeights.Values[solverActiveChannelMaskIndex()];
+    if (!useActiveChannelMask() || seedPersistentActivity() || ChannelIndex >= 32u) return true;
+    uint Mask = AccumulationHeights.Values[solverCurrentMaskIndex()];
     return (Mask & (1u << ChannelIndex)) != 0u;
+}
+
+void scheduleNextSolverGroup(uint Group)
+{
+    if (!useSparseSolver()) return;
+    uint Groups = sparseWorkgroupCount();
+    if (Group >= Groups) return;
+    if (atomicCompSwap(AccumulationHeights.Values[solverNextFlagBase() + Group], 0u, 1u) == 0u)
+    {
+        uint Slot = atomicAdd(AccumulationHeights.Values[solverNextCommandBase()], 1u);
+        if (Slot < Groups) AccumulationHeights.Values[solverNextListBase() + Slot] = Group;
+    }
+}
+
+void scheduleNextSolverTexel(uint TexelIndex, uint ChannelIndex)
+{
+    if (useActiveChannelMask() && ChannelIndex < 32u)
+        atomicOr(AccumulationHeights.Values[solverNextMaskIndex()], 1u << ChannelIndex);
+    if (!useSparseSolver()) return;
+    scheduleNextSolverGroup(TexelIndex / 64u);
+    // Pass2 is a gather pass: target groups adjacent to an active source must also run next step.
+    for (uint Direction = 0u; Direction < SurfaceNeighborCount; ++Direction)
+    {
+        uint Neighbor = neighborIndex(TexelIndex, Direction);
+        if (Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount)
+            scheduleNextSolverGroup(Neighbor / 64u);
+    }
 }
 
 void scheduleAccumulationGroup(uint Group)
@@ -350,7 +434,12 @@ uint reverseNeighborDirectionIndex(uint TexelIndex, uint DirectionIndex)
 
 float transferWeight(uint SourceTexel, uint DirectionIndex)
 {
-    return TransferWeights.Values[SourceTexel * SurfaceNeighborCount + DirectionIndex];
+    if (!useHalfDynamicWeights())
+        return uintBitsToFloat(TransferWeights.Values[SourceTexel * SurfaceNeighborCount + DirectionIndex]);
+    uint PairIndex = DirectionIndex >> 1u;
+    uint Packed = TransferWeights.Values[SourceTexel * (SurfaceNeighborCount / 2u) + PairIndex];
+    vec2 Pair = unpackHalf2x16(Packed);
+    return (DirectionIndex & 1u) == 0u ? Pair.x : Pair.y;
 }
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex);
@@ -367,7 +456,7 @@ float accumulationHeight(uint TexelIndex)
     {
         if (!supportsChannel(TexelIndex, ChannelIndex)) continue;
         uint Record = profileRecordIndex(TexelIndex, ChannelIndex);
-        TSurfaceGPUProfileParameters P = ProfileParameters.Values[Record];
+        TSurfaceGPUProfileParameters P = loadProfileParameters(Record);
         float Factor = P.DecayAndGeometry.z;
         float CavityFactor = P.DecayAndGeometry.w;
         float ThicknessPerAmount = P.AccumulationThickness.x;
@@ -465,8 +554,8 @@ bool supportsChannel(uint TexelIndex, uint ChannelIndex)
 
 float stateCapacity(uint TexelIndex, uint ChannelIndex)
 {
-    return ProfileParameters.Values[profileRecordIndex(TexelIndex, ChannelIndex)]
-        .CapacityInputAndTransfer.x * texelAreaScale(TexelIndex);
+    return profileCapacityInputAndTransfer(profileRecordIndex(TexelIndex, ChannelIndex)).x *
+           texelAreaScale(TexelIndex);
 }
 
 float saturation(uint TexelIndex, uint ChannelIndex)
@@ -495,7 +584,7 @@ float decayAmountPrepared(uint TexelIndex, float Current,
 float decayAmount(uint TexelIndex, uint ChannelIndex)
 {
     uint RecordIndex = profileRecordIndex(TexelIndex, ChannelIndex);
-    TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[RecordIndex];
+    TSurfaceGPUProfileParameters Parameters = loadProfileParameters(RecordIndex);
     float Current = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
     return decayAmountPrepared(TexelIndex, Current, Parameters, texelAreaScale(TexelIndex));
 }

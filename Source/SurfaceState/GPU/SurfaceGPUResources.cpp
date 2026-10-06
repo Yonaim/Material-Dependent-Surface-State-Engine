@@ -5,6 +5,8 @@
 
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
 
+#include <glm/gtc/packing.hpp>
+
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -302,11 +304,28 @@ namespace MDSS::SurfaceState
         const std::size_t              MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         const TSurfaceGPUProfileUpload Upload = PackSurfaceProfiles(Profiles, Registry);
         SupportedChannels = Upload.Supported;
+
+        // GPU hot path uses a 3-plane vec4 SoA layout instead of 48-byte AoS records:
+        // [Capacity/Input/Transfer records][Decay/Geometry records][Accumulation/Thickness records].
+        // This keeps the descriptor count unchanged while allowing shaders that only need capacity or
+        // accumulation fields to fetch one 16-byte vector instead of touching the whole logical record.
+        std::vector<TSurfaceGPUVec4> ParameterPlanes(Upload.Parameters.size() * 3U);
+        const std::size_t RecordCount = Upload.Parameters.size();
+        for (std::size_t Record = 0; Record < RecordCount; ++Record)
+        {
+            const auto& P = Upload.Parameters[Record];
+            ParameterPlanes[Record] = {P.CapacityInputAndTransfer[0], P.CapacityInputAndTransfer[1],
+                                       P.CapacityInputAndTransfer[2], P.CapacityInputAndTransfer[3]};
+            ParameterPlanes[RecordCount + Record] = {P.DecayAndGeometry[0], P.DecayAndGeometry[1],
+                                                     P.DecayAndGeometry[2], P.DecayAndGeometry[3]};
+            ParameterPlanes[RecordCount * 2U + Record] = {P.AccumulationThickness[0], P.AccumulationThickness[1],
+                                                          P.AccumulationThickness[2], P.AccumulationThickness[3]};
+        }
         ParametersBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                 Device,
-                                                Upload.Parameters.data(),
-                                                Upload.Parameters.size(),
-                                                sizeof(TSurfaceGPUProfileParameters),
+                                                ParameterPlanes.data(),
+                                                ParameterPlanes.size(),
+                                                sizeof(TSurfaceGPUVec4),
                                                 MaxRange,
                                                 GPU::TGPUBufferMemoryCategory::SurfaceProfile);
         SupportedBuffer = CreateUploadedBuffer(
@@ -360,18 +379,21 @@ namespace MDSS::SurfaceState
             throw std::invalid_argument("Cannot override a State that this Profile does not support.");
         }
 
-        const TSurfaceGPUProfileParameters Packed{
-            {Parameters.StateCapacity,
-             Parameters.InputFactor,
-             Parameters.SaturationTransferFactor,
-             Parameters.GeometryTransferFactor},
-            {Parameters.DecayRate,
-             Parameters.CavityRetentionFactor,
-             Parameters.AccumulationFactor,
-             Parameters.CavityFillFactor},
-            {Parameters.ThicknessPerAmount, Parameters.CavityTransportRetentionFactor, 0.0F, 0.0F}};
-        const VkDeviceSize Offset = static_cast<VkDeviceSize>(RecordIndex * sizeof(Packed));
-        ParametersBuffer->Upload(&Packed, sizeof(Packed), Offset);
+        const std::array<TSurfaceGPUVec4, 3> Packed{
+            TSurfaceGPUVec4{Parameters.StateCapacity,
+                            Parameters.InputFactor,
+                            Parameters.SaturationTransferFactor,
+                            Parameters.GeometryTransferFactor},
+            TSurfaceGPUVec4{Parameters.DecayRate,
+                            Parameters.CavityRetentionFactor,
+                            Parameters.AccumulationFactor,
+                            Parameters.CavityFillFactor},
+            TSurfaceGPUVec4{Parameters.ThicknessPerAmount, Parameters.CavityTransportRetentionFactor, 0.0F, 0.0F}};
+        const VkDeviceSize PlaneStride = static_cast<VkDeviceSize>(ProfileCount * ChannelCount * sizeof(TSurfaceGPUVec4));
+        const VkDeviceSize RecordOffset = static_cast<VkDeviceSize>(RecordIndex * sizeof(TSurfaceGPUVec4));
+        for (std::size_t Plane = 0; Plane < Packed.size(); ++Plane)
+            ParametersBuffer->Upload(&Packed[Plane], sizeof(TSurfaceGPUVec4),
+                                     static_cast<VkDeviceSize>(Plane) * PlaneStride + RecordOffset);
     }
 
 #pragma endregion
@@ -426,15 +448,10 @@ namespace MDSS::SurfaceState
                                                      GPU::TGPUBufferMemoryCategory::SurfaceState);
         DynamicConcavityWeightBuffer =
             CreateZeroedScalarBuffer(PhysicalDevice, Device, TexelCount, MaxRange);
-        const std::size_t WorkgroupCount = TexelCount / 64U + (TexelCount % 64U != 0U);
-        const std::size_t MaxSize = std::numeric_limits<std::size_t>::max();
-        // 3 texel planes + three independent sparse schedule blocks.
-        // Solver block has one extra word for the active-channel mask.
-        // Total words: 3*N + 3*(dispatch3 + flags G + list G) + 1 = 3*N + 6*G + 10.
-        if (WorkgroupCount > (MaxSize - 10U) / 6U ||
-            TexelCount > (MaxSize - WorkgroupCount * 6U - 10U) / 3U)
-            throw std::overflow_error("Surface accumulation/sparse scheduling buffer size overflowed.");
-        const std::size_t AccumulationWordCount = TexelCount * 3U + WorkgroupCount * 6U + 10U;
+        const TSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
+        // 3 texel planes + persistent solver A/B sets + CPU-input activation list + accumulation/geometry schedules.
+        // The two solver sets ping-pong with State A/B so Pass2 can directly build the next step's active set.
+        const std::size_t AccumulationWordCount = SparseLayout.TotalWordCount;
         AccumulationHeightBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
                                                             Device,
                                                             AccumulationWordCount,
@@ -545,13 +562,36 @@ namespace MDSS::SurfaceState
 
     void
     TSurfaceInstanceGPUResources::UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                                        const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages)
+                                                        const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages,
+                                                        bool                                bHalfPrecision)
     {
         if (TransferWeights.size() != TexelCount * SurfaceNeighborCount)
         {
             throw std::invalid_argument("Updated TransferWeight cache has an incompatible size.");
         }
-        TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeightBuffer->GetSize());
+        if (bHalfPrecision)
+        {
+            // Runtime A/B keeps the original allocation. FP16 mode uses only the first 4 uint words/texel.
+            std::vector<std::uint32_t> Packed(TexelCount * (SurfaceNeighborCount / 2U), 0U);
+            for (std::size_t Texel = 0; Texel < TexelCount; ++Texel)
+            {
+                for (std::size_t Pair = 0; Pair < SurfaceNeighborCount / 2U; ++Pair)
+                {
+                    const std::size_t D0 = Pair * 2U;
+                    const std::size_t D1 = D0 + 1U;
+                    Packed[Texel * (SurfaceNeighborCount / 2U) + Pair] = glm::packHalf2x16(
+                        glm::vec2(std::clamp(TransferWeights[Texel * SurfaceNeighborCount + D0], 0.0F, 1.0F),
+                                  std::clamp(TransferWeights[Texel * SurfaceNeighborCount + D1], 0.0F, 1.0F)));
+                }
+            }
+            TransferWeightBuffer->Upload(Packed.data(),
+                static_cast<VkDeviceSize>(Packed.size() * sizeof(std::uint32_t)));
+        }
+        else
+        {
+            // Buffer is uint-addressed in GLSL, but IEEE-754 float bytes are intentionally uploaded verbatim.
+            TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeightBuffer->GetSize());
+        }
         if (!TransferWeightDebugAverages.empty())
         {
             if (TransferWeightDebugAverages.size() != TexelCount)

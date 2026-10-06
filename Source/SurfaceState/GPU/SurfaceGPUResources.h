@@ -210,7 +210,8 @@ namespace MDSS::SurfaceState
         // Instance data updates and reset
         void                                 UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void                                 UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
+                                                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                                                   bool bHalfPrecision = false);
         [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
         [[nodiscard]] std::size_t            GetChannelCount() const noexcept;
         void                                 ResetState(const std::vector<float>& OutgoingFluxScale);
@@ -291,6 +292,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const TSurfaceSharedGeometryGPUResources* GetInstanceSharedGeometry(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources*   GetAnyInstanceDescriptors() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const GPU::TGPUBuffer& GetInstanceAccumulationHeightBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetSceneProfileParametersBuffer() const;
         [[nodiscard]] bool                   UpdateProfileParameters(Asset::TSRProfileAssetHandle   ProfileHandle,
@@ -308,7 +310,8 @@ namespace MDSS::SurfaceState
                                                      const TTransform& Transform,
                                                      bool              bUseNormalWeight = true,
                                                      bool              bUseDistanceWeight = true,
-                                                     bool              bUseProfileBoundaryWeight = true);
+                                                     bool              bUseProfileBoundaryWeight = true,
+                                                     bool              bHalfPrecision = false);
         void               InvalidateTransferWeightCache(std::size_t SceneIndex);
         void               AdvanceCurrentState(std::size_t SceneIndex);
 

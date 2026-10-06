@@ -1,8 +1,16 @@
 /**
  * @file SurfaceSparseScheduleReset.comp
- * @brief Solver/Accumulation/Geometry sparse schedule metadata를 step 시작 시 한 번 초기화한다.
+ * @brief 다음 persistent Solver set과 Height/Geometry sparse schedule을 초기화하고 CPU input activation을 현재 set에 병합한다.
  */
 #version 450
+
+const uint AccumulationGeometryUpdateFlag = 1u << 6u;
+const uint SparseGeometryFlag = 1u << 13u;
+const uint SparseSolverFlag = 1u << 15u;
+const uint SparseAccumulationHeightFlag = 1u << 16u;
+const uint ActiveChannelMaskFlag = 1u << 17u;
+const uint PrepareAccumulationHeightFlag = 1u << 18u;
+const uint CurrentStateABFlag = 1u << 21u;
 
 layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationData
 {
@@ -22,12 +30,23 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
 
 layout(local_size_x = 64) in;
 
+shared uint InputCount;
+shared uint InputMask;
+
 uint WorkgroupCount() { return (Solver.LocalTexelCount + 63u) / 64u; }
-uint SolverCommandBase() { return 3u * Solver.LocalTexelCount; }
-uint SolverFlagBase() { return SolverCommandBase() + 3u; }
-uint SolverListBase() { return SolverFlagBase() + WorkgroupCount(); }
-uint ActiveChannelMaskIndex() { return SolverListBase() + WorkgroupCount(); }
-uint AccumulationCommandBase() { return ActiveChannelMaskIndex() + 1u; }
+uint SolverBlockWords() { return WorkgroupCount() * 2u + 4u; }
+uint SolverACommandBase() { return 3u * Solver.LocalTexelCount; }
+uint SolverBCommandBase() { return SolverACommandBase() + SolverBlockWords(); }
+uint SolverCommandBase(bool AB) { return AB ? SolverACommandBase() : SolverBCommandBase(); }
+uint SolverFlagBase(bool AB) { return SolverCommandBase(AB) + 3u; }
+uint SolverListBase(bool AB) { return SolverFlagBase(AB) + WorkgroupCount(); }
+uint SolverMaskIndex(bool AB) { return SolverListBase(AB) + WorkgroupCount(); }
+bool CurrentAB() { return (Solver.Flags & CurrentStateABFlag) != 0u; }
+
+uint InputCountIndex() { return SolverBCommandBase() + SolverBlockWords(); }
+uint InputMaskIndex() { return InputCountIndex() + 1u; }
+uint InputListBase() { return InputMaskIndex() + 1u; }
+uint AccumulationCommandBase() { return InputListBase() + WorkgroupCount(); }
 uint AccumulationFlagBase() { return AccumulationCommandBase() + 3u; }
 uint AccumulationListBase() { return AccumulationFlagBase() + WorkgroupCount(); }
 uint GeometryCommandBase() { return AccumulationListBase() + WorkgroupCount(); }
@@ -40,21 +59,75 @@ void ResetCommand(uint Base)
     AccumulationData.Values[Base + 2u] = 1u;
 }
 
+void ScheduleCurrentSolverGroup(uint Group)
+{
+    if ((Solver.Flags & SparseSolverFlag) == 0u || Group >= WorkgroupCount()) return;
+    bool AB = CurrentAB();
+    if (atomicCompSwap(AccumulationData.Values[SolverFlagBase(AB) + Group], 0u, 1u) == 0u)
+    {
+        uint Slot = atomicAdd(AccumulationData.Values[SolverCommandBase(AB)], 1u);
+        if (Slot < WorkgroupCount())
+            AccumulationData.Values[SolverListBase(AB) + Slot] = Group;
+    }
+}
+
 void main()
 {
     uint Lane = gl_LocalInvocationIndex;
     uint Groups = WorkgroupCount();
+    bool Current = CurrentAB();
+    bool Next = !Current;
+
+    bool NeedSparseSolver = (Solver.Flags & SparseSolverFlag) != 0u;
+    bool NeedActiveMask = (Solver.Flags & ActiveChannelMaskFlag) != 0u;
+    bool NeedSparseAccumulation = (Solver.Flags & SparseAccumulationHeightFlag) != 0u &&
+                                  (Solver.Flags & PrepareAccumulationHeightFlag) != 0u;
+    bool NeedGeometry = (Solver.Flags & AccumulationGeometryUpdateFlag) != 0u;
+    bool NeedSparseGeometry = NeedGeometry && (Solver.Flags & SparseGeometryFlag) != 0u;
+
+    // Only metadata that will be consumed this step is cleared. The current persistent set must remain
+    // valid for Pass1/Pass2, while the destination A/B set is prepared for Pass2's next-step handoff.
     for (uint Group = Lane; Group < Groups; Group += 64u)
     {
-        AccumulationData.Values[SolverFlagBase() + Group] = 0u;
-        AccumulationData.Values[AccumulationFlagBase() + Group] = 0u;
-        AccumulationData.Values[GeometryFlagBase() + Group] = 0u;
+        if (NeedSparseSolver)
+            AccumulationData.Values[SolverFlagBase(Next) + Group] = 0u;
+        if (NeedSparseAccumulation)
+            AccumulationData.Values[AccumulationFlagBase() + Group] = 0u;
+        if (NeedSparseGeometry)
+            AccumulationData.Values[GeometryFlagBase() + Group] = 0u;
     }
+
     if (Lane == 0u)
     {
-        ResetCommand(SolverCommandBase());
-        ResetCommand(AccumulationCommandBase());
-        ResetCommand(GeometryCommandBase());
-        AccumulationData.Values[ActiveChannelMaskIndex()] = 0u;
+        if (NeedSparseSolver)
+        {
+            // Current command may be seeded from CPU input before it has ever served as a previous "next" set.
+            AccumulationData.Values[SolverCommandBase(Current) + 1u] = 1u;
+            AccumulationData.Values[SolverCommandBase(Current) + 2u] = 1u;
+            ResetCommand(SolverCommandBase(Next));
+        }
+        if (NeedActiveMask)
+            AccumulationData.Values[SolverMaskIndex(Next)] = 0u;
+        if (NeedSparseAccumulation)
+            ResetCommand(AccumulationCommandBase());
+        if (NeedGeometry)
+            ResetCommand(GeometryCommandBase());
+        InputCount = min(AccumulationData.Values[InputCountIndex()], Groups);
+        InputMask = AccumulationData.Values[InputMaskIndex()];
+    }
+    barrier();
+
+    // CPU contact distribution already knows the touched groups; merge only those instead of scanning every texel.
+    for (uint Index = Lane; Index < InputCount; Index += 64u)
+        ScheduleCurrentSolverGroup(AccumulationData.Values[InputListBase() + Index]);
+
+    if (Lane == 0u && (Solver.Flags & ActiveChannelMaskFlag) != 0u)
+        atomicOr(AccumulationData.Values[SolverMaskIndex(Current)], InputMask);
+
+    barrier();
+    if (Lane == 0u)
+    {
+        AccumulationData.Values[InputCountIndex()] = 0u;
+        AccumulationData.Values[InputMaskIndex()] = 0u;
     }
 }

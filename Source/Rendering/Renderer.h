@@ -300,6 +300,8 @@ namespace MDSS::Rendering
         void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept;
         void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsHalfDynamicWeightsEnabled() const noexcept;
+        void SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept;
         void SetSparseSolverEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept;

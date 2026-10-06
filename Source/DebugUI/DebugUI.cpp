@@ -3789,6 +3789,17 @@ namespace MDSS
         ImGui::EndDisabled();
         ImGui::Unindent();
 
+        bool bHalfDynamicWeights = FrameRenderer->IsHalfDynamicWeightsEnabled();
+        if (ImGui::Checkbox("Half Precision Dynamic Weights", &bHalfDynamicWeights))
+        {
+            FrameRenderer->SetHalfDynamicWeightsEnabled(bHalfDynamicWeights);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("TransferWeight 8방향 값을 FP16 두 개/uint로 pack합니다. static cache와 dynamic feedback weight를 모두 "
+                                  "같은 표현으로 재생성하며 Solver read bandwidth를 줄이는 A/B 옵션입니다.");
+
         bool bSparseSolver = FrameRenderer->IsSparseSolverEnabled();
         if (ImGui::Checkbox("Sparse Solver", &bSparseSolver))
         {
@@ -3797,8 +3808,8 @@ namespace MDSS
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("Current/반대 ping-pong State와 Input을 스캔해 active source + topology 1-hop workgroup만 "
-                                  "Pass1/Pass2에 vkCmdDispatchIndirect로 제출합니다. Pass1 측정에는 scan 오버헤드도 포함됩니다.");
+            SetDescriptionTooltip("Pass2가 다음 A/B State의 active workgroup + topology 1-hop list를 직접 만들고 다음 step이 "
+                                  "vkCmdDispatchIndirect로 소비합니다. 전체 State Active Scan은 제거되었고 새 CPU contact group만 fused reset pass에서 병합합니다.");
 
         bool bSparseAccumulationHeight = FrameRenderer->IsSparseAccumulationHeightEnabled();
         if (ImGui::Checkbox("Sparse Accumulation Height", &bSparseAccumulationHeight))
@@ -3819,8 +3830,8 @@ namespace MDSS
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("현재/반대 ping-pong State 또는 Input이 하나라도 존재하는 channel만 Solver channel loop에서 처리합니다. "
-                                  "32개 초과 channel은 안전하게 항상 활성로 처리합니다.");
+            SetDescriptionTooltip("Pass2가 다음 step의 active channel mask를 persistent A/B metadata에 직접 만들고, 새 CPU input channel은 "
+                                  "fused reset/input-merge에서 현재 mask에 추가합니다. 32개 초과 channel은 안전하게 항상 활성로 처리합니다.");
 
         bool bSparseSimulation = FrameRenderer->IsSparseSimulationGeometryEnabled();
         if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))

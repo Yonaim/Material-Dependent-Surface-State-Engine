@@ -46,6 +46,8 @@ namespace MDSS::SurfaceState
         // Dynamic geometry buffers start empty.  The first feedback-enabled solver step performs one
         // force-full bootstrap before Pass 1, then normal steps use Solver -> Height -> Geometry -> Weights.
         bForceFullGeometryOnNextStep = true;
+        bSeedPersistentActivityOnNextStep = true;
+        PendingInputActivation.assign(GPUResources->GetSceneInstanceCount(), false);
         QueueInitialContacts();
     }
 
@@ -83,9 +85,11 @@ namespace MDSS::SurfaceState
         Solver = std::move(Replacement.Solver);
         GPUResources = std::move(Replacement.GPUResources);
         PendingContacts = std::move(Replacement.PendingContacts);
+        PendingInputActivation = std::move(Replacement.PendingInputActivation);
         DebugSolverSettings = Replacement.DebugSolverSettings;
         bTransferWeightSettingsDirty = Replacement.bTransferWeightSettingsDirty;
         bForceFullGeometryOnNextStep = Replacement.bForceFullGeometryOnNextStep;
+        bSeedPersistentActivityOnNextStep = Replacement.bSeedPersistentActivityOnNextStep;
         bStableDeltaTimeDirty = Replacement.bStableDeltaTimeDirty;
         CachedMaximumStableDeltaTime = Replacement.CachedMaximumStableDeltaTime;
         StableDeltaTimeModelMatrices = std::move(Replacement.StableDeltaTimeModelMatrices);
@@ -111,6 +115,8 @@ namespace MDSS::SurfaceState
         // Resetting State invalidates the derived simulation geometry.  Rebuild it before the next
         // feedback-enabled solver step rather than tracking a separate revision/cache key.
         bForceFullGeometryOnNextStep = true;
+        bSeedPersistentActivityOnNextStep = true;
+        std::fill(PendingInputActivation.begin(), PendingInputActivation.end(), false);
     }
 
     void TSurfaceStateSystem::RestartState()
@@ -179,8 +185,10 @@ namespace MDSS::SurfaceState
             return;
         }
 
-        std::vector<std::vector<float>> InputDeltas(InstanceCount);
-        std::vector<bool>               bInstanceHasInput(InstanceCount, false);
+        std::vector<std::vector<float>>        InputDeltas(InstanceCount);
+        std::vector<std::vector<std::uint8_t>> InputGroupFlags(InstanceCount);
+        std::vector<std::uint32_t>              InputChannelMasks(InstanceCount, 0U);
+        std::vector<bool>                       bInstanceHasInput(InstanceCount, false);
 
         for (const TSurfaceContactInput& Contact : PendingContacts)
         {
@@ -383,6 +391,7 @@ namespace MDSS::SurfaceState
             if (InputDeltas[InstanceIndex].empty())
             {
                 InputDeltas[InstanceIndex].assign(ScalarCount, 0.0F);
+                InputGroupFlags[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
             }
 
             const std::vector<Asset::TSRProfileAssetHandle>& ProfileHandles =
@@ -445,8 +454,14 @@ namespace MDSS::SurfaceState
                 const float ContactWeight = Contact.Falloff == 0.0F ? 1.0F : std::pow(LinearFalloff, Contact.Falloff);
                 const std::size_t ScalarIndex = GetSurfaceGPUStateValueIndex(TexelIndex, StateChannel, ChannelCount);
                 const float       AreaScale = GetSurfaceWorldTexelArea(Texel, Model) / SurfaceStateReferenceArea;
-                InputDeltas[InstanceIndex][ScalarIndex] +=
-                    Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
+                const float Delta = Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
+                InputDeltas[InstanceIndex][ScalarIndex] += Delta;
+                if (Delta != 0.0F)
+                {
+                    InputGroupFlags[InstanceIndex][TexelIndex / 64U] = 1U;
+                    if (StateChannel < 32U)
+                        InputChannelMasks[InstanceIndex] |= (1U << static_cast<std::uint32_t>(StateChannel));
+                }
                 bAppliedToAnyTexel = true;
                 ++AppliedTexelCount;
             }
@@ -491,6 +506,34 @@ namespace MDSS::SurfaceState
                 throw std::runtime_error("CPU InputDelta size does not match the instance GPU buffer size.");
             }
             InputDeltaBuffer.Upload(InputDelta.data(), ByteSize);
+
+            // Persistent sparse solver does not rescan all texels. CPU contact distribution already knows
+            // exactly which workgroups/channels received InputDelta, so upload that compact activation list.
+            const std::size_t TexelCount = GPUResources->GetInstanceTexelCount(InstanceIndex);
+            const TSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
+            std::vector<std::uint32_t> InputGroups;
+            InputGroups.reserve(InputGroupFlags[InstanceIndex].size());
+            for (std::size_t Group = 0; Group < InputGroupFlags[InstanceIndex].size(); ++Group)
+                if (InputGroupFlags[InstanceIndex][Group] != 0U)
+                    InputGroups.push_back(static_cast<std::uint32_t>(Group));
+
+            if (!InputGroups.empty())
+            {
+                const GPU::TGPUBuffer& AccumulationBuffer =
+                    GPUResources->GetInstanceAccumulationHeightBuffer(InstanceIndex);
+                const std::uint32_t GroupCount = static_cast<std::uint32_t>(InputGroups.size());
+                const std::uint32_t ChannelMask = InputChannelMasks[InstanceIndex];
+                AccumulationBuffer.Upload(&GroupCount, sizeof(GroupCount),
+                    static_cast<VkDeviceSize>(SparseLayout.InputCountWord * sizeof(std::uint32_t)));
+                AccumulationBuffer.Upload(&ChannelMask, sizeof(ChannelMask),
+                    static_cast<VkDeviceSize>(SparseLayout.InputMaskWord * sizeof(std::uint32_t)));
+                AccumulationBuffer.Upload(InputGroups.data(),
+                    static_cast<VkDeviceSize>(InputGroups.size() * sizeof(std::uint32_t)),
+                    static_cast<VkDeviceSize>(SparseLayout.InputListWord * sizeof(std::uint32_t)));
+                if (InstanceIndex >= PendingInputActivation.size())
+                    PendingInputActivation.resize(InstanceCount, false);
+                PendingInputActivation[InstanceIndex] = true;
+            }
         }
         PendingContacts.clear();
     }
@@ -596,7 +639,8 @@ namespace MDSS::SurfaceState
                 Scene.GetStaticMeshInstances()[SceneIndex].GetTransform(),
                 DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
                 DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight));
+                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
+                bHalfDynamicWeightsEnabled);
         }
         bTransferWeightSettingsDirty = false;
         bForceFullGeometryOnNextStep = true;
@@ -659,7 +703,8 @@ namespace MDSS::SurfaceState
                     Instance.GetTransform(),
                     DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
                     DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight));
+                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
+                    bHalfDynamicWeightsEnabled);
             }
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             std::uint32_t   SolverFlags = 0U;
@@ -691,6 +736,10 @@ namespace MDSS::SurfaceState
                 if (bHalfRawFluxCacheEnabled)
                     SolverFlags |= SurfaceSolverHalfRawFluxCacheFlag;
             }
+            if (bHalfDynamicWeightsEnabled)
+                SolverFlags |= SurfaceSolverHalfDynamicWeightsFlag;
+            if (bSeedPersistentActivityOnNextStep && (bSparseSolverEnabled || bActiveChannelMaskEnabled))
+                SolverFlags |= SurfaceSolverSeedPersistentActivityFlag;
             if (bSparseSolverEnabled)
                 SolverFlags |= SurfaceSolverSparseSolverFlag;
             if (bSparseAccumulationHeightEnabled)
@@ -725,12 +774,19 @@ namespace MDSS::SurfaceState
             Step.GravityWorld = GravityWorld;
             Step.SolverFlags = SolverFlags;
             Step.bPrepareAccumulationHeight = bPrepareRenderHeight;
+            Step.bHasInputActivation = SceneIndex < PendingInputActivation.size() && PendingInputActivation[SceneIndex];
             InstanceSteps.push_back(Step);
             ActiveSceneIndices.push_back(SceneIndex);
         }
         Solver->RecordSteps(CommandBuffer, InstanceSteps, TimestampQueryPool, FirstStepQuery);
         for (const std::size_t SceneIndex : ActiveSceneIndices)
+        {
             GPUResources->AdvanceCurrentState(SceneIndex);
+            if (SceneIndex < PendingInputActivation.size())
+                PendingInputActivation[SceneIndex] = false;
+        }
+        if (!InstanceSteps.empty())
+            bSeedPersistentActivityOnNextStep = false;
         bTransferWeightSettingsDirty = false;
         // Feedback ON always derives Height after the step. Feedback OFF may execute several fixed substeps;
         // keep the invalidation alive until the final substep actually prepares render height.
@@ -753,6 +809,35 @@ namespace MDSS::SurfaceState
             InstanceCount += GPUResources->GetInstanceDescriptors(SceneIndex) != nullptr ? 1U : 0U;
         }
         return InstanceCount;
+    }
+
+    void TSurfaceStateSystem::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
+    {
+        if (bHalfDynamicWeightsEnabled == bEnabled)
+            return;
+        bHalfDynamicWeightsEnabled = bEnabled;
+        // Static weights must be re-uploaded in the selected representation; dynamic feedback then rebuilds from it.
+        bTransferWeightSettingsDirty = true;
+        bForceFullGeometryOnNextStep = true;
+        bStableDeltaTimeDirty = true;
+    }
+
+    void TSurfaceStateSystem::SetSparseSolverEnabled(bool bEnabled) noexcept
+    {
+        if (bSparseSolverEnabled == bEnabled)
+            return;
+        bSparseSolverEnabled = bEnabled;
+        if (bEnabled)
+            bSeedPersistentActivityOnNextStep = true;
+    }
+
+    void TSurfaceStateSystem::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
+    {
+        if (bActiveChannelMaskEnabled == bEnabled)
+            return;
+        bActiveChannelMaskEnabled = bEnabled;
+        if (bEnabled)
+            bSeedPersistentActivityOnNextStep = true;
     }
 
     const TSurfaceSolverDebugSettings& TSurfaceStateSystem::GetDebugSolverSettings() const noexcept

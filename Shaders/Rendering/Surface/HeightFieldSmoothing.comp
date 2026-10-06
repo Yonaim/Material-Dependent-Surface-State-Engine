@@ -105,9 +105,9 @@ float DisplayedCavityFill(uint Texel, uint Profile)
 {
     if (Push.Channels == 0u || Push.Channel >= Push.Channels) return 0.0;
 #if MDSS_GPU_VALIDATION
-    if (Profile >= uint(ProfileParameters.Values.length()) / Push.Channels) return 0.0;
+    if (Profile >= SurfaceProfileRecordCount() / Push.Channels) return 0.0;
 #endif
-    TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[Profile * Push.Channels + Push.Channel];
+    TSurfaceGPUProfileParameters Parameters = LoadSurfaceProfileParameters(Profile * Push.Channels + Push.Channel);
     float ReferenceAmount = StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) *
                             Parameters.CapacityInputAndTransfer.x;
     float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;

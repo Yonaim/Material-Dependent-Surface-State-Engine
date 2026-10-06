@@ -181,7 +181,7 @@ void main()
     uint Profile = OverlayTexelProfileIndices.Values[Center];
     uint Chart = OverlayTexelChartIndices.Values[Center];
 #if MDSS_GPU_VALIDATION
-    if (Profile >= uint(OverlayProfileParameters.Values.length()) / Channels)
+    if (Profile >= OverlayProfileRecordCount() / Channels)
     {
         Coverage.Values[Index] = 0.0;
         return;

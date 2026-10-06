@@ -34,11 +34,11 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
     if (Channels == 0u || Channel >= Channels) return D;
     uint Profile = TexelProfileIndices.Values[Texel];
     if (Profile >= uint(ProfileSupported.Values.length()) / Channels ||
-        Profile >= uint(ProfileParameters.Values.length()) / Channels ||
+        Profile >= SurfaceProfileRecordCount() / Channels ||
         Texel >= uint(CurrentState.Values.length()) / Channels) return D;
     uint Record = Profile * Channels + Channel;
     if (ProfileSupported.Values[Record] == 0u) return D;
-    TSurfaceGPUProfileParameters P = ProfileParameters.Values[Record];
+    TSurfaceGPUProfileParameters P = LoadSurfaceProfileParameters(Record);
     D.State = CurrentState.Values[Texel * Channels + Channel];
     D.Factor = P.DecayAndGeometry.z;
     D.CavityFactor = P.DecayAndGeometry.w;

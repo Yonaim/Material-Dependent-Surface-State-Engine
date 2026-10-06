@@ -421,7 +421,7 @@ void main()
     uint ProfileRecordIndex = ProfileIndex * Material.StateChannelCount + Material.DebugStateChannel;
     uint StateIndex = TexelIndex * Material.StateChannelCount + Material.DebugStateChannel;
     if (ProfileRecordIndex >= uint(ProfileSupported.Values.length()) ||
-        ProfileRecordIndex >= uint(ProfileParameters.Values.length()) ||
+        ProfileRecordIndex >= SurfaceProfileRecordCount() ||
         StateIndex >= uint(CurrentState.Values.length()))
     {
         OutColor = vec4(0.35, 0.35, 0.35, 1.0);

@@ -214,6 +214,15 @@ namespace MDSS::SurfaceState
         return InstanceResources[SceneIndex]->State->GetInputDeltaBuffer();
     }
 
+    const GPU::TGPUBuffer& TSurfaceGPUResourceManager::GetInstanceAccumulationHeightBuffer(std::size_t SceneIndex) const
+    {
+        if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
+        {
+            throw std::out_of_range("Scene instance has no Surface GPU accumulation buffer.");
+        }
+        return InstanceResources[SceneIndex]->State->GetAccumulationHeightBuffer();
+    }
+
     const GPU::TGPUBuffer& TSurfaceGPUResourceManager::GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
@@ -352,7 +361,8 @@ namespace MDSS::SurfaceState
                                                                const TTransform& Transform,
                                                                bool              bUseNormalWeight,
                                                                bool              bUseDistanceWeight,
-                                                               bool              bUseProfileBoundaryWeight)
+                                                               bool              bUseProfileBoundaryWeight,
+                                                               bool              bHalfPrecision)
     {
         if (SceneIndex >= InstanceResources.size() || !InstanceResources[SceneIndex])
         {
@@ -372,7 +382,7 @@ namespace MDSS::SurfaceState
                                                                                   bUseNormalWeight,
                                                                                   bUseDistanceWeight,
                                                                                   bUseProfileBoundaryWeight);
-        Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages);
+        Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages, bHalfPrecision);
         Instance.State->UpdateWorldTexelAreas(
             BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));
         Instance.TransferWeightScale = Transform.Scale;
