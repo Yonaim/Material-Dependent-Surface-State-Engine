@@ -21,7 +21,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     uvec4 DemoStateChannels; // Heat ID, Mud ID, WaterFilm ID, effects enabled
     vec4 DemoOptions; // dry roughness, reserved, mud roughness, Lit height display scale
     vec4 DemoEffectOptions; // heat strength, reserved, waterfilm opacity, waterfilm roughness
-    uvec4 DemoExtraStateChannels; // Lava ID, transparent WaterFilm, performance flags, enabled effect bits
+    uvec4 DemoExtraStateChannels; // Lava ID, reserved, performance flags, enabled effect bits
     vec4 EffectColorRampStarts; // Heat, Mud, WaterFilm, Lava
     vec4 EffectColorRampEnds;
     vec4 EffectLowSaturationColors[4];

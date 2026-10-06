@@ -71,7 +71,7 @@ void main()
         ApplyHeat(States.x, Albedo, Material.DemoEffectOptions.x);
     if ((EnabledEffects & 2u) != 0u)
         ApplyMud(States.y, Albedo, Roughness, Material.DemoOptions.z);
-    float WaterCoat = Material.DemoExtraStateChannels.y == 0u && (EnabledEffects & 4u) != 0u ? States.z : 0.0;
+    float WaterCoat = (EnabledEffects & 4u) != 0u ? States.z : 0.0;
     if (WaterCoat > 0.0)
         ApplyWaterFilm(WaterCoat, Albedo, Roughness, Material.DemoEffectOptions.w);
     if ((EnabledEffects & 8u) != 0u)
