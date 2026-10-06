@@ -16,6 +16,7 @@ Config/EditorLayout.ini
 *.lo
 *.o
 *.obj
+!Assets/Meshes/BrickCube/BrickCube_512.obj
 
 # Precompiled Headers
 *.gch
