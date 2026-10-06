@@ -23,6 +23,8 @@
 
 namespace MDSS
 {
+#pragma region Lifecycle
+
     TApplication::TApplication(TBenchmarkOptions BenchmarkOptions)
         : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), SurfaceData(Assets), MainScene(),
           Benchmark(std::move(BenchmarkOptions))
@@ -57,6 +59,10 @@ namespace MDSS
     }
 
     TApplication::~TApplication() = default;
+
+#pragma endregion
+
+#pragma region Main_Loop
 
     void TApplication::Run(std::size_t FrameLimit)
     {
@@ -126,4 +132,5 @@ namespace MDSS
         TLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");
         vkDeviceWaitIdle(Context.GetDevice());
     }
+#pragma endregion
 } // namespace MDSS

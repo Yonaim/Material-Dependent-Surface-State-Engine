@@ -45,6 +45,8 @@ namespace MDSS::GPU
         }
     } // namespace
 
+#pragma region Pipeline_Lifecycle
+
     TGraphicsPipeline::TGraphicsPipeline(VkDevice                       Device,
                                          VkRenderPass                   TRenderPass,
                                          const TGraphicsPipelineConfig& Config)
@@ -224,6 +226,10 @@ namespace MDSS::GPU
         }
     }
 
+#pragma endregion
+
+#pragma region Pipeline_Accessors
+
     VkPipeline TGraphicsPipeline::GetHandle() const noexcept
     {
         return Pipeline;
@@ -233,6 +239,10 @@ namespace MDSS::GPU
     {
         return PipelineLayout;
     }
+
+#pragma endregion
+
+#pragma region Shader_Module_Creation
 
     VkShaderModule TGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
     {
@@ -250,4 +260,5 @@ namespace MDSS::GPU
         }
         return Module;
     }
+#pragma endregion
 } // namespace MDSS::GPU

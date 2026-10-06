@@ -53,7 +53,8 @@ flowchart LR
 `.SRProfile`은 전역 State 종류 목록이 아니라 해당 Profile이 지원하는 State의 반응 파라미터와 Transition을 정의한다.
 
 - Runtime Solver와 GPU는 문자열 대신 Registry가 부여한 ID/index를 사용한다.
-- ID 배정과 저장 레이아웃은 구현 계약에서 정한다. (Dynamic State Registry)
+- `lava`가 Registry에 등록되어 있으면 ID 0에 둔다. 나머지 이름은 알파벳순을 유지한다. `lava`가 없으면 기존처럼 전체 이름을 알파벳순으로 둔다.
+- Profile 입력 순서와 무관한 이 정렬 규칙으로 ID를 배정하고 저장 레이아웃을 구성한다. (Dynamic State Registry)
 
 ## State / Capacity / Saturation
 

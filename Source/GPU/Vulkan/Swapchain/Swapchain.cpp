@@ -20,6 +20,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Swapchain_Lifecycle
+
     TSwapchain::TSwapchain(const TVulkanContext& Context, const TWindow& TWindow) : Device(Context.GetDevice())
     {
         Create(Context, TWindow);
@@ -140,6 +142,10 @@ namespace MDSS::GPU
         Extent = {};
     }
 
+#pragma endregion
+
+#pragma region Swapchain_Accessors
+
     VkSwapchainKHR TSwapchain::GetHandle() const noexcept
     {
         return SwapchainData;
@@ -164,6 +170,10 @@ namespace MDSS::GPU
     {
         return ImageViews;
     }
+
+#pragma endregion
+
+#pragma region Surface_Format_and_Present_Selection
 
     TSwapchainSupportDetails TSwapchain::QuerySupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
@@ -258,6 +268,10 @@ namespace MDSS::GPU
         throw std::runtime_error("No supported Vulkan swapchain composite alpha mode was found.");
     }
 
+#pragma endregion
+
+#pragma region Swapchain_Image_Views
+
     void TSwapchain::CreateImageViews()
     {
         ImageViews.resize(Images.size());
@@ -290,4 +304,5 @@ namespace MDSS::GPU
             }
         }
     }
+#pragma endregion
 } // namespace MDSS::GPU

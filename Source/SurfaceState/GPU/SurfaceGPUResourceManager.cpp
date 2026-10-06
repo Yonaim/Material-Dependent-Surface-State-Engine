@@ -25,6 +25,8 @@ namespace MDSS::SurfaceState
             static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::Count);
     } // namespace
 
+#pragma region Resource_Lifecycle
+
     TSurfaceGPUResourceManager::TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
                                                            const Asset::TAssetManager& Assets,
                                                            const TSurfaceDataManager&  SurfaceData,
@@ -144,6 +146,9 @@ namespace MDSS::SurfaceState
                            " Surface data variant(s) and " + std::to_string(GetManagedInstanceCount()) +
                            " Surface instances.");
     }
+#pragma endregion
+
+#pragma region Resource_Accessors_and_Profile_Updates
 
     std::size_t TSurfaceGPUResourceManager::GetManagedInstanceCount() const noexcept
     {
@@ -241,6 +246,9 @@ namespace MDSS::SurfaceState
             static_cast<std::size_t>(std::distance(SceneProfileHandles.begin(), Found)), State, Parameters);
         return true;
     }
+#pragma endregion
+
+#pragma region State_Reset_and_Transfer_Weight_Cache
 
     std::size_t TSurfaceGPUResourceManager::GetInstanceTexelCount(std::size_t SceneIndex) const
     {
@@ -388,4 +396,5 @@ namespace MDSS::SurfaceState
         }
         InstanceResources[SceneIndex]->bCurrentStateAB = !InstanceResources[SceneIndex]->bCurrentStateAB;
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

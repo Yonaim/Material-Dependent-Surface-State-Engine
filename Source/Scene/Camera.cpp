@@ -14,6 +14,8 @@
 
 namespace MDSS
 {
+#pragma region Camera_Matrices
+
     TCamera::TCamera(
         glm::vec3 Position, glm::vec3 Target, float VerticalFieldOfViewDegrees, float NearPlane, float FarPlane)
         : Position(Position), Target(Target), VerticalFieldOfViewDegrees(VerticalFieldOfViewDegrees),
@@ -55,6 +57,10 @@ namespace MDSS
         return GetProjectionMatrix(AspectRatio) * GetViewMatrix();
     }
 
+#pragma endregion
+
+#pragma region Camera_Controls
+
     void TCamera::SetPosition(glm::vec3 NewPosition) noexcept
     {
         Position = NewPosition;
@@ -85,6 +91,10 @@ namespace MDSS
         VerticalFieldOfViewDegrees = std::clamp(FieldOfViewDegrees, 1.0F, 179.0F);
     }
 
+#pragma endregion
+
+#pragma region Camera_State_Access
+
     const glm::vec3& TCamera::GetPosition() const noexcept
     {
         return Position;
@@ -107,4 +117,5 @@ namespace MDSS
     {
         return VerticalFieldOfViewDegrees;
     }
+#pragma endregion
 } // namespace MDSS

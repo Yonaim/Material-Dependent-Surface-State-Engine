@@ -65,7 +65,7 @@ namespace MDSS
 
 namespace MDSS::Rendering
 {
-    enum class TOverlayDrawProfilingMode : std::uint32_t
+    enum class TOverlayDisplayMode : std::uint32_t
     {
         Both = 0,
         TopOnly,
@@ -130,7 +130,9 @@ namespace MDSS::Rendering
         std::uint32_t             OverlayTexelMeshResolution = 0;
         std::uint64_t             OverlayActiveTopTriangles = 0;
         std::uint64_t             OverlayTotalTopTriangles = 0;
-        TOverlayDrawProfilingMode OverlayDrawMode = TOverlayDrawProfilingMode::Both;
+        std::uint64_t             OverlayActiveTiles = 0;
+        std::uint64_t             OverlayTotalTiles = 0;
+        TOverlayDisplayMode OverlayDisplayMode = TOverlayDisplayMode::Both;
     };
 
     enum class TRenderViewMode : std::uint32_t
@@ -183,6 +185,7 @@ namespace MDSS::Rendering
     class TRenderer
     {
     public:
+        // Renderer lifecycle
         TRenderer(const GPU::TVulkanContext&         Context,
                   TWindow&                           TWindow,
                   Asset::TAssetManager&              Assets,
@@ -196,6 +199,7 @@ namespace MDSS::Rendering
         TRenderer(TRenderer&&) = delete;
         TRenderer& operator=(TRenderer&&) = delete;
 
+        // Frame rendering and simulation clock
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
         void                 RenderFrame(const TScene& SceneData,
                                          TDebugUI&     DebugInterface,
@@ -217,6 +221,8 @@ namespace MDSS::Rendering
         {
             return MaximumSimulationStep;
         }
+
+        // Scene resources, resolution, and runtime Profile settings
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
         void ReloadSceneResources(const TScene& Scene, bool bResetStateSettings = true);
         /** @brief Reset simulation and caches while retaining loaded Scene/GPU resources. */
@@ -239,6 +245,7 @@ namespace MDSS::Rendering
                                        const SurfaceState::TSurfaceStateParameters& Parameters,
                                        bool                                         bKeepRuntimeOverride = true);
 
+        // Swapchain and profiling access
         [[nodiscard]] const GPU::TSwapchain&                          GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass                                    GetRenderPassHandle() const noexcept;
         [[nodiscard]] const SurfaceState::TSurfaceGPUResourceManager& GetSurfaceGPUResources() const noexcept;
@@ -251,27 +258,60 @@ namespace MDSS::Rendering
         {
             return ProfilingStats;
         }
+
+        // Benchmark capture and overlay profiling
         void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
                                        std::uint32_t WarmupFrames,
                                        std::uint32_t MeasurementFrames);
-        [[nodiscard]] TOverlayDrawProfilingMode GetOverlayDrawProfilingMode() const noexcept
+        [[nodiscard]] TOverlayDisplayMode GetOverlayDisplayMode() const noexcept
         {
-            return OverlayDrawProfilingMode;
+            return OverlayDisplayMode;
         }
-        void SetOverlayDrawProfilingMode(TOverlayDrawProfilingMode Mode) noexcept
+        void SetOverlayDisplayMode(TOverlayDisplayMode Mode) noexcept
         {
-            OverlayDrawProfilingMode = Mode;
+            OverlayDisplayMode = Mode;
+        }
+        [[nodiscard]] bool IsOverlayOnlyDebugEnabled() const noexcept
+        {
+            return bOverlayOnlyDebug;
+        }
+        void SetOverlayOnlyDebugEnabled(bool bEnabled) noexcept
+        {
+            bOverlayOnlyDebug = bEnabled;
+            if (!bEnabled)
+                OverlayDisplayMode = TOverlayDisplayMode::Both;
         }
         [[nodiscard]] TOverlayOccupancyTileSize GetOverlayOccupancyTileSize() const noexcept
         {
             return OverlayOccupancyTileSize;
         }
         void               SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size);
+        [[nodiscard]] bool IsOverlayTileCullingEnabled() const noexcept
+        {
+            return bOverlayTileCullingEnabled;
+        }
+        void SetOverlayTileCullingEnabled(bool bEnabled) noexcept
+        {
+            bOverlayTileCullingEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
+        void SetRawFluxCacheEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept;
+        void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseHeightSmoothingEnabled() const noexcept { return bSparseHeightSmoothingEnabled; }
+        void SetSparseHeightSmoothingEnabled(bool bEnabled) noexcept { bSparseHeightSmoothingEnabled = bEnabled; }
+        [[nodiscard]] bool IsPrecomputeCoverageSmoothingEnabled() const noexcept { return bPrecomputeCoverageSmoothingEnabled; }
+        void SetPrecomputeCoverageSmoothingEnabled(bool bEnabled) noexcept { bPrecomputeCoverageSmoothingEnabled = bEnabled; }
+        [[nodiscard]] bool IsRenderStateTextureSamplingEnabled() const noexcept { return bRenderStateTextureSamplingEnabled; }
+        void SetRenderStateTextureSamplingEnabled(bool bEnabled) noexcept { bRenderStateTextureSamplingEnabled = bEnabled; }
+        [[nodiscard]] bool IsSeparableCoverageSmoothingEnabled() const noexcept { return bSeparableCoverageSmoothingEnabled; }
+        void SetSeparableCoverageSmoothingEnabled(bool bEnabled) noexcept { bSeparableCoverageSmoothingEnabled = bEnabled; }
         [[nodiscard]] bool AreRenderPassSubstageTimingsReliable() const noexcept
         {
             return bRenderPassSubstageTimingsReliable;
         }
 
+        // Render view and debug settings
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         [[nodiscard]] bool            WasTotalHeightCacheHit() const noexcept
         {
@@ -388,6 +428,7 @@ namespace MDSS::Rendering
             std::array<VkDescriptorSet, TRenderContext::MaxFramesInFlight>                  DescriptorSets{};
         };
 
+        // Render resources and command recording
         static VkFormat              FindDepthFormat(VkPhysicalDevice PhysicalDevice);
         static VkFormat              FindSupportedFormat(VkPhysicalDevice     PhysicalDevice,
                                                          const VkFormat*      Candidates,
@@ -449,15 +490,12 @@ namespace MDSS::Rendering
         std::unique_ptr<TRenderStateTexture>                  RenderStateTexture;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> MudLayerGeometry;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> WaterLayerGeometry;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview> LavaLayerGeometry;
         std::unique_ptr<THeightFieldSmoothing>               HeightFieldSmoothing;
         std::unique_ptr<TAccumulationOverlaySides>           OverlaySides;
         std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlayTopPipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlaySidePipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              WaterOverlayTopPipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              WaterOverlaySidePipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              LavaOverlayTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              LavaOverlaySidePipeline;
         GPU::TFramebuffer                                    MainFramebuffers;
         TRenderContext                                       FrameContext;
         VkDescriptorPool                                     MaterialDescriptorPool = VK_NULL_HANDLE;
@@ -474,7 +512,13 @@ namespace MDSS::Rendering
         bool                                                 bStateHeatmapReliefShadingEnabled = true;
         TSurfaceDebugDisplaySettings                         SurfaceDebugSettings;
         TDemoSurfaceEffectSettings                           DemoEffects;
-        TOverlayDrawProfilingMode                            OverlayDrawProfilingMode = TOverlayDrawProfilingMode::Both;
+        TOverlayDisplayMode                                  OverlayDisplayMode = TOverlayDisplayMode::Both;
+        bool                                                 bOverlayOnlyDebug = false;
+        bool                                                 bOverlayTileCullingEnabled = true;
+        bool                                                 bSparseHeightSmoothingEnabled = true;
+        bool                                                 bPrecomputeCoverageSmoothingEnabled = true;
+        bool                                                 bRenderStateTextureSamplingEnabled = true;
+        bool                                                 bSeparableCoverageSmoothingEnabled = true;
         TOverlayOccupancyTileSize OverlayOccupancyTileSize = TOverlayOccupancyTileSize::Tile16;
         std::uint32_t             SurfaceTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
         std::uint32_t             OverlayTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
@@ -498,7 +542,7 @@ namespace MDSS::Rendering
         std::array<bool, TRenderContext::MaxFramesInFlight>                      bTimestampQueriesSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             SolverTimestampStepsSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             OverlayTimestampLayersSubmitted{};
-        std::array<TOverlayDrawProfilingMode, TRenderContext::MaxFramesInFlight> OverlayDrawModesSubmitted{};
+        std::array<TOverlayDisplayMode, TRenderContext::MaxFramesInFlight> OverlayDisplayModesSubmitted{};
         std::array<TBenchmarkFrameSubmission, TRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
         std::ofstream      BenchmarkOutput;
         std::vector<std::string> BenchmarkJsonLines;

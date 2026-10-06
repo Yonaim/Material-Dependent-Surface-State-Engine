@@ -5,7 +5,10 @@
 #pragma once
 
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
+#include "Rendering/RenderContext.h"
 
+#include <array>
+#include <cstdint>
 #include <map>
 
 namespace MDSS::SurfaceState
@@ -20,6 +23,13 @@ namespace MDSS::SurfaceState
     class TTexelGeometryPreview final
     {
     public:
+        struct TTileActivity
+        {
+            std::uint64_t Active = 0;
+            std::uint64_t Total = 0;
+        };
+
+        // Preview resource lifecycle
         TTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
                               VkDevice              Device,
                               VkDescriptorSetLayout SurfaceLayout,
@@ -29,13 +39,19 @@ namespace MDSS::SurfaceState
         TTexelGeometryPreview(const TTexelGeometryPreview&) = delete;
         TTexelGeometryPreview& operator=(const TTexelGeometryPreview&) = delete;
 
+        // Output access and preview settings
         [[nodiscard]] VkDescriptorSetLayout GetOutputLayout() const noexcept
         {
             return OutputLayout;
         }
         [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance) const;
+        [[nodiscard]] const GPU::TGPUBuffer& GetGeometryCacheBuffer(std::size_t Instance) const;
+        /** @brief Read active-tile counters after the corresponding frame slot fence has signaled. */
+        [[nodiscard]] TTileActivity CompleteOccupancyFrame(std::size_t FrameIndex);
         void                                 SetOccupancyTileSize(std::uint32_t TileSize);
+
+        // Compute command recording
         void                                 Record(VkCommandBuffer                         Command,
                                                     std::size_t                             Instance,
                                                     const TSurfaceStateDescriptorResources& Descriptors,
@@ -49,14 +65,20 @@ namespace MDSS::SurfaceState
                                                     bool                                    bAccumulation,
                                                     VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
                                                     std::uint32_t                           HeightCompleteQuery = 0U,
-                                                    bool                                    bTotalHeight = false);
+                                                    bool                                    bTotalHeight = false,
+                                                    std::size_t                             FrameIndex = 0U);
 
     private:
+        // Resource cleanup
         void Destroy() noexcept;
         struct TOutput
         {
             std::unique_ptr<GPU::TGPUBuffer> Buffer;
             std::unique_ptr<GPU::TGPUBuffer> GeometryCache;
+            std::array<std::unique_ptr<GPU::TGPUBuffer>, Rendering::TRenderContext::MaxFramesInFlight>
+                OccupancyReadbacks;
+            std::array<bool, Rendering::TRenderContext::MaxFramesInFlight> OccupancyPending{};
+            std::uint32_t                    OccupancyTotalTiles = 0;
             VkDescriptorSet                  Set = VK_NULL_HANDLE;
             bool                             bOccupancyInitialized = false;
             bool                             bSparseReady = false;

@@ -18,10 +18,28 @@ float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH,
     return 3.14159265 * D * Visibility * F * NoL;
 }
 
-vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
-                  float WetnessCoverage, float WaterFilmCoverage, float WetnessSpecularStrength)
+vec3 EvaluateWaterFilmEnvironment(vec3 ReflectionDirection, float PerceptualRoughness)
 {
-    // 고정 key light와 ambient 항에 wetness 및 film 반사를 더한다.
+    // A small analytic studio environment gives the film something to reflect
+    // without requiring an environment-map descriptor. The renderer uses Z-up.
+    float Height = clamp(ReflectionDirection.z * 0.5 + 0.5, 0.0, 1.0);
+    vec3 Environment = mix(vec3(0.035, 0.042, 0.050),
+                           vec3(0.34, 0.40, 0.48),
+                           smoothstep(0.08, 0.92, Height));
+
+    float PanelExponent = mix(10.0, 96.0, 1.0 - clamp(PerceptualRoughness, 0.0, 1.0));
+    float KeyPanel = pow(max(dot(ReflectionDirection, normalize(vec3(-0.45, 0.28, 0.85))), 0.0),
+                         PanelExponent);
+    float FillPanel = pow(max(dot(ReflectionDirection, normalize(vec3(0.55, 0.05, 0.72))), 0.0),
+                          PanelExponent * 0.72);
+    Environment += vec3(0.92, 0.96, 1.0) * (KeyPanel * 0.72 + FillPanel * 0.28);
+    return Environment;
+}
+
+vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
+                  float WaterFilmCoverage)
+{
+    // 고정 key light와 ambient 항에 WaterFilm clear coat 및 반사를 더한다.
     vec3 V = ViewVector * inversesqrt(max(dot(ViewVector, ViewVector), 1e-12));
     vec3 L = normalize(vec3(0.35, 0.55, 1.0));
     vec3 Sum = V + L;
@@ -38,33 +56,22 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
     float F = 0.04 + 0.96 * pow(1.0 - VoH, 5.0);
     vec3 Direct = ((1.0-F) * Albedo + vec3(3.14159265 * D * Visibility * F)) * NoL;
 
-    float Wet = clamp(WetnessCoverage, 0.0, 1.0);
     float Film = clamp(WaterFilmCoverage, 0.0, 1.0);
     float StateHighlight = 0.0;
-    if (Wet > 0.0 && WetnessSpecularStrength > 0.0)
-        StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, 0.32, 0.08) *
-                          Wet * 0.65 * WetnessSpecularStrength;
     if (Film > 0.0)
-        StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, PerceptualRoughness, 0.14) * Film * 0.9;
-    Direct += vec3(StateHighlight);
+        StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, PerceptualRoughness, 0.02) * Film;
 
-    // environment map 없이도 비스듬한 각도의 젖은 가장자리가 보이도록 약한 반사를 더한다.
-    float Grazing = pow(1.0 - max(dot(N, V), 0.0), 5.0);
-    vec3 SoftWetReflection = vec3(0.12, 0.15, 0.18) * (Wet * Grazing * 0.45 * WetnessSpecularStrength);
-    vec3 FilmEdgeReflection = vec3(0.22, 0.27, 0.32) * (Film * Grazing * 0.8);
+    float NoVFilm = max(dot(N, V), 0.0);
+    float FilmFresnel = 0.02 + 0.98 * pow(1.0 - NoVFilm, 5.0);
+    vec3 ReflectionDirection = reflect(-V, N);
+    vec3 FilmEnvironment = EvaluateWaterFilmEnvironment(ReflectionDirection, PerceptualRoughness);
+    vec3 FilmReflection = FilmEnvironment * (Film * FilmFresnel);
 
     // 기존 ambient 조절과 고정된 흰 key light를 사용한다. environment map과 tone mapper는 없다.
-    return Albedo * Ambient + Direct * (1.0-Ambient) + SoftWetReflection + FilmEdgeReflection;
-}
-
-vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
-                  float WetnessCoverage, float WaterFilmCoverage)
-{
-    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient,
-                        WetnessCoverage, WaterFilmCoverage, 1.0);
+    return Albedo * Ambient + Direct * (1.0-Ambient) + vec3(StateHighlight) + FilmReflection;
 }
 
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient)
 {
-    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0, 0.0);
+    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0);
 }

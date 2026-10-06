@@ -9,6 +9,8 @@
 
 namespace MDSS::Asset
 {
+#pragma region TMaterialAsset_Implementation
+
     TMaterialAsset::TMaterialAsset(TAssetID              ID,
                                    std::string           Name,
                                    std::filesystem::path SourcePath,
@@ -34,4 +36,5 @@ namespace MDSS::Asset
     {
         return NormalTexture;
     }
+#pragma endregion
 } // namespace MDSS::Asset

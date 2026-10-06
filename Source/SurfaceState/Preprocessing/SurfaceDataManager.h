@@ -29,6 +29,7 @@ namespace MDSS::SurfaceState
     class TSurfaceDataManager final
     {
     public:
+        // Runtime surface data loading
         explicit TSurfaceDataManager(Asset::TAssetManager& Assets);
 
         [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceData(Asset::TMeshAssetHandle      Mesh,
@@ -36,6 +37,8 @@ namespace MDSS::SurfaceState
                                                                 std::uint32_t                Resolution = 0);
         [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
                                                                             std::uint32_t             Resolution);
+
+        // Registry and runtime data access
         [[nodiscard]] std::uint32_t             GetSimulationResolution() const noexcept;
         void                                    SetSimulationResolution(std::uint32_t Resolution);
         void ReleaseUnusedSurfaceData(const std::vector<TSurfaceRuntimeDataHandle>& RetainedHandles);

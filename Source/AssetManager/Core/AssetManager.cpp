@@ -20,6 +20,8 @@
 namespace MDSS::Asset
 {
 
+#pragma region Asset_Manager_Lifecycle
+
     TAssetManager::TAssetManager(const GPU::TVulkanContext& Context) : Context(Context)
     {
         TLogger::Info("TAssetManager", "Initializing default material resources.");
@@ -29,6 +31,10 @@ namespace MDSS::Asset
             CreateMaterial("DefaultMaterial", {}, glm::vec4(1.0F), DefaultBaseColorTexture, DefaultNormalTexture);
         TLogger::Debug("TAssetManager", "Default white texture, flat normal texture, and material created.");
     }
+
+#pragma endregion
+
+#pragma region Asset_Loading
 
     TMeshAssetHandle TAssetManager::LoadOBJ(const std::filesystem::path& Path)
     {
@@ -116,6 +122,10 @@ namespace MDSS::Asset
         return Handle;
     }
 
+#pragma endregion
+
+#pragma region Asset_Access
+
     const TMeshAsset& TAssetManager::GetMesh(TMeshAssetHandle Handle) const
     {
         if (Handle >= Meshes.size())
@@ -166,6 +176,10 @@ namespace MDSS::Asset
     {
         return DefaultMaterial;
     }
+
+#pragma endregion
+
+#pragma region Generated_Assets
 
     TextureAssetHandle TAssetManager::LoadTexture(const std::filesystem::path& Path, bool bSRGB)
     {
@@ -226,4 +240,5 @@ namespace MDSS::Asset
                            ", normal texture=" + std::to_string(NormalTexture) + ").");
         return Handle;
     }
+#pragma endregion
 } // MDSS 네임스페이스

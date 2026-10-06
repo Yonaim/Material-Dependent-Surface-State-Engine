@@ -28,6 +28,7 @@ namespace MDSS::GPU
     class TSwapchain
     {
     public:
+        // Swapchain lifecycle and recreation
         TSwapchain(const TVulkanContext& Context, const TWindow& TWindow);
         ~TSwapchain();
 
@@ -39,6 +40,7 @@ namespace MDSS::GPU
         /** @brief 현재 surface와 window 크기에 맞춰 swapchain 및 image view를 다시 만든다. */
         void Recreate(const TVulkanContext& Context, const TWindow& TWindow);
 
+        // Swapchain image access
         [[nodiscard]] VkSwapchainKHR                  GetHandle() const noexcept;
         [[nodiscard]] VkFormat                        GetImageFormat() const noexcept;
         [[nodiscard]] VkExtent2D                      GetExtent() const noexcept;
@@ -50,6 +52,7 @@ namespace MDSS::GPU
                                                                    VkSurfaceKHR     Surface);
 
     private:
+        // Surface support and creation helpers
         static VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& Formats);
         static VkPresentModeKHR   ChoosePresentMode(const std::vector<VkPresentModeKHR>& PresentModes);
         static VkExtent2D         ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const TWindow& TWindow);

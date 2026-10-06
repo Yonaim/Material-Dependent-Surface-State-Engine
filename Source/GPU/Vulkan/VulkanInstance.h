@@ -15,6 +15,7 @@ namespace MDSS::GPU
     class TVulkanInstance
     {
     public:
+        // Vulkan instance lifecycle
         /**
          * @brief Vulkan instance를 만들고 요청 extension 및 빌드 설정에 따른 validation을 적용한다.
          * @throws std::runtime_error 필수 extension/layer가 없거나 instance 생성이 실패한 경우.
@@ -30,6 +31,7 @@ namespace MDSS::GPU
         [[nodiscard]] VkInstance GetHandle() const noexcept;
 
     private:
+        // Extension and validation layer checks
         static std::vector<const char*> BuildExtensionList(const std::vector<const char*>& RequiredExtensions);
         static void                     ValidateExtensions(const std::vector<const char*>& Extensions);
 #if MDSS_ENABLE_VALIDATION

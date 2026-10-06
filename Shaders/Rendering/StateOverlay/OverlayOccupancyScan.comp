@@ -13,6 +13,7 @@ layout(local_size_x = 64) in;
 
 layout(set = 0, binding = 8, std430) readonly buffer TCurrentState { float Values[]; } CurrentState;
 layout(set = 0, binding = 12, std430) readonly buffer TSurfaceRanges { uvec4 Values[]; } SurfaceRanges;
+layout(set = 0, binding = 21, std430) readonly buffer TAccumulationHeights { float Values[]; } AccumulationHeights;
 
 layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
 
@@ -39,10 +40,10 @@ shared uint RangeFirstTexel;
 shared uint RangeWidth;
 shared uint RangeHeight;
 
-// State is not geometry itself, but for a single overlay layer it is the source of the displayed
-// accumulation height. Keep tiny solver jitter from rebuilding geometry every frame. Because the
-// cached state is only advanced when the tile is actually rebuilt, sub-threshold changes accumulate
-// and eventually trigger an update instead of being lost forever.
+// State is not geometry itself, but it is the source of displayed accumulation height. A channel
+// value of 0xffffffff selects the shared-surface mode: occupancy is any nonzero state, while dirty
+// tracking follows the solver's total accumulation height. Keep tiny solver jitter from rebuilding
+// geometry every frame. Because the cached input advances only when rebuilt, small changes accumulate.
 const float DirtyStateAbsoluteEpsilon = 1.0e-5;
 const float DirtyStateRelativeEpsilon = 1.0e-3;
 
@@ -58,7 +59,7 @@ uint CapacityTileCount()
 // heightScheduled[N], normalScheduled[N]          (dynamic)
 // heightCount, heightDispatch[3], heightList[N]   (dynamic)
 // normalCount, normalDispatch[3], normalList[N]   (dynamic)
-// globalAny                                       (dynamic, last word)
+// globalAny, activeTileCount                      (dynamic, last two words)
 uint FlagBase()             { return Push.Texels * 4u; }
 uint BuiltStateBase()       { return FlagBase() + CapacityTileCount(); }
 uint HeightScheduleBase()   { return BuiltStateBase() + Push.Texels; }
@@ -69,7 +70,8 @@ uint HeightListBase()       { return HeightDispatchBase() + 3u; }
 uint NormalCountIndex()     { return HeightListBase() + CapacityTileCount(); }
 uint NormalDispatchBase()   { return NormalCountIndex() + 1u; }
 uint NormalListBase()       { return NormalDispatchBase() + 3u; }
-uint GlobalAnyIndex()       { return uint(GeometryCache.Values.length()) - 1u; }
+uint GlobalAnyIndex()       { return uint(GeometryCache.Values.length()) - 2u; }
+uint ActiveTileCountIndex() { return uint(GeometryCache.Values.length()) - 1u; }
 
 bool ResolveCandidateTile(uint Candidate)
 {
@@ -103,11 +105,32 @@ bool ResolveCandidateTile(uint Candidate)
 
 float SanitizedState(uint Texel)
 {
-    if (Push.Channels == 0u || Push.Channel >= Push.Channels) return 0.0;
+    if (Push.Channels == 0u) return 0.0;
+    if (Push.Channel == 0xffffffffu)
+    {
+        if (Texel >= uint(AccumulationHeights.Values.length())) return 0.0;
+        float Height = AccumulationHeights.Values[Texel];
+        return (isnan(Height) || isinf(Height)) ? 0.0 : Height;
+    }
+    if (Push.Channel >= Push.Channels) return 0.0;
     uint I = Texel * Push.Channels + Push.Channel;
     if (I >= uint(CurrentState.Values.length())) return 0.0;
     float State = CurrentState.Values[I];
     return (isnan(State) || isinf(State) || State < 0.0) ? 0.0 : State;
+}
+
+bool HasActiveState(uint Texel)
+{
+    if (Push.Channel != 0xffffffffu)
+        return SanitizedState(Texel) > 0.0;
+    for (uint Channel = 0u; Channel < Push.Channels; ++Channel)
+    {
+        uint I = Texel * Push.Channels + Channel;
+        if (I >= uint(CurrentState.Values.length())) continue;
+        float State = CurrentState.Values[I];
+        if (!isnan(State) && !isinf(State) && State > 0.0) return true;
+    }
+    return false;
 }
 
 bool StateChanged(float Current, float Built)
@@ -174,7 +197,7 @@ void main()
         if (T >= Push.Texels) continue;
 
         float State = SanitizedState(T);
-        if (State > 0.0) atomicOr(AnyStateInTile, 1u);
+        if (HasActiveState(T)) atomicOr(AnyStateInTile, 1u);
 
         float BuiltState = uintBitsToFloat(GeometryCache.Values[BuiltStateBase() + T]);
         if (Push.ForceFullUpdate != 0u || StateChanged(State, BuiltState))
@@ -187,7 +210,10 @@ void main()
         uint CurrentActive = AnyStateInTile != 0u ? 1u : 0u;
         GeometryCache.Values[FlagBase() + Candidate] = CurrentActive;
         if (CurrentActive != 0u)
+        {
             atomicOr(GeometryCache.Values[GlobalAnyIndex()], 1u);
+            atomicAdd(GeometryCache.Values[ActiveTileCountIndex()], 1u);
+        }
 
         TileDirty = (Push.ForceFullUpdate != 0u || AnyDirtyInTile != 0u) ? 1u : 0u;
         if (TileDirty != 0u)

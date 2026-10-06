@@ -3,13 +3,15 @@
 > **한 줄 요약:** 원래 표면은 바닥에 남기고 쌓인 State는 별도 윗면과 옆면으로 그린다.
 
 - 분류: **Rendering**
-- Status: **Accepted (1차 렌더 경로 코드 반영, 실행 검증 대기)**
+- Status: **Superseded by Decision 0028 (원본 Base와 경계 옆면 원칙은 유지)**
 - Date: 2026-09-30
 - 관련 문서: [[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016 — 데모 Lit]], [[05_Decisions/0017_Source-Topology-Seam-Stitching|Decision 0017 — texel 연결면]], [[03_Architecture/0004_Surface-Geometry|Surface Geometry]]
 
 ## 쉽게 읽기
 
-원본 메시를 바닥 표면으로 그리고, 쌓인 상태는 별도 윗면과 경계 옆면으로 그린다. 현재 코드는 Mud·WaterFilm·Lava 오버레이 경로를 갖지만 실행 화면 검증 상태는 별도로 표시한다.
+초기안은 원본 메시를 바닥 표면으로 그리고 Mud·WaterFilm·Lava의 윗면과 경계 옆면을 각각 그렸다.
+
+초기안은 State별 Overlay Draw를 사용했다. 현재 결정은 State별 Draw를 공통 누적 윗면과 fragment 재질 합성으로 바꾼 [[05_Decisions/0028_Shared-Accumulation-Top-and-Optional-Transparent-WaterFilm|Decision 0028]]을 따른다. 아래 State별 Draw 설명은 초기안의 기록이다.
 
 ## Context — 왜 필요했나
 

@@ -14,7 +14,14 @@ const float DynamicGeometryEpsilon = 1.0e-6;
 
 void main()
 {
-    uint Texel = gl_GlobalInvocationID.x;
+    uint WorkgroupCount = (Solver.LocalTexelCount + 63u) / 64u;
+    uint DirtyFlagBase = 3u * Solver.LocalTexelCount;
+    uint CommandBase = DirtyFlagBase + WorkgroupCount;
+    uint ScheduledListBase = CommandBase + 3u + WorkgroupCount;
+    uint OriginalGroup = gl_WorkGroupID.x;
+    if (useSparseSimulationGeometry())
+        OriginalGroup = floatBitsToUint(AccumulationHeights.Values[ScheduledListBase + gl_WorkGroupID.x]);
+    uint Texel = OriginalGroup * 64u + gl_LocalInvocationID.x;
     if (Texel >= Solver.LocalTexelCount) return;
 
     // 전체 재계산 요청이 있거나, 이 texel 또는 인접 texel의 높이가 바뀌면 형상을 다시 만든다.

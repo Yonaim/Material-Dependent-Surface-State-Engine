@@ -4,7 +4,7 @@
   "loop": true,
   "tracks": [
     {
-      "target": "mountain_wetness",
+      "target": "mountain_heat",
       "property": "rotation",
       "interpolation": "slerp",
       "keys": [

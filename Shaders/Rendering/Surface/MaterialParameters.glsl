@@ -18,12 +18,24 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     float ReliefShadingEnabled;
     vec4 DebugOptions;
     uvec4 DebugFlags;
-    uvec4 DemoStateChannels; // Wetness ID, Mud ID, WaterFilm ID, effects enabled
-    vec4 DemoOptions; // dry / wet / mud perceptual roughness, Lit height display scale
-    vec4 DemoEffectOptions; // wetness strength, wet specular strength, waterfilm opacity, waterfilm roughness
-    vec4 WetnessTint;
-    vec4 WaterFilmTint;
-    uvec4 DemoExtraStateChannels; // Lava ID, reserved
+    uvec4 DemoStateChannels; // Heat ID, Mud ID, WaterFilm ID, effects enabled
+    vec4 DemoOptions; // dry roughness, reserved, mud roughness, Lit height display scale
+    vec4 DemoEffectOptions; // heat strength, reserved, waterfilm opacity, waterfilm roughness
+    uvec4 DemoExtraStateChannels; // Lava ID, transparent WaterFilm, performance flags, enabled effect bits
+    vec4 EffectColorRampStarts; // Heat, Mud, WaterFilm, Lava
+    vec4 EffectColorRampEnds;
+    vec4 EffectLowSaturationColors[4];
+    vec4 EffectHighSaturationColors[4];
     vec4 CameraPosition;
 } Material;
+
+vec3 MapEffectColor(uint EffectIndex, float Saturation)
+{
+    float Start = Material.EffectColorRampStarts[EffectIndex];
+    float End = Material.EffectColorRampEnds[EffectIndex];
+    float Range = max(End - Start, 1e-4);
+    float T = clamp((Saturation - Start) / Range, 0.0, 1.0);
+    return mix(Material.EffectLowSaturationColors[EffectIndex].rgb,
+                Material.EffectHighSaturationColors[EffectIndex].rgb, T);
+}
 #endif

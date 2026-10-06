@@ -1,12 +1,15 @@
 /**
  * @file SurfaceDynamicUpdateDispatch.comp
- * @brief 모든 높이 workgroup이 그대로면 geometry와 weight dispatch를 생략한다.
+ * @brief dirty geometry workgroup을 선택적으로 compact해 geometry/weight indirect dispatch를 만든다.
  */
 #version 450
+#extension GL_GOOGLE_include_directive : require
 
-// 이 buffer는 vkCmdDispatchIndirect도 읽으므로 command word를 uint로 정확히 기록한다.
-// 작은 workgroup 수에서도 dispatch 인자 각 항목이 그대로 유지되어야 한다.
-layout(std430, set = 0, binding = 22) buffer TSurfaceAccumulationData
+#define SURFACE_DEBUG_SET 0
+#include "Surface/SurfaceStateData.glsl"
+
+// AccumulationHeights binding을 uint view로 사용한다. Height/dirty float와 command/list uint가 같은 buffer를 공유한다.
+layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationData
 {
     uint Values[];
 } AccumulationData;
@@ -24,30 +27,107 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
 
 layout(local_size_x = 64) in;
 
-shared uint AnyDirty[64];
+const uint InvalidTexelIndex = 0xffffffffu;
+const uint SurfaceNeighborCount = 8u;
+const uint SparseGeometryFlag = 1u << 13u;
+const uint ForceFullGeometryFlag = 1u << 10u;
+
+uint WorkgroupCount() { return (Solver.LocalTexelCount + 63u) / 64u; }
+uint DirtyFlagBase() { return 3u * Solver.LocalTexelCount; }
+uint CommandBase() { return DirtyFlagBase() + WorkgroupCount(); }
+uint ScheduledFlagBase() { return CommandBase() + 3u; }
+uint ScheduledListBase() { return ScheduledFlagBase() + WorkgroupCount(); }
+
+bool HeightDirty(uint Texel)
+{
+    return Texel < Solver.LocalTexelCount &&
+           AccumulationData.Values[Solver.LocalTexelCount + Texel] != 0u;
+}
+
+void ScheduleGroup(uint Group)
+{
+    uint Groups = WorkgroupCount();
+    if (Group >= Groups) return;
+    if (atomicCompSwap(AccumulationData.Values[ScheduledFlagBase() + Group], 0u, 1u) == 0u)
+    {
+        uint Slot = atomicAdd(AccumulationData.Values[CommandBase()], 1u);
+        if (Slot < Groups)
+            AccumulationData.Values[ScheduledListBase() + Slot] = Group;
+    }
+}
+
+void ScheduleTexelAndTwoHopNeighbors(uint Texel)
+{
+    if (Texel >= Solver.LocalTexelCount) return;
+    ScheduleGroup(Texel / 64u);
+    for (uint D = 0u; D < SurfaceNeighborCount; ++D)
+    {
+        uint N1 = NeighborIndices.Values[Texel].Indices[D];
+        if (N1 == InvalidTexelIndex || N1 >= Solver.LocalTexelCount) continue;
+        ScheduleGroup(N1 / 64u);
+        // Dynamic geometry marks direct neighbors dirty. Transfer weights also depend on neighbors
+        // of those geometry-dirty texels, so schedule one more topology hop conservatively.
+        for (uint D2 = 0u; D2 < SurfaceNeighborCount; ++D2)
+        {
+            uint N2 = NeighborIndices.Values[N1].Indices[D2];
+            if (N2 != InvalidTexelIndex && N2 < Solver.LocalTexelCount)
+                ScheduleGroup(N2 / 64u);
+        }
+    }
+}
 
 void main()
 {
-    // 각 lane이 일부 workgroup flag를 확인한 뒤 shared memory에서 전체 변경 여부를 reduction한다.
     uint Lane = gl_LocalInvocationIndex;
-    uint WorkgroupCount = (Solver.LocalTexelCount + 63u) / 64u;
-    uint FlagBase = 3u * Solver.LocalTexelCount;
-    uint Dirty = (Solver.Flags & (1u << 10u)) != 0u ? 1u : 0u;
-    for (uint Group = Lane; Group < WorkgroupCount && Dirty == 0u; Group += 64u)
-        Dirty |= AccumulationData.Values[FlagBase + Group] != 0u ? 1u : 0u;
-    AnyDirty[Lane] = Dirty;
-    barrier();
-    for (uint Stride = 32u; Stride > 0u; Stride >>= 1u)
-    {
-        if (Lane < Stride) AnyDirty[Lane] |= AnyDirty[Lane + Stride];
-        barrier();
-    }
+    uint Groups = WorkgroupCount();
+    uint Cmd = CommandBase();
+
+    // This pass is intentionally one workgroup so a single workgroup barrier is sufficient for
+    // clearing the schedule metadata before any lane starts compacting.
+    for (uint Group = Lane; Group < Groups; Group += 64u)
+        AccumulationData.Values[ScheduledFlagBase() + Group] = 0u;
     if (Lane == 0u)
     {
-        // 변경이 있을 때만 geometry/weight pass를 실행하도록 indirect command의 x 크기를 설정한다.
-        uint CommandBase = FlagBase + WorkgroupCount;
-        AccumulationData.Values[CommandBase] = AnyDirty[0] != 0u ? WorkgroupCount : 0u;
-        AccumulationData.Values[CommandBase + 1u] = 1u;
-        AccumulationData.Values[CommandBase + 2u] = 1u;
+        AccumulationData.Values[Cmd] = 0u;
+        AccumulationData.Values[Cmd + 1u] = 1u;
+        AccumulationData.Values[Cmd + 2u] = 1u;
+    }
+    barrier();
+
+    bool Sparse = (Solver.Flags & SparseGeometryFlag) != 0u;
+    bool ForceFull = (Solver.Flags & ForceFullGeometryFlag) != 0u;
+    if (!Sparse)
+    {
+        uint AnyDirty = ForceFull ? 1u : 0u;
+        for (uint Group = Lane; Group < Groups && AnyDirty == 0u; Group += 64u)
+            AnyDirty |= AccumulationData.Values[DirtyFlagBase() + Group] != 0u ? 1u : 0u;
+        if (AnyDirty != 0u) atomicOr(AccumulationData.Values[Cmd], 0x80000000u);
+        barrier();
+        if (Lane == 0u)
+            AccumulationData.Values[Cmd] = (AccumulationData.Values[Cmd] & 0x80000000u) != 0u ? Groups : 0u;
+        return;
+    }
+
+    if (ForceFull)
+    {
+        for (uint Group = Lane; Group < Groups; Group += 64u)
+        {
+            AccumulationData.Values[ScheduledFlagBase() + Group] = 1u;
+            AccumulationData.Values[ScheduledListBase() + Group] = Group;
+        }
+        barrier();
+        if (Lane == 0u) AccumulationData.Values[Cmd] = Groups;
+        return;
+    }
+
+    // Scan only dirty workgroups; within them inspect the 64 height-dirty texels and compact all
+    // workgroups that can affect geometry or transfer weights (self + topology 2-hop halo).
+    for (uint Group = Lane; Group < Groups; Group += 64u)
+    {
+        if (AccumulationData.Values[DirtyFlagBase() + Group] == 0u) continue;
+        uint First = Group * 64u;
+        uint Last = min(First + 64u, Solver.LocalTexelCount);
+        for (uint Texel = First; Texel < Last; ++Texel)
+            if (HeightDirty(Texel)) ScheduleTexelAndTwoHopNeighbors(Texel);
     }
 }

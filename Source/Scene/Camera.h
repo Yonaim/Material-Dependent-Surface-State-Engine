@@ -12,6 +12,7 @@ namespace MDSS
     class TCamera
     {
     public:
+        // Camera construction and matrices
         TCamera() = default;
         TCamera(glm::vec3 Position,
                 glm::vec3 Target,
@@ -24,6 +25,7 @@ namespace MDSS
         [[nodiscard]] glm::mat4 GetProjectionMatrix(float AspectRatio) const;
         [[nodiscard]] glm::mat4 GetViewProjectionMatrix(float AspectRatio) const;
 
+        // Camera controls and state access
         void SetPosition(glm::vec3 Position) noexcept;
         void SetTarget(glm::vec3 Target) noexcept;
         void SetRotationDegrees(glm::vec2 RotationDegrees) noexcept;

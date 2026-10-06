@@ -1,0 +1,106 @@
+/**
+ * @file RenderStateTextureSmoothing.comp
+ * @brief RenderStateTexture를 chart/profile 경계 안에서 5-tap/5x5 Gaussian으로 smoothing한다.
+ */
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#define SURFACE_DEBUG_SET 0
+#include "Surface/SurfaceStateData.glsl"
+layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
+{
+    uint Values[];
+} TexelChartIndices;
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(rgba16f, set = 1, binding = 0) uniform readonly image2DArray RawStates;
+layout(rgba16f, set = 1, binding = 1) uniform image2DArray TempStates;
+layout(rgba16f, set = 1, binding = 2) uniform image2DArray SmoothedStates;
+
+layout(push_constant) uniform TSmoothingPush
+{
+    uint Mode; // 0: direct 5x5, 1: horizontal 5-tap, 2: vertical 5-tap
+} Push;
+
+const int Kernel[5] = int[5](1, 4, 6, 4, 1);
+
+bool SameRegion(uint Center, uint Other, uint Surface)
+{
+    return Other < uint(TexelSurfaceIndices.Values.length()) &&
+           Other < uint(TexelProfileIndices.Values.length()) &&
+           Other < uint(TexelChartIndices.Values.length()) &&
+           TexelSurfaceIndices.Values[Other] == Surface &&
+           TexelSurfaceIndices.Values[Center] == Surface &&
+           TexelProfileIndices.Values[Other] == TexelProfileIndices.Values[Center] &&
+           TexelChartIndices.Values[Other] == TexelChartIndices.Values[Center];
+}
+
+vec4 ReadSource(ivec3 P)
+{
+    return Push.Mode == 2u ? imageLoad(TempStates, P) : imageLoad(RawStates, P);
+}
+
+void main()
+{
+    uint Surface = gl_GlobalInvocationID.z;
+    if (Surface >= uint(SurfaceRanges.Values.length())) return;
+    uvec4 Range = SurfaceRanges.Values[Surface];
+    uvec2 XY = gl_GlobalInvocationID.xy;
+    if (XY.x >= Range.y || XY.y >= Range.z) return;
+
+    uint Center = Range.x + XY.y * Range.y + XY.x;
+    if (Center >= uint(TexelSurfaceIndices.Values.length()) ||
+        Center >= uint(TexelProfileIndices.Values.length()) ||
+        Center >= uint(TexelChartIndices.Values.length()) ||
+        TexelSurfaceIndices.Values[Center] != Surface)
+    {
+        if (Push.Mode == 1u)
+            imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
+        else
+            imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
+        return;
+    }
+
+    vec4 Sum = vec4(0.0);
+    float WeightSum = 0.0;
+    if (Push.Mode == 0u)
+    {
+        for (int Y = -2; Y <= 2; ++Y)
+        {
+            int SY = int(XY.y) + Y;
+            if (SY < 0 || SY >= int(Range.z)) continue;
+            for (int X = -2; X <= 2; ++X)
+            {
+                int SX = int(XY.x) + X;
+                if (SX < 0 || SX >= int(Range.y)) continue;
+                uint Other = Range.x + uint(SY) * Range.y + uint(SX);
+                if (!SameRegion(Center, Other, Surface)) continue;
+                float W = float(Kernel[X + 2] * Kernel[Y + 2]);
+                Sum += W * imageLoad(RawStates, ivec3(SX, SY, int(Surface)));
+                WeightSum += W;
+            }
+        }
+        imageStore(SmoothedStates,
+                   ivec3(ivec2(XY), int(Surface)),
+                   WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : vec4(0.0));
+        return;
+    }
+
+    bool Horizontal = Push.Mode == 1u;
+    for (int Offset = -2; Offset <= 2; ++Offset)
+    {
+        int SX = int(XY.x) + (Horizontal ? Offset : 0);
+        int SY = int(XY.y) + (Horizontal ? 0 : Offset);
+        if (SX < 0 || SY < 0 || SX >= int(Range.y) || SY >= int(Range.z)) continue;
+        uint Other = Range.x + uint(SY) * Range.y + uint(SX);
+        if (!SameRegion(Center, Other, Surface)) continue;
+        float W = float(Kernel[Offset + 2]);
+        Sum += W * ReadSource(ivec3(SX, SY, int(Surface)));
+        WeightSum += W;
+    }
+    vec4 Result = WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : vec4(0.0);
+    if (Horizontal)
+        imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), Result);
+    else
+        imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
+}

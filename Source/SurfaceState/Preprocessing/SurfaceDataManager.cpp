@@ -30,6 +30,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Runtime_Surface_Key_Helper
+
     namespace
     {
         std::string MakeRuntimeSurfaceKey(const std::filesystem::path& MeshPath,
@@ -42,6 +44,9 @@ namespace MDSS::SurfaceState
             return MeshKey + '\n' + DistributionKey + '\n' + std::to_string(Resolution);
         }
     } // namespace
+#pragma endregion
+
+#pragma region Surface_Data_Loading
 
     TSurfaceDataManager::TSurfaceDataManager(Asset::TAssetManager& Assets) : Assets(Assets)
     {
@@ -258,6 +263,9 @@ namespace MDSS::SurfaceState
         const auto                    DistributionPath = RuntimeSurfaceAssets[Handle].DistributionPath;
         return LoadSurfaceData(Mesh, DistributionPath, Resolution);
     }
+#pragma endregion
+
+#pragma region Registry_and_Surface_Data_Accessors
 
     std::uint32_t TSurfaceDataManager::GetSimulationResolution() const noexcept
     {
@@ -348,4 +356,5 @@ namespace MDSS::SurfaceState
         return StateRegistry;
     }
 
+#pragma endregion
 } // namespace MDSS::SurfaceState

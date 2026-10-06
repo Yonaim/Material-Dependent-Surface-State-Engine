@@ -221,34 +221,40 @@ if(BUILD_TESTING)
     target_link_libraries(MDSS_SimulationTransportTests PRIVATE glm::glm)
     add_test(NAME MDSS_SimulationTransport COMMAND MDSS_SimulationTransportTests)
 
-    # Exercise the actual Scene/AssetManager/Renderer resource lifecycle with a small native Vulkan window.
-    set(MDSS_SCENE_TEST_SOURCES ${MDSS_SOURCES})
-    list(FILTER MDSS_SCENE_TEST_SOURCES EXCLUDE REGEX "/main\\.cpp$")
-    add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp Tests/SurfaceDebugRenderingTests.cpp ${MDSS_SCENE_TEST_SOURCES})
-    add_dependencies(MDSS_SceneResourceTests MDSS_Shaders)
-    target_include_directories(MDSS_SceneResourceTests PRIVATE Source)
-    target_include_directories(MDSS_SceneResourceTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
-    target_link_libraries(MDSS_SceneResourceTests PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
-    target_compile_definitions(MDSS_SceneResourceTests PRIVATE
-        MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
-        MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
-        MDSS_SURFACE_CACHE_DIR="${CMAKE_CURRENT_BINARY_DIR}/SceneTestCache"
-        MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
-        GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE
+    option(MDSS_BUILD_VULKAN_SCENE_TESTS
+        "Build and register Scene/Renderer tests that require a native Vulkan window"
+        OFF
     )
-    if(MSVC)
-        target_compile_options(MDSS_SceneResourceTests PRIVATE /W4 /permissive-)
-    else()
-        target_compile_options(MDSS_SceneResourceTests PRIVATE -Wall -Wextra -Wpedantic)
+    if(MDSS_BUILD_VULKAN_SCENE_TESTS)
+        # Exercise the actual Scene/AssetManager/Renderer resource lifecycle with a small native Vulkan window.
+        set(MDSS_SCENE_TEST_SOURCES ${MDSS_SOURCES})
+        list(FILTER MDSS_SCENE_TEST_SOURCES EXCLUDE REGEX "/main\\.cpp$")
+        add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp Tests/SurfaceDebugRenderingTests.cpp ${MDSS_SCENE_TEST_SOURCES})
+        add_dependencies(MDSS_SceneResourceTests MDSS_Shaders)
+        target_include_directories(MDSS_SceneResourceTests PRIVATE Source)
+        target_include_directories(MDSS_SceneResourceTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
+        target_link_libraries(MDSS_SceneResourceTests PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
+        target_compile_definitions(MDSS_SceneResourceTests PRIVATE
+            MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+            MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+            MDSS_SURFACE_CACHE_DIR="${CMAKE_CURRENT_BINARY_DIR}/SceneTestCache"
+            MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
+            GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE
+        )
+        if(MSVC)
+            target_compile_options(MDSS_SceneResourceTests PRIVATE /W4 /permissive-)
+        else()
+            target_compile_options(MDSS_SceneResourceTests PRIVATE -Wall -Wextra -Wpedantic)
+        endif()
+        add_test(NAME MDSS_SceneResources COMMAND MDSS_SceneResourceTests)
+        add_test(NAME MDSS_DemoAnimation COMMAND MDSS_SceneResourceTests --demo-animation)
+        add_test(NAME MDSS_CavityFillDisplayBound COMMAND MDSS_SceneResourceTests --cavity-fill-bound)
+        add_test(NAME MDSS_LavaScene COMMAND MDSS_SceneResourceTests --lava-scene)
+        add_test(NAME MDSS_OverlaySideCompaction COMMAND MDSS_SceneResourceTests --overlay-side-compaction)
+        set_tests_properties(MDSS_SceneResources PROPERTIES SKIP_RETURN_CODE 77)
+        set_tests_properties(MDSS_OverlaySideCompaction PROPERTIES SKIP_RETURN_CODE 77)
+        set_tests_properties(MDSS_LavaScene PROPERTIES SKIP_RETURN_CODE 77)
     endif()
-    add_test(NAME MDSS_SceneResources COMMAND MDSS_SceneResourceTests)
-    add_test(NAME MDSS_DemoAnimation COMMAND MDSS_SceneResourceTests --demo-animation)
-    add_test(NAME MDSS_CavityFillDisplayBound COMMAND MDSS_SceneResourceTests --cavity-fill-bound)
-    add_test(NAME MDSS_LavaScene COMMAND MDSS_SceneResourceTests --lava-scene)
-    add_test(NAME MDSS_OverlaySideCompaction COMMAND MDSS_SceneResourceTests --overlay-side-compaction)
-    set_tests_properties(MDSS_SceneResources PROPERTIES SKIP_RETURN_CODE 77)
-    set_tests_properties(MDSS_OverlaySideCompaction PROPERTIES SKIP_RETURN_CODE 77)
-    set_tests_properties(MDSS_LavaScene PROPERTIES SKIP_RETURN_CODE 77)
 
     add_executable(MDSS_SurfaceCacheTests
         Tests/SurfaceCacheTests.cpp

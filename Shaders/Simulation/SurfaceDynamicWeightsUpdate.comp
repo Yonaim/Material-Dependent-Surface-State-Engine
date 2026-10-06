@@ -97,7 +97,14 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
 
 void main()
 {
-    uint Source = gl_GlobalInvocationID.x;
+    uint WorkgroupCount = (Solver.LocalTexelCount + 63u) / 64u;
+    uint DirtyFlagBase = 3u * Solver.LocalTexelCount;
+    uint CommandBase = DirtyFlagBase + WorkgroupCount;
+    uint ScheduledListBase = CommandBase + 3u + WorkgroupCount;
+    uint OriginalGroup = gl_WorkGroupID.x;
+    if (useSparseSimulationGeometry())
+        OriginalGroup = floatBitsToUint(AccumulationHeights.Values[ScheduledListBase + gl_WorkGroupID.x]);
+    uint Source = OriginalGroup * 64u + gl_LocalInvocationID.x;
     if (Source >= Solver.LocalTexelCount) return;
     // 높이 변경 표시가 있는 source 또는 이웃에 대해서만 관련 transfer weight를 다시 만든다.
     bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||

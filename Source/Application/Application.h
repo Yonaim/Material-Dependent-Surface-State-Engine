@@ -32,6 +32,7 @@ namespace MDSS
     class TApplication
     {
     public:
+        // Application lifecycle and execution
         explicit TApplication(TBenchmarkOptions BenchmarkOptions = {});
         ~TApplication();
 

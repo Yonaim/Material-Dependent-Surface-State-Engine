@@ -10,6 +10,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region TGraphicsPass_Implementation
+
     TGraphicsPass::TGraphicsPass(const TRenderPass& RenderPass) noexcept : RenderPass(&RenderPass)
     {
     }
@@ -51,4 +53,5 @@ namespace MDSS::GPU
 
         vkCmdEndRenderPass(CommandBuffer);
     }
+#pragma endregion
 } // namespace MDSS::GPU

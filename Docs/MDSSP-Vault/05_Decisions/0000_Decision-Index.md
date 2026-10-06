@@ -36,9 +36,11 @@
 | --- | --- | --- |
 | [[05_Decisions/0014_Accumulation-Debug-and-Texel-Inspector|Decision 0014]] | 적층 디버그 뷰와 Texel Inspector | State 양과 쌓인 높이를 화면에서 확인하고, 선택한 texel의 GPU 결과를 검사하는 디버그 도구를 정한다. 미리보기는 Solver에 영향을 주지 않는다. |
 | [[05_Decisions/0015_Texel-Geometry-Preview|Decision 0015]] | Texel 연결면 기반 형상 미리보기 | 시뮬레이션 texel을 잇는 표면을 만들어 높이 변화가 실제 실루엣에 나타나게 한다. 표시용 위치와 법선은 GPU에서 계산하고 Solver 상태는 바꾸지 않는다. |
-| [[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]] | Texel 묶음 Grid와 데모 Lit 반응 | texel 격자를 화면에 표시하고 Wetness·Mud·WaterFilm 등의 데모 상태를 조명에 연결한다. State 종류는 Profile Registry에서 찾으며 고정 채널 번호를 두지 않는다. |
+| [[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]] | Texel 묶음 Grid와 초기 데모 Lit 반응 | texel 격자와 당시 Wetness·Mud·WaterFilm 외관 구현을 기록한다. 현재 Heat 반응은 Decision 0027을 따른다. |
 | [[05_Decisions/0017_Source-Topology-Seam-Stitching|Decision 0017]] | 원본 topology 기반 UV seam 봉합 | 원본 삼각형의 연결 관계를 따라 texel 표면을 만들고 UV seam 양쪽의 위치와 변위를 공유한다. 그 결과 seam이 벌어지지 않으며 원본 메시의 열린 경계는 유지한다. |
-| [[05_Decisions/0019_Base-Surface-and-Accumulation-Overlay|Decision 0019]] | 원본 표면과 적층 Overlay 분리 렌더링 | 원본 메시를 바닥 표면으로 그리고, 쌓인 상태는 별도 윗면과 경계 옆면으로 그린다. 현재 코드는 Mud·WaterFilm·Lava 오버레이 경로를 갖지만 실행 화면 검증 상태는 별도로 표시한다. |
+| [[05_Decisions/0019_Base-Surface-and-Accumulation-Overlay|Decision 0019 · superseded]] | 원본 표면과 적층 Overlay 분리 렌더링 | 초기 State별 Overlay Draw를 기록한다. Base와 경계 옆면 원칙은 유지하며 현재 Draw 구성은 Decision 0028을 따른다. |
+| [[05_Decisions/0027_Heat-Red-Lit-Demo|Decision 0027]] | Heat 기반 Red Lit 데모 | 기본 표면 반응을 Heat saturation에 따른 red tint로 바꾸고 Wetness 전용 반사를 제거한다. |
+| [[05_Decisions/0028_Shared-Accumulation-Top-and-Optional-Transparent-WaterFilm|Decision 0028]] | 공통 누적 윗면과 선택적 투명 WaterFilm | 기본은 공통 누적 윗면에서 State 재질을 합성하고, 옵션을 켜면 WaterFilm을 최종 높이의 투명 윗면으로 그린다. |
 
 ## Simulation
 

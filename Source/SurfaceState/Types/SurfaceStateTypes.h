@@ -61,6 +61,7 @@ namespace MDSS::SurfaceState
     using TSurfaceStateValues = std::vector<float>;
 
     /** @brief Trim ASCII whitespace and lowercase ASCII letters; preserve all other bytes. */
+    // State name normalization and profile validation
     [[nodiscard]] std::string NormalizeSurfaceStateName(std::string_view Name);
 
     /** @throws std::invalid_argument if any parameter or transition is invalid. */

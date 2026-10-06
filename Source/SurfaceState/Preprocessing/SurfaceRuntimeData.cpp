@@ -11,6 +11,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Runtime_Surface_Data
+
     TSurfaceRuntimeData::TSurfaceRuntimeData(TSharedSurfaceGeometryData Geometry)
         : Geometry(std::make_shared<const TSharedSurfaceGeometryData>(std::move(Geometry)))
     {
@@ -27,4 +29,5 @@ namespace MDSS::SurfaceState
     {
         return TSurfaceRuntimeData(TSurfaceGeometryBuilder::Build(Mapping, std::move(ProfileMap), ProfileCount));
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

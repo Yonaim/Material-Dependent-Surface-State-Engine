@@ -23,6 +23,7 @@ namespace MDSS::Asset
     class TAsset
     {
     public:
+        // Asset identity and source access
         TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath = {});
         virtual ~TAsset() = default;
 

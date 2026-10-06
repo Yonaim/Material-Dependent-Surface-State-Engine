@@ -84,6 +84,7 @@ namespace MDSS::SurfaceState
     class TSurfaceSharedGeometryGPUResources final
     {
     public:
+        // Shared geometry resource creation
         TSurfaceSharedGeometryGPUResources(VkPhysicalDevice                            PhysicalDevice,
                                            VkDevice                                    Device,
                                            const TSharedSurfaceGeometryData&           Geometry,
@@ -91,6 +92,7 @@ namespace MDSS::SurfaceState
                                            std::span<const Asset::TVertex>             SourceVertices = {},
                                            std::span<const Asset::TMeshTriangleSource> SourceTriangles = {});
 
+        // Geometry buffers
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetPositionBuffer() const noexcept;
@@ -104,6 +106,8 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetRenderSamplingBoundaryFlagBuffer() const noexcept;
         [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
+
+        // Render mesh variants
         [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept
         {
             return FullTexelMesh.IndexBuffer.get();
@@ -156,6 +160,7 @@ namespace MDSS::SurfaceState
     class TSurfaceProfileGPUResources final
     {
     public:
+        // Profile table creation and access
         TSurfaceProfileGPUResources(VkPhysicalDevice                                PhysicalDevice,
                                     VkDevice                                        Device,
                                     const std::vector<TSurfaceResponseProfileData>& Profiles,
@@ -180,6 +185,7 @@ namespace MDSS::SurfaceState
     class TSurfaceInstanceGPUResources final
     {
     public:
+        // Instance state buffer creation
         TSurfaceInstanceGPUResources(VkPhysicalDevice                    PhysicalDevice,
                                      VkDevice                            Device,
                                      std::size_t                         TexelCount,
@@ -188,6 +194,7 @@ namespace MDSS::SurfaceState
                                      const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
                                      const std::vector<float>&           WorldTexelAreas = {});
 
+        // State and geometry buffers
         [[nodiscard]] const GPU::TGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetStateBBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetOutgoingFluxScaleBuffer() const noexcept;
@@ -199,6 +206,8 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetDynamicConcavityWeightBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
+
+        // Instance data updates and reset
         void                                 UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void                                 UpdateTransferWeights(const std::vector<float>&           TransferWeights,
                                                                    const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
@@ -226,6 +235,7 @@ namespace MDSS::SurfaceState
     class TSurfaceStateDescriptorResources final
     {
     public:
+        // Descriptor creation and access
         TSurfaceStateDescriptorResources(VkDevice                                  Device,
                                          const TSurfaceSharedGeometryGPUResources& SharedGeometry,
                                          const TSurfaceProfileGPUResources&        Profiles,
@@ -259,6 +269,7 @@ namespace MDSS::SurfaceState
     class TSurfaceGPUResourceManager final
     {
     public:
+        // Resource lifecycle
         TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
                                    const Asset::TAssetManager& Assets,
                                    const TSurfaceDataManager&  SurfaceData,
@@ -270,6 +281,7 @@ namespace MDSS::SurfaceState
         TSurfaceGPUResourceManager(TSurfaceGPUResourceManager&&) = delete;
         TSurfaceGPUResourceManager& operator=(TSurfaceGPUResourceManager&&) = delete;
 
+        // Scene and instance resource access
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
         [[nodiscard]] std::size_t GetSharedSurfaceDataCount() const noexcept;
         [[nodiscard]] std::size_t GetSceneProfileCount() const noexcept;
@@ -284,6 +296,8 @@ namespace MDSS::SurfaceState
         [[nodiscard]] bool                   UpdateProfileParameters(Asset::TSRProfileAssetHandle   ProfileHandle,
                                                                      TStateId                       State,
                                                                      const TSurfaceStateParameters& Parameters);
+
+        // State and transfer-weight cache management
         [[nodiscard]] std::size_t            GetInstanceTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t            GetInstanceValidTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t            GetInstanceChannelCount(std::size_t SceneIndex) const;

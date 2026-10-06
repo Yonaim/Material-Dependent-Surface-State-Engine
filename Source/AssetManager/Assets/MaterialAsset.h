@@ -16,6 +16,7 @@ namespace MDSS::Asset
     class TMaterialAsset final : public TAsset
     {
     public:
+        // Material construction and data access
         TMaterialAsset(TAssetID              ID,
                        std::string           Name,
                        std::filesystem::path SourcePath,

@@ -5,7 +5,7 @@
 #include "Rendering/Surface/MaterialParameters.glsl"
 #include "Rendering/Surface/RenderStateSampling.glsl"
 #include "Rendering/Surface/Effects/Mud.glsl"
-#include "Rendering/Surface/Effects/Wetness.glsl"
+#include "Rendering/Surface/Effects/Heat.glsl"
 #include "Rendering/Surface/Effects/WaterFilm.glsl"
 #include "Rendering/Surface/Effects/Lava.glsl"
 #include "Rendering/Surface/Lighting.glsl"
@@ -74,40 +74,71 @@ void main()
     if (!gl_FrontFacing) N = -N;
     vec4 Color = texture(BaseColorTexture, FragUV) * Material.BaseColor;
     float Roughness = Material.DemoOptions.x;
-    float Wetness = 0.0;
+    float Heat = 0.0;
     float WaterFilm = 0.0;
     float Lava = 0.0;
     if (Material.DemoStateChannels.w != 0u)
     {
-        // demo channel ID는 동적이며, 렌더 texture의 RGBA lane에 대응한다.
-        vec4 DemoStates = SampleRenderStates(
-            FragSurfaceIndex, FragUV,
-            uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
-            Material.StateChannelCount);
-        Wetness = DemoStates.x;
+        // PerformanceFlags: bit0 coverage smoothing, bit1 precomputed smoothing,
+        // bit2 RenderStateTexture sampling. Precomputed smoothing necessarily uses the texture path.
+        uint PerformanceFlags = Material.DemoExtraStateChannels.z;
+        uint EnabledEffects = Material.DemoExtraStateChannels.w;
+        bool CoverageSmoothing = (PerformanceFlags & 1u) != 0u;
+        bool PrecomputedSmoothing = (PerformanceFlags & 2u) != 0u;
+        bool UseRenderTexture = (PerformanceFlags & 4u) != 0u || PrecomputedSmoothing;
+        vec4 DemoStates = UseRenderTexture
+            ? SampleRenderStates(FragSurfaceIndex, FragUV,
+                                 uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
+                                 Material.StateChannelCount)
+            : SampleStateSaturations(FragSurfaceIndex, FragUV,
+                                     uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
+                                     Material.StateChannelCount);
+        Heat = DemoStates.x;
         float Mud = DemoStates.y;
         WaterFilm = DemoStates.z;
         Lava = DemoStates.w;
+        // Legacy A/B path: when precompute is OFF, retain the original per-fragment 5x5 smoothing.
+        if (CoverageSmoothing && !PrecomputedSmoothing)
+        {
+            if ((EnabledEffects & 1u) != 0u)
+                Heat = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                     Material.DemoStateChannels.x, Material.StateChannelCount);
+#ifndef BASE_SURFACE_LIT
+            if ((EnabledEffects & 2u) != 0u)
+                Mud = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                    Material.DemoStateChannels.y, Material.StateChannelCount);
+            if ((EnabledEffects & 4u) != 0u)
+                WaterFilm = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                          Material.DemoStateChannels.z, Material.StateChannelCount);
+            if ((EnabledEffects & 8u) != 0u)
+                Lava = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                     Material.DemoExtraStateChannels.x, Material.StateChannelCount);
+#endif
+        }
 #ifndef BASE_SURFACE_LIT
         // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.
-        ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
-        ApplyLava(Lava, Color.rgb, Roughness);
+        if ((EnabledEffects & 2u) != 0u)
+            ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
+        if ((EnabledEffects & 8u) != 0u)
+            ApplyLava(Lava, Color.rgb, Roughness);
 #endif
-        ApplyWetness(Wetness, Color.rgb, Roughness, Material.DemoOptions.y,
-                     Material.WetnessTint.rgb, Material.DemoEffectOptions.x);
+        if ((EnabledEffects & 1u) != 0u)
+            ApplyHeat(Heat, Color.rgb, Material.DemoEffectOptions.x);
 #ifndef BASE_SURFACE_LIT
-        ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w,
-                       Material.WaterFilmTint.rgb);
+        if ((EnabledEffects & 4u) != 0u)
+            ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w);
 #else
         WaterFilm = 0.0;
 #endif
     }
     OutColor = vec4(ShadeSurface(Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition,
-                               Roughness, Material.AmbientLight,
-                               Wetness * Material.DemoEffectOptions.x, WaterFilm,
-                               Material.DemoEffectOptions.y), Color.a);
+                               Roughness, Material.AmbientLight, WaterFilm), Color.a);
 #ifndef BASE_SURFACE_LIT
-    if (Material.DemoStateChannels.w != 0u)
-        OutColor.rgb = min(OutColor.rgb + LavaEmission(Lava), vec3(1.0));
+    if (Material.DemoStateChannels.w != 0u &&
+        (Material.DemoExtraStateChannels.w & 8u) != 0u)
+    {
+        vec3 Emission = Lava > 0.02 ? LavaEmission(Lava) : vec3(0.0);
+        OutColor.rgb = min(OutColor.rgb + Emission, vec3(1.0));
+    }
 #endif
 }

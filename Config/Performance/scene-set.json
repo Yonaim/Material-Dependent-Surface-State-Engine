@@ -16,7 +16,7 @@
       "surfaces_per_instance": 6,
       "initial_contact_count": 1,
       "default_resolution": 256,
-      "state_channels": ["wetness", "mud", "waterfilm", "lava"]
+      "state_channels": ["heat", "mud", "waterfilm", "lava"]
     },
     {
       "id": "mountain",
@@ -26,7 +26,7 @@
       "surfaces_per_instance": 1,
       "initial_contact_count": 3,
       "default_resolution": 256,
-      "state_channels": ["wetness", "mud", "waterfilm", "lava"]
+      "state_channels": ["heat", "mud", "waterfilm", "lava"]
     }
   ]
 }

@@ -30,6 +30,7 @@ namespace MDSS
     class TScene
     {
     public:
+        // Scene lifecycle and configuration
         TScene();
 
         [[nodiscard]] TCamera&                     GetMainCamera() noexcept;
@@ -44,9 +45,11 @@ namespace MDSS
         /** @brief Lit 및 표면 디버그 미리보기의 렌더링 전용 높이 배율. */
         void SetLitHeightDisplayScale(float Scale);
         /** @brief 현재 Camera·object Transform을 Scene의 재시작 기준으로 저장한다. */
+        // Initial state and contact management
         void CaptureInitialState();
         /** @brief 저장된 초기 Transform과 animation key를 적용하고 animation 시간을 되돌린다. */
         void RestoreInitialState();
+        // Demo animation state
         void SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip);
         [[nodiscard]] const std::filesystem::path&             GetDemoAnimationPath() const noexcept;
         [[nodiscard]] bool                                     HasDemoAnimation() const noexcept;
@@ -61,6 +64,7 @@ namespace MDSS
         [[nodiscard]] const std::vector<TSceneInitialContact>& GetInitialContacts() const noexcept;
 
         /** @brief TScene 소유 목록에 정적 메시 인스턴스를 추가한다. */
+        // Static mesh instances
         void                                                  AddStaticMeshInstance(TStaticMeshInstance Instance);
         [[nodiscard]] std::vector<TStaticMeshInstance>&       GetStaticMeshInstances() noexcept;
         [[nodiscard]] const std::vector<TStaticMeshInstance>& GetStaticMeshInstances() const noexcept;
