@@ -24,6 +24,11 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
     inline constexpr std::uint32_t SurfaceSolverProfileBoundaryWeightFlag = 1U << 9U;
     inline constexpr std::uint32_t SurfaceSolverForceFullGeometryFlag = 1U << 10U;
+    inline constexpr std::uint32_t SurfaceSolverExcludeRenderChannelFlag = 1U << 11U;
+    /** @brief Pass 1의 방향별 raw flux를 cache해 Pass 2 재계산을 제거한다. */
+    inline constexpr std::uint32_t SurfaceSolverRawFluxCacheFlag = 1U << 12U;
+    /** @brief 동적 geometry/weight 갱신을 dirty workgroup list 기반 indirect dispatch로 제한한다. */
+    inline constexpr std::uint32_t SurfaceSolverSparseGeometryFlag = 1U << 13U;
 
     enum class TSurfaceSolverTerm : std::uint8_t
     {
@@ -70,6 +75,7 @@ namespace MDSS::SurfaceState
     class TSurfaceStateSolver final
     {
     public:
+        // Lifecycle
         TSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout);
         ~TSurfaceStateSolver();
 
@@ -78,10 +84,7 @@ namespace MDSS::SurfaceState
         TSurfaceStateSolver(TSurfaceStateSolver&&) = delete;
         TSurfaceStateSolver& operator=(TSurfaceStateSolver&&) = delete;
 
-        void RecordSteps(VkCommandBuffer                         CommandBuffer,
-                         std::span<const TSurfaceSolverInstanceStep> InstanceSteps,
-                         VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
-                         std::uint32_t                           FirstStepQuery = 0U) const;
+        // Solver command recording
         void RecordStep(VkCommandBuffer                         CommandBuffer,
                         const TSurfaceStateDescriptorResources& Descriptors,
                         bool                                    bCurrentStateAB,
@@ -93,14 +96,20 @@ namespace MDSS::SurfaceState
                         std::uint32_t                           SolverFlags = 0U,
                         VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
                         std::uint32_t                           FirstPassQuery = 0U) const;
+        void RecordSteps(VkCommandBuffer                         CommandBuffer,
+                         std::span<const TSurfaceSolverInstanceStep> InstanceSteps,
+                         VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
+                         std::uint32_t                           FirstStepQuery = 0U) const;
         void RecordCurrentAccumulationHeight(VkCommandBuffer                         CommandBuffer,
                                              const TSurfaceStateDescriptorResources& Descriptors,
                                              bool                                    bCurrentStateAB,
                                              std::size_t                             TexelCount,
                                              std::size_t                             ChannelCount,
-                                             const glm::mat4&                        ModelMatrix) const;
+                                             const glm::mat4&                        ModelMatrix,
+                                             TStateId                                ExcludedChannel = InvalidStateId) const;
 
     private:
+        // Compute pipeline creation
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
         static VkPipeline     CreateComputePipeline(VkDevice         Device,
                                                     VkPipelineLayout Layout,

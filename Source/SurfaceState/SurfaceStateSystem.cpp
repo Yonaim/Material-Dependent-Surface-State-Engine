@@ -30,6 +30,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Lifecycle
+
     TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
                                              const Asset::TAssetManager& Assets,
                                              const TSurfaceDataManager&  SurfaceData,
@@ -86,6 +88,9 @@ namespace MDSS::SurfaceState
         StableDeltaTimeModelMatrices = std::move(Replacement.StableDeltaTimeModelMatrices);
         RuntimeProfileOverrides = std::move(Replacement.RuntimeProfileOverrides);
     }
+#pragma endregion
+
+#pragma region State_and_Contact_Management
 
     void TSurfaceStateSystem::SubmitContact(TSurfaceContactInput Contact)
     {
@@ -145,6 +150,10 @@ namespace MDSS::SurfaceState
             RuntimeProfileOverrides.erase(Key);
         }
     }
+
+#pragma endregion
+
+#pragma region Pending_Contact_Application
 
     void TSurfaceStateSystem::ApplyPendingContacts()
     {
@@ -477,6 +486,10 @@ namespace MDSS::SurfaceState
         PendingContacts.clear();
     }
 
+#pragma endregion
+
+#pragma region Timestep_and_Transfer_Caches
+
     float TSurfaceStateSystem::GetMaximumStableDeltaTime()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
@@ -580,6 +593,10 @@ namespace MDSS::SurfaceState
         bForceFullGeometryOnNextStep = true;
     }
 
+#pragma endregion
+
+#pragma region GPU_Recording
+
     void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
                                          float           DeltaTime,
                                          VkQueryPool     TimestampQueryPool,
@@ -656,6 +673,10 @@ namespace MDSS::SurfaceState
             {
                 SolverFlags |= 1U << 4U;
             }
+            if (bRawFluxCacheEnabled)
+                SolverFlags |= SurfaceSolverRawFluxCacheFlag;
+            if (bSparseSimulationGeometryEnabled)
+                SolverFlags |= SurfaceSolverSparseGeometryFlag;
             if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled)
             {
                 SolverFlags |= SurfaceSolverAccumulationGeometryUpdateFlag;
@@ -687,7 +708,9 @@ namespace MDSS::SurfaceState
         bForceFullGeometryOnNextStep = false;
     }
 
-    void TSurfaceStateSystem::RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer, std::size_t SceneIndex)
+    void TSurfaceStateSystem::RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer,
+                                                              std::size_t SceneIndex,
+                                                              TStateId       ExcludedChannel)
     {
         const auto* Descriptors = GPUResources->GetInstanceDescriptors(SceneIndex);
         if (!Solver || !Descriptors)
@@ -697,8 +720,13 @@ namespace MDSS::SurfaceState
                                                 GPUResources->IsCurrentStateAB(SceneIndex),
                                                 GPUResources->GetInstanceTexelCount(SceneIndex),
                                                 GPUResources->GetInstanceChannelCount(SceneIndex),
-                                                Scene.GetStaticMeshInstances()[SceneIndex].GetTransform().GetMatrix());
+                                                Scene.GetStaticMeshInstances()[SceneIndex].GetTransform().GetMatrix(),
+                                                ExcludedChannel);
     }
+
+#pragma endregion
+
+#pragma region Debug_and_Accessors
 
     std::size_t TSurfaceStateSystem::GetSolverInstanceCount() const noexcept
     {
@@ -753,4 +781,5 @@ namespace MDSS::SurfaceState
     {
         return *GPUResources;
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

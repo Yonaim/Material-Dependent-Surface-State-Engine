@@ -157,6 +157,23 @@ layout(push_constant) uniform TSurfaceSolverPushConstants
 
 const float GeometryEpsilon = 1.0e-6;
 
+const uint SurfaceSolverRawFluxCacheFlag = 1u << 12u;
+const uint SurfaceSolverSparseGeometryFlag = 1u << 13u;
+
+bool useRawFluxCache() { return (Solver.Flags & SurfaceSolverRawFluxCacheFlag) != 0u; }
+bool useSparseSimulationGeometry() { return (Solver.Flags & SurfaceSolverSparseGeometryFlag) != 0u; }
+
+uint rawEdgeFluxBase()
+{
+    return Solver.LocalTexelCount * Solver.StateChannelCount;
+}
+
+uint rawEdgeFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
+{
+    return rawEdgeFluxBase() +
+           (TexelIndex * Solver.StateChannelCount + ChannelIndex) * SurfaceNeighborCount + DirectionIndex;
+}
+
 bool solverFinite(float Value)
 {
 #if MDSS_GPU_VALIDATION
@@ -226,6 +243,8 @@ float accumulationHeight(uint TexelIndex)
     float CavityThicknessWeighted = 0.0;
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
+        // Set only by the render-time height query. Solver feedback always includes every State.
+        if ((Solver.Flags & (1u << 11u)) != 0u && ChannelIndex == (Solver.Flags >> 16u)) continue;
         if (!supportsChannel(TexelIndex, ChannelIndex)) continue;
         uint Record = profileRecordIndex(TexelIndex, ChannelIndex);
         TSurfaceGPUProfileParameters P = ProfileParameters.Values[Record];

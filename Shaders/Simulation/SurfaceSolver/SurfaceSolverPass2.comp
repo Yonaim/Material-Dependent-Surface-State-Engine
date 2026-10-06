@@ -61,6 +61,15 @@ void main()
             {
                 continue;
             }
+            if (useRawFluxCache())
+            {
+                // Pass 1 already evaluated the exact source -> target edge. Pass 2 only applies
+                // the source-wide outgoing limiter and gathers the incoming amount.
+                float CachedRawIncoming = RawOutgoingBuffer.Values[
+                    rawEdgeFluxIndex(NeighborTexel, ChannelIndex, ReverseDirectionIndex)];
+                Incoming += CachedRawIncoming * NeighborScale;
+                continue;
+            }
             float NeighborTransferWeight = transferWeight(NeighborTexel, ReverseDirectionIndex);
             if (NeighborTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
             {

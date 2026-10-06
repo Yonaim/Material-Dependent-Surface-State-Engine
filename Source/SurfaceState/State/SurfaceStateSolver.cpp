@@ -22,6 +22,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Solver_Command_Helpers
+
     namespace
     {
         std::vector<std::uint32_t> ReadSpirvFile(const char* Path)
@@ -117,6 +119,9 @@ namespace MDSS::SurfaceState
                                  nullptr);
         }
     } // namespace
+#pragma endregion
+
+#pragma region Solver_Lifecycle
 
     TSurfaceStateSolver::TSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout)
         : Device(Device)
@@ -203,6 +208,9 @@ namespace MDSS::SurfaceState
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
         }
     }
+#pragma endregion
+
+#pragma region Solver_Command_Recording
 
     void TSurfaceStateSolver::RecordStep(VkCommandBuffer                         CommandBuffer,
                                          const TSurfaceStateDescriptorResources& Descriptors,
@@ -365,11 +373,12 @@ namespace MDSS::SurfaceState
                     continue;
                 BindStep(Item);
                 vkCmdDispatch(CommandBuffer, 1, 1, 1);
-                Barriers.push_back(MakeComputeBufferBarrier(Item.HeightBuffer, VK_ACCESS_INDIRECT_COMMAND_READ_BIT));
+                Barriers.push_back(MakeComputeBufferBarrier(
+                    Item.HeightBuffer, VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_SHADER_READ_BIT));
             }
             RecordBufferBarriers(CommandBuffer,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+                                 VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  Barriers);
 
             Barriers.clear();
@@ -481,7 +490,8 @@ namespace MDSS::SurfaceState
                                                               bool                                    bCurrentStateAB,
                                                               std::size_t                             TexelCount,
                                                               std::size_t                             ChannelCount,
-                                                              const glm::mat4&                        ModelMatrix) const
+                                                              const glm::mat4&                        ModelMatrix,
+                                                              TStateId                                ExcludedChannel) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || TexelCount == 0 || ChannelCount == 0 ||
             TexelCount > static_cast<std::size_t>(65535U) * 64U ||
@@ -492,6 +502,12 @@ namespace MDSS::SurfaceState
         TSurfaceSolverPushConstants Constants{};
         Constants.LocalTexelCount = static_cast<std::uint32_t>(TexelCount);
         Constants.StateChannelCount = static_cast<std::uint32_t>(ChannelCount);
+        if (ExcludedChannel != InvalidStateId)
+        {
+            if (ExcludedChannel >= ChannelCount || ExcludedChannel > 0xffffU)
+                throw std::invalid_argument("Excluded accumulation channel is outside the render range.");
+            Constants.Flags = SurfaceSolverExcludeRenderChannelFlag | (ExcludedChannel << 16U);
+        }
         const glm::mat3 ModelLinear(ModelMatrix);
         const float     Determinant = glm::determinant(ModelLinear);
         glm::mat3       NormalMatrix(0.0F);
@@ -540,6 +556,10 @@ namespace MDSS::SurfaceState
                              nullptr);
     }
 
+#pragma endregion
+
+#pragma region Compute_Pipeline_Creation
+
     VkShaderModule TSurfaceStateSolver::CreateShaderModule(VkDevice Device, const char* Path)
     {
         const std::vector<std::uint32_t> Code = ReadSpirvFile(Path);
@@ -582,4 +602,5 @@ namespace MDSS::SurfaceState
         }
         return Pipeline;
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

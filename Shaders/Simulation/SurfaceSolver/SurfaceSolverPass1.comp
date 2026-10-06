@@ -25,12 +25,22 @@ void main()
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
         bool Supported = supportsChannel(TexelIndex, ChannelIndex);
         float Current = Supported ? CurrentState.Values[StateValueIndex] : 0.0;
-        float AvailableState = Supported ? max(Current - decayAmount(TexelIndex, ChannelIndex), 0.0) : 0.0;
-        if (!Supported || AvailableState <= 0.0 || Solver.DeltaTime <= 0.0)
+
+        // 빈 source는 decay 계산까지 갈 필요가 없다.
+        // Pass 2가 OutgoingFluxScale <= 0인 source를 cache read 전에 건너뛰므로,
+        // 이전 step의 RawEdgeFlux 값이 남아 있어도 안전하다.
+        if (!Supported || Current <= 0.0 || Solver.DeltaTime <= 0.0)
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
             RawOutgoingBuffer.Values[StateValueIndex] = 0.0;
-            // Pass 2는 OutgoingFluxScale이 0인 source를 건너뛴다.
+            continue;
+        }
+
+        float AvailableState = max(Current - decayAmount(TexelIndex, ChannelIndex), 0.0);
+        if (AvailableState <= 0.0)
+        {
+            OutgoingFluxScale.Values[StateValueIndex] = 0.0;
+            RawOutgoingBuffer.Values[StateValueIndex] = 0.0;
             continue;
         }
 
@@ -57,6 +67,8 @@ void main()
                                   Parameters,
                                   SourceSaturation);
             }
+            if (useRawFluxCache())
+                RawOutgoingBuffer.Values[rawEdgeFluxIndex(TexelIndex, ChannelIndex, DirectionIndex)] = RawFlux;
             RawOutgoing += RawFlux;
         }
 

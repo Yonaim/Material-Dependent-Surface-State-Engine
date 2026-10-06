@@ -39,6 +39,7 @@ namespace MDSS::SurfaceState
     class TSurfaceStateSystem final
     {
     public:
+        // Lifecycle
         TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
                             const Asset::TAssetManager& Assets,
                             const TSurfaceDataManager&  SurfaceData,
@@ -52,29 +53,42 @@ namespace MDSS::SurfaceState
 
         /** @brief 같은 Application 소유 객체를 유지한 채 준비된 Scene별 GPU 자원을 교체한다. */
         void ReplaceSceneResources(TSurfaceStateSystem&& Replacement);
+
+        // State and contact management
+        void SubmitContact(TSurfaceContactInput Contact);
+        void ResetState();
+        void RestartState();
+        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle   Profile,
+                                       TStateId                       State,
+                                       const TSurfaceStateParameters& Parameters,
+                                       bool                           bKeepRuntimeOverride = true);
+
+        // Simulation and GPU recording
+        [[nodiscard]] float GetMaximumStableDeltaTime();
+        void PrepareTransferWeightCachesForSettingChange();
         void RecordStep(VkCommandBuffer CommandBuffer,
                         float           DeltaTime,
                         VkQueryPool     TimestampQueryPool = VK_NULL_HANDLE,
                         std::uint32_t   FirstStepQuery = 0);
-        void RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer, std::size_t SceneIndex);
-        void PrepareTransferWeightCachesForSettingChange();
+        void RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer,
+                                             std::size_t SceneIndex,
+                                             TStateId       ExcludedChannel = InvalidStateId);
+
+        // Debug controls and resource access
         [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
-        void                                             ResetState();
-        void                                             RestartState();
-        [[nodiscard]] float                              GetMaximumStableDeltaTime();
         [[nodiscard]] const TSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
         void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
         void SetAccumulationGeometryUpdateEnabled(bool bEnabled) noexcept;
         void SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
         void SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
-        void SubmitContact(TSurfaceContactInput Contact);
-        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle   Profile,
-                                       TStateId                       State,
-                                       const TSurfaceStateParameters& Parameters,
-                                       bool                           bKeepRuntimeOverride = true);
+        [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept { return bRawFluxCacheEnabled; }
+        void SetRawFluxCacheEnabled(bool bEnabled) noexcept { bRawFluxCacheEnabled = bEnabled; }
+        [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept { return bSparseSimulationGeometryEnabled; }
+        void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept { bSparseSimulationGeometryEnabled = bEnabled; }
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
 
     private:
+        // Pending contact application
         void QueueInitialContacts();
         void ApplyPendingContacts();
 
@@ -89,6 +103,8 @@ namespace MDSS::SurfaceState
         bool                                        bTransferWeightSettingsDirty = false;
         bool                                        bForceFullGeometryOnNextStep = false;
         bool                                        bStableDeltaTimeDirty = true;
+        bool                                        bRawFluxCacheEnabled = true;
+        bool                                        bSparseSimulationGeometryEnabled = true;
         float                                       CachedMaximumStableDeltaTime = 1.0F / 60.0F;
         std::vector<glm::mat3>                      StableDeltaTimeModelMatrices;
         std::map<std::pair<Asset::TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
