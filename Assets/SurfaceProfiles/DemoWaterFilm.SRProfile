@@ -13,7 +13,7 @@
       "cavityExitResistanceFactor": 1.0,
       "accumulationFactor": 0.15,
       "cavityFillFactor": 0.8,
-      "thicknessPerAmount": 0.001
+      "thicknessPerAmount": 0.05
     }
   },
   "transitions": []

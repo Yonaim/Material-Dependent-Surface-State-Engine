@@ -40,7 +40,7 @@ flowchart LR
 State는 Capacity를 넘을 수 있다 ([[05_Decisions/0004_State-Overcapacity-Transport|Decision 0004]]). Heatmap과 외관 remap은 필요하면 `clamp(State / Capacity, 0, 1)`을 표시용으로 사용하되 GPU State 및 Transport용 Saturation은 바꾸지 않는다.
 
 - State Heatmap은 선택 State의 `State / (Profile Capacity × AreaScale)`를 표시한다. 100% 초과는 주황색으로 구분한다. 실제 총량은 Texel Inspector에서 확인한다.
-- Heat·Mud의 Lit 반응과 옵션형 Solver 적층 형상 피드백을 사용한다. 형상 피드백은 기본 OFF다.
+- Heat·Mud의 Lit 반응과 적층 표면 형상을 반영하는 Solver 옵션을 사용한다. `Use Accumulated Surface`는 기본 ON이며 필요하면 Solver 설정에서 끌 수 있다.
 
 ## 외관 변화 (State-based Appearance Changes)
 

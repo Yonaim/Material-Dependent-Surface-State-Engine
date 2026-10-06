@@ -736,6 +736,7 @@ namespace MDSS::Rendering
                                                                       Descriptors->GetLayout(),
                                                                       Scene.GetStaticMeshInstances().size(),
                                                                       true);
+            MudLayerGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
             HeightFieldSmoothing = std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                                            Context.GetDevice(),
                                                                            Descriptors->GetLayout(),
@@ -1358,6 +1359,7 @@ namespace MDSS::Rendering
                                                                           Scene.GetStaticMeshInstances().size(),
                                                                           true);
                 ReplacementMudGeometry->SetOccupancyTileSize(static_cast<std::uint32_t>(OverlayOccupancyTileSize));
+                ReplacementMudGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
                 ReplacementHeightFieldSmoothing =
                     std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                             Context.GetDevice(),
@@ -1749,6 +1751,8 @@ namespace MDSS::Rendering
         if (!Roughness(Settings.DryRoughness) ||
             !Roughness(Settings.MudRoughness) || !Roughness(Settings.WaterFilmRoughness) ||
             !Unit(Settings.HeatStrength) || !Unit(Settings.WaterFilmOpacity) ||
+            !std::isfinite(Settings.LowAmountHeightFade) || Settings.LowAmountHeightFade < 0.0F ||
+            Settings.LowAmountHeightFade > 0.5F ||
             !ColorMapping(Settings.HeatColorMap) || !ColorMapping(Settings.MudColorMap) ||
             !ColorMapping(Settings.WaterFilmColorMap) || !ColorMapping(Settings.LavaColorMap))
             throw std::invalid_argument("Invalid demo surface effect settings.");
@@ -1766,6 +1770,8 @@ namespace MDSS::Rendering
         }
 
         DemoEffects = Settings;
+        if (MudLayerGeometry)
+            MudLayerGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
         if (bHeightSmoothingChanged && HeightFieldSmoothing)
         {
             if (DemoEffects.bHeightFieldSmoothing)
@@ -1790,10 +1796,14 @@ namespace MDSS::Rendering
     {
         const bool bChanged = Scene.GetLitHeightDisplayScale() != Scale;
         Scene.SetLitHeightDisplayScale(Scale);
-        if (bChanged && TexelInspector)
+        if (!bChanged)
+            return;
+        if (TexelInspector)
         {
             TexelInspector->Invalidate();
         }
+        if (MudLayerGeometry)
+            MudLayerGeometry->InvalidateSparseOutput();
     }
 
     bool TRenderer::InspectTexel(const TScene& Scene, std::size_t InstanceIndex, std::uint32_t Triangle, glm::vec2 UV)

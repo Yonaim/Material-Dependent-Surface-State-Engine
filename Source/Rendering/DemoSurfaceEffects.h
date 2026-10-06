@@ -49,17 +49,19 @@ namespace MDSS::Rendering
         bool      bLavaDisplacement = true;
         // Smoothing is a render-performance experiment now: one global visual toggle per smoothing type.
         // Algorithm selection (sparse/precompute/separable) lives in the Performance tab.
-        bool      bHeightFieldSmoothing = false;
-        bool      bCoverageSmoothing = false;
+        bool      bHeightFieldSmoothing = true;
+        bool      bCoverageSmoothing = true;
         float     DryRoughness = 0.65F;
         float     HeatStrength = 1.0F;
         float     MudRoughness = 0.48F;
         float     WaterFilmOpacity = 1.0F;
         float     WaterFilmRoughness = 0.16F;
+        // Render-only fade for accumulation geometry at low normalized State saturation.
+        float     LowAmountHeightFade = 0.05F;
         TDemoStateColorMapping HeatColorMap{0.0F, 1.0F,
                                              {0.55F, 0.035F, 0.012F}, {0.95F, 0.075F, 0.025F}};
         TDemoStateColorMapping MudColorMap{0.0F, 1.0F,
-                                            {0.105F, 0.060F, 0.028F}, {0.24F, 0.13F, 0.045F}};
+                                            {0.30F, 0.20F, 0.12F}, {0.09F, 0.035F, 0.012F}};
         TDemoStateColorMapping WaterFilmColorMap{0.0F, 1.0F,
                                                   {0.35F, 0.53F, 0.68F}, {0.58F, 0.74F, 0.88F}};
         TDemoStateColorMapping LavaColorMap{0.0F, 1.0F,

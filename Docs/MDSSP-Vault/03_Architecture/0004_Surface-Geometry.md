@@ -275,7 +275,7 @@ Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space�
 - 최신 유효 Position에서 이웃 거리를 계산한다.
 - Solver는 원시 거리 대신 간선별 TransferWeight를 geometry revision 동안 cache한다.
 - Runtime은 instance별로 모든 지원 State의 적층 높이를 합산하고, step마다 위치·normal·곡률·TransferWeight를 GPU에서 갱신한다.
-- Accumulation Geometry Update는 Simulation/Solver의 `Accumulation Geometry Update` 옵션으로 제어하며 기본 OFF다. OFF에서는 기존 정적 형상과 CPU TransferWeight cache를 사용한다.
+- Accumulation Geometry Update는 Simulation/Solver의 `Accumulation Geometry Update` 옵션으로 제어하며 기본 ON이다. ON에서는 적층에 따른 동적 형상과 TransferWeight를 후속 수송에 반영한다. OFF에서는 기존 정적 형상과 CPU TransferWeight cache를 사용한다.
 - 시뮬레이션은 각 State의 `.SRProfile` `thicknessPerAmount`로 표면 위 두께를 계산한다. 공통 `Lit height display scale`은 렌더링 전용이며 Solver 형상에 영향을 주지 않는다.
 - GPU 소유와 동기화는 [[03_Architecture/0006_Surface-State-Update|Simulation Optimization]]과 [[03_Architecture/0007_Surface-GPU-Data-Layout|GPU resource 설계]]를 따른다.
 

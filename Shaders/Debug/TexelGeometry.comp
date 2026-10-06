@@ -25,7 +25,8 @@ layout(push_constant) uniform TPush
     uint UseBaseline;
     uint TileSize;
     uint UseActiveTileList;
-    uint Padding[2];
+    float LowAmountHeightFade;
+    uint Padding;
     vec4 NormalMatrixColumns[3];
 } Push;
 
@@ -107,11 +108,83 @@ uint ResolveTexel()
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
 
+float DisplayAccumulationHeight(uint Texel, float DisplayScale)
+{
+    if (DisplayScale <= 0.0 || Texel >= uint(TexelProfileIndices.Values.length()) ||
+        TexelProfileIndices.Values[Texel] == 0xffffffffu ||
+        Texel >= uint(WorldTexelAreas.Values.length()) || Push.Channels == 0u)
+        return 0.0;
+
+    uint Profile = TexelProfileIndices.Values[Texel];
+    if (Profile >= uint(ProfileSupported.Values.length()) / Push.Channels ||
+        Profile >= SurfaceProfileRecordCount() / Push.Channels ||
+        Texel >= uint(CurrentState.Values.length()) / Push.Channels)
+        return 0.0;
+
+    float AreaScale = WorldTexelAreas.Values[Texel] * (256.0 * 256.0);
+    if (isnan(AreaScale) || isinf(AreaScale) || AreaScale <= 0.0)
+        return 0.0;
+
+    float CavityAmount = 0.0;
+    float FollowingHeightWorld = 0.0;
+    float CavityThicknessWeighted = 0.0;
+    float MaxSaturation = 0.0;
+    for (uint Channel = 0u; Channel < Push.Channels; ++Channel)
+    {
+        uint Record = Profile * Push.Channels + Channel;
+        if (ProfileSupported.Values[Record] == 0u)
+            continue;
+        TSurfaceGPUProfileParameters P = LoadSurfaceProfileParameters(Record);
+        float Factor = P.DecayAndGeometry.z;
+        float CavityFactor = P.DecayAndGeometry.w;
+        float ThicknessPerAmount = P.AccumulationThickness.x;
+        float State = CurrentState.Values[Texel * Push.Channels + Channel];
+        if (isnan(State) || isinf(State) || State <= 0.0 ||
+            isnan(Factor) || isinf(Factor) || Factor <= 0.0 ||
+            isnan(CavityFactor) || isinf(CavityFactor) ||
+            isnan(ThicknessPerAmount) || isinf(ThicknessPerAmount) || ThicknessPerAmount < 0.0)
+            continue;
+
+        float Capacity = P.CapacityInputAndTransfer.x * AreaScale;
+        if (Capacity <= 0.0 || isnan(Capacity) || isinf(Capacity))
+            continue;
+        State = min(State, Capacity);
+        MaxSaturation = max(MaxSaturation, State / Capacity);
+
+        float Amount = (State / AreaScale) * Factor;
+        float CavityContribution = Amount * clamp(CavityFactor, 0.0, 1.0);
+        CavityAmount += CavityContribution;
+        CavityThicknessWeighted += CavityContribution * ThicknessPerAmount;
+        FollowingHeightWorld += Amount * (1.0 - clamp(CavityFactor, 0.0, 1.0)) * ThicknessPerAmount;
+    }
+
+    if (CavityAmount > 1.0)
+        FollowingHeightWorld += (CavityAmount - 1.0) * (CavityThicknessWeighted / CavityAmount);
+
+    vec3 Normal = normalize(Normals.Values[Texel].xyz);
+    mat3 NormalMatrix = mat3(Push.NormalMatrixColumns[0].xyz,
+                             Push.NormalMatrixColumns[1].xyz,
+                             Push.NormalMatrixColumns[2].xyz);
+    float WorldToLocalHeight = length(NormalMatrix * Normal);
+    float EffectiveScale = DisplayScale;
+    if (Push.LowAmountHeightFade > 0.0)
+        EffectiveScale *= smoothstep(0.0, Push.LowAmountHeightFade, MaxSaturation);
+
+    float MesoHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
+    float CavityHeight = min(CavityAmount * EffectiveScale, 1.0) * max(-MesoHeight, 0.0);
+    float FollowingHeight = FollowingHeightWorld * WorldToLocalHeight * EffectiveScale;
+    float Height = CavityHeight + FollowingHeight;
+    return (isnan(Height) || isinf(Height)) ? 0.0 : max(Height, 0.0);
+}
+
 float DisplayHeight(uint Texel)
 {
     if (Push.TotalHeight != 0u)
+    {
+        float AccumulationHeight = DisplayAccumulationHeight(Texel, Push.AccumulationDisplayScale);
         return GeometryScalars.Values[Texel].MesoVirtualHeight +
-               AccumulationHeights.Values[Texel] * Push.AccumulationDisplayScale;
+               AccumulationHeight;
+    }
     return uintBitsToFloat(GeometryCache.Values[Texel]);
 }
 

@@ -87,7 +87,7 @@ void main()
     vec3 Color = ShadeSurface(MapEffectColor(2u, FragCoverage), N, V, Material.DemoEffectOptions.w,
                               Material.AmbientLight, FragCoverage);
     OutColor = vec4(Color, clamp(Material.DemoEffectOptions.z *
-                                 (0.16 + 0.38 * FragCoverage + 0.18 * Fresnel), 0.0, 0.75));
+                                 (0.45 + 0.45 * FragCoverage + 0.10 * Fresnel), 0.0, 0.95));
 #else
     vec3 Color = ShadeSurface(MapEffectColor(1u, FragCoverage), N, V, Material.DemoOptions.z,
                               Material.AmbientLight, 0.0);

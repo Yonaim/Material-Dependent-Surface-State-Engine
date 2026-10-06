@@ -197,6 +197,27 @@ namespace MDSS::SurfaceState
             Output.bSparseReady = false;
         }
     }
+
+    void TTexelGeometryPreview::SetLowAmountHeightFade(float Saturation)
+    {
+        if (!std::isfinite(Saturation) || Saturation < 0.0F || Saturation > 0.5F)
+            throw std::invalid_argument("Low amount height fade must be between 0 and 0.5.");
+        if (LowAmountHeightFade == Saturation)
+            return;
+        LowAmountHeightFade = Saturation;
+        InvalidateSparseOutput();
+    }
+
+    void TTexelGeometryPreview::InvalidateSparseOutput() noexcept
+    {
+        // This changes only derived display geometry. Rebuild the sparse render schedule once,
+        // without changing simulation state or simulation geometry feedback.
+        for (auto& [Instance, Output] : Outputs)
+        {
+            (void)Instance;
+            Output.bSparseReady = false;
+        }
+    }
 #pragma endregion
 
 #pragma region Preview_Command_Recording
@@ -517,7 +538,9 @@ namespace MDSS::SurfaceState
         {
             std::uint32_t            Texels, Channel, Channels, Accumulation;
             float                    AccumulationDisplayScale, GeometryDisplayScale;
-            std::uint32_t            TotalHeight, UseBaseline, TileSize, UseActiveTileList, Padding[2];
+            std::uint32_t            TotalHeight, UseBaseline, TileSize, UseActiveTileList;
+            float                    LowAmountHeightFade;
+            std::uint32_t            Padding;
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
         static_assert(offsetof(TPush, NormalMatrixColumns) == 48);
@@ -557,7 +580,8 @@ namespace MDSS::SurfaceState
                    bAccumulation && !bTotalHeight && It->second.bBaselineReady ? 1U : 0U,
                    OccupancyTileSize,
                    bEnableOccupancyScan ? 1U : 0U,
-                   {0U, 0U},
+                   LowAmountHeightFade,
+                   0U,
                    {}};
         for (int Column = 0; Column < 3; ++Column)
             Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);

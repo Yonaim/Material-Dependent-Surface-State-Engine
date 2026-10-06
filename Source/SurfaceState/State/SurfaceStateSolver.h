@@ -63,7 +63,7 @@ namespace MDSS::SurfaceState
 
     struct TSurfaceSolverDebugSettings
     {
-        bool                                                                  bAccumulationGeometryUpdateEnabled = false;
+        bool                                                                  bAccumulationGeometryUpdateEnabled = true;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, true};
 

@@ -25,7 +25,7 @@
       "cavityExitResistanceFactor": 0.85,
       "accumulationFactor": 0.15,
       "cavityFillFactor": 0.8,
-      "thicknessPerAmount": 0.01
+      "thicknessPerAmount": 0.05
     },
     "waterfilm": {
       "stateCapacity": 1.0,
@@ -37,7 +37,7 @@
       "cavityExitResistanceFactor": 1.0,
       "accumulationFactor": 0.15,
       "cavityFillFactor": 0.8,
-      "thicknessPerAmount": 0.001
+      "thicknessPerAmount": 0.05
     },
     "lava": {
       "stateCapacity": 2.0,

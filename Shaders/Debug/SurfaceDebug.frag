@@ -316,9 +316,19 @@ void main()
 
     if (Material.RenderMode == RENDER_MODE_SURFACE_ID)
     {
-        uint Hash = FragSurfaceIndex * 1664525u + 1013904223u;
-        vec3 Color = vec3(float(Hash & 255u), float((Hash >> 8u) & 255u), float((Hash >> 16u) & 255u)) / 255.0;
-        OutColor = vec4(0.25 + 0.70 * Color, 1.0);
+        // Surface ID 뷰는 조명과 무관하게 구분할 수 있도록 선명한 고정 색상표를 사용한다.
+        const vec3 SurfaceIdPalette[8] = vec3[8](
+            vec3(1.00, 0.05, 0.05), // red
+            vec3(0.05, 0.25, 1.00), // blue
+            vec3(0.05, 0.90, 0.12), // green
+            vec3(1.00, 0.82, 0.02), // yellow
+            vec3(1.00, 0.04, 0.78), // magenta
+            vec3(0.00, 0.90, 0.95), // cyan
+            vec3(1.00, 0.35, 0.02), // orange
+            vec3(0.48, 0.08, 1.00)  // violet
+        );
+        vec3 Color = SurfaceIdPalette[FragSurfaceIndex % 8u];
+        OutColor = vec4(Color, 1.0);
         return;
     }
     if (Material.RenderMode == RENDER_MODE_NEIGHBOR_COUNT || Material.RenderMode == RENDER_MODE_SURFACE_SEAM)

@@ -50,6 +50,8 @@ namespace MDSS::SurfaceState
         /** @brief Read active-tile counters after the corresponding frame slot fence has signaled. */
         [[nodiscard]] TTileActivity CompleteOccupancyFrame(std::size_t FrameIndex);
         void                                 SetOccupancyTileSize(std::uint32_t TileSize);
+        void                                 SetLowAmountHeightFade(float Saturation);
+        void                                 InvalidateSparseOutput() noexcept;
 
         // Compute command recording
         void                                 Record(VkCommandBuffer                         Command,
@@ -102,6 +104,7 @@ namespace MDSS::SurfaceState
         VkPhysicalDeviceLimits         Limits{};
         bool                           bEnableOccupancyScan = false;
         std::uint32_t                  OccupancyTileSize = 16U;
+        float                          LowAmountHeightFade = 0.05F;
         std::map<std::size_t, TOutput> Outputs;
     };
 }
