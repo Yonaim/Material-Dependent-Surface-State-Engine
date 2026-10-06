@@ -1325,13 +1325,11 @@ namespace
         Check(std::abs(InitialTotal - ResultTotal) < 1.0e-5F,
               "accumulation geometry update transport should conserve State in the no-decay fixture");
 
-        // The same current State must leave both geometry passes untouched on
-        // a subsequent step; this also covers a renderer height refresh in
-        // between, which must not become the geometry change baseline.
+        // A zero-delta step over the just-derived current State must leave both
+        // geometry passes untouched.
         Vulkan.Execute(
             [&](VkCommandBuffer CommandBuffer)
             {
-                Solver.RecordCurrentAccumulationHeight(CommandBuffer, Descriptors, false, 3, 2, glm::mat4(1.0F));
                 Solver.RecordStep(CommandBuffer,
                                   Descriptors,
                                   false,

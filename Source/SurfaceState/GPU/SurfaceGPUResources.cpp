@@ -428,15 +428,16 @@ namespace MDSS::SurfaceState
             CreateZeroedScalarBuffer(PhysicalDevice, Device, TexelCount, MaxRange);
         const std::size_t WorkgroupCount = TexelCount / 64U + (TexelCount % 64U != 0U);
         const std::size_t MaxSize = std::numeric_limits<std::size_t>::max();
-        if (WorkgroupCount > (MaxSize - 3U) / 3U ||
-            TexelCount > (MaxSize - WorkgroupCount * 3U - 3U) / 3U)
-            throw std::overflow_error("Surface accumulation height and dirty flag count overflowed.");
-        // Height, two dirty planes, one dirty flag per 64-texel workgroup, indirect command,
-        // sparse scheduled flags, and sparse workgroup list share the existing descriptor.
-        // Layout (uint/float words): [3*N][G dirty][dispatch 3][G scheduled flags][G scheduled list].
+        // 3 texel planes + three independent sparse schedule blocks.
+        // Solver block has one extra word for the active-channel mask.
+        // Total words: 3*N + 3*(dispatch3 + flags G + list G) + 1 = 3*N + 6*G + 10.
+        if (WorkgroupCount > (MaxSize - 10U) / 6U ||
+            TexelCount > (MaxSize - WorkgroupCount * 6U - 10U) / 3U)
+            throw std::overflow_error("Surface accumulation/sparse scheduling buffer size overflowed.");
+        const std::size_t AccumulationWordCount = TexelCount * 3U + WorkgroupCount * 6U + 10U;
         AccumulationHeightBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
                                                             Device,
-                                                            TexelCount * 3U + WorkgroupCount * 3U + 3U,
+                                                            AccumulationWordCount,
                                                             MaxRange,
                                                             StorageUsage | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
                                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
@@ -585,6 +586,13 @@ namespace MDSS::SurfaceState
         InputDeltaBuffer->Upload(Zeros.data(), ByteSize);
         RawOutgoingBuffer->Upload(Zeros.data(), ByteSize);
         OutgoingFluxScaleBuffer->Upload(ResetOutgoingFluxScale.data(), ByteSize);
+
+        // Rendering now consumes the solver-produced accumulation height directly.  Reset it together
+        // with State so a paused/reset frame cannot display stale derived height before the next step.
+        const std::size_t AccumulationWordCount =
+            static_cast<std::size_t>(AccumulationHeightBuffer->GetSize() / sizeof(std::uint32_t));
+        const std::vector<std::uint32_t> ZeroAccumulation(AccumulationWordCount, 0U);
+        AccumulationHeightBuffer->Upload(ZeroAccumulation.data(), AccumulationHeightBuffer->GetSize());
     }
 
 #pragma endregion

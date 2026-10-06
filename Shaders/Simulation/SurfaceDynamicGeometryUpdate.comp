@@ -14,40 +14,20 @@ const float DynamicGeometryEpsilon = 1.0e-6;
 
 void main()
 {
-    uint WorkgroupCount = (Solver.LocalTexelCount + 63u) / 64u;
-    uint DirtyFlagBase = 3u * Solver.LocalTexelCount;
-    uint CommandBase = DirtyFlagBase + WorkgroupCount;
-    uint ScheduledListBase = CommandBase + 3u + WorkgroupCount;
-    uint OriginalGroup = gl_WorkGroupID.x;
-    if (useSparseSimulationGeometry())
-        OriginalGroup = floatBitsToUint(AccumulationHeights.Values[ScheduledListBase + gl_WorkGroupID.x]);
+    uint OriginalGroup = geometryOriginalGroup();
     uint Texel = OriginalGroup * 64u + gl_LocalInvocationID.x;
     if (Texel >= Solver.LocalTexelCount) return;
 
-    // 전체 재계산 요청이 있거나, 이 texel 또는 인접 texel의 높이가 바뀌면 형상을 다시 만든다.
-    bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
-                 AccumulationHeights.Values[Solver.LocalTexelCount + Texel] != 0.0;
-    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount && !Dirty; ++DirectionIndex)
-    {
-        uint Neighbor = neighborIndex(Texel, DirectionIndex);
-        Dirty = Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount &&
-                AccumulationHeights.Values[Solver.LocalTexelCount + Neighbor] != 0.0;
-    }
-    AccumulationHeights.Values[2u * Solver.LocalTexelCount + Texel] = Dirty ? 1.0 : 0.0;
-    if (!Dirty) return;
-
-    // 기본 meso 형상 위에 누적 높이를 반영한 위치와 normal을 구한다.
+    // Height pass가 dependency halo를 workgroup 단위로 이미 compact했다. 여기서는 dispatched texel을
+    // 그대로 갱신해 stale per-texel dirty flag를 다시 검사하는 비용과 sparse-height 세대 문제를 없앤다.
     uint PositionIndex = Texel * 2u;
     vec3 Position = effectiveLocalPosition(Texel);
     vec3 Normal = effectiveLocalNormal(Texel);
-    // 입력 데이터가 비정상일 때는 원래 texel 형상으로 되돌려 NaN 전파를 막는다.
     if (!solverFinite(Position))
         Position = Positions.Values[Texel].xyz + Normals.Values[Texel].xyz * GeometryScalars.Values[Texel].MesoVirtualHeight;
     if (!solverFinite(Normal) || dot(Normal, Normal) < 1.0e-12)
         Normal = MesoNormals.Values[Texel].xyz;
 
-    // transfer weight 계산에 쓰는 이웃 평균 거리를 texel마다 한 번 계산해 캐시한다.
-    // 평균 거리는 world space 기준이며, 이웃 간 거리를 각 source edge에서 반복 계산하지 않는다.
     float MeanDistance = 0.0;
     if (isValidTexel(Texel) && (Solver.Flags & (1u << 7u)) != 0u)
     {
@@ -74,7 +54,6 @@ void main()
         if (Count > 0u) MeanDistance /= float(Count);
     }
 
-    // DynamicGeometry의 두 vec4에는 각각 위치+평균거리, normal+마지막 생성 높이를 저장한다.
     DynamicGeometry.Values[PositionIndex] = vec4(Position, MeanDistance);
-    DynamicGeometry.Values[PositionIndex + 1u] = vec4(normalize(Normal), AccumulationHeights.Values[Texel]);
+    DynamicGeometry.Values[PositionIndex + 1u] = vec4(normalize(Normal), accumulationFloat(Texel));
 }

@@ -47,9 +47,6 @@ namespace MDSS::Rendering
         bool      bMudDisplacement = true;
         bool      bWaterFilmDisplacement = true;
         bool      bLavaDisplacement = true;
-        // Default: water is a coat in the shared opaque top shader. When enabled,
-        // it is rendered as a separate transparent surface at the total height.
-        bool      bTransparentWaterFilm = false;
         // Smoothing is a render-performance experiment now: one global visual toggle per smoothing type.
         // Algorithm selection (sparse/precompute/separable) lives in the Performance tab.
         bool      bHeightFieldSmoothing = false;

@@ -145,7 +145,6 @@ namespace MDSS
         void                      DrawRenderOptionsWindow(TScene& SceneData);
         void                      DrawRenderSettingsWindow(TScene& SceneData);
         void                      DrawViewportStatsOverlay();
-        void                      DrawTotalHeightCacheOverlay();
         void                      ResetProfilingAverages() noexcept;
         void                      ResetSurfaceStateSettings();
 

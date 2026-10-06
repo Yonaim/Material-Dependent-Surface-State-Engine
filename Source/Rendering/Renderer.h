@@ -90,7 +90,7 @@ namespace MDSS::Rendering
         float                     TexelInspectorGpuMilliseconds = -1.0F;
         float                     BaseMeshDrawGpuMilliseconds = -1.0F;
         float                     MudOverlayDrawGpuMilliseconds = -1.0F;
-        float                     WaterFilmOverlayDrawGpuMilliseconds = -1.0F;
+        float                     ReservedOverlayDrawGpuMilliseconds = -1.0F;
         float                     OverlayPreparationGpuMilliseconds = -1.0F;
         float                     OverlayGeometryGpuMilliseconds = -1.0F;
         float                     OverlayHeightGpuMilliseconds = -1.0F;
@@ -296,6 +296,16 @@ namespace MDSS::Rendering
         }
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
         void SetRawFluxCacheEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept;
+        void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept;
+        void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseSolverEnabled() const noexcept;
+        void SetSparseSolverEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept;
+        void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept;
+        void SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept;
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseHeightSmoothingEnabled() const noexcept { return bSparseHeightSmoothingEnabled; }
@@ -313,10 +323,6 @@ namespace MDSS::Rendering
 
         // Render view and debug settings
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
-        [[nodiscard]] bool            WasTotalHeightCacheHit() const noexcept
-        {
-            return bTotalHeightCacheHit;
-        }
         void               SetRenderViewMode(TRenderViewMode Mode);
         [[nodiscard]] bool IsWireframeUniformWhite() const noexcept
         {
@@ -414,13 +420,6 @@ namespace MDSS::Rendering
 
         void WriteBenchmarkSample(std::uint32_t FrameSlot);
 
-        struct TTotalHeightCacheEntry
-        {
-            glm::mat4     Model{1.0F};
-            std::uint64_t StepSerial = 0;
-            std::uint64_t ProfileRevision = 0;
-            bool          bValid = false;
-        };
 
         struct TMaterialRenderResource
         {
@@ -489,13 +488,10 @@ namespace MDSS::Rendering
         std::unique_ptr<GPU::TGraphicsPipeline>              BaseSurfaceLitPipeline;
         std::unique_ptr<TRenderStateTexture>                  RenderStateTexture;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> MudLayerGeometry;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview> WaterLayerGeometry;
         std::unique_ptr<THeightFieldSmoothing>               HeightFieldSmoothing;
         std::unique_ptr<TAccumulationOverlaySides>           OverlaySides;
         std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlayTopPipeline;
         std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlaySidePipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              WaterOverlayTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              WaterOverlaySidePipeline;
         GPU::TFramebuffer                                    MainFramebuffers;
         TRenderContext                                       FrameContext;
         VkDescriptorPool                                     MaterialDescriptorPool = VK_NULL_HANDLE;
@@ -525,9 +521,6 @@ namespace MDSS::Rendering
         std::optional<SurfaceState::TSurfaceTexelSelection> InspectedTexel;
         std::unique_ptr<SurfaceState::TTexelInspector>      TexelInspector;
         std::uint64_t                                       SimulationStepSerial = 0;
-        std::uint64_t                                       TotalHeightProfileRevision = 0;
-        std::vector<TTotalHeightCacheEntry>                 TotalHeightCacheEntries;
-        bool                                                bTotalHeightCacheHit = false;
         TSolverTransferWeightView                 SolverTransferWeightView = TSolverTransferWeightView::Combined;
         std::uint32_t                             TexelGridBlockSize = 8;
         float                                     TexelAreaReference = 1.0e-4F;

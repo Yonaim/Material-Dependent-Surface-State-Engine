@@ -1,0 +1,60 @@
+/**
+ * @file SurfaceSparseScheduleReset.comp
+ * @brief Solver/Accumulation/Geometry sparse schedule metadata를 step 시작 시 한 번 초기화한다.
+ */
+#version 450
+
+layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationData
+{
+    uint Values[];
+} AccumulationData;
+
+layout(push_constant) uniform TSurfaceSolverPushConstants
+{
+    float DeltaTime;
+    uint StateChannelCount;
+    uint LocalTexelCount;
+    uint Flags;
+    vec4 GravityWorld;
+    vec4 ModelLinearColumns[3];
+    vec4 NormalMatrixAndUpColumns[3];
+} Solver;
+
+layout(local_size_x = 64) in;
+
+uint WorkgroupCount() { return (Solver.LocalTexelCount + 63u) / 64u; }
+uint SolverCommandBase() { return 3u * Solver.LocalTexelCount; }
+uint SolverFlagBase() { return SolverCommandBase() + 3u; }
+uint SolverListBase() { return SolverFlagBase() + WorkgroupCount(); }
+uint ActiveChannelMaskIndex() { return SolverListBase() + WorkgroupCount(); }
+uint AccumulationCommandBase() { return ActiveChannelMaskIndex() + 1u; }
+uint AccumulationFlagBase() { return AccumulationCommandBase() + 3u; }
+uint AccumulationListBase() { return AccumulationFlagBase() + WorkgroupCount(); }
+uint GeometryCommandBase() { return AccumulationListBase() + WorkgroupCount(); }
+uint GeometryFlagBase() { return GeometryCommandBase() + 3u; }
+
+void ResetCommand(uint Base)
+{
+    AccumulationData.Values[Base] = 0u;
+    AccumulationData.Values[Base + 1u] = 1u;
+    AccumulationData.Values[Base + 2u] = 1u;
+}
+
+void main()
+{
+    uint Lane = gl_LocalInvocationIndex;
+    uint Groups = WorkgroupCount();
+    for (uint Group = Lane; Group < Groups; Group += 64u)
+    {
+        AccumulationData.Values[SolverFlagBase() + Group] = 0u;
+        AccumulationData.Values[AccumulationFlagBase() + Group] = 0u;
+        AccumulationData.Values[GeometryFlagBase() + Group] = 0u;
+    }
+    if (Lane == 0u)
+    {
+        ResetCommand(SolverCommandBase());
+        ResetCommand(AccumulationCommandBase());
+        ResetCommand(GeometryCommandBase());
+        AccumulationData.Values[ActiveChannelMaskIndex()] = 0u;
+    }
+}

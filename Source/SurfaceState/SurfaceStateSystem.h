@@ -69,10 +69,8 @@ namespace MDSS::SurfaceState
         void RecordStep(VkCommandBuffer CommandBuffer,
                         float           DeltaTime,
                         VkQueryPool     TimestampQueryPool = VK_NULL_HANDLE,
-                        std::uint32_t   FirstStepQuery = 0);
-        void RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer,
-                                             std::size_t SceneIndex,
-                                             TStateId       ExcludedChannel = InvalidStateId);
+                        std::uint32_t   FirstStepQuery = 0,
+                        bool            bPrepareRenderHeight = true);
 
         // Debug controls and resource access
         [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
@@ -83,6 +81,16 @@ namespace MDSS::SurfaceState
         void SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept { return bRawFluxCacheEnabled; }
         void SetRawFluxCacheEnabled(bool bEnabled) noexcept { bRawFluxCacheEnabled = bEnabled; }
+        [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept { return bCoalescedRawFluxLayoutEnabled; }
+        void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept { bCoalescedRawFluxLayoutEnabled = bEnabled; }
+        [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept { return bHalfRawFluxCacheEnabled; }
+        void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept { bHalfRawFluxCacheEnabled = bEnabled; }
+        [[nodiscard]] bool IsSparseSolverEnabled() const noexcept { return bSparseSolverEnabled; }
+        void SetSparseSolverEnabled(bool bEnabled) noexcept { bSparseSolverEnabled = bEnabled; }
+        [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept { return bSparseAccumulationHeightEnabled; }
+        void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept { bSparseAccumulationHeightEnabled = bEnabled; }
+        [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept { return bActiveChannelMaskEnabled; }
+        void SetActiveChannelMaskEnabled(bool bEnabled) noexcept { bActiveChannelMaskEnabled = bEnabled; }
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept { return bSparseSimulationGeometryEnabled; }
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept { bSparseSimulationGeometryEnabled = bEnabled; }
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
@@ -104,6 +112,11 @@ namespace MDSS::SurfaceState
         bool                                        bForceFullGeometryOnNextStep = false;
         bool                                        bStableDeltaTimeDirty = true;
         bool                                        bRawFluxCacheEnabled = true;
+        bool                                        bCoalescedRawFluxLayoutEnabled = true;
+        bool                                        bHalfRawFluxCacheEnabled = false;
+        bool                                        bSparseSolverEnabled = true;
+        bool                                        bSparseAccumulationHeightEnabled = true;
+        bool                                        bActiveChannelMaskEnabled = true;
         bool                                        bSparseSimulationGeometryEnabled = true;
         float                                       CachedMaximumStableDeltaTime = 1.0F / 60.0F;
         std::vector<glm::mat3>                      StableDeltaTimeModelMatrices;

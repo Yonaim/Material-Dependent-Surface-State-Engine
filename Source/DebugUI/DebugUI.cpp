@@ -537,7 +537,6 @@ namespace MDSS
         DrawSelectedObjectWindow(SceneData);
         DrawRenderSettingsWindow(SceneData);
         DrawViewportStatsOverlay();
-        DrawTotalHeightCacheOverlay();
         if (bMouseOverViewportOverlay)
             HoveredViewportId = 0;
         DrawSimulationDebugWindow(SceneData);
@@ -2641,15 +2640,9 @@ namespace MDSS
                         if (ImGui::CollapsingHeader("WaterFilm"))
                         {
                             ImGui::PushID("WaterFilmEffect");
-                            TextDescriptionWrapped("표면에 색조와 광택을 입힙니다. 투명 표면 옵션을 켜면 최종 적층 높이에 별도 윗면으로 그립니다.");
+                            TextDescriptionWrapped("표면에 색조와 광택을 입히며 공통 accumulation 윗면에서 얇은 막 재질로 합성합니다.");
                             EffectsChanged |= ImGui::Checkbox("Enable layer", &Effects.bWaterFilmDisplacement);
                             EffectsChanged |= DrawColorMapping("WaterFilm mapping", Effects.WaterFilmColorMap);
-                            EffectsChanged |= ImGui::Checkbox("Transparent surface##WaterFilm",
-                                                              &Effects.bTransparentWaterFilm);
-                            if (ImGui::IsItemHovered())
-                                SetDescriptionTooltip("물을 포함한 최종 높이에 투명 WaterFilm 윗면을 그리고 depth를 기록하지 않습니다. "
-                                                      "기본 모드는 공통 불투명 윗면에서 얇은 막 재질로 합성합니다. "
-                                                      "Solver의 형상 피드백 높이는 바뀌지 않습니다.");
                             EffectsChanged |=
                                 LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
                             EffectsChanged |=
@@ -2748,35 +2741,6 @@ namespace MDSS
         bProfilingAverageAvailable = false;
     }
 
-    void TDebugUI::DrawTotalHeightCacheOverlay()
-    {
-        if (FrameRenderer == nullptr ||
-            FrameRenderer->GetRenderViewMode() != Rendering::TRenderViewMode::TotalSimulationHeight ||
-            !FrameRenderer->WasTotalHeightCacheHit())
-            return;
-
-        const ImVec2    DisplaySize = ImGui::GetIO().DisplaySize;
-        const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
-        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || Rect.z <= 0.0F || Rect.w <= 0.0F)
-            return;
-        const ImVec2          Origin = ImGui::GetMainViewport()->Pos;
-        constexpr const char* Title = "Total Height Cache: HIT";
-        constexpr const char* Detail = "Last frame | all channels | height pass skipped";
-        const ImVec2          TitleSize = ImGui::CalcTextSize(Title);
-        const ImVec2          DetailSize = ImGui::CalcTextSize(Detail);
-        const float           Width = std::max(TitleSize.x, DetailSize.x) + 24.0F;
-        const float           Height = TitleSize.y + DetailSize.y + 20.0F;
-        const float           Right = Origin.x + (Rect.x + Rect.z) * DisplaySize.x - 10.0F;
-        const float           Top = Origin.y + Rect.y * DisplaySize.y + 10.0F;
-        if (Width + 20.0F > Rect.z * DisplaySize.x || Height + 20.0F > Rect.w * DisplaySize.y)
-            return;
-        ImDrawList* DrawList = ImGui::GetForegroundDrawList();
-        DrawList->AddRectFilled({Right - Width, Top}, {Right, Top + Height}, IM_COL32(18, 31, 30, 220), 5.0F);
-        DrawList->AddRect({Right - Width, Top}, {Right, Top + Height}, IM_COL32(80, 190, 139, 220), 5.0F);
-        DrawList->AddText({Right - Width + 12.0F, Top + 6.0F}, IM_COL32(153, 244, 181, 255), Title);
-        DrawList->AddText({Right - Width + 12.0F, Top + 10.0F + TitleSize.y}, IM_COL32(212, 228, 221, 255), Detail);
-    }
-
     void TDebugUI::DrawViewportStatsOverlay()
     {
         if (FrameRenderer == nullptr || !bViewportOverlaysVisible)
@@ -2847,7 +2811,7 @@ namespace MDSS
                 Stats.PresentCpuMilliseconds,
                 Stats.BaseMeshDrawGpuMilliseconds,
                 Stats.MudOverlayDrawGpuMilliseconds,
-                Stats.WaterFilmOverlayDrawGpuMilliseconds,
+                Stats.ReservedOverlayDrawGpuMilliseconds,
                 Stats.OverlayPreparationGpuMilliseconds,
                 Stats.OverlayGeometryGpuMilliseconds,
                 Stats.OverlaySmoothingGpuMilliseconds,
@@ -3056,15 +3020,15 @@ namespace MDSS
                     if (SetupMetricTable("ViewportProfilingSimulation"))
                     {
                         DrawMetric(2,
-                                   bSolverMetricsPerStep ? "Accumulation Geometry Update / step"
-                                                         : "Accumulation Geometry Update / frame",
+                                   bSolverMetricsPerStep ? "Accumulation Height + Geometry / step"
+                                                         : "Accumulation Height + Geometry / frame",
                                    {0.82F, 0.87F, 0.94F, 1.0F});
                         DrawMetric(
                             3, bSolverMetricsPerStep ? "Pass 1 / step" : "Pass 1 / frame", {0.72F, 0.78F, 0.87F, 1.0F});
                         DrawMetric(
                             4, bSolverMetricsPerStep ? "Pass 2 / step" : "Pass 2 / frame", {0.72F, 0.78F, 0.87F, 1.0F});
                         DrawMetric(36,
-                                   bSolverMetricsPerStep ? "Geometry build / step" : "Geometry build / frame",
+                                   bSolverMetricsPerStep ? "Height + geometry build / step" : "Height + geometry build / frame",
                                    {0.82F, 0.87F, 0.94F, 1.0F});
                         DrawMetric(37,
                                    bSolverMetricsPerStep ? "Transfer weights / step" : "Transfer weights / frame",
@@ -3214,7 +3178,6 @@ namespace MDSS
                             DrawMetric(27, "  Viewport state setup", {0.72F, 0.78F, 0.87F, 1.0F});
                             DrawMetric(13, "Base mesh draw", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(14, "Mud overlay draw", {0.82F, 0.87F, 0.94F, 1.0F});
-                            DrawMetric(15, "WaterFilm draw", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(21, "Between draws", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(22, "Grid / gizmo", {0.82F, 0.87F, 0.94F, 1.0F});
                             ImGui::EndTable();
@@ -3358,8 +3321,7 @@ namespace MDSS
                 DrawState("WaterFilm layer", Effects.bWaterFilmDisplacement, bEffectsActive);
                 DrawState("Lava layer", Effects.bLavaDisplacement, bEffectsActive);
                 const bool bSmoothingActive = bEffectsActive &&
-                    (Effects.bMudDisplacement || Effects.bLavaDisplacement ||
-                     (Effects.bTransparentWaterFilm && Effects.bWaterFilmDisplacement));
+                    (Effects.bMudDisplacement || Effects.bWaterFilmDisplacement || Effects.bLavaDisplacement);
                 DrawState("Height-field smoothing", Effects.bHeightFieldSmoothing, bSmoothingActive);
                 DrawState("Coverage smoothing", Effects.bCoverageSmoothing, bEffectsActive);
                 ImGui::EndTable();
@@ -3801,6 +3763,65 @@ namespace MDSS
             SetDescriptionTooltip("Pass 1의 8방향 raw flux를 저장해 Pass 2 재계산을 제거합니다. "
                                   "연산량은 줄지만 Texel x State x 8 float만큼 GPU 메모리/대역폭을 추가 사용합니다.");
 
+        ImGui::Indent();
+        bool bCoalescedRawFluxLayout = FrameRenderer->IsCoalescedRawFluxLayoutEnabled();
+        ImGui::BeginDisabled(!bRawFluxCache);
+        if (ImGui::Checkbox("Coalesced Raw Flux Layout", &bCoalescedRawFluxLayout))
+        {
+            FrameRenderer->SetCoalescedRawFluxLayoutEnabled(bCoalescedRawFluxLayout);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("RawEdgeFlux를 [channel][direction][texel] 순서로 배치해 같은 wave의 Pass 1 write를 "
+                                  "연속 주소로 만드는 A/B 옵션입니다. OFF는 기존 [texel][channel][direction] layout입니다.");
+
+        bool bHalfRawFlux = FrameRenderer->IsHalfRawFluxCacheEnabled();
+        if (ImGui::Checkbox("Half Precision Raw Flux", &bHalfRawFlux))
+        {
+            FrameRenderer->SetHalfRawFluxCacheEnabled(bHalfRawFlux);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("8개 RawEdgeFlux를 FP16 두 개씩 pack해 Pass 1 write / Pass 2 read bandwidth를 줄입니다. "
+                                  "런타임 A/B를 위해 버퍼 할당 크기는 그대로 유지되며, 정밀도 차이를 함께 확인해야 합니다.");
+        ImGui::EndDisabled();
+        ImGui::Unindent();
+
+        bool bSparseSolver = FrameRenderer->IsSparseSolverEnabled();
+        if (ImGui::Checkbox("Sparse Solver", &bSparseSolver))
+        {
+            FrameRenderer->SetSparseSolverEnabled(bSparseSolver);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Current/반대 ping-pong State와 Input을 스캔해 active source + topology 1-hop workgroup만 "
+                                  "Pass1/Pass2에 vkCmdDispatchIndirect로 제출합니다. Pass1 측정에는 scan 오버헤드도 포함됩니다.");
+
+        bool bSparseAccumulationHeight = FrameRenderer->IsSparseAccumulationHeightEnabled();
+        if (ImGui::Checkbox("Sparse Accumulation Height", &bSparseAccumulationHeight))
+        {
+            FrameRenderer->SetSparseAccumulationHeightEnabled(bSparseAccumulationHeight);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("Pass2에서 실제 accumulation 기여량이 변한 texel group만 기록하고, Height pass를 indirect dispatch합니다. "
+                                  "Force-full rebuild에서는 자동으로 전체 texel을 갱신합니다.");
+
+        bool bActiveChannelMask = FrameRenderer->IsActiveChannelMaskEnabled();
+        if (ImGui::Checkbox("Active Channel Mask", &bActiveChannelMask))
+        {
+            FrameRenderer->SetActiveChannelMaskEnabled(bActiveChannelMask);
+            bFrameTimeResetRequested = true;
+            ResetProfilingAverages();
+        }
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip("현재/반대 ping-pong State 또는 Input이 하나라도 존재하는 channel만 Solver channel loop에서 처리합니다. "
+                                  "32개 초과 channel은 안전하게 항상 활성로 처리합니다.");
+
         bool bSparseSimulation = FrameRenderer->IsSparseSimulationGeometryEnabled();
         if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))
         {
@@ -3809,8 +3830,8 @@ namespace MDSS
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("동적 geometry/transfer-weight 갱신에서 dirty workgroup과 topology halo만 compact해 "
-                                  "vkCmdDispatchIndirect로 실행합니다. Dense 장면에서는 compaction 오버헤드와 비교할 수 있습니다.");
+            SetDescriptionTooltip("Accumulation Height pass가 dirty texel의 geometry/transfer-weight topology halo를 직접 compact해 "
+                                  "vkCmdDispatchIndirect로 실행합니다. 별도 dirty-scan pass 없이 dense/full 경로와 비교할 수 있습니다.");
 
         DrawSectionHeader("Rendering smoothing");
         auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();

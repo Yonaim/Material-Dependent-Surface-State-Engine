@@ -97,25 +97,11 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
 
 void main()
 {
-    uint WorkgroupCount = (Solver.LocalTexelCount + 63u) / 64u;
-    uint DirtyFlagBase = 3u * Solver.LocalTexelCount;
-    uint CommandBase = DirtyFlagBase + WorkgroupCount;
-    uint ScheduledListBase = CommandBase + 3u + WorkgroupCount;
-    uint OriginalGroup = gl_WorkGroupID.x;
-    if (useSparseSimulationGeometry())
-        OriginalGroup = floatBitsToUint(AccumulationHeights.Values[ScheduledListBase + gl_WorkGroupID.x]);
+    uint OriginalGroup = geometryOriginalGroup();
     uint Source = OriginalGroup * 64u + gl_LocalInvocationID.x;
     if (Source >= Solver.LocalTexelCount) return;
-    // 높이 변경 표시가 있는 source 또는 이웃에 대해서만 관련 transfer weight를 다시 만든다.
-    bool Dirty = (Solver.Flags & (1u << 10u)) != 0u ||
-                 AccumulationHeights.Values[2u * Solver.LocalTexelCount + Source] != 0.0;
-    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount && !Dirty; ++DirectionIndex)
-    {
-        uint Neighbor = neighborIndex(Source, DirectionIndex);
-        Dirty = Neighbor != InvalidTexelIndex && Neighbor < Solver.LocalTexelCount &&
-                AccumulationHeights.Values[2u * Solver.LocalTexelCount + Neighbor] != 0.0;
-    }
-    if (!Dirty) return;
+
+    // Height pass가 geometry/weight dependency halo를 schedule했으므로 dispatched source는 바로 갱신한다.
     ModelLinear = mat3(Solver.ModelLinearColumns[0].xyz,
                        Solver.ModelLinearColumns[1].xyz,
                        Solver.ModelLinearColumns[2].xyz);

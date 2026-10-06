@@ -99,8 +99,18 @@ layout(std430, set = 0, binding = 14) readonly buffer TSurfaceTransferWeights
 
 layout(std430, set = 0, binding = 15) buffer TSurfaceRawOutgoing
 {
-    float Values[];
+    uint Values[];
 } RawOutgoingBuffer;
+
+float loadRawOutgoingFloat(uint Index)
+{
+    return uintBitsToFloat(RawOutgoingBuffer.Values[Index]);
+}
+
+void storeRawOutgoingFloat(uint Index, float Value)
+{
+    RawOutgoingBuffer.Values[Index] = floatBitsToUint(Value);
+}
 
 layout(std430, set = 0, binding = 17) readonly buffer TSurfaceMesoNormals
 {
@@ -122,14 +132,23 @@ layout(std430, set = 0, binding = 20) buffer TSurfaceDynamicGeometry
 {
     vec4 Values[]; // displaced position + mean distance, local normal + last built height
 } DynamicGeometry;
-#if defined(SURFACE_ACCUMULATION_HEIGHT_WRITE) || defined(SURFACE_GEOMETRY_DIRTY_WRITE)
+// Height values and sparse scheduling metadata share one uint-addressed storage buffer.
+// Float height/dirty planes are stored as IEEE-754 bit patterns so the same descriptor can also
+// use uint atomics for compact workgroup lists and indirect dispatch commands.
 layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationHeights
-#else
-layout(std430, set = 0, binding = 21) readonly buffer TSurfaceAccumulationHeights
-#endif
 {
-    float Values[]; // height, dirty planes, workgroup flags, indirect command bits
+    uint Values[];
 } AccumulationHeights;
+
+float accumulationFloat(uint Index)
+{
+    return uintBitsToFloat(AccumulationHeights.Values[Index]);
+}
+
+void storeAccumulationFloat(uint Index, float Value)
+{
+    AccumulationHeights.Values[Index] = floatBitsToUint(Value);
+}
 #if defined(SURFACE_CONCAVITY_WEIGHT_WRITE)
 layout(std430, set = 0, binding = 22) buffer TSurfaceDynamicConcavityWeights
 #else
@@ -159,9 +178,81 @@ const float GeometryEpsilon = 1.0e-6;
 
 const uint SurfaceSolverRawFluxCacheFlag = 1u << 12u;
 const uint SurfaceSolverSparseGeometryFlag = 1u << 13u;
+const uint SurfaceSolverCoalescedRawFluxLayoutFlag = 1u << 14u;
+const uint SurfaceSolverSparseSolverFlag = 1u << 15u;
+const uint SurfaceSolverSparseAccumulationHeightFlag = 1u << 16u;
+const uint SurfaceSolverActiveChannelMaskFlag = 1u << 17u;
+const uint SurfaceSolverPrepareAccumulationHeightFlag = 1u << 18u;
+const uint SurfaceSolverHalfRawFluxCacheFlag = 1u << 19u;
 
 bool useRawFluxCache() { return (Solver.Flags & SurfaceSolverRawFluxCacheFlag) != 0u; }
 bool useSparseSimulationGeometry() { return (Solver.Flags & SurfaceSolverSparseGeometryFlag) != 0u; }
+bool useCoalescedRawFluxLayout() { return (Solver.Flags & SurfaceSolverCoalescedRawFluxLayoutFlag) != 0u; }
+bool useSparseSolver() { return (Solver.Flags & SurfaceSolverSparseSolverFlag) != 0u; }
+bool useSparseAccumulationHeight() { return (Solver.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0u; }
+bool useActiveChannelMask() { return (Solver.Flags & SurfaceSolverActiveChannelMaskFlag) != 0u; }
+bool prepareAccumulationHeight() { return (Solver.Flags & SurfaceSolverPrepareAccumulationHeightFlag) != 0u; }
+bool useHalfRawFluxCache() { return useRawFluxCache() && (Solver.Flags & SurfaceSolverHalfRawFluxCacheFlag) != 0u; }
+
+uint sparseWorkgroupCount()
+{
+    return (Solver.LocalTexelCount + 63u) / 64u;
+}
+
+// AccumulationHeights metadata layout (uint words):
+// [3*N]
+// solver:       [dispatch 3][scheduled flags G][scheduled list G][active channel mask 1]
+// accumulation: [dispatch 3][scheduled flags G][scheduled list G]
+// geometry:     [dispatch 3][scheduled flags G][scheduled list G]
+uint solverScheduleCommandBase() { return 3u * Solver.LocalTexelCount; }
+uint solverScheduleFlagBase() { return solverScheduleCommandBase() + 3u; }
+uint solverScheduleListBase() { return solverScheduleFlagBase() + sparseWorkgroupCount(); }
+uint solverActiveChannelMaskIndex() { return solverScheduleListBase() + sparseWorkgroupCount(); }
+
+uint accumulationScheduleCommandBase() { return solverActiveChannelMaskIndex() + 1u; }
+uint accumulationScheduleFlagBase() { return accumulationScheduleCommandBase() + 3u; }
+uint accumulationScheduleListBase() { return accumulationScheduleFlagBase() + sparseWorkgroupCount(); }
+
+uint geometryScheduleCommandBase() { return accumulationScheduleListBase() + sparseWorkgroupCount(); }
+uint geometryScheduleFlagBase() { return geometryScheduleCommandBase() + 3u; }
+uint geometryScheduleListBase() { return geometryScheduleFlagBase() + sparseWorkgroupCount(); }
+
+uint solverOriginalGroup()
+{
+    if (!useSparseSolver()) return gl_WorkGroupID.x;
+    return AccumulationHeights.Values[solverScheduleListBase() + gl_WorkGroupID.x];
+}
+
+uint accumulationOriginalGroup()
+{
+    if (!useSparseAccumulationHeight()) return gl_WorkGroupID.x;
+    return AccumulationHeights.Values[accumulationScheduleListBase() + gl_WorkGroupID.x];
+}
+
+uint geometryOriginalGroup()
+{
+    if (!useSparseSimulationGeometry()) return gl_WorkGroupID.x;
+    return AccumulationHeights.Values[geometryScheduleListBase() + gl_WorkGroupID.x];
+}
+
+bool isChannelActive(uint ChannelIndex)
+{
+    if (!useActiveChannelMask() || ChannelIndex >= 32u) return true;
+    uint Mask = AccumulationHeights.Values[solverActiveChannelMaskIndex()];
+    return (Mask & (1u << ChannelIndex)) != 0u;
+}
+
+void scheduleAccumulationGroup(uint Group)
+{
+    if (!useSparseAccumulationHeight() || !prepareAccumulationHeight()) return;
+    uint Groups = sparseWorkgroupCount();
+    if (Group >= Groups) return;
+    if (atomicCompSwap(AccumulationHeights.Values[accumulationScheduleFlagBase() + Group], 0u, 1u) == 0u)
+    {
+        uint Slot = atomicAdd(AccumulationHeights.Values[accumulationScheduleCommandBase()], 1u);
+        if (Slot < Groups) AccumulationHeights.Values[accumulationScheduleListBase() + Slot] = Group;
+    }
+}
 
 uint rawEdgeFluxBase()
 {
@@ -170,8 +261,39 @@ uint rawEdgeFluxBase()
 
 uint rawEdgeFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
 {
+    if (useCoalescedRawFluxLayout())
+    {
+        // [channel][direction][texel]
+        return rawEdgeFluxBase() +
+               (ChannelIndex * SurfaceNeighborCount + DirectionIndex) * Solver.LocalTexelCount + TexelIndex;
+    }
+    // Legacy A/B layout: [texel][channel][direction]
     return rawEdgeFluxBase() +
            (TexelIndex * Solver.StateChannelCount + ChannelIndex) * SurfaceNeighborCount + DirectionIndex;
+}
+
+uint rawEdgeFluxHalfWordIndex(uint TexelIndex, uint ChannelIndex, uint DirectionPairIndex)
+{
+    const uint PairCount = SurfaceNeighborCount / 2u;
+    if (useCoalescedRawFluxLayout())
+    {
+        // [channel][direction-pair][texel] -- two fp16 values per uint word.
+        return rawEdgeFluxBase() +
+               (ChannelIndex * PairCount + DirectionPairIndex) * Solver.LocalTexelCount + TexelIndex;
+    }
+    // [texel][channel][direction-pair]
+    return rawEdgeFluxBase() +
+           (TexelIndex * Solver.StateChannelCount + ChannelIndex) * PairCount + DirectionPairIndex;
+}
+
+float loadCachedRawEdgeFlux(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
+{
+    if (!useHalfRawFluxCache())
+        return loadRawOutgoingFloat(rawEdgeFluxIndex(TexelIndex, ChannelIndex, DirectionIndex));
+    uint PairIndex = DirectionIndex >> 1u;
+    uint Packed = RawOutgoingBuffer.Values[rawEdgeFluxHalfWordIndex(TexelIndex, ChannelIndex, PairIndex)];
+    vec2 Pair = unpackHalf2x16(Packed);
+    return (DirectionIndex & 1u) == 0u ? Pair.x : Pair.y;
 }
 
 bool solverFinite(float Value)
@@ -243,8 +365,6 @@ float accumulationHeight(uint TexelIndex)
     float CavityThicknessWeighted = 0.0;
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
-        // Set only by the render-time height query. Solver feedback always includes every State.
-        if ((Solver.Flags & (1u << 11u)) != 0u && ChannelIndex == (Solver.Flags >> 16u)) continue;
         if (!supportsChannel(TexelIndex, ChannelIndex)) continue;
         uint Record = profileRecordIndex(TexelIndex, ChannelIndex);
         TSurfaceGPUProfileParameters P = ProfileParameters.Values[Record];
@@ -288,7 +408,7 @@ vec3 effectiveLocalPosition(uint TexelIndex)
     vec3 Position = Positions.Values[TexelIndex].xyz +
                     Normals.Values[TexelIndex].xyz * GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
     if ((Solver.Flags & (1u << 6u)) != 0u)
-        Position += Normals.Values[TexelIndex].xyz * AccumulationHeights.Values[TexelIndex];
+        Position += Normals.Values[TexelIndex].xyz * accumulationFloat(TexelIndex);
     return Position;
 }
 
@@ -300,7 +420,7 @@ vec3 effectiveLocalNormal(uint TexelIndex)
     vec3 N = normalize(Normals.Values[TexelIndex].xyz);
     vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0), N));
     vec3 V = cross(N, U);
-    float CenterHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight + AccumulationHeights.Values[TexelIndex];
+    float CenterHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight + accumulationFloat(TexelIndex);
     float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
     for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
     {
@@ -311,7 +431,7 @@ vec3 effectiveLocalNormal(uint TexelIndex)
         float X = dot(Delta, U), Y = dot(Delta, V);
         float LengthSquared = X * X + Y * Y;
         if (LengthSquared <= 1.0e-16) continue;
-        float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight + AccumulationHeights.Values[Other];
+        float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight + accumulationFloat(Other);
         float Weight = 1.0 / LengthSquared;
         float DH = OtherHeight - CenterHeight;
         XX += X * X * Weight; XY += X * Y * Weight; YY += Y * Y * Weight;
@@ -356,21 +476,28 @@ float saturation(uint TexelIndex, uint ChannelIndex)
     return CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)] / Capacity;
 }
 
-float decayAmount(uint TexelIndex, uint ChannelIndex)
+float decayAmountPrepared(uint TexelIndex, float Current,
+                          TSurfaceGPUProfileParameters Parameters, float AreaScale)
 {
     if ((Solver.Flags & (1u << 2u)) != 0u)
     {
         return 0.0;
     }
-    uint RecordIndex = profileRecordIndex(TexelIndex, ChannelIndex);
-    float DecayRate = ProfileParameters.Values[RecordIndex].DecayAndGeometry.x;
-    float CavityRetentionFactor = ProfileParameters.Values[RecordIndex].DecayAndGeometry.y;
+    float DecayRate = Parameters.DecayAndGeometry.x;
+    float CavityRetentionFactor = Parameters.DecayAndGeometry.y;
     float ConcavityWeight = concavityWeight(TexelIndex);
     float Retention = (Solver.Flags & (1u << 3u)) != 0u
                           ? 1.0
                           : 1.0 - ConcavityWeight * CavityRetentionFactor;
+    return min(Current, max(0.0, DecayRate * AreaScale * Retention * Solver.DeltaTime));
+}
+
+float decayAmount(uint TexelIndex, uint ChannelIndex)
+{
+    uint RecordIndex = profileRecordIndex(TexelIndex, ChannelIndex);
+    TSurfaceGPUProfileParameters Parameters = ProfileParameters.Values[RecordIndex];
     float Current = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
-    return min(Current, max(0.0, DecayRate * texelAreaScale(TexelIndex) * Retention * Solver.DeltaTime));
+    return decayAmountPrepared(TexelIndex, Current, Parameters, texelAreaScale(TexelIndex));
 }
 
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.

@@ -43,6 +43,9 @@ namespace MDSS::SurfaceState
         {
             Solver = std::make_unique<TSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
         }
+        // Dynamic geometry buffers start empty.  The first feedback-enabled solver step performs one
+        // force-full bootstrap before Pass 1, then normal steps use Solver -> Height -> Geometry -> Weights.
+        bForceFullGeometryOnNextStep = true;
         QueueInitialContacts();
     }
 
@@ -105,6 +108,9 @@ namespace MDSS::SurfaceState
         }
         PendingContacts.clear();
         GPUResources->ResetStates();
+        // Resetting State invalidates the derived simulation geometry.  Rebuild it before the next
+        // feedback-enabled solver step rather than tracking a separate revision/cache key.
+        bForceFullGeometryOnNextStep = true;
     }
 
     void TSurfaceStateSystem::RestartState()
@@ -140,6 +146,9 @@ namespace MDSS::SurfaceState
         }
 
         bStableDeltaTimeDirty = true;
+        // Accumulation factors/capacity can change the State -> Height mapping.  A one-shot full
+        // rebuild on the next solver step keeps derived data authoritative without a revision cache.
+        bForceFullGeometryOnNextStep = true;
         const auto Key = std::make_pair(Profile, State);
         if (bKeepRuntimeOverride)
         {
@@ -600,7 +609,8 @@ namespace MDSS::SurfaceState
     void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
                                          float           DeltaTime,
                                          VkQueryPool     TimestampQueryPool,
-                                         std::uint32_t   FirstStepQuery)
+                                         std::uint32_t   FirstStepQuery,
+                                         bool            bPrepareRenderHeight)
     {
         ApplyPendingContacts();
         if (!Solver)
@@ -674,14 +684,30 @@ namespace MDSS::SurfaceState
                 SolverFlags |= 1U << 4U;
             }
             if (bRawFluxCacheEnabled)
+            {
                 SolverFlags |= SurfaceSolverRawFluxCacheFlag;
+                if (bCoalescedRawFluxLayoutEnabled)
+                    SolverFlags |= SurfaceSolverCoalescedRawFluxLayoutFlag;
+                if (bHalfRawFluxCacheEnabled)
+                    SolverFlags |= SurfaceSolverHalfRawFluxCacheFlag;
+            }
+            if (bSparseSolverEnabled)
+                SolverFlags |= SurfaceSolverSparseSolverFlag;
+            if (bSparseAccumulationHeightEnabled)
+                SolverFlags |= SurfaceSolverSparseAccumulationHeightFlag;
+            if (bActiveChannelMaskEnabled)
+                SolverFlags |= SurfaceSolverActiveChannelMaskFlag;
             if (bSparseSimulationGeometryEnabled)
                 SolverFlags |= SurfaceSolverSparseGeometryFlag;
+
+            // Height validity is independent of simulation feedback. If feedback is OFF the full rebuild
+            // is deferred until the final render-height step instead of adding revision/cache bookkeeping.
+            if (bRebuildStaticWeights || bForceFullGeometryOnNextStep)
+                SolverFlags |= SurfaceSolverForceFullGeometryFlag;
+
             if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled)
             {
                 SolverFlags |= SurfaceSolverAccumulationGeometryUpdateFlag;
-                if (bRebuildStaticWeights || bForceFullGeometryOnNextStep)
-                    SolverFlags |= SurfaceSolverForceFullGeometryFlag;
                 if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight))
                     SolverFlags |= SurfaceSolverDistanceWeightFlag;
                 if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight))
@@ -698,6 +724,7 @@ namespace MDSS::SurfaceState
             Step.ModelMatrix = ModelMatrix;
             Step.GravityWorld = GravityWorld;
             Step.SolverFlags = SolverFlags;
+            Step.bPrepareAccumulationHeight = bPrepareRenderHeight;
             InstanceSteps.push_back(Step);
             ActiveSceneIndices.push_back(SceneIndex);
         }
@@ -705,24 +732,12 @@ namespace MDSS::SurfaceState
         for (const std::size_t SceneIndex : ActiveSceneIndices)
             GPUResources->AdvanceCurrentState(SceneIndex);
         bTransferWeightSettingsDirty = false;
-        bForceFullGeometryOnNextStep = false;
+        // Feedback ON always derives Height after the step. Feedback OFF may execute several fixed substeps;
+        // keep the invalidation alive until the final substep actually prepares render height.
+        if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled || bPrepareRenderHeight)
+            bForceFullGeometryOnNextStep = false;
     }
 
-    void TSurfaceStateSystem::RecordCurrentAccumulationHeight(VkCommandBuffer CommandBuffer,
-                                                              std::size_t SceneIndex,
-                                                              TStateId       ExcludedChannel)
-    {
-        const auto* Descriptors = GPUResources->GetInstanceDescriptors(SceneIndex);
-        if (!Solver || !Descriptors)
-            throw std::logic_error("Current accumulation height requires active solver resources.");
-        Solver->RecordCurrentAccumulationHeight(CommandBuffer,
-                                                *Descriptors,
-                                                GPUResources->IsCurrentStateAB(SceneIndex),
-                                                GPUResources->GetInstanceTexelCount(SceneIndex),
-                                                GPUResources->GetInstanceChannelCount(SceneIndex),
-                                                Scene.GetStaticMeshInstances()[SceneIndex].GetTransform().GetMatrix(),
-                                                ExcludedChannel);
-    }
 
 #pragma endregion
 
