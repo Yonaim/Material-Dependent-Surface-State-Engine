@@ -357,11 +357,7 @@ namespace MDSS::Rendering
         if (!Command || !Pipeline || ChannelCount == 0)
             return;
         const std::array<std::uint32_t, 5> Push{Channels[0], Channels[1], Channels[2], Channels[3], ChannelCount};
-        if (bUpdateStates)
-        {
-            vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-            vkCmdPushConstants(Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), Push.data());
-        }
+        bool bMainPipelineReady = false;
         for (std::size_t Index = 0; Index < Instances.size(); ++Index)
         {
             TInstance& Instance = Instances[Index];
@@ -419,6 +415,16 @@ namespace MDSS::Rendering
 
             const VkDescriptorSet StateSet = Resources.IsCurrentStateAB(Index) ? SurfaceDescriptors->GetABSet()
                                                                                 : SurfaceDescriptors->GetBASet();
+            // Smoothing uses a different pipeline layout (4-byte push constants vs 20 bytes here).
+            // With multiple instances, the previous iteration may have left SmoothingPipeline bound.
+            // Re-establish the main pipeline and its full push-constant payload before the next state dispatch.
+            if (!bMainPipelineReady)
+            {
+                vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
+                vkCmdPushConstants(
+                    Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), Push.data());
+                bMainPipelineReady = true;
+            }
             const std::array<VkDescriptorSet, 2> Sets{StateSet, Instance.Set};
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -481,6 +487,7 @@ namespace MDSS::Rendering
 
             const std::array<VkDescriptorSet, 2> SmoothSets{StateSet, Instance.SmoothingSet};
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, SmoothingPipeline);
+            bMainPipelineReady = false;
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,
                                     SmoothingPipelineLayout,
