@@ -79,6 +79,8 @@ namespace MDSS
         }
     } // namespace
 
+#pragma region Log_Writing
+
     void TLogger::Verbose(std::string_view Module, std::string_view Message)
     {
         Write(TLogLevel::Verbose, Module, Message);
@@ -135,6 +137,10 @@ namespace MDSS
         ++Storage.Revision;
     }
 
+#pragma endregion
+
+#pragma region Log_Entry_Access
+
     std::vector<TLogEntry> TLogger::GetEntries()
     {
         TLoggerStorage&  Storage = GetStorage();
@@ -157,6 +163,10 @@ namespace MDSS
         ++Storage.Revision;
     }
 
+#pragma endregion
+
+#pragma region Log_Level_Names
+
     const char* TLogger::GetLevelName(TLogLevel Level) noexcept
     {
         switch (Level)
@@ -176,4 +186,5 @@ namespace MDSS
         }
         return "UNKNOWN";
     }
+#pragma endregion
 } // namespace MDSS

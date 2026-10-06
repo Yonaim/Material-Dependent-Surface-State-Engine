@@ -11,6 +11,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Mapping_Validation_Helpers
+
     namespace
     {
         bool ContainsNeighbor(const TSurfaceMappingTexel& Texel, TLocalTexelIndex Neighbor)
@@ -25,6 +27,9 @@ namespace MDSS::SurfaceState
             return false;
         }
     } // namespace
+#pragma endregion
+
+#pragma region Surface_Mapping_Validation
 
     void ValidateSurfaceMapping(const TSurfaceMappingData& Mapping)
     {
@@ -88,4 +93,5 @@ namespace MDSS::SurfaceState
             }
         }
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

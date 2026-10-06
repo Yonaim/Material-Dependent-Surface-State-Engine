@@ -93,6 +93,22 @@ layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
     TTopDrawCommand Values[];
 } TopDrawCommands;
 
+layout(push_constant) uniform TOverlayPush
+{
+    uint Mud;
+    uint WaterFilm;
+    uint Lava;
+    uint ActiveMaterialMask;
+    uint Channel;
+    uint Channels;
+    uint TexelCount;
+    uint TileSize;
+    uint BoundaryCount;
+    float HeightDisplayScale;
+    uint UseOpaqueBase;
+    uint Padding;
+} Push;
+
 struct TPoint
 {
     vec3 Base;
@@ -116,6 +132,17 @@ TPoint ReadGeometryPoint(uint Index)
             Height += V.Weights[K] * Computed.Values[Texel].HeightAndNormal.x;
         if (Texel < uint(GeometryScalars.Values.length()))
             MesoHeight += V.Weights[K] * GeometryScalars.Values[Texel].MesoVirtualHeight;
+    }
+    if (Push.UseOpaqueBase != 0u)
+    {
+        float OpaqueHeight = 0.0;
+        for (uint K = 0u; K < 4u; ++K)
+        {
+            uint Texel = V.Samples[K];
+            if (V.Weights[K] <= 0.0 || Texel >= uint(GeometryCache.Values.length())) continue;
+            OpaqueHeight += V.Weights[K] * uintBitsToFloat(GeometryCache.Values[Texel]);
+        }
+        MesoHeight += OpaqueHeight * Push.HeightDisplayScale;
     }
     P.Base = V.Position.xyz + V.DisplacementNormal.xyz * MesoHeight;
     P.Top = V.Position.xyz + V.DisplacementNormal.xyz * Height;
@@ -146,7 +173,7 @@ void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface)
 void main()
 {
     uint TriangleCount = uint(MeshIndices.Values.length()) / 3u;
-    uint BoundaryCount = DrawCommands.Values[uint(DrawCommands.Values.length()) - 1u].FirstInstance >> 2u;
+    uint BoundaryCount = Push.BoundaryCount;
     // coverage 경계를 넘는 삼각형 변과 mesh boundary edge를 같은 segment 형식으로 저장한다.
     if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u) return;
     uint Slot = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;

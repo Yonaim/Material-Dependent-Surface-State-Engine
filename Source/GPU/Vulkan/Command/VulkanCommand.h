@@ -15,6 +15,7 @@ namespace MDSS::GPU
     class TVulkanCommand
     {
     public:
+        // Command pool lifecycle
         TVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily);
         ~TVulkanCommand();
 

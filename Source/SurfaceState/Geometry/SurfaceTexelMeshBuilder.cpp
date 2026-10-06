@@ -16,6 +16,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Texel_Mesh_Construction_Helpers
+
     static void BuildBoundaryEdges(TSurfaceTexelMesh& Mesh, const std::vector<std::uint32_t>& TopologyIDs)
     {
         struct TEdgeOccurrence
@@ -228,6 +230,10 @@ namespace MDSS::SurfaceState
         BuildBoundaryEdges(Result, TopologyIDs);
         return Result;
     }
+
+#pragma endregion
+
+#pragma region Surface_Texel_Mesh_Build
 
     TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
                                             std::span<const Asset::TVertex>             Vertices,
@@ -559,4 +565,5 @@ namespace MDSS::SurfaceState
         }
         return Result;
     }
+#pragma endregion
 }

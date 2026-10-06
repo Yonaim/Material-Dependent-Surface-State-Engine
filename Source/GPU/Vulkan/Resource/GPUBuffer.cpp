@@ -13,12 +13,15 @@
 
 namespace MDSS::GPU
 {
+#pragma region Buffer_Lifecycle
+
     TGPUBuffer::TGPUBuffer(VkPhysicalDevice      PhysicalDevice,
                            VkDevice              Device,
                            VkDeviceSize          Size,
                            VkBufferUsageFlags    Usage,
-                           VkMemoryPropertyFlags MemoryProperties)
-        : Device(Device), Size(Size), MemoryProperties(MemoryProperties)
+                           VkMemoryPropertyFlags MemoryProperties,
+                           TGPUBufferMemoryCategory Category)
+        : Device(Device), Size(Size), MemoryCategory(Category), MemoryProperties(MemoryProperties)
     {
         if (Size == 0)
         {
@@ -57,7 +60,7 @@ namespace MDSS::GPU
             {
                 throw std::runtime_error("Failed to bind Vulkan buffer memory.");
             }
-            TGPUResourceMemoryStats::BufferAllocated(AllocationSize);
+            TGPUResourceMemoryStats::BufferAllocated(AllocationSize, MemoryCategory);
         }
         catch (...)
         {
@@ -89,12 +92,16 @@ namespace MDSS::GPU
 
         if (Memory != VK_NULL_HANDLE)
         {
-            TGPUResourceMemoryStats::BufferFreed(AllocationSize);
+            TGPUResourceMemoryStats::BufferFreed(AllocationSize, MemoryCategory);
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
         AllocationSize = 0;
     }
+
+#pragma endregion
+
+#pragma region Buffer_Transfers
 
     void TGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
@@ -157,6 +164,10 @@ namespace MDSS::GPU
         vkUnmapMemory(Device, Memory);
     }
 
+#pragma endregion
+
+#pragma region Buffer_Accessors
+
     VkBuffer TGPUBuffer::GetHandle() const noexcept
     {
         return Handle;
@@ -171,6 +182,10 @@ namespace MDSS::GPU
     {
         return UploadRevision.load(std::memory_order_acquire);
     }
+
+#pragma endregion
+
+#pragma region Memory_Type_Selection
 
     std::uint32_t TGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                              std::uint32_t         TypeFilter,
@@ -193,4 +208,5 @@ namespace MDSS::GPU
 
         throw std::runtime_error("Failed to find a suitable Vulkan memory type for GPU buffer.");
     }
+#pragma endregion
 } // namespace MDSS::GPU

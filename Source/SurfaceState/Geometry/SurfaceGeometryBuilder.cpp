@@ -21,6 +21,8 @@ namespace MDSS::SurfaceState
         }
     } // namespace
 
+#pragma region Surface_Geometry_Build
+
     TSharedSurfaceGeometryData TSurfaceGeometryBuilder::Build(const TSurfaceMappingData&        Mapping,
                                                               std::vector<TSurfaceProfileIndex> ProfileMap,
                                                               std::uint32_t                     ProfileCount)
@@ -89,4 +91,5 @@ namespace MDSS::SurfaceState
         Geometry.SetProfileMap(std::move(ProfileMap));
         return Geometry;
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

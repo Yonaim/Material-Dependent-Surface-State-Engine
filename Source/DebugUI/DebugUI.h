@@ -59,6 +59,7 @@ namespace MDSS
     class TDebugUI
     {
     public:
+        // Debug UI lifecycle
         TDebugUI(const GPU::TVulkanContext&         Context,
                  const TWindow&                     TWindow,
                  Rendering::TRenderer&              Renderer,
@@ -71,6 +72,7 @@ namespace MDSS
         TDebugUI(TDebugUI&&) = delete;
         TDebugUI& operator=(TDebugUI&&) = delete;
 
+        // Frame, scene, and swapchain control
         /** @brief 새 ImGui frame을 시작해 진단 창을 갱신하고 draw data를 확정한다. */
         void BeginFrame(TScene& SceneData);
 
@@ -88,12 +90,14 @@ namespace MDSS
         /** @brief 저장된 .Scene을 다시 읽어 애니메이션, 상태, 초기 접촉 입력을 처음부터 시작한다. */
         void RestartScene(TScene& SceneData);
 
+        // Draw submission
         /** @brief 현재 Vulkan render pass에 ImGui draw command를 기록한다. */
         void Render(VkCommandBuffer CommandBuffer) const;
 
         /** @brief swapchain 재생성 후 ImGui Vulkan backend의 image count를 갱신한다. */
         void OnSwapchainRecreated(const GPU::TVulkanContext& Context, const Rendering::TRenderer& Renderer);
 
+        // Runtime settings and viewport state
         [[nodiscard]] bool                   IsInjectModeEnabled() const noexcept;
         [[nodiscard]] SurfaceState::TStateId GetInjectState() const noexcept;
         [[nodiscard]] float                  GetInjectStrength() const noexcept;
@@ -126,6 +130,7 @@ namespace MDSS
         [[nodiscard]] bool                       ShouldSuppressDebugHotkey() const noexcept;
 
     private:
+        // Scene, selection, and camera controls
         void                      ProcessCameraInput(TScene& SceneData);
         void                      ProcessSelectionAndGizmo(TScene& SceneData);
         void                      DrawSceneWindow(TScene& SceneData);
@@ -135,12 +140,16 @@ namespace MDSS
         void                      DrawCameraWindow(TScene& SceneData);
         void                      DrawViewportPanels(TScene& SceneData);
         void                      DrawBrickCubeTexelMeshNotice(const TScene& SceneData);
+
+        // Rendering controls and performance overlays
         void                      DrawRenderOptionsWindow(TScene& SceneData);
         void                      DrawRenderSettingsWindow(TScene& SceneData);
         void                      DrawViewportStatsOverlay();
         void                      DrawTotalHeightCacheOverlay();
         void                      ResetProfilingAverages() noexcept;
         void                      ResetSurfaceStateSettings();
+
+        // Simulation and diagnostic panels
         void                      DrawSimulationDebugWindow(TScene& SceneData);
         void                      DrawSimulationCommonControls();
         void                      DrawSolverTab();
@@ -149,7 +158,10 @@ namespace MDSS
         void                      DrawContactInputTab();
         void                      DrawProfileTuningTab(TScene& SceneData);
         void                      DrawGlobalSettingsTab(TScene& SceneData);
+        void                      DrawPerformanceTab();
         void                      DrawLogWindow();
+
+        // Shared layout helpers
         void                      SetupDockspace();
         void                      ApplyCameraViewPreset(TScene& SceneData, std::size_t Index);
         [[nodiscard]] TCamera&    GetViewportCamera(TScene& SceneData, std::size_t Index) noexcept;

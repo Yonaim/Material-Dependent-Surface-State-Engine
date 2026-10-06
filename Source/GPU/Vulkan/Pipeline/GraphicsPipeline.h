@@ -45,6 +45,7 @@ namespace MDSS::GPU
     class TGraphicsPipeline
     {
     public:
+        // Pipeline lifecycle
         /**
          * @brief 설정에 지정된 shader와 fixed-function state로 pipeline을 생성한다.
          * @throws std::runtime_error shader 파일 또는 Vulkan pipeline 생성이 실패한 경우.

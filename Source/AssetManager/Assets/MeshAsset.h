@@ -36,6 +36,7 @@ namespace MDSS::Asset
     class TMeshAsset final : public TAsset
     {
     public:
+        // Mesh asset construction
         /**
          * @brief CPU mesh data를 보관하고 정점·인덱스 GPU buffer를 업로드한다.
          * @throws std::runtime_error GPU buffer 생성 또는 업로드가 실패한 경우.
@@ -49,6 +50,7 @@ namespace MDSS::Asset
                    std::vector<TMeshSection>        Sections,
                    std::vector<TMeshTriangleSource> Triangles);
 
+        // CPU mesh data and GPU buffer access
         [[nodiscard]] const std::vector<TVertex>&             GetVertices() const noexcept;
         [[nodiscard]] const std::vector<std::uint32_t>&       GetIndices() const noexcept;
         [[nodiscard]] const std::vector<TMeshSection>&        GetSections() const noexcept;

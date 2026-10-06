@@ -37,6 +37,7 @@ namespace MDSS
     class TLogger final
     {
     public:
+        // Log output
         static void Verbose(std::string_view Module, std::string_view Message);
         static void Debug(std::string_view Module, std::string_view Message);
         static void Info(std::string_view Module, std::string_view Message);
@@ -46,6 +47,7 @@ namespace MDSS
         /** @brief 로그 항목을 콘솔에 기록하고 thread-safe history에 보관한다. */
         static void Write(TLogLevel Level, std::string_view Module, std::string_view Message);
 
+        // Retained log history
         /** @brief 현재 로그 history의 thread-safe 복사본을 반환한다. */
         static std::vector<TLogEntry> GetEntries();
         /** @brief 로그가 추가되거나 지워질 때 증가하는 revision을 반환한다. */
@@ -53,6 +55,7 @@ namespace MDSS
         /** @brief 콘솔에는 영향을 주지 않고 보관 중인 로그 history를 비운다. */
         static void Clear();
 
+        // Level display names
         static const char* GetLevelName(TLogLevel Level) noexcept;
 
     private:

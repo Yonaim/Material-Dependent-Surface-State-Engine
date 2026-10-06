@@ -10,6 +10,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Normal_Map_Sampling_Helpers
+
     namespace
     {
         constexpr float NormalMapEpsilon = 1.0e-8F;
@@ -61,6 +63,9 @@ namespace MDSS::SurfaceState
             return true;
         }
     } // namespace
+#pragma endregion
+
+#pragma region Transfer_Normal_Build
 
     bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&                   Texel,
                                       const std::vector<Asset::TVertex>&             Vertices,
@@ -125,4 +130,5 @@ namespace MDSS::SurfaceState
         OutTransferNormal = NormalLocal / std::sqrt(NormalLengthSquared);
         return true;
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

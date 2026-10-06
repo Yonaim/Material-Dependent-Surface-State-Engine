@@ -19,6 +19,7 @@ namespace MDSS
         std::uint32_t        WarmupFrames = 0;
         std::uint32_t        MeasurementFrames = 0;
 
+        // Benchmark frame limits
         [[nodiscard]] std::size_t GetTotalFrameLimit() const noexcept;
     };
 
@@ -28,6 +29,7 @@ namespace MDSS
         TBenchmarkOptions Benchmark;
     };
 
+    // Command-line parsing and usage text
     [[nodiscard]] TApplicationLaunchOptions ParseApplicationLaunchOptions(int Argc, char* Argv[]);
     [[nodiscard]] const char* GetApplicationUsage() noexcept;
 } // namespace MDSS

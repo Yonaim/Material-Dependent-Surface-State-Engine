@@ -16,6 +16,8 @@
  * @brief 엔진 응용 프로그램을 실행하고 처리되지 않은 초기화 오류를 기록한다.
  * @return 실행 성공 시 0, fatal error 발생 시 1.
  */
+#pragma region Application_Entry_Point
+
 int main(int Argc, char* Argv[])
 {
     MDSS::TApplicationLaunchOptions LaunchOptions;
@@ -42,3 +44,4 @@ int main(int Argc, char* Argv[])
 
     return 0;
 }
+#pragma endregion

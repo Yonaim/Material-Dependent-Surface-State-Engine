@@ -41,6 +41,8 @@ namespace MDSS
         }
     } // namespace
 
+#pragma region std_Implementation
+
     std::size_t TBenchmarkOptions::GetTotalFrameLimit() const noexcept
     {
         // Two extra frames drain the timestamp queries for the final measured frames.
@@ -134,4 +136,5 @@ namespace MDSS
         return "Usage: MDSS [--frames COUNT] | MDSS --benchmark-scene PATH --benchmark-resolution {128|256|512} "
                "--benchmark-warmup-frames COUNT --benchmark-measure-frames COUNT --benchmark-output PATH";
     }
+#pragma endregion
 } // namespace MDSS

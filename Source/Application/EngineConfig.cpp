@@ -27,6 +27,8 @@ namespace MDSS
         }
     }
 
+#pragma region std_Implementation
+
     std::filesystem::path GetEngineConfigDirectory()
     {
         return std::filesystem::absolute(std::filesystem::path(MDSS_ASSET_DIR)).parent_path() / "Config";
@@ -77,4 +79,5 @@ namespace MDSS
             ScenePath = AbsoluteConfig.parent_path() / ScenePath;
         return ScenePath.lexically_normal();
     }
+#pragma endregion
 }

@@ -31,6 +31,8 @@ namespace MDSS::SurfaceState
         }
     } // 내부 네임스페이스
 
+#pragma region Shared_Geometry_Upload
+
     TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData&     Geometry,
                                                               std::span<const TSurfaceProfileIndex> ProfileIndexRemap)
     {
@@ -121,6 +123,10 @@ namespace MDSS::SurfaceState
 
         return Result;
     }
+
+#pragma endregion
+
+#pragma region Transform_Dependent_Geometry_Data
 
     float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel, const glm::mat4& ModelMatrix) noexcept
     {
@@ -293,6 +299,10 @@ namespace MDSS::SurfaceState
         return Result;
     }
 
+#pragma endregion
+
+#pragma region Profile_and_Buffer_Layouts
+
     TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
                                                  const TSurfaceStateRegistry&                    Registry)
     {
@@ -389,4 +399,5 @@ namespace MDSS::SurfaceState
         }
         return ByteSize;
     }
+#pragma endregion
 } // MDSS 네임스페이스

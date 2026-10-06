@@ -32,8 +32,10 @@ namespace MDSS::SurfaceState
     class TSurfaceStateRegistry final
     {
     public:
+        // Registry construction
         explicit TSurfaceStateRegistry(const std::vector<TSurfaceResponseProfileData>& Profiles);
 
+        // State lookup and profile resolution
         [[nodiscard]] std::size_t        GetStateCount() const noexcept;
         [[nodiscard]] TStateId           GetStateId(std::string_view Name) const;
         [[nodiscard]] const std::string& GetStateName(TStateId ID) const;

@@ -13,6 +13,7 @@ layout(local_size_x = 64) in;
 layout(set = 1, binding = 0, std430) readonly buffer TInput { TTexelGeometryVertex Values[]; } InputGeometry;
 
 layout(set = 2, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } OutputGeometry;
+layout(set = 2, binding = 1, std430) readonly buffer TGeometryCache { uint Values[]; } GeometryCache;
 
 layout(push_constant) uniform TPush
 {
@@ -21,9 +22,84 @@ layout(push_constant) uniform TPush
     uint Channels;
     uint Padding;
     float AccumulationDisplayScale;
+    uint TileSize;
+    uint UseSparse;
 } Push;
 
 const float CoverageCutoff = 0.02;
+
+shared uint SparseTileValid;
+shared uint SparseRangeFirst;
+shared uint SparseRangeWidth;
+shared uint SparseRangeHeight;
+shared uint SparseTileX;
+shared uint SparseTileY;
+
+uint CapacityTileCount()
+{
+    return (Push.TexelCount + 255u) / 256u;
+}
+
+uint NormalListBase()
+{
+    // GeometryCache sparse layout matches TexelGeometry/OverlayOccupancyScan.
+    return Push.TexelCount * 5u + CapacityTileCount() * 4u + 8u;
+}
+
+bool ResolveCandidateTile(uint Candidate)
+{
+    uint Base = 0u;
+    for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
+    {
+        uvec4 Range = SurfaceRanges.Values[Surface];
+        uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
+        uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
+        uint Count = TilesX * TilesY;
+        if (Candidate < Base + Count)
+        {
+            uint Local = Candidate - Base;
+            SparseTileValid = 1u;
+            SparseRangeFirst = Range.x;
+            SparseRangeWidth = Range.y;
+            SparseRangeHeight = Range.z;
+            SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
+            SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+            return true;
+        }
+        Base += Count;
+    }
+    SparseTileValid = 0u;
+    return false;
+}
+
+uint ResolveTexel()
+{
+    if (Push.UseSparse == 0u)
+        return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
+    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+    uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
+    uint ActiveSlot = gl_WorkGroupID.x / GroupsPerTile;
+    uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
+    uint Candidate = GeometryCache.Values[NormalListBase() + ActiveSlot];
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        SparseTileValid = 0u;
+        ResolveCandidateTile(Candidate);
+    }
+    barrier();
+    if (SparseTileValid == 0u) return Push.TexelCount;
+
+    uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    if (Local >= TilePixels) return Push.TexelCount;
+    uint LocalX = Local % Push.TileSize;
+    uint LocalY = Local / Push.TileSize;
+    uint X = SparseTileX * Push.TileSize + LocalX;
+    uint Y = SparseTileY * Push.TileSize + LocalY;
+    if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
+    return SparseRangeFirst + Y * SparseRangeWidth + X;
+}
 
 float DisplayedCavityFill(uint Texel, uint Profile)
 {
@@ -41,7 +117,7 @@ float DisplayedCavityFill(uint Texel, uint Profile)
 void main()
 {
     // 각 texel을 중심으로 한 3x3 이웃만 사용해 경계를 보존하며 smoothing한다.
-    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    uint T = ResolveTexel();
     if (T >= Push.TexelCount) return;
 #if MDSS_GPU_VALIDATION
     if (T >= uint(InputGeometry.Values.length())) return;

@@ -362,8 +362,19 @@ namespace MDSS::Tests
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         auto                                Command = Context.GetCommands().BeginSingleTime();
         Preview.Record(Command, 0, Descriptors, 4, 0, 1, 4.0F, 1.0F, glm::mat4(1.0F), true, true);
-        Smoothing.Record(
-            Command, 0, 0, 1, 4, Descriptors, Preview.GetOutputSet(0), Preview.GetOutputBuffer(0), true, 4.0F);
+        Smoothing.Record(Command,
+                         0,
+                         0,
+                         1,
+                         4,
+                         Descriptors,
+                         Preview.GetOutputSet(0),
+                         Preview.GetOutputBuffer(0),
+                         Preview.GetGeometryCacheBuffer(0),
+                         true,
+                         4.0F,
+                         16U,
+                         false);
         VkBufferMemoryBarrier CopyBarrier{};
         CopyBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         CopyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;

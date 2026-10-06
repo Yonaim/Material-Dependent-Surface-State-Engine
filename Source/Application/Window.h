@@ -15,6 +15,7 @@ namespace MDSS
     class TWindow
     {
     public:
+        // Window lifecycle
         /**
          * @brief GLFW를 초기화하고 Vulkan용 native window를 생성한다.
          * @throws std::runtime_error GLFW 또는 창 생성에 실패한 경우.
@@ -27,6 +28,7 @@ namespace MDSS
         TWindow(TWindow&&) = delete;
         TWindow& operator=(TWindow&&) = delete;
 
+        // Window state and event handling
         [[nodiscard]] bool ShouldClose() const;
         void               PollEvents() const;
 
@@ -38,6 +40,7 @@ namespace MDSS
         void WaitForNonZeroFramebuffer() const;
 
     private:
+        // GLFW global lifecycle and framebuffer events
         /** @brief 여러 TWindow 인스턴스 사이에서 GLFW를 첫 사용 시 한 번 초기화한다. */
         static void InitializeGLFW();
         /** @brief 마지막 TWindow가 사라질 때 GLFW global state를 종료한다. */

@@ -11,6 +11,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Profile_Value_Validation_Helpers
+
     namespace
     {
         void ValidateFiniteNonNegative(float Value, std::string_view FieldName)
@@ -29,6 +31,9 @@ namespace MDSS::SurfaceState
             }
         }
     } // namespace
+#pragma endregion
+
+#pragma region State_Name_Normalization
 
     std::string NormalizeSurfaceStateName(std::string_view Name)
     {
@@ -56,6 +61,9 @@ namespace MDSS::SurfaceState
         }
         return Result;
     }
+#pragma endregion
+
+#pragma region Surface_Response_Profile_Validation
 
     void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data)
     {
@@ -104,4 +112,5 @@ namespace MDSS::SurfaceState
             ValidateFiniteNonNegative(Transition.TransitionRate, Prefix + "transitionRate");
         }
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

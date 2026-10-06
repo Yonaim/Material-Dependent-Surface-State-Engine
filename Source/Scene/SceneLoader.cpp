@@ -161,6 +161,8 @@ namespace MDSS
         }
     } // namespace
 
+#pragma region Scene_Loading
+
     TScene TSceneLoader::Load(const std::filesystem::path&       Path,
                               Asset::TAssetManager&              Assets,
                               SurfaceState::TSurfaceDataManager& SurfaceData,
@@ -299,6 +301,10 @@ namespace MDSS
         return Scene;
     }
 
+#pragma endregion
+
+#pragma region Scene_Saving
+
     void TSceneLoader::Save(const TScene& Scene, const std::filesystem::path& Path)
     {
         const std::filesystem::path AbsolutePath = std::filesystem::absolute(Path).lexically_normal();
@@ -364,4 +370,5 @@ namespace MDSS
             throw std::runtime_error("Failed while writing Scene file: " + AbsolutePath.string());
         }
     }
+#pragma endregion
 } // namespace MDSS

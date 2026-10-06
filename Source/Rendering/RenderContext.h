@@ -23,6 +23,7 @@ namespace MDSS::Rendering
     class TRenderContext
     {
     public:
+        // Frame resources and lifecycle
         static constexpr std::size_t MaxFramesInFlight = 2;
 
         explicit TRenderContext(const GPU::TVulkanContext& Context);
@@ -34,12 +35,14 @@ namespace MDSS::Rendering
         TRenderContext& operator=(TRenderContext&&) = delete;
 
         /** @brief 현재 frame slot의 fence가 신호될 때까지 CPU를 대기시킨다. */
+        // Frame synchronization
         void WaitForCurrentFrame() const;
         /** @brief 현재 frame slot fence를 다음 queue submit을 위해 reset한다. */
         void ResetCurrentFence() const;
         /** @brief 다음 frame-in-flight slot으로 인덱스를 순환 이동한다. */
         void AdvanceFrame() noexcept;
 
+        // Current frame access
         [[nodiscard]] std::uint32_t   GetCurrentFrameIndex() const noexcept;
         [[nodiscard]] VkCommandBuffer GetCurrentCommandBuffer() const noexcept;
         [[nodiscard]] VkSemaphore     GetImageAvailableSemaphore() const noexcept;

@@ -20,6 +20,7 @@ namespace MDSS::Rendering
     class TAccumulationOverlaySides final
     {
     public:
+        // Overlay resource lifecycle
         struct TTriangleActivity
         {
             std::uint64_t Active = 0;
@@ -35,6 +36,7 @@ namespace MDSS::Rendering
         TAccumulationOverlaySides(const TAccumulationOverlaySides&) = delete;
         TAccumulationOverlaySides& operator=(const TAccumulationOverlaySides&) = delete;
 
+        // Overlay draw buffers and frame readback
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept
         {
             return OutputLayout;
@@ -53,6 +55,7 @@ namespace MDSS::Rendering
                                                        std::uint32_t MeshResolution) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
         [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
+        // Overlay command recording
         void                            Record(VkCommandBuffer                                         Command,
                                                std::size_t                                             Instance,
                                                std::uint32_t                                           Channel,
@@ -66,7 +69,12 @@ namespace MDSS::Rendering
                                                VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
                                                std::uint32_t                                           FirstSideTimestampQuery = 0,
                                                std::uint32_t                                           OccupancyTileSize = 16U,
-                                               bool                                                    bSmoothCoverage = false);
+                                               bool                                                    bSmoothCoverage = false,
+                                               bool                                                    bUseOpaqueBase = false,
+                                               float                                                   HeightDisplayScale = 1.0F,
+                                               std::array<std::uint32_t, 3>                           MaterialChannels = {
+                                                   0xffffffffU, 0xffffffffU, 0xffffffffU},
+                                               std::uint32_t                                           ActiveMaterialMask = 0x7U);
 
     private:
         struct TOutput

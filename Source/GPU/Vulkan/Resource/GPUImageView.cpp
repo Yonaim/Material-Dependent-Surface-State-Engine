@@ -11,6 +11,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Image_View_Lifecycle
+
     TGPUImageView::TGPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
                                  std::uint32_t ArrayLayers, VkImageViewType ViewType)
         : Device(Device)
@@ -39,6 +41,10 @@ namespace MDSS::GPU
         }
     }
 
+#pragma endregion
+
+#pragma region Image_View_Creation
+
     void TGPUImageView::Create(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
                                std::uint32_t ArrayLayers, VkImageViewType ViewType)
     {
@@ -60,8 +66,13 @@ namespace MDSS::GPU
         TLogger::Verbose("Vulkan", "TGPUImageView created (format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
+#pragma endregion
+
+#pragma region Image_View_Access
+
     VkImageView TGPUImageView::GetHandle() const noexcept
     {
         return Handle;
     }
+#pragma endregion
 } // namespace MDSS::GPU

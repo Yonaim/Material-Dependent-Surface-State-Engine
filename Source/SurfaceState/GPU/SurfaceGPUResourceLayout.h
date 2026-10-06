@@ -106,11 +106,13 @@ namespace MDSS::SurfaceState
     static_assert(offsetof(TSurfaceSolverPushConstants, ModelLinearColumns) == 32);
     static_assert(offsetof(TSurfaceSolverPushConstants, NormalMatrixAndUpColumns) == 80);
 
+    // Shared geometry upload layout
     /** @brief Optional Runtime-local → Scene Profile index remap; CPU Geometry remains unchanged. */
     [[nodiscard]] TSurfaceGPUSharedGeometryUpload
     PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData&     Geometry,
                               std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
 
+    // Transform-dependent instance data
     [[nodiscard]] float              GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel,
                                                               const glm::mat4&             ModelMatrix) noexcept;
     [[nodiscard]] std::vector<float> BuildSurfaceGPUWorldTexelAreas(const TSharedSurfaceGeometryData& Geometry,
@@ -125,6 +127,7 @@ namespace MDSS::SurfaceState
                                    bool                              bUseDistanceWeight = true,
                                    bool                              bUseProfileBoundaryWeight = true);
 
+    // Profile and buffer layouts
     [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
                                                                const TSurfaceStateRegistry& Registry);
 

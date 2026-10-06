@@ -14,6 +14,7 @@ namespace MDSS::GPU
     class TGPUImage
     {
     public:
+        // Image allocation and lifecycle
         /** @brief 이미지와 backing memory를 생성한다. 실패하면 std::runtime_error를 던진다. */
         TGPUImage(VkPhysicalDevice      PhysicalDevice,
                   VkDevice              Device,
@@ -41,6 +42,7 @@ namespace MDSS::GPU
         /** @brief image와 memory를 해제하고 객체를 빈 상태로 되돌린다. */
         void Reset();
 
+        // Image properties
         [[nodiscard]] VkImage    GetHandle() const noexcept;
         [[nodiscard]] VkFormat   GetFormat() const noexcept;
         [[nodiscard]] VkExtent2D GetExtent() const noexcept;

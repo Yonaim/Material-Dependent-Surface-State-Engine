@@ -76,6 +76,8 @@ namespace MDSS::Asset
         }
     } // namespace
 
+#pragma region OBJ_Loading
+
     TOBJLoadResult TOBJLoader::Load(const std::filesystem::path& Path)
     {
         tinyobj::attrib_t                Attrib{};
@@ -244,6 +246,10 @@ namespace MDSS::Asset
         return Result;
     }
 
+#pragma endregion
+
+#pragma region Tangent_Generation
+
     void TOBJLoader::GenerateTangents(std::vector<TVertex>& Vertices, const std::vector<std::uint32_t>& Indices)
     {
         std::vector<glm::vec3> TangentSums(Vertices.size(), glm::vec3(0.0F));
@@ -298,4 +304,5 @@ namespace MDSS::Asset
             Vertices[Index].Tangent = glm::vec4(Tangent, Handedness);
         }
     }
+#pragma endregion
 } // namespace MDSS::Asset

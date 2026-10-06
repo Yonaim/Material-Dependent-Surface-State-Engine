@@ -30,6 +30,7 @@ namespace MDSS
     class TInputSystem final
     {
     public:
+        // Window input polling
         explicit TInputSystem(GLFWwindow* Window) noexcept;
 
         /** @brief Convert one Space press into a center-camera ray contact unless text entry or a UI drag is active. */

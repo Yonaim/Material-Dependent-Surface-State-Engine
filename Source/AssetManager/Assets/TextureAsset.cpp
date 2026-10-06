@@ -14,6 +14,8 @@
 
 namespace MDSS::Asset
 {
+#pragma region Texture_Asset_Lifecycle
+
     TextureAsset::TextureAsset(TAssetID                         ID,
                                std::string                      Name,
                                std::filesystem::path            SourcePath,
@@ -34,7 +36,8 @@ namespace MDSS::Asset
                                       Context.GetDevice(),
                                       ByteCount,
                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                      GPU::TGPUBufferMemoryCategory::Other);
         StagingBuffer.Upload(RGBA8Pixels.data(), ByteCount);
 
         Image = std::make_unique<GPU::TGPUImage>(Context.GetPhysicalDevice(),
@@ -61,6 +64,10 @@ namespace MDSS::Asset
                            std::to_string(Height) + ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
+#pragma endregion
+
+#pragma region Texture_Resource_Access
+
     std::uint32_t TextureAsset::GetWidth() const noexcept
     {
         return Width;
@@ -85,6 +92,10 @@ namespace MDSS::Asset
     {
         return Sampler->GetHandle();
     }
+
+#pragma endregion
+
+#pragma region Texture_Layout_and_Upload
 
     void TextureAsset::TransitionImageLayout(const GPU::TVulkanContext& Context,
                                              VkImage                    Image,
@@ -154,4 +165,5 @@ namespace MDSS::Asset
         vkCmdCopyBufferToImage(CommandBuffer, Buffer, Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &Region);
         Context.GetCommands().EndSingleTime(CommandBuffer, Context.GetQueues().GetGraphics());
     }
+#pragma endregion
 } // namespace MDSS::Asset

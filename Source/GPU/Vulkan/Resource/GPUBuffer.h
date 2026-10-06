@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
+
 #include <vulkan/vulkan.h>
 
 #include <atomic>
@@ -15,6 +17,7 @@ namespace MDSS::GPU
     class TGPUBuffer
     {
     public:
+        // Buffer allocation and lifecycle
         /**
          * @brief 지정한 usage와 memory property로 Vulkan buffer와 memory를 생성한다.
          * @throws std::runtime_error buffer 또는 memory 생성에 실패한 경우.
@@ -23,7 +26,8 @@ namespace MDSS::GPU
                    VkDevice              Device,
                    VkDeviceSize          Size,
                    VkBufferUsageFlags    Usage,
-                   VkMemoryPropertyFlags MemoryProperties);
+                   VkMemoryPropertyFlags MemoryProperties,
+                   TGPUBufferMemoryCategory Category = TGPUBufferMemoryCategory::Other);
         ~TGPUBuffer();
 
         TGPUBuffer(const TGPUBuffer&) = delete;
@@ -38,10 +42,12 @@ namespace MDSS::GPU
          * @param Offset buffer 시작점으로부터의 byte offset.
          * @throws std::runtime_error mapping 실패 시 발생한다.
          */
+        // Buffer transfers
         void Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
         /** @brief host-visible/coherent buffer memory에서 바이트 범위를 읽는다. */
         void Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
 
+        // Buffer properties
         [[nodiscard]] VkBuffer      GetHandle() const noexcept;
         [[nodiscard]] VkDeviceSize  GetSize() const noexcept;
         [[nodiscard]] std::uint64_t GetUploadRevision() const noexcept;
@@ -56,6 +62,7 @@ namespace MDSS::GPU
         VkDeviceMemory                     Memory = VK_NULL_HANDLE;
         VkDeviceSize                       Size = 0;
         VkDeviceSize                       AllocationSize = 0;
+        TGPUBufferMemoryCategory           MemoryCategory = TGPUBufferMemoryCategory::Other;
         VkMemoryPropertyFlags              MemoryProperties = 0;
         mutable std::atomic<std::uint64_t> UploadRevision{0};
     };
