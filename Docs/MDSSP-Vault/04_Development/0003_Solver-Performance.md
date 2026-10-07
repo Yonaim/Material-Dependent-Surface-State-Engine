@@ -47,7 +47,7 @@ Build/bin/MDSS --benchmark-scene Assets/Scenes/BrickCube.Scene \
 
 각 run set의 `manifest.json`, `raw/*.jsonl`, 앱 로그, `summary.md`는 `Performance-Results/`에 보존한다. 이 파일들은 **재현용 원자료**이고, 가설과 결론은 아래 실험 기록에 적는다.
 
-> **한 줄 요약:** Solver pass, GeometryDrive와 셰이더 핫패스의 비용을 한 문서에서 비교한다. 아래 RawFlux cache ON/OFF 결과는 제거 전의 역사 기록이다.
+> **한 줄 요약:** Solver pass, GeometryDrive와 셰이더 핫패스의 비용을 한 문서에서 비교한다. RawFlux cache ON/OFF 결과는 제거 및 A/B variant 복귀 전후의 구현 상태를 구분해 기록한다.
 
 ## 실험 — Solver Pass 비교
 
@@ -305,7 +305,7 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 - Pass 2는 이웃 flux를 모으기 전에 현재 texel/channel이 지원되는지 확인한다. 이 결과를 전제로 이웃별 `rawFlux` 안의 중복 `supportsChannel(target)` 확인을 없앴다.
 - 현재 texel의 포화도, concavity, effective position은 모든 이웃 flux가 공통으로 참조하므로 이웃 loop 전에 한 번 계산해 재평가 함수에 넘긴다. 이웃 source의 Profile, saturation, transfer weight와 source geometry는 방향마다 달라지므로 source 측 계산은 계속 이웃별로 한다.
 - texel의 8개 packed reverse-direction index를 나타내는 `uint`를 loop 전에 한 번 읽고, loop 안에서는 shift/mask만 수행한다.
-- Directional RawFlux cache 분기가 있던 시기의 specialization 최적화 기록이다. Decision 0025 이후 재계산 경로만 남는다.
+- Directional RawFlux cache 분기가 있던 시기의 specialization 최적화 기록이다. Decision 0025에서 재계산 경로만 남겼고, Decision 0029에서 측정을 위한 cache A/B variant를 다시 생성하기로 했다.
 
 ```text
 기존 OFF: 이웃마다 target 지원 검사 + target saturation/concavity/position 조회 + reverse index word 읽기
@@ -351,9 +351,9 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 
 관련 구현: [SurfaceAccumulationHeight.comp](../../../Shaders/Simulation/SurfaceAccumulationHeight.comp)
 
-### 캐시 비교 UI — 제거 전 기록
+### RawFlux cache 비교 UI — 제거 및 A/B variant 복귀 이력
 
-이 셰이더 기록 시점에는 Debug UI에 `Cache Comparison > RawFlux Cache` 체크박스와 specialization pipeline 전환이 있었다. 이후 Decision 0025에서 방향별 cache와 비교 UI를 제거했다. 이 절은 과거 구현만 기록한다.
+초기 구현에서는 Debug UI의 `Cache Comparison > RawFlux Cache` 체크박스와 specialization pipeline 전환으로 비교했다. Decision 0025에서 방향별 cache와 비교 UI를 제거했으며, 이후 GPU 측정을 위해 Decision 0029에서 cache/layout/precision 비교를 별도 compile-time SPIR-V variant로 복귀시키기로 결정했다. 이 항목의 과거 구현 세부는 이전 방식을 기록한다.
 
 관련 구현: `Source/DebugUI/DebugUI.cpp`, `Source/SurfaceState/State/SurfaceStateSolver.cpp`; Directional RawFlux Cache
 
@@ -367,8 +367,9 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 
 ### 후속 검토
 
-- `HeightFieldSmoothing`의 2D shared-memory tile은 dispatch 좌표와 경계 조건을 함께 검토하는 별도 실험으로 둔다. `local_size_x = 64`를 단독으로 `8×8`로 바꾸는 것은 적용하지 않았다.
+- 초기에는 `HeightFieldSmoothing`의 2D shared-memory tile을 별도 실험으로 두었다. Decision 0029에서 sparse tile을 8×8 microtile로 매핑하고 10×10 shared halo를 적재하는 A/B variant를 구현했다.
 - 이 단계에서는 SurfaceLit용 State texture 변환을 보류하고 SSBO 경로를 유지했다. 후속 구현은 아래에 기록한다.
+- 현재 A/B variant 구현 상태와 남은 검증은 [[05_Decisions/0029_Compile-Time-GPU-A-B-Shader-Variants|Decision 0029]] 및 [[04_Development/0000_Current-Work|Current Work]]를 따른다.
 - Tolerance에 따른 형상 오차와 갱신 빈도의 Scene별 영향은 측정하지 않았다. 상대 기준과 절대 하한은 구현된 시작값이며, 장면 스케일별 품질·성능 비교가 필요하다.
 - GPU timestamp 비교를 통해 개별 변경의 효과를 분리할 수 있는 benchmark run이 필요하다.
 
@@ -377,6 +378,7 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 - Simulation Optimization
 - Rendering
 - [[05_Decisions/0025_RawFlux-Cache-Removal|Decision 0025 — 방향별 RawFlux 캐시 제거]]
+- [[05_Decisions/0029_Compile-Time-GPU-A-B-Shader-Variants|Decision 0029 — GPU A/B compile-time shader variants]]
 
 ## 2026-10-05 렌더링용 State texture
 

@@ -59,5 +59,11 @@
 | [[05_Decisions/0022_Macro-Meso-Concavity-Field|Decision 0022]] | Macro Mesh와 Normal Map을 반영한 텍셀 오목도 | Mesh의 큰 굴곡과 Normal Map의 작은 굴곡을 합친 표면에서 오목도를 계산한다. 같은 오목도 값을 자연 감소와 방향별 이동 억제에 제공한다. |
 | [[05_Decisions/0023_Directional-Cavity-Transport-Retention|Decision 0023]] | 방향별 홈 이탈 억제와 Decay 계수 분리 | 오목한 곳에서 밖으로 나가는 흐름을 줄이는 State별 계수를 자연 감소 계수와 분리한 초기 결정을 기록한다. 현재 필드명과 곡률 감쇠 정책은 Decision 0024을 따른다. |
 | [[05_Decisions/0024_Transport-Role-Names-and-Curvature-Removal|Decision 0024]] | Transport 역할별 Profile 키와 곡률 감쇠 제거 | 이동 확산·중력 이동·홈 이탈 저항·자연 감소를 이름과 설정에서 구별한다. 양방향 곡률 감쇠를 제거하고 Profile v4 키를 쓰며 v3 파일은 호환해 읽는다. |
-| [[05_Decisions/0025_RawFlux-Cache-Removal|Decision 0025]] | 방향별 RawFlux 캐시 제거 | 방향별 flux scratch와 ON/OFF 경로를 없애고 Pass 2에서 재계산한다. |
+| [[05_Decisions/0025_RawFlux-Cache-Removal|Decision 0025 · superseded for A/B]] | 방향별 RawFlux 캐시 제거 | 방향별 flux scratch 제거 당시의 결정을 기록한다. 성능 A/B 비교용 cache/layout/precision variant는 Decision 0029에 따라 다시 생성한다. |
 | [[05_Decisions/0026_Instance-Batched-Solver-Dispatch|Decision 0026]] | 인스턴스별 Solver를 단계별로 묶어 기록 | 같은 Solver 단계의 독립 인스턴스 dispatch를 모아 기록하고, 단계 사이에서만 동기화한다. |
+
+## Performance
+
+| Decision | 안건 | 쉬운 요약 |
+| --- | --- | --- |
+| [[05_Decisions/0029_Compile-Time-GPU-A-B-Shader-Variants|Decision 0029]] | GPU A/B 비교용 compile-time shader variant | 런타임 hot-path 분기 대신 유효한 A/B 구현을 별도 SPIR-V와 `VkPipeline`으로 만들어 선택한다. |

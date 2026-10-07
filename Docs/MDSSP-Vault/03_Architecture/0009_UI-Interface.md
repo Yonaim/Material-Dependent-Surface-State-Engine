@@ -128,7 +128,7 @@ Simulation 상태 overlay에서 step 수, step 간격, 진행 시간과 backlog�
 
 ## Rendering Performance
 
-- 좌측 `Render Debug > Performance`에는 Surface/Overlay mesh 해상도, Overlay tile culling과 tile 크기, 기본 ON인 Height/Coverage smoothing을 둔다. `Advanced` 제목 아래 Sparse Height Smoothing, Precompute/Separable Coverage Smoothing, Render State Texture Sampling을 바로 나열한다.
+- 좌측 `Render Debug > Performance`에는 Surface/Overlay mesh 해상도, Overlay tile culling과 tile 크기, 기본 ON인 Height/Coverage smoothing을 둔다. `Advanced` 아래 Sparse Height Smoothing, Precompute/Separable Coverage Smoothing, Render State Texture Sampling과 세 shared halo A/B 토글을 둔다. Shared halo 초기값은 OFF이며 필요한 sparse/precompute/separable 조건이 꺼지면 각 토글을 비활성화한다. Coverage precompute가 켜지면 State texture sampling은 필수이므로 해당 A/B checkbox를 checked·disabled 상태로 표시하고, 툴팁에서 SSBO 비교 조건을 안내한다.
 
 ## Solver 항목
 
