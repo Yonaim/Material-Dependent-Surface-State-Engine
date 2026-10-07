@@ -433,17 +433,18 @@ namespace MDSS::Rendering
         GPU::TGraphicsPipelineConfig BuildSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
                                                                    VkDescriptorSetLayout SurfaceLayout,
                                                                    VkDescriptorSetLayout OutputLayout = VK_NULL_HANDLE,
-                                                                   VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE)
+                                                                   VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE,
+                                                                   std::uint32_t Mode = 0)
         {
             auto Config = BuildSurfaceDebugPipelineConfig(MaterialLayout, SurfaceLayout);
             Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.vert.spv";
-            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.frag.spv";
+            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.frag.m" + std::to_string(Mode) + ".spv";
             if (OutputLayout != VK_NULL_HANDLE)
             {
                 Config.ShaderStages[0].ShaderPath =
                     std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.vert.spv";
                 Config.ShaderStages[1].ShaderPath =
-                    std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.frag.spv";
+                    std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.frag.m" + std::to_string(Mode) + ".spv";
                 SetTexelMeshVertexLayout(Config);
                 Config.DescriptorSetLayouts.push_back(OutputLayout);
             }
@@ -455,12 +456,13 @@ namespace MDSS::Rendering
         GPU::TGraphicsPipelineConfig BuildBaseSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
                                                                        VkDescriptorSetLayout SurfaceLayout,
                                                                        VkDescriptorSetLayout OutputLayout,
-                                                                       VkDescriptorSetLayout StateTextureLayout)
+                                                                       VkDescriptorSetLayout StateTextureLayout,
+                                                                       std::uint32_t Mode)
         {
             auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, OutputLayout,
-                                                        StateTextureLayout);
+                                                        StateTextureLayout, Mode);
             Config.ShaderStages[1].ShaderPath =
-                std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/BaseSurfaceLit.frag.spv";
+                std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/BaseSurfaceLit.frag.m" + std::to_string(Mode) + ".spv";
             return Config;
         }
 
@@ -470,7 +472,8 @@ namespace MDSS::Rendering
                                                                 VkDescriptorSetLayout SideLayout,
                                                                 bool                  bSide,
                                                                 bool                  bCombined = false,
-                                                                VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE)
+                                                                VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE,
+                                                                std::uint32_t         Mode = 0)
         {
             auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, ComputedLayout);
             Config.ShaderStages[0].ShaderPath =
@@ -478,7 +481,7 @@ namespace MDSS::Rendering
                 (bSide ? "/Rendering/StateOverlay/OverlaySide.vert.spv" : "/Rendering/StateOverlay/OverlayTop.vert.spv");
             Config.ShaderStages[1].ShaderPath =
                 std::string(MDSS_SHADER_DIR) +
-                (bCombined ? "/Rendering/StateOverlay/OverlayCombined.frag.spv"
+                (bCombined ? "/Rendering/StateOverlay/OverlayCombined.frag.m" + std::to_string(Mode) + ".spv"
                            : "/Rendering/StateOverlay/OverlayMud.frag.spv");
             Config.CullMode = VK_CULL_MODE_NONE;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
@@ -691,7 +694,7 @@ namespace MDSS::Rendering
             static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)),
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            GPU::TGPUBufferMemoryCategory::Rendering);
+            GPU::TGPUBufferMemoryCategory::Renderer);
         GizmoVertexBuffer->Upload(GizmoVertices.data(),
                                   static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
         CreateMaterialDescriptorResources();
@@ -716,20 +719,29 @@ namespace MDSS::Rendering
                 MainRenderPass.GetHandle(),
                 BuildTexelGeometryPipelineConfig(
                     MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
-            RenderStateTexture = std::make_unique<TRenderStateTexture>(
-                Context.GetPhysicalDevice(), Context.GetDevice(), Descriptors->GetLayout(),
-                SurfaceStates.GetGPUResources());
-            SurfaceLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
-                                              VK_NULL_HANDLE, RenderStateTexture->GetLayout()));
-            BaseSurfaceLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildBaseSurfaceLitPipelineConfig(
-                    MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout(),
-                    RenderStateTexture->GetLayout()));
+            RenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+                                                                       Context.GetDevice(),
+                                                                       Descriptors->GetLayout(),
+                                                                       SurfaceStates.GetGPUResources());
+            for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+            {
+                SurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                                                  Descriptors->GetLayout(),
+                                                  VK_NULL_HANDLE,
+                                                  RenderStateTexture->GetLayout(),
+                                                  Mode));
+                BaseSurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                                                      Descriptors->GetLayout(),
+                                                      TexelGeometryPreview->GetOutputLayout(),
+                                                      RenderStateTexture->GetLayout(),
+                                                      Mode));
+            }
             MudLayerGeometry =
                 std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
@@ -747,26 +759,31 @@ namespace MDSS::Rendering
                                                                        Descriptors->GetLayout(),
                                                                        MudLayerGeometry->GetOutputLayout(),
                                                                        Scene.GetStaticMeshInstances().size());
-            MudOverlayTopPipeline =
-                std::make_unique<GPU::TGraphicsPipeline>(Context.GetDevice(),
-                                                         MainRenderPass.GetHandle(),
-                                                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                                                                    Descriptors->GetLayout(),
-                                                                                    MudLayerGeometry->GetOutputLayout(),
-                                                                                    OverlaySides->GetLayout(),
-                                                                                    false,
-                                                                                    true,
-                                                                                    RenderStateTexture->GetLayout()));
-            MudOverlaySidePipeline =
-                std::make_unique<GPU::TGraphicsPipeline>(Context.GetDevice(),
-                                                         MainRenderPass.GetHandle(),
-                                                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                                                                    Descriptors->GetLayout(),
-                                                                                    MudLayerGeometry->GetOutputLayout(),
-                                                                                    OverlaySides->GetLayout(),
-                                                                                    true,
-                                                                                    true,
-                                                                                    RenderStateTexture->GetLayout()));
+            for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+            {
+                MudOverlayTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                               Descriptors->GetLayout(),
+                                               MudLayerGeometry->GetOutputLayout(),
+                                               OverlaySides->GetLayout(),
+                                               false,
+                                               true,
+                                               RenderStateTexture->GetLayout(),
+                                               Mode));
+                MudOverlaySidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                               Descriptors->GetLayout(),
+                                               MudLayerGeometry->GetOutputLayout(),
+                                               OverlaySides->GetLayout(),
+                                               true,
+                                               true,
+                                               RenderStateTexture->GetLayout(),
+                                               Mode));
+            }
         }
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
@@ -819,11 +836,11 @@ namespace MDSS::Rendering
         DestroyRenderFinishedSemaphores();
 
         SurfaceDebugPipeline.reset();
-        SurfaceLitPipeline.reset();
-        BaseSurfaceLitPipeline.reset();
+        for (auto& Pipeline : SurfaceLitPipelines) Pipeline.reset();
+        for (auto& Pipeline : BaseSurfaceLitPipelines) Pipeline.reset();
         RenderStateTexture.reset();
-        MudOverlayTopPipeline.reset();
-        MudOverlaySidePipeline.reset();
+        for (auto& Pipeline : MudOverlayTopPipelines) Pipeline.reset();
+        for (auto& Pipeline : MudOverlaySidePipelines) Pipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
         OverlaySides.reset();
@@ -1281,14 +1298,14 @@ namespace MDSS::Rendering
         std::unique_ptr<SurfaceState::TTexelInspector>       ReplacementInspector;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementGeometryPreview;
         std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementGeometryPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementLitPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementBaseLitPipeline;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementLitPipelines;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
         std::unique_ptr<TRenderStateTexture>                  ReplacementRenderStateTexture;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementMudGeometry;
         std::unique_ptr<THeightFieldSmoothing>               ReplacementHeightFieldSmoothing;
         std::unique_ptr<TAccumulationOverlaySides>           ReplacementOverlaySides;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementMudTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementMudSidePipeline;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudTopPipelines;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudSidePipelines;
         try
         {
             Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene);
@@ -1337,21 +1354,29 @@ namespace MDSS::Rendering
                     BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
                                                      Descriptors->GetLayout(),
                                                      ReplacementGeometryPreview->GetOutputLayout()));
-                ReplacementRenderStateTexture = std::make_unique<TRenderStateTexture>(
-                    Context.GetPhysicalDevice(), Context.GetDevice(), Descriptors->GetLayout(),
-                    Replacement->GetGPUResources());
-                ReplacementLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
-                                                  VK_NULL_HANDLE, ReplacementRenderStateTexture->GetLayout()));
-                ReplacementBaseLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                ReplacementRenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+                                                                                      Context.GetDevice(),
+                                                                                      Descriptors->GetLayout(),
+                                                                                      Replacement->GetGPUResources());
+                for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+                {
+                    ReplacementLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
                                                       Descriptors->GetLayout(),
-                                                      ReplacementGeometryPreview->GetOutputLayout(),
-                                                      ReplacementRenderStateTexture->GetLayout()));
+                                                      VK_NULL_HANDLE,
+                                                      ReplacementRenderStateTexture->GetLayout(),
+                                                      Mode));
+                    ReplacementBaseLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                                                          Descriptors->GetLayout(),
+                                                          ReplacementGeometryPreview->GetOutputLayout(),
+                                                          ReplacementRenderStateTexture->GetLayout(),
+                                                          Mode));
+                }
                 ReplacementMudGeometry =
                     std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
@@ -1372,26 +1397,31 @@ namespace MDSS::Rendering
                                                                 Descriptors->GetLayout(),
                                                                 ReplacementMudGeometry->GetOutputLayout(),
                                                                 Scene.GetStaticMeshInstances().size());
-                ReplacementMudTopPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementMudGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               false,
-                                               true,
-                                               ReplacementRenderStateTexture->GetLayout()));
-                ReplacementMudSidePipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementMudGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               true,
-                                               true,
-                                               ReplacementRenderStateTexture->GetLayout()));
+                for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+                {
+                    ReplacementMudTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                                   Descriptors->GetLayout(),
+                                                   ReplacementMudGeometry->GetOutputLayout(),
+                                                   ReplacementOverlaySides->GetLayout(),
+                                                   false,
+                                                   true,
+                                                   ReplacementRenderStateTexture->GetLayout(),
+                                                   Mode));
+                    ReplacementMudSidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                                   Descriptors->GetLayout(),
+                                                   ReplacementMudGeometry->GetOutputLayout(),
+                                                   ReplacementOverlaySides->GetLayout(),
+                                                   true,
+                                                   true,
+                                                   ReplacementRenderStateTexture->GetLayout(),
+                                                   Mode));
+                }
             }
         }
         catch (...)
@@ -1400,11 +1430,11 @@ namespace MDSS::Rendering
             throw;
         }
         SurfaceDebugPipeline.reset();
-        SurfaceLitPipeline.reset();
-        BaseSurfaceLitPipeline.reset();
+        for (auto& Pipeline : SurfaceLitPipelines) Pipeline.reset();
+        for (auto& Pipeline : BaseSurfaceLitPipelines) Pipeline.reset();
         RenderStateTexture.reset();
-        MudOverlayTopPipeline.reset();
-        MudOverlaySidePipeline.reset();
+        for (auto& Pipeline : MudOverlayTopPipelines) Pipeline.reset();
+        for (auto& Pipeline : MudOverlaySidePipelines) Pipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
         OverlaySides.reset();
@@ -1420,14 +1450,14 @@ namespace MDSS::Rendering
         TexelInspector = std::move(ReplacementInspector);
         TexelGeometryPreview = std::move(ReplacementGeometryPreview);
         TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
-        SurfaceLitPipeline = std::move(ReplacementLitPipeline);
-        BaseSurfaceLitPipeline = std::move(ReplacementBaseLitPipeline);
+        SurfaceLitPipelines = std::move(ReplacementLitPipelines);
+        BaseSurfaceLitPipelines = std::move(ReplacementBaseLitPipelines);
         RenderStateTexture = std::move(ReplacementRenderStateTexture);
         MudLayerGeometry = std::move(ReplacementMudGeometry);
         HeightFieldSmoothing = std::move(ReplacementHeightFieldSmoothing);
         OverlaySides = std::move(ReplacementOverlaySides);
-        MudOverlayTopPipeline = std::move(ReplacementMudTopPipeline);
-        MudOverlaySidePipeline = std::move(ReplacementMudSidePipeline);
+        MudOverlayTopPipelines = std::move(ReplacementMudTopPipelines);
+        MudOverlaySidePipelines = std::move(ReplacementMudSidePipelines);
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
         if (bResetStateSettings)
         {
@@ -1720,9 +1750,9 @@ namespace MDSS::Rendering
 
     bool TRenderer::CanRenderLitOverlays() const noexcept
     {
-        return DemoEffects.bEnabled && SurfaceLitPipeline &&
-               BaseSurfaceLitPipeline && TexelGeometryPreview && OverlaySides && HeightFieldSmoothing &&
-               MudLayerGeometry && MudOverlayTopPipeline && MudOverlaySidePipeline;
+        return DemoEffects.bEnabled && SurfaceLitPipelines[0] &&
+               BaseSurfaceLitPipelines[0] && TexelGeometryPreview && OverlaySides && HeightFieldSmoothing &&
+               MudLayerGeometry && MudOverlayTopPipelines[0] && MudOverlaySidePipelines[0];
     }
 
     std::array<bool, 3> TRenderer::GetLitOverlayActivity(const TStaticMeshInstance& Instance,
@@ -2299,7 +2329,7 @@ namespace MDSS::Rendering
                         MaterialUniformStride * MaterialViewportCapacity,
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        GPU::TGPUBufferMemoryCategory::Rendering);
+                        GPU::TGPUBufferMemoryCategory::Renderer);
                     NewResources[Index].DescriptorSets[Frame] = Sets[SetIndex];
 
                     VkDescriptorImageInfo BaseImage{};
@@ -2507,6 +2537,7 @@ namespace MDSS::Rendering
         const auto DemoBindings = GetDemoSurfaceStateBindings();
         const bool bPrecomputeCoverage = DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled;
         const bool bUseRenderStateTexture = bRenderStateTextureSamplingEnabled || bPrecomputeCoverage;
+        const std::uint32_t FragmentMode = bPrecomputeCoverage ? 2U : (bUseRenderStateTexture ? 1U : 0U);
         if (bAnyLitView && DemoEffects.bEnabled && RenderStateTexture)
             RenderStateTexture->Record(
                 CommandBuffer, SurfaceStates.GetGPUResources(),
@@ -2514,7 +2545,8 @@ namespace MDSS::Rendering
                 static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()),
                 bUseRenderStateTexture,
                 bPrecomputeCoverage,
-                bSeparableCoverageSmoothingEnabled);
+                bSeparableCoverageSmoothingEnabled,
+                bSharedStateTextureSmoothingEnabled);
         const bool bOverlayRendering = bAnyLitView && CanRenderLitOverlays();
         std::vector<std::array<bool, 3>> OverlayActive(SceneData.GetStaticMeshInstances().size(),
                                                        {false, false, false});
@@ -2634,7 +2666,8 @@ namespace MDSS::Rendering
                                                      bStateAB,
                                                      LitHeightDisplayScale,
                                                      static_cast<std::uint32_t>(OverlayOccupancyTileSize),
-                                                     bSparseHeightSmoothingEnabled && bOverlayTileCullingEnabled);
+                                                     bSparseHeightSmoothingEnabled && bOverlayTileCullingEnabled,
+                                                     bSharedHeightSmoothingEnabled);
                         GeometrySet = HeightFieldSmoothing->GetOutputSet(Instance, Channel);
                         GeometryBuffer = &HeightFieldSmoothing->GetOutputBuffer(Instance, Channel);
                     };
@@ -2675,7 +2708,8 @@ namespace MDSS::Rendering
                                          false,
                                          LitHeightDisplayScale,
                                          {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
-                                         (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U));
+                                         (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U),
+                                         bSharedOverlayCoverageEnabled);
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                         ++OverlayTimestampLayersSubmitted[FrameIndex];
                 };
@@ -2727,7 +2761,7 @@ namespace MDSS::Rendering
             const bool            bShowSurfaceDebug = Mode >= TRenderViewMode::SurfaceStateHeatmap;
             const bool            bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
             const bool            bWireframe = Mode == TRenderViewMode::Wireframe;
-            const bool            bSurfaceLit = Mode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipeline;
+            const bool            bSurfaceLit = Mode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipelines[FragmentMode];
             vkCmdBindPipeline(CommandBuffer,
                               VK_PIPELINE_BIND_POINT_GRAPHICS,
                               bTexelGeometry ? TexelGeometryPipeline->GetHandle()
@@ -2810,7 +2844,7 @@ namespace MDSS::Rendering
                     const auto& SurfaceMesh = Shared->GetTexelMeshVariant(SurfaceTexelMeshResolution);
                     if (!bTexelGeometry && (!SurfaceMesh.IndexBuffer || !SurfaceMesh.VertexBuffer))
                         continue;
-                    const auto& Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipeline;
+                    const auto& Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipelines[FragmentMode];
                     vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline->GetHandle());
                     const auto                     Layout = Pipeline->GetLayout();
                     const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
@@ -2874,7 +2908,7 @@ namespace MDSS::Rendering
                 const bool  bInstanceSurfaceLit = bSurfaceLit && SurfaceDescriptors;
                 const auto& Pipeline =
                     bInstanceSurfaceLit
-                        ? *SurfaceLitPipeline
+                        ? *SurfaceLitPipelines[FragmentMode]
                         : (bCanShowSurfaceDebug ? *SurfaceDebugPipeline
                                                 : (bWireframe ? WireframePipeline : StaticMeshPipeline));
                 const auto Layout = Pipeline.GetLayout();
@@ -2944,8 +2978,8 @@ namespace MDSS::Rendering
             {
                 const auto DrawLayer = [&]()
                 {
-                    const auto& TopPipeline = MudOverlayTopPipeline;
-                    const auto& SidePipeline = MudOverlaySidePipeline;
+                    const auto& TopPipeline = MudOverlayTopPipelines[FragmentMode];
+                    const auto& SidePipeline = MudOverlaySidePipelines[FragmentMode];
                     std::vector<std::size_t> Order;
                     for (std::size_t I = 0; I < OverlayActive.size(); ++I)
                         if (OverlayActive[I][0] || OverlayActive[I][1] || OverlayActive[I][2])

@@ -8,6 +8,7 @@
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
 
 #include <map>
+#include <array>
 #include <memory>
 #include <utility>
 
@@ -45,7 +46,8 @@ namespace MDSS::Rendering
                                                     bool                                                  bStateAB,
                                                     float                                                 AccumulationDisplayScale,
                                                     std::uint32_t                                         OccupancyTileSize,
-                                                    bool                                                  bSparse);
+                                                    bool                                                  bSparse,
+                                                    bool                                                  bSharedHalo);
 
     private:
         struct TOutput
@@ -62,7 +64,7 @@ namespace MDSS::Rendering
         VkPhysicalDeviceLimits                                   Limits{};
         VkDescriptorSetLayout                                    HeightLayout;
         VkPipelineLayout                                         PipelineLayout = VK_NULL_HANDLE;
-        VkPipeline                                               Pipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 2>                                Pipelines{};
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;
         std::map<std::pair<std::size_t, std::uint32_t>, TOutput> Outputs;
     };

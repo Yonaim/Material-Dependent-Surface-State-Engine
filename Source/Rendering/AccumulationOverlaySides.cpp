@@ -125,7 +125,8 @@ namespace MDSS::Rendering
                 RequireVk(Result);
             };
             CreatePipeline("OverlaySideCoverage.comp", PipelineLayout, CoveragePipeline);
-            CreatePipeline("OverlayCoverageSmoothing.comp", PipelineLayout, CoverageSmoothingPipeline);
+            CreatePipeline("OverlayCoverageSmoothing.comp.h0", PipelineLayout, CoverageSmoothingPipelines[0]);
+            CreatePipeline("OverlayCoverageSmoothing.comp.h1", PipelineLayout, CoverageSmoothingPipelines[1]);
             CreatePipeline("OverlayDrawReset.comp", PipelineLayout, DrawResetPipeline);
             CreatePipeline("OverlaySideBoundary.comp", PipelineLayout, BoundaryPipeline);
 
@@ -147,8 +148,8 @@ namespace MDSS::Rendering
                 vkDestroyDescriptorPool(Device, Pool, nullptr);
             if (CoveragePipeline)
                 vkDestroyPipeline(Device, CoveragePipeline, nullptr);
-            if (CoverageSmoothingPipeline)
-                vkDestroyPipeline(Device, CoverageSmoothingPipeline, nullptr);
+            for (VkPipeline Pipeline : CoverageSmoothingPipelines)
+                if (Pipeline) vkDestroyPipeline(Device, Pipeline, nullptr);
             if (DrawResetPipeline)
                 vkDestroyPipeline(Device, DrawResetPipeline, nullptr);
             if (BoundaryPipeline)
@@ -168,8 +169,8 @@ namespace MDSS::Rendering
             vkDestroyDescriptorPool(Device, Pool, nullptr);
         if (CoveragePipeline)
             vkDestroyPipeline(Device, CoveragePipeline, nullptr);
-        if (CoverageSmoothingPipeline)
-            vkDestroyPipeline(Device, CoverageSmoothingPipeline, nullptr);
+        for (VkPipeline Pipeline : CoverageSmoothingPipelines)
+            if (Pipeline) vkDestroyPipeline(Device, Pipeline, nullptr);
         if (DrawResetPipeline)
             vkDestroyPipeline(Device, DrawResetPipeline, nullptr);
         if (BoundaryPipeline)
@@ -265,7 +266,8 @@ namespace MDSS::Rendering
                                            bool                                                  bUseOpaqueBase,
                                            float                                                 HeightDisplayScale,
                                            std::array<std::uint32_t, 3>                          MaterialChannels,
-                                           std::uint32_t                                         ActiveMaterialMask)
+                                           std::uint32_t                                         ActiveMaterialMask,
+                                           bool                                                  bSharedCoverageHalo)
     {
         if (FrameIndex >= TRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Overlay activity frame slot is invalid.");
@@ -358,7 +360,7 @@ namespace MDSS::Rendering
                                                                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
                                                                               VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                                          GPU::TGPUBufferMemoryCategory::Rendering));
+                                                                          GPU::TGPUBufferMemoryCategory::SurfaceRuntime));
                 CoveragePageUsed.push_back(0U);
                 CoveragePage = CoveragePages.size() - 1U;
                 CoverageOffset = 0U;
@@ -372,7 +374,7 @@ namespace MDSS::Rendering
                 Bytes,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                GPU::TGPUBufferMemoryCategory::Rendering);
+                GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
             Output.DrawCommands = std::make_unique<GPU::TGPUBuffer>(
                 PhysicalDevice,
                 Device,
@@ -380,7 +382,7 @@ namespace MDSS::Rendering
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                GPU::TGPUBufferMemoryCategory::Rendering);
+                GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
             Output.TopDrawCommands = std::make_unique<GPU::TGPUBuffer>(
                 PhysicalDevice,
                 Device,
@@ -388,7 +390,7 @@ namespace MDSS::Rendering
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                GPU::TGPUBufferMemoryCategory::Rendering);
+                GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
             Output.TopIndexOffset = CoverageOffset + CoverageVertexBytes;
 
             // Indirect command topology is immutable for this overlay mesh. Upload static offsets
@@ -434,7 +436,7 @@ namespace MDSS::Rendering
                                                              VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                             GPU::TGPUBufferMemoryCategory::Rendering);
+                                                             GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
             Output.CoveragePage = CoveragePage;
             Output.CoverageOffset = CoverageOffset;
             VkDescriptorSetAllocateInfo Allocate{};
@@ -484,6 +486,7 @@ namespace MDSS::Rendering
             It->second.LastProfileRevision != ProfileRevision ||
             It->second.LastHeightDisplayScale != HeightDisplayScale ||
             It->second.bLastSmoothCoverage != bSmoothCoverage ||
+            It->second.bLastSharedCoverageHalo != bSharedCoverageHalo ||
             It->second.bLastUseOpaqueBase != bUseOpaqueBase;
         const VkDeviceSize CacheWords = GeometryCacheBuffer.GetSize() / sizeof(std::uint32_t);
         const VkDeviceSize Texels = Geometry.GetTexelCount();
@@ -613,7 +616,9 @@ namespace MDSS::Rendering
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, DrawResetPipeline);
         Dispatch(std::max(SurfaceCount + 2U, SurfaceCount));
         vkCmdBindPipeline(
-            Command, VK_PIPELINE_BIND_POINT_COMPUTE, bSmoothCoverage ? CoverageSmoothingPipeline : CoveragePipeline);
+            Command, VK_PIPELINE_BIND_POINT_COMPUTE,
+            bSmoothCoverage ? CoverageSmoothingPipelines[!bFullCoverageUpdate && bSharedCoverageHalo ? 1U : 0U]
+                            : CoveragePipeline);
         vkCmdPushConstants(
             Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), &Push);
         if (bFullCoverageUpdate)
@@ -627,6 +632,7 @@ namespace MDSS::Rendering
         It->second.LastProfileRevision = ProfileRevision;
         It->second.LastHeightDisplayScale = HeightDisplayScale;
         It->second.bLastSmoothCoverage = bSmoothCoverage;
+        It->second.bLastSharedCoverageHalo = bSharedCoverageHalo;
         It->second.bLastUseOpaqueBase = bUseOpaqueBase;
         It->second.bCoverageInitialized = true;
         WriteStageTimestamp(2U);

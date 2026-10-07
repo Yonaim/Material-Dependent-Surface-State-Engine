@@ -321,6 +321,12 @@ namespace MDSS::Rendering
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseHeightSmoothingEnabled() const noexcept { return bSparseHeightSmoothingEnabled; }
         void SetSparseHeightSmoothingEnabled(bool bEnabled) noexcept { bSparseHeightSmoothingEnabled = bEnabled; }
+        [[nodiscard]] bool IsSharedHeightSmoothingEnabled() const noexcept { return bSharedHeightSmoothingEnabled; }
+        void SetSharedHeightSmoothingEnabled(bool bEnabled) noexcept { bSharedHeightSmoothingEnabled = bEnabled; }
+        [[nodiscard]] bool IsSharedOverlayCoverageEnabled() const noexcept { return bSharedOverlayCoverageEnabled; }
+        void SetSharedOverlayCoverageEnabled(bool bEnabled) noexcept { bSharedOverlayCoverageEnabled = bEnabled; }
+        [[nodiscard]] bool IsSharedStateTextureSmoothingEnabled() const noexcept { return bSharedStateTextureSmoothingEnabled; }
+        void SetSharedStateTextureSmoothingEnabled(bool bEnabled) noexcept { bSharedStateTextureSmoothingEnabled = bEnabled; }
         [[nodiscard]] bool IsPrecomputeCoverageSmoothingEnabled() const noexcept { return bPrecomputeCoverageSmoothingEnabled; }
         void SetPrecomputeCoverageSmoothingEnabled(bool bEnabled) noexcept { bPrecomputeCoverageSmoothingEnabled = bEnabled; }
         [[nodiscard]] bool IsRenderStateTextureSamplingEnabled() const noexcept { return bRenderStateTextureSamplingEnabled; }
@@ -497,14 +503,14 @@ namespace MDSS::Rendering
         std::unique_ptr<GPU::TGraphicsPipeline>              SurfaceDebugPipeline;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> TexelGeometryPreview;
         std::unique_ptr<GPU::TGraphicsPipeline>              TexelGeometryPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              SurfaceLitPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              BaseSurfaceLitPipeline;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> SurfaceLitPipelines;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> BaseSurfaceLitPipelines;
         std::unique_ptr<TRenderStateTexture>                  RenderStateTexture;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> MudLayerGeometry;
         std::unique_ptr<THeightFieldSmoothing>               HeightFieldSmoothing;
         std::unique_ptr<TAccumulationOverlaySides>           OverlaySides;
-        std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlayTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              MudOverlaySidePipeline;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> MudOverlayTopPipelines;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> MudOverlaySidePipelines;
         GPU::TFramebuffer                                    MainFramebuffers;
         TRenderContext                                       FrameContext;
         VkDescriptorPool                                     MaterialDescriptorPool = VK_NULL_HANDLE;
@@ -528,6 +534,9 @@ namespace MDSS::Rendering
         bool                                                 bOverlayTopDrawEnabled = true;
         bool                                                 bOverlaySidesDrawEnabled = true;
         bool                                                 bSparseHeightSmoothingEnabled = true;
+        bool                                                 bSharedHeightSmoothingEnabled = false;
+        bool                                                 bSharedOverlayCoverageEnabled = false;
+        bool                                                 bSharedStateTextureSmoothingEnabled = false;
         bool                                                 bPrecomputeCoverageSmoothingEnabled = true;
         bool                                                 bRenderStateTextureSamplingEnabled = true;
         bool                                                 bSeparableCoverageSmoothingEnabled = true;

@@ -62,34 +62,39 @@ namespace MDSS::Rendering
             LayoutInfo.pPushConstantRanges = &Push;
             RequireVk(vkCreatePipelineLayout(Device, &LayoutInfo, nullptr, &PipelineLayout));
 
-            std::ifstream File(std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/HeightFieldSmoothing.comp.spv",
-                               std::ios::binary | std::ios::ate);
-            if (!File)
-                throw std::runtime_error("Cannot open height-field smoothing compute shader.");
-            const auto Size = File.tellg();
-            if (Size <= 0 || Size % 4 != 0)
-                throw std::runtime_error("Invalid height-field smoothing SPIR-V.");
-            std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
-            File.seekg(0);
-            File.read(reinterpret_cast<char*>(Code.data()), Size);
-            if (!File)
-                throw std::runtime_error("Cannot read height-field smoothing compute shader.");
-            VkShaderModuleCreateInfo ModuleInfo{};
-            ModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            ModuleInfo.codeSize = static_cast<std::size_t>(Size);
-            ModuleInfo.pCode = Code.data();
-            RequireVk(vkCreateShaderModule(Device, &ModuleInfo, nullptr, &Module));
+            for (std::uint32_t Variant = 0; Variant < 2; ++Variant)
+            {
+                std::ifstream File(std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/HeightFieldSmoothing.comp.h" +
+                                       std::to_string(Variant) + ".spv",
+                                   std::ios::binary | std::ios::ate);
+                if (!File)
+                    throw std::runtime_error("Cannot open height-field smoothing compute shader.");
+                const auto Size = File.tellg();
+                if (Size <= 0 || Size % 4 != 0)
+                    throw std::runtime_error("Invalid height-field smoothing SPIR-V.");
+                std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
+                File.seekg(0);
+                File.read(reinterpret_cast<char*>(Code.data()), Size);
+                if (!File)
+                    throw std::runtime_error("Cannot read height-field smoothing compute shader.");
+                VkShaderModuleCreateInfo ModuleInfo{};
+                ModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+                ModuleInfo.codeSize = static_cast<std::size_t>(Size);
+                ModuleInfo.pCode = Code.data();
+                RequireVk(vkCreateShaderModule(Device, &ModuleInfo, nullptr, &Module));
 
-            VkComputePipelineCreateInfo PipelineInfo{};
-            PipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-            PipelineInfo.layout = PipelineLayout;
-            PipelineInfo.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            PipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-            PipelineInfo.stage.module = Module;
-            PipelineInfo.stage.pName = "main";
-            RequireVk(vkCreateComputePipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline));
-            vkDestroyShaderModule(Device, Module, nullptr);
-            Module = VK_NULL_HANDLE;
+                VkComputePipelineCreateInfo PipelineInfo{};
+                PipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+                PipelineInfo.layout = PipelineLayout;
+                PipelineInfo.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                PipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+                PipelineInfo.stage.module = Module;
+                PipelineInfo.stage.pName = "main";
+                RequireVk(
+                    vkCreateComputePipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipelines[Variant]));
+                vkDestroyShaderModule(Device, Module, nullptr);
+                Module = VK_NULL_HANDLE;
+            }
 
             // Smoothing output sets are cached per instance and overlay State channel.
             const auto SetCount = static_cast<std::uint32_t>(MaxInstances * MaxOverlayLayersPerInstance);
@@ -107,8 +112,8 @@ namespace MDSS::Rendering
                 vkDestroyShaderModule(Device, Module, nullptr);
             if (Pool)
                 vkDestroyDescriptorPool(Device, Pool, nullptr);
-            if (Pipeline)
-                vkDestroyPipeline(Device, Pipeline, nullptr);
+            for (VkPipeline Pipeline : Pipelines)
+                if (Pipeline) vkDestroyPipeline(Device, Pipeline, nullptr);
             if (PipelineLayout)
                 vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
             throw;
@@ -120,8 +125,8 @@ namespace MDSS::Rendering
         Outputs.clear();
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
-        if (Pipeline)
-            vkDestroyPipeline(Device, Pipeline, nullptr);
+        for (VkPipeline Pipeline : Pipelines)
+            if (Pipeline) vkDestroyPipeline(Device, Pipeline, nullptr);
         if (PipelineLayout)
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
     }
@@ -178,7 +183,8 @@ namespace MDSS::Rendering
                                        bool                                                  bStateAB,
                                        float                                                 AccumulationDisplayScale,
                                        std::uint32_t                                         OccupancyTileSize,
-                                       bool                                                  bSparse)
+                                       bool                                                  bSparse,
+                                       bool                                                  bSharedHalo)
     {
         const auto Bytes =
             SurfaceState::GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
@@ -197,7 +203,7 @@ namespace MDSS::Rendering
                 Bytes,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                GPU::TGPUBufferMemoryCategory::Rendering);
+                GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;
@@ -278,7 +284,8 @@ namespace MDSS::Rendering
         static_assert(sizeof(TPush) == 28);
         const TPush Push{TexelCount, Channel, Channels, 0U, AccumulationDisplayScale, OccupancyTileSize,
                          bUseSparse ? 1U : 0U};
-        vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
+        vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE,
+                          Pipelines[bUseSparse && bSharedHalo ? 1U : 0U]);
         vkCmdBindDescriptorSets(Command,
                                 VK_PIPELINE_BIND_POINT_COMPUTE,
                                 PipelineLayout,

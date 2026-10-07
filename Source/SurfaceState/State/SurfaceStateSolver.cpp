@@ -50,6 +50,19 @@ namespace MDSS::SurfaceState
             return Code;
         }
 
+        std::size_t RawModeFromFlags(std::uint32_t Flags)
+        {
+            if ((Flags & SurfaceSolverRawFluxCacheFlag) == 0U) return 0U;
+            const bool Coalesced = (Flags & SurfaceSolverCoalescedRawFluxLayoutFlag) != 0U;
+            const bool Half = (Flags & SurfaceSolverHalfRawFluxCacheFlag) != 0U;
+            return Half ? (Coalesced ? 4U : 3U) : (Coalesced ? 2U : 1U);
+        }
+
+        std::size_t WeightModeFromFlags(std::uint32_t Flags)
+        {
+            return (Flags & SurfaceSolverHalfDynamicWeightsFlag) != 0U ? 1U : 0U;
+        }
+
         VkBufferMemoryBarrier MakeComputeBufferBarrier(VkBuffer      Buffer,
                                                        VkAccessFlags DestinationAccess,
                                                        VkAccessFlags SourceAccess = VK_ACCESS_SHADER_WRITE_BIT)
@@ -160,14 +173,22 @@ namespace MDSS::SurfaceState
                 Device,
                 PipelineLayout,
                 (ShaderRoot + "/Simulation/SurfaceDynamicGeometryUpdate.comp.spv").c_str());
-            DynamicTransferWeightPipeline = CreateComputePipeline(
-                Device,
-                PipelineLayout,
-                (ShaderRoot + "/Simulation/SurfaceDynamicWeightsUpdate.comp.spv").c_str());
-            Pass1Pipeline = CreateComputePipeline(
-                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1.comp.spv").c_str());
-            Pass2Pipeline = CreateComputePipeline(
-                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2.comp.spv").c_str());
+            for (std::size_t Weight = 0; Weight < DynamicTransferWeightPipelines.size(); ++Weight)
+                DynamicTransferWeightPipelines[Weight] = CreateComputePipeline(
+                    Device, PipelineLayout,
+                    (ShaderRoot + "/Simulation/SurfaceDynamicWeightsUpdate.comp.w" + std::to_string(Weight) + ".spv").c_str());
+            for (std::size_t Raw = 0; Raw < 5; ++Raw)
+                for (std::size_t Weight = 0; Weight < 2; ++Weight)
+                {
+                    const std::size_t Index = Raw * 2U + Weight;
+                    const std::string Variant = ".comp.r" + std::to_string(Raw) + "w" + std::to_string(Weight) + ".spv";
+                    Pass1Pipelines[Index] = CreateComputePipeline(
+                        Device, PipelineLayout,
+                        (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1" + Variant).c_str());
+                    Pass2Pipelines[Index] = CreateComputePipeline(
+                        Device, PipelineLayout,
+                        (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2" + Variant).c_str());
+                }
         }
         catch (...)
         {
@@ -177,12 +198,12 @@ namespace MDSS::SurfaceState
                 vkDestroyPipeline(Device, SparseScheduleResetPipeline, nullptr);
             if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
                 vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
-            if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
-                vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
-            if (Pass1Pipeline != VK_NULL_HANDLE)
-                vkDestroyPipeline(Device, Pass1Pipeline, nullptr);
-            if (Pass2Pipeline != VK_NULL_HANDLE)
-                vkDestroyPipeline(Device, Pass2Pipeline, nullptr);
+            for (VkPipeline Pipeline : DynamicTransferWeightPipelines)
+                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            for (VkPipeline Pipeline : Pass1Pipelines)
+                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            for (VkPipeline Pipeline : Pass2Pipelines)
+                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
             PipelineLayout = VK_NULL_HANDLE;
             throw;
@@ -197,12 +218,12 @@ namespace MDSS::SurfaceState
             vkDestroyPipeline(Device, SparseScheduleResetPipeline, nullptr);
         if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
             vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
-        if (DynamicTransferWeightPipeline != VK_NULL_HANDLE)
-            vkDestroyPipeline(Device, DynamicTransferWeightPipeline, nullptr);
-        if (Pass1Pipeline != VK_NULL_HANDLE)
-            vkDestroyPipeline(Device, Pass1Pipeline, nullptr);
-        if (Pass2Pipeline != VK_NULL_HANDLE)
-            vkDestroyPipeline(Device, Pass2Pipeline, nullptr);
+        for (VkPipeline Pipeline : DynamicTransferWeightPipelines)
+            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+        for (VkPipeline Pipeline : Pass1Pipelines)
+            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+        for (VkPipeline Pipeline : Pass2Pipelines)
+            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
         if (PipelineLayout != VK_NULL_HANDLE)
         {
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
@@ -432,10 +453,11 @@ namespace MDSS::SurfaceState
                                  Barriers);
 
             Barriers.clear();
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DynamicTransferWeightPipeline);
             for (const TPreparedStep& Item : Prepared)
             {
                 if (!Item.bNeedsPreSolverGeometryBuild) continue;
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                  DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PrebuildConstants.Flags)]);
                 BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 const auto& Descriptors = *Item.Step->Descriptors;
@@ -480,11 +502,13 @@ namespace MDSS::SurfaceState
                                  ResetBarriers);
         }
 
-        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipeline);
         std::vector<VkBufferMemoryBarrier> PassBarriers;
         PassBarriers.reserve(Prepared.size() * 2U);
         for (const TPreparedStep& Item : Prepared)
         {
+            const std::size_t Variant = RawModeFromFlags(Item.Constants.Flags) * 2U +
+                                        WeightModeFromFlags(Item.Constants.Flags);
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
                                          (Item.Constants.Flags & SurfaceSolverSeedPersistentActivityFlag) == 0U;
@@ -508,11 +532,13 @@ namespace MDSS::SurfaceState
                              PassBarriers);
 
         WriteTimestamp(6U);
-        vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipeline);
         PassBarriers.clear();
         PassBarriers.reserve(Prepared.size() * 5U);
         for (const TPreparedStep& Item : Prepared)
         {
+            const std::size_t Variant = RawModeFromFlags(Item.Constants.Flags) * 2U +
+                                        WeightModeFromFlags(Item.Constants.Flags);
+            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
                                          (Item.Constants.Flags & SurfaceSolverSeedPersistentActivityFlag) == 0U;
@@ -615,10 +641,11 @@ namespace MDSS::SurfaceState
         if (bAnyGeometryUpdate)
         {
             DerivedBarriers.clear();
-            vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, DynamicTransferWeightPipeline);
             for (const TPreparedStep& Item : Prepared)
             {
                 if (!Item.bUpdateGeometry) continue;
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                  DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PostConstants.Flags)]);
                 BindStep(Item.NextDescriptorSet, Item.PostConstants);
                 vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.GeometryIndirectOffset);
                 const auto& Descriptors = *Item.Step->Descriptors;

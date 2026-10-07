@@ -136,8 +136,8 @@ namespace MDSS::SurfaceState
         VkPipeline                AccumulationHeightPipeline = VK_NULL_HANDLE;
         VkPipeline                SparseScheduleResetPipeline = VK_NULL_HANDLE;
         VkPipeline                AccumulationGeometryPipeline = VK_NULL_HANDLE;
-        VkPipeline                DynamicTransferWeightPipeline = VK_NULL_HANDLE;
-        VkPipeline                Pass1Pipeline = VK_NULL_HANDLE;
-        VkPipeline                Pass2Pipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 2> DynamicTransferWeightPipelines{};
+        std::array<VkPipeline, 10> Pass1Pipelines{};
+        std::array<VkPipeline, 10> Pass2Pipelines{};
     };
 } // namespace MDSS::SurfaceState

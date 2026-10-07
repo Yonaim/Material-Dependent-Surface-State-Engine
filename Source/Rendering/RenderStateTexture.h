@@ -43,7 +43,8 @@ namespace MDSS::Rendering
                                              std::uint32_t                                   ChannelCount,
                                              bool                                            bUpdateStates,
                                              bool                                            bPrecomputeSmoothing,
-                                             bool                                            bSeparableSmoothing);
+                                             bool                                            bSeparableSmoothing,
+                                             bool                                            bSharedHalo);
 
     private:
         struct TInstance
@@ -72,7 +73,7 @@ namespace MDSS::Rendering
         VkPipelineLayout       PipelineLayout = VK_NULL_HANDLE;
         VkPipelineLayout       SmoothingPipelineLayout = VK_NULL_HANDLE;
         VkPipeline             Pipeline = VK_NULL_HANDLE;
-        VkPipeline             SmoothingPipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 5> SmoothingPipelines{};
         VkSampler              Sampler = VK_NULL_HANDLE;
         std::vector<TInstance> Instances;
     };

@@ -8,6 +8,19 @@
 
 layout(local_size_x = 64) in;
 
+#if MDSS_COVERAGE_HALO
+shared uint HaloProfile[1296];
+shared uint HaloChart[1296];
+shared float HaloSaturation[1296];
+shared uint HaloSurface;
+shared uint HaloRangeFirst;
+shared uint HaloRangeWidth;
+shared uint HaloRangeHeight;
+shared uint HaloTileX;
+shared uint HaloTileY;
+shared uint HaloTileValid;
+#endif
+
 struct TOverlayVertex
 {
     vec4 Position;
@@ -88,6 +101,75 @@ uint CoverageListBase()
     return Push.TexelCount * 6u + Capacity * 6u + 12u;
 }
 
+#if MDSS_COVERAGE_HALO
+float LoadCoverageSaturation(uint Texel, uint Profile)
+{
+    uint Channels = Push.Channels;
+    uint Channel = Push.Channel;
+    float Sample = 0.0;
+    if (Channel == 0xfffeu || Channel == 0xffffu)
+    {
+        if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
+            Sample = max(Sample, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
+        if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
+            Sample = max(Sample, OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));
+        if (Channel == 0xffffu && (Push.ActiveMaterialMask & 2u) != 0u && Push.WaterFilm < Channels)
+            Sample = max(Sample, OverlayStateSaturation(Texel, Push.WaterFilm, Channels, Profile));
+    }
+    else if (Channel < Channels)
+        Sample = OverlayStateSaturation(Texel, Channel, Channels, Profile);
+    return Sample;
+}
+
+void StageCoverageTile(uint Candidate)
+{
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        HaloTileValid = 0u;
+        uint Base = 0u;
+        for (uint Surface = 0u; Surface < uint(OverlaySurfaceRanges.Values.length()); ++Surface)
+        {
+            uvec4 Range = OverlaySurfaceRanges.Values[Surface];
+            uint TilesX = (Range.y + Push.TileSize - 1u) / Push.TileSize;
+            uint TilesY = (Range.z + Push.TileSize - 1u) / Push.TileSize;
+            if (Candidate < Base + TilesX * TilesY)
+            {
+                uint Local = Candidate - Base;
+                HaloSurface = Surface;
+                HaloRangeFirst = Range.x;
+                HaloRangeWidth = Range.y;
+                HaloRangeHeight = Range.z;
+                HaloTileX = Local % TilesX;
+                HaloTileY = Local / TilesX;
+                HaloTileValid = 1u;
+                break;
+            }
+            Base += TilesX * TilesY;
+        }
+    }
+    barrier();
+    if (HaloTileValid == 0u) return;
+    uint Stride = Push.TileSize + 4u;
+    for (uint Slot = gl_LocalInvocationIndex; Slot < Stride * Stride; Slot += 64u)
+    {
+        int X = int(HaloTileX * Push.TileSize + Slot % Stride) - 2;
+        int Y = int(HaloTileY * Push.TileSize + Slot / Stride) - 2;
+        bool Valid = X >= 0 && Y >= 0 && X < int(HaloRangeWidth) && Y < int(HaloRangeHeight);
+        uint Texel = Valid ? HaloRangeFirst + uint(Y) * HaloRangeWidth + uint(X) : Push.TexelCount;
+        Valid = Texel < Push.TexelCount && Texel < uint(OverlayTexelProfileIndices.Values.length()) &&
+                Texel < uint(OverlayTexelChartIndices.Values.length()) &&
+                Texel < uint(OverlayWorldTexelAreas.Values.length()) &&
+                (Push.Channels == 0u || Texel < uint(OverlayCurrentState.Values.length()) / Push.Channels);
+        uint Profile = Valid ? OverlayTexelProfileIndices.Values[Texel] : 0xffffffffu;
+        Valid = Valid && Push.Channels > 0u && Profile < OverlayProfileRecordCount() / Push.Channels;
+        HaloProfile[Slot] = Valid ? Profile : 0xffffffffu;
+        HaloChart[Slot] = Valid ? OverlayTexelChartIndices.Values[Texel] : 0xffffffffu;
+        HaloSaturation[Slot] = Valid ? LoadCoverageSaturation(Texel, Profile) : 0.0;
+    }
+    barrier();
+}
+#endif
+
 void ComputeCoverage(uint Index, bool TileActive)
 {
     if (Index >= uint(MeshVertices.Values.length()) || Index >= uint(Coverage.Values.length())) return;
@@ -151,6 +233,9 @@ void ComputeCoverage(uint Index, bool TileActive)
     float Sum = 0.0;
     float WeightSum = 0.0;
     const int Kernel[5] = int[5](1, 4, 6, 4, 1);
+#if MDSS_COVERAGE_HALO
+    bool SharedTile = (Push.Padding & 1u) == 0u && HaloTileValid != 0u && Surface == HaloSurface;
+#endif
     for (int OffsetY = -2; OffsetY <= 2; ++OffsetY)
     {
         int Y = int(CenterXY.y) + OffsetY;
@@ -159,6 +244,23 @@ void ComputeCoverage(uint Index, bool TileActive)
         {
             int X = int(CenterXY.x) + OffsetX;
             if (X < 0 || X >= int(Range.y)) continue;
+#if MDSS_COVERAGE_HALO
+            if (SharedTile)
+            {
+                int LocalX = X - int(HaloTileX * Push.TileSize) + 2;
+                int LocalY = Y - int(HaloTileY * Push.TileSize) + 2;
+                int Stride = int(Push.TileSize) + 4;
+                if (LocalX >= 0 && LocalY >= 0 && LocalX < Stride && LocalY < Stride)
+                {
+                    uint Slot = uint(LocalY * Stride + LocalX);
+                    if (HaloProfile[Slot] != Profile || HaloChart[Slot] != Chart) continue;
+                    float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
+                    Sum += Weight * HaloSaturation[Slot];
+                    WeightSum += Weight;
+                    continue;
+                }
+            }
+#endif
             uint Texel = Range.x + uint(Y) * Range.y + uint(X);
             if (Texel >= TexelCount) continue;
 #if MDSS_GPU_VALIDATION
@@ -210,6 +312,9 @@ void main()
     bool TileActive = (GeometryCache.Values[Push.TexelCount * 4u + Candidate] & 1u) != 0u;
     uint Begin = Coverage.Values[MappingBase + Candidate];
     uint End = Coverage.Values[MappingBase + Candidate + 1u];
+#if MDSS_COVERAGE_HALO
+    if (TileActive) StageCoverageTile(Candidate);
+#endif
     for (uint Offset = Begin + gl_LocalInvocationID.x; Offset < End; Offset += gl_WorkGroupSize.x)
     {
         uint Vertex = Coverage.Values[MappingBase + Offset];

@@ -34,6 +34,16 @@ shared uint SparseRangeWidth;
 shared uint SparseRangeHeight;
 shared uint SparseTileX;
 shared uint SparseTileY;
+#if MDSS_HEIGHT_HALO
+shared uint HaloSurface[100];
+shared uint HaloProfile[100];
+shared uint HaloChart[100];
+shared uint HaloValid[100];
+shared vec4 HaloHeightNormal[100];
+shared float HaloMeso[100];
+shared float HaloSaturation[100];
+shared float HaloCavityFill[100];
+#endif
 
 uint CapacityTileCount()
 {
@@ -93,8 +103,14 @@ uint ResolveTexel()
 
     uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
     if (Local >= TilePixels) return Push.TexelCount;
+#if MDSS_HEIGHT_HALO
+    uint MicrotilesX = Push.TileSize / 8u;
+    uint LocalX = (Subgroup % MicrotilesX) * 8u + gl_LocalInvocationID.x % 8u;
+    uint LocalY = (Subgroup / MicrotilesX) * 8u + gl_LocalInvocationID.x / 8u;
+#else
     uint LocalX = Local % Push.TileSize;
     uint LocalY = Local / Push.TileSize;
+#endif
     uint X = SparseTileX * Push.TileSize + LocalX;
     uint Y = SparseTileY * Push.TileSize + LocalY;
     if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
@@ -118,6 +134,50 @@ void main()
 {
     // 각 texel을 중심으로 한 3x3 이웃만 사용해 경계를 보존하며 smoothing한다.
     uint T = ResolveTexel();
+#if MDSS_HEIGHT_HALO
+    if (Push.UseSparse != 0u && SparseTileValid != 0u)
+    {
+        uint GroupsPerTile = Push.TileSize * Push.TileSize / 64u;
+        uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
+        uint MicrotilesX = Push.TileSize / 8u;
+        uint MicroX = (Subgroup % MicrotilesX) * 8u;
+        uint MicroY = (Subgroup / MicrotilesX) * 8u;
+        for (uint Slot = gl_LocalInvocationID.x; Slot < 100u; Slot += 64u)
+        {
+            uint X = SparseTileX * Push.TileSize + MicroX + Slot % 10u;
+            uint Y = SparseTileY * Push.TileSize + MicroY + Slot / 10u;
+            // The 10x10 shared block covers output [-1,+8] on each axis.
+            int LocalX = int(X) - 1;
+            int LocalY = int(Y) - 1;
+            bool InRange = LocalX >= 0 && LocalY >= 0 &&
+                           LocalX < int(SparseRangeWidth) && LocalY < int(SparseRangeHeight);
+            uint N = InRange ? SparseRangeFirst + uint(LocalY) * SparseRangeWidth + uint(LocalX) : Push.TexelCount;
+            bool Valid = N < Push.TexelCount && N < uint(InputGeometry.Values.length()) &&
+                         N < uint(GeometryScalars.Values.length()) &&
+                         N < uint(TexelSurfaceIndices.Values.length()) &&
+                         N < uint(TexelProfileIndices.Values.length()) &&
+                         N < uint(TexelChartIndices.Values.length());
+            HaloValid[Slot] = Valid ? 1u : 0u;
+            if (!Valid) continue;
+            uint Profile = TexelProfileIndices.Values[N];
+            HaloSurface[Slot] = TexelSurfaceIndices.Values[N];
+            HaloProfile[Slot] = Profile;
+            HaloChart[Slot] = TexelChartIndices.Values[N];
+            HaloHeightNormal[Slot] = InputGeometry.Values[N].HeightAndNormal;
+            float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
+#if MDSS_GPU_VALIDATION
+            if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
+#endif
+            HaloMeso[Slot] = Meso;
+            bool Supported = Push.Channels > 0u && Push.Channel < Push.Channels &&
+                             Profile < SurfaceProfileRecordCount() / Push.Channels;
+            HaloSaturation[Slot] = Supported
+                ? StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) : 0.0;
+            HaloCavityFill[Slot] = Supported ? DisplayedCavityFill(N, Profile) : 0.0;
+        }
+        barrier();
+    }
+#endif
     if (T >= Push.TexelCount) return;
 #if MDSS_GPU_VALIDATION
     if (T >= uint(InputGeometry.Values.length())) return;
@@ -153,6 +213,30 @@ void main()
     {
         ivec2 XY = Center + ivec2(X, Y);
         if (XY.x < 0 || XY.y < 0 || XY.x >= int(Range.y) || XY.y >= int(Range.z)) continue;
+#if MDSS_HEIGHT_HALO
+        if (Push.UseSparse != 0u)
+        {
+            uint Slot = uint((int(gl_LocalInvocationID.x / 8u) + 1 + Y) * 10 +
+                             int(gl_LocalInvocationID.x % 8u) + 1 + X);
+            if (HaloValid[Slot] == 0u || HaloSurface[Slot] != Surface ||
+                HaloProfile[Slot] != Profile || HaloChart[Slot] != Chart ||
+                HaloSaturation[Slot] <= CoverageCutoff) continue;
+            float Meso = HaloMeso[Slot];
+            float AccumulationHeight = HaloHeightNormal[Slot].x - Meso;
+#if MDSS_GPU_VALIDATION
+            if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
+#endif
+            float CavityDepth = max(-Meso, 0.0);
+            float CavityFill = CavityDepth > 0.0 ? HaloCavityFill[Slot] : 0.0;
+            float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
+            float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
+            WeightedCavityFill += Weight * CavityFill;
+            WeightedFollowingHeight += Weight * FollowingHeight;
+            WeightedNormal += Weight * HaloHeightNormal[Slot].yzw;
+            WeightSum += Weight;
+            continue;
+        }
+#endif
         uint N = Range.x + uint(XY.y) * Range.y + uint(XY.x);
         if (N >= Push.TexelCount) continue;
 #if MDSS_GPU_VALIDATION

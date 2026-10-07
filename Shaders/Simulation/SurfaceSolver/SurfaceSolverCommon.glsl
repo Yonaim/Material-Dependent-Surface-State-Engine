@@ -220,15 +220,31 @@ const uint SurfaceSolverCurrentStateABFlag = 1u << 21u;
 const uint SurfaceSolverSeedPersistentActivityFlag = 1u << 22u;
 const uint SurfaceSolverPerWorkgroupChannelMaskFlag = 1u << 23u;
 
+#ifdef MDSS_RAW_MODE
+bool useRawFluxCache() { return MDSS_RAW_MODE != 0; }
+#else
 bool useRawFluxCache() { return (Solver.Flags & SurfaceSolverRawFluxCacheFlag) != 0u; }
+#endif
 bool useSparseSimulationGeometry() { return (Solver.Flags & SurfaceSolverSparseGeometryFlag) != 0u; }
+#ifdef MDSS_RAW_MODE
+bool useCoalescedRawFluxLayout() { return MDSS_RAW_MODE == 2 || MDSS_RAW_MODE == 4; }
+#else
 bool useCoalescedRawFluxLayout() { return (Solver.Flags & SurfaceSolverCoalescedRawFluxLayoutFlag) != 0u; }
+#endif
 bool useSparseSolver() { return (Solver.Flags & SurfaceSolverSparseSolverFlag) != 0u; }
 bool useSparseAccumulationHeight() { return (Solver.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0u; }
 bool useActiveChannelMask() { return (Solver.Flags & SurfaceSolverActiveChannelMaskFlag) != 0u; }
 bool prepareAccumulationHeight() { return (Solver.Flags & SurfaceSolverPrepareAccumulationHeightFlag) != 0u; }
+#ifdef MDSS_RAW_MODE
+bool useHalfRawFluxCache() { return MDSS_RAW_MODE == 3 || MDSS_RAW_MODE == 4; }
+#else
 bool useHalfRawFluxCache() { return useRawFluxCache() && (Solver.Flags & SurfaceSolverHalfRawFluxCacheFlag) != 0u; }
+#endif
+#ifdef MDSS_HALF_WEIGHTS
+bool useHalfDynamicWeights() { return MDSS_HALF_WEIGHTS != 0; }
+#else
 bool useHalfDynamicWeights() { return (Solver.Flags & SurfaceSolverHalfDynamicWeightsFlag) != 0u; }
+#endif
 bool currentStateIsAB() { return (Solver.Flags & SurfaceSolverCurrentStateABFlag) != 0u; }
 bool seedPersistentActivity() { return (Solver.Flags & SurfaceSolverSeedPersistentActivityFlag) != 0u; }
 bool usePerWorkgroupChannelMask() { return (Solver.Flags & SurfaceSolverPerWorkgroupChannelMaskFlag) != 0u; }

@@ -41,8 +41,13 @@ void main()
     uint EnabledEffects = Material.DemoExtraStateChannels.w;
     uint PerformanceFlags = Material.DemoExtraStateChannels.z;
     bool CoverageSmoothing = (PerformanceFlags & 1u) != 0u;
+#if defined(MDSS_FRAGMENT_MODE)
+    const bool PrecomputedSmoothing = MDSS_FRAGMENT_MODE == 2;
+    const bool UseRenderTexture = MDSS_FRAGMENT_MODE != 0;
+#else
     bool PrecomputedSmoothing = (PerformanceFlags & 2u) != 0u;
     bool UseRenderTexture = (PerformanceFlags & 4u) != 0u || PrecomputedSmoothing;
+#endif
     vec4 States = UseRenderTexture
         ? SampleRenderStates(FragSurfaceIndex, FragUV,
                              uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),

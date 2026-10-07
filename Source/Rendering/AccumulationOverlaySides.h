@@ -75,7 +75,8 @@ namespace MDSS::Rendering
                                                float                                                   HeightDisplayScale = 1.0F,
                                                std::array<std::uint32_t, 3>                           MaterialChannels = {
                                                    0xffffffffU, 0xffffffffU, 0xffffffffU},
-                                               std::uint32_t                                           ActiveMaterialMask = 0x7U);
+                                               std::uint32_t                                           ActiveMaterialMask = 0x7U,
+                                               bool                                                    bSharedCoverageHalo = false);
 
     private:
         struct TOutput
@@ -100,6 +101,7 @@ namespace MDSS::Rendering
             std::uint64_t                                                                   LastProfileRevision = 0;
             float                                                                           LastHeightDisplayScale = 0.0F;
             bool                                                                            bLastSmoothCoverage = false;
+            bool                                                                            bLastSharedCoverageHalo = false;
             bool                                                                            bLastUseOpaqueBase = false;
             bool                                                                            bCoverageInitialized = false;
         };
@@ -109,7 +111,7 @@ namespace MDSS::Rendering
         VkDescriptorSetLayout                                    OutputLayout = VK_NULL_HANDLE;
         VkPipelineLayout                                         PipelineLayout = VK_NULL_HANDLE;
         VkPipeline                                               CoveragePipeline = VK_NULL_HANDLE;
-        VkPipeline                                               CoverageSmoothingPipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 2>                                CoverageSmoothingPipelines{};
         VkPipeline                                               DrawResetPipeline = VK_NULL_HANDLE;
         VkPipeline                                               BoundaryPipeline = VK_NULL_HANDLE;
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;

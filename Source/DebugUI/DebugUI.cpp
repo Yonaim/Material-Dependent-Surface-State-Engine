@@ -3436,8 +3436,8 @@ namespace MDSS
                                   2,
                                   ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
             {
-                ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, 154.0F);
-                ImGui::TableSetupColumn("Current", ImGuiTableColumnFlags_WidthFixed, 104.0F);
+                ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, 200.0F);
+                ImGui::TableSetupColumn("Current", ImGuiTableColumnFlags_WidthFixed, 100.0F);
                 const auto CategoryBytes = [&](GPU::TGPUBufferMemoryCategory Category)
                 {
                     return Memory.BufferCategoryCurrentBytes[static_cast<std::size_t>(Category)];
@@ -3446,50 +3446,64 @@ namespace MDSS
                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh128) +
                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh256) +
                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh512);
-                const std::uint64_t SurfaceResourceBytes =
+                const std::uint64_t SurfaceCoreBytes =
                     CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceState) +
                     CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceGeometry) +
                     CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceProfile);
-                const std::uint64_t OtherBufferBytes = CategoryBytes(GPU::TGPUBufferMemoryCategory::MeshAsset) +
-                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::Rendering) +
-                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::Debug) +
-                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::Other);
-
+                const std::uint64_t SurfaceRuntimeBytes =
+                    CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
+                const std::uint64_t SurfaceSystemBytes =
+                    SurfaceCoreBytes + RenderMeshBytes + SurfaceRuntimeBytes;
+                const std::uint64_t SceneEditorBufferBytes =
+                    CategoryBytes(GPU::TGPUBufferMemoryCategory::MeshAsset) +
+                    CategoryBytes(GPU::TGPUBufferMemoryCategory::Renderer);
                 DrawMemoryTotalRow("GPU total", Memory.CurrentTotalBytes, TotalColor);
-                DrawMemoryTotalRow("Buffers", Memory.CurrentBufferBytes, GroupColor);
-                if (DrawMemoryTreeRow("Render meshes", RenderMeshBytes))
+                if (DrawMemoryTreeRow("MDSS Surface System", SurfaceSystemBytes))
                 {
-                    DrawMemoryRow("512 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh512));
-                    DrawMemoryRow("256 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh256));
-                    DrawMemoryRow("128 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh128));
-                    DrawMemoryRow("64 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh64));
+                    if (DrawMemoryTreeRow("Core data", SurfaceCoreBytes))
+                    {
+                        DrawMemoryRow("Surface State", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceState));
+                        DrawMemoryRow("Surface Geometry",
+                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceGeometry));
+                        DrawMemoryRow("Profile Tables",
+                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceProfile));
+                        ImGui::TreePop();
+                    }
+                    if (DrawMemoryTreeRow("Surface rendering", RenderMeshBytes))
+                    {
+                        DrawMemoryRow("512 resolution",
+                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh512));
+                        DrawMemoryRow("256 resolution",
+                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh256));
+                        DrawMemoryRow("128 resolution",
+                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh128));
+                        DrawMemoryRow("64 resolution",
+                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh64));
+                        ImGui::TreePop();
+                    }
+                    DrawMemoryRow("Surface runtime buffers", SurfaceRuntimeBytes);
                     ImGui::TreePop();
                 }
-                if (DrawMemoryTreeRow("Surface resources", SurfaceResourceBytes))
-                {
-                    DrawMemoryRow("Surface State", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceState));
-                    DrawMemoryRow("Surface Geometry", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceGeometry));
-                    DrawMemoryRow("Profile Tables", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceProfile));
-                    ImGui::TreePop();
-                }
-                if (DrawMemoryTreeRow("Other buffers", OtherBufferBytes))
+                if (DrawMemoryTreeRow("Scene & Editor", SceneEditorBufferBytes))
                 {
                     DrawMemoryRow("Mesh Assets", CategoryBytes(GPU::TGPUBufferMemoryCategory::MeshAsset));
-                    DrawMemoryRow("Render / Compute", CategoryBytes(GPU::TGPUBufferMemoryCategory::Rendering));
-                    DrawMemoryRow("Debug", CategoryBytes(GPU::TGPUBufferMemoryCategory::Debug));
-                    DrawMemoryRow("Other / Staging", CategoryBytes(GPU::TGPUBufferMemoryCategory::Other));
+                    DrawMemoryRow("Renderer buffers", CategoryBytes(GPU::TGPUBufferMemoryCategory::Renderer));
                     ImGui::TreePop();
                 }
+                DrawMemoryRow("Debug", CategoryBytes(GPU::TGPUBufferMemoryCategory::Debug));
+                DrawMemoryRow("Other / Staging", CategoryBytes(GPU::TGPUBufferMemoryCategory::Other));
                 DrawMemoryTotalRow("Images", Memory.CurrentImageBytes, GroupColor);
                 ImGui::EndTable();
             }
             ImGui::TextDisabled("Tracked Vulkan allocations · MiB");
-            ImGui::TextDisabled("Performance options reuse preallocated buffers; Current total stays unchanged.");
+            ImGui::TextDisabled("MDSS totals include surface rendering and runtime buffers.");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Buffer rows are grouped by resource purpose. Values use Vulkan memory requirements "
-                                  "for app-owned TGPUBuffer and TGPUImage allocations. Swapchain and driver "
-                                  "allocations are excluded; Other includes transient staging buffers. Performance toggles "
-                                  "change which preallocated buffer regions are used, not their Vulkan allocation size.");
+                ImGui::SetTooltip("MDSS Surface System includes core surface data, generated surface render meshes, "
+                                  "and runtime buffers for smoothing and accumulation overlays. Scene & Editor "
+                                  "includes source mesh assets and general renderer buffers. Values use Vulkan "
+                                  "memory requirements for app-owned TGPUBuffer and TGPUImage allocations; "
+                                  "swapchain and driver allocations are excluded. Other includes transient staging buffers.");
+            ImGui::TextDisabled("Performance options use preallocated buffers; toggles do not change current allocations.");
             ImGui::TextDisabled("FP16 compact allocation estimate");
             ImGui::Text("Raw Flux savings: %.2f MiB", PrecisionMemory.RawFluxSavingsBytes / BytesPerMiB);
             ImGui::Text("TransferWeight savings: %.2f MiB", PrecisionMemory.DynamicWeightSavingsBytes / BytesPerMiB);
@@ -4128,6 +4142,29 @@ namespace MDSS
             }
             if (ImGui::IsItemHovered())
                 SetDescriptionTooltip("변경된 Normal tile만 처리합니다.");
+            bool bSharedHeight = FrameRenderer->IsSharedHeightSmoothingEnabled();
+            ImGui::BeginDisabled(!bSparseHeight || !FrameRenderer->IsOverlayTileCullingEnabled());
+            if (ImGui::Checkbox("Shared Height Smoothing Halo", &bSharedHeight))
+            {
+                FrameRenderer->SetSharedHeightSmoothingEnabled(bSharedHeight);
+                bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                SetDescriptionTooltip("sparse 8x8 workgroup의 3x3 입력을 shared memory halo에 모아 재사용합니다. Sparse Height Smoothing과 Overlay tile culling이 필요합니다.");
+            ImGui::EndDisabled();
+            ImGui::EndDisabled();
+
+            bool bSharedOverlay = FrameRenderer->IsSharedOverlayCoverageEnabled();
+            ImGui::BeginDisabled(!Effects.bCoverageSmoothing || !FrameRenderer->IsOverlayTileCullingEnabled());
+            if (ImGui::Checkbox("Shared Overlay Coverage Halo", &bSharedOverlay))
+            {
+                FrameRenderer->SetSharedOverlayCoverageEnabled(bSharedOverlay);
+                bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                SetDescriptionTooltip("sparse overlay tile의 5x5 coverage 입력을 shared memory에 모읍니다. Coverage Smoothing과 Overlay tile culling이 필요합니다. 전체 갱신은 기존 경로를 사용합니다.");
             ImGui::EndDisabled();
 
             bool bPrecompute = FrameRenderer->IsPrecomputeCoverageSmoothingEnabled();
@@ -4139,7 +4176,8 @@ namespace MDSS
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("State texture를 compute에서 미리 smoothing해 fragment 샘플을 줄입니다.");
+                SetDescriptionTooltip("State texture를 compute에서 미리 smoothing해 fragment 샘플을 줄입니다. "
+                                      "켜면 Render State Texture Sampling의 Texture/SSBO 비교는 비활성화됩니다.");
 
             bool bSeparable = FrameRenderer->IsSeparableCoverageSmoothingEnabled();
             ImGui::BeginDisabled(!bPrecompute);
@@ -4152,19 +4190,36 @@ namespace MDSS
             if (ImGui::IsItemHovered())
                 SetDescriptionTooltip(
                     "5x5 필터를 가로·세로 두 pass로 처리합니다. 경계에서 결과가 조금 달라질 수 있습니다.");
+            bool bSharedState = FrameRenderer->IsSharedStateTextureSmoothingEnabled();
+            ImGui::BeginDisabled(!bPrecompute || !bSeparable);
+            if (ImGui::Checkbox("Shared Render State Halo", &bSharedState))
+            {
+                FrameRenderer->SetSharedStateTextureSmoothingEnabled(bSharedState);
+                bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                SetDescriptionTooltip("가로·세로 separable pass의 입력을 8x8 workgroup과 shared memory halo로 재사용합니다.");
+            ImGui::EndDisabled();
             ImGui::EndDisabled();
             ImGui::EndDisabled();
 
-            bool bRenderStateTexture = FrameRenderer->IsRenderStateTextureSamplingEnabled();
+            const bool bTextureForcedByPrecompute = Effects.bCoverageSmoothing && bPrecompute;
+            bool bRenderStateTexture = FrameRenderer->IsRenderStateTextureSamplingEnabled() ||
+                                       bTextureForcedByPrecompute;
+            ImGui::BeginDisabled(bTextureForcedByPrecompute);
             if (ImGui::Checkbox("Render State Texture Sampling", &bRenderStateTexture))
             {
                 FrameRenderer->SetRenderStateTextureSamplingEnabled(bRenderStateTexture);
                 bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip(
-                    "fragment의 RenderStateTexture 샘플링과 Simulation SSBO bilinear sampling을 비교합니다.");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                SetDescriptionTooltip(bTextureForcedByPrecompute
+                    ? "Precompute Coverage Smoothing이 켜져 있으면 미리 계산한 State texture를 사용하므로 "
+                      "Texture/SSBO A/B 비교를 할 수 없습니다. 비교하려면 Precompute를 끄세요."
+                    : "fragment의 RenderStateTexture 샘플링과 Simulation SSBO bilinear sampling을 비교합니다.");
+            ImGui::EndDisabled();
         }
 
         if (EffectsChanged)

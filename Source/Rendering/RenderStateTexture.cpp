@@ -178,8 +178,13 @@ namespace MDSS::Rendering
             RequireVk(vkCreatePipelineLayout(Device, &SmoothPipelineLayoutInfo, nullptr, &SmoothingPipelineLayout));
 
             Pipeline = CreateComputePipeline(Device, PipelineLayout, "/Rendering/Surface/RenderStateTexture.comp.spv");
-            SmoothingPipeline = CreateComputePipeline(
-                Device, SmoothingPipelineLayout, "/Rendering/Surface/RenderStateTextureSmoothing.comp.spv");
+            constexpr std::array<const char*, 5> SmoothVariants{
+                "direct", "a1h0", "a1h1", "a2h0", "a2h1"};
+            for (std::size_t Variant = 0; Variant < SmoothVariants.size(); ++Variant)
+                SmoothingPipelines[Variant] = CreateComputePipeline(
+                    Device, SmoothingPipelineLayout,
+                    (std::string("/Rendering/Surface/RenderStateTextureSmoothing.comp.") +
+                     SmoothVariants[Variant] + ".spv").c_str());
 
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
             {
@@ -306,8 +311,8 @@ namespace MDSS::Rendering
 
     void TRenderStateTexture::Destroy() noexcept
     {
-        if (SmoothingPipeline)
-            vkDestroyPipeline(Device, SmoothingPipeline, nullptr);
+        for (VkPipeline Variant : SmoothingPipelines)
+            if (Variant) vkDestroyPipeline(Device, Variant, nullptr);
         if (Pipeline)
             vkDestroyPipeline(Device, Pipeline, nullptr);
         if (SmoothingPipelineLayout)
@@ -322,7 +327,7 @@ namespace MDSS::Rendering
             vkDestroyDescriptorSetLayout(Device, SmoothingLayout, nullptr);
         if (Layout)
             vkDestroyDescriptorSetLayout(Device, Layout, nullptr);
-        SmoothingPipeline = VK_NULL_HANDLE;
+        SmoothingPipelines.fill(VK_NULL_HANDLE);
         Pipeline = VK_NULL_HANDLE;
         SmoothingPipelineLayout = VK_NULL_HANDLE;
         PipelineLayout = VK_NULL_HANDLE;
@@ -352,7 +357,8 @@ namespace MDSS::Rendering
                                      std::uint32_t                                   ChannelCount,
                                      bool                                            bUpdateStates,
                                      bool                                            bPrecomputeSmoothing,
-                                     bool                                            bSeparableSmoothing)
+                                     bool                                            bSeparableSmoothing,
+                                     bool                                            bSharedHalo)
     {
         if (!Command || !Pipeline || ChannelCount == 0)
             return;
@@ -416,7 +422,7 @@ namespace MDSS::Rendering
             const VkDescriptorSet StateSet = Resources.IsCurrentStateAB(Index) ? SurfaceDescriptors->GetABSet()
                                                                                 : SurfaceDescriptors->GetBASet();
             // Smoothing uses a different pipeline layout (4-byte push constants vs 20 bytes here).
-            // With multiple instances, the previous iteration may have left SmoothingPipeline bound.
+            // With multiple instances, the previous iteration may have left a smoothing variant bound.
             // Re-establish the main pipeline and its full push-constant payload before the next state dispatch.
             if (!bMainPipelineReady)
             {
@@ -486,7 +492,6 @@ namespace MDSS::Rendering
                                  SmoothBefore.data());
 
             const std::array<VkDescriptorSet, 2> SmoothSets{StateSet, Instance.SmoothingSet};
-            vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, SmoothingPipeline);
             bMainPipelineReady = false;
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -506,6 +511,8 @@ namespace MDSS::Rendering
             if (bSeparableSmoothing)
             {
                 std::uint32_t Mode = 1U;
+                vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                  SmoothingPipelines[1U + (bSharedHalo ? 1U : 0U)]);
                 vkCmdPushConstants(
                     Command, SmoothingPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Mode), &Mode);
                 Dispatch();
@@ -525,6 +532,8 @@ namespace MDSS::Rendering
                                      1,
                                      &TempBarrier);
                 Mode = 2U;
+                vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                  SmoothingPipelines[3U + (bSharedHalo ? 1U : 0U)]);
                 vkCmdPushConstants(
                     Command, SmoothingPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Mode), &Mode);
                 Dispatch();
@@ -532,6 +541,7 @@ namespace MDSS::Rendering
             else
             {
                 const std::uint32_t Mode = 0U;
+                vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, SmoothingPipelines[0]);
                 vkCmdPushConstants(
                     Command, SmoothingPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Mode), &Mode);
                 Dispatch();

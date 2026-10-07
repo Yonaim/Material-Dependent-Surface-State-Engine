@@ -147,6 +147,40 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MDSS_SHADER_SOU
 # be reused by a Release build (or vice versa).
 set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders/$<CONFIG>")
 set(MDSS_SHADER_BINARIES)
+set(MDSS_VARIANT_SHADERS
+    Simulation/SurfaceSolver/SurfaceSolverPass1.comp
+    Simulation/SurfaceSolver/SurfaceSolverPass2.comp
+    Simulation/SurfaceDynamicWeightsUpdate.comp
+    Rendering/Surface/HeightFieldSmoothing.comp
+    Rendering/StateOverlay/OverlayCoverageSmoothing.comp
+    Rendering/Surface/RenderStateTextureSmoothing.comp
+    Rendering/Surface/SurfaceLit.frag
+    Rendering/Surface/BaseSurfaceLit.frag
+    Rendering/Surface/TexelSurfaceLit.frag
+    Rendering/StateOverlay/OverlayCombined.frag
+)
+
+function(mdss_add_shader_variant ShaderRelativePath VariantName)
+    set(ShaderSource "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/${ShaderRelativePath}")
+    set(ShaderBinary "${MDSS_SHADER_OUTPUT_DIR}/${ShaderRelativePath}.${VariantName}.spv")
+    get_filename_component(ShaderOutputDirectory "${ShaderBinary}" DIRECTORY)
+    add_custom_command(
+        OUTPUT "${ShaderBinary}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${ShaderOutputDirectory}"
+        COMMAND "${Vulkan_GLSLC_EXECUTABLE}"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/Source"
+                "-DMDSS_GPU_VALIDATION=$<IF:$<CONFIG:Debug>,1,0>"
+                ${ARGN}
+                "${ShaderSource}"
+                -o "${ShaderBinary}"
+        DEPENDS "${ShaderSource}" ${MDSS_SHADER_INCLUDES}
+                "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceState/Types/SurfaceSolverRates.h"
+        COMMENT "Compiling shader ${ShaderRelativePath}.${VariantName}"
+        VERBATIM
+    )
+    set(MDSS_SHADER_BINARIES ${MDSS_SHADER_BINARIES} "${ShaderBinary}" PARENT_SCOPE)
+endfunction()
 
 foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
     file(STRINGS "${ShaderSource}" ShaderVersionLine
@@ -162,6 +196,9 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
         "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
         "${ShaderSource}"
     )
+    if(ShaderRelativePath IN_LIST MDSS_VARIANT_SHADERS)
+        continue()
+    endif()
     set(ShaderBinary "${MDSS_SHADER_OUTPUT_DIR}/${ShaderRelativePath}.spv")
     get_filename_component(ShaderOutputDirectory "${ShaderBinary}" DIRECTORY)
 
@@ -181,6 +218,41 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
     )
 
     list(APPEND MDSS_SHADER_BINARIES "${ShaderBinary}")
+endforeach()
+
+foreach(RawMode RANGE 0 4)
+    foreach(WeightMode RANGE 0 1)
+        foreach(PassName SurfaceSolverPass1 SurfaceSolverPass2)
+            mdss_add_shader_variant("Simulation/SurfaceSolver/${PassName}.comp" "r${RawMode}w${WeightMode}"
+                "-DMDSS_RAW_MODE=${RawMode}" "-DMDSS_HALF_WEIGHTS=${WeightMode}")
+        endforeach()
+    endforeach()
+endforeach()
+foreach(WeightMode RANGE 0 1)
+    mdss_add_shader_variant("Simulation/SurfaceDynamicWeightsUpdate.comp" "w${WeightMode}"
+        "-DMDSS_HALF_WEIGHTS=${WeightMode}")
+endforeach()
+foreach(HaloMode RANGE 0 1)
+    mdss_add_shader_variant("Rendering/Surface/HeightFieldSmoothing.comp" "h${HaloMode}"
+        "-DMDSS_HEIGHT_HALO=${HaloMode}")
+    mdss_add_shader_variant("Rendering/StateOverlay/OverlayCoverageSmoothing.comp" "h${HaloMode}"
+        "-DMDSS_COVERAGE_HALO=${HaloMode}")
+endforeach()
+mdss_add_shader_variant("Rendering/Surface/RenderStateTextureSmoothing.comp" "direct"
+    "-DMDSS_SMOOTH_MODE=0" "-DMDSS_SMOOTH_HALO=0")
+foreach(AxisMode RANGE 1 2)
+    foreach(HaloMode RANGE 0 1)
+        mdss_add_shader_variant("Rendering/Surface/RenderStateTextureSmoothing.comp" "a${AxisMode}h${HaloMode}"
+            "-DMDSS_SMOOTH_MODE=${AxisMode}" "-DMDSS_SMOOTH_HALO=${HaloMode}")
+    endforeach()
+endforeach()
+foreach(FragmentMode RANGE 0 2)
+    foreach(FragmentName SurfaceLit BaseSurfaceLit TexelSurfaceLit)
+        mdss_add_shader_variant("Rendering/Surface/${FragmentName}.frag" "m${FragmentMode}"
+            "-DMDSS_FRAGMENT_MODE=${FragmentMode}")
+    endforeach()
+    mdss_add_shader_variant("Rendering/StateOverlay/OverlayCombined.frag" "m${FragmentMode}"
+        "-DMDSS_FRAGMENT_MODE=${FragmentMode}")
 endforeach()
 
 add_custom_target(MDSS_Shaders DEPENDS ${MDSS_SHADER_BINARIES})

@@ -24,6 +24,15 @@ layout(push_constant) uniform TSmoothingPush
 
 const int Kernel[5] = int[5](1, 4, 6, 4, 1);
 
+#if MDSS_SMOOTH_HALO
+shared vec4 TileState[96];
+shared uint TileSurface[96];
+shared uint TileProfile[96];
+shared uint TileChart[96];
+#endif
+
+uint SmoothingMode() { return uint(MDSS_SMOOTH_MODE); }
+
 bool SameRegion(uint Center, uint Other, uint Surface)
 {
     return Other < uint(TexelSurfaceIndices.Values.length()) &&
@@ -37,7 +46,7 @@ bool SameRegion(uint Center, uint Other, uint Surface)
 
 vec4 ReadSource(ivec3 P)
 {
-    return Push.Mode == 2u ? imageLoad(TempStates, P) : imageLoad(RawStates, P);
+    return SmoothingMode() == 2u ? imageLoad(TempStates, P) : imageLoad(RawStates, P);
 }
 
 void main()
@@ -46,6 +55,49 @@ void main()
     if (Surface >= uint(SurfaceRanges.Values.length())) return;
     uvec4 Range = SurfaceRanges.Values[Surface];
     uvec2 XY = gl_GlobalInvocationID.xy;
+#if MDSS_SMOOTH_HALO && MDSS_SMOOTH_MODE != 0
+    const bool Horizontal = MDSS_SMOOTH_MODE == 1;
+    const uint TileWidth = Horizontal ? 12u : 8u;
+    const uint TileHeight = Horizontal ? 8u : 12u;
+    ivec2 Start = ivec2(gl_WorkGroupID.xy * 8u) - (Horizontal ? ivec2(2, 0) : ivec2(0, 2));
+    for (uint Slot = gl_LocalInvocationIndex; Slot < TileWidth * TileHeight; Slot += 64u)
+    {
+        ivec2 P = Start + ivec2(int(Slot % TileWidth), int(Slot / TileWidth));
+        bool Valid = P.x >= 0 && P.y >= 0 && P.x < int(Range.y) && P.y < int(Range.z);
+        uint Texel = Valid ? Range.x + uint(P.y) * Range.y + uint(P.x) : 0u;
+        Valid = Valid && Texel < uint(TexelSurfaceIndices.Values.length()) &&
+                Texel < uint(TexelProfileIndices.Values.length()) &&
+                Texel < uint(TexelChartIndices.Values.length());
+        TileSurface[Slot] = Valid ? TexelSurfaceIndices.Values[Texel] : 0xffffffffu;
+        TileProfile[Slot] = Valid ? TexelProfileIndices.Values[Texel] : 0xffffffffu;
+        TileChart[Slot] = Valid ? TexelChartIndices.Values[Texel] : 0xffffffffu;
+        TileState[Slot] = Valid ? ReadSource(ivec3(P, int(Surface))) : vec4(0.0);
+    }
+    barrier();
+    if (XY.x >= Range.y || XY.y >= Range.z) return;
+    uint CenterSlot = (gl_LocalInvocationID.y + (Horizontal ? 0u : 2u)) * TileWidth +
+                      gl_LocalInvocationID.x + (Horizontal ? 2u : 0u);
+    if (TileSurface[CenterSlot] != Surface)
+    {
+        if (Horizontal) imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
+        else imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
+        return;
+    }
+    vec4 Sum = vec4(0.0);
+    float WeightSum = 0.0;
+    for (int Offset = -2; Offset <= 2; ++Offset)
+    {
+        uint Slot = uint(int(CenterSlot) + Offset * (Horizontal ? 1 : int(TileWidth)));
+        if (TileSurface[Slot] != Surface || TileProfile[Slot] != TileProfile[CenterSlot] ||
+            TileChart[Slot] != TileChart[CenterSlot]) continue;
+        float W = float(Kernel[Offset + 2]);
+        Sum += W * TileState[Slot];
+        WeightSum += W;
+    }
+    vec4 Result = WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : vec4(0.0);
+    if (Horizontal) imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), Result);
+    else imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
+#else
     if (XY.x >= Range.y || XY.y >= Range.z) return;
 
     uint Center = Range.x + XY.y * Range.y + XY.x;
@@ -54,7 +106,7 @@ void main()
         Center >= uint(TexelChartIndices.Values.length()) ||
         TexelSurfaceIndices.Values[Center] != Surface)
     {
-        if (Push.Mode == 1u)
+        if (SmoothingMode() == 1u)
             imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
         else
             imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
@@ -63,7 +115,7 @@ void main()
 
     vec4 Sum = vec4(0.0);
     float WeightSum = 0.0;
-    if (Push.Mode == 0u)
+    if (SmoothingMode() == 0u)
     {
         for (int Y = -2; Y <= 2; ++Y)
         {
@@ -86,7 +138,7 @@ void main()
         return;
     }
 
-    bool Horizontal = Push.Mode == 1u;
+    bool Horizontal = SmoothingMode() == 1u;
     for (int Offset = -2; Offset <= 2; ++Offset)
     {
         int SX = int(XY.x) + (Horizontal ? Offset : 0);
@@ -103,4 +155,5 @@ void main()
         imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), Result);
     else
         imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
+#endif
 }
