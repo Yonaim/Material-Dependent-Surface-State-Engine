@@ -7,6 +7,10 @@
 
 #include "Logger/Logger.h"
 
+#if defined(_MSC_VER)
+// The bundled fast_float currently fails MSVC's C++20 constexpr checks.
+#define TINYOBJLOADER_DISABLE_FAST_FLOAT
+#endif
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <cmath>
 #include <cstddef>
