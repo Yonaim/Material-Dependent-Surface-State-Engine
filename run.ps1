@@ -9,18 +9,9 @@ param(
 $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
 $BuildDir = Join-Path $ProjectRoot "Build"
+$BuildScript = Join-Path $ProjectRoot "Scripts/build.ps1"
 
-if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
-    Write-Error "cmake is required but was not found in PATH."
-    exit 1
-}
-
-& cmake -S $ProjectRoot -B $BuildDir
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
-}
-
-& cmake --build $BuildDir --config $Configuration --parallel
+& $BuildScript -Configuration $Configuration
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
