@@ -8,68 +8,119 @@
 #include "Simulation/SurfaceSolver/SurfaceSolverCommon.glsl"
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+shared uint GroupNextMask;
+
+bool accumulationContributionChanged(uint TexelIndex,
+                                     uint ChannelIndex,
+                                     float OldState,
+                                     float NewState)
+{
+    if (!useSparseAccumulationHeight() || !prepareAccumulationHeight())
+        return false;
+
+    uint Record = profileRecordIndex(TexelIndex, ChannelIndex);
+    // Sparse-height scheduling only needs capacity and accumulation factor: fetch two SoA planes, not all 3 vec4s.
+    float Factor = profileDecayAndGeometry(Record).z;
+    if (!solverFinite(Factor) || Factor <= 0.0)
+        return false;
+
+    float AreaScale = texelAreaScale(TexelIndex);
+    float Capacity = profileCapacityInputAndTransfer(Record).x * AreaScale;
+    if (!solverFinite(Capacity) || Capacity <= 0.0)
+        return false;
+
+    // Height는 capacity까지의 state만 사용하므로 capacity 위의 overflow-like state 변화는 재계산 사유가 아니다.
+    float OldVisible = min(max(OldState, 0.0), Capacity);
+    float NewVisible = min(max(NewState, 0.0), Capacity);
+    // Height pass 자체가 BuiltHeight 기준 tolerance를 갖고 있으므로 여기서는 누적 손실이 생기지 않게
+    // visible state가 조금이라도 바뀌면 schedule한다.
+    return NewVisible != OldVisible;
+}
 
 void main()
 {
-    uint TexelIndex = gl_GlobalInvocationID.x;
-    if (TexelIndex >= Solver.LocalTexelCount)
-    {
-        return;
-    }
+    uint OriginalGroup = solverOriginalGroup();
+    uint TexelIndex = OriginalGroup * 64u + gl_LocalInvocationID.x;
+    uint LocalNextMask = 0u;
+    bool LocalNeedsNext = false;
+    if (gl_LocalInvocationIndex == 0u) GroupNextMask = 0u;
+    barrier();
 
+    if (TexelIndex < Solver.LocalTexelCount)
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
+        if (!isChannelActive(ChannelIndex, OriginalGroup))
+            continue;
+
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
         if (!supportsChannel(TexelIndex, ChannelIndex))
         {
             // 면적이 0인 instance에서는 전달을 멈추되, 기존 총량과 새 입력은 보존한다.
             bool SupportedProfile = isValidTexel(TexelIndex) &&
                 ProfileSupported.Values[profileRecordIndex(TexelIndex, ChannelIndex)] != 0u;
-            NextState.Values[StateValueIndex] = SupportedProfile ?
-                max(CurrentState.Values[StateValueIndex] + InputDelta.Values[StateValueIndex], 0.0) : 0.0;
+            float Current = CurrentState.Values[StateValueIndex];
+            float NewState = SupportedProfile
+                ? max(Current + InputDelta.Values[StateValueIndex], 0.0)
+                : 0.0;
+            NextState.Values[StateValueIndex] = NewState;
             InputDelta.Values[StateValueIndex] = 0.0;
+            // Keep one retirement generation when Current was non-zero.
+            // The destination ping-pong buffer may still contain an older value; scheduling one more
+            // step guarantees that buffer is explicitly overwritten with zero before the group retires.
+            if (Current > 0.0 || NewState > 0.0)
+            {
+                LocalNeedsNext = true;
+                if (ChannelIndex < 32u) LocalNextMask |= 1u << ChannelIndex;
+            }
+            if (accumulationContributionChanged(TexelIndex, ChannelIndex, Current, NewState))
+                scheduleAccumulationGroup(TexelIndex / 64u);
             continue;
         }
 
         float Incoming = 0.0;
-        // 목표 texel 값은 실제 유입 후보가 있을 때만 준비한다.
         float TargetSaturation = 0.0;
         float TargetConcavity = 0.0;
         vec3 TargetPosition = vec3(0.0);
         bool TargetSaturationReady = false;
         bool TargetConcavityReady = false;
         bool TargetPositionReady = false;
-        // 이웃 source의 방향별 flux를 다시 계산해 현재 texel로 모은다.
+
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
             if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
-            {
                 continue;
-            }
 
             uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
-            float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
-            // Pass 1은 유효하지 않거나 해당 channel을 지원하지 않는 source의 OutgoingFluxScale을 0으로 기록한다.
-            // Event Input은 flux 계산 후 반영하므로 비어 있던 source에 새로 들어온 양은 다음 step부터 전달된다.
-            if (NeighborScale <= 0.0)
-            {
+            // Sparse solver에서는 source가 막 0이 된 뒤 이전 step의 scale/cache가 남을 수 있다.
+            // CurrentState를 먼저 확인하면 stale temporary cache를 절대 소비하지 않는다.
+            float NeighborCurrent = CurrentState.Values[NeighborStateValueIndex];
+            if (NeighborCurrent <= 0.0)
                 continue;
-            }
+
+            float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
+            if (NeighborScale <= 0.0)
+                continue;
+
             uint ReverseDirectionIndex = reverseNeighborDirectionIndex(TexelIndex, DirectionIndex);
             if (ReverseDirectionIndex >= SurfaceNeighborCount)
-            {
                 continue;
-            }
-            float NeighborTransferWeight = transferWeight(NeighborTexel, ReverseDirectionIndex);
-            if (NeighborTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
+
+            if (useRawFluxCache())
             {
+                float CachedRawIncoming = loadCachedRawEdgeFlux(
+                    NeighborTexel, ChannelIndex, ReverseDirectionIndex);
+                Incoming += CachedRawIncoming * NeighborScale;
                 continue;
             }
 
+            float NeighborTransferWeight = transferWeight(NeighborTexel, ReverseDirectionIndex);
+            if (NeighborTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
+                continue;
+
             TSurfaceGPUProfileParameters SourceParameters =
-                ProfileParameters.Values[profileRecordIndex(NeighborTexel, ChannelIndex)];
-            float SourceSaturation = CurrentState.Values[NeighborStateValueIndex] / stateCapacity(NeighborTexel, ChannelIndex);
+                loadProfileParameters(profileRecordIndex(NeighborTexel, ChannelIndex));
+            float SourceSaturation = NeighborCurrent / stateCapacity(NeighborTexel, ChannelIndex);
             float SaturationTransferRate =
                 SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
             float GeometryTransferRate =
@@ -94,23 +145,48 @@ void main()
                 TargetPositionReady = true;
             }
             if (SourceParameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & 1u) == 0u)
-            {
                 prepareSourceGeometry(NeighborTexel);
-            }
-            // Pass 1과 동일한 식으로 source 방향 flux를 재평가한다.
-            float NeighborRawIncoming = rawFlux(NeighborTexel, TexelIndex, ChannelIndex,
-                NeighborTransferWeight, SourceParameters, SourceSaturation,
-                TargetSaturation, TargetConcavity, TargetPosition);
+
+            float NeighborRawIncoming = rawFlux(NeighborTexel,
+                                                 TexelIndex,
+                                                 ChannelIndex,
+                                                 NeighborTransferWeight,
+                                                 SourceParameters,
+                                                 SourceSaturation,
+                                                 TargetSaturation,
+                                                 TargetConcavity,
+                                                 TargetPosition);
             Incoming += NeighborRawIncoming * NeighborScale;
         }
 
         float Current = CurrentState.Values[StateValueIndex];
-        float Outgoing = RawOutgoingBuffer.Values[StateValueIndex] *
+        float Outgoing = loadRawOutgoingFloat(StateValueIndex) *
                          OutgoingFluxScale.Values[StateValueIndex];
-        float Decay = decayAmount(TexelIndex, ChannelIndex);
+        float Decay = Current > 0.0 ? decayAmount(TexelIndex, ChannelIndex) : 0.0;
         float EventInput = InputDelta.Values[StateValueIndex];
         InputDelta.Values[StateValueIndex] = 0.0;
-        // 유입량과 Event Input은 Capacity를 넘어도 보존하며, 다음 step에서 다시 이웃으로 전달될 수 있다.
-        NextState.Values[StateValueIndex] = max(Current + EventInput + Incoming - Outgoing - Decay, 0.0);
+        float NewState = max(Current + EventInput + Incoming - Outgoing - Decay, 0.0);
+        NextState.Values[StateValueIndex] = NewState;
+
+        // Persistent active-set handoff: Pass2 directly builds the schedule/mask consumed after the A/B swap.
+        // Current>0 also schedules one cleanup generation so the opposite ping-pong state buffer
+        // cannot retain a stale non-zero value after this state reaches zero.
+        if (Current > 0.0 || NewState > 0.0)
+        {
+            LocalNeedsNext = true;
+            if (ChannelIndex < 32u) LocalNextMask |= 1u << ChannelIndex;
+        }
+        if (accumulationContributionChanged(TexelIndex, ChannelIndex, Current, NewState))
+            scheduleAccumulationGroup(TexelIndex / 64u);
+    }
+    if (LocalNextMask != 0u) atomicOr(GroupNextMask, LocalNextMask);
+    if (LocalNeedsNext) scheduleNextSolverTexel(TexelIndex, LocalNextMask);
+    barrier();
+    if (gl_LocalInvocationIndex == 0u && GroupNextMask != 0u)
+    {
+        if (useActiveChannelMask())
+            atomicOr(AccumulationHeights.Values[solverNextMaskIndex()], GroupNextMask);
+        if (usePerWorkgroupChannelMask())
+            atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase() + OriginalGroup], GroupNextMask);
     }
 }

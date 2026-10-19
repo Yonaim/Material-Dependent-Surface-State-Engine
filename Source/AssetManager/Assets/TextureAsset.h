@@ -29,6 +29,7 @@ namespace MDSS::Asset
     class TextureAsset final : public TAsset
     {
     public:
+        // Texture resource construction and access
         /**
          * @brief RGBA8 픽셀을 Vulkan image에 업로드하고 view와 sampler를 생성한다.
          * @throws std::runtime_error 이미지 자원 생성, layout 전환 또는 upload가 실패한 경우.

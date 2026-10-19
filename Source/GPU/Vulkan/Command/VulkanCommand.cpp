@@ -11,6 +11,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Command_Pool_Lifecycle
+
     TVulkanCommand::TVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily) : Device(Device)
     {
         VkCommandPoolCreateInfo CreateInfo{};
@@ -35,6 +37,10 @@ namespace MDSS::GPU
         }
     }
 
+#pragma endregion
+
+#pragma region Command_Buffer_Access
+
     VkCommandPool TVulkanCommand::GetPool() const noexcept
     {
         return CommandPool;
@@ -58,6 +64,10 @@ namespace MDSS::GPU
         TLogger::Verbose("Vulkan", "Allocated " + std::to_string(Count) + " primary command buffer(s).");
         return CommandBuffers;
     }
+
+#pragma endregion
+
+#pragma region Single_Time_Commands
 
     VkCommandBuffer TVulkanCommand::BeginSingleTime() const
     {
@@ -113,4 +123,5 @@ namespace MDSS::GPU
 
         vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
     }
+#pragma endregion
 } // namespace MDSS::GPU

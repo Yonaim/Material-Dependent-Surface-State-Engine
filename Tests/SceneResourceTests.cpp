@@ -67,18 +67,18 @@ namespace
             const char* Triangle = "v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nvt 1 0\nvt 0 1\nvn 0 0 1\nf 1/1/1 2/2/1 3/3/1\n";
             std::ofstream(Root / "A.obj") << Triangle;
             std::ofstream(Root / "B.obj") << Triangle;
-            WriteProfile("Wet", {"wetness"}, 0.75F);
+            WriteProfile("Heat", {"heat"}, 0.75F);
             WriteProfile("Mud", {"mud"}, 0.5F);
             WriteProfile("Cached", {"heat"}, 1.0F);
-            WriteMap("Wet", {"Wet.SRProfile"}, 0);
+            WriteMap("Heat", {"Heat.SRProfile"}, 0);
             WriteMap("Mud", {"Mud.SRProfile"}, 0);
-            WriteMap("WetMud", {"Wet.SRProfile", "Mud.SRProfile"}, 0);
-            WriteMap("MudWet", {"Mud.SRProfile", "Wet.SRProfile"}, 1);
-            WriteScene("Wet", {{"A.obj", "Wet.SurfaceProfileMap"}}, 128);
+            WriteMap("HeatMud", {"Heat.SRProfile", "Mud.SRProfile"}, 0);
+            WriteMap("MudHeat", {"Mud.SRProfile", "Heat.SRProfile"}, 1);
+            WriteScene("Heat", {{"A.obj", "Heat.SurfaceProfileMap"}}, 128);
             WriteScene("Mud", {{"B.obj", "Mud.SurfaceProfileMap"}}, 128);
             WriteScene("Mixed",
-                       {{"A.obj", "WetMud.SurfaceProfileMap"},
-                        {"B.obj", "MudWet.SurfaceProfileMap"},
+                       {{"A.obj", "HeatMud.SurfaceProfileMap"},
+                        {"B.obj", "MudHeat.SurfaceProfileMap"},
                         {"A.obj", "Mud.SurfaceProfileMap"}},
                        128);
             WriteScene("Empty", {});
@@ -210,7 +210,7 @@ namespace
         Check(Saved.HasDemoAnimation() && Saved.GetStaticMeshInstances()[0].GetId() == "object",
               "Scene save and load should preserve animation reference and object IDs");
 
-        TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets, SurfaceData);
+        TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(SurfaceScene));
         SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, SurfaceScene);
         auto&                             SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
@@ -225,11 +225,11 @@ namespace
               "scale changes must still refresh TransferWeight and world area buffers");
         SurfaceTransform.Scale.x = 1.0F;
         SurfaceTransform.RotationDegrees.x = 0.0F;
-        const auto WetProfile = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
-        auto       Flow = Assets.GetSRProfile(WetProfile).GetData().States.at("wetness");
+        const auto HeatProfile = Assets.LoadSRProfile(Fixtures.Root / "Heat.SRProfile");
+        auto       Flow = Assets.GetSRProfile(HeatProfile).GetData().States.at("heat");
         Flow.GeometryTransferFactor = 1.0F;
-        const auto WetState = SurfaceData.GetSurfaceStateRegistry().GetStateId("wetness");
-        SurfaceStates.SetDebugProfileParameters(WetProfile, WetState, Flow);
+        const auto HeatState = SurfaceData.GetSurfaceStateRegistry().GetStateId("heat");
+        SurfaceStates.SetDebugProfileParameters(HeatProfile, HeatState, Flow);
         const float FlatBound = SurfaceStates.GetMaximumStableDeltaTime();
         SurfaceTransform.RotationDegrees.x = 90.0F;
         const float TiltedBound = SurfaceStates.GetMaximumStableDeltaTime();
@@ -279,7 +279,7 @@ namespace
                       "the inverted Mud mountain must remain stationary during animation");
         }
         constexpr std::array<std::pair<std::string_view, std::string_view>, 4> Effects{
-            {{"Wetness", "wetness"}, {"WaterFilm", "waterfilm"}, {"Mud", "mud"}, {"Lava", "lava"}}};
+            {{"Heat", "heat"}, {"WaterFilm", "waterfilm"}, {"Mud", "mud"}, {"Lava", "lava"}}};
         for (const std::string_view Shape : {"Cube", "Bunny", "Mountain"})
         {
             glm::vec3 ReferencePosition(0.0F);
@@ -386,13 +386,13 @@ namespace
         Asset::TAssetManager              Assets(Context);
         SurfaceState::TSurfaceDataManager SurfaceData(Assets);
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
-        TScene Scene = TSceneLoader::Load(Fixtures.Root / "Wet.Scene", Assets, SurfaceData);
+        TScene Scene = TSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
         SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, Scene);
         Rendering::TRenderer              Renderer(Context, Window, Assets, SurfaceData, Scene, SurfaceStates);
-        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == 0 &&
+        Check(Renderer.GetDemoSurfaceStateBindings().Heat == 0 &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == SurfaceState::InvalidStateId,
-              "Wet Scene demo bindings must resolve optional names.");
+              "Heat Scene demo bindings must resolve optional names.");
         {
             TDebugUI UI(Context, Window, Renderer, Assets, SurfaceData);
             Check(UI.IsFixedSimulationTimestep() && !UI.IsAutoSubsteppingEnabled(),
@@ -452,12 +452,12 @@ namespace
             vkDeviceWaitIdle(Context.GetDevice());
         }
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-                  SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+                  SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "heat",
               "cached foreign States must be excluded");
-        const auto WetHandle = Assets.LoadSRProfile(Fixtures.Root / "Wet.SRProfile");
-        auto       Parameters = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
+        const auto HeatHandle = Assets.LoadSRProfile(Fixtures.Root / "Heat.SRProfile");
+        auto       Parameters = Assets.GetSRProfile(HeatHandle).GetData().States.at("heat");
         Parameters.InputFactor = 2.5F;
-        Renderer.SetDebugProfileParameters(WetHandle, 0, Parameters);
+        Renderer.SetDebugProfileParameters(HeatHandle, 0, Parameters);
 
         auto SwitchScene = [&](const std::string& Name)
         {
@@ -475,15 +475,15 @@ namespace
             }
         };
         TScene Mud = TSceneLoader::Load(Fixtures.Root / "Mud.Scene", Assets, SurfaceData);
-        Check(SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+        Check(SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "heat",
               "loading prospective assets must preserve active IDs");
         SwitchScene("Mud");
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 1 &&
                   SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "mud",
               "Scene switch must replace the Registry");
         Check(Renderer.GetDemoSurfaceStateBindings().Mud == 0 &&
-                  Renderer.GetDemoSurfaceStateBindings().Wetness == SurfaceState::InvalidStateId,
-              "Mud Scene must discard the former Wetness ID.");
+                  Renderer.GetDemoSurfaceStateBindings().Heat == SurfaceState::InvalidStateId,
+              "Mud Scene must discard the former Heat ID.");
         {
             TDebugUI UI(Context, Window, Renderer, Assets, SurfaceData);
             ImGui::GetIO().IniFilename = nullptr;
@@ -511,8 +511,8 @@ namespace
 
         SwitchScene("Mixed");
         const auto&                  Registry = SurfaceData.GetSurfaceStateRegistry();
-        const SurfaceState::TStateId WetState = Registry.GetStateId("wetness");
-        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == WetState &&
+        const SurfaceState::TStateId HeatState = Registry.GetStateId("heat");
+        Check(Renderer.GetDemoSurfaceStateBindings().Heat == HeatState &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == Registry.GetStateId("mud"),
               "Scene reload must resolve changed demo IDs.");
         Check(Registry.GetStateCount() == 2, "mixed Scene must use exactly its two States");
@@ -532,12 +532,12 @@ namespace
         Check(A->GetBoundBufferHandle(SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true) !=
                   B->GetBoundBufferHandle(SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true),
               "instance State must stay independent");
-        Check(std::abs(GetProfileInputFactor(GPU, SurfaceData, Scene, WetHandle, WetState) - 0.75F) < 1e-6F,
+        Check(std::abs(GetProfileInputFactor(GPU, SurfaceData, Scene, HeatHandle, HeatState) - 0.75F) < 1e-6F,
               "Scene switch must discard old numeric-ID overrides");
-        Renderer.SetDebugStateChannel(WetState);
+        Renderer.SetDebugStateChannel(HeatState);
         Parameters.InputFactor = 1.25F;
-        Renderer.SetDebugProfileParameters(WetHandle, WetState, Parameters);
-        Check(std::abs(GetProfileInputFactor(GPU, SurfaceData, Scene, WetHandle, WetState) - 1.25F) < 1e-6F,
+        Renderer.SetDebugProfileParameters(HeatHandle, HeatState, Parameters);
+        Check(std::abs(GetProfileInputFactor(GPU, SurfaceData, Scene, HeatHandle, HeatState) - 1.25F) < 1e-6F,
               "Profile update must target the single shared table");
 
         {
@@ -547,7 +547,7 @@ namespace
             {
                 SurfaceState::TSurfaceContactInput Contact;
                 Contact.TargetInstance = Target;
-                Contact.State = WetState;
+                Contact.State = HeatState;
                 Contact.Radius = 100.0F;
                 Contact.Strength = 1.0F;
                 Contact.Falloff = 0.0F;
@@ -563,7 +563,7 @@ namespace
                 Resources.GetInstanceCurrentStateBuffer(Index).Download(Values.data(), Values.size() * sizeof(float));
                 const float Sum = std::accumulate(Values.begin(), Values.end(), 0.0F);
                 Check(Index == 2 ? Sum == 0.0F : Sum > 0.0F,
-                      "local Profile order remapping must inject Wetness into both Wet Meshes and skip the Mud Mesh");
+                      "local Profile order remapping must inject Heat into both Heat Meshes and skip the Mud Mesh");
                 if (Index < 2)
                 {
                     const auto& MeshInstance = Scene.GetStaticMeshInstances()[Index];
@@ -574,7 +574,7 @@ namespace
                     for (std::size_t Texel = 0; Texel < Areas.size(); ++Texel)
                     {
                         const float Expected = 0.75F * Areas[Texel] / SurfaceStateReferenceArea;
-                        Check(std::abs(Values[Texel * Registry.GetStateCount() + WetState] - Expected) < 1e-5F,
+                        Check(std::abs(Values[Texel * Registry.GetStateCount() + HeatState] - Expected) < 1e-5F,
                               "contact input must scale per texel world area");
                     }
                 }
@@ -582,7 +582,7 @@ namespace
         }
         Renderer.SetSimulationResolution(Scene, 256);
         Check(
-            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, WetHandle, WetState) -
+            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, HeatHandle, HeatState) -
                      1.25F) < 1e-6F,
             "resolution change must preserve current Scene tuning");
 
@@ -593,14 +593,14 @@ namespace
             Transform.RotationDegrees = {90, 0, 0};
             {
                 SurfaceState::TSurfaceStateSystem System(Context, Assets, SurfaceData, Scene);
-                auto                              Flow = Assets.GetSRProfile(WetHandle).GetData().States.at("wetness");
+                auto                              Flow = Assets.GetSRProfile(HeatHandle).GetData().States.at("heat");
                 Flow.GeometryTransferFactor = 0.5F;
-                System.SetDebugProfileParameters(WetHandle, WetState, Flow);
+                System.SetDebugProfileParameters(HeatHandle, HeatState, Flow);
                 const float HalfFactorStep = System.GetMaximumStableDeltaTime();
                 Check(HalfFactorStep > 0.012F && HalfFactorStep < 0.016F,
                       "calibrated Geometry must lower the transport step bound on a vertical Medium surface");
                 Flow.GeometryTransferFactor = 1.0F;
-                System.SetDebugProfileParameters(WetHandle, WetState, Flow);
+                System.SetDebugProfileParameters(HeatHandle, HeatState, Flow);
                 const float FullFactorStep = System.GetMaximumStableDeltaTime();
                 Check(std::abs(FullFactorStep * 2 - HalfFactorStep) < 1e-6F,
                       "doubling Geometry factor must halve its safe step bound");
@@ -636,25 +636,25 @@ namespace
         }
         Check(bFailed, "oversized Scene must fail GPU resource construction");
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 2 &&
-                  SurfaceData.GetSurfaceStateRegistry().GetStateId("wetness") == WetState,
+                  SurfaceData.GetSurfaceStateRegistry().GetStateId("heat") == HeatState,
               "failed resource rebuild must restore the previous Registry");
         Check(Renderer.GetSurfaceGPUResources().GetInstanceDescriptors(0)->GetBoundBufferHandle(
                   SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true) == PreviousState,
               "failed Scene switch must retain previous GPU resources");
         Check(
-            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, WetHandle, WetState) -
+            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, HeatHandle, HeatState) -
                      1.25F) < 1e-6F,
             "failed switch must retain previous tuning");
         SwitchScene("Empty");
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 0 &&
                   Renderer.GetSurfaceGPUResources().GetManagedInstanceCount() == 0,
               "empty Scene must have no State channels or resources");
-        Check(Renderer.GetDemoSurfaceStateBindings().Wetness == SurfaceState::InvalidStateId &&
+        Check(Renderer.GetDemoSurfaceStateBindings().Heat == SurfaceState::InvalidStateId &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == SurfaceState::InvalidStateId,
               "Empty Registry must resolve both demo States as absent.");
-        SwitchScene("Wet");
+        SwitchScene("Heat");
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 1 &&
-                  SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "wetness",
+                  SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "heat",
               "switching back must exclude cached failed Scene States");
     }
 }

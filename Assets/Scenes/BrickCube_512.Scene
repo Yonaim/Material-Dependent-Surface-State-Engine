@@ -1,0 +1,33 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/BrickCube_512.DemoAnim",
+  "camera": {
+    "position": [1.6, -2.6, 1.8],
+    "target": [0.0, 0.0, 0.0],
+    "verticalFieldOfViewDegrees": 45.0
+  },
+  "simulationResolution": 512,
+  "objects": [
+    {
+      "id": "brick_cube_512",
+      "mesh": "../Meshes/BrickCube/BrickCube_512.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/BrickCube_512.SurfaceProfileMap",
+      "transform": {
+        "position": [0.0, 0.0, 0.0],
+        "rotationDegrees": [0.0, 0.0, 0.0],
+        "scale": [1.0, 1.0, 1.0]
+      }
+    }
+  ],
+  "initialContacts": [
+    {
+      "target": "brick_cube_512",
+      "state": "lava",
+      "worldPosition": [0.0, -0.501, 0.25],
+      "radius": 0.35,
+      "strength": 1.5,
+      "falloff": 1.0
+    }
+  ]
+}

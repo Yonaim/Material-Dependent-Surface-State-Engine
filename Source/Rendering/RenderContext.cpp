@@ -13,6 +13,8 @@
 
 namespace MDSS::Rendering
 {
+#pragma region Render_Context_Lifecycle
+
     TRenderContext::TRenderContext(const GPU::TVulkanContext& Context)
         : Device(Context.GetDevice()), CommandPool(Context.GetCommands().GetPool()),
           CommandBuffers(Context.GetCommands().AllocatePrimary(static_cast<std::uint32_t>(MaxFramesInFlight)))
@@ -75,6 +77,10 @@ namespace MDSS::Rendering
         }
     }
 
+#pragma endregion
+
+#pragma region Frame_Synchronization
+
     void TRenderContext::WaitForCurrentFrame() const
     {
         if (vkWaitForFences(
@@ -98,6 +104,10 @@ namespace MDSS::Rendering
         CurrentFrame = (CurrentFrame + 1) % static_cast<std::uint32_t>(MaxFramesInFlight);
     }
 
+#pragma endregion
+
+#pragma region Frame_Resource_Access
+
     std::uint32_t TRenderContext::GetCurrentFrameIndex() const noexcept
     {
         return CurrentFrame;
@@ -117,4 +127,5 @@ namespace MDSS::Rendering
     {
         return InFlightFences[CurrentFrame];
     }
+#pragma endregion
 } // namespace MDSS::Rendering

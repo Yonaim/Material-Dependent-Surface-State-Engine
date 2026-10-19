@@ -26,6 +26,7 @@ namespace MDSS::GPU
     class TVulkanQueue
     {
     public:
+        // Queue setup and access
         TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface);
 
         [[nodiscard]] VkQueue                    GetGraphics() const noexcept;

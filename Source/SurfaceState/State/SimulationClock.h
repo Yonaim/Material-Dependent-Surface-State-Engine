@@ -21,6 +21,7 @@ namespace MDSS::SurfaceState
     class TSimulationClock
     {
     public:
+        // Elapsed time accumulation and pending-time limits
         void Accumulate(double ElapsedSeconds, double TimeScale, bool bPaused)
         {
             if (!std::isfinite(ElapsedSeconds) || ElapsedSeconds < 0.0 || !std::isfinite(TimeScale) || TimeScale < 0.0)
@@ -42,6 +43,7 @@ namespace MDSS::SurfaceState
             return DroppedSeconds;
         }
 
+        // Simulation step consumption
         [[nodiscard]] std::vector<float>
         Consume(float TransportMaximumStep, bool bFixed, bool bAutoSubstepping, bool bPaused, bool bSingleStep)
         {
@@ -88,6 +90,7 @@ namespace MDSS::SurfaceState
             return Steps;
         }
 
+        // Pending time inspection and reset
         void Reset() noexcept
         {
             PendingSeconds = 0.0;

@@ -147,6 +147,40 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MDSS_SHADER_SOU
 # be reused by a Release build (or vice versa).
 set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders/$<CONFIG>")
 set(MDSS_SHADER_BINARIES)
+set(MDSS_VARIANT_SHADERS
+    Simulation/SurfaceSolver/SurfaceSolverPass1.comp
+    Simulation/SurfaceSolver/SurfaceSolverPass2.comp
+    Simulation/SurfaceDynamicWeightsUpdate.comp
+    Rendering/Surface/HeightFieldSmoothing.comp
+    Rendering/StateOverlay/OverlayCoverageSmoothing.comp
+    Rendering/Surface/RenderStateTextureSmoothing.comp
+    Rendering/Surface/SurfaceLit.frag
+    Rendering/Surface/BaseSurfaceLit.frag
+    Rendering/Surface/TexelSurfaceLit.frag
+    Rendering/StateOverlay/OverlayCombined.frag
+)
+
+function(mdss_add_shader_variant ShaderRelativePath VariantName)
+    set(ShaderSource "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/${ShaderRelativePath}")
+    set(ShaderBinary "${MDSS_SHADER_OUTPUT_DIR}/${ShaderRelativePath}.${VariantName}.spv")
+    get_filename_component(ShaderOutputDirectory "${ShaderBinary}" DIRECTORY)
+    add_custom_command(
+        OUTPUT "${ShaderBinary}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${ShaderOutputDirectory}"
+        COMMAND "${Vulkan_GLSLC_EXECUTABLE}"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
+                -I "${CMAKE_CURRENT_SOURCE_DIR}/Source"
+                "-DMDSS_GPU_VALIDATION=$<IF:$<CONFIG:Debug>,1,0>"
+                ${ARGN}
+                "${ShaderSource}"
+                -o "${ShaderBinary}"
+        DEPENDS "${ShaderSource}" ${MDSS_SHADER_INCLUDES}
+                "${CMAKE_CURRENT_SOURCE_DIR}/Source/SurfaceState/Types/SurfaceSolverRates.h"
+        COMMENT "Compiling shader ${ShaderRelativePath}.${VariantName}"
+        VERBATIM
+    )
+    set(MDSS_SHADER_BINARIES ${MDSS_SHADER_BINARIES} "${ShaderBinary}" PARENT_SCOPE)
+endfunction()
 
 foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
     file(STRINGS "${ShaderSource}" ShaderVersionLine
@@ -162,6 +196,9 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
         "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
         "${ShaderSource}"
     )
+    if(ShaderRelativePath IN_LIST MDSS_VARIANT_SHADERS)
+        continue()
+    endif()
     set(ShaderBinary "${MDSS_SHADER_OUTPUT_DIR}/${ShaderRelativePath}.spv")
     get_filename_component(ShaderOutputDirectory "${ShaderBinary}" DIRECTORY)
 
@@ -181,6 +218,41 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
     )
 
     list(APPEND MDSS_SHADER_BINARIES "${ShaderBinary}")
+endforeach()
+
+foreach(RawMode RANGE 0 4)
+    foreach(WeightMode RANGE 0 1)
+        foreach(PassName SurfaceSolverPass1 SurfaceSolverPass2)
+            mdss_add_shader_variant("Simulation/SurfaceSolver/${PassName}.comp" "r${RawMode}w${WeightMode}"
+                "-DMDSS_RAW_MODE=${RawMode}" "-DMDSS_HALF_WEIGHTS=${WeightMode}")
+        endforeach()
+    endforeach()
+endforeach()
+foreach(WeightMode RANGE 0 1)
+    mdss_add_shader_variant("Simulation/SurfaceDynamicWeightsUpdate.comp" "w${WeightMode}"
+        "-DMDSS_HALF_WEIGHTS=${WeightMode}")
+endforeach()
+foreach(HaloMode RANGE 0 1)
+    mdss_add_shader_variant("Rendering/Surface/HeightFieldSmoothing.comp" "h${HaloMode}"
+        "-DMDSS_HEIGHT_HALO=${HaloMode}")
+    mdss_add_shader_variant("Rendering/StateOverlay/OverlayCoverageSmoothing.comp" "h${HaloMode}"
+        "-DMDSS_COVERAGE_HALO=${HaloMode}")
+endforeach()
+mdss_add_shader_variant("Rendering/Surface/RenderStateTextureSmoothing.comp" "direct"
+    "-DMDSS_SMOOTH_MODE=0" "-DMDSS_SMOOTH_HALO=0")
+foreach(AxisMode RANGE 1 2)
+    foreach(HaloMode RANGE 0 1)
+        mdss_add_shader_variant("Rendering/Surface/RenderStateTextureSmoothing.comp" "a${AxisMode}h${HaloMode}"
+            "-DMDSS_SMOOTH_MODE=${AxisMode}" "-DMDSS_SMOOTH_HALO=${HaloMode}")
+    endforeach()
+endforeach()
+foreach(FragmentMode RANGE 0 2)
+    foreach(FragmentName SurfaceLit BaseSurfaceLit TexelSurfaceLit)
+        mdss_add_shader_variant("Rendering/Surface/${FragmentName}.frag" "m${FragmentMode}"
+            "-DMDSS_FRAGMENT_MODE=${FragmentMode}")
+    endforeach()
+    mdss_add_shader_variant("Rendering/StateOverlay/OverlayCombined.frag" "m${FragmentMode}"
+        "-DMDSS_FRAGMENT_MODE=${FragmentMode}")
 endforeach()
 
 add_custom_target(MDSS_Shaders DEPENDS ${MDSS_SHADER_BINARIES})
@@ -221,34 +293,40 @@ if(BUILD_TESTING)
     target_link_libraries(MDSS_SimulationTransportTests PRIVATE glm::glm)
     add_test(NAME MDSS_SimulationTransport COMMAND MDSS_SimulationTransportTests)
 
-    # Exercise the actual Scene/AssetManager/Renderer resource lifecycle with a small native Vulkan window.
-    set(MDSS_SCENE_TEST_SOURCES ${MDSS_SOURCES})
-    list(FILTER MDSS_SCENE_TEST_SOURCES EXCLUDE REGEX "/main\\.cpp$")
-    add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp Tests/SurfaceDebugRenderingTests.cpp ${MDSS_SCENE_TEST_SOURCES})
-    add_dependencies(MDSS_SceneResourceTests MDSS_Shaders)
-    target_include_directories(MDSS_SceneResourceTests PRIVATE Source)
-    target_include_directories(MDSS_SceneResourceTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
-    target_link_libraries(MDSS_SceneResourceTests PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
-    target_compile_definitions(MDSS_SceneResourceTests PRIVATE
-        MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
-        MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
-        MDSS_SURFACE_CACHE_DIR="${CMAKE_CURRENT_BINARY_DIR}/SceneTestCache"
-        MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
-        GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE
+    option(MDSS_BUILD_VULKAN_SCENE_TESTS
+        "Build and register Scene/Renderer tests that require a native Vulkan window"
+        OFF
     )
-    if(MSVC)
-        target_compile_options(MDSS_SceneResourceTests PRIVATE /W4 /permissive-)
-    else()
-        target_compile_options(MDSS_SceneResourceTests PRIVATE -Wall -Wextra -Wpedantic)
+    if(MDSS_BUILD_VULKAN_SCENE_TESTS)
+        # Exercise the actual Scene/AssetManager/Renderer resource lifecycle with a small native Vulkan window.
+        set(MDSS_SCENE_TEST_SOURCES ${MDSS_SOURCES})
+        list(FILTER MDSS_SCENE_TEST_SOURCES EXCLUDE REGEX "/main\\.cpp$")
+        add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp Tests/SurfaceDebugRenderingTests.cpp ${MDSS_SCENE_TEST_SOURCES})
+        add_dependencies(MDSS_SceneResourceTests MDSS_Shaders)
+        target_include_directories(MDSS_SceneResourceTests PRIVATE Source)
+        target_include_directories(MDSS_SceneResourceTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
+        target_link_libraries(MDSS_SceneResourceTests PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
+        target_compile_definitions(MDSS_SceneResourceTests PRIVATE
+            MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"
+            MDSS_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets"
+            MDSS_SURFACE_CACHE_DIR="${CMAKE_CURRENT_BINARY_DIR}/SceneTestCache"
+            MDSS_ENABLE_VALIDATION=$<BOOL:${MDSS_ENABLE_VALIDATION}>
+            GLM_FORCE_RADIANS GLM_FORCE_DEPTH_ZERO_TO_ONE
+        )
+        if(MSVC)
+            target_compile_options(MDSS_SceneResourceTests PRIVATE /W4 /permissive-)
+        else()
+            target_compile_options(MDSS_SceneResourceTests PRIVATE -Wall -Wextra -Wpedantic)
+        endif()
+        add_test(NAME MDSS_SceneResources COMMAND MDSS_SceneResourceTests)
+        add_test(NAME MDSS_DemoAnimation COMMAND MDSS_SceneResourceTests --demo-animation)
+        add_test(NAME MDSS_CavityFillDisplayBound COMMAND MDSS_SceneResourceTests --cavity-fill-bound)
+        add_test(NAME MDSS_LavaScene COMMAND MDSS_SceneResourceTests --lava-scene)
+        add_test(NAME MDSS_OverlaySideCompaction COMMAND MDSS_SceneResourceTests --overlay-side-compaction)
+        set_tests_properties(MDSS_SceneResources PROPERTIES SKIP_RETURN_CODE 77)
+        set_tests_properties(MDSS_OverlaySideCompaction PROPERTIES SKIP_RETURN_CODE 77)
+        set_tests_properties(MDSS_LavaScene PROPERTIES SKIP_RETURN_CODE 77)
     endif()
-    add_test(NAME MDSS_SceneResources COMMAND MDSS_SceneResourceTests)
-    add_test(NAME MDSS_DemoAnimation COMMAND MDSS_SceneResourceTests --demo-animation)
-    add_test(NAME MDSS_CavityFillDisplayBound COMMAND MDSS_SceneResourceTests --cavity-fill-bound)
-    add_test(NAME MDSS_LavaScene COMMAND MDSS_SceneResourceTests --lava-scene)
-    add_test(NAME MDSS_OverlaySideCompaction COMMAND MDSS_SceneResourceTests --overlay-side-compaction)
-    set_tests_properties(MDSS_SceneResources PROPERTIES SKIP_RETURN_CODE 77)
-    set_tests_properties(MDSS_OverlaySideCompaction PROPERTIES SKIP_RETURN_CODE 77)
-    set_tests_properties(MDSS_LavaScene PROPERTIES SKIP_RETURN_CODE 77)
 
     add_executable(MDSS_SurfaceCacheTests
         Tests/SurfaceCacheTests.cpp

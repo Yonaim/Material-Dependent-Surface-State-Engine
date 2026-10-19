@@ -19,6 +19,7 @@ namespace MDSS::SurfaceState
     class TSharedSurfaceGeometryData
     {
     public:
+        // Shared geometry construction
         /**
          * @brief Surface별 texel range를 만들고 공유 texel 저장 공간을 초기화한다.
          * @param Surfaces dense ID 순서로 정의된 Surface 목록.
@@ -29,6 +30,7 @@ namespace MDSS::SurfaceState
         TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition>   Surfaces,
                                    std::vector<TSurfaceProfileIndex> ProfileMap);
 
+        // Geometry and profile data access
         [[nodiscard]] const std::vector<TSurfaceTexelRange>& GetSurfaces() const noexcept;
         /** @brief 전처리 코드가 채우는 mesh-local texel geometry 배열에 접근한다. */
         [[nodiscard]] const std::vector<TSurfaceTexelGeometry>& GetTexels() const noexcept;

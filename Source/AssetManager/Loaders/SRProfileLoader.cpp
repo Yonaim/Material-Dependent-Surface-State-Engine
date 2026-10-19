@@ -205,6 +205,8 @@ namespace MDSS::Asset
         }
     } // namespace
 
+#pragma region std_Implementation
+
     std::unique_ptr<TSRProfileAsset> TSRProfileLoader::Load(TAssetID ID, const std::filesystem::path& Path)
     {
         std::ifstream File(Path);
@@ -225,4 +227,5 @@ namespace MDSS::Asset
             throw std::runtime_error("Failed to load SRProfile '" + Path.string() + "': " + Exception.what());
         }
     }
+#pragma endregion
 } // namespace MDSS::Asset

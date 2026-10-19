@@ -12,10 +12,10 @@
 | [[06_Assets/Documents/0004_Contact-Input.pdf\|Contact-Input.pdf]] | 접촉 입력 데이터와 라우팅 개념 | 고정 `SurfaceStateType` enum 대신 Profile에서 모은 Registry State를 쓴다. 공개 계약의 `Surface.SubmitContact(payload)`와 내부 instance 대상 식별자를 구분한다. 중심 texel의 same-triangle fallback, 별도 `texelSearchRadius`, 월드 반경/falloff, `InputDelta` 누적·업로드·1회 소비를 추가하고, Debug 경로는 연결됨·Collider/Physics adapter는 미연결로 표시한다. 기준: Decision 0002, [[03_Architecture/0005_Surface-Input\|Surface Contact Input]]. |
 | [[06_Assets/Documents/0005_Next-State-Calculation.pdf\|Next-State-Calculation.pdf]] | Input·Transport·Decay와 Solver 실행 방식 | 기존 PDF에는 당시 선택 가능했던 RawFlux cache가 기록돼 있다. 현재 cache 제거 결정은 Decision 0025와 [[03_Architecture/0006_Surface-State-Update\|Surface State Update]]를 따른다. |
 | [[06_Assets/Documents/0006_Geometry-Integration.pdf\|Geometry-Integration.pdf]] | Macro/Meso Geometry, State 적층 및 렌더링 목표 | Static Normal Map 전처리의 PCG height 복원·normal/curvature 계산, 실행 간 `.Surface` 캐시와 WorldTexelArea/AreaScale를 설명한다. 이웃 거리는 Position에서 계산해 별도 저장하지 않는다. 초기 Surface별 `Meso_Height_Reference` 대신 현재 `.SRProfile`의 State별 `thicknessPerAmount`로 월드 기준 두께를 정하며, 선택 State 렌더 미리보기와 모든 적층 State를 합산하는 Solver의 `Accumulation Geometry Update` 옵션을 구분한다. 물리 재질별 layer 순서·상호작용은 후속 설계다. 기준: Decision 0003·0006·0009·0014–0017, [[03_Architecture/0004_Surface-Geometry\|Surface Geometry]], [[03_Architecture/0008_Rendering\|Rendering]]. |
-| [[06_Assets/Documents/0007_Target-Demos.pdf\|Target-Demos.pdf]] | 목표 시연 시나리오 | 목표와 현재 완료 기능이 혼동되지 않도록 구현 현황·MVP 범위·미연결 사례를 보탠다. Wetness/Mud/WaterFilm의 데모 외관·표시용 형상과 선택적 동적 Accumulation Geometry Update 경로는 연결되었지만, 옷의 Snow→Water→흡수, 실제 접촉 Physics, Heat→Burn 전이와 물리 재질별 layer 합성은 완성 시연으로 간주하지 않는다. 데모 범위가 바뀌면 PDF 목표 판본도 갱신한다. |
+| [[06_Assets/Documents/0007_Target-Demos.pdf\|Target-Demos.pdf]] | 목표 시연 시나리오 | 목표와 현재 완료 기능이 혼동되지 않도록 구현 현황·MVP 범위·미연결 사례를 보탠다. Heat/Mud/WaterFilm의 데모 외관·표시용 형상과 선택적 동적 Accumulation Geometry Update 경로는 연결되었지만, 옷의 Snow→Water→흡수, 실제 접촉 Physics, Heat→Burn 전이와 물리 재질별 layer 합성은 완성 시연으로 간주하지 않는다. 데모 범위가 바뀌면 PDF 목표 판본도 갱신한다. |
 | [[06_Assets/Documents/0008_2026-09-11-Meeting.pdf\|2026-09-11-Meeting.pdf]] | 당시 논의의 역사 기록 | 회의록 원문은 당시 발언과 상태를 보존한다. 현재 기준과 충돌하는 Capacity 상한 등은 회의록에서 지우지 않고, 후속 결정의 날짜·Decision 링크를 Source Index와 개정 설계 PDF에서 연결한다. |
 
-검토 기준일: **2026-09-30**. 이 표는 PDF 본문 갱신 시 반영할 항목을 정리한 검토안이며, PDF 파일 자체는 이 작업에서 변경하지 않았다.
+검토 기준일: **2026-10-05**. 이 표는 PDF 본문 갱신 시 반영할 항목을 정리한 검토안이며, PDF 파일 자체는 이 작업에서 변경하지 않았다.
 
 ## PDF 이후 반영된 최신 설계
 

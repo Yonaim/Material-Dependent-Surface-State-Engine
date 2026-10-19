@@ -13,6 +13,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Framebuffer_Lifecycle
+
     TFramebuffer::TFramebuffer(VkDevice                        Device,
                                VkRenderPass                    TRenderPass,
                                VkExtent2D                      Extent,
@@ -27,6 +29,10 @@ namespace MDSS::GPU
     {
         Reset();
     }
+
+#pragma endregion
+
+#pragma region Framebuffer_Creation
 
     void TFramebuffer::Recreate(VkRenderPass                    TRenderPass,
                                 VkExtent2D                      Extent,
@@ -87,6 +93,10 @@ namespace MDSS::GPU
                            std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ".");
     }
 
+#pragma endregion
+
+#pragma region Framebuffer_Accessors
+
     VkFramebuffer TFramebuffer::Get(std::size_t Index) const
     {
         if (Index >= Handles.size())
@@ -101,4 +111,5 @@ namespace MDSS::GPU
     {
         return Handles.size();
     }
+#pragma endregion
 } // namespace MDSS::GPU

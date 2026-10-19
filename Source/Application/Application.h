@@ -32,7 +32,10 @@ namespace MDSS
     class TApplication
     {
     public:
-        explicit TApplication(TBenchmarkOptions BenchmarkOptions = {});
+        // Application lifecycle and execution
+        explicit TApplication(TBenchmarkOptions BenchmarkOptions = {},
+                              std::uint32_t RenderTileSize = 16U,
+                              bool bPerWorkgroupChannelMask = false);
         ~TApplication();
 
         /** @brief 엔진 main loop를 시작하고 종료 시 정상 정리를 수행한다. 0은 무제한 실행이다. */

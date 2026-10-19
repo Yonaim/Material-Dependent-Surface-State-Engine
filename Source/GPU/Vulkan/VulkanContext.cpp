@@ -16,6 +16,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Vulkan_Context_Lifecycle
+
     TVulkanContext::TVulkanContext(const TWindow& TWindow)
         : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), TWindow)),
           Device(Instance.GetHandle(), Surface), Queues(Device.GetPhysicalHandle(), Device.GetHandle(), Surface),
@@ -37,6 +39,10 @@ namespace MDSS::GPU
             Surface = VK_NULL_HANDLE;
         }
     }
+
+#pragma endregion
+
+#pragma region Vulkan_Context_Accessors
 
     VkInstance TVulkanContext::GetInstance() const noexcept
     {
@@ -73,6 +79,10 @@ namespace MDSS::GPU
         return Commands;
     }
 
+#pragma endregion
+
+#pragma region Instance_Extensions_and_Surface
+
     std::vector<const char*> TVulkanContext::RequiredInstanceExtensions()
     {
         if (glfwVulkanSupported() != GLFW_TRUE)
@@ -105,4 +115,5 @@ namespace MDSS::GPU
         TLogger::Info("Vulkan", "TWindow surface created.");
         return Surface;
     }
+#pragma endregion
 } // namespace MDSS::GPU

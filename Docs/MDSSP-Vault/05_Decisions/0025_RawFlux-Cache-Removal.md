@@ -3,7 +3,7 @@
 > **한 줄 요약:** RawFlux는 Pass 1에서 합산하고 Pass 2에서 재계산하며, 방향별 캐시와 비교 UI를 제거한다.
 
 - 분류: **Simulation**
-- Status: **Accepted · 구현 반영, 런타임 검증 대기**
+- Status: **Historical implementation decision; A/B cache variants restored by Decision 0029**
 - Date: 2026-10-05
 
 ## Context

@@ -68,6 +68,8 @@ namespace MDSS
         }
     } // namespace
 
+#pragma region TRaycaster_Implementation
+
     TSurfaceRayHit TRaycaster::Cast(const TScene&               Scene,
                                     const Asset::TAssetManager& Assets,
                                     glm::vec3                   WorldOrigin,
@@ -133,4 +135,5 @@ namespace MDSS
 
         return Result;
     }
+#pragma endregion
 } // namespace MDSS

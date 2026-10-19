@@ -21,6 +21,7 @@ namespace MDSS::SurfaceState
     class TSurfaceInstanceStateData
     {
     public:
+        // Instance state construction
         /**
          * @brief Instance 상태를 생성하고 모든 채널을 0으로 초기화한다.
          * @param ID 유효한 Instance 식별자.
@@ -32,6 +33,7 @@ namespace MDSS::SurfaceState
                                   std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
                                   std::size_t                                       StateCount);
 
+        // Instance state access
         [[nodiscard]] TSurfaceInstanceID                      GetID() const noexcept;
         [[nodiscard]] const TSharedSurfaceGeometryData&       GetGeometry() const noexcept;
         [[nodiscard]] std::size_t                             GetStateCount() const noexcept;

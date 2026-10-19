@@ -9,6 +9,8 @@
 
 namespace MDSS
 {
+#pragma region TStaticMeshInstance_Implementation
+
     TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform)
         : TStaticMeshInstance(Mesh, SurfaceState::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))
     {
@@ -64,4 +66,5 @@ namespace MDSS
     {
         return Id;
     }
+#pragma endregion
 } // namespace MDSS

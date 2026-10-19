@@ -25,6 +25,8 @@ namespace MDSS::SurfaceState
         }
     }
 
+#pragma region Inspector_Resource_Lifecycle
+
     TTexelInspector::TTexelInspector(VkPhysicalDevice      PhysicalDevice,
                                      VkDevice              Device,
                                      VkDescriptorSetLayout SurfaceLayout,
@@ -94,7 +96,8 @@ namespace MDSS::SurfaceState
                                                                  SnapshotBytes,
                                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                                 GPU::TGPUBufferMemoryCategory::Debug);
                 VkDescriptorSetAllocateInfo Allocate{};
                 Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 Allocate.descriptorPool = Pool;
@@ -137,6 +140,9 @@ namespace MDSS::SurfaceState
         if (OutputLayout)
             vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
     }
+#pragma endregion
+
+#pragma region Inspector_Command_Recording
 
     void TTexelInspector::Record(VkCommandBuffer                         Command,
                                  std::size_t                             FrameIndex,
@@ -191,6 +197,9 @@ namespace MDSS::SurfaceState
         Frame.Pending = TSurfaceTexelSnapshot{Selection, Channel, Step, ++Serial, bStateAB, {}};
         Frame.Generation = Generation;
     }
+#pragma endregion
+
+#pragma region Inspector_Readback
 
     void TTexelInspector::CompleteFrame(std::size_t FrameIndex)
     {
@@ -208,4 +217,5 @@ namespace MDSS::SurfaceState
         ++Generation;
         Snapshot.reset();
     }
+#pragma endregion
 }

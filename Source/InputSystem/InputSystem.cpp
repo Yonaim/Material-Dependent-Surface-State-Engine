@@ -21,6 +21,8 @@
 
 namespace MDSS
 {
+#pragma region TInputSystem_Implementation
+
     TInputSystem::TInputSystem(GLFWwindow* Window) noexcept : Window(Window)
     {
     }
@@ -94,4 +96,5 @@ namespace MDSS
         Contact.SimulationUV = Hit.SimulationUV;
         return Contact;
     }
+#pragma endregion
 } // namespace MDSS

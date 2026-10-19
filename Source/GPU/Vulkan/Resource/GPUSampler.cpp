@@ -11,6 +11,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region TGPUSampler_Implementation
+
     TGPUSampler::TGPUSampler(VkDevice Device) : Device(Device)
     {
         VkSamplerCreateInfo Info{};
@@ -49,4 +51,5 @@ namespace MDSS::GPU
     {
         return Handle;
     }
+#pragma endregion
 } // namespace MDSS::GPU

@@ -9,6 +9,8 @@
 
 namespace MDSS::Asset
 {
+#pragma region TAsset_Implementation
+
     TAsset::TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath)
         : ID(ID), Name(std::move(Name)), SourcePath(std::move(SourcePath))
     {
@@ -28,4 +30,5 @@ namespace MDSS::Asset
     {
         return SourcePath;
     }
+#pragma endregion
 } // namespace MDSS::Asset

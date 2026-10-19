@@ -2,6 +2,14 @@
 
 > **한 줄 요약:** 아직 Architecture의 정본으로 확정되지 않은 현재·후속 작업만 둔다. 완료되면 결과를 Architecture / Decisions / Validation 문서에 반영하고 여기서는 제거한다.
 
+## Compile-Time GPU A/B Shader Variants
+
+상태: **Decision 0029 구현 완료 · A/B 성능·화질 검증 대기**
+
+Decision 0029에 따라 build configuration당 43개의 유효 SPIR-V variant를 생성하고 A/B pipeline으로 선택한다. Solver의 cache/layout/precision, rendering의 fragment sampling/precompute 및 세 shared halo를 별도 variant로 연결했다. 측정 결과를 기록한 뒤 채택할 fast path와 제거할 비교 경로를 후속 결정한다.
+
+Debug/Release 각각 대상 43개 SPIR-V, Debug 전체 MDSS 빌드, BrickCube.Scene 기본값 2 frame과 세 shared halo ON 5 frame 기동을 확인했다. 남은 검증은 같은 Scene, 초기 State, 입력, GPU와 측정 구간으로 variant별 GPU timestamps·전체 frame time을 비교하는 것이다. Smoothing의 chart/Profile 경계, tile halo 및 출력 동등성도 검사한다. Debug/Release shader 검증 define은 각자 별도 variant set을 만든다.
+
 ## Surface Water Wetting
 
 상태: **향후 검토**
@@ -42,7 +50,7 @@ RemainingSurfaceWater = NewSurfaceWater - DepositedWetness
 
 ### 목표와 현재 경로
 
-정적 Mesh도 회전하면 이웃 간 월드 높이 차와 표면에 투영된 중력 방향이 변한다. 현재 Solver는 instance model 행렬과 World Gravity를 push constant로 받아 GPU에서 GeometryDrive의 HeightDrive × DirectionDrive를 매 step 계산한다. Directional RawFlux cache 제거 이후 Pass 2는 incoming flux를 재평가한다. 이 경로의 GPU 비용은 별도 측정으로 확인한다.
+정적 Mesh도 회전하면 이웃 간 월드 높이 차와 표면에 투영된 중력 방향이 변한다. 현재 Solver는 instance model 행렬과 World Gravity를 push constant로 받아 GPU에서 GeometryDrive의 HeightDrive × DirectionDrive를 매 step 계산한다. Decision 0025는 Directional RawFlux cache를 제거했으며, Decision 0029의 현재 A/B plan은 성능 비교용 cache variant를 복귀시킨다. 어떤 경로를 남길지는 해당 GPU 측정 뒤 결정한다.
 
 [[05_Decisions/0021_Rotation-Invariant-Transfer-Cache|Decision 0021]]의 순수 회전 TransferWeight buffer 갱신 제거가 선행한다. 이 후속 작업은 불필요한 GPU queue 대기를 해결하는 수단이 아니라, 남아 있는 GPU 중력 계산을 조회로 바꿀지 평가하는 별도 최적화다.
 

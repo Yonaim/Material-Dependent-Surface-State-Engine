@@ -31,6 +31,7 @@ namespace MDSS::SurfaceState
         // Version 4 includes local texel area vectors; older caches are rebuilt.
         static constexpr std::uint32_t FormatVersion = 4;
 
+        // Cache identity
         /** @brief Fingerprint parsed mesh inputs, Normal Map bytes and ordered Profile assignments.
          * SRProfile response parameters and Registry channels are deliberately excluded.
          */
@@ -49,6 +50,7 @@ namespace MDSS::SurfaceState
                                                            const std::filesystem::path& DistributionPath,
                                                            std::uint32_t                Resolution);
 
+        // Cache serialization
         /** @brief Missing, stale or corrupt cache returns nullopt with a diagnostic. */
         [[nodiscard]] static std::optional<TSharedSurfaceGeometryData>
         Load(const std::filesystem::path& Path, const TSurfaceCacheDescriptor& Expected, std::string& Diagnostic);

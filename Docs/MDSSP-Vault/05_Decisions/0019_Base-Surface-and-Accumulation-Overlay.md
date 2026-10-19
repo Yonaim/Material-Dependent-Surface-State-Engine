@@ -3,13 +3,15 @@
 > **한 줄 요약:** 원래 표면은 바닥에 남기고 쌓인 State는 별도 윗면과 옆면으로 그린다.
 
 - 분류: **Rendering**
-- Status: **Accepted (1차 렌더 경로 코드 반영, 실행 검증 대기)**
+- Status: **Superseded by Decision 0028 (원본 Base와 경계 옆면 원칙은 유지)**
 - Date: 2026-09-30
 - 관련 문서: [[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016 — 데모 Lit]], [[05_Decisions/0017_Source-Topology-Seam-Stitching|Decision 0017 — texel 연결면]], [[03_Architecture/0004_Surface-Geometry|Surface Geometry]]
 
 ## 쉽게 읽기
 
-원본 메시를 바닥 표면으로 그리고, 쌓인 상태는 별도 윗면과 경계 옆면으로 그린다. 현재 코드는 Mud·WaterFilm·Lava 오버레이 경로를 갖지만 실행 화면 검증 상태는 별도로 표시한다.
+초기안은 원본 메시를 바닥 표면으로 그리고 Mud·WaterFilm·Lava의 윗면과 경계 옆면을 각각 그렸다.
+
+초기안은 State별 Overlay Draw를 사용했다. 현재 결정은 State별 Draw를 공통 누적 윗면과 fragment 재질 합성으로 바꾼 [[05_Decisions/0028_Shared-Accumulation-Top-and-Optional-Transparent-WaterFilm|Decision 0028]]을 따른다. 아래 State별 Draw 설명은 초기안의 기록이다.
 
 ## Context — 왜 필요했나
 
@@ -48,6 +50,7 @@
 - Virtual Meso cavity가 원본 Macro Mesh 표면 아래에 있으면 Base의 depth가 그 안의 Overlay를 가릴 수 있다. 실제 기하 홈과 가상 홈을 구분해 렌더링 정책을 검토한다. 단순히 모든 Overlay를 앞으로 밀어 올리면 cavity 높이의 의미가 달라진다.
 - 1차 경로는 기존 texel 연결면을 Overlay 윗면으로 그린다. Compute Shader가 연결 삼각형의 State 경계와 실제 열린 topology 경계에서 옆면 구간을 계산하고, Vertex Shader가 구간마다 삼각형 두 개를 그린다. 원본 Mesh는 별도 Base 패스로 그린다. MDSS 실행파일 빌드까지 확인했으며, 실행 화면·시각·성능 검증은 남아 있다.
 - 렌더링 품질 실험 옵션 `Height-field smoothing`은 기본 OFF다. ON이면 선택 State의 texel 적층 높이를 `1 2 1 / 2 4 2 / 1 2 1`의 3×3 가우시안 가중치로 필터링하고, 유효 이웃의 가중치 합으로 정규화한다. 같은 Surface·UV chart·Profile에서 해당 State가 표시되는 texel만 섞는다. Meso 높이는 원래 texel 값을 유지하고, 필터 결과는 Overlay 윗면과 옆면에 함께 사용한다. State 저장량, Solver 높이 계산과 형상 피드백은 바꾸지 않는다. 이 필터는 높이 변화의 급격함을 줄이지만 연결 삼각형의 평면성을 제거하지는 않는다.
+- 후속 기본값 (2026-10-07): Height smoothing과 Coverage smoothing을 모두 기본 ON으로 설정했다. 두 옵션은 렌더링 표시만 바꾸며 Solver 상태를 변경하지 않는다.
 - 경계와 옆면의 GPU 생성 비용, UV seam 연속성, 윗면과 옆면의 접합 및 투명 패스의 겹침은 구현 후 검증한다. Mud와 WaterFilm 동시 적층 높이의 물리적 순서는 이 Decision에서 정하지 않는다.
 
 ## Related — 관련 문서

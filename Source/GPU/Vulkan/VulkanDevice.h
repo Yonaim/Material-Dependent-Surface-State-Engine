@@ -14,6 +14,7 @@ namespace MDSS::GPU
     class TVulkanDevice
     {
     public:
+        // Logical device lifecycle and properties
         /**
          * @brief surface 지원과 필수 기능을 만족하는 physical device를 고르고 logical device를 만든다.
          * @throws std::runtime_error 사용할 수 있는 장치가 없거나 device 생성이 실패한 경우.

@@ -17,6 +17,7 @@ namespace MDSS
     class TStaticMeshInstance
     {
     public:
+        // Instance construction
         TStaticMeshInstance() = default;
         TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform = {});
         TStaticMeshInstance(Asset::TMeshAssetHandle                 Mesh,
@@ -26,6 +27,7 @@ namespace MDSS
                             std::filesystem::path                   ProfileMapPath = {},
                             std::string                             ObjectId = {});
 
+        // Instance properties and asset references
         [[nodiscard]] TTransform&                             GetTransform() noexcept;
         [[nodiscard]] const TTransform&                       GetTransform() const noexcept;
         [[nodiscard]] Asset::TMeshAssetHandle                 GetMesh() const noexcept;

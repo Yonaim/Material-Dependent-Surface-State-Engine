@@ -59,6 +59,8 @@ namespace MDSS::GPU
     } // namespace
 #endif
 
+#pragma region Vulkan_Instance_Lifecycle
+
     TVulkanInstance::TVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
     {
         const std::vector<const char*> Extensions = BuildExtensionList(RequiredExtensions);
@@ -148,10 +150,18 @@ namespace MDSS::GPU
         }
     }
 
+#pragma endregion
+
+#pragma region Vulkan_Instance_Access
+
     VkInstance TVulkanInstance::GetHandle() const noexcept
     {
         return Instance;
     }
+
+#pragma endregion
+
+#pragma region Extension_and_Layer_Validation
 
     std::vector<const char*> TVulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
     {
@@ -221,4 +231,5 @@ namespace MDSS::GPU
     }
 
 #endif
+#pragma endregion
 } // namespace MDSS::GPU

@@ -40,6 +40,101 @@
 | Include 최소화 | 완전한 type 정의가 필요하지 않으면 forward declaration을 고려한다. |
 | 대응 헤더 | `.cpp`에서는 해당 구현의 대응 헤더를 첫 include로 둔다. |
 
+## 함수 배치와 코드 영역
+
+구현 파일의 함수는 **기능 또는 책임 단위**로 모은다. 파일이 길어 내부 탐색이 어려워지면 `#pragma region`과 `#pragma endregion`으로 큰 영역을 표시한다. region은 파일 내부를 빠르게 탐색하고 접기 위한 표식이며, 클래스나 파일을 나누는 구조적 경계를 대신하지 않는다.
+
+영역은 코드의 실행 흐름과 책임을 기준으로 정한다. 예를 들어 Renderer에서는 수명 주기, 프레임 처리, geometry, rendering, GPU resource, debug 같은 이름을 사용할 수 있다. 이 이름은 예시이며 모든 파일에 동일한 고정 목차를 강제하지 않는다.
+
+```cpp
+#pragma region Lifecycle
+
+void TRenderer::Initialize()
+{
+}
+
+void TRenderer::Shutdown()
+{
+}
+
+#pragma endregion
+
+#pragma region Frame
+
+void TRenderer::BeginFrame()
+{
+}
+
+void TRenderer::RenderFrame(const TScene& Scene)
+{
+}
+
+#pragma endregion
+
+#pragma region GPU_Resources
+
+void TRenderer::CreateBuffers()
+{
+}
+
+void TRenderer::CreatePipelines()
+{
+}
+
+#pragma endregion
+```
+
+하나의 region이 길어져 내부 하위 묶음이 필요하면, 아래처럼 구분선 주석을 사용한다. `#pragma region`은 큰 책임 영역을 접는 용도이고, 구분선은 그 안에서 관련 함수 묶음을 빠르게 찾는 용도다. 하위 묶음이 실제로 있을 때만 사용하며, 모든 함수에 구분선을 붙이거나 바깥 region 제목을 반복하지 않는다.
+
+```cpp
+#pragma region Initialization
+
+// ============================================================
+// Device
+// ============================================================
+
+void TRenderer::CreateDevice()
+{
+}
+
+// ============================================================
+// Swapchain
+// ============================================================
+
+void TRenderer::CreateSwapchain()
+{
+}
+
+#pragma endregion
+```
+
+`Create` 함수, `Update` 함수처럼 동사나 함수 종류만으로 영역을 나누지 않는다. 서로 다른 책임의 함수가 섞이기 쉽기 때문이다. Buffer, Image, Simulation처럼 각 구성 요소의 생성·갱신·정리가 함께 이해되어야 하는 경우에는 해당 책임 아래 관련 함수를 모은다.
+
+헤더와 구현 파일의 선언·정의 순서는 대응시킨다. 헤더에서는 주석으로 책임별 선언을 묶고, `.cpp`에서는 같은 순서로 region을 배치해 선언을 보고 구현 위치를 예측할 수 있게 한다.
+
+```cpp
+// Renderer.h
+class TRenderer
+{
+public:
+    void Initialize();
+    void Shutdown();
+
+private:
+    // Frame
+    void BeginFrame();
+    void RenderFrame(const TScene& Scene);
+
+    // GPU Resources
+    void CreateBuffers();
+    void CreatePipelines();
+};
+```
+
+region 수는 필요한 만큼만 둔다. 영역이 8~10개를 넘거나 한 영역이 수백 줄에 이르면, region을 더 잘게 나누기 전에 책임을 별도 type이나 파일로 분리할지 검토한다. 이는 점검 기준이지 고정된 제한은 아니다.
+
+VS Code는 C/C++ 파일에서 `#pragma region` / `#pragma endregion`을 접기 표식으로 인식하며, 명령 팔레트의 **Fold Marker Regions**로 표식 영역을 접을 수 있다. 단축키는 운영체제와 사용자 설정에 따라 다를 수 있다. 이 표식은 편집기 탐색 편의를 위한 것이므로 compiler와 다른 도구에서의 처리는 사용하는 toolchain 설정으로 확인한다. [VS Code: Basic editing — Folding](https://code.visualstudio.com/docs/editing/codebasics#_folding)
+
 ## 선언과 API
 
 | 항목 | 규칙 |

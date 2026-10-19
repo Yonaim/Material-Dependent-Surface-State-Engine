@@ -127,6 +127,8 @@ namespace MDSS
         }
     } // namespace
 
+#pragma region Demo_Animation_Loading
+
     TDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const TScene& Scene)
     {
         std::ifstream Input(Path);
@@ -211,6 +213,10 @@ namespace MDSS
         return Clip;
     }
 
+#pragma endregion
+
+#pragma region Demo_Animation_Application
+
     void ApplyDemoAnimation(TScene& Scene, const TDemoAnimationClip& Clip, float Time)
     {
         for (const TDemoAnimationTrack& Track : Clip.Tracks)
@@ -248,4 +254,5 @@ namespace MDSS
             }
         }
     }
+#pragma endregion
 } // namespace MDSS

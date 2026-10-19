@@ -23,7 +23,11 @@
 
 namespace MDSS
 {
-    TApplication::TApplication(TBenchmarkOptions BenchmarkOptions)
+#pragma region Lifecycle
+
+    TApplication::TApplication(TBenchmarkOptions BenchmarkOptions,
+                               std::uint32_t RenderTileSize,
+                               bool bPerWorkgroupChannelMask)
         : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), SurfaceData(Assets), MainScene(),
           Benchmark(std::move(BenchmarkOptions))
     {
@@ -43,6 +47,8 @@ namespace MDSS
         SurfaceStates = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
         FrameRenderer =
             std::make_unique<Rendering::TRenderer>(Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStates);
+        FrameRenderer->SetOverlayOccupancyTileSize(static_cast<Rendering::TOverlayOccupancyTileSize>(RenderTileSize));
+        FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
         DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
         if (Benchmark.Enabled)
         {
@@ -57,6 +63,10 @@ namespace MDSS
     }
 
     TApplication::~TApplication() = default;
+
+#pragma endregion
+
+#pragma region Main_Loop
 
     void TApplication::Run(std::size_t FrameLimit)
     {
@@ -126,4 +136,5 @@ namespace MDSS
         TLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");
         vkDeviceWaitIdle(Context.GetDevice());
     }
+#pragma endregion
 } // namespace MDSS

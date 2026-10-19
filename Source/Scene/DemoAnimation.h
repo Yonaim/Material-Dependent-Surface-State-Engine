@@ -53,6 +53,7 @@ namespace MDSS
     };
 
     /** @brief Parse and validate a JSON .DemoAnim against stable Scene object IDs. */
+    // Animation loading and evaluation
     [[nodiscard]] TDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const TScene& Scene);
     /** @brief Apply all tracks at the requested clip time without touching simulation state. */
     void ApplyDemoAnimation(TScene& Scene, const TDemoAnimationClip& Clip, float Time);

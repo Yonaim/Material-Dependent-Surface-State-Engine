@@ -18,6 +18,7 @@ namespace MDSS::GPU
     class TGraphicsPass final
     {
     public:
+        // Render pass recording
         explicit TGraphicsPass(const TRenderPass& RenderPass) noexcept;
 
         /** @brief 지정한 framebuffer로 render pass 기록을 시작한다. */

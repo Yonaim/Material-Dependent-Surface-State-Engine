@@ -4,10 +4,12 @@
  */
 #include "Rendering/Surface/StateSampling.glsl"
 
+#ifndef RENDER_STATE_TEXTURE_SET
 #ifdef TEXEL_LIT
 #define RENDER_STATE_TEXTURE_SET 3
 #else
 #define RENDER_STATE_TEXTURE_SET 2
+#endif
 #endif
 
 layout(set = RENDER_STATE_TEXTURE_SET, binding = 1) uniform sampler2DArray RenderStateTexture;

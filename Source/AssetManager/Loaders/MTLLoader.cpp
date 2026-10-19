@@ -30,6 +30,8 @@ namespace MDSS::Asset
         }
     } // namespace
 
+#pragma region TMTLLoader_Implementation
+
     TMaterialSourceData TMTLLoader::Convert(const tinyobj::material_t&   Material,
                                             const std::filesystem::path& TextureBaseDirectory)
     {
@@ -54,4 +56,5 @@ namespace MDSS::Asset
                            ".");
         return Result;
     }
+#pragma endregion
 } // namespace MDSS::Asset

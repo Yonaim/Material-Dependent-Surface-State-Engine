@@ -12,6 +12,7 @@ namespace MDSS::GPU
     class TRenderPass
     {
     public:
+        // Render pass lifecycle and access
         /** @brief 지정된 color·depth format에 맞는 render pass를 생성한다. */
         TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat);
         ~TRenderPass();

@@ -25,6 +25,7 @@ namespace MDSS
     class TSceneLoader final
     {
     public:
+        // Scene serialization
         /** @brief Scene과 그 Scene이 참조하는 Mesh/Profile Distribution을 로드한다. */
         [[nodiscard]] static TScene Load(const std::filesystem::path&       Path,
                                          Asset::TAssetManager&              Assets,

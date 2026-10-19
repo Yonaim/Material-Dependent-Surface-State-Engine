@@ -11,6 +11,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Render_Pass_Lifecycle
+
     TRenderPass::TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
     {
         VkAttachmentDescription ColorAttachment{};
@@ -85,8 +87,13 @@ namespace MDSS::GPU
         }
     }
 
+#pragma endregion
+
+#pragma region Render_Pass_Access
+
     VkRenderPass TRenderPass::GetHandle() const noexcept
     {
         return Handle;
     }
+#pragma endregion
 } // namespace MDSS::GPU

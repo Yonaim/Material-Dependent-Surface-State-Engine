@@ -19,8 +19,18 @@ layout(std430, set = 0, binding = 1) readonly buffer TOverlayTexelProfileIndices
 
 layout(std430, set = 0, binding = 6) readonly buffer TOverlayProfileParameters
 {
-    TOverlayGPUProfileParameters Values[];
+    vec4 Values[];
 } OverlayProfileParameters;
+
+uint OverlayProfileRecordCount()
+{
+    return uint(OverlayProfileParameters.Values.length()) / 3u;
+}
+
+vec4 OverlayProfileCapacityInputAndTransfer(uint Record)
+{
+    return OverlayProfileParameters.Values[Record];
+}
 
 layout(std430, set = 0, binding = 8) readonly buffer TOverlayCurrentState
 {
@@ -48,11 +58,11 @@ float OverlayStateSaturation(uint Texel, uint Channel, uint Channels, uint Profi
 #if MDSS_GPU_VALIDATION
     if (Texel >= uint(OverlayWorldTexelAreas.Values.length()) ||
         Texel >= uint(OverlayCurrentState.Values.length()) / Channels ||
-        Profile >= uint(OverlayProfileParameters.Values.length()) / Channels ||
+        Profile >= OverlayProfileRecordCount() / Channels ||
         Texel >= uint(OverlayTexelProfileIndices.Values.length())) return 0.0;
 #endif
-    float Capacity = OverlayProfileParameters.Values[Profile * Channels + Channel]
-                         .CapacityInputAndTransfer.x * OverlayWorldTexelAreas.Values[Texel] * (256.0 * 256.0);
+    float Capacity = OverlayProfileCapacityInputAndTransfer(Profile * Channels + Channel).x *
+                     OverlayWorldTexelAreas.Values[Texel] * (256.0 * 256.0);
     float Amount = OverlayCurrentState.Values[Texel * Channels + Channel];
     if (Capacity <= 0.0 || Amount < 0.0) return 0.0;
     return clamp(Amount / Capacity, 0.0, 1.0);

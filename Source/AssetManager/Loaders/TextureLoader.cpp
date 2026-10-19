@@ -14,6 +14,8 @@
 
 namespace MDSS::Asset
 {
+#pragma region TextureLoader_Implementation
+
     TextureData TextureLoader::LoadRGBA8(const std::filesystem::path& Path)
     {
         int Width = 0;
@@ -40,4 +42,5 @@ namespace MDSS::Asset
                            std::to_string(Data.Height) + ", source channels=" + std::to_string(Channels) + ").");
         return Data;
     }
+#pragma endregion
 } // namespace MDSS::Asset

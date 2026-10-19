@@ -26,7 +26,7 @@ void main()
         TexelSurfaceIndices.Values[Texel] == Surface &&
         Texel < uint(TexelProfileIndices.Values.length()) &&
         TexelProfileIndices.Values[Texel] < uint(ProfileSupported.Values.length()) / Push.ChannelCount &&
-        TexelProfileIndices.Values[Texel] < uint(ProfileParameters.Values.length()) / Push.ChannelCount &&
+        TexelProfileIndices.Values[Texel] < SurfaceProfileRecordCount() / Push.ChannelCount &&
         Texel < uint(CurrentState.Values.length()) / Push.ChannelCount &&
         Texel < uint(WorldTexelAreas.Values.length()))
     {

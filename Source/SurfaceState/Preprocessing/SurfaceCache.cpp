@@ -21,6 +21,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Cache_Encoding_and_Validation_Helpers
+
     namespace
     {
         constexpr std::array<std::uint8_t, 8> Magic{'M', 'D', 'S', 'S', 'S', 'R', 'F', '3'};
@@ -262,6 +264,10 @@ namespace MDSS::SurfaceState
         }
     } // namespace
 
+#pragma endregion
+
+#pragma region Cache_Identity
+
     TSurfaceCacheDescriptor TSurfaceCache::Describe(std::span<const Asset::TVertex>             Vertices,
                                                     std::span<const Asset::TMeshTriangleSource> Triangles,
                                                     std::vector<TSurfaceDefinition>             Surfaces,
@@ -344,6 +350,9 @@ namespace MDSS::SurfaceState
         const std::string Stem = MeshPath.stem().string();
         return CacheRoot / (Stem + "_" + Suffix.str()) / (Stem + "_" + std::to_string(Resolution) + ".Surface");
     }
+#pragma endregion
+
+#pragma region Cache_Load
 
     std::optional<TSharedSurfaceGeometryData> TSurfaceCache::Load(const std::filesystem::path&   Path,
                                                                   const TSurfaceCacheDescriptor& Expected,
@@ -432,6 +441,9 @@ namespace MDSS::SurfaceState
             return std::nullopt;
         }
     }
+#pragma endregion
+
+#pragma region Cache_Save
 
     void TSurfaceCache::Save(const std::filesystem::path&      Path,
                              const TSurfaceCacheDescriptor&    Descriptor,
@@ -510,4 +522,5 @@ namespace MDSS::SurfaceState
             throw;
         }
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

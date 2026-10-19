@@ -23,6 +23,8 @@ namespace MDSS
         std::uint32_t WindowCount = 0;
     } // namespace
 
+#pragma region Window_Lifecycle
+
     TWindow::TWindow(std::uint32_t Width, std::uint32_t Height, std::string Title)
     {
         InitializeGLFW();
@@ -55,6 +57,10 @@ namespace MDSS
 
         TerminateGLFW();
     }
+
+#pragma endregion
+
+#pragma region Window_State_and_Events
 
     bool TWindow::ShouldClose() const
     {
@@ -118,6 +124,10 @@ namespace MDSS
                            std::to_string(std::max(Height, 0)) + ".");
     }
 
+#pragma endregion
+
+#pragma region GLFW_Lifecycle
+
     void TWindow::InitializeGLFW()
     {
         std::scoped_lock Lock(GLFWMutex);
@@ -151,4 +161,5 @@ namespace MDSS
             TLogger::Verbose("TApplication", "GLFW terminated.");
         }
     }
+#pragma endregion
 } // namespace MDSS

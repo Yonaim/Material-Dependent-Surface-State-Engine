@@ -10,7 +10,7 @@ The project focuses on representing surface state changes in UV-space and updati
 - UV-space texel-based surface state simulation
 - Material-dependent surface response
 - Geometry-aware state transport
-- Wetness, Heat/Burn, and Mud states
+- Heat-to-red, Burn, and Mud states
 - Compute shader based state update
 - Raycast-based state injection
 - ImGui-based debug and simulation controls

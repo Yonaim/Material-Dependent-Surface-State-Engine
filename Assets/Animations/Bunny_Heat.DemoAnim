@@ -4,21 +4,12 @@
   "loop": true,
   "tracks": [
     {
-      "target": "cube_wetness",
+      "target": "bunny_heat",
       "property": "rotation",
       "interpolation": "slerp",
       "keys": [
         {
           "time": 0.0,
-          "value": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ]
-        },
-        {
-          "time": 3.0,
           "value": [
             0.707107,
             0.0,
@@ -27,7 +18,7 @@
           ]
         },
         {
-          "time": 6.0,
+          "time": 3.0,
           "value": [
             1.0,
             0.0,
@@ -36,7 +27,7 @@
           ]
         },
         {
-          "time": 9.0,
+          "time": 6.0,
           "value": [
             0.707107,
             0.0,
@@ -45,12 +36,21 @@
           ]
         },
         {
-          "time": 12.0,
+          "time": 9.0,
           "value": [
             0.0,
             0.0,
             0.0,
             -1.0
+          ]
+        },
+        {
+          "time": 12.0,
+          "value": [
+            -0.707107,
+            0.0,
+            0.0,
+            -0.707107
           ]
         }
       ]

@@ -13,6 +13,8 @@
 
 namespace MDSS::Asset
 {
+#pragma region TMeshAsset_Implementation
+
     TMeshAsset::TMeshAsset(TAssetID                         ID,
                            std::string                      Name,
                            std::filesystem::path            SourcePath,
@@ -41,13 +43,15 @@ namespace MDSS::Asset
                                                          VertexBytes,
                                                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                         GPU::TGPUBufferMemoryCategory::MeshAsset);
         IndexBuffer = std::make_unique<GPU::TGPUBuffer>(Context.GetPhysicalDevice(),
                                                         Context.GetDevice(),
                                                         IndexBytes,
                                                         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                        GPU::TGPUBufferMemoryCategory::MeshAsset);
 
         VertexBuffer->Upload(this->Vertices.data(), VertexBytes);
         IndexBuffer->Upload(this->Indices.data(), IndexBytes);
@@ -86,4 +90,5 @@ namespace MDSS::Asset
     {
         return *IndexBuffer;
     }
+#pragma endregion
 } // namespace MDSS::Asset

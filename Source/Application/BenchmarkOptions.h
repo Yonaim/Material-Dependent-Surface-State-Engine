@@ -19,15 +19,19 @@ namespace MDSS
         std::uint32_t        WarmupFrames = 0;
         std::uint32_t        MeasurementFrames = 0;
 
+        // Benchmark frame limits
         [[nodiscard]] std::size_t GetTotalFrameLimit() const noexcept;
     };
 
     struct TApplicationLaunchOptions
     {
         std::size_t       FrameLimit = 0;
+        std::uint32_t     RenderTileSize = 16;
+        bool              bPerWorkgroupChannelMask = false;
         TBenchmarkOptions Benchmark;
     };
 
+    // Command-line parsing and usage text
     [[nodiscard]] TApplicationLaunchOptions ParseApplicationLaunchOptions(int Argc, char* Argv[]);
     [[nodiscard]] const char* GetApplicationUsage() noexcept;
 } // namespace MDSS

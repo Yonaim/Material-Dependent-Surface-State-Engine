@@ -28,12 +28,14 @@ namespace MDSS::Asset
     class TAssetManager
     {
     public:
+        // Asset loading
         explicit TAssetManager(const GPU::TVulkanContext& Context);
 
         /** @brief OBJ와 참조된 material·texture만 로드한다. Profile Distribution은 Scene이 별도로 선택한다. */
         [[nodiscard]] TMeshAssetHandle LoadOBJ(const std::filesystem::path& Path);
         /** @brief `.SRProfile` 파일을 로드하고 Profile handle을 반환한다. */
         [[nodiscard]] TSRProfileAssetHandle LoadSRProfile(const std::filesystem::path& Path);
+        // Loaded asset access
         /** @throws std::out_of_range Handle이 현재 등록된 Mesh 범위를 벗어난 경우. */
         [[nodiscard]] const TMeshAsset& GetMesh(TMeshAssetHandle Handle) const;
         /** @throws std::out_of_range Handle이 현재 등록된 Material 범위를 벗어난 경우. */
@@ -48,6 +50,7 @@ namespace MDSS::Asset
         [[nodiscard]] TMaterialAssetHandle GetDefaultMaterialHandle() const noexcept;
 
     private:
+        // Generated textures and materials
         TextureAssetHandle   LoadTexture(const std::filesystem::path& Path, bool bSRGB);
         TextureAssetHandle   CreateSolidTexture(std::string Name, const std::vector<std::uint8_t>& RGBA, bool bSRGB);
         TMaterialAssetHandle CreateMaterial(std::string                  Name,

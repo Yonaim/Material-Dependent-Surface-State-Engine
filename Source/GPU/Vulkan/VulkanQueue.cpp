@@ -13,6 +13,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Queue_Lifecycle_and_Access
+
     TVulkanQueue::TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
         : FamilyIndices(FindFamilies(PhysicalDevice, Surface))
     {
@@ -40,6 +42,10 @@ namespace MDSS::GPU
     {
         return FamilyIndices;
     }
+
+#pragma endregion
+
+#pragma region Queue_Family_Selection
 
     TQueueFamilyIndices TVulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
@@ -74,4 +80,5 @@ namespace MDSS::GPU
 
         return Indices;
     }
+#pragma endregion
 } // namespace MDSS::GPU

@@ -12,6 +12,8 @@
 
 namespace MDSS::GPU
 {
+#pragma region Image_Lifecycle_and_Creation
+
     TGPUImage::TGPUImage(VkPhysicalDevice      PhysicalDevice,
                          VkDevice              Device,
                          VkExtent2D            Extent,
@@ -132,6 +134,10 @@ namespace MDSS::GPU
                              ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
+#pragma endregion
+
+#pragma region Image_Accessors
+
     VkImage TGPUImage::GetHandle() const noexcept
     {
         return Handle;
@@ -146,6 +152,10 @@ namespace MDSS::GPU
     {
         return Extent;
     }
+
+#pragma endregion
+
+#pragma region Memory_Type_Selection
 
     std::uint32_t TGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,
@@ -168,4 +178,5 @@ namespace MDSS::GPU
 
         throw std::runtime_error("Failed to find a suitable Vulkan memory type for GPU image.");
     }
+#pragma endregion
 } // namespace MDSS::GPU

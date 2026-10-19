@@ -29,13 +29,6 @@
   "appIcons": {},
   "tabIcons": {},
   "fileIcons": {
-    "00_Start": {
-      "icon": "lucide-home",
-      "unsynced": [
-        "cbda2c37e432a588",
-        "60e847407cf0ad33"
-      ]
-    },
     "01_Project-Policy": {
       "icon": "lucide-flag-triangle-left",
       "unsynced": [
@@ -49,40 +42,8 @@
         "60e847407cf0ad33"
       ]
     },
-    "03_Architecture": {
-      "icon": "lucide-pen-tool",
-      "unsynced": [
-        "60e847407cf0ad33"
-      ]
-    },
-    "04_Architecture": {
-      "icon": "lucide-badge",
-      "unsynced": [
-        "cbda2c37e432a588",
-        "60e847407cf0ad33"
-      ]
-    },
-    "04_Development": {
-      "icon": "experiment",
-      "unsynced": [
-        "60e847407cf0ad33"
-      ]
-    },
-    "05_ADR": {
-      "icon": "lucide-stamp",
-      "unsynced": [
-        "cbda2c37e432a588",
-        "60e847407cf0ad33"
-      ]
-    },
-    "05_Decisions": {
-      "icon": "lucide-stamp",
-      "unsynced": [
-        "60e847407cf0ad33"
-      ]
-    },
     "06_Assets": {
-      "icon": "lucide-archive",
+      "icon": "lucide-boxes",
       "unsynced": [
         "cbda2c37e432a588",
         "60e847407cf0ad33"
@@ -94,30 +55,6 @@
         "cbda2c37e432a588",
         "60e847407cf0ad33"
       ]
-    },
-    "06_Development/Debugging": {
-      "icon": "lucide-bug",
-      "unsynced": [
-        "cbda2c37e432a588",
-        "60e847407cf0ad33"
-      ]
-    },
-    "06_Development/Experiments": {
-      "icon": "lucide-flask-conical",
-      "unsynced": [
-        "cbda2c37e432a588",
-        "60e847407cf0ad33"
-      ]
-    },
-    "06_Development/Notes": {
-      "icon": "lucide-sticky-note",
-      "unsynced": [
-        "cbda2c37e432a588",
-        "60e847407cf0ad33"
-      ]
-    },
-    "Roadmap.md": {
-      "icon": "lucide-goal"
     },
     "TODO.md": {
       "icon": "lucide-check-circle",

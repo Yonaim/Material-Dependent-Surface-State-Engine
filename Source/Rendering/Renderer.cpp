@@ -262,11 +262,13 @@ namespace MDSS::Rendering
             glm::uvec4    DebugFlags{0};
             glm::uvec4    DemoStateChannels{
                 SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 1U};
-            glm::vec4  DemoOptions{0.65F, 0.16F, 0.48F, 1.0F};
+            glm::vec4  DemoOptions{0.65F, 0.0F, 0.48F, 1.0F};
             glm::vec4  DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
-            glm::vec4  WetnessTint{0.44F, 0.56F, 0.68F, 1.0F};
-            glm::vec4  WaterFilmTint{0.35F, 0.53F, 0.68F, 1.0F};
             glm::uvec4 DemoExtraStateChannels{SurfaceState::InvalidStateId, 0U, 0U, 0U};
+            glm::vec4  EffectColorRampStarts{0.0F};
+            glm::vec4  EffectColorRampEnds{1.0F};
+            std::array<glm::vec4, 4> EffectLowSaturationColors{};
+            std::array<glm::vec4, 4> EffectHighSaturationColors{};
             glm::vec4  CameraPosition{0, 0, 1, 1};
         };
 
@@ -324,7 +326,7 @@ namespace MDSS::Rendering
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 192, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 320, "TMaterialUniform must match the std140 shader block layout.");
 
         GPU::TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -431,17 +433,18 @@ namespace MDSS::Rendering
         GPU::TGraphicsPipelineConfig BuildSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
                                                                    VkDescriptorSetLayout SurfaceLayout,
                                                                    VkDescriptorSetLayout OutputLayout = VK_NULL_HANDLE,
-                                                                   VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE)
+                                                                   VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE,
+                                                                   std::uint32_t Mode = 0)
         {
             auto Config = BuildSurfaceDebugPipelineConfig(MaterialLayout, SurfaceLayout);
             Config.ShaderStages[0].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.vert.spv";
-            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.frag.spv";
+            Config.ShaderStages[1].ShaderPath = std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/SurfaceLit.frag.m" + std::to_string(Mode) + ".spv";
             if (OutputLayout != VK_NULL_HANDLE)
             {
                 Config.ShaderStages[0].ShaderPath =
                     std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.vert.spv";
                 Config.ShaderStages[1].ShaderPath =
-                    std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.frag.spv";
+                    std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/TexelSurfaceLit.frag.m" + std::to_string(Mode) + ".spv";
                 SetTexelMeshVertexLayout(Config);
                 Config.DescriptorSetLayouts.push_back(OutputLayout);
             }
@@ -453,12 +456,13 @@ namespace MDSS::Rendering
         GPU::TGraphicsPipelineConfig BuildBaseSurfaceLitPipelineConfig(VkDescriptorSetLayout MaterialLayout,
                                                                        VkDescriptorSetLayout SurfaceLayout,
                                                                        VkDescriptorSetLayout OutputLayout,
-                                                                       VkDescriptorSetLayout StateTextureLayout)
+                                                                       VkDescriptorSetLayout StateTextureLayout,
+                                                                       std::uint32_t Mode)
         {
             auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, OutputLayout,
-                                                        StateTextureLayout);
+                                                        StateTextureLayout, Mode);
             Config.ShaderStages[1].ShaderPath =
-                std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/BaseSurfaceLit.frag.spv";
+                std::string(MDSS_SHADER_DIR) + "/Rendering/Surface/BaseSurfaceLit.frag.m" + std::to_string(Mode) + ".spv";
             return Config;
         }
 
@@ -466,23 +470,26 @@ namespace MDSS::Rendering
                                                                 VkDescriptorSetLayout SurfaceLayout,
                                                                 VkDescriptorSetLayout ComputedLayout,
                                                                 VkDescriptorSetLayout SideLayout,
-                                                                bool                  bWater,
                                                                 bool                  bSide,
-                                                                bool                  bLava = false)
+                                                                bool                  bCombined = false,
+                                                                VkDescriptorSetLayout StateTextureLayout = VK_NULL_HANDLE,
+                                                                std::uint32_t         Mode = 0)
         {
             auto Config = BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, ComputedLayout);
             Config.ShaderStages[0].ShaderPath =
                 std::string(MDSS_SHADER_DIR) +
                 (bSide ? "/Rendering/StateOverlay/OverlaySide.vert.spv" : "/Rendering/StateOverlay/OverlayTop.vert.spv");
             Config.ShaderStages[1].ShaderPath =
-                std::string(MDSS_SHADER_DIR) + (bLava    ? "/Rendering/StateOverlay/OverlayLava.frag.spv"
-                                                : bWater ? "/Rendering/StateOverlay/OverlayWater.frag.spv"
-                                                         : "/Rendering/StateOverlay/OverlayMud.frag.spv");
+                std::string(MDSS_SHADER_DIR) +
+                (bCombined ? "/Rendering/StateOverlay/OverlayCombined.frag.m" + std::to_string(Mode) + ".spv"
+                           : "/Rendering/StateOverlay/OverlayMud.frag.spv");
             Config.CullMode = VK_CULL_MODE_NONE;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-            Config.bDepthWriteEnabled = !bWater;
-            Config.bBlendingEnabled = bWater;
+            Config.bDepthWriteEnabled = true;
+            Config.bBlendingEnabled = false;
             Config.DescriptorSetLayouts.push_back(SideLayout);
+            if (bCombined && StateTextureLayout != VK_NULL_HANDLE)
+                Config.DescriptorSetLayouts.push_back(StateTextureLayout);
             if (bSide)
             {
                 Config.VertexBindings.clear();
@@ -593,6 +600,8 @@ namespace MDSS::Rendering
         };
     } // 내부 네임스페이스
 
+#pragma region Renderer_Lifecycle
+
     TRenderer::TRenderer(const GPU::TVulkanContext&         Context,
                          TWindow&                           TWindow,
                          Asset::TAssetManager&              Assets,
@@ -684,7 +693,8 @@ namespace MDSS::Rendering
             Context.GetDevice(),
             static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)),
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            GPU::TGPUBufferMemoryCategory::Renderer);
         GizmoVertexBuffer->Upload(GizmoVertices.data(),
                                   static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
         CreateMaterialDescriptorResources();
@@ -709,38 +719,36 @@ namespace MDSS::Rendering
                 MainRenderPass.GetHandle(),
                 BuildTexelGeometryPipelineConfig(
                     MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
-            RenderStateTexture = std::make_unique<TRenderStateTexture>(
-                Context.GetPhysicalDevice(), Context.GetDevice(), Descriptors->GetLayout(),
-                SurfaceStates.GetGPUResources());
-            SurfaceLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
-                                              VK_NULL_HANDLE, RenderStateTexture->GetLayout()));
-            BaseSurfaceLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildBaseSurfaceLitPipelineConfig(
-                    MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout(),
-                    RenderStateTexture->GetLayout()));
+            RenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+                                                                       Context.GetDevice(),
+                                                                       Descriptors->GetLayout(),
+                                                                       SurfaceStates.GetGPUResources());
+            for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+            {
+                SurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                                                  Descriptors->GetLayout(),
+                                                  VK_NULL_HANDLE,
+                                                  RenderStateTexture->GetLayout(),
+                                                  Mode));
+                BaseSurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                                                      Descriptors->GetLayout(),
+                                                      TexelGeometryPreview->GetOutputLayout(),
+                                                      RenderStateTexture->GetLayout(),
+                                                      Mode));
+            }
             MudLayerGeometry =
                 std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
                                                                       Descriptors->GetLayout(),
                                                                       Scene.GetStaticMeshInstances().size(),
                                                                       true);
-            WaterLayerGeometry =
-                std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
-                                                                      Context.GetDevice(),
-                                                                      Descriptors->GetLayout(),
-                                                                      Scene.GetStaticMeshInstances().size(),
-                                                                      true);
-            LavaLayerGeometry =
-                std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
-                                                                      Context.GetDevice(),
-                                                                      Descriptors->GetLayout(),
-                                                                      Scene.GetStaticMeshInstances().size(),
-                                                                      true);
+            MudLayerGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
             HeightFieldSmoothing = std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                                            Context.GetDevice(),
                                                                            Descriptors->GetLayout(),
@@ -751,62 +759,31 @@ namespace MDSS::Rendering
                                                                        Descriptors->GetLayout(),
                                                                        MudLayerGeometry->GetOutputLayout(),
                                                                        Scene.GetStaticMeshInstances().size());
-            MudOverlayTopPipeline =
-                std::make_unique<GPU::TGraphicsPipeline>(Context.GetDevice(),
-                                                         MainRenderPass.GetHandle(),
-                                                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                                                                    Descriptors->GetLayout(),
-                                                                                    MudLayerGeometry->GetOutputLayout(),
-                                                                                    OverlaySides->GetLayout(),
-                                                                                    false,
-                                                                                    false));
-            MudOverlaySidePipeline =
-                std::make_unique<GPU::TGraphicsPipeline>(Context.GetDevice(),
-                                                         MainRenderPass.GetHandle(),
-                                                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                                                                    Descriptors->GetLayout(),
-                                                                                    MudLayerGeometry->GetOutputLayout(),
-                                                                                    OverlaySides->GetLayout(),
-                                                                                    false,
-                                                                                    true));
-            WaterOverlayTopPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                           Descriptors->GetLayout(),
-                                           WaterLayerGeometry->GetOutputLayout(),
-                                           OverlaySides->GetLayout(),
-                                           true,
-                                           false));
-            WaterOverlaySidePipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                           Descriptors->GetLayout(),
-                                           WaterLayerGeometry->GetOutputLayout(),
-                                           OverlaySides->GetLayout(),
-                                           true,
-                                           true));
-            LavaOverlayTopPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                           Descriptors->GetLayout(),
-                                           LavaLayerGeometry->GetOutputLayout(),
-                                           OverlaySides->GetLayout(),
-                                           false,
-                                           false,
-                                           true));
-            LavaOverlaySidePipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                Context.GetDevice(),
-                MainRenderPass.GetHandle(),
-                BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                           Descriptors->GetLayout(),
-                                           LavaLayerGeometry->GetOutputLayout(),
-                                           OverlaySides->GetLayout(),
-                                           false,
-                                           true,
-                                           true));
+            for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+            {
+                MudOverlayTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                               Descriptors->GetLayout(),
+                                               MudLayerGeometry->GetOutputLayout(),
+                                               OverlaySides->GetLayout(),
+                                               false,
+                                               true,
+                                               RenderStateTexture->GetLayout(),
+                                               Mode));
+                MudOverlaySidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    Context.GetDevice(),
+                    MainRenderPass.GetHandle(),
+                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                               Descriptors->GetLayout(),
+                                               MudLayerGeometry->GetOutputLayout(),
+                                               OverlaySides->GetLayout(),
+                                               true,
+                                               true,
+                                               RenderStateTexture->GetLayout(),
+                                               Mode));
+            }
         }
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
@@ -859,22 +836,16 @@ namespace MDSS::Rendering
         DestroyRenderFinishedSemaphores();
 
         SurfaceDebugPipeline.reset();
-        SurfaceLitPipeline.reset();
-        BaseSurfaceLitPipeline.reset();
+        for (auto& Pipeline : SurfaceLitPipelines) Pipeline.reset();
+        for (auto& Pipeline : BaseSurfaceLitPipelines) Pipeline.reset();
         RenderStateTexture.reset();
-        MudOverlayTopPipeline.reset();
-        MudOverlaySidePipeline.reset();
-        WaterOverlayTopPipeline.reset();
-        WaterOverlaySidePipeline.reset();
-        LavaOverlayTopPipeline.reset();
-        LavaOverlaySidePipeline.reset();
+        for (auto& Pipeline : MudOverlayTopPipelines) Pipeline.reset();
+        for (auto& Pipeline : MudOverlaySidePipelines) Pipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
         OverlaySides.reset();
         HeightFieldSmoothing.reset();
         MudLayerGeometry.reset();
-        WaterLayerGeometry.reset();
-        LavaLayerGeometry.reset();
         TexelInspector.reset();
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
@@ -888,6 +859,10 @@ namespace MDSS::Rendering
             MaterialDescriptorSetLayout = VK_NULL_HANDLE;
         }
     }
+
+#pragma endregion
+
+#pragma region Frame_Rendering
 
     void TRenderer::RenderFrame(const TScene& SceneData,
                                 TDebugUI&     DebugInterface,
@@ -918,6 +893,12 @@ namespace MDSS::Rendering
             ProfilingStats.OverlayActiveTopTriangles = Activity.Active;
             ProfilingStats.OverlayTotalTopTriangles = Activity.Total;
         }
+        if (MudLayerGeometry)
+        {
+            const auto Activity = MudLayerGeometry->CompleteOccupancyFrame(FrameIndex);
+            ProfilingStats.OverlayActiveTiles = Activity.Active;
+            ProfilingStats.OverlayTotalTiles = Activity.Total;
+        }
         if (TimestampQueryPool != VK_NULL_HANDLE && bTimestampQueriesSubmitted[FrameIndex])
         {
             const std::uint32_t QueryBase = FrameIndex * TimestampQueriesPerFrame;
@@ -936,7 +917,7 @@ namespace MDSS::Rendering
                                                                VK_QUERY_RESULT_64_BIT);
             if (QueryResult == VK_SUCCESS && TimestampPeriodNanoseconds > 0.0F)
             {
-                ProfilingStats.OverlayDrawMode = OverlayDrawModesSubmitted[FrameIndex];
+                ProfilingStats.OverlayDisplayMode = OverlayDisplayModesSubmitted[FrameIndex];
                 const auto ToMilliseconds = [this](std::uint64_t Start, std::uint64_t End)
                 {
                     std::uint64_t ElapsedTicks = End - Start;
@@ -952,7 +933,7 @@ namespace MDSS::Rendering
                 ProfilingStats.TexelInspectorGpuMilliseconds = ToMilliseconds(Timestamps[4], Timestamps[5]);
                 ProfilingStats.BaseMeshDrawGpuMilliseconds = ToMilliseconds(Timestamps[6], Timestamps[7]);
                 ProfilingStats.MudOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[8], Timestamps[9]);
-                ProfilingStats.WaterFilmOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[10], Timestamps[11]);
+                ProfilingStats.ReservedOverlayDrawGpuMilliseconds = ToMilliseconds(Timestamps[10], Timestamps[11]);
                 ProfilingStats.OverlayPreparationGpuMilliseconds = ToMilliseconds(Timestamps[12], Timestamps[13]);
                 ProfilingStats.SceneSetupGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[6]);
                 ProfilingStats.RenderPassBeginGpuMilliseconds = ToMilliseconds(Timestamps[2], Timestamps[14]);
@@ -1053,8 +1034,6 @@ namespace MDSS::Rendering
             SurfaceStates.ResetState();
             SimulationClock.Reset();
             SimulationStepSerial = 0;
-            TotalHeightCacheEntries.clear();
-            bTotalHeightCacheHit = false;
             if (TexelInspector)
                 TexelInspector->Invalidate();
         }
@@ -1143,7 +1122,7 @@ namespace MDSS::Rendering
             LastSolverGpuMilliseconds = LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = 0.0F;
         CpuStageStart = TClock::now();
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, SimulationSteps);
-        OverlayDrawModesSubmitted[FrameIndex] = OverlayDrawProfilingMode;
+        OverlayDisplayModesSubmitted[FrameIndex] = OverlayDisplayMode;
         ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
@@ -1220,13 +1199,16 @@ namespace MDSS::Rendering
         }
     }
 
+#pragma endregion
+
+#pragma region Runtime_Settings_and_Benchmark_Capture
+
     void TRenderer::SetDebugProfileParameters(Asset::TSRProfileAssetHandle                 Profile,
                                               SurfaceState::TStateId                       State,
                                               const SurfaceState::TSurfaceStateParameters& Parameters,
                                               bool                                         bKeepRuntimeOverride)
     {
         SurfaceStates.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
-        ++TotalHeightProfileRevision;
         if (TexelInspector)
             TexelInspector->Invalidate();
         const auto Key = std::make_pair(Profile, State);
@@ -1294,6 +1276,10 @@ namespace MDSS::Rendering
         BenchmarkJsonLines.push_back(Sample.dump());
     }
 
+#pragma endregion
+
+#pragma region Scene_Resource_Replacement
+
     void TRenderer::ReloadSceneResources(const TScene& Scene, bool bResetStateSettings)
     {
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
@@ -1312,24 +1298,27 @@ namespace MDSS::Rendering
         std::unique_ptr<SurfaceState::TTexelInspector>       ReplacementInspector;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementGeometryPreview;
         std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementGeometryPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementLitPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementBaseLitPipeline;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementLitPipelines;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
         std::unique_ptr<TRenderStateTexture>                  ReplacementRenderStateTexture;
         std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementMudGeometry;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementWaterGeometry;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview> ReplacementLavaGeometry;
         std::unique_ptr<THeightFieldSmoothing>               ReplacementHeightFieldSmoothing;
         std::unique_ptr<TAccumulationOverlaySides>           ReplacementOverlaySides;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementMudTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementMudSidePipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementWaterTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementWaterSidePipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementLavaTopPipeline;
-        std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementLavaSidePipeline;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudTopPipelines;
+        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudSidePipelines;
         try
         {
             Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene);
             Replacement->SetAccumulationGeometryUpdateEnabled(DebugSolverSettings.bAccumulationGeometryUpdateEnabled);
+            Replacement->SetRawFluxCacheEnabled(SurfaceStates.IsRawFluxCacheEnabled());
+            Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStates.IsCoalescedRawFluxLayoutEnabled());
+            Replacement->SetHalfRawFluxCacheEnabled(SurfaceStates.IsHalfRawFluxCacheEnabled());
+            Replacement->SetHalfDynamicWeightsEnabled(SurfaceStates.IsHalfDynamicWeightsEnabled());
+            Replacement->SetSparseSolverEnabled(SurfaceStates.IsSparseSolverEnabled());
+            Replacement->SetSparseAccumulationHeightEnabled(SurfaceStates.IsSparseAccumulationHeightEnabled());
+            Replacement->SetActiveChannelMaskEnabled(SurfaceStates.IsActiveChannelMaskEnabled());
+            Replacement->SetPerWorkgroupChannelMaskEnabled(SurfaceStates.IsPerWorkgroupChannelMaskEnabled());
+            Replacement->SetSparseSimulationGeometryEnabled(SurfaceStates.IsSparseSimulationGeometryEnabled());
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
                 Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::TSurfaceSolverTerm>(Index),
@@ -1365,42 +1354,37 @@ namespace MDSS::Rendering
                     BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
                                                      Descriptors->GetLayout(),
                                                      ReplacementGeometryPreview->GetOutputLayout()));
-                ReplacementRenderStateTexture = std::make_unique<TRenderStateTexture>(
-                    Context.GetPhysicalDevice(), Context.GetDevice(), Descriptors->GetLayout(),
-                    Replacement->GetGPUResources());
-                ReplacementLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout(),
-                                                  VK_NULL_HANDLE, ReplacementRenderStateTexture->GetLayout()));
-                ReplacementBaseLitPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                ReplacementRenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+                                                                                      Context.GetDevice(),
+                                                                                      Descriptors->GetLayout(),
+                                                                                      Replacement->GetGPUResources());
+                for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+                {
+                    ReplacementLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
                                                       Descriptors->GetLayout(),
-                                                      ReplacementGeometryPreview->GetOutputLayout(),
-                                                      ReplacementRenderStateTexture->GetLayout()));
+                                                      VK_NULL_HANDLE,
+                                                      ReplacementRenderStateTexture->GetLayout(),
+                                                      Mode));
+                    ReplacementBaseLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
+                                                          Descriptors->GetLayout(),
+                                                          ReplacementGeometryPreview->GetOutputLayout(),
+                                                          ReplacementRenderStateTexture->GetLayout(),
+                                                          Mode));
+                }
                 ReplacementMudGeometry =
                     std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
                                                                           Descriptors->GetLayout(),
                                                                           Scene.GetStaticMeshInstances().size(),
                                                                           true);
-                ReplacementWaterGeometry =
-                    std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
-                                                                          Context.GetDevice(),
-                                                                          Descriptors->GetLayout(),
-                                                                          Scene.GetStaticMeshInstances().size(),
-                                                                          true);
-                ReplacementLavaGeometry =
-                    std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
-                                                                          Context.GetDevice(),
-                                                                          Descriptors->GetLayout(),
-                                                                          Scene.GetStaticMeshInstances().size(),
-                                                                          true);
                 ReplacementMudGeometry->SetOccupancyTileSize(static_cast<std::uint32_t>(OverlayOccupancyTileSize));
-                ReplacementWaterGeometry->SetOccupancyTileSize(static_cast<std::uint32_t>(OverlayOccupancyTileSize));
-                ReplacementLavaGeometry->SetOccupancyTileSize(static_cast<std::uint32_t>(OverlayOccupancyTileSize));
+                ReplacementMudGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
                 ReplacementHeightFieldSmoothing =
                     std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                             Context.GetDevice(),
@@ -1413,62 +1397,31 @@ namespace MDSS::Rendering
                                                                 Descriptors->GetLayout(),
                                                                 ReplacementMudGeometry->GetOutputLayout(),
                                                                 Scene.GetStaticMeshInstances().size());
-                ReplacementMudTopPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementMudGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               false,
-                                               false));
-                ReplacementMudSidePipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementMudGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               false,
-                                               true));
-                ReplacementWaterTopPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementWaterGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               true,
-                                               false));
-                ReplacementWaterSidePipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementWaterGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               true,
-                                               true));
-                ReplacementLavaTopPipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementLavaGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               false,
-                                               false,
-                                               true));
-                ReplacementLavaSidePipeline = std::make_unique<GPU::TGraphicsPipeline>(
-                    Context.GetDevice(),
-                    MainRenderPass.GetHandle(),
-                    BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
-                                               Descriptors->GetLayout(),
-                                               ReplacementLavaGeometry->GetOutputLayout(),
-                                               ReplacementOverlaySides->GetLayout(),
-                                               false,
-                                               true,
-                                               true));
+                for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
+                {
+                    ReplacementMudTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                                   Descriptors->GetLayout(),
+                                                   ReplacementMudGeometry->GetOutputLayout(),
+                                                   ReplacementOverlaySides->GetLayout(),
+                                                   false,
+                                                   true,
+                                                   ReplacementRenderStateTexture->GetLayout(),
+                                                   Mode));
+                    ReplacementMudSidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                        Context.GetDevice(),
+                        MainRenderPass.GetHandle(),
+                        BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
+                                                   Descriptors->GetLayout(),
+                                                   ReplacementMudGeometry->GetOutputLayout(),
+                                                   ReplacementOverlaySides->GetLayout(),
+                                                   true,
+                                                   true,
+                                                   ReplacementRenderStateTexture->GetLayout(),
+                                                   Mode));
+                }
             }
         }
         catch (...)
@@ -1477,27 +1430,19 @@ namespace MDSS::Rendering
             throw;
         }
         SurfaceDebugPipeline.reset();
-        SurfaceLitPipeline.reset();
-        BaseSurfaceLitPipeline.reset();
+        for (auto& Pipeline : SurfaceLitPipelines) Pipeline.reset();
+        for (auto& Pipeline : BaseSurfaceLitPipelines) Pipeline.reset();
         RenderStateTexture.reset();
-        MudOverlayTopPipeline.reset();
-        MudOverlaySidePipeline.reset();
-        WaterOverlayTopPipeline.reset();
-        WaterOverlaySidePipeline.reset();
-        LavaOverlayTopPipeline.reset();
-        LavaOverlaySidePipeline.reset();
+        for (auto& Pipeline : MudOverlayTopPipelines) Pipeline.reset();
+        for (auto& Pipeline : MudOverlaySidePipelines) Pipeline.reset();
         TexelGeometryPipeline.reset();
         TexelGeometryPreview.reset();
         OverlaySides.reset();
         HeightFieldSmoothing.reset();
         MudLayerGeometry.reset();
-        WaterLayerGeometry.reset();
-        LavaLayerGeometry.reset();
         TexelInspector.reset();
         InspectedTexel.reset();
         SimulationStepSerial = 0;
-        TotalHeightCacheEntries.clear();
-        bTotalHeightCacheHit = false;
         SurfaceStates.ReplaceSceneResources(std::move(*Replacement));
         SimulationClock.Reset();
         LastSimulationStepCount = 0;
@@ -1505,20 +1450,14 @@ namespace MDSS::Rendering
         TexelInspector = std::move(ReplacementInspector);
         TexelGeometryPreview = std::move(ReplacementGeometryPreview);
         TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
-        SurfaceLitPipeline = std::move(ReplacementLitPipeline);
-        BaseSurfaceLitPipeline = std::move(ReplacementBaseLitPipeline);
+        SurfaceLitPipelines = std::move(ReplacementLitPipelines);
+        BaseSurfaceLitPipelines = std::move(ReplacementBaseLitPipelines);
         RenderStateTexture = std::move(ReplacementRenderStateTexture);
         MudLayerGeometry = std::move(ReplacementMudGeometry);
-        WaterLayerGeometry = std::move(ReplacementWaterGeometry);
-        LavaLayerGeometry = std::move(ReplacementLavaGeometry);
         HeightFieldSmoothing = std::move(ReplacementHeightFieldSmoothing);
         OverlaySides = std::move(ReplacementOverlaySides);
-        MudOverlayTopPipeline = std::move(ReplacementMudTopPipeline);
-        MudOverlaySidePipeline = std::move(ReplacementMudSidePipeline);
-        WaterOverlayTopPipeline = std::move(ReplacementWaterTopPipeline);
-        WaterOverlaySidePipeline = std::move(ReplacementWaterSidePipeline);
-        LavaOverlayTopPipeline = std::move(ReplacementLavaTopPipeline);
-        LavaOverlaySidePipeline = std::move(ReplacementLavaSidePipeline);
+        MudOverlayTopPipelines = std::move(ReplacementMudTopPipelines);
+        MudOverlaySidePipelines = std::move(ReplacementMudSidePipelines);
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
         if (bResetStateSettings)
         {
@@ -1537,12 +1476,14 @@ namespace MDSS::Rendering
         SurfaceStates.RestartState();
         SimulationClock.Reset();
         SimulationStepSerial = 0;
-        TotalHeightCacheEntries.clear();
-        bTotalHeightCacheHit = false;
         LastSimulationStepCount = 0;
         if (TexelInspector)
             TexelInspector->Invalidate();
     }
+
+#pragma endregion
+
+#pragma region Resolution_and_Swapchain
 
     std::uint32_t TRenderer::GetSimulationResolution() const noexcept
     {
@@ -1670,6 +1611,10 @@ namespace MDSS::Rendering
                           std::to_string(NewExtent.height) + ".");
     }
 
+#pragma endregion
+
+#pragma region Renderer_Accessors
+
     const GPU::TSwapchain& TRenderer::GetSwapchain() const noexcept
     {
         return SwapchainData;
@@ -1705,9 +1650,18 @@ namespace MDSS::Rendering
         return LastSolverPass2GpuMilliseconds;
     }
 
+#pragma endregion
+
+#pragma region Render_and_Debug_Settings
+
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
     {
-        return ViewMode;
+        return GetRenderViewMode(0);
+    }
+
+    TRenderViewMode TRenderer::GetRenderViewMode(std::size_t ViewportIndex) const noexcept
+    {
+        return ViewportIndex < ViewModes.size() ? ViewModes[ViewportIndex] : TRenderViewMode::Lit;
     }
 
     void TRenderer::SetWireframeLineWidth(float Width) noexcept
@@ -1740,14 +1694,19 @@ namespace MDSS::Rendering
 
     void TRenderer::SetRenderViewMode(TRenderViewMode Mode)
     {
-        if (ViewMode == Mode)
-        {
-            return;
-        }
+        SetRenderViewMode(0, Mode);
+    }
 
-        ViewMode = Mode;
-        bTotalHeightCacheHit = false;
-        TLogger::Info("TRenderer", std::string("Render view mode changed to ") + GetRenderViewModeName(ViewMode) + ".");
+    void TRenderer::SetRenderViewMode(std::size_t ViewportIndex, TRenderViewMode Mode)
+    {
+        if (ViewportIndex >= ViewModes.size())
+            ViewModes.resize(ViewportIndex + 1U, TRenderViewMode::Lit);
+        if (ViewModes[ViewportIndex] == Mode)
+            return;
+
+        ViewModes[ViewportIndex] = Mode;
+        TLogger::Info("TRenderer", "Viewport " + std::to_string(ViewportIndex + 1U) +
+                                       " render view mode changed to " + GetRenderViewModeName(Mode) + ".");
     }
 
     std::uint32_t TRenderer::GetDebugStateChannel() const noexcept
@@ -1791,11 +1750,9 @@ namespace MDSS::Rendering
 
     bool TRenderer::CanRenderLitOverlays() const noexcept
     {
-        return ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipeline &&
-               BaseSurfaceLitPipeline && TexelGeometryPreview && OverlaySides && HeightFieldSmoothing &&
-               MudLayerGeometry && WaterLayerGeometry && LavaLayerGeometry && MudOverlayTopPipeline &&
-               MudOverlaySidePipeline && WaterOverlayTopPipeline && WaterOverlaySidePipeline &&
-               LavaOverlayTopPipeline && LavaOverlaySidePipeline;
+        return DemoEffects.bEnabled && SurfaceLitPipelines[0] &&
+               BaseSurfaceLitPipelines[0] && TexelGeometryPreview && OverlaySides && HeightFieldSmoothing &&
+               MudLayerGeometry && MudOverlayTopPipelines[0] && MudOverlaySidePipelines[0];
     }
 
     std::array<bool, 3> TRenderer::GetLitOverlayActivity(const TStaticMeshInstance& Instance,
@@ -1814,7 +1771,10 @@ namespace MDSS::Rendering
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
         const auto& Resources = SurfaceStates.GetGPUResources();
-        if (!CanRenderLitOverlays() || Instance >= Instances.size() || Instance >= Resources.GetSceneInstanceCount() ||
+        const bool bAnyLitView = std::any_of(ViewModes.begin(), ViewModes.end(),
+                                             [](TRenderViewMode Mode) { return Mode == TRenderViewMode::Lit; });
+        if (!bAnyLitView || !CanRenderLitOverlays() || Instance >= Instances.size() ||
+            Instance >= Resources.GetSceneInstanceCount() ||
             !Resources.GetInstanceDescriptors(Instance))
             return false;
         const auto Activity = GetLitOverlayActivity(
@@ -1827,22 +1787,67 @@ namespace MDSS::Rendering
         const auto Roughness = [](float V) { return std::isfinite(V) && V >= 0.05F && V <= 1.0F; };
         const auto Unit = [](float V) { return std::isfinite(V) && V >= 0.0F && V <= 1.0F; };
         const auto Color = [&](const glm::vec3& V) { return Unit(V.r) && Unit(V.g) && Unit(V.b); };
-        if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.WetRoughness) ||
+        const auto ColorMapping = [&](const TDemoStateColorMapping& Mapping)
+        {
+            return Unit(Mapping.RampStart) && Unit(Mapping.RampEnd) && Mapping.RampStart < Mapping.RampEnd &&
+                   Color(Mapping.LowSaturationColor) && Color(Mapping.HighSaturationColor);
+        };
+        if (!Roughness(Settings.DryRoughness) ||
             !Roughness(Settings.MudRoughness) || !Roughness(Settings.WaterFilmRoughness) ||
-            !Unit(Settings.WetnessStrength) || !Unit(Settings.WetnessSpecularStrength) ||
-            !Unit(Settings.WaterFilmOpacity) || !Color(Settings.WetnessTint) || !Color(Settings.WaterFilmTint))
+            !Unit(Settings.HeatStrength) || !Unit(Settings.LavaThreshold) || !Unit(Settings.WaterFilmOpacity) ||
+            !std::isfinite(Settings.LowAmountHeightFade) || Settings.LowAmountHeightFade < 0.0F ||
+            Settings.LowAmountHeightFade > 0.5F ||
+            !ColorMapping(Settings.HeatColorMap) || !ColorMapping(Settings.MudColorMap) ||
+            !ColorMapping(Settings.WaterFilmColorMap) || !ColorMapping(Settings.LavaColorMap))
             throw std::invalid_argument("Invalid demo surface effect settings.");
+        const bool bHeightSmoothingChanged = DemoEffects.bHeightFieldSmoothing != Settings.bHeightFieldSmoothing;
+        const bool bCoverageSmoothingChanged = DemoEffects.bCoverageSmoothing != Settings.bCoverageSmoothing;
+
+        // Smoothing is exposed as an A/B performance experiment.  Drain the two
+        // frames-in-flight when its execution mode changes so profiling after the
+        // click cannot still contain commands recorded with the previous mode.
+        // This is a one-time UI transition cost, never a per-frame wait.
+        if ((bHeightSmoothingChanged || bCoverageSmoothingChanged) && Context.GetDevice() != VK_NULL_HANDLE)
+        {
+            if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+                throw std::runtime_error("Failed to idle Vulkan device while changing smoothing mode.");
+        }
+
         DemoEffects = Settings;
+        if (MudLayerGeometry)
+            MudLayerGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
+        if (bHeightSmoothingChanged && HeightFieldSmoothing)
+        {
+            if (DemoEffects.bHeightFieldSmoothing)
+            {
+                // The next ON frame must rebuild the output from the raw preview.
+                HeightFieldSmoothing->Invalidate();
+            }
+            else
+            {
+                // Height smoothing allocates one full texel-geometry buffer per
+                // active instance/channel on first use.  The old implementation
+                // stopped dispatching when OFF but kept those buffers resident,
+                // so an ON->OFF A/B run did not return to the original GPU-memory
+                // footprint.  The device is idle above, therefore it is safe to
+                // reclaim them here.
+                HeightFieldSmoothing->ReleaseOutputs();
+            }
+        }
     }
 
     void TRenderer::SetSceneLitHeightDisplayScale(TScene& Scene, float Scale)
     {
         const bool bChanged = Scene.GetLitHeightDisplayScale() != Scale;
         Scene.SetLitHeightDisplayScale(Scale);
-        if (bChanged && TexelInspector)
+        if (!bChanged)
+            return;
+        if (TexelInspector)
         {
             TexelInspector->Invalidate();
         }
+        if (MudLayerGeometry)
+            MudLayerGeometry->InvalidateSparseOutput();
     }
 
     bool TRenderer::InspectTexel(const TScene& Scene, std::size_t InstanceIndex, std::uint32_t Triangle, glm::vec2 UV)
@@ -1946,9 +1951,9 @@ namespace MDSS::Rendering
         TexelAreaReference = Area;
     }
 
-    float TRenderer::GetDebugViewParameter() const noexcept
+    float TRenderer::GetDebugViewParameter(TRenderViewMode Mode) const noexcept
     {
-        switch (ViewMode)
+        switch (Mode)
         {
             case TRenderViewMode::SurfaceTexelGrid:
                 return static_cast<float>(TexelGridBlockSize);
@@ -1982,8 +1987,9 @@ namespace MDSS::Rendering
 
     void TRenderer::SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size)
     {
-        if (Size != TOverlayOccupancyTileSize::Tile16 && Size != TOverlayOccupancyTileSize::Tile32)
-            throw std::invalid_argument("Overlay occupancy tile size must be 16 or 32.");
+        if (Size != TOverlayOccupancyTileSize::Tile8 && Size != TOverlayOccupancyTileSize::Tile16 &&
+            Size != TOverlayOccupancyTileSize::Tile32)
+            throw std::invalid_argument("Overlay occupancy tile size must be 8, 16, or 32.");
         if (OverlayOccupancyTileSize == Size)
             return;
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
@@ -1992,10 +1998,96 @@ namespace MDSS::Rendering
         const std::uint32_t Tile = static_cast<std::uint32_t>(Size);
         if (MudLayerGeometry)
             MudLayerGeometry->SetOccupancyTileSize(Tile);
-        if (WaterLayerGeometry)
-            WaterLayerGeometry->SetOccupancyTileSize(Tile);
-        if (LavaLayerGeometry)
-            LavaLayerGeometry->SetOccupancyTileSize(Tile);
+    }
+
+    bool TRenderer::IsRawFluxCacheEnabled() const noexcept
+    {
+        return SurfaceStates.IsRawFluxCacheEnabled();
+    }
+
+    void TRenderer::SetRawFluxCacheEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetRawFluxCacheEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsCoalescedRawFluxLayoutEnabled() const noexcept
+    {
+        return SurfaceStates.IsCoalescedRawFluxLayoutEnabled();
+    }
+
+    void TRenderer::SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetCoalescedRawFluxLayoutEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsHalfRawFluxCacheEnabled() const noexcept
+    {
+        return SurfaceStates.IsHalfRawFluxCacheEnabled();
+    }
+
+    void TRenderer::SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetHalfRawFluxCacheEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsHalfDynamicWeightsEnabled() const noexcept
+    {
+        return SurfaceStates.IsHalfDynamicWeightsEnabled();
+    }
+
+    void TRenderer::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetHalfDynamicWeightsEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsSparseSolverEnabled() const noexcept
+    {
+        return SurfaceStates.IsSparseSolverEnabled();
+    }
+
+    void TRenderer::SetSparseSolverEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetSparseSolverEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsSparseAccumulationHeightEnabled() const noexcept
+    {
+        return SurfaceStates.IsSparseAccumulationHeightEnabled();
+    }
+
+    void TRenderer::SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetSparseAccumulationHeightEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsActiveChannelMaskEnabled() const noexcept
+    {
+        return SurfaceStates.IsActiveChannelMaskEnabled();
+    }
+
+    void TRenderer::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetActiveChannelMaskEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsPerWorkgroupChannelMaskEnabled() const noexcept
+    {
+        return SurfaceStates.IsPerWorkgroupChannelMaskEnabled();
+    }
+
+    void TRenderer::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetPerWorkgroupChannelMaskEnabled(bEnabled);
+    }
+
+    bool TRenderer::IsSparseSimulationGeometryEnabled() const noexcept
+    {
+        return SurfaceStates.IsSparseSimulationGeometryEnabled();
+    }
+
+    void TRenderer::SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept
+    {
+        SurfaceStates.SetSparseSimulationGeometryEnabled(bEnabled);
     }
 
     bool TRenderer::IsAccumulationGeometryUpdateEnabled() const noexcept
@@ -2054,6 +2146,10 @@ namespace MDSS::Rendering
     {
         AmbientLight = std::clamp(Intensity, 0.0F, 1.0F);
     }
+
+#pragma endregion
+
+#pragma region Material_and_GPU_Resource_Setup
 
     VkDescriptorSetLayout TRenderer::CreateMaterialDescriptorSetLayout(VkDevice Device)
     {
@@ -2232,7 +2328,8 @@ namespace MDSS::Rendering
                         Context.GetDevice(),
                         MaterialUniformStride * MaterialViewportCapacity,
                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        GPU::TGPUBufferMemoryCategory::Renderer);
                     NewResources[Index].DescriptorSets[Frame] = Sets[SetIndex];
 
                     VkDescriptorImageInfo BaseImage{};
@@ -2306,32 +2403,53 @@ namespace MDSS::Rendering
             const Asset::TMaterialAsset& Material = Assets.GetMaterial(static_cast<Asset::TMaterialAssetHandle>(Index));
             TMaterialUniform             Uniform{
                 Material.GetBaseColor(),
-                ViewMode == TRenderViewMode::Wireframe && bWireframeUniformWhite ? RenderModeWireframeUniformWhite
-                                                                                             : static_cast<std::uint32_t>(ViewMode),
+                static_cast<std::uint32_t>(GetRenderViewMode(0)),
                 bFlipNormalY ? 1U : 0U,
                 NormalStrength,
                 AmbientLight,
                 DebugStateChannel,
                 static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()),
-                GetDebugViewParameter(),
+                GetDebugViewParameter(GetRenderViewMode(0)),
                 bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F,
                             {0.0F, 0.0F, LitHeightDisplayScale, SurfaceDebugSettings.DisplacementScale},
                             {0U,
                              SurfaceDebugSettings.AccumulationComponent,
                              SurfaceDebugSettings.HeightGridMode,
                              SurfaceDebugSettings.HeightGridBlockSize},
-                            {Bindings.Wetness, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
-                            {DemoEffects.DryRoughness, DemoEffects.WetRoughness, DemoEffects.MudRoughness, LitHeightDisplayScale},
-                            {DemoEffects.WetnessStrength,
-                             DemoEffects.WetnessSpecularStrength,
-                             DemoEffects.WaterFilmOpacity,
+                            {Bindings.Heat, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
+                            {DemoEffects.DryRoughness, DemoEffects.LavaThreshold, DemoEffects.MudRoughness,
+                             LitHeightDisplayScale},
+                            {DemoEffects.HeatStrength, 0.0F, DemoEffects.WaterFilmOpacity,
                              DemoEffects.WaterFilmRoughness},
-                            {DemoEffects.WetnessTint, 1.0F},
-                            {DemoEffects.WaterFilmTint, 1.0F},
-                            {Bindings.Lava, 0U, 0U, 0U},
+                            {Bindings.Lava,
+                             0U,
+                             (DemoEffects.bCoverageSmoothing ? 1U : 0U) |
+                                 (DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled ? 2U : 0U) |
+                                 (bRenderStateTextureSamplingEnabled ? 4U : 0U),
+                             (DemoEffects.bHeatLayer ? 1U : 0U) |
+                                 (DemoEffects.bMudDisplacement ? 2U : 0U) |
+                                 (DemoEffects.bWaterFilmDisplacement ? 4U : 0U) |
+                                 (DemoEffects.bLavaDisplacement ? 8U : 0U)},
+                            {DemoEffects.HeatColorMap.RampStart, DemoEffects.MudColorMap.RampStart,
+                             DemoEffects.WaterFilmColorMap.RampStart, DemoEffects.LavaColorMap.RampStart},
+                            {DemoEffects.HeatColorMap.RampEnd, DemoEffects.MudColorMap.RampEnd,
+                             DemoEffects.WaterFilmColorMap.RampEnd, DemoEffects.LavaColorMap.RampEnd},
+                            {glm::vec4(DemoEffects.HeatColorMap.LowSaturationColor, 1.0F),
+                             glm::vec4(DemoEffects.MudColorMap.LowSaturationColor, 1.0F),
+                             glm::vec4(DemoEffects.WaterFilmColorMap.LowSaturationColor, 1.0F),
+                             glm::vec4(DemoEffects.LavaColorMap.LowSaturationColor, 1.0F)},
+                            {glm::vec4(DemoEffects.HeatColorMap.HighSaturationColor, 1.0F),
+                             glm::vec4(DemoEffects.MudColorMap.HighSaturationColor, 1.0F),
+                             glm::vec4(DemoEffects.WaterFilmColorMap.HighSaturationColor, 1.0F),
+                             glm::vec4(DemoEffects.LavaColorMap.HighSaturationColor, 1.0F)},
                 glm::vec4(0.0F)};
             for (std::size_t ViewportIndex = 0; ViewportIndex < DebugInterface.GetViewportCount(); ++ViewportIndex)
             {
+                const TRenderViewMode Mode = GetRenderViewMode(ViewportIndex);
+                Uniform.RenderMode = Mode == TRenderViewMode::Wireframe && bWireframeUniformWhite
+                                         ? RenderModeWireframeUniformWhite
+                                         : static_cast<std::uint32_t>(Mode);
+                Uniform.DebugViewParameter = GetDebugViewParameter(Mode);
                 Uniform.CameraPosition =
                     glm::vec4(DebugInterface.GetViewportCamera(SceneData, ViewportIndex).GetPosition(), 1.0F);
                 MaterialResources[Index].UniformBuffers[Frame]->Upload(
@@ -2339,6 +2457,10 @@ namespace MDSS::Rendering
             }
         }
     }
+
+#pragma endregion
+
+#pragma region Command_Buffer_Recording
 
     void TRenderer::RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
                                         std::uint32_t          ImageIndex,
@@ -2371,7 +2493,8 @@ namespace MDSS::Rendering
                                      SimulationSteps[Step],
                                      TimestampQueryPool,
                                      QueryBase + FixedTimestampQueryCount +
-                                         static_cast<std::uint32_t>(Step) * SolverTimestampGroupCount * 8U);
+                                         static_cast<std::uint32_t>(Step) * SolverTimestampGroupCount * 8U,
+                                     Step + 1U == SimulationSteps.size());
         }
 
         SimulationStepSerial += SimulationSteps.size();
@@ -2401,31 +2524,40 @@ namespace MDSS::Rendering
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase);
         }
 
-        const bool bTexelGeometry = UsesTexelGeometry(ViewMode) && TexelGeometryPreview && TexelGeometryPipeline;
-        const bool bTotalHeight = bTexelGeometry && ViewMode == TRenderViewMode::TotalSimulationHeight;
-        bool       bAnyTotalHeightGeometry = false;
-        bool       bAllTotalHeightCachesHit = true;
-        bTotalHeightCacheHit = false;
-        if (bTotalHeight)
-            TotalHeightCacheEntries.resize(SceneData.GetStaticMeshInstances().size());
+        std::vector<TRenderViewMode> ViewModes(DebugInterface.GetViewportCount(), TRenderViewMode::Lit);
+        bool                        bAnyTexelGeometry = false;
+        bool                        bAnyLitView = false;
+        for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
+        {
+            ViewModes[ViewportIndex] = GetRenderViewMode(ViewportIndex);
+            bAnyTexelGeometry |= UsesTexelGeometry(ViewModes[ViewportIndex]);
+            bAnyLitView |= ViewModes[ViewportIndex] == TRenderViewMode::Lit;
+        }
+        bAnyTexelGeometry &= TexelGeometryPreview && TexelGeometryPipeline;
         const auto DemoBindings = GetDemoSurfaceStateBindings();
-        if (ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && RenderStateTexture)
+        const bool bPrecomputeCoverage = DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled;
+        const bool bUseRenderStateTexture = bRenderStateTextureSamplingEnabled || bPrecomputeCoverage;
+        const std::uint32_t FragmentMode = bPrecomputeCoverage ? 2U : (bUseRenderStateTexture ? 1U : 0U);
+        if (bAnyLitView && DemoEffects.bEnabled && RenderStateTexture)
             RenderStateTexture->Record(
                 CommandBuffer, SurfaceStates.GetGPUResources(),
-                {DemoBindings.Wetness, DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
-                static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()));
-        const bool bSurfaceLit = ViewMode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipeline;
-        const bool bOverlayRendering = CanRenderLitOverlays();
+                {DemoBindings.Heat, DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
+                static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()),
+                bUseRenderStateTexture,
+                bPrecomputeCoverage,
+                bSeparableCoverageSmoothingEnabled,
+                bSharedStateTextureSmoothingEnabled);
+        const bool bOverlayRendering = bAnyLitView && CanRenderLitOverlays();
         std::vector<std::array<bool, 3>> OverlayActive(SceneData.GetStaticMeshInstances().size(),
                                                        {false, false, false});
+        std::vector<VkDescriptorSet> OverlayGeometrySets(
+            SceneData.GetStaticMeshInstances().size(), VK_NULL_HANDLE);
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 12U);
-        if (bTexelGeometry || bOverlayRendering)
+        if (bAnyTexelGeometry || bOverlayRendering)
         {
             const auto& Resources = SurfaceStates.GetGPUResources();
-            const bool  bAccumulation = ViewMode == TRenderViewMode::SurfaceAccumulation ||
-                                       ViewMode == TRenderViewMode::SurfaceFinalGeometry || bTotalHeight;
             for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
             {
                 const auto* Shared = Resources.GetInstanceSharedGeometry(Instance);
@@ -2436,38 +2568,37 @@ namespace MDSS::Rendering
                 const auto  ChannelCount = static_cast<std::uint32_t>(Resources.GetInstanceChannelCount(Instance));
                 const auto  Model = MeshInstance.GetTransform().GetMatrix();
                 const bool  bStateAB = Resources.IsCurrentStateAB(Instance);
-                if (bTotalHeight)
+                if (bAnyTexelGeometry)
                 {
-                    bAnyTotalHeightGeometry = true;
-                    auto& Cache = TotalHeightCacheEntries[Instance];
-                    bool  bSameModelLinear = true;
-                    for (int Column = 0; Column < 3; ++Column)
-                        bSameModelLinear &=
-                            glm::all(glm::equal(glm::vec3(Cache.Model[Column]), glm::vec3(Model[Column])));
-                    const bool bHit = Cache.bValid && Cache.StepSerial == SimulationStepSerial &&
-                                      Cache.ProfileRevision == TotalHeightProfileRevision && bSameModelLinear;
-                    bAllTotalHeightCachesHit &= bHit;
-                    if (!bHit)
+                    for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
                     {
-                        SurfaceStates.RecordCurrentAccumulationHeight(CommandBuffer, Instance);
-                        Cache = {Model, SimulationStepSerial, TotalHeightProfileRevision, true};
+                        const TRenderViewMode Mode = ViewModes[ViewportIndex];
+                        if (!UsesTexelGeometry(Mode))
+                            continue;
+                        const bool bAccumulation = Mode == TRenderViewMode::SurfaceAccumulation ||
+                                                  Mode == TRenderViewMode::SurfaceFinalGeometry ||
+                                                  Mode == TRenderViewMode::TotalSimulationHeight;
+                        const bool bTotalHeight = Mode == TRenderViewMode::TotalSimulationHeight;
+                        TexelGeometryPreview->Record(CommandBuffer,
+                                                     Instance,
+                                                     *Descriptors,
+                                                     static_cast<std::uint32_t>(Shared->GetTexelCount()),
+                                                     DebugStateChannel,
+                                                     ChannelCount,
+                                                     LitHeightDisplayScale,
+                                                     bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F,
+                                                     Model,
+                                                     bStateAB,
+                                                     bAccumulation,
+                                                     VK_NULL_HANDLE,
+                                                     0U,
+                                                     bTotalHeight,
+                                                     0U,
+                                                     {0xffffffffU, 0xffffffffU, 0xffffffffU},
+                                                     0U,
+                                                     ViewportIndex + 1U);
                     }
                 }
-                if (bTexelGeometry)
-                    TexelGeometryPreview->Record(CommandBuffer,
-                                                 Instance,
-                                                 *Descriptors,
-                                                 static_cast<std::uint32_t>(Shared->GetTexelCount()),
-                                                 DebugStateChannel,
-                                                 ChannelCount,
-                                                 LitHeightDisplayScale,
-                                                 bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F,
-                                                 Model,
-                                                 bStateAB,
-                                                 bAccumulation,
-                                                 VK_NULL_HANDLE,
-                                                 0U,
-                                                 bTotalHeight);
                 if (!bOverlayRendering)
                     continue;
                 OverlayActive[Instance] = GetLitOverlayActivity(MeshInstance, Shared, DemoBindings);
@@ -2484,8 +2615,11 @@ namespace MDSS::Rendering
                                                  Model,
                                                  bStateAB,
                                                  false);
-                const auto RecordLayer =
-                    [&](SurfaceState::TTexelGeometryPreview& Preview, SurfaceState::TStateId Channel, bool bSmoothLayer)
+                // Reserved keys identify derived geometry, never Registry State channels.
+                constexpr std::uint32_t CombinedSurfaceKey = 0xffffU;
+                constexpr std::uint32_t AllStateChannels = std::numeric_limits<std::uint32_t>::max();
+                const auto RecordSurface =
+                    [&](SurfaceState::TTexelGeometryPreview& Preview, std::uint32_t Key, bool bSmoothCoverage)
                 {
                     const std::uint32_t LayerQuery = OverlayQueryBase + OverlayTimestampLayersSubmitted[FrameIndex] *
                                                                             OverlayTimestampQueriesPerLayer;
@@ -2496,7 +2630,7 @@ namespace MDSS::Rendering
                                    Instance,
                                    *Descriptors,
                                    static_cast<std::uint32_t>(Shared->GetTexelCount()),
-                                   Channel,
+                                   AllStateChannels,
                                    ChannelCount,
                                    LitHeightDisplayScale,
                                    1.0F,
@@ -2504,7 +2638,11 @@ namespace MDSS::Rendering
                                    bStateAB,
                                    true,
                                    TimestampQueryPool,
-                                   LayerQuery + 12U);
+                                   LayerQuery + 12U,
+                                   true,
+                                   FrameIndex,
+                                   {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
+                                   (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U));
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                     {
                         vkCmdWriteTimestamp(
@@ -2513,7 +2651,8 @@ namespace MDSS::Rendering
                             CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery + 2U);
                     }
                     VkDescriptorSet GeometrySet = Preview.GetOutputSet(Instance);
-                    if (DemoEffects.bHeightFieldSmoothing || bSmoothLayer)
+                    const GPU::TGPUBuffer* GeometryBuffer = &Preview.GetOutputBuffer(Instance);
+                    const auto SmoothChannel = [&](SurfaceState::TStateId Channel)
                     {
                         HeightFieldSmoothing->Record(CommandBuffer,
                                                      Instance,
@@ -2522,11 +2661,26 @@ namespace MDSS::Rendering
                                                      static_cast<std::uint32_t>(Shared->GetTexelCount()),
                                                      *Descriptors,
                                                      GeometrySet,
-                                                     Preview.GetOutputBuffer(Instance),
+                                                     *GeometryBuffer,
+                                                     Preview.GetGeometryCacheBuffer(Instance),
                                                      bStateAB,
-                                                     LitHeightDisplayScale);
+                                                     LitHeightDisplayScale,
+                                                     static_cast<std::uint32_t>(OverlayOccupancyTileSize),
+                                                     bSparseHeightSmoothingEnabled && bOverlayTileCullingEnabled,
+                                                     bSharedHeightSmoothingEnabled);
                         GeometrySet = HeightFieldSmoothing->GetOutputSet(Instance, Channel);
+                        GeometryBuffer = &HeightFieldSmoothing->GetOutputBuffer(Instance, Channel);
+                    };
+                    if (DemoEffects.bHeightFieldSmoothing)
+                    {
+                        if (bMud && DemoBindings.Mud != SurfaceState::InvalidStateId)
+                            SmoothChannel(DemoBindings.Mud);
+                        if (bWater && DemoBindings.WaterFilm != SurfaceState::InvalidStateId)
+                            SmoothChannel(DemoBindings.WaterFilm);
+                        if (bLava && DemoBindings.Lava != SurfaceState::InvalidStateId)
+                            SmoothChannel(DemoBindings.Lava);
                     }
+                    OverlayGeometrySets[Instance] = GeometrySet;
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                     {
                         vkCmdWriteTimestamp(
@@ -2536,30 +2690,36 @@ namespace MDSS::Rendering
                     }
                     OverlaySides->Record(CommandBuffer,
                                          Instance,
-                                         Channel,
+                                         Key,
                                          ChannelCount,
                                          OverlayTexelMeshResolution,
                                          *Shared,
                                          *Descriptors,
                                          GeometrySet,
+                                         Preview.GetGeometryCacheBuffer(Instance),
                                          bStateAB,
                                          FrameIndex,
                                          TimestampQueryPool,
                                          LayerQuery + 4U,
-                                         static_cast<std::uint32_t>(OverlayOccupancyTileSize),
-                                         bSmoothLayer);
+                                         bOverlayTileCullingEnabled
+                                             ? static_cast<std::uint32_t>(OverlayOccupancyTileSize)
+                                             : 0U,
+                                         bSmoothCoverage,
+                                         false,
+                                         LitHeightDisplayScale,
+                                         {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
+                                         (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U),
+                                         bSharedOverlayCoverageEnabled);
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                         ++OverlayTimestampLayersSubmitted[FrameIndex];
                 };
-                if (bMud)
-                    RecordLayer(*MudLayerGeometry, DemoBindings.Mud, DemoEffects.bMudSmoothing);
-                if (bWater)
-                    RecordLayer(*WaterLayerGeometry, DemoBindings.WaterFilm, DemoEffects.bWaterFilmSmoothing);
-                if (bLava)
-                    RecordLayer(*LavaLayerGeometry, DemoBindings.Lava, DemoEffects.bLavaSmoothing);
+                if (bMud || bWater || bLava)
+                {
+                    // Accumulation height was produced immediately after the latest solver step.
+                    RecordSurface(*MudLayerGeometry, CombinedSurfaceKey, DemoEffects.bCoverageSmoothing);
+                }
             }
         }
-        bTotalHeightCacheHit = bAnyTotalHeightGeometry && bAllTotalHeightCachesHit;
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 13U);
@@ -2590,28 +2750,30 @@ namespace MDSS::Rendering
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 14U);
         }
-        const bool bShowSurfaceDebug = ViewMode >= TRenderViewMode::SurfaceStateHeatmap;
-        const bool bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
-        const bool bWireframe = ViewMode == TRenderViewMode::Wireframe;
-        vkCmdBindPipeline(CommandBuffer,
-                          VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          bTexelGeometry ? TexelGeometryPipeline->GetHandle()
-                          : bCanShowSurfaceDebug
-                              ? SurfaceDebugPipeline->GetHandle()
-                              : (bWireframe ? WireframePipeline.GetHandle() : StaticMeshPipeline.GetHandle()));
-        if (bWireframe)
-        {
-            // Dynamic line width must be set before drawing with the wireframe pipeline.
-            // Without wideLines support, Vulkan only permits the default width of 1.0.
-            vkCmdSetLineWidth(CommandBuffer, bSupportsWireframeLineWidth ? WireframeLineWidth : 1.0F);
-        }
-
         const VkExtent2D Extent = SwapchainData.GetExtent();
         for (std::size_t ViewportIndex = 0; ViewportIndex < DebugInterface.GetViewportCount(); ++ViewportIndex)
         {
             const glm::vec4 NormalizedViewport = DebugInterface.GetViewportRectNormalized(ViewportIndex);
             if (NormalizedViewport.z <= 0.0F || NormalizedViewport.w <= 0.0F)
                 continue;
+            const TRenderViewMode Mode = ViewModes[ViewportIndex];
+            const bool            bTexelGeometry = UsesTexelGeometry(Mode) && TexelGeometryPreview && TexelGeometryPipeline;
+            const bool            bShowSurfaceDebug = Mode >= TRenderViewMode::SurfaceStateHeatmap;
+            const bool            bCanShowSurfaceDebug = bShowSurfaceDebug && SurfaceDebugPipeline != nullptr;
+            const bool            bWireframe = Mode == TRenderViewMode::Wireframe;
+            const bool            bSurfaceLit = Mode == TRenderViewMode::Lit && DemoEffects.bEnabled && SurfaceLitPipelines[FragmentMode];
+            vkCmdBindPipeline(CommandBuffer,
+                              VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              bTexelGeometry ? TexelGeometryPipeline->GetHandle()
+                              : bCanShowSurfaceDebug
+                                  ? SurfaceDebugPipeline->GetHandle()
+                                  : (bWireframe ? WireframePipeline.GetHandle() : StaticMeshPipeline.GetHandle()));
+            if (bWireframe)
+            {
+                // Dynamic line width must be set before drawing with the wireframe pipeline.
+                // Without wideLines support, Vulkan only permits the default width of 1.0.
+                vkCmdSetLineWidth(CommandBuffer, bSupportsWireframeLineWidth ? WireframeLineWidth : 1.0F);
+            }
             const TCamera&      ViewCamera = DebugInterface.GetViewportCamera(SceneData, ViewportIndex);
             const std::uint32_t MaterialUniformOffset =
                 static_cast<std::uint32_t>(MaterialUniformStride * ViewportIndex);
@@ -2668,9 +2830,13 @@ namespace MDSS::Rendering
                     continue;
                 }
                 const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
-                const bool  bInstanceOverlay =
-                    bOverlayRendering && (OverlayActive[CurrentSceneIndex][0] || OverlayActive[CurrentSceneIndex][1] ||
-                                          OverlayActive[CurrentSceneIndex][2]);
+                const bool  bInstanceOverlay = Mode == TRenderViewMode::Lit && bOverlayRendering &&
+                    (OverlayActive[CurrentSceneIndex][0] || OverlayActive[CurrentSceneIndex][1] ||
+                     OverlayActive[CurrentSceneIndex][2]);
+                if (bOverlayOnlyDebug && Mode == TRenderViewMode::Lit && bOverlayRendering)
+                    continue;
+                if (!bBaseMeshDrawEnabled)
+                    continue;
                 if (bTexelGeometry || bInstanceOverlay)
                 {
                     if (!Shared || !Shared->GetTexelMeshIndexBuffer())
@@ -2678,7 +2844,7 @@ namespace MDSS::Rendering
                     const auto& SurfaceMesh = Shared->GetTexelMeshVariant(SurfaceTexelMeshResolution);
                     if (!bTexelGeometry && (!SurfaceMesh.IndexBuffer || !SurfaceMesh.VertexBuffer))
                         continue;
-                    const auto& Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipeline;
+                    const auto& Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipelines[FragmentMode];
                     vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Pipeline->GetHandle());
                     const auto                     Layout = Pipeline->GetLayout();
                     const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
@@ -2700,7 +2866,8 @@ namespace MDSS::Rendering
                     const std::array<VkDescriptorSet, 2> Sets{SurfaceGPU.IsCurrentStateAB(CurrentSceneIndex)
                                                                   ? SurfaceDescriptors->GetABSet()
                                                                   : SurfaceDescriptors->GetBASet(),
-                                                              TexelGeometryPreview->GetOutputSet(CurrentSceneIndex)};
+                                                              TexelGeometryPreview->GetOutputSet(
+                                                                  CurrentSceneIndex, bTexelGeometry ? ViewportIndex + 1U : 0U)};
                     vkCmdBindDescriptorSets(CommandBuffer,
                                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                                             Layout,
@@ -2711,7 +2878,7 @@ namespace MDSS::Rendering
                                             nullptr);
                     if (!bTexelGeometry)
                     {
-                        const VkDescriptorSet RenderSet = RenderStateTexture->GetSet(CurrentSceneIndex);
+                        const VkDescriptorSet RenderSet = RenderStateTexture->GetSet(CurrentSceneIndex, bPrecomputeCoverage);
                         vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                                 Layout, 3, 1, &RenderSet, 0, nullptr);
                     }
@@ -2741,7 +2908,7 @@ namespace MDSS::Rendering
                 const bool  bInstanceSurfaceLit = bSurfaceLit && SurfaceDescriptors;
                 const auto& Pipeline =
                     bInstanceSurfaceLit
-                        ? *SurfaceLitPipeline
+                        ? *SurfaceLitPipelines[FragmentMode]
                         : (bCanShowSurfaceDebug ? *SurfaceDebugPipeline
                                                 : (bWireframe ? WireframePipeline : StaticMeshPipeline));
                 const auto Layout = Pipeline.GetLayout();
@@ -2789,7 +2956,7 @@ namespace MDSS::Rendering
                     }
                     if (bInstanceSurfaceLit)
                     {
-                        const VkDescriptorSet RenderSet = RenderStateTexture->GetSet(CurrentSceneIndex);
+                        const VkDescriptorSet RenderSet = RenderStateTexture->GetSet(CurrentSceneIndex, bPrecomputeCoverage);
                         vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                                 Layout, 2, 1, &RenderSet, 0, nullptr);
                     }
@@ -2807,45 +2974,19 @@ namespace MDSS::Rendering
                 vkCmdWriteTimestamp(
                     CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 7U);
 
-            if (bOverlayRendering)
+            if (bOverlayRendering && Mode == TRenderViewMode::Lit)
             {
-                const auto DrawLayer = [&](std::size_t Layer)
+                const auto DrawLayer = [&]()
                 {
-                    const bool                   bWater = Layer == 1;
-                    const bool                   bLava = Layer == 2;
-                    const bool                   bSmoothLayer = bWater  ? DemoEffects.bWaterFilmSmoothing
-                                                                : bLava ? DemoEffects.bLavaSmoothing
-                                                                        : DemoEffects.bMudSmoothing;
-                    const SurfaceState::TStateId Channel = bWater  ? DemoBindings.WaterFilm
-                                                           : bLava ? DemoBindings.Lava
-                                                                   : DemoBindings.Mud;
-                    if (Channel == SurfaceState::InvalidStateId)
-                        return;
-                    const auto& Preview = bWater ? WaterLayerGeometry : bLava ? LavaLayerGeometry : MudLayerGeometry;
-                    const auto& TopPipeline = bWater  ? WaterOverlayTopPipeline
-                                              : bLava ? LavaOverlayTopPipeline
-                                                      : MudOverlayTopPipeline;
-                    const auto& SidePipeline = bWater  ? WaterOverlaySidePipeline
-                                               : bLava ? LavaOverlaySidePipeline
-                                                       : MudOverlaySidePipeline;
+                    const auto& TopPipeline = MudOverlayTopPipelines[FragmentMode];
+                    const auto& SidePipeline = MudOverlaySidePipelines[FragmentMode];
                     std::vector<std::size_t> Order;
                     for (std::size_t I = 0; I < OverlayActive.size(); ++I)
-                        if (OverlayActive[I][Layer])
+                        if (OverlayActive[I][0] || OverlayActive[I][1] || OverlayActive[I][2])
                             Order.push_back(I);
-                    if (bWater)
-                    {
-                        const auto Camera = ViewCamera.GetPosition();
-                        std::sort(Order.begin(),
-                                  Order.end(),
-                                  [&](std::size_t A, std::size_t B)
-                                  {
-                                      const auto PA = SceneData.GetStaticMeshInstances()[A].GetTransform().Position;
-                                      const auto PB = SceneData.GetStaticMeshInstances()[B].GetTransform().Position;
-                                      return glm::dot(PA - Camera, PA - Camera) > glm::dot(PB - Camera, PB - Camera);
-                                  });
-                    }
                     for (const std::size_t I : Order)
                     {
+                        constexpr std::uint32_t Channel = 0xffffU;
                         const auto& Instance = SceneData.GetStaticMeshInstances()[I];
                         const auto& Mesh = Assets.GetMesh(Instance.GetMesh());
                         const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(I);
@@ -2857,9 +2998,7 @@ namespace MDSS::Rendering
                             continue;
                         const VkDescriptorSet StateSet =
                             SurfaceGPU.IsCurrentStateAB(I) ? Descriptors->GetABSet() : Descriptors->GetBASet();
-                        const VkDescriptorSet          ComputedSet = (DemoEffects.bHeightFieldSmoothing || bSmoothLayer)
-                                                                         ? HeightFieldSmoothing->GetOutputSet(I, Channel)
-                                                                         : Preview->GetOutputSet(I);
+                        const VkDescriptorSet ComputedSet = OverlayGeometrySets[I];
                         const TStaticMeshPushConstants Push{Instance.GetTransform().GetMatrix(), ViewProjection};
 
                         const auto TopLayout = TopPipeline->GetLayout();
@@ -2888,9 +3027,13 @@ namespace MDSS::Rendering
                                                 TopSets.data(),
                                                 0,
                                                 nullptr);
+                        const VkDescriptorSet RenderSet =
+                            RenderStateTexture->GetSet(I, bPrecomputeCoverage);
+                        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                TopLayout, 4, 1, &RenderSet, 0, nullptr);
                         const VkBuffer TopDrawBuffer =
                             OverlaySides->GetTopDrawBuffer(I, Channel, OverlayTexelMeshResolution);
-                        if (OverlayDrawProfilingMode != TOverlayDrawProfilingMode::SidesOnly)
+                        if (bOverlayTopDrawEnabled && OverlayDisplayMode != TOverlayDisplayMode::SidesOnly)
                         {
                             for (const auto& Section : Mesh.GetSections())
                             {
@@ -2937,9 +3080,11 @@ namespace MDSS::Rendering
                                                 SideSets.data(),
                                                 0,
                                                 nullptr);
+                        vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                SideLayout, 4, 1, &RenderSet, 0, nullptr);
                         const VkBuffer SideDrawBuffer =
                             OverlaySides->GetDrawBuffer(I, Channel, OverlayTexelMeshResolution);
-                        if (OverlayDrawProfilingMode != TOverlayDrawProfilingMode::TopOnly)
+                        if (bOverlaySidesDrawEnabled && OverlayDisplayMode != TOverlayDisplayMode::TopOnly)
                         {
                             for (const auto& Section : Mesh.GetSections())
                             {
@@ -2967,7 +3112,7 @@ namespace MDSS::Rendering
                                                   0);
                             }
                         }
-                        if (OverlayDrawProfilingMode != TOverlayDrawProfilingMode::TopOnly &&
+                        if (bOverlaySidesDrawEnabled && OverlayDisplayMode != TOverlayDisplayMode::TopOnly &&
                             OverlaySides->GetBoundaryCount(I, Channel, OverlayTexelMeshResolution) > 0 &&
                             !Mesh.GetSections().empty())
                         {
@@ -2997,18 +3142,16 @@ namespace MDSS::Rendering
                 if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
                     vkCmdWriteTimestamp(
                         CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
-                DrawLayer(0);
+                DrawLayer();
                 if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
                     vkCmdWriteTimestamp(
                         CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
                 if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
                     vkCmdWriteTimestamp(
                         CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 10U);
-                DrawLayer(1);
                 if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
                     vkCmdWriteTimestamp(
                         CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 11U);
-                DrawLayer(2);
             }
             else if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
             {
@@ -3097,6 +3240,10 @@ namespace MDSS::Rendering
         }
     }
 
+#pragma endregion
+
+#pragma region Format_Selection
+
     VkFormat TRenderer::FindDepthFormat(VkPhysicalDevice PhysicalDevice)
     {
         constexpr std::array<VkFormat, 3> Candidates = {
@@ -3131,4 +3278,5 @@ namespace MDSS::Rendering
         }
         throw std::runtime_error("Failed to find a supported Vulkan format.");
     }
+#pragma endregion
 } // MDSS 네임스페이스

@@ -37,6 +37,7 @@ namespace MDSS::SurfaceState
     class TTexelInspector final
     {
     public:
+        // Inspector resource lifecycle
         TTexelInspector(VkPhysicalDevice      PhysicalDevice,
                         VkDevice              Device,
                         VkDescriptorSetLayout SurfaceLayout,
@@ -44,6 +45,8 @@ namespace MDSS::SurfaceState
         ~TTexelInspector();
         TTexelInspector(const TTexelInspector&) = delete;
         TTexelInspector& operator=(const TTexelInspector&) = delete;
+
+        // Selection recording and snapshot readback
         void             Record(VkCommandBuffer                         Command,
                                 std::size_t                             Frame,
                                 const TSurfaceStateDescriptorResources& Descriptors,
@@ -63,6 +66,7 @@ namespace MDSS::SurfaceState
         }
 
     private:
+        // Resource cleanup
         void Destroy() noexcept;
         struct TFrame
         {

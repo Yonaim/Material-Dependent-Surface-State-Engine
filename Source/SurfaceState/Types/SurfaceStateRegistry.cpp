@@ -12,6 +12,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region State_Registry_Construction
+
     TSurfaceStateRegistry::TSurfaceStateRegistry(const std::vector<TSurfaceResponseProfileData>& Profiles)
     {
         std::set<std::string> StateNames;
@@ -30,6 +32,11 @@ namespace MDSS::SurfaceState
         }
 
         Names.assign(StateNames.begin(), StateNames.end());
+        const auto Lava = std::find(Names.begin(), Names.end(), "lava");
+        if (Lava != Names.end() && Lava != Names.begin())
+        {
+            std::rotate(Names.begin(), Lava, Lava + 1);
+        }
         IDs.reserve(Names.size());
         for (std::size_t Index = 0; Index < Names.size(); ++Index)
         {
@@ -53,6 +60,9 @@ namespace MDSS::SurfaceState
             }
         }
     }
+#pragma endregion
+
+#pragma region State_Lookup_and_Profile_Resolution
 
     std::size_t TSurfaceStateRegistry::GetStateCount() const noexcept
     {
@@ -110,4 +120,5 @@ namespace MDSS::SurfaceState
         }
         return Result;
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

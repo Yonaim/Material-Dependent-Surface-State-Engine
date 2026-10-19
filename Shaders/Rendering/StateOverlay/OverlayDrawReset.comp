@@ -1,0 +1,39 @@
+/**
+ * @file OverlayDrawReset.comp
+ * @brief Clears dynamic indirect draw counts before boundary compaction.
+ */
+#version 450
+layout(local_size_x = 64) in;
+
+struct TDrawCommand
+{
+    uint VertexCount;
+    uint InstanceCount;
+    uint FirstVertex;
+    uint FirstInstance;
+};
+struct TTopDrawCommand
+{
+    uint IndexCount;
+    uint InstanceCount;
+    uint FirstIndex;
+    int VertexOffset;
+    uint FirstInstance;
+};
+layout(set = 2, binding = 5, std430) buffer TDrawCommands
+{
+    TDrawCommand Values[];
+} DrawCommands;
+layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
+{
+    TTopDrawCommand Values[];
+} TopDrawCommands;
+
+void main()
+{
+    uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (Index < uint(DrawCommands.Values.length()))
+        DrawCommands.Values[Index].VertexCount = 0u;
+    if (Index < uint(TopDrawCommands.Values.length()))
+        TopDrawCommands.Values[Index].IndexCount = 0u;
+}

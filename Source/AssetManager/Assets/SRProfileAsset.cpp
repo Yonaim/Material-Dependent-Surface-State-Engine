@@ -9,6 +9,8 @@
 
 namespace MDSS::Asset
 {
+#pragma region TSRProfileAsset_Implementation
+
     TSRProfileAsset::TSRProfileAsset(TAssetID                                  ID,
                                      std::string                               Name,
                                      std::filesystem::path                     SourcePath,
@@ -22,4 +24,5 @@ namespace MDSS::Asset
     {
         return Data;
     }
+#pragma endregion
 } // namespace MDSS::Asset

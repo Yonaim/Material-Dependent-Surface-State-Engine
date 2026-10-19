@@ -66,6 +66,8 @@ namespace MDSS
         }
     } // namespace
 
+#pragma region std_Implementation
+
     std::optional<std::filesystem::path> TSceneFileDialog::OpenScene()
     {
         return RunNativeDialog(false);
@@ -75,4 +77,5 @@ namespace MDSS
     {
         return RunNativeDialog(true);
     }
+#pragma endregion
 } // namespace MDSS

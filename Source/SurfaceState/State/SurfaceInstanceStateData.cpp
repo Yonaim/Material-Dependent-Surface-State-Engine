@@ -11,6 +11,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Instance_State_Construction
+
     TSurfaceInstanceStateData::TSurfaceInstanceStateData(TSurfaceInstanceID                                ID,
                                                          std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
                                                          std::size_t                                       StateCount)
@@ -26,6 +28,9 @@ namespace MDSS::SurfaceState
         }
         States.resize(this->Geometry->GetTexelCount(), TSurfaceStateValues(StateCount, 0.0F));
     }
+#pragma endregion
+
+#pragma region Instance_State_Accessors
 
     TSurfaceInstanceID TSurfaceInstanceStateData::GetID() const noexcept
     {
@@ -56,4 +61,5 @@ namespace MDSS::SurfaceState
     {
         return Geometry->GetProfileIndex(Texel);
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

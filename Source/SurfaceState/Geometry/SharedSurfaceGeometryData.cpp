@@ -11,6 +11,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Resolution_and_Texel_Validation
+
     std::size_t TSurfaceResolution::GetTexelCount() const
     {
         if (Width == 0 || Height == 0)
@@ -31,6 +33,9 @@ namespace MDSS::SurfaceState
     {
         return Surface != InvalidSurfaceID && Triangle != InvalidTriangleID;
     }
+#pragma endregion
+
+#pragma region Shared_Geometry_Data
 
     TSharedSurfaceGeometryData::TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition> SurfaceDefinitions)
     {
@@ -139,4 +144,5 @@ namespace MDSS::SurfaceState
 
         throw std::out_of_range("TSurfaceLocalID is not present in TSharedSurfaceGeometryData.");
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState

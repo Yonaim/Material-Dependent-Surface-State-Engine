@@ -20,6 +20,7 @@ namespace MDSS::Rendering
     class TAccumulationOverlaySides final
     {
     public:
+        // Overlay resource lifecycle
         struct TTriangleActivity
         {
             std::uint64_t Active = 0;
@@ -35,6 +36,7 @@ namespace MDSS::Rendering
         TAccumulationOverlaySides(const TAccumulationOverlaySides&) = delete;
         TAccumulationOverlaySides& operator=(const TAccumulationOverlaySides&) = delete;
 
+        // Overlay draw buffers and frame readback
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept
         {
             return OutputLayout;
@@ -53,6 +55,7 @@ namespace MDSS::Rendering
                                                        std::uint32_t MeshResolution) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
         [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
+        // Overlay command recording
         void                            Record(VkCommandBuffer                                         Command,
                                                std::size_t                                             Instance,
                                                std::uint32_t                                           Channel,
@@ -61,12 +64,19 @@ namespace MDSS::Rendering
                                                const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
                                                const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
                                                VkDescriptorSet                                         ComputedSet,
+                                               const GPU::TGPUBuffer&                                  GeometryCacheBuffer,
                                                bool                                                    bStateAB,
                                                std::size_t                                             FrameIndex = 0,
                                                VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
                                                std::uint32_t                                           FirstSideTimestampQuery = 0,
                                                std::uint32_t                                           OccupancyTileSize = 16U,
-                                               bool                                                    bSmoothCoverage = false);
+                                               bool                                                    bSmoothCoverage = false,
+                                               bool                                                    bUseOpaqueBase = false,
+                                               float                                                   HeightDisplayScale = 1.0F,
+                                               std::array<std::uint32_t, 3>                           MaterialChannels = {
+                                                   0xffffffffU, 0xffffffffU, 0xffffffffU},
+                                               std::uint32_t                                           ActiveMaterialMask = 0x7U,
+                                               bool                                                    bSharedCoverageHalo = false);
 
     private:
         struct TOutput
@@ -84,6 +94,16 @@ namespace MDSS::Rendering
             std::uint32_t                                                                   TriangleCount = 0;
             std::uint32_t                                                                   BoundaryCount = 0;
             std::uint32_t                                                                   SurfaceCount = 0;
+            std::uint32_t                                                                   LastTileSize = 0;
+            std::array<std::uint32_t, 3>                                                   LastMaterialChannels{};
+            std::uint32_t                                                                   LastMaterialMask = 0;
+            std::array<std::uint64_t, 6>                                                   LastGeometryRevisions{};
+            std::uint64_t                                                                   LastProfileRevision = 0;
+            float                                                                           LastHeightDisplayScale = 0.0F;
+            bool                                                                            bLastSmoothCoverage = false;
+            bool                                                                            bLastSharedCoverageHalo = false;
+            bool                                                                            bLastUseOpaqueBase = false;
+            bool                                                                            bCoverageInitialized = false;
         };
         VkPhysicalDevice                                         PhysicalDevice;
         VkDevice                                                 Device;
@@ -91,7 +111,8 @@ namespace MDSS::Rendering
         VkDescriptorSetLayout                                    OutputLayout = VK_NULL_HANDLE;
         VkPipelineLayout                                         PipelineLayout = VK_NULL_HANDLE;
         VkPipeline                                               CoveragePipeline = VK_NULL_HANDLE;
-        VkPipeline                                               CoverageSmoothingPipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 2>                                CoverageSmoothingPipelines{};
+        VkPipeline                                               DrawResetPipeline = VK_NULL_HANDLE;
         VkPipeline                                               BoundaryPipeline = VK_NULL_HANDLE;
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;
         std::vector<std::unique_ptr<GPU::TGPUBuffer>>            CoveragePages;

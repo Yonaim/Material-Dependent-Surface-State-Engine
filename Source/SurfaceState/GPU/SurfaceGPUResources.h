@@ -45,12 +45,18 @@ namespace MDSS::SurfaceState
 {
     struct TSurfaceTexelMeshGPUVariant
     {
+        struct TTileVertexList
+        {
+            std::vector<std::uint32_t> Words;
+            std::uint32_t TileCount = 0;
+        };
         std::unique_ptr<GPU::TGPUBuffer>    IndexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    VertexBuffer;
         std::unique_ptr<GPU::TGPUBuffer>    BoundaryBuffer;
         std::uint32_t                       VertexCount = 0;
         std::uint32_t                       BoundaryCount = 0;
         std::vector<TSurfaceTexelMeshRange> Ranges;
+        std::map<std::uint32_t, TTileVertexList> TileVertexLists;
     };
 
     enum class TSurfaceGPUDescriptorBinding : std::uint32_t
@@ -84,6 +90,7 @@ namespace MDSS::SurfaceState
     class TSurfaceSharedGeometryGPUResources final
     {
     public:
+        // Shared geometry resource creation
         TSurfaceSharedGeometryGPUResources(VkPhysicalDevice                            PhysicalDevice,
                                            VkDevice                                    Device,
                                            const TSharedSurfaceGeometryData&           Geometry,
@@ -91,6 +98,7 @@ namespace MDSS::SurfaceState
                                            std::span<const Asset::TVertex>             SourceVertices = {},
                                            std::span<const Asset::TMeshTriangleSource> SourceTriangles = {});
 
+        // Geometry buffers
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetPositionBuffer() const noexcept;
@@ -104,6 +112,8 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetRenderSamplingBoundaryFlagBuffer() const noexcept;
         [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
+
+        // Render mesh variants
         [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept
         {
             return FullTexelMesh.IndexBuffer.get();
@@ -156,6 +166,7 @@ namespace MDSS::SurfaceState
     class TSurfaceProfileGPUResources final
     {
     public:
+        // Profile table creation and access
         TSurfaceProfileGPUResources(VkPhysicalDevice                                PhysicalDevice,
                                     VkDevice                                        Device,
                                     const std::vector<TSurfaceResponseProfileData>& Profiles,
@@ -180,6 +191,7 @@ namespace MDSS::SurfaceState
     class TSurfaceInstanceGPUResources final
     {
     public:
+        // Instance state buffer creation
         TSurfaceInstanceGPUResources(VkPhysicalDevice                    PhysicalDevice,
                                      VkDevice                            Device,
                                      std::size_t                         TexelCount,
@@ -188,6 +200,7 @@ namespace MDSS::SurfaceState
                                      const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
                                      const std::vector<float>&           WorldTexelAreas = {});
 
+        // State and geometry buffers
         [[nodiscard]] const GPU::TGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetStateBBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetOutgoingFluxScaleBuffer() const noexcept;
@@ -199,9 +212,12 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetDynamicConcavityWeightBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
+
+        // Instance data updates and reset
         void                                 UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
         void                                 UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {});
+                                                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                                                   bool bHalfPrecision = false);
         [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
         [[nodiscard]] std::size_t            GetChannelCount() const noexcept;
         void                                 ResetState(const std::vector<float>& OutgoingFluxScale);
@@ -226,6 +242,7 @@ namespace MDSS::SurfaceState
     class TSurfaceStateDescriptorResources final
     {
     public:
+        // Descriptor creation and access
         TSurfaceStateDescriptorResources(VkDevice                                  Device,
                                          const TSurfaceSharedGeometryGPUResources& SharedGeometry,
                                          const TSurfaceProfileGPUResources&        Profiles,
@@ -242,10 +259,19 @@ namespace MDSS::SurfaceState
         [[nodiscard]] VkDescriptorSet       GetBASet() const noexcept;
         [[nodiscard]] VkBuffer              GetBoundBufferHandle(TSurfaceGPUDescriptorBinding Binding, bool bAB) const;
         [[nodiscard]] std::array<std::uint64_t, 6> GetGeometryInputRevisions() const noexcept;
+        [[nodiscard]] std::uint64_t GetProfileParameterRevision() const noexcept
+        {
+            return ProfileResources->GetParametersBuffer().GetUploadRevision();
+        }
+        [[nodiscard]] const TSurfaceSharedGeometryGPUResources& GetSharedGeometry() const noexcept
+        {
+            return *SharedGeometryResources;
+        }
 
     private:
         VkDevice                                  Device = VK_NULL_HANDLE;
         const TSurfaceSharedGeometryGPUResources* SharedGeometryResources = nullptr;
+        const TSurfaceProfileGPUResources*        ProfileResources = nullptr;
         VkDescriptorSetLayout                     Layout = VK_NULL_HANDLE;
         VkDescriptorPool                          Pool = VK_NULL_HANDLE;
         std::array<VkDescriptorSet, 2>            Sets{VK_NULL_HANDLE, VK_NULL_HANDLE};
@@ -259,6 +285,7 @@ namespace MDSS::SurfaceState
     class TSurfaceGPUResourceManager final
     {
     public:
+        // Resource lifecycle
         TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
                                    const Asset::TAssetManager& Assets,
                                    const TSurfaceDataManager&  SurfaceData,
@@ -270,6 +297,7 @@ namespace MDSS::SurfaceState
         TSurfaceGPUResourceManager(TSurfaceGPUResourceManager&&) = delete;
         TSurfaceGPUResourceManager& operator=(TSurfaceGPUResourceManager&&) = delete;
 
+        // Scene and instance resource access
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
         [[nodiscard]] std::size_t GetSharedSurfaceDataCount() const noexcept;
         [[nodiscard]] std::size_t GetSceneProfileCount() const noexcept;
@@ -279,11 +307,14 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const TSurfaceSharedGeometryGPUResources* GetInstanceSharedGeometry(std::size_t SceneIndex) const;
         [[nodiscard]] const TSurfaceStateDescriptorResources*   GetAnyInstanceDescriptors() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const GPU::TGPUBuffer& GetInstanceAccumulationHeightBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetSceneProfileParametersBuffer() const;
         [[nodiscard]] bool                   UpdateProfileParameters(Asset::TSRProfileAssetHandle   ProfileHandle,
                                                                      TStateId                       State,
                                                                      const TSurfaceStateParameters& Parameters);
+
+        // State and transfer-weight cache management
         [[nodiscard]] std::size_t            GetInstanceTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t            GetInstanceValidTexelCount(std::size_t SceneIndex) const;
         [[nodiscard]] std::size_t            GetInstanceChannelCount(std::size_t SceneIndex) const;
@@ -294,7 +325,8 @@ namespace MDSS::SurfaceState
                                                      const TTransform& Transform,
                                                      bool              bUseNormalWeight = true,
                                                      bool              bUseDistanceWeight = true,
-                                                     bool              bUseProfileBoundaryWeight = true);
+                                                     bool              bUseProfileBoundaryWeight = true,
+                                                     bool              bHalfPrecision = false);
         void               InvalidateTransferWeightCache(std::size_t SceneIndex);
         void               AdvanceCurrentState(std::size_t SceneIndex);
 

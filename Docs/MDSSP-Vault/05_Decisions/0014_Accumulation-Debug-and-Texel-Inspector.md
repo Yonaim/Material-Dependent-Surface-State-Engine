@@ -38,7 +38,7 @@ State 양과 쌓인 높이를 화면에서 확인하고, 선택한 texel의 GPU 
 
 - 구현됨: 용량 상대 State Heatmap, 두 적층 미리보기 뷰, 선택 texel GPU snapshot, 적층 파라미터 runtime override.
 - 검증: 전체 build와 CTest 8개 통과. 실제 GPU fragment에서 Raw State·높이 항목·Cavity Fill 범위·정점 변위를 확인했고, Inspector compute 결과의 면적 환산·Cavity 초과·A/B·normal gradient·무효화 및 Renderer 비동기 readback·해상도 교체를 검증했다. Vulkan validation 오류는 없었다.
-- 후속 상태: 선택 State 미리보기는 디버그 렌더링 전용으로 유지한다. Simulation의 별도 `Accumulation Geometry Update` 옵션은 기본 OFF이며, ON에서 모든 적층 State의 Capacity 제한 형상 기여를 공통 높이로 합성한다. 현재 높이 단위와 변환은 [[03_Architecture/0004_Surface-Geometry|Surface Geometry]]에 따른다. 물리 재질별 layer 순서·상호작용은 후속 과제다.
+- 후속 상태: 선택 State 미리보기는 디버그 렌더링 전용으로 유지한다. Simulation의 별도 `Accumulation Geometry Update` 옵션은 모든 적층 State의 Capacity 제한 형상 기여를 공통 높이로 합성한다. 초기 기본값은 OFF였으며 2026-10-07부터 기본 ON으로 변경했다. 현재 높이 단위와 변환은 [[03_Architecture/0004_Surface-Geometry|Surface Geometry]]에 따른다. 물리 재질별 layer 순서·상호작용은 후속 과제다.
 - 현재 Inspector는 설계식의 GPU 미리보기 값을 검사한다. 미래 적층 pass가 다른 buffer를 생성하면 Inspector가 그 실제 출력도 읽도록 확장해야 한다.
 - 2026-09-30 후속 결정: 위 Decision 5의 공통 Height reference는 State별 `.SRProfile` `thicknessPerAmount`와 Lit·디버그 미리보기 공통의 무차원 `Lit height display scale`로 대체했다. Solver는 Profile 두께를 사용하고 표시 배율은 읽지 않는다. 초기 고정 `0.01` Simulation 기준도 제거했다. 추가로 State 저장·수송은 Capacity 초과량을 보존하되, 미리보기와 Solver Accumulation Geometry Update의 형상 기여는 Capacity에서 제한한다 ([[03_Architecture/0004_Surface-Geometry|Surface Geometry]]).
 - 초기 정점 변위는 원본 메시 밀도로 실루엣 세부가 제한되었다. 현재 연결면은 시뮬레이션 샘플을 포함하고 원본 topology의 seam 경계를 봉합한다 ([[05_Decisions/0017_Source-Topology-Seam-Stitching|Decision 0017]]). 원본 메시의 열린 경계는 유지한다. 표시 배율은 위치와 gradient normal에 함께 적용하지만 실제 두께·물리적 layer 합성과 별도로 해석한다.

@@ -14,6 +14,8 @@
 
 namespace MDSS
 {
+#pragma region Scene_Lifecycle_and_Camera_Access
+
     TScene::TScene() : MainCamera({2.0F, -3.3F, 2.0F}, {0.0F, 0.0F, 0.0F}, 50.0F), InitialCamera(MainCamera)
     {
         TLogger::Debug("TScene", "Main camera created at default position.");
@@ -33,6 +35,10 @@ namespace MDSS
     {
         return InitialCamera;
     }
+
+#pragma endregion
+
+#pragma region Scene_Configuration
 
     void TScene::SetSourcePath(std::filesystem::path Path)
     {
@@ -72,6 +78,10 @@ namespace MDSS
         LitHeightDisplayScale = Scale;
     }
 
+#pragma endregion
+
+#pragma region Initial_State_and_Contacts
+
     void TScene::CaptureInitialState()
     {
         InitialCamera = MainCamera;
@@ -94,6 +104,10 @@ namespace MDSS
             ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
         }
     }
+
+#pragma endregion
+
+#pragma region Demo_Animation_State
 
     void TScene::SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip)
     {
@@ -172,6 +186,10 @@ namespace MDSS
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
     }
 
+#pragma endregion
+
+#pragma region Mesh_Instance_Management
+
     void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)
     {
         StaticMeshInstances.push_back(std::move(Instance));
@@ -190,4 +208,5 @@ namespace MDSS
     {
         return StaticMeshInstances;
     }
+#pragma endregion
 } // namespace MDSS

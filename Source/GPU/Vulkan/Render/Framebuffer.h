@@ -15,6 +15,7 @@ namespace MDSS::GPU
     class TFramebuffer
     {
     public:
+        // Framebuffer lifecycle
         /** @brief 각 color image view에 대응하는 depth view를 연결한 framebuffer를 생성한다. */
         TFramebuffer(VkDevice                        Device,
                      VkRenderPass                    TRenderPass,

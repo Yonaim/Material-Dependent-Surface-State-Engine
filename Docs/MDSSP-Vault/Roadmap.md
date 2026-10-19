@@ -2,7 +2,7 @@
 
 ## Goal
 
-Material-Dependent Surface State 시스템을 구현해 **Wetness / Mud / Heat / Burn 등 표면 상태가 입력·전파·감쇠되고, 필요한 경우 렌더링과 적층 형상에 반영되는 과정**을 시뮬레이션한다.
+Material-Dependent Surface State 시스템을 구현해 **Heat / Mud / Burn 등 표면 상태가 입력·전파·감쇠되고, 필요한 경우 렌더링과 적층 형상에 반영되는 과정**을 시뮬레이션한다.
 
 현재 시스템 정의는 [[03_Architecture/0000_Overview|Architecture Overview]], 당장 할 일은 [[TODO|TODO]]를 기준으로 한다.
 
@@ -10,9 +10,9 @@ Material-Dependent Surface State 시스템을 구현해 **Wetness / Mud / Heat /
 
 1. Surface Data Pipeline
 2. Surface Solver
-3. Wetness / SurfaceWater
+3. Heat
 4. Mud / Accumulation
-5. Heat / Burn
+5. Burn
 6. GPU Optimization & Validation
 7. Final Demo
 

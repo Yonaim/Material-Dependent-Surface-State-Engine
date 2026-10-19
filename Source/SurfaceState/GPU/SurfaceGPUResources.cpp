@@ -5,7 +5,10 @@
 
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
 
+#include <glm/gtc/packing.hpp>
+
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -38,12 +41,14 @@ namespace MDSS::SurfaceState
                                                               const void*      Data,
                                                               std::size_t      ElementCount,
                                                               std::size_t      ElementStride,
-                                                              std::size_t      MaxStorageBufferRange)
+                                                              std::size_t      MaxStorageBufferRange,
+                                                              GPU::TGPUBufferMemoryCategory Category =
+                                                                  GPU::TGPUBufferMemoryCategory::SurfaceGeometry)
         {
             const std::size_t ByteSize =
                 GetSurfaceGPUBufferByteSize(ElementCount, ElementStride, MaxStorageBufferRange);
             auto Buffer = std::make_unique<GPU::TGPUBuffer>(
-                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), StorageUsage, UploadMemory);
+                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), StorageUsage, UploadMemory, Category);
             Buffer->Upload(Data, static_cast<VkDeviceSize>(ByteSize));
             return Buffer;
         }
@@ -52,17 +57,21 @@ namespace MDSS::SurfaceState
                                                                   VkDevice           Device,
                                                                   std::size_t        ScalarCount,
                                                                   std::size_t        MaxStorageBufferRange,
-                                                                  VkBufferUsageFlags Usage = StorageUsage)
+                                                                  VkBufferUsageFlags Usage = StorageUsage,
+                                                                  GPU::TGPUBufferMemoryCategory Category =
+                                                                      GPU::TGPUBufferMemoryCategory::SurfaceState)
         {
             const std::size_t ByteSize = GetSurfaceGPUBufferByteSize(ScalarCount, sizeof(float), MaxStorageBufferRange);
             std::vector<float> Zeros(ScalarCount, 0.0F);
             auto               Buffer = std::make_unique<GPU::TGPUBuffer>(
-                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), Usage, UploadMemory);
+                PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), Usage, UploadMemory, Category);
             Buffer->Upload(Zeros.data(), static_cast<VkDeviceSize>(ByteSize));
             return Buffer;
         }
 
     } // 내부 네임스페이스
+
+#pragma region Shared_Geometry_Resources
 
     TSurfaceSharedGeometryGPUResources::TSurfaceSharedGeometryGPUResources(
         VkPhysicalDevice                            PhysicalDevice,
@@ -168,7 +177,25 @@ namespace MDSS::SurfaceState
                                                                  BoundaryFlags.data(), BoundaryFlags.size(),
                                                                  sizeof(std::uint32_t), MaxRange);
         SimulationResolution = Geometry.GetSurfaces().empty() ? 0U : Geometry.GetSurfaces().front().Resolution.Width;
-        const auto UploadTexelMesh = [&](TSurfaceTexelMesh Mesh, TSurfaceTexelMeshGPUVariant& Output)
+        const auto MeshMemoryCategory = [](std::uint32_t Resolution)
+        {
+            switch (Resolution)
+            {
+                case 64:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh64;
+                case 128:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh128;
+                case 256:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh256;
+                case 512:
+                    return GPU::TGPUBufferMemoryCategory::RenderMesh512;
+                default:
+                    throw std::invalid_argument("Unsupported render mesh resolution for memory tracking.");
+            }
+        };
+        const auto UploadTexelMesh = [&](TSurfaceTexelMesh Mesh,
+                                         TSurfaceTexelMeshGPUVariant& Output,
+                                         GPU::TGPUBufferMemoryCategory Category)
         {
             Output.Ranges = std::move(Mesh.Surfaces);
             Output.VertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
@@ -181,32 +208,90 @@ namespace MDSS::SurfaceState
                                                   Device,
                                                   Bytes,
                                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                                  UploadMemory);
+                                                  UploadMemory,
+                                                  Category);
             Output.IndexBuffer->Upload(Mesh.Indices.data(), Bytes);
             const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(TSurfaceTexelMeshVertex));
             Output.VertexBuffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
                                                                     Device,
                                                                     VertexBytes,
-                                                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-                                                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                                                    UploadMemory);
+                                                                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                                                            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                                                    UploadMemory,
+                                                                    Category);
             Output.VertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
+            // One immutable CSR vertex list per render tile size. Geometry shares these lists;
+            // coverage and its history remain owned by each Scene instance.
+            for (const std::uint32_t TileSize : {8U, 16U, 32U})
+            {
+                std::vector<std::uint32_t> SurfaceTileBases(SurfaceRanges.size() + 1U, 0U);
+                for (std::size_t Surface = 0; Surface < SurfaceRanges.size(); ++Surface)
+                {
+                    const auto& Range = SurfaceRanges[Surface];
+                    const std::size_t Tiles =
+                        ((static_cast<std::size_t>(Range.Width) + TileSize - 1U) / TileSize) *
+                        ((static_cast<std::size_t>(Range.Height) + TileSize - 1U) / TileSize);
+                    if (Tiles > std::numeric_limits<std::uint32_t>::max() - SurfaceTileBases[Surface])
+                        throw std::overflow_error("Overlay tile count exceeds uint32 range.");
+                    SurfaceTileBases[Surface + 1U] = SurfaceTileBases[Surface] + static_cast<std::uint32_t>(Tiles);
+                }
+                const std::uint32_t TileCount = SurfaceTileBases.back();
+                std::vector<std::vector<std::uint32_t>> TileVertices(TileCount);
+                for (std::uint32_t Vertex = 0; Vertex < Mesh.Vertices.size(); ++Vertex)
+                {
+                    const auto& UVSurface = Mesh.Vertices[Vertex].UVSurface;
+                    if (!std::isfinite(UVSurface.x) || !std::isfinite(UVSurface.y) ||
+                        !std::isfinite(UVSurface.w) || UVSurface.w < 0.0F ||
+                        UVSurface.w >= static_cast<float>(SurfaceRanges.size()))
+                        throw std::runtime_error("Overlay vertex has an invalid surface or UV.");
+                    const auto Surface = static_cast<std::uint32_t>(UVSurface.w);
+                    const auto& Range = SurfaceRanges[Surface];
+                    if (Range.Width == 0U || Range.Height == 0U)
+                        throw std::runtime_error("Overlay vertex belongs to an empty surface range.");
+                    const auto X = std::min(static_cast<std::uint32_t>(
+                        std::clamp(UVSurface.x, 0.0F, 1.0F) * Range.Width), Range.Width - 1U);
+                    const auto Y = std::min(static_cast<std::uint32_t>(
+                        std::clamp(UVSurface.y, 0.0F, 1.0F) * Range.Height), Range.Height - 1U);
+                    const auto TilesX = (Range.Width + TileSize - 1U) / TileSize;
+                    const auto Candidate = SurfaceTileBases[Surface] + (Y / TileSize) * TilesX + X / TileSize;
+                    TileVertices[Candidate].push_back(Vertex);
+                }
+                std::vector<std::uint32_t> Packed(TileCount + 1U, 0U);
+                for (std::uint32_t Tile = 0; Tile < TileCount; ++Tile)
+                {
+                    Packed[Tile] = static_cast<std::uint32_t>(Packed.size());
+                    Packed.insert(Packed.end(), TileVertices[Tile].begin(), TileVertices[Tile].end());
+                }
+                Packed[TileCount] = static_cast<std::uint32_t>(Packed.size());
+                TSurfaceTexelMeshGPUVariant::TTileVertexList List;
+                List.TileCount = TileCount;
+                List.Words = std::move(Packed);
+                Output.TileVertexLists.emplace(TileSize, std::move(List));
+            }
             const glm::uvec4 EmptyEdge{0};
             const auto*      Edges = Mesh.BoundaryEdges.empty() ? &EmptyEdge : Mesh.BoundaryEdges.data();
             const auto       BoundaryBytes =
                 static_cast<VkDeviceSize>(std::max<std::size_t>(Mesh.BoundaryEdges.size(), 1) * sizeof(glm::uvec4));
             Output.BoundaryBuffer = std::make_unique<GPU::TGPUBuffer>(
-                PhysicalDevice, Device, BoundaryBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, UploadMemory);
+                PhysicalDevice,
+                Device,
+                BoundaryBytes,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                UploadMemory,
+                Category);
             Output.BoundaryBuffer->Upload(Edges, BoundaryBytes);
         };
-        UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles), FullTexelMesh);
+        UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles),
+                        FullTexelMesh,
+                        MeshMemoryCategory(SimulationResolution));
         for (const auto& Preset : SurfaceRenderMeshResolutionPresets)
         {
             if (Preset.Resolution == SimulationResolution)
                 continue;
             TSurfaceTexelMeshGPUVariant Variant;
             UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles, Preset.Resolution),
-                            Variant);
+                            Variant,
+                            MeshMemoryCategory(Preset.Resolution));
             TexelMeshVariants.emplace(Preset.Resolution, std::move(Variant));
         }
     }
@@ -276,6 +361,10 @@ namespace MDSS::SurfaceState
         return TexelCount;
     }
 
+#pragma endregion
+
+#pragma region Profile_Resources
+
     TSurfaceProfileGPUResources::TSurfaceProfileGPUResources(VkPhysicalDevice PhysicalDevice,
                                                              VkDevice         Device,
                                                              const std::vector<TSurfaceResponseProfileData>& Profiles,
@@ -285,14 +374,38 @@ namespace MDSS::SurfaceState
         const std::size_t              MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         const TSurfaceGPUProfileUpload Upload = PackSurfaceProfiles(Profiles, Registry);
         SupportedChannels = Upload.Supported;
+
+        // GPU hot path uses a 3-plane vec4 SoA layout instead of 48-byte AoS records:
+        // [Capacity/Input/Transfer records][Decay/Geometry records][Accumulation/Thickness records].
+        // This keeps the descriptor count unchanged while allowing shaders that only need capacity or
+        // accumulation fields to fetch one 16-byte vector instead of touching the whole logical record.
+        std::vector<TSurfaceGPUVec4> ParameterPlanes(Upload.Parameters.size() * 3U);
+        const std::size_t RecordCount = Upload.Parameters.size();
+        for (std::size_t Record = 0; Record < RecordCount; ++Record)
+        {
+            const auto& P = Upload.Parameters[Record];
+            ParameterPlanes[Record] = {P.CapacityInputAndTransfer[0], P.CapacityInputAndTransfer[1],
+                                       P.CapacityInputAndTransfer[2], P.CapacityInputAndTransfer[3]};
+            ParameterPlanes[RecordCount + Record] = {P.DecayAndGeometry[0], P.DecayAndGeometry[1],
+                                                     P.DecayAndGeometry[2], P.DecayAndGeometry[3]};
+            ParameterPlanes[RecordCount * 2U + Record] = {P.AccumulationThickness[0], P.AccumulationThickness[1],
+                                                          P.AccumulationThickness[2], P.AccumulationThickness[3]};
+        }
         ParametersBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                 Device,
-                                                Upload.Parameters.data(),
-                                                Upload.Parameters.size(),
-                                                sizeof(TSurfaceGPUProfileParameters),
-                                                MaxRange);
+                                                ParameterPlanes.data(),
+                                                ParameterPlanes.size(),
+                                                sizeof(TSurfaceGPUVec4),
+                                                MaxRange,
+                                                GPU::TGPUBufferMemoryCategory::SurfaceProfile);
         SupportedBuffer = CreateUploadedBuffer(
-            PhysicalDevice, Device, Upload.Supported.data(), Upload.Supported.size(), sizeof(std::uint32_t), MaxRange);
+            PhysicalDevice,
+            Device,
+            Upload.Supported.data(),
+            Upload.Supported.size(),
+            sizeof(std::uint32_t),
+            MaxRange,
+            GPU::TGPUBufferMemoryCategory::SurfaceProfile);
     }
 
     const GPU::TGPUBuffer& TSurfaceProfileGPUResources::GetParametersBuffer() const noexcept
@@ -336,19 +449,26 @@ namespace MDSS::SurfaceState
             throw std::invalid_argument("Cannot override a State that this Profile does not support.");
         }
 
-        const TSurfaceGPUProfileParameters Packed{
-            {Parameters.StateCapacity,
-             Parameters.InputFactor,
-             Parameters.SaturationTransferFactor,
-             Parameters.GeometryTransferFactor},
-            {Parameters.DecayRate,
-             Parameters.CavityRetentionFactor,
-             Parameters.AccumulationFactor,
-             Parameters.CavityFillFactor},
-            {Parameters.ThicknessPerAmount, Parameters.CavityTransportRetentionFactor, 0.0F, 0.0F}};
-        const VkDeviceSize Offset = static_cast<VkDeviceSize>(RecordIndex * sizeof(Packed));
-        ParametersBuffer->Upload(&Packed, sizeof(Packed), Offset);
+        const std::array<TSurfaceGPUVec4, 3> Packed{
+            TSurfaceGPUVec4{Parameters.StateCapacity,
+                            Parameters.InputFactor,
+                            Parameters.SaturationTransferFactor,
+                            Parameters.GeometryTransferFactor},
+            TSurfaceGPUVec4{Parameters.DecayRate,
+                            Parameters.CavityRetentionFactor,
+                            Parameters.AccumulationFactor,
+                            Parameters.CavityFillFactor},
+            TSurfaceGPUVec4{Parameters.ThicknessPerAmount, Parameters.CavityTransportRetentionFactor, 0.0F, 0.0F}};
+        const VkDeviceSize PlaneStride = static_cast<VkDeviceSize>(ProfileCount * ChannelCount * sizeof(TSurfaceGPUVec4));
+        const VkDeviceSize RecordOffset = static_cast<VkDeviceSize>(RecordIndex * sizeof(TSurfaceGPUVec4));
+        for (std::size_t Plane = 0; Plane < Packed.size(); ++Plane)
+            ParametersBuffer->Upload(&Packed[Plane], sizeof(TSurfaceGPUVec4),
+                                     static_cast<VkDeviceSize>(Plane) * PlaneStride + RecordOffset);
     }
+
+#pragma endregion
+
+#pragma region Instance_State_Resources
 
     TSurfaceInstanceGPUResources::TSurfaceInstanceGPUResources(
         VkPhysicalDevice                    PhysicalDevice,
@@ -381,33 +501,45 @@ namespace MDSS::SurfaceState
         ScalarCount = TexelCount * ChannelCount;
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         WorldTexelAreaBuffer =
-            CreateUploadedBuffer(PhysicalDevice, Device, Areas.data(), Areas.size(), sizeof(float), MaxRange);
+            CreateUploadedBuffer(PhysicalDevice,
+                                 Device,
+                                 Areas.data(),
+                                 Areas.size(),
+                                 sizeof(float),
+                                 MaxRange,
+                                 GPU::TGPUBufferMemoryCategory::SurfaceState);
         std::vector<TSurfaceGPUVec4> ZeroDynamicGeometry(TexelCount * 2U);
         DynamicGeometryBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                      Device,
                                                      ZeroDynamicGeometry.data(),
                                                      ZeroDynamicGeometry.size(),
                                                      sizeof(TSurfaceGPUVec4),
-                                                     MaxRange);
+                                                     MaxRange,
+                                                     GPU::TGPUBufferMemoryCategory::SurfaceState);
         DynamicConcavityWeightBuffer =
             CreateZeroedScalarBuffer(PhysicalDevice, Device, TexelCount, MaxRange);
-        const std::size_t WorkgroupCount = TexelCount / 64U + (TexelCount % 64U != 0U);
-        if (WorkgroupCount > std::numeric_limits<std::size_t>::max() - 3U ||
-            TexelCount > (std::numeric_limits<std::size_t>::max() - WorkgroupCount - 3U) / 3U)
-            throw std::overflow_error("Surface accumulation height and dirty flag count overflowed.");
-        // Height, two dirty planes, one flag per 64-texel workgroup, and a
-        // three-word VkDispatchIndirectCommand share the existing descriptor.
+        const TSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
+        // 3 texel planes + persistent solver A/B sets + CPU-input activation list + accumulation/geometry schedules.
+        // The two solver sets ping-pong with State A/B so Pass2 can directly build the next step's active set.
+        const std::size_t AccumulationWordCount = SparseLayout.TotalWordCount;
         AccumulationHeightBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
                                                             Device,
-                                                            TexelCount * 3U + WorkgroupCount + 3U,
+                                                            AccumulationWordCount,
                                                             MaxRange,
-                                                            StorageUsage | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+                                                            StorageUsage | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+                                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
         StateABuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         StateBBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         OutgoingFluxScaleBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         InputDeltaBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
         TransferWeightBuffer = CreateUploadedBuffer(
-            PhysicalDevice, Device, TransferWeights.data(), TransferWeights.size(), sizeof(float), MaxRange);
+            PhysicalDevice,
+            Device,
+            TransferWeights.data(),
+            TransferWeights.size(),
+            sizeof(float),
+            MaxRange,
+            GPU::TGPUBufferMemoryCategory::SurfaceState);
         std::vector<TSurfaceGPUVec4>        ZeroDebugAverages;
         const std::vector<TSurfaceGPUVec4>* DebugAverages = &TransferWeightDebugAverages;
         if (DebugAverages->empty())
@@ -420,8 +552,19 @@ namespace MDSS::SurfaceState
             throw std::invalid_argument("TransferWeight debug averages must match the texel count.");
         }
         TransferWeightDebugAverageBuffer = CreateUploadedBuffer(
-            PhysicalDevice, Device, DebugAverages->data(), DebugAverages->size(), sizeof(TSurfaceGPUVec4), MaxRange);
-        RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice, Device, ScalarCount, MaxRange);
+            PhysicalDevice,
+            Device,
+            DebugAverages->data(),
+            DebugAverages->size(),
+            sizeof(TSurfaceGPUVec4),
+            MaxRange,
+            GPU::TGPUBufferMemoryCategory::SurfaceState);
+        // 첫 ScalarCount는 기존 RawOutgoing 합, 뒤 8*ScalarCount는 선택적 방향별 RawEdgeFlux cache다.
+        // 같은 descriptor를 확장해 storage-buffer binding 수를 늘리지 않는다.
+        if (ScalarCount > std::numeric_limits<std::size_t>::max() / (SurfaceNeighborCount + 1U))
+            throw std::overflow_error("Surface raw-flux cache size overflowed.");
+        RawOutgoingBuffer = CreateZeroedScalarBuffer(
+            PhysicalDevice, Device, ScalarCount * (SurfaceNeighborCount + 1U), MaxRange);
     }
 
     const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetStateABuffer() const noexcept
@@ -489,13 +632,36 @@ namespace MDSS::SurfaceState
 
     void
     TSurfaceInstanceGPUResources::UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                                        const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages)
+                                                        const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages,
+                                                        bool                                bHalfPrecision)
     {
         if (TransferWeights.size() != TexelCount * SurfaceNeighborCount)
         {
             throw std::invalid_argument("Updated TransferWeight cache has an incompatible size.");
         }
-        TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeightBuffer->GetSize());
+        if (bHalfPrecision)
+        {
+            // Runtime A/B keeps the original allocation. FP16 mode uses only the first 4 uint words/texel.
+            std::vector<std::uint32_t> Packed(TexelCount * (SurfaceNeighborCount / 2U), 0U);
+            for (std::size_t Texel = 0; Texel < TexelCount; ++Texel)
+            {
+                for (std::size_t Pair = 0; Pair < SurfaceNeighborCount / 2U; ++Pair)
+                {
+                    const std::size_t D0 = Pair * 2U;
+                    const std::size_t D1 = D0 + 1U;
+                    Packed[Texel * (SurfaceNeighborCount / 2U) + Pair] = glm::packHalf2x16(
+                        glm::vec2(std::clamp(TransferWeights[Texel * SurfaceNeighborCount + D0], 0.0F, 1.0F),
+                                  std::clamp(TransferWeights[Texel * SurfaceNeighborCount + D1], 0.0F, 1.0F)));
+                }
+            }
+            TransferWeightBuffer->Upload(Packed.data(),
+                static_cast<VkDeviceSize>(Packed.size() * sizeof(std::uint32_t)));
+        }
+        else
+        {
+            // Buffer is uint-addressed in GLSL, but IEEE-754 float bytes are intentionally uploaded verbatim.
+            TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeightBuffer->GetSize());
+        }
         if (!TransferWeightDebugAverages.empty())
         {
             if (TransferWeightDebugAverages.size() != TexelCount)
@@ -530,14 +696,25 @@ namespace MDSS::SurfaceState
         InputDeltaBuffer->Upload(Zeros.data(), ByteSize);
         RawOutgoingBuffer->Upload(Zeros.data(), ByteSize);
         OutgoingFluxScaleBuffer->Upload(ResetOutgoingFluxScale.data(), ByteSize);
+
+        // Rendering now consumes the solver-produced accumulation height directly.  Reset it together
+        // with State so a paused/reset frame cannot display stale derived height before the next step.
+        const std::size_t AccumulationWordCount =
+            static_cast<std::size_t>(AccumulationHeightBuffer->GetSize() / sizeof(std::uint32_t));
+        const std::vector<std::uint32_t> ZeroAccumulation(AccumulationWordCount, 0U);
+        AccumulationHeightBuffer->Upload(ZeroAccumulation.data(), AccumulationHeightBuffer->GetSize());
     }
+
+#pragma endregion
+
+#pragma region Descriptor_Resources
 
     TSurfaceStateDescriptorResources::TSurfaceStateDescriptorResources(
         VkDevice                                  Device,
         const TSurfaceSharedGeometryGPUResources& SharedGeometry,
         const TSurfaceProfileGPUResources&        Profiles,
         const TSurfaceInstanceGPUResources&       Instance)
-        : Device(Device), SharedGeometryResources(&SharedGeometry)
+        : Device(Device), SharedGeometryResources(&SharedGeometry), ProfileResources(&Profiles)
     {
         if (SharedGeometry.GetTexelCount() != Instance.GetTexelCount() ||
             Profiles.GetChannelCount() != Instance.GetChannelCount())
@@ -707,4 +884,5 @@ namespace MDSS::SurfaceState
                 SharedGeometryResources->GetMesoNormalBuffer().GetUploadRevision()};
     }
 
+#pragma endregion
 } // MDSS 네임스페이스

@@ -16,6 +16,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Differential_Geometry_Helpers
+
     namespace
     {
         constexpr float         NormalDotMinimum = 0.05F;
@@ -256,6 +258,9 @@ namespace MDSS::SurfaceState
             }
         }
     } // 내부 네임스페이스
+#pragma endregion
+
+#pragma region Meso_Geometry_Build
 
     TMesoGeometryBuildReport BuildMesoGeometry(TSharedSurfaceGeometryData& Geometry)
     {
@@ -441,4 +446,5 @@ namespace MDSS::SurfaceState
         BuildCombinedConcavity(Texels);
         return Report;
     }
+#pragma endregion
 } // MDSS 네임스페이스

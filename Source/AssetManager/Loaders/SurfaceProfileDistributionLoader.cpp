@@ -81,6 +81,8 @@ namespace MDSS::Asset
         }
     } // namespace
 
+#pragma region Distribution_Loading
+
     TSurfaceProfileDistribution TSurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
     {
         std::ifstream Input(Path);
@@ -219,6 +221,10 @@ namespace MDSS::Asset
     }
 
     std::vector<SurfaceState::TSurfaceProfileIndex>
+#pragma endregion
+
+#pragma region Texel_Profile_Mapping
+
     TSurfaceProfileDistribution::BuildTexelProfileMap(const SurfaceState::TSurfaceMappingData& Mapping) const
     {
         if (Mapping.Surfaces.size() != ProfileIndicesBySurface.size())
@@ -242,4 +248,5 @@ namespace MDSS::Asset
         }
         return Result;
     }
+#pragma endregion
 } // namespace MDSS::Asset

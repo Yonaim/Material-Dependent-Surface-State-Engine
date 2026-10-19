@@ -8,6 +8,7 @@
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
 
 #include <map>
+#include <array>
 #include <memory>
 #include <utility>
 
@@ -17,6 +18,7 @@ namespace MDSS::Rendering
     class THeightFieldSmoothing final
     {
     public:
+        // Smoothing resource lifecycle
         THeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
                               VkDevice              Device,
                               VkDescriptorSetLayout SurfaceLayout,
@@ -26,8 +28,12 @@ namespace MDSS::Rendering
         THeightFieldSmoothing(const THeightFieldSmoothing&) = delete;
         THeightFieldSmoothing& operator=(const THeightFieldSmoothing&) = delete;
 
+        // Smoothing outputs and command recording
         [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance, std::uint32_t Channel) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const;
+        void                                 Invalidate() noexcept;
+        /** @brief Releases lazily-created smoothing outputs. Caller must ensure no in-flight GPU work uses them. */
+        void                                 ReleaseOutputs() noexcept;
         void                                 Record(VkCommandBuffer                                       Command,
                                                     std::size_t                                           Instance,
                                                     std::uint32_t                                         Channel,
@@ -36,21 +42,29 @@ namespace MDSS::Rendering
                                                     const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
                                                     VkDescriptorSet                                       InputSet,
                                                     const GPU::TGPUBuffer&                                InputBuffer,
+                                                    const GPU::TGPUBuffer&                                GeometryCacheBuffer,
                                                     bool                                                  bStateAB,
-                                                    float                                                 AccumulationDisplayScale);
+                                                    float                                                 AccumulationDisplayScale,
+                                                    std::uint32_t                                         OccupancyTileSize,
+                                                    bool                                                  bSparse,
+                                                    bool                                                  bSharedHalo);
 
     private:
         struct TOutput
         {
             std::unique_ptr<GPU::TGPUBuffer> Buffer;
             VkDescriptorSet                  Set = VK_NULL_HANDLE;
+            VkBuffer                         LastInputBuffer = VK_NULL_HANDLE;
+            float                            LastDisplayScale = 0.0F;
+            std::uint32_t                    LastTileSize = 0U;
+            bool                             bInitialized = false;
         };
         VkPhysicalDevice                                         PhysicalDevice;
         VkDevice                                                 Device;
         VkPhysicalDeviceLimits                                   Limits{};
         VkDescriptorSetLayout                                    HeightLayout;
         VkPipelineLayout                                         PipelineLayout = VK_NULL_HANDLE;
-        VkPipeline                                               Pipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 2>                                Pipelines{};
         VkDescriptorPool                                         Pool = VK_NULL_HANDLE;
         std::map<std::pair<std::size_t, std::uint32_t>, TOutput> Outputs;
     };

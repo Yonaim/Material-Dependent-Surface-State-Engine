@@ -1,6 +1,6 @@
 /**
  * @file SurfaceAccumulationHeight.comp
- * @brief 현재 solver step에서 texel별 누적 높이와 형상 갱신 필요 여부를 계산한다.
+ * @brief 현재 descriptor의 State에서 누적 높이를 계산하고 geometry sparse schedule을 직접 생성한다.
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
@@ -9,57 +9,97 @@
 
 layout(local_size_x = 64) in;
 
-shared uint WorkgroupDirty;
-
 const float DirtyHeightAbsoluteEpsilon = 1.0e-5;
-
 const float DirtyHeightRelativeEpsilon = 1.0e-3;
+const uint AccumulationGeometryUpdateFlag = 1u << 6u;
+const uint ForceFullGeometryFlag = 1u << 10u;
+
+void ScheduleGeometryGroup(uint Group)
+{
+    uint Groups = sparseWorkgroupCount();
+    if (Group >= Groups) return;
+    if (atomicCompSwap(AccumulationHeights.Values[geometryScheduleFlagBase() + Group], 0u, 1u) == 0u)
+    {
+        uint Slot = atomicAdd(AccumulationHeights.Values[geometryScheduleCommandBase()], 1u);
+        if (Slot < Groups)
+            AccumulationHeights.Values[geometryScheduleListBase() + Slot] = Group;
+    }
+}
+
+void ScheduleGeometryTexelAndTwoHopNeighbors(uint Texel)
+{
+    if (Texel >= Solver.LocalTexelCount) return;
+    ScheduleGeometryGroup(Texel / 64u);
+    for (uint D = 0u; D < SurfaceNeighborCount; ++D)
+    {
+        uint N1 = neighborIndex(Texel, D);
+        if (N1 == InvalidTexelIndex || N1 >= Solver.LocalTexelCount) continue;
+        ScheduleGeometryGroup(N1 / 64u);
+        for (uint D2 = 0u; D2 < SurfaceNeighborCount; ++D2)
+        {
+            uint N2 = neighborIndex(N1, D2);
+            if (N2 != InvalidTexelIndex && N2 < Solver.LocalTexelCount)
+                ScheduleGeometryGroup(N2 / 64u);
+        }
+    }
+}
 
 void main()
 {
-    uint Texel = gl_GlobalInvocationID.x;
+    uint OriginalGroup = accumulationOriginalGroup();
+    uint Texel = OriginalGroup * 64u + gl_LocalInvocationID.x;
+    if (Texel >= Solver.LocalTexelCount) return;
+
+    bool GeometryFeedback = (Solver.Flags & AccumulationGeometryUpdateFlag) != 0u;
+    bool ForceFull = (Solver.Flags & ForceFullGeometryFlag) != 0u;
     bool Dirty = false;
-    // Values 배열은 texel 단위 plane으로 나뉜다.
-    // [0, N): 높이, [N, 2N): 높이 변경 표시,
-    // [2N, 3N): 형상 재계산 표시, 이후: workgroup별 변경 표시다.
-    // 간접 dispatch가 0 workgroup이면 geometry pass 자체가 생략된다.
-    // 간접 dispatch에 workgroup이 없더라도 이전 실행의 표시 값이 남지 않도록 초기화한다.
-    if (Texel < Solver.LocalTexelCount)
-        AccumulationHeights.Values[2u * Solver.LocalTexelCount + Texel] = 0.0;
-    if (Texel < Solver.LocalTexelCount && !isValidTexel(Texel))
+
+    if (!isValidTexel(Texel))
     {
-        // 유효하지 않은 texel은 높이와 높이 변경 표시를 모두 0으로 정리한다.
-        AccumulationHeights.Values[Solver.LocalTexelCount + Texel] = 0.0;
-        AccumulationHeights.Values[Texel] = 0.0;
-    }
-    else if (Texel < Solver.LocalTexelCount)
-    {
-        // 새 누적 높이를 계산하고, 이전에 만든 동적 형상과 비교한다.
-        float Height = accumulationHeight(Texel);
-        float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
-        vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
-        // 작은 float 흔들림은 무시한다. 비교 기준은 마지막 geometry build 값이므로 누적 변화가
-        // tolerance를 넘으면 갱신된다. 높이는 local-space 길이 단위다.
-        float HeightTolerance = max(DirtyHeightAbsoluteEpsilon,
-                                    DirtyHeightRelativeEpsilon * max(abs(Height), abs(BuiltHeight)));
-        bool BuiltHeightInvalid = false;
-        bool BuiltNormalInvalid = dot(BuiltNormal, BuiltNormal) < 0.5;
-#if MDSS_GPU_VALIDATION
-        BuiltHeightInvalid = isnan(BuiltHeight) || isinf(BuiltHeight);
-        BuiltNormalInvalid = BuiltNormalInvalid || any(isnan(BuiltNormal)) || any(isinf(BuiltNormal));
-#endif
-        // 저장 normal의 유효성도 함께 확인해 잘못된 동적 geometry를 복구한다.
-        Dirty = BuiltHeightInvalid || abs(Height - BuiltHeight) > HeightTolerance || BuiltNormalInvalid;
-        AccumulationHeights.Values[Solver.LocalTexelCount + Texel] = Dirty ? 1.0 : 0.0;
-        AccumulationHeights.Values[Texel] = Height;
+        storeAccumulationFloat(Texel, 0.0);
+        storeAccumulationFloat(Solver.LocalTexelCount + Texel, 0.0);
+        return;
     }
 
-    // workgroup 안에서 하나라도 Dirty인 texel이 있는지 합친다.
-    if (gl_LocalInvocationIndex == 0u) WorkgroupDirty = 0u;
-    barrier();
-    if (Dirty) atomicOr(WorkgroupDirty, 1u);
-    barrier();
-    // 다음 단계의 간접 실행 판단에 사용할 workgroup별 요약값을 기록한다.
-    if (gl_LocalInvocationIndex == 0u)
-        AccumulationHeights.Values[3u * Solver.LocalTexelCount + gl_WorkGroupID.x] = float(WorkgroupDirty);
+    float Height = accumulationHeight(Texel);
+    storeAccumulationFloat(Texel, Height);
+
+    // 렌더 전용 height pass에서는 geometry dirty 판정을 위한 DynamicGeometry read조차 하지 않는다.
+    if (!GeometryFeedback)
+    {
+        storeAccumulationFloat(Solver.LocalTexelCount + Texel, 0.0);
+        return;
+    }
+
+    if (ForceFull)
+    {
+        // bootstrap은 C++에서 full Geometry/Weights dispatch를 직접 실행한다. 여기서는 height만 준비한다.
+        storeAccumulationFloat(Solver.LocalTexelCount + Texel, 1.0);
+        return;
+    }
+
+    float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
+    vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
+    float HeightTolerance = max(DirtyHeightAbsoluteEpsilon,
+                                DirtyHeightRelativeEpsilon * max(abs(Height), abs(BuiltHeight)));
+    bool BuiltHeightInvalid = false;
+    bool BuiltNormalInvalid = dot(BuiltNormal, BuiltNormal) < 0.5;
+#if MDSS_GPU_VALIDATION
+    BuiltHeightInvalid = isnan(BuiltHeight) || isinf(BuiltHeight);
+    BuiltNormalInvalid = BuiltNormalInvalid || any(isnan(BuiltNormal)) || any(isinf(BuiltNormal));
+#endif
+    Dirty = BuiltHeightInvalid || abs(Height - BuiltHeight) > HeightTolerance || BuiltNormalInvalid;
+    storeAccumulationFloat(Solver.LocalTexelCount + Texel, Dirty ? 1.0 : 0.0);
+    if (!Dirty) return;
+
+    if (useSparseSimulationGeometry())
+    {
+        // Geometry + transfer-weight dependency를 함께 만족하도록 기존과 동일한 topology 2-hop halo를 compact한다.
+        ScheduleGeometryTexelAndTwoHopNeighbors(Texel);
+    }
+    else
+    {
+        // Legacy full geometry 경로도 별도 dirty-scan pass 없이 height shader가 indirect count를 직접 설정한다.
+        atomicMax(AccumulationHeights.Values[geometryScheduleCommandBase()], sparseWorkgroupCount());
+    }
 }

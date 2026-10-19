@@ -22,6 +22,8 @@
 
 namespace MDSS::SurfaceState
 {
+#pragma region Mapping_and_Seam_Helpers
+
     namespace
     {
         constexpr float UVEpsilon = 1.0e-6F;
@@ -279,6 +281,10 @@ namespace MDSS::SurfaceState
                                              { return std::abs(Candidate.Parameter - Parameter); });
         }
     } // namespace
+
+#pragma endregion
+
+#pragma region Surface_Mapping_Build
 
     TSurfaceMappingData TSurfaceMappingBuilder::Build(const std::vector<Asset::TVertex>&             Vertices,
                                                       const std::vector<Asset::TMeshTriangleSource>& Triangles,
@@ -572,4 +578,5 @@ namespace MDSS::SurfaceState
         ValidateSurfaceMapping(Mapping);
         return Mapping;
     }
+#pragma endregion
 } // namespace MDSS::SurfaceState
