@@ -14,9 +14,13 @@
 #include "Scene/SceneLoader.h"
 #include "SurfaceState/SurfaceStateSystem.h"
 #include "SurfaceState/State/SimulationClock.h"
+#include "Scene/StaticMeshInstance.h"
 
 #include <chrono>
 #include <filesystem>
+#include <algorithm>
+#include <glm/geometric.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -27,7 +31,8 @@ namespace MDSS
 
     TApplication::TApplication(TBenchmarkOptions BenchmarkOptions,
                                std::uint32_t RenderTileSize,
-                               bool bPerWorkgroupChannelMask)
+                               bool bPerWorkgroupChannelMask,
+                               std::filesystem::path ScenePath)
         : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), SurfaceData(Assets), MainScene(),
           Benchmark(std::move(BenchmarkOptions))
     {
@@ -35,7 +40,9 @@ namespace MDSS
 
         const auto StartupScenePath = Benchmark.Enabled
                                           ? std::filesystem::absolute(Benchmark.ScenePath).lexically_normal()
-                                          : LoadStartupScenePath(GetEngineConfigDirectory() / "Engine.ini");
+                                          : !ScenePath.empty()
+                                                ? std::filesystem::absolute(ScenePath).lexically_normal()
+                                                : LoadStartupScenePath(GetEngineConfigDirectory() / "Engine.ini");
         TLogger::Info("TApplication", "Startup Scene: " + StartupScenePath.string());
         MainScene = TSceneLoader::Load(StartupScenePath,
                                        Assets,
@@ -100,6 +107,10 @@ namespace MDSS
                                                      DebugInterface->GetInjectStrength(),
                                                      DebugInterface->GetInjectRadius(),
                                                      DebugInterface->GetInjectFalloff(),
+                                                     DebugInterface->GetInjectOperation(),
+                                                     DebugInterface->GetInjectShape(),
+                                                     DebugInterface->GetInjectSecondaryRadius(),
+                                                     DebugInterface->GetInjectRotationDegrees(),
                                                      DebugInterface->GetInjectTexelSearchRadius(),
                                                      DebugInterface->ShouldSuppressDebugHotkey()))
             {
@@ -120,8 +131,36 @@ namespace MDSS
                                               : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime)
                                                     .count();
             PreviousFrameTime = CurrentFrameTime;
-            MainScene.AdvanceDemoAnimation(DeltaTime * DebugInterface->GetAnimationTimeScale());
-            FrameRenderer->RenderFrame(MainScene, *DebugInterface, DeltaTime, bSuspendSimulationClock);
+            const float PlaybackDeltaTime = !Benchmark.Enabled && !bSuspendSimulationClock &&
+                                                    MainScene.IsDemoAnimationPlaying() && MainScene.HasDemoContactEvents()
+                                                ? SurfaceState::FixedSimulationStepSeconds
+                                                : DeltaTime;
+            const auto Events = MainScene.AdvanceDemoAnimation(PlaybackDeltaTime * DebugInterface->GetAnimationTimeScale());
+            for (const auto& Event : Events)
+            {
+                const auto& Instances = MainScene.GetStaticMeshInstances();
+                const auto Target = std::find_if(Instances.begin(), Instances.end(), [&](const TStaticMeshInstance& Instance)
+                                                 { return Instance.GetId() == Event.Target; });
+                if (Target == Instances.end())
+                    throw std::runtime_error("Demo contact target disappeared from Scene: " + Event.Target);
+                const glm::mat4 Model = Target->GetTransform().GetMatrix();
+                SurfaceState::TSurfaceContactInput Contact;
+                Contact.TargetInstance = static_cast<SurfaceState::TSurfaceInstanceID>(std::distance(Instances.begin(), Target));
+                Contact.State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Event.State);
+                Contact.WorldPosition = glm::vec3(Model * glm::vec4(Event.LocalPosition, 1.0F));
+                Contact.PlaneNormal = glm::normalize(glm::transpose(glm::inverse(glm::mat3(Model))) * Event.LocalNormal);
+                Contact.bPlanar = true;
+                Contact.PlaneHalfDepth = Event.Depth;
+                Contact.Operation = Event.Operation;
+                Contact.Shape = Event.Shape;
+                Contact.Radius = Event.Radius;
+                Contact.SecondaryRadius = Event.SecondaryRadius;
+                Contact.RotationDegrees = Event.RotationDegrees;
+                Contact.Strength = Event.Strength;
+                Contact.Falloff = Event.Falloff;
+                SurfaceStates->SubmitContact(Contact);
+            }
+            FrameRenderer->RenderFrame(MainScene, *DebugInterface, PlaybackDeltaTime, bSuspendSimulationClock);
             if (bSuspendSimulationClock)
             {
                 // The setting's GPU work can outlive RenderFrame. Resume the

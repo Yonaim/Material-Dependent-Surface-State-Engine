@@ -1309,7 +1309,7 @@ namespace MDSS::Rendering
         try
         {
             Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene);
-            Replacement->SetAccumulationGeometryUpdateEnabled(DebugSolverSettings.bAccumulationGeometryUpdateEnabled);
+            Replacement->SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
             Replacement->SetRawFluxCacheEnabled(SurfaceStates.IsRawFluxCacheEnabled());
             Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStates.IsCoalescedRawFluxLayoutEnabled());
             Replacement->SetHalfRawFluxCacheEnabled(SurfaceStates.IsHalfRawFluxCacheEnabled());
@@ -2090,15 +2090,15 @@ namespace MDSS::Rendering
         SurfaceStates.SetSparseSimulationGeometryEnabled(bEnabled);
     }
 
-    bool TRenderer::IsAccumulationGeometryUpdateEnabled() const noexcept
+    bool TRenderer::IsStateDrivenGeometryUpdateEnabled() const noexcept
     {
-        return DebugSolverSettings.bAccumulationGeometryUpdateEnabled;
+        return DebugSolverSettings.bStateDrivenGeometryUpdateEnabled;
     }
 
-    void TRenderer::SetAccumulationGeometryUpdateEnabled(bool bEnabled)
+    void TRenderer::SetStateDrivenGeometryUpdateEnabled(bool bEnabled)
     {
-        DebugSolverSettings.bAccumulationGeometryUpdateEnabled = bEnabled;
-        SurfaceStates.SetAccumulationGeometryUpdateEnabled(bEnabled);
+        DebugSolverSettings.bStateDrivenGeometryUpdateEnabled = bEnabled;
+        SurfaceStates.SetStateDrivenGeometryUpdateEnabled(bEnabled);
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept

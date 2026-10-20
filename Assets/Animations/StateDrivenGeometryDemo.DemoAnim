@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "durationSeconds": 11.0,
+  "loop": false,
+  "autoplay": true,
+  "tracks": [
+    {
+      "target": "press",
+      "property": "position",
+      "interpolation": "linear",
+      "keys": [
+        { "time": 0.0, "value": [0.0, 0.0, 1.25] },
+        { "time": 2.5, "value": [0.0, 0.0, 1.25] },
+        { "time": 3.3, "value": [0.0, 0.0, 0.45] },
+        { "time": 3.65, "value": [0.0, 0.0, 0.45] },
+        { "time": 4.5, "value": [0.0, 0.0, 1.25] },
+        { "time": 5.0, "value": [1.8, 1.8, 1.25] },
+        { "time": 11.0, "value": [1.8, 1.8, 1.25] }
+      ]
+    },
+    {
+      "target": "water_nozzle",
+      "property": "position",
+      "interpolation": "linear",
+      "keys": [
+        { "time": 0.0, "value": [1.8, -1.8, 1.0] },
+        { "time": 4.4, "value": [1.8, -1.8, 1.0] },
+        { "time": 5.0, "value": [0.42, -0.12, 0.55] },
+        { "time": 6.1, "value": [0.42, -0.12, 0.55] },
+        { "time": 6.7, "value": [1.8, -1.8, 1.0] },
+        { "time": 11.0, "value": [1.8, -1.8, 1.0] }
+      ]
+    },
+    {
+      "target": "camera",
+      "property": "position",
+      "interpolation": "linear",
+      "keys": [
+        { "time": 0.0, "value": [1.7, -3.0, 2.3] },
+        { "time": 4.0, "value": [1.7, -3.0, 2.3] },
+        { "time": 8.0, "value": [1.3, -2.6, 1.9] },
+        { "time": 11.0, "value": [1.3, -2.6, 1.9] }
+      ]
+    },
+    {
+      "target": "camera",
+      "property": "target",
+      "interpolation": "linear",
+      "keys": [
+        { "time": 0.0, "value": [0.0, 0.0, 0.15] },
+        { "time": 11.0, "value": [0.0, 0.0, 0.10] }
+      ]
+    }
+  ],
+  "contactEvents": [
+    { "time": 0.25, "target": "mud_platform", "state": "mud", "operation": "add", "shape": "circle", "localPosition": [0.0, 0.0, 0.5], "radius": 0.85, "depth": 0.06, "strength": 0.50, "falloff": 0.5 },
+    { "time": 0.55, "target": "mud_platform", "state": "mud", "operation": "add", "shape": "circle", "localPosition": [0.0, 0.0, 0.5], "radius": 0.85, "depth": 0.06, "strength": 0.50, "falloff": 0.5 },
+    { "time": 0.85, "target": "mud_platform", "state": "mud", "operation": "add", "shape": "circle", "localPosition": [0.0, 0.0, 0.5], "radius": 0.85, "depth": 0.06, "strength": 0.50, "falloff": 0.5 },
+    { "time": 1.15, "target": "mud_platform", "state": "mud", "operation": "add", "shape": "circle", "localPosition": [0.0, 0.0, 0.5], "radius": 0.85, "depth": 0.06, "strength": 0.50, "falloff": 0.5 },
+    { "time": 1.45, "target": "mud_platform", "state": "mud", "operation": "add", "shape": "circle", "localPosition": [0.0, 0.0, 0.5], "radius": 0.85, "depth": 0.06, "strength": 0.50, "falloff": 0.5 },
+    { "time": 3.3, "target": "mud_platform", "state": "mud", "operation": "remove", "shape": "circle", "localPosition": [0.0, 0.0, 0.5], "radius": 0.31, "depth": 0.06, "strength": 2.0, "falloff": 0.0 },
+    { "time": 5.05, "target": "mud_platform", "state": "waterfilm", "operation": "add", "shape": "ellipse", "localPosition": [0.085, -0.025, 0.5], "radius": 0.26, "secondaryRadius": 0.19, "depth": 0.06, "strength": 0.35, "falloff": 1.0 },
+    { "time": 5.30, "target": "mud_platform", "state": "waterfilm", "operation": "add", "shape": "ellipse", "localPosition": [0.085, -0.025, 0.5], "radius": 0.26, "secondaryRadius": 0.19, "depth": 0.06, "strength": 0.35, "falloff": 1.0 },
+    { "time": 5.55, "target": "mud_platform", "state": "waterfilm", "operation": "add", "shape": "ellipse", "localPosition": [0.085, -0.025, 0.5], "radius": 0.26, "secondaryRadius": 0.19, "depth": 0.06, "strength": 0.35, "falloff": 1.0 },
+    { "time": 5.80, "target": "mud_platform", "state": "waterfilm", "operation": "add", "shape": "ellipse", "localPosition": [0.085, -0.025, 0.5], "radius": 0.26, "secondaryRadius": 0.19, "depth": 0.06, "strength": 0.35, "falloff": 1.0 }
+  ]
+}

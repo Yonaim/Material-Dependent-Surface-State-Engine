@@ -26,6 +26,7 @@ namespace MDSS
         std::uint32_t TriangleID = 0;
         glm::vec3     Barycentric{0.0F};
         glm::vec3     WorldPosition{0.0F};
+        glm::vec3     WorldNormal{0.0F, 0.0F, 1.0F};
         glm::vec2     SimulationUV{0.0F};
         float         Distance = 0.0F;
     };

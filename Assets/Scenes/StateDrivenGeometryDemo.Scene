@@ -1,0 +1,42 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/StateDrivenGeometryDemo.DemoAnim",
+  "camera": {
+    "position": [1.7, -3.0, 2.3],
+    "target": [0.0, 0.0, 0.15],
+    "verticalFieldOfViewDegrees": 43.0
+  },
+  "simulationResolution": 256,
+  "litHeightDisplayScale": 1.0,
+  "objects": [
+    {
+      "id": "mud_platform",
+      "mesh": "../Meshes/MarbleCube/MarbleCube.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/StateDrivenGeometryDemo.SurfaceProfileMap",
+      "transform": {
+        "position": [0.0, 0.0, -0.15],
+        "rotationDegrees": [0.0, 0.0, 0.0],
+        "scale": [5.0, 5.0, 0.3]
+      }
+    },
+    {
+      "id": "press",
+      "mesh": "../Meshes/DemoPress/DemoPress.obj",
+      "transform": {
+        "position": [0.0, 0.0, 1.25],
+        "rotationDegrees": [0.0, 0.0, 0.0],
+        "scale": [0.62, 0.62, 0.7]
+      }
+    },
+    {
+      "id": "water_nozzle",
+      "mesh": "../Meshes/DemoPress/DemoPress.obj",
+      "transform": {
+        "position": [1.8, -1.8, 1.0],
+        "rotationDegrees": [0.0, 0.0, 0.0],
+        "scale": [0.14, 0.14, 0.45]
+      }
+    }
+  ]
+}

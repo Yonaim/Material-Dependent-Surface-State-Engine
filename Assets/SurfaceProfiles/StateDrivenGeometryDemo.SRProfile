@@ -1,0 +1,32 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 4,
+  "name": "StateDrivenGeometryDemo",
+  "states": {
+    "mud": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.03,
+      "gravityFlowFactor": 0.005,
+      "decayRate": 0.001,
+      "cavityDecayProtectionFactor": 0.9,
+      "cavityExitResistanceFactor": 0.85,
+      "accumulationFactor": 1.0,
+      "cavityFillFactor": 0.8,
+      "thicknessPerAmount": 0.45
+    },
+    "waterfilm": {
+      "stateCapacity": 1.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.2,
+      "gravityFlowFactor": 0.3412,
+      "decayRate": 0.01,
+      "cavityDecayProtectionFactor": 0.8,
+      "cavityExitResistanceFactor": 1.0,
+      "accumulationFactor": 0.15,
+      "cavityFillFactor": 0.8,
+      "thicknessPerAmount": 0.05
+    }
+  },
+  "transitions": []
+}

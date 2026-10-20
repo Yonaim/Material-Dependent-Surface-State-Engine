@@ -11,7 +11,7 @@ layout(local_size_x = 64) in;
 
 const float DirtyHeightAbsoluteEpsilon = 1.0e-5;
 const float DirtyHeightRelativeEpsilon = 1.0e-3;
-const uint AccumulationGeometryUpdateFlag = 1u << 6u;
+const uint StateDrivenGeometryUpdateFlag = 1u << 6u;
 const uint ForceFullGeometryFlag = 1u << 10u;
 
 void ScheduleGeometryGroup(uint Group)
@@ -50,7 +50,7 @@ void main()
     uint Texel = OriginalGroup * 64u + gl_LocalInvocationID.x;
     if (Texel >= Solver.LocalTexelCount) return;
 
-    bool GeometryFeedback = (Solver.Flags & AccumulationGeometryUpdateFlag) != 0u;
+    bool StateDrivenGeometry = (Solver.Flags & StateDrivenGeometryUpdateFlag) != 0u;
     bool ForceFull = (Solver.Flags & ForceFullGeometryFlag) != 0u;
     bool Dirty = false;
 
@@ -65,7 +65,7 @@ void main()
     storeAccumulationFloat(Texel, Height);
 
     // 렌더 전용 height pass에서는 geometry dirty 판정을 위한 DynamicGeometry read조차 하지 않는다.
-    if (!GeometryFeedback)
+    if (!StateDrivenGeometry)
     {
         storeAccumulationFloat(Solver.LocalTexelCount + Texel, 0.0);
         return;

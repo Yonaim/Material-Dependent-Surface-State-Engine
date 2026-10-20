@@ -12,6 +12,7 @@
 #include <cmath>
 #include <fstream>
 #include <glm/common.hpp>
+#include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
@@ -156,6 +157,12 @@ namespace MDSS
                 throw std::runtime_error("Demo Animation loop must be a boolean.");
             Clip.bLoop = Loop->get<bool>();
         }
+        if (const auto Autoplay = Root.find("autoplay"); Autoplay != Root.end())
+        {
+            if (!Autoplay->is_boolean())
+                throw std::runtime_error("Demo Animation.autoplay must be a boolean.");
+            Clip.bAutoplay = Autoplay->get<bool>();
+        }
         const TJson& Tracks = Required(Root, "tracks", "Demo Animation");
         if (!Tracks.is_array() || Tracks.empty())
             throw std::runtime_error("Demo Animation tracks must be a non-empty array.");
@@ -209,6 +216,66 @@ namespace MDSS
                     {Time, ReadValue(Required(Key, "value", KeyContext), bRotation, KeyContext + ".value")});
             }
             Clip.Tracks.push_back(std::move(Track));
+        }
+        if (const auto Events = Root.find("contactEvents"); Events != Root.end())
+        {
+            if (!Events->is_array())
+                throw std::runtime_error("Demo Animation.contactEvents must be an array.");
+            if (Clip.bLoop && !Events->empty())
+                throw std::runtime_error("Demo Animation with contact events cannot loop; replay resets Surface State.");
+            float PreviousTime = -1.0F;
+            for (std::size_t Index = 0; Index < Events->size(); ++Index)
+            {
+                const TJson& JsonEvent = (*Events)[Index];
+                const std::string Context = "contactEvents[" + std::to_string(Index) + "]";
+                TDemoAnimationClip::TContactEvent Event;
+                Event.Time = Float(Required(JsonEvent, "time", Context), Context + ".time");
+                if (Event.Time < 0.0F || Event.Time > Clip.DurationSeconds || Event.Time < PreviousTime)
+                    throw std::runtime_error(Context + ".time must be sorted and within clip duration.");
+                PreviousTime = Event.Time;
+                Event.Target = String(JsonEvent, "target", Context);
+                Event.State = String(JsonEvent, "state", Context);
+                if (SurfaceState::NormalizeSurfaceStateName(Event.State) != Event.State)
+                    throw std::runtime_error(Context + ".state must be a normalized State name.");
+                const auto& Objects = Scene.GetStaticMeshInstances();
+                const auto Target = std::find_if(Objects.begin(), Objects.end(), [&](const TStaticMeshInstance& Object)
+                                                 { return Object.GetId() == Event.Target; });
+                if (Target == Objects.end() || Target->GetSurfaceData() == SurfaceState::InvalidSurfaceRuntimeDataHandle)
+                    throw std::runtime_error(Context + ".target must name a Scene object with Surface data.");
+                Event.LocalPosition = glm::vec3(ReadValue(Required(JsonEvent, "localPosition", Context), false,
+                                                         Context + ".localPosition"));
+                if (const auto Normal = JsonEvent.find("localNormal"); Normal != JsonEvent.end())
+                    Event.LocalNormal = glm::vec3(ReadValue(*Normal, false, Context + ".localNormal"));
+                if (glm::dot(Event.LocalNormal, Event.LocalNormal) <= 1.0e-12F)
+                    throw std::runtime_error(Context + ".localNormal must be nonzero.");
+                const std::string Operation = String(JsonEvent, "operation", Context);
+                if (Operation == "add")
+                    Event.Operation = SurfaceState::ESurfaceContactOperation::Add;
+                else if (Operation == "remove")
+                    Event.Operation = SurfaceState::ESurfaceContactOperation::Remove;
+                else
+                    throw std::runtime_error(Context + ".operation must be add or remove.");
+                const std::string Shape = String(JsonEvent, "shape", Context);
+                if (Shape == "circle") Event.Shape = SurfaceState::ESurfaceContactShape::Circle;
+                else if (Shape == "ellipse") Event.Shape = SurfaceState::ESurfaceContactShape::Ellipse;
+                else if (Shape == "rectangle") Event.Shape = SurfaceState::ESurfaceContactShape::Rectangle;
+                else if (Shape == "capsule") Event.Shape = SurfaceState::ESurfaceContactShape::Capsule;
+                else throw std::runtime_error(Context + ".shape is unsupported.");
+                Event.Radius = Float(Required(JsonEvent, "radius", Context), Context + ".radius");
+                Event.Strength = Float(Required(JsonEvent, "strength", Context), Context + ".strength");
+                if (const auto Other = JsonEvent.find("secondaryRadius"); Other != JsonEvent.end())
+                    Event.SecondaryRadius = Float(*Other, Context + ".secondaryRadius");
+                if (const auto Rotation = JsonEvent.find("rotationDegrees"); Rotation != JsonEvent.end())
+                    Event.RotationDegrees = Float(*Rotation, Context + ".rotationDegrees");
+                if (const auto Depth = JsonEvent.find("depth"); Depth != JsonEvent.end())
+                    Event.Depth = Float(*Depth, Context + ".depth");
+                if (const auto Falloff = JsonEvent.find("falloff"); Falloff != JsonEvent.end())
+                    Event.Falloff = Float(*Falloff, Context + ".falloff");
+                if (Event.Radius <= 0.0F || Event.Strength < 0.0F || Event.Falloff < 0.0F || Event.Depth <= 0.0F ||
+                    (Event.Shape != SurfaceState::ESurfaceContactShape::Circle && Event.SecondaryRadius <= 0.0F))
+                    throw std::runtime_error(Context + " has invalid radius, secondary radius, depth, strength, or falloff.");
+                Clip.ContactEvents.push_back(std::move(Event));
+            }
         }
         return Clip;
     }

@@ -645,6 +645,15 @@ namespace MDSS
 
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::GetIO().FontGlobalScale = DisplaySize.x >= 1280.0F && DisplaySize.y >= 800.0F ? 1.15F : 1.0F;
+        if (ImGui::IsKeyPressed(ImGuiKey_F10))
+            TogglePresentationMode();
+        if (ImGui::IsKeyPressed(ImGuiKey_F9) && SceneData.HasDemoAnimation())
+            ReplayDemo(SceneData);
+        if (bPresentationMode)
+        {
+            ImGui::Render();
+            return;
+        }
         SetupDockspace();
 
         // Render the viewport windows before the other editor windows.  The
@@ -735,7 +744,7 @@ namespace MDSS
 
     bool TDebugUI::IsInjectModeEnabled() const noexcept
     {
-        return bInjectMode;
+        return bInjectMode && !bPresentationMode;
     }
 
     SurfaceState::TStateId TDebugUI::GetInjectState() const noexcept
@@ -756,6 +765,26 @@ namespace MDSS
     float TDebugUI::GetInjectFalloff() const noexcept
     {
         return InjectFalloff;
+    }
+
+    SurfaceState::ESurfaceContactOperation TDebugUI::GetInjectOperation() const noexcept
+    {
+        return InjectOperation;
+    }
+
+    SurfaceState::ESurfaceContactShape TDebugUI::GetInjectShape() const noexcept
+    {
+        return InjectShape;
+    }
+
+    float TDebugUI::GetInjectSecondaryRadius() const noexcept
+    {
+        return InjectSecondaryRadius;
+    }
+
+    float TDebugUI::GetInjectRotationDegrees() const noexcept
+    {
+        return InjectRotationDegrees;
     }
 
     std::uint32_t TDebugUI::GetInjectTexelSearchRadius() const noexcept
@@ -805,11 +834,13 @@ namespace MDSS
 
     std::size_t TDebugUI::GetViewportCount() const noexcept
     {
-        return ViewportPanels.size();
+        return bPresentationMode ? 1U : ViewportPanels.size();
     }
 
     glm::vec4 TDebugUI::GetViewportRectNormalized(std::size_t Index) const noexcept
     {
+        if (bPresentationMode)
+            return Index == 0 ? glm::vec4(0.0F, 0.0F, 1.0F, 1.0F) : glm::vec4(0.0F);
         return Index < ViewportPanels.size() ? ViewportPanels[Index].RectNormalized : glm::vec4(0.0F);
     }
 
@@ -880,7 +911,7 @@ namespace MDSS
 
     std::optional<std::size_t> TDebugUI::GetSelectedObject() const noexcept
     {
-        return SelectedObject;
+        return bPresentationMode ? std::nullopt : SelectedObject;
     }
 
     int TDebugUI::GetHoveredGizmoAxis() const noexcept
@@ -1123,6 +1154,7 @@ namespace MDSS
         DrawDemoSceneButton("BrickCube", "BrickCube.Scene");
         ImGui::SameLine();
         DrawDemoSceneButton("Bunny", "Bunny.Scene");
+        DrawDemoSceneButton("State-Driven Geometry", "StateDrivenGeometryDemo.Scene");
         ImGui::TextDisabled("Performance scenes:");
         DrawDemoSceneButton("3 Cubes", "BrickCube_3.Scene");
         ImGui::SameLine();
@@ -1136,6 +1168,35 @@ namespace MDSS
             ImGui::TextWrapped("%s", SceneStatus.c_str());
         }
         ImGui::End();
+    }
+
+    void TDebugUI::ReplayDemo(TScene& SceneData)
+    {
+        bFrameTimeResetRequested = true;
+        SceneData.RestoreInitialState();
+        FrameRenderer->RestartSimulationState();
+        bSimulationPaused = false;
+        AnimationTimeScale = 1.0F;
+        SimulationTimeScale = 1.0F;
+        SceneData.PlayDemoAnimation();
+    }
+
+    void TDebugUI::TogglePresentationMode()
+    {
+        bPresentationMode = !bPresentationMode;
+        if (bPresentationMode)
+        {
+            bPresentationGridWasVisible = FrameRenderer->IsWorldGridVisible();
+            bPresentationAxisWasVisible = FrameRenderer->IsWorldAxisVisible();
+            FrameRenderer->SetWorldGridVisible(false);
+            FrameRenderer->SetWorldAxisVisible(false);
+            FrameRenderer->SetRenderViewMode(0, Rendering::TRenderViewMode::Lit);
+        }
+        else
+        {
+            FrameRenderer->SetWorldGridVisible(bPresentationGridWasVisible);
+            FrameRenderer->SetWorldAxisVisible(bPresentationAxisWasVisible);
+        }
     }
 
     void TDebugUI::DrawAnimationWindow(TScene& SceneData)
@@ -1174,13 +1235,25 @@ namespace MDSS
             BeginLabeledControlRow("Playback");
             if (ImGui::RadioButton("Running", bAnimationPlaying))
             {
-                SceneData.PlayDemoAnimation();
+                if (SceneData.GetDemoAnimationTime() >= SceneData.GetDemoAnimationDuration())
+                    ReplayDemo(SceneData);
+                else
+                    SceneData.PlayDemoAnimation();
             }
             ContinueControlRow(RadioWidth("Paused"));
             if (ImGui::RadioButton("Paused", !bAnimationPlaying))
             {
                 SceneData.PauseDemoAnimation();
             }
+
+            if (ImGui::Button("Replay demo"))
+            {
+                ReplayDemo(SceneData);
+            }
+            ImGui::SameLine();
+            ImGui::Text("%.1f / %.1f s", SceneData.GetDemoAnimationTime(), SceneData.GetDemoAnimationDuration());
+            if (ImGui::Button(bPresentationMode ? "Exit capture (F10)" : "Capture view (F10)"))
+                TogglePresentationMode();
 
             BeginLabeledControlRow("Speed");
             constexpr std::array<std::pair<const char*, float>, 4> SpeedPresets = {
@@ -3003,7 +3076,7 @@ namespace MDSS
             const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
             const Rendering::TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
             const bool  bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
-            const float AccumulationGeometryUpdateGpuMilliseconds =
+            const float StateDrivenGeometryUpdateGpuMilliseconds =
                 Stats.AccumulationGeometryGpuMilliseconds >= 0.0F && Stats.TransferWeightGpuMilliseconds >= 0.0F
                     ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds
                     : -1.0F;
@@ -3011,7 +3084,7 @@ namespace MDSS
                 Stats.RenderPreparationGpuMilliseconds + Stats.SceneDrawGpuMilliseconds +
                     (bFineRenderTimings ? Stats.UIDrawGpuMilliseconds + Stats.RenderPassEndGpuMilliseconds : 0.0F),
                 Stats.SolverGpuMilliseconds,
-                AccumulationGeometryUpdateGpuMilliseconds,
+                StateDrivenGeometryUpdateGpuMilliseconds,
                 Stats.SolverPass1GpuMilliseconds,
                 Stats.SolverPass2GpuMilliseconds,
                 Stats.RenderPreparationGpuMilliseconds,
@@ -3246,9 +3319,9 @@ namespace MDSS
                         AddStateRow("Surface mesh", "%u", Stats.SurfaceTexelMeshResolution);
                         AddStateRow("Overlay mesh", "%u", Stats.OverlayTexelMeshResolution);
                         AddStateRow(
-                            "Use Accumulated Surface",
+                            "State-Driven Geometry",
                             "%s",
-                            FrameRenderer->IsAccumulationGeometryUpdateEnabled() ? "ON" : "OFF");
+                            FrameRenderer->IsStateDrivenGeometryUpdateEnabled() ? "ON" : "OFF");
                         AddStateRow("Fixed timestep", "%s", bFixedSimulationTimestep ? "ON" : "OFF");
                         AddStateRow("Auto substepping", "%s", bAutoSubstepping ? "ON" : "OFF");
                         AddStateRow("Time scale", "%.2fx", SimulationTimeScale);
@@ -4248,12 +4321,12 @@ namespace MDSS
             }
         };
 
-        DrawSectionHeader("Accumulation Geometry", 0.0F, 2.0F);
-        bool bAccumulationGeometryUpdate = FrameRenderer->IsAccumulationGeometryUpdateEnabled();
-        if (ImGui::Checkbox("Use Accumulated Surface", &bAccumulationGeometryUpdate))
+        DrawSectionHeader("State-Driven Geometry", 0.0F, 2.0F);
+        bool bStateDrivenGeometryUpdate = FrameRenderer->IsStateDrivenGeometryUpdateEnabled();
+        if (ImGui::Checkbox("State-Driven Geometry", &bStateDrivenGeometryUpdate))
         {
             bFrameTimeResetRequested = true;
-            FrameRenderer->SetAccumulationGeometryUpdateEnabled(bAccumulationGeometryUpdate);
+            FrameRenderer->SetStateDrivenGeometryUpdateEnabled(bStateDrivenGeometryUpdate);
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
@@ -4363,6 +4436,20 @@ namespace MDSS
         if (ImGui::IsItemHovered())
         {
             SetDescriptionTooltip("반경 가장자리로 갈수록 주입 강도가 감소하는 정도를 조절합니다.");
+        }
+        int Operation = static_cast<int>(InjectOperation);
+        if (ImGui::Combo("Operation", &Operation, "Add\0Remove\0"))
+            InjectOperation = static_cast<SurfaceState::ESurfaceContactOperation>(Operation);
+        int Shape = static_cast<int>(InjectShape);
+        if (ImGui::Combo("Shape", &Shape, "Circle\0Ellipse\0Rectangle\0Capsule\0"))
+            InjectShape = static_cast<SurfaceState::ESurfaceContactShape>(Shape);
+        if (InjectShape != SurfaceState::ESurfaceContactShape::Circle)
+        {
+            const char* SecondaryLabel = InjectShape == SurfaceState::ESurfaceContactShape::Capsule
+                                             ? "Capsule half length"
+                                             : "Second half extent";
+            LabeledSliderFloat(SecondaryLabel, &InjectSecondaryRadius, 0.01F, 2.0F, "%.2f");
+            LabeledSliderFloat("Rotation (degrees)", &InjectRotationDegrees, -180.0F, 180.0F, "%.0f");
         }
         BeginLabeledControlRow("Texel search");
         ImGui::SetNextItemWidth(-1.0F);

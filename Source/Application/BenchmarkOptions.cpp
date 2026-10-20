@@ -74,6 +74,12 @@ namespace MDSS
                 Options.FrameLimit = ParsePositiveInteger(ReadValue(), Argument);
                 HasFrameLimit = true;
             }
+            else if (Argument == "--scene")
+            {
+                Options.ScenePath = std::filesystem::path(std::string(ReadValue()));
+                if (Options.ScenePath.empty())
+                    throw std::invalid_argument("--scene requires a non-empty path.");
+            }
             else if (Argument == "--render-tile-size")
             {
                 Options.RenderTileSize = ParsePositiveInteger(ReadValue(), Argument);
@@ -120,6 +126,8 @@ namespace MDSS
                                           HasMeasurementFrames || HasBenchmarkOutput;
         if (AnyBenchmarkArgument)
         {
+            if (!Options.ScenePath.empty())
+                throw std::invalid_argument("Do not combine --scene with benchmark options.");
             if (HasFrameLimit)
                 throw std::invalid_argument("Do not combine --frames with benchmark options.");
             if (!HasBenchmarkScene || !HasBenchmarkResolution || !HasWarmupFrames || !HasMeasurementFrames ||
@@ -144,7 +152,7 @@ namespace MDSS
 
     const char* GetApplicationUsage() noexcept
     {
-        return "Usage: MDSS [--frames COUNT] [--render-tile-size {8|16|32}] [--per-wg-channel-mask] | "
+        return "Usage: MDSS [--scene PATH] [--frames COUNT] [--render-tile-size {8|16|32}] [--per-wg-channel-mask] | "
                "MDSS --benchmark-scene PATH --benchmark-resolution {128|256|512} "
                "--benchmark-warmup-frames COUNT --benchmark-measure-frames COUNT --benchmark-output PATH "
                "[--render-tile-size {8|16|32}] [--per-wg-channel-mask]";

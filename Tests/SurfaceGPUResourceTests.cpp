@@ -1309,7 +1309,7 @@ namespace
               "GPU solver flux should use the Normal Map-derived NormalWeight from the cache");
     }
 
-    void TestAccumulationGeometryUpdate(TVulkanTestDevice& Vulkan)
+    void TestStateDrivenGeometryUpdate(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -1378,7 +1378,7 @@ namespace
                          WeightsWithGeometryUpdateOff.begin(),
                          [](float A, float B) { return std::abs(A - B) < 1.0e-6F; }) &&
                   std::abs(GeometryWithGeometryUpdateOff[0].Z) < 1.0e-7F,
-              "Accumulation Geometry Update가 꺼진 상태 should retain the static transfer cache and skip dynamic geometry prepasses");
+              "State-Driven Geometry가 꺼진 상태 should retain the static transfer cache and skip dynamic geometry prepasses");
         std::array<float, 6> StateWithGeometryUpdateOff{};
         Instance.GetStateBBuffer().Download(StateWithGeometryUpdateOff.data(), sizeof(StateWithGeometryUpdateOff));
         Check(std::equal(InitialState.begin(),
@@ -1388,7 +1388,7 @@ namespace
               "the static flat geometry should produce no geometry-driven movement in the 형상 갱신 OFF run");
 
         std::uint32_t Flags =
-            SurfaceState::SurfaceSolverAccumulationGeometryUpdateFlag | SurfaceState::SurfaceSolverDistanceWeightFlag |
+            SurfaceState::SurfaceSolverStateDrivenGeometryUpdateFlag | SurfaceState::SurfaceSolverDistanceWeightFlag |
             SurfaceState::SurfaceSolverNormalWeightFlag | SurfaceState::SurfaceSolverProfileBoundaryWeightFlag;
         Vulkan.Execute(
             [&](VkCommandBuffer CommandBuffer)
@@ -1445,7 +1445,7 @@ namespace
                   (ResultingState[4U + Mud] + ResultingState[4U + WaterFilm]) > 0.0F,
               "accumulation geometry should change subsequent GeometryDrive transport toward the downhill neighbor");
         Check(std::abs(InitialTotal - ResultTotal) < 1.0e-5F,
-              "accumulation geometry update transport should conserve State in the no-decay fixture");
+              "state-driven geometry update transport should conserve State in the no-decay fixture");
 
         // A zero-delta step over the just-derived current State must leave both
         // geometry passes untouched.
@@ -1554,7 +1554,7 @@ namespace
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
         SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
         SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const std::uint32_t                            Flags = SurfaceState::SurfaceSolverAccumulationGeometryUpdateFlag |
+        const std::uint32_t                            Flags = SurfaceState::SurfaceSolverStateDrivenGeometryUpdateFlag |
                                     SurfaceState::SurfaceSolverDistanceWeightFlag |
                                     SurfaceState::SurfaceSolverNormalWeightFlag;
         Vulkan.Execute(
@@ -1628,7 +1628,7 @@ int main()
         TestMesoGeometryDrive(Vulkan);
         TestSourceGeometryChannelReuse(Vulkan);
         TestTransferWeightSolver(Vulkan);
-        TestAccumulationGeometryUpdate(Vulkan);
+        TestStateDrivenGeometryUpdate(Vulkan);
         TestSparseGeometryUpdateWeights(Vulkan);
     }
     catch (const TVulkanUnavailable& Exception)

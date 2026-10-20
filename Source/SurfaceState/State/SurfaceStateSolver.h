@@ -19,7 +19,7 @@
 
 namespace MDSS::SurfaceState
 {
-    inline constexpr std::uint32_t SurfaceSolverAccumulationGeometryUpdateFlag = 1U << 6U;
+    inline constexpr std::uint32_t SurfaceSolverStateDrivenGeometryUpdateFlag = 1U << 6U;
     inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
     inline constexpr std::uint32_t SurfaceSolverProfileBoundaryWeightFlag = 1U << 9U;
@@ -63,7 +63,7 @@ namespace MDSS::SurfaceState
 
     struct TSurfaceSolverDebugSettings
     {
-        bool                                                                  bAccumulationGeometryUpdateEnabled = true;
+        bool                                                                  bStateDrivenGeometryUpdateEnabled = true;
         std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, true};
 
@@ -88,7 +88,7 @@ namespace MDSS::SurfaceState
         glm::mat4                               ModelMatrix{1.0F};
         glm::vec3                               GravityWorld{0.0F, 0.0F, -1.0F};
         std::uint32_t                           SolverFlags = 0U;
-        // Feedback ON이면 매 substep에서 height가 필요하고, OFF이면 렌더 직전 step에서만 true면 된다.
+        // State-driven geometry updates need height after each substep; otherwise height is only needed before rendering.
         bool                                    bPrepareAccumulationHeight = true;
         // CPU contact distribution이 sparse input group list를 업로드한 경우 reset/merge pass를 반드시 기록한다.
         bool                                    bHasInputActivation = false;

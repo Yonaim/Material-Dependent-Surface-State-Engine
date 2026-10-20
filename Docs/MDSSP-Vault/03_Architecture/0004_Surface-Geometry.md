@@ -195,7 +195,7 @@ Cache fingerprint와 lifecycle은 [[05_Decisions/0006_Resolution-Surface-Cache|D
 
 ### 적층 두께 기준
 
-초기안은 Surface별 `Meso_Height_Reference`로 표면 위 적층량을 높이로 바꾸는 방식이었다. 현재는 `.SRProfile`의 State별 `thicknessPerAmount`를 사용한다. 이 값은 기준 면적당 적층량 1에 대응하는 world-length 두께이며, 특정 Mesh의 Meso 높이에서 산정하지 않는다. 높이 환산값은 State의 저장량이나 입력·Decay 식을 직접 바꾸지 않는다. Accumulation Geometry Update가 켜져 있으면 바뀐 형상이 후속 수송에 간접적으로 영향을 준다 (State Thickness Per Amount).
+초기안은 Surface별 `Meso_Height_Reference`로 표면 위 적층량을 높이로 바꾸는 방식이었다. 현재는 `.SRProfile`의 State별 `thicknessPerAmount`를 사용한다. 이 값은 기준 면적당 적층량 1에 대응하는 world-length 두께이며, 특정 Mesh의 Meso 높이에서 산정하지 않는다. 높이 환산값은 State의 저장량이나 입력·Decay 식을 직접 바꾸지 않는다. State-Driven Geometry Update가 켜져 있으면 바뀐 형상이 후속 수송에 간접적으로 영향을 준다 (State Thickness Per Amount).
 
 ## World texel 면적
 
@@ -275,7 +275,7 @@ Static Mesh이므로 Actor Transform을 사용해 Surface Normal을 World Space�
 - 최신 유효 Position에서 이웃 거리를 계산한다.
 - Solver는 원시 거리 대신 간선별 TransferWeight를 geometry revision 동안 cache한다.
 - Runtime은 instance별로 모든 지원 State의 적층 높이를 합산하고, step마다 위치·normal·곡률·TransferWeight를 GPU에서 갱신한다.
-- Accumulation Geometry Update는 Simulation/Solver의 `Accumulation Geometry Update` 옵션으로 제어하며 기본 ON이다. ON에서는 적층에 따른 동적 형상과 TransferWeight를 후속 수송에 반영한다. OFF에서는 기존 정적 형상과 CPU TransferWeight cache를 사용한다.
+- State-Driven Geometry Update는 Simulation/Solver의 `State-Driven Geometry Update` 옵션으로 제어하며 기본 ON이다. ON에서는 적층에 따른 동적 형상과 TransferWeight를 후속 수송에 반영한다. OFF에서는 기존 정적 형상과 CPU TransferWeight cache를 사용한다.
 - 시뮬레이션은 각 State의 `.SRProfile` `thicknessPerAmount`로 표면 위 두께를 계산한다. 공통 `Lit height display scale`은 렌더링 전용이며 Solver 형상에 영향을 주지 않는다.
 - GPU 소유와 동기화는 [[03_Architecture/0006_Surface-State-Update|Simulation Optimization]]과 [[03_Architecture/0007_Surface-GPU-Data-Layout|GPU resource 설계]]를 따른다.
 
@@ -369,6 +369,6 @@ $$
 DynamicFinalHeight = MacroHeight + MesoVirtualHeight + AccumulationHeight
 $$
 
-Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Height / Curvature에도 다시 반영한다. Neighbor Distance는 Position 기반으로 필요할 때 계산한다 (Dynamic Accumulation Geometry).
+Accumulation Height로 변한 형상은 Rendering뿐 아니라 다음 Simulation의 Normal / Height / Curvature에도 다시 반영한다. Neighbor Distance는 Position 기반으로 필요할 때 계산한다 (Dynamic State-Driven Geometry).
 
 예를 들어 Wetness / Heat / Burn은 형상 적층이 없도록 `accumulationFactor = 0`을 사용할 수 있고, Mud는 적층을 표현할 수 있다. State 종류는 고정 목록이 아니며, SurfaceWater / Snow 등 다른 State의 적층 동작도 해당 Profile 파라미터로 정의한다.

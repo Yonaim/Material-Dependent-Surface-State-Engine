@@ -9,6 +9,7 @@
 #include "Logger/Logger.h"
 #include "Scene/Camera.h"
 #include "SurfaceState/State/SimulationClock.h"
+#include "SurfaceState/State/SurfaceInput.h"
 #include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <vulkan/vulkan.h>
@@ -103,6 +104,10 @@ namespace MDSS
         [[nodiscard]] float                  GetInjectStrength() const noexcept;
         [[nodiscard]] float                  GetInjectRadius() const noexcept;
         [[nodiscard]] float                  GetInjectFalloff() const noexcept;
+        [[nodiscard]] SurfaceState::ESurfaceContactOperation GetInjectOperation() const noexcept;
+        [[nodiscard]] SurfaceState::ESurfaceContactShape GetInjectShape() const noexcept;
+        [[nodiscard]] float GetInjectSecondaryRadius() const noexcept;
+        [[nodiscard]] float GetInjectRotationDegrees() const noexcept;
         [[nodiscard]] std::uint32_t          GetInjectTexelSearchRadius() const noexcept;
         [[nodiscard]] float                  GetAnimationTimeScale() const noexcept;
         [[nodiscard]] float                  GetSimulationTimeScale() const noexcept;
@@ -136,6 +141,8 @@ namespace MDSS
         void                      DrawSceneWindow(TScene& SceneData);
         void                      ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path);
         void                      DrawAnimationWindow(TScene& SceneData);
+        void                      ReplayDemo(TScene& SceneData);
+        void                      TogglePresentationMode();
         void                      DrawSelectedObjectWindow(TScene& SceneData);
         void                      DrawCameraWindow(TScene& SceneData);
         void                      DrawViewportPanels(TScene& SceneData);
@@ -180,11 +187,18 @@ namespace MDSS
         float                              CameraMoveSpeed = 2.5F;
         bool                               bDockLayoutInitialized = false;
         bool                               bInjectMode = false;
+        bool                               bPresentationMode = false;
+        bool                               bPresentationGridWasVisible = false;
+        bool                               bPresentationAxisWasVisible = false;
         SurfaceState::TStateId             InjectState = 0;
         SurfaceState::TStateId             DebugState = 0;
         float                              InjectStrength = 1.0F;
         float                              InjectRadius = 0.25F;
         float                              InjectFalloff = 1.0F;
+        SurfaceState::ESurfaceContactOperation InjectOperation = SurfaceState::ESurfaceContactOperation::Add;
+        SurfaceState::ESurfaceContactShape InjectShape = SurfaceState::ESurfaceContactShape::Circle;
+        float                              InjectSecondaryRadius = 0.25F;
+        float                              InjectRotationDegrees = 0.0F;
         int                                InjectTexelSearchRadius = 2;
         float                              AnimationTimeScale = 1.0F;
         float                              SimulationTimeScale = 1.0F;

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <glm/vec4.hpp>
+#include "SurfaceState/State/SurfaceInput.h"
 #include <string>
 #include <vector>
 
@@ -49,7 +50,25 @@ namespace MDSS
     {
         float                            DurationSeconds = 0.0F;
         bool                             bLoop = false;
+        bool                             bAutoplay = false;
         std::vector<TDemoAnimationTrack> Tracks;
+        struct TContactEvent
+        {
+            float                                 Time = 0.0F;
+            std::string                           Target;
+            std::string                           State;
+            glm::vec3                             LocalPosition{0.0F};
+            glm::vec3                             LocalNormal{0.0F, 0.0F, 1.0F};
+            SurfaceState::ESurfaceContactOperation Operation = SurfaceState::ESurfaceContactOperation::Add;
+            SurfaceState::ESurfaceContactShape     Shape = SurfaceState::ESurfaceContactShape::Circle;
+            float                                 Radius = 0.0F;
+            float                                 SecondaryRadius = 0.0F;
+            float                                 RotationDegrees = 0.0F;
+            float                                 Depth = 0.0F;
+            float                                 Strength = 0.0F;
+            float                                 Falloff = 1.0F;
+        };
+        std::vector<TContactEvent> ContactEvents;
     };
 
     /** @brief Parse and validate a JSON .DemoAnim against stable Scene object IDs. */
