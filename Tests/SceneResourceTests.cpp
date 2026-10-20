@@ -776,7 +776,7 @@ int main(int Argc, char* Argv[])
                 Window->PollEvents();
                 OverlayUI.BeginFrame(OverlayScene);
                 OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 0.0F);
-                OverlayRenderer.SetAccumulationGeometryUpdateEnabled(true);
+                OverlayRenderer.SetStateDrivenGeometryUpdateEnabled(true);
                 Window->PollEvents();
                 OverlayUI.BeginFrame(OverlayScene);
                 OverlayRenderer.RenderFrame(OverlayScene, OverlayUI, 1.0F / 60.0F, true);

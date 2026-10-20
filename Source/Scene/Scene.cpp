@@ -114,7 +114,7 @@ namespace MDSS
         DemoAnimationPath = std::move(Path);
         DemoAnimation = std::move(Clip);
         DemoAnimationTime = 0.0F;
-        bDemoAnimationPlaying = false;
+        bDemoAnimationPlaying = DemoAnimation->bAutoplay;
     }
 
     const std::filesystem::path& TScene::GetDemoAnimationPath() const noexcept
@@ -124,6 +124,10 @@ namespace MDSS
     bool TScene::HasDemoAnimation() const noexcept
     {
         return DemoAnimation.has_value();
+    }
+    bool TScene::HasDemoContactEvents() const noexcept
+    {
+        return DemoAnimation && !DemoAnimation->ContactEvents.empty();
     }
     bool TScene::IsDemoAnimationPlaying() const noexcept
     {
@@ -171,10 +175,12 @@ namespace MDSS
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
     }
 
-    void TScene::AdvanceDemoAnimation(float DeltaTime)
+    std::vector<TDemoAnimationClip::TContactEvent> TScene::AdvanceDemoAnimation(float DeltaTime)
     {
+        std::vector<TDemoAnimationClip::TContactEvent> Fired;
         if (!DemoAnimation || !bDemoAnimationPlaying || !std::isfinite(DeltaTime) || DeltaTime <= 0.0F)
-            return;
+            return Fired;
+        const float PreviousTime = DemoAnimationTime;
         DemoAnimationTime += DeltaTime;
         if (DemoAnimation->bLoop)
             DemoAnimationTime = std::fmod(DemoAnimationTime, DemoAnimation->DurationSeconds);
@@ -184,6 +190,13 @@ namespace MDSS
             bDemoAnimationPlaying = false;
         }
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
+        for (const auto& Event : DemoAnimation->ContactEvents)
+        {
+            if ((Event.Time > PreviousTime || (PreviousTime == 0.0F && Event.Time == 0.0F)) &&
+                Event.Time <= DemoAnimationTime)
+                Fired.push_back(Event);
+        }
+        return Fired;
     }
 
 #pragma endregion

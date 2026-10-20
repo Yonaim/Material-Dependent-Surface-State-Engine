@@ -322,7 +322,7 @@ namespace MDSS::SurfaceState
             Item.GeometryIndirectOffset =
                 static_cast<VkDeviceSize>(SparseLayout.GeometryCommandWord * sizeof(std::uint32_t));
 
-            Item.bUpdateGeometry = (Step.SolverFlags & SurfaceSolverAccumulationGeometryUpdateFlag) != 0U;
+            Item.bUpdateGeometry = (Step.SolverFlags & SurfaceSolverStateDrivenGeometryUpdateFlag) != 0U;
             Item.bPrepareAccumulationHeight = Step.bPrepareAccumulationHeight || Item.bUpdateGeometry;
             Item.bNeedsPreSolverGeometryBuild =
                 Item.bUpdateGeometry && (Step.SolverFlags & SurfaceSolverForceFullGeometryFlag) != 0U;
@@ -339,7 +339,7 @@ namespace MDSS::SurfaceState
 
             Item.PostConstants = Item.Constants;
             // A force-full prebuild makes CurrentState geometry valid before Pass1. The newly-produced state can
-            // then use normal sparse dirty propagation. If no prebuild happened (feedback OFF), keep ForceFull
+            // then use normal sparse dirty propagation. If no prebuild happened (state-driven updates OFF), keep ForceFull
             // so the final render-height pass refreshes every texel without cache/revision bookkeeping.
             if (Item.bNeedsPreSolverGeometryBuild)
                 Item.PostConstants.Flags &= ~SurfaceSolverForceFullGeometryFlag;

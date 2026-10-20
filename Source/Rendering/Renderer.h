@@ -411,8 +411,8 @@ namespace MDSS::Rendering
         void               SetDebugNormalWeightEnabled(bool bEnabled);
         [[nodiscard]] bool IsDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term) const noexcept;
         void               SetDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term, bool bEnabled);
-        [[nodiscard]] bool IsAccumulationGeometryUpdateEnabled() const noexcept;
-        void               SetAccumulationGeometryUpdateEnabled(bool bEnabled);
+        [[nodiscard]] bool IsStateDrivenGeometryUpdateEnabled() const noexcept;
+        void               SetStateDrivenGeometryUpdateEnabled(bool bEnabled);
 
         [[nodiscard]] bool GetFlipNormalY() const noexcept;
         void               SetFlipNormalY(bool bEnabled);

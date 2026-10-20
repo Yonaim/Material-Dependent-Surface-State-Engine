@@ -44,6 +44,10 @@ namespace MDSS
                          float                                    Strength,
                          float                                    Radius,
                          float                                    Falloff,
+                         SurfaceState::ESurfaceContactOperation  Operation,
+                         SurfaceState::ESurfaceContactShape      Shape,
+                         float                                    SecondaryRadius,
+                         float                                    RotationDegrees,
                          std::uint32_t                            TexelSearchRadius,
                          bool                                     bHotkeySuppressed);
 

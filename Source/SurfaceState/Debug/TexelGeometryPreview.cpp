@@ -214,7 +214,7 @@ namespace MDSS::SurfaceState
     void TTexelGeometryPreview::InvalidateSparseOutput() noexcept
     {
         // This changes only derived display geometry. Rebuild the sparse render schedule once,
-        // without changing simulation state or simulation geometry feedback.
+        // without changing simulation state or simulation state-driven geometry.
         for (auto& [Instance, Output] : Outputs)
         {
             (void)Instance;

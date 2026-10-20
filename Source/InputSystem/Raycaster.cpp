@@ -127,6 +127,7 @@ namespace MDSS
                 Result.TriangleID = static_cast<std::uint32_t>(TriangleIndex);
                 Result.Barycentric = Barycentric;
                 Result.WorldPosition = WorldOrigin + WorldDirection * Distance;
+                Result.WorldNormal = glm::normalize(glm::cross(B - A, C - A));
                 Result.SimulationUV =
                     Barycentric.x * Vertices[IA].UV + Barycentric.y * Vertices[IB].UV + Barycentric.z * Vertices[IC].UV;
                 Result.Distance = Distance;

@@ -76,7 +76,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
         [[nodiscard]] const TSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
         void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
-        void SetAccumulationGeometryUpdateEnabled(bool bEnabled) noexcept;
+        void SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept;
         void SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
         void SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept { return bRawFluxCacheEnabled; }

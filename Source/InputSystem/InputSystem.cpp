@@ -37,6 +37,10 @@ namespace MDSS
                                    float                                    Strength,
                                    float                                    Radius,
                                    float                                    Falloff,
+                                   SurfaceState::ESurfaceContactOperation  Operation,
+                                   SurfaceState::ESurfaceContactShape      Shape,
+                                   float                                    SecondaryRadius,
+                                   float                                    RotationDegrees,
                                    std::uint32_t                            TexelSearchRadius,
                                    bool                                     bHotkeySuppressed)
     {
@@ -90,6 +94,16 @@ namespace MDSS
         Contact.Radius = Radius;
         Contact.Strength = Strength;
         Contact.Falloff = Falloff;
+        Contact.Operation = Operation;
+        Contact.Shape = Shape;
+        Contact.SecondaryRadius = SecondaryRadius;
+        Contact.RotationDegrees = RotationDegrees;
+        if (Shape != SurfaceState::ESurfaceContactShape::Circle)
+        {
+            Contact.bPlanar = true;
+            Contact.PlaneNormal = Hit.WorldNormal;
+            Contact.PlaneHalfDepth = Radius;
+        }
         Contact.TexelSearchRadius = TexelSearchRadius;
         Contact.bHasSimulationMapping = true;
         Contact.TargetTriangle = Hit.TriangleID;

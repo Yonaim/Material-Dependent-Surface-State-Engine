@@ -53,13 +53,14 @@ namespace MDSS
         void SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip);
         [[nodiscard]] const std::filesystem::path&             GetDemoAnimationPath() const noexcept;
         [[nodiscard]] bool                                     HasDemoAnimation() const noexcept;
+        [[nodiscard]] bool                                     HasDemoContactEvents() const noexcept;
         [[nodiscard]] bool                                     IsDemoAnimationPlaying() const noexcept;
         [[nodiscard]] float                                    GetDemoAnimationTime() const noexcept;
         [[nodiscard]] float                                    GetDemoAnimationDuration() const noexcept;
         void                                                   PlayDemoAnimation();
         void                                                   PauseDemoAnimation() noexcept;
         void                                                   RestartDemoAnimation();
-        void                                                   AdvanceDemoAnimation(float DeltaTime);
+        std::vector<TDemoAnimationClip::TContactEvent> AdvanceDemoAnimation(float DeltaTime);
         void                                                   AddInitialContact(TSceneInitialContact Contact);
         [[nodiscard]] const std::vector<TSceneInitialContact>& GetInitialContacts() const noexcept;
 

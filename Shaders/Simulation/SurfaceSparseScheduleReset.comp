@@ -4,7 +4,7 @@
  */
 #version 450
 
-const uint AccumulationGeometryUpdateFlag = 1u << 6u;
+const uint StateDrivenGeometryUpdateFlag = 1u << 6u;
 const uint SparseGeometryFlag = 1u << 13u;
 const uint SparseSolverFlag = 1u << 15u;
 const uint SparseAccumulationHeightFlag = 1u << 16u;
@@ -86,7 +86,7 @@ void main()
     bool NeedWorkgroupMask = (Solver.Flags & PerWorkgroupChannelMaskFlag) != 0u;
     bool NeedSparseAccumulation = (Solver.Flags & SparseAccumulationHeightFlag) != 0u &&
                                   (Solver.Flags & PrepareAccumulationHeightFlag) != 0u;
-    bool NeedGeometry = (Solver.Flags & AccumulationGeometryUpdateFlag) != 0u;
+    bool NeedGeometry = (Solver.Flags & StateDrivenGeometryUpdateFlag) != 0u;
     bool NeedSparseGeometry = NeedGeometry && (Solver.Flags & SparseGeometryFlag) != 0u;
 
     // Only metadata that will be consumed this step is cleared. The current persistent set must remain

@@ -43,7 +43,7 @@ namespace MDSS::SurfaceState
         {
             Solver = std::make_unique<TSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
         }
-        // Dynamic geometry buffers start empty.  The first feedback-enabled solver step performs one
+        // Dynamic geometry buffers start empty.  The first state-driven solver step performs one
         // force-full bootstrap before Pass 1, then normal steps use Solver -> Height -> Geometry -> Weights.
         bForceFullGeometryOnNextStep = true;
         bSeedPersistentActivityOnNextStep = true;
@@ -113,7 +113,7 @@ namespace MDSS::SurfaceState
         PendingContacts.clear();
         GPUResources->ResetStates();
         // Resetting State invalidates the derived simulation geometry.  Rebuild it before the next
-        // feedback-enabled solver step rather than tracking a separate revision/cache key.
+        // state-driven solver step rather than tracking a separate revision/cache key.
         bForceFullGeometryOnNextStep = true;
         bSeedPersistentActivityOnNextStep = true;
         std::fill(PendingInputActivation.begin(), PendingInputActivation.end(), false);
@@ -208,7 +208,13 @@ namespace MDSS::SurfaceState
                 !std::isfinite(Contact.WorldPosition.x) || !std::isfinite(Contact.WorldPosition.y) ||
                 !std::isfinite(Contact.WorldPosition.z) || !std::isfinite(Contact.Radius) || Contact.Radius <= 0.0F ||
                 !std::isfinite(Contact.Strength) || Contact.Strength < 0.0F || !std::isfinite(Contact.Falloff) ||
-                Contact.Falloff < 0.0F)
+                Contact.Falloff < 0.0F || !std::isfinite(Contact.SecondaryRadius) ||
+                !std::isfinite(Contact.RotationDegrees) || !std::isfinite(Contact.PlaneHalfDepth) ||
+                (Contact.Shape != ESurfaceContactShape::Circle && Contact.SecondaryRadius <= 0.0F) ||
+                (Contact.bPlanar && (Contact.PlaneHalfDepth <= 0.0F ||
+                                     !std::isfinite(Contact.PlaneNormal.x) || !std::isfinite(Contact.PlaneNormal.y) ||
+                                     !std::isfinite(Contact.PlaneNormal.z) ||
+                                     glm::dot(Contact.PlaneNormal, Contact.PlaneNormal) <= 1.0e-12F)))
             {
                 Diagnose("Rejected contact with an invalid instance, State, radius, strength, or falloff.");
                 continue;
@@ -422,6 +428,13 @@ namespace MDSS::SurfaceState
             bool              bOverlappedNoSimulationSurface = false;
             std::size_t       AppliedTexelCount = 0;
             const std::size_t StateChannel = Contact.State;
+            const glm::vec3 PlaneNormal = Contact.bPlanar ? glm::normalize(Contact.PlaneNormal) : glm::vec3(0, 0, 1);
+            const glm::vec3 Reference = std::abs(PlaneNormal.x) < 0.9F ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+            const glm::vec3 Tangent = glm::normalize(Reference - PlaneNormal * glm::dot(Reference, PlaneNormal));
+            const glm::vec3 Bitangent = glm::cross(PlaneNormal, Tangent);
+            const float Angle = glm::radians(Contact.RotationDegrees);
+            const float CosAngle = std::cos(Angle);
+            const float SinAngle = std::sin(Angle);
             for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
             {
                 const TSurfaceTexelGeometry& Texel = Texels[TexelIndex];
@@ -433,8 +446,36 @@ namespace MDSS::SurfaceState
                 const TSurfaceProfileIndex ProfileIndex =
                     Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(TexelIndex));
                 const glm::vec3 WorldTexelPosition = glm::vec3(Model * glm::vec4(Texel.Position, 1.0F));
-                const float     Distance = glm::length(WorldTexelPosition - InfluenceCenter);
-                if (!std::isfinite(Distance) || Distance > Contact.Radius)
+                const glm::vec3 Offset = WorldTexelPosition - InfluenceCenter;
+                float NormalizedDistance = glm::length(Offset) / Contact.Radius;
+                if (Contact.bPlanar)
+                {
+                    if (std::abs(glm::dot(Offset, PlaneNormal)) > Contact.PlaneHalfDepth)
+                        continue;
+                    const float U = glm::dot(Offset, Tangent);
+                    const float V = glm::dot(Offset, Bitangent);
+                    const float X = CosAngle * U + SinAngle * V;
+                    const float Y = -SinAngle * U + CosAngle * V;
+                    switch (Contact.Shape)
+                    {
+                        case ESurfaceContactShape::Circle:
+                            NormalizedDistance = glm::length(glm::vec2(X, Y)) / Contact.Radius;
+                            break;
+                        case ESurfaceContactShape::Ellipse:
+                            NormalizedDistance = glm::length(glm::vec2(X / Contact.Radius,
+                                                                        Y / Contact.SecondaryRadius));
+                            break;
+                        case ESurfaceContactShape::Rectangle:
+                            NormalizedDistance = std::max(std::abs(X) / Contact.Radius,
+                                                          std::abs(Y) / Contact.SecondaryRadius);
+                            break;
+                        case ESurfaceContactShape::Capsule:
+                            NormalizedDistance = glm::length(glm::vec2(std::max(std::abs(X) - Contact.SecondaryRadius,
+                                                                                 0.0F), Y)) / Contact.Radius;
+                            break;
+                    }
+                }
+                if (!std::isfinite(NormalizedDistance) || NormalizedDistance > 1.0F)
                 {
                     continue;
                 }
@@ -451,12 +492,12 @@ namespace MDSS::SurfaceState
                     continue;
                 }
 
-                const float NormalizedDistance = std::clamp(Distance / Contact.Radius, 0.0F, 1.0F);
                 const float LinearFalloff = 1.0F - NormalizedDistance;
                 const float ContactWeight = Contact.Falloff == 0.0F ? 1.0F : std::pow(LinearFalloff, Contact.Falloff);
                 const std::size_t ScalarIndex = GetSurfaceGPUStateValueIndex(TexelIndex, StateChannel, ChannelCount);
                 const float       AreaScale = GetSurfaceWorldTexelArea(Texel, Model) / SurfaceStateReferenceArea;
-                const float Delta = Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
+                const float Sign = Contact.Operation == ESurfaceContactOperation::Remove ? -1.0F : 1.0F;
+                const float Delta = Sign * Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
                 InputDeltas[InstanceIndex][ScalarIndex] += Delta;
                 if (Delta != 0.0F)
                 {
@@ -766,14 +807,14 @@ namespace MDSS::SurfaceState
             if (bSparseSimulationGeometryEnabled)
                 SolverFlags |= SurfaceSolverSparseGeometryFlag;
 
-            // Height validity is independent of simulation feedback. If feedback is OFF the full rebuild
+            // Height validity is independent of state-driven geometry updates. If updates are OFF the full rebuild
             // is deferred until the final render-height step instead of adding revision/cache bookkeeping.
             if (bRebuildStaticWeights || bForceFullGeometryOnNextStep)
                 SolverFlags |= SurfaceSolverForceFullGeometryFlag;
 
-            if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled)
+            if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled)
             {
-                SolverFlags |= SurfaceSolverAccumulationGeometryUpdateFlag;
+                SolverFlags |= SurfaceSolverStateDrivenGeometryUpdateFlag;
                 if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight))
                     SolverFlags |= SurfaceSolverDistanceWeightFlag;
                 if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight))
@@ -805,9 +846,9 @@ namespace MDSS::SurfaceState
         if (!InstanceSteps.empty())
             bSeedPersistentActivityOnNextStep = false;
         bTransferWeightSettingsDirty = false;
-        // Feedback ON always derives Height after the step. Feedback OFF may execute several fixed substeps;
+        // State-driven geometry updates always derive Height after the step. When disabled, several fixed substeps may run;
         // keep the invalidation alive until the final substep actually prepares render height.
-        if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled || bPrepareRenderHeight)
+        if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled || bPrepareRenderHeight)
             bForceFullGeometryOnNextStep = false;
     }
 
@@ -833,7 +874,7 @@ namespace MDSS::SurfaceState
         if (bHalfDynamicWeightsEnabled == bEnabled)
             return;
         bHalfDynamicWeightsEnabled = bEnabled;
-        // Static weights must be re-uploaded in the selected representation; dynamic feedback then rebuilds from it.
+        // Static weights must be re-uploaded in the selected representation; dynamic state-driven geometry then rebuilds from it.
         bTransferWeightSettingsDirty = true;
         bForceFullGeometryOnNextStep = true;
         bStableDeltaTimeDirty = true;
@@ -871,11 +912,11 @@ namespace MDSS::SurfaceState
         return DebugSolverSettings;
     }
 
-    void TSurfaceStateSystem::SetAccumulationGeometryUpdateEnabled(bool bEnabled) noexcept
+    void TSurfaceStateSystem::SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept
     {
-        if (DebugSolverSettings.bAccumulationGeometryUpdateEnabled != bEnabled)
+        if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled != bEnabled)
             bTransferWeightSettingsDirty = true;
-        DebugSolverSettings.bAccumulationGeometryUpdateEnabled = bEnabled;
+        DebugSolverSettings.bStateDrivenGeometryUpdateEnabled = bEnabled;
     }
 
     void TSurfaceStateSystem::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept
