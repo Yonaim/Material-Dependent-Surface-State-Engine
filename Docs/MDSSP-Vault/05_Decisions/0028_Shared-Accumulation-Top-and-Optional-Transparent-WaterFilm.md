@@ -18,7 +18,7 @@ Decision 0019의 초기 구현은 Mud·WaterFilm·Lava를 각각 별도 윗면�
 2. 기본 Lit 경로는 지원되는 State의 물리 누적 높이 `H_total`로 공통 윗면과 필요한 경계 옆면을 만든다. 공통 fragment shader가 Heat·Mud·WaterFilm·Lava의 State saturation을 읽어 재질을 합성한다. WaterFilm은 기본 경로에서 얇은 막의 tint·roughness·반사 반응으로 처리한다. 윗면은 불투명하고 depth를 기록한다.
 3. `Transparent surface` 옵션을 켜면 물을 제외한 `H_opaque`의 공통 불투명 윗면과 물을 포함한 `H_total`의 투명 WaterFilm 윗면을 사용한다. WaterFilm은 불투명 표면 뒤에 alpha blending으로 합성하고 depth를 기록하지 않는다. 물의 옆면은 `H_opaque`와 `H_total` 사이에만 만든다. 두 윗면은 같은 정적 texel topology를 사용하지만 서로 다른 높이 출력과 graphics pipeline으로 그린다.
 4. `H_opaque`는 렌더 경로에서 WaterFilm 채널을 제외해 임시로 계산한다. 지속적인 층 번호나 Layer Stack은 만들지 않는다. 기본 경로에는 투명 WaterFilm 패스가 없다.
-5. Solver의 Accumulation Geometry Update는 옵션과 관계없이 모든 지원 State가 기여한 물리 `H_total`을 사용한다. 렌더링 전용 높이 배율과 smoothing은 Solver에 입력하지 않는다.
+5. Solver의 State-Driven Geometry Update는 옵션과 관계없이 모든 지원 State가 기여한 물리 `H_total`을 사용한다. 렌더링 전용 높이 배율과 smoothing은 Solver에 입력하지 않는다.
 6. State ID는 로드된 `.SRProfile`의 `states`에서 Registry가 부여한다. Heat·Mud·WaterFilm·Lava는 현재 데모 adapter가 조회하는 이름이다.
 7. 공통 윗면의 표시 범위는 누적 높이뿐 아니라 해당 재질 State의 포화도도 사용한다. 두께가 0이어도 State가 있는 표면은 재질을 합성한다. 투명 옵션의 불투명 윗면 표시 범위에서는 WaterFilm을 제외한다.
 

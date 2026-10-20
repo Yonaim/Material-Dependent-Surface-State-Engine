@@ -46,7 +46,7 @@
 
 - State Heatmap은 용량 기준 0–100%를 표시하고 초과량은 주황색으로 표시한다. 실제 총량은 Texel Inspector에서 확인한다. 표시 결과는 Solver에 입력되지 않는다.
 - Accumulation 높이 색은 선택 Profile의 Capacity로 제한된 높이를 100% 기준으로 정규화한다. Total/Cavity/Following은 각 성분의 기준 높이를 사용하며, Cavity Fill은 cavity depth 대비 0–100%다. `Display scale`은 형상 표시만 과장하며 색상 기준과 Solver 형상에는 반영하지 않는다.
-- 적층 뷰는 선택 State를 따로 미리보기한다. Solver의 `Use Accumulated Surface`는 지원되는 모든 적층 State를 합산해 이후 흐름 계산에 반영하는 별도 옵션이다 ([[05_Decisions/0014_Accumulation-Debug-and-Texel-Inspector|Decision 0014]]).
+- 적층 뷰는 선택 State를 따로 미리보기한다. Solver의 `State-Driven Geometry`는 지원되는 모든 적층 State를 합산해 이후 흐름 계산에 반영하는 별도 옵션이다 ([[05_Decisions/0014_Accumulation-Debug-and-Texel-Inspector|Decision 0014]]).
 - Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[05_Decisions/0015_Texel-Geometry-Preview|Decision 0015]]).
 - Wireframe 뷰 설명 상자에서 선을 흰색으로 통일할지 선택하고, GPU가 wide lines를 지원하면 선 굵기도 조절한다. 기본 굵기는 2 px다.
 - Meso·Accumulation·Final Geometry 뷰 설명 상자에서 `Height Surface Grid`의 Off / Overlay / Grid only와 셀당 texel 수를 조절한다. Grid only도 어두운 면으로 depth를 유지한다. 새 View Mode는 추가하지 않는다 ([[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]]).
@@ -133,7 +133,7 @@ Simulation 상태 overlay에서 step 수, step 간격, 진행 시간과 backlog�
 ## Solver 항목
 
 - Solver debug terms는 `Transport`와 `Decay` 제목 아래에서 runtime에 켜고 끌 수 있다:
-  - 탭 상단 `Accumulation Geometry`의 `Use Accumulated Surface`는 기본 ON이다. ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
+  - 탭 상단 `State-Driven Geometry`의 `State-Driven Geometry`는 기본 ON이다. ON은 Solver step마다 DynamicGeometry와 edge weight를 갱신하는 GPU dispatch 두 개를 추가한다. OFF는 기존 정적 Geometry cache 경로를 쓴다.
   - Transport: `Saturation spreading` (`SaturationDrive`), `Gravity-guided flow` (`GeometryDrive`), DirectionDrive: MesoNormal, DistanceWeight, NormalWeight, ProfileBoundaryWeight
   - Decay: Decay, `Cavity decay protection` (`ConcavityRetention`)
 - Raw Flux Cache와 시뮬레이션 최적화 옵션은 우측 `Settings` 탭에서 조절한다. Fixed timestep과 Auto substepping도 같은 탭의 `Resolution & Time`에 둔다.

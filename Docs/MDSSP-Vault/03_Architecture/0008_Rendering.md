@@ -40,7 +40,7 @@ flowchart LR
 State는 Capacity를 넘을 수 있다 ([[05_Decisions/0004_State-Overcapacity-Transport|Decision 0004]]). Heatmap과 외관 remap은 필요하면 `clamp(State / Capacity, 0, 1)`을 표시용으로 사용하되 GPU State 및 Transport용 Saturation은 바꾸지 않는다.
 
 - State Heatmap은 선택 State의 `State / (Profile Capacity × AreaScale)`를 표시한다. 100% 초과는 주황색으로 구분한다. 실제 총량은 Texel Inspector에서 확인한다.
-- Heat·Mud의 Lit 반응과 적층 표면 형상을 반영하는 Solver 옵션을 사용한다. `Use Accumulated Surface`는 기본 ON이며 필요하면 Solver 설정에서 끌 수 있다.
+- Heat·Mud의 Lit 반응과 적층 표면 형상을 반영하는 Solver 옵션을 사용한다. `State-Driven Geometry`는 기본 ON이며 필요하면 Solver 설정에서 끌 수 있다.
 
 ## 외관 변화 (State-based Appearance Changes)
 
@@ -75,7 +75,7 @@ Mud·Snow처럼 실제 두께 변화가 중요한 적층은 화면상 외관 변
 
 ## 적층 디버그 미리보기
 
-Accumulation은 선택 State의 Capacity 제한·기준면적 환산량에서 총 높이·Cavity·Following·Fill 비율을 계산한다. Capacity 초과량은 State 저장과 수송에 남지만 해당 State의 형상 기여에는 포함하지 않는다. Accumulation Geometry Update도 같은 Capacity 제한을 모든 적층 State에 적용해, 화면과 시뮬레이션이 같은 높이 변환을 사용한다. Compute는 최신 State와 Meso 높이에서 texel별 표시 위치·법선을 만들고, vertex shader는 그 결과를 원본 triangle과 texel 중심으로 세분한 연결면에 표시한다. Final Geometry와 Accumulation heatmap은 같은 변위 면을 사용한다. Meso Color/Displacement도 texel 연결면을 사용하며 적층을 제외한다. 초기 원본 메시 정점 변위의 밀도 제한을 제거했고, 원본 position/edge topology의 공통 높이 stencil과 경계 분할로 UV seam을 봉합한다 ([[05_Decisions/0017_Source-Topology-Seam-Stitching|Decision 0017]]). 원본 메시의 열린 경계는 유지한다. 원본 Normal Map은 중복 적용하지 않는다.
+Accumulation은 선택 State의 Capacity 제한·기준면적 환산량에서 총 높이·Cavity·Following·Fill 비율을 계산한다. Capacity 초과량은 State 저장과 수송에 남지만 해당 State의 형상 기여에는 포함하지 않는다. State-Driven Geometry Update도 같은 Capacity 제한을 모든 적층 State에 적용해, 화면과 시뮬레이션이 같은 높이 변환을 사용한다. Compute는 최신 State와 Meso 높이에서 texel별 표시 위치·법선을 만들고, vertex shader는 그 결과를 원본 triangle과 texel 중심으로 세분한 연결면에 표시한다. Final Geometry와 Accumulation heatmap은 같은 변위 면을 사용한다. Meso Color/Displacement도 texel 연결면을 사용하며 적층을 제외한다. 초기 원본 메시 정점 변위의 밀도 제한을 제거했고, 원본 position/edge topology의 공통 높이 stencil과 경계 분할로 UV seam을 봉합한다 ([[05_Decisions/0017_Source-Topology-Seam-Stitching|Decision 0017]]). 원본 메시의 열린 경계는 유지한다. 원본 Normal Map은 중복 적용하지 않는다.
 
 Inspector는 같은 GPU 식의 선택 texel 결과를 완료 frame fence 이후 표시한다. `.SRProfile`의 State별 `thicknessPerAmount`를 사용하고, 공통 `Lit height display scale`은 렌더링 전용이다. Simulation은 같은 Profile 두께값으로 모든 지원 State의 물리 높이를 합산하며 표시 배율을 읽지 않는다. 렌더링은 같은 정적 texel topology에서 `H_total`을 기본 공통 윗면에 사용한다. 투명 옵션에서는 물을 제외한 `H_opaque`와 물을 포함한 `H_total`을 각각 사용한다. 물리적 다중 Layer Stack은 없다. [[05_Decisions/0014_Accumulation-Debug-and-Texel-Inspector|Decision 0014]], [[05_Decisions/0015_Texel-Geometry-Preview|Decision 0015]], [[05_Decisions/0028_Shared-Accumulation-Top-and-Optional-Transparent-WaterFilm|Decision 0028]]을 따른다.
 
@@ -85,7 +85,7 @@ Registry는 로드된 `.SRProfile`의 State 종류를 유지한다. 데모 adapt
 
 `Lit height display scale`은 Lit과 선택 State 디버그 미리보기가 공유하는 렌더링 설정이다. 표시 설정은 State·Solver에 피드백하지 않는다. 범용 State ID→효과 시스템, 물리 재질별 다중 layer·환경 조명은 후속 설계다. Texel Grid와 초기 Wetness Lit 구현 이력은 [[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]], 현재 Heat appearance는 [[05_Decisions/0027_Heat-Red-Lit-Demo|Decision 0027]]을 따른다.
 
-[[05_Decisions/0019_Base-Surface-and-Accumulation-Overlay|Decision 0019]]에서 Base와 Overlay를 분리했다. 후속 [[05_Decisions/0028_Shared-Accumulation-Top-and-Optional-Transparent-WaterFilm|Decision 0028]]에서 State별 Overlay Draw를 공통 누적 윗면과 선택적 투명 WaterFilm으로 바꿨다. Accumulation Geometry Update는 렌더 옵션과 무관하게 모든 지원 State의 `H_total`을 다음 Solver step에 사용한다. 화면 품질과 성능 검증은 진행 중이다.
+[[05_Decisions/0019_Base-Surface-and-Accumulation-Overlay|Decision 0019]]에서 Base와 Overlay를 분리했다. 후속 [[05_Decisions/0028_Shared-Accumulation-Top-and-Optional-Transparent-WaterFilm|Decision 0028]]에서 State별 Overlay Draw를 공통 누적 윗면과 선택적 투명 WaterFilm으로 바꿨다. State-Driven Geometry Update는 렌더 옵션과 무관하게 모든 지원 State의 `H_total`을 다음 Solver step에 사용한다. 화면 품질과 성능 검증은 진행 중이다.
 
 ## 주요 Rendering Shader 인터페이스
 
