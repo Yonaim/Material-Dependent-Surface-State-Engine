@@ -1,0 +1,6 @@
+{
+  "type": "SurfaceProfileMap",
+  "version": 1,
+  "profiles": ["../SurfaceProfiles/Showcase.SRProfile"],
+  "surfaces": [{ "surfaceId": 0, "profileIndex": 0 }]
+}

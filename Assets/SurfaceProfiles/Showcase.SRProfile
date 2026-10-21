@@ -1,0 +1,56 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 4,
+  "name": "Showcase",
+  "states": {
+    "heat": {
+      "stateCapacity": 1.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.2,
+      "gravityFlowFactor": 0.0,
+      "decayRate": 0.03,
+      "cavityDecayProtectionFactor": 0.5,
+      "cavityExitResistanceFactor": 1.0,
+      "accumulationFactor": 0.0,
+      "cavityFillFactor": 0.0,
+      "thicknessPerAmount": 0.01
+    },
+    "mud": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.03,
+      "gravityFlowFactor": 0.005,
+      "decayRate": 0.005,
+      "cavityDecayProtectionFactor": 0.9,
+      "cavityExitResistanceFactor": 0.85,
+      "accumulationFactor": 0.15,
+      "cavityFillFactor": 0.8,
+      "thicknessPerAmount": 0.05
+    },
+    "waterfilm": {
+      "stateCapacity": 1.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 0.2,
+      "gravityFlowFactor": 0.3412,
+      "decayRate": 0.03,
+      "cavityDecayProtectionFactor": 0.5,
+      "cavityExitResistanceFactor": 1.0,
+      "accumulationFactor": 0.15,
+      "cavityFillFactor": 0.8,
+      "thicknessPerAmount": 0.05
+    },
+    "lava": {
+      "stateCapacity": 2.0,
+      "inputFactor": 1.0,
+      "saturationSpreadFactor": 1.0,
+      "gravityFlowFactor": 0.2,
+      "decayRate": 0.0,
+      "cavityDecayProtectionFactor": 1.0,
+      "cavityExitResistanceFactor": 1.0,
+      "accumulationFactor": 0.08,
+      "cavityFillFactor": 0.9,
+      "thicknessPerAmount": 0.0
+    }
+  },
+  "transitions": []
+}

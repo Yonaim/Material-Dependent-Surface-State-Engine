@@ -1,0 +1,5 @@
+newmtl BasaltAltar
+Kd 1 1 1
+d 1
+map_Kd Rock07DisplayAlbedo.png
+norm BasaltNormal.jpg

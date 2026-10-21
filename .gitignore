@@ -17,6 +17,10 @@ Config/EditorLayout.ini
 *.o
 *.obj
 !Assets/Meshes/BrickCube/BrickCube_512.obj
+!Assets/Meshes/BasaltAltar/*.obj
+!Assets/Meshes/LionFountain/*.obj
+!Assets/Meshes/MarbleBust/*.obj
+__pycache__/
 
 # Precompiled Headers
 *.gch

@@ -1,0 +1,5 @@
+newmtl FountainStonework
+Kd 1 1 1
+d 1
+map_Kd FountainStoneAlbedo.jpg
+norm FountainStoneNormal.jpg

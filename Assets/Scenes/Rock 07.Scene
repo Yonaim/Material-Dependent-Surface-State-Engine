@@ -1,0 +1,20 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/BasaltAltar.DemoAnim",
+  "camera": {
+    "position": [2.45, -3.55, 1.90],
+    "target": [0.0, 0.0, 0.60],
+    "verticalFieldOfViewDegrees": 47.0
+  },
+  "simulationResolution": 256,
+  "objects": [
+    {
+      "id": "basalt_rock",
+      "mesh": "../Meshes/BasaltAltar/BasaltAltar.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/BasaltAltar.SurfaceProfileMap",
+      "transform": { "position": [0.0, 0.0, 0.0], "rotationDegrees": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0] }
+    }
+  ],
+  "initialContacts": []
+}
