@@ -29,6 +29,7 @@ namespace MDSS::Asset
 namespace MDSS::SurfaceState
 {
     class TSurfaceDataManager;
+    class TSurfaceGPUBufferPool;
 }
 namespace MDSS::GPU
 {
@@ -57,6 +58,8 @@ namespace MDSS::SurfaceState
         std::uint32_t                       BoundaryCount = 0;
         std::vector<TSurfaceTexelMeshRange> Ranges;
         std::map<std::uint32_t, TTileVertexList> TileVertexLists;
+
+        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
     };
 
     enum class TSurfaceGPUDescriptorBinding : std::uint32_t
@@ -96,7 +99,9 @@ namespace MDSS::SurfaceState
                                            const TSharedSurfaceGeometryData&           Geometry,
                                            std::span<const TSurfaceProfileIndex>       ProfileIndexRemap = {},
                                            std::span<const Asset::TVertex>             SourceVertices = {},
-                                           std::span<const Asset::TMeshTriangleSource> SourceTriangles = {});
+                                           std::span<const Asset::TMeshTriangleSource> SourceTriangles = {},
+                                           TSurfaceGPUBufferPool*                      Pool = nullptr);
+        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
 
         // Geometry buffers
         [[nodiscard]] const GPU::TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
@@ -170,7 +175,9 @@ namespace MDSS::SurfaceState
         TSurfaceProfileGPUResources(VkPhysicalDevice                                PhysicalDevice,
                                     VkDevice                                        Device,
                                     const std::vector<TSurfaceResponseProfileData>& Profiles,
-                                    const TSurfaceStateRegistry&                    Registry);
+                                    const TSurfaceStateRegistry&                    Registry,
+                                    TSurfaceGPUBufferPool*                          Pool = nullptr);
+        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
 
         [[nodiscard]] const GPU::TGPUBuffer& GetParametersBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetSupportedBuffer() const noexcept;
@@ -198,7 +205,9 @@ namespace MDSS::SurfaceState
                                      std::size_t                         ChannelCount,
                                      const std::vector<float>&           TransferWeights,
                                      const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
-                                     const std::vector<float>&           WorldTexelAreas = {});
+                                     const std::vector<float>&           WorldTexelAreas = {},
+                                     TSurfaceGPUBufferPool*             Pool = nullptr);
+        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
 
         // State and geometry buffers
         [[nodiscard]] const GPU::TGPUBuffer& GetStateABuffer() const noexcept;
@@ -289,8 +298,11 @@ namespace MDSS::SurfaceState
         TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
                                    const Asset::TAssetManager& Assets,
                                    const TSurfaceDataManager&  SurfaceData,
-                                   const TScene&               Scene);
+                                   const TScene&               Scene,
+                                   TSurfaceGPUBufferPool*      Pool = nullptr);
         ~TSurfaceGPUResourceManager();
+
+        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
 
         TSurfaceGPUResourceManager(const TSurfaceGPUResourceManager&) = delete;
         TSurfaceGPUResourceManager& operator=(const TSurfaceGPUResourceManager&) = delete;

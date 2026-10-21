@@ -35,9 +35,10 @@ namespace MDSS::SurfaceState
     TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
                                              const Asset::TAssetManager& Assets,
                                              const TSurfaceDataManager&  SurfaceData,
-                                             const TScene&               Scene)
+                                             const TScene&               Scene,
+                                             TSurfaceGPUBufferPool*      ReusePool)
         : Context(Context), Assets(Assets), SurfaceData(SurfaceData), Scene(Scene),
-          GPUResources(std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene))
+          GPUResources(std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene, ReusePool))
     {
         if (const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
         {
@@ -83,6 +84,8 @@ namespace MDSS::SurfaceState
         }
 
         Solver = std::move(Replacement.Solver);
+        if (GPUResources)
+            GPUResources->RetireBuffers(BufferPool);
         GPUResources = std::move(Replacement.GPUResources);
         PendingContacts = std::move(Replacement.PendingContacts);
         PendingInputActivation = std::move(Replacement.PendingInputActivation);

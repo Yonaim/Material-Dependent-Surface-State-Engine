@@ -50,6 +50,9 @@ namespace MDSS::GPU
         // Buffer properties
         [[nodiscard]] VkBuffer      GetHandle() const noexcept;
         [[nodiscard]] VkDeviceSize  GetSize() const noexcept;
+        [[nodiscard]] VkBufferUsageFlags GetUsage() const noexcept;
+        [[nodiscard]] VkMemoryPropertyFlags GetMemoryProperties() const noexcept;
+        [[nodiscard]] TGPUBufferMemoryCategory GetMemoryCategory() const noexcept;
         [[nodiscard]] std::uint64_t GetUploadRevision() const noexcept;
 
     private:
@@ -62,6 +65,7 @@ namespace MDSS::GPU
         VkDeviceMemory                     Memory = VK_NULL_HANDLE;
         VkDeviceSize                       Size = 0;
         VkDeviceSize                       AllocationSize = 0;
+        VkBufferUsageFlags                 Usage = 0;
         TGPUBufferMemoryCategory           MemoryCategory = TGPUBufferMemoryCategory::Other;
         VkMemoryPropertyFlags              MemoryProperties = 0;
         mutable std::atomic<std::uint64_t> UploadRevision{0};

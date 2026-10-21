@@ -4,6 +4,7 @@
  */
 
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
+#include "SurfaceState/GPU/SurfaceGPUBufferPool.h"
 #include "SurfaceState/State/SurfaceStateSolver.h"
 #include "SurfaceState/Types/SurfaceSolverRates.h"
 #include "SurfaceState/Types/SurfaceStateRegistry.h"
@@ -251,6 +252,28 @@ namespace
         {
             Check(Value == 0.0F, Name + " should start with zero values");
         }
+    }
+
+    void TestRetiredBufferReuse(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS::SurfaceState;
+        TSurfaceGPUBufferPool Pool;
+        const std::vector<float> Weights(4U * SurfaceNeighborCount, 1.0F);
+        {
+            TSurfaceInstanceGPUResources Previous(
+                Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, Weights);
+            const std::array<float, 4> DirtyState{1.0F, 2.0F, 3.0F, 4.0F};
+            Previous.GetStateABuffer().Upload(DirtyState.data(), sizeof(DirtyState));
+            Previous.RetireBuffers(Pool);
+        }
+        Check(Pool.GetRetainedBytes() > 0, "retired Scene buffers should remain available for reuse");
+        TSurfaceInstanceGPUResources Replacement(
+            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, Weights, {}, {}, &Pool);
+        Check(Pool.GetReuseCount() > 0, "matching Scene buffers should be reused");
+        CheckZeroBuffer(Replacement.GetStateABuffer(), 4, "reused State A buffer");
+        CheckZeroBuffer(Replacement.GetStateBBuffer(), 4, "reused State B buffer");
+        CheckZeroBuffer(Replacement.GetRawOutgoingBuffer(), 4U * (SurfaceNeighborCount + 1U),
+                        "reused raw outgoing buffer");
     }
 
     void TestGPUResources(TVulkanTestDevice& Vulkan)
@@ -1613,23 +1636,27 @@ namespace
     }
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
     try
     {
         TVulkanTestDevice Vulkan;
-        TestGPUResources(Vulkan);
-        TestGPUSolver(Vulkan);
-        TestPerWorkgroupChannelMask(Vulkan);
-        TestDirectionalCavityRetention(Vulkan);
-        TestAreaAndMobility(Vulkan);
-        TestCalibratedGeometrySpeed(Vulkan);
-        TestGeometryDrivenSolver(Vulkan);
-        TestMesoGeometryDrive(Vulkan);
-        TestSourceGeometryChannelReuse(Vulkan);
-        TestTransferWeightSolver(Vulkan);
-        TestStateDrivenGeometryUpdate(Vulkan);
-        TestSparseGeometryUpdateWeights(Vulkan);
+        TestRetiredBufferReuse(Vulkan);
+        if (argc == 1 || std::string(argv[1]) != "--reuse-only")
+        {
+            TestGPUResources(Vulkan);
+            TestGPUSolver(Vulkan);
+            TestPerWorkgroupChannelMask(Vulkan);
+            TestDirectionalCavityRetention(Vulkan);
+            TestAreaAndMobility(Vulkan);
+            TestCalibratedGeometrySpeed(Vulkan);
+            TestGeometryDrivenSolver(Vulkan);
+            TestMesoGeometryDrive(Vulkan);
+            TestSourceGeometryChannelReuse(Vulkan);
+            TestTransferWeightSolver(Vulkan);
+            TestStateDrivenGeometryUpdate(Vulkan);
+            TestSparseGeometryUpdateWeights(Vulkan);
+        }
     }
     catch (const TVulkanUnavailable& Exception)
     {

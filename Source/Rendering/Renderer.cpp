@@ -263,7 +263,7 @@ namespace MDSS::Rendering
             glm::uvec4    DemoStateChannels{
                 SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 1U};
             glm::vec4  DemoOptions{0.65F, 0.0F, 0.48F, 1.0F};
-            glm::vec4  DemoEffectOptions{1.0F, 1.0F, 1.0F, 0.16F};
+            glm::vec4  DemoEffectOptions{1.0F, 0.35F, 1.0F, 0.16F};
             glm::uvec4 DemoExtraStateChannels{SurfaceState::InvalidStateId, 0U, 0U, 0U};
             glm::vec4  EffectColorRampStarts{0.0F};
             glm::vec4  EffectColorRampEnds{1.0F};
@@ -486,7 +486,7 @@ namespace MDSS::Rendering
             Config.CullMode = VK_CULL_MODE_NONE;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             Config.bDepthWriteEnabled = true;
-            Config.bBlendingEnabled = false;
+            Config.bBlendingEnabled = bCombined;
             Config.DescriptorSetLayouts.push_back(SideLayout);
             if (bCombined && StateTextureLayout != VK_NULL_HANDLE)
                 Config.DescriptorSetLayouts.push_back(StateTextureLayout);
@@ -1292,6 +1292,9 @@ namespace MDSS::Rendering
         {
             CreateMaterialDescriptorResources();
         }
+        auto& ReusePool = SurfaceStates.GetReusableBufferPool();
+        const std::uint64_t ReuseCountBefore = ReusePool.GetReuseCount();
+        const VkDeviceSize ReusedBytesBefore = ReusePool.GetReusedBytes();
         auto PreviousRegistry = SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
         std::unique_ptr<SurfaceState::TSurfaceStateSystem>   Replacement;
         std::unique_ptr<GPU::TGraphicsPipeline>              ReplacementDebugPipeline;
@@ -1308,7 +1311,8 @@ namespace MDSS::Rendering
         std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudSidePipelines;
         try
         {
-            Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene);
+            Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(
+                Context, Assets, SurfaceData, Scene, &ReusePool);
             Replacement->SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
             Replacement->SetRawFluxCacheEnabled(SurfaceStates.IsRawFluxCacheEnabled());
             Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStates.IsCoalescedRawFluxLayoutEnabled());
@@ -1444,6 +1448,10 @@ namespace MDSS::Rendering
         InspectedTexel.reset();
         SimulationStepSerial = 0;
         SurfaceStates.ReplaceSceneResources(std::move(*Replacement));
+        TLogger::Info("TRenderer",
+                      "Surface GPU buffer reuse: " + std::to_string(ReusePool.GetReuseCount() - ReuseCountBefore) +
+                          " buffer(s), " + std::to_string((ReusePool.GetReusedBytes() - ReusedBytesBefore) / (1024U * 1024U)) +
+                          " MiB; retained " + std::to_string(ReusePool.GetRetainedBytes() / (1024U * 1024U)) + " MiB.");
         SimulationClock.Reset();
         LastSimulationStepCount = 0;
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
@@ -1794,7 +1802,8 @@ namespace MDSS::Rendering
         };
         if (!Roughness(Settings.DryRoughness) ||
             !Roughness(Settings.MudRoughness) || !Roughness(Settings.WaterFilmRoughness) ||
-            !Unit(Settings.HeatStrength) || !Unit(Settings.LavaThreshold) || !Unit(Settings.WaterFilmOpacity) ||
+            !Unit(Settings.HeatStrength) || !Unit(Settings.LavaThreshold) || !Unit(Settings.MudNoiseAmount) ||
+            !Unit(Settings.WaterFilmOpacity) ||
             !std::isfinite(Settings.LowAmountHeightFade) || Settings.LowAmountHeightFade < 0.0F ||
             Settings.LowAmountHeightFade > 0.5F ||
             !ColorMapping(Settings.HeatColorMap) || !ColorMapping(Settings.MudColorMap) ||
@@ -2419,10 +2428,10 @@ namespace MDSS::Rendering
                             {Bindings.Heat, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
                             {DemoEffects.DryRoughness, DemoEffects.LavaThreshold, DemoEffects.MudRoughness,
                              LitHeightDisplayScale},
-                            {DemoEffects.HeatStrength, 0.0F, DemoEffects.WaterFilmOpacity,
+                            {DemoEffects.HeatStrength, DemoEffects.MudNoiseAmount, DemoEffects.WaterFilmOpacity,
                              DemoEffects.WaterFilmRoughness},
                             {Bindings.Lava,
-                             0U,
+                             bOverlayOnlyDebug ? static_cast<std::uint32_t>(OverlayShadingDiagnostic) : 0U,
                              (DemoEffects.bCoverageSmoothing ? 1U : 0U) |
                                  (DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled ? 2U : 0U) |
                                  (bRenderStateTextureSamplingEnabled ? 4U : 0U),
@@ -2709,7 +2718,8 @@ namespace MDSS::Rendering
                                          LitHeightDisplayScale,
                                          {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
                                          (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U),
-                                         bSharedOverlayCoverageEnabled);
+                                         bSharedOverlayCoverageEnabled,
+                                         DemoEffects.LavaThreshold);
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                         ++OverlayTimestampLayersSubmitted[FrameIndex];
                 };

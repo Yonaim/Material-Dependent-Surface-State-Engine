@@ -6,6 +6,7 @@
 #pragma once
 
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
+#include "SurfaceState/GPU/SurfaceGPUBufferPool.h"
 #include "SurfaceState/State/SurfaceInput.h"
 #include "SurfaceState/State/SurfaceStateSolver.h"
 
@@ -43,7 +44,8 @@ namespace MDSS::SurfaceState
         TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
                             const Asset::TAssetManager& Assets,
                             const TSurfaceDataManager&  SurfaceData,
-                            const TScene&               Scene);
+                            const TScene&               Scene,
+                            TSurfaceGPUBufferPool*      ReusePool = nullptr);
         ~TSurfaceStateSystem();
 
         TSurfaceStateSystem(const TSurfaceStateSystem&) = delete;
@@ -98,6 +100,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept { return bSparseSimulationGeometryEnabled; }
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept { bSparseSimulationGeometryEnabled = bEnabled; }
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
+        [[nodiscard]] TSurfaceGPUBufferPool& GetReusableBufferPool() noexcept { return BufferPool; }
 
     private:
         // Pending contact application
@@ -108,6 +111,7 @@ namespace MDSS::SurfaceState
         const Asset::TAssetManager&                 Assets;
         const TSurfaceDataManager&                  SurfaceData;
         const TScene&                               Scene;
+        TSurfaceGPUBufferPool                       BufferPool;
         std::unique_ptr<TSurfaceGPUResourceManager> GPUResources;
         std::unique_ptr<TSurfaceStateSolver>        Solver;
         std::vector<TSurfaceContactInput>           PendingContacts;

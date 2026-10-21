@@ -21,7 +21,7 @@ namespace MDSS::GPU
                            VkBufferUsageFlags    Usage,
                            VkMemoryPropertyFlags MemoryProperties,
                            TGPUBufferMemoryCategory Category)
-        : Device(Device), Size(Size), MemoryCategory(Category), MemoryProperties(MemoryProperties)
+        : Device(Device), Size(Size), Usage(Usage), MemoryCategory(Category), MemoryProperties(MemoryProperties)
     {
         if (Size == 0)
         {
@@ -176,6 +176,21 @@ namespace MDSS::GPU
     VkDeviceSize TGPUBuffer::GetSize() const noexcept
     {
         return Size;
+    }
+
+    VkBufferUsageFlags TGPUBuffer::GetUsage() const noexcept
+    {
+        return Usage;
+    }
+
+    VkMemoryPropertyFlags TGPUBuffer::GetMemoryProperties() const noexcept
+    {
+        return MemoryProperties;
+    }
+
+    TGPUBufferMemoryCategory TGPUBuffer::GetMemoryCategory() const noexcept
+    {
+        return MemoryCategory;
     }
 
     std::uint64_t TGPUBuffer::GetUploadRevision() const noexcept

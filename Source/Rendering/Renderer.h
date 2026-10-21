@@ -72,6 +72,20 @@ namespace MDSS::Rendering
         SidesOnly
     };
 
+    enum class TOverlayShadingDiagnostic : std::uint32_t
+    {
+        Lit = 0,
+        FixedNormal,
+        NormalRGB,
+        Facing,
+        MeshNormal,
+        VertexNormal,
+        LitOpaque,
+        StateLayers,
+        MudDiffuse,
+        MudSpecular
+    };
+
     enum class TOverlayOccupancyTileSize : std::uint32_t
     {
         Tile8 = 8,
@@ -271,6 +285,14 @@ namespace MDSS::Rendering
         void SetOverlayDisplayMode(TOverlayDisplayMode Mode) noexcept
         {
             OverlayDisplayMode = Mode;
+        }
+        [[nodiscard]] TOverlayShadingDiagnostic GetOverlayShadingDiagnostic() const noexcept
+        {
+            return OverlayShadingDiagnostic;
+        }
+        void SetOverlayShadingDiagnostic(TOverlayShadingDiagnostic Mode) noexcept
+        {
+            OverlayShadingDiagnostic = Mode;
         }
         [[nodiscard]] bool IsOverlayOnlyDebugEnabled() const noexcept
         {
@@ -528,6 +550,7 @@ namespace MDSS::Rendering
         TSurfaceDebugDisplaySettings                         SurfaceDebugSettings;
         TDemoSurfaceEffectSettings                           DemoEffects;
         TOverlayDisplayMode                                  OverlayDisplayMode = TOverlayDisplayMode::Both;
+        TOverlayShadingDiagnostic                             OverlayShadingDiagnostic = TOverlayShadingDiagnostic::Lit;
         bool                                                 bOverlayOnlyDebug = false;
         bool                                                 bOverlayTileCullingEnabled = true;
         bool                                                 bBaseMeshDrawEnabled = true;
