@@ -92,6 +92,7 @@ layout(push_constant) uniform TOverlayPush
     float HeightDisplayScale;
     uint UseOpaqueBase;
     uint Padding;
+    float LavaThreshold;
 } Push;
 
 

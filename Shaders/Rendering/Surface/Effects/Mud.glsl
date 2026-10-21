@@ -5,7 +5,7 @@
  */
 void ApplyMud(float Coverage, inout vec3 Albedo, inout float Roughness, float MudRoughness)
 {
-    float Blend = smoothstep(0.0, 1.0, Coverage);
+    float Blend = smoothstep(0.02, 0.50, Coverage);
     Albedo = mix(Albedo, MapEffectColor(1u, Coverage), Blend);
     Roughness = mix(Roughness, MudRoughness, Blend);
 }

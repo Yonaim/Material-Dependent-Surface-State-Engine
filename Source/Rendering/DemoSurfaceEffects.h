@@ -53,9 +53,7 @@ namespace MDSS::Rendering
         bool      bCoverageSmoothing = true;
         float     DryRoughness = 0.65F;
         float     HeatStrength = 1.0F;
-        // The state heatmap turns from teal toward yellow at 0.66 saturation.
-        // Keep low-level lava spread visible there without painting it opaque in Lit.
-        float     LavaThreshold = 0.66F;
+        float     LavaThreshold = 0.1F;
         float     MudRoughness = 0.48F;
         float     MudNoiseAmount = 0.35F;
         float     WaterFilmOpacity = 0.5F;

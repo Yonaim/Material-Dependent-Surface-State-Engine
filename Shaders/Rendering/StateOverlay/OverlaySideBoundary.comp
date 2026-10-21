@@ -109,7 +109,16 @@ layout(push_constant) uniform TOverlayPush
     float HeightDisplayScale;
     uint UseOpaqueBase;
     uint Padding;
+    float LavaThreshold;
 } Push;
+
+float CoverageCutoff()
+{
+    // Shared geometry must include every visible material. Mud/water use the
+    // low cutoff; lava uses its own slider even when other effects are enabled.
+    return (Push.ActiveMaterialMask & 4u) != 0u
+        ? min(0.02, Push.LavaThreshold) : 0.02;
+}
 
 struct TPoint
 {
@@ -174,7 +183,7 @@ vec3 SideNormal(TPoint A, TPoint B, vec3 Inside)
 
 bool ReadSide(uint Slot, out TPoint A, out TPoint B, out vec3 Inside)
 {
-    const float Cutoff = 0.02;
+    float Cutoff = CoverageCutoff();
     uint TriangleCount = uint(MeshIndices.Values.length()) / 3u;
     if (Slot < TriangleCount)
     {
@@ -271,7 +280,7 @@ void main()
     // coverage 경계를 넘는 삼각형 변과 mesh boundary edge를 같은 segment 형식으로 저장한다.
     if (GeometryCache.Values[uint(GeometryCache.Values.length()) - 1u] == 0u) return;
     uint Slot = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
-    const float Cutoff = 0.02;
+    float Cutoff = CoverageCutoff();
     if (gl_LocalInvocationIndex == 0u) ActiveTrianglesInGroup = 0u;
     barrier();
 

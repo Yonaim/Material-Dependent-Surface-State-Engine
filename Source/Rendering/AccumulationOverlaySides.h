@@ -77,7 +77,7 @@ namespace MDSS::Rendering
                                                    0xffffffffU, 0xffffffffU, 0xffffffffU},
                                                std::uint32_t                                           ActiveMaterialMask = 0x7U,
                                                bool                                                    bSharedCoverageHalo = false,
-                                               float                                                   LavaThreshold = 0.02F);
+                                               float                                                   LavaThreshold = 0.1F);
 
     private:
         struct TOutput
@@ -101,7 +101,6 @@ namespace MDSS::Rendering
             std::array<std::uint64_t, 6>                                                   LastGeometryRevisions{};
             std::uint64_t                                                                   LastProfileRevision = 0;
             float                                                                           LastHeightDisplayScale = 0.0F;
-            float                                                                           LastLavaThreshold = -1.0F;
             bool                                                                            bLastSmoothCoverage = false;
             bool                                                                            bLastSharedCoverageHalo = false;
             bool                                                                            bLastUseOpaqueBase = false;

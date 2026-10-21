@@ -26,11 +26,11 @@ vec4 SampleRenderStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channel
 #endif
     uvec4 Range = SurfaceRanges.Values[Surface];
     if (Range.y == 0u || Range.z == 0u) return vec4(0.0);
-    uvec2 CenterXY = min(uvec2(clamp(UV, 0.0, 1.0) * vec2(Range.yz)), Range.yz - 1u);
-    uint Center = Range.x + CenterXY.y * Range.y + CenterXY.x;
+    uint Center = FindSurfaceSamplingAnchor(Surface, UV, Range);
 #if MDSS_GPU_VALIDATION
     if (Center >= uint(RenderSamplingBoundaryFlags.Values.length())) return vec4(0.0);
 #endif
+    if (Center == 0xffffffffu) return vec4(0.0);
     vec2 Extent = vec2(textureSize(RenderStateTexture, 0).xy);
     vec2 SurfacePixel = clamp(clamp(UV, 0.0, 1.0) * vec2(Range.yz),
                               vec2(0.5), vec2(Range.yz) - vec2(0.5));

@@ -486,7 +486,6 @@ namespace MDSS::Rendering
             It->second.LastGeometryRevisions != GeometryRevisions ||
             It->second.LastProfileRevision != ProfileRevision ||
             It->second.LastHeightDisplayScale != HeightDisplayScale ||
-            It->second.LastLavaThreshold != LavaThreshold ||
             It->second.bLastSmoothCoverage != bSmoothCoverage ||
             It->second.bLastSharedCoverageHalo != bSharedCoverageHalo ||
             It->second.bLastUseOpaqueBase != bUseOpaqueBase;
@@ -635,7 +634,6 @@ namespace MDSS::Rendering
         It->second.LastGeometryRevisions = GeometryRevisions;
         It->second.LastProfileRevision = ProfileRevision;
         It->second.LastHeightDisplayScale = HeightDisplayScale;
-        It->second.LastLavaThreshold = LavaThreshold;
         It->second.bLastSmoothCoverage = bSmoothCoverage;
         It->second.bLastSharedCoverageHalo = bSharedCoverageHalo;
         It->second.bLastUseOpaqueBase = bUseOpaqueBase;

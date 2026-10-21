@@ -8,6 +8,11 @@
 #include "Debug/SurfaceDebugData.glsl"
 #include "Debug/TexelGeometryData.glsl"
 
+layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
+{
+    uint Values[];
+} TexelChartIndices;
+
 layout(local_size_x = 64) in;
 
 layout(set = 1, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } Output;
@@ -188,16 +193,50 @@ float DisplayHeight(uint Texel)
     return uintBitsToFloat(GeometryCache.Values[Texel]);
 }
 
+float SeamNormalBlend(uint Texel)
+{
+    if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
+        Texel >= uint(TexelChartIndices.Values.length())) return 0.0;
+    uint Surface = TexelSurfaceIndices.Values[Texel];
+    if (Surface >= uint(SurfaceRanges.Values.length())) return 0.0;
+    uvec4 Range = SurfaceRanges.Values[Surface];
+    if (Range.y == 0u || Range.z == 0u || Texel < Range.x) return 0.0;
+    uint Local = Texel - Range.x;
+    ivec2 Center = ivec2(int(Local % Range.y), int(Local / Range.y));
+    uint Chart = TexelChartIndices.Values[Texel];
+    int NearestGap = 3;
+    for (int Y = -2; Y <= 2; ++Y)
+    for (int X = -2; X <= 2; ++X)
+    {
+        ivec2 XY = Center + ivec2(X, Y);
+        bool Missing = any(lessThan(XY, ivec2(0))) ||
+                       any(greaterThanEqual(XY, ivec2(Range.yz)));
+        if (!Missing)
+        {
+            uint Neighbor = Range.x + uint(XY.y) * Range.y + uint(XY.x);
+            Missing = Neighbor >= uint(TexelSurfaceIndices.Values.length()) ||
+                      Neighbor >= uint(TexelChartIndices.Values.length()) ||
+                      TexelSurfaceIndices.Values[Neighbor] != Surface ||
+                      TexelChartIndices.Values[Neighbor] != Chart;
+        }
+        if (Missing)
+            NearestGap = min(NearestGap, max(abs(X), abs(Y)));
+    }
+    return NearestGap == 1 ? 1.0 : NearestGap == 2 ? 0.5 : 0.0;
+}
+
 vec3 CachedFinalNormal(uint Texel)
 {
-    vec3 Fallback = MesoNormals.Values[Texel].xyz;
+    float SeamBlend = SeamNormalBlend(Texel);
+    vec3 Fallback = normalize(mix(MesoNormals.Values[Texel].xyz,
+                                  Normals.Values[Texel].xyz, SeamBlend));
     if (Texel >= Push.TexelCount || Texel >= uint(Positions.Values.length()) ||
         Texel >= uint(Normals.Values.length()) || Texel >= uint(NeighborIndices.Values.length())) return Fallback;
     float CenterHeight = DisplayHeight(Texel);
     if (isnan(CenterHeight)) return Fallback;
     // baseline cache도 Meso 높이에 같은 least-squares fitting을 적용해 만든 값이다.
     // TotalHeight는 이웃 제외 규칙이 다르므로 해당 cache를 재사용하지 않는다.
-    if (Push.UseBaseline != 0u && Texel < Push.TexelCount &&
+    if (SeamBlend == 0.0 && Push.UseBaseline != 0u && Texel < Push.TexelCount &&
         Texel < uint(GeometryScalars.Values.length()) &&
         CenterHeight == GeometryScalars.Values[Texel].MesoVirtualHeight)
     {
@@ -230,6 +269,7 @@ vec3 CachedFinalNormal(uint Texel)
     vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0,0,1) : vec3(0,1,0), N));
     vec3 V = cross(N, U);
     float XX = 0.0, XY = 0.0, YY = 0.0, XH = 0.0, YH = 0.0;
+    float MesoXH = 0.0, MesoYH = 0.0;
     for (uint DirectionIndex = 0u; DirectionIndex < 8u; ++DirectionIndex)
     {
         uint Other = NeighborIndices.Values[Texel].Indices[DirectionIndex];
@@ -245,10 +285,23 @@ vec3 CachedFinalNormal(uint Texel)
         float DH = (NeighborHeight - CenterHeight) * Push.GeometryDisplayScale;
         XX += X * X * Weight; XY += X * Y * Weight; YY += Y * Y * Weight;
         XH += X * DH * Weight; YH += Y * DH * Weight;
+        if (SeamBlend > 0.0 && Texel < uint(GeometryScalars.Values.length()) &&
+            Other < uint(GeometryScalars.Values.length()))
+        {
+            float MesoDH = (GeometryScalars.Values[Other].MesoVirtualHeight -
+                            GeometryScalars.Values[Texel].MesoVirtualHeight) *
+                           Push.GeometryDisplayScale;
+            MesoXH += X * MesoDH * Weight;
+            MesoYH += Y * MesoDH * Weight;
+        }
     }
     float Det = XX * YY - XY * XY;
     if (Det <= 1e-6 * max(XX * YY, 1e-12)) return Fallback;
     vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
+    if (SeamBlend > 0.0)
+        Gradient -= SeamBlend *
+                    vec2(YY * MesoXH - XY * MesoYH,
+                         XX * MesoYH - XY * MesoXH) / Det;
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
 
@@ -268,7 +321,8 @@ void main()
             // Legacy/full-dispatch path: inactive tiles still receive their baseline output.
             float BaseHeight = GeometryScalars.Values[T].MesoVirtualHeight;
             if (isnan(BaseHeight) || isinf(BaseHeight)) BaseHeight = 0.0;
-            vec3 BaseNormal = MesoNormals.Values[T].xyz;
+            vec3 BaseNormal = mix(MesoNormals.Values[T].xyz, Normals.Values[T].xyz,
+                                  SeamNormalBlend(T));
             if (any(isnan(BaseNormal)) || any(isinf(BaseNormal)) || dot(BaseNormal, BaseNormal) < 1e-12)
                 BaseNormal = Normals.Values[T].xyz;
             Output.Values[T].HeightAndNormal = vec4(BaseHeight * Push.GeometryDisplayScale, normalize(BaseNormal));
@@ -290,6 +344,8 @@ void main()
     }
     if (any(isnan(FinalNormal)) || any(isinf(FinalNormal)) || dot(FinalNormal, FinalNormal) < 1e-12)
         FinalNormal = N;
+    if (Push.Accumulation == 0u)
+        FinalNormal = mix(FinalNormal, N, SeamNormalBlend(T));
     H *= Push.GeometryDisplayScale;
     if (isnan(H) || isinf(H)) H = 0.0;
     Output.Values[T].HeightAndNormal = vec4(H, normalize(FinalNormal));

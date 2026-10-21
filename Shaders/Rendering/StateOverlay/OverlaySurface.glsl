@@ -48,8 +48,7 @@ vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback)
     vec2 TexelPosition = UVClamped * vec2(Range.yz) - 0.5;
     ivec2 First = ivec2(floor(TexelPosition));
     vec2 Fraction = fract(TexelPosition);
-    uvec2 AnchorXY = min(uvec2(UVClamped * vec2(Range.yz)), Range.yz - 1u);
-    uint Anchor = Range.x + AnchorXY.y * Range.y + AnchorXY.x;
+    uint Anchor = FindSurfaceSamplingAnchor(Surface, UV, Range);
     if (Anchor >= uint(TexelSurfaceIndices.Values.length()) ||
         Anchor >= uint(TexelProfileIndices.Values.length()) ||
         Anchor >= uint(TexelChartIndices.Values.length()) ||
@@ -83,6 +82,95 @@ vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback)
     return WeightSum > 1e-6 && dot(Sum, Sum) > 1e-12
         ? vec4(normalize(FragNormalMatrix * normalize(Sum)), clamp(WeightSum, 0.0, 1.0))
         : vec4(Fallback, 0.0);
+}
+
+bool SampleSeamPartnerStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channels,
+                             bool UseRenderTexture, out vec4 PartnerStates,
+                             out vec3 SeamNormal, out float SeamBlend)
+{
+    PartnerStates = vec4(0.0);
+    SeamNormal = vec3(0.0);
+    SeamBlend = 0.0;
+    if (Surface >= uint(SurfaceRanges.Values.length())) return false;
+    uvec4 Range = SurfaceRanges.Values[Surface];
+    if (Range.y == 0u || Range.z == 0u) return false;
+    uint Center = FindSurfaceSamplingAnchor(Surface, UV, Range);
+    if (Center >= uint(TexelSurfaceIndices.Values.length()) ||
+        Center >= uint(TexelProfileIndices.Values.length()) ||
+        Center >= uint(TexelChartIndices.Values.length()) ||
+        Center >= uint(NeighborIndices.Values.length()) ||
+        Center >= uint(Normals.Values.length()) ||
+        Center >= uint(Positions.Values.length()) ||
+        Center >= uint(RenderSamplingBoundaryFlags.Values.length()) ||
+        RenderSamplingBoundaryFlags.Values[Center] == 0u ||
+        TexelSurfaceIndices.Values[Center] != Surface) return false;
+
+    uint Profile = TexelProfileIndices.Values[Center];
+    uint Chart = TexelChartIndices.Values[Center];
+    vec3 BaseNormal = normalize(Normals.Values[Center].xyz);
+    vec3 BasePosition = Positions.Values[Center].xyz;
+    float WeightSum = 0.0;
+    vec3 PartnerNormalSum = vec3(0.0);
+    for (uint K = 0u; K < 8u; ++K)
+    {
+        uint Other = NeighborIndices.Values[Center].Indices[K];
+        if (Other >= uint(TexelSurfaceIndices.Values.length()) ||
+            Other >= uint(TexelProfileIndices.Values.length()) ||
+            Other >= uint(TexelChartIndices.Values.length()) ||
+            Other >= uint(Normals.Values.length()) ||
+            Other >= uint(Positions.Values.length()) ||
+            TexelSurfaceIndices.Values[Other] != Surface ||
+            TexelProfileIndices.Values[Other] != Profile ||
+            TexelChartIndices.Values[Other] == Chart ||
+            dot(BaseNormal, normalize(Normals.Values[Other].xyz)) < 0.5) continue;
+
+        vec3 Delta = Positions.Values[Other].xyz - BasePosition;
+        float Weight = 1.0 / max(dot(Delta, Delta), 1e-8);
+        uint Local = Other - Range.x;
+        ivec3 PartnerXY = ivec3(int(Local % Range.y), int(Local / Range.y), int(Surface));
+        vec4 Value = UseRenderTexture
+            ? texelFetch(RenderStateTexture, PartnerXY, 0)
+            : StateSaturationsForProfile(Other, Channels, Profile, StateChannels);
+        PartnerStates += Weight * Value;
+        PartnerNormalSum += Weight * normalize(Normals.Values[Other].xyz);
+        WeightSum += Weight;
+    }
+    if (WeightSum <= 0.0) return false;
+    PartnerStates /= WeightSum;
+    SeamNormal = normalize(BaseNormal + PartnerNormalSum / WeightSum);
+
+    // A fully valid 2x2 bilinear footprint can still lie immediately beside
+    // a chart border. Measure the nearest missing chart texel explicitly.
+    vec2 TexelPosition = clamp(UV, 0.0, 1.0) * vec2(Range.yz) - 0.5;
+    uint Local = Center - Range.x;
+    ivec2 CenterXY = ivec2(int(Local % Range.y), int(Local / Range.y));
+    float NearestGap = 3.0;
+    for (int Y = -1; Y <= 1; ++Y)
+    for (int X = -1; X <= 1; ++X)
+    {
+        ivec2 XY = CenterXY + ivec2(X, Y);
+        bool Missing = any(lessThan(XY, ivec2(0))) ||
+                       any(greaterThanEqual(XY, ivec2(Range.yz)));
+        if (!Missing)
+        {
+            uint Neighbor = Range.x + uint(XY.y) * Range.y + uint(XY.x);
+            Missing = Neighbor >= uint(TexelSurfaceIndices.Values.length()) ||
+                      Neighbor >= uint(TexelChartIndices.Values.length()) ||
+                      TexelSurfaceIndices.Values[Neighbor] != Surface ||
+                      TexelChartIndices.Values[Neighbor] != Chart;
+        }
+        if (Missing)
+            NearestGap = min(NearestGap, length(TexelPosition - vec2(XY)));
+    }
+    SeamBlend = 1.0 - smoothstep(0.5, 2.0, NearestGap);
+    return true;
+}
+
+bool HasVisibleOverlayState(vec4 States, uint EnabledEffects)
+{
+    return ((EnabledEffects & 2u) != 0u && States.y > 0.02) ||
+           ((EnabledEffects & 4u) != 0u && States.z > 0.02) ||
+           ((EnabledEffects & 8u) != 0u && States.w > Material.DemoOptions.y);
 }
 #endif
 
@@ -137,7 +225,8 @@ vec4 ShadeWaterFilmLayer(vec3 N, vec3 V, float Coverage)
     float Fresnel = 0.02 + 0.98 * pow(1.0 - NoV, 5.0);
     float Absorption = 0.04 + 0.24 * Amount;
     float OpticalAlpha = Fresnel + (1.0 - Fresnel) * Absorption;
-    float CoverageFade = smoothstep(0.02, 0.25, Amount);
+    // A thin film appears early, then gains opacity across most of the range.
+    float CoverageFade = smoothstep(0.02, 0.85, Amount);
     float Alpha = clamp(Material.DemoEffectOptions.z * CoverageFade * OpticalAlpha, 0.0, 0.98);
 
     vec3 L = normalize(vec3(0.35, 0.55, 1.0));
@@ -159,7 +248,11 @@ void main()
     // 아주 낮은 coverage는 버리고 재질별 branch에서 색, 조명, 투명도를 정한다.
     const float Cutoff = 0.02;
 #ifndef OVERLAY_COMBINED
+#ifdef OVERLAY_LAVA
+    if (FragCoverage <= Material.DemoOptions.y) discard;
+#else
     if (FragCoverage <= Cutoff) discard;
+#endif
 #endif
 #ifdef OVERLAY_COMBINED
     uint EnabledEffects = Material.DemoExtraStateChannels.w;
@@ -191,11 +284,9 @@ void main()
             States.w = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
                                                      Material.DemoExtraStateChannels.x, Material.StateChannelCount);
     }
-    float PixelCoverage = 0.0;
-    if ((EnabledEffects & 2u) != 0u) PixelCoverage = max(PixelCoverage, States.y);
-    if ((EnabledEffects & 4u) != 0u) PixelCoverage = max(PixelCoverage, States.z);
-    if ((EnabledEffects & 8u) != 0u) PixelCoverage = max(PixelCoverage, States.w);
-    if (PixelCoverage <= Cutoff) discard;
+    // A render-texture sample can be empty right on an atlas boundary even
+    // though the welded overlay vertex remains occupied.
+    if (!HasVisibleOverlayState(States, EnabledEffects) && FragCoverage <= Cutoff) discard;
     vec3 N = normalize(FragNormal);
     uint ShadingDiagnostic = Material.DemoExtraStateChannels.y;
     float NormalSampleWeight = 1.0;
@@ -207,6 +298,30 @@ void main()
         NormalSampleWeight = PixelNormal.w;
         N = PixelNormal.xyz;
     }
+    if (FragIsSide == 0u)
+    {
+        vec4 PartnerStates;
+        vec3 SeamNormal;
+        float SeamBlend;
+        if (SampleSeamPartnerStates(FragSurfaceIndex, FragUV,
+                                    uvec4(Material.DemoStateChannels.xyz,
+                                          Material.DemoExtraStateChannels.x),
+                                    Material.StateChannelCount, UseRenderTexture,
+                                    PartnerStates, SeamNormal, SeamBlend))
+        {
+            States = mix(States, 0.5 * (States + PartnerStates), SeamBlend);
+            if (ShadingDiagnostic == 0u || ShadingDiagnostic == 2u ||
+                ShadingDiagnostic == 6u || ShadingDiagnostic == 7u ||
+                ShadingDiagnostic == 8u || ShadingDiagnostic == 9u)
+            {
+                // Both charts share the same source surface normal. The
+                // computed height normals are independent on either side.
+                N = normalize(mix(N, normalize(FragNormalMatrix * SeamNormal), SeamBlend));
+                NormalSampleWeight = min(NormalSampleWeight, 1.0 - 0.20 * SeamBlend);
+            }
+        }
+    }
+    if (!HasVisibleOverlayState(States, EnabledEffects)) discard;
     if (!gl_FrontFacing) N = -N;
     if (ShadingDiagnostic == 2u)
     {
@@ -232,7 +347,7 @@ void main()
         OutColor = vec4(MudCoverage, LavaCoverage, WaterCoverage, 1.0);
         return;
     }
-    float MudAlpha = smoothstep(Cutoff, 0.10, MudCoverage);
+    float MudAlpha = smoothstep(Cutoff, 0.50, MudCoverage);
     vec3 MudNormal = ShadingDiagnostic == 1u || ShadingDiagnostic == 4u
         ? N : ApplyMudMicroBump(N, FragWorldPosition,
                                Material.DemoEffectOptions.y * smoothstep(0.75, 1.0, NormalSampleWeight));
@@ -274,7 +389,8 @@ void main()
     if ((EnabledEffects & 8u) != 0u && States.w > Material.DemoOptions.y)
     {
         float LavaCoverage = clamp(States.w, 0.0, 1.0);
-        vec3 LavaLit = ShadeSurface(LavaColor(LavaCoverage), N, V, 0.34, Material.AmbientLight);
+        vec3 LavaLit = ShadeSurface(LavaColor(LavaCoverage), N, V,
+                                    0.34, Material.AmbientLight);
         PremultipliedColor = min(LavaLit + LavaEmission(LavaCoverage, Material.DemoOptions.y), vec3(1.0));
         SurfaceAlpha = 1.0;
     }
@@ -287,7 +403,8 @@ void main()
     vec3 N = normalize(FragNormal);
     if (!gl_FrontFacing) N = -N;
     vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
-    vec3 Color = ShadeSurface(LavaColor(FragCoverage), N, V, 0.34, Material.AmbientLight);
+    vec3 Color = ShadeSurface(LavaColor(FragCoverage), N, V,
+                              0.34, Material.AmbientLight);
     OutColor = vec4(min(Color + LavaEmission(FragCoverage, Material.DemoOptions.y), vec3(1.0)), 1.0);
 #elif defined(OVERLAY_WATER)
     vec3 N = normalize(FragNormal);
