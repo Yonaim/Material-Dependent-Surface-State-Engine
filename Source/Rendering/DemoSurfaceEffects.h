@@ -53,18 +53,21 @@ namespace MDSS::Rendering
         bool      bCoverageSmoothing = true;
         float     DryRoughness = 0.65F;
         float     HeatStrength = 1.0F;
-        float     LavaThreshold = 0.02F;
+        // The state heatmap turns from teal toward yellow at 0.66 saturation.
+        // Keep low-level lava spread visible there without painting it opaque in Lit.
+        float     LavaThreshold = 0.66F;
         float     MudRoughness = 0.48F;
-        float     WaterFilmOpacity = 1.0F;
+        float     MudNoiseAmount = 0.35F;
+        float     WaterFilmOpacity = 0.5F;
         float     WaterFilmRoughness = 0.16F;
         // Render-only fade for accumulation geometry at low normalized State saturation.
         float     LowAmountHeightFade = 0.05F;
         TDemoStateColorMapping HeatColorMap{0.0F, 1.0F,
                                              {0.55F, 0.035F, 0.012F}, {0.95F, 0.075F, 0.025F}};
-        TDemoStateColorMapping MudColorMap{0.0F, 1.0F,
-                                            {0.30F, 0.20F, 0.12F}, {0.09F, 0.035F, 0.012F}};
+        TDemoStateColorMapping MudColorMap{0.25F, 1.0F,
+                                            {0.16F, 0.09F, 0.045F}, {0.09F, 0.035F, 0.012F}};
         TDemoStateColorMapping WaterFilmColorMap{0.0F, 1.0F,
-                                                  {0.35F, 0.53F, 0.68F}, {0.58F, 0.74F, 0.88F}};
+                                                  {0.20F, 0.25F, 0.28F}, {0.12F, 0.20F, 0.23F}};
         TDemoStateColorMapping LavaColorMap{0.0F, 1.0F,
                                              {0.75F, 0.11F, 0.008F}, {1.0F, 0.36F, 0.035F}};
     };

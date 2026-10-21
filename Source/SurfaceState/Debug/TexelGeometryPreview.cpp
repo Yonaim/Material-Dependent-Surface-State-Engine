@@ -54,7 +54,7 @@ namespace MDSS::SurfaceState
                 {{0,
                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                   1,
-                  VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+                  VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                   nullptr},
                  {1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr}}};
             VkDescriptorSetLayoutCreateInfo OutputInfo{};

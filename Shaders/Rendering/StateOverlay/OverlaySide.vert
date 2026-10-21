@@ -12,6 +12,8 @@ struct TSideSegment
     vec4 BaseB;
     vec4 TopB;
     vec4 Inside;
+    vec4 NormalA;
+    vec4 NormalB;
 };
 
 layout(set = 3, binding = 3, std430) readonly buffer TSegments { TSideSegment Values[]; } Segments;
@@ -28,8 +30,15 @@ layout(location = 3) out vec3 FragWorldPosition;
 
 layout(location = 4) out float FragCoverage;
 
+layout(location = 5) flat out uint FragIsSide;
+
+layout(location = 6) flat out mat3 FragNormalMatrix;
+
+
 void main()
 {
+    FragIsSide = 1u;
+    FragNormalMatrix = mat3(1.0);
     // 각 정점은 segment 내 corner 번호로 결정되며, 무효 segment는 clip space 밖으로 보낸다.
     uint SegmentIndex = uint(gl_VertexIndex) / 6u;
     uint Corner = uint(gl_VertexIndex) % 6u;
@@ -49,16 +58,17 @@ void main()
     vec3 BaseB = vec3(Push.Model * vec4(S.BaseB.xyz, 1.0));
     vec3 TopB = vec3(Push.Model * vec4(S.TopB.xyz, 1.0));
     vec3 Inside = vec3(Push.Model * vec4(S.Inside.xyz, 1.0));
+    const uint Indices[6] = uint[6](0u, 2u, 3u, 0u, 3u, 1u);
+    uint Vertex = Indices[Corner];
     vec3 Edge = BaseB - BaseA;
     vec3 Up = 0.5 * (TopA + TopB - BaseA - BaseB);
-    vec3 N = cross(Edge, Up);
-    // 높이가 거의 0인 면에서도 가능한 normal을 만들고 안쪽 방향을 기준으로 뒤집는다.
-    if (dot(N, N) < 1e-16) N = cross(Edge, TopA - BaseA);
+    vec3 LocalNormal = Vertex < 2u ? S.NormalA.xyz : S.NormalB.xyz;
+    mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
+    vec3 N = NormalMatrix * LocalNormal;
+    if (dot(N, N) < 1e-16) N = cross(Edge, Up);
     if (dot(N, N) < 1e-16) N = vec3(0.0, 0.0, 1.0);
     N = normalize(N);
     if (dot(N, 0.5 * (BaseA + BaseB) - Inside) < 0.0) N = -N;
-    const uint Indices[6] = uint[6](0u, 2u, 3u, 0u, 3u, 1u);
-    uint Vertex = Indices[Corner];
     FragWorldPosition = Vertex == 0u ? BaseA : Vertex == 1u ? TopA : Vertex == 2u ? BaseB : TopB;
     FragUV = Vertex < 2u ? vec2(S.BaseA.w, S.TopA.w) : vec2(S.BaseB.w, S.TopB.w);
     FragNormal = N;

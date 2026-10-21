@@ -647,8 +647,11 @@ namespace MDSS
         ImGui::GetIO().FontGlobalScale = DisplaySize.x >= 1280.0F && DisplaySize.y >= 800.0F ? 1.15F : 1.0F;
         if (ImGui::IsKeyPressed(ImGuiKey_F10))
             TogglePresentationMode();
+        if (bPresentationMode && ImGui::IsKeyPressed(ImGuiKey_Escape))
+            TogglePresentationMode();
         if (ImGui::IsKeyPressed(ImGuiKey_F9) && SceneData.HasDemoAnimation())
             ReplayDemo(SceneData);
+        UpdateDemoPlaybackGridAxis(SceneData);
         if (bPresentationMode)
         {
             ImGui::Render();
@@ -1129,6 +1132,8 @@ namespace MDSS
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
             ImGui::SetTooltip("초기 Scene 상태로 복원하고 리소스를 다시 불러오지 않은 채 접촉 입력을 재생합니다.");
 
+        ImGui::Separator();
+
         const std::filesystem::path SceneDirectory = std::filesystem::path(MDSS_ASSET_DIR) / "Scenes";
         const auto                  DrawDemoSceneButton = [&](const char* Label, const char* FileName)
         {
@@ -1155,6 +1160,12 @@ namespace MDSS
         ImGui::SameLine();
         DrawDemoSceneButton("Bunny", "Bunny.Scene");
         DrawDemoSceneButton("State-Driven Geometry", "StateDrivenGeometryDemo.Scene");
+        ImGui::TextDisabled("Showcase scenes:");
+        DrawDemoSceneButton("Lion Head", "Lion Head.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("Marble Bust 01", "Marble Bust 01.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("Rock 07", "Rock 07.Scene");
         ImGui::TextDisabled("Performance scenes:");
         DrawDemoSceneButton("3 Cubes", "BrickCube_3.Scene");
         ImGui::SameLine();
@@ -1196,6 +1207,28 @@ namespace MDSS
         {
             FrameRenderer->SetWorldGridVisible(bPresentationGridWasVisible);
             FrameRenderer->SetWorldAxisVisible(bPresentationAxisWasVisible);
+        }
+    }
+
+    void TDebugUI::UpdateDemoPlaybackGridAxis(TScene& SceneData)
+    {
+        const bool bShouldHide = SceneData.HasDemoAnimation() && SceneData.IsDemoAnimationPlaying();
+        if (bShouldHide && !bDemoPlaybackGridAxisHidden)
+        {
+            bDemoPlaybackGridWasVisible = FrameRenderer->IsWorldGridVisible();
+            bDemoPlaybackAxisWasVisible = FrameRenderer->IsWorldAxisVisible();
+            FrameRenderer->SetWorldGridVisible(false);
+            FrameRenderer->SetWorldAxisVisible(false);
+            bDemoPlaybackGridAxisHidden = true;
+        }
+        else if (!bShouldHide && bDemoPlaybackGridAxisHidden)
+        {
+            if (!bPresentationMode)
+            {
+                FrameRenderer->SetWorldGridVisible(bDemoPlaybackGridWasVisible);
+                FrameRenderer->SetWorldAxisVisible(bDemoPlaybackAxisWasVisible);
+            }
+            bDemoPlaybackGridAxisHidden = false;
         }
     }
 
@@ -2255,6 +2288,8 @@ namespace MDSS
                 ImGui::SetCursorPosX(RightControlsStart);
             }
 
+            const bool bDemoPlaybackActive = SceneData.HasDemoAnimation() && SceneData.IsDemoAnimationPlaying();
+            ImGui::BeginDisabled(bDemoPlaybackActive);
             bool bGridVisible = FrameRenderer->IsWorldGridVisible();
             if (ImGui::Checkbox("Grid", &bGridVisible))
             {
@@ -2266,6 +2301,7 @@ namespace MDSS
             {
                 FrameRenderer->SetWorldAxisVisible(bAxisVisible);
             }
+            ImGui::EndDisabled();
             ImGui::SameLine();
             ImGui::Checkbox("Overlays", &bViewportOverlaysVisible);
             if (ImGui::IsItemHovered())
@@ -2859,7 +2895,7 @@ namespace MDSS
                                          "Heat 포화도에 따라 표면 기본색을 색상 램프와 섞습니다. 현재 Heat 프로필은 높이를 쌓지 않습니다.");
                         DrawEffectToggle("WaterFilm", Effects.bWaterFilmDisplacement,
                                          Bindings.WaterFilm != SurfaceState::InvalidStateId,
-                                         "표면에 색조와 광택을 입히며 공통 accumulation 윗면에서 얇은 막 재질로 합성합니다.");
+                                         "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.");
                         DrawEffectToggle("Mud", Effects.bMudDisplacement, Bindings.Mud != SurfaceState::InvalidStateId,
                                          "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.");
                         DrawEffectToggle("Lava", Effects.bLavaDisplacement, Bindings.Lava != SurfaceState::InvalidStateId,
@@ -2876,11 +2912,26 @@ namespace MDSS
                                            });
                         DrawEffectSettings("WaterFilm", Effects.bWaterFilmDisplacement,
                                            Bindings.WaterFilm != SurfaceState::InvalidStateId,
-                                           "표면에 색조와 광택을 입히며 공통 accumulation 윗면에서 얇은 막 재질로 합성합니다.",
-                                           [&]() { DrawRamp(Effects.WaterFilmColorMap); });
+                                           "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
+                                           [&]()
+                                           {
+                                               EffectsChanged |= LabeledSliderFloat(
+                                                   "Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
+                                               DrawRamp(Effects.WaterFilmColorMap);
+                                           });
                         DrawEffectSettings("Mud", Effects.bMudDisplacement, Bindings.Mud != SurfaceState::InvalidStateId,
                                            "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.",
-                                           [&]() { DrawRamp(Effects.MudColorMap); });
+                                           [&]()
+                                           {
+                                                EffectsChanged |= LabeledSliderFloat(
+                                                    "Roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
+                                               EffectsChanged |= LabeledSliderFloat(
+                                                   "Noise amount", &Effects.MudNoiseAmount, 0.0F, 1.0F, "%.2f");
+                                               if (ImGui::IsItemHovered())
+                                                   SetDescriptionTooltip(
+                                                       "머드 표면의 절차적 미세요철 강도를 조절합니다. 0이면 매끈하고 1이면 요철이 가장 강합니다.");
+                                               DrawRamp(Effects.MudColorMap);
+                                           });
                         DrawEffectSettings("Lava", Effects.bLavaDisplacement, Bindings.Lava != SurfaceState::InvalidStateId,
                                            "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.",
                                            [&]()
@@ -2961,6 +3012,18 @@ namespace MDSS
                             }
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip("Overlay 전체, 윗면만, 또는 옆면만 표시합니다.");
+
+                            int ShadingDiagnostic = static_cast<int>(FrameRenderer->GetOverlayShadingDiagnostic());
+                            ImGui::SetNextItemWidth(180.0F);
+                            if (ImGui::Combo("Overlay shading diagnostic", &ShadingDiagnostic,
+                                             "Lit\0Fixed normal\0Normal RGB\0Front/back faces\0Mesh normal\0Vertex normal (old)\0Lit opaque\0State layers\0Mud diffuse\0Mud specular x4\0"))
+                                FrameRenderer->SetOverlayShadingDiagnostic(
+                                    static_cast<Rendering::TOverlayShadingDiagnostic>(ShadingDiagnostic));
+                            if (ImGui::IsItemHovered())
+                                SetDescriptionTooltip(
+                                    "Fixed normal은 조명 노멀을 일정하게 유지합니다. Normal RGB는 보간 노멀을, "
+                                    "Front/back faces는 삼각형 앞뒷면을, Mesh normal은 원본 메쉬 노멀을, "
+                                    "Lit은 texel 노멀을 픽셀별로 보간합니다. Vertex normal (old)는 이전 정점 보간 결과입니다.");
                         }
                         ImGui::EndDisabled();
 
@@ -4437,12 +4500,38 @@ namespace MDSS
         {
             SetDescriptionTooltip("반경 가장자리로 갈수록 주입 강도가 감소하는 정도를 조절합니다.");
         }
-        int Operation = static_cast<int>(InjectOperation);
-        if (ImGui::Combo("Operation", &Operation, "Add\0Remove\0"))
-            InjectOperation = static_cast<SurfaceState::ESurfaceContactOperation>(Operation);
-        int Shape = static_cast<int>(InjectShape);
-        if (ImGui::Combo("Shape", &Shape, "Circle\0Ellipse\0Rectangle\0Capsule\0"))
-            InjectShape = static_cast<SurfaceState::ESurfaceContactShape>(Shape);
+        const char* OperationPreview =
+            InjectOperation == SurfaceState::ESurfaceContactOperation::Remove ? "Remove" : "Add";
+        if (BeginLabeledCombo("Operation", OperationPreview))
+        {
+            if (ImGui::Selectable("Add", InjectOperation == SurfaceState::ESurfaceContactOperation::Add))
+                InjectOperation = SurfaceState::ESurfaceContactOperation::Add;
+            if (ImGui::Selectable("Remove", InjectOperation == SurfaceState::ESurfaceContactOperation::Remove))
+                InjectOperation = SurfaceState::ESurfaceContactOperation::Remove;
+            EndLabeledCombo();
+        }
+
+        const char* ShapePreview = "Circle";
+        switch (InjectShape)
+        {
+            case SurfaceState::ESurfaceContactShape::Ellipse: ShapePreview = "Ellipse"; break;
+            case SurfaceState::ESurfaceContactShape::Rectangle: ShapePreview = "Rectangle"; break;
+            case SurfaceState::ESurfaceContactShape::Capsule: ShapePreview = "Capsule"; break;
+            case SurfaceState::ESurfaceContactShape::Circle:
+            default: break;
+        }
+        if (BeginLabeledCombo("Shape", ShapePreview))
+        {
+            if (ImGui::Selectable("Circle", InjectShape == SurfaceState::ESurfaceContactShape::Circle))
+                InjectShape = SurfaceState::ESurfaceContactShape::Circle;
+            if (ImGui::Selectable("Ellipse", InjectShape == SurfaceState::ESurfaceContactShape::Ellipse))
+                InjectShape = SurfaceState::ESurfaceContactShape::Ellipse;
+            if (ImGui::Selectable("Rectangle", InjectShape == SurfaceState::ESurfaceContactShape::Rectangle))
+                InjectShape = SurfaceState::ESurfaceContactShape::Rectangle;
+            if (ImGui::Selectable("Capsule", InjectShape == SurfaceState::ESurfaceContactShape::Capsule))
+                InjectShape = SurfaceState::ESurfaceContactShape::Capsule;
+            EndLabeledCombo();
+        }
         if (InjectShape != SurfaceState::ESurfaceContactShape::Circle)
         {
             const char* SecondaryLabel = InjectShape == SurfaceState::ESurfaceContactShape::Capsule

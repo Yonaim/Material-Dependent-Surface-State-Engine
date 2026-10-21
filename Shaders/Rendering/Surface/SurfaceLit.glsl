@@ -112,9 +112,11 @@ void main()
             if ((EnabledEffects & 2u) != 0u)
                 Mud = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
                                                     Material.DemoStateChannels.y, Material.StateChannelCount);
+#endif
             if ((EnabledEffects & 4u) != 0u)
                 WaterFilm = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
                                                           Material.DemoStateChannels.z, Material.StateChannelCount);
+#ifndef BASE_SURFACE_LIT
             if ((EnabledEffects & 8u) != 0u)
                 Lava = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
                                                      Material.DemoExtraStateChannels.x, Material.StateChannelCount);
@@ -129,11 +131,11 @@ void main()
 #endif
         if ((EnabledEffects & 1u) != 0u)
             ApplyHeat(Heat, Color.rgb, Material.DemoEffectOptions.x);
-#ifndef BASE_SURFACE_LIT
         if ((EnabledEffects & 4u) != 0u)
             ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w);
-#else
-        WaterFilm = 0.0;
+#ifdef BASE_SURFACE_LIT
+        // 얇은 막은 바탕에서 반사하고, 고인 물의 표면 반사는 overlay가 맡는다.
+        WaterFilm *= 1.0 - smoothstep(0.20, 0.60, WaterFilm);
 #endif
     }
     OutColor = vec4(ShadeSurface(Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition,

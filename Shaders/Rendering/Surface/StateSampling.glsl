@@ -75,20 +75,26 @@ float SampleStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
     ivec2 Base = ivec2(floor(Pixel));
     vec2 F = fract(Pixel);
     float Value = 0.0;
+    float WeightSum = 0.0;
     for (int Y = 0; Y < 2; ++Y) for (int X = 0; X < 2; ++X)
     {
         ivec2 XY = clamp(Base + ivec2(X,Y), ivec2(0), ivec2(Range.yz) - 1);
         float Weight = (X == 0 ? 1.0-F.x : F.x) * (Y == 0 ? 1.0-F.y : F.y);
         uint T = Range.x + uint(XY.y) * Range.y + uint(XY.x);
 #if MDSS_GPU_VALIDATION
-        if (T < uint(TexelChartIndices.Values.length()) && TexelChartIndices.Values[T] == Chart &&
+        if (T < uint(TexelSurfaceIndices.Values.length()) && TexelSurfaceIndices.Values[T] == Surface &&
+            T < uint(TexelChartIndices.Values.length()) && TexelChartIndices.Values[T] == Chart &&
             T < uint(TexelProfileIndices.Values.length()) && TexelProfileIndices.Values[T] == Profile)
 #else
-        if (TexelChartIndices.Values[T] == Chart && TexelProfileIndices.Values[T] == Profile)
+        if (TexelSurfaceIndices.Values[T] == Surface &&
+            TexelChartIndices.Values[T] == Chart && TexelProfileIndices.Values[T] == Profile)
 #endif
+        {
             Value += Weight * StateSaturationForProfile(T, Channel, Channels, Profile);
+            WeightSum += Weight;
+        }
     }
-    return Value;
+    return WeightSum > 1e-6 ? Value / WeightSum : 0.0;
 }
 
 float SampleSmoothedStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
@@ -191,16 +197,23 @@ vec4 SampleStateSaturations(uint Surface, vec2 UV, uvec4 StateChannels, uint Cha
     ivec2 Base = ivec2(floor(Pixel));
     vec2 F = fract(Pixel);
     vec4 Values = vec4(0.0);
+    float WeightSum = 0.0;
     for (int Y = 0; Y < 2; ++Y) for (int X = 0; X < 2; ++X)
     {
         ivec2 XY = clamp(Base + ivec2(X,Y), ivec2(0), ivec2(Range.yz) - 1);
         float Weight = (X == 0 ? 1.0-F.x : F.x) * (Y == 0 ? 1.0-F.y : F.y);
         uint T = Range.x + uint(XY.y) * Range.y + uint(XY.x);
 #if MDSS_GPU_VALIDATION
-        if (T >= uint(TexelChartIndices.Values.length()) || T >= uint(TexelProfileIndices.Values.length())) continue;
+        if (T >= uint(TexelSurfaceIndices.Values.length()) ||
+            T >= uint(TexelChartIndices.Values.length()) ||
+            T >= uint(TexelProfileIndices.Values.length())) continue;
 #endif
-        if (TexelChartIndices.Values[T] == Chart && TexelProfileIndices.Values[T] == Profile)
+        if (TexelSurfaceIndices.Values[T] == Surface &&
+            TexelChartIndices.Values[T] == Chart && TexelProfileIndices.Values[T] == Profile)
+        {
             Values += Weight * StateSaturationsForProfile(T, Channels, Profile, StateChannels);
+            WeightSum += Weight;
+        }
     }
-    return Values;
+    return WeightSum > 1e-6 ? Values / WeightSum : vec4(0.0);
 }

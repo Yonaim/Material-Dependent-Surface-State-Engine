@@ -170,6 +170,7 @@ namespace MDSS
         // Shared layout helpers
         void                      SetupDockspace();
         void                      ApplyCameraViewPreset(TScene& SceneData, std::size_t Index);
+        void                      UpdateDemoPlaybackGridAxis(TScene& SceneData);
         [[nodiscard]] TCamera&    GetViewportCamera(TScene& SceneData, std::size_t Index) noexcept;
         [[nodiscard]] std::size_t GetActiveViewportIndex() const noexcept;
         static constexpr float    SectionHeaderTopPadding = 8.0F;
@@ -190,6 +191,9 @@ namespace MDSS
         bool                               bPresentationMode = false;
         bool                               bPresentationGridWasVisible = false;
         bool                               bPresentationAxisWasVisible = false;
+        bool                               bDemoPlaybackGridAxisHidden = false;
+        bool                               bDemoPlaybackGridWasVisible = false;
+        bool                               bDemoPlaybackAxisWasVisible = false;
         SurfaceState::TStateId             InjectState = 0;
         SurfaceState::TStateId             DebugState = 0;
         float                              InjectStrength = 1.0F;

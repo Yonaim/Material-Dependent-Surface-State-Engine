@@ -29,6 +29,8 @@ struct TSideSegment
     vec4 BaseB;
     vec4 TopB;
     vec4 Inside;
+    vec4 NormalA;
+    vec4 NormalB;
 };
 
 struct TDrawCommand
@@ -158,7 +160,97 @@ TPoint Interpolate(TPoint A, TPoint B, float T)
     return P;
 }
 
-void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface)
+vec3 SideNormal(TPoint A, TPoint B, vec3 Inside)
+{
+    vec3 Edge = B.Base - A.Base;
+    vec3 Up = 0.5 * (A.Top + B.Top - A.Base - B.Base);
+    vec3 N = cross(Edge, Up);
+    if (dot(N, N) < 1e-16) N = cross(Edge, A.Top - A.Base);
+    if (dot(N, N) < 1e-16) N = vec3(0.0, 0.0, 1.0);
+    N = normalize(N);
+    if (dot(N, 0.5 * (A.Base + B.Base) - Inside) < 0.0) N = -N;
+    return N;
+}
+
+bool ReadSide(uint Slot, out TPoint A, out TPoint B, out vec3 Inside)
+{
+    const float Cutoff = 0.02;
+    uint TriangleCount = uint(MeshIndices.Values.length()) / 3u;
+    if (Slot < TriangleCount)
+    {
+        uvec3 Indices = uvec3(MeshIndices.Values[Slot * 3u], MeshIndices.Values[Slot * 3u + 1u],
+                              MeshIndices.Values[Slot * 3u + 2u]);
+        if (any(greaterThanEqual(Indices, uvec3(MeshVertices.Values.length())))) return false;
+        vec3 C = vec3(uintBitsToFloat(Coverage.Values[Indices.x]),
+                      uintBitsToFloat(Coverage.Values[Indices.y]),
+                      uintBitsToFloat(Coverage.Values[Indices.z]));
+        uint CrossingEdges[2];
+        float CrossingParameters[2];
+        uint CrossingCount = 0u;
+        uint InsideVertex = 0u;
+        for (uint I = 0u; I < 3u; ++I)
+        {
+            uint J = (I + 1u) % 3u;
+            bool ActiveA = C[I] > Cutoff;
+            bool ActiveB = C[J] > Cutoff;
+            if (ActiveA) InsideVertex = I;
+            if (ActiveA != ActiveB && CrossingCount < 2u)
+            {
+                CrossingEdges[CrossingCount] = I;
+                CrossingParameters[CrossingCount] = clamp((Cutoff - C[I]) / (C[J] - C[I]), 0.0, 1.0);
+                ++CrossingCount;
+            }
+        }
+        if (CrossingCount != 2u) return false;
+        TPoint P[3];
+        P[0] = ReadGeometryPoint(Indices.x);
+        P[1] = ReadGeometryPoint(Indices.y);
+        P[2] = ReadGeometryPoint(Indices.z);
+        uint EA = CrossingEdges[0], EB = CrossingEdges[1];
+        A = Interpolate(P[EA], P[(EA + 1u) % 3u], CrossingParameters[0]);
+        B = Interpolate(P[EB], P[(EB + 1u) % 3u], CrossingParameters[1]);
+        Inside = P[InsideVertex].Base;
+        return true;
+    }
+    uint Boundary = Slot - TriangleCount;
+    if (Boundary >= Push.BoundaryCount) return false;
+    uvec4 Edge = BoundaryEdges.Values[Boundary];
+    if (Edge.x >= uint(MeshVertices.Values.length()) || Edge.y >= uint(MeshVertices.Values.length()) ||
+        Edge.z >= uint(MeshVertices.Values.length())) return false;
+    float CA = uintBitsToFloat(Coverage.Values[Edge.x]);
+    float CB = uintBitsToFloat(Coverage.Values[Edge.y]);
+    bool ActiveA = CA > Cutoff, ActiveB = CB > Cutoff;
+    if (!ActiveA && !ActiveB) return false;
+    float TA = 0.0, TB = 1.0;
+    if (ActiveA != ActiveB)
+    {
+        float T = clamp((Cutoff - CA) / (CB - CA), 0.0, 1.0);
+        if (ActiveA) TB = T;
+        else TA = T;
+    }
+    TPoint PA = ReadGeometryPoint(Edge.x), PB = ReadGeometryPoint(Edge.y);
+    A = Interpolate(PA, PB, TA);
+    B = Interpolate(PA, PB, TB);
+    Inside = ReadGeometryPoint(Edge.z).Base;
+    return true;
+}
+
+vec3 SmoothSideNormal(vec3 Current, uint NeighborSlot)
+{
+    if (NeighborSlot >= uint(BoundaryEdges.Values.length()) - Push.BoundaryCount) return Current;
+    TPoint A, B;
+    vec3 Inside;
+    if (!ReadSide(NeighborSlot, A, B, Inside)) return Current;
+    vec3 Neighbor = SideNormal(A, B, Inside);
+    // Smooth every connected pair. Opposing normals cancel, so retain the current
+    // face normal for that degenerate case instead of normalizing a near-zero vector.
+    vec3 Average = Current + Neighbor;
+    if (dot(Average, Average) < 1e-8) return Current;
+    return normalize(Average);
+}
+
+void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface,
+                  vec3 NormalA, vec3 NormalB)
 {
     // 한 segment는 두 삼각형, 즉 정점 6개로 그릴 수 있도록 draw command와 segment buffer를 갱신한다.
     uint LocalVertex = atomicAdd(DrawCommands.Values[Group].VertexCount, 6u);
@@ -168,6 +260,8 @@ void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface)
     Segments.Values[Segment].BaseB = vec4(B.Base, B.UV.x);
     Segments.Values[Segment].TopB = vec4(B.Top, B.UV.y);
     Segments.Values[Segment].Inside = vec4(Inside, Surface);
+    Segments.Values[Segment].NormalA = vec4(NormalA, 0.0);
+    Segments.Values[Segment].NormalB = vec4(NormalB, 0.0);
 }
 
 void main()
@@ -277,7 +371,12 @@ void main()
         uint EdgeB = CrossingEdges[1];
         TPoint A = Interpolate(P[EdgeA], P[(EdgeA + 1u) % 3u], CrossingParameters[0]);
         TPoint B = Interpolate(P[EdgeB], P[(EdgeB + 1u) % 3u], CrossingParameters[1]);
-        WriteSegment(Group, A, B, P[InsideVertex].Base, MeshVertices.Values[Indices.x].UVSurface.w);
+        vec3 Inside = P[InsideVertex].Base;
+        vec3 Normal = SideNormal(A, B, Inside);
+        uvec4 Neighbors = BoundaryEdges.Values[Push.BoundaryCount + Slot];
+        WriteSegment(Group, A, B, Inside, MeshVertices.Values[Indices.x].UVSurface.w,
+                     SmoothSideNormal(Normal, Neighbors[EdgeA]),
+                     SmoothSideNormal(Normal, Neighbors[EdgeB]));
         return;
     }
 
@@ -302,6 +401,11 @@ void main()
     TPoint EdgeB = ReadGeometryPoint(Edge.y);
     TPoint A = Interpolate(EdgeA, EdgeB, ParameterA);
     TPoint B = Interpolate(EdgeA, EdgeB, ParameterB);
-    WriteSegment(uint(DrawCommands.Values.length()) - 2u, A, B,
-                 ReadGeometryPoint(Edge.z).Base, MeshVertices.Values[Edge.x].UVSurface.w);
+    vec3 Inside = ReadGeometryPoint(Edge.z).Base;
+    vec3 Normal = SideNormal(A, B, Inside);
+    uvec4 Neighbors = BoundaryEdges.Values[Push.BoundaryCount + Slot];
+    WriteSegment(uint(DrawCommands.Values.length()) - 2u, A, B, Inside,
+                 MeshVertices.Values[Edge.x].UVSurface.w,
+                 SmoothSideNormal(Normal, AActive ? Neighbors.x : Neighbors.z),
+                 SmoothSideNormal(Normal, BActive ? Neighbors.y : Neighbors.z));
 }

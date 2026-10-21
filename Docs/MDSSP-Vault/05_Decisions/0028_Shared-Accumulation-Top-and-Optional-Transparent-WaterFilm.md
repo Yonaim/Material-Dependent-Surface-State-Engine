@@ -1,10 +1,12 @@
 # Decision 0028 — 공통 누적 윗면과 선택적 투명 WaterFilm
 
-> **한 줄 요약:** State별 Render Layer 대신 누적 높이의 공통 윗면에서 재질을 합성하고, 옵션을 켠 경우에만 WaterFilm을 투명 윗면으로 분리한다.
+> **한 줄 요약:** State별 Render Layer 대신 누적 높이의 공통 윗면에서 재질을 합성한다. 선택적 별도 WaterFilm 윗면은 이 결정의 후속 Decision 0030에서 단일 표면 합성으로 조정했다.
 
 - 분류: **Rendering**
-- Status: **Accepted (코드 반영, 128 해상도 제한 프레임 실행 확인; 화면 품질·성능 검증 진행 중)**
+- Status: **Accepted (공통 윗면 구조 유지; WaterFilm 렌더 경로는 Decision 0030에서 후속 조정)**
 - Date: 2026-10-05
+
+Decision 0030 supersedes this document's separate transparent WaterFilm pass and `H_opaque` rendering path. The shared `H_total` top remains the common geometry.
 
 ## Context
 
@@ -40,6 +42,7 @@ Decision 0019의 초기 구현은 Mud·WaterFilm·Lava를 각각 별도 윗면�
 
 ## Related
 
+- [[05_Decisions/0030_Shared-Top-Mud-Water-Composition|Decision 0030 — 후속 Mud·WaterFilm 재질 합성]]
 - [[05_Decisions/0019_Base-Surface-and-Accumulation-Overlay|Decision 0019 — 초기 Base/Overlay 분리]]
 - [[05_Decisions/0027_Heat-Red-Lit-Demo|Decision 0027 — Heat 외관]]
 - [[03_Architecture/0008_Rendering|Surface State Rendering]]

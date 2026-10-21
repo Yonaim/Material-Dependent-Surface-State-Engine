@@ -25,9 +25,9 @@ namespace MDSS::Rendering
 
         struct alignas(16) TSideSegment
         {
-            glm::vec4 BaseA, TopA, BaseB, TopB, Inside;
+            glm::vec4 BaseA, TopA, BaseB, TopB, Inside, NormalA, NormalB;
         };
-        static_assert(sizeof(TSideSegment) == 80);
+        static_assert(sizeof(TSideSegment) == 112);
         static_assert(sizeof(VkDrawIndirectCommand) == 16);
         static_assert(sizeof(VkDrawIndexedIndirectCommand) == 20);
 
@@ -86,7 +86,7 @@ namespace MDSS::Rendering
             LayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             LayoutInfo.setLayoutCount = static_cast<std::uint32_t>(Layouts.size());
             LayoutInfo.pSetLayouts = Layouts.data();
-            const VkPushConstantRange BoundaryPush{VK_SHADER_STAGE_COMPUTE_BIT, 0, 48U};
+            const VkPushConstantRange BoundaryPush{VK_SHADER_STAGE_COMPUTE_BIT, 0, 52U};
             LayoutInfo.pushConstantRangeCount = 1;
             LayoutInfo.pPushConstantRanges = &BoundaryPush;
             RequireVk(vkCreatePipelineLayout(Device, &LayoutInfo, nullptr, &PipelineLayout));
@@ -267,7 +267,8 @@ namespace MDSS::Rendering
                                            float                                                 HeightDisplayScale,
                                            std::array<std::uint32_t, 3>                          MaterialChannels,
                                            std::uint32_t                                         ActiveMaterialMask,
-                                           bool                                                  bSharedCoverageHalo)
+                                           bool                                                  bSharedCoverageHalo,
+                                           float                                                 LavaThreshold)
     {
         if (FrameIndex >= TRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Overlay activity frame slot is invalid.");
@@ -485,6 +486,7 @@ namespace MDSS::Rendering
             It->second.LastGeometryRevisions != GeometryRevisions ||
             It->second.LastProfileRevision != ProfileRevision ||
             It->second.LastHeightDisplayScale != HeightDisplayScale ||
+            It->second.LastLavaThreshold != LavaThreshold ||
             It->second.bLastSmoothCoverage != bSmoothCoverage ||
             It->second.bLastSharedCoverageHalo != bSharedCoverageHalo ||
             It->second.bLastUseOpaqueBase != bUseOpaqueBase;
@@ -512,8 +514,9 @@ namespace MDSS::Rendering
             float         HeightDisplayScale;
             std::uint32_t UseOpaqueBase;
             std::uint32_t Padding;
+            float         LavaThreshold;
         };
-        static_assert(sizeof(TOverlayPush) == 48);
+        static_assert(sizeof(TOverlayPush) == 52);
         const TOverlayPush Push{MaterialChannels[0],
                                 MaterialChannels[1],
                                 MaterialChannels[2],
@@ -525,7 +528,8 @@ namespace MDSS::Rendering
                                 Boundaries,
                                 HeightDisplayScale,
                                 bUseOpaqueBase ? 1U : 0U,
-                                (Mapping->second.TileCount << 1U) | (bFullCoverageUpdate ? 1U : 0U)};
+                                (Mapping->second.TileCount << 1U) | (bFullCoverageUpdate ? 1U : 0U),
+                                LavaThreshold};
 
         std::array<VkBufferMemoryBarrier, 4> Barriers{};
         for (auto& Barrier : Barriers)
@@ -631,6 +635,7 @@ namespace MDSS::Rendering
         It->second.LastGeometryRevisions = GeometryRevisions;
         It->second.LastProfileRevision = ProfileRevision;
         It->second.LastHeightDisplayScale = HeightDisplayScale;
+        It->second.LastLavaThreshold = LavaThreshold;
         It->second.bLastSmoothCoverage = bSmoothCoverage;
         It->second.bLastSharedCoverageHalo = bSharedCoverageHalo;
         It->second.bLastUseOpaqueBase = bUseOpaqueBase;

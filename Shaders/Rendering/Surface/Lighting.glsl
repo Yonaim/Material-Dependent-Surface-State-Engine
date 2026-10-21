@@ -27,8 +27,8 @@ vec3 EvaluateWaterFilmEnvironment(vec3 ReflectionDirection, float PerceptualRoug
                            vec3(0.34, 0.40, 0.48),
                            smoothstep(0.08, 0.92, Height));
 
-    float PanelExponent = mix(10.0, 96.0, 1.0 - clamp(PerceptualRoughness, 0.0, 1.0));
-    float KeyPanel = pow(max(dot(ReflectionDirection, normalize(vec3(-0.45, 0.28, 0.85))), 0.0),
+    float PanelExponent = mix(8.0, 32.0, 1.0 - clamp(PerceptualRoughness, 0.0, 1.0));
+    float KeyPanel = pow(max(dot(ReflectionDirection, normalize(vec3(-0.39, 0.79, 0.55))), 0.0),
                          PanelExponent);
     float FillPanel = pow(max(dot(ReflectionDirection, normalize(vec3(0.55, 0.05, 0.72))), 0.0),
                           PanelExponent * 0.72);
@@ -37,7 +37,7 @@ vec3 EvaluateWaterFilmEnvironment(vec3 ReflectionDirection, float PerceptualRoug
 }
 
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
-                  float WaterFilmCoverage)
+                  float WaterFilmCoverage, float DirectSpecularLimit)
 {
     // 고정 key light와 ambient 항에 WaterFilm clear coat 및 반사를 더한다.
     vec3 V = ViewVector * inversesqrt(max(dot(ViewVector, ViewVector), 1e-12));
@@ -54,7 +54,13 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
     float GGXL = NoV * sqrt(NoL * NoL * (1.0-A2) + A2);
     float Visibility = 0.5 / max(GGXV + GGXL, 1e-6);
     float F = 0.04 + 0.96 * pow(1.0 - VoH, 5.0);
-    vec3 Direct = ((1.0-F) * Albedo + vec3(3.14159265 * D * Visibility * F)) * NoL;
+    float DirectSpecular = 3.14159265 * D * Visibility * F * NoL;
+    // The demo renders directly to an LDR target. A nonnegative limit compresses
+    // only the bright peak; negative values keep the original BRDF response.
+    if (DirectSpecularLimit >= 0.0)
+        DirectSpecular = DirectSpecularLimit * DirectSpecular /
+                         max(DirectSpecularLimit + DirectSpecular, 1e-8);
+    vec3 Direct = (1.0 - F) * Albedo * NoL + vec3(DirectSpecular);
 
     float Film = clamp(WaterFilmCoverage, 0.0, 1.0);
     float StateHighlight = 0.0;
@@ -73,5 +79,11 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
 
 vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient)
 {
-    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0);
+    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0, -1.0);
+}
+
+vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient,
+                  float WaterFilmCoverage)
+{
+    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, WaterFilmCoverage, -1.0);
 }
