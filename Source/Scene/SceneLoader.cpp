@@ -166,7 +166,7 @@ namespace MDSS
     TScene TSceneLoader::Load(const std::filesystem::path&       Path,
                               Asset::TAssetManager&              Assets,
                               SurfaceState::TSurfaceDataManager& SurfaceData,
-                              std::optional<std::uint32_t>        ResolutionOverride)
+                              std::optional<std::uint32_t>       ResolutionOverride)
     {
         std::ifstream Input(Path);
         if (!Input)

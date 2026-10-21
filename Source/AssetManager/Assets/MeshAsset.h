@@ -51,9 +51,15 @@ namespace MDSS::Asset
                    std::vector<TMeshTriangleSource> Triangles);
 
         // CPU mesh data and GPU buffer access
-        [[nodiscard]] const std::vector<TVertex>&             GetVertices() const noexcept;
-        [[nodiscard]] const glm::vec3& GetBoundsCenter() const noexcept { return BoundsCenter; }
-        [[nodiscard]] float GetBoundsRadius() const noexcept { return BoundsRadius; }
+        [[nodiscard]] const std::vector<TVertex>& GetVertices() const noexcept;
+        [[nodiscard]] const glm::vec3&            GetBoundsCenter() const noexcept
+        {
+            return BoundsCenter;
+        }
+        [[nodiscard]] float GetBoundsRadius() const noexcept
+        {
+            return BoundsRadius;
+        }
         [[nodiscard]] const std::vector<std::uint32_t>&       GetIndices() const noexcept;
         [[nodiscard]] const std::vector<TMeshSection>&        GetSections() const noexcept;
         [[nodiscard]] const std::vector<TMeshTriangleSource>& GetTriangles() const noexcept;

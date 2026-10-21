@@ -52,7 +52,8 @@ namespace MDSS::SurfaceState
 
         std::size_t RawModeFromFlags(std::uint32_t Flags)
         {
-            if ((Flags & SurfaceSolverRawFluxCacheFlag) == 0U) return 0U;
+            if ((Flags & SurfaceSolverRawFluxCacheFlag) == 0U)
+                return 0U;
             const bool Coalesced = (Flags & SurfaceSolverCoalescedRawFluxLayoutFlag) != 0U;
             const bool Half = (Flags & SurfaceSolverHalfRawFluxCacheFlag) != 0U;
             return Half ? (Coalesced ? 4U : 3U) : (Coalesced ? 2U : 1U);
@@ -89,10 +90,10 @@ namespace MDSS::SurfaceState
             Constants.GravityWorld = {Step.GravityWorld.x, Step.GravityWorld.y, Step.GravityWorld.z, 0.0F};
 
             constexpr float GeometryEpsilon = 1.0e-6F;
-            const glm::mat3  ModelLinear(Step.ModelMatrix);
-            glm::mat3        NormalMatrix(0.0F);
-            glm::vec3        Up(0.0F);
-            const float      Determinant = glm::determinant(ModelLinear);
+            const glm::mat3 ModelLinear(Step.ModelMatrix);
+            glm::mat3       NormalMatrix(0.0F);
+            glm::vec3       Up(0.0F);
+            const float     Determinant = glm::determinant(ModelLinear);
             if (std::isfinite(Determinant) && std::abs(Determinant) > GeometryEpsilon)
                 NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
             const float GravityLength = glm::length(Step.GravityWorld);
@@ -113,9 +114,9 @@ namespace MDSS::SurfaceState
             return Constants;
         }
 
-        void RecordBufferBarriers(VkCommandBuffer CommandBuffer,
-                                  VkPipelineStageFlags SourceStages,
-                                  VkPipelineStageFlags DestinationStages,
+        void RecordBufferBarriers(VkCommandBuffer                           CommandBuffer,
+                                  VkPipelineStageFlags                      SourceStages,
+                                  VkPipelineStageFlags                      DestinationStages,
                                   const std::vector<VkBufferMemoryBarrier>& Barriers)
         {
             if (Barriers.empty())
@@ -166,27 +167,27 @@ namespace MDSS::SurfaceState
             AccumulationHeightPipeline = CreateComputePipeline(
                 Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceAccumulationHeight.comp.spv").c_str());
             SparseScheduleResetPipeline = CreateComputePipeline(
-                Device,
-                PipelineLayout,
-                (ShaderRoot + "/Simulation/SurfaceSparseScheduleReset.comp.spv").c_str());
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceSparseScheduleReset.comp.spv").c_str());
             AccumulationGeometryPipeline = CreateComputePipeline(
-                Device,
-                PipelineLayout,
-                (ShaderRoot + "/Simulation/SurfaceDynamicGeometryUpdate.comp.spv").c_str());
+                Device, PipelineLayout, (ShaderRoot + "/Simulation/SurfaceDynamicGeometryUpdate.comp.spv").c_str());
             for (std::size_t Weight = 0; Weight < DynamicTransferWeightPipelines.size(); ++Weight)
                 DynamicTransferWeightPipelines[Weight] = CreateComputePipeline(
-                    Device, PipelineLayout,
-                    (ShaderRoot + "/Simulation/SurfaceDynamicWeightsUpdate.comp.w" + std::to_string(Weight) + ".spv").c_str());
+                    Device,
+                    PipelineLayout,
+                    (ShaderRoot + "/Simulation/SurfaceDynamicWeightsUpdate.comp.w" + std::to_string(Weight) + ".spv")
+                        .c_str());
             for (std::size_t Raw = 0; Raw < 5; ++Raw)
                 for (std::size_t Weight = 0; Weight < 2; ++Weight)
                 {
                     const std::size_t Index = Raw * 2U + Weight;
                     const std::string Variant = ".comp.r" + std::to_string(Raw) + "w" + std::to_string(Weight) + ".spv";
                     Pass1Pipelines[Index] = CreateComputePipeline(
-                        Device, PipelineLayout,
+                        Device,
+                        PipelineLayout,
                         (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass1" + Variant).c_str());
                     Pass2Pipelines[Index] = CreateComputePipeline(
-                        Device, PipelineLayout,
+                        Device,
+                        PipelineLayout,
                         (ShaderRoot + "/Simulation/SurfaceSolver/SurfaceSolverPass2" + Variant).c_str());
                 }
         }
@@ -199,11 +200,14 @@ namespace MDSS::SurfaceState
             if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
                 vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
             for (VkPipeline Pipeline : DynamicTransferWeightPipelines)
-                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+                if (Pipeline != VK_NULL_HANDLE)
+                    vkDestroyPipeline(Device, Pipeline, nullptr);
             for (VkPipeline Pipeline : Pass1Pipelines)
-                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+                if (Pipeline != VK_NULL_HANDLE)
+                    vkDestroyPipeline(Device, Pipeline, nullptr);
             for (VkPipeline Pipeline : Pass2Pipelines)
-                if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+                if (Pipeline != VK_NULL_HANDLE)
+                    vkDestroyPipeline(Device, Pipeline, nullptr);
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
             PipelineLayout = VK_NULL_HANDLE;
             throw;
@@ -219,11 +223,14 @@ namespace MDSS::SurfaceState
         if (AccumulationGeometryPipeline != VK_NULL_HANDLE)
             vkDestroyPipeline(Device, AccumulationGeometryPipeline, nullptr);
         for (VkPipeline Pipeline : DynamicTransferWeightPipelines)
-            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pipeline, nullptr);
         for (VkPipeline Pipeline : Pass1Pipelines)
-            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pipeline, nullptr);
         for (VkPipeline Pipeline : Pass2Pipelines)
-            if (Pipeline != VK_NULL_HANDLE) vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, Pipeline, nullptr);
         if (PipelineLayout != VK_NULL_HANDLE)
         {
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
@@ -246,27 +253,24 @@ namespace MDSS::SurfaceState
                                          std::uint32_t                           FirstPassQuery,
                                          bool                                    bPrepareAccumulationHeight) const
     {
-        const TSurfaceSolverInstanceStep Step{
-            &Descriptors,
-            bCurrentStateAB,
-            TexelCount,
-            ChannelCount,
-            DeltaTime,
-            ModelMatrix,
-            GravityWorld,
-            SolverFlags,
-            bPrepareAccumulationHeight,
-            false};
-        RecordSteps(CommandBuffer,
-                    std::span<const TSurfaceSolverInstanceStep>(&Step, 1U),
-                    TimestampQueryPool,
-                    FirstPassQuery);
+        const TSurfaceSolverInstanceStep Step{&Descriptors,
+                                              bCurrentStateAB,
+                                              TexelCount,
+                                              ChannelCount,
+                                              DeltaTime,
+                                              ModelMatrix,
+                                              GravityWorld,
+                                              SolverFlags,
+                                              bPrepareAccumulationHeight,
+                                              false};
+        RecordSteps(
+            CommandBuffer, std::span<const TSurfaceSolverInstanceStep>(&Step, 1U), TimestampQueryPool, FirstPassQuery);
     }
 
-    void TSurfaceStateSolver::RecordSteps(VkCommandBuffer CommandBuffer,
+    void TSurfaceStateSolver::RecordSteps(VkCommandBuffer                             CommandBuffer,
                                           std::span<const TSurfaceSolverInstanceStep> InstanceSteps,
-                                          VkQueryPool   TimestampQueryPool,
-                                          std::uint32_t FirstStepQuery) const
+                                          VkQueryPool                                 TimestampQueryPool,
+                                          std::uint32_t                               FirstStepQuery) const
     {
         if (CommandBuffer == VK_NULL_HANDLE)
             throw std::invalid_argument("Surface State solver requires a command buffer.");
@@ -306,16 +310,16 @@ namespace MDSS::SurfaceState
 
             TPreparedStep Item;
             Item.Step = &Step;
-            Item.CurrentDescriptorSet = Step.bCurrentStateAB ? Step.Descriptors->GetABSet() : Step.Descriptors->GetBASet();
+            Item.CurrentDescriptorSet =
+                Step.bCurrentStateAB ? Step.Descriptors->GetABSet() : Step.Descriptors->GetBASet();
             Item.NextDescriptorSet = Step.bCurrentStateAB ? Step.Descriptors->GetBASet() : Step.Descriptors->GetABSet();
             Item.WorkgroupCount = static_cast<std::uint32_t>((Step.TexelCount + 63U) / 64U);
             Item.HeightBuffer = Step.Descriptors->GetBoundBufferHandle(
                 TSurfaceGPUDescriptorBinding::AccumulationHeights, Step.bCurrentStateAB);
 
             const TSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(Step.TexelCount);
-            const std::size_t SolverCommandWord = Step.bCurrentStateAB
-                                                      ? SparseLayout.SolverACommandWord
-                                                      : SparseLayout.SolverBCommandWord;
+            const std::size_t                  SolverCommandWord =
+                Step.bCurrentStateAB ? SparseLayout.SolverACommandWord : SparseLayout.SolverBCommandWord;
             Item.SolverIndirectOffset = static_cast<VkDeviceSize>(SolverCommandWord * sizeof(std::uint32_t));
             Item.AccumulationIndirectOffset =
                 static_cast<VkDeviceSize>(SparseLayout.AccumulationCommandWord * sizeof(std::uint32_t));
@@ -339,19 +343,19 @@ namespace MDSS::SurfaceState
 
             Item.PostConstants = Item.Constants;
             // A force-full prebuild makes CurrentState geometry valid before Pass1. The newly-produced state can
-            // then use normal sparse dirty propagation. If no prebuild happened (state-driven updates OFF), keep ForceFull
-            // so the final render-height pass refreshes every texel without cache/revision bookkeeping.
+            // then use normal sparse dirty propagation. If no prebuild happened (state-driven updates OFF), keep
+            // ForceFull so the final render-height pass refreshes every texel without cache/revision bookkeeping.
             if (Item.bNeedsPreSolverGeometryBuild)
                 Item.PostConstants.Flags &= ~SurfaceSolverForceFullGeometryFlag;
 
             Item.PrebuildConstants = Item.Constants;
-            Item.PrebuildConstants.Flags &= ~(SurfaceSolverSparseGeometryFlag |
-                                               SurfaceSolverSparseAccumulationHeightFlag |
-                                               SurfaceSolverSparseSolverFlag);
+            Item.PrebuildConstants.Flags &=
+                ~(SurfaceSolverSparseGeometryFlag | SurfaceSolverSparseAccumulationHeightFlag |
+                  SurfaceSolverSparseSolverFlag);
 
             const bool bSparseSolver = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U;
-            const bool bActiveChannelMask = (Item.Constants.Flags &
-                (SurfaceSolverActiveChannelMaskFlag | SurfaceSolverPerWorkgroupChannelMaskFlag)) != 0U;
+            const bool bActiveChannelMask = (Item.Constants.Flags & (SurfaceSolverActiveChannelMaskFlag |
+                                                                     SurfaceSolverPerWorkgroupChannelMaskFlag)) != 0U;
             const bool bSparseHeight = (Item.Constants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U;
             // One fused reset pass clears only the destination persistent set, Height/Geometry schedules,
             // and merges any CPU-known input groups into the current persistent set. No full-state scan remains.
@@ -377,37 +381,23 @@ namespace MDSS::SurfaceState
                              0,
                              nullptr);
 
-        const auto BindStep = [&](VkDescriptorSet DescriptorSet,
-                                  const TSurfaceSolverPushConstants& Constants)
+        const auto BindStep = [&](VkDescriptorSet DescriptorSet, const TSurfaceSolverPushConstants& Constants)
         {
-            vkCmdBindDescriptorSets(CommandBuffer,
-                                    VK_PIPELINE_BIND_POINT_COMPUTE,
-                                    PipelineLayout,
-                                    0,
-                                    1,
-                                    &DescriptorSet,
-                                    0,
-                                    nullptr);
-            vkCmdPushConstants(CommandBuffer,
-                               PipelineLayout,
-                               VK_SHADER_STAGE_COMPUTE_BIT,
-                               0,
-                               sizeof(Constants),
-                               &Constants);
+            vkCmdBindDescriptorSets(
+                CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &DescriptorSet, 0, nullptr);
+            vkCmdPushConstants(
+                CommandBuffer, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Constants), &Constants);
         };
         const auto WriteTimestamp = [&](std::uint32_t Offset)
         {
             if (TimestampQueryPool != VK_NULL_HANDLE)
-                vkCmdWriteTimestamp(CommandBuffer,
-                                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                    TimestampQueryPool,
-                                    FirstStepQuery + Offset);
+                vkCmdWriteTimestamp(
+                    CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstStepQuery + Offset);
         };
-        const auto AppendGeometryBarriers = [&](std::vector<VkBufferMemoryBarrier>& Barriers,
-                                                const TPreparedStep&                Item)
+        const auto AppendGeometryBarriers = [&](std::vector<VkBufferMemoryBarrier>& Barriers, const TPreparedStep& Item)
         {
             const auto& Descriptors = *Item.Step->Descriptors;
-            const bool CurrentAB = Item.Step->bCurrentStateAB;
+            const bool  CurrentAB = Item.Step->bCurrentStateAB;
             Barriers.push_back(MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::DynamicGeometry, CurrentAB),
                 VK_ACCESS_SHADER_READ_BIT));
@@ -416,10 +406,10 @@ namespace MDSS::SurfaceState
 
         // Lifecycle bootstrap only: build CurrentState-derived data once before the solver when a reset,
         // profile edit or transform change invalidated it. This path deliberately bypasses sparse lists.
-        const bool bAnyPreSolverBuild = std::any_of(Prepared.begin(), Prepared.end(), [](const TPreparedStep& Item)
-        {
-            return Item.bNeedsPreSolverGeometryBuild;
-        });
+        const bool bAnyPreSolverBuild =
+            std::any_of(Prepared.begin(),
+                        Prepared.end(),
+                        [](const TPreparedStep& Item) { return Item.bNeedsPreSolverGeometryBuild; });
         if (bAnyPreSolverBuild)
         {
             std::vector<VkBufferMemoryBarrier> Barriers;
@@ -428,40 +418,40 @@ namespace MDSS::SurfaceState
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationHeightPipeline);
             for (const TPreparedStep& Item : Prepared)
             {
-                if (!Item.bNeedsPreSolverGeometryBuild) continue;
+                if (!Item.bNeedsPreSolverGeometryBuild)
+                    continue;
                 BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 Barriers.push_back(MakeComputeBufferBarrier(Item.HeightBuffer, VK_ACCESS_SHADER_READ_BIT));
             }
-            RecordBufferBarriers(CommandBuffer,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 Barriers);
+            RecordBufferBarriers(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, Barriers);
 
             Barriers.clear();
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationGeometryPipeline);
             for (const TPreparedStep& Item : Prepared)
             {
-                if (!Item.bNeedsPreSolverGeometryBuild) continue;
+                if (!Item.bNeedsPreSolverGeometryBuild)
+                    continue;
                 BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 AppendGeometryBarriers(Barriers, Item);
             }
-            RecordBufferBarriers(CommandBuffer,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 Barriers);
+            RecordBufferBarriers(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, Barriers);
 
             Barriers.clear();
             for (const TPreparedStep& Item : Prepared)
             {
-                if (!Item.bNeedsPreSolverGeometryBuild) continue;
-                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                if (!Item.bNeedsPreSolverGeometryBuild)
+                    continue;
+                vkCmdBindPipeline(CommandBuffer,
+                                  VK_PIPELINE_BIND_POINT_COMPUTE,
                                   DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PrebuildConstants.Flags)]);
                 BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 const auto& Descriptors = *Item.Step->Descriptors;
-                const bool CurrentAB = Item.Step->bCurrentStateAB;
+                const bool  CurrentAB = Item.Step->bCurrentStateAB;
                 Barriers.push_back(MakeComputeBufferBarrier(
                     Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::TransferWeights, CurrentAB),
                     VK_ACCESS_SHADER_READ_BIT));
@@ -469,19 +459,15 @@ namespace MDSS::SurfaceState
                     Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::DynamicConcavityWeights, CurrentAB),
                     VK_ACCESS_SHADER_READ_BIT));
             }
-            RecordBufferBarriers(CommandBuffer,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 Barriers);
+            RecordBufferBarriers(
+                CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, Barriers);
         }
 
         // Pass1 timing includes the fused sparse reset/input-merge setup so A/B numbers include real overhead.
         WriteTimestamp(4U);
 
-        const bool bAnySparseReset = std::any_of(Prepared.begin(), Prepared.end(), [](const TPreparedStep& Item)
-        {
-            return Item.bNeedsSparseReset;
-        });
+        const bool bAnySparseReset = std::any_of(
+            Prepared.begin(), Prepared.end(), [](const TPreparedStep& Item) { return Item.bNeedsSparseReset; });
         if (bAnySparseReset)
         {
             std::vector<VkBufferMemoryBarrier> ResetBarriers;
@@ -489,7 +475,8 @@ namespace MDSS::SurfaceState
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, SparseScheduleResetPipeline);
             for (const TPreparedStep& Item : Prepared)
             {
-                if (!Item.bNeedsSparseReset) continue;
+                if (!Item.bNeedsSparseReset)
+                    continue;
                 BindStep(Item.CurrentDescriptorSet, Item.Constants);
                 vkCmdDispatch(CommandBuffer, 1, 1, 1);
                 ResetBarriers.push_back(MakeComputeBufferBarrier(
@@ -506,8 +493,8 @@ namespace MDSS::SurfaceState
         PassBarriers.reserve(Prepared.size() * 2U);
         for (const TPreparedStep& Item : Prepared)
         {
-            const std::size_t Variant = RawModeFromFlags(Item.Constants.Flags) * 2U +
-                                        WeightModeFromFlags(Item.Constants.Flags);
+            const std::size_t Variant =
+                RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
@@ -517,7 +504,7 @@ namespace MDSS::SurfaceState
             else
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
             const auto& Descriptors = *Item.Step->Descriptors;
-            const bool CurrentAB = Item.Step->bCurrentStateAB;
+            const bool  CurrentAB = Item.Step->bCurrentStateAB;
             PassBarriers.push_back(MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::OutgoingFluxScale, CurrentAB),
                 VK_ACCESS_SHADER_READ_BIT));
@@ -526,18 +513,16 @@ namespace MDSS::SurfaceState
                 VK_ACCESS_SHADER_READ_BIT));
         }
         WriteTimestamp(5U);
-        RecordBufferBarriers(CommandBuffer,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                             PassBarriers);
+        RecordBufferBarriers(
+            CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, PassBarriers);
 
         WriteTimestamp(6U);
         PassBarriers.clear();
         PassBarriers.reserve(Prepared.size() * 5U);
         for (const TPreparedStep& Item : Prepared)
         {
-            const std::size_t Variant = RawModeFromFlags(Item.Constants.Flags) * 2U +
-                                        WeightModeFromFlags(Item.Constants.Flags);
+            const std::size_t Variant =
+                RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
@@ -547,7 +532,7 @@ namespace MDSS::SurfaceState
             else
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
             const auto& Descriptors = *Item.Step->Descriptors;
-            const bool CurrentAB = Item.Step->bCurrentStateAB;
+            const bool  CurrentAB = Item.Step->bCurrentStateAB;
             PassBarriers.push_back(MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::NextState, CurrentAB),
                 VK_ACCESS_SHADER_READ_BIT));
@@ -565,9 +550,8 @@ namespace MDSS::SurfaceState
                 VK_ACCESS_SHADER_READ_BIT));
             const bool bPersistentActivity =
                 (Item.Constants.Flags & (SurfaceSolverSparseSolverFlag | SurfaceSolverActiveChannelMaskFlag)) != 0U;
-            if (bPersistentActivity ||
-                (Item.bPrepareAccumulationHeight &&
-                 (Item.Constants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U))
+            if (bPersistentActivity || (Item.bPrepareAccumulationHeight &&
+                                        (Item.Constants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U))
             {
                 PassBarriers.push_back(MakeComputeBufferBarrier(
                     Item.HeightBuffer,
@@ -585,21 +569,20 @@ namespace MDSS::SurfaceState
         WriteTimestamp(0U);
         std::vector<VkBufferMemoryBarrier> DerivedBarriers;
         DerivedBarriers.reserve(Prepared.size() * 2U);
-        const bool bAnyPostHeight = std::any_of(Prepared.begin(), Prepared.end(), [](const TPreparedStep& Item)
-        {
-            return Item.bPrepareAccumulationHeight;
-        });
+        const bool bAnyPostHeight =
+            std::any_of(Prepared.begin(),
+                        Prepared.end(),
+                        [](const TPreparedStep& Item) { return Item.bPrepareAccumulationHeight; });
         if (bAnyPostHeight)
         {
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationHeightPipeline);
             for (const TPreparedStep& Item : Prepared)
             {
-                if (!Item.bPrepareAccumulationHeight) continue;
+                if (!Item.bPrepareAccumulationHeight)
+                    continue;
                 BindStep(Item.NextDescriptorSet, Item.PostConstants);
-                const bool bForceFull =
-                    (Item.PostConstants.Flags & SurfaceSolverForceFullGeometryFlag) != 0U;
-                const bool bSparseHeight =
-                    (Item.PostConstants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U;
+                const bool bForceFull = (Item.PostConstants.Flags & SurfaceSolverForceFullGeometryFlag) != 0U;
+                const bool bSparseHeight = (Item.PostConstants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U;
                 if (bSparseHeight && !bForceFull)
                     vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.AccumulationIndirectOffset);
                 else
@@ -614,17 +597,16 @@ namespace MDSS::SurfaceState
                                  DerivedBarriers);
         }
 
-        const bool bAnyGeometryUpdate = std::any_of(Prepared.begin(), Prepared.end(), [](const TPreparedStep& Item)
-        {
-            return Item.bUpdateGeometry;
-        });
+        const bool bAnyGeometryUpdate = std::any_of(
+            Prepared.begin(), Prepared.end(), [](const TPreparedStep& Item) { return Item.bUpdateGeometry; });
         if (bAnyGeometryUpdate)
         {
             DerivedBarriers.clear();
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, AccumulationGeometryPipeline);
             for (const TPreparedStep& Item : Prepared)
             {
-                if (!Item.bUpdateGeometry) continue;
+                if (!Item.bUpdateGeometry)
+                    continue;
                 BindStep(Item.NextDescriptorSet, Item.PostConstants);
                 vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.GeometryIndirectOffset);
                 AppendGeometryBarriers(DerivedBarriers, Item);
@@ -643,13 +625,15 @@ namespace MDSS::SurfaceState
             DerivedBarriers.clear();
             for (const TPreparedStep& Item : Prepared)
             {
-                if (!Item.bUpdateGeometry) continue;
-                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                if (!Item.bUpdateGeometry)
+                    continue;
+                vkCmdBindPipeline(CommandBuffer,
+                                  VK_PIPELINE_BIND_POINT_COMPUTE,
                                   DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PostConstants.Flags)]);
                 BindStep(Item.NextDescriptorSet, Item.PostConstants);
                 vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.GeometryIndirectOffset);
                 const auto& Descriptors = *Item.Step->Descriptors;
-                const bool NextAB = !Item.Step->bCurrentStateAB;
+                const bool  NextAB = !Item.Step->bCurrentStateAB;
                 DerivedBarriers.push_back(MakeComputeBufferBarrier(
                     Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::TransferWeights, NextAB),
                     VK_ACCESS_SHADER_READ_BIT));
@@ -705,9 +689,8 @@ namespace MDSS::SurfaceState
         return Module;
     }
 
-    VkPipeline TSurfaceStateSolver::CreateComputePipeline(VkDevice         Device,
-                                                          VkPipelineLayout Layout,
-                                                          const char*      ShaderPath)
+    VkPipeline
+    TSurfaceStateSolver::CreateComputePipeline(VkDevice Device, VkPipelineLayout Layout, const char* ShaderPath)
     {
         const VkShaderModule            Module = CreateShaderModule(Device, ShaderPath);
         VkPipelineShaderStageCreateInfo Stage{};

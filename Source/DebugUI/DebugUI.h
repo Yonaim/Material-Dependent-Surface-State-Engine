@@ -99,20 +99,20 @@ namespace MDSS
         void OnSwapchainRecreated(const GPU::TVulkanContext& Context, const Rendering::TRenderer& Renderer);
 
         // Runtime settings and viewport state
-        [[nodiscard]] bool                   IsInjectModeEnabled() const noexcept;
-        [[nodiscard]] SurfaceState::TStateId GetInjectState() const noexcept;
-        [[nodiscard]] float                  GetInjectStrength() const noexcept;
-        [[nodiscard]] float                  GetInjectRadius() const noexcept;
-        [[nodiscard]] float                  GetInjectFalloff() const noexcept;
+        [[nodiscard]] bool                                   IsInjectModeEnabled() const noexcept;
+        [[nodiscard]] SurfaceState::TStateId                 GetInjectState() const noexcept;
+        [[nodiscard]] float                                  GetInjectStrength() const noexcept;
+        [[nodiscard]] float                                  GetInjectRadius() const noexcept;
+        [[nodiscard]] float                                  GetInjectFalloff() const noexcept;
         [[nodiscard]] SurfaceState::ESurfaceContactOperation GetInjectOperation() const noexcept;
-        [[nodiscard]] SurfaceState::ESurfaceContactShape GetInjectShape() const noexcept;
-        [[nodiscard]] float GetInjectSecondaryRadius() const noexcept;
-        [[nodiscard]] float GetInjectRotationDegrees() const noexcept;
-        [[nodiscard]] std::uint32_t          GetInjectTexelSearchRadius() const noexcept;
-        [[nodiscard]] float                  GetAnimationTimeScale() const noexcept;
-        [[nodiscard]] float                  GetSimulationTimeScale() const noexcept;
-        [[nodiscard]] bool                   IsSimulationPaused() const noexcept;
-        [[nodiscard]] bool                   IsFixedSimulationTimestep() const noexcept
+        [[nodiscard]] SurfaceState::ESurfaceContactShape     GetInjectShape() const noexcept;
+        [[nodiscard]] float                                  GetInjectSecondaryRadius() const noexcept;
+        [[nodiscard]] float                                  GetInjectRotationDegrees() const noexcept;
+        [[nodiscard]] std::uint32_t                          GetInjectTexelSearchRadius() const noexcept;
+        [[nodiscard]] float                                  GetAnimationTimeScale() const noexcept;
+        [[nodiscard]] float                                  GetSimulationTimeScale() const noexcept;
+        [[nodiscard]] bool                                   IsSimulationPaused() const noexcept;
+        [[nodiscard]] bool                                   IsFixedSimulationTimestep() const noexcept
         {
             return bFixedSimulationTimestep;
         }
@@ -136,36 +136,36 @@ namespace MDSS
 
     private:
         // Scene, selection, and camera controls
-        void                      ProcessCameraInput(TScene& SceneData);
-        void                      ProcessSelectionAndGizmo(TScene& SceneData);
-        void                      DrawSceneWindow(TScene& SceneData);
-        void                      ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path);
-        void                      DrawAnimationWindow(TScene& SceneData);
-        void                      ReplayDemo(TScene& SceneData);
-        void                      TogglePresentationMode();
-        void                      DrawSelectedObjectWindow(TScene& SceneData);
-        void                      DrawCameraWindow(TScene& SceneData);
-        void                      DrawViewportPanels(TScene& SceneData);
-        void                      DrawBrickCubeTexelMeshNotice(const TScene& SceneData);
+        void ProcessCameraInput(TScene& SceneData);
+        void ProcessSelectionAndGizmo(TScene& SceneData);
+        void DrawSceneWindow(TScene& SceneData);
+        void ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path);
+        void DrawAnimationWindow(TScene& SceneData);
+        void ReplayDemo(TScene& SceneData);
+        void TogglePresentationMode();
+        void DrawSelectedObjectWindow(TScene& SceneData);
+        void DrawCameraWindow(TScene& SceneData);
+        void DrawViewportPanels(TScene& SceneData);
+        void DrawBrickCubeTexelMeshNotice(const TScene& SceneData);
 
         // Rendering controls and performance overlays
-        void                      DrawRenderOptionsWindow(TScene& SceneData);
-        void                      DrawRenderSettingsWindow(TScene& SceneData);
-        void                      DrawViewportStatsOverlay();
-        void                      ResetProfilingAverages() noexcept;
-        void                      ResetSurfaceStateSettings();
+        void DrawRenderOptionsWindow(TScene& SceneData);
+        void DrawRenderSettingsWindow(TScene& SceneData);
+        void DrawViewportStatsOverlay();
+        void ResetProfilingAverages() noexcept;
+        void ResetSurfaceStateSettings();
 
         // Simulation and diagnostic panels
-        void                      DrawSimulationDebugWindow(TScene& SceneData);
-        void                      DrawSimulationCommonControls();
-        void                      DrawSolverTab();
-        void                      DrawTexelInspectorTab();
-        void                      DrawDebugStateSelector();
-        void                      DrawContactInputTab();
-        void                      DrawProfileTuningTab(TScene& SceneData);
-        void                      DrawSimulationSettingsTab(TScene& SceneData);
-        void                      DrawPerformanceTab(bool bRendering);
-        void                      DrawLogWindow();
+        void DrawSimulationDebugWindow(TScene& SceneData);
+        void DrawSimulationCommonControls();
+        void DrawSolverTab();
+        void DrawTexelInspectorTab();
+        void DrawDebugStateSelector();
+        void DrawContactInputTab();
+        void DrawProfileTuningTab(TScene& SceneData);
+        void DrawSimulationSettingsTab(TScene& SceneData);
+        void DrawPerformanceTab(bool bRendering);
+        void DrawLogWindow();
 
         // Shared layout helpers
         void                      SetupDockspace();
@@ -178,42 +178,42 @@ namespace MDSS
                                                     float       TopPadding = SectionHeaderTopPadding,
                                                     float       BottomPadding = 4.0F) const;
 
-        VkDevice                           Device = VK_NULL_HANDLE;
-        GLFWwindow*                        NativeWindow = nullptr;
-        Rendering::TRenderer*              FrameRenderer = nullptr;
-        Asset::TAssetManager*              AssetManager = nullptr;
-        SurfaceState::TSurfaceDataManager* SurfaceDataManager = nullptr;
-        bool                               bRotatingCamera = false;
-        float                              CameraZoomSpeed = 12.0F;
-        float                              CameraMoveSpeed = 2.5F;
-        bool                               bDockLayoutInitialized = false;
-        bool                               bInjectMode = false;
-        bool                               bPresentationMode = false;
-        bool                               bPresentationGridWasVisible = false;
-        bool                               bPresentationAxisWasVisible = false;
-        bool                               bDemoPlaybackGridAxisHidden = false;
-        bool                               bDemoPlaybackGridWasVisible = false;
-        bool                               bDemoPlaybackAxisWasVisible = false;
-        SurfaceState::TStateId             InjectState = 0;
-        SurfaceState::TStateId             DebugState = 0;
-        float                              InjectStrength = 1.0F;
-        float                              InjectRadius = 0.25F;
-        float                              InjectFalloff = 1.0F;
+        VkDevice                               Device = VK_NULL_HANDLE;
+        GLFWwindow*                            NativeWindow = nullptr;
+        Rendering::TRenderer*                  FrameRenderer = nullptr;
+        Asset::TAssetManager*                  AssetManager = nullptr;
+        SurfaceState::TSurfaceDataManager*     SurfaceDataManager = nullptr;
+        bool                                   bRotatingCamera = false;
+        float                                  CameraZoomSpeed = 12.0F;
+        float                                  CameraMoveSpeed = 2.5F;
+        bool                                   bDockLayoutInitialized = false;
+        bool                                   bInjectMode = false;
+        bool                                   bPresentationMode = false;
+        bool                                   bPresentationGridWasVisible = false;
+        bool                                   bPresentationAxisWasVisible = false;
+        bool                                   bDemoPlaybackGridAxisHidden = false;
+        bool                                   bDemoPlaybackGridWasVisible = false;
+        bool                                   bDemoPlaybackAxisWasVisible = false;
+        SurfaceState::TStateId                 InjectState = 0;
+        SurfaceState::TStateId                 DebugState = 0;
+        float                                  InjectStrength = 1.0F;
+        float                                  InjectRadius = 0.25F;
+        float                                  InjectFalloff = 1.0F;
         SurfaceState::ESurfaceContactOperation InjectOperation = SurfaceState::ESurfaceContactOperation::Add;
-        SurfaceState::ESurfaceContactShape InjectShape = SurfaceState::ESurfaceContactShape::Circle;
-        float                              InjectSecondaryRadius = 0.25F;
-        float                              InjectRotationDegrees = 0.0F;
-        int                                InjectTexelSearchRadius = 2;
-        float                              AnimationTimeScale = 1.0F;
-        float                              SimulationTimeScale = 1.0F;
-        bool                               bFixedSimulationTimestep = SurfaceState::DefaultFixedSimulationTimestep;
-        bool                               bAutoSubstepping = SurfaceState::DefaultAutoSubstepping;
-        bool                               bSimulationPaused = false;
-        bool                               bSolverStepRequested = false;
-        bool                               bSolverResetRequested = false;
-        bool                               bFrameTimeResetRequested = false;
-        Asset::TSRProfileAssetHandle       DebugParameterProfile = Asset::InvalidAssetHandle;
-        SurfaceState::TStateId             DebugParameterState = 0;
+        SurfaceState::ESurfaceContactShape     InjectShape = SurfaceState::ESurfaceContactShape::Circle;
+        float                                  InjectSecondaryRadius = 0.25F;
+        float                                  InjectRotationDegrees = 0.0F;
+        int                                    InjectTexelSearchRadius = 2;
+        float                                  AnimationTimeScale = 1.0F;
+        float                                  SimulationTimeScale = 1.0F;
+        bool                                   bFixedSimulationTimestep = SurfaceState::DefaultFixedSimulationTimestep;
+        bool                                   bAutoSubstepping = SurfaceState::DefaultAutoSubstepping;
+        bool                                   bSimulationPaused = false;
+        bool                                   bSolverStepRequested = false;
+        bool                                   bSolverResetRequested = false;
+        bool                                   bFrameTimeResetRequested = false;
+        Asset::TSRProfileAssetHandle           DebugParameterProfile = Asset::InvalidAssetHandle;
+        SurfaceState::TStateId                 DebugParameterState = 0;
         std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> ParameterDraftKey{Asset::InvalidAssetHandle,
                                                                                           SurfaceState::InvalidStateId};
         SurfaceState::TSurfaceStateParameters                           ParameterDraft{};

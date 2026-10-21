@@ -39,8 +39,8 @@ namespace MDSS::SurfaceState
                                                                             std::uint32_t             Resolution);
 
         // Registry and runtime data access
-        [[nodiscard]] std::uint32_t             GetSimulationResolution() const noexcept;
-        void                                    SetSimulationResolution(std::uint32_t Resolution);
+        [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
+        void                        SetSimulationResolution(std::uint32_t Resolution);
         void ReleaseUnusedSurfaceData(const std::vector<TSurfaceRuntimeDataHandle>& RetainedHandles);
 
         [[nodiscard]] bool                       HasSurfaceData(TSurfaceRuntimeDataHandle Handle) const noexcept;

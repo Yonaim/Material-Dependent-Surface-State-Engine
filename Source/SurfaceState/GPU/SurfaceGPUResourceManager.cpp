@@ -8,8 +8,8 @@
 #include "Logger/Logger.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
 #include "SurfaceState/GPU/SurfaceGPUBufferPool.h"
+#include "SurfaceState/GPU/SurfaceGPUResources.h"
 #include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
 #include <algorithm>
@@ -51,7 +51,8 @@ namespace MDSS::SurfaceState
             {
                 Profiles.push_back(Assets.GetSRProfile(Handle).GetData());
             }
-            SceneProfiles = std::make_unique<TSurfaceProfileGPUResources>(PhysicalDevice, Device, Profiles, Registry, Pool);
+            SceneProfiles =
+                std::make_unique<TSurfaceProfileGPUResources>(PhysicalDevice, Device, Profiles, Registry, Pool);
         }
 
         InstanceResources.reserve(Scene.GetStaticMeshInstances().size());
@@ -397,11 +398,11 @@ namespace MDSS::SurfaceState
         const glm::mat4              ModelMatrix = Transform.GetMatrix();
         std::vector<TSurfaceGPUVec4> TransferWeightDebugAverages;
         const std::vector<float>     TransferWeights = BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry,
-                                                                                  ModelMatrix,
-                                                                                  &TransferWeightDebugAverages,
-                                                                                  bUseNormalWeight,
-                                                                                  bUseDistanceWeight,
-                                                                                  bUseProfileBoundaryWeight);
+                                                                                      ModelMatrix,
+                                                                                      &TransferWeightDebugAverages,
+                                                                                      bUseNormalWeight,
+                                                                                      bUseDistanceWeight,
+                                                                                      bUseProfileBoundaryWeight);
         Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages, bHalfPrecision);
         Instance.State->UpdateWorldTexelAreas(
             BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));

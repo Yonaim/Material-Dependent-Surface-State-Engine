@@ -103,8 +103,7 @@ namespace MDSS::SurfaceState
                     continue;
                 }
                 const auto& NeighborTexelIndices = Geometry.GetTexels()[Neighbor].NeighborIndices;
-                for (std::uint32_t ReverseDirectionIndex = 0;
-                     ReverseDirectionIndex < SurfaceNeighborCount;
+                for (std::uint32_t ReverseDirectionIndex = 0; ReverseDirectionIndex < SurfaceNeighborCount;
                      ++ReverseDirectionIndex)
                 {
                     if (NeighborTexelIndices[ReverseDirectionIndex] == TexelIndex)
@@ -302,7 +301,6 @@ namespace MDSS::SurfaceState
 #pragma endregion
 
 #pragma region Profile_and_Buffer_Layouts
-
 
     TSurfaceSparseMetadataLayout GetSurfaceSparseMetadataLayout(std::size_t TexelCount)
     {

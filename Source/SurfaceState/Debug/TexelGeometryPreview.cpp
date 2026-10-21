@@ -240,9 +240,9 @@ namespace MDSS::SurfaceState
                                        std::uint32_t                           HeightCompleteQuery,
                                        bool                                    bTotalHeight,
                                        std::size_t                             FrameIndex,
-                                       std::array<std::uint32_t, 3>           MaterialChannels,
-                                                    std::uint32_t                           ActiveMaterialMask,
-                                                    std::size_t                             OutputSlot)
+                                       std::array<std::uint32_t, 3>            MaterialChannels,
+                                       std::uint32_t                           ActiveMaterialMask,
+                                       std::size_t                             OutputSlot)
     {
         if (FrameIndex >= Rendering::TRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Occupancy frame slot is invalid.");
@@ -264,7 +264,7 @@ namespace MDSS::SurfaceState
         //   globalAny, activeTileCount                      dynamic (last two words)
         // N includes padding at every surface edge for the smallest supported tile (8x8).
         const auto& SurfaceRanges = Descriptors.GetSharedGeometry().GetSurfaceRanges();
-        const auto CountTiles = [&SurfaceRanges](std::uint32_t TileSize)
+        const auto  CountTiles = [&SurfaceRanges](std::uint32_t TileSize)
         {
             std::size_t Count = 0;
             for (const auto& Range : SurfaceRanges)
@@ -277,10 +277,10 @@ namespace MDSS::SurfaceState
         if (MaxTileCount == 0 || MaxTileCount > Limits.maxComputeWorkGroupCount[0] ||
             MaxTileCount > std::numeric_limits<std::uint32_t>::max())
             throw std::overflow_error("Overlay tile capacity exceeds Vulkan workgroup limits.");
-        const auto SparseWordCount = static_cast<std::size_t>(TexelCount) * 2U +
-                                     static_cast<std::size_t>(MaxTileCount) * 7U + 14U;
-        const auto SparseBytes = SparseWordCount * sizeof(std::uint32_t);
-        const auto CacheBytes = BaseCacheBytes + SparseBytes;
+        const auto SparseWordCount =
+            static_cast<std::size_t>(TexelCount) * 2U + static_cast<std::size_t>(MaxTileCount) * 7U + 14U;
+        const auto         SparseBytes = SparseWordCount * sizeof(std::uint32_t);
+        const auto         CacheBytes = BaseCacheBytes + SparseBytes;
         const VkDeviceSize PersistentSparseBytes =
             (static_cast<VkDeviceSize>(MaxTileCount) + static_cast<VkDeviceSize>(TexelCount) * 2U) *
             sizeof(std::uint32_t);
@@ -307,15 +307,14 @@ namespace MDSS::SurfaceState
                                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                   GPU::TGPUBufferMemoryCategory::Debug);
-            Output.GeometryCache =
-                std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
-                                                  Device,
-                                                  CacheBytes,
-                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                                      VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-                                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                  GPU::TGPUBufferMemoryCategory::Debug);
+            Output.GeometryCache = std::make_unique<GPU::TGPUBuffer>(
+                PhysicalDevice,
+                Device,
+                CacheBytes,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                GPU::TGPUBufferMemoryCategory::Debug);
             for (auto& Readback : Output.OccupancyReadbacks)
                 Readback = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
                                                              Device,
@@ -422,11 +421,8 @@ namespace MDSS::SurfaceState
                                  &SparseBarrier,
                                  0,
                                  nullptr);
-            vkCmdFillBuffer(Command,
-                            It->second.GeometryCache->GetHandle(),
-                            DynamicSparseOffset,
-                            DynamicSparseBytes,
-                            0U);
+            vkCmdFillBuffer(
+                Command, It->second.GeometryCache->GetHandle(), DynamicSparseOffset, DynamicSparseBytes, 0U);
             // The transfer reset touches only the dynamic tail, but the occupancy pass also reads
             // builtState written by the previous frame. Cover the complete sparse region here so
             // both the transfer reset and the persistent compute writes are visible to this scan.
@@ -477,8 +473,8 @@ namespace MDSS::SurfaceState
             SparseBarrier.offset = BaseCacheBytes;
             SparseBarrier.size = SparseBytes;
             SparseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-            SparseBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
-                                          VK_ACCESS_TRANSFER_READ_BIT;
+            SparseBarrier.dstAccessMask =
+                VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT;
             vkCmdPipelineBarrier(Command,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT |

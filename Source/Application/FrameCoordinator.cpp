@@ -22,11 +22,9 @@ namespace MDSS
             ResetClock();
         }
         if (!bSuspendClock)
-            Clock.Accumulate(DeltaTime, DebugUI.GetSimulationTimeScale(),
-                             bResetState || DebugUI.IsSimulationPaused());
-        const double PendingTickBudget =
-            std::max(SurfaceState::MaxRealtimePendingTicks,
-                     std::ceil(static_cast<double>(DebugUI.GetSimulationTimeScale())));
+            Clock.Accumulate(DeltaTime, DebugUI.GetSimulationTimeScale(), bResetState || DebugUI.IsSimulationPaused());
+        const double PendingTickBudget = std::max(SurfaceState::MaxRealtimePendingTicks,
+                                                  std::ceil(static_cast<double>(DebugUI.GetSimulationTimeScale())));
         DroppedSeconds = static_cast<float>(Clock.LimitPendingSeconds(
             bSuspendClock ? 0.0 : PendingTickBudget * SurfaceState::FixedSimulationStepSeconds));
         if (bSuspendClock)
@@ -40,20 +38,26 @@ namespace MDSS
         MaximumStep = DebugUI.IsAutoSubsteppingEnabled() ? SurfaceStateSystem.GetMaximumStableDeltaTime()
                                                          : SurfaceState::FixedSimulationStepSeconds;
         Steps = bResetState ? std::vector<float>{}
-                            : Clock.Consume(MaximumStep, DebugUI.IsFixedSimulationTimestep(),
-                                            DebugUI.IsAutoSubsteppingEnabled(), DebugUI.IsSimulationPaused(),
+                            : Clock.Consume(MaximumStep,
+                                            DebugUI.IsFixedSimulationTimestep(),
+                                            DebugUI.IsAutoSubsteppingEnabled(),
+                                            DebugUI.IsSimulationPaused(),
                                             bRequestStep);
         if (!DebugUI.IsFixedSimulationTimestep() && !DebugUI.IsAutoSubsteppingEnabled() && !Steps.empty())
             MaximumStep = Steps.front();
     }
 
-    void TFrameCoordinator::RecordSimulation(VkCommandBuffer CommandBuffer, VkQueryPool QueryPool,
-                                              std::uint32_t FirstStepQuery, std::uint32_t QueriesPerStep)
+    void TFrameCoordinator::RecordSimulation(VkCommandBuffer CommandBuffer,
+                                             VkQueryPool     QueryPool,
+                                             std::uint32_t   FirstStepQuery,
+                                             std::uint32_t   QueriesPerStep)
     {
         for (std::size_t Step = 0; Step < Steps.size(); ++Step)
-            SurfaceStateSystem.RecordStep(CommandBuffer, Steps[Step], QueryPool,
-                                     FirstStepQuery + static_cast<std::uint32_t>(Step) * QueriesPerStep,
-                                     Step + 1U == Steps.size());
+            SurfaceStateSystem.RecordStep(CommandBuffer,
+                                          Steps[Step],
+                                          QueryPool,
+                                          FirstStepQuery + static_cast<std::uint32_t>(Step) * QueriesPerStep,
+                                          Step + 1U == Steps.size());
         StepSerial += Steps.size();
     }
 

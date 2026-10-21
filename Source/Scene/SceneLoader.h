@@ -30,7 +30,7 @@ namespace MDSS
         [[nodiscard]] static TScene Load(const std::filesystem::path&       Path,
                                          Asset::TAssetManager&              Assets,
                                          SurfaceState::TSurfaceDataManager& SurfaceData,
-                                         std::optional<std::uint32_t>        ResolutionOverride = std::nullopt);
+                                         std::optional<std::uint32_t>       ResolutionOverride = std::nullopt);
         static void                 Save(const TScene& Scene, const std::filesystem::path& Path);
     };
 } // namespace MDSS

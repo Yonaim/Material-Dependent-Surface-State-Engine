@@ -49,14 +49,14 @@ namespace MDSS::SurfaceState
         struct TTileVertexList
         {
             std::vector<std::uint32_t> Words;
-            std::uint32_t TileCount = 0;
+            std::uint32_t              TileCount = 0;
         };
-        std::unique_ptr<GPU::TGPUBuffer>    IndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    VertexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    BoundaryBuffer;
-        std::uint32_t                       VertexCount = 0;
-        std::uint32_t                       BoundaryCount = 0;
-        std::vector<TSurfaceTexelMeshRange> Ranges;
+        std::unique_ptr<GPU::TGPUBuffer>         IndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>         VertexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>         BoundaryBuffer;
+        std::uint32_t                            VertexCount = 0;
+        std::uint32_t                            BoundaryCount = 0;
+        std::vector<TSurfaceTexelMeshRange>      Ranges;
         std::map<std::uint32_t, TTileVertexList> TileVertexLists;
 
         void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
@@ -114,9 +114,9 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetReverseNeighborDirectionIndexBuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
         [[nodiscard]] const std::vector<TSurfaceGPUSurfaceRange>& GetSurfaceRanges() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetTexelChartIndexBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetRenderSamplingBoundaryFlagBuffer() const noexcept;
-        [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
+        [[nodiscard]] const GPU::TGPUBuffer&                      GetTexelChartIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::TGPUBuffer&                      GetRenderSamplingBoundaryFlagBuffer() const noexcept;
+        [[nodiscard]] std::size_t                                 GetTexelCount() const noexcept;
 
         // Render mesh variants
         [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept
@@ -143,28 +143,29 @@ namespace MDSS::SurfaceState
         {
             return FullTexelMesh.Ranges;
         }
-        [[nodiscard]] const TSurfaceTexelMeshGPUVariant& GetTexelMeshVariant(std::uint32_t RenderResolution) const noexcept
+        [[nodiscard]] const TSurfaceTexelMeshGPUVariant&
+        GetTexelMeshVariant(std::uint32_t RenderResolution) const noexcept
         {
             const auto Found = TexelMeshVariants.find(RenderResolution);
             return Found != TexelMeshVariants.end() ? Found->second : FullTexelMesh;
         }
 
     private:
-        std::size_t                         TexelCount = 0;
-        std::unique_ptr<GPU::TGPUBuffer>    TexelSurfaceIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    TexelProfileIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    PositionBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    NormalBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    MesoNormalBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    GeometryScalarBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    NeighborIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    ReverseNeighborDirectionIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    SurfaceRangeBuffer;
-        std::vector<TSurfaceGPUSurfaceRange> SurfaceRanges;
-        std::unique_ptr<GPU::TGPUBuffer>    TexelChartIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>    RenderSamplingBoundaryFlagBuffer;
-        std::uint32_t                       SimulationResolution = 0;
-        TSurfaceTexelMeshGPUVariant         FullTexelMesh;
+        std::size_t                                          TexelCount = 0;
+        std::unique_ptr<GPU::TGPUBuffer>                     TexelSurfaceIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     TexelProfileIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     PositionBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     NormalBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     MesoNormalBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     GeometryScalarBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     NeighborIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     ReverseNeighborDirectionIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     SurfaceRangeBuffer;
+        std::vector<TSurfaceGPUSurfaceRange>                 SurfaceRanges;
+        std::unique_ptr<GPU::TGPUBuffer>                     TexelChartIndexBuffer;
+        std::unique_ptr<GPU::TGPUBuffer>                     RenderSamplingBoundaryFlagBuffer;
+        std::uint32_t                                        SimulationResolution = 0;
+        TSurfaceTexelMeshGPUVariant                          FullTexelMesh;
         std::map<std::uint32_t, TSurfaceTexelMeshGPUVariant> TexelMeshVariants;
     };
 
@@ -206,7 +207,7 @@ namespace MDSS::SurfaceState
                                      const std::vector<float>&           TransferWeights,
                                      const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
                                      const std::vector<float>&           WorldTexelAreas = {},
-                                     TSurfaceGPUBufferPool*             Pool = nullptr);
+                                     TSurfaceGPUBufferPool*              Pool = nullptr);
         void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
 
         // State and geometry buffers
@@ -223,13 +224,13 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
 
         // Instance data updates and reset
-        void                                 UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
-        void                                 UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
-                                                                   bool bHalfPrecision = false);
-        [[nodiscard]] std::size_t            GetTexelCount() const noexcept;
-        [[nodiscard]] std::size_t            GetChannelCount() const noexcept;
-        void                                 ResetState(const std::vector<float>& OutgoingFluxScale);
+        void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
+        void UpdateTransferWeights(const std::vector<float>&           TransferWeights,
+                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                   bool                                bHalfPrecision = false);
+        [[nodiscard]] std::size_t GetTexelCount() const noexcept;
+        [[nodiscard]] std::size_t GetChannelCount() const noexcept;
+        void                      ResetState(const std::vector<float>& OutgoingFluxScale);
 
     private:
         std::size_t                      TexelCount = 0;
@@ -268,7 +269,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] VkDescriptorSet       GetBASet() const noexcept;
         [[nodiscard]] VkBuffer              GetBoundBufferHandle(TSurfaceGPUDescriptorBinding Binding, bool bAB) const;
         [[nodiscard]] std::array<std::uint64_t, 6> GetGeometryInputRevisions() const noexcept;
-        [[nodiscard]] std::uint64_t GetProfileParameterRevision() const noexcept
+        [[nodiscard]] std::uint64_t                GetProfileParameterRevision() const noexcept
         {
             return ProfileResources->GetParametersBuffer().GetUploadRevision();
         }
@@ -327,11 +328,11 @@ namespace MDSS::SurfaceState
                                                                      const TSurfaceStateParameters& Parameters);
 
         // State and transfer-weight cache management
-        [[nodiscard]] std::size_t            GetInstanceTexelCount(std::size_t SceneIndex) const;
-        [[nodiscard]] std::size_t            GetInstanceValidTexelCount(std::size_t SceneIndex) const;
-        [[nodiscard]] std::size_t            GetInstanceChannelCount(std::size_t SceneIndex) const;
-        [[nodiscard]] bool                   IsCurrentStateAB(std::size_t SceneIndex) const;
-        void                                 ResetStates();
+        [[nodiscard]] std::size_t GetInstanceTexelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] std::size_t GetInstanceValidTexelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
+        [[nodiscard]] bool        IsCurrentStateAB(std::size_t SceneIndex) const;
+        void                      ResetStates();
         [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const TTransform& Transform) const;
         void               UpdateTransferWeightCache(std::size_t       SceneIndex,
                                                      const TTransform& Transform,

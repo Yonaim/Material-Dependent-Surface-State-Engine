@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <glm/glm.hpp>
 #include <glm/geometric.hpp>
+#include <glm/glm.hpp>
 
 namespace MDSS::Rendering
 {
@@ -16,9 +16,8 @@ namespace MDSS::Rendering
         explicit TViewFrustum(const glm::mat4& ViewProjection)
         {
             const glm::mat4 Rows = glm::transpose(ViewProjection);
-            Planes = {Rows[3] + Rows[0], Rows[3] - Rows[0],
-                      Rows[3] + Rows[1], Rows[3] - Rows[1],
-                      Rows[2],           Rows[3] - Rows[2]};
+            Planes = {
+                Rows[3] + Rows[0], Rows[3] - Rows[0], Rows[3] + Rows[1], Rows[3] - Rows[1], Rows[2], Rows[3] - Rows[2]};
             for (glm::vec4& Plane : Planes)
             {
                 const float Length = glm::length(glm::vec3(Plane));
@@ -42,14 +41,14 @@ namespace MDSS::Rendering
     };
 
     [[nodiscard]] inline bool IsMeshSphereVisible(const TViewFrustum& Frustum,
-                                                   const glm::vec3& LocalCenter, float LocalRadius,
-                                                   const glm::mat4& Model) noexcept
+                                                  const glm::vec3&    LocalCenter,
+                                                  float               LocalRadius,
+                                                  const glm::mat4&    Model) noexcept
     {
         const glm::vec3 Center = glm::vec3(Model * glm::vec4(LocalCenter, 1.0F));
         // TTransform composes translation, rotation and scale; its columns are orthogonal.
-        const float Scale = std::max({glm::length(glm::vec3(Model[0])),
-                                      glm::length(glm::vec3(Model[1])),
-                                      glm::length(glm::vec3(Model[2]))});
+        const float Scale = std::max(
+            {glm::length(glm::vec3(Model[0])), glm::length(glm::vec3(Model[1])), glm::length(glm::vec3(Model[2]))});
         return Frustum.ContainsSphere(Center, LocalRadius * Scale);
     }
 }

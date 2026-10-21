@@ -4,8 +4,8 @@
  */
 
 #include "GPU/Vulkan/Resource/GPUImage.h"
-#include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
 
+#include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"
 #include "Logger/Logger.h"
 
 #include <stdexcept>

@@ -2,11 +2,11 @@
  * @file SimulationTransportTests.cpp
  * @brief 2-pass Surface solver의 입력, flux, 감쇠와 상태 보존 계약을 검증한다.
  */
+#include "Rendering/FrustumCulling.h"
 #include "SurfaceState/GPU/SurfaceGPUResourceLayout.h"
 #include "SurfaceState/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceState/Mapping/SurfaceMappingBuilder.h"
 #include "SurfaceState/State/SimulationClock.h"
-#include "Rendering/FrustumCulling.h"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>

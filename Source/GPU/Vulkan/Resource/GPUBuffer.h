@@ -22,11 +22,11 @@ namespace MDSS::GPU
          * @brief 지정한 usage와 memory property로 Vulkan buffer와 memory를 생성한다.
          * @throws std::runtime_error buffer 또는 memory 생성에 실패한 경우.
          */
-        TGPUBuffer(VkPhysicalDevice      PhysicalDevice,
-                   VkDevice              Device,
-                   VkDeviceSize          Size,
-                   VkBufferUsageFlags    Usage,
-                   VkMemoryPropertyFlags MemoryProperties,
+        TGPUBuffer(VkPhysicalDevice         PhysicalDevice,
+                   VkDevice                 Device,
+                   VkDeviceSize             Size,
+                   VkBufferUsageFlags       Usage,
+                   VkMemoryPropertyFlags    MemoryProperties,
                    TGPUBufferMemoryCategory Category = TGPUBufferMemoryCategory::Other);
         ~TGPUBuffer();
 
@@ -48,12 +48,12 @@ namespace MDSS::GPU
         void Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset = 0) const;
 
         // Buffer properties
-        [[nodiscard]] VkBuffer      GetHandle() const noexcept;
-        [[nodiscard]] VkDeviceSize  GetSize() const noexcept;
-        [[nodiscard]] VkBufferUsageFlags GetUsage() const noexcept;
-        [[nodiscard]] VkMemoryPropertyFlags GetMemoryProperties() const noexcept;
+        [[nodiscard]] VkBuffer                 GetHandle() const noexcept;
+        [[nodiscard]] VkDeviceSize             GetSize() const noexcept;
+        [[nodiscard]] VkBufferUsageFlags       GetUsage() const noexcept;
+        [[nodiscard]] VkMemoryPropertyFlags    GetMemoryProperties() const noexcept;
         [[nodiscard]] TGPUBufferMemoryCategory GetMemoryCategory() const noexcept;
-        [[nodiscard]] std::uint64_t GetUploadRevision() const noexcept;
+        [[nodiscard]] std::uint64_t            GetUploadRevision() const noexcept;
 
     private:
         static std::uint32_t FindMemoryType(VkPhysicalDevice      PhysicalDevice,

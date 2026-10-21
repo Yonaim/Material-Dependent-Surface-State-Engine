@@ -41,7 +41,7 @@ namespace MDSS::Asset
 
         glm::vec3 Minimum(std::numeric_limits<float>::max());
         glm::vec3 Maximum(std::numeric_limits<float>::lowest());
-        bool bFiniteBounds = true;
+        bool      bFiniteBounds = true;
         for (const TVertex& Vertex : this->Vertices)
         {
             const glm::vec3 P = Vertex.Position;

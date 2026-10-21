@@ -60,7 +60,7 @@ namespace MDSS
         void                                                   PlayDemoAnimation();
         void                                                   PauseDemoAnimation() noexcept;
         void                                                   RestartDemoAnimation();
-        std::vector<TDemoAnimationClip::TContactEvent> AdvanceDemoAnimation(float DeltaTime);
+        std::vector<TDemoAnimationClip::TContactEvent>         AdvanceDemoAnimation(float DeltaTime);
         void                                                   AddInitialContact(TSceneInitialContact Contact);
         [[nodiscard]] const std::vector<TSceneInitialContact>& GetInitialContacts() const noexcept;
 

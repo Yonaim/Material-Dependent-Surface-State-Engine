@@ -52,17 +52,17 @@ namespace MDSS
     TApplicationLaunchOptions ParseApplicationLaunchOptions(int Argc, char* Argv[])
     {
         TApplicationLaunchOptions Options;
-        bool                     HasBenchmarkScene = false;
-        bool                     HasBenchmarkResolution = false;
-        bool                     HasWarmupFrames = false;
-        bool                     HasMeasurementFrames = false;
-        bool                     HasBenchmarkOutput = false;
-        bool                     HasFrameLimit = false;
+        bool                      HasBenchmarkScene = false;
+        bool                      HasBenchmarkResolution = false;
+        bool                      HasWarmupFrames = false;
+        bool                      HasMeasurementFrames = false;
+        bool                      HasBenchmarkOutput = false;
+        bool                      HasFrameLimit = false;
 
         for (int Index = 1; Index < Argc; ++Index)
         {
             const std::string_view Argument(Argv[Index]);
-            const auto ReadValue = [&]() -> std::string_view
+            const auto             ReadValue = [&]() -> std::string_view
             {
                 if (Index + 1 >= Argc)
                     throw std::invalid_argument(std::string(Argument) + " requires a value.");
@@ -83,8 +83,7 @@ namespace MDSS
             else if (Argument == "--render-tile-size")
             {
                 Options.RenderTileSize = ParsePositiveInteger(ReadValue(), Argument);
-                if (Options.RenderTileSize != 8U && Options.RenderTileSize != 16U &&
-                    Options.RenderTileSize != 32U)
+                if (Options.RenderTileSize != 8U && Options.RenderTileSize != 16U && Options.RenderTileSize != 32U)
                     throw std::invalid_argument("--render-tile-size must be 8, 16, or 32.");
             }
             else if (Argument == "--per-wg-channel-mask")
@@ -135,8 +134,8 @@ namespace MDSS
                 throw std::invalid_argument("All --benchmark-* options are required for a benchmark run.");
             if (Options.Benchmark.ScenePath.empty() || Options.Benchmark.OutputPath.empty())
                 throw std::invalid_argument("Benchmark Scene and output paths must not be empty.");
-            const std::uint64_t TotalFrames = static_cast<std::uint64_t>(Options.Benchmark.WarmupFrames) +
-                                              Options.Benchmark.MeasurementFrames + 2U;
+            const std::uint64_t TotalFrames =
+                static_cast<std::uint64_t>(Options.Benchmark.WarmupFrames) + Options.Benchmark.MeasurementFrames + 2U;
             if (TotalFrames > std::numeric_limits<std::size_t>::max())
                 throw std::invalid_argument("Benchmark frame count is too large.");
             Options.Benchmark.Enabled = true;

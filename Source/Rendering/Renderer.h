@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "Application/FrameCoordinator.h"
 #include "AssetManager/Core/Asset.h"
 #include "GPU/Pass/GraphicsPass.h"
 #include "GPU/Vulkan/Pipeline/GraphicsPipeline.h"
@@ -17,9 +18,8 @@
 #include "Rendering/AccumulationOverlaySides.h"
 #include "Rendering/DemoSurfaceEffects.h"
 #include "Rendering/HeightFieldSmoothing.h"
-#include "Application/FrameCoordinator.h"
-#include "Rendering/RenderStateTexture.h"
 #include "Rendering/RenderContext.h"
+#include "Rendering/RenderStateTexture.h"
 #include "SurfaceState/Debug/TexelGeometryPreview.h"
 #include "SurfaceState/Debug/TexelInspector.h"
 #include "SurfaceState/SurfaceStateSystem.h"
@@ -95,58 +95,58 @@ namespace MDSS::Rendering
 
     struct TRendererProfilingStats
     {
-        float                     SolverGpuMilliseconds = -1.0F;
-        float                     SolverPass1GpuMilliseconds = -1.0F;
-        float                     SolverPass2GpuMilliseconds = -1.0F;
-        float                     AccumulationGeometryGpuMilliseconds = -1.0F;
-        float                     TransferWeightGpuMilliseconds = -1.0F;
-        float                     RenderPreparationGpuMilliseconds = -1.0F;
-        float                     SceneDrawGpuMilliseconds = -1.0F;
-        float                     TexelInspectorGpuMilliseconds = -1.0F;
-        float                     BaseMeshDrawGpuMilliseconds = -1.0F;
-        float                     MudOverlayDrawGpuMilliseconds = -1.0F;
-        float                     ReservedOverlayDrawGpuMilliseconds = -1.0F;
-        float                     OverlayPreparationGpuMilliseconds = -1.0F;
-        float                     OverlayGeometryGpuMilliseconds = -1.0F;
-        float                     OverlayHeightGpuMilliseconds = -1.0F;
-        float                     OverlayNormalVertexGpuMilliseconds = -1.0F;
-        float                     OverlaySmoothingGpuMilliseconds = -1.0F;
-        float                     OverlaySidesGpuMilliseconds = -1.0F;
-        float                     OverlaySidesPreBarrierGpuMilliseconds = -1.0F;
-        float                     OverlaySidesDispatchGpuMilliseconds = -1.0F;
-        float                     OverlaySidesPostBarrierGpuMilliseconds = -1.0F;
-        float                     OverlayBoundarySearchGpuMilliseconds = -1.0F;
-        float                     OverlayTopCommandGpuMilliseconds = -1.0F;
-        float                     OverlaySidesInterPassBarrierGpuMilliseconds = -1.0F;
-        float                     OverlayCoverageSampleGpuMilliseconds = -1.0F;
-        float                     SceneSetupGpuMilliseconds = -1.0F;
-        float                     RenderPassBeginGpuMilliseconds = -1.0F;
-        float                     RenderPassColorStageGpuMilliseconds = -1.0F;
-        float                     RenderPassDepthStageGpuMilliseconds = -1.0F;
-        float                     ViewportSetupGpuMilliseconds = -1.0F;
-        float                     UIDrawGpuMilliseconds = -1.0F;
-        float                     RenderPassEndGpuMilliseconds = -1.0F;
-        float                     SceneBetweenDrawsGpuMilliseconds = -1.0F;
-        float                     SceneTailGpuMilliseconds = -1.0F;
-        float                     FrameFenceWaitCpuMilliseconds = -1.0F;
-        float                     AcquireCpuMilliseconds = -1.0F;
-        float                     CommandRecordCpuMilliseconds = -1.0F;
-        float                     QueueSubmitCpuMilliseconds = -1.0F;
-        float                     PresentCpuMilliseconds = -1.0F;
-        std::uint32_t             SimulationSteps = 0;
-        float                     SimulatedThisFrameSeconds = 0.0F;
-        float                     PendingSimulationSeconds = 0.0F;
-        float                     DroppedSimulationSeconds = 0.0F;
-        std::uint32_t             SimulationInstances = 0;
-        std::uint64_t             SimulationTexels = 0;
-        std::uint32_t             StateChannels = 0;
-        std::uint32_t             SimulationResolution = 0;
-        std::uint32_t             SurfaceTexelMeshResolution = 0;
-        std::uint32_t             OverlayTexelMeshResolution = 0;
-        std::uint64_t             OverlayActiveTopTriangles = 0;
-        std::uint64_t             OverlayTotalTopTriangles = 0;
-        std::uint64_t             OverlayActiveTiles = 0;
-        std::uint64_t             OverlayTotalTiles = 0;
+        float               SolverGpuMilliseconds = -1.0F;
+        float               SolverPass1GpuMilliseconds = -1.0F;
+        float               SolverPass2GpuMilliseconds = -1.0F;
+        float               AccumulationGeometryGpuMilliseconds = -1.0F;
+        float               TransferWeightGpuMilliseconds = -1.0F;
+        float               RenderPreparationGpuMilliseconds = -1.0F;
+        float               SceneDrawGpuMilliseconds = -1.0F;
+        float               TexelInspectorGpuMilliseconds = -1.0F;
+        float               BaseMeshDrawGpuMilliseconds = -1.0F;
+        float               MudOverlayDrawGpuMilliseconds = -1.0F;
+        float               ReservedOverlayDrawGpuMilliseconds = -1.0F;
+        float               OverlayPreparationGpuMilliseconds = -1.0F;
+        float               OverlayGeometryGpuMilliseconds = -1.0F;
+        float               OverlayHeightGpuMilliseconds = -1.0F;
+        float               OverlayNormalVertexGpuMilliseconds = -1.0F;
+        float               OverlaySmoothingGpuMilliseconds = -1.0F;
+        float               OverlaySidesGpuMilliseconds = -1.0F;
+        float               OverlaySidesPreBarrierGpuMilliseconds = -1.0F;
+        float               OverlaySidesDispatchGpuMilliseconds = -1.0F;
+        float               OverlaySidesPostBarrierGpuMilliseconds = -1.0F;
+        float               OverlayBoundarySearchGpuMilliseconds = -1.0F;
+        float               OverlayTopCommandGpuMilliseconds = -1.0F;
+        float               OverlaySidesInterPassBarrierGpuMilliseconds = -1.0F;
+        float               OverlayCoverageSampleGpuMilliseconds = -1.0F;
+        float               SceneSetupGpuMilliseconds = -1.0F;
+        float               RenderPassBeginGpuMilliseconds = -1.0F;
+        float               RenderPassColorStageGpuMilliseconds = -1.0F;
+        float               RenderPassDepthStageGpuMilliseconds = -1.0F;
+        float               ViewportSetupGpuMilliseconds = -1.0F;
+        float               UIDrawGpuMilliseconds = -1.0F;
+        float               RenderPassEndGpuMilliseconds = -1.0F;
+        float               SceneBetweenDrawsGpuMilliseconds = -1.0F;
+        float               SceneTailGpuMilliseconds = -1.0F;
+        float               FrameFenceWaitCpuMilliseconds = -1.0F;
+        float               AcquireCpuMilliseconds = -1.0F;
+        float               CommandRecordCpuMilliseconds = -1.0F;
+        float               QueueSubmitCpuMilliseconds = -1.0F;
+        float               PresentCpuMilliseconds = -1.0F;
+        std::uint32_t       SimulationSteps = 0;
+        float               SimulatedThisFrameSeconds = 0.0F;
+        float               PendingSimulationSeconds = 0.0F;
+        float               DroppedSimulationSeconds = 0.0F;
+        std::uint32_t       SimulationInstances = 0;
+        std::uint64_t       SimulationTexels = 0;
+        std::uint32_t       StateChannels = 0;
+        std::uint32_t       SimulationResolution = 0;
+        std::uint32_t       SurfaceTexelMeshResolution = 0;
+        std::uint32_t       OverlayTexelMeshResolution = 0;
+        std::uint64_t       OverlayActiveTopTriangles = 0;
+        std::uint64_t       OverlayTotalTopTriangles = 0;
+        std::uint64_t       OverlayActiveTiles = 0;
+        std::uint64_t       OverlayTotalTiles = 0;
         TOverlayDisplayMode OverlayDisplayMode = TOverlayDisplayMode::Both;
     };
 
@@ -245,12 +245,12 @@ namespace MDSS::Rendering
         void                        RestartSimulationState();
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         /** @brief Rebuild Surface mapping and GPU resources, resetting State on success. */
-        void SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);
+        void                        SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);
         [[nodiscard]] std::uint32_t GetSurfaceTexelMeshResolution() const noexcept
         {
             return SurfaceTexelMeshResolution;
         }
-        void SetSurfaceTexelMeshResolution(std::uint32_t Resolution);
+        void                        SetSurfaceTexelMeshResolution(std::uint32_t Resolution);
         [[nodiscard]] std::uint32_t GetOverlayTexelMeshResolution() const noexcept
         {
             return OverlayTexelMeshResolution;
@@ -276,9 +276,9 @@ namespace MDSS::Rendering
         }
 
         // Benchmark capture and overlay profiling
-        void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
-                                       std::uint32_t WarmupFrames,
-                                       std::uint32_t MeasurementFrames);
+        void                              ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
+                                                                    std::uint32_t                WarmupFrames,
+                                                                    std::uint32_t                MeasurementFrames);
         [[nodiscard]] TOverlayDisplayMode GetOverlayDisplayMode() const noexcept
         {
             return OverlayDisplayMode;
@@ -318,44 +318,104 @@ namespace MDSS::Rendering
         {
             bOverlayTileCullingEnabled = bEnabled;
         }
-        [[nodiscard]] bool IsBaseMeshDrawEnabled() const noexcept { return bBaseMeshDrawEnabled; }
-        void SetBaseMeshDrawEnabled(bool bEnabled) noexcept { bBaseMeshDrawEnabled = bEnabled; }
-        [[nodiscard]] bool IsOverlayTopDrawEnabled() const noexcept { return bOverlayTopDrawEnabled; }
-        void SetOverlayTopDrawEnabled(bool bEnabled) noexcept { bOverlayTopDrawEnabled = bEnabled; }
-        [[nodiscard]] bool IsOverlaySidesDrawEnabled() const noexcept { return bOverlaySidesDrawEnabled; }
-        void SetOverlaySidesDrawEnabled(bool bEnabled) noexcept { bOverlaySidesDrawEnabled = bEnabled; }
+        [[nodiscard]] bool IsBaseMeshDrawEnabled() const noexcept
+        {
+            return bBaseMeshDrawEnabled;
+        }
+        void SetBaseMeshDrawEnabled(bool bEnabled) noexcept
+        {
+            bBaseMeshDrawEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsOverlayTopDrawEnabled() const noexcept
+        {
+            return bOverlayTopDrawEnabled;
+        }
+        void SetOverlayTopDrawEnabled(bool bEnabled) noexcept
+        {
+            bOverlayTopDrawEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsOverlaySidesDrawEnabled() const noexcept
+        {
+            return bOverlaySidesDrawEnabled;
+        }
+        void SetOverlaySidesDrawEnabled(bool bEnabled) noexcept
+        {
+            bOverlaySidesDrawEnabled = bEnabled;
+        }
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
-        void SetRawFluxCacheEnabled(bool bEnabled) noexcept;
+        void               SetRawFluxCacheEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept;
-        void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept;
+        void               SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept;
-        void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept;
+        void               SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsHalfDynamicWeightsEnabled() const noexcept;
-        void SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
+        void               SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept;
-        void SetSparseSolverEnabled(bool bEnabled) noexcept;
+        void               SetSparseSolverEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept;
-        void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept;
+        void               SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept;
-        void SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
+        void               SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsPerWorkgroupChannelMaskEnabled() const noexcept;
-        void SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
+        void               SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept;
-        void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept;
-        [[nodiscard]] bool IsSparseHeightSmoothingEnabled() const noexcept { return bSparseHeightSmoothingEnabled; }
-        void SetSparseHeightSmoothingEnabled(bool bEnabled) noexcept { bSparseHeightSmoothingEnabled = bEnabled; }
-        [[nodiscard]] bool IsSharedHeightSmoothingEnabled() const noexcept { return bSharedHeightSmoothingEnabled; }
-        void SetSharedHeightSmoothingEnabled(bool bEnabled) noexcept { bSharedHeightSmoothingEnabled = bEnabled; }
-        [[nodiscard]] bool IsSharedOverlayCoverageEnabled() const noexcept { return bSharedOverlayCoverageEnabled; }
-        void SetSharedOverlayCoverageEnabled(bool bEnabled) noexcept { bSharedOverlayCoverageEnabled = bEnabled; }
-        [[nodiscard]] bool IsSharedStateTextureSmoothingEnabled() const noexcept { return bSharedStateTextureSmoothingEnabled; }
-        void SetSharedStateTextureSmoothingEnabled(bool bEnabled) noexcept { bSharedStateTextureSmoothingEnabled = bEnabled; }
-        [[nodiscard]] bool IsPrecomputeCoverageSmoothingEnabled() const noexcept { return bPrecomputeCoverageSmoothingEnabled; }
-        void SetPrecomputeCoverageSmoothingEnabled(bool bEnabled) noexcept { bPrecomputeCoverageSmoothingEnabled = bEnabled; }
-        [[nodiscard]] bool IsRenderStateTextureSamplingEnabled() const noexcept { return bRenderStateTextureSamplingEnabled; }
-        void SetRenderStateTextureSamplingEnabled(bool bEnabled) noexcept { bRenderStateTextureSamplingEnabled = bEnabled; }
-        [[nodiscard]] bool IsSeparableCoverageSmoothingEnabled() const noexcept { return bSeparableCoverageSmoothingEnabled; }
-        void SetSeparableCoverageSmoothingEnabled(bool bEnabled) noexcept { bSeparableCoverageSmoothingEnabled = bEnabled; }
+        void               SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseHeightSmoothingEnabled() const noexcept
+        {
+            return bSparseHeightSmoothingEnabled;
+        }
+        void SetSparseHeightSmoothingEnabled(bool bEnabled) noexcept
+        {
+            bSparseHeightSmoothingEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsSharedHeightSmoothingEnabled() const noexcept
+        {
+            return bSharedHeightSmoothingEnabled;
+        }
+        void SetSharedHeightSmoothingEnabled(bool bEnabled) noexcept
+        {
+            bSharedHeightSmoothingEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsSharedOverlayCoverageEnabled() const noexcept
+        {
+            return bSharedOverlayCoverageEnabled;
+        }
+        void SetSharedOverlayCoverageEnabled(bool bEnabled) noexcept
+        {
+            bSharedOverlayCoverageEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsSharedStateTextureSmoothingEnabled() const noexcept
+        {
+            return bSharedStateTextureSmoothingEnabled;
+        }
+        void SetSharedStateTextureSmoothingEnabled(bool bEnabled) noexcept
+        {
+            bSharedStateTextureSmoothingEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsPrecomputeCoverageSmoothingEnabled() const noexcept
+        {
+            return bPrecomputeCoverageSmoothingEnabled;
+        }
+        void SetPrecomputeCoverageSmoothingEnabled(bool bEnabled) noexcept
+        {
+            bPrecomputeCoverageSmoothingEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsRenderStateTextureSamplingEnabled() const noexcept
+        {
+            return bRenderStateTextureSamplingEnabled;
+        }
+        void SetRenderStateTextureSamplingEnabled(bool bEnabled) noexcept
+        {
+            bRenderStateTextureSamplingEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsSeparableCoverageSmoothingEnabled() const noexcept
+        {
+            return bSeparableCoverageSmoothingEnabled;
+        }
+        void SetSeparableCoverageSmoothingEnabled(bool bEnabled) noexcept
+        {
+            bSeparableCoverageSmoothingEnabled = bEnabled;
+        }
         [[nodiscard]] bool AreRenderPassSubstageTimingsReliable() const noexcept
         {
             return bRenderPassSubstageTimingsReliable;
@@ -364,9 +424,9 @@ namespace MDSS::Rendering
         // Render view and debug settings
         [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
         [[nodiscard]] TRenderViewMode GetRenderViewMode(std::size_t ViewportIndex) const noexcept;
-        void               SetRenderViewMode(TRenderViewMode Mode);
-        void               SetRenderViewMode(std::size_t ViewportIndex, TRenderViewMode Mode);
-        [[nodiscard]] bool IsWireframeUniformWhite() const noexcept
+        void                          SetRenderViewMode(TRenderViewMode Mode);
+        void                          SetRenderViewMode(std::size_t ViewportIndex, TRenderViewMode Mode);
+        [[nodiscard]] bool            IsWireframeUniformWhite() const noexcept
         {
             return bWireframeUniformWhite;
         }
@@ -462,7 +522,6 @@ namespace MDSS::Rendering
 
         void WriteBenchmarkSample(std::uint32_t FrameSlot);
 
-
         struct TMaterialRenderResource
         {
             std::array<std::unique_ptr<GPU::TGPUBuffer>, TRenderContext::MaxFramesInFlight> UniformBuffers;
@@ -504,67 +563,67 @@ namespace MDSS::Rendering
         Asset::TAssetManager&              Assets;
         SurfaceState::TSurfaceDataManager& SurfaceData;
         /** @brief Application이 소유하며 Renderer는 compute 기록과 렌더링 동안만 참조한다. */
-        SurfaceState::TSurfaceStateSystem&                   SurfaceStateSystem;
-        TFrameCoordinator&                                   FrameCoordinator;
-        GPU::TSwapchain                                      SwapchainData;
-        VkFormat                                             DepthFormat = VK_FORMAT_UNDEFINED;
-        std::vector<std::unique_ptr<GPU::TGPUImage>>         DepthImages;
-        std::vector<std::unique_ptr<GPU::TGPUImageView>>     DepthImageViews;
-        GPU::TRenderPass                                     MainRenderPass;
-        GPU::TGraphicsPass                                   MainGraphicsPass;
-        VkDescriptorSetLayout                                MaterialDescriptorSetLayout = VK_NULL_HANDLE;
-        GPU::TGraphicsPipeline                               StaticMeshPipeline;
-        GPU::TGraphicsPipeline                               WireframePipeline;
-        GPU::TGraphicsPipeline                               GizmoPipeline;
-        GPU::TGraphicsPipeline                               WorldReferencePipeline;
-        std::unique_ptr<GPU::TGPUBuffer>                     GizmoVertexBuffer;
-        std::uint32_t                                        WorldGridVertexCount = 0;
-        std::uint32_t                                        WorldAxisVertexCount = 0;
-        std::uint32_t                                        TranslateGizmoVertexCount = 0;
-        std::uint32_t                                        RotateGizmoVertexCount = 0;
-        bool                                                 bWorldGridVisible = true;
-        bool                                                 bWorldAxisVisible = true;
-        std::unique_ptr<GPU::TGraphicsPipeline>              SurfaceDebugPipeline;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview> TexelGeometryPreview;
-        std::unique_ptr<GPU::TGraphicsPipeline>              TexelGeometryPipeline;
+        SurfaceState::TSurfaceStateSystem&                     SurfaceStateSystem;
+        TFrameCoordinator&                                     FrameCoordinator;
+        GPU::TSwapchain                                        SwapchainData;
+        VkFormat                                               DepthFormat = VK_FORMAT_UNDEFINED;
+        std::vector<std::unique_ptr<GPU::TGPUImage>>           DepthImages;
+        std::vector<std::unique_ptr<GPU::TGPUImageView>>       DepthImageViews;
+        GPU::TRenderPass                                       MainRenderPass;
+        GPU::TGraphicsPass                                     MainGraphicsPass;
+        VkDescriptorSetLayout                                  MaterialDescriptorSetLayout = VK_NULL_HANDLE;
+        GPU::TGraphicsPipeline                                 StaticMeshPipeline;
+        GPU::TGraphicsPipeline                                 WireframePipeline;
+        GPU::TGraphicsPipeline                                 GizmoPipeline;
+        GPU::TGraphicsPipeline                                 WorldReferencePipeline;
+        std::unique_ptr<GPU::TGPUBuffer>                       GizmoVertexBuffer;
+        std::uint32_t                                          WorldGridVertexCount = 0;
+        std::uint32_t                                          WorldAxisVertexCount = 0;
+        std::uint32_t                                          TranslateGizmoVertexCount = 0;
+        std::uint32_t                                          RotateGizmoVertexCount = 0;
+        bool                                                   bWorldGridVisible = true;
+        bool                                                   bWorldAxisVisible = true;
+        std::unique_ptr<GPU::TGraphicsPipeline>                SurfaceDebugPipeline;
+        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   TexelGeometryPreview;
+        std::unique_ptr<GPU::TGraphicsPipeline>                TexelGeometryPipeline;
         std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> SurfaceLitPipelines;
         std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> BaseSurfaceLitPipelines;
-        std::unique_ptr<TRenderStateTexture>                  RenderStateTexture;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview> MudLayerGeometry;
-        std::unique_ptr<THeightFieldSmoothing>               HeightFieldSmoothing;
-        std::unique_ptr<TAccumulationOverlaySides>           OverlaySides;
+        std::unique_ptr<TRenderStateTexture>                   RenderStateTexture;
+        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   MudLayerGeometry;
+        std::unique_ptr<THeightFieldSmoothing>                 HeightFieldSmoothing;
+        std::unique_ptr<TAccumulationOverlaySides>             OverlaySides;
         std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> MudOverlayTopPipelines;
         std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> MudOverlaySidePipelines;
-        GPU::TFramebuffer                                    MainFramebuffers;
-        TRenderContext                                       FrameContext;
-        VkDescriptorPool                                     MaterialDescriptorPool = VK_NULL_HANDLE;
-        std::vector<TMaterialRenderResource>                 MaterialResources;
-        VkDeviceSize                                         MaterialUniformStride = 0;
-        std::size_t                                          MaterialViewportCapacity = 1;
-        std::vector<TRenderViewMode>                         ViewModes{TRenderViewMode::Lit};
-        bool                                                 bWireframeUniformWhite = true;
-        bool                                                 bSupportsWireframeLineWidth = false;
-        float                                                WireframeLineWidth = 2.0F;
-        float                                                WireframeLineWidthMin = 1.0F;
-        float                                                WireframeLineWidthMax = 1.0F;
-        std::uint32_t                                        DebugStateChannel = 0;
-        bool                                                 bStateHeatmapReliefShadingEnabled = true;
-        TSurfaceDebugDisplaySettings                         SurfaceDebugSettings;
-        TDemoSurfaceEffectSettings                           DemoEffects;
-        TOverlayDisplayMode                                  OverlayDisplayMode = TOverlayDisplayMode::Both;
-        TOverlayShadingDiagnostic                             OverlayShadingDiagnostic = TOverlayShadingDiagnostic::Lit;
-        bool                                                 bOverlayOnlyDebug = false;
-        bool                                                 bOverlayTileCullingEnabled = true;
-        bool                                                 bBaseMeshDrawEnabled = true;
-        bool                                                 bOverlayTopDrawEnabled = true;
-        bool                                                 bOverlaySidesDrawEnabled = true;
-        bool                                                 bSparseHeightSmoothingEnabled = true;
-        bool                                                 bSharedHeightSmoothingEnabled = false;
-        bool                                                 bSharedOverlayCoverageEnabled = false;
-        bool                                                 bSharedStateTextureSmoothingEnabled = false;
-        bool                                                 bPrecomputeCoverageSmoothingEnabled = true;
-        bool                                                 bRenderStateTextureSamplingEnabled = true;
-        bool                                                 bSeparableCoverageSmoothingEnabled = true;
+        GPU::TFramebuffer                                      MainFramebuffers;
+        TRenderContext                                         FrameContext;
+        VkDescriptorPool                                       MaterialDescriptorPool = VK_NULL_HANDLE;
+        std::vector<TMaterialRenderResource>                   MaterialResources;
+        VkDeviceSize                                           MaterialUniformStride = 0;
+        std::size_t                                            MaterialViewportCapacity = 1;
+        std::vector<TRenderViewMode>                           ViewModes{TRenderViewMode::Lit};
+        bool                                                   bWireframeUniformWhite = true;
+        bool                                                   bSupportsWireframeLineWidth = false;
+        float                                                  WireframeLineWidth = 2.0F;
+        float                                                  WireframeLineWidthMin = 1.0F;
+        float                                                  WireframeLineWidthMax = 1.0F;
+        std::uint32_t                                          DebugStateChannel = 0;
+        bool                                                   bStateHeatmapReliefShadingEnabled = true;
+        TSurfaceDebugDisplaySettings                           SurfaceDebugSettings;
+        TDemoSurfaceEffectSettings                             DemoEffects;
+        TOverlayDisplayMode                                    OverlayDisplayMode = TOverlayDisplayMode::Both;
+        TOverlayShadingDiagnostic OverlayShadingDiagnostic = TOverlayShadingDiagnostic::Lit;
+        bool                      bOverlayOnlyDebug = false;
+        bool                      bOverlayTileCullingEnabled = true;
+        bool                      bBaseMeshDrawEnabled = true;
+        bool                      bOverlayTopDrawEnabled = true;
+        bool                      bOverlaySidesDrawEnabled = true;
+        bool                      bSparseHeightSmoothingEnabled = true;
+        bool                      bSharedHeightSmoothingEnabled = false;
+        bool                      bSharedOverlayCoverageEnabled = false;
+        bool                      bSharedStateTextureSmoothingEnabled = false;
+        bool                      bPrecomputeCoverageSmoothingEnabled = true;
+        bool                      bRenderStateTextureSamplingEnabled = true;
+        bool                      bSeparableCoverageSmoothingEnabled = true;
         TOverlayOccupancyTileSize OverlayOccupancyTileSize = TOverlayOccupancyTileSize::Tile16;
         std::uint32_t             SurfaceTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
         std::uint32_t             OverlayTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
@@ -584,18 +643,18 @@ namespace MDSS::Rendering
         std::array<bool, TRenderContext::MaxFramesInFlight>                      bTimestampQueriesSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             SolverTimestampStepsSubmitted{};
         std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             OverlayTimestampLayersSubmitted{};
-        std::array<TOverlayDisplayMode, TRenderContext::MaxFramesInFlight> OverlayDisplayModesSubmitted{};
+        std::array<TOverlayDisplayMode, TRenderContext::MaxFramesInFlight>       OverlayDisplayModesSubmitted{};
         std::array<TBenchmarkFrameSubmission, TRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
-        std::ofstream      BenchmarkOutput;
-        std::vector<std::string> BenchmarkJsonLines;
-        std::uint64_t      BenchmarkWarmupFrames = 0;
-        std::uint64_t      BenchmarkMeasurementFrames = 0;
-        std::uint64_t      NextBenchmarkFrameIndex = 0;
-        bool               bBenchmarkCaptureEnabled = false;
-        std::uint32_t           TimestampQueriesPerFrame = 21;
-        std::uint32_t           SolverTimestampGroupCount = 0;
-        float                   TimestampPeriodNanoseconds = 0.0F;
-        std::uint32_t           TimestampValidBits = 0;
+        std::ofstream                                                            BenchmarkOutput;
+        std::vector<std::string>                                                 BenchmarkJsonLines;
+        std::uint64_t                                                            BenchmarkWarmupFrames = 0;
+        std::uint64_t                                                            BenchmarkMeasurementFrames = 0;
+        std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
+        bool                                                                     bBenchmarkCaptureEnabled = false;
+        std::uint32_t                                                            TimestampQueriesPerFrame = 21;
+        std::uint32_t                                                            SolverTimestampGroupCount = 0;
+        float                                                                    TimestampPeriodNanoseconds = 0.0F;
+        std::uint32_t                                                            TimestampValidBits = 0;
         bool                    bRenderPassSubstageTimingsReliable = true;
         float                   LastRenderGpuMilliseconds = -1.0F;
         float                   LastSolverGpuMilliseconds = -1.0F;

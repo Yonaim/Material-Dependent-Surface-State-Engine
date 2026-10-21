@@ -47,16 +47,16 @@ namespace MDSS::SurfaceState
         TTexelInspector& operator=(const TTexelInspector&) = delete;
 
         // Selection recording and snapshot readback
-        void             Record(VkCommandBuffer                         Command,
-                                std::size_t                             Frame,
-                                const TSurfaceStateDescriptorResources& Descriptors,
-                                const TSurfaceTexelSelection&           Selection,
-                                TStateId                                Channel,
-                                std::uint32_t                           Channels,
-                                float                                   AccumulationDisplayScale,
-                                const glm::mat4&                        ModelMatrix,
-                                bool                                    bStateAB,
-                                std::uint64_t                           Step);
+        void Record(VkCommandBuffer                         Command,
+                    std::size_t                             Frame,
+                    const TSurfaceStateDescriptorResources& Descriptors,
+                    const TSurfaceTexelSelection&           Selection,
+                    TStateId                                Channel,
+                    std::uint32_t                           Channels,
+                    float                                   AccumulationDisplayScale,
+                    const glm::mat4&                        ModelMatrix,
+                    bool                                    bStateAB,
+                    std::uint64_t                           Step);
         /** @brief Call only after the corresponding frame fence has signaled. */
         void                                                      CompleteFrame(std::size_t Frame);
         void                                                      Invalidate() noexcept;

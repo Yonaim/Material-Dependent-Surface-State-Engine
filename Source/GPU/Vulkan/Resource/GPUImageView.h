@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+
 #include <cstdint>
 
 namespace MDSS::GPU
@@ -15,8 +16,12 @@ namespace MDSS::GPU
     public:
         // Image view lifecycle
         /** @brief image와 format·aspect 설정을 참조하는 Vulkan image view를 생성한다. */
-        TGPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
-                      std::uint32_t ArrayLayers = 1, VkImageViewType ViewType = VK_IMAGE_VIEW_TYPE_2D);
+        TGPUImageView(VkDevice           Device,
+                      VkImage            Image,
+                      VkFormat           Format,
+                      VkImageAspectFlags AspectMask,
+                      std::uint32_t      ArrayLayers = 1,
+                      VkImageViewType    ViewType = VK_IMAGE_VIEW_TYPE_2D);
         ~TGPUImageView();
 
         TGPUImageView(const TGPUImageView&) = delete;
@@ -24,16 +29,22 @@ namespace MDSS::GPU
         TGPUImageView(TGPUImageView&&) = delete;
         TGPUImageView& operator=(TGPUImageView&&) = delete;
 
-        void Recreate(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
-                      std::uint32_t ArrayLayers = 1, VkImageViewType ViewType = VK_IMAGE_VIEW_TYPE_2D);
+        void Recreate(VkImage            Image,
+                      VkFormat           Format,
+                      VkImageAspectFlags AspectMask,
+                      std::uint32_t      ArrayLayers = 1,
+                      VkImageViewType    ViewType = VK_IMAGE_VIEW_TYPE_2D);
         void Reset();
 
         // Image view access
         [[nodiscard]] VkImageView GetHandle() const noexcept;
 
     private:
-        void Create(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
-                    std::uint32_t ArrayLayers, VkImageViewType ViewType);
+        void Create(VkImage            Image,
+                    VkFormat           Format,
+                    VkImageAspectFlags AspectMask,
+                    std::uint32_t      ArrayLayers,
+                    VkImageViewType    ViewType);
 
         VkDevice    Device = VK_NULL_HANDLE;
         VkImageView Handle = VK_NULL_HANDLE;

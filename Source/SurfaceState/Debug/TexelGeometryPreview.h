@@ -4,8 +4,8 @@
  */
 #pragma once
 
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
 #include "Rendering/RenderContext.h"
+#include "SurfaceState/GPU/SurfaceGPUResources.h"
 
 #include <array>
 #include <cstdint>
@@ -51,30 +51,29 @@ namespace MDSS::SurfaceState
                                                                     std::size_t OutputSlot = 0U) const;
         /** @brief Read active-tile counters after the corresponding frame slot fence has signaled. */
         [[nodiscard]] TTileActivity CompleteOccupancyFrame(std::size_t FrameIndex);
-        void                                 SetOccupancyTileSize(std::uint32_t TileSize);
-        void                                 SetLowAmountHeightFade(float Saturation);
-        void                                 InvalidateSparseOutput() noexcept;
+        void                        SetOccupancyTileSize(std::uint32_t TileSize);
+        void                        SetLowAmountHeightFade(float Saturation);
+        void                        InvalidateSparseOutput() noexcept;
 
         // Compute command recording
-        void                                 Record(VkCommandBuffer                         Command,
-                                                    std::size_t                             Instance,
-                                                    const TSurfaceStateDescriptorResources& Descriptors,
-                                                    std::uint32_t                           TexelCount,
-                                                    std::uint32_t                           Channel,
-                                                    std::uint32_t                           Channels,
-                                                    float                                   AccumulationDisplayScale,
-                                                    float                                   GeometryDisplayScale,
-                                                    const glm::mat4&                        ModelMatrix,
-                                                    bool                                    bStateAB,
-                                                    bool                                    bAccumulation,
-                                                    VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
-                                                    std::uint32_t                           HeightCompleteQuery = 0U,
-                                                    bool                                    bTotalHeight = false,
-                                                    std::size_t                             FrameIndex = 0U,
-                                                    std::array<std::uint32_t, 3>           MaterialChannels = {
-                                                        0xffffffffU, 0xffffffffU, 0xffffffffU},
-                                                    std::uint32_t                           ActiveMaterialMask = 0U,
-                                                    std::size_t                             OutputSlot = 0U);
+        void Record(VkCommandBuffer                         Command,
+                    std::size_t                             Instance,
+                    const TSurfaceStateDescriptorResources& Descriptors,
+                    std::uint32_t                           TexelCount,
+                    std::uint32_t                           Channel,
+                    std::uint32_t                           Channels,
+                    float                                   AccumulationDisplayScale,
+                    float                                   GeometryDisplayScale,
+                    const glm::mat4&                        ModelMatrix,
+                    bool                                    bStateAB,
+                    bool                                    bAccumulation,
+                    VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
+                    std::uint32_t                           HeightCompleteQuery = 0U,
+                    bool                                    bTotalHeight = false,
+                    std::size_t                             FrameIndex = 0U,
+                    std::array<std::uint32_t, 3>            MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU},
+                    std::uint32_t                           ActiveMaterialMask = 0U,
+                    std::size_t                             OutputSlot = 0U);
 
     private:
         // Resource cleanup
@@ -84,30 +83,30 @@ namespace MDSS::SurfaceState
             std::unique_ptr<GPU::TGPUBuffer> Buffer;
             std::unique_ptr<GPU::TGPUBuffer> GeometryCache;
             std::array<std::unique_ptr<GPU::TGPUBuffer>, Rendering::TRenderContext::MaxFramesInFlight>
-                OccupancyReadbacks;
+                                                                           OccupancyReadbacks;
             std::array<bool, Rendering::TRenderContext::MaxFramesInFlight> OccupancyPending{};
-            std::uint32_t                    OccupancyTotalTiles = 0;
-            VkDescriptorSet                  Set = VK_NULL_HANDLE;
-            bool                             bOccupancyInitialized = false;
-            bool                             bSparseReady = false;
-            float                            BaselineScale = 0.0F;
-            bool                             bBaselineReady = false;
-            bool                             bInputsObserved = false;
-            std::array<std::uint64_t, 6>     ObservedInputRevisions{};
+            std::uint32_t                                                  OccupancyTotalTiles = 0;
+            VkDescriptorSet                                                Set = VK_NULL_HANDLE;
+            bool                                                           bOccupancyInitialized = false;
+            bool                                                           bSparseReady = false;
+            float                                                          BaselineScale = 0.0F;
+            bool                                                           bBaselineReady = false;
+            bool                                                           bInputsObserved = false;
+            std::array<std::uint64_t, 6>                                   ObservedInputRevisions{};
         };
-        VkPhysicalDevice               PhysicalDevice;
-        VkDevice                       Device;
-        VkDescriptorSetLayout          OutputLayout = VK_NULL_HANDLE;
-        VkPipelineLayout               Layout = VK_NULL_HANDLE;
-        VkPipeline                     Pipeline = VK_NULL_HANDLE;
-        VkPipeline                     HeightPipeline = VK_NULL_HANDLE;
-        VkPipeline                     BaselinePipeline = VK_NULL_HANDLE;
-        VkPipeline                     OccupancyPipeline = VK_NULL_HANDLE;
-        VkDescriptorPool               Pool = VK_NULL_HANDLE;
-        VkPhysicalDeviceLimits         Limits{};
-        bool                           bEnableOccupancyScan = false;
-        std::uint32_t                  OccupancyTileSize = 16U;
-        float                          LowAmountHeightFade = 0.05F;
+        VkPhysicalDevice                                       PhysicalDevice;
+        VkDevice                                               Device;
+        VkDescriptorSetLayout                                  OutputLayout = VK_NULL_HANDLE;
+        VkPipelineLayout                                       Layout = VK_NULL_HANDLE;
+        VkPipeline                                             Pipeline = VK_NULL_HANDLE;
+        VkPipeline                                             HeightPipeline = VK_NULL_HANDLE;
+        VkPipeline                                             BaselinePipeline = VK_NULL_HANDLE;
+        VkPipeline                                             OccupancyPipeline = VK_NULL_HANDLE;
+        VkDescriptorPool                                       Pool = VK_NULL_HANDLE;
+        VkPhysicalDeviceLimits                                 Limits{};
+        bool                                                   bEnableOccupancyScan = false;
+        std::uint32_t                                          OccupancyTileSize = 16U;
+        float                                                  LowAmountHeightFade = 0.05F;
         std::map<std::pair<std::size_t, std::size_t>, TOutput> Outputs;
     };
 }

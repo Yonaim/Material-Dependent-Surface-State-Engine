@@ -15,17 +15,19 @@ namespace MDSS::SurfaceState
     public:
         static constexpr VkDeviceSize MaximumRetainedBytes = 256ULL * 1024ULL * 1024ULL;
 
-        [[nodiscard]] std::unique_ptr<GPU::TGPUBuffer> Acquire(
-            VkDeviceSize Size,
-            VkBufferUsageFlags Usage,
-            VkMemoryPropertyFlags MemoryProperties,
-            GPU::TGPUBufferMemoryCategory Category) noexcept
+        [[nodiscard]] std::unique_ptr<GPU::TGPUBuffer> Acquire(VkDeviceSize                  Size,
+                                                               VkBufferUsageFlags            Usage,
+                                                               VkMemoryPropertyFlags         MemoryProperties,
+                                                               GPU::TGPUBufferMemoryCategory Category) noexcept
         {
-            const auto Found = std::find_if(Buffers.begin(), Buffers.end(), [&](const auto& Buffer)
-            {
-                return Buffer->GetSize() == Size && Buffer->GetUsage() == Usage &&
-                       Buffer->GetMemoryProperties() == MemoryProperties && Buffer->GetMemoryCategory() == Category;
-            });
+            const auto Found = std::find_if(Buffers.begin(),
+                                            Buffers.end(),
+                                            [&](const auto& Buffer)
+                                            {
+                                                return Buffer->GetSize() == Size && Buffer->GetUsage() == Usage &&
+                                                       Buffer->GetMemoryProperties() == MemoryProperties &&
+                                                       Buffer->GetMemoryCategory() == Category;
+                                            });
             if (Found == Buffers.end())
                 return nullptr;
             RetainedBytes -= (*Found)->GetSize();
@@ -62,14 +64,23 @@ namespace MDSS::SurfaceState
             RetainedBytes = 0;
         }
 
-        [[nodiscard]] VkDeviceSize GetRetainedBytes() const noexcept { return RetainedBytes; }
-        [[nodiscard]] std::uint64_t GetReuseCount() const noexcept { return ReuseCount; }
-        [[nodiscard]] VkDeviceSize GetReusedBytes() const noexcept { return ReusedBytes; }
+        [[nodiscard]] VkDeviceSize GetRetainedBytes() const noexcept
+        {
+            return RetainedBytes;
+        }
+        [[nodiscard]] std::uint64_t GetReuseCount() const noexcept
+        {
+            return ReuseCount;
+        }
+        [[nodiscard]] VkDeviceSize GetReusedBytes() const noexcept
+        {
+            return ReusedBytes;
+        }
 
     private:
         std::vector<std::unique_ptr<GPU::TGPUBuffer>> Buffers;
-        VkDeviceSize RetainedBytes = 0;
-        std::uint64_t ReuseCount = 0;
-        VkDeviceSize ReusedBytes = 0;
+        VkDeviceSize                                  RetainedBytes = 0;
+        std::uint64_t                                 ReuseCount = 0;
+        VkDeviceSize                                  ReusedBytes = 0;
     };
 } // namespace MDSS::SurfaceState

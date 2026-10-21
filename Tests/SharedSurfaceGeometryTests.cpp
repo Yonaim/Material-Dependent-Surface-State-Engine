@@ -325,15 +325,15 @@ namespace
         const auto Mapping = TSurfaceMappingBuilder::Build(Source.Vertices, Source.Triangles, Surfaces);
         std::vector<TSurfaceProfileIndex> Profiles(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
         for (std::size_t T = 0; T < Profiles.size(); ++T)
-            if (Mapping.Texels[T].IsValid()) Profiles[T] = 0;
-        const auto Geometry = TSurfaceGeometryBuilder::Build(Mapping, Profiles, 1);
-        const auto Mesh = BuildSurfaceTexelMesh(Geometry, Source.Vertices, Source.Triangles);
+            if (Mapping.Texels[T].IsValid())
+                Profiles[T] = 0;
+        const auto  Geometry = TSurfaceGeometryBuilder::Build(Mapping, Profiles, 1);
+        const auto  Mesh = BuildSurfaceTexelMesh(Geometry, Source.Vertices, Source.Triangles);
         std::size_t TopDiagonalVertices = 0;
         for (const auto& Vertex : Mesh.Vertices)
         {
             const auto Position = glm::vec3(Vertex.Position);
-            if (std::abs(Position.z - 0.5F) > 1e-5F ||
-                std::abs(Position.x - Position.y) > 1e-5F ||
+            if (std::abs(Position.z - 0.5F) > 1e-5F || std::abs(Position.x - Position.y) > 1e-5F ||
                 std::abs(Position.x) >= 0.45F || Vertex.Normal.z < 0.99F)
                 continue;
             ++TopDiagonalVertices;

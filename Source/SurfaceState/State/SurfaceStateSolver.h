@@ -44,7 +44,8 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t SurfaceSolverHalfDynamicWeightsFlag = 1U << 20U;
     /** @brief 현재 descriptor의 CurrentState가 A buffer임을 persistent activity metadata에 알려준다. */
     inline constexpr std::uint32_t SurfaceSolverCurrentStateABFlag = 1U << 21U;
-    /** @brief persistent active set bootstrap step에서는 full dispatch/channel scan을 사용하면서 next set을 생성한다. */
+    /** @brief persistent active set bootstrap step에서는 full dispatch/channel scan을 사용하면서 next set을 생성한다.
+     */
     inline constexpr std::uint32_t SurfaceSolverSeedPersistentActivityFlag = 1U << 22U;
     inline constexpr std::uint32_t SurfaceSolverPerWorkgroupChannelMaskFlag = 1U << 23U;
 
@@ -88,10 +89,11 @@ namespace MDSS::SurfaceState
         glm::mat4                               ModelMatrix{1.0F};
         glm::vec3                               GravityWorld{0.0F, 0.0F, -1.0F};
         std::uint32_t                           SolverFlags = 0U;
-        // State-driven geometry updates need height after each substep; otherwise height is only needed before rendering.
-        bool                                    bPrepareAccumulationHeight = true;
+        // State-driven geometry updates need height after each substep; otherwise height is only needed before
+        // rendering.
+        bool bPrepareAccumulationHeight = true;
         // CPU contact distribution이 sparse input group list를 업로드한 경우 reset/merge pass를 반드시 기록한다.
-        bool                                    bHasInputActivation = false;
+        bool bHasInputActivation = false;
     };
 
     class TSurfaceStateSolver final
@@ -119,24 +121,22 @@ namespace MDSS::SurfaceState
                         VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
                         std::uint32_t                           FirstPassQuery = 0U,
                         bool                                    bPrepareAccumulationHeight = true) const;
-        void RecordSteps(VkCommandBuffer                         CommandBuffer,
+        void RecordSteps(VkCommandBuffer                             CommandBuffer,
                          std::span<const TSurfaceSolverInstanceStep> InstanceSteps,
-                         VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
-                         std::uint32_t                           FirstStepQuery = 0U) const;
+                         VkQueryPool                                 TimestampQueryPool = VK_NULL_HANDLE,
+                         std::uint32_t                               FirstStepQuery = 0U) const;
 
     private:
         // Compute pipeline creation
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
-        static VkPipeline     CreateComputePipeline(VkDevice         Device,
-                                                    VkPipelineLayout Layout,
-                                                    const char*      ShaderPath);
+        static VkPipeline     CreateComputePipeline(VkDevice Device, VkPipelineLayout Layout, const char* ShaderPath);
 
-        VkDevice                  Device = VK_NULL_HANDLE;
-        VkPipelineLayout          PipelineLayout = VK_NULL_HANDLE;
-        VkPipeline                AccumulationHeightPipeline = VK_NULL_HANDLE;
-        VkPipeline                SparseScheduleResetPipeline = VK_NULL_HANDLE;
-        VkPipeline                AccumulationGeometryPipeline = VK_NULL_HANDLE;
-        std::array<VkPipeline, 2> DynamicTransferWeightPipelines{};
+        VkDevice                   Device = VK_NULL_HANDLE;
+        VkPipelineLayout           PipelineLayout = VK_NULL_HANDLE;
+        VkPipeline                 AccumulationHeightPipeline = VK_NULL_HANDLE;
+        VkPipeline                 SparseScheduleResetPipeline = VK_NULL_HANDLE;
+        VkPipeline                 AccumulationGeometryPipeline = VK_NULL_HANDLE;
+        std::array<VkPipeline, 2>  DynamicTransferWeightPipelines{};
         std::array<VkPipeline, 10> Pass1Pipelines{};
         std::array<VkPipeline, 10> Pass2Pipelines{};
     };

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "Application/Window.h"
 #include "Application/BenchmarkOptions.h"
+#include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "GPU/Vulkan/VulkanContext.h"
 #include "Scene/Scene.h"
@@ -34,9 +34,9 @@ namespace MDSS
     {
     public:
         // Application lifecycle and execution
-        explicit TApplication(TBenchmarkOptions BenchmarkOptions = {},
-                              std::uint32_t RenderTileSize = 16U,
-                              bool bPerWorkgroupChannelMask = false,
+        explicit TApplication(TBenchmarkOptions     BenchmarkOptions = {},
+                              std::uint32_t         RenderTileSize = 16U,
+                              bool                  bPerWorkgroupChannelMask = false,
                               std::filesystem::path ScenePath = {});
         ~TApplication();
 

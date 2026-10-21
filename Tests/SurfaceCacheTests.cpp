@@ -171,8 +171,8 @@ namespace
                 continue;
             const auto& Triangle = Mesh.Triangles[Texel.Triangle];
             const auto  UV = Texel.Barycentric.x * Mesh.Vertices[Triangle.RenderVertexIndices[0]].UV +
-                            Texel.Barycentric.y * Mesh.Vertices[Triangle.RenderVertexIndices[1]].UV +
-                            Texel.Barycentric.z * Mesh.Vertices[Triangle.RenderVertexIndices[2]].UV;
+                             Texel.Barycentric.y * Mesh.Vertices[Triangle.RenderVertexIndices[1]].UV +
+                             Texel.Barycentric.z * Mesh.Vertices[Triangle.RenderVertexIndices[2]].UV;
             const auto  X = std::min(static_cast<std::uint32_t>(UV.x * Albedo.Width), Albedo.Width - 1U);
             const auto  Y = std::min(static_cast<std::uint32_t>(UV.y * Albedo.Height), Albedo.Height - 1U);
             const auto  Pixel = (static_cast<std::size_t>(Y) * Albedo.Width + X) * 4U;

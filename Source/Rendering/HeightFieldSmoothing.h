@@ -7,8 +7,8 @@
 #include "GPU/Vulkan/Resource/GPUBuffer.h"
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
 
-#include <map>
 #include <array>
+#include <map>
 #include <memory>
 #include <utility>
 
@@ -33,21 +33,21 @@ namespace MDSS::Rendering
         [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const;
         void                                 Invalidate() noexcept;
         /** @brief Releases lazily-created smoothing outputs. Caller must ensure no in-flight GPU work uses them. */
-        void                                 ReleaseOutputs() noexcept;
-        void                                 Record(VkCommandBuffer                                       Command,
-                                                    std::size_t                                           Instance,
-                                                    std::uint32_t                                         Channel,
-                                                    std::uint32_t                                         Channels,
-                                                    std::uint32_t                                         TexelCount,
-                                                    const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
-                                                    VkDescriptorSet                                       InputSet,
-                                                    const GPU::TGPUBuffer&                                InputBuffer,
-                                                    const GPU::TGPUBuffer&                                GeometryCacheBuffer,
-                                                    bool                                                  bStateAB,
-                                                    float                                                 AccumulationDisplayScale,
-                                                    std::uint32_t                                         OccupancyTileSize,
-                                                    bool                                                  bSparse,
-                                                    bool                                                  bSharedHalo);
+        void ReleaseOutputs() noexcept;
+        void Record(VkCommandBuffer                                       Command,
+                    std::size_t                                           Instance,
+                    std::uint32_t                                         Channel,
+                    std::uint32_t                                         Channels,
+                    std::uint32_t                                         TexelCount,
+                    const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
+                    VkDescriptorSet                                       InputSet,
+                    const GPU::TGPUBuffer&                                InputBuffer,
+                    const GPU::TGPUBuffer&                                GeometryCacheBuffer,
+                    bool                                                  bStateAB,
+                    float                                                 AccumulationDisplayScale,
+                    std::uint32_t                                         OccupancyTileSize,
+                    bool                                                  bSparse,
+                    bool                                                  bSharedHalo);
 
     private:
         struct TOutput

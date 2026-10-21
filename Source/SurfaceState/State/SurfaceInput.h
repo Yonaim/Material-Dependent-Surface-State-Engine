@@ -38,8 +38,8 @@ namespace MDSS::SurfaceState
         glm::vec3          WorldDirection{0.0F};
         float              Radius = 0.0F;
         /** @brief One event's amount per fixed SurfaceStateReferenceArea, before falloff and InputFactor. */
-        float Strength = 0.0F;
-        float Falloff = 1.0F;
+        float                    Strength = 0.0F;
+        float                    Falloff = 1.0F;
         ESurfaceContactOperation Operation = ESurfaceContactOperation::Add;
         ESurfaceContactShape     Shape = ESurfaceContactShape::Circle;
         /** @brief Non-circular stamps use Radius as their first half-extent and this as their second. */
