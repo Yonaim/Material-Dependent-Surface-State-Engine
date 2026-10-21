@@ -6,7 +6,9 @@
 #include "SurfaceState/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceState/Mapping/SurfaceMappingBuilder.h"
 #include "SurfaceState/State/SimulationClock.h"
+#include "Rendering/FrustumCulling.h"
 
+#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <numeric>
@@ -184,6 +186,23 @@ namespace
                   "reflection must retain positive physical area");
         }
     }
+
+    void TestFrustumCulling()
+    {
+        glm::mat4 Projection = glm::perspectiveRH_ZO(glm::radians(90.0F), 1.0F, 1.0F, 10.0F);
+        Projection[1][1] *= -1.0F;
+        const MDSS::Rendering::TViewFrustum Frustum(Projection);
+        Check(Frustum.ContainsSphere({0.0F, 0.0F, -5.0F}, 0.5F), "center sphere must be visible");
+        Check(!Frustum.ContainsSphere({0.0F, 0.0F, 5.0F}, 0.5F), "sphere behind camera must be culled");
+        Check(!Frustum.ContainsSphere({12.0F, 0.0F, -5.0F}, 0.5F), "sphere outside side plane must be culled");
+        Check(!Frustum.ContainsSphere({0.0F, 0.0F, -0.5F}, 0.1F), "near plane must use zero-to-one depth");
+        Check(Frustum.ContainsSphere({0.0F, 0.0F, -0.95F}, 0.1F), "near-plane overlap must remain visible");
+        Check(Frustum.ContainsSphere({0.0F, 0.0F, -10.2F}, 0.3F), "far-plane overlap must remain visible");
+        const glm::mat4 Model = glm::translate(glm::mat4(1.0F), glm::vec3(12.0F, 0.0F, -5.0F)) *
+                                glm::scale(glm::mat4(1.0F), glm::vec3(-2.0F, 1.0F, 1.0F));
+        Check(!MDSS::Rendering::IsMeshSphereVisible(Frustum, glm::vec3(0.0F), 0.5F, Model),
+              "transformed sphere outside view must be culled");
+    }
 }
 
 int main()
@@ -192,7 +211,8 @@ int main()
     {
         TestClock();
         TestArea();
-        std::cout << "Simulation clock and world-area tests passed\n";
+        TestFrustumCulling();
+        std::cout << "Simulation clock, world-area, and frustum tests passed\n";
         return 0;
     }
     catch (const std::exception& Error)

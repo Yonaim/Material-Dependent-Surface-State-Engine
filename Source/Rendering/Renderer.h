@@ -17,11 +17,11 @@
 #include "Rendering/AccumulationOverlaySides.h"
 #include "Rendering/DemoSurfaceEffects.h"
 #include "Rendering/HeightFieldSmoothing.h"
+#include "Application/FrameCoordinator.h"
 #include "Rendering/RenderStateTexture.h"
 #include "Rendering/RenderContext.h"
 #include "SurfaceState/Debug/TexelGeometryPreview.h"
 #include "SurfaceState/Debug/TexelInspector.h"
-#include "SurfaceState/State/SimulationClock.h"
 #include "SurfaceState/SurfaceStateSystem.h"
 
 #include <vulkan/vulkan.h>
@@ -206,7 +206,8 @@ namespace MDSS::Rendering
                   Asset::TAssetManager&              Assets,
                   SurfaceState::TSurfaceDataManager& SurfaceData,
                   const TScene&                      Scene,
-                  SurfaceState::TSurfaceStateSystem& SurfaceStates);
+                  SurfaceState::TSurfaceStateSystem& SurfaceStateSystem,
+                  TFrameCoordinator&                 FrameCoordinator);
         ~TRenderer();
 
         TRenderer(const TRenderer&) = delete;
@@ -222,19 +223,19 @@ namespace MDSS::Rendering
                                          bool          bSuspendSimulationClock = false);
         [[nodiscard]] double GetPendingSimulationSeconds() const noexcept
         {
-            return SimulationClock.GetPendingSeconds();
+            return FrameCoordinator.GetPendingSeconds();
         }
         [[nodiscard]] double GetSimulatedSeconds() const noexcept
         {
-            return SimulationClock.GetSimulatedSeconds();
+            return FrameCoordinator.GetSimulatedSeconds();
         }
         [[nodiscard]] std::uint32_t GetLastSimulationStepCount() const noexcept
         {
-            return LastSimulationStepCount;
+            return FrameCoordinator.GetStepCount();
         }
         [[nodiscard]] float GetMaximumSimulationStep() const noexcept
         {
-            return MaximumSimulationStep;
+            return FrameCoordinator.GetMaximumStep();
         }
 
         // Scene resources, resolution, and runtime Profile settings
@@ -503,7 +504,8 @@ namespace MDSS::Rendering
         Asset::TAssetManager&              Assets;
         SurfaceState::TSurfaceDataManager& SurfaceData;
         /** @brief Application이 소유하며 Renderer는 compute 기록과 렌더링 동안만 참조한다. */
-        SurfaceState::TSurfaceStateSystem&                   SurfaceStates;
+        SurfaceState::TSurfaceStateSystem&                   SurfaceStateSystem;
+        TFrameCoordinator&                                   FrameCoordinator;
         GPU::TSwapchain                                      SwapchainData;
         VkFormat                                             DepthFormat = VK_FORMAT_UNDEFINED;
         std::vector<std::unique_ptr<GPU::TGPUImage>>         DepthImages;
@@ -568,7 +570,6 @@ namespace MDSS::Rendering
         std::uint32_t             OverlayTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
         std::optional<SurfaceState::TSurfaceTexelSelection> InspectedTexel;
         std::unique_ptr<SurfaceState::TTexelInspector>      TexelInspector;
-        std::uint64_t                                       SimulationStepSerial = 0;
         TSolverTransferWeightView                 SolverTransferWeightView = TSolverTransferWeightView::Combined;
         std::uint32_t                             TexelGridBlockSize = 8;
         float                                     TexelAreaReference = 1.0e-4F;
@@ -591,9 +592,6 @@ namespace MDSS::Rendering
         std::uint64_t      BenchmarkMeasurementFrames = 0;
         std::uint64_t      NextBenchmarkFrameIndex = 0;
         bool               bBenchmarkCaptureEnabled = false;
-        SurfaceState::TSimulationClock                                           SimulationClock;
-        std::uint32_t                                                            LastSimulationStepCount = 0;
-        float                   MaximumSimulationStep = SurfaceState::FixedSimulationStepSeconds;
         std::uint32_t           TimestampQueriesPerFrame = 21;
         std::uint32_t           SolverTimestampGroupCount = 0;
         float                   TimestampPeriodNanoseconds = 0.0F;

@@ -7,6 +7,7 @@
 
 #include "Application/BenchmarkOptions.h"
 #include "Application/EngineConfig.h"
+#include "Application/FrameCoordinator.h"
 #include "DebugUI/DebugUI.h"
 #include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
@@ -51,9 +52,11 @@ namespace MDSS
                                                          : std::nullopt);
 
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(MainScene));
-        SurfaceStates = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
+        SurfaceStateSystem = std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
+        FrameCoordinator = std::make_unique<TFrameCoordinator>(*SurfaceStateSystem);
         FrameRenderer =
-            std::make_unique<Rendering::TRenderer>(Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStates);
+            std::make_unique<Rendering::TRenderer>(Context, MainWindow, Assets, SurfaceData, MainScene,
+                                                   *SurfaceStateSystem, *FrameCoordinator);
         FrameRenderer->SetOverlayOccupancyTileSize(static_cast<Rendering::TOverlayOccupancyTileSize>(RenderTileSize));
         FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
         DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
@@ -114,7 +117,7 @@ namespace MDSS
                                                      DebugInterface->GetInjectTexelSearchRadius(),
                                                      DebugInterface->ShouldSuppressDebugHotkey()))
             {
-                SurfaceStates->SubmitContact(*Contact);
+                SurfaceStateSystem->SubmitContact(*Contact);
                 TLogger::Info("TInputSystem",
                               "Debug contact submitted for processing (state=" + std::to_string(Contact->State) +
                                   ", instance=" + std::to_string(Contact->TargetInstance) +
@@ -158,7 +161,7 @@ namespace MDSS
                 Contact.RotationDegrees = Event.RotationDegrees;
                 Contact.Strength = Event.Strength;
                 Contact.Falloff = Event.Falloff;
-                SurfaceStates->SubmitContact(Contact);
+                SurfaceStateSystem->SubmitContact(Contact);
             }
             FrameRenderer->RenderFrame(MainScene, *DebugInterface, PlaybackDeltaTime, bSuspendSimulationClock);
             if (bSuspendSimulationClock)

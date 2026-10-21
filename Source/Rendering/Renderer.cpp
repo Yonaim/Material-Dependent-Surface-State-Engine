@@ -4,6 +4,7 @@
  */
 
 #include "Rendering/Renderer.h"
+#include "Rendering/FrustumCulling.h"
 
 #include "Application/Window.h"
 #include "AssetManager/Assets/MaterialAsset.h"
@@ -607,9 +608,10 @@ namespace MDSS::Rendering
                          Asset::TAssetManager&              Assets,
                          SurfaceState::TSurfaceDataManager& SurfaceData,
                          const TScene&                      Scene,
-                         SurfaceState::TSurfaceStateSystem& SurfaceStates)
+                         SurfaceState::TSurfaceStateSystem& SurfaceStateSystem,
+                         TFrameCoordinator&                 FrameCoordinator)
         : Context(Context), TargetWindow(TWindow), Assets(Assets), SurfaceData(SurfaceData),
-          SurfaceStates(SurfaceStates), SwapchainData(Context, TWindow),
+          SurfaceStateSystem(SurfaceStateSystem), FrameCoordinator(FrameCoordinator), SwapchainData(Context, TWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
           DepthImages(CreateDepthImages(Context.GetPhysicalDevice(),
                                         Context.GetDevice(),
@@ -699,7 +701,7 @@ namespace MDSS::Rendering
                                   static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
         CreateMaterialDescriptorResources();
         if (const SurfaceState::TSurfaceStateDescriptorResources* Descriptors =
-                SurfaceStates.GetGPUResources().GetAnyInstanceDescriptors())
+                SurfaceStateSystem.GetGPUResources().GetAnyInstanceDescriptors())
         {
             SurfaceDebugPipeline = std::make_unique<GPU::TGraphicsPipeline>(
                 Context.GetDevice(),
@@ -722,7 +724,7 @@ namespace MDSS::Rendering
             RenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
                                                                        Context.GetDevice(),
                                                                        Descriptors->GetLayout(),
-                                                                       SurfaceStates.GetGPUResources());
+                                                                       SurfaceStateSystem.GetGPUResources());
             for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
             {
                 SurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
@@ -800,7 +802,7 @@ namespace MDSS::Rendering
         }
         if (TimestampValidBits > 0)
         {
-            CreateTimestampQueryPool(SurfaceStates.GetSolverInstanceCount());
+            CreateTimestampQueryPool(SurfaceStateSystem.GetSolverInstanceCount());
         }
         else
         {
@@ -1027,29 +1029,13 @@ namespace MDSS::Rendering
             OverlayTimestampLayersSubmitted[FrameIndex] = 0;
         }
 
-        const bool bResetSolverState = DebugInterface.ConsumeSolverResetRequest();
-        const bool bRequestSolverStep = DebugInterface.ConsumeSolverStepRequest();
+        const bool bResetSolverState = FrameCoordinator.BeginFrame(DebugInterface, DeltaTime, bSuspendSimulationClock);
         if (bResetSolverState)
         {
-            SurfaceStates.ResetState();
-            SimulationClock.Reset();
-            SimulationStepSerial = 0;
             if (TexelInspector)
                 TexelInspector->Invalidate();
         }
-        if (!bSuspendSimulationClock)
-            SimulationClock.Accumulate(DeltaTime,
-                                       DebugInterface.GetSimulationTimeScale(),
-                                       bResetSolverState || DebugInterface.IsSimulationPaused());
-        // A changed setting starts with no old backlog. Other long frames
-        // retain a bounded catch-up budget, so playback stays responsive.
-        const double PendingTickBudget =
-            std::max(SurfaceState::MaxRealtimePendingTicks,
-                     std::ceil(static_cast<double>(DebugInterface.GetSimulationTimeScale())));
-        ProfilingStats.DroppedSimulationSeconds = static_cast<float>(SimulationClock.LimitPendingSeconds(
-            bSuspendSimulationClock ? 0.0 : PendingTickBudget * SurfaceState::FixedSimulationStepSeconds));
-        if (bSuspendSimulationClock)
-            SurfaceStates.PrepareTransferWeightCachesForSettingChange();
+        ProfilingStats.DroppedSimulationSeconds = FrameCoordinator.GetDroppedSeconds();
 
         if (TargetWindow.WasFramebufferResized())
         {
@@ -1086,31 +1072,20 @@ namespace MDSS::Rendering
             throw std::runtime_error("Failed to reset Vulkan command buffer.");
         }
 
-        MaximumSimulationStep = DebugInterface.IsAutoSubsteppingEnabled() ? SurfaceStates.GetMaximumStableDeltaTime()
-                                                                          : SurfaceState::FixedSimulationStepSeconds;
-        const auto SimulationSteps = bResetSolverState
-                                         ? std::vector<float>{}
-                                         : SimulationClock.Consume(MaximumSimulationStep,
-                                                                   DebugInterface.IsFixedSimulationTimestep(),
-                                                                   DebugInterface.IsAutoSubsteppingEnabled(),
-                                                                   DebugInterface.IsSimulationPaused(),
-                                                                   bRequestSolverStep);
-        if (!DebugInterface.IsFixedSimulationTimestep() && !DebugInterface.IsAutoSubsteppingEnabled() &&
-            !SimulationSteps.empty())
-            MaximumSimulationStep = SimulationSteps.front();
-        LastSimulationStepCount = static_cast<std::uint32_t>(SimulationSteps.size());
-        ProfilingStats.SimulationSteps = LastSimulationStepCount;
+        FrameCoordinator.PrepareSteps(DebugInterface, bResetSolverState);
+        const auto& SimulationSteps = FrameCoordinator.GetSteps();
+        ProfilingStats.SimulationSteps = FrameCoordinator.GetStepCount();
         ProfilingStats.SimulatedThisFrameSeconds = 0.0F;
         for (const float StepSeconds : SimulationSteps)
             ProfilingStats.SimulatedThisFrameSeconds += StepSeconds;
-        ProfilingStats.PendingSimulationSeconds = static_cast<float>(SimulationClock.GetPendingSeconds());
-        ProfilingStats.SimulationInstances = static_cast<std::uint32_t>(SurfaceStates.GetSolverInstanceCount());
+        ProfilingStats.PendingSimulationSeconds = static_cast<float>(FrameCoordinator.GetPendingSeconds());
+        ProfilingStats.SimulationInstances = static_cast<std::uint32_t>(SurfaceStateSystem.GetSolverInstanceCount());
         ProfilingStats.SimulationTexels = 0;
         ProfilingStats.StateChannels = 0;
         ProfilingStats.SimulationResolution = GetSimulationResolution();
         ProfilingStats.SurfaceTexelMeshResolution = SurfaceTexelMeshResolution;
         ProfilingStats.OverlayTexelMeshResolution = OverlayTexelMeshResolution;
-        const auto& GPUResources = SurfaceStates.GetGPUResources();
+        const auto& GPUResources = SurfaceStateSystem.GetGPUResources();
         for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
         {
             if (GPUResources.GetInstanceDescriptors(Instance) == nullptr)
@@ -1127,11 +1102,11 @@ namespace MDSS::Rendering
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             bTimestampQueriesSubmitted[FrameIndex] = true;
-            SolverTimestampStepsSubmitted[FrameIndex] = LastSimulationStepCount;
+            SolverTimestampStepsSubmitted[FrameIndex] = FrameCoordinator.GetStepCount();
             if (bBenchmarkCaptureEnabled)
             {
                 BenchmarkSubmissions[FrameIndex] = {NextBenchmarkFrameIndex++,
-                                                     LastSimulationStepCount,
+                                                     FrameCoordinator.GetStepCount(),
                                                      ProfilingStats.SimulationResolution,
                                                      ProfilingStats.SurfaceTexelMeshResolution,
                                                      ProfilingStats.OverlayTexelMeshResolution,
@@ -1208,7 +1183,7 @@ namespace MDSS::Rendering
                                               const SurfaceState::TSurfaceStateParameters& Parameters,
                                               bool                                         bKeepRuntimeOverride)
     {
-        SurfaceStates.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
+        SurfaceStateSystem.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
         if (TexelInspector)
             TexelInspector->Invalidate();
         const auto Key = std::make_pair(Profile, State);
@@ -1292,7 +1267,7 @@ namespace MDSS::Rendering
         {
             CreateMaterialDescriptorResources();
         }
-        auto& ReusePool = SurfaceStates.GetReusableBufferPool();
+        auto& ReusePool = SurfaceStateSystem.GetReusableBufferPool();
         const std::uint64_t ReuseCountBefore = ReusePool.GetReuseCount();
         const VkDeviceSize ReusedBytesBefore = ReusePool.GetReusedBytes();
         auto PreviousRegistry = SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
@@ -1314,15 +1289,15 @@ namespace MDSS::Rendering
             Replacement = std::make_unique<SurfaceState::TSurfaceStateSystem>(
                 Context, Assets, SurfaceData, Scene, &ReusePool);
             Replacement->SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
-            Replacement->SetRawFluxCacheEnabled(SurfaceStates.IsRawFluxCacheEnabled());
-            Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStates.IsCoalescedRawFluxLayoutEnabled());
-            Replacement->SetHalfRawFluxCacheEnabled(SurfaceStates.IsHalfRawFluxCacheEnabled());
-            Replacement->SetHalfDynamicWeightsEnabled(SurfaceStates.IsHalfDynamicWeightsEnabled());
-            Replacement->SetSparseSolverEnabled(SurfaceStates.IsSparseSolverEnabled());
-            Replacement->SetSparseAccumulationHeightEnabled(SurfaceStates.IsSparseAccumulationHeightEnabled());
-            Replacement->SetActiveChannelMaskEnabled(SurfaceStates.IsActiveChannelMaskEnabled());
-            Replacement->SetPerWorkgroupChannelMaskEnabled(SurfaceStates.IsPerWorkgroupChannelMaskEnabled());
-            Replacement->SetSparseSimulationGeometryEnabled(SurfaceStates.IsSparseSimulationGeometryEnabled());
+            Replacement->SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
+            Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
+            Replacement->SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
+            Replacement->SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
+            Replacement->SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
+            Replacement->SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
+            Replacement->SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
+            Replacement->SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
+            Replacement->SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
                 Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::TSurfaceSolverTerm>(Index),
@@ -1446,14 +1421,12 @@ namespace MDSS::Rendering
         MudLayerGeometry.reset();
         TexelInspector.reset();
         InspectedTexel.reset();
-        SimulationStepSerial = 0;
-        SurfaceStates.ReplaceSceneResources(std::move(*Replacement));
+        SurfaceStateSystem.ReplaceSceneResources(std::move(*Replacement));
         TLogger::Info("TRenderer",
                       "Surface GPU buffer reuse: " + std::to_string(ReusePool.GetReuseCount() - ReuseCountBefore) +
                           " buffer(s), " + std::to_string((ReusePool.GetReusedBytes() - ReusedBytesBefore) / (1024U * 1024U)) +
                           " MiB; retained " + std::to_string(ReusePool.GetRetainedBytes() / (1024U * 1024U)) + " MiB.");
-        SimulationClock.Reset();
-        LastSimulationStepCount = 0;
+        FrameCoordinator.ResetClock();
         SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
         TexelInspector = std::move(ReplacementInspector);
         TexelGeometryPreview = std::move(ReplacementGeometryPreview);
@@ -1472,7 +1445,7 @@ namespace MDSS::Rendering
             DebugProfileParameterOverrides.clear();
             DebugStateChannel = 0;
         }
-        CreateTimestampQueryPool(SurfaceStates.GetSolverInstanceCount());
+        CreateTimestampQueryPool(SurfaceStateSystem.GetSolverInstanceCount());
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
         LastSolverPass1GpuMilliseconds = -1.0F;
@@ -1481,10 +1454,7 @@ namespace MDSS::Rendering
 
     void TRenderer::RestartSimulationState()
     {
-        SurfaceStates.RestartState();
-        SimulationClock.Reset();
-        SimulationStepSerial = 0;
-        LastSimulationStepCount = 0;
+        FrameCoordinator.RestartState();
         if (TexelInspector)
             TexelInspector->Invalidate();
     }
@@ -1635,7 +1605,7 @@ namespace MDSS::Rendering
 
     const SurfaceState::TSurfaceGPUResourceManager& TRenderer::GetSurfaceGPUResources() const noexcept
     {
-        return SurfaceStates.GetGPUResources();
+        return SurfaceStateSystem.GetGPUResources();
     }
 
     float TRenderer::GetLastSolverGpuMilliseconds() const noexcept
@@ -1778,7 +1748,7 @@ namespace MDSS::Rendering
     bool TRenderer::IsLitTexelMeshBaseRendered(const TScene& Scene, std::size_t Instance) const
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
-        const auto& Resources = SurfaceStates.GetGPUResources();
+        const auto& Resources = SurfaceStateSystem.GetGPUResources();
         const bool bAnyLitView = std::any_of(ViewModes.begin(), ViewModes.end(),
                                              [](TRenderViewMode Mode) { return Mode == TRenderViewMode::Lit; });
         if (!bAnyLitView || !CanRenderLitOverlays() || Instance >= Instances.size() ||
@@ -1868,7 +1838,7 @@ namespace MDSS::Rendering
             return false;
         const auto& Instance = Instances[InstanceIndex];
         if (!SurfaceData.HasSurfaceData(Instance.GetSurfaceData()) ||
-            !SurfaceStates.GetGPUResources().GetInstanceDescriptors(InstanceIndex))
+            !SurfaceStateSystem.GetGPUResources().GetInstanceDescriptors(InstanceIndex))
             return false;
         const auto& Triangles = Assets.GetMesh(Instance.GetMesh()).GetTriangles();
         if (Triangle >= Triangles.size())
@@ -1991,7 +1961,7 @@ namespace MDSS::Rendering
     void TRenderer::SetDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term, bool bEnabled)
     {
         DebugSolverSettings.SetEnabled(Term, bEnabled);
-        SurfaceStates.SetDebugSolverTermEnabled(Term, bEnabled);
+        SurfaceStateSystem.SetDebugSolverTermEnabled(Term, bEnabled);
     }
 
     void TRenderer::SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size)
@@ -2011,92 +1981,92 @@ namespace MDSS::Rendering
 
     bool TRenderer::IsRawFluxCacheEnabled() const noexcept
     {
-        return SurfaceStates.IsRawFluxCacheEnabled();
+        return SurfaceStateSystem.IsRawFluxCacheEnabled();
     }
 
     void TRenderer::SetRawFluxCacheEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetRawFluxCacheEnabled(bEnabled);
+        SurfaceStateSystem.SetRawFluxCacheEnabled(bEnabled);
     }
 
     bool TRenderer::IsCoalescedRawFluxLayoutEnabled() const noexcept
     {
-        return SurfaceStates.IsCoalescedRawFluxLayoutEnabled();
+        return SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled();
     }
 
     void TRenderer::SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetCoalescedRawFluxLayoutEnabled(bEnabled);
+        SurfaceStateSystem.SetCoalescedRawFluxLayoutEnabled(bEnabled);
     }
 
     bool TRenderer::IsHalfRawFluxCacheEnabled() const noexcept
     {
-        return SurfaceStates.IsHalfRawFluxCacheEnabled();
+        return SurfaceStateSystem.IsHalfRawFluxCacheEnabled();
     }
 
     void TRenderer::SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetHalfRawFluxCacheEnabled(bEnabled);
+        SurfaceStateSystem.SetHalfRawFluxCacheEnabled(bEnabled);
     }
 
     bool TRenderer::IsHalfDynamicWeightsEnabled() const noexcept
     {
-        return SurfaceStates.IsHalfDynamicWeightsEnabled();
+        return SurfaceStateSystem.IsHalfDynamicWeightsEnabled();
     }
 
     void TRenderer::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetHalfDynamicWeightsEnabled(bEnabled);
+        SurfaceStateSystem.SetHalfDynamicWeightsEnabled(bEnabled);
     }
 
     bool TRenderer::IsSparseSolverEnabled() const noexcept
     {
-        return SurfaceStates.IsSparseSolverEnabled();
+        return SurfaceStateSystem.IsSparseSolverEnabled();
     }
 
     void TRenderer::SetSparseSolverEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetSparseSolverEnabled(bEnabled);
+        SurfaceStateSystem.SetSparseSolverEnabled(bEnabled);
     }
 
     bool TRenderer::IsSparseAccumulationHeightEnabled() const noexcept
     {
-        return SurfaceStates.IsSparseAccumulationHeightEnabled();
+        return SurfaceStateSystem.IsSparseAccumulationHeightEnabled();
     }
 
     void TRenderer::SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetSparseAccumulationHeightEnabled(bEnabled);
+        SurfaceStateSystem.SetSparseAccumulationHeightEnabled(bEnabled);
     }
 
     bool TRenderer::IsActiveChannelMaskEnabled() const noexcept
     {
-        return SurfaceStates.IsActiveChannelMaskEnabled();
+        return SurfaceStateSystem.IsActiveChannelMaskEnabled();
     }
 
     void TRenderer::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetActiveChannelMaskEnabled(bEnabled);
+        SurfaceStateSystem.SetActiveChannelMaskEnabled(bEnabled);
     }
 
     bool TRenderer::IsPerWorkgroupChannelMaskEnabled() const noexcept
     {
-        return SurfaceStates.IsPerWorkgroupChannelMaskEnabled();
+        return SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled();
     }
 
     void TRenderer::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetPerWorkgroupChannelMaskEnabled(bEnabled);
+        SurfaceStateSystem.SetPerWorkgroupChannelMaskEnabled(bEnabled);
     }
 
     bool TRenderer::IsSparseSimulationGeometryEnabled() const noexcept
     {
-        return SurfaceStates.IsSparseSimulationGeometryEnabled();
+        return SurfaceStateSystem.IsSparseSimulationGeometryEnabled();
     }
 
     void TRenderer::SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept
     {
-        SurfaceStates.SetSparseSimulationGeometryEnabled(bEnabled);
+        SurfaceStateSystem.SetSparseSimulationGeometryEnabled(bEnabled);
     }
 
     bool TRenderer::IsStateDrivenGeometryUpdateEnabled() const noexcept
@@ -2107,7 +2077,7 @@ namespace MDSS::Rendering
     void TRenderer::SetStateDrivenGeometryUpdateEnabled(bool bEnabled)
     {
         DebugSolverSettings.bStateDrivenGeometryUpdateEnabled = bEnabled;
-        SurfaceStates.SetStateDrivenGeometryUpdateEnabled(bEnabled);
+        SurfaceStateSystem.SetStateDrivenGeometryUpdateEnabled(bEnabled);
     }
 
     bool TRenderer::IsDebugNormalWeightEnabled() const noexcept
@@ -2496,23 +2466,15 @@ namespace MDSS::Rendering
         {
             vkCmdResetQueryPool(CommandBuffer, TimestampQueryPool, QueryBase, TimestampQueriesPerFrame);
         }
-        for (std::size_t Step = 0; Step < SimulationSteps.size(); ++Step)
-        {
-            SurfaceStates.RecordStep(CommandBuffer,
-                                     SimulationSteps[Step],
-                                     TimestampQueryPool,
-                                     QueryBase + FixedTimestampQueryCount +
-                                         static_cast<std::uint32_t>(Step) * SolverTimestampGroupCount * 8U,
-                                     Step + 1U == SimulationSteps.size());
-        }
-
-        SimulationStepSerial += SimulationSteps.size();
+        FrameCoordinator.RecordSimulation(CommandBuffer, TimestampQueryPool,
+                                          QueryBase + FixedTimestampQueryCount,
+                                          SolverTimestampGroupCount * 8U);
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 4U);
         if (TexelInspector && InspectedTexel &&
             DebugStateChannel < SurfaceData.GetSurfaceStateRegistry().GetStateCount())
         {
-            const auto& Resources = SurfaceStates.GetGPUResources();
+            const auto& Resources = SurfaceStateSystem.GetGPUResources();
             if (const auto* Descriptors = Resources.GetInstanceDescriptors(InspectedTexel->Instance))
                 TexelInspector->Record(
                     CommandBuffer,
@@ -2524,7 +2486,7 @@ namespace MDSS::Rendering
                     LitHeightDisplayScale,
                     SceneData.GetStaticMeshInstances()[InspectedTexel->Instance].GetTransform().GetMatrix(),
                     Resources.IsCurrentStateAB(InspectedTexel->Instance),
-                    SimulationStepSerial);
+                    FrameCoordinator.GetStepSerial());
         }
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
@@ -2549,7 +2511,7 @@ namespace MDSS::Rendering
         const std::uint32_t FragmentMode = bPrecomputeCoverage ? 2U : (bUseRenderStateTexture ? 1U : 0U);
         if (bAnyLitView && DemoEffects.bEnabled && RenderStateTexture)
             RenderStateTexture->Record(
-                CommandBuffer, SurfaceStates.GetGPUResources(),
+                CommandBuffer, SurfaceStateSystem.GetGPUResources(),
                 {DemoBindings.Heat, DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
                 static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()),
                 bUseRenderStateTexture,
@@ -2566,7 +2528,7 @@ namespace MDSS::Rendering
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 12U);
         if (bAnyTexelGeometry || bOverlayRendering)
         {
-            const auto& Resources = SurfaceStates.GetGPUResources();
+            const auto& Resources = SurfaceStateSystem.GetGPUResources();
             for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
             {
                 const auto* Shared = Resources.GetInstanceSharedGeometry(Instance);
@@ -2818,8 +2780,9 @@ namespace MDSS::Rendering
 
             const float     AspectRatio = static_cast<float>(ViewportWidth) / static_cast<float>(ViewportHeight);
             const glm::mat4 ViewProjection = ViewCamera.GetViewProjectionMatrix(AspectRatio);
+            const TViewFrustum ViewFrustum(ViewProjection);
 
-            const SurfaceState::TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStates.GetGPUResources();
+            const SurfaceState::TSurfaceGPUResourceManager& SurfaceGPU = SurfaceStateSystem.GetGPUResources();
             if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
                 vkCmdWriteTimestamp(
                     CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 6U);
@@ -2833,6 +2796,11 @@ namespace MDSS::Rendering
                 }
 
                 const Asset::TMeshAsset&                              Mesh = Assets.GetMesh(Instance.GetMesh());
+                // Debug texel geometry can extend beyond the source mesh; its bounds are not static.
+                if (!bTexelGeometry &&
+                    !IsMeshSphereVisible(ViewFrustum, Mesh.GetBoundsCenter(), Mesh.GetBoundsRadius(),
+                                         Instance.GetTransform().GetMatrix()))
+                    continue;
                 const SurfaceState::TSurfaceStateDescriptorResources* SurfaceDescriptors =
                     SurfaceGPU.GetInstanceDescriptors(CurrentSceneIndex);
                 if (bShowSurfaceDebug && (!bCanShowSurfaceDebug || SurfaceDescriptors == nullptr))

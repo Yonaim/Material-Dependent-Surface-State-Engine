@@ -27,6 +27,7 @@ namespace MDSS::SurfaceState
 namespace MDSS
 {
     class TDebugUI;
+    class TFrameCoordinator;
     class TInputSystem;
 
     class TApplication
@@ -52,7 +53,8 @@ namespace MDSS
         Asset::TAssetManager                               Assets;
         SurfaceState::TSurfaceDataManager                  SurfaceData;
         TScene                                             MainScene;
-        std::unique_ptr<SurfaceState::TSurfaceStateSystem> SurfaceStates;
+        std::unique_ptr<SurfaceState::TSurfaceStateSystem> SurfaceStateSystem;
+        std::unique_ptr<TFrameCoordinator>                 FrameCoordinator;
         std::unique_ptr<Rendering::TRenderer>              FrameRenderer;
         std::unique_ptr<TDebugUI>                          DebugInterface;
         std::unique_ptr<TInputSystem>                      InputInterface;

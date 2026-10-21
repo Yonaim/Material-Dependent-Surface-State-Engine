@@ -212,9 +212,9 @@ namespace
 
         TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(SurfaceScene));
-        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, SurfaceScene);
+        SurfaceState::TSurfaceStateSystem SurfaceStateSystem(Context, Assets, SurfaceData, SurfaceScene);
         auto&                             SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
-        const auto&                       GPU = SurfaceStates.GetGPUResources();
+        const auto&                       GPU = SurfaceStateSystem.GetGPUResources();
         Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform), "new Surface cache should be valid");
         SurfaceTransform.RotationDegrees.x = 35.0F;
         SurfaceTransform.Position.y = 2.0F;
@@ -229,10 +229,10 @@ namespace
         auto       Flow = Assets.GetSRProfile(HeatProfile).GetData().States.at("heat");
         Flow.GeometryTransferFactor = 1.0F;
         const auto HeatState = SurfaceData.GetSurfaceStateRegistry().GetStateId("heat");
-        SurfaceStates.SetDebugProfileParameters(HeatProfile, HeatState, Flow);
-        const float FlatBound = SurfaceStates.GetMaximumStableDeltaTime();
+        SurfaceStateSystem.SetDebugProfileParameters(HeatProfile, HeatState, Flow);
+        const float FlatBound = SurfaceStateSystem.GetMaximumStableDeltaTime();
         SurfaceTransform.RotationDegrees.x = 90.0F;
-        const float TiltedBound = SurfaceStates.GetMaximumStableDeltaTime();
+        const float TiltedBound = SurfaceStateSystem.GetMaximumStableDeltaTime();
         Check(TiltedBound < FlatBound,
               "Auto timestep bound should reflect rotation even when static TransferWeight cache is reused");
 
@@ -388,8 +388,9 @@ namespace
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
         TScene Scene = TSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
-        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, Scene);
-        Rendering::TRenderer              Renderer(Context, Window, Assets, SurfaceData, Scene, SurfaceStates);
+        SurfaceState::TSurfaceStateSystem SurfaceStateSystem(Context, Assets, SurfaceData, Scene);
+        TFrameCoordinator                 Coordinator(SurfaceStateSystem);
+        Rendering::TRenderer              Renderer(Context, Window, Assets, SurfaceData, Scene, SurfaceStateSystem, Coordinator);
         Check(Renderer.GetDemoSurfaceStateBindings().Heat == 0 &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == SurfaceState::InvalidStateId,
               "Heat Scene demo bindings must resolve optional names.");
@@ -495,7 +496,7 @@ namespace
             Contact.Radius = 100;
             Contact.Strength = 10;
             Contact.Falloff = 0;
-            SurfaceStates.SubmitContact(Contact);
+            SurfaceStateSystem.SubmitContact(Contact);
             for (int Frame = 0; Frame < 3; ++Frame)
             {
                 auto Effects = Renderer.GetDemoSurfaceEffectSettings();
@@ -690,7 +691,9 @@ int main(int Argc, char* Argv[])
                 std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", LavaAssets, LavaSurfaceData);
             LavaSurfaceData.ExchangeSurfaceStateRegistry(LavaSurfaceData.BuildSurfaceStateRegistry(LavaScene));
             SurfaceState::TSurfaceStateSystem LavaStates(*Context, LavaAssets, LavaSurfaceData, LavaScene);
-            Rendering::TRenderer LavaRenderer(*Context, *Window, LavaAssets, LavaSurfaceData, LavaScene, LavaStates);
+            TFrameCoordinator LavaCoordinator(LavaStates);
+            Rendering::TRenderer LavaRenderer(*Context, *Window, LavaAssets, LavaSurfaceData, LavaScene, LavaStates,
+                                              LavaCoordinator);
             TDebugUI             LavaUI(*Context, *Window, LavaRenderer, LavaAssets, LavaSurfaceData);
             ImGui::GetIO().IniFilename = nullptr;
             LavaRenderer.SetRenderViewMode(TRenderViewMode::Lit);
@@ -750,8 +753,10 @@ int main(int Argc, char* Argv[])
                     OverlaySurfaceData.BuildSurfaceStateRegistry(OverlayScene));
                 SurfaceState::TSurfaceStateSystem OverlayStates(
                     *Context, OverlayAssets, OverlaySurfaceData, OverlayScene);
+                TFrameCoordinator OverlayCoordinator(OverlayStates);
                 Rendering::TRenderer OverlayRenderer(
-                    *Context, *Window, OverlayAssets, OverlaySurfaceData, OverlayScene, OverlayStates);
+                    *Context, *Window, OverlayAssets, OverlaySurfaceData, OverlayScene, OverlayStates,
+                    OverlayCoordinator);
                 TDebugUI OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets, OverlaySurfaceData);
                 ImGui::GetIO().IniFilename = nullptr;
                 OverlayRenderer.SetRenderViewMode(TRenderViewMode::Lit);

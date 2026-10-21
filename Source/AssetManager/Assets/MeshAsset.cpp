@@ -8,6 +8,10 @@
 #include "GPU/Vulkan/VulkanContext.h"
 #include "Logger/Logger.h"
 
+#include <algorithm>
+#include <cmath>
+#include <glm/geometric.hpp>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -34,6 +38,29 @@ namespace MDSS::Asset
         {
             throw std::invalid_argument("TMeshAsset source triangle count must match its render index data.");
         }
+
+        glm::vec3 Minimum(std::numeric_limits<float>::max());
+        glm::vec3 Maximum(std::numeric_limits<float>::lowest());
+        bool bFiniteBounds = true;
+        for (const TVertex& Vertex : this->Vertices)
+        {
+            const glm::vec3 P = Vertex.Position;
+            if (!std::isfinite(P.x) || !std::isfinite(P.y) || !std::isfinite(P.z))
+            {
+                bFiniteBounds = false;
+                break;
+            }
+            Minimum = glm::min(Minimum, P);
+            Maximum = glm::max(Maximum, P);
+        }
+        if (bFiniteBounds)
+        {
+            BoundsCenter = Minimum + (Maximum - Minimum) * 0.5F;
+            for (const TVertex& Vertex : this->Vertices)
+                BoundsRadius = std::max(BoundsRadius, glm::length(Vertex.Position - BoundsCenter));
+        }
+        else
+            BoundsRadius = std::numeric_limits<float>::infinity();
 
         const VkDeviceSize VertexBytes = sizeof(TVertex) * this->Vertices.size();
         const VkDeviceSize IndexBytes = sizeof(std::uint32_t) * this->Indices.size();
