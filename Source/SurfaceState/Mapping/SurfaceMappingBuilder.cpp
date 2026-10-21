@@ -130,6 +130,79 @@ namespace MDSS::SurfaceState
             return true;
         }
 
+        bool TriangleIntersectsTexel(const std::array<glm::vec2, 3>& Triangle, const glm::vec2& Center)
+        {
+            constexpr float HalfExtent = 0.5F;
+            constexpr float SeparationEpsilon = 1.0e-6F;
+            const auto HasSeparation = [&](const glm::vec2& Axis)
+            {
+                const float P0 = glm::dot(Triangle[0] - Center, Axis);
+                const float P1 = glm::dot(Triangle[1] - Center, Axis);
+                const float P2 = glm::dot(Triangle[2] - Center, Axis);
+                const float Radius = HalfExtent * (std::abs(Axis.x) + std::abs(Axis.y));
+                const float Minimum = std::min({P0, P1, P2});
+                const float Maximum = std::max({P0, P1, P2});
+                return Minimum >= Radius - SeparationEpsilon || Maximum <= -Radius + SeparationEpsilon;
+            };
+
+            if (HasSeparation({1.0F, 0.0F}) || HasSeparation({0.0F, 1.0F}))
+            {
+                return false;
+            }
+            for (std::size_t EdgeIndex = 0; EdgeIndex < 3; ++EdgeIndex)
+            {
+                const glm::vec2 Edge = Triangle[(EdgeIndex + 1U) % 3U] - Triangle[EdgeIndex];
+                if (HasSeparation({-Edge.y, Edge.x}))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        struct TClosestTrianglePoint
+        {
+            glm::vec3 Barycentric{0.0F};
+            float     DistanceSquared = std::numeric_limits<float>::max();
+        };
+
+        TClosestTrianglePoint ClosestPointOnTriangle(const std::array<glm::vec2, 3>& Triangle,
+                                                     const glm::vec2&                Point)
+        {
+            TClosestTrianglePoint Result;
+            for (std::size_t EdgeIndex = 0; EdgeIndex < 3; ++EdgeIndex)
+            {
+                const std::size_t NextIndex = (EdgeIndex + 1U) % 3U;
+                const glm::vec2   Edge = Triangle[NextIndex] - Triangle[EdgeIndex];
+                const float       EdgeLengthSquared = glm::dot(Edge, Edge);
+                const float       Parameter = EdgeLengthSquared > 0.0F
+                                                  ? std::clamp(glm::dot(Point - Triangle[EdgeIndex], Edge) /
+                                                                   EdgeLengthSquared,
+                                                               0.0F,
+                                                               1.0F)
+                                                  : 0.0F;
+                const glm::vec2 Closest = Triangle[EdgeIndex] + Parameter * Edge;
+                const float     DistanceSquared = glm::dot(Point - Closest, Point - Closest);
+                if (DistanceSquared < Result.DistanceSquared)
+                {
+                    Result.DistanceSquared = DistanceSquared;
+                    Result.Barycentric = glm::vec3(0.0F);
+                    Result.Barycentric[EdgeIndex] = 1.0F - Parameter;
+                    Result.Barycentric[NextIndex] = Parameter;
+                }
+            }
+            return Result;
+        }
+
+        struct TEdgeTexelAssignment
+        {
+            std::uint32_t Triangle = InvalidTriangleID;
+            std::uint32_t Chart = InvalidChartID;
+            glm::vec3     Barycentric{0.0F};
+            float         DistanceSquared = std::numeric_limits<float>::max();
+            bool          bAmbiguousChart = false;
+        };
+
         std::array<glm::vec2, 3> GetTriangleUVs(const std::vector<Asset::TVertex>& Vertices,
                                                 const Asset::TMeshTriangleSource&  Triangle)
         {
@@ -487,6 +560,105 @@ namespace MDSS::SurfaceState
                 Mapping.Warnings.push_back("Triangle " + std::to_string(TriangleIndex) + " on Surface " +
                                            std::to_string(Triangle.Surface) + " covers no texel centers.");
             }
+        }
+
+        // Fill only texel cells crossed by UV triangles but missed by center sampling. Keep
+        // center-owned texels authoritative, and leave cells touched by multiple UV charts
+        // unmapped rather than silently merging separate islands.
+        std::vector<TEdgeTexelAssignment> EdgeAssignments(Mapping.Texels.size());
+        for (std::size_t TriangleIndex = 0; TriangleIndex < Triangles.size(); ++TriangleIndex)
+        {
+            const Asset::TMeshTriangleSource& Triangle = Triangles[TriangleIndex];
+            const TSurfaceTexelRange&         Range = GetSurfaceRange(Mapping, Triangle.Surface);
+            const std::array<glm::vec2, 3>    UVs = GetTriangleUVs(Vertices, Triangle);
+            const glm::vec2                   Scale(static_cast<float>(Range.Resolution.Width),
+                                  static_cast<float>(Range.Resolution.Height));
+            const std::array<glm::vec2, 3> TexelUVs = {UVs[0] * Scale, UVs[1] * Scale, UVs[2] * Scale};
+            const float MinX = std::min({TexelUVs[0].x, TexelUVs[1].x, TexelUVs[2].x});
+            const float MaxX = std::max({TexelUVs[0].x, TexelUVs[1].x, TexelUVs[2].x});
+            const float MinY = std::min({TexelUVs[0].y, TexelUVs[1].y, TexelUVs[2].y});
+            const float MaxY = std::max({TexelUVs[0].y, TexelUVs[1].y, TexelUVs[2].y});
+            const std::int32_t StartX = std::max(0, static_cast<std::int32_t>(std::floor(MinX)));
+            const std::int32_t EndX = std::min(static_cast<std::int32_t>(Range.Resolution.Width) - 1,
+                                               static_cast<std::int32_t>(std::ceil(MaxX)));
+            const std::int32_t StartY = std::max(0, static_cast<std::int32_t>(std::floor(MinY)));
+            const std::int32_t EndY = std::min(static_cast<std::int32_t>(Range.Resolution.Height) - 1,
+                                               static_cast<std::int32_t>(std::ceil(MaxY)));
+
+            for (std::int32_t Y = StartY; Y <= EndY; ++Y)
+            {
+                for (std::int32_t X = StartX; X <= EndX; ++X)
+                {
+                    const TLocalTexelIndex MappingIndex = Range.FirstTexel +
+                                                          static_cast<TLocalTexelIndex>(Y) * Range.Resolution.Width +
+                                                          static_cast<TLocalTexelIndex>(X);
+                    if (Mapping.Texels[MappingIndex].IsValid())
+                    {
+                        continue;
+                    }
+
+                    const glm::vec2 Center(static_cast<float>(X) + 0.5F, static_cast<float>(Y) + 0.5F);
+                    if (!TriangleIntersectsTexel(TexelUVs, Center))
+                    {
+                        continue;
+                    }
+
+                    const TClosestTrianglePoint Closest = ClosestPointOnTriangle(TexelUVs, Center);
+                    TEdgeTexelAssignment&        Assignment = EdgeAssignments[MappingIndex];
+                    const std::uint32_t          Chart = TriangleCharts[TriangleIndex];
+                    if (Assignment.Triangle == InvalidTriangleID)
+                    {
+                        Assignment.Triangle = static_cast<std::uint32_t>(TriangleIndex);
+                        Assignment.Chart = Chart;
+                        Assignment.Barycentric = Closest.Barycentric;
+                        Assignment.DistanceSquared = Closest.DistanceSquared;
+                    }
+                    else if (Assignment.Chart != Chart)
+                    {
+                        Assignment.bAmbiguousChart = true;
+                    }
+                    else if (Closest.DistanceSquared < Assignment.DistanceSquared ||
+                             (Closest.DistanceSquared == Assignment.DistanceSquared &&
+                              TriangleIndex < Assignment.Triangle))
+                    {
+                        Assignment.Triangle = static_cast<std::uint32_t>(TriangleIndex);
+                        Assignment.Barycentric = Closest.Barycentric;
+                        Assignment.DistanceSquared = Closest.DistanceSquared;
+                    }
+                }
+            }
+        }
+
+        for (std::size_t TexelIndex = 0; TexelIndex < EdgeAssignments.size(); ++TexelIndex)
+        {
+            const TEdgeTexelAssignment& Assignment = EdgeAssignments[TexelIndex];
+            if (Assignment.Triangle == InvalidTriangleID || Assignment.bAmbiguousChart)
+            {
+                continue;
+            }
+
+            const Asset::TMeshTriangleSource& Triangle = Triangles[Assignment.Triangle];
+            const Asset::TVertex&             V0 = Vertices[Triangle.RenderVertexIndices[0]];
+            const Asset::TVertex&             V1 = Vertices[Triangle.RenderVertexIndices[1]];
+            const Asset::TVertex&             V2 = Vertices[Triangle.RenderVertexIndices[2]];
+            const TSurfaceTexelRange&         Range = GetSurfaceRange(Mapping, Triangle.Surface);
+            const glm::vec2                   UVs[3] = {V0.UV, V1.UV, V2.UV};
+            const float                       UVDet = (UVs[1].x - UVs[0].x) * (UVs[2].y - UVs[0].y) -
+                                    (UVs[1].y - UVs[0].y) * (UVs[2].x - UVs[0].x);
+            const glm::vec3 Barycentric = Assignment.Barycentric;
+            const glm::vec3 Normal = Barycentric.x * V0.Normal + Barycentric.y * V1.Normal +
+                                     Barycentric.z * V2.Normal;
+
+            TSurfaceMappingTexel& Texel = Mapping.Texels[TexelIndex];
+            Texel.Surface = Triangle.Surface;
+            Texel.Triangle = Assignment.Triangle;
+            Texel.Chart = Assignment.Chart;
+            Texel.Barycentric = Barycentric;
+            Texel.Position = Barycentric.x * V0.Position + Barycentric.y * V1.Position + Barycentric.z * V2.Position;
+            Texel.AreaVector = glm::cross(V1.Position - V0.Position, V2.Position - V0.Position) /
+                               (UVDet * static_cast<float>(Range.Resolution.Width) *
+                                static_cast<float>(Range.Resolution.Height));
+            Texel.Normal = glm::dot(Normal, Normal) > UVEpsilon ? glm::normalize(Normal) : glm::vec3(0.0F, 0.0F, 1.0F);
         }
 
         constexpr std::array<std::array<std::int32_t, 2>, SurfaceNeighborCount> NeighborOffsets = {{

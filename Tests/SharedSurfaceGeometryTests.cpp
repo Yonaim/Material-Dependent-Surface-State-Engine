@@ -313,6 +313,37 @@ namespace
               "unsampled connected components must retain zero displacement");
     }
 
+    void TestCubeTopDiagonalDisplacement()
+    {
+        using namespace MDSS;
+        using namespace MDSS::Asset;
+        using namespace MDSS::SurfaceState;
+        const auto Source = TOBJLoader::Load(Fixture("../../Assets/Meshes/MarbleCube/MarbleCube.obj"));
+        std::vector<TSurfaceDefinition> Surfaces;
+        for (std::uint32_t Surface = 0; Surface < Source.Sections.size(); ++Surface)
+            Surfaces.push_back({Surface, {16, 16}});
+        const auto Mapping = TSurfaceMappingBuilder::Build(Source.Vertices, Source.Triangles, Surfaces);
+        std::vector<TSurfaceProfileIndex> Profiles(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
+        for (std::size_t T = 0; T < Profiles.size(); ++T)
+            if (Mapping.Texels[T].IsValid()) Profiles[T] = 0;
+        const auto Geometry = TSurfaceGeometryBuilder::Build(Mapping, Profiles, 1);
+        const auto Mesh = BuildSurfaceTexelMesh(Geometry, Source.Vertices, Source.Triangles);
+        std::size_t TopDiagonalVertices = 0;
+        for (const auto& Vertex : Mesh.Vertices)
+        {
+            const auto Position = glm::vec3(Vertex.Position);
+            if (std::abs(Position.z - 0.5F) > 1e-5F ||
+                std::abs(Position.x - Position.y) > 1e-5F ||
+                std::abs(Position.x) >= 0.45F || Vertex.Normal.z < 0.99F)
+                continue;
+            ++TopDiagonalVertices;
+            const auto Direction = glm::vec3(Vertex.DisplacementNormal);
+            Check(std::abs(Direction.x) < 1e-5F && std::abs(Direction.y) < 1e-5F && Direction.z > 0.99F,
+                  "cube top diagonal displacement must use its incident top-face normals");
+        }
+        Check(TopDiagonalVertices > 0, "cube top diagonal must contain refined render vertices");
+    }
+
     void TestRuntimePreprocessing()
     {
         using namespace MDSS;
@@ -380,6 +411,7 @@ int main()
     TestGeometryBuild();
     TestTexelMesh();
     TestStitchedSourceMesh();
+    TestCubeTopDiagonalDisplacement();
     TestRuntimePreprocessing();
     TestMacroConcavityWithoutNormalMap();
 

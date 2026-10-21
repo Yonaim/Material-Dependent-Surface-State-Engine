@@ -35,6 +35,10 @@ namespace MDSS::SurfaceState
         std::vector<std::uint32_t>           Indices;
         // x/y: render edge endpoints, z: incident triangle's third vertex.
         std::vector<glm::uvec4>             BoundaryEdges;
+        // One record per triangle, then per boundary edge. Triangle xyz identify the
+        // side slot across each edge; boundary xyz identify the two endpoint neighbors
+        // and the incident triangle. InvalidTexelIndex means no unique neighbor.
+        std::vector<glm::uvec4>             SideAdjacency;
         std::vector<TSurfaceTexelMeshRange> Surfaces;
     };
 
