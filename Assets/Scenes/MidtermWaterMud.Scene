@@ -1,0 +1,66 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/MidtermWaterMud.DemoAnim",
+  "camera": {
+    "position": [
+      0,
+      -3.45,
+      2.7
+    ],
+    "target": [
+      0,
+      0,
+      0.15
+    ],
+    "verticalFieldOfViewDegrees": 46.0
+  },
+  "simulationResolution": 256,
+  "litHeightDisplayScale": 1.4,
+  "objects": [
+    {
+      "id": "water_stone",
+      "mesh": "../Meshes/MidtermGround/FracturedStone.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/MidtermFractured.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          -0.99,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "mud_stone",
+      "mesh": "../Meshes/MidtermGround/FracturedStone.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/MidtermFractured.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          0.99,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    }
+  ]
+}

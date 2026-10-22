@@ -1,0 +1,273 @@
+{
+  "version": 1,
+  "durationSeconds": 10.0,
+  "loop": false,
+  "autoplay": true,
+  "tracks": [
+    {
+      "target": "camera",
+      "property": "position",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            1.25,
+            -2.45,
+            1.5
+          ]
+        },
+        {
+          "time": 10.0,
+          "value": [
+            1.25,
+            -2.45,
+            1.5
+          ]
+        }
+      ]
+    },
+    {
+      "target": "camera",
+      "property": "target",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0,
+            0,
+            0.24
+          ]
+        },
+        {
+          "time": 10.0,
+          "value": [
+            0,
+            0,
+            0.24
+          ]
+        }
+      ]
+    },
+    {
+      "target": "dustpan",
+      "property": "rotation",
+      "interpolation": "slerp",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            -0.13917310096006544,
+            0,
+            0,
+            0.9902680687415704
+          ]
+        },
+        {
+          "time": 5.0,
+          "value": [
+            -0.13917310096006544,
+            0,
+            0,
+            0.9902680687415704
+          ]
+        },
+        {
+          "time": 6.0,
+          "value": [
+            0.14780941112961063,
+            0,
+            0,
+            0.9890158633619168
+          ]
+        },
+        {
+          "time": 10.0,
+          "value": [
+            0.14780941112961063,
+            0,
+            0,
+            0.9890158633619168
+          ]
+        }
+      ]
+    }
+  ],
+  "contactEvents": [
+    {
+      "time": 0.6,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.018,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.92,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.0,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.24,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.018,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.56,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.018,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.88,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.0,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.2,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.018,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.52,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.018,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.84,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.0,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.16,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.018,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.48,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.018,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.8,
+      "target": "dustpan",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.0,
+        -0.126,
+        0.003
+      ],
+      "radius": 0.17,
+      "depth": 0.085,
+      "strength": 0.32,
+      "falloff": 0.7
+    }
+  ]
+}

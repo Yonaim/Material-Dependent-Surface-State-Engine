@@ -142,6 +142,11 @@ namespace MDSS
         return DemoAnimation ? DemoAnimation->DurationSeconds : 0.0F;
     }
 
+    const TDemoAnimationClip::TWeatherCue* TScene::GetDemoWeather() const noexcept
+    {
+        return DemoAnimation && DemoAnimation->Weather ? &*DemoAnimation->Weather : nullptr;
+    }
+
     void TScene::PlayDemoAnimation()
     {
         if (!DemoAnimation)

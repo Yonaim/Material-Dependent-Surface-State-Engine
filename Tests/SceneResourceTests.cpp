@@ -210,6 +210,20 @@ namespace
         Check(Saved.HasDemoAnimation() && Saved.GetStaticMeshInstances()[0].GetId() == "object",
               "Scene save and load should preserve animation reference and object IDs");
 
+        TScene Dustpan = TSceneLoader::Load(
+            std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/MidtermDustpanGravity.Scene", Assets, SurfaceData);
+        Check(Dustpan.GetStaticMeshInstances().size() == 1 && Dustpan.HasDemoContactEvents(),
+              "midterm gravity scene should use one connected surface with water contacts");
+        Dustpan.RestartDemoAnimation();
+        Dustpan.PlayDemoAnimation();
+        const auto Injections = Dustpan.AdvanceDemoAnimation(4.2F);
+        Check(Injections.size() == 11 &&
+                  Dustpan.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x < -15.0F,
+              "dustpan should receive water while its open end is raised");
+        Dustpan.AdvanceDemoAnimation(1.8F);
+        Check(Dustpan.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x > 16.0F,
+              "dustpan should tilt once after the water input ends");
+
         TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(SurfaceScene));
         SurfaceState::TSurfaceStateSystem SurfaceStateSystem(Context, Assets, SurfaceData, SurfaceScene);

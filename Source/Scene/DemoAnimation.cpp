@@ -163,6 +163,21 @@ namespace MDSS
                 throw std::runtime_error("Demo Animation.autoplay must be a boolean.");
             Clip.bAutoplay = Autoplay->get<bool>();
         }
+        if (const auto Weather = Root.find("weather"); Weather != Root.end())
+        {
+            if (!Weather->is_object())
+                throw std::runtime_error("Demo Animation.weather must be an object.");
+            TDemoAnimationClip::TWeatherCue Cue;
+            Cue.RainStartSeconds = Float(Required(*Weather, "rainStartSeconds", "weather"), "weather.rainStartSeconds");
+            Cue.RainEndSeconds = Float(Required(*Weather, "rainEndSeconds", "weather"), "weather.rainEndSeconds");
+            Cue.CloudEndSeconds = Float(Required(*Weather, "cloudEndSeconds", "weather"), "weather.cloudEndSeconds");
+            Cue.Intensity = Float(Required(*Weather, "intensity", "weather"), "weather.intensity");
+            if (Cue.RainStartSeconds < 0.0F || Cue.RainEndSeconds <= Cue.RainStartSeconds ||
+                Cue.CloudEndSeconds < Cue.RainEndSeconds || Cue.CloudEndSeconds > Clip.DurationSeconds ||
+                Cue.Intensity < 0.0F || Cue.Intensity > 1.0F)
+                throw std::runtime_error("Demo Animation.weather times or intensity are out of range.");
+            Clip.Weather = Cue;
+        }
         const TJson& Tracks = Required(Root, "tracks", "Demo Animation");
         if (!Tracks.is_array() || Tracks.empty())
             throw std::runtime_error("Demo Animation tracks must be a non-empty array.");

@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <glm/vec4.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -49,10 +50,18 @@ namespace MDSS
 
     struct TDemoAnimationClip
     {
+        struct TWeatherCue
+        {
+            float RainStartSeconds = 0.0F;
+            float RainEndSeconds = 0.0F;
+            float CloudEndSeconds = 0.0F;
+            float Intensity = 0.0F;
+        };
         float                            DurationSeconds = 0.0F;
         bool                             bLoop = false;
         bool                             bAutoplay = false;
         std::vector<TDemoAnimationTrack> Tracks;
+        std::optional<TWeatherCue>       Weather;
         struct TContactEvent
         {
             float                                  Time = 0.0F;
