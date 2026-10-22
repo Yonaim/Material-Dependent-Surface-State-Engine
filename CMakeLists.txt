@@ -470,6 +470,7 @@ if(BUILD_TESTING)
         target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME MDSS_SurfaceGPUResource COMMAND MDSS_SurfaceGPUResourceTests)
+    add_test(NAME MDSS_MesoPeakPacking COMMAND MDSS_SurfaceGPUResourceTests --meso-peak-only)
     set_tests_properties(MDSS_SurfaceGPUResource PROPERTIES SKIP_RETURN_CODE 77)
 endif()
 

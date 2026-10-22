@@ -176,7 +176,8 @@ float DisplayAccumulationHeight(uint Texel, float DisplayScale)
         EffectiveScale *= smoothstep(0.0, Push.LowAmountHeightFade, MaxSaturation);
 
     float MesoHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
-    float CavityHeight = min(CavityAmount * EffectiveScale, 1.0) * max(-MesoHeight, 0.0);
+    float FillDepth = max(MesoNormals.Values[Texel].w - MesoHeight, 0.0);
+    float CavityHeight = min(CavityAmount * EffectiveScale, 1.0) * FillDepth;
     float FollowingHeight = FollowingHeightWorld * WorldToLocalHeight * EffectiveScale;
     float Height = CavityHeight + FollowingHeight;
     return (isnan(Height) || isinf(Height)) ? 0.0 : max(Height, 0.0);

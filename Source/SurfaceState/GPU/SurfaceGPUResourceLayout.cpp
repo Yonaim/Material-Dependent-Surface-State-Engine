@@ -10,6 +10,7 @@
 #include <glm/geometric.hpp>
 #include <limits>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace
 {
@@ -79,6 +80,20 @@ namespace MDSS::SurfaceState
                 {Range.FirstTexel, Range.Resolution.Width, Range.Resolution.Height, Range.TexelCount});
         }
 
+        // The fourth MesoNormal component carries the highest Meso elevation in
+        // the same surface/chart. A filled layer can then cover positive relief
+        // as well as negative cavities without another GPU buffer or reduction.
+        std::unordered_map<std::uint64_t, float> ChartMesoPeaks;
+        for (const TSurfaceTexelGeometry& Texel : Geometry.GetTexels())
+        {
+            if (!Texel.IsValid() || !std::isfinite(Texel.Geometry.MesoVirtualHeight))
+                continue;
+            const std::uint64_t Key = (std::uint64_t{Texel.Surface} << 32U) | Texel.Chart;
+            auto [It, Inserted] = ChartMesoPeaks.try_emplace(Key, Texel.Geometry.MesoVirtualHeight);
+            if (!Inserted)
+                It->second = std::max(It->second, Texel.Geometry.MesoVirtualHeight);
+        }
+
         for (std::size_t TexelIndex = 0; TexelIndex < TexelCount; ++TexelIndex)
         {
             const TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[TexelIndex];
@@ -93,7 +108,15 @@ namespace MDSS::SurfaceState
             const glm::vec3 MesoNormal = Texel.HasMesoNormal
                                              ? Texel.MesoNormal
                                              : (Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal);
-            Result.MesoNormals.push_back(ToGPUVec4(MesoNormal));
+            TSurfaceGPUVec4 PackedMesoNormal = ToGPUVec4(MesoNormal);
+            if (Texel.IsValid())
+            {
+                const std::uint64_t Key = (std::uint64_t{Texel.Surface} << 32U) | Texel.Chart;
+                const auto Peak = ChartMesoPeaks.find(Key);
+                if (Peak != ChartMesoPeaks.end())
+                    PackedMesoNormal.W = Peak->second;
+            }
+            Result.MesoNormals.push_back(PackedMesoNormal);
             Result.NeighborIndices.push_back({Texel.NeighborIndices});
             for (std::size_t DirectionIndex = 0; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
             {

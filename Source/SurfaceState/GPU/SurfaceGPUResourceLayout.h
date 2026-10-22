@@ -71,6 +71,7 @@ namespace MDSS::SurfaceState
         std::vector<std::uint32_t>              TexelProfileIndices;
         std::vector<TSurfaceGPUVec4>            Positions;
         std::vector<TSurfaceGPUVec4>            Normals;
+        // xyz: Meso normal; w: maximum Meso height in the same surface/chart.
         std::vector<TSurfaceGPUVec4>            MesoNormals;
         std::vector<TSurfaceGPUGeometryScalar>  GeometryScalars;
         std::vector<TSurfaceGPUNeighborIndices> NeighborIndices;

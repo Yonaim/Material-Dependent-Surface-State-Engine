@@ -146,6 +146,7 @@ layout(std430, set = SURFACE_DEBUG_SET, binding = 17)
 
 readonly buffer TSurfaceMesoNormals
 {
+    // xyz: Meso normal; w: maximum Meso height in this surface/chart.
     vec4 Values[];
 } MesoNormals;
 
