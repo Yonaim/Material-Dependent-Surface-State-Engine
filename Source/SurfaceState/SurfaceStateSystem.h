@@ -171,7 +171,7 @@ namespace MDSS::SurfaceState
         bool                                        bSparseSolverEnabled = true;
         bool                                        bSparseAccumulationHeightEnabled = true;
         bool                                        bActiveChannelMaskEnabled = true;
-        bool                                        bPerWorkgroupChannelMaskEnabled = false;
+        bool                                        bPerWorkgroupChannelMaskEnabled = true;
         bool                                        bSparseSimulationGeometryEnabled = true;
         bool                                        bSeedPersistentActivityOnNextStep = true;
         std::vector<bool>                           PendingInputActivation;

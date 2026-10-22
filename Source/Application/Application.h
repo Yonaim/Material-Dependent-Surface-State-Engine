@@ -36,7 +36,7 @@ namespace MDSS
         // Application lifecycle and execution
         explicit TApplication(TBenchmarkOptions     BenchmarkOptions = {},
                               std::uint32_t         RenderTileSize = 16U,
-                              bool                  bPerWorkgroupChannelMask = false,
+                              bool                  bPerWorkgroupChannelMask = true,
                               std::filesystem::path ScenePath = {});
         ~TApplication();
 
