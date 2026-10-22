@@ -146,6 +146,7 @@ namespace MDSS
         void DrawSelectedObjectWindow(TScene& SceneData);
         void DrawCameraWindow(TScene& SceneData);
         void DrawViewportPanels(TScene& SceneData);
+        void DrawDemoWeatherOverlay(const TScene& SceneData);
         void DrawBrickCubeTexelMeshNotice(const TScene& SceneData);
 
         // Rendering controls and performance overlays

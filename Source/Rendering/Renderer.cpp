@@ -271,6 +271,8 @@ namespace MDSS::Rendering
             std::array<glm::vec4, 4> EffectLowSaturationColors{};
             std::array<glm::vec4, 4> EffectHighSaturationColors{};
             glm::vec4                CameraPosition{0, 0, 1, 1};
+            glm::vec4                WaterAppearance{0, 1, 0.22F, 100};
+            glm::uvec4               ExtraDemoBindings{SurfaceState::InvalidStateId, 0, 0, 0};
         };
 
         constexpr std::uint32_t RenderModeWireframeUniformWhite = 20U;
@@ -327,7 +329,7 @@ namespace MDSS::Rendering
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 320, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 352, "TMaterialUniform must match the std140 shader block layout.");
 
         GPU::TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {
@@ -2388,6 +2390,12 @@ namespace MDSS::Rendering
     {
         const auto        Bindings = GetDemoSurfaceStateBindings();
         const std::size_t MaterialCount = std::min(Assets.GetMaterialCount(), MaterialResources.size());
+        TDemoStateColorMapping WaterColorMap = DemoEffects.WaterFilmColorMap;
+        if (DemoEffects.bEmphasizeWaterFilm)
+        {
+            WaterColorMap.LowSaturationColor = {0.14F, 0.55F, 0.58F};
+            WaterColorMap.HighSaturationColor = {0.04F, 0.39F, 0.55F};
+        }
         for (std::size_t Index = 0; Index < MaterialCount; ++Index)
         {
             if (!MaterialResources[Index].UniformBuffers[Frame])
@@ -2423,24 +2431,27 @@ namespace MDSS::Rendering
                      (DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled ? 2U : 0U) |
                      (bRenderStateTextureSamplingEnabled ? 4U : 0U),
                  (DemoEffects.bHeatLayer ? 1U : 0U) | (DemoEffects.bMudDisplacement ? 2U : 0U) |
-                     (DemoEffects.bWaterFilmDisplacement ? 4U : 0U) | (DemoEffects.bLavaDisplacement ? 8U : 0U)},
+                     (DemoEffects.bWaterFilmDisplacement ? 4U : 0U) | (DemoEffects.bLavaDisplacement ? 8U : 0U) |
+                     (Bindings.AbsorbedWetness != SurfaceState::InvalidStateId ? 16U : 0U)},
                 {DemoEffects.HeatColorMap.RampStart,
                  DemoEffects.MudColorMap.RampStart,
-                 DemoEffects.WaterFilmColorMap.RampStart,
+                 WaterColorMap.RampStart,
                  DemoEffects.LavaColorMap.RampStart},
                 {DemoEffects.HeatColorMap.RampEnd,
                  DemoEffects.MudColorMap.RampEnd,
-                 DemoEffects.WaterFilmColorMap.RampEnd,
+                 WaterColorMap.RampEnd,
                  DemoEffects.LavaColorMap.RampEnd},
                 {glm::vec4(DemoEffects.HeatColorMap.LowSaturationColor, 1.0F),
                  glm::vec4(DemoEffects.MudColorMap.LowSaturationColor, 1.0F),
-                 glm::vec4(DemoEffects.WaterFilmColorMap.LowSaturationColor, 1.0F),
+                 glm::vec4(WaterColorMap.LowSaturationColor, 1.0F),
                  glm::vec4(DemoEffects.LavaColorMap.LowSaturationColor, 1.0F)},
                 {glm::vec4(DemoEffects.HeatColorMap.HighSaturationColor, 1.0F),
                  glm::vec4(DemoEffects.MudColorMap.HighSaturationColor, 1.0F),
-                 glm::vec4(DemoEffects.WaterFilmColorMap.HighSaturationColor, 1.0F),
+                 glm::vec4(WaterColorMap.HighSaturationColor, 1.0F),
                  glm::vec4(DemoEffects.LavaColorMap.HighSaturationColor, 1.0F)},
-                glm::vec4(0.0F)};
+                glm::vec4(0.0F),
+                Material.GetWaterAppearance(),
+                {Bindings.AbsorbedWetness, DemoEffects.bEmphasizeWaterFilm ? 1U : 0U, 0U, 0U}};
             for (std::size_t ViewportIndex = 0; ViewportIndex < DebugInterface.GetViewportCount(); ++ViewportIndex)
             {
                 const TRenderViewMode Mode = GetRenderViewMode(ViewportIndex);

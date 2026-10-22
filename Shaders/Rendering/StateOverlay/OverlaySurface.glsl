@@ -7,6 +7,7 @@
 #include "Rendering/Surface/MaterialParameters.glsl"
 #include "Rendering/Surface/Lighting.glsl"
 #include "Rendering/Surface/Effects/Lava.glsl"
+#include "Rendering/Surface/Effects/WaterFilm.glsl"
 #ifdef OVERLAY_COMBINED
 #define SURFACE_DEBUG_SET 1
 #define RENDER_STATE_TEXTURE_SET 4
@@ -223,11 +224,15 @@ vec4 ShadeWaterFilmLayer(vec3 N, vec3 V, float Coverage)
     float Amount = clamp(Coverage, 0.0, 1.0);
     float NoV = max(dot(N, V), 0.0);
     float Fresnel = 0.02 + 0.98 * pow(1.0 - NoV, 5.0);
-    float Absorption = 0.04 + 0.24 * Amount;
+    // The presentation toggle strengthens only the optical layer. Coverage and
+    // accumulation geometry still come from the same simulated WaterFilm state.
+    float Absorption = Material.ExtraDemoBindings.y != 0u
+        ? 0.30 + 0.55 * Amount : 0.04 + 0.24 * Amount;
     float OpticalAlpha = Fresnel + (1.0 - Fresnel) * Absorption;
     // A thin film appears early, then gains opacity across most of the range.
     float CoverageFade = smoothstep(0.02, 0.85, Amount);
-    float Alpha = clamp(Material.DemoEffectOptions.z * CoverageFade * OpticalAlpha, 0.0, 0.98);
+    float Alpha = clamp(Material.DemoEffectOptions.z * Material.WaterAppearance.y *
+                        CoverageFade * OpticalAlpha, 0.0, 0.98);
 
     vec3 L = normalize(vec3(0.35, 0.55, 1.0));
     vec3 Sum = V + L;
@@ -377,7 +382,8 @@ void main()
     vec3 PremultipliedColor = MudColor * MudAlpha;
     float SurfaceAlpha = MudAlpha;
 
-    float WaterCoverage = (EnabledEffects & 4u) != 0u ? clamp(States.z, 0.0, 1.0) : 0.0;
+    float WaterCoverage = (EnabledEffects & 4u) != 0u
+        ? VisibleWaterCoverage(clamp(States.z, 0.0, 1.0), FragUV) : 0.0;
     if (WaterCoverage > 0.0)
     {
         vec4 Water = ShadeWaterFilmLayer(N, V, WaterCoverage);
@@ -410,7 +416,7 @@ void main()
     vec3 N = normalize(FragNormal);
     if (!gl_FrontFacing) N = -N;
     vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
-    OutColor = ShadeWaterFilmLayer(N, V, FragCoverage);
+    OutColor = ShadeWaterFilmLayer(N, V, VisibleWaterCoverage(FragCoverage, FragUV));
 #else
     vec3 N = normalize(FragNormal);
     if (!gl_FrontFacing) N = -N;

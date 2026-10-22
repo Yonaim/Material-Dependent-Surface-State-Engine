@@ -57,7 +57,8 @@ namespace MDSS::Asset
                                             const std::filesystem::path& SourcePath,
                                             glm::vec4                    BaseColor,
                                             TextureAssetHandle           BaseColorTexture,
-                                            TextureAssetHandle           NormalTexture);
+                                            TextureAssetHandle           NormalTexture,
+                                            glm::vec4                    WaterAppearance = {0.0F, 1.0F, 0.22F, 100.0F});
 
         const GPU::TVulkanContext& Context;
 

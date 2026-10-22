@@ -21,6 +21,7 @@ namespace MDSS::Rendering
         SurfaceState::TStateId Heat = SurfaceState::InvalidStateId;
         SurfaceState::TStateId Mud = SurfaceState::InvalidStateId;
         SurfaceState::TStateId WaterFilm = SurfaceState::InvalidStateId;
+        SurfaceState::TStateId AbsorbedWetness = SurfaceState::InvalidStateId;
         SurfaceState::TStateId Lava = SurfaceState::InvalidStateId;
     };
     inline TDemoSurfaceStateBindings ResolveDemoSurfaceStates(const SurfaceState::TSurfaceStateRegistry& Registry)
@@ -35,6 +36,8 @@ namespace MDSS::Rendering
                 Result.Mud = ID;
             else if (Name == "waterfilm")
                 Result.WaterFilm = ID;
+            else if (Name == "absorbedwetness")
+                Result.AbsorbedWetness = ID;
             else if (Name == "lava")
                 Result.Lava = ID;
         }
@@ -46,6 +49,7 @@ namespace MDSS::Rendering
         bool bHeatLayer = true;
         bool bMudDisplacement = true;
         bool bWaterFilmDisplacement = true;
+        bool bEmphasizeWaterFilm = false;
         bool bLavaDisplacement = true;
         // Smoothing is a render-performance experiment now: one global visual toggle per smoothing type.
         // Algorithm selection (sparse/precompute/separable) lives in the Performance tab.

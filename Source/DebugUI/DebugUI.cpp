@@ -655,6 +655,7 @@ namespace MDSS
         UpdateDemoPlaybackGridAxis(SceneData);
         if (bPresentationMode)
         {
+            DrawDemoWeatherOverlay(SceneData);
             ImGui::Render();
             return;
         }
@@ -666,6 +667,7 @@ namespace MDSS
         // window is visually above the viewport.
         DrawRenderOptionsWindow(SceneData);
         DrawViewportPanels(SceneData);
+        DrawDemoWeatherOverlay(SceneData);
         DrawBrickCubeTexelMeshNotice(SceneData);
         DrawSceneWindow(SceneData);
         DrawAnimationWindow(SceneData);
@@ -835,6 +837,59 @@ namespace MDSS
 #pragma endregion
 
 #pragma region Viewport_and_Selection_Accessors
+
+    void TDebugUI::DrawDemoWeatherOverlay(const TScene& SceneData)
+    {
+        const auto* Cue = SceneData.GetDemoWeather();
+        if (!Cue)
+            return;
+        const float Time = SceneData.GetDemoAnimationTime();
+        if (Time >= Cue->CloudEndSeconds)
+            return;
+
+        const ImVec2 Display = ImGui::GetIO().DisplaySize;
+        const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+        const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+        if (Rect.z <= 0.0F || Rect.w <= 0.0F)
+            return;
+        const ImVec2 Min{Origin.x + Rect.x * Display.x, Origin.y + Rect.y * Display.y};
+        const ImVec2 Max{Min.x + Rect.z * Display.x, Min.y + Rect.w * Display.y};
+        const float Width = Max.x - Min.x;
+        const float Height = Max.y - Min.y;
+        const float Enter = std::clamp((Time + 0.05F) / 0.75F, 0.0F, 1.0F);
+        const float Leave = std::clamp((Cue->CloudEndSeconds - Time) / 1.2F, 0.0F, 1.0F);
+        const float CloudAlpha = Cue->Intensity * Enter * Leave;
+        const float RainAlpha = Cue->Intensity *
+                                std::clamp((Time - Cue->RainStartSeconds) / 0.45F, 0.0F, 1.0F) *
+                                std::clamp((Cue->RainEndSeconds - Time) / 0.45F, 0.0F, 1.0F);
+        ImDrawList* Draw = ImGui::GetBackgroundDrawList();
+        Draw->PushClipRect(Min, Max, true);
+        const float Band = std::min(Height * 0.19F, 115.0F);
+        Draw->AddRectFilledMultiColor(Min, {Max.x, Min.y + Band},
+                                      IM_COL32(36, 43, 56, static_cast<int>(CloudAlpha * 155.0F)),
+                                      IM_COL32(36, 43, 56, static_cast<int>(CloudAlpha * 155.0F)),
+                                      IM_COL32(36, 43, 56, 0), IM_COL32(36, 43, 56, 0));
+        for (int I = 0; I < 9; ++I)
+        {
+            const float CenterX = Min.x + Width * (static_cast<float>(I) + 0.25F) / 8.5F;
+            const float CenterY = Min.y + Band * (0.13F + 0.09F * static_cast<float>(I % 3));
+            Draw->AddCircleFilled({CenterX, CenterY}, Band * (0.27F + 0.04F * static_cast<float>(I % 2)),
+                                  IM_COL32(48, 54, 65, static_cast<int>(CloudAlpha * 85.0F)), 20);
+        }
+        if (RainAlpha > 0.0F)
+        {
+            for (int I = 0; I < 110; ++I)
+            {
+                const float SeedX = std::fmod(static_cast<float>(I * 73 + 19), 109.0F) / 109.0F;
+                const float SeedY = std::fmod(static_cast<float>(I * 47 + 7), 113.0F) / 113.0F;
+                const float X = Min.x + SeedX * Width;
+                const float Y = Min.y + std::fmod(SeedY + Time * (0.27F + 0.06F * (I % 4)), 1.0F) * Height;
+                Draw->AddLine({X, Y}, {X - 3.0F, Y + 12.0F},
+                              IM_COL32(181, 207, 231, static_cast<int>(RainAlpha * 95.0F)), 1.0F);
+            }
+        }
+        Draw->PopClipRect();
+    }
 
     std::size_t TDebugUI::GetViewportCount() const noexcept
     {
@@ -1161,6 +1216,12 @@ namespace MDSS
         ImGui::SameLine();
         DrawDemoSceneButton("Bunny", "Bunny.Scene");
         DrawDemoSceneButton("State-Driven Geometry", "StateDrivenGeometryDemo.Scene");
+        ImGui::TextDisabled("Midterm demos (F9: replay, F10: presentation):");
+        DrawDemoSceneButton("1 Rain / Materials", "MidtermRainMaterials.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("2 Dustpan / Gravity", "MidtermDustpanGravity.Scene");
+        ImGui::SameLine();
+        DrawDemoSceneButton("3 Water / Mud", "MidtermWaterMud.Scene");
         ImGui::TextDisabled("Showcase scenes:");
         DrawDemoSceneButton("Lion Head", "Lion Head.Scene");
         ImGui::SameLine();
@@ -2934,6 +2995,11 @@ namespace MDSS
                                            "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
                                            [&]()
                                            {
+                                               EffectsChanged |= ImGui::Checkbox(
+                                                   "Teal visibility mode", &Effects.bEmphasizeWaterFilm);
+                                               if (ImGui::IsItemHovered())
+                                                   SetDescriptionTooltip(
+                                                       "WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 높이는 바꾸지 않습니다.");
                                                EffectsChanged |= LabeledSliderFloat(
                                                    "Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
                                                DrawRamp(Effects.WaterFilmColorMap);
@@ -3913,10 +3979,10 @@ namespace MDSS
             Row("Thickness per amount (world)", S.Values[1].w);
             Row("Lit height display scale", S.Values[4].z);
             Row("World-to-local height", S.Values[4].w);
-            Row("Cavity depth", S.Values[2].x);
+            Row("Depth to Meso peak", S.Values[2].x);
             Row("Cavity fill (0-1)", S.Values[2].y);
             Row("Cavity excess", S.Values[2].z);
-            Row("Cavity height", S.Values[3].x);
+            Row("Meso fill height", S.Values[3].x);
             Row("Following height", S.Values[3].y);
             Row("Accumulation height", S.Values[3].z);
             Row("Final height", S.Values[3].w);
@@ -4739,8 +4805,8 @@ namespace MDSS
         bChanged |= LabeledSliderFloat(
             "Cavity exit resistance", &ParameterDraft.CavityTransportRetentionFactor, 0.0F, 1.0F, "%.3f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("더 오목하지 않은 이웃 방향으로 이동할 때 수송을 줄입니다. 오목한 정도가 같으면 "
-                                  "흐름에 영향을 주지 않습니다.");
+            SetDescriptionTooltip("더 오목하지 않은 이웃 방향으로 이동할 때 수송을 줄입니다. 홈이 차오를수록 "
+                                  "저항은 감소하고, 완전히 차면 적용되지 않습니다.");
         DrawSectionHeader("Decay", 6.0F, 2.0F);
         bChanged |= LabeledDragFloat("Decay /s", &ParameterDraft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
         if (ImGui::IsItemHovered())
@@ -4748,7 +4814,8 @@ namespace MDSS
         bChanged |=
             LabeledSliderFloat("Cavity decay protection", &ParameterDraft.CavityRetentionFactor, 0.0F, 1.0F, "%.3f");
         if (ImGui::IsItemHovered())
-            SetDescriptionTooltip("오목한 텍셀에서 State의 감소를 줄입니다. 수송 속도에는 직접 영향을 주지 않습니다.");
+            SetDescriptionTooltip("오목한 텍셀에서 State의 감소를 줄입니다. 홈이 차오를수록 보호 효과가 "
+                                  "감소하며 수송 속도에는 직접 영향을 주지 않습니다.");
         DrawSectionHeader("Accumulation", 6.0F, 2.0F);
         bChanged |= LabeledDragFloat("Accumulation", &ParameterDraft.AccumulationFactor, 0.01F, 0.0F, 1000.0F, "%.3f");
         if (ImGui::IsItemHovered())

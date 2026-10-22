@@ -7,6 +7,7 @@
 #include "Rendering/Surface/Effects/Mud.glsl"
 #include "Rendering/Surface/Effects/Heat.glsl"
 #include "Rendering/Surface/Effects/WaterFilm.glsl"
+#include "Rendering/Surface/Effects/AbsorbedWetness.glsl"
 #include "Rendering/Surface/Effects/Lava.glsl"
 #include "Rendering/Surface/Lighting.glsl"
 
@@ -122,6 +123,16 @@ void main()
                                                      Material.DemoExtraStateChannels.x, Material.StateChannelCount);
 #endif
         }
+        if ((EnabledEffects & 16u) != 0u && Material.ExtraDemoBindings.x < Material.StateChannelCount)
+        {
+            float AbsorbedWetness = CoverageSmoothing && !PrecomputedSmoothing
+                ? SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                Material.ExtraDemoBindings.x, Material.StateChannelCount)
+                : SampleStateSaturation(FragSurfaceIndex, FragUV,
+                                        Material.ExtraDemoBindings.x, Material.StateChannelCount);
+            ApplyAbsorbedWetness(AbsorbedWetness, Color.rgb, Roughness);
+        }
+        WaterFilm = VisibleWaterCoverage(WaterFilm, FragUV);
 #ifndef BASE_SURFACE_LIT
         // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.
         if ((EnabledEffects & 2u) != 0u)
