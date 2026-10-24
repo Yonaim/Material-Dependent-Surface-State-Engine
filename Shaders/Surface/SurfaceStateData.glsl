@@ -7,6 +7,8 @@
 #ifndef MDSS_SURFACE_STATE_DATA
 #define MDSS_SURFACE_STATE_DATA
 
+// 이 파일은 공용 선언만 담는다. 실제 계산은 이 파일을 include한 셰이더가 수행한다.
+// include guard는 같은 파일이 여러 번 포함되어도 구조체와 버퍼가 중복 선언되지 않게 한다.
 #ifndef SURFACE_DEBUG_SET
 #define SURFACE_DEBUG_SET 1
 #endif
@@ -18,6 +20,7 @@
 struct TSurfaceGPUProfileParameters
 {
     // profile의 용량/입력/transfer, 감쇠/형상, 누적 두께 계수 묶음이다.
+    // CPU의 TSurfaceGPUProfileParameters와 vec4 3개 순서 및 크기가 일치해야 한다.
     vec4 CapacityInputAndTransfer;
     vec4 DecayAndGeometry;
     vec4 AccumulationThickness;
@@ -42,6 +45,9 @@ struct TSurfaceGPUNeighborIndices
 // -----------------------------------------------------------------------------
 // Surface Resources
 // -----------------------------------------------------------------------------
+// set은 descriptor set 번호, binding은 그 안의 버퍼 슬롯 번호다.
+// SURFACE_DEBUG_SET은 include 전에 재정의할 수 있다. 아래 binding 번호는
+// CPU에서 만드는 descriptor layout과 같아야 하며, 중간 번호가 비어 있어도 의도된 배치다.
 layout(std430, set = SURFACE_DEBUG_SET, binding = 0)
 
 readonly buffer TSurfaceTexelSurfaceIndices
@@ -92,6 +98,8 @@ readonly buffer TSurfaceProfileParameters
     vec4 Values[];
 } ProfileParameters;
 
+// CPU가 [모든 Record의 첫 vec4][모든 Record의 둘째 vec4][모든 Record의 셋째 vec4]
+// 순서로 한 버퍼에 저장하므로, Record 하나를 읽을 때 plane별 시작 위치를 계산한다.
 uint SurfaceProfileRecordCount()
 {
     return uint(ProfileParameters.Values.length()) / 3u;
@@ -114,6 +122,7 @@ vec4 SurfaceProfileAccumulationThickness(uint Record)
 
 TSurfaceGPUProfileParameters LoadSurfaceProfileParameters(uint Record)
 {
+    // 세 vec4 plane에서 같은 Record 번호를 각각 읽어 한 구조체로 묶는다.
     TSurfaceGPUProfileParameters P;
     P.CapacityInputAndTransfer = SurfaceProfileCapacityInputAndTransfer(Record);
     P.DecayAndGeometry = SurfaceProfileDecayAndGeometry(Record);

@@ -276,9 +276,11 @@ namespace MDSS::Rendering
         }
 
         // Benchmark capture and overlay profiling
-        void                              ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
-                                                                    std::uint32_t                WarmupFrames,
-                                                                    std::uint32_t                MeasurementFrames);
+        void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
+                                       std::uint32_t                WarmupFrames,
+                                       std::uint32_t                MeasurementFrames);
+        // Called only after the application has waited for the device to become idle.
+        void                              FinalizeBenchmarkCapture();
         [[nodiscard]] TOverlayDisplayMode GetOverlayDisplayMode() const noexcept
         {
             return OverlayDisplayMode;
@@ -459,6 +461,8 @@ namespace MDSS::Rendering
         void                                              SetDebugStateChannel(std::uint32_t Channel);
         [[nodiscard]] bool                                IsStateHeatmapReliefShadingEnabled() const noexcept;
         void                                              SetStateHeatmapReliefShadingEnabled(bool bEnabled);
+        [[nodiscard]] bool                                IsStateHeatmapAllStatesEnabled() const noexcept;
+        void                                              SetStateHeatmapAllStatesEnabled(bool bEnabled) noexcept;
         [[nodiscard]] const TSurfaceDebugDisplaySettings& GetSurfaceDebugDisplaySettings() const noexcept
         {
             return SurfaceDebugSettings;
@@ -509,18 +513,20 @@ namespace MDSS::Rendering
     private:
         struct TBenchmarkFrameSubmission
         {
-            std::uint64_t FrameIndex = std::numeric_limits<std::uint64_t>::max();
-            std::uint32_t SimulationSteps = 0;
-            std::uint32_t Resolution = 0;
-            std::uint32_t SurfaceMeshResolution = 0;
-            std::uint32_t OverlayMeshResolution = 0;
-            std::uint32_t Instances = 0;
-            std::uint32_t StateChannels = 0;
-            std::uint64_t Texels = 0;
-            float         SimulatedSeconds = 0.0F;
+            std::uint64_t        FrameIndex = std::numeric_limits<std::uint64_t>::max();
+            std::uint32_t        SimulationSteps = 0;
+            std::uint32_t        Resolution = 0;
+            std::uint32_t        SurfaceMeshResolution = 0;
+            std::uint32_t        OverlayMeshResolution = 0;
+            std::uint32_t        Instances = 0;
+            std::uint32_t        StateChannels = 0;
+            std::uint64_t        Texels = 0;
+            float                SimulatedSeconds = 0.0F;
+            std::array<float, 5> CpuMilliseconds{};
         };
 
         void WriteBenchmarkSample(std::uint32_t FrameSlot);
+        void WriteBenchmarkMetadata(const TScene& SceneData, const TDebugUI& DebugInterface);
 
         struct TMaterialRenderResource
         {
@@ -608,6 +614,7 @@ namespace MDSS::Rendering
         float                                                  WireframeLineWidthMax = 1.0F;
         std::uint32_t                                          DebugStateChannel = 0;
         bool                                                   bStateHeatmapReliefShadingEnabled = true;
+        bool                                                   bStateHeatmapAllStatesEnabled = false;
         TSurfaceDebugDisplaySettings                           SurfaceDebugSettings;
         TDemoSurfaceEffectSettings                             DemoEffects;
         TOverlayDisplayMode                                    OverlayDisplayMode = TOverlayDisplayMode::Both;
@@ -646,6 +653,8 @@ namespace MDSS::Rendering
         std::array<TOverlayDisplayMode, TRenderContext::MaxFramesInFlight>       OverlayDisplayModesSubmitted{};
         std::array<TBenchmarkFrameSubmission, TRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
         std::ofstream                                                            BenchmarkOutput;
+        std::filesystem::path                                                    BenchmarkOutputPath;
+        bool                                                                     bBenchmarkMetadataWritten = false;
         std::vector<std::string>                                                 BenchmarkJsonLines;
         std::uint64_t                                                            BenchmarkWarmupFrames = 0;
         std::uint64_t                                                            BenchmarkMeasurementFrames = 0;

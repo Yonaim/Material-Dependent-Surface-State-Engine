@@ -847,35 +847,29 @@ namespace MDSS
         if (Time >= Cue->CloudEndSeconds)
             return;
 
-        const ImVec2 Display = ImGui::GetIO().DisplaySize;
-        const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+        const ImVec2    Display = ImGui::GetIO().DisplaySize;
+        const ImVec2    Origin = ImGui::GetMainViewport()->Pos;
         const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
         if (Rect.z <= 0.0F || Rect.w <= 0.0F)
             return;
         const ImVec2 Min{Origin.x + Rect.x * Display.x, Origin.y + Rect.y * Display.y};
         const ImVec2 Max{Min.x + Rect.z * Display.x, Min.y + Rect.w * Display.y};
-        const float Width = Max.x - Min.x;
-        const float Height = Max.y - Min.y;
-        const float Enter = std::clamp((Time + 0.05F) / 0.75F, 0.0F, 1.0F);
-        const float Leave = std::clamp((Cue->CloudEndSeconds - Time) / 1.2F, 0.0F, 1.0F);
-        const float CloudAlpha = Cue->Intensity * Enter * Leave;
-        const float RainAlpha = Cue->Intensity *
-                                std::clamp((Time - Cue->RainStartSeconds) / 0.45F, 0.0F, 1.0F) *
-                                std::clamp((Cue->RainEndSeconds - Time) / 0.45F, 0.0F, 1.0F);
-        ImDrawList* Draw = ImGui::GetBackgroundDrawList();
+        const float  Width = Max.x - Min.x;
+        const float  Height = Max.y - Min.y;
+        const float  Enter = std::clamp((Time + 0.05F) / 0.75F, 0.0F, 1.0F);
+        const float  Leave = std::clamp((Cue->CloudEndSeconds - Time) / 1.2F, 0.0F, 1.0F);
+        const float  CloudAlpha = Cue->Intensity * Enter * Leave;
+        const float  RainAlpha = Cue->Intensity * std::clamp((Time - Cue->RainStartSeconds) / 0.45F, 0.0F, 1.0F) *
+                                 std::clamp((Cue->RainEndSeconds - Time) / 0.45F, 0.0F, 1.0F);
+        ImDrawList*  Draw = ImGui::GetBackgroundDrawList();
         Draw->PushClipRect(Min, Max, true);
         const float Band = std::min(Height * 0.19F, 115.0F);
-        Draw->AddRectFilledMultiColor(Min, {Max.x, Min.y + Band},
+        Draw->AddRectFilledMultiColor(Min,
+                                      {Max.x, Min.y + Band},
                                       IM_COL32(36, 43, 56, static_cast<int>(CloudAlpha * 155.0F)),
                                       IM_COL32(36, 43, 56, static_cast<int>(CloudAlpha * 155.0F)),
-                                      IM_COL32(36, 43, 56, 0), IM_COL32(36, 43, 56, 0));
-        for (int I = 0; I < 9; ++I)
-        {
-            const float CenterX = Min.x + Width * (static_cast<float>(I) + 0.25F) / 8.5F;
-            const float CenterY = Min.y + Band * (0.13F + 0.09F * static_cast<float>(I % 3));
-            Draw->AddCircleFilled({CenterX, CenterY}, Band * (0.27F + 0.04F * static_cast<float>(I % 2)),
-                                  IM_COL32(48, 54, 65, static_cast<int>(CloudAlpha * 85.0F)), 20);
-        }
+                                      IM_COL32(36, 43, 56, 0),
+                                      IM_COL32(36, 43, 56, 0));
         if (RainAlpha > 0.0F)
         {
             for (int I = 0; I < 110; ++I)
@@ -884,8 +878,8 @@ namespace MDSS
                 const float SeedY = std::fmod(static_cast<float>(I * 47 + 7), 113.0F) / 113.0F;
                 const float X = Min.x + SeedX * Width;
                 const float Y = Min.y + std::fmod(SeedY + Time * (0.27F + 0.06F * (I % 4)), 1.0F) * Height;
-                Draw->AddLine({X, Y}, {X - 3.0F, Y + 12.0F},
-                              IM_COL32(181, 207, 231, static_cast<int>(RainAlpha * 95.0F)), 1.0F);
+                Draw->AddLine(
+                    {X, Y}, {X - 3.0F, Y + 12.0F}, IM_COL32(181, 207, 231, static_cast<int>(RainAlpha * 95.0F)), 1.0F);
             }
         }
         Draw->PopClipRect();
@@ -2264,19 +2258,26 @@ namespace MDSS
                     ImGui::TextUnformatted("State");
                     ImGui::SameLine(0.0F, 6.0F);
                     ImGui::SetNextItemWidth(145.0F);
-                    const char* StateComboId = CurrentMode == Rendering::TRenderViewMode::SurfaceStateHeatmap
-                                                   ? "##ToolbarHeatmapState"
-                                                   : "##ToolbarHeightState";
-                    if (ImGui::BeginCombo(StateComboId, Registry->GetStateName(DebugState).c_str()))
+                    const bool  bHeatmap = CurrentMode == Rendering::TRenderViewMode::SurfaceStateHeatmap;
+                    const bool  bAllStates = bHeatmap && FrameRenderer->IsStateHeatmapAllStatesEnabled();
+                    const char* StateComboId = bHeatmap ? "##ToolbarHeatmapState" : "##ToolbarHeightState";
+                    if (ImGui::BeginCombo(StateComboId,
+                                          bAllStates ? "All states (max)" : Registry->GetStateName(DebugState).c_str()))
                     {
+                        if (bHeatmap && ImGui::Selectable("All states (max)", bAllStates))
+                        {
+                            FrameRenderer->SetStateHeatmapAllStatesEnabled(true);
+                        }
                         for (std::size_t Index = 0; Index < StateCount; ++Index)
                         {
                             const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
-                            const bool                   bSelected = State == DebugState;
+                            const bool                   bSelected = !bAllStates && State == DebugState;
                             if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                             {
                                 DebugState = State;
                                 FrameRenderer->SetDebugStateChannel(DebugState);
+                                if (bHeatmap)
+                                    FrameRenderer->SetStateHeatmapAllStatesEnabled(false);
                             }
                             if (bSelected)
                             {
@@ -2989,21 +2990,21 @@ namespace MDSS
                                                    "Strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
                                                DrawRamp(Effects.HeatColorMap);
                                            });
-                        DrawEffectSettings("WaterFilm",
-                                           Effects.bWaterFilmDisplacement,
-                                           Bindings.WaterFilm != SurfaceState::InvalidStateId,
-                                           "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
-                                           [&]()
-                                           {
-                                               EffectsChanged |= ImGui::Checkbox(
-                                                   "Teal visibility mode", &Effects.bEmphasizeWaterFilm);
-                                               if (ImGui::IsItemHovered())
-                                                   SetDescriptionTooltip(
-                                                       "WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 높이는 바꾸지 않습니다.");
-                                               EffectsChanged |= LabeledSliderFloat(
-                                                   "Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
-                                               DrawRamp(Effects.WaterFilmColorMap);
-                                           });
+                        DrawEffectSettings(
+                            "WaterFilm",
+                            Effects.bWaterFilmDisplacement,
+                            Bindings.WaterFilm != SurfaceState::InvalidStateId,
+                            "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
+                            [&]()
+                            {
+                                EffectsChanged |= ImGui::Checkbox("Teal visibility mode", &Effects.bEmphasizeWaterFilm);
+                                if (ImGui::IsItemHovered())
+                                    SetDescriptionTooltip("WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 "
+                                                          "높이는 바꾸지 않습니다.");
+                                EffectsChanged |=
+                                    LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
+                                DrawRamp(Effects.WaterFilmColorMap);
+                            });
                         DrawEffectSettings(
                             "Mud",
                             Effects.bMudDisplacement,

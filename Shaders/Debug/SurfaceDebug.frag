@@ -422,12 +422,54 @@ void main()
         return;
     }
 
-    if (Material.StateChannelCount == 0u || Material.DebugStateChannel >= Material.StateChannelCount)
+    if (Material.StateChannelCount == 0u)
     {
         OutColor = vec4(0.35, 0.35, 0.35, 1.0);
         return;
     }
     uint ProfileIndex = TexelProfileIndices.Values[TexelIndex];
+    if (Material.DebugFlags.x != 0u)
+    {
+        float MaximumSaturation = 0.0;
+        bool AnySupported = false;
+        for (uint Channel = 0u; Channel < Material.StateChannelCount; ++Channel)
+        {
+            uint Record = ProfileIndex * Material.StateChannelCount + Channel;
+            uint StateIndex = TexelIndex * Material.StateChannelCount + Channel;
+            if (Record >= uint(ProfileSupported.Values.length()) ||
+                Record >= SurfaceProfileRecordCount() ||
+                StateIndex >= uint(CurrentState.Values.length()))
+            {
+                OutColor = vec4(0.35, 0.35, 0.35, 1.0);
+                return;
+            }
+            if (ProfileSupported.Values[Record] == 0u)
+                continue;
+            AnySupported = true;
+            TDebugAccumulation D = DebugAccumulation(TexelIndex, Channel,
+                                                    Material.StateChannelCount, Material.DebugOptions.z,
+                                                    AccumulationNormalMatrix());
+            if (D.Status != 3u)
+            {
+                OutColor = vec4(1, 0, 1, 1);
+                return;
+            }
+            MaximumSaturation = max(MaximumSaturation, D.Saturation);
+        }
+        if (!AnySupported)
+        {
+            OutColor = vec4(0.42, 0.42, 0.45, 1.0);
+            return;
+        }
+        vec3 AllColor = MaximumSaturation > 1.0 ? vec3(1, 0.25, 0.05) : HeatColor(MaximumSaturation);
+        OutColor = vec4(ApplyReliefLighting(AllColor, FragMesoNormalWS), 1.0);
+        return;
+    }
+    if (Material.DebugStateChannel >= Material.StateChannelCount)
+    {
+        OutColor = vec4(0.35, 0.35, 0.35, 1.0);
+        return;
+    }
     uint ProfileRecordIndex = ProfileIndex * Material.StateChannelCount + Material.DebugStateChannel;
     uint StateIndex = TexelIndex * Material.StateChannelCount + Material.DebugStateChannel;
     if (ProfileRecordIndex >= uint(ProfileSupported.Values.length()) ||

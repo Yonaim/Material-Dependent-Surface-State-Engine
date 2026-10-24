@@ -63,6 +63,7 @@ namespace MDSS
         {
             MainScene.PauseDemoAnimation();
             DebugInterface->SetBenchmarkMode();
+            FrameRenderer->SetStateDrivenGeometryUpdateEnabled(true);
             FrameRenderer->ConfigureBenchmarkCapture(
                 Benchmark.OutputPath, Benchmark.WarmupFrames, Benchmark.MeasurementFrames);
         }
@@ -179,6 +180,8 @@ namespace MDSS
 
         TLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");
         vkDeviceWaitIdle(Context.GetDevice());
+        if (Benchmark.Enabled)
+            FrameRenderer->FinalizeBenchmarkCapture();
     }
 #pragma endregion
 } // namespace MDSS

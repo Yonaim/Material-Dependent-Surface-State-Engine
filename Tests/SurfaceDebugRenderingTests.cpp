@@ -147,8 +147,16 @@ namespace MDSS::Tests
             Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
             auto Command = Context.GetCommands().BeginSingleTime();
             Preview.Record(Command, 0, Descriptors, 8, 0, 1, 1.0F, 1.0F, glm::mat4(1.0F), true, true);
-            Sides.Record(Command, 0, 0, 1, 0, Shared, Descriptors, Preview.GetOutputSet(0),
-                         Preview.GetGeometryCacheBuffer(0), true);
+            Sides.Record(Command,
+                         0,
+                         0,
+                         1,
+                         0,
+                         Shared,
+                         Descriptors,
+                         Preview.GetOutputSet(0),
+                         Preview.GetGeometryCacheBuffer(0),
+                         true);
             VkBufferMemoryBarrier CopyBarrier{};
             CopyBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
             CopyBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
