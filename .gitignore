@@ -86,6 +86,7 @@ Cache/
 
 # Performance benchmark raw captures
 Docs/MDSSP-Vault/06_Development/Performance/Results/*/raw/
+Docs/MDSSP-Vault/04_Development/Performance-Results/*/raw/
 
 # exceptionally allowed
 !/Assets/Meshes/*.obj

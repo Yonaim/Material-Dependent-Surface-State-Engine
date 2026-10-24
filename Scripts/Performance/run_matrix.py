@@ -12,18 +12,21 @@ import random
 import re
 import subprocess
 import sys
+import time
+import zipfile
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MATRIX = ROOT / "Config/Performance/solver-resolution-matrix.json"
-DEFAULT_RESULTS = ROOT / "Docs/MDSSP-Vault/06_Development/Performance/Results"
+DEFAULT_RESULTS = ROOT / "Docs/MDSSP-Vault/04_Development/Performance-Results"
 
 
 def run_text(command: list[str], *, cwd: Path, timeout: int = 30) -> str:
     try:
-        result = subprocess.run(command, cwd=cwd, text=True, capture_output=True, timeout=timeout, check=False)
+        result = subprocess.run(command, cwd=cwd, text=True, encoding="utf-8", errors="replace",
+                                capture_output=True, timeout=timeout, check=False)
     except (OSError, subprocess.TimeoutExpired):
         return ""
     return result.stdout if result.returncode == 0 else ""
@@ -87,6 +90,29 @@ def load_config(matrix_path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
 
 def write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def preserve_inputs(raw_dir: Path, binary: Path) -> dict[str, Any]:
+    """Keep recoverable inputs, rather than relying on a dirty-tree hash alone."""
+    inputs = raw_dir / "inputs"
+    inputs.mkdir()
+    patch = subprocess.run(["git", "diff", "--binary", "HEAD"], cwd=ROOT, capture_output=True, check=True)
+    (inputs / "working-tree.patch").write_bytes(patch.stdout)
+    paths = [ROOT / "CMakeLists.txt"]
+    for folder in ("Source", "Shaders", "Assets", "Config", "Scripts", "ThirdParty"):
+        paths.extend(path for path in (ROOT / folder).rglob("*")
+                     if path.is_file() and ".git" not in path.parts and "__pycache__" not in path.parts)
+    hashes = {}
+    with zipfile.ZipFile(inputs / "source-assets.zip", "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(paths):
+            relative = path.relative_to(ROOT).as_posix()
+            hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+            archive.write(path, relative)
+    for path in sorted((ROOT / "Build/bin/Shaders/Release").rglob("*.spv")):
+        hashes[path.relative_to(ROOT).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    write_json(inputs / "sha256.json", hashes)
+    return {"source_archive": "raw/inputs/source-assets.zip", "patch": "raw/inputs/working-tree.patch",
+            "input_hashes": "raw/inputs/sha256.json", "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
 
 
 def main() -> int:
@@ -157,6 +183,7 @@ def main() -> int:
             "gpu_vulkan_summary": gpu_summary(),
         },
         "binary": str(binary),
+        "preserved_inputs": preserve_inputs(raw_dir, binary),
         "runs": [],
     }
     manifest_path = result_dir / "manifest.json"
@@ -168,6 +195,8 @@ def main() -> int:
             command = [str(binary), "--benchmark-scene", run["scene"]["resolved_path"],
                        "--benchmark-resolution", str(run["resolution"]), "--benchmark-warmup-frames", str(warmup),
                        "--benchmark-measure-frames", str(measure), "--benchmark-output", str(raw_path)]
+            started_at = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+            started = time.perf_counter()
             with log_path.open("w", encoding="utf-8") as log:
                 completed = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
                                            timeout=args.timeout, check=False)
@@ -177,13 +206,32 @@ def main() -> int:
                 "name": run["name"], "scene_id": run["scene_id"], "scene_path": run["scene"]["resolved_path"],
                 "role": run["scene"].get("role"), "resolution": run["resolution"], "repeat": run["repeat"],
                 "warmup_frames": warmup, "measurement_frames": measure, "exit_code": completed.returncode,
-                "sample_count": sample_count, "raw_jsonl": str(raw_path.relative_to(result_dir)),
-                "log": str(log_path.relative_to(result_dir)), "command": command,
+                "sample_count": sample_count, "raw_jsonl": raw_path.relative_to(result_dir).as_posix(),
+                "log": log_path.relative_to(result_dir).as_posix(), "command": command,
+                "started_at": started_at,
+                "finished_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+                "process_seconds": time.perf_counter() - started,
             }
             manifest["runs"].append(record)
             write_json(manifest_path, manifest)
             if completed.returncode != 0 or sample_count != measure:
                 raise RuntimeError(f"{run['name']} failed: exit={completed.returncode}, samples={sample_count}/{measure}; see {log_path}")
+            samples = [json.loads(line) for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            if [sample["frame_index"] for sample in samples] != list(range(warmup, warmup + measure)):
+                raise RuntimeError(f"{run['name']}: frame indices do not match the measurement window")
+            settings_path = Path(str(raw_path) + ".settings.json")
+            if settings_path.is_file():
+                settings = json.loads(settings_path.read_text(encoding="utf-8"))
+                if settings.get("geometry_feedback") is not True:
+                    raise RuntimeError(f"{run['name']}: geometry feedback must be enabled")
+                record["settings"] = settings_path.relative_to(result_dir).as_posix()
+            validation_path = Path(str(raw_path) + ".validation.json")
+            if validation_path.is_file():
+                validation = json.loads(validation_path.read_text(encoding="utf-8"))
+                record["validation"] = validation_path.relative_to(result_dir).as_posix()
+                if any(item["nonfinite"] or item["negative"] for item in validation["instances"]):
+                    raise RuntimeError(f"{run['name']}: final State contains nonfinite or negative values")
+            write_json(manifest_path, manifest)
             print(f"Captured {run['name']} ({sample_count} frames)", flush=True)
         manifest["status"] = "complete"
     except Exception as exc:
