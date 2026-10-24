@@ -45,8 +45,8 @@ namespace
     void TestMesoPeakPacking()
     {
         using namespace MDSS::SurfaceState;
-        TSharedSurfaceGeometryData Geometry({{0, {3, 1}}, {1, {1, 1}}});
-        const std::array<float, 4> Heights{-0.2F, 0.3F, 0.1F, 0.5F};
+        TSharedSurfaceGeometryData         Geometry({{0, {3, 1}}, {1, {1, 1}}});
+        const std::array<float, 4>         Heights{-0.2F, 0.3F, 0.1F, 0.5F};
         const std::array<std::uint32_t, 4> Charts{0U, 0U, 1U, 0U};
         for (std::size_t Index = 0; Index < Heights.size(); ++Index)
         {
@@ -57,7 +57,7 @@ namespace
             Texel.Geometry.MesoVirtualHeight = Heights[Index];
         }
         Geometry.SetProfileMap({0, 0, 0, 0});
-        const auto Packed = PackSharedSurfaceGeometry(Geometry);
+        const auto                 Packed = PackSharedSurfaceGeometry(Geometry);
         const std::array<float, 4> Expected{0.3F, 0.3F, 0.1F, 0.5F};
         for (std::size_t Index = 0; Index < Expected.size(); ++Index)
             Check(std::abs(Packed.MesoNormals[Index].W - Expected[Index]) < 1.0e-6F,

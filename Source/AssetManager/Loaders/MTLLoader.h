@@ -23,7 +23,7 @@ namespace MDSS::Asset
         std::filesystem::path BaseColorTexturePath;
         std::filesystem::path NormalTexturePath;
         // x: 0 film / 1 droplets, y: opacity multiplier, z: film darkening, w: droplets per UV unit.
-        glm::vec4             WaterAppearance{0.0F, 1.0F, 0.22F, 100.0F};
+        glm::vec4 WaterAppearance{0.0F, 1.0F, 0.22F, 100.0F};
     };
 
     class TMTLLoader

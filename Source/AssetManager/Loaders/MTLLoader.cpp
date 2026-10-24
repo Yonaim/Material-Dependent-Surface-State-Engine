@@ -7,10 +7,9 @@
 
 #include "Logger/Logger.h"
 
-#include <tiny_obj_loader.h>
-
 #include <cmath>
 #include <stdexcept>
+#include <tiny_obj_loader.h>
 
 namespace MDSS::Asset
 {

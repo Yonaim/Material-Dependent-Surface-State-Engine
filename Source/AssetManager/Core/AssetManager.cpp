@@ -59,9 +59,12 @@ namespace MDSS::Asset
                                                          ? DefaultNormalTexture
                                                          : LoadTexture(SourceMaterial.NormalTexturePath, false);
 
-            MaterialRemap.push_back(
-                CreateMaterial(SourceMaterial.Name, Path, SourceMaterial.BaseColor, BaseColorTexture, NormalTexture,
-                               SourceMaterial.WaterAppearance));
+            MaterialRemap.push_back(CreateMaterial(SourceMaterial.Name,
+                                                   Path,
+                                                   SourceMaterial.BaseColor,
+                                                   BaseColorTexture,
+                                                   NormalTexture,
+                                                   SourceMaterial.WaterAppearance));
         }
 
         std::vector<TMeshSection> Sections;

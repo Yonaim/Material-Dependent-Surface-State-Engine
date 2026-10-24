@@ -28,7 +28,7 @@ namespace MDSS::Asset
         [[nodiscard]] const glm::vec4&   GetBaseColor() const noexcept;
         [[nodiscard]] TextureAssetHandle GetBaseColorTexture() const noexcept;
         [[nodiscard]] TextureAssetHandle GetNormalTexture() const noexcept;
-        [[nodiscard]] const glm::vec4& GetWaterAppearance() const noexcept;
+        [[nodiscard]] const glm::vec4&   GetWaterAppearance() const noexcept;
 
     private:
         glm::vec4          BaseColor{1.0F};

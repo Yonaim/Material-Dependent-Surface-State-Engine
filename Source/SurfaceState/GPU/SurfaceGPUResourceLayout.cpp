@@ -112,7 +112,7 @@ namespace MDSS::SurfaceState
             if (Texel.IsValid())
             {
                 const std::uint64_t Key = (std::uint64_t{Texel.Surface} << 32U) | Texel.Chart;
-                const auto Peak = ChartMesoPeaks.find(Key);
+                const auto          Peak = ChartMesoPeaks.find(Key);
                 if (Peak != ChartMesoPeaks.end())
                     PackedMesoNormal.W = Peak->second;
             }

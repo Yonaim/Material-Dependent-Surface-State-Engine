@@ -217,8 +217,7 @@ namespace
         Dustpan.RestartDemoAnimation();
         Dustpan.PlayDemoAnimation();
         const auto Injections = Dustpan.AdvanceDemoAnimation(4.2F);
-        Check(Injections.size() == 11 &&
-                  Dustpan.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x < -15.0F,
+        Check(Injections.size() == 11 && Dustpan.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x < -15.0F,
               "dustpan should receive water while its open end is raised");
         Dustpan.AdvanceDemoAnimation(1.8F);
         Check(Dustpan.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x > 16.0F,

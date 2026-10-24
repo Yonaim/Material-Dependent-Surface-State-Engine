@@ -67,10 +67,10 @@ namespace MDSS::SurfaceState
 
     struct TSurfaceGPUSharedGeometryUpload
     {
-        std::vector<std::uint32_t>              TexelSurfaceIndices;
-        std::vector<std::uint32_t>              TexelProfileIndices;
-        std::vector<TSurfaceGPUVec4>            Positions;
-        std::vector<TSurfaceGPUVec4>            Normals;
+        std::vector<std::uint32_t>   TexelSurfaceIndices;
+        std::vector<std::uint32_t>   TexelProfileIndices;
+        std::vector<TSurfaceGPUVec4> Positions;
+        std::vector<TSurfaceGPUVec4> Normals;
         // xyz: Meso normal; w: maximum Meso height in the same surface/chart.
         std::vector<TSurfaceGPUVec4>            MesoNormals;
         std::vector<TSurfaceGPUGeometryScalar>  GeometryScalars;
