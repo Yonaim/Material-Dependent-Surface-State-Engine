@@ -19,7 +19,7 @@
       "stateCapacity": 2.0,
       "inputFactor": 1.0,
       "saturationSpreadFactor": 0.035,
-      "gravityFlowFactor": 0.018,
+      "gravityFlowFactor": 0.0,
       "decayRate": 0.002,
       "cavityDecayProtectionFactor": 0.92,
       "cavityExitResistanceFactor": 0.95,

@@ -69,12 +69,15 @@ def write_grid(name, material, height, nx=64, ny=64):
 
 def build_ground():
     folder = MESHES / "MidtermGround"
-    texture("road_damaged_clean", "Diffuse", folder / "Road.jpg")
-    texture("road_damaged_clean", "nor_dx", folder / "RoadNormal.jpg")
-    texture("farm_soil", "Diffuse", folder / "Soil.jpg")
-    for name, image in (("Road", "Road.jpg"), ("Soil", "Soil.jpg")):
-        extra = ("norm RoadNormal.jpg\nmdss_water_style film\n"
+    texture("clean_asphalt", "Diffuse", folder / "CleanAsphalt.jpg")
+    texture("clean_asphalt", "nor_dx", folder / "CleanAsphaltNormal.jpg")
+    texture("dirt", "Diffuse", folder / "Dirt.jpg")
+    texture("dirt", "nor_dx", folder / "DirtNormal.jpg")
+    for name, image in (("Road", "CleanAsphalt.jpg"), ("Soil", "Dirt.jpg")):
+        extra = ("norm CleanAsphaltNormal.jpg\nmdss_water_style film\n"
                  "mdss_water_opacity 2.2\nmdss_water_darkening 0.60\n") if name == "Road" else ""
+        if name == "Soil":
+            extra = "norm DirtNormal.jpg\n"
         (folder / f"{name}.mtl").write_text(f"newmtl {name}\nKd 1 1 1\nd 1\nmap_Kd {image}\n{extra}")
         write_grid(name, name, lambda x, y: 0.02 + 0.025 * y)
     # A narrow painted center line gives the asphalt unmistakable road context.
@@ -113,7 +116,7 @@ def build_fractured_stone():
 
 
 def build_dustpan():
-    """Import the one-piece metal dustpan, preserving shared positions at UV seams."""
+    """Import the visible dustpan shell, preserving shared positions at UV seams."""
     folder = MESHES / "MidtermDustpan"
     source = folder / "Source"
     gltf_path = source / "dustpan_1k.gltf"
@@ -127,8 +130,9 @@ def build_dustpan():
 
     texture("dustpan", "Diffuse", folder / "Dustpan.jpg")
     texture("dustpan", "nor_dx", folder / "DustpanNormal.jpg")
+    # Keep the scanned metal detail, but reduce its diffuse brightness so the water film stands out.
     (folder / "Dustpan.mtl").write_text(
-        "newmtl Dustpan\nKd 1 1 1\nd 1\nmap_Kd Dustpan.jpg\n"
+        "newmtl Dustpan\nKd 0.8 0.8 0.8\nd 1\nmap_Kd Dustpan.jpg\n"
         "norm DustpanNormal.jpg\nmdss_water_style film\n"
         "mdss_water_opacity 2.2\nmdss_water_darkening 0.55\n")
 
@@ -151,6 +155,37 @@ def build_dustpan():
     normals = accessor(primitive["attributes"]["NORMAL"])
     uvs = accessor(primitive["attributes"]["TEXCOORD_0"])
     indices = [entry[0] + 1 for entry in accessor(primitive["indices"])]
+    triangles = [indices[i:i + 3] for i in range(0, len(indices), 3)]
+    incident = [[] for _ in positions]
+    for triangle_index, triangle in enumerate(triangles):
+        for vertex in triangle:
+            incident[vertex - 1].append(triangle_index)
+    visited = set()
+    underside = set()
+    for root in range(len(triangles)):
+        if root in visited:
+            continue
+        component = []
+        pending = [root]
+        visited.add(root)
+        while pending:
+            triangle_index = pending.pop()
+            component.append(triangle_index)
+            for vertex in triangles[triangle_index]:
+                for neighbor in incident[vertex - 1]:
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        pending.append(neighbor)
+        mean_up = sum(normals[vertex - 1][1]
+                      for triangle_index in component
+                      for vertex in triangles[triangle_index]) / (3 * len(component))
+        # The scan's two large UV shells represent the thin upper and lower
+        # plates. Integrated normal-map height crosses them on the left, making
+        # the lower plate occlude water rendered on the upper plate.
+        if len(component) > 1000 and mean_up < -0.4:
+            underside.update(component)
+    if not underside:
+        raise ValueError("Dustpan underside UV shell was not found")
     lines = ["mtllib Dustpan.mtl", "o Dustpan"]
     unique_positions = {}
     position_indices = []
@@ -166,8 +201,9 @@ def build_dustpan():
     for x, y, z in normals:
         lines.append(f"vn {x:.7f} {-z:.7f} {y:.7f}")
     lines.append("usemtl Dustpan")
-    for i in range(0, len(indices), 3):
-        a, b, c = indices[i:i + 3]
+    for triangle_index, (a, b, c) in enumerate(triangles):
+        if triangle_index in underside:
+            continue
         lines.append(f"f {position_indices[a-1]}/{a}/{a} {position_indices[b-1]}/{b}/{b} {position_indices[c-1]}/{c}/{c}")
     (folder / "Dustpan.obj").write_text("\n".join(lines) + "\n")
 
@@ -201,7 +237,7 @@ def scene(name, camera, objects, duration, tracks, contacts, weather=None):
               {"type": "TScene", "version": 1,
                "animation": f"../Animations/{title}.DemoAnim",
                "camera": {"position": camera[0], "target": camera[1],
-                          "verticalFieldOfViewDegrees": 46.0},
+                          "verticalFieldOfViewDegrees": 40.0},
                "simulationResolution": 256, "litHeightDisplayScale": 1.4,
                "objects": objects})
     animation = {"version": 1, "durationSeconds": duration, "loop": False,
@@ -238,12 +274,12 @@ def build_scenes():
     profile("Dustpan", {"waterfilm": water_profile(0.018, 0.82, 0.16)})
     profile("Fractured", {"waterfilm": water_profile(0.07, 0.48, 0.25),
                         "mud": {"stateCapacity": 2.0, "inputFactor": 1.0,
-                                "saturationSpreadFactor": 0.035, "gravityFlowFactor": 0.018,
+                                "saturationSpreadFactor": 0.035, "gravityFlowFactor": 0.0,
                                 "decayRate": 0.002, "cavityDecayProtectionFactor": 0.92,
                                 "cavityExitResistanceFactor": 0.95, "accumulationFactor": 0.4,
                                 "cavityFillFactor": 0.8, "thicknessPerAmount": 0.18}})
 
-    ground_camera = ([0, -3.6, 3.1], [0, 0, 0.02])
+    ground_camera = ([0, -2.5, 3.2], [0, 0, 0.02])
     rain = []
     drops = [(-0.43, 0.4), (0.38, 0.45), (-0.3, -0.3), (0.43, -0.38),
              (0.02, 0.1), (0.15, -0.55)]
@@ -261,34 +297,41 @@ def build_scenes():
           {"rainStartSeconds": 0.5, "rainEndSeconds": 4.75,
            "cloudEndSeconds": 7.5, "intensity": 0.75})
 
-    pan_camera = ([1.25, -2.45, 1.50], [0, 0, 0.24])
+    # A closer, higher front-quarter view exposes the tray floor and rear wall.
+    pan_camera = ([0.30, -1.55, 2.20], [0, 0, 0.35])
     # Put the water on the open, initially high end of the pan. Its actual
     # connected metal surface carries the state toward the shallow rear trough.
     pan_contacts = [contact(0.60 + i * 0.32, "dustpan", "waterfilm",
-                            [(i % 3 - 1) * 0.018, -0.126, 0.003], 0.17, 0.32, 0.085)
-                    for i in range(11)]
+                            [(i % 3 - 1) * 0.018, -0.126, 0.003], 0.24, 0.32, 0.085)
+                    for i in range(7)]
     def x_quat(degrees):
         a = math.radians(degrees) * 0.5
         return [math.sin(a), 0, 0, math.cos(a)]
-    pan_tracks = camera_track(*pan_camera, 10.0)
+    pan_duration = 16.5
+    pan_tracks = camera_track(*pan_camera, pan_duration)
     pan_tracks.append({"target": "dustpan", "property": "rotation", "interpolation": "slerp",
                        "keys": [{"time": t, "value": x_quat(angle)} for t, angle in
-                                ((0, -16), (5.0, -16), (6.0, 17), (10.0, 17))]})
+                                ((0, -16), (7.0, -16), (9.3, 17),
+                                 (11.8, 17), (14.1, -18), (pan_duration, -18))]})
     pan_object = obj("dustpan", "MidtermDustpan/Dustpan.obj", "Dustpan", [0, 0, 0.25])
     pan_object["transform"]["rotationDegrees"] = [-16, 0, 0]
     pan_object["transform"]["scale"] = [3.4, 3.4, 3.4]
-    scene("DustpanGravity", pan_camera, [pan_object], 10.0, pan_tracks, pan_contacts)
+    scene("DustpanGravity", pan_camera, [pan_object], pan_duration, pan_tracks, pan_contacts)
 
-    stone_camera = ([0, -3.45, 2.7], [0, 0, 0.15])
+    stone_camera = ([0, -1.35, 2.15], [0, 0, 0.20])
     stone_contacts = []
     for i in range(13):
         t = 0.55 + i * 0.3
-        for target, state in (("water_stone", "waterfilm"), ("mud_stone", "mud")):
-            stone_contacts.append(contact(t, target, state, [-0.30, 0.58, 0.10], 0.31, 0.26, 0.20))
+        for x, state in ((-0.30, "waterfilm"), (0.29, "mud")):
+            stone_contacts.append(contact(t, "fractured_stone", state,
+                                          [x, 0.58, 0.10], 0.20, 0.26, 0.20))
+    stone_tracks = camera_track(*stone_camera, 12.0)
+    stone_tracks.append({"target": "fractured_stone", "property": "rotation", "interpolation": "slerp",
+                         "keys": [{"time": t, "value": x_quat(angle)} for t, angle in
+                                  ((0, 0), (4.8, 0), (6.8, 20), (12.0, 20))]})
     scene("WaterMud", stone_camera,
-          [obj("water_stone", "MidtermGround/FracturedStone.obj", "Fractured", [-0.99, 0, 0]),
-           obj("mud_stone", "MidtermGround/FracturedStone.obj", "Fractured", [0.99, 0, 0])],
-          12.0, camera_track(*stone_camera, 12.0), stone_contacts)
+          [obj("fractured_stone", "MidtermGround/FracturedStone.obj", "Fractured", [0, 0, 0])],
+          12.0, stone_tracks, stone_contacts)
 
 
 if __name__ == "__main__":

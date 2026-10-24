@@ -1,8 +1,8 @@
 newmtl Road
 Kd 1 1 1
 d 1
-map_Kd Road.jpg
-norm RoadNormal.jpg
+map_Kd CleanAsphalt.jpg
+norm CleanAsphaltNormal.jpg
 mdss_water_style film
 mdss_water_opacity 2.2
 mdss_water_darkening 0.60

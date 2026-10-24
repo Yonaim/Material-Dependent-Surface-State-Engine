@@ -1,4 +1,5 @@
 newmtl Soil
 Kd 1 1 1
 d 1
-map_Kd Soil.jpg
+map_Kd Dirt.jpg
+norm DirtNormal.jpg
