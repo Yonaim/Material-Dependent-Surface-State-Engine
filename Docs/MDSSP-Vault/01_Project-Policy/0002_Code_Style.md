@@ -224,10 +224,10 @@ placeholder에는 구현된 것처럼 보이는 임시 동작을 넣지 않는�
 
 ```bash
 # 파일 형식 적용
-clang-format -i Source/Renderer/Renderer.cpp Source/Renderer/Renderer.h
+clang-format -i Source/Rendering/Core/Renderer.cpp Source/Rendering/Core/Renderer.h
 
 # 형식 확인만 수행
-clang-format --dry-run --Werror Source/Renderer/Renderer.cpp Source/Renderer/Renderer.h
+clang-format --dry-run --Werror Source/Rendering/Core/Renderer.cpp Source/Rendering/Core/Renderer.h
 ```
 
 변경한 C++ 파일에 formatter를 적용한 뒤 프로젝트 빌드와 관련 테스트도 실행한다. `clang-format`은 naming, API 의도, Vulkan lifetime, 알고리즘 정확성을 검증하는 도구가 아니다.

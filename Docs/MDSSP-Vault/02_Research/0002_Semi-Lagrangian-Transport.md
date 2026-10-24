@@ -137,7 +137,7 @@ flowchart LR
 | 외부 입력 | Strength × ContactWeight × InputFactor × AreaScale를 사건 한 번 적용한다. Strength는 고정 기준 면적의 양이고 전체 브러시 총량으로 정규화하지 않는다. |
 | 면적 표시 | Heatmap의 fragment 미분 면적과 별도로 Macro 삼각형 Jacobian에서 계산한 월드 texel 면적을 Solver Capacity·Decay 및 CPU 입력에 사용한다. |
 
-거리 계산은 `Source/SurfaceStateSystem/GPU/SurfaceGPUResourceLayout.cpp`, 전달 계산은 `Shaders/Simulation/SurfaceSolver/`의 공통 shader와 두 pass를 기준으로 확인했다.
+거리 계산은 `Source/SurfaceState/GPU/Packing/TransferWeightPacking.cpp`, 전달 계산은 `Shaders/Simulation/Solver/`의 공통 shader와 두 pass를 기준으로 확인했다.
 
 Profile version 2의 `GeometryTransferFactor × BaseGeometryTransferRate(6000)`은 **전달량 계수**다. DemoWetness의 factor `0.5`는 현재 Rate `3000`이다. 초기 기준값 100의 Rate 50에서 흐름을 재보정했다. [[05_Decisions/0012_Geometry-Rate-Recalibration|Decision 0012]] 단위는 `State/(world-length × second)`로, 출발점을 찾는 데 필요한 **이동 속도** `world-length/second`와 다르다. 이 값을 속도로 그대로 사용할 수는 없다. [[05_Decisions/0008_Normalized-Transport-Factors|Decision 0008]]
 

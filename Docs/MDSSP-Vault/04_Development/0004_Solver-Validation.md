@@ -187,4 +187,4 @@ Fixed·Auto 분리의 실행 정책은 [[0013_Fixed-Timestep-and-Auto-Substeppin
 - Auto substepping ON에서는 더 큰 Rate가 안전 간격을 줄여 필요한 Solver 반복 수를 늘릴 수 있다. 현재 기본 Fixed ON·Auto OFF에서는 dt=1/60초가 유지된다. frame당 8회 한도와 미처리 시간 이월은 유지된다 ([[0013_Fixed-Timestep-and-Auto-Substepping|Decision 0013]]).
 - 같은 월드 초기분포의 128·256·512 이동 거리·분포·총량, dt-halving 및 GPU 비용 비교는 [[0004_Solver-Validation#실험 초안 — 해상도와 시간 간격에 따른 Transport|해상도·시간 비교 실험 초안]]을 따른다.
 
-관련 코드: `Source/SurfaceStateSystem/Types/SurfaceSolverRates.h`, `Tests/SurfaceGPUResourceTests.cpp`, `Tests/SceneResourceTests.cpp`.
+관련 코드: `Source/SurfaceState/Types/SurfaceSolverRates.h`, `Tests/SurfaceGPUResourceTests.cpp`, `Tests/SceneResourceTests.cpp`.

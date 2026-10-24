@@ -1409,7 +1409,7 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 
 각 방향의 source flux 수식과 Pass 1/Pass 2 역할, Current/Next State 계산은 유지한다. 재사용 대상은 모든 incoming edge에서 같은 target 항목이고, 서로 다른 source가 요구하는 값은 합치지 않는다.
 
-관련 구현: [SurfaceSolverPass2.comp](../../../Shaders/Simulation/SurfaceSolver/SurfaceSolverPass2.comp), [SurfaceSolverCommon.glsl](../../../Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl)
+관련 구현: [SurfaceSolverPass2.comp](../../../Shaders/Simulation/Solver/SurfaceSolverPass2.comp), [SurfaceSolverCommon.glsl](../../../Shaders/Simulation/Solver/SurfaceSolverCommon.glsl)
 
 #### Stencil State 샘플링
 
@@ -1417,7 +1417,7 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 - `SampleStateSaturation`은 center에서 Surface, Profile, chart와 channel 지원을 확인하고, 2×2 bilinear 이웃에 대해 chart/Profile 동일 여부를 검사한 뒤 helper를 쓴다. `HeightFieldSmoothing`도 center 지원 channel 검사 이후 같은 Profile인 이웃에 helper를 사용한다. `OverlayCoverageSmoothing`은 중심 Profile의 지원 여부를 loop 전에 한 번 확인하고, 최대 5×5 이웃에서 같은 Surface/Profile/chart texel만 처리한다.
 - 이 검사 순서로 이웃마다 중복되던 Surface/Profile/support table 조회를 줄인다. 이웃의 면적·State 값은 달라질 수 있으므로 texel별 capacity·amount read는 유지한다. 기존 kernel weight, 면적 보정과 출력 clamp는 변경하지 않았다.
 
-관련 구현: [StateSampling.glsl](../../../Shaders/Rendering/Surface/StateSampling.glsl), [HeightFieldSmoothing.comp](../../../Shaders/Rendering/Surface/HeightFieldSmoothing.comp), [OverlayCoverageSmoothing.comp](../../../Shaders/Rendering/StateOverlay/OverlayCoverageSmoothing.comp)
+관련 구현: [StateSampling.glsl](../../../Shaders/Rendering/Surface/StateTexture/StateSampling.glsl), [HeightFieldSmoothing.comp](../../../Shaders/Rendering/Surface/Smoothing/HeightFieldSmoothing.comp), [OverlayCoverageSmoothing.comp](../../../Shaders/Rendering/Overlay/Coverage/OverlayCoverageSmoothing.comp)
 
 #### 동적 concavity와 조명
 
@@ -1425,7 +1425,7 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 - Lit 경로는 `V`, `L`, `H`와 `NoV`, `NoL`, `NoH`, `VoH`를 base direct-light 계산에 사용한다. Wet/film `EvaluateSpecularLobe`가 이 공통 항을 입력으로 받게 해 lobe마다 수행하던 vector normalization과 dot product를 제거하고, 각 roughness에 필요한 GGX distribution·visibility·Fresnel은 유지한다.
 - `Wet == 0` 또는 Wetness specular strength가 0이면 Wet lobe를, `Film == 0`이면 Film lobe를 생략한다. 색상·coverage·roughness 값 자체는 기존 식과 같다.
 
-관련 구현: [SurfaceDynamicWeightsUpdate.comp](../../../Shaders/Simulation/SurfaceDynamicWeightsUpdate.comp), [Lighting.glsl](../../../Shaders/Rendering/Surface/Lighting.glsl)
+관련 구현: [SurfaceDynamicWeightsUpdate.comp](../../../Shaders/Simulation/Geometry/SurfaceDynamicWeightsUpdate.comp), [Lighting.glsl](../../../Shaders/Rendering/Surface/Lighting/Lighting.glsl)
 
 #### Release GPU validation
 
@@ -1434,7 +1434,7 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 - 지원 channel, Surface·chart/Profile 경계, 0 이하 capacity/amount, stencil 범위처럼 결과 의미를 정하는 분기는 Release에서도 유지한다. 진단용 Debug shader도 항상 검사를 유지하며 Vulkan validation layer 설정과는 별도다.
 - 이 경로는 resource descriptor나 CPU 검증을 대신하지 않는다. Release에서 buffer 계약이 깨진 경우 out-of-bounds access가 날 수 있으므로 입력·ABI 검증은 유지해야 한다.
 
-관련 구현: `CMakeLists.txt`, [StateSampling.glsl](../../../Shaders/Rendering/Surface/StateSampling.glsl), [SurfaceSolverCommon.glsl](../../../Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl), [SurfaceDynamicGeometryUpdate.comp](../../../Shaders/Simulation/SurfaceDynamicGeometryUpdate.comp)
+관련 구현: `CMakeLists.txt`, [StateSampling.glsl](../../../Shaders/Rendering/Surface/StateTexture/StateSampling.glsl), [SurfaceSolverCommon.glsl](../../../Shaders/Simulation/Solver/SurfaceSolverCommon.glsl), [SurfaceDynamicGeometryUpdate.comp](../../../Shaders/Simulation/Geometry/SurfaceDynamicGeometryUpdate.comp)
 
 #### Dirty height tolerance
 
@@ -1443,13 +1443,13 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 - 비교 기준은 매 step의 직전 높이가 아니라 마지막으로 생성한 `BuiltHeight`다. 작은 step 변화가 계속 같은 방향으로 쌓이면 누적 차이가 tolerance를 넘는 시점에 갱신된다.
 - 이 최적화는 임계값 이하의 형상 변화를 바로 반영하지 않으므로 정확히 같은 형상을 보장하지 않는다. 큰 높이 변화와 normal 길이가 유효하지 않은 경우 dirty 처리한다. Debug에서는 저장 높이/normal의 NaN·Inf도 dirty로 처리하며 Release는 유한한 GPU 입력 계약을 따른다.
 
-관련 구현: [SurfaceAccumulationHeight.comp](../../../Shaders/Simulation/SurfaceAccumulationHeight.comp)
+관련 구현: [SurfaceAccumulationHeight.comp](../../../Shaders/Simulation/Geometry/SurfaceAccumulationHeight.comp)
 
 ### RawFlux cache 비교 UI — 제거 및 A/B variant 복귀 이력
 
 초기 구현에서는 Debug UI의 `Cache Comparison > RawFlux Cache` 체크박스와 specialization pipeline 전환으로 비교했다. Decision 0025에서 방향별 cache와 비교 UI를 제거했으며, 이후 GPU 측정을 위해 Decision 0029에서 cache/layout/precision 비교를 별도 compile-time SPIR-V variant로 복귀시키기로 결정했다. 이 항목의 과거 구현 세부는 이전 방식을 기록한다.
 
-관련 구현: `Source/DebugUI/DebugUI.cpp`, `Source/SurfaceState/State/SurfaceStateSolver.cpp`; Directional RawFlux Cache
+관련 구현: `Source/DebugUI/Panels/DebugUISimulation.cpp`, `Source/SurfaceState/Solver/SurfaceStateSolver.cpp`; Directional RawFlux Cache
 
 ### 검증 및 성능 기록
 
@@ -1483,4 +1483,4 @@ UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초�
 - 메모리 계산은 인스턴스별 RGBA16F 배열 이미지가 `8 × maxWidth × maxHeight × SurfaceCount` byte(이미지 padding·alignment 제외), 공유 Geometry의 경계 flag가 `uint32` 기준 `4 × TexelCount` byte라는 가정이다. State의 원본 SSBO는 시뮬레이션과 경계 fallback용으로 유지한다.
 - Release 셰이더 및 MDSS 실행 파일 빌드, Debug/Release SPIR-V 검증과 Mountain `.Scene`의 2프레임 실행을 확인했다. 해당 실행은 Apple M1/MoltenVK에서 종료 코드 0이며 Vulkan validation 오류를 출력하지 않았다. 실제 GPU 시간과 경계 fallback 비율은 아직 측정하지 않았다. RGBA16F의 `[0,1]` 양자화 오차는 float SSBO 경로와 같지 않으므로 외관 비교가 필요하다.
 
-관련 구현: [RenderStateTexture.cpp](../../../Source/Rendering/RenderStateTexture.cpp), [RenderStateTexture.comp](../../../Shaders/Rendering/Surface/RenderStateTexture.comp), [RenderStateSampling.glsl](../../../Shaders/Rendering/Surface/RenderStateSampling.glsl)
+관련 구현: [RenderStateTexture.cpp](../../../Source/Rendering/Surface/RenderStateTexture.cpp), [RenderStateTexture.comp](../../../Shaders/Rendering/Surface/StateTexture/RenderStateTexture.comp), [RenderStateSampling.glsl](../../../Shaders/Rendering/Surface/StateTexture/RenderStateSampling.glsl)

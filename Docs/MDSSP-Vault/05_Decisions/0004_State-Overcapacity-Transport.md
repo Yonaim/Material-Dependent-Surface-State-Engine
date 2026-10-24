@@ -61,7 +61,7 @@ Next_i = max(Current_i + EventInput_i + Incoming_i - Outgoing_i - Decay_i, 0)
 
 ### 구현 상태
 
-`Shaders/Simulation/SurfaceSolver/SurfaceSolverCommon.glsl::saturation()`은 상한 없는 `Current / Capacity`를 반환하고 `SurfaceSolverPass2.comp`는 `max(Current + Input + Incoming - Outgoing - Decay, 0)`을 기록한다. Pass 1의 가용량·alpha, 두 pass·barrier·descriptor·GPU ABI는 유지한다. 기존 Geometry source/sink fixture의 기대값을 기준량 초과 보존에 맞췄다. 앱·compute shader 빌드와 CTest 5개가 통과했다. 기존 Geometry fixture와 multichannel cache fixture에서 source 유출 제한, 여러 이웃 유입·EventInput의 초과량 보존, 서로 다른 Capacity/Profile, 입력 소비, unsupported/invalid 처리를 GPU로 확인했다. 아래 후속 항목의 전수 검증과 timestep 비교는 별도 수행한다. 이 결정 자체의 추가 payload는 0 B이며, 성능 캐시 payload와 구분한다.
+`Shaders/Simulation/Solver/StateMath.glsl::saturation()`은 상한 없는 `Current / Capacity`를 반환하고 `SurfaceSolverPass2.comp`는 `max(Current + Input + Incoming - Outgoing - Decay, 0)`을 기록한다. Pass 1의 가용량·alpha, 두 pass·barrier·descriptor·GPU ABI는 유지한다. 기존 Geometry source/sink fixture의 기대값을 기준량 초과 보존에 맞췄다. 앱·compute shader 빌드와 CTest 5개가 통과했다. 기존 Geometry fixture와 multichannel cache fixture에서 source 유출 제한, 여러 이웃 유입·EventInput의 초과량 보존, 서로 다른 Capacity/Profile, 입력 소비, unsupported/invalid 처리를 GPU로 확인했다. 아래 후속 항목의 전수 검증과 timestep 비교는 별도 수행한다. 이 결정 자체의 추가 payload는 0 B이며, 성능 캐시 payload와 구분한다.
 
 ## Alternatives Considered — 다른 방법
 

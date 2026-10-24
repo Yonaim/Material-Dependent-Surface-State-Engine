@@ -173,7 +173,7 @@ Simulation texel mapping으로 지정된 triangle/barycentric 좌표에서 Mater
 | Tangent handedness | mirrored tangent frame에서 bitangent 방향을 반전함 |
 | 잘못된 입력 fallback 신호 | 퇴화 tangent, 누락/잘못된 texture, triangle 또는 Surface 불일치는 geometric normal fallback을 요청함 |
 
-테스트 코드는 `Tests/NormalMapTransferTests.cpp`, CPU 변환은 `Source/SurfaceStateSystem/Mapping/NormalMapTransferNormalBuilder.cpp`에 있다. 전처리 fixture는 Vulkan device 없이 실행한다.
+테스트 코드는 `Tests/NormalMapTransferTests.cpp`, CPU 변환은 `Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp`에 있다. 전처리 fixture는 Vulkan device 없이 실행한다.
 
 ### GPU cache 및 Solver fixture
 
