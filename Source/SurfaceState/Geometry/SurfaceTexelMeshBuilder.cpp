@@ -26,6 +26,7 @@ namespace MDSS::SurfaceState
             glm::uvec4    Edge{0};
             std::uint32_t Count = 0;
         };
+
         std::map<std::pair<std::uint32_t, std::uint32_t>, TEdgeOccurrence> Edges;
         for (std::size_t I = 0; I + 2 < Mesh.Indices.size(); I += 3)
             for (std::size_t C = 0; C < 3; ++C)
@@ -38,6 +39,7 @@ namespace MDSS::SurfaceState
                 if (Occurrence.Count++ == 0)
                     Occurrence.Edge = {A, B, Other, 0};
             }
+
         for (const auto& [Key, Occurrence] : Edges)
             if (Occurrence.Count == 1)
                 Mesh.BoundaryEdges.push_back(Occurrence.Edge);
@@ -50,11 +52,13 @@ namespace MDSS::SurfaceState
             std::uint32_t A, B, Triangle, Edge;
         };
         using TEdgeKey = std::pair<std::uint32_t, std::uint32_t>;
+
         const auto TriangleCount = static_cast<std::uint32_t>(Mesh.Indices.size() / 3U);
         Mesh.SideAdjacency.assign(static_cast<std::size_t>(TriangleCount) + Mesh.BoundaryEdges.size(),
                                   glm::uvec4(InvalidTexelIndex));
         std::vector<TTriangleEdge> TriangleEdges;
         TriangleEdges.reserve(Mesh.Indices.size());
+
         for (std::uint32_t Triangle = 0; Triangle < TriangleCount; ++Triangle)
             for (std::uint32_t Edge = 0; Edge < 3U; ++Edge)
             {
@@ -63,11 +67,13 @@ namespace MDSS::SurfaceState
                 const auto Key = std::minmax(A, B);
                 TriangleEdges.push_back({Key.first, Key.second, Triangle, Edge});
             }
+
         std::sort(TriangleEdges.begin(),
                   TriangleEdges.end(),
                   [](const auto& A, const auto& B) { return std::tie(A.A, A.B) < std::tie(B.A, B.B); });
         std::map<TEdgeKey, std::vector<std::uint32_t>>                                          BoundaryEdges;
         std::unordered_map<std::uint32_t, std::vector<std::pair<std::uint32_t, std::uint32_t>>> BoundaryVertices;
+
         for (std::uint32_t Boundary = 0; Boundary < Mesh.BoundaryEdges.size(); ++Boundary)
         {
             const auto& Edge = Mesh.BoundaryEdges[Boundary];
@@ -76,6 +82,7 @@ namespace MDSS::SurfaceState
             BoundaryVertices[Edge.x].push_back({Boundary, 0U});
             BoundaryVertices[Edge.y].push_back({Boundary, 1U});
         }
+
         for (std::size_t Begin = 0; Begin < TriangleEdges.size();)
         {
             const auto  Key = TEdgeKey{TriangleEdges[Begin].A, TriangleEdges[Begin].B};
@@ -107,6 +114,7 @@ namespace MDSS::SurfaceState
         {
             if (Edges.size() != 2U)
                 continue; // An open end or a branch is a real discontinuity.
+
             Mesh.SideAdjacency[TriangleCount + Edges[0].first][Edges[0].second] = TriangleCount + Edges[1].first;
             Mesh.SideAdjacency[TriangleCount + Edges[1].first][Edges[1].second] = TriangleCount + Edges[0].first;
         }

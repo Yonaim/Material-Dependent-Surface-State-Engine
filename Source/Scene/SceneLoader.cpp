@@ -7,7 +7,7 @@
 
 #include "AssetManager/Core/AssetManager.h"
 #include "Scene/StaticMeshInstance.h"
-#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
+#include "SurfaceState/Runtime/SurfaceDataManager.h"
 #include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <cmath>

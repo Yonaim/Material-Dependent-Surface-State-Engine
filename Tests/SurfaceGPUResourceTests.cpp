@@ -3,9 +3,9 @@
  * @brief Vulkan resource layout, 초기화와 descriptor 연결을 검증한다.
  */
 
-#include "SurfaceState/GPU/SurfaceGPUBufferPool.h"
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
-#include "SurfaceState/State/SurfaceStateSolver.h"
+#include "SurfaceState/GPU/Resources/SurfaceGPUBufferPool.h"
+#include "SurfaceState/GPU/Resources/SurfaceGPUResources.h"
+#include "SurfaceState/Solver/SurfaceStateSolver.h"
 #include "SurfaceState/Types/SurfaceSolverRates.h"
 #include "SurfaceState/Types/SurfaceStateRegistry.h"
 

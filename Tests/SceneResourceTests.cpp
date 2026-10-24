@@ -4,13 +4,13 @@
  */
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
-#include "DebugUI/DebugUI.h"
+#include "DebugUI/Core/DebugUI.h"
 #include "GPU/Vulkan/VulkanContext.h"
 #include "Logger/Logger.h"
-#include "Rendering/Renderer.h"
+#include "Rendering/Core/Renderer.h"
 #include "Scene/SceneLoader.h"
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
-#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
+#include "SurfaceState/GPU/Resources/SurfaceGPUResources.h"
+#include "SurfaceState/Runtime/SurfaceDataManager.h"
 #include "SurfaceState/SurfaceStateSystem.h"
 
 #define GLFW_INCLUDE_NONE

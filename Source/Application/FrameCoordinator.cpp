@@ -1,6 +1,6 @@
 #include "Application/FrameCoordinator.h"
 
-#include "DebugUI/DebugUI.h"
+#include "DebugUI/Core/DebugUI.h"
 #include "SurfaceState/SurfaceStateSystem.h"
 
 #include <algorithm>

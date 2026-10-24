@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
+#include "SurfaceState/GPU/Resources/SurfaceGPUResources.h"
 
 #include <optional>
 #include <string>

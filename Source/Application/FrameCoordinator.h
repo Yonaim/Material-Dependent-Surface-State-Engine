@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SurfaceState/State/SimulationClock.h"
+#include "SurfaceState/Solver/SimulationClock.h"
 
 #include <vulkan/vulkan.h>
 

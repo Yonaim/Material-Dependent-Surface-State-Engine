@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "SurfaceState/GPU/SurfaceGPUBufferPool.h"
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
+#include "SurfaceState/GPU/Resources/SurfaceGPUBufferPool.h"
+#include "SurfaceState/GPU/Resources/SurfaceGPUResources.h"
+#include "SurfaceState/Solver/SurfaceStateSolver.h"
 #include "SurfaceState/State/SurfaceInput.h"
-#include "SurfaceState/State/SurfaceStateSolver.h"
 
 #include <glm/mat3x3.hpp>
 #include <map>

@@ -4,13 +4,11 @@
  */
 #include "SurfaceState/Debug/TexelInspector.h"
 
+#include "ShaderCatalog.h"
+
 #include <cmath>
 #include <fstream>
 #include <stdexcept>
-
-#ifndef MDSS_SHADER_DIR
-#define MDSS_SHADER_DIR "Shaders"
-#endif
 
 namespace MDSS::SurfaceState
 {
@@ -54,7 +52,7 @@ namespace MDSS::SurfaceState
             Info.pushConstantRangeCount = 1;
             Info.pPushConstantRanges = &Push;
             RequireVk(vkCreatePipelineLayout(Device, &Info, nullptr, &Layout));
-            std::ifstream File(std::string(MDSS_SHADER_DIR) + "/Debug/TexelInspector.comp.spv",
+            std::ifstream File(Shaders::Path(Shaders::EShader::Debug_TexelInspector_comp),
                                std::ios::binary | std::ios::ate);
             if (!File)
                 throw std::runtime_error("Cannot open Texel Inspector shader.");

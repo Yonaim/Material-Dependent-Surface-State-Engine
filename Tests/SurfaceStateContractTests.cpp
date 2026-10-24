@@ -6,7 +6,7 @@
 #include "AssetManager/Assets/SRProfileAsset.h"
 #include "AssetManager/Loaders/SRProfileLoader.h"
 #include "SurfaceState/Geometry/SharedSurfaceGeometryData.h"
-#include "SurfaceState/Preprocessing/SurfaceRuntimeData.h"
+#include "SurfaceState/Runtime/SurfaceRuntimeData.h"
 #include "SurfaceState/State/SurfaceInput.h"
 #include "SurfaceState/State/SurfaceInstanceStateData.h"
 #include "SurfaceState/Types/SurfaceStateRegistry.h"

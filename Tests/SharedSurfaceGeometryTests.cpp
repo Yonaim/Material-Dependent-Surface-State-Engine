@@ -9,7 +9,7 @@
 #include "SurfaceState/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceState/Geometry/SurfaceTexelMeshBuilder.h"
 #include "SurfaceState/Mapping/SurfaceMappingBuilder.h"
-#include "SurfaceState/Preprocessing/SurfaceRuntimeData.h"
+#include "SurfaceState/Runtime/SurfaceRuntimeData.h"
 
 #include <algorithm>
 #include <cmath>

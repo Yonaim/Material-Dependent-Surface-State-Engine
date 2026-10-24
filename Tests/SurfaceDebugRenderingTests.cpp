@@ -8,12 +8,12 @@
 #include "GPU/Vulkan/Resource/GPUImage.h"
 #include "GPU/Vulkan/Resource/GPUImageView.h"
 #include "GPU/Vulkan/VulkanContext.h"
-#include "Rendering/AccumulationOverlaySides.h"
-#include "Rendering/HeightFieldSmoothing.h"
-#include "Rendering/Renderer.h"
-#include "SurfaceState/Debug/TexelGeometryPreview.h"
+#include "Rendering/Core/Renderer.h"
+#include "Rendering/Overlay/AccumulationOverlaySides.h"
+#include "Rendering/Overlay/Geometry/TexelGeometryPreview.h"
+#include "Rendering/Surface/HeightFieldSmoothing.h"
 #include "SurfaceState/Debug/TexelInspector.h"
-#include "SurfaceState/GPU/SurfaceGPUResources.h"
+#include "SurfaceState/GPU/Resources/SurfaceGPUResources.h"
 
 #include <algorithm>
 #include <array>

@@ -11,7 +11,7 @@
 #include "Scene/Camera.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
-#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
+#include "SurfaceState/Runtime/SurfaceDataManager.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>

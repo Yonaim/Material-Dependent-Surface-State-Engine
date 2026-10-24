@@ -7,7 +7,7 @@
 #ifndef SURFACE_DEBUG_SET
 #define SURFACE_DEBUG_SET 1
 #endif
-#include "Surface/SurfaceStateData.glsl"
+#include "Shared/SurfaceState/SurfaceStateData.glsl"
 
 struct TDebugAccumulation
 {

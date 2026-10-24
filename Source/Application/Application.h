@@ -10,7 +10,7 @@
 #include "AssetManager/Core/AssetManager.h"
 #include "GPU/Vulkan/VulkanContext.h"
 #include "Scene/Scene.h"
-#include "SurfaceState/Preprocessing/SurfaceDataManager.h"
+#include "SurfaceState/Runtime/SurfaceDataManager.h"
 
 #include <cstddef>
 #include <memory>

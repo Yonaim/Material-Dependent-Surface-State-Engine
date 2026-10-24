@@ -8,13 +8,13 @@
 #include "Application/BenchmarkOptions.h"
 #include "Application/EngineConfig.h"
 #include "Application/FrameCoordinator.h"
-#include "DebugUI/DebugUI.h"
+#include "DebugUI/Core/DebugUI.h"
 #include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
-#include "Rendering/Renderer.h"
+#include "Rendering/Core/Renderer.h"
 #include "Scene/SceneLoader.h"
 #include "Scene/StaticMeshInstance.h"
-#include "SurfaceState/State/SimulationClock.h"
+#include "SurfaceState/Solver/SimulationClock.h"
 #include "SurfaceState/SurfaceStateSystem.h"
 
 #include <algorithm>

@@ -127,38 +127,41 @@ target_include_directories(MDSS SYSTEM PRIVATE
 )
 target_link_libraries(MDSS PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
 
-file(GLOB_RECURSE MDSS_SHADER_SOURCES CONFIGURE_DEPENDS
+include(CMake/ShaderManifest.cmake)
+file(GLOB_RECURSE MDSS_DISCOVERED_SHADER_ENTRIES CONFIGURE_DEPENDS
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.vert"
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.comp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.geom"
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.tesc"
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.tese"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.comp"
 )
+foreach(ShaderRelativePath IN LISTS MDSS_DISCOVERED_SHADER_ENTRIES)
+    if(NOT ShaderRelativePath IN_LIST MDSS_SHADER_ENTRIES AND
+       NOT ShaderRelativePath IN_LIST MDSS_SHADER_PLACEHOLDERS)
+        message(FATAL_ERROR "Unregistered shader entry point: ${ShaderRelativePath}")
+    endif()
+endforeach()
 
 file(GLOB_RECURSE MDSS_SHADER_INCLUDES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/*.glsl"
 )
 
-# Reconfigure when a placeholder shader receives its first implementation.
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MDSS_SHADER_SOURCES})
-
 # Keep shader binaries configuration-specific so Debug validation SPIR-V cannot
 # be reused by a Release build (or vice versa).
 set(MDSS_SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/Shaders/$<CONFIG>")
 set(MDSS_SHADER_BINARIES)
-set(MDSS_VARIANT_SHADERS
-    Simulation/SurfaceSolver/SurfaceSolverPass1.comp
-    Simulation/SurfaceSolver/SurfaceSolverPass2.comp
-    Simulation/SurfaceDynamicWeightsUpdate.comp
-    Rendering/Surface/HeightFieldSmoothing.comp
-    Rendering/StateOverlay/OverlayCoverageSmoothing.comp
-    Rendering/Surface/RenderStateTextureSmoothing.comp
-    Rendering/Surface/SurfaceLit.frag
-    Rendering/Surface/BaseSurfaceLit.frag
-    Rendering/Surface/TexelSurfaceLit.frag
-    Rendering/StateOverlay/OverlayCombined.frag
-)
+
+function(mdss_catalog_add ShaderRelativePath VariantName)
+    string(REPLACE "/" "_" ShaderId "${ShaderRelativePath}")
+    string(REPLACE "." "_" ShaderId "${ShaderId}")
+    if(NOT "${VariantName}" STREQUAL "")
+        set(ShaderId "${ShaderId}_${VariantName}")
+        set(ShaderRelativePath "${ShaderRelativePath}.${VariantName}")
+    endif()
+    set_property(GLOBAL APPEND PROPERTY MDSS_SHADER_CATALOG "${ShaderId}|${ShaderRelativePath}.spv")
+endfunction()
 
 function(mdss_add_shader_variant ShaderRelativePath VariantName)
     set(ShaderSource "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/${ShaderRelativePath}")
@@ -180,22 +183,14 @@ function(mdss_add_shader_variant ShaderRelativePath VariantName)
         VERBATIM
     )
     set(MDSS_SHADER_BINARIES ${MDSS_SHADER_BINARIES} "${ShaderBinary}" PARENT_SCOPE)
+    mdss_catalog_add("${ShaderRelativePath}" "${VariantName}")
 endfunction()
 
-foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
-    file(STRINGS "${ShaderSource}" ShaderVersionLine
-        LIMIT_COUNT 1
-        REGEX "^[ \t]*#version"
-    )
-    if(NOT ShaderVersionLine)
-        message(STATUS "Skipping placeholder shader: ${ShaderSource}")
-        continue()
+foreach(ShaderRelativePath IN LISTS MDSS_SHADER_ENTRIES)
+    set(ShaderSource "${CMAKE_CURRENT_SOURCE_DIR}/Shaders/${ShaderRelativePath}")
+    if(NOT EXISTS "${ShaderSource}")
+        message(FATAL_ERROR "Shader manifest references missing source: ${ShaderRelativePath}")
     endif()
-
-    file(RELATIVE_PATH ShaderRelativePath
-        "${CMAKE_CURRENT_SOURCE_DIR}/Shaders"
-        "${ShaderSource}"
-    )
     if(ShaderRelativePath IN_LIST MDSS_VARIANT_SHADERS)
         continue()
     endif()
@@ -218,42 +213,27 @@ foreach(ShaderSource IN LISTS MDSS_SHADER_SOURCES)
     )
 
     list(APPEND MDSS_SHADER_BINARIES "${ShaderBinary}")
+    mdss_catalog_add("${ShaderRelativePath}" "")
 endforeach()
 
-foreach(RawMode RANGE 0 4)
-    foreach(WeightMode RANGE 0 1)
-        foreach(PassName SurfaceSolverPass1 SurfaceSolverPass2)
-            mdss_add_shader_variant("Simulation/SurfaceSolver/${PassName}.comp" "r${RawMode}w${WeightMode}"
-                "-DMDSS_RAW_MODE=${RawMode}" "-DMDSS_HALF_WEIGHTS=${WeightMode}")
-        endforeach()
-    endforeach()
+mdss_register_shader_variants()
+
+get_property(MDSS_SHADER_CATALOG GLOBAL PROPERTY MDSS_SHADER_CATALOG)
+set(MDSS_SHADER_CATALOG_HEADER "#pragma once\n#include <string>\n#include <stdexcept>\n\nnamespace MDSS::Shaders\n{\n    enum class EShader\n    {\n")
+foreach(Entry IN LISTS MDSS_SHADER_CATALOG)
+    string(REPLACE "|" ";" Parts "${Entry}")
+    list(GET Parts 0 Id)
+    string(APPEND MDSS_SHADER_CATALOG_HEADER "        ${Id},\n")
 endforeach()
-foreach(WeightMode RANGE 0 1)
-    mdss_add_shader_variant("Simulation/SurfaceDynamicWeightsUpdate.comp" "w${WeightMode}"
-        "-DMDSS_HALF_WEIGHTS=${WeightMode}")
+string(APPEND MDSS_SHADER_CATALOG_HEADER "    };\n\n    inline std::string Path(EShader Shader)\n    {\n        switch (Shader)\n        {\n")
+foreach(Entry IN LISTS MDSS_SHADER_CATALOG)
+    string(REPLACE "|" ";" Parts "${Entry}")
+    list(GET Parts 0 Id)
+    list(GET Parts 1 RelativePath)
+    string(APPEND MDSS_SHADER_CATALOG_HEADER "            case EShader::${Id}: return std::string(MDSS_SHADER_DIR) + \"/${RelativePath}\";\n")
 endforeach()
-foreach(HaloMode RANGE 0 1)
-    mdss_add_shader_variant("Rendering/Surface/HeightFieldSmoothing.comp" "h${HaloMode}"
-        "-DMDSS_HEIGHT_HALO=${HaloMode}")
-    mdss_add_shader_variant("Rendering/StateOverlay/OverlayCoverageSmoothing.comp" "h${HaloMode}"
-        "-DMDSS_COVERAGE_HALO=${HaloMode}")
-endforeach()
-mdss_add_shader_variant("Rendering/Surface/RenderStateTextureSmoothing.comp" "direct"
-    "-DMDSS_SMOOTH_MODE=0" "-DMDSS_SMOOTH_HALO=0")
-foreach(AxisMode RANGE 1 2)
-    foreach(HaloMode RANGE 0 1)
-        mdss_add_shader_variant("Rendering/Surface/RenderStateTextureSmoothing.comp" "a${AxisMode}h${HaloMode}"
-            "-DMDSS_SMOOTH_MODE=${AxisMode}" "-DMDSS_SMOOTH_HALO=${HaloMode}")
-    endforeach()
-endforeach()
-foreach(FragmentMode RANGE 0 2)
-    foreach(FragmentName SurfaceLit BaseSurfaceLit TexelSurfaceLit)
-        mdss_add_shader_variant("Rendering/Surface/${FragmentName}.frag" "m${FragmentMode}"
-            "-DMDSS_FRAGMENT_MODE=${FragmentMode}")
-    endforeach()
-    mdss_add_shader_variant("Rendering/StateOverlay/OverlayCombined.frag" "m${FragmentMode}"
-        "-DMDSS_FRAGMENT_MODE=${FragmentMode}")
-endforeach()
+string(APPEND MDSS_SHADER_CATALOG_HEADER "        }\n        throw std::invalid_argument(\"Unknown shader id\");\n    }\n}\n")
+file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/generated/ShaderCatalog.h" CONTENT "${MDSS_SHADER_CATALOG_HEADER}")
 
 add_custom_target(MDSS_Shaders DEPENDS ${MDSS_SHADER_BINARIES})
 add_dependencies(MDSS MDSS_Shaders)
@@ -266,6 +246,7 @@ target_compile_definitions(MDSS PRIVATE
     GLM_FORCE_RADIANS
     GLM_FORCE_DEPTH_ZERO_TO_ONE
 )
+target_include_directories(MDSS PRIVATE "${CMAKE_BINARY_DIR}/generated")
 
 if(MSVC)
     target_compile_options(MDSS PRIVATE /W4 /permissive-)
@@ -279,13 +260,25 @@ set_target_properties(MDSS PROPERTIES
 
 include(CTest)
 if(BUILD_TESTING)
+    set(MDSS_SURFACE_PACKING_SOURCES
+        Source/SurfaceState/GPU/Packing/SharedGeometryPacking.cpp
+        Source/SurfaceState/GPU/Packing/TransferWeightPacking.cpp
+        Source/SurfaceState/GPU/Packing/ProfilePacking.cpp
+        Source/SurfaceState/GPU/Packing/SparseMetadataLayout.cpp
+    )
+    set(MDSS_SURFACE_RESOURCE_SOURCES
+        Source/SurfaceState/GPU/Resources/SharedGeometryResources.cpp
+        Source/SurfaceState/GPU/Resources/ProfileResources.cpp
+        Source/SurfaceState/GPU/Resources/InstanceResources.cpp
+        Source/SurfaceState/GPU/Resources/DescriptorResources.cpp
+    )
     add_executable(MDSS_SimulationTransportTests
         Tests/SimulationTransportTests.cpp
         Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
         Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
         Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
         Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
-        Source/SurfaceState/GPU/SurfaceGPUResourceLayout.cpp
+        ${MDSS_SURFACE_PACKING_SOURCES}
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
     )
@@ -304,6 +297,7 @@ if(BUILD_TESTING)
         add_executable(MDSS_SceneResourceTests Tests/SceneResourceTests.cpp Tests/SurfaceDebugRenderingTests.cpp ${MDSS_SCENE_TEST_SOURCES})
         add_dependencies(MDSS_SceneResourceTests MDSS_Shaders)
         target_include_directories(MDSS_SceneResourceTests PRIVATE Source)
+        target_include_directories(MDSS_SceneResourceTests PRIVATE "${CMAKE_BINARY_DIR}/generated")
         target_include_directories(MDSS_SceneResourceTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
         target_link_libraries(MDSS_SceneResourceTests PRIVATE MDSS_ImGui glfw Vulkan::Vulkan glm::glm nlohmann_json::nlohmann_json)
         target_compile_definitions(MDSS_SceneResourceTests PRIVATE
@@ -340,8 +334,8 @@ if(BUILD_TESTING)
         Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
         Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
         Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp
-        Source/SurfaceState/Preprocessing/SurfaceCache.cpp
-        Source/SurfaceState/GPU/SurfaceGPUResourceLayout.cpp
+        Source/SurfaceState/Cache/SurfaceCache.cpp
+        ${MDSS_SURFACE_PACKING_SOURCES}
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
     )
@@ -366,7 +360,7 @@ if(BUILD_TESTING)
         Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
         Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
         Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceState/Preprocessing/SurfaceRuntimeData.cpp
+        Source/SurfaceState/Runtime/SurfaceRuntimeData.cpp
         Source/SurfaceState/State/SurfaceInstanceStateData.cpp
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
@@ -431,7 +425,7 @@ if(BUILD_TESTING)
         Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp
         Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp
         Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp
-        Source/SurfaceState/Preprocessing/SurfaceRuntimeData.cpp
+        Source/SurfaceState/Runtime/SurfaceRuntimeData.cpp
     )
     target_include_directories(MDSS_SharedSurfaceGeometryTests PRIVATE Source)
     target_include_directories(MDSS_SharedSurfaceGeometryTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}")
@@ -451,15 +445,16 @@ if(BUILD_TESTING)
         Source/SurfaceState/Geometry/SurfaceTexelMeshBuilder.cpp
         Source/Logger/Logger.cpp
         Source/SurfaceState/Geometry/SharedSurfaceGeometryData.cpp
-        Source/SurfaceState/GPU/SurfaceGPUResourceLayout.cpp
-        Source/SurfaceState/GPU/SurfaceGPUResources.cpp
-        Source/SurfaceState/State/SurfaceStateSolver.cpp
+        ${MDSS_SURFACE_PACKING_SOURCES}
+        ${MDSS_SURFACE_RESOURCE_SOURCES}
+        Source/SurfaceState/Solver/SurfaceStateSolver.cpp
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
         Source/GPU/Vulkan/Resource/GPUBuffer.cpp
     )
     add_dependencies(MDSS_SurfaceGPUResourceTests MDSS_Shaders)
     target_include_directories(MDSS_SurfaceGPUResourceTests PRIVATE Source)
+    target_include_directories(MDSS_SurfaceGPUResourceTests PRIVATE "${CMAKE_BINARY_DIR}/generated")
     target_link_libraries(MDSS_SurfaceGPUResourceTests PRIVATE Vulkan::Vulkan glm::glm)
     target_compile_definitions(MDSS_SurfaceGPUResourceTests PRIVATE
         MDSS_SHADER_DIR="${MDSS_SHADER_OUTPUT_DIR}"

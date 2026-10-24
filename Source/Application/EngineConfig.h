@@ -4,6 +4,7 @@
  */
 #pragma once
 #include <filesystem>
+
 namespace MDSS
 {
     [[nodiscard]] std::filesystem::path GetEngineConfigDirectory();

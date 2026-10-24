@@ -4,12 +4,12 @@
  */
 #include "AssetManager/Loaders/OBJLoader.h"
 #include "AssetManager/Loaders/TextureLoader.h"
-#include "SurfaceState/GPU/SurfaceGPUResourceLayout.h"
+#include "SurfaceState/Cache/SurfaceCache.h"
+#include "SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h"
 #include "SurfaceState/Geometry/MesoGeometryBuilder.h"
 #include "SurfaceState/Geometry/SurfaceGeometryBuilder.h"
 #include "SurfaceState/Mapping/NormalMapTransferNormalBuilder.h"
 #include "SurfaceState/Mapping/SurfaceMappingBuilder.h"
-#include "SurfaceState/Preprocessing/SurfaceCache.h"
 
 #include <algorithm>
 #include <chrono>
