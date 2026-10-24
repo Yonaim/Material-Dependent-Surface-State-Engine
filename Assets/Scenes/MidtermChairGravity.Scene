@@ -1,0 +1,107 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/MidtermChairGravity.DemoAnim",
+  "camera": {
+    "position": [
+      1.65,
+      -2.25,
+      1.6
+    ],
+    "target": [
+      0,
+      -0.2,
+      0.56
+    ],
+    "verticalFieldOfViewDegrees": 46.0
+  },
+  "simulationResolution": 256,
+  "litHeightDisplayScale": 1.4,
+  "objects": [
+    {
+      "id": "chair",
+      "mesh": "../Meshes/MidtermChair/LoungeChair.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/MidtermChair.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "drip_0",
+      "mesh": "../Meshes/MidtermChair/Drip.obj",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -3
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "drip_1",
+      "mesh": "../Meshes/MidtermChair/Drip.obj",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -3
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "drip_2",
+      "mesh": "../Meshes/MidtermChair/Drip.obj",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -3
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    }
+  ]
+}

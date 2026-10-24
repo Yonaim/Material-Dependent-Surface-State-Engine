@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <atomic>
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
@@ -34,12 +34,12 @@ namespace MDSS::GPU
 
     struct TGPUResourceMemorySnapshot
     {
-        std::uint64_t CurrentBufferBytes = 0;
-        std::uint64_t PeakBufferBytes = 0;
-        std::uint64_t CurrentImageBytes = 0;
-        std::uint64_t PeakImageBytes = 0;
-        std::uint64_t CurrentTotalBytes = 0;
-        std::uint64_t PeakTotalBytes = 0;
+        std::uint64_t                                           CurrentBufferBytes = 0;
+        std::uint64_t                                           PeakBufferBytes = 0;
+        std::uint64_t                                           CurrentImageBytes = 0;
+        std::uint64_t                                           PeakImageBytes = 0;
+        std::uint64_t                                           CurrentTotalBytes = 0;
+        std::uint64_t                                           PeakTotalBytes = 0;
         std::array<std::uint64_t, GPUBufferMemoryCategoryCount> BufferCategoryCurrentBytes{};
         std::array<std::uint64_t, GPUBufferMemoryCategoryCount> BufferCategoryPeakBytes{};
     };
@@ -67,7 +67,10 @@ namespace MDSS::GPU
             Add(Bytes, ImageCurrent, ImagePeak);
             UpdatePeak(TotalPeak, TotalCurrent.fetch_add(Bytes, std::memory_order_relaxed) + Bytes);
         }
-        static void ImageFreed(std::uint64_t Bytes) noexcept { Subtract(Bytes, ImageCurrent, TotalCurrent); }
+        static void ImageFreed(std::uint64_t Bytes) noexcept
+        {
+            Subtract(Bytes, ImageCurrent, TotalCurrent);
+        }
 
         [[nodiscard]] static TGPUResourceMemorySnapshot GetSnapshot() noexcept
         {
@@ -91,7 +94,8 @@ namespace MDSS::GPU
         static std::size_t GetCategoryIndex(TGPUBufferMemoryCategory Category) noexcept
         {
             const std::size_t Index = static_cast<std::size_t>(Category);
-            return Index < GPUBufferMemoryCategoryCount ? Index : static_cast<std::size_t>(TGPUBufferMemoryCategory::Other);
+            return Index < GPUBufferMemoryCategoryCount ? Index
+                                                        : static_cast<std::size_t>(TGPUBufferMemoryCategory::Other);
         }
 
         static void UpdatePeak(std::atomic<std::uint64_t>& Peak, std::uint64_t Value) noexcept
@@ -103,28 +107,26 @@ namespace MDSS::GPU
             }
         }
 
-        static void Add(std::uint64_t Bytes,
-                        std::atomic<std::uint64_t>& Current,
-                        std::atomic<std::uint64_t>& Peak) noexcept
+        static void
+        Add(std::uint64_t Bytes, std::atomic<std::uint64_t>& Current, std::atomic<std::uint64_t>& Peak) noexcept
         {
             UpdatePeak(Peak, Current.fetch_add(Bytes, std::memory_order_relaxed) + Bytes);
         }
 
-        static void Subtract(std::uint64_t Bytes,
-                             std::atomic<std::uint64_t>& Current,
-                             std::atomic<std::uint64_t>& Total) noexcept
+        static void
+        Subtract(std::uint64_t Bytes, std::atomic<std::uint64_t>& Current, std::atomic<std::uint64_t>& Total) noexcept
         {
             Current.fetch_sub(Bytes, std::memory_order_relaxed);
             Total.fetch_sub(Bytes, std::memory_order_relaxed);
         }
 
-        inline static std::atomic<std::uint64_t> BufferCurrent{0};
-        inline static std::atomic<std::uint64_t> BufferPeak{0};
+        inline static std::atomic<std::uint64_t>                                           BufferCurrent{0};
+        inline static std::atomic<std::uint64_t>                                           BufferPeak{0};
         inline static std::array<std::atomic<std::uint64_t>, GPUBufferMemoryCategoryCount> BufferCategoryCurrent{};
         inline static std::array<std::atomic<std::uint64_t>, GPUBufferMemoryCategoryCount> BufferCategoryPeak{};
-        inline static std::atomic<std::uint64_t> ImageCurrent{0};
-        inline static std::atomic<std::uint64_t> ImagePeak{0};
-        inline static std::atomic<std::uint64_t> TotalCurrent{0};
-        inline static std::atomic<std::uint64_t> TotalPeak{0};
+        inline static std::atomic<std::uint64_t>                                           ImageCurrent{0};
+        inline static std::atomic<std::uint64_t>                                           ImagePeak{0};
+        inline static std::atomic<std::uint64_t>                                           TotalCurrent{0};
+        inline static std::atomic<std::uint64_t>                                           TotalPeak{0};
     };
 } // namespace MDSS::GPU

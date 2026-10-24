@@ -12,6 +12,7 @@
 #include <map>
 #include <queue>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_map>
 
 namespace MDSS::SurfaceState
@@ -42,6 +43,75 @@ namespace MDSS::SurfaceState
                 Mesh.BoundaryEdges.push_back(Occurrence.Edge);
     }
 
+    static void BuildSideAdjacency(TSurfaceTexelMesh& Mesh)
+    {
+        struct TTriangleEdge
+        {
+            std::uint32_t A, B, Triangle, Edge;
+        };
+        using TEdgeKey = std::pair<std::uint32_t, std::uint32_t>;
+        const auto TriangleCount = static_cast<std::uint32_t>(Mesh.Indices.size() / 3U);
+        Mesh.SideAdjacency.assign(static_cast<std::size_t>(TriangleCount) + Mesh.BoundaryEdges.size(),
+                                  glm::uvec4(InvalidTexelIndex));
+        std::vector<TTriangleEdge> TriangleEdges;
+        TriangleEdges.reserve(Mesh.Indices.size());
+        for (std::uint32_t Triangle = 0; Triangle < TriangleCount; ++Triangle)
+            for (std::uint32_t Edge = 0; Edge < 3U; ++Edge)
+            {
+                const auto A = Mesh.Indices[Triangle * 3U + Edge];
+                const auto B = Mesh.Indices[Triangle * 3U + (Edge + 1U) % 3U];
+                const auto Key = std::minmax(A, B);
+                TriangleEdges.push_back({Key.first, Key.second, Triangle, Edge});
+            }
+        std::sort(TriangleEdges.begin(),
+                  TriangleEdges.end(),
+                  [](const auto& A, const auto& B) { return std::tie(A.A, A.B) < std::tie(B.A, B.B); });
+        std::map<TEdgeKey, std::vector<std::uint32_t>>                                          BoundaryEdges;
+        std::unordered_map<std::uint32_t, std::vector<std::pair<std::uint32_t, std::uint32_t>>> BoundaryVertices;
+        for (std::uint32_t Boundary = 0; Boundary < Mesh.BoundaryEdges.size(); ++Boundary)
+        {
+            const auto& Edge = Mesh.BoundaryEdges[Boundary];
+            const auto  Key = std::minmax(Edge.x, Edge.y);
+            BoundaryEdges[{Key.first, Key.second}].push_back(Boundary);
+            BoundaryVertices[Edge.x].push_back({Boundary, 0U});
+            BoundaryVertices[Edge.y].push_back({Boundary, 1U});
+        }
+        for (std::size_t Begin = 0; Begin < TriangleEdges.size();)
+        {
+            const auto  Key = TEdgeKey{TriangleEdges[Begin].A, TriangleEdges[Begin].B};
+            std::size_t End = Begin + 1U;
+            while (End < TriangleEdges.size() && TriangleEdges[End].A == Key.first &&
+                   TriangleEdges[End].B == Key.second)
+                ++End;
+            if (End - Begin == 2U)
+            {
+                const auto& A = TriangleEdges[Begin];
+                const auto& B = TriangleEdges[Begin + 1U];
+                Mesh.SideAdjacency[A.Triangle][A.Edge] = B.Triangle;
+                Mesh.SideAdjacency[B.Triangle][B.Edge] = A.Triangle;
+            }
+            else if (End - Begin == 1U)
+            {
+                const auto Found = BoundaryEdges.find(Key);
+                if (Found != BoundaryEdges.end() && Found->second.size() == 1U)
+                {
+                    const auto Boundary = Found->second.front();
+                    Mesh.SideAdjacency[TriangleEdges[Begin].Triangle][TriangleEdges[Begin].Edge] =
+                        TriangleCount + Boundary;
+                    Mesh.SideAdjacency[TriangleCount + Boundary].z = TriangleEdges[Begin].Triangle;
+                }
+            }
+            Begin = End;
+        }
+        for (const auto& [Vertex, Edges] : BoundaryVertices)
+        {
+            if (Edges.size() != 2U)
+                continue; // An open end or a branch is a real discontinuity.
+            Mesh.SideAdjacency[TriangleCount + Edges[0].first][Edges[0].second] = TriangleCount + Edges[1].first;
+            Mesh.SideAdjacency[TriangleCount + Edges[1].first][Edges[1].second] = TriangleCount + Edges[0].first;
+        }
+    }
+
     static TSurfaceTexelMesh SubdivideMesh(const TSurfaceTexelMesh& Source, std::uint32_t Levels)
     {
         TSurfaceTexelMesh Mesh = Source;
@@ -55,8 +125,8 @@ namespace MDSS::SurfaceState
                     return Found->second;
                 if (Mesh.Vertices.size() >= std::numeric_limits<std::uint32_t>::max())
                     throw std::overflow_error("Subdivided texel mesh exceeds the vertex index range.");
-                const auto& VA = Mesh.Vertices[A];
-                const auto& VB = Mesh.Vertices[B];
+                const auto&             VA = Mesh.Vertices[A];
+                const auto&             VB = Mesh.Vertices[B];
                 TSurfaceTexelMeshVertex V;
                 V.Position = (VA.Position + VB.Position) * 0.5F;
                 V.Normal = (VA.Normal + VB.Normal) * 0.5F;
@@ -77,8 +147,9 @@ namespace MDSS::SurfaceState
                         SampleWeights[VB.Samples[Slot]] += 0.5F * VB.Weights[Slot];
                 }
                 std::vector<std::pair<std::uint32_t, float>> OrderedSamples(SampleWeights.begin(), SampleWeights.end());
-                std::sort(OrderedSamples.begin(), OrderedSamples.end(), [](const auto& A, const auto& B)
-                          { return A.second > B.second; });
+                std::sort(OrderedSamples.begin(),
+                          OrderedSamples.end(),
+                          [](const auto& A, const auto& B) { return A.second > B.second; });
                 float WeightSum = 0.0F;
                 for (std::size_t Slot = 0; Slot < std::min<std::size_t>(4, OrderedSamples.size()); ++Slot)
                     WeightSum += OrderedSamples[Slot].second;
@@ -108,8 +179,7 @@ namespace MDSS::SurfaceState
                     const auto AB = Midpoint(A, B);
                     const auto BC = Midpoint(B, C);
                     const auto CA = Midpoint(C, A);
-                    RefinedIndices.insert(RefinedIndices.end(),
-                                          {A, AB, CA, AB, B, BC, CA, BC, C, AB, BC, CA});
+                    RefinedIndices.insert(RefinedIndices.end(), {A, AB, CA, AB, B, BC, CA, BC, C, AB, BC, CA});
                 }
                 Range = {First, static_cast<std::uint32_t>(RefinedIndices.size()) - First};
             }
@@ -132,8 +202,8 @@ namespace MDSS::SurfaceState
 
     static TSurfaceTexelMesh BuildGridMesh(const TSharedSurfaceGeometryData& Geometry, std::uint32_t RenderResolution)
     {
-        TSurfaceTexelMesh Result;
-        const auto&       Texels = Geometry.GetTexels();
+        TSurfaceTexelMesh          Result;
+        const auto&                Texels = Geometry.GetTexels();
         std::vector<std::uint32_t> VertexCharts;
         for (const auto& Range : Geometry.GetSurfaces())
         {
@@ -142,12 +212,10 @@ namespace MDSS::SurfaceState
                                            : 1U;
             const std::uint32_t Offset = Step > 1 ? Step / 2U : 0U;
             const std::uint32_t First = static_cast<std::uint32_t>(Result.Indices.size());
-            const std::uint32_t GridWidth = Range.Resolution.Width > Offset
-                                                ? (Range.Resolution.Width - Offset + Step - 1U) / Step
-                                                : 0U;
-            const std::uint32_t GridHeight = Range.Resolution.Height > Offset
-                                                 ? (Range.Resolution.Height - Offset + Step - 1U) / Step
-                                                 : 0U;
+            const std::uint32_t GridWidth =
+                Range.Resolution.Width > Offset ? (Range.Resolution.Width - Offset + Step - 1U) / Step : 0U;
+            const std::uint32_t GridHeight =
+                Range.Resolution.Height > Offset ? (Range.Resolution.Height - Offset + Step - 1U) / Step : 0U;
             std::vector<std::uint32_t> GridVertices(static_cast<std::size_t>(GridWidth) * GridHeight,
                                                     InvalidTexelIndex);
             for (std::uint32_t Y = 0; Y < GridHeight; ++Y)
@@ -158,7 +226,7 @@ namespace MDSS::SurfaceState
                     if (TexelX >= Range.Resolution.Width || TexelY >= Range.Resolution.Height)
                         continue;
                     const std::uint32_t T = Range.FirstTexel + TexelY * Range.Resolution.Width + TexelX;
-                    const auto& Texel = Texels[T];
+                    const auto&         Texel = Texels[T];
                     if (!Texel.IsValid() || !std::isfinite(Texel.Position.x) || !std::isfinite(Texel.Position.y) ||
                         !std::isfinite(Texel.Position.z) || !std::isfinite(Texel.Normal.x) ||
                         !std::isfinite(Texel.Normal.y) || !std::isfinite(Texel.Normal.z))
@@ -238,7 +306,7 @@ namespace MDSS::SurfaceState
     TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
                                             std::span<const Asset::TVertex>             Vertices,
                                             std::span<const Asset::TMeshTriangleSource> Triangles,
-                                            std::uint32_t                                RenderResolution)
+                                            std::uint32_t                               RenderResolution)
     {
         if (Vertices.empty() && Triangles.empty())
         {
@@ -255,12 +323,13 @@ namespace MDSS::SurfaceState
                 if (Levels > 0)
                     Mesh = SubdivideMesh(Mesh, Levels);
             }
+            BuildSideAdjacency(Mesh);
             return Mesh;
         }
         if (Vertices.empty() || Triangles.empty())
             throw std::invalid_argument("Texel mesh requires both source vertices and triangles.");
-        const auto&                             Texels = Geometry.GetTexels();
-        const auto IsSelectedRenderTexel = [&](std::uint32_t TexelIndex)
+        const auto& Texels = Geometry.GetTexels();
+        const auto  IsSelectedRenderTexel = [&](std::uint32_t TexelIndex)
         {
             if (RenderResolution == 0)
                 return true;
@@ -371,9 +440,28 @@ namespace MDSS::SurfaceState
             glm::vec4  Position{0}, Direction{0};
         };
         using TEdgeKey = std::pair<std::uint32_t, std::uint32_t>;
+        struct TEdgeNormals
+        {
+            glm::vec3 First{0};
+            glm::vec3 Second{0};
+        };
         std::map<TEdgeKey, std::vector<std::pair<float, std::uint32_t>>> EdgeSamples;
         std::map<TEdgeKey, std::vector<TEdgePoint>>                      EdgePoints;
         std::map<TEdgeKey, std::vector<std::uint32_t>>                   EdgeTopologyIDs;
+        std::map<TEdgeKey, TEdgeNormals>                                 EdgeNormals;
+        // An edge's interior displacement direction belongs to its incident faces. Using
+        // the endpoint weld normals here pulls a flat face's internal diagonal toward the
+        // normals of unrelated cube sides, which stretches its displaced top sideways.
+        for (std::size_t I = 0; I < Triangles.size(); ++I)
+            for (std::size_t C = 0; C < 3; ++C)
+            {
+                auto A = C, B = (C + 1U) % 3U;
+                if (TriangleWelds[I][A] > TriangleWelds[I][B])
+                    std::swap(A, B);
+                auto& Normals = EdgeNormals[{TriangleWelds[I][A], TriangleWelds[I][B]}];
+                Normals.First += Vertices[Triangles[I].RenderVertexIndices[A]].Normal;
+                Normals.Second += Vertices[Triangles[I].RenderVertexIndices[B]].Normal;
+            }
         // Union exact edge samples from both charts before refinement. Both incident source
         // triangles receive identical subdivisions, so edge samples cannot form T-junctions.
         for (std::size_t I = 0; I < Triangles.size(); ++I)
@@ -413,7 +501,8 @@ namespace MDSS::SurfaceState
                 }
                 Point.Position =
                     glm::vec4(glm::mix(Welds[Key.first].Position, Welds[Key.second].Position, Point.Parameter), 1);
-                auto N = glm::mix(Welds[Key.first].Normal, Welds[Key.second].Normal, Point.Parameter);
+                const auto& [NormalA, NormalB] = EdgeNormals.at(Key);
+                auto N = glm::mix(NormalA, NormalB, Point.Parameter);
                 Point.Direction = glm::vec4(glm::dot(N, N) > 1e-12F ? glm::normalize(N) : Welds[Key.first].Normal, 0);
                 Points.push_back(Point);
                 EdgeTopologyIDs[Key].push_back(NextTopologyID++);
@@ -525,7 +614,7 @@ namespace MDSS::SurfaceState
                                                    Vertices[Source.RenderVertexIndices[0]].Position,
                                                Vertices[Source.RenderVertexIndices[2]].Position -
                                                    Vertices[Source.RenderVertexIndices[0]].Position);
-                const auto      Cross = glm::cross(glm::vec3(Result.Vertices[B].Position - Result.Vertices[A].Position),
+                const auto Cross = glm::cross(glm::vec3(Result.Vertices[B].Position - Result.Vertices[A].Position),
                                               glm::vec3(Result.Vertices[C].Position - Result.Vertices[A].Position));
                 if (glm::dot(N, Cross) < 0)
                     std::swap(B, C);
@@ -563,6 +652,7 @@ namespace MDSS::SurfaceState
             if (Levels > 0)
                 Result = SubdivideMesh(Result, Levels);
         }
+        BuildSideAdjacency(Result);
         return Result;
     }
 #pragma endregion

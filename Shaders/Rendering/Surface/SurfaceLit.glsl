@@ -7,6 +7,7 @@
 #include "Rendering/Surface/Effects/Mud.glsl"
 #include "Rendering/Surface/Effects/Heat.glsl"
 #include "Rendering/Surface/Effects/WaterFilm.glsl"
+#include "Rendering/Surface/Effects/AbsorbedWetness.glsl"
 #include "Rendering/Surface/Effects/Lava.glsl"
 #include "Rendering/Surface/Lighting.glsl"
 
@@ -112,14 +113,26 @@ void main()
             if ((EnabledEffects & 2u) != 0u)
                 Mud = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
                                                     Material.DemoStateChannels.y, Material.StateChannelCount);
+#endif
             if ((EnabledEffects & 4u) != 0u)
                 WaterFilm = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
                                                           Material.DemoStateChannels.z, Material.StateChannelCount);
+#ifndef BASE_SURFACE_LIT
             if ((EnabledEffects & 8u) != 0u)
                 Lava = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
                                                      Material.DemoExtraStateChannels.x, Material.StateChannelCount);
 #endif
         }
+        if ((EnabledEffects & 16u) != 0u && Material.ExtraDemoBindings.x < Material.StateChannelCount)
+        {
+            float AbsorbedWetness = CoverageSmoothing && !PrecomputedSmoothing
+                ? SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                Material.ExtraDemoBindings.x, Material.StateChannelCount)
+                : SampleStateSaturation(FragSurfaceIndex, FragUV,
+                                        Material.ExtraDemoBindings.x, Material.StateChannelCount);
+            ApplyAbsorbedWetness(AbsorbedWetness, Color.rgb, Roughness);
+        }
+        WaterFilm = VisibleWaterCoverage(WaterFilm, FragUV);
 #ifndef BASE_SURFACE_LIT
         // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.
         if ((EnabledEffects & 2u) != 0u)
@@ -129,11 +142,11 @@ void main()
 #endif
         if ((EnabledEffects & 1u) != 0u)
             ApplyHeat(Heat, Color.rgb, Material.DemoEffectOptions.x);
-#ifndef BASE_SURFACE_LIT
         if ((EnabledEffects & 4u) != 0u)
             ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w);
-#else
-        WaterFilm = 0.0;
+#ifdef BASE_SURFACE_LIT
+        // 얇은 막은 바탕에서 반사하고, 고인 물의 표면 반사는 overlay가 맡는다.
+        WaterFilm *= 1.0 - smoothstep(0.20, 0.60, WaterFilm);
 #endif
     }
     OutColor = vec4(ShadeSurface(Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition,

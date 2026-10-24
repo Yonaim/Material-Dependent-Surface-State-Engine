@@ -59,8 +59,12 @@ namespace MDSS::Asset
                                                          ? DefaultNormalTexture
                                                          : LoadTexture(SourceMaterial.NormalTexturePath, false);
 
-            MaterialRemap.push_back(
-                CreateMaterial(SourceMaterial.Name, Path, SourceMaterial.BaseColor, BaseColorTexture, NormalTexture));
+            MaterialRemap.push_back(CreateMaterial(SourceMaterial.Name,
+                                                   Path,
+                                                   SourceMaterial.BaseColor,
+                                                   BaseColorTexture,
+                                                   NormalTexture,
+                                                   SourceMaterial.WaterAppearance));
         }
 
         std::vector<TMeshSection> Sections;
@@ -228,12 +232,13 @@ namespace MDSS::Asset
                                                        const std::filesystem::path& SourcePath,
                                                        glm::vec4                    BaseColor,
                                                        TextureAssetHandle           BaseColorTexture,
-                                                       TextureAssetHandle           NormalTexture)
+                                                       TextureAssetHandle           NormalTexture,
+                                                       glm::vec4                    WaterAppearance)
     {
         const TMaterialAssetHandle Handle = static_cast<TMaterialAssetHandle>(Materials.size());
         const std::string          LogName = Name;
         Materials.push_back(std::make_unique<TMaterialAsset>(
-            Handle, std::move(Name), SourcePath, BaseColor, BaseColorTexture, NormalTexture));
+            Handle, std::move(Name), SourcePath, BaseColor, BaseColorTexture, NormalTexture, WaterAppearance));
         TLogger::Debug("TAssetManager",
                        "Material registered: '" + LogName + "' (handle=" + std::to_string(Handle) +
                            ", base texture=" + std::to_string(BaseColorTexture) +

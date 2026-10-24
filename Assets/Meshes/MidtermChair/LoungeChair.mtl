@@ -1,0 +1,8 @@
+newmtl LoungeChair
+Kd 1 1 1
+d 1
+map_Kd LoungeChair.jpg
+mdss_water_style droplets
+mdss_water_opacity 1.5
+mdss_water_darkening 0.10
+mdss_droplet_density 105

@@ -1,0 +1,28 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/MarbleBust.DemoAnim",
+  "camera": {
+    "position": [1.65, -2.70, 1.85],
+    "target": [0.0, 0.0, 0.76],
+    "verticalFieldOfViewDegrees": 42.0
+  },
+  "simulationResolution": 256,
+  "objects": [
+    {
+      "id": "bust_debris",
+      "mesh": "../Meshes/MarbleBust/BustDebris.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/MarbleBust.SurfaceProfileMap",
+      "transform": { "position": [0.0, 0.0, 0.0], "rotationDegrees": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0] }
+    },
+    {
+      "id": "marble_bust",
+      "mesh": "../Meshes/MarbleBust/MarbleBust.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/MarbleBust.SurfaceProfileMap",
+      "transform": { "position": [0.0, 0.0, 0.0], "rotationDegrees": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0] }
+    }
+  ],
+  "initialContacts": [
+    { "target": "marble_bust", "state": "mud", "worldPosition": [-0.17, -0.24, 0.48], "radius": 0.24, "strength": 0.9, "falloff": 0.8 }
+  ]
+}

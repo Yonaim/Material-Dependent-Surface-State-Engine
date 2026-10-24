@@ -20,13 +20,15 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     uvec4 DebugFlags;
     uvec4 DemoStateChannels; // Heat ID, Mud ID, WaterFilm ID, effects enabled
     vec4 DemoOptions; // dry roughness, Lava threshold, mud roughness, Lit height display scale
-    vec4 DemoEffectOptions; // heat strength, reserved, waterfilm opacity, waterfilm roughness
-    uvec4 DemoExtraStateChannels; // Lava ID, reserved, performance flags, enabled effect bits
+    vec4 DemoEffectOptions; // heat strength, mud noise amount, waterfilm opacity, waterfilm roughness
+    uvec4 DemoExtraStateChannels; // Lava ID, overlay shading diagnostic, performance flags, enabled effect bits
     vec4 EffectColorRampStarts; // Heat, Mud, WaterFilm, Lava
     vec4 EffectColorRampEnds;
     vec4 EffectLowSaturationColors[4];
     vec4 EffectHighSaturationColors[4];
     vec4 CameraPosition;
+    vec4 WaterAppearance; // film/droplets mode, opacity multiplier, darkening, droplet density
+    uvec4 ExtraDemoBindings; // absorbedwetness State ID, WaterFilm visibility mode
 } Material;
 
 vec3 MapEffectColor(uint EffectIndex, float Saturation)

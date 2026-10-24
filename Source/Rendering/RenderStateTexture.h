@@ -66,15 +66,15 @@ namespace MDSS::Rendering
 
         void Destroy() noexcept;
 
-        VkDevice               Device = VK_NULL_HANDLE;
-        VkDescriptorSetLayout  Layout = VK_NULL_HANDLE;
-        VkDescriptorSetLayout  SmoothingLayout = VK_NULL_HANDLE;
-        VkDescriptorPool       Pool = VK_NULL_HANDLE;
-        VkPipelineLayout       PipelineLayout = VK_NULL_HANDLE;
-        VkPipelineLayout       SmoothingPipelineLayout = VK_NULL_HANDLE;
-        VkPipeline             Pipeline = VK_NULL_HANDLE;
+        VkDevice                  Device = VK_NULL_HANDLE;
+        VkDescriptorSetLayout     Layout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout     SmoothingLayout = VK_NULL_HANDLE;
+        VkDescriptorPool          Pool = VK_NULL_HANDLE;
+        VkPipelineLayout          PipelineLayout = VK_NULL_HANDLE;
+        VkPipelineLayout          SmoothingPipelineLayout = VK_NULL_HANDLE;
+        VkPipeline                Pipeline = VK_NULL_HANDLE;
         std::array<VkPipeline, 5> SmoothingPipelines{};
-        VkSampler              Sampler = VK_NULL_HANDLE;
-        std::vector<TInstance> Instances;
+        VkSampler                 Sampler = VK_NULL_HANDLE;
+        std::vector<TInstance>    Instances;
     };
 }

@@ -8,6 +8,7 @@
 #include "Logger/Logger.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
+#include "SurfaceState/GPU/SurfaceGPUBufferPool.h"
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
 #include "SurfaceState/Preprocessing/SurfaceDataManager.h"
 
@@ -30,7 +31,8 @@ namespace MDSS::SurfaceState
     TSurfaceGPUResourceManager::TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
                                                            const Asset::TAssetManager& Assets,
                                                            const TSurfaceDataManager&  SurfaceData,
-                                                           const TScene&               Scene)
+                                                           const TScene&               Scene,
+                                                           TSurfaceGPUBufferPool*      Pool)
     {
         const VkPhysicalDevice       PhysicalDevice = Context.GetPhysicalDevice();
         const VkDevice               Device = Context.GetDevice();
@@ -49,7 +51,8 @@ namespace MDSS::SurfaceState
             {
                 Profiles.push_back(Assets.GetSRProfile(Handle).GetData());
             }
-            SceneProfiles = std::make_unique<TSurfaceProfileGPUResources>(PhysicalDevice, Device, Profiles, Registry);
+            SceneProfiles =
+                std::make_unique<TSurfaceProfileGPUResources>(PhysicalDevice, Device, Profiles, Registry, Pool);
         }
 
         InstanceResources.reserve(Scene.GetStaticMeshInstances().size());
@@ -97,7 +100,8 @@ namespace MDSS::SurfaceState
                         *RuntimeData.GetSharedGeometry(),
                         Resources.SceneProfileIndices,
                         Assets.GetMesh(MeshInstance.GetMesh()).GetVertices(),
-                        Assets.GetMesh(MeshInstance.GetMesh()).GetTriangles());
+                        Assets.GetMesh(MeshInstance.GetMesh()).GetTriangles(),
+                        Pool);
                     Resources.CPUGeometry = RuntimeData.GetSharedGeometry().get();
                     SharedIt = SharedSurfaceData.emplace(SurfaceDataHandle, std::move(Resources)).first;
                 }
@@ -114,7 +118,8 @@ namespace MDSS::SurfaceState
                     Registry.GetStateCount(),
                     TransferWeights,
                     TransferWeightDebugAverages,
-                    BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));
+                    BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix),
+                    Pool);
                 auto Descriptors = std::make_unique<TSurfaceStateDescriptorResources>(
                     Device, *SharedIt->second.Geometry, *SceneProfiles, *State);
 
@@ -145,6 +150,22 @@ namespace MDSS::SurfaceState
                        "Releasing resources for " + std::to_string(GetSharedSurfaceDataCount()) +
                            " Surface data variant(s) and " + std::to_string(GetManagedInstanceCount()) +
                            " Surface instances.");
+    }
+
+    void TSurfaceGPUResourceManager::RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept
+    {
+        // Descriptors must be gone before any buffer can be loaned to a later Scene.
+        for (auto& Instance : InstanceResources)
+            if (Instance)
+                Instance->Descriptors.reset();
+        for (auto& Instance : InstanceResources)
+            if (Instance && Instance->State)
+                Instance->State->RetireBuffers(Pool);
+        for (auto& [Handle, Shared] : SharedSurfaceData)
+            if (Shared.Geometry)
+                Shared.Geometry->RetireBuffers(Pool);
+        if (SceneProfiles)
+            SceneProfiles->RetireBuffers(Pool);
     }
 #pragma endregion
 
@@ -377,11 +398,11 @@ namespace MDSS::SurfaceState
         const glm::mat4              ModelMatrix = Transform.GetMatrix();
         std::vector<TSurfaceGPUVec4> TransferWeightDebugAverages;
         const std::vector<float>     TransferWeights = BuildSurfaceGPUTransferWeights(*SharedIt->second.CPUGeometry,
-                                                                                  ModelMatrix,
-                                                                                  &TransferWeightDebugAverages,
-                                                                                  bUseNormalWeight,
-                                                                                  bUseDistanceWeight,
-                                                                                  bUseProfileBoundaryWeight);
+                                                                                      ModelMatrix,
+                                                                                      &TransferWeightDebugAverages,
+                                                                                      bUseNormalWeight,
+                                                                                      bUseDistanceWeight,
+                                                                                      bUseProfileBoundaryWeight);
         Instance.State->UpdateTransferWeights(TransferWeights, TransferWeightDebugAverages, bHalfPrecision);
         Instance.State->UpdateWorldTexelAreas(
             BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix));

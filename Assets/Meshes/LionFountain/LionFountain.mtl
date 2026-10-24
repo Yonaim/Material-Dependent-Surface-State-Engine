@@ -1,0 +1,5 @@
+newmtl LionFountain
+Kd 1 1 1
+d 1
+map_Kd LionHeadDisplayAlbedo.png
+norm LionHeadNormal.jpg

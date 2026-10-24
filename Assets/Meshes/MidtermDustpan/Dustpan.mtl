@@ -1,0 +1,8 @@
+newmtl Dustpan
+Kd 0.8 0.8 0.8
+d 1
+map_Kd Dustpan.jpg
+norm DustpanNormal.jpg
+mdss_water_style film
+mdss_water_opacity 2.2
+mdss_water_darkening 0.55

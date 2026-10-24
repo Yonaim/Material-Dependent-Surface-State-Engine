@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "Application/Window.h"
 #include "Application/BenchmarkOptions.h"
+#include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "GPU/Vulkan/VulkanContext.h"
 #include "Scene/Scene.h"
@@ -27,15 +27,16 @@ namespace MDSS::SurfaceState
 namespace MDSS
 {
     class TDebugUI;
+    class TFrameCoordinator;
     class TInputSystem;
 
     class TApplication
     {
     public:
         // Application lifecycle and execution
-        explicit TApplication(TBenchmarkOptions BenchmarkOptions = {},
-                              std::uint32_t RenderTileSize = 16U,
-                              bool bPerWorkgroupChannelMask = false,
+        explicit TApplication(TBenchmarkOptions     BenchmarkOptions = {},
+                              std::uint32_t         RenderTileSize = 16U,
+                              bool                  bPerWorkgroupChannelMask = true,
                               std::filesystem::path ScenePath = {});
         ~TApplication();
 
@@ -52,7 +53,8 @@ namespace MDSS
         Asset::TAssetManager                               Assets;
         SurfaceState::TSurfaceDataManager                  SurfaceData;
         TScene                                             MainScene;
-        std::unique_ptr<SurfaceState::TSurfaceStateSystem> SurfaceStates;
+        std::unique_ptr<SurfaceState::TSurfaceStateSystem> SurfaceStateSystem;
+        std::unique_ptr<TFrameCoordinator>                 FrameCoordinator;
         std::unique_ptr<Rendering::TRenderer>              FrameRenderer;
         std::unique_ptr<TDebugUI>                          DebugInterface;
         std::unique_ptr<TInputSystem>                      InputInterface;

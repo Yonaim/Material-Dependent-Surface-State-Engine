@@ -503,7 +503,10 @@ float accumulationHeight(uint TexelIndex)
         FollowingHeightWorld += Amount * (1.0 - clamp(CavityFactor, 0.0, 1.0)) * ThicknessPerAmount;
     }
     float MesoHeight = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
-    float CavityHeight = min(CavityAmount, 1.0) * max(-MesoHeight, 0.0);
+    // Fill toward the highest Meso point in this chart, including positive
+    // relief. At full fill the Meso term becomes a level surface.
+    float FillDepth = max(MesoNormals.Values[TexelIndex].w - MesoHeight, 0.0);
+    float CavityHeight = min(CavityAmount, 1.0) * FillDepth;
     // cavity 용량을 초과한 기여는 각 State의 cavity 비중에 따른 두께로 표면 위에 쌓인다.
     if (CavityAmount > 1.0)
         FollowingHeightWorld += (CavityAmount - 1.0) * (CavityThicknessWeighted / CavityAmount);
@@ -602,9 +605,11 @@ float decayAmountPrepared(uint TexelIndex, float Current,
     float DecayRate = Parameters.DecayAndGeometry.x;
     float CavityRetentionFactor = Parameters.DecayAndGeometry.y;
     float ConcavityWeight = concavityWeight(TexelIndex);
+    float CavityFill = clamp(min(Current / AreaScale, Parameters.CapacityInputAndTransfer.x) *
+                             Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w, 0.0, 1.0);
     float Retention = (Solver.Flags & (1u << 3u)) != 0u
                           ? 1.0
-                          : 1.0 - ConcavityWeight * CavityRetentionFactor;
+                          : 1.0 - ConcavityWeight * CavityRetentionFactor * (1.0 - CavityFill);
     return min(Current, max(0.0, DecayRate * AreaScale * Retention * Solver.DeltaTime));
 }
 
@@ -729,7 +734,14 @@ float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float Cache
                               ? geometryDriveToPosition(TargetPosition)
                               : 0.0;
     float Exit = max(concavityWeight(SourceTexel) - TargetConcavity, 0.0);
-    float Retention = clamp(1.0 - SourceParameters.AccumulationThickness.y * Exit, 0.0, 1.0);
+    // Cavity resistance should disappear as the deposited layer reaches the
+    // chart's Meso peak. Otherwise excess State stays trapped in full grooves.
+    float CavityFill = clamp(min(SourceSaturation, 1.0) *
+                             SourceParameters.CapacityInputAndTransfer.x *
+                             SourceParameters.DecayAndGeometry.z *
+                             SourceParameters.DecayAndGeometry.w, 0.0, 1.0);
+    float Retention = clamp(1.0 - SourceParameters.AccumulationThickness.y * Exit *
+                                 (1.0 - CavityFill), 0.0, 1.0);
     return (SaturationDrive * SaturationTransferRate + GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
            CachedTransferWeight * Retention * Solver.DeltaTime;
 }

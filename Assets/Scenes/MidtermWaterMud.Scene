@@ -1,0 +1,44 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/MidtermWaterMud.DemoAnim",
+  "camera": {
+    "position": [
+      0,
+      -1.35,
+      2.15
+    ],
+    "target": [
+      0,
+      0,
+      0.2
+    ],
+    "verticalFieldOfViewDegrees": 40.0
+  },
+  "simulationResolution": 256,
+  "litHeightDisplayScale": 1.4,
+  "objects": [
+    {
+      "id": "fractured_stone",
+      "mesh": "../Meshes/MidtermGround/FracturedStone.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/MidtermFractured.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotationDegrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    }
+  ]
+}

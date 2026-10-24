@@ -50,7 +50,7 @@
 - Meso 뷰는 texel 연결면의 색상 표시 또는 Displacement를 선택한다. 높이 형상 뷰의 chart 경계는 열린 상태다 ([[05_Decisions/0015_Texel-Geometry-Preview|Decision 0015]]).
 - Wireframe 뷰 설명 상자에서 선을 흰색으로 통일할지 선택하고, GPU가 wide lines를 지원하면 선 굵기도 조절한다. 기본 굵기는 2 px다.
 - Meso·Accumulation·Final Geometry 뷰 설명 상자에서 `Height Surface Grid`의 Off / Overlay / Grid only와 셀당 texel 수를 조절한다. Grid only도 어두운 면으로 depth를 유지한다. 새 View Mode는 추가하지 않는다 ([[05_Decisions/0016_Texel-Grid-and-Demo-Lit-Effects|Decision 0016]]).
-- 좌측 `Render Debug`의 `Visual`: Heat/WaterFilm/Mud/Lava 활성화 체크박스를 먼저 나열한다. 켜진 효과만 아래에 접을 수 있는 설정 제목을 표시한다. 각 효과는 하나의 `Color ramp` 범위 슬라이더로 포화도별 색 전환 시작점과 끝점을 조절한다. Heat에는 `Strength`, Lava에는 `Lava threshold`를 제공해 낮은 포화도에서 Lava 색과 발광을 억제한다. 공통 `Height fade threshold`는 낮은 State 포화도의 적층 형상을 화면에서 부드럽게 줄인다. 관련 State가 로드되지 않은 효과는 비활성 색으로 표시한다. 하단의 기본 접힘 `Shading`에는 Ambient/direct mix, Dry surface roughness, Normal Strength, Flip Y를 둔다. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
+- 좌측 `Render Debug`의 `Visual`: Heat/WaterFilm/Mud/Lava 활성화 체크박스를 먼저 나열한다. 켜진 효과만 아래에 접을 수 있는 설정 제목을 표시한다. 각 효과는 하나의 `Color ramp` 범위 슬라이더로 포화도별 색 전환 시작점과 끝점을 조절한다. Mud에는 절차적 미세요철 강도를 조절하는 `Noise amount`, Heat에는 `Strength`, Lava에는 `Lava threshold`를 제공해 외관을 조절한다. 공통 `Height fade threshold`는 낮은 State 포화도의 적층 형상을 화면에서 부드럽게 줄인다. 관련 State가 로드되지 않은 효과는 비활성 색으로 표시한다. 하단의 기본 접힘 `Shading`에는 Ambient/direct mix, Dry surface roughness, Normal Strength, Flip Y를 둔다. Registry와 texel Profile이 지원하는 데모 State만 반응한다.
 - `Render Debug`의 `Display`: `Overlay only`, 해당 모드에서 고르는 `Overlay display`, Base Mesh/Overlay Top/Overlay Sides draw, `Lit height display scale`. 표시 배율은 렌더링 전용이며 시뮬레이션 데이터를 바꾸지 않는다.
 - 선택한 뷰의 State·보조 옵션은 Viewport 상단에 표시한다.
 

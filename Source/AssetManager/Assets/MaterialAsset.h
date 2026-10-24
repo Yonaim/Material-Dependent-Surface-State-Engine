@@ -22,15 +22,18 @@ namespace MDSS::Asset
                        std::filesystem::path SourcePath,
                        glm::vec4             BaseColor,
                        TextureAssetHandle    BaseColorTexture,
-                       TextureAssetHandle    NormalTexture);
+                       TextureAssetHandle    NormalTexture,
+                       glm::vec4             WaterAppearance = {0.0F, 1.0F, 0.22F, 100.0F});
 
         [[nodiscard]] const glm::vec4&   GetBaseColor() const noexcept;
         [[nodiscard]] TextureAssetHandle GetBaseColorTexture() const noexcept;
         [[nodiscard]] TextureAssetHandle GetNormalTexture() const noexcept;
+        [[nodiscard]] const glm::vec4&   GetWaterAppearance() const noexcept;
 
     private:
         glm::vec4          BaseColor{1.0F};
         TextureAssetHandle BaseColorTexture = InvalidAssetHandle;
         TextureAssetHandle NormalTexture = InvalidAssetHandle;
+        glm::vec4          WaterAppearance{0.0F, 1.0F, 0.22F, 100.0F};
     };
 } // namespace MDSS::Asset

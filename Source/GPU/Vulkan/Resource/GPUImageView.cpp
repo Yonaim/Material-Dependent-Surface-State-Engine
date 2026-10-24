@@ -13,8 +13,12 @@ namespace MDSS::GPU
 {
 #pragma region Image_View_Lifecycle
 
-    TGPUImageView::TGPUImageView(VkDevice Device, VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
-                                 std::uint32_t ArrayLayers, VkImageViewType ViewType)
+    TGPUImageView::TGPUImageView(VkDevice           Device,
+                                 VkImage            Image,
+                                 VkFormat           Format,
+                                 VkImageAspectFlags AspectMask,
+                                 std::uint32_t      ArrayLayers,
+                                 VkImageViewType    ViewType)
         : Device(Device)
     {
         Create(Image, Format, AspectMask, ArrayLayers, ViewType);
@@ -25,8 +29,11 @@ namespace MDSS::GPU
         Reset();
     }
 
-    void TGPUImageView::Recreate(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
-                                 std::uint32_t ArrayLayers, VkImageViewType ViewType)
+    void TGPUImageView::Recreate(VkImage            Image,
+                                 VkFormat           Format,
+                                 VkImageAspectFlags AspectMask,
+                                 std::uint32_t      ArrayLayers,
+                                 VkImageViewType    ViewType)
     {
         Reset();
         Create(Image, Format, AspectMask, ArrayLayers, ViewType);
@@ -45,8 +52,11 @@ namespace MDSS::GPU
 
 #pragma region Image_View_Creation
 
-    void TGPUImageView::Create(VkImage Image, VkFormat Format, VkImageAspectFlags AspectMask,
-                               std::uint32_t ArrayLayers, VkImageViewType ViewType)
+    void TGPUImageView::Create(VkImage            Image,
+                               VkFormat           Format,
+                               VkImageAspectFlags AspectMask,
+                               std::uint32_t      ArrayLayers,
+                               VkImageViewType    ViewType)
     {
         VkImageViewCreateInfo CreateInfo{};
         CreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

@@ -35,9 +35,10 @@ namespace MDSS::SurfaceState
     TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
                                              const Asset::TAssetManager& Assets,
                                              const TSurfaceDataManager&  SurfaceData,
-                                             const TScene&               Scene)
+                                             const TScene&               Scene,
+                                             TSurfaceGPUBufferPool*      ReusePool)
         : Context(Context), Assets(Assets), SurfaceData(SurfaceData), Scene(Scene),
-          GPUResources(std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene))
+          GPUResources(std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene, ReusePool))
     {
         if (const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
         {
@@ -83,6 +84,8 @@ namespace MDSS::SurfaceState
         }
 
         Solver = std::move(Replacement.Solver);
+        if (GPUResources)
+            GPUResources->RetireBuffers(BufferPool);
         GPUResources = std::move(Replacement.GPUResources);
         PendingContacts = std::move(Replacement.PendingContacts);
         PendingInputActivation = std::move(Replacement.PendingInputActivation);
@@ -185,8 +188,8 @@ namespace MDSS::SurfaceState
             return;
         }
 
-        std::vector<std::vector<float>>        InputDeltas(InstanceCount);
-        std::vector<std::vector<std::uint8_t>> InputGroupFlags(InstanceCount);
+        std::vector<std::vector<float>>         InputDeltas(InstanceCount);
+        std::vector<std::vector<std::uint8_t>>  InputGroupFlags(InstanceCount);
         std::vector<std::vector<std::uint32_t>> InputGroupMasks(InstanceCount);
         std::vector<std::uint32_t>              InputChannelMasks(InstanceCount, 0U);
         std::vector<bool>                       bInstanceHasInput(InstanceCount, false);
@@ -211,9 +214,8 @@ namespace MDSS::SurfaceState
                 Contact.Falloff < 0.0F || !std::isfinite(Contact.SecondaryRadius) ||
                 !std::isfinite(Contact.RotationDegrees) || !std::isfinite(Contact.PlaneHalfDepth) ||
                 (Contact.Shape != ESurfaceContactShape::Circle && Contact.SecondaryRadius <= 0.0F) ||
-                (Contact.bPlanar && (Contact.PlaneHalfDepth <= 0.0F ||
-                                     !std::isfinite(Contact.PlaneNormal.x) || !std::isfinite(Contact.PlaneNormal.y) ||
-                                     !std::isfinite(Contact.PlaneNormal.z) ||
+                (Contact.bPlanar && (Contact.PlaneHalfDepth <= 0.0F || !std::isfinite(Contact.PlaneNormal.x) ||
+                                     !std::isfinite(Contact.PlaneNormal.y) || !std::isfinite(Contact.PlaneNormal.z) ||
                                      glm::dot(Contact.PlaneNormal, Contact.PlaneNormal) <= 1.0e-12F)))
             {
                 Diagnose("Rejected contact with an invalid instance, State, radius, strength, or falloff.");
@@ -428,13 +430,13 @@ namespace MDSS::SurfaceState
             bool              bOverlappedNoSimulationSurface = false;
             std::size_t       AppliedTexelCount = 0;
             const std::size_t StateChannel = Contact.State;
-            const glm::vec3 PlaneNormal = Contact.bPlanar ? glm::normalize(Contact.PlaneNormal) : glm::vec3(0, 0, 1);
-            const glm::vec3 Reference = std::abs(PlaneNormal.x) < 0.9F ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-            const glm::vec3 Tangent = glm::normalize(Reference - PlaneNormal * glm::dot(Reference, PlaneNormal));
-            const glm::vec3 Bitangent = glm::cross(PlaneNormal, Tangent);
-            const float Angle = glm::radians(Contact.RotationDegrees);
-            const float CosAngle = std::cos(Angle);
-            const float SinAngle = std::sin(Angle);
+            const glm::vec3   PlaneNormal = Contact.bPlanar ? glm::normalize(Contact.PlaneNormal) : glm::vec3(0, 0, 1);
+            const glm::vec3   Reference = std::abs(PlaneNormal.x) < 0.9F ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+            const glm::vec3   Tangent = glm::normalize(Reference - PlaneNormal * glm::dot(Reference, PlaneNormal));
+            const glm::vec3   Bitangent = glm::cross(PlaneNormal, Tangent);
+            const float       Angle = glm::radians(Contact.RotationDegrees);
+            const float       CosAngle = std::cos(Angle);
+            const float       SinAngle = std::sin(Angle);
             for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
             {
                 const TSurfaceTexelGeometry& Texel = Texels[TexelIndex];
@@ -447,7 +449,7 @@ namespace MDSS::SurfaceState
                     Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(TexelIndex));
                 const glm::vec3 WorldTexelPosition = glm::vec3(Model * glm::vec4(Texel.Position, 1.0F));
                 const glm::vec3 Offset = WorldTexelPosition - InfluenceCenter;
-                float NormalizedDistance = glm::length(Offset) / Contact.Radius;
+                float           NormalizedDistance = glm::length(Offset) / Contact.Radius;
                 if (Contact.bPlanar)
                 {
                     if (std::abs(glm::dot(Offset, PlaneNormal)) > Contact.PlaneHalfDepth)
@@ -462,16 +464,17 @@ namespace MDSS::SurfaceState
                             NormalizedDistance = glm::length(glm::vec2(X, Y)) / Contact.Radius;
                             break;
                         case ESurfaceContactShape::Ellipse:
-                            NormalizedDistance = glm::length(glm::vec2(X / Contact.Radius,
-                                                                        Y / Contact.SecondaryRadius));
+                            NormalizedDistance =
+                                glm::length(glm::vec2(X / Contact.Radius, Y / Contact.SecondaryRadius));
                             break;
                         case ESurfaceContactShape::Rectangle:
-                            NormalizedDistance = std::max(std::abs(X) / Contact.Radius,
-                                                          std::abs(Y) / Contact.SecondaryRadius);
+                            NormalizedDistance =
+                                std::max(std::abs(X) / Contact.Radius, std::abs(Y) / Contact.SecondaryRadius);
                             break;
                         case ESurfaceContactShape::Capsule:
-                            NormalizedDistance = glm::length(glm::vec2(std::max(std::abs(X) - Contact.SecondaryRadius,
-                                                                                 0.0F), Y)) / Contact.Radius;
+                            NormalizedDistance =
+                                glm::length(glm::vec2(std::max(std::abs(X) - Contact.SecondaryRadius, 0.0F), Y)) /
+                                Contact.Radius;
                             break;
                     }
                 }
@@ -496,7 +499,7 @@ namespace MDSS::SurfaceState
                 const float ContactWeight = Contact.Falloff == 0.0F ? 1.0F : std::pow(LinearFalloff, Contact.Falloff);
                 const std::size_t ScalarIndex = GetSurfaceGPUStateValueIndex(TexelIndex, StateChannel, ChannelCount);
                 const float       AreaScale = GetSurfaceWorldTexelArea(Texel, Model) / SurfaceStateReferenceArea;
-                const float Sign = Contact.Operation == ESurfaceContactOperation::Remove ? -1.0F : 1.0F;
+                const float       Sign = Contact.Operation == ESurfaceContactOperation::Remove ? -1.0F : 1.0F;
                 const float Delta = Sign * Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
                 InputDeltas[InstanceIndex][ScalarIndex] += Delta;
                 if (Delta != 0.0F)
@@ -556,10 +559,10 @@ namespace MDSS::SurfaceState
 
             // Persistent sparse solver does not rescan all texels. CPU contact distribution already knows
             // exactly which workgroups/channels received InputDelta, so upload that compact activation list.
-            const std::size_t TexelCount = GPUResources->GetInstanceTexelCount(InstanceIndex);
+            const std::size_t                  TexelCount = GPUResources->GetInstanceTexelCount(InstanceIndex);
             const TSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
-            std::vector<std::uint32_t> InputGroups;
-            std::vector<std::uint32_t> CompactInputGroupMasks;
+            std::vector<std::uint32_t>         InputGroups;
+            std::vector<std::uint32_t>         CompactInputGroupMasks;
             InputGroups.reserve(InputGroupFlags[InstanceIndex].size());
             CompactInputGroupMasks.reserve(InputGroupFlags[InstanceIndex].size());
             for (std::size_t Group = 0; Group < InputGroupFlags[InstanceIndex].size(); ++Group)
@@ -575,14 +578,20 @@ namespace MDSS::SurfaceState
                     GPUResources->GetInstanceAccumulationHeightBuffer(InstanceIndex);
                 const std::uint32_t GroupCount = static_cast<std::uint32_t>(InputGroups.size());
                 const std::uint32_t ChannelMask = InputChannelMasks[InstanceIndex];
-                AccumulationBuffer.Upload(&GroupCount, sizeof(GroupCount),
+                AccumulationBuffer.Upload(
+                    &GroupCount,
+                    sizeof(GroupCount),
                     static_cast<VkDeviceSize>(SparseLayout.InputCountWord * sizeof(std::uint32_t)));
-                AccumulationBuffer.Upload(&ChannelMask, sizeof(ChannelMask),
+                AccumulationBuffer.Upload(
+                    &ChannelMask,
+                    sizeof(ChannelMask),
                     static_cast<VkDeviceSize>(SparseLayout.InputMaskWord * sizeof(std::uint32_t)));
-                AccumulationBuffer.Upload(InputGroups.data(),
+                AccumulationBuffer.Upload(
+                    InputGroups.data(),
                     static_cast<VkDeviceSize>(InputGroups.size() * sizeof(std::uint32_t)),
                     static_cast<VkDeviceSize>(SparseLayout.InputListWord * sizeof(std::uint32_t)));
-                AccumulationBuffer.Upload(CompactInputGroupMasks.data(),
+                AccumulationBuffer.Upload(
+                    CompactInputGroupMasks.data(),
                     static_cast<VkDeviceSize>(CompactInputGroupMasks.size() * sizeof(std::uint32_t)),
                     static_cast<VkDeviceSize>(SparseLayout.InputGroupMaskWord * sizeof(std::uint32_t)));
                 if (InstanceIndex >= PendingInputActivation.size())
@@ -717,7 +726,7 @@ namespace MDSS::SurfaceState
             return;
         }
 
-        bool          bHasDirtyTransferWeightCache = bTransferWeightSettingsDirty;
+        bool bHasDirtyTransferWeightCache = bTransferWeightSettingsDirty;
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             if (GPUResources->GetInstanceDescriptors(SceneIndex) == nullptr)
@@ -846,12 +855,11 @@ namespace MDSS::SurfaceState
         if (!InstanceSteps.empty())
             bSeedPersistentActivityOnNextStep = false;
         bTransferWeightSettingsDirty = false;
-        // State-driven geometry updates always derive Height after the step. When disabled, several fixed substeps may run;
-        // keep the invalidation alive until the final substep actually prepares render height.
+        // State-driven geometry updates always derive Height after the step. When disabled, several fixed substeps may
+        // run; keep the invalidation alive until the final substep actually prepares render height.
         if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled || bPrepareRenderHeight)
             bForceFullGeometryOnNextStep = false;
     }
-
 
 #pragma endregion
 
@@ -874,7 +882,8 @@ namespace MDSS::SurfaceState
         if (bHalfDynamicWeightsEnabled == bEnabled)
             return;
         bHalfDynamicWeightsEnabled = bEnabled;
-        // Static weights must be re-uploaded in the selected representation; dynamic state-driven geometry then rebuilds from it.
+        // Static weights must be re-uploaded in the selected representation; dynamic state-driven geometry then
+        // rebuilds from it.
         bTransferWeightSettingsDirty = true;
         bForceFullGeometryOnNextStep = true;
         bStableDeltaTimeDirty = true;

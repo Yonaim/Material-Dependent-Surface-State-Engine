@@ -1,0 +1,28 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/LionFountain.DemoAnim",
+  "camera": {
+    "position": [1.75, -3.10, 1.85],
+    "target": [0.0, -0.24, 0.83],
+    "verticalFieldOfViewDegrees": 48.0
+  },
+  "simulationResolution": 256,
+  "objects": [
+    {
+      "id": "fountain_stonework",
+      "mesh": "../Meshes/LionFountain/FountainStonework.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/LionFountain.SurfaceProfileMap",
+      "transform": { "position": [0.0, 0.0, 0.0], "rotationDegrees": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0] }
+    },
+    {
+      "id": "lion_head",
+      "mesh": "../Meshes/LionFountain/LionFountain.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/LionFountain.SurfaceProfileMap",
+      "transform": { "position": [0.0, 0.20, 0.28], "rotationDegrees": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0] }
+    }
+  ],
+  "initialContacts": [
+    { "target": "fountain_stonework", "state": "waterfilm", "worldPosition": [0.0, -0.55, 0.11], "radius": 0.40, "strength": 1.1, "falloff": 0.8 }
+  ]
+}

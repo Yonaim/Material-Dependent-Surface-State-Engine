@@ -1,0 +1,6 @@
+newmtl FracturedStone
+Kd 1 1 1
+d 1
+map_Kd FracturedStone.jpg
+mdss_water_opacity 1.5
+mdss_water_darkening 0.42

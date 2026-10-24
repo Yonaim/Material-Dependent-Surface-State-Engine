@@ -113,7 +113,8 @@ namespace MDSS::Rendering
             if (Pool)
                 vkDestroyDescriptorPool(Device, Pool, nullptr);
             for (VkPipeline Pipeline : Pipelines)
-                if (Pipeline) vkDestroyPipeline(Device, Pipeline, nullptr);
+                if (Pipeline)
+                    vkDestroyPipeline(Device, Pipeline, nullptr);
             if (PipelineLayout)
                 vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
             throw;
@@ -126,7 +127,8 @@ namespace MDSS::Rendering
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
         for (VkPipeline Pipeline : Pipelines)
-            if (Pipeline) vkDestroyPipeline(Device, Pipeline, nullptr);
+            if (Pipeline)
+                vkDestroyPipeline(Device, Pipeline, nullptr);
         if (PipelineLayout)
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
     }
@@ -197,13 +199,12 @@ namespace MDSS::Rendering
         if (It == Outputs.end())
         {
             TOutput Output;
-            Output.Buffer = std::make_unique<GPU::TGPUBuffer>(
-                PhysicalDevice,
-                Device,
-                Bytes,
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
+            Output.Buffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                                                              Device,
+                                                              Bytes,
+                                                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                              GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;
@@ -257,10 +258,8 @@ namespace MDSS::Rendering
         if (CacheWords < static_cast<VkDeviceSize>(TexelCount) * 6U + 14U ||
             (CacheWords - static_cast<VkDeviceSize>(TexelCount) * 6U - 14U) % 7U != 0U)
             throw std::invalid_argument("Height-field smoothing geometry cache layout is invalid.");
-        const auto MaxTileCount =
-            (CacheWords - static_cast<VkDeviceSize>(TexelCount) * 6U - 14U) / 7U;
-        const VkDeviceSize BaseCacheBytes =
-            static_cast<VkDeviceSize>(TexelCount) * sizeof(glm::vec4);
+        const auto         MaxTileCount = (CacheWords - static_cast<VkDeviceSize>(TexelCount) * 6U - 14U) / 7U;
+        const VkDeviceSize BaseCacheBytes = static_cast<VkDeviceSize>(TexelCount) * sizeof(glm::vec4);
         const VkDeviceSize NormalDispatchIndirectOffset =
             BaseCacheBytes +
             (static_cast<VkDeviceSize>(TexelCount) * 2U + static_cast<VkDeviceSize>(MaxTileCount) * 5U + 5U) *
@@ -270,10 +269,9 @@ namespace MDSS::Rendering
 
         // Sparse updates preserve untouched output texels, so the first use (or a changed input chain/scale/tile size)
         // must populate the complete output once before the normal dirty-tile list can be consumed incrementally.
-        const bool bUseSparse = bSparse && It->second.bInitialized &&
-                                It->second.LastInputBuffer == InputBuffer.GetHandle() &&
-                                It->second.LastDisplayScale == AccumulationDisplayScale &&
-                                It->second.LastTileSize == OccupancyTileSize;
+        const bool bUseSparse =
+            bSparse && It->second.bInitialized && It->second.LastInputBuffer == InputBuffer.GetHandle() &&
+            It->second.LastDisplayScale == AccumulationDisplayScale && It->second.LastTileSize == OccupancyTileSize;
 
         struct TPush
         {
@@ -282,10 +280,9 @@ namespace MDSS::Rendering
             std::uint32_t TileSize, UseSparse;
         };
         static_assert(sizeof(TPush) == 28);
-        const TPush Push{TexelCount, Channel, Channels, 0U, AccumulationDisplayScale, OccupancyTileSize,
-                         bUseSparse ? 1U : 0U};
-        vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE,
-                          Pipelines[bUseSparse && bSharedHalo ? 1U : 0U]);
+        const TPush Push{
+            TexelCount, Channel, Channels, 0U, AccumulationDisplayScale, OccupancyTileSize, bUseSparse ? 1U : 0U};
+        vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipelines[bUseSparse && bSharedHalo ? 1U : 0U]);
         vkCmdBindDescriptorSets(Command,
                                 VK_PIPELINE_BIND_POINT_COMPUTE,
                                 PipelineLayout,

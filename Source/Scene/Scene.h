@@ -57,10 +57,11 @@ namespace MDSS
         [[nodiscard]] bool                                     IsDemoAnimationPlaying() const noexcept;
         [[nodiscard]] float                                    GetDemoAnimationTime() const noexcept;
         [[nodiscard]] float                                    GetDemoAnimationDuration() const noexcept;
+        [[nodiscard]] const TDemoAnimationClip::TWeatherCue*   GetDemoWeather() const noexcept;
         void                                                   PlayDemoAnimation();
         void                                                   PauseDemoAnimation() noexcept;
         void                                                   RestartDemoAnimation();
-        std::vector<TDemoAnimationClip::TContactEvent> AdvanceDemoAnimation(float DeltaTime);
+        std::vector<TDemoAnimationClip::TContactEvent>         AdvanceDemoAnimation(float DeltaTime);
         void                                                   AddInitialContact(TSceneInitialContact Contact);
         [[nodiscard]] const std::vector<TSceneInitialContact>& GetInitialContacts() const noexcept;
 

@@ -1,0 +1,668 @@
+{
+  "version": 1,
+  "durationSeconds": 12.0,
+  "loop": false,
+  "autoplay": true,
+  "tracks": [
+    {
+      "target": "camera",
+      "property": "position",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0,
+            -2.5,
+            3.2
+          ]
+        },
+        {
+          "time": 12.0,
+          "value": [
+            0,
+            -2.5,
+            3.2
+          ]
+        }
+      ]
+    },
+    {
+      "target": "camera",
+      "property": "target",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0,
+            0,
+            0.02
+          ]
+        },
+        {
+          "time": 12.0,
+          "value": [
+            0,
+            0,
+            0.02
+          ]
+        }
+      ]
+    }
+  ],
+  "contactEvents": [
+    {
+      "time": 0.55,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.55,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.77,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.38,
+        0.45,
+        0.03125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.77,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.38,
+        0.45,
+        0.03125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.99,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        -0.3,
+        0.0125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.99,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        -0.3,
+        0.0125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.21,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.43,
+        -0.38,
+        0.010499999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.21,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.43,
+        -0.38,
+        0.010499999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.43,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.02,
+        0.1,
+        0.0225
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.43,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.02,
+        0.1,
+        0.0225
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.65,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.15,
+        -0.55,
+        0.006249999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.65,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.15,
+        -0.55,
+        0.006249999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.87,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.87,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.09,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.38,
+        0.45,
+        0.03125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.09,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.38,
+        0.45,
+        0.03125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.31,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        -0.3,
+        0.0125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.31,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        -0.3,
+        0.0125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.53,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.43,
+        -0.38,
+        0.010499999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.53,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.43,
+        -0.38,
+        0.010499999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.75,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.02,
+        0.1,
+        0.0225
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.75,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.02,
+        0.1,
+        0.0225
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.97,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.15,
+        -0.55,
+        0.006249999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.97,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.15,
+        -0.55,
+        0.006249999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.19,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.19,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.41,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.38,
+        0.45,
+        0.03125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.41,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.38,
+        0.45,
+        0.03125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.63,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        -0.3,
+        0.0125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.63,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        -0.3,
+        0.0125
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.85,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.43,
+        -0.38,
+        0.010499999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.85,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.43,
+        -0.38,
+        0.010499999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.07,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.02,
+        0.1,
+        0.0225
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.07,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.02,
+        0.1,
+        0.0225
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.29,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.15,
+        -0.55,
+        0.006249999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.29,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.15,
+        -0.55,
+        0.006249999999999999
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.51,
+      "target": "road",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.51,
+      "target": "soil",
+      "state": "absorbedwetness",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.43,
+        0.4,
+        0.030000000000000002
+      ],
+      "radius": 0.38,
+      "depth": 0.14,
+      "strength": 0.3,
+      "falloff": 0.7
+    }
+  ],
+  "weather": {
+    "rainStartSeconds": 0.5,
+    "rainEndSeconds": 4.75,
+    "cloudEndSeconds": 7.5,
+    "intensity": 0.75
+  }
+}

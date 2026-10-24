@@ -1,0 +1,1354 @@
+{
+  "status": "complete",
+  "comparability": "Common assets, camera, nominal resolution, fixed timestep, feedback ON and height smoothing ON. Solver/preprocessing/rendering semantics differ; no isolated optimization percentage is reported.",
+  "excluded_versions": {
+    "V2": "OS Application Control rejected executable (WinError 4551); no bypass attempted"
+  },
+  "failed_runs": [],
+  "rows": [
+    {
+      "scene": "BrickCube",
+      "resolution": 256,
+      "version": "V0",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 101.81436157226562,
+          "p95": 112.37180671691894,
+          "repeat_range": [
+            101.51762008666992,
+            102.39220809936523
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 86.15085983276367,
+          "p95": 96.30083656311035,
+          "repeat_range": [
+            85.79299926757812,
+            86.7146224975586
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 15.669684886932373,
+          "p95": 16.02187576293945,
+          "repeat_range": [
+            15.615795135498047,
+            15.680134773254395
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.016786763796655,
+        "state_max_absolute": 27.65089988708496,
+        "state_max_relative_to_global_peak": 3.049142458359651,
+        "state_changed_fraction": 0.10657628377278645,
+        "image_exact": false,
+        "image_mae_u8": 0.8288343123013903,
+        "image_p99_u8": 31.0,
+        "image_max_u8": 196.0,
+        "image_changed_pixel_fraction": 0.05081796421943323,
+        "image_psnr_db": 31.862167086280962
+      }
+    },
+    {
+      "scene": "BrickCube",
+      "resolution": 256,
+      "version": "V1",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 55.65786552429199,
+          "p95": 58.39166736602782,
+          "repeat_range": [
+            54.55486488342285,
+            57.60196495056152
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 47.829519271850586,
+          "p95": 50.43129215240479,
+          "repeat_range": [
+            46.34122085571289,
+            48.99372100830078
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 8.19751501083374,
+          "p95": 8.494432020187377,
+          "repeat_range": [
+            7.817079782485962,
+            8.572084903717041
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.0167867478652917,
+        "state_max_absolute": 9.068418502807617,
+        "state_max_relative_to_global_peak": 1.0,
+        "state_changed_fraction": 0.09044075012207031,
+        "image_exact": false,
+        "image_mae_u8": 1.7648049469938274,
+        "image_p99_u8": 58.0,
+        "image_max_u8": 193.0,
+        "image_changed_pixel_fraction": 0.06049313104231158,
+        "image_psnr_db": 28.296832747276135
+      }
+    },
+    {
+      "scene": "BrickCube",
+      "resolution": 256,
+      "version": "V3",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 11.261799812316895,
+          "p95": 11.982553625106812,
+          "repeat_range": [
+            11.167779922485352,
+            11.291719913482666
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 4.6788201332092285,
+          "p95": 5.302846026420593,
+          "repeat_range": [
+            4.63238000869751,
+            4.680199861526489
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 6.595299959182739,
+          "p95": 6.890068316459656,
+          "repeat_range": [
+            6.557219982147217,
+            6.608779668807983
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 0.33903081079308905,
+        "state_max_absolute": 22.553120136260986,
+        "state_max_relative_to_global_peak": 2.4869959551688594,
+        "state_changed_fraction": 0.03139495849609375,
+        "image_exact": false,
+        "image_mae_u8": 0.2745915157761356,
+        "image_p99_u8": 6.0,
+        "image_max_u8": 174.0,
+        "image_changed_pixel_fraction": 0.03377906564251547,
+        "image_psnr_db": 37.94934286386217
+      }
+    },
+    {
+      "scene": "BrickCube",
+      "resolution": 256,
+      "version": "V4",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 12.118899822235107,
+          "p95": 12.957432222366334,
+          "repeat_range": [
+            12.03693962097168,
+            12.121339797973633
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 4.7831199169158936,
+          "p95": 5.398066186904908,
+          "repeat_range": [
+            4.74180006980896,
+            4.799879789352417
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 7.387439966201782,
+          "p95": 7.703817439079284,
+          "repeat_range": [
+            7.313940048217773,
+            7.402979850769043
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "active_channel_mask": true,
+        "base_draw": true,
+        "coalesced_raw_flux": true,
+        "experiment": {},
+        "fp16_raw_flux": true,
+        "fp16_weights": false,
+        "frame_index": 60,
+        "geometry_feedback": true,
+        "overlay_mesh_resolution": 256,
+        "overlay_sides_draw": true,
+        "overlay_tile_culling": true,
+        "overlay_tile_size": 16,
+        "overlay_top_draw": true,
+        "per_workgroup_channel_mask": true,
+        "precompute_coverage": true,
+        "raw_flux_cache": true,
+        "render_state_texture": true,
+        "schema_version": 1,
+        "separable_coverage": true,
+        "shared_coverage_smoothing": false,
+        "shared_height_smoothing": false,
+        "shared_state_texture_smoothing": false,
+        "sparse_geometry": true,
+        "sparse_height": true,
+        "sparse_height_smoothing": true,
+        "sparse_solver": true,
+        "surface_mesh_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ],
+            "view_mode": 0
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": true,
+        "state_l1_relative": 0.0,
+        "state_max_absolute": 0.0,
+        "state_max_relative_to_global_peak": 0.0,
+        "state_changed_fraction": 0.0,
+        "image_exact": true,
+        "image_mae_u8": 0.0,
+        "image_p99_u8": 0.0,
+        "image_max_u8": 0.0,
+        "image_changed_pixel_fraction": 0.0,
+        "image_psnr_db": null
+      }
+    },
+    {
+      "scene": "BrickCube",
+      "resolution": 512,
+      "version": "V0",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 338.72706604003906,
+          "p95": 362.8906951904297,
+          "repeat_range": [
+            330.24659729003906,
+            377.16004943847656
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 271.7823791503906,
+          "p95": 302.43936004638675,
+          "repeat_range": [
+            270.4559020996094,
+            315.99493408203125
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 61.02894592285156,
+          "p95": 62.340697860717775,
+          "repeat_range": [
+            59.77296257019043,
+            66.70692825317383
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.0356673513554124,
+        "state_max_absolute": 19.631704330444336,
+        "state_max_relative_to_global_peak": 15.999717085133572,
+        "state_changed_fraction": 0.0902250607808431,
+        "image_exact": false,
+        "image_mae_u8": 0.7397388837648137,
+        "image_p99_u8": 28.0,
+        "image_max_u8": 169.0,
+        "image_changed_pixel_fraction": 0.047531917594912605,
+        "image_psnr_db": 32.33466167246759
+      }
+    },
+    {
+      "scene": "BrickCube",
+      "resolution": 512,
+      "version": "V1",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 172.35344696044922,
+          "p95": 195.4457145690918,
+          "repeat_range": [
+            162.6914291381836,
+            179.66161346435547
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 140.65647888183594,
+          "p95": 163.769694519043,
+          "repeat_range": [
+            131.16675567626953,
+            148.34622192382812
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 31.404839515686035,
+          "p95": 32.18085823059082,
+          "repeat_range": [
+            31.319008827209473,
+            31.693419456481934
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.035667328355505,
+        "state_max_absolute": 1.2270032167434692,
+        "state_max_relative_to_global_peak": 1.0,
+        "state_changed_fraction": 0.08205747604370117,
+        "image_exact": false,
+        "image_mae_u8": 1.8010136955950793,
+        "image_p99_u8": 59.0,
+        "image_max_u8": 191.0,
+        "image_changed_pixel_fraction": 0.05984339000519046,
+        "image_psnr_db": 28.12170433557828
+      }
+    },
+    {
+      "scene": "BrickCube",
+      "resolution": 512,
+      "version": "V3",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 51.367624282836914,
+          "p95": 54.54699306488037,
+          "repeat_range": [
+            50.633766174316406,
+            51.5450553894043
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 22.93667984008789,
+          "p95": 24.76996421813965,
+          "repeat_range": [
+            22.20143985748291,
+            22.976359367370605
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 28.40890407562256,
+          "p95": 29.678891658782955,
+          "repeat_range": [
+            27.671585083007812,
+            29.116785049438477
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 0.2696883078223639,
+        "state_max_absolute": 18.403792589902878,
+        "state_max_relative_to_global_peak": 14.998976643881592,
+        "state_changed_fraction": 0.028135299682617188,
+        "image_exact": false,
+        "image_mae_u8": 0.21452905599597707,
+        "image_p99_u8": 4.0,
+        "image_max_u8": 162.0,
+        "image_changed_pixel_fraction": 0.03175515965332208,
+        "image_psnr_db": 38.92944107805207
+      }
+    },
+    {
+      "scene": "BrickCube",
+      "resolution": 512,
+      "version": "V4",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 53.629446029663086,
+          "p95": 56.7460256576538,
+          "repeat_range": [
+            53.46484565734863,
+            53.65227508544922
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 23.50465965270996,
+          "p95": 25.469867610931395,
+          "repeat_range": [
+            23.493860244750977,
+            23.676759719848633
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 29.973719596862793,
+          "p95": 31.410053157806395,
+          "repeat_range": [
+            29.96884536743164,
+            30.1566801071167
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "active_channel_mask": true,
+        "base_draw": true,
+        "coalesced_raw_flux": true,
+        "experiment": {},
+        "fp16_raw_flux": true,
+        "fp16_weights": false,
+        "frame_index": 60,
+        "geometry_feedback": true,
+        "overlay_mesh_resolution": 512,
+        "overlay_sides_draw": true,
+        "overlay_tile_culling": true,
+        "overlay_tile_size": 16,
+        "overlay_top_draw": true,
+        "per_workgroup_channel_mask": true,
+        "precompute_coverage": true,
+        "raw_flux_cache": true,
+        "render_state_texture": true,
+        "schema_version": 1,
+        "separable_coverage": true,
+        "shared_coverage_smoothing": false,
+        "shared_height_smoothing": false,
+        "shared_state_texture_smoothing": false,
+        "sparse_geometry": true,
+        "sparse_height": true,
+        "sparse_height_smoothing": true,
+        "sparse_solver": true,
+        "surface_mesh_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              1.600000023841858,
+              -2.5999999046325684,
+              1.7999999523162842
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fov_degrees": 45.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ],
+            "view_mode": 0
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": true,
+        "state_l1_relative": 0.0,
+        "state_max_absolute": 0.0,
+        "state_max_relative_to_global_peak": 0.0,
+        "state_changed_fraction": 0.0,
+        "image_exact": true,
+        "image_mae_u8": 0.0,
+        "image_p99_u8": 0.0,
+        "image_max_u8": 0.0,
+        "image_changed_pixel_fraction": 0.0,
+        "image_psnr_db": null
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 256,
+      "version": "V0",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 54.06444549560547,
+          "p95": 60.980326843261714,
+          "repeat_range": [
+            53.35494041442871,
+            54.08806037902832
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 45.11256980895996,
+          "p95": 51.90889205932617,
+          "repeat_range": [
+            44.46411895751953,
+            45.21175956726074
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 8.867910385131836,
+          "p95": 9.165312385559082,
+          "repeat_range": [
+            8.846525192260742,
+            8.886620044708252
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.004197476284589,
+        "state_max_absolute": 232.98916625976562,
+        "state_max_relative_to_global_peak": 1.0,
+        "state_changed_fraction": 0.216552734375,
+        "image_exact": false,
+        "image_mae_u8": 0.6723911092523372,
+        "image_p99_u8": 19.0,
+        "image_max_u8": 240.0,
+        "image_changed_pixel_fraction": 0.02980593654195871,
+        "image_psnr_db": 31.499213628027512
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 256,
+      "version": "V1",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 30.37187957763672,
+          "p95": 32.564080429077144,
+          "repeat_range": [
+            30.298270225524902,
+            30.625020027160645
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 26.034119606018066,
+          "p95": 28.212393474578853,
+          "repeat_range": [
+            25.976699829101562,
+            26.30445957183838
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 4.301699876785278,
+          "p95": 4.614249873161316,
+          "repeat_range": [
+            4.29371976852417,
+            4.305619955062866
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.0041974108104252,
+        "state_max_absolute": 232.98916625976562,
+        "state_max_relative_to_global_peak": 1.0,
+        "state_changed_fraction": 0.1463801066080729,
+        "image_exact": false,
+        "image_mae_u8": 1.5178336488684923,
+        "image_p99_u8": 56.0,
+        "image_max_u8": 231.0,
+        "image_changed_pixel_fraction": 0.04046691735219325,
+        "image_psnr_db": 27.492659946937014
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 256,
+      "version": "V3",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 12.522919654846191,
+          "p95": 13.147758340835571,
+          "repeat_range": [
+            12.444799900054932,
+            12.526619911193848
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 8.03931999206543,
+          "p95": 8.530905818939209,
+          "repeat_range": [
+            8.005439758300781,
+            8.0688796043396
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 4.477359771728516,
+          "p95": 4.6410737991333,
+          "repeat_range": [
+            4.456940174102783,
+            4.485480070114136
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 0.2527714544425147,
+        "state_max_absolute": 129.62364196777344,
+        "state_max_relative_to_global_peak": 0.5563505121231804,
+        "state_changed_fraction": 0.06215667724609375,
+        "image_exact": false,
+        "image_mae_u8": 0.09958961758632408,
+        "image_p99_u8": 1.0,
+        "image_max_u8": 241.0,
+        "image_changed_pixel_fraction": 0.015164358343384404,
+        "image_psnr_db": 41.14676488750602
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 256,
+      "version": "V4",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 13.30486011505127,
+          "p95": 13.962576341629028,
+          "repeat_range": [
+            13.2710599899292,
+            13.533820152282715
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 8.125519752502441,
+          "p95": 8.627762126922606,
+          "repeat_range": [
+            8.043479919433594,
+            8.236879825592041
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 5.231639862060547,
+          "p95": 5.404694175720215,
+          "repeat_range": [
+            5.227479934692383,
+            5.3012001514434814
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "active_channel_mask": true,
+        "base_draw": true,
+        "coalesced_raw_flux": true,
+        "experiment": {},
+        "fp16_raw_flux": true,
+        "fp16_weights": false,
+        "frame_index": 60,
+        "geometry_feedback": true,
+        "overlay_mesh_resolution": 256,
+        "overlay_sides_draw": true,
+        "overlay_tile_culling": true,
+        "overlay_tile_size": 16,
+        "overlay_top_draw": true,
+        "per_workgroup_channel_mask": true,
+        "precompute_coverage": true,
+        "raw_flux_cache": true,
+        "render_state_texture": true,
+        "schema_version": 1,
+        "separable_coverage": true,
+        "shared_coverage_smoothing": false,
+        "shared_height_smoothing": false,
+        "shared_state_texture_smoothing": false,
+        "sparse_geometry": true,
+        "sparse_height": true,
+        "sparse_height_smoothing": true,
+        "sparse_solver": true,
+        "surface_mesh_resolution": 256,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ],
+            "view_mode": 0
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": true,
+        "state_l1_relative": 0.0,
+        "state_max_absolute": 0.0,
+        "state_max_relative_to_global_peak": 0.0,
+        "state_changed_fraction": 0.0,
+        "image_exact": true,
+        "image_mae_u8": 0.0,
+        "image_p99_u8": 0.0,
+        "image_max_u8": 0.0,
+        "image_changed_pixel_fraction": 0.0,
+        "image_psnr_db": null
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 512,
+      "version": "V0",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 193.72071075439453,
+          "p95": 209.4588653564453,
+          "repeat_range": [
+            191.54168701171875,
+            195.22256469726562
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 152.3712387084961,
+          "p95": 166.84071578979493,
+          "repeat_range": [
+            150.2662811279297,
+            154.14725494384766
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 41.2241096496582,
+          "p95": 43.051165962219244,
+          "repeat_range": [
+            41.03038787841797,
+            41.555158615112305
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.0081275731546375,
+        "state_max_absolute": 99.16246795654297,
+        "state_max_relative_to_global_peak": 1.0,
+        "state_changed_fraction": 0.17008368174235025,
+        "image_exact": false,
+        "image_mae_u8": 0.6763978456479175,
+        "image_p99_u8": 19.0,
+        "image_max_u8": 229.0,
+        "image_changed_pixel_fraction": 0.029279422253257106,
+        "image_psnr_db": 31.585682027174453
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 512,
+      "version": "V1",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 91.16905975341797,
+          "p95": 94.38557929992676,
+          "repeat_range": [
+            89.48898696899414,
+            93.51114654541016
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 72.74858093261719,
+          "p95": 75.86971817016601,
+          "repeat_range": [
+            71.43889999389648,
+            75.21060180664062
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 18.417449951171875,
+          "p95": 18.88166103363037,
+          "repeat_range": [
+            18.03695583343506,
+            18.46801471710205
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 2.008127361261348,
+        "state_max_absolute": 99.16246795654297,
+        "state_max_relative_to_global_peak": 1.0,
+        "state_changed_fraction": 0.12955220540364584,
+        "image_exact": false,
+        "image_mae_u8": 1.5891520630522644,
+        "image_p99_u8": 61.0,
+        "image_max_u8": 231.0,
+        "image_changed_pixel_fraction": 0.041392985037285425,
+        "image_psnr_db": 27.2413684055617
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 512,
+      "version": "V3",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 61.71396064758301,
+          "p95": 63.595149421691886,
+          "repeat_range": [
+            61.64491081237793,
+            61.84830093383789
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 40.260419845581055,
+          "p95": 41.62994174957275,
+          "repeat_range": [
+            40.10813903808594,
+            40.30901908874512
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 21.37937641143799,
+          "p95": 21.83464317321777,
+          "repeat_range": [
+            21.370914459228516,
+            21.742900848388672
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "fixed_dt": 0.016666666666666666,
+        "geometry_feedback": true,
+        "height_smoothing": true,
+        "simulation_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ]
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": false,
+        "state_l1_relative": 0.40796078770971217,
+        "state_max_absolute": 98.43739944696426,
+        "state_max_relative_to_global_peak": 0.9926880751909436,
+        "state_changed_fraction": 0.056971232096354164,
+        "image_exact": false,
+        "image_mae_u8": 0.17559811649782112,
+        "image_p99_u8": 2.0,
+        "image_max_u8": 229.0,
+        "image_changed_pixel_fraction": 0.016848457238451225,
+        "image_psnr_db": 38.34475009879778
+      }
+    },
+    {
+      "scene": "Mountain",
+      "resolution": 512,
+      "version": "V4",
+      "runs": 3,
+      "metrics": {
+        "frame_gpu_elapsed_ms": {
+          "median": 64.54750442504883,
+          "p95": 65.6756362915039,
+          "repeat_range": [
+            64.54081344604492,
+            64.60330963134766
+          ]
+        },
+        "simulation_gpu_elapsed_ms": {
+          "median": 40.0770206451416,
+          "p95": 40.99074649810791,
+          "repeat_range": [
+            40.068220138549805,
+            40.07832145690918
+          ]
+        },
+        "render_gpu_ms": {
+          "median": 24.493820190429688,
+          "p95": 25.11554546356201,
+          "repeat_range": [
+            24.472535133361816,
+            24.57756996154785
+          ]
+        }
+      },
+      "state_repeat_reproducible": true,
+      "settings": {
+        "active_channel_mask": true,
+        "base_draw": true,
+        "coalesced_raw_flux": true,
+        "experiment": {},
+        "fp16_raw_flux": true,
+        "fp16_weights": false,
+        "frame_index": 60,
+        "geometry_feedback": true,
+        "overlay_mesh_resolution": 512,
+        "overlay_sides_draw": true,
+        "overlay_tile_culling": true,
+        "overlay_tile_size": 16,
+        "overlay_top_draw": true,
+        "per_workgroup_channel_mask": true,
+        "precompute_coverage": true,
+        "raw_flux_cache": true,
+        "render_state_texture": true,
+        "schema_version": 1,
+        "separable_coverage": true,
+        "shared_coverage_smoothing": false,
+        "shared_height_smoothing": false,
+        "shared_state_texture_smoothing": false,
+        "sparse_geometry": true,
+        "sparse_height": true,
+        "sparse_height_smoothing": true,
+        "sparse_solver": true,
+        "surface_mesh_resolution": 512,
+        "swapchain_extent": [
+          1280,
+          720
+        ],
+        "viewports": [
+          {
+            "camera_position": [
+              2.0,
+              -3.299999952316284,
+              2.700000047683716
+            ],
+            "camera_target": [
+              0.0,
+              0.0,
+              0.699999988079071
+            ],
+            "fov_degrees": 55.0,
+            "normalized_rect": [
+              0.3257812559604645,
+              0.06666667014360428,
+              0.36640626192092896,
+              0.793055534362793
+            ],
+            "view_mode": 0
+          }
+        ]
+      },
+      "difference_from_V4": {
+        "status": "complete",
+        "state_exact": true,
+        "state_l1_relative": 0.0,
+        "state_max_absolute": 0.0,
+        "state_max_relative_to_global_peak": 0.0,
+        "state_changed_fraction": 0.0,
+        "image_exact": true,
+        "image_mae_u8": 0.0,
+        "image_p99_u8": 0.0,
+        "image_max_u8": 0.0,
+        "image_changed_pixel_fraction": 0.0,
+        "image_psnr_db": null
+      }
+    }
+  ]
+}

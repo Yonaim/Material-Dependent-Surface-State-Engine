@@ -45,7 +45,7 @@ namespace MDSS::Rendering
 
         VkPipeline CreateComputePipeline(VkDevice Device, VkPipelineLayout Layout, const char* RelativePath)
         {
-            const auto Code = ReadShader(RelativePath);
+            const auto               Code = ReadShader(RelativePath);
             VkShaderModuleCreateInfo ModuleInfo{};
             ModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
             ModuleInfo.codeSize = Code.size() * sizeof(std::uint32_t);
@@ -60,7 +60,7 @@ namespace MDSS::Rendering
             PipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
             PipelineInfo.stage.module = Module;
             PipelineInfo.stage.pName = "main";
-            VkPipeline Result = VK_NULL_HANDLE;
+            VkPipeline     Result = VK_NULL_HANDLE;
             const VkResult PipelineResult =
                 vkCreateComputePipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Result);
             vkDestroyShaderModule(Device, Module, nullptr);
@@ -68,7 +68,7 @@ namespace MDSS::Rendering
             return Result;
         }
 
-        VkImageMemoryBarrier MakeImageBarrier(VkImage Image,
+        VkImageMemoryBarrier MakeImageBarrier(VkImage       Image,
                                               std::uint32_t Layers,
                                               VkImageLayout OldLayout,
                                               VkAccessFlags SrcAccess,
@@ -168,7 +168,7 @@ namespace MDSS::Rendering
             RequireVk(vkCreatePipelineLayout(Device, &PipelineLayoutInfo, nullptr, &PipelineLayout));
 
             const std::array<VkDescriptorSetLayout, 2> SmoothingPipelineLayouts{SurfaceLayout, SmoothingLayout};
-            const VkPushConstantRange SmoothPushRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(std::uint32_t)};
+            const VkPushConstantRange  SmoothPushRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(std::uint32_t)};
             VkPipelineLayoutCreateInfo SmoothPipelineLayoutInfo{};
             SmoothPipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             SmoothPipelineLayoutInfo.setLayoutCount = static_cast<std::uint32_t>(SmoothingPipelineLayouts.size());
@@ -178,13 +178,14 @@ namespace MDSS::Rendering
             RequireVk(vkCreatePipelineLayout(Device, &SmoothPipelineLayoutInfo, nullptr, &SmoothingPipelineLayout));
 
             Pipeline = CreateComputePipeline(Device, PipelineLayout, "/Rendering/Surface/RenderStateTexture.comp.spv");
-            constexpr std::array<const char*, 5> SmoothVariants{
-                "direct", "a1h0", "a1h1", "a2h0", "a2h1"};
+            constexpr std::array<const char*, 5> SmoothVariants{"direct", "a1h0", "a1h1", "a2h0", "a2h1"};
             for (std::size_t Variant = 0; Variant < SmoothVariants.size(); ++Variant)
-                SmoothingPipelines[Variant] = CreateComputePipeline(
-                    Device, SmoothingPipelineLayout,
-                    (std::string("/Rendering/Surface/RenderStateTextureSmoothing.comp.") +
-                     SmoothVariants[Variant] + ".spv").c_str());
+                SmoothingPipelines[Variant] =
+                    CreateComputePipeline(Device,
+                                          SmoothingPipelineLayout,
+                                          (std::string("/Rendering/Surface/RenderStateTextureSmoothing.comp.") +
+                                           SmoothVariants[Variant] + ".spv")
+                                              .c_str());
 
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
             {
@@ -248,7 +249,7 @@ namespace MDSS::Rendering
                 AllocateSet(Layout, Instance.SmoothedSet);
                 AllocateSet(SmoothingLayout, Instance.SmoothingSet);
 
-                const auto& FlagBuffer = Geometry->GetRenderSamplingBoundaryFlagBuffer();
+                const auto&                  FlagBuffer = Geometry->GetRenderSamplingBoundaryFlagBuffer();
                 const VkDescriptorBufferInfo FlagInfo{FlagBuffer.GetHandle(), 0, FlagBuffer.GetSize()};
                 const auto WriteRenderSet = [&](VkDescriptorSet Set, VkImageView StorageView, VkImageView SampleView)
                 {
@@ -273,7 +274,8 @@ namespace MDSS::Rendering
                     Writes[2].descriptorCount = 1;
                     Writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                     Writes[2].pBufferInfo = &FlagInfo;
-                    vkUpdateDescriptorSets(Device, static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
+                    vkUpdateDescriptorSets(
+                        Device, static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
                 };
                 WriteRenderSet(Instance.Set, Instance.View->GetHandle(), Instance.View->GetHandle());
                 WriteRenderSet(
@@ -312,7 +314,8 @@ namespace MDSS::Rendering
     void TRenderStateTexture::Destroy() noexcept
     {
         for (VkPipeline Variant : SmoothingPipelines)
-            if (Variant) vkDestroyPipeline(Device, Variant, nullptr);
+            if (Variant)
+                vkDestroyPipeline(Device, Variant, nullptr);
         if (Pipeline)
             vkDestroyPipeline(Device, Pipeline, nullptr);
         if (SmoothingPipelineLayout)
@@ -343,7 +346,8 @@ namespace MDSS::Rendering
 
     VkDescriptorSet TRenderStateTexture::GetSet(std::size_t Instance, bool bSmoothed) const noexcept
     {
-        if (Instance >= Instances.size()) return VK_NULL_HANDLE;
+        if (Instance >= Instances.size())
+            return VK_NULL_HANDLE;
         return bSmoothed ? Instances[Instance].SmoothedSet : Instances[Instance].Set;
     }
 
@@ -363,7 +367,7 @@ namespace MDSS::Rendering
         if (!Command || !Pipeline || ChannelCount == 0)
             return;
         const std::array<std::uint32_t, 5> Push{Channels[0], Channels[1], Channels[2], Channels[3], ChannelCount};
-        bool bMainPipelineReady = false;
+        bool                               bMainPipelineReady = false;
         for (std::size_t Index = 0; Index < Instances.size(); ++Index)
         {
             TInstance& Instance = Instances[Index];
@@ -381,10 +385,10 @@ namespace MDSS::Rendering
                 if (!Instance.bInitialized)
                 {
                     VkImageMemoryBarrier Initialize = MakeImageBarrier(Instance.Image->GetHandle(),
-                                                                        Instance.SurfaceCount,
-                                                                        VK_IMAGE_LAYOUT_UNDEFINED,
-                                                                        0,
-                                                                        VK_ACCESS_SHADER_READ_BIT);
+                                                                       Instance.SurfaceCount,
+                                                                       VK_IMAGE_LAYOUT_UNDEFINED,
+                                                                       0,
+                                                                       VK_ACCESS_SHADER_READ_BIT);
                     vkCmdPipelineBarrier(Command,
                                          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -400,12 +404,12 @@ namespace MDSS::Rendering
                 continue;
             }
 
-            VkImageMemoryBarrier Before = MakeImageBarrier(
-                Instance.Image->GetHandle(),
-                Instance.SurfaceCount,
-                Instance.bInitialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
-                Instance.bInitialized ? VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT : 0,
-                VK_ACCESS_SHADER_WRITE_BIT);
+            VkImageMemoryBarrier Before =
+                MakeImageBarrier(Instance.Image->GetHandle(),
+                                 Instance.SurfaceCount,
+                                 Instance.bInitialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
+                                 Instance.bInitialized ? VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT : 0,
+                                 VK_ACCESS_SHADER_WRITE_BIT);
             vkCmdPipelineBarrier(Command,
                                  Instance.bInitialized
                                      ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
@@ -419,16 +423,15 @@ namespace MDSS::Rendering
                                  1,
                                  &Before);
 
-            const VkDescriptorSet StateSet = Resources.IsCurrentStateAB(Index) ? SurfaceDescriptors->GetABSet()
-                                                                                : SurfaceDescriptors->GetBASet();
+            const VkDescriptorSet StateSet =
+                Resources.IsCurrentStateAB(Index) ? SurfaceDescriptors->GetABSet() : SurfaceDescriptors->GetBASet();
             // Smoothing uses a different pipeline layout (4-byte push constants vs 20 bytes here).
             // With multiple instances, the previous iteration may have left a smoothing variant bound.
             // Re-establish the main pipeline and its full push-constant payload before the next state dispatch.
             if (!bMainPipelineReady)
             {
                 vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
-                vkCmdPushConstants(
-                    Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), Push.data());
+                vkCmdPushConstants(Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), Push.data());
                 bMainPipelineReady = true;
             }
             const std::array<VkDescriptorSet, 2> Sets{StateSet, Instance.Set};
@@ -447,10 +450,10 @@ namespace MDSS::Rendering
             if (!bPrecomputeSmoothing)
             {
                 VkImageMemoryBarrier After = MakeImageBarrier(Instance.Image->GetHandle(),
-                                                               Instance.SurfaceCount,
-                                                               VK_IMAGE_LAYOUT_GENERAL,
-                                                               VK_ACCESS_SHADER_WRITE_BIT,
-                                                               VK_ACCESS_SHADER_READ_BIT);
+                                                              Instance.SurfaceCount,
+                                                              VK_IMAGE_LAYOUT_GENERAL,
+                                                              VK_ACCESS_SHADER_WRITE_BIT,
+                                                              VK_ACCESS_SHADER_READ_BIT);
                 vkCmdPipelineBarrier(Command,
                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -473,12 +476,14 @@ namespace MDSS::Rendering
                 MakeImageBarrier(Instance.SmoothingTempImage->GetHandle(),
                                  Instance.SurfaceCount,
                                  Instance.bSmoothingInitialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
-                                 Instance.bSmoothingInitialized ? VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT : 0,
+                                 Instance.bSmoothingInitialized ? VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT
+                                                                : 0,
                                  VK_ACCESS_SHADER_WRITE_BIT),
                 MakeImageBarrier(Instance.SmoothedImage->GetHandle(),
                                  Instance.SurfaceCount,
                                  Instance.bSmoothingInitialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
-                                 Instance.bSmoothingInitialized ? VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT : 0,
+                                 Instance.bSmoothingInitialized ? VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT
+                                                                : 0,
                                  VK_ACCESS_SHADER_WRITE_BIT)};
             vkCmdPipelineBarrier(Command,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -511,16 +516,16 @@ namespace MDSS::Rendering
             if (bSeparableSmoothing)
             {
                 std::uint32_t Mode = 1U;
-                vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  SmoothingPipelines[1U + (bSharedHalo ? 1U : 0U)]);
+                vkCmdBindPipeline(
+                    Command, VK_PIPELINE_BIND_POINT_COMPUTE, SmoothingPipelines[1U + (bSharedHalo ? 1U : 0U)]);
                 vkCmdPushConstants(
                     Command, SmoothingPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Mode), &Mode);
                 Dispatch();
                 VkImageMemoryBarrier TempBarrier = MakeImageBarrier(Instance.SmoothingTempImage->GetHandle(),
-                                                                     Instance.SurfaceCount,
-                                                                     VK_IMAGE_LAYOUT_GENERAL,
-                                                                     VK_ACCESS_SHADER_WRITE_BIT,
-                                                                     VK_ACCESS_SHADER_READ_BIT);
+                                                                    Instance.SurfaceCount,
+                                                                    VK_IMAGE_LAYOUT_GENERAL,
+                                                                    VK_ACCESS_SHADER_WRITE_BIT,
+                                                                    VK_ACCESS_SHADER_READ_BIT);
                 vkCmdPipelineBarrier(Command,
                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -532,8 +537,8 @@ namespace MDSS::Rendering
                                      1,
                                      &TempBarrier);
                 Mode = 2U;
-                vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  SmoothingPipelines[3U + (bSharedHalo ? 1U : 0U)]);
+                vkCmdBindPipeline(
+                    Command, VK_PIPELINE_BIND_POINT_COMPUTE, SmoothingPipelines[3U + (bSharedHalo ? 1U : 0U)]);
                 vkCmdPushConstants(
                     Command, SmoothingPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Mode), &Mode);
                 Dispatch();
@@ -548,10 +553,10 @@ namespace MDSS::Rendering
             }
 
             VkImageMemoryBarrier AfterSmooth = MakeImageBarrier(Instance.SmoothedImage->GetHandle(),
-                                                                 Instance.SurfaceCount,
-                                                                 VK_IMAGE_LAYOUT_GENERAL,
-                                                                 VK_ACCESS_SHADER_WRITE_BIT,
-                                                                 VK_ACCESS_SHADER_READ_BIT);
+                                                                Instance.SurfaceCount,
+                                                                VK_IMAGE_LAYOUT_GENERAL,
+                                                                VK_ACCESS_SHADER_WRITE_BIT,
+                                                                VK_ACCESS_SHADER_READ_BIT);
             vkCmdPipelineBarrier(Command,
                                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,

@@ -226,7 +226,7 @@ void main()
 #if MDSS_GPU_VALIDATION
             if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
 #endif
-            float CavityDepth = max(-Meso, 0.0);
+            float CavityDepth = max(MesoNormals.Values[T].w - Meso, 0.0);
             float CavityFill = CavityDepth > 0.0 ? HaloCavityFill[Slot] : 0.0;
             float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
             float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
@@ -259,7 +259,7 @@ void main()
 #if MDSS_GPU_VALIDATION
         if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
 #endif
-        float CavityDepth = max(-Meso, 0.0);
+        float CavityDepth = max(MesoNormals.Values[N].w - Meso, 0.0);
         float CavityFill = CavityDepth > 0.0 ? DisplayedCavityFill(N, Profile) : 0.0;
         float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
         float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
@@ -273,7 +273,7 @@ void main()
 #if MDSS_GPU_VALIDATION
     if (isnan(CenterMeso) || isinf(CenterMeso)) CenterMeso = 0.0;
 #endif
-    float CenterCavityDepth = max(-CenterMeso, 0.0);
+    float CenterCavityDepth = max(MesoNormals.Values[T].w - CenterMeso, 0.0);
     float Height = CenterMeso + min(WeightedCavityFill / WeightSum, 1.0) * CenterCavityDepth +
                    WeightedFollowingHeight / WeightSum;
     OutputGeometry.Values[T].HeightAndNormal.x = Height;

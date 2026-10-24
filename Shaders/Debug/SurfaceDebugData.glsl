@@ -26,7 +26,7 @@ TDebugAccumulation DebugAccumulation(uint Texel, uint Channel, uint Channels,
     if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
         TexelSurfaceIndices.Values[Texel] == 0xffffffffu || Texel >= uint(GeometryScalars.Values.length())) return D;
     D.MesoHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
-    D.CavityDepth = max(-D.MesoHeight, 0.0);
+    D.CavityDepth = max(MesoNormals.Values[Texel].w - D.MesoHeight, 0.0);
     if (isnan(D.MesoHeight) || isinf(D.MesoHeight)) { D.Status = 4u; return D; }
     D.Status = 1u;
     if (Texel >= uint(TexelProfileIndices.Values.length()) || TexelProfileIndices.Values[Texel] == 0xffffffffu) return D;

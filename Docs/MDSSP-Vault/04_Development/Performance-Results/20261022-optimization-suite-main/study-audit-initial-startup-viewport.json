@@ -1,0 +1,385 @@
+{
+  "generated_at": "2026-10-23T11:16:20.824617+09:00",
+  "status": "issues_found",
+  "scope": "File completeness, measured frame continuity, exported conditions, final step, finite state/timings, repeat state records, binary identity, non-overlapping app execution. Does not prove conservation, image correctness or absence of external GPU load.",
+  "phases": [
+    {
+      "phase": "20261022-optimization-suite-main",
+      "status": "complete",
+      "planned": 432,
+      "captured": 432,
+      "measured_frames": 223320,
+      "unique_cases": 124,
+      "unsupported_checks": [],
+      "binary_hashes": {
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Build\\bin\\Release\\MDSS.exe": [
+          "7e9f78245e7f19fb95313ae83d7e82f7538f70181473054a8855c2af4dfa149f"
+        ]
+      }
+    },
+    {
+      "phase": "20261022-single-transport-validation",
+      "status": "complete",
+      "planned": 152,
+      "captured": 152,
+      "measured_frames": 152,
+      "unique_cases": 152,
+      "unsupported_checks": [],
+      "binary_hashes": {
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe": [
+          "bcfe697512f55f1707e1eb8021b797a21a0d990e91e2d5c5bbba2a90938cab41"
+        ],
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe": [
+          "8525ced58f5fd0f211284c454beb2149bf217a185d89a051a2d1d84c10d10ae2"
+        ]
+      }
+    },
+    {
+      "phase": "20261022-workload-supplement",
+      "status": "complete",
+      "planned": 357,
+      "captured": 357,
+      "measured_frames": 207024,
+      "unique_cases": 119,
+      "unsupported_checks": [],
+      "binary_hashes": {
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Build\\bin\\Release\\MDSS.exe": [
+          "7e9f78245e7f19fb95313ae83d7e82f7538f70181473054a8855c2af4dfa149f"
+        ],
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe": [
+          "8525ced58f5fd0f211284c454beb2149bf217a185d89a051a2d1d84c10d10ae2"
+        ]
+      }
+    },
+    {
+      "phase": "20261022-development-history",
+      "status": "complete",
+      "planned": 48,
+      "captured": 48,
+      "measured_frames": 28800,
+      "unique_cases": 16,
+      "unsupported_checks": [
+        "CPU frame elapsed (historical exporter)",
+        "allocation categories (historical exporter)",
+        "final simulation step serial (historical exporter; frame count and measured steps checked)",
+        "separate base/overlay resolution fields (historical mesh follows scene resolution)"
+      ],
+      "binary_hashes": {
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\V0\\Build\\bin\\Release\\MDSS.exe": [
+          "c4d1e57bf8650ba992f7c45addea13a9a3f6e20254e7676c6423246e4d8b7f7d"
+        ],
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\V1\\Build\\bin\\Release\\MDSS.exe": [
+          "734ddc00d5c6d3ad2a9f6495361db4cb906cf3cac46c0aaf8738eeb141b98d56"
+        ],
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\V3\\Build\\bin\\Release\\MDSS.exe": [
+          "38406eecec59ec54a2a629ef13983f1ff6b9bf47b00e458222cd10149b263774"
+        ],
+        "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Build\\bin\\Release\\MDSS.exe": [
+          "7e9f78245e7f19fb95313ae83d7e82f7538f70181473054a8855c2af4dfa149f"
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reference-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-cold_load-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reload_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reload_no_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-unshared_profiles-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-unshared_profiles-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reload_no_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reload_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-cold_load-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reference-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reference-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-cold_load-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reload_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-reload_no_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-256-unshared_profiles-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reference-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-cold_load-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reload_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reload_no_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-unshared_profiles-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-unshared_profiles-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reload_no_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reload_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-cold_load-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reference-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reference-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-cold_load-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reload_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-reload_no_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-brickcube-512-unshared_profiles-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reference-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-cold_load-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reload_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reload_no_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-unshared_profiles-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-unshared_profiles-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reload_no_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reload_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-cold_load-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reference-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reference-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-cold_load-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reload_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-reload_no_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-256-unshared_profiles-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reference-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-cold_load-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reload_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reload_no_pool-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-unshared_profiles-1",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-unshared_profiles-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reload_no_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reload_pool-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-cold_load-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reference-2",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reference-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-cold_load-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reload_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-reload_no_pool-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    },
+    {
+      "phase": "20261022-optimization-suite-main",
+      "run": "G1-mountain-512-unshared_profiles-3",
+      "error": "camera/viewport changed within a scene-resolution case"
+    }
+  ]
+}

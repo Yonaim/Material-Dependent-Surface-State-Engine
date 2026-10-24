@@ -88,6 +88,7 @@ layout(push_constant) uniform TOverlayPush
     float HeightDisplayScale;
     uint UseOpaqueBase;
     uint Padding;
+    float LavaThreshold;
 } Push;
 
 uint CoverageListBase()
@@ -144,6 +145,7 @@ void ComputeCoverage(uint Index, bool TileActive)
     ivec2 Base = ivec2(floor(Pixel));
     vec2 F = fract(Pixel);
     float Value = 0.0;
+    float WeightSum = 0.0;
     for (int Y = 0; Y < 2; ++Y)
     {
         for (int X = 0; X < 2; ++X)
@@ -157,6 +159,7 @@ void ComputeCoverage(uint Index, bool TileActive)
 #endif
             if (OverlayTexelProfileIndices.Values[Texel] != Profile ||
                 OverlayTexelChartIndices.Values[Texel] != Chart) continue;
+            WeightSum += Weight;
             if (SharedSurface)
             {
                 float MaterialCoverage = 0.0;
@@ -175,7 +178,10 @@ void ComputeCoverage(uint Index, bool TileActive)
                 Value += Weight * OverlayStateSaturation(Texel, Channel, Channels, Profile);
         }
     }
-    if (SharedSurface)
+    Value = WeightSum > 1e-6 ? Value / WeightSum : 0.0;
+    // A lava-only overlay should not expand to every texel with a tiny height delta.
+    // Its visible boundary is determined by the same saturation threshold as shading.
+    if (SharedSurface && (Push.ActiveMaterialMask & 3u) != 0u)
     {
         float Top = 0.0;
         float Base = 0.0;

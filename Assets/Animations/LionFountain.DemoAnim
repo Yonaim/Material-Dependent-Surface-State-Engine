@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "durationSeconds": 11.0,
+  "loop": false,
+  "autoplay": true,
+  "tracks": [
+    { "target": "camera", "property": "position", "interpolation": "linear", "keys": [
+      { "time": 0.0, "value": [1.75, -3.10, 1.85] },
+      { "time": 11.0, "value": [1.20, -2.35, 1.65] }
+    ] },
+    { "target": "camera", "property": "target", "interpolation": "linear", "keys": [
+      { "time": 0.0, "value": [0.0, -0.24, 0.83] },
+      { "time": 11.0, "value": [0.0, -0.20, 0.90] }
+    ] }
+  ],
+  "contactEvents": [
+    { "time": 0.4, "target": "lion_head", "state": "waterfilm", "operation": "add", "shape": "circle", "localPosition": [0.0, -0.24, 0.91], "radius": 0.25, "depth": 0.08, "strength": 0.7, "falloff": 0.7 },
+    { "time": 1.4, "target": "lion_head", "state": "waterfilm", "operation": "add", "shape": "circle", "localPosition": [0.0, -0.24, 0.91], "radius": 0.25, "depth": 0.08, "strength": 0.7, "falloff": 0.7 },
+    { "time": 2.4, "target": "lion_head", "state": "waterfilm", "operation": "add", "shape": "circle", "localPosition": [0.0, -0.24, 0.91], "radius": 0.25, "depth": 0.08, "strength": 0.7, "falloff": 0.7 },
+    { "time": 3.2, "target": "fountain_stonework", "state": "waterfilm", "operation": "add", "shape": "circle", "localPosition": [0.0, -0.55, 0.11], "radius": 0.48, "depth": 0.06, "strength": 0.7, "falloff": 0.6 },
+    { "time": 4.2, "target": "fountain_stonework", "state": "waterfilm", "operation": "add", "shape": "circle", "localPosition": [0.0, -0.55, 0.11], "radius": 0.48, "depth": 0.06, "strength": 0.7, "falloff": 0.6 },
+    { "time": 5.2, "target": "fountain_stonework", "state": "waterfilm", "operation": "add", "shape": "circle", "localPosition": [0.0, -0.55, 0.11], "radius": 0.48, "depth": 0.06, "strength": 0.7, "falloff": 0.6 }
+  ]
+}

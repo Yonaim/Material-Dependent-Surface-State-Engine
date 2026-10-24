@@ -96,7 +96,7 @@ namespace MDSS
                 return Track.Keys.front().Value;
             if (Time >= Track.Keys.back().Time)
                 return Track.Keys.back().Value;
-            const auto               Upper = std::upper_bound(Track.Keys.begin(),
+            const auto Upper = std::upper_bound(Track.Keys.begin(),
                                                 Track.Keys.end(),
                                                 Time,
                                                 [](float T, const TDemoAnimationKey& Key) { return T < Key.Time; });
@@ -163,6 +163,21 @@ namespace MDSS
                 throw std::runtime_error("Demo Animation.autoplay must be a boolean.");
             Clip.bAutoplay = Autoplay->get<bool>();
         }
+        if (const auto Weather = Root.find("weather"); Weather != Root.end())
+        {
+            if (!Weather->is_object())
+                throw std::runtime_error("Demo Animation.weather must be an object.");
+            TDemoAnimationClip::TWeatherCue Cue;
+            Cue.RainStartSeconds = Float(Required(*Weather, "rainStartSeconds", "weather"), "weather.rainStartSeconds");
+            Cue.RainEndSeconds = Float(Required(*Weather, "rainEndSeconds", "weather"), "weather.rainEndSeconds");
+            Cue.CloudEndSeconds = Float(Required(*Weather, "cloudEndSeconds", "weather"), "weather.cloudEndSeconds");
+            Cue.Intensity = Float(Required(*Weather, "intensity", "weather"), "weather.intensity");
+            if (Cue.RainStartSeconds < 0.0F || Cue.RainEndSeconds <= Cue.RainStartSeconds ||
+                Cue.CloudEndSeconds < Cue.RainEndSeconds || Cue.CloudEndSeconds > Clip.DurationSeconds ||
+                Cue.Intensity < 0.0F || Cue.Intensity > 1.0F)
+                throw std::runtime_error("Demo Animation.weather times or intensity are out of range.");
+            Clip.Weather = Cue;
+        }
         const TJson& Tracks = Required(Root, "tracks", "Demo Animation");
         if (!Tracks.is_array() || Tracks.empty())
             throw std::runtime_error("Demo Animation tracks must be a non-empty array.");
@@ -222,12 +237,13 @@ namespace MDSS
             if (!Events->is_array())
                 throw std::runtime_error("Demo Animation.contactEvents must be an array.");
             if (Clip.bLoop && !Events->empty())
-                throw std::runtime_error("Demo Animation with contact events cannot loop; replay resets Surface State.");
+                throw std::runtime_error(
+                    "Demo Animation with contact events cannot loop; replay resets Surface State.");
             float PreviousTime = -1.0F;
             for (std::size_t Index = 0; Index < Events->size(); ++Index)
             {
-                const TJson& JsonEvent = (*Events)[Index];
-                const std::string Context = "contactEvents[" + std::to_string(Index) + "]";
+                const TJson&                      JsonEvent = (*Events)[Index];
+                const std::string                 Context = "contactEvents[" + std::to_string(Index) + "]";
                 TDemoAnimationClip::TContactEvent Event;
                 Event.Time = Float(Required(JsonEvent, "time", Context), Context + ".time");
                 if (Event.Time < 0.0F || Event.Time > Clip.DurationSeconds || Event.Time < PreviousTime)
@@ -238,12 +254,15 @@ namespace MDSS
                 if (SurfaceState::NormalizeSurfaceStateName(Event.State) != Event.State)
                     throw std::runtime_error(Context + ".state must be a normalized State name.");
                 const auto& Objects = Scene.GetStaticMeshInstances();
-                const auto Target = std::find_if(Objects.begin(), Objects.end(), [&](const TStaticMeshInstance& Object)
-                                                 { return Object.GetId() == Event.Target; });
-                if (Target == Objects.end() || Target->GetSurfaceData() == SurfaceState::InvalidSurfaceRuntimeDataHandle)
+                const auto  Target =
+                    std::find_if(Objects.begin(),
+                                 Objects.end(),
+                                 [&](const TStaticMeshInstance& Object) { return Object.GetId() == Event.Target; });
+                if (Target == Objects.end() ||
+                    Target->GetSurfaceData() == SurfaceState::InvalidSurfaceRuntimeDataHandle)
                     throw std::runtime_error(Context + ".target must name a Scene object with Surface data.");
-                Event.LocalPosition = glm::vec3(ReadValue(Required(JsonEvent, "localPosition", Context), false,
-                                                         Context + ".localPosition"));
+                Event.LocalPosition = glm::vec3(
+                    ReadValue(Required(JsonEvent, "localPosition", Context), false, Context + ".localPosition"));
                 if (const auto Normal = JsonEvent.find("localNormal"); Normal != JsonEvent.end())
                     Event.LocalNormal = glm::vec3(ReadValue(*Normal, false, Context + ".localNormal"));
                 if (glm::dot(Event.LocalNormal, Event.LocalNormal) <= 1.0e-12F)
@@ -256,11 +275,16 @@ namespace MDSS
                 else
                     throw std::runtime_error(Context + ".operation must be add or remove.");
                 const std::string Shape = String(JsonEvent, "shape", Context);
-                if (Shape == "circle") Event.Shape = SurfaceState::ESurfaceContactShape::Circle;
-                else if (Shape == "ellipse") Event.Shape = SurfaceState::ESurfaceContactShape::Ellipse;
-                else if (Shape == "rectangle") Event.Shape = SurfaceState::ESurfaceContactShape::Rectangle;
-                else if (Shape == "capsule") Event.Shape = SurfaceState::ESurfaceContactShape::Capsule;
-                else throw std::runtime_error(Context + ".shape is unsupported.");
+                if (Shape == "circle")
+                    Event.Shape = SurfaceState::ESurfaceContactShape::Circle;
+                else if (Shape == "ellipse")
+                    Event.Shape = SurfaceState::ESurfaceContactShape::Ellipse;
+                else if (Shape == "rectangle")
+                    Event.Shape = SurfaceState::ESurfaceContactShape::Rectangle;
+                else if (Shape == "capsule")
+                    Event.Shape = SurfaceState::ESurfaceContactShape::Capsule;
+                else
+                    throw std::runtime_error(Context + ".shape is unsupported.");
                 Event.Radius = Float(Required(JsonEvent, "radius", Context), Context + ".radius");
                 Event.Strength = Float(Required(JsonEvent, "strength", Context), Context + ".strength");
                 if (const auto Other = JsonEvent.find("secondaryRadius"); Other != JsonEvent.end())
@@ -273,7 +297,8 @@ namespace MDSS
                     Event.Falloff = Float(*Falloff, Context + ".falloff");
                 if (Event.Radius <= 0.0F || Event.Strength < 0.0F || Event.Falloff < 0.0F || Event.Depth <= 0.0F ||
                     (Event.Shape != SurfaceState::ESurfaceContactShape::Circle && Event.SecondaryRadius <= 0.0F))
-                    throw std::runtime_error(Context + " has invalid radius, secondary radius, depth, strength, or falloff.");
+                    throw std::runtime_error(Context +
+                                             " has invalid radius, secondary radius, depth, strength, or falloff.");
                 Clip.ContactEvents.push_back(std::move(Event));
             }
         }

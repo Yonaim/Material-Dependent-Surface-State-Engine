@@ -1,0 +1,5 @@
+newmtl AltarStonework
+Kd 1 1 1
+d 1
+map_Kd AltarStoneAlbedo.jpg
+norm AltarStoneNormal.jpg

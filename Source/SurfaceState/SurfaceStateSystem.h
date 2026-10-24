@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "SurfaceState/GPU/SurfaceGPUBufferPool.h"
 #include "SurfaceState/GPU/SurfaceGPUResources.h"
 #include "SurfaceState/State/SurfaceInput.h"
 #include "SurfaceState/State/SurfaceStateSolver.h"
@@ -43,7 +44,8 @@ namespace MDSS::SurfaceState
         TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
                             const Asset::TAssetManager& Assets,
                             const TSurfaceDataManager&  SurfaceData,
-                            const TScene&               Scene);
+                            const TScene&               Scene,
+                            TSurfaceGPUBufferPool*      ReusePool = nullptr);
         ~TSurfaceStateSystem();
 
         TSurfaceStateSystem(const TSurfaceStateSystem&) = delete;
@@ -65,39 +67,85 @@ namespace MDSS::SurfaceState
 
         // Simulation and GPU recording
         [[nodiscard]] float GetMaximumStableDeltaTime();
-        void PrepareTransferWeightCachesForSettingChange();
-        void RecordStep(VkCommandBuffer CommandBuffer,
-                        float           DeltaTime,
-                        VkQueryPool     TimestampQueryPool = VK_NULL_HANDLE,
-                        std::uint32_t   FirstStepQuery = 0,
-                        bool            bPrepareRenderHeight = true);
+        void                PrepareTransferWeightCachesForSettingChange();
+        void                RecordStep(VkCommandBuffer CommandBuffer,
+                                       float           DeltaTime,
+                                       VkQueryPool     TimestampQueryPool = VK_NULL_HANDLE,
+                                       std::uint32_t   FirstStepQuery = 0,
+                                       bool            bPrepareRenderHeight = true);
 
         // Debug controls and resource access
         [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
         [[nodiscard]] const TSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
-        void SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
-        void SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept;
-        void SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
-        void SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
-        [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept { return bRawFluxCacheEnabled; }
-        void SetRawFluxCacheEnabled(bool bEnabled) noexcept { bRawFluxCacheEnabled = bEnabled; }
-        [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept { return bCoalescedRawFluxLayoutEnabled; }
-        void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept { bCoalescedRawFluxLayoutEnabled = bEnabled; }
-        [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept { return bHalfRawFluxCacheEnabled; }
-        void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept { bHalfRawFluxCacheEnabled = bEnabled; }
-        [[nodiscard]] bool IsHalfDynamicWeightsEnabled() const noexcept { return bHalfDynamicWeightsEnabled; }
-        void SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
-        [[nodiscard]] bool IsSparseSolverEnabled() const noexcept { return bSparseSolverEnabled; }
-        void SetSparseSolverEnabled(bool bEnabled) noexcept;
-        [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept { return bSparseAccumulationHeightEnabled; }
-        void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept { bSparseAccumulationHeightEnabled = bEnabled; }
-        [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept { return bActiveChannelMaskEnabled; }
-        void SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
-        [[nodiscard]] bool IsPerWorkgroupChannelMaskEnabled() const noexcept { return bPerWorkgroupChannelMaskEnabled; }
-        void SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
-        [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept { return bSparseSimulationGeometryEnabled; }
-        void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept { bSparseSimulationGeometryEnabled = bEnabled; }
+        void               SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
+        void               SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept;
+        void               SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
+        void               SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept
+        {
+            return bRawFluxCacheEnabled;
+        }
+        void SetRawFluxCacheEnabled(bool bEnabled) noexcept
+        {
+            bRawFluxCacheEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept
+        {
+            return bCoalescedRawFluxLayoutEnabled;
+        }
+        void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept
+        {
+            bCoalescedRawFluxLayoutEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept
+        {
+            return bHalfRawFluxCacheEnabled;
+        }
+        void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
+        {
+            bHalfRawFluxCacheEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsHalfDynamicWeightsEnabled() const noexcept
+        {
+            return bHalfDynamicWeightsEnabled;
+        }
+        void               SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseSolverEnabled() const noexcept
+        {
+            return bSparseSolverEnabled;
+        }
+        void               SetSparseSolverEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept
+        {
+            return bSparseAccumulationHeightEnabled;
+        }
+        void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept
+        {
+            bSparseAccumulationHeightEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept
+        {
+            return bActiveChannelMaskEnabled;
+        }
+        void               SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsPerWorkgroupChannelMaskEnabled() const noexcept
+        {
+            return bPerWorkgroupChannelMaskEnabled;
+        }
+        void               SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
+        [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept
+        {
+            return bSparseSimulationGeometryEnabled;
+        }
+        void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept
+        {
+            bSparseSimulationGeometryEnabled = bEnabled;
+        }
         [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
+        [[nodiscard]] TSurfaceGPUBufferPool&            GetReusableBufferPool() noexcept
+        {
+            return BufferPool;
+        }
 
     private:
         // Pending contact application
@@ -108,6 +156,7 @@ namespace MDSS::SurfaceState
         const Asset::TAssetManager&                 Assets;
         const TSurfaceDataManager&                  SurfaceData;
         const TScene&                               Scene;
+        TSurfaceGPUBufferPool                       BufferPool;
         std::unique_ptr<TSurfaceGPUResourceManager> GPUResources;
         std::unique_ptr<TSurfaceStateSolver>        Solver;
         std::vector<TSurfaceContactInput>           PendingContacts;
@@ -122,7 +171,7 @@ namespace MDSS::SurfaceState
         bool                                        bSparseSolverEnabled = true;
         bool                                        bSparseAccumulationHeightEnabled = true;
         bool                                        bActiveChannelMaskEnabled = true;
-        bool                                        bPerWorkgroupChannelMaskEnabled = false;
+        bool                                        bPerWorkgroupChannelMaskEnabled = true;
         bool                                        bSparseSimulationGeometryEnabled = true;
         bool                                        bSeedPersistentActivityOnNextStep = true;
         std::vector<bool>                           PendingInputActivation;

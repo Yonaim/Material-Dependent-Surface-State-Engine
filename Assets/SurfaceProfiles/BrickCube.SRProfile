@@ -18,12 +18,12 @@
     "mud": {
       "stateCapacity": 2.0,
       "inputFactor": 1.0,
-      "saturationSpreadFactor": 0.03,
+      "saturationSpreadFactor": 0.12,
       "gravityFlowFactor": 0.005,
       "decayRate": 0.005,
       "cavityDecayProtectionFactor": 0.9,
       "cavityExitResistanceFactor": 0.85,
-      "accumulationFactor": 0.15,
+      "accumulationFactor": 0.625,
       "cavityFillFactor": 0.8,
       "thicknessPerAmount": 0.05
     },
@@ -49,7 +49,7 @@
       "cavityExitResistanceFactor": 1.0,
       "accumulationFactor": 0.08,
       "cavityFillFactor": 0.9,
-      "thicknessPerAmount": 0.0
+      "thicknessPerAmount": 0.05
     }
   },
   "transitions": []

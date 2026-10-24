@@ -42,23 +42,34 @@ layout(location = 3) out vec3 FragWorldPosition;
 
 layout(location = 4) out float FragCoverage;
 
+layout(location = 5) flat out uint FragIsSide;
+
+layout(location = 6) flat out mat3 FragNormalMatrix;
+
+
 void main()
 {
     // 각 mesh 정점이 참조하는 최대 네 texel의 형상을 bilinear weight로 보간한다.
     float Height = 0.0;
-    vec3 NormalOffset = vec3(0.0);
+    vec3 DisplacedNormal = vec3(0.0);
     float Weight = 0.0;
     for (uint K = 0u; K < 4u; ++K)
     {
         uint T = InSamples[K];
         if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length())) continue;
         Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
-        NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
+        DisplacedNormal += InWeights[K] * Computed.Values[T].HeightAndNormal.yzw;
         Weight += InWeights[K];
     }
-    vec3 Normal = InNormal + NormalOffset;
-    if (Weight == 0.0 || dot(Normal, Normal) < 1e-12) Normal = InNormal;
+    vec3 Normal = InNormal;
+    // Use the height-field normal directly. The prior additive correction preserved
+    // the source shading normal and could retain its triangle facets on the overlay.
+    if (Weight > 0.0 && dot(DisplacedNormal, DisplacedNormal) > 1e-12)
+        Normal = normalize(DisplacedNormal);
+    if (Material.DemoExtraStateChannels.y == 4u) Normal = InNormal;
     mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
+    FragIsSide = 0u;
+    FragNormalMatrix = NormalMatrix;
     FragNormal = normalize(NormalMatrix * Normal);
     FragUV = InUVSurface.xy;
     FragSurfaceIndex = uint(InUVSurface.w);

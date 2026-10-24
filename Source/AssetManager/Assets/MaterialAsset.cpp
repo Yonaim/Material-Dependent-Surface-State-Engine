@@ -16,9 +16,10 @@ namespace MDSS::Asset
                                    std::filesystem::path SourcePath,
                                    glm::vec4             BaseColor,
                                    TextureAssetHandle    BaseColorTexture,
-                                   TextureAssetHandle    NormalTexture)
+                                   TextureAssetHandle    NormalTexture,
+                                   glm::vec4             WaterAppearance)
         : TAsset(ID, std::move(Name), std::move(SourcePath)), BaseColor(BaseColor), BaseColorTexture(BaseColorTexture),
-          NormalTexture(NormalTexture)
+          NormalTexture(NormalTexture), WaterAppearance(WaterAppearance)
     {
     }
 
@@ -35,6 +36,11 @@ namespace MDSS::Asset
     TextureAssetHandle TMaterialAsset::GetNormalTexture() const noexcept
     {
         return NormalTexture;
+    }
+
+    const glm::vec4& TMaterialAsset::GetWaterAppearance() const noexcept
+    {
+        return WaterAppearance;
     }
 #pragma endregion
 } // namespace MDSS::Asset

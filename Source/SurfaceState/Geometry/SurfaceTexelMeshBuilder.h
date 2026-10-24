@@ -34,7 +34,11 @@ namespace MDSS::SurfaceState
         std::vector<TSurfaceTexelMeshVertex> Vertices;
         std::vector<std::uint32_t>           Indices;
         // x/y: render edge endpoints, z: incident triangle's third vertex.
-        std::vector<glm::uvec4>             BoundaryEdges;
+        std::vector<glm::uvec4> BoundaryEdges;
+        // One record per triangle, then per boundary edge. Triangle xyz identify the
+        // side slot across each edge; boundary xyz identify the two endpoint neighbors
+        // and the incident triangle. InvalidTexelIndex means no unique neighbor.
+        std::vector<glm::uvec4>             SideAdjacency;
         std::vector<TSurfaceTexelMeshRange> Surfaces;
     };
 
@@ -44,5 +48,5 @@ namespace MDSS::SurfaceState
     [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
                                                           std::span<const Asset::TVertex>             Vertices = {},
                                                           std::span<const Asset::TMeshTriangleSource> Triangles = {},
-                                                          std::uint32_t                                RenderResolution = 0);
+                                                          std::uint32_t RenderResolution = 0);
 }

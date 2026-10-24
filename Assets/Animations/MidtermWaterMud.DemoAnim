@@ -1,0 +1,513 @@
+{
+  "version": 1,
+  "durationSeconds": 12.0,
+  "loop": false,
+  "autoplay": true,
+  "tracks": [
+    {
+      "target": "camera",
+      "property": "position",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0,
+            -1.35,
+            2.15
+          ]
+        },
+        {
+          "time": 12.0,
+          "value": [
+            0,
+            -1.35,
+            2.15
+          ]
+        }
+      ]
+    },
+    {
+      "target": "camera",
+      "property": "target",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0,
+            0,
+            0.2
+          ]
+        },
+        {
+          "time": 12.0,
+          "value": [
+            0,
+            0,
+            0.2
+          ]
+        }
+      ]
+    },
+    {
+      "target": "fractured_stone",
+      "property": "rotation",
+      "interpolation": "slerp",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0.0,
+            0,
+            0,
+            1.0
+          ]
+        },
+        {
+          "time": 4.8,
+          "value": [
+            0.0,
+            0,
+            0,
+            1.0
+          ]
+        },
+        {
+          "time": 6.8,
+          "value": [
+            0.17364817766693033,
+            0,
+            0,
+            0.984807753012208
+          ]
+        },
+        {
+          "time": 12.0,
+          "value": [
+            0.17364817766693033,
+            0,
+            0,
+            0.984807753012208
+          ]
+        }
+      ]
+    }
+  ],
+  "contactEvents": [
+    {
+      "time": 0.55,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.55,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.85,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 0.85,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.15,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.15,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.45,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.45,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.75,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 1.75,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.05,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.05,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.35,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.35,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.65,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.65,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.95,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 2.95,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.25,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.25,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.55,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.55,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.85,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 3.85,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.15,
+      "target": "fractured_stone",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        -0.3,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    },
+    {
+      "time": 4.15,
+      "target": "fractured_stone",
+      "state": "mud",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0.29,
+        0.58,
+        0.1
+      ],
+      "radius": 0.2,
+      "depth": 0.2,
+      "strength": 0.26,
+      "falloff": 0.7
+    }
+  ]
+}

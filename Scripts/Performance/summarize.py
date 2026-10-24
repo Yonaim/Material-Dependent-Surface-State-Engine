@@ -61,7 +61,7 @@ def main() -> int:
         f"- GPU/runtime: {manifest['environment'].get('gpu_vulkan_summary') or 'not reported by vulkaninfo'}",
         f"- Matrix: `{manifest['matrix_path']}`",
         "",
-        "> GPU timings are per-frame timestamp-query totals. Solver pass times sum the dispatched instance/step ranges for that frame. Compare revisions within the same scene, resolution, and run protocol.",
+        "> GPU timings are per-frame timestamp-query totals. Solver pass times sum the dispatched stage batches for that frame. Compare revisions within the same scene, resolution, and run protocol.",
         "",
         "| Scene | Resolution | Repeats | Solver median ms (run median range) | Solver p95 ms (run p95 range) | Pass 1 median ms | Pass 2 median ms |",
         "|---|---:|---:|---:|---:|---:|---:|",
@@ -94,9 +94,57 @@ def main() -> int:
         if any(count != run.get("measurement_frames") for count, run in zip(run_sample_counts, runs)):
             raise ValueError(f"Raw sample count mismatch for {scene_id} at {resolution}.")
 
+    metrics = [
+        ("render_gpu_ms", "Render GPU (includes UI)"),
+        ("render_preparation_gpu_ms", "Render preparation GPU"),
+        ("scene_draw_gpu_ms", "Scene draw GPU"),
+        ("overlay_preparation_gpu_ms", "Overlay preparation GPU (within render preparation)"),
+        ("base_draw_gpu_ms", "Base draw GPU"),
+        ("overlay_draw_gpu_ms", "Overlay draw GPU"),
+        ("geometry_gpu_ms", "Simulation geometry GPU"),
+        ("transfer_weight_gpu_ms", "Transfer weights GPU"),
+        ("command_record_cpu_ms", "Command recording CPU"),
+        ("fence_wait_cpu_ms", "Frame fence wait CPU"),
+    ]
+    aggregates = []
+    lines.extend(["", "## Detailed timings", "",
+                  "Subranges overlap their parent ranges; do not add all rows. Values are median of repeat medians / median of repeat p95, in ms.", "",
+                  "| Scene | Resolution | Metric | Median ms | p95 ms | Repeat median min-max ms |",
+                  "|---|---:|---|---:|---:|---:|"])
+    for (scene_id, resolution), runs in sorted(grouped.items()):
+        loaded = [read_samples(manifest_path, run) for run in runs]
+        for field, label in metrics:
+            values = [[float(sample[field]) for sample in samples
+                       if isinstance(sample.get(field), (int, float)) and math.isfinite(sample[field])]
+                      for samples in loaded]
+            if not all(values):
+                continue
+            medians = [statistics.median(items) for items in values]
+            p95s = [percentile(items, .95) for items in values]
+            row = {"scene": scene_id, "resolution": resolution, "metric": field,
+                   "median": statistics.median(medians), "p95": statistics.median(p95s),
+                   "repeat_medians": medians, "repeat_p95": p95s}
+            aggregates.append(row)
+            lines.append(f"| {scene_id} | {resolution} | {label} | {row['median']:.3f} | {row['p95']:.3f} | {min(medians):.3f}–{max(medians):.3f} |")
+    (manifest_path.parent / "aggregate.json").write_text(
+        json.dumps(aggregates, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    lines.extend(["", "## Final-state and allocation checks", "",
+                  "After drain frames and device idle, before resource destruction. Allocation totals include cached meshes; exclude swapchain/driver allocations.", "",
+                  "| Run | Submitted frames | Simulation steps | Nonfinite / negative State | Allocation MiB | Peak MiB |",
+                  "|---|---:|---:|---|---:|---:|"])
+    for run in manifest["runs"]:
+        if "validation" not in run:
+            continue
+        check = json.loads((manifest_path.parent / run["validation"]).read_text(encoding="utf-8"))
+        invalid = sum(item["nonfinite"] for item in check["instances"])
+        negative = sum(item["negative"] for item in check["instances"])
+        lines.append(f"| {run['name']} | {check['submitted_frames']} | {check['simulation_step_serial']} | {invalid} / {negative} | {check['allocated_total_bytes']/2**20:.2f} | {check['peak_allocated_total_bytes']/2**20:.2f} |")
+
     lines.extend(["", "## Run files", "", "| Run | Samples | Raw measurements | App log |", "|---|---:|---|---|"])
     for run in manifest["runs"]:
-        lines.append(f"| {run['name']} | {run['sample_count']} | [`{run['raw_jsonl']}`]({run['raw_jsonl']}) | [`{run['log']}`]({run['log']}) |")
+        raw_link = run['raw_jsonl'].replace('\\', '/')
+        log_link = run['log'].replace('\\', '/')
+        lines.append(f"| {run['name']} | {run['sample_count']} | [`{raw_link}`]({raw_link}) | [`{log_link}`]({log_link}) |")
     lines.extend([
         "",
         "## Protocol",

@@ -85,9 +85,9 @@ namespace MDSS::GPU
 
 #if MDSS_ENABLE_VALIDATION
         const VkDebugUtilsMessengerCreateInfoEXT MessengerInfo = DebugMessengerCreateInfo();
-        constexpr std::array                     EnabledFeatures = {VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
-                                                                    VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
-        VkValidationFeaturesEXT                  ValidationFeatures{};
+        constexpr std::array    EnabledFeatures = {VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
+                                                   VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
+        VkValidationFeaturesEXT ValidationFeatures{};
         ValidationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
         ValidationFeatures.pNext = &MessengerInfo;
         ValidationFeatures.enabledValidationFeatureCount = static_cast<std::uint32_t>(EnabledFeatures.size());

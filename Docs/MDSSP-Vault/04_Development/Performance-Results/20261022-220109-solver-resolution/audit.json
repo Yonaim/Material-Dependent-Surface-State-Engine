@@ -1,0 +1,19 @@
+{
+  "runs": 12,
+  "samples": 7200,
+  "frame_index_range": [
+    60,
+    659
+  ],
+  "steps_per_frame": 1,
+  "final_steps": 662,
+  "state_hash_repeat_agreement": true,
+  "settings_repeat_agreement": true,
+  "all_timing_values_finite_nonnegative": true,
+  "nonfinite_state": 0,
+  "negative_state": 0,
+  "logs_error_count": 0,
+  "present_mode": 0,
+  "frozen_source_asset_shader_hashes_verified": 432,
+  "binary_sha256_match": true
+}

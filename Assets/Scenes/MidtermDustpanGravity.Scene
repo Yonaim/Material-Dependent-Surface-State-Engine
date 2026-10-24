@@ -1,0 +1,44 @@
+{
+  "type": "TScene",
+  "version": 1,
+  "animation": "../Animations/MidtermDustpanGravity.DemoAnim",
+  "camera": {
+    "position": [
+      0.3,
+      -1.55,
+      2.2
+    ],
+    "target": [
+      0,
+      0,
+      0.35
+    ],
+    "verticalFieldOfViewDegrees": 40.0
+  },
+  "simulationResolution": 256,
+  "litHeightDisplayScale": 1.4,
+  "objects": [
+    {
+      "id": "dustpan",
+      "mesh": "../Meshes/MidtermDustpan/Dustpan.obj",
+      "surfaceProfileMap": "../SurfaceProfileMaps/MidtermDustpan.SurfaceProfileMap",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0.25
+        ],
+        "rotationDegrees": [
+          -16,
+          0,
+          0
+        ],
+        "scale": [
+          3.4,
+          3.4,
+          3.4
+        ]
+      }
+    }
+  ]
+}

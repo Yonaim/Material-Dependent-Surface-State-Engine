@@ -148,8 +148,8 @@ namespace
         const auto                                 ProfileIndex = static_cast<std::size_t>(Found - Handles.begin());
         SurfaceState::TSurfaceGPUProfileParameters Parameters{};
         const auto                                 Offset = GetSurfaceGPUProfileRecordIndex(
-                                ProfileIndex, State, SurfaceData.GetSurfaceStateRegistry().GetStateCount()) *
-                            sizeof(Parameters);
+                                                                ProfileIndex, State, SurfaceData.GetSurfaceStateRegistry().GetStateCount()) *
+                                                            sizeof(Parameters);
         GPU.GetSceneProfileParametersBuffer().Download(&Parameters, sizeof(Parameters), Offset);
         return Parameters.CapacityInputAndTransfer[1];
     }
@@ -210,11 +210,24 @@ namespace
         Check(Saved.HasDemoAnimation() && Saved.GetStaticMeshInstances()[0].GetId() == "object",
               "Scene save and load should preserve animation reference and object IDs");
 
+        TScene Dustpan = TSceneLoader::Load(
+            std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/MidtermDustpanGravity.Scene", Assets, SurfaceData);
+        Check(Dustpan.GetStaticMeshInstances().size() == 1 && Dustpan.HasDemoContactEvents(),
+              "midterm gravity scene should use one connected surface with water contacts");
+        Dustpan.RestartDemoAnimation();
+        Dustpan.PlayDemoAnimation();
+        const auto Injections = Dustpan.AdvanceDemoAnimation(4.2F);
+        Check(Injections.size() == 11 && Dustpan.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x < -15.0F,
+              "dustpan should receive water while its open end is raised");
+        Dustpan.AdvanceDemoAnimation(1.8F);
+        Check(Dustpan.GetStaticMeshInstances()[0].GetTransform().RotationDegrees.x > 16.0F,
+              "dustpan should tilt once after the water input ends");
+
         TScene SurfaceScene = TSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(SurfaceScene));
-        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, SurfaceScene);
+        SurfaceState::TSurfaceStateSystem SurfaceStateSystem(Context, Assets, SurfaceData, SurfaceScene);
         auto&                             SurfaceTransform = SurfaceScene.GetStaticMeshInstances()[0].GetTransform();
-        const auto&                       GPU = SurfaceStates.GetGPUResources();
+        const auto&                       GPU = SurfaceStateSystem.GetGPUResources();
         Check(!GPU.NeedsTransferWeightCacheUpdate(0, SurfaceTransform), "new Surface cache should be valid");
         SurfaceTransform.RotationDegrees.x = 35.0F;
         SurfaceTransform.Position.y = 2.0F;
@@ -229,10 +242,10 @@ namespace
         auto       Flow = Assets.GetSRProfile(HeatProfile).GetData().States.at("heat");
         Flow.GeometryTransferFactor = 1.0F;
         const auto HeatState = SurfaceData.GetSurfaceStateRegistry().GetStateId("heat");
-        SurfaceStates.SetDebugProfileParameters(HeatProfile, HeatState, Flow);
-        const float FlatBound = SurfaceStates.GetMaximumStableDeltaTime();
+        SurfaceStateSystem.SetDebugProfileParameters(HeatProfile, HeatState, Flow);
+        const float FlatBound = SurfaceStateSystem.GetMaximumStableDeltaTime();
         SurfaceTransform.RotationDegrees.x = 90.0F;
-        const float TiltedBound = SurfaceStates.GetMaximumStableDeltaTime();
+        const float TiltedBound = SurfaceStateSystem.GetMaximumStableDeltaTime();
         Check(TiltedBound < FlatBound,
               "Auto timestep bound should reflect rotation even when static TransferWeight cache is reused");
 
@@ -243,9 +256,9 @@ namespace
             const auto  Handle = RealScene.GetStaticMeshInstances().front().GetSurfaceData();
             const auto& Texels = SurfaceData.GetSurfaceData(Handle).GetSharedGeometry()->GetTexels();
             const auto  Positive = std::count_if(Texels.begin(),
-                                                Texels.end(),
-                                                [](const auto& Texel)
-                                                { return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.01F; });
+                                                 Texels.end(),
+                                                 [](const auto& Texel)
+                                                 { return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.01F; });
             Check(Positive > 0, "Mountain and Bunny must contain Macro concavity without normal maps");
             if (std::string_view(Name) == "Mountain")
             {
@@ -388,8 +401,9 @@ namespace
         (void)Assets.LoadSRProfile(Fixtures.Root / "Cached.SRProfile");
         TScene Scene = TSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
-        SurfaceState::TSurfaceStateSystem SurfaceStates(Context, Assets, SurfaceData, Scene);
-        Rendering::TRenderer              Renderer(Context, Window, Assets, SurfaceData, Scene, SurfaceStates);
+        SurfaceState::TSurfaceStateSystem SurfaceStateSystem(Context, Assets, SurfaceData, Scene);
+        TFrameCoordinator                 Coordinator(SurfaceStateSystem);
+        Rendering::TRenderer Renderer(Context, Window, Assets, SurfaceData, Scene, SurfaceStateSystem, Coordinator);
         Check(Renderer.GetDemoSurfaceStateBindings().Heat == 0 &&
                   Renderer.GetDemoSurfaceStateBindings().Mud == SurfaceState::InvalidStateId,
               "Heat Scene demo bindings must resolve optional names.");
@@ -495,7 +509,7 @@ namespace
             Contact.Radius = 100;
             Contact.Strength = 10;
             Contact.Falloff = 0;
-            SurfaceStates.SubmitContact(Contact);
+            SurfaceStateSystem.SubmitContact(Contact);
             for (int Frame = 0; Frame < 3; ++Frame)
             {
                 auto Effects = Renderer.GetDemoSurfaceEffectSettings();
@@ -581,10 +595,10 @@ namespace
             }
         }
         Renderer.SetSimulationResolution(Scene, 256);
-        Check(
-            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, HeatHandle, HeatState) -
-                     1.25F) < 1e-6F,
-            "resolution change must preserve current Scene tuning");
+        Check(std::abs(
+                  GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, HeatHandle, HeatState) -
+                  1.25F) < 1e-6F,
+              "resolution change must preserve current Scene tuning");
 
         {
             // A vertical unit triangle must reduce dt with the new rate, including runtime overrides.
@@ -641,10 +655,10 @@ namespace
         Check(Renderer.GetSurfaceGPUResources().GetInstanceDescriptors(0)->GetBoundBufferHandle(
                   SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true) == PreviousState,
               "failed Scene switch must retain previous GPU resources");
-        Check(
-            std::abs(GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, HeatHandle, HeatState) -
-                     1.25F) < 1e-6F,
-            "failed switch must retain previous tuning");
+        Check(std::abs(
+                  GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, HeatHandle, HeatState) -
+                  1.25F) < 1e-6F,
+              "failed switch must retain previous tuning");
         SwitchScene("Empty");
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 0 &&
                   Renderer.GetSurfaceGPUResources().GetManagedInstanceCount() == 0,
@@ -690,8 +704,10 @@ int main(int Argc, char* Argv[])
                 std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", LavaAssets, LavaSurfaceData);
             LavaSurfaceData.ExchangeSurfaceStateRegistry(LavaSurfaceData.BuildSurfaceStateRegistry(LavaScene));
             SurfaceState::TSurfaceStateSystem LavaStates(*Context, LavaAssets, LavaSurfaceData, LavaScene);
-            Rendering::TRenderer LavaRenderer(*Context, *Window, LavaAssets, LavaSurfaceData, LavaScene, LavaStates);
-            TDebugUI             LavaUI(*Context, *Window, LavaRenderer, LavaAssets, LavaSurfaceData);
+            TFrameCoordinator                 LavaCoordinator(LavaStates);
+            Rendering::TRenderer              LavaRenderer(
+                *Context, *Window, LavaAssets, LavaSurfaceData, LavaScene, LavaStates, LavaCoordinator);
+            TDebugUI LavaUI(*Context, *Window, LavaRenderer, LavaAssets, LavaSurfaceData);
             ImGui::GetIO().IniFilename = nullptr;
             LavaRenderer.SetRenderViewMode(TRenderViewMode::Lit);
             Check(LavaRenderer.GetDemoSurfaceStateBindings().Lava != SurfaceState::InvalidStateId,
@@ -750,9 +766,15 @@ int main(int Argc, char* Argv[])
                     OverlaySurfaceData.BuildSurfaceStateRegistry(OverlayScene));
                 SurfaceState::TSurfaceStateSystem OverlayStates(
                     *Context, OverlayAssets, OverlaySurfaceData, OverlayScene);
-                Rendering::TRenderer OverlayRenderer(
-                    *Context, *Window, OverlayAssets, OverlaySurfaceData, OverlayScene, OverlayStates);
-                TDebugUI OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets, OverlaySurfaceData);
+                TFrameCoordinator    OverlayCoordinator(OverlayStates);
+                Rendering::TRenderer OverlayRenderer(*Context,
+                                                     *Window,
+                                                     OverlayAssets,
+                                                     OverlaySurfaceData,
+                                                     OverlayScene,
+                                                     OverlayStates,
+                                                     OverlayCoordinator);
+                TDebugUI             OverlayUI(*Context, *Window, OverlayRenderer, OverlayAssets, OverlaySurfaceData);
                 ImGui::GetIO().IniFilename = nullptr;
                 OverlayRenderer.SetRenderViewMode(TRenderViewMode::Lit);
                 Check(OverlayRenderer.IsLitTexelMeshBaseRendered(OverlayScene, 0),

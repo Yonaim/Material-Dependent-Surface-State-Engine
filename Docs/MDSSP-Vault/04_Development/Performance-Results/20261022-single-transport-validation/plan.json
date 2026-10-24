@@ -1,0 +1,2629 @@
+{
+  "question": "State after initial injection plus exactly one transport step; two drain frames do not advance simulation",
+  "runs": [
+    {
+      "id": "SHORT-brickcube-256-cache_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "cache_off",
+      "repeat": 1,
+      "settings": {
+        "raw_flux_cache": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-cache_fp32-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "cache_fp32",
+      "repeat": 1,
+      "settings": {
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-reference-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "reference",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-zero_writes-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "zero_writes",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\zero-writes",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-legacy_layout-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "legacy_layout",
+      "repeat": 1,
+      "settings": {
+        "coalesced_raw_flux": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-weights_fp16-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "weights_fp16",
+      "repeat": 1,
+      "settings": {
+        "fp16_weights": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-solver_dense-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "solver_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-height_dense-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "height_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_height": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-geometry_dense-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "geometry_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_geometry": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-dense_all-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "dense_all",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "sparse_height": false,
+        "sparse_geometry": false,
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-mask_global-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "mask_global",
+      "repeat": 1,
+      "settings": {
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-mask_none-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "mask_none",
+      "repeat": 1,
+      "settings": {
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-height_halo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "height_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_height_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-coverage_halo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "coverage_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_coverage_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-texture_halo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "texture_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_state_texture_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-coverage_direct-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "coverage_direct",
+      "repeat": 1,
+      "settings": {
+        "separable_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-fragment_texture-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "fragment_texture",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-fragment_ssbo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "fragment_ssbo",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-tile_culling_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "tile_culling_off",
+      "repeat": 1,
+      "settings": {
+        "overlay_tile_culling": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-overlay_full-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "overlay_full",
+      "repeat": 1,
+      "settings": {
+        "force_full_overlay": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-mesh128-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "mesh128",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 128,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-no_frustum-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "no_frustum",
+      "repeat": 1,
+      "settings": {
+        "disable_frustum_culling": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-serial-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "serial",
+      "repeat": 1,
+      "settings": {
+        "serial_instances": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-validation-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "validation",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\validation",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-runtime-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "runtime",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\runtime-solver",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-unshared_profiles-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "unshared_profiles",
+      "repeat": 1,
+      "settings": {
+        "disable_shared_profiles": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-cache_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "cache_off",
+      "repeat": 1,
+      "settings": {
+        "raw_flux_cache": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-cache_fp32-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "cache_fp32",
+      "repeat": 1,
+      "settings": {
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-reference-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "reference",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-zero_writes-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "zero_writes",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\zero-writes",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-legacy_layout-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "legacy_layout",
+      "repeat": 1,
+      "settings": {
+        "coalesced_raw_flux": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-weights_fp16-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "weights_fp16",
+      "repeat": 1,
+      "settings": {
+        "fp16_weights": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-solver_dense-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "solver_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-height_dense-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "height_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_height": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-geometry_dense-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "geometry_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_geometry": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-dense_all-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "dense_all",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "sparse_height": false,
+        "sparse_geometry": false,
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-mask_global-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "mask_global",
+      "repeat": 1,
+      "settings": {
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-mask_none-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "mask_none",
+      "repeat": 1,
+      "settings": {
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-height_halo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "height_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_height_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-coverage_halo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "coverage_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_coverage_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-texture_halo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "texture_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_state_texture_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-coverage_direct-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "coverage_direct",
+      "repeat": 1,
+      "settings": {
+        "separable_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-fragment_texture-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "fragment_texture",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-fragment_ssbo-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "fragment_ssbo",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-tile_culling_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "tile_culling_off",
+      "repeat": 1,
+      "settings": {
+        "overlay_tile_culling": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-overlay_full-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "overlay_full",
+      "repeat": 1,
+      "settings": {
+        "force_full_overlay": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-mesh128-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "mesh128",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 128,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-no_frustum-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "no_frustum",
+      "repeat": 1,
+      "settings": {
+        "disable_frustum_culling": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-serial-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "serial",
+      "repeat": 1,
+      "settings": {
+        "serial_instances": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-validation-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "validation",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\validation",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-runtime-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "runtime",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\runtime-solver",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-unshared_profiles-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "unshared_profiles",
+      "repeat": 1,
+      "settings": {
+        "disable_shared_profiles": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-cache_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "cache_off",
+      "repeat": 1,
+      "settings": {
+        "raw_flux_cache": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-cache_fp32-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "cache_fp32",
+      "repeat": 1,
+      "settings": {
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-reference-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "reference",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-zero_writes-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "zero_writes",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\zero-writes",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-legacy_layout-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "legacy_layout",
+      "repeat": 1,
+      "settings": {
+        "coalesced_raw_flux": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-weights_fp16-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "weights_fp16",
+      "repeat": 1,
+      "settings": {
+        "fp16_weights": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-solver_dense-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "solver_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-height_dense-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "height_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_height": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-geometry_dense-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "geometry_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_geometry": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-dense_all-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "dense_all",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "sparse_height": false,
+        "sparse_geometry": false,
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-mask_global-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "mask_global",
+      "repeat": 1,
+      "settings": {
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-mask_none-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "mask_none",
+      "repeat": 1,
+      "settings": {
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-height_halo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "height_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_height_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-coverage_halo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "coverage_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_coverage_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-texture_halo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "texture_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_state_texture_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-coverage_direct-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "coverage_direct",
+      "repeat": 1,
+      "settings": {
+        "separable_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-fragment_texture-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "fragment_texture",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-fragment_ssbo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "fragment_ssbo",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-tile_culling_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "tile_culling_off",
+      "repeat": 1,
+      "settings": {
+        "overlay_tile_culling": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-overlay_full-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "overlay_full",
+      "repeat": 1,
+      "settings": {
+        "force_full_overlay": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-mesh128-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "mesh128",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 128,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-no_frustum-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "no_frustum",
+      "repeat": 1,
+      "settings": {
+        "disable_frustum_culling": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-serial-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "serial",
+      "repeat": 1,
+      "settings": {
+        "serial_instances": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-validation-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "validation",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\validation",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-runtime-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "runtime",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\runtime-solver",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-unshared_profiles-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "unshared_profiles",
+      "repeat": 1,
+      "settings": {
+        "disable_shared_profiles": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-cache_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "cache_off",
+      "repeat": 1,
+      "settings": {
+        "raw_flux_cache": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-cache_fp32-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "cache_fp32",
+      "repeat": 1,
+      "settings": {
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-reference-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "reference",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-zero_writes-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "zero_writes",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\zero-writes",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-legacy_layout-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "legacy_layout",
+      "repeat": 1,
+      "settings": {
+        "coalesced_raw_flux": false,
+        "fp16_raw_flux": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-weights_fp16-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "weights_fp16",
+      "repeat": 1,
+      "settings": {
+        "fp16_weights": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-solver_dense-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "solver_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-height_dense-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "height_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_height": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-geometry_dense-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "geometry_dense",
+      "repeat": 1,
+      "settings": {
+        "sparse_geometry": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-dense_all-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "dense_all",
+      "repeat": 1,
+      "settings": {
+        "sparse_solver": false,
+        "sparse_height": false,
+        "sparse_geometry": false,
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-mask_global-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "mask_global",
+      "repeat": 1,
+      "settings": {
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-mask_none-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "mask_none",
+      "repeat": 1,
+      "settings": {
+        "active_channel_mask": false,
+        "per_workgroup_channel_mask": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-height_halo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "height_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_height_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-coverage_halo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "coverage_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_coverage_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-texture_halo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "texture_halo",
+      "repeat": 1,
+      "settings": {
+        "shared_state_texture_smoothing": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-coverage_direct-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "coverage_direct",
+      "repeat": 1,
+      "settings": {
+        "separable_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-fragment_texture-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "fragment_texture",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-fragment_ssbo-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "fragment_ssbo",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-tile_culling_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "tile_culling_off",
+      "repeat": 1,
+      "settings": {
+        "overlay_tile_culling": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-overlay_full-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "overlay_full",
+      "repeat": 1,
+      "settings": {
+        "force_full_overlay": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-mesh128-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "mesh128",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 128,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-no_frustum-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "no_frustum",
+      "repeat": 1,
+      "settings": {
+        "disable_frustum_culling": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-serial-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "serial",
+      "repeat": 1,
+      "settings": {
+        "serial_instances": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-validation-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "validation",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\validation",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-runtime-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "runtime",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\runtime-solver",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-unshared_profiles-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "unshared_profiles",
+      "repeat": 1,
+      "settings": {
+        "disable_shared_profiles": true,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-height_smoothing_full-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "height_smoothing_full",
+      "repeat": 1,
+      "settings": {
+        "sparse_height_smoothing": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-tile8-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "tile8",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 8,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-tile32-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "tile32",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 32,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-mesh64-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "mesh64",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 64,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-mesh256-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "mesh256",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 256,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-mesh512-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "mesh512",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 512,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-height_smoothing_full-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "height_smoothing_full",
+      "repeat": 1,
+      "settings": {
+        "sparse_height_smoothing": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-tile8-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "tile8",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 8,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-tile32-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "tile32",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 32,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-mesh64-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "mesh64",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 64,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-mesh256-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "mesh256",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 256,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-mesh512-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "mesh512",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 512,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-height_smoothing_full-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "height_smoothing_full",
+      "repeat": 1,
+      "settings": {
+        "sparse_height_smoothing": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-tile8-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "tile8",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 8,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-tile32-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "tile32",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 32,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-mesh64-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "mesh64",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 64,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-mesh256-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "mesh256",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 256,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-mesh512-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "mesh512",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 512,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-height_smoothing_full-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "height_smoothing_full",
+      "repeat": 1,
+      "settings": {
+        "sparse_height_smoothing": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-tile8-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "tile8",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 8,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-tile32-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "tile32",
+      "repeat": 1,
+      "settings": {
+        "tile_size": 32,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-mesh64-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "mesh64",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 64,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-mesh256-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "mesh256",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 256,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-mesh512-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "mesh512",
+      "repeat": 1,
+      "settings": {
+        "render_mesh_resolution": 512,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-solver_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "solver_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\solver-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-render_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "render_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-render_ssbo_reuse_on-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "render_ssbo_reuse_on",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-256-render_ssbo_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "render_ssbo_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-solver_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "solver_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\solver-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-render_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "render_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-render_ssbo_reuse_on-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "render_ssbo_reuse_on",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-512-render_ssbo_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "render_ssbo_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-solver_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "solver_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\solver-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-render_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "render_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-render_ssbo_reuse_on-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "render_ssbo_reuse_on",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-256-render_ssbo_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "render_ssbo_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-solver_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "solver_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\solver-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-render_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "render_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-render_ssbo_reuse_on-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "render_ssbo_reuse_on",
+      "repeat": 1,
+      "settings": {
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-512-render_ssbo_reuse_off-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "render_ssbo_reuse_off",
+      "repeat": 1,
+      "settings": {
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\shader-profiles\\render-reuse-off",
+        "precompute_coverage": false,
+        "render_state_texture": false,
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\MDSS-validation.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-top-256-full_top-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "full_top",
+      "repeat": 1,
+      "settings": {
+        "disable_top_compaction": true,
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\full-top-shaders",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-top-256-compact_top-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 256,
+      "variant": "compact_top",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-top-512-full_top-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "full_top",
+      "repeat": 1,
+      "settings": {
+        "disable_top_compaction": true,
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\full-top-shaders",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-brickcube-top-512-compact_top-1",
+      "group": "SHORT",
+      "scene_name": "BrickCube",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\BrickCube.Scene",
+      "resolution": 512,
+      "variant": "compact_top",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-top-256-full_top-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "full_top",
+      "repeat": 1,
+      "settings": {
+        "disable_top_compaction": true,
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\full-top-shaders",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-top-256-compact_top-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 256,
+      "variant": "compact_top",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-top-512-full_top-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "full_top",
+      "repeat": 1,
+      "settings": {
+        "disable_top_compaction": true,
+        "shader_root": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\full-top-shaders",
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    },
+    {
+      "id": "SHORT-mountain-top-512-compact_top-1",
+      "group": "SHORT",
+      "scene_name": "Mountain",
+      "scene": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\current\\Assets\\Scenes\\Mountain.Scene",
+      "resolution": 512,
+      "variant": "compact_top",
+      "repeat": 1,
+      "settings": {
+        "freeze_after_steps": 2
+      },
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact\\Build\\bin\\Release\\MDSS.exe",
+      "cwd": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\PerformanceLab\\compact",
+      "warmup": 1,
+      "measure": 1
+    }
+  ]
+}

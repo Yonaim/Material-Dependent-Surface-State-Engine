@@ -8,6 +8,7 @@
     "verticalFieldOfViewDegrees": 45.0
   },
   "simulationResolution": 512,
+  "litHeightDisplayScale": 1.0,
   "objects": [
     {
       "id": "brick_cube_512",
