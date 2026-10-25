@@ -48,6 +48,7 @@ namespace MDSS::SurfaceState
      */
     inline constexpr std::uint32_t SurfaceSolverSeedPersistentActivityFlag = 1U << 22U;
     inline constexpr std::uint32_t SurfaceSolverPerWorkgroupChannelMaskFlag = 1U << 23U;
+    inline constexpr std::uint32_t SurfaceSolverAdaptiveGeometryFlag = 1U << 24U;
 
     enum class TSurfaceSolverTerm : std::uint8_t
     {
@@ -126,7 +127,10 @@ namespace MDSS::SurfaceState
                          VkQueryPool                                 TimestampQueryPool = VK_NULL_HANDLE,
                          std::uint32_t                               FirstStepQuery = 0U) const;
 
+        void SetRuntimeFlagsEnabled(bool Enabled) noexcept { bRuntimeFlagsEnabled = Enabled; }
+        [[nodiscard]] bool IsRuntimeFlagsEnabled() const noexcept { return bRuntimeFlagsEnabled; }
     private:
+        bool bRuntimeFlagsEnabled = true;
         // Compute pipeline creation
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
         static VkPipeline     CreateComputePipeline(VkDevice Device, VkPipelineLayout Layout, const char* ShaderPath);
@@ -136,8 +140,8 @@ namespace MDSS::SurfaceState
         VkPipeline                 AccumulationHeightPipeline = VK_NULL_HANDLE;
         VkPipeline                 SparseScheduleResetPipeline = VK_NULL_HANDLE;
         VkPipeline                 AccumulationGeometryPipeline = VK_NULL_HANDLE;
-        std::array<VkPipeline, 2>  DynamicTransferWeightPipelines{};
-        std::array<VkPipeline, 10> Pass1Pipelines{};
-        std::array<VkPipeline, 10> Pass2Pipelines{};
+        std::array<VkPipeline, 3>  DynamicTransferWeightPipelines{};
+        std::array<VkPipeline, 11> Pass1Pipelines{};
+        std::array<VkPipeline, 11> Pass2Pipelines{};
     };
 } // namespace MDSS::SurfaceState

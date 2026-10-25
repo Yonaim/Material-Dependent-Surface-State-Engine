@@ -56,9 +56,18 @@ uint accumulationOriginalGroup()
     return AccumulationHeights.Values[accumulationScheduleListBase() + gl_WorkGroupID.x];
 }
 
+// Pass2 has finished producing this count before the height pass starts. This decision is
+// uniform for all height/geometry invocations and needs neither readback nor an extra dispatch.
+bool useDenseAdaptiveGeometry()
+{
+    if ((Solver.Flags & (1u << 24u)) == 0u || !useSparseSimulationGeometry()) return false;
+    if (!useSparseAccumulationHeight()) return true;
+    return AccumulationHeights.Values[accumulationScheduleCommandBase()] * 4u >= sparseWorkgroupCount() * 3u;
+}
+
 uint geometryOriginalGroup()
 {
-    if (!useSparseSimulationGeometry()) return gl_WorkGroupID.x;
+    if (!useSparseSimulationGeometry() || useDenseAdaptiveGeometry()) return gl_WorkGroupID.x;
     return AccumulationHeights.Values[geometryScheduleListBase() + gl_WorkGroupID.x];
 }
 

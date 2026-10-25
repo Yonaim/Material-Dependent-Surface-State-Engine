@@ -33,8 +33,10 @@ namespace MDSS::SurfaceState
                                                            const Asset::TAssetManager& Assets,
                                                            const TSurfaceDataManager&  SurfaceData,
                                                            const TScene&               Scene,
-                                                           TSurfaceGPUBufferPool*      Pool)
+                                                           TSurfaceGPUBufferPool*      Pool,
+                                                           TSurfaceScratchStorageFormat Storage)
     {
+        ScratchStorageFormat = std::array<bool, 4>{Storage.CacheRawFlux, Storage.HalfRawFlux, Storage.HalfWeights, Storage.Compact};
         const VkPhysicalDevice       PhysicalDevice = Context.GetPhysicalDevice();
         const VkDevice               Device = Context.GetDevice();
         const TSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
@@ -120,7 +122,7 @@ namespace MDSS::SurfaceState
                     TransferWeights,
                     TransferWeightDebugAverages,
                     BuildSurfaceGPUWorldTexelAreas(*SharedIt->second.CPUGeometry, ModelMatrix),
-                    Pool);
+                    Pool, Storage);
                 auto Descriptors = std::make_unique<TSurfaceStateDescriptorResources>(
                     Device, *SharedIt->second.Geometry, *SceneProfiles, *State);
 
@@ -171,6 +173,35 @@ namespace MDSS::SurfaceState
 #pragma endregion
 
 #pragma region Resource_Accessors_and_Profile_Updates
+
+    bool TSurfaceGPUResourceManager::ConfigureScratchStorage(const GPU::TVulkanContext& Context, bool Cache,
+                                                             bool HalfRaw, bool HalfWeights, bool Compact)
+    {
+        const std::array<bool, 4> Format{Cache, HalfRaw, HalfWeights, Compact};
+        if (ScratchStorageFormat == Format) return false;
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+            throw std::runtime_error("Failed to wait before changing solver storage format.");
+        bool Changed = false;
+        for (auto& Instance : InstanceResources)
+        {
+            if (!Instance) continue;
+            if (Instance->State->ConfigureScratchStorage(Context.GetPhysicalDevice(), Context.GetDevice(), Cache,
+                                                         HalfRaw, HalfWeights, Compact))
+            {
+                auto Replacement = std::make_unique<TSurfaceStateDescriptorResources>(Context.GetDevice(),
+                    *SharedSurfaceData.at(Instance->SurfaceDataHandle).Geometry, *SceneProfiles, *Instance->State);
+                Instance->Descriptors = std::move(Replacement);
+                Changed = true;
+            }
+        }
+        ScratchStorageFormat = Format;
+        return Changed;
+    }
+
+    void TSurfaceGPUResourceManager::TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
+    {
+        for (auto& [Handle, Resources] : SharedSurfaceData) Resources.Geometry->TrimRenderMeshVariants(Surface, Overlay);
+    }
 
     std::size_t TSurfaceGPUResourceManager::GetManagedInstanceCount() const noexcept
     {

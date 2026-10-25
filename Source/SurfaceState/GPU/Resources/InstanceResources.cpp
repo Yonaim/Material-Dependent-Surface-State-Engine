@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <glm/gtc/packing.hpp>
 #include <limits>
 #include <stdexcept>
@@ -24,7 +25,8 @@ namespace MDSS::SurfaceState
         const std::vector<float>&           TransferWeights,
         const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages,
         const std::vector<float>&           WorldTexelAreas,
-        TSurfaceGPUBufferPool*              Pool)
+        TSurfaceGPUBufferPool*              Pool,
+        TSurfaceScratchStorageFormat        Storage)
         : TexelCount(TexelCount), ChannelCount(ChannelCount)
     {
         if (TexelCount == 0 || ChannelCount == 0)
@@ -117,7 +119,17 @@ namespace MDSS::SurfaceState
                                                     StorageUsage,
                                                     GPU::TGPUBufferMemoryCategory::SurfaceState,
                                                     Pool);
-        TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice,
+        if (Storage.Compact && Storage.HalfWeights)
+        {
+            std::vector<std::uint32_t> Packed(TransferWeights.size() / 2U);
+            for (std::size_t Pair = 0; Pair < Packed.size(); ++Pair)
+                Packed[Pair] = glm::packHalf2x16(glm::vec2(std::clamp(TransferWeights[Pair * 2U], 0.0F, 1.0F),
+                                                         std::clamp(TransferWeights[Pair * 2U + 1U], 0.0F, 1.0F)));
+            TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice, Device, Packed.data(), Packed.size(),
+                sizeof(std::uint32_t), MaxRange, GPU::TGPUBufferMemoryCategory::SurfaceState, Pool);
+            bStoredHalfWeights = true;
+        }
+        else TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                     Device,
                                                     TransferWeights.data(),
                                                     TransferWeights.size(),
@@ -152,13 +164,54 @@ namespace MDSS::SurfaceState
         if (ScalarCount > std::numeric_limits<std::size_t>::max() / (SurfaceNeighborCount + 1U))
             throw std::overflow_error("Surface raw-flux cache size overflowed.");
 
+        const auto EdgeWords = !Storage.Compact ? SurfaceNeighborCount : !Storage.CacheRawFlux ? 0U :
+                               Storage.HalfRawFlux ? SurfaceNeighborCount / 2U : SurfaceNeighborCount;
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
                                                      Device,
-                                                     ScalarCount * (SurfaceNeighborCount + 1U),
+                                                     ScalarCount * (EdgeWords + 1U),
                                                      MaxRange,
                                                      StorageUsage,
                                                      GPU::TGPUBufferMemoryCategory::SurfaceState,
                                                      Pool);
+        if (Storage.HalfWeights && !bStoredHalfWeights)
+            UpdateTransferWeights(TransferWeights, {}, true);
+    }
+
+    bool TSurfaceInstanceGPUResources::ConfigureScratchStorage(VkPhysicalDevice PhysicalDevice, VkDevice Device,
+                                                               bool Cache, bool HalfRaw, bool HalfWeights, bool Compact)
+    {
+        const auto MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
+        const auto EdgeWords = !Compact ? SurfaceNeighborCount : !Cache ? 0U : HalfRaw ? SurfaceNeighborCount / 2U : SurfaceNeighborCount;
+        const auto RawWords = ScalarCount * (1U + EdgeWords);
+        const auto WeightWords = TexelCount * (Compact && HalfWeights ? SurfaceNeighborCount / 2U : SurfaceNeighborCount);
+        bool Changed = false;
+        if (RawOutgoingBuffer->GetSize() != RawWords * sizeof(std::uint32_t))
+        {
+            auto Replacement = CreateZeroedScalarBuffer(PhysicalDevice, Device, RawWords, MaxRange);
+            RawOutgoingBuffer = std::move(Replacement);
+            Changed = true;
+        }
+        if (TransferWeightBuffer->GetSize() != WeightWords * sizeof(std::uint32_t))
+        {
+            std::vector<std::uint32_t> Old(TransferWeightBuffer->GetSize() / sizeof(std::uint32_t));
+            TransferWeightBuffer->Download(Old.data(), TransferWeightBuffer->GetSize());
+            std::vector<float> Weights(TexelCount * SurfaceNeighborCount);
+            if (bStoredHalfWeights)
+            {
+                for (std::size_t Pair = 0; Pair < Weights.size() / 2U; ++Pair)
+                {
+                    const auto Value = glm::unpackHalf2x16(Old[Pair]);
+                    Weights[Pair * 2U] = Value.x;
+                    Weights[Pair * 2U + 1U] = Value.y;
+                }
+            }
+            else std::memcpy(Weights.data(), Old.data(), Weights.size() * sizeof(float));
+            auto Replacement = CreateZeroedScalarBuffer(PhysicalDevice, Device, WeightWords, MaxRange);
+            TransferWeightBuffer = std::move(Replacement);
+            UpdateTransferWeights(Weights, {}, HalfWeights);
+            Changed = true;
+        }
+        return Changed;
     }
 
     const GPU::TGPUBuffer& TSurfaceInstanceGPUResources::GetStateABuffer() const noexcept
@@ -248,9 +301,10 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("Updated TransferWeight cache has an incompatible size.");
         }
+        bStoredHalfWeights = bHalfPrecision;
         if (bHalfPrecision)
         {
-            // Runtime A/B keeps the original allocation. FP16 mode uses only the first 4 uint words/texel.
+            // FP16 mode uses four uint words per texel; compact storage allocates exactly that range.
             std::vector<std::uint32_t> Packed(TexelCount * (SurfaceNeighborCount / 2U), 0U);
             for (std::size_t Texel = 0; Texel < TexelCount; ++Texel)
             {
@@ -269,7 +323,7 @@ namespace MDSS::SurfaceState
         else
         {
             // Buffer is uint-addressed in GLSL, but IEEE-754 float bytes are intentionally uploaded verbatim.
-            TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeightBuffer->GetSize());
+            TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeights.size() * sizeof(float));
         }
         if (!TransferWeightDebugAverages.empty())
         {

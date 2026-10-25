@@ -1,4 +1,5 @@
 #include "Rendering/Core/RendererShared.h"
+#include "Application/PerformanceSettings.h"
 
 namespace MDSS::Rendering
 {
@@ -75,6 +76,8 @@ namespace MDSS::Rendering
             {"geometry_gpu_ms", OptionalTiming(ProfilingStats.AccumulationGeometryGpuMilliseconds)},
             {"transfer_weight_gpu_ms", OptionalTiming(ProfilingStats.TransferWeightGpuMilliseconds)},
             {"render_gpu_ms", OptionalTiming(LastRenderGpuMilliseconds)},
+            {"frame_gpu_elapsed_ms", OptionalTiming(BenchmarkGpuElapsed)},
+            {"simulation_gpu_elapsed_ms", OptionalTiming(BenchmarkSimulationElapsed)},
         };
         const std::array<std::pair<const char*, float>, 18> DetailedTimings{
             {{"render_preparation_gpu_ms", ProfilingStats.RenderPreparationGpuMilliseconds},
@@ -167,6 +170,9 @@ namespace MDSS::Rendering
             const auto&        Buffer = Resources.GetInstanceCurrentStateBuffer(Index);
             std::vector<float> Values(Buffer.GetSize() / sizeof(float));
             Buffer.Download(Values.data(), Buffer.GetSize());
+            std::ofstream StateOutput(BenchmarkOutputPath.string() + ".state-" + std::to_string(Index) + ".f32", std::ios::binary);
+            StateOutput.write(reinterpret_cast<const char*>(Values.data()), static_cast<std::streamsize>(Buffer.GetSize()));
+            if (!StateOutput) throw std::runtime_error("Cannot write benchmark State array.");
             std::uint64_t Nonfinite = 0, Negative = 0, Positive = 0;
             double        Sum = 0.0;
             float         Maximum = 0.0F;
@@ -186,7 +192,15 @@ namespace MDSS::Rendering
                 Sum += Value;
                 Maximum = std::max(Maximum, Value);
             }
+            const auto Layout = SurfaceState::GetSurfaceSparseMetadataLayout(Resources.GetInstanceTexelCount(Index));
+            std::array<std::uint32_t, 3> HeightDispatch{}, GeometryDispatch{};
+            const auto& Scheduling = Resources.GetInstanceAccumulationHeightBuffer(Index);
+            Scheduling.Download(HeightDispatch.data(), sizeof(HeightDispatch), Layout.AccumulationCommandWord * sizeof(std::uint32_t));
+            Scheduling.Download(GeometryDispatch.data(), sizeof(GeometryDispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
             Instances.push_back({{"instance", Index},
+                                 {"total_workgroups", Layout.WorkgroupCount},
+                                 {"final_height_candidate_groups", HeightDispatch[0]},
+                                 {"final_geometry_dispatch_groups", GeometryDispatch[0]},
                                  {"elements", Values.size()},
                                  {"nonfinite", Nonfinite},
                                  {"negative", Negative},
@@ -197,6 +211,10 @@ namespace MDSS::Rendering
         }
         const auto           Memory = GPU::TGPUResourceMemoryStats::GetSnapshot();
         const nlohmann::json Result = {{"schema_version", 1},
+                                       {"experiment", PerformanceSettings()},
+                                       {"runtime_solver", SurfaceStateSystem.IsRuntimeSolverFlagsEnabled()},
+                                       {"compact_storage", SurfaceStateSystem.IsCompactScratchStorageEnabled()},
+                                       {"adaptive_geometry", SurfaceStateSystem.IsAdaptiveGeometryEnabled()},
                                        {"scope", "after final drain frames; device idle; before resource destruction"},
                                        {"submitted_frames", NextBenchmarkFrameIndex},
                                        {"simulation_step_serial", FrameCoordinator.GetStepSerial()},

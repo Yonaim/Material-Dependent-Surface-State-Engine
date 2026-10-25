@@ -54,7 +54,7 @@ namespace MDSS::Rendering
             EShader::Rendering_Overlay_Shading_OverlayCombined_frag_m0,
             EShader::Rendering_Overlay_Shading_OverlayCombined_frag_m1,
             EShader::Rendering_Overlay_Shading_OverlayCombined_frag_m2};
-        constexpr std::uint32_t FixedTimestampQueryCount = 21U;
+        constexpr std::uint32_t FixedTimestampQueryCount = 24U;
         constexpr std::uint32_t OverlayTimestampQueriesPerLayer = 13U;
 
         std::vector<std::unique_ptr<GPU::TGPUImage>> CreateDepthImages(

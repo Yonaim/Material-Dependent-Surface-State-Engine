@@ -431,6 +431,8 @@ namespace MDSS::Rendering
                                                        ProfilingStats.AccumulationGeometryGpuMilliseconds +
                                                        ProfilingStats.TransferWeightGpuMilliseconds;
                 LastSolverGpuMilliseconds = ProfilingStats.SolverGpuMilliseconds;
+                BenchmarkGpuElapsed = ToMilliseconds(Timestamps[21], Timestamps[23]);
+                BenchmarkSimulationElapsed = ToMilliseconds(Timestamps[21], Timestamps[22]);
                 WriteBenchmarkSample(FrameIndex);
             }
             bTimestampQueriesSubmitted[FrameIndex] = false;
@@ -634,6 +636,9 @@ namespace MDSS::Rendering
             Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
             Replacement->SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
             Replacement->SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
+            Replacement->SetCompactScratchStorageEnabled(SurfaceStateSystem.IsCompactScratchStorageEnabled());
+            Replacement->SetRuntimeSolverFlagsEnabled(SurfaceStateSystem.IsRuntimeSolverFlagsEnabled());
+            Replacement->SetAdaptiveGeometryEnabled(SurfaceStateSystem.IsAdaptiveGeometryEnabled());
             Replacement->SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
             Replacement->SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
             Replacement->SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
@@ -813,6 +818,17 @@ namespace MDSS::Rendering
         return SurfaceData.GetSimulationResolution();
     }
 
+    void TRenderer::TrimRenderResolutionCaches()
+    {
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+            throw std::runtime_error("Failed to wait before trimming render mesh caches.");
+        if (OverlaySides) OverlaySides->ReleaseOutputs();
+        if (HeightFieldSmoothing) HeightFieldSmoothing->ReleaseOutputs();
+        if (MudLayerGeometry) MudLayerGeometry->ReleaseOutputs();
+        if (TexelGeometryPreview) TexelGeometryPreview->ReleaseOutputs();
+        SurfaceStateSystem.TrimRenderMeshVariants(SurfaceTexelMeshResolution, OverlayTexelMeshResolution);
+    }
+
     void TRenderer::SetSurfaceTexelMeshResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceRenderMeshResolution(Resolution))
@@ -820,6 +836,7 @@ namespace MDSS::Rendering
         if (SurfaceTexelMeshResolution == Resolution)
             return;
         SurfaceTexelMeshResolution = Resolution;
+        TrimRenderResolutionCaches();
         LastRenderGpuMilliseconds = -1.0F;
     }
 
@@ -830,6 +847,7 @@ namespace MDSS::Rendering
         if (OverlayTexelMeshResolution == Resolution)
             return;
         OverlayTexelMeshResolution = Resolution;
+        TrimRenderResolutionCaches();
         LastRenderGpuMilliseconds = -1.0F;
     }
 

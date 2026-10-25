@@ -37,9 +37,12 @@ namespace MDSS::SurfaceState
                                              const TSurfaceDataManager&  SurfaceData,
                                              const TScene&               Scene,
                                              TSurfaceGPUBufferPool*      ReusePool)
-        : Context(Context), Assets(Assets), SurfaceData(SurfaceData), Scene(Scene),
-          GPUResources(std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene, ReusePool))
+        : Context(Context), Assets(Assets), SurfaceData(SurfaceData), Scene(Scene)
     {
+        GPUResources = std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene, ReusePool,
+            TSurfaceScratchStorageFormat{bRawFluxCacheEnabled, bHalfRawFluxCacheEnabled,
+                                        bHalfDynamicWeightsEnabled, bCompactScratchStorageEnabled});
+        PrepareScratchStorage();
         if (const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
         {
             Solver = std::make_unique<TSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());

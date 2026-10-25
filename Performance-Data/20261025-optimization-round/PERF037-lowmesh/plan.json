@@ -1,0 +1,209 @@
+{
+  "name": "PERF037-lowmesh",
+  "runs": [
+    {
+      "id": "PERF037-lowmesh-BrickCube-256-before-1",
+      "experiment": "PERF037-lowmesh",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-BrickCube-256-after-1",
+      "experiment": "PERF037-lowmesh",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-Mountain-512-before-1",
+      "experiment": "PERF037-lowmesh",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-Mountain-512-after-1",
+      "experiment": "PERF037-lowmesh",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-Mountain-512-after-2",
+      "experiment": "PERF037-lowmesh",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-Mountain-512-before-2",
+      "experiment": "PERF037-lowmesh",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-BrickCube-256-after-2",
+      "experiment": "PERF037-lowmesh",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-BrickCube-256-before-2",
+      "experiment": "PERF037-lowmesh",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-Mountain-512-before-3",
+      "experiment": "PERF037-lowmesh",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-Mountain-512-after-3",
+      "experiment": "PERF037-lowmesh",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-BrickCube-256-before-3",
+      "experiment": "PERF037-lowmesh",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF037-lowmesh-BrickCube-256-after-3",
+      "experiment": "PERF037-lowmesh",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S03\\Shaders",
+      "settings": {
+        "render_mesh_resolution": 64,
+        "prewarm_mesh_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    }
+  ]
+}

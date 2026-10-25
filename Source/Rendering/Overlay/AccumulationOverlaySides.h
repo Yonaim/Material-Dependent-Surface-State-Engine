@@ -10,6 +10,7 @@
 
 #include <array>
 #include <map>
+#include <stdexcept>
 #include <memory>
 #include <tuple>
 #include <utility>
@@ -77,6 +78,16 @@ namespace MDSS::Rendering
                     std::uint32_t                ActiveMaterialMask = 0x7U,
                     bool                         bSharedCoverageHalo = false,
                     float                        LavaThreshold = 0.1F);
+
+        // Call only after GPU completion; descriptors and their buffers are released together.
+        void ReleaseOutputs()
+        {
+            Outputs.clear();
+            CoveragePages.clear();
+            CoveragePageUsed.clear();
+            if (vkResetDescriptorPool(Device, Pool, 0) != VK_SUCCESS)
+                throw std::runtime_error("Cannot reset render output descriptors.");
+        }
 
     private:
         struct TOutput

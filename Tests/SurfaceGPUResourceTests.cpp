@@ -276,6 +276,66 @@ namespace
         }
     }
 
+    void TestCompactScratchStorage(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS::SurfaceState;
+        const std::vector<float> Weights(4U * SurfaceNeighborCount, 0.5F);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 2, Weights,
+            {}, {}, nullptr, TSurfaceScratchStorageFormat{true, true, false, true});
+        const std::array<float, 8> State{1, 2, 3, 4, 5, 6, 7, 8};
+        Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
+        const auto StateHandle = Instance.GetStateABuffer().GetHandle();
+        Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * 5U * sizeof(float), "FP16 flux allocates five words per State value");
+        TSurfaceInstanceGPUResources FullHalf(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 2, Weights,
+            {}, {}, nullptr, TSurfaceScratchStorageFormat{true, true, true, false});
+        std::uint32_t PackedHalf = 0;
+        FullHalf.GetTransferWeightBuffer().Download(&PackedHalf, sizeof(PackedHalf));
+        Check(PackedHalf == 0x38003800U, "FP16 initialization also packs weights in an uncompressed-capacity buffer");
+        for (const auto Format : std::array<TSurfaceScratchStorageFormat, 5>{
+                 TSurfaceScratchStorageFormat{false, false, false, true},
+                 TSurfaceScratchStorageFormat{true, false, true, true},
+                 TSurfaceScratchStorageFormat{true, true, true, true},
+                 TSurfaceScratchStorageFormat{true, false, false, true},
+                 TSurfaceScratchStorageFormat{true, true, false, false}})
+        {
+            Instance.ConfigureScratchStorage(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Format.CacheRawFlux,
+                Format.HalfRawFlux, Format.HalfWeights, Format.Compact);
+            const auto EdgeWords = !Format.Compact ? 8U : !Format.CacheRawFlux ? 0U : Format.HalfRawFlux ? 4U : 8U;
+            Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * (EdgeWords + 1U) * sizeof(float), "flux size follows storage format");
+            Check(Instance.GetTransferWeightBuffer().GetSize() == 4U * (Format.Compact && Format.HalfWeights ? 4U : 8U) * sizeof(float), "weight size follows storage format");
+            std::array<float, 8> Actual{};
+            Instance.GetStateABuffer().Download(Actual.data(), sizeof(Actual));
+            Check(Actual == State && Instance.GetStateABuffer().GetHandle() == StateHandle, "storage switches preserve State and its buffer");
+            // Emulate the static-cache upload performed by the system after each precision change.
+            Instance.UpdateTransferWeights(Weights, {}, Format.HalfWeights);
+        }
+    }
+
+    void TestLazyMeshStorage(TVulkanTestDevice& Vulkan)
+    {
+        using namespace MDSS::SurfaceState;
+        auto Geometry = BuildGeometry();
+        for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
+        {
+            Geometry.GetTexels()[Index].Position = {float(Index % 2U), float(Index / 2U), 0.0F};
+            Geometry.GetTexels()[Index].Normal = {0.0F, 0.0F, 1.0F};
+        }
+        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        const auto FullHandle = Shared.GetTexelMeshIndexBuffer()->GetHandle();
+        const auto SmallHandle = Shared.GetTexelMeshVariant(64).VertexBuffer->GetHandle();
+        (void)Shared.GetTexelMeshVariant(128);
+        const auto Before = MDSS::GPU::TGPUResourceMemoryStats::GetSnapshot().CurrentBufferBytes;
+        Shared.TrimRenderMeshVariants(64, 64);
+        const auto After = MDSS::GPU::TGPUResourceMemoryStats::GetSnapshot().CurrentBufferBytes;
+        Check(After < Before, "trimming an unused mesh actually frees its Vulkan allocation");
+        Check(Shared.GetTexelMeshVariant(64).VertexBuffer->GetHandle() == SmallHandle,
+              "trimming preserves the selected render mesh");
+        Check(Shared.GetTexelMeshIndexBuffer()->GetHandle() == FullHandle,
+              "trimming preserves the simulation topology mesh");
+        Check(Shared.GetTexelMeshVariant(128).VertexCount > 0U,
+              "a released resolution can be rebuilt on demand");
+    }
+
     void TestRetiredBufferReuse(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
@@ -1405,10 +1465,10 @@ namespace
                                   false,
                                   3,
                                   2,
-                                  0.0001F,
+                                  0.0F,
                                   glm::mat4(1.0F),
                                   glm::vec3(0.0F, 0.0F, -1.0F),
-                                  Flags);
+                                  Flags | SurfaceSolverForceFullGeometryFlag);
             });
 
         std::array<SurfaceState::TSurfaceGPUVec4, 6> DynamicGeometry{};
@@ -1446,6 +1506,15 @@ namespace
               "updated geometry transfer weight should use the cached mean without changing the edge formula");
         Check(std::abs(DynamicWeights[9] - StaticWeights[9]) > 1.0e-4F,
               "geometry update should rebuild edge weights using displaced distances and updated normals");
+        // Bootstrap derives geometry without transport; the next step consumes it.
+        Vulkan.Execute([&](VkCommandBuffer Command)
+        {
+            Solver.RecordStep(Command, Descriptors, true, 3, 2, 0.0001F, glm::mat4(1.0F),
+                              glm::vec3(0, 0, -1), Flags);
+        });
+        Instance.GetStateBBuffer().Download(ResultingState.data(), sizeof(ResultingState));
+        Instance.GetTransferWeightBuffer().Download(DynamicWeights.data(), DynamicWeights.size() * sizeof(float));
+        const auto Layout = GetSurfaceSparseMetadataLayout(3);
         const float InitialTotal = std::accumulate(InitialState.begin(), InitialState.end(), 0.0F);
         const float ResultTotal = std::accumulate(ResultingState.begin(), ResultingState.end(), 0.0F);
         Check(ResultingState[Mud] < InitialState[Mud] && ResultingState[WaterFilm] < InitialState[WaterFilm] &&
@@ -1470,27 +1539,25 @@ namespace
                                   Flags);
             });
         std::array<float, 3> StableHeightDirty{};
-        std::array<float, 3> StableGeometryDirty{};
         Instance.GetAccumulationHeightBuffer().Download(
             StableHeightDirty.data(), sizeof(StableHeightDirty), sizeof(StableHeightDirty));
-        Instance.GetAccumulationHeightBuffer().Download(
-            StableGeometryDirty.data(), sizeof(StableGeometryDirty), sizeof(StableHeightDirty) * 2U);
         std::array<std::uint32_t, 3> StableDispatch{};
         Instance.GetAccumulationHeightBuffer().Download(
-            StableDispatch.data(), sizeof(StableDispatch), (3U * 3U + 1U) * sizeof(float));
+            StableDispatch.data(), sizeof(StableDispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
         std::vector<float> StableWeights(StaticWeights.size(), 0.0F);
         Instance.GetTransferWeightBuffer().Download(StableWeights.data(),
                                                     static_cast<VkDeviceSize>(StableWeights.size() * sizeof(float)));
         Check(
-            std::all_of(StableHeightDirty.begin(), StableHeightDirty.end(), [](float V) { return V == 0.0F; }) &&
-                std::all_of(StableGeometryDirty.begin(), StableGeometryDirty.end(), [](float V) { return V == 0.0F; }),
+            std::all_of(StableHeightDirty.begin(), StableHeightDirty.end(), [](float V) { return V == 0.0F; }),
             "unchanged accumulation heights should skip geometry and transfer-weight rebuilds");
         Check(StableDispatch == std::array<std::uint32_t, 3>{0U, 1U, 1U},
               "unchanged geometry update should dispatch no geometry or transfer-weight workgroups");
         Check(std::equal(DynamicWeights.begin(), DynamicWeights.end(), StableWeights.begin()),
               "unchanged updated geometry should preserve the cached transfer weights");
 
-        auto ChangedState = InitialState;
+        std::array<TSurfaceGPUVec4, 6> BeforeDirtyGeometry{};
+        Instance.GetDynamicGeometryBuffer().Download(BeforeDirtyGeometry.data(), sizeof(BeforeDirtyGeometry));
+        auto ChangedState = ResultingState;
         ChangedState[Mud] += 0.1F;
         Instance.GetStateBBuffer().Upload(ChangedState.data(), sizeof(ChangedState));
         Vulkan.Execute(
@@ -1507,17 +1574,15 @@ namespace
                                   Flags);
             });
         std::array<float, 3> ChangedHeightDirty{};
-        std::array<float, 3> ChangedGeometryDirty{};
         Instance.GetAccumulationHeightBuffer().Download(
             ChangedHeightDirty.data(), sizeof(ChangedHeightDirty), sizeof(ChangedHeightDirty));
-        Instance.GetAccumulationHeightBuffer().Download(
-            ChangedGeometryDirty.data(), sizeof(ChangedGeometryDirty), sizeof(ChangedHeightDirty) * 2U);
         std::array<std::uint32_t, 3> ChangedDispatch{};
         Instance.GetAccumulationHeightBuffer().Download(
-            ChangedDispatch.data(), sizeof(ChangedDispatch), (3U * 3U + 1U) * sizeof(float));
+            ChangedDispatch.data(), sizeof(ChangedDispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
+        std::array<TSurfaceGPUVec4, 6> AfterDirtyGeometry{};
+        Instance.GetDynamicGeometryBuffer().Download(AfterDirtyGeometry.data(), sizeof(AfterDirtyGeometry));
         Check(ChangedHeightDirty[0] == 1.0F && ChangedHeightDirty[1] == 0.0F && ChangedHeightDirty[2] == 0.0F &&
-                  std::all_of(
-                      ChangedGeometryDirty.begin(), ChangedGeometryDirty.end(), [](float V) { return V == 1.0F; }),
+                  std::abs(AfterDirtyGeometry[3].X - BeforeDirtyGeometry[3].X) > 1.0e-6F,
               "a changed texel should rebuild geometry across its neighbor halo");
         Check(ChangedDispatch == std::array<std::uint32_t, 3>{1U, 1U, 1U},
               "changed geometry update should dispatch geometry and transfer-weight workgroups");
@@ -1525,100 +1590,68 @@ namespace
 
     void TestSparseGeometryUpdateWeights(TVulkanTestDevice& Vulkan)
     {
-        using namespace MDSS;
-        using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Layer{};
+        TSurfaceResponseProfileData Profile;
+        TSurfaceStateParameters Layer{};
         Layer.StateCapacity = 1.0F;
         Layer.AccumulationFactor = 1.0F;
         Layer.ThicknessPerAmount = 0.1F;
         Profile.States.emplace("mud", Layer);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> Profiles{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(Profiles);
-        TSharedSurfaceGeometryData                                   Geometry({{0, {6, 1}}});
-        for (std::size_t I = 0; I < 6; ++I)
+        const std::vector<TSurfaceResponseProfileData> Profiles{Profile};
+        const TSurfaceStateRegistry Registry(Profiles);
+        constexpr std::uint32_t Texels = 129;
+        TSharedSurfaceGeometryData Geometry({{0, {Texels, 1}}});
+        for (std::uint32_t I = 0; I < Texels; ++I)
         {
-            auto& Texel = Geometry.GetTexels()[I];
-            Texel.Surface = 0;
-            Texel.Triangle = 0;
-            Texel.Position = glm::vec3(static_cast<float>(I), 0.0F, 0.0F);
-            Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
-            if (I > 0)
-                Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(I - 1);
-            if (I + 1 < 6)
-                Texel.NeighborIndices[1] = static_cast<TLocalTexelIndex>(I + 1);
+            auto& T = Geometry.GetTexels()[I];
+            T.Surface = 0; T.Triangle = 0;
+            T.Position = {float(I), 0, 0}; T.Normal = {0, 0, 1};
         }
-        Geometry.SetProfileMap({0, 0, 0, 0, 0, 0});
-        SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources GPUProfiles(
-            Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
-                                                            Vulkan.GetDevice(),
-                                                            6,
-                                                            1,
-                                                            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
-        SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
-        const std::uint32_t Flags = SurfaceState::SurfaceSolverStateDrivenGeometryUpdateFlag |
-                                    SurfaceState::SurfaceSolverDistanceWeightFlag |
-                                    SurfaceState::SurfaceSolverNormalWeightFlag;
-        Vulkan.Execute(
-            [&](VkCommandBuffer CommandBuffer)
+        Geometry.GetTexels()[0].NeighborIndices[0] = 1;
+        Geometry.GetTexels()[1].NeighborIndices[0] = 0;
+        Geometry.GetTexels()[127].NeighborIndices[0] = 128;
+        Geometry.GetTexels()[128].NeighborIndices[0] = 127;
+        Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(Texels, 0));
+        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        TSurfaceProfileGPUResources GPUProfiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Texels, 1,
+            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)));
+        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
+        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        const auto Flags = SurfaceSolverStateDrivenGeometryUpdateFlag | SurfaceSolverDistanceWeightFlag |
+                           SurfaceSolverNormalWeightFlag | SurfaceSolverSparseGeometryFlag;
+        const auto Execute = [&](bool CurrentAB, std::uint32_t Extra)
+        {
+            Vulkan.Execute([&](VkCommandBuffer Command)
             {
-                Solver.RecordStep(
-                    CommandBuffer, Descriptors, true, 6, 1, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
+                Solver.RecordStep(Command, Descriptors, CurrentAB, Texels, 1, 0, glm::mat4(1),
+                                  glm::vec3(0, 0, -1), Flags | Extra);
             });
-
-        // A distant cached edge must survive a local height change unchanged.
+        };
+        Execute(true, SurfaceSolverForceFullGeometryFlag);
         constexpr float Sentinel = 0.123F;
-        Instance.GetTransferWeightBuffer().Upload(
-            &Sentinel, sizeof(Sentinel), 4U * SurfaceNeighborCount * sizeof(float));
-        const std::array<float, 6> ChangedState{0.5F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F};
-        Instance.GetStateABuffer().Upload(ChangedState.data(), sizeof(ChangedState));
-        Vulkan.Execute(
-            [&](VkCommandBuffer CommandBuffer)
-            {
-                Solver.RecordStep(
-                    CommandBuffer, Descriptors, true, 6, 1, 0.0F, glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.0F), Flags);
-            });
-        std::array<float, 6> HeightDirty{};
-        std::array<float, 6> GeometryDirty{};
-        Instance.GetAccumulationHeightBuffer().Download(HeightDirty.data(), sizeof(HeightDirty), sizeof(HeightDirty));
-        Instance.GetAccumulationHeightBuffer().Download(
-            GeometryDirty.data(), sizeof(GeometryDirty), sizeof(HeightDirty) * 2U);
-        float FarWeight = 0.0F;
-        Instance.GetTransferWeightBuffer().Download(
-            &FarWeight, sizeof(FarWeight), 4U * SurfaceNeighborCount * sizeof(float));
-        Check(HeightDirty == std::array<float, 6>{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F} &&
-                  GeometryDirty == std::array<float, 6>{1.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F},
-              "sparse geometry update should update the changed texel and its geometry neighbor only");
-        Check(FarWeight == Sentinel,
-              "sparse geometry update should retain distant transfer weights without rewriting them");
-        Vulkan.Execute(
-            [&](VkCommandBuffer CommandBuffer)
-            {
-                Solver.RecordStep(CommandBuffer,
-                                  Descriptors,
-                                  true,
-                                  6,
-                                  1,
-                                  0.0F,
-                                  glm::mat4(1.0F),
-                                  glm::vec3(0.0F, 0.0F, -1.0F),
-                                  Flags | SurfaceState::SurfaceSolverForceFullGeometryFlag);
-            });
-        std::array<std::uint32_t, 3> ForcedDispatch{};
-        Instance.GetAccumulationHeightBuffer().Download(
-            ForcedDispatch.data(), sizeof(ForcedDispatch), (3U * 6U + 1U) * sizeof(float));
-        Instance.GetTransferWeightBuffer().Download(
-            &FarWeight, sizeof(FarWeight), 4U * SurfaceNeighborCount * sizeof(float));
-        Check(ForcedDispatch == std::array<std::uint32_t, 3>{1U, 1U, 1U},
-              "forced full geometry should dispatch even when heights are unchanged");
-        Check(std::abs(FarWeight - 1.0F) < 1.0e-5F,
-              "transform and weight-setting invalidation should rebuild distant cached weights");
+        const auto FarOffset = 128U * SurfaceNeighborCount * sizeof(float);
+        Instance.GetTransferWeightBuffer().Upload(&Sentinel, sizeof(Sentinel), FarOffset);
+        std::vector<float> State(Texels, 0); State[0] = 0.5F;
+        Instance.GetStateBBuffer().Upload(State.data(), State.size() * sizeof(float));
+        Execute(false, 0);
+        const auto Layout = GetSurfaceSparseMetadataLayout(Texels);
+        std::array<std::uint32_t, 3> Dispatch{}, GroupFlags{};
+        Instance.GetAccumulationHeightBuffer().Download(Dispatch.data(), sizeof(Dispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
+        Instance.GetAccumulationHeightBuffer().Download(GroupFlags.data(), sizeof(GroupFlags), Layout.GeometryFlagWord * sizeof(std::uint32_t));
+        float FarWeight = 0;
+        Instance.GetTransferWeightBuffer().Download(&FarWeight, sizeof(FarWeight), FarOffset);
+        Check(Dispatch == std::array<std::uint32_t, 3>{1, 1, 1} && GroupFlags == std::array<std::uint32_t, 3>{1, 0, 0},
+              "local geometry updates schedule the affected 64-texel workgroup, not distant groups");
+        Check(FarWeight == Sentinel, "a transfer weight in another workgroup survives a local update");
+        Execute(true, SurfaceSolverForceFullGeometryFlag);
+        Instance.GetTransferWeightBuffer().Download(&FarWeight, sizeof(FarWeight), FarOffset);
+        Check(std::abs(FarWeight - 1.0F) < 1.0e-5F, "force-full prebuild refreshes the distant cached weight");
+        Instance.GetAccumulationHeightBuffer().Download(Dispatch.data(), sizeof(Dispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
+        Check(Dispatch == std::array<std::uint32_t, 3>{0, 1, 1},
+              "an unchanged post-step skips the second geometry update after a force-full prebuild");
     }
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -1631,8 +1664,14 @@ int main(int argc, char** argv)
             return FailureCount == 0 ? 0 : 1;
         }
         TVulkanTestDevice Vulkan;
-        TestRetiredBufferReuse(Vulkan);
-        if (argc == 1 || std::string(argv[1]) != "--reuse-only")
+        TestCompactScratchStorage(Vulkan);
+        if (argc > 1 && std::string(argv[1]) == "--storage-and-mesh-only")
+        {
+            TestLazyMeshStorage(Vulkan);
+            return FailureCount == 0 ? 0 : 1;
+        }
+        if (argc == 1 || std::string(argv[1]) != "--compact-storage-only") TestRetiredBufferReuse(Vulkan);
+        if (argc == 1 || (std::string(argv[1]) != "--reuse-only" && std::string(argv[1]) != "--compact-storage-only"))
         {
             TestGPUResources(Vulkan);
             TestGPUSolver(Vulkan);

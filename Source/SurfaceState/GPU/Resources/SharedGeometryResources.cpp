@@ -177,12 +177,13 @@ namespace MDSS::SurfaceState
                 case 512:
                     return GPU::TGPUBufferMemoryCategory::RenderMesh512;
                 default:
-                    throw std::invalid_argument("Unsupported render mesh resolution for memory tracking.");
+                    // Synthetic solver/debug fixtures may use grids smaller than the UI presets.
+                    return GPU::TGPUBufferMemoryCategory::SurfaceGeometry;
             }
         };
 
         const auto UploadTexelMesh =
-            [&](TSurfaceTexelMesh Mesh, TSurfaceTexelMeshGPUVariant& Output, GPU::TGPUBufferMemoryCategory Category)
+            [PhysicalDevice, Device, MaxRange, Pool, Ranges = SurfaceRanges](TSurfaceTexelMesh Mesh, TSurfaceTexelMeshGPUVariant& Output, GPU::TGPUBufferMemoryCategory Category)
         {
             Output.Ranges = std::move(Mesh.Surfaces);
             Output.VertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
@@ -217,10 +218,10 @@ namespace MDSS::SurfaceState
             // coverage and its history remain owned by each Scene instance.
             for (const std::uint32_t TileSize : {8U, 16U, 32U})
             {
-                std::vector<std::uint32_t> SurfaceTileBases(SurfaceRanges.size() + 1U, 0U);
-                for (std::size_t Surface = 0; Surface < SurfaceRanges.size(); ++Surface)
+                std::vector<std::uint32_t> SurfaceTileBases(Ranges.size() + 1U, 0U);
+                for (std::size_t Surface = 0; Surface < Ranges.size(); ++Surface)
                 {
-                    const auto&       Range = SurfaceRanges[Surface];
+                    const auto&       Range = Ranges[Surface];
                     const std::size_t Tiles = ((static_cast<std::size_t>(Range.Width) + TileSize - 1U) / TileSize) *
                                               ((static_cast<std::size_t>(Range.Height) + TileSize - 1U) / TileSize);
                     if (Tiles > std::numeric_limits<std::uint32_t>::max() - SurfaceTileBases[Surface])
@@ -234,10 +235,10 @@ namespace MDSS::SurfaceState
                 {
                     const auto& UVSurface = Mesh.Vertices[Vertex].UVSurface;
                     if (!std::isfinite(UVSurface.x) || !std::isfinite(UVSurface.y) || !std::isfinite(UVSurface.w) ||
-                        UVSurface.w < 0.0F || UVSurface.w >= static_cast<float>(SurfaceRanges.size()))
+                        UVSurface.w < 0.0F || UVSurface.w >= static_cast<float>(Ranges.size()))
                         throw std::runtime_error("Overlay vertex has an invalid surface or UV.");
                     const auto  Surface = static_cast<std::uint32_t>(UVSurface.w);
-                    const auto& Range = SurfaceRanges[Surface];
+                    const auto& Range = Ranges[Surface];
                     if (Range.Width == 0U || Range.Height == 0U)
                         throw std::runtime_error("Overlay vertex belongs to an empty surface range.");
                     const auto X =
@@ -284,16 +285,16 @@ namespace MDSS::SurfaceState
                         FullTexelMesh,
                         MeshMemoryCategory(SimulationResolution));
 
-        for (const auto& Preset : SurfaceRenderMeshResolutionPresets)
+        MeshVariantFactory = [GeometryPointer = &Geometry,
+                              Vertices = std::vector<Asset::TVertex>(SourceVertices.begin(), SourceVertices.end()),
+                              Triangles = std::vector<Asset::TMeshTriangleSource>(SourceTriangles.begin(), SourceTriangles.end()),
+                              UploadTexelMesh, MeshMemoryCategory](std::uint32_t Resolution)
         {
-            if (Preset.Resolution == SimulationResolution)
-                continue;
             TSurfaceTexelMeshGPUVariant Variant;
-            UploadTexelMesh(BuildSurfaceTexelMesh(Geometry, SourceVertices, SourceTriangles, Preset.Resolution),
-                            Variant,
-                            MeshMemoryCategory(Preset.Resolution));
-            TexelMeshVariants.emplace(Preset.Resolution, std::move(Variant));
-        }
+            UploadTexelMesh(BuildSurfaceTexelMesh(*GeometryPointer, Vertices, Triangles, Resolution),
+                            Variant, MeshMemoryCategory(Resolution));
+            return Variant;
+        };
     }
 
     const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelSurfaceIndexBuffer() const noexcept

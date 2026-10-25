@@ -23,6 +23,7 @@
 #include <glm/glm.hpp>
 #include <map>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -56,10 +57,15 @@ namespace MDSS::SurfaceState
                                    const Asset::TAssetManager& Assets,
                                    const TSurfaceDataManager&  SurfaceData,
                                    const TScene&               Scene,
-                                   TSurfaceGPUBufferPool*      Pool = nullptr);
+                                   TSurfaceGPUBufferPool*      Pool = nullptr,
+                                   TSurfaceScratchStorageFormat Storage = {});
         ~TSurfaceGPUResourceManager();
 
         void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
+        void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay);
+        bool ConfigureScratchStorage(const GPU::TVulkanContext& Context, bool Cache, bool HalfRaw,
+                                     bool HalfWeights, bool Compact);
+
 
         TSurfaceGPUResourceManager(const TSurfaceGPUResourceManager&) = delete;
         TSurfaceGPUResourceManager& operator=(const TSurfaceGPUResourceManager&) = delete;
@@ -100,6 +106,7 @@ namespace MDSS::SurfaceState
         void               AdvanceCurrentState(std::size_t SceneIndex);
 
     private:
+        std::optional<std::array<bool, 4>> ScratchStorageFormat;
         struct TSharedSurfaceResources
         {
             std::unique_ptr<TSurfaceSharedGeometryGPUResources> Geometry;

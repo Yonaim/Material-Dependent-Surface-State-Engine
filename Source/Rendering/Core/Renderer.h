@@ -416,6 +416,7 @@ namespace MDSS::Rendering
         void                CreateRenderFinishedSemaphores();
         void                DestroyRenderFinishedSemaphores() noexcept;
         void                CreateTimestampQueryPool(std::size_t SolverInstanceCount);
+        void TrimRenderResolutionCaches();
         void                UploadMaterialUniforms(std::uint32_t   Frame,
                                                    const TScene&   SceneData,
                                                    const TDebugUI& DebugInterface,
@@ -529,7 +530,9 @@ namespace MDSS::Rendering
         std::uint64_t                                                            BenchmarkMeasurementFrames = 0;
         std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
         bool                                                                     bBenchmarkCaptureEnabled = false;
-        std::uint32_t                                                            TimestampQueriesPerFrame = 21;
+        float BenchmarkGpuElapsed = -1.0F;
+        float BenchmarkSimulationElapsed = -1.0F;
+        std::uint32_t                                                            TimestampQueriesPerFrame = 24;
         std::uint32_t                                                            SolverTimestampGroupCount = 0;
         float                                                                    TimestampPeriodNanoseconds = 0.0F;
         std::uint32_t                                                            TimestampValidBits = 0;

@@ -172,13 +172,14 @@ namespace MDSS::SurfaceState
                 Device,
                 PipelineLayout,
                 Shaders::Path(Shaders::EShader::Simulation_Geometry_SurfaceDynamicGeometryUpdate_comp).c_str());
-            constexpr std::array<Shaders::EShader, 2> WeightVariants{
+            constexpr std::array<Shaders::EShader, 3> WeightVariants{
                 Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_w0,
-                Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_w1};
+                Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_w1,
+                Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_runtime};
             for (std::size_t Weight = 0; Weight < DynamicTransferWeightPipelines.size(); ++Weight)
                 DynamicTransferWeightPipelines[Weight] =
                     CreateComputePipeline(Device, PipelineLayout, Shaders::Path(WeightVariants[Weight]).c_str());
-            constexpr std::array<Shaders::EShader, 10> Pass1Variants{
+            constexpr std::array<Shaders::EShader, 11> Pass1Variants{
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r0w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r0w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r1w0,
@@ -188,8 +189,9 @@ namespace MDSS::SurfaceState
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r3w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r3w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r4w0,
-                Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r4w1};
-            constexpr std::array<Shaders::EShader, 10> Pass2Variants{
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r4w1,
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_runtime};
+            constexpr std::array<Shaders::EShader, 11> Pass2Variants{
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r0w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r0w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r1w0,
@@ -199,7 +201,10 @@ namespace MDSS::SurfaceState
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r3w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r3w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r4w0,
-                Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r4w1};
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r4w1,
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_runtime};
+            Pass1Pipelines[10] = CreateComputePipeline(Device, PipelineLayout, Shaders::Path(Pass1Variants[10]).c_str());
+            Pass2Pipelines[10] = CreateComputePipeline(Device, PipelineLayout, Shaders::Path(Pass2Variants[10]).c_str());
             for (std::size_t Raw = 0; Raw < 5; ++Raw)
                 for (std::size_t Weight = 0; Weight < 2; ++Weight)
                 {
@@ -466,7 +471,7 @@ namespace MDSS::SurfaceState
                     continue;
                 vkCmdBindPipeline(CommandBuffer,
                                   VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PrebuildConstants.Flags)]);
+                                  DynamicTransferWeightPipelines[bRuntimeFlagsEnabled ? 2U : WeightModeFromFlags(Item.PrebuildConstants.Flags)]);
                 BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 const auto& Descriptors = *Item.Step->Descriptors;
@@ -513,7 +518,7 @@ namespace MDSS::SurfaceState
         for (const TPreparedStep& Item : Prepared)
         {
             const std::size_t Variant =
-                RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
+                bRuntimeFlagsEnabled ? 10U : RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
@@ -541,7 +546,7 @@ namespace MDSS::SurfaceState
         for (const TPreparedStep& Item : Prepared)
         {
             const std::size_t Variant =
-                RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
+                bRuntimeFlagsEnabled ? 10U : RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
@@ -648,7 +653,7 @@ namespace MDSS::SurfaceState
                     continue;
                 vkCmdBindPipeline(CommandBuffer,
                                   VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PostConstants.Flags)]);
+                                  DynamicTransferWeightPipelines[bRuntimeFlagsEnabled ? 2U : WeightModeFromFlags(Item.PostConstants.Flags)]);
                 BindStep(Item.NextDescriptorSet, Item.PostConstants);
                 vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.GeometryIndirectOffset);
                 const auto& Descriptors = *Item.Step->Descriptors;

@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <stdexcept>
 #include <utility>
 
 namespace MDSS::SurfaceState
@@ -74,6 +75,14 @@ namespace MDSS::SurfaceState
                     std::array<std::uint32_t, 3>            MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU},
                     std::uint32_t                           ActiveMaterialMask = 0U,
                     std::size_t                             OutputSlot = 0U);
+
+        // Call only after GPU completion; descriptors and their buffers are released together.
+        void ReleaseOutputs()
+        {
+            Outputs.clear();
+            if (vkResetDescriptorPool(Device, Pool, 0) != VK_SUCCESS)
+                throw std::runtime_error("Cannot reset render output descriptors.");
+        }
 
     private:
         // Resource cleanup

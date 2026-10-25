@@ -1,0 +1,581 @@
+{
+  "name": "PERF036-formats",
+  "runs": [
+    {
+      "id": "PERF036-fp32-BrickCube-256-before-1",
+      "experiment": "PERF036-fp32",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-BrickCube-256-after-1",
+      "experiment": "PERF036-fp32",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-Mountain-512-before-1",
+      "experiment": "PERF036-fp32",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-Mountain-512-after-1",
+      "experiment": "PERF036-fp32",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-Mountain-512-after-2",
+      "experiment": "PERF036-fp32",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-Mountain-512-before-2",
+      "experiment": "PERF036-fp32",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-BrickCube-256-after-2",
+      "experiment": "PERF036-fp32",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-BrickCube-256-before-2",
+      "experiment": "PERF036-fp32",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-Mountain-512-before-3",
+      "experiment": "PERF036-fp32",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-Mountain-512-after-3",
+      "experiment": "PERF036-fp32",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-BrickCube-256-before-3",
+      "experiment": "PERF036-fp32",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-fp32-BrickCube-256-after-3",
+      "experiment": "PERF036-fp32",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_raw_flux": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-BrickCube-256-before-1",
+      "experiment": "PERF036-halfweights",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-BrickCube-256-after-1",
+      "experiment": "PERF036-halfweights",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-Mountain-512-before-1",
+      "experiment": "PERF036-halfweights",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-Mountain-512-after-1",
+      "experiment": "PERF036-halfweights",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-Mountain-512-after-2",
+      "experiment": "PERF036-halfweights",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-Mountain-512-before-2",
+      "experiment": "PERF036-halfweights",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-BrickCube-256-after-2",
+      "experiment": "PERF036-halfweights",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-BrickCube-256-before-2",
+      "experiment": "PERF036-halfweights",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-Mountain-512-before-3",
+      "experiment": "PERF036-halfweights",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-Mountain-512-after-3",
+      "experiment": "PERF036-halfweights",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-BrickCube-256-before-3",
+      "experiment": "PERF036-halfweights",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-halfweights-BrickCube-256-after-3",
+      "experiment": "PERF036-halfweights",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "fp16_weights": true
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-BrickCube-256-before-1",
+      "experiment": "PERF036-nocache",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-BrickCube-256-after-1",
+      "experiment": "PERF036-nocache",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-Mountain-512-before-1",
+      "experiment": "PERF036-nocache",
+      "arm": "before",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-Mountain-512-after-1",
+      "experiment": "PERF036-nocache",
+      "arm": "after",
+      "repeat": 1,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-Mountain-512-after-2",
+      "experiment": "PERF036-nocache",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-Mountain-512-before-2",
+      "experiment": "PERF036-nocache",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-BrickCube-256-after-2",
+      "experiment": "PERF036-nocache",
+      "arm": "after",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-BrickCube-256-before-2",
+      "experiment": "PERF036-nocache",
+      "arm": "before",
+      "repeat": 2,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-Mountain-512-before-3",
+      "experiment": "PERF036-nocache",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-Mountain-512-after-3",
+      "experiment": "PERF036-nocache",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/Mountain.Scene",
+      "resolution": 512,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-BrickCube-256-before-3",
+      "experiment": "PERF036-nocache",
+      "arm": "before",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S01\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    },
+    {
+      "id": "PERF036-nocache-BrickCube-256-after-3",
+      "experiment": "PERF036-nocache",
+      "arm": "after",
+      "repeat": 3,
+      "scene": "Assets/Scenes/BrickCube.Scene",
+      "resolution": 256,
+      "binary": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\MDSS.exe",
+      "shader_archive": "C:\\Users\\yonai\\Documents\\MDSS_Engine\\Build\\OptimizationLab\\S02\\Shaders",
+      "settings": {
+        "raw_flux_cache": false
+      },
+      "warmup": 60,
+      "measure": 600,
+      "timeout": 1800
+    }
+  ]
+}

@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <map>
+#include <functional>
+#include <stdexcept>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -116,10 +118,20 @@ namespace MDSS::SurfaceState
             return FullTexelMesh.Ranges;
         }
         [[nodiscard]] const TSurfaceTexelMeshGPUVariant&
-        GetTexelMeshVariant(std::uint32_t RenderResolution) const noexcept
+        GetTexelMeshVariant(std::uint32_t RenderResolution) const
         {
-            const auto Found = TexelMeshVariants.find(RenderResolution);
-            return Found != TexelMeshVariants.end() ? Found->second : FullTexelMesh;
+            if (RenderResolution == SimulationResolution) return FullTexelMesh;
+            if (!IsSurfaceRenderMeshResolution(RenderResolution))
+                throw std::invalid_argument("Unsupported render mesh resolution.");
+            auto Found = TexelMeshVariants.find(RenderResolution);
+            if (Found == TexelMeshVariants.end())
+                Found = TexelMeshVariants.emplace(RenderResolution, MeshVariantFactory(RenderResolution)).first;
+            return Found->second;
+        }
+        // GPU-idle only. The simulation-resolution mesh remains available to topology/debug consumers.
+        void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
+        {
+            std::erase_if(TexelMeshVariants, [=](const auto& Item) { return Item.first != Surface && Item.first != Overlay; });
         }
 
     private:
@@ -138,7 +150,8 @@ namespace MDSS::SurfaceState
         std::unique_ptr<GPU::TGPUBuffer>                     RenderSamplingBoundaryFlagBuffer;
         std::uint32_t                                        SimulationResolution = 0;
         TSurfaceTexelMeshGPUVariant                          FullTexelMesh;
-        std::map<std::uint32_t, TSurfaceTexelMeshGPUVariant> TexelMeshVariants;
+        mutable std::map<std::uint32_t, TSurfaceTexelMeshGPUVariant> TexelMeshVariants;
+        std::function<TSurfaceTexelMeshGPUVariant(std::uint32_t)> MeshVariantFactory;
     };
 
 } // namespace MDSS::SurfaceState
