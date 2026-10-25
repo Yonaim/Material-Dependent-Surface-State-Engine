@@ -1,5 +1,0 @@
-/* Red text for inline code in reading and editing views. */
-.markdown-rendered :not(pre) > code,
-.markdown-source-view.mod-cm6 .cm-inline-code {
-  color: var(--color-red);
-}

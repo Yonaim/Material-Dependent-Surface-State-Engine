@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse, collections, datetime, hashlib, json, math
 
 ROOT = Path(__file__).resolve().parents[2]
-RESULTS = ROOT / 'Docs/MDSSP-Vault/04_Development/Performance-Results'
+RESULTS = ROOT / 'Performance-Data'
 FOLDERS = ['20261022-optimization-suite-main', '20261022-single-transport-validation',
            '20261022-workload-supplement', '20261022-development-history']
 

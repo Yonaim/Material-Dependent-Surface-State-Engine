@@ -2,8 +2,8 @@
 from pathlib import Path
 import json,datetime,argparse
 ROOT=Path(__file__).resolve().parents[2]
-RESULTS=ROOT/'Docs/MDSSP-Vault/04_Development/Performance-Results'
-DOC=ROOT/'Docs/MDSSP-Vault/04_Development/0003_Solver-Performance.md'
+RESULTS=ROOT/'Performance-Data'
+DOC=ROOT/'Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md'
 FOLDERS={'main':'20261022-optimization-suite-main','short':'20261022-single-transport-validation',
          'extra':'20261022-workload-supplement','history':'20261022-development-history'}
 QUESTIONS={
@@ -80,7 +80,7 @@ def table(headers,rows):
   alignment.append('---:' if values and all(numeric(value) for value in values) else '---')
  return ['','| '+' | '.join(headers)+' |','|'+'|'.join(alignment)+'|',
          *['| '+' | '.join(str(x) for x in row)+' |' for row in rows],'']
-def pathlink(key,name):return f'Performance-Results/{FOLDERS[key]}/{name}'
+def pathlink(key,name):return f'../../../Performance-Data/{FOLDERS[key]}/{name}'
 
 def overview(comparisons,complete):
  def selected(name,source=None,scene=None):
@@ -303,7 +303,7 @@ def main():
            f"- [전체 실행·조건·상태·파일·실행 파일 독립 검증]({pathlink('main','study-audit.json')}) — 최종 보고서는 이 검사가 통과한 뒤 생성한다.",
            f"- [최초 startup viewport 검사의 진단 기록]({pathlink('main','study-audit-initial-startup-viewport.json')}) — 위 수정 이유를 보존한다.",
            f"- [현재 옵션 상세 집계]({pathlink('main','comparisons.json')}), [추가 workload 상세 집계]({pathlink('extra','comparisons.json')}), [한 번 전달 검사]({pathlink('short','validation-summary.json')}), [개발 단계 요약]({pathlink('history','history-summary.json')}).",
-           '- [제외한 사전 pilot 실행 기록](Performance-Results/20261022-optimization-suite/manifest.json), [실험용 Scene 경로 수정 기록](Performance-Results/20261022-workload-supplement/raw/inputs/scenario-path-correction.json).',
+           '- [제외한 사전 pilot 실행 기록](../../../Performance-Data/20261022-optimization-suite/manifest.json), [실험용 Scene 경로 수정 기록](../../../Performance-Data/20261022-workload-supplement/raw/inputs/scenario-path-correction.json).',
            '- 각 manifest에 실제 시각, 명령, 종료 코드, 표본 수, 실행 파일 SHA-256이 있다. main/raw/inputs에 고정 소스·에셋 보관본, 실행 파일, patch, 입력 해시와 빌드 로그를 보관했다. 추가 workload의 Scene/복원 셰이더와 역사 버전 patch도 각 inputs에 있다.',
            '- 미커밋 변경이 포함돼 있으므로 commit만으로 재현되는 결과가 아니다. 같은 소스/에셋/설정 보관본과 도구 버전으로 복원해야 한다.',
            '- **raw는 Git ignore 대상이며 현재 PC에 저장돼 있다. Git push만으로 백업되지 않는다.** 장기 보관 시 결과 폴더 전체를 함께 보관해야 한다.','']

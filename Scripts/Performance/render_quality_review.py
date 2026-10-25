@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image,ImageDraw,ImageFont
 
 ROOT=Path(__file__).resolve().parents[2]
-RESULTS=ROOT/'Docs/MDSSP-Vault/04_Development/Performance-Results'
+RESULTS=ROOT/'Performance-Data'
 MAIN=RESULTS/'20261022-optimization-suite-main'
 EXTRA=RESULTS/'20261022-workload-supplement'
 OUTPUT=MAIN/'raw/quality-review'

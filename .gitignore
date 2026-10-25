@@ -85,8 +85,10 @@ Testing/
 Cache/
 
 # Performance benchmark raw captures
-Docs/MDSSP-Vault/06_Development/Performance/Results/*/raw/
-Docs/MDSSP-Vault/04_Development/Performance-Results/*/raw/
+Performance-Data/**/raw/
+# Two small historical JSONL sets were already versioned before the vault split.
+!Performance-Data/20261004-232011-solver-resolution/raw/
+!Performance-Data/20261004-235404-solver-resolution/raw/
 
 # exceptionally allowed
 !/Assets/Meshes/*.obj
