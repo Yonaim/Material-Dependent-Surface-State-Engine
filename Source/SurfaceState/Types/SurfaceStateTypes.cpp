@@ -67,6 +67,7 @@ namespace MDSS::SurfaceState
 
     void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data)
     {
+        ValidateSurfaceReactions(Data);
         for (const auto& [Name, State] : Data.States)
         {
             if (Name.empty() || NormalizeSurfaceStateName(Name) != Name)

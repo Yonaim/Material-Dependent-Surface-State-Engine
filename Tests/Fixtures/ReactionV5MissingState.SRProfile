@@ -1,0 +1,87 @@
+{
+  "type": "SurfaceResponseProfile",
+  "version": 5,
+  "name": "Ice Reaction Lab",
+  "states": {
+    "ice": {
+      "stateCapacity": 4,
+      "inputFactor": 1,
+      "saturationSpreadFactor": 0,
+      "gravityFlowFactor": 0,
+      "decayRate": 0,
+      "cavityDecayProtectionFactor": 0,
+      "cavityExitResistanceFactor": 0,
+      "accumulationFactor": 1,
+      "cavityFillFactor": 0,
+      "thicknessPerAmount": 0.035
+    },
+    "waterfilm": {
+      "stateCapacity": 2,
+      "inputFactor": 1,
+      "saturationSpreadFactor": 0.16,
+      "gravityFlowFactor": 0.025,
+      "decayRate": 0,
+      "cavityDecayProtectionFactor": 0,
+      "cavityExitResistanceFactor": 0,
+      "accumulationFactor": 0.18,
+      "cavityFillFactor": 0,
+      "thicknessPerAmount": 0.035
+    },
+    "heat": {
+      "stateCapacity": 2,
+      "inputFactor": 1,
+      "saturationSpreadFactor": 0.15,
+      "gravityFlowFactor": 0,
+      "decayRate": 0.015,
+      "cavityDecayProtectionFactor": 0,
+      "cavityExitResistanceFactor": 0,
+      "accumulationFactor": 0,
+      "cavityFillFactor": 0,
+      "thicknessPerAmount": 0.025
+    }
+  },
+  "reactions": [
+    {
+      "id": "ice_melting",
+      "consumes": {
+        "ice": 1,
+        "heat": 0.45
+      },
+      "produces": {
+        "missing_state": 1
+      },
+      "rate": {
+        "model": "stateProportional",
+        "state": "ice",
+        "coefficient": 0.5
+      },
+      "modifiers": [
+        {
+          "state": "heat",
+          "function": "rampAbove",
+          "threshold": 0.25,
+          "scale": 1
+        }
+      ]
+    },
+    {
+      "id": "water_cooling",
+      "consumes": {
+        "heat": 1
+      },
+      "produces": {},
+      "rate": {
+        "model": "stateProportional",
+        "state": "heat",
+        "coefficient": 0.5
+      },
+      "modifiers": [
+        {
+          "state": "waterfilm",
+          "function": "linear",
+          "scale": 1
+        }
+      ]
+    }
+  ]
+}
