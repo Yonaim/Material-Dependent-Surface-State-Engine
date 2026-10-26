@@ -10,6 +10,7 @@
 | Scene 초기화부터 GPU 구성 | [[02_Architecture/01_Flows/01_Initialization/00_Scene-Load|Scene Load]], [[02_Architecture/01_Flows/01_Initialization/01_Surface-Build-and-GPU-Setup|Surface Build]] |
 | State에서 화면 표시까지 | [[02_Architecture/01_Flows/04_Rendering/00_Render-Overview|Rendering Pipeline]] |
 | State·Profile·입력 | [[02_Architecture/02_Contracts/00_State-and-Profile|State and Profile]], [[02_Architecture/02_Contracts/01_Assets-and-Profiles|Assets]] |
+| 전이·상호작용과 Profile v5 | [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]] |
 | 형상·Solver 수식 | [[02_Architecture/02_Contracts/02_Geometry|Geometry]], [[02_Architecture/02_Contracts/03_Solver|Solver]] |
 | GPU 저장·공유·ABI | [[02_Architecture/02_Contracts/04_GPU-Layout|GPU Layout]] |
 | CPU↔GPU 변경 영향 | [[02_Architecture/03_Source/00_Index|Source 연결표]] |

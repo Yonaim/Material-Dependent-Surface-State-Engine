@@ -36,6 +36,10 @@ Pause는 시간을 누적·소비하지 않는다. 수동 Step은 Auto OFF에서
 결정: 면적·총량, Geometry 비례 전달. HeightDrive, DistanceWeight와 2-Pass 구조는 유지한다.
 
 
+## Local Reaction 실행
+
+아래 Input·Transport·Decay 식은 기본 결과를 정의한다. Reaction이 있는 Scene에서는 Pass 2가 이 기본 결과를 scratch에 기록한 뒤 별도 Reaction Pass가 전이·상호작용을 적용해 최종 Next State를 기록한다. 유입 기반 전환을 한 번 적용한 뒤 continuous 반응을 내부 세분화하며, 최종 State로 sparse schedule과 Height/Geometry를 갱신한다. 수식·단위·자원 경쟁·시간 예산 진단은 [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]]를 따른다.
+
 ## Input 경계
 
 Contact는 texel·channel별 `InputDelta`를 만든다. GPU Pass 2는 이를 첫 실행 step에서 한 번 더하고 비운다. 입력을 받은 State가 이웃으로 이동하는 것은 다음 step부터다. Add/Remove와 입력 형상은 [[02_Architecture/02_Contracts/00_State-and-Profile#Contact Input|Contact Input]]을 따른다.

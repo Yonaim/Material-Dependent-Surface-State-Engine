@@ -27,8 +27,15 @@
 | 두-pass gather와 A/B State | Pass 1이 Decay·방향 flux 합·source alpha를 계산하고 barrier 후 Pass 2가 incoming과 입력을 합친다. 받은 양은 같은 step에서 다시 보내지 않는다. |
 | Raw Flux cache·FP16·sparse 경로는 선택형 | 현재 기본 Raw Flux cache와 FP16 Raw Flux는 ON, FP16 Weights는 OFF다. `compact_storage`는 buffer 크기를 바꿀 수 있다. 실측 전에는 빠른 경로를 단정하지 않는다. 과거 Decision 0025의 제거 기록은 현행 상태가 아니다. |
 
+## 확정된 개발 방향 — 상태 전이와 상호작용
+
+2026-10-26 사용자 지시에 따라 프로젝트의 개발 범위를 **State 전이와 State 간 상호작용**으로 확장한다. `Ice → Water`처럼 보유량을 소비해 다른 State를 만드는 전이와, Heat가 Burn 생성을 촉진하거나 Water가 이를 억제하는 상호작용을 함께 다룬다. 조건을 제공하는 State가 반드시 소비되는 것은 아니다.
+
+State는 texel별 총량이며 **저장 상한을 두지 않는 기존 계약을 유지한다**. `stateCapacity`는 포화 기준이다. 여러 반응의 총 소비량은 보유량 이하로 제한해야 하지만, 생성량에 저장 공간을 이유로 한 상한은 도입하지 않는다. 제안의 `Burn ∈ [0,1]`은 예시일 뿐 채택한 State 계약이 아니다.
+
+현재 `.SRProfile` Transition 정의는 기존 선언 형식의 설명이며 새 기능의 범위를 제한하지 않는다. 현재 version 5의 `reactions`, 별도 GPU Reaction Pass, 공통 공급량 제한과 면적 환산 조건을 구현했다. 상세 계약은 [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]]를 따른다. Rule별 sample 선택은 두지 않고 기준 면적당 양으로 통일한다.
+
 ## 아직 확정되지 않은 범위
 
-- `.SRProfile` Transition은 읽지만 Solver에서 실행하지 않는다.
 - 게임 Physics adapter와 Surface-bound 공개 Contact wrapper는 없다.
 - 성능 A/B 경로의 채택은 같은 조건의 기준·변경 후 측정과 정확성 확인을 거쳐 결정한다. 근거 없는 속도·메모리 절감률을 현행 판단으로 쓰지 않는다.

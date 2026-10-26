@@ -11,6 +11,8 @@ Pass 1 scratch와 이웃 출발 Texel의 보정 비율을 읽고 각 destination
 
 `SurfaceSolverPass2.comp`는 이웃 출발점의 Flux와 Outgoing scale을 gather하고, 현재 State에 Incoming을 더하고 Outgoing·Decay를 반영한다. 첫 실행 Step의 `InputDelta`를 **한 번 소비**하여 Next State에 적용한다. 새로 비었던 texel에 주입한 InputDelta는 현재 step의 Pass 1 Flux를 바꾸지 않으므로 다음 Step부터 이웃으로 전파된다.
 
+Reaction이 있는 Scene에서는 여기서 최종 State를 확정하지 않고 모든 채널의 기본 결과와 신규 유입 정보를 ReactionScratch에 준비한다. compute barrier 뒤 `SurfaceReaction.comp`가 최종 State와 다음 활성/Height schedule을 기록한다. [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]] 참고.
+
 ## 쓰기와 동기화
 
 - **읽기:** Current State, 이웃 Raw Flux/Outgoing scale, `InputDelta`, Profile.

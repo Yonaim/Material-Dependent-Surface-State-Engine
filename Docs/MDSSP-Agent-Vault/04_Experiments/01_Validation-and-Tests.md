@@ -485,3 +485,30 @@ ctest --test-dir Build --output-on-failure
 - [[02_Architecture/03_Source/Src_Cpp/07_Scene-Input-DebugUI#Debug UI와 profiling|UI Interface]]
 - Decision 0020 — Scene 참조형 데모 애니메이션
 - 로드맵(별도 문서 미작성)
+
+## 검증 — Local Reactions와 Ice Reaction Lab (2026-10-26)
+
+상태: **기능 구현 및 실제 Lit 전체 재생 확인 · 최종 단위 테스트 일부 OS 실행 차단**. 성능 비교 실험이 아니다.
+
+- 코드: `92225fc` 이후 작업 트리. Profile v5·Reaction·Ice Lit 변경을 포함한 Debug 전체 C++/SPIR-V 빌드 성공. 실행 파일과 소스 SHA-256은 `Build/ReactionValidation/summary.json`에 기록했다.
+- 실행 환경: AMD Radeon RX 6700 XT, Debug, Vulkan core/synchronization/best-practices validation ON.
+- Scene: `Assets/Scenes/IceReactionLab.Scene`, simulation/render mesh 128, 3 simulation instances, channels `heat`, `ice`, `waterfilm`. `SparseSolver`, global/WG channel mask ON. 정확한 렌더·수송 옵션은 각 `.settings.json`에 저장했다.
+- `Scripts/Validation/verify_reactions.ps1`로 182 및 842 Solver step 실행 성공. Scene animation replay 및 presentation Lit 모드로 약 3초·14초를 캡처했다.
+- 두 실행 모두 모든 instance에서 음수·NaN/Inf·Reaction 적분 예산 초과·산술 오류 **0**. 런타임/Vulkan validation 오류 **0**. 초기/최종 화면은 `Build/ReactionValidation/early.png`, `final.png`, 원본 PPM과 로그·State f32·validation JSON도 같은 폴더에 보존했다.
+- 최종 화면에서 A의 잔류 얼음, B의 용융된 물과 낮아진 적층, C의 냉각에 따른 더 많은 잔류 얼음·물 합성을 확인했다. 아래 값은 자동 출력한 최종 texel 총량 합이며 면적을 다시 곱하지 않았다. C에는 별도 물 공급이 있으므로 세 판의 WaterFilm 양을 직접 보존량 비교로 쓰지 않는다.
+
+| 판 | Ice | WaterFilm | Heat |
+|---|---:|---:|---:|
+| A — finite heat | 391926.661 | 77339.137 | 340.574 |
+| B — sustained heat | 150912.535 | 318322.047 | 10610.955 |
+| C — water cooling | 294980.874 | 663953.862 | 3734.328 |
+
+![Ice Reaction Lab — Lit](Images/IceReactionLab-Lit.png)
+
+### 회귀 결과와 실행 제한
+
+- 작업 중 Surface State 계약 테스트와 Reaction 전용/전체 Surface GPU 테스트가 통과했다. 면적별 동일 밀도, 질량 보존, 여러 source/경쟁 규칙, Rule 순서, 상한 없는 생성, mass-action·억제, 유입 1회 전환, legacy Transition, Sparse 경계 수송, 32개 초과 채널 및 최종 Height를 확인했다.
+- 진단 경계 테스트를 추가한 최종 빌드에서는 Windows Application Control이 `MDSS_SurfaceGPUResourceTests.exe`와 `MDSS_SceneResourceTests.exe`를 차단했다. 직접 실행에서도 “An Application Control policy has blocked this file”을 확인했다. 최종 14개 CTest 결과는 **4 통과 / 기존 CPU assertion 실패 2 / 실행 차단 8**이며 차단 항목을 통과로 기록하지 않는다. 실제 앱 `MDSS.exe`의 최신 Lit 검증은 위와 같이 정상 완료했다.
+- 변경 전 HEAD를 `Build/ReactionValidation/Baseline/`에 별도로 구성하고, 기존 작업 폴더의 미추적 지원 파일인 `Source/SurfaceState/Cache` 및 `MidtermDustpan/Dustpan.obj`를 동일하게 준비했다. 선택한 9개 기존 회귀 중 2 통과/7 실패를 재현했다. 변경 버전도 OS 차단 전 전체 13개 실행에서 동일한 7개 실패를 보였다.
+- 재현한 기존 실패: SceneResources/DemoAnimation의 dustpan 이벤트 시점, CavityFillDisplayBound의 이전 형상 기대값, LavaScene의 없는 `Mountain_Lava.Scene`, OverlaySideCompaction의 미지원 render 해상도, SurfaceMapping의 seam 경고 기대값, SharedSurfaceGeometry의 invalid-texel triangulation 기대값. 이번 기능에서 이 fixture/기대값을 수정하지 않았다.
+- 원자료: `Build/reaction-build.log`, `Build/reaction-ctest.log`, `Build/reaction-gpu-tests.log`, `Build/ReactionValidation/baseline-build.log`, `baseline-ctest.log`, `summary.json`. 과거 통과 시점의 별도 소스 snapshot/hash는 보존하지 않았으므로 최종 차단된 테스트 바이너리의 통과를 주장하지 않는다.

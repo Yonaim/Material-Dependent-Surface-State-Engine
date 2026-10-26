@@ -144,7 +144,9 @@ State별로 현재 상태와 Solver 계산 과정의 임시값을 각각 스칼�
 
 ## State Transitions
 
-State Transition은 한 State가 조건을 만족했을 때 다른 State를 증가시키는 규칙이다.
+아래는 version 3/4 `.SRProfile`의 기존 Transition 선언 의미다. 현재는 GPU 패킹 시 source를 소비하지 않는 조건부 생성 Reaction으로 변환해 실행한다. version 5의 State 전이·상호작용은 [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]]를 따른다.
+
+현재 선언에서 State Transition은 한 State가 조건을 만족했을 때 다른 State를 증가시키는 규칙이다.
 
 예:
 
@@ -161,7 +163,7 @@ Heat → Burn
 
 - `threshold = 0.7`이면 source Saturation이 `0.7` 이상일 때 전이 조건을 만족한다.
 - Saturation은 1을 넘을 수 있으므로 Transition 구현에서 이 범위를 검증한다.
-- State Transition의 Solver 적용은 미구현이다.
+- 기존 Transition도 Reaction Pass에서 실행한다. source Saturation 임계값과 target 증가 속도의 의미를 유지한다.
 - 실행 순서와 Solver pass 배치는 [[02_Architecture/02_Contracts/03_Solver|Next State 계산 메모]]에서 다룬다.
 
 ### State Transition 조건 평가

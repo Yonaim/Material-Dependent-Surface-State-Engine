@@ -42,6 +42,8 @@ flowchart LR
   Swap --> Descriptors
 ```
 
+Reaction이 있는 Scene에서는 Pass 2와 State swap 사이에 별도 Reaction Pass가 실행된다. 다섯 K-plane의 scratch는 두 snapshot, 소비 비율, positive input, incoming이고 M은 Profile당 최대 활성 규칙 수다. 나머지 네 값은 texel별 적분 진단이다. 실제 ABI와 알고리즘은 [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]]를 따른다.
+
 ## Shared Geometry
 
 Shared Geometry는 Mesh와 Profile Distribution 조합에 대해 전처리한 texel 정보를 담는다. 같은 조합으로 만들어진 instance끼리 이 버퍼들을 공유할 수 있다. Neighbor도 여기 저장되므로 매 simulation step마다 격자나 UV seam을 다시 분석할 필요가 없다.
@@ -196,7 +198,7 @@ flowchart LR
 
 ## Solver 캐시 buffer descriptor binding
 
-각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver 전용 자원은 binding 14–22를 사용한다. 전체 descriptor binding count는 23이며 기존 device limit 검증에도 적용한다.
+각 descriptor는 storage buffer 하나를 가리킨다. 기존 Surface debug fragment shader의 binding 12·13을 유지하고, Solver 전용 자원은 binding 14–24를 사용한다. 전체 descriptor binding count는 25이며 기존 device limit 검증에도 적용한다.
 
 | set 0 binding | Buffer | 소유 범위 | 원소 / 인덱스 |
 |---:|---|---|---|
@@ -213,6 +215,8 @@ flowchart LR
 | 20 | DynamicGeometry | instance | texel별 위치+평균거리 vec4, normal+마지막 생성 높이 vec4 |
 | 21 | AccumulationHeights | instance | texel별 높이·dirty planes와 workgroup/indirect dispatch data |
 | 22 | DynamicConcavityWeights | instance | texel별 float32 |
+| 23 | Reaction table | Scene Profile table | uint-word header/rules/terms/modifiers/factors |
+| 24 | ReactionScratch | instance | `N × (5K+M+4)` float; Reaction 없는 경우 dummy 1개 |
 
 DynamicConcavityWeights는 Surface 6개 × 512×512에서 float32, texel당 4 B, 원소 padding 없음 기준으로 instance당 6 MiB다. Dynamic geometry update가 변경된 texel의 값을 갱신한다.
 

@@ -1,6 +1,6 @@
 # Compute Shader — Solver Pass 1 / 2
 
-두 실제 SPIR-V entry와 아직 실행하지 않는 Input placeholder를 분리 표시한다. 각 entry의 Input/Output과 barrier 소비자를 먼저 확인한다.
+수송 두 entry, 선택적 Reaction entry와 아직 실행하지 않는 Input placeholder를 분리 표시한다. 각 entry의 Input/Output과 barrier 소비자를 먼저 확인한다.
 
 **연결 문서**
 - [[02_Architecture/01_Flows/03_Simulation/02_Flux-Pass1|Pass 1]]
@@ -12,6 +12,7 @@
 |---|---|---|
 | [SurfaceSolverPass1.comp](../../../../../../Shaders/Simulation/Solver/SurfaceSolverPass1.comp) | `evaluateDirectionRawFlux`, `main` | Current State/Profile/Geometry→Decay 결과·RawOutgoing·source별 outgoing scale/cache; Pass 2가 읽음 |
 | [SurfaceSolverPass2.comp](../../../../../../Shaders/Simulation/Solver/SurfaceSolverPass2.comp) | `accumulationContributionChanged`, `main` | Raw outgoing+scale를 neighbor gather하고 InputDelta를 한 번 소비→Next State; next step의 geometry dirty 상태도 갱신 |
+| `SurfaceReaction.comp` | `reactionRequest`, `termCoefficient`, `main` | 기본 ITD snapshot → 유입 전환/continuous 반응 → 최종 Next 및 sparse/Height schedule |
 | [SurfaceInput.comp](../../../../../../Shaders/Simulation/Input/SurfaceInput.comp) | placeholder only | 아직 SPIR-V를 생성하지 않는 placeholder. 실제 Contact는 `SurfaceContactApplication.cpp`에서 InputDelta로 모음 |
 
 ## 실행 의존성

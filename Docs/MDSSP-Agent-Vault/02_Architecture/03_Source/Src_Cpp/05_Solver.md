@@ -42,3 +42,7 @@
 7. 호출자가 각 active scene instance에 `AdvanceCurrentState`를 적용하고 pending input activation을 내린다.
 
 **구현상 중요한 조건:** `RawModeFromFlags`는 cache-off, FP32/FP16 및 coalesced 조합으로 5개, `WeightModeFromFlags`는 FP32/FP16 2개, 별도 runtime-flags variant 1개이므로 Pass 1/2 각각 **총 11개 pipeline**이다. 이는 성능 숫자나 정밀도가 모든 variant에서 동일하다는 주장과 다르며 실제 실행 테스트가 필요하다.
+
+## Local Reaction 경로
+
+`TSurfaceStateSolver`는 Profile GPU table에 활성 규칙이 있으면 Reaction flag(bit 25)를 설정한다. Pass 2가 binding 24에 기본 snapshot과 유입을 기록한 뒤 write/read barrier를 거쳐 `SurfaceReaction.comp`를 실행한다. 이 pass의 최종 Next State와 activity/Height schedule을 기존 post Geometry 경로가 소비한다. binding 23/24의 데이터 및 시간 적분 계약은 [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]]를 따른다.

@@ -20,7 +20,7 @@ Debug/Release 각각 대상 43개 SPIR-V, Debug 전체 MDSS 빌드, BrickCube.Sc
 
 ### 검토안
 
-초기 후보는 최소 잔류량과 잔류 시간이었다. 현재 검토안은 Profile의 표면 물 State에 `wettingFraction`을 두고, 새로 입력되거나 이웃에서 유입된 양 중 일부를 Wetness로 전환하는 방식이다.
+초기 후보는 최소 잔류량과 잔류 시간이었다. 현재 공통 Reaction 구현의 `inflowFraction` 모드와 `fraction`을 사용해, 새로 입력되거나 이웃에서 유입된 양 중 일부를 Wetness로 전환하는 방식이다.
 
 ```text
 DepositedWetness = NewSurfaceWater × wettingFraction
@@ -31,9 +31,9 @@ RemainingSurfaceWater = NewSurfaceWater - DepositedWetness
 
 ### 구현 전 결정
 
-- `wettingFraction`의 범위와 기본값을 정한다. 큐브 데모에서는 `0.1`을 시작값으로 검토한다.
+- `fraction`의 데모 값을 정한다. 지원 범위는 `[0,1]`이다. 큐브 데모에서는 `0.1`을 시작값으로 검토한다.
 - SurfaceWater와 Wetness를 모두 지원하지 않는 Profile의 동작을 정한다.
-- 현재 `.SRProfile` Transition은 Solver에서 미구현이므로, 전환을 별도 solver 경로로 둘지 Transition 모델을 확장할지 결정한다.
+- [[02_Architecture/02_Contracts/05_Reactions|구현된 Reaction]]의 신규 positive Input·Incoming 전환을 사용한다. GPU 회귀는 지원하며, Wetting 전용 Scene·외관과 재질별 계수 선정은 후속 작업이다.
 
 ### 검증 기준
 

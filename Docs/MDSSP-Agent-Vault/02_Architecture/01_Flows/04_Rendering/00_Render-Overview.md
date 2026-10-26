@@ -27,7 +27,7 @@ State-driven geometry는 지원되는 모든 적층 State의 Capacity 제한 기
 
 ## 현재 데모 외관
 
-데모 adapter는 Registry에서 `heat`, `mud`, `waterfilm`, `lava` channel을 조회한다. Heat는 base albedo를 붉은색으로 보간한다. Mud·WaterFilm·Lava는 공통 윗면에서 합성하며 물이 Mud 위에 있으면 shader가 한 RGBA 결과로 결합한다. Mud 절차적 범프, WaterFilm opacity, color ramp와 smoothing은 렌더링 전용이다. 원본 Normal Map을 Overlay에 중복 적용하지 않는다.
+데모 adapter는 Registry에서 `heat`, `mud`, `waterfilm`, `lava`, `ice` channel을 조회한다. Heat는 base albedo를 붉은색으로 보간한다. Mud·WaterFilm·Lava는 공통 윗면에서 합성하며 물이 Mud 위에 있으면 shader가 한 RGBA 결과로 결합한다. Mud 절차적 범프, WaterFilm opacity, color ramp와 smoothing은 렌더링 전용이다. 원본 Normal Map을 Overlay에 중복 적용하지 않는다.
 
 State Heatmap은 `State / Capacity`를 표시하며 100% 초과를 구분한다. 렌더링의 `[0,1]` 제한은 저장량이나 전달용 Saturation에 적용하지 않는다. 실제 State·Capacity·world area·적층량은 Texel Inspector에서 확인한다. [[02_Architecture/02_Contracts/00_State-and-Profile|State 계약]]
 
@@ -52,3 +52,5 @@ flowchart LR
 ## C++ RecordCommandBuffer 검증된 조건
 
 `RendererCommands.cpp`는 `FrameCoordinator.RecordSimulation` 다음 Inspector→ViewMode 검사→Lit state-texture(선택)→texel preview/overlay compute(선택)→graphics pass를 순서대로 기록한다. Lit view가 없거나 demo effect가 꺼져 있을 때 전체 display compute를 항상 실행한다고 설명하지 않는다. overlay는 `CanRenderLitOverlays()` 및 instance의 공유 texel mesh/index/descriptor 유무도 검사한다.
+
+Ice는 별도 다섯 번째 재질로 서리 noise·푸른 산란색·유전체 반사를 사용한다. 기존 RGBA texture는 그대로 두고 `ExtraDemoBindings.z`의 Ice ID로 State buffer를 sample한다. Mud/WaterFilm/Lava/Ice의 네 적층 채널이 occupancy·coverage·smoothing에 참여하며, 최종 공통 윗면에서 물을 합성한다. 자세한 예제는 [[02_Architecture/02_Contracts/05_Reactions|Local Reactions]]를 따른다.

@@ -9,7 +9,7 @@
 | `.Scene` | Static Mesh object, 선택적 `.SurfaceProfileMap`·`.DemoAnim`, 해상도, 시작 Camera·Transform, `initialContacts` |
 | OBJ·MTL·Texture | Macro mesh, Simulation UV, 렌더 재질과 Meso 복원용 Normal Map |
 | `.SurfaceProfileMap` | Surface/Material별 `.SRProfile` 배치. 현재 한 Surface의 valid texel에는 같은 Profile을 확장 |
-| `.SRProfile` | State별 반응 계수와 Transition 선언. 현재 schema version 4 |
+| `.SRProfile` | State별 반응 계수와 Transition 선언. 권장 schema version 5; version 3/4도 읽음 |
 | `.Surface` | 정적 CPU texel Geometry·이웃·Profile index의 해상도별 생성 캐시. 직접 편집하지 않음 |
 
 `surfaceProfileMap`이 없는 Scene object는 렌더링 전용이다. 같은 Mesh·Map·해상도 조합의 instance는 Runtime Surface Data를 공유하지만 State는 별도로 가진다. `simulationResolution`은 Scene 전체에 128·256·512 중 하나를 적용하며 생략하면 256이다. [[02_Architecture/02_Contracts/02_Geometry|Geometry]], [[02_Architecture/02_Contracts/04_GPU-Layout|GPU 데이터]]
@@ -18,7 +18,7 @@
 
 ## Profile과 Registry
 
-현재 Scene이 참조하는 고유 Profile의 `states` key를 정규화해 `TSurfaceStateRegistry`를 만든다. Registry가 이름을 동적 channel index로 연결하며 별도 전역 State enum은 없다. Profile table은 Scene에서 공유하고 각 texel은 `ProfileIndex`로 응답값을 찾는다. Profile이 선언한 Transition은 로드하지만 Solver에서는 아직 실행하지 않는다. 파라미터의 의미·범위는 [[02_Architecture/02_Contracts/00_State-and-Profile|State 계약]]이 기준이다.
+현재 Scene이 참조하는 고유 Profile의 `states` key를 정규화해 `TSurfaceStateRegistry`를 만든다. Registry가 이름을 동적 channel index로 연결하며 별도 전역 State enum은 없다. Profile table은 Scene에서 공유하고 각 texel은 `ProfileIndex`로 응답값을 찾는다. version 5는 `reactions`로 전이·상호작용을 선언한다. version 3/4 Transition은 기존 의미의 조건부 생성 규칙으로 변환해 실행한다. [[02_Architecture/02_Contracts/05_Reactions|Reaction 계약]]을 따른다. 파라미터의 의미·범위는 [[02_Architecture/02_Contracts/00_State-and-Profile|State 계약]]이 기준이다.
 
 Version 4의 전달·보유 키는 `saturationSpreadFactor`, `gravityFlowFactor`, `cavityExitResistanceFactor`, `cavityDecayProtectionFactor`다. Version 3은 이전 키로만 읽고 서로 다른 version의 키를 섞으면 실패한다. Version 1·2는 지원하지 않는다.
 
