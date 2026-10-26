@@ -26,7 +26,8 @@ namespace MDSS::SurfaceState
         const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages,
         const std::vector<float>&           WorldTexelAreas,
         TSurfaceGPUBufferPool*              Pool,
-        TSurfaceScratchStorageFormat        Storage)
+        TSurfaceScratchStorageFormat        Storage,
+        std::uint32_t                       MaxReactionCount)
         : TexelCount(TexelCount), ChannelCount(ChannelCount)
     {
         if (TexelCount == 0 || ChannelCount == 0)
@@ -51,6 +52,17 @@ namespace MDSS::SurfaceState
 
         ScalarCount = TexelCount * ChannelCount;
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
+        ReactionCapacity = MaxReactionCount;
+        const std::size_t ReactionStride = ChannelCount * 5U + MaxReactionCount + 4U;
+        if (MaxReactionCount && TexelCount > std::numeric_limits<std::size_t>::max() / ReactionStride)
+            throw std::overflow_error("Reaction scratch size overflow.");
+        ReactionScratchBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
+                                                         Device,
+                                                         MaxReactionCount ? TexelCount * ReactionStride : 1U,
+                                                         MaxRange,
+                                                         StorageUsage,
+                                                         GPU::TGPUBufferMemoryCategory::SurfaceState,
+                                                         Pool);
 
         WorldTexelAreaBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                     Device,
@@ -124,19 +136,26 @@ namespace MDSS::SurfaceState
             std::vector<std::uint32_t> Packed(TransferWeights.size() / 2U);
             for (std::size_t Pair = 0; Pair < Packed.size(); ++Pair)
                 Packed[Pair] = glm::packHalf2x16(glm::vec2(std::clamp(TransferWeights[Pair * 2U], 0.0F, 1.0F),
-                                                         std::clamp(TransferWeights[Pair * 2U + 1U], 0.0F, 1.0F)));
-            TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice, Device, Packed.data(), Packed.size(),
-                sizeof(std::uint32_t), MaxRange, GPU::TGPUBufferMemoryCategory::SurfaceState, Pool);
+                                                           std::clamp(TransferWeights[Pair * 2U + 1U], 0.0F, 1.0F)));
+            TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                                        Device,
+                                                        Packed.data(),
+                                                        Packed.size(),
+                                                        sizeof(std::uint32_t),
+                                                        MaxRange,
+                                                        GPU::TGPUBufferMemoryCategory::SurfaceState,
+                                                        Pool);
             bStoredHalfWeights = true;
         }
-        else TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice,
-                                                    Device,
-                                                    TransferWeights.data(),
-                                                    TransferWeights.size(),
-                                                    sizeof(float),
-                                                    MaxRange,
-                                                    GPU::TGPUBufferMemoryCategory::SurfaceState,
-                                                    Pool);
+        else
+            TransferWeightBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                                        Device,
+                                                        TransferWeights.data(),
+                                                        TransferWeights.size(),
+                                                        sizeof(float),
+                                                        MaxRange,
+                                                        GPU::TGPUBufferMemoryCategory::SurfaceState,
+                                                        Pool);
 
         std::vector<TSurfaceGPUVec4>        ZeroDebugAverages;
         const std::vector<TSurfaceGPUVec4>* DebugAverages = &TransferWeightDebugAverages;
@@ -164,8 +183,10 @@ namespace MDSS::SurfaceState
         if (ScalarCount > std::numeric_limits<std::size_t>::max() / (SurfaceNeighborCount + 1U))
             throw std::overflow_error("Surface raw-flux cache size overflowed.");
 
-        const auto EdgeWords = !Storage.Compact ? SurfaceNeighborCount : !Storage.CacheRawFlux ? 0U :
-                               Storage.HalfRawFlux ? SurfaceNeighborCount / 2U : SurfaceNeighborCount;
+        const auto EdgeWords = !Storage.Compact        ? SurfaceNeighborCount
+                               : !Storage.CacheRawFlux ? 0U
+                               : Storage.HalfRawFlux   ? SurfaceNeighborCount / 2U
+                                                       : SurfaceNeighborCount;
         RawOutgoingBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
                                                      Device,
                                                      ScalarCount * (EdgeWords + 1U),
@@ -177,13 +198,17 @@ namespace MDSS::SurfaceState
             UpdateTransferWeights(TransferWeights, {}, true);
     }
 
-    bool TSurfaceInstanceGPUResources::ConfigureScratchStorage(VkPhysicalDevice PhysicalDevice, VkDevice Device,
-                                                               bool Cache, bool HalfRaw, bool HalfWeights, bool Compact)
+    bool TSurfaceInstanceGPUResources::ConfigureScratchStorage(
+        VkPhysicalDevice PhysicalDevice, VkDevice Device, bool Cache, bool HalfRaw, bool HalfWeights, bool Compact)
     {
         const auto MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
-        const auto EdgeWords = !Compact ? SurfaceNeighborCount : !Cache ? 0U : HalfRaw ? SurfaceNeighborCount / 2U : SurfaceNeighborCount;
+        const auto EdgeWords = !Compact  ? SurfaceNeighborCount
+                               : !Cache  ? 0U
+                               : HalfRaw ? SurfaceNeighborCount / 2U
+                                         : SurfaceNeighborCount;
         const auto RawWords = ScalarCount * (1U + EdgeWords);
-        const auto WeightWords = TexelCount * (Compact && HalfWeights ? SurfaceNeighborCount / 2U : SurfaceNeighborCount);
+        const auto WeightWords =
+            TexelCount * (Compact && HalfWeights ? SurfaceNeighborCount / 2U : SurfaceNeighborCount);
         bool Changed = false;
         if (RawOutgoingBuffer->GetSize() != RawWords * sizeof(std::uint32_t))
         {
@@ -205,7 +230,8 @@ namespace MDSS::SurfaceState
                     Weights[Pair * 2U + 1U] = Value.y;
                 }
             }
-            else std::memcpy(Weights.data(), Old.data(), Weights.size() * sizeof(float));
+            else
+                std::memcpy(Weights.data(), Old.data(), Weights.size() * sizeof(float));
             auto Replacement = CreateZeroedScalarBuffer(PhysicalDevice, Device, WeightWords, MaxRange);
             TransferWeightBuffer = std::move(Replacement);
             UpdateTransferWeights(Weights, {}, HalfWeights);
@@ -221,6 +247,7 @@ namespace MDSS::SurfaceState
 
     void TSurfaceInstanceGPUResources::RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept
     {
+        Pool.Release(std::move(ReactionScratchBuffer));
         Pool.Release(std::move(StateABuffer));
         Pool.Release(std::move(StateBBuffer));
         Pool.Release(std::move(OutgoingFluxScaleBuffer));

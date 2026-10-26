@@ -53,6 +53,14 @@ namespace MDSS::SurfaceState
                                     const std::vector<TSurfaceResponseProfileData>& Profiles,
                                     const TSurfaceStateRegistry&                    Registry,
                                     TSurfaceGPUBufferPool*                          Pool = nullptr);
+        [[nodiscard]] const GPU::TGPUBuffer& GetReactionsBuffer() const noexcept
+        {
+            return *ReactionsBuffer;
+        }
+        [[nodiscard]] std::uint32_t GetMaxReactionCount() const noexcept
+        {
+            return MaxReactionCount;
+        }
         void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
 
         [[nodiscard]] const GPU::TGPUBuffer& GetParametersBuffer() const noexcept;
@@ -64,6 +72,8 @@ namespace MDSS::SurfaceState
         UpdateParameters(std::size_t ProfileIndex, std::size_t ChannelIndex, const TSurfaceStateParameters& Parameters);
 
     private:
+        std::unique_ptr<GPU::TGPUBuffer> ReactionsBuffer;
+        std::uint32_t                    MaxReactionCount = 0;
         std::size_t                      ProfileCount = 0;
         std::size_t                      ChannelCount = 0;
         std::vector<std::uint32_t>       SupportedChannels;

@@ -23,7 +23,8 @@ namespace MDSS::SurfaceState
         : Device(Device), SharedGeometryResources(&SharedGeometry), ProfileResources(&Profiles)
     {
         if (SharedGeometry.GetTexelCount() != Instance.GetTexelCount() ||
-            Profiles.GetChannelCount() != Instance.GetChannelCount())
+            Profiles.GetChannelCount() != Instance.GetChannelCount() ||
+            Profiles.GetMaxReactionCount() > Instance.GetReactionCapacity())
         {
             throw std::invalid_argument("Surface descriptor resources have incompatible texel or channel counts.");
         }
@@ -104,7 +105,9 @@ namespace MDSS::SurfaceState
             &Instance.GetWorldTexelAreaBuffer(),
             &Instance.GetDynamicGeometryBuffer(),
             &Instance.GetAccumulationHeightBuffer(),
-            &Instance.GetDynamicConcavityWeightBuffer()};
+            &Instance.GetDynamicConcavityWeightBuffer(),
+            &Profiles.GetReactionsBuffer(),
+            &Instance.GetReactionScratchBuffer()};
 
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {

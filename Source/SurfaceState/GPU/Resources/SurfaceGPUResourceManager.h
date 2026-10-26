@@ -53,19 +53,18 @@ namespace MDSS::SurfaceState
     {
     public:
         // Resource lifecycle
-        TSurfaceGPUResourceManager(const GPU::TVulkanContext&  Context,
-                                   const Asset::TAssetManager& Assets,
-                                   const TSurfaceDataManager&  SurfaceData,
-                                   const TScene&               Scene,
-                                   TSurfaceGPUBufferPool*      Pool = nullptr,
+        TSurfaceGPUResourceManager(const GPU::TVulkanContext&   Context,
+                                   const Asset::TAssetManager&  Assets,
+                                   const TSurfaceDataManager&   SurfaceData,
+                                   const TScene&                Scene,
+                                   TSurfaceGPUBufferPool*       Pool = nullptr,
                                    TSurfaceScratchStorageFormat Storage = {});
         ~TSurfaceGPUResourceManager();
 
         void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
         void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay);
-        bool ConfigureScratchStorage(const GPU::TVulkanContext& Context, bool Cache, bool HalfRaw,
-                                     bool HalfWeights, bool Compact);
-
+        bool ConfigureScratchStorage(
+            const GPU::TVulkanContext& Context, bool Cache, bool HalfRaw, bool HalfWeights, bool Compact);
 
         TSurfaceGPUResourceManager(const TSurfaceGPUResourceManager&) = delete;
         TSurfaceGPUResourceManager& operator=(const TSurfaceGPUResourceManager&) = delete;
@@ -84,6 +83,7 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceAccumulationHeightBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const GPU::TGPUBuffer& GetInstanceReactionScratchBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::TGPUBuffer& GetSceneProfileParametersBuffer() const;
         [[nodiscard]] bool                   UpdateProfileParameters(Asset::TSRProfileAssetHandle   ProfileHandle,
                                                                      TStateId                       State,

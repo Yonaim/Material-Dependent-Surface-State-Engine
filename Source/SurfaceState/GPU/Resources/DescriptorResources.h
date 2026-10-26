@@ -63,6 +63,10 @@ namespace MDSS::SurfaceState
         TSurfaceStateDescriptorResources(TSurfaceStateDescriptorResources&&) = delete;
         TSurfaceStateDescriptorResources& operator=(TSurfaceStateDescriptorResources&&) = delete;
 
+        [[nodiscard]] bool HasReactions() const noexcept
+        {
+            return ProfileResources->GetMaxReactionCount() != 0;
+        }
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept;
         [[nodiscard]] VkDescriptorSet       GetABSet() const noexcept;
         [[nodiscard]] VkDescriptorSet       GetBASet() const noexcept;

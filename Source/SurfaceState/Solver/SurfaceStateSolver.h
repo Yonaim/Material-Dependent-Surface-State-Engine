@@ -50,6 +50,8 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t SurfaceSolverPerWorkgroupChannelMaskFlag = 1U << 23U;
     inline constexpr std::uint32_t SurfaceSolverAdaptiveGeometryFlag = 1U << 24U;
 
+    inline constexpr std::uint32_t SurfaceSolverReactionFlag = 1U << 25U;
+
     enum class TSurfaceSolverTerm : std::uint8_t
     {
         SaturationDrive,
@@ -127,8 +129,15 @@ namespace MDSS::SurfaceState
                          VkQueryPool                                 TimestampQueryPool = VK_NULL_HANDLE,
                          std::uint32_t                               FirstStepQuery = 0U) const;
 
-        void SetRuntimeFlagsEnabled(bool Enabled) noexcept { bRuntimeFlagsEnabled = Enabled; }
-        [[nodiscard]] bool IsRuntimeFlagsEnabled() const noexcept { return bRuntimeFlagsEnabled; }
+        void SetRuntimeFlagsEnabled(bool Enabled) noexcept
+        {
+            bRuntimeFlagsEnabled = Enabled;
+        }
+        [[nodiscard]] bool IsRuntimeFlagsEnabled() const noexcept
+        {
+            return bRuntimeFlagsEnabled;
+        }
+
     private:
         bool bRuntimeFlagsEnabled = true;
         // Compute pipeline creation
@@ -137,6 +146,7 @@ namespace MDSS::SurfaceState
 
         VkDevice                   Device = VK_NULL_HANDLE;
         VkPipelineLayout           PipelineLayout = VK_NULL_HANDLE;
+        VkPipeline                 ReactionPipeline = VK_NULL_HANDLE;
         VkPipeline                 AccumulationHeightPipeline = VK_NULL_HANDLE;
         VkPipeline                 SparseScheduleResetPipeline = VK_NULL_HANDLE;
         VkPipeline                 AccumulationGeometryPipeline = VK_NULL_HANDLE;

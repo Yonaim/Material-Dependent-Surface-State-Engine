@@ -38,6 +38,7 @@ set(MDSS_SHADER_ENTRIES
     Simulation/Geometry/SurfaceDynamicGeometryUpdate.comp
     Simulation/Geometry/SurfaceDynamicWeightsUpdate.comp
     Simulation/Solver/SurfaceSolverPass1.comp
+    Simulation/Solver/SurfaceReaction.comp
     Simulation/Solver/SurfaceSolverPass2.comp
     Simulation/Scheduling/SurfaceSparseScheduleReset.comp
 )

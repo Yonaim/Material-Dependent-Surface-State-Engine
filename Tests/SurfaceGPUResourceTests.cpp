@@ -279,33 +279,56 @@ namespace
     void TestCompactScratchStorage(TVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
-        const std::vector<float> Weights(4U * SurfaceNeighborCount, 0.5F);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 2, Weights,
-            {}, {}, nullptr, TSurfaceScratchStorageFormat{true, true, false, true});
-        const std::array<float, 8> State{1, 2, 3, 4, 5, 6, 7, 8};
+        const std::vector<float>     Weights(4U * SurfaceNeighborCount, 0.5F);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              4,
+                                              2,
+                                              Weights,
+                                              {},
+                                              {},
+                                              nullptr,
+                                              TSurfaceScratchStorageFormat{true, true, false, true});
+        const std::array<float, 8>   State{1, 2, 3, 4, 5, 6, 7, 8};
         Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
         const auto StateHandle = Instance.GetStateABuffer().GetHandle();
-        Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * 5U * sizeof(float), "FP16 flux allocates five words per State value");
-        TSurfaceInstanceGPUResources FullHalf(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 2, Weights,
-            {}, {}, nullptr, TSurfaceScratchStorageFormat{true, true, true, false});
-        std::uint32_t PackedHalf = 0;
+        Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * 5U * sizeof(float),
+              "FP16 flux allocates five words per State value");
+        TSurfaceInstanceGPUResources FullHalf(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              4,
+                                              2,
+                                              Weights,
+                                              {},
+                                              {},
+                                              nullptr,
+                                              TSurfaceScratchStorageFormat{true, true, true, false});
+        std::uint32_t                PackedHalf = 0;
         FullHalf.GetTransferWeightBuffer().Download(&PackedHalf, sizeof(PackedHalf));
         Check(PackedHalf == 0x38003800U, "FP16 initialization also packs weights in an uncompressed-capacity buffer");
-        for (const auto Format : std::array<TSurfaceScratchStorageFormat, 5>{
-                 TSurfaceScratchStorageFormat{false, false, false, true},
-                 TSurfaceScratchStorageFormat{true, false, true, true},
-                 TSurfaceScratchStorageFormat{true, true, true, true},
-                 TSurfaceScratchStorageFormat{true, false, false, true},
-                 TSurfaceScratchStorageFormat{true, true, false, false}})
+        for (const auto Format :
+             std::array<TSurfaceScratchStorageFormat, 5>{TSurfaceScratchStorageFormat{false, false, false, true},
+                                                         TSurfaceScratchStorageFormat{true, false, true, true},
+                                                         TSurfaceScratchStorageFormat{true, true, true, true},
+                                                         TSurfaceScratchStorageFormat{true, false, false, true},
+                                                         TSurfaceScratchStorageFormat{true, true, false, false}})
         {
-            Instance.ConfigureScratchStorage(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Format.CacheRawFlux,
-                Format.HalfRawFlux, Format.HalfWeights, Format.Compact);
+            Instance.ConfigureScratchStorage(Vulkan.GetPhysicalDevice(),
+                                             Vulkan.GetDevice(),
+                                             Format.CacheRawFlux,
+                                             Format.HalfRawFlux,
+                                             Format.HalfWeights,
+                                             Format.Compact);
             const auto EdgeWords = !Format.Compact ? 8U : !Format.CacheRawFlux ? 0U : Format.HalfRawFlux ? 4U : 8U;
-            Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * (EdgeWords + 1U) * sizeof(float), "flux size follows storage format");
-            Check(Instance.GetTransferWeightBuffer().GetSize() == 4U * (Format.Compact && Format.HalfWeights ? 4U : 8U) * sizeof(float), "weight size follows storage format");
+            Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * (EdgeWords + 1U) * sizeof(float),
+                  "flux size follows storage format");
+            Check(Instance.GetTransferWeightBuffer().GetSize() ==
+                      4U * (Format.Compact && Format.HalfWeights ? 4U : 8U) * sizeof(float),
+                  "weight size follows storage format");
             std::array<float, 8> Actual{};
             Instance.GetStateABuffer().Download(Actual.data(), sizeof(Actual));
-            Check(Actual == State && Instance.GetStateABuffer().GetHandle() == StateHandle, "storage switches preserve State and its buffer");
+            Check(Actual == State && Instance.GetStateABuffer().GetHandle() == StateHandle,
+                  "storage switches preserve State and its buffer");
             // Emulate the static-cache upload performed by the system after each precision change.
             Instance.UpdateTransferWeights(Weights, {}, Format.HalfWeights);
         }
@@ -321,8 +344,8 @@ namespace
             Geometry.GetTexels()[Index].Normal = {0.0F, 0.0F, 1.0F};
         }
         TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        const auto FullHandle = Shared.GetTexelMeshIndexBuffer()->GetHandle();
-        const auto SmallHandle = Shared.GetTexelMeshVariant(64).VertexBuffer->GetHandle();
+        const auto                         FullHandle = Shared.GetTexelMeshIndexBuffer()->GetHandle();
+        const auto                         SmallHandle = Shared.GetTexelMeshVariant(64).VertexBuffer->GetHandle();
         (void)Shared.GetTexelMeshVariant(128);
         const auto Before = MDSS::GPU::TGPUResourceMemoryStats::GetSnapshot().CurrentBufferBytes;
         Shared.TrimRenderMeshVariants(64, 64);
@@ -332,8 +355,7 @@ namespace
               "trimming preserves the selected render mesh");
         Check(Shared.GetTexelMeshIndexBuffer()->GetHandle() == FullHandle,
               "trimming preserves the simulation topology mesh");
-        Check(Shared.GetTexelMeshVariant(128).VertexCount > 0U,
-              "a released resolution can be rebuilt on demand");
+        Check(Shared.GetTexelMeshVariant(128).VertexCount > 0U, "a released resolution can be rebuilt on demand");
     }
 
     void TestRetiredBufferReuse(TVulkanTestDevice& Vulkan)
@@ -1507,14 +1529,15 @@ namespace
         Check(std::abs(DynamicWeights[9] - StaticWeights[9]) > 1.0e-4F,
               "geometry update should rebuild edge weights using displaced distances and updated normals");
         // Bootstrap derives geometry without transport; the next step consumes it.
-        Vulkan.Execute([&](VkCommandBuffer Command)
-        {
-            Solver.RecordStep(Command, Descriptors, true, 3, 2, 0.0001F, glm::mat4(1.0F),
-                              glm::vec3(0, 0, -1), Flags);
-        });
+        Vulkan.Execute(
+            [&](VkCommandBuffer Command)
+            {
+                Solver.RecordStep(
+                    Command, Descriptors, true, 3, 2, 0.0001F, glm::mat4(1.0F), glm::vec3(0, 0, -1), Flags);
+            });
         Instance.GetStateBBuffer().Download(ResultingState.data(), sizeof(ResultingState));
         Instance.GetTransferWeightBuffer().Download(DynamicWeights.data(), DynamicWeights.size() * sizeof(float));
-        const auto Layout = GetSurfaceSparseMetadataLayout(3);
+        const auto  Layout = GetSurfaceSparseMetadataLayout(3);
         const float InitialTotal = std::accumulate(InitialState.begin(), InitialState.end(), 0.0F);
         const float ResultTotal = std::accumulate(ResultingState.begin(), ResultingState.end(), 0.0F);
         Check(ResultingState[Mud] < InitialState[Mud] && ResultingState[WaterFilm] < InitialState[WaterFilm] &&
@@ -1547,9 +1570,8 @@ namespace
         std::vector<float> StableWeights(StaticWeights.size(), 0.0F);
         Instance.GetTransferWeightBuffer().Download(StableWeights.data(),
                                                     static_cast<VkDeviceSize>(StableWeights.size() * sizeof(float)));
-        Check(
-            std::all_of(StableHeightDirty.begin(), StableHeightDirty.end(), [](float V) { return V == 0.0F; }),
-            "unchanged accumulation heights should skip geometry and transfer-weight rebuilds");
+        Check(std::all_of(StableHeightDirty.begin(), StableHeightDirty.end(), [](float V) { return V == 0.0F; }),
+              "unchanged accumulation heights should skip geometry and transfer-weight rebuilds");
         Check(StableDispatch == std::array<std::uint32_t, 3>{0U, 1U, 1U},
               "unchanged geometry update should dispatch no geometry or transfer-weight workgroups");
         Check(std::equal(DynamicWeights.begin(), DynamicWeights.end(), StableWeights.begin()),
@@ -1592,20 +1614,22 @@ namespace
     {
         using namespace MDSS::SurfaceState;
         TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters Layer{};
+        TSurfaceStateParameters     Layer{};
         Layer.StateCapacity = 1.0F;
         Layer.AccumulationFactor = 1.0F;
         Layer.ThicknessPerAmount = 0.1F;
         Profile.States.emplace("mud", Layer);
         const std::vector<TSurfaceResponseProfileData> Profiles{Profile};
-        const TSurfaceStateRegistry Registry(Profiles);
-        constexpr std::uint32_t Texels = 129;
-        TSharedSurfaceGeometryData Geometry({{0, {Texels, 1}}});
+        const TSurfaceStateRegistry                    Registry(Profiles);
+        constexpr std::uint32_t                        Texels = 129;
+        TSharedSurfaceGeometryData                     Geometry({{0, {Texels, 1}}});
         for (std::uint32_t I = 0; I < Texels; ++I)
         {
             auto& T = Geometry.GetTexels()[I];
-            T.Surface = 0; T.Triangle = 0;
-            T.Position = {float(I), 0, 0}; T.Normal = {0, 0, 1};
+            T.Surface = 0;
+            T.Triangle = 0;
+            T.Position = {float(I), 0, 0};
+            T.Normal = {0, 0, 1};
         }
         Geometry.GetTexels()[0].NeighborIndices[0] = 1;
         Geometry.GetTexels()[1].NeighborIndices[0] = 0;
@@ -1613,32 +1637,46 @@ namespace
         Geometry.GetTexels()[128].NeighborIndices[0] = 127;
         Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(Texels, 0));
         TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources GPUProfiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Texels, 1,
-            BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)));
+        TSurfaceProfileGPUResources  GPUProfiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
+        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              Texels,
+                                              1,
+                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)));
         TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
-        TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         const auto Flags = SurfaceSolverStateDrivenGeometryUpdateFlag | SurfaceSolverDistanceWeightFlag |
                            SurfaceSolverNormalWeightFlag | SurfaceSolverSparseGeometryFlag;
         const auto Execute = [&](bool CurrentAB, std::uint32_t Extra)
         {
-            Vulkan.Execute([&](VkCommandBuffer Command)
-            {
-                Solver.RecordStep(Command, Descriptors, CurrentAB, Texels, 1, 0, glm::mat4(1),
-                                  glm::vec3(0, 0, -1), Flags | Extra);
-            });
+            Vulkan.Execute(
+                [&](VkCommandBuffer Command)
+                {
+                    Solver.RecordStep(Command,
+                                      Descriptors,
+                                      CurrentAB,
+                                      Texels,
+                                      1,
+                                      0,
+                                      glm::mat4(1),
+                                      glm::vec3(0, 0, -1),
+                                      Flags | Extra);
+                });
         };
         Execute(true, SurfaceSolverForceFullGeometryFlag);
         constexpr float Sentinel = 0.123F;
-        const auto FarOffset = 128U * SurfaceNeighborCount * sizeof(float);
+        const auto      FarOffset = 128U * SurfaceNeighborCount * sizeof(float);
         Instance.GetTransferWeightBuffer().Upload(&Sentinel, sizeof(Sentinel), FarOffset);
-        std::vector<float> State(Texels, 0); State[0] = 0.5F;
+        std::vector<float> State(Texels, 0);
+        State[0] = 0.5F;
         Instance.GetStateBBuffer().Upload(State.data(), State.size() * sizeof(float));
         Execute(false, 0);
-        const auto Layout = GetSurfaceSparseMetadataLayout(Texels);
+        const auto                   Layout = GetSurfaceSparseMetadataLayout(Texels);
         std::array<std::uint32_t, 3> Dispatch{}, GroupFlags{};
-        Instance.GetAccumulationHeightBuffer().Download(Dispatch.data(), sizeof(Dispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
-        Instance.GetAccumulationHeightBuffer().Download(GroupFlags.data(), sizeof(GroupFlags), Layout.GeometryFlagWord * sizeof(std::uint32_t));
+        Instance.GetAccumulationHeightBuffer().Download(
+            Dispatch.data(), sizeof(Dispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
+        Instance.GetAccumulationHeightBuffer().Download(
+            GroupFlags.data(), sizeof(GroupFlags), Layout.GeometryFlagWord * sizeof(std::uint32_t));
         float FarWeight = 0;
         Instance.GetTransferWeightBuffer().Download(&FarWeight, sizeof(FarWeight), FarOffset);
         Check(Dispatch == std::array<std::uint32_t, 3>{1, 1, 1} && GroupFlags == std::array<std::uint32_t, 3>{1, 0, 0},
@@ -1647,9 +1685,290 @@ namespace
         Execute(true, SurfaceSolverForceFullGeometryFlag);
         Instance.GetTransferWeightBuffer().Download(&FarWeight, sizeof(FarWeight), FarOffset);
         Check(std::abs(FarWeight - 1.0F) < 1.0e-5F, "force-full prebuild refreshes the distant cached weight");
-        Instance.GetAccumulationHeightBuffer().Download(Dispatch.data(), sizeof(Dispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
+        Instance.GetAccumulationHeightBuffer().Download(
+            Dispatch.data(), sizeof(Dispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
         Check(Dispatch == std::array<std::uint32_t, 3>{0, 1, 1},
               "an unchanged post-step skips the second geometry update after a force-full prebuild");
+    }
+
+    std::vector<float> RunReactions(TVulkanTestDevice&                                     V,
+                                    const MDSS::SurfaceState::TSurfaceResponseProfileData& P,
+                                    const std::vector<float>&                              Initial,
+                                    const std::vector<float>&                              Areas,
+                                    float                                                  Dt,
+                                    unsigned                                               Steps = 1,
+                                    std::uint32_t                                          Flags = 0,
+                                    const std::vector<float>&                              Input = {},
+                                    bool                                                   Chain = false,
+                                    std::vector<float>*                                    Heights = nullptr,
+                                    std::vector<float>*                                    Diagnostics = nullptr)
+    {
+        using namespace MDSS::SurfaceState;
+        const TSurfaceStateRegistry Registry({P});
+        const auto                  K = Registry.GetStateCount(), N = Areas.size();
+        TSharedSurfaceGeometryData  G({{0, {static_cast<std::uint32_t>(N), 1}}});
+        std::vector<float>          Weights(N * SurfaceNeighborCount, 0);
+        for (std::size_t I = 0; I < N; ++I)
+        {
+            auto& T = G.GetTexels()[I];
+            T.Surface = 0;
+            T.Triangle = 0;
+            T.Position = {float(I), 0, 0};
+            T.Normal = {0, 0, 1};
+            if (Chain && I + 1 < N)
+            {
+                T.NeighborIndices[0] = static_cast<TLocalTexelIndex>(I + 1);
+                Weights[I * 8] = 1;
+            }
+            if (Chain && I > 0)
+            {
+                T.NeighborIndices[1] = static_cast<TLocalTexelIndex>(I - 1);
+                Weights[I * 8 + 1] = 1;
+            }
+        }
+        G.SetProfileMap(std::vector<TSurfaceProfileIndex>(N, 0));
+        TSurfaceSharedGeometryGPUResources Shared(V.GetPhysicalDevice(), V.GetDevice(), G);
+        TSurfaceProfileGPUResources        Profiles(V.GetPhysicalDevice(), V.GetDevice(), {P}, Registry);
+        std::vector<float>                 WorldAreas = Areas;
+        for (auto& A : WorldAreas)
+            A *= SurfaceStateReferenceArea;
+        TSurfaceInstanceGPUResources     Instance(V.GetPhysicalDevice(),
+                                                  V.GetDevice(),
+                                                  N,
+                                                  K,
+                                                  Weights,
+                                                  {},
+                                                  WorldAreas,
+                                                  nullptr,
+                                                  {},
+                                                  Profiles.GetMaxReactionCount());
+        TSurfaceStateDescriptorResources Descriptors(V.GetDevice(), Shared, Profiles, Instance);
+        TSurfaceStateSolver              Solver(V.GetDevice(), Descriptors.GetLayout());
+        Instance.GetStateABuffer().Upload(Initial.data(), Initial.size() * sizeof(float));
+        if (!Input.empty())
+            Instance.GetInputDeltaBuffer().Upload(Input.data(), Input.size() * sizeof(float));
+        V.Execute(
+            [&](VkCommandBuffer C)
+            {
+                for (unsigned S = 0; S < Steps; ++S)
+                    Solver.RecordStep(C,
+                                      Descriptors,
+                                      S % 2 == 0,
+                                      N,
+                                      K,
+                                      Dt,
+                                      glm::mat4(1),
+                                      glm::vec3(0, 0, -1),
+                                      Flags | (S == 0 ? SurfaceSolverSeedPersistentActivityFlag : 0U));
+            });
+        std::vector<float> Out(Initial.size());
+        (Steps % 2 ? Instance.GetStateBBuffer() : Instance.GetStateABuffer())
+            .Download(Out.data(), Out.size() * sizeof(float));
+        if (Heights)
+        {
+            Heights->resize(N);
+            Instance.GetAccumulationHeightBuffer().Download(Heights->data(), N * sizeof(float));
+        }
+        if (Diagnostics)
+        {
+            const auto&        Scratch = Instance.GetReactionScratchBuffer();
+            std::vector<float> Data(static_cast<std::size_t>(Scratch.GetSize() / sizeof(float)));
+            Scratch.Download(Data.data(), Scratch.GetSize());
+            Diagnostics->resize(N * 4U);
+            const auto Stride = Data.size() / N;
+            for (std::size_t T = 0; T < N; ++T)
+                std::copy_n(Data.begin() + T * Stride + Stride - 4U, 4U, Diagnostics->begin() + T * 4U);
+        }
+        return Out;
+    }
+
+    void TestLocalReactions(TVulkanTestDevice& V)
+    {
+        using namespace MDSS::SurfaceState;
+        TSurfaceResponseProfileData P;
+        P.States["ice"] = {};
+        P.States["waterfilm"] = {};
+        P.States["heat"] = {};
+        P.States["ice"].AccumulationFactor = 1;
+        P.States["ice"].StateCapacity = 20;
+        P.States["ice"].ThicknessPerAmount = .01F;
+        TSurfaceReaction Melt;
+        Melt.ID = "melt";
+        Melt.Consumes = {{"ice", 1}, {"heat", .25F}};
+        Melt.Produces = {{"waterfilm", 1}};
+        Melt.RateModel = TReactionRateModel::StateProportional;
+        Melt.RateState = "ice";
+        Melt.RateCoefficient = .4F;
+        Melt.Modifiers = {{"heat", TReactionFunction::RampAbove, .5F, 1}};
+        P.Reactions = {Melt};
+        TSurfaceStateRegistry    R({P});
+        const auto               H = R.GetStateId("heat"), I = R.GetStateId("ice"), W = R.GetStateId("waterfilm");
+        const auto               K = R.GetStateCount();
+        std::vector<float>       Initial(3 * K, 0);
+        const std::vector<float> Areas{1, .25F, 4};
+        for (unsigned T = 0; T < 3; ++T)
+        {
+            Initial[T * K + H] = 2 * Areas[T];
+            Initial[T * K + I] = 10 * Areas[T];
+        }
+        std::vector<float> Heights;
+        const auto         Out = RunReactions(V, P, Initial, Areas, .1F, 1, 0, {}, false, &Heights);
+        for (unsigned T = 0; T < 3; ++T)
+        {
+            Check(Out[T * K + W] > 0 && Out[T * K + H] < Initial[T * K + H],
+                  "melting produces water and consumes heat");
+            Check(std::abs(Out[T * K + I] + Out[T * K + W] - 10 * Areas[T]) < 1e-4F,
+                  "reaction preserves ice + water mass");
+            Check(std::abs(Out[T * K + W] / Areas[T] - Out[W]) < 1e-4F, "threshold and scale both follow texel area");
+            Check(std::abs(Heights[T] - Out[T * K + I] / Areas[T] * .01F) < 1e-4F,
+                  "height derives from final reacted State");
+        }
+        const auto Half = RunReactions(V, P, Initial, Areas, .05F, 2);
+        Check(std::abs(Half[W] - Out[W]) < 2e-4F, "reaction integration converges under timestep subdivision");
+        auto Limited = Initial;
+        Limited[H] = .01F;
+        auto Q = P;
+        Q.Reactions[0].Modifiers.clear();
+        Q.Reactions[0].RateCoefficient = 100;
+        const auto Low = RunReactions(V, Q, Limited, Areas, .5F);
+        Check(Low[H] >= 0 && Low[W] <= .04001F, "multi-source reaction is limited by available heat");
+
+        TSurfaceReaction Other = Melt;
+        Other.ID = "other";
+        Other.Consumes = {{"ice", 1}};
+        Other.Produces = {{"heat", 1}};
+        Other.Modifiers.clear();
+        Other.RateModel = TReactionRateModel::Constant;
+        Other.RateCoefficient = 7;
+        Q = P;
+        Q.Reactions[0].Consumes = {{"ice", 1}};
+        Q.Reactions[0].Modifiers.clear();
+        Q.Reactions[0].RateModel = TReactionRateModel::Constant;
+        Q.Reactions[0].RateCoefficient = 8;
+        Q.Reactions.push_back(Other);
+        std::vector<float> Ten(K, 0);
+        Ten[I] = 10;
+        std::vector<float> Diagnostics;
+        const auto         Competition = RunReactions(V, Q, Ten, {1}, 1, 1, 0, {}, false, nullptr, &Diagnostics);
+        Check(Diagnostics[2] == 1 && Diagnostics[3] == 0,
+              "stiff reaction fallback reports its exhausted integration budget without arithmetic failure");
+        Check(std::abs(Competition[I]) < 1e-4F && std::abs(Competition[W] + Competition[H] - 10) < 2e-4F,
+              "competing conversions never overspend their common source");
+        Check(std::abs(Competition[W] / Competition[H] - 8.0F / 7.0F) < 1e-4F,
+              "competing rules share consumption proportionally");
+        std::reverse(Q.Reactions.begin(), Q.Reactions.end());
+        const auto Reordered = RunReactions(V, Q, Ten, {1}, 1);
+        for (std::size_t C = 0; C < K; ++C)
+            Check(std::abs(Reordered[C] - Competition[C]) < 2e-4F, "reaction rule order does not change the result");
+
+        Q = P;
+        Q.Reactions[0].Consumes.clear();
+        Q.Reactions[0].RateModel = TReactionRateModel::Constant;
+        Q.Reactions[0].Modifiers.clear();
+        Q.Reactions[0].RateCoefficient = 3;
+        Q.States["waterfilm"].StateCapacity = .1F;
+        const auto Generated = RunReactions(V,
+                                            Q,
+                                            std::vector<float>(K, 0),
+                                            {1},
+                                            .5F,
+                                            3,
+                                            SurfaceSolverSparseSolverFlag | SurfaceSolverActiveChannelMaskFlag |
+                                                SurfaceSolverPerWorkgroupChannelMaskFlag);
+        Check(std::abs(Generated[W] - 4.5F) < 2e-4F,
+              "pure generation activates empty channels and exceeds Capacity without loss");
+
+        Q = P;
+        Q.Reactions[0].Consumes.clear();
+        Q.Reactions[0].RateModel = TReactionRateModel::MassAction;
+        Q.Reactions[0].Factors = {{"ice", 2, 1}, {"heat", 4, 1}};
+        Q.Reactions[0].Modifiers.clear();
+        Q.Reactions[0].RateCoefficient = 1;
+        Ten.assign(K, 0);
+        Ten[I] = 2;
+        Ten[H] = 4;
+        const auto MassAction = RunReactions(V, Q, Ten, {1}, .2F);
+        Check(std::abs(MassAction[W] - .2F) < 1e-5F && MassAction[I] == 2 && MassAction[H] == 4,
+              "mass-action factors drive a rule without being consumed");
+        Q.Reactions[0].Modifiers = {{"heat", TReactionFunction::Inhibit, 0, 4}};
+        const auto Inhibited = RunReactions(V, Q, Ten, {1}, .2F);
+        Check(std::abs(Inhibited[W] - .1F) < 1e-5F, "inhibitor multiplies the reaction rate");
+        for (const auto& [Function, Threshold, Scale, Expected] :
+             {std::tuple{TReactionFunction::Above, 4.0F, 1.0F, .2F},
+              std::tuple{TReactionFunction::Below, 3.0F, 1.0F, 0.0F},
+              std::tuple{TReactionFunction::RampAbove, 3.0F, 2.0F, .1F},
+              std::tuple{TReactionFunction::RampBelow, 5.0F, 2.0F, .1F},
+              std::tuple{TReactionFunction::Linear, 0.0F, 4.0F, .2F}})
+        {
+            Q.Reactions[0].Modifiers = {{"heat", Function, Threshold, Scale}};
+            const auto Value = RunReactions(V, Q, Ten, {1}, .2F);
+            Check(std::abs(Value[W] - Expected) < 1e-5F,
+                  "condition functions use the documented threshold and scale semantics");
+        }
+
+        Q = P;
+        Q.Reactions[0].Mode = TReactionMode::InflowFraction;
+        Q.Reactions[0].Modifiers.clear();
+        Q.Reactions[0].Consumes = {{"waterfilm", 1}};
+        Q.Reactions[0].Produces = {{"ice", 1}};
+        Q.Reactions[0].InflowState = "waterfilm";
+        Q.Reactions[0].Fraction = .25F;
+        Ten.assign(K, 0);
+        Ten[W] = 10;
+        std::vector<float> Input(K, 0);
+        Input[W] = 8;
+        const auto Deposited = RunReactions(V, Q, Ten, {1}, .25F, 2, 0, Input);
+        Check(std::abs(Deposited[W] - 16) < 1e-5F && std::abs(Deposited[I] - 2) < 1e-5F,
+              "inflow conversion consumes fresh input once, independently of substeps and existing water");
+        Q.Reactions[0].InflowSources = 2;
+        Q.States["waterfilm"].SaturationTransferFactor = .5F;
+        Ten.assign(2 * K, 0);
+        Ten[W] = 4;
+        const auto Arrived = RunReactions(V, Q, Ten, {1, 1}, .25F, 1, 0, {}, true);
+        Check(std::abs(Arrived[K + I] - .125F) < 1e-5F && std::abs(Arrived[K + W] - .375F) < 1e-5F && Arrived[I] == 0,
+              "only actual incoming flux deposits wetness at the receiving texel");
+
+        Q = P;
+        Q.Reactions.clear();
+        Q.Transitions = {{"heat", "waterfilm", .7F, .2F}};
+        Q.States["heat"].StateCapacity = 2;
+        Ten.assign(K, 0);
+        Ten[H] = 1.6F;
+        const auto Legacy = RunReactions(V, Q, Ten, {1}, 1);
+        Check(std::abs(Legacy[W] - .2F) < 1e-5F && Legacy[H] == Ten[H],
+              "legacy transition preserves Saturation threshold and does not consume its driver");
+
+        Q = P;
+        Q.States["waterfilm"].SaturationTransferFactor = .2F;
+        const unsigned     N = 130;
+        std::vector<float> Many(N * K, 0);
+        Many[63 * K + I] = 10;
+        Many[63 * K + H] = 2;
+        const auto Dense = RunReactions(V, Q, Many, std::vector<float>(N, 1), .025F, 5, 0, {}, true);
+        const auto Sparse =
+            RunReactions(V,
+                         Q,
+                         Many,
+                         std::vector<float>(N, 1),
+                         .025F,
+                         5,
+                         SurfaceSolverSparseSolverFlag | SurfaceSolverActiveChannelMaskFlag |
+                             SurfaceSolverPerWorkgroupChannelMaskFlag | SurfaceSolverSparseAccumulationHeightFlag,
+                         {},
+                         true);
+        for (std::size_t C = 0; C < Dense.size(); ++C)
+            Check(std::abs(Dense[C] - Sparse[C]) < 1e-5F,
+                  "sparse reactions include newly generated channels and cross-workgroup incoming");
+        Check(Sparse[64 * K + W] > 0, "newly generated water participates in next-step transport");
+        for (unsigned C = 0; C < 34; ++C)
+            Q.States["extra_" + std::to_string(C)] = {};
+        const TSurfaceStateRegistry Dynamic({Q});
+        std::vector<float>          DynamicInitial(Dynamic.GetStateCount(), 0);
+        DynamicInitial[Dynamic.GetStateId("ice")] = 10;
+        DynamicInitial[Dynamic.GetStateId("heat")] = 2;
+        const auto DynamicOut = RunReactions(V, Q, DynamicInitial, {1}, .1F);
+        Check(DynamicOut[Dynamic.GetStateId("waterfilm")] > 0,
+              "reaction storage supports runtime channel counts above 32");
     }
 
 } // namespace
@@ -1664,17 +1983,24 @@ int main(int argc, char** argv)
             return FailureCount == 0 ? 0 : 1;
         }
         TVulkanTestDevice Vulkan;
+        if (argc > 1 && std::string(argv[1]) == "--reactions-only")
+        {
+            TestLocalReactions(Vulkan);
+            return FailureCount == 0 ? 0 : 1;
+        }
         TestCompactScratchStorage(Vulkan);
         if (argc > 1 && std::string(argv[1]) == "--storage-and-mesh-only")
         {
             TestLazyMeshStorage(Vulkan);
             return FailureCount == 0 ? 0 : 1;
         }
-        if (argc == 1 || std::string(argv[1]) != "--compact-storage-only") TestRetiredBufferReuse(Vulkan);
+        if (argc == 1 || std::string(argv[1]) != "--compact-storage-only")
+            TestRetiredBufferReuse(Vulkan);
         if (argc == 1 || (std::string(argv[1]) != "--reuse-only" && std::string(argv[1]) != "--compact-storage-only"))
         {
             TestGPUResources(Vulkan);
             TestGPUSolver(Vulkan);
+            TestLocalReactions(Vulkan);
             TestPerWorkgroupChannelMask(Vulkan);
             TestDirectionalCavityRetention(Vulkan);
             TestAreaAndMobility(Vulkan);
