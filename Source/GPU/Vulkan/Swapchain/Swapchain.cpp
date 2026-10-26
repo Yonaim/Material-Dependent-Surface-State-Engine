@@ -67,6 +67,9 @@ namespace MDSS::GPU
         CreateInfo.imageExtent = SelectedExtent;
         CreateInfo.imageArrayLayers = 1;
         CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        bCanReadback = (Support.Capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
+        if (bCanReadback)
+            CreateInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         const auto&                        QueueFamilies = Context.GetQueues().GetFamilyIndices();
         const std::array<std::uint32_t, 2> TQueueFamilyIndices = {QueueFamilies.GraphicsFamily.value(),

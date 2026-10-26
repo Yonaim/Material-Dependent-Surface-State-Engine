@@ -1,0 +1,7 @@
+newmtl lettering
+Kd 0.72 0.87 0.94
+Ns 40
+
+newmtl stage
+Kd 0.055 0.075 0.095
+Ns 90

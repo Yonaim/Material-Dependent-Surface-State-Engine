@@ -138,6 +138,12 @@ void main()
         WaterFilm = VisibleWaterCoverage(WaterFilm, FragUV);
 
 #ifndef BASE_SURFACE_LIT
+        if ((EnabledEffects & 32u) != 0u && Material.ExtraDemoBindings.z < Material.StateChannelCount)
+        {
+            float Ice = clamp(SampleStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount),0.0,1.0);
+            Color.rgb = mix(Color.rgb,vec3(0.48,0.77,0.86),smoothstep(0.02,0.5,Ice));
+            Roughness = mix(Roughness,0.28,Ice);
+        }
         // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.
         if ((EnabledEffects & 2u) != 0u)
             ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);

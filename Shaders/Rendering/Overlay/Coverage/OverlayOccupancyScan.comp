@@ -28,6 +28,7 @@ layout(push_constant) uniform TPush
     uint WaterFilm;
     uint Lava;
     uint ActiveMaterialMask;
+    uint Ice;
 } Push;
 
 shared uint AnyStateInTile;
@@ -155,6 +156,8 @@ float CoverageSignal(uint Texel)
         Signal = max(Signal, OverlayStateSaturation(Texel, Push.Lava, Push.Channels, Profile));
     if ((Push.ActiveMaterialMask & 2u) != 0u && Push.WaterFilm < Push.Channels)
         Signal = max(Signal, OverlayStateSaturation(Texel, Push.WaterFilm, Push.Channels, Profile));
+    if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Push.Channels)
+        Signal = max(Signal, OverlayStateSaturation(Texel, Push.Ice, Push.Channels, Profile));
     return Signal;
 }
 

@@ -6,10 +6,9 @@
 #include "Application/Application.h"
 
 #include "Application/BenchmarkOptions.h"
-#include "Application/PerformanceSettings.h"
-#include <fstream>
 #include "Application/EngineConfig.h"
 #include "Application/FrameCoordinator.h"
+#include "Application/PerformanceSettings.h"
 #include "DebugUI/Core/DebugUI.h"
 #include "InputSystem/InputSystem.h"
 #include "Logger/Logger.h"
@@ -22,6 +21,7 @@
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <optional>
@@ -63,23 +63,38 @@ namespace MDSS
         DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
         if (Benchmark.Enabled)
         {
-            MainScene.PauseDemoAnimation();
+            if (!PerformanceSettings().value("replay_demo", false))
+                MainScene.PauseDemoAnimation();
             DebugInterface->SetBenchmarkMode();
             FrameRenderer->SetStateDrivenGeometryUpdateEnabled(true);
             const auto& Settings = PerformanceSettings();
-            if (Settings.contains("adaptive_geometry")) SurfaceStateSystem->SetAdaptiveGeometryEnabled(Settings.at("adaptive_geometry").get<bool>());
-            if (Settings.contains("compact_storage")) SurfaceStateSystem->SetCompactScratchStorageEnabled(Settings.at("compact_storage").get<bool>());
-            if (Settings.contains("runtime_solver")) SurfaceStateSystem->SetRuntimeSolverFlagsEnabled(Settings.at("runtime_solver").get<bool>());
-            if (Settings.contains("raw_flux_cache")) FrameRenderer->SetRawFluxCacheEnabled(Settings.at("raw_flux_cache").get<bool>());
-            if (Settings.contains("coalesced_raw_flux")) FrameRenderer->SetCoalescedRawFluxLayoutEnabled(Settings.at("coalesced_raw_flux").get<bool>());
-            if (Settings.contains("fp16_raw_flux")) FrameRenderer->SetHalfRawFluxCacheEnabled(Settings.at("fp16_raw_flux").get<bool>());
-            if (Settings.contains("fp16_weights")) FrameRenderer->SetHalfDynamicWeightsEnabled(Settings.at("fp16_weights").get<bool>());
-            if (Settings.contains("sparse_solver")) FrameRenderer->SetSparseSolverEnabled(Settings.at("sparse_solver").get<bool>());
-            if (Settings.contains("sparse_height")) FrameRenderer->SetSparseAccumulationHeightEnabled(Settings.at("sparse_height").get<bool>());
-            if (Settings.contains("sparse_geometry")) FrameRenderer->SetSparseSimulationGeometryEnabled(Settings.at("sparse_geometry").get<bool>());
-            if (Settings.contains("active_channel_mask")) FrameRenderer->SetActiveChannelMaskEnabled(Settings.at("active_channel_mask").get<bool>());
-            if (Settings.contains("per_workgroup_channel_mask")) FrameRenderer->SetPerWorkgroupChannelMaskEnabled(Settings.at("per_workgroup_channel_mask").get<bool>());
-            if (Settings.contains("overlay_tile_culling")) FrameRenderer->SetOverlayTileCullingEnabled(Settings.at("overlay_tile_culling").get<bool>());
+            DebugInterface->SetPresentationMode(Settings.value("presentation_mode", false));
+            if (Settings.contains("adaptive_geometry"))
+                SurfaceStateSystem->SetAdaptiveGeometryEnabled(Settings.at("adaptive_geometry").get<bool>());
+            if (Settings.contains("compact_storage"))
+                SurfaceStateSystem->SetCompactScratchStorageEnabled(Settings.at("compact_storage").get<bool>());
+            if (Settings.contains("runtime_solver"))
+                SurfaceStateSystem->SetRuntimeSolverFlagsEnabled(Settings.at("runtime_solver").get<bool>());
+            if (Settings.contains("raw_flux_cache"))
+                FrameRenderer->SetRawFluxCacheEnabled(Settings.at("raw_flux_cache").get<bool>());
+            if (Settings.contains("coalesced_raw_flux"))
+                FrameRenderer->SetCoalescedRawFluxLayoutEnabled(Settings.at("coalesced_raw_flux").get<bool>());
+            if (Settings.contains("fp16_raw_flux"))
+                FrameRenderer->SetHalfRawFluxCacheEnabled(Settings.at("fp16_raw_flux").get<bool>());
+            if (Settings.contains("fp16_weights"))
+                FrameRenderer->SetHalfDynamicWeightsEnabled(Settings.at("fp16_weights").get<bool>());
+            if (Settings.contains("sparse_solver"))
+                FrameRenderer->SetSparseSolverEnabled(Settings.at("sparse_solver").get<bool>());
+            if (Settings.contains("sparse_height"))
+                FrameRenderer->SetSparseAccumulationHeightEnabled(Settings.at("sparse_height").get<bool>());
+            if (Settings.contains("sparse_geometry"))
+                FrameRenderer->SetSparseSimulationGeometryEnabled(Settings.at("sparse_geometry").get<bool>());
+            if (Settings.contains("active_channel_mask"))
+                FrameRenderer->SetActiveChannelMaskEnabled(Settings.at("active_channel_mask").get<bool>());
+            if (Settings.contains("per_workgroup_channel_mask"))
+                FrameRenderer->SetPerWorkgroupChannelMaskEnabled(Settings.at("per_workgroup_channel_mask").get<bool>());
+            if (Settings.contains("overlay_tile_culling"))
+                FrameRenderer->SetOverlayTileCullingEnabled(Settings.at("overlay_tile_culling").get<bool>());
             if (Settings.contains("render_mesh_resolution"))
             {
                 const auto Resolution = Settings.at("render_mesh_resolution").get<unsigned>();
@@ -87,7 +102,8 @@ namespace MDSS
                 FrameRenderer->SetOverlayTexelMeshResolution(Resolution);
             }
             if (Settings.value("prewarm_mesh_cache", false))
-                for (std::size_t Index = 0; Index < SurfaceStateSystem->GetGPUResources().GetSceneInstanceCount(); ++Index)
+                for (std::size_t Index = 0; Index < SurfaceStateSystem->GetGPUResources().GetSceneInstanceCount();
+                     ++Index)
                     if (const auto* Geometry = SurfaceStateSystem->GetGPUResources().GetInstanceSharedGeometry(Index))
                         for (const auto& Preset : SurfaceState::SurfaceRenderMeshResolutionPresets)
                             (void)Geometry->GetTexelMeshVariant(Preset.Resolution);
@@ -120,9 +136,9 @@ namespace MDSS
 
     void TApplication::MainLoop(std::size_t FrameLimit)
     {
-        std::size_t RenderedFrameCount = 0;
+        std::size_t         RenderedFrameCount = 0;
         std::vector<double> BenchmarkCpuFrames;
-        auto        PreviousFrameTime = std::chrono::steady_clock::now();
+        auto                PreviousFrameTime = std::chrono::steady_clock::now();
         while (!MainWindow.ShouldClose() && (FrameLimit == 0 || RenderedFrameCount < FrameLimit))
         {
             const auto FrameCpuStart = std::chrono::steady_clock::now();
@@ -204,7 +220,10 @@ namespace MDSS
                     throw std::runtime_error("Failed to wait for GPU after a setting change.");
                 PreviousFrameTime = std::chrono::steady_clock::now();
             }
-            if (Benchmark.Enabled) BenchmarkCpuFrames.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - FrameCpuStart).count());
+            if (Benchmark.Enabled)
+                BenchmarkCpuFrames.push_back(
+                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - FrameCpuStart)
+                        .count());
             ++RenderedFrameCount;
         }
 

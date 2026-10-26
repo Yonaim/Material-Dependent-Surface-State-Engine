@@ -110,6 +110,7 @@ layout(push_constant) uniform TOverlayPush
     uint UseOpaqueBase;
     uint Padding;
     float LavaThreshold;
+    uint Ice;
 } Push;
 
 float CoverageCutoff()

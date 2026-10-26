@@ -84,7 +84,7 @@ namespace MDSS::Rendering
             LayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             LayoutInfo.setLayoutCount = static_cast<std::uint32_t>(Layouts.size());
             LayoutInfo.pSetLayouts = Layouts.data();
-            const VkPushConstantRange BoundaryPush{VK_SHADER_STAGE_COMPUTE_BIT, 0, 52U};
+            const VkPushConstantRange BoundaryPush{VK_SHADER_STAGE_COMPUTE_BIT, 0, 56U};
             LayoutInfo.pushConstantRangeCount = 1;
             LayoutInfo.pPushConstantRanges = &BoundaryPush;
             RequireVk(vkCreatePipelineLayout(Device, &LayoutInfo, nullptr, &PipelineLayout));
@@ -273,7 +273,7 @@ namespace MDSS::Rendering
                                            bool                         bSmoothCoverage,
                                            bool                         bUseOpaqueBase,
                                            float                        HeightDisplayScale,
-                                           std::array<std::uint32_t, 3> MaterialChannels,
+                                           std::array<std::uint32_t, 4> MaterialChannels,
                                            std::uint32_t                ActiveMaterialMask,
                                            bool                         bSharedCoverageHalo,
                                            float                        LavaThreshold)
@@ -487,7 +487,7 @@ namespace MDSS::Rendering
         const bool         bFullCoverageUpdate = OccupancyTileSize == 0U || !It->second.bCoverageInitialized ||
                                                  It->second.LastTileSize != MappingTileSize ||
                                                  It->second.LastMaterialChannels != MaterialChannels ||
-                                                 It->second.LastMaterialMask != (ActiveMaterialMask & 0x7U) ||
+                                                 It->second.LastMaterialMask != (ActiveMaterialMask & 0xfU) ||
                                                  It->second.LastGeometryRevisions != GeometryRevisions ||
                                                  It->second.LastProfileRevision != ProfileRevision ||
                                                  It->second.LastHeightDisplayScale != HeightDisplayScale ||
@@ -519,12 +519,13 @@ namespace MDSS::Rendering
             std::uint32_t UseOpaqueBase;
             std::uint32_t Padding;
             float         LavaThreshold;
+            std::uint32_t Ice;
         };
-        static_assert(sizeof(TOverlayPush) == 52);
+        static_assert(sizeof(TOverlayPush) == 56);
         const TOverlayPush Push{MaterialChannels[0],
                                 MaterialChannels[1],
                                 MaterialChannels[2],
-                                ActiveMaterialMask & 0x7U,
+                                ActiveMaterialMask & 0xfU,
                                 Channel,
                                 Channels,
                                 static_cast<std::uint32_t>(Geometry.GetTexelCount()),
@@ -533,7 +534,8 @@ namespace MDSS::Rendering
                                 HeightDisplayScale,
                                 bUseOpaqueBase ? 1U : 0U,
                                 (Mapping->second.TileCount << 1U) | (bFullCoverageUpdate ? 1U : 0U),
-                                LavaThreshold};
+                                LavaThreshold,
+                                MaterialChannels[3]};
 
         std::array<VkBufferMemoryBarrier, 4> Barriers{};
         for (auto& Barrier : Barriers)
@@ -640,7 +642,7 @@ namespace MDSS::Rendering
             vkCmdDispatchIndirect(Command, GeometryCacheBuffer.GetHandle(), CoverageDispatchIndirectOffset);
         It->second.LastTileSize = MappingTileSize;
         It->second.LastMaterialChannels = MaterialChannels;
-        It->second.LastMaterialMask = ActiveMaterialMask & 0x7U;
+        It->second.LastMaterialMask = ActiveMaterialMask & 0xfU;
         It->second.LastGeometryRevisions = GeometryRevisions;
         It->second.LastProfileRevision = ProfileRevision;
         It->second.LastHeightDisplayScale = HeightDisplayScale;

@@ -78,6 +78,11 @@ namespace MDSS
         void BeginFrame(TScene& SceneData);
 
         /** @brief 자동 benchmark에서 solver 조건을 fixed 1/60 s step으로 고정한다. */
+        void SetPresentationMode(bool Enabled)
+        {
+            if (bPresentationMode != Enabled)
+                TogglePresentationMode();
+        }
         void SetBenchmarkMode() noexcept
         {
             bFixedSimulationTimestep = true;

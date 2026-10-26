@@ -20,6 +20,7 @@ Config/EditorLayout.ini
 !Assets/Meshes/BasaltAltar/*.obj
 !Assets/Meshes/LionFountain/*.obj
 !Assets/Meshes/MarbleBust/*.obj
+!Assets/Meshes/ReactionLab/*.obj
 __pycache__/
 
 # Precompiled Headers
