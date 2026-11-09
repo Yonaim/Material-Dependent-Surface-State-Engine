@@ -30,3 +30,10 @@ Pass 1이 쓰는 RawOutgoing, source scale 또는 Flux cache는 Pass 2에서 읽
 - [Pass2](../../../../../../Shaders/Simulation/Solver/SurfaceSolverPass2.comp): 유효 이웃의 `CurrentState > 0` 및 출발 scale을 확인하고, optional raw cache를 읽거나 flux를 재계산한다. 이 검사는 sparse 실행에서 stale scratch가 섞이는 문제를 완화한다. `InputDelta.Values[...] = 0.0`로 실제 소모를 수행한다.
 - Scene에 활성 Reaction 규칙이 없으면 Pass2의 `accumulationContributionChanged(...)`가, 하나라도 있으면 Reaction Pass의 같은 검사가 최종 State를 기준으로 sparse accumulation을 예약한다. `min(State, Capacity)`의 형상 기여가 변하지 않으면 State가 변해도 재계산하지 않을 수 있다. Capacity는 **저장량 upper clamp가 아닌 포화도 기준량**이다.
 - [SurfaceInput.comp](../../../../../../Shaders/Simulation/Input/SurfaceInput.comp)의 코드만으로 실행 pipeline이 있다고 단정하지 않는다. 이번 C++ source의 contact 주입은 CPU 쪽 `ApplyPendingContacts`이며 `SurfaceStateSolver.cpp`의 파이프라인 생성 목록에는 이 entry가 없다.
+
+## 상위 실행 단계와 helper
+
+- Pass1은 기존 channel/profile 준비 후 `EvaluateRawOutgoing`에서 FP16 packing 또는 float cache/방향 합산을 수행한다. 양자화된 edge 합을 사용하는 기존 보존 규칙을 유지한다.
+- Pass2 main은 shared mask 초기화 → barrier → `AdvanceTexelState` → sparse 예약/reduction → barrier → group mask 게시를 보여 준다. `GatherIncoming`은 stale source 검사와 cache/recompute 경로를 담당한다.
+- Reaction main은 동일한 workgroup 참여/마스크 게시 구조를 유지하고 `ReactAndPublishTexel` → `IntegrateReactionRules`로 texel 처리와 local reaction 적분을 구분한다. 네 번의 buffer memory barrier와 bounded substep/진단 정책은 그대로다.
+- helper 선언 → main → 세부 구현 순서이며 CPU dispatch, descriptor, push constant, pass 사이 barrier는 변경하지 않았다.

@@ -12,11 +12,15 @@
 // ============================================================
 // #region 00_Resource_Interface
 
+// CPU: SurfaceStateSolver.cpp가 64-texel group을 dispatch하며 sparse 목록은 solverOriginalGroup()으로 복원한다.
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 shared uint GroupNextMask;
 
 #include "Simulation/Solver/StateFinalize.glsl"
 #include "Simulation/Solver/ReactionBindings.glsl"
+
+float GatherIncoming(uint TexelIndex, uint ChannelIndex);
+void AdvanceTexelState(uint TexelIndex, uint OriginalGroup, inout uint LocalNextMask, inout bool LocalNeedsNext);
 
 // #endregion
 
@@ -32,8 +36,30 @@ void main()
     uint LocalNextMask = 0u;
     bool LocalNeedsNext = false;
     if (gl_LocalInvocationIndex == 0u) GroupNextMask = 0u;
+    // 범위를 벗어난 invocation도 아래 workgroup reduction까지 참여해야 한다.
     barrier();
 
+    AdvanceTexelState(TexelIndex, OriginalGroup, LocalNextMask, LocalNeedsNext);
+    if (LocalNextMask != 0u) atomicOr(GroupNextMask, LocalNextMask);
+    if (LocalNeedsNext) scheduleNextSolverTexel(TexelIndex, LocalNextMask);
+    barrier();
+    if (gl_LocalInvocationIndex == 0u && GroupNextMask != 0u)
+    {
+        if (useActiveChannelMask())
+            atomicOr(AccumulationHeights.Values[solverNextMaskIndex()], GroupNextMask);
+        if (usePerWorkgroupChannelMask())
+            atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase() + OriginalGroup], GroupNextMask);
+    }
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+void AdvanceTexelState(uint TexelIndex, uint OriginalGroup, inout uint LocalNextMask, inout bool LocalNeedsNext)
+{
     if (TexelIndex < Solver.LocalTexelCount)
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
@@ -74,87 +100,7 @@ void main()
             continue;
         }
 
-        float Incoming = 0.0;
-        float TargetSaturation = 0.0;
-        float TargetConcavity = 0.0;
-        vec3 TargetPosition = vec3(0.0);
-        bool TargetSaturationReady = false;
-        bool TargetConcavityReady = false;
-        bool TargetPositionReady = false;
-
-        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-        {
-            uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
-            if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
-                continue;
-
-            uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
-            // Sparse solver에서는 source가 막 0이 된 뒤 이전 step의 scale/cache가 남을 수 있다.
-            // CurrentState를 먼저 확인하면 stale temporary cache를 절대 소비하지 않는다.
-            float NeighborCurrent = CurrentState.Values[NeighborStateValueIndex];
-            if (NeighborCurrent <= 0.0)
-                continue;
-
-            float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
-            if (NeighborScale <= 0.0)
-                continue;
-
-            uint ReverseDirectionIndex = reverseNeighborDirectionIndex(TexelIndex, DirectionIndex);
-            if (ReverseDirectionIndex >= SurfaceNeighborCount)
-                continue;
-
-            if (useRawFluxCache())
-            {
-                float CachedRawIncoming = loadCachedRawEdgeFlux(
-                    NeighborTexel, ChannelIndex, ReverseDirectionIndex);
-                Incoming += CachedRawIncoming * NeighborScale;
-                continue;
-            }
-
-            float NeighborTransferWeight = transferWeight(NeighborTexel, ReverseDirectionIndex);
-            if (NeighborTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
-                continue;
-
-            TSurfaceGPUProfileParameters SourceParameters =
-                loadProfileParameters(profileRecordIndex(NeighborTexel, ChannelIndex));
-            float SourceSaturation = NeighborCurrent / stateCapacity(NeighborTexel, ChannelIndex);
-            float SaturationTransferRate =
-                SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
-            float GeometryTransferRate =
-                SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
-            if (!TargetSaturationReady && (Solver.Flags & (1u << 1u)) == 0u &&
-                SaturationTransferRate != 0.0)
-            {
-                TargetSaturation = saturation(TexelIndex, ChannelIndex);
-                TargetSaturationReady = true;
-            }
-            if (!TargetConcavityReady && SourceParameters.AccumulationThickness.y != 0.0)
-            {
-                TargetConcavity = concavityWeight(TexelIndex);
-                TargetConcavityReady = true;
-            }
-            if (!TargetPositionReady && GeometryTransferRate > 0.0 &&
-                (Solver.Flags & 1u) == 0u)
-            {
-                TargetPosition = (Solver.Flags & (1u << 6u)) != 0u
-                                     ? DynamicGeometry.Values[TexelIndex * 2u].xyz
-                                     : effectiveLocalPosition(TexelIndex);
-                TargetPositionReady = true;
-            }
-            if (SourceParameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & 1u) == 0u)
-                prepareSourceGeometry(NeighborTexel);
-
-            float NeighborRawIncoming = rawFlux(NeighborTexel,
-                                                 TexelIndex,
-                                                 ChannelIndex,
-                                                 NeighborTransferWeight,
-                                                 SourceParameters,
-                                                 SourceSaturation,
-                                                 TargetSaturation,
-                                                 TargetConcavity,
-                                                 TargetPosition);
-            Incoming += NeighborRawIncoming * NeighborScale;
-        }
+        float Incoming = GatherIncoming(TexelIndex, ChannelIndex);
 
         float Current = CurrentState.Values[StateValueIndex];
         float Outgoing = Current > 0.0 ? loadRawOutgoingFloat(StateValueIndex) *
@@ -184,15 +130,92 @@ void main()
         if (accumulationContributionChanged(TexelIndex, ChannelIndex, Current, NewState))
             scheduleAccumulationGroup(TexelIndex / 64u);
     }
-    if (LocalNextMask != 0u) atomicOr(GroupNextMask, LocalNextMask);
-    if (LocalNeedsNext) scheduleNextSolverTexel(TexelIndex, LocalNextMask);
-    barrier();
-    if (gl_LocalInvocationIndex == 0u && GroupNextMask != 0u)
-    {
-        if (useActiveChannelMask())
-            atomicOr(AccumulationHeights.Values[solverNextMaskIndex()], GroupNextMask);
-        if (usePerWorkgroupChannelMask())
-            atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase() + OriginalGroup], GroupNextMask);
-    }
 }
+
+float GatherIncoming(uint TexelIndex, uint ChannelIndex)
+{
+    float Incoming = 0.0;
+    float TargetSaturation = 0.0;
+    float TargetConcavity = 0.0;
+    vec3 TargetPosition = vec3(0.0);
+    bool TargetSaturationReady = false;
+    bool TargetConcavityReady = false;
+    bool TargetPositionReady = false;
+
+    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+    {
+        uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
+        if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
+            continue;
+
+        uint NeighborStateValueIndex = stateIndex(NeighborTexel, ChannelIndex);
+        // Sparse solver에서는 source가 막 0이 된 뒤 이전 step의 scale/cache가 남을 수 있다.
+        // CurrentState를 먼저 확인하면 stale temporary cache를 절대 소비하지 않는다.
+        float NeighborCurrent = CurrentState.Values[NeighborStateValueIndex];
+        if (NeighborCurrent <= 0.0)
+            continue;
+
+        float NeighborScale = OutgoingFluxScale.Values[NeighborStateValueIndex];
+        if (NeighborScale <= 0.0)
+            continue;
+
+        uint ReverseDirectionIndex = reverseNeighborDirectionIndex(TexelIndex, DirectionIndex);
+        if (ReverseDirectionIndex >= SurfaceNeighborCount)
+            continue;
+
+        if (useRawFluxCache())
+        {
+            float CachedRawIncoming = loadCachedRawEdgeFlux(
+                NeighborTexel, ChannelIndex, ReverseDirectionIndex);
+            Incoming += CachedRawIncoming * NeighborScale;
+            continue;
+        }
+
+        float NeighborTransferWeight = transferWeight(NeighborTexel, ReverseDirectionIndex);
+        if (NeighborTransferWeight <= 0.0 || Solver.DeltaTime <= 0.0)
+            continue;
+
+        TSurfaceGPUProfileParameters SourceParameters =
+            loadProfileParameters(profileRecordIndex(NeighborTexel, ChannelIndex));
+        float SourceSaturation = NeighborCurrent / stateCapacity(NeighborTexel, ChannelIndex);
+        float SaturationTransferRate =
+            SourceParameters.CapacityInputAndTransfer.z * BaseSaturationTransferRate;
+        float GeometryTransferRate =
+            SourceParameters.CapacityInputAndTransfer.w * BaseGeometryTransferRate;
+        if (!TargetSaturationReady && (Solver.Flags & (1u << 1u)) == 0u &&
+            SaturationTransferRate != 0.0)
+        {
+            TargetSaturation = saturation(TexelIndex, ChannelIndex);
+            TargetSaturationReady = true;
+        }
+        if (!TargetConcavityReady && SourceParameters.AccumulationThickness.y != 0.0)
+        {
+            TargetConcavity = concavityWeight(TexelIndex);
+            TargetConcavityReady = true;
+        }
+        if (!TargetPositionReady && GeometryTransferRate > 0.0 &&
+            (Solver.Flags & 1u) == 0u)
+        {
+            TargetPosition = (Solver.Flags & (1u << 6u)) != 0u
+                                 ? DynamicGeometry.Values[TexelIndex * 2u].xyz
+                                 : effectiveLocalPosition(TexelIndex);
+            TargetPositionReady = true;
+        }
+        if (SourceParameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & 1u) == 0u)
+            prepareSourceGeometry(NeighborTexel);
+
+        float NeighborRawIncoming = rawFlux(NeighborTexel,
+                                             TexelIndex,
+                                             ChannelIndex,
+                                             NeighborTransferWeight,
+                                             SourceParameters,
+                                             SourceSaturation,
+                                             TargetSaturation,
+                                             TargetConcavity,
+                                             TargetPosition);
+        Incoming += NeighborRawIncoming * NeighborScale;
+    }
+    return Incoming;
+}
+
 // #endregion

@@ -42,3 +42,9 @@ Top/Side Vertex 및 Indirect Command를 만들고 dirty tile·coverage를 갱신
 - [TAccumulationOverlaySides::Record](../../../../../../Source/Rendering/Overlay/AccumulationOverlaySides.cpp): coverage 및 boundary 정보로 top/side draw용 자료를 만든다.
 - 호출은 [TRenderer::RecordCommandBuffer](../../../../../../Source/Rendering/Core/RendererCommands.cpp)의 Lit 조건, `CanRenderLitOverlays`, Shared mesh/descriptor availability에 종속된다. `CombinedSurfaceKey = 0xffffU`는 Registry State channel ID가 아니라 derived geometry 식별용 예약 값이다.
 - Overlay coverage/height smoothing은 **표시 전용 결과**다. Solver의 `DynamicGeometry`와 구별하고 visual artifact만 관찰된 경우 Render branch부터 추적한다.
+
+## 상위 실행 단계
+
+- `OverlayOccupancyScan`: 타일 초기화/복원 → barrier → `ScanTileChanges` → barrier → `ScheduleDirtyTile` → barrier → `AdvanceBuiltState`. uniform 타일 guard와 기존 workgroup 참여 범위를 유지한다.
+- `OverlaySideBoundary`: shared counter 초기화 → barrier → `CompactTopTriangle` → barrier → counter 합산/범위 검사 → `EmitBoundarySegment`. atomics·buffer 접근·분기 순서를 유지한다.
+- Coverage 두 entry와 TexelGeometry/Baseline/Height는 local helper의 prototype을 앞에 두고 정의를 main 아래로 배치한다. Coverage halo helper의 선언/정의 모두 기존 compile-time guard 안에 둔다.

@@ -16,6 +16,7 @@
 // ============================================================
 // #region 00_Resource_Interface
 
+// CPU: TexelGeometryPreview.cpp가 tile candidate를 dispatch하고 geometry cache의 dirty 목록을 소비한다.
 layout(local_size_x = 64) in;
 
 layout(set = 0, binding = 21, std430) readonly buffer TAccumulationHeights { float Values[]; } AccumulationHeights;
@@ -58,11 +59,7 @@ shared uint RangeHeight;
 const float DirtyStateAbsoluteEpsilon = 1.0e-5;
 const float DirtyStateRelativeEpsilon = 1.0e-3;
 
-uint CapacityTileCount()
-{
-    // 4 texel cache planes + 2 persistent texel planes + 7 tile planes + 14 scalars.
-    return (uint(GeometryCache.Values.length()) - Push.Texels * 6u - 14u) / 7u;
-}
+uint CapacityTileCount();
 
 // GeometryCache layout after the four texel-sized height/normal planes:
 // activeFlags[N]                                  (persistent)
@@ -72,23 +69,83 @@ uint CapacityTileCount()
 // normalCount, normalDispatch[3], normalList[N]   (dynamic)
 // coverageCount, coverageDispatch[3], coverageList[N] (dynamic)
 // globalAny, activeTileCount                      (dynamic, last two words)
-uint FlagBase()             { return Push.Texels * 4u; }
-uint BuiltStateBase()       { return FlagBase() + CapacityTileCount(); }
-uint BuiltCoverageBase()    { return BuiltStateBase() + Push.Texels; }
-uint HeightScheduleBase()   { return BuiltCoverageBase() + Push.Texels; }
-uint NormalScheduleBase()   { return HeightScheduleBase() + CapacityTileCount(); }
-uint CoverageScheduleBase() { return NormalScheduleBase() + CapacityTileCount(); }
-uint HeightCountIndex()     { return CoverageScheduleBase() + CapacityTileCount(); }
-uint HeightDispatchBase()   { return HeightCountIndex() + 1u; }
-uint HeightListBase()       { return HeightDispatchBase() + 3u; }
-uint NormalCountIndex()     { return HeightListBase() + CapacityTileCount(); }
-uint NormalDispatchBase()   { return NormalCountIndex() + 1u; }
-uint NormalListBase()       { return NormalDispatchBase() + 3u; }
-uint CoverageCountIndex()   { return NormalListBase() + CapacityTileCount(); }
-uint CoverageDispatchBase(){ return CoverageCountIndex() + 1u; }
-uint CoverageListBase()     { return CoverageDispatchBase() + 3u; }
-uint GlobalAnyIndex()       { return uint(GeometryCache.Values.length()) - 2u; }
-uint ActiveTileCountIndex() { return uint(GeometryCache.Values.length()) - 1u; }
+uint FlagBase();
+uint BuiltStateBase();
+uint BuiltCoverageBase();
+uint HeightScheduleBase();
+uint NormalScheduleBase();
+uint CoverageScheduleBase();
+uint HeightCountIndex();
+uint HeightDispatchBase();
+uint HeightListBase();
+uint NormalCountIndex();
+uint NormalDispatchBase();
+uint NormalListBase();
+uint CoverageCountIndex();
+uint CoverageDispatchBase();
+uint CoverageListBase();
+uint GlobalAnyIndex();
+uint ActiveTileCountIndex();
+
+bool ResolveCandidateTile(uint Candidate);
+
+float SanitizedState(uint Texel);
+
+bool HasActiveState(uint Texel);
+
+float CoverageSignal(uint Texel);
+
+bool StateChanged(float Current, float Built);
+
+void ScheduleHeightCandidate(uint Candidate, uint GroupsPerTile);
+
+void ScheduleNormalCandidate(uint Candidate, uint GroupsPerTile);
+
+void ScheduleCoverageCandidate(uint Candidate);
+
+void ScanTileChanges(uint TilePixels);
+void ScheduleDirtyTile(uint Candidate, uint TilePixels);
+void AdvanceBuiltState(uint TilePixels);
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+
+void main()
+{
+    uint Candidate = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        AnyStateInTile = 0u;
+        AnyDirtyInTile = 0u;
+        AnyCoverageDirtyInTile = 0u;
+        TileDirty = 0u;
+        TileValid = 0u;
+        ResolveCandidateTile(Candidate);
+    }
+    barrier();
+    // TileValid와 Push는 workgroup 내에서 동일하므로 모든 invocation이 함께 반환한다.
+    if (TileValid == 0u || Push.TileSize == 0u) return;
+
+    uint TilePixels = Push.TileSize * Push.TileSize;
+    ScanTileChanges(TilePixels);
+    barrier();
+
+    ScheduleDirtyTile(Candidate, TilePixels);
+    barrier();
+
+    AdvanceBuiltState(TilePixels);
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
 
 bool ResolveCandidateTile(uint Candidate)
 {
@@ -118,6 +175,33 @@ bool ResolveCandidateTile(uint Candidate)
     }
     TileValid = 0u;
     return false;
+}
+
+void ScanTileChanges(uint TilePixels)
+{
+    for (uint Local = gl_LocalInvocationID.x; Local < TilePixels; Local += gl_WorkGroupSize.x)
+    {
+        uint LocalX = Local % Push.TileSize;
+        uint LocalY = Local / Push.TileSize;
+        uint X = TileX * Push.TileSize + LocalX;
+        uint Y = TileY * Push.TileSize + LocalY;
+        if (X >= RangeWidth || Y >= RangeHeight) continue;
+
+        uint T = RangeFirstTexel + Y * RangeWidth + X;
+        if (T >= Push.Texels) continue;
+
+        float State = SanitizedState(T);
+        if (HasActiveState(T)) atomicOr(AnyStateInTile, 1u);
+
+        float BuiltState = uintBitsToFloat(GeometryCache.Values[BuiltStateBase() + T]);
+        if (Push.ForceFullUpdate != 0u || StateChanged(State, BuiltState))
+            atomicOr(AnyDirtyInTile, 1u);
+        float Signal = CoverageSignal(T);
+        if (Push.ForceFullUpdate != 0u ||
+            floatBitsToUint(Signal) != GeometryCache.Values[BuiltCoverageBase() + T])
+            atomicOr(AnyCoverageDirtyInTile, 1u);
+        GeometryCache.Values[BuiltCoverageBase() + T] = floatBitsToUint(Signal);
+    }
 }
 
 float SanitizedState(uint Texel)
@@ -150,6 +234,24 @@ bool HasActiveState(uint Texel)
     return false;
 }
 
+uint BuiltStateBase()       { return FlagBase() + CapacityTileCount(); }
+
+uint FlagBase()             { return Push.Texels * 4u; }
+
+uint CapacityTileCount()
+{
+    // 4 texel cache planes + 2 persistent texel planes + 7 tile planes + 14 scalars.
+    return (uint(GeometryCache.Values.length()) - Push.Texels * 6u - 14u) / 7u;
+}
+
+bool StateChanged(float Current, float Built)
+{
+    if (isnan(Built) || isinf(Built)) return true;
+    float Tolerance = max(DirtyStateAbsoluteEpsilon,
+                          DirtyStateRelativeEpsilon * max(abs(Current), abs(Built)));
+    return abs(Current - Built) > Tolerance;
+}
+
 float CoverageSignal(uint Texel)
 {
     if (Push.Channels == 0u || Texel >= uint(OverlayTexelProfileIndices.Values.length())) return 0.0;
@@ -166,104 +268,10 @@ float CoverageSignal(uint Texel)
     return Signal;
 }
 
-bool StateChanged(float Current, float Built)
+uint BuiltCoverageBase()    { return BuiltStateBase() + Push.Texels; }
+
+void ScheduleDirtyTile(uint Candidate, uint TilePixels)
 {
-    if (isnan(Built) || isinf(Built)) return true;
-    float Tolerance = max(DirtyStateAbsoluteEpsilon,
-                          DirtyStateRelativeEpsilon * max(abs(Current), abs(Built)));
-    return abs(Current - Built) > Tolerance;
-}
-
-void ScheduleHeightCandidate(uint Candidate, uint GroupsPerTile)
-{
-    uint Capacity = CapacityTileCount();
-    if (Candidate >= Capacity) return;
-    if (atomicCompSwap(GeometryCache.Values[HeightScheduleBase() + Candidate], 0u, 1u) != 0u) return;
-
-    uint Slot = atomicAdd(GeometryCache.Values[HeightCountIndex()], 1u);
-    if (Slot >= Capacity) return;
-    GeometryCache.Values[HeightListBase() + Slot] = Candidate;
-    atomicAdd(GeometryCache.Values[HeightDispatchBase() + 0u], GroupsPerTile);
-    atomicOr(GeometryCache.Values[HeightDispatchBase() + 1u], 1u);
-    atomicOr(GeometryCache.Values[HeightDispatchBase() + 2u], 1u);
-}
-
-void ScheduleNormalCandidate(uint Candidate, uint GroupsPerTile)
-{
-    uint Capacity = CapacityTileCount();
-    if (Candidate >= Capacity) return;
-    if (atomicCompSwap(GeometryCache.Values[NormalScheduleBase() + Candidate], 0u, 1u) != 0u) return;
-
-    uint Slot = atomicAdd(GeometryCache.Values[NormalCountIndex()], 1u);
-    if (Slot >= Capacity) return;
-    GeometryCache.Values[NormalListBase() + Slot] = Candidate;
-    atomicAdd(GeometryCache.Values[NormalDispatchBase() + 0u], GroupsPerTile);
-    atomicOr(GeometryCache.Values[NormalDispatchBase() + 1u], 1u);
-    atomicOr(GeometryCache.Values[NormalDispatchBase() + 2u], 1u);
-}
-
-void ScheduleCoverageCandidate(uint Candidate)
-{
-    uint Capacity = CapacityTileCount();
-    if (Candidate >= Capacity) return;
-    if (atomicCompSwap(GeometryCache.Values[CoverageScheduleBase() + Candidate], 0u, 1u) != 0u) return;
-    uint Slot = atomicAdd(GeometryCache.Values[CoverageCountIndex()], 1u);
-    if (Slot >= Capacity) return;
-    GeometryCache.Values[CoverageListBase() + Slot] = Candidate;
-    atomicAdd(GeometryCache.Values[CoverageDispatchBase()], 1u);
-    atomicOr(GeometryCache.Values[CoverageDispatchBase() + 1u], 1u);
-    atomicOr(GeometryCache.Values[CoverageDispatchBase() + 2u], 1u);
-}
-
-// #endregion
-
-// ============================================================
-// 01. Main Process
-// ============================================================
-// #region 01_Main_Process
-
-void main()
-{
-    uint Candidate = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
-
-    if (gl_LocalInvocationIndex == 0u)
-    {
-        AnyStateInTile = 0u;
-        AnyDirtyInTile = 0u;
-        AnyCoverageDirtyInTile = 0u;
-        TileDirty = 0u;
-        TileValid = 0u;
-        ResolveCandidateTile(Candidate);
-    }
-    barrier();
-    if (TileValid == 0u || Push.TileSize == 0u) return;
-
-    uint TilePixels = Push.TileSize * Push.TileSize;
-    for (uint Local = gl_LocalInvocationID.x; Local < TilePixels; Local += gl_WorkGroupSize.x)
-    {
-        uint LocalX = Local % Push.TileSize;
-        uint LocalY = Local / Push.TileSize;
-        uint X = TileX * Push.TileSize + LocalX;
-        uint Y = TileY * Push.TileSize + LocalY;
-        if (X >= RangeWidth || Y >= RangeHeight) continue;
-
-        uint T = RangeFirstTexel + Y * RangeWidth + X;
-        if (T >= Push.Texels) continue;
-
-        float State = SanitizedState(T);
-        if (HasActiveState(T)) atomicOr(AnyStateInTile, 1u);
-
-        float BuiltState = uintBitsToFloat(GeometryCache.Values[BuiltStateBase() + T]);
-        if (Push.ForceFullUpdate != 0u || StateChanged(State, BuiltState))
-            atomicOr(AnyDirtyInTile, 1u);
-        float Signal = CoverageSignal(T);
-        if (Push.ForceFullUpdate != 0u ||
-            floatBitsToUint(Signal) != GeometryCache.Values[BuiltCoverageBase() + T])
-            atomicOr(AnyCoverageDirtyInTile, 1u);
-        GeometryCache.Values[BuiltCoverageBase() + T] = floatBitsToUint(Signal);
-    }
-    barrier();
-
     if (gl_LocalInvocationIndex == 0u)
     {
         uint CurrentActive = AnyStateInTile != 0u ? 1u : 0u;
@@ -319,8 +327,79 @@ void main()
             }
         }
     }
-    barrier();
+}
 
+uint GlobalAnyIndex()       { return uint(GeometryCache.Values.length()) - 2u; }
+
+uint ActiveTileCountIndex() { return uint(GeometryCache.Values.length()) - 1u; }
+
+void ScheduleCoverageCandidate(uint Candidate)
+{
+    uint Capacity = CapacityTileCount();
+    if (Candidate >= Capacity) return;
+    if (atomicCompSwap(GeometryCache.Values[CoverageScheduleBase() + Candidate], 0u, 1u) != 0u) return;
+    uint Slot = atomicAdd(GeometryCache.Values[CoverageCountIndex()], 1u);
+    if (Slot >= Capacity) return;
+    GeometryCache.Values[CoverageListBase() + Slot] = Candidate;
+    atomicAdd(GeometryCache.Values[CoverageDispatchBase()], 1u);
+    atomicOr(GeometryCache.Values[CoverageDispatchBase() + 1u], 1u);
+    atomicOr(GeometryCache.Values[CoverageDispatchBase() + 2u], 1u);
+}
+
+uint CoverageScheduleBase() { return NormalScheduleBase() + CapacityTileCount(); }
+
+uint NormalScheduleBase()   { return HeightScheduleBase() + CapacityTileCount(); }
+
+uint HeightScheduleBase()   { return BuiltCoverageBase() + Push.Texels; }
+
+uint CoverageCountIndex()   { return NormalListBase() + CapacityTileCount(); }
+
+uint NormalListBase()       { return NormalDispatchBase() + 3u; }
+
+uint NormalDispatchBase()   { return NormalCountIndex() + 1u; }
+
+uint NormalCountIndex()     { return HeightListBase() + CapacityTileCount(); }
+
+uint HeightListBase()       { return HeightDispatchBase() + 3u; }
+
+uint HeightDispatchBase()   { return HeightCountIndex() + 1u; }
+
+uint HeightCountIndex()     { return CoverageScheduleBase() + CapacityTileCount(); }
+
+uint CoverageListBase()     { return CoverageDispatchBase() + 3u; }
+
+uint CoverageDispatchBase(){ return CoverageCountIndex() + 1u; }
+
+void ScheduleHeightCandidate(uint Candidate, uint GroupsPerTile)
+{
+    uint Capacity = CapacityTileCount();
+    if (Candidate >= Capacity) return;
+    if (atomicCompSwap(GeometryCache.Values[HeightScheduleBase() + Candidate], 0u, 1u) != 0u) return;
+
+    uint Slot = atomicAdd(GeometryCache.Values[HeightCountIndex()], 1u);
+    if (Slot >= Capacity) return;
+    GeometryCache.Values[HeightListBase() + Slot] = Candidate;
+    atomicAdd(GeometryCache.Values[HeightDispatchBase() + 0u], GroupsPerTile);
+    atomicOr(GeometryCache.Values[HeightDispatchBase() + 1u], 1u);
+    atomicOr(GeometryCache.Values[HeightDispatchBase() + 2u], 1u);
+}
+
+void ScheduleNormalCandidate(uint Candidate, uint GroupsPerTile)
+{
+    uint Capacity = CapacityTileCount();
+    if (Candidate >= Capacity) return;
+    if (atomicCompSwap(GeometryCache.Values[NormalScheduleBase() + Candidate], 0u, 1u) != 0u) return;
+
+    uint Slot = atomicAdd(GeometryCache.Values[NormalCountIndex()], 1u);
+    if (Slot >= Capacity) return;
+    GeometryCache.Values[NormalListBase() + Slot] = Candidate;
+    atomicAdd(GeometryCache.Values[NormalDispatchBase() + 0u], GroupsPerTile);
+    atomicOr(GeometryCache.Values[NormalDispatchBase() + 1u], 1u);
+    atomicOr(GeometryCache.Values[NormalDispatchBase() + 2u], 1u);
+}
+
+void AdvanceBuiltState(uint TilePixels)
+{
     // Advance the comparison baseline only when geometry for this tile is actually rebuilt. This
     // lets small per-frame state changes accumulate against the last built result until they become
     // visually meaningful enough to cross the tolerance.
@@ -340,4 +419,5 @@ void main()
         }
     }
 }
+
 // #endregion

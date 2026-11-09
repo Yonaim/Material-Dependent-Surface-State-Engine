@@ -12,6 +12,7 @@
 // ============================================================
 // #region 00_Resource_Interface
 
+// CPU: AccumulationOverlaySides.cpp의 descriptor/push constant와 direct·indirect dispatch에 대응한다.
 layout(local_size_x = 64) in;
 
 struct TOverlayVertex
@@ -97,11 +98,49 @@ layout(push_constant) uniform TOverlayPush
     uint Ice;
 } Push;
 
-uint CoverageListBase()
+uint CoverageListBase();
+
+void ComputeCoverage(uint Index, bool TileActive);
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+
+void main()
 {
-    uint Capacity = (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
-    return Push.TexelCount * 6u + Capacity * 6u + 12u;
+    if ((Push.Padding & 1u) != 0u || Push.TileSize == 0u)
+    {
+        uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u +
+                     gl_LocalInvocationID.x;
+        ComputeCoverage(Index, true);
+        return;
+    }
+
+    // One workgroup owns one dirty tile. The shared mesh's immutable CSR list maps that tile
+    // to its vertices; only the per-instance coverage buffer is written.
+    uint Slot = gl_WorkGroupID.x;
+    uint Candidate = GeometryCache.Values[CoverageListBase() + Slot];
+    uint TileCount = Push.Padding >> 1u;
+    uint MappingBase = uint(MeshVertices.Values.length()) + uint(MeshIndices.Values.length());
+    if (Candidate >= TileCount) return;
+    bool TileActive = (GeometryCache.Values[Push.TexelCount * 4u + Candidate] & 1u) != 0u;
+    uint Begin = Coverage.Values[MappingBase + Candidate];
+    uint End = Coverage.Values[MappingBase + Candidate + 1u];
+    for (uint Offset = Begin + gl_LocalInvocationID.x; Offset < End; Offset += gl_WorkGroupSize.x)
+    {
+        uint Vertex = Coverage.Values[MappingBase + Offset];
+        ComputeCoverage(Vertex, TileActive);
+    }
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
 
 void ComputeCoverage(uint Index, bool TileActive)
 {
@@ -206,37 +245,10 @@ void ComputeCoverage(uint Index, bool TileActive)
     Coverage.Values[Index] = floatBitsToUint(Value);
 }
 
-// #endregion
-
-// ============================================================
-// 01. Main Process
-// ============================================================
-// #region 01_Main_Process
-
-void main()
+uint CoverageListBase()
 {
-    if ((Push.Padding & 1u) != 0u || Push.TileSize == 0u)
-    {
-        uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u +
-                     gl_LocalInvocationID.x;
-        ComputeCoverage(Index, true);
-        return;
-    }
-
-    // One workgroup owns one dirty tile. The shared mesh's immutable CSR list maps that tile
-    // to its vertices; only the per-instance coverage buffer is written.
-    uint Slot = gl_WorkGroupID.x;
-    uint Candidate = GeometryCache.Values[CoverageListBase() + Slot];
-    uint TileCount = Push.Padding >> 1u;
-    uint MappingBase = uint(MeshVertices.Values.length()) + uint(MeshIndices.Values.length());
-    if (Candidate >= TileCount) return;
-    bool TileActive = (GeometryCache.Values[Push.TexelCount * 4u + Candidate] & 1u) != 0u;
-    uint Begin = Coverage.Values[MappingBase + Candidate];
-    uint End = Coverage.Values[MappingBase + Candidate + 1u];
-    for (uint Offset = Begin + gl_LocalInvocationID.x; Offset < End; Offset += gl_WorkGroupSize.x)
-    {
-        uint Vertex = Coverage.Values[MappingBase + Offset];
-        ComputeCoverage(Vertex, TileActive);
-    }
+    uint Capacity = (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
+    return Push.TexelCount * 6u + Capacity * 6u + 12u;
 }
+
 // #endregion

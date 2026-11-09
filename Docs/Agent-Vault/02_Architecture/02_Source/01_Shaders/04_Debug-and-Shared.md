@@ -30,3 +30,9 @@
 - [SurfaceGPUAbi.h](../../../../../Source/SurfaceState/GPU/Abi/SurfaceGPUAbi.h)의 layout asserts와 [SurfaceTypes.glsl](../../../../../Shaders/Shared/SurfaceState/SurfaceTypes.glsl)의 GLSL struct/flags를 같은 revision에서 비교한다.
 - [DescriptorResources.cpp](../../../../../Source/SurfaceState/GPU/Resources/DescriptorResources.cpp)는 두 descriptor set을 가진다. debug/renderer에서 read할 때도 `IsCurrentStateAB`에 맞는 set을 써야 한다.
 - [TexelInspector.cpp](../../../../../Source/SurfaceState/Debug/TexelInspector.cpp) ↔ [TexelInspector.comp](../../../../../Shaders/Debug/TexelInspector.comp): Inspector 스냅샷은 GPU readback 경로다. CPU 표시용 metadata만 검사하면 Solver 계산 검증이 되지 않는다.
+
+## 진입점과 세부 구현
+
+- `SurfaceDebug.vert`: 원본 위치·basis 출력을 유지하고 `WriteMesoNormal` → `ApplyMesoOffset`으로 조회/변위를 구분한다. 면적 진단용 world position은 변위 전 위치다.
+- `SurfaceDebug.frag`: `ComputeDebugDerivatives`를 모든 fragment별 guard보다 먼저 호출한다. surface/geometry guard와 mode 우선순위는 `main`에 남기고 `Render*` helper가 각 진단 출력·fallback을 담당한다.
+- 인터페이스/prototype → main → Detailed Implementation 순서이며 layout과 CPU 바인딩은 유지한다.

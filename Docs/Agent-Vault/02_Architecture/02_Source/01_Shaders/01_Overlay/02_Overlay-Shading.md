@@ -21,3 +21,7 @@
 ## 실제 코드 경계
 
 `[RendererCommands.cpp](../../../../../../Source/Rendering/Core/RendererCommands.cpp)`에서 active channel은 demo `Mud/WaterFilm/Lava` lookup으로 결정된다. Combined top surface 경로에서 fragment appearance와 coverage/geometry 준비는 다른 pass이므로 두 효과를 하나의 Solver 계산으로 설명하지 않는다. `OverlayCombined.frag`·`OverlayAppearance.glsl`는 표시의 소비자이고 source state producer가 아니다.
+
+## Combined fragment 실행 단계
+
+`OverlaySurface.glsl`의 main은 재질 variant와 초기 coverage discard를 선택한다. Combined는 `ShadeCombinedOverlay`에서 State sampling → Ice coverage/초기 discard → seam normal/State 조정 → 최종 discard/진단 → layer composition을 조율한다. 세부 계산은 `SampleCombinedOverlayStates`, `ResolveCombinedOverlayNormal`, `CompositeOverlayLayers`에 둔다. 기존 Mud → Ice → Water → Lava 합성 우선순위·alpha·discard 조건은 유지한다.

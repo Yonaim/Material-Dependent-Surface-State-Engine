@@ -36,6 +36,37 @@ layout(push_constant) uniform TPush
 }
 Push;
 
+vec3 BaselineNormal(uint Texel);
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+
+void main()
+{
+    // 각 invocation은 한 texel의 기준 normal을 계산해 3개 uint plane에 보관한다.
+    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    if (T >= Push.TexelCount)
+        return;
+
+    vec3 Normal = BaselineNormal(T);
+
+    // 높이 데이터 뒤에 법선의 세 성분을 uint 비트 패턴으로 저장한다.
+    uint Offset = Push.TexelCount + T * 3u;
+    GeometryCache.Values[Offset] = floatBitsToUint(Normal.x);
+    GeometryCache.Values[Offset + 1u] = floatBitsToUint(Normal.y);
+    GeometryCache.Values[Offset + 2u] = floatBitsToUint(Normal.z);
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
 vec3 BaselineNormal(uint Texel)
 {
     vec3 Fallback = MesoNormals.Values[Texel].xyz;
@@ -105,26 +136,4 @@ vec3 BaselineNormal(uint Texel)
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
 
-// #endregion
-
-// ============================================================
-// 01. Main Process
-// ============================================================
-// #region 01_Main_Process
-
-void main()
-{
-    // 각 invocation은 한 texel의 기준 normal을 계산해 3개 uint plane에 보관한다.
-    uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
-    if (T >= Push.TexelCount)
-        return;
-
-    vec3 Normal = BaselineNormal(T);
-
-    // 높이 데이터 뒤에 법선의 세 성분을 uint 비트 패턴으로 저장한다.
-    uint Offset = Push.TexelCount + T * 3u;
-    GeometryCache.Values[Offset] = floatBitsToUint(Normal.x);
-    GeometryCache.Values[Offset + 1u] = floatBitsToUint(Normal.y);
-    GeometryCache.Values[Offset + 2u] = floatBitsToUint(Normal.z);
-}
 // #endregion

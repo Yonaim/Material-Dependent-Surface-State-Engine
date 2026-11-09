@@ -12,24 +12,16 @@
 // ============================================================
 // #region 00_Resource_Interface
 
+// CPU: SurfaceStateSolver.cpp가 64-texel group을 dispatch하며 sparse 목록은 solverOriginalGroup()으로 복원한다.
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 float evaluateDirectionRawFlux(uint TexelIndex,
                                uint ChannelIndex,
                                uint DirectionIndex,
                                TSurfaceGPUProfileParameters Parameters,
-                               float SourceSaturation)
-{
-    uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
-    if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
-        return 0.0;
-    return rawFlux(TexelIndex,
-                   NeighborTexel,
-                   ChannelIndex,
-                   transferWeight(TexelIndex, DirectionIndex),
-                   Parameters,
-                   SourceSaturation);
-}
+                               float SourceSaturation);
+
+float EvaluateRawOutgoing(uint TexelIndex, uint ChannelIndex, TSurfaceGPUProfileParameters Parameters, float SourceSaturation);
 
 // #endregion
 
@@ -105,36 +97,7 @@ void main()
             SourceGeometryPrepared = true;
         }
 
-        float RawOutgoing = 0.0;
-        if (useRawFluxCache() && useHalfRawFluxCache())
-        {
-            // FP16 A/B path: 두 방향을 하나의 uint word에 pack해 edge cache write bandwidth를 절반으로 줄인다.
-            for (uint PairIndex = 0u; PairIndex < SurfaceNeighborCount / 2u; ++PairIndex)
-            {
-                uint D0 = PairIndex * 2u;
-                uint D1 = D0 + 1u;
-                float F0 = evaluateDirectionRawFlux(TexelIndex, ChannelIndex, D0, Parameters, SourceSaturation);
-                float F1 = evaluateDirectionRawFlux(TexelIndex, ChannelIndex, D1, Parameters, SourceSaturation);
-                // Pass2는 FP16 cache 값을 읽으므로 source Outgoing도 같은 quantized edge 합으로 계산해야
-                // edge 총량 보존이 cache 정밀도 범위 안에서 일관된다.
-                vec2 SafeFlux = clamp(vec2(F0, F1), vec2(0.0), vec2(65504.0));
-                uint PackedFlux = packHalf2x16(SafeFlux);
-                vec2 QuantizedFlux = unpackHalf2x16(PackedFlux);
-                RawOutgoingBuffer.Values[rawEdgeFluxHalfWordIndex(TexelIndex, ChannelIndex, PairIndex)] = PackedFlux;
-                RawOutgoing += QuantizedFlux.x + QuantizedFlux.y;
-            }
-        }
-        else
-        {
-            for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-            {
-                float RawFlux = evaluateDirectionRawFlux(
-                    TexelIndex, ChannelIndex, DirectionIndex, Parameters, SourceSaturation);
-                if (useRawFluxCache())
-                    storeRawOutgoingFloat(rawEdgeFluxIndex(TexelIndex, ChannelIndex, DirectionIndex), RawFlux);
-                RawOutgoing += RawFlux;
-            }
-        }
+        float RawOutgoing = EvaluateRawOutgoing(TexelIndex, ChannelIndex, Parameters, SourceSaturation);
 
         storeRawOutgoingFloat(StateValueIndex, RawOutgoing);
         OutgoingFluxScale.Values[StateValueIndex] = RawOutgoing > 0.0
@@ -142,4 +105,63 @@ void main()
             : 1.0;
     }
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+float EvaluateRawOutgoing(uint TexelIndex, uint ChannelIndex, TSurfaceGPUProfileParameters Parameters, float SourceSaturation)
+{
+    float RawOutgoing = 0.0;
+    if (useRawFluxCache() && useHalfRawFluxCache())
+    {
+        // FP16 A/B path: 두 방향을 하나의 uint word에 pack해 edge cache write bandwidth를 절반으로 줄인다.
+        for (uint PairIndex = 0u; PairIndex < SurfaceNeighborCount / 2u; ++PairIndex)
+        {
+            uint D0 = PairIndex * 2u;
+            uint D1 = D0 + 1u;
+            float F0 = evaluateDirectionRawFlux(TexelIndex, ChannelIndex, D0, Parameters, SourceSaturation);
+            float F1 = evaluateDirectionRawFlux(TexelIndex, ChannelIndex, D1, Parameters, SourceSaturation);
+            // Pass2는 FP16 cache 값을 읽으므로 source Outgoing도 같은 quantized edge 합으로 계산해야
+            // edge 총량 보존이 cache 정밀도 범위 안에서 일관된다.
+            vec2 SafeFlux = clamp(vec2(F0, F1), vec2(0.0), vec2(65504.0));
+            uint PackedFlux = packHalf2x16(SafeFlux);
+            vec2 QuantizedFlux = unpackHalf2x16(PackedFlux);
+            RawOutgoingBuffer.Values[rawEdgeFluxHalfWordIndex(TexelIndex, ChannelIndex, PairIndex)] = PackedFlux;
+            RawOutgoing += QuantizedFlux.x + QuantizedFlux.y;
+        }
+    }
+    else
+    {
+        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+        {
+            float RawFlux = evaluateDirectionRawFlux(
+                TexelIndex, ChannelIndex, DirectionIndex, Parameters, SourceSaturation);
+            if (useRawFluxCache())
+                storeRawOutgoingFloat(rawEdgeFluxIndex(TexelIndex, ChannelIndex, DirectionIndex), RawFlux);
+            RawOutgoing += RawFlux;
+        }
+    }
+    return RawOutgoing;
+}
+
+float evaluateDirectionRawFlux(uint TexelIndex,
+                               uint ChannelIndex,
+                               uint DirectionIndex,
+                               TSurfaceGPUProfileParameters Parameters,
+                               float SourceSaturation)
+{
+    uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
+    if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
+        return 0.0;
+    return rawFlux(TexelIndex,
+                   NeighborTexel,
+                   ChannelIndex,
+                   transferWeight(TexelIndex, DirectionIndex),
+                   Parameters,
+                   SourceSaturation);
+}
+
 // #endregion

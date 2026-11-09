@@ -17,6 +17,7 @@ layout(location = 3) in vec2 FragUV;
 layout(location = 4) flat in uint FragSurfaceIndex;
 layout(location = 5) in vec3 FragMesoNormalWS;
 layout(location = 6) in vec3 FragWorldPosition;
+// CPU: RendererShared.h의 TMaterialUniform prefix; RendererMaterials.cpp에서 업로드한다.
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
     vec4 BaseColor;
@@ -42,10 +43,7 @@ layout(push_constant) uniform TStaticMeshPushConstants
     mat4 ViewProjection;
 } Push;
 
-mat3 AccumulationNormalMatrix()
-{
-    return transpose(inverse(mat3(Push.Model)));
-}
+
 
 layout(std430, set = 1, binding = 10) readonly buffer TSurfaceOutgoingFluxScale
 {
@@ -99,6 +97,21 @@ const uint RENDER_MODE_TOTAL_SIMULATION_HEIGHT = 21u;
 
 #include "Debug/Views/SurfaceDebugColors.glsl"
 
+mat3 AccumulationNormalMatrix();
+void ComputeDebugDerivatives(out vec2 UVFootprint, out float WorldAreaPerUV);
+void RenderTexelGrid(uvec4 Range, vec2 UVFootprint);
+void RenderTexelArea(uvec4 Range, float WorldAreaPerUV);
+void RenderValidity(bool bSimulationEnabled, bool bGeometryValid);
+void RenderHeightGeometry(uvec4 Range, vec2 UVFootprint);
+void RenderOutgoingFluxScale(uint TexelIndex, bool bSimulationEnabled);
+void RenderMesoHeight(uvec4 Range, vec2 UVFootprint, uint TexelIndex);
+void RenderMacroGeometry();
+void RenderSurfaceID();
+void RenderNeighbors(uint TexelIndex);
+void RenderTransferWeight(uint TexelIndex);
+void RenderAccumulation(uvec4 Range, vec2 UVFootprint, uint TexelIndex);
+void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled);
+
 // #endregion
 
 // ============================================================
@@ -108,9 +121,116 @@ const uint RENDER_MODE_TOTAL_SIMULATION_HEIGHT = 21u;
 
 void main()
 {
+    vec2 UVFootprint;
+    float WorldAreaPerUV;
+    ComputeDebugDerivatives(UVFootprint, WorldAreaPerUV);
+    if (FragSurfaceIndex >= uint(SurfaceRanges.Values.length()))
+    {
+        OutColor = vec4(0.35, 0.35, 0.35, 1.0);
+        return;
+    }
+
+    uvec4 Range = SurfaceRanges.Values[FragSurfaceIndex];
+    if (Range.y == 0u || Range.z == 0u)
+    {
+        OutColor = vec4(0.35, 0.35, 0.35, 1.0);
+        return;
+    }
+
+    // texel grid와 면적 모드는 simulation data 없이 UV와 화면 미분값으로 바로 진단한다.
+    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
+    {
+        RenderTexelGrid(Range, UVFootprint);
+        return;
+    }
+    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_AREA)
+    {
+        RenderTexelArea(Range, WorldAreaPerUV);
+        return;
+    }
+
+    uvec2 TexelXY = min(uvec2(floor(clamp(FragUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
+    uint TexelIndex = Range.x + TexelXY.y * Range.y + TexelXY.x;
+    bool bInBuffer = TexelIndex < uint(TexelSurfaceIndices.Values.length()) &&
+                     TexelIndex < uint(TexelProfileIndices.Values.length());
+    bool bGeometryValid = bInBuffer && TexelSurfaceIndices.Values[TexelIndex] == FragSurfaceIndex;
+    bool bSimulationEnabled = bGeometryValid &&
+                              TexelProfileIndices.Values[TexelIndex] != InvalidIndex;
+
+    // geometry 유효성은 Surface 소속 여부, simulation 활성 여부는 profile 할당 여부로 구분한다.
+    if (Material.RenderMode == RENDER_MODE_SURFACE_VALIDITY)
+    {
+        RenderValidity(bSimulationEnabled, bGeometryValid);
+        return;
+    }
+    // UV cell 중심 샘플이 없는 곳도 세밀하게 만든 source boundary 면은 계속 표시한다.
+    if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY ||
+        Material.RenderMode == RENDER_MODE_TOTAL_SIMULATION_HEIGHT)
+    {
+        RenderHeightGeometry(Range, UVFootprint);
+        return;
+    }
+    if (!bGeometryValid)
+    {
+        OutColor = vec4(0.10, 0.10, 0.13, 1.0);
+        return;
+    }
+
+    // 이후 모드는 texel에 대응하는 solver 데이터를 확인한 뒤 각 buffer를 읽는다.
+    if (Material.RenderMode == RENDER_MODE_OUTGOING_FLUX_SCALE)
+    {
+        RenderOutgoingFluxScale(TexelIndex, bSimulationEnabled);
+        return;
+    }
+
+    if (Material.RenderMode == RENDER_MODE_MESO_HEIGHT)
+    {
+        RenderMesoHeight(Range, UVFootprint, TexelIndex);
+        return;
+    }
+    if (Material.RenderMode == RENDER_MODE_MACRO_GEOMETRY)
+    {
+        RenderMacroGeometry();
+        return;
+    }
+
+    if (Material.RenderMode == RENDER_MODE_SURFACE_ID)
+    {
+        RenderSurfaceID();
+        return;
+    }
+    if (Material.RenderMode == RENDER_MODE_NEIGHBOR_COUNT || Material.RenderMode == RENDER_MODE_SURFACE_SEAM)
+    {
+        RenderNeighbors(TexelIndex);
+        return;
+    }
+
+    if (Material.RenderMode == RENDER_MODE_SOLVER_TRANSFER_WEIGHT)
+    {
+        RenderTransferWeight(TexelIndex);
+        return;
+    }
+
+    if (Material.RenderMode == RENDER_MODE_ACCUMULATION)
+    {
+        RenderAccumulation(Range, UVFootprint, TexelIndex);
+        return;
+    }
+
+    RenderStateHeatmap(TexelIndex, bSimulationEnabled);
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+void ComputeDebugDerivatives(out vec2 UVFootprint, out float WorldAreaPerUV)
+{
     // fwidth와 dFdx/dFdy는 fragment별 조기 반환 전에 uniform 분기 안에서 계산한다.
-    vec2 UVFootprint = vec2(0.0);
-    float WorldAreaPerUV = 0.0;
+    UVFootprint = vec2(0.0);
+    WorldAreaPerUV = 0.0;
     bool HeightMode = Material.RenderMode == RENDER_MODE_MESO_HEIGHT || Material.RenderMode == RENDER_MODE_MESO_OFFSET ||
                       Material.RenderMode == RENDER_MODE_ACCUMULATION || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY ||
                       Material.RenderMode == RENDER_MODE_TOTAL_SIMULATION_HEIGHT;
@@ -128,205 +248,187 @@ void main()
         // 분자와 분모의 화면 면적이 상쇄되므로 카메라 거리와 무관한 월드 면적 비율을 얻는다.
         WorldAreaPerUV = UVArea > 0.0 ? length(cross(PositionDx, PositionDy)) / UVArea : 0.0;
     }
-    if (FragSurfaceIndex >= uint(SurfaceRanges.Values.length()))
+}
+
+void RenderTexelGrid(uvec4 Range, vec2 UVFootprint)
+{
+    OutColor = vec4(TexelGridColor(FragUV * vec2(Range.yz), UVFootprint * vec2(Range.yz)), 1.0);
+    return;
+}
+
+void RenderTexelArea(uvec4 Range, float WorldAreaPerUV)
+{
+    float Area = WorldAreaPerUV / (float(Range.y) * float(Range.z));
+    bool ValidArea = Area > 0.0 && !isnan(Area) && !isinf(Area);
+    OutColor = vec4(ValidArea ? TexelAreaColor(Area) : vec3(1.0, 0.18, 0.72), 1.0);
+    return;
+}
+
+void RenderValidity(bool bSimulationEnabled, bool bGeometryValid)
+{
+    vec3 Color = !bGeometryValid ? vec3(0.86, 0.12, 0.08) :
+                 (bSimulationEnabled ? vec3(0.10, 0.78, 0.24) : vec3(0.18, 0.48, 0.82));
+    OutColor = vec4(Color, 1.0);
+    return;
+}
+
+void RenderHeightGeometry(uvec4 Range, vec2 UVFootprint)
+{
+    vec3 Normal = normalize(FragMesoNormalWS);
+    float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
+    OutColor = vec4(HeightGridColor(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Range, UVFootprint), Material.BaseColor.a);
+    return;
+}
+
+void RenderOutgoingFluxScale(uint TexelIndex, bool bSimulationEnabled)
+{
+    if (Material.StateChannelCount == 0u || Material.DebugStateChannel >= Material.StateChannelCount)
+    {
+        OutColor = vec4(0.35, 0.35, 0.38, 1.0);
+        return;
+    }
+    uint ScaleIndex = TexelIndex * Material.StateChannelCount + Material.DebugStateChannel;
+    uint ProfileIndex = TexelProfileIndices.Values[TexelIndex];
+    uint ProfileRecordIndex = ProfileIndex * Material.StateChannelCount + Material.DebugStateChannel;
+    if (!bSimulationEnabled || ScaleIndex >= uint(OutgoingFluxScale.Values.length()) ||
+        ProfileRecordIndex >= uint(ProfileSupported.Values.length()) ||
+        ProfileSupported.Values[ProfileRecordIndex] == 0u)
+    {
+        OutColor = vec4(0.42, 0.42, 0.45, 1.0);
+        return;
+    }
+    OutColor = vec4(OutgoingFluxScaleColor(OutgoingFluxScale.Values[ScaleIndex]), 1.0);
+    return;
+}
+
+void RenderMesoHeight(uvec4 Range, vec2 UVFootprint, uint TexelIndex)
+{
+    if (TexelIndex >= uint(GeometryScalars.Values.length()))
     {
         OutColor = vec4(0.35, 0.35, 0.35, 1.0);
         return;
     }
+    float Height = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+    float SignedT = clamp(0.5 + atan(Height * 16.0) / 3.14159265, 0.0, 1.0);
+    vec3 Negative = vec3(0.12, 0.52, 0.92);
+    vec3 Zero = vec3(0.12, 0.13, 0.17);
+    vec3 Positive = vec3(1.0, 0.42, 0.10);
+    vec3 Color = SignedT < 0.5 ? mix(Negative, Zero, SignedT * 2.0) : mix(Zero, Positive, (SignedT - 0.5) * 2.0);
+    OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1.0);
+    return;
+}
 
-    uvec4 Range = SurfaceRanges.Values[FragSurfaceIndex];
-    if (Range.y == 0u || Range.z == 0u)
+void RenderMacroGeometry()
+{
+    vec3 Normal = normalize(FragNormal);
+    float Diffuse = abs(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))));
+    OutColor = vec4(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Material.BaseColor.a);
+    return;
+}
+
+void RenderSurfaceID()
+{
+    // Surface ID 뷰는 조명과 무관하게 구분할 수 있도록 선명한 고정 색상표를 사용한다.
+    const vec3 SurfaceIdPalette[8] = vec3[8](
+        vec3(1.00, 0.05, 0.05), // red
+        vec3(0.05, 0.25, 1.00), // blue
+        vec3(0.05, 0.90, 0.12), // green
+        vec3(1.00, 0.82, 0.02), // yellow
+        vec3(1.00, 0.04, 0.78), // magenta
+        vec3(0.00, 0.90, 0.95), // cyan
+        vec3(1.00, 0.35, 0.02), // orange
+        vec3(0.48, 0.08, 1.00)  // violet
+    );
+    vec3 Color = SurfaceIdPalette[FragSurfaceIndex % 8u];
+    OutColor = vec4(Color, 1.0);
+    return;
+}
+
+void RenderNeighbors(uint TexelIndex)
+{
+    if (TexelIndex >= uint(NeighborIndices.Values.length()) ||
+        TexelIndex >= uint(TexelChartIndices.Values.length()))
     {
         OutColor = vec4(0.35, 0.35, 0.35, 1.0);
         return;
     }
+    uint NeighborCount = 0u;
+    bool bHasCrossChartNeighbor = false;
+    uint Chart = TexelChartIndices.Values[TexelIndex];
+    for (uint DirectionIndex = 0u; DirectionIndex < 8u; ++DirectionIndex)
+    {
+        uint Neighbor = NeighborIndices.Values[TexelIndex].Indices[DirectionIndex];
+        if (Neighbor == InvalidIndex || Neighbor >= uint(TexelChartIndices.Values.length())) continue;
+        ++NeighborCount;
+        uint NeighborChart = TexelChartIndices.Values[Neighbor];
+        bHasCrossChartNeighbor = bHasCrossChartNeighbor ||
+                                 (Chart != InvalidIndex && NeighborChart != InvalidIndex && NeighborChart != Chart);
+    }
+    if (Material.RenderMode == RENDER_MODE_NEIGHBOR_COUNT)
+    {
+        float T = float(NeighborCount) / 8.0;
+        OutColor = vec4(mix(vec3(0.08, 0.10, 0.18), vec3(0.95, 0.72, 0.12), T), 1.0);
+    }
+    else
+    {
+        OutColor = vec4(bHasCrossChartNeighbor ? vec3(1.0, 0.18, 0.72) : vec3(0.12, 0.16, 0.22), 1.0);
+    }
+    return;
+}
 
-    // texel grid와 면적 모드는 simulation data 없이 UV와 화면 미분값으로 바로 진단한다.
-    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
+void RenderTransferWeight(uint TexelIndex)
+{
+    if (TexelIndex >= uint(TransferWeightDebugAverages.Values.length()))
     {
-        OutColor = vec4(TexelGridColor(FragUV * vec2(Range.yz), UVFootprint * vec2(Range.yz)), 1.0);
+        OutColor = vec4(0.35, 0.35, 0.35, 1.0);
         return;
     }
-    if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_AREA)
-    {
-        float Area = WorldAreaPerUV / (float(Range.y) * float(Range.z));
-        bool ValidArea = Area > 0.0 && !isnan(Area) && !isinf(Area);
-        OutColor = vec4(ValidArea ? TexelAreaColor(Area) : vec3(1.0, 0.18, 0.72), 1.0);
-        return;
-    }
+    vec4 Values = TransferWeightDebugAverages.Values[TexelIndex];
+    uint Component = uint(clamp(Material.DebugViewParameter, 0.0, 3.0));
+    float Value = Component == 0u ? Values.x :
+                  (Component == 1u ? Values.y : (Component == 2u ? Values.z : Values.w));
+    OutColor = vec4(TransferWeightColor(Value), 1.0);
+    return;
+}
 
-    uvec2 TexelXY = min(uvec2(floor(clamp(FragUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
-    uint TexelIndex = Range.x + TexelXY.y * Range.y + TexelXY.x;
-    bool bInBuffer = TexelIndex < uint(TexelSurfaceIndices.Values.length()) &&
-                     TexelIndex < uint(TexelProfileIndices.Values.length());
-    bool bGeometryValid = bInBuffer && TexelSurfaceIndices.Values[TexelIndex] == FragSurfaceIndex;
-    bool bSimulationEnabled = bGeometryValid &&
-                              TexelProfileIndices.Values[TexelIndex] != InvalidIndex;
-
-    // geometry 유효성은 Surface 소속 여부, simulation 활성 여부는 profile 할당 여부로 구분한다.
-    if (Material.RenderMode == RENDER_MODE_SURFACE_VALIDITY)
+void RenderAccumulation(uvec4 Range, vec2 UVFootprint, uint TexelIndex)
+{
+    // 누적 높이를 cavity fill, cavity 초과분, 표면 위 적층 높이로 나눠 표시한다.
+    TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel,
+                                            Material.StateChannelCount, Material.DebugOptions.z,
+                                            AccumulationNormalMatrix());
+    if (D.Status != 3u)
     {
-        vec3 Color = !bGeometryValid ? vec3(0.86, 0.12, 0.08) :
-                     (bSimulationEnabled ? vec3(0.10, 0.78, 0.24) : vec3(0.18, 0.48, 0.82));
-        OutColor = vec4(Color, 1.0);
-        return;
-    }
-    // UV cell 중심 샘플이 없는 곳도 세밀하게 만든 source boundary 면은 계속 표시한다.
-    if (Material.RenderMode == RENDER_MODE_MESO_OFFSET || Material.RenderMode == RENDER_MODE_FINAL_GEOMETRY ||
-        Material.RenderMode == RENDER_MODE_TOTAL_SIMULATION_HEIGHT)
-    {
-        vec3 Normal = normalize(FragMesoNormalWS);
-        float Diffuse = max(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
-        OutColor = vec4(HeightGridColor(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Range, UVFootprint), Material.BaseColor.a);
-        return;
-    }
-    if (!bGeometryValid)
-    {
-        OutColor = vec4(0.10, 0.10, 0.13, 1.0);
-        return;
-    }
-
-    // 이후 모드는 texel에 대응하는 solver 데이터를 확인한 뒤 각 buffer를 읽는다.
-    if (Material.RenderMode == RENDER_MODE_OUTGOING_FLUX_SCALE)
-    {
-        if (Material.StateChannelCount == 0u || Material.DebugStateChannel >= Material.StateChannelCount)
-        {
-            OutColor = vec4(0.35, 0.35, 0.38, 1.0);
-            return;
-        }
-        uint ScaleIndex = TexelIndex * Material.StateChannelCount + Material.DebugStateChannel;
-        uint ProfileIndex = TexelProfileIndices.Values[TexelIndex];
-        uint ProfileRecordIndex = ProfileIndex * Material.StateChannelCount + Material.DebugStateChannel;
-        if (!bSimulationEnabled || ScaleIndex >= uint(OutgoingFluxScale.Values.length()) ||
-            ProfileRecordIndex >= uint(ProfileSupported.Values.length()) ||
-            ProfileSupported.Values[ProfileRecordIndex] == 0u)
-        {
-            OutColor = vec4(0.42, 0.42, 0.45, 1.0);
-            return;
-        }
-        OutColor = vec4(OutgoingFluxScaleColor(OutgoingFluxScale.Values[ScaleIndex]), 1.0);
-        return;
-    }
-
-    if (Material.RenderMode == RENDER_MODE_MESO_HEIGHT)
-    {
-        if (TexelIndex >= uint(GeometryScalars.Values.length()))
-        {
-            OutColor = vec4(0.35, 0.35, 0.35, 1.0);
-            return;
-        }
-        float Height = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
-        float SignedT = clamp(0.5 + atan(Height * 16.0) / 3.14159265, 0.0, 1.0);
-        vec3 Negative = vec3(0.12, 0.52, 0.92);
-        vec3 Zero = vec3(0.12, 0.13, 0.17);
-        vec3 Positive = vec3(1.0, 0.42, 0.10);
-        vec3 Color = SignedT < 0.5 ? mix(Negative, Zero, SignedT * 2.0) : mix(Zero, Positive, (SignedT - 0.5) * 2.0);
-        OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1.0);
-        return;
-    }
-    if (Material.RenderMode == RENDER_MODE_MACRO_GEOMETRY)
-    {
-        vec3 Normal = normalize(FragNormal);
-        float Diffuse = abs(dot(Normal, normalize(vec3(0.35, 0.55, 1.0))));
-        OutColor = vec4(Material.BaseColor.rgb * (0.28 + 0.72 * Diffuse), Material.BaseColor.a);
-        return;
-    }
-
-    if (Material.RenderMode == RENDER_MODE_SURFACE_ID)
-    {
-        // Surface ID 뷰는 조명과 무관하게 구분할 수 있도록 선명한 고정 색상표를 사용한다.
-        const vec3 SurfaceIdPalette[8] = vec3[8](
-            vec3(1.00, 0.05, 0.05), // red
-            vec3(0.05, 0.25, 1.00), // blue
-            vec3(0.05, 0.90, 0.12), // green
-            vec3(1.00, 0.82, 0.02), // yellow
-            vec3(1.00, 0.04, 0.78), // magenta
-            vec3(0.00, 0.90, 0.95), // cyan
-            vec3(1.00, 0.35, 0.02), // orange
-            vec3(0.48, 0.08, 1.00)  // violet
-        );
-        vec3 Color = SurfaceIdPalette[FragSurfaceIndex % 8u];
-        OutColor = vec4(Color, 1.0);
-        return;
-    }
-    if (Material.RenderMode == RENDER_MODE_NEIGHBOR_COUNT || Material.RenderMode == RENDER_MODE_SURFACE_SEAM)
-    {
-        if (TexelIndex >= uint(NeighborIndices.Values.length()) ||
-            TexelIndex >= uint(TexelChartIndices.Values.length()))
-        {
-            OutColor = vec4(0.35, 0.35, 0.35, 1.0);
-            return;
-        }
-        uint NeighborCount = 0u;
-        bool bHasCrossChartNeighbor = false;
-        uint Chart = TexelChartIndices.Values[TexelIndex];
-        for (uint DirectionIndex = 0u; DirectionIndex < 8u; ++DirectionIndex)
-        {
-            uint Neighbor = NeighborIndices.Values[TexelIndex].Indices[DirectionIndex];
-            if (Neighbor == InvalidIndex || Neighbor >= uint(TexelChartIndices.Values.length())) continue;
-            ++NeighborCount;
-            uint NeighborChart = TexelChartIndices.Values[Neighbor];
-            bHasCrossChartNeighbor = bHasCrossChartNeighbor ||
-                                     (Chart != InvalidIndex && NeighborChart != InvalidIndex && NeighborChart != Chart);
-        }
-        if (Material.RenderMode == RENDER_MODE_NEIGHBOR_COUNT)
-        {
-            float T = float(NeighborCount) / 8.0;
-            OutColor = vec4(mix(vec3(0.08, 0.10, 0.18), vec3(0.95, 0.72, 0.12), T), 1.0);
-        }
-        else
-        {
-            OutColor = vec4(bHasCrossChartNeighbor ? vec3(1.0, 0.18, 0.72) : vec3(0.12, 0.16, 0.22), 1.0);
-        }
-        return;
-    }
-
-    if (Material.RenderMode == RENDER_MODE_SOLVER_TRANSFER_WEIGHT)
-    {
-        if (TexelIndex >= uint(TransferWeightDebugAverages.Values.length()))
-        {
-            OutColor = vec4(0.35, 0.35, 0.35, 1.0);
-            return;
-        }
-        vec4 Values = TransferWeightDebugAverages.Values[TexelIndex];
-        uint Component = uint(clamp(Material.DebugViewParameter, 0.0, 3.0));
-        float Value = Component == 0u ? Values.x :
-                      (Component == 1u ? Values.y : (Component == 2u ? Values.z : Values.w));
-        OutColor = vec4(TransferWeightColor(Value), 1.0);
-        return;
-    }
-
-    if (Material.RenderMode == RENDER_MODE_ACCUMULATION)
-    {
-        // 누적 높이를 cavity fill, cavity 초과분, 표면 위 적층 높이로 나눠 표시한다.
-        TDebugAccumulation D = DebugAccumulation(TexelIndex, Material.DebugStateChannel,
-                                                Material.StateChannelCount, Material.DebugOptions.z,
-                                                AccumulationNormalMatrix());
-        if (D.Status != 3u)
-        {
-            vec3 Color = D.Status == 4u ? vec3(1,0,1) : (D.Status == 2u ? vec3(0.42,0.42,0.45) : vec3(0.18,0.20,0.24));
-            OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1);
-            return;
-        }
-        uint Component = Material.DebugFlags.y;
-        if (Component == 4u && (D.CavityDepth <= 1e-8 || D.Fill <= 0.0))
-        {
-            OutColor = vec4(HeightGridColor(vec3(0.12, 0.13, 0.15), Range, UVFootprint), 1);
-            return;
-        }
-        float Value = Component == 1u ? D.CavityHeight :
-                      (Component == 2u ? D.FollowingHeight :
-                       ((Component == 3u || Component == 4u) ? D.Fill : D.Height));
-        float Limit = Component == 0u ? D.CapacityHeight :
-                      (Component == 1u ? D.CapacityCavityHeight :
-                       (Component == 2u ? D.CapacityFollowingHeight : 1.0));
-        Limit = max(Limit, 1e-12);
-        vec3 Color = HeatColor(Value / Limit);
-        if (Value > Limit) Color = vec3(1,0.25,0.05);
+        vec3 Color = D.Status == 4u ? vec3(1,0,1) : (D.Status == 2u ? vec3(0.42,0.42,0.45) : vec3(0.18,0.20,0.24));
         OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1);
         return;
     }
+    uint Component = Material.DebugFlags.y;
+    if (Component == 4u && (D.CavityDepth <= 1e-8 || D.Fill <= 0.0))
+    {
+        OutColor = vec4(HeightGridColor(vec3(0.12, 0.13, 0.15), Range, UVFootprint), 1);
+        return;
+    }
+    float Value = Component == 1u ? D.CavityHeight :
+                  (Component == 2u ? D.FollowingHeight :
+                   ((Component == 3u || Component == 4u) ? D.Fill : D.Height));
+    float Limit = Component == 0u ? D.CapacityHeight :
+                  (Component == 1u ? D.CapacityCavityHeight :
+                   (Component == 2u ? D.CapacityFollowingHeight : 1.0));
+    Limit = max(Limit, 1e-12);
+    vec3 Color = HeatColor(Value / Limit);
+    if (Value > Limit) Color = vec3(1,0.25,0.05);
+    OutColor = vec4(HeightGridColor(Color, Range, UVFootprint), 1);
+    return;
+}
 
+mat3 AccumulationNormalMatrix()
+{
+    return transpose(inverse(mat3(Push.Model)));
+}
+
+void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled)
+{
     if (Material.RenderMode != RENDER_MODE_SURFACE_STATE_HEATMAP)
     {
         OutColor = vec4(0.35, 0.35, 0.38, 1.0);
@@ -417,4 +519,5 @@ void main()
     if (Value > 1.0) Color = vec3(1,0.25,0.05);
     OutColor = vec4(ApplyReliefLighting(Color, FragMesoNormalWS), 1.0);
 }
+
 // #endregion

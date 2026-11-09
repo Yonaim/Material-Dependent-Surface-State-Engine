@@ -14,6 +14,7 @@ layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec2 InUV;
 layout(location = 3) in vec4 InTangent;
+// CPU: RendererShared.h의 TMaterialUniform prefix; RendererMaterials.cpp에서 업로드한다.
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
     vec4 BaseColor;
@@ -45,6 +46,9 @@ layout(location = 4) flat out uint FragSurfaceIndex;
 layout(location = 5) out vec3 FragMesoNormalWS;
 layout(location = 6) out vec3 FragWorldPosition;
 
+void WriteMesoNormal(mat3 NormalMatrix);
+void ApplyMesoOffset(inout vec3 LocalPosition);
+
 // #endregion
 
 // ============================================================
@@ -59,7 +63,24 @@ void main()
     FragTangent = normalize(mat3(Push.Model) * InTangent.xyz);
     FragTangentSign = InTangent.w;
     FragUV = InUV;
+    // RendererCommands.cpp의 draw firstInstance는 Section.Surface를 전달한다.
     FragSurfaceIndex = gl_InstanceIndex;
+    WriteMesoNormal(NormalMatrix);
+    vec3 LocalPosition = InPosition;
+    // Texel Area 진단은 Meso Offset과 Normal Map을 적용하기 전의 위치와 instance scale을 사용한다.
+    FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
+    ApplyMesoOffset(LocalPosition);
+    gl_Position = Push.ViewProjection * Push.Model * vec4(LocalPosition, 1.0);
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+void WriteMesoNormal(mat3 NormalMatrix)
+{
     // 상태 히트맵에 입체감을 더할 Meso Normal을 조회해 월드 공간으로 변환한다.
     FragMesoNormalWS = FragNormal;
     uint Surface = uint(gl_InstanceIndex);
@@ -74,9 +95,10 @@ void main()
                 FragMesoNormalWS = normalize(NormalMatrix * MesoNormals.Values[TexelIndex].xyz);
         }
     }
-    vec3 LocalPosition = InPosition;
-    // Texel Area 진단은 Meso Offset과 Normal Map을 적용하기 전의 위치와 instance scale을 사용한다.
-    FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
+}
+
+void ApplyMesoOffset(inout vec3 LocalPosition)
+{
     if (Material.RenderMode == 14u)
     {
         // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.
@@ -98,6 +120,6 @@ void main()
             }
         }
     }
-    gl_Position = Push.ViewProjection * Push.Model * vec4(LocalPosition, 1.0);
 }
+
 // #endregion

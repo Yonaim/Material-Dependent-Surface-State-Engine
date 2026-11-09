@@ -85,6 +85,13 @@
 - **문서 동기화:** Project Brief에 모든 shader 적용 정책을 명시하고 README·Shader Source Index·Current Work·Validation 갱신. 계산/리소스/ABI/패스 순서 변경이 없어 Flow/Contract 본문 변경 없음.
 - **검증:** 실제 설치 provider를 mock 값 API와 실행해 69개·103개 typed/default Region 확인. LF/CRLF 회귀 통과, 69개 주석 제외 코드·개행 동일. 150개 glslc/spirv-val 통과 및 기준선 SPIR-V 모두 바이트 동일. CUA native pipe 연결 실패로 UI 화면은 미확인. 전체 C++/CTest/GPU 실행 반복 없음. [증거](../../../Build/Validation/20261109-215915-shader-folding-fix/summary.md). 커밋/push 없음.
 
+## 2026-11-09 — GLSL 상위 흐름 정리 (기존 4번)
+- **읽은 문서:** AGENTS·Document Map·Code Style·GLSL·Source Comments·Verification, Solver/CPU–GPU 계약, Debug/Overlay/Solver Source와 기존 검증 기록 및 CPU 바인딩·dispatch 구현.
+- **코드 변경:** Debug의 조회·변위/미분·진단 출력, Overlay의 dirty scan·예약·baseline/삼각형 compaction·segment 출력/combined sampling·normal·layer 합성, Solver의 raw outgoing·gather·state 갱신·reaction 적분을 책임별 helper로 추출. Geometry/Coverage helper 정의를 main 아래 배치. 총 13개 파일이며 기존 layout·수식·접근/분기 우선순위·barrier 참여·variant scope 보존. Shader folding은 전체 69개·116개 영역. 기존 C++ 5개 및 테스트 기대값 유지.
+- **문서 동기화:** Debug/Overlay/Solver Source·Shader Index·README·Current Work·Validation 갱신. Contracts/Flows 검토 결과 pass 순서·수용 기준·ABI가 같아 계약/흐름 본문 변경 불필요.
+- **검증:** 최종 build 성공, shader 150개 컴파일/spirv-val 통과 및 reflection 동일. CTest 7 통과/7 실패·skip 0, 상태/실패 원인 문구 기준선 동일. 별도 debug helper는 전후 동일한 기존 assertion 실패이고 도달한 GPU 출력 16개 동일, validation ERROR 없음. Region provider 116개 인식, CRLF-aware whitespace 확인. Overlay 전체·모든 mode/variant GPU 출력·성능/장시간/다른 장치는 미검증. [증거](../../../Build/Validation/20261109-221158-glsl-top-down/summary.md).
+- **커밋:** 미커밋·push 없음. 다음 단계는 기존 5번 Unreal-Inspired 네이밍.
+
 ## 2026-11-09 — 누적 변경 분할 커밋
 
 - 사용자 요청에 따라 기존 변경을 의미 단위로 분리한다. 소스 작업 폴더를 유지하고 보존된 단계별 스냅샷으로 인덱스를 구성했다.
@@ -92,3 +99,4 @@
 - 분리 항목:
   - Refactor(CPP): 데모 로딩·프레임·명령 기록의 상위 흐름 분리
   - Fix(Shaders): 누락 Region과 CRLF 자동 접기 설정 보완
+  - Refactor(Shaders): 디버그·오버레이·솔버 진입점과 helper 정리

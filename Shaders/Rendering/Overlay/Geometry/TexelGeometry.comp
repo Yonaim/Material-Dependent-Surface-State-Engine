@@ -48,6 +48,81 @@ shared uint SparseRangeHeight;
 shared uint SparseTileX;
 shared uint SparseTileY;
 
+uint CapacityTileCount();
+
+uint NormalListBase();
+
+bool ResolveCandidateTile(uint Candidate);
+
+uint ResolveTexel();
+
+float DisplayAccumulationHeight(uint Texel, float DisplayScale);
+
+float DisplayHeight(uint Texel);
+
+float SeamNormalBlend(uint Texel);
+
+vec3 CachedFinalNormal(uint Texel);
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+
+void main()
+{
+    uint T = ResolveTexel();
+    if (T >= Push.TexelCount) return;
+
+    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+    uint TileFlag = 1u;
+    if (Push.UseActiveTileList == 0u)
+    {
+        uint Tile = T / TilePixels;
+        TileFlag = GeometryCache.Values[Push.TexelCount * 4u + Tile] & 1u;
+        if (TileFlag == 0u)
+        {
+            // Legacy/full-dispatch path: inactive tiles still receive their baseline output.
+            float BaseHeight = GeometryScalars.Values[T].MesoVirtualHeight;
+            if (isnan(BaseHeight) || isinf(BaseHeight)) BaseHeight = 0.0;
+            vec3 BaseNormal = mix(MesoNormals.Values[T].xyz, Normals.Values[T].xyz,
+                                  SeamNormalBlend(T));
+            if (any(isnan(BaseNormal)) || any(isinf(BaseNormal)) || dot(BaseNormal, BaseNormal) < 1e-12)
+                BaseNormal = Normals.Values[T].xyz;
+            Output.Values[T].HeightAndNormal = vec4(BaseHeight * Push.GeometryDisplayScale, normalize(BaseNormal));
+            return;
+        }
+    }
+
+    vec3 N = Normals.Values[T].xyz;
+    float H = GeometryScalars.Values[T].MesoVirtualHeight;
+    if (isnan(H) || isinf(H)) H = 0.0;
+    vec3 FinalNormal = MesoNormals.Values[T].xyz;
+    if (TexelSurfaceIndices.Values[T] != 0xffffffffu && Push.Accumulation != 0u)
+    {
+        float CachedHeight = DisplayHeight(T);
+        if (!isnan(CachedHeight)) H = CachedHeight;
+        // Sparse mode schedules a one-tile halo around dirty tiles. Even if this tile is currently inactive, recomputing
+        // the normal lets an adjacent active tile bend the shared boundary continuously.
+        FinalNormal = CachedFinalNormal(T);
+    }
+    if (any(isnan(FinalNormal)) || any(isinf(FinalNormal)) || dot(FinalNormal, FinalNormal) < 1e-12)
+        FinalNormal = N;
+    if (Push.Accumulation == 0u)
+        FinalNormal = mix(FinalNormal, N, SeamNormalBlend(T));
+    H *= Push.GeometryDisplayScale;
+    if (isnan(H) || isinf(H)) H = 0.0;
+    Output.Values[T].HeightAndNormal = vec4(H, normalize(FinalNormal));
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
 uint CapacityTileCount()
 {
     return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
@@ -311,56 +386,4 @@ vec3 CachedFinalNormal(uint Texel)
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
 
-// #endregion
-
-// ============================================================
-// 01. Main Process
-// ============================================================
-// #region 01_Main_Process
-
-void main()
-{
-    uint T = ResolveTexel();
-    if (T >= Push.TexelCount) return;
-
-    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
-    uint TileFlag = 1u;
-    if (Push.UseActiveTileList == 0u)
-    {
-        uint Tile = T / TilePixels;
-        TileFlag = GeometryCache.Values[Push.TexelCount * 4u + Tile] & 1u;
-        if (TileFlag == 0u)
-        {
-            // Legacy/full-dispatch path: inactive tiles still receive their baseline output.
-            float BaseHeight = GeometryScalars.Values[T].MesoVirtualHeight;
-            if (isnan(BaseHeight) || isinf(BaseHeight)) BaseHeight = 0.0;
-            vec3 BaseNormal = mix(MesoNormals.Values[T].xyz, Normals.Values[T].xyz,
-                                  SeamNormalBlend(T));
-            if (any(isnan(BaseNormal)) || any(isinf(BaseNormal)) || dot(BaseNormal, BaseNormal) < 1e-12)
-                BaseNormal = Normals.Values[T].xyz;
-            Output.Values[T].HeightAndNormal = vec4(BaseHeight * Push.GeometryDisplayScale, normalize(BaseNormal));
-            return;
-        }
-    }
-
-    vec3 N = Normals.Values[T].xyz;
-    float H = GeometryScalars.Values[T].MesoVirtualHeight;
-    if (isnan(H) || isinf(H)) H = 0.0;
-    vec3 FinalNormal = MesoNormals.Values[T].xyz;
-    if (TexelSurfaceIndices.Values[T] != 0xffffffffu && Push.Accumulation != 0u)
-    {
-        float CachedHeight = DisplayHeight(T);
-        if (!isnan(CachedHeight)) H = CachedHeight;
-        // Sparse mode schedules a one-tile halo around dirty tiles. Even if this tile is currently inactive, recomputing
-        // the normal lets an adjacent active tile bend the shared boundary continuously.
-        FinalNormal = CachedFinalNormal(T);
-    }
-    if (any(isnan(FinalNormal)) || any(isinf(FinalNormal)) || dot(FinalNormal, FinalNormal) < 1e-12)
-        FinalNormal = N;
-    if (Push.Accumulation == 0u)
-        FinalNormal = mix(FinalNormal, N, SeamNormalBlend(T));
-    H *= Push.GeometryDisplayScale;
-    if (isnan(H) || isinf(H)) H = 0.0;
-    Output.Values[T].HeightAndNormal = vec4(H, normalize(FinalNormal));
-}
 // #endregion

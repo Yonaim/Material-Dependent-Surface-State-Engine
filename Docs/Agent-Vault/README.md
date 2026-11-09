@@ -66,6 +66,14 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 - 이번 동기화의 기준 원본은 저장소 루트 `Universal-Agent-Vault/`다. 범용 규칙만 병합하고 MDSS의 Context·Architecture·프로필·실험 기록은 유지한다. JS/TS는 규칙을 제공하되 실제 프로젝트 소스가 도입될 때만 활성화한다.
 
 
+### MDSS Shader 자동 접기 확인
+
+- 프로젝트 설정에서 모든 shader(작은 include/placeholder 포함)에 comment Region을 적용한다. 현재 69개 파일·116개 영역이다.
+- `foldOnOpen.targets: ["AllMarkerRegions"]`는 인식된 Region을 접는 명령 설정이다. GLSL의 마커 인식은 Custom Folding 설정/공급자가 담당한다.
+- root/vault 설정의 `maptz.regionfolder.[glsl]`은 **CRLF를 허용하는 정규식**과 `defaultFoldStartRegex`를 사용한다. Maptz의 `collapseDefaultRegionsOnOpen`도 활성화했다. 이전 `(.*)$` 형식은 확장의 split("\n")에서 남은 CR을 처리하지 못했다.
+- GLSL 설정을 새로 추가한 실행 중 창은 **Developer: Reload Window** 후 shader를 다시 연다. 필요하면 **Fold All Regions**를 실행한다. 파일의 언어 모드는 GLSL이어야 한다.
+- [원인 재현·검증 기록](../../Build/Validation/20261109-215915-shader-folding-fix/summary.md). 실제 확장 파서에서 인식과 default Region 지정은 검증했지만, UI 연결 실패로 접힌 화면 자체는 미관찰이다.
+
 ## 1. 프로젝트 정의 — 네 문서 필수
 
 - [ ] [`Project Brief`](01_Project-Context/00_Project-Brief.md): 실제 목표, 범위, 저장소, 엔트리 포인트, 빌드·테스트 방법을 기입한다.

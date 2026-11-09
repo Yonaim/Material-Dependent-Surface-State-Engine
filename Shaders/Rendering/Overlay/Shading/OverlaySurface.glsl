@@ -41,6 +41,271 @@ layout(location = 6) flat in mat3 FragNormalMatrix;
 layout(location = 0) out vec4 OutColor;
 
 #ifdef OVERLAY_COMBINED
+vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback);
+
+bool SampleSeamPartnerStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channels,
+                             bool UseRenderTexture, out vec4 PartnerStates,
+                             out vec3 SeamNormal, out float SeamBlend);
+
+bool HasVisibleOverlayState(vec4 States, uint EnabledEffects);
+#endif
+
+#include "Rendering/Overlay/Shading/OverlayAppearance.glsl"
+
+
+#ifdef OVERLAY_COMBINED
+void ShadeCombinedOverlay(float Cutoff);
+vec4 SampleCombinedOverlayStates(uint EnabledEffects, bool CoverageSmoothing, bool PrecomputedSmoothing, bool UseRenderTexture);
+vec3 ResolveCombinedOverlayNormal(inout vec4 States, uint ShadingDiagnostic, bool UseRenderTexture, out float NormalSampleWeight);
+void CompositeOverlayLayers(vec4 States, uint EnabledEffects, float IceCoverage, float Cutoff, vec3 N, vec3 V, uint ShadingDiagnostic, float NormalSampleWeight);
+#endif
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+
+void main()
+{
+    // 아주 낮은 coverage는 버리고 재질별 branch에서 색, 조명, 투명도를 정한다.
+    const float Cutoff = 0.02;
+#ifndef OVERLAY_COMBINED
+#ifdef OVERLAY_LAVA
+    if (FragCoverage <= Material.DemoOptions.y) discard;
+#else
+    if (FragCoverage <= Cutoff) discard;
+#endif
+#endif
+#ifdef OVERLAY_COMBINED
+    ShadeCombinedOverlay(Cutoff);
+#elif defined(OVERLAY_LAVA)
+    if (FragCoverage <= Material.DemoOptions.y) discard;
+    vec3 N = normalize(FragNormal);
+    if (!gl_FrontFacing) N = -N;
+    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
+    vec3 Color = ShadeSurface(LavaColor(FragCoverage), N, V,
+                              0.34, Material.AmbientLight);
+    OutColor = vec4(min(Color + LavaEmission(FragCoverage, Material.DemoOptions.y), vec3(1.0)), 1.0);
+#elif defined(OVERLAY_WATER)
+    vec3 N = normalize(FragNormal);
+    if (!gl_FrontFacing) N = -N;
+    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
+    OutColor = ShadeWaterFilmLayer(N, V, VisibleWaterCoverage(FragCoverage, FragUV));
+#else
+    vec3 N = normalize(FragNormal);
+    if (!gl_FrontFacing) N = -N;
+    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
+    vec3 Color = ShadeSurface(MapEffectColor(1u, FragCoverage), N, V, Material.DemoOptions.z,
+                              Material.AmbientLight, 0.0);
+    OutColor = vec4(Color, 1.0);
+#endif
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+#ifdef OVERLAY_COMBINED
+
+void ShadeCombinedOverlay(float Cutoff)
+{
+    uint EnabledEffects = Material.DemoExtraStateChannels.w;
+    uint PerformanceFlags = Material.DemoExtraStateChannels.z;
+    bool CoverageSmoothing = (PerformanceFlags & 1u) != 0u;
+
+#if defined(MDSS_FRAGMENT_MODE)
+    const bool PrecomputedSmoothing = MDSS_FRAGMENT_MODE == 2;
+    const bool UseRenderTexture = MDSS_FRAGMENT_MODE != 0;
+#else
+    bool PrecomputedSmoothing = (PerformanceFlags & 2u) != 0u;
+    bool UseRenderTexture = (PerformanceFlags & 4u) != 0u || PrecomputedSmoothing;
+#endif
+
+    vec4 States = SampleCombinedOverlayStates(EnabledEffects, CoverageSmoothing, PrecomputedSmoothing, UseRenderTexture);
+
+    float IceCoverage = (EnabledEffects & 32u) != 0u && Material.ExtraDemoBindings.z < Material.StateChannelCount
+        ? (CoverageSmoothing
+            ? SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount)
+            : SampleStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount)) : 0.0;
+    IceCoverage = clamp(IceCoverage, 0.0, 1.0);
+    // A render-texture sample can be empty right on an atlas boundary even
+    // though the welded overlay vertex remains occupied.
+    if (!HasVisibleOverlayState(States, EnabledEffects) && IceCoverage <= Cutoff && FragCoverage <= Cutoff) discard;
+    uint ShadingDiagnostic = Material.DemoExtraStateChannels.y;
+    float NormalSampleWeight;
+    vec3 N = ResolveCombinedOverlayNormal(States, ShadingDiagnostic, UseRenderTexture, NormalSampleWeight);
+
+    if (!HasVisibleOverlayState(States, EnabledEffects) && IceCoverage <= Cutoff) discard;
+    if (!gl_FrontFacing) N = -N;
+
+    if (ShadingDiagnostic == 2u)
+    {
+        OutColor = vec4(N * 0.5 + 0.5, 1.0);
+        return;
+    }
+
+    if (ShadingDiagnostic == 3u)
+    {
+        OutColor = gl_FrontFacing ? vec4(0.0, 0.8, 0.0, 1.0) : vec4(0.9, 0.0, 0.0, 1.0);
+        return;
+    }
+    // Only the lighting input changes. Geometry, coverage and the GGX BRDF stay
+    // identical, so this mode separates normal variation from the reflection math.
+    if (ShadingDiagnostic == 1u) N = vec3(0.0, 0.0, 1.0);
+    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
+
+    CompositeOverlayLayers(States, EnabledEffects, IceCoverage, Cutoff, N, V, ShadingDiagnostic, NormalSampleWeight);
+}
+
+vec4 SampleCombinedOverlayStates(uint EnabledEffects, bool CoverageSmoothing, bool PrecomputedSmoothing, bool UseRenderTexture)
+{
+    vec4 States = UseRenderTexture
+        ? SampleRenderStates(FragSurfaceIndex, FragUV,
+                             uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
+                             Material.StateChannelCount)
+        : SampleStateSaturations(FragSurfaceIndex, FragUV,
+                                 uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
+                                 Material.StateChannelCount);
+
+    if (CoverageSmoothing && !PrecomputedSmoothing)
+    {
+        if ((EnabledEffects & 2u) != 0u)
+            States.y = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                     Material.DemoStateChannels.y, Material.StateChannelCount);
+        if ((EnabledEffects & 4u) != 0u)
+            States.z = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                     Material.DemoStateChannels.z, Material.StateChannelCount);
+        if ((EnabledEffects & 8u) != 0u)
+            States.w = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
+                                                     Material.DemoExtraStateChannels.x, Material.StateChannelCount);
+    }
+
+    return States;
+}
+
+vec3 ResolveCombinedOverlayNormal(inout vec4 States, uint ShadingDiagnostic, bool UseRenderTexture, out float NormalSampleWeight)
+{
+    vec3 N = normalize(FragNormal);
+    NormalSampleWeight = 1.0;
+
+    if ((ShadingDiagnostic == 0u || ShadingDiagnostic == 2u ||
+         ShadingDiagnostic == 6u || ShadingDiagnostic == 7u ||
+         ShadingDiagnostic == 8u || ShadingDiagnostic == 9u) && FragIsSide == 0u)
+    {
+        vec4 PixelNormal = SamplePixelOverlayNormal(FragSurfaceIndex, FragUV, N);
+        NormalSampleWeight = PixelNormal.w;
+        N = PixelNormal.xyz;
+    }
+
+    if (FragIsSide == 0u)
+    {
+        vec4 PartnerStates;
+        vec3 SeamNormal;
+        float SeamBlend;
+        if (SampleSeamPartnerStates(FragSurfaceIndex, FragUV,
+                                    uvec4(Material.DemoStateChannels.xyz,
+                                          Material.DemoExtraStateChannels.x),
+                                    Material.StateChannelCount, UseRenderTexture,
+                                    PartnerStates, SeamNormal, SeamBlend))
+        {
+            States = mix(States, 0.5 * (States + PartnerStates), SeamBlend);
+            if (ShadingDiagnostic == 0u || ShadingDiagnostic == 2u ||
+                ShadingDiagnostic == 6u || ShadingDiagnostic == 7u ||
+                ShadingDiagnostic == 8u || ShadingDiagnostic == 9u)
+            {
+                // Both charts share the same source surface normal. The
+                // computed height normals are independent on either side.
+                N = normalize(mix(N, normalize(FragNormalMatrix * SeamNormal), SeamBlend));
+                NormalSampleWeight = min(NormalSampleWeight, 1.0 - 0.20 * SeamBlend);
+            }
+        }
+    }
+
+    return N;
+}
+
+void CompositeOverlayLayers(vec4 States, uint EnabledEffects, float IceCoverage, float Cutoff, vec3 N, vec3 V, uint ShadingDiagnostic, float NormalSampleWeight)
+{
+    // The base surface has already been drawn. Emit one straight-alpha color
+    // for this shared accumulation surface; water is composited over mud here.
+    float MudCoverage = (EnabledEffects & 2u) != 0u ? clamp(States.y, 0.0, 1.0) : 0.0;
+
+    if (ShadingDiagnostic == 7u)
+    {
+        float WaterCoverage = (EnabledEffects & 4u) != 0u ? clamp(States.z, 0.0, 1.0) : 0.0;
+        float LavaCoverage = (EnabledEffects & 8u) != 0u ? clamp(States.w, 0.0, 1.0) : 0.0;
+        OutColor = vec4(MudCoverage, LavaCoverage, WaterCoverage, 1.0);
+        return;
+    }
+    float MudAlpha = smoothstep(Cutoff, 0.50, MudCoverage);
+    vec3 MudNormal = ShadingDiagnostic == 1u || ShadingDiagnostic == 4u
+        ? N : ApplyMudMicroBump(N, FragWorldPosition,
+                               Material.DemoEffectOptions.y * smoothstep(0.75, 1.0, NormalSampleWeight));
+    // At chart borders the bilinear footprint has fewer valid texels. A broad
+    // specular lobe avoids exposing the fallback vertex-normal triangulation.
+    float MudRoughness = mix(1.0, Material.DemoOptions.z,
+                             smoothstep(0.90, 1.0, NormalSampleWeight));
+    // A partly valid bilinear normal footprint at a chart boundary cannot
+    // support a stable highlight. Fade it there and compress the remaining
+    // GGX peak while preserving weak reflections on the interior.
+    float NormalFootprintFade = FragIsSide == 0u
+        ? smoothstep(0.75, 1.0, NormalSampleWeight) : 1.0;
+    float MudSpecularLimit = 0.015 * NormalFootprintFade *
+                             smoothstep(Cutoff, 0.50, MudCoverage);
+    vec3 MudColor = ShadeSurface(MapEffectColor(1u, MudCoverage), MudNormal, V,
+                                 MudRoughness, Material.AmbientLight, 0.0, MudSpecularLimit);
+    if (ShadingDiagnostic == 8u || ShadingDiagnostic == 9u)
+    {
+        vec3 Specular = ShadeSurface(vec3(0.0), MudNormal, V, MudRoughness, 0.0,
+                                    0.0, MudSpecularLimit) *
+                        (1.0 - Material.AmbientLight);
+        OutColor = ShadingDiagnostic == 8u
+            ? vec4(clamp(MudColor - Specular, 0.0, 1.0), 1.0)
+            : vec4(clamp(Specular * 4.0, 0.0, 1.0), 1.0);
+        return;
+    }
+    vec3 PremultipliedColor = MudColor * MudAlpha;
+    float SurfaceAlpha = MudAlpha;
+    if (IceCoverage > Cutoff)
+    {
+        float IceAlpha = smoothstep(Cutoff, 0.20, IceCoverage);
+        // Blue scattering tint, frosted grain and broad dielectric highlights.
+        float Grain = 0.7*MudValueNoise(FragWorldPosition*4.0) + 0.3*MudValueNoise(FragWorldPosition*15.0);
+        vec3 IceAlbedo = mix(vec3(0.18,0.48,0.66),vec3(0.70,0.89,0.94),0.45+0.35*Grain);
+        vec3 IceNormal = ApplyMudMicroBump(N, FragWorldPosition, 0.035);
+        vec3 IceColor = ShadeSurface(IceAlbedo, IceNormal, V, 0.24+0.12*Grain, Material.AmbientLight, 0.35, 0.25);
+        PremultipliedColor = IceColor*IceAlpha + PremultipliedColor*(1.0-IceAlpha);
+        SurfaceAlpha = IceAlpha + SurfaceAlpha*(1.0-IceAlpha);
+    }
+
+    float WaterCoverage = (EnabledEffects & 4u) != 0u
+        ? VisibleWaterCoverage(clamp(States.z, 0.0, 1.0), FragUV) : 0.0;
+    if (WaterCoverage > 0.0)
+    {
+        vec4 Water = ShadeWaterFilmLayer(N, V, WaterCoverage);
+        PremultipliedColor = Water.rgb * Water.a + PremultipliedColor * (1.0 - Water.a);
+        SurfaceAlpha = Water.a + SurfaceAlpha * (1.0 - Water.a);
+    }
+
+    // Lava keeps its existing highest material priority and remains opaque.
+    if ((EnabledEffects & 8u) != 0u && States.w > Material.DemoOptions.y)
+    {
+        float LavaCoverage = clamp(States.w, 0.0, 1.0);
+        vec3 LavaLit = ShadeSurface(LavaColor(LavaCoverage), N, V,
+                                    0.34, Material.AmbientLight);
+        PremultipliedColor = min(LavaLit + LavaEmission(LavaCoverage, Material.DemoOptions.y), vec3(1.0));
+        SurfaceAlpha = 1.0;
+    }
+
+    if (SurfaceAlpha <= 1e-5) discard;
+    OutColor = vec4(min(PremultipliedColor / SurfaceAlpha, vec3(1.0)),
+                    ShadingDiagnostic == 6u ? 1.0 : SurfaceAlpha);
+}
+
 vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback)
 {
     if (Surface >= uint(SurfaceRanges.Values.length())) return vec4(Fallback, 0.0);
@@ -186,221 +451,8 @@ bool HasVisibleOverlayState(vec4 States, uint EnabledEffects)
            ((EnabledEffects & 4u) != 0u && States.z > 0.02) ||
            ((EnabledEffects & 8u) != 0u && States.w > Material.DemoOptions.y);
 }
+
 #endif
-
-#include "Rendering/Overlay/Shading/OverlayAppearance.glsl"
-
 // #endregion
 
-// ============================================================
-// 01. Main Process
-// ============================================================
-// #region 01_Main_Process
-
-void main()
-{
-    // 아주 낮은 coverage는 버리고 재질별 branch에서 색, 조명, 투명도를 정한다.
-    const float Cutoff = 0.02;
-#ifndef OVERLAY_COMBINED
-#ifdef OVERLAY_LAVA
-    if (FragCoverage <= Material.DemoOptions.y) discard;
-#else
-    if (FragCoverage <= Cutoff) discard;
-#endif
-#endif
-#ifdef OVERLAY_COMBINED
-    uint EnabledEffects = Material.DemoExtraStateChannels.w;
-    uint PerformanceFlags = Material.DemoExtraStateChannels.z;
-    bool CoverageSmoothing = (PerformanceFlags & 1u) != 0u;
-
-#if defined(MDSS_FRAGMENT_MODE)
-    const bool PrecomputedSmoothing = MDSS_FRAGMENT_MODE == 2;
-    const bool UseRenderTexture = MDSS_FRAGMENT_MODE != 0;
-#else
-    bool PrecomputedSmoothing = (PerformanceFlags & 2u) != 0u;
-    bool UseRenderTexture = (PerformanceFlags & 4u) != 0u || PrecomputedSmoothing;
-#endif
-
-    vec4 States = UseRenderTexture
-        ? SampleRenderStates(FragSurfaceIndex, FragUV,
-                             uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
-                             Material.StateChannelCount)
-        : SampleStateSaturations(FragSurfaceIndex, FragUV,
-                                 uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
-                                 Material.StateChannelCount);
-
-    if (CoverageSmoothing && !PrecomputedSmoothing)
-    {
-        if ((EnabledEffects & 2u) != 0u)
-            States.y = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                     Material.DemoStateChannels.y, Material.StateChannelCount);
-        if ((EnabledEffects & 4u) != 0u)
-            States.z = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                     Material.DemoStateChannels.z, Material.StateChannelCount);
-        if ((EnabledEffects & 8u) != 0u)
-            States.w = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                     Material.DemoExtraStateChannels.x, Material.StateChannelCount);
-    }
-
-    float IceCoverage = (EnabledEffects & 32u) != 0u && Material.ExtraDemoBindings.z < Material.StateChannelCount
-        ? (CoverageSmoothing
-            ? SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount)
-            : SampleStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount)) : 0.0;
-    IceCoverage = clamp(IceCoverage, 0.0, 1.0);
-    // A render-texture sample can be empty right on an atlas boundary even
-    // though the welded overlay vertex remains occupied.
-    if (!HasVisibleOverlayState(States, EnabledEffects) && IceCoverage <= Cutoff && FragCoverage <= Cutoff) discard;
-    vec3 N = normalize(FragNormal);
-    uint ShadingDiagnostic = Material.DemoExtraStateChannels.y;
-    float NormalSampleWeight = 1.0;
-
-    if ((ShadingDiagnostic == 0u || ShadingDiagnostic == 2u ||
-         ShadingDiagnostic == 6u || ShadingDiagnostic == 7u ||
-         ShadingDiagnostic == 8u || ShadingDiagnostic == 9u) && FragIsSide == 0u)
-    {
-        vec4 PixelNormal = SamplePixelOverlayNormal(FragSurfaceIndex, FragUV, N);
-        NormalSampleWeight = PixelNormal.w;
-        N = PixelNormal.xyz;
-    }
-
-    if (FragIsSide == 0u)
-    {
-        vec4 PartnerStates;
-        vec3 SeamNormal;
-        float SeamBlend;
-        if (SampleSeamPartnerStates(FragSurfaceIndex, FragUV,
-                                    uvec4(Material.DemoStateChannels.xyz,
-                                          Material.DemoExtraStateChannels.x),
-                                    Material.StateChannelCount, UseRenderTexture,
-                                    PartnerStates, SeamNormal, SeamBlend))
-        {
-            States = mix(States, 0.5 * (States + PartnerStates), SeamBlend);
-            if (ShadingDiagnostic == 0u || ShadingDiagnostic == 2u ||
-                ShadingDiagnostic == 6u || ShadingDiagnostic == 7u ||
-                ShadingDiagnostic == 8u || ShadingDiagnostic == 9u)
-            {
-                // Both charts share the same source surface normal. The
-                // computed height normals are independent on either side.
-                N = normalize(mix(N, normalize(FragNormalMatrix * SeamNormal), SeamBlend));
-                NormalSampleWeight = min(NormalSampleWeight, 1.0 - 0.20 * SeamBlend);
-            }
-        }
-    }
-
-    if (!HasVisibleOverlayState(States, EnabledEffects) && IceCoverage <= Cutoff) discard;
-    if (!gl_FrontFacing) N = -N;
-
-    if (ShadingDiagnostic == 2u)
-    {
-        OutColor = vec4(N * 0.5 + 0.5, 1.0);
-        return;
-    }
-
-    if (ShadingDiagnostic == 3u)
-    {
-        OutColor = gl_FrontFacing ? vec4(0.0, 0.8, 0.0, 1.0) : vec4(0.9, 0.0, 0.0, 1.0);
-        return;
-    }
-    // Only the lighting input changes. Geometry, coverage and the GGX BRDF stay
-    // identical, so this mode separates normal variation from the reflection math.
-    if (ShadingDiagnostic == 1u) N = vec3(0.0, 0.0, 1.0);
-    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
-
-    // The base surface has already been drawn. Emit one straight-alpha color
-    // for this shared accumulation surface; water is composited over mud here.
-    float MudCoverage = (EnabledEffects & 2u) != 0u ? clamp(States.y, 0.0, 1.0) : 0.0;
-
-    if (ShadingDiagnostic == 7u)
-    {
-        float WaterCoverage = (EnabledEffects & 4u) != 0u ? clamp(States.z, 0.0, 1.0) : 0.0;
-        float LavaCoverage = (EnabledEffects & 8u) != 0u ? clamp(States.w, 0.0, 1.0) : 0.0;
-        OutColor = vec4(MudCoverage, LavaCoverage, WaterCoverage, 1.0);
-        return;
-    }
-    float MudAlpha = smoothstep(Cutoff, 0.50, MudCoverage);
-    vec3 MudNormal = ShadingDiagnostic == 1u || ShadingDiagnostic == 4u
-        ? N : ApplyMudMicroBump(N, FragWorldPosition,
-                               Material.DemoEffectOptions.y * smoothstep(0.75, 1.0, NormalSampleWeight));
-    // At chart borders the bilinear footprint has fewer valid texels. A broad
-    // specular lobe avoids exposing the fallback vertex-normal triangulation.
-    float MudRoughness = mix(1.0, Material.DemoOptions.z,
-                             smoothstep(0.90, 1.0, NormalSampleWeight));
-    // A partly valid bilinear normal footprint at a chart boundary cannot
-    // support a stable highlight. Fade it there and compress the remaining
-    // GGX peak while preserving weak reflections on the interior.
-    float NormalFootprintFade = FragIsSide == 0u
-        ? smoothstep(0.75, 1.0, NormalSampleWeight) : 1.0;
-    float MudSpecularLimit = 0.015 * NormalFootprintFade *
-                             smoothstep(Cutoff, 0.50, MudCoverage);
-    vec3 MudColor = ShadeSurface(MapEffectColor(1u, MudCoverage), MudNormal, V,
-                                 MudRoughness, Material.AmbientLight, 0.0, MudSpecularLimit);
-    if (ShadingDiagnostic == 8u || ShadingDiagnostic == 9u)
-    {
-        vec3 Specular = ShadeSurface(vec3(0.0), MudNormal, V, MudRoughness, 0.0,
-                                    0.0, MudSpecularLimit) *
-                        (1.0 - Material.AmbientLight);
-        OutColor = ShadingDiagnostic == 8u
-            ? vec4(clamp(MudColor - Specular, 0.0, 1.0), 1.0)
-            : vec4(clamp(Specular * 4.0, 0.0, 1.0), 1.0);
-        return;
-    }
-    vec3 PremultipliedColor = MudColor * MudAlpha;
-    float SurfaceAlpha = MudAlpha;
-    if (IceCoverage > Cutoff)
-    {
-        float IceAlpha = smoothstep(Cutoff, 0.20, IceCoverage);
-        // Blue scattering tint, frosted grain and broad dielectric highlights.
-        float Grain = 0.7*MudValueNoise(FragWorldPosition*4.0) + 0.3*MudValueNoise(FragWorldPosition*15.0);
-        vec3 IceAlbedo = mix(vec3(0.18,0.48,0.66),vec3(0.70,0.89,0.94),0.45+0.35*Grain);
-        vec3 IceNormal = ApplyMudMicroBump(N, FragWorldPosition, 0.035);
-        vec3 IceColor = ShadeSurface(IceAlbedo, IceNormal, V, 0.24+0.12*Grain, Material.AmbientLight, 0.35, 0.25);
-        PremultipliedColor = IceColor*IceAlpha + PremultipliedColor*(1.0-IceAlpha);
-        SurfaceAlpha = IceAlpha + SurfaceAlpha*(1.0-IceAlpha);
-    }
-
-    float WaterCoverage = (EnabledEffects & 4u) != 0u
-        ? VisibleWaterCoverage(clamp(States.z, 0.0, 1.0), FragUV) : 0.0;
-    if (WaterCoverage > 0.0)
-    {
-        vec4 Water = ShadeWaterFilmLayer(N, V, WaterCoverage);
-        PremultipliedColor = Water.rgb * Water.a + PremultipliedColor * (1.0 - Water.a);
-        SurfaceAlpha = Water.a + SurfaceAlpha * (1.0 - Water.a);
-    }
-
-    // Lava keeps its existing highest material priority and remains opaque.
-    if ((EnabledEffects & 8u) != 0u && States.w > Material.DemoOptions.y)
-    {
-        float LavaCoverage = clamp(States.w, 0.0, 1.0);
-        vec3 LavaLit = ShadeSurface(LavaColor(LavaCoverage), N, V,
-                                    0.34, Material.AmbientLight);
-        PremultipliedColor = min(LavaLit + LavaEmission(LavaCoverage, Material.DemoOptions.y), vec3(1.0));
-        SurfaceAlpha = 1.0;
-    }
-
-    if (SurfaceAlpha <= 1e-5) discard;
-    OutColor = vec4(min(PremultipliedColor / SurfaceAlpha, vec3(1.0)),
-                    ShadingDiagnostic == 6u ? 1.0 : SurfaceAlpha);
-#elif defined(OVERLAY_LAVA)
-    if (FragCoverage <= Material.DemoOptions.y) discard;
-    vec3 N = normalize(FragNormal);
-    if (!gl_FrontFacing) N = -N;
-    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
-    vec3 Color = ShadeSurface(LavaColor(FragCoverage), N, V,
-                              0.34, Material.AmbientLight);
-    OutColor = vec4(min(Color + LavaEmission(FragCoverage, Material.DemoOptions.y), vec3(1.0)), 1.0);
-#elif defined(OVERLAY_WATER)
-    vec3 N = normalize(FragNormal);
-    if (!gl_FrontFacing) N = -N;
-    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
-    OutColor = ShadeWaterFilmLayer(N, V, VisibleWaterCoverage(FragCoverage, FragUV));
-#else
-    vec3 N = normalize(FragNormal);
-    if (!gl_FrontFacing) N = -N;
-    vec3 V = normalize(Material.CameraPosition.xyz - FragWorldPosition);
-    vec3 Color = ShadeSurface(MapEffectColor(1u, FragCoverage), N, V, Material.DemoOptions.z,
-                              Material.AmbientLight, 0.0);
-    OutColor = vec4(Color, 1.0);
-#endif
-}
-// #endregion
 #endif
