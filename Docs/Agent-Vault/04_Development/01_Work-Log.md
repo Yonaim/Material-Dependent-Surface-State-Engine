@@ -71,12 +71,14 @@
 - **남은 제한:** 비교 Scene 생성기는 보존했으나 생성된 ReactionTransitionComparison.Scene·Profile·Mesh는 현재 checkout에 없어 실행 전 생성이 필요하다. 기존 assertion 실패·누락 입력·GPU 한도 문제는 수정하지 않았다.
 - **다음 구현:** 기존 3번 C++ 구조 정리 — LoadDemoAnimation → MainLoop → RecordCommandBuffer. 이번 작업에서 해당 리팩터링이나 push는 수행하지 않는다.
 
+
 ## 2026-11-09 — C++ 상위 흐름 정리 (기존 3번)
 - **읽은 문서:** AGENTS·Document Map·Code Style·C++·Local Numbering·Source Comments·Workflow·Verification·Constraints, Application/Scene/Rendering Source, Render Flow·CPU–GPU Interface 및 기존 기준선 기록.
 - **코드 변경:** LoadDemoAnimation을 파일/설정/weather/tracks/contact 단계로, MainLoop를 입력·시간·demo contact·GPU wait·마무리 단계로, RecordCommandBuffer를 simulation/inspection·display preparation·graphics/viewport·UI/end 단계로 추출. Renderer private frame/view 상태는 자원을 장기 소유하지 않으며 기존 vector를 move. 원래 값 계산·검증·예외·Vulkan call/query/barrier 순서 유지. 오류 정책·타입명 일괄 변경·GLSL 구조 변경은 후속 범위.
 - **문서 동기화:** Application/Scene/Rendering Source·Render Flow·Current Work·Validation 갱신. Contract/ABI 데이터와 수용 기준은 변경되지 않아 계약 본문 변경 없음. 감사의 원래 관찰은 역사 기록으로 유지하고 Current Work에서 완료 상태 안내.
 - **검증:** Debug 전체 build 성공. CTest 7 통과/7 실패/skip 0이며 테스트별 상태/이유가 기준선과 동일. 파서 35개 old/new 비교 동일, Vulkan call 지점 81개 정적 순서/인자 동일, render-only old/new 5프레임 PPM/settings/validation 동일. simulation Scene은 양쪽 모두 기존 33-buffer GPU 한도로 초기화 실패. overlay 전체 동등성·성능·장시간·UI suspend 조작은 미검증. clang-format 5개 통과 및 CRLF-aware diff check. [실행 증거](../../../Build/Validation/20261109-213530-cpp-top-down/summary.md).
 - **커밋:** 이번 구현 변경은 미커밋, push 없음. 다음 작업은 기존 4번 GLSL 계산 구조 정리.
+
 
 ## 2026-11-09 — Shader 누락 Region 및 CRLF 자동 접기 수정
 - **읽은 문서:** AGENTS·Document Map·Code Style·GLSL·Verification·Shader Source Index·Project Brief. 설치된 Maptz/Fold on Open/Custom Folding 확장 구현과 VS Code Fold All Regions 처리도 로컬 코드로 확인.
@@ -117,6 +119,14 @@
 - 먼저 42개 파일의 누락 구획 정리: Renderer/SurfaceStateSystem 등 헤더·테스트 시나리오 및 Python의 imports/config/helper/main/execution 구획. 기존 GPU shader 구획과 작은 실행 진입점은 유지.
 - C++ 코드 토큰·선언/접근 순서 동일, Python AST 동일, 전체 Debug build 성공. stage1 스냅샷/검증을 보존한 뒤 실제 책임 추출을 별도 작업으로 진행한다. 기존 작업/실패 정책 보존·커밋 없음.
 
+## 2026-11-09 — Universal 5.5 프로젝트 전체 2단계 및 전수 대조 완료
+- **읽은 문서:** AGENTS·Map·Code Style·공통 2단계·활성 C++/GLSL/Python/Shell·Verification·현재 Source/CPU–GPU·Solver·Rendering/UI 경계와 기존 검증.
+- **코드:** UI·Renderer·Solver 8개 값 소유 상태(97개 필드), frame timing/solver preparation·view popup/설명·world geometry 모듈 추출, Python 7개 처리 함수와 Shell preflight/cache 분리. GLSL 나머지 6개 entry의 helper 구현 배치를 main 아래로 정리. 자원/초기값/생성·리셋·종료/공개 API·문자열/직렬화·GPU record/dispatch/barrier 의미 유지.
+- **전수 판단:** 323개 구현 + CMake 2개를 대조. 작은 파일·이미 단일 책임 또는 고정 ABI/공유 수명 단위에는 불필요한 추출을 하지 않고 파일별 이유를 기록. 구획만 추가한 파일을 책임 분리 완료라고 대체하지 않음.
+- **검증:** 실제 추출 상태·동작 역전개 시 C++ 197개 토큰/5개 Python AST 동일. build 성공, CTest 7 통과/7 실패·원인 문구 동일. shader 150개 통과·reflection 동일. render-only 전후 출력/설정/validation 동일, geometry 3개 비트 동일, Python 정상/오류 보고서 및 Bash 6개 fixture 비교 동일. 구문/format/Region/링크/whitespace 통과. 연구 도구 기존 8개 진단 유지. native PowerShell·전체 연구/UI/장시간/성능/다른 플랫폼·기존 GPU 한도 경로 미검증.
+- **동기화:** 전체 대조표·5.5 계획·Current Work·Rendering/Solver/UI/Shader Source·CPU–GPU 경계·Validation 갱신. Flow 의미와 pass 계약은 검토 후 유지. [원자료](../../../Build/Validation/20261109-230833-vault55-project-wide/summary.md).
+- **상태:** 전체 적용 작업 완료, 미커밋·push 없음. 다음 기존 6번 문서·스타일 정리로 진행 가능.
+
 ## 2026-11-09 — 누적 변경 분할 커밋
 
 - 사용자 요청에 따라 기존 변경을 의미 단위로 분리한다. 소스 작업 폴더를 유지하고 보존된 단계별 스냅샷으로 인덱스를 구성했다.
@@ -135,3 +145,4 @@
   - Refactor(Rendering): 벤치마크 상태·타이밍·기준 기하 책임 분리
   - Refactor(Simulation): 솔버 실행 상태와 step 준비 흐름 분리
   - Refactor(Tools): 분석 보고서와 빌드 스크립트의 책임 분리
+  - Docs(AgentVault): 전수 적용 범위·검증 결과와 분할 커밋 기록 동기화

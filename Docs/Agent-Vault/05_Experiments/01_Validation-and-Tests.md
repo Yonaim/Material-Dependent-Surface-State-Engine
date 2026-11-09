@@ -6,6 +6,17 @@
 
 
 
+## 2026-11-09 — Universal 5.5 프로젝트 전체 적용
+
+- 범위: 구현 코드 **323개**(C++ 201/GLSL 69/Python 44/Bash 5/PowerShell 4)와 CMake 설정/manifest 2개. 시작 319개 + 추출 모듈 4개. [파일별 적용·유지 근거](../04_Development/12_Section-and-Responsibility-Coverage.md). 외부/생성물/데이터 제외, C/JS/TS 구현 부재 확인.
+- **1단계:** 42개 구획 변경을 독립 스냅샷으로 보존, C++ 토큰/선언·접근 순서 및 Python AST 동일, 전체 Debug build 성공. 연구 C++ 3개와 PowerShell build helper의 추가 구획도 코드 동일/Region 균형 확인.
+- **2단계:** UI 6개·benchmark 1개·solver execution 1개 값 소유 상태에 **97개 필드** 추출. 기존 Profiling 상태 분리를 유지. frame timing/solver step preparation·view popup/설명·world/gizmo 모듈, Python 처리 함수 7개, Bash prerequisite/cache 단계를 분리. 남은 shader entry 6개의 helper는 prototype/main/구현 배치로 정리. 기존 단일 책임과 GPU record/수명 경계는 유지.
+- 실제 최종 코드에서 추출된 필드 초기값/순서/본문을 대조했고, 원래 호출 지점으로 역전개하면 시작 전 C++ 197개 토큰 및 Python 5개 AST와 동일. Python helper가 필요한 parent local을 빠뜨리지 않았음을 symbol table로 확인. 6개 GLSL의 helper 본문 동일.
+- 최종 전체 Debug build 성공. CTest **7 통과/7 실패/skip 0**, 직전 FDebugUI 기준선과 상태/추출 원인 문구 동일. ShaderManifest **150/150** glslc/spirv-val 통과·reflection 150개 동일(바이트 동일 124개, helper 배치 변경 26개).
+- Render-only old/new 각 5 frame·샘플 2개, PPM/settings/validation 동일·ERROR 0. geometry 생성기 3개 좌표/색/edge/count 비트 동일. Python 정상 manifest 보고서/aggregate 및 잘못된 sample count 예외, 빈 comparison sections 결과 동일. Bash fresh/valid cache/stale cache/configure 실패/build 실패/도구 누락 **6종**은 mock 도구·임시 workspace에서 전후 출력/종료 코드/명령/backup 효과 동일. 실제 Build를 이동하는 검증은 수행하지 않음.
+- Python/Bash 구문 검사 49개 통과, C++ Source/Tests 변경 38개 format dry-run 통과, 모든 번호 Region 균형/연속 번호·대조표 링크·CRLF-aware whitespace 확인.
+- 별도 Research C++ AST/syntax는 동일한 기존 8개 진단(MDSS_MODULAR_SHADER_DIR/제거된 flag/constructor 불일치). 기대값·skip·기존 오류를 바꾸지 않음. PowerShell native 실행, archive 연구 전체 재실행, UI 모든 조작/장시간·Release/다른 OS·GPU·성능·33-buffer 한도 경로는 미검증. [스냅샷·명령·원자료](../../../Build/Validation/20261109-230833-vault55-project-wide/summary.md).
+
 ## 2026-11-09 — Universal 5.5 첫 적용: FDebugUI 2단계 구조화
 
 - 공통 규칙 13개·AGENTS/공통 라우팅을 로컬 Universal `93dbbed`와 대조해 먼저 반영. 프로젝트 라우팅·Unreal-Inspired·설정·과거 실험 보존. 공통 문서의 로컬 Markdown 링크 누락 0.

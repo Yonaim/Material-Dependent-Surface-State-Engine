@@ -1,18 +1,21 @@
 # Current Work
 
+> 누적 변경은 14개 의미 단위 커밋으로 분리했다. 소스는 분할 전 상태를 보존했으며, push는 수행하지 않았다. 중간 커밋별 재빌드는 수행하지 않았고 최종 상태의 기존 검증 기록을 유지한다.
+
 > **한 줄 요약:** 아직 Architecture의 정본으로 확정되지 않은 현재·후속 작업만 둔다. 완료되면 결과를 Architecture / Decisions / Validation 문서에 반영하고 여기서는 제거한다.
 
 ## Engineering Standards 정비 — 현재 실행 순서
 
-2026-11-09 사용자 결정. 현재 상태는 `refactor/engineering-standards`에서 의미 단위로 분할 커밋해 보존한다. **다음 구현 작업은 기존 3번 C++ 상위 흐름 정리부터 시작한다.** 아래 순서는 그 전에 요청된 Universal 규칙 동기화·shader folding을 포함해 갱신한 것이다. 완료된 folding을 GLSL 계산 구조 리팩터링 완료로 보지 않는다.
+2026-11-09 사용자 결정. 현재 상태는 `refactor/engineering-standards`에서 의미 단위로 분할 커밋해 보존한다. **기존 3번 C++·4번 GLSL 구조 정리와 5번 Unreal-Inspired 네이밍 전환 완료. Universal 5.5의 큰 클래스·파일 2단계 작업도 프로젝트 전체에 적용·검토했다. 다음은 기존 6번 문서·스타일 정리다.** 아래 순서는 그 전에 요청된 Universal 규칙 동기화·shader folding을 포함해 갱신한 것이다. 완료된 folding을 GLSL 계산 구조 리팩터링 완료로 보지 않는다.
 
 | 순서 | 작업 | 상태 / 완료 기준 |
 |---|---|---|
 | 선행 A | 변경 전 최소 기준선 보존 | 완료: 전체 Debug build 성공, CTest 7 통과/7 실패/skip 0, shader 150/150. [실행 기록](../../../Build/Validation/20261109-210554-pre-refactor/summary.md) |
-| 선행 B | Universal-Agent-Vault 규칙 병합·shader folding | 공통 규칙·JS/TS 선택 프로필·라우팅·언어별 folding 반영. shader 50개에 84개 region 추가, 짧은 wrapper/helper/placeholder 19개 유지. 검증은 [실행 기록](../../../Build/Validation/20261109-211718-vault-region-folding/summary.md) 참조 |
-| 1 (기존 3) | C++ 상위 흐름 정리 | 대기: LoadDemoAnimation → MainLoop → RecordCommandBuffer. 응집된 책임으로 분리하고 순서·오류·수명·성능 제약 보존 |
-| 2 (기존 4) | GLSL 계산 구조 정리 | 대기: SurfaceDebug.vert → SurfaceDebug.frag → Overlay → Solver. main/prototype/helper와 필요한 계약 주석 정리. barrier 참여와 derivative 계산 위치 보존 |
-| 3 (기존 5) | Unreal-Inspired 네이밍 | 대기: 일반 클래스/구조체 F, 템플릿 T 유지, enum E, bool b. 선언·정의·사용처·테스트·문서 동기화 |
+| 선행 B | Universal-Agent-Vault 규칙 병합·shader folding | 공통 규칙·JS/TS 선택 프로필·라우팅·언어별 folding 반영. 최초 shader 50개·84개 region 적용 후 사용자 요청으로 작은 19개도 포함해 보완 당시 69개·103개로 확장(구조 정리 당시 116개, 5.5 전체 적용 후 122개). CRLF 마커 인식·기본 자동 접기도 수정. 검증은 [실행 기록](../../../Build/Validation/20261109-211718-vault-region-folding/summary.md) 참조 |
+| 1 (기존 3) | C++ 상위 흐름 정리 | 완료: LoadDemoAnimation → MainLoop → RecordCommandBuffer 책임 분리. build 성공, CTest 상태/실패 이유 기준선 동일, 파서 35개·render-only 캡처 동일. Overlay 런타임은 GPU 한도로 미검증. [근거](../../../Build/Validation/20261109-213530-cpp-top-down/summary.md) |
+| 2 (기존 4) | GLSL 계산 구조 정리 | 완료: Debug·Overlay·Solver 13개 구조 정리. shader 150개 컴파일/검증·reflection 동일, build 성공, CTest 7 통과/7 실패·기준선 동일, debug GPU 출력 16개 동일. Overlay 전체·성능 미검증. [근거](../../../Build/Validation/20261109-221158-glsl-top-down/summary.md) |
+| 3 (기존 5) | Unreal-Inspired 네이밍 | 완료: C++ 일반 타입/비템플릿 별칭 F·enum E·scalar bool b. 템플릿/외부 타입·GLSL 이름/직렬화 유지. 전체 build 성공, CTest 7 통과/7 실패·기준선 동일, shader 150개 동일, render-only 출력 동일. [근거](../../../Build/Validation/20261109-222214-unreal-naming/summary.md) |
+| 우선 추가 | Universal 5.5 2단계 구조화 | 완료: 구현 코드 323개 + CMake 2개 검토, 구획과 실제 책임 추출을 별도 검증. 8개 값 소유 상태·frame/solver/UI/geometry/Python/Shell 분리, 유지 판단도 기록. [파일별 대조표](12_Section-and-Responsibility-Coverage.md) · [검증](../../../Build/Validation/20261109-230833-vault55-project-wide/summary.md) |
 | 4 (기존 6) | 문서·스타일 정리 | 대기: Doxygen 한국어, Python/Shell 구조와 필요한 큰 책임별 folding, 포맷터 버전 확정 후 검사. JS/TS는 실제 도입 전 비활성 |
 | 5 (기존 2) | 오류 처리·CPU–GPU 계약 보완 | 후순위 유지: benchmark 쓰기 오류, 버퍼 길이/인덱스/수명 계약 확인. 기존 실패의 원인은 개별 작업으로 판정하고 기대값을 임의 변경하지 않음 |
 | 6 | 전체 검증 및 결과 정리 | 마지막: 정식 결과 수집 절차 보완, 전체 build/CTest/shader와 필요한 GPU·성능 회귀. 기존 실패·환경 제한·신규 회귀를 분리 |
