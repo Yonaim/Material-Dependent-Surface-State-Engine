@@ -442,6 +442,7 @@ namespace MDSS::Rendering
             std::array<float, 5> CpuMilliseconds{};
         };
 
+        void CollectCompletedFrameTimings(std::uint32_t FrameIndex);
         void WriteBenchmarkSample(std::uint32_t FrameSlot);
         void WriteBenchmarkMetadata(const FScene& SceneData, const FDebugUI& DebugInterface);
 
@@ -643,27 +644,25 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 10_Benchmark_Capture_State
 
-        std::array<FBenchmarkFrameSubmission, FRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
-        std::ofstream                                                            BenchmarkOutput;
-        std::filesystem::path                                                    BenchmarkOutputPath;
-        bool                                                                     bBenchmarkMetadataWritten = false;
-        std::vector<std::string>                                                 BenchmarkJsonLines;
-        std::uint64_t                                                            BenchmarkWarmupFrames = 0;
-        std::uint64_t                                                            BenchmarkMeasurementFrames = 0;
-        std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
-        bool                                                                     bBenchmarkCaptureEnabled = false;
-        std::unique_ptr<GPU::FGPUBuffer>                                         BenchmarkScreenshot;
-        VkExtent2D                                                               BenchmarkScreenshotExtent{};
-        VkFormat BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
-#pragma endregion
+        struct FBenchmarkCaptureState
+        {
+            std::array<FBenchmarkFrameSubmission, FRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
+            std::ofstream                                                            BenchmarkOutput;
+            std::filesystem::path                                                    BenchmarkOutputPath;
+            bool                                                                     bBenchmarkMetadataWritten = false;
+            std::vector<std::string>                                                 BenchmarkJsonLines;
+            std::uint64_t                                                            BenchmarkWarmupFrames = 0;
+            std::uint64_t                                                            BenchmarkMeasurementFrames = 0;
+            std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
+            bool                                                                     bBenchmarkCaptureEnabled = false;
+            std::unique_ptr<GPU::FGPUBuffer>                                         BenchmarkScreenshot;
+            VkExtent2D                                                               BenchmarkScreenshotExtent{};
+            VkFormat BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
 
-// ============================================================
-// 11. Timestamp and Profiling State
-// ============================================================
-#pragma region 11_Timestamp_and_Profiling_State
-
-        float                   BenchmarkGpuElapsed = -1.0F;
-        float                   BenchmarkSimulationElapsed = -1.0F;
+            float BenchmarkGpuElapsed = -1.0F;
+            float BenchmarkSimulationElapsed = -1.0F;
+        };
+        FBenchmarkCaptureState  Benchmark;
         std::uint32_t           TimestampQueriesPerFrame = 24;
         std::uint32_t           SolverTimestampGroupCount = 0;
         float                   TimestampPeriodNanoseconds = 0.0F;

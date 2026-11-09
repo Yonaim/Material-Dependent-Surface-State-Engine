@@ -132,3 +132,4 @@
   - Style(Code): 프로젝트 전반의 섹션과 탐색 구조 정리
   - Refactor(Shaders): 나머지 렌더·기하·스케줄링 진입점 정리
   - Refactor(DebugUI): UI 상태 묶음과 뷰 설정 패널 책임 분리
+  - Refactor(Rendering): 벤치마크 상태·타이밍·기준 기하 책임 분리

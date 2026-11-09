@@ -73,3 +73,10 @@ Lit overlay가 활성인 경우 renderer는 Mud/WaterFilm/Lava channel을 하나
 private `FCommandRecordingState`는 호출 내 frame/query/display/overlay 값을 함께 전달한다. 기존 vector 저장소를 move해 draw 단계까지 유지하며 Renderer의 장기 멤버 자원을 대체하지 않는다. `FViewportRecordingState`는 view mode·행렬/frustum·material offset과 기록 동안 유효한 camera 참조를 전달한다. 타입은 CPU–GPU ABI 자료형이 아니다.
 
 Vulkan 호출 지점 81개 정적 대조와 render-only 5프레임 old/new 캡처 비교를 수행했다. simulation/overlay 앱 경로는 양쪽 버전 모두 기존 GPU storage buffer 한도로 초기화되지 않았으므로 해당 런타임 동등성을 통과로 기록하지 않는다. [검증 기록](../../../05_Experiments/01_Validation-and-Tests.md)을 따른다.
+
+## 5.5 책임 경계 보완
+
+- `Renderer.h::FBenchmarkCaptureState`: stream/output 경로·in-flight submission·capture buffer·frame counters를 값 소유한다. 원래 초기값/생성/마무리/flush·파괴 순서를 보존하고 timestamp pool/프레임 자원은 Renderer에 유지한다.
+- [RendererTiming.cpp](../../../../../Source/Rendering/Profiling/RendererTiming.cpp): `CollectCompletedFrameTimings`는 frame fence 이후의 query 회수·통계 갱신·benchmark sample 기록을 담당한다. RenderFrame의 호출 지점과 query index/수식·실패 정책은 동일하다.
+- [WorldReferenceGeometry.h](../../../../../Source/Rendering/Scene/WorldReferenceGeometry.h): 내부 grid/축/gizmo record·정점 생성을 material/attachment helper에서 분리했다. 정점 필드/순서·pipeline layout을 유지하며 같은 translation unit의 내부 helper로 사용한다.
+- 나머지 swapchain/attachment/descriptor·overlay 자원은 공유 frame/device 수명과 생성/종료 경계가 있어 기존 pass별 소유 클래스와 command helper를 유지한다.

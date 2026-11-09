@@ -38,26 +38,26 @@ namespace MDSS::Rendering
         const std::filesystem::path AbsoluteOutput = std::filesystem::absolute(OutputPath).lexically_normal();
         if (AbsoluteOutput.has_parent_path())
             std::filesystem::create_directories(AbsoluteOutput.parent_path());
-        BenchmarkOutput.open(AbsoluteOutput, std::ios::out | std::ios::trunc);
-        if (!BenchmarkOutput)
+        Benchmark.BenchmarkOutput.open(AbsoluteOutput, std::ios::out | std::ios::trunc);
+        if (!Benchmark.BenchmarkOutput)
             throw std::runtime_error("Unable to open benchmark output: " + AbsoluteOutput.string());
-        BenchmarkWarmupFrames = WarmupFrames;
-        BenchmarkOutputPath = AbsoluteOutput;
-        bBenchmarkMetadataWritten = false;
-        BenchmarkMeasurementFrames = MeasurementFrames;
-        NextBenchmarkFrameIndex = 0;
-        BenchmarkJsonLines.clear();
-        bBenchmarkCaptureEnabled = true;
+        Benchmark.BenchmarkWarmupFrames = WarmupFrames;
+        Benchmark.BenchmarkOutputPath = AbsoluteOutput;
+        Benchmark.bBenchmarkMetadataWritten = false;
+        Benchmark.BenchmarkMeasurementFrames = MeasurementFrames;
+        Benchmark.NextBenchmarkFrameIndex = 0;
+        Benchmark.BenchmarkJsonLines.clear();
+        Benchmark.bBenchmarkCaptureEnabled = true;
     }
 
     void FRenderer::WriteBenchmarkSample(std::uint32_t FrameSlot)
     {
-        if (!bBenchmarkCaptureEnabled || FrameSlot >= BenchmarkSubmissions.size())
+        if (!Benchmark.bBenchmarkCaptureEnabled || FrameSlot >= Benchmark.BenchmarkSubmissions.size())
             return;
-        const FBenchmarkFrameSubmission& Submitted = BenchmarkSubmissions[FrameSlot];
+        const FBenchmarkFrameSubmission& Submitted = Benchmark.BenchmarkSubmissions[FrameSlot];
         if (Submitted.FrameIndex == std::numeric_limits<std::uint64_t>::max() ||
-            Submitted.FrameIndex < BenchmarkWarmupFrames ||
-            Submitted.FrameIndex >= BenchmarkWarmupFrames + BenchmarkMeasurementFrames)
+            Submitted.FrameIndex < Benchmark.BenchmarkWarmupFrames ||
+            Submitted.FrameIndex >= Benchmark.BenchmarkWarmupFrames + Benchmark.BenchmarkMeasurementFrames)
             return;
 
         const auto OptionalTiming = [](float Value) -> nlohmann::json
@@ -79,8 +79,8 @@ namespace MDSS::Rendering
             {"geometry_gpu_ms", OptionalTiming(ProfilingStats.AccumulationGeometryGpuMilliseconds)},
             {"transfer_weight_gpu_ms", OptionalTiming(ProfilingStats.TransferWeightGpuMilliseconds)},
             {"render_gpu_ms", OptionalTiming(LastRenderGpuMilliseconds)},
-            {"frame_gpu_elapsed_ms", OptionalTiming(BenchmarkGpuElapsed)},
-            {"simulation_gpu_elapsed_ms", OptionalTiming(BenchmarkSimulationElapsed)},
+            {"frame_gpu_elapsed_ms", OptionalTiming(Benchmark.BenchmarkGpuElapsed)},
+            {"simulation_gpu_elapsed_ms", OptionalTiming(Benchmark.BenchmarkSimulationElapsed)},
         };
         const std::array<std::pair<const char*, float>, 18> DetailedTimings{
             {{"render_preparation_gpu_ms", ProfilingStats.RenderPreparationGpuMilliseconds},
@@ -107,7 +107,7 @@ namespace MDSS::Rendering
         Sample["overlay_total_tiles"] = ProfilingStats.OverlayTotalTiles;
         Sample["overlay_active_top_triangles"] = ProfilingStats.OverlayActiveTopTriangles;
         Sample["overlay_total_top_triangles"] = ProfilingStats.OverlayTotalTopTriangles;
-        BenchmarkJsonLines.push_back(Sample.dump());
+        Benchmark.BenchmarkJsonLines.push_back(Sample.dump());
     }
 
     void FRenderer::WriteBenchmarkMetadata(const FScene& SceneData, const FDebugUI& DebugInterface)
@@ -127,7 +127,7 @@ namespace MDSS::Rendering
                                  {"view_mode", static_cast<std::uint32_t>(ViewModes[Index])}});
         }
         const nlohmann::json Metadata = {{"schema_version", 1},
-                                         {"frame_index", NextBenchmarkFrameIndex - 1},
+                                         {"frame_index", Benchmark.NextBenchmarkFrameIndex - 1},
                                          {"swapchain_extent", {Extent.width, Extent.height}},
                                          {"viewports", Viewports},
                                          {"geometry_feedback", IsStateDrivenGeometryUpdateEnabled()},
@@ -154,25 +154,26 @@ namespace MDSS::Rendering
                                          {"overlay_sides_draw", IsOverlaySidesDrawEnabled()},
                                          {"surface_mesh_resolution", SurfaceTexelMeshResolution},
                                          {"overlay_mesh_resolution", OverlayTexelMeshResolution}};
-        std::ofstream        Output(BenchmarkOutputPath.string() + ".settings.json");
+        std::ofstream        Output(Benchmark.BenchmarkOutputPath.string() + ".settings.json");
         if (!(Output << Metadata.dump(2) << '\n'))
             throw std::runtime_error("Unable to write benchmark settings.");
-        bBenchmarkMetadataWritten = true;
+        Benchmark.bBenchmarkMetadataWritten = true;
     }
 
     void FRenderer::RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex)
     {
-        if (!PerformanceSettings().value("capture_image", false) || BenchmarkScreenshot ||
-            NextBenchmarkFrameIndex != BenchmarkWarmupFrames + BenchmarkMeasurementFrames - 1U)
+        if (!PerformanceSettings().value("capture_image", false) || Benchmark.BenchmarkScreenshot ||
+            Benchmark.NextBenchmarkFrameIndex !=
+                Benchmark.BenchmarkWarmupFrames + Benchmark.BenchmarkMeasurementFrames - 1U)
             return;
         if (!SwapchainData.CanReadback())
             throw std::runtime_error("This swapchain cannot capture images.");
-        BenchmarkScreenshotExtent = SwapchainData.GetExtent();
-        BenchmarkScreenshotFormat = SwapchainData.GetImageFormat();
-        BenchmarkScreenshot = std::make_unique<GPU::FGPUBuffer>(
+        Benchmark.BenchmarkScreenshotExtent = SwapchainData.GetExtent();
+        Benchmark.BenchmarkScreenshotFormat = SwapchainData.GetImageFormat();
+        Benchmark.BenchmarkScreenshot = std::make_unique<GPU::FGPUBuffer>(
             Context.GetPhysicalDevice(),
             Context.GetDevice(),
-            VkDeviceSize(BenchmarkScreenshotExtent.width) * BenchmarkScreenshotExtent.height * 4U,
+            VkDeviceSize(Benchmark.BenchmarkScreenshotExtent.width) * Benchmark.BenchmarkScreenshotExtent.height * 4U,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         VkImageMemoryBarrier Barrier{};
@@ -200,15 +201,19 @@ namespace MDSS::Rendering
                              &Barrier);
         VkBufferImageCopy Copy{};
         Copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-        Copy.imageExtent = {BenchmarkScreenshotExtent.width, BenchmarkScreenshotExtent.height, 1};
-        vkCmdCopyImageToBuffer(
-            Command, Barrier.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, BenchmarkScreenshot->GetHandle(), 1, &Copy);
+        Copy.imageExtent = {Benchmark.BenchmarkScreenshotExtent.width, Benchmark.BenchmarkScreenshotExtent.height, 1};
+        vkCmdCopyImageToBuffer(Command,
+                               Barrier.image,
+                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               Benchmark.BenchmarkScreenshot->GetHandle(),
+                               1,
+                               &Copy);
         VkBufferMemoryBarrier Readback{};
         Readback.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         Readback.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         Readback.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
         Readback.srcQueueFamilyIndex = Readback.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        Readback.buffer = BenchmarkScreenshot->GetHandle();
+        Readback.buffer = Benchmark.BenchmarkScreenshot->GetHandle();
         Readback.size = VK_WHOLE_SIZE;
         vkCmdPipelineBarrier(Command,
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -238,16 +243,18 @@ namespace MDSS::Rendering
 
     void FRenderer::FinalizeBenchmarkCapture()
     {
-        if (!bBenchmarkCaptureEnabled)
+        if (!Benchmark.bBenchmarkCaptureEnabled)
             return;
-        if (BenchmarkScreenshot)
+        if (Benchmark.BenchmarkScreenshot)
         {
-            std::vector<std::uint8_t> Pixels(static_cast<std::size_t>(BenchmarkScreenshot->GetSize()));
-            BenchmarkScreenshot->Download(Pixels.data(), BenchmarkScreenshot->GetSize());
-            const bool bBGRA = BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_SRGB ||
-                               BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_UNORM;
-            std::ofstream Image(BenchmarkOutputPath.string() + ".ppm", std::ios::binary);
-            Image << "P6\n" << BenchmarkScreenshotExtent.width << ' ' << BenchmarkScreenshotExtent.height << "\n255\n";
+            std::vector<std::uint8_t> Pixels(static_cast<std::size_t>(Benchmark.BenchmarkScreenshot->GetSize()));
+            Benchmark.BenchmarkScreenshot->Download(Pixels.data(), Benchmark.BenchmarkScreenshot->GetSize());
+            const bool bBGRA = Benchmark.BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_SRGB ||
+                               Benchmark.BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_UNORM;
+            std::ofstream Image(Benchmark.BenchmarkOutputPath.string() + ".ppm", std::ios::binary);
+            Image << "P6\n"
+                  << Benchmark.BenchmarkScreenshotExtent.width << ' ' << Benchmark.BenchmarkScreenshotExtent.height
+                  << "\n255\n";
             for (std::size_t P = 0; P < Pixels.size(); P += 4)
             {
                 Image.put(char(Pixels[P + (bBGRA ? 2 : 0)]));
@@ -266,8 +273,8 @@ namespace MDSS::Rendering
             const auto&        Buffer = Resources.GetInstanceCurrentStateBuffer(Index);
             std::vector<float> Values(Buffer.GetSize() / sizeof(float));
             Buffer.Download(Values.data(), Buffer.GetSize());
-            std::ofstream StateOutput(BenchmarkOutputPath.string() + ".state-" + std::to_string(Index) + ".f32",
-                                      std::ios::binary);
+            std::ofstream StateOutput(
+                Benchmark.BenchmarkOutputPath.string() + ".state-" + std::to_string(Index) + ".f32", std::ios::binary);
             StateOutput.write(reinterpret_cast<const char*>(Values.data()),
                               static_cast<std::streamsize>(Buffer.GetSize()));
             if (!StateOutput)
@@ -337,7 +344,7 @@ namespace MDSS::Rendering
                                        {"compact_storage", SurfaceStateSystem.IsCompactScratchStorageEnabled()},
                                        {"adaptive_geometry", SurfaceStateSystem.IsAdaptiveGeometryEnabled()},
                                        {"scope", "after final drain frames; device idle; before resource destruction"},
-                                       {"submitted_frames", NextBenchmarkFrameIndex},
+                                       {"submitted_frames", Benchmark.NextBenchmarkFrameIndex},
                                        {"simulation_step_serial", FrameCoordinator.GetStepSerial()},
                                        {"instances", Instances},
                                        {"allocated_buffer_bytes", Memory.CurrentBufferBytes},
@@ -345,7 +352,7 @@ namespace MDSS::Rendering
                                        {"allocated_total_bytes", Memory.CurrentTotalBytes},
                                        {"peak_allocated_total_bytes", Memory.PeakTotalBytes},
                                        {"buffer_category_bytes", Memory.BufferCategoryCurrentBytes}};
-        std::ofstream        Output(BenchmarkOutputPath.string() + ".validation.json");
+        std::ofstream        Output(Benchmark.BenchmarkOutputPath.string() + ".validation.json");
         if (!(Output << Result.dump(2) << '\n'))
             throw std::runtime_error("Unable to write benchmark validation.");
     }

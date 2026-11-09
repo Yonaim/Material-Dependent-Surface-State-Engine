@@ -440,7 +440,7 @@ namespace MDSS::Rendering
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 19U);
 
         MainGraphicsPass.End(CommandBuffer);
-        if (bBenchmarkCaptureEnabled)
+        if (Benchmark.bBenchmarkCaptureEnabled)
             RecordBenchmarkScreenshot(CommandBuffer, ImageIndex);
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(
