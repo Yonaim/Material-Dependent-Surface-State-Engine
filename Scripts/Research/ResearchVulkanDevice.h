@@ -4,6 +4,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+// ============================================================
+// 00. Vulkan Fixture Lifecycle
+// ============================================================
+#pragma region 00_Vulkan_Fixture_Lifecycle
+
 class FVulkanUnavailable : public std::runtime_error { public: using std::runtime_error::runtime_error; };
     class FVulkanTestDevice final
     {
@@ -188,3 +193,5 @@ class FVulkanUnavailable : public std::runtime_error { public: using std::runtim
         VkQueue          Queue = VK_NULL_HANDLE;
         VkCommandPool    CommandPool = VK_NULL_HANDLE;
     };
+
+#pragma endregion

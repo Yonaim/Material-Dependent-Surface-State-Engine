@@ -1,4 +1,9 @@
 """Prepare immutable conditions, invoke the production GPU harness, and retain every attempt."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import argparse
 import collections
 import datetime as dt
@@ -15,6 +20,13 @@ EXPERIMENT = STUDY / "PERF-041-coupling"
 RAW = EXPERIMENT / "raw"
 EXE = ROOT / "Build/Release/MDSS_CouplingStudy.exe"
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def stamp():
     return dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
@@ -148,6 +160,13 @@ def run(stage, selected, sparse=False, repeat=False):
     return 0
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__ == "__main__":
     ap=argparse.ArgumentParser()
     ap.add_argument("stage",choices=["prepare","smoke","development","heldout"])
@@ -160,3 +179,5 @@ if __name__ == "__main__":
         print(EXPERIMENT/"plan.json")
     else:
         sys.exit(run(args.stage,args.ids,args.sparse,args.repeat))
+
+#endregion

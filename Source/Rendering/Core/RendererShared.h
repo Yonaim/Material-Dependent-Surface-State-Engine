@@ -39,6 +39,11 @@ namespace MDSS::Rendering
 {
     namespace
     {
+// ============================================================
+// 00. Shader Variants and Frame Constants
+// ============================================================
+#pragma region 00_Shader_Variants_and_Frame_Constants
+
         using Shaders::EShader;
         const std::array<EShader, 3> SurfaceLitVariants{EShader::Rendering_Surface_Lighting_SurfaceLit_frag_m0,
                                                         EShader::Rendering_Surface_Lighting_SurfaceLit_frag_m1,
@@ -56,6 +61,13 @@ namespace MDSS::Rendering
             EShader::Rendering_Overlay_Shading_OverlayCombined_frag_m2};
         constexpr std::uint32_t FixedTimestampQueryCount = 24U;
         constexpr std::uint32_t OverlayTimestampQueriesPerLayer = 13U;
+
+#pragma endregion
+
+// ============================================================
+// 01. Attachment Construction
+// ============================================================
+#pragma region 01_Attachment_Construction
 
         std::vector<std::unique_ptr<GPU::FGPUImage>> CreateDepthImages(
             VkPhysicalDevice PhysicalDevice, VkDevice Device, VkExtent2D Extent, VkFormat Format, std::size_t Count)
@@ -92,6 +104,13 @@ namespace MDSS::Rendering
                 Handles.push_back(View->GetHandle());
             return Handles;
         }
+
+#pragma endregion
+
+// ============================================================
+// 02. Mesh and World Geometry
+// ============================================================
+#pragma region 02_Mesh_and_World_Geometry
 
         struct FStaticMeshPushConstants
         {
@@ -261,6 +280,13 @@ namespace MDSS::Rendering
             return Vertices;
         }
 
+#pragma endregion
+
+// ============================================================
+// 03. Material GPU Interface
+// ============================================================
+#pragma region 03_Material_GPU_Interface
+
         struct alignas(16) FMaterialUniform
         {
             glm::vec4     BaseColor{1.0F};
@@ -412,6 +438,13 @@ namespace MDSS::Rendering
             Config.bDynamicLineWidth = true;
             return Config;
         }
+
+#pragma endregion
+
+// ============================================================
+// 04. Geometry Mode Selection
+// ============================================================
+#pragma region 04_Geometry_Mode_Selection
 
         bool UsesTexelGeometry(ERenderViewMode Mode)
         {
@@ -587,6 +620,13 @@ namespace MDSS::Rendering
             return Config;
         }
 
+#pragma endregion
+
+// ============================================================
+// 05. Scope Cleanup
+// ============================================================
+#pragma region 05_Scope_Cleanup
+
         template <typename TCallback> class TScopeExit final
         {
         public:
@@ -610,3 +650,5 @@ namespace MDSS::Rendering
     } // 내부 네임스페이스
 
 }
+
+#pragma endregion

@@ -27,6 +27,11 @@
 #include <string>
 #include <vector>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace MDSS::Tests
 {
     using namespace MDSS::GPU;
@@ -97,6 +102,13 @@ namespace MDSS::Tests
             glm::mat4 ViewProjection{1.0F};
         };
     }
+
+#pragma endregion
+
+// ============================================================
+// 01. TestOverlaySideCompaction
+// ============================================================
+#pragma region 01_TestOverlaySideCompaction
 
     void TestOverlaySideCompaction(const GPU::FVulkanContext& Context)
     {
@@ -279,6 +291,13 @@ namespace MDSS::Tests
                     "Rebuilt meso normals must match the uncached result after a height update.");
     }
 
+#pragma endregion
+
+// ============================================================
+// 02. TestCavityFillDisplayBound
+// ============================================================
+#pragma region 02_TestCavityFillDisplayBound
+
     void TestCavityFillDisplayBound(const GPU::FVulkanContext& Context)
     {
         const VkDevice             Device = Context.GetDevice();
@@ -426,6 +445,13 @@ namespace MDSS::Tests
         Require(Smoothed[0].HeightAndNormal.x <= 1e-6F && Smoothed[0].HeightAndNormal.x >= -0.001F - 1e-6F,
                 "Smoothing must not overfill a shallow cavity using taller neighboring cavities.");
     }
+
+#pragma endregion
+
+// ============================================================
+// 03. TestSurfaceDebugRendering
+// ============================================================
+#pragma region 03_TestSurfaceDebugRendering
 
     void TestSurfaceDebugRendering(const GPU::FVulkanContext& Context)
     {
@@ -1218,3 +1244,5 @@ namespace MDSS::Tests
         }
     }
 } // namespace MDSS::Tests
+
+#pragma endregion

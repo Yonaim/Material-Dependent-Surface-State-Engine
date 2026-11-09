@@ -19,6 +19,11 @@
 #include <iterator>
 #include <stdexcept>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace
 {
     using namespace MDSS;
@@ -133,6 +138,13 @@ namespace
               "cached geometry gives identical TransferWeights under nonuniform scale");
     }
 
+#pragma endregion
+
+// ============================================================
+// 01. TestBrickCubeMesoHeightSign
+// ============================================================
+#pragma region 01_TestBrickCubeMesoHeightSign
+
     void TestBrickCubeMesoHeightSign()
     {
         const auto AssetDirectory =
@@ -199,6 +211,13 @@ namespace
                   "BrickCube mortar reconstructs as negative height below the brick faces");
         }
     }
+
+#pragma endregion
+
+// ============================================================
+// 02. Tests
+// ============================================================
+#pragma region 02_Tests
 
     void Tests()
     {
@@ -403,6 +422,13 @@ namespace
     }
 }
 
+#pragma endregion
+
+// ============================================================
+// 03. Test Entry Point
+// ============================================================
+#pragma region 03_Test_Entry_Point
+
 int main()
 {
     try
@@ -418,3 +444,5 @@ int main()
         std::cout << "Surface cache tests passed.\n";
     return Failures == 0 ? 0 : 1;
 }
+
+#pragma endregion

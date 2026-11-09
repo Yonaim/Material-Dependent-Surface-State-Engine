@@ -1,4 +1,9 @@
 """Frozen meso reconstruction/transport sensitivity study; no product algorithm changes."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import argparse, datetime as dt, hashlib, json, pathlib, shutil, subprocess, sys, time
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'Build/ResearchPython'))
@@ -11,6 +16,13 @@ STUDY=ROOT/'Performance-Data/20261027-meso-study'
 EXP=STUDY/'PERF-043-meso'
 RAW=EXP/'raw'
 EXE=ROOT/'Build/Release/MDSS_CouplingStudy.exe'
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
+
 def stamp():return dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
 def write(p,x):p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(x,indent=2,ensure_ascii=False,allow_nan=False),encoding='utf-8')
 def read(p):return json.loads(p.read_text(encoding='utf-8'))
@@ -174,8 +186,17 @@ def reconstruct():
     write(EXP/'reconstruction.json',dict(created_at=stamp(),method='float64 direct solve of same unweighted graph slope least squares; first node pinned, then zero mean',results=results))
     for r in results:print(r['id'],'height error vs LS',format(r['height_relative_rmse_vs_ls'],'.5g'),'edge',format(r['production_edge_relative'],'.5g'),'LS edge',format(r['reference_edge_relative'],'.5g'))
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('stage',choices=['prepare','cpu','reconstruct','gpu','control']);ap.add_argument('--ids',nargs='*',default=[]);a=ap.parse_args()
     if a.stage=='prepare':p=prepare();print(EXP/'plan.json',len(p['conditions']))
     elif a.stage=='reconstruct':reconstruct()
     else:raise SystemExit(run(a.stage,a.ids))
+
+#endregion

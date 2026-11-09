@@ -1,4 +1,9 @@
 """Apply frozen v1 equality gates. No novelty/productivity claim is inferred from implementation counts."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import json
 import pathlib
 import sys
@@ -13,6 +18,13 @@ runs={r["id"]:r for r in manifest["runs"] if r["status"]=="completed"}
 requests={c["id"]:c for c in plan["conditions"]}
 for name in ["cost-reference-plan.json","order-control-plan.json","timing-control-plan.json"]:
     if (EXP/name).exists():requests.update({c["id"]:c for c in json.loads((EXP/name).read_text(encoding="utf-8"))["conditions"]})
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def base(key):return ROOT/runs[key]["output"]
 def array(key,file):return np.fromfile(base(key)/file,dtype="<f4").astype(np.float64)
@@ -112,6 +124,13 @@ def pair(a,b,seconds=None):
                 state_geometry_weights_bit_identical=all_identical,entire_numeric_series_equal=bool(series_equal),
                 snapshots=checks,terminal_relative=terminal,extents_relative=extents.tolist(),cumulative_channel_budgets=cumulative_budget)
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 comparisons=[]
 for c in requests.values():
     if c["implementation"]!="U" or c["stage"] not in ["smoke","diagnostic","cost-reference"]:continue
@@ -170,3 +189,5 @@ result=dict(analyzed_at=stamp(),status="diagnostics_complete" if not remaining e
             limitation="Same numerical services/provider code, independent command coordinator; not independent physics validation or a user productivity study")
 write(EXP/"comparisons.json",result)
 print(json.dumps(dict(completed=result["completed_attempts"],pairs=len(comparisons),failed=result["failed_comparisons"],remaining=remaining,cost_conditions=len(cost)),indent=2))
+
+#endregion

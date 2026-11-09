@@ -1,5 +1,10 @@
 """Build simple UV-mapped stonework for the fountain and basalt showcase scenes."""
 
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from __future__ import annotations
 
 import math
@@ -9,6 +14,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MESHES = ROOT / "Assets" / "Meshes"
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 class ObjWriter:
     def __init__(self, path: Path, material: str):
@@ -144,7 +156,16 @@ def build_bust_debris():
     )
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__ == "__main__":
     build_fountain()
     build_altar()
     build_bust_debris()
+
+#endregion

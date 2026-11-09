@@ -21,6 +21,11 @@
 #include <utility>
 #include <vector>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace
 {
     int FailureCount = 0;
@@ -65,6 +70,13 @@ namespace
     {
         return std::filesystem::path(MDSS_TEST_FIXTURE_DIR) / FileName;
     }
+
+#pragma endregion
+
+// ============================================================
+// 01. TestProfileAndRegistry
+// ============================================================
+#pragma region 01_TestProfileAndRegistry
 
     void TestProfileAndRegistry()
     {
@@ -173,6 +185,13 @@ namespace
               "Registry IDs should be independent of Profile load order");
     }
 
+#pragma endregion
+
+// ============================================================
+// 02. TestTransferFactorValidation
+// ============================================================
+#pragma region 02_TestTransferFactorValidation
+
     void TestTransferFactorValidation()
     {
         using namespace MDSS;
@@ -200,6 +219,13 @@ namespace
             }
         }
     }
+
+#pragma endregion
+
+// ============================================================
+// 03. TestGeometryAndInstanceData
+// ============================================================
+#pragma region 03_TestGeometryAndInstanceData
 
     void TestGeometryAndInstanceData()
     {
@@ -246,6 +272,13 @@ namespace
               "valid geometry should allow an invalid Profile sentinel to disable simulation");
     }
 
+#pragma endregion
+
+// ============================================================
+// 04. TestContactInputType
+// ============================================================
+#pragma region 04_TestContactInputType
+
     void TestContactInputType()
     {
         MDSS::SurfaceState::FSurfaceContactInput Input;
@@ -256,6 +289,13 @@ namespace
         Check(Input.TargetInstance == 11 && Input.State == 3, "input should reference instance and registry State ID");
         Check(Input.Falloff == 1.0F, "contact input should have a stable default falloff");
     }
+
+#pragma endregion
+
+// ============================================================
+// 05. TestRuntimePreprocessing
+// ============================================================
+#pragma region 05_TestRuntimePreprocessing
 
     void TestRuntimePreprocessing()
     {
@@ -301,6 +341,13 @@ namespace
     }
 } // namespace
 
+#pragma endregion
+
+// ============================================================
+// 06. Test Entry Point
+// ============================================================
+#pragma region 06_Test_Entry_Point
+
 int main()
 {
     TestProfileAndRegistry();
@@ -318,3 +365,5 @@ int main()
     std::cout << "All Surface State contract tests passed.\n";
     return 0;
 }
+
+#pragma endregion

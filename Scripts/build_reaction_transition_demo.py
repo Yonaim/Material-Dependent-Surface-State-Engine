@@ -1,5 +1,10 @@
 """Build a side-by-side consuming Transition and multi-input Reaction demo."""
 
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from __future__ import annotations
 
 import json
@@ -14,6 +19,13 @@ MAPS = ROOT / "Assets/SurfaceProfileMaps"
 MESHES = ROOT / "Assets/Meshes/ReactionLab"
 PLATE_MESHES = ROOT / "Assets/Meshes/MarbleCube"
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def save(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
@@ -258,8 +270,17 @@ def build_scene() -> None:
     })
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__ == "__main__":
     build_profiles()
     build_labels()
     build_plate_meshes()
     build_scene()
+
+#endregion

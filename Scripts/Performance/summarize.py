@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Regenerate a Markdown performance report from a benchmark manifest and raw JSONL files."""
 
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from __future__ import annotations
 
 import argparse
@@ -10,6 +15,13 @@ import statistics
 from pathlib import Path
 from typing import Any
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def percentile(values: list[float], fraction: float) -> float:
     ordered = sorted(values)
@@ -35,6 +47,13 @@ def read_samples(manifest_path: Path, run: dict[str, Any]) -> list[dict[str, Any
 def fmt(value: float | None) -> str:
     return "—" if value is None else f"{value:.3f}"
 
+
+#endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+#region 02_Main_Process
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -162,5 +181,14 @@ def main() -> int:
     return 0
 
 
+#endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+#region 03_Script_Execution
+
 if __name__ == "__main__":
     raise SystemExit(main())
+
+#endregion

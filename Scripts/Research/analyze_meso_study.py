@@ -1,4 +1,9 @@
 """Analyse the frozen meso study, preserving nulls and numerical/representation limitations."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import json,pathlib,sys,hashlib,re,datetime as dt
 from meso_study import ROOT,EXP,RAW,read,write,digest,arr,stamp
 import numpy as np
@@ -13,6 +18,13 @@ runs={r['id']:r for r in manifest['runs'] if r['status']=='completed'}
 errors=[]
 channel_budget_checks=[]
 missing=[c['id'] for c in expected if c['id'] not in runs]
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
+
 def folder(k):return ROOT/runs[k]['output']
 def summary(k):return runs[k]['summary']
 def states(k,t='final'):
@@ -37,6 +49,13 @@ def compare(a,b,label,restriction=False):
         area_sum_a=float(arr(folder(a),'areas').sum()),area_sum_b=float(arr(folder(b),'areas').sum()),
         final_extents_a=summary(a)['cumulative_extents'],final_extents_b=summary(b)['cumulative_extents'])
     return record
+
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
 
 for k,r in runs.items():
     f=folder(k)
@@ -188,3 +207,5 @@ fig,ax=plt.subplots(figsize=(12,5.2),layout='constrained');ax.barh(labels,values
 ax.set_xlabel('Waterfilm L1 difference / supplied ice + water (%)');ax.set_title('Observed sensitivities at 4 s | differences are not all numerical errors')
 for i,v in enumerate(values):ax.text(v,i,f' {v:.4g}%',va='center')
 ax.set_xlim(0,max(values)*1.18);fig.savefig(figures/'sensitivities.png');plt.close(fig)
+
+#endregion

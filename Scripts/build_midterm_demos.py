@@ -3,6 +3,11 @@
 Run with Python 3. The dustpan glTF and ground textures come from Poly Haven.
 """
 
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import json
 import math
 import shutil
@@ -15,6 +20,13 @@ ROOT = Path(__file__).resolve().parents[1]
 MESHES = ROOT / "Assets" / "Meshes"
 USER_AGENT = {"User-Agent": "MDSS-Engine midterm demo asset builder"}
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def download(url, path):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -334,9 +346,18 @@ def build_scenes():
           12.0, stone_tracks, stone_contacts)
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__ == "__main__":
     build_ground()
     build_fractured_stone()
     build_dustpan()
     build_scenes()
     print("Midterm demo mesh and texture assets built.")
+
+#endregion

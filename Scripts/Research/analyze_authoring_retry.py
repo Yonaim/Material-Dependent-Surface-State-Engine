@@ -1,4 +1,9 @@
 """Audit fresh rendered references and compare named states; no human productivity inference."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import copy, pathlib, sys
 from authoring_study import ROOT, STUDY, read, write, digest, stamp
 sys.path.insert(0,str(ROOT/'Build/ResearchPython'))
@@ -11,6 +16,13 @@ TEST_RECORD=None
 TEST_ARCHIVE=None
 ALLOWED_PRODUCTION_CHANGES=set()
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def main():
     plan=read(EXP/'plan.json'); manifest=read(EXP/'manifest.json')
@@ -159,4 +171,13 @@ def main():
         print(errors);raise SystemExit(1)
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__=='__main__':main()
+
+#endregion

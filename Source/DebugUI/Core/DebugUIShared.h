@@ -6,6 +6,11 @@
 
 #include "Application/EngineConfig.h"
 #include "Application/SceneFileDialog.h"
+// ============================================================
+// 00. Shared UI Dependencies
+// ============================================================
+#pragma region 00_Shared_UI_Dependencies
+
 #include "Application/Window.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "DebugUI/Core/DebugUI.h"
@@ -49,6 +54,13 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+#pragma endregion
+
+// ============================================================
+// 01. UI Widgets and Display Helpers
+// ============================================================
+#pragma region 01_UI_Widgets_and_Display_Helpers
 
 namespace MDSS
 {
@@ -471,3 +483,5 @@ namespace MDSS
     } // 내부 네임스페이스
 
 }
+
+#pragma endregion

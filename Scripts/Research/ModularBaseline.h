@@ -9,6 +9,11 @@
 #include <string>
 #include <vector>
 
+// ============================================================
+// 00. Module Contracts
+// ============================================================
+#pragma region 00_Module_Contracts
+
 namespace MDSS::Research
 {
 using namespace SurfaceState;
@@ -19,6 +24,13 @@ struct FPhenomenonModule
     bool bHeightContributor = false;
     // All v1 phenomena elect the common LocalFlux provider. No state-name dispatch exists here.
 };
+
+#pragma endregion
+
+// ============================================================
+// 01. Module Selection
+// ============================================================
+#pragma region 01_Module_Selection
 
 inline std::vector<FPhenomenonModule> MakeLocalFluxModules(const FSurfaceStateRegistry& Registry,
                                                           const FSurfaceResponseProfileData& Profile,
@@ -33,6 +45,13 @@ inline std::vector<FPhenomenonModule> MakeLocalFluxModules(const FSurfaceStateRe
     if(bReverse) std::reverse(Modules.begin(),Modules.end());
     return Modules;
 }
+
+#pragma endregion
+
+// ============================================================
+// 02. Compute Provider Ownership and Recording
+// ============================================================
+#pragma region 02_Compute_Provider_Ownership_and_Recording
 
 class FModularCoordinator
 {
@@ -159,3 +178,5 @@ public:
     }
 };
 }
+
+#pragma endregion

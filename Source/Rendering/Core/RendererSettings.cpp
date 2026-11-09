@@ -147,6 +147,13 @@ namespace MDSS::Rendering
         return Activity[0] || Activity[1] || Activity[2];
     }
 
+#pragma endregion
+
+// ============================================================
+// 01. Surface Effect Configuration
+// ============================================================
+#pragma region 01_Surface_Effect_Configuration
+
     void FRenderer::SetDemoSurfaceEffectSettings(const FDemoSurfaceEffectSettings& Settings)
     {
         const auto Roughness = [](float V) { return std::isfinite(V) && V >= 0.05F && V <= 1.0F; };

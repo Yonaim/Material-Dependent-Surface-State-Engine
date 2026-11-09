@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Build MDSS, run the configured scene/resolution matrix, and preserve raw captures."""
 
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from __future__ import annotations
 
 import argparse
@@ -22,6 +27,13 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MATRIX = ROOT / "Config/Performance/solver-resolution-matrix.json"
 DEFAULT_RESULTS = ROOT / "Performance-Data"
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def run_text(command: list[str], *, cwd: Path, timeout: int = 30) -> str:
     try:
@@ -114,6 +126,13 @@ def preserve_inputs(raw_dir: Path, binary: Path) -> dict[str, Any]:
     return {"source_archive": "raw/inputs/source-assets.zip", "patch": "raw/inputs/working-tree.patch",
             "input_hashes": "raw/inputs/sha256.json", "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
 
+
+#endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+#region 02_Main_Process
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -248,5 +267,14 @@ def main() -> int:
     return summary.returncode
 
 
+#endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+#region 03_Script_Execution
+
 if __name__ == "__main__":
     raise SystemExit(main())
+
+#endregion

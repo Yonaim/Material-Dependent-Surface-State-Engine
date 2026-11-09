@@ -1,10 +1,22 @@
 """Execute a saved A/B plan serially; preserve each run and final numerical/visual data."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from __future__ import annotations
 import argparse,datetime as dt,hashlib,json,os,subprocess,sys,time,zipfile,shutil
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
 BLOCKED_REGISTRY=ROOT/'Build/OptimizationLab/blocked-executables.json'
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 class BlockedExecutable(RuntimeError):
     pass
@@ -13,6 +25,13 @@ def save(path,value):
     temporary=path.with_name(path.name+'.tmp')
     temporary.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
     temporary.replace(path)
+
+#endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+#region 02_Main_Process
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -111,4 +130,13 @@ def main():
     save(manifest_path,manifest)
     return 0
 
+#endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+#region 03_Script_Execution
+
 if __name__=='__main__': raise SystemExit(main())
+
+#endregion

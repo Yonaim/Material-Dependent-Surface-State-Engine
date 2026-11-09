@@ -24,6 +24,11 @@
 #include <unordered_map>
 #include <vector>
 
+// ============================================================
+// 00. Types and Resource Interface
+// ============================================================
+#pragma region 00_Types_and_Resource_Interface
+
 namespace MDSS::Asset
 {
     class FAssetManager;
@@ -153,6 +158,8 @@ namespace MDSS::SurfaceState
         FSurfaceTexelMeshGPUVariant                                  FullTexelMesh;
         mutable std::map<std::uint32_t, FSurfaceTexelMeshGPUVariant> TexelMeshVariants;
         std::function<FSurfaceTexelMeshGPUVariant(std::uint32_t)>    MeshVariantFactory;
+
+#pragma endregion
     };
 
 } // namespace MDSS::SurfaceState

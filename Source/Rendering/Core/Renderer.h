@@ -69,6 +69,11 @@ namespace MDSS::Rendering
     class FRenderer
     {
     public:
+// ============================================================
+// 00. Renderer lifecycle
+// ============================================================
+#pragma region 00_Renderer_lifecycle
+
         // Renderer lifecycle
         FRenderer(const GPU::FVulkanContext&         Context,
                   FWindow&                           FWindow,
@@ -83,6 +88,13 @@ namespace MDSS::Rendering
         FRenderer& operator=(const FRenderer&) = delete;
         FRenderer(FRenderer&&) = delete;
         FRenderer& operator=(FRenderer&&) = delete;
+
+#pragma endregion
+
+// ============================================================
+// 01. Frame rendering and simulation clock
+// ============================================================
+#pragma region 01_Frame_rendering_and_simulation_clock
 
         // Frame rendering and simulation clock
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
@@ -107,6 +119,13 @@ namespace MDSS::Rendering
             return FrameCoordinator.GetMaximumStep();
         }
 
+#pragma endregion
+
+// ============================================================
+// 02. Scene resources, resolution, and runtime Profile settings
+// ============================================================
+#pragma region 02_Scene_resources_resolution_and_runtime_Profile_settings
+
         // Scene resources, resolution, and runtime Profile settings
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
         void ReloadSceneResources(const FScene& Scene, bool bResetStateSettings = true);
@@ -130,6 +149,13 @@ namespace MDSS::Rendering
                                        const SurfaceState::FSurfaceStateParameters& Parameters,
                                        bool                                         bKeepRuntimeOverride = true);
 
+#pragma endregion
+
+// ============================================================
+// 03. Swapchain and profiling access
+// ============================================================
+#pragma region 03_Swapchain_and_profiling_access
+
         // Swapchain and profiling access
         [[nodiscard]] const GPU::FSwapchain&                          GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass                                    GetRenderPassHandle() const noexcept;
@@ -143,6 +169,13 @@ namespace MDSS::Rendering
         {
             return ProfilingStats;
         }
+
+#pragma endregion
+
+// ============================================================
+// 04. Benchmark capture and overlay profiling
+// ============================================================
+#pragma region 04_Benchmark_capture_and_overlay_profiling
 
         // Benchmark capture and overlay profiling
         void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
@@ -293,6 +326,13 @@ namespace MDSS::Rendering
             return bRenderPassSubstageTimingsReliable;
         }
 
+#pragma endregion
+
+// ============================================================
+// 05. Render view and debug settings
+// ============================================================
+#pragma region 05_Render_view_and_debug_settings
+
         // Render view and debug settings
         [[nodiscard]] ERenderViewMode GetRenderViewMode() const noexcept;
         [[nodiscard]] ERenderViewMode GetRenderViewMode(std::size_t ViewportIndex) const noexcept;
@@ -381,6 +421,13 @@ namespace MDSS::Rendering
         void                SetAmbientLight(float Intensity);
 
     private:
+#pragma endregion
+
+// ============================================================
+// 06. Benchmark Submission and Material Records
+// ============================================================
+#pragma region 06_Benchmark_Submission_and_Material_Records
+
         struct FBenchmarkFrameSubmission
         {
             std::uint64_t        FrameIndex = std::numeric_limits<std::uint64_t>::max();
@@ -403,6 +450,13 @@ namespace MDSS::Rendering
             std::array<std::unique_ptr<GPU::FGPUBuffer>, FRenderContext::MaxFramesInFlight> UniformBuffers;
             std::array<VkDescriptorSet, FRenderContext::MaxFramesInFlight>                  DescriptorSets{};
         };
+
+#pragma endregion
+
+// ============================================================
+// 07. Render resources and command recording
+// ============================================================
+#pragma region 07_Render_resources_and_command_recording
 
         // Render resources and command recording
         static VkFormat              FindDepthFormat(VkPhysicalDevice PhysicalDevice);
@@ -481,6 +535,13 @@ namespace MDSS::Rendering
                                                                            const FDebugUI&                DebugInterface,
                                                                            const FViewportRecordingState& View);
 
+#pragma endregion
+
+// ============================================================
+// 08. Resource Ownership
+// ============================================================
+#pragma region 08_Resource_Ownership
+
         const GPU::FVulkanContext&         Context;
         FWindow&                           TargetWindow;
         Asset::FAssetManager&              Assets;
@@ -523,34 +584,41 @@ namespace MDSS::Rendering
         std::vector<FMaterialRenderResource>                   MaterialResources;
         VkDeviceSize                                           MaterialUniformStride = 0;
         std::size_t                                            MaterialViewportCapacity = 1;
-        std::vector<ERenderViewMode>                           ViewModes{ERenderViewMode::Lit};
-        bool                                                   bWireframeUniformWhite = true;
-        bool                                                   bSupportsWireframeLineWidth = false;
-        float                                                  WireframeLineWidth = 2.0F;
-        float                                                  WireframeLineWidthMin = 1.0F;
-        float                                                  WireframeLineWidthMax = 1.0F;
-        std::uint32_t                                          DebugStateChannel = 0;
-        bool                                                   bStateHeatmapReliefShadingEnabled = true;
-        bool                                                   bStateHeatmapAllStatesEnabled = false;
-        FSurfaceDebugDisplaySettings                           SurfaceDebugSettings;
-        FDemoSurfaceEffectSettings                             DemoEffects;
-        EOverlayDisplayMode                                    OverlayDisplayMode = EOverlayDisplayMode::Both;
-        EOverlayShadingDiagnostic OverlayShadingDiagnostic = EOverlayShadingDiagnostic::Lit;
-        bool                      bOverlayOnlyDebug = false;
-        bool                      bOverlayTileCullingEnabled = true;
-        bool                      bBaseMeshDrawEnabled = true;
-        bool                      bOverlayTopDrawEnabled = true;
-        bool                      bOverlaySidesDrawEnabled = true;
-        bool                      bSparseHeightSmoothingEnabled = true;
-        bool                      bSharedHeightSmoothingEnabled = false;
-        bool                      bSharedOverlayCoverageEnabled = false;
-        bool                      bSharedStateTextureSmoothingEnabled = false;
-        bool                      bPrecomputeCoverageSmoothingEnabled = true;
-        bool                      bRenderStateTextureSamplingEnabled = true;
-        bool                      bSeparableCoverageSmoothingEnabled = true;
-        EOverlayOccupancyTileSize OverlayOccupancyTileSize = EOverlayOccupancyTileSize::Tile16;
-        std::uint32_t             SurfaceTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
-        std::uint32_t             OverlayTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
+#pragma endregion
+
+// ============================================================
+// 09. View and Display Settings
+// ============================================================
+#pragma region 09_View_and_Display_Settings
+
+        std::vector<ERenderViewMode> ViewModes{ERenderViewMode::Lit};
+        bool                         bWireframeUniformWhite = true;
+        bool                         bSupportsWireframeLineWidth = false;
+        float                        WireframeLineWidth = 2.0F;
+        float                        WireframeLineWidthMin = 1.0F;
+        float                        WireframeLineWidthMax = 1.0F;
+        std::uint32_t                DebugStateChannel = 0;
+        bool                         bStateHeatmapReliefShadingEnabled = true;
+        bool                         bStateHeatmapAllStatesEnabled = false;
+        FSurfaceDebugDisplaySettings SurfaceDebugSettings;
+        FDemoSurfaceEffectSettings   DemoEffects;
+        EOverlayDisplayMode          OverlayDisplayMode = EOverlayDisplayMode::Both;
+        EOverlayShadingDiagnostic    OverlayShadingDiagnostic = EOverlayShadingDiagnostic::Lit;
+        bool                         bOverlayOnlyDebug = false;
+        bool                         bOverlayTileCullingEnabled = true;
+        bool                         bBaseMeshDrawEnabled = true;
+        bool                         bOverlayTopDrawEnabled = true;
+        bool                         bOverlaySidesDrawEnabled = true;
+        bool                         bSparseHeightSmoothingEnabled = true;
+        bool                         bSharedHeightSmoothingEnabled = false;
+        bool                         bSharedOverlayCoverageEnabled = false;
+        bool                         bSharedStateTextureSmoothingEnabled = false;
+        bool                         bPrecomputeCoverageSmoothingEnabled = true;
+        bool                         bRenderStateTextureSamplingEnabled = true;
+        bool                         bSeparableCoverageSmoothingEnabled = true;
+        EOverlayOccupancyTileSize    OverlayOccupancyTileSize = EOverlayOccupancyTileSize::Tile16;
+        std::uint32_t                SurfaceTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
+        std::uint32_t                OverlayTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
         std::optional<SurfaceState::FSurfaceTexelSelection> InspectedTexel;
         std::unique_ptr<SurfaceState::FTexelInspector>      TexelInspector;
         ESolverTransferWeightView                 SolverTransferWeightView = ESolverTransferWeightView::Combined;
@@ -561,13 +629,20 @@ namespace MDSS::Rendering
         float                                     NormalStrength = 1.0F;
         float                                     AmbientLight = 0.25F;
         std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>, SurfaceState::FSurfaceStateParameters>
-                                                                                 DebugProfileParameterOverrides;
-        std::vector<VkSemaphore>                                                 RenderFinishedSemaphores;
-        VkQueryPool                                                              TimestampQueryPool = VK_NULL_HANDLE;
-        std::array<bool, FRenderContext::MaxFramesInFlight>                      bTimestampQueriesSubmitted{};
-        std::array<std::uint32_t, FRenderContext::MaxFramesInFlight>             SolverTimestampStepsSubmitted{};
-        std::array<std::uint32_t, FRenderContext::MaxFramesInFlight>             OverlayTimestampLayersSubmitted{};
-        std::array<EOverlayDisplayMode, FRenderContext::MaxFramesInFlight>       OverlayDisplayModesSubmitted{};
+                                                                           DebugProfileParameterOverrides;
+        std::vector<VkSemaphore>                                           RenderFinishedSemaphores;
+        VkQueryPool                                                        TimestampQueryPool = VK_NULL_HANDLE;
+        std::array<bool, FRenderContext::MaxFramesInFlight>                bTimestampQueriesSubmitted{};
+        std::array<std::uint32_t, FRenderContext::MaxFramesInFlight>       SolverTimestampStepsSubmitted{};
+        std::array<std::uint32_t, FRenderContext::MaxFramesInFlight>       OverlayTimestampLayersSubmitted{};
+        std::array<EOverlayDisplayMode, FRenderContext::MaxFramesInFlight> OverlayDisplayModesSubmitted{};
+#pragma endregion
+
+// ============================================================
+// 10. Benchmark Capture State
+// ============================================================
+#pragma region 10_Benchmark_Capture_State
+
         std::array<FBenchmarkFrameSubmission, FRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
         std::ofstream                                                            BenchmarkOutput;
         std::filesystem::path                                                    BenchmarkOutputPath;
@@ -579,7 +654,14 @@ namespace MDSS::Rendering
         bool                                                                     bBenchmarkCaptureEnabled = false;
         std::unique_ptr<GPU::FGPUBuffer>                                         BenchmarkScreenshot;
         VkExtent2D                                                               BenchmarkScreenshotExtent{};
-        VkFormat                BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
+        VkFormat BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
+#pragma endregion
+
+// ============================================================
+// 11. Timestamp and Profiling State
+// ============================================================
+#pragma region 11_Timestamp_and_Profiling_State
+
         float                   BenchmarkGpuElapsed = -1.0F;
         float                   BenchmarkSimulationElapsed = -1.0F;
         std::uint32_t           TimestampQueriesPerFrame = 24;
@@ -592,5 +674,7 @@ namespace MDSS::Rendering
         float                   LastSolverPass1GpuMilliseconds = -1.0F;
         float                   LastSolverPass2GpuMilliseconds = -1.0F;
         FRendererProfilingStats ProfilingStats;
+
+#pragma endregion
     };
 } // MDSS 네임스페이스

@@ -16,6 +16,11 @@
 #include <string>
 #include <utility>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace
 {
     int FailureCount = 0;
@@ -105,6 +110,13 @@ namespace
         return false;
     }
 
+#pragma endregion
+
+// ============================================================
+// 01. TestOBJTopologyPreservation
+// ============================================================
+#pragma region 01_TestOBJTopologyPreservation
+
     void TestOBJTopologyPreservation()
     {
         const MDSS::Asset::FOBJLoadResult Mesh = MDSS::Asset::FOBJLoader::Load(GetMappingFixturePath("QuadSeam.obj"));
@@ -118,6 +130,13 @@ namespace
               "different UVs should split the shared position into distinct render vertices");
         Check(A.Surface == 0 && B.Surface == 0, "OBJ triangles without materials should use Surface zero");
     }
+
+#pragma endregion
+
+// ============================================================
+// 02. TestSingleTriangleRasterization
+// ============================================================
+#pragma region 02_TestSingleTriangleRasterization
 
     void TestSingleTriangleRasterization()
     {
@@ -138,6 +157,13 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 03. TestRegularChartNeighbors
+// ============================================================
+#pragma region 03_TestRegularChartNeighbors
+
     void TestRegularChartNeighbors()
     {
         const MDSS::SurfaceState::FSurfaceMappingData Mapping = BuildFixture("QuadNoSeam.obj");
@@ -145,6 +171,13 @@ namespace
               "triangles sharing a UV edge should connect through regular texel neighbors");
         Check(!HasCrossChartNeighbor(Mapping), "quad without a seam should remain one UV chart");
     }
+
+#pragma endregion
+
+// ============================================================
+// 04. TestSeamNeighbors
+// ============================================================
+#pragma region 04_TestSeamNeighbors
 
     void TestSeamNeighbors()
     {
@@ -154,12 +187,26 @@ namespace
         Check(Mapping.Warnings.empty(), "prepared seam fixture should not produce mapping warnings");
     }
 
+#pragma endregion
+
+// ============================================================
+// 05. TestDisconnectedTopology
+// ============================================================
+#pragma region 05_TestDisconnectedTopology
+
     void TestDisconnectedTopology()
     {
         const MDSS::SurfaceState::FSurfaceMappingData Mapping = BuildFixture("DisconnectedQuads.obj", 24);
         Check(!HasCrossChartNeighbor(Mapping),
               "spatially close but topologically disconnected charts must not become neighbors");
     }
+
+#pragma endregion
+
+// ============================================================
+// 06. TestDeterministicResult
+// ============================================================
+#pragma region 06_TestDeterministicResult
 
     void TestDeterministicResult()
     {
@@ -175,6 +222,13 @@ namespace
                   "mapping output should be deterministic");
         }
     }
+
+#pragma endregion
+
+// ============================================================
+// 07. TestMultipleSurfaceRanges
+// ============================================================
+#pragma region 07_TestMultipleSurfaceRanges
 
     void TestMultipleSurfaceRanges()
     {
@@ -213,6 +267,13 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 08. TestInvalidFixtures
+// ============================================================
+#pragma region 08_TestInvalidFixtures
+
     void TestInvalidFixtures()
     {
         CheckThrows([] { (void)BuildFixture("DegenerateUV.obj"); }, "UV area", "degenerate UV triangle");
@@ -221,6 +282,13 @@ namespace
         CheckThrows(
             [] { (void)BuildFixture("MissingUV.obj"); }, "missing a Simulation UV", "OBJ without UV coordinates");
     }
+
+#pragma endregion
+
+// ============================================================
+// 09. TestInvariantValidation
+// ============================================================
+#pragma region 09_TestInvariantValidation
 
     void TestInvariantValidation()
     {
@@ -260,6 +328,13 @@ namespace
     }
 } // namespace
 
+#pragma endregion
+
+// ============================================================
+// 10. Test Entry Point
+// ============================================================
+#pragma region 10_Test_Entry_Point
+
 int main()
 {
     TestOBJTopologyPreservation();
@@ -281,3 +356,5 @@ int main()
     std::cout << "All Surface Mapping tests passed.\n";
     return 0;
 }
+
+#pragma endregion

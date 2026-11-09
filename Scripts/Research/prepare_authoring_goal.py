@@ -1,4 +1,9 @@
 """Prepare a falsifiable single-system authoring task; do not run or score it."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import copy
 import os
 import pathlib
@@ -12,6 +17,13 @@ SOURCE_ANIMATION = ROOT / 'Assets/Animations/IceReactionLab.DemoAnim'
 SOURCE_PROFILE = ROOT / 'Assets/SurfaceProfiles/IceReactionLab.SRProfile'
 SOURCE_MAP = ROOT / 'Assets/SurfaceProfileMaps/IceReactionLab.SurfaceProfileMap'
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def relative(path, directory):
     return os.path.relpath(path, directory).replace('\\', '/')
@@ -136,5 +148,14 @@ def prepare():
     print('Task specification and 8 isolated input files prepared; application runs: 0')
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__ == '__main__':
     prepare()
+
+#endregion

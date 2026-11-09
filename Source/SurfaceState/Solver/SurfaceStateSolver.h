@@ -17,6 +17,11 @@
 #include <glm/vec3.hpp>
 #include <span>
 
+// ============================================================
+// 00. Types and Resource Interface
+// ============================================================
+#pragma region 00_Types_and_Resource_Interface
+
 namespace MDSS::SurfaceState
 {
     inline constexpr std::uint32_t SurfaceSolverStateDrivenGeometryUpdateFlag = 1U << 6U;
@@ -153,5 +158,7 @@ namespace MDSS::SurfaceState
         std::array<VkPipeline, 3>  DynamicTransferWeightPipelines{};
         std::array<VkPipeline, 11> Pass1Pipelines{};
         std::array<VkPipeline, 11> Pass2Pipelines{};
+
+#pragma endregion
     };
 } // namespace MDSS::SurfaceState

@@ -30,14 +30,40 @@
 #include <stdexcept>
 #include <string_view>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace MDSS::Tests
 {
     using namespace MDSS::GPU;
     using namespace MDSS::Rendering;
     using namespace MDSS::Asset;
     using namespace MDSS::SurfaceState;
+#pragma endregion
+
+// ============================================================
+// 01. TestSurfaceDebugRendering
+// ============================================================
+#pragma region 01_TestSurfaceDebugRendering
+
     void TestSurfaceDebugRendering(const GPU::FVulkanContext& Context);
+#pragma endregion
+
+// ============================================================
+// 02. TestOverlaySideCompaction
+// ============================================================
+#pragma region 02_TestOverlaySideCompaction
+
     void TestOverlaySideCompaction(const GPU::FVulkanContext& Context);
+#pragma endregion
+
+// ============================================================
+// 03. TestCavityFillDisplayBound
+// ============================================================
+#pragma region 03_TestCavityFillDisplayBound
+
     void TestCavityFillDisplayBound(const GPU::FVulkanContext& Context);
 }
 
@@ -153,6 +179,13 @@ namespace
         GPU.GetSceneProfileParametersBuffer().Download(&Parameters, sizeof(Parameters), Offset);
         return Parameters.CapacityInputAndTransfer[1];
     }
+
+#pragma endregion
+
+// ============================================================
+// 04. TestDemoAnimation
+// ============================================================
+#pragma region 04_TestDemoAnimation
 
     void TestDemoAnimation(const GPU::FVulkanContext& Context, const FFixtures& Fixtures)
     {
@@ -393,6 +426,13 @@ namespace
             glm::mat3(LavaScene.GetStaticMeshInstances()[0].GetTransform().GetMatrix()) * glm::vec3(0, 1, 0);
         Check(LavaUp.z < 0.0F, "Lava Mountain animation must turn its basin upside down");
     }
+
+#pragma endregion
+
+// ============================================================
+// 05. TestSceneResources
+// ============================================================
+#pragma region 05_TestSceneResources
 
     void TestSceneResources(FWindow& Window, const GPU::FVulkanContext& Context, const FFixtures& Fixtures)
     {
@@ -673,6 +713,13 @@ namespace
     }
 }
 
+#pragma endregion
+
+// ============================================================
+// 06. Test Entry Point
+// ============================================================
+#pragma region 06_Test_Entry_Point
+
 int main(int Argc, char* Argv[])
 {
     std::unique_ptr<MDSS::FWindow>             Window;
@@ -844,3 +891,5 @@ int main(int Argc, char* Argv[])
         return 1;
     }
 }
+
+#pragma endregion

@@ -1,4 +1,9 @@
 """Regenerate A/B timing and final-state/image comparison tables from run_suite outputs."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from __future__ import annotations
 import argparse,json,math,statistics as st,sys
 from pathlib import Path
@@ -48,6 +53,13 @@ COMPARISONS=[
  ('G6','render_math_reuse_ssbo','render_ssbo_reuse_off','render_ssbo_reuse_on','render_gpu_ms'),
  ('G7','top_triangle_compaction','full_top','compact_top','render_gpu_ms'),
 ]
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def load(path):return json.loads(path.read_text(encoding='utf8'))
 def sample_paths(base,run):return base/run['raw']
@@ -125,6 +137,13 @@ def quality(base,a,b):
                        'image_changed_pixel_fraction':float(np.mean(np.any(diff!=0,axis=2))),
                        'image_psnr_db':20*math.log10(255/rmse) if rmse else None})
     return result
+
+#endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+#region 02_Main_Process
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--result',type=Path,required=True);args=ap.parse_args()
@@ -215,4 +234,13 @@ def main():
     (base/'comparisons.md').write_text('\n'.join(lines)+'\n',encoding='utf8')
     print(f"Analyzed {audit['complete_runs']} runs; {len(rows)} paired case comparisons; errors={len(bad)}")
 
+#endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+#region 03_Script_Execution
+
 if __name__=='__main__':main()
+
+#endregion

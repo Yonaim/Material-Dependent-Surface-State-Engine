@@ -1,4 +1,9 @@
 """Immutable v1 requests, independent Vulkan runs, explicit failures, and reproducibility archives."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import argparse
 import json
 import pathlib
@@ -12,6 +17,13 @@ from run_coupling_study import ROOT, EXE, digest, stamp, write, compact_mapping_
 SPEC_PATH=ROOT/"Scripts/Research/Plans/modular-baseline-v1.json"
 EXP=ROOT/"Performance-Data/20261026-coupling-study/baseline"
 RAW=EXP/"raw"
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def prepare():
     if (EXP/"plan.json").exists():return json.loads((EXP/"plan.json").read_text(encoding="utf-8"))
@@ -135,6 +147,13 @@ def structural_stop():
     print("STRUCTURAL NO-GO: v1 tasks require no task-specific modular core changes; large cost collection stopped by declared rule",flush=True)
     return True
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__=="__main__":
     ap=argparse.ArgumentParser();ap.add_argument("stage",choices=["prepare","smoke","diagnostic","separate","ledger-off","reverse","order-control","timing-smoke","cost-reference","cost","finish"])
     ap.add_argument("--ids",nargs="*",default=[]);a=ap.parse_args()
@@ -150,3 +169,5 @@ if __name__=="__main__":
             if run(stage,[]):raise SystemExit(1)
         subprocess.run([sys.executable,str(ROOT/"Scripts/Research/analyze_modular_baseline.py")],cwd=ROOT,check=True)
     else:raise SystemExit(run(a.stage,a.ids))
+
+#endregion

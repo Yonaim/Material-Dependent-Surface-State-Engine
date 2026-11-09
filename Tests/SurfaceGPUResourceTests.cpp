@@ -23,6 +23,11 @@
 #include <tuple>
 #include <vector>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace
 {
     int FailureCount = 0;
@@ -41,6 +46,13 @@ namespace
             std::cerr << "FAIL: " << Message << '\n';
         }
     }
+
+#pragma endregion
+
+// ============================================================
+// 01. TestMesoPeakPacking
+// ============================================================
+#pragma region 01_TestMesoPeakPacking
 
     void TestMesoPeakPacking()
     {
@@ -276,6 +288,13 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 02. TestCompactScratchStorage
+// ============================================================
+#pragma region 02_TestCompactScratchStorage
+
     void TestCompactScratchStorage(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
@@ -334,6 +353,13 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 03. TestLazyMeshStorage
+// ============================================================
+#pragma region 03_TestLazyMeshStorage
+
     void TestLazyMeshStorage(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
@@ -358,6 +384,13 @@ namespace
         Check(Shared.GetTexelMeshVariant(128).VertexCount > 0U, "a released resolution can be rebuilt on demand");
     }
 
+#pragma endregion
+
+// ============================================================
+// 04. TestRetiredBufferReuse
+// ============================================================
+#pragma region 04_TestRetiredBufferReuse
+
     void TestRetiredBufferReuse(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
@@ -378,6 +411,13 @@ namespace
         CheckZeroBuffer(
             Replacement.GetRawOutgoingBuffer(), 4U * (SurfaceNeighborCount + 1U), "reused raw outgoing buffer");
     }
+
+#pragma endregion
+
+// ============================================================
+// 05. TestGPUResources
+// ============================================================
+#pragma region 05_TestGPUResources
 
     void TestGPUResources(FVulkanTestDevice& Vulkan)
     {
@@ -538,6 +578,13 @@ namespace
         Check(ProfileSupported[0] == 1U, "defined Profile channel should be marked supported");
     }
 
+#pragma endregion
+
+// ============================================================
+// 06. TestDirectionalCavityRetention
+// ============================================================
+#pragma region 06_TestDirectionalCavityRetention
+
     void TestDirectionalCavityRetention(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
@@ -606,6 +653,13 @@ namespace
         Check(Retained[1] > 0.0F && Retained[1] < Unretained[1] * 0.1F,
               "inverted Lava-like cavity must strongly resist downhill exit");
     }
+
+#pragma endregion
+
+// ============================================================
+// 07. TestGPUSolver
+// ============================================================
+#pragma region 07_TestGPUSolver
 
     void TestGPUSolver(FVulkanTestDevice& Vulkan)
     {
@@ -686,6 +740,13 @@ namespace
         Check(std::abs(State[0] - 0.625F) < 1.0e-4F && std::abs(State[1] - 0.375F) < 1.0e-4F,
               "third solver step should continue deterministic diffusion");
     }
+
+#pragma endregion
+
+// ============================================================
+// 08. TestPerWorkgroupChannelMask
+// ============================================================
+#pragma region 08_TestPerWorkgroupChannelMask
 
     void TestPerWorkgroupChannelMask(FVulkanTestDevice& Vulkan)
     {
@@ -784,6 +845,13 @@ namespace
         Check(Result[64U * Channels + Mud] == 0.0F,
               "per-WG cleanup should overwrite stale state in the opposite ping-pong buffer");
     }
+
+#pragma endregion
+
+// ============================================================
+// 09. TestAreaAndMobility
+// ============================================================
+#pragma region 09_TestAreaAndMobility
 
     void TestAreaAndMobility(FVulkanTestDevice& Vulkan)
     {
@@ -899,6 +967,13 @@ namespace
               "zero area must freeze transport while retaining existing amounts");
     }
 
+#pragma endregion
+
+// ============================================================
+// 10. TestCalibratedGeometrySpeed
+// ============================================================
+#pragma region 10_TestCalibratedGeometrySpeed
+
     void TestCalibratedGeometrySpeed(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
@@ -974,6 +1049,13 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 11. TestGeometryDrivenSolver
+// ============================================================
+#pragma region 11_TestGeometryDrivenSolver
+
     void TestGeometryDrivenSolver(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
@@ -1041,6 +1123,13 @@ namespace
         Check(std::abs(Limited[0]) < 1.0e-4F && std::abs(Limited[1] - 1.4F) < 1.0e-4F,
               "유출은 source 보유량으로 제한하고 target의 Capacity 초과량은 보존해야 한다.");
     }
+
+#pragma endregion
+
+// ============================================================
+// 12. TestMesoGeometryDrive
+// ============================================================
+#pragma region 12_TestMesoGeometryDrive
 
     void TestMesoGeometryDrive(FVulkanTestDevice& Vulkan)
     {
@@ -1182,6 +1271,13 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 13. TestSourceGeometryChannelReuse
+// ============================================================
+#pragma region 13_TestSourceGeometryChannelReuse
+
     void TestSourceGeometryChannelReuse(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
@@ -1248,6 +1344,13 @@ namespace
                   std::abs(Result[FastChannel] + Result[3 + FastChannel] - 1.0F) < 1.0e-5F,
               "shared source geometry must preserve distinct Registry channel rates, capacities and conservation");
     }
+
+#pragma endregion
+
+// ============================================================
+// 14. TestTransferWeightSolver
+// ============================================================
+#pragma region 14_TestTransferWeightSolver
 
     void TestTransferWeightSolver(FVulkanTestDevice& Vulkan)
     {
@@ -1394,6 +1497,13 @@ namespace
         Check(std::abs(NormalResult[0] - 0.875F) < 1.0e-4F && std::abs(NormalResult[1] - 0.125F) < 1.0e-4F,
               "GPU solver flux should use the Normal Map-derived NormalWeight from the cache");
     }
+
+#pragma endregion
+
+// ============================================================
+// 15. TestStateDrivenGeometryUpdate
+// ============================================================
+#pragma region 15_TestStateDrivenGeometryUpdate
 
     void TestStateDrivenGeometryUpdate(FVulkanTestDevice& Vulkan)
     {
@@ -1610,6 +1720,13 @@ namespace
               "changed geometry update should dispatch geometry and transfer-weight workgroups");
     }
 
+#pragma endregion
+
+// ============================================================
+// 16. TestSparseGeometryUpdateWeights
+// ============================================================
+#pragma region 16_TestSparseGeometryUpdateWeights
+
     void TestSparseGeometryUpdateWeights(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
@@ -1781,6 +1898,13 @@ namespace
         }
         return Out;
     }
+
+#pragma endregion
+
+// ============================================================
+// 17. TestLocalReactions
+// ============================================================
+#pragma region 17_TestLocalReactions
 
     void TestLocalReactions(FVulkanTestDevice& V)
     {
@@ -1973,6 +2097,13 @@ namespace
 
 } // namespace
 
+#pragma endregion
+
+// ============================================================
+// 18. Test Entry Point
+// ============================================================
+#pragma region 18_Test_Entry_Point
+
 int main(int argc, char** argv)
 {
     try
@@ -2033,3 +2164,5 @@ int main(int argc, char** argv)
     std::cout << "Surface GPU resource checks passed.\n";
     return 0;
 }
+
+#pragma endregion

@@ -112,6 +112,11 @@
 - **동기화:** Debug UI Source·5.5 계획·Current Work·Validation 갱신. API/직렬화/GPU·pass 흐름 의미가 같아 Contracts/Flows 본문 추가 수정 불필요. [증거](../../../Build/Validation/20261109-224136-vault55-debugui/summary.md).
 - **상태:** FDebugUI 첫 적용만 완료. 나머지 상태/대형 파일은 후보별 검토 후 별도 두 단계로 수행. 기존 미커밋 작업 보존·이번 커밋/push 없음.
 
+## 2026-11-09 — Universal 5.5 프로젝트 전체 1단계
+- 사용자 지시로 FDebugUI 첫 적용에서 Source/Shaders/Scripts/Tests/루트 실행 도구 전체(319개 파일)로 확대. 외부/생성물/중첩 템플릿 볼트/자산은 제외. 150줄은 후보 탐색용이며 작은 단일 책임 파일은 무리하게 분리하지 않는다.
+- 먼저 42개 파일의 누락 구획 정리: Renderer/SurfaceStateSystem 등 헤더·테스트 시나리오 및 Python의 imports/config/helper/main/execution 구획. 기존 GPU shader 구획과 작은 실행 진입점은 유지.
+- C++ 코드 토큰·선언/접근 순서 동일, Python AST 동일, 전체 Debug build 성공. stage1 스냅샷/검증을 보존한 뒤 실제 책임 추출을 별도 작업으로 진행한다. 기존 작업/실패 정책 보존·커밋 없음.
+
 ## 2026-11-09 — 누적 변경 분할 커밋
 
 - 사용자 요청에 따라 기존 변경을 의미 단위로 분리한다. 소스 작업 폴더를 유지하고 보존된 단계별 스냅샷으로 인덱스를 구성했다.
@@ -124,3 +129,4 @@
   - Docs(Standards): Universal 5.5의 2단계 리팩터링 규칙 반영
   - Style(DebugUI): 클래스 선언을 책임별 14개 섹션으로 구획
   - Refactor(DebugUI): 프로파일링 누적 상태와 계산 책임 추출
+  - Style(Code): 프로젝트 전반의 섹션과 탐색 구조 정리

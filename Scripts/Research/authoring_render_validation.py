@@ -1,10 +1,22 @@
 """Render isolated reference fixtures; this is not a timed human authoring study."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import copy, os, pathlib, shutil, subprocess, sys
 from authoring_study import ROOT, STUDY, PACK, read, write, stamp, digest
 
 EXE = ROOT/'Build/bin/Release/MDSS.exe'
 OUT = STUDY/'render-validation'
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def prepare():
     if (OUT/'plan.json').exists():
@@ -124,6 +136,13 @@ def run():
         raise SystemExit(1)
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__ == '__main__':
     if len(sys.argv)!=2 or sys.argv[1] not in ['prepare','run']:
         raise SystemExit('Usage: authoring_render_validation.py prepare|run')
@@ -131,3 +150,5 @@ if __name__ == '__main__':
         print('Prepared',len(prepare()['runs']),'reference render validations')
     else:
         run()
+
+#endregion

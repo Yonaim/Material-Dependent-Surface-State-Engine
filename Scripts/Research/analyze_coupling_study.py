@@ -1,4 +1,9 @@
 """Compute reproducible paired effects and numerical sensitivities, without promoting them to novelty."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import json
 import pathlib
 import sys
@@ -12,6 +17,13 @@ from run_coupling_study import ROOT, STUDY, EXPERIMENT, write
 manifest=json.loads((EXPERIMENT/"manifest.json").read_text(encoding="utf-8"))
 runs={r["id"]:r for r in manifest["runs"] if r["status"]=="completed"}
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def folder(key):
     return ROOT/runs[key]["output"]
@@ -46,6 +58,13 @@ def compare(a,b):
         downstream_difference=(np.array(end_a["downstream_sums"])-end_b["downstream_sums"]).tolist(),
         extents_a=end_a["cumulative_extents"],extents_b=end_b["cumulative_extents"])
 
+
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
 
 comparisons=[]
 for case in ["plate","bunny","mud"]:
@@ -214,3 +233,5 @@ for c in comparisons:
     lines.append(f"| {c['a']} vs {c['b']} | {values['heat']:.6g} | {values['ice']:.6g} | {values['waterfilm']:.6g} | {c['bit_identical']} |")
 (EXPERIMENT/"comparisons.md").write_text("\n".join(lines)+"\n",encoding="utf-8")
 print(json.dumps(dict(completed=len(runs),initial_checks=initial_checks,comparisons=comparisons),indent=2))
+
+#endregion

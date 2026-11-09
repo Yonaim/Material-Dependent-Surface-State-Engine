@@ -25,6 +25,11 @@
 #include <utility>
 #include <vector>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace
 {
     int FailureCount = 0;
@@ -63,6 +68,13 @@ namespace
         const MDSS::Asset::FOBJLoadResult Mesh = MDSS::Asset::FOBJLoader::Load(Fixture("Mapping/QuadNoSeam.obj"));
         return MDSS::SurfaceState::FSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {8, 8}}});
     }
+
+#pragma endregion
+
+// ============================================================
+// 01. TestProfileDistribution
+// ============================================================
+#pragma region 01_TestProfileDistribution
 
     void TestProfileDistribution()
     {
@@ -110,6 +122,13 @@ namespace
             "non-negative integer",
             "non-integer Surface ID");
     }
+
+#pragma endregion
+
+// ============================================================
+// 02. TestGeometryBuild
+// ============================================================
+#pragma region 02_TestGeometryBuild
 
     void TestGeometryBuild()
     {
@@ -196,6 +215,13 @@ namespace
               "valid geometry should preserve the sentinel that disables simulation for a texel");
     }
 
+#pragma endregion
+
+// ============================================================
+// 03. TestTexelMesh
+// ============================================================
+#pragma region 03_TestTexelMesh
+
     void TestTexelMesh()
     {
         using namespace MDSS;
@@ -242,6 +268,13 @@ namespace
         Check(BuildSurfaceTexelMesh(Geometry).Surfaces[1].IndexCount == 0,
               "degenerate triangles must not produce render indices");
     }
+
+#pragma endregion
+
+// ============================================================
+// 04. TestStitchedSourceMesh
+// ============================================================
+#pragma region 04_TestStitchedSourceMesh
 
     void TestStitchedSourceMesh()
     {
@@ -313,6 +346,13 @@ namespace
               "unsampled connected components must retain zero displacement");
     }
 
+#pragma endregion
+
+// ============================================================
+// 05. TestCubeTopDiagonalDisplacement
+// ============================================================
+#pragma region 05_TestCubeTopDiagonalDisplacement
+
     void TestCubeTopDiagonalDisplacement()
     {
         using namespace MDSS;
@@ -344,6 +384,13 @@ namespace
         Check(TopDiagonalVertices > 0, "cube top diagonal must contain refined render vertices");
     }
 
+#pragma endregion
+
+// ============================================================
+// 06. TestRuntimePreprocessing
+// ============================================================
+#pragma region 06_TestRuntimePreprocessing
+
     void TestRuntimePreprocessing()
     {
         using namespace MDSS;
@@ -369,6 +416,13 @@ namespace
         Check(First.Geometry->GetProfileMap() == Second.Geometry->GetProfileMap(),
               "identical Runtime inputs should deterministically reproduce the texel Profile map");
     }
+
+#pragma endregion
+
+// ============================================================
+// 07. TestMacroConcavityWithoutNormalMap
+// ============================================================
+#pragma region 07_TestMacroConcavityWithoutNormalMap
 
     void TestMacroConcavityWithoutNormalMap()
     {
@@ -405,6 +459,13 @@ namespace
     }
 } // namespace
 
+#pragma endregion
+
+// ============================================================
+// 08. Test Entry Point
+// ============================================================
+#pragma region 08_Test_Entry_Point
+
 int main()
 {
     TestProfileDistribution();
@@ -423,3 +484,5 @@ int main()
     std::cout << "All shared geometry tests passed.\n";
     return 0;
 }
+
+#pragma endregion

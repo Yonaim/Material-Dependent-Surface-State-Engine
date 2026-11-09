@@ -1,4 +1,9 @@
 """Audit archived experiment outputs independently of the timing comparison tables."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from pathlib import Path
 import argparse, collections, datetime, hashlib, json, math
 
@@ -8,9 +13,23 @@ FOLDERS = ['20261022-optimization-suite-main', '20261022-single-transport-valida
            '20261022-workload-supplement', '20261022-development-history']
 
 
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
+
 def load(path):
     return json.loads(path.read_text(encoding='utf8'))
 
+
+#endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+#region 02_Main_Process
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -149,5 +168,14 @@ def main():
     return bool(errors)
 
 
+#endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+#region 03_Script_Execution
+
 if __name__ == '__main__':
     raise SystemExit(main())
+
+#endregion

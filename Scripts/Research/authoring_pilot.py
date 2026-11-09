@@ -1,4 +1,9 @@
 """Archive and execute opt-in, synchronized authoring checkpoints. No human data."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import argparse
 import copy
 import os
@@ -13,6 +18,13 @@ OUT = STUDY / 'goal-v1/pilot'
 EXE = ROOT / 'Build/bin/Release/MDSS.exe'
 OLD = STUDY / 'layout-lifetime-fix/render/raw/absorbedwetness'
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def prepare(kind):
     folder = OUT / 'raw' / kind
@@ -114,8 +126,17 @@ def run(kind):
     if record['status']!='completed':raise SystemExit(1)
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('kind',choices=['compatibility','candidate-01','candidate-01-retry'])
     ap.add_argument('--prepare-only',action='store_true');args=ap.parse_args()
     if args.prepare_only:prepare(args.kind)
     else:run(args.kind)
+
+#endregion

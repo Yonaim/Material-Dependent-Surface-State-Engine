@@ -1,9 +1,21 @@
 """Prepare isolated authoring tasks and verify capability boundaries; never fabricate human data."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import argparse,copy,datetime as dt,hashlib,json,os,pathlib,shutil,subprocess,sys
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 STUDY=ROOT/'Performance-Data/20261027-authoring-readiness'
 PACK=STUDY/'raw/task-pack'
 EXE=ROOT/'Build/Release/MDSS_AuthoringProbe.exe'
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
+
 def stamp():return dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).isoformat()
 def read(p):return json.loads(p.read_text(encoding='utf-8'))
 def write(p,x):p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(x,indent=2,ensure_ascii=False),encoding='utf-8')
@@ -119,7 +131,16 @@ def probe():
     if scene_errors:raise RuntimeError('Broken scene references')
     print(json.dumps(dict(status=output['status'],cases=len(results),binding_checks='passed',scene_reference_errors=scene_errors,human_sessions=0),indent=2))
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('stage',choices=['prepare','probe']);a=ap.parse_args()
     if a.stage=='prepare':print('Prepared',len(prepare()['tasks']),'authoring task fixtures')
     else:probe()
+
+#endregion

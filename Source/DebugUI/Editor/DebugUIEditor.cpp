@@ -251,6 +251,13 @@ namespace MDSS
         ImGui::End();
     }
 
+#pragma endregion
+
+// ============================================================
+// 01. Animation and Presentation
+// ============================================================
+#pragma region 01_Animation_and_Presentation
+
     void FDebugUI::ReplayDemo(FScene& SceneData)
     {
         bFrameTimeResetRequested = true;
@@ -380,6 +387,13 @@ namespace MDSS
         }
         ImGui::End();
     }
+
+#pragma endregion
+
+// ============================================================
+// 02. Selection and Gizmo Interaction
+// ============================================================
+#pragma region 02_Selection_and_Gizmo_Interaction
 
     void FDebugUI::ProcessSelectionAndGizmo(FScene& SceneData)
     {
@@ -724,6 +738,13 @@ namespace MDSS
             SelectedObject.reset();
         }
     }
+
+#pragma endregion
+
+// ============================================================
+// 03. Object and Camera Editing
+// ============================================================
+#pragma region 03_Object_and_Camera_Editing
 
     void FDebugUI::DrawSelectedObjectWindow(FScene& SceneData)
     {

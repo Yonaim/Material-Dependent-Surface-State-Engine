@@ -5,6 +5,11 @@ The generated OBJ files keep the source UVs and normals, share position indices
 across UV seams, and use the engine's `norm` MTL key.
 """
 
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from __future__ import annotations
 
 import hashlib
@@ -27,6 +32,13 @@ ASSETS = {
     "rock_07": ("BasaltAltar", 1.12),
 }
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def fetch(url: str, destination: Path, md5: str | None = None) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -208,6 +220,13 @@ def bake_display_albedo(gltf: Path, source_diffuse: Path, source_ao: Path, desti
     return destination.name
 
 
+#endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+#region 02_Main_Process
+
 def main() -> None:
     with tempfile.TemporaryDirectory(prefix="mdss-showcase-") as tmp:
         temporary = Path(tmp)
@@ -243,5 +262,14 @@ def main() -> None:
                 texture("rock_01", "nor_dx", folder, "DebrisNormal.jpg")
 
 
+#endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+#region 03_Script_Execution
+
 if __name__ == "__main__":
     main()
+
+#endregion

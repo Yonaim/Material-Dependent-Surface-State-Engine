@@ -1,4 +1,9 @@
 """Audit recorded capability evidence and preserve blocked/unexecuted outcomes."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from authoring_study import ROOT, STUDY, PACK, read, write, digest, stamp
 import pathlib, shutil
 
@@ -105,3 +110,5 @@ write(STUDY/'followup-archive.json',dict(created_at=stamp(),scope='Post-executio
 print('Archive audit:',len(archives),'archives;',sum(a['files'] for a in archives),'files;',len(errors),'errors')
 if errors:
     raise SystemExit(1)
+
+#endregion

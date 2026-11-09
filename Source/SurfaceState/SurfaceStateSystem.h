@@ -40,6 +40,11 @@ namespace MDSS::SurfaceState
     class FSurfaceStateSystem final
     {
     public:
+// ============================================================
+// 00. Lifecycle
+// ============================================================
+#pragma region 00_Lifecycle
+
         // Lifecycle
         FSurfaceStateSystem(const GPU::FVulkanContext&  Context,
                             const Asset::FAssetManager& Assets,
@@ -56,6 +61,13 @@ namespace MDSS::SurfaceState
         /** @brief 같은 Application 소유 객체를 유지한 채 준비된 Scene별 GPU 자원을 교체한다. */
         void ReplaceSceneResources(FSurfaceStateSystem&& Replacement);
 
+#pragma endregion
+
+// ============================================================
+// 01. State and contact management
+// ============================================================
+#pragma region 01_State_and_contact_management
+
         // State and contact management
         void SubmitContact(FSurfaceContactInput Contact);
         void ResetState();
@@ -65,6 +77,13 @@ namespace MDSS::SurfaceState
                                        const FSurfaceStateParameters& Parameters,
                                        bool                           bKeepRuntimeOverride = true);
 
+#pragma endregion
+
+// ============================================================
+// 02. Simulation and GPU recording
+// ============================================================
+#pragma region 02_Simulation_and_GPU_recording
+
         // Simulation and GPU recording
         [[nodiscard]] float GetMaximumStableDeltaTime();
         void                PrepareTransferWeightCachesForSettingChange();
@@ -73,6 +92,13 @@ namespace MDSS::SurfaceState
                                        VkQueryPool     TimestampQueryPool = VK_NULL_HANDLE,
                                        std::uint32_t   FirstStepQuery = 0,
                                        bool            bPrepareRenderHeight = true);
+
+#pragma endregion
+
+// ============================================================
+// 03. Debug controls and resource access
+// ============================================================
+#pragma region 03_Debug_controls_and_resource_access
 
         // Debug controls and resource access
         [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
@@ -190,9 +216,23 @@ namespace MDSS::SurfaceState
         }
 
     private:
+#pragma endregion
+
+// ============================================================
+// 04. Pending contact application
+// ============================================================
+#pragma region 04_Pending_contact_application
+
         // Pending contact application
         void QueueInitialContacts();
         void ApplyPendingContacts();
+
+#pragma endregion
+
+// ============================================================
+// 05. Resource Ownership and Runtime State
+// ============================================================
+#pragma region 05_Resource_Ownership_and_Runtime_State
 
         const GPU::FVulkanContext&                  Context;
         const Asset::FAssetManager&                 Assets;
@@ -203,24 +243,33 @@ namespace MDSS::SurfaceState
         std::unique_ptr<FSurfaceStateSolver>        Solver;
         std::vector<FSurfaceContactInput>           PendingContacts;
         FSurfaceSolverDebugSettings                 DebugSolverSettings;
-        bool                                        bTransferWeightSettingsDirty = false;
-        bool                                        bForceFullGeometryOnNextStep = false;
-        bool                                        bStableDeltaTimeDirty = true;
-        bool                                        bAdaptiveGeometryEnabled = false;
-        bool                                        bCompactScratchStorageEnabled = true;
-        bool                                        bRawFluxCacheEnabled = true;
-        bool                                        bCoalescedRawFluxLayoutEnabled = true;
-        bool                                        bHalfRawFluxCacheEnabled = true;
-        bool                                        bHalfDynamicWeightsEnabled = false;
-        bool                                        bSparseSolverEnabled = false;
-        bool                                        bSparseAccumulationHeightEnabled = true;
-        bool                                        bActiveChannelMaskEnabled = true;
-        bool                                        bPerWorkgroupChannelMaskEnabled = true;
-        bool                                        bSparseSimulationGeometryEnabled = true;
-        bool                                        bSeedPersistentActivityOnNextStep = true;
-        std::vector<bool>                           PendingInputActivation;
-        float                                       CachedMaximumStableDeltaTime = 1.0F / 60.0F;
-        std::vector<glm::mat3>                      StableDeltaTimeModelMatrices;
+#pragma endregion
+
+// ============================================================
+// 06. Solver Settings and Activity State
+// ============================================================
+#pragma region 06_Solver_Settings_and_Activity_State
+
+        bool                   bTransferWeightSettingsDirty = false;
+        bool                   bForceFullGeometryOnNextStep = false;
+        bool                   bStableDeltaTimeDirty = true;
+        bool                   bAdaptiveGeometryEnabled = false;
+        bool                   bCompactScratchStorageEnabled = true;
+        bool                   bRawFluxCacheEnabled = true;
+        bool                   bCoalescedRawFluxLayoutEnabled = true;
+        bool                   bHalfRawFluxCacheEnabled = true;
+        bool                   bHalfDynamicWeightsEnabled = false;
+        bool                   bSparseSolverEnabled = false;
+        bool                   bSparseAccumulationHeightEnabled = true;
+        bool                   bActiveChannelMaskEnabled = true;
+        bool                   bPerWorkgroupChannelMaskEnabled = true;
+        bool                   bSparseSimulationGeometryEnabled = true;
+        bool                   bSeedPersistentActivityOnNextStep = true;
+        std::vector<bool>      PendingInputActivation;
+        float                  CachedMaximumStableDeltaTime = 1.0F / 60.0F;
+        std::vector<glm::mat3> StableDeltaTimeModelMatrices;
         std::map<std::pair<Asset::FSRProfileAssetHandle, FStateId>, FSurfaceStateParameters> RuntimeProfileOverrides;
+
+#pragma endregion
     };
 } // namespace MDSS::SurfaceState

@@ -12,6 +12,11 @@
 #include <string>
 #include <vector>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace
 {
     int FailureCount = 0;
@@ -78,6 +83,13 @@ namespace
         return Texel;
     }
 
+#pragma endregion
+
+// ============================================================
+// 01. TestFlatAndTiltedNormals
+// ============================================================
+#pragma region 01_TestFlatAndTiltedNormals
+
     void TestFlatAndTiltedNormals()
     {
         using namespace MDSS;
@@ -98,6 +110,13 @@ namespace
         Check(Result.x > 0.99F && std::abs(Result.z) < 0.02F,
               "tangent-space +X normal should map to the mesh tangent direction");
     }
+
+#pragma endregion
+
+// ============================================================
+// 02. TestBarycentricUVAndSeamCharts
+// ============================================================
+#pragma region 02_TestBarycentricUVAndSeamCharts
 
     void TestBarycentricUVAndSeamCharts()
     {
@@ -136,6 +155,13 @@ namespace
                   std::to_string(Mid.y) + ", " + std::to_string(Mid.z) + ")");
     }
 
+#pragma endregion
+
+// ============================================================
+// 03. TestTangentHandednessAndRepeat
+// ============================================================
+#pragma region 03_TestTangentHandednessAndRepeat
+
     void TestTangentHandednessAndRepeat()
     {
         using namespace MDSS;
@@ -164,6 +190,13 @@ namespace
               "mirrored tangent frame and repeated UV should produce a normal");
         Check(Mirrored.y < -0.99F, "negative tangent handedness should flip the bitangent direction");
     }
+
+#pragma endregion
+
+// ============================================================
+// 04. TestInvalidInputsUseFallbackSignal
+// ============================================================
+#pragma region 04_TestInvalidInputsUseFallbackSignal
 
     void TestInvalidInputsUseFallbackSignal()
     {
@@ -201,6 +234,13 @@ namespace
     }
 } // namespace
 
+#pragma endregion
+
+// ============================================================
+// 05. Test Entry Point
+// ============================================================
+#pragma region 05_Test_Entry_Point
+
 int main()
 {
     TestFlatAndTiltedNormals();
@@ -216,3 +256,5 @@ int main()
     std::cout << "All Normal Map transfer tests passed.\n";
     return 0;
 }
+
+#pragma endregion

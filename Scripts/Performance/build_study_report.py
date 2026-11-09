@@ -1,4 +1,9 @@
 """Build the central Korean report from the completed archived study artifacts."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 from pathlib import Path
 import json,datetime,argparse
 ROOT=Path(__file__).resolve().parents[2]
@@ -68,6 +73,13 @@ VARIANTS={
 METRICS={'scene_load_ms':'Scene 로드 CPU ms','reload_ms':'자원 재생성 CPU ms','profile_bytes':'Profile 표 B',
          'simulation_gpu_elapsed_ms':'Simulation GPU ms','render_gpu_ms':'Render GPU ms','frame_gpu_elapsed_ms':'전체 command-buffer GPU ms'}
 
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
+
 def load(path):return json.loads(path.read_text(encoding='utf8'))
 def num(v,digits=3):return '—' if v is None else f'{v:.{digits}f}'
 def table(headers,rows):
@@ -104,6 +116,13 @@ def overview(comparisons,complete):
  lines+=['제품 기본값은 바꾸지 않았다. V2와 회전 불변 CPU 캐시 보조 실험은 Windows 앱 제어로 실행하지 못했으며, 개별 효과를 분리하지 않은 과거 변경은 측정 범위 표에 명시했다.','',
          '<!-- PERFORMANCE_STUDY_OVERVIEW_END -->','']
  return '\n'.join(lines)
+
+#endregion
+
+# ============================================================
+# 02. Main Process
+# ============================================================
+#region 02_Main_Process
 
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('--allow-incomplete',action='store_true');args=ap.parse_args()
@@ -349,4 +368,13 @@ def main():
  DOC.write_text(text,encoding='utf8')
  print('Updated central study report:',len(comparisons),'case comparisons; execution phases finished:',complete)
 
+#endregion
+
+# ============================================================
+# 03. Script Execution
+# ============================================================
+#region 03_Script_Execution
+
 if __name__=='__main__':main()
+
+#endregion

@@ -1,4 +1,9 @@
 // Headless, explicitly invoked research harness. No renderer, wall-clock stepping or demo drain frames.
+// ============================================================
+// 00. Research Dependencies
+// ============================================================
+#pragma region 00_Research_Dependencies
+
 #include "ResearchVulkanDevice.h"
 #include "ModularBaseline.h"
 #include "AssetManager/Loaders/OBJLoader.h"
@@ -22,6 +27,13 @@
 using namespace MDSS::SurfaceState;
 using FJson = nlohmann::json;
 namespace fs = std::filesystem;
+
+#pragma endregion
+
+// ============================================================
+// 01. GPU State Readback Helpers
+// ============================================================
+#pragma region 01_GPU_State_Readback_Helpers
 
 std::vector<float> Read(const MDSS::GPU::FGPUBuffer& B)
 {
@@ -47,6 +59,13 @@ double Gaussian(float U,float V,float CU,float CV,float RU,float RV)
 }
 
 #include "MesoStudy.h"
+
+#pragma endregion
+
+// ============================================================
+// 02. Experiment Orchestration
+// ============================================================
+#pragma region 02_Experiment_Orchestration
 
 int main(int argc,char** argv)
 try
@@ -368,3 +387,5 @@ try
     return 0;
 }
 catch(const std::exception& E) {std::cerr<<E.what()<<std::endl;return 1;}
+
+#pragma endregion

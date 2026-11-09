@@ -1,4 +1,9 @@
 """Score the frozen task's numeric predicates; visual/human quality is separate."""
+# ============================================================
+# 00. Imports and Module Configuration
+# ============================================================
+#region 00_Imports_and_Module_Configuration
+
 import argparse
 import pathlib
 import sys
@@ -11,6 +16,13 @@ import numpy as np
 OUT=STUDY/'goal-v1/pilot'
 OLD=STUDY/'layout-lifetime-fix/render/raw/absorbedwetness'
 
+
+#endregion
+
+# ============================================================
+# 01. Processing Helpers
+# ============================================================
+#region 01_Processing_Helpers
 
 def load(kind):
     plan=read(OUT/(kind+'-plan.json'));record=read(OUT/(kind+'-manifest.json'))
@@ -129,5 +141,14 @@ def analyze(kind):
     print(result['numeric_gates']);print('Ice fraction',ratio,'transport',transport_area,'trace',trace_area)
 
 
+#endregion
+
+# ============================================================
+# 02. Script Execution
+# ============================================================
+#region 02_Script_Execution
+
 if __name__=='__main__':
     ap=argparse.ArgumentParser();ap.add_argument('kind',choices=['compatibility','candidate-01','candidate-01-retry']);analyze(ap.parse_args().kind)
+
+#endregion

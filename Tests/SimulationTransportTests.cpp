@@ -14,6 +14,11 @@
 #include <numeric>
 #include <stdexcept>
 
+// ============================================================
+// 00. Fixtures and Test Support
+// ============================================================
+#pragma region 00_Fixtures_and_Test_Support
+
 namespace
 {
     void Check(bool bCondition, const char* Message)
@@ -21,6 +26,13 @@ namespace
         if (!bCondition)
             throw std::runtime_error(Message);
     }
+
+#pragma endregion
+
+// ============================================================
+// 01. TestClock
+// ============================================================
+#pragma region 01_TestClock
 
     void TestClock()
     {
@@ -152,6 +164,13 @@ namespace
               "reset must discard the in-progress fixed tick as well as elapsed time");
     }
 
+#pragma endregion
+
+// ============================================================
+// 02. TestArea
+// ============================================================
+#pragma region 02_TestArea
+
     void TestArea()
     {
         using namespace MDSS;
@@ -187,6 +206,13 @@ namespace
         }
     }
 
+#pragma endregion
+
+// ============================================================
+// 03. TestFrustumCulling
+// ============================================================
+#pragma region 03_TestFrustumCulling
+
     void TestFrustumCulling()
     {
         glm::mat4 Projection = glm::perspectiveRH_ZO(glm::radians(90.0F), 1.0F, 1.0F, 10.0F);
@@ -205,6 +231,13 @@ namespace
     }
 }
 
+#pragma endregion
+
+// ============================================================
+// 04. Test Entry Point
+// ============================================================
+#pragma region 04_Test_Entry_Point
+
 int main()
 {
     try
@@ -221,3 +254,5 @@ int main()
         return 1;
     }
 }
+
+#pragma endregion
