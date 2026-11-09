@@ -20,6 +20,10 @@ The project focuses on representing surface state changes in UV-space and updati
 
 Build with `./Scripts/build.ps1 -Configuration Debug`, then run:
 
+For CMake Tools or direct CMake use with Visual Studio 2026, select the
+`windows-msvc-x64` configure preset and the matching Debug or Release build
+preset. This preset requires CMake 4.2 or newer.
+
 ```powershell
 & ./Build/bin/Debug/MDSS.exe --scene Assets/Scenes/IceReactionLab.Scene
 ```
