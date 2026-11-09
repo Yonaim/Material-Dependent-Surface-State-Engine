@@ -55,6 +55,11 @@ namespace MDSS
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(MainScene));
         SurfaceStateSystem =
             std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
+        if (StartupScenePath.filename() == "ReactionTransitionComparison.Scene")
+        {
+            SurfaceStateSystem->SetSparseSolverEnabled(true);
+            TLogger::Info("TApplication", "Sparse Solver enabled for comparison scene.");
+        }
         FrameCoordinator = std::make_unique<TFrameCoordinator>(*SurfaceStateSystem);
         FrameRenderer = std::make_unique<Rendering::TRenderer>(
             Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStateSystem, *FrameCoordinator);

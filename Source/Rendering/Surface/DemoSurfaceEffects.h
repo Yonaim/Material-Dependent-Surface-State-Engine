@@ -25,6 +25,8 @@ namespace MDSS::Rendering
         SurfaceState::TStateId WaterFilm = SurfaceState::InvalidStateId;
         SurfaceState::TStateId AbsorbedWetness = SurfaceState::InvalidStateId;
         SurfaceState::TStateId Lava = SurfaceState::InvalidStateId;
+        SurfaceState::TStateId Burn = SurfaceState::InvalidStateId;
+        SurfaceState::TStateId Scorched = SurfaceState::InvalidStateId;
     };
     inline TDemoSurfaceStateBindings ResolveDemoSurfaceStates(const SurfaceState::TSurfaceStateRegistry& Registry)
     {
@@ -44,6 +46,10 @@ namespace MDSS::Rendering
                 Result.AbsorbedWetness = ID;
             else if (Name == "lava")
                 Result.Lava = ID;
+            else if (Name == "burn")
+                Result.Burn = ID;
+            else if (Name == "scorched")
+                Result.Scorched = ID;
         }
         return Result;
     }

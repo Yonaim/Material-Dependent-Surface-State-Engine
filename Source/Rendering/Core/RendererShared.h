@@ -286,6 +286,7 @@ namespace MDSS::Rendering
             glm::vec4                CameraPosition{0, 0, 1, 1};
             glm::vec4                WaterAppearance{0, 1, 0.22F, 100};
             glm::uvec4 ExtraDemoBindings{SurfaceState::InvalidStateId, 0, SurfaceState::InvalidStateId, 0};
+            glm::uvec4 BurnScorchedBindings{SurfaceState::InvalidStateId, SurfaceState::InvalidStateId, 0, 0};
         };
 
         constexpr std::uint32_t RenderModeWireframeUniformWhite = 20U;
@@ -342,7 +343,7 @@ namespace MDSS::Rendering
 
         static_assert(sizeof(TStaticMeshPushConstants) == 128,
                       "Static mesh push constants are expected to use Vulkan's guaranteed 128-byte minimum.");
-        static_assert(sizeof(TMaterialUniform) == 352, "TMaterialUniform must match the std140 shader block layout.");
+        static_assert(sizeof(TMaterialUniform) == 368, "TMaterialUniform must match the std140 shader block layout.");
 
         GPU::TGraphicsPipelineConfig BuildStaticMeshPipelineConfig(VkDescriptorSetLayout MaterialLayout)
         {

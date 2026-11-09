@@ -306,7 +306,8 @@ namespace MDSS::Rendering
                  glm::vec4(DemoEffects.LavaColorMap.HighSaturationColor, 1.0F)},
                 glm::vec4(0.0F),
                 Material.GetWaterAppearance(),
-                {Bindings.AbsorbedWetness, DemoEffects.bEmphasizeWaterFilm ? 1U : 0U, Bindings.Ice, 0U}};
+                {Bindings.AbsorbedWetness, DemoEffects.bEmphasizeWaterFilm ? 1U : 0U, Bindings.Ice, 0U},
+                {Bindings.Burn, Bindings.Scorched, 0U, 0U}};
             for (std::size_t ViewportIndex = 0; ViewportIndex < DebugInterface.GetViewportCount(); ++ViewportIndex)
             {
                 const TRenderViewMode Mode = GetRenderViewMode(ViewportIndex);

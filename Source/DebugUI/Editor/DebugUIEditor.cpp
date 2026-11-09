@@ -220,6 +220,7 @@ namespace MDSS
         ImGui::SameLine();
         DrawDemoSceneButton("Bunny", "Bunny.Scene");
         DrawDemoSceneButton("State-Driven Geometry", "StateDrivenGeometryDemo.Scene");
+        DrawDemoSceneButton("Transition / Reaction", "ReactionTransitionComparison.Scene");
         ImGui::TextDisabled("Midterm demos (F9: replay, F10: presentation):");
         DrawDemoSceneButton("1 Rain / Materials", "MidtermRainMaterials.Scene");
         ImGui::SameLine();

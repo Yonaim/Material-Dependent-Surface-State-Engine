@@ -9,6 +9,7 @@
 #include "Rendering/Surface/Lighting/Effects/WaterFilm.glsl"
 #include "Rendering/Surface/Lighting/Effects/AbsorbedWetness.glsl"
 #include "Rendering/Surface/Lighting/Effects/Lava.glsl"
+#include "Rendering/Surface/Lighting/Effects/BurnScorched.glsl"
 #include "Rendering/Surface/Lighting/Lighting.glsl"
 
 layout(location = 0) in vec3 FragNormal;
@@ -75,6 +76,7 @@ void main()
     float Heat = 0.0;
     float WaterFilm = 0.0;
     float Lava = 0.0;
+    float BurnGlow = 0.0;
 
     if (Material.DemoStateChannels.w != 0u)
     {
@@ -155,6 +157,19 @@ void main()
         if ((EnabledEffects & 4u) != 0u)
             ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w);
 
+        if (Material.BurnScorchedBindings.y < Material.StateChannelCount)
+        {
+            float Scorched = SampleStateSaturation(FragSurfaceIndex, FragUV,
+                                                   Material.BurnScorchedBindings.y, Material.StateChannelCount);
+            ApplyScorched(Scorched, Color.rgb, Roughness);
+        }
+        if (Material.BurnScorchedBindings.x < Material.StateChannelCount)
+        {
+            float Burn = SampleStateSaturation(FragSurfaceIndex, FragUV,
+                                               Material.BurnScorchedBindings.x, Material.StateChannelCount);
+            BurnGlow = ApplyBurn(Burn, Color.rgb, Roughness);
+        }
+
 #ifdef BASE_SURFACE_LIT
         // 얇은 막은 바탕에서 반사하고, 고인 물의 표면 반사는 overlay가 맡는다.
         WaterFilm *= 1.0 - smoothstep(0.20, 0.60, WaterFilm);
@@ -163,6 +178,7 @@ void main()
 
     OutColor = vec4(ShadeSurface(Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition,
                                Roughness, Material.AmbientLight, WaterFilm), Color.a);
+    OutColor.rgb = min(OutColor.rgb + vec3(0.32, 0.085, 0.006) * BurnGlow, vec3(1.0));
 
 #ifndef BASE_SURFACE_LIT
     if (Material.DemoStateChannels.w != 0u &&
