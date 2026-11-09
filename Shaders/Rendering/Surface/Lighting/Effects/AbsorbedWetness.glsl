@@ -11,4 +11,5 @@ void ApplyAbsorbedWetness(float Coverage, inout vec3 Albedo, inout float Roughne
     Albedo *= mix(1.0, 0.43, Stain);
     Roughness = mix(Roughness, 0.86, Stain);
 }
+
 // #endregion

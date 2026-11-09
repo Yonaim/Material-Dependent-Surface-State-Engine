@@ -47,11 +47,14 @@ void main()
 {
     uint OriginalGroup = geometryOriginalGroup();
     uint Source = OriginalGroup * 64u + gl_LocalInvocationID.x;
-    if (Source >= Solver.LocalTexelCount) return;
 
-    ModelLinear = mat3(Solver.ModelLinearColumns[0].xyz,
-                       Solver.ModelLinearColumns[1].xyz,
-                       Solver.ModelLinearColumns[2].xyz);
+    if (Source >= Solver.LocalTexelCount)
+    {
+        return;
+    }
+
+    ModelLinear =
+        mat3(Solver.ModelLinearColumns[0].xyz, Solver.ModelLinearColumns[1].xyz, Solver.ModelLinearColumns[2].xyz);
     NormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
                         Solver.NormalMatrixAndUpColumns[1].xyz,
                         Solver.NormalMatrixAndUpColumns[2].xyz);
@@ -59,28 +62,35 @@ void main()
     if (!isValidTexel(Source))
     {
         DynamicConcavityWeights.Values[Source] = 0.0;
+
         if (useHalfDynamicWeights())
         {
             uint Base = Source * (SurfaceNeighborCount / 2u);
+
             for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
+            {
                 TransferWeights.Values[Base + Pair] = 0u;
+            }
         }
         else
         {
             uint Base = Source * SurfaceNeighborCount;
+
             for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+            {
                 TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(0.0);
+            }
         }
+
         return;
     }
 
-    DynamicConcavityWeights.Values[Source] = buildDynamicConcavityWeight(
-        Source, GeometryScalars.Values[Source].ConcavityWeight);
+    DynamicConcavityWeights.Values[Source] =
+        buildDynamicConcavityWeight(Source, GeometryScalars.Values[Source].ConcavityWeight);
 
     vec3 SourceWorld = worldPosition(Source);
     vec3 SourceNormal = worldNormal(Source);
-    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u
-        ? DynamicGeometry.Values[Source * 2u].w : 1.0;
+    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u ? DynamicGeometry.Values[Source * 2u].w : 1.0;
     bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5;
 #if MDSS_GPU_VALIDATION
     SourceNormalValid = SourceNormalValid && !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
@@ -89,20 +99,23 @@ void main()
     if (useHalfDynamicWeights())
     {
         uint Base = Source * (SurfaceNeighborCount / 2u);
+
         for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
         {
             uint D0 = Pair * 2u;
             uint D1 = D0 + 1u;
-            vec2 Weights = clamp(vec2(
-                buildTransferWeight(Source, D0, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid),
-                buildTransferWeight(Source, D1, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid)),
-                vec2(0.0), vec2(1.0));
+            vec2 Weights = clamp(
+                vec2(buildTransferWeight(Source, D0, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid),
+                     buildTransferWeight(Source, D1, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid)),
+                vec2(0.0),
+                vec2(1.0));
             TransferWeights.Values[Base + Pair] = packHalf2x16(Weights);
         }
     }
     else
     {
         uint Base = Source * SurfaceNeighborCount;
+
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
             float Weight = buildTransferWeight(
@@ -111,6 +124,7 @@ void main()
         }
     }
 }
+
 // #endregion
 
 // ============================================================
@@ -141,10 +155,14 @@ vec3 worldNormal(uint Texel)
 float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
 {
     vec3 CenterPosition = localPosition(Texel);
+
     // DynamicGeometryUpdate는 두 번째 vec4에 정규화된 local normal을 저장한다.
     vec3 N = localNormal(Texel);
 #if MDSS_GPU_VALIDATION
-    if (any(isnan(N)) || any(isinf(N))) return StaticWeight;
+    if (any(isnan(N)) || any(isinf(N)))
+    {
+        return StaticWeight;
+    }
 #endif
     vec3 Axis = abs(N.z) < 0.85 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
     vec3 T = normalize(cross(Axis, N));
@@ -153,36 +171,64 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
     float UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
     float SpacingSum = 0.0;
     uint SampleCount = 0u;
+
     for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
     {
         uint Other = neighborIndex(Texel, DirectionIndex);
-        if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other)) continue;
+
+        if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other))
+        {
+            continue;
+        }
+
         vec3 OtherPosition = localPosition(Other);
         vec3 OtherNormal = localNormal(Other);
 #if MDSS_GPU_VALIDATION
-        if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05) continue;
+        if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05)
+        {
+            continue;
+        }
 #else
-        if (dot(N, OtherNormal) <= 0.05) continue;
+        if (dot(N, OtherNormal) <= 0.05)
+        {
+            continue;
+        }
 #endif
         vec3 Delta = OtherPosition - CenterPosition;
         float X = dot(Delta, T), Y = dot(Delta, B);
         float DistanceSquared = X * X + Y * Y;
 #if MDSS_GPU_VALIDATION
-        if (DistanceSquared <= 1.0e-12 || isnan(DistanceSquared) || isinf(DistanceSquared)) continue;
+        if (DistanceSquared <= 1.0e-12 || isnan(DistanceSquared) || isinf(DistanceSquared))
+        {
+            continue;
+        }
 #else
-        if (DistanceSquared <= 1.0e-12) continue;
+        if (DistanceSquared <= 1.0e-12)
+        {
+            continue;
+        }
 #endif
         float Weight = 1.0 / DistanceSquared;
         vec3 NormalDelta = OtherNormal - N;
         float DU = -dot(NormalDelta, T), DV = -dot(NormalDelta, B);
-        XX += Weight * X * X; XY += Weight * X * Y; YY += Weight * Y * Y;
-        UX += Weight * X * DU; UY += Weight * Y * DU;
-        VX += Weight * X * DV; VY += Weight * Y * DV;
+        XX += Weight * X * X;
+        XY += Weight * X * Y;
+        YY += Weight * Y * Y;
+        UX += Weight * X * DU;
+        UY += Weight * Y * DU;
+        VX += Weight * X * DV;
+        VY += Weight * Y * DV;
         SpacingSum += sqrt(DistanceSquared);
         ++SampleCount;
     }
+
     float Determinant = XX * YY - XY * XY;
-    if (SampleCount < 3u || Determinant <= 1.0e-6 * max(XX * YY, 1.0e-12)) return StaticWeight;
+
+    if (SampleCount < 3u || Determinant <= 1.0e-6 * max(XX * YY, 1.0e-12))
+    {
+        return StaticWeight;
+    }
+
     float Sxx = (YY * UX - XY * UY) / Determinant;
     float Sxy = 0.5 * ((XX * UY - XY * UX) + (YY * VX - XY * VY)) / Determinant;
     float Syy = (XX * VY - XY * VX) / Determinant;
@@ -208,8 +254,11 @@ float buildTransferWeight(uint Source,
 {
     uint Target = neighborIndex(Source, DirectionIndex);
     float Weight = 0.0;
+
     if (Target == InvalidTexelIndex || Target >= Solver.LocalTexelCount || !isValidTexel(Target))
+    {
         return 0.0;
+    }
 
     vec3 TargetWorld = worldPosition(Target);
     vec3 TargetNormal = worldNormal(Target);
@@ -219,33 +268,48 @@ float buildTransferWeight(uint Source,
 #endif
     float DistanceWeight = 1.0;
     bool Valid = true;
+
     if ((Solver.Flags & (1u << 7u)) != 0u)
     {
         float TargetMeanDistance = DynamicGeometry.Values[Target * 2u].w;
         float EdgeDistance = length(TargetWorld - SourceWorld);
         float ReferenceDistance = 0.5 * (SourceMeanDistance + TargetMeanDistance);
-        Valid = SourceMeanDistance > DynamicGeometryEpsilon &&
-                TargetMeanDistance > DynamicGeometryEpsilon &&
+        Valid = SourceMeanDistance > DynamicGeometryEpsilon && TargetMeanDistance > DynamicGeometryEpsilon &&
                 EdgeDistance > DynamicGeometryEpsilon && ReferenceDistance > DynamicGeometryEpsilon;
 #if MDSS_GPU_VALIDATION
-        Valid = Valid && !isnan(EdgeDistance) && !isinf(EdgeDistance) &&
-                !isnan(ReferenceDistance) && !isinf(ReferenceDistance);
+        Valid = Valid && !isnan(EdgeDistance) && !isinf(EdgeDistance) && !isnan(ReferenceDistance) &&
+                !isinf(ReferenceDistance);
 #endif
-        if (Valid) DistanceWeight = clamp(ReferenceDistance / EdgeDistance, 0.0, 1.0);
+        if (Valid)
+        {
+            DistanceWeight = clamp(ReferenceDistance / EdgeDistance, 0.0, 1.0);
+        }
     }
 
     float NormalWeight = 1.0;
+
     if ((Solver.Flags & (1u << 8u)) != 0u)
     {
         Valid = Valid && SourceNormalValid && TargetNormalValid;
-        if (Valid) NormalWeight = clamp(dot(SourceNormal, TargetNormal), 0.0, 1.0);
+
+        if (Valid)
+        {
+            NormalWeight = clamp(dot(SourceNormal, TargetNormal), 0.0, 1.0);
+        }
     }
 
     float ProfileBoundaryWeight = 1.0;
-    if ((Solver.Flags & (1u << 9u)) != 0u &&
-        TexelProfileIndices.Values[Source] != TexelProfileIndices.Values[Target])
+
+    if ((Solver.Flags & (1u << 9u)) != 0u && TexelProfileIndices.Values[Source] != TexelProfileIndices.Values[Target])
+    {
         ProfileBoundaryWeight = 0.5;
-    if (Valid) Weight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
+    }
+
+    if (Valid)
+    {
+        Weight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
+    }
+
     return Weight;
 }
 

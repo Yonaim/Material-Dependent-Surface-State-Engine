@@ -34,4 +34,5 @@ void main()
     float Alpha = 1.0 - smoothstep(1.0 - EdgeWidth, 1.0 + EdgeWidth, EdgeDistance);
     OutColor = vec4(FragColor.rgb, FragColor.a * Alpha);
 }
+
 // #endregion

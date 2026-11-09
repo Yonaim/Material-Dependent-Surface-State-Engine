@@ -19,7 +19,9 @@ layout(push_constant) uniform TWorldReferencePushConstants
     int Padding0;
     int Padding1;
     int Padding2;
-} Push;
+}
+
+Push;
 
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out float EdgeCoordinate;
@@ -37,4 +39,5 @@ void main()
     EdgeCoordinate = InEdgeCoordinate;
     gl_Position = Push.ViewProjectionModel * vec4(InPosition, 1.0);
 }
+
 // #endregion

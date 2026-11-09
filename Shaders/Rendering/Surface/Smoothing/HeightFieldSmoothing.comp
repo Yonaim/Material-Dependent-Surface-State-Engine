@@ -15,10 +15,25 @@
 
 layout(local_size_x = 64) in;
 
-layout(set = 1, binding = 0, std430) readonly buffer TInput { TTexelGeometryVertex Values[]; } InputGeometry;
+layout(set = 1, binding = 0, std430) readonly buffer TInput
+{
+    TTexelGeometryVertex Values[];
+}
 
-layout(set = 2, binding = 0, std430) writeonly buffer TOutput { TTexelGeometryVertex Values[]; } OutputGeometry;
-layout(set = 2, binding = 1, std430) readonly buffer TGeometryCache { uint Values[]; } GeometryCache;
+InputGeometry;
+
+layout(set = 2, binding = 0, std430) writeonly buffer TOutput
+{
+    TTexelGeometryVertex Values[];
+}
+
+OutputGeometry;
+layout(set = 2, binding = 1, std430) readonly buffer TGeometryCache
+{
+    uint Values[];
+}
+
+GeometryCache;
 
 layout(push_constant) uniform TPush
 {
@@ -29,7 +44,9 @@ layout(push_constant) uniform TPush
     float AccumulationDisplayScale;
     uint TileSize;
     uint UseSparse;
-} Push;
+}
+
+Push;
 
 const float CoverageCutoff = 0.02;
 
@@ -79,23 +96,28 @@ void main()
         uint MicrotilesX = Push.TileSize / 8u;
         uint MicroX = (Subgroup % MicrotilesX) * 8u;
         uint MicroY = (Subgroup / MicrotilesX) * 8u;
+
         for (uint Slot = gl_LocalInvocationID.x; Slot < 100u; Slot += 64u)
         {
             uint X = SparseTileX * Push.TileSize + MicroX + Slot % 10u;
             uint Y = SparseTileY * Push.TileSize + MicroY + Slot / 10u;
+
             // The 10x10 shared block covers output [-1,+8] on each axis.
             int LocalX = int(X) - 1;
             int LocalY = int(Y) - 1;
-            bool InRange = LocalX >= 0 && LocalY >= 0 &&
-                           LocalX < int(SparseRangeWidth) && LocalY < int(SparseRangeHeight);
+            bool InRange =
+                LocalX >= 0 && LocalY >= 0 && LocalX < int(SparseRangeWidth) && LocalY < int(SparseRangeHeight);
             uint N = InRange ? SparseRangeFirst + uint(LocalY) * SparseRangeWidth + uint(LocalX) : Push.TexelCount;
             bool Valid = N < Push.TexelCount && N < uint(InputGeometry.Values.length()) &&
-                         N < uint(GeometryScalars.Values.length()) &&
-                         N < uint(TexelSurfaceIndices.Values.length()) &&
-                         N < uint(TexelProfileIndices.Values.length()) &&
-                         N < uint(TexelChartIndices.Values.length());
+                         N < uint(GeometryScalars.Values.length()) && N < uint(TexelSurfaceIndices.Values.length()) &&
+                         N < uint(TexelProfileIndices.Values.length()) && N < uint(TexelChartIndices.Values.length());
             HaloValid[Slot] = Valid ? 1u : 0u;
-            if (!Valid) continue;
+
+            if (!Valid)
+            {
+                continue;
+            }
+
             uint Profile = TexelProfileIndices.Values[N];
             HaloSurface[Slot] = TexelSurfaceIndices.Values[N];
             HaloProfile[Slot] = Profile;
@@ -103,41 +125,68 @@ void main()
             HaloHeightNormal[Slot] = InputGeometry.Values[N].HeightAndNormal;
             float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
 #if MDSS_GPU_VALIDATION
-            if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
+            if (isnan(Meso) || isinf(Meso))
+            {
+                Meso = 0.0;
+            }
 #endif
             HaloMeso[Slot] = Meso;
             bool Supported = Push.Channels > 0u && Push.Channel < Push.Channels &&
                              Profile < SurfaceProfileRecordCount() / Push.Channels;
-            HaloSaturation[Slot] = Supported
-                ? StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) : 0.0;
+            HaloSaturation[Slot] = Supported ? StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) : 0.0;
             HaloCavityFill[Slot] = Supported ? DisplayedCavityFill(N, Profile) : 0.0;
         }
+
         barrier();
     }
 #endif
-    if (T >= Push.TexelCount) return;
+    if (T >= Push.TexelCount)
+    {
+        return;
+    }
 #if MDSS_GPU_VALIDATION
-    if (T >= uint(InputGeometry.Values.length())) return;
+    if (T >= uint(InputGeometry.Values.length()))
+    {
+        return;
+    }
 #endif
     TTexelGeometryVertex Original = InputGeometry.Values[T];
     OutputGeometry.Values[T] = Original;
 #if MDSS_GPU_VALIDATION
-    if (T >= uint(TexelSurfaceIndices.Values.length()) ||
-        T >= uint(TexelProfileIndices.Values.length()) ||
-        T >= uint(TexelChartIndices.Values.length()) ||
-        T >= uint(GeometryScalars.Values.length()) ||
-        T >= uint(Positions.Values.length()) || T >= uint(Normals.Values.length())) return;
+    if (T >= uint(TexelSurfaceIndices.Values.length()) || T >= uint(TexelProfileIndices.Values.length()) ||
+        T >= uint(TexelChartIndices.Values.length()) || T >= uint(GeometryScalars.Values.length()) ||
+        T >= uint(Positions.Values.length()) || T >= uint(Normals.Values.length()))
+    {
+        return;
+    }
 #endif
 
     uint Surface = TexelSurfaceIndices.Values[T];
 #if MDSS_GPU_VALIDATION
-    if (Surface >= uint(SurfaceRanges.Values.length())) return;
+    if (Surface >= uint(SurfaceRanges.Values.length()))
+    {
+        return;
+    }
 #endif
-    if (StateSaturation(T, Push.Channel, Push.Channels, Surface) <= CoverageCutoff) return;
+    if (StateSaturation(T, Push.Channel, Push.Channels, Surface) <= CoverageCutoff)
+    {
+        return;
+    }
+
     uvec4 Range = SurfaceRanges.Values[Surface];
-    if (Range.y == 0u || Range.z == 0u || T < Range.x) return;
+
+    if (Range.y == 0u || Range.z == 0u || T < Range.x)
+    {
+        return;
+    }
+
     uint Local = T - Range.x;
-    if (Local >= Range.y * Range.z) return;
+
+    if (Local >= Range.y * Range.z)
+    {
+        return;
+    }
+
     ivec2 Center = ivec2(int(Local % Range.y), int(Local / Range.y));
     uint Chart = TexelChartIndices.Values[T];
     uint Profile = TexelProfileIndices.Values[T];
@@ -145,78 +194,116 @@ void main()
     float WeightedFollowingHeight = 0.0;
     vec3 WeightedNormal = vec3(0.0);
     float WeightSum = 0.0;
+
     for (int Y = -1; Y <= 1; ++Y)
-    for (int X = -1; X <= 1; ++X)
     {
-        ivec2 XY = Center + ivec2(X, Y);
-        if (XY.x < 0 || XY.y < 0 || XY.x >= int(Range.y) || XY.y >= int(Range.z)) continue;
-#if MDSS_HEIGHT_HALO
-        if (Push.UseSparse != 0u)
+        for (int X = -1; X <= 1; ++X)
         {
-            uint Slot = uint((int(gl_LocalInvocationID.x / 8u) + 1 + Y) * 10 +
-                             int(gl_LocalInvocationID.x % 8u) + 1 + X);
-            if (HaloValid[Slot] == 0u || HaloSurface[Slot] != Surface ||
-                HaloProfile[Slot] != Profile || HaloChart[Slot] != Chart ||
-                HaloSaturation[Slot] <= CoverageCutoff) continue;
-            float Meso = HaloMeso[Slot];
-            float AccumulationHeight = HaloHeightNormal[Slot].x - Meso;
+            ivec2 XY = Center + ivec2(X, Y);
+
+            if (XY.x < 0 || XY.y < 0 || XY.x >= int(Range.y) || XY.y >= int(Range.z))
+            {
+                continue;
+            }
+#if MDSS_HEIGHT_HALO
+            if (Push.UseSparse != 0u)
+            {
+                uint Slot =
+                    uint((int(gl_LocalInvocationID.x / 8u) + 1 + Y) * 10 + int(gl_LocalInvocationID.x % 8u) + 1 + X);
+                if (HaloValid[Slot] == 0u || HaloSurface[Slot] != Surface || HaloProfile[Slot] != Profile ||
+                    HaloChart[Slot] != Chart || HaloSaturation[Slot] <= CoverageCutoff)
+                {
+                    continue;
+                }
+
+                float Meso = HaloMeso[Slot];
+                float AccumulationHeight = HaloHeightNormal[Slot].x - Meso;
 #if MDSS_GPU_VALIDATION
-            if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
+                if (isnan(AccumulationHeight) || isinf(AccumulationHeight))
+                {
+                    continue;
+                }
 #endif
-            float CavityDepth = max(MesoNormals.Values[T].w - Meso, 0.0);
-            float CavityFill = CavityDepth > 0.0 ? HaloCavityFill[Slot] : 0.0;
+                float CavityDepth = max(MesoNormals.Values[T].w - Meso, 0.0);
+                float CavityFill = CavityDepth > 0.0 ? HaloCavityFill[Slot] : 0.0;
+                float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
+                float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
+                WeightedCavityFill += Weight * CavityFill;
+                WeightedFollowingHeight += Weight * FollowingHeight;
+                WeightedNormal += Weight * HaloHeightNormal[Slot].yzw;
+                WeightSum += Weight;
+                continue;
+            }
+#endif
+            uint N = Range.x + uint(XY.y) * Range.y + uint(XY.x);
+
+            if (N >= Push.TexelCount)
+            {
+                continue;
+            }
+#if MDSS_GPU_VALIDATION
+            if (N >= uint(InputGeometry.Values.length()) || N >= uint(GeometryScalars.Values.length()) ||
+                N >= uint(TexelSurfaceIndices.Values.length()) || N >= uint(TexelProfileIndices.Values.length()) ||
+                N >= uint(TexelChartIndices.Values.length()))
+            {
+                continue;
+            }
+#endif
+            if (TexelSurfaceIndices.Values[N] != Surface || TexelProfileIndices.Values[N] != Profile ||
+                TexelChartIndices.Values[N] != Chart ||
+                StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) <= CoverageCutoff)
+            {
+                continue;
+            }
+
+            float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
+#if MDSS_GPU_VALIDATION
+            if (isnan(Meso) || isinf(Meso))
+            {
+                Meso = 0.0;
+            }
+#endif
+            float AccumulationHeight = InputGeometry.Values[N].HeightAndNormal.x - Meso;
+#if MDSS_GPU_VALIDATION
+            if (isnan(AccumulationHeight) || isinf(AccumulationHeight))
+            {
+                continue;
+            }
+#endif
+            float CavityDepth = max(MesoNormals.Values[N].w - Meso, 0.0);
+            float CavityFill = CavityDepth > 0.0 ? DisplayedCavityFill(N, Profile) : 0.0;
             float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
             float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
             WeightedCavityFill += Weight * CavityFill;
             WeightedFollowingHeight += Weight * FollowingHeight;
-            WeightedNormal += Weight * HaloHeightNormal[Slot].yzw;
+            WeightedNormal += Weight * InputGeometry.Values[N].HeightAndNormal.yzw;
             WeightSum += Weight;
-            continue;
         }
-#endif
-        uint N = Range.x + uint(XY.y) * Range.y + uint(XY.x);
-        if (N >= Push.TexelCount) continue;
-#if MDSS_GPU_VALIDATION
-        if (N >= uint(InputGeometry.Values.length()) ||
-            N >= uint(GeometryScalars.Values.length()) ||
-            N >= uint(TexelSurfaceIndices.Values.length()) ||
-            N >= uint(TexelProfileIndices.Values.length()) ||
-            N >= uint(TexelChartIndices.Values.length())) continue;
-#endif
-        if (TexelSurfaceIndices.Values[N] != Surface ||
-            TexelProfileIndices.Values[N] != Profile ||
-            TexelChartIndices.Values[N] != Chart ||
-            StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) <= CoverageCutoff) continue;
-
-        float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
-#if MDSS_GPU_VALIDATION
-        if (isnan(Meso) || isinf(Meso)) Meso = 0.0;
-#endif
-        float AccumulationHeight = InputGeometry.Values[N].HeightAndNormal.x - Meso;
-#if MDSS_GPU_VALIDATION
-        if (isnan(AccumulationHeight) || isinf(AccumulationHeight)) continue;
-#endif
-        float CavityDepth = max(MesoNormals.Values[N].w - Meso, 0.0);
-        float CavityFill = CavityDepth > 0.0 ? DisplayedCavityFill(N, Profile) : 0.0;
-        float FollowingHeight = max(AccumulationHeight - CavityFill * CavityDepth, 0.0);
-        float Weight = float((X == 0 ? 2 : 1) * (Y == 0 ? 2 : 1));
-        WeightedCavityFill += Weight * CavityFill;
-        WeightedFollowingHeight += Weight * FollowingHeight;
-        WeightedNormal += Weight * InputGeometry.Values[N].HeightAndNormal.yzw;
-        WeightSum += Weight;
     }
-    if (WeightSum <= 0.0) return;
+
+    if (WeightSum <= 0.0)
+    {
+        return;
+    }
+
     float CenterMeso = GeometryScalars.Values[T].MesoVirtualHeight;
 #if MDSS_GPU_VALIDATION
-    if (isnan(CenterMeso) || isinf(CenterMeso)) CenterMeso = 0.0;
+    if (isnan(CenterMeso) || isinf(CenterMeso))
+    {
+        CenterMeso = 0.0;
+    }
 #endif
     float CenterCavityDepth = max(MesoNormals.Values[T].w - CenterMeso, 0.0);
-    float Height = CenterMeso + min(WeightedCavityFill / WeightSum, 1.0) * CenterCavityDepth +
-                   WeightedFollowingHeight / WeightSum;
+    float Height =
+        CenterMeso + min(WeightedCavityFill / WeightSum, 1.0) * CenterCavityDepth + WeightedFollowingHeight / WeightSum;
     OutputGeometry.Values[T].HeightAndNormal.x = Height;
+
     if (dot(WeightedNormal, WeightedNormal) > 1e-12)
+    {
         OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(WeightedNormal);
+    }
 }
+
 // #endregion
 
 // ============================================================
@@ -238,12 +325,14 @@ uint NormalListBase()
 bool ResolveCandidateTile(uint Candidate)
 {
     uint Base = 0u;
+
     for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
     {
         uvec4 Range = SurfaceRanges.Values[Surface];
         uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
         uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
         uint Count = TilesX * TilesY;
+
         if (Candidate < Base + Count)
         {
             uint Local = Candidate - Base;
@@ -253,10 +342,13 @@ bool ResolveCandidateTile(uint Candidate)
             SparseRangeHeight = Range.z;
             SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
             SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+
             return true;
         }
+
         Base += Count;
     }
+
     SparseTileValid = 0u;
     return false;
 }
@@ -264,7 +356,9 @@ bool ResolveCandidateTile(uint Candidate)
 uint ResolveTexel()
 {
     if (Push.UseSparse == 0u)
+    {
         return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    }
 
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
     uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
@@ -277,11 +371,20 @@ uint ResolveTexel()
         SparseTileValid = 0u;
         ResolveCandidateTile(Candidate);
     }
+
     barrier();
-    if (SparseTileValid == 0u) return Push.TexelCount;
+
+    if (SparseTileValid == 0u)
+    {
+        return Push.TexelCount;
+    }
 
     uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    if (Local >= TilePixels) return Push.TexelCount;
+
+    if (Local >= TilePixels)
+    {
+        return Push.TexelCount;
+    }
 #if MDSS_HEIGHT_HALO
     uint MicrotilesX = Push.TileSize / 8u;
     uint LocalX = (Subgroup % MicrotilesX) * 8u + gl_LocalInvocationID.x % 8u;
@@ -292,20 +395,32 @@ uint ResolveTexel()
 #endif
     uint X = SparseTileX * Push.TileSize + LocalX;
     uint Y = SparseTileY * Push.TileSize + LocalY;
-    if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
+
+    if (X >= SparseRangeWidth || Y >= SparseRangeHeight)
+    {
+        return Push.TexelCount;
+    }
+
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
 
 float DisplayedCavityFill(uint Texel, uint Profile)
 {
-    if (Push.Channels == 0u || Push.Channel >= Push.Channels) return 0.0;
+    if (Push.Channels == 0u || Push.Channel >= Push.Channels)
+    {
+        return 0.0;
+    }
 #if MDSS_GPU_VALIDATION
-    if (Profile >= SurfaceProfileRecordCount() / Push.Channels) return 0.0;
+    if (Profile >= SurfaceProfileRecordCount() / Push.Channels)
+    {
+        return 0.0;
+    }
 #endif
     TSurfaceGPUProfileParameters Parameters = LoadSurfaceProfileParameters(Profile * Push.Channels + Push.Channel);
-    float ReferenceAmount = StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) *
-                            Parameters.CapacityInputAndTransfer.x;
+    float ReferenceAmount =
+        StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) * Parameters.CapacityInputAndTransfer.x;
     float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
+
     return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
 }
 

@@ -33,7 +33,9 @@ float MudValueNoise(vec3 P)
 vec3 ApplyMudMicroBump(vec3 N, vec3 P, float Amount)
 {
     if (Amount <= 0.0)
+    {
         return N;
+    }
 
     float Height = MudValueNoise(P * 8.0);
     vec3 dPdx = dFdx(P);
@@ -42,6 +44,7 @@ vec3 ApplyMudMicroBump(vec3 N, vec3 P, float Amount)
     vec3 R2 = cross(N, dPdx);
     float Det = dot(dPdx, R1);
     vec3 Gradient = sign(Det) * (dFdx(Height) * R1 + dFdy(Height) * R2);
+
     return normalize(abs(Det) * N - (0.025 * Amount) * Gradient);
 }
 
@@ -52,27 +55,31 @@ vec4 ShadeWaterFilmLayer(vec3 N, vec3 V, float Coverage)
     float Amount = clamp(Coverage, 0.0, 1.0);
     float NoV = max(dot(N, V), 0.0);
     float Fresnel = 0.02 + 0.98 * pow(1.0 - NoV, 5.0);
+
     // The presentation toggle strengthens only the optical layer. Coverage and
     // accumulation geometry still come from the same simulated WaterFilm state.
-    float Absorption = Material.ExtraDemoBindings.y != 0u
-        ? 0.30 + 0.55 * Amount : 0.04 + 0.24 * Amount;
+    float Absorption = Material.ExtraDemoBindings.y != 0u ? 0.30 + 0.55 * Amount : 0.04 + 0.24 * Amount;
     float OpticalAlpha = Fresnel + (1.0 - Fresnel) * Absorption;
+
     // A thin film appears early, then gains opacity across most of the range.
     float CoverageFade = smoothstep(0.02, 0.85, Amount);
-    float Alpha = clamp(Material.DemoEffectOptions.z * Material.WaterAppearance.y *
-                        CoverageFade * OpticalAlpha, 0.0, 0.98);
+    float Alpha =
+        clamp(Material.DemoEffectOptions.z * Material.WaterAppearance.y * CoverageFade * OpticalAlpha, 0.0, 0.98);
 
     vec3 L = normalize(vec3(0.35, 0.55, 1.0));
     vec3 Sum = V + L;
     vec3 H = Sum * inversesqrt(max(dot(Sum, Sum), 1e-12));
-    float Highlight = EvaluateSpecularLobe(max(NoV, 1e-4), max(dot(N, L), 0.0),
-                                           max(dot(N, H), 0.0), max(dot(V, H), 0.0),
-                                           Material.DemoEffectOptions.w, 0.02);
-    vec3 Reflection = EvaluateWaterFilmEnvironment(reflect(-V, N), Material.DemoEffectOptions.w) +
-                      vec3(Highlight);
+    float Highlight = EvaluateSpecularLobe(max(NoV, 1e-4),
+                                           max(dot(N, L), 0.0),
+                                           max(dot(N, H), 0.0),
+                                           max(dot(V, H), 0.0),
+                                           Material.DemoEffectOptions.w,
+                                           0.02);
+    vec3 Reflection = EvaluateWaterFilmEnvironment(reflect(-V, N), Material.DemoEffectOptions.w) + vec3(Highlight);
     vec3 Tint = MapEffectColor(2u, Amount);
-    vec3 Color = (Fresnel * Reflection + (1.0 - Fresnel) * Absorption * Tint) /
-                 max(OpticalAlpha, 1e-5);
+    vec3 Color = (Fresnel * Reflection + (1.0 - Fresnel) * Absorption * Tint) / max(OpticalAlpha, 1e-5);
+
     return vec4(min(Color, vec3(1.0)), Alpha);
 }
+
 // #endregion

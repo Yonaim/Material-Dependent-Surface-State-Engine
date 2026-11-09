@@ -31,12 +31,16 @@ struct TTopDrawCommand
 layout(set = 0, binding = 0, std430) readonly buffer TSideDrawCommands
 {
     TSideDrawCommand Values[];
-} SideDrawCommands;
+}
+
+SideDrawCommands;
 
 layout(set = 0, binding = 1, std430) buffer TTopDrawCommands
 {
     TTopDrawCommand Values[];
-} TopDrawCommands;
+}
+
+TopDrawCommands;
 
 // #endregion
 
@@ -49,8 +53,14 @@ void main()
 {
     // 마지막 side command는 전체 segment의 활성 여부를 담는 요약 command다.
     uint Surface = gl_GlobalInvocationID.x;
-    if (Surface >= uint(TopDrawCommands.Values.length())) return;
+
+    if (Surface >= uint(TopDrawCommands.Values.length()))
+    {
+        return;
+    }
+
     bool AnyActive = SideDrawCommands.Values[uint(SideDrawCommands.Values.length()) - 1u].VertexCount != 0u;
     TopDrawCommands.Values[Surface].InstanceCount = AnyActive ? 1u : 0u;
 }
+
 // #endregion

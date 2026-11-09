@@ -10,11 +10,11 @@
 // ============================================================
 // #region 00_Vertex_Data
 
-
 struct TTexelGeometryVertex
 {
     vec4 HeightAndNormal; // x: scaled total height, yzw: displayed height-field normal
 };
+
 // #endregion
 
 #endif

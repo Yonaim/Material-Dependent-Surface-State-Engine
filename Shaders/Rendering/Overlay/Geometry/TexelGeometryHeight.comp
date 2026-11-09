@@ -14,7 +14,12 @@
 
 layout(local_size_x = 64) in;
 
-layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
+layout(set = 1, binding = 1, std430) buffer TGeometryCache
+{
+    uint Values[];
+}
+
+GeometryCache;
 
 layout(push_constant) uniform TPush
 {
@@ -30,7 +35,9 @@ layout(push_constant) uniform TPush
     uint UseActiveTileList;
     uint Padding[2];
     vec4 NormalMatrixColumns[3];
-} Push;
+}
+
+Push;
 
 shared uint SparseTileValid;
 shared uint SparseCandidate;
@@ -58,10 +65,15 @@ uint ResolveTexel();
 void main()
 {
     uint T = ResolveTexel();
-    if (T >= Push.TexelCount) return;
+
+    if (T >= Push.TexelCount)
+    {
+        return;
+    }
 
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
     uint TileFlag = 1u;
+
     if (Push.UseActiveTileList == 0u)
     {
         // Legacy/full-dispatch path. Sparse overlay mode reaches only dirty height tiles via the list.
@@ -80,15 +92,14 @@ void main()
         return;
     }
 
-    mat3 NormalMatrix = mat3(Push.NormalMatrixColumns[0].xyz,
-                             Push.NormalMatrixColumns[1].xyz,
-                             Push.NormalMatrixColumns[2].xyz);
-    TDebugAccumulation D = DebugAccumulation(T, Push.Channel, Push.Channels,
-                                            Push.AccumulationDisplayScale, NormalMatrix);
+    mat3 NormalMatrix =
+        mat3(Push.NormalMatrixColumns[0].xyz, Push.NormalMatrixColumns[1].xyz, Push.NormalMatrixColumns[2].xyz);
+    TDebugAccumulation D =
+        DebugAccumulation(T, Push.Channel, Push.Channels, Push.AccumulationDisplayScale, NormalMatrix);
     // status 0 또는 4인 이웃은 DebugFinalNormal에서 제외되도록 NaN으로 기록한다.
-    GeometryCache.Values[T] = D.Status == 0u || D.Status == 4u
-        ? 0x7fc00000u : floatBitsToUint(D.MesoHeight + D.Height);
+    GeometryCache.Values[T] = D.Status == 0u || D.Status == 4u ? 0x7fc00000u : floatBitsToUint(D.MesoHeight + D.Height);
 }
+
 // #endregion
 
 // ============================================================
@@ -112,12 +123,14 @@ uint HeightListBase()
 bool ResolveCandidateTile(uint Candidate)
 {
     uint Base = 0u;
+
     for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
     {
         uvec4 Range = SurfaceRanges.Values[Surface];
         uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
         uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
         uint Count = TilesX * TilesY;
+
         if (Candidate < Base + Count)
         {
             uint Local = Candidate - Base;
@@ -128,10 +141,13 @@ bool ResolveCandidateTile(uint Candidate)
             SparseRangeHeight = Range.z;
             SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
             SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+
             return true;
         }
+
         Base += Count;
     }
+
     SparseTileValid = 0u;
     return false;
 }
@@ -139,7 +155,9 @@ bool ResolveCandidateTile(uint Candidate)
 uint ResolveTexel()
 {
     if (Push.UseActiveTileList == 0u)
+    {
         return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+    }
 
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
     uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
@@ -153,16 +171,31 @@ uint ResolveTexel()
         SparseCandidate = Candidate;
         ResolveCandidateTile(Candidate);
     }
+
     barrier();
-    if (SparseTileValid == 0u) return Push.TexelCount;
+
+    if (SparseTileValid == 0u)
+    {
+        return Push.TexelCount;
+    }
 
     uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    if (Local >= TilePixels) return Push.TexelCount;
+
+    if (Local >= TilePixels)
+    {
+        return Push.TexelCount;
+    }
+
     uint LocalX = Local % Push.TileSize;
     uint LocalY = Local / Push.TileSize;
     uint X = SparseTileX * Push.TileSize + LocalX;
     uint Y = SparseTileY * Push.TileSize + LocalY;
-    if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
+
+    if (X >= SparseRangeWidth || Y >= SparseRangeHeight)
+    {
+        return Push.TexelCount;
+    }
+
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
 

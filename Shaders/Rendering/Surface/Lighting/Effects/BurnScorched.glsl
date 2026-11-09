@@ -22,4 +22,5 @@ float ApplyBurn(float Burn, inout vec3 Albedo, inout float Roughness)
     Roughness = mix(Roughness, 0.42, Coverage);
     return Coverage;
 }
+
 // #endregion

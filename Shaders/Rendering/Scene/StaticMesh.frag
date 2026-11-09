@@ -55,15 +55,22 @@ void main()
     mat3 tangentToWorld = mat3(tangentWS, bitangentWS, normalWS);
 
     vec3 normalTS = texture(NormalTexture, FragUV).xyz * 2.0 - 1.0;
+
     if (Material.FlipNormalY != 0u)
     {
         normalTS.y = -normalTS.y;
     }
+
     normalTS.xy *= Material.NormalStrength;
     normalTS = normalize(normalTS);
 
     vec3 mappedNormalWS = normalize(tangentToWorld * normalTS);
-    if (!gl_FrontFacing) mappedNormalWS = -mappedNormalWS;
+
+    if (!gl_FrontFacing)
+    {
+        mappedNormalWS = -mappedNormalWS;
+    }
+
     vec4 albedo = texture(BaseColorTexture, FragUV) * Material.BaseColor;
 
     // 진단 모드는 색상과 각 좌표계 normal을 시각화해 입력 문제를 구분해 볼 수 있다.
@@ -93,18 +100,25 @@ void main()
 
     if (Material.RenderMode == RENDER_MODE_WIREFRAME)
     {
-        float Diffuse = max(dot(mappedNormalWS, normalize(vec3(0.35,0.55,1.0))), 0.0);
-        OutColor = vec4(albedo.rgb * (Material.AmbientLight + (1.0-Material.AmbientLight) * Diffuse), albedo.a);
+        float Diffuse = max(dot(mappedNormalWS, normalize(vec3(0.35, 0.55, 1.0))), 0.0);
+        OutColor = vec4(albedo.rgb * (Material.AmbientLight + (1.0 - Material.AmbientLight) * Diffuse), albedo.a);
         return;
     }
+
     if (Material.RenderMode == RENDER_MODE_WIREFRAME_UNIFORM_WHITE)
     {
         OutColor = vec4(1.0);
         return;
     }
-    OutColor = vec4(ShadeSurface(albedo.rgb, mappedNormalWS, Material.CameraPosition.xyz - FragWorldPosition,
-                               Material.DemoOptions.x, Material.AmbientLight), albedo.a);
+
+    OutColor = vec4(ShadeSurface(albedo.rgb,
+                                 mappedNormalWS,
+                                 Material.CameraPosition.xyz - FragWorldPosition,
+                                 Material.DemoOptions.x,
+                                 Material.AmbientLight),
+                    albedo.a);
 }
+
 // #endregion
 
 // ============================================================

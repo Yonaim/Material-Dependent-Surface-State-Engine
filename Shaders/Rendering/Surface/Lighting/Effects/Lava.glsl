@@ -23,15 +23,24 @@ vec3 LavaColor(float Coverage)
 
 vec3 LavaEmission(float Coverage, float Threshold)
 {
-    if (Coverage <= Threshold) return vec3(0.0);
+    if (Coverage <= Threshold)
+    {
+        return vec3(0.0);
+    }
+
     // 조명 계산 뒤에 더할 자체 발광 색이다.
     return vec3(0.25, 0.085, 0.008) * LavaVisualAmount(Coverage);
 }
 
 void ApplyLava(float Coverage, float Threshold, inout vec3 Albedo, inout float Roughness)
 {
-    if (Coverage <= Threshold) return;
+    if (Coverage <= Threshold)
+    {
+        return;
+    }
+
     Albedo = LavaColor(Coverage);
     Roughness = 0.34;
 }
+
 // #endregion

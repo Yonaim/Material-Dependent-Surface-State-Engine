@@ -21,7 +21,10 @@ float evaluateDirectionRawFlux(uint TexelIndex,
                                TSurfaceGPUProfileParameters Parameters,
                                float SourceSaturation);
 
-float EvaluateRawOutgoing(uint TexelIndex, uint ChannelIndex, TSurfaceGPUProfileParameters Parameters, float SourceSaturation);
+float EvaluateRawOutgoing(uint TexelIndex,
+                          uint ChannelIndex,
+                          TSurfaceGPUProfileParameters Parameters,
+                          float SourceSaturation);
 
 // #endregion
 
@@ -35,31 +38,37 @@ void main()
     // Sparse Solver ON이면 compact list의 workgroup id를 원래 surface workgroup id로 복원한다.
     uint OriginalGroup = solverOriginalGroup();
     uint TexelIndex = OriginalGroup * 64u + gl_LocalInvocationID.x;
+
     if (TexelIndex >= Solver.LocalTexelCount)
+    {
         return;
+    }
 
     bool SourceGeometryPrepared = false;
 
     // source texel에 공통인 profile index/area는 channel loop 밖에서 한 번만 읽는다.
     uint SourceSurfaceIndex = TexelSurfaceIndices.Values[TexelIndex];
     uint SourceProfileIndex = TexelProfileIndices.Values[TexelIndex];
-    bool SourceTexelValid = SourceSurfaceIndex != InvalidSurfaceId &&
-                            SourceProfileIndex != InvalidSurfaceId;
+    bool SourceTexelValid = SourceSurfaceIndex != InvalidSurfaceId && SourceProfileIndex != InvalidSurfaceId;
     float SourceAreaScale = SourceTexelValid ? texelAreaScale(TexelIndex) : 0.0;
-    uint SourceProfileRecordBase = SourceTexelValid
-                                       ? SourceProfileIndex * Solver.StateChannelCount
-                                       : 0u;
+    uint SourceProfileRecordBase = SourceTexelValid ? SourceProfileIndex * Solver.StateChannelCount : 0u;
 
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
         if (!isChannelActive(ChannelIndex, OriginalGroup))
+        {
             continue;
+        }
 
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
         uint SourceProfileRecord = SourceProfileRecordBase + ChannelIndex;
         bool Supported = false;
+
         if (SourceTexelValid && SourceAreaScale > 0.0)
+        {
             Supported = ProfileSupported.Values[SourceProfileRecord] != 0u;
+        }
+
         float Current = Supported ? CurrentState.Values[StateValueIndex] : 0.0;
 
         // 빈 source는 decay 계산까지 갈 필요가 없다.
@@ -73,8 +82,8 @@ void main()
 
         // Profile도 이 channel에서 한 번만 읽고 decay/capacity/rawFlux가 재사용한다.
         TSurfaceGPUProfileParameters Parameters = loadProfileParameters(SourceProfileRecord);
-        float AvailableState = max(
-            Current - decayAmountPrepared(TexelIndex, Current, Parameters, SourceAreaScale), 0.0);
+        float AvailableState =
+            max(Current - decayAmountPrepared(TexelIndex, Current, Parameters, SourceAreaScale), 0.0);
         if (AvailableState <= 0.0)
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
@@ -83,15 +92,17 @@ void main()
         }
 
         float SourceCapacity = Parameters.CapacityInputAndTransfer.x * SourceAreaScale;
+
         if (SourceCapacity <= 0.0 || !solverFinite(SourceCapacity))
         {
             OutgoingFluxScale.Values[StateValueIndex] = 0.0;
             storeRawOutgoingFloat(StateValueIndex, 0.0);
             continue;
         }
+
         float SourceSaturation = Current / SourceCapacity;
-        if (!SourceGeometryPrepared && Parameters.CapacityInputAndTransfer.w > 0.0 &&
-            (Solver.Flags & (1u << 0u)) == 0u)
+
+        if (!SourceGeometryPrepared && Parameters.CapacityInputAndTransfer.w > 0.0 && (Solver.Flags & (1u << 0u)) == 0u)
         {
             prepareSourceGeometry(TexelIndex);
             SourceGeometryPrepared = true;
@@ -100,11 +111,10 @@ void main()
         float RawOutgoing = EvaluateRawOutgoing(TexelIndex, ChannelIndex, Parameters, SourceSaturation);
 
         storeRawOutgoingFloat(StateValueIndex, RawOutgoing);
-        OutgoingFluxScale.Values[StateValueIndex] = RawOutgoing > 0.0
-            ? min(1.0, AvailableState / RawOutgoing)
-            : 1.0;
+        OutgoingFluxScale.Values[StateValueIndex] = RawOutgoing > 0.0 ? min(1.0, AvailableState / RawOutgoing) : 1.0;
     }
 }
+
 // #endregion
 
 // ============================================================
@@ -112,9 +122,13 @@ void main()
 // ============================================================
 // #region 02_Detailed_Implementation
 
-float EvaluateRawOutgoing(uint TexelIndex, uint ChannelIndex, TSurfaceGPUProfileParameters Parameters, float SourceSaturation)
+float EvaluateRawOutgoing(uint TexelIndex,
+                          uint ChannelIndex,
+                          TSurfaceGPUProfileParameters Parameters,
+                          float SourceSaturation)
 {
     float RawOutgoing = 0.0;
+
     if (useRawFluxCache() && useHalfRawFluxCache())
     {
         // FP16 A/B path: 두 방향을 하나의 uint word에 pack해 edge cache write bandwidth를 절반으로 줄인다.
@@ -124,6 +138,7 @@ float EvaluateRawOutgoing(uint TexelIndex, uint ChannelIndex, TSurfaceGPUProfile
             uint D1 = D0 + 1u;
             float F0 = evaluateDirectionRawFlux(TexelIndex, ChannelIndex, D0, Parameters, SourceSaturation);
             float F1 = evaluateDirectionRawFlux(TexelIndex, ChannelIndex, D1, Parameters, SourceSaturation);
+
             // Pass2는 FP16 cache 값을 읽으므로 source Outgoing도 같은 quantized edge 합으로 계산해야
             // edge 총량 보존이 cache 정밀도 범위 안에서 일관된다.
             vec2 SafeFlux = clamp(vec2(F0, F1), vec2(0.0), vec2(65504.0));
@@ -137,13 +152,17 @@ float EvaluateRawOutgoing(uint TexelIndex, uint ChannelIndex, TSurfaceGPUProfile
     {
         for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
         {
-            float RawFlux = evaluateDirectionRawFlux(
-                TexelIndex, ChannelIndex, DirectionIndex, Parameters, SourceSaturation);
+            float RawFlux =
+                evaluateDirectionRawFlux(TexelIndex, ChannelIndex, DirectionIndex, Parameters, SourceSaturation);
             if (useRawFluxCache())
+            {
                 storeRawOutgoingFloat(rawEdgeFluxIndex(TexelIndex, ChannelIndex, DirectionIndex), RawFlux);
+            }
+
             RawOutgoing += RawFlux;
         }
     }
+
     return RawOutgoing;
 }
 
@@ -154,8 +173,12 @@ float evaluateDirectionRawFlux(uint TexelIndex,
                                float SourceSaturation)
 {
     uint NeighborTexel = neighborIndex(TexelIndex, DirectionIndex);
+
     if (NeighborTexel == InvalidTexelIndex || NeighborTexel >= Solver.LocalTexelCount)
+    {
         return 0.0;
+    }
+
     return rawFlux(TexelIndex,
                    NeighborTexel,
                    ChannelIndex,

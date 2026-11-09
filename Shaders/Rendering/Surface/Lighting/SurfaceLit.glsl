@@ -39,6 +39,9 @@ layout(location = 0) out vec4 OutColor;
 
 void main()
 {
+    // 01.00. Reconstruct Surface Normal
+    // #region 01_00_Reconstruct_Surface_Normal
+
     vec3 N = normalize(FragNormal);
 
 #ifdef TEXEL_LIT
@@ -60,13 +63,19 @@ void main()
         vec3 Tangent = (PositionDx * UVDy.y - PositionDy * UVDx.y) / UVDeterminant;
         vec3 Bitangent = (-PositionDx * UVDy.x + PositionDy * UVDx.x) / UVDeterminant;
         Tangent -= N * dot(N, Tangent);
+
         if (dot(Tangent, Tangent) > 1e-12 && dot(Bitangent, Bitangent) > 1e-12)
         {
             Tangent = normalize(Tangent);
             float Handedness = dot(cross(N, Tangent), Bitangent) < 0.0 ? -1.0 : 1.0;
             Bitangent = normalize(cross(N, Tangent)) * Handedness;
             vec3 MapN = texture(NormalTexture, FragUV).xyz * 2.0 - 1.0;
-            if (Material.FlipNormalY != 0u) MapN.y = -MapN.y;
+
+            if (Material.FlipNormalY != 0u)
+            {
+                MapN.y = -MapN.y;
+            }
+
             MapN.xy *= Material.NormalStrength;
             N = normalize(mat3(Tangent, Bitangent, N) * normalize(MapN));
         }
@@ -74,14 +83,27 @@ void main()
 #else
     // 일반 mesh는 정점에서 전달된 tangent와 handedness로 tangent-to-world 변환을 구성한다.
     vec3 T = normalize(FragTangent - N * dot(N, FragTangent));
-    vec3 B = normalize(cross(N,T)) * FragTangentSign;
+    vec3 B = normalize(cross(N, T)) * FragTangentSign;
     vec3 MapN = texture(NormalTexture, FragUV).xyz * 2.0 - 1.0;
-    if (Material.FlipNormalY != 0u) MapN.y = -MapN.y;
+
+    if (Material.FlipNormalY != 0u)
+    {
+        MapN.y = -MapN.y;
+    }
+
     MapN.xy *= Material.NormalStrength;
-    N = normalize(mat3(T,B,N) * normalize(MapN));
+    N = normalize(mat3(T, B, N) * normalize(MapN));
 #endif
 
-    if (!gl_FrontFacing) N = -N;
+    if (!gl_FrontFacing)
+    {
+        N = -N;
+    }
+
+    // #endregion
+
+    // 01.01. Sample States and Apply Material Effects
+    // #region 01_01_Sample_States_and_Apply_Material_Effects
 
     vec4 Color = texture(BaseColorTexture, FragUV) * Material.BaseColor;
     float Roughness = Material.DemoOptions.x;
@@ -106,13 +128,16 @@ void main()
         bool UseRenderTexture = (PerformanceFlags & 4u) != 0u || PrecomputedSmoothing;
 #endif
 
-        vec4 DemoStates = UseRenderTexture
-            ? SampleRenderStates(FragSurfaceIndex, FragUV,
-                                 uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
-                                 Material.StateChannelCount)
-            : SampleStateSaturations(FragSurfaceIndex, FragUV,
+        vec4 DemoStates =
+            UseRenderTexture
+                ? SampleRenderStates(FragSurfaceIndex,
+                                     FragUV,
                                      uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
-                                     Material.StateChannelCount);
+                                     Material.StateChannelCount)
+                : SampleStateSaturations(FragSurfaceIndex,
+                                         FragUV,
+                                         uvec4(Material.DemoStateChannels.xyz, Material.DemoExtraStateChannels.x),
+                                         Material.StateChannelCount);
         Heat = DemoStates.x;
         float Mud = DemoStates.y;
         WaterFilm = DemoStates.z;
@@ -122,30 +147,39 @@ void main()
         if (CoverageSmoothing && !PrecomputedSmoothing)
         {
             if ((EnabledEffects & 1u) != 0u)
-                Heat = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                     Material.DemoStateChannels.x, Material.StateChannelCount);
+            {
+                Heat = SampleSmoothedStateSaturation(
+                    FragSurfaceIndex, FragUV, Material.DemoStateChannels.x, Material.StateChannelCount);
+            }
 #ifndef BASE_SURFACE_LIT
             if ((EnabledEffects & 2u) != 0u)
-                Mud = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                    Material.DemoStateChannels.y, Material.StateChannelCount);
+            {
+                Mud = SampleSmoothedStateSaturation(
+                    FragSurfaceIndex, FragUV, Material.DemoStateChannels.y, Material.StateChannelCount);
+            }
 #endif
             if ((EnabledEffects & 4u) != 0u)
-                WaterFilm = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                          Material.DemoStateChannels.z, Material.StateChannelCount);
+            {
+                WaterFilm = SampleSmoothedStateSaturation(
+                    FragSurfaceIndex, FragUV, Material.DemoStateChannels.z, Material.StateChannelCount);
+            }
 #ifndef BASE_SURFACE_LIT
             if ((EnabledEffects & 8u) != 0u)
-                Lava = SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                     Material.DemoExtraStateChannels.x, Material.StateChannelCount);
+            {
+                Lava = SampleSmoothedStateSaturation(
+                    FragSurfaceIndex, FragUV, Material.DemoExtraStateChannels.x, Material.StateChannelCount);
+            }
 #endif
         }
 
         if ((EnabledEffects & 16u) != 0u && Material.ExtraDemoBindings.x < Material.StateChannelCount)
         {
-            float AbsorbedWetness = CoverageSmoothing && !PrecomputedSmoothing
-                ? SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV,
-                                                Material.ExtraDemoBindings.x, Material.StateChannelCount)
-                : SampleStateSaturation(FragSurfaceIndex, FragUV,
-                                        Material.ExtraDemoBindings.x, Material.StateChannelCount);
+            float AbsorbedWetness =
+                CoverageSmoothing && !PrecomputedSmoothing
+                    ? SampleSmoothedStateSaturation(
+                          FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.x, Material.StateChannelCount)
+                    : SampleStateSaturation(
+                          FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.x, Material.StateChannelCount);
             ApplyAbsorbedWetness(AbsorbedWetness, Color.rgb, Roughness);
         }
 
@@ -154,31 +188,46 @@ void main()
 #ifndef BASE_SURFACE_LIT
         if ((EnabledEffects & 32u) != 0u && Material.ExtraDemoBindings.z < Material.StateChannelCount)
         {
-            float Ice = clamp(SampleStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount),0.0,1.0);
-            Color.rgb = mix(Color.rgb,vec3(0.48,0.77,0.86),smoothstep(0.02,0.5,Ice));
-            Roughness = mix(Roughness,0.28,Ice);
+            float Ice = clamp(SampleStateSaturation(
+                                  FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount),
+                              0.0,
+                              1.0);
+            Color.rgb = mix(Color.rgb, vec3(0.48, 0.77, 0.86), smoothstep(0.02, 0.5, Ice));
+            Roughness = mix(Roughness, 0.28, Ice);
         }
+
         // 기본 surface pass는 이미 형상을 만들었으므로 외관 효과만 적용하고 두께는 추가하지 않는다.
         if ((EnabledEffects & 2u) != 0u)
+        {
             ApplyMud(Mud, Color.rgb, Roughness, Material.DemoOptions.z);
+        }
+
         if ((EnabledEffects & 8u) != 0u)
+        {
             ApplyLava(Lava, Material.DemoOptions.y, Color.rgb, Roughness);
+        }
 #endif
         if ((EnabledEffects & 1u) != 0u)
+        {
             ApplyHeat(Heat, Color.rgb, Material.DemoEffectOptions.x);
+        }
+
         if ((EnabledEffects & 4u) != 0u)
+        {
             ApplyWaterFilm(WaterFilm, Color.rgb, Roughness, Material.DemoEffectOptions.w);
+        }
 
         if (Material.BurnScorchedBindings.y < Material.StateChannelCount)
         {
-            float Scorched = SampleStateSaturation(FragSurfaceIndex, FragUV,
-                                                   Material.BurnScorchedBindings.y, Material.StateChannelCount);
+            float Scorched = SampleStateSaturation(
+                FragSurfaceIndex, FragUV, Material.BurnScorchedBindings.y, Material.StateChannelCount);
             ApplyScorched(Scorched, Color.rgb, Roughness);
         }
+
         if (Material.BurnScorchedBindings.x < Material.StateChannelCount)
         {
-            float Burn = SampleStateSaturation(FragSurfaceIndex, FragUV,
-                                               Material.BurnScorchedBindings.x, Material.StateChannelCount);
+            float Burn = SampleStateSaturation(
+                FragSurfaceIndex, FragUV, Material.BurnScorchedBindings.x, Material.StateChannelCount);
             BurnGlow = ApplyBurn(Burn, Color.rgb, Roughness);
         }
 
@@ -188,17 +237,26 @@ void main()
 #endif
     }
 
-    OutColor = vec4(ShadeSurface(Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition,
-                               Roughness, Material.AmbientLight, WaterFilm), Color.a);
+    // #endregion
+
+    // 01.02. Compose Lighting and Emission
+    // #region 01_02_Compose_Lighting_and_Emission
+
+    OutColor = vec4(
+        ShadeSurface(
+            Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition, Roughness, Material.AmbientLight, WaterFilm),
+        Color.a);
     OutColor.rgb = min(OutColor.rgb + vec3(0.32, 0.085, 0.006) * BurnGlow, vec3(1.0));
 
 #ifndef BASE_SURFACE_LIT
-    if (Material.DemoStateChannels.w != 0u &&
-        (Material.DemoExtraStateChannels.w & 8u) != 0u)
+    if (Material.DemoStateChannels.w != 0u && (Material.DemoExtraStateChannels.w & 8u) != 0u)
     {
         vec3 Emission = LavaEmission(Lava, Material.DemoOptions.y);
         OutColor.rgb = min(OutColor.rgb + Emission, vec3(1.0));
     }
 #endif
+
+    // #endregion
 }
+
 // #endregion

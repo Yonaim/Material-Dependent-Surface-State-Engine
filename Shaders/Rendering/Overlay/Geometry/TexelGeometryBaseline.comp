@@ -18,22 +18,24 @@ layout(set = 1, binding = 1, std430) writeonly buffer TGeometryCache
 {
     uint Values[];
 }
+
 GeometryCache;
 
 layout(push_constant) uniform TPush
 {
-    uint  TexelCount;
-    uint  Channel;
-    uint  Channels;
-    uint  Accumulation;
+    uint TexelCount;
+    uint Channel;
+    uint Channels;
+    uint Accumulation;
     float AccumulationDisplayScale;
     float GeometryDisplayScale;
-    uint  TotalHeight;
-    uint  UseBaseline;
-    uint  TileSize;
-    uint  Padding[3];
-    vec4  NormalMatrixColumns[3];
+    uint TotalHeight;
+    uint UseBaseline;
+    uint TileSize;
+    uint Padding[3];
+    vec4 NormalMatrixColumns[3];
 }
+
 Push;
 
 vec3 BaselineNormal(uint Texel);
@@ -49,8 +51,11 @@ void main()
 {
     // 각 invocation은 한 texel의 기준 normal을 계산해 3개 uint plane에 보관한다.
     uint T = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
     if (T >= Push.TexelCount)
+    {
         return;
+    }
 
     vec3 Normal = BaselineNormal(T);
 
@@ -60,6 +65,7 @@ void main()
     GeometryCache.Values[Offset + 1u] = floatBitsToUint(Normal.y);
     GeometryCache.Values[Offset + 2u] = floatBitsToUint(Normal.z);
 }
+
 // #endregion
 
 // ============================================================
@@ -76,11 +82,16 @@ vec3 BaselineNormal(uint Texel)
     if (Texel >= uint(Positions.Values.length()) || Texel >= uint(Normals.Values.length()) ||
         Texel >= uint(NeighborIndices.Values.length()) || Texel >= uint(GeometryScalars.Values.length()) ||
         Texel >= uint(TexelSurfaceIndices.Values.length()) || TexelSurfaceIndices.Values[Texel] == 0xffffffffu)
+    {
         return Fallback;
+    }
 
     float CenterHeight = GeometryScalars.Values[Texel].MesoVirtualHeight;
+
     if (isnan(CenterHeight) || isinf(CenterHeight))
+    {
         return Fallback;
+    }
 
     // texel의 접평면 위에 서로 수직인 두 축 U, V를 만든다.
     vec3 N = normalize(Normals.Values[Texel].xyz);
@@ -98,21 +109,30 @@ vec3 BaselineNormal(uint Texel)
     for (uint DirectionIndex = 0u; DirectionIndex < 8u; ++DirectionIndex)
     {
         uint Other = NeighborIndices.Values[Texel].Indices[DirectionIndex];
+
         if (Other >= Push.TexelCount || Other >= uint(Positions.Values.length()) ||
             Other >= uint(Normals.Values.length()) || Other >= uint(GeometryScalars.Values.length()) ||
             Other >= uint(TexelSurfaceIndices.Values.length()) || TexelSurfaceIndices.Values[Other] == 0xffffffffu ||
             dot(N, Normals.Values[Other].xyz) < 0.5)
+        {
             continue;
+        }
 
         float OtherHeight = GeometryScalars.Values[Other].MesoVirtualHeight;
-        if (isnan(OtherHeight) || isinf(OtherHeight))
-            continue;
 
-        vec3  Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
+        if (isnan(OtherHeight) || isinf(OtherHeight))
+        {
+            continue;
+        }
+
+        vec3 Delta = Positions.Values[Other].xyz - Positions.Values[Texel].xyz;
         float X = dot(Delta, U), Y = dot(Delta, V);
         float LengthSquared = X * X + Y * Y;
+
         if (LengthSquared <= 1e-16)
+        {
             continue;
+        }
 
         // 가까운 이웃일수록 큰 영향을 주며, 높이 차는 먼저 표시 배율을 적용한다.
         float Weight = 1.0 / LengthSquared;
@@ -127,8 +147,11 @@ vec3 BaselineNormal(uint Texel)
 
     // 2x2 연립방정식을 푼다. 이웃 배치가 퇴화하면 안정적인 기울기를 구할 수 없다.
     float Det = XX * YY - XY * XY;
+
     if (Det <= 1e-6 * max(XX * YY, 1e-12))
+    {
         return Fallback;
+    }
 
     vec2 Gradient = vec2(YY * XH - XY * YH, XX * YH - XY * XH) / Det;
 

@@ -23,4 +23,5 @@ void main()
 {
     OutColor = FragColor;
 }
+
 // #endregion

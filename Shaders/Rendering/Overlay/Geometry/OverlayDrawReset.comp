@@ -29,11 +29,15 @@ struct TTopDrawCommand
 layout(set = 2, binding = 5, std430) buffer TDrawCommands
 {
     TDrawCommand Values[];
-} DrawCommands;
+}
+
+DrawCommands;
 layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
 {
     TTopDrawCommand Values[];
-} TopDrawCommands;
+}
+
+TopDrawCommands;
 
 // #endregion
 
@@ -45,9 +49,16 @@ layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
 void main()
 {
     uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
     if (Index < uint(DrawCommands.Values.length()))
+    {
         DrawCommands.Values[Index].VertexCount = 0u;
+    }
+
     if (Index < uint(TopDrawCommands.Values.length()))
+    {
         TopDrawCommands.Values[Index].IndexCount = 0u;
+    }
 }
+
 // #endregion

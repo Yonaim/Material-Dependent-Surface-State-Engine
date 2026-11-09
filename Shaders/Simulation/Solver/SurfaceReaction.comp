@@ -30,28 +30,54 @@ void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool Ne
 void main()
 {
     uint Group = solverOriginalGroup();
-    uint Texel = Group*64u + gl_LocalInvocationID.x;
-    if (gl_LocalInvocationIndex == 0u) GroupNextMask = 0u;
+    uint Texel = Group * 64u + gl_LocalInvocationID.x;
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        GroupNextMask = 0u;
+    }
+
     // 범위를 벗어난 invocation도 아래 workgroup reduction까지 참여해야 한다.
     barrier();
     uint Mask = 0u;
     bool NeedsNext = false;
     ReactAndPublishTexel(Texel, Group, Mask, NeedsNext);
-    if (Mask != 0u) atomicOr(GroupNextMask,Mask);
-    if (NeedsNext) scheduleNextSolverTexel(Texel,Mask);
+
+    if (Mask != 0u)
+    {
+        atomicOr(GroupNextMask, Mask);
+    }
+
+    if (NeedsNext)
+    {
+        scheduleNextSolverTexel(Texel, Mask);
+    }
+
     barrier();
+
     if (gl_LocalInvocationIndex == 0u && GroupNextMask != 0u)
     {
-        if (useActiveChannelMask()) atomicOr(AccumulationHeights.Values[solverNextMaskIndex()],GroupNextMask);
-        if (usePerWorkgroupChannelMask()) atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase()+Group],GroupNextMask);
+        if (useActiveChannelMask())
+        {
+            atomicOr(AccumulationHeights.Values[solverNextMaskIndex()], GroupNextMask);
+        }
+
+        if (usePerWorkgroupChannelMask())
+        {
+            atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase() + Group], GroupNextMask);
+        }
     }
 }
+
 // #endregion
 
 // ============================================================
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+
+// 02.00. React and Publish Texel
+// #region 02_00_React_and_Publish_Texel
 
 void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool NeedsNext)
 {
@@ -61,157 +87,288 @@ void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool Ne
         uint Base = reactionScratchBase(Texel);
         uint RuleStart = 0u, Count = 0u;
         float Area = texelAreaScale(Texel);
+
         if (isValidTexel(Texel) && Area > 0.0)
         {
             uint Profile = TexelProfileIndices.Values[Texel];
-            RuleStart = ReactionTable.Values[4u + Profile*4u];
-            Count = ReactionTable.Values[5u + Profile*4u];
+            RuleStart = ReactionTable.Values[4u + Profile * 4u];
+            Count = ReactionTable.Values[5u + Profile * 4u];
         }
+
         uint ReadPlane = IntegrateReactionRules(K, Base, RuleStart, Count, Area);
+
         for (uint C = 0u; C < K; ++C)
         {
             float Old = CurrentState.Values[stateIndex(Texel, C)];
-            float Value = ReactionScratch.Values[Base+ReadPlane*K+C];
-            NextState.Values[stateIndex(Texel,C)] = Value;
+            float Value = ReactionScratch.Values[Base + ReadPlane * K + C];
+            NextState.Values[stateIndex(Texel, C)] = Value;
+
             if (Old > 0.0 || Value > 0.0)
-            { NeedsNext = true; if (C < 32u) Mask |= 1u << C; }
-            if (accumulationContributionChanged(Texel,C,Old,Value)) scheduleAccumulationGroup(Group);
+            {
+                NeedsNext = true;
+
+                if (C < 32u)
+                {
+                    Mask |= 1u << C;
+                }
+            }
+
+            if (accumulationContributionChanged(Texel, C, Old, Value))
+            {
+                scheduleAccumulationGroup(Group);
+            }
         }
     }
 }
+
+// #endregion
+
+// 02.01. Integrate Reaction Rules
+// #region 02_01_Integrate_Reaction_Rules
 
 uint IntegrateReactionRules(uint K, uint Base, uint RuleStart, uint Count, float Area)
 {
     uint ReadPlane = 0u;
     vec4 Diagnostics = vec4(0.0); // substeps, supply-limited extents, budget exhausted, arithmetic failure
     bool HasContinuous = false;
-    for (uint R = 0u; R < Count; ++R) HasContinuous = HasContinuous || ReactionTable.Values[RuleStart+R*16u] == 0u;
+
+    for (uint R = 0u; R < Count; ++R)
+    {
+        HasContinuous = HasContinuous || ReactionTable.Values[RuleStart + R * 16u] == 0u;
+    }
+
     float Remaining = max(Solver.DeltaTime, 0.0);
+
     // Inflow is a discrete operation, evaluated once before continuous integration.
     // Thereafter every local substep evaluates all rules from one immutable snapshot.
     for (uint Iteration = 0u; Iteration < 257u && Count > 0u; ++Iteration)
     {
         bool Inflow = Iteration == 0u;
-        if (!Inflow && (Remaining <= 0.0 || !HasContinuous)) break;
+
+        if (!Inflow && (Remaining <= 0.0 || !HasContinuous))
+        {
+            break;
+        }
+
         for (uint R = 0u; R < Count; ++R)
         {
-            float Request = reactionRequest(RuleStart + R*16u, Base, ReadPlane, Area, Inflow);
-            if (!solverFinite(Request)) { Diagnostics.w = 1.0; Request = 0.0; }
-            ReactionScratch.Values[Base + 5u*K + R] = max(0.0,Request);
+            float Request = reactionRequest(RuleStart + R * 16u, Base, ReadPlane, Area, Inflow);
+
+            if (!solverFinite(Request))
+            {
+                Diagnostics.w = 1.0;
+                Request = 0.0;
+            }
+
+            ReactionScratch.Values[Base + 5u * K + R] = max(0.0, Request);
         }
+
         memoryBarrierBuffer();
-        float Dt = Inflow ? 1.0 : min(Remaining, 1.0/240.0);
+        float Dt = Inflow ? 1.0 : min(Remaining, 1.0 / 240.0);
+
         for (uint C = 0u; C < K; ++C)
         {
             float Demand = 0.0;
+
             for (uint R = 0u; R < Count; ++R)
-                Demand += termCoefficient(RuleStart+R*16u, 8u, C) * ReactionScratch.Values[Base+5u*K+R];
-            float Available = ReactionScratch.Values[Base + ReadPlane*K + C];
-            if (!solverFinite(Demand)) Diagnostics.w = 1.0;
+            {
+                Demand += termCoefficient(RuleStart + R * 16u, 8u, C) * ReactionScratch.Values[Base + 5u * K + R];
+            }
+
+            float Available = ReactionScratch.Values[Base + ReadPlane * K + C];
+
+            if (!solverFinite(Demand))
+            {
+                Diagnostics.w = 1.0;
+            }
+
             // Keep ordinary continuous substeps below 10% depletion where possible.
-            if (!Inflow && Demand > 0.0 && Available > 0.0) Dt = min(Dt, 0.1*Available/Demand);
-            ReactionScratch.Values[Base+2u*K+C] = Demand;
+            if (!Inflow && Demand > 0.0 && Available > 0.0)
+            {
+                Dt = min(Dt, 0.1 * Available / Demand);
+            }
+
+            ReactionScratch.Values[Base + 2u * K + C] = Demand;
         }
+
         // Always consume the entire caller's interval. The final bounded iteration
         // retains positivity through the common limiter, even for extremely stiff input.
-        if (!Inflow && Iteration == 256u && Dt < Remaining) { Diagnostics.z = 1.0; Dt = Remaining; }
-        if (!Inflow) Diagnostics.x += 1.0;
+        if (!Inflow && Iteration == 256u && Dt < Remaining)
+        {
+            Diagnostics.z = 1.0;
+            Dt = Remaining;
+        }
+
+        if (!Inflow)
+        {
+            Diagnostics.x += 1.0;
+        }
+
         for (uint C = 0u; C < K; ++C)
         {
-            float Demand = ReactionScratch.Values[Base+2u*K+C] * Dt;
-            float Available = ReactionScratch.Values[Base+ReadPlane*K+C];
-            ReactionScratch.Values[Base+2u*K+C] = Demand > 0.0 ? min(1.0, Available/Demand) : 1.0;
+            float Demand = ReactionScratch.Values[Base + 2u * K + C] * Dt;
+            float Available = ReactionScratch.Values[Base + ReadPlane * K + C];
+            ReactionScratch.Values[Base + 2u * K + C] = Demand > 0.0 ? min(1.0, Available / Demand) : 1.0;
         }
+
         memoryBarrierBuffer();
+
         for (uint R = 0u; R < Count; ++R)
         {
-            uint Rule = RuleStart+R*16u;
+            uint Rule = RuleStart + R * 16u;
             float Ratio = 1.0;
-            uint Offset = ReactionTable.Values[Rule+8u];
-            for (uint T = 0u; T < ReactionTable.Values[Rule+9u]; ++T)
-                Ratio = min(Ratio, ReactionScratch.Values[Base+2u*K+ReactionTable.Values[Offset+2u*T]]);
-            if (Ratio < 1.0 && ReactionScratch.Values[Base+5u*K+R] > 0.0) Diagnostics.y += 1.0;
-            ReactionScratch.Values[Base+5u*K+R] *= Dt * Ratio;
+            uint Offset = ReactionTable.Values[Rule + 8u];
+
+            for (uint T = 0u; T < ReactionTable.Values[Rule + 9u]; ++T)
+            {
+                Ratio = min(Ratio, ReactionScratch.Values[Base + 2u * K + ReactionTable.Values[Offset + 2u * T]]);
+            }
+
+            if (Ratio < 1.0 && ReactionScratch.Values[Base + 5u * K + R] > 0.0)
+            {
+                Diagnostics.y += 1.0;
+            }
+
+            ReactionScratch.Values[Base + 5u * K + R] *= Dt * Ratio;
         }
+
         memoryBarrierBuffer();
-        uint WritePlane = 1u-ReadPlane;
+        uint WritePlane = 1u - ReadPlane;
         bool FiniteStep = true;
+
         for (uint C = 0u; C < K; ++C)
         {
             float Delta = 0.0;
+
             for (uint R = 0u; R < Count; ++R)
             {
-                uint Rule = RuleStart+R*16u;
-                Delta += (termCoefficient(Rule, 10u, C)-termCoefficient(Rule, 8u, C)) * ReactionScratch.Values[Base+5u*K+R];
+                uint Rule = RuleStart + R * 16u;
+                Delta += (termCoefficient(Rule, 10u, C) - termCoefficient(Rule, 8u, C)) *
+                         ReactionScratch.Values[Base + 5u * K + R];
             }
-            float NewValue = ReactionScratch.Values[Base+ReadPlane*K+C]+Delta;
-            if (!solverFinite(NewValue)) { FiniteStep = false; Diagnostics.w = 1.0; }
-            ReactionScratch.Values[Base+WritePlane*K+C] = max(0.0,NewValue);
+
+            float NewValue = ReactionScratch.Values[Base + ReadPlane * K + C] + Delta;
+
+            if (!solverFinite(NewValue))
+            {
+                FiniteStep = false;
+                Diagnostics.w = 1.0;
+            }
+
+            ReactionScratch.Values[Base + WritePlane * K + C] = max(0.0, NewValue);
         }
+
         memoryBarrierBuffer();
-        if (FiniteStep) ReadPlane = WritePlane;
-        if (!Inflow) Remaining = max(0.0, Remaining-Dt);
+
+        if (FiniteStep)
+        {
+            ReadPlane = WritePlane;
+        }
+
+        if (!Inflow)
+        {
+            Remaining = max(0.0, Remaining - Dt);
+        }
     }
-    uint DiagnosticBase = Base + 5u*K + ReactionTable.Values[1];
-    for (uint D = 0u; D < 4u; ++D) ReactionScratch.Values[DiagnosticBase+D] = Diagnostics[D];
+
+    uint DiagnosticBase = Base + 5u * K + ReactionTable.Values[1];
+
+    for (uint D = 0u; D < 4u; ++D)
+    {
+        ReactionScratch.Values[DiagnosticBase + D] = Diagnostics[D];
+    }
+
     return ReadPlane;
 }
+
+// #endregion
+
+// 02.02. Evaluate Reaction Terms
+// #region 02_02_Evaluate_Reaction_Terms
 
 float reactionRequest(uint R, uint Base, uint ReadPlane, float Area, bool Inflow)
 {
     uint K = Solver.StateChannelCount;
     bool IsInflow = ReactionTable.Values[R] == 1u;
-    if (IsInflow != Inflow) return 0.0;
+
+    if (IsInflow != Inflow)
+    {
+        return 0.0;
+    }
+
     uint State = ReactionTable.Values[R + (Inflow ? 7u : 2u)];
     float Request;
+
     if (Inflow)
     {
         uint Sources = ReactionTable.Values[R + 6u];
-        float NewAmount = ((Sources & 1u) != 0u ? ReactionScratch.Values[Base + 3u*K + State] : 0.0) +
-                          ((Sources & 2u) != 0u ? ReactionScratch.Values[Base + 4u*K + State] : 0.0);
+        float NewAmount = ((Sources & 1u) != 0u ? ReactionScratch.Values[Base + 3u * K + State] : 0.0) +
+                          ((Sources & 2u) != 0u ? ReactionScratch.Values[Base + 4u * K + State] : 0.0);
         return NewAmount * rf(R + 5u) / termCoefficient(R, 8u, State);
     }
+
     uint Model = ReactionTable.Values[R + 1u];
     Request = rf(R + 4u) * Area;
+
     if (Model == 1u)
-        Request = rf(R + 4u) * ReactionScratch.Values[Base + ReadPlane*K + State] / termCoefficient(R, 8u, State);
+    {
+        Request = rf(R + 4u) * ReactionScratch.Values[Base + ReadPlane * K + State] / termCoefficient(R, 8u, State);
+    }
+
     if (Model == 2u)
     {
         uint Offset = ReactionTable.Values[R + 14u];
+
         for (uint F = 0u; F < ReactionTable.Values[R + 15u]; ++F)
         {
-            uint At = Offset + F*3u;
-            float X = ReactionScratch.Values[Base + ReadPlane*K + ReactionTable.Values[At]];
-            Request *= pow(max(X / (Area * rf(At+1u)), 0.0), rf(At+2u));
+            uint At = Offset + F * 3u;
+            float X = ReactionScratch.Values[Base + ReadPlane * K + ReactionTable.Values[At]];
+            Request *= pow(max(X / (Area * rf(At + 1u)), 0.0), rf(At + 2u));
         }
     }
+
     uint Offset = ReactionTable.Values[R + 12u];
+
     for (uint M = 0u; M < ReactionTable.Values[R + 13u]; ++M)
     {
-        uint At = Offset + M*4u;
-        float X = ReactionScratch.Values[Base + ReadPlane*K + ReactionTable.Values[At]];
-        float Threshold = Area * rf(At+2u);
-        float Scale = Area * rf(At+3u);
-        uint Function = ReactionTable.Values[At+1u];
-        float Multiplier = Function == 0u ? (X >= Threshold ? 1.0 : 0.0) :
-                           Function == 1u ? (X <= Threshold ? 1.0 : 0.0) :
-                           Function == 2u ? max(0.0, (X-Threshold)/Scale) :
-                           Function == 3u ? max(0.0, (Threshold-X)/Scale) :
-                           Function == 4u ? X/Scale : 1.0/(1.0+X/Scale);
+        uint At = Offset + M * 4u;
+        float X = ReactionScratch.Values[Base + ReadPlane * K + ReactionTable.Values[At]];
+        float Threshold = Area * rf(At + 2u);
+        float Scale = Area * rf(At + 3u);
+        uint Function = ReactionTable.Values[At + 1u];
+        float Multiplier = Function == 0u   ? (X >= Threshold ? 1.0 : 0.0)
+                           : Function == 1u ? (X <= Threshold ? 1.0 : 0.0)
+                           : Function == 2u ? max(0.0, (X - Threshold) / Scale)
+                           : Function == 3u ? max(0.0, (Threshold - X) / Scale)
+                           : Function == 4u ? X / Scale
+                                            : 1.0 / (1.0 + X / Scale);
         Request *= Multiplier;
     }
+
     return Request;
 }
 
-float rf(uint At) { return uintBitsToFloat(ReactionTable.Values[At]); }
+float rf(uint At)
+{
+    return uintBitsToFloat(ReactionTable.Values[At]);
+}
 
 float termCoefficient(uint R, uint Field, uint Channel)
 {
     uint Offset = ReactionTable.Values[R + Field];
     uint Count = ReactionTable.Values[R + Field + 1u];
+
     for (uint T = 0u; T < Count; ++T)
-        if (ReactionTable.Values[Offset + T * 2u] == Channel) return rf(Offset + T * 2u + 1u);
+    {
+        if (ReactionTable.Values[Offset + T * 2u] == Channel)
+        {
+            return rf(Offset + T * 2u + 1u);
+        }
+    }
+
     return 0.0;
 }
+
+// #endregion
 
 // #endregion

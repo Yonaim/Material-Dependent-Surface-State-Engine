@@ -12,32 +12,37 @@ uint rawEdgeFluxIndex(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
     if (useCoalescedRawFluxLayout())
     {
         // [channel][direction][texel]
-        return rawEdgeFluxBase() +
-               (ChannelIndex * SurfaceNeighborCount + DirectionIndex) * Solver.LocalTexelCount + TexelIndex;
+        return rawEdgeFluxBase() + (ChannelIndex * SurfaceNeighborCount + DirectionIndex) * Solver.LocalTexelCount +
+               TexelIndex;
     }
+
     // Legacy A/B layout: [texel][channel][direction]
-    return rawEdgeFluxBase() +
-           (TexelIndex * Solver.StateChannelCount + ChannelIndex) * SurfaceNeighborCount + DirectionIndex;
+    return rawEdgeFluxBase() + (TexelIndex * Solver.StateChannelCount + ChannelIndex) * SurfaceNeighborCount +
+           DirectionIndex;
 }
 
 uint rawEdgeFluxHalfWordIndex(uint TexelIndex, uint ChannelIndex, uint DirectionPairIndex)
 {
     const uint PairCount = SurfaceNeighborCount / 2u;
+
     if (useCoalescedRawFluxLayout())
     {
         // [channel][direction-pair][texel] -- two fp16 values per uint word.
-        return rawEdgeFluxBase() +
-               (ChannelIndex * PairCount + DirectionPairIndex) * Solver.LocalTexelCount + TexelIndex;
+        return rawEdgeFluxBase() + (ChannelIndex * PairCount + DirectionPairIndex) * Solver.LocalTexelCount +
+               TexelIndex;
     }
+
     // [texel][channel][direction-pair]
-    return rawEdgeFluxBase() +
-           (TexelIndex * Solver.StateChannelCount + ChannelIndex) * PairCount + DirectionPairIndex;
+    return rawEdgeFluxBase() + (TexelIndex * Solver.StateChannelCount + ChannelIndex) * PairCount + DirectionPairIndex;
 }
 
 float loadCachedRawEdgeFlux(uint TexelIndex, uint ChannelIndex, uint DirectionIndex)
 {
     if (!useHalfRawFluxCache())
+    {
         return loadRawOutgoingFloat(rawEdgeFluxIndex(TexelIndex, ChannelIndex, DirectionIndex));
+    }
+
     uint PairIndex = DirectionIndex >> 1u;
     uint Packed = RawOutgoingBuffer.Values[rawEdgeFluxHalfWordIndex(TexelIndex, ChannelIndex, PairIndex)];
     vec2 Pair = unpackHalf2x16(Packed);
@@ -61,4 +66,5 @@ bool solverFinite(vec3 Value)
     return true;
 #endif
 }
+
 // #endregion

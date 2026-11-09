@@ -11,7 +11,10 @@
 float VisibleWaterCoverage(float Coverage, vec2 UV)
 {
     if (Material.WaterAppearance.x < 0.5)
+    {
         return Coverage;
+    }
+
     // Leather beads water: the simulated state still moves continuously, while
     // its material appearance resolves into small, separate drops.
     vec2 Grid = UV * Material.WaterAppearance.w;
@@ -23,6 +26,7 @@ float VisibleWaterCoverage(float Coverage, vec2 UV)
     float Radius = length(Local - Center);
     float Antialias = max(fwidth(Radius), 0.012);
     float Drop = 1.0 - smoothstep(0.22 - Antialias, 0.27 + Antialias, Radius);
+
     return Coverage * Drop;
 }
 
@@ -32,4 +36,5 @@ void ApplyWaterFilm(float Coverage, inout vec3 Albedo, inout float Roughness, fl
     Albedo *= mix(1.0, 1.0 - Material.WaterAppearance.z, Blend);
     Roughness = mix(Roughness, FilmRoughness, Blend);
 }
+
 // #endregion

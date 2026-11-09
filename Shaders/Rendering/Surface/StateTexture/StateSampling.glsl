@@ -9,15 +9,23 @@
 // ============================================================
 // #region 00_Resource_Interface
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTexelChartIndices { uint Values[]; } TexelChartIndices;
+layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTexelChartIndices
+{
+    uint Values[];
+}
+
+TexelChartIndices;
 
 uint FindSurfaceSamplingAnchor(uint Surface, vec2 UV, uvec4 Range)
 {
     vec2 Pixel = clamp(UV, 0.0, 1.0) * vec2(Range.yz) - 0.5;
     uvec2 CenterXY = min(uvec2(clamp(UV, 0.0, 1.0) * vec2(Range.yz)), Range.yz - 1u);
     uint Center = Range.x + CenterXY.y * Range.y + CenterXY.x;
-    if (Center < uint(TexelSurfaceIndices.Values.length()) &&
-        TexelSurfaceIndices.Values[Center] == Surface) return Center;
+
+    if (Center < uint(TexelSurfaceIndices.Values.length()) && TexelSurfaceIndices.Values[Center] == Surface)
+    {
+        return Center;
+    }
 
     // Texel centers outside a UV island are unassigned. A fragment can still
     // lie on the mesh there, so choose the nearest valid bilinear corner.
@@ -25,38 +33,61 @@ uint FindSurfaceSamplingAnchor(uint Surface, vec2 UV, uvec4 Range)
     vec2 Fraction = fract(Pixel);
     float BestWeight = -1.0;
     uint Best = 0xffffffffu;
+
     for (int Y = 0; Y < 2; ++Y)
-    for (int X = 0; X < 2; ++X)
     {
-        ivec2 XY = clamp(First + ivec2(X, Y), ivec2(0), ivec2(Range.yz) - 1);
-        uint Texel = Range.x + uint(XY.y) * Range.y + uint(XY.x);
-        if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
-            TexelSurfaceIndices.Values[Texel] != Surface) continue;
-        float Weight = (X == 0 ? 1.0 - Fraction.x : Fraction.x) *
-                       (Y == 0 ? 1.0 - Fraction.y : Fraction.y);
-        if (Weight <= 1e-6 || Weight <= BestWeight) continue;
-        BestWeight = Weight;
-        Best = Texel;
+        for (int X = 0; X < 2; ++X)
+        {
+            ivec2 XY = clamp(First + ivec2(X, Y), ivec2(0), ivec2(Range.yz) - 1);
+            uint Texel = Range.x + uint(XY.y) * Range.y + uint(XY.x);
+
+            if (Texel >= uint(TexelSurfaceIndices.Values.length()) || TexelSurfaceIndices.Values[Texel] != Surface)
+            {
+                continue;
+            }
+
+            float Weight = (X == 0 ? 1.0 - Fraction.x : Fraction.x) * (Y == 0 ? 1.0 - Fraction.y : Fraction.y);
+
+            if (Weight <= 1e-6 || Weight <= BestWeight)
+            {
+                continue;
+            }
+
+            BestWeight = Weight;
+            Best = Texel;
+        }
     }
+
     return Best;
 }
 
 float StateSaturationForProfile(uint Texel, uint Channel, uint Channels, uint Profile)
 {
     // 호출자가 이미 검증한 Surface/Profile/chart mapping을 재사용하는 neighbor sampling 경로다.
-    if (Channels == 0u || Channel >= Channels) return 0.0;
+    if (Channels == 0u || Channel >= Channels)
+    {
+        return 0.0;
+    }
 #if MDSS_GPU_VALIDATION
-    if (Texel >= uint(WorldTexelAreas.Values.length()) ||
-        Texel >= uint(CurrentState.Values.length()) / Channels ||
-        Profile >= SurfaceProfileRecordCount() / Channels) return 0.0;
+    if (Texel >= uint(WorldTexelAreas.Values.length()) || Texel >= uint(CurrentState.Values.length()) / Channels ||
+        Profile >= SurfaceProfileRecordCount() / Channels)
+    {
+        return 0.0;
+    }
 #endif
     float Capacity = SurfaceProfileCapacityInputAndTransfer(Profile * Channels + Channel).x *
                      WorldTexelAreas.Values[Texel] * (256.0 * 256.0);
     float Amount = CurrentState.Values[Texel * Channels + Channel];
 #if MDSS_GPU_VALIDATION
-    if (Capacity <= 0.0 || isnan(Capacity) || isinf(Capacity) || Amount < 0.0 || isnan(Amount) || isinf(Amount)) return 0.0;
+    if (Capacity <= 0.0 || isnan(Capacity) || isinf(Capacity) || Amount < 0.0 || isnan(Amount) || isinf(Amount))
+    {
+        return 0.0;
+    }
 #else
-    if (Capacity <= 0.0 || Amount < 0.0) return 0.0;
+    if (Capacity <= 0.0 || Amount < 0.0)
+    {
+        return 0.0;
+    }
 #endif
     return clamp(Amount / Capacity, 0.0, 1.0);
 }
@@ -64,127 +95,222 @@ float StateSaturationForProfile(uint Texel, uint Channel, uint Channels, uint Pr
 float StateSaturation(uint Texel, uint Channel, uint Channels, uint Surface)
 {
     // 총량을 profile capacity로 나눠 [0, 1] 포화도로 변환한다.
-    if (Channels == 0u || Channel >= Channels) return 0.0;
+    if (Channels == 0u || Channel >= Channels)
+    {
+        return 0.0;
+    }
 #if MDSS_GPU_VALIDATION
-    if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
-        Texel >= uint(TexelProfileIndices.Values.length())) return 0.0;
+    if (Texel >= uint(TexelSurfaceIndices.Values.length()) || Texel >= uint(TexelProfileIndices.Values.length()))
+    {
+        return 0.0;
+    }
 #endif
-    if (TexelSurfaceIndices.Values[Texel] != Surface) return 0.0;
+    if (TexelSurfaceIndices.Values[Texel] != Surface)
+    {
+        return 0.0;
+    }
+
     uint Profile = TexelProfileIndices.Values[Texel];
 #if MDSS_GPU_VALIDATION
     if (Profile >= uint(ProfileSupported.Values.length()) / Channels ||
-        Profile >= SurfaceProfileRecordCount() / Channels ||
-        Texel >= uint(CurrentState.Values.length()) / Channels || Texel >= uint(WorldTexelAreas.Values.length())) return 0.0;
+        Profile >= SurfaceProfileRecordCount() / Channels || Texel >= uint(CurrentState.Values.length()) / Channels ||
+        Texel >= uint(WorldTexelAreas.Values.length()))
+    {
+        return 0.0;
+    }
 #endif
     uint Record = Profile * Channels + Channel;
-    if (ProfileSupported.Values[Record] == 0u) return 0.0;
+
+    if (ProfileSupported.Values[Record] == 0u)
+    {
+        return 0.0;
+    }
+
     return StateSaturationForProfile(Texel, Channel, Channels, Profile);
 }
 
 float SampleStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
 {
     // 중심 texel의 chart와 profile 내부에서만 bilinear sample을 누적한다.
-    if (Channel >= Channels) return 0.0;
+    if (Channel >= Channels)
+    {
+        return 0.0;
+    }
 #if MDSS_GPU_VALIDATION
-    if (Surface >= uint(SurfaceRanges.Values.length())) return 0.0;
+    if (Surface >= uint(SurfaceRanges.Values.length()))
+    {
+        return 0.0;
+    }
 #endif
     uvec4 Range = SurfaceRanges.Values[Surface];
-    if (Range.y == 0u || Range.z == 0u) return 0.0;
+
+    if (Range.y == 0u || Range.z == 0u)
+    {
+        return 0.0;
+    }
+
     uint Center = FindSurfaceSamplingAnchor(Surface, UV, Range);
 #if MDSS_GPU_VALIDATION
-    if (Center >= uint(TexelSurfaceIndices.Values.length()) ||
-        Center >= uint(TexelChartIndices.Values.length()) || Center >= uint(TexelProfileIndices.Values.length())) return 0.0;
+    if (Center >= uint(TexelSurfaceIndices.Values.length()) || Center >= uint(TexelChartIndices.Values.length()) ||
+        Center >= uint(TexelProfileIndices.Values.length()))
+    {
+        return 0.0;
+    }
 #endif
-    if (Center == 0xffffffffu) return 0.0;
-    if (TexelSurfaceIndices.Values[Center] != Surface) return 0.0;
+    if (Center == 0xffffffffu)
+    {
+        return 0.0;
+    }
+
+    if (TexelSurfaceIndices.Values[Center] != Surface)
+    {
+        return 0.0;
+    }
+
     uint Profile = TexelProfileIndices.Values[Center];
 #if MDSS_GPU_VALIDATION
     if (Channels == 0u || Profile >= uint(ProfileSupported.Values.length()) / Channels ||
-        ProfileSupported.Values[Profile * Channels + Channel] == 0u) return 0.0;
+        ProfileSupported.Values[Profile * Channels + Channel] == 0u)
+    {
+        return 0.0;
+    }
 #else
-    if (ProfileSupported.Values[Profile * Channels + Channel] == 0u) return 0.0;
+    if (ProfileSupported.Values[Profile * Channels + Channel] == 0u)
+    {
+        return 0.0;
+    }
 #endif
     uint Chart = TexelChartIndices.Values[Center];
+
     // 중심 texel과 chart/profile이 다른 이웃은 bilinear 합산에서 제외한다.
     vec2 Pixel = clamp(UV, 0.0, 1.0) * vec2(Range.yz) - 0.5;
     ivec2 Base = ivec2(floor(Pixel));
     vec2 F = fract(Pixel);
     float Value = 0.0;
     float WeightSum = 0.0;
-    for (int Y = 0; Y < 2; ++Y) for (int X = 0; X < 2; ++X)
+
+    for (int Y = 0; Y < 2; ++Y)
     {
-        ivec2 XY = clamp(Base + ivec2(X,Y), ivec2(0), ivec2(Range.yz) - 1);
-        float Weight = (X == 0 ? 1.0-F.x : F.x) * (Y == 0 ? 1.0-F.y : F.y);
-        uint T = Range.x + uint(XY.y) * Range.y + uint(XY.x);
-#if MDSS_GPU_VALIDATION
-        if (T < uint(TexelSurfaceIndices.Values.length()) && TexelSurfaceIndices.Values[T] == Surface &&
-            T < uint(TexelChartIndices.Values.length()) && TexelChartIndices.Values[T] == Chart &&
-            T < uint(TexelProfileIndices.Values.length()) && TexelProfileIndices.Values[T] == Profile)
-#else
-        if (TexelSurfaceIndices.Values[T] == Surface &&
-            TexelChartIndices.Values[T] == Chart && TexelProfileIndices.Values[T] == Profile)
-#endif
+        for (int X = 0; X < 2; ++X)
         {
-            Value += Weight * StateSaturationForProfile(T, Channel, Channels, Profile);
-            WeightSum += Weight;
+            ivec2 XY = clamp(Base + ivec2(X, Y), ivec2(0), ivec2(Range.yz) - 1);
+            float Weight = (X == 0 ? 1.0 - F.x : F.x) * (Y == 0 ? 1.0 - F.y : F.y);
+            uint T = Range.x + uint(XY.y) * Range.y + uint(XY.x);
+#if MDSS_GPU_VALIDATION
+            if (T < uint(TexelSurfaceIndices.Values.length()) && TexelSurfaceIndices.Values[T] == Surface &&
+                T < uint(TexelChartIndices.Values.length()) && TexelChartIndices.Values[T] == Chart &&
+                T < uint(TexelProfileIndices.Values.length()) && TexelProfileIndices.Values[T] == Profile)
+#else
+            if (TexelSurfaceIndices.Values[T] == Surface && TexelChartIndices.Values[T] == Chart &&
+                TexelProfileIndices.Values[T] == Profile)
+#endif
+            {
+                Value += Weight * StateSaturationForProfile(T, Channel, Channels, Profile);
+                WeightSum += Weight;
+            }
         }
     }
+
     return WeightSum > 1e-6 ? Value / WeightSum : 0.0;
 }
 
 float SampleSmoothedStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
 {
     // 렌더링 전용 5x5 Gaussian 평균이다. 시뮬레이션 State에는 쓰지 않는다.
-    if (Channels == 0u || Channel >= Channels) return 0.0;
+    if (Channels == 0u || Channel >= Channels)
+    {
+        return 0.0;
+    }
 #if MDSS_GPU_VALIDATION
-    if (Surface >= uint(SurfaceRanges.Values.length())) return 0.0;
+    if (Surface >= uint(SurfaceRanges.Values.length()))
+    {
+        return 0.0;
+    }
 #endif
     uvec4 Range = SurfaceRanges.Values[Surface];
-    if (Range.y == 0u || Range.z == 0u) return 0.0;
+
+    if (Range.y == 0u || Range.z == 0u)
+    {
+        return 0.0;
+    }
+
     uint Center = FindSurfaceSamplingAnchor(Surface, UV, Range);
 #if MDSS_GPU_VALIDATION
-    if (Center >= uint(TexelSurfaceIndices.Values.length()) ||
-        Center >= uint(TexelProfileIndices.Values.length()) ||
-        Center >= uint(TexelChartIndices.Values.length())) return 0.0;
+    if (Center >= uint(TexelSurfaceIndices.Values.length()) || Center >= uint(TexelProfileIndices.Values.length()) ||
+        Center >= uint(TexelChartIndices.Values.length()))
+    {
+        return 0.0;
+    }
 #endif
-    if (Center == 0xffffffffu) return 0.0;
-    if (TexelSurfaceIndices.Values[Center] != Surface) return 0.0;
+    if (Center == 0xffffffffu)
+    {
+        return 0.0;
+    }
+
+    if (TexelSurfaceIndices.Values[Center] != Surface)
+    {
+        return 0.0;
+    }
+
     uvec2 CenterXY = uvec2((Center - Range.x) % Range.y, (Center - Range.x) / Range.y);
     uint Profile = TexelProfileIndices.Values[Center];
     uint Chart = TexelChartIndices.Values[Center];
 #if MDSS_GPU_VALIDATION
     if (Profile >= uint(ProfileSupported.Values.length()) / Channels ||
         Profile >= SurfaceProfileRecordCount() / Channels ||
-        ProfileSupported.Values[Profile * Channels + Channel] == 0u) return 0.0;
+        ProfileSupported.Values[Profile * Channels + Channel] == 0u)
+    {
+        return 0.0;
+    }
 #else
-    if (ProfileSupported.Values[Profile * Channels + Channel] == 0u) return 0.0;
+    if (ProfileSupported.Values[Profile * Channels + Channel] == 0u)
+    {
+        return 0.0;
+    }
 #endif
 
     const int Kernel[5] = int[5](1, 4, 6, 4, 1);
     float Sum = 0.0;
     float WeightSum = 0.0;
+
     for (int OffsetY = -2; OffsetY <= 2; ++OffsetY)
     {
         int Y = int(CenterXY.y) + OffsetY;
-        if (Y < 0 || Y >= int(Range.z)) continue;
+
+        if (Y < 0 || Y >= int(Range.z))
+        {
+            continue;
+        }
+
         for (int OffsetX = -2; OffsetX <= 2; ++OffsetX)
         {
             int X = int(CenterXY.x) + OffsetX;
-            if (X < 0 || X >= int(Range.y)) continue;
+
+            if (X < 0 || X >= int(Range.y))
+            {
+                continue;
+            }
+
             uint Texel = Range.x + uint(Y) * Range.y + uint(X);
 #if MDSS_GPU_VALIDATION
             if (Texel >= uint(TexelSurfaceIndices.Values.length()) ||
-                Texel >= uint(TexelProfileIndices.Values.length()) ||
-                Texel >= uint(TexelChartIndices.Values.length())) continue;
+                Texel >= uint(TexelProfileIndices.Values.length()) || Texel >= uint(TexelChartIndices.Values.length()))
+            {
+                continue;
+            }
 #endif
-            if (TexelSurfaceIndices.Values[Texel] != Surface ||
-                TexelProfileIndices.Values[Texel] != Profile ||
-                TexelChartIndices.Values[Texel] != Chart) continue;
+            if (TexelSurfaceIndices.Values[Texel] != Surface || TexelProfileIndices.Values[Texel] != Profile ||
+                TexelChartIndices.Values[Texel] != Chart)
+            {
+                continue;
+            }
+
             float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
             Sum += Weight * StateSaturationForProfile(Texel, Channel, Channels, Profile);
             WeightSum += Weight;
         }
     }
+
     return WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : 0.0;
 }
 
@@ -192,40 +318,74 @@ vec4 StateSaturationsForProfile(uint Texel, uint Channels, uint Profile, uvec4 S
 {
     // SurfaceLit의 네 demo State가 같은 texel/profile을 읽으므로 metadata는 공유하고 값만 연속해서 읽는다.
     vec4 Values = vec4(0.0);
+
     for (uint Index = 0u; Index < 4u; ++Index)
     {
         uint Channel = StateChannels[Index];
-        if (Channel >= Channels) continue;
+
+        if (Channel >= Channels)
+        {
+            continue;
+        }
 #if MDSS_GPU_VALIDATION
         if (Profile >= uint(ProfileSupported.Values.length()) / Channels ||
             Profile >= SurfaceProfileRecordCount() / Channels ||
-            Texel >= uint(CurrentState.Values.length()) / Channels ||
-            Texel >= uint(WorldTexelAreas.Values.length())) continue;
+            Texel >= uint(CurrentState.Values.length()) / Channels || Texel >= uint(WorldTexelAreas.Values.length()))
+        {
+            continue;
+        }
 #endif
         uint Record = Profile * Channels + Channel;
-        if (ProfileSupported.Values[Record] == 0u) continue;
+
+        if (ProfileSupported.Values[Record] == 0u)
+        {
+            continue;
+        }
+
         Values[Index] = StateSaturationForProfile(Texel, Channel, Channels, Profile);
     }
+
     return Values;
 }
 
 vec4 SampleStateSaturations(uint Surface, vec2 UV, uvec4 StateChannels, uint Channels)
 {
     // 네 채널에 공통인 중심 Surface, chart/profile 경계와 bilinear 가중치를 한 번만 계산한다.
-    if (Channels == 0u) return vec4(0.0);
+    if (Channels == 0u)
+    {
+        return vec4(0.0);
+    }
 #if MDSS_GPU_VALIDATION
-    if (Surface >= uint(SurfaceRanges.Values.length())) return vec4(0.0);
+    if (Surface >= uint(SurfaceRanges.Values.length()))
+    {
+        return vec4(0.0);
+    }
 #endif
     uvec4 Range = SurfaceRanges.Values[Surface];
-    if (Range.y == 0u || Range.z == 0u) return vec4(0.0);
+
+    if (Range.y == 0u || Range.z == 0u)
+    {
+        return vec4(0.0);
+    }
+
     uint Center = FindSurfaceSamplingAnchor(Surface, UV, Range);
 #if MDSS_GPU_VALIDATION
-    if (Center >= uint(TexelSurfaceIndices.Values.length()) ||
-        Center >= uint(TexelChartIndices.Values.length()) ||
-        Center >= uint(TexelProfileIndices.Values.length())) return vec4(0.0);
+    if (Center >= uint(TexelSurfaceIndices.Values.length()) || Center >= uint(TexelChartIndices.Values.length()) ||
+        Center >= uint(TexelProfileIndices.Values.length()))
+    {
+        return vec4(0.0);
+    }
 #endif
-    if (Center == 0xffffffffu) return vec4(0.0);
-    if (TexelSurfaceIndices.Values[Center] != Surface) return vec4(0.0);
+    if (Center == 0xffffffffu)
+    {
+        return vec4(0.0);
+    }
+
+    if (TexelSurfaceIndices.Values[Center] != Surface)
+    {
+        return vec4(0.0);
+    }
+
     uint Profile = TexelProfileIndices.Values[Center];
     uint Chart = TexelChartIndices.Values[Center];
 
@@ -234,23 +394,31 @@ vec4 SampleStateSaturations(uint Surface, vec2 UV, uvec4 StateChannels, uint Cha
     vec2 F = fract(Pixel);
     vec4 Values = vec4(0.0);
     float WeightSum = 0.0;
-    for (int Y = 0; Y < 2; ++Y) for (int X = 0; X < 2; ++X)
+
+    for (int Y = 0; Y < 2; ++Y)
     {
-        ivec2 XY = clamp(Base + ivec2(X,Y), ivec2(0), ivec2(Range.yz) - 1);
-        float Weight = (X == 0 ? 1.0-F.x : F.x) * (Y == 0 ? 1.0-F.y : F.y);
-        uint T = Range.x + uint(XY.y) * Range.y + uint(XY.x);
-#if MDSS_GPU_VALIDATION
-        if (T >= uint(TexelSurfaceIndices.Values.length()) ||
-            T >= uint(TexelChartIndices.Values.length()) ||
-            T >= uint(TexelProfileIndices.Values.length())) continue;
-#endif
-        if (TexelSurfaceIndices.Values[T] == Surface &&
-            TexelChartIndices.Values[T] == Chart && TexelProfileIndices.Values[T] == Profile)
+        for (int X = 0; X < 2; ++X)
         {
-            Values += Weight * StateSaturationsForProfile(T, Channels, Profile, StateChannels);
-            WeightSum += Weight;
+            ivec2 XY = clamp(Base + ivec2(X, Y), ivec2(0), ivec2(Range.yz) - 1);
+            float Weight = (X == 0 ? 1.0 - F.x : F.x) * (Y == 0 ? 1.0 - F.y : F.y);
+            uint T = Range.x + uint(XY.y) * Range.y + uint(XY.x);
+#if MDSS_GPU_VALIDATION
+            if (T >= uint(TexelSurfaceIndices.Values.length()) || T >= uint(TexelChartIndices.Values.length()) ||
+                T >= uint(TexelProfileIndices.Values.length()))
+            {
+                continue;
+            }
+#endif
+            if (TexelSurfaceIndices.Values[T] == Surface && TexelChartIndices.Values[T] == Chart &&
+                TexelProfileIndices.Values[T] == Profile)
+            {
+                Values += Weight * StateSaturationsForProfile(T, Channels, Profile, StateChannels);
+                WeightSum += Weight;
+            }
         }
     }
+
     return WeightSum > 1e-6 ? Values / WeightSum : vec4(0.0);
 }
+
 // #endregion

@@ -45,40 +45,56 @@ struct TTopDrawCommand
 layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
 {
     TOverlayVertex Values[];
-} MeshVertices;
+}
+
+MeshVertices;
 
 layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices
 {
     uint Values[];
-} MeshIndices;
+}
+
+MeshIndices;
 
 layout(set = 2, binding = 4, std430) buffer TCoverageValues
 {
     uint Values[];
-} Coverage;
+}
+
+Coverage;
 
 layout(set = 2, binding = 5, std430) buffer TDrawCommands
 {
     TDrawCommand Values[];
-} DrawCommands;
+}
+
+DrawCommands;
 
 layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
 {
     TTopDrawCommand Values[];
-} TopDrawCommands;
+}
+
+TopDrawCommands;
 
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
 {
     uint Values[];
-} GeometryCache;
+}
+
+GeometryCache;
 layout(set = 1, binding = 0, std430) readonly buffer TComputedVertices
 {
     TTexelGeometryVertex Values[];
-} Computed;
+}
+
+Computed;
 layout(set = 0, binding = 4, std430) readonly buffer TOverlayGeometryScalars
 {
     vec4 Values[];
-} OverlayGeometryScalars;
+}
+
+OverlayGeometryScalars;
 
 layout(push_constant) uniform TOverlayPush
 {
@@ -96,7 +112,9 @@ layout(push_constant) uniform TOverlayPush
     uint Padding;
     float LavaThreshold;
     uint Ice;
-} Push;
+}
+
+Push;
 
 uint CoverageListBase();
 
@@ -113,8 +131,7 @@ void main()
 {
     if ((Push.Padding & 1u) != 0u || Push.TileSize == 0u)
     {
-        uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u +
-                     gl_LocalInvocationID.x;
+        uint Index = (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
         ComputeCoverage(Index, true);
         return;
     }
@@ -125,16 +142,23 @@ void main()
     uint Candidate = GeometryCache.Values[CoverageListBase() + Slot];
     uint TileCount = Push.Padding >> 1u;
     uint MappingBase = uint(MeshVertices.Values.length()) + uint(MeshIndices.Values.length());
-    if (Candidate >= TileCount) return;
+
+    if (Candidate >= TileCount)
+    {
+        return;
+    }
+
     bool TileActive = (GeometryCache.Values[Push.TexelCount * 4u + Candidate] & 1u) != 0u;
     uint Begin = Coverage.Values[MappingBase + Candidate];
     uint End = Coverage.Values[MappingBase + Candidate + 1u];
+
     for (uint Offset = Begin + gl_LocalInvocationID.x; Offset < End; Offset += gl_WorkGroupSize.x)
     {
         uint Vertex = Coverage.Values[MappingBase + Offset];
         ComputeCoverage(Vertex, TileActive);
     }
 }
+
 // #endregion
 
 // ============================================================
@@ -144,17 +168,23 @@ void main()
 
 void ComputeCoverage(uint Index, bool TileActive)
 {
-    if (Index >= uint(MeshVertices.Values.length()) || Index >= uint(Coverage.Values.length())) return;
+    if (Index >= uint(MeshVertices.Values.length()) || Index >= uint(Coverage.Values.length()))
+    {
+        return;
+    }
+
     if (!TileActive)
     {
         Coverage.Values[Index] = floatBitsToUint(0.0);
         return;
     }
+
     TOverlayVertex Vertex = MeshVertices.Values[Index];
     uint Surface = uint(max(Vertex.UVSurface.w, 0.0));
     uint Channels = Push.Channels;
     uint Channel = Push.Channel;
     bool SharedSurface = Channel == 0xfffeu || Channel == 0xffffu;
+
     if (Channels == 0u || (!SharedSurface && Channel >= Channels))
     {
         Coverage.Values[Index] = floatBitsToUint(0.0);
@@ -168,11 +198,13 @@ void ComputeCoverage(uint Index, bool TileActive)
     }
 #endif
     uvec4 Range = OverlaySurfaceRanges.Values[Surface];
+
     if (Range.y == 0u || Range.z == 0u)
     {
         Coverage.Values[Index] = floatBitsToUint(0.0);
         return;
     }
+
     vec2 UV = clamp(Vertex.UVSurface.xy, 0.0, 1.0);
     uvec2 CenterXY = min(uvec2(UV * vec2(Range.yz)), Range.yz - 1u);
     uint Center = Range.x + CenterXY.y * Range.y + CenterXY.x;
@@ -191,6 +223,7 @@ void ComputeCoverage(uint Index, bool TileActive)
     vec2 F = fract(Pixel);
     float Value = 0.0;
     float WeightSum = 0.0;
+
     for (int Y = 0; Y < 2; ++Y)
     {
         for (int X = 0; X < 2; ++X)
@@ -200,48 +233,81 @@ void ComputeCoverage(uint Index, bool TileActive)
             uint Texel = Range.x + uint(XY.y) * Range.y + uint(XY.x);
 #if MDSS_GPU_VALIDATION
             if (Texel >= uint(OverlayTexelProfileIndices.Values.length()) ||
-                Texel >= uint(OverlayTexelChartIndices.Values.length())) continue;
+                Texel >= uint(OverlayTexelChartIndices.Values.length()))
+            {
+                continue;
+            }
 #endif
-            if (OverlayTexelProfileIndices.Values[Texel] != Profile ||
-                OverlayTexelChartIndices.Values[Texel] != Chart) continue;
+            if (OverlayTexelProfileIndices.Values[Texel] != Profile || OverlayTexelChartIndices.Values[Texel] != Chart)
+            {
+                continue;
+            }
+
             WeightSum += Weight;
+
             if (SharedSurface)
             {
                 float MaterialCoverage = 0.0;
+
                 if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Channels)
-                    MaterialCoverage = max(MaterialCoverage, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
+                {
+                    MaterialCoverage =
+                        max(MaterialCoverage, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
+                }
+
                 if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
-                    MaterialCoverage = max(MaterialCoverage,
-                                           OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
+                {
+                    MaterialCoverage =
+                        max(MaterialCoverage, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
+                }
+
                 if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
-                    MaterialCoverage = max(MaterialCoverage,
-                                           OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));
+                {
+                    MaterialCoverage =
+                        max(MaterialCoverage, OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));
+                }
+
                 if (Channel == 0xffffu && (Push.ActiveMaterialMask & 2u) != 0u && Push.WaterFilm < Channels)
-                    MaterialCoverage = max(MaterialCoverage,
-                                           OverlayStateSaturation(Texel, Push.WaterFilm, Channels, Profile));
+                {
+                    MaterialCoverage =
+                        max(MaterialCoverage, OverlayStateSaturation(Texel, Push.WaterFilm, Channels, Profile));
+                }
+
                 Value += Weight * MaterialCoverage;
             }
             else
+            {
                 Value += Weight * OverlayStateSaturation(Texel, Channel, Channels, Profile);
+            }
         }
     }
+
     Value = WeightSum > 1e-6 ? Value / WeightSum : 0.0;
+
     // A lava-only overlay should not expand to every texel with a tiny height delta.
     // Its visible boundary is determined by the same saturation threshold as shading.
     if (SharedSurface && (Push.ActiveMaterialMask & 11u) != 0u)
     {
         float Top = 0.0;
         float Base = 0.0;
+
         for (uint K = 0u; K < 4u; ++K)
         {
             uint T = Vertex.Samples[K];
+
             if (Vertex.Weights[K] <= 0.0 || T >= uint(Computed.Values.length()) ||
-                T >= uint(OverlayGeometryScalars.Values.length())) continue;
+                T >= uint(OverlayGeometryScalars.Values.length()))
+            {
+                continue;
+            }
+
             Top += Vertex.Weights[K] * Computed.Values[T].HeightAndNormal.x;
             Base += Vertex.Weights[K] * OverlayGeometryScalars.Values[T].x;
         }
+
         Value = max(Value, Top - Base > 1.0e-6 ? 1.0 : 0.0);
     }
+
     Coverage.Values[Index] = floatBitsToUint(Value);
 }
 

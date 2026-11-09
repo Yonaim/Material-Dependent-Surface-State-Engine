@@ -15,4 +15,5 @@ void ApplyMud(float Coverage, inout vec3 Albedo, inout float Roughness, float Mu
     Albedo = mix(Albedo, MapEffectColor(1u, Coverage), Blend);
     Roughness = mix(Roughness, MudRoughness, Blend);
 }
+
 // #endregion

@@ -34,7 +34,11 @@ void main()
 {
     uint OriginalGroup = accumulationOriginalGroup();
     uint Texel = OriginalGroup * 64u + gl_LocalInvocationID.x;
-    if (Texel >= Solver.LocalTexelCount) return;
+
+    if (Texel >= Solver.LocalTexelCount)
+    {
+        return;
+    }
 
     bool StateDrivenGeometry = (Solver.Flags & StateDrivenGeometryUpdateFlag) != 0u;
     bool ForceFull = (Solver.Flags & ForceFullGeometryFlag) != 0u;
@@ -66,8 +70,8 @@ void main()
 
     float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
     vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
-    float HeightTolerance = max(DirtyHeightAbsoluteEpsilon,
-                                DirtyHeightRelativeEpsilon * max(abs(Height), abs(BuiltHeight)));
+    float HeightTolerance =
+        max(DirtyHeightAbsoluteEpsilon, DirtyHeightRelativeEpsilon * max(abs(Height), abs(BuiltHeight)));
     bool BuiltHeightInvalid = false;
     bool BuiltNormalInvalid = dot(BuiltNormal, BuiltNormal) < 0.5;
 #if MDSS_GPU_VALIDATION
@@ -76,7 +80,11 @@ void main()
 #endif
     Dirty = BuiltHeightInvalid || abs(Height - BuiltHeight) > HeightTolerance || BuiltNormalInvalid;
     storeAccumulationFloat(Solver.LocalTexelCount + Texel, Dirty ? 1.0 : 0.0);
-    if (!Dirty) return;
+
+    if (!Dirty)
+    {
+        return;
+    }
 
     if (useSparseSimulationGeometry() && !useDenseAdaptiveGeometry())
     {
@@ -89,6 +97,7 @@ void main()
         atomicMax(AccumulationHeights.Values[geometryScheduleCommandBase()], sparseWorkgroupCount());
     }
 }
+
 // #endregion
 
 // ============================================================
@@ -99,29 +108,51 @@ void main()
 void ScheduleGeometryGroup(uint Group)
 {
     uint Groups = sparseWorkgroupCount();
-    if (Group >= Groups) return;
+
+    if (Group >= Groups)
+    {
+        return;
+    }
+
     if (atomicCompSwap(AccumulationHeights.Values[geometryScheduleFlagBase() + Group], 0u, 1u) == 0u)
     {
         uint Slot = atomicAdd(AccumulationHeights.Values[geometryScheduleCommandBase()], 1u);
+
         if (Slot < Groups)
+        {
             AccumulationHeights.Values[geometryScheduleListBase() + Slot] = Group;
+        }
     }
 }
 
 void ScheduleGeometryTexelAndTwoHopNeighbors(uint Texel)
 {
-    if (Texel >= Solver.LocalTexelCount) return;
+    if (Texel >= Solver.LocalTexelCount)
+    {
+        return;
+    }
+
     ScheduleGeometryGroup(Texel / 64u);
+
     for (uint D = 0u; D < SurfaceNeighborCount; ++D)
     {
         uint N1 = neighborIndex(Texel, D);
-        if (N1 == InvalidTexelIndex || N1 >= Solver.LocalTexelCount) continue;
+
+        if (N1 == InvalidTexelIndex || N1 >= Solver.LocalTexelCount)
+        {
+            continue;
+        }
+
         ScheduleGeometryGroup(N1 / 64u);
+
         for (uint D2 = 0u; D2 < SurfaceNeighborCount; ++D2)
         {
             uint N2 = neighborIndex(N1, D2);
+
             if (N2 != InvalidTexelIndex && N2 < Solver.LocalTexelCount)
+            {
                 ScheduleGeometryGroup(N2 / 64u);
+            }
         }
     }
 }

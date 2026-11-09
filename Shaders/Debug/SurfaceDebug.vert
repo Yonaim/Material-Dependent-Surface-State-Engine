@@ -14,6 +14,7 @@ layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec2 InUV;
 layout(location = 3) in vec4 InTangent;
+
 // CPU: RendererShared.h의 FMaterialUniform prefix; RendererMaterials.cpp에서 업로드한다.
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
@@ -27,8 +28,10 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     float DebugViewParameter;
     float ReliefShadingEnabled;
     vec4 DebugOptions; // reserved, reserved, Lit height display scale, displacement scale
-    uvec4 DebugFlags; // reserved, Accumulation component, height grid mode, height grid block size
-} Material;
+    uvec4 DebugFlags;  // reserved, Accumulation component, height grid mode, height grid block size
+}
+
+Material;
 
 #include "Debug/SurfaceDebugData.glsl"
 
@@ -36,7 +39,9 @@ layout(push_constant) uniform TStaticMeshPushConstants
 {
     mat4 Model;
     mat4 ViewProjection;
-} Push;
+}
+
+Push;
 
 layout(location = 0) out vec3 FragNormal;
 layout(location = 1) out vec3 FragTangent;
@@ -63,15 +68,18 @@ void main()
     FragTangent = normalize(mat3(Push.Model) * InTangent.xyz);
     FragTangentSign = InTangent.w;
     FragUV = InUV;
+
     // RendererCommands.cpp의 draw firstInstance는 Section.Surface를 전달한다.
     FragSurfaceIndex = gl_InstanceIndex;
     WriteMesoNormal(NormalMatrix);
     vec3 LocalPosition = InPosition;
+
     // Texel Area 진단은 Meso Offset과 Normal Map을 적용하기 전의 위치와 instance scale을 사용한다.
     FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
     ApplyMesoOffset(LocalPosition);
     gl_Position = Push.ViewProjection * Push.Model * vec4(LocalPosition, 1.0);
 }
+
 // #endregion
 
 // ============================================================
@@ -84,15 +92,20 @@ void WriteMesoNormal(mat3 NormalMatrix)
     // 상태 히트맵에 입체감을 더할 Meso Normal을 조회해 월드 공간으로 변환한다.
     FragMesoNormalWS = FragNormal;
     uint Surface = uint(gl_InstanceIndex);
+
     if (Surface < uint(SurfaceRanges.Values.length()))
     {
         uvec4 Range = SurfaceRanges.Values[Surface];
+
         if (Range.y > 0u && Range.z > 0u)
         {
             uvec2 XY = min(uvec2(floor(clamp(InUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
             uint TexelIndex = Range.x + XY.y * Range.y + XY.x;
+
             if (TexelIndex < uint(MesoNormals.Values.length()))
+            {
                 FragMesoNormalWS = normalize(NormalMatrix * MesoNormals.Values[TexelIndex].xyz);
+            }
         }
     }
 }
@@ -103,13 +116,16 @@ void ApplyMesoOffset(inout vec3 LocalPosition)
     {
         // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.
         uint Surface = uint(gl_InstanceIndex);
+
         if (Surface < uint(SurfaceRanges.Values.length()))
         {
             uvec4 Range = SurfaceRanges.Values[Surface];
+
             if (Range.y > 0u && Range.z > 0u)
             {
                 uvec2 XY = min(uvec2(floor(clamp(InUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
                 uint TexelIndex = Range.x + XY.y * Range.y + XY.x;
+
                 if (TexelIndex < uint(GeometryScalars.Values.length()) &&
                     TexelIndex < uint(TexelSurfaceIndices.Values.length()) &&
                     TexelSurfaceIndices.Values[TexelIndex] == Surface)

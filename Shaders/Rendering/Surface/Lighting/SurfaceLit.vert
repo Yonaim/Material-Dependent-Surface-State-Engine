@@ -17,7 +17,9 @@ layout(push_constant) uniform TStaticMeshPushConstants
 {
     mat4 Model;
     mat4 ViewProjection;
-} Push;
+}
+
+Push;
 
 layout(location = 0) out vec3 FragNormal;
 layout(location = 1) out vec3 FragTangent;
@@ -47,4 +49,5 @@ void main()
     FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
     gl_Position = Push.ViewProjection * Push.Model * vec4(InPosition, 1.0);
 }
+
 // #endregion
