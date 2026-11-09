@@ -3,13 +3,12 @@
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
-#region 00_Imports_and_Module_Configuration
+# region 00_Imports_and_Module_Configuration
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENES = ROOT / "Assets/Scenes"
@@ -20,12 +19,13 @@ MESHES = ROOT / "Assets/Meshes/ReactionLab"
 PLATE_MESHES = ROOT / "Assets/Meshes/MarbleCube"
 
 
-#endregion
+# endregion
 
 # ============================================================
 # 01. Processing Helpers
 # ============================================================
-#region 01_Processing_Helpers
+# region 01_Processing_Helpers
+
 
 def save(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
@@ -105,12 +105,15 @@ def build_profiles() -> None:
                 },
             ]
         save(PROFILES / f"{name}.SRProfile", profile)
-        save(MAPS / f"{name}.SurfaceProfileMap", {
-            "type": "SurfaceProfileMap",
-            "version": 1,
-            "profiles": [f"../SurfaceProfiles/{name}.SRProfile"],
-            "surfaces": [{"surfaceId": 0, "profileIndex": 0}],
-        })
+        save(
+            MAPS / f"{name}.SurfaceProfileMap",
+            {
+                "type": "SurfaceProfileMap",
+                "version": 1,
+                "profiles": [f"../SurfaceProfiles/{name}.SRProfile"],
+                "surfaces": [{"surfaceId": 0, "profileIndex": 0}],
+            },
+        )
 
 
 GLYPHS = {
@@ -154,14 +157,16 @@ def build_labels() -> None:
                             continue
                         x = left + (column * 4 + bit) * pitch
                         y = baseline + (4 - row) * pitch
-                        lines.extend([
-                            f"v {x:.5f} {y:.5f} 0",
-                            f"v {x + pixel:.5f} {y:.5f} 0",
-                            f"v {x + pixel:.5f} {y + pixel:.5f} 0",
-                            f"v {x:.5f} {y + pixel:.5f} 0",
-                            f"f {vertex} {vertex + 1} {vertex + 2}",
-                            f"f {vertex} {vertex + 2} {vertex + 3}",
-                        ])
+                        lines.extend(
+                            [
+                                f"v {x:.5f} {y:.5f} 0",
+                                f"v {x + pixel:.5f} {y:.5f} 0",
+                                f"v {x + pixel:.5f} {y + pixel:.5f} 0",
+                                f"v {x:.5f} {y + pixel:.5f} 0",
+                                f"f {vertex} {vertex + 1} {vertex + 2}",
+                                f"f {vertex} {vertex + 2} {vertex + 3}",
+                            ]
+                        )
                         vertex += 4
     (MESHES / "ReactionTransitionLabels.obj").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -174,8 +179,16 @@ def build_plate_meshes() -> None:
     (PLATE_MESHES / "ReactionTransitionPlate.mtl").write_text(
         "\n".join(
             f"newmtl {name}\nKd 0.52 0.31 0.16\nNs 35"
-            for name in ("marble", "marble_back", "marble_right", "marble_left", "marble_top", "marble_bottom")
-        ) + "\n",
+            for name in (
+                "marble",
+                "marble_back",
+                "marble_right",
+                "marble_left",
+                "marble_top",
+                "marble_bottom",
+            )
+        )
+        + "\n",
         encoding="utf-8",
     )
     (PLATE_MESHES / "ReactionTransitionPlateTop.obj").write_text(
@@ -195,87 +208,114 @@ def build_scene() -> None:
             "rotationDegrees": [8, 0, 0],
             "scale": [1.65, 2.2, 0.22],
         }
-        objects.append({
-            "id": kind,
-            "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateTop.obj",
-            "surfaceProfileMap": f"../SurfaceProfileMaps/{PROFILE_NAMES[kind]}.SurfaceProfileMap",
-            "transform": transform,
-        })
-        objects.append({
-            "id": kind + "_sides",
-            "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateSides.obj",
-            "transform": transform,
-        })
-        contacts.append({
-            "target": kind,
-            "state": "fuel",
-            "worldPosition": [x, 0.23225797607978538, 0.1437227628015891],
-            "radius": 0.7,
-            "strength": 2.0,
-            "falloff": 0.25,
-        })
-    objects.extend([
+        objects.append(
+            {
+                "id": kind,
+                "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateTop.obj",
+                "surfaceProfileMap": f"../SurfaceProfileMaps/{PROFILE_NAMES[kind]}.SurfaceProfileMap",
+                "transform": transform,
+            }
+        )
+        objects.append(
+            {
+                "id": kind + "_sides",
+                "mesh": "../Meshes/MarbleCube/ReactionTransitionPlateSides.obj",
+                "transform": transform,
+            }
+        )
+        contacts.append(
+            {
+                "target": kind,
+                "state": "fuel",
+                "worldPosition": [x, 0.23225797607978538, 0.1437227628015891],
+                "radius": 0.7,
+                "strength": 2.0,
+                "falloff": 0.25,
+            }
+        )
+    objects.extend(
+        [
+            {
+                "id": "labels",
+                "mesh": "../Meshes/ReactionLab/ReactionTransitionLabels.obj",
+                "transform": {
+                    "position": [0, -1.42, -0.02],
+                    "rotationDegrees": [0, 0, 0],
+                    "scale": [1, 1, 1],
+                },
+            },
+            {
+                "id": "stage",
+                "mesh": "../Meshes/ReactionLab/Stage.obj",
+                "transform": {
+                    "position": [0, 0, -0.29],
+                    "rotationDegrees": [0, 0, 0],
+                    "scale": [7, 3.65, 0.18],
+                },
+            },
+        ]
+    )
+    save(
+        SCENES / "ReactionTransitionComparison.Scene",
         {
-            "id": "labels",
-            "mesh": "../Meshes/ReactionLab/ReactionTransitionLabels.obj",
-            "transform": {"position": [0, -1.42, -0.02], "rotationDegrees": [0, 0, 0], "scale": [1, 1, 1]},
+            "type": "TScene",
+            "version": 1,
+            "animation": "../Animations/ReactionTransitionComparison.DemoAnim",
+            "camera": {
+                "position": [0.8, -6.9, 5.9],
+                "target": [0, 0, 0.12],
+                "verticalFieldOfViewDegrees": 40,
+            },
+            "simulationResolution": 128,
+            "litHeightDisplayScale": 1,
+            "objects": objects,
+            "initialContacts": contacts,
         },
+    )
+    save(
+        ANIMATIONS / "ReactionTransitionComparison.DemoAnim",
         {
-            "id": "stage",
-            "mesh": "../Meshes/ReactionLab/Stage.obj",
-            "transform": {"position": [0, 0, -0.29], "rotationDegrees": [0, 0, 0], "scale": [7, 3.65, 0.18]},
-        },
-    ])
-    save(SCENES / "ReactionTransitionComparison.Scene", {
-        "type": "TScene",
-        "version": 1,
-        "animation": "../Animations/ReactionTransitionComparison.DemoAnim",
-        "camera": {
-            "position": [0.8, -6.9, 5.9],
-            "target": [0, 0, 0.12],
-            "verticalFieldOfViewDegrees": 40,
-        },
-        "simulationResolution": 128,
-        "litHeightDisplayScale": 1,
-        "objects": objects,
-        "initialContacts": contacts,
-    })
-    save(ANIMATIONS / "ReactionTransitionComparison.DemoAnim", {
-        "version": 1,
-        "durationSeconds": 12,
-        "loop": False,
-        "autoplay": True,
-        "tracks": [{
-            "target": "camera",
-            "property": "position",
-            "interpolation": "linear",
-            "keys": [
-                {"time": 0, "value": [0.8, -6.9, 5.9]},
-                {"time": 12, "value": [0.8, -6.9, 5.9]},
+            "version": 1,
+            "durationSeconds": 12,
+            "loop": False,
+            "autoplay": True,
+            "tracks": [
+                {
+                    "target": "camera",
+                    "property": "position",
+                    "interpolation": "linear",
+                    "keys": [
+                        {"time": 0, "value": [0.8, -6.9, 5.9]},
+                        {"time": 12, "value": [0.8, -6.9, 5.9]},
+                    ],
+                }
             ],
-        }],
-        "contactEvents": [{
-            "time": 1.0,
-            "target": kind,
-            "state": "heat",
-            "operation": "add",
-            "shape": "ellipse",
-            "localPosition": [0, 0.12, 0.5],
-            "radius": 0.65,
-            "secondaryRadius": 0.75,
-            "depth": 0.05,
-            "strength": 1.4,
-            "falloff": 0.3,
-        } for kind in ("control", "transition", "reaction")],
-    })
+            "contactEvents": [
+                {
+                    "time": 1.0,
+                    "target": kind,
+                    "state": "heat",
+                    "operation": "add",
+                    "shape": "ellipse",
+                    "localPosition": [0, 0.12, 0.5],
+                    "radius": 0.65,
+                    "secondaryRadius": 0.75,
+                    "depth": 0.05,
+                    "strength": 1.4,
+                    "falloff": 0.3,
+                }
+                for kind in ("control", "transition", "reaction")
+            ],
+        },
+    )
 
 
-#endregion
+# endregion
 
 # ============================================================
 # 02. Script Execution
 # ============================================================
-#region 02_Script_Execution
+# region 02_Script_Execution
 
 if __name__ == "__main__":
     build_profiles()
@@ -283,4 +323,4 @@ if __name__ == "__main__":
     build_plate_meshes()
     build_scene()
 
-#endregion
+# endregion

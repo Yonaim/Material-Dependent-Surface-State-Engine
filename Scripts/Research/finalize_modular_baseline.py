@@ -1,32 +1,55 @@
 """Publish measured tables into the existing experiment section after all required gates and a decision."""
+
 import json
-from run_modular_baseline import EXP,ROOT,write,stamp
+from run_modular_baseline import EXP, ROOT, write, stamp
 
-comparison=json.loads((EXP/"comparisons.json").read_text(encoding="utf-8"))
-audit=json.loads((EXP/"study-audit.json").read_text(encoding="utf-8"))
-decision=json.loads((EXP/"decision.json").read_text(encoding="utf-8"))
-manifest=json.loads((EXP/"manifest.json").read_text(encoding="utf-8"))
-if comparison["remaining_diagnostics"] or comparison["failed_comparisons"] or audit["audit_failures"]:
+comparison = json.loads((EXP / "comparisons.json").read_text(encoding="utf-8"))
+audit = json.loads((EXP / "study-audit.json").read_text(encoding="utf-8"))
+decision = json.loads((EXP / "decision.json").read_text(encoding="utf-8"))
+manifest = json.loads((EXP / "manifest.json").read_text(encoding="utf-8"))
+if (
+    comparison["remaining_diagnostics"]
+    or comparison["failed_comparisons"]
+    or audit["audit_failures"]
+):
     raise SystemExit("Cannot finalize an incomplete or failed comparison")
-latest={r["id"]:r for r in manifest["runs"] if r["status"]=="completed"}
-main=[r for r in latest.values() if r["stage"]=="diagnostic"]
-rows=[]
-for task,variants in [("T0","BDE"),("T1","D"),("T2","D"),("T3","DE")]:
+latest = {r["id"]: r for r in manifest["runs"] if r["status"] == "completed"}
+main = [r for r in latest.values() if r["stage"] == "diagnostic"]
+rows = []
+for task, variants in [("T0", "BDE"), ("T1", "D"), ("T2", "D"), ("T3", "DE")]:
     for v in variants:
-        key=f"diagnostic-{task}-{v}-U-128";r=latest[key];s=r["summary"]
-        c=next(x for x in comparison["comparisons"] if x["a"]==key and x["b"]==key.replace("-U-","-M-"))
-        maximum=max(max(check["state_l1_relative"]) for check in c["snapshots"])
-        rows.append(f"| {task}-{v} | {len(s['channels'])} / {len(s['cumulative_extents'])} | {'통과' if c['passed'] else '실패'} | {'비트 일치' if c['state_geometry_weights_bit_identical'] else '차이 있음'} | {maximum:.6g} |")
-max_budget=max(max(x["max_relative_per_channel"]) for c in comparison["comparisons"] for x in c.get("cumulative_channel_budgets",[]))
-first=manifest["runs"][0]["started_at"];last=manifest["runs"][-1]["finished_at"]
-core_exes={r["executable_sha256"] for r in main}
-extension=json.loads((EXP/"extension-audit.json").read_text(encoding="utf-8"))
-extension.update(status="completed_declaration_only_execution_audit",verified_at=stamp(),main_diagnostic_executable_hashes=sorted(core_exes),
-                 fourteen_main_runs_single_executable=len(core_exes)==1,decision=decision["status"],
-                 limitation="No retrospective reconstruction of marginal authoring time; the generic infrastructure was written with task definitions known")
-write(EXP/"extension-audit.json",extension)
+        key = f"diagnostic-{task}-{v}-U-128"
+        r = latest[key]
+        s = r["summary"]
+        c = next(
+            x
+            for x in comparison["comparisons"]
+            if x["a"] == key and x["b"] == key.replace("-U-", "-M-")
+        )
+        maximum = max(max(check["state_l1_relative"]) for check in c["snapshots"])
+        rows.append(
+            f"| {task}-{v} | {len(s['channels'])} / {len(s['cumulative_extents'])} | {'통과' if c['passed'] else '실패'} | {'비트 일치' if c['state_geometry_weights_bit_identical'] else '차이 있음'} | {maximum:.6g} |"
+        )
+max_budget = max(
+    max(x["max_relative_per_channel"])
+    for c in comparison["comparisons"]
+    for x in c.get("cumulative_channel_budgets", [])
+)
+first = manifest["runs"][0]["started_at"]
+last = manifest["runs"][-1]["finished_at"]
+core_exes = {r["executable_sha256"] for r in main}
+extension = json.loads((EXP / "extension-audit.json").read_text(encoding="utf-8"))
+extension.update(
+    status="completed_declaration_only_execution_audit",
+    verified_at=stamp(),
+    main_diagnostic_executable_hashes=sorted(core_exes),
+    fourteen_main_runs_single_executable=len(core_exes) == 1,
+    decision=decision["status"],
+    limitation="No retrospective reconstruction of marginal authoring time; the generic infrastructure was written with task definitions known",
+)
+write(EXP / "extension-audit.json", extension)
 
-text=f'''### 현재 결과와 판단
+text = f'''### 현재 결과와 판단
 
 **완료: 이 과제에서 MDSSP의 구조적 확장 부담 우위는 지지되지 않았다.** 동일 수치 모델과 공통 서비스를 제공받은 M도 T1/T2/T3를 설정 선언과 일반 모듈 factory로 처리했다. 이는 공통 모델 자체의 선행연구 대비 신규성 판정과 구분한다.
 
@@ -67,16 +90,27 @@ T0의 M-separate 14초 대조, ledger OFF, 등록 역순, 실제 모듈별 dispa
 H1의 State-Driven Geometry Coupling 기전 증거는 유지된다. H3 중 모듈 조정 방식에 의한 확장 부담 우위는 이 범위에서 지지되지 않으며, H4 모델의 신규성은 여전히 별도 질문이다. 실제 선행 프레임워크의 계산 모델과 비교해 어떤 제한을 해결하는지 정의하기 전에는 이번 결과를 SIGGRAPH 시스템 기여의 증거로 쓰지 않는다.
 
 '''
-report=ROOT/"Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md"
-content=report.read_text(encoding="utf-8")
-start=content.index("### 현재 결과와 판단",content.index("## PERF-042"))
-end=content.index("### 중단 기준과 해석의 경계",start)
-content=content[:start]+text+content[end:]
-content=content.replace("현재 실행 중이며 구조적/성능 우위는 미판정이다.","동일 모델의 모듈식 구성도 확장 과제를 선언만으로 처리했다. 구조적 우위는 지지되지 않았고 정식 성능 비교는 중단했다.")
-content=content.replace("상태: **실행 중**.","상태: **진단/확장 비교 완료 · 사전 조건에 따른 구조적 중단**.",1)
-report.write_text(content,encoding="utf-8")
-study_path=ROOT/"Performance-Data/20261026-coupling-study/study.json";study=json.loads(study_path.read_text(encoding="utf-8"))
-study["baseline"].update(status="completed_structural_stop",completed_at=stamp(),completed_attempts=audit["completed_attempts"],
-                         audited_steps=audit["main_steps"],decision="No structural extension-burden advantage demonstrated in v1 tasks; repeated cost study not run")
-write(study_path,study)
+report = ROOT / "Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md"
+content = report.read_text(encoding="utf-8")
+start = content.index("### 현재 결과와 판단", content.index("## PERF-042"))
+end = content.index("### 중단 기준과 해석의 경계", start)
+content = content[:start] + text + content[end:]
+content = content.replace(
+    "현재 실행 중이며 구조적/성능 우위는 미판정이다.",
+    "동일 모델의 모듈식 구성도 확장 과제를 선언만으로 처리했다. 구조적 우위는 지지되지 않았고 정식 성능 비교는 중단했다.",
+)
+content = content.replace(
+    "상태: **실행 중**.", "상태: **진단/확장 비교 완료 · 사전 조건에 따른 구조적 중단**.", 1
+)
+report.write_text(content, encoding="utf-8")
+study_path = ROOT / "Performance-Data/20261026-coupling-study/study.json"
+study = json.loads(study_path.read_text(encoding="utf-8"))
+study["baseline"].update(
+    status="completed_structural_stop",
+    completed_at=stamp(),
+    completed_attempts=audit["completed_attempts"],
+    audited_steps=audit["main_steps"],
+    decision="No structural extension-burden advantage demonstrated in v1 tasks; repeated cost study not run",
+)
+write(study_path, study)
 print(report)

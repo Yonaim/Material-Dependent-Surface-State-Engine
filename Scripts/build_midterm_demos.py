@@ -6,7 +6,7 @@ Run with Python 3. The dustpan glTF and ground textures come from Poly Haven.
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
-#region 00_Imports_and_Module_Configuration
+# region 00_Imports_and_Module_Configuration
 
 import json
 import math
@@ -15,18 +15,18 @@ import struct
 import urllib.request
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 MESHES = ROOT / "Assets" / "Meshes"
 USER_AGENT = {"User-Agent": "MDSS-Engine midterm demo asset builder"}
 
 
-#endregion
+# endregion
 
 # ============================================================
 # 01. Processing Helpers
 # ============================================================
-#region 01_Processing_Helpers
+# region 01_Processing_Helpers
+
 
 def download(url, path):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -86,11 +86,19 @@ def build_ground():
     texture("dirt", "Diffuse", folder / "Dirt.jpg")
     texture("dirt", "nor_dx", folder / "DirtNormal.jpg")
     for name, image in (("Road", "CleanAsphalt.jpg"), ("Soil", "Dirt.jpg")):
-        extra = ("norm CleanAsphaltNormal.jpg\nmdss_water_style film\n"
-                 "mdss_water_opacity 2.2\nmdss_water_darkening 0.60\n") if name == "Road" else ""
+        extra = (
+            (
+                "norm CleanAsphaltNormal.jpg\nmdss_water_style film\n"
+                "mdss_water_opacity 2.2\nmdss_water_darkening 0.60\n"
+            )
+            if name == "Road"
+            else ""
+        )
         if name == "Soil":
             extra = "norm DirtNormal.jpg\n"
-        (folder / f"{name}.mtl").write_text(f"newmtl {name}\nKd 1 1 1\nd 1\nmap_Kd {image}\n{extra}")
+        (folder / f"{name}.mtl").write_text(
+            f"newmtl {name}\nKd 1 1 1\nd 1\nmap_Kd {image}\n{extra}"
+        )
         write_grid(name, name, lambda x, y: 0.02 + 0.025 * y)
     # A narrow painted center line gives the asphalt unmistakable road context.
     lines = ["mtllib RoadMarks.mtl", "o RoadMarks"]
@@ -109,13 +117,13 @@ def build_ground():
 
 def build_fractured_stone():
     folder = MESHES / "MidtermGround"
+
     # Jagged, narrow, deep joints between broad stone faces. The valley bottoms
     # stay connected so the simulator can represent material lodged in the cracks.
     def height(x, y):
         left = -0.30 + 0.045 * math.sin(7.0 * y) + 0.017 * math.sin(21.0 * y)
         right = 0.29 + 0.048 * math.sin(6.2 * y + 1.2) + 0.014 * math.sin(24.0 * y)
-        crevice = sum(0.19 * math.exp(-((x - center) / 0.068) ** 4)
-                      for center in (left, right))
+        crevice = sum(0.19 * math.exp(-(((x - center) / 0.068) ** 4)) for center in (left, right))
         stone_variation = 0.016 * math.sin(4.7 * x + 2.0 * y) * math.sin(5.1 * y)
         return 0.24 + 0.10 * y + stone_variation - crevice
 
@@ -124,7 +132,8 @@ def build_fractured_stone():
     shutil.copyfile(source, folder / "FracturedStone.jpg")
     (folder / "FracturedStone.mtl").write_text(
         "newmtl FracturedStone\nKd 1 1 1\nd 1\nmap_Kd FracturedStone.jpg\n"
-        "mdss_water_opacity 1.5\nmdss_water_darkening 0.42\n")
+        "mdss_water_opacity 1.5\nmdss_water_darkening 0.42\n"
+    )
 
 
 def build_dustpan():
@@ -133,7 +142,9 @@ def build_dustpan():
     source = folder / "Source"
     gltf_path = source / "dustpan_1k.gltf"
     if not gltf_path.exists() or not (source / "dustpan.bin").exists():
-        request = urllib.request.Request("https://api.polyhaven.com/files/dustpan", headers=USER_AGENT)
+        request = urllib.request.Request(
+            "https://api.polyhaven.com/files/dustpan", headers=USER_AGENT
+        )
         with urllib.request.urlopen(request) as response:
             entry = json.load(response)["gltf"]["1k"]["gltf"]
         download(entry["url"], gltf_path)
@@ -146,7 +157,8 @@ def build_dustpan():
     (folder / "Dustpan.mtl").write_text(
         "newmtl Dustpan\nKd 0.8 0.8 0.8\nd 1\nmap_Kd Dustpan.jpg\n"
         "norm DustpanNormal.jpg\nmdss_water_style film\n"
-        "mdss_water_opacity 2.2\nmdss_water_darkening 0.55\n")
+        "mdss_water_opacity 2.2\nmdss_water_darkening 0.55\n"
+    )
 
     gltf = json.loads(gltf_path.read_text())
     binary = (source / gltf["buffers"][0]["uri"]).read_bytes()
@@ -159,15 +171,17 @@ def build_dustpan():
         size = struct.calcsize("<" + fmt * count)
         start = view.get("byteOffset", 0) + a.get("byteOffset", 0)
         stride = view.get("byteStride", size)
-        return [struct.unpack_from("<" + fmt * count, binary, start + i * stride)
-                for i in range(a["count"])]
+        return [
+            struct.unpack_from("<" + fmt * count, binary, start + i * stride)
+            for i in range(a["count"])
+        ]
 
     primitive = gltf["meshes"][0]["primitives"][0]
     positions = accessor(primitive["attributes"]["POSITION"])
     normals = accessor(primitive["attributes"]["NORMAL"])
     uvs = accessor(primitive["attributes"]["TEXCOORD_0"])
     indices = [entry[0] + 1 for entry in accessor(primitive["indices"])]
-    triangles = [indices[i:i + 3] for i in range(0, len(indices), 3)]
+    triangles = [indices[i : i + 3] for i in range(0, len(indices), 3)]
     incident = [[] for _ in positions]
     for triangle_index, triangle in enumerate(triangles):
         for vertex in triangle:
@@ -188,9 +202,11 @@ def build_dustpan():
                     if neighbor not in visited:
                         visited.add(neighbor)
                         pending.append(neighbor)
-        mean_up = sum(normals[vertex - 1][1]
-                      for triangle_index in component
-                      for vertex in triangles[triangle_index]) / (3 * len(component))
+        mean_up = sum(
+            normals[vertex - 1][1]
+            for triangle_index in component
+            for vertex in triangles[triangle_index]
+        ) / (3 * len(component))
         # The scan's two large UV shells represent the thin upper and lower
         # plates. Integrated normal-map height crosses them on the left, making
         # the lower plate occlude water rendered on the upper plate.
@@ -216,7 +232,9 @@ def build_dustpan():
     for triangle_index, (a, b, c) in enumerate(triangles):
         if triangle_index in underside:
             continue
-        lines.append(f"f {position_indices[a-1]}/{a}/{a} {position_indices[b-1]}/{b}/{b} {position_indices[c-1]}/{c}/{c}")
+        lines.append(
+            f"f {position_indices[a-1]}/{a}/{a} {position_indices[b-1]}/{b}/{b} {position_indices[c-1]}/{c}/{c}"
+        )
     (folder / "Dustpan.obj").write_text("\n".join(lines) + "\n")
 
 
@@ -226,57 +244,110 @@ def save_json(path, data):
 
 
 def water_profile(decay, gravity=0.34, spread=0.22):
-    return {"stateCapacity": 1.0, "inputFactor": 1.0,
-            "saturationSpreadFactor": spread, "gravityFlowFactor": gravity,
-            "decayRate": decay, "cavityDecayProtectionFactor": 0.65,
-            "cavityExitResistanceFactor": 0.85, "accumulationFactor": 0.08,
-            "cavityFillFactor": 0.8, "thicknessPerAmount": 0.055}
+    return {
+        "stateCapacity": 1.0,
+        "inputFactor": 1.0,
+        "saturationSpreadFactor": spread,
+        "gravityFlowFactor": gravity,
+        "decayRate": decay,
+        "cavityDecayProtectionFactor": 0.65,
+        "cavityExitResistanceFactor": 0.85,
+        "accumulationFactor": 0.08,
+        "cavityFillFactor": 0.8,
+        "thicknessPerAmount": 0.055,
+    }
 
 
 def profile(name, states):
-    save_json(ROOT / "Assets/SurfaceProfiles" / f"Midterm{name}.SRProfile",
-              {"type": "SurfaceResponseProfile", "version": 4,
-               "name": f"Midterm{name}", "states": states, "transitions": []})
-    save_json(ROOT / "Assets/SurfaceProfileMaps" / f"Midterm{name}.SurfaceProfileMap",
-              {"type": "SurfaceProfileMap", "version": 1,
-               "profiles": [f"../SurfaceProfiles/Midterm{name}.SRProfile"],
-               "surfaces": [{"surfaceId": 0, "profileIndex": 0}]})
+    save_json(
+        ROOT / "Assets/SurfaceProfiles" / f"Midterm{name}.SRProfile",
+        {
+            "type": "SurfaceResponseProfile",
+            "version": 4,
+            "name": f"Midterm{name}",
+            "states": states,
+            "transitions": [],
+        },
+    )
+    save_json(
+        ROOT / "Assets/SurfaceProfileMaps" / f"Midterm{name}.SurfaceProfileMap",
+        {
+            "type": "SurfaceProfileMap",
+            "version": 1,
+            "profiles": [f"../SurfaceProfiles/Midterm{name}.SRProfile"],
+            "surfaces": [{"surfaceId": 0, "profileIndex": 0}],
+        },
+    )
 
 
 def scene(name, camera, objects, duration, tracks, contacts, weather=None):
     title = "Midterm" + name
-    save_json(ROOT / "Assets/Scenes" / f"{title}.Scene",
-              {"type": "TScene", "version": 1,
-               "animation": f"../Animations/{title}.DemoAnim",
-               "camera": {"position": camera[0], "target": camera[1],
-                          "verticalFieldOfViewDegrees": 40.0},
-               "simulationResolution": 256, "litHeightDisplayScale": 1.4,
-               "objects": objects})
-    animation = {"version": 1, "durationSeconds": duration, "loop": False,
-                 "autoplay": True, "tracks": tracks,
-                 "contactEvents": sorted(contacts, key=lambda event: event["time"])}
+    save_json(
+        ROOT / "Assets/Scenes" / f"{title}.Scene",
+        {
+            "type": "TScene",
+            "version": 1,
+            "animation": f"../Animations/{title}.DemoAnim",
+            "camera": {
+                "position": camera[0],
+                "target": camera[1],
+                "verticalFieldOfViewDegrees": 40.0,
+            },
+            "simulationResolution": 256,
+            "litHeightDisplayScale": 1.4,
+            "objects": objects,
+        },
+    )
+    animation = {
+        "version": 1,
+        "durationSeconds": duration,
+        "loop": False,
+        "autoplay": True,
+        "tracks": tracks,
+        "contactEvents": sorted(contacts, key=lambda event: event["time"]),
+    }
     if weather:
         animation["weather"] = weather
     save_json(ROOT / "Assets/Animations" / f"{title}.DemoAnim", animation)
 
 
 def obj(identifier, mesh, profile_name, position):
-    return {"id": identifier, "mesh": f"../Meshes/{mesh}",
-            "surfaceProfileMap": f"../SurfaceProfileMaps/Midterm{profile_name}.SurfaceProfileMap",
-            "transform": {"position": position, "rotationDegrees": [0, 0, 0], "scale": [1, 1, 1]}}
+    return {
+        "id": identifier,
+        "mesh": f"../Meshes/{mesh}",
+        "surfaceProfileMap": f"../SurfaceProfileMaps/Midterm{profile_name}.SurfaceProfileMap",
+        "transform": {"position": position, "rotationDegrees": [0, 0, 0], "scale": [1, 1, 1]},
+    }
 
 
 def camera_track(position, target, duration):
-    return [{"target": "camera", "property": "position", "keys":
-             [{"time": 0, "value": position}, {"time": duration, "value": position}]},
-            {"target": "camera", "property": "target", "keys":
-             [{"time": 0, "value": target}, {"time": duration, "value": target}]}]
+    return [
+        {
+            "target": "camera",
+            "property": "position",
+            "keys": [{"time": 0, "value": position}, {"time": duration, "value": position}],
+        },
+        {
+            "target": "camera",
+            "property": "target",
+            "keys": [{"time": 0, "value": target}, {"time": duration, "value": target}],
+        },
+    ]
 
 
 def contact(time, target, state, position, radius, strength, depth=0.14):
-    return {"time": round(time, 3), "target": target, "state": state,
-            "operation": "add", "shape": "circle", "localPosition": position,
-            "radius": radius, "depth": depth, "strength": strength, "falloff": 0.7}
+    return {
+        "time": round(time, 3),
+        "target": target,
+        "state": state,
+        "operation": "add",
+        "shape": "circle",
+        "localPosition": position,
+        "radius": radius,
+        "depth": depth,
+        "strength": strength,
+        "falloff": 0.7,
+    }
 
 
 def build_scenes():
@@ -284,47 +355,101 @@ def build_scenes():
     # Rain infiltrates the soil on impact, leaving a persistent, matte wet stain.
     profile("Soil", {"absorbedwetness": water_profile(0.035, 0.0, 0.10)})
     profile("Dustpan", {"waterfilm": water_profile(0.018, 0.82, 0.16)})
-    profile("Fractured", {"waterfilm": water_profile(0.07, 0.48, 0.25),
-                        "mud": {"stateCapacity": 2.0, "inputFactor": 1.0,
-                                "saturationSpreadFactor": 0.035, "gravityFlowFactor": 0.0,
-                                "decayRate": 0.002, "cavityDecayProtectionFactor": 0.92,
-                                "cavityExitResistanceFactor": 0.95, "accumulationFactor": 0.4,
-                                "cavityFillFactor": 0.8, "thicknessPerAmount": 0.18}})
+    profile(
+        "Fractured",
+        {
+            "waterfilm": water_profile(0.07, 0.48, 0.25),
+            "mud": {
+                "stateCapacity": 2.0,
+                "inputFactor": 1.0,
+                "saturationSpreadFactor": 0.035,
+                "gravityFlowFactor": 0.0,
+                "decayRate": 0.002,
+                "cavityDecayProtectionFactor": 0.92,
+                "cavityExitResistanceFactor": 0.95,
+                "accumulationFactor": 0.4,
+                "cavityFillFactor": 0.8,
+                "thicknessPerAmount": 0.18,
+            },
+        },
+    )
 
     ground_camera = ([0, -2.5, 3.2], [0, 0, 0.02])
     rain = []
-    drops = [(-0.43, 0.4), (0.38, 0.45), (-0.3, -0.3), (0.43, -0.38),
-             (0.02, 0.1), (0.15, -0.55)]
+    drops = [(-0.43, 0.4), (0.38, 0.45), (-0.3, -0.3), (0.43, -0.38), (0.02, 0.1), (0.15, -0.55)]
     for step in range(19):
         t = 0.55 + step * 0.22
         x, y = drops[step % len(drops)]
         rain.append(contact(t, "road", "waterfilm", [x, y, 0.02 + 0.025 * y], 0.38, 0.3))
         rain.append(contact(t, "soil", "absorbedwetness", [x, y, 0.02 + 0.025 * y], 0.38, 0.3))
-    scene("RainMaterials", ground_camera,
-          [obj("road", "MidtermGround/Road.obj", "Road", [-0.99, 0, 0]),
-           {"id": "road_marks", "mesh": "../Meshes/MidtermGround/RoadMarks.obj",
-            "transform": {"position": [-0.99, 0, 0], "rotationDegrees": [0, 0, 0], "scale": [1, 1, 1]}},
-           obj("soil", "MidtermGround/Soil.obj", "Soil", [0.99, 0, 0])],
-          12.0, camera_track(*ground_camera, 12.0), rain,
-          {"rainStartSeconds": 0.5, "rainEndSeconds": 4.75,
-           "cloudEndSeconds": 7.5, "intensity": 0.75})
+    scene(
+        "RainMaterials",
+        ground_camera,
+        [
+            obj("road", "MidtermGround/Road.obj", "Road", [-0.99, 0, 0]),
+            {
+                "id": "road_marks",
+                "mesh": "../Meshes/MidtermGround/RoadMarks.obj",
+                "transform": {
+                    "position": [-0.99, 0, 0],
+                    "rotationDegrees": [0, 0, 0],
+                    "scale": [1, 1, 1],
+                },
+            },
+            obj("soil", "MidtermGround/Soil.obj", "Soil", [0.99, 0, 0]),
+        ],
+        12.0,
+        camera_track(*ground_camera, 12.0),
+        rain,
+        {
+            "rainStartSeconds": 0.5,
+            "rainEndSeconds": 4.75,
+            "cloudEndSeconds": 7.5,
+            "intensity": 0.75,
+        },
+    )
 
     # A closer, higher front-quarter view exposes the tray floor and rear wall.
     pan_camera = ([0.30, -1.55, 2.20], [0, 0, 0.35])
     # Put the water on the open, initially high end of the pan. Its actual
     # connected metal surface carries the state toward the shallow rear trough.
-    pan_contacts = [contact(0.60 + i * 0.32, "dustpan", "waterfilm",
-                            [(i % 3 - 1) * 0.018, -0.126, 0.003], 0.24, 0.32, 0.085)
-                    for i in range(7)]
+    pan_contacts = [
+        contact(
+            0.60 + i * 0.32,
+            "dustpan",
+            "waterfilm",
+            [(i % 3 - 1) * 0.018, -0.126, 0.003],
+            0.24,
+            0.32,
+            0.085,
+        )
+        for i in range(7)
+    ]
+
     def x_quat(degrees):
         a = math.radians(degrees) * 0.5
         return [math.sin(a), 0, 0, math.cos(a)]
+
     pan_duration = 16.5
     pan_tracks = camera_track(*pan_camera, pan_duration)
-    pan_tracks.append({"target": "dustpan", "property": "rotation", "interpolation": "slerp",
-                       "keys": [{"time": t, "value": x_quat(angle)} for t, angle in
-                                ((0, -16), (7.0, -16), (9.3, 17),
-                                 (11.8, 17), (14.1, -18), (pan_duration, -18))]})
+    pan_tracks.append(
+        {
+            "target": "dustpan",
+            "property": "rotation",
+            "interpolation": "slerp",
+            "keys": [
+                {"time": t, "value": x_quat(angle)}
+                for t, angle in (
+                    (0, -16),
+                    (7.0, -16),
+                    (9.3, 17),
+                    (11.8, 17),
+                    (14.1, -18),
+                    (pan_duration, -18),
+                )
+            ],
+        }
+    )
     pan_object = obj("dustpan", "MidtermDustpan/Dustpan.obj", "Dustpan", [0, 0, 0.25])
     pan_object["transform"]["rotationDegrees"] = [-16, 0, 0]
     pan_object["transform"]["scale"] = [3.4, 3.4, 3.4]
@@ -335,23 +460,37 @@ def build_scenes():
     for i in range(13):
         t = 0.55 + i * 0.3
         for x, state in ((-0.30, "waterfilm"), (0.29, "mud")):
-            stone_contacts.append(contact(t, "fractured_stone", state,
-                                          [x, 0.58, 0.10], 0.20, 0.26, 0.20))
+            stone_contacts.append(
+                contact(t, "fractured_stone", state, [x, 0.58, 0.10], 0.20, 0.26, 0.20)
+            )
     stone_tracks = camera_track(*stone_camera, 12.0)
-    stone_tracks.append({"target": "fractured_stone", "property": "rotation", "interpolation": "slerp",
-                         "keys": [{"time": t, "value": x_quat(angle)} for t, angle in
-                                  ((0, 0), (4.8, 0), (6.8, 20), (12.0, 20))]})
-    scene("WaterMud", stone_camera,
-          [obj("fractured_stone", "MidtermGround/FracturedStone.obj", "Fractured", [0, 0, 0])],
-          12.0, stone_tracks, stone_contacts)
+    stone_tracks.append(
+        {
+            "target": "fractured_stone",
+            "property": "rotation",
+            "interpolation": "slerp",
+            "keys": [
+                {"time": t, "value": x_quat(angle)}
+                for t, angle in ((0, 0), (4.8, 0), (6.8, 20), (12.0, 20))
+            ],
+        }
+    )
+    scene(
+        "WaterMud",
+        stone_camera,
+        [obj("fractured_stone", "MidtermGround/FracturedStone.obj", "Fractured", [0, 0, 0])],
+        12.0,
+        stone_tracks,
+        stone_contacts,
+    )
 
 
-#endregion
+# endregion
 
 # ============================================================
 # 02. Script Execution
 # ============================================================
-#region 02_Script_Execution
+# region 02_Script_Execution
 
 if __name__ == "__main__":
     build_ground()
@@ -360,4 +499,4 @@ if __name__ == "__main__":
     build_scenes()
     print("Midterm demo mesh and texture assets built.")
 
-#endregion
+# endregion
