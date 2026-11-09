@@ -1,0 +1,1942 @@
+# Surface Performance
+
+> **한 줄 요약:** 시뮬레이션·렌더링·메모리 개선을 같은 조건의 전후 실험으로 확인한다. 측정값은 파일로 저장하고, Codex가 이 문서의 실험 기록과 해석을 채운다. 원자료는 `Performance-Data/`에 둔다.
+
+> **자료 위치:** 비교 요약과 약 19.5GB의 로컬 `raw/` 산출물은 저장소의 `Performance-Data/`에 있다. 필요한 실행 자료만 직접 연다. [실험 색인과 폴더 규칙](../../../Performance-Data/README.md)을 확인한다.
+
+<!-- OPT_ROUND_LATEST_START -->
+## 2026-10-25 후속 최적화 결과
+
+- 검증 완료 원자료: **204회 / 122,400개 측정 프레임**, 원자료 검사 오류 **0개**. 초기 씬 경로 오류 4회는 별도 보존하고 정상 실행 수에서 제외했다.
+- 아래는 항목별 전후 비교다. 감소율을 합산하지 않는다. 마지막 통합 앱은 OS 차단으로 미검증이며, 각 결과는 보관한 실행 성공 버전 S01~S04에 해당한다.
+
+| 변경 | 실측 결과 | State 확인 | 판단 |
+|---|---|---|---|
+| Solver 실행 중 분기 복구 | Simulation GPU 시간 7.14~16.35% 감소 | 전 조건 비트 일치 | 기본 경로 채택 |
+| Solver 전체 dispatch·채널 생략 유지 | 0.08~8.26% 감소; 거의 차이 없는 조건 포함 | 전 조건 비트 일치 | 기본값 변경·Sparse 옵션 유지 |
+| 저장 형식에 맞춘 scratch 할당 | 12.00~96.00 MiB 절감 | 전 조건 비트 일치 | 메모리 절감으로 채택 |
+| 메시 해상도 GPU 캐시 지연 생성 | 13.90~246.11 MiB 절감 | 전 조건 비트 일치 | 메모리 절감으로 채택·최초 전환 비용 유의 |
+| Geometry 전체/부분 자동 선택 | Wide 512 23.62% 감소, Wide 256 33.39% 증가 | 차이 있음·세부 표 참조 | 실험 옵션·기본 OFF |
+| 인스턴스 실행 순서 선택 | OS 실행 차단·미측정 | 미검증 | 검토 패치로 분리 |
+| Overlay 필터 자동 선택 | 미측정 | 미검증 | 검토 패치로 분리 |
+
+현재 simulation elapsed는 렌더링도 수행하는 앱의 GPU 구간이며, 렌더링을 완전히 끈 측정은 아니다. 메모리는 앱이 추적한 Vulkan 할당량으로, 스왑체인·드라이버 할당·실제 VRAM 상주량과 구분한다. State 일치는 물리적 보존식·정답·화면 픽셀 일치의 증명이 아니다.
+
+실행 파일·SPIR-V·카메라·설정·step·반복 재현 검사는 [원자료 감사 결과](../../../Performance-Data/20261025-optimization-round/study-audit.json)에 남겼다. 실행별 Scene 해시는 192회에 저장되어 있다. 기준 S00의 12회는 당시 실행별 Scene 해시 출력이 없었으며 보관한 입력 에셋에 의존한다. 이 미지원 항목과 GPU 단위 검사 실패·OS 차단은 아래 제한 표에서 별도로 확인한다.
+
+PERF-007은 초기 실패를 보관하고 재시도하면서 씬 실행 순서가 처음 계획과 달라졌다. 감사에서 실행 ID·횟수·설정의 누락/중복이 없음을 확인했고 실제 순서는 manifest와 감사 JSON에 보존했다.
+
+표·manifest·집계 JSON은 보고서와 함께 저장한다. 프레임별 파일·State 배열·[재현 입력 보관본](../../../Performance-Data/20261025-optimization-round/raw/inputs)은 용량이 큰 로컬 원자료이며 `raw/` 경로는 git에서 제외한다.
+
+<!-- OPT_ROUND_LATEST_END -->
+
+## PERF-044 — Reaction Transition 비교 씬의 윗면만 시뮬레이션
+
+> **입력 버전:** 이 측정은 Ice·Heat→Lava·Ice→WaterFilm을 사용한 이전 비교 씬에 대한 기록이다. 현재 Fuel·Burn·Scorched 씬의 FPS 실측값으로 재사용하지 않는다.
+
+> **한 줄 요약:** 세 판의 보이는 윗면만 Solver에 등록해 GPU 프레임 중앙값을 36.316ms에서 7.459ms로 줄였다. 같은 윗면의 State는 비교한 step에서 비트 단위로 일치한다.
+
+- 실험 ID: `PERF-044-plate-top-only`. 기록 유형: **구현 당시 전후 측정**. 상태: **완료, 기준 3회·변경 후 3회 모두 성공**. 마지막 확인: **2026-11-08**.
+- 실행 완료 시각: 기준 2026-11-08 05:08:55~05:09:38 KST, 변경 후 05:10:18~05:11:01 KST. 개별 시각·출력·입력 해시는 [manifest](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/manifest.json)에 둔다.
+- 질문: `ReactionTransitionComparison.Scene`의 낮은 FPS가 화면 밖 옆면까지 시뮬레이션하는 비용에서 오는가? 판마다 MarbleCube 6면을 시뮬레이션하던 구조를 동일한 UV 윗면 1개 시뮬레이션 + 옆면 5개 render-only 구조로 바꾸면 비용과 결과는 어떻게 달라지는가?
+- 기대: Solver 대상 texel 수를 6분의 1로 줄여 Pass 2와 GPU 프레임 시간을 낮춘다. 기대값은 실측과 분리한다.
+
+### 측정 조건과 방법
+
+| 항목 | 실제 조건 |
+|---|---|
+| 코드·입력 | HEAD `9fb712fb352e3faf7074acb68fc21c6aefa485d0` + 미커밋 비교 씬·생성 스크립트. 변경 전후 Scene·Profile·Mesh·Animation은 [raw 입력 보관본](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/raw)과 manifest의 SHA-256으로 구분한다. Solver 코드는 동일하다. |
+| 실행 파일 | 동일한 `Build/bin/Debug/MDSS.exe`, SHA-256 `e20a8a7b49d258794967bb2f96fbb1ef76ab0cc37b09a9ca55eba9ad474ec6e7`. Debug Vulkan validation ON. |
+| 환경·화면 | Windows, AMD Radeon RX 6700 XT, Vulkan API 1.4.315. 1280×720 단일 Lit presentation viewport, Scene 고정 카메라, present mode 0. |
+| 해상도·작업량 | simulation 128, render mesh 128, State 4채널, 3개 시뮬레이션 판. 기준 18면·294,912 texel, 변경 후 3면·49,152 texel. |
+| 초기 상태·입력 | 매 실행 새 프로세스에서 같은 Ice 초기 접촉과 1초 Heat pulse를 재생. 동일 Profile의 Transition·Reaction 규칙과 계수, 같은 카메라·애니메이션·입력 위치·반경·세기. |
+| 옵션 | `replay_demo`, `presentation_mode`, sparse solver, active channel mask, per-workgroup channel mask ON. 실제 로드된 나머지 옵션은 실행별 `*.settings.json`에 기록. Geometry feedback ON, RawFlux cache/coalesced/FP16 ON, FP16 weights OFF. |
+| 구간·반복 | 고정 dt 1/60초, 180 warmup frame 뒤 60 frame 측정, 각 조건 3회. 종료 상태 step 242. 프레임별 GPU timestamp·CPU fence 대기를 원자료 JSONL에서 자동 집계. |
+| 실행 명령 | `MDSS.exe --benchmark-scene Assets/Scenes/ReactionTransitionComparison.Scene --benchmark-resolution 128 --benchmark-warmup-frames 180 --benchmark-measure-frames 60 --benchmark-output <각 실행 JSONL>`; 환경변수 `MDSS_PERF_SETTINGS`는 보관된 `raw/settings.json`. |
+
+### 결과
+
+각 실행 60프레임의 중앙값과 nearest-rank p95를 먼저 구하고, 3회 실행의 각 값을 다시 중앙값으로 요약했다. 범위는 실행별 중앙값의 최소~최대다. 값은 [자동 집계 JSON](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/comparisons.json)에서 반올림했다.
+
+| GPU 지표 | 기준 중앙값 / p95 (ms) | 변경 후 중앙값 / p95 (ms) | 중앙값 감소 | 실행별 중앙값 범위 기준 → 변경 후 (ms) |
+|---|---:|---:|---:|---|
+| 전체 프레임 | 36.316 / 39.298 | 7.459 / 8.109 | 79.46% | 36.117~37.496 → 7.398~8.146 |
+| 시뮬레이션 | 30.825 / 33.871 | 5.638 / 6.294 | 81.71% | [JSON 상세](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/comparisons.json) |
+| Pass 2 + Reaction | 27.996 / 30.612 | 4.276 / 4.657 | 84.73% | 27.914~29.029 → 4.258~4.747 |
+| 렌더링 | 5.406 / 6.374 | 1.746 / 2.076 | 67.71% | [JSON 상세](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/comparisons.json) |
+
+앱이 추적한 종료 시 Vulkan 할당량은 기준 318,164,164 byte, 변경 후 67,386,900 byte였다. 이는 드라이버 전체 VRAM 상주량이 아니다.
+
+### 정확성 확인과 판단
+
+- 3쌍 모두 같은 step 242에서 윗면 State float 배열이 비트 단위로 일치했다. 기준 instance 0/1/2의 첫 128×128면과 변경 후 instance 0/2/4의 전체 윗면을 비교했다. 같은 step 723의 추가 Lit 캡처에서도 세 윗면 State가 비트 단위로 일치했다.
+- 각 실행의 `nonfinite`, `negative`, Reaction arithmetic failure, budget exhausted texel은 모두 0이다. 마지막 Lit 이미지의 RGB byte 2,764,800개 중 2,299개가 달랐고 평균 절대 byte 차이는 0.00132였다. 옆면은 더 이상 State를 보유하지 않으므로 전체 instance State 총량은 달라진다. 데모에서 관찰하는 윗면 결과는 유지된다.
+- 판단: **이 비교 씬에 채택**. 기준·변경 후 실행별 중앙값 범위가 겹치지 않고 원인인 Solver texel 수도 6분의 1로 줄었다. Debug validation이 켜진 단일 GPU의 presentation benchmark이며, GPU frame timestamp 감소율을 사용자 환경의 실제 FPS 증가율로 해석하지 않는다. 다른 씬이나 해상도에는 이 수치를 일반화하지 않는다.
+
+원자료: [study](../../../Performance-Data/20261108-reaction-transition-fps/study.json), [plan](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/plan.json), [manifest](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/manifest.json), [comparisons](../../../Performance-Data/20261108-reaction-transition-fps/PERF-044-plate-top-only/comparisons.json), 로컬 `raw/baseline/`·`raw/optimized/`의 프레임 JSONL·상태 배열·같은 카메라 Lit 캡처·입력 보관본.
+
+## PERF-045 — 비교 씬 편집 화면의 Sparse Solver 기본값
+
+> **입력 버전:** 이 측정은 Ice·Heat→Lava·Ice→WaterFilm을 사용한 이전 비교 씬에 대한 기록이다. 현재 Fuel·Burn·Scorched 씬의 FPS 실측값으로 재사용하지 않는다.
+
+> **한 줄 요약:** 비교 씬의 편집 화면 조건에서 Sparse Solver를 켜자 GPU 프레임 중앙값이 19.216ms에서 8.573ms로, CPU 프레임 중앙값이 19.615ms에서 8.804ms로 줄었다. 이 씬의 앱 시작 시 Sparse Solver를 켜도록 채택했다.
+
+- 실험 ID: `PERF-045-editor-sparse-default`. 기록 유형: **구현 당시 옵션 전후 측정**. 상태: **완료, OFF 3회·ON 3회 모두 성공**. 마지막 확인: **2026-11-08**.
+- 실행 완료 시각: OFF 2026-11-08 05:23:22~05:23:37 KST, ON 05:23:57~05:24:07 KST. 반복별 시각·원자료·입력 SHA-256은 [manifest](../../../Performance-Data/20261108-reaction-transition-fps/PERF-045-editor-sparse-default/manifest.json)에 기록했다.
+- 질문·한 가지 변경: `ReactionTransitionComparison.Scene`의 편집 화면에서 일반 앱 기본값인 `sparse_solver=false`를 `true`로 바꾸면 프레임 비용이 줄어드는가? 전역 기본값 OFF는 넓은 활성 영역에서 확인한 [[#PERF-007 후속 — Solver 부분 계산 기본 정책 (2026-10-25)|PERF-007 후속]] 결론에 따른다. 이번 판정은 이 비교 씬에 한정한다.
+- 가설: 세 판의 접촉 영역이 국소적이므로 활성 workgroup만 실행하면 Pass 2 비용이 낮아진다. 기대 효과는 아래 실측과 구분한다.
+
+### 측정 조건과 방법
+
+| 항목 | 실제 조건 |
+|---|---|
+| 코드·입력 | HEAD `9fb712fb352e3faf7074acb68fc21c6aefa485d0` + 미커밋 비교 씬·기본 시작 씬 변경. 두 조건은 동일한 Scene·Profile·Mesh·Animation 입력을 사용하며 로컬 `raw/inputs/`에 보관했다. |
+| 실행 파일·환경 | 동일한 Debug `Build/bin/Debug/MDSS.exe`, SHA-256 `041851818644bc7f835ce29b04d449842111ba4303e097aabd0ec755ecb3bd83`. Windows, AMD Radeon RX 6700 XT, Vulkan API 1.4.315, Vulkan validation ON. |
+| 화면·해상도 | 1280×720 editor UI, Lit viewport 1개, 정규화 위치 `(0.3258, 0.0667)`, 크기 `(0.3664, 0.7931)`, 고정 Scene 카메라. Simulation·surface mesh·overlay mesh 해상도 모두 128, State 4채널, 3판·49,152 texel. |
+| 입력·시간 | 새 프로세스에서 초기 Ice를 적용하고 1초 시점의 Heat pulse를 재생. 고정 dt 1/60초·매 frame 1 Solver step. 180 warmup frame 뒤 60 frame 측정, 조건별 3회. 종료 step 242. |
+| 옵션 | 발표 화면 OFF, demo replay ON, active channel mask ON, per-workgroup channel mask OFF, render mesh 128. 변경한 값은 `sparse_solver` 하나다. 실제 로드 옵션·viewport는 실행별 `*.settings.json`에 기록했다. |
+| 지표·집계 | GPU timestamp의 frame/simulation/Pass 1/Pass 2/render, CPU 명령 기록·fence 대기 및 앱의 CPU frame 경과. 각 실행의 측정 60 frame에서 중앙값·nearest-rank p95를 구한 뒤 3회 값의 중앙값을 대표값으로 사용했다. |
+| 실행 명령 | `MDSS.exe --benchmark-scene Assets/Scenes/ReactionTransitionComparison.Scene --benchmark-resolution 128 --benchmark-warmup-frames 180 --benchmark-measure-frames 60 --benchmark-output <각 실행 JSONL>`. 환경변수 `MDSS_PERF_SETTINGS`만 OFF/ON 설정 JSON으로 교체했다. |
+
+### 결과
+
+| 지표 | Sparse OFF 중앙값 / p95 (ms) | Sparse ON 중앙값 / p95 (ms) | 중앙값 감소 | 실행별 중앙값 범위 OFF → ON (ms) |
+|---|---:|---:|---:|---|
+| GPU 프레임 | 19.216 / 21.877 | 8.573 / 9.426 | 55.38% | 18.725~19.778 → 8.492~9.810 |
+| Simulation GPU | 17.340 / 19.536 | 6.752 / 7.533 | 61.06% | 16.732~17.800 → 6.676~7.764 |
+| Pass 2 + Reaction GPU | 15.249 / 16.068 | 5.385 / 5.994 | 64.69% | 14.715~15.663 → 5.358~6.010 |
+| Render GPU | 1.924 / 2.340 | 1.820 / 2.203 | 5.42% | 1.897~1.963 → 1.742~1.987 |
+| CPU 프레임 경과 | 19.615 / 22.036 | 8.804 / 10.932 | 55.12% | 19.104~20.121 → 8.731~10.045 |
+
+자동 집계의 전체 지표와 반복별 값은 [comparisons.json](../../../Performance-Data/20261108-reaction-transition-fps/PERF-045-editor-sparse-default/comparisons.json)에 둔다. Pass 2가 주된 비용이며 sparse scheduling을 켜면 이 구간이 크게 줄었다. 앞선 PERF-044의 7.459ms는 발표 화면과 per-workgroup mask ON을 포함한 별도 조건이므로 이 편집 화면 기본값과 직접 비교하지 않는다.
+
+### 정확성·판단·한계
+
+- 같은 step 242에서 세 판의 전체 State float 배열이 OFF/ON의 3쌍 모두 비트 단위로 일치했다. 모든 실행에서 비유한·음수 State는 0이다. Renderer가 기록한 두 조건의 다른 실제 설정과 viewport는 동일하다.
+- 판단: **이 비교 씬 시작 시 Sparse Solver ON 채택**. `TApplication`은 시작 Scene이 `ReactionTransitionComparison.Scene`일 때만 옵션을 켠다. Benchmark 설정의 명시적 `sparse_solver` 값은 이를 덮어쓸 수 있어 위 전후 측정과 PERF-044 재현이 가능하다.
+- 이 benchmark는 편집 UI를 그리되 매 frame 정확히 한 번만 Solver를 실행한다. 일반 앱은 벽시계 시간을 누적해 느린 frame 다음에 여러 고정 step을 처리할 수 있으므로 사용자의 실제 FPS를 여기서 직접 산출하지 않는다. 다른 GPU·Scene·창 배치 및 Release 빌드의 성능은 미측정이다. 과거 넓은 활성 영역에서는 Sparse Solver 기본 OFF가 유리했으므로 전역 기본값은 바꾸지 않는다.
+
+원자료: [study](../../../Performance-Data/20261108-reaction-transition-fps/study.json), [plan](../../../Performance-Data/20261108-reaction-transition-fps/PERF-045-editor-sparse-default/plan.json), [manifest](../../../Performance-Data/20261108-reaction-transition-fps/PERF-045-editor-sparse-default/manifest.json), [comparisons](../../../Performance-Data/20261108-reaction-transition-fps/PERF-045-editor-sparse-default/comparisons.json), 로컬 `raw/baseline/`·`raw/sparse/`·`raw/inputs/`.
+
+## 2026-10-26/27 후속 모델 연구
+
+이 연구 묶음은 새 Solver 최적화의 전후 속도 향상을 주장하지 않는다. State-driven geometry의 인과 ablation, 모듈식 기준 모델의 확장 부담, meso 재구성 오차와 후속 수송 차이를 각각 평가했다. authoring readiness는 참여자 비교 없이 실행 준비·렌더·정합성을 점검한 별도 검증 기록이다.
+
+| 기록 | 질문·실행 | 관찰 및 판정 | 범위 |
+|---|---|---|---|
+| [PERF-041 — State-driven geometry coupling](../../../Performance-Data/20261026-coupling-study/PERF-041-coupling/comparisons.md) | Plate·Bunny·Mud의 조건 ablation. 20개 선택 조건, 31회 완료, 25,740 solver step, audit 오류 0, 최대 상대 mass residual `1.6849e-7` | H1은 plate에서 지지. Bunny는 topology/mapping 충실도에 제한되고 Mud 확장 효과는 작았다. H3 modular superiority와 H4 novelty는 평가하지 않음. | 인과·수치 비교이며 성능 향상 A/B가 아님. Bunny 충실도와 appearance/authoring은 미평가. [manifest](../../../Performance-Data/20261026-coupling-study/PERF-041-coupling/manifest.json) |
+| [PERF-042 — modular baseline](../../../Performance-Data/20261026-coupling-study/baseline/decision.json) | 같은 진단 실행기·core와 대칭 recipe로 T1/T2/T3 확장 과제를 평가. 26회 완료, 13,260 step, 품질 gate 실패 0 | 사전 구조 중단 규칙이 발동했다. v1 과제에서 구조적 확장 부담 이점은 입증되지 않았고, 반복 비용 비교는 **미실행**이다. | 보편적 동등성·수치 독립 검증·사람의 생산성·신규성 판정이 아니다. [manifest](../../../Performance-Data/20261026-coupling-study/baseline/manifest.json) |
+| [PERF-043 — meso reconstruction](../../../Performance-Data/20261027-meso-study/PERF-043-meso/comparisons.json) | normal 재구성 방식과 scale을 비교하고 이후 shared-geometry transport 결과를 평가. 35회 성공, 5,580 evaluation GPU step, audit 오류 0; 관련 unit test 실패 1건 | 같은 제약의 표준 least-squares가 재구성 오차를 줄였다. 테스트 범위에서 후속 State 차이는 작아 새 meso transport 알고리즘의 필요성은 입증되지 않았다. | 단일 +Z square와 단일 normal asset, 4초 transient. seam·일반 mesh·렌더 품질·생산성·성능 우월성은 평가하지 않음. [reconstruction](../../../Performance-Data/20261027-meso-study/PERF-043-meso/reconstruction.json), [manifest](../../../Performance-Data/20261027-meso-study/PERF-043-meso/manifest.json) |
+
+Authoring readiness study는 human session 0회이며 comparative quality·completion time을 측정하지 않았다. Descriptor lifetime 오류 수정에 대한 targeted GPU·6 render validation은 [readiness protocol](../04_Development/07_Authoring-Study-Protocol.md)과 [study record](../../../Performance-Data/20261027-authoring-readiness/study.json)에 둔다. 이를 성능 결과로 집계하지 않는다.
+
+## 기록 운영
+
+- 합의일: **2026-10-22 (Asia/Seoul)**. 이 규칙은 이후 실험에 적용하며 과거 결과의 조건과 수치는 바꾸지 않는다.
+- 성능 개선 한 가지를 비교하는 질문마다 실험 ID `PERF-NNN`을 부여한다. 같은 질문의 재실행은 같은 실험 섹션에 추가한다.
+- Codex가 [[00_Engineering-Standards/04_Docs_Templates/02_Docs_Template-Experiment|실험 기록 양식]]에 따라 변경 전 조건·질문을 적고, 측정 후 전후 표·정확성 확인·해석·판단과 원자료 링크를 채운다. 사용자가 화면 수치를 옮겨 적는 절차를 기본으로 삼지 않는다.
+- 최적화 전에 기준 결과를 보관하고 같은 조건으로 변경 후를 측정한다. 이전 실험의 결과를 재사용할 때도 씬·Profile·옵션·측정 범위가 같은지 확인한다.
+- 미측정·미지원·실행 실패는 그대로 남긴다. 예상값을 실측으로 쓰거나 실패·불리한 결과를 누락하지 않는다. 측정하지 않은 문서·설정 변경은 성능 개선 실험으로 기록하지 않는다.
+
+<!-- PERFORMANCE_STUDY_OVERVIEW_START -->
+## 2026-10-23 기존 성능 평가 결론
+
+- 집계 시각: 2026-10-23T11:34:26.159589+09:00. 상태: **측정·검증 종료**.
+- 아래는 이번 Radeon RX 6700 XT 실험에서 관찰한 결과다. 감소율은 각 행에 해당하는 CPU/GPU 구간의 시간이며 서로 합산하지 않는다. 세부 조건·p95·상태/화면 차이는 아래 8개 묶음 표에 있다.
+
+
+| 분류 | 핵심 관찰 | 권장 판단 |
+|---|---|---|
+| 1. 로딩·재사용 | 전처리 캐시로 Scene 로드 구간 37.7~91.6% 감소. 버퍼 pool은 최종 할당량을 늘리고 시간 효과는 씬별로 다름 | 디스크 캐시 유지 근거 확보. pool은 보관 메모리와 재생성 빈도로 판단 |
+| 2. Solver 계산 재사용 | FP32 이동량 캐시 3.3~12.6% 감소, source 재사용 묶음 13.2~26.0% 감소 | 재사용 이득 확인. 긴 실행에서 생긴 상태 차이는 별도 검토 |
+| 3. 필요한 곳만 계산 | 기본 두 씬의 전체 부분 계산 묶음 68.4~94.3% 감소. 넓은 512에서는 오히려 증가 | 활성 영역이 넓을 때 전체 계산으로 바꾸는 방식 검토 |
+| 4. 여러 물체 실행 | 동일 물체 3/6개: 256에서는 묶음 실행이 느리고, 512에서는 빠름 | 해상도·작업량별 선택 검토. 항상 빠른 방식으로 설명하지 않음 |
+| 5. 데이터 배치·FP16 | 연속 배치 30.1~40.0% 감소. FP16은 빨라졌지만 결과 차이가 있고 할당량은 그대로 | 배치 개선은 유지 근거 확보. FP16은 허용 오차를 정해 선택 |
+| 6. 렌더링 필터 | 필터 사전 계산 10.8~31.1% 감소. Texture 단독 사용은 이득 확인 못 함 | 사전 계산 경로는 유리. 화면 차이와 shared-memory 옵션은 각각 판단 |
+| 7. Overlay 작업량 | 기본 두 씬의 부분 갱신 51.6~72.9% 감소. 넓은 입력에서는 타일 필터가 불리 | 부분/전체 갱신을 조건에 따라 선택. 메시 해상도는 화질과 함께 선택 |
+| 8. 셰이더 경로 | 컴파일 시점 Solver 옵션 고정은 네 조건 모두 실행 중 분기보다 느림 | 고정 variant가 항상 빠르다는 주장은 철회. GPU 검증 제거는 별도 결과 확인 |
+
+이 2026-10-23 평가에서는 제품 기본값을 바꾸지 않았다. V2와 회전 불변 CPU 캐시 보조 실험은 Windows 앱 제어로 실행하지 못했으며, 개별 효과를 분리하지 않은 과거 변경은 측정 범위 표에 명시했다.
+
+<!-- PERFORMANCE_STUDY_OVERVIEW_END -->
+
+
+
+
+
+## PERF-001 — 현재 버전 기준 측정 (2026-10-22)
+
+> **결론:** 현재 코드의 두 씬·두 해상도 기준값을 확보했다. 렌더링은 Overlay 준비, 시뮬레이션은 씬별 Solver/동적 형상·가중치 계산을 우선 조사한다. 새 최적화의 개선률은 아직 측정하지 않았다.
+
+### 질문과 기록 범위
+
+- 실험 ID: `PERF-001`. 기록 유형: **현재 코드 기준 측정 / 과거 구현에 대한 사후 측정**.
+- 상태: **완료 — 12/12회 정상 종료, 7,200/7,200프레임 확보**. 판단: **후속 A/B 실험의 기준값으로 보관**.
+- 질문: 새 최적화를 적용하기 전, 현재 씬의 시뮬레이션·렌더링 비용과 할당 메모리는 얼마인가?
+- 비교 변경: 없음. 기존 GPU timestamp와 CPU 계측의 파일 출력, 설정 저장, 종료 시 상태 검증만 추가했다. Geometry feedback은 기존 기본값에 의존하지 않도록 benchmark 시작 전에 ON을 명시했다.
+- 구현 시점: 기존 최적화는 여러 과거 commit에 걸쳐 있다. 이번 날짜는 그 최적화의 구현일이 아니라 **현재 코드의 실제 측정일**이다.
+- **8개 묶음의 개별 개선 효과와 V0~V4 발전 과정 비교는 이번에 실행하지 않았다.** 이 결과는 해당 후속 실험들의 현재 버전 기준 자료다.
+
+| 항목 | 실제 조건 |
+|---|---|
+| 측정 일시 | 2026-10-22T22:01:15+09:00 ~ 2026-10-22T22:07:15+09:00 (KST) |
+| 코드 | `fa83c68b26b83f4765ebb47fded53c946d444fff` + 당시 미커밋 변경 + 이번 출력 계측 변경. commit 단독의 결과가 아님 |
+| 실행 파일 SHA-256 | `87d9cfe07ca0990be50c64b99fd2af8a2395c532050af5e8e622f02cfd40020f` |
+| 환경 | Windows 11 Pro 26300 / Ryzen 5 5600X (6C/12T) / RAM 약 32 GiB / Radeon RX 6700 XT |
+| 드라이버·도구 | Windows GPU driver 32.0.21030.2001 / Vulkan driverInfo 25.10.30.02 / device API 1.4.315 / SDK 1.4.363.0 / CMake 4.4.4 / MSVC 14.51.36231 |
+| 빌드 | Visual Studio 18 2026, Release / NDEBUG / Vulkan validation OFF / production shader MDSS_GPU_VALIDATION=0 |
+| 전원 | Balanced. GPU 클록·온도·다른 앱 부하는 별도 통제·기록하지 않음 |
+| 초기화·입력 | 매회 새 프로세스, Scene initialContacts의 lava 입력 재현. 데모 애니메이션 정지, 추가 브러시 입력 없음 |
+| 시간 진행 | 고정 dt=1/60초, time scale=1, auto substepping OFF. 측정 프레임 모두 1 step |
+| 시작·측정 구간 | frame 0~59 준비 / 60~659 측정 (각 600개) / 660~661 query 회수용 추가 실행. 마지막 상태 검증은 662 step 이후 |
+| 반복·실행 순서 | 조건별 3회, seed 42017로 섞은 순서. 실행별 시각·명령은 manifest에 저장 |
+| 화면 | swapchain 1280×720, Lit viewport 1개, 실제 영역 x=417 / y=48 / 469×571 px. 씬별 저장 카메라 사용 |
+| 표시 동기화 | 로그의 present mode=0 (IMMEDIATE), 추가 FPS 제한 없음. 전체 프레임 시간/FPS는 이번 지표가 아님 |
+| 해상도 | 256 조건은 simulation/base mesh/overlay mesh 모두 256, 512 조건은 모두 512. 해상도 변화가 렌더 메시에도 적용됨 |
+
+### 고정한 주요 옵션
+
+| 옵션 | 실제 값 |
+|---|---|
+| Geometry feedback | ON — 준비 구간 이전 명시 적용, 12개 settings 파일에서 확인 |
+| RawFlux / 배치 / 정밀도 | cache ON / coalesced ON / FP16 RawFlux ON / FP16 dynamic weights OFF |
+| 부분 계산 | Sparse Solver·height·geometry ON / active channel mask·per-workgroup channel mask ON |
+| 렌더링 | State texture ON / sparse height smoothing ON / coverage precompute·separable ON |
+| Shared-memory 비교 경로 | height·coverage·State texture smoothing 모두 OFF |
+| Overlay | tile size 16 / tile culling ON / base·top·sides draw ON |
+| 표시 효과 | 기존 기본값 유지: demo effects·height smoothing·coverage smoothing ON. 정확한 소스·에셋은 입력 보관본 참조 |
+
+시간은 **실행별 중앙값·p95를 먼저 구하고, 3개 실행의 해당 값의 중앙값**으로 정리했다. p95는 측정 프레임의 95%가 이 시간 이내였다는 뜻이다. 단위는 ms이며 낮을수록 빠르다. 각 구간의 중앙값을 따로 구하므로 세부 중앙값의 합이 총 중앙값과 정확히 같지는 않다.
+
+### 핵심 결과
+
+| 씬 / 해상도 | 시뮬레이션 중앙값 | 시뮬레이션 p95 | 렌더링 중앙값 | 렌더링 p95 | 개선률 |
+|---|---|---|---|---|---|
+| BrickCube / 256 | 4.824 | 5.629 | 7.737 | 8.372 | — (비교 전 기준) |
+| BrickCube / 512 | 24.255 | 26.418 | 34.062 | 36.995 | — (비교 전 기준) |
+| Mountain / 256 | 8.238 | 8.953 | 5.960 | 6.540 | — (비교 전 기준) |
+| Mountain / 512 | 41.477 | 42.954 | 27.663 | 29.076 | — (비교 전 기준) |
+
+시뮬레이션은 geometry + transfer weights + Pass 1 + Pass 2의 GPU 구간 합이다. 렌더링은 준비 작업 + scene draw + UI/렌더패스 종료의 기존 계측 합이다. CPU·present 전체 시간은 포함하지 않는다. 계측 구간 사이의 미포함 작업도 있어 두 값을 더해 FPS로 환산하지 않는다.
+
+### 시뮬레이션 세부 결과
+
+| 씬 / 해상도 | 형상 갱신 | 가중치 갱신 | Pass 1 | Pass 2 | 전체 중앙값 반복 범위 |
+|---|---|---|---|---|---|
+| BrickCube / 256 | 0.553 | 0.037 | 2.272 | 1.843 | 4.791~4.834 |
+| BrickCube / 512 | 5.090 | 3.782 | 9.177 | 6.409 | 24.249~24.813 |
+| Mountain / 256 | 1.249 | 2.573 | 2.287 | 2.087 | 8.173~8.327 |
+| Mountain / 512 | 11.840 | 10.936 | 11.053 | 7.691 | 41.105~41.758 |
+
+### 렌더링 세부 결과
+
+| 씬 / 해상도 | 렌더 준비 전체 | 그중 Overlay 준비 | Base draw | Overlay draw | 렌더 전체 중앙값 반복 범위 |
+|---|---|---|---|---|---|
+| BrickCube / 256 | 5.198 | 4.329 | 2.041 | 0.152 | 7.692~8.049 |
+| BrickCube / 512 | 25.152 | 20.281 | 7.687 | 0.535 | 32.867~35.956 |
+| Mountain / 256 | 4.550 | 4.006 | 1.032 | 0.132 | 5.957~5.983 |
+| Mountain / 512 | 22.579 | 20.090 | 3.828 | 0.730 | 27.035~29.045 |
+
+Overlay 준비는 렌더 준비에 포함되는 하위 구간이다. 아래 height·normal은 Overlay geometry의 하위 구간이며, coverage는 sides 구간에도 포함된다. 중복 구간을 모두 더하지 않는다.
+
+| 씬 / 해상도 | Overlay height | Overlay normal/vertex | smoothing | sides 전체 | 그중 coverage |
+|---|---|---|---|---|---|
+| BrickCube / 256 | 1.036 | 1.427 | 0.234 | 0.832 | 0.327 |
+| BrickCube / 512 | 2.718 | 6.055 | 3.126 | 5.003 | 3.086 |
+| Mountain / 256 | 0.256 | 2.134 | 0.224 | 0.876 | 0.501 |
+| Mountain / 512 | 1.302 | 9.276 | 3.083 | 4.480 | 3.138 |
+
+### CPU 보조 지표
+
+| 씬 / 해상도 | 명령 기록 CPU 중앙값 | 프레임 fence 대기 CPU 중앙값 |
+|---|---|---|
+| BrickCube / 256 | 0.128 | 11.889 |
+| BrickCube / 512 | 0.192 | 57.675 |
+| Mountain / 256 | 0.154 | 13.389 |
+| Mountain / 512 | 0.216 | 68.446 |
+
+Fence 대기는 앞서 제출한 GPU 작업 완료를 기다린 시간이다. 이것을 별도의 계산 비용으로 GPU 시간에 다시 더하지 않는다. UI 구성·입력 처리까지 포함한 전체 CPU frame time은 미측정이다.
+### 작업량과 측정 시점
+
+| 씬 / 해상도 | 인스턴스 | 할당 texel 합계 | 등록 채널 | Overlay 활성 타일 비율 중앙값 |
+|---|---|---|---|---|
+| BrickCube / 256 | 1 | 393,216 | 4 | 13.02% |
+| BrickCube / 512 | 1 | 1,572,864 | 4 | 10.94% |
+| Mountain / 256 | 3 | 196,608 | 4 | 32.55% |
+| Mountain / 512 | 3 | 786,432 | 4 | 27.38% |
+
+등록 채널은 4개지만 입력 workload는 lava 중심이다. 할당 texel 수에는 유효하지 않은 atlas 영역도 포함되며 실제 활성 texel 수와 같지 않다. 아래는 600프레임을 200개씩 나눈 구간의 중앙값이다. 각 구간도 3회 반복의 중앙값을 사용했다.
+
+| 씬 / 해상도 | Solver 60~259 | Solver 260~459 | Solver 460~659 | Render 60~259 | Render 260~459 | Render 460~659 |
+|---|---|---|---|---|---|---|
+| BrickCube / 256 | 4.322 | 4.770 | 5.220 | 7.695 | 7.708 | 7.828 |
+| BrickCube / 512 | 22.919 | 24.240 | 25.695 | 33.624 | 34.132 | 35.232 |
+| Mountain / 256 | 7.797 | 8.264 | 8.504 | 5.916 | 5.949 | 6.057 |
+| Mountain / 512 | 41.238 | 41.417 | 41.624 | 27.608 | 27.643 | 27.708 |
+
+State가 퍼지며 작업량이 달라지는 실험이다. 다른 step의 화면 숫자와 이 표를 직접 비교하지 않는다.
+### 메모리 — 전체 할당과 대기 메시 캐시 분리
+
+| 씬 / 해상도 | 전체 할당 MiB | Buffer MiB | Image MiB | 미선택 해상도 메시 캐시 MiB | 캐시 제외 참고값 MiB |
+|---|---|---|---|---|---|
+| BrickCube / 256 | 629.63 | 607.01 | 22.63 | 246.11 | 383.53 |
+| BrickCube / 512 | 1567.40 | 1517.77 | 49.63 | 74.82 | 1492.58 |
+| Mountain / 256 | 213.24 | 192.74 | 20.50 | 43.39 | 169.85 |
+| Mountain / 512 | 635.76 | 601.76 | 34.00 | 13.90 | 621.87 |
+
+- 측정 시점: 662 step 후 GPU idle, 자원 해제 이전. 각 조건에서 3회 값이 같았고 peak 전체 할당도 이 값과 같았다.
+- 전체 할당은 `TGPUBuffer`/`TGPUImage`가 추적하는 Vulkan allocation 크기다. swapchain·드라이버 내부·pipeline 등 추적 밖 메모리와 CPU RAM은 포함하지 않는다. GPU 전체 VRAM 사용량/상주량을 측정한 값이 아니다.
+- 미선택 캐시는 현재 base/overlay 해상도를 제외한 64·128·256·512 메시의 allocation category 합이다. 두 mesh 해상도가 모두 256이면 64/128/512, 모두 512이면 64/128/256을 대기 캐시로 분류했다.
+- **캐시 제외 참고값은 전체에서 이 대기 캐시만 뺀 계산값**이다. 나머지 자원이 매 프레임 실제로 읽혔다는 뜻이 아니다. 캐시를 없애거나 메모리를 절약한 실험도 아니다.
+- UI를 정리할 때는 `현재 구성 배정액(참고)` / `대기 메시 캐시` / `전체 할당`을 함께 보여주면 큰 합계의 이유를 설명할 수 있다.
+
+### 검증 결과
+
+| 확인 항목 | 결과 | 범위·한계 |
+|---|---|---|
+| 실행·원자료 | 12/12 종료 코드 0, 프레임별 JSONL 7,200개 | 각 실행 frame 60~659 연속, 모든 프레임 1 step |
+| 조건 일치 | 각 씬·해상도의 settings 3개가 완전히 일치 | 카메라·viewport·주요 옵션·mesh 해상도 포함 |
+| 상태값 | NaN/Inf 0, 음수 0 (12회 모두) | 마지막 추가 프레임까지 포함한 662 step 후 State 검사 |
+| 반복 재현 | 각 조건의 모든 instance State FNV-1a 64-bit 해시·총합·양수 개수 일치 | 정해진 입력의 반복 재현 확인. 알고리즘 정확성/보존법칙 증명은 아님 |
+| 측정값 | 출력 시간 전부 유한·0 이상, Solver 세부합과 total 일치 | GPU timestamp 범위의 기존 정의 유지 |
+| 로그 | 12회 모두 [ERROR] 없음, present mode=0 확인 | Vulkan validation을 껐으므로 validation 무오류를 증명하지 않음 |
+| 화질·정확성 대조 | 미실행 | 다른 알고리즘/버전과 픽셀·분포·총량 보존 대조는 후속 A/B에서 수행 |
+
+### 해석과 다음 실험
+
+| 대상 | 관찰 | 다음에 비교할 것 |
+|---|---|---|
+| 렌더링 | Overlay 준비 4.006~20.281 ms, Overlay draw 0.132~0.730 ms. 실제 draw보다 준비 비용이 큼 | 변경 타일 전달·불필요한 geometry/normal 갱신 생략을 하나씩 A/B 비교. occupancy scan만의 비용은 이번 출력에서 분리하지 못했으므로 원인으로 단정하지 않음 |
+| 시뮬레이션: BrickCube | 256에서는 Pass 1/2가 주요 비용, 512에서는 형상·가중치 갱신 부담도 증가 | 현재 옵션의 RawFlux/layout/precision 효과를 동일 상태·설정에서 먼저 비교 |
+| 시뮬레이션: Mountain | 512에서 형상 11.840 ms + 가중치 10.936 ms, Pass 1/2 합보다 큼 | dirty/sparse geometry 경로와 갱신량을 우선 조사. 비용을 없애려고 feedback을 끈 값과 ON 값을 순수 최적화로 비교하지 않음 |
+| 메모리 | BrickCube 256의 대기 메시 캐시만 246.11 MiB | 표시 분리와 실제 해제/지연 할당은 별도 작업으로 구분. FP16 할당 축소는 별도 전후 실험 |
+| 편차 | BrickCube 512 렌더 중앙값의 반복 범위 32.867~35.956 ms | 작은 개선은 이 기준을 과신하지 않고 baseline/후보를 같은 세션에서 번갈아 다시 측정 |
+
+이 결과로 특정 최적화의 개선률을 주장하지 않는다. 해상도 256→512는 simulation과 render mesh가 함께 변한 별도 조건이며, 한 GPU·lava 중심 workload의 결과를 모든 씬에 일반화하지 않는다. UI가 차지하는 영역을 뺀 실제 렌더 영역은 469×571이므로 전체 화면 렌더 결과와도 구분한다.
+
+### 반복별 기록
+
+아래 시간은 KST이며 process 시간에는 로딩·준비·측정·종료를 포함한다. GPU 프레임 시간과 구분한다.
+
+| 씬 / 해상도 | 반복 | 시작 | 종료 | Solver 중앙값 / p95 | Render 중앙값 / p95 | Process 초 |
+|---|---|---|---|---|---|---|
+| BrickCube / 256 | 1 | 22:05:53 | 22:06:05 | 4.791 / 5.681 | 7.737 / 8.372 | 12.45 |
+| BrickCube / 256 | 2 | 22:05:40 | 22:05:53 | 4.824 / 5.629 | 8.049 / 8.875 | 12.74 |
+| BrickCube / 256 | 3 | 22:05:28 | 22:05:40 | 4.834 / 5.616 | 7.692 / 8.320 | 12.46 |
+| BrickCube / 512 | 1 | 22:01:15 | 22:02:09 | 24.813 / 26.967 | 32.867 / 34.429 | 54.60 |
+| BrickCube / 512 | 2 | 22:02:09 | 22:02:55 | 24.255 / 26.418 | 34.062 / 36.995 | 45.93 |
+| BrickCube / 512 | 3 | 22:04:30 | 22:05:17 | 24.249 / 26.370 | 35.956 / 39.547 | 47.10 |
+| Mountain / 256 | 1 | 22:06:05 | 22:06:16 | 8.327 / 8.953 | 5.983 / 6.540 | 10.65 |
+| Mountain / 256 | 2 | 22:06:16 | 22:06:27 | 8.173 / 8.904 | 5.960 / 6.479 | 10.54 |
+| Mountain / 256 | 3 | 22:05:17 | 22:05:28 | 8.238 / 9.213 | 5.957 / 6.586 | 10.62 |
+| Mountain / 512 | 1 | 22:06:27 | 22:07:15 | 41.477 / 42.954 | 29.045 / 30.397 | 48.17 |
+| Mountain / 512 | 2 | 22:02:55 | 22:03:43 | 41.758 / 43.887 | 27.663 / 29.076 | 47.93 |
+| Mountain / 512 | 3 | 22:03:43 | 22:04:30 | 41.105 / 42.860 | 27.035 / 28.227 | 46.95 |
+
+### 근거와 재실행
+
+- [자동 요약](../../../Performance-Data/20261022-220109-solver-resolution/summary.md), [실행 manifest](../../../Performance-Data/20261022-220109-solver-resolution/manifest.json), [검증 요약](../../../Performance-Data/20261022-220109-solver-resolution/audit.json), [상세 집계 JSON](../../../Performance-Data/20261022-220109-solver-resolution/aggregate.json).
+- [프레임별 원자료·로그·settings·validation](../../../Performance-Data/20261022-220109-solver-resolution/raw). 설정 파일은 첫 측정 프레임, validation은 최종 662 step 후 기록이다.
+- [소스·에셋 보관본](../../../Performance-Data/20261022-220109-solver-resolution/raw/inputs/source-assets.zip), [당시 미커밋 patch](../../../Performance-Data/20261022-220109-solver-resolution/raw/inputs/working-tree.patch), [입력 SHA-256](../../../Performance-Data/20261022-220109-solver-resolution/raw/inputs/sha256.json).
+- 같은 inputs 폴더에 실행 파일, Release SPIR-V 보관본, CMakeCache, build log, 환경·Vulkan 정보, 외부 의존성 commit을 보관했다. 이번 계측 이전 patch도 별도로 보관했다.
+- `raw/`는 Git ignore 대상이다. **이 컴퓨터에 저장된 원자료이며 Git push만으로 백업되지 않는다.** 장기 보관 시 이 결과 폴더 전체를 함께 백업해야 한다.
+- 본 실행 이전에 Windows subprocess의 Git 출력 디코딩 오류로 runner 초기화가 한 번 실패했다. UTF-8 처리를 명시한 뒤 본 실행을 시작했으며, 해당 실패에서는 앱 측정이 시작되지 않았다. [시작 실패 로그](../../../Performance-Data/20261022-220053-solver-resolution/raw/startup-failure.log)도 보관했다.
+
+```powershell
+cmake -S . -B Build -DMDSS_ENABLE_VALIDATION=OFF
+cmake --build Build --config Release --target MDSS --parallel 8
+& 'C:/Users/yonai/AppData/Roaming/uv/python/cpython-3.13-windows-x86_64-none/python.exe' Scripts/Performance/run_matrix.py --skip-build --binary Build/bin/Release/MDSS.exe
+```
+
+이 명령은 실행할 때의 작업 트리를 측정한다. 이번 수치를 재현하려면 먼저 보관한 소스·에셋/옵션을 복원해야 한다. 이후 최적화는 각 묶음의 비교 변수 하나만 바꾸고 baseline도 함께 재실행해 대조한다.
+
+## 8개 묶음 최적화 비교 — PERF-002~035
+
+> 현재 고정 스냅샷에서 비교할 항목만 OFF·이전 방식으로 바꿔 대조했다. 아래 감소율은 표에 적힌 구간의 시간/할당량 감소율이며 FPS 개선률이 아니다.
+
+- 기록 유형: **사후 재측정**. 보고서 상태: **실행 종료·검증 결과 기록**.
+- 코드: `fa83c68` + PERF-001 당시 미커밋 변경 + 실험용 계측/복원 patch. 제품 코드의 기본값을 바꾸지 않았다.
+- 각 질문에 ID를 부여했다. 같은 질문의 해상도·입력 범위·인스턴스 수가 다른 경우에는 같은 ID 아래 조건별 행으로 기록했다. 이 문서 하나가 중앙 보고서다.
+
+
+| 실행 단계 | 계획 | 정상 종료 | 실패 | 상태 |
+|---|---:|---:|---:|---|
+| main | 432 | 432 | 0 | complete |
+| short | 152 | 152 | 0 | complete |
+| extra | 357 | 357 | 0 | complete |
+| history | 48 | 48 | 0 | complete |
+
+최종 독립 검증: **989회 / 459,296개 측정 프레임, 검사 오류 0개**. 프레임 연속성·옵션·동일 시작 규칙의 카메라/화면 영역·고정 timestep·상태 유효성·반복 State 기록·바이너리/보관본 해시·GPU 앱 실행 중복 여부를 확인했다. 구버전 exporter의 미지원 검사는 audit의 `unsupported_checks`와 아래 제한에 남겼다.
+
+### 이번 측정으로 확인한 범위
+
+8개 묶음은 분류다. 아래 비교쌍의 현재 기여도를 측정했으며, 묶음 안의 모든 과거 변경을 하나씩 제거한 실험은 아니다. 개별 측정하지 않은 변경은 개선율을 붙이지 않는다. 여러 개별 감소율이나 묶음 감소율을 더해 전체 개선율로 사용하지 않는다.
+
+
+| 묶음 | 이번에 직접 비교한 것 | 별도 효과를 분리하지 않은 것 |
+|---:|---|---|
+| 1 | 디스크 캐시·동일 씬 GPU 자원 5회 재생성·여러 runtime의 Profile 공유 | pool 재사용 횟수/누적 요청 바이트/보관량을 출력. 전체 vkAllocateMemory 호출 횟수는 별도 계측하지 않음 |
+| 2 | RawFlux FP32 캐시·0 쓰기 생략·source 공통값 재사용 묶음 | 초기 TransferWeight/outgoing 합/ConcavityWeight 캐시 각각의 독립 효과. 회전 불변 CPU 캐시는 OS 실행 차단 |
+| 3 | Solver/height/geometry 부분 계산·전역/workgroup 채널 마스크·넓은/여러 채널 입력 | persistent schedule 유지 자체만 제거한 별도 비교는 없음 |
+| 4 | 현재 Solver의 물체별 순차 기록과 단계별 묶음 기록 | 개별 barrier 하나마다의 독립 비용은 미측정 |
+| 5 | RawFlux 배치·FP16 Flux·FP16 Weights·실제 할당량 | Profile 등 나머지 compact/SoA 변경 각각의 효과·하드웨어 실제 전송 바이트는 미측정 |
+| 6 | Texture/SSBO·사전 계산·분리 필터·shared memory·공통 조명 계산 재사용 | 외관이 함께 달라진 과거 렌더 수식 전체를 동일 품질로 복원한 비교는 아님 |
+| 7 | dirty 갱신·타일/메시 크기·화면 밖 draw 생략·top 압축 draw | side/top 갱신 통합 자체·occupancy scan 단독 시간은 미분리 |
+| 8 | GPU 반복 검증·runtime/compile-time Solver 선택 | pipeline 생성/드라이버 내부 메모리 효과는 미측정 |
+
+### 공통 조건과 읽는 방법
+
+- 기본: BrickCube·Mountain, simulation 256/512, 60프레임 준비 + 600프레임 측정 + query 회수 2프레임, 각 조건 3회, 새 프로세스, 고정 dt=1/60, auto substepping OFF, Geometry feedback ON.
+- Release·Vulkan validation OFF. GPU validation 비교만 production SPIR-V의 `MDSS_GPU_VALIDATION=1/0`을 바꾼다. C++ 빌드와 알고리즘 옵션은 동일하다.
+- 기본 base mesh·Overlay mesh는 모두 simulation과 같은 256/512다. 메시 실험은 두 render mesh를 함께 바꾸고 simulation 해상도는 유지한다. Overlay mesh 하나만 바꾼 효과로 해석하지 않는다.
+- 기본 화면은 1280×720 swapchain 안의 Lit viewport 469×571, 카메라는 Scene 값이다. 화면 밖 실험만 카메라를 이동한 별도 Scene을 사용한다.
+- 각 묶음에서 반복 2의 실행 순서를 반대로 한다. 시간은 실행별 중앙값/p95를 먼저 구하고, 세 반복의 해당 값의 중앙값으로 정리한다. 반복 범위 겹침은 효과 불확실의 근거이며 통계적 유의성 검정을 대신하지 않는다.
+- **로딩 예외:** 0 준비/2 측정 프레임으로 실행하되 지표는 `TSceneLoader::Load`의 CPU 경과 시간, 또는 `Renderer::ReloadSceneResources`를 5회 호출한 시간, 또는 Profile 표의 할당 B다. 자원 재생성은 GPU idle 대기·State system/descriptor/pipeline 등 재구성을 포함하며 Scene 파일을 다시 읽는 실험은 아니다. OS 디스크 캐시를 비운 실험도 아니다. CPU 시간은 CPU에서 잰 경과 시간으로, 대기/I/O를 제외한 순수 CPU 연산 시간이 아니다.
+- **짧은 정확성 검사:** 초기 입력을 넣은 step 1 이후 전달 계산을 한 번 수행한 step 2에서 시뮬레이션을 멈춘다. 이후 drain 프레임은 상태를 바꾸지 않는다. 이 검사의 한 프레임 GPU 시간은 성능 결론에 사용하지 않는다.
+- 프레임 성능 실행의 최종 상태·화면은 662 step 후이고, 로딩 실험은 4 step 후다. 화면 저장 시에만 UI를 숨기며, 측정 프레임에는 UI가 포함된다. GPU 구간은 공통 timestamp로 잰 simulation elapsed/전체 command-buffer elapsed를 추가했다. 과거의 인스턴스별 stage 합계와 직접 비교하지 않는다.
+- 표의 **Simulation GPU ms**는 공통 simulation elapsed, **Render GPU ms**는 기존 렌더 준비+scene draw+UI 구간의 합계, **전체 command-buffer GPU ms**는 공통 시작~끝 경과 시간이다. Render 합계에 계측 사이의 빈 구간이 포함된다고 가정하지 않는다. 세 지표를 혼용하거나 하위 구간을 중복 합산하지 않는다.
+- 상태 상대 L1 = 모든 texel의 절대 차이 합 / 기준 상태량 절댓값 합. 화면 MAE는 viewport의 RGB 평균 절대 차이(0~255)다. 배경도 포함하므로 작은 평균만 보고 화질 동등성을 단정하지 않는다. 최대 차이·p99·변경 픽셀 비율은 JSON 원자료에 있다.
+- 감소율이 음수이면 비교 경로가 더 느리거나 할당량이 더 크다는 뜻이다. `화면 차이`는 픽셀 하나라도 다르면 표시하며, 곧바로 눈에 보이는 화질 저하를 뜻하지 않는다. 같은 경로를 반복했을 때의 화면 MAE 범위도 JSON에 보관했다.
+
+이 실험은 현재 설정에서 지정한 항목의 기여도를 비교한 것이며, 모든 옵션 조합에서 가장 빠른 구성을 찾은 실험은 아니다. 여러 권장 옵션을 함께 바꿀 때는 그 조합을 새로 검증해야 한다.
+
+
+| 추가 Scene 이름 | 변경한 조건 |
+|---|---|
+| BrickCube-Wide | lava 입력 반경 1000, falloff 0. 넓은 영역에 같은 초기 입력 |
+| BrickCube-Mixed | heat/mud/waterfilm/lava를 서로 다른 x 위치에 입력, 반경 0.22, 강도 1.5 |
+| *-Offscreen | 카메라 위치와 target의 모든 좌표에 +100. 물체·입력은 동일 |
+| Mountain-1/3/6-identical | 첫 Mountain 물체·입력을 1/3/6개 복제, x 간격 1.1. 사용하지 않는 원본 animation 참조 제거 |
+| Mountain-DistinctRuntime | 서로 다른 mesh 경로 3개, 각 1 instance, 동일 Profile 세트 |
+| *-Additional / *-Reuse / *-Top | 현재 기본 에셋·카메라에서 지정한 렌더/계산 경로만 비교. Wide-Top은 넓은 입력 유지 |
+
+### 실제 입력 영역의 참고 수치
+
+State 양수 texel 비율은 마지막 662 step 후에 채널 하나라도 양수인 texel 수 / 할당 texel 수다. 유효하지 않은 atlas 공간도 분모에 포함된다. Overlay 비율은 측정 600프레임의 실행별 중앙값을 구한 뒤 세 반복의 중앙값이다. 이 수치들은 Solver의 실제 활성 workgroup 비율이 아니며, 전환 임계값을 바로 결정하는 근거로 사용하지 않는다.
+
+
+| 씬 / simulation | 할당 texel | State 양수 texel % | 0 아닌 채널 / 등록 채널 | Overlay 활성 tile % | 활성 top 삼각형 % |
+|---|---:|---:|---|---:|---:|
+| BrickCube / 256 | 393,216 | 12.55 | 1 / 4 | 13.02 | 7.56 |
+| BrickCube / 512 | 1,572,864 | 11.25 | 1 / 4 | 10.94 | 7.13 |
+| Mountain / 256 | 196,608 | 27.16 | 1 / 4 | 32.55 | 18.88 |
+| Mountain / 512 | 786,432 | 25.05 | 1 / 4 | 27.38 | 17.70 |
+| BrickCube-Mixed / 256 | 393,216 | 11.87 | 4 / 4 | 13.28 | 7.25 |
+| BrickCube-Wide / 256 | 393,216 | 100.00 | 1 / 4 | 100.00 | 98.89 |
+| BrickCube-Wide / 512 | 1,572,864 | 100.00 | 1 / 4 | 100.00 | 97.29 |
+
+### 1. 로딩·리소스 재사용
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-002 | 전처리 결과를 디스크 캐시에서 다시 읽기 | 전처리 디스크 캐시 사용 안 함 | 현재 기본 경로 | Scene 로드 CPU ms |
+| PERF-003 | 같은 씬의 GPU 자원 재생성에서 버퍼 재사용 | 버퍼 재사용 없이 자원 5회 재생성 | 버퍼 재사용하며 자원 5회 재생성 | 자원 재생성 CPU ms |
+| PERF-004 | 같은 Profile 표를 씬에서 공유 | 같은 Profile 표를 별도 할당 | 현재 기본 경로 | Profile 표 B |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---|---|
+| PERF-002 | BrickCube / 256 | ms | 1825.151 | 169.834 | 90.69 | 0.00000 | — | 감소 관찰 |
+| PERF-002 | BrickCube / 512 | ms | 7421.210 | 620.621 | 91.64 | 0.00000 | — | 감소 관찰 |
+| PERF-002 | Mountain / 256 | ms | 75.811 | 47.218 | 37.72 | 0.00000 | — | 감소 관찰 |
+| PERF-002 | Mountain / 512 | ms | 244.915 | 126.269 | 48.44 | 0.00000 | — | 감소 관찰 |
+| PERF-003 | BrickCube / 256 | ms | 3266.490 | 3242.958 | 0.72 | 0.00000 | — | 시간/할당량 범위 겹침 |
+| PERF-003 | BrickCube / 512 | ms | 5394.508 | 5493.716 | -1.84 | 0.00000 | — | 이 조건에서 증가 |
+| PERF-003 | Mountain / 256 | ms | 585.302 | 526.021 | 10.13 | 0.00000 | — | 감소 관찰 |
+| PERF-003 | Mountain / 512 | ms | 890.867 | 816.959 | 8.30 | 0.00000 | — | 감소 관찰 |
+| PERF-004 | Mountain-DistinctRuntime / 256 | B | 624 | 208 | 66.67 | 0.00000 | — | 감소 관찰 |
+| PERF-004 | Mountain-DistinctRuntime / 512 | B | 624 | 208 | 66.67 | 0.00000 | — | 감소 관찰 |
+
+Profile 공유의 역사적 base는 runtime별 표다. 같은 runtime의 여러 instance는 예전에도 공유했다. 따라서 일반 Mountain의 per-instance 복제 arm은 역사적 효과 산정에서 제외하고, 서로 다른 runtime 3개가 같은 Profile을 쓰는 통제 씬을 사용했다. 표의 B는 **Profile 표만의 할당량**이며 전체 GPU 메모리 감소율이 아니다.
+
+로딩 실험은 준비 프레임 없이 frame 0에서 설정을 저장해, 초기 화면 영역 1280×672가 기록됐다. 일반 프레임 성능 실험의 안정된 영역 469×571과 구분한다. 카메라 위치·시선·FOV는 같고, 같은 로딩 비교쌍의 시작 규칙·영역도 일치한다. 저장 영역과 마지막 화면의 실제 viewport가 다를 수 있어 로딩 실험의 화면 MAE는 화질 판단에서 제외했다. Scene 로드/자원 재생성 CPU 시간과 메모리 비교에 이 화면 지표를 사용하지 않았다.
+
+### 2. Solver 중복 계산·캐시
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-005 | 계산한 이동량을 저장해서 다시 쓰기 — FP32 | 이동량 재계산(FP32) | 이동량 캐시(FP32) | Simulation GPU ms |
+| PERF-006 | 빈 source의 불필요한 0 쓰기 생략 | 빈 source에도 0 기록 | 현재 기본 경로 | Simulation GPU ms |
+| PERF-032 | 빈 source 계산 생략·Profile/형상/행렬 공통값 재사용 묶음 | 빈 source·공통값을 다시 계산 | 현재 기본 경로 | Simulation GPU ms |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PERF-005 | BrickCube / 256 | ms | 11.469 | 10.020 | 12.63 | 0.08019 | 0.002 | 감소 관찰 · 상태 차이 |
+| PERF-005 | BrickCube / 512 | ms | 42.043 | 38.756 | 7.82 | 0.38453 | 0.004 | 감소 관찰 · 상태 차이 |
+| PERF-005 | Mountain / 256 | ms | 15.494 | 14.149 | 8.68 | 0.09830 | 0.002 | 감소 관찰 · 상태 차이 |
+| PERF-005 | Mountain / 512 | ms | 53.293 | 51.216 | 3.90 | 1.05412 | 0.024 | 감소 관찰 · 상태 차이 |
+| PERF-006 | BrickCube / 256 | ms | 4.825 | 4.861 | -0.75 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-006 | BrickCube / 512 | ms | 24.337 | 24.477 | -0.57 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-006 | Mountain / 256 | ms | 8.579 | 8.319 | 3.03 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-006 | Mountain / 512 | ms | 41.153 | 41.234 | -0.20 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-005 | BrickCube-Wide / 256 | ms | 62.198 | 57.791 | 7.09 | 0.10614 | 0.019 | 감소 관찰 · 상태 차이 |
+| PERF-005 | BrickCube-Wide / 512 | ms | 296.352 | 286.626 | 3.28 | 0.64935 | 0.029 | 감소 관찰 · 상태 차이 |
+| PERF-006 | BrickCube-Wide / 256 | ms | 57.246 | 57.834 | -1.03 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-006 | BrickCube-Wide / 512 | ms | 282.252 | 285.424 | -1.12 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-032 | BrickCube-Source-Reuse / 256 | ms | 6.183 | 4.767 | 22.90 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-032 | BrickCube-Source-Reuse / 512 | ms | 27.547 | 23.714 | 13.91 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-032 | Mountain-Source-Reuse / 256 | ms | 10.986 | 8.126 | 26.03 | 0.02508 | 0.001 | 감소 관찰 · 상태 차이 |
+| PERF-032 | Mountain-Source-Reuse / 512 | ms | 46.272 | 40.142 | 13.25 | 1.61475 | 0.021 | 감소 관찰 · 상태 차이 |
+
+PERF-032는 빈 source 계산 생략, Profile/포화도/source 형상 재사용, normal matrix의 CPU 준비를 묶은 대조다. 과거 파일 전체를 되돌린 것이 아니라 현재 ABI에서 지정 연산을 반복하도록 복원했다. 사용하지 않는 scratch 값까지 동일하다는 주장은 하지 않는다.
+
+**PERF-029 회전 불변 CPU 캐시 보조 실험은 Windows 앱 제어의 실행 차단으로 미측정이다.** 속도 수치를 추정하거나 다른 실험으로 대체하지 않았다.
+
+### 3. 필요한 영역만 시뮬레이션
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-007 | 상태가 있는 영역 주변만 Solver 실행 | Solver 전체 영역 | 현재 기본 경로 | Simulation GPU ms |
+| PERF-008 | 필요한 영역만 높이 갱신 | 높이 전체 영역 | 현재 기본 경로 | Simulation GPU ms |
+| PERF-009 | 필요한 영역만 형상·가중치 갱신 | 형상·가중치 전체 영역 | 현재 기본 경로 | Simulation GPU ms |
+| PERF-010 | 부분 계산과 채널 생략을 묶어서 사용 | 부분 계산 3종·채널 생략 모두 OFF | 현재 기본 경로 | Simulation GPU ms |
+| PERF-011 | 전체에서 사용하지 않는 채널 생략 | 채널 생략 모두 OFF | 전체 채널 생략만 ON | Simulation GPU ms |
+| PERF-012 | 각 workgroup에 필요한 채널만 계산 | 전체 채널 생략만 ON | 현재 기본 경로 | Simulation GPU ms |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PERF-007 | BrickCube / 256 | ms | 4.329 | 4.781 | -10.44 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-007 | BrickCube / 512 | ms | 23.862 | 23.877 | -0.06 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-007 | Mountain / 256 | ms | 8.037 | 8.191 | -1.91 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-007 | Mountain / 512 | ms | 38.103 | 40.271 | -5.69 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-008 | BrickCube / 256 | ms | 6.094 | 4.781 | 21.55 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-008 | BrickCube / 512 | ms | 28.949 | 23.877 | 17.52 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-008 | Mountain / 256 | ms | 8.560 | 8.191 | 4.31 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-008 | Mountain / 512 | ms | 42.450 | 40.271 | 5.13 | 0.00000 | 0.001 | 감소 관찰 · 화면 차이 |
+| PERF-009 | BrickCube / 256 | ms | 42.914 | 4.781 | 88.86 | 0.02587 | 0.000 | 감소 관찰 · 상태 차이 |
+| PERF-009 | BrickCube / 512 | ms | 95.179 | 23.877 | 74.91 | 0.22706 | 0.000 | 감소 관찰 · 상태 차이 |
+| PERF-009 | Mountain / 256 | ms | 23.813 | 8.191 | 65.60 | 0.01993 | 0.001 | 감소 관찰 · 상태 차이 |
+| PERF-009 | Mountain / 512 | ms | 67.405 | 40.271 | 40.25 | 0.77926 | 0.022 | 감소 관찰 · 상태 차이 |
+| PERF-010 | BrickCube / 256 | ms | 83.454 | 4.781 | 94.27 | 0.02587 | 0.000 | 감소 관찰 · 상태 차이 |
+| PERF-010 | BrickCube / 512 | ms | 216.968 | 23.877 | 89.00 | 0.22706 | 0.000 | 감소 관찰 · 상태 차이 |
+| PERF-010 | Mountain / 256 | ms | 38.306 | 8.191 | 78.62 | 0.01993 | 0.001 | 감소 관찰 · 상태 차이 |
+| PERF-010 | Mountain / 512 | ms | 127.368 | 40.271 | 68.38 | 0.77926 | 0.022 | 감소 관찰 · 상태 차이 |
+| PERF-011 | BrickCube / 256 | ms | 8.216 | 4.707 | 42.71 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-011 | BrickCube / 512 | ms | 36.421 | 23.839 | 34.55 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-011 | Mountain / 256 | ms | 12.180 | 8.263 | 32.16 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-011 | Mountain / 512 | ms | 56.001 | 40.369 | 27.91 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-012 | BrickCube / 256 | ms | 4.707 | 4.781 | -1.58 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-012 | BrickCube / 512 | ms | 23.839 | 23.877 | -0.16 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-012 | Mountain / 256 | ms | 8.263 | 8.191 | 0.87 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-012 | Mountain / 512 | ms | 40.369 | 40.271 | 0.24 | 0.00000 | 0.001 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-007 | BrickCube-Wide / 256 | ms | 57.156 | 57.671 | -0.90 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-007 | BrickCube-Wide / 512 | ms | 262.492 | 284.758 | -8.48 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-008 | BrickCube-Wide / 256 | ms | 58.171 | 57.671 | 0.86 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-008 | BrickCube-Wide / 512 | ms | 283.044 | 284.758 | -0.61 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-009 | BrickCube-Wide / 256 | ms | 75.719 | 57.671 | 23.84 | 0.03273 | 0.003 | 감소 관찰 · 상태 차이 |
+| PERF-009 | BrickCube-Wide / 512 | ms | 216.813 | 284.758 | -31.34 | 0.54045 | 0.010 | 이 조건에서 증가 · 상태 차이 |
+| PERF-010 | BrickCube-Wide / 256 | ms | 101.450 | 57.671 | 43.15 | 0.03273 | 0.003 | 감소 관찰 · 상태 차이 |
+| PERF-010 | BrickCube-Wide / 512 | ms | 273.394 | 284.758 | -4.16 | 0.54045 | 0.010 | 이 조건에서 증가 · 상태 차이 |
+| PERF-011 | BrickCube-Mixed / 256 | ms | 8.251 | 8.440 | -2.29 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-011 | BrickCube-Wide / 256 | ms | 85.713 | 57.799 | 32.57 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-011 | BrickCube-Wide / 512 | ms | 389.324 | 284.965 | 26.81 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-012 | BrickCube-Mixed / 256 | ms | 8.440 | 5.579 | 33.89 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-012 | BrickCube-Wide / 256 | ms | 57.799 | 57.671 | 0.22 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-012 | BrickCube-Wide / 512 | ms | 284.965 | 284.758 | 0.07 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+
+Wide는 입력 반경을 넓힌 별도 씬이고 Mixed는 여러 상태 채널에 다른 위치의 입력을 넣은 조건이다. Overlay 활성 타일 비율을 Solver의 실제 active workgroup 비율로 해석하지 않는다. 전체 부분 계산 OFF는 여러 설정을 함께 바꾼 묶음 효과이며 개별 감소율과 합산할 수 없다.
+
+### 4. 여러 인스턴스의 실행·동기화
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-013 | 여러 물체의 같은 계산 단계를 모아 실행 | 물체별 순차 Solver | 현재 기본 경로 | Simulation GPU ms |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PERF-013 | Mountain / 256 | ms | 4.987 | 8.195 | -64.32 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-013 | Mountain / 512 | ms | 42.819 | 40.132 | 6.27 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-013 | Mountain-1-identical / 256 | ms | 1.665 | 1.692 | -1.63 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-013 | Mountain-1-identical / 512 | ms | 14.382 | 14.453 | -0.49 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-013 | Mountain-3-identical / 256 | ms | 4.997 | 7.379 | -47.67 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-013 | Mountain-3-identical / 512 | ms | 43.372 | 40.634 | 6.31 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-013 | Mountain-6-identical / 256 | ms | 10.110 | 14.733 | -45.72 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-013 | Mountain-6-identical / 512 | ms | 87.082 | 80.233 | 7.86 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+
+물체별 순차 경로는 현재 Solver를 한 instance씩 호출한다. 물리 수식·자원을 유지하고 실행 순서/동기화를 비교한다. 공통 simulation elapsed를 사용한다. 보조 timestamp 기록 수는 두 경로 모두 8개지만, 순차 arm은 시작/끝에 각각 4개를 배치하므로 세부 pass 합계를 지원하지 않는다. 기록 위치에 따른 영향이나 계측이 전혀 없는 실행의 효과까지 분리한 실험은 아니다. 인스턴스 수 통제 씬은 같은 물체를 복제한 1/3/6개 구성이다.
+
+### 5. 데이터 배치·정밀도
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-014 | 이웃 스레드가 연속된 이동량 데이터를 읽도록 배치 | 기존 이동량 배치(FP32) | 이동량 캐시(FP32) | Simulation GPU ms |
+| PERF-015 | 이동량을 FP16으로 저장 | 이동량 캐시(FP32) | 현재 기본 경로 | Simulation GPU ms |
+| PERF-016 | 가중치를 FP16으로 저장 | 현재 기본 경로 | 가중치 FP16 | Simulation GPU ms |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PERF-014 | BrickCube / 256 | ms | 16.129 | 9.683 | 39.96 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-014 | BrickCube / 512 | ms | 60.730 | 39.101 | 35.61 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-014 | Mountain / 256 | ms | 21.915 | 13.931 | 36.43 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-014 | Mountain / 512 | ms | 71.214 | 49.803 | 30.07 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-015 | BrickCube / 256 | ms | 9.683 | 4.721 | 51.24 | 1.65364 | 0.016 | 감소 관찰 · 상태 차이 |
+| PERF-015 | BrickCube / 512 | ms | 39.101 | 24.063 | 38.46 | 3.52500 | 0.034 | 감소 관찰 · 상태 차이 |
+| PERF-015 | Mountain / 256 | ms | 13.931 | 8.266 | 40.67 | 1.09134 | 0.009 | 감소 관찰 · 상태 차이 |
+| PERF-015 | Mountain / 512 | ms | 49.803 | 40.524 | 18.63 | 6.16093 | 0.040 | 감소 관찰 · 상태 차이 |
+| PERF-016 | BrickCube / 256 | ms | 4.721 | 4.493 | 4.84 | 0.03394 | 0.000 | 감소 관찰 · 상태 차이 |
+| PERF-016 | BrickCube / 512 | ms | 24.063 | 22.333 | 7.19 | 0.25843 | 0.001 | 감소 관찰 · 상태 차이 |
+| PERF-016 | Mountain / 256 | ms | 8.266 | 7.146 | 13.54 | 0.50951 | 0.003 | 감소 관찰 · 상태 차이 |
+| PERF-016 | Mountain / 512 | ms | 40.524 | 36.863 | 9.03 | 3.11789 | 0.024 | 감소 관찰 · 상태 차이 |
+
+FP16은 결과 차이가 생길 수 있는 정밀도 실험이다. 현재 버퍼는 큰 저장 용량을 유지하므로 FP16을 켠 것만으로 할당량이 절반이 되지는 않는다. 상태가 진화하는 실험이므로 시간 차이를 전부 전송 대역폭 효과로만 해석하지 않는다.
+
+### 6. 렌더 상태 읽기·필터·조명
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-017 | 렌더링 상태를 SSBO 대신 Texture로 읽기 | 화면에서 SSBO 필터 | 화면에서 Texture 필터 | Render GPU ms |
+| PERF-018 | 화면에서 쓸 필터 결과를 compute로 미리 계산 | 화면에서 Texture 필터 | 현재 기본 경로 | Render GPU ms |
+| PERF-019 | 필터를 가로·세로 계산으로 나누기 | 분리하지 않은 coverage 필터 | 현재 기본 경로 | Render GPU ms |
+| PERF-020 | 높이 필터의 주변값을 shared memory에서 재사용 | 현재 기본 경로 | 높이 shared memory ON | Render GPU ms |
+| PERF-021 | Overlay coverage 필터의 주변값 재사용 | 현재 기본 경로 | coverage shared memory ON | Render GPU ms |
+| PERF-022 | State texture 필터의 주변값 재사용 | 현재 기본 경로 | Texture 필터 shared memory ON | Render GPU ms |
+| PERF-030 | 렌더링용 높이 필터의 부분 계산 | 렌더 높이 필터 전체 영역 | 현재 기본 경로 | Render GPU ms |
+| PERF-033 | 렌더 Profile 조회·조명 방향 계산 재사용 | Profile·조명 공통값 다시 계산 | 현재 기본 경로 | Render GPU ms |
+| PERF-033 | 렌더 Profile 조회·조명 방향 계산 재사용 — SSBO 조건 | SSBO에서 공통값 다시 계산 | SSBO에서 공통값 재사용 | Render GPU ms |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PERF-017 | BrickCube / 256 | ms | 10.590 | 10.738 | -1.40 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-017 | BrickCube / 512 | ms | 37.371 | 39.470 | -5.62 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-017 | Mountain / 256 | ms | 6.665 | 6.766 | -1.52 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-017 | Mountain / 512 | ms | 27.233 | 27.853 | -2.28 | 0.00000 | 0.001 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-018 | BrickCube / 256 | ms | 10.738 | 7.402 | 31.06 | 0.00000 | 0.060 | 감소 관찰 · 화면 차이 |
+| PERF-018 | BrickCube / 512 | ms | 39.470 | 30.169 | 23.56 | 0.00000 | 0.042 | 감소 관찰 · 화면 차이 |
+| PERF-018 | Mountain / 256 | ms | 6.766 | 5.353 | 20.88 | 0.00000 | 0.046 | 감소 관찰 · 화면 차이 |
+| PERF-018 | Mountain / 512 | ms | 27.853 | 24.846 | 10.80 | 0.00000 | 0.039 | 감소 관찰 · 화면 차이 |
+| PERF-019 | BrickCube / 256 | ms | 7.449 | 7.402 | 0.63 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-019 | BrickCube / 512 | ms | 29.457 | 30.169 | -2.42 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-019 | Mountain / 256 | ms | 5.515 | 5.353 | 2.92 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-019 | Mountain / 512 | ms | 24.772 | 24.846 | -0.30 | 0.00000 | 0.001 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-020 | BrickCube / 256 | ms | 7.402 | 7.411 | -0.12 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-020 | BrickCube / 512 | ms | 30.169 | 29.648 | 1.73 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-020 | Mountain / 256 | ms | 5.353 | 5.469 | -2.16 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-020 | Mountain / 512 | ms | 24.846 | 24.333 | 2.07 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-021 | BrickCube / 256 | ms | 7.402 | 7.309 | 1.26 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-021 | BrickCube / 512 | ms | 30.169 | 28.993 | 3.90 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-021 | Mountain / 256 | ms | 5.353 | 5.124 | 4.29 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-021 | Mountain / 512 | ms | 24.846 | 24.184 | 2.67 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-022 | BrickCube / 256 | ms | 7.402 | 7.440 | -0.50 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-022 | BrickCube / 512 | ms | 30.169 | 30.039 | 0.43 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-022 | Mountain / 256 | ms | 5.353 | 5.341 | 0.23 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-022 | Mountain / 512 | ms | 24.846 | 24.984 | -0.56 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-030 | BrickCube / 256 | ms | 8.417 | 7.414 | 11.92 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-030 | BrickCube / 512 | ms | 34.807 | 30.756 | 11.64 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-030 | Mountain / 256 | ms | 5.638 | 5.245 | 6.97 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-030 | Mountain / 512 | ms | 25.795 | 25.006 | 3.06 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-033 | BrickCube-Render-Reuse / 256 | ms | 7.470 | 7.509 | -0.53 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-033 | BrickCube-Render-Reuse / 512 | ms | 32.146 | 30.277 | 5.81 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-033 | Mountain-Render-Reuse / 256 | ms | 5.206 | 5.262 | -1.06 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-033 | Mountain-Render-Reuse / 512 | ms | 24.598 | 24.450 | 0.60 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-033 | BrickCube-SSBO-Reuse / 256 | ms | 11.194 | 10.529 | 5.95 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-033 | BrickCube-SSBO-Reuse / 512 | ms | 39.000 | 37.221 | 4.56 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-033 | Mountain-SSBO-Reuse / 256 | ms | 6.786 | 6.474 | 4.61 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-033 | Mountain-SSBO-Reuse / 512 | ms | 27.856 | 27.306 | 1.97 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+
+Texture 비교는 precompute OFF 양쪽에서 수행한다. precompute ON은 Texture를 사용하는 경로다. PERF-033의 SSBO 조건은 두 arm 모두 precompute OFF·Texture OFF를 유지한다. 필터 경계 정규화나 수치 연산 순서의 차이가 화면에 나타나면 속도와 별개로 기록한다.
+
+### 7. Overlay 형상·draw 작업량
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-023 | Overlay 형상을 변경된 타일 중심으로 갱신 | Overlay 형상 매번 전체 갱신 | 현재 기본 경로 | Render GPU ms |
+| PERF-024 | Overlay 높이 필터·coverage의 타일 부분 갱신 | 높이 필터·coverage의 타일 갱신 OFF | 현재 기본 경로 | Render GPU ms |
+| PERF-025 | 렌더 메시 해상도 변경 | 현재 기본 경로 | 렌더 메시 128 | Render GPU ms |
+| PERF-025 | 렌더 메시 해상도 변경 | 현재 기본 경로 | 렌더 메시 64 | Render GPU ms |
+| PERF-025 | 렌더 메시 해상도 변경 | 현재 기본 경로 | 렌더 메시 256 | Render GPU ms |
+| PERF-025 | 렌더 메시 해상도 변경 | 현재 기본 경로 | 렌더 메시 512 | Render GPU ms |
+| PERF-026 | 화면 밖 물체의 draw 생략 | 화면 밖 draw 생략 OFF | 현재 기본 경로 | Render GPU ms |
+| PERF-031 | Overlay 타일 크기 선택 | 현재 기본 경로 | 타일 한 변 8 texel | Render GPU ms |
+| PERF-031 | Overlay 타일 크기 선택 | 현재 기본 경로 | 타일 한 변 32 texel | Render GPU ms |
+| PERF-035 | 활성 top 삼각형만 압축해서 draw | 전체 top 인덱스로 직접 draw | 활성 top 압축·간접 draw | Render GPU ms |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PERF-023 | BrickCube / 256 | ms | 27.269 | 7.383 | 72.93 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-023 | BrickCube / 512 | ms | 88.989 | 29.965 | 66.33 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-023 | Mountain / 256 | ms | 10.965 | 5.302 | 51.65 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-023 | Mountain / 512 | ms | 55.460 | 24.620 | 55.61 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-024 (tile_culling) | BrickCube / 256 | ms | 10.605 | 7.383 | 30.38 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-024 (tile_culling) | BrickCube / 512 | ms | 41.424 | 29.965 | 27.66 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-024 (tile_culling) | Mountain / 256 | ms | 6.603 | 5.302 | 19.70 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-024 (tile_culling) | Mountain / 512 | ms | 30.916 | 24.620 | 20.37 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-025 (mesh128) | BrickCube / 256 | ms | 7.383 | 5.319 | 27.96 | 0.00000 | 0.868 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh128) | BrickCube / 512 | ms | 29.965 | 20.246 | 32.43 | 0.00000 | 1.468 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh128) | Mountain / 256 | ms | 5.302 | 4.202 | 20.74 | 0.00000 | 0.080 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh128) | Mountain / 512 | ms | 24.620 | 18.031 | 26.76 | 0.00000 | 0.178 | 감소 관찰 · 화면 차이 |
+| PERF-026 | BrickCube / 256 | ms | 8.274 | 7.383 | 10.77 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-026 | BrickCube / 512 | ms | 30.186 | 29.965 | 0.73 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-026 | Mountain / 256 | ms | 5.352 | 5.302 | 0.94 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-026 | Mountain / 512 | ms | 24.495 | 24.620 | -0.51 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-023 | BrickCube-Wide-Overlay / 256 | ms | 56.486 | 53.534 | 5.23 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-023 | BrickCube-Wide-Overlay / 512 | ms | 199.989 | 200.585 | -0.30 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-024 (tile_culling) | BrickCube-Wide-Overlay / 256 | ms | 36.034 | 53.534 | -48.56 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-024 (tile_culling) | BrickCube-Wide-Overlay / 512 | ms | 130.581 | 200.585 | -53.61 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-026 | BrickCube-Offscreen / 256 | ms | 7.124 | 5.326 | 25.23 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-026 | BrickCube-Offscreen / 512 | ms | 30.256 | 22.240 | 26.49 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-026 | Mountain-Offscreen / 256 | ms | 5.177 | 4.227 | 18.35 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-026 | Mountain-Offscreen / 512 | ms | 24.004 | 20.641 | 14.01 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-031 (tile8) | BrickCube / 256 | ms | 7.328 | 6.191 | 15.52 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-031 (tile8) | BrickCube / 512 | ms | 32.739 | 29.285 | 10.55 | 0.00000 | 0.001 | 감소 관찰 · 화면 차이 |
+| PERF-031 (tile8) | Mountain / 256 | ms | 5.263 | 4.099 | 22.12 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-031 (tile8) | Mountain / 512 | ms | 24.759 | 25.673 | -3.69 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-031 (tile32) | BrickCube / 256 | ms | 7.328 | 7.750 | -5.76 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-031 (tile32) | BrickCube / 512 | ms | 32.739 | 33.489 | -2.29 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 · 화면 차이 |
+| PERF-031 (tile32) | Mountain / 256 | ms | 5.263 | 9.374 | -78.11 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-031 (tile32) | Mountain / 512 | ms | 24.759 | 29.394 | -18.72 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+| PERF-025 (mesh64) | BrickCube / 256 | ms | 7.328 | 4.704 | 35.81 | 0.00000 | 2.095 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh64) | BrickCube / 512 | ms | 32.739 | 21.109 | 35.53 | 0.00000 | 2.537 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh64) | Mountain / 256 | ms | 5.263 | 3.678 | 30.12 | 0.00000 | 0.113 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh64) | Mountain / 512 | ms | 24.759 | 17.821 | 28.02 | 0.00000 | 0.231 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh256) | BrickCube / 512 | ms | 32.739 | 23.053 | 29.59 | 0.00000 | 0.597 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh256) | Mountain / 512 | ms | 24.759 | 19.753 | 20.22 | 0.00000 | 0.117 | 감소 관찰 · 화면 차이 |
+| PERF-025 (mesh512) | BrickCube / 256 | ms | 7.328 | 15.078 | -105.76 | 0.00000 | 0.083 | 이 조건에서 증가 · 화면 차이 |
+| PERF-025 (mesh512) | Mountain / 256 | ms | 5.263 | 10.470 | -98.93 | 0.00000 | 0.050 | 이 조건에서 증가 · 화면 차이 |
+| PERF-035 | BrickCube-TopDraw / 256 | ms | 9.184 | 7.361 | 19.85 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-035 | BrickCube-TopDraw / 512 | ms | 37.251 | 30.239 | 18.82 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-035 | BrickCube-Wide-TopDraw / 256 | ms | 50.664 | 55.792 | -10.12 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-035 | BrickCube-Wide-TopDraw / 512 | ms | 215.485 | 198.679 | 7.80 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-035 | Mountain-TopDraw / 256 | ms | 6.197 | 5.180 | 16.42 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-035 | Mountain-TopDraw / 512 | ms | 28.338 | 24.703 | 12.83 | 0.00000 | 0.000 | 감소 관찰 |
+
+메시 해상도 변경은 simulation 해상도를 바꾸지 않는 품질 trade-off다. 화면 밖 씬은 카메라만 달리한 통제 조건이다. 현재 타일 컬링 옵션은 높이 smoothing·coverage의 부분 갱신을 제어하며 top 삼각형 압축 자체를 끄지 않는다. PERF-035는 별도 실행 파일에서 같은 side 계산을 유지하고, 압축 목록 생성+간접 draw와 원본 전체 인덱스의 직접 draw를 비교한다. 두 arm의 자원 할당은 유지했다. Occupancy scan 단독 시간은 계측하지 않아 전체 Overlay 준비 시간의 원인으로 단정하지 않는다.
+
+### 8. 셰이더 실행 경로 고정
+
+
+| 실험 ID | 질문 | 기준 경로 | 비교 경로 | 측정 지표 |
+|---|---|---|---|---|
+| PERF-027 | 같은 C++ Release에서 GPU 반복 검증 제거 | GPU 반복 검증 ON | 현재 기본 경로 | 전체 command-buffer GPU ms |
+| PERF-028 | Solver의 옵션 분기를 컴파일 시점에 고정 | 실행 중 Solver 옵션 분기 | 현재 기본 경로 | Simulation GPU ms |
+
+
+| ID / 조건 | 씬 / simulation | 단위 | 기준 중앙값 | 비교 경로 중앙값 | 감소 % | 상태 L1 % | 화면 MAE | 판단 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PERF-027 | BrickCube / 256 | ms | 12.206 | 12.136 | 0.58 | 0.00000 | 0.000 | 시간/할당량 범위 겹침 |
+| PERF-027 | BrickCube / 512 | ms | 56.420 | 53.943 | 4.39 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-027 | Mountain / 256 | ms | 14.408 | 13.540 | 6.02 | 0.00000 | 0.000 | 감소 관찰 · 화면 차이 |
+| PERF-027 | Mountain / 512 | ms | 67.995 | 64.944 | 4.49 | 0.00000 | 0.000 | 감소 관찰 |
+| PERF-028 | BrickCube / 256 | ms | 4.011 | 4.798 | -19.62 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-028 | BrickCube / 512 | ms | 21.310 | 23.877 | -12.04 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-028 | Mountain / 256 | ms | 7.702 | 8.206 | -6.55 | 0.00000 | 0.000 | 이 조건에서 증가 |
+| PERF-028 | Mountain / 512 | ms | 37.083 | 40.311 | -8.71 | 0.00000 | 0.000 | 이 조건에서 증가 · 화면 차이 |
+
+GPU 검증 제거와 컴파일 시점 옵션 고정은 서로 다른 질문이다. 알고리즘 옵션 ON/OFF의 효과와 컴파일 시점 고정의 효과를 섞지 않는다. Pipeline 내부 메모리/생성 비용은 추적하지 않았다.
+
+### 정밀도 옵션의 실제 할당량
+
+아래는 마지막 GPU 작업 완료 후 capture buffer를 해제한 시점의 앱 추적 할당량이다. State는 FP32이며 FP16 옵션은 이동량/가중치 저장 경로를 바꾼다. swapchain·드라이버 내부·pipeline 메모리는 포함하지 않는다.
+
+
+| PERF ID | 조건 | 기준 MiB | FP16 MiB | 감소 MiB |
+|---:|---|---:|---:|---:|
+| 015 | BrickCube / 256 | 629.63 | 629.63 | 0.00 |
+| 015 | BrickCube / 512 | 1567.40 | 1567.40 | 0.00 |
+| 015 | Mountain / 256 | 214.00 | 214.00 | 0.00 |
+| 015 | Mountain / 512 | 635.76 | 635.76 | 0.00 |
+| 016 | BrickCube / 256 | 629.63 | 629.63 | 0.00 |
+| 016 | BrickCube / 512 | 1567.40 | 1567.40 | 0.00 |
+| 016 | Mountain / 256 | 214.00 | 214.00 | 0.00 |
+| 016 | Mountain / 512 | 635.76 | 635.76 | 0.00 |
+
+### GPU 자원 재생성 시 버퍼 재사용의 할당량
+
+최종 할당량과 실행 중 peak를 구분한다. peak는 capture buffer·로딩/재로드의 일시적인 할당도 포함하므로, 매 프레임 필요한 데이터량이나 실제 VRAM 상주량으로 해석하지 않는다.
+
+
+| 조건 | 재사용 OFF 최종 MiB | 재사용 ON 최종 MiB | OFF peak MiB | ON peak MiB |
+|---|---:|---:|---:|---:|
+| BrickCube / 256 | 629.63 | 875.74 | 956.80 | 956.80 |
+| BrickCube / 512 | 1567.40 | 1690.22 | 1966.19 | 1966.19 |
+| Mountain / 256 | 214.00 | 332.75 | 262.86 | 336.27 |
+| Mountain / 512 | 635.76 | 884.28 | 677.37 | 887.79 |
+
+
+| 조건 | OFF 누적 재사용 횟수 | ON 누적 재사용 횟수 | ON 누적 재사용 요청 MiB | ON 마지막 pool 보관 요청 MiB |
+|---|---:|---:|---:|---:|
+| BrickCube / 256 | 0 | 44 | 984.42 | 246.11 |
+| BrickCube / 512 | 0 | 48 | 491.28 | 122.82 |
+| Mountain / 256 | 0 | 232 | 475.02 | 118.75 |
+| Mountain / 512 | 0 | 204 | 994.04 | 248.51 |
+
+누적 재사용 용량은 같은 버퍼를 여러 번 재사용한 양의 합이며 메모리 절감량이 아니다. pool 보관량은 버퍼 요청 크기의 합으로, 위 Vulkan allocation 크기와 정의가 다르다. 첫 재생성에서 반납한 버퍼가 다음 호출부터 재사용되므로 5회 전체의 누적 수치로 기록했다.
+
+이번 pool 실험은 메모리 절감으로 해석할 수 없다. 네 조건 모두 최종 할당량이 늘었고, Mountain에서는 자원 재생성 시간이 줄었지만 BrickCube에서는 이득이 불확실하거나 증가했다. pool의 대기 자원과 미선택 해상도 메시 캐시가 같은 버퍼를 가리킬 수 있으므로 두 숫자를 무조건 합치거나 전체에서 이중으로 빼지 않는다. 메모리 UI는 allocation마다 한 번만 분류하도록 소유 상태를 추가해 `Scene 참조 / pool 대기 / 기타 공유 자원`을 먼저 나누고, Scene 참조 안에서 선택 메시와 미선택 해상도 캐시를 구분하는 방식이 적절하다. 현재 Scene이 참조한다는 것과 매 프레임 GPU가 실제로 읽었다는 것은 다르다.
+
+### 짧은 전달 계산의 정확성 검사
+
+초기 입력을 넣은 뒤 전달 계산 한 번만 수행했을 때의 차이다. 긴 실행의 차이와 구분한다. 완전 일치는 이 입력·이 장치·이 비교 범위에서만 확인한 것이며 모든 Profile과 상태에 대한 증명은 아니다.
+
+
+| PERF ID | 조건 | State 완전 일치 | 상대 L1 | 최대 절대 차이 |
+|---|---|---|---:|---:|
+| 005 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 005 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 005 | Mountain / 256 | 차이 | 1.598e-12 | 0.00000006 |
+| 005 | Mountain / 512 | 차이 | 6.039e-12 | 0.00000012 |
+| 006 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 006 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 006 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 006 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 007 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 007 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 007 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 007 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 008 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 008 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 008 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 008 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 009 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 009 | BrickCube / 512 | 차이 | 3.108e-10 | 0.00000089 |
+| 009 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 009 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 010 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 010 | BrickCube / 512 | 차이 | 3.108e-10 | 0.00000089 |
+| 010 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 010 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 011 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 011 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 011 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 011 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 012 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 012 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 012 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 012 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 013 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 013 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 013 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 013 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 014 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 014 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 014 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 014 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 015 | BrickCube / 256 | 차이 | 2.563e-05 | 0.00008476 |
+| 015 | BrickCube / 512 | 차이 | 5.154e-05 | 0.00004444 |
+| 015 | Mountain / 256 | 차이 | 8.853e-06 | 0.00014687 |
+| 015 | Mountain / 512 | 차이 | 1.807e-05 | 0.00007319 |
+| 016 | BrickCube / 256 | 차이 | 1.511e-05 | 0.00006402 |
+| 016 | BrickCube / 512 | 차이 | 3.043e-05 | 0.00004626 |
+| 016 | Mountain / 256 | 차이 | 4.899e-06 | 0.00014925 |
+| 016 | Mountain / 512 | 차이 | 9.570e-06 | 0.00006533 |
+| 017 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 017 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 017 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 017 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 018 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 018 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 018 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 018 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 019 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 019 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 019 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 019 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 020 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 020 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 020 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 020 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 021 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 021 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 021 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 021 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 022 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 022 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 022 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 022 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 023 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 023 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 023 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 023 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 024 (tile_culling) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 024 (tile_culling) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 024 (tile_culling) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 024 (tile_culling) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh128) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh128) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh128) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh128) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 026 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 026 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 026 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 026 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 027 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 027 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 027 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 027 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 028 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 028 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 028 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 028 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 030 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 030 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 030 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 030 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile8) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile8) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile8) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile8) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile32) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile32) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile32) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 031 (tile32) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh64) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh64) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh64) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh64) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh256) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh256) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh256) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh256) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh512) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh512) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh512) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 025 (mesh512) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 032 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 032 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 032 | Mountain / 256 | 차이 | 1.598e-11 | 0.00000048 |
+| 032 | Mountain / 512 | 차이 | 2.391e-11 | 0.00000012 |
+| 033 (기본) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 033 (기본) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 033 (기본) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 033 (기본) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 033 (SSBO) | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 033 (SSBO) | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 033 (SSBO) | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 033 (SSBO) | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 035 | BrickCube / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 035 | BrickCube / 512 | 일치 | 0.000e+00 | 0.00000000 |
+| 035 | Mountain / 256 | 일치 | 0.000e+00 | 0.00000000 |
+| 035 | Mountain / 512 | 일치 | 0.000e+00 | 0.00000000 |
+
+### 캡처 화면 직접 확인
+
+같은 662 step의 원본 viewport 픽셀을 나란히 확인했다. 아래 세 비교는 최종 시뮬레이션 State 기록이 같음을 별도로 확인했다. 차이 패널은 육안 확인을 위해 절대 RGB 차이를 4배 또는 16배로 표시했으며, 원본 화면은 확대 보정하지 않았다. 그림만으로 FP16의 수치 정확성이나 필터의 정답을 판정하지 않는다.
+
+
+| 비교 | 관찰 | 같은 시점 화면과 차이 |
+|---|---|---|
+| BrickCube / simulation 512 / render 512·128·64 | 메시를 줄이면 적층 경계뿐 아니라 벽돌 표면의 표시·조명도 달라짐 | [원본·차이 ×4](../../../Performance-Data/20261022-optimization-suite-main/raw/quality-review/brickcube-512-lod.png) |
+| Mountain / simulation 512 / render 512·128·64 | 적층 경계와 흘러내리는 윤곽에 차이가 모임. 화면 전체 평균만으로 국소 차이를 무시하지 않음 | [원본·차이 ×4](../../../Performance-Data/20261022-optimization-suite-main/raw/quality-review/mountain-512-lod.png) |
+| BrickCube / 256 / 필터 사전 계산 ON·OFF | 상태는 같지만 적층 경계 주변 표시가 일부 다름. 어느 필터가 정답인지는 별도 문제 | [원본·차이 ×16](../../../Performance-Data/20261022-optimization-suite-main/raw/quality-review/brickcube-256-filter.png) |
+
+[그림에 사용한 실행 ID·상태 일치·검토 기록](../../../Performance-Data/20261022-optimization-suite-main/raw/quality-review/review-inputs.json).
+
+### PERF-034 — 개발 단계의 보조 비교
+
+V0~V4의 공통 현재 에셋·카메라·해상도·고정 dt·Geometry feedback ON·높이 smoothing ON을 사용했다. 그러나 전처리, 이동/적층 수식, 표시 방식이 달라 **같은 알고리즘의 순수 개선률로 환산하지 않는다**. 상태/화면 값도 현재 V4와의 차이이지 기준 정답에 대한 오차가 아니다. 과거 버전의 texel 배치까지 동일함을 입증한 것은 아니므로, State 값은 같은 인덱스 배열의 차이로만 해석한다.
+
+구버전에는 공통 계측·입력 설정과 Windows 빌드 호환 수정을 적용했다. 원본 commit 그대로 실행한 결과가 아니며 실제 수정 patch·실행 파일·빌드 로그는 history/raw/inputs에 보관했다.
+
+V2 `afe1c4f`는 빌드에 성공했지만 Windows 앱 제어가 실행을 차단했다(WinError 4551). 차단을 우회하지 않았고 표에 수치를 넣지 않았다.
+
+
+| 버전 | 조건 | 전체 GPU 중앙값 / p95 ms | Simulation ms | Render ms | V4와 State L1 차이 % | V4와 화면 MAE |
+|---|---|---|---:|---:|---:|---:|
+| V0 | BrickCube / 256 | 101.814 / 112.372 | 86.151 | 15.670 | 201.6787 | 0.829 |
+| V1 | BrickCube / 256 | 55.658 / 58.392 | 47.830 | 8.198 | 201.6787 | 1.765 |
+| V3 | BrickCube / 256 | 11.262 / 11.983 | 4.679 | 6.595 | 33.9031 | 0.275 |
+| V4 | BrickCube / 256 | 12.119 / 12.957 | 4.783 | 7.387 | 0.0000 | 0.000 |
+| V0 | BrickCube / 512 | 338.727 / 362.891 | 271.782 | 61.029 | 203.5667 | 0.740 |
+| V1 | BrickCube / 512 | 172.353 / 195.446 | 140.656 | 31.405 | 203.5667 | 1.801 |
+| V3 | BrickCube / 512 | 51.368 / 54.547 | 22.937 | 28.409 | 26.9688 | 0.215 |
+| V4 | BrickCube / 512 | 53.629 / 56.746 | 23.505 | 29.974 | 0.0000 | 0.000 |
+| V0 | Mountain / 256 | 54.064 / 60.980 | 45.113 | 8.868 | 200.4197 | 0.672 |
+| V1 | Mountain / 256 | 30.372 / 32.564 | 26.034 | 4.302 | 200.4197 | 1.518 |
+| V3 | Mountain / 256 | 12.523 / 13.148 | 8.039 | 4.477 | 25.2771 | 0.100 |
+| V4 | Mountain / 256 | 13.305 / 13.963 | 8.126 | 5.232 | 0.0000 | 0.000 |
+| V0 | Mountain / 512 | 193.721 / 209.459 | 152.371 | 41.224 | 200.8128 | 0.676 |
+| V1 | Mountain / 512 | 91.169 / 94.386 | 72.749 | 18.417 | 200.8127 | 1.589 |
+| V3 | Mountain / 512 | 61.714 / 63.595 | 40.260 | 21.379 | 40.7961 | 0.176 |
+| V4 | Mountain / 512 | 64.548 / 65.676 | 40.077 | 24.494 | 0.0000 | 0.000 |
+| V2 | 모든 계획 조건 | 실행 차단 | — | — | — | — |
+
+### 실패·미지원·해석 제한
+
+
+| 단계 | 항목 | 결과 |
+|---|---|---|
+| extra | 이전 실패 시도 135회 | 실험용 Scene 경로 오류로 시작 전 종료. 상대 경로 수정 후 재측정했으며 실패 로그·manifest는 raw/failed-attempts와 inputs에 보관. 아래 최종 완료 수에 포함하지 않음 |
+| 개발 단계 | V2 afe1c4f | Windows Application Control 실행 차단 — 미측정 |
+| PERF-029 | 회전 불변 CPU 캐시 | 실험용 addon 실행 파일의 Windows Application Control 차단 — 미측정 |
+| 사전 pilot | 4회 — 본 집계 제외 | 마지막 화면에 Profiling UI가 포함돼 화질 비교용으로 부적절했다. capture를 수정한 뒤 본 비교를 새로 실행. 초기 수치가 불리해서 제외한 것이 아님 |
+| 최초 검증 | 로딩 60회의 화면 영역 검사 | 서로 다른 시작 규칙의 viewport까지 같아야 한다는 검사 가정이 잘못됐다. 카메라는 모든 조건에서 확인하고 viewport는 같은 준비/측정 규칙끼리 비교하도록 수정. 로딩 화면 수치는 품질 판단에서 제외; 원래 검사 결과도 보관 |
+
+- GPU/CPU 시간은 해당 계측 구간만 나타낸다. 전체 command-buffer GPU 경과 시간도 acquire·present·CPU 대기까지 포함한 최종 사용자 FPS와 같지 않다.
+- 연속된 600프레임은 상태가 진화하는 구간이다. 특히 정밀도·반올림·dirty tolerance가 분포를 바꾸면 시간 차이에 작업량 차이도 포함된다. 단일 연산의 대역폭 효과로만 주장하지 않는다.
+- Frame fence 대기는 이미 제출한 GPU 작업을 기다리는 시간이다. GPU 시간에 다시 더하지 않는다. CPU frame 보조 자료와 command recording은 원자료에 남긴다.
+- 과거 V0/V1/V3 exporter는 최종 step serial·전체 CPU frame time·메모리 분류를 출력하지 않는다. 제출 프레임 수와 측정 구간의 step 수를 확인하되, 미지원 항목을 현재 버전처럼 검증했다고 주장하지 않는다.
+- 상태와 화면을 따로 확인했다. 화면이 같아 보여도 상태가 다를 수 있고, viewport 평균 화면 차이는 작은 경계 오류를 희석할 수 있다.
+- NaN/음수·반복 재현·경로 간 상태 차이를 확인했지만, 모든 물리 항의 분석적 정답이나 입력/감쇠를 포함한 보존식 잔차를 검증한 것은 아니다. 여러 채널의 상대 L1은 배열 전체 차이이며 서로 다른 단위를 가진 채널의 물리적 총량 보존을 뜻하지 않는다.
+- 이 결과는 Radeon RX 6700 XT와 고정된 대표 입력에 한정한다. GPU 온도·클록·다른 앱 부하를 별도로 통제/기록하지 않았다. 작은 차이는 반복 편차를 함께 보고 판단한다.
+- 제품 기본 옵션을 변경하거나 새 최적화를 배포한 작업이 아니다. 감소가 관찰돼도 결과 차이·조건 의존성이 있으면 옵션을 유지하고 조건부 결과로 기록한다.
+
+### 원자료·코드·반복 범위
+
+
+| 단계 | 시작 KST | 종료 KST | 실행 기록 | 프레임·상태·화면·설정 |
+|---|---|---|---|---|
+| main | 2026-10-22T22:44:43.967445+09:00 | 2026-10-23T02:52:50.162284+09:00 | [manifest](../../../Performance-Data/20261022-optimization-suite-main/manifest.json) | [원자료·입력 보관본](../../../Performance-Data/20261022-optimization-suite-main/raw) |
+| short | 2026-10-23T02:53:10.485253+09:00 | 2026-10-23T03:09:06.437605+09:00 | [manifest](../../../Performance-Data/20261022-single-transport-validation/manifest.json) | [원자료·입력 보관본](../../../Performance-Data/20261022-single-transport-validation/raw) |
+| extra | 2026-10-23T03:02:44.443556+09:00 | 2026-10-23T10:28:58.717771+09:00 | [manifest](../../../Performance-Data/20261022-workload-supplement/manifest.json) | [원자료·입력 보관본](../../../Performance-Data/20261022-workload-supplement/raw) |
+| history | 2026-10-23T10:29:11.508447+09:00 | 2026-10-23T11:15:35.794651+09:00 | [manifest](../../../Performance-Data/20261022-development-history/manifest.json) | [원자료·입력 보관본](../../../Performance-Data/20261022-development-history/raw) |
+
+- [전체 p95·반복 중앙값 범위 표](../../../Performance-Data/20261022-optimization-suite-main/timing-details.md) — 각 비교의 3회 값과 최소~최대 범위를 포함한다.
+- [전체 실행·조건·상태·파일·실행 파일 독립 검증](../../../Performance-Data/20261022-optimization-suite-main/study-audit.json) — 최종 보고서는 이 검사가 통과한 뒤 생성한다.
+- [최초 startup viewport 검사의 진단 기록](../../../Performance-Data/20261022-optimization-suite-main/study-audit-initial-startup-viewport.json) — 위 수정 이유를 보존한다.
+- [현재 옵션 상세 집계](../../../Performance-Data/20261022-optimization-suite-main/comparisons.json), [추가 workload 상세 집계](../../../Performance-Data/20261022-workload-supplement/comparisons.json), [한 번 전달 검사](../../../Performance-Data/20261022-single-transport-validation/validation-summary.json), [개발 단계 요약](../../../Performance-Data/20261022-development-history/history-summary.json).
+- [제외한 사전 pilot 실행 기록](../../../Performance-Data/20261022-optimization-suite/manifest.json), [실험용 Scene 경로 수정 기록](../../../Performance-Data/20261022-workload-supplement/raw/inputs/scenario-path-correction.json).
+- 각 manifest에 실제 시각, 명령, 종료 코드, 표본 수, 실행 파일 SHA-256이 있다. main/raw/inputs에 고정 소스·에셋 보관본, 실행 파일, patch, 입력 해시와 빌드 로그를 보관했다. 추가 workload의 Scene/복원 셰이더와 역사 버전 patch도 각 inputs에 있다.
+- 미커밋 변경이 포함돼 있으므로 commit만으로 재현되는 결과가 아니다. 같은 소스/에셋/설정 보관본과 도구 버전으로 복원해야 한다.
+- **raw는 Git ignore 대상이며 현재 PC에 저장돼 있다. Git push만으로 백업되지 않는다.** 장기 보관 시 결과 폴더 전체를 함께 보관해야 한다.
+
+
+## 과거 최적화 기록 복원
+
+- 정리일: **2026-10-22 (Asia/Seoul)**.
+- 상태 갱신 (2026-10-23): **주요 비교쌍의 사후 재측정 종료**. 현재 코드 기준은 `PERF-001`, 실제 비교 결과·실행 제한·미분리 항목은 위 `PERF-002~035`에 기록했다. 아래는 2026-10-22에 작성한 복원 목록이며, 모든 작은 변경의 개별 효과까지 측정했다는 뜻은 아니다.
+- 구현 당시 측정하지 않았어도 현재 같은 조건의 비교 실험을 구성할 수 있다. `구현 당시 기록`, `사후 구현 분석`, `사후 재측정`을 구분하고 구현 시점과 실제 측정 시점을 각각 적는다. 현재 측정한 값을 과거에 측정한 것처럼 기록하지 않는다.
+
+### 복원 방법
+
+| 남아 있는 자료 | 비교 방법 | 결과로 주장할 수 있는 범위 |
+|---|---|---|
+| 현재 ON/OFF 옵션과 두 구현이 남아 있음 | 같은 코드·씬·초기 상태에서 옵션만 바꿔 비교 | 현재 버전에서 해당 옵션의 효과 |
+| 최적화 전후 Git 코드가 남아 있음 | 별도 worktree·빌드에서 같은 씬·Profile·입력·시간 구간·계측 범위로 비교 | 해당 전후 버전의 효과; 다른 변경이 섞였으면 묶음 효과 |
+| 큰 커밋에 여러 변경이 섞임 | 먼저 변경 전후 묶음을 비교하고, 필요한 항목만 실험용 코드에서 하나씩 이전 방식으로 복원 | 묶음 효과와 현재 버전에서 해당 항목을 제거했을 때의 효과를 구분 |
+| 변경 전 구현·실행 조건을 재구성하기 어려움 | 중복 계산·전송·대기 제거 등 코드 변경의 의미만 분석 | 구현 근거만 기록; 시간 감소율은 미측정 |
+
+현재 작업 트리나 공유 커밋을 되돌려 실험하지 않는다. 분리된 실험용 worktree·브랜치에서 이전 방식을 구성하고, 최종 제품에 모든 최적화의 ON/OFF 옵션을 추가할 필요는 없다. 이전 파일 전체를 덮어써 다른 기능·오류 수정까지 되돌리는 대신 비교할 변경만 복원한다.
+
+현재 구현에서 최적화 하나를 제거하는 비교는 **현재 코드에서 그 항목이 기여하는 정도**를 측정한다. 구현 당시의 단독 효과와 같다고 주장하지 않는다. 여러 최적화는 서로 영향을 주므로 개별 감소율을 합산하지 않는다. 이전 버전이 현재 에셋·ABI·측정 코드와 호환되지 않으면 공통 fixture를 준비하거나 직접 비교 불가로 남긴다. 결과 화면·상태량이 달라지는 변경은 품질·정확성 차이도 함께 적는다.
+
+### 확인한 기존 자료
+
+| 자료 | 2026-10-22에 확인한 보관 상태 | 해석 시 주의점 |
+|---|---|---|
+| [2026-10-04 23:20 실행](../../../Performance-Data/20261004-232011-solver-resolution/manifest.json) | complete manifest와 프레임별 JSONL 18개 확인 | Apple M1, dirty working tree; 개별 최적화 효과를 바로 분리할 수 없음 |
+| [2026-10-04 23:54 실행](../../../Performance-Data/20261004-235404-solver-resolution/manifest.json) | complete manifest와 프레임별 JSONL 18개 확인 | 위 실행과 commit·미커밋 변경이 다름. 기존 핫패스 기록의 한계를 유지 |
+| [2026-10-05 03:25 실행](../../../Performance-Data/20261005-032552-solver-resolution/manifest.json) | complete manifest·요약은 남아 있고 로컬 JSONL은 미확인 | 당시 실행 기록과 현재 원자료 보관 상태를 구분; 원자료 보관본을 찾기 전 재집계 불가 |
+| [2026-10-05 03:48 실행](../../../Performance-Data/20261005-034834-solver-resolution/manifest.json) | complete manifest·요약은 남아 있고 로컬 JSONL은 미확인 | 위와 같음. Windows에서 새로 측정한 값과 직접적인 개선율 비교 금지 |
+| 아래 `2026-10-05 셰이더 핫패스 최적화 기록` | 변경 내용·컴파일 확인·당시 수치 해석의 한계가 이미 기록됨 | 코드 검증 완료와 개별 성능 검증 완료를 구분 |
+
+이 확인은 파일 존재·manifest의 상태를 조사한 것으로, 원자료 전체의 수치 검증이나 새 benchmark 실행은 아니다.
+
+### 사후 비교 대상 1차 목록
+
+구현일은 Git commit 기준이며 측정일이 아니다. 아래는 2026-10-22에 작성한 대상 목록이다. 이후 실제 수행한 비교는 위 `PERF-002~035`에 연결했으며, 개별 효과를 분리하지 않은 항목은 측정 범위 표에 명시했다.
+
+| 구현일 | 대상·근거 commit | 복원할 비교와 우선 확인할 지표 |
+|---|---|---|
+| 2026-09-28 | 빈 source 계산 생략·source 재사용 `aca0647`, RawFlux 0 쓰기 생략 `ee4fa76` | 원래 계산/쓰기와 생략 경로 비교; Pass 1 시간·상태량·scratch 계약 |
+| 2026-10-05 | Solver 이웃 계산 `aab65ca`, State 샘플링·조명 `9b686b5`, 검증 비용·이웃 계산 `4e82ae7` | 항목별 소스 차이를 분류하고 필요한 것만 이전 방식으로 복원; Solver·렌더 GPU 시간·출력 동등성 |
+| 2026-10-05 | 인스턴스 단계 묶음 `7d269c8` | 인스턴스별 순차 경로와 단계별 묶음 경로; 동일 범위를 재는 timestamp 또는 전체 GPU 구간 필요 |
+| 2026-10-06~07 | Sparse scheduling·packed flux `29f7ccc`, persistent schedules `e103451` | 남아 있는 옵션부터 비교; 서로 의존하는 구조 변경은 묶음 실험으로 시작 |
+| 2026-10-07 | Dirty tile Overlay `abb66db` | 전체 갱신과 dirty tile 갱신; 동일 초기 상태의 활성·변경 비율별 Overlay 준비 시간 |
+| 2026-10-07 | Compile-time A/B 경로 `23ceeb9` | 현재 옵션 간 비교와 runtime 선택→compile-time 선택의 효과는 별도 질문으로 기록 |
+| 2026-10-21 | Surface 버퍼 재사용 `31490d9` | 같은 씬을 처음 로드할 때와 반복 재로드할 때의 할당·재사용 횟수, 로드 시간, 보관 메모리 |
+| 2026-10-21 | FrameCoordinator·frustum culling `166470e` | 화면 안/밖 물체 구성에서 컬링 효과 분리; 클래스 분리를 성능 향상으로 단정하지 않음 |
+| 2026-10-21 | Overlay 샘플링·표시 `c51d97e` | 소스 diff에서 성능 변경과 외관 변경을 먼저 구분; GPU 시간과 화질 함께 비교 |
+| 2026-10-21 | 렌더링·시뮬레이션 묶음 `60a8be3` | 58개 파일 변경인 큰 묶음. 포맷·구조·동작 변경을 분류한 뒤 묶음 또는 필요한 항목만 비교 |
+| 2026-10-22 | Workgroup 채널 마스크 기본 ON `60d65b1` | 현재 옵션 ON/OFF 비교부터 수행; 기본값 변경과 알고리즘 도입 효과를 구분 |
+
+우선순위는 **현재 옵션으로 비교 가능한 항목 → 큰 변경 묶음 → 연구 결과 설명에 중요한 개별 항목**이다. 모든 작은 중복 제거를 각각 실험하기보다 주장할 결론의 범위에 맞춰 묶고, 성능 차이가 확인되지 않으면 구현 의도와 미확인 상태를 남긴다.
+
+### 권장 실험 묶음과 base 선정안
+
+- 작성일: **2026-10-22 (Asia/Seoul)**.
+- 문서 성격: **2026-10-22 당시 실험 구성안**. 이후 빌드·실행·출력 대조 결과는 위 `PERF-002~035`에 기록했다. 아래 base 선정 원칙과 실제 완료/미측정 범위를 구분한다.
+- 묶음은 개선 목적에 따라 나눈다. 같은 commit에 여러 목적의 변경이 포함될 수 있으므로 commit 하나를 그대로 독립 알고리즘 하나로 취급하지 않는다. 아래 번호는 실험 분류이며 실행 완료 ID가 아니다.
+- **보고서와 주 실험은 아래 8개 묶음을 기준으로 구성한다.** V0~V4는 시간순 코드 스냅샷을 나타내는 보조 자료이며, 8개 묶음에 대응하는 단계나 5개로 줄인 대체 실험이 아니다. 묶음별로 필요한 코드·옵션 비교쌍을 선택하고, 모든 묶음×모든 버전을 조합해 실행하지 않는다.
+- **보고서는 하나이며 8개 묶음을 주 목차로 둔다.** `fa83c68`의 고정 스냅샷은 이 실험들을 준비하는 코드 출발점이고 별도의 보고서 종류가 아니다. 시간순 V0~V4 비교는 필요할 때 보조 절·부록으로 추가한다.
+
+| 묶음 | 과거부터 현재까지 포함할 시도 | 근거 이력 | 기본 비교와 지표 |
+|---|---|---|---|
+| 1. 로딩·리소스 재사용 | 해상도별 전처리 디스크 캐시, Scene 공유 Profile 자원, Surface GPU buffer pool | `d5ab2ee`, `4fe4e4d`, `31490d9` | 캐시 없는 첫 로드 / 유효 캐시 로드, pool 미사용 / 반복 재사용. 로드·재로드 시간, 할당·재사용 횟수, 보관 메모리 |
+| 2. Solver 중복 계산·캐시 | TransferWeight·outgoing 합 재사용, RawFlux 저장·재계산의 도입/제거/복귀, 빈 source 계산·쓰기 생략, source·target·이웃 공통값 재사용, ConcavityWeight 캐시, 회전 불변 정적 캐시 | `69c6b40`, `aebca4e`, `aca0647`, `ee4fa76`, `fbfb570`, `aab65ca`, `23aed71`, `55b3860`, Decision 0021 | 현재 RawFlux 옵션 비교와 중요한 비옵션 계산 제거를 분리. Solver·Pass 1·2, 회전 중 CPU 캐시 갱신·대기 시간 |
+| 3. Solver 부분 계산 | 바뀐 적층 영역만 height/geometry/weight 갱신, sparse solver, persistent active schedules, 전역·workgroup 채널 마스크 | `23078f2`, `55b3860`, `29f7ccc`, `e103451`, `1431779`, `60d65b1` | 현재 동일 코드에서 전체 계산 / 부분 계산, 채널 마스크 OFF / ON. 좁은·넓은 활성 영역별 Solver 시간·step 수·결과 동등성 |
+| 4. 인스턴스 실행·동기화 | 인스턴스별 Solver 순차 기록에서 단계별 묶음 기록으로 변경, 단계 사이 barrier 유지·독립 인스턴스 사이 대기 감소 | `7d269c8` | 같은 알고리즘·자원을 쓰는 순차 / 단계별 묶음. Mountain 및 복제 instance 수에 따른 동일 범위 GPU 경과 시간 |
+| 5. GPU 데이터 배치·정밀도 | packed flux, coalesced 배치, FP16 RawFlux·Weights, Profile 등 GPU 데이터 compact·SoA 배치 | `55b3860`, `29f7ccc`, `e103451` | 같은 활성 일정·계산 조건에서 FP32 / FP16, 저장 배치별 비교. Solver 시간, 실제 할당량, 전송량 추정·상태 오차. cache 유무 효과와 정밀도 효과를 구분 |
+| 6. 렌더 상태 읽기·필터·조명 | 중복 State/Profile 조회·조명 연산 축소, SSBO→State texture, coverage 사전 계산, separable smoothing, shared halo, Overlay 샘플링 개선 | `9b686b5`, `f4ee334`, `c51d97e`, `23ceeb9` | 현재 sampling/precompute/halo 옵션부터 비교. 같은 smoothing 강도·화면·mesh 해상도에서 준비 compute와 draw를 함께 측정하고 경계·화질 확인 |
+| 7. Overlay 형상·draw 작업량 | 렌더 mesh 해상도 선택, side·top 갱신 통합, 활성 타일 간접 dispatch, top 삼각형 compact draw, dirty height/normal/coverage 타일, frustum culling | `23aed71`, `a26b976`, `8ff781a`, `ca54cad`, `abb66db`, `166470e` | full / sparse Overlay, culling 미적용 / 적용, render mesh 해상도별 비교. Overlay 준비·draw, 활성 tile·triangle 수. 해상도 실험은 품질 차이를 별도로 기록 |
+| 8. 셰이더 실행 경로 고정 | Release GPU 입력 검증의 compile-time 제거, runtime A/B 분기에서 compile-time SPIR-V variant 선택으로 변경 | `4e82ae7`, `23ceeb9` | 같은 C++ Release·Vulkan validation 설정에서 해당 shader 경로만 비교. 알고리즘 옵션의 효과와 분기를 고정한 효과를 구분 |
+
+이 묶음들은 여덟 개를 모두 제거한 최초 코드를 새로 만들겠다는 계획이 아니다. 현재 옵션으로 비교할 수 있는 것은 최종 기준 코드에서 다른 옵션을 고정해 비교한다. 옵션이 없는 것은 연구 결론에 중요한 변경만 해당 구간의 이전 구현 또는 실험용 복원본으로 비교한다. 로딩, frame rendering, Solver, 메모리는 측정 단위가 달라 하나의 FPS 개선율로 합치지 않는다.
+
+#### 8개 묶음의 실험 base
+
+**코드 출발점과 실험 base를 구분한다.** 기본 전략은 고정된 V4 코드에서 해당 실험의 대상만 이전 방식·OFF로 만든 것을 base로 삼고, 대상의 개선 방식·ON과 비교하는 것이다. 양쪽의 나머지 기능·옵션·입력은 동일하게 유지한다. 아래는 먼저 수행할 대표 비교의 설계이며, 모든 base 구현이 이미 옵션으로 준비되었다는 뜻은 아니다.
+
+| 묶음 | 실험 base 예 | 비교할 개선 방식 |
+|---|---|---|
+| 1. 로딩·리소스 재사용 | 디스크 캐시가 없는 로드. buffer pool은 별도로 재사용하지 않는 비교본 | 같은 에셋의 유효 디스크 캐시 로드. pool 비교는 같은 재로드 절차에서 재사용한 경우 |
+| 2. Solver 중복 계산·캐시 | 같은 값을 매번 계산하는 경로. RawFlux 대표 비교는 cache OFF·FP32 기준 | cache ON·FP32 또는 해당 중복 계산만 재사용한 비교본 |
+| 3. Solver 부분 계산 | Geometry feedback ON, Solver/height/geometry의 sparse dispatch와 채널 마스크를 끈 설정 | Geometry feedback ON을 유지하고 해당 부분 계산 설정을 켠 경우. 필요하면 sparse와 채널 마스크를 각각 분리 |
+| 4. 인스턴스 실행·동기화 | 같은 Solver 계산을 instance별로 순차 기록하는 실험용 비교본 | instance의 같은 단계를 모아 기록한 경우 |
+| 5. GPU 데이터 배치·정밀도 | 정밀도 실험은 FP32, 배치 실험은 기존 배치. 양쪽 cache·sparse 설정은 동일 | 정밀도만 FP16 또는 배치만 변경. 두 변경은 각각 측정 |
+| 6. 렌더 상태 읽기·필터·조명 | sampling 실험은 SSBO 경로, 사전 계산 실험은 fragment에서 같은 필터 수행, 연산 재사용은 이전 수식 평가 방식 | State texture, compute 사전 계산, 연산 재사용을 해당 실험별로 비교. 같은 smoothing 품질·mesh 해상도 유지 |
+| 7. Overlay 형상·draw 작업량 | 타일 실험은 전체 영역 갱신 경로. compact draw·culling 실험은 해당 처리만 적용하지 않은 비교본 | 부분 타일 갱신, compact draw, culling을 각각 또는 명시한 묶음으로 비교. mesh 해상도 조절은 품질 trade-off 실험으로 분리 |
+| 8. 셰이더 실행 경로 고정 | 같은 알고리즘을 runtime 분기로 선택하는 셰이더. 검증 비용은 같은 C++ Release에서 GPU 검증을 포함한 별도 비교본 | compile-time variant 또는 GPU 검증을 제거한 경로를 각각 비교. C++ 빌드·Vulkan validation 설정은 전후 동일 |
+
+예를 들어 묶음 3의 base에도 State texture·FP16·다른 중복 계산 제거가 남아 있을 수 있다. 이 비교는 **현재 기능을 갖춘 코드에서 부분 계산이 기여하는 정도**를 나타낸다. 최적화가 전혀 없는 최초 엔진 대비 개선율은 아니다.
+
+한 묶음은 하나의 주제이며, 디스크 캐시와 pool처럼 작동 시점이 다르거나 FP16과 저장 배치처럼 효과를 나눠야 하는 항목은 그 안에 별도 비교쌍을 둔다. 관련 물리 항을 끄는 것과 그 항의 값을 매번 재계산하는 것을 혼동하지 않는다. 예를 들어 NormalWeight OFF는 가중치 캐시 미사용의 대체 base가 아니다.
+
+현재 코드에서 이전 방식을 안전하게 복원하기 어려우면, 그 대표 실험에 한해 앞서 기록한 실제 전후 commit을 base/비교본으로 사용한다. 그때는 코드 출발점·이식 patch·공통 입력·측정 범위를 실험 섹션에 명시한다. 나머지 7개 묶음의 base까지 같은 과거 commit으로 옮길 필요는 없다. 이전 방식 복원과 결과 동등성 확인을 마치기 전에는 해당 비교를 계획 상태로 둔다.
+
+#### 보조 자료: 개발 단계 비교용 기준 후보
+
+주요 GPU 최적화 단계의 시작 후보는 **`26963eb` (2026-10-04)**로 둔다. 해당 버전에는 2-pass Solver, geometry/accumulation, Overlay, 대표 씬과 Profile v4가 이미 존재하고, 이후 GPU 최적화 브랜치가 들어오기 직전의 main 코드다. 최초 엔진이나 모든 최적화가 없는 버전은 아니다. 9월의 캐시 시도는 아래 초기 구간의 별도 비교로 보존한다.
+
+| 단계 | 기준 commit | 비교하려는 개발 구간 |
+|---|---|---|
+| V0 | `26963eb` | 10월 GPU 최적화 전 출발점 후보 |
+| V1 | `f935df2` | 1차 GPU 개선 묶음: 계산·샘플링·Overlay 실행량·인스턴스 단계 묶음 |
+| V2 | `afe1c4f` | Sparse schedules·packed data·dirty Overlay·A/B variants가 합쳐진 단계 |
+| V3 | `c51d97e` | GPU buffer 재사용과 frustum culling, Overlay 샘플링 후속 변경까지 포함한 단계 |
+| V4 | `fa83c68` | 조사 시점 HEAD인 최종 기능 코드 후보 |
+
+8개 묶음의 성능 검증을 먼저 수행하고, 필요할 때 이 시간순 표로 전체 개발 과정을 설명한다. 버전 번호만으로 어느 최적화의 효과인지 판단하지 않는다.
+
+이 표는 **비교 후보의 순서**다. 현재 각 commit이 같은 조건으로 빌드·실행 가능하다는 보장은 아니다. 공통 씬·Profile·카메라·상태·shader 기능·프레임/step 수를 먼저 맞추고, 같은 범위를 재는 계측 코드를 적용해야 한다. Windows 호환용 수정이나 공통 계측의 이식이 필요하면 실험용 patch로 기록하고 전후에 같은 정책을 적용한다.
+
+실제로 V0~V2 구간에서 BrickCube Profile의 State 이름·이동 설정·두께 설정이 바뀌었고, `9b686b5`는 계산 축소와 함께 smoothing 기본값도 바꿨다. 따라서 각 버전의 기본값으로 실행한 FPS를 바로 이어 붙이면 순수 최적화 효과가 아니다. 기능·품질을 맞출 수 없는 구간은 개발 단계의 서로 다른 workload로 표기하고 개선율 비교에서 제외한다. 특히 공통 적층면·물 합성(`535aca5`, `94236ea`), 면적·이동 수식·Meso peak/cavity 수정은 기능·정확성 변경으로 따로 기록한다.
+
+현재 옵션 비교의 기준은 V4의 **고정된 실험 스냅샷**이다. 조사 시점의 미커밋 shader 수정은 `fa83c68`에 포함되어 있지 않다. 이를 포함할 경우 patch·새 파일·빌드 설정을 별도로 고정하고 `V4+patch`로 기록하며 매번 달라지는 작업 트리를 비교 기준으로 쓰지 않는다.
+
+##### Geometry feedback / State-driven geometry 통일
+
+2026-10-22에 각 commit의 `SurfaceStateSolver.h`에서 확인한 기본값은 다음과 같다. 아래 값은 소스의 초기값이며 실제 실행 로그를 확인한 결과는 아니다.
+
+| 버전 | 설정 필드 | 소스 기본값 |
+|---|---|---|
+| V0 `26963eb` | `bAccumulationFeedbackEnabled` | OFF |
+| V1 `f935df2` | `bAccumulationGeometryUpdateEnabled` | OFF |
+| V2 `afe1c4f` | `bAccumulationGeometryUpdateEnabled` | ON |
+| V3 `c51d97e` | `bStateDrivenGeometryUpdateEnabled` | ON |
+| V4 `fa83c68` | `bStateDrivenGeometryUpdateEnabled` | ON |
+
+`c762e27` (2026-10-07)에서 당시 `bAccumulationGeometryUpdateEnabled` 기본값을 false에서 true로 바꿨다. 현재 이름으로 같은 필드를 검색하는 것만으로 초기 버전에 기능이 없다고 판단하지 않는다. 확인한 V0·V1에도 setter, Solver flag와 동적 geometry/weight 갱신 경로가 있다.
+
+- **주 성능 비교는 Geometry feedback ON으로 통일한다.** 구버전도 준비 구간 이전에 해당 setter/측정용 초기화로 명시적으로 켠다. 실행 중 사람이 체크박스를 누르는 시점에 의존하지 않는다.
+- 초기 상태·step 수·Profile의 accumulation/thickness 등 관련 값을 맞추고, 실제 적층 변화가 있는 workload를 사용한다. ON이어도 적층이 없는 조건은 동적 형상 부하를 대표하지 않는다.
+- 로그·manifest 또는 별도 조건 파일에 실제 적용값을 남긴다. 같은 ON 이름이라도 갱신 순서·캐시 유효성·오차가 다를 수 있으므로 상태·형상 결과를 확인한다.
+- 현재 benchmark는 시작 전에 이 값을 ON으로 명시하고 `*.settings.json`에 기록한다 (`PERF-001`에서 추가). 이후 V0·V1·V3에도 실험용 patch로 같은 ON 설정과 출력을 적용해 측정했다 (`PERF-034`). V2는 빌드했지만 Windows 앱 제어가 실행을 차단해 미측정이다.
+- OFF는 정적 형상 조건의 비용을 분리할 때 필요한 묶음에만 보조 실험으로 추가한다. OFF↔OFF와 ON↔ON을 각각 비교하며 구버전 OFF↔신버전 ON을 순수 최적화 개선율로 제시하지 않는다. 모든 묶음에 ON/OFF 조합을 곱하지 않는다.
+- 더 초기의 별도 실험처럼 feedback이 없는 버전은 `해당 없음`으로 기록한다. 주 ON 비교에는 같은 기능을 제공하는 비교쌍만 포함하며, 불가능하면 해당 항목의 통제된 별도 실험으로 남긴다.
+
+#### 주요 GPU 개선 이전의 초기 구간
+
+| 초기 시도 | 로컬 base → 변경 후보 | 기록 범위 |
+|---|---|---|
+| 전달 가중치·outgoing 합 캐시 | `beeeaf3` → `69c6b40` | 초기 Solver의 계산 재사용; 현대 상태 모델과 별도 비교 |
+| RawFlux cache 도입·빈 source 생략 | `165b1b8` → `aca0647`, 후속 `ee4fa76` | 도입 단계의 기록을 보존하고 현재 cache 옵션 실험은 별도로 연결 |
+| 전처리 디스크 캐시 | `15b818b` → `d5ab2ee` | 고정된 에셋·해상도의 첫 로드와 캐시 재사용; frame time과 분리 |
+| 적층 dirty geometry | `5b387ec` → `23078f2` | 상태 변화가 적은/많은 조건의 형상 갱신량; timestep 제한 변경의 영향은 통제 |
+| 동적 ConcavityWeight cache | `28cfe1d` → `fbfb570` | 같은 입력의 계산 재사용; main V0~V1 구간에 포함된 변경으로도 연결 |
+
+현재 raw cache, precision, layout, sparse, sampling 등의 옵션을 비교할 때 모든 조합을 곱해 실행하지 않는다. 묶음별 기준 옵션을 정하고 한 항목씩 바꾸며, 결과가 서로 의존하는 항목만 추가 조합을 측정한다. `60a8be3` 같은 큰 Perf commit은 포맷 변경이 많이 섞여 있으므로 실제 의미가 바뀐 부분을 먼저 분류하고, 포맷·이름·클래스 분리 자체를 성능 향상으로 계산하지 않는다.
+
+실행 우선순위는 **8개 묶음 중 V4 옵션으로 비교 가능한 항목 → 주요 비옵션·초기 시도 복원 → 필요할 때 공통 조건을 맞춘 V0~V4 보조 비교**다. 입력 staging, FP16 크기에 맞춘 재할당, Solver→Overlay 후보 전달처럼 대화에서 제안만 한 후속 개선은 과거 구현 목록에 포함하지 않는다.
+
+## 현재 인스턴스 dispatch와 계측
+
+Decision 0026에 따라 한 simulation step에서 활성 인스턴스의 같은 Solver 단계를 모아 기록한다. Height, dirty command, dynamic geometry, transfer weight, Pass 1, Pass 2는 각각 인스턴스 전체 dispatch를 기록한 뒤 단계 간 데이터 의존성만 barrier로 연결한다. 서로 다른 인스턴스의 같은 단계에는 barrier를 넣지 않아 GPU가 함께 스케줄할 수 있게 한다. GPU가 실제로 동시에 실행하는지와 성능 이득은 측정으로 확인한다.
+
+현재 Solver GPU timestamp는 인스턴스별 구간 합이 아니라 단계별 인스턴스 묶음 구간이다. 이전 구현에서 수집한 instance-summed 값과 직접 비교하지 않는다. `SimulationInstances` 통계는 계측 슬롯 수가 아니라 활성 인스턴스 수를 표시한다.
+
+## 성능 측정 규칙
+
+### 기본 원칙
+
+- 한 번에 하나의 비교 변수만 바꾸고 Scene·입력·해상도·Profile·Solver 설정은 고정한다.
+- 준비 구간을 제외한 고정 frame/step 구간을 반복 측정한다. 아래 기본 시작 규칙과 실제 실행 manifest의 조건을 함께 기록한다.
+- 평균 FPS 하나가 아니라 **GPU Solver total / Pass 1 / Pass 2 / geometry update / transfer weight**, 반복별 중앙값과 p95를 함께 본다.
+- 기준과 후보를 같은 머신·빌드에서 번갈아 실행하고, 속도와 함께 총량 보존·NaN/Inf·분포 오차를 확인한다.
+- 한 Scene이나 한 GPU의 개선률을 일반적인 개선률로 표현하지 않는다.
+
+### 기본 시작 규칙
+
+| 항목 | 기본값 |
+|---|---|
+| 기준 씬 | `BrickCube.Scene`, `Mountain.Scene` |
+| 시뮬레이션 해상도 | 각 씬에서 256, 512 |
+| 초기화 | 반복마다 새 프로세스로 씬을 처음부터 로드하고 같은 초기 접촉 입력 사용 |
+| 시간 진행 | 렌더 프레임마다 simulation `1/60초`, 고정 timestep ON, auto substepping OFF, time scale 1 |
+| Geometry feedback | 주 성능 비교는 ON. 버전별 기본값에 의존하지 않고 명시적으로 적용·기록 |
+| 준비 구간 | 처음 60프레임 제외 |
+| 측정 구간 | 다음 600프레임, 시뮬레이션 시간으로 10초 |
+| 반복 | 씬·해상도 조합마다 3회 (기본 matrix 전체 12회 실행) |
+| 빌드 | 같은 머신에서 Release, Vulkan validation OFF; shader 컴파일 옵션도 전후 동일 |
+| 화면 | 같은 카메라·실제 렌더링 영역 크기·viewport 수·VSync·프레임 제한 |
+| 조작 | 측정 중 임의의 카메라 이동·브러시 입력·옵션 변경을 하지 않음 |
+
+기본 matrix의 실제 값은 `Config/Performance/solver-resolution-matrix.json`에서 관리한다. 렌더 mesh 해상도, 카메라와 옵션은 전후 동일하게 고정하고 실제 값을 기록한다. 앱 창의 초기 크기는 1280×720이지만 DPI와 UI 배치가 렌더링 영역을 바꿀 수 있으므로 창 크기만으로 같은 화면 부하라고 판단하지 않는다.
+
+현재 benchmark 모드는 데모 애니메이션을 일시정지한다. 기본 두 씬은 `initialContacts`를 사용한다. 애니메이션으로만 입력이 발생하는 데모나 반복 브러시 실험은 입력 step·위치·반경·세기를 재현하는 별도 조건을 준비한 뒤 측정한다. 임의의 한 화면을 보고 시작 시점을 정하지 않고 simulation step 또는 저장한 상태로 시작 구간을 지정한다.
+
+### 개선 대상별 추가 조건
+
+| 개선 대상 | 기준 씬 외에 고정할 조건 |
+|---|---|
+| Overlay 계산 | 적층이 좁게 존재하는 상태 / 넓게 퍼진 상태, 해당 상태를 만드는 입력·진행 step |
+| 입력 처리 | 일정한 step 간격의 같은 입력 위치·반경·세기; 현재 자동 재생·CPU 계측 지원 여부 확인 |
+| 변경 없는 프레임 재사용 | 같은 상태를 만든 뒤 일시정지; 기본 benchmark의 재생 조건과 구분해 기록 |
+| 가시성 처리 | 같은 씬의 보이는 카메라 / 보이지 않는 카메라 |
+| 메모리 | 같은 씬·해상도·상태에서 옵션 변경 전후와 GPU 작업 완료·옛 버퍼 해제 이후 등 측정 시점 |
+
+### 파일 출력 기준
+
+화면의 Profiling UI는 실행 중 상태를 확인하는 용도다. 보고할 수치는 자동 저장한 프레임별 원자료에서 집계한다. 화면 캡처는 같은 simulation step의 화질·형상 비교에 사용한다.
+
+아래 표의 기본 제품 출력과 구분: `PERF-002~035`의 **실험용 빌드**에서는 공통 command-buffer/simulation GPU 경과 시간, 전체 CPU frame 경과 시간, f32 상태 배열과 BGRA 화면 출력을 추가했다. 보관한 계측 patch·실행 파일을 사용한 결과이며, 현재 루트의 기본 제품 빌드가 이 추가 항목을 모두 제공한다는 뜻은 아니다.
+
+| 항목 | 현재 자동 출력 | 기록 방법 |
+|---|---|---|
+| 실행 조건·버전 | matrix, 실행 시각·시간대, Git commit·수정 여부·dirty hash, 실행 경로·명령, OS, 조회 가능한 GPU 정보 | `manifest.json` |
+| 프레임별 GPU 측정 | Solver total, Pass 1·2, geometry, transfer weight, render 합계, 렌더 준비·Base/Overlay draw·Overlay height/normal/smoothing/sides/coverage·UI | `raw/*.jsonl` (현재 schema 2) |
+| 프레임별 작업량 | frame index, simulation step 수·진행 시간, simulation·render mesh 해상도, instance·texel·channel 수 | `raw/*.jsonl` |
+| CPU 보조 계측 | frame fence 대기, acquire, command record, queue submit, present | `raw/*.jsonl`; 해당 GPU frame submission에 대응하는 CPU 값 |
+| 실제 설정·상태·메모리 | 첫 측정 프레임의 주요 옵션·카메라·viewport, 종료 시 State 해시·NaN/음수·할당 메모리 | `raw/*.settings.json`, `raw/*.validation.json`; 메모리는 GPU idle 후 자원 해제 이전 |
+| 자동 요약 | Solver·렌더링 중앙값·p95, 세부 시간·반복 간 범위, 최종 상태·할당량 | `summary.md`, `aggregate.json` |
+| 실행 실패·오류 | 앱 출력, 종료 코드, 표본 수 | `raw/*.log`, `manifest.json` |
+| 추가로 필요한 항목 | 전체 frame time, CPU 입력 처리, occupancy scan 단독 GPU 시간, GPU 전체 VRAM 상주량 | **현재 미지원**. 해당 실험의 출력 항목을 추가한 뒤 측정 |
+
+`render_gpu_ms`는 GPU 렌더링 계측 범위의 합계이며 CPU·present까지 포함한 전체 frame time으로 쓰지 않는다. `summarize.py`는 Solver·Pass 1·2 외에 geometry/transfer, 렌더링·Overlay·CPU 보조 지표도 집계한다. 세부 구간은 상위 구간과 중복되므로 전부 합산하지 않는다. 계측 구간 정의가 바뀌면 과거 값과 직접 비교하지 않는다.
+
+현재 runner는 실행 파일 SHA-256과 소스·에셋·설정 보관본, 미커밋 patch 및 입력 파일 해시를 `raw/inputs`에 남긴다. 이 기록만으로 실행 파일의 빌드 출처를 자동 증명하지는 않으므로 Codex가 해당 소스의 Release를 실제 빌드했는지 확인한다. 주요 runtime 옵션은 settings 파일에 저장하며 CPU·드라이버·빌드 로그 등 누락 환경은 실험 섹션과 inputs에 추가한다. dirty hash는 상태 식별용이며 원본을 복구하는 자료가 아니다. raw는 Git ignore 대상이므로 장기 보관 시 별도 백업도 필요하다.
+
+시간의 대표값은 실행별 중앙값·p95를 구한 뒤 반복들의 중앙값으로 정리하고 실행별 값과 최소~최대 범위를 함께 보관한다. 메모리는 측정한 시점의 값을 쓴다. 감소율은 `(개선 전 - 개선 후) / 개선 전 × 100`이며 기준이 0이거나 조건이 다르면 계산하지 않는다. 차이가 반복 편차와 비슷하면 `효과 확인 못 함`으로 남긴다.
+
+### 대표 Scene
+
+| Scene | 용도 |
+|---|---|
+| `BrickCube.Scene` | 기본 Solver workload, 다중 Surface 기준 |
+| `Mountain.Scene` | 다중 instance workload |
+| `Bunny.Scene` | 복잡 Mesh / mapping·geometry·render 비용이 가설에 포함될 때 |
+
+세 Scene의 workload는 동일하지 않으므로 모든 실험에서 무조건 함께 비교하지 않는다.
+
+### 자동 측정
+
+실행 가능한 Python 3가 필요하다. Windows의 `python` 명령이 Microsoft Store 설치 안내만 출력하면 실제 Python 실행 파일 또는 설치된 Python launcher로 아래 명령을 실행한다. 저장소 루트에서 기본 matrix를 실행한다.
+
+```sh
+Scripts/run_performance_benchmarks.sh
+```
+
+Windows PowerShell에서는 먼저 해당 버전의 Release 실행 파일을 빌드하고 Python runner를 실행한다. 아래 CMake 명령은 기존 Build의 validation 옵션도 바꾸므로, 이후 검사 빌드에서는 validation ON을 다시 지정한다. 별도 빌드 디렉터리를 쓸 경우 `--binary`도 그 실행 파일 경로로 지정한다.
+
+```powershell
+cmake -S . -B Build -DMDSS_ENABLE_VALIDATION=OFF
+cmake --build Build --config Release --target MDSS --parallel
+python Scripts/Performance/run_matrix.py --skip-build --binary Build/bin/Release/MDSS.exe --results-dir Performance-Data
+```
+
+Windows runner의 자동 빌드 경로는 현재 Bash helper를 사용하므로 위처럼 미리 빌드하고 `--skip-build`를 사용한다. 설정·명령만 확인하려면 같은 runner에 `--dry-run`을 붙인다. 이 경우 앱과 빌드를 실행하지 않는다.
+
+앱 단독 실행 예시는 다음과 같다. 이 명령은 한 번의 프레임별 원자료만 생성하며 반복 실행의 manifest와 요약은 matrix runner가 담당한다.
+
+```sh
+Build/bin/MDSS --benchmark-scene Assets/Scenes/BrickCube.Scene \
+  --benchmark-resolution 256 --benchmark-warmup-frames 60 \
+  --benchmark-measure-frames 600 \
+  --benchmark-output /tmp/brickcube-frames.jsonl
+```
+
+`run_matrix.py`의 기본 저장 위치는 저장소 루트의 `Performance-Data/<실행일시>-solver-resolution/`이다. 각 run set에는 `manifest.json`, `raw/*.jsonl`, 앱 로그, `summary.md`가 들어간다. 개선 전·후 폴더를 덮어쓰지 않는다. 기존 기록도 이 디렉터리에 보관한다.
+
+이 파일들은 **재현용 원자료**이고, 가설과 결론은 아래 실험 기록에 적는다. `raw/`는 Git에서 제외되므로 manifest와 summary를 commit하는 것만으로 원자료가 보관되지는 않는다. 실행 폴더 전체를 보존하고, 별도 보관본이 있으면 위치를 실험 섹션에 기록한다. 로컬 원자료를 지우기 전에 보관본을 확인한다.
+
+### 전후 비교 기록 절차
+
+1. 이 문서에 실험 질문·ID·변경 한 가지와 비교 조건을 기록한다. 새 실험은 위 실험 양식을 사용한다.
+2. 개선 전 코드를 빌드하고 기준 실행을 보관한다. 개선 후 코드를 빌드해 같은 조건으로 측정한다. 가능한 경우 A/B를 번갈아 반복하고 순서를 적는다. 현재 runner 한 번은 한 코드 버전의 matrix이므로 두 버전을 자동 교대로 실행하는 기능이 있다고 가정하지 않는다.
+3. Codex가 원자료에서 전후 표를 채우고 반복 편차·정확성·메모리 비용을 확인한다. 입력량·시뮬레이션 진행 시간이 줄어서 빨라진 결과와 계산 효율 개선을 구분한다.
+4. `채택 / 보류 / 효과 확인 못 함`과 이유를 기록한다. 채택한 구현은 이후 실험의 기준이 되며, 기존 결과는 덮어쓰지 않는다.
+
+이 규칙과 설정을 정리한 2026-10-22 작업 자체는 성능 측정을 실행한 실험이 아니다. 새 기준으로 측정하기 전에는 결과를 `미측정`으로 둔다. 아래 과거 실험은 당시 기록과 측정 범위를 유지한다.
+
+> **한 줄 요약:** Solver pass, GeometryDrive와 셰이더 핫패스의 비용을 한 문서에서 비교한다. RawFlux cache ON/OFF 결과는 제거 및 A/B variant 복귀 전후의 구현 상태를 구분해 기록한다.
+
+## 실험 — Solver Pass 비교
+
+- 상태: **계획**
+- 근거: Next State 계산
+
+### 가설
+
+이웃 alpha를 매번 재계산하는 1-Pass보다 `alpha`를 저장하는 2-Pass가 중복 계산을 줄인다.
+
+### 비교 조건과 방법
+
+- 동일한 State Field와 8-neighbor 조건.
+- 동일한 SRProfile과 입력 이벤트.
+- texel 수와 활성 texel 비율 변화.
+- GPU 시간, 임시 메모리, 메모리 대역폭, Barrier 비용 측정.
+
+### 결과
+
+미실시. 현재 설계 기본안은 **2-Pass + alpha 저장**이다.
+
+## 실험 — Solver GeometryDrive 비용과 구현 점검
+
+- Date: 2026-09-28
+- 상태: **기능 검증 완료 / 실제 Scene FPS 개선은 미확정**
+- 관련: Simulation Optimization, Optional Curvature Transfer Weight
+
+> **파라미터 표현과 기준값 변경:** 아래 Rate 수치는 측정 당시의 전달량 계수다. Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장한다. 초기 기준 Geometry Rate 100에서는 Rate `50`, `1`이 Factor `0.5`, `0.01`에 대응했다 (Decision 0008). 현재 기준값은 6000으로 재보정되어 Factor `0.5`의 Rate는 3000이다 (Decision 0012). 아래 과거 측정 결과는 새 기준값으로 재측정한 결과가 아니다.
+
+### RawFlux 방향별 캐시 적용 전 확인한 비용
+
+- Pass 1은 최대 8개 outgoing RawFlux를, Pass 2는 최대 8개 incoming RawFlux를 texel·채널마다 계산한다. Pass 2는 outgoing 합계를 캐시에서 재사용하지만 incoming RawFlux는 재평가한다. 따라서 두 pass 모두 같은 비싼 GeometryDrive 경로를 실행한다.
+- 기존 경로는 RawFlux마다 두 height의 world 변환, direction용 두 world 변환과 source normal inverse-transpose를 반복한다. TransferWeight cache와 RawOutgoing 저장은 이미 구현되어 있으므로 캐시 부재를 현재 병목으로 설명하지 않는다.
+- 기본 Simulation resolution은 Surface당 512×512이며 invalid texel 슬롯도 dispatch된다. 작업량은 instance·Surface·Registry 채널 수·유효 이웃 수에 따라 늘어난다.
+- 선형 instance transform 또는 weight toggle이 cache를 dirty로 만들면 CPU 전체 cache rebuild와 graphics queue idle이 발생한다. 고정 transform에서 매 프레임 발생하는 비용은 아니다.
+- 기존 pass 시작 timestamp는 TOP_OF_PIPE, 끝은 COMPUTE_SHADER였으므로 앞선 작업 대기가 포함될 수 있다. 현재 시작·끝을 COMPUTE_SHADER로 맞춘다. timestamp는 driver가 더 늦은 stage에 latch할 수 있어 순수 shader instruction 시간으로 해석하지 않는다.
+
+### 최종 변경
+
+각 compute invocation은 한 texel을 처리한다. GeometryDrive가 켜져 있으면 이웃 간선과 State channel을 계산하기 전에 `initializeGeometryDrive()`가 두 값을 준비한다. `SolverUp = normalize(-GravityWorld)`는 월드 중력에 반대인 높이 축이고, `SolverNormalMatrix = transpose(inverse(mat3(ModelMatrix)))`는 mesh-local normal을 world normal로 바꾸는 행렬이다. 두 값은 해당 invocation의 모든 이웃 간선과 channel에서 재사용한다. 따라서 역행렬과 중력 정규화는 간선·channel마다 반복하지 않지만, 여전히 dispatch의 각 invocation에서 계산한다. Pass 1은 valid texel에서 계산을 시작할 때 준비하고, Pass 2는 실제 incoming flux를 처음 평가할 때까지 준비를 미룬다.
+
+방향성 flux를 계산할 source texel `i`와 target texel `j`마다 Virtual Height를 반영한 mesh-local endpoint를 만든다. 여기서 높이 displacement는 현재 구현처럼 각 endpoint의 macro normal 방향으로 적용된다.
+
+```text
+Q_i = Position_i + MacroNormal_i × MesoVirtualHeight_i
+Q_j = Position_j + MacroNormal_j × MesoVirtualHeight_j
+DeltaWorld_ij = mat3(ModelMatrix) × (Q_j - Q_i)
+```
+
+`Q_j - Q_i`는 벡터이므로 instance translation은 적용할 필요가 없다. 두 world 위치를 따로 변환해 빼는 것과 결과가 같고, translation은 차이에서 상쇄된다. 한 번 얻은 `DeltaWorld_ij`를 두 항에 함께 쓴다.
+
+```text
+HeightDrive    = abs(dot(DeltaWorld_ij, SolverUp))
+DirectionDrive = clamp(dot(normalize(GravityOnSurface_i),
+                            normalize(DeltaWorld_ij)), 0, 1)
+GeometryDrive  = HeightDrive × DirectionDrive
+```
+
+`HeightDrive`는 endpoint 사이의 월드 높이 차이 크기를 나타낸다. `abs`를 쓰므로 위·아래 부호는 여기서 구분하지 않는다. `DirectionDrive`가 source 표면에 투영한 중력이 이웃 방향과 얼마나 같은지를 평가하고, 반대 방향의 이동은 0으로 제한한다.
+
+`GravityOnSurface_i`는 `GravityWorld`에서 source normal 방향 성분을 제거해 구한다. 기본 경로의 source normal은 이미 업로드된 `MesoNormal`(set 0, binding 17)을 mesh-local에서 읽어 `SolverNormalMatrix`로 world space에 변환한 값이다. 이 리소스는 tangent-space Normal Map의 원시 픽셀이 아니다. 전처리가 Macro normal로 tangent frame을 세우고 Virtual Height의 국소 기울기를 결합해 만든 mesh-local 복원 normal이므로 Macro 방향이 포함된다. 따라서 DirectionDrive가 macro normal 대신 이를 쓰면 Virtual Meso Geometry의 요철까지 반영한 표면 방향을 사용한다. 비교용 `DirectionDrive: MesoNormal` 설정을 끄면 macro normal을 사용한다. 유효 복원 normal이 없는 texel은 pack 단계에서 sampled `TransferNormal`, macro normal 순으로 대체한다.
+
+요약하면 높이 비교와 이웃 이동 방향은 같은 displaced endpoint 차이에서 나오며, 표면에서 중력이 향하는 방향은 source의 복원 normal로 결정한다. 위치/방향 벡터에는 model transform의 선형 부분을 쓰고, normal에는 inverse-transpose를 쓰는 이유가 서로 다르다.
+
+여러 채널의 GeometryDrive를 간선 배열에 준비해 재사용하는 후보는 4채널의 일부 표본에서 개선됐으나 1채널에서 안정적인 이득을 확인하지 못해 최종 변경에서 제외했다.
+
+### 합성 GPU 측정
+
+Apple M1, Vulkan compute queue, 256×256의 모든 texel 유효 grid, 최대 8-neighbor, 1/4채널, 동일 Profile, 추가 이벤트 없음. local 위치는 `(0.01x, 0.01y, 0.0025x)`, normal은 `normalize(-0.25, 0, 1)`, identity instance transform, world gravity `(0,0,-1)`이다. Normal Map 없이 MesoNormal은 macro fallback이므로 normal 연결 수정에 따른 물리 결과 차이는 없다.
+
+Capacity 1, SaturationTransferRate 0.5, GeometryTransferRate 1, DecayRate 0.01, dt=1/60. 초기 State는 0.25~0.75의 반복 패턴이며 각 dispatch는 같은 State A를 읽고 State B에 쓴다. cache rebuild와 buffer upload는 측정 밖이다. 5회 warmup 뒤 30회 표본의 pass별 중앙값을 기록했다. baseline은 변경 전 HEAD solver shader이며 CPU timestamp stage는 baseline/최종 모두 COMPUTE_SHADER로 같게 했다. 같은 compiler 기본 옵션으로 SPIR-V를 생성했다.
+
+| 채널 | GeometryDrive | 이전 Pass 1 / Pass 2 (ms) | 최종 Pass 1 / Pass 2 (ms) |
+|---|---|---|---|
+| 1 | ON | 4.891 / 0.826 | 4.885 / 0.800 |
+| 1 | OFF | 4.127 / 0.376 | 4.221 / 0.412 |
+| 4 | ON | 8.882 / 10.601 | 7.692 / 8.766 |
+| 4 | OFF | 6.287 / 2.060 | 6.356 / 1.961 |
+
+이는 한 측정 run이며 반복 run 간 시간 편차가 크다. 1채널의 개선을 입증하지 못했고, 4채널 표본도 실제 Scene FPS 개선 배수로 사용하지 않는다. ON/OFF 차이는 GeometryDrive가 비용을 추가한다는 관찰을 제공하지만 ALU/메모리/driver 점유율은 이 실험만으로 분리할 수 없다. 초기 실험은 wetness 1채널·accumulationFactor=0인 DemoStone.SRProfile을 사용했다. 실제 Scene의 고정 카메라·동일 State와 GPU 부하 조건에서 별도 검증이 필요하다.
+
+### 구현 상태 점검
+
+- Next State의 event Input, saturation/geometry transport, alpha 보유량 제한, Decay/ConcavityRetention, Capacity clamp, InputDelta 소비 및 A/B swap은 구현되어 있다.
+- HeightDrive와 DirectionDrive는 같은 공통 함수로 양 pass에 적용한다. Virtual Height와 MesoNormal은 연결되어 있으며 non-uniform instance scale GPU 검증을 추가했다.
+- Virtual Height에서 유도한 mean/Gaussian curvature는 전처리된다. 독립 Macro curvature field는 없으며 Gaussian curvature는 Transport에 연결하지 않는다.
+- AccumulationFactor/CavityFillFactor는 Profile/GPU record에 존재하지만 SurfaceDynamicGeometryUpdate.comp와 SurfaceDynamicWeightsUpdate.comp는 placeholder다. Cavity Filling, Surface Following, AccumulationHeight, 적층 후 normal/distance/curvature 갱신은 미구현이다.
+- Curvature UI는 OFF=1.0, ON=Virtual Height에서 유도한 mean curvature 기반 cache 감쇠이며 기본 OFF다. 물리 응집·응결 구현의 완성을 뜻하지 않는다.
+
+### 검증
+
+CMake 전체 build 및 CTest의 5개 테스트를 실행한다. 새 검증은 Virtual Height/normal 기반 GPU 전달과 비균일 scale, mass conservation, curvature 기본값·평탄·오목/볼록 대칭·scale 독립성·NaN 차단을 포함한다. 실제 UI 클릭과 실제 Scene FPS는 이 실험에서 검증하지 않았다.
+
+### 30fps 데모 후속 점검
+
+데모에서 약 30fps라는 실행 관측이 추가되었다. 실제 Scene의 Solver/Render GPU 시간과 Pause 전후 FPS는 아직 확보하지 못했다. 코드상 고정 30fps 제한은 없고 PresentMode는 IMMEDIATE → MAILBOX → FIFO 순으로 선택한다. 실제 선택된 mode와 화면 주사율은 이 기록에서 확인되지 않았다. MDSS 프로세스는 실행 중이지만 UI 자동화가 해당 native 실행 파일을 앱으로 인식하지 못해 직접 성능 표시를 읽지 못했다. 합성 측정 당시 다른 GPU workload가 없었는지도 보장되지 않아 이전 시간 편차를 고려해야 한다.
+
+Pass 2는 source Current State가 0 이하, alpha가 0 이하, 또는 간선 가중치가 0 이하이면 incoming rawFlux 평가를 생략한다. inverse-transpose 준비도 첫 실제 incoming 평가까지 지연한다. Pass 1의 RawOutgoing/alpha scratch 값과 최종 갱신 식은 유지한다. 빈 source의 입력 이벤트가 소실되지 않고 다음 step부터 전달되며 InputDelta가 한 번 소비되는 GPU regression을 추가했다. 전체 build 및 CTest 5개가 통과했다. 실제 Scene FPS 개선은 아직 측정되지 않았다.
+
+후속 비교는 동일 카메라·해상도·State에서 Pause/Run의 frame time, pass별 GPU 시간, Render GPU를 기록한다. Simulation resolution 512→256은 Surface당 texel 수를 262,144→65,536으로 줄이지만 공간 정밀도와 현행 전달 이산화 결과에 영향을 준다. 기본 해상도를 조용히 변경하지 않는다. 당시 512를 유지하는 후보로 평가한 Pass 1의 방향별·채널별 rawFlux 저장은 Decision 0025에서 제거했다.
+
+### 방향별 RawFlux 캐시의 이전 구현 기록
+
+이 방식은 Decision 0025로 superseded됐다. 아래는 채택 당시의 프로젝트 진화를 기록한다.
+
+당시 Pass 1은 방향·채널별 RawFlux를 저장하고 Pass 2는 공유 역방향 인덱스로 gather했다. 그 구현은 Pass 2 RawFlux·GeometryDrive 재평가를 없앴다. Decision 0025 이후 현재 경로는 Pass 2에서 RawFlux를 재평가하며 역방향 인덱스는 유지한다. 이전 측정과 메모리 가정은 역사 기록이다.
+
+## 실험 — Pass 1 비용 분리
+
+- Date: 2026-09-28
+- 상태: **원인 분리 및 Decision 0022 적용 완료 · 합성 성능/GPU 회귀 검증 완료**
+- 관련: Decision 0025, Simulation Optimization
+
+> **파라미터 표현과 기준값 변경:** 아래 Rate 수치는 측정 당시의 전달량 계수다. Profile/GPU 레코드는 `[0,1]` TransferFactor를 저장한다. 초기 기준 Geometry Rate 100에서는 Rate `50`, `1`이 Factor `0.5`, `0.01`에 대응했다 (Decision 0008). 현재 기준값은 6000으로 재보정되어 Factor `0.5`의 Rate는 3000이다 (Decision 0012). 아래 과거 측정 결과는 새 기준값으로 재측정한 결과가 아니다.
+
+### 실행 화면 관측과 집계
+
+기본 Cube Wetness Scene의 관측은 Frame 13.4 FPS / 74.50 ms, Render GPU 0.38 ms, Solver GPU 74.01 ms, Pass 1 62.61 ms, Pass 2 11.40 ms다. Pass 1은 Solver 표시 시간의 약 84.6%다.
+
+**이전 인스턴스별 순차 dispatch의 역사 기록:** 당시 `TRenderer::RenderFrame`은 모든 instance의 Pass 1 timestamp 구간을 합산했다. UI는 1초 동안 이 값을 평균했다. 따라서 62.61 ms는 단일 dispatch나 큐브 한 개의 값이 아니며, 4개 cube instance의 합계다. 균등 분할하면 cube당 평균 15.65 ms이고 각 cube 비용이 같다는 뜻은 아니다. 현재 단계별 배치 timestamp와는 집계 기준이 다르며, 이전 6×512×512·1채널 합성 측정과도 같은 표본으로 비교하지 않는다.
+
+한 장의 화면으로 순간 급등이나 frame별 jitter를 판정하지 않는다. 지속적인 Pass 1의 높은 비용을 설명하는 코드와 합성 분리 결과를 아래에 기록한다.
+
+### 확인한 작업량 — Decision 0022 적용 전
+
+6 Surface × 512×512 × 4 instances = 6,291,456 texel invocation/step이며 Registry channel은 DemoWetness의 1개다. 유효 이웃이 모두 8개인 소스 수준 상한은 50,331,648 directed rawFlux 평가/step이다. 실제 이웃 수·지원 여부·가중치에 따라 더 작다. 화면에 보이지 않는 표면도 Solver 대상이다.
+
+- Pass 1에는 State=0 또는 감쇠 후 가용량=0인 source의 비싼 flux 평가를 생략하는 경로가 없다. Current와 AvailableState는 이웃별 RawFlux를 다 합친 뒤에 계산한다.
+- `initializeGeometryDrive`는 각 유효 texel invocation에서 instance 공통 inverse-transpose와 gravity up 축을 준비한다. 실제 기계 명령 수는 compiler 최적화에 따라 달라진다.
+- `geometryDrive(source,target)`는 이웃마다 source 법선 읽기·행렬 변환·길이·정규화, source 중력 투영·길이, source displaced position을 다시 계산한다. source가 같으면 이 값들은 이웃마다 동일하다. target 위치·edge 길이·방향·높이 차이는 이웃별 계산이 필요하다.
+- Decision 0021은 Pass 2의 RawFlux 재평가를 없앴다. 위 Pass 1 계산은 유지되며 RawFlux 저장 쓰기가 추가됐다.
+- RawFlux 쓰기는 instance별 float32, direction-index-major plane, 6×512×512·1채널·8개 방향 이웃, scalar 원소 padding 없음에서 instance당 48 MiB/step이다. 4 instances는 192 MiB/step의 payload store다. allocator padding 및 다른 buffer 접근은 제외하며 실제 DRAM transaction 양과 동일시하지 않는다.
+- 측정 당시 DemoWetness의 GeometryTransferRate=50은 곱셈 계수로, 그 값만으로 한 dispatch의 이웃 반복 횟수가 늘지 않았다. 현재 Auto substepping ON에서는 Rate 증가가 안전 step 간격을 줄여 frame당 Solver 반복 수를 늘릴 수 있다. 기본 Auto OFF·Fixed ON의 dt=1/60초는 계수로 바뀌지 않는다 (Decision 0013).
+
+### 합성 분리 측정
+
+Apple M1, 한 instance에 6개 Surface × 512×512, 1채널, 모든 texel 유효 grid, 최대 8개 이웃이다. 실제 Cube Mesh·Normal Map·Render는 포함하지 않는다. 위치 `(0.01x,0.01y,0.0025x)`, normal `normalize(-0.25,0,1)`, identity transform, gravity `(0,0,-1)`, dt=1/60이다. Profile은 Decision 0021과 같은 DemoWetness 수치를 사용하며 Input=0, ConcavityWeight=0이다.
+
+각 dispatch는 같은 State A를 읽고 B에 쓴다. State는 `0.25 + 0.5 × (i % 31) / 30`이며 dry 조건은 전부 0이다. 현행 shader를 사용해 GeometryDrive/SaturationDrive push flag만 변경했다. 5회 warmup + 30회 표본 중앙값을 사용하며 두 번 반복하고 두 번째는 측정 순서를 뒤집었다. CPU geometry/cache 준비·upload는 측정 밖이다.
+
+| 조건 | Pass 1 run 1 / run 2 (ms) |
+|---|---|
+| 기본 ON / State 전체 양수 | 19.572 / 19.981 |
+| GeometryDrive OFF | 3.938 / 11.216 |
+| SaturationDrive OFF | 17.816 / 18.138 |
+| GeometryDrive와 SaturationDrive 모두 OFF | 5.834 / 4.020 |
+| State 전부 0 / 기본 ON | 16.816 / 16.249 |
+| State 전부 0 / GeometryDrive OFF | 7.321 / 4.261 |
+
+시간 편차가 커서 항목별 비용을 차이 값으로 정확히 분해하거나 더해서 전체 시간을 예측하지 않는다. GeometryDrive를 끈 조건의 큰 감소와 dry에서도 유지되는 비용은, Pass 1 형상 경로가 주된 비용이며 빈 source 생략이 없다는 코드 관찰을 뒷받침한다. SaturationDrive만 끄는 효과는 이 표본에서 작았다. CPU 전처리와 TransferWeight cache rebuild는 이 query 구간에 포함되지 않는다. 형상 연산과 관련 buffer read 중 어느 쪽이 GPU 실행을 제한하는지는 이 측정만으로 분리하지 않는다.
+
+### source 중복 계산을 제거한 임시 후보
+
+분석용 shader에서 source 법선 변환·정규화, 중력 투영과 길이, displaced source position을 invocation당 한 번 준비해 이웃 평가가 재사용하도록 했다. source inverse-transpose 준비와 이웃별 target/edge 계산, RawFlux 쓰기, Profile/State 규칙은 유지했다. 추가 GPU buffer는 없다. 현행 runtime shader에 적용한 변경은 아니다.
+
+별도 두 반복에서 source 재사용 후보와 현행을 번갈아 측정했으며 모든 배열의 Next State·RawOutgoing·alpha를 비교했다.
+
+| 조건 | 현행 Pass 1 (ms) | source 재사용 후보 (ms) | 최대 절대 오차 |
+|---|---:|---:|---:|
+| 전체 State / run 1 | 25.198 | 15.621 | 5.96e-8 |
+| 전체 State / run 2 | 19.082 | 12.993 | 5.96e-8 |
+| dry / run 1 | 13.808 | 12.813 | 1.40e-9 |
+| dry / run 2 | 14.106 | 13.262 | 1.40e-9 |
+
+임시 후보 shader로 기존 Surface GPU resource/solver 회귀 검사도 통과했다. Virtual Height·normal, 비균일 scale, 중력 반전, term toggle, 여러 channel·seam direction index·초과량 보존·입력 소비 fixture를 포함하며 validation 오류가 없었다.
+
+source 재사용의 개선은 전체 State 조건에서 약 32–38%, dry에서 약 6–7%다. 시간 편차와 위 다른 실험 run을 섞지 않으며 실제 Scene 성능 개선률로 환산하지 않는다. 여러 Profile/channel의 GeometryTransferRate=0 경로에서는 불필요한 source 준비를 피하도록 실제 적용 시 준비 시점을 검토한다.
+
+### 가용량 0의 source 생략 범위
+
+생략 후보는 텍셀 전체 갱신이 아니라 Pass 1의 **해당 texel·channel에서 나가는 전달량 평가**다. `AvailableState = max(Current - Decay, 0)`이고 실제 outgoing은 `RawOutgoing × alpha`이므로, 가용량이 0이면 계산 전에도 실제 outgoing이 0임을 알 수 있다. 이 판단에는 별도 활동 비트 마스크가 필요하지 않다.
+
+Pass 2는 계속 이웃 source의 캐시를 gather하고 InputDelta를 소비해 `Next = max(Current + Input + Incoming - Outgoing - Decay, 0)`를 기록한다. 자기 가용량이 0이어도 이웃 유입이나 외부 입력을 받을 수 있다. 이번 step에 받은 양은 다음 step의 Current가 되므로 다음 step부터 outgoing 평가 대상이다. 여러 Registry channel 중 하나의 가용량이 0인 경우에도 다른 channel은 독립적으로 처리한다.
+
+생략 경로에서도 재사용 scratch의 이전 값이 남지 않도록 해당 channel의 RawFlux의 8개 방향별 항목과 RawOutgoing·alpha를 0으로 덮어써야 한다. 이는 Next State와 실제 전달량을 보존하지만, 가용량이 0일 때의 제한 전 RawOutgoing과 alpha 디버그 값은 초기 구현과 달라질 수 있다. 후속 Decision 0022에서 이 경로를 runtime shader에 적용했다.
+
+### 추가 중복 연산 검토 — Decision 0022 적용 전
+
+아래 횟수는 유효 이웃 8개인 소스 코드의 평가 상한이다. GPU compiler가 일부 계산과 읽기를 합칠 수 있으며, source 형상 재사용 임시 후보 외의 각 항목은 별도 성능 측정을 하지 않았다.
+
+| 항목 | 현행 반복 범위 | 재사용 가능한 범위와 적용 제한 |
+|---|---|---|
+| source Saturation `Current / Capacity` | SaturationDrive가 켜져 있으면 이웃당 한 번, 최대 8회/channel | source·channel당 한 번. target의 Saturation은 이웃마다 다르다. |
+| source 지원 검사·profile index·profile parameters | Pass 1 외부 지원 검사 이후에도 각 `rawFlux`에서 source 지원 검사를 반복하고 profile을 다시 조회한다. source Capacity도 Saturation 함수에서 재조회한다. | 이미 지원을 확인한 source·channel의 Parameters와 Current를 이웃 루프 밖에서 준비한다. target의 지원 여부와 Capacity 검사는 유지한다. |
+| instance normal matrix·gravity up 축 | 각 유효 texel invocation의 `initializeGeometryDrive` | transform·gravity가 같은 instance의 dispatch 공통 값이다. CPU 또는 instance 공통 자원에서 준비하는 후보이며 push constant/layout 변경 비용을 함께 검토한다. 이 행렬은 이웃당 8회가 아니라 현행에서도 texel당 한 번 준비한다. |
+| source projected gravity의 방향 정규화·공통 유효성 검사 | `length(SolverUp)`와 source 방향 `GravityOnSurface / SurfaceGravityLength`가 `geometryDrive`마다 평가된다. | source 형상 준비에 유효 여부와 정규화된 방향을 포함해 이웃들이 재사용한다. 기존 임시 후보도 source 방향 나눗셈은 이웃 평가 안에 남아 있다. target edge 길이·정규화는 이웃별로 필요하다. |
+| 같은 edge의 GeometryDrive·neighbor index·TransferWeight | channel 루프 안에서 이웃 루프를 반복하므로 여러 channel에서 동일 값을 재평가/재조회한다. | 형상·topology·가중치는 channel 독립이다. 여러 channel에서 재사용할 수 있으나 현재 1채널 wetness 데모에는 channel 간 절감이 없다. edge 배열의 register 압력과 1채널 성능을 검증해야 하며 기존 배열 후보는 안정적인 개선이 확인되지 않아 미채택이다. |
+| 동일 texel·channel의 `decayAmount` | Pass 1에서 가용량 계산, Pass 2에서 Next 계산으로 두 번 | 두 pass가 같은 Current·Profile·형상·dt·flags를 읽는다. 재사용하려면 pass 간 저장과 읽기가 필요하므로 단순 루프 이동과 다르다. 추가 메모리 접근 대비 이득을 측정하기 전에는 우선순위를 낮춘다. |
+
+이웃별 target 위치·Saturation과 source→target 방향은 실제로 다르므로 source와 같은 값으로 취급하지 않는다. 반대 방향 `rawFlux(j,i)`도 Saturation 차이·source 계수·중력 방향에 따라 달라지므로 `rawFlux(i,j)`를 그대로 재사용할 수 없다.
+
+### 후속 우선순위
+
+아래는 원인 분리 시점의 우선순위다. 1–4의 가용량 0 생략·source 공통 형상·instance 공통 행렬·source channel 공통 조회는 Decision 0022에서 적용했다. 여러 channel의 edge 배열과 pass 간 Decay 캐시는 보류하며 실제 Scene 시계열은 별도 과제다. 적용 후 동일 512 해상도의 합성 비교 결과는 Pass1 Source Reuse에 기록했다. 기본 해상도는 후속 Decision 0023에서 Medium 256으로 변경했으므로 최초 화면 관측과 기본 실행 시간을 직접 비교하지 않는다.
+
+1. 가용 State=0인 source의 실제 outgoing은 source alpha 제한으로 0이다. Pass 1의 형상·Saturation 계산을 생략하는 경로를 검토한다. Input은 기존대로 Pass 2에 반영하므로 새 입력의 전달 시점은 다음 step이다. 생략 시 RawFlux·RawOutgoing·alpha scratch의 0 기록 의미와 디버그 계약을 함께 정의해야 한다.
+2. 위 source 공통 geometry 재사용을 검토한다. channel 수가 달라도 source geometry는 동일하며, GeometryDrive가 실제 필요한 경우에 한 번 준비한다.
+3. instance 공통 inverse-transpose와 gravity up 축을 instance 단위로 준비해 invocation당 반복을 줄이는 방안을 검토한다. 비용 절감 폭은 따로 측정한다.
+4. source·channel 공통 Saturation·Profile 조회·지원 검사를 이웃 루프 밖으로 옮기는 후보를 검토한다. 여러 channel의 edge 재사용과 pass 간 Decay 재사용은 별도 측정 후 판단한다.
+5. 실제 Scene의 네 instance별 Pass 1/2와 frame별 timestamp를 수집해 Virtual Meso Geometry·회전·State 분포·시간 편차를 분리한다. 이 기록은 상시 높은 Pass 1의 원인을 분석했으며 순간 급등 원인은 별도 시계열이 필요하다.
+
+## RawFlux 캐시 ON/OFF 비교 실험
+
+- Date: 2026-09-28
+- Status: **초기 ON/OFF 경로의 합성 GPU 비교 완료 · Decision 0005 이전 측정 기록**
+- 적용 범위: 아래 수치는 빈 source의 RawFlux를 0으로 덮어쓰던 초기 ON 구현이다. Decision 0005 이후에는 해당 쓰기를 생략하므로 현재 성능 수치로 사용하지 않는다.
+- 결정: RawFlux 캐시 ON/OFF 비교
+
+### 비교 조건
+
+- Apple M1, Vulkan/MoltenVK, 6 Surface × 512×512 = 1,572,864 texel, Registry 1채널, 1 instance.
+- 같은 GPU 리소스와 Profile을 사용하며 ON/OFF 각각 specialization pipeline을 선택한다. source 재사용, 빈 source 생략, CPU instance 행렬 계산, 다른 Solver 항목은 양쪽에 유지한다. 메모리 할당은 바꾸지 않는다.
+- 각 Surface의 texel `(x,y)` 위치는 `(0.01x, 0.01y, 0.0025x)`, 법선은 `normalize(-0.25,0,1)`이다. 8방향 grid 이웃이며 경계 밖 이웃은 invalid다. 모든 texel은 같은 Profile을 지원하며 Normal Map, 렌더링, 이벤트 입력은 제외한다.
+- Capacity=1, saturation rate=0.2, geometry rate=50, decay rate=0.03, cavity retention factor=0.5, instance transform=identity, gravity=(0,0,-1), dt=1/60초.
+- dense는 모든 source의 State가 `0.25 + 0.5 × (global index % 31)/30`이다. sparse는 `global index % 1024 < 16`에만 같은 양수를 넣고 나머지는 0이다. dry는 전체 0이다.
+- 각 모드의 측정 전 동일한 initial State를 A에 업로드한다. 모든 dispatch는 같은 A를 읽고 B에 기록하여 시뮬레이션 진행에 따른 조건 변화를 제거한다. 5회 warmup 후 30회 GPU timestamp의 중앙값을 구한다. 두 번째 반복에서는 OFF→ON으로 순서를 뒤집는다.
+- CPU 준비·업로드·pipeline 생성·download는 시간 측정 밖이다. 전체 구간은 Pass 1 시작부터 Pass 2 종료까지이며 중간 barrier 구간을 포함한다. UI의 Solver GPU 값은 두 pass 구간 합을 평균하므로 이 전체 중앙값과 집계 방식이 다르다.
+- 비교 fixture의 버퍼 payload는 RawFlux float32 `1,572,864 × 1 × 8 × 4 B` = 48 MiB, 공유 reverse direction indices uint32 `1,572,864 × 4 B` = 6 MiB로 합계 54 MiB다. 두 배열은 원소당 4 B이며 추가 원소 padding이 없다. ON/OFF 모두 동일하게 할당한다. allocator overhead, pipeline 메모리 및 기존 State·형상 버퍼는 제외한다. 실제 Scene의 instance·공유 조합 수와 구분한다.
+
+### 결과
+
+시간 단위는 ms이며 ON/OFF 열은 각각 반복 1 / 반복 2다.
+
+| State 분포 | ON Pass 1 | OFF Pass 1 | ON Pass 2 | OFF Pass 2 | ON 전체 | OFF 전체 |
+|---|---|---|---|---|---|---|
+| 전체 양수 | 8.937 / 9.255 | 11.708 / 8.758 | 3.308 / 3.404 | 13.878 / 13.400 | 12.321 / 12.615 | 25.535 / 22.290 |
+| 약 1.56% 양수 | 1.952 / 1.978 | 1.188 / 1.105 | 2.170 / 2.195 | 2.438 / 2.336 | 4.181 / 4.241 | 3.675 / 3.592 |
+| 전체 0 | 2.101 / 1.850 | 1.198 / 1.043 | 2.528 / 2.123 | 2.714 / 2.194 | 4.494 / 4.007 | 3.901 / 3.303 |
+
+- 전체 양수에서는 ON의 전체 GPU 구간이 OFF보다 약 43–52% 짧았다. Pass 2의 방향별 geometry·saturation 재평가를 없애는 이득이 크다.
+- 약 1.56% 양수에서는 ON의 전체 구간이 OFF보다 약 14–18% 길었다. 빈 source의 계산은 이미 생략되므로 재계산 제거 이득은 작고 ON의 방향별 cache zero store 비용은 남는다.
+- 전체 0에서는 ON의 전체 구간이 OFF보다 약 15–21% 길었다. 두 모드 모두 incoming 재평가가 없어 Pass 1의 cache zero store 제거가 OFF에 유리했다.
+- 모든 결과 배열 Next·RawOutgoing·alpha의 ON/OFF 최대 절대 차이는 전체 양수·sparse에서 5.96×10⁻⁸ 이하, dry에서 0이었다. specialization에 따른 부동소수점 반올림 수준이다.
+- GPU clock·열 상태와 compiler 최적화에 따른 반복 편차가 있다. 캐시 사용이 항상 빠르다는 결론이나 실제 Cube Scene FPS 개선률로 환산하지 않는다. 반복 1의 dense Pass 1 편차도 유지하여 기록했다.
+
+### 실제 Scene에서 비교
+
+1. 당시 Solver 탭의 Cache Comparison을 펼쳐 RawFlux Cache를 선택했다. 이 기능은 Decision 0025에서 제거됐다.
+2. 동일한 해상도·다른 Solver 항목·Profile·transform을 유지하고 맨 오른쪽 Global Settings 탭에서 Fixed timestep ON·Auto substepping OFF를 사용한다. 양쪽에서 같은 Time scale을 사용한다. Solver step당 1/60초이며 배속은 누적 시간에 적용된다. frame당 Solver 반복 수와 backlog도 함께 기록한다.
+3. 각 모드에서 Reset State 후 같은 입력을 재현한다. 같은 초기 State 없이 실행 중 토글한 숫자는 동등한 조건의 A/B 측정으로 해석하지 않는다. 입력 위치·강도·횟수와 경과 step을 맞춰야 한다.
+4. warmup과 전환 직후 첫 평균을 지나서 Pass 1·Pass 2·Solver GPU를 읽는다. 화면의 모드 표시와 cache buffer MiB를 함께 기록한다. OFF에서도 할당은 유지되며 추가 VRAM 절감은 발생하지 않는다.
+
+UI는 토글·고정 시간 간격·실제 buffer 크기·모드별 평균 초기화를 제공한다. 자동 State snapshot/replay와 정해진 step 수의 benchmark 실행은 현재 제공하지 않는다.
+
+## 2026-10-05 셰이더 핫패스 최적화 기록
+
+- 작업일: 2026-10-05 (KST)
+- 범위: Solver Pass 2, stencil State 샘플링, 동적 concavity, surface lighting
+- 상태: 당시 구현 및 셰이더 컴파일 확인 완료. Shared-memory 타일과 렌더링용 State texture는 이 단계에서 후속 검토 항목이었다.
+
+### 반영한 변경
+
+#### Solver Pass 2
+
+- Pass 2는 이웃 flux를 모으기 전에 현재 texel/channel이 지원되는지 확인한다. 이 결과를 전제로 이웃별 `rawFlux` 안의 중복 `supportsChannel(target)` 확인을 없앴다.
+- 현재 texel의 포화도, concavity, effective position은 모든 이웃 flux가 공통으로 참조하므로 이웃 loop 전에 한 번 계산해 재평가 함수에 넘긴다. 이웃 source의 Profile, saturation, transfer weight와 source geometry는 방향마다 달라지므로 source 측 계산은 계속 이웃별로 한다.
+- texel의 8개 packed reverse-direction index를 나타내는 `uint`를 loop 전에 한 번 읽고, loop 안에서는 shift/mask만 수행한다.
+- Directional RawFlux cache 분기가 있던 시기의 specialization 최적화 기록이다. Decision 0025에서 재계산 경로만 남겼고, Decision 0029에서 측정을 위한 cache A/B variant를 다시 생성하기로 했다.
+
+```text
+기존 OFF: 이웃마다 target 지원 검사 + target saturation/concavity/position 조회 + reverse index word 읽기
+현재 OFF: 앞선 target channel guard 재사용 + target 공통값 한 번 준비 + reverse index word 한 번 읽기
+현재:     Pass 1은 방향별 flux 합계만 저장하고 Pass 2가 incoming flux를 재평가
+```
+
+각 방향의 source flux 수식과 Pass 1/Pass 2 역할, Current/Next State 계산은 유지한다. 재사용 대상은 모든 incoming edge에서 같은 target 항목이고, 서로 다른 source가 요구하는 값은 합치지 않는다.
+
+관련 구현: [SurfaceSolverPass2.comp](../../../Shaders/Simulation/Solver/SurfaceSolverPass2.comp), [SurfaceSolverCommon.glsl](../../../Shaders/Simulation/Solver/SurfaceSolverCommon.glsl)
+
+#### Stencil State 샘플링
+
+- `StateSaturationForProfile`을 추가했다. 일반 `StateSaturation`은 texel→Surface/Profile 대응, Profile/channel 지원, buffer 길이를 검증한 뒤 이 helper를 호출한다. helper는 Profile index를 받아 capacity와 총량만 읽고 면적 환산·유효성·`[0,1]` clamp를 수행한다.
+- `SampleStateSaturation`은 center에서 Surface, Profile, chart와 channel 지원을 확인하고, 2×2 bilinear 이웃에 대해 chart/Profile 동일 여부를 검사한 뒤 helper를 쓴다. `HeightFieldSmoothing`도 center 지원 channel 검사 이후 같은 Profile인 이웃에 helper를 사용한다. `OverlayCoverageSmoothing`은 중심 Profile의 지원 여부를 loop 전에 한 번 확인하고, 최대 5×5 이웃에서 같은 Surface/Profile/chart texel만 처리한다.
+- 이 검사 순서로 이웃마다 중복되던 Surface/Profile/support table 조회를 줄인다. 이웃의 면적·State 값은 달라질 수 있으므로 texel별 capacity·amount read는 유지한다. 기존 kernel weight, 면적 보정과 출력 clamp는 변경하지 않았다.
+
+관련 구현: [StateSampling.glsl](../../../Shaders/Rendering/Surface/StateTexture/StateSampling.glsl), [HeightFieldSmoothing.comp](../../../Shaders/Rendering/Surface/Smoothing/HeightFieldSmoothing.comp), [OverlayCoverageSmoothing.comp](../../../Shaders/Rendering/Overlay/Coverage/OverlayCoverageSmoothing.comp)
+
+#### 동적 concavity와 조명
+
+- `SurfaceDynamicGeometryUpdate`는 동적 geometry의 두 번째 `vec4.xyz`에 `normalize(Normal)`을 저장한다. `SurfaceDynamicWeightsUpdate`의 concavity fit은 이 local 값을 그대로 사용해 중심 및 최대 8개 이웃의 불필요한 `normalize` 호출을 제거한다. `worldNormal`은 NormalMatrix 변환이 길이를 바꿀 수 있어 변환 후 정규화를 유지한다. 정적 fallback Meso normal도 builder에서 정규화된 값이라는 데이터 계약을 따른다.
+- Lit 경로는 `V`, `L`, `H`와 `NoV`, `NoL`, `NoH`, `VoH`를 base direct-light 계산에 사용한다. Wet/film `EvaluateSpecularLobe`가 이 공통 항을 입력으로 받게 해 lobe마다 수행하던 vector normalization과 dot product를 제거하고, 각 roughness에 필요한 GGX distribution·visibility·Fresnel은 유지한다.
+- `Wet == 0` 또는 Wetness specular strength가 0이면 Wet lobe를, `Film == 0`이면 Film lobe를 생략한다. 색상·coverage·roughness 값 자체는 기존 식과 같다.
+
+관련 구현: [SurfaceDynamicWeightsUpdate.comp](../../../Shaders/Simulation/Geometry/SurfaceDynamicWeightsUpdate.comp), [Lighting.glsl](../../../Shaders/Rendering/Surface/Lighting/Lighting.glsl)
+
+#### Release GPU validation
+
+- CMake Debug configuration은 `MDSS_GPU_VALIDATION=1`, 그 외 configuration은 `0`으로 모든 shader를 컴파일한다. Debug와 Release SPIR-V는 `bin/Shaders/<CONFIG>/`에 따로 두어 한 configuration의 결과물을 다른 configuration이 재사용하지 않게 한다.
+- production hot paths의 buffer bounds용 `.length()` 확인과 capacity/amount·geometry의 NaN/Inf 방어 검사는 Debug shader에서 수행한다. 대상은 `StateSampling`, 3×3/5×5 smoothing, Solver common geometry와 동적 형상/가중치 계산이다. Release shader는 CPU 전처리와 GPU resource layout이 보장하는 index·유한값 계약을 전제로 이 반복 검사를 컴파일 단계에서 제거한다. Overlay의 마지막 occupancy flag처럼 실제 element index를 계산하기 위한 `.length()` 조회는 남긴다.
+- 지원 channel, Surface·chart/Profile 경계, 0 이하 capacity/amount, stencil 범위처럼 결과 의미를 정하는 분기는 Release에서도 유지한다. 진단용 Debug shader도 항상 검사를 유지하며 Vulkan validation layer 설정과는 별도다.
+- 이 경로는 resource descriptor나 CPU 검증을 대신하지 않는다. Release에서 buffer 계약이 깨진 경우 out-of-bounds access가 날 수 있으므로 입력·ABI 검증은 유지해야 한다.
+
+관련 구현: `CMakeLists.txt`, [StateSampling.glsl](../../../Shaders/Rendering/Surface/StateTexture/StateSampling.glsl), [SurfaceSolverCommon.glsl](../../../Shaders/Simulation/Solver/SurfaceSolverCommon.glsl), [SurfaceDynamicGeometryUpdate.comp](../../../Shaders/Simulation/Geometry/SurfaceDynamicGeometryUpdate.comp)
+
+#### Dirty height tolerance
+
+- `SurfaceAccumulationHeight.comp`는 현재 높이와 마지막 geometry build 높이의 차이가 tolerance 이하이면 geometry를 dirty로 표시하지 않는다.
+- 기준은 local-space 높이 단위의 `max(1e-5, 1e-3 × max(abs(Height), abs(BuiltHeight)))`다. 즉 절대 하한 `1e-5`, 상대 허용 변화 `0.1%` 중 큰 값을 쓴다.
+- 비교 기준은 매 step의 직전 높이가 아니라 마지막으로 생성한 `BuiltHeight`다. 작은 step 변화가 계속 같은 방향으로 쌓이면 누적 차이가 tolerance를 넘는 시점에 갱신된다.
+- 이 최적화는 임계값 이하의 형상 변화를 바로 반영하지 않으므로 정확히 같은 형상을 보장하지 않는다. 큰 높이 변화와 normal 길이가 유효하지 않은 경우 dirty 처리한다. Debug에서는 저장 높이/normal의 NaN·Inf도 dirty로 처리하며 Release는 유한한 GPU 입력 계약을 따른다.
+
+관련 구현: [SurfaceAccumulationHeight.comp](../../../Shaders/Simulation/Geometry/SurfaceAccumulationHeight.comp)
+
+### RawFlux cache 비교 UI — 제거 및 A/B variant 복귀 이력
+
+초기 구현에서는 Debug UI의 `Cache Comparison > RawFlux Cache` 체크박스와 specialization pipeline 전환으로 비교했다. Decision 0025에서 방향별 cache와 비교 UI를 제거했으며, 이후 GPU 측정을 위해 Decision 0029에서 cache/layout/precision 비교를 별도 compile-time SPIR-V variant로 복귀시키기로 결정했다. 이 항목의 과거 구현 세부는 이전 방식을 기록한다.
+
+관련 구현: `Source/DebugUI/Panels/DebugUISimulation.cpp`, `Source/SurfaceState/Solver/SurfaceStateSolver.cpp`; Directional RawFlux Cache
+
+### 검증 및 성능 기록
+
+- 수정한 Pass 1/2, dynamic weights, SurfaceLit, HeightFieldSmoothing, OverlayCoverageSmoothing 셰이더를 `glslc`로 컴파일했고, 이후 Pass 2 helper signature와 Overlay 중심 지원 검증을 보완한 뒤 Pass 1/2 및 Overlay 셰이더도 다시 컴파일했다. `git diff --check`도 통과했다.
+- `MDSS_GPU_VALIDATION=1/0` 양쪽으로 production shader variant를 수동 컴파일했다. Release CMake configure와 전체 `MDSS_Shaders` target도 통과했으며, SPIR-V 확인에서 Release `SurfaceLit`/`SurfaceAccumulationHeight`에는 검증용 `OpIsNan`·`OpIsInf`가 없고 Debug variant에는 남아 있다.
+- GPU validation을 끄는 것은 Release의 fast path에서 CPU·resource 계약 기반의 bounds/finiteness 검사를 제거하는 것이며, Vulkan validation layer를 끄는 변경은 아니다.
+- 이 노트 작성 시점에는 테스트 suite를 실행하지 않았다.
+- 2026-10-04 23:54 결과는 직전 23:20 결과와 비교해 여섯 Scene/resolution 조합 모두 Solver median이 낮았으며 감소폭은 약 39–49%였다. 다만 두 실행 모두 dirty working tree였고 revision도 다르므로, 이 수치를 이번 셰이더 변경만의 효과로 해석하지 않는다. 상세값과 실행 protocol은 [23:54 solver-resolution 결과](../../../Performance-Data/20261004-235404-solver-resolution/summary.md) 및 [23:20 직전 결과](../../../Performance-Data/20261004-232011-solver-resolution/summary.md)를 참조한다.
+
+### 후속 검토
+
+- 초기에는 `HeightFieldSmoothing`의 2D shared-memory tile을 별도 실험으로 두었다. Decision 0029에서 sparse tile을 8×8 microtile로 매핑하고 10×10 shared halo를 적재하는 A/B variant를 구현했다.
+- 이 단계에서는 SurfaceLit용 State texture 변환을 보류하고 SSBO 경로를 유지했다. 후속 구현은 아래에 기록한다.
+- 현재 A/B variant 구현 상태와 남은 검증은 Decision 0029 및 [[04_Development/00_Current-Work|Current Work]]를 따른다.
+- Tolerance에 따른 형상 오차와 갱신 빈도의 Scene별 영향은 측정하지 않았다. 상대 기준과 절대 하한은 구현된 시작값이며, 장면 스케일별 품질·성능 비교가 필요하다.
+- GPU timestamp 비교를 통해 개별 변경의 효과를 분리할 수 있는 benchmark run이 필요하다.
+
+### 관련 문서
+
+- Simulation Optimization
+- Rendering
+- Decision 0025 — 방향별 RawFlux 캐시 제거
+- Decision 0029 — GPU A/B compile-time shader variants
+
+## 2026-10-05 렌더링용 State texture
+
+- 현재 결정은 Lit 경로의 demo State 네 개를 Surface별 RGBA16F 배열 texture로 변환해 샘플링하는 것이다. 채널 ID는 `.SRProfile`에서 로드한 Registry에 따라 정해지며, 매 프레임 현재 AB/BA State 버퍼와 선택된 demo 채널 ID를 compute pass에 전달한다.
+- 배열의 layer는 Surface ID에 대응한다. 인스턴스별 이미지의 가로·세로 크기는 해당 인스턴스 Surface들의 최대 해상도이며, 각 layer의 유효 영역만 쓴다. Surface 경계에서 bilinear filter가 padding을 섞지 않도록 sampling 좌표를 유효 영역의 texel center 범위로 제한한다.
+- chart/Profile 경계에 인접하지 않은 texel은 fragment에서 하드웨어 bilinear RGBA fetch 한 번으로 네 상태를 읽는다. 경계 texel은 공유 Geometry에 저장한 정적 flag를 보고 기존 2×2 SSBO 샘플링을 사용한다. 이는 경계에서 다른 chart/Profile의 값이 섞이지 않는 기존 의미를 보존한다.
+- compute write와 fragment sample 사이에 image barrier를 둔다. 매 Lit 프레임 texture를 다시 생성하므로 solver step이 없는 프레임의 Profile 파라미터 변경과 State reset도 반영된다.
+- 메모리 계산은 인스턴스별 RGBA16F 배열 이미지가 `8 × maxWidth × maxHeight × SurfaceCount` byte(이미지 padding·alignment 제외), 공유 Geometry의 경계 flag가 `uint32` 기준 `4 × TexelCount` byte라는 가정이다. State의 원본 SSBO는 시뮬레이션과 경계 fallback용으로 유지한다.
+- Release 셰이더 및 MDSS 실행 파일 빌드, Debug/Release SPIR-V 검증과 Mountain `.Scene`의 2프레임 실행을 확인했다. 해당 실행은 Apple M1/MoltenVK에서 종료 코드 0이며 Vulkan validation 오류를 출력하지 않았다. 실제 GPU 시간과 경계 fallback 비율은 아직 측정하지 않았다. RGBA16F의 `[0,1]` 양자화 오차는 float SSBO 경로와 같지 않으므로 외관 비교가 필요하다.
+
+관련 구현: [RenderStateTexture.cpp](../../../Source/Rendering/Surface/RenderStateTexture.cpp), [RenderStateTexture.comp](../../../Shaders/Rendering/Surface/StateTexture/RenderStateTexture.comp), [RenderStateSampling.glsl](../../../Shaders/Rendering/Surface/StateTexture/RenderStateSampling.glsl)
+
+
+## 최적화 후속 구현·전후 측정 — 2026-10-25
+
+- 상태: **실행 가능한 5항목의 측정·검증 완료 — 4항목 채택, Geometry는 실험 옵션·기본 OFF, 2항목 실행 차단/미실행으로 보류**. 기준·보충 포함 204회 / 122,400프레임이며 과거 결과에 개선율을 덧붙이지 않는다.
+- 기준: `2b115ff` + 공통 benchmark 계측. 변경마다 소스·실행 파일·SPIR-V·에셋을 보관한다.
+- 공통 조건: BrickCube/Mountain × 256/512, Geometry feedback ON, fixed dt 1/60, 60 준비 + 600 측정 + 2 drain, 3회 반복. 설정·실행 시각은 manifest에 기록한다. CPU 전체 loop 경과 시간과 공통 simulation/command-buffer GPU timestamp를 동일하게 추가한 뒤 기준 측정한다.
+- 판단: **항목별 아래 표에 기록**. NaN/음수, 같은 step의 State 배열·총량·분포 차이와 반복 편차를 확인했고 불리한 결과도 보존했다. 총량 요약 일치만으로 물리적 보존을 증명하지 않는다.
+
+| 공통 조건 | 실제 설정·보관 위치 |
+|---|---|
+| 실행 환경 | Windows 11 Pro 26300 / Ryzen 5 5600X / Radeon RX 6700 XT / Windows GPU driver 32.0.21030.2001 / Balanced. [환경 출력](../../../Performance-Data/20261025-optimization-round/raw/inputs/environment.json) |
+| 빌드 | Vulkan Release, validation OFF. 단계별 실행 파일·SPIR-V·소스·에셋·patch·SHA-256은 [보관본](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages)에 저장 |
+| 화면 | swapchain 1280×720, Lit viewport 1개 469×571. 카메라 위치·방향·FOV는 실행별 `.settings.json`으로 고정·대조 |
+| 입력 | 새 프로세스, initialContacts만 적용, 데모 애니메이션 정지, 추가 브러시 입력 없음. Wide는 lava radius 10 / falloff 0인 별도 Scene |
+| 기본 계산 설정 | feedback ON, FP16 RawFlux ON, FP16 weights OFF, RawFlux cache·연속 배치·height/geometry 부분 계산·채널 마스크 ON. 각 실험에서 바꾼 옵션은 manifest와 `.input.json` / `.settings.json` / `.validation.json`에 기록 |
+| 해상도 | 기본은 simulation/base/overlay 모두 256 또는 512. PERF-037 보충만 simulation 유지·base/overlay 64 |
+| 집계 | 실행별 600개 프레임의 중앙값·p95를 계산한 뒤 3회 값의 중앙값. 반복별 범위도 함께 보관. 마지막 State는 drain 포함 662 step 기준 |
+
+| 실험 | 질문·변경 한 가지 | 기준 → 후보 | 상태 |
+|---|---|---|---|
+| PERF-028 후속 | Solver shader 실행 경로 | compile-time variant → runtime flags | 완료·기본 경로 채택 |
+| PERF-007 후속 | Solver 부분 계산 사용 정책 | sparse ON → OFF (Geometry·채널 마스크 유지) | 완료·기본값 채택 |
+| PERF-036 | 저장 형식에 맞는 버퍼 할당 | 최대 FP32 용량 → cache/FP16 실제 크기 | 기본 24회·옵션 보충 36회 완료·메모리 절감으로 채택 |
+| PERF-037 | 메시 해상도 GPU 캐시 정책 | 모든 해상도 미리 생성 → 필요할 때 생성·미사용 해제 | 기본 24회·메시 64 보충 12회 완료·메모리 절감으로 채택 |
+| PERF-038 | 넓은 활성 영역의 Geometry 실행 | 항상 부분 dispatch → GPU 작업량별 전체/부분 선택 | 36회 완료·속도 악화/State 차이 확인·실험 옵션·기본 OFF |
+| PERF-039 | 여러 물체의 실행 순서 | 항상 단계별 batch → 순차/batch 선택 | OS 실행 차단·0프레임·검토 패치 분리 |
+| PERF-040 | 넓은 Overlay 필터 실행 | 항상 tile 기반 → 전체/부분 선택 | 미실행·검토 패치 분리 |
+
+각 실험은 질문·실제 조건·전후 결과 표·정확성·채택 여부·원자료를 아래에 갱신한다. 전후 측정 전 예상 효과를 결과로 작성하지 않는다. Overlay 변경 후보 전달은 scan 단독 비용과 안전한 갱신 범위를 확인한 뒤 별도로 판단한다.
+
+
+<!-- OPT_ROUND_PERF028_START -->
+### PERF-028 후속 — Solver shader 실행 중 분기 복구 (2026-10-25)
+
+- 기록 유형: **구현 당시 측정**. 상태: **완료 — 24회 / 14,400개 측정 프레임**.
+- 질문·변경 한 가지: 컴파일 시점 고정 → 실행 중 flags 분기.
+- 실행 일시: 2026-10-25T04:52:02.841431+09:00 ~ 2026-10-25T05:07:42.150783+09:00 (KST).
+- 코드: `2b115ff` 이후 미커밋 변경. commit 단독 결과가 아니며 아래 단계별 patch·소스·SPIR-V·실행 파일 해시를 보관했다.
+- 비교 조건: 씬·입력·카메라·실제 viewport·해상도·나머지 옵션 고정. 새 프로세스, fixed dt=1/60, feedback ON, 60 준비 + 600 측정 + 2 drain, 조건별 3회. 반복 2에서는 arm 순서를 반대로 실행했다.
+- 측정 범위: simulation은 공통 GPU timestamp 21→22, 전체 command buffer는 21→23. CPU loop는 별도 `.cpu.json`. 상위/하위 구간을 합산하지 않는다. 전체 표시 FPS·VRAM 상주량은 측정하지 않았다.
+
+| 조건 | Simulation 중앙값 전 → 후 (ms) | Simulation p95 전 → 후 (ms) | 시간 감소 % | 할당 전 → 후 (MiB) | State 상대 L1 % |
+|---|---:|---:|---:|---:|---:|
+| BrickCube / 512 | 23.742 → 21.169 | 25.593 → 22.719 | 10.84 | 1567.40 → 1567.40 | 0.000000 |
+| BrickCube / 256 | 4.732 → 3.959 | 5.379 → 4.393 | 16.35 | 629.63 → 629.63 | 0.000000 |
+| Mountain / 256 | 8.140 → 7.559 | 8.644 → 8.037 | 7.14 | 213.24 → 213.24 | 0.000000 |
+| Mountain / 512 | 40.007 → 36.937 | 41.327 → 37.876 | 7.67 | 635.76 → 635.76 | 0.000000 |
+
+| 조건 | Simulation 반복 중앙값 범위 전 → 후 (ms) | Render 중앙값 전 → 후 (ms) | 최대 할당 전 → 후 (MiB) |
+|---|---:|---:|---:|
+| BrickCube / 512 | 23.670–23.769 → 21.077–21.494 | 29.989 → 29.792 | 1567.40 → 1567.40 |
+| BrickCube / 256 | 4.727–4.761 → 3.949–4.042 | 7.301 → 7.353 | 629.63 → 629.63 |
+| Mountain / 256 | 8.127–8.251 → 7.525–7.750 | 5.189 → 5.237 | 213.24 → 213.24 |
+| Mountain / 512 | 39.976–40.384 → 36.920–37.162 | 24.122 → 24.633 | 635.76 → 635.76 |
+
+- 정확성: 최종 662 step의 State 배열 비교. 전후 완전 일치: **모든 조건 일치**. NaN/Inf·음수 0, 같은 arm 반복 State 해시 일치. 물리적 총량 보존식·화면 픽셀 검증과는 구분한다.
+- 판단: **채택**. 네 조건에서 시뮬레이션 시간이 7.14~16.35% 감소하고 State 비트가 일치했다. 실행 중 flags 분기를 기본으로 선택하고 컴파일 고정 경로는 비교 옵션으로 유지한다.
+- 한계: RX 6700 XT 한 장치의 결과. GPU 클록·온도·외부 부하는 별도 계측하지 않았다. 반복 범위가 겹치는 작은 차이는 확정적 개선으로 해석하지 않는다. 이미지 비교는 별도 지원 여부를 표시한다.
+- 원자료: [manifest](../../../Performance-Data/20261025-optimization-round/PERF028/manifest.json), [전후 집계·p95·범위](../../../Performance-Data/20261025-optimization-round/PERF028/comparisons.json), [프레임·설정·State 배열](../../../Performance-Data/20261025-optimization-round/PERF028/raw).
+- 코드 보관본: [S01](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S01/snapshot.json).
+<!-- OPT_ROUND_PERF028_END -->
+
+<!-- OPT_ROUND_BLOCKED_START -->
+
+
+### PERF-039 — 인스턴스 실행 순서 선택: 실행 차단
+
+- 기록 유형: **구현 당시 측정**. 상태: **실행 실패 — Windows Application Control, WinError 4551**.
+- 질문·변경: 단계별 batch와 물체별 순차 실행을 독립 선택하고, 작업량별 자동 선택을 검토한다. 두 정책 모두 인스턴스당 8개 timestamp를 기록하도록 작성했다.
+- 코드: `2b115ff` + S05 미커밋 변경. Release 빌드 성공, 첫 Mountain/256 기동 비교를 시작하기 전에 OS가 실행을 거부했다. 실행 시도 로그 확인: 2026-10-25T05:32:04.019894+09:00.
+- 차단된 실행 파일 SHA-256: `4742196e448ef04e9cdd56006f4c7b6567a4f8899cadf6be91508f2d347ba89c`. 파일을 바꾸거나 다른 경로로 실행하는 우회는 하지 않는다. 보관본은 검토용이며 자동 실행기에서 같은 해시의 재실행을 차단한다.
+- 예정 조건: Mountain·동일 mesh 1/3/6개, 256/512, feedback ON, fixed dt 1/60, 60 준비 + 600 측정, 3회. **실제로 확보한 측정 프레임 0개**.
+- 결과·정확성: **미측정**. GPU 시간·개선율·State 동일성을 기록할 수 없다. 기본 코드는 실행 성공한 S04 경로로 유지하며, 이 변경은 [검토용 패치](../../../Performance-Data/20261025-optimization-round/raw/inputs/PERF039-blocked-candidate.patch)로 분리했다. 자동/순차 선택은 반영 보류다.
+- 근거: [실행 시도 로그](../../../Performance-Data/20261025-optimization-round/raw/inputs/optimization-S05-smoke.log), [차단 기록](../../../Performance-Data/20261025-optimization-round/raw/inputs/blocked-application-S05.json), [검토용 코드·해시](../../../Performance-Data/20261025-optimization-round/raw/inputs/S05-review-metadata/snapshot.json).
+
+### PERF-040 — Overlay 필터의 전체/부분 선택: 미측정
+
+- 기록 유형: **구현 당시 측정 준비**. 상태: **코드 작성·구문 검사 / 실행 미실시**.
+- 질문·변경: 기존 비동기 activity readback의 직전 완료 프레임 활성 타일 비율이 75% 이상이면 높이 필터와 coverage를 전체 계산으로 전환한다. 추가 GPU readback 대기를 넣지 않는다. geometry occupancy scan·top 압축은 그대로다.
+- 기본 코드에는 반영하지 않았다. [검토용 패치](../../../Performance-Data/20261025-optimization-round/raw/inputs/PERF040-unmeasured-candidate.patch)로 보관한다. 기존 수동 tile 옵션을 유지한다. 직전 active 점유율만으로는 넓지만 정지한 영역을 구분하지 못하므로, 실제 dirty 작업량 계측 후 정책을 검토해야 한다.
+- 예정 비교: 같은 코드에서 adaptive filtering OFF/ON, 기본 두 씬과 Wide, 256/512. 실제 frame time·화면 픽셀·State 결과는 **미측정**이다.
+- 최신 앱 빌드가 OS에서 차단된 뒤 실행 파일을 새로 만들어 이를 우회하지 않았다. 소스만 검토할 수 있게 작성했으며, 아직 새 앱 빌드·실행 결과가 없다. 최종 drain의 화면 출력 추가안은 준비만 했고 현재 소스·측정에는 반영하지 않았다.
+- 판단: **보류 — 실행·화면 검증 후 결정**. 기존 연구의 유리한 수치를 이번 구현의 성능으로 사용하지 않는다.
+
+### 후속 최적화의 검사 범위와 제한
+
+| 검사 | 실제 상태 | 해석 |
+|---|---|---|
+| 완료된 benchmark의 프레임·State 검사 | 원자료에서 실험별 집계 | NaN/음수·step·반복 재현·A/B 분포 차이이며 물리 보존식 검증은 아님 |
+| 초기 GPU 자원 단위 검사 | 기존 geometry fixture 7개 assertion 실패 | 옛 메타데이터 위치·pre/post-step 순서를 가정한 검사였으며 원래 실패 로그 보존 |
+| 수정한 GPU 자원 검사 | OS 차단으로 미실행 | fixture를 layout helper·실제 64-texel group 단위로 갱신했지만 실행 통과로 주장하지 않음 |
+| 새 lazy-mesh fixture 최초 시도 | 퇴화된 테스트 위치로 접근 오류 | 사각형 fixture로 수정했으나 수정 후 실행은 OS가 차단 |
+| C++ 소스 구문 검사 | MSVC `/Zs` 12개 소스 통과 | 실행 파일·object를 만들거나 실행하지 않음. OS가 차단한 앱 해시가 그대로임을 확인 |
+| 최종 통합 앱 | 미검증 | 마지막 실행 성공 보관본은 S04. 차단된 후보는 패치로 분리했으며 기본값·소규모 보완을 포함한 마지막 통합 실행은 미측정 |
+| 화면 픽셀·실제 표시 FPS·VRAM 상주량 | 이번 후속 측정에서 미지원 | State 배열 일치나 Vulkan 추적 할당량으로 대체해 주장하지 않음 |
+
+[GPU 검사 기록](../../../Performance-Data/20261025-optimization-round/raw/inputs/unit-test-status.json), [구문 검사 원자료](../../../Performance-Data/20261025-optimization-round/raw/inputs/source-syntax.json), [초기 GPU 검사 실패 로그](../../../Performance-Data/20261025-optimization-round/raw/inputs/optimization-S02-resource-tests.log).
+
+마지막 실행 성공 보관본 S04 이후 최종 소스에는 Sparse Solver 기본값 OFF, 초기 저장 형식의 멤버 기본값 사용, 최대 용량 FP16 weights 초기 packing 보완, 씬 재로드 시 신규 옵션 유지, 수정한 테스트 fixture가 추가되어 있다. 각 최적화의 독립 비교와 최종 소스 구문 통과를 이 조합의 통합 실행 통과로 대체하지 않는다.
+
+이번 GPU simulation elapsed는 렌더링도 수행하는 앱 안에서 잰 21→22 구간이다. 직접적인 draw 비용은 제외하지만 선행 렌더링 자원과의 동기화 대기는 포함될 수 있다. 렌더링을 완전히 끈 benchmark 결과로 표현하지 않는다.
+<!-- OPT_ROUND_BLOCKED_END -->
+
+
+<!-- OPT_ROUND_PERF007_START -->
+### PERF-007 후속 — Solver 부분 계산 기본 정책 (2026-10-25)
+
+- 기록 유형: **구현 당시 측정**. 상태: **완료 — 36회 / 21,600개 측정 프레임**.
+- 질문·변경 한 가지: Sparse Solver ON → OFF; Geometry/height 부분 계산·채널 마스크 유지.
+- 실행 일시: 2026-10-25T05:07:42.309017+09:00 ~ 2026-10-25T06:25:29.777650+09:00 (KST).
+- 코드: `2b115ff` 이후 미커밋 변경. commit 단독 결과가 아니며 아래 단계별 patch·소스·SPIR-V·실행 파일 해시를 보관했다.
+- 비교 조건: 씬·입력·카메라·실제 viewport·해상도·나머지 옵션 고정. 새 프로세스, fixed dt=1/60, feedback ON, 60 준비 + 600 측정 + 2 drain, 조건별 3회. 반복 2에서는 arm 순서를 반대로 실행했다.
+- 측정 범위: simulation은 공통 GPU timestamp 21→22, 전체 command buffer는 21→23. CPU loop는 별도 `.cpu.json`. 상위/하위 구간을 합산하지 않는다. 전체 표시 FPS·VRAM 상주량은 측정하지 않았다.
+
+| 조건 | Simulation 중앙값 전 → 후 (ms) | Simulation p95 전 → 후 (ms) | 시간 감소 % | 할당 전 → 후 (MiB) | State 상대 L1 % |
+|---|---:|---:|---:|---:|---:|
+| BrickCube / 512 | 21.223 → 21.207 | 22.813 → 22.453 | 0.08 | 1567.40 → 1567.40 | 0.000000 |
+| Mountain / 256 | 7.699 → 7.480 | 8.172 → 7.912 | 2.84 | 213.24 → 213.24 | 0.000000 |
+| BrickCube / 256 | 4.026 → 3.976 | 4.421 → 4.386 | 1.25 | 629.63 → 629.63 | 0.000000 |
+| Mountain / 512 | 37.296 → 35.541 | 38.837 → 36.758 | 4.71 | 635.76 → 635.76 | 0.000000 |
+| BrickCube-Wide / 512 | 262.493 → 240.809 | 283.106 → 261.772 | 8.26 | 1567.40 → 1567.40 | 0.000000 |
+| BrickCube-Wide / 256 | 53.298 → 51.762 | 61.935 → 59.261 | 2.88 | 629.63 → 629.63 | 0.000000 |
+
+| 조건 | Simulation 반복 중앙값 범위 전 → 후 (ms) | Render 중앙값 전 → 후 (ms) | 최대 할당 전 → 후 (MiB) |
+|---|---:|---:|---:|
+| BrickCube / 512 | 20.938–21.379 → 20.812–21.718 | 29.947 → 31.208 | 1567.40 → 1567.40 |
+| Mountain / 256 | 7.651–7.750 → 7.460–7.562 | 5.247 → 5.267 | 213.24 → 213.24 |
+| BrickCube / 256 | 3.942–4.099 → 3.919–4.080 | 7.354 → 7.349 | 629.63 → 629.63 |
+| Mountain / 512 | 36.809–37.305 → 35.513–35.774 | 24.903 → 24.494 | 635.76 → 635.76 |
+| BrickCube-Wide / 512 | 262.241–263.355 → 240.672–241.035 | 187.510 → 187.333 | 1567.40 → 1567.40 |
+| BrickCube-Wide / 256 | 53.267–53.472 → 50.954–52.039 | 50.555 → 50.262 | 629.63 → 629.63 |
+
+- 정확성: 최종 662 step의 State 배열 비교. 전후 완전 일치: **모든 조건 일치**. NaN/Inf·음수 0, 같은 arm 반복 State 해시 일치. 물리적 총량 보존식·화면 픽셀 검증과는 구분한다.
+- 판단: **채택**. Solver 전체 dispatch를 기본으로 선택하고 기존 Sparse Solver 옵션을 유지한다. Geometry/height 부분 갱신과 채널 마스크는 유지한다. 여섯 조건 모두 State 비트가 같았고 시간 감소는 0.08~8.26%였다. BrickCube 512의 0.08%는 효과가 확인됐다고 해석하지 않는다. 최종 통합 실행은 OS 차단으로 별도 미검증이다.
+- 한계: RX 6700 XT 한 장치의 결과. GPU 클록·온도·외부 부하는 별도 계측하지 않았다. 반복 범위가 겹치는 작은 차이는 확정적 개선으로 해석하지 않는다. 이미지 비교는 별도 지원 여부를 표시한다.
+- 원자료: [manifest](../../../Performance-Data/20261025-optimization-round/PERF007/manifest.json), [전후 집계·p95·범위](../../../Performance-Data/20261025-optimization-round/PERF007/comparisons.json), [프레임·설정·State 배열](../../../Performance-Data/20261025-optimization-round/PERF007/raw).
+- 코드 보관본: [S01](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S01/snapshot.json).
+<!-- OPT_ROUND_PERF007_END -->
+
+
+<!-- OPT_ROUND_PERF036_START -->
+### PERF-036 — 저장 형식에 맞춘 scratch 할당 (2026-10-25)
+
+- 기록 유형: **구현 당시 측정**. 상태: **완료 — 24회 / 14,400개 측정 프레임**.
+- 질문·변경 한 가지: 최대 FP32 용량 → 같은 FP16 값을 저장하는 데 필요한 용량.
+- 실행 일시: 2026-10-25T06:25:29.925949+09:00 ~ 2026-10-25T06:36:16.655936+09:00 (KST).
+- 코드: `2b115ff` 이후 미커밋 변경. commit 단독 결과가 아니며 아래 단계별 patch·소스·SPIR-V·실행 파일 해시를 보관했다.
+- 비교 조건: 씬·입력·카메라·실제 viewport·해상도·나머지 옵션 고정. 새 프로세스, fixed dt=1/60, feedback ON, 60 준비 + 600 측정 + 2 drain, 조건별 3회. 반복 2에서는 arm 순서를 반대로 실행했다.
+- 측정 범위: simulation은 공통 GPU timestamp 21→22, 전체 command buffer는 21→23. CPU loop는 별도 `.cpu.json`. 상위/하위 구간을 합산하지 않는다. 전체 표시 FPS·VRAM 상주량은 측정하지 않았다.
+
+| 조건 | Simulation 중앙값 전 → 후 (ms) | Simulation p95 전 → 후 (ms) | 시간 감소 % | 할당 전 → 후 (MiB) | State 상대 L1 % |
+|---|---:|---:|---:|---:|---:|
+| BrickCube / 512 | 21.230 → 21.455 | 23.297 → 23.565 | -1.06 | 1567.40 → 1471.40 | 0.000000 |
+| BrickCube / 256 | 4.054 → 3.929 | 4.443 → 4.322 | 3.07 | 629.63 → 605.63 | 0.000000 |
+| Mountain / 256 | 7.754 → 7.806 | 8.293 → 8.457 | -0.67 | 213.24 → 201.24 | 0.000000 |
+| Mountain / 512 | 36.819 → 36.935 | 37.807 → 38.043 | -0.32 | 635.76 → 587.76 | 0.000000 |
+
+| 조건 | Simulation 반복 중앙값 범위 전 → 후 (ms) | Render 중앙값 전 → 후 (ms) | 최대 할당 전 → 후 (MiB) |
+|---|---:|---:|---:|
+| BrickCube / 512 | 21.209–21.287 → 21.318–21.823 | 30.032 → 30.546 | 1567.40 → 1471.40 |
+| BrickCube / 256 | 3.897–4.134 → 3.897–4.049 | 7.307 → 7.325 | 629.63 → 605.63 |
+| Mountain / 256 | 7.580–7.800 → 7.580–7.810 | 5.254 → 5.203 | 213.24 → 201.24 |
+| Mountain / 512 | 36.798–36.892 → 36.858–37.184 | 24.864 → 24.263 | 635.76 → 587.76 |
+
+- 정확성: 최종 662 step의 State 배열 비교. 전후 완전 일치: **모든 조건 일치**. NaN/Inf·음수 0, 같은 arm 반복 State 해시 일치. 물리적 총량 보존식·화면 픽셀 검증과는 구분한다.
+- 판단: **채택**. 같은 FP16 정밀도에서 RawFlux 저장 용량을 줄여 12~96 MiB를 절약했고 네 조건의 State 비트가 모두 같았다. 실행 시간은 -1.06~3.07%로 방향이 일정하지 않아 속도 개선으로 주장하지 않는다. 옵션 전환은 GPU 완료 후 scratch와 descriptor를 교체하며 State 버퍼를 유지한다. 최초 생성부터 필요한 용량으로 할당한다.
+- 한계: RX 6700 XT 한 장치의 결과. GPU 클록·온도·외부 부하는 별도 계측하지 않았다. 반복 범위가 겹치는 작은 차이는 확정적 개선으로 해석하지 않는다. 이미지 비교는 별도 지원 여부를 표시한다.
+- 원자료: [manifest](../../../Performance-Data/20261025-optimization-round/PERF036/manifest.json), [전후 집계·p95·범위](../../../Performance-Data/20261025-optimization-round/PERF036/comparisons.json), [프레임·설정·State 배열](../../../Performance-Data/20261025-optimization-round/PERF036/raw).
+- 코드 보관본: [S01](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S01/snapshot.json), [S02](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S02/snapshot.json).
+<!-- OPT_ROUND_PERF036_END -->
+
+
+<!-- OPT_ROUND_PERF036-formats_START -->
+### PERF-036 보충 — FP32·FP16 weights·cache OFF의 할당 (2026-10-25)
+
+- 기록 유형: **구현 당시 측정**. 상태: **완료 — 36회 / 21,600개 측정 프레임**.
+- 질문·변경 한 가지: 동일한 계산 옵션에서 최대 용량 → 실제 필요 용량.
+- 실행 일시: 2026-10-25T06:36:16.810347+09:00 ~ 2026-10-25T06:55:01.478928+09:00 (KST).
+- 코드: `2b115ff` 이후 미커밋 변경. commit 단독 결과가 아니며 아래 단계별 patch·소스·SPIR-V·실행 파일 해시를 보관했다.
+- 비교 조건: 씬·입력·카메라·실제 viewport·해상도·나머지 옵션 고정. 새 프로세스, fixed dt=1/60, feedback ON, 60 준비 + 600 측정 + 2 drain, 조건별 3회. 반복 2에서는 arm 순서를 반대로 실행했다.
+- 측정 범위: simulation은 공통 GPU timestamp 21→22, 전체 command buffer는 21→23. CPU loop는 별도 `.cpu.json`. 상위/하위 구간을 합산하지 않는다. 전체 표시 FPS·VRAM 상주량은 측정하지 않았다.
+
+| 조건 | Simulation 중앙값 전 → 후 (ms) | Simulation p95 전 → 후 (ms) | 시간 감소 % | 할당 전 → 후 (MiB) | State 상대 L1 % |
+|---|---:|---:|---:|---:|---:|
+| PERF036-fp32 / BrickCube / 256 | 8.301 → 8.337 | 10.178 → 10.487 | -0.43 | 629.63 → 629.63 | 0.000000 |
+| PERF036-fp32 / Mountain / 512 | 46.154 → 46.102 | 49.606 → 49.784 | 0.11 | 635.76 → 635.76 | 0.000000 |
+| PERF036-halfweights / BrickCube / 256 | 3.735 → 3.745 | 4.117 → 4.165 | -0.26 | 629.63 → 599.63 | 0.000000 |
+| PERF036-halfweights / Mountain / 512 | 33.167 → 33.213 | 35.169 → 33.889 | -0.14 | 635.76 → 575.76 | 0.000000 |
+| PERF036-nocache / BrickCube / 256 | 11.041 → 11.071 | 13.239 → 13.255 | -0.28 | 629.63 → 581.63 | 0.000000 |
+| PERF036-nocache / Mountain / 512 | 52.758 → 52.370 | 56.914 → 56.995 | 0.74 | 635.76 → 539.76 | 0.000000 |
+
+| 조건 | Simulation 반복 중앙값 범위 전 → 후 (ms) | Render 중앙값 전 → 후 (ms) | 최대 할당 전 → 후 (MiB) |
+|---|---:|---:|---:|
+| PERF036-fp32 / BrickCube / 256 | 8.283–8.319 → 8.321–8.703 | 7.561 → 7.563 | 629.63 → 629.63 |
+| PERF036-fp32 / Mountain / 512 | 46.097–46.341 → 46.020–46.153 | 26.794 → 26.997 | 635.76 → 635.76 |
+| PERF036-halfweights / BrickCube / 256 | 3.716–3.943 → 3.698–3.787 | 7.356 → 7.331 | 629.63 → 599.63 |
+| PERF036-halfweights / Mountain / 512 | 33.164–33.495 → 33.126–33.256 | 24.722 → 24.526 | 635.76 → 575.76 |
+| PERF036-nocache / BrickCube / 256 | 10.993–11.055 → 11.033–11.150 | 7.871 → 7.971 | 629.63 → 581.63 |
+| PERF036-nocache / Mountain / 512 | 52.512–52.907 → 52.273–52.451 | 27.287 → 26.644 | 635.76 → 539.76 |
+
+- 정확성: 최종 662 step의 State 배열 비교. 전후 완전 일치: **모든 조건 일치**. NaN/Inf·음수 0, 같은 arm 반복 State 해시 일치. 물리적 총량 보존식·화면 픽셀 검증과는 구분한다.
+- 판단: **채택**. FP32 Flux는 실제 필요 용량이 같아 할당량 변화가 없었다. FP16 Weights는 RawFlux 포함 30/60 MiB, cache OFF는 48/96 MiB를 절약했고 각 옵션의 전후 State 비트가 모두 같았다. 서로 다른 정밀도 옵션 사이의 속도·정확성 비교가 아니라 같은 옵션에서 저장 공간만 줄인 결과다.
+- 한계: RX 6700 XT 한 장치의 결과. GPU 클록·온도·외부 부하는 별도 계측하지 않았다. 반복 범위가 겹치는 작은 차이는 확정적 개선으로 해석하지 않는다. 이미지 비교는 별도 지원 여부를 표시한다.
+- 원자료: [manifest](../../../Performance-Data/20261025-optimization-round/PERF036-formats/manifest.json), [전후 집계·p95·범위](../../../Performance-Data/20261025-optimization-round/PERF036-formats/comparisons.json), [프레임·설정·State 배열](../../../Performance-Data/20261025-optimization-round/PERF036-formats/raw).
+- 코드 보관본: [S01](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S01/snapshot.json), [S02](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S02/snapshot.json).
+<!-- OPT_ROUND_PERF036-formats_END -->
+
+
+<!-- OPT_ROUND_PERF037_START -->
+### PERF-037 — GPU 메시 해상도 캐시 지연 생성 (2026-10-25)
+
+- 기록 유형: **구현 당시 측정**. 상태: **완료 — 24회 / 14,400개 측정 프레임**.
+- 질문·변경 한 가지: 전 해상도 생성 → 시뮬레이션 해상도 메시 + 요청한 해상도만 생성.
+- 실행 일시: 2026-10-25T06:55:01.626137+09:00 ~ 2026-10-25T07:05:41.294063+09:00 (KST).
+- 코드: `2b115ff` 이후 미커밋 변경. commit 단독 결과가 아니며 아래 단계별 patch·소스·SPIR-V·실행 파일 해시를 보관했다.
+- 비교 조건: 씬·입력·카메라·실제 viewport·해상도·나머지 옵션 고정. 새 프로세스, fixed dt=1/60, feedback ON, 60 준비 + 600 측정 + 2 drain, 조건별 3회. 반복 2에서는 arm 순서를 반대로 실행했다.
+- 측정 범위: simulation은 공통 GPU timestamp 21→22, 전체 command buffer는 21→23. CPU loop는 별도 `.cpu.json`. 상위/하위 구간을 합산하지 않는다. 전체 표시 FPS·VRAM 상주량은 측정하지 않았다.
+
+| 조건 | Simulation 중앙값 전 → 후 (ms) | Simulation p95 전 → 후 (ms) | 시간 감소 % | 할당 전 → 후 (MiB) | State 상대 L1 % |
+|---|---:|---:|---:|---:|---:|
+| BrickCube / 512 | 21.273 → 21.378 | 22.994 → 23.011 | -0.49 | 1471.40 → 1396.58 | 0.000000 |
+| BrickCube / 256 | 4.010 → 3.926 | 4.443 → 4.281 | 2.09 | 605.63 → 359.53 | 0.000000 |
+| Mountain / 256 | 7.609 → 7.794 | 8.086 → 8.254 | -2.43 | 201.24 → 157.85 | 0.000000 |
+| Mountain / 512 | 36.978 → 36.908 | 38.139 → 38.008 | 0.19 | 587.76 → 573.87 | 0.000000 |
+
+| 조건 | Simulation 반복 중앙값 범위 전 → 후 (ms) | Render 중앙값 전 → 후 (ms) | 최대 할당 전 → 후 (MiB) |
+|---|---:|---:|---:|
+| BrickCube / 512 | 21.240–22.120 → 21.374–21.658 | 31.053 → 30.640 | 1471.40 → 1396.58 |
+| BrickCube / 256 | 4.006–4.033 → 3.901–3.941 | 7.367 → 7.315 | 605.63 → 359.53 |
+| Mountain / 256 | 7.592–7.766 → 7.708–7.802 | 5.204 → 5.253 | 201.24 → 157.85 |
+| Mountain / 512 | 36.908–37.071 → 36.894–37.256 | 24.330 → 24.942 | 587.76 → 573.87 |
+
+- 정확성: 최종 662 step의 State 배열 비교. 전후 완전 일치: **모든 조건 일치**. NaN/Inf·음수 0, 같은 arm 반복 State 해시 일치. 물리적 총량 보존식·화면 픽셀 검증과는 구분한다.
+- 판단: **채택 — 메모리 절감**. 네 조건의 추적 할당량이 13.90~246.11 MiB 줄고 State가 비트 단위로 일치했다. 시뮬레이션 시간 변화는 -2.43~2.09%로 일관된 속도 향상을 주장하지 않는다. 시뮬레이션 해상도 메시와 현재 선택한 추가 해상도를 유지한다. 처음 요청한 해상도는 CPU 생성·GPU 업로드 비용이 들며, 실행 중 해상도 전환·미사용 해제는 GPU idle을 기다릴 수 있다. 600프레임 정상 구간 측정은 최초 전환 지연을 검증하지 않는다. 지연 생성에 필요한 CPU 원본 정점·삼각형 복사본은 보관하며, CPU RAM 변화는 이번 계측 대상이 아니다.
+- 한계: RX 6700 XT 한 장치의 결과. GPU 클록·온도·외부 부하는 별도 계측하지 않았다. 반복 범위가 겹치는 작은 차이는 확정적 개선으로 해석하지 않는다. 이미지 비교는 별도 지원 여부를 표시한다.
+- 원자료: [manifest](../../../Performance-Data/20261025-optimization-round/PERF037/manifest.json), [전후 집계·p95·범위](../../../Performance-Data/20261025-optimization-round/PERF037/comparisons.json), [프레임·설정·State 배열](../../../Performance-Data/20261025-optimization-round/PERF037/raw).
+- 코드 보관본: [S02](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S02/snapshot.json), [S03](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S03/snapshot.json).
+<!-- OPT_ROUND_PERF037_END -->
+
+
+<!-- OPT_ROUND_PERF037-lowmesh_START -->
+### PERF-037 보충 — 64 메시 선택 시 캐시 할당 (2026-10-25)
+
+- 기록 유형: **구현 당시 측정**. 상태: **완료 — 12회 / 7,200개 측정 프레임**.
+- 질문·변경 한 가지: 같은 64 메시에서 모든 해상도 사전 생성 → 필요한 해상도만 생성.
+- 실행 일시: 2026-10-25T07:05:41.441199+09:00 ~ 2026-10-25T07:10:24.231872+09:00 (KST).
+- 코드: `2b115ff` 이후 미커밋 변경. commit 단독 결과가 아니며 아래 단계별 patch·소스·SPIR-V·실행 파일 해시를 보관했다.
+- 비교 조건: 씬·입력·카메라·실제 viewport·해상도·나머지 옵션 고정. 새 프로세스, fixed dt=1/60, feedback ON, 60 준비 + 600 측정 + 2 drain, 조건별 3회. 반복 2에서는 arm 순서를 반대로 실행했다.
+- 측정 범위: simulation은 공통 GPU timestamp 21→22, 전체 command buffer는 21→23. CPU loop는 별도 `.cpu.json`. 상위/하위 구간을 합산하지 않는다. 전체 표시 FPS·VRAM 상주량은 측정하지 않았다.
+
+| 조건 | Simulation 중앙값 전 → 후 (ms) | Simulation p95 전 → 후 (ms) | 시간 감소 % | 할당 전 → 후 (MiB) | State 상대 L1 % |
+|---|---:|---:|---:|---:|---:|
+| BrickCube / 256 | 3.941 → 3.979 | 4.268 → 4.404 | -0.95 | 516.85 → 274.31 | 0.000000 |
+| Mountain / 512 | 36.857 → 37.013 | 37.789 → 38.046 | -0.42 | 402.44 → 389.66 | 0.000000 |
+
+| 조건 | Simulation 반복 중앙값 범위 전 → 후 (ms) | Render 중앙값 전 → 후 (ms) | 최대 할당 전 → 후 (MiB) |
+|---|---:|---:|---:|
+| BrickCube / 256 | 3.887–4.004 → 3.895–3.994 | 4.699 → 4.703 | 516.85 → 274.31 |
+| Mountain / 512 | 36.758–36.890 → 36.962–37.150 | 17.962 → 18.152 | 402.44 → 389.66 |
+
+- 정확성: 최종 662 step의 State 배열 비교. 전후 완전 일치: **모든 조건 일치**. NaN/Inf·음수 0, 같은 arm 반복 State 해시 일치. 물리적 총량 보존식·화면 픽셀 검증과는 구분한다.
+- 판단: **채택 근거 보충**. 양쪽 모두 렌더 메시 64를 선택한 비교다. 모든 해상도를 prewarm한 경우와 필요한 해상도만 생성한 경우의 State가 비트 일치했고, BrickCube 256은 약 242.54 MiB, Mountain 512는 약 12.78 MiB를 절약했다. 시뮬레이션 시간 변화는 -0.95~-0.42%로 속도 개선 근거가 아니다. 기본 메시와의 화질 비교나 최초 해상도 전환 지연을 측정한 실험은 아니다.
+- 한계: RX 6700 XT 한 장치의 결과. GPU 클록·온도·외부 부하는 별도 계측하지 않았다. 반복 범위가 겹치는 작은 차이는 확정적 개선으로 해석하지 않는다. 이미지 비교는 별도 지원 여부를 표시한다.
+- 원자료: [manifest](../../../Performance-Data/20261025-optimization-round/PERF037-lowmesh/manifest.json), [전후 집계·p95·범위](../../../Performance-Data/20261025-optimization-round/PERF037-lowmesh/comparisons.json), [프레임·설정·State 배열](../../../Performance-Data/20261025-optimization-round/PERF037-lowmesh/raw).
+- 코드 보관본: [S03](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S03/snapshot.json).
+<!-- OPT_ROUND_PERF037-lowmesh_END -->
+
+
+<!-- OPT_ROUND_PERF038_START -->
+### PERF-038 — 넓은 영역의 Geometry 갱신 (2026-10-25)
+
+- 기록 유형: **구현 당시 측정**. 상태: **완료 — 36회 / 21,600개 측정 프레임**.
+- 질문·변경 한 가지: 항상 부분 목록 → 높이 후보 workgroup 비율에 따른 전체/부분 선택.
+- 실행 일시: 2026-10-25T07:10:24.395174+09:00 ~ 2026-10-25T07:57:28.244660+09:00 (KST).
+- 코드: `2b115ff` 이후 미커밋 변경. commit 단독 결과가 아니며 아래 단계별 patch·소스·SPIR-V·실행 파일 해시를 보관했다.
+- 비교 조건: 씬·입력·카메라·실제 viewport·해상도·나머지 옵션 고정. 새 프로세스, fixed dt=1/60, feedback ON, 60 준비 + 600 측정 + 2 drain, 조건별 3회. 반복 2에서는 arm 순서를 반대로 실행했다.
+- 측정 범위: simulation은 공통 GPU timestamp 21→22, 전체 command buffer는 21→23. CPU loop는 별도 `.cpu.json`. 상위/하위 구간을 합산하지 않는다. 전체 표시 FPS·VRAM 상주량은 측정하지 않았다.
+
+| 조건 | Simulation 중앙값 전 → 후 (ms) | Simulation p95 전 → 후 (ms) | 시간 감소 % | 할당 전 → 후 (MiB) | State 상대 L1 % |
+|---|---:|---:|---:|---:|---:|
+| BrickCube / 512 | 21.665 → 21.262 | 23.374 → 22.972 | 1.86 | 1396.58 → 1396.58 | 0.000000 |
+| BrickCube-Wide / 512 | 263.045 → 200.916 | 282.681 → 208.698 | 23.62 | 1396.58 → 1396.58 | 0.540447 |
+| Mountain / 256 | 7.668 → 7.699 | 8.189 → 8.168 | -0.40 | 157.85 → 157.85 | 0.000000 |
+| BrickCube / 256 | 3.983 → 3.969 | 4.392 → 4.579 | 0.33 | 359.53 → 359.53 | 0.000000 |
+| BrickCube-Wide / 256 | 53.170 → 70.920 | 61.116 → 72.349 | -33.39 | 359.53 → 359.53 | 0.032735 |
+| Mountain / 512 | 37.242 → 36.895 | 38.353 → 38.437 | 0.93 | 573.87 → 573.87 | 0.000000 |
+
+| 조건 | Simulation 반복 중앙값 범위 전 → 후 (ms) | Render 중앙값 전 → 후 (ms) | 최대 할당 전 → 후 (MiB) |
+|---|---:|---:|---:|
+| BrickCube / 512 | 21.519–22.323 → 21.250–21.414 | 31.135 → 31.117 | 1396.58 → 1396.58 |
+| BrickCube-Wide / 512 | 261.748–263.106 → 199.990–209.058 | 186.727 → 197.882 | 1396.58 → 1396.58 |
+| Mountain / 256 | 7.626–7.728 → 7.488–7.816 | 5.227 → 5.245 | 157.85 → 157.85 |
+| BrickCube / 256 | 3.885–4.020 → 3.924–3.982 | 7.308 → 7.272 | 359.53 → 359.53 |
+| BrickCube-Wide / 256 | 52.955–53.318 → 70.417–71.547 | 50.569 → 48.323 | 359.53 → 359.53 |
+| Mountain / 512 | 36.892–37.246 → 36.596–37.260 | 24.619 → 24.934 | 573.87 → 573.87 |
+
+| 조건 | Geometry 전 → 후 (ms) | Transfer Weight 전 → 후 (ms) | Pass 1 전 → 후 (ms) | Pass 2 전 → 후 (ms) |
+|---|---:|---:|---:|---:|
+| BrickCube / 512 | 4.609 → 4.583 | 3.830 → 3.783 | 9.098 → 8.997 | 4.143 → 3.916 |
+| BrickCube-Wide / 512 | 75.957 → 47.689 | 71.670 → 37.545 | 82.392 → 82.172 | 32.967 → 33.410 |
+| Mountain / 256 | 1.191 → 1.206 | 2.603 → 2.579 | 2.176 → 2.197 | 1.620 → 1.651 |
+| BrickCube / 256 | 0.563 → 0.565 | 0.026 → 0.027 | 2.187 → 2.176 | 1.178 → 1.169 |
+| BrickCube-Wide / 256 | 11.594 → 19.777 | 11.041 → 20.655 | 21.458 → 21.517 | 8.944 → 8.971 |
+| Mountain / 512 | 10.947 → 10.776 | 10.600 → 10.594 | 10.638 → 10.613 | 5.035 → 4.969 |
+
+하위 구간의 중앙값은 전체 simulation elapsed와 더하지 않는다. Geometry 목록 구성·height 처리·구간 사이 동기화는 전체 elapsed에는 포함되지만 위 네 구간에 모두 분리되어 있지는 않다.
+
+- 정확성: 최종 662 step의 State 배열 비교. 전후 완전 일치: **차이 있는 조건 존재**. NaN/Inf·음수 0, 같은 arm 반복 State 해시 일치. 물리적 총량 보존식·화면 픽셀 검증과는 구분한다.
+- 판단: **기본 적용 보류 — 실험 옵션·기본 OFF**. Wide 512의 simulation elapsed는 263.045→200.916 ms로 23.62% 줄었지만, Wide 256은 53.170→70.920 ms로 33.39% 늘었다. State 상대 L1 차이는 각각 0.540447%, 0.032735%이며 물리적 정확성의 개선이나 악화를 판정한 값은 아니다. 일반 네 조건은 State 비트가 일치했고 시간 감소율 -0.40~1.86%로 작아 확정적 이득을 주장하지 않는다. 후보 workgroup 비율 75%만으로는 유리한 경로를 고를 수 없으므로 기본값은 OFF로 유지한다. 코드·benchmark 옵션은 실험용으로 남긴다. 추가 Geometry 갱신이 기존 dirty 허용치 이하의 누적 변화까지 반영하는 것이 차이의 가능한 원인이나, 보존식과 참조 결과로 검증하지 않았다. 실행 중 ON/OFF 변경, Sparse Height OFF 조합, 다른 GPU와 활성도 곡선은 이번 측정 범위가 아니다.
+- 한계: RX 6700 XT 한 장치의 결과. GPU 클록·온도·외부 부하는 별도 계측하지 않았다. 반복 범위가 겹치는 작은 차이는 확정적 개선으로 해석하지 않는다. 이미지 비교는 별도 지원 여부를 표시한다.
+- 원자료: [manifest](../../../Performance-Data/20261025-optimization-round/PERF038/manifest.json), [전후 집계·p95·범위](../../../Performance-Data/20261025-optimization-round/PERF038/comparisons.json), [프레임·설정·State 배열](../../../Performance-Data/20261025-optimization-round/PERF038/raw).
+- 코드 보관본: [S04](../../../Performance-Data/20261025-optimization-round/raw/inputs/stages/S04/snapshot.json).
+<!-- OPT_ROUND_PERF038_END -->
+
+
+<!-- OPT_ROUND_MEMORY_START -->
+### 같은 조건의 단계별 할당량
+
+| 씬 / simulation | 기존 S01 (MiB) | 저장 용량 축소 S02 (MiB) | 메시 지연 생성 S03 (MiB) |
+|---|---:|---:|---:|
+| BrickCube / 512 | 1567.40 | 1471.40 | 1396.58 |
+| BrickCube / 256 | 629.63 | 605.63 | 359.53 |
+| Mountain / 256 | 213.24 | 201.24 | 157.85 |
+| Mountain / 512 | 635.76 | 587.76 | 573.87 |
+
+같은 해상도·옵션에서 종료 시 실제로 추적한 할당량이다. 화면의 집계에서 캐시를 빼서 만든 값이 아니다. GPU driver 내부·swapchain·상주량은 포함하지 않는다. 지연 생성은 최초 해상도 전환 시 생성 비용을 발생시키며, 시뮬레이션 해상도 메시와 선택된 추가 해상도는 유지한다.
+<!-- OPT_ROUND_MEMORY_END -->

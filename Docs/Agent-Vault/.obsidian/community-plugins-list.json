@@ -1,0 +1,23 @@
+[
+  {
+    "id": "automatic-installation-of-plugins",
+    "devices": "desktop"
+  },
+  {
+    "id": "obsidian-style-settings"
+  },
+  {
+    "id": "custom-sort"
+  },
+  {
+    "id": "smart-fold"
+  },
+  {
+    "id": "editor-width-slider",
+    "devices": "desktop"
+  },
+  {
+    "id": "table-width",
+    "devices": "desktop"
+  }
+]

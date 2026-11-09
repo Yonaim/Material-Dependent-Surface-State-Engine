@@ -1,0 +1,28 @@
+{
+  "explorer.sortOrder": "filesFirst",
+  "files.associations": {
+    "*.vert": "glsl",
+    "*.frag": "glsl",
+    "*.comp": "glsl",
+    "*.glsl": "glsl"
+  },
+  "maptz.regionfolder": {
+    "[glsl]": {
+      "foldStart": "// #region [NAME]",
+      "foldStartRegex": "^\\s*//\\s*#region\\b\\s*(.*)$",
+      "foldEnd": "// #endregion",
+      "foldEndRegex": "^\\s*//\\s*#endregion\\b",
+      "disableFolding": false
+    },
+    "[shellscript]": {
+      "foldStart": "#region [NAME]",
+      "foldStartRegex": "^\\s*#region\\b\\s*(.*)$",
+      "foldEnd": "#endregion",
+      "foldEndRegex": "^\\s*#endregion\\b",
+      "disableFolding": false
+    }
+  },
+  "[glsl]": {
+    "editor.foldingStrategy": "auto"
+  }
+}

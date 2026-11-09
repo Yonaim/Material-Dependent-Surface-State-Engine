@@ -95,3 +95,6 @@ Performance-Data/**/raw/
 !/Assets/Meshes/*.obj
 
 !/Assets/Meshes/MarbleCube/MarbleCube.obj
+
+# Local upstream Agent Vault checkout (independent repository)
+/Universal-Agent-Vault/

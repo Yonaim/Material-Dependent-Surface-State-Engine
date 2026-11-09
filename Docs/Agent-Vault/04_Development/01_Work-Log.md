@@ -1,0 +1,72 @@
+# Work Log — 코드 변경 및 문서 동기화
+
+> **모든 코드 변경 작업에서 작업 단위 최소 1건 기록 필수.** 상세 설계는 Architecture/ADR, 실제 테스트 결과는 Experiments에 기록한다.
+
+| 날짜 | 작업 / 코드 범위 | 읽은 주요 문서 | 갱신 문서 또는 영향 없음 근거 | 검증 상태 |
+|---|---|---|---|---|
+| `YYYY-MM-DD` | `{{TASK_AND_CODE_PATHS}}` | `{{READ_DOCS}}` | `{{UPDATED_DOCS_OR_NO_IMPACT_REASON}}` | `{{COMMAND_AND_RESULT_OR_NOT_RUN}}` |
+
+## 작성 원칙
+
+- 소규모 작업은 한 줄이면 충분하다. 여러 파일의 동일 작업은 하나로 묶을 수 있다.
+- 문서 갱신이 불필요해도 **왜 영향이 없는지** 간결히 기록한다.
+- `미실행`, `미검증`, `실패`, `통과`를 구분한다. 실행하지 않은 명령을 성공 처리하지 않는다.
+- 길어지면 월별 로그로 분리하고 여기에는 짧은 링크 인덱스를 남긴다.
+
+
+## 2026-11-09 — 범용 볼트 이관 및 소스 구획 정리
+- **읽은 문서:** 기존 프로젝트 Policy·Glossary·Architecture(Flows/Contracts/Source)·Development·Experiments 및 Universal Agent Vault 규칙·언어·GLSL·주석 문서.
+- **코드 변경:** 기존 `#pragma region`에 번호·섹션 구분선 추가, 주요 엔트리 포인트의 구획 정리, GLSL 코드의 접기용 섹션 주석 추가. **알고리즘·상수·API·호출 순서·GPU 동기화는 의도적으로 변경하지 않음.**
+- **문서 동기화:** 새 볼트의 Context/Architecture/Decisions/Development/Experiments/Research로 기존 문서 보존·재배치. 새 Document Map·Project Brief·Requirements·Constraints·Home 작성.
+- **검증:** ZIP 무결성, 이전/이후 코드 토큰 대조(공백·주석·`#pragma region`을 제외), 파일 목록·링크 탐색, 셸/Python 문법 검사를 수행할 실행함 (C/C++/GLSL 원본 비주석 코드 줄 동일, 44개 Python AST 검사, 4개 Shell 문법 검사, Region 균형 및 문서 링크). 실제 C++ 빌드/셰이더 컴파일/런타임·GPU 테스트는 프로젝트 루트 `CMakeLists.txt` 등 누락으로 **미실행**.
+
+
+## 2026-11-09 — Engineering Standards 준수 감사 및 네이밍 프로필 확정
+- **읽은 문서:** AGENTS·Document Map, Code Style·Local Numbering·Architecture Organization, C++·GLSL·Python·Shell, Source Comments·Doxygen·Markdown, Workflow·Verification·Commit Style, Project Brief·Constraints, Source Map·CPU–GPU Interface 및 기존 Work Log.
+- **코드 변경:** 없음. 사용자 결정에 따라 목표 프로필을 Unreal-Inspired로 문서화하고 현재 소스의 미준수 항목을 감사했다. 소스 리네이밍·자동 포맷 미수행.
+- **문서 동기화:** Project Brief의 활성 네이밍·빌드/포맷 설정, Constraints의 실제 파일 존재 여부 갱신. [준수 감사 보고서](10_Engineering-Standards-Audit.md)에 근거·전수 패턴 검사와 수동 검토 한계·전환 순서 기록. API·ABI·실행 흐름이 바뀌지 않아 Architecture 변경 없음.
+- **검증:** Python AST 44/44, Bash 구문 5/5 통과. clang-format 20.1.8: C++ 195개 중 35개 불일치. 실제 Manifest의 셰이더 75개 엔트리·변형을 검증 매크로 0/1로 컴파일하고 spirv-val 검사: 150/150 통과. C++ 빌드·CTest·GPU 실행·성능·ABI Reflection은 미실행. 명명/주석 집계는 정적 패턴 검사이며 완전한 컴파일러 AST/의미 검증이 아님.
+
+
+## 2026-11-09 — Code Style 구조·의미 체크리스트 후속 리뷰
+- **읽은 문서:** AGENTS·Document Map·Code Style, Scene/Input/Debug UI 및 Application/Frame Source 문서. 기존 규칙 감사 결과와 실제 Scene/Camera/DemoAnimation/Application/Renderer 흐름 대조.
+- **코드 변경:** 없음. 접두어와 별개로 상위 흐름·추상화 수준·책임·오류 경로를 리뷰했다.
+- **문서 동기화:** [규칙 감사 보고서](10_Engineering-Standards-Audit.md)에 §05의 6개 체크리스트 판정, 구체적 미준수와 준수 사례, 보존할 순서/계약 및 검토 범위를 추가. API/ABI/동작 변경이 없어 Architecture 변경 없음.
+- **검증:** 정적 소스 수동 리뷰만 수행. 이번 후속 작업에서 빌드·테스트·GPU 실행·성능 검증 미실행. 기존 셰이더 검사 결과와 구분한다.
+
+
+## 2026-11-09 — GLSL 규칙 후속 리뷰
+- **읽은 문서:** AGENTS·Document Map·GLSL, CPU–GPU Interface 및 Debug/Shared Shader Source 문서. 기존 Code Style 감사 기준과 함께 Debug/Solver/Overlay 및 CPU pipeline/draw 경로 대조.
+- **코드 변경:** 없음. Shader 구조 패턴 전수 검색, 주요 entry/helper의 책임·로컬 계약·경계/barrier 조건을 수동 리뷰했다.
+- **문서 동기화:** [감사 보고서](10_Engineering-Standards-Audit.md)에 GLSL 규칙별 근거, SurfaceDebug.vert/frag 개선 대상, bounds 전제조건 확인 과제, 정상 사례 및 검토 한계 추가. API/ABI/실행 변경이 없어 Architecture 변경 없음.
+- **검증:** 이번 작업은 정적 리뷰만 수행. 새 shader 컴파일·Reflection·Pipeline 생성·GPU 실행·성능 측정 미실행. 이전 150개 compile/spirv-val 결과와 구조·안전성 리뷰를 구분함.
+
+
+## 2026-11-09 — 변경 전 최소 빌드·테스트 기준선 확보
+- **읽은 문서:** AGENTS·Document Map·Verification and Review, Validation and Tests의 테스트/fixture·실행 기준, 기존 build script 및 CMake 테스트 설정.
+- **코드 변경:** 없음. 스냅샷 808개·SHA-256·HEAD·미커밋 patch 저장 후 별도 Debug build/CTest 및 Manifest shader 검증 실행. 보조 runner/로그는 결과 디렉터리에만 저장.
+- **문서 동기화:** Validation and Tests 상단에 이번 환경의 실제 결과·한계·[증거 위치](../../../Build/Validation/20261109-210554-pre-refactor/summary.md) 추가. API/ABI/실행 흐름 변경이 없어 Architecture 변경 없음.
+- **검증:** configure/전체 build 성공. CTest 14개: 7 통과·7 실패·0 skip(종료 코드 8). 셰이더 150개 glslc/spirv-val 통과. 실행 중 입력 해시 변경 0·ZIP CRC 정상·기존 Build cache 유지. 실패는 assertion 5개/Scene 입력 누락 1개/GPU 한도 1개로 구분하고 실제 failed 상태 보존. 성능/대규모 시각·물리 동등성은 미실행.
+
+
+## 2026-11-09 — Universal 규칙 동기화·전 언어 folding 표기·Shader 접기 반영
+- **읽은 문서:** 양쪽 AGENTS·Document Map, Universal Code Style·Local Numbering·GLSL·Python·Shell·JS/TS·Source Comments·README, 현재 Workflow·Verification·Shader Source Index·Current Work. 설치된 Custom Folding README/schema 및 Shader 확장 language ID도 확인.
+- **코드/설정 변경:** Shader 50개에 84개 comment region, 작은 19개 유지. 기존 Source/Tests 수정 없음. root/vault VS Code에 glsl/shellscript folding 정규식과 shader 언어 연결. 원본 Universal 볼트 수정 없음.
+- **문서 동기화:** 공통 규칙 7개 및 AGENTS/README/공통 라우팅 병합, Shader Source Index·Current Work의 후속 순서 갱신. 프로젝트 Context·네이밍·기존 실험 보존. 계산/API/ABI/호출/barrier가 동일해 Contract/Flow 본문 변경 없음.
+- **검증:** 69개 주석 제외 코드 동일·84개 region 균형/번호·기존 개행 유지. shader 150개 glslc/spirv-val 통과 및 직전 기준선 SPIR-V와 모두 바이트 동일. 전체 C++/CTest/GPU 실행은 주석 전용 변경이라 반복하지 않음. UI folding 화면은 미확인. [상세 증거](../../../Build/Validation/20261109-211718-vault-region-folding/summary.md).
+
+
+## 2026-11-09 — 현재 상태 분할 커밋 및 다음 작업 확정
+- **읽은 문서:** 루트/볼트 AGENTS·Document Map·Commit Style와 기존 감사/기준선/Current Work 기록.
+- **작업:** refactor/engineering-standards에서 기존 미커밋 상태를 기능/연구/실행 도구/공통 소스 정리/GLSL folding/볼트 이관으로 분리해 보존했다. 기능 변경과 섹션·개행 변경이 같은 파일에 있던 부분은 index에서 분리하고 작업 폴더 내용은 유지했다.
+- **커밋 단위:**
+  - `405a5cc Feat(Rendering): Burn·Scorched 시각화와 반응 비교 씬 생성기 추가`
+  - `6a979d3 Chore(Research): 결합·모듈 기준선과 저작 검증 도구 보존`
+  - `d16e1a2 Build(Scripts): 기존 빌드 산출물 실행 진입점 추가`
+  - `49390b0 Style(Code): 기존 섹션 번호와 주석·소스 개행 정리`
+  - `a73ac04 Style(Shaders): 책임별 주석 Region folding 적용`
+  - `Docs(AgentVault): 공통 규칙 이관과 감사·기준선 기록 보존` — 이 작업 기록을 포함하는 마지막 커밋.
+- **문서 동기화:** 현재 Agent-Vault, JS/TS 및 언어별 folding 규칙, Source/Contracts/Flows, 감사·검증·연구 기록을 기존 볼트 삭제와 함께 이관. 독립 Git 저장소인 로컬 Universal-Agent-Vault는 .gitignore로 제외하고 실제 반영된 규칙은 본체 볼트에 보존했다. 루트 .vscode 및 Build 검증 원자료는 기존 ignore 정책에 따라 로컬 유지하며, 공유 가능한 볼트 .vscode 설정은 이관 문서에 포함한다.
+- **검증:** 분할 전 작업 파일 531개 존재/해시 검사 일치. 공통 정리 staged 297개는 C++/GLSL의 주석·Region·공백을 제외한 코드 동일, 다른 설정/fixture/스크립트는 CRLF/LF 정규화 후 동일. 연구 Python 27개 AST·계획 JSON 확인. 기존 전체 Debug build 성공, CTest 7 통과/7 실패/skip 0, shader 150개 검사·기준선 바이트 동일 결과를 보존. 이번 분할 작업에서 전체 빌드/CTest/실험을 재실행하지 않았다.
+- **남은 제한:** 비교 Scene 생성기는 보존했으나 생성된 ReactionTransitionComparison.Scene·Profile·Mesh는 현재 checkout에 없어 실행 전 생성이 필요하다. 기존 assertion 실패·누락 입력·GPU 한도 문제는 수정하지 않았다.
+- **다음 구현:** 기존 3번 C++ 구조 정리 — LoadDemoAnimation → MainLoop → RecordCommandBuffer. 이번 작업에서 해당 리팩터링이나 push는 수행하지 않는다.
