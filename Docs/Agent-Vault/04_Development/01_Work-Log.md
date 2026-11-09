@@ -146,3 +146,35 @@
   - Refactor(Simulation): 솔버 실행 상태와 step 준비 흐름 분리
   - Refactor(Tools): 분석 보고서와 빌드 스크립트의 책임 분리
   - Docs(AgentVault): 전수 적용 범위·검증 결과와 분할 커밋 기록 동기화
+
+# 2026-11-10 — 공유 Windows MSVC CMake 프리셋
+
+- **읽은 문서:** Agent Vault 지침·Document Map·Code Style·Document Workflow·Verification and Review, 기존 CMakeLists/빌드 스크립트/README와 Build 캐시.
+- **변경:** `Visual Studio 18 2026` + x64 구성 및 Debug/Release 빌드 프리셋을 루트 `CMakePresets.json`에 추가. 기존 `Build` 출력 경로를 사용하고 로컬 컴파일러 경로는 고정하지 않는다.
+- **문서 동기화:** README에 프리셋 사용 안내와 CMake 4.2 최소 버전을 추가. Architecture/Contracts/Flows 영향 없음.
+- **검증:** `cmake --list-presets=all`에서 configure/build 프리셋 3개 인식 확인. 실제 빌드 미실행.
+
+## 2026-11-10 — Universal v5.8 소스 가독성 및 설정 이관
+
+- **읽은 문서:** 프로젝트/최신 AGENTS·Document Map, v5.8 CHANGELOG·Code Style·Local Numbering·단계적 구조화·C++/GLSL/Python/Shell·Source Comments·Workflow·Verification, Project Brief·Constraints·Source Map·Rendering Flow·GPU Layout·CPU–GPU 계약과 이전 v5.5 작업 기록.
+- **코드:** 추적 구현 323개 대조, Source 126·Shaders 58·Scripts 49·Tests 9 = 242개 정리. 의미 단위 공백·긴 조건/조기 반환 서식과 GLSL 중괄호를 보완하고, 조명·솔버·Renderer API·View Settings의 6개 큰 영역에만 선택적 하위 Region 추가. 새 타입/함수 추출·명명 전환·GPU 인터페이스 변경 없음. 미추적 test.glsl 보존.
+- **호환성:** 현재 MSVC가 원본의 08/09 Region 라벨을 C2041로 거부해 해당 파일과 새 하위 Region C++ 파일의 이름을 인용했다. GLSL에는 Shaders/.clang-format 추가. 사용자 전역 설정은 변경하지 않고 root/vault 접기 설정을 v5.8 LF/CRLF 정규식으로 병합했다. root .vscode는 기존 ignore 정책 유지.
+- **문서 동기화:** 공통 규칙 변경 6개·AGENTS·Document Map·Changelog, Project Brief·Constraints·README·Current Work·Source Map·Validation 및 [v5.8 파일별 적용표](13_Vault-5.8-Readability-Coverage.md) 갱신. upstream은 HEAD 93dbbed 위의 v5.8 작업 트리를 기준으로 함. Contracts/Flows는 실행/데이터 의미가 같아 정의 변경 불필요. 검증 문서의 표를 끊던 설명 위치도 보완.
+- **검증:** C++ 201개 토큰·Python 44개 AST 대조 통과, GLSL은 제어문 중괄호 추가 외 기존 토큰 유지. 최종 Debug 전체 build 성공. shader 150개 컴파일/spirv-val 통과·SPIR-V 바이트 동일. CTest 변경 전/후 7 통과·7 기존 실패. 실제 Maptz parser 74개 LF/CRLF 148회 통과(133 shader·2 shell Region). Python formatter check 및 CRLF 대응 공백/Region 검사 수행. [증거](../../../Build/Validation/20261110-vault58/summary.md).
+- **한계:** 기존 테스트 실패 수정, 별도 성능·전체 렌더 캡처·다른 GPU/OS·실제 편집기 접힘 UI 검증은 범위에 포함하지 않았다. commit/push 없음.
+
+## 2026-11-10 — Shader 중첩 Region 전수 조사·추가
+
+- **읽은 문서:** AGENTS·Document Map·Code Style·Local Numbering·GLSL·Source Comments·Verification, Project Brief·Shader Source Index·CPU–GPU 경계 및 실제 shader의 함수·resource·진입점·전처리/동기화 구조.
+- **검토/변경:** 디스크와 Git shader 목록 69개 일치 확인. 35개 파일에 하위 Region 115개 추가, 기존 4개 중첩 파일 유지, 나머지 30개는 파일별 미추가 근거 기록. Debug record/적층/normal·뷰 종류, Overlay coverage/geometry/compositing, scalar/vector sampling, solver layout/geometry/transport/scheduling을 실제 책임으로 구획. 최상위 유지·한 줄 하위 제목·연결 번호·논리적 들여쓰기·총 2단계 준수. 함수별·검증문별 기계적 생성은 하지 않았다.
+- **보존:** 기존 미커밋 변경, 계산 토큰·선언/함수 순서·layout/binding·매크로/오류 경로·barrier 호출 순서·줄바꿈 유지. shared halo/schedule reset의 barrier는 진입점 구획 사이에 보이며, synchronization helper 구획은 제목에 명시.
+- **문서:** [69개 파일별 검토표](14_Shader-Nested-Region-Coverage.md), README·Project Brief·Shader Source Index·Current Work·최초 v5.8 적용표의 후속 안내·Validation 갱신. Contracts/Flows 검토 결과 ABI·데이터/실행 의미의 변경이 없어 본문 변경 불필요.
+- **검증:** 69개 비주석 토큰 동일. Region 짝/포함/상하위 번호/들여쓰기·최대 2단계 및 새 범위의 brace/전처리 경계 검사 통과. shader 150개 glslc/spirv-val 통과·전후 SPIR-V 바이트 동일. 실제 Maptz parser LF/CRLF 138회 통과(각 248영역). CRLF-aware diff check 통과. [원자료](../../../Build/Validation/20261110-shader-regions/summary.md).
+- **미실행:** 실제 편집기 접힘 UI, 전체 C++ build/CTest·별도 GPU 성능/렌더 캡처는 주석만 추가한 이번 작업에서 반복하지 않았다. commit/push 없음.
+
+## 2026-11-10 — 현재 변경 의미 단위 분할 커밋
+
+- **근거:** 사용자 요청 및 AGENTS·Document Map·Commit Style에 따라 누적 변경을 분리했다. 작업 파일은 유지하고 보존된 셰이더 스냅샷으로 서식 변경과 후속 중첩 Region 추가를 구분했다.
+- **커밋:** `f07410e` CMake 프리셋·사용 안내, `97ce059` v5.8 공통 규칙·접기 설정, `b96bbe1` C++ 서식·Region·MSVC 라벨, `3d1901e` Python 서식, `d34fc77` 셰이더 v5.8 가독성 정리, `50cd941` 셰이더 중첩 Region 전수 적용. 적용표·프로젝트 현황·검증 결과와 이 기록은 마지막 문서 커밋으로 묶는다.
+- **검증:** 각 커밋의 인덱스에 CRLF 대응 공백 검사 수행. 코드·설정 커밋 전후 작업 파일의 SHA-256 동일 확인. CMake 프리셋 3개 인식 재확인. 앞선 최종 Debug build 성공·shader 150개 검증 및 SPIR-V 동일·CTest 7 통과/7 기존 실패 결과를 사용하며, 각 중간 커밋을 별도로 빌드한 것으로 간주하지 않는다.
+- **문서 검토:** 변경 내용과 두 적용표·Validation·Current Work·Source Index의 일치 여부 확인. 실행 의미·GPU 인터페이스 추가 변경이 없어 Contracts/Flows 수정 불필요. 원자료는 `Build/Validation/20261110-split-commits/`에 보존하며 push는 수행하지 않는다.

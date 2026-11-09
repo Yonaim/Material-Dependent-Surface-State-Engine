@@ -25,3 +25,14 @@
 - [[01_Project-Context/01_Glossary|Glossary]] / [[01_Project-Context/02_Requirements|Requirements]] / [[01_Project-Context/03_Constraints|Constraints]]
 - [[02_Architecture/00_Flows/00_Main-Flow|Main Flow]] / [[02_Architecture/01_Contracts/05_GPU-Layout|GPU Layout]] / [[02_Architecture/02_Source/00_Source-Map|Source Map]]
 - [[04_Development/00_Current-Work|Current Work]] / [[05_Experiments/01_Validation-and-Tests|Validation]]
+
+## 가독성 규칙 적용 — Universal v5.8 (2026-11-10)
+
+- 로컬 `Universal-Agent-Vault/` v5.8 작업 트리의 공통 규칙을 병합했다. 기존 명명 프로필과 GPU 계약을 유지한다.
+- 323개 구현의 공백·조건 서식·필요한 하위 Region을 대조했다. 결과와 유지 판단은 [v5.8 적용표](../04_Development/13_Vault-5.8-Readability-Coverage.md)를 따른다.
+- GLSL 포맷은 `Shaders/.clang-format`을 사용한다. LF·CRLF 접기 설정은 볼트 `.vscode/settings.json`에 보존하고 실제 프로젝트 루트 설정에 병합한다.
+- MSVC가 `08_...`·`09_...`를 8진수로 해석하는 C++ Region 라벨은 `#pragma region "09_Profile_Editing_State"`처럼 인용한다. 번호와 이름을 바꾸는 대신 컴파일러 호환성을 우선한다.
+
+## Shader 중첩 Region 적용 (2026-11-10)
+
+모든 shader의 최상위 Region 정책은 유지한다. 중첩은 v5.8의 하위 책임·독립 탐색 가치·추출 적합성 기준으로 69개 파일을 검토했고, 최종 39개 파일에 존재한다. 작은 wrapper·단일 계산·고정 ABI 선언에 강제하지 않은 이유도 [전수 검토표](../04_Development/14_Shader-Nested-Region-Coverage.md)에 기록했다. 최대 깊이는 2이며 layout·계산·barrier 순서는 바꾸지 않는다.

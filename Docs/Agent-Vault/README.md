@@ -68,11 +68,17 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 
 ### MDSS Shader 자동 접기 확인
 
-- 프로젝트 설정에서 모든 shader(작은 include/placeholder 포함)에 comment Region을 적용한다. 현재 69개 파일·122개 영역이다.
+- 프로젝트 설정에서 모든 shader(작은 include/placeholder 포함)에 comment Region을 적용한다. 중첩 Region 전수 검토 후 추적 중인 69개 파일·248개 영역이다. 하위 Region은 126개이며 최대 2단계다. [파일별 생성/유지 판단](04_Development/14_Shader-Nested-Region-Coverage.md)을 따른다.
 - `foldOnOpen.targets: ["AllMarkerRegions"]`는 인식된 Region을 접는 명령 설정이다. GLSL의 마커 인식은 Custom Folding 설정/공급자가 담당한다.
 - root/vault 설정의 `maptz.regionfolder.[glsl]`은 **CRLF를 허용하는 정규식**과 `defaultFoldStartRegex`를 사용한다. Maptz의 `collapseDefaultRegionsOnOpen`도 활성화했다. 이전 `(.*)$` 형식은 확장의 split("\n")에서 남은 CR을 처리하지 못했다.
 - GLSL 설정을 새로 추가한 실행 중 창은 **Developer: Reload Window** 후 shader를 다시 연다. 필요하면 **Fold All Regions**를 실행한다. 파일의 언어 모드는 GLSL이어야 한다.
 - [원인 재현·검증 기록](../../Build/Validation/20261109-215915-shader-folding-fix/summary.md). 실제 확장 파서에서 인식과 default Region 지정은 검증했지만, UI 연결 실패로 접힌 화면 자체는 미관찰이다.
+
+### Universal v5.8 적용 범위
+
+- 기준은 루트 `Universal-Agent-Vault/`의 v5.8 작업 트리다. 프로젝트 Context·Architecture·과거 검증 기록을 덮어쓰지 않고 공통 규칙 차이를 병합했다.
+- 공백·조건 서식과 선택적 2단계 Region, LF/CRLF 접기를 반영했다. [소스별 적용 결과](04_Development/13_Vault-5.8-Readability-Coverage.md)와 [변경·검증 기록](04_Development/01_Work-Log.md)을 참조한다.
+- 루트 `.vscode`는 기존 Git ignore 대상이다. 새로운 checkout에서는 볼트 `.vscode/settings.json`을 프로젝트 루트 설정에 병합해야 하며, 하위 볼트 설정이 자동 적용되는 것으로 간주하지 않는다.
 
 ## 1. 프로젝트 정의 — 네 문서 필수
 

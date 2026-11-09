@@ -609,3 +609,21 @@ ctest --test-dir Build --output-on-failure
 - 변경 전 HEAD를 `Build/ReactionValidation/Baseline/`에 별도로 구성하고, 기존 작업 폴더의 미추적 지원 파일인 `Source/SurfaceState/Cache` 및 `MidtermDustpan/Dustpan.obj`를 동일하게 준비했다. 선택한 9개 기존 회귀 중 2 통과/7 실패를 재현했다. 변경 버전도 OS 차단 전 전체 13개 실행에서 동일한 7개 실패를 보였다.
 - 재현한 기존 실패: SceneResources/DemoAnimation의 dustpan 이벤트 시점, CavityFillDisplayBound의 이전 형상 기대값, LavaScene의 없는 `Mountain_Lava.Scene`, OverlaySideCompaction의 미지원 render 해상도, SurfaceMapping의 seam 경고 기대값, SharedSurfaceGeometry의 invalid-texel triangulation 기대값. 이번 기능에서 이 fixture/기대값을 수정하지 않았다.
 - 원자료: `Build/reaction-build.log`, `Build/reaction-ctest.log`, `Build/reaction-gpu-tests.log`, `Build/ReactionValidation/baseline-build.log`, `baseline-ctest.log`, `summary.json`. 과거 통과 시점의 별도 소스 snapshot/hash는 보존하지 않았으므로 최종 차단된 테스트 바이너리의 통과를 주장하지 않는다.
+
+## 2026-11-10 — Universal v5.8 가독성 이관 검증
+
+- 범위: 추적 구현 323개, 변경 242개. C++ 201개 Region/주석 제외 토큰 동일, Python 44개 AST 동일, GLSL은 기존 토큰에 제어문 중괄호만 추가. 선언·접근·멤버 순서 및 GPU 계약을 변경하지 않았다.
+- Debug 전체 `cmake --build Build --config Debug --parallel 4` 성공. 원본에도 있던 `#pragma region 08_...`/`09_...`의 MSVC C2041은 해당 파일의 라벨 인용으로 보완했다.
+- Debug/Release shader entry·variant 150개 전후 glslc/spirv-val 통과, SPIR-V 모두 바이트 동일.
+- 변경 전 기존 바이너리와 최종 재빌드 후 CTest는 동일하게 7 통과/7 실패. SceneResources·DemoAnimation·CavityFillDisplayBound·LavaScene·OverlaySideCompaction·SurfaceMapping·SharedSurfaceGeometry의 기존 실패를 유지했다.
+- 설치된 Maptz RegionProvider: GLSL 69개·Shell 5개 × LF/CRLF = 148회 통과, GLSL 133개·Shell 2개 영역과 default 지정 일치. Region 균형·포함·최대 2단계 확인. 편집기 실제 접기 UI는 미검증이다.
+- formatter: clang-format 22.1.6, Black 26.10.1. Python check 통과. C++의 논리적 하위 pragma 들여쓰기는 clang-format의 열 0 이동보다 프로젝트 규칙을 우선했다.
+- 별도 성능/렌더 캡처/장시간/다른 장치·플랫폼 검증은 반복하지 않았다. [원자료](../../../Build/Validation/20261110-vault58/summary.md), [파일별 적용표](../04_Development/13_Vault-5.8-Readability-Coverage.md).
+
+## 2026-11-10 — Shader 중첩 Region 전수 추가 검증
+
+- 대상: 실제 shader 전체 69개. 35개 파일에 중첩 115개 추가, 기존 중첩 4개 파일 유지, 30개 미추가 판단 기록. 전체 248개·하위 126개·최대 깊이 2.
+- 시작 snapshot 대비 69개 비주석 토큰 동일, 줄바꿈 형식 유지. 새 구획의 brace scope·조건부 컴파일 분기 경계, 모든 Region 번호·짝·부모/자식 포함·들여쓰기 검사 통과.
+- Debug/Release entry·variant 150개 전후 glslc/spirv-val 통과. 모든 SPIR-V 바이트 동일.
+- 설치된 Maptz 1.0.22 parser: 69개 × LF/CRLF = 138회 통과, 각 줄바꿈에서 248개 영역/default 지정 일치. root/vault 설정 일치. 편집기 실제 folding UI는 미검증.
+- 계산·C++ 변경이 없어 전체 C++ build/CTest·별도 GPU 렌더/성능은 반복하지 않았다. [파일별 검토](../04_Development/14_Shader-Nested-Region-Coverage.md), [원자료](../../../Build/Validation/20261110-shader-regions/summary.md).

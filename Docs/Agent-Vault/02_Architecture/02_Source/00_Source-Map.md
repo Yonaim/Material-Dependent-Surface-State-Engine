@@ -40,3 +40,7 @@
 - [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|누락되었던 CPU Surface Cache]] — `.Surface` fingerprint, version, rebuild fallback.
 
 이 Source 지도는 코드 위치와 연결을 설명한다. 빌드·GPU 실행·렌더·테스트 결과는 [[05_Experiments/01_Validation-and-Tests|Validation]]에서 확인한다.
+
+## Universal v5.8 가독성 이관 (2026-11-10)
+
+상위 Source 경로·진입점·소유권과 CPU–GPU 연결은 유지했다. 공백/조건 서식 및 선택적인 하위 Region만 정리했고, C++ MSVC Region 라벨 인용을 보완했다. Contracts·Flows 검토 결과 API/ABI·데이터·실행 순서의 새 정의가 없어 본문을 재작성하지 않았다. 파일별 적용 범위와 검증은 [v5.8 적용표](../../04_Development/13_Vault-5.8-Readability-Coverage.md)를 따른다.

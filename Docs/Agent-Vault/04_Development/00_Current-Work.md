@@ -16,7 +16,8 @@
 | 2 (기존 4) | GLSL 계산 구조 정리 | 완료: Debug·Overlay·Solver 13개 구조 정리. shader 150개 컴파일/검증·reflection 동일, build 성공, CTest 7 통과/7 실패·기준선 동일, debug GPU 출력 16개 동일. Overlay 전체·성능 미검증. [근거](../../../Build/Validation/20261109-221158-glsl-top-down/summary.md) |
 | 3 (기존 5) | Unreal-Inspired 네이밍 | 완료: C++ 일반 타입/비템플릿 별칭 F·enum E·scalar bool b. 템플릿/외부 타입·GLSL 이름/직렬화 유지. 전체 build 성공, CTest 7 통과/7 실패·기준선 동일, shader 150개 동일, render-only 출력 동일. [근거](../../../Build/Validation/20261109-222214-unreal-naming/summary.md) |
 | 우선 추가 | Universal 5.5 2단계 구조화 | 완료: 구현 코드 323개 + CMake 2개 검토, 구획과 실제 책임 추출을 별도 검증. 8개 값 소유 상태·frame/solver/UI/geometry/Python/Shell 분리, 유지 판단도 기록. [파일별 대조표](12_Section-and-Responsibility-Coverage.md) · [검증](../../../Build/Validation/20261109-230833-vault55-project-wide/summary.md) |
-| 4 (기존 6) | 문서·스타일 정리 | 대기: Doxygen 한국어, Python/Shell 구조와 필요한 큰 책임별 folding, 포맷터 버전 확정 후 검사. JS/TS는 실제 도입 전 비활성 |
+| 추가 | Universal v5.8 가독성·접기 | 완료: 323개 구현 대조·242개 정리, 선택적 2단계 Region, LF/CRLF 설정 병합. Debug build 성공, shader 150개 바이트 동일, CTest 7 통과/7 기존 실패. [적용표](13_Vault-5.8-Readability-Coverage.md) |
+| 4 (기존 6) | 문서·스타일 정리 | 가독성·서식은 v5.8 이관 완료. 남은 항목: Doxygen 한국어, Python/Shell 구조와 필요한 큰 책임별 folding, 포맷터 버전 확정 후 검사. JS/TS는 실제 도입 전 비활성 |
 | 5 (기존 2) | 오류 처리·CPU–GPU 계약 보완 | 후순위 유지: benchmark 쓰기 오류, 버퍼 길이/인덱스/수명 계약 확인. 기존 실패의 원인은 개별 작업으로 판정하고 기대값을 임의 변경하지 않음 |
 | 6 | 전체 검증 및 결과 정리 | 마지막: 정식 결과 수집 절차 보완, 전체 build/CTest/shader와 필요한 GPU·성능 회귀. 기존 실패·환경 제한·신규 회귀를 분리 |
 
@@ -94,3 +95,7 @@ Decision 0021의 순수 회전 TransferWeight buffer 갱신 제거가 선행한�
 - Pass 간 RawFlux 재사용
 - Decision 0021 — 회전 불변 캐시
 - Decision 0022 — 유효 형상
+
+## Shader 중첩 Region 후속 전수 검토 — 완료 (2026-11-10)
+
+최초 v5.8의 4개 shader 적용에서 확대해 실제 shader 69개를 검토했다. 35개 파일에 115개 하위 구획을 추가, 기존 4개 유지, 미추가 30개 이유 기록. 최종 248개 Region·하위 126개·깊이 2다. 토큰 동일, shader 150개 컴파일/검증 및 바이트 동일, Maptz LF/CRLF 138회 통과. [파일별 판단](14_Shader-Nested-Region-Coverage.md). 이번 주석 추가로 기존 CTest 실패를 해결하거나 다른 작업의 완료 범위를 확대하지 않는다.
