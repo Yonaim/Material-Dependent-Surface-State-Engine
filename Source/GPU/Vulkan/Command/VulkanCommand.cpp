@@ -16,7 +16,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Command_Pool_Lifecycle
 
-    TVulkanCommand::TVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily) : Device(Device)
+    FVulkanCommand::FVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily) : Device(Device)
     {
         VkCommandPoolCreateInfo CreateInfo{};
         CreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -27,11 +27,11 @@ namespace MDSS::GPU
         {
             throw std::runtime_error("Failed to create Vulkan command pool.");
         }
-        TLogger::Debug("Vulkan",
+        FLogger::Debug("Vulkan",
                        "Command pool created for graphics queue family " + std::to_string(GraphicsQueueFamily) + ".");
     }
 
-    TVulkanCommand::~TVulkanCommand()
+    FVulkanCommand::~FVulkanCommand()
     {
         if (CommandPool != VK_NULL_HANDLE)
         {
@@ -47,12 +47,12 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Command_Buffer_Access
 
-    VkCommandPool TVulkanCommand::GetPool() const noexcept
+    VkCommandPool FVulkanCommand::GetPool() const noexcept
     {
         return CommandPool;
     }
 
-    std::vector<VkCommandBuffer> TVulkanCommand::AllocatePrimary(std::uint32_t Count) const
+    std::vector<VkCommandBuffer> FVulkanCommand::AllocatePrimary(std::uint32_t Count) const
     {
         std::vector<VkCommandBuffer> CommandBuffers(Count, VK_NULL_HANDLE);
 
@@ -67,7 +67,7 @@ namespace MDSS::GPU
             throw std::runtime_error("Failed to allocate Vulkan command buffers.");
         }
 
-        TLogger::Verbose("Vulkan", "Allocated " + std::to_string(Count) + " primary command buffer(s).");
+        FLogger::Verbose("Vulkan", "Allocated " + std::to_string(Count) + " primary command buffer(s).");
         return CommandBuffers;
     }
 
@@ -78,7 +78,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Single_Time_Commands
 
-    VkCommandBuffer TVulkanCommand::BeginSingleTime() const
+    VkCommandBuffer FVulkanCommand::BeginSingleTime() const
     {
         VkCommandBuffer             CommandBuffer = VK_NULL_HANDLE;
         VkCommandBufferAllocateInfo AllocateInfo{};
@@ -105,7 +105,7 @@ namespace MDSS::GPU
         return CommandBuffer;
     }
 
-    void TVulkanCommand::EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const
+    void FVulkanCommand::EndSingleTime(VkCommandBuffer CommandBuffer, VkQueue Queue) const
     {
         if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
         {

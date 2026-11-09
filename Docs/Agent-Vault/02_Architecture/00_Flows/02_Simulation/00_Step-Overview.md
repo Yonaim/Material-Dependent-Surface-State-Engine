@@ -58,7 +58,7 @@ flowchart TD
   Swap --> Consumer["다음 substep 또는 renderer"]
 ```
 
-[`TSurfaceStateSystem::RecordStep`](../../../../../Source/SurfaceState/Solver/SurfaceStepRecording.cpp)는 active instance마다 현재 A/B, texel/channel 수, 모델 행렬, gravity, 입력 활성화 및 Solver flags를 `TSurfaceSolverInstanceStep`에 담는다. Transform·설정 변경으로 transfer weight cache가 무효화되면 CPU에서 다시 계산해 업로드한다. [`TSurfaceStateSolver::RecordSteps`](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp)는 instance들을 단계별로 묶어 dispatch하며, 출력 버퍼가 다음 shader·indirect command에서 읽히기 전에 barrier를 기록한다.
+[`FSurfaceStateSystem::RecordStep`](../../../../../Source/SurfaceState/Solver/SurfaceStepRecording.cpp)는 active instance마다 현재 A/B, texel/channel 수, 모델 행렬, gravity, 입력 활성화 및 Solver flags를 `FSurfaceSolverInstanceStep`에 담는다. Transform·설정 변경으로 transfer weight cache가 무효화되면 CPU에서 다시 계산해 업로드한다. [`FSurfaceStateSolver::RecordSteps`](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp)는 instance들을 단계별로 묶어 dispatch하며, 출력 버퍼가 다음 shader·indirect command에서 읽히기 전에 barrier를 기록한다.
 
 ## Pass별 입출력과 조건
 
@@ -73,7 +73,7 @@ flowchart TD
 
 ## Step 종료, 다음 소비자
 
-`RecordSteps` 이후 `TSurfaceGPUResourceManager::AdvanceCurrentState`가 A/B 방향을 뒤집고 입력 활성화 플래그를 정리한다. geometry OFF에서는 Solver용 동적 geometry 갱신을 생략하지만 마지막 substep에서 표시용 높이를 만들 수 있다. sparse dispatch는 metadata의 indirect command를 소비하고, full 경로는 texel 수에 따른 workgroup을 dispatch한다. 둘의 수식 의미와 buffer ABI는 [[02_Architecture/01_Contracts/04_Solver|Solver]]와 [[02_Architecture/01_Contracts/05_GPU-Layout|GPU Layout]]이 기준이다.
+`RecordSteps` 이후 `FSurfaceGPUResourceManager::AdvanceCurrentState`가 A/B 방향을 뒤집고 입력 활성화 플래그를 정리한다. geometry OFF에서는 Solver용 동적 geometry 갱신을 생략하지만 마지막 substep에서 표시용 높이를 만들 수 있다. sparse dispatch는 metadata의 indirect command를 소비하고, full 경로는 texel 수에 따른 workgroup을 dispatch한다. 둘의 수식 의미와 buffer ABI는 [[02_Architecture/01_Contracts/04_Solver|Solver]]와 [[02_Architecture/01_Contracts/05_GPU-Layout|GPU Layout]]이 기준이다.
 
 
 ## 변경 시 함께 추적할 위치

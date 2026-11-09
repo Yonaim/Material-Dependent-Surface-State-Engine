@@ -26,7 +26,7 @@
 
 ## C++ pipeline variant 대조
 
-[TSurfaceStateSolver 생성자](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp)에는 Solver Pass1·Pass2 각각 11개 GPU pipeline variant(5 raw modes × 2 weight modes + 1 runtime flag mode), Reaction pipeline 하나와 DynamicWeights 3개 variant, SparseScheduleReset/AccumulationHeight/DynamicGeometry pipeline 생성이 명시되어 있다. [SurfaceInput.comp](../../../../../Shaders/Simulation/Input/SurfaceInput.comp)는 이 생성자에서 pipeline이 구성되지 않는다.
+[FSurfaceStateSolver 생성자](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp)에는 Solver Pass1·Pass2 각각 11개 GPU pipeline variant(5 raw modes × 2 weight modes + 1 runtime flag mode), Reaction pipeline 하나와 DynamicWeights 3개 variant, SparseScheduleReset/AccumulationHeight/DynamicGeometry pipeline 생성이 명시되어 있다. [SurfaceInput.comp](../../../../../Shaders/Simulation/Input/SurfaceInput.comp)는 이 생성자에서 pipeline이 구성되지 않는다.
 
 실제 SPIR-V variant 생성 범위는 [ShaderManifest.cmake](../../../../../CMake/ShaderManifest.cmake)와 CMake 빌드 설정을 함께 확인한다.
 

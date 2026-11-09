@@ -22,14 +22,14 @@ flowchart LR
 
 ## Mapping, Geometry, GPU 생성
 
-2. [`TSurfaceMappingBuilder`](../../../../../Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp)는 triangle을 simulation UV texel에 대응시키고 원본 topology를 따라 UV seam의 이웃을 연결한다. [`ValidateSurfaceMapping`](../../../../../Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp)이 유효 texel·neighbor 관계를 검사한다.
+2. [`FSurfaceMappingBuilder`](../../../../../Source/SurfaceState/Mapping/SurfaceMappingBuilder.cpp)는 triangle을 simulation UV texel에 대응시키고 원본 topology를 따라 UV seam의 이웃을 연결한다. [`ValidateSurfaceMapping`](../../../../../Source/SurfaceState/Mapping/SurfaceMappingValidation.cpp)이 유효 texel·neighbor 관계를 검사한다.
 
 
-3. [`TSurfaceGeometryBuilder`](../../../../../Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp)는 texel 위치·법선·면적·이웃 기하량을 구성한다. [`BuildMesoGeometry`](../../../../../Source/SurfaceState/Geometry/MesoGeometryBuilder.cpp)와 [`NormalMapTransferNormalBuilder`](../../../../../Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp)가 추가 기하량을 준비한다.
+3. [`FSurfaceGeometryBuilder`](../../../../../Source/SurfaceState/Geometry/SurfaceGeometryBuilder.cpp)는 texel 위치·법선·면적·이웃 기하량을 구성한다. [`BuildMesoGeometry`](../../../../../Source/SurfaceState/Geometry/MesoGeometryBuilder.cpp)와 [`NormalMapTransferNormalBuilder`](../../../../../Source/SurfaceState/Mapping/NormalMapTransferNormalBuilder.cpp)가 추가 기하량을 준비한다.
 
 
-4. [`TSurfaceStateRegistry`](../../../../../Source/SurfaceState/Types/SurfaceStateRegistry.cpp)가 State ID와 profile index를 정한다. [`TSurfaceGPUResourceManager`](../../../../../Source/SurfaceState/GPU/Resources/SurfaceGPUResourceManager.cpp)는 정적 geometry를 동일 runtime surface 사이에 공유하고, State A/B·InputDelta·동적 geometry·scratch·world texel area를 instance마다 구성한다. Runtime data는 CPU 전처리 결과이며 GPU resource는 실제 shader가 읽고 쓰는 자료다.
+4. [`FSurfaceStateRegistry`](../../../../../Source/SurfaceState/Types/SurfaceStateRegistry.cpp)가 State ID와 profile index를 정한다. [`FSurfaceGPUResourceManager`](../../../../../Source/SurfaceState/GPU/Resources/SurfaceGPUResourceManager.cpp)는 정적 geometry를 동일 runtime surface 사이에 공유하고, State A/B·InputDelta·동적 geometry·scratch·world texel area를 instance마다 구성한다. Runtime data는 CPU 전처리 결과이며 GPU resource는 실제 shader가 읽고 쓰는 자료다.
 
 ## Surface cache hit / miss
 
-`TSurfaceDataManager::LoadSurfaceData`는 `TSurfaceCache::Describe` → `GetPath` → `Load`를 시도한다. 캐시 미존재·손상·버전 mismatch에서는 Mapping/Geometry/NormalMap/Meso build로 fallback하고 저장 실패는 경고로 남긴다. **Response Profile의 이동·감쇠 계수 수정만으로 GPU Solver 계산을 위해 CPU `.Surface` geometry 전처리를 반드시 다시 수행한다고 가정하지 않는다.** 자세한 fingerprint 포함·제외 값은 [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|캐시 문서]]를 참조한다.
+`FSurfaceDataManager::LoadSurfaceData`는 `FSurfaceCache::Describe` → `GetPath` → `Load`를 시도한다. 캐시 미존재·손상·버전 mismatch에서는 Mapping/Geometry/NormalMap/Meso build로 fallback하고 저장 실패는 경고로 남긴다. **Response Profile의 이동·감쇠 계수 수정만으로 GPU Solver 계산을 위해 CPU `.Surface` geometry 전처리를 반드시 다시 수행한다고 가정하지 않는다.** 자세한 fingerprint 포함·제외 값은 [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|캐시 문서]]를 참조한다.

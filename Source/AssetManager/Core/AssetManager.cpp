@@ -25,14 +25,14 @@ namespace MDSS::Asset
 // ============================================================
 #pragma region 00_Asset_Manager_Lifecycle
 
-    TAssetManager::TAssetManager(const GPU::TVulkanContext& Context) : Context(Context)
+    FAssetManager::FAssetManager(const GPU::FVulkanContext& Context) : Context(Context)
     {
-        TLogger::Info("TAssetManager", "Initializing default material resources.");
+        FLogger::Info("TAssetManager", "Initializing default material resources.");
         DefaultBaseColorTexture = CreateSolidTexture("DefaultWhite", {255, 255, 255, 255}, true);
         DefaultNormalTexture = CreateSolidTexture("DefaultFlatNormal", {128, 128, 255, 255}, false);
         DefaultMaterial =
             CreateMaterial("DefaultMaterial", {}, glm::vec4(1.0F), DefaultBaseColorTexture, DefaultNormalTexture);
-        TLogger::Debug("TAssetManager", "Default white texture, flat normal texture, and material created.");
+        FLogger::Debug("TAssetManager", "Default white texture, flat normal texture, and material created.");
     }
 
 #pragma endregion
@@ -42,7 +42,7 @@ namespace MDSS::Asset
 // ============================================================
 #pragma region 01_Asset_Loading
 
-    TMeshAssetHandle TAssetManager::LoadOBJ(const std::filesystem::path& Path)
+    FMeshAssetHandle FAssetManager::LoadOBJ(const std::filesystem::path& Path)
     {
         const std::string MeshPathKey = std::filesystem::absolute(Path).lexically_normal().generic_string();
         if (const auto Found = MeshAssetsByPath.find(MeshPathKey); Found != MeshAssetsByPath.end())
@@ -50,20 +50,20 @@ namespace MDSS::Asset
             return Found->second;
         }
 
-        TLogger::Info("TAssetManager", "Loading OBJ asset: " + Path.string());
-        TOBJLoadResult Loaded = TOBJLoader::Load(Path);
+        FLogger::Info("TAssetManager", "Loading OBJ asset: " + Path.string());
+        FOBJLoadResult Loaded = FOBJLoader::Load(Path);
 
-        std::vector<TMaterialAssetHandle> MaterialRemap;
+        std::vector<FMaterialAssetHandle> MaterialRemap;
         MaterialRemap.reserve(Loaded.Materials.size());
 
-        for (const TMaterialSourceData& SourceMaterial : Loaded.Materials)
+        for (const FMaterialSourceData& SourceMaterial : Loaded.Materials)
         {
-            const TextureAssetHandle BaseColorTexture = SourceMaterial.BaseColorTexturePath.empty()
-                                                            ? DefaultBaseColorTexture
-                                                            : LoadTexture(SourceMaterial.BaseColorTexturePath, true);
-            const TextureAssetHandle NormalTexture = SourceMaterial.NormalTexturePath.empty()
-                                                         ? DefaultNormalTexture
-                                                         : LoadTexture(SourceMaterial.NormalTexturePath, false);
+            const FTextureAssetHandle BaseColorTexture = SourceMaterial.BaseColorTexturePath.empty()
+                                                             ? DefaultBaseColorTexture
+                                                             : LoadTexture(SourceMaterial.BaseColorTexturePath, true);
+            const FTextureAssetHandle NormalTexture = SourceMaterial.NormalTexturePath.empty()
+                                                          ? DefaultNormalTexture
+                                                          : LoadTexture(SourceMaterial.NormalTexturePath, false);
 
             MaterialRemap.push_back(CreateMaterial(SourceMaterial.Name,
                                                    Path,
@@ -73,11 +73,11 @@ namespace MDSS::Asset
                                                    SourceMaterial.WaterAppearance));
         }
 
-        std::vector<TMeshSection> Sections;
+        std::vector<FMeshSection> Sections;
         Sections.reserve(Loaded.Sections.size());
-        for (const TOBJMeshSectionData& SourceSection : Loaded.Sections)
+        for (const FOBJMeshSectionData& SourceSection : Loaded.Sections)
         {
-            TMaterialAssetHandle Material = DefaultMaterial;
+            FMaterialAssetHandle Material = DefaultMaterial;
             if (SourceSection.MaterialIndex >= 0 &&
                 static_cast<std::size_t>(SourceSection.MaterialIndex) < MaterialRemap.size())
             {
@@ -87,13 +87,13 @@ namespace MDSS::Asset
             Sections.push_back({SourceSection.FirstIndex, SourceSection.IndexCount, Material, SourceSection.Surface});
         }
 
-        const TMeshAssetHandle Handle = static_cast<TMeshAssetHandle>(Meshes.size());
+        const FMeshAssetHandle Handle = static_cast<FMeshAssetHandle>(Meshes.size());
         const std::size_t      VertexCount = Loaded.Vertices.size();
         const std::size_t      IndexCount = Loaded.Indices.size();
         const std::size_t      SectionCount = Sections.size();
         const std::size_t      MaterialCount = MaterialRemap.size();
 
-        Meshes.push_back(std::make_unique<TMeshAsset>(Handle,
+        Meshes.push_back(std::make_unique<FMeshAsset>(Handle,
                                                       Path.stem().string(),
                                                       Path,
                                                       Context,
@@ -102,7 +102,7 @@ namespace MDSS::Asset
                                                       std::move(Sections),
                                                       std::move(Loaded.Triangles)));
         MeshAssetsByPath.emplace(MeshPathKey, Handle);
-        TLogger::Info("TAssetManager",
+        FLogger::Info("TAssetManager",
                       "OBJ registered as TMeshAsset handle=" + std::to_string(Handle) +
                           " (vertices=" + std::to_string(VertexCount) + ", indices=" + std::to_string(IndexCount) +
                           ", sections=" + std::to_string(SectionCount) +
@@ -111,7 +111,7 @@ namespace MDSS::Asset
         return Handle;
     }
 
-    TSRProfileAssetHandle TAssetManager::LoadSRProfile(const std::filesystem::path& Path)
+    FSRProfileAssetHandle FAssetManager::LoadSRProfile(const std::filesystem::path& Path)
     {
         const std::string CacheKey = std::filesystem::absolute(Path).lexically_normal().generic_string();
         if (const auto Found = SRProfileCache.find(CacheKey); Found != SRProfileCache.end())
@@ -123,9 +123,9 @@ namespace MDSS::Asset
             throw std::overflow_error("TSRProfileAsset handle range is exhausted.");
         }
 
-        const TSRProfileAssetHandle      Handle = static_cast<TSRProfileAssetHandle>(SRProfiles.size());
-        std::unique_ptr<TSRProfileAsset> Profile = TSRProfileLoader::Load(Handle, Path);
-        TLogger::Info("TAssetManager",
+        const FSRProfileAssetHandle      Handle = static_cast<FSRProfileAssetHandle>(SRProfiles.size());
+        std::unique_ptr<FSRProfileAsset> Profile = FSRProfileLoader::Load(Handle, Path);
+        FLogger::Info("TAssetManager",
                       "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
         SRProfiles.push_back(std::move(Profile));
         SRProfileCache.emplace(CacheKey, Handle);
@@ -139,7 +139,7 @@ namespace MDSS::Asset
 // ============================================================
 #pragma region 02_Asset_Access
 
-    const TMeshAsset& TAssetManager::GetMesh(TMeshAssetHandle Handle) const
+    const FMeshAsset& FAssetManager::GetMesh(FMeshAssetHandle Handle) const
     {
         if (Handle >= Meshes.size())
         {
@@ -148,7 +148,7 @@ namespace MDSS::Asset
         return *Meshes[Handle];
     }
 
-    const TMaterialAsset& TAssetManager::GetMaterial(TMaterialAssetHandle Handle) const
+    const FMaterialAsset& FAssetManager::GetMaterial(FMaterialAssetHandle Handle) const
     {
         if (Handle >= Materials.size())
         {
@@ -157,7 +157,7 @@ namespace MDSS::Asset
         return *Materials[Handle];
     }
 
-    const TextureAsset& TAssetManager::GetTexture(TextureAssetHandle Handle) const
+    const FTextureAsset& FAssetManager::GetTexture(FTextureAssetHandle Handle) const
     {
         if (Handle >= Textures.size())
         {
@@ -166,7 +166,7 @@ namespace MDSS::Asset
         return *Textures[Handle];
     }
 
-    const TSRProfileAsset& TAssetManager::GetSRProfile(TSRProfileAssetHandle Handle) const
+    const FSRProfileAsset& FAssetManager::GetSRProfile(FSRProfileAssetHandle Handle) const
     {
         if (Handle >= SRProfiles.size())
         {
@@ -175,17 +175,17 @@ namespace MDSS::Asset
         return *SRProfiles[Handle];
     }
 
-    std::size_t TAssetManager::GetMaterialCount() const noexcept
+    std::size_t FAssetManager::GetMaterialCount() const noexcept
     {
         return Materials.size();
     }
 
-    std::size_t TAssetManager::GetSRProfileCount() const noexcept
+    std::size_t FAssetManager::GetSRProfileCount() const noexcept
     {
         return SRProfiles.size();
     }
 
-    TMaterialAssetHandle TAssetManager::GetDefaultMaterialHandle() const noexcept
+    FMaterialAssetHandle FAssetManager::GetDefaultMaterialHandle() const noexcept
     {
         return DefaultMaterial;
     }
@@ -197,61 +197,61 @@ namespace MDSS::Asset
 // ============================================================
 #pragma region 03_Generated_Assets
 
-    TextureAssetHandle TAssetManager::LoadTexture(const std::filesystem::path& Path, bool bSRGB)
+    FTextureAssetHandle FAssetManager::LoadTexture(const std::filesystem::path& Path, bool bSRGB)
     {
         const std::string CacheKey = Path.lexically_normal().string() + (bSRGB ? "#srgb" : "#linear");
         if (const auto Found = TextureCache.find(CacheKey); Found != TextureCache.end())
         {
-            TLogger::Verbose("TAssetManager", "Texture cache hit: " + Path.string());
+            FLogger::Verbose("TAssetManager", "Texture cache hit: " + Path.string());
             return Found->second;
         }
 
-        TLogger::Debug("TAssetManager",
+        FLogger::Debug("TAssetManager",
                        "Loading " + std::string(bSRGB ? "sRGB" : "linear") + " texture: " + Path.string());
 
-        const TextureData        Data = TextureLoader::LoadRGBA8(Path);
-        const TextureAssetHandle Handle = static_cast<TextureAssetHandle>(Textures.size());
-        const VkFormat           Format = bSRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+        const FTextureData        Data = FTextureLoader::LoadRGBA8(Path);
+        const FTextureAssetHandle Handle = static_cast<FTextureAssetHandle>(Textures.size());
+        const VkFormat            Format = bSRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
 
-        Textures.push_back(std::make_unique<TextureAsset>(
+        Textures.push_back(std::make_unique<FTextureAsset>(
             Handle, Path.stem().string(), Path, Context, Data.Width, Data.Height, Data.Pixels, Format));
         TextureCache.emplace(CacheKey, Handle);
-        TLogger::Info("TAssetManager",
+        FLogger::Info("TAssetManager",
                       "Texture registered: " + Path.filename().string() + " (handle=" + std::to_string(Handle) + ", " +
                           std::to_string(Data.Width) + "x" + std::to_string(Data.Height) + ").");
         return Handle;
     }
 
-    TextureAssetHandle
-    TAssetManager::CreateSolidTexture(std::string Name, const std::vector<std::uint8_t>& RGBA, bool bSRGB)
+    FTextureAssetHandle
+    FAssetManager::CreateSolidTexture(std::string Name, const std::vector<std::uint8_t>& RGBA, bool bSRGB)
     {
         if (RGBA.size() != 4U)
         {
             throw std::invalid_argument("Solid fallback texture requires exactly one RGBA8 pixel.");
         }
 
-        const TextureAssetHandle Handle = static_cast<TextureAssetHandle>(Textures.size());
-        const VkFormat           Format = bSRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
-        const std::string        LogName = Name;
-        Textures.push_back(std::make_unique<TextureAsset>(
+        const FTextureAssetHandle Handle = static_cast<FTextureAssetHandle>(Textures.size());
+        const VkFormat            Format = bSRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+        const std::string         LogName = Name;
+        Textures.push_back(std::make_unique<FTextureAsset>(
             Handle, std::move(Name), std::filesystem::path{}, Context, 1, 1, RGBA, Format));
-        TLogger::Verbose("TAssetManager",
+        FLogger::Verbose("TAssetManager",
                          "Created solid fallback texture '" + LogName + "' (handle=" + std::to_string(Handle) + ").");
         return Handle;
     }
 
-    TMaterialAssetHandle TAssetManager::CreateMaterial(std::string                  Name,
+    FMaterialAssetHandle FAssetManager::CreateMaterial(std::string                  Name,
                                                        const std::filesystem::path& SourcePath,
                                                        glm::vec4                    BaseColor,
-                                                       TextureAssetHandle           BaseColorTexture,
-                                                       TextureAssetHandle           NormalTexture,
+                                                       FTextureAssetHandle          BaseColorTexture,
+                                                       FTextureAssetHandle          NormalTexture,
                                                        glm::vec4                    WaterAppearance)
     {
-        const TMaterialAssetHandle Handle = static_cast<TMaterialAssetHandle>(Materials.size());
+        const FMaterialAssetHandle Handle = static_cast<FMaterialAssetHandle>(Materials.size());
         const std::string          LogName = Name;
-        Materials.push_back(std::make_unique<TMaterialAsset>(
+        Materials.push_back(std::make_unique<FMaterialAsset>(
             Handle, std::move(Name), SourcePath, BaseColor, BaseColorTexture, NormalTexture, WaterAppearance));
-        TLogger::Debug("TAssetManager",
+        FLogger::Debug("TAssetManager",
                        "Material registered: '" + LogName + "' (handle=" + std::to_string(Handle) +
                            ", base texture=" + std::to_string(BaseColorTexture) +
                            ", normal texture=" + std::to_string(NormalTexture) + ").");

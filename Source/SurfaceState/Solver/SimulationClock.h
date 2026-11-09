@@ -15,10 +15,10 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t MaxSimulationStepsPerFrame = 8;
     inline constexpr double        MaxRealtimePendingTicks = 4.0;
     inline constexpr float         FixedSimulationStepSeconds = 1.0F / 60.0F;
-    inline constexpr bool          DefaultFixedSimulationTimestep = true;
-    inline constexpr bool          DefaultAutoSubstepping = false;
+    inline constexpr bool          bDefaultFixedSimulationTimestep = true;
+    inline constexpr bool          bDefaultAutoSubstepping = false;
 
-    class TSimulationClock
+    class FSimulationClock
     {
     public:
         // Elapsed time accumulation and pending-time limits

@@ -10,26 +10,26 @@
 namespace MDSS::Asset
 {
 // ============================================================
-// 00. TAsset Implementation
+// 00. FAsset Implementation
 // ============================================================
 #pragma region 00_TAsset_Implementation
 
-    TAsset::TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath)
+    FAsset::FAsset(FAssetID ID, std::string Name, std::filesystem::path SourcePath)
         : ID(ID), Name(std::move(Name)), SourcePath(std::move(SourcePath))
     {
     }
 
-    TAssetID TAsset::GetID() const noexcept
+    FAssetID FAsset::GetID() const noexcept
     {
         return ID;
     }
 
-    const std::string& TAsset::GetName() const noexcept
+    const std::string& FAsset::GetName() const noexcept
     {
         return Name;
     }
 
-    const std::filesystem::path& TAsset::GetSourcePath() const noexcept
+    const std::filesystem::path& FAsset::GetSourcePath() const noexcept
     {
         return SourcePath;
     }

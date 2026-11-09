@@ -16,7 +16,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Resolution_and_Texel_Validation
 
-    std::size_t TSurfaceResolution::GetTexelCount() const
+    std::size_t FSurfaceResolution::GetTexelCount() const
     {
         if (Width == 0 || Height == 0)
         {
@@ -24,7 +24,7 @@ namespace MDSS::SurfaceState
         }
 
         const std::uint64_t TexelCount = static_cast<std::uint64_t>(Width) * Height;
-        if (TexelCount > std::numeric_limits<TLocalTexelIndex>::max())
+        if (TexelCount > std::numeric_limits<FLocalTexelIndex>::max())
         {
             throw std::overflow_error("Surface resolution exceeds the supported local texel index range.");
         }
@@ -32,7 +32,7 @@ namespace MDSS::SurfaceState
         return static_cast<std::size_t>(TexelCount);
     }
 
-    bool TSurfaceTexelGeometry::IsValid() const noexcept
+    bool FSurfaceTexelGeometry::IsValid() const noexcept
     {
         return Surface != InvalidSurfaceID && Triangle != InvalidTriangleID;
     }
@@ -43,7 +43,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_Shared_Geometry_Data
 
-    TSharedSurfaceGeometryData::TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition> SurfaceDefinitions)
+    FSharedSurfaceGeometryData::FSharedSurfaceGeometryData(std::vector<FSurfaceDefinition> SurfaceDefinitions)
     {
         if (SurfaceDefinitions.empty())
         {
@@ -52,7 +52,7 @@ namespace MDSS::SurfaceState
 
         std::uint64_t FirstTexel = 0;
 
-        for (const TSurfaceDefinition& Definition : SurfaceDefinitions)
+        for (const FSurfaceDefinition& Definition : SurfaceDefinitions)
         {
             if (Definition.ID == InvalidSurfaceID)
             {
@@ -64,49 +64,49 @@ namespace MDSS::SurfaceState
             }
             const std::size_t SurfaceTexelCount = Definition.Resolution.GetTexelCount();
             FirstTexel += SurfaceTexelCount;
-            if (FirstTexel > std::numeric_limits<TLocalTexelIndex>::max())
+            if (FirstTexel > std::numeric_limits<FLocalTexelIndex>::max())
             {
                 throw std::overflow_error("Combined Surface resolution exceeds the local texel index range.");
             }
 
             Surfaces.push_back({Definition.ID,
                                 Definition.Resolution,
-                                static_cast<TLocalTexelIndex>(FirstTexel - SurfaceTexelCount),
-                                static_cast<TLocalTexelIndex>(SurfaceTexelCount)});
+                                static_cast<FLocalTexelIndex>(FirstTexel - SurfaceTexelCount),
+                                static_cast<FLocalTexelIndex>(SurfaceTexelCount)});
         }
 
         Texels.resize(static_cast<std::size_t>(FirstTexel));
         ProfileMap.resize(Texels.size(), InvalidSurfaceProfileIndex);
     }
 
-    TSharedSurfaceGeometryData::TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition>   SurfaceDefinitions,
-                                                           std::vector<TSurfaceProfileIndex> ProfileIndices)
-        : TSharedSurfaceGeometryData(std::move(SurfaceDefinitions))
+    FSharedSurfaceGeometryData::FSharedSurfaceGeometryData(std::vector<FSurfaceDefinition>   SurfaceDefinitions,
+                                                           std::vector<FSurfaceProfileIndex> ProfileIndices)
+        : FSharedSurfaceGeometryData(std::move(SurfaceDefinitions))
     {
         SetProfileMap(std::move(ProfileIndices));
     }
 
-    const std::vector<TSurfaceTexelRange>& TSharedSurfaceGeometryData::GetSurfaces() const noexcept
+    const std::vector<FSurfaceTexelRange>& FSharedSurfaceGeometryData::GetSurfaces() const noexcept
     {
         return Surfaces;
     }
 
-    const std::vector<TSurfaceTexelGeometry>& TSharedSurfaceGeometryData::GetTexels() const noexcept
+    const std::vector<FSurfaceTexelGeometry>& FSharedSurfaceGeometryData::GetTexels() const noexcept
     {
         return Texels;
     }
 
-    std::vector<TSurfaceTexelGeometry>& TSharedSurfaceGeometryData::GetTexels() noexcept
+    std::vector<FSurfaceTexelGeometry>& FSharedSurfaceGeometryData::GetTexels() noexcept
     {
         return Texels;
     }
 
-    const std::vector<TSurfaceProfileIndex>& TSharedSurfaceGeometryData::GetProfileMap() const noexcept
+    const std::vector<FSurfaceProfileIndex>& FSharedSurfaceGeometryData::GetProfileMap() const noexcept
     {
         return ProfileMap;
     }
 
-    void TSharedSurfaceGeometryData::SetProfileMap(std::vector<TSurfaceProfileIndex> NewProfileMap)
+    void FSharedSurfaceGeometryData::SetProfileMap(std::vector<FSurfaceProfileIndex> NewProfileMap)
     {
         if (NewProfileMap.size() != Texels.size())
         {
@@ -124,7 +124,7 @@ namespace MDSS::SurfaceState
         ProfileMap = std::move(NewProfileMap);
     }
 
-    TSurfaceProfileIndex TSharedSurfaceGeometryData::GetProfileIndex(TLocalTexelIndex Texel) const
+    FSurfaceProfileIndex FSharedSurfaceGeometryData::GetProfileIndex(FLocalTexelIndex Texel) const
     {
         if (Texel >= ProfileMap.size())
         {
@@ -133,14 +133,14 @@ namespace MDSS::SurfaceState
         return ProfileMap[Texel];
     }
 
-    std::size_t TSharedSurfaceGeometryData::GetTexelCount() const noexcept
+    std::size_t FSharedSurfaceGeometryData::GetTexelCount() const noexcept
     {
         return Texels.size();
     }
 
-    const TSurfaceTexelRange& TSharedSurfaceGeometryData::GetSurface(TSurfaceLocalID Surface) const
+    const FSurfaceTexelRange& FSharedSurfaceGeometryData::GetSurface(FSurfaceLocalID Surface) const
     {
-        for (const TSurfaceTexelRange& Range : Surfaces)
+        for (const FSurfaceTexelRange& Range : Surfaces)
         {
             if (Range.Surface == Surface)
             {

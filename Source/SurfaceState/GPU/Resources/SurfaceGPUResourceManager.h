@@ -29,47 +29,47 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager;
-    class TSurfaceGPUBufferPool;
+    class FSurfaceDataManager;
+    class FSurfaceGPUBufferPool;
 }
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS
 {
-    struct TTransform;
-    class TScene;
+    struct FTransform;
+    class FScene;
 }
 
 namespace MDSS::SurfaceState
 {
-    class TSurfaceGPUResourceManager final
+    class FSurfaceGPUResourceManager final
     {
     public:
         // Resource lifecycle
-        TSurfaceGPUResourceManager(const GPU::TVulkanContext&   Context,
-                                   const Asset::TAssetManager&  Assets,
-                                   const TSurfaceDataManager&   SurfaceData,
-                                   const TScene&                Scene,
-                                   TSurfaceGPUBufferPool*       Pool = nullptr,
-                                   TSurfaceScratchStorageFormat Storage = {});
-        ~TSurfaceGPUResourceManager();
+        FSurfaceGPUResourceManager(const GPU::FVulkanContext&   Context,
+                                   const Asset::FAssetManager&  Assets,
+                                   const FSurfaceDataManager&   SurfaceData,
+                                   const FScene&                Scene,
+                                   FSurfaceGPUBufferPool*       Pool = nullptr,
+                                   FSurfaceScratchStorageFormat Storage = {});
+        ~FSurfaceGPUResourceManager();
 
-        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
+        void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
         void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay);
         bool ConfigureScratchStorage(
-            const GPU::TVulkanContext& Context, bool Cache, bool HalfRaw, bool HalfWeights, bool Compact);
+            const GPU::FVulkanContext& Context, bool bCache, bool bHalfRaw, bool bHalfWeights, bool bCompact);
 
-        TSurfaceGPUResourceManager(const TSurfaceGPUResourceManager&) = delete;
-        TSurfaceGPUResourceManager& operator=(const TSurfaceGPUResourceManager&) = delete;
-        TSurfaceGPUResourceManager(TSurfaceGPUResourceManager&&) = delete;
-        TSurfaceGPUResourceManager& operator=(TSurfaceGPUResourceManager&&) = delete;
+        FSurfaceGPUResourceManager(const FSurfaceGPUResourceManager&) = delete;
+        FSurfaceGPUResourceManager& operator=(const FSurfaceGPUResourceManager&) = delete;
+        FSurfaceGPUResourceManager(FSurfaceGPUResourceManager&&) = delete;
+        FSurfaceGPUResourceManager& operator=(FSurfaceGPUResourceManager&&) = delete;
 
         // Scene and instance resource access
         [[nodiscard]] std::size_t GetManagedInstanceCount() const noexcept;
@@ -77,17 +77,17 @@ namespace MDSS::SurfaceState
         [[nodiscard]] std::size_t GetSceneProfileCount() const noexcept;
         [[nodiscard]] std::size_t GetSceneInstanceCount() const noexcept;
         /** @brief Scene 벡터 인덱스에 해당하는 instance 디스크립터 리소스를 반환한다. */
-        [[nodiscard]] const TSurfaceStateDescriptorResources*   GetInstanceDescriptors(std::size_t SceneIndex) const;
-        [[nodiscard]] const TSurfaceSharedGeometryGPUResources* GetInstanceSharedGeometry(std::size_t SceneIndex) const;
-        [[nodiscard]] const TSurfaceStateDescriptorResources*   GetAnyInstanceDescriptors() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetInstanceAccumulationHeightBuffer(std::size_t SceneIndex) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetInstanceReactionScratchBuffer(std::size_t SceneIndex) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetSceneProfileParametersBuffer() const;
-        [[nodiscard]] bool                   UpdateProfileParameters(Asset::TSRProfileAssetHandle   ProfileHandle,
-                                                                     TStateId                       State,
-                                                                     const TSurfaceStateParameters& Parameters);
+        [[nodiscard]] const FSurfaceStateDescriptorResources*   GetInstanceDescriptors(std::size_t SceneIndex) const;
+        [[nodiscard]] const FSurfaceSharedGeometryGPUResources* GetInstanceSharedGeometry(std::size_t SceneIndex) const;
+        [[nodiscard]] const FSurfaceStateDescriptorResources*   GetAnyInstanceDescriptors() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const GPU::FGPUBuffer& GetInstanceAccumulationHeightBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const GPU::FGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const GPU::FGPUBuffer& GetInstanceReactionScratchBuffer(std::size_t SceneIndex) const;
+        [[nodiscard]] const GPU::FGPUBuffer& GetSceneProfileParametersBuffer() const;
+        [[nodiscard]] bool                   UpdateProfileParameters(Asset::FSRProfileAssetHandle   ProfileHandle,
+                                                                     FStateId                       State,
+                                                                     const FSurfaceStateParameters& Parameters);
 
         // State and transfer-weight cache management
         [[nodiscard]] std::size_t GetInstanceTexelCount(std::size_t SceneIndex) const;
@@ -95,9 +95,9 @@ namespace MDSS::SurfaceState
         [[nodiscard]] std::size_t GetInstanceChannelCount(std::size_t SceneIndex) const;
         [[nodiscard]] bool        IsCurrentStateAB(std::size_t SceneIndex) const;
         void                      ResetStates();
-        [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const TTransform& Transform) const;
+        [[nodiscard]] bool NeedsTransferWeightCacheUpdate(std::size_t SceneIndex, const FTransform& Transform) const;
         void               UpdateTransferWeightCache(std::size_t       SceneIndex,
-                                                     const TTransform& Transform,
+                                                     const FTransform& Transform,
                                                      bool              bUseNormalWeight = true,
                                                      bool              bUseDistanceWeight = true,
                                                      bool              bUseProfileBoundaryWeight = true,
@@ -107,19 +107,19 @@ namespace MDSS::SurfaceState
 
     private:
         std::optional<std::array<bool, 4>> ScratchStorageFormat;
-        struct TSharedSurfaceResources
+        struct FSharedSurfaceResources
         {
-            std::unique_ptr<TSurfaceSharedGeometryGPUResources> Geometry;
-            std::vector<TSurfaceProfileIndex>                   SceneProfileIndices;
-            const TSharedSurfaceGeometryData*                   CPUGeometry = nullptr;
+            std::unique_ptr<FSurfaceSharedGeometryGPUResources> Geometry;
+            std::vector<FSurfaceProfileIndex>                   SceneProfileIndices;
+            const FSharedSurfaceGeometryData*                   CPUGeometry = nullptr;
         };
 
-        struct TInstanceResources
+        struct FInstanceResources
         {
-            std::unique_ptr<TSurfaceInstanceGPUResources> State;
+            std::unique_ptr<FSurfaceInstanceGPUResources> State;
             // 디스크립터가 참조하는 버퍼보다 디스크립터 세트와 레이아웃을 먼저 파괴한다.
-            std::unique_ptr<TSurfaceStateDescriptorResources> Descriptors;
-            TSurfaceRuntimeDataHandle                         SurfaceDataHandle{};
+            std::unique_ptr<FSurfaceStateDescriptorResources> Descriptors;
+            FSurfaceRuntimeDataHandle                         SurfaceDataHandle{};
             std::size_t                                       ValidTexelCount = 0;
             glm::vec3                                         TransferWeightScale{1.0F};
             bool                                              bTransferWeightCacheValid = false;
@@ -127,9 +127,9 @@ namespace MDSS::SurfaceState
         };
 
         // Reverse destruction order: descriptors → Geometry → Scene Profile buffers.
-        std::vector<Asset::TSRProfileAssetHandle>                              SceneProfileHandles;
-        std::unique_ptr<TSurfaceProfileGPUResources>                           SceneProfiles;
-        std::unordered_map<TSurfaceRuntimeDataHandle, TSharedSurfaceResources> SharedSurfaceData;
-        std::vector<std::unique_ptr<TInstanceResources>>                       InstanceResources;
+        std::vector<Asset::FSRProfileAssetHandle>                              SceneProfileHandles;
+        std::unique_ptr<FSurfaceProfileGPUResources>                           SceneProfiles;
+        std::unordered_map<FSurfaceRuntimeDataHandle, FSharedSurfaceResources> SharedSurfaceData;
+        std::vector<std::unique_ptr<FInstanceResources>>                       InstanceResources;
     };
 } // namespace MDSS::SurfaceState

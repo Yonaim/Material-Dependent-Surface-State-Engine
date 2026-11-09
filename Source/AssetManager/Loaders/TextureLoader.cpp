@@ -15,11 +15,11 @@
 namespace MDSS::Asset
 {
 // ============================================================
-// 00. TextureLoader Implementation
+// 00. FTextureLoader Implementation
 // ============================================================
 #pragma region 00_TextureLoader_Implementation
 
-    TextureData TextureLoader::LoadRGBA8(const std::filesystem::path& Path)
+    FTextureData FTextureLoader::LoadRGBA8(const std::filesystem::path& Path)
     {
         int Width = 0;
         int Height = 0;
@@ -33,14 +33,14 @@ namespace MDSS::Asset
                                      "': " + (Reason != nullptr ? Reason : "unknown stb_image error"));
         }
 
-        TextureData Data{};
+        FTextureData Data{};
         Data.Width = static_cast<std::uint32_t>(Width);
         Data.Height = static_cast<std::uint32_t>(Height);
         const std::size_t ByteCount = static_cast<std::size_t>(Width) * static_cast<std::size_t>(Height) * 4U;
         Data.Pixels.assign(Pixels, Pixels + ByteCount);
 
         stbi_image_free(Pixels);
-        TLogger::Debug("TextureLoader",
+        FLogger::Debug("TextureLoader",
                        "Decoded '" + Path.filename().string() + "' as RGBA8 (" + std::to_string(Data.Width) + "x" +
                            std::to_string(Data.Height) + ", source channels=" + std::to_string(Channels) + ").");
         return Data;

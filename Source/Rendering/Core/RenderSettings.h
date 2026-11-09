@@ -3,14 +3,14 @@
 
 namespace MDSS::Rendering
 {
-    enum class TOverlayDisplayMode : std::uint32_t
+    enum class EOverlayDisplayMode : std::uint32_t
     {
         Both = 0,
         TopOnly,
         SidesOnly
     };
 
-    enum class TOverlayShadingDiagnostic : std::uint32_t
+    enum class EOverlayShadingDiagnostic : std::uint32_t
     {
         Lit = 0,
         FixedNormal,
@@ -24,14 +24,14 @@ namespace MDSS::Rendering
         MudSpecular
     };
 
-    enum class TOverlayOccupancyTileSize : std::uint32_t
+    enum class EOverlayOccupancyTileSize : std::uint32_t
     {
         Tile8 = 8,
         Tile16 = 16,
         Tile32 = 32
     };
 
-    struct TRendererProfilingStats
+    struct FRendererProfilingStats
     {
         float               SolverGpuMilliseconds = -1.0F;
         float               SolverPass1GpuMilliseconds = -1.0F;
@@ -85,10 +85,10 @@ namespace MDSS::Rendering
         std::uint64_t       OverlayTotalTopTriangles = 0;
         std::uint64_t       OverlayActiveTiles = 0;
         std::uint64_t       OverlayTotalTiles = 0;
-        TOverlayDisplayMode OverlayDisplayMode = TOverlayDisplayMode::Both;
+        EOverlayDisplayMode OverlayDisplayMode = EOverlayDisplayMode::Both;
     };
 
-    enum class TRenderViewMode : std::uint32_t
+    enum class ERenderViewMode : std::uint32_t
     {
         Lit = 0,
         Unlit = 1,
@@ -118,7 +118,7 @@ namespace MDSS::Rendering
         TotalSimulationHeight = 21
     };
 
-    enum class TSolverTransferWeightView : std::uint32_t
+    enum class ESolverTransferWeightView : std::uint32_t
     {
         Combined = 0,
         Distance,
@@ -126,7 +126,7 @@ namespace MDSS::Rendering
         ProfileBoundary
     };
 
-    struct TSurfaceDebugDisplaySettings
+    struct FSurfaceDebugDisplaySettings
     {
         std::uint32_t AccumulationComponent = 0;
         float         DisplacementScale = 1.0F;

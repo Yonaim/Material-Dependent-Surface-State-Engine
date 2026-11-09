@@ -17,7 +17,7 @@
 
 namespace MDSS
 {
-    struct TSceneInitialContact
+    struct FSceneInitialContact
     {
         std::string Target;
         std::string State;
@@ -27,15 +27,15 @@ namespace MDSS
         float       Falloff = 1.0F;
     };
 
-    class TScene
+    class FScene
     {
     public:
         // Scene lifecycle and configuration
-        TScene();
+        FScene();
 
-        [[nodiscard]] TCamera&                     GetMainCamera() noexcept;
-        [[nodiscard]] const TCamera&               GetMainCamera() const noexcept;
-        [[nodiscard]] const TCamera&               GetInitialCamera() const noexcept;
+        [[nodiscard]] FCamera&                     GetMainCamera() noexcept;
+        [[nodiscard]] const FCamera&               GetMainCamera() const noexcept;
+        [[nodiscard]] const FCamera&               GetInitialCamera() const noexcept;
         void                                       SetSourcePath(std::filesystem::path Path);
         [[nodiscard]] const std::filesystem::path& GetSourcePath() const noexcept;
         [[nodiscard]] std::uint32_t                GetSimulationResolution() const noexcept;
@@ -50,39 +50,39 @@ namespace MDSS
         /** @brief 저장된 초기 Transform과 animation key를 적용하고 animation 시간을 되돌린다. */
         void RestoreInitialState();
         // Demo animation state
-        void SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip);
+        void SetDemoAnimation(std::filesystem::path Path, FDemoAnimationClip Clip);
         [[nodiscard]] const std::filesystem::path&             GetDemoAnimationPath() const noexcept;
         [[nodiscard]] bool                                     HasDemoAnimation() const noexcept;
         [[nodiscard]] bool                                     HasDemoContactEvents() const noexcept;
         [[nodiscard]] bool                                     IsDemoAnimationPlaying() const noexcept;
         [[nodiscard]] float                                    GetDemoAnimationTime() const noexcept;
         [[nodiscard]] float                                    GetDemoAnimationDuration() const noexcept;
-        [[nodiscard]] const TDemoAnimationClip::TWeatherCue*   GetDemoWeather() const noexcept;
+        [[nodiscard]] const FDemoAnimationClip::FWeatherCue*   GetDemoWeather() const noexcept;
         void                                                   PlayDemoAnimation();
         void                                                   PauseDemoAnimation() noexcept;
         void                                                   RestartDemoAnimation();
-        std::vector<TDemoAnimationClip::TContactEvent>         AdvanceDemoAnimation(float DeltaTime);
-        void                                                   AddInitialContact(TSceneInitialContact Contact);
-        [[nodiscard]] const std::vector<TSceneInitialContact>& GetInitialContacts() const noexcept;
+        std::vector<FDemoAnimationClip::FContactEvent>         AdvanceDemoAnimation(float DeltaTime);
+        void                                                   AddInitialContact(FSceneInitialContact Contact);
+        [[nodiscard]] const std::vector<FSceneInitialContact>& GetInitialContacts() const noexcept;
 
-        /** @brief TScene 소유 목록에 정적 메시 인스턴스를 추가한다. */
+        /** @brief FScene 소유 목록에 정적 메시 인스턴스를 추가한다. */
         // Static mesh instances
-        void                                                  AddStaticMeshInstance(TStaticMeshInstance Instance);
-        [[nodiscard]] std::vector<TStaticMeshInstance>&       GetStaticMeshInstances() noexcept;
-        [[nodiscard]] const std::vector<TStaticMeshInstance>& GetStaticMeshInstances() const noexcept;
+        void                                                  AddStaticMeshInstance(FStaticMeshInstance Instance);
+        [[nodiscard]] std::vector<FStaticMeshInstance>&       GetStaticMeshInstances() noexcept;
+        [[nodiscard]] const std::vector<FStaticMeshInstance>& GetStaticMeshInstances() const noexcept;
 
     private:
-        TCamera                           MainCamera;
-        std::vector<TStaticMeshInstance>  StaticMeshInstances;
+        FCamera                           MainCamera;
+        std::vector<FStaticMeshInstance>  StaticMeshInstances;
         std::filesystem::path             SourcePath;
         std::uint32_t                     SimulationResolution = SurfaceState::SurfaceSimulationResolution;
         float                             LitHeightDisplayScale = 4.0F;
         std::filesystem::path             DemoAnimationPath;
-        std::optional<TDemoAnimationClip> DemoAnimation;
+        std::optional<FDemoAnimationClip> DemoAnimation;
         float                             DemoAnimationTime = 0.0F;
         bool                              bDemoAnimationPlaying = false;
-        std::vector<TSceneInitialContact> InitialContacts;
-        TCamera                           InitialCamera;
-        std::vector<TTransform>           InitialTransforms;
+        std::vector<FSceneInitialContact> InitialContacts;
+        FCamera                           InitialCamera;
+        std::vector<FTransform>           InitialTransforms;
     };
 } // namespace MDSS

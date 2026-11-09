@@ -29,7 +29,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Preview_Resource_Lifecycle
 
-    TTexelGeometryPreview::TTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
+    FTexelGeometryPreview::FTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
                                                  VkDescriptorSetLayout SurfaceLayout,
                                                  std::size_t           MaxInstances,
@@ -43,7 +43,7 @@ namespace MDSS::SurfaceState
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
         Limits = Properties.limits;
-        constexpr auto DescriptorCount = static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::Count) + 2U;
+        constexpr auto DescriptorCount = static_cast<std::uint32_t>(ESurfaceGPUDescriptorBinding::Count) + 2U;
         if (Limits.maxPerStageDescriptorStorageBuffers < DescriptorCount ||
             Limits.maxDescriptorSetStorageBuffers < DescriptorCount || Limits.maxComputeWorkGroupSize[0] < 64 ||
             Limits.maxComputeWorkGroupInvocations < 64)
@@ -127,11 +127,11 @@ namespace MDSS::SurfaceState
         }
     }
 
-    TTexelGeometryPreview::~TTexelGeometryPreview()
+    FTexelGeometryPreview::~FTexelGeometryPreview()
     {
         Destroy();
     }
-    void TTexelGeometryPreview::Destroy() noexcept
+    void FTexelGeometryPreview::Destroy() noexcept
     {
         if (Pipeline)
             vkDestroyPipeline(Device, Pipeline, nullptr);
@@ -156,25 +156,25 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_Preview_Accessors_and_Settings
 
-    VkDescriptorSet TTexelGeometryPreview::GetOutputSet(std::size_t Instance, std::size_t OutputSlot) const
+    VkDescriptorSet FTexelGeometryPreview::GetOutputSet(std::size_t Instance, std::size_t OutputSlot) const
     {
         return Outputs.at({Instance, OutputSlot}).Set;
     }
-    const GPU::TGPUBuffer& TTexelGeometryPreview::GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot) const
+    const GPU::FGPUBuffer& FTexelGeometryPreview::GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot) const
     {
         return *Outputs.at({Instance, OutputSlot}).Buffer;
     }
-    const GPU::TGPUBuffer& TTexelGeometryPreview::GetGeometryCacheBuffer(std::size_t Instance,
+    const GPU::FGPUBuffer& FTexelGeometryPreview::GetGeometryCacheBuffer(std::size_t Instance,
                                                                          std::size_t OutputSlot) const
     {
         return *Outputs.at({Instance, OutputSlot}).GeometryCache;
     }
 
-    TTexelGeometryPreview::TTileActivity TTexelGeometryPreview::CompleteOccupancyFrame(std::size_t FrameIndex)
+    FTexelGeometryPreview::FTileActivity FTexelGeometryPreview::CompleteOccupancyFrame(std::size_t FrameIndex)
     {
-        if (FrameIndex >= Rendering::TRenderContext::MaxFramesInFlight)
+        if (FrameIndex >= Rendering::FRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Occupancy frame slot is invalid.");
-        TTileActivity Activity;
+        FTileActivity Activity;
         for (auto& [Instance, Output] : Outputs)
         {
             (void)Instance;
@@ -188,7 +188,7 @@ namespace MDSS::SurfaceState
         }
         return Activity;
     }
-    void TTexelGeometryPreview::SetOccupancyTileSize(std::uint32_t TileSize)
+    void FTexelGeometryPreview::SetOccupancyTileSize(std::uint32_t TileSize)
     {
         if (TileSize != 8U && TileSize != 16U && TileSize != 32U)
             throw std::invalid_argument("Overlay occupancy tile size must be 8, 16, or 32.");
@@ -205,7 +205,7 @@ namespace MDSS::SurfaceState
         }
     }
 
-    void TTexelGeometryPreview::SetLowAmountHeightFade(float Saturation)
+    void FTexelGeometryPreview::SetLowAmountHeightFade(float Saturation)
     {
         if (!std::isfinite(Saturation) || Saturation < 0.0F || Saturation > 0.5F)
             throw std::invalid_argument("Low amount height fade must be between 0 and 0.5.");
@@ -215,7 +215,7 @@ namespace MDSS::SurfaceState
         InvalidateSparseOutput();
     }
 
-    void TTexelGeometryPreview::InvalidateSparseOutput() noexcept
+    void FTexelGeometryPreview::InvalidateSparseOutput() noexcept
     {
         // This changes only derived display geometry. Rebuild the sparse render schedule once,
         // without changing simulation state or simulation state-driven geometry.
@@ -232,9 +232,9 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 02_Preview_Command_Recording
 
-    void TTexelGeometryPreview::Record(VkCommandBuffer                         Command,
+    void FTexelGeometryPreview::Record(VkCommandBuffer                         Command,
                                        std::size_t                             Instance,
-                                       const TSurfaceStateDescriptorResources& Descriptors,
+                                       const FSurfaceStateDescriptorResources& Descriptors,
                                        std::uint32_t                           TexelCount,
                                        std::uint32_t                           Channel,
                                        std::uint32_t                           Channels,
@@ -251,10 +251,10 @@ namespace MDSS::SurfaceState
                                        std::uint32_t                           ActiveMaterialMask,
                                        std::size_t                             OutputSlot)
     {
-        if (FrameIndex >= Rendering::TRenderContext::MaxFramesInFlight)
+        if (FrameIndex >= Rendering::FRenderContext::MaxFramesInFlight)
             throw std::out_of_range("Occupancy frame slot is invalid.");
         const auto Bytes =
-            GetSurfaceGPUBufferByteSize(TexelCount, sizeof(TTexelGeometryVertex), Limits.maxStorageBufferRange);
+            GetSurfaceGPUBufferByteSize(TexelCount, sizeof(FTexelGeometryVertex), Limits.maxStorageBufferRange);
         const auto BaseCacheBytes =
             GetSurfaceGPUBufferByteSize(TexelCount, sizeof(glm::vec4), Limits.maxStorageBufferRange);
 
@@ -306,30 +306,30 @@ namespace MDSS::SurfaceState
         auto       It = Outputs.find(OutputKey);
         if (It == Outputs.end())
         {
-            TOutput Output;
+            FOutput Output;
             Output.Buffer =
-                std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                   Device,
                                                   Bytes,
                                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                  GPU::TGPUBufferMemoryCategory::Debug);
-            Output.GeometryCache = std::make_unique<GPU::TGPUBuffer>(
+                                                  GPU::EGPUBufferMemoryCategory::Debug);
+            Output.GeometryCache = std::make_unique<GPU::FGPUBuffer>(
                 PhysicalDevice,
                 Device,
                 CacheBytes,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                GPU::TGPUBufferMemoryCategory::Debug);
+                GPU::EGPUBufferMemoryCategory::Debug);
             for (auto& Readback : Output.OccupancyReadbacks)
-                Readback = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                Readback = std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                              Device,
                                                              sizeof(std::uint32_t),
                                                              VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                             GPU::TGPUBufferMemoryCategory::Debug);
+                                                             GPU::EGPUBufferMemoryCategory::Debug);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;
@@ -543,7 +543,7 @@ namespace MDSS::SurfaceState
                              0,
                              nullptr);
 
-        struct TPush
+        struct FPush
         {
             std::uint32_t            Texels, Channel, Channels, Accumulation;
             float                    AccumulationDisplayScale, GeometryDisplayScale;
@@ -552,8 +552,8 @@ namespace MDSS::SurfaceState
             std::uint32_t            Padding;
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
-        static_assert(offsetof(TPush, NormalMatrixColumns) == 48);
-        static_assert(sizeof(TPush) == 96);
+        static_assert(offsetof(FPush, NormalMatrixColumns) == 48);
+        static_assert(sizeof(FPush) == 96);
         glm::mat3       NormalMatrix(0.0F);
         const glm::mat3 ModelLinear(ModelMatrix);
         const float     Determinant = glm::determinant(ModelLinear);
@@ -579,7 +579,7 @@ namespace MDSS::SurfaceState
             }
         }
 
-        TPush Push{TexelCount,
+        FPush Push{TexelCount,
                    Channel,
                    Channels,
                    bAccumulation ? 1U : 0U,

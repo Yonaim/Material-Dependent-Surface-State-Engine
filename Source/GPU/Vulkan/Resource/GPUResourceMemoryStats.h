@@ -12,7 +12,7 @@
 
 namespace MDSS::GPU
 {
-    enum class TGPUBufferMemoryCategory : std::uint32_t
+    enum class EGPUBufferMemoryCategory : std::uint32_t
     {
         SurfaceState,
         SurfaceGeometry,
@@ -30,9 +30,9 @@ namespace MDSS::GPU
     };
 
     inline constexpr std::size_t GPUBufferMemoryCategoryCount =
-        static_cast<std::size_t>(TGPUBufferMemoryCategory::Count);
+        static_cast<std::size_t>(EGPUBufferMemoryCategory::Count);
 
-    struct TGPUResourceMemorySnapshot
+    struct FGPUResourceMemorySnapshot
     {
         std::uint64_t                                           CurrentBufferBytes = 0;
         std::uint64_t                                           PeakBufferBytes = 0;
@@ -44,19 +44,19 @@ namespace MDSS::GPU
         std::array<std::uint64_t, GPUBufferMemoryCategoryCount> BufferCategoryPeakBytes{};
     };
 
-    /** @brief Separate Vulkan allocations owned by TGPUBuffer and TGPUImage; excludes swapchain allocations. */
-    class TGPUResourceMemoryStats final
+    /** @brief Separate Vulkan allocations owned by FGPUBuffer and FGPUImage; excludes swapchain allocations. */
+    class FGPUResourceMemoryStats final
     {
     public:
         // GPU resource allocation statistics
-        static void BufferAllocated(std::uint64_t Bytes, TGPUBufferMemoryCategory Category) noexcept
+        static void BufferAllocated(std::uint64_t Bytes, EGPUBufferMemoryCategory Category) noexcept
         {
             const std::size_t Index = GetCategoryIndex(Category);
             Add(Bytes, BufferCategoryCurrent[Index], BufferCategoryPeak[Index]);
             Add(Bytes, BufferCurrent, BufferPeak);
             UpdatePeak(TotalPeak, TotalCurrent.fetch_add(Bytes, std::memory_order_relaxed) + Bytes);
         }
-        static void BufferFreed(std::uint64_t Bytes, TGPUBufferMemoryCategory Category) noexcept
+        static void BufferFreed(std::uint64_t Bytes, EGPUBufferMemoryCategory Category) noexcept
         {
             BufferCategoryCurrent[GetCategoryIndex(Category)].fetch_sub(Bytes, std::memory_order_relaxed);
             BufferCurrent.fetch_sub(Bytes, std::memory_order_relaxed);
@@ -72,9 +72,9 @@ namespace MDSS::GPU
             Subtract(Bytes, ImageCurrent, TotalCurrent);
         }
 
-        [[nodiscard]] static TGPUResourceMemorySnapshot GetSnapshot() noexcept
+        [[nodiscard]] static FGPUResourceMemorySnapshot GetSnapshot() noexcept
         {
-            TGPUResourceMemorySnapshot Snapshot;
+            FGPUResourceMemorySnapshot Snapshot;
             Snapshot.CurrentBufferBytes = BufferCurrent.load(std::memory_order_relaxed);
             Snapshot.PeakBufferBytes = BufferPeak.load(std::memory_order_relaxed);
             Snapshot.CurrentImageBytes = ImageCurrent.load(std::memory_order_relaxed);
@@ -91,11 +91,11 @@ namespace MDSS::GPU
         }
 
     private:
-        static std::size_t GetCategoryIndex(TGPUBufferMemoryCategory Category) noexcept
+        static std::size_t GetCategoryIndex(EGPUBufferMemoryCategory Category) noexcept
         {
             const std::size_t Index = static_cast<std::size_t>(Category);
             return Index < GPUBufferMemoryCategoryCount ? Index
-                                                        : static_cast<std::size_t>(TGPUBufferMemoryCategory::Other);
+                                                        : static_cast<std::size_t>(EGPUBufferMemoryCategory::Other);
         }
 
         static void UpdatePeak(std::atomic<std::uint64_t>& Peak, std::uint64_t Value) noexcept

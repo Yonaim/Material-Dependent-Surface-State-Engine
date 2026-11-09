@@ -7,17 +7,17 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 00_Render_and_Debug_Settings
 
-    TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
+    ERenderViewMode FRenderer::GetRenderViewMode() const noexcept
     {
         return GetRenderViewMode(0);
     }
 
-    TRenderViewMode TRenderer::GetRenderViewMode(std::size_t ViewportIndex) const noexcept
+    ERenderViewMode FRenderer::GetRenderViewMode(std::size_t ViewportIndex) const noexcept
     {
-        return ViewportIndex < ViewModes.size() ? ViewModes[ViewportIndex] : TRenderViewMode::Lit;
+        return ViewportIndex < ViewModes.size() ? ViewModes[ViewportIndex] : ERenderViewMode::Lit;
     }
 
-    void TRenderer::SetWireframeLineWidth(float Width) noexcept
+    void FRenderer::SetWireframeLineWidth(float Width) noexcept
     {
         if (std::isfinite(Width))
         {
@@ -25,50 +25,50 @@ namespace MDSS::Rendering
         }
     }
 
-    bool TRenderer::IsWorldGridVisible() const noexcept
+    bool FRenderer::IsWorldGridVisible() const noexcept
     {
         return bWorldGridVisible;
     }
 
-    void TRenderer::SetWorldGridVisible(bool bVisible) noexcept
+    void FRenderer::SetWorldGridVisible(bool bVisible) noexcept
     {
         bWorldGridVisible = bVisible;
     }
 
-    bool TRenderer::IsWorldAxisVisible() const noexcept
+    bool FRenderer::IsWorldAxisVisible() const noexcept
     {
         return bWorldAxisVisible;
     }
 
-    void TRenderer::SetWorldAxisVisible(bool bVisible) noexcept
+    void FRenderer::SetWorldAxisVisible(bool bVisible) noexcept
     {
         bWorldAxisVisible = bVisible;
     }
 
-    void TRenderer::SetRenderViewMode(TRenderViewMode Mode)
+    void FRenderer::SetRenderViewMode(ERenderViewMode Mode)
     {
         SetRenderViewMode(0, Mode);
     }
 
-    void TRenderer::SetRenderViewMode(std::size_t ViewportIndex, TRenderViewMode Mode)
+    void FRenderer::SetRenderViewMode(std::size_t ViewportIndex, ERenderViewMode Mode)
     {
         if (ViewportIndex >= ViewModes.size())
-            ViewModes.resize(ViewportIndex + 1U, TRenderViewMode::Lit);
+            ViewModes.resize(ViewportIndex + 1U, ERenderViewMode::Lit);
         if (ViewModes[ViewportIndex] == Mode)
             return;
 
         ViewModes[ViewportIndex] = Mode;
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Viewport " + std::to_string(ViewportIndex + 1U) + " render view mode changed to " +
                           GetRenderViewModeName(Mode) + ".");
     }
 
-    std::uint32_t TRenderer::GetDebugStateChannel() const noexcept
+    std::uint32_t FRenderer::GetDebugStateChannel() const noexcept
     {
         return DebugStateChannel;
     }
 
-    void TRenderer::SetDebugStateChannel(std::uint32_t Channel)
+    void FRenderer::SetDebugStateChannel(std::uint32_t Channel)
     {
         if (Channel >= SurfaceData.GetSurfaceStateRegistry().GetStateCount())
         {
@@ -83,22 +83,22 @@ namespace MDSS::Rendering
             TexelInspector->Invalidate();
     }
 
-    bool TRenderer::IsStateHeatmapReliefShadingEnabled() const noexcept
+    bool FRenderer::IsStateHeatmapReliefShadingEnabled() const noexcept
     {
         return bStateHeatmapReliefShadingEnabled;
     }
 
-    bool TRenderer::IsStateHeatmapAllStatesEnabled() const noexcept
+    bool FRenderer::IsStateHeatmapAllStatesEnabled() const noexcept
     {
         return bStateHeatmapAllStatesEnabled;
     }
 
-    void TRenderer::SetStateHeatmapAllStatesEnabled(bool bEnabled) noexcept
+    void FRenderer::SetStateHeatmapAllStatesEnabled(bool bEnabled) noexcept
     {
         bStateHeatmapAllStatesEnabled = bEnabled;
     }
 
-    void TRenderer::SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings)
+    void FRenderer::SetSurfaceDebugDisplaySettings(const FSurfaceDebugDisplaySettings& Settings)
     {
         const auto Positive = [](float Value) { return std::isfinite(Value) && Value >= 1e-8F && Value <= 1e6F; };
         if (!Positive(Settings.DisplacementScale) || Settings.AccumulationComponent > 4 ||
@@ -107,21 +107,21 @@ namespace MDSS::Rendering
         SurfaceDebugSettings = Settings;
     }
 
-    TDemoSurfaceStateBindings TRenderer::GetDemoSurfaceStateBindings() const
+    FDemoSurfaceStateBindings FRenderer::GetDemoSurfaceStateBindings() const
     {
         return ResolveDemoSurfaceStates(SurfaceData.GetSurfaceStateRegistry());
     }
 
-    bool TRenderer::CanRenderLitOverlays() const noexcept
+    bool FRenderer::CanRenderLitOverlays() const noexcept
     {
         return DemoEffects.bEnabled && SurfaceLitPipelines[0] && BaseSurfaceLitPipelines[0] && TexelGeometryPreview &&
                OverlaySides && HeightFieldSmoothing && MudLayerGeometry && MudOverlayTopPipelines[0] &&
                MudOverlaySidePipelines[0];
     }
 
-    std::array<bool, 3> TRenderer::GetLitOverlayActivity(const TStaticMeshInstance& Instance,
-                                                         const SurfaceState::TSurfaceSharedGeometryGPUResources* Shared,
-                                                         const TDemoSurfaceStateBindings& Bindings) const
+    std::array<bool, 3> FRenderer::GetLitOverlayActivity(const FStaticMeshInstance& Instance,
+                                                         const SurfaceState::FSurfaceSharedGeometryGPUResources* Shared,
+                                                         const FDemoSurfaceStateBindings& Bindings) const
     {
         return {(DemoEffects.bMudDisplacement && Bindings.Mud != SurfaceState::InvalidStateId &&
                  UsesAccumulationGeometry(Instance, Assets, SurfaceData, Shared, "mud")) ||
@@ -133,12 +133,12 @@ namespace MDSS::Rendering
                     UsesAccumulationGeometry(Instance, Assets, SurfaceData, Shared, "lava")};
     }
 
-    bool TRenderer::IsLitTexelMeshBaseRendered(const TScene& Scene, std::size_t Instance) const
+    bool FRenderer::IsLitTexelMeshBaseRendered(const FScene& Scene, std::size_t Instance) const
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
         const auto& Resources = SurfaceStateSystem.GetGPUResources();
         const bool  bAnyLitView = std::any_of(
-            ViewModes.begin(), ViewModes.end(), [](TRenderViewMode Mode) { return Mode == TRenderViewMode::Lit; });
+            ViewModes.begin(), ViewModes.end(), [](ERenderViewMode Mode) { return Mode == ERenderViewMode::Lit; });
         if (!bAnyLitView || !CanRenderLitOverlays() || Instance >= Instances.size() ||
             Instance >= Resources.GetSceneInstanceCount() || !Resources.GetInstanceDescriptors(Instance))
             return false;
@@ -147,12 +147,12 @@ namespace MDSS::Rendering
         return Activity[0] || Activity[1] || Activity[2];
     }
 
-    void TRenderer::SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings)
+    void FRenderer::SetDemoSurfaceEffectSettings(const FDemoSurfaceEffectSettings& Settings)
     {
         const auto Roughness = [](float V) { return std::isfinite(V) && V >= 0.05F && V <= 1.0F; };
         const auto Unit = [](float V) { return std::isfinite(V) && V >= 0.0F && V <= 1.0F; };
         const auto Color = [&](const glm::vec3& V) { return Unit(V.r) && Unit(V.g) && Unit(V.b); };
-        const auto ColorMapping = [&](const TDemoStateColorMapping& Mapping)
+        const auto ColorMapping = [&](const FDemoStateColorMapping& Mapping)
         {
             return Unit(Mapping.RampStart) && Unit(Mapping.RampEnd) && Mapping.RampStart < Mapping.RampEnd &&
                    Color(Mapping.LowSaturationColor) && Color(Mapping.HighSaturationColor);
@@ -201,7 +201,7 @@ namespace MDSS::Rendering
         }
     }
 
-    void TRenderer::SetSceneLitHeightDisplayScale(TScene& Scene, float Scale)
+    void FRenderer::SetSceneLitHeightDisplayScale(FScene& Scene, float Scale)
     {
         const bool bChanged = Scene.GetLitHeightDisplayScale() != Scale;
         Scene.SetLitHeightDisplayScale(Scale);
@@ -215,7 +215,7 @@ namespace MDSS::Rendering
             MudLayerGeometry->InvalidateSparseOutput();
     }
 
-    bool TRenderer::InspectTexel(const TScene& Scene, std::size_t InstanceIndex, std::uint32_t Triangle, glm::vec2 UV)
+    bool FRenderer::InspectTexel(const FScene& Scene, std::size_t InstanceIndex, std::uint32_t Triangle, glm::vec2 UV)
     {
         ClearInspectedTexel();
         const auto& Instances = Scene.GetStaticMeshInstances();
@@ -244,24 +244,24 @@ namespace MDSS::Rendering
         if (ProfileIndex < Profiles.size())
             Profile = Assets.GetSRProfile(Profiles[ProfileIndex]).GetName();
         InspectedTexel =
-            SurfaceState::TSurfaceTexelSelection{InstanceIndex, Surface, Texel, Triangle, {X, Y}, std::move(Profile)};
+            SurfaceState::FSurfaceTexelSelection{InstanceIndex, Surface, Texel, Triangle, {X, Y}, std::move(Profile)};
         return true;
     }
 
-    void TRenderer::ClearInspectedTexel() noexcept
+    void FRenderer::ClearInspectedTexel() noexcept
     {
         InspectedTexel.reset();
         if (TexelInspector)
             TexelInspector->Invalidate();
     }
 
-    const std::optional<SurfaceState::TSurfaceTexelSnapshot>& TRenderer::GetTexelSnapshot() const noexcept
+    const std::optional<SurfaceState::FSurfaceTexelSnapshot>& FRenderer::GetTexelSnapshot() const noexcept
     {
-        static const std::optional<SurfaceState::TSurfaceTexelSnapshot> Empty;
+        static const std::optional<SurfaceState::FSurfaceTexelSnapshot> Empty;
         return TexelInspector ? TexelInspector->GetSnapshot() : Empty;
     }
 
-    void TRenderer::SetStateHeatmapReliefShadingEnabled(bool bEnabled)
+    void FRenderer::SetStateHeatmapReliefShadingEnabled(bool bEnabled)
     {
         if (bStateHeatmapReliefShadingEnabled == bEnabled)
         {
@@ -270,12 +270,12 @@ namespace MDSS::Rendering
         bStateHeatmapReliefShadingEnabled = bEnabled;
     }
 
-    TSolverTransferWeightView TRenderer::GetSolverTransferWeightView() const noexcept
+    ESolverTransferWeightView FRenderer::GetSolverTransferWeightView() const noexcept
     {
         return SolverTransferWeightView;
     }
 
-    void TRenderer::SetSolverTransferWeightView(TSolverTransferWeightView View)
+    void FRenderer::SetSolverTransferWeightView(ESolverTransferWeightView View)
     {
         if (SolverTransferWeightView == View)
         {
@@ -284,12 +284,12 @@ namespace MDSS::Rendering
         SolverTransferWeightView = View;
     }
 
-    std::uint32_t TRenderer::GetTexelGridBlockSize() const noexcept
+    std::uint32_t FRenderer::GetTexelGridBlockSize() const noexcept
     {
         return TexelGridBlockSize;
     }
 
-    void TRenderer::SetTexelGridBlockSize(std::uint32_t Size)
+    void FRenderer::SetTexelGridBlockSize(std::uint32_t Size)
     {
         if (Size != 8U && Size != 16U)
         {
@@ -300,12 +300,12 @@ namespace MDSS::Rendering
         TexelGridBlockSize = Size;
     }
 
-    float TRenderer::GetTexelAreaReference() const noexcept
+    float FRenderer::GetTexelAreaReference() const noexcept
     {
         return TexelAreaReference;
     }
 
-    void TRenderer::SetTexelAreaReference(float Area)
+    void FRenderer::SetTexelAreaReference(float Area)
     {
         if (!std::isfinite(Area) || Area < 1.0e-12F || Area > 1.0e12F)
         {
@@ -316,44 +316,44 @@ namespace MDSS::Rendering
         TexelAreaReference = Area;
     }
 
-    float TRenderer::GetDebugViewParameter(TRenderViewMode Mode) const noexcept
+    float FRenderer::GetDebugViewParameter(ERenderViewMode Mode) const noexcept
     {
         switch (Mode)
         {
-            case TRenderViewMode::SurfaceTexelGrid:
+            case ERenderViewMode::SurfaceTexelGrid:
                 return static_cast<float>(TexelGridBlockSize);
-            case TRenderViewMode::SurfaceTexelArea:
+            case ERenderViewMode::SurfaceTexelArea:
                 return TexelAreaReference;
             default:
                 return static_cast<float>(SolverTransferWeightView);
         }
     }
 
-    bool TRenderer::IsDebugGeometryDriveEnabled() const noexcept
+    bool FRenderer::IsDebugGeometryDriveEnabled() const noexcept
     {
-        return IsDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm::GeometryDrive);
+        return IsDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm::GeometryDrive);
     }
 
-    void TRenderer::SetDebugGeometryDriveEnabled(bool bEnabled)
+    void FRenderer::SetDebugGeometryDriveEnabled(bool bEnabled)
     {
-        SetDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm::GeometryDrive, bEnabled);
+        SetDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm::GeometryDrive, bEnabled);
     }
 
-    bool TRenderer::IsDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term) const noexcept
+    bool FRenderer::IsDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm Term) const noexcept
     {
         return DebugSolverSettings.IsEnabled(Term);
     }
 
-    void TRenderer::SetDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term, bool bEnabled)
+    void FRenderer::SetDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm Term, bool bEnabled)
     {
         DebugSolverSettings.SetEnabled(Term, bEnabled);
         SurfaceStateSystem.SetDebugSolverTermEnabled(Term, bEnabled);
     }
 
-    void TRenderer::SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size)
+    void FRenderer::SetOverlayOccupancyTileSize(EOverlayOccupancyTileSize Size)
     {
-        if (Size != TOverlayOccupancyTileSize::Tile8 && Size != TOverlayOccupancyTileSize::Tile16 &&
-            Size != TOverlayOccupancyTileSize::Tile32)
+        if (Size != EOverlayOccupancyTileSize::Tile8 && Size != EOverlayOccupancyTileSize::Tile16 &&
+            Size != EOverlayOccupancyTileSize::Tile32)
             throw std::invalid_argument("Overlay occupancy tile size must be 8, 16, or 32.");
         if (OverlayOccupancyTileSize == Size)
             return;
@@ -365,123 +365,123 @@ namespace MDSS::Rendering
             MudLayerGeometry->SetOccupancyTileSize(Tile);
     }
 
-    bool TRenderer::IsRawFluxCacheEnabled() const noexcept
+    bool FRenderer::IsRawFluxCacheEnabled() const noexcept
     {
         return SurfaceStateSystem.IsRawFluxCacheEnabled();
     }
 
-    void TRenderer::SetRawFluxCacheEnabled(bool bEnabled) noexcept
+    void FRenderer::SetRawFluxCacheEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetRawFluxCacheEnabled(bEnabled);
     }
 
-    bool TRenderer::IsCoalescedRawFluxLayoutEnabled() const noexcept
+    bool FRenderer::IsCoalescedRawFluxLayoutEnabled() const noexcept
     {
         return SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled();
     }
 
-    void TRenderer::SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept
+    void FRenderer::SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetCoalescedRawFluxLayoutEnabled(bEnabled);
     }
 
-    bool TRenderer::IsHalfRawFluxCacheEnabled() const noexcept
+    bool FRenderer::IsHalfRawFluxCacheEnabled() const noexcept
     {
         return SurfaceStateSystem.IsHalfRawFluxCacheEnabled();
     }
 
-    void TRenderer::SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
+    void FRenderer::SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetHalfRawFluxCacheEnabled(bEnabled);
     }
 
-    bool TRenderer::IsHalfDynamicWeightsEnabled() const noexcept
+    bool FRenderer::IsHalfDynamicWeightsEnabled() const noexcept
     {
         return SurfaceStateSystem.IsHalfDynamicWeightsEnabled();
     }
 
-    void TRenderer::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
+    void FRenderer::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetHalfDynamicWeightsEnabled(bEnabled);
     }
 
-    bool TRenderer::IsSparseSolverEnabled() const noexcept
+    bool FRenderer::IsSparseSolverEnabled() const noexcept
     {
         return SurfaceStateSystem.IsSparseSolverEnabled();
     }
 
-    void TRenderer::SetSparseSolverEnabled(bool bEnabled) noexcept
+    void FRenderer::SetSparseSolverEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetSparseSolverEnabled(bEnabled);
     }
 
-    bool TRenderer::IsSparseAccumulationHeightEnabled() const noexcept
+    bool FRenderer::IsSparseAccumulationHeightEnabled() const noexcept
     {
         return SurfaceStateSystem.IsSparseAccumulationHeightEnabled();
     }
 
-    void TRenderer::SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept
+    void FRenderer::SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetSparseAccumulationHeightEnabled(bEnabled);
     }
 
-    bool TRenderer::IsActiveChannelMaskEnabled() const noexcept
+    bool FRenderer::IsActiveChannelMaskEnabled() const noexcept
     {
         return SurfaceStateSystem.IsActiveChannelMaskEnabled();
     }
 
-    void TRenderer::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
+    void FRenderer::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetActiveChannelMaskEnabled(bEnabled);
     }
 
-    bool TRenderer::IsPerWorkgroupChannelMaskEnabled() const noexcept
+    bool FRenderer::IsPerWorkgroupChannelMaskEnabled() const noexcept
     {
         return SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled();
     }
 
-    void TRenderer::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
+    void FRenderer::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetPerWorkgroupChannelMaskEnabled(bEnabled);
     }
 
-    bool TRenderer::IsSparseSimulationGeometryEnabled() const noexcept
+    bool FRenderer::IsSparseSimulationGeometryEnabled() const noexcept
     {
         return SurfaceStateSystem.IsSparseSimulationGeometryEnabled();
     }
 
-    void TRenderer::SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept
+    void FRenderer::SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept
     {
         SurfaceStateSystem.SetSparseSimulationGeometryEnabled(bEnabled);
     }
 
-    bool TRenderer::IsStateDrivenGeometryUpdateEnabled() const noexcept
+    bool FRenderer::IsStateDrivenGeometryUpdateEnabled() const noexcept
     {
         return DebugSolverSettings.bStateDrivenGeometryUpdateEnabled;
     }
 
-    void TRenderer::SetStateDrivenGeometryUpdateEnabled(bool bEnabled)
+    void FRenderer::SetStateDrivenGeometryUpdateEnabled(bool bEnabled)
     {
         DebugSolverSettings.bStateDrivenGeometryUpdateEnabled = bEnabled;
         SurfaceStateSystem.SetStateDrivenGeometryUpdateEnabled(bEnabled);
     }
 
-    bool TRenderer::IsDebugNormalWeightEnabled() const noexcept
+    bool FRenderer::IsDebugNormalWeightEnabled() const noexcept
     {
-        return IsDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm::NormalWeight);
+        return IsDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm::NormalWeight);
     }
 
-    void TRenderer::SetDebugNormalWeightEnabled(bool bEnabled)
+    void FRenderer::SetDebugNormalWeightEnabled(bool bEnabled)
     {
-        SetDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm::NormalWeight, bEnabled);
+        SetDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm::NormalWeight, bEnabled);
     }
 
-    bool TRenderer::GetFlipNormalY() const noexcept
+    bool FRenderer::GetFlipNormalY() const noexcept
     {
         return bFlipNormalY;
     }
 
-    void TRenderer::SetFlipNormalY(bool bEnabled)
+    void FRenderer::SetFlipNormalY(bool bEnabled)
     {
         if (bFlipNormalY == bEnabled)
         {
@@ -489,25 +489,25 @@ namespace MDSS::Rendering
         }
 
         bFlipNormalY = bEnabled;
-        TLogger::Info("TRenderer", std::string("Normal-map Y flip ") + (bFlipNormalY ? "enabled." : "disabled."));
+        FLogger::Info("TRenderer", std::string("Normal-map Y flip ") + (bFlipNormalY ? "enabled." : "disabled."));
     }
 
-    float TRenderer::GetNormalStrength() const noexcept
+    float FRenderer::GetNormalStrength() const noexcept
     {
         return NormalStrength;
     }
 
-    void TRenderer::SetNormalStrength(float Strength)
+    void FRenderer::SetNormalStrength(float Strength)
     {
         NormalStrength = std::clamp(Strength, 0.0F, 4.0F);
     }
 
-    float TRenderer::GetAmbientLight() const noexcept
+    float FRenderer::GetAmbientLight() const noexcept
     {
         return AmbientLight;
     }
 
-    void TRenderer::SetAmbientLight(float Intensity)
+    void FRenderer::SetAmbientLight(float Intensity)
     {
         AmbientLight = std::clamp(Intensity, 0.0F, 1.0F);
     }

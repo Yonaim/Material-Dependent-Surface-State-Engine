@@ -16,7 +16,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Image_View_Lifecycle
 
-    TGPUImageView::TGPUImageView(VkDevice           Device,
+    FGPUImageView::FGPUImageView(VkDevice           Device,
                                  VkImage            Image,
                                  VkFormat           Format,
                                  VkImageAspectFlags AspectMask,
@@ -27,12 +27,12 @@ namespace MDSS::GPU
         Create(Image, Format, AspectMask, ArrayLayers, ViewType);
     }
 
-    TGPUImageView::~TGPUImageView()
+    FGPUImageView::~FGPUImageView()
     {
         Reset();
     }
 
-    void TGPUImageView::Recreate(VkImage            Image,
+    void FGPUImageView::Recreate(VkImage            Image,
                                  VkFormat           Format,
                                  VkImageAspectFlags AspectMask,
                                  std::uint32_t      ArrayLayers,
@@ -42,7 +42,7 @@ namespace MDSS::GPU
         Create(Image, Format, AspectMask, ArrayLayers, ViewType);
     }
 
-    void TGPUImageView::Reset()
+    void FGPUImageView::Reset()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -58,7 +58,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Image_View_Creation
 
-    void TGPUImageView::Create(VkImage            Image,
+    void FGPUImageView::Create(VkImage            Image,
                                VkFormat           Format,
                                VkImageAspectFlags AspectMask,
                                std::uint32_t      ArrayLayers,
@@ -79,7 +79,7 @@ namespace MDSS::GPU
         {
             throw std::runtime_error("Failed to create Vulkan image view.");
         }
-        TLogger::Verbose("Vulkan", "TGPUImageView created (format=" + std::to_string(static_cast<int>(Format)) + ").");
+        FLogger::Verbose("Vulkan", "TGPUImageView created (format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 
 #pragma endregion
@@ -89,7 +89,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Image_View_Access
 
-    VkImageView TGPUImageView::GetHandle() const noexcept
+    VkImageView FGPUImageView::GetHandle() const noexcept
     {
         return Handle;
     }

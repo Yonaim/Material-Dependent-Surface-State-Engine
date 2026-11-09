@@ -11,23 +11,23 @@
 
 namespace MDSS::GPU
 {
-    class TGPUImageView
+    class FGPUImageView
     {
     public:
         // Image view lifecycle
         /** @brief image와 format·aspect 설정을 참조하는 Vulkan image view를 생성한다. */
-        TGPUImageView(VkDevice           Device,
+        FGPUImageView(VkDevice           Device,
                       VkImage            Image,
                       VkFormat           Format,
                       VkImageAspectFlags AspectMask,
                       std::uint32_t      ArrayLayers = 1,
                       VkImageViewType    ViewType = VK_IMAGE_VIEW_TYPE_2D);
-        ~TGPUImageView();
+        ~FGPUImageView();
 
-        TGPUImageView(const TGPUImageView&) = delete;
-        TGPUImageView& operator=(const TGPUImageView&) = delete;
-        TGPUImageView(TGPUImageView&&) = delete;
-        TGPUImageView& operator=(TGPUImageView&&) = delete;
+        FGPUImageView(const FGPUImageView&) = delete;
+        FGPUImageView& operator=(const FGPUImageView&) = delete;
+        FGPUImageView(FGPUImageView&&) = delete;
+        FGPUImageView& operator=(FGPUImageView&&) = delete;
 
         void Recreate(VkImage            Image,
                       VkFormat           Format,

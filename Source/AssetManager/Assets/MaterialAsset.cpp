@@ -10,38 +10,38 @@
 namespace MDSS::Asset
 {
 // ============================================================
-// 00. TMaterialAsset Implementation
+// 00. FMaterialAsset Implementation
 // ============================================================
 #pragma region 00_TMaterialAsset_Implementation
 
-    TMaterialAsset::TMaterialAsset(TAssetID              ID,
+    FMaterialAsset::FMaterialAsset(FAssetID              ID,
                                    std::string           Name,
                                    std::filesystem::path SourcePath,
                                    glm::vec4             BaseColor,
-                                   TextureAssetHandle    BaseColorTexture,
-                                   TextureAssetHandle    NormalTexture,
+                                   FTextureAssetHandle   BaseColorTexture,
+                                   FTextureAssetHandle   NormalTexture,
                                    glm::vec4             WaterAppearance)
-        : TAsset(ID, std::move(Name), std::move(SourcePath)), BaseColor(BaseColor), BaseColorTexture(BaseColorTexture),
+        : FAsset(ID, std::move(Name), std::move(SourcePath)), BaseColor(BaseColor), BaseColorTexture(BaseColorTexture),
           NormalTexture(NormalTexture), WaterAppearance(WaterAppearance)
     {
     }
 
-    const glm::vec4& TMaterialAsset::GetBaseColor() const noexcept
+    const glm::vec4& FMaterialAsset::GetBaseColor() const noexcept
     {
         return BaseColor;
     }
 
-    TextureAssetHandle TMaterialAsset::GetBaseColorTexture() const noexcept
+    FTextureAssetHandle FMaterialAsset::GetBaseColorTexture() const noexcept
     {
         return BaseColorTexture;
     }
 
-    TextureAssetHandle TMaterialAsset::GetNormalTexture() const noexcept
+    FTextureAssetHandle FMaterialAsset::GetNormalTexture() const noexcept
     {
         return NormalTexture;
     }
 
-    const glm::vec4& TMaterialAsset::GetWaterAppearance() const noexcept
+    const glm::vec4& FMaterialAsset::GetWaterAppearance() const noexcept
     {
         return WaterAppearance;
     }

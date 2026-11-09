@@ -10,15 +10,15 @@
 namespace MDSS::SurfaceState
 {
     /** Retains completed Scene buffers for an exact-size, exact-usage reuse on a later reload. */
-    class TSurfaceGPUBufferPool final
+    class FSurfaceGPUBufferPool final
     {
     public:
         static constexpr VkDeviceSize MaximumRetainedBytes = 256ULL * 1024ULL * 1024ULL;
 
-        [[nodiscard]] std::unique_ptr<GPU::TGPUBuffer> Acquire(VkDeviceSize                  Size,
+        [[nodiscard]] std::unique_ptr<GPU::FGPUBuffer> Acquire(VkDeviceSize                  Size,
                                                                VkBufferUsageFlags            Usage,
                                                                VkMemoryPropertyFlags         MemoryProperties,
-                                                               GPU::TGPUBufferMemoryCategory Category) noexcept
+                                                               GPU::EGPUBufferMemoryCategory Category) noexcept
         {
             const auto Found = std::find_if(Buffers.begin(),
                                             Buffers.end(),
@@ -38,7 +38,7 @@ namespace MDSS::SurfaceState
             return Buffer;
         }
 
-        void Release(std::unique_ptr<GPU::TGPUBuffer> Buffer) noexcept
+        void Release(std::unique_ptr<GPU::FGPUBuffer> Buffer) noexcept
         {
             if (!Buffer || Buffer->GetSize() > MaximumRetainedBytes)
                 return;
@@ -78,7 +78,7 @@ namespace MDSS::SurfaceState
         }
 
     private:
-        std::vector<std::unique_ptr<GPU::TGPUBuffer>> Buffers;
+        std::vector<std::unique_ptr<GPU::FGPUBuffer>> Buffers;
         VkDeviceSize                                  RetainedBytes = 0;
         std::uint64_t                                 ReuseCount = 0;
         VkDeviceSize                                  ReusedBytes = 0;

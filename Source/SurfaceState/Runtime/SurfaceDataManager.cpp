@@ -54,12 +54,12 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_Surface_Data_Loading
 
-    TSurfaceDataManager::TSurfaceDataManager(Asset::TAssetManager& Assets) : Assets(Assets)
+    FSurfaceDataManager::FSurfaceDataManager(Asset::FAssetManager& Assets) : Assets(Assets)
     {
     }
 
-    TSurfaceRuntimeDataHandle
-    TSurfaceDataManager::LoadSurfaceData(Asset::TMeshAssetHandle      MeshHandle,
+    FSurfaceRuntimeDataHandle
+    FSurfaceDataManager::LoadSurfaceData(Asset::FMeshAssetHandle      MeshHandle,
                                          const std::filesystem::path& RequestedDistributionPath,
                                          std::uint32_t                Resolution)
     {
@@ -77,7 +77,7 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("A Scene-selected Surface Profile Map path is required.");
         }
-        const Asset::TMeshAsset&    Mesh = Assets.GetMesh(MeshHandle);
+        const Asset::FMeshAsset&    Mesh = Assets.GetMesh(MeshHandle);
         const std::filesystem::path DistributionPath = RequestedDistributionPath;
         const std::string RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath, Resolution);
         if (const auto Found = RuntimeSurfaceAssetsByInputs.find(RuntimeKey);
@@ -85,46 +85,46 @@ namespace MDSS::SurfaceState
         {
             return Found->second;
         }
-        const Asset::TSurfaceProfileDistribution Distribution =
-            Asset::TSurfaceProfileDistributionLoader::Load(DistributionPath);
+        const Asset::FSurfaceProfileDistribution Distribution =
+            Asset::FSurfaceProfileDistributionLoader::Load(DistributionPath);
 
-        std::vector<Asset::TSRProfileAssetHandle> ProfileTable;
+        std::vector<Asset::FSRProfileAssetHandle> ProfileTable;
         ProfileTable.reserve(Distribution.ProfilePaths.size());
         for (const std::filesystem::path& ProfilePath : Distribution.ProfilePaths)
         {
             ProfileTable.push_back(Assets.LoadSRProfile(ProfilePath));
         }
 
-        SurfaceState::TSurfaceLocalID SurfaceCount = 0;
-        for (const Asset::TMeshSection& Section : Mesh.GetSections())
+        SurfaceState::FSurfaceLocalID SurfaceCount = 0;
+        for (const Asset::FMeshSection& Section : Mesh.GetSections())
         {
             if (Section.Surface == SurfaceState::InvalidSurfaceID)
             {
                 throw std::runtime_error("Mesh section has an invalid Surface ID.");
             }
-            if (Section.Surface == std::numeric_limits<SurfaceState::TSurfaceLocalID>::max() - 1U)
+            if (Section.Surface == std::numeric_limits<SurfaceState::FSurfaceLocalID>::max() - 1U)
             {
                 throw std::overflow_error("Mesh Surface count exceeds the supported range.");
             }
-            SurfaceCount = std::max(SurfaceCount, static_cast<SurfaceState::TSurfaceLocalID>(Section.Surface + 1U));
+            SurfaceCount = std::max(SurfaceCount, static_cast<SurfaceState::FSurfaceLocalID>(Section.Surface + 1U));
         }
         if (SurfaceCount == 0)
         {
             throw std::runtime_error("Mesh contains no Surface sections to preprocess.");
         }
 
-        std::vector<SurfaceState::TSurfaceDefinition> SurfaceDefinitions;
+        std::vector<SurfaceState::FSurfaceDefinition> SurfaceDefinitions;
         SurfaceDefinitions.reserve(SurfaceCount);
-        for (SurfaceState::TSurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
+        for (SurfaceState::FSurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
         {
             SurfaceDefinitions.push_back({Surface, {Resolution, Resolution}});
         }
 
         std::vector<std::filesystem::path> NormalMapPaths(SurfaceCount);
         std::vector<bool>                  HasMaterial(SurfaceCount, false);
-        for (const Asset::TMeshSection& Section : Mesh.GetSections())
+        for (const Asset::FMeshSection& Section : Mesh.GetSections())
         {
-            const Asset::TMaterialAsset& Material = Assets.GetMaterial(Section.Material);
+            const Asset::FMaterialAsset& Material = Assets.GetMaterial(Section.Material);
             const std::filesystem::path  NormalPath = Assets.GetTexture(Material.GetNormalTexture()).GetSourcePath();
             if (HasMaterial[Section.Surface] && NormalMapPaths[Section.Surface] != NormalPath)
             {
@@ -139,45 +139,45 @@ namespace MDSS::SurfaceState
         }
 
         const auto                                  CacheStart = std::chrono::steady_clock::now();
-        const SurfaceState::TSurfaceCacheDescriptor CacheDescriptor =
-            SurfaceState::TSurfaceCache::Describe(Mesh.GetVertices(),
+        const SurfaceState::FSurfaceCacheDescriptor CacheDescriptor =
+            SurfaceState::FSurfaceCache::Describe(Mesh.GetVertices(),
                                                   Mesh.GetTriangles(),
                                                   SurfaceDefinitions,
                                                   NormalMapPaths,
                                                   DistributionPath,
                                                   Distribution.ProfilePaths,
                                                   Distribution.ProfileIndicesBySurface);
-        const std::filesystem::path CachePath = SurfaceState::TSurfaceCache::GetPath(
+        const std::filesystem::path CachePath = SurfaceState::FSurfaceCache::GetPath(
             MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
         std::string CacheDiagnostic;
-        auto        CachedGeometry = SurfaceState::TSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
+        auto        CachedGeometry = SurfaceState::FSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
         if (CachedGeometry)
         {
             const double LoadMilliseconds =
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
-            TLogger::Info("TSurfaceDataManager",
+            FLogger::Info("TSurfaceDataManager",
                           "Loaded .Surface cache: " + CachePath.string() + " (" + std::to_string(LoadMilliseconds) +
                               " ms, including input fingerprint).");
         }
         else
         {
-            TLogger::Info("TSurfaceDataManager",
+            FLogger::Info("TSurfaceDataManager",
                           "Rebuilding .Surface cache (" + CacheDiagnostic + "): " + CachePath.string());
-            const SurfaceState::TSurfaceMappingData Mapping = SurfaceState::TSurfaceMappingBuilder::Build(
+            const SurfaceState::FSurfaceMappingData Mapping = SurfaceState::FSurfaceMappingBuilder::Build(
                 Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
             for (const std::string& MappingWarning : Mapping.Warnings)
             {
                 if (MappingWarning.starts_with("UV seam texel links were dropped:"))
                 {
-                    TLogger::Warning("TSurfaceDataManager", MappingWarning);
+                    FLogger::Warning("TSurfaceDataManager", MappingWarning);
                 }
             }
-            std::vector<SurfaceState::TSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
-            CachedGeometry.emplace(SurfaceState::TSurfaceGeometryBuilder::Build(
+            std::vector<SurfaceState::FSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+            CachedGeometry.emplace(SurfaceState::FSurfaceGeometryBuilder::Build(
                 Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size())));
-            SurfaceState::TSharedSurfaceGeometryData& Geometry = *CachedGeometry;
+            SurfaceState::FSharedSurfaceGeometryData& Geometry = *CachedGeometry;
 
-            std::unordered_map<std::string, Asset::TextureData> NormalMapPixels;
+            std::unordered_map<std::string, Asset::FTextureData> NormalMapPixels;
             for (const std::filesystem::path& NormalMapPath : NormalMapPaths)
             {
                 if (NormalMapPath.empty())
@@ -187,13 +187,13 @@ namespace MDSS::SurfaceState
                 const std::string Key = std::filesystem::absolute(NormalMapPath).lexically_normal().generic_string();
                 if (!NormalMapPixels.contains(Key))
                 {
-                    NormalMapPixels.emplace(Key, Asset::TextureLoader::LoadRGBA8(NormalMapPath));
+                    NormalMapPixels.emplace(Key, Asset::FTextureLoader::LoadRGBA8(NormalMapPath));
                 }
             }
 
             std::size_t                                       MappedNormalCount = 0;
-            std::vector<SurfaceState::TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
-            for (SurfaceState::TSurfaceTexelGeometry& Texel : GeometryTexels)
+            std::vector<SurfaceState::FSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
+            for (SurfaceState::FSurfaceTexelGeometry& Texel : GeometryTexels)
             {
                 if (!Texel.IsValid() || Texel.Surface >= NormalMapPaths.size() || NormalMapPaths[Texel.Surface].empty())
                 {
@@ -209,63 +209,63 @@ namespace MDSS::SurfaceState
                         Texel, Mesh.GetVertices(), Mesh.GetTriangles(), TextureIt->second, TransferNormal, true))
                 {
                     Texel.TransferNormal = TransferNormal;
-                    Texel.HasTransferNormal = true;
+                    Texel.bHasTransferNormal = true;
                     ++MappedNormalCount;
                 }
             }
 
-            TLogger::Info("TSurfaceDataManager",
+            FLogger::Info("TSurfaceDataManager",
                           "Precomputed Normal Map transfer normals for " + std::to_string(MappedNormalCount) + "/" +
                               std::to_string(Geometry.GetTexelCount()) + " Simulation texels.");
             // 노멀 맵의 텍셀 노멀을 준비한 뒤 공유 형상의 높이와 파생 형상을 전처리한다.
-            const SurfaceState::TMesoGeometryBuildReport MesoReport = SurfaceState::BuildMesoGeometry(Geometry);
-            TLogger::Info("TSurfaceDataManager",
+            const SurfaceState::FMesoGeometryBuildReport MesoReport = SurfaceState::BuildMesoGeometry(Geometry);
+            FLogger::Info("TSurfaceDataManager",
                           "Integrated Normal Map meso geometry for " + std::to_string(MesoReport.ActiveTexelCount) +
                               " texels across " + std::to_string(MesoReport.ComponentCount) + " connected charts (" +
                               std::to_string(MesoReport.IterationCount) + " PCG iterations, relative edge residual " +
                               std::to_string(MesoReport.RelativeEdgeResidual) + ").");
             try
             {
-                SurfaceState::TSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
+                SurfaceState::FSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
                 const double BuildMilliseconds =
                     std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
-                TLogger::Info("TSurfaceDataManager",
+                FLogger::Info("TSurfaceDataManager",
                               "Saved .Surface cache: " + CachePath.string() + " (" + std::to_string(BuildMilliseconds) +
                                   " ms, including preprocessing and save).");
             }
             catch (const std::exception& Error)
             {
-                TLogger::Warning("TSurfaceDataManager",
+                FLogger::Warning("TSurfaceDataManager",
                                  "Unable to save .Surface cache; using Runtime data: " + std::string(Error.what()));
             }
         }
-        TSurfaceRuntimeData Built(std::move(*CachedGeometry));
+        FSurfaceRuntimeData Built(std::move(*CachedGeometry));
         if (RuntimeSurfaceAssets.size() >= InvalidSurfaceRuntimeDataHandle)
         {
             throw std::overflow_error("Runtime Surface Data handle range is exhausted.");
         }
-        const TSurfaceRuntimeDataHandle RuntimeHandle =
-            static_cast<TSurfaceRuntimeDataHandle>(RuntimeSurfaceAssets.size());
-        TRuntimeSurfaceAsset RuntimeAsset;
-        RuntimeAsset.Data = std::make_shared<const TSurfaceRuntimeData>(std::move(Built));
+        const FSurfaceRuntimeDataHandle RuntimeHandle =
+            static_cast<FSurfaceRuntimeDataHandle>(RuntimeSurfaceAssets.size());
+        FRuntimeSurfaceAsset RuntimeAsset;
+        RuntimeAsset.Data = std::make_shared<const FSurfaceRuntimeData>(std::move(Built));
         RuntimeAsset.ProfileTable = std::move(ProfileTable);
         RuntimeAsset.Mesh = MeshHandle;
         RuntimeAsset.DistributionPath = DistributionPath;
         RuntimeSurfaceAssets.push_back(std::move(RuntimeAsset));
         RuntimeSurfaceAssetsByInputs.emplace(RuntimeKey, RuntimeHandle);
-        TLogger::Info("TSurfaceDataManager",
+        FLogger::Info("TSurfaceDataManager",
                       "Registered Runtime Surface data (" + std::to_string(Resolution) + " x " +
                           std::to_string(Resolution) + ") for Mesh: " + Mesh.GetSourcePath().string());
         return RuntimeHandle;
     }
 
-    TSurfaceRuntimeDataHandle TSurfaceDataManager::LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
+    FSurfaceRuntimeDataHandle FSurfaceDataManager::LoadSurfaceDataAtResolution(FSurfaceRuntimeDataHandle Handle,
                                                                                std::uint32_t             Resolution)
     {
         if (!HasSurfaceData(Handle))
             throw std::out_of_range("Invalid Runtime Surface Data handle.");
         // Copy before LoadSurfaceData can grow RuntimeSurfaceAssets and invalidate references.
-        const Asset::TMeshAssetHandle Mesh = RuntimeSurfaceAssets[Handle].Mesh;
+        const Asset::FMeshAssetHandle Mesh = RuntimeSurfaceAssets[Handle].Mesh;
         const auto                    DistributionPath = RuntimeSurfaceAssets[Handle].DistributionPath;
         return LoadSurfaceData(Mesh, DistributionPath, Resolution);
     }
@@ -276,26 +276,26 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 02_Registry_and_Surface_Data_Accessors
 
-    std::uint32_t TSurfaceDataManager::GetSimulationResolution() const noexcept
+    std::uint32_t FSurfaceDataManager::GetSimulationResolution() const noexcept
     {
         return SimulationResolution;
     }
 
-    void TSurfaceDataManager::SetSimulationResolution(std::uint32_t Resolution)
+    void FSurfaceDataManager::SetSimulationResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         SimulationResolution = Resolution;
     }
 
-    void TSurfaceDataManager::ReleaseUnusedSurfaceData(const std::vector<TSurfaceRuntimeDataHandle>& RetainedHandles)
+    void FSurfaceDataManager::ReleaseUnusedSurfaceData(const std::vector<FSurfaceRuntimeDataHandle>& RetainedHandles)
     {
-        const auto IsRetained = [&](TSurfaceRuntimeDataHandle Handle)
+        const auto IsRetained = [&](FSurfaceRuntimeDataHandle Handle)
         { return std::find(RetainedHandles.begin(), RetainedHandles.end(), Handle) != RetainedHandles.end(); };
         std::erase_if(RuntimeSurfaceAssetsByInputs, [&](const auto& Entry) { return !IsRetained(Entry.second); });
         for (std::size_t Index = 0; Index < RuntimeSurfaceAssets.size(); ++Index)
         {
-            if (!IsRetained(static_cast<TSurfaceRuntimeDataHandle>(Index)))
+            if (!IsRetained(static_cast<FSurfaceRuntimeDataHandle>(Index)))
             {
                 RuntimeSurfaceAssets[Index].Data.reset();
                 RuntimeSurfaceAssets[Index].ProfileTable.clear();
@@ -303,12 +303,12 @@ namespace MDSS::SurfaceState
         }
     }
 
-    bool TSurfaceDataManager::HasSurfaceData(TSurfaceRuntimeDataHandle Handle) const noexcept
+    bool FSurfaceDataManager::HasSurfaceData(FSurfaceRuntimeDataHandle Handle) const noexcept
     {
         return Handle < RuntimeSurfaceAssets.size() && static_cast<bool>(RuntimeSurfaceAssets[Handle].Data);
     }
 
-    const TSurfaceRuntimeData& TSurfaceDataManager::GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const
+    const FSurfaceRuntimeData& FSurfaceDataManager::GetSurfaceData(FSurfaceRuntimeDataHandle Handle) const
     {
         if (!HasSurfaceData(Handle))
         {
@@ -317,8 +317,8 @@ namespace MDSS::SurfaceState
         return *RuntimeSurfaceAssets[Handle].Data;
     }
 
-    const std::vector<Asset::TSRProfileAssetHandle>&
-    TSurfaceDataManager::GetSurfaceProfileTable(TSurfaceRuntimeDataHandle Handle) const
+    const std::vector<Asset::FSRProfileAssetHandle>&
+    FSurfaceDataManager::GetSurfaceProfileTable(FSurfaceRuntimeDataHandle Handle) const
     {
         if (!HasSurfaceData(Handle))
         {
@@ -327,10 +327,10 @@ namespace MDSS::SurfaceState
         return RuntimeSurfaceAssets[Handle].ProfileTable;
     }
 
-    std::vector<Asset::TSRProfileAssetHandle> TSurfaceDataManager::GetSceneSurfaceProfiles(const TScene& Scene) const
+    std::vector<Asset::FSRProfileAssetHandle> FSurfaceDataManager::GetSceneSurfaceProfiles(const FScene& Scene) const
     {
-        std::vector<Asset::TSRProfileAssetHandle> Handles;
-        for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
+        std::vector<Asset::FSRProfileAssetHandle> Handles;
+        for (const FStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {
             if (HasSurfaceData(Instance.GetSurfaceData()))
             {
@@ -343,24 +343,24 @@ namespace MDSS::SurfaceState
         return Handles;
     }
 
-    SurfaceState::TSurfaceStateRegistry TSurfaceDataManager::BuildSurfaceStateRegistry(const TScene& Scene) const
+    SurfaceState::FSurfaceStateRegistry FSurfaceDataManager::BuildSurfaceStateRegistry(const FScene& Scene) const
     {
-        std::vector<SurfaceState::TSurfaceResponseProfileData> Profiles;
-        for (Asset::TSRProfileAssetHandle Handle : GetSceneSurfaceProfiles(Scene))
+        std::vector<SurfaceState::FSurfaceResponseProfileData> Profiles;
+        for (Asset::FSRProfileAssetHandle Handle : GetSceneSurfaceProfiles(Scene))
         {
             Profiles.push_back(Assets.GetSRProfile(Handle).GetData());
         }
-        return SurfaceState::TSurfaceStateRegistry(Profiles);
+        return SurfaceState::FSurfaceStateRegistry(Profiles);
     }
 
-    SurfaceState::TSurfaceStateRegistry
-    TSurfaceDataManager::ExchangeSurfaceStateRegistry(SurfaceState::TSurfaceStateRegistry Registry) noexcept
+    SurfaceState::FSurfaceStateRegistry
+    FSurfaceDataManager::ExchangeSurfaceStateRegistry(SurfaceState::FSurfaceStateRegistry Registry) noexcept
     {
         std::swap(StateRegistry, Registry);
         return Registry;
     }
 
-    const SurfaceState::TSurfaceStateRegistry& TSurfaceDataManager::GetSurfaceStateRegistry() const noexcept
+    const SurfaceState::FSurfaceStateRegistry& FSurfaceDataManager::GetSurfaceStateRegistry() const noexcept
     {
         return StateRegistry;
     }

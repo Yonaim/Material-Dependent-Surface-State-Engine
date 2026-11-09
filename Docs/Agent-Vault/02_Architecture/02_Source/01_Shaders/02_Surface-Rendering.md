@@ -45,6 +45,6 @@
 
 ## C++ 렌더 옵션에 따른 실제 분기
 
-[TRenderer::RecordCommandBuffer](../../../../../Source/Rendering/Core/RendererCommands.cpp)는 Lit viewport가 있고 demo effects가 켜져 있을 때만 `RenderStateTexture->Record`를 호출한다. Texture 경로 사용 여부는 `bRenderStateTextureSamplingEnabled || bPrecomputeCoverage`이며 `bPrecomputeCoverage`는 coverage smoothing 및 precompute 옵션이 모두 켜져야 한다. 이 분기는 shader 구조가 아니라 C++ record 경계에서 결정된다.
+[FRenderer::RecordCommandBuffer](../../../../../Source/Rendering/Core/RendererCommands.cpp)는 Lit viewport가 있고 demo effects가 켜져 있을 때만 `RenderStateTexture->Record`를 호출한다. Texture 경로 사용 여부는 `bRenderStateTextureSamplingEnabled || bPrecomputeCoverage`이며 `bPrecomputeCoverage`는 coverage smoothing 및 precompute 옵션이 모두 켜져야 한다. 이 분기는 shader 구조가 아니라 C++ record 경계에서 결정된다.
 
-[TRenderStateTexture::Record](../../../../../Source/Rendering/Surface/RenderStateTexture.cpp)는 State buffer를 표시용 이미지로 변환한다. [THeightFieldSmoothing::Record](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.cpp)는 geometry 표시용 smoothing이고 Solver의 State·DynamicGeometry buffer를 교체하지 않는다.
+[FRenderStateTexture::Record](../../../../../Source/Rendering/Surface/RenderStateTexture.cpp)는 State buffer를 표시용 이미지로 변환한다. [FHeightFieldSmoothing::Record](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.cpp)는 geometry 표시용 smoothing이고 Solver의 State·DynamicGeometry buffer를 교체하지 않는다.

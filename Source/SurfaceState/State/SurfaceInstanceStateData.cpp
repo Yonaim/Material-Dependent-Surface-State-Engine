@@ -16,8 +16,8 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Instance_State_Construction
 
-    TSurfaceInstanceStateData::TSurfaceInstanceStateData(TSurfaceInstanceID                                ID,
-                                                         std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
+    FSurfaceInstanceStateData::FSurfaceInstanceStateData(FSurfaceInstanceID                                ID,
+                                                         std::shared_ptr<const FSharedSurfaceGeometryData> Geometry,
                                                          std::size_t                                       StateCount)
         : ID(ID), Geometry(std::move(Geometry))
     {
@@ -29,7 +29,7 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("TSurfaceInstanceStateData requires TSharedSurfaceGeometryData.");
         }
-        States.resize(this->Geometry->GetTexelCount(), TSurfaceStateValues(StateCount, 0.0F));
+        States.resize(this->Geometry->GetTexelCount(), FSurfaceStateValues(StateCount, 0.0F));
     }
 #pragma endregion
 
@@ -38,32 +38,32 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_Instance_State_Accessors
 
-    TSurfaceInstanceID TSurfaceInstanceStateData::GetID() const noexcept
+    FSurfaceInstanceID FSurfaceInstanceStateData::GetID() const noexcept
     {
         return ID;
     }
 
-    const TSharedSurfaceGeometryData& TSurfaceInstanceStateData::GetGeometry() const noexcept
+    const FSharedSurfaceGeometryData& FSurfaceInstanceStateData::GetGeometry() const noexcept
     {
         return *Geometry;
     }
 
-    std::size_t TSurfaceInstanceStateData::GetStateCount() const noexcept
+    std::size_t FSurfaceInstanceStateData::GetStateCount() const noexcept
     {
         return States.empty() ? 0 : States.front().size();
     }
 
-    const std::vector<TSurfaceStateValues>& TSurfaceInstanceStateData::GetStates() const noexcept
+    const std::vector<FSurfaceStateValues>& FSurfaceInstanceStateData::GetStates() const noexcept
     {
         return States;
     }
 
-    std::vector<TSurfaceStateValues>& TSurfaceInstanceStateData::GetStates() noexcept
+    std::vector<FSurfaceStateValues>& FSurfaceInstanceStateData::GetStates() noexcept
     {
         return States;
     }
 
-    TSurfaceProfileIndex TSurfaceInstanceStateData::GetProfileIndex(TLocalTexelIndex Texel) const
+    FSurfaceProfileIndex FSurfaceInstanceStateData::GetProfileIndex(FLocalTexelIndex Texel) const
     {
         return Geometry->GetProfileIndex(Texel);
     }

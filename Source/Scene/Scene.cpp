@@ -19,22 +19,22 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Scene_Lifecycle_and_Camera_Access
 
-    TScene::TScene() : MainCamera({2.0F, -3.3F, 2.0F}, {0.0F, 0.0F, 0.0F}, 50.0F), InitialCamera(MainCamera)
+    FScene::FScene() : MainCamera({2.0F, -3.3F, 2.0F}, {0.0F, 0.0F, 0.0F}, 50.0F), InitialCamera(MainCamera)
     {
-        TLogger::Debug("TScene", "Main camera created at default position.");
+        FLogger::Debug("TScene", "Main camera created at default position.");
     }
 
-    TCamera& TScene::GetMainCamera() noexcept
-    {
-        return MainCamera;
-    }
-
-    const TCamera& TScene::GetMainCamera() const noexcept
+    FCamera& FScene::GetMainCamera() noexcept
     {
         return MainCamera;
     }
 
-    const TCamera& TScene::GetInitialCamera() const noexcept
+    const FCamera& FScene::GetMainCamera() const noexcept
+    {
+        return MainCamera;
+    }
+
+    const FCamera& FScene::GetInitialCamera() const noexcept
     {
         return InitialCamera;
     }
@@ -46,22 +46,22 @@ namespace MDSS
 // ============================================================
 #pragma region 01_Scene_Configuration
 
-    void TScene::SetSourcePath(std::filesystem::path Path)
+    void FScene::SetSourcePath(std::filesystem::path Path)
     {
         SourcePath = std::move(Path);
     }
 
-    const std::filesystem::path& TScene::GetSourcePath() const noexcept
+    const std::filesystem::path& FScene::GetSourcePath() const noexcept
     {
         return SourcePath;
     }
 
-    std::uint32_t TScene::GetSimulationResolution() const noexcept
+    std::uint32_t FScene::GetSimulationResolution() const noexcept
     {
         return SimulationResolution;
     }
 
-    void TScene::SetSimulationResolution(std::uint32_t Resolution)
+    void FScene::SetSimulationResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
         {
@@ -70,12 +70,12 @@ namespace MDSS
         SimulationResolution = Resolution;
     }
 
-    float TScene::GetLitHeightDisplayScale() const noexcept
+    float FScene::GetLitHeightDisplayScale() const noexcept
     {
         return LitHeightDisplayScale;
     }
 
-    void TScene::SetLitHeightDisplayScale(float Scale)
+    void FScene::SetLitHeightDisplayScale(float Scale)
     {
         if (!std::isfinite(Scale) || Scale < 0.0F || Scale > 100.0F)
         {
@@ -91,16 +91,16 @@ namespace MDSS
 // ============================================================
 #pragma region 02_Initial_State_and_Contacts
 
-    void TScene::CaptureInitialState()
+    void FScene::CaptureInitialState()
     {
         InitialCamera = MainCamera;
         InitialTransforms.clear();
         InitialTransforms.reserve(StaticMeshInstances.size());
-        for (const TStaticMeshInstance& Instance : StaticMeshInstances)
+        for (const FStaticMeshInstance& Instance : StaticMeshInstances)
             InitialTransforms.push_back(Instance.GetTransform());
     }
 
-    void TScene::RestoreInitialState()
+    void FScene::RestoreInitialState()
     {
         MainCamera = InitialCamera;
         const std::size_t Count = std::min(StaticMeshInstances.size(), InitialTransforms.size());
@@ -121,7 +121,7 @@ namespace MDSS
 // ============================================================
 #pragma region 03_Demo_Animation_State
 
-    void TScene::SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip)
+    void FScene::SetDemoAnimation(std::filesystem::path Path, FDemoAnimationClip Clip)
     {
         DemoAnimationPath = std::move(Path);
         DemoAnimation = std::move(Clip);
@@ -129,37 +129,37 @@ namespace MDSS
         bDemoAnimationPlaying = DemoAnimation->bAutoplay;
     }
 
-    const std::filesystem::path& TScene::GetDemoAnimationPath() const noexcept
+    const std::filesystem::path& FScene::GetDemoAnimationPath() const noexcept
     {
         return DemoAnimationPath;
     }
-    bool TScene::HasDemoAnimation() const noexcept
+    bool FScene::HasDemoAnimation() const noexcept
     {
         return DemoAnimation.has_value();
     }
-    bool TScene::HasDemoContactEvents() const noexcept
+    bool FScene::HasDemoContactEvents() const noexcept
     {
         return DemoAnimation && !DemoAnimation->ContactEvents.empty();
     }
-    bool TScene::IsDemoAnimationPlaying() const noexcept
+    bool FScene::IsDemoAnimationPlaying() const noexcept
     {
         return bDemoAnimationPlaying;
     }
-    float TScene::GetDemoAnimationTime() const noexcept
+    float FScene::GetDemoAnimationTime() const noexcept
     {
         return DemoAnimationTime;
     }
-    float TScene::GetDemoAnimationDuration() const noexcept
+    float FScene::GetDemoAnimationDuration() const noexcept
     {
         return DemoAnimation ? DemoAnimation->DurationSeconds : 0.0F;
     }
 
-    const TDemoAnimationClip::TWeatherCue* TScene::GetDemoWeather() const noexcept
+    const FDemoAnimationClip::FWeatherCue* FScene::GetDemoWeather() const noexcept
     {
         return DemoAnimation && DemoAnimation->Weather ? &*DemoAnimation->Weather : nullptr;
     }
 
-    void TScene::PlayDemoAnimation()
+    void FScene::PlayDemoAnimation()
     {
         if (!DemoAnimation)
             return;
@@ -168,22 +168,22 @@ namespace MDSS
         bDemoAnimationPlaying = true;
     }
 
-    void TScene::PauseDemoAnimation() noexcept
+    void FScene::PauseDemoAnimation() noexcept
     {
         bDemoAnimationPlaying = false;
     }
 
-    void TScene::AddInitialContact(TSceneInitialContact Contact)
+    void FScene::AddInitialContact(FSceneInitialContact Contact)
     {
         InitialContacts.push_back(std::move(Contact));
     }
 
-    const std::vector<TSceneInitialContact>& TScene::GetInitialContacts() const noexcept
+    const std::vector<FSceneInitialContact>& FScene::GetInitialContacts() const noexcept
     {
         return InitialContacts;
     }
 
-    void TScene::RestartDemoAnimation()
+    void FScene::RestartDemoAnimation()
     {
         if (!DemoAnimation)
             return;
@@ -192,9 +192,9 @@ namespace MDSS
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
     }
 
-    std::vector<TDemoAnimationClip::TContactEvent> TScene::AdvanceDemoAnimation(float DeltaTime)
+    std::vector<FDemoAnimationClip::FContactEvent> FScene::AdvanceDemoAnimation(float DeltaTime)
     {
-        std::vector<TDemoAnimationClip::TContactEvent> Fired;
+        std::vector<FDemoAnimationClip::FContactEvent> Fired;
         if (!DemoAnimation || !bDemoAnimationPlaying || !std::isfinite(DeltaTime) || DeltaTime <= 0.0F)
             return Fired;
         const float PreviousTime = DemoAnimationTime;
@@ -223,21 +223,21 @@ namespace MDSS
 // ============================================================
 #pragma region 04_Mesh_Instance_Management
 
-    void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)
+    void FScene::AddStaticMeshInstance(FStaticMeshInstance Instance)
     {
         StaticMeshInstances.push_back(std::move(Instance));
         InitialTransforms.push_back(StaticMeshInstances.back().GetTransform());
-        TLogger::Debug(
+        FLogger::Debug(
             "TScene",
             "Static mesh instance added. TScene instance count=" + std::to_string(StaticMeshInstances.size()) + ".");
     }
 
-    std::vector<TStaticMeshInstance>& TScene::GetStaticMeshInstances() noexcept
+    std::vector<FStaticMeshInstance>& FScene::GetStaticMeshInstances() noexcept
     {
         return StaticMeshInstances;
     }
 
-    const std::vector<TStaticMeshInstance>& TScene::GetStaticMeshInstances() const noexcept
+    const std::vector<FStaticMeshInstance>& FScene::GetStaticMeshInstances() const noexcept
     {
         return StaticMeshInstances;
     }

@@ -14,33 +14,33 @@
 
 namespace MDSS
 {
-    class TStaticMeshInstance
+    class FStaticMeshInstance
     {
     public:
         // Instance construction
-        TStaticMeshInstance() = default;
-        TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform = {});
-        TStaticMeshInstance(Asset::TMeshAssetHandle                 Mesh,
-                            SurfaceState::TSurfaceRuntimeDataHandle SurfaceData,
-                            TTransform                              InstanceTransform,
+        FStaticMeshInstance() = default;
+        FStaticMeshInstance(Asset::FMeshAssetHandle Mesh, FTransform InstanceTransform = {});
+        FStaticMeshInstance(Asset::FMeshAssetHandle                 Mesh,
+                            SurfaceState::FSurfaceRuntimeDataHandle SurfaceData,
+                            FTransform                              InstanceTransform,
                             std::filesystem::path                   MeshPath = {},
                             std::filesystem::path                   ProfileMapPath = {},
                             std::string                             ObjectId = {});
 
         // Instance properties and asset references
-        [[nodiscard]] TTransform&                             GetTransform() noexcept;
-        [[nodiscard]] const TTransform&                       GetTransform() const noexcept;
-        [[nodiscard]] Asset::TMeshAssetHandle                 GetMesh() const noexcept;
-        [[nodiscard]] SurfaceState::TSurfaceRuntimeDataHandle GetSurfaceData() const noexcept;
-        void SetSurfaceData(SurfaceState::TSurfaceRuntimeDataHandle Handle) noexcept;
+        [[nodiscard]] FTransform&                             GetTransform() noexcept;
+        [[nodiscard]] const FTransform&                       GetTransform() const noexcept;
+        [[nodiscard]] Asset::FMeshAssetHandle                 GetMesh() const noexcept;
+        [[nodiscard]] SurfaceState::FSurfaceRuntimeDataHandle GetSurfaceData() const noexcept;
+        void SetSurfaceData(SurfaceState::FSurfaceRuntimeDataHandle Handle) noexcept;
         [[nodiscard]] const std::filesystem::path& GetMeshPath() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetProfileMapPath() const noexcept;
         [[nodiscard]] const std::string&           GetId() const noexcept;
 
     private:
-        Asset::TMeshAssetHandle                 Mesh = Asset::InvalidAssetHandle;
-        SurfaceState::TSurfaceRuntimeDataHandle SurfaceData = SurfaceState::InvalidSurfaceRuntimeDataHandle;
-        TTransform                              InstanceTransform;
+        Asset::FMeshAssetHandle                 Mesh = Asset::InvalidAssetHandle;
+        SurfaceState::FSurfaceRuntimeDataHandle SurfaceData = SurfaceState::InvalidSurfaceRuntimeDataHandle;
+        FTransform                              InstanceTransform;
         std::filesystem::path                   SourceMeshPath;
         std::filesystem::path                   SourceProfileMapPath;
         std::string                             Id;

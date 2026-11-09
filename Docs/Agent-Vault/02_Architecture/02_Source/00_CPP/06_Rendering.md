@@ -1,29 +1,29 @@
 # Rendering
 
-`TRenderer`는 Scene, Surface State, GPU context를 읽어 프레임의 compute/display command를 기록한다. 보조 클래스는 frame synchronization, material 준비, state texture 변환, height smoothing, texel overlay mesh·side geometry, profiling을 각각 맡는다. 렌더 표시 변환은 Solver State를 다시 쓰지 않는다.
+`FRenderer`는 Scene, Surface State, GPU context를 읽어 프레임의 compute/display command를 기록한다. 보조 클래스는 frame synchronization, material 준비, state texture 변환, height smoothing, texel overlay mesh·side geometry, profiling을 각각 맡는다. 렌더 표시 변환은 Solver State를 다시 쓰지 않는다.
 
 ## Renderer와 frame 자원
 
 | 파일 | 주요 코드 | 역할·연결 |
 |---|---|---|
-| [RenderContext.h](../../../../../Source/Rendering/Core/RenderContext.h) | `TRenderContext` | 현재 frame slot, fence, frame advance API |
+| [RenderContext.h](../../../../../Source/Rendering/Core/RenderContext.h) | `FRenderContext` | 현재 frame slot, fence, frame advance API |
 | [RenderContext.cpp](../../../../../Source/Rendering/Core/RenderContext.cpp) | wait/reset/advance | CPU frame과 GPU 완료 상태를 동기화 |
-| [Renderer.h](../../../../../Source/Rendering/Core/Renderer.h) | `TRenderer`, options, output/resource declarations | public setting API와 내부 render resource 소유 |
+| [Renderer.h](../../../../../Source/Rendering/Core/Renderer.h) | `FRenderer`, options, output/resource declarations | public setting API와 내부 render resource 소유 |
 | [Renderer.cpp](../../../../../Source/Rendering/Core/Renderer.cpp) | init/destroy/frame entry | render pipeline과 swapchain dependent resources lifecycle |
 | [RendererCommands.cpp](../../../../../Source/Rendering/Core/RendererCommands.cpp) | `RecordCommandBuffer` 주변 pass 기록 | state texture/height/overlay compute와 scene draw 순서 기록 |
 | [RendererSettings.cpp](../../../../../Source/Rendering/Core/RendererSettings.cpp) | renderer option 적용·cache 재구성 | UI에서 변경한 sampling/smoothing/culling 옵션을 pipeline·resource에 전달 |
 | [RenderSettings.h](../../../../../Source/Rendering/Core/RenderSettings.h) | render/debug mode와 sampling settings | renderer와 DebugUI가 공유하는 표시 option 형식 |
 | [RendererShared.h](../../../../../Source/Rendering/Core/RendererShared.h) | descriptor/push constant·vertex helper·`TScopeExit` | 여러 rendering translation unit에서 쓰는 공통 pipeline 자료와 작은 helper |
 | [RendererMaterials.cpp](../../../../../Source/Rendering/Scene/RendererMaterials.cpp) | material descriptor/pipeline preparation | Scene mesh material과 texture asset을 draw resource로 연결 |
-| [FrustumCulling.h](../../../../../Source/Rendering/Scene/FrustumCulling.h) | `TViewFrustum` 및 visibility helper | camera view에 포함되는 object/tile 판별 자료 |
+| [FrustumCulling.h](../../../../../Source/Rendering/Scene/FrustumCulling.h) | `FViewFrustum` 및 visibility helper | camera view에 포함되는 object/tile 판별 자료 |
 
 ## Surface state 표시 변환
 
 | 파일 | 주요 코드 | 역할·데이터 흐름 |
 |---|---|---|
-| [RenderStateTexture.h](../../../../../Source/Rendering/Surface/RenderStateTexture.h) | `TRenderStateTexture` | State A/B를 fragment sampling용 texture로 바꾸는 GPU resource/API |
+| [RenderStateTexture.h](../../../../../Source/Rendering/Surface/RenderStateTexture.h) | `FRenderStateTexture` | State A/B를 fragment sampling용 texture로 바꾸는 GPU resource/API |
 | [RenderStateTexture.cpp](../../../../../Source/Rendering/Surface/RenderStateTexture.cpp) | `RenderStateTexture.comp` dispatch·image barrier | solver buffer 상태를 render texture로 변환 |
-| [HeightFieldSmoothing.h](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.h) | `THeightFieldSmoothing::Record`, output lifecycle | 동적 height geometry 표시용 smoothing API |
+| [HeightFieldSmoothing.h](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.h) | `FHeightFieldSmoothing::Record`, output lifecycle | 동적 height geometry 표시용 smoothing API |
 | [HeightFieldSmoothing.cpp](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.cpp) | variant pipeline·smoothing dispatch | height field를 화면용으로 smoothing하며 Solver geometry/state를 변경하지 않음 |
 | [DemoSurfaceEffects.h](../../../../../Source/Rendering/Surface/DemoSurfaceEffects.h) | demo state color/effect mappings | Surface State 채널과 데모 shader appearance 연결 설정 |
 
@@ -31,9 +31,9 @@
 
 | 파일 | 주요 코드 | 역할·데이터 흐름 |
 |---|---|---|
-| [AccumulationOverlaySides.h](../../../../../Source/Rendering/Overlay/AccumulationOverlaySides.h) | `TAccumulationOverlaySides` API | texel boundary의 overlay side line/segment 생성 resource |
+| [AccumulationOverlaySides.h](../../../../../Source/Rendering/Overlay/AccumulationOverlaySides.h) | `FAccumulationOverlaySides` API | texel boundary의 overlay side line/segment 생성 resource |
 | [AccumulationOverlaySides.cpp](../../../../../Source/Rendering/Overlay/AccumulationOverlaySides.cpp) | boundary upload·draw preparation | GPU shared geometry의 boundary 정보를 overlay draw에 연결 |
-| [TexelGeometryPreview.h](../../../../../Source/Rendering/Overlay/Geometry/TexelGeometryPreview.h) | `TTexelGeometryPreview`, `Record` | top geometry·tile activity·draw resources의 생성/업데이트 API |
+| [TexelGeometryPreview.h](../../../../../Source/Rendering/Overlay/Geometry/TexelGeometryPreview.h) | `FTexelGeometryPreview`, `Record` | top geometry·tile activity·draw resources의 생성/업데이트 API |
 | [TexelGeometryPreview.cpp](../../../../../Source/Rendering/Overlay/Geometry/TexelGeometryPreview.cpp) | baseline/height geometry dispatch, smoothing·tile draw prep | CPU render mesh를 GPU texel geometry로 변환하고 overlay top command 입력 준비 |
 | [RendererBenchmark.cpp](../../../../../Source/Rendering/Profiling/RendererBenchmark.cpp) | frame query/sample serialization | renderer GPU timestamp와 benchmark frame data를 결과 파일로 기록 |
 
@@ -57,7 +57,7 @@ Lit overlay가 활성인 경우 renderer는 Mud/WaterFilm/Lava channel을 하나
 
 ## RendererCommands의 코드상 조건과 State 소비
 
-[TRenderer::RecordCommandBuffer](../../../../../Source/Rendering/Core/RendererCommands.cpp) 기준으로:
+[FRenderer::RecordCommandBuffer](../../../../../Source/Rendering/Core/RendererCommands.cpp) 기준으로:
 
 - `FrameCoordinator.RecordSimulation` → 선택적 `TexelInspector->Record` → ViewMode 평가 → 필요 시 `RenderStateTexture->Record` → 선택적 TexelGeometry/Overlay preparation → RenderPass 시작 순서다.
 - `bUseRenderStateTexture = bRenderStateTextureSamplingEnabled || bPrecomputeCoverage`, `bPrecomputeCoverage = DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled`. 전환에 따라 `FragmentMode = 0/1/2`가 달라진다.

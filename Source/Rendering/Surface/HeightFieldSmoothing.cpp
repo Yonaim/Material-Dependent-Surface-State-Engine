@@ -31,7 +31,7 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 00_Smoothing_Resource_Lifecycle
 
-    THeightFieldSmoothing::THeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
+    FHeightFieldSmoothing::FHeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
                                                  VkDescriptorSetLayout SurfaceLayout,
                                                  VkDescriptorSetLayout HeightLayout,
@@ -44,7 +44,7 @@ namespace MDSS::Rendering
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
         Limits = Properties.limits;
-        const auto StorageBindings = static_cast<std::uint32_t>(SurfaceState::TSurfaceGPUDescriptorBinding::Count) + 2U;
+        const auto StorageBindings = static_cast<std::uint32_t>(SurfaceState::ESurfaceGPUDescriptorBinding::Count) + 2U;
         if (Limits.maxPerStageDescriptorStorageBuffers < StorageBindings ||
             Limits.maxDescriptorSetStorageBuffers < StorageBindings || Limits.maxComputeWorkGroupInvocations < 64 ||
             Limits.maxComputeWorkGroupSize[0] < 64)
@@ -123,7 +123,7 @@ namespace MDSS::Rendering
         }
     }
 
-    THeightFieldSmoothing::~THeightFieldSmoothing()
+    FHeightFieldSmoothing::~FHeightFieldSmoothing()
     {
         Outputs.clear();
         if (Pool)
@@ -142,17 +142,17 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 01_Smoothing_Output_Access
 
-    VkDescriptorSet THeightFieldSmoothing::GetOutputSet(std::size_t Instance, std::uint32_t Channel) const
+    VkDescriptorSet FHeightFieldSmoothing::GetOutputSet(std::size_t Instance, std::uint32_t Channel) const
     {
         return Outputs.at({Instance, Channel}).Set;
     }
 
-    const GPU::TGPUBuffer& THeightFieldSmoothing::GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const
+    const GPU::FGPUBuffer& FHeightFieldSmoothing::GetOutputBuffer(std::size_t Instance, std::uint32_t Channel) const
     {
         return *Outputs.at({Instance, Channel}).Buffer;
     }
 
-    void THeightFieldSmoothing::Invalidate() noexcept
+    void FHeightFieldSmoothing::Invalidate() noexcept
     {
         for (auto& [Key, Output] : Outputs)
         {
@@ -161,7 +161,7 @@ namespace MDSS::Rendering
         }
     }
 
-    void THeightFieldSmoothing::ReleaseOutputs() noexcept
+    void FHeightFieldSmoothing::ReleaseOutputs() noexcept
     {
         // Output buffers are allocated lazily the first time smoothing is enabled.
         // Keeping them alive after the A/B toggle is disabled can leave a sizeable
@@ -181,15 +181,15 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 02_Smoothing_Command_Recording
 
-    void THeightFieldSmoothing::Record(VkCommandBuffer                                       Command,
+    void FHeightFieldSmoothing::Record(VkCommandBuffer                                       Command,
                                        std::size_t                                           Instance,
                                        std::uint32_t                                         Channel,
                                        std::uint32_t                                         Channels,
                                        std::uint32_t                                         TexelCount,
-                                       const SurfaceState::TSurfaceStateDescriptorResources& StateDescriptors,
+                                       const SurfaceState::FSurfaceStateDescriptorResources& StateDescriptors,
                                        VkDescriptorSet                                       InputSet,
-                                       const GPU::TGPUBuffer&                                InputBuffer,
-                                       const GPU::TGPUBuffer&                                GeometryCacheBuffer,
+                                       const GPU::FGPUBuffer&                                InputBuffer,
+                                       const GPU::FGPUBuffer&                                GeometryCacheBuffer,
                                        bool                                                  bStateAB,
                                        float                                                 AccumulationDisplayScale,
                                        std::uint32_t                                         OccupancyTileSize,
@@ -206,13 +206,13 @@ namespace MDSS::Rendering
         auto       It = Outputs.find(Key);
         if (It == Outputs.end())
         {
-            TOutput Output;
-            Output.Buffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+            FOutput Output;
+            Output.Buffer = std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                               Device,
                                                               Bytes,
                                                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                              GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
+                                                              GPU::EGPUBufferMemoryCategory::SurfaceRuntime);
             VkDescriptorSetAllocateInfo Allocate{};
             Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             Allocate.descriptorPool = Pool;
@@ -281,14 +281,14 @@ namespace MDSS::Rendering
             bSparse && It->second.bInitialized && It->second.LastInputBuffer == InputBuffer.GetHandle() &&
             It->second.LastDisplayScale == AccumulationDisplayScale && It->second.LastTileSize == OccupancyTileSize;
 
-        struct TPush
+        struct FPush
         {
             std::uint32_t Texels, Channel, Channels, Padding;
             float         DisplayScale;
             std::uint32_t TileSize, UseSparse;
         };
-        static_assert(sizeof(TPush) == 28);
-        const TPush Push{
+        static_assert(sizeof(FPush) == 28);
+        const FPush Push{
             TexelCount, Channel, Channels, 0U, AccumulationDisplayScale, OccupancyTileSize, bUseSparse ? 1U : 0U};
         vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, Pipelines[bUseSparse && bSharedHalo ? 1U : 0U]);
         vkCmdBindDescriptorSets(Command,

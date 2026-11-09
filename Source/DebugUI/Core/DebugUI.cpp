@@ -7,12 +7,12 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Debug_UI_Lifecycle
 
-    TDebugUI::TDebugUI(const GPU::TVulkanContext&         Context,
-                       const TWindow&                     TWindow,
-                       Rendering::TRenderer&              Renderer,
-                       Asset::TAssetManager&              Assets,
-                       SurfaceState::TSurfaceDataManager& SurfaceData)
-        : Device(Context.GetDevice()), NativeWindow(TWindow.GetNativeHandle()), FrameRenderer(&Renderer),
+    FDebugUI::FDebugUI(const GPU::FVulkanContext&         Context,
+                       const FWindow&                     Window,
+                       Rendering::FRenderer&              Renderer,
+                       Asset::FAssetManager&              Assets,
+                       SurfaceState::FSurfaceDataManager& SurfaceData)
+        : Device(Context.GetDevice()), NativeWindow(Window.GetNativeHandle()), FrameRenderer(&Renderer),
           AssetManager(&Assets), SurfaceDataManager(&SurfaceData)
     {
         ResetProfilingAverages();
@@ -104,15 +104,15 @@ namespace MDSS
         Style.Colors[ImGuiCol_TabSelected] = {0.11F, 0.29F, 0.51F, 1.0F};
         Style.Colors[ImGuiCol_TabSelectedOverline] = {0.08F, 0.34F, 0.70F, 1.0F};
 
-        if (!ImGui_ImplGlfw_InitForVulkan(TWindow.GetNativeHandle(), true))
+        if (!ImGui_ImplGlfw_InitForVulkan(Window.GetNativeHandle(), true))
         {
             ImGui::DestroyContext();
             throw std::runtime_error("Failed to initialize Dear ImGui GLFW backend.");
         }
 
         const std::uint32_t ImageCount = static_cast<std::uint32_t>(Renderer.GetSwapchain().GetImages().size());
-        const GPU::TSwapchainSupportDetails Support =
-            GPU::TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const GPU::FSwapchainSupportDetails Support =
+            GPU::FSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
         const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
 
         ImGui_ImplVulkan_InitInfo InitInfo{};
@@ -143,14 +143,14 @@ namespace MDSS
         }
 
         ResetSurfaceStateSettings();
-        TLogger::Info("TDebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
-        TLogger::Debug("TDebugUI",
+        FLogger::Info("TDebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
+        FLogger::Debug("TDebugUI",
                        "Camera/render controls, injection controls, normal debug views, and log filtering are active.");
-        CachedLogEntries = TLogger::GetEntries();
-        LastSeenLogRevision = TLogger::GetRevision();
+        CachedLogEntries = FLogger::GetEntries();
+        LastSeenLogRevision = FLogger::GetRevision();
     }
 
-    TDebugUI::~TDebugUI()
+    FDebugUI::~FDebugUI()
     {
         if (NativeWindow != nullptr && bRotatingCamera)
         {
@@ -162,7 +162,7 @@ namespace MDSS
             vkDeviceWaitIdle(Device);
         }
 
-        TLogger::Verbose("TDebugUI", "Shutting down Dear ImGui backends.");
+        FLogger::Verbose("TDebugUI", "Shutting down Dear ImGui backends.");
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -174,7 +174,7 @@ namespace MDSS
 // ============================================================
 #pragma region 01_Frame_Presentation
 
-    void TDebugUI::BeginFrame(TScene& SceneData)
+    void FDebugUI::BeginFrame(FScene& SceneData)
     {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -225,7 +225,7 @@ namespace MDSS
             const ImVec2    DisplaySize = ImGui::GetIO().DisplaySize;
             const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
             const ImVec2    Center{Viewport->Pos.x + (Rect.x + Rect.z * 0.5F) * DisplaySize.x,
-                                   Viewport->Pos.y + (Rect.y + Rect.w * 0.5F) * DisplaySize.y};
+                                Viewport->Pos.y + (Rect.y + Rect.w * 0.5F) * DisplaySize.y};
             constexpr float CrosshairHalfSize = 9.0F;
             constexpr ImU32 CrosshairColor = IM_COL32(255, 255, 255, 230);
             ImDrawList*     DrawList = ImGui::GetForegroundDrawList();
@@ -242,7 +242,7 @@ namespace MDSS
         ImGui::Render();
     }
 
-    void TDebugUI::DrawSectionHeader(const char* Title, float TopPadding, float BottomPadding) const
+    void FDebugUI::DrawSectionHeader(const char* Title, float TopPadding, float BottomPadding) const
     {
         ImGui::Dummy({0.0F, TopPadding});
         ImGui::PushStyleColor(ImGuiCol_Text, {0.91F, 0.93F, 0.97F, 1.0F});
@@ -260,7 +260,7 @@ namespace MDSS
         ImGui::Dummy({0.0F, BottomPadding});
     }
 
-    void TDebugUI::Render(VkCommandBuffer CommandBuffer) const
+    void FDebugUI::Render(VkCommandBuffer CommandBuffer) const
     {
         ImDrawData* DrawData = ImGui::GetDrawData();
         if (DrawData != nullptr && DrawData->CmdListsCount > 0)
@@ -269,14 +269,14 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::OnSwapchainRecreated(const GPU::TVulkanContext& Context, const Rendering::TRenderer& Renderer)
+    void FDebugUI::OnSwapchainRecreated(const GPU::FVulkanContext& Context, const Rendering::FRenderer& Renderer)
     {
-        const GPU::TSwapchainSupportDetails Support =
-            GPU::TSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
+        const GPU::FSwapchainSupportDetails Support =
+            GPU::FSwapchain::QuerySupport(Context.GetPhysicalDevice(), Context.GetSurface());
         const std::uint32_t MinImageCount = std::max(2U, Support.Capabilities.minImageCount);
         ImGui_ImplVulkan_SetMinImageCount(MinImageCount);
 
-        TLogger::Debug("TDebugUI",
+        FLogger::Debug("TDebugUI",
                        "ImGui Vulkan backend updated after swapchain recreation (images=" +
                            std::to_string(Renderer.GetSwapchain().GetImages().size()) + ").");
     }
@@ -287,86 +287,86 @@ namespace MDSS
 // ============================================================
 #pragma region 02_UI_State_Accessors
 
-    bool TDebugUI::IsInjectModeEnabled() const noexcept
+    bool FDebugUI::IsInjectModeEnabled() const noexcept
     {
         return bInjectMode && !bPresentationMode;
     }
 
-    SurfaceState::TStateId TDebugUI::GetInjectState() const noexcept
+    SurfaceState::FStateId FDebugUI::GetInjectState() const noexcept
     {
         return InjectState;
     }
 
-    float TDebugUI::GetInjectStrength() const noexcept
+    float FDebugUI::GetInjectStrength() const noexcept
     {
         return InjectStrength;
     }
 
-    float TDebugUI::GetInjectRadius() const noexcept
+    float FDebugUI::GetInjectRadius() const noexcept
     {
         return InjectRadius;
     }
 
-    float TDebugUI::GetInjectFalloff() const noexcept
+    float FDebugUI::GetInjectFalloff() const noexcept
     {
         return InjectFalloff;
     }
 
-    SurfaceState::ESurfaceContactOperation TDebugUI::GetInjectOperation() const noexcept
+    SurfaceState::ESurfaceContactOperation FDebugUI::GetInjectOperation() const noexcept
     {
         return InjectOperation;
     }
 
-    SurfaceState::ESurfaceContactShape TDebugUI::GetInjectShape() const noexcept
+    SurfaceState::ESurfaceContactShape FDebugUI::GetInjectShape() const noexcept
     {
         return InjectShape;
     }
 
-    float TDebugUI::GetInjectSecondaryRadius() const noexcept
+    float FDebugUI::GetInjectSecondaryRadius() const noexcept
     {
         return InjectSecondaryRadius;
     }
 
-    float TDebugUI::GetInjectRotationDegrees() const noexcept
+    float FDebugUI::GetInjectRotationDegrees() const noexcept
     {
         return InjectRotationDegrees;
     }
 
-    std::uint32_t TDebugUI::GetInjectTexelSearchRadius() const noexcept
+    std::uint32_t FDebugUI::GetInjectTexelSearchRadius() const noexcept
     {
         return static_cast<std::uint32_t>(InjectTexelSearchRadius);
     }
 
-    float TDebugUI::GetAnimationTimeScale() const noexcept
+    float FDebugUI::GetAnimationTimeScale() const noexcept
     {
         return AnimationTimeScale;
     }
 
-    float TDebugUI::GetSimulationTimeScale() const noexcept
+    float FDebugUI::GetSimulationTimeScale() const noexcept
     {
         return SimulationTimeScale;
     }
 
-    bool TDebugUI::IsSimulationPaused() const noexcept
+    bool FDebugUI::IsSimulationPaused() const noexcept
     {
         return bSimulationPaused;
     }
 
-    bool TDebugUI::ConsumeSolverStepRequest() noexcept
+    bool FDebugUI::ConsumeSolverStepRequest() noexcept
     {
         const bool bRequested = bSolverStepRequested;
         bSolverStepRequested = false;
         return bRequested;
     }
 
-    bool TDebugUI::ConsumeSolverResetRequest() noexcept
+    bool FDebugUI::ConsumeSolverResetRequest() noexcept
     {
         const bool bRequested = bSolverResetRequested;
         bSolverResetRequested = false;
         return bRequested;
     }
 
-    bool TDebugUI::ConsumeFrameTimeResetRequest() noexcept
+    bool FDebugUI::ConsumeFrameTimeResetRequest() noexcept
     {
         const bool bRequested = bFrameTimeResetRequested;
         bFrameTimeResetRequested = false;
@@ -379,7 +379,7 @@ namespace MDSS
 // ============================================================
 #pragma region 03_Viewport_and_Selection_Accessors
 
-    void TDebugUI::DrawDemoWeatherOverlay(const TScene& SceneData)
+    void FDebugUI::DrawDemoWeatherOverlay(const FScene& SceneData)
     {
         const auto* Cue = SceneData.GetDemoWeather();
         if (!Cue)
@@ -401,8 +401,8 @@ namespace MDSS
         const float  Leave = std::clamp((Cue->CloudEndSeconds - Time) / 1.2F, 0.0F, 1.0F);
         const float  CloudAlpha = Cue->Intensity * Enter * Leave;
         const float  RainAlpha = Cue->Intensity * std::clamp((Time - Cue->RainStartSeconds) / 0.45F, 0.0F, 1.0F) *
-                                 std::clamp((Cue->RainEndSeconds - Time) / 0.45F, 0.0F, 1.0F);
-        ImDrawList*  Draw = ImGui::GetBackgroundDrawList();
+                                std::clamp((Cue->RainEndSeconds - Time) / 0.45F, 0.0F, 1.0F);
+        ImDrawList* Draw = ImGui::GetBackgroundDrawList();
         Draw->PushClipRect(Min, Max, true);
         const float Band = std::min(Height * 0.19F, 115.0F);
         Draw->AddRectFilledMultiColor(Min,
@@ -426,31 +426,31 @@ namespace MDSS
         Draw->PopClipRect();
     }
 
-    std::size_t TDebugUI::GetViewportCount() const noexcept
+    std::size_t FDebugUI::GetViewportCount() const noexcept
     {
         return bPresentationMode ? 1U : ViewportPanels.size();
     }
 
-    glm::vec4 TDebugUI::GetViewportRectNormalized(std::size_t Index) const noexcept
+    glm::vec4 FDebugUI::GetViewportRectNormalized(std::size_t Index) const noexcept
     {
         if (bPresentationMode)
             return Index == 0 ? glm::vec4(0.0F, 0.0F, 1.0F, 1.0F) : glm::vec4(0.0F);
         return Index < ViewportPanels.size() ? ViewportPanels[Index].RectNormalized : glm::vec4(0.0F);
     }
 
-    const TCamera& TDebugUI::GetViewportCamera(const TScene& SceneData, std::size_t Index) const noexcept
+    const FCamera& FDebugUI::GetViewportCamera(const FScene& SceneData, std::size_t Index) const noexcept
     {
         (void)Index;
         return SceneData.GetMainCamera();
     }
 
-    TCamera& TDebugUI::GetViewportCamera(TScene& SceneData, std::size_t Index) noexcept
+    FCamera& FDebugUI::GetViewportCamera(FScene& SceneData, std::size_t Index) noexcept
     {
         (void)Index;
         return SceneData.GetMainCamera();
     }
 
-    std::size_t TDebugUI::GetActiveViewportIndex() const noexcept
+    std::size_t FDebugUI::GetActiveViewportIndex() const noexcept
     {
         for (std::size_t Index = 0; Index < ViewportPanels.size(); ++Index)
             if (ViewportPanels[Index].Id == ActiveViewportId)
@@ -458,7 +458,7 @@ namespace MDSS
         return 0;
     }
 
-    void TDebugUI::ApplyCameraViewPreset(TScene& SceneData, std::size_t Index)
+    void FDebugUI::ApplyCameraViewPreset(FScene& SceneData, std::size_t Index)
     {
         if (!SelectedObject || *SelectedObject >= SceneData.GetStaticMeshInstances().size() ||
             Index >= CameraViewPresetPitchYawDegrees.size())
@@ -466,18 +466,18 @@ namespace MDSS
             return;
         }
 
-        TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+        FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
         glm::vec3   Target = Transform.Position;
         if (AssetManager != nullptr)
         {
-            const Asset::TMeshAsset& Mesh =
+            const Asset::FMeshAsset& Mesh =
                 AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*SelectedObject].GetMesh());
             const auto& Vertices = Mesh.GetVertices();
             if (!Vertices.empty())
             {
                 glm::vec3 Minimum(std::numeric_limits<float>::max());
                 glm::vec3 Maximum(std::numeric_limits<float>::lowest());
-                for (const Asset::TVertex& Vertex : Vertices)
+                for (const Asset::FVertex& Vertex : Vertices)
                 {
                     Minimum = glm::min(Minimum, Vertex.Position);
                     Maximum = glm::max(Maximum, Vertex.Position);
@@ -487,7 +487,7 @@ namespace MDSS
             }
         }
 
-        TCamera&        Camera = GetViewportCamera(SceneData, GetActiveViewportIndex());
+        FCamera&        Camera = GetViewportCamera(SceneData, GetActiveViewportIndex());
         const glm::vec3 ViewOffset = Camera.GetPosition() - Camera.GetTarget();
         const float     OffsetLength = glm::length(ViewOffset);
         const float     Distance = OffsetLength > 1.0e-6F ? OffsetLength : 3.0F;
@@ -498,32 +498,32 @@ namespace MDSS
         Camera.SetTarget(Target);
     }
 
-    const TCamera& TDebugUI::GetActiveViewportCamera(const TScene& SceneData) const noexcept
+    const FCamera& FDebugUI::GetActiveViewportCamera(const FScene& SceneData) const noexcept
     {
         return GetViewportCamera(SceneData, GetActiveViewportIndex());
     }
 
-    std::optional<std::size_t> TDebugUI::GetSelectedObject() const noexcept
+    std::optional<std::size_t> FDebugUI::GetSelectedObject() const noexcept
     {
         return bPresentationMode ? std::nullopt : SelectedObject;
     }
 
-    int TDebugUI::GetHoveredGizmoAxis() const noexcept
+    int FDebugUI::GetHoveredGizmoAxis() const noexcept
     {
         return HoveredGizmoAxis;
     }
 
-    bool TDebugUI::IsRotationGizmoMode() const noexcept
+    bool FDebugUI::IsRotationGizmoMode() const noexcept
     {
         return bRotationGizmoMode;
     }
 
-    SurfaceState::TStateId TDebugUI::GetDebugState() const noexcept
+    SurfaceState::FStateId FDebugUI::GetDebugState() const noexcept
     {
         return DebugState;
     }
 
-    bool TDebugUI::ShouldSuppressDebugHotkey() const noexcept
+    bool FDebugUI::ShouldSuppressDebugHotkey() const noexcept
     {
         const ImGuiIO& IO = ImGui::GetIO();
         return bMouseOverViewportOverlay || IO.WantTextInput ||

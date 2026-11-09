@@ -15,25 +15,25 @@
 
 namespace MDSS::SurfaceState
 {
-    using TSurfaceRuntimeDataHandle = std::uint32_t;
-    inline constexpr TSurfaceRuntimeDataHandle InvalidSurfaceRuntimeDataHandle =
-        std::numeric_limits<TSurfaceRuntimeDataHandle>::max();
+    using FSurfaceRuntimeDataHandle = std::uint32_t;
+    inline constexpr FSurfaceRuntimeDataHandle InvalidSurfaceRuntimeDataHandle =
+        std::numeric_limits<FSurfaceRuntimeDataHandle>::max();
 
     /** @brief Shared static mapping output for a Mesh/Profile Distribution input pair. */
-    struct TSurfaceRuntimeData
+    struct FSurfaceRuntimeData
     {
-        std::shared_ptr<const TSharedSurfaceGeometryData> Geometry;
+        std::shared_ptr<const FSharedSurfaceGeometryData> Geometry;
 
-        explicit TSurfaceRuntimeData(TSharedSurfaceGeometryData Geometry);
-        [[nodiscard]] std::shared_ptr<const TSharedSurfaceGeometryData> GetSharedGeometry() const noexcept;
+        explicit FSurfaceRuntimeData(FSharedSurfaceGeometryData Geometry);
+        [[nodiscard]] std::shared_ptr<const FSharedSurfaceGeometryData> GetSharedGeometry() const noexcept;
     };
 
-    class TSurfacePreprocessor final
+    class FSurfacePreprocessor final
     {
     public:
         /** @brief Build in-memory shared geometry from a Runtime mapping and its texel Profile map. */
-        [[nodiscard]] static TSurfaceRuntimeData Build(const TSurfaceMappingData&        Mapping,
-                                                       std::vector<TSurfaceProfileIndex> ProfileMap,
+        [[nodiscard]] static FSurfaceRuntimeData Build(const FSurfaceMappingData&        Mapping,
+                                                       std::vector<FSurfaceProfileIndex> ProfileMap,
                                                        std::uint32_t                     ProfileCount);
     };
 } // namespace MDSS::SurfaceState

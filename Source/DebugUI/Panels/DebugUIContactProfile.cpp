@@ -2,12 +2,12 @@
 
 namespace MDSS
 {
-    // ============================================================
-    // 00. Contact Input
-    // ============================================================
-    #pragma region 00_Contact_Input
+// ============================================================
+// 00. Contact Input
+// ============================================================
+#pragma region 00_Contact_Input
 
-    void TDebugUI::DrawContactInputTab()
+    void FDebugUI::DrawContactInputTab()
     {
         ImGui::Checkbox("Inject mode", &bInjectMode);
         if (ImGui::IsItemHovered())
@@ -16,7 +16,7 @@ namespace MDSS
         }
         ImGui::TextDisabled("Crosshair hit → triangle → UV → simulation texel.");
 
-        const SurfaceState::TSurfaceStateRegistry* InjectRegistry =
+        const SurfaceState::FSurfaceStateRegistry* InjectRegistry =
             AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
         const std::size_t InjectStateCount = InjectRegistry != nullptr ? InjectRegistry->GetStateCount() : 0;
         if (InjectStateCount == 0)
@@ -40,7 +40,7 @@ namespace MDSS
             {
                 for (std::size_t Index = 0; Index < InjectStateCount; ++Index)
                 {
-                    const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                    const SurfaceState::FStateId State = static_cast<SurfaceState::FStateId>(Index);
                     const std::string&           Name = InjectRegistry->GetStateName(State);
                     const bool                   bSelected = State == InjectState;
                     if (ImGui::Selectable(Name.c_str(), bSelected))
@@ -128,24 +128,24 @@ namespace MDSS
         }
     }
 
-    #pragma endregion
+#pragma endregion
 
-    // ============================================================
-    // 01. Profile Tuning
-    // ============================================================
-    #pragma region 01_Profile_Tuning
+// ============================================================
+// 01. Profile Tuning
+// ============================================================
+#pragma region 01_Profile_Tuning
 
-    void TDebugUI::DrawProfileTuningTab(TScene& SceneData)
+    void FDebugUI::DrawProfileTuningTab(FScene& SceneData)
     {
-        std::vector<Asset::TSRProfileAssetHandle> SceneProfiles;
-        for (const TStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
+        std::vector<Asset::FSRProfileAssetHandle> SceneProfiles;
+        for (const FStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
-            const SurfaceState::TSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
+            const SurfaceState::FSurfaceRuntimeDataHandle SurfaceData = Instance.GetSurfaceData();
             if (!SurfaceDataManager->HasSurfaceData(SurfaceData))
             {
                 continue;
             }
-            for (Asset::TSRProfileAssetHandle Profile : SurfaceDataManager->GetSurfaceProfileTable(SurfaceData))
+            for (Asset::FSRProfileAssetHandle Profile : SurfaceDataManager->GetSurfaceProfileTable(SurfaceData))
             {
                 if (std::find(SceneProfiles.begin(), SceneProfiles.end(), Profile) == SceneProfiles.end())
                 {
@@ -165,14 +165,14 @@ namespace MDSS
             ParameterDraftKey = {Asset::InvalidAssetHandle, SurfaceState::InvalidStateId};
         }
 
-        const auto GetProfileName = [this](Asset::TSRProfileAssetHandle Handle) -> const char*
+        const auto GetProfileName = [this](Asset::FSRProfileAssetHandle Handle) -> const char*
         { return AssetManager->GetSRProfile(Handle).GetName().c_str(); };
         const bool bProfileComboOpen = BeginLabeledCombo("Profile", GetProfileName(DebugParameterProfile));
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("현재 씬에 사용 중인 Surface Profile 중 조정할 프로필을 선택합니다.");
         if (bProfileComboOpen)
         {
-            for (Asset::TSRProfileAssetHandle Profile : SceneProfiles)
+            for (Asset::FSRProfileAssetHandle Profile : SceneProfiles)
             {
                 const bool bSelected = Profile == DebugParameterProfile;
                 if (ImGui::Selectable(GetProfileName(Profile), bSelected))
@@ -195,13 +195,13 @@ namespace MDSS
             for (const auto& R : ReactionRules)
             {
                 ImGui::PushID(R.ID.c_str());
-                if (ImGui::TreeNode("Rule", "%s [%s]", R.ID.c_str(), R.Enabled ? "enabled" : "disabled"))
+                if (ImGui::TreeNode("Rule", "%s [%s]", R.ID.c_str(), R.bEnabled ? "enabled" : "disabled"))
                 {
                     for (const auto& T : R.Consumes)
                         ImGui::Text("Consume %s x %.4g", T.State.c_str(), T.Coefficient);
                     for (const auto& T : R.Produces)
                         ImGui::Text("Produce %s x %.4g", T.State.c_str(), T.Coefficient);
-                    if (R.Mode == SurfaceState::TReactionMode::Continuous)
+                    if (R.Mode == SurfaceState::EReactionMode::Continuous)
                         ImGui::Text("Rate coefficient: %.4g", R.RateCoefficient);
                     else
                         ImGui::Text("Fresh inflow fraction: %.4g", R.Fraction);
@@ -214,7 +214,7 @@ namespace MDSS
             }
             ImGui::TreePop();
         }
-        const SurfaceState::TSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
+        const SurfaceState::FSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
         const std::size_t                          StateCount = Registry.GetStateCount();
         if (StateCount == 0)
         {
@@ -233,7 +233,7 @@ namespace MDSS
         {
             for (std::size_t Index = 0; Index < StateCount; ++Index)
             {
-                const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                const SurfaceState::FStateId State = static_cast<SurfaceState::FStateId>(Index);
                 const std::string&           Name = Registry.GetStateName(State);
                 const bool                   bSelected = State == DebugParameterState;
                 if (ImGui::Selectable(Name.c_str(), bSelected))
@@ -248,7 +248,7 @@ namespace MDSS
             EndLabeledCombo();
         }
 
-        const std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId> Key{DebugParameterProfile,
+        const std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> Key{DebugParameterProfile,
                                                                                   DebugParameterState};
         if (ParameterDraftKey != Key)
         {
@@ -269,7 +269,7 @@ namespace MDSS
             }
             else
             {
-                const SurfaceState::TRegisteredSurfaceResponseProfileData Resolved =
+                const SurfaceState::FRegisteredSurfaceResponseProfileData Resolved =
                     Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
                 if (DebugParameterState < Resolved.States.size() && Resolved.States[DebugParameterState].has_value())
                 {
@@ -282,7 +282,7 @@ namespace MDSS
             }
         }
 
-        const SurfaceState::TRegisteredSurfaceResponseProfileData Resolved =
+        const SurfaceState::FRegisteredSurfaceResponseProfileData Resolved =
             Registry.ResolveProfile(AssetManager->GetSRProfile(DebugParameterProfile).GetData());
         const bool bProfileSupportsState =
             DebugParameterState < Resolved.States.size() && Resolved.States[DebugParameterState].has_value();
@@ -369,7 +369,7 @@ namespace MDSS
             bFrameTimeResetRequested = true;
             try
             {
-                SurfaceState::TSurfaceResponseProfileData ValidationData;
+                SurfaceState::FSurfaceResponseProfileData ValidationData;
                 ValidationData.States.emplace(Registry.GetStateName(DebugParameterState), ParameterDraft);
                 ValidateSurfaceResponseProfileData(ValidationData);
                 FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, ParameterDraft);
@@ -383,7 +383,7 @@ namespace MDSS
             catch (const std::exception& Exception)
             {
                 ParameterStatus = Exception.what();
-                TLogger::Warning("TDebugUI", "Could not apply Profile override: " + ParameterStatus);
+                FLogger::Warning("TDebugUI", "Could not apply Profile override: " + ParameterStatus);
             }
         }
         ImGui::SameLine();
@@ -393,7 +393,7 @@ namespace MDSS
         if (bRestoreProfileValues)
         {
             bFrameTimeResetRequested = true;
-            const SurfaceState::TSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
+            const SurfaceState::FSurfaceStateParameters& Original = *Resolved.States[DebugParameterState];
             if (RuntimeProfileOverrides.contains(Key))
             {
                 FrameRenderer->SetDebugProfileParameters(DebugParameterProfile, DebugParameterState, Original, false);
@@ -412,6 +412,6 @@ namespace MDSS
         }
     }
 
-    #pragma endregion
+#pragma endregion
 
 } // namespace MDSS

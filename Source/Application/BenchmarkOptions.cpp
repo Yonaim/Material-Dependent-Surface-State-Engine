@@ -46,21 +46,21 @@ namespace MDSS
 // ============================================================
 #pragma region 00_std_Implementation
 
-    std::size_t TBenchmarkOptions::GetTotalFrameLimit() const noexcept
+    std::size_t FBenchmarkOptions::GetTotalFrameLimit() const noexcept
     {
         // Two extra frames drain the timestamp queries for the final measured frames.
         return static_cast<std::size_t>(WarmupFrames) + MeasurementFrames + 2U;
     }
 
-    TApplicationLaunchOptions ParseApplicationLaunchOptions(int Argc, char* Argv[])
+    FApplicationLaunchOptions ParseApplicationLaunchOptions(int Argc, char* Argv[])
     {
-        TApplicationLaunchOptions Options;
-        bool                      HasBenchmarkScene = false;
-        bool                      HasBenchmarkResolution = false;
-        bool                      HasWarmupFrames = false;
-        bool                      HasMeasurementFrames = false;
-        bool                      HasBenchmarkOutput = false;
-        bool                      HasFrameLimit = false;
+        FApplicationLaunchOptions Options;
+        bool                      bHasBenchmarkScene = false;
+        bool                      bHasBenchmarkResolution = false;
+        bool                      bHasWarmupFrames = false;
+        bool                      bHasMeasurementFrames = false;
+        bool                      bHasBenchmarkOutput = false;
+        bool                      bHasFrameLimit = false;
 
         for (int Index = 1; Index < Argc; ++Index)
         {
@@ -75,7 +75,7 @@ namespace MDSS
             if (Argument == "--frames")
             {
                 Options.FrameLimit = ParsePositiveInteger(ReadValue(), Argument);
-                HasFrameLimit = true;
+                bHasFrameLimit = true;
             }
             else if (Argument == "--scene")
             {
@@ -96,27 +96,27 @@ namespace MDSS
             else if (Argument == "--benchmark-scene")
             {
                 Options.Benchmark.ScenePath = std::filesystem::path(std::string(ReadValue()));
-                HasBenchmarkScene = true;
+                bHasBenchmarkScene = true;
             }
             else if (Argument == "--benchmark-resolution")
             {
                 Options.Benchmark.Resolution = ParseResolution(ReadValue());
-                HasBenchmarkResolution = true;
+                bHasBenchmarkResolution = true;
             }
             else if (Argument == "--benchmark-warmup-frames")
             {
                 Options.Benchmark.WarmupFrames = ParseNonNegativeInteger(ReadValue(), Argument);
-                HasWarmupFrames = true;
+                bHasWarmupFrames = true;
             }
             else if (Argument == "--benchmark-measure-frames")
             {
                 Options.Benchmark.MeasurementFrames = ParsePositiveInteger(ReadValue(), Argument);
-                HasMeasurementFrames = true;
+                bHasMeasurementFrames = true;
             }
             else if (Argument == "--benchmark-output")
             {
                 Options.Benchmark.OutputPath = std::filesystem::path(std::string(ReadValue()));
-                HasBenchmarkOutput = true;
+                bHasBenchmarkOutput = true;
             }
             else
             {
@@ -124,16 +124,16 @@ namespace MDSS
             }
         }
 
-        const bool AnyBenchmarkArgument = HasBenchmarkScene || HasBenchmarkResolution || HasWarmupFrames ||
-                                          HasMeasurementFrames || HasBenchmarkOutput;
-        if (AnyBenchmarkArgument)
+        const bool bAnyBenchmarkArgument = bHasBenchmarkScene || bHasBenchmarkResolution || bHasWarmupFrames ||
+                                           bHasMeasurementFrames || bHasBenchmarkOutput;
+        if (bAnyBenchmarkArgument)
         {
             if (!Options.ScenePath.empty())
                 throw std::invalid_argument("Do not combine --scene with benchmark options.");
-            if (HasFrameLimit)
+            if (bHasFrameLimit)
                 throw std::invalid_argument("Do not combine --frames with benchmark options.");
-            if (!HasBenchmarkScene || !HasBenchmarkResolution || !HasWarmupFrames || !HasMeasurementFrames ||
-                !HasBenchmarkOutput)
+            if (!bHasBenchmarkScene || !bHasBenchmarkResolution || !bHasWarmupFrames || !bHasMeasurementFrames ||
+                !bHasBenchmarkOutput)
                 throw std::invalid_argument("All --benchmark-* options are required for a benchmark run.");
             if (Options.Benchmark.ScenePath.empty() || Options.Benchmark.OutputPath.empty())
                 throw std::invalid_argument("Benchmark Scene and output paths must not be empty.");
@@ -141,12 +141,12 @@ namespace MDSS
                 static_cast<std::uint64_t>(Options.Benchmark.WarmupFrames) + Options.Benchmark.MeasurementFrames + 2U;
             if (TotalFrames > std::numeric_limits<std::size_t>::max())
                 throw std::invalid_argument("Benchmark frame count is too large.");
-            Options.Benchmark.Enabled = true;
+            Options.Benchmark.bEnabled = true;
             Options.FrameLimit = Options.Benchmark.GetTotalFrameLimit();
         }
-        else if (HasFrameLimit)
+        else if (bHasFrameLimit)
         {
-            Options.Benchmark.Enabled = false;
+            Options.Benchmark.bEnabled = false;
         }
 
         return Options;

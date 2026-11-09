@@ -12,7 +12,7 @@
 |---|---|---|
 | [DebugData.h](../../../../../../Source/SurfaceState/Debug/DebugData.h) | CPU debug selection·readback 자료 | Debug Renderer와 Texel Inspector가 공유하는 표시 metadata |
 | [DebugData.cpp](../../../../../../Source/SurfaceState/Debug/DebugData.cpp) | debug data 초기화·전달 | Scene/renderer 쪽 debug 상태 준비 |
-| [TexelInspector.h](../../../../../../Source/SurfaceState/Debug/TexelInspector.h) | selection/snapshot 형식, `TTexelInspector::Record` | texel 하나의 Solver 입력·파생량을 GPU에서 복사하는 readback API |
+| [TexelInspector.h](../../../../../../Source/SurfaceState/Debug/TexelInspector.h) | selection/snapshot 형식, `FTexelInspector::Record` | texel 하나의 Solver 입력·파생량을 GPU에서 복사하는 readback API |
 | [TexelInspector.cpp](../../../../../../Source/SurfaceState/Debug/TexelInspector.cpp) | compute dispatch·staging readback | `Debug/TexelInspector.comp`로 선택 texel의 계산 항목을 snapshot buffer에 기록 |
 
 검증 후보(이번 첨부에 없는 파일): `Tests/SurfaceMappingTests.cpp`, `Tests/SharedSurfaceGeometryTests.cpp`, `Tests/NormalMapTransferTests.cpp`, `Tests/SurfaceStateContractTests.cpp`, `Tests/SceneResourceTests.cpp`에서 시작한다. Contact 크기와 적용 시점은 [[02_Architecture/01_Contracts/01_State-and-Profile#Contact Input|Contact Input]], geometry 의미는 [[02_Architecture/01_Contracts/03_Geometry|Geometry]]가 기준이다.

@@ -12,17 +12,17 @@
 
 namespace MDSS::Asset
 {
-    class TSRProfileAsset;
+    class FSRProfileAsset;
 
-    class TSRProfileLoader
+    class FSRProfileLoader
     {
     public:
         /**
          * @brief version 3/4/5 `.SRProfile` JSON을 읽고 검증한다.
-         * @param ID TAssetManager가 부여한 고유 에셋 ID.
+         * @param ID FAssetManager가 부여한 고유 에셋 ID.
          * @param Path 읽을 Profile 파일 경로.
          * @throws std::runtime_error 파일을 읽거나 파싱·검증하지 못한 경우.
          */
-        [[nodiscard]] static std::unique_ptr<TSRProfileAsset> Load(TAssetID ID, const std::filesystem::path& Path);
+        [[nodiscard]] static std::unique_ptr<FSRProfileAsset> Load(FAssetID ID, const std::filesystem::path& Path);
     };
 } // namespace MDSS::Asset

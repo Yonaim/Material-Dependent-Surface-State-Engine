@@ -12,8 +12,8 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Profile_and_Buffer_Layouts
 
-    TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
-                                                 const TSurfaceStateRegistry&                    Registry)
+    FSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<FSurfaceResponseProfileData>& Profiles,
+                                                 const FSurfaceStateRegistry&                    Registry)
     {
         if (Profiles.empty())
         {
@@ -30,13 +30,13 @@ namespace MDSS::SurfaceState
         }
 
         const std::size_t        RecordCount = Profiles.size() * ChannelCount;
-        TSurfaceGPUProfileUpload Result;
+        FSurfaceGPUProfileUpload Result;
         Result.Parameters.resize(RecordCount);
         Result.Supported.resize(RecordCount, 0U);
 
         for (std::size_t ProfileIndex = 0; ProfileIndex < Profiles.size(); ++ProfileIndex)
         {
-            const TRegisteredSurfaceResponseProfileData Resolved = Registry.ResolveProfile(Profiles[ProfileIndex]);
+            const FRegisteredSurfaceResponseProfileData Resolved = Registry.ResolveProfile(Profiles[ProfileIndex]);
             for (std::size_t ChannelIndex = 0; ChannelIndex < ChannelCount; ++ChannelIndex)
             {
                 const std::size_t RecordIndex = ProfileIndex * ChannelCount + ChannelIndex;
@@ -45,7 +45,7 @@ namespace MDSS::SurfaceState
                     continue;
                 }
 
-                const TSurfaceStateParameters& Parameters = *Resolved.States[ChannelIndex];
+                const FSurfaceStateParameters& Parameters = *Resolved.States[ChannelIndex];
                 Result.Parameters[RecordIndex] = {
                     {Parameters.StateCapacity,
                      Parameters.InputFactor,
@@ -79,17 +79,17 @@ namespace MDSS::SurfaceState
             {
                 if (!Profiles[P].States.contains(T.Source) || !Profiles[P].States.contains(T.Target))
                     throw std::invalid_argument("Legacy Transition participants must be supported by their Profile.");
-                TSurfaceReaction R;
+                FSurfaceReaction R;
                 R.ID = "legacy_" + std::to_string(Rules.size());
                 R.Produces.push_back({T.Target, 1.0F});
                 R.RateCoefficient = T.TransitionRate;
                 R.Modifiers.push_back({T.Source,
-                                       TReactionFunction::Above,
+                                       EReactionFunction::Above,
                                        T.Threshold * Profiles[P].States.at(T.Source).StateCapacity,
                                        1.0F});
                 Rules.push_back(R);
             }
-            std::erase_if(Rules, [](const auto& R) { return !R.Enabled; });
+            std::erase_if(Rules, [](const auto& R) { return !R.bEnabled; });
             const auto Count = static_cast<std::uint32_t>(Rules.size());
             Result.MaxReactionCount = std::max(Result.MaxReactionCount, Count);
             Words[4U + P * 4U] = Offset();

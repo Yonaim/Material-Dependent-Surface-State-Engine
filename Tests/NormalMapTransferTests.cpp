@@ -16,9 +16,9 @@ namespace
 {
     int FailureCount = 0;
 
-    void Check(bool Condition, const std::string& Message)
+    void Check(bool bCondition, const std::string& Message)
     {
-        if (!Condition)
+        if (!bCondition)
         {
             ++FailureCount;
             std::cerr << "FAIL: " << Message << '\n';
@@ -30,10 +30,10 @@ namespace
         return glm::length(Actual - Expected) <= Epsilon;
     }
 
-    MDSS::Asset::TextureData
+    MDSS::Asset::FTextureData
     MakeTexture(std::uint32_t Width, std::uint32_t Height, const std::vector<std::array<std::uint8_t, 4>>& Pixels)
     {
-        MDSS::Asset::TextureData Result;
+        MDSS::Asset::FTextureData Result;
         Result.Width = Width;
         Result.Height = Height;
         for (const auto& Pixel : Pixels)
@@ -43,13 +43,13 @@ namespace
         return Result;
     }
 
-    std::vector<MDSS::Asset::TVertex> MakeVertices()
+    std::vector<MDSS::Asset::FVertex> MakeVertices()
     {
-        std::vector<MDSS::Asset::TVertex> Vertices(3);
+        std::vector<MDSS::Asset::FVertex> Vertices(3);
         Vertices[0].UV = {0.25F, 0.5F};
         Vertices[1].UV = {0.75F, 0.5F};
         Vertices[2].UV = {0.25F, 0.75F};
-        for (MDSS::Asset::TVertex& Vertex : Vertices)
+        for (MDSS::Asset::FVertex& Vertex : Vertices)
         {
             Vertex.Normal = {0.0F, 0.0F, 1.0F};
             Vertex.Tangent = {1.0F, 0.0F, 0.0F, 1.0F};
@@ -57,20 +57,20 @@ namespace
         return Vertices;
     }
 
-    MDSS::Asset::TMeshTriangleSource MakeTriangle(std::uint32_t                       FirstVertex,
-                                                  MDSS::SurfaceState::TSurfaceLocalID Surface = 0)
+    MDSS::Asset::FMeshTriangleSource MakeTriangle(std::uint32_t                       FirstVertex,
+                                                  MDSS::SurfaceState::FSurfaceLocalID Surface = 0)
     {
-        MDSS::Asset::TMeshTriangleSource Triangle;
+        MDSS::Asset::FMeshTriangleSource Triangle;
         Triangle.RenderVertexIndices = {FirstVertex, FirstVertex + 1, FirstVertex + 2};
         Triangle.Surface = Surface;
         return Triangle;
     }
 
-    MDSS::SurfaceState::TSurfaceTexelGeometry MakeTexel(std::uint32_t                       Triangle = 0,
-                                                        MDSS::SurfaceState::TSurfaceLocalID Surface = 0,
+    MDSS::SurfaceState::FSurfaceTexelGeometry MakeTexel(std::uint32_t                       Triangle = 0,
+                                                        MDSS::SurfaceState::FSurfaceLocalID Surface = 0,
                                                         glm::vec3 Barycentric = {1.0F, 0.0F, 0.0F})
     {
-        MDSS::SurfaceState::TSurfaceTexelGeometry Texel;
+        MDSS::SurfaceState::FSurfaceTexelGeometry Texel;
         Texel.Surface = Surface;
         Texel.Triangle = Triangle;
         Texel.Barycentric = Barycentric;
@@ -83,16 +83,16 @@ namespace
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        const std::vector<TVertex>             Vertices = MakeVertices();
-        const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0)};
+        const std::vector<FVertex>             Vertices = MakeVertices();
+        const std::vector<FMeshTriangleSource> Triangles{MakeTriangle(0)};
         glm::vec3                              Result{};
 
-        const TextureData Flat = MakeTexture(1, 1, {{{128, 128, 255, 255}}});
+        const FTextureData Flat = MakeTexture(1, 1, {{{128, 128, 255, 255}}});
         Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, Flat, Result, false),
               "flat normal map should produce a transfer normal");
         Check(Near(Result, {0.0F, 0.0F, 1.0F}), "flat normal map should match the geometric normal");
 
-        const TextureData Tilted = MakeTexture(1, 1, {{{255, 128, 128, 255}}});
+        const FTextureData Tilted = MakeTexture(1, 1, {{{255, 128, 128, 255}}});
         Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, Tilted, Result, false),
               "tilted normal map should produce a transfer normal");
         Check(Result.x > 0.99F && std::abs(Result.z) < 0.02F,
@@ -104,10 +104,10 @@ namespace
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        std::vector<TVertex>       Vertices = MakeVertices();
-        const std::vector<TVertex> SecondChart = MakeVertices();
+        std::vector<FVertex>       Vertices = MakeVertices();
+        const std::vector<FVertex> SecondChart = MakeVertices();
         Vertices.insert(Vertices.end(), SecondChart.begin(), SecondChart.end());
-        for (TVertex& Vertex : Vertices)
+        for (FVertex& Vertex : Vertices)
         {
             Vertex.UV.x = 0.25F;
         }
@@ -115,8 +115,8 @@ namespace
         Vertices[3].UV.x = 0.75F;
         Vertices[4].UV.x = 0.75F;
         Vertices[5].UV.x = 0.75F;
-        const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0), MakeTriangle(3)};
-        const TextureData Map = MakeTexture(2, 1, {{{128, 128, 255, 255}}, {{255, 128, 128, 255}}});
+        const std::vector<FMeshTriangleSource> Triangles{MakeTriangle(0), MakeTriangle(3)};
+        const FTextureData Map = MakeTexture(2, 1, {{{128, 128, 255, 255}}, {{255, 128, 128, 255}}});
 
         glm::vec3 First{};
         glm::vec3 Second{};
@@ -141,9 +141,9 @@ namespace
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        std::vector<TVertex>                   Vertices = MakeVertices();
-        const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0)};
-        const TextureData                      PositiveY = MakeTexture(1, 1, {{{128, 255, 128, 255}}});
+        std::vector<FVertex>                   Vertices = MakeVertices();
+        const std::vector<FMeshTriangleSource> Triangles{MakeTriangle(0)};
+        const FTextureData                     PositiveY = MakeTexture(1, 1, {{{128, 255, 128, 255}}});
         glm::vec3                              Positive{};
         Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, PositiveY, Positive, false),
               "positive-handed tangent frame should produce a normal");
@@ -154,7 +154,7 @@ namespace
               "flipped normal-map Y should produce a normal");
         Check(Flipped.y < -0.99F, "Y flip should match the rendered normal-map convention");
 
-        for (TVertex& Vertex : Vertices)
+        for (FVertex& Vertex : Vertices)
         {
             Vertex.Tangent.w = -1.0F;
             Vertex.UV.x = -0.25F; // repeat addressing wraps this coordinate into the one-pixel texture
@@ -170,28 +170,28 @@ namespace
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        const std::vector<TVertex>             Vertices = MakeVertices();
-        const std::vector<TMeshTriangleSource> Triangles{MakeTriangle(0)};
-        const TextureData                      Flat = MakeTexture(1, 1, {{{128, 128, 255, 255}}});
+        const std::vector<FVertex>             Vertices = MakeVertices();
+        const std::vector<FMeshTriangleSource> Triangles{MakeTriangle(0)};
+        const FTextureData                     Flat = MakeTexture(1, 1, {{{128, 128, 255, 255}}});
         glm::vec3                              Result{};
 
-        std::vector<TVertex> DegenerateTangent = Vertices;
-        for (TVertex& Vertex : DegenerateTangent)
+        std::vector<FVertex> DegenerateTangent = Vertices;
+        for (FVertex& Vertex : DegenerateTangent)
         {
             Vertex.Tangent = {0.0F, 0.0F, 1.0F, 1.0F};
         }
         Check(!BuildNormalMapTransferNormal(MakeTexel(), DegenerateTangent, Triangles, Flat, Result, false),
               "degenerate tangent should request geometric-normal fallback");
 
-        const TextureData InvalidTexture{};
+        const FTextureData InvalidTexture{};
         Check(!BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, InvalidTexture, Result, false),
               "missing or malformed texture data should request geometric-normal fallback");
-        std::vector<TVertex> MidUVVertices = Vertices;
-        for (TVertex& Vertex : MidUVVertices)
+        std::vector<FVertex> MidUVVertices = Vertices;
+        for (FVertex& Vertex : MidUVVertices)
         {
             Vertex.UV.x = 0.5F;
         }
-        const TextureData ZeroLengthSample = MakeTexture(2, 1, {{{127, 127, 127, 255}}, {{128, 128, 128, 255}}});
+        const FTextureData ZeroLengthSample = MakeTexture(2, 1, {{{127, 127, 127, 255}}, {{128, 128, 128, 255}}});
         Check(!BuildNormalMapTransferNormal(MakeTexel(), MidUVVertices, Triangles, ZeroLengthSample, Result, false),
               "zero-length filtered normal sample should request geometric-normal fallback");
         Check(!BuildNormalMapTransferNormal(MakeTexel(1), Vertices, Triangles, Flat, Result, false),

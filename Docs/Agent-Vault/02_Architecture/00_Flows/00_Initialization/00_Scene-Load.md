@@ -8,7 +8,7 @@ Scene 로더가 Mesh·Profile Map·해상도를 읽고 Runtime Surface를 요청
 
 ## 로드 경로
 
-1. [`TSceneLoader`](../../../../../Source/Scene/SceneLoader.cpp)가 Scene의 mesh, `.SurfaceProfileMap`, simulation resolution을 읽어 instance를 구성한다. [`TSurfaceDataManager::LoadSurfaceData`](../../../../../Source/SurfaceState/Runtime/SurfaceDataManager.cpp)는 mesh·profile distribution·resolution 조합의 runtime data를 조회하거나 생성한다.
+1. [`FSceneLoader`](../../../../../Source/Scene/SceneLoader.cpp)가 Scene의 mesh, `.SurfaceProfileMap`, simulation resolution을 읽어 instance를 구성한다. [`FSurfaceDataManager::LoadSurfaceData`](../../../../../Source/SurfaceState/Runtime/SurfaceDataManager.cpp)는 mesh·profile distribution·resolution 조합의 runtime data를 조회하거나 생성한다.
 
 ## 산출물과 다음 단계
 
@@ -16,6 +16,6 @@ Mesh/profile distribution/resolution으로 Runtime Surface를 조회한 뒤 Mapp
 
 ## 파싱 단계의 실제 분기
 
-[SceneLoader.cpp](../../../../../Source/Scene/SceneLoader.cpp)의 `TSceneLoader::Load`는 `simulationResolution` 값을 처리한 뒤 Mesh instance를 로드한다. `surfaceProfileMap`이 있는 경우에만 `TSurfaceDataManager::LoadSurfaceData(MeshHandle, DistributionPath, Resolution)`로 시뮬레이션 runtime handle을 연결한다. 표시 가능한 Static Mesh라고 해서 반드시 Solver용 Surface 데이터를 가진 것은 아니다.
+[SceneLoader.cpp](../../../../../Source/Scene/SceneLoader.cpp)의 `FSceneLoader::Load`는 `simulationResolution` 값을 처리한 뒤 Mesh instance를 로드한다. `surfaceProfileMap`이 있는 경우에만 `FSurfaceDataManager::LoadSurfaceData(MeshHandle, DistributionPath, Resolution)`로 시뮬레이션 runtime handle을 연결한다. 표시 가능한 Static Mesh라고 해서 반드시 Solver용 Surface 데이터를 가진 것은 아니다.
 
 해상도 값·Profile Map의 경로와 유효성 오류는 이 단계에서 먼저 확인한다. Runtime Surface가 구성된 뒤에는 [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|CPU 캐시]]를 확인한다.

@@ -19,25 +19,25 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Shared_Geometry_Resources
 
-    void TSurfaceTexelMeshGPUVariant::RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept
+    void FSurfaceTexelMeshGPUVariant::RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept
     {
         Pool.Release(std::move(IndexBuffer));
         Pool.Release(std::move(VertexBuffer));
         Pool.Release(std::move(BoundaryBuffer));
     }
 
-    TSurfaceSharedGeometryGPUResources::TSurfaceSharedGeometryGPUResources(
+    FSurfaceSharedGeometryGPUResources::FSurfaceSharedGeometryGPUResources(
         VkPhysicalDevice                            PhysicalDevice,
         VkDevice                                    Device,
-        const TSharedSurfaceGeometryData&           Geometry,
-        std::span<const TSurfaceProfileIndex>       ProfileIndexRemap,
-        std::span<const Asset::TVertex>             SourceVertices,
-        std::span<const Asset::TMeshTriangleSource> SourceTriangles,
-        TSurfaceGPUBufferPool*                      Pool)
+        const FSharedSurfaceGeometryData&           Geometry,
+        std::span<const FSurfaceProfileIndex>       ProfileIndexRemap,
+        std::span<const Asset::FVertex>             SourceVertices,
+        std::span<const Asset::FMeshTriangleSource> SourceTriangles,
+        FSurfaceGPUBufferPool*                      Pool)
         : TexelCount(Geometry.GetTexelCount())
     {
         const std::size_t                     MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
-        const TSurfaceGPUSharedGeometryUpload Upload = PackSharedSurfaceGeometry(Geometry, ProfileIndexRemap);
+        const FSurfaceGPUSharedGeometryUpload Upload = PackSharedSurfaceGeometry(Geometry, ProfileIndexRemap);
         SurfaceRanges = Upload.SurfaceRanges;
 
         TexelSurfaceIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
@@ -46,7 +46,7 @@ namespace MDSS::SurfaceState
                                                        Upload.TexelSurfaceIndices.size(),
                                                        sizeof(std::uint32_t),
                                                        MaxRange,
-                                                       GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                       GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                        Pool);
         TexelProfileIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                        Device,
@@ -54,23 +54,23 @@ namespace MDSS::SurfaceState
                                                        Upload.TexelProfileIndices.size(),
                                                        sizeof(std::uint32_t),
                                                        MaxRange,
-                                                       GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                       GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                        Pool);
         PositionBuffer = CreateUploadedBuffer(PhysicalDevice,
                                               Device,
                                               Upload.Positions.data(),
                                               Upload.Positions.size(),
-                                              sizeof(TSurfaceGPUVec4),
+                                              sizeof(FSurfaceGPUVec4),
                                               MaxRange,
-                                              GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                              GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                               Pool);
         NormalBuffer = CreateUploadedBuffer(PhysicalDevice,
                                             Device,
                                             Upload.Normals.data(),
                                             Upload.Normals.size(),
-                                            sizeof(TSurfaceGPUVec4),
+                                            sizeof(FSurfaceGPUVec4),
                                             MaxRange,
-                                            GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                            GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                             Pool);
 
         // 렌더링과 디버그 뷰가 복원 노멀을 GPU에서 텍셀별로 조회한다.
@@ -78,25 +78,25 @@ namespace MDSS::SurfaceState
                                                 Device,
                                                 Upload.MesoNormals.data(),
                                                 Upload.MesoNormals.size(),
-                                                sizeof(TSurfaceGPUVec4),
+                                                sizeof(FSurfaceGPUVec4),
                                                 MaxRange,
-                                                GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                 Pool);
         GeometryScalarBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                     Device,
                                                     Upload.GeometryScalars.data(),
                                                     Upload.GeometryScalars.size(),
-                                                    sizeof(TSurfaceGPUGeometryScalar),
+                                                    sizeof(FSurfaceGPUGeometryScalar),
                                                     MaxRange,
-                                                    GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                    GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                     Pool);
         NeighborIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                    Device,
                                                    Upload.NeighborIndices.data(),
                                                    Upload.NeighborIndices.size(),
-                                                   sizeof(TSurfaceGPUNeighborIndices),
+                                                   sizeof(FSurfaceGPUNeighborIndices),
                                                    MaxRange,
-                                                   GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                   GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                    Pool);
         ReverseNeighborDirectionIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                                    Device,
@@ -104,16 +104,16 @@ namespace MDSS::SurfaceState
                                                                    Upload.ReverseNeighborDirectionIndices.size(),
                                                                    sizeof(std::uint32_t),
                                                                    MaxRange,
-                                                                   GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                                   GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                                    Pool);
 
         SurfaceRangeBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                   Device,
                                                   Upload.SurfaceRanges.data(),
                                                   Upload.SurfaceRanges.size(),
-                                                  sizeof(TSurfaceGPUSurfaceRange),
+                                                  sizeof(FSurfaceGPUSurfaceRange),
                                                   MaxRange,
-                                                  GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                  GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                   Pool);
 
         TexelChartIndexBuffer = CreateUploadedBuffer(PhysicalDevice,
@@ -122,7 +122,7 @@ namespace MDSS::SurfaceState
                                                      Upload.TexelChartIndices.size(),
                                                      sizeof(std::uint32_t),
                                                      MaxRange,
-                                                     GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                     GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                      Pool);
 
         std::vector<std::uint32_t> BoundaryFlags(TexelCount, 0U);
@@ -163,7 +163,7 @@ namespace MDSS::SurfaceState
                                                                 BoundaryFlags.size(),
                                                                 sizeof(std::uint32_t),
                                                                 MaxRange,
-                                                                GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
+                                                                GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
                                                                 Pool);
 
         SimulationResolution = Geometry.GetSurfaces().empty() ? 0U : Geometry.GetSurfaces().front().Resolution.Width;
@@ -172,21 +172,22 @@ namespace MDSS::SurfaceState
             switch (Resolution)
             {
                 case 64:
-                    return GPU::TGPUBufferMemoryCategory::RenderMesh64;
+                    return GPU::EGPUBufferMemoryCategory::RenderMesh64;
                 case 128:
-                    return GPU::TGPUBufferMemoryCategory::RenderMesh128;
+                    return GPU::EGPUBufferMemoryCategory::RenderMesh128;
                 case 256:
-                    return GPU::TGPUBufferMemoryCategory::RenderMesh256;
+                    return GPU::EGPUBufferMemoryCategory::RenderMesh256;
                 case 512:
-                    return GPU::TGPUBufferMemoryCategory::RenderMesh512;
+                    return GPU::EGPUBufferMemoryCategory::RenderMesh512;
                 default:
                     // Synthetic solver/debug fixtures may use grids smaller than the UI presets.
-                    return GPU::TGPUBufferMemoryCategory::SurfaceGeometry;
+                    return GPU::EGPUBufferMemoryCategory::SurfaceGeometry;
             }
         };
 
         const auto UploadTexelMesh =
-            [PhysicalDevice, Device, MaxRange, Pool, Ranges = SurfaceRanges](TSurfaceTexelMesh Mesh, TSurfaceTexelMeshGPUVariant& Output, GPU::TGPUBufferMemoryCategory Category)
+            [PhysicalDevice, Device, MaxRange, Pool, Ranges = SurfaceRanges](
+                FSurfaceTexelMesh Mesh, FSurfaceTexelMeshGPUVariant& Output, GPU::EGPUBufferMemoryCategory Category)
         {
             Output.Ranges = std::move(Mesh.Surfaces);
             Output.VertexCount = static_cast<std::uint32_t>(Mesh.Vertices.size());
@@ -207,7 +208,7 @@ namespace MDSS::SurfaceState
                                       Pool);
             Output.IndexBuffer->Upload(Mesh.Indices.data(), Bytes);
 
-            const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(TSurfaceTexelMeshVertex));
+            const auto VertexBytes = static_cast<VkDeviceSize>(Mesh.Vertices.size() * sizeof(FSurfaceTexelMeshVertex));
             Output.VertexBuffer =
                 AcquireOrCreateBuffer(PhysicalDevice,
                                       Device,
@@ -263,7 +264,7 @@ namespace MDSS::SurfaceState
                 }
                 Packed[TileCount] = static_cast<std::uint32_t>(Packed.size());
 
-                TSurfaceTexelMeshGPUVariant::TTileVertexList List;
+                FSurfaceTexelMeshGPUVariant::FTileVertexList List;
                 List.TileCount = TileCount;
                 List.Words = std::move(Packed);
                 Output.TileVertexLists.emplace(TileSize, std::move(List));
@@ -288,84 +289,87 @@ namespace MDSS::SurfaceState
                         FullTexelMesh,
                         MeshMemoryCategory(SimulationResolution));
 
-        MeshVariantFactory = [GeometryPointer = &Geometry,
-                              Vertices = std::vector<Asset::TVertex>(SourceVertices.begin(), SourceVertices.end()),
-                              Triangles = std::vector<Asset::TMeshTriangleSource>(SourceTriangles.begin(), SourceTriangles.end()),
-                              UploadTexelMesh, MeshMemoryCategory](std::uint32_t Resolution)
+        MeshVariantFactory =
+            [GeometryPointer = &Geometry,
+             Vertices = std::vector<Asset::FVertex>(SourceVertices.begin(), SourceVertices.end()),
+             Triangles = std::vector<Asset::FMeshTriangleSource>(SourceTriangles.begin(), SourceTriangles.end()),
+             UploadTexelMesh,
+             MeshMemoryCategory](std::uint32_t Resolution)
         {
-            TSurfaceTexelMeshGPUVariant Variant;
+            FSurfaceTexelMeshGPUVariant Variant;
             UploadTexelMesh(BuildSurfaceTexelMesh(*GeometryPointer, Vertices, Triangles, Resolution),
-                            Variant, MeshMemoryCategory(Resolution));
+                            Variant,
+                            MeshMemoryCategory(Resolution));
             return Variant;
         };
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelSurfaceIndexBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetTexelSurfaceIndexBuffer() const noexcept
     {
         return *TexelSurfaceIndexBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelProfileIndexBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetTexelProfileIndexBuffer() const noexcept
     {
         return *TexelProfileIndexBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetPositionBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetPositionBuffer() const noexcept
     {
         return *PositionBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetNormalBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetNormalBuffer() const noexcept
     {
         return *NormalBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetMesoNormalBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetMesoNormalBuffer() const noexcept
     {
         return *MesoNormalBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetGeometryScalarBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetGeometryScalarBuffer() const noexcept
     {
         return *GeometryScalarBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetNeighborIndexBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetNeighborIndexBuffer() const noexcept
     {
         return *NeighborIndexBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetReverseNeighborDirectionIndexBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetReverseNeighborDirectionIndexBuffer() const noexcept
     {
         return *ReverseNeighborDirectionIndexBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetSurfaceRangeBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetSurfaceRangeBuffer() const noexcept
     {
         return *SurfaceRangeBuffer;
     }
 
-    const std::vector<TSurfaceGPUSurfaceRange>& TSurfaceSharedGeometryGPUResources::GetSurfaceRanges() const noexcept
+    const std::vector<FSurfaceGPUSurfaceRange>& FSurfaceSharedGeometryGPUResources::GetSurfaceRanges() const noexcept
     {
         return SurfaceRanges;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetTexelChartIndexBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetTexelChartIndexBuffer() const noexcept
     {
         return *TexelChartIndexBuffer;
     }
 
-    const GPU::TGPUBuffer& TSurfaceSharedGeometryGPUResources::GetRenderSamplingBoundaryFlagBuffer() const noexcept
+    const GPU::FGPUBuffer& FSurfaceSharedGeometryGPUResources::GetRenderSamplingBoundaryFlagBuffer() const noexcept
     {
         return *RenderSamplingBoundaryFlagBuffer;
     }
 
-    std::size_t TSurfaceSharedGeometryGPUResources::GetTexelCount() const noexcept
+    std::size_t FSurfaceSharedGeometryGPUResources::GetTexelCount() const noexcept
     {
         return TexelCount;
     }
 
-    void TSurfaceSharedGeometryGPUResources::RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept
+    void FSurfaceSharedGeometryGPUResources::RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept
     {
         Pool.Release(std::move(TexelSurfaceIndexBuffer));
         Pool.Release(std::move(TexelProfileIndexBuffer));

@@ -10,20 +10,20 @@
 namespace MDSS::Asset
 {
 // ============================================================
-// 00. TSRProfileAsset Implementation
+// 00. FSRProfileAsset Implementation
 // ============================================================
 #pragma region 00_TSRProfileAsset_Implementation
 
-    TSRProfileAsset::TSRProfileAsset(TAssetID                                  ID,
+    FSRProfileAsset::FSRProfileAsset(FAssetID                                  ID,
                                      std::string                               Name,
                                      std::filesystem::path                     SourcePath,
-                                     SurfaceState::TSurfaceResponseProfileData Data)
-        : TAsset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
+                                     SurfaceState::FSurfaceResponseProfileData Data)
+        : FAsset(ID, std::move(Name), std::move(SourcePath)), Data(std::move(Data))
     {
         ValidateSurfaceResponseProfileData(this->Data);
     }
 
-    const SurfaceState::TSurfaceResponseProfileData& TSRProfileAsset::GetData() const noexcept
+    const SurfaceState::FSurfaceResponseProfileData& FSRProfileAsset::GetData() const noexcept
     {
         return Data;
     }

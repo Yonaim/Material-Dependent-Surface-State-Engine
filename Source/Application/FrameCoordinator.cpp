@@ -8,17 +8,17 @@
 
 namespace MDSS
 {
-    // ============================================================
-    // 00. Frame Preparation
-    // ============================================================
-    #pragma region 00_Frame_Preparation
+// ============================================================
+// 00. Frame Preparation
+// ============================================================
+#pragma region 00_Frame_Preparation
 
-    TFrameCoordinator::TFrameCoordinator(SurfaceState::TSurfaceStateSystem& InSurfaceStateSystem) noexcept
+    FFrameCoordinator::FFrameCoordinator(SurfaceState::FSurfaceStateSystem& InSurfaceStateSystem) noexcept
         : SurfaceStateSystem(InSurfaceStateSystem)
     {
     }
 
-    bool TFrameCoordinator::BeginFrame(TDebugUI& DebugUI, float DeltaTime, bool bSuspendClock)
+    bool FFrameCoordinator::BeginFrame(FDebugUI& DebugUI, float DeltaTime, bool bSuspendClock)
     {
         SurfaceStateSystem.PrepareScratchStorage();
         const bool bResetState = DebugUI.ConsumeSolverResetRequest();
@@ -38,7 +38,7 @@ namespace MDSS
         return bResetState;
     }
 
-    void TFrameCoordinator::PrepareSteps(TDebugUI& DebugUI, bool bResetState)
+    void FFrameCoordinator::PrepareSteps(FDebugUI& DebugUI, bool bResetState)
     {
         const bool bRequestStep = DebugUI.ConsumeSolverStepRequest();
         MaximumStep = DebugUI.IsAutoSubsteppingEnabled() ? SurfaceStateSystem.GetMaximumStableDeltaTime()
@@ -53,14 +53,14 @@ namespace MDSS
             MaximumStep = Steps.front();
     }
 
-    #pragma endregion
+#pragma endregion
 
-    // ============================================================
-    // 01. Simulation Recording
-    // ============================================================
-    #pragma region 01_Simulation_Recording
+// ============================================================
+// 01. Simulation Recording
+// ============================================================
+#pragma region 01_Simulation_Recording
 
-    void TFrameCoordinator::RecordSimulation(VkCommandBuffer CommandBuffer,
+    void FFrameCoordinator::RecordSimulation(VkCommandBuffer CommandBuffer,
                                              VkQueryPool     QueryPool,
                                              std::uint32_t   FirstStepQuery,
                                              std::uint32_t   QueriesPerStep)
@@ -74,14 +74,14 @@ namespace MDSS
         StepSerial += Steps.size();
     }
 
-    #pragma endregion
+#pragma endregion
 
-    // ============================================================
-    // 02. Clock and State Lifecycle
-    // ============================================================
-    #pragma region 02_Clock_and_State_Lifecycle
+// ============================================================
+// 02. Clock and State Lifecycle
+// ============================================================
+#pragma region 02_Clock_and_State_Lifecycle
 
-    void TFrameCoordinator::ResetClock() noexcept
+    void FFrameCoordinator::ResetClock() noexcept
     {
         Clock.Reset();
         Steps.clear();
@@ -90,11 +90,11 @@ namespace MDSS
         DroppedSeconds = 0.0F;
     }
 
-    void TFrameCoordinator::RestartState()
+    void FFrameCoordinator::RestartState()
     {
         SurfaceStateSystem.RestartState();
         ResetClock();
     }
-    #pragma endregion
+#pragma endregion
 
 }

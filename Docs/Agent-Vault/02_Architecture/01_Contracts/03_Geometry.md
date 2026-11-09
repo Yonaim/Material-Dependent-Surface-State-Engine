@@ -119,7 +119,7 @@ Mesh의 연속 표면은 Solver가 처리할 **simulation texel graph**로 변�
 | 무효 index | `0xFFFFFFFF` |
 | 생성 시점 | `.Surface` cache hit이면 로드, miss이면 CPU 전처리 후 저장 |
 
-현재 `TSurfaceLocalID`는 Mesh 안에서 MTL Material 단위의 dense index로 사용한다. Profile 배치는 이 ID와 일대일로 가정하지 않고 texel별 Profile Map / Profile Index로 구분한다.
+현재 `FSurfaceLocalID`는 Mesh 안에서 MTL Material 단위의 dense index로 사용한다. Profile 배치는 이 ID와 일대일로 가정하지 않고 texel별 Profile Map / Profile Index로 구분한다.
 
 ### 생성 흐름
 
@@ -170,7 +170,7 @@ Cache fingerprint와 lifecycle은 Decision 0006, packed GPU layout은 Per Texel 
 
 ## Shared Surface Geometry Data
 
-형상 값은 Mesh·Normal Map·해상도에 종속된다. 현재 `TSharedSurfaceGeometryData`는 texel Profile map도 함께 소유하므로 같은 Mesh·Profile Distribution·해상도 조합의 instance가 공유한다.
+형상 값은 Mesh·Normal Map·해상도에 종속된다. 현재 `FSharedSurfaceGeometryData`는 texel Profile map도 함께 소유하므로 같은 Mesh·Profile Distribution·해상도 조합의 instance가 공유한다.
 
 ### Surface Geometry Field
 
@@ -221,7 +221,7 @@ Macro footprint 근사이며 Meso 요철·적층의 추가 표면적은 포함�
 | `Barycentric` | `float32 × 3` | 삼각형 내 표면 대응 |
 | `Position`, `Normal` | 각각 `float32 × 3` | mesh-local Macro 위치와 법선 |
 | `TransferNormal`, `MesoNormal` | 각각 `float32 × 3` | 샘플 Normal Map 법선과 높이에서 유도한 mesh-local 법선 |
-| `HasTransferNormal`, `HasMesoNormal` | 하나의 `uint32`에 두 bit | 기존 법선 fallback 규칙 보존 |
+| `bHasTransferNormal`, `bHasMesoNormal` | 하나의 `uint32`에 두 bit | 기존 법선 fallback 규칙 보존 |
 | `MesoVirtualHeight`, `ConcavityWeight`, `MesoMeanCurvature`, `MesoGaussianCurvature` | 각각 `float32` | 최종 상대 높이·오목함·두 곡률 |
 | `NeighborIndices[8]` | `uint32 × 8` | seam을 포함한 최종 이웃 graph. invalid entry 포함 |
 | texel `ProfileIndex` | `uint32` | 별도 순서 있는 Profile table 참조. render-only sentinel 포함 |
@@ -249,7 +249,7 @@ Macro footprint 근사이며 Meso 요철·적층의 추가 표면적은 포함�
 CPU 저장 표현은 GPU ABI와 분리한다.
 
 - Cache hit는 정적 CPU 전처리를 생략하는 최적화다. GPU 자원 생성, Solver 동작, 동적 적층 설계는 바꾸지 않는다.
-- `.Surface` load 결과는 기존 `TSharedSurfaceGeometryData`를 복원한다. Normal fallback, UV seam, TransferWeight, Rendering은 동일한 데이터를 사용한다.
+- `.Surface` load 결과는 기존 `FSharedSurfaceGeometryData`를 복원한다. Normal fallback, UV seam, TransferWeight, Rendering은 동일한 데이터를 사용한다.
 
 ## World Gravity
 

@@ -16,7 +16,7 @@
 
 ## State → Texture
 
-[`TRenderStateTexture::Record`](../../../../../Source/Rendering/Surface/RenderStateTexture.cpp)는 Registry에서 Heat·Mud·WaterFilm·Lava 채널을 찾아 buffer State를 image로 변환한다. `RenderStateTextureSmoothing.comp`는 설정에 따라 chart/region 경계를 고려한 표시용 texture를 만든다. `StateSampling.glsl`과 `RenderStateSampling.glsl`은 UV와 seam에서 이 texture의 sampling을 해석한다. 직접 buffer sampling과 texture sampling은 렌더링 경로의 선택이며 저장된 State 양을 바꾸지 않는다.
+[`FRenderStateTexture::Record`](../../../../../Source/Rendering/Surface/RenderStateTexture.cpp)는 Registry에서 Heat·Mud·WaterFilm·Lava 채널을 찾아 buffer State를 image로 변환한다. `RenderStateTextureSmoothing.comp`는 설정에 따라 chart/region 경계를 고려한 표시용 texture를 만든다. `StateSampling.glsl`과 `RenderStateSampling.glsl`은 UV와 seam에서 이 texture의 sampling을 해석한다. 직접 buffer sampling과 texture sampling은 렌더링 경로의 선택이며 저장된 State 양을 바꾸지 않는다.
 
 ## 확인
 

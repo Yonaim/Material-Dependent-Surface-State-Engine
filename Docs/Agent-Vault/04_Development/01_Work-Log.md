@@ -92,6 +92,13 @@
 - **검증:** 최종 build 성공, shader 150개 컴파일/spirv-val 통과 및 reflection 동일. CTest 7 통과/7 실패·skip 0, 상태/실패 원인 문구 기준선 동일. 별도 debug helper는 전후 동일한 기존 assertion 실패이고 도달한 GPU 출력 16개 동일, validation ERROR 없음. Region provider 116개 인식, CRLF-aware whitespace 확인. Overlay 전체·모든 mode/variant GPU 출력·성능/장시간/다른 장치는 미검증. [증거](../../../Build/Validation/20261109-221158-glsl-top-down/summary.md).
 - **커밋:** 미커밋·push 없음. 다음 단계는 기존 5번 Unreal-Inspired 네이밍.
 
+## 2026-11-09 — Unreal-Inspired 네이밍 전환 (기존 5번)
+- **읽은 문서:** AGENTS·Document Map·Code Style·C++·Verification·Source Comments·Python, Project Brief·Constraints, Source Map·C++ Index·CPU–GPU Interface·GPU Layout/ABI Source 및 직전 검증 기록.
+- **코드 변경:** 일반 타입/비템플릿 별칭 F·enum E·scalar bool b로 선언/정의/호출자/테스트/Research를 동기화(186개 C++ 파일). libclang 선언·참조 기반 bool 치환 후 generic lambda 및 기존 오류가 있는 실험 식의 누락 참조를 보완. TScopeExit/외부 타입, 파일명, 문자열/Scene schema, GLSL 선언·리소스/byte layout 유지. Python source marker 1개와 shader CPU 대응 주석 3개 동기화.
+- **문서 동기화:** 현재 Architecture/Source/Contracts/Flows의 C++ 심벌 참조·GPU CPU/GLSL 명칭 구분, Project Brief·Current Work·Validation 갱신. 과거 실험/Work Log/ADR의 당시 이름은 보존. 계산·수명·pass/barrier·저장 형식 변경 없음.
+- **검증:** 최종 Debug build 성공. CTest 7 통과/7 실패·skip 0, 상태/실패 원인 문구 동일. AST 100 TU 오류 0·scalar bool 553개/타입 규칙 적합. 계획 외 코드 토큰 변경 없음·문자열/개행 유지. shader 150개 통과·SPIR-V 바이트 동일, render-only 전후 화면/settings/validation 동일·ERROR 0. Source/Tests format dry-run 181개 통과. Research syntax 진단은 전후 동일한 기존 8개이며 별도 연구 실행/전체 overlay·성능·다른 플랫폼은 미검증. [증거](../../../Build/Validation/20261109-222214-unreal-naming/summary.md).
+- **커밋:** 미커밋·push 없음. 다음 단계는 기존 6번 문서·스타일 정리.
+
 ## 2026-11-09 — 누적 변경 분할 커밋
 
 - 사용자 요청에 따라 기존 변경을 의미 단위로 분리한다. 소스 작업 폴더를 유지하고 보존된 단계별 스냅샷으로 인덱스를 구성했다.
@@ -100,3 +107,4 @@
   - Refactor(CPP): 데모 로딩·프레임·명령 기록의 상위 흐름 분리
   - Fix(Shaders): 누락 Region과 CRLF 자동 접기 설정 보완
   - Refactor(Shaders): 디버그·오버레이·솔버 진입점과 helper 정리
+  - Refactor(Naming): C++ 타입과 bool에 Unreal-Inspired 접두어 적용

@@ -18,18 +18,18 @@
 
 namespace MDSS::Rendering
 {
-    class TRenderStateTexture final
+    class FRenderStateTexture final
     {
     public:
         // Render state texture lifecycle
-        TRenderStateTexture(VkPhysicalDevice                                PhysicalDevice,
+        FRenderStateTexture(VkPhysicalDevice                                PhysicalDevice,
                             VkDevice                                        Device,
                             VkDescriptorSetLayout                           SurfaceLayout,
-                            const SurfaceState::TSurfaceGPUResourceManager& Resources);
-        ~TRenderStateTexture();
+                            const SurfaceState::FSurfaceGPUResourceManager& Resources);
+        ~FRenderStateTexture();
 
-        TRenderStateTexture(const TRenderStateTexture&) = delete;
-        TRenderStateTexture& operator=(const TRenderStateTexture&) = delete;
+        FRenderStateTexture(const FRenderStateTexture&) = delete;
+        FRenderStateTexture& operator=(const FRenderStateTexture&) = delete;
 
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept
         {
@@ -38,7 +38,7 @@ namespace MDSS::Rendering
         // Descriptor access and texture command recording
         [[nodiscard]] VkDescriptorSet GetSet(std::size_t Instance, bool bSmoothed = false) const noexcept;
         void                          Record(VkCommandBuffer                                 Command,
-                                             const SurfaceState::TSurfaceGPUResourceManager& Resources,
+                                             const SurfaceState::FSurfaceGPUResourceManager& Resources,
                                              std::array<std::uint32_t, 4>                    Channels,
                                              std::uint32_t                                   ChannelCount,
                                              bool                                            bUpdateStates,
@@ -47,14 +47,14 @@ namespace MDSS::Rendering
                                              bool                                            bSharedHalo);
 
     private:
-        struct TInstance
+        struct FInstance
         {
-            std::unique_ptr<GPU::TGPUImage>     Image;
-            std::unique_ptr<GPU::TGPUImageView> View;
-            std::unique_ptr<GPU::TGPUImage>     SmoothingTempImage;
-            std::unique_ptr<GPU::TGPUImageView> SmoothingTempView;
-            std::unique_ptr<GPU::TGPUImage>     SmoothedImage;
-            std::unique_ptr<GPU::TGPUImageView> SmoothedView;
+            std::unique_ptr<GPU::FGPUImage>     Image;
+            std::unique_ptr<GPU::FGPUImageView> View;
+            std::unique_ptr<GPU::FGPUImage>     SmoothingTempImage;
+            std::unique_ptr<GPU::FGPUImageView> SmoothingTempView;
+            std::unique_ptr<GPU::FGPUImage>     SmoothedImage;
+            std::unique_ptr<GPU::FGPUImageView> SmoothedView;
             VkDescriptorSet                     Set = VK_NULL_HANDLE;
             VkDescriptorSet                     SmoothedSet = VK_NULL_HANDLE;
             VkDescriptorSet                     SmoothingSet = VK_NULL_HANDLE;
@@ -75,6 +75,6 @@ namespace MDSS::Rendering
         VkPipeline                Pipeline = VK_NULL_HANDLE;
         std::array<VkPipeline, 5> SmoothingPipelines{};
         VkSampler                 Sampler = VK_NULL_HANDLE;
-        std::vector<TInstance>    Instances;
+        std::vector<FInstance>    Instances;
     };
 }

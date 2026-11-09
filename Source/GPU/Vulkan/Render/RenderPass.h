@@ -9,18 +9,18 @@
 
 namespace MDSS::GPU
 {
-    class TRenderPass
+    class FRenderPass
     {
     public:
         // Render pass lifecycle and access
         /** @brief 지정된 color·depth format에 맞는 render pass를 생성한다. */
-        TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat);
-        ~TRenderPass();
+        FRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat);
+        ~FRenderPass();
 
-        TRenderPass(const TRenderPass&) = delete;
-        TRenderPass& operator=(const TRenderPass&) = delete;
-        TRenderPass(TRenderPass&&) = delete;
-        TRenderPass& operator=(TRenderPass&&) = delete;
+        FRenderPass(const FRenderPass&) = delete;
+        FRenderPass& operator=(const FRenderPass&) = delete;
+        FRenderPass(FRenderPass&&) = delete;
+        FRenderPass& operator=(FRenderPass&&) = delete;
 
         [[nodiscard]] VkRenderPass GetHandle() const noexcept;
 

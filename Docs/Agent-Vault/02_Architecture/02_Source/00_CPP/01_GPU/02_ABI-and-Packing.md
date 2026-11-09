@@ -10,7 +10,7 @@ CPU record가 GLSL에서 읽는 byte layout과 정확히 대응하는지 확인�
 
 | 파일 | 선언·핵심 코드 | 역할 |
 |---|---|---|
-| [SurfaceGPUAbi.h](../../../../../../Source/SurfaceState/GPU/Abi/SurfaceGPUAbi.h) | `TSurfaceGPU*` 레코드 | CPU에서 upload할 정렬·크기·필드 순서 계약 |
+| [SurfaceGPUAbi.h](../../../../../../Source/SurfaceState/GPU/Abi/SurfaceGPUAbi.h) | `FSurfaceGPU*` 레코드 | CPU에서 upload할 정렬·크기·필드 순서 계약 |
 | [SurfaceGPUDescriptorBinding.h](../../../../../../Source/SurfaceState/GPU/Abi/SurfaceGPUDescriptorBinding.h) | descriptor binding enum | C++ descriptor writer와 GLSL binding index가 공유하는 binding 이름 |
 | [SurfaceGPUResourceLayout.h](../../../../../../Source/SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h) | upload payload, sparse layout, pack 함수 선언 | GPU에 보낼 공유 Geometry/Profile과 instance metadata payload API |
 | [SharedGeometryPacking.cpp](../../../../../../Source/SurfaceState/GPU/Packing/SharedGeometryPacking.cpp) | `PackSharedSurfaceGeometry` | CPU static texel geometry/neighbour를 ABI record 배열로 변환 |
@@ -20,7 +20,7 @@ CPU record가 GLSL에서 읽는 byte layout과 정확히 대응하는지 확인�
 
 ## 실제 ABI 크기·Descriptor 번호 확인
 
-- [SurfaceGPUAbi.h](../../../../../../Source/SurfaceState/GPU/Abi/SurfaceGPUAbi.h)의 `static_assert`: `TSurfaceGPUVec4 = 16B`, `TSurfaceGPUGeometryScalar = 16B`, `TSurfaceGPUNeighborIndices = 32B`, `TSurfaceGPUProfileParameters = 48B`, `TSurfaceSolverPushConstants = 128B`.
+- [SurfaceGPUAbi.h](../../../../../../Source/SurfaceState/GPU/Abi/SurfaceGPUAbi.h)의 `static_assert`: `FSurfaceGPUVec4 = 16B`, `FSurfaceGPUGeometryScalar = 16B`, `FSurfaceGPUNeighborIndices = 32B`, `FSurfaceGPUProfileParameters = 48B`, `FSurfaceSolverPushConstants = 128B`.
 - [SurfaceGPUDescriptorBinding.h](../../../../../../Source/SurfaceState/GPU/Abi/SurfaceGPUDescriptorBinding.h)는 0부터 24까지 25개 storage buffer binding을 순서대로 선언한다. 예: `CurrentState = 8`, `NextState = 9`, `OutgoingFluxScale = 10`, `InputDelta = 11`, `TransferWeights = 14`, `RawOutgoing = 15`, `DynamicGeometry = 20`, `AccumulationHeights = 21`, `DynamicConcavityWeights = 22`, `Reactions = 23`, `ReactionScratch = 24`.
 - [DescriptorResources.cpp](../../../../../../Source/SurfaceState/GPU/Resources/DescriptorResources.cpp): 같은 layout으로 AB/BA 두 descriptor set을 할당하며, Current/Next에서만 State A/B source buffer를 맞바꾼다. 나머지 shared/profile/instance 자원은 두 set에서 참조한다.
 - [SparseMetadataLayout.cpp](../../../../../../Source/SurfaceState/GPU/Packing/SparseMetadataLayout.cpp)의 sparse metadata word/indirect command offset은 [SparseSchedule.glsl](../../../../../../Shaders/Simulation/Solver/SparseSchedule.glsl)의 인덱싱과 연동된다. 같은 단어를 쓴다고 ABI 일치가 보장되는 것은 아니므로 값 변경 시 양쪽을 검사한다.

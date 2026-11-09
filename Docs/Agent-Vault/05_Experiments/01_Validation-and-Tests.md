@@ -6,6 +6,45 @@
 
 
 
+## 2026-11-09 — Unreal-Inspired 네이밍 전환 검증
+
+- C++ 186개 파일(Source/Tests 181 + Research 5)의 일반 타입·비템플릿 별칭 `F`, enum `E`, scalar bool `b`로 전환. 타입명 매핑 208개 및 지역 별칭 3곳, bool 선언 108개와 참조 갱신. 실제 템플릿 `TScopeExit`·템플릿 매개변수·외부 API 타입 유지. 파일명·직렬화/로그/예외 문자열·GLSL 타입명 유지.
+- CMake 100개 고유 번역 단위를 libclang AST로 검사: 오류 0, scalar bool 선언 553개 모두 b+PascalCase, 프로젝트 타입 접두어 위반 0(외부 forward declaration 제외). bool 컨테이너 이름은 scalar 규칙의 대상이 아님.
+- 최종 Debug 전체 build 성공. CTest **7 통과/7 실패/skip 0**, 각 상태 및 추출 실패 원인 문구가 직전 GLSL 기준선과 동일. 기존 기대값·skip 정책 변경 없음.
+- 186개 C++의 최종 실행 토큰은 계획된 이름 치환 외 변화 없음(공백/주석 제외). 문자열·개행 보존. shader 69개 주석 제외 토큰 동일, glslc/spirv-val **150/150**, 직전 GLSL 기준선 SPIR-V와 모두 바이트 동일.
+- 기존 T 타입으로 빌드된 앱과 새 앱의 render-only 실행: 각 5개 frame·측정 샘플 2개, 화면 PPM·settings·validation JSON 동일, ERROR 로그 없음. timing 수치는 동일성/성능 주장에 사용하지 않음.
+- clang-format 20.1.8을 적용하고 Source/Tests 181개 dry-run 통과(`--sort-includes=false`: 기존 include 순서 유지). formatter 버전의 프로젝트 고정은 다음 스타일 단계에서 별도 처리. Python source-marker 소비자 1개 갱신·AST 구문 확인.
+- Research 도구는 CMake 정식 target 외부다. 동일 인자 syntax/AST 검사에서 변경 전후 8개 기존 진단이 타입명을 정규화하면 동일(MDSS_MODULAR_SHADER_DIR 미지정, 제거된 solver flag, instance constructor 불일치). 연구 실행 성공을 주장하지 않음.
+- GPU ABI static_assert 포함 build/GPUResource/LocalReactions 통과. C++ 심벌 이름이 바뀌므로 외부 C++ 소비자는 재빌드 필요. 모든 overlay·플랫폼·성능/장시간 검증은 미실행이며 기존 GPU 한도 유지. [명령·원문·전후 비교](../../../Build/Validation/20261109-222214-unreal-naming/summary.md).
+
+## 2026-11-09 — GLSL 상위 흐름 정리 회귀 검증
+
+- Debug 2개, Overlay 8개, Solver 3개를 interface/prototype → main → helper 순서로 정리. 기존 미분 계산 위치·workgroup 참여·memory barrier·buffer 접근/수식/variant 조건 유지. Tests/CPU 코드·기대값 변경 없음.
+- 최종 Debug 전체 build 성공. glslc/spirv-val **150/150**, SPIRV-Cross reflection에서 entry/stage·resource·member offset/stride/size·push constant·location·workgroup 인터페이스 **150개 모두 동일**. 함수 추출로 SPIR-V 자체는 달라질 수 있으며 전체 binary 동일성은 주장하지 않음.
+- 최종 CTest **7 통과/7 실패/skip 0**. 테스트별 상태와 추출한 실패 원인 문구가 직전 C++ 기준선과 동일. GPUResource/LocalReactions 통과.
+- 기존 SceneResources가 앞선 DemoAnimation 실패로 도달하지 못하던 `TestSurfaceDebugRendering` helper를 artifact harness에서 직접 실행. 변경 전·후 모두 `Raw State must distinguish over-capacity amounts.`에서 실패. 기대값을 수정하지 않았으며 그 지점까지의 **16개 RGBA32F GPU readback이 바이트 동일**, Vulkan validation ERROR 없음. helper 전체 통과로 기록하지 않음.
+- 69개 shader의 116개 Region을 실제 설치 parser/provider로 인식. live editor UI는 미확인. source layout/개행 및 이전 C++ 5개 해시 유지.
+- Overlay 전체는 기존 33 storage-buffer 장치 한도로 미검증. 전체 debug mode/variant GPU 출력, 성능·장시간·다른 GPU는 미검증. [명령·원자료·비교 결과](../../../Build/Validation/20261109-221158-glsl-top-down/summary.md).
+
+## 2026-11-09 — Shader CRLF folding 회귀 및 누락 마커 보완
+
+- 제외되었던 짧은 19개도 Region 추가. 전체 69개·103개 영역.
+- 설치 Maptz 1.0.22 실제 parser/provider 실행: 103개 typed Region·default Region 인식, 오류 없음. 옛 regex는 CRLF 시작 마커 0개로 재현되고, 새 regex는 LF/CRLF 모두 정상. AllMarkerRegions 명령 자체와 마커 인식을 구분.
+- 69개 주석 제외 코드·개행 동일. glslc/spirv-val 150개 통과, 이전 SPIR-V와 모두 바이트 동일. 기존 C++ 리팩터링 5개 해시 유지.
+- 실제 editor UI 확인은 CUA native pipe startup 실패로 미실행. provider/default 지정까지만 검증했으며 사용자는 Reload Window 후 shader를 다시 열어 확인한다. 전체 C++/CTest/성능 반복 없음.
+- [정규식·실행 코드·원자료](../../../Build/Validation/20261109-215915-shader-folding-fix/summary.md).
+
+## 2026-11-09 — C++ 상위 흐름 정리 회귀 검증
+
+- 범위: DemoAnimation.cpp, Application.cpp/.h, RendererCommands.cpp, Renderer.h의 책임 추출. 기존 검증·시간·Vulkan command/query 순서 유지. 셰이더·테스트 기대값 변경 없음.
+- Debug 전체 build 성공. CTest 14개 **7 통과/7 실패/skip 0**, 각 상태와 실패 이유 모두 직전 기준선과 동일.
+- 파서 old/new 비교 **35개(정상 5/오류 30)**: 직렬화된 clip·보간 값·예외 유형/메시지 동일.
+- Vulkan 호출 지점 81개 이름·인자·텍스트 단계 순서 동일. 실제 GPU의 동적 조건·동기화 전수 증명은 아님.
+- Render-only 앱 old/new 각 5프레임·종료 코드 0, 측정 샘플 각 2개, 화면 PPM/settings/validation JSON 동일, ERROR 로그 0. 성능 향상이나 장시간 동등성의 근거로 쓰지 않음.
+- simulation ContactSmoke.Scene은 **변경 전·후 모두** 33 storage buffer 한도로 Renderer 초기화 실패(exit 1). 실제 Contact dispatch/overlay/texel debug 동등성은 지원 GPU에서 추가 검증 필요. 이 제한을 통과·skip으로 숨기지 않음.
+- 변경 5개 clang-format dry-run 통과, CRLF-aware whitespace 검사 및 Region 번호/균형 확인. UI 설정·clock suspend 수동 조작, 장시간·성능·전 플랫폼 검증 미실행.
+- [상세 요약·명령·입력·원문 로그](../../../Build/Validation/20261109-213530-cpp-top-down/summary.md). reference는 before.zip의 변경 전 3개 C++ 본문과 같은 현재 헤더/미변경 object·의존성을 사용한 비교용 별도 링크다.
+
 ## 2026-11-09 — Shader Region 주석 변경 검증
 
 - 규칙 원본: 저장소 루트 Universal-Agent-Vault의 JS/TS 및 언어별 Region 갱신. shader 50개·84개 영역에 comment marker 추가.

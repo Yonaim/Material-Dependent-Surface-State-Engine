@@ -24,54 +24,58 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    struct TSurfaceScratchStorageFormat
+    struct FSurfaceScratchStorageFormat
     {
-        bool CacheRawFlux = true;
-        bool HalfRawFlux = false;
-        bool HalfWeights = false;
-        bool Compact = false;
+        bool bCacheRawFlux = true;
+        bool bHalfRawFlux = false;
+        bool bHalfWeights = false;
+        bool bCompact = false;
     };
 
-    class TSurfaceDataManager;
-    class TSurfaceGPUBufferPool;
+    class FSurfaceDataManager;
+    class FSurfaceGPUBufferPool;
 }
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS
 {
-    struct TTransform;
-    class TScene;
+    struct FTransform;
+    class FScene;
 }
 
 namespace MDSS::SurfaceState
 {
-    class TSurfaceInstanceGPUResources final
+    class FSurfaceInstanceGPUResources final
     {
     public:
         // Instance state buffer creation
-        TSurfaceInstanceGPUResources(VkPhysicalDevice                    PhysicalDevice,
+        FSurfaceInstanceGPUResources(VkPhysicalDevice                    PhysicalDevice,
                                      VkDevice                            Device,
                                      std::size_t                         TexelCount,
                                      std::size_t                         ChannelCount,
                                      const std::vector<float>&           TransferWeights,
-                                     const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                     const std::vector<FSurfaceGPUVec4>& TransferWeightDebugAverages = {},
                                      const std::vector<float>&           WorldTexelAreas = {},
-                                     TSurfaceGPUBufferPool*              Pool = nullptr,
-                                     TSurfaceScratchStorageFormat        Storage = {},
+                                     FSurfaceGPUBufferPool*              Pool = nullptr,
+                                     FSurfaceScratchStorageFormat        Storage = {},
                                      std::uint32_t                       MaxReactionCount = 0);
-        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
+        void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
         // Caller must wait for GPU completion and rebuild descriptors when this returns true.
-        bool ConfigureScratchStorage(
-            VkPhysicalDevice PhysicalDevice, VkDevice Device, bool Cache, bool HalfRaw, bool HalfWeights, bool Compact);
+        bool ConfigureScratchStorage(VkPhysicalDevice PhysicalDevice,
+                                     VkDevice         Device,
+                                     bool             bCache,
+                                     bool             bHalfRaw,
+                                     bool             bHalfWeights,
+                                     bool             bCompact);
 
-        [[nodiscard]] const GPU::TGPUBuffer& GetReactionScratchBuffer() const noexcept
+        [[nodiscard]] const GPU::FGPUBuffer& GetReactionScratchBuffer() const noexcept
         {
             return *ReactionScratchBuffer;
         }
@@ -80,45 +84,45 @@ namespace MDSS::SurfaceState
             return ReactionCapacity;
         }
         // State and geometry buffers
-        [[nodiscard]] const GPU::TGPUBuffer& GetStateABuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetStateBBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetOutgoingFluxScaleBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetInputDeltaBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetTransferWeightBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetTransferWeightDebugAverageBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetRawOutgoingBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetDynamicConcavityWeightBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetStateABuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetStateBBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetOutgoingFluxScaleBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetInputDeltaBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetTransferWeightBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetTransferWeightDebugAverageBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetRawOutgoingBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetWorldTexelAreaBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetDynamicGeometryBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetDynamicConcavityWeightBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
 
         // Instance data updates and reset
-        void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
-        void UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                   const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
-                                   bool                                bHalfPrecision = false);
+        void                      UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
+        void                      UpdateTransferWeights(const std::vector<float>&           TransferWeights,
+                                                        const std::vector<FSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                                        bool                                bHalfPrecision = false);
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
         void                      ResetState(const std::vector<float>& OutgoingFluxScale);
 
     private:
-        std::unique_ptr<GPU::TGPUBuffer> ReactionScratchBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> ReactionScratchBuffer;
         std::uint32_t                    ReactionCapacity = 0;
         std::size_t                      TexelCount = 0;
         std::size_t                      ChannelCount = 0;
         std::size_t                      ScalarCount = 0;
         bool                             bStoredHalfWeights = false;
-        std::unique_ptr<GPU::TGPUBuffer> StateABuffer;
-        std::unique_ptr<GPU::TGPUBuffer> StateBBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> OutgoingFluxScaleBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> InputDeltaBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> TransferWeightBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> TransferWeightDebugAverageBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> RawOutgoingBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> WorldTexelAreaBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> DynamicGeometryBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> DynamicConcavityWeightBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> AccumulationHeightBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> StateABuffer;
+        std::unique_ptr<GPU::FGPUBuffer> StateBBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> OutgoingFluxScaleBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> InputDeltaBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> TransferWeightBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> TransferWeightDebugAverageBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> RawOutgoingBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> WorldTexelAreaBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> DynamicGeometryBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> DynamicConcavityWeightBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> AccumulationHeightBuffer;
     };
 
 } // namespace MDSS::SurfaceState

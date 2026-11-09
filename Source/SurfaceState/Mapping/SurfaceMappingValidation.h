@@ -10,5 +10,5 @@
 namespace MDSS::SurfaceState
 {
     /** @throws std::invalid_argument mapping range 또는 이웃 불변조건이 깨진 경우. */
-    void ValidateSurfaceMapping(const TSurfaceMappingData& Mapping);
+    void ValidateSurfaceMapping(const FSurfaceMappingData& Mapping);
 } // namespace MDSS::SurfaceState

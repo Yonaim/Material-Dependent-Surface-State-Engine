@@ -12,7 +12,7 @@
 namespace MDSS::SurfaceState
 {
     // Static render vertex. Seam copies retain their own UV/normal but share displacement data.
-    struct TSurfaceTexelMeshVertex
+    struct FSurfaceTexelMeshVertex
     {
         glm::vec4  Position{0};
         glm::vec4  Normal{0, 0, 1, 0};
@@ -21,17 +21,17 @@ namespace MDSS::SurfaceState
         glm::uvec4 Samples{InvalidTexelIndex};
         glm::vec4  Weights{0};
     };
-    static_assert(sizeof(TSurfaceTexelMeshVertex) == 96);
+    static_assert(sizeof(FSurfaceTexelMeshVertex) == 96);
 
-    struct TSurfaceTexelMeshRange
+    struct FSurfaceTexelMeshRange
     {
         std::uint32_t FirstIndex = 0;
         std::uint32_t IndexCount = 0;
     };
 
-    struct TSurfaceTexelMesh
+    struct FSurfaceTexelMesh
     {
-        std::vector<TSurfaceTexelMeshVertex> Vertices;
+        std::vector<FSurfaceTexelMeshVertex> Vertices;
         std::vector<std::uint32_t>           Indices;
         // x/y: render edge endpoints, z: incident triangle's third vertex.
         std::vector<glm::uvec4> BoundaryEdges;
@@ -39,14 +39,14 @@ namespace MDSS::SurfaceState
         // side slot across each edge; boundary xyz identify the two endpoint neighbors
         // and the incident triangle. InvalidTexelIndex means no unique neighbor.
         std::vector<glm::uvec4>             SideAdjacency;
-        std::vector<TSurfaceTexelMeshRange> Surfaces;
+        std::vector<FSurfaceTexelMeshRange> Surfaces;
     };
 
     /** @brief Refine source triangles with texel centers; preserve and weld source seam boundaries.
      *  Without source topology, connect the supplied same-chart grid (synthetic geometry fixtures).
      */
-    [[nodiscard]] TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
-                                                          std::span<const Asset::TVertex>             Vertices = {},
-                                                          std::span<const Asset::TMeshTriangleSource> Triangles = {},
+    [[nodiscard]] FSurfaceTexelMesh BuildSurfaceTexelMesh(const FSharedSurfaceGeometryData&           Geometry,
+                                                          std::span<const Asset::FVertex>             Vertices = {},
+                                                          std::span<const Asset::FMeshTriangleSource> Triangles = {},
                                                           std::uint32_t RenderResolution = 0);
 }

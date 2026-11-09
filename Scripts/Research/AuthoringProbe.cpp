@@ -14,21 +14,21 @@ try
     nlohmann::json Output=nlohmann::json::array();
     for(const auto& C:Cases)
     {
-        auto Asset=MDSS::Asset::TSRProfileLoader::Load(0,C.at("profile").get<std::string>());
+        auto Asset=MDSS::Asset::FSRProfileLoader::Load(0,C.at("profile").get<std::string>());
         const auto& P=Asset->GetData();
-        MDSS::SurfaceState::TSurfaceStateRegistry Registry({P});
+        MDSS::SurfaceState::FSurfaceStateRegistry Registry({P});
         const auto Bindings=MDSS::Rendering::ResolveDemoSurfaceStates(Registry);
         const auto Name=C.at("state").get<std::string>();
         const auto State=Registry.GetStateId(Name);
-        const bool WetnessBound=State!=MDSS::SurfaceState::InvalidStateId&&Bindings.AbsorbedWetness==State;
+        const bool bWetnessBound=State!=MDSS::SurfaceState::InvalidStateId&&Bindings.AbsorbedWetness==State;
         nlohmann::json Names=nlohmann::json::array();
         for(unsigned I=0;I<Registry.GetStateCount();++I)Names.push_back(Registry.GetStateName(I));
         Output.push_back({{"id",C.at("id")},{"profile_loaded",true},{"registered",State!=MDSS::SurfaceState::InvalidStateId},
             {"state",Name},{"channels",Names},{"rule_count",P.Reactions.size()},
-            {"builtin_absorbed_wetness_binding",WetnessBound},
+            {"builtin_absorbed_wetness_binding",bWetnessBound},
             {"expected_builtin_absorbed_wetness_binding",C.at("expected_builtin_absorbed_wetness_binding")},
             {"scope","Actual profile loader/registry/appearance binding; no rendered-frame or author-performance evidence"}});
-        if(WetnessBound!=C.at("expected_builtin_absorbed_wetness_binding").get<bool>())throw std::runtime_error("Unexpected appearance binding");
+        if(bWetnessBound!=C.at("expected_builtin_absorbed_wetness_binding").get<bool>())throw std::runtime_error("Unexpected appearance binding");
     }
     std::ofstream F(argv[2]);F<<Output.dump(2);if(!F)throw std::runtime_error("Output failed");
     std::cout<<Output.size()<<" profile/appearance binding cases verified\n";return 0;

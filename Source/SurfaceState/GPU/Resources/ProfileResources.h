@@ -24,36 +24,36 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager;
-    class TSurfaceGPUBufferPool;
+    class FSurfaceDataManager;
+    class FSurfaceGPUBufferPool;
 }
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS
 {
-    struct TTransform;
-    class TScene;
+    struct FTransform;
+    class FScene;
 }
 
 namespace MDSS::SurfaceState
 {
-    class TSurfaceProfileGPUResources final
+    class FSurfaceProfileGPUResources final
     {
     public:
         // Profile table creation and access
-        TSurfaceProfileGPUResources(VkPhysicalDevice                                PhysicalDevice,
+        FSurfaceProfileGPUResources(VkPhysicalDevice                                PhysicalDevice,
                                     VkDevice                                        Device,
-                                    const std::vector<TSurfaceResponseProfileData>& Profiles,
-                                    const TSurfaceStateRegistry&                    Registry,
-                                    TSurfaceGPUBufferPool*                          Pool = nullptr);
-        [[nodiscard]] const GPU::TGPUBuffer& GetReactionsBuffer() const noexcept
+                                    const std::vector<FSurfaceResponseProfileData>& Profiles,
+                                    const FSurfaceStateRegistry&                    Registry,
+                                    FSurfaceGPUBufferPool*                          Pool = nullptr);
+        [[nodiscard]] const GPU::FGPUBuffer& GetReactionsBuffer() const noexcept
         {
             return *ReactionsBuffer;
         }
@@ -61,24 +61,24 @@ namespace MDSS::SurfaceState
         {
             return MaxReactionCount;
         }
-        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
+        void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
 
-        [[nodiscard]] const GPU::TGPUBuffer& GetParametersBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetSupportedBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetParametersBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetSupportedBuffer() const noexcept;
         [[nodiscard]] std::size_t            GetProfileCount() const noexcept;
         [[nodiscard]] std::size_t            GetChannelCount() const noexcept;
         [[nodiscard]] bool IsSupported(std::size_t ProfileIndex, std::size_t ChannelIndex) const noexcept;
         void
-        UpdateParameters(std::size_t ProfileIndex, std::size_t ChannelIndex, const TSurfaceStateParameters& Parameters);
+        UpdateParameters(std::size_t ProfileIndex, std::size_t ChannelIndex, const FSurfaceStateParameters& Parameters);
 
     private:
-        std::unique_ptr<GPU::TGPUBuffer> ReactionsBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> ReactionsBuffer;
         std::uint32_t                    MaxReactionCount = 0;
         std::size_t                      ProfileCount = 0;
         std::size_t                      ChannelCount = 0;
         std::vector<std::uint32_t>       SupportedChannels;
-        std::unique_ptr<GPU::TGPUBuffer> ParametersBuffer;
-        std::unique_ptr<GPU::TGPUBuffer> SupportedBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> ParametersBuffer;
+        std::unique_ptr<GPU::FGPUBuffer> SupportedBuffer;
     };
 
 } // namespace MDSS::SurfaceState

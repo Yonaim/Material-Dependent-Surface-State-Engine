@@ -27,7 +27,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Logical_Device_Lifecycle
 
-    TVulkanDevice::TVulkanDevice(VkInstance Instance, VkSurfaceKHR Surface)
+    FVulkanDevice::FVulkanDevice(VkInstance Instance, VkSurfaceKHR Surface)
     {
         std::uint32_t PhysicalDeviceCount = 0;
         vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, nullptr);
@@ -39,7 +39,7 @@ namespace MDSS::GPU
 
         std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDeviceCount);
         vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data());
-        TLogger::Debug("Vulkan", "Enumerated " + std::to_string(PhysicalDeviceCount) + " physical device(s).");
+        FLogger::Debug("Vulkan", "Enumerated " + std::to_string(PhysicalDeviceCount) + " physical device(s).");
 
         const auto Selected =
             std::find_if(PhysicalDevices.begin(),
@@ -54,7 +54,7 @@ namespace MDSS::GPU
 
         PhysicalDevice = *Selected;
 
-        const TQueueFamilyIndices QueueFamilies = TVulkanQueue::FindFamilies(PhysicalDevice, Surface);
+        const FQueueFamilyIndices QueueFamilies = FVulkanQueue::FindFamilies(PhysicalDevice, Surface);
         std::set<std::uint32_t>   UniqueQueueFamilies = {QueueFamilies.GraphicsFamily.value(),
                                                          QueueFamilies.PresentFamily.value()};
 
@@ -99,20 +99,20 @@ namespace MDSS::GPU
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
 
-        TLogger::Info("Vulkan", std::string("Physical device selected: ") + Properties.deviceName + ".");
-        TLogger::Debug("Vulkan",
+        FLogger::Info("Vulkan", std::string("Physical device selected: ") + Properties.deviceName + ".");
+        FLogger::Debug("Vulkan",
                        "GPU Vulkan API version=" + std::to_string(VK_API_VERSION_MAJOR(Properties.apiVersion)) + "." +
                            std::to_string(VK_API_VERSION_MINOR(Properties.apiVersion)) + "." +
                            std::to_string(VK_API_VERSION_PATCH(Properties.apiVersion)) + ".");
-        TLogger::Info("Vulkan",
+        FLogger::Info("Vulkan",
                       "Logical device created with " + std::to_string(DeviceExtensions.size()) +
                           " required device extension(s).");
-        TLogger::Info("Vulkan",
+        FLogger::Info("Vulkan",
                       std::string("Geometry shader support: ") +
                           (bGeometryShaderSupported ? "yes." : "no (optional stage will require fallback)."));
     }
 
-    TVulkanDevice::~TVulkanDevice()
+    FVulkanDevice::~FVulkanDevice()
     {
         if (Device != VK_NULL_HANDLE)
         {
@@ -128,22 +128,22 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Physical_Device_Selection
 
-    VkPhysicalDevice TVulkanDevice::GetPhysicalHandle() const noexcept
+    VkPhysicalDevice FVulkanDevice::GetPhysicalHandle() const noexcept
     {
         return PhysicalDevice;
     }
 
-    VkDevice TVulkanDevice::GetHandle() const noexcept
+    VkDevice FVulkanDevice::GetHandle() const noexcept
     {
         return Device;
     }
 
-    bool TVulkanDevice::SupportsGeometryShader() const noexcept
+    bool FVulkanDevice::SupportsGeometryShader() const noexcept
     {
         return bGeometryShaderSupported;
     }
 
-    bool TVulkanDevice::IsDeviceSuitable(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    bool FVulkanDevice::IsDeviceSuitable(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
         VkPhysicalDeviceProperties Properties{};
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
@@ -161,18 +161,18 @@ namespace MDSS::GPU
             return false;
         }
 
-        const TQueueFamilyIndices QueueFamilies = TVulkanQueue::FindFamilies(PhysicalDevice, Surface);
+        const FQueueFamilyIndices QueueFamilies = FVulkanQueue::FindFamilies(PhysicalDevice, Surface);
 
         return QueueFamilies.Complete() && SupportsRequiredExtensions(PhysicalDevice) &&
                HasAdequateSwapchainSupport(PhysicalDevice, Surface);
     }
 
-    bool TVulkanDevice::SupportsRequiredExtensions(VkPhysicalDevice PhysicalDevice)
+    bool FVulkanDevice::SupportsRequiredExtensions(VkPhysicalDevice PhysicalDevice)
     {
         return HasDeviceExtension(PhysicalDevice, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
 
-    bool TVulkanDevice::HasAdequateSwapchainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    bool FVulkanDevice::HasAdequateSwapchainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
         std::uint32_t FormatCount = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &FormatCount, nullptr);
@@ -183,7 +183,7 @@ namespace MDSS::GPU
         return FormatCount > 0 && PresentModeCount > 0;
     }
 
-    bool TVulkanDevice::HasDeviceExtension(VkPhysicalDevice PhysicalDevice, const char* ExtensionName)
+    bool FVulkanDevice::HasDeviceExtension(VkPhysicalDevice PhysicalDevice, const char* ExtensionName)
     {
         std::uint32_t ExtensionCount = 0;
         vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, nullptr);
@@ -197,7 +197,7 @@ namespace MDSS::GPU
                            { return std::strcmp(Extension.extensionName, ExtensionName) == 0; });
     }
 
-    std::vector<const char*> TVulkanDevice::BuildDeviceExtensions(VkPhysicalDevice PhysicalDevice)
+    std::vector<const char*> FVulkanDevice::BuildDeviceExtensions(VkPhysicalDevice PhysicalDevice)
     {
         std::vector<const char*> Extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 

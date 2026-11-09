@@ -9,25 +9,25 @@
 
 namespace MDSS
 {
-    class TDebugUI;
+    class FDebugUI;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceStateSystem;
+    class FSurfaceStateSystem;
 }
 
 namespace MDSS
 {
     // Owns simulation time and records simulation work into the frame command buffer.
-    class TFrameCoordinator final
+    class FFrameCoordinator final
     {
     public:
-        explicit TFrameCoordinator(SurfaceState::TSurfaceStateSystem& SurfaceStateSystem) noexcept;
+        explicit FFrameCoordinator(SurfaceState::FSurfaceStateSystem& SurfaceStateSystem) noexcept;
 
         // Called after the frame fence wait, before swapchain acquisition.
-        bool BeginFrame(TDebugUI& DebugUI, float DeltaTime, bool bSuspendClock);
+        bool BeginFrame(FDebugUI& DebugUI, float DeltaTime, bool bSuspendClock);
         // Consume time only after an image was acquired so skipped frames retain their budget.
-        void PrepareSteps(TDebugUI& DebugUI, bool bResetState);
+        void PrepareSteps(FDebugUI& DebugUI, bool bResetState);
         void RecordSimulation(VkCommandBuffer CommandBuffer,
                               VkQueryPool     QueryPool,
                               std::uint32_t   FirstStepQuery,
@@ -65,8 +65,8 @@ namespace MDSS
         }
 
     private:
-        SurfaceState::TSurfaceStateSystem& SurfaceStateSystem;
-        SurfaceState::TSimulationClock     Clock;
+        SurfaceState::FSurfaceStateSystem& SurfaceStateSystem;
+        SurfaceState::FSimulationClock     Clock;
         std::vector<float>                 Steps;
         std::uint64_t                      StepSerial = 0;
         float                              MaximumStep = SurfaceState::FixedSimulationStepSeconds;

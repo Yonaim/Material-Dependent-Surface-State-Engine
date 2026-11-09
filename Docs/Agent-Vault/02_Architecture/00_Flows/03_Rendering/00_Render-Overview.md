@@ -38,7 +38,7 @@ State Heatmap은 `State / Capacity`를 표시하며 100% 초과를 구분한다.
 
 ## Command Buffer 전체 순서
 
-[`TRenderer::RecordCommandBuffer`](../../../../../Source/Rendering/Core/RendererCommands.cpp)는 command buffer를 연 뒤 `FrameCoordinator.RecordSimulation`을 먼저 호출한다. 여러 substep이 있다면 마지막까지 기록하고 A/B 방향을 바꾼 뒤, 현재 State에 대해 Inspector·State texture·overlay compute·graphics draw를 차례로 기록한다. CPU 측 `RenderFrame`은 image acquire, 제출과 present를 담당한다.
+[`FRenderer::RecordCommandBuffer`](../../../../../Source/Rendering/Core/RendererCommands.cpp)는 command buffer를 연 뒤 `FrameCoordinator.RecordSimulation`을 먼저 호출한다. 여러 substep이 있다면 마지막까지 기록하고 A/B 방향을 바꾼 뒤, 현재 State에 대해 Inspector·State texture·overlay compute·graphics draw를 차례로 기록한다. CPU 측 `RenderFrame`은 image acquire, 제출과 present를 담당한다.
 
 ```mermaid
 flowchart LR

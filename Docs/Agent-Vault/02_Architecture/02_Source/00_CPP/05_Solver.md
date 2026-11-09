@@ -1,12 +1,12 @@
 # Solver
 
-`TSimulationClock`가 frame elapsed를 누적하고 `TFrameCoordinator`가 실행할 fixed step 수를 결정한다. 각 step의 instance 입력은 `TSurfaceSolverInstanceStep`에 모여 `TSurfaceStateSolver`로 전달된다. Solver는 accumulation geometry 준비, 두 transport compute pass와 활성 규칙이 있을 때의 Reaction Pass를 command buffer에 기록한다. 계산식은 [[02_Architecture/01_Contracts/04_Solver|Solver Contract]], 순서는 [[02_Architecture/00_Flows/00_Main-Flow|Simulation Pipeline]]이 기준이다.
+`FSimulationClock`가 frame elapsed를 누적하고 `FFrameCoordinator`가 실행할 fixed step 수를 결정한다. 각 step의 instance 입력은 `FSurfaceSolverInstanceStep`에 모여 `FSurfaceStateSolver`로 전달된다. Solver는 accumulation geometry 준비, 두 transport compute pass와 활성 규칙이 있을 때의 Reaction Pass를 command buffer에 기록한다. 계산식은 [[02_Architecture/01_Contracts/04_Solver|Solver Contract]], 순서는 [[02_Architecture/00_Flows/00_Main-Flow|Simulation Pipeline]]이 기준이다.
 
 | 파일 | 주요 코드 | 역할·데이터 흐름 |
 |---|---|---|
-| [SimulationClock.h](../../../../../Source/SurfaceState/Solver/SimulationClock.h) | `TSimulationClock::Accumulate`, `LimitPendingSeconds`, `Reset` | pause·배속·backlog 제한을 반영해 simulation time 잔여량 유지 |
+| [SimulationClock.h](../../../../../Source/SurfaceState/Solver/SimulationClock.h) | `FSimulationClock::Accumulate`, `LimitPendingSeconds`, `Reset` | pause·배속·backlog 제한을 반영해 simulation time 잔여량 유지 |
 | [SurfaceTimestep.cpp](../../../../../Source/SurfaceState/Solver/SurfaceTimestep.cpp) | next timestep bound 계산, transfer-weight/geometry 입력 준비 | 현재 Solver 옵션·profile·surface geometry에 안전한 timestep 제한을 계산 |
-| [SurfaceStateSolver.h](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.h) | solver term/debug 설정, `TSurfaceSolverInstanceStep`, `RecordStep(s)` | step 구성과 GPU command 기록 API |
+| [SurfaceStateSolver.h](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.h) | solver term/debug 설정, `FSurfaceSolverInstanceStep`, `RecordStep(s)` | step 구성과 GPU command 기록 API |
 | [SurfaceStateSolver.cpp](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp) | variant 선택, push constants, `RecordBufferBarriers`, pass dispatch | buffer 상태 전이와 sparse/regular dispatch를 기록하고 Pass 1→Pass 2→선택적 Reaction 의존성을 동기화 |
 | [SurfaceStepRecording.cpp](../../../../../Source/SurfaceState/Solver/SurfaceStepRecording.cpp) | step command orchestration helper | instance state, InputDelta, geometry update와 solver step 호출의 순서를 묶음 |
 
@@ -28,13 +28,13 @@
 | 최종 State buffer barriers | Pass 2 또는 Reaction Pass의 Next State·schedule 결과를 파생 pass에 보이게 함 | post height·다음 step |
 | `bPrepareAccumulationHeight` | geometry OFF에서도 최종 render height를 준비할지 결정 | overlay preview |
 
-`TSimulationClock`은 시간 예산만 관리하고 State 계산을 하지 않는다. `SurfaceTimestep.cpp`의 안정성 제한은 `PrepareSteps`에서 auto substepping을 선택했을 때 사용된다. 수치 계산의 식과 범위는 [[02_Architecture/01_Contracts/04_Solver|Solver 계약]], 실제 pass 입출력은 [[02_Architecture/02_Source/01_Shaders/00_Simulation/00_Index|Simulation shader 지도]]와 함께 읽는다.
+`FSimulationClock`은 시간 예산만 관리하고 State 계산을 하지 않는다. `SurfaceTimestep.cpp`의 안정성 제한은 `PrepareSteps`에서 auto substepping을 선택했을 때 사용된다. 수치 계산의 식과 범위는 [[02_Architecture/01_Contracts/04_Solver|Solver 계약]], 실제 pass 입출력은 [[02_Architecture/02_Source/01_Shaders/00_Simulation/00_Index|Simulation shader 지도]]와 함께 읽는다.
 
 ## RecordSteps 실제 단계별 명령과 Barrier
 
-[TSurfaceStateSystem::RecordStep](../../../../../Source/SurfaceState/Solver/SurfaceStepRecording.cpp) → [TSurfaceStateSolver::RecordSteps](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp)의 호출을 따라가면:
+[FSurfaceStateSystem::RecordStep](../../../../../Source/SurfaceState/Solver/SurfaceStepRecording.cpp) → [FSurfaceStateSolver::RecordSteps](../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp)의 호출을 따라가면:
 
-1. Contact 적용 후 transform/weight 설정 변화를 감지해 CPU TransferWeight cache를 필요할 때 갱신한다. 각 instance의 CurrentAB, model matrix, gravity, flag, InputActive, 마지막 step의 height 준비 여부를 `TSurfaceSolverInstanceStep`에 담는다.
+1. Contact 적용 후 transform/weight 설정 변화를 감지해 CPU TransferWeight cache를 필요할 때 갱신한다. 각 instance의 CurrentAB, model matrix, gravity, flag, InputActive, 마지막 step의 height 준비 여부를 `FSurfaceSolverInstanceStep`에 담는다.
 2. `RecordSteps` 시작은 이전 graphics/compute/indirect 사용에 대한 read completion Barrier를 기록한다. `ForceFullGeometry`인 state-driven geometry는 Current State를 **AccumulationHeight → DynamicGeometry → DynamicWeights** 순서로 전체 재구축한다.
 3. sparse/active-mask/geometry height 조건이 있으면 `SurfaceSparseScheduleReset` compute를 한 번 기록하고 schedule metadata write/read·indirect Barrier를 둔다.
 4. **Pass 1**: 선택된 `Pass1Pipelines[Variant]`, full `vkCmdDispatch` 또는 sparse `vkCmdDispatchIndirect`. 결과 `OutgoingFluxScale`, `RawOutgoing`의 compute write→read Barrier.
@@ -47,4 +47,4 @@
 
 ## Local Reaction 경로
 
-`TSurfaceStateSolver`는 Scene 공유 Profile GPU table의 최대 활성 규칙 수가 0보다 크면 Reaction flag(bit 25)를 설정한다. 이 flag는 해당 texel의 Profile 규칙 수가 아닌 Scene 전체 조건이다. Pass 2가 binding 24에 기본 snapshot과 유입을 기록한 뒤 write/read barrier를 거쳐 `SurfaceReaction.comp`를 실행한다. 이 pass의 최종 Next State와 activity/Height schedule을 기존 post Geometry 경로가 소비한다. binding 23/24의 데이터 및 시간 적분 계약은 [[02_Architecture/01_Contracts/06_Reactions|Local Reactions]]를 따른다.
+`FSurfaceStateSolver`는 Scene 공유 Profile GPU table의 최대 활성 규칙 수가 0보다 크면 Reaction flag(bit 25)를 설정한다. 이 flag는 해당 texel의 Profile 규칙 수가 아닌 Scene 전체 조건이다. Pass 2가 binding 24에 기본 snapshot과 유입을 기록한 뒤 write/read barrier를 거쳐 `SurfaceReaction.comp`를 실행한다. 이 pass의 최종 Next State와 activity/Height schedule을 기존 post Geometry 경로가 소비한다. binding 23/24의 데이터 및 시간 적분 계약은 [[02_Architecture/01_Contracts/06_Reactions|Local Reactions]]를 따른다.

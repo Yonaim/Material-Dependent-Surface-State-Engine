@@ -11,16 +11,16 @@
 namespace MDSS::GPU
 {
 // ============================================================
-// 00. TGraphicsPass Implementation
+// 00. FGraphicsPass Implementation
 // ============================================================
 #pragma region 00_TGraphicsPass_Implementation
 
-    TGraphicsPass::TGraphicsPass(const TRenderPass& RenderPass) noexcept : RenderPass(&RenderPass)
+    FGraphicsPass::FGraphicsPass(const FRenderPass& RenderPass) noexcept : RenderPass(&RenderPass)
     {
     }
 
-    void TGraphicsPass::Begin(VkCommandBuffer               CommandBuffer,
-                              const TFramebuffer&           Framebuffers,
+    void FGraphicsPass::Begin(VkCommandBuffer               CommandBuffer,
+                              const FFramebuffer&           Framebuffers,
                               std::size_t                   FramebufferIndex,
                               VkExtent2D                    RenderExtent,
                               std::span<const VkClearValue> ClearValues,
@@ -47,7 +47,7 @@ namespace MDSS::GPU
         vkCmdBeginRenderPass(CommandBuffer, &BeginInfo, Contents);
     }
 
-    void TGraphicsPass::End(VkCommandBuffer CommandBuffer) const
+    void FGraphicsPass::End(VkCommandBuffer CommandBuffer) const
     {
         if (CommandBuffer == VK_NULL_HANDLE || RenderPass == nullptr)
         {

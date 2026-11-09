@@ -23,7 +23,7 @@
 
 int main(int Argc, char* Argv[])
 {
-    MDSS::TApplicationLaunchOptions LaunchOptions;
+    MDSS::FApplicationLaunchOptions LaunchOptions;
     try
     {
         LaunchOptions = MDSS::ParseApplicationLaunchOptions(Argc, Argv);
@@ -36,15 +36,15 @@ int main(int Argc, char* Argv[])
 
     try
     {
-        MDSS::TApplication TApplication(std::move(LaunchOptions.Benchmark),
+        MDSS::FApplication FApplication(std::move(LaunchOptions.Benchmark),
                                         LaunchOptions.RenderTileSize,
                                         LaunchOptions.bPerWorkgroupChannelMask,
                                         std::move(LaunchOptions.ScenePath));
-        TApplication.Run(LaunchOptions.FrameLimit);
+        FApplication.Run(LaunchOptions.FrameLimit);
     }
     catch (const std::exception& Exception)
     {
-        MDSS::TLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
+        MDSS::FLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
         return 1;
     }
 

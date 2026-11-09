@@ -14,25 +14,25 @@
 
 namespace MDSS::Asset
 {
-    struct TSurfaceProfileDistribution
+    struct FSurfaceProfileDistribution
     {
         std::vector<std::filesystem::path> ProfilePaths;
         /** @brief Per-Surface Profile index; SurfaceState::InvalidSurfaceProfileIndex means render-only/no simulation.
          */
-        std::vector<SurfaceState::TSurfaceProfileIndex> ProfileIndicesBySurface;
+        std::vector<SurfaceState::FSurfaceProfileIndex> ProfileIndicesBySurface;
 
         /** @brief Expand one Profile assignment per Surface to one index per mapping texel. */
-        [[nodiscard]] std::vector<SurfaceState::TSurfaceProfileIndex>
-        BuildTexelProfileMap(const SurfaceState::TSurfaceMappingData& Mapping) const;
+        [[nodiscard]] std::vector<SurfaceState::FSurfaceProfileIndex>
+        BuildTexelProfileMap(const SurfaceState::FSurfaceMappingData& Mapping) const;
     };
 
-    class TSurfaceProfileDistributionLoader final
+    class FSurfaceProfileDistributionLoader final
     {
     public:
         /**
          * @brief Load a version 1 `.SurfaceProfileMap` JSON sidecar.
          * Paths in the file are relative to the sidecar's directory.
          */
-        [[nodiscard]] static TSurfaceProfileDistribution Load(const std::filesystem::path& Path);
+        [[nodiscard]] static FSurfaceProfileDistribution Load(const std::filesystem::path& Path);
     };
 } // namespace MDSS::Asset

@@ -18,17 +18,17 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Framebuffer_Lifecycle
 
-    TFramebuffer::TFramebuffer(VkDevice                        Device,
-                               VkRenderPass                    TRenderPass,
+    FFramebuffer::FFramebuffer(VkDevice                        Device,
+                               VkRenderPass                    FRenderPass,
                                VkExtent2D                      Extent,
                                const std::vector<VkImageView>& ColorImageViews,
                                const std::vector<VkImageView>& DepthImageViews)
         : Device(Device)
     {
-        Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
+        Create(FRenderPass, Extent, ColorImageViews, DepthImageViews);
     }
 
-    TFramebuffer::~TFramebuffer()
+    FFramebuffer::~FFramebuffer()
     {
         Reset();
     }
@@ -40,16 +40,16 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Framebuffer_Creation
 
-    void TFramebuffer::Recreate(VkRenderPass                    TRenderPass,
+    void FFramebuffer::Recreate(VkRenderPass                    FRenderPass,
                                 VkExtent2D                      Extent,
                                 const std::vector<VkImageView>& ColorImageViews,
                                 const std::vector<VkImageView>& DepthImageViews)
     {
         Reset();
-        Create(TRenderPass, Extent, ColorImageViews, DepthImageViews);
+        Create(FRenderPass, Extent, ColorImageViews, DepthImageViews);
     }
 
-    void TFramebuffer::Reset()
+    void FFramebuffer::Reset()
     {
         for (VkFramebuffer Handle : Handles)
         {
@@ -61,7 +61,7 @@ namespace MDSS::GPU
         Handles.clear();
     }
 
-    void TFramebuffer::Create(VkRenderPass                    TRenderPass,
+    void FFramebuffer::Create(VkRenderPass                    FRenderPass,
                               VkExtent2D                      Extent,
                               const std::vector<VkImageView>& ColorImageViews,
                               const std::vector<VkImageView>& DepthImageViews)
@@ -76,7 +76,7 @@ namespace MDSS::GPU
 
             VkFramebufferCreateInfo CreateInfo{};
             CreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            CreateInfo.renderPass = TRenderPass;
+            CreateInfo.renderPass = FRenderPass;
             CreateInfo.attachmentCount = static_cast<std::uint32_t>(Attachments.size());
             CreateInfo.pAttachments = Attachments.data();
             CreateInfo.width = Extent.width;
@@ -94,7 +94,7 @@ namespace MDSS::GPU
             }
         }
 
-        TLogger::Debug("TRenderer",
+        FLogger::Debug("TRenderer",
                        "Framebuffers created: " + std::to_string(Handles.size()) + " at " +
                            std::to_string(Extent.width) + "x" + std::to_string(Extent.height) + ".");
     }
@@ -106,7 +106,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Framebuffer_Accessors
 
-    VkFramebuffer TFramebuffer::Get(std::size_t Index) const
+    VkFramebuffer FFramebuffer::Get(std::size_t Index) const
     {
         if (Index >= Handles.size())
         {
@@ -116,7 +116,7 @@ namespace MDSS::GPU
         return Handles[Index];
     }
 
-    std::size_t TFramebuffer::GetCount() const noexcept
+    std::size_t FFramebuffer::GetCount() const noexcept
     {
         return Handles.size();
     }

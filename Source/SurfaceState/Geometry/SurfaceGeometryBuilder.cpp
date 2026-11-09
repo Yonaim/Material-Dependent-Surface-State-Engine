@@ -26,8 +26,8 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Surface_Geometry_Build
 
-    TSharedSurfaceGeometryData TSurfaceGeometryBuilder::Build(const TSurfaceMappingData&        Mapping,
-                                                              std::vector<TSurfaceProfileIndex> ProfileMap,
+    FSharedSurfaceGeometryData FSurfaceGeometryBuilder::Build(const FSurfaceMappingData&        Mapping,
+                                                              std::vector<FSurfaceProfileIndex> ProfileMap,
                                                               std::uint32_t                     ProfileCount)
     {
         ValidateSurfaceMapping(Mapping);
@@ -44,19 +44,19 @@ namespace MDSS::SurfaceState
             throw std::invalid_argument("ProfileMap must provide exactly one entry per mapping texel.");
         }
 
-        std::vector<TSurfaceDefinition> Definitions;
+        std::vector<FSurfaceDefinition> Definitions;
         Definitions.reserve(Mapping.Surfaces.size());
-        for (const TSurfaceTexelRange& Surface : Mapping.Surfaces)
+        for (const FSurfaceTexelRange& Surface : Mapping.Surfaces)
         {
             Definitions.push_back({Surface.Surface, Surface.Resolution});
         }
 
-        TSharedSurfaceGeometryData          Geometry(std::move(Definitions));
-        std::vector<TSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
+        FSharedSurfaceGeometryData          Geometry(std::move(Definitions));
+        std::vector<FSurfaceTexelGeometry>& GeometryTexels = Geometry.GetTexels();
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
-            const TSurfaceMappingTexel& Source = Mapping.Texels[Index];
-            TSurfaceTexelGeometry&      Target = GeometryTexels[Index];
+            const FSurfaceMappingTexel& Source = Mapping.Texels[Index];
+            FSurfaceTexelGeometry&      Target = GeometryTexels[Index];
             if (!Source.IsValid())
             {
                 if (ProfileMap[Index] != InvalidSurfaceProfileIndex)

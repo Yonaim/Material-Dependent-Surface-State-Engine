@@ -71,12 +71,12 @@ namespace MDSS
 // ============================================================
 #pragma region 00_std_Implementation
 
-    std::optional<std::filesystem::path> TSceneFileDialog::OpenScene()
+    std::optional<std::filesystem::path> FSceneFileDialog::OpenScene()
     {
         return RunNativeDialog(false);
     }
 
-    std::optional<std::filesystem::path> TSceneFileDialog::SaveScene()
+    std::optional<std::filesystem::path> FSceneFileDialog::SaveScene()
     {
         return RunNativeDialog(true);
     }

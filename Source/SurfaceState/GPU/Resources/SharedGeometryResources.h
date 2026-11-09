@@ -26,82 +26,82 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager;
-    class TSurfaceGPUBufferPool;
+    class FSurfaceDataManager;
+    class FSurfaceGPUBufferPool;
 }
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS
 {
-    struct TTransform;
-    class TScene;
+    struct FTransform;
+    class FScene;
 }
 
 namespace MDSS::SurfaceState
 {
-    struct TSurfaceTexelMeshGPUVariant
+    struct FSurfaceTexelMeshGPUVariant
     {
-        struct TTileVertexList
+        struct FTileVertexList
         {
             std::vector<std::uint32_t> Words;
             std::uint32_t              TileCount = 0;
         };
-        std::unique_ptr<GPU::TGPUBuffer>         IndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         VertexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>         BoundaryBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>         IndexBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>         VertexBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>         BoundaryBuffer;
         std::uint32_t                            VertexCount = 0;
         std::uint32_t                            BoundaryCount = 0;
-        std::vector<TSurfaceTexelMeshRange>      Ranges;
-        std::map<std::uint32_t, TTileVertexList> TileVertexLists;
+        std::vector<FSurfaceTexelMeshRange>      Ranges;
+        std::map<std::uint32_t, FTileVertexList> TileVertexLists;
 
-        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
+        void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
     };
 
-    class TSurfaceSharedGeometryGPUResources final
+    class FSurfaceSharedGeometryGPUResources final
     {
     public:
         // Shared geometry resource creation
-        TSurfaceSharedGeometryGPUResources(VkPhysicalDevice                            PhysicalDevice,
+        FSurfaceSharedGeometryGPUResources(VkPhysicalDevice                            PhysicalDevice,
                                            VkDevice                                    Device,
-                                           const TSharedSurfaceGeometryData&           Geometry,
-                                           std::span<const TSurfaceProfileIndex>       ProfileIndexRemap = {},
-                                           std::span<const Asset::TVertex>             SourceVertices = {},
-                                           std::span<const Asset::TMeshTriangleSource> SourceTriangles = {},
-                                           TSurfaceGPUBufferPool*                      Pool = nullptr);
-        void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
+                                           const FSharedSurfaceGeometryData&           Geometry,
+                                           std::span<const FSurfaceProfileIndex>       ProfileIndexRemap = {},
+                                           std::span<const Asset::FVertex>             SourceVertices = {},
+                                           std::span<const Asset::FMeshTriangleSource> SourceTriangles = {},
+                                           FSurfaceGPUBufferPool*                      Pool = nullptr);
+        void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
 
         // Geometry buffers
-        [[nodiscard]] const GPU::TGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetPositionBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetNormalBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetMesoNormalBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetGeometryScalarBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetNeighborIndexBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetReverseNeighborDirectionIndexBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
-        [[nodiscard]] const std::vector<TSurfaceGPUSurfaceRange>& GetSurfaceRanges() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer&                      GetTexelChartIndexBuffer() const noexcept;
-        [[nodiscard]] const GPU::TGPUBuffer&                      GetRenderSamplingBoundaryFlagBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetTexelSurfaceIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetTexelProfileIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetPositionBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetNormalBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetMesoNormalBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetGeometryScalarBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetNeighborIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetReverseNeighborDirectionIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer& GetSurfaceRangeBuffer() const noexcept;
+        [[nodiscard]] const std::vector<FSurfaceGPUSurfaceRange>& GetSurfaceRanges() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer&                      GetTexelChartIndexBuffer() const noexcept;
+        [[nodiscard]] const GPU::FGPUBuffer&                      GetRenderSamplingBoundaryFlagBuffer() const noexcept;
         [[nodiscard]] std::size_t                                 GetTexelCount() const noexcept;
 
         // Render mesh variants
-        [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshIndexBuffer() const noexcept
+        [[nodiscard]] const GPU::FGPUBuffer* GetTexelMeshIndexBuffer() const noexcept
         {
             return FullTexelMesh.IndexBuffer.get();
         }
-        [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshVertexBuffer() const noexcept
+        [[nodiscard]] const GPU::FGPUBuffer* GetTexelMeshVertexBuffer() const noexcept
         {
             return FullTexelMesh.VertexBuffer.get();
         }
-        [[nodiscard]] const GPU::TGPUBuffer* GetTexelMeshBoundaryBuffer() const noexcept
+        [[nodiscard]] const GPU::FGPUBuffer* GetTexelMeshBoundaryBuffer() const noexcept
         {
             return FullTexelMesh.BoundaryBuffer.get();
         }
@@ -113,14 +113,14 @@ namespace MDSS::SurfaceState
         {
             return FullTexelMesh.BoundaryCount;
         }
-        [[nodiscard]] const std::vector<TSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept
+        [[nodiscard]] const std::vector<FSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept
         {
             return FullTexelMesh.Ranges;
         }
-        [[nodiscard]] const TSurfaceTexelMeshGPUVariant&
-        GetTexelMeshVariant(std::uint32_t RenderResolution) const
+        [[nodiscard]] const FSurfaceTexelMeshGPUVariant& GetTexelMeshVariant(std::uint32_t RenderResolution) const
         {
-            if (RenderResolution == SimulationResolution) return FullTexelMesh;
+            if (RenderResolution == SimulationResolution)
+                return FullTexelMesh;
             if (!IsSurfaceRenderMeshResolution(RenderResolution))
                 throw std::invalid_argument("Unsupported render mesh resolution.");
             auto Found = TexelMeshVariants.find(RenderResolution);
@@ -131,27 +131,28 @@ namespace MDSS::SurfaceState
         // GPU-idle only. The simulation-resolution mesh remains available to topology/debug consumers.
         void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
         {
-            std::erase_if(TexelMeshVariants, [=](const auto& Item) { return Item.first != Surface && Item.first != Overlay; });
+            std::erase_if(TexelMeshVariants,
+                          [=](const auto& Item) { return Item.first != Surface && Item.first != Overlay; });
         }
 
     private:
-        std::size_t                                          TexelCount = 0;
-        std::unique_ptr<GPU::TGPUBuffer>                     TexelSurfaceIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     TexelProfileIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     PositionBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     NormalBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     MesoNormalBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     GeometryScalarBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     NeighborIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     ReverseNeighborDirectionIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     SurfaceRangeBuffer;
-        std::vector<TSurfaceGPUSurfaceRange>                 SurfaceRanges;
-        std::unique_ptr<GPU::TGPUBuffer>                     TexelChartIndexBuffer;
-        std::unique_ptr<GPU::TGPUBuffer>                     RenderSamplingBoundaryFlagBuffer;
-        std::uint32_t                                        SimulationResolution = 0;
-        TSurfaceTexelMeshGPUVariant                          FullTexelMesh;
-        mutable std::map<std::uint32_t, TSurfaceTexelMeshGPUVariant> TexelMeshVariants;
-        std::function<TSurfaceTexelMeshGPUVariant(std::uint32_t)> MeshVariantFactory;
+        std::size_t                                                  TexelCount = 0;
+        std::unique_ptr<GPU::FGPUBuffer>                             TexelSurfaceIndexBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             TexelProfileIndexBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             PositionBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             NormalBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             MesoNormalBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             GeometryScalarBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             NeighborIndexBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             ReverseNeighborDirectionIndexBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             SurfaceRangeBuffer;
+        std::vector<FSurfaceGPUSurfaceRange>                         SurfaceRanges;
+        std::unique_ptr<GPU::FGPUBuffer>                             TexelChartIndexBuffer;
+        std::unique_ptr<GPU::FGPUBuffer>                             RenderSamplingBoundaryFlagBuffer;
+        std::uint32_t                                                SimulationResolution = 0;
+        FSurfaceTexelMeshGPUVariant                                  FullTexelMesh;
+        mutable std::map<std::uint32_t, FSurfaceTexelMeshGPUVariant> TexelMeshVariants;
+        std::function<FSurfaceTexelMeshGPUVariant(std::uint32_t)>    MeshVariantFactory;
     };
 
 } // namespace MDSS::SurfaceState

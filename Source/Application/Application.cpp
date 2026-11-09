@@ -35,41 +35,41 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Lifecycle
 
-    TApplication::TApplication(TBenchmarkOptions     BenchmarkOptions,
+    FApplication::FApplication(FBenchmarkOptions     BenchmarkOptions,
                                std::uint32_t         RenderTileSize,
                                bool                  bPerWorkgroupChannelMask,
                                std::filesystem::path ScenePath)
         : MainWindow(1280, 720, "MDSS Engine"), Context(MainWindow), Assets(Context), SurfaceData(Assets), MainScene(),
           Benchmark(std::move(BenchmarkOptions))
     {
-        TLogger::Info("TApplication", "Initializing MDSS Engine.");
+        FLogger::Info("TApplication", "Initializing MDSS Engine.");
 
         const auto StartupScenePath =
-            Benchmark.Enabled    ? std::filesystem::absolute(Benchmark.ScenePath).lexically_normal()
+            Benchmark.bEnabled   ? std::filesystem::absolute(Benchmark.ScenePath).lexically_normal()
             : !ScenePath.empty() ? std::filesystem::absolute(ScenePath).lexically_normal()
                                  : LoadStartupScenePath(GetEngineConfigDirectory() / "Engine.ini");
-        TLogger::Info("TApplication", "Startup Scene: " + StartupScenePath.string());
+        FLogger::Info("TApplication", "Startup Scene: " + StartupScenePath.string());
         MainScene =
-            TSceneLoader::Load(StartupScenePath,
+            FSceneLoader::Load(StartupScenePath,
                                Assets,
                                SurfaceData,
-                               Benchmark.Enabled ? std::optional<std::uint32_t>(Benchmark.Resolution) : std::nullopt);
+                               Benchmark.bEnabled ? std::optional<std::uint32_t>(Benchmark.Resolution) : std::nullopt);
 
         SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(MainScene));
         SurfaceStateSystem =
-            std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
+            std::make_unique<SurfaceState::FSurfaceStateSystem>(Context, Assets, SurfaceData, MainScene);
         if (StartupScenePath.filename() == "ReactionTransitionComparison.Scene")
         {
             SurfaceStateSystem->SetSparseSolverEnabled(true);
-            TLogger::Info("TApplication", "Sparse Solver enabled for comparison scene.");
+            FLogger::Info("TApplication", "Sparse Solver enabled for comparison scene.");
         }
-        FrameCoordinator = std::make_unique<TFrameCoordinator>(*SurfaceStateSystem);
-        FrameRenderer = std::make_unique<Rendering::TRenderer>(
+        FrameCoordinator = std::make_unique<FFrameCoordinator>(*SurfaceStateSystem);
+        FrameRenderer = std::make_unique<Rendering::FRenderer>(
             Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStateSystem, *FrameCoordinator);
-        FrameRenderer->SetOverlayOccupancyTileSize(static_cast<Rendering::TOverlayOccupancyTileSize>(RenderTileSize));
+        FrameRenderer->SetOverlayOccupancyTileSize(static_cast<Rendering::EOverlayOccupancyTileSize>(RenderTileSize));
         FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
-        DebugInterface = std::make_unique<TDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
-        if (Benchmark.Enabled)
+        DebugInterface = std::make_unique<FDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
+        if (Benchmark.bEnabled)
         {
             if (!PerformanceSettings().value("replay_demo", false))
                 MainScene.PauseDemoAnimation();
@@ -118,11 +118,11 @@ namespace MDSS
             FrameRenderer->ConfigureBenchmarkCapture(
                 Benchmark.OutputPath, Benchmark.WarmupFrames, Benchmark.MeasurementFrames);
         }
-        InputInterface = std::make_unique<TInputSystem>(MainWindow.GetNativeHandle());
-        TLogger::Info("TApplication", "Surface State System, renderer, scene, asset system, and Debug UI are ready.");
+        InputInterface = std::make_unique<FInputSystem>(MainWindow.GetNativeHandle());
+        FLogger::Info("TApplication", "Surface State System, renderer, scene, asset system, and Debug UI are ready.");
     }
 
-    TApplication::~TApplication() = default;
+    FApplication::~FApplication() = default;
 
 #pragma endregion
 
@@ -131,21 +131,21 @@ namespace MDSS
 // ============================================================
 #pragma region 01_Main_Loop
 
-    void TApplication::Run(std::size_t FrameLimit)
+    void FApplication::Run(std::size_t FrameLimit)
     {
         if (FrameLimit == 0)
         {
-            TLogger::Info("TApplication", "Entering main loop.");
+            FLogger::Info("TApplication", "Entering main loop.");
         }
         else
         {
-            TLogger::Info("TApplication", "Entering main loop for " + std::to_string(FrameLimit) + " frame(s).");
+            FLogger::Info("TApplication", "Entering main loop for " + std::to_string(FrameLimit) + " frame(s).");
         }
         MainLoop(FrameLimit);
-        TLogger::Info("TApplication", "Main loop finished.");
+        FLogger::Info("TApplication", "Main loop finished.");
     }
 
-    void TApplication::MainLoop(std::size_t FrameLimit)
+    void FApplication::MainLoop(std::size_t FrameLimit)
     {
         std::size_t         RenderedFrameCount = 0;
         std::vector<double> BenchmarkCpuFrames;
@@ -162,7 +162,7 @@ namespace MDSS
                 MainScene, *DebugInterface, Timing.PlaybackDeltaTime, Timing.bSuspendSimulationClock);
             if (Timing.bSuspendSimulationClock)
                 WaitForSettingsAndResetClock(PreviousFrameTime);
-            if (Benchmark.Enabled)
+            if (Benchmark.bEnabled)
                 BenchmarkCpuFrames.push_back(
                     std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - FrameCpuStart)
                         .count());
@@ -177,9 +177,9 @@ namespace MDSS
 // ============================================================
 #pragma region 02_Frame_Input_and_Timing
 
-    void TApplication::SubmitInteractiveContact()
+    void FApplication::SubmitInteractiveContact()
     {
-        if (const std::optional<SurfaceState::TSurfaceContactInput> Contact =
+        if (const std::optional<SurfaceState::FSurfaceContactInput> Contact =
                 InputInterface->PollDebugContact(MainScene,
                                                  Assets,
                                                  SurfaceData,
@@ -197,32 +197,32 @@ namespace MDSS
                                                  DebugInterface->ShouldSuppressDebugHotkey()))
         {
             SurfaceStateSystem->SubmitContact(*Contact);
-            TLogger::Info("TInputSystem",
+            FLogger::Info("TInputSystem",
                           "Debug contact submitted for processing (state=" + std::to_string(Contact->State) +
                               ", instance=" + std::to_string(Contact->TargetInstance) +
                               ", strength=" + std::to_string(Contact->Strength) + ").");
         }
     }
 
-    TApplication::FFrameTiming TApplication::UpdateFrameTiming(std::chrono::steady_clock::time_point& PreviousFrameTime)
+    FApplication::FFrameTiming FApplication::UpdateFrameTiming(std::chrono::steady_clock::time_point& PreviousFrameTime)
     {
         const auto CurrentFrameTime = std::chrono::steady_clock::now();
         // Settings and file dialogs can block inside BeginFrame. Exclude
         // their elapsed time from the interactive simulation clock.
         const bool  bSuspendSimulationClock = DebugInterface->ConsumeFrameTimeResetRequest();
-        const float DeltaTime = Benchmark.Enabled ? SurfaceState::FixedSimulationStepSeconds
+        const float DeltaTime = Benchmark.bEnabled ? SurfaceState::FixedSimulationStepSeconds
                                 : bSuspendSimulationClock
                                     ? 0.0F
                                     : std::chrono::duration<float>(CurrentFrameTime - PreviousFrameTime).count();
         PreviousFrameTime = CurrentFrameTime;
-        const float PlaybackDeltaTime = !Benchmark.Enabled && !bSuspendSimulationClock &&
+        const float PlaybackDeltaTime = !Benchmark.bEnabled && !bSuspendSimulationClock &&
                                                 MainScene.IsDemoAnimationPlaying() && MainScene.HasDemoContactEvents()
                                             ? SurfaceState::FixedSimulationStepSeconds
                                             : DeltaTime;
         return {bSuspendSimulationClock, PlaybackDeltaTime};
     }
 
-    void TApplication::AdvanceDemoAndSubmitContacts(float PlaybackDeltaTime)
+    void FApplication::AdvanceDemoAndSubmitContacts(float PlaybackDeltaTime)
     {
         const auto Events = MainScene.AdvanceDemoAnimation(PlaybackDeltaTime * DebugInterface->GetAnimationTimeScale());
         for (const auto& Event : Events)
@@ -231,13 +231,13 @@ namespace MDSS
             const auto  Target =
                 std::find_if(Instances.begin(),
                              Instances.end(),
-                             [&](const TStaticMeshInstance& Instance) { return Instance.GetId() == Event.Target; });
+                             [&](const FStaticMeshInstance& Instance) { return Instance.GetId() == Event.Target; });
             if (Target == Instances.end())
                 throw std::runtime_error("Demo contact target disappeared from Scene: " + Event.Target);
             const glm::mat4                    Model = Target->GetTransform().GetMatrix();
-            SurfaceState::TSurfaceContactInput Contact;
+            SurfaceState::FSurfaceContactInput Contact;
             Contact.TargetInstance =
-                static_cast<SurfaceState::TSurfaceInstanceID>(std::distance(Instances.begin(), Target));
+                static_cast<SurfaceState::FSurfaceInstanceID>(std::distance(Instances.begin(), Target));
             Contact.State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Event.State);
             Contact.WorldPosition = glm::vec3(Model * glm::vec4(Event.LocalPosition, 1.0F));
             Contact.PlaneNormal = glm::normalize(glm::transpose(glm::inverse(glm::mat3(Model))) * Event.LocalNormal);
@@ -254,7 +254,7 @@ namespace MDSS
         }
     }
 
-    void TApplication::WaitForSettingsAndResetClock(std::chrono::steady_clock::time_point& PreviousFrameTime)
+    void FApplication::WaitForSettingsAndResetClock(std::chrono::steady_clock::time_point& PreviousFrameTime)
     {
         // The setting's GPU work can outlive RenderFrame. Resume the
         // clock only after that work is complete.
@@ -263,11 +263,11 @@ namespace MDSS
         PreviousFrameTime = std::chrono::steady_clock::now();
     }
 
-    void TApplication::FinalizeRun(const std::vector<double>& BenchmarkCpuFrames)
+    void FApplication::FinalizeRun(const std::vector<double>& BenchmarkCpuFrames)
     {
-        TLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");
+        FLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");
         vkDeviceWaitIdle(Context.GetDevice());
-        if (Benchmark.Enabled)
+        if (Benchmark.bEnabled)
         {
             FrameRenderer->FinalizeBenchmarkCapture();
             std::ofstream(Benchmark.OutputPath.string() + ".cpu.json") << nlohmann::json(BenchmarkCpuFrames).dump();

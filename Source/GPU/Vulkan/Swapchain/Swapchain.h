@@ -11,34 +11,34 @@
 
 namespace MDSS
 {
-    class TWindow;
+    class FWindow;
 }
 
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 
-    struct TSwapchainSupportDetails
+    struct FSwapchainSupportDetails
     {
         VkSurfaceCapabilitiesKHR        Capabilities{};
         std::vector<VkSurfaceFormatKHR> Formats;
         std::vector<VkPresentModeKHR>   PresentModes;
     };
 
-    class TSwapchain
+    class FSwapchain
     {
     public:
         // Swapchain lifecycle and recreation
-        TSwapchain(const TVulkanContext& Context, const TWindow& TWindow);
-        ~TSwapchain();
+        FSwapchain(const FVulkanContext& Context, const FWindow& FWindow);
+        ~FSwapchain();
 
-        TSwapchain(const TSwapchain&) = delete;
-        TSwapchain& operator=(const TSwapchain&) = delete;
-        TSwapchain(TSwapchain&&) = delete;
-        TSwapchain& operator=(TSwapchain&&) = delete;
+        FSwapchain(const FSwapchain&) = delete;
+        FSwapchain& operator=(const FSwapchain&) = delete;
+        FSwapchain(FSwapchain&&) = delete;
+        FSwapchain& operator=(FSwapchain&&) = delete;
 
         /** @brief 현재 surface와 window 크기에 맞춰 swapchain 및 image view를 다시 만든다. */
-        void Recreate(const TVulkanContext& Context, const TWindow& TWindow);
+        void Recreate(const FVulkanContext& Context, const FWindow& FWindow);
 
         // Swapchain image access
         [[nodiscard]] VkSwapchainKHR GetHandle() const noexcept;
@@ -52,17 +52,17 @@ namespace MDSS::GPU
         [[nodiscard]] const std::vector<VkImageView>& GetImageViews() const noexcept;
 
         /** @brief physical device와 surface의 capabilities, formats, present modes를 조회한다. */
-        [[nodiscard]] static TSwapchainSupportDetails QuerySupport(VkPhysicalDevice PhysicalDevice,
+        [[nodiscard]] static FSwapchainSupportDetails QuerySupport(VkPhysicalDevice PhysicalDevice,
                                                                    VkSurfaceKHR     Surface);
 
     private:
         // Surface support and creation helpers
         static VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& Formats);
         static VkPresentModeKHR   ChoosePresentMode(const std::vector<VkPresentModeKHR>& PresentModes);
-        static VkExtent2D         ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const TWindow& TWindow);
+        static VkExtent2D         ChooseExtent(const VkSurfaceCapabilitiesKHR& Capabilities, const FWindow& FWindow);
         static VkCompositeAlphaFlagBitsKHR ChooseCompositeAlpha(const VkSurfaceCapabilitiesKHR& Capabilities);
 
-        void Create(const TVulkanContext& Context, const TWindow& TWindow);
+        void Create(const FVulkanContext& Context, const FWindow& FWindow);
         void Destroy();
         void CreateImageViews();
 

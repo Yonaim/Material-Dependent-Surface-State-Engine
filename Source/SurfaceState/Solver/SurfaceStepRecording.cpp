@@ -34,7 +34,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_GPU_Recording
 
-    void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
+    void FSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
                                          float           DeltaTime,
                                          VkQueryPool     TimestampQueryPool,
                                          std::uint32_t   FirstStepQuery,
@@ -62,20 +62,20 @@ namespace MDSS::SurfaceState
             throw std::runtime_error("Failed to wait for the graphics queue before updating TransferWeight caches.");
         }
 
-        std::vector<TSurfaceSolverInstanceStep> InstanceSteps;
+        std::vector<FSurfaceSolverInstanceStep> InstanceSteps;
         std::vector<std::size_t>                ActiveSceneIndices;
         InstanceSteps.reserve(GPUResources->GetSceneInstanceCount());
         ActiveSceneIndices.reserve(GPUResources->GetSceneInstanceCount());
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
-            const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(SceneIndex);
+            const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(SceneIndex);
             if (Descriptors == nullptr)
             {
                 continue;
             }
 
             const bool                 bCurrentStateAB = GPUResources->IsCurrentStateAB(SceneIndex);
-            const TStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[SceneIndex];
+            const FStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[SceneIndex];
             const glm::mat4            ModelMatrix = Instance.GetTransform().GetMatrix();
             const bool                 bRebuildStaticWeights =
                 bTransferWeightSettingsDirty ||
@@ -85,30 +85,30 @@ namespace MDSS::SurfaceState
                 GPUResources->UpdateTransferWeightCache(
                     SceneIndex,
                     Instance.GetTransform(),
-                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
-                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                    DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
+                    DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight),
+                    DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight),
+                    DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight),
                     bHalfDynamicWeightsEnabled);
             }
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             std::uint32_t   SolverFlags = 0U;
-            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::GeometryDrive))
+            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::GeometryDrive))
             {
                 SolverFlags |= 1U << 0U;
             }
-            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::SaturationDrive))
+            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::SaturationDrive))
             {
                 SolverFlags |= 1U << 1U;
             }
-            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::Decay))
+            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::Decay))
             {
                 SolverFlags |= 1U << 2U;
             }
-            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ConcavityRetention))
+            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ConcavityRetention))
             {
                 SolverFlags |= 1U << 3U;
             }
-            if (!DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::MesoDirectionNormal))
+            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::MesoDirectionNormal))
             {
                 SolverFlags |= 1U << 4U;
             }
@@ -146,14 +146,14 @@ namespace MDSS::SurfaceState
             if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled)
             {
                 SolverFlags |= SurfaceSolverStateDrivenGeometryUpdateFlag;
-                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight))
+                if (DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight))
                     SolverFlags |= SurfaceSolverDistanceWeightFlag;
-                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight))
+                if (DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight))
                     SolverFlags |= SurfaceSolverNormalWeightFlag;
-                if (DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight))
+                if (DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight))
                     SolverFlags |= SurfaceSolverProfileBoundaryWeightFlag;
             }
-            TSurfaceSolverInstanceStep Step;
+            FSurfaceSolverInstanceStep Step;
             Step.Descriptors = Descriptors;
             Step.bCurrentStateAB = bCurrentStateAB;
             Step.TexelCount = GPUResources->GetInstanceTexelCount(SceneIndex);

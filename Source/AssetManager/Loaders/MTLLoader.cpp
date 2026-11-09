@@ -33,14 +33,14 @@ namespace MDSS::Asset
     } // namespace
 
 // ============================================================
-// 00. TMTLLoader Implementation
+// 00. FMTLLoader Implementation
 // ============================================================
 #pragma region 00_TMTLLoader_Implementation
 
-    TMaterialSourceData TMTLLoader::Convert(const tinyobj::material_t&   Material,
+    FMaterialSourceData FMTLLoader::Convert(const tinyobj::material_t&   Material,
                                             const std::filesystem::path& TextureBaseDirectory)
     {
-        TMaterialSourceData Result{};
+        FMaterialSourceData Result{};
         Result.Name = Material.name.empty() ? "Material" : Material.name;
         Result.BaseColor = {Material.diffuse[0], Material.diffuse[1], Material.diffuse[2], Material.dissolve};
         Result.BaseColorTexturePath = ResolveTexturePath(TextureBaseDirectory, Material.diffuse_texname);
@@ -80,7 +80,7 @@ namespace MDSS::Asset
         ReadWaterParameter("mdss_water_darkening", Result.WaterAppearance.z, 0.0F, 1.0F);
         ReadWaterParameter("mdss_droplet_density", Result.WaterAppearance.w, 1.0F, 256.0F);
 
-        TLogger::Debug("TMTLLoader",
+        FLogger::Debug("TMTLLoader",
                        "Material '" + Result.Name + "': base texture=" +
                            (Result.BaseColorTexturePath.empty() ? std::string("<default>")
                                                                 : Result.BaseColorTexturePath.filename().string()) +

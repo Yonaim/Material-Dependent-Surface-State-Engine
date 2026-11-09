@@ -18,31 +18,31 @@
 
 namespace MDSS::SurfaceState
 {
-    struct TSurfaceGPUSharedGeometryUpload
+    struct FSurfaceGPUSharedGeometryUpload
     {
         std::vector<std::uint32_t>   TexelSurfaceIndices;
         std::vector<std::uint32_t>   TexelProfileIndices;
-        std::vector<TSurfaceGPUVec4> Positions;
-        std::vector<TSurfaceGPUVec4> Normals;
+        std::vector<FSurfaceGPUVec4> Positions;
+        std::vector<FSurfaceGPUVec4> Normals;
         // xyz: Meso normal; w: maximum Meso height in the same surface/chart.
-        std::vector<TSurfaceGPUVec4>            MesoNormals;
-        std::vector<TSurfaceGPUGeometryScalar>  GeometryScalars;
-        std::vector<TSurfaceGPUNeighborIndices> NeighborIndices;
+        std::vector<FSurfaceGPUVec4>            MesoNormals;
+        std::vector<FSurfaceGPUGeometryScalar>  GeometryScalars;
+        std::vector<FSurfaceGPUNeighborIndices> NeighborIndices;
         // Eight 4-bit reverse direction indices per texel; 0xf means no reciprocal neighbor.
         std::vector<std::uint32_t>           ReverseNeighborDirectionIndices;
-        std::vector<TSurfaceGPUSurfaceRange> SurfaceRanges;
+        std::vector<FSurfaceGPUSurfaceRange> SurfaceRanges;
         std::vector<std::uint32_t>           TexelChartIndices;
     };
 
-    struct TSurfaceGPUProfileUpload
+    struct FSurfaceGPUProfileUpload
     {
-        std::vector<TSurfaceGPUProfileParameters> Parameters;
+        std::vector<FSurfaceGPUProfileParameters> Parameters;
         std::vector<std::uint32_t>                Supported;
         std::vector<std::uint32_t>                Reactions;
         std::uint32_t                             MaxReactionCount = 0;
     };
 
-    struct TSurfaceSparseMetadataLayout
+    struct FSurfaceSparseMetadataLayout
     {
         std::size_t WorkgroupCount = 0;
         std::size_t SolverACommandWord = 0;
@@ -69,32 +69,32 @@ namespace MDSS::SurfaceState
     };
 
     /** @brief Accumulation-height 뒤에 붙는 persistent solver/sparse scheduling metadata의 word layout을 계산한다. */
-    [[nodiscard]] TSurfaceSparseMetadataLayout GetSurfaceSparseMetadataLayout(std::size_t TexelCount);
+    [[nodiscard]] FSurfaceSparseMetadataLayout GetSurfaceSparseMetadataLayout(std::size_t TexelCount);
 
     // Shared geometry upload layout
     /** @brief Optional Runtime-local → Scene Profile index remap; CPU Geometry remains unchanged. */
-    [[nodiscard]] TSurfaceGPUSharedGeometryUpload
-    PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData&     Geometry,
-                              std::span<const TSurfaceProfileIndex> ProfileIndexRemap = {});
+    [[nodiscard]] FSurfaceGPUSharedGeometryUpload
+    PackSharedSurfaceGeometry(const FSharedSurfaceGeometryData&     Geometry,
+                              std::span<const FSurfaceProfileIndex> ProfileIndexRemap = {});
 
     // Transform-dependent instance data
-    [[nodiscard]] float              GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel,
+    [[nodiscard]] float              GetSurfaceWorldTexelArea(const FSurfaceTexelGeometry& Texel,
                                                               const glm::mat4&             ModelMatrix) noexcept;
-    [[nodiscard]] std::vector<float> BuildSurfaceGPUWorldTexelAreas(const TSharedSurfaceGeometryData& Geometry,
+    [[nodiscard]] std::vector<float> BuildSurfaceGPUWorldTexelAreas(const FSharedSurfaceGeometryData& Geometry,
                                                                     const glm::mat4&                  ModelMatrix);
 
     /** @brief 대칭 TransferWeight 규칙을 각 텍셀의 이웃 방향 인덱스별 cache로 만든다. */
     [[nodiscard]] std::vector<float>
-    BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
+    BuildSurfaceGPUTransferWeights(const FSharedSurfaceGeometryData& Geometry,
                                    const glm::mat4&                  ModelMatrix,
-                                   std::vector<TSurfaceGPUVec4>*     OutDebugAverages = nullptr,
+                                   std::vector<FSurfaceGPUVec4>*     OutDebugAverages = nullptr,
                                    bool                              bUseNormalWeight = true,
                                    bool                              bUseDistanceWeight = true,
                                    bool                              bUseProfileBoundaryWeight = true);
 
     // Profile and buffer layouts
-    [[nodiscard]] TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
-                                                               const TSurfaceStateRegistry& Registry);
+    [[nodiscard]] FSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<FSurfaceResponseProfileData>& Profiles,
+                                                               const FSurfaceStateRegistry& Registry);
 
     [[nodiscard]] std::size_t
     GetSurfaceGPUStateValueIndex(std::size_t TexelIndex, std::size_t ChannelIndex, std::size_t ChannelCount);

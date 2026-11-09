@@ -7,7 +7,7 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Scene_and_Camera_Controls
 
-    void TDebugUI::SetupDockspace()
+    void FDebugUI::SetupDockspace()
     {
         ImGuiViewport*               Viewport = ImGui::GetMainViewport();
         constexpr ImGuiDockNodeFlags DockFlags = ImGuiDockNodeFlags_PassthruCentralNode;
@@ -65,7 +65,7 @@ namespace MDSS
         bDockLayoutInitialized = true;
     }
 
-    void TDebugUI::ResetSurfaceStateSettings()
+    void FDebugUI::ResetSurfaceStateSettings()
     {
         const bool bHasStates = SurfaceDataManager->GetSurfaceStateRegistry().GetStateCount() != 0;
         InjectState = bHasStates ? 0 : SurfaceState::InvalidStateId;
@@ -88,10 +88,10 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::ReplaceSceneFromPath(TScene& SceneData, const std::filesystem::path& Path)
+    void FDebugUI::ReplaceSceneFromPath(FScene& SceneData, const std::filesystem::path& Path)
     {
-        TScene Loaded = TSceneLoader::Load(Path, *AssetManager, *SurfaceDataManager);
-        TScene PreviousScene = SceneData;
+        FScene Loaded = FSceneLoader::Load(Path, *AssetManager, *SurfaceDataManager);
+        FScene PreviousScene = SceneData;
         SceneData = std::move(Loaded);
         try
         {
@@ -109,10 +109,10 @@ namespace MDSS
         ActiveGizmoAxis = -1;
     }
 
-    void TDebugUI::RestartScene(TScene& SceneData)
+    void FDebugUI::RestartScene(FScene& SceneData)
     {
         const std::filesystem::path Path = SceneData.GetSourcePath();
-        const TCamera               CurrentCamera = SceneData.GetMainCamera();
+        const FCamera               CurrentCamera = SceneData.GetMainCamera();
         bFrameTimeResetRequested = true;
         SceneData.RestoreInitialState();
         SceneData.GetMainCamera() = CurrentCamera;
@@ -123,7 +123,7 @@ namespace MDSS
         SceneStatus = Path.empty() ? "Restarted: Scene" : "Restarted: " + Path.filename().string();
     }
 
-    void TDebugUI::DrawSceneWindow(TScene& SceneData)
+    void FDebugUI::DrawSceneWindow(FScene& SceneData)
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos({Viewport->WorkPos.x + 350.0F, Viewport->WorkPos.y + 10.0F}, ImGuiCond_FirstUseEver);
@@ -141,7 +141,7 @@ namespace MDSS
         {
             // 취소하거나 로딩에 실패해도 대화상자 대기 시간은 시뮬레이션에서 제외한다.
             bFrameTimeResetRequested = true;
-            if (const auto Path = TSceneFileDialog::OpenScene())
+            if (const auto Path = FSceneFileDialog::OpenScene())
             {
                 try
                 {
@@ -151,7 +151,7 @@ namespace MDSS
                 catch (const std::exception& Error)
                 {
                     SceneStatus = std::string("Load failed: ") + Error.what();
-                    TLogger::Error("TDebugUI", SceneStatus);
+                    FLogger::Error("TDebugUI", SceneStatus);
                 }
             }
         }
@@ -159,7 +159,7 @@ namespace MDSS
         if (ImGui::Button("Save Scene"))
         {
             bFrameTimeResetRequested = true;
-            if (const auto Path = TSceneFileDialog::SaveScene())
+            if (const auto Path = FSceneFileDialog::SaveScene())
             {
                 try
                 {
@@ -168,7 +168,7 @@ namespace MDSS
                     {
                         SavePath += ".Scene";
                     }
-                    TSceneLoader::Save(SceneData, SavePath);
+                    FSceneLoader::Save(SceneData, SavePath);
                     SceneData.SetSourcePath(std::filesystem::absolute(SavePath).lexically_normal());
                     SceneData.CaptureInitialState();
                     SceneStatus = "Saved: " + SavePath.filename().string();
@@ -189,7 +189,7 @@ namespace MDSS
             catch (const std::exception& Error)
             {
                 SceneStatus = std::string("Restart failed: ") + Error.what();
-                TLogger::Error("TDebugUI", SceneStatus);
+                FLogger::Error("TDebugUI", SceneStatus);
             }
         }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -212,7 +212,7 @@ namespace MDSS
                 catch (const std::exception& Error)
                 {
                     SceneStatus = std::string("Load failed: ") + Error.what();
-                    TLogger::Error("TDebugUI", SceneStatus);
+                    FLogger::Error("TDebugUI", SceneStatus);
                 }
             }
         };
@@ -251,7 +251,7 @@ namespace MDSS
         ImGui::End();
     }
 
-    void TDebugUI::ReplayDemo(TScene& SceneData)
+    void FDebugUI::ReplayDemo(FScene& SceneData)
     {
         bFrameTimeResetRequested = true;
         SceneData.RestoreInitialState();
@@ -262,7 +262,7 @@ namespace MDSS
         SceneData.PlayDemoAnimation();
     }
 
-    void TDebugUI::TogglePresentationMode()
+    void FDebugUI::TogglePresentationMode()
     {
         bPresentationMode = !bPresentationMode;
         if (bPresentationMode)
@@ -271,7 +271,7 @@ namespace MDSS
             bPresentationAxisWasVisible = FrameRenderer->IsWorldAxisVisible();
             FrameRenderer->SetWorldGridVisible(false);
             FrameRenderer->SetWorldAxisVisible(false);
-            FrameRenderer->SetRenderViewMode(0, Rendering::TRenderViewMode::Lit);
+            FrameRenderer->SetRenderViewMode(0, Rendering::ERenderViewMode::Lit);
         }
         else
         {
@@ -280,7 +280,7 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::UpdateDemoPlaybackGridAxis(TScene& SceneData)
+    void FDebugUI::UpdateDemoPlaybackGridAxis(FScene& SceneData)
     {
         const bool bShouldHide = SceneData.HasDemoAnimation() && SceneData.IsDemoAnimationPlaying();
         if (bShouldHide && !bDemoPlaybackGridAxisHidden)
@@ -302,7 +302,7 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::DrawAnimationWindow(TScene& SceneData)
+    void FDebugUI::DrawAnimationWindow(FScene& SceneData)
     {
         if (!SceneData.HasDemoAnimation())
         {
@@ -381,7 +381,7 @@ namespace MDSS
         ImGui::End();
     }
 
-    void TDebugUI::ProcessSelectionAndGizmo(TScene& SceneData)
+    void FDebugUI::ProcessSelectionAndGizmo(FScene& SceneData)
     {
         if (bInjectMode)
         {
@@ -430,20 +430,20 @@ namespace MDSS
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
         const glm::vec4      Rect = GetViewportRectNormalized(GetActiveViewportIndex());
         const ImVec2         ViewportOrigin{MainViewport->Pos.x + Rect.x * DisplaySize.x,
-                                            MainViewport->Pos.y + Rect.y * DisplaySize.y};
+                                    MainViewport->Pos.y + Rect.y * DisplaySize.y};
         const ImVec2         ViewportSize{Rect.z * DisplaySize.x, Rect.w * DisplaySize.y};
         if (ViewportSize.x <= 0.0F || ViewportSize.y <= 0.0F)
         {
             return;
         }
         const float     Aspect = ViewportSize.x / ViewportSize.y;
-        const TCamera&  Camera = GetActiveViewportCamera(SceneData);
+        const FCamera&  Camera = GetActiveViewportCamera(SceneData);
         const glm::mat4 VP = Camera.GetViewProjectionMatrix(Aspect);
         const glm::vec3 Origin = Camera.GetPosition();
         const ImVec2    Mouse = IO.MousePos;
         const bool      bMouseInViewport = Mouse.x >= ViewportOrigin.x && Mouse.y >= ViewportOrigin.y &&
-                                           Mouse.x < ViewportOrigin.x + ViewportSize.x &&
-                                           Mouse.y < ViewportOrigin.y + ViewportSize.y;
+                                      Mouse.x < ViewportOrigin.x + ViewportSize.x &&
+                                      Mouse.y < ViewportOrigin.y + ViewportSize.y;
 
         auto GetAxisScreenSegment = [&](glm::vec3 Position, int Axis, ImVec2& A, ImVec2& B, float& WorldScale)
         {
@@ -520,7 +520,7 @@ namespace MDSS
                     const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse;
                     if (glm::length(MouseDelta) >= 3.0F && GizmoDragWorldScale > 0.0F)
                     {
-                        TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+                        FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
                         float       CurrentAngle = 0.0F, Distance = 0.0F;
                         if (GetRotationRingAngle(Transform.Position,
                                                  ActiveGizmoAxis,
@@ -670,7 +670,7 @@ namespace MDSS
             {
                 ActiveGizmoAxis = BestAxis;
                 GizmoDragStartMouse = {Mouse.x, Mouse.y};
-                TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+                FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
                 GizmoDragStartPosition = Transform.Position;
                 GizmoDragWorldScale = WorldScale;
                 if (bRotationGizmoMode)
@@ -706,16 +706,16 @@ namespace MDSS
             return;
         }
         FarPoint /= FarPoint.w;
-        const TSurfaceRayHit Hit = TRaycaster::Cast(SceneData, *AssetManager, Origin, glm::vec3(FarPoint) - Origin);
+        const FSurfaceRayHit Hit = FRaycaster::Cast(SceneData, *AssetManager, Origin, glm::vec3(FarPoint) - Origin);
         if (ImGui::GetIO().KeyShift)
         {
-            if (Hit.Hit)
+            if (Hit.bHit)
                 (void)FrameRenderer->InspectTexel(SceneData, Hit.InstanceIndex, Hit.TriangleID, Hit.SimulationUV);
             else
                 FrameRenderer->ClearInspectedTexel();
             return;
         }
-        if (Hit.Hit)
+        if (Hit.bHit)
         {
             SelectedObject = Hit.InstanceIndex;
         }
@@ -725,7 +725,7 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::DrawSelectedObjectWindow(TScene& SceneData)
+    void FDebugUI::DrawSelectedObjectWindow(FScene& SceneData)
     {
         if (!SelectedObject || *SelectedObject >= SceneData.GetStaticMeshInstances().size())
         {
@@ -737,7 +737,7 @@ namespace MDSS
         ImGui::SetNextWindowSize({330.0F, 420.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Selected Object##SceneTools", nullptr, Flags);
-        TTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+        FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
         ImGui::Text("Object %zu", *SelectedObject);
         DrawSectionHeader("Transform");
         if (ImGui::RadioButton("Translate", !bRotationGizmoMode))
@@ -777,7 +777,7 @@ namespace MDSS
         ImGui::End();
     }
 
-    void TDebugUI::ProcessCameraInput(TScene& SceneData)
+    void FDebugUI::ProcessCameraInput(FScene& SceneData)
     {
         ImGuiIO& IO = ImGui::GetIO();
 
@@ -811,7 +811,7 @@ namespace MDSS
             glfwSetInputMode(NativeWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
 
-        TCamera& CameraData = GetViewportCamera(SceneData, GetActiveViewportIndex());
+        FCamera& CameraData = GetViewportCamera(SceneData, GetActiveViewportIndex());
 
         if (bRotatingCamera)
         {
@@ -904,7 +904,7 @@ namespace MDSS
         CameraData.SetTarget(CameraData.GetTarget() + Delta);
     }
 
-    void TDebugUI::DrawCameraWindow(TScene& SceneData)
+    void FDebugUI::DrawCameraWindow(FScene& SceneData)
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         const float    AvailableWidth = std::max(Viewport->WorkSize.x, 1.0F);
@@ -921,7 +921,7 @@ namespace MDSS
 
         if (ImGui::Begin("Camera", nullptr, Flags))
         {
-            TCamera& CameraData = GetViewportCamera(SceneData, GetActiveViewportIndex());
+            FCamera& CameraData = GetViewportCamera(SceneData, GetActiveViewportIndex());
 
             ImGui::TextDisabled("Viewport %u", ActiveViewportId);
 

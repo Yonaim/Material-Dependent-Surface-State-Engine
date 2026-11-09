@@ -18,19 +18,19 @@
 namespace MDSS::Asset
 {
 // ============================================================
-// 00. TMeshAsset Implementation
+// 00. FMeshAsset Implementation
 // ============================================================
 #pragma region 00_TMeshAsset_Implementation
 
-    TMeshAsset::TMeshAsset(TAssetID                         ID,
+    FMeshAsset::FMeshAsset(FAssetID                         ID,
                            std::string                      Name,
                            std::filesystem::path            SourcePath,
-                           const GPU::TVulkanContext&       Context,
-                           std::vector<TVertex>             Vertices,
+                           const GPU::FVulkanContext&       Context,
+                           std::vector<FVertex>             Vertices,
                            std::vector<std::uint32_t>       Indices,
-                           std::vector<TMeshSection>        Sections,
-                           std::vector<TMeshTriangleSource> Triangles)
-        : TAsset(ID, std::move(Name), std::move(SourcePath)), Vertices(std::move(Vertices)),
+                           std::vector<FMeshSection>        Sections,
+                           std::vector<FMeshTriangleSource> Triangles)
+        : FAsset(ID, std::move(Name), std::move(SourcePath)), Vertices(std::move(Vertices)),
           Indices(std::move(Indices)), Sections(std::move(Sections)), Triangles(std::move(Triangles))
     {
         if (this->Vertices.empty() || this->Indices.empty())
@@ -45,7 +45,7 @@ namespace MDSS::Asset
         glm::vec3 Minimum(std::numeric_limits<float>::max());
         glm::vec3 Maximum(std::numeric_limits<float>::lowest());
         bool      bFiniteBounds = true;
-        for (const TVertex& Vertex : this->Vertices)
+        for (const FVertex& Vertex : this->Vertices)
         {
             const glm::vec3 P = Vertex.Position;
             if (!std::isfinite(P.x) || !std::isfinite(P.y) || !std::isfinite(P.z))
@@ -59,64 +59,64 @@ namespace MDSS::Asset
         if (bFiniteBounds)
         {
             BoundsCenter = Minimum + (Maximum - Minimum) * 0.5F;
-            for (const TVertex& Vertex : this->Vertices)
+            for (const FVertex& Vertex : this->Vertices)
                 BoundsRadius = std::max(BoundsRadius, glm::length(Vertex.Position - BoundsCenter));
         }
         else
             BoundsRadius = std::numeric_limits<float>::infinity();
 
-        const VkDeviceSize VertexBytes = sizeof(TVertex) * this->Vertices.size();
+        const VkDeviceSize VertexBytes = sizeof(FVertex) * this->Vertices.size();
         const VkDeviceSize IndexBytes = sizeof(std::uint32_t) * this->Indices.size();
 
-        VertexBuffer = std::make_unique<GPU::TGPUBuffer>(Context.GetPhysicalDevice(),
+        VertexBuffer = std::make_unique<GPU::FGPUBuffer>(Context.GetPhysicalDevice(),
                                                          Context.GetDevice(),
                                                          VertexBytes,
                                                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                         GPU::TGPUBufferMemoryCategory::MeshAsset);
-        IndexBuffer = std::make_unique<GPU::TGPUBuffer>(Context.GetPhysicalDevice(),
+                                                         GPU::EGPUBufferMemoryCategory::MeshAsset);
+        IndexBuffer = std::make_unique<GPU::FGPUBuffer>(Context.GetPhysicalDevice(),
                                                         Context.GetDevice(),
                                                         IndexBytes,
                                                         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                        GPU::TGPUBufferMemoryCategory::MeshAsset);
+                                                        GPU::EGPUBufferMemoryCategory::MeshAsset);
 
         VertexBuffer->Upload(this->Vertices.data(), VertexBytes);
         IndexBuffer->Upload(this->Indices.data(), IndexBytes);
 
-        TLogger::Debug("TAssetManager",
+        FLogger::Debug("TAssetManager",
                        "Uploaded TMeshAsset '" + GetName() + "' to GPU (vertex bytes=" + std::to_string(VertexBytes) +
                            ", index bytes=" + std::to_string(IndexBytes) + ").");
     }
 
-    const std::vector<TVertex>& TMeshAsset::GetVertices() const noexcept
+    const std::vector<FVertex>& FMeshAsset::GetVertices() const noexcept
     {
         return Vertices;
     }
 
-    const std::vector<std::uint32_t>& TMeshAsset::GetIndices() const noexcept
+    const std::vector<std::uint32_t>& FMeshAsset::GetIndices() const noexcept
     {
         return Indices;
     }
 
-    const std::vector<TMeshSection>& TMeshAsset::GetSections() const noexcept
+    const std::vector<FMeshSection>& FMeshAsset::GetSections() const noexcept
     {
         return Sections;
     }
 
-    const std::vector<TMeshTriangleSource>& TMeshAsset::GetTriangles() const noexcept
+    const std::vector<FMeshTriangleSource>& FMeshAsset::GetTriangles() const noexcept
     {
         return Triangles;
     }
 
-    const GPU::TGPUBuffer& TMeshAsset::GetVertexBuffer() const noexcept
+    const GPU::FGPUBuffer& FMeshAsset::GetVertexBuffer() const noexcept
     {
         return *VertexBuffer;
     }
 
-    const GPU::TGPUBuffer& TMeshAsset::GetIndexBuffer() const noexcept
+    const GPU::FGPUBuffer& FMeshAsset::GetIndexBuffer() const noexcept
     {
         return *IndexBuffer;
     }

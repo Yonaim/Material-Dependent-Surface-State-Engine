@@ -14,7 +14,7 @@ layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec2 InUV;
 layout(location = 3) in vec4 InTangent;
-// CPU: RendererShared.h의 TMaterialUniform prefix; RendererMaterials.cpp에서 업로드한다.
+// CPU: RendererShared.h의 FMaterialUniform prefix; RendererMaterials.cpp에서 업로드한다.
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
     vec4 BaseColor;

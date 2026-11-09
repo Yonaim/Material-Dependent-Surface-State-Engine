@@ -29,7 +29,7 @@ flowchart LR
 
 ## State 식별과 런타임 채널
 
-State 종류는 C++ enum에 고정하지 않는다. 로드된 `.SRProfile`의 `states` key를 모아 `TSurfaceStateRegistry`를 만들며, Registry가 문자열 State 이름을 런타임 `TStateId` 또는 `ChannelIndex`에 연결한다. 별도의 `SurfaceStateSchema` 파일은 두지 않는다.
+State 종류는 C++ enum에 고정하지 않는다. 로드된 `.SRProfile`의 `states` key를 모아 `FSurfaceStateRegistry`를 만들며, Registry가 문자열 State 이름을 런타임 `FStateId` 또는 `ChannelIndex`에 연결한다. 별도의 `SurfaceStateSchema` 파일은 두지 않는다.
 
 State 이름은 앞뒤 whitespace를 제거하고 lowercase로 정규화한다. 그 외 문자와 내부 공백·구두점은 보존한다.
 
@@ -43,8 +43,8 @@ State 이름은 앞뒤 whitespace를 제거하고 lowercase로 정규화한다. 
 flowchart LR
   Profiles["여러 .SRProfile"] --> Keys["states key 수집"]
   Keys --> Normalize["trim + lowercase"]
-  Normalize --> Registry["TSurfaceStateRegistry"]
-  Registry --> IDs["TStateId / ChannelIndex"]
+  Normalize --> Registry["FSurfaceStateRegistry"]
+  Registry --> IDs["FStateId / ChannelIndex"]
   UI["입력·디버그에서 고른 State"] --> Name["State name"]
   Name --> IDs
   IDs --> GPU["동적 channel 배열 조회"]
@@ -176,7 +176,7 @@ flowchart LR
 
 ## Contact Input
 
-Contact는 한 번의 사건으로 State 양을 더하거나 제거한다. Debug Raycast와 `.DemoAnim.contactEvents`가 내부 `TSurfaceContactInput`을 만들고, `TApplication`이 `TSurfaceStateSystem::SubmitContact`에 전달한다. 내부 payload는 대상 instance·State, 월드 위치·반경·Strength·Falloff, Add/Remove와 Circle/Ellipse/Rectangle/Capsule 형상을 포함한다. 게임 Physics adapter와 Surface-bound 공개 wrapper는 아직 없다.
+Contact는 한 번의 사건으로 State 양을 더하거나 제거한다. Debug Raycast와 `.DemoAnim.contactEvents`가 내부 `FSurfaceContactInput`을 만들고, `FApplication`이 `FSurfaceStateSystem::SubmitContact`에 전달한다. 내부 payload는 대상 instance·State, 월드 위치·반경·Strength·Falloff, Add/Remove와 Circle/Ellipse/Rectangle/Capsule 형상을 포함한다. 게임 Physics adapter와 Surface-bound 공개 wrapper는 아직 없다.
 
 Raycast는 hit triangle의 barycentric Simulation UV로 중심 texel을 찾는다. 유효하지 않으면 같은 Surface·triangle에서 `texelSearchRadius` 이내를 탐색하며, 실패하면 입력을 거부하고 로그를 남긴다. 이 탐색 반경은 실제 입력의 world radius와 다르다. 입력 형상 안에 든 유효 texel은 위치·falloff와 월드 texel 면적으로 가중한다.
 

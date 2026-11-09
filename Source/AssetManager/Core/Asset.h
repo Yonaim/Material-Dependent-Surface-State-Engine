@@ -12,27 +12,27 @@
 
 namespace MDSS::Asset
 {
-    using TAssetID = std::uint32_t;
-    using TMeshAssetHandle = std::uint32_t;
-    using TMaterialAssetHandle = std::uint32_t;
-    using TextureAssetHandle = std::uint32_t;
-    using TSRProfileAssetHandle = std::uint32_t;
+    using FAssetID = std::uint32_t;
+    using FMeshAssetHandle = std::uint32_t;
+    using FMaterialAssetHandle = std::uint32_t;
+    using FTextureAssetHandle = std::uint32_t;
+    using FSRProfileAssetHandle = std::uint32_t;
 
     inline constexpr std::uint32_t InvalidAssetHandle = std::numeric_limits<std::uint32_t>::max();
 
-    class TAsset
+    class FAsset
     {
     public:
         // Asset identity and source access
-        TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath = {});
-        virtual ~TAsset() = default;
+        FAsset(FAssetID ID, std::string Name, std::filesystem::path SourcePath = {});
+        virtual ~FAsset() = default;
 
-        [[nodiscard]] TAssetID                     GetID() const noexcept;
+        [[nodiscard]] FAssetID                     GetID() const noexcept;
         [[nodiscard]] const std::string&           GetName() const noexcept;
         [[nodiscard]] const std::filesystem::path& GetSourcePath() const noexcept;
 
     private:
-        TAssetID              ID = InvalidAssetHandle;
+        FAssetID              ID = InvalidAssetHandle;
         std::string           Name;
         std::filesystem::path SourcePath;
     };

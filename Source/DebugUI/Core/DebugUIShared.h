@@ -54,32 +54,32 @@ namespace MDSS
 {
     namespace
     {
-        ImVec4 GetLogColor(TLogLevel Level)
+        ImVec4 GetLogColor(ELogLevel Level)
         {
             switch (Level)
             {
-                case TLogLevel::Verbose:
+                case ELogLevel::Verbose:
                     return {0.55F, 0.55F, 0.55F, 1.0F}; // 회색
-                case TLogLevel::Debug:
+                case ELogLevel::Debug:
                     return {1.00F, 1.00F, 1.00F, 1.0F}; // 흰색
-                case TLogLevel::Info:
+                case ELogLevel::Info:
                     return {0.28F, 0.52F, 0.86F, 1.0F}; // 파랑
-                case TLogLevel::Warning:
+                case ELogLevel::Warning:
                     return {1.00F, 0.84F, 0.25F, 1.0F}; // 노랑
-                case TLogLevel::Error:
+                case ELogLevel::Error:
                     return {1.00F, 0.30F, 0.30F, 1.0F}; // 빨강
-                case TLogLevel::Count:
+                case ELogLevel::Count:
                     break;
             }
             return {1.0F, 1.0F, 1.0F, 1.0F};
         }
 
-        constexpr std::array<TLogLevel, 5> DisplayedLevels = {
-            TLogLevel::Verbose,
-            TLogLevel::Debug,
-            TLogLevel::Info,
-            TLogLevel::Warning,
-            TLogLevel::Error,
+        constexpr std::array<ELogLevel, 5> DisplayedLevels = {
+            ELogLevel::Verbose,
+            ELogLevel::Debug,
+            ELogLevel::Info,
+            ELogLevel::Warning,
+            ELogLevel::Error,
         };
 
         constexpr std::array<std::array<float, 2>, 9> CameraViewPresetPitchYawDegrees = {{
@@ -160,7 +160,7 @@ namespace MDSS
 
         constexpr float LabeledControlColumnWidth = 140.0F;
 
-        void DollyCamera(TCamera& CameraData, float Steps)
+        void DollyCamera(FCamera& CameraData, float Steps)
         {
             const glm::vec3 ViewDirection = CameraData.GetTarget() - CameraData.GetPosition();
             const float     Distance = glm::length(ViewDirection);
@@ -416,7 +416,7 @@ namespace MDSS
                                }) != Text.end();
         }
 
-        struct TPerformanceMemoryEstimate
+        struct FPerformanceMemoryEstimate
         {
             double RawFluxCacheBytes = 0.0;
             double RawFluxSavingsBytes = 0.0;
@@ -428,10 +428,10 @@ namespace MDSS
             double SparseSimulationGeometryBytes = 0.0;
         };
 
-        TPerformanceMemoryEstimate
-        EstimatePerformanceMemory(const SurfaceState::TSurfaceGPUResourceManager& GPUResources)
+        FPerformanceMemoryEstimate
+        EstimatePerformanceMemory(const SurfaceState::FSurfaceGPUResourceManager& GPUResources)
         {
-            TPerformanceMemoryEstimate Estimate;
+            FPerformanceMemoryEstimate Estimate;
             for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
             {
                 if (GPUResources.GetInstanceDescriptors(Instance) == nullptr)

@@ -9,11 +9,11 @@
 namespace MDSS::Rendering
 {
     // Vulkan's zero-to-one clip depth: near is row 2, far is row 3 minus row 2.
-    struct TViewFrustum
+    struct FViewFrustum
     {
         std::array<glm::vec4, 6> Planes{};
 
-        explicit TViewFrustum(const glm::mat4& ViewProjection)
+        explicit FViewFrustum(const glm::mat4& ViewProjection)
         {
             const glm::mat4 Rows = glm::transpose(ViewProjection);
             Planes = {
@@ -40,13 +40,13 @@ namespace MDSS::Rendering
         }
     };
 
-    [[nodiscard]] inline bool IsMeshSphereVisible(const TViewFrustum& Frustum,
+    [[nodiscard]] inline bool IsMeshSphereVisible(const FViewFrustum& Frustum,
                                                   const glm::vec3&    LocalCenter,
                                                   float               LocalRadius,
                                                   const glm::mat4&    Model) noexcept
     {
         const glm::vec3 Center = glm::vec3(Model * glm::vec4(LocalCenter, 1.0F));
-        // TTransform composes translation, rotation and scale; its columns are orthogonal.
+        // FTransform composes translation, rotation and scale; its columns are orthogonal.
         const float Scale = std::max(
             {glm::length(glm::vec3(Model[0])), glm::length(glm::vec3(Model[1])), glm::length(glm::vec3(Model[2]))});
         return Frustum.ContainsSphere(Center, LocalRadius * Scale);

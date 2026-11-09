@@ -18,7 +18,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Queue_Lifecycle_and_Access
 
-    TVulkanQueue::TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
+    FVulkanQueue::FVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
         : FamilyIndices(FindFamilies(PhysicalDevice, Surface))
     {
         if (!FamilyIndices.Complete())
@@ -28,20 +28,20 @@ namespace MDSS::GPU
 
         vkGetDeviceQueue(Device, FamilyIndices.GraphicsFamily.value(), 0, &GraphicsQueue);
         vkGetDeviceQueue(Device, FamilyIndices.PresentFamily.value(), 0, &PresentQueue);
-        TLogger::Debug("Vulkan", "Queue handles acquired from logical device.");
+        FLogger::Debug("Vulkan", "Queue handles acquired from logical device.");
     }
 
-    VkQueue TVulkanQueue::GetGraphics() const noexcept
+    VkQueue FVulkanQueue::GetGraphics() const noexcept
     {
         return GraphicsQueue;
     }
 
-    VkQueue TVulkanQueue::GetPresent() const noexcept
+    VkQueue FVulkanQueue::GetPresent() const noexcept
     {
         return PresentQueue;
     }
 
-    const TQueueFamilyIndices& TVulkanQueue::GetFamilyIndices() const noexcept
+    const FQueueFamilyIndices& FVulkanQueue::GetFamilyIndices() const noexcept
     {
         return FamilyIndices;
     }
@@ -53,9 +53,9 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Queue_Family_Selection
 
-    TQueueFamilyIndices TVulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+    FQueueFamilyIndices FVulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
-        TQueueFamilyIndices Indices;
+        FQueueFamilyIndices Indices;
 
         std::uint32_t QueueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, nullptr);

@@ -14,15 +14,15 @@
 
 namespace MDSS::SurfaceState
 {
-    using TStateId = std::uint32_t;
-    inline constexpr TStateId InvalidStateId = UINT32_MAX;
+    using FStateId = std::uint32_t;
+    inline constexpr FStateId InvalidStateId = UINT32_MAX;
 
-    using TSurfaceProfileIndex = std::uint32_t;
-    using TSurfaceInstanceID = std::uint32_t;
-    inline constexpr TSurfaceProfileIndex InvalidSurfaceProfileIndex = UINT32_MAX;
-    inline constexpr TSurfaceInstanceID   InvalidSurfaceInstanceID = UINT32_MAX;
+    using FSurfaceProfileIndex = std::uint32_t;
+    using FSurfaceInstanceID = std::uint32_t;
+    inline constexpr FSurfaceProfileIndex InvalidSurfaceProfileIndex = UINT32_MAX;
+    inline constexpr FSurfaceInstanceID   InvalidSurfaceInstanceID = UINT32_MAX;
 
-    struct TSurfaceStateParameters
+    struct FSurfaceStateParameters
     {
         // Fixed reference-area Capacity; texel total Capacity = StateCapacity * WorldArea / ReferenceArea.
         // State stores total amount; Capacity is a saturation reference, not an upper storage bound.
@@ -43,7 +43,7 @@ namespace MDSS::SurfaceState
     };
 
     /** @brief Source and target names are canonicalized during profile loading. */
-    struct TSurfaceStateTransition
+    struct FSurfaceStateTransition
     {
         std::string Source;
         std::string Target;
@@ -51,18 +51,18 @@ namespace MDSS::SurfaceState
         float       TransitionRate = 0.0F;
     };
 
-    enum class TReactionMode : std::uint32_t
+    enum class EReactionMode : std::uint32_t
     {
         Continuous,
         InflowFraction
     };
-    enum class TReactionRateModel : std::uint32_t
+    enum class EReactionRateModel : std::uint32_t
     {
         Constant,
         StateProportional,
         MassAction
     };
-    enum class TReactionFunction : std::uint32_t
+    enum class EReactionFunction : std::uint32_t
     {
         Above,
         Below,
@@ -71,57 +71,57 @@ namespace MDSS::SurfaceState
         Linear,
         Inhibit
     };
-    struct TReactionTerm
+    struct FReactionTerm
     {
         std::string State;
         float       Coefficient = 1.0F;
     };
-    struct TReactionModifier
+    struct FReactionModifier
     {
         std::string       State;
-        TReactionFunction Function = TReactionFunction::Linear;
+        EReactionFunction Function = EReactionFunction::Linear;
         // Both quantities refer to the fixed reference area, independently of Capacity.
         float Threshold = 0.0F;
         float Scale = 1.0F;
     };
-    struct TReactionFactor
+    struct FReactionFactor
     {
         std::string State;
         float       Reference = 1.0F;
         float       Exponent = 1.0F;
     };
-    struct TSurfaceReaction
+    struct FSurfaceReaction
     {
         std::string                    ID;
-        bool                           Enabled = true;
-        TReactionMode                  Mode = TReactionMode::Continuous;
-        std::vector<TReactionTerm>     Consumes;
-        std::vector<TReactionTerm>     Produces;
-        TReactionRateModel             RateModel = TReactionRateModel::Constant;
+        bool                           bEnabled = true;
+        EReactionMode                  Mode = EReactionMode::Continuous;
+        std::vector<FReactionTerm>     Consumes;
+        std::vector<FReactionTerm>     Produces;
+        EReactionRateModel             RateModel = EReactionRateModel::Constant;
         std::string                    RateState;
         float                          RateCoefficient = 0.0F;
-        std::vector<TReactionModifier> Modifiers;
-        std::vector<TReactionFactor>   Factors;
+        std::vector<FReactionModifier> Modifiers;
+        std::vector<FReactionFactor>   Factors;
         std::string                    InflowState;
         std::uint32_t                  InflowSources = 3U; // positive event input / neighbor incoming
         float                          Fraction = 0.0F;
     };
 
     /** @brief A profile contains only the states and transitions it defines. */
-    struct TSurfaceResponseProfileData
+    struct FSurfaceResponseProfileData
     {
-        std::unordered_map<std::string, TSurfaceStateParameters> States;
-        std::vector<TSurfaceStateTransition>                     Transitions;
-        std::vector<TSurfaceReaction>                            Reactions;
+        std::unordered_map<std::string, FSurfaceStateParameters> States;
+        std::vector<FSurfaceStateTransition>                     Transitions;
+        std::vector<FSurfaceReaction>                            Reactions;
     };
 
-    using TSurfaceStateValues = std::vector<float>;
+    using FSurfaceStateValues = std::vector<float>;
 
     /** @brief Trim ASCII whitespace and lowercase ASCII letters; preserve all other bytes. */
     // State name normalization and profile validation
     [[nodiscard]] std::string NormalizeSurfaceStateName(std::string_view Name);
 
     /** @throws std::invalid_argument if any parameter or transition is invalid. */
-    void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data);
-    void ValidateSurfaceReactions(const TSurfaceResponseProfileData& Data);
+    void ValidateSurfaceResponseProfileData(const FSurfaceResponseProfileData& Data);
+    void ValidateSurfaceReactions(const FSurfaceResponseProfileData& Data);
 } // namespace MDSS::SurfaceState

@@ -17,7 +17,7 @@ layout(location = 3) in vec2 FragUV;
 layout(location = 4) flat in uint FragSurfaceIndex;
 layout(location = 5) in vec3 FragMesoNormalWS;
 layout(location = 6) in vec3 FragWorldPosition;
-// CPU: RendererShared.h의 TMaterialUniform prefix; RendererMaterials.cpp에서 업로드한다.
+// CPU: RendererShared.h의 FMaterialUniform prefix; RendererMaterials.cpp에서 업로드한다.
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
     vec4 BaseColor;
@@ -64,7 +64,7 @@ layout(location = 0) out vec4 OutColor;
 
 const uint InvalidIndex = 0xffffffffu;
 
-// 값은 TRenderViewMode enum의 항목과 일치해야 한다.
+// 값은 ERenderViewMode enum의 항목과 일치해야 한다.
 const uint RENDER_MODE_SURFACE_STATE_HEATMAP = 6u;
 
 const uint RENDER_MODE_SURFACE_VALIDITY = 7u;

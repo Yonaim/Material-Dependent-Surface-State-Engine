@@ -4,11 +4,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-class TVulkanUnavailable : public std::runtime_error { public: using std::runtime_error::runtime_error; };
-    class TVulkanTestDevice final
+class FVulkanUnavailable : public std::runtime_error { public: using std::runtime_error::runtime_error; };
+    class FVulkanTestDevice final
     {
     public:
-        TVulkanTestDevice()
+        FVulkanTestDevice()
         {
             VkApplicationInfo ApplicationInfo{};
             ApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -26,14 +26,14 @@ class TVulkanUnavailable : public std::runtime_error { public: using std::runtim
 #endif
             if (vkCreateInstance(&InstanceInfo, nullptr, &Instance) != VK_SUCCESS)
             {
-                throw TVulkanUnavailable("Could not create Vulkan instance for GPU resource tests.");
+                throw FVulkanUnavailable("Could not create Vulkan instance for GPU resource tests.");
             }
 
             std::uint32_t PhysicalDeviceCount = 0;
             if (vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, nullptr) != VK_SUCCESS ||
                 PhysicalDeviceCount == 0)
             {
-                throw TVulkanUnavailable("No Vulkan physical device is available for GPU resource tests.");
+                throw FVulkanUnavailable("No Vulkan physical device is available for GPU resource tests.");
             }
             std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDeviceCount);
             if (vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data()) != VK_SUCCESS)
@@ -63,7 +63,7 @@ class TVulkanUnavailable : public std::runtime_error { public: using std::runtim
             }
             if (PhysicalDevice == VK_NULL_HANDLE)
             {
-                throw TVulkanUnavailable("No compute-capable Vulkan queue is available for GPU resource tests.");
+                throw FVulkanUnavailable("No compute-capable Vulkan queue is available for GPU resource tests.");
             }
 
             constexpr float         QueuePriority = 1.0F;
@@ -110,7 +110,7 @@ class TVulkanUnavailable : public std::runtime_error { public: using std::runtim
             }
         }
 
-        ~TVulkanTestDevice()
+        ~FVulkanTestDevice()
         {
             if (Device != VK_NULL_HANDLE)
             {
@@ -127,8 +127,8 @@ class TVulkanUnavailable : public std::runtime_error { public: using std::runtim
             }
         }
 
-        TVulkanTestDevice(const TVulkanTestDevice&) = delete;
-        TVulkanTestDevice& operator=(const TVulkanTestDevice&) = delete;
+        FVulkanTestDevice(const FVulkanTestDevice&) = delete;
+        FVulkanTestDevice& operator=(const FVulkanTestDevice&) = delete;
 
         [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const noexcept
         {

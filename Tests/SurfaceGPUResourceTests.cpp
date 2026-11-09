@@ -27,15 +27,15 @@ namespace
 {
     int FailureCount = 0;
 
-    class TVulkanUnavailable final : public std::runtime_error
+    class FVulkanUnavailable final : public std::runtime_error
     {
     public:
         using std::runtime_error::runtime_error;
     };
 
-    void Check(bool Condition, const std::string& Message)
+    void Check(bool bCondition, const std::string& Message)
     {
-        if (!Condition)
+        if (!bCondition)
         {
             ++FailureCount;
             std::cerr << "FAIL: " << Message << '\n';
@@ -45,7 +45,7 @@ namespace
     void TestMesoPeakPacking()
     {
         using namespace MDSS::SurfaceState;
-        TSharedSurfaceGeometryData         Geometry({{0, {3, 1}}, {1, {1, 1}}});
+        FSharedSurfaceGeometryData         Geometry({{0, {3, 1}}, {1, {1, 1}}});
         const std::array<float, 4>         Heights{-0.2F, 0.3F, 0.1F, 0.5F};
         const std::array<std::uint32_t, 4> Charts{0U, 0U, 1U, 0U};
         for (std::size_t Index = 0; Index < Heights.size(); ++Index)
@@ -64,10 +64,10 @@ namespace
                   "Meso peak must be shared within a chart and isolated across charts and surfaces");
     }
 
-    class TVulkanTestDevice final
+    class FVulkanTestDevice final
     {
     public:
-        TVulkanTestDevice()
+        FVulkanTestDevice()
         {
             VkApplicationInfo ApplicationInfo{};
             ApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -85,14 +85,14 @@ namespace
 #endif
             if (vkCreateInstance(&InstanceInfo, nullptr, &Instance) != VK_SUCCESS)
             {
-                throw TVulkanUnavailable("Could not create Vulkan instance for GPU resource tests.");
+                throw FVulkanUnavailable("Could not create Vulkan instance for GPU resource tests.");
             }
 
             std::uint32_t PhysicalDeviceCount = 0;
             if (vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, nullptr) != VK_SUCCESS ||
                 PhysicalDeviceCount == 0)
             {
-                throw TVulkanUnavailable("No Vulkan physical device is available for GPU resource tests.");
+                throw FVulkanUnavailable("No Vulkan physical device is available for GPU resource tests.");
             }
             std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDeviceCount);
             if (vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data()) != VK_SUCCESS)
@@ -122,7 +122,7 @@ namespace
             }
             if (PhysicalDevice == VK_NULL_HANDLE)
             {
-                throw TVulkanUnavailable("No compute-capable Vulkan queue is available for GPU resource tests.");
+                throw FVulkanUnavailable("No compute-capable Vulkan queue is available for GPU resource tests.");
             }
 
             constexpr float         QueuePriority = 1.0F;
@@ -169,7 +169,7 @@ namespace
             }
         }
 
-        ~TVulkanTestDevice()
+        ~FVulkanTestDevice()
         {
             if (Device != VK_NULL_HANDLE)
             {
@@ -186,8 +186,8 @@ namespace
             }
         }
 
-        TVulkanTestDevice(const TVulkanTestDevice&) = delete;
-        TVulkanTestDevice& operator=(const TVulkanTestDevice&) = delete;
+        FVulkanTestDevice(const FVulkanTestDevice&) = delete;
+        FVulkanTestDevice& operator=(const FVulkanTestDevice&) = delete;
 
         [[nodiscard]] VkPhysicalDevice GetPhysicalDevice() const noexcept
         {
@@ -248,25 +248,25 @@ namespace
         VkCommandPool    CommandPool = VK_NULL_HANDLE;
     };
 
-    MDSS::SurfaceState::TSharedSurfaceGeometryData BuildGeometry()
+    MDSS::SurfaceState::FSharedSurfaceGeometryData BuildGeometry()
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        TSharedSurfaceGeometryData Geometry({{0, {2, 2}}});
+        FSharedSurfaceGeometryData Geometry({{0, {2, 2}}});
         for (std::size_t Index = 0; Index < Geometry.GetTexels().size(); ++Index)
         {
-            SurfaceState::TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+            SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
             Texel.Surface = 0;
             Texel.Triangle = 0;
             Texel.Position = {static_cast<float>(Index), 2.0F, 3.0F};
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>((Index + 1U) % Geometry.GetTexelCount());
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>((Index + 1U) % Geometry.GetTexelCount());
         }
         Geometry.SetProfileMap({0, 0, 0, 0});
         return Geometry;
     }
 
-    void CheckZeroBuffer(const MDSS::GPU::TGPUBuffer& Buffer, std::size_t ScalarCount, const std::string& Name)
+    void CheckZeroBuffer(const MDSS::GPU::FGPUBuffer& Buffer, std::size_t ScalarCount, const std::string& Name)
     {
         std::vector<float> Values(ScalarCount, -1.0F);
         Buffer.Download(Values.data(), static_cast<VkDeviceSize>(Values.size() * sizeof(float)));
@@ -276,11 +276,11 @@ namespace
         }
     }
 
-    void TestCompactScratchStorage(TVulkanTestDevice& Vulkan)
+    void TestCompactScratchStorage(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
         const std::vector<float>     Weights(4U * SurfaceNeighborCount, 0.5F);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                               Vulkan.GetDevice(),
                                               4,
                                               2,
@@ -288,13 +288,13 @@ namespace
                                               {},
                                               {},
                                               nullptr,
-                                              TSurfaceScratchStorageFormat{true, true, false, true});
+                                              FSurfaceScratchStorageFormat{true, true, false, true});
         const std::array<float, 8>   State{1, 2, 3, 4, 5, 6, 7, 8};
         Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
         const auto StateHandle = Instance.GetStateABuffer().GetHandle();
         Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * 5U * sizeof(float),
               "FP16 flux allocates five words per State value");
-        TSurfaceInstanceGPUResources FullHalf(Vulkan.GetPhysicalDevice(),
+        FSurfaceInstanceGPUResources FullHalf(Vulkan.GetPhysicalDevice(),
                                               Vulkan.GetDevice(),
                                               4,
                                               2,
@@ -302,39 +302,39 @@ namespace
                                               {},
                                               {},
                                               nullptr,
-                                              TSurfaceScratchStorageFormat{true, true, true, false});
+                                              FSurfaceScratchStorageFormat{true, true, true, false});
         std::uint32_t                PackedHalf = 0;
         FullHalf.GetTransferWeightBuffer().Download(&PackedHalf, sizeof(PackedHalf));
         Check(PackedHalf == 0x38003800U, "FP16 initialization also packs weights in an uncompressed-capacity buffer");
         for (const auto Format :
-             std::array<TSurfaceScratchStorageFormat, 5>{TSurfaceScratchStorageFormat{false, false, false, true},
-                                                         TSurfaceScratchStorageFormat{true, false, true, true},
-                                                         TSurfaceScratchStorageFormat{true, true, true, true},
-                                                         TSurfaceScratchStorageFormat{true, false, false, true},
-                                                         TSurfaceScratchStorageFormat{true, true, false, false}})
+             std::array<FSurfaceScratchStorageFormat, 5>{FSurfaceScratchStorageFormat{false, false, false, true},
+                                                         FSurfaceScratchStorageFormat{true, false, true, true},
+                                                         FSurfaceScratchStorageFormat{true, true, true, true},
+                                                         FSurfaceScratchStorageFormat{true, false, false, true},
+                                                         FSurfaceScratchStorageFormat{true, true, false, false}})
         {
             Instance.ConfigureScratchStorage(Vulkan.GetPhysicalDevice(),
                                              Vulkan.GetDevice(),
-                                             Format.CacheRawFlux,
-                                             Format.HalfRawFlux,
-                                             Format.HalfWeights,
-                                             Format.Compact);
-            const auto EdgeWords = !Format.Compact ? 8U : !Format.CacheRawFlux ? 0U : Format.HalfRawFlux ? 4U : 8U;
+                                             Format.bCacheRawFlux,
+                                             Format.bHalfRawFlux,
+                                             Format.bHalfWeights,
+                                             Format.bCompact);
+            const auto EdgeWords = !Format.bCompact ? 8U : !Format.bCacheRawFlux ? 0U : Format.bHalfRawFlux ? 4U : 8U;
             Check(Instance.GetRawOutgoingBuffer().GetSize() == 8U * (EdgeWords + 1U) * sizeof(float),
                   "flux size follows storage format");
             Check(Instance.GetTransferWeightBuffer().GetSize() ==
-                      4U * (Format.Compact && Format.HalfWeights ? 4U : 8U) * sizeof(float),
+                      4U * (Format.bCompact && Format.bHalfWeights ? 4U : 8U) * sizeof(float),
                   "weight size follows storage format");
             std::array<float, 8> Actual{};
             Instance.GetStateABuffer().Download(Actual.data(), sizeof(Actual));
             Check(Actual == State && Instance.GetStateABuffer().GetHandle() == StateHandle,
                   "storage switches preserve State and its buffer");
             // Emulate the static-cache upload performed by the system after each precision change.
-            Instance.UpdateTransferWeights(Weights, {}, Format.HalfWeights);
+            Instance.UpdateTransferWeights(Weights, {}, Format.bHalfWeights);
         }
     }
 
-    void TestLazyMeshStorage(TVulkanTestDevice& Vulkan)
+    void TestLazyMeshStorage(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
         auto Geometry = BuildGeometry();
@@ -343,13 +343,13 @@ namespace
             Geometry.GetTexels()[Index].Position = {float(Index % 2U), float(Index / 2U), 0.0F};
             Geometry.GetTexels()[Index].Normal = {0.0F, 0.0F, 1.0F};
         }
-        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        FSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         const auto                         FullHandle = Shared.GetTexelMeshIndexBuffer()->GetHandle();
         const auto                         SmallHandle = Shared.GetTexelMeshVariant(64).VertexBuffer->GetHandle();
         (void)Shared.GetTexelMeshVariant(128);
-        const auto Before = MDSS::GPU::TGPUResourceMemoryStats::GetSnapshot().CurrentBufferBytes;
+        const auto Before = MDSS::GPU::FGPUResourceMemoryStats::GetSnapshot().CurrentBufferBytes;
         Shared.TrimRenderMeshVariants(64, 64);
-        const auto After = MDSS::GPU::TGPUResourceMemoryStats::GetSnapshot().CurrentBufferBytes;
+        const auto After = MDSS::GPU::FGPUResourceMemoryStats::GetSnapshot().CurrentBufferBytes;
         Check(After < Before, "trimming an unused mesh actually frees its Vulkan allocation");
         Check(Shared.GetTexelMeshVariant(64).VertexBuffer->GetHandle() == SmallHandle,
               "trimming preserves the selected render mesh");
@@ -358,19 +358,19 @@ namespace
         Check(Shared.GetTexelMeshVariant(128).VertexCount > 0U, "a released resolution can be rebuilt on demand");
     }
 
-    void TestRetiredBufferReuse(TVulkanTestDevice& Vulkan)
+    void TestRetiredBufferReuse(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
-        TSurfaceGPUBufferPool    Pool;
+        FSurfaceGPUBufferPool    Pool;
         const std::vector<float> Weights(4U * SurfaceNeighborCount, 1.0F);
         {
-            TSurfaceInstanceGPUResources Previous(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, Weights);
+            FSurfaceInstanceGPUResources Previous(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, Weights);
             const std::array<float, 4>   DirtyState{1.0F, 2.0F, 3.0F, 4.0F};
             Previous.GetStateABuffer().Upload(DirtyState.data(), sizeof(DirtyState));
             Previous.RetireBuffers(Pool);
         }
         Check(Pool.GetRetainedBytes() > 0, "retired Scene buffers should remain available for reuse");
-        TSurfaceInstanceGPUResources Replacement(
+        FSurfaceInstanceGPUResources Replacement(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, Weights, {}, {}, &Pool);
         Check(Pool.GetReuseCount() > 0, "matching Scene buffers should be reused");
         CheckZeroBuffer(Replacement.GetStateABuffer(), 4, "reused State A buffer");
@@ -379,7 +379,7 @@ namespace
             Replacement.GetRawOutgoingBuffer(), 4U * (SurfaceNeighborCount + 1U), "reused raw outgoing buffer");
     }
 
-    void TestGPUResources(TVulkanTestDevice& Vulkan)
+    void TestGPUResources(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
@@ -387,36 +387,36 @@ namespace
         VkPhysicalDeviceProperties DeviceProperties{};
         vkGetPhysicalDeviceProperties(Vulkan.GetPhysicalDevice(), &DeviceProperties);
         const std::uint32_t RequiredStorageBufferBindings =
-            static_cast<std::uint32_t>(SurfaceState::TSurfaceGPUDescriptorBinding::Count);
+            static_cast<std::uint32_t>(SurfaceState::ESurfaceGPUDescriptorBinding::Count);
         if (DeviceProperties.limits.maxDescriptorSetStorageBuffers < RequiredStorageBufferBindings ||
             DeviceProperties.limits.maxPerStageDescriptorStorageBuffers < RequiredStorageBufferBindings)
         {
-            throw TVulkanUnavailable("Vulkan device does not support the Surface descriptor storage-buffer count.");
+            throw FVulkanUnavailable("Vulkan device does not support the Surface descriptor storage-buffer count.");
         }
 
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Parameters{};
+        SurfaceState::FSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 3.0F;
         Parameters.InputFactor = 0.75F;
         Parameters.SaturationTransferFactor = 0.2F;
         Parameters.GeometryTransferFactor = 0.5F;
         Profile.States.emplace("wetness", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(ProfileTable);
-        TSharedSurfaceGeometryData                                   Geometry = BuildGeometry();
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> ProfileTable{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
+        FSharedSurfaceGeometryData                                   Geometry = BuildGeometry();
 
-        SurfaceState::TSurfaceSharedGeometryGPUResources SharedGeometry(
+        SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
         const std::vector<float> GeometryWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
-        SurfaceState::TSurfaceInstanceGPUResources InstanceA(
+        SurfaceState::FSurfaceInstanceGPUResources InstanceA(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, GeometryWeights);
-        SurfaceState::TSurfaceInstanceGPUResources InstanceB(
+        SurfaceState::FSurfaceInstanceGPUResources InstanceB(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, GeometryWeights);
-        SurfaceState::TSurfaceStateDescriptorResources DescriptorsA(
+        SurfaceState::FSurfaceStateDescriptorResources DescriptorsA(
             Vulkan.GetDevice(), SharedGeometry, Profiles, InstanceA);
-        SurfaceState::TSurfaceStateDescriptorResources DescriptorsB(
+        SurfaceState::FSurfaceStateDescriptorResources DescriptorsB(
             Vulkan.GetDevice(), SharedGeometry, Profiles, InstanceB);
 
         Check(SharedGeometry.GetTexelCount() == 4, "shared Geometry should retain four texels");
@@ -429,7 +429,7 @@ namespace
         auto MappingGeometry = BuildGeometry();
         for (std::size_t Index = 0; Index < MappingGeometry.GetTexels().size(); ++Index)
             MappingGeometry.GetTexels()[Index].Position = {float(Index % 2U), float(Index / 2U), 0.0F};
-        TSurfaceSharedGeometryGPUResources MappingShared(
+        FSurfaceSharedGeometryGPUResources MappingShared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), MappingGeometry);
         const auto& RenderMesh = MappingShared.GetTexelMeshVariant(2U);
         Check(RenderMesh.IndexBuffer != nullptr, "nondegenerate test surface should produce overlay triangles");
@@ -455,43 +455,43 @@ namespace
                     Check(Count == 1U, "each overlay vertex should belong to exactly one render tile");
             }
         Check(SharedGeometry.GetNeighborIndexBuffer().GetSize() ==
-                  4U * sizeof(SurfaceState::TSurfaceGPUNeighborIndices),
+                  4U * sizeof(SurfaceState::FSurfaceGPUNeighborIndices),
               "neighbor buffer should use the expected per-texel stride");
         Check(DescriptorsA.GetABSet() != VK_NULL_HANDLE && DescriptorsA.GetBASet() != VK_NULL_HANDLE,
               "both A/B descriptor sets should be allocated");
         Check(DescriptorsB.GetABSet() != VK_NULL_HANDLE && DescriptorsB.GetBASet() != VK_NULL_HANDLE,
               "each instance should own its descriptor sets");
 
-        const auto Bound = [](const SurfaceState::TSurfaceStateDescriptorResources& Descriptors,
-                              SurfaceState::TSurfaceGPUDescriptorBinding            Binding,
+        const auto Bound = [](const SurfaceState::FSurfaceStateDescriptorResources& Descriptors,
+                              SurfaceState::ESurfaceGPUDescriptorBinding            Binding,
                               bool bAB) { return Descriptors.GetBoundBufferHandle(Binding, bAB); };
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::TexelSurfaceIndices, true) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::TexelSurfaceIndices, true) ==
                   SharedGeometry.GetTexelSurfaceIndexBuffer().GetHandle(),
               "descriptor should bind the shared Geometry buffer");
-        Check(Bound(DescriptorsB, SurfaceState::TSurfaceGPUDescriptorBinding::TexelSurfaceIndices, true) ==
-                  Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::TexelSurfaceIndices, true),
+        Check(Bound(DescriptorsB, SurfaceState::ESurfaceGPUDescriptorBinding::TexelSurfaceIndices, true) ==
+                  Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::TexelSurfaceIndices, true),
               "instances should bind the same shared Geometry buffer");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::CurrentState, true) ==
                   InstanceA.GetStateABuffer().GetHandle(),
               "AB descriptor should read State A");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::NextState, true) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::NextState, true) ==
                   InstanceA.GetStateBBuffer().GetHandle(),
               "AB descriptor should write State B");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, false) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::CurrentState, false) ==
                   InstanceA.GetStateBBuffer().GetHandle(),
               "BA descriptor should read State B");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::NextState, false) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::NextState, false) ==
                   InstanceA.GetStateABuffer().GetHandle(),
               "BA descriptor should write State A");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::TransferWeights, true) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::TransferWeights, true) ==
                       InstanceA.GetTransferWeightBuffer().GetHandle() &&
-                  Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::RawOutgoing, true) ==
+                  Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::RawOutgoing, true) ==
                       InstanceA.GetRawOutgoingBuffer().GetHandle(),
               "instance descriptors should bind the TransferWeight and RawOutgoing caches");
         Check(InstanceA.GetStateABuffer().GetHandle() != InstanceB.GetStateABuffer().GetHandle() &&
                   InstanceA.GetStateBBuffer().GetHandle() != InstanceB.GetStateBBuffer().GetHandle(),
               "separate instances should own separate State buffers");
-        Check(Bound(DescriptorsB, SurfaceState::TSurfaceGPUDescriptorBinding::CurrentState, true) ==
+        Check(Bound(DescriptorsB, SurfaceState::ESurfaceGPUDescriptorBinding::CurrentState, true) ==
                   InstanceB.GetStateABuffer().GetHandle(),
               "second instance descriptor should refer to its own state");
 
@@ -507,26 +507,26 @@ namespace
         CheckZeroBuffer(InstanceB.GetRawOutgoingBuffer(), 4, "second instance RawOutgoing");
         Check(InstanceA.GetTransferWeightBuffer().GetSize() == 4U * SurfaceNeighborCount * sizeof(float),
               "TransferWeight cache should store one float per texel neighbor direction index");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::ReverseNeighborDirectionIndices, true) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::ReverseNeighborDirectionIndices, true) ==
                       SharedGeometry.GetReverseNeighborDirectionIndexBuffer().GetHandle() &&
                   Bound(DescriptorsB,
-                        SurfaceState::TSurfaceGPUDescriptorBinding::ReverseNeighborDirectionIndices,
+                        SurfaceState::ESurfaceGPUDescriptorBinding::ReverseNeighborDirectionIndices,
                         false) == SharedGeometry.GetReverseNeighborDirectionIndexBuffer().GetHandle(),
               "reverse direction indices should be shared with Geometry across instances and AB/BA sets");
-        Check(Bound(DescriptorsA, SurfaceState::TSurfaceGPUDescriptorBinding::WorldTexelAreas, true) ==
+        Check(Bound(DescriptorsA, SurfaceState::ESurfaceGPUDescriptorBinding::WorldTexelAreas, true) ==
                   InstanceA.GetWorldTexelAreaBuffer().GetHandle(),
               "WorldTexelAreas should follow the retained reverse-direction binding without a RawFlux binding");
 
-        std::array<SurfaceState::TSurfaceGPUVec4, 4> UploadedPositions{};
+        std::array<SurfaceState::FSurfaceGPUVec4, 4> UploadedPositions{};
         SharedGeometry.GetPositionBuffer().Download(UploadedPositions.data(), sizeof(UploadedPositions));
         Check(UploadedPositions[2].X == 2.0F && UploadedPositions[2].Y == 2.0F && UploadedPositions[2].Z == 3.0F,
               "position upload should preserve texel-major values");
 
-        std::array<SurfaceState::TSurfaceGPUNeighborIndices, 4> UploadedNeighbors{};
+        std::array<SurfaceState::FSurfaceGPUNeighborIndices, 4> UploadedNeighbors{};
         SharedGeometry.GetNeighborIndexBuffer().Download(UploadedNeighbors.data(), sizeof(UploadedNeighbors));
         Check(UploadedNeighbors[2].Indices[0] == 3U, "neighbor upload should preserve the local neighbor index");
 
-        std::array<SurfaceState::TSurfaceGPUProfileParameters, 1> UploadedProfiles{};
+        std::array<SurfaceState::FSurfaceGPUProfileParameters, 1> UploadedProfiles{};
         Profiles.GetParametersBuffer().Download(UploadedProfiles.data(), sizeof(UploadedProfiles));
         Check(UploadedProfiles[0].CapacityInputAndTransfer[0] == 3.0F &&
                   UploadedProfiles[0].CapacityInputAndTransfer[1] == 0.75F &&
@@ -538,43 +538,43 @@ namespace
         Check(ProfileSupported[0] == 1U, "defined Profile channel should be marked supported");
     }
 
-    void TestDirectionalCavityRetention(TVulkanTestDevice& Vulkan)
+    void TestDirectionalCavityRetention(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceStateParameters Parameters{};
+        SurfaceState::FSurfaceStateParameters Parameters{};
         Parameters.SaturationTransferFactor = 1.0F;
         Parameters.CavityTransportRetentionFactor = 1.0F;
-        SurfaceState::TSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceResponseProfileData Profile;
         Profile.States.emplace("wetness", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> Table{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(Table);
-        TSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> Table{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(Table);
+        FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
         for (std::size_t I = 0; I < 2; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
             Texel.Surface = Texel.Triangle = Texel.Chart = 0;
             Texel.Position = {float(I), 0.0F, 0.0F};
             Texel.Normal = {0.0F, 0.0F, 1.0F};
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - I);
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - I);
         }
         Geometry.GetTexels()[0].Geometry.ConcavityWeight = 1.0F;
         Geometry.SetProfileMap({0, 0});
-        SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
+        SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        SurfaceState::FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         const auto                                     Run = [&](std::array<float, 2> Initial,
-                                                                 const glm::mat4&     Model = glm::mat4(1.0F),
-                                                                 glm::vec3            Gravity = glm::vec3(0.0F))
+                             const glm::mat4&     Model = glm::mat4(1.0F),
+                             glm::vec3            Gravity = glm::vec3(0.0F))
         {
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
             Vulkan.Execute([&](VkCommandBuffer Command)
@@ -607,43 +607,43 @@ namespace
               "inverted Lava-like cavity must strongly resist downhill exit");
     }
 
-    void TestGPUSolver(TVulkanTestDevice& Vulkan)
+    void TestGPUSolver(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Parameters{};
+        SurfaceState::FSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 1.0F;
         Profile.States.emplace("wetness", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(ProfileTable);
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> ProfileTable{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
 
-        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        FSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
-            SurfaceState::TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+            SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
             Texel.Surface = 0;
             Texel.Triangle = 0;
             Texel.Position = {static_cast<float>(Index), 0.0F, 0.0F};
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
         Geometry.SetProfileMap({0, 0});
 
-        SurfaceState::TSurfaceSharedGeometryGPUResources SharedGeometry(
+        SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(
             Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
         const std::array<float, 2> Input{1.0F, 0.0F};
         Instance.GetInputDeltaBuffer().Upload(Input.data(), sizeof(Input));
@@ -662,7 +662,7 @@ namespace
                                       glm::mat4(1.0F),
                                       glm::vec3(0.0F, -1.0F, 0.0F));
                 });
-            const GPU::TGPUBuffer& StateBuffer =
+            const GPU::FGPUBuffer& StateBuffer =
                 bCurrentStateAB ? Instance.GetStateBBuffer() : Instance.GetStateABuffer();
             StateBuffer.Download(State.data(), sizeof(State));
             Instance.GetInputDeltaBuffer().Download(RemainingInput.data(), sizeof(RemainingInput));
@@ -687,23 +687,23 @@ namespace
               "third solver step should continue deterministic diffusion");
     }
 
-    void TestPerWorkgroupChannelMask(TVulkanTestDevice& Vulkan)
+    void TestPerWorkgroupChannelMask(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::SurfaceState;
-        TSurfaceStateParameters Parameters{};
+        FSurfaceStateParameters Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 1.0F;
-        TSurfaceResponseProfileData Profile;
+        FSurfaceResponseProfileData Profile;
         Profile.States.emplace("mud", Parameters);
         Profile.States.emplace("heat", Parameters);
-        const std::vector<TSurfaceResponseProfileData> Table{Profile};
-        const TSurfaceStateRegistry                    Registry(Table);
+        const std::vector<FSurfaceResponseProfileData> Table{Profile};
+        const FSurfaceStateRegistry                    Registry(Table);
         constexpr std::uint32_t                        Texels = 65U;
         const auto                                     Channels = static_cast<std::uint32_t>(Registry.GetStateCount());
         const auto                                     Mud = Registry.GetStateId("mud");
         const auto                                     Heat = Registry.GetStateId("heat");
-        TSharedSurfaceGeometryData                     Geometry({{0, {Texels, 1}}});
+        FSharedSurfaceGeometryData                     Geometry({{0, {Texels, 1}}});
         for (std::uint32_t I = 0; I < Texels; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -713,16 +713,16 @@ namespace
         }
         Geometry.GetTexels()[63].NeighborIndices[0] = 64;
         Geometry.GetTexels()[64].NeighborIndices[0] = 63;
-        Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(Texels, 0U));
-        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources        Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        TSurfaceInstanceGPUResources       Instance(Vulkan.GetPhysicalDevice(),
-                                                    Vulkan.GetDevice(),
-                                                    Texels,
-                                                    Channels,
-                                                    BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        TSurfaceStateDescriptorResources   Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        TSurfaceStateSolver                Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        Geometry.SetProfileMap(std::vector<FSurfaceProfileIndex>(Texels, 0U));
+        FSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        FSurfaceProfileGPUResources        Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
+        FSurfaceInstanceGPUResources       Instance(Vulkan.GetPhysicalDevice(),
+                                              Vulkan.GetDevice(),
+                                              Texels,
+                                              Channels,
+                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+        FSurfaceStateDescriptorResources   Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        FSurfaceStateSolver                Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         std::vector<float>                 Initial(static_cast<std::size_t>(Texels) * Channels, 0.0F);
         Initial[63U * Channels + Mud] = 1.0F;
         Initial[Heat] = 1.0F;
@@ -785,20 +785,20 @@ namespace
               "per-WG cleanup should overwrite stale state in the opposite ping-pong buffer");
     }
 
-    void TestAreaAndMobility(TVulkanTestDevice& Vulkan)
+    void TestAreaAndMobility(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceStateParameters Parameters{};
+        SurfaceState::FSurfaceStateParameters Parameters{};
         Parameters.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         // Nonzero Saturation factor verifies that its debug flag is independent of Geometry mobility.
         Parameters.SaturationTransferFactor = 1.0F;
-        SurfaceState::TSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceResponseProfileData Profile;
         Profile.States.emplace("test_flow", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> Table{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(Table);
-        TSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> Table{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(Table);
+        FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
         for (std::size_t I = 0; I < 2; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -806,14 +806,14 @@ namespace
             Texel.Triangle = 0;
             Texel.Position = {0, 0, 1.0F - float(I)};
             Texel.Normal = {1, 0, 0};
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1 - I);
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1 - I);
         }
         Geometry.SetProfileMap({0, 0});
-        SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
+        SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(
+        SurfaceState::FSurfaceInstanceGPUResources Instance(
             Vulkan.GetPhysicalDevice(),
             Vulkan.GetDevice(),
             2,
@@ -821,8 +821,8 @@ namespace
             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)),
             {},
             {2 * SurfaceStateReferenceArea, 4 * SurfaceStateReferenceArea});
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        SurfaceState::FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         const std::uint32_t                            Flags = (1U << 1U);
         auto Run = [&](std::array<float, 2> Initial, std::uint32_t ExtraFlags = 0U)
         {
@@ -881,7 +881,7 @@ namespace
         {
             // Local one-edge scaling check, distinct from an entire-scene resolution comparison.
             const float                                        H = 1.0F / Resolution;
-            const std::array<SurfaceState::TSurfaceGPUVec4, 2> Positions{{{0, 0, H, 0}, {0, 0, 0, 0}}};
+            const std::array<SurfaceState::FSurfaceGPUVec4, 2> Positions{{{0, 0, H, 0}, {0, 0, 0, 0}}};
             Shared.GetPositionBuffer().Upload(Positions.data(), sizeof(Positions));
             Instance.UpdateWorldTexelAreas({H * H, H * H});
             const float Mass = H * H / SurfaceStateReferenceArea;
@@ -899,23 +899,23 @@ namespace
               "zero area must freeze transport while retaining existing amounts");
     }
 
-    void TestCalibratedGeometrySpeed(TVulkanTestDevice& Vulkan)
+    void TestCalibratedGeometrySpeed(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Parameters{};
+        SurfaceState::FSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceStateParameters     Parameters{};
         Parameters.GeometryTransferFactor = 0.5F;
         Profile.States.emplace("flow", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> Table{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(Table);
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> Table{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(Table);
         constexpr std::size_t Width = 5, Count = Width * Width, Source = Count / 2;
         constexpr float       Dt = 0.001F;
         for (float Resolution : {128.0F, 256.0F, 512.0F})
         {
             const float                H = 1.0F / Resolution;
-            TSharedSurfaceGeometryData Geometry({{0, {Width, Width}}});
+            FSharedSurfaceGeometryData Geometry({{0, {Width, Width}}});
             for (int Y = 0; Y < int(Width); ++Y)
                 for (int X = 0; X < int(Width); ++X)
                 {
@@ -933,24 +933,24 @@ namespace
                                 continue;
                             if (X + DX >= 0 && X + DX < int(Width) && Y + DY >= 0 && Y + DY < int(Width))
                                 Texel.NeighborIndices[DirectionIndex] =
-                                    static_cast<TLocalTexelIndex>((Y + DY) * Width + X + DX);
+                                    static_cast<FLocalTexelIndex>((Y + DY) * Width + X + DX);
                             ++DirectionIndex;
                         }
                 }
-            Geometry.SetProfileMap(std::vector<SurfaceState::TSurfaceProfileIndex>(Count, 0));
-            SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
+            Geometry.SetProfileMap(std::vector<SurfaceState::FSurfaceProfileIndex>(Count, 0));
+            SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
                 Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-            SurfaceState::TSurfaceProfileGPUResources Profiles(
+            SurfaceState::FSurfaceProfileGPUResources Profiles(
                 Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-            SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+            SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
                                                                 Vulkan.GetDevice(),
                                                                 Count,
                                                                 1,
                                                                 BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)),
-                                                                {},
+                                                                    {},
                                                                 BuildSurfaceGPUWorldTexelAreas(Geometry, glm::mat4(1)));
-            SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-            SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+            SurfaceState::FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+            SurfaceState::FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
             std::array<float, Count>                       Initial{}, Result{};
             const double Mass = 2.0 * H * H / SurfaceStateReferenceArea; // Saturation=2, deliberately above 1.
             Initial[Source] = static_cast<float>(Mass);
@@ -974,45 +974,45 @@ namespace
         }
     }
 
-    void TestGeometryDrivenSolver(TVulkanTestDevice& Vulkan)
+    void TestGeometryDrivenSolver(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
 
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Parameters{};
+        SurfaceState::FSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 0.0F;
         Parameters.GeometryTransferFactor = 8.0F / BaseGeometryTransferRate;
         Profile.States.emplace("wetness", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(ProfileTable);
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> ProfileTable{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
 
-        TSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+        FSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
-            SurfaceState::TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+            SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
             Texel.Surface = 0;
             Texel.Triangle = 0;
             Texel.Position = Index == 0 ? glm::vec3(1.0F, 0.0F, 0.0F) : glm::vec3(0.0F);
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
         Geometry.SetProfileMap({0, 0});
 
-        SurfaceState::TSurfaceSharedGeometryGPUResources SharedGeometry(
+        SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(
             Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
         const glm::mat4 ModelMatrix = glm::rotate(glm::mat4(1.0F), glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
         auto            Run = [&](std::array<float, 2> InitialState, glm::vec3 Gravity, float DeltaTime)
@@ -1042,19 +1042,19 @@ namespace
               "유출은 source 보유량으로 제한하고 target의 Capacity 초과량은 보존해야 한다.");
     }
 
-    void TestMesoGeometryDrive(TVulkanTestDevice& Vulkan)
+    void TestMesoGeometryDrive(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Parameters{};
+        SurfaceState::FSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         Profile.States.emplace("deposit", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(ProfileTable);
-        TSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> ProfileTable{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
+        FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < 2; ++Index)
         {
             auto& Texel = Geometry.GetTexels()[Index];
@@ -1063,22 +1063,22 @@ namespace
             Texel.Position = {1.0F - static_cast<float>(Index), 0.0F, 0.0F};
             Texel.Normal = {0.0F, 0.0F, 1.0F};
             Texel.MesoNormal = glm::normalize(glm::vec3(-1.0F, 0.0F, 1.0F));
-            Texel.HasMesoNormal = true;
+            Texel.bHasMesoNormal = true;
             Texel.Geometry.MesoVirtualHeight = Index == 0 ? 0.2F : 0.0F;
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
         Geometry.SetProfileMap({0, 0});
-        SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
+        SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        SurfaceState::FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         const std::array<float, 2>                     EmptyState{0.0F, 0.0F};
         const std::array<float, 2>                     EventInput{0.125F, 0.0F};
         Instance.GetStateABuffer().Upload(EmptyState.data(), sizeof(EmptyState));
@@ -1126,8 +1126,8 @@ namespace
         Parameters.DecayRate = 0.0F;
         Profiles.UpdateParameters(0, 0, Parameters);
 
-        Check(SurfaceState::TSurfaceSolverDebugSettings{}.IsEnabled(
-                  SurfaceState::TSurfaceSolverTerm::MesoDirectionNormal),
+        Check(SurfaceState::FSurfaceSolverDebugSettings{}.IsEnabled(
+                  SurfaceState::ESurfaceSolverTerm::MesoDirectionNormal),
               "Meso direction normal should be enabled by default");
         const glm::vec3 Gravity(0.0F, 0.0F, -1.0F);
         for (const glm::mat4 Model :
@@ -1150,7 +1150,7 @@ namespace
             const glm::vec3 SurfaceGravity = Gravity - Normal * glm::dot(Gravity, Normal);
             const glm::vec3 Edge = glm::mat3(Model) * glm::vec3(-1.0F, 0.0F, -0.2F);
             const float     Expected = 0.25F * std::abs(Edge.z) *
-                                       std::max(glm::dot(glm::normalize(SurfaceGravity), glm::normalize(Edge)), 0.0F);
+                                   std::max(glm::dot(glm::normalize(SurfaceGravity), glm::normalize(Edge)), 0.0F);
             Check(Expected > 0.0F && std::abs(Result[1] - Expected) < 1.0e-5F &&
                       std::abs(Result[0] + Result[1] - 1.0F) < 1.0e-5F,
                   "both passes should use Meso height and inverse-transpose Meso normal under instance scaling");
@@ -1182,25 +1182,25 @@ namespace
         }
     }
 
-    void TestSourceGeometryChannelReuse(TVulkanTestDevice& Vulkan)
+    void TestSourceGeometryChannelReuse(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Static{}, Flow{}, FastFlow{};
+        SurfaceState::FSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceStateParameters     Static{}, Flow{}, FastFlow{};
         Flow.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
         FastFlow.GeometryTransferFactor = 2.0F / BaseGeometryTransferRate;
         FastFlow.StateCapacity = 2.0F;
         Profile.States.emplace("a_static", Static);
         Profile.States.emplace("b_flow", Flow);
         Profile.States.emplace("c_flow", FastFlow);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> Table{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(Table);
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> Table{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(Table);
         const auto                                                   StaticChannel = Registry.GetStateId("a_static");
         const auto                                                   FlowChannel = Registry.GetStateId("b_flow");
         const auto                                                   FastChannel = Registry.GetStateId("c_flow");
-        TSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+        FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < 2; ++Index)
         {
             auto& Texel = Geometry.GetTexels()[Index];
@@ -1208,22 +1208,22 @@ namespace
             Texel.Triangle = 0;
             Texel.Position = {1.0F - static_cast<float>(Index), 0.0F, 0.0F};
             Texel.MesoNormal = glm::normalize(glm::vec3(-1.0F, 0.0F, 1.0F));
-            Texel.HasMesoNormal = true;
+            Texel.bHasMesoNormal = true;
             Texel.Geometry.MesoVirtualHeight = Index == 0 ? 0.2F : 0.0F;
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
         Geometry.SetProfileMap({0, 0});
-        SurfaceState::TSurfaceSharedGeometryGPUResources Shared(
+        SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             3,
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
+        SurfaceState::FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         std::array<float, 6>                           Initial{};
         Initial[StaticChannel] = 0.7F;
         Initial[FlowChannel] = 0.5F;
@@ -1249,29 +1249,29 @@ namespace
               "shared source geometry must preserve distinct Registry channel rates, capacities and conservation");
     }
 
-    void TestTransferWeightSolver(TVulkanTestDevice& Vulkan)
+    void TestTransferWeightSolver(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
 
-        SurfaceState::TSurfaceResponseProfileData ProfileA;
-        SurfaceState::TSurfaceStateParameters     Parameters{};
+        SurfaceState::FSurfaceResponseProfileData ProfileA;
+        SurfaceState::FSurfaceStateParameters     Parameters{};
         Parameters.StateCapacity = 1.0F;
         Parameters.SaturationTransferFactor = 1.0F;
         ProfileA.States.emplace("wetness", Parameters);
-        SurfaceState::TSurfaceResponseProfileData                    ProfileB = ProfileA;
-        SurfaceState::TSurfaceResponseProfileData                    ProfileWithoutWetness;
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{
+        SurfaceState::FSurfaceResponseProfileData                    ProfileB = ProfileA;
+        SurfaceState::FSurfaceResponseProfileData                    ProfileWithoutWetness;
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> ProfileTable{
             ProfileA, ProfileB, ProfileWithoutWetness};
-        const SurfaceState::TSurfaceStateRegistry Registry(ProfileTable);
+        const SurfaceState::FSurfaceStateRegistry Registry(ProfileTable);
 
-        TSharedSurfaceGeometryData     Geometry({{0, {3, 1}}});
+        FSharedSurfaceGeometryData     Geometry({{0, {3, 1}}});
         const std::array<glm::vec3, 3> Positions{
             glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(4.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F)};
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
-            SurfaceState::TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+            SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
             Texel.Surface = 0;
             Texel.Triangle = 0;
             Texel.Position = Positions[Index];
@@ -1289,18 +1289,18 @@ namespace
                   std::abs(CachedWeights[SurfaceNeighborCount] - ExpectedLongEdgeWeight) < 1.0e-5F,
               "directed cache entries should preserve the symmetric edge weight in both directions");
 
-        SurfaceState::TSurfaceSharedGeometryGPUResources SharedGeometry(
+        SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             3,
                                                             1,
                                                             BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(
             Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
         const std::array<float, 3> InitialState{1.0F, 0.0F, 0.0F};
         Instance.GetStateABuffer().Upload(InitialState.data(), sizeof(InitialState));
@@ -1321,24 +1321,24 @@ namespace
                 std::abs(Result[1] - ExpectedTransfer) < 1.0e-4F && std::abs(Result[2]) < 1.0e-5F,
             "distance and Profile boundary weights should scale flux and unsupported channels should remain unchanged");
 
-        SurfaceState::TSurfaceResponseProfileData NormalProfile;
+        SurfaceState::FSurfaceResponseProfileData NormalProfile;
         NormalProfile.States.emplace("wetness", Parameters);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> NormalProfileTable{NormalProfile};
-        const SurfaceState::TSurfaceStateRegistry                    NormalRegistry(NormalProfileTable);
-        TSharedSurfaceGeometryData                                   NormalGeometry({{0, {2, 1}}});
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> NormalProfileTable{NormalProfile};
+        const SurfaceState::FSurfaceStateRegistry                    NormalRegistry(NormalProfileTable);
+        FSharedSurfaceGeometryData                                   NormalGeometry({{0, {2, 1}}});
         for (std::size_t Index = 0; Index < NormalGeometry.GetTexelCount(); ++Index)
         {
-            SurfaceState::TSurfaceTexelGeometry& Texel = NormalGeometry.GetTexels()[Index];
+            SurfaceState::FSurfaceTexelGeometry& Texel = NormalGeometry.GetTexels()[Index];
             Texel.Surface = 0;
             Texel.Triangle = 0;
             Texel.Position = {static_cast<float>(Index), 0.0F, 0.0F};
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
-            Texel.NeighborIndices[0] = static_cast<TLocalTexelIndex>(1U - Index);
+            Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
         NormalGeometry.GetTexels()[0].TransferNormal = {0.0F, 0.0F, 1.0F};
         NormalGeometry.GetTexels()[1].TransferNormal = {std::sqrt(0.75F), 0.0F, 0.5F};
-        NormalGeometry.GetTexels()[0].HasTransferNormal = true;
-        NormalGeometry.GetTexels()[1].HasTransferNormal = true;
+        NormalGeometry.GetTexels()[0].bHasTransferNormal = true;
+        NormalGeometry.GetTexels()[1].bHasTransferNormal = true;
         NormalGeometry.SetProfileMap({0, 0});
 
         const std::vector<float> MappedNormalWeights = BuildSurfaceGPUTransferWeights(NormalGeometry, glm::mat4(1.0F));
@@ -1354,10 +1354,10 @@ namespace
         Check(std::abs(NormalWeightDisabled[0] - 1.0F) < 1.0e-5F,
               "disabling the debug NormalWeight contribution should restore a neutral value");
 
-        TSharedSurfaceGeometryData FallbackGeometry = NormalGeometry;
-        for (SurfaceState::TSurfaceTexelGeometry& Texel : FallbackGeometry.GetTexels())
+        FSharedSurfaceGeometryData FallbackGeometry = NormalGeometry;
+        for (SurfaceState::FSurfaceTexelGeometry& Texel : FallbackGeometry.GetTexels())
         {
-            Texel.HasTransferNormal = false;
+            Texel.bHasTransferNormal = false;
         }
         FallbackGeometry.GetTexels()[1].Normal = {std::sqrt(0.75F), 0.0F, 0.5F};
         const std::vector<float> GeometricFallbackWeights =
@@ -1366,19 +1366,19 @@ namespace
                   std::abs(GeometricFallbackWeights[SurfaceNeighborCount] - 0.5F) < 1.0e-5F,
               "missing Normal Map transfer normals should fall back to geometric normals");
 
-        SurfaceState::TSurfaceSharedGeometryGPUResources NormalSharedGeometry(
+        SurfaceState::FSurfaceSharedGeometryGPUResources NormalSharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), NormalGeometry);
-        SurfaceState::TSurfaceProfileGPUResources NormalProfiles(
+        SurfaceState::FSurfaceProfileGPUResources NormalProfiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), NormalProfileTable, NormalRegistry);
-        SurfaceState::TSurfaceInstanceGPUResources NormalInstance(
+        SurfaceState::FSurfaceInstanceGPUResources NormalInstance(
             Vulkan.GetPhysicalDevice(),
             Vulkan.GetDevice(),
             2,
             1,
             BuildSurfaceGPUTransferWeights(NormalGeometry, glm::mat4(1.0F)));
-        SurfaceState::TSurfaceStateDescriptorResources NormalDescriptors(
+        SurfaceState::FSurfaceStateDescriptorResources NormalDescriptors(
             Vulkan.GetDevice(), NormalSharedGeometry, NormalProfiles, NormalInstance);
-        SurfaceState::TSurfaceStateSolver NormalSolver(Vulkan.GetDevice(), NormalDescriptors.GetLayout());
+        SurfaceState::FSurfaceStateSolver NormalSolver(Vulkan.GetDevice(), NormalDescriptors.GetLayout());
 
         const std::array<float, 2> NormalInitialState{1.0F, 0.0F};
         NormalInstance.GetStateABuffer().Upload(NormalInitialState.data(), sizeof(NormalInitialState));
@@ -1395,35 +1395,35 @@ namespace
               "GPU solver flux should use the Normal Map-derived NormalWeight from the cache");
     }
 
-    void TestStateDrivenGeometryUpdate(TVulkanTestDevice& Vulkan)
+    void TestStateDrivenGeometryUpdate(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
-        SurfaceState::TSurfaceResponseProfileData Profile;
-        SurfaceState::TSurfaceStateParameters     Layer{};
+        SurfaceState::FSurfaceResponseProfileData Profile;
+        SurfaceState::FSurfaceStateParameters     Layer{};
         Layer.StateCapacity = 1.0F;
         Layer.AccumulationFactor = 10.0F;
         Layer.CavityFillFactor = 0.0F;
         Layer.GeometryTransferFactor = 1.0F;
         Profile.States.emplace("mud", Layer);
-        SurfaceState::TSurfaceStateParameters FilmLayer = Layer;
+        SurfaceState::FSurfaceStateParameters FilmLayer = Layer;
         FilmLayer.ThicknessPerAmount = 0.002F;
         Profile.States.emplace("waterfilm", FilmLayer);
-        const std::vector<SurfaceState::TSurfaceResponseProfileData> ProfileTable{Profile};
-        const SurfaceState::TSurfaceStateRegistry                    Registry(ProfileTable);
-        const SurfaceState::TStateId                                 Mud = Registry.GetStateId("mud");
-        const SurfaceState::TStateId                                 WaterFilm = Registry.GetStateId("waterfilm");
+        const std::vector<SurfaceState::FSurfaceResponseProfileData> ProfileTable{Profile};
+        const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
+        const SurfaceState::FStateId                                 Mud = Registry.GetStateId("mud");
+        const SurfaceState::FStateId                                 WaterFilm = Registry.GetStateId("waterfilm");
         Check(Mud != SurfaceState::InvalidStateId && WaterFilm != SurfaceState::InvalidStateId && Mud != WaterFilm,
               "geometry update fixture should resolve two independent accumulation states");
 
-        TSharedSurfaceGeometryData     Geometry({{0, {3, 1}}});
+        FSharedSurfaceGeometryData     Geometry({{0, {3, 1}}});
         const std::array<glm::vec3, 3> Positions{
             glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F)};
-        const std::array<std::array<TLocalTexelIndex, 2>, 3> Neighbors{{{{1, 2}}, {{0, 2}}, {{0, 1}}}};
+        const std::array<std::array<FLocalTexelIndex, 2>, 3> Neighbors{{{{1, 2}}, {{0, 2}}, {{0, 1}}}};
         for (std::size_t TexelIndex = 0; TexelIndex < Geometry.GetTexelCount(); ++TexelIndex)
         {
-            SurfaceState::TSurfaceTexelGeometry& Texel = Geometry.GetTexels()[TexelIndex];
+            SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[TexelIndex];
             Texel.Surface = 0;
             Texel.Triangle = 0;
             Texel.Position = Positions[TexelIndex];
@@ -1433,16 +1433,16 @@ namespace
         }
         Geometry.SetProfileMap({0, 0, 0});
 
-        SurfaceState::TSurfaceSharedGeometryGPUResources SharedGeometry(
+        SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        SurfaceState::TSurfaceProfileGPUResources Profiles(
+        SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
         const auto StaticWeights = BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F));
-        SurfaceState::TSurfaceInstanceGPUResources Instance(
+        SurfaceState::FSurfaceInstanceGPUResources Instance(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 3, 2, StaticWeights);
-        SurfaceState::TSurfaceStateDescriptorResources Descriptors(
+        SurfaceState::FSurfaceStateDescriptorResources Descriptors(
             Vulkan.GetDevice(), SharedGeometry, Profiles, Instance);
-        SurfaceState::TSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        SurfaceState::FSurfaceStateSolver Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
 
         std::array<float, 6> InitialState{};
         InitialState[Mud] = 0.5F;
@@ -1458,7 +1458,7 @@ namespace
         Instance.GetTransferWeightBuffer().Download(
             WeightsWithGeometryUpdateOff.data(),
             static_cast<VkDeviceSize>(WeightsWithGeometryUpdateOff.size() * sizeof(float)));
-        std::array<SurfaceState::TSurfaceGPUVec4, 6> GeometryWithGeometryUpdateOff{};
+        std::array<SurfaceState::FSurfaceGPUVec4, 6> GeometryWithGeometryUpdateOff{};
         Instance.GetDynamicGeometryBuffer().Download(GeometryWithGeometryUpdateOff.data(),
                                                      sizeof(GeometryWithGeometryUpdateOff));
         Check(std::equal(StaticWeights.begin(),
@@ -1493,7 +1493,7 @@ namespace
                                   Flags | SurfaceSolverForceFullGeometryFlag);
             });
 
-        std::array<SurfaceState::TSurfaceGPUVec4, 6> DynamicGeometry{};
+        std::array<SurfaceState::FSurfaceGPUVec4, 6> DynamicGeometry{};
         Instance.GetDynamicGeometryBuffer().Download(DynamicGeometry.data(), sizeof(DynamicGeometry));
         std::array<float, 3> CachedHeights{};
         Instance.GetAccumulationHeightBuffer().Download(CachedHeights.data(), sizeof(CachedHeights));
@@ -1577,7 +1577,7 @@ namespace
         Check(std::equal(DynamicWeights.begin(), DynamicWeights.end(), StableWeights.begin()),
               "unchanged updated geometry should preserve the cached transfer weights");
 
-        std::array<TSurfaceGPUVec4, 6> BeforeDirtyGeometry{};
+        std::array<FSurfaceGPUVec4, 6> BeforeDirtyGeometry{};
         Instance.GetDynamicGeometryBuffer().Download(BeforeDirtyGeometry.data(), sizeof(BeforeDirtyGeometry));
         auto ChangedState = ResultingState;
         ChangedState[Mud] += 0.1F;
@@ -1601,7 +1601,7 @@ namespace
         std::array<std::uint32_t, 3> ChangedDispatch{};
         Instance.GetAccumulationHeightBuffer().Download(
             ChangedDispatch.data(), sizeof(ChangedDispatch), Layout.GeometryCommandWord * sizeof(std::uint32_t));
-        std::array<TSurfaceGPUVec4, 6> AfterDirtyGeometry{};
+        std::array<FSurfaceGPUVec4, 6> AfterDirtyGeometry{};
         Instance.GetDynamicGeometryBuffer().Download(AfterDirtyGeometry.data(), sizeof(AfterDirtyGeometry));
         Check(ChangedHeightDirty[0] == 1.0F && ChangedHeightDirty[1] == 0.0F && ChangedHeightDirty[2] == 0.0F &&
                   std::abs(AfterDirtyGeometry[3].X - BeforeDirtyGeometry[3].X) > 1.0e-6F,
@@ -1610,19 +1610,19 @@ namespace
               "changed geometry update should dispatch geometry and transfer-weight workgroups");
     }
 
-    void TestSparseGeometryUpdateWeights(TVulkanTestDevice& Vulkan)
+    void TestSparseGeometryUpdateWeights(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
-        TSurfaceResponseProfileData Profile;
-        TSurfaceStateParameters     Layer{};
+        FSurfaceResponseProfileData Profile;
+        FSurfaceStateParameters     Layer{};
         Layer.StateCapacity = 1.0F;
         Layer.AccumulationFactor = 1.0F;
         Layer.ThicknessPerAmount = 0.1F;
         Profile.States.emplace("mud", Layer);
-        const std::vector<TSurfaceResponseProfileData> Profiles{Profile};
-        const TSurfaceStateRegistry                    Registry(Profiles);
+        const std::vector<FSurfaceResponseProfileData> Profiles{Profile};
+        const FSurfaceStateRegistry                    Registry(Profiles);
         constexpr std::uint32_t                        Texels = 129;
-        TSharedSurfaceGeometryData                     Geometry({{0, {Texels, 1}}});
+        FSharedSurfaceGeometryData                     Geometry({{0, {Texels, 1}}});
         for (std::uint32_t I = 0; I < Texels; ++I)
         {
             auto& T = Geometry.GetTexels()[I];
@@ -1635,26 +1635,26 @@ namespace
         Geometry.GetTexels()[1].NeighborIndices[0] = 0;
         Geometry.GetTexels()[127].NeighborIndices[0] = 128;
         Geometry.GetTexels()[128].NeighborIndices[0] = 127;
-        Geometry.SetProfileMap(std::vector<TSurfaceProfileIndex>(Texels, 0));
-        TSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
-        TSurfaceProfileGPUResources  GPUProfiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
-        TSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
+        Geometry.SetProfileMap(std::vector<FSurfaceProfileIndex>(Texels, 0));
+        FSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
+        FSurfaceProfileGPUResources  GPUProfiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Profiles, Registry);
+        FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                               Vulkan.GetDevice(),
                                               Texels,
                                               1,
                                               BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)));
-        TSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
-        TSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
+        FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, GPUProfiles, Instance);
+        FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         const auto Flags = SurfaceSolverStateDrivenGeometryUpdateFlag | SurfaceSolverDistanceWeightFlag |
                            SurfaceSolverNormalWeightFlag | SurfaceSolverSparseGeometryFlag;
-        const auto Execute = [&](bool CurrentAB, std::uint32_t Extra)
+        const auto Execute = [&](bool bCurrentAB, std::uint32_t Extra)
         {
             Vulkan.Execute(
                 [&](VkCommandBuffer Command)
                 {
                     Solver.RecordStep(Command,
                                       Descriptors,
-                                      CurrentAB,
+                                      bCurrentAB,
                                       Texels,
                                       1,
                                       0,
@@ -1691,22 +1691,22 @@ namespace
               "an unchanged post-step skips the second geometry update after a force-full prebuild");
     }
 
-    std::vector<float> RunReactions(TVulkanTestDevice&                                     V,
-                                    const MDSS::SurfaceState::TSurfaceResponseProfileData& P,
+    std::vector<float> RunReactions(FVulkanTestDevice&                                     V,
+                                    const MDSS::SurfaceState::FSurfaceResponseProfileData& P,
                                     const std::vector<float>&                              Initial,
                                     const std::vector<float>&                              Areas,
                                     float                                                  Dt,
                                     unsigned                                               Steps = 1,
                                     std::uint32_t                                          Flags = 0,
                                     const std::vector<float>&                              Input = {},
-                                    bool                                                   Chain = false,
+                                    bool                                                   bChain = false,
                                     std::vector<float>*                                    Heights = nullptr,
                                     std::vector<float>*                                    Diagnostics = nullptr)
     {
         using namespace MDSS::SurfaceState;
-        const TSurfaceStateRegistry Registry({P});
+        const FSurfaceStateRegistry Registry({P});
         const auto                  K = Registry.GetStateCount(), N = Areas.size();
-        TSharedSurfaceGeometryData  G({{0, {static_cast<std::uint32_t>(N), 1}}});
+        FSharedSurfaceGeometryData  G({{0, {static_cast<std::uint32_t>(N), 1}}});
         std::vector<float>          Weights(N * SurfaceNeighborCount, 0);
         for (std::size_t I = 0; I < N; ++I)
         {
@@ -1715,35 +1715,35 @@ namespace
             T.Triangle = 0;
             T.Position = {float(I), 0, 0};
             T.Normal = {0, 0, 1};
-            if (Chain && I + 1 < N)
+            if (bChain && I + 1 < N)
             {
-                T.NeighborIndices[0] = static_cast<TLocalTexelIndex>(I + 1);
+                T.NeighborIndices[0] = static_cast<FLocalTexelIndex>(I + 1);
                 Weights[I * 8] = 1;
             }
-            if (Chain && I > 0)
+            if (bChain && I > 0)
             {
-                T.NeighborIndices[1] = static_cast<TLocalTexelIndex>(I - 1);
+                T.NeighborIndices[1] = static_cast<FLocalTexelIndex>(I - 1);
                 Weights[I * 8 + 1] = 1;
             }
         }
-        G.SetProfileMap(std::vector<TSurfaceProfileIndex>(N, 0));
-        TSurfaceSharedGeometryGPUResources Shared(V.GetPhysicalDevice(), V.GetDevice(), G);
-        TSurfaceProfileGPUResources        Profiles(V.GetPhysicalDevice(), V.GetDevice(), {P}, Registry);
+        G.SetProfileMap(std::vector<FSurfaceProfileIndex>(N, 0));
+        FSurfaceSharedGeometryGPUResources Shared(V.GetPhysicalDevice(), V.GetDevice(), G);
+        FSurfaceProfileGPUResources        Profiles(V.GetPhysicalDevice(), V.GetDevice(), {P}, Registry);
         std::vector<float>                 WorldAreas = Areas;
         for (auto& A : WorldAreas)
             A *= SurfaceStateReferenceArea;
-        TSurfaceInstanceGPUResources     Instance(V.GetPhysicalDevice(),
-                                                  V.GetDevice(),
-                                                  N,
-                                                  K,
-                                                  Weights,
+        FSurfaceInstanceGPUResources     Instance(V.GetPhysicalDevice(),
+                                              V.GetDevice(),
+                                              N,
+                                              K,
+                                              Weights,
                                                   {},
-                                                  WorldAreas,
-                                                  nullptr,
+                                              WorldAreas,
+                                              nullptr,
                                                   {},
-                                                  Profiles.GetMaxReactionCount());
-        TSurfaceStateDescriptorResources Descriptors(V.GetDevice(), Shared, Profiles, Instance);
-        TSurfaceStateSolver              Solver(V.GetDevice(), Descriptors.GetLayout());
+                                              Profiles.GetMaxReactionCount());
+        FSurfaceStateDescriptorResources Descriptors(V.GetDevice(), Shared, Profiles, Instance);
+        FSurfaceStateSolver              Solver(V.GetDevice(), Descriptors.GetLayout());
         Instance.GetStateABuffer().Upload(Initial.data(), Initial.size() * sizeof(float));
         if (!Input.empty())
             Instance.GetInputDeltaBuffer().Upload(Input.data(), Input.size() * sizeof(float));
@@ -1782,26 +1782,26 @@ namespace
         return Out;
     }
 
-    void TestLocalReactions(TVulkanTestDevice& V)
+    void TestLocalReactions(FVulkanTestDevice& V)
     {
         using namespace MDSS::SurfaceState;
-        TSurfaceResponseProfileData P;
+        FSurfaceResponseProfileData P;
         P.States["ice"] = {};
         P.States["waterfilm"] = {};
         P.States["heat"] = {};
         P.States["ice"].AccumulationFactor = 1;
         P.States["ice"].StateCapacity = 20;
         P.States["ice"].ThicknessPerAmount = .01F;
-        TSurfaceReaction Melt;
+        FSurfaceReaction Melt;
         Melt.ID = "melt";
         Melt.Consumes = {{"ice", 1}, {"heat", .25F}};
         Melt.Produces = {{"waterfilm", 1}};
-        Melt.RateModel = TReactionRateModel::StateProportional;
+        Melt.RateModel = EReactionRateModel::StateProportional;
         Melt.RateState = "ice";
         Melt.RateCoefficient = .4F;
-        Melt.Modifiers = {{"heat", TReactionFunction::RampAbove, .5F, 1}};
+        Melt.Modifiers = {{"heat", EReactionFunction::RampAbove, .5F, 1}};
         P.Reactions = {Melt};
-        TSurfaceStateRegistry    R({P});
+        FSurfaceStateRegistry    R({P});
         const auto               H = R.GetStateId("heat"), I = R.GetStateId("ice"), W = R.GetStateId("waterfilm");
         const auto               K = R.GetStateCount();
         std::vector<float>       Initial(3 * K, 0);
@@ -1833,17 +1833,17 @@ namespace
         const auto Low = RunReactions(V, Q, Limited, Areas, .5F);
         Check(Low[H] >= 0 && Low[W] <= .04001F, "multi-source reaction is limited by available heat");
 
-        TSurfaceReaction Other = Melt;
+        FSurfaceReaction Other = Melt;
         Other.ID = "other";
         Other.Consumes = {{"ice", 1}};
         Other.Produces = {{"heat", 1}};
         Other.Modifiers.clear();
-        Other.RateModel = TReactionRateModel::Constant;
+        Other.RateModel = EReactionRateModel::Constant;
         Other.RateCoefficient = 7;
         Q = P;
         Q.Reactions[0].Consumes = {{"ice", 1}};
         Q.Reactions[0].Modifiers.clear();
-        Q.Reactions[0].RateModel = TReactionRateModel::Constant;
+        Q.Reactions[0].RateModel = EReactionRateModel::Constant;
         Q.Reactions[0].RateCoefficient = 8;
         Q.Reactions.push_back(Other);
         std::vector<float> Ten(K, 0);
@@ -1863,7 +1863,7 @@ namespace
 
         Q = P;
         Q.Reactions[0].Consumes.clear();
-        Q.Reactions[0].RateModel = TReactionRateModel::Constant;
+        Q.Reactions[0].RateModel = EReactionRateModel::Constant;
         Q.Reactions[0].Modifiers.clear();
         Q.Reactions[0].RateCoefficient = 3;
         Q.States["waterfilm"].StateCapacity = .1F;
@@ -1880,7 +1880,7 @@ namespace
 
         Q = P;
         Q.Reactions[0].Consumes.clear();
-        Q.Reactions[0].RateModel = TReactionRateModel::MassAction;
+        Q.Reactions[0].RateModel = EReactionRateModel::MassAction;
         Q.Reactions[0].Factors = {{"ice", 2, 1}, {"heat", 4, 1}};
         Q.Reactions[0].Modifiers.clear();
         Q.Reactions[0].RateCoefficient = 1;
@@ -1890,15 +1890,15 @@ namespace
         const auto MassAction = RunReactions(V, Q, Ten, {1}, .2F);
         Check(std::abs(MassAction[W] - .2F) < 1e-5F && MassAction[I] == 2 && MassAction[H] == 4,
               "mass-action factors drive a rule without being consumed");
-        Q.Reactions[0].Modifiers = {{"heat", TReactionFunction::Inhibit, 0, 4}};
+        Q.Reactions[0].Modifiers = {{"heat", EReactionFunction::Inhibit, 0, 4}};
         const auto Inhibited = RunReactions(V, Q, Ten, {1}, .2F);
         Check(std::abs(Inhibited[W] - .1F) < 1e-5F, "inhibitor multiplies the reaction rate");
         for (const auto& [Function, Threshold, Scale, Expected] :
-             {std::tuple{TReactionFunction::Above, 4.0F, 1.0F, .2F},
-              std::tuple{TReactionFunction::Below, 3.0F, 1.0F, 0.0F},
-              std::tuple{TReactionFunction::RampAbove, 3.0F, 2.0F, .1F},
-              std::tuple{TReactionFunction::RampBelow, 5.0F, 2.0F, .1F},
-              std::tuple{TReactionFunction::Linear, 0.0F, 4.0F, .2F}})
+             {std::tuple{EReactionFunction::Above, 4.0F, 1.0F, .2F},
+              std::tuple{EReactionFunction::Below, 3.0F, 1.0F, 0.0F},
+              std::tuple{EReactionFunction::RampAbove, 3.0F, 2.0F, .1F},
+              std::tuple{EReactionFunction::RampBelow, 5.0F, 2.0F, .1F},
+              std::tuple{EReactionFunction::Linear, 0.0F, 4.0F, .2F}})
         {
             Q.Reactions[0].Modifiers = {{"heat", Function, Threshold, Scale}};
             const auto Value = RunReactions(V, Q, Ten, {1}, .2F);
@@ -1907,7 +1907,7 @@ namespace
         }
 
         Q = P;
-        Q.Reactions[0].Mode = TReactionMode::InflowFraction;
+        Q.Reactions[0].Mode = EReactionMode::InflowFraction;
         Q.Reactions[0].Modifiers.clear();
         Q.Reactions[0].Consumes = {{"waterfilm", 1}};
         Q.Reactions[0].Produces = {{"ice", 1}};
@@ -1962,7 +1962,7 @@ namespace
         Check(Sparse[64 * K + W] > 0, "newly generated water participates in next-step transport");
         for (unsigned C = 0; C < 34; ++C)
             Q.States["extra_" + std::to_string(C)] = {};
-        const TSurfaceStateRegistry Dynamic({Q});
+        const FSurfaceStateRegistry Dynamic({Q});
         std::vector<float>          DynamicInitial(Dynamic.GetStateCount(), 0);
         DynamicInitial[Dynamic.GetStateId("ice")] = 10;
         DynamicInitial[Dynamic.GetStateId("heat")] = 2;
@@ -1982,7 +1982,7 @@ int main(int argc, char** argv)
             TestMesoPeakPacking();
             return FailureCount == 0 ? 0 : 1;
         }
-        TVulkanTestDevice Vulkan;
+        FVulkanTestDevice Vulkan;
         if (argc > 1 && std::string(argv[1]) == "--reactions-only")
         {
             TestLocalReactions(Vulkan);
@@ -2013,7 +2013,7 @@ int main(int argc, char** argv)
             TestSparseGeometryUpdateWeights(Vulkan);
         }
     }
-    catch (const TVulkanUnavailable& Exception)
+    catch (const FVulkanUnavailable& Exception)
     {
         std::cout << "SKIP: " << Exception.what() << '\n';
         return 77;

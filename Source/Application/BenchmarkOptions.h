@@ -10,9 +10,9 @@
 
 namespace MDSS
 {
-    struct TBenchmarkOptions
+    struct FBenchmarkOptions
     {
-        bool                  Enabled = false;
+        bool                  bEnabled = false;
         std::filesystem::path ScenePath;
         std::filesystem::path OutputPath;
         std::uint32_t         Resolution = 256;
@@ -23,16 +23,16 @@ namespace MDSS
         [[nodiscard]] std::size_t GetTotalFrameLimit() const noexcept;
     };
 
-    struct TApplicationLaunchOptions
+    struct FApplicationLaunchOptions
     {
         std::size_t           FrameLimit = 0;
         std::uint32_t         RenderTileSize = 16;
         bool                  bPerWorkgroupChannelMask = true;
         std::filesystem::path ScenePath;
-        TBenchmarkOptions     Benchmark;
+        FBenchmarkOptions     Benchmark;
     };
 
     // Command-line parsing and usage text
-    [[nodiscard]] TApplicationLaunchOptions ParseApplicationLaunchOptions(int Argc, char* Argv[]);
+    [[nodiscard]] FApplicationLaunchOptions ParseApplicationLaunchOptions(int Argc, char* Argv[]);
     [[nodiscard]] const char*               GetApplicationUsage() noexcept;
 } // namespace MDSS

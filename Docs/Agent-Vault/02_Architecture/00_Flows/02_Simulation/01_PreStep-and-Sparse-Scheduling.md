@@ -9,7 +9,7 @@ Current Geometry가 무효화되었는지 검사하고 필요한 전체 재구�
 
 ## 진입점과 조건
 
-[`TSurfaceStateSystem::RecordStep`](../../../../../Source/SurfaceState/Solver/SurfaceStepRecording.cpp)은 active instance마다 현재 A/B State, texel/channel 수, 모델 행렬, gravity, 입력 활성화 및 solver flags를 `TSurfaceSolverInstanceStep`으로 묶는다. Transform·설정 변경으로 transfer-weight cache가 무효화되면 CPU에서 재계산·업로드한다.
+[`FSurfaceStateSystem::RecordStep`](../../../../../Source/SurfaceState/Solver/SurfaceStepRecording.cpp)은 active instance마다 현재 A/B State, texel/channel 수, 모델 행렬, gravity, 입력 활성화 및 solver flags를 `FSurfaceSolverInstanceStep`으로 묶는다. Transform·설정 변경으로 transfer-weight cache가 무효화되면 CPU에서 재계산·업로드한다.
 
 ## 수행 순서
 

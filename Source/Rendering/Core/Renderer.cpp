@@ -7,15 +7,15 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 00_Renderer_Lifecycle
 
-    TRenderer::TRenderer(const GPU::TVulkanContext&         Context,
-                         TWindow&                           TWindow,
-                         Asset::TAssetManager&              Assets,
-                         SurfaceState::TSurfaceDataManager& SurfaceData,
-                         const TScene&                      Scene,
-                         SurfaceState::TSurfaceStateSystem& SurfaceStateSystem,
-                         TFrameCoordinator&                 FrameCoordinator)
-        : Context(Context), TargetWindow(TWindow), Assets(Assets), SurfaceData(SurfaceData),
-          SurfaceStateSystem(SurfaceStateSystem), FrameCoordinator(FrameCoordinator), SwapchainData(Context, TWindow),
+    FRenderer::FRenderer(const GPU::FVulkanContext&         Context,
+                         FWindow&                           FWindow,
+                         Asset::FAssetManager&              Assets,
+                         SurfaceState::FSurfaceDataManager& SurfaceData,
+                         const FScene&                      Scene,
+                         SurfaceState::FSurfaceStateSystem& SurfaceStateSystem,
+                         FFrameCoordinator&                 FrameCoordinator)
+        : Context(Context), TargetWindow(FWindow), Assets(Assets), SurfaceData(SurfaceData),
+          SurfaceStateSystem(SurfaceStateSystem), FrameCoordinator(FrameCoordinator), SwapchainData(Context, FWindow),
           DepthFormat(FindDepthFormat(Context.GetPhysicalDevice())),
           DepthImages(CreateDepthImages(Context.GetPhysicalDevice(),
                                         Context.GetDevice(),
@@ -44,7 +44,7 @@ namespace MDSS::Rendering
         TScopeExit ConstructionCleanup(
             [this]
             {
-                // The TRenderer destructor is not called when construction fails. Release raw Vulkan
+                // The FRenderer destructor is not called when construction fails. Release raw Vulkan
                 // handles owned by this object; RAII members clean themselves during stack unwinding.
                 if (TimestampQueryPool != VK_NULL_HANDLE)
                 {
@@ -78,7 +78,7 @@ namespace MDSS::Rendering
             std::max<VkDeviceSize>(DeviceProperties.limits.minUniformBufferOffsetAlignment, 1U);
 
         MaterialUniformStride =
-            (sizeof(TMaterialUniform) + UniformAlignment - 1U) / UniformAlignment * UniformAlignment;
+            (sizeof(FMaterialUniform) + UniformAlignment - 1U) / UniformAlignment * UniformAlignment;
         bRenderPassSubstageTimingsReliable =
             DriverProperties.driverID != VK_DRIVER_ID_MOLTENVK || DeviceProperties.vendorID != 0x106BU;
         bSupportsWireframeLineWidth = DeviceFeatures.wideLines == VK_TRUE;
@@ -89,54 +89,54 @@ namespace MDSS::Rendering
             WireframeLineWidth = std::clamp(2.0F, WireframeLineWidthMin, WireframeLineWidthMax);
         }
 
-        std::vector<TGizmoVertex> GizmoVertices =
+        std::vector<FGizmoVertex> GizmoVertices =
             BuildWorldReferenceVertices(WorldGridVertexCount, WorldAxisVertexCount);
-        const std::vector<TGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
+        const std::vector<FGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
         TranslateGizmoVertexCount = static_cast<std::uint32_t>(TranslateGizmoVertices.size());
         GizmoVertices.insert(GizmoVertices.end(), TranslateGizmoVertices.begin(), TranslateGizmoVertices.end());
-        const std::vector<TGizmoVertex> RotateGizmoVertices = BuildRotateGizmoVertices();
+        const std::vector<FGizmoVertex> RotateGizmoVertices = BuildRotateGizmoVertices();
         RotateGizmoVertexCount = static_cast<std::uint32_t>(RotateGizmoVertices.size());
         GizmoVertices.insert(GizmoVertices.end(), RotateGizmoVertices.begin(), RotateGizmoVertices.end());
-        GizmoVertexBuffer = std::make_unique<GPU::TGPUBuffer>(
+        GizmoVertexBuffer = std::make_unique<GPU::FGPUBuffer>(
             Context.GetPhysicalDevice(),
             Context.GetDevice(),
-            static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)),
+            static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(FGizmoVertex)),
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            GPU::TGPUBufferMemoryCategory::Renderer);
+            GPU::EGPUBufferMemoryCategory::Renderer);
         GizmoVertexBuffer->Upload(GizmoVertices.data(),
-                                  static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(TGizmoVertex)));
+                                  static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(FGizmoVertex)));
 
         CreateMaterialDescriptorResources();
 
-        if (const SurfaceState::TSurfaceStateDescriptorResources* Descriptors =
+        if (const SurfaceState::FSurfaceStateDescriptorResources* Descriptors =
                 SurfaceStateSystem.GetGPUResources().GetAnyInstanceDescriptors())
         {
-            SurfaceDebugPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+            SurfaceDebugPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                 Context.GetDevice(),
                 MainRenderPass.GetHandle(),
                 BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
-            TexelInspector = std::make_unique<SurfaceState::TTexelInspector>(Context.GetPhysicalDevice(),
+            TexelInspector = std::make_unique<SurfaceState::FTexelInspector>(Context.GetPhysicalDevice(),
                                                                              Context.GetDevice(),
                                                                              Descriptors->GetLayout(),
-                                                                             TRenderContext::MaxFramesInFlight);
+                                                                             FRenderContext::MaxFramesInFlight);
             TexelGeometryPreview =
-                std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
                                                                       Descriptors->GetLayout(),
                                                                       Scene.GetStaticMeshInstances().size());
-            TexelGeometryPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+            TexelGeometryPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                 Context.GetDevice(),
                 MainRenderPass.GetHandle(),
                 BuildTexelGeometryPipelineConfig(
                     MaterialDescriptorSetLayout, Descriptors->GetLayout(), TexelGeometryPreview->GetOutputLayout()));
-            RenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+            RenderStateTexture = std::make_unique<FRenderStateTexture>(Context.GetPhysicalDevice(),
                                                                        Context.GetDevice(),
                                                                        Descriptors->GetLayout(),
                                                                        SurfaceStateSystem.GetGPUResources());
             for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
             {
-                SurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                SurfaceLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -144,7 +144,7 @@ namespace MDSS::Rendering
                                                   VK_NULL_HANDLE,
                                                   RenderStateTexture->GetLayout(),
                                                   Mode));
-                BaseSurfaceLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                BaseSurfaceLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -154,25 +154,25 @@ namespace MDSS::Rendering
                                                       Mode));
             }
             MudLayerGeometry =
-                std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
                                                                       Descriptors->GetLayout(),
                                                                       Scene.GetStaticMeshInstances().size(),
                                                                       true);
             MudLayerGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
-            HeightFieldSmoothing = std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
+            HeightFieldSmoothing = std::make_unique<FHeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                                            Context.GetDevice(),
                                                                            Descriptors->GetLayout(),
                                                                            MudLayerGeometry->GetOutputLayout(),
                                                                            Scene.GetStaticMeshInstances().size());
-            OverlaySides = std::make_unique<TAccumulationOverlaySides>(Context.GetPhysicalDevice(),
+            OverlaySides = std::make_unique<FAccumulationOverlaySides>(Context.GetPhysicalDevice(),
                                                                        Context.GetDevice(),
                                                                        Descriptors->GetLayout(),
                                                                        MudLayerGeometry->GetOutputLayout(),
                                                                        Scene.GetStaticMeshInstances().size());
             for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
             {
-                MudOverlayTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                MudOverlayTopPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -183,7 +183,7 @@ namespace MDSS::Rendering
                                                true,
                                                RenderStateTexture->GetLayout(),
                                                Mode));
-                MudOverlaySidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                MudOverlaySidePipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -215,19 +215,19 @@ namespace MDSS::Rendering
         }
         else
         {
-            TLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
+            FLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
         }
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
         SurfaceTexelMeshResolution = Scene.GetSimulationResolution();
         OverlayTexelMeshResolution = Scene.GetSimulationResolution();
-        TLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
-        TLogger::Debug("TRenderer",
+        FLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
+        FLogger::Debug("TRenderer",
                        "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
                            ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
         ConstructionCleanup.Release();
     }
 
-    TRenderer::~TRenderer()
+    FRenderer::~FRenderer()
     {
         if (Context.GetDevice() != VK_NULL_HANDLE)
         {
@@ -281,16 +281,16 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 01_Frame_Rendering
 
-    void TRenderer::RenderFrame(const TScene& SceneData,
-                                TDebugUI&     DebugInterface,
+    void FRenderer::RenderFrame(const FScene& SceneData,
+                                FDebugUI&     DebugInterface,
                                 float         DeltaTime,
                                 bool          bSuspendSimulationClock)
     {
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
-        using TClock = std::chrono::steady_clock;
-        const auto ToMilliseconds = [](TClock::duration Duration)
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
         { return std::chrono::duration<float, std::milli>(Duration).count(); };
-        auto CpuStageStart = TClock::now();
+        auto CpuStageStart = FClock::now();
         FrameContext.WaitForCurrentFrame();
         if (DebugInterface.GetViewportCount() > MaterialViewportCapacity)
         {
@@ -301,7 +301,7 @@ namespace MDSS::Rendering
                 throw std::runtime_error("Too many viewports for dynamic material uniform offsets.");
             CreateMaterialDescriptorResources();
         }
-        ProfilingStats.FrameFenceWaitCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.FrameFenceWaitCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
         if (TexelInspector)
             TexelInspector->CompleteFrame(FrameIndex);
         if (OverlaySides)
@@ -325,13 +325,13 @@ namespace MDSS::Rendering
                 OverlayQueryOffset + OverlayTimestampLayersSubmitted[FrameIndex] * OverlayTimestampQueriesPerLayer;
             std::vector<std::uint64_t> Timestamps(QueryCount, 0U);
             const VkResult             QueryResult = vkGetQueryPoolResults(Context.GetDevice(),
-                                                                           TimestampQueryPool,
-                                                                           QueryBase,
-                                                                           QueryCount,
-                                                                           Timestamps.size() * sizeof(std::uint64_t),
-                                                                           Timestamps.data(),
-                                                                           sizeof(std::uint64_t),
-                                                                           VK_QUERY_RESULT_64_BIT);
+                                                               TimestampQueryPool,
+                                                               QueryBase,
+                                                               QueryCount,
+                                                               Timestamps.size() * sizeof(std::uint64_t),
+                                                               Timestamps.data(),
+                                                               sizeof(std::uint64_t),
+                                                               VK_QUERY_RESULT_64_BIT);
             if (QueryResult == VK_SUCCESS && TimestampPeriodNanoseconds > 0.0F)
             {
                 ProfilingStats.OverlayDisplayMode = OverlayDisplayModesSubmitted[FrameIndex];
@@ -461,18 +461,18 @@ namespace MDSS::Rendering
         }
 
         std::uint32_t ImageIndex = 0;
-        CpuStageStart = TClock::now();
+        CpuStageStart = FClock::now();
         const VkResult AcquireResult = vkAcquireNextImageKHR(Context.GetDevice(),
                                                              SwapchainData.GetHandle(),
                                                              std::numeric_limits<std::uint64_t>::max(),
                                                              FrameContext.GetImageAvailableSemaphore(),
                                                              VK_NULL_HANDLE,
                                                              &ImageIndex);
-        ProfilingStats.AcquireCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.AcquireCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
 
         if (AcquireResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            TLogger::Debug("TRenderer", "TSwapchain became out of date while acquiring; recreating it.");
+            FLogger::Debug("TRenderer", "TSwapchain became out of date while acquiring; recreating it.");
             RecreateSwapchain(DebugInterface);
             return;
         }
@@ -512,10 +512,10 @@ namespace MDSS::Rendering
         }
         if (SimulationSteps.empty())
             LastSolverGpuMilliseconds = LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = 0.0F;
-        CpuStageStart = TClock::now();
+        CpuStageStart = FClock::now();
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, SimulationSteps);
         OverlayDisplayModesSubmitted[FrameIndex] = OverlayDisplayMode;
-        ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             bTimestampQueriesSubmitted[FrameIndex] = true;
@@ -552,13 +552,13 @@ namespace MDSS::Rendering
         SubmitInfo.signalSemaphoreCount = 1;
         SubmitInfo.pSignalSemaphores = &SignalSemaphore;
 
-        CpuStageStart = TClock::now();
+        CpuStageStart = FClock::now();
         if (vkQueueSubmit(Context.GetQueues().GetGraphics(), 1, &SubmitInfo, FrameContext.GetInFlightFence()) !=
             VK_SUCCESS)
         {
             throw std::runtime_error("Failed to submit Vulkan draw command buffer.");
         }
-        ProfilingStats.QueueSubmitCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.QueueSubmitCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
 
         const VkSwapchainKHR SwapchainHandle = SwapchainData.GetHandle();
         VkPresentInfoKHR     PresentInfo{};
@@ -569,9 +569,9 @@ namespace MDSS::Rendering
         PresentInfo.pSwapchains = &SwapchainHandle;
         PresentInfo.pImageIndices = &ImageIndex;
 
-        CpuStageStart = TClock::now();
+        CpuStageStart = FClock::now();
         const VkResult PresentResult = vkQueuePresentKHR(Context.GetQueues().GetPresent(), &PresentInfo);
-        ProfilingStats.PresentCpuMilliseconds = ToMilliseconds(TClock::now() - CpuStageStart);
+        ProfilingStats.PresentCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
         const bool bSwapchainNeedsRecreation =
             AcquireResult == VK_SUBOPTIMAL_KHR || PresentResult == VK_ERROR_OUT_OF_DATE_KHR ||
             PresentResult == VK_SUBOPTIMAL_KHR || TargetWindow.WasFramebufferResized();
@@ -596,7 +596,7 @@ namespace MDSS::Rendering
 
         if (bSwapchainNeedsRecreation)
         {
-            TLogger::Debug("TRenderer", "Presentation requires swapchain recreation.");
+            FLogger::Debug("TRenderer", "Presentation requires swapchain recreation.");
             RecreateSwapchain(DebugInterface);
         }
     }
@@ -607,7 +607,7 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 02_Scene_Resource_Replacement
 
-    void TRenderer::ReloadSceneResources(const TScene& Scene, bool bResetStateSettings)
+    void FRenderer::ReloadSceneResources(const FScene& Scene, bool bResetStateSettings)
     {
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
         {
@@ -623,23 +623,23 @@ namespace MDSS::Rendering
         const std::uint64_t ReuseCountBefore = ReusePool.GetReuseCount();
         const VkDeviceSize  ReusedBytesBefore = ReusePool.GetReusedBytes();
         auto PreviousRegistry = SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
-        std::unique_ptr<SurfaceState::TSurfaceStateSystem>     Replacement;
-        std::unique_ptr<GPU::TGraphicsPipeline>                ReplacementDebugPipeline;
-        std::unique_ptr<SurfaceState::TTexelInspector>         ReplacementInspector;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   ReplacementGeometryPreview;
-        std::unique_ptr<GPU::TGraphicsPipeline>                ReplacementGeometryPipeline;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementLitPipelines;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
-        std::unique_ptr<TRenderStateTexture>                   ReplacementRenderStateTexture;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   ReplacementMudGeometry;
-        std::unique_ptr<THeightFieldSmoothing>                 ReplacementHeightFieldSmoothing;
-        std::unique_ptr<TAccumulationOverlaySides>             ReplacementOverlaySides;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudTopPipelines;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> ReplacementMudSidePipelines;
+        std::unique_ptr<SurfaceState::FSurfaceStateSystem>     Replacement;
+        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementDebugPipeline;
+        std::unique_ptr<SurfaceState::FTexelInspector>         ReplacementInspector;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementGeometryPreview;
+        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementGeometryPipeline;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementLitPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
+        std::unique_ptr<FRenderStateTexture>                   ReplacementRenderStateTexture;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementMudGeometry;
+        std::unique_ptr<FHeightFieldSmoothing>                 ReplacementHeightFieldSmoothing;
+        std::unique_ptr<FAccumulationOverlaySides>             ReplacementOverlaySides;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudTopPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudSidePipelines;
         try
         {
             Replacement =
-                std::make_unique<SurfaceState::TSurfaceStateSystem>(Context, Assets, SurfaceData, Scene, &ReusePool);
+                std::make_unique<SurfaceState::FSurfaceStateSystem>(Context, Assets, SurfaceData, Scene, &ReusePool);
             Replacement->SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
             Replacement->SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
             Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
@@ -655,7 +655,7 @@ namespace MDSS::Rendering
             Replacement->SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
-                Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::TSurfaceSolverTerm>(Index),
+                Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::ESurfaceSolverTerm>(Index),
                                                        DebugSolverSettings.Enabled[Index]);
             }
             if (!bResetStateSettings)
@@ -665,36 +665,36 @@ namespace MDSS::Rendering
                     Replacement->SetDebugProfileParameters(Key.first, Key.second, Parameters);
                 }
             }
-            if (const SurfaceState::TSurfaceStateDescriptorResources* Descriptors =
+            if (const SurfaceState::FSurfaceStateDescriptorResources* Descriptors =
                     Replacement->GetGPUResources().GetAnyInstanceDescriptors())
             {
-                ReplacementDebugPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+                ReplacementDebugPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildSurfaceDebugPipelineConfig(MaterialDescriptorSetLayout, Descriptors->GetLayout()));
                 ReplacementInspector =
-                    std::make_unique<SurfaceState::TTexelInspector>(Context.GetPhysicalDevice(),
+                    std::make_unique<SurfaceState::FTexelInspector>(Context.GetPhysicalDevice(),
                                                                     Context.GetDevice(),
                                                                     Descriptors->GetLayout(),
-                                                                    TRenderContext::MaxFramesInFlight);
+                                                                    FRenderContext::MaxFramesInFlight);
                 ReplacementGeometryPreview =
-                    std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                    std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
                                                                           Descriptors->GetLayout(),
                                                                           Scene.GetStaticMeshInstances().size());
-                ReplacementGeometryPipeline = std::make_unique<GPU::TGraphicsPipeline>(
+                ReplacementGeometryPipeline = std::make_unique<GPU::FGraphicsPipeline>(
                     Context.GetDevice(),
                     MainRenderPass.GetHandle(),
                     BuildTexelGeometryPipelineConfig(MaterialDescriptorSetLayout,
                                                      Descriptors->GetLayout(),
                                                      ReplacementGeometryPreview->GetOutputLayout()));
-                ReplacementRenderStateTexture = std::make_unique<TRenderStateTexture>(Context.GetPhysicalDevice(),
+                ReplacementRenderStateTexture = std::make_unique<FRenderStateTexture>(Context.GetPhysicalDevice(),
                                                                                       Context.GetDevice(),
                                                                                       Descriptors->GetLayout(),
                                                                                       Replacement->GetGPUResources());
                 for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
                 {
-                    ReplacementLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -702,7 +702,7 @@ namespace MDSS::Rendering
                                                       VK_NULL_HANDLE,
                                                       ReplacementRenderStateTexture->GetLayout(),
                                                       Mode));
-                    ReplacementBaseLitPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementBaseLitPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildBaseSurfaceLitPipelineConfig(MaterialDescriptorSetLayout,
@@ -712,7 +712,7 @@ namespace MDSS::Rendering
                                                           Mode));
                 }
                 ReplacementMudGeometry =
-                    std::make_unique<SurfaceState::TTexelGeometryPreview>(Context.GetPhysicalDevice(),
+                    std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
                                                                           Descriptors->GetLayout(),
                                                                           Scene.GetStaticMeshInstances().size(),
@@ -720,20 +720,20 @@ namespace MDSS::Rendering
                 ReplacementMudGeometry->SetOccupancyTileSize(static_cast<std::uint32_t>(OverlayOccupancyTileSize));
                 ReplacementMudGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
                 ReplacementHeightFieldSmoothing =
-                    std::make_unique<THeightFieldSmoothing>(Context.GetPhysicalDevice(),
+                    std::make_unique<FHeightFieldSmoothing>(Context.GetPhysicalDevice(),
                                                             Context.GetDevice(),
                                                             Descriptors->GetLayout(),
                                                             ReplacementMudGeometry->GetOutputLayout(),
                                                             Scene.GetStaticMeshInstances().size());
                 ReplacementOverlaySides =
-                    std::make_unique<TAccumulationOverlaySides>(Context.GetPhysicalDevice(),
+                    std::make_unique<FAccumulationOverlaySides>(Context.GetPhysicalDevice(),
                                                                 Context.GetDevice(),
                                                                 Descriptors->GetLayout(),
                                                                 ReplacementMudGeometry->GetOutputLayout(),
                                                                 Scene.GetStaticMeshInstances().size());
                 for (std::uint32_t Mode = 0; Mode < 3; ++Mode)
                 {
-                    ReplacementMudTopPipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementMudTopPipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -744,7 +744,7 @@ namespace MDSS::Rendering
                                                    true,
                                                    ReplacementRenderStateTexture->GetLayout(),
                                                    Mode));
-                    ReplacementMudSidePipelines[Mode] = std::make_unique<GPU::TGraphicsPipeline>(
+                    ReplacementMudSidePipelines[Mode] = std::make_unique<GPU::FGraphicsPipeline>(
                         Context.GetDevice(),
                         MainRenderPass.GetHandle(),
                         BuildOverlayPipelineConfig(MaterialDescriptorSetLayout,
@@ -781,7 +781,7 @@ namespace MDSS::Rendering
         TexelInspector.reset();
         InspectedTexel.reset();
         SurfaceStateSystem.ReplaceSceneResources(std::move(*Replacement));
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Surface GPU buffer reuse: " + std::to_string(ReusePool.GetReuseCount() - ReuseCountBefore) +
                           " buffer(s), " +
                           std::to_string((ReusePool.GetReusedBytes() - ReusedBytesBefore) / (1024U * 1024U)) +
@@ -812,7 +812,7 @@ namespace MDSS::Rendering
         LastSolverPass2GpuMilliseconds = -1.0F;
     }
 
-    void TRenderer::RestartSimulationState()
+    void FRenderer::RestartSimulationState()
     {
         FrameCoordinator.RestartState();
         if (TexelInspector)
@@ -825,23 +825,27 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 03_Resolution_and_Swapchain
 
-    std::uint32_t TRenderer::GetSimulationResolution() const noexcept
+    std::uint32_t FRenderer::GetSimulationResolution() const noexcept
     {
         return SurfaceData.GetSimulationResolution();
     }
 
-    void TRenderer::TrimRenderResolutionCaches()
+    void FRenderer::TrimRenderResolutionCaches()
     {
         if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
             throw std::runtime_error("Failed to wait before trimming render mesh caches.");
-        if (OverlaySides) OverlaySides->ReleaseOutputs();
-        if (HeightFieldSmoothing) HeightFieldSmoothing->ReleaseOutputs();
-        if (MudLayerGeometry) MudLayerGeometry->ReleaseOutputs();
-        if (TexelGeometryPreview) TexelGeometryPreview->ReleaseOutputs();
+        if (OverlaySides)
+            OverlaySides->ReleaseOutputs();
+        if (HeightFieldSmoothing)
+            HeightFieldSmoothing->ReleaseOutputs();
+        if (MudLayerGeometry)
+            MudLayerGeometry->ReleaseOutputs();
+        if (TexelGeometryPreview)
+            TexelGeometryPreview->ReleaseOutputs();
         SurfaceStateSystem.TrimRenderMeshVariants(SurfaceTexelMeshResolution, OverlayTexelMeshResolution);
     }
 
-    void TRenderer::SetSurfaceTexelMeshResolution(std::uint32_t Resolution)
+    void FRenderer::SetSurfaceTexelMeshResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceRenderMeshResolution(Resolution))
             throw std::invalid_argument("Surface Texel Mesh resolution must be 64, 128, 256 or 512.");
@@ -852,7 +856,7 @@ namespace MDSS::Rendering
         LastRenderGpuMilliseconds = -1.0F;
     }
 
-    void TRenderer::SetOverlayTexelMeshResolution(std::uint32_t Resolution)
+    void FRenderer::SetOverlayTexelMeshResolution(std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceRenderMeshResolution(Resolution))
             throw std::invalid_argument("Overlay Texel Mesh resolution must be 64, 128, 256 or 512.");
@@ -863,7 +867,7 @@ namespace MDSS::Rendering
         LastRenderGpuMilliseconds = -1.0F;
     }
 
-    void TRenderer::SetSimulationResolution(TScene& Scene, std::uint32_t Resolution)
+    void FRenderer::SetSimulationResolution(FScene& Scene, std::uint32_t Resolution)
     {
         if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
@@ -872,7 +876,7 @@ namespace MDSS::Rendering
 
         const std::uint32_t                                  PreviousResolution = Scene.GetSimulationResolution();
         auto&                                                Instances = Scene.GetStaticMeshInstances();
-        std::vector<SurfaceState::TSurfaceRuntimeDataHandle> PreviousHandles;
+        std::vector<SurfaceState::FSurfaceRuntimeDataHandle> PreviousHandles;
         PreviousHandles.reserve(Instances.size());
         for (const auto& Instance : Instances)
             PreviousHandles.push_back(Instance.GetSurfaceData());
@@ -900,12 +904,12 @@ namespace MDSS::Rendering
             throw;
         }
         SurfaceData.ReleaseUnusedSurfaceData(ReplacementHandles);
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Simulation resolution changed to " + std::to_string(Resolution) + " x " +
                           std::to_string(Resolution) + "; State reset.");
     }
 
-    void TRenderer::RecreateSwapchain(TDebugUI& DebugInterface)
+    void FRenderer::RecreateSwapchain(FDebugUI& DebugInterface)
     {
         TargetWindow.WaitForNonZeroFramebuffer();
         if (TargetWindow.ShouldClose())
@@ -917,7 +921,7 @@ namespace MDSS::Rendering
         std::uint32_t FramebufferHeight = 0;
         TargetWindow.GetFramebufferSize(FramebufferWidth, FramebufferHeight);
 
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Recreating swapchain for framebuffer " + std::to_string(FramebufferWidth) + "x" +
                           std::to_string(FramebufferHeight) + ".");
 
@@ -959,7 +963,7 @@ namespace MDSS::Rendering
         DebugInterface.OnSwapchainRecreated(Context, *this);
 
         const VkExtent2D NewExtent = SwapchainData.GetExtent();
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "TSwapchain recreation complete: " + std::to_string(NewExtent.width) + "x" +
                           std::to_string(NewExtent.height) + ".");
     }
@@ -970,37 +974,37 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 04_Renderer_Accessors
 
-    const GPU::TSwapchain& TRenderer::GetSwapchain() const noexcept
+    const GPU::FSwapchain& FRenderer::GetSwapchain() const noexcept
     {
         return SwapchainData;
     }
 
-    VkRenderPass TRenderer::GetRenderPassHandle() const noexcept
+    VkRenderPass FRenderer::GetRenderPassHandle() const noexcept
     {
         return MainRenderPass.GetHandle();
     }
 
-    const SurfaceState::TSurfaceGPUResourceManager& TRenderer::GetSurfaceGPUResources() const noexcept
+    const SurfaceState::FSurfaceGPUResourceManager& FRenderer::GetSurfaceGPUResources() const noexcept
     {
         return SurfaceStateSystem.GetGPUResources();
     }
 
-    float TRenderer::GetLastSolverGpuMilliseconds() const noexcept
+    float FRenderer::GetLastSolverGpuMilliseconds() const noexcept
     {
         return LastSolverGpuMilliseconds;
     }
 
-    float TRenderer::GetLastRenderGpuMilliseconds() const noexcept
+    float FRenderer::GetLastRenderGpuMilliseconds() const noexcept
     {
         return LastRenderGpuMilliseconds;
     }
 
-    float TRenderer::GetLastSolverPass1GpuMilliseconds() const noexcept
+    float FRenderer::GetLastSolverPass1GpuMilliseconds() const noexcept
     {
         return LastSolverPass1GpuMilliseconds;
     }
 
-    float TRenderer::GetLastSolverPass2GpuMilliseconds() const noexcept
+    float FRenderer::GetLastSolverPass2GpuMilliseconds() const noexcept
     {
         return LastSolverPass2GpuMilliseconds;
     }

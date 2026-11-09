@@ -34,7 +34,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Timestep_and_Transfer_Caches
 
-    float TSurfaceStateSystem::GetMaximumStableDeltaTime()
+    float FSurfaceStateSystem::GetMaximumStableDeltaTime()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
         if (StableDeltaTimeModelMatrices.size() != Instances.size())
@@ -53,8 +53,8 @@ namespace MDSS::SurfaceState
             return CachedMaximumStableDeltaTime;
 
         double     Limit = 1.0 / 60.0;
-        const bool SatEnabled = DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::SaturationDrive);
-        const bool GeoEnabled = DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::GeometryDrive);
+        const bool bSatEnabled = DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::SaturationDrive);
+        const bool bGeoEnabled = DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::GeometryDrive);
         for (std::size_t I = 0; I < Instances.size(); ++I)
         {
             if (!GPUResources->GetInstanceDescriptors(I))
@@ -69,12 +69,12 @@ namespace MDSS::SurfaceState
                 Geometry,
                 Model,
                 nullptr,
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight));
+                DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight),
+                DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight),
+                DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight));
             for (std::size_t T = 0; T < Texels.size(); ++T)
             {
-                const auto Profile = Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(T));
+                const auto Profile = Geometry.GetProfileIndex(static_cast<FLocalTexelIndex>(T));
                 if (!Texels[T].IsValid() || Profile >= Profiles.size())
                     continue;
                 const double AreaScale = GetSurfaceWorldTexelArea(Texels[T], Model) / SurfaceStateReferenceArea;
@@ -96,13 +96,13 @@ namespace MDSS::SurfaceState
                 }
                 for (const auto& [Name, Original] : Assets.GetSRProfile(Profiles[Profile]).GetData().States)
                 {
-                    const TStateId State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Name);
+                    const FStateId State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Name);
                     const auto     Override = RuntimeProfileOverrides.find({Profiles[Profile], State});
                     const auto&    P = Override == RuntimeProfileOverrides.end() ? Original : Override->second;
                     // SaturationDrive <= source saturation; Geometry uses the same unclamped mobility.
                     const double RateBound =
-                        (SatEnabled ? BaseSaturationTransferRate * P.SaturationTransferFactor * WeightSum : 0.0) +
-                        (GeoEnabled ? BaseGeometryTransferRate * P.GeometryTransferFactor * HeightWeightSum : 0.0);
+                        (bSatEnabled ? BaseSaturationTransferRate * P.SaturationTransferFactor * WeightSum : 0.0) +
+                        (bGeoEnabled ? BaseGeometryTransferRate * P.GeometryTransferFactor * HeightWeightSum : 0.0);
                     if (RateBound > 0.0)
                         Limit = std::min(Limit, 0.9 * P.StateCapacity * AreaScale / RateBound);
                 }
@@ -116,7 +116,7 @@ namespace MDSS::SurfaceState
         return CachedMaximumStableDeltaTime;
     }
 
-    void TSurfaceStateSystem::PrepareTransferWeightCachesForSettingChange()
+    void FSurfaceStateSystem::PrepareTransferWeightCachesForSettingChange()
     {
         if (!bTransferWeightSettingsDirty)
             return;
@@ -129,9 +129,9 @@ namespace MDSS::SurfaceState
             GPUResources->UpdateTransferWeightCache(
                 SceneIndex,
                 Scene.GetStaticMeshInstances()[SceneIndex].GetTransform(),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::NormalWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::DistanceWeight),
-                DebugSolverSettings.IsEnabled(TSurfaceSolverTerm::ProfileBoundaryWeight),
+                DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight),
+                DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight),
+                DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight),
                 bHalfDynamicWeightsEnabled);
         }
         bTransferWeightSettingsDirty = false;

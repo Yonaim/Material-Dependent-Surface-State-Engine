@@ -13,8 +13,8 @@ def main():
         raise RuntimeError('Unresolved correctness gate')
     source='Source/SurfaceState/GPU/Resources/DescriptorResources.cpp'
     old=(OUT/'raw/before/inputs'/source).read_text(encoding='utf-8');new=(ROOT/source).read_text(encoding='utf-8')
-    marker='        const std::array<const GPU::TGPUBuffer*, DescriptorBindingCount> SharedAndProfileBuffers'
-    end='    TSurfaceStateDescriptorResources::~TSurfaceStateDescriptorResources()'
+    marker='        const std::array<const GPU::FGPUBuffer*, DescriptorBindingCount> SharedAndProfileBuffers'
+    end='    FSurfaceStateDescriptorResources::~FSurfaceStateDescriptorResources()'
     unchanged=old[old.index(marker):old.index(end)]==new[new.index(marker):new.index(end)]
     errors=[]
     for name,entry,folder in [('before',before,OUT/'raw/before/inputs'),('after',after,OUT/'raw/after/inputs'),('gpu',gpu,OUT/'raw/gpu/inputs')]:

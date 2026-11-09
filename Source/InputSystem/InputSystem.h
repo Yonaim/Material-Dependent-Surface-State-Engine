@@ -14,33 +14,33 @@ struct GLFWwindow;
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager;
+    class FSurfaceDataManager;
 }
 
 namespace MDSS
 {
 
-    class TCamera;
-    class TScene;
+    class FCamera;
+    class FScene;
 
-    class TInputSystem final
+    class FInputSystem final
     {
     public:
         // Window input polling
-        explicit TInputSystem(GLFWwindow* Window) noexcept;
+        explicit FInputSystem(GLFWwindow* Window) noexcept;
 
         /** @brief Convert one Space press into a center-camera ray contact unless text entry or a UI drag is active. */
-        [[nodiscard]] std::optional<SurfaceState::TSurfaceContactInput>
-        PollDebugContact(const TScene&                            Scene,
-                         const Asset::TAssetManager&              Assets,
-                         const SurfaceState::TSurfaceDataManager& SurfaceData,
-                         const TCamera&                           Camera,
+        [[nodiscard]] std::optional<SurfaceState::FSurfaceContactInput>
+        PollDebugContact(const FScene&                            Scene,
+                         const Asset::FAssetManager&              Assets,
+                         const SurfaceState::FSurfaceDataManager& SurfaceData,
+                         const FCamera&                           Camera,
                          bool                                     bInjectMode,
-                         SurfaceState::TStateId                   State,
+                         SurfaceState::FStateId                   State,
                          float                                    Strength,
                          float                                    Radius,
                          float                                    Falloff,

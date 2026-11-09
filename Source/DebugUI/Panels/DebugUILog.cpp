@@ -2,7 +2,7 @@
 
 namespace MDSS
 {
-    void TDebugUI::DrawLogWindow()
+    void FDebugUI::DrawLogWindow()
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowSize({std::max(Viewport->WorkSize.x * 0.70F, 720.0F), LogWindowHeight},
@@ -10,17 +10,17 @@ namespace MDSS
 
         if (ImGui::Begin("Log"))
         {
-            const std::uint64_t CurrentRevision = TLogger::GetRevision();
+            const std::uint64_t CurrentRevision = FLogger::GetRevision();
             if (CurrentRevision != LastSeenLogRevision)
             {
-                CachedLogEntries = TLogger::GetEntries();
+                CachedLogEntries = FLogger::GetEntries();
                 bScrollLogToBottom = true;
                 LastSeenLogRevision = CurrentRevision;
             }
 
             if (ImGui::Button("Clear"))
             {
-                TLogger::Clear();
+                FLogger::Clear();
                 bScrollLogToBottom = true;
             }
 
@@ -31,7 +31,7 @@ namespace MDSS
             if (ImGui::Button("Copy Visible"))
             {
                 std::string ClipboardText;
-                for (const TLogEntry& Entry : CachedLogEntries)
+                for (const FLogEntry& Entry : CachedLogEntries)
                 {
                     const std::size_t Index = static_cast<std::size_t>(Entry.Level);
                     if (Index < LogLevelFilters.size() && LogLevelFilters[Index] &&
@@ -58,12 +58,12 @@ namespace MDSS
             ImGui::SameLine();
             ImGui::TextUnformatted("Filter:");
 
-            for (const TLogLevel Level : DisplayedLevels)
+            for (const ELogLevel Level : DisplayedLevels)
             {
                 ImGui::SameLine();
                 const std::size_t Index = static_cast<std::size_t>(Level);
                 ImGui::PushStyleColor(ImGuiCol_Text, GetLogColor(Level));
-                ImGui::Checkbox(TLogger::GetLevelName(Level), &LogLevelFilters[Index]);
+                ImGui::Checkbox(FLogger::GetLevelName(Level), &LogLevelFilters[Index]);
                 ImGui::PopStyleColor();
             }
 
@@ -71,7 +71,7 @@ namespace MDSS
 
             ImGui::BeginChild(
                 "LogMessages", ImVec2(0.0F, 0.0F), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
-            for (const TLogEntry& Entry : CachedLogEntries)
+            for (const FLogEntry& Entry : CachedLogEntries)
             {
                 const std::size_t Index = static_cast<std::size_t>(Entry.Level);
                 if (Index >= LogLevelFilters.size() || !LogLevelFilters[Index])

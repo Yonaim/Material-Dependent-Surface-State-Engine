@@ -17,10 +17,10 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_State_Registry_Construction
 
-    TSurfaceStateRegistry::TSurfaceStateRegistry(const std::vector<TSurfaceResponseProfileData>& Profiles)
+    FSurfaceStateRegistry::FSurfaceStateRegistry(const std::vector<FSurfaceResponseProfileData>& Profiles)
     {
         std::set<std::string> StateNames;
-        for (const TSurfaceResponseProfileData& Profile : Profiles)
+        for (const FSurfaceResponseProfileData& Profile : Profiles)
         {
             ValidateSurfaceResponseProfileData(Profile);
             for (const auto& Entry : Profile.States)
@@ -43,12 +43,12 @@ namespace MDSS::SurfaceState
         IDs.reserve(Names.size());
         for (std::size_t Index = 0; Index < Names.size(); ++Index)
         {
-            IDs.emplace(Names[Index], static_cast<TStateId>(Index));
+            IDs.emplace(Names[Index], static_cast<FStateId>(Index));
         }
 
-        for (const TSurfaceResponseProfileData& Profile : Profiles)
+        for (const FSurfaceResponseProfileData& Profile : Profiles)
         {
-            for (const TSurfaceStateTransition& Transition : Profile.Transitions)
+            for (const FSurfaceStateTransition& Transition : Profile.Transitions)
             {
                 if (!IDs.contains(Transition.Source))
                 {
@@ -70,12 +70,12 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_State_Lookup_and_Profile_Resolution
 
-    std::size_t TSurfaceStateRegistry::GetStateCount() const noexcept
+    std::size_t FSurfaceStateRegistry::GetStateCount() const noexcept
     {
         return Names.size();
     }
 
-    TStateId TSurfaceStateRegistry::GetStateId(std::string_view Name) const
+    FStateId FSurfaceStateRegistry::GetStateId(std::string_view Name) const
     {
         const std::string CanonicalName = NormalizeSurfaceStateName(Name);
         const auto        Found = IDs.find(CanonicalName);
@@ -86,7 +86,7 @@ namespace MDSS::SurfaceState
         return Found->second;
     }
 
-    const std::string& TSurfaceStateRegistry::GetStateName(TStateId ID) const
+    const std::string& FSurfaceStateRegistry::GetStateName(FStateId ID) const
     {
         if (ID >= Names.size())
         {
@@ -95,12 +95,12 @@ namespace MDSS::SurfaceState
         return Names[ID];
     }
 
-    TRegisteredSurfaceResponseProfileData
-    TSurfaceStateRegistry::ResolveProfile(const TSurfaceResponseProfileData& Profile) const
+    FRegisteredSurfaceResponseProfileData
+    FSurfaceStateRegistry::ResolveProfile(const FSurfaceResponseProfileData& Profile) const
     {
         ValidateSurfaceResponseProfileData(Profile);
 
-        TRegisteredSurfaceResponseProfileData Result;
+        FRegisteredSurfaceResponseProfileData Result;
         Result.States.resize(Names.size());
         for (const auto& [Name, Parameters] : Profile.States)
         {
@@ -113,7 +113,7 @@ namespace MDSS::SurfaceState
         }
 
         Result.Transitions.reserve(Profile.Transitions.size());
-        for (const TSurfaceStateTransition& Transition : Profile.Transitions)
+        for (const FSurfaceStateTransition& Transition : Profile.Transitions)
         {
             const auto Source = IDs.find(Transition.Source);
             const auto Target = IDs.find(Transition.Target);

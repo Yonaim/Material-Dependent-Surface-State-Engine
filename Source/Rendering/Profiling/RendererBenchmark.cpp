@@ -8,9 +8,9 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 00_Runtime_Settings_and_Benchmark_Capture
 
-    void TRenderer::SetDebugProfileParameters(Asset::TSRProfileAssetHandle                 Profile,
-                                              SurfaceState::TStateId                       State,
-                                              const SurfaceState::TSurfaceStateParameters& Parameters,
+    void FRenderer::SetDebugProfileParameters(Asset::FSRProfileAssetHandle                 Profile,
+                                              SurfaceState::FStateId                       State,
+                                              const SurfaceState::FSurfaceStateParameters& Parameters,
                                               bool                                         bKeepRuntimeOverride)
     {
         SurfaceStateSystem.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
@@ -27,7 +27,7 @@ namespace MDSS::Rendering
         }
     }
 
-    void TRenderer::ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
+    void FRenderer::ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
                                               std::uint32_t                WarmupFrames,
                                               std::uint32_t                MeasurementFrames)
     {
@@ -50,11 +50,11 @@ namespace MDSS::Rendering
         bBenchmarkCaptureEnabled = true;
     }
 
-    void TRenderer::WriteBenchmarkSample(std::uint32_t FrameSlot)
+    void FRenderer::WriteBenchmarkSample(std::uint32_t FrameSlot)
     {
         if (!bBenchmarkCaptureEnabled || FrameSlot >= BenchmarkSubmissions.size())
             return;
-        const TBenchmarkFrameSubmission& Submitted = BenchmarkSubmissions[FrameSlot];
+        const FBenchmarkFrameSubmission& Submitted = BenchmarkSubmissions[FrameSlot];
         if (Submitted.FrameIndex == std::numeric_limits<std::uint64_t>::max() ||
             Submitted.FrameIndex < BenchmarkWarmupFrames ||
             Submitted.FrameIndex >= BenchmarkWarmupFrames + BenchmarkMeasurementFrames)
@@ -110,7 +110,7 @@ namespace MDSS::Rendering
         BenchmarkJsonLines.push_back(Sample.dump());
     }
 
-    void TRenderer::WriteBenchmarkMetadata(const TScene& SceneData, const TDebugUI& DebugInterface)
+    void FRenderer::WriteBenchmarkMetadata(const FScene& SceneData, const FDebugUI& DebugInterface)
     {
         const VkExtent2D Extent = SwapchainData.GetExtent();
         nlohmann::json   Viewports = nlohmann::json::array();
@@ -160,7 +160,7 @@ namespace MDSS::Rendering
         bBenchmarkMetadataWritten = true;
     }
 
-    void TRenderer::RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex)
+    void FRenderer::RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex)
     {
         if (!PerformanceSettings().value("capture_image", false) || BenchmarkScreenshot ||
             NextBenchmarkFrameIndex != BenchmarkWarmupFrames + BenchmarkMeasurementFrames - 1U)
@@ -169,7 +169,7 @@ namespace MDSS::Rendering
             throw std::runtime_error("This swapchain cannot capture images.");
         BenchmarkScreenshotExtent = SwapchainData.GetExtent();
         BenchmarkScreenshotFormat = SwapchainData.GetImageFormat();
-        BenchmarkScreenshot = std::make_unique<GPU::TGPUBuffer>(
+        BenchmarkScreenshot = std::make_unique<GPU::FGPUBuffer>(
             Context.GetPhysicalDevice(),
             Context.GetDevice(),
             VkDeviceSize(BenchmarkScreenshotExtent.width) * BenchmarkScreenshotExtent.height * 4U,
@@ -236,7 +236,7 @@ namespace MDSS::Rendering
                              &Barrier);
     }
 
-    void TRenderer::FinalizeBenchmarkCapture()
+    void FRenderer::FinalizeBenchmarkCapture()
     {
         if (!bBenchmarkCaptureEnabled)
             return;
@@ -244,15 +244,15 @@ namespace MDSS::Rendering
         {
             std::vector<std::uint8_t> Pixels(static_cast<std::size_t>(BenchmarkScreenshot->GetSize()));
             BenchmarkScreenshot->Download(Pixels.data(), BenchmarkScreenshot->GetSize());
-            const bool    BGRA = BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_SRGB ||
-                                 BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_UNORM;
+            const bool bBGRA = BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_SRGB ||
+                               BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_UNORM;
             std::ofstream Image(BenchmarkOutputPath.string() + ".ppm", std::ios::binary);
             Image << "P6\n" << BenchmarkScreenshotExtent.width << ' ' << BenchmarkScreenshotExtent.height << "\n255\n";
             for (std::size_t P = 0; P < Pixels.size(); P += 4)
             {
-                Image.put(char(Pixels[P + (BGRA ? 2 : 0)]));
+                Image.put(char(Pixels[P + (bBGRA ? 2 : 0)]));
                 Image.put(char(Pixels[P + 1]));
-                Image.put(char(Pixels[P + (BGRA ? 0 : 2)]));
+                Image.put(char(Pixels[P + (bBGRA ? 0 : 2)]));
             }
             if (!Image)
                 throw std::runtime_error("Cannot save scene capture.");
@@ -330,7 +330,7 @@ namespace MDSS::Rendering
                                  {"max", Maximum},
                                  {"state_fnv1a64", std::to_string(StateHash)}});
         }
-        const auto           Memory = GPU::TGPUResourceMemoryStats::GetSnapshot();
+        const auto           Memory = GPU::FGPUResourceMemoryStats::GetSnapshot();
         const nlohmann::json Result = {{"schema_version", 1},
                                        {"experiment", PerformanceSettings()},
                                        {"runtime_solver", SurfaceStateSystem.IsRuntimeSolverFlagsEnabled()},

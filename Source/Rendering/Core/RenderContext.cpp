@@ -18,7 +18,7 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 00_Render_Context_Lifecycle
 
-    TRenderContext::TRenderContext(const GPU::TVulkanContext& Context)
+    FRenderContext::FRenderContext(const GPU::FVulkanContext& Context)
         : Device(Context.GetDevice()), CommandPool(Context.GetCommands().GetPool()),
           CommandBuffers(Context.GetCommands().AllocatePrimary(static_cast<std::uint32_t>(MaxFramesInFlight)))
     {
@@ -53,12 +53,12 @@ namespace MDSS::Rendering
             }
         }
 
-        TLogger::Info("TRenderer",
+        FLogger::Info("TRenderer",
                       "Frame synchronization initialized with " + std::to_string(MaxFramesInFlight) +
                           " frames in flight.");
     }
 
-    TRenderContext::~TRenderContext()
+    FRenderContext::~FRenderContext()
     {
         for (std::size_t Index = 0; Index < MaxFramesInFlight; ++Index)
         {
@@ -87,7 +87,7 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 01_Frame_Synchronization
 
-    void TRenderContext::WaitForCurrentFrame() const
+    void FRenderContext::WaitForCurrentFrame() const
     {
         if (vkWaitForFences(
                 Device, 1, &InFlightFences[CurrentFrame], VK_TRUE, std::numeric_limits<std::uint64_t>::max()) !=
@@ -97,7 +97,7 @@ namespace MDSS::Rendering
         }
     }
 
-    void TRenderContext::ResetCurrentFence() const
+    void FRenderContext::ResetCurrentFence() const
     {
         if (vkResetFences(Device, 1, &InFlightFences[CurrentFrame]) != VK_SUCCESS)
         {
@@ -105,7 +105,7 @@ namespace MDSS::Rendering
         }
     }
 
-    void TRenderContext::AdvanceFrame() noexcept
+    void FRenderContext::AdvanceFrame() noexcept
     {
         CurrentFrame = (CurrentFrame + 1) % static_cast<std::uint32_t>(MaxFramesInFlight);
     }
@@ -117,22 +117,22 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 02_Frame_Resource_Access
 
-    std::uint32_t TRenderContext::GetCurrentFrameIndex() const noexcept
+    std::uint32_t FRenderContext::GetCurrentFrameIndex() const noexcept
     {
         return CurrentFrame;
     }
 
-    VkCommandBuffer TRenderContext::GetCurrentCommandBuffer() const noexcept
+    VkCommandBuffer FRenderContext::GetCurrentCommandBuffer() const noexcept
     {
         return CommandBuffers[CurrentFrame];
     }
 
-    VkSemaphore TRenderContext::GetImageAvailableSemaphore() const noexcept
+    VkSemaphore FRenderContext::GetImageAvailableSemaphore() const noexcept
     {
         return ImageAvailableSemaphores[CurrentFrame];
     }
 
-    VkFence TRenderContext::GetInFlightFence() const noexcept
+    VkFence FRenderContext::GetInFlightFence() const noexcept
     {
         return InFlightFences[CurrentFrame];
     }

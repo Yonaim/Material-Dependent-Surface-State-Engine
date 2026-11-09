@@ -17,54 +17,54 @@
 
 namespace MDSS
 {
-    class TScene;
+    class FScene;
 }
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager final
+    class FSurfaceDataManager final
     {
     public:
         // Runtime surface data loading
-        explicit TSurfaceDataManager(Asset::TAssetManager& Assets);
+        explicit FSurfaceDataManager(Asset::FAssetManager& Assets);
 
-        [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceData(Asset::TMeshAssetHandle      Mesh,
+        [[nodiscard]] FSurfaceRuntimeDataHandle LoadSurfaceData(Asset::FMeshAssetHandle      Mesh,
                                                                 const std::filesystem::path& DistributionPath,
                                                                 std::uint32_t                Resolution = 0);
-        [[nodiscard]] TSurfaceRuntimeDataHandle LoadSurfaceDataAtResolution(TSurfaceRuntimeDataHandle Handle,
+        [[nodiscard]] FSurfaceRuntimeDataHandle LoadSurfaceDataAtResolution(FSurfaceRuntimeDataHandle Handle,
                                                                             std::uint32_t             Resolution);
 
         // Registry and runtime data access
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         void                        SetSimulationResolution(std::uint32_t Resolution);
-        void ReleaseUnusedSurfaceData(const std::vector<TSurfaceRuntimeDataHandle>& RetainedHandles);
+        void ReleaseUnusedSurfaceData(const std::vector<FSurfaceRuntimeDataHandle>& RetainedHandles);
 
-        [[nodiscard]] bool                       HasSurfaceData(TSurfaceRuntimeDataHandle Handle) const noexcept;
-        [[nodiscard]] const TSurfaceRuntimeData& GetSurfaceData(TSurfaceRuntimeDataHandle Handle) const;
-        [[nodiscard]] const std::vector<Asset::TSRProfileAssetHandle>&
-        GetSurfaceProfileTable(TSurfaceRuntimeDataHandle Handle) const;
-        [[nodiscard]] std::vector<Asset::TSRProfileAssetHandle> GetSceneSurfaceProfiles(const TScene& Scene) const;
-        [[nodiscard]] TSurfaceStateRegistry                     BuildSurfaceStateRegistry(const TScene& Scene) const;
-        TSurfaceStateRegistry ExchangeSurfaceStateRegistry(TSurfaceStateRegistry Registry) noexcept;
-        [[nodiscard]] const TSurfaceStateRegistry& GetSurfaceStateRegistry() const noexcept;
+        [[nodiscard]] bool                       HasSurfaceData(FSurfaceRuntimeDataHandle Handle) const noexcept;
+        [[nodiscard]] const FSurfaceRuntimeData& GetSurfaceData(FSurfaceRuntimeDataHandle Handle) const;
+        [[nodiscard]] const std::vector<Asset::FSRProfileAssetHandle>&
+        GetSurfaceProfileTable(FSurfaceRuntimeDataHandle Handle) const;
+        [[nodiscard]] std::vector<Asset::FSRProfileAssetHandle> GetSceneSurfaceProfiles(const FScene& Scene) const;
+        [[nodiscard]] FSurfaceStateRegistry                     BuildSurfaceStateRegistry(const FScene& Scene) const;
+        FSurfaceStateRegistry ExchangeSurfaceStateRegistry(FSurfaceStateRegistry Registry) noexcept;
+        [[nodiscard]] const FSurfaceStateRegistry& GetSurfaceStateRegistry() const noexcept;
 
     private:
-        struct TRuntimeSurfaceAsset
+        struct FRuntimeSurfaceAsset
         {
-            std::shared_ptr<const TSurfaceRuntimeData> Data;
-            std::vector<Asset::TSRProfileAssetHandle>  ProfileTable;
-            Asset::TMeshAssetHandle                    Mesh = Asset::InvalidAssetHandle;
+            std::shared_ptr<const FSurfaceRuntimeData> Data;
+            std::vector<Asset::FSRProfileAssetHandle>  ProfileTable;
+            Asset::FMeshAssetHandle                    Mesh = Asset::InvalidAssetHandle;
             std::filesystem::path                      DistributionPath;
         };
 
-        Asset::TAssetManager&                                      Assets;
-        std::vector<TRuntimeSurfaceAsset>                          RuntimeSurfaceAssets;
-        std::unordered_map<std::string, TSurfaceRuntimeDataHandle> RuntimeSurfaceAssetsByInputs;
-        TSurfaceStateRegistry StateRegistry{std::vector<TSurfaceResponseProfileData>{}};
+        Asset::FAssetManager&                                      Assets;
+        std::vector<FRuntimeSurfaceAsset>                          RuntimeSurfaceAssets;
+        std::unordered_map<std::string, FSurfaceRuntimeDataHandle> RuntimeSurfaceAssetsByInputs;
+        FSurfaceStateRegistry StateRegistry{std::vector<FSurfaceResponseProfileData>{}};
         std::uint32_t         SimulationResolution = SurfaceSimulationResolution;
     };
 } // namespace MDSS::SurfaceState

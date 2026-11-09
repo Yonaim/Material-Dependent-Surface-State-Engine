@@ -16,7 +16,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Render_Pass_Lifecycle
 
-    TRenderPass::TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
+    FRenderPass::FRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
     {
         VkAttachmentDescription ColorAttachment{};
         ColorAttachment.format = ColorFormat;
@@ -81,7 +81,7 @@ namespace MDSS::GPU
         }
     }
 
-    TRenderPass::~TRenderPass()
+    FRenderPass::~FRenderPass()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -97,7 +97,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Render_Pass_Access
 
-    VkRenderPass TRenderPass::GetHandle() const noexcept
+    VkRenderPass FRenderPass::GetHandle() const noexcept
     {
         return Handle;
     }

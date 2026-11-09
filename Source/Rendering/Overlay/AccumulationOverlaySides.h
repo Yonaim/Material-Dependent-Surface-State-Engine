@@ -18,24 +18,24 @@
 namespace MDSS::Rendering
 {
     /** @brief Detects walls and packs only active segments for indirect drawing. */
-    class TAccumulationOverlaySides final
+    class FAccumulationOverlaySides final
     {
     public:
         // Overlay resource lifecycle
-        struct TTriangleActivity
+        struct FTriangleActivity
         {
             std::uint64_t Active = 0;
             std::uint64_t Total = 0;
         };
 
-        TAccumulationOverlaySides(VkPhysicalDevice      PhysicalDevice,
+        FAccumulationOverlaySides(VkPhysicalDevice      PhysicalDevice,
                                   VkDevice              Device,
                                   VkDescriptorSetLayout SurfaceLayout,
                                   VkDescriptorSetLayout ComputedLayout,
                                   std::size_t           MaxInstances);
-        ~TAccumulationOverlaySides();
-        TAccumulationOverlaySides(const TAccumulationOverlaySides&) = delete;
-        TAccumulationOverlaySides& operator=(const TAccumulationOverlaySides&) = delete;
+        ~FAccumulationOverlaySides();
+        FAccumulationOverlaySides(const FAccumulationOverlaySides&) = delete;
+        FAccumulationOverlaySides& operator=(const FAccumulationOverlaySides&) = delete;
 
         // Overlay draw buffers and frame readback
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept
@@ -55,7 +55,7 @@ namespace MDSS::Rendering
         [[nodiscard]] VkDeviceSize
         GetTopIndexOffset(std::size_t Instance, std::uint32_t Channel, std::uint32_t MeshResolution) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
-        [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
+        [[nodiscard]] FTriangleActivity CompleteFrame(std::size_t FrameIndex);
         // Overlay command recording
         void
         Record(VkCommandBuffer                                         Command,
@@ -63,10 +63,10 @@ namespace MDSS::Rendering
                std::uint32_t                                           Channel,
                std::uint32_t                                           Channels,
                std::uint32_t                                           MeshResolution,
-               const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
-               const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
+               const SurfaceState::FSurfaceSharedGeometryGPUResources& Geometry,
+               const SurfaceState::FSurfaceStateDescriptorResources&   StateDescriptors,
                VkDescriptorSet                                         ComputedSet,
-               const GPU::TGPUBuffer&                                  GeometryCacheBuffer,
+               const GPU::FGPUBuffer&                                  GeometryCacheBuffer,
                bool                                                    bStateAB,
                std::size_t                                             FrameIndex = 0,
                VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
@@ -91,13 +91,13 @@ namespace MDSS::Rendering
         }
 
     private:
-        struct TOutput
+        struct FOutput
         {
-            std::unique_ptr<GPU::TGPUBuffer>                                                Segments;
-            std::unique_ptr<GPU::TGPUBuffer>                                                DrawCommands;
-            std::unique_ptr<GPU::TGPUBuffer>                                                TopDrawCommands;
-            std::array<std::unique_ptr<GPU::TGPUBuffer>, TRenderContext::MaxFramesInFlight> ActivityReadbacks;
-            std::array<bool, TRenderContext::MaxFramesInFlight>                             ActivityPending{};
+            std::unique_ptr<GPU::FGPUBuffer>                                                Segments;
+            std::unique_ptr<GPU::FGPUBuffer>                                                DrawCommands;
+            std::unique_ptr<GPU::FGPUBuffer>                                                TopDrawCommands;
+            std::array<std::unique_ptr<GPU::FGPUBuffer>, FRenderContext::MaxFramesInFlight> ActivityReadbacks;
+            std::array<bool, FRenderContext::MaxFramesInFlight>                             ActivityPending{};
             VkDescriptorSet                                                                 Set = VK_NULL_HANDLE;
             std::size_t                                                                     CoveragePage = 0;
             VkDeviceSize                                                                    CoverageOffset = 0;
@@ -127,8 +127,8 @@ namespace MDSS::Rendering
         VkPipeline                                                               DrawResetPipeline = VK_NULL_HANDLE;
         VkPipeline                                                               BoundaryPipeline = VK_NULL_HANDLE;
         VkDescriptorPool                                                         Pool = VK_NULL_HANDLE;
-        std::vector<std::unique_ptr<GPU::TGPUBuffer>>                            CoveragePages;
+        std::vector<std::unique_ptr<GPU::FGPUBuffer>>                            CoveragePages;
         std::vector<VkDeviceSize>                                                CoveragePageUsed;
-        std::map<std::tuple<std::size_t, std::uint32_t, std::uint32_t>, TOutput> Outputs;
+        std::map<std::tuple<std::size_t, std::uint32_t, std::uint32_t>, FOutput> Outputs;
     };
 }

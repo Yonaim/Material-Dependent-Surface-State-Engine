@@ -15,15 +15,15 @@
 
 namespace MDSS::GPU
 {
-    class TGraphicsPass final
+    class FGraphicsPass final
     {
     public:
         // Render pass recording
-        explicit TGraphicsPass(const TRenderPass& RenderPass) noexcept;
+        explicit FGraphicsPass(const FRenderPass& RenderPass) noexcept;
 
         /** @brief 지정한 framebuffer로 render pass 기록을 시작한다. */
         void Begin(VkCommandBuffer               CommandBuffer,
-                   const TFramebuffer&           Framebuffers,
+                   const FFramebuffer&           Framebuffers,
                    std::size_t                   FramebufferIndex,
                    VkExtent2D                    RenderExtent,
                    std::span<const VkClearValue> ClearValues,
@@ -32,6 +32,6 @@ namespace MDSS::GPU
         void End(VkCommandBuffer CommandBuffer) const;
 
     private:
-        const TRenderPass* RenderPass = nullptr;
+        const FRenderPass* RenderPass = nullptr;
     };
 } // namespace MDSS::GPU

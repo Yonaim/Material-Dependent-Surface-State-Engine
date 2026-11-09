@@ -8,7 +8,7 @@
 
 ## 실행
 
-`TSurfaceStateSolver::RecordSteps`가 `SurfaceSolverPass1.comp`를 기록한다. Pass 1은 Decay를 고려한 source 보유량을 기준으로 방향별 Raw Flux와 전체 Outgoing을 구하고, 가용량을 초과하는 유출을 제한할 scale을 기록한다.
+`FSurfaceStateSolver::RecordSteps`가 `SurfaceSolverPass1.comp`를 기록한다. Pass 1은 Decay를 고려한 source 보유량을 기준으로 방향별 Raw Flux와 전체 Outgoing을 구하고, 가용량을 초과하는 유출을 제한할 scale을 기록한다.
 
 ## 의존성
 
@@ -20,4 +20,4 @@
 
 ## C++ barrier/dispatch 연결
 
-`TSurfaceStateSolver::RecordSteps`는 Pass1 variant를 선택하고 full 또는 `Item.HeightBuffer`의 solver indirect offset으로 dispatch한다. 종료 후 `OutgoingFluxScale`, `RawOutgoing`에 compute write → compute read buffer barrier를 둔다. shader에서 총 raw outgoing이 계산한 available amount보다 클 때 scaling해 Pass2가 읽도록 한다. Raw flux cache를 켰을 때에만 방향별 flux cache가 채워진다.
+`FSurfaceStateSolver::RecordSteps`는 Pass1 variant를 선택하고 full 또는 `Item.HeightBuffer`의 solver indirect offset으로 dispatch한다. 종료 후 `OutgoingFluxScale`, `RawOutgoing`에 compute write → compute read buffer barrier를 둔다. shader에서 총 raw outgoing이 계산한 available amount보다 클 때 scaling해 Pass2가 읽도록 한다. Raw flux cache를 켰을 때에만 방향별 flux cache가 채워진다.

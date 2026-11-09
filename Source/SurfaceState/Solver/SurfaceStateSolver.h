@@ -52,7 +52,7 @@ namespace MDSS::SurfaceState
 
     inline constexpr std::uint32_t SurfaceSolverReactionFlag = 1U << 25U;
 
-    enum class TSurfaceSolverTerm : std::uint8_t
+    enum class ESurfaceSolverTerm : std::uint8_t
     {
         SaturationDrive,
         GeometryDrive,
@@ -65,26 +65,26 @@ namespace MDSS::SurfaceState
         Count
     };
 
-    struct TSurfaceSolverDebugSettings
+    struct FSurfaceSolverDebugSettings
     {
         bool                                                                  bStateDrivenGeometryUpdateEnabled = true;
-        std::array<bool, static_cast<std::size_t>(TSurfaceSolverTerm::Count)> Enabled{
+        std::array<bool, static_cast<std::size_t>(ESurfaceSolverTerm::Count)> Enabled{
             true, true, true, true, true, true, true, true};
 
-        [[nodiscard]] bool IsEnabled(TSurfaceSolverTerm Term) const noexcept
+        [[nodiscard]] bool IsEnabled(ESurfaceSolverTerm Term) const noexcept
         {
             return Enabled[static_cast<std::size_t>(Term)];
         }
 
-        void SetEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept
+        void SetEnabled(ESurfaceSolverTerm Term, bool bEnabled) noexcept
         {
             Enabled[static_cast<std::size_t>(Term)] = bEnabled;
         }
     };
 
-    struct TSurfaceSolverInstanceStep
+    struct FSurfaceSolverInstanceStep
     {
-        const TSurfaceStateDescriptorResources* Descriptors = nullptr;
+        const FSurfaceStateDescriptorResources* Descriptors = nullptr;
         bool                                    bCurrentStateAB = true;
         std::size_t                             TexelCount = 0;
         std::size_t                             ChannelCount = 0;
@@ -99,21 +99,21 @@ namespace MDSS::SurfaceState
         bool bHasInputActivation = false;
     };
 
-    class TSurfaceStateSolver final
+    class FSurfaceStateSolver final
     {
     public:
         // Lifecycle
-        TSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout);
-        ~TSurfaceStateSolver();
+        FSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout);
+        ~FSurfaceStateSolver();
 
-        TSurfaceStateSolver(const TSurfaceStateSolver&) = delete;
-        TSurfaceStateSolver& operator=(const TSurfaceStateSolver&) = delete;
-        TSurfaceStateSolver(TSurfaceStateSolver&&) = delete;
-        TSurfaceStateSolver& operator=(TSurfaceStateSolver&&) = delete;
+        FSurfaceStateSolver(const FSurfaceStateSolver&) = delete;
+        FSurfaceStateSolver& operator=(const FSurfaceStateSolver&) = delete;
+        FSurfaceStateSolver(FSurfaceStateSolver&&) = delete;
+        FSurfaceStateSolver& operator=(FSurfaceStateSolver&&) = delete;
 
         // Solver command recording
         void RecordStep(VkCommandBuffer                         CommandBuffer,
-                        const TSurfaceStateDescriptorResources& Descriptors,
+                        const FSurfaceStateDescriptorResources& Descriptors,
                         bool                                    bCurrentStateAB,
                         std::size_t                             TexelCount,
                         std::size_t                             ChannelCount,
@@ -125,13 +125,13 @@ namespace MDSS::SurfaceState
                         std::uint32_t                           FirstPassQuery = 0U,
                         bool                                    bPrepareAccumulationHeight = true) const;
         void RecordSteps(VkCommandBuffer                             CommandBuffer,
-                         std::span<const TSurfaceSolverInstanceStep> InstanceSteps,
+                         std::span<const FSurfaceSolverInstanceStep> InstanceSteps,
                          VkQueryPool                                 TimestampQueryPool = VK_NULL_HANDLE,
                          std::uint32_t                               FirstStepQuery = 0U) const;
 
-        void SetRuntimeFlagsEnabled(bool Enabled) noexcept
+        void SetRuntimeFlagsEnabled(bool bEnabled) noexcept
         {
-            bRuntimeFlagsEnabled = Enabled;
+            bRuntimeFlagsEnabled = bEnabled;
         }
         [[nodiscard]] bool IsRuntimeFlagsEnabled() const noexcept
         {

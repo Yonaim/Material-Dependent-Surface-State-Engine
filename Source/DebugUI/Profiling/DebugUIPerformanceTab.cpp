@@ -2,7 +2,7 @@
 
 namespace MDSS
 {
-    void TDebugUI::DrawPerformanceTab(bool bRendering)
+    void FDebugUI::DrawPerformanceTab(bool bRendering)
     {
         const auto       PrecisionMemory = EstimatePerformanceMemory(FrameRenderer->GetSurfaceGPUResources());
         constexpr double BytesPerMiB = 1024.0 * 1024.0;
@@ -27,7 +27,7 @@ namespace MDSS
             ImGui::Dummy({0.0F, 5.0F});
         };
         auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-        bool EffectsChanged = false;
+        bool bEffectsChanged = false;
         if (bRendering)
         {
             const auto DrawTexelMeshResolutionControl =
@@ -44,14 +44,14 @@ namespace MDSS
                 {
                     for (const auto& Preset : SurfaceState::SurfaceRenderMeshResolutionPresets)
                     {
-                        const bool Selected = Preset.Resolution == ActiveResolution;
-                        if (ImGui::Selectable(Preset.Label, Selected) && !Selected)
+                        const bool bSelected = Preset.Resolution == ActiveResolution;
+                        if (ImGui::Selectable(Preset.Label, bSelected) && !bSelected)
                         {
                             SetResolution(Preset.Resolution);
                             bFrameTimeResetRequested = true;
                             ResetProfilingAverages();
                         }
-                        if (Selected)
+                        if (bSelected)
                             ImGui::SetItemDefaultFocus();
                     }
                     EndLabeledCombo();
@@ -78,8 +78,8 @@ namespace MDSS
                                       "전체 정점을 계산합니다.");
 
             const auto  OccupancyTileSize = FrameRenderer->GetOverlayOccupancyTileSize();
-            const char* OccupancyTileLabel = OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile8 ? "8 x 8"
-                                             : OccupancyTileSize == Rendering::TOverlayOccupancyTileSize::Tile16
+            const char* OccupancyTileLabel = OccupancyTileSize == Rendering::EOverlayOccupancyTileSize::Tile8 ? "8 x 8"
+                                             : OccupancyTileSize == Rendering::EOverlayOccupancyTileSize::Tile16
                                                  ? "16 x 16"
                                                  : "32 x 32";
             ImGui::BeginDisabled(!bOverlayTileCullingEnabled);
@@ -89,10 +89,10 @@ namespace MDSS
                     "Occupancy, Height, Normal, smoothing, Coverage가 함께 사용하는 render tile 크기입니다.");
             if (bOccupancyTileOpen)
             {
-                const std::array<std::pair<const char*, Rendering::TOverlayOccupancyTileSize>, 3> TileOptions{{
-                    {"8 x 8", Rendering::TOverlayOccupancyTileSize::Tile8},
-                    {"16 x 16", Rendering::TOverlayOccupancyTileSize::Tile16},
-                    {"32 x 32", Rendering::TOverlayOccupancyTileSize::Tile32},
+                const std::array<std::pair<const char*, Rendering::EOverlayOccupancyTileSize>, 3> TileOptions{{
+                    {"8 x 8", Rendering::EOverlayOccupancyTileSize::Tile8},
+                    {"16 x 16", Rendering::EOverlayOccupancyTileSize::Tile16},
+                    {"32 x 32", Rendering::EOverlayOccupancyTileSize::Tile32},
                 }};
                 for (const auto& [Label, Size] : TileOptions)
                 {
@@ -110,10 +110,10 @@ namespace MDSS
             }
             ImGui::EndDisabled();
             ImGui::Dummy({0.0F, 6.0F});
-            EffectsChanged |= ImGui::Checkbox("Height smoothing", &Effects.bHeightFieldSmoothing);
+            bEffectsChanged |= ImGui::Checkbox("Height smoothing", &Effects.bHeightFieldSmoothing);
             if (ImGui::IsItemHovered())
                 SetDescriptionTooltip("Mud/Water/Lava 적층 높이와 normal을 렌더링 전용 3x3 필터로 부드럽게 합니다.");
-            EffectsChanged |= ImGui::Checkbox("Coverage smoothing", &Effects.bCoverageSmoothing);
+            bEffectsChanged |= ImGui::Checkbox("Coverage smoothing", &Effects.bCoverageSmoothing);
             if (ImGui::IsItemHovered())
                 SetDescriptionTooltip("State coverage의 시각적 경계를 5x5 Gaussian으로 부드럽게 합니다. Simulation "
                                       "State는 바꾸지 않습니다.");
@@ -342,7 +342,7 @@ namespace MDSS
             ImGui::EndDisabled();
         }
 
-        if (EffectsChanged)
+        if (bEffectsChanged)
         {
             FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
             bFrameTimeResetRequested = true;

@@ -20,7 +20,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Transform_Dependent_Geometry_Data
 
-    float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel, const glm::mat4& ModelMatrix) noexcept
+    float GetSurfaceWorldTexelArea(const FSurfaceTexelGeometry& Texel, const glm::mat4& ModelMatrix) noexcept
     {
         if (!Texel.IsValid())
             return 0.0F;
@@ -30,7 +30,7 @@ namespace MDSS::SurfaceState
         return std::isfinite(Area) && Area > 0.0F ? Area : 0.0F;
     }
 
-    std::vector<float> BuildSurfaceGPUWorldTexelAreas(const TSharedSurfaceGeometryData& Geometry,
+    std::vector<float> BuildSurfaceGPUWorldTexelAreas(const FSharedSurfaceGeometryData& Geometry,
                                                       const glm::mat4&                  ModelMatrix)
     {
         std::vector<float> Areas;
@@ -40,15 +40,15 @@ namespace MDSS::SurfaceState
         return Areas;
     }
 
-    std::vector<float> BuildSurfaceGPUTransferWeights(const TSharedSurfaceGeometryData& Geometry,
+    std::vector<float> BuildSurfaceGPUTransferWeights(const FSharedSurfaceGeometryData& Geometry,
                                                       const glm::mat4&                  ModelMatrix,
-                                                      std::vector<TSurfaceGPUVec4>*     OutDebugAverages,
+                                                      std::vector<FSurfaceGPUVec4>*     OutDebugAverages,
                                                       bool                              bUseNormalWeight,
                                                       bool                              bUseDistanceWeight,
                                                       bool                              bUseProfileBoundaryWeight)
     {
-        const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
-        const std::vector<TSurfaceProfileIndex>&  Profiles = Geometry.GetProfileMap();
+        const std::vector<FSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
+        const std::vector<FSurfaceProfileIndex>&  Profiles = Geometry.GetProfileMap();
         const std::size_t                         TexelCount = Geometry.GetTexelCount();
         if (TexelCount == 0 || Profiles.size() != TexelCount)
         {
@@ -70,7 +70,7 @@ namespace MDSS::SurfaceState
 
         for (std::size_t Index = 0; Index < TexelCount; ++Index)
         {
-            const TSurfaceTexelGeometry& Texel = Texels[Index];
+            const FSurfaceTexelGeometry& Texel = Texels[Index];
             if (!Texel.IsValid() || Profiles[Index] == InvalidSurfaceProfileIndex)
             {
                 continue;
@@ -79,9 +79,9 @@ namespace MDSS::SurfaceState
             const glm::vec3 EffectiveLocalPosition = Texel.Position + Texel.Normal * Texel.Geometry.MesoVirtualHeight;
             const glm::vec4 WorldPosition = ModelMatrix * glm::vec4(EffectiveLocalPosition, 1.0F);
             // NormalWeight cache도 복원된 Meso normal을 우선 사용한다.
-            const glm::vec3 TransferNormal = Texel.HasMesoNormal
+            const glm::vec3 TransferNormal = Texel.bHasMesoNormal
                                                  ? Texel.MesoNormal
-                                                 : (Texel.HasTransferNormal ? Texel.TransferNormal : Texel.Normal);
+                                                 : (Texel.bHasTransferNormal ? Texel.TransferNormal : Texel.Normal);
             const glm::vec3 TransformedNormal = bInvertible ? NormalMatrix * TransferNormal : glm::vec3(0.0F);
             const float     NormalLength = glm::length(TransformedNormal);
             if (!IsFinite(EffectiveLocalPosition) || !IsFinite(glm::vec3(WorldPosition)))
@@ -105,7 +105,7 @@ namespace MDSS::SurfaceState
             }
             float         DistanceSum = 0.0F;
             std::uint32_t ValidDistanceCount = 0;
-            for (const TLocalTexelIndex NeighborIndex : Texels[Index].NeighborIndices)
+            for (const FLocalTexelIndex NeighborIndex : Texels[Index].NeighborIndices)
             {
                 if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount || !bValidPosition[NeighborIndex])
                 {
@@ -133,7 +133,7 @@ namespace MDSS::SurfaceState
             }
             for (std::size_t DirectionIndex = 0; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
             {
-                const TLocalTexelIndex NeighborIndex = Texels[Index].NeighborIndices[DirectionIndex];
+                const FLocalTexelIndex NeighborIndex = Texels[Index].NeighborIndices[DirectionIndex];
                 if (NeighborIndex == InvalidTexelIndex || NeighborIndex >= TexelCount ||
                     !bValidPosition[NeighborIndex] || (bUseNormalWeight && !bValidNormal[NeighborIndex]) ||
                     (bUseDistanceWeight && MeanNeighborDistances[NeighborIndex] <= GeometryEpsilon))

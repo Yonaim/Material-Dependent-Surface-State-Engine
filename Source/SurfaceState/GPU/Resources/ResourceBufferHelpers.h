@@ -11,9 +11,9 @@ namespace MDSS::SurfaceState::Detail
     constexpr VkBufferUsageFlags    StorageUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     constexpr VkMemoryPropertyFlags UploadMemory =
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    constexpr std::uint32_t DescriptorBindingCount = static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::Count);
+    constexpr std::uint32_t DescriptorBindingCount = static_cast<std::uint32_t>(ESurfaceGPUDescriptorBinding::Count);
 
-    constexpr std::uint32_t BindingIndex(TSurfaceGPUDescriptorBinding Binding)
+    constexpr std::uint32_t BindingIndex(ESurfaceGPUDescriptorBinding Binding)
     {
         return static_cast<std::uint32_t>(Binding);
     }
@@ -25,12 +25,12 @@ namespace MDSS::SurfaceState::Detail
         return Properties.limits.maxStorageBufferRange;
     }
 
-    inline std::unique_ptr<GPU::TGPUBuffer> AcquireOrCreateBuffer(VkPhysicalDevice              PhysicalDevice,
+    inline std::unique_ptr<GPU::FGPUBuffer> AcquireOrCreateBuffer(VkPhysicalDevice              PhysicalDevice,
                                                                   VkDevice                      Device,
                                                                   VkDeviceSize                  Size,
                                                                   VkBufferUsageFlags            Usage,
-                                                                  GPU::TGPUBufferMemoryCategory Category,
-                                                                  TSurfaceGPUBufferPool*        Pool)
+                                                                  GPU::EGPUBufferMemoryCategory Category,
+                                                                  FSurfaceGPUBufferPool*        Pool)
     {
         if (Pool)
         {
@@ -39,7 +39,7 @@ namespace MDSS::SurfaceState::Detail
         }
         try
         {
-            return std::make_unique<GPU::TGPUBuffer>(PhysicalDevice, Device, Size, Usage, UploadMemory, Category);
+            return std::make_unique<GPU::FGPUBuffer>(PhysicalDevice, Device, Size, Usage, UploadMemory, Category);
         }
         catch (const std::runtime_error&)
         {
@@ -47,19 +47,19 @@ namespace MDSS::SurfaceState::Detail
             if (!Pool || Pool->GetRetainedBytes() == 0)
                 throw;
             Pool->Clear();
-            return std::make_unique<GPU::TGPUBuffer>(PhysicalDevice, Device, Size, Usage, UploadMemory, Category);
+            return std::make_unique<GPU::FGPUBuffer>(PhysicalDevice, Device, Size, Usage, UploadMemory, Category);
         }
     }
 
-    inline std::unique_ptr<GPU::TGPUBuffer>
+    inline std::unique_ptr<GPU::FGPUBuffer>
     CreateUploadedBuffer(VkPhysicalDevice              PhysicalDevice,
                          VkDevice                      Device,
                          const void*                   Data,
                          std::size_t                   ElementCount,
                          std::size_t                   ElementStride,
                          std::size_t                   MaxStorageBufferRange,
-                         GPU::TGPUBufferMemoryCategory Category = GPU::TGPUBufferMemoryCategory::SurfaceGeometry,
-                         TSurfaceGPUBufferPool*        Pool = nullptr)
+                         GPU::EGPUBufferMemoryCategory Category = GPU::EGPUBufferMemoryCategory::SurfaceGeometry,
+                         FSurfaceGPUBufferPool*        Pool = nullptr)
     {
         const std::size_t ByteSize = GetSurfaceGPUBufferByteSize(ElementCount, ElementStride, MaxStorageBufferRange);
         auto              Buffer = AcquireOrCreateBuffer(
@@ -68,14 +68,14 @@ namespace MDSS::SurfaceState::Detail
         return Buffer;
     }
 
-    inline std::unique_ptr<GPU::TGPUBuffer>
+    inline std::unique_ptr<GPU::FGPUBuffer>
     CreateZeroedScalarBuffer(VkPhysicalDevice              PhysicalDevice,
                              VkDevice                      Device,
                              std::size_t                   ScalarCount,
                              std::size_t                   MaxStorageBufferRange,
                              VkBufferUsageFlags            Usage = StorageUsage,
-                             GPU::TGPUBufferMemoryCategory Category = GPU::TGPUBufferMemoryCategory::SurfaceState,
-                             TSurfaceGPUBufferPool*        Pool = nullptr)
+                             GPU::EGPUBufferMemoryCategory Category = GPU::EGPUBufferMemoryCategory::SurfaceState,
+                             FSurfaceGPUBufferPool*        Pool = nullptr)
     {
         const std::size_t  ByteSize = GetSurfaceGPUBufferByteSize(ScalarCount, sizeof(float), MaxStorageBufferRange);
         std::vector<float> Zeros(ScalarCount, 0.0F);

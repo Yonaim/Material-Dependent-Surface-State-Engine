@@ -9,7 +9,7 @@ App 프레임과 Simulation Step은 다르다. Clock, pause·reset, 누락된 �
 
 ## MainLoop에서 Step 목록까지
 
-[`TApplication::MainLoop`](../../../../../Source/Application/Application.cpp)는 UI 프레임과 raycast 입력을 처리해 Contact를 `SubmitContact`에 전달한 뒤 `TRenderer::RenderFrame`을 호출한다. [`TFrameCoordinator::BeginFrame`](../../../../../Source/Application/FrameCoordinator.cpp)은 scratch 형식과 reset을 처리하고, pause·time scale·프레임 시간 중단 여부에 따라 시간을 누적한다. `LimitPendingSeconds`는 프레임 작업 예산을 넘는 시간을 버린다. `PrepareSteps`는 auto substepping 때 `GetMaximumStableDeltaTime`을 물어보고 [`TSimulationClock::Consume`](../../../../../Source/SurfaceState/Solver/SimulationClock.h)에 fixed/variable step, pause, 단일 step 요청을 전달한다. 기본 fixed tick은 `1/60 s`, 프레임당 최대 step 수는 `MaxSimulationStepsPerFrame`이다.
+[`FApplication::MainLoop`](../../../../../Source/Application/Application.cpp)는 UI 프레임과 raycast 입력을 처리해 Contact를 `SubmitContact`에 전달한 뒤 `FRenderer::RenderFrame`을 호출한다. [`FFrameCoordinator::BeginFrame`](../../../../../Source/Application/FrameCoordinator.cpp)은 scratch 형식과 reset을 처리하고, pause·time scale·프레임 시간 중단 여부에 따라 시간을 누적한다. `LimitPendingSeconds`는 프레임 작업 예산을 넘는 시간을 버린다. `PrepareSteps`는 auto substepping 때 `GetMaximumStableDeltaTime`을 물어보고 [`FSimulationClock::Consume`](../../../../../Source/SurfaceState/Solver/SimulationClock.h)에 fixed/variable step, pause, 단일 step 요청을 전달한다. 기본 fixed tick은 `1/60 s`, 프레임당 최대 step 수는 `MaxSimulationStepsPerFrame`이다.
 
 | 상태 | 기록되는 Solver step |
 |---|---|

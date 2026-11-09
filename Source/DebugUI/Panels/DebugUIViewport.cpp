@@ -2,12 +2,12 @@
 
 namespace MDSS
 {
-    // ============================================================
-    // 00. Viewport Panels
-    // ============================================================
-    #pragma region 00_Viewport_Panels
+// ============================================================
+// 00. Viewport Panels
+// ============================================================
+#pragma region 00_Viewport_Panels
 
-    void TDebugUI::DrawViewportPanels(TScene&)
+    void FDebugUI::DrawViewportPanels(FScene&)
     {
         HoveredViewportId = 0;
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
@@ -16,9 +16,9 @@ namespace MDSS
 
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
         const ImVec2         WorkspacePos{MainViewport->Pos.x + ViewportWorkspaceRectNormalized.x * DisplaySize.x,
-                                          MainViewport->Pos.y + ViewportWorkspaceRectNormalized.y * DisplaySize.y};
+                                  MainViewport->Pos.y + ViewportWorkspaceRectNormalized.y * DisplaySize.y};
         const ImVec2         WorkspaceSize{ViewportWorkspaceRectNormalized.z * DisplaySize.x,
-                                           ViewportWorkspaceRectNormalized.w * DisplaySize.y};
+                                   ViewportWorkspaceRectNormalized.w * DisplaySize.y};
         if (WorkspaceSize.x < 1.0F || WorkspaceSize.y < 1.0F)
             return;
 
@@ -33,33 +33,33 @@ namespace MDSS
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
             ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus;
-        const auto GetViewportModeName = [](Rendering::TRenderViewMode Mode) -> const char*
+        const auto GetViewportModeName = [](Rendering::ERenderViewMode Mode) -> const char*
         {
             const auto Value = static_cast<std::uint32_t>(Mode);
             if (Value < RenderViewModeNames.size())
                 return RenderViewModeNames[Value];
-            if (Mode >= Rendering::TRenderViewMode::SurfaceStateHeatmap &&
-                Mode <= Rendering::TRenderViewMode::OutgoingFluxScale)
+            if (Mode >= Rendering::ERenderViewMode::SurfaceStateHeatmap &&
+                Mode <= Rendering::ERenderViewMode::OutgoingFluxScale)
                 return SurfaceDebugViewNames[Value - static_cast<std::uint32_t>(
-                                                         Rendering::TRenderViewMode::SurfaceStateHeatmap)];
+                                                         Rendering::ERenderViewMode::SurfaceStateHeatmap)];
             switch (Mode)
             {
-                case Rendering::TRenderViewMode::SolverTransferWeight:
+                case Rendering::ERenderViewMode::SolverTransferWeight:
                     return "Solver Transfer Weights";
-                case Rendering::TRenderViewMode::MesoHeight:
-                case Rendering::TRenderViewMode::MesoOffset:
+                case Rendering::ERenderViewMode::MesoHeight:
+                case Rendering::ERenderViewMode::MesoOffset:
                     return "Meso Geometry";
-                case Rendering::TRenderViewMode::MacroGeometry:
+                case Rendering::ERenderViewMode::MacroGeometry:
                     return "Base Geometry";
-                case Rendering::TRenderViewMode::SurfaceTexelGrid:
+                case Rendering::ERenderViewMode::SurfaceTexelGrid:
                     return "Texel Grid";
-                case Rendering::TRenderViewMode::SurfaceTexelArea:
+                case Rendering::ERenderViewMode::SurfaceTexelArea:
                     return "Texel Area Heatmap";
-                case Rendering::TRenderViewMode::SurfaceAccumulation:
+                case Rendering::ERenderViewMode::SurfaceAccumulation:
                     return "State Height Heatmap";
-                case Rendering::TRenderViewMode::SurfaceFinalGeometry:
+                case Rendering::ERenderViewMode::SurfaceFinalGeometry:
                     return "Meso + State Geometry";
-                case Rendering::TRenderViewMode::TotalSimulationHeight:
+                case Rendering::ERenderViewMode::TotalSimulationHeight:
                     return "Total Simulation Height";
                 default:
                     return "Lit";
@@ -67,7 +67,7 @@ namespace MDSS
         };
         for (std::size_t Index = 0; Index < Count; ++Index)
         {
-            TViewportPanel&   Panel = ViewportPanels[Index];
+            FViewportPanel&   Panel = ViewportPanels[Index];
             const std::size_t Column = Index % Columns;
             const std::size_t Row = Index / Columns;
             const float       Left =
@@ -107,15 +107,15 @@ namespace MDSS
                 const ImVec2 PanelMaximum{Right, Bottom};
                 const bool   bActive = Panel.Id == ActiveViewportId;
                 const ImU32  BorderColor = ImGui::GetColorU32(bActive ? ImVec4{0.35F, 0.78F, 1.0F, 0.95F}
-                                                                      : ImVec4{0.55F, 0.60F, 0.67F, 0.55F});
+                                                                     : ImVec4{0.55F, 0.60F, 0.67F, 0.55F});
                 ImDrawList*  DrawList = ImGui::GetWindowDrawList();
                 DrawList->AddRect(PanelMinimum, PanelMaximum, BorderColor, 0.0F, 0, bActive ? 2.0F : 1.0F);
                 const std::string Label = "View " + std::to_string(Index + 1U) + "  ·  " +
                                           GetViewportModeName(FrameRenderer->GetRenderViewMode(Index));
-                const ImVec2      LabelMinimum{Left + 8.0F, Top + 8.0F};
-                const ImVec2      LabelTextSize = ImGui::CalcTextSize(Label.c_str());
-                const ImVec2      LabelMaximum{LabelMinimum.x + LabelTextSize.x + 12.0F,
-                                               LabelMinimum.y + LabelTextSize.y + 8.0F};
+                const ImVec2 LabelMinimum{Left + 8.0F, Top + 8.0F};
+                const ImVec2 LabelTextSize = ImGui::CalcTextSize(Label.c_str());
+                const ImVec2 LabelMaximum{LabelMinimum.x + LabelTextSize.x + 12.0F,
+                                          LabelMinimum.y + LabelTextSize.y + 8.0F};
                 DrawList->AddRectFilled(
                     LabelMinimum, LabelMaximum, ImGui::GetColorU32({0.04F, 0.05F, 0.07F, 0.74F}), 3.0F);
                 DrawList->AddText(
@@ -128,14 +128,14 @@ namespace MDSS
         }
     }
 
-    #pragma endregion
+#pragma endregion
 
-    // ============================================================
-    // 01. Mesh Notices
-    // ============================================================
-    #pragma region 01_Mesh_Notices
+// ============================================================
+// 01. Mesh Notices
+// ============================================================
+#pragma region 01_Mesh_Notices
 
-    void TDebugUI::DrawBrickCubeTexelMeshNotice(const TScene& SceneData)
+    void FDebugUI::DrawBrickCubeTexelMeshNotice(const FScene& SceneData)
     {
         if (FrameRenderer == nullptr || AssetManager == nullptr)
             return;
@@ -178,14 +178,14 @@ namespace MDSS
         ImGui::End();
     }
 
-    #pragma endregion
+#pragma endregion
 
-    // ============================================================
-    // 02. Render Settings
-    // ============================================================
-    #pragma region 02_Render_Settings
+// ============================================================
+// 02. Render Settings
+// ============================================================
+#pragma region 02_Render_Settings
 
-    void TDebugUI::DrawRenderSettingsWindow(TScene& SceneData)
+    void FDebugUI::DrawRenderSettingsWindow(FScene& SceneData)
     {
         if (FrameRenderer == nullptr)
         {
@@ -203,22 +203,22 @@ namespace MDSS
                     {
                         ImGui::Dummy({0.0F, 12.0F});
                         auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-                        bool EffectsChanged = false;
+                        bool bEffectsChanged = false;
                         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{8.0F, 7.0F});
                         const auto Bindings =
                             Rendering::ResolveDemoSurfaceStates(SurfaceDataManager->GetSurfaceStateRegistry());
-                        const auto DrawRamp = [&](Rendering::TDemoStateColorMapping& Mapping)
+                        const auto DrawRamp = [&](Rendering::FDemoStateColorMapping& Mapping)
                         {
-                            EffectsChanged |=
+                            bEffectsChanged |=
                                 LabeledRangeSliderFloat("Color ramp", &Mapping.RampStart, &Mapping.RampEnd);
                         };
                         const auto DrawEffectToggle =
-                            [&](const char* Label, bool& Enabled, bool Available, const char* Description)
+                            [&](const char* Label, bool& bEnabled, bool bAvailable, const char* Description)
                         {
                             ImGui::PushID("Toggle");
                             ImGui::PushID(Label);
-                            ImGui::BeginDisabled(!Available);
-                            EffectsChanged |= ImGui::Checkbox(Label, &Enabled);
+                            ImGui::BeginDisabled(!bAvailable);
+                            bEffectsChanged |= ImGui::Checkbox(Label, &bEnabled);
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip(Description);
                             ImGui::EndDisabled();
@@ -226,12 +226,12 @@ namespace MDSS
                             ImGui::PopID();
                         };
                         const auto DrawEffectSettings = [&](const char* Label,
-                                                            bool&       Enabled,
-                                                            bool        Available,
+                                                            bool&       bEnabled,
+                                                            bool        bAvailable,
                                                             const char* Description,
                                                             auto&&      DrawSettings)
                         {
-                            if (!Enabled || !Available)
+                            if (!bEnabled || !bAvailable)
                                 return;
                             ImGui::PushID("Details");
                             ImGui::PushID(Label);
@@ -279,7 +279,7 @@ namespace MDSS
                                            "높이를 쌓지 않습니다.",
                                            [&]()
                                            {
-                                               EffectsChanged |= LabeledSliderFloat(
+                                               bEffectsChanged |= LabeledSliderFloat(
                                                    "Strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
                                                DrawRamp(Effects.HeatColorMap);
                                            });
@@ -290,11 +290,12 @@ namespace MDSS
                             "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
                             [&]()
                             {
-                                EffectsChanged |= ImGui::Checkbox("Teal visibility mode", &Effects.bEmphasizeWaterFilm);
+                                bEffectsChanged |=
+                                    ImGui::Checkbox("Teal visibility mode", &Effects.bEmphasizeWaterFilm);
                                 if (ImGui::IsItemHovered())
                                     SetDescriptionTooltip("WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 "
                                                           "높이는 바꾸지 않습니다.");
-                                EffectsChanged |=
+                                bEffectsChanged |=
                                     LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
                                 DrawRamp(Effects.WaterFilmColorMap);
                             });
@@ -305,9 +306,9 @@ namespace MDSS
                             "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.",
                             [&]()
                             {
-                                EffectsChanged |=
+                                bEffectsChanged |=
                                     LabeledSliderFloat("Roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
-                                EffectsChanged |=
+                                bEffectsChanged |=
                                     LabeledSliderFloat("Noise amount", &Effects.MudNoiseAmount, 0.0F, 1.0F, "%.2f");
                                 if (ImGui::IsItemHovered())
                                     SetDescriptionTooltip("머드 표면의 절차적 미세요철 강도를 조절합니다. 0이면 "
@@ -320,7 +321,7 @@ namespace MDSS
                                            "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.",
                                            [&]()
                                            {
-                                               EffectsChanged |= LabeledSliderFloat(
+                                               bEffectsChanged |= LabeledSliderFloat(
                                                    "Lava threshold", &Effects.LavaThreshold, 0.0F, 1.0F, "%.2f");
                                                if (ImGui::IsItemHovered())
                                                    SetDescriptionTooltip(
@@ -329,7 +330,7 @@ namespace MDSS
                                            });
 
                         ImGui::Dummy({0.0F, 4.0F});
-                        EffectsChanged |= LabeledSliderFloat(
+                        bEffectsChanged |= LabeledSliderFloat(
                             "Height fade threshold", &Effects.LowAmountHeightFade, 0.0F, 0.5F, "%.2f");
                         if (ImGui::IsItemHovered())
                             SetDescriptionTooltip(
@@ -347,7 +348,7 @@ namespace MDSS
                                 SetDescriptionTooltip("0은 직접광 중심, 1은 표면색 기반 주변광 중심으로 섞습니다. 광원 "
                                                       "방향과 색은 현재 고정입니다.");
 
-                            EffectsChanged |=
+                            bEffectsChanged |=
                                 LabeledSliderFloat("Dry surface roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
 
                             float NormalStrength = FrameRenderer->GetNormalStrength();
@@ -363,7 +364,7 @@ namespace MDSS
                             ImGui::Unindent();
                         }
                         ImGui::PopStyleVar();
-                        if (EffectsChanged)
+                        if (bEffectsChanged)
                             FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
                     }
                     ImGui::EndChild();
@@ -376,23 +377,23 @@ namespace MDSS
                             "DebugSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
                     {
                         ImGui::Dummy({0.0F, 12.0F});
-                        bool OverlayOnly = FrameRenderer->IsOverlayOnlyDebugEnabled();
-                        if (ImGui::Checkbox("Overlay only", &OverlayOnly))
+                        bool bOverlayOnly = FrameRenderer->IsOverlayOnlyDebugEnabled();
+                        if (ImGui::Checkbox("Overlay only", &bOverlayOnly))
                         {
-                            FrameRenderer->SetOverlayOnlyDebugEnabled(OverlayOnly);
+                            FrameRenderer->SetOverlayOnlyDebugEnabled(bOverlayOnly);
                             ResetProfilingAverages();
                         }
                         if (ImGui::IsItemHovered())
                             SetDescriptionTooltip("Lit 뷰에서 Base Surface를 숨기고 생성된 State Overlay만 표시합니다. "
                                                   "켜면 표시 모드를 선택할 수 있습니다.");
-                        ImGui::BeginDisabled(!OverlayOnly);
+                        ImGui::BeginDisabled(!bOverlayOnly);
                         {
                             int OverlayDisplayMode = static_cast<int>(FrameRenderer->GetOverlayDisplayMode());
                             ImGui::SetNextItemWidth(180.0F);
                             if (ImGui::Combo("Overlay display", &OverlayDisplayMode, "Both\0Top only\0Sides only\0"))
                             {
                                 FrameRenderer->SetOverlayDisplayMode(
-                                    static_cast<Rendering::TOverlayDisplayMode>(OverlayDisplayMode));
+                                    static_cast<Rendering::EOverlayDisplayMode>(OverlayDisplayMode));
                                 ResetProfilingAverages();
                             }
                             if (ImGui::IsItemHovered())
@@ -405,7 +406,7 @@ namespace MDSS
                                              "Lit\0Fixed normal\0Normal RGB\0Front/back faces\0Mesh normal\0Vertex "
                                              "normal (old)\0Lit opaque\0State layers\0Mud diffuse\0Mud specular x4\0"))
                                 FrameRenderer->SetOverlayShadingDiagnostic(
-                                    static_cast<Rendering::TOverlayShadingDiagnostic>(ShadingDiagnostic));
+                                    static_cast<Rendering::EOverlayShadingDiagnostic>(ShadingDiagnostic));
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip(
                                     "Fixed normal은 조명 노멀을 일정하게 유지합니다. Normal RGB는 보간 노멀을, "
@@ -469,6 +470,6 @@ namespace MDSS
         ImGui::End();
     }
 
-    #pragma endregion
+#pragma endregion
 
 } // namespace MDSS

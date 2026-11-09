@@ -31,15 +31,15 @@ namespace MDSS::GPU
 
             if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0)
             {
-                TLogger::Error("Vulkan Validation", Message);
+                FLogger::Error("Vulkan Validation", Message);
             }
             else if ((Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0)
             {
-                TLogger::Warning("Vulkan Validation", Message);
+                FLogger::Warning("Vulkan Validation", Message);
             }
             else
             {
-                TLogger::Debug("Vulkan Validation", Message);
+                FLogger::Debug("Vulkan Validation", Message);
             }
             return VK_FALSE;
         }
@@ -64,7 +64,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Vulkan_Instance_Lifecycle
 
-    TVulkanInstance::TVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
+    FVulkanInstance::FVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
     {
         const std::vector<const char*> Extensions = BuildExtensionList(RequiredExtensions);
         ValidateExtensions(Extensions);
@@ -88,9 +88,9 @@ namespace MDSS::GPU
 
 #if MDSS_ENABLE_VALIDATION
         const VkDebugUtilsMessengerCreateInfoEXT MessengerInfo = DebugMessengerCreateInfo();
-        constexpr std::array    EnabledFeatures = {VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
-                                                   VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
-        VkValidationFeaturesEXT ValidationFeatures{};
+        constexpr std::array                     EnabledFeatures = {VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
+                                                                    VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
+        VkValidationFeaturesEXT                  ValidationFeatures{};
         ValidationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
         ValidationFeatures.pNext = &MessengerInfo;
         ValidationFeatures.enabledValidationFeatureCount = static_cast<std::uint32_t>(EnabledFeatures.size());
@@ -124,14 +124,14 @@ namespace MDSS::GPU
         }
 #endif
 
-        TLogger::Info("Vulkan", "Instance created (API 1.2).");
-        TLogger::Debug("Vulkan", "Enabled instance extension count=" + std::to_string(Extensions.size()) + ".");
+        FLogger::Info("Vulkan", "Instance created (API 1.2).");
+        FLogger::Debug("Vulkan", "Enabled instance extension count=" + std::to_string(Extensions.size()) + ".");
 #if MDSS_ENABLE_VALIDATION
-        TLogger::Info("Vulkan", "Validation enabled (core, synchronization, best practices).");
+        FLogger::Info("Vulkan", "Validation enabled (core, synchronization, best practices).");
 #endif
     }
 
-    TVulkanInstance::~TVulkanInstance()
+    FVulkanInstance::~FVulkanInstance()
     {
 #if MDSS_ENABLE_VALIDATION
         if (DebugMessenger != VK_NULL_HANDLE)
@@ -160,7 +160,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Vulkan_Instance_Access
 
-    VkInstance TVulkanInstance::GetHandle() const noexcept
+    VkInstance FVulkanInstance::GetHandle() const noexcept
     {
         return Instance;
     }
@@ -172,7 +172,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Extension_and_Layer_Validation
 
-    std::vector<const char*> TVulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
+    std::vector<const char*> FVulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
     {
         std::vector<const char*> Extensions = RequiredExtensions;
 
@@ -196,7 +196,7 @@ namespace MDSS::GPU
         return Extensions;
     }
 
-    void TVulkanInstance::ValidateExtensions(const std::vector<const char*>& Extensions)
+    void FVulkanInstance::ValidateExtensions(const std::vector<const char*>& Extensions)
     {
         std::uint32_t AvailableCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &AvailableCount, nullptr);
@@ -220,7 +220,7 @@ namespace MDSS::GPU
     }
 
 #if MDSS_ENABLE_VALIDATION
-    void TVulkanInstance::ValidateLayers()
+    void FVulkanInstance::ValidateLayers()
     {
         std::uint32_t LayerCount = 0;
         vkEnumerateInstanceLayerProperties(&LayerCount, nullptr);

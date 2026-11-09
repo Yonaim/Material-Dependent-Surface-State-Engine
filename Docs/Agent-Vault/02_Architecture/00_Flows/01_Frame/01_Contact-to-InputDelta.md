@@ -12,7 +12,7 @@ Contact 제출은 State를 즉시 바꾸지 않는다. 첫 실행 step의 [`Appl
 
 ## 코드의 연계 지점
 
-`TInputSystem::PollDebugContact` → `TSurfaceStateSystem::SubmitContact` → `ApplyPendingContacts` → `InputDelta` → 첫 실행 Pass 2. `InputDelta`는 Contact 제출 즉시 Current State를 바꾸지 않는다.
+`FInputSystem::PollDebugContact` → `FSurfaceStateSystem::SubmitContact` → `ApplyPendingContacts` → `InputDelta` → 첫 실행 Pass 2. `InputDelta`는 Contact 제출 즉시 Current State를 바꾸지 않는다.
 
 ## 실제 접촉 매핑과 실패 조건
 

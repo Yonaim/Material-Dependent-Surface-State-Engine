@@ -13,8 +13,9 @@
 |---|---|
 | 주요 언어 | C++ (`.cpp`, `.h`), GLSL (`.comp`, `.vert`, `.frag`, `.glsl`), Python, Shell |
 | C++ 표준 | **C++20** (2026-11-09: 루트 `CMakeLists.txt`의 `CMAKE_CXX_STANDARD 20` 확인; 전체 빌드는 별도 검증) |
-| C++ 네이밍 | **Unreal-Inspired** (2026-11-09 사용자 확정): 일반 클래스·구조체 `F`, 템플릿 클래스 `T`, 추상 인터페이스 `I`, enum `E`, bool `b`+PascalCase. 함수·변수 PascalCase(언어 프로필의 기존 관례 예외 적용). 현재 소스에는 기존 `T` 타입 등이 남아 있으며 전환 미완료. 파일명에 타입 접두어를 자동 적용하지 않음 |
+| C++ 네이밍 | **Unreal-Inspired** (2026-11-09 사용자 확정): 일반 클래스·구조체 `F`, 템플릿 클래스 `T`, 추상 인터페이스 `I`, enum `E`, bool `b`+PascalCase. 함수·변수 PascalCase(언어 프로필의 기존 관례 예외 적용). C++ 일반 타입/비템플릿 별칭·enum·bool 전환 완료(2026-11-09). 실제 템플릿 `TScopeExit` 및 외부 API 타입은 유지. 파일명에 타입 접두어를 자동 적용하지 않음 |
 | GPU | Vulkan, GLSL `#version 450` (관련 코드 확인) |
+| Shader Region | 사용자 요청(2026-11-09): `Shaders/`의 작은 wrapper/helper/placeholder까지 모두 번호 섹션 + `// #region` 적용. GLSL 언어 프로필의 작은 파일 선택 규칙보다 이 프로젝트 설정을 우선 |
 | 소스 포맷터 | `Scripts/format.sh`, `Scripts/format.ps1`는 `clang-format` 사용. 루트 `.clang-format` 확인(2026-11-09); 명명 규칙은 포맷터가 검사하지 않음 |
 | 진입점 | `Source/main.cpp`, `Source/Application/Application.cpp` |
 | 빌드/테스트 | `Scripts/build.sh`, `Scripts/build.ps1`, `Tests/*.cpp`; 루트 `CMakeLists.txt`의 CTest 등록 확인. 현재 환경의 전체 빌드·테스트 실행 여부와 의존성은 별도 확인 필요 |

@@ -91,10 +91,10 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 00_Render_State_Texture_Lifecycle
 
-    TRenderStateTexture::TRenderStateTexture(VkPhysicalDevice                                PhysicalDevice,
+    FRenderStateTexture::FRenderStateTexture(VkPhysicalDevice                                PhysicalDevice,
                                              VkDevice                                        Device,
                                              VkDescriptorSetLayout                           SurfaceLayout,
-                                             const SurfaceState::TSurfaceGPUResourceManager& Resources)
+                                             const SurfaceState::FSurfaceGPUResourceManager& Resources)
         : Device(Device)
     {
         if (!PhysicalDevice || !Device || !SurfaceLayout || Resources.GetManagedInstanceCount() == 0)
@@ -198,7 +198,7 @@ namespace MDSS::Rendering
                     continue;
                 const auto* Geometry = Resources.GetInstanceSharedGeometry(Index);
                 const auto& Ranges = Geometry->GetSurfaceRanges();
-                TInstance&  Instance = Instances[Index];
+                FInstance&  Instance = Instances[Index];
                 if (Ranges.empty() || Ranges.size() > Limits.limits.maxImageArrayLayers ||
                     Ranges.size() > Limits.limits.maxComputeWorkGroupCount[2])
                     throw std::runtime_error("Surface count exceeds State texture array or dispatch limits.");
@@ -216,7 +216,7 @@ namespace MDSS::Rendering
 
                 const auto MakeImage = [&](VkImageUsageFlags Usage)
                 {
-                    return std::make_unique<GPU::TGPUImage>(PhysicalDevice,
+                    return std::make_unique<GPU::FGPUImage>(PhysicalDevice,
                                                             Device,
                                                             Instance.Extent,
                                                             RenderFormat,
@@ -225,9 +225,9 @@ namespace MDSS::Rendering
                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                                             Instance.SurfaceCount);
                 };
-                const auto MakeView = [&](const GPU::TGPUImage& Image)
+                const auto MakeView = [&](const GPU::FGPUImage& Image)
                 {
-                    return std::make_unique<GPU::TGPUImageView>(Device,
+                    return std::make_unique<GPU::FGPUImageView>(Device,
                                                                 Image.GetHandle(),
                                                                 RenderFormat,
                                                                 VK_IMAGE_ASPECT_COLOR_BIT,
@@ -311,12 +311,12 @@ namespace MDSS::Rendering
         }
     }
 
-    TRenderStateTexture::~TRenderStateTexture()
+    FRenderStateTexture::~FRenderStateTexture()
     {
         Destroy();
     }
 
-    void TRenderStateTexture::Destroy() noexcept
+    void FRenderStateTexture::Destroy() noexcept
     {
         for (VkPipeline Variant : SmoothingPipelines)
             if (Variant)
@@ -352,7 +352,7 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 01_Descriptor_Access
 
-    VkDescriptorSet TRenderStateTexture::GetSet(std::size_t Instance, bool bSmoothed) const noexcept
+    VkDescriptorSet FRenderStateTexture::GetSet(std::size_t Instance, bool bSmoothed) const noexcept
     {
         if (Instance >= Instances.size())
             return VK_NULL_HANDLE;
@@ -366,8 +366,8 @@ namespace MDSS::Rendering
 // ============================================================
 #pragma region 02_Texture_Command_Recording
 
-    void TRenderStateTexture::Record(VkCommandBuffer                                 Command,
-                                     const SurfaceState::TSurfaceGPUResourceManager& Resources,
+    void FRenderStateTexture::Record(VkCommandBuffer                                 Command,
+                                     const SurfaceState::FSurfaceGPUResourceManager& Resources,
                                      std::array<std::uint32_t, 4>                    Channels,
                                      std::uint32_t                                   ChannelCount,
                                      bool                                            bUpdateStates,
@@ -381,7 +381,7 @@ namespace MDSS::Rendering
         bool                               bMainPipelineReady = false;
         for (std::size_t Index = 0; Index < Instances.size(); ++Index)
         {
-            TInstance& Instance = Instances[Index];
+            FInstance& Instance = Instances[Index];
             if (!Instance.Image)
                 continue;
             const auto* SurfaceDescriptors = Resources.GetInstanceDescriptors(Index);

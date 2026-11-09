@@ -50,9 +50,9 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Pipeline_Lifecycle
 
-    TGraphicsPipeline::TGraphicsPipeline(VkDevice                       Device,
-                                         VkRenderPass                   TRenderPass,
-                                         const TGraphicsPipelineConfig& Config)
+    FGraphicsPipeline::FGraphicsPipeline(VkDevice                       Device,
+                                         VkRenderPass                   FRenderPass,
+                                         const FGraphicsPipelineConfig& Config)
         : Device(Device)
     {
         if (Config.ShaderStages.empty())
@@ -67,14 +67,14 @@ namespace MDSS::GPU
 
         try
         {
-            for (const TShaderStageConfig& StageConfig : Config.ShaderStages)
+            for (const FShaderStageConfig& StageConfig : Config.ShaderStages)
             {
                 if (StageConfig.ShaderPath.empty() || StageConfig.EntryPoint.empty())
                 {
                     throw std::invalid_argument("Graphics pipeline shader stage path/entry point must not be empty.");
                 }
 
-                TLogger::Debug("TRenderer",
+                FLogger::Debug("TRenderer",
                                "Loading shader stage " + std::to_string(static_cast<int>(StageConfig.Stage)) + ": " +
                                    StageConfig.ShaderPath);
                 const VkShaderModule Module = CreateShaderModule(Device, StageConfig.ShaderPath.c_str());
@@ -183,7 +183,7 @@ namespace MDSS::GPU
             PipelineInfo.pColorBlendState = &ColorBlending;
             PipelineInfo.pDynamicState = &DynamicState;
             PipelineInfo.layout = PipelineLayout;
-            PipelineInfo.renderPass = TRenderPass;
+            PipelineInfo.renderPass = FRenderPass;
             PipelineInfo.subpass = 0;
 
             if (vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Pipeline) != VK_SUCCESS)
@@ -191,7 +191,7 @@ namespace MDSS::GPU
                 throw std::runtime_error("Failed to create Vulkan graphics pipeline.");
             }
 
-            TLogger::Info("TRenderer",
+            FLogger::Info("TRenderer",
                           "Graphics pipeline created with " + std::to_string(ShaderStageInfos.size()) +
                               " shader stage(s).");
         }
@@ -215,7 +215,7 @@ namespace MDSS::GPU
         }
     }
 
-    TGraphicsPipeline::~TGraphicsPipeline()
+    FGraphicsPipeline::~FGraphicsPipeline()
     {
         if (Pipeline != VK_NULL_HANDLE)
         {
@@ -236,12 +236,12 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Pipeline_Accessors
 
-    VkPipeline TGraphicsPipeline::GetHandle() const noexcept
+    VkPipeline FGraphicsPipeline::GetHandle() const noexcept
     {
         return Pipeline;
     }
 
-    VkPipelineLayout TGraphicsPipeline::GetLayout() const noexcept
+    VkPipelineLayout FGraphicsPipeline::GetLayout() const noexcept
     {
         return PipelineLayout;
     }
@@ -253,7 +253,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Shader_Module_Creation
 
-    VkShaderModule TGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
+    VkShaderModule FGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
     {
         const std::vector<std::uint32_t> Code = ReadSpirvFile(Path);
 

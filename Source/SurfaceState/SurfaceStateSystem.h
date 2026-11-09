@@ -18,51 +18,51 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager;
+    class FSurfaceDataManager;
 }
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS
 {
-    class TScene;
+    class FScene;
 }
 
 namespace MDSS::SurfaceState
 {
 
-    class TSurfaceStateSystem final
+    class FSurfaceStateSystem final
     {
     public:
         // Lifecycle
-        TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
-                            const Asset::TAssetManager& Assets,
-                            const TSurfaceDataManager&  SurfaceData,
-                            const TScene&               Scene,
-                            TSurfaceGPUBufferPool*      ReusePool = nullptr);
-        ~TSurfaceStateSystem();
+        FSurfaceStateSystem(const GPU::FVulkanContext&  Context,
+                            const Asset::FAssetManager& Assets,
+                            const FSurfaceDataManager&  SurfaceData,
+                            const FScene&               Scene,
+                            FSurfaceGPUBufferPool*      ReusePool = nullptr);
+        ~FSurfaceStateSystem();
 
-        TSurfaceStateSystem(const TSurfaceStateSystem&) = delete;
-        TSurfaceStateSystem& operator=(const TSurfaceStateSystem&) = delete;
-        TSurfaceStateSystem(TSurfaceStateSystem&&) = delete;
-        TSurfaceStateSystem& operator=(TSurfaceStateSystem&&) = delete;
+        FSurfaceStateSystem(const FSurfaceStateSystem&) = delete;
+        FSurfaceStateSystem& operator=(const FSurfaceStateSystem&) = delete;
+        FSurfaceStateSystem(FSurfaceStateSystem&&) = delete;
+        FSurfaceStateSystem& operator=(FSurfaceStateSystem&&) = delete;
 
         /** @brief 같은 Application 소유 객체를 유지한 채 준비된 Scene별 GPU 자원을 교체한다. */
-        void ReplaceSceneResources(TSurfaceStateSystem&& Replacement);
+        void ReplaceSceneResources(FSurfaceStateSystem&& Replacement);
 
         // State and contact management
-        void SubmitContact(TSurfaceContactInput Contact);
+        void SubmitContact(FSurfaceContactInput Contact);
         void ResetState();
         void RestartState();
-        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle   Profile,
-                                       TStateId                       State,
-                                       const TSurfaceStateParameters& Parameters,
+        void SetDebugProfileParameters(Asset::FSRProfileAssetHandle   Profile,
+                                       FStateId                       State,
+                                       const FSurfaceStateParameters& Parameters,
                                        bool                           bKeepRuntimeOverride = true);
 
         // Simulation and GPU recording
@@ -76,8 +76,8 @@ namespace MDSS::SurfaceState
 
         // Debug controls and resource access
         [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
-        [[nodiscard]] const TSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
-        void               SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept;
+        [[nodiscard]] const FSurfaceSolverDebugSettings& GetDebugSolverSettings() const noexcept;
+        void               SetDebugSolverTermEnabled(ESurfaceSolverTerm Term, bool bEnabled) noexcept;
         void               SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept;
         void               SetDebugGeometryDriveEnabled(bool bEnabled) noexcept;
         void               SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
@@ -109,26 +109,49 @@ namespace MDSS::SurfaceState
         {
             return bHalfDynamicWeightsEnabled;
         }
-        void               SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
+        void SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
         void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
         {
-            if (GPUResources) GPUResources->TrimRenderMeshVariants(Surface, Overlay);
+            if (GPUResources)
+                GPUResources->TrimRenderMeshVariants(Surface, Overlay);
         }
-        void SetAdaptiveGeometryEnabled(bool Enabled) noexcept { bAdaptiveGeometryEnabled = Enabled; }
-        [[nodiscard]] bool IsAdaptiveGeometryEnabled() const noexcept { return bAdaptiveGeometryEnabled; }
+        void SetAdaptiveGeometryEnabled(bool bEnabled) noexcept
+        {
+            bAdaptiveGeometryEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsAdaptiveGeometryEnabled() const noexcept
+        {
+            return bAdaptiveGeometryEnabled;
+        }
         void PrepareScratchStorage()
         {
-            if (GPUResources && GPUResources->ConfigureScratchStorage(Context, bRawFluxCacheEnabled,
-                bHalfRawFluxCacheEnabled, bHalfDynamicWeightsEnabled, bCompactScratchStorageEnabled))
+            if (GPUResources && GPUResources->ConfigureScratchStorage(Context,
+                                                                      bRawFluxCacheEnabled,
+                                                                      bHalfRawFluxCacheEnabled,
+                                                                      bHalfDynamicWeightsEnabled,
+                                                                      bCompactScratchStorageEnabled))
             {
                 bTransferWeightSettingsDirty = true;
                 bForceFullGeometryOnNextStep = true;
             }
         }
-        void SetCompactScratchStorageEnabled(bool Enabled) noexcept { bCompactScratchStorageEnabled = Enabled; }
-        [[nodiscard]] bool IsCompactScratchStorageEnabled() const noexcept { return bCompactScratchStorageEnabled; }
-        void SetRuntimeSolverFlagsEnabled(bool Enabled) noexcept { if (Solver) Solver->SetRuntimeFlagsEnabled(Enabled); }
-        [[nodiscard]] bool IsRuntimeSolverFlagsEnabled() const noexcept { return Solver && Solver->IsRuntimeFlagsEnabled(); }
+        void SetCompactScratchStorageEnabled(bool bEnabled) noexcept
+        {
+            bCompactScratchStorageEnabled = bEnabled;
+        }
+        [[nodiscard]] bool IsCompactScratchStorageEnabled() const noexcept
+        {
+            return bCompactScratchStorageEnabled;
+        }
+        void SetRuntimeSolverFlagsEnabled(bool bEnabled) noexcept
+        {
+            if (Solver)
+                Solver->SetRuntimeFlagsEnabled(bEnabled);
+        }
+        [[nodiscard]] bool IsRuntimeSolverFlagsEnabled() const noexcept
+        {
+            return Solver && Solver->IsRuntimeFlagsEnabled();
+        }
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept
         {
             return bSparseSolverEnabled;
@@ -160,8 +183,8 @@ namespace MDSS::SurfaceState
         {
             bSparseSimulationGeometryEnabled = bEnabled;
         }
-        [[nodiscard]] const TSurfaceGPUResourceManager& GetGPUResources() const noexcept;
-        [[nodiscard]] TSurfaceGPUBufferPool&            GetReusableBufferPool() noexcept
+        [[nodiscard]] const FSurfaceGPUResourceManager& GetGPUResources() const noexcept;
+        [[nodiscard]] FSurfaceGPUBufferPool&            GetReusableBufferPool() noexcept
         {
             return BufferPool;
         }
@@ -171,20 +194,20 @@ namespace MDSS::SurfaceState
         void QueueInitialContacts();
         void ApplyPendingContacts();
 
-        const GPU::TVulkanContext&                  Context;
-        const Asset::TAssetManager&                 Assets;
-        const TSurfaceDataManager&                  SurfaceData;
-        const TScene&                               Scene;
-        TSurfaceGPUBufferPool                       BufferPool;
-        std::unique_ptr<TSurfaceGPUResourceManager> GPUResources;
-        std::unique_ptr<TSurfaceStateSolver>        Solver;
-        std::vector<TSurfaceContactInput>           PendingContacts;
-        TSurfaceSolverDebugSettings                 DebugSolverSettings;
+        const GPU::FVulkanContext&                  Context;
+        const Asset::FAssetManager&                 Assets;
+        const FSurfaceDataManager&                  SurfaceData;
+        const FScene&                               Scene;
+        FSurfaceGPUBufferPool                       BufferPool;
+        std::unique_ptr<FSurfaceGPUResourceManager> GPUResources;
+        std::unique_ptr<FSurfaceStateSolver>        Solver;
+        std::vector<FSurfaceContactInput>           PendingContacts;
+        FSurfaceSolverDebugSettings                 DebugSolverSettings;
         bool                                        bTransferWeightSettingsDirty = false;
         bool                                        bForceFullGeometryOnNextStep = false;
         bool                                        bStableDeltaTimeDirty = true;
-        bool bAdaptiveGeometryEnabled = false;
-        bool bCompactScratchStorageEnabled = true;
+        bool                                        bAdaptiveGeometryEnabled = false;
+        bool                                        bCompactScratchStorageEnabled = true;
         bool                                        bRawFluxCacheEnabled = true;
         bool                                        bCoalescedRawFluxLayoutEnabled = true;
         bool                                        bHalfRawFluxCacheEnabled = true;
@@ -198,6 +221,6 @@ namespace MDSS::SurfaceState
         std::vector<bool>                           PendingInputActivation;
         float                                       CachedMaximumStableDeltaTime = 1.0F / 60.0F;
         std::vector<glm::mat3>                      StableDeltaTimeModelMatrices;
-        std::map<std::pair<Asset::TSRProfileAssetHandle, TStateId>, TSurfaceStateParameters> RuntimeProfileOverrides;
+        std::map<std::pair<Asset::FSRProfileAssetHandle, FStateId>, FSurfaceStateParameters> RuntimeProfileOverrides;
     };
 } // namespace MDSS::SurfaceState

@@ -28,40 +28,40 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager;
-    class TSurfaceGPUBufferPool;
+    class FSurfaceDataManager;
+    class FSurfaceGPUBufferPool;
 }
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS
 {
-    struct TTransform;
-    class TScene;
+    struct FTransform;
+    class FScene;
 }
 
 namespace MDSS::SurfaceState
 {
-    class TSurfaceStateDescriptorResources final
+    class FSurfaceStateDescriptorResources final
     {
     public:
         // Descriptor creation and access
-        TSurfaceStateDescriptorResources(VkDevice                                  Device,
-                                         const TSurfaceSharedGeometryGPUResources& SharedGeometry,
-                                         const TSurfaceProfileGPUResources&        Profiles,
-                                         const TSurfaceInstanceGPUResources&       Instance);
-        ~TSurfaceStateDescriptorResources();
+        FSurfaceStateDescriptorResources(VkDevice                                  Device,
+                                         const FSurfaceSharedGeometryGPUResources& SharedGeometry,
+                                         const FSurfaceProfileGPUResources&        Profiles,
+                                         const FSurfaceInstanceGPUResources&       Instance);
+        ~FSurfaceStateDescriptorResources();
 
-        TSurfaceStateDescriptorResources(const TSurfaceStateDescriptorResources&) = delete;
-        TSurfaceStateDescriptorResources& operator=(const TSurfaceStateDescriptorResources&) = delete;
-        TSurfaceStateDescriptorResources(TSurfaceStateDescriptorResources&&) = delete;
-        TSurfaceStateDescriptorResources& operator=(TSurfaceStateDescriptorResources&&) = delete;
+        FSurfaceStateDescriptorResources(const FSurfaceStateDescriptorResources&) = delete;
+        FSurfaceStateDescriptorResources& operator=(const FSurfaceStateDescriptorResources&) = delete;
+        FSurfaceStateDescriptorResources(FSurfaceStateDescriptorResources&&) = delete;
+        FSurfaceStateDescriptorResources& operator=(FSurfaceStateDescriptorResources&&) = delete;
 
         [[nodiscard]] bool HasReactions() const noexcept
         {
@@ -70,25 +70,25 @@ namespace MDSS::SurfaceState
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept;
         [[nodiscard]] VkDescriptorSet       GetABSet() const noexcept;
         [[nodiscard]] VkDescriptorSet       GetBASet() const noexcept;
-        [[nodiscard]] VkBuffer              GetBoundBufferHandle(TSurfaceGPUDescriptorBinding Binding, bool bAB) const;
+        [[nodiscard]] VkBuffer              GetBoundBufferHandle(ESurfaceGPUDescriptorBinding Binding, bool bAB) const;
         [[nodiscard]] std::array<std::uint64_t, 6> GetGeometryInputRevisions() const noexcept;
         [[nodiscard]] std::uint64_t                GetProfileParameterRevision() const noexcept
         {
             return ProfileResources->GetParametersBuffer().GetUploadRevision();
         }
-        [[nodiscard]] const TSurfaceSharedGeometryGPUResources& GetSharedGeometry() const noexcept
+        [[nodiscard]] const FSurfaceSharedGeometryGPUResources& GetSharedGeometry() const noexcept
         {
             return *SharedGeometryResources;
         }
 
     private:
         VkDevice                                  Device = VK_NULL_HANDLE;
-        const TSurfaceSharedGeometryGPUResources* SharedGeometryResources = nullptr;
-        const TSurfaceProfileGPUResources*        ProfileResources = nullptr;
+        const FSurfaceSharedGeometryGPUResources* SharedGeometryResources = nullptr;
+        const FSurfaceProfileGPUResources*        ProfileResources = nullptr;
         VkDescriptorSetLayout                     Layout = VK_NULL_HANDLE;
         VkDescriptorPool                          Pool = VK_NULL_HANDLE;
         std::array<VkDescriptorSet, 2>            Sets{VK_NULL_HANDLE, VK_NULL_HANDLE};
-        std::array<std::array<VkBuffer, static_cast<std::size_t>(TSurfaceGPUDescriptorBinding::Count)>, 2>
+        std::array<std::array<VkBuffer, static_cast<std::size_t>(ESurfaceGPUDescriptorBinding::Count)>, 2>
             BoundBufferHandles{};
     };
 

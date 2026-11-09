@@ -45,13 +45,13 @@ namespace MDSS
         {
             if (std::filesystem::exists(AbsoluteConfig))
                 throw std::runtime_error("Cannot read engine config: " + AbsoluteConfig.string());
-            TLogger::Warning("EngineConfig", "Config missing; using Assets/Scenes/ReactionTransitionComparison.Scene.");
-            return std::filesystem::absolute(
-                       std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/ReactionTransitionComparison.Scene")
+            FLogger::Warning("EngineConfig", "Config missing; using Assets/Scenes/ReactionTransitionComparison.Scene.");
+            return std::filesystem::absolute(std::filesystem::path(MDSS_ASSET_DIR) /
+                                             "Scenes/ReactionTransitionComparison.Scene")
                 .lexically_normal();
         }
         std::string Section, Line, SceneValue;
-        bool        Found = false;
+        bool        bFound = false;
         while (std::getline(File, Line))
         {
             // UTF-8 BOM과 Windows 줄바꿈도 허용한다.
@@ -69,14 +69,14 @@ namespace MDSS
             if (Section != "Application" || Equals == std::string::npos ||
                 Trim(Line.substr(0, Equals)) != "StartupScene")
                 continue;
-            if (Found)
+            if (bFound)
                 throw std::runtime_error("Duplicate [Application] StartupScene in " + AbsoluteConfig.string());
-            Found = true;
+            bFound = true;
             SceneValue = Trim(Line.substr(Equals + 1));
             if (SceneValue.size() >= 2 && SceneValue.front() == '"' && SceneValue.back() == '"')
                 SceneValue = SceneValue.substr(1, SceneValue.size() - 2);
         }
-        if (!Found || Trim(SceneValue).empty())
+        if (!bFound || Trim(SceneValue).empty())
             throw std::runtime_error("Missing or empty [Application] StartupScene in " + AbsoluteConfig.string());
         std::filesystem::path ScenePath(SceneValue);
         if (ScenePath.is_relative())

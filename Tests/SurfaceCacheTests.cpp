@@ -25,25 +25,25 @@ namespace
     using namespace MDSS::Asset;
     using namespace MDSS::SurfaceState;
     int  Failures = 0;
-    void Check(bool Condition, const std::string& Name)
+    void Check(bool bCondition, const std::string& Name)
     {
-        if (!Condition)
+        if (!bCondition)
         {
             ++Failures;
             std::cerr << "FAIL: " << Name << '\n';
         }
     }
 
-    struct TTemporaryDirectory
+    struct FTemporaryDirectory
     {
         std::filesystem::path Path =
             std::filesystem::temp_directory_path() /
             ("mdss-surface-cache-tests-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-        TTemporaryDirectory()
+        FTemporaryDirectory()
         {
             std::filesystem::create_directories(Path);
         }
-        ~TTemporaryDirectory()
+        ~FTemporaryDirectory()
         {
             std::error_code Error;
             std::filesystem::remove_all(Path, Error);
@@ -68,21 +68,21 @@ namespace
         Output.write(reinterpret_cast<const char*>(Bytes.data()), static_cast<std::streamsize>(Bytes.size()));
     }
 
-    TSharedSurfaceGeometryData Build(const TOBJLoadResult& Mesh, std::uint32_t Resolution)
+    FSharedSurfaceGeometryData Build(const FOBJLoadResult& Mesh, std::uint32_t Resolution)
     {
         auto Mapping =
-            SurfaceState::TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {Resolution, Resolution}}});
-        std::vector<SurfaceState::TSurfaceProfileIndex> Profiles(Mapping.Texels.size(),
+            SurfaceState::FSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, {{0, {Resolution, Resolution}}});
+        std::vector<SurfaceState::FSurfaceProfileIndex> Profiles(Mapping.Texels.size(),
                                                                  SurfaceState::InvalidSurfaceProfileIndex);
         for (std::size_t I = 0; I < Mapping.Texels.size(); ++I)
             if (Mapping.Texels[I].IsValid())
                 Profiles[I] = 0;
-        auto Geometry = SurfaceState::TSurfaceGeometryBuilder::Build(Mapping, std::move(Profiles), 1);
+        auto Geometry = SurfaceState::FSurfaceGeometryBuilder::Build(Mapping, std::move(Profiles), 1);
         // Vary tangent-space slopes in both directions to exercise the integrated height and curvature fields.
-        TextureData NormalMap{2, 2, {120, 125, 255, 255, 140, 118, 255, 255, 112, 142, 255, 255, 136, 138, 255, 255}};
+        FTextureData NormalMap{2, 2, {120, 125, 255, 255, 140, 118, 255, 255, 112, 142, 255, 255, 136, 138, 255, 255}};
         for (auto& T : Geometry.GetTexels())
         {
-            T.HasTransferNormal =
+            T.bHasTransferNormal =
                 BuildNormalMapTransferNormal(T, Mesh.Vertices, Mesh.Triangles, NormalMap, T.TransferNormal, true);
         }
         const auto Report = BuildMesoGeometry(Geometry);
@@ -94,7 +94,7 @@ namespace
             if (Geometry.GetTexels()[I].IsValid())
             {
                 Map[I] = SurfaceState::InvalidSurfaceProfileIndex;
-                Geometry.GetTexels()[I].HasMesoNormal = false;
+                Geometry.GetTexels()[I].bHasMesoNormal = false;
                 break;
             }
         }
@@ -102,27 +102,27 @@ namespace
         return Geometry;
     }
 
-    void Compare(const TSharedSurfaceGeometryData& A, const TSharedSurfaceGeometryData& B)
+    void Compare(const FSharedSurfaceGeometryData& A, const FSharedSurfaceGeometryData& B)
     {
         Check(A.GetProfileMap() == B.GetProfileMap(), "Profile indices and invalid sentinels round-trip");
         Check(A.GetTexelCount() == B.GetTexelCount(), "texel count round-trips");
-        bool Equal = A.GetTexelCount() == B.GetTexelCount();
-        for (std::size_t I = 0; Equal && I < A.GetTexelCount(); ++I)
+        bool bEqual = A.GetTexelCount() == B.GetTexelCount();
+        for (std::size_t I = 0; bEqual && I < A.GetTexelCount(); ++I)
         {
             const auto& X = A.GetTexels()[I];
             const auto& Y = B.GetTexels()[I];
-            Equal = X.Surface == Y.Surface && X.Triangle == Y.Triangle && X.Chart == Y.Chart &&
-                    X.Barycentric == Y.Barycentric && X.Position == Y.Position && X.Normal == Y.Normal &&
-                    X.AreaVector == Y.AreaVector && X.TransferNormal == Y.TransferNormal &&
-                    X.HasTransferNormal == Y.HasTransferNormal && X.MesoNormal == Y.MesoNormal &&
-                    X.HasMesoNormal == Y.HasMesoNormal &&
-                    X.Geometry.MesoVirtualHeight == Y.Geometry.MesoVirtualHeight &&
-                    X.Geometry.ConcavityWeight == Y.Geometry.ConcavityWeight &&
-                    X.Geometry.MesoMeanCurvature == Y.Geometry.MesoMeanCurvature &&
-                    X.Geometry.MesoGaussianCurvature == Y.Geometry.MesoGaussianCurvature &&
-                    X.NeighborIndices == Y.NeighborIndices;
+            bEqual = X.Surface == Y.Surface && X.Triangle == Y.Triangle && X.Chart == Y.Chart &&
+                     X.Barycentric == Y.Barycentric && X.Position == Y.Position && X.Normal == Y.Normal &&
+                     X.AreaVector == Y.AreaVector && X.TransferNormal == Y.TransferNormal &&
+                     X.bHasTransferNormal == Y.bHasTransferNormal && X.MesoNormal == Y.MesoNormal &&
+                     X.bHasMesoNormal == Y.bHasMesoNormal &&
+                     X.Geometry.MesoVirtualHeight == Y.Geometry.MesoVirtualHeight &&
+                     X.Geometry.ConcavityWeight == Y.Geometry.ConcavityWeight &&
+                     X.Geometry.MesoMeanCurvature == Y.Geometry.MesoMeanCurvature &&
+                     X.Geometry.MesoGaussianCurvature == Y.Geometry.MesoGaussianCurvature &&
+                     X.NeighborIndices == Y.NeighborIndices;
         }
-        Check(Equal, "all final texel fields round-trip exactly");
+        Check(bEqual, "all final texel fields round-trip exactly");
         const auto PackedA = PackSharedSurfaceGeometry(A);
         const auto PackedB = PackSharedSurfaceGeometry(B);
         Check(PackedA.ReverseNeighborDirectionIndices == PackedB.ReverseNeighborDirectionIndices,
@@ -137,27 +137,27 @@ namespace
     {
         const auto AssetDirectory =
             std::filesystem::path(MDSS_TEST_FIXTURE_DIR).parent_path().parent_path() / "Assets/Meshes/BrickCube";
-        const auto Mesh = TOBJLoader::Load(AssetDirectory / "BrickCube.obj");
-        const auto NormalMap = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeNormal.png");
-        const auto Albedo = TextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeAlbedo.png");
-        std::vector<SurfaceState::TSurfaceDefinition> Surfaces;
+        const auto Mesh = FOBJLoader::Load(AssetDirectory / "BrickCube.obj");
+        const auto NormalMap = FTextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeNormal.png");
+        const auto Albedo = FTextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeAlbedo.png");
+        std::vector<SurfaceState::FSurfaceDefinition> Surfaces;
         for (const auto& Triangle : Mesh.Triangles)
         {
             while (Surfaces.size() <= Triangle.Surface)
-                Surfaces.push_back({static_cast<SurfaceState::TSurfaceLocalID>(Surfaces.size()), {64, 64}});
+                Surfaces.push_back({static_cast<SurfaceState::FSurfaceLocalID>(Surfaces.size()), {64, 64}});
         }
-        const auto Mapping = SurfaceState::TSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, Surfaces);
-        std::vector<SurfaceState::TSurfaceProfileIndex> Profiles(Mapping.Texels.size(),
+        const auto Mapping = SurfaceState::FSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, Surfaces);
+        std::vector<SurfaceState::FSurfaceProfileIndex> Profiles(Mapping.Texels.size(),
                                                                  SurfaceState::InvalidSurfaceProfileIndex);
         for (std::size_t I = 0; I < Mapping.Texels.size(); ++I)
             if (Mapping.Texels[I].IsValid())
                 Profiles[I] = 0;
-        auto Geometry = SurfaceState::TSurfaceGeometryBuilder::Build(Mapping, std::move(Profiles), 1);
+        auto Geometry = SurfaceState::FSurfaceGeometryBuilder::Build(Mapping, std::move(Profiles), 1);
         for (auto& Texel : Geometry.GetTexels())
         {
             if (!Texel.IsValid())
                 continue;
-            Texel.HasTransferNormal = BuildNormalMapTransferNormal(
+            Texel.bHasTransferNormal = BuildNormalMapTransferNormal(
                 Texel, Mesh.Vertices, Mesh.Triangles, NormalMap, Texel.TransferNormal, true);
         }
         const auto Report = BuildMesoGeometry(Geometry);
@@ -167,12 +167,12 @@ namespace
         std::size_t BrickCount = 0, MortarCount = 0;
         for (const auto& Texel : Geometry.GetTexels())
         {
-            if (!Texel.IsValid() || !Texel.HasTransferNormal)
+            if (!Texel.IsValid() || !Texel.bHasTransferNormal)
                 continue;
             const auto& Triangle = Mesh.Triangles[Texel.Triangle];
             const auto  UV = Texel.Barycentric.x * Mesh.Vertices[Triangle.RenderVertexIndices[0]].UV +
-                             Texel.Barycentric.y * Mesh.Vertices[Triangle.RenderVertexIndices[1]].UV +
-                             Texel.Barycentric.z * Mesh.Vertices[Triangle.RenderVertexIndices[2]].UV;
+                            Texel.Barycentric.y * Mesh.Vertices[Triangle.RenderVertexIndices[1]].UV +
+                            Texel.Barycentric.z * Mesh.Vertices[Triangle.RenderVertexIndices[2]].UV;
             const auto  X = std::min(static_cast<std::uint32_t>(UV.x * Albedo.Width), Albedo.Width - 1U);
             const auto  Y = std::min(static_cast<std::uint32_t>(UV.y * Albedo.Height), Albedo.Height - 1U);
             const auto  Pixel = (static_cast<std::size_t>(Y) * Albedo.Width + X) * 4U;
@@ -203,32 +203,32 @@ namespace
     void Tests()
     {
         TestBrickCubeMesoHeightSign();
-        TTemporaryDirectory Temp;
+        FTemporaryDirectory Temp;
         const auto          Distribution = Temp.Path / "Input.SurfaceProfileMap";
         const auto          Profile = Temp.Path / "Input.SRProfile";
         const auto          Normal = Temp.Path / "normal.bin";
         Write(Distribution, "surface profile assignment v1");
         Write(Profile, "response v1");
         Write(Normal, "normal v1");
-        auto Mesh = TOBJLoader::Load(std::filesystem::path(MDSS_TEST_FIXTURE_DIR) / "Mapping/QuadNoSeam.obj");
+        auto Mesh = FOBJLoader::Load(std::filesystem::path(MDSS_TEST_FIXTURE_DIR) / "Mapping/QuadNoSeam.obj");
         auto Describe = [&](std::uint32_t Resolution = 8)
         {
-            return SurfaceState::TSurfaceCache::Describe(Mesh.Vertices,
+            return SurfaceState::FSurfaceCache::Describe(Mesh.Vertices,
                                                          Mesh.Triangles,
                                                          {{0, {Resolution, Resolution}}},
                                                          std::vector<std::filesystem::path>{Normal},
                                                          Distribution,
                                                          {Profile},
-                                                         std::vector<SurfaceState::TSurfaceProfileIndex>{0});
+                                                         std::vector<SurfaceState::FSurfaceProfileIndex>{0});
         };
         const auto  Descriptor = Describe();
-        const auto  Cache = SurfaceState::TSurfaceCache::GetPath(Temp.Path / "Cache", "Cube.obj", Distribution, 8);
+        const auto  Cache = SurfaceState::FSurfaceCache::GetPath(Temp.Path / "Cache", "Cube.obj", Distribution, 8);
         std::string Diagnostic;
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic) && Diagnostic == "missing cache",
+        Check(!SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic) && Diagnostic == "missing cache",
               "missing cache requests rebuild");
         auto Geometry = Build(Mesh, 8);
-        SurfaceState::TSurfaceCache::Save(Cache, Descriptor, Geometry);
-        auto Loaded = SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic);
+        SurfaceState::FSurfaceCache::Save(Cache, Descriptor, Geometry);
+        auto Loaded = SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic);
         Check(Loaded.has_value() && Diagnostic.empty(), "saved final geometry loads");
         if (Loaded)
             Compare(Geometry, *Loaded);
@@ -236,14 +236,14 @@ namespace
 
         auto Changed = Descriptor;
         ++Changed.Fingerprint;
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic),
+        Check(!SurfaceState::FSurfaceCache::Load(Cache, Changed, Diagnostic),
               "input fingerprint mismatch requests rebuild");
         Changed = Descriptor;
         Changed.Surfaces[0].Resolution = {4, 4};
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic), "resolution mismatch requests rebuild");
+        Check(!SurfaceState::FSurfaceCache::Load(Cache, Changed, Diagnostic), "resolution mismatch requests rebuild");
         Changed = Descriptor;
         Changed.ProfilePaths[0] = Temp.Path / "Other.SRProfile";
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Changed, Diagnostic),
+        Check(!SurfaceState::FSurfaceCache::Load(Cache, Changed, Diagnostic),
               "Profile table binding mismatch requests rebuild");
 
         // Stale versions, corrupt payload, truncation and trailing bytes never become Runtime data.
@@ -252,21 +252,21 @@ namespace
             auto Bad = GoodBytes;
             Bad[Offset] ^= 0x40;
             WriteBytes(Cache, Bad);
-            Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic),
+            Check(!SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic),
                   "corrupt/versioned cache requests rebuild");
         }
         auto Bad = GoodBytes;
         Bad.resize(20);
         WriteBytes(Cache, Bad);
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic), "truncated header requests rebuild");
+        Check(!SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic), "truncated header requests rebuild");
         Bad = GoodBytes;
         Bad.pop_back();
         WriteBytes(Cache, Bad);
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic), "truncated payload requests rebuild");
+        Check(!SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic), "truncated payload requests rebuild");
         Bad = GoodBytes;
         Bad.push_back(0);
         WriteBytes(Cache, Bad);
-        Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic), "trailing payload requests rebuild");
+        Check(!SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic), "trailing payload requests rebuild");
 
         // A valid checksum alone must not admit invalid Runtime geometry.
         std::size_t FirstValid = 0;
@@ -286,7 +286,7 @@ namespace
             for (int I = 0; I < 8; ++I)
                 Bytes[44 + I] = static_cast<std::uint8_t>(Hash >> (I * 8));
             WriteBytes(Cache, Bytes);
-            Check(!SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic) &&
+            Check(!SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic) &&
                       Diagnostic.find(ExpectedDiagnostic) != std::string::npos,
                   "checked payload rejects " + ExpectedDiagnostic);
         };
@@ -294,8 +294,8 @@ namespace
         RejectRecord(24, 0x7fc00000U, "geometry values"); // NaN Position.x
         RejectRecord(92, UINT32_MAX - 1, "neighbor indices");
         RejectRecord(0, 99, "texel mapping");
-        SurfaceState::TSurfaceCache::Save(Cache, Descriptor, Geometry);
-        Check(SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic).has_value(),
+        SurfaceState::FSurfaceCache::Save(Cache, Descriptor, Geometry);
+        Check(SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic).has_value(),
               "corrupt file is replaced by rebuilt data");
 
         auto Invalid = Geometry;
@@ -305,38 +305,38 @@ namespace
                 T.NeighborIndices[0] = UINT32_MAX - 1;
                 break;
             }
-        bool Rejected = false;
+        bool bRejected = false;
         try
         {
-            SurfaceState::TSurfaceCache::Save(Cache, Descriptor, Invalid);
+            SurfaceState::FSurfaceCache::Save(Cache, Descriptor, Invalid);
         }
         catch (const std::exception&)
         {
-            Rejected = true;
+            bRejected = true;
         }
-        Check(Rejected && Read(Cache) == GoodBytes, "invalid save preserves previous complete cache");
+        Check(bRejected && Read(Cache) == GoodBytes, "invalid save preserves previous complete cache");
         const auto BlockedRoot = Temp.Path / "blocked";
         Write(BlockedRoot, "file, not directory");
-        Rejected = false;
+        bRejected = false;
         try
         {
-            SurfaceState::TSurfaceCache::Save(BlockedRoot / "Cube.Surface", Descriptor, Geometry);
+            SurfaceState::FSurfaceCache::Save(BlockedRoot / "Cube.Surface", Descriptor, Geometry);
         }
         catch (const std::exception&)
         {
-            Rejected = true;
+            bRejected = true;
         }
-        Check(Rejected && Geometry.GetTexelCount() == 64, "save failure leaves built Runtime geometry usable");
+        Check(bRejected && Geometry.GetTexelCount() == 64, "save failure leaves built Runtime geometry usable");
 
-        const auto Cache4 = SurfaceState::TSurfaceCache::GetPath(Temp.Path / "Cache", "Cube.obj", Distribution, 4);
-        SurfaceState::TSurfaceCache::Save(Cache4, Describe(4), Build(Mesh, 4));
-        Check(Cache != Cache4 && SurfaceState::TSurfaceCache::Load(Cache, Descriptor, Diagnostic).has_value() &&
-                  SurfaceState::TSurfaceCache::Load(Cache4, Describe(4), Diagnostic).has_value(),
+        const auto Cache4 = SurfaceState::FSurfaceCache::GetPath(Temp.Path / "Cache", "Cube.obj", Distribution, 4);
+        SurfaceState::FSurfaceCache::Save(Cache4, Describe(4), Build(Mesh, 4));
+        Check(Cache != Cache4 && SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic).has_value() &&
+                  SurfaceState::FSurfaceCache::Load(Cache4, Describe(4), Diagnostic).has_value(),
               "resolution variants coexist and reload");
-        Check(SurfaceState::TSurfaceCache::GetPath(
+        Check(SurfaceState::FSurfaceCache::GetPath(
                   Temp.Path / "Cache", "Cube.obj", Temp.Path / "Other.SurfaceProfileMap", 8) != Cache,
               "different Profile maps have separate identity directories");
-        Check(SurfaceState::TSurfaceCache::GetPath(Temp.Path / "Cache", "./Cube.obj", Distribution, 8) == Cache,
+        Check(SurfaceState::FSurfaceCache::GetPath(Temp.Path / "Cache", "./Cube.obj", Distribution, 8) == Cache,
               "normalized Mesh paths share an identity");
 
         Write(Profile, "different capacities, channels and response rates");
@@ -363,38 +363,38 @@ namespace
         Check(Describe().Fingerprint != Descriptor.Fingerprint, "mesh positions affect fingerprint");
         Mesh.Vertices[0].Position = OriginalPosition;
         const auto Reordered =
-            SurfaceState::TSurfaceCache::Describe(Mesh.Vertices,
+            SurfaceState::FSurfaceCache::Describe(Mesh.Vertices,
                                                   Mesh.Triangles,
                                                   {{0, {8, 8}}},
                                                   std::vector<std::filesystem::path>{Normal},
                                                   Distribution,
                                                   {Profile, Temp.Path / "Second.SRProfile"},
-                                                  std::vector<SurfaceState::TSurfaceProfileIndex>{0});
-        const auto Reversed = SurfaceState::TSurfaceCache::Describe(Mesh.Vertices,
+                                                  std::vector<SurfaceState::FSurfaceProfileIndex>{0});
+        const auto Reversed = SurfaceState::FSurfaceCache::Describe(Mesh.Vertices,
                                                                     Mesh.Triangles,
                                                                     {{0, {8, 8}}},
                                                                     std::vector<std::filesystem::path>{Normal},
                                                                     Distribution,
                                                                     {Temp.Path / "Second.SRProfile", Profile},
-                                                                    std::vector<SurfaceState::TSurfaceProfileIndex>{1});
+                                                                    std::vector<SurfaceState::FSurfaceProfileIndex>{1});
         Check(Reordered.Fingerprint != Reversed.Fingerprint,
               "ordered Profile table and assignments affect fingerprint");
         Mesh.Triangles[0].OriginalPositionIndices[0] += 10;
         Check(Describe().Fingerprint != Descriptor.Fingerprint, "source topology affects fingerprint");
 
         // A seam graph survives serialization, preserving reciprocal links and GPU transfer behavior.
-        auto       SeamMesh = TOBJLoader::Load(std::filesystem::path(MDSS_TEST_FIXTURE_DIR) / "Mapping/QuadSeam.obj");
+        auto       SeamMesh = FOBJLoader::Load(std::filesystem::path(MDSS_TEST_FIXTURE_DIR) / "Mapping/QuadSeam.obj");
         const auto SeamDescriptor =
-            SurfaceState::TSurfaceCache::Describe(SeamMesh.Vertices,
+            SurfaceState::FSurfaceCache::Describe(SeamMesh.Vertices,
                                                   SeamMesh.Triangles,
                                                   {{0, {8, 8}}},
                                                   std::vector<std::filesystem::path>{Normal},
                                                   Distribution,
                                                   {Profile},
-                                                  std::vector<SurfaceState::TSurfaceProfileIndex>{0});
+                                                  std::vector<SurfaceState::FSurfaceProfileIndex>{0});
         auto SeamGeometry = Build(SeamMesh, 8);
-        SurfaceState::TSurfaceCache::Save(Cache, SeamDescriptor, SeamGeometry);
-        Loaded = SurfaceState::TSurfaceCache::Load(Cache, SeamDescriptor, Diagnostic);
+        SurfaceState::FSurfaceCache::Save(Cache, SeamDescriptor, SeamGeometry);
+        Loaded = SurfaceState::FSurfaceCache::Load(Cache, SeamDescriptor, Diagnostic);
         Check(Loaded.has_value(), "atomic overwrite loads new seam geometry");
         if (Loaded)
             Compare(SeamGeometry, *Loaded);

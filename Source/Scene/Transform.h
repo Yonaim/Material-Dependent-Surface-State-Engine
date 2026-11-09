@@ -10,7 +10,7 @@
 
 namespace MDSS
 {
-    struct TTransform
+    struct FTransform
     {
         glm::vec3 Position{0.0F, 0.0F, 0.0F};
         glm::vec3 RotationDegrees{0.0F, 0.0F, 0.0F};

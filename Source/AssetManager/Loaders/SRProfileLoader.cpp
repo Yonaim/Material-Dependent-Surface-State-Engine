@@ -20,10 +20,10 @@ namespace MDSS::Asset
 {
     namespace
     {
-        using TJson = nlohmann::json;
+        using FJson = nlohmann::json;
 
         /** @brief JSON object에서 필수 key를 찾고 오류 경로를 포함해 실패를 보고한다. */
-        const TJson& RequireMember(const TJson& Object, std::string_view Key, std::string_view JsonPath)
+        const FJson& RequireMember(const FJson& Object, std::string_view Key, std::string_view JsonPath)
         {
             if (!Object.is_object())
             {
@@ -39,9 +39,9 @@ namespace MDSS::Asset
             return *Found;
         }
 
-        std::string ReadString(const TJson& Object, std::string_view Key, std::string_view JsonPath)
+        std::string ReadString(const FJson& Object, std::string_view Key, std::string_view JsonPath)
         {
-            const TJson& Value = RequireMember(Object, Key, JsonPath);
+            const FJson& Value = RequireMember(Object, Key, JsonPath);
             if (!Value.is_string())
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " must be a string.");
@@ -51,9 +51,9 @@ namespace MDSS::Asset
         }
 
         /** @brief 필수 numeric field를 float으로 읽고 자료형과 유한성을 확인한다. */
-        float ReadFloat(const TJson& Object, std::string_view Key, std::string_view JsonPath)
+        float ReadFloat(const FJson& Object, std::string_view Key, std::string_view JsonPath)
         {
-            const TJson& Value = RequireMember(Object, Key, JsonPath);
+            const FJson& Value = RequireMember(Object, Key, JsonPath);
             if (!Value.is_number())
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " must be a number.");
@@ -69,8 +69,8 @@ namespace MDSS::Asset
             return Result;
         }
 
-        SurfaceState::TSurfaceStateParameters
-        ReadStateParameters(const TJson& State, const std::string& StateName, std::int64_t Version)
+        SurfaceState::FSurfaceStateParameters
+        ReadStateParameters(const FJson& State, const std::string& StateName, std::int64_t Version)
         {
             const std::string JsonPath = "states." + StateName;
             const bool        bCurrentSchema = Version >= 4;
@@ -119,17 +119,17 @@ namespace MDSS::Asset
             };
         }
 
-        SurfaceState::TSurfaceReaction ReadReaction(const TJson& J)
+        SurfaceState::FSurfaceReaction ReadReaction(const FJson& J)
         {
             using namespace SurfaceState;
             const std::string Path = "reactions";
-            TSurfaceReaction  R;
+            FSurfaceReaction  R;
             R.ID = ReadString(J, "id", Path);
             if (J.contains("enabled"))
-                R.Enabled = J.at("enabled").get<bool>();
+                R.bEnabled = J.at("enabled").get<bool>();
             const auto Mode = J.value("mode", std::string("continuous"));
             if (Mode == "inflowFraction")
-                R.Mode = TReactionMode::InflowFraction;
+                R.Mode = EReactionMode::InflowFraction;
             else if (Mode != "continuous")
                 throw std::invalid_argument("reactions.mode is unknown.");
             auto Name = [](const std::string& S) { return NormalizeSurfaceStateName(S); };
@@ -143,7 +143,7 @@ namespace MDSS::Asset
             };
             Terms("consumes", R.Consumes);
             Terms("produces", R.Produces);
-            if (R.Mode == TReactionMode::InflowFraction)
+            if (R.Mode == EReactionMode::InflowFraction)
             {
                 if (J.contains("rate") || J.contains("modifiers"))
                     throw std::invalid_argument("inflowFraction uses fraction, not rate/modifiers.");
@@ -168,15 +168,15 @@ namespace MDSS::Asset
                 const auto& Rate = RequireMember(J, "rate", Path);
                 const auto  Model = ReadString(Rate, "model", "reactions.rate");
                 if (Model == "constant")
-                    R.RateModel = TReactionRateModel::Constant;
+                    R.RateModel = EReactionRateModel::Constant;
                 else if (Model == "stateProportional")
                 {
-                    R.RateModel = TReactionRateModel::StateProportional;
+                    R.RateModel = EReactionRateModel::StateProportional;
                     R.RateState = Name(ReadString(Rate, "state", "reactions.rate"));
                 }
                 else if (Model == "massAction")
                 {
-                    R.RateModel = TReactionRateModel::MassAction;
+                    R.RateModel = EReactionRateModel::MassAction;
                     const auto& Factors = RequireMember(Rate, "factors", "reactions.rate");
                     if (!Factors.is_array())
                         throw std::invalid_argument("reactions.rate.factors must be an array.");
@@ -202,26 +202,26 @@ namespace MDSS::Asset
                         if (M.contains("sample"))
                             throw std::invalid_argument(
                                 "Reaction conditions always use reference-area amounts; sample is unsupported.");
-                        TReactionModifier V;
+                        FReactionModifier V;
                         V.State = Name(ReadString(M, "state", Path));
                         const auto Function = ReadString(M, "function", Path);
                         if (Function == "above")
-                            V.Function = TReactionFunction::Above;
+                            V.Function = EReactionFunction::Above;
                         else if (Function == "below")
-                            V.Function = TReactionFunction::Below;
+                            V.Function = EReactionFunction::Below;
                         else if (Function == "rampAbove")
-                            V.Function = TReactionFunction::RampAbove;
+                            V.Function = EReactionFunction::RampAbove;
                         else if (Function == "rampBelow")
-                            V.Function = TReactionFunction::RampBelow;
+                            V.Function = EReactionFunction::RampBelow;
                         else if (Function == "linear")
-                            V.Function = TReactionFunction::Linear;
+                            V.Function = EReactionFunction::Linear;
                         else if (Function == "inhibit")
-                            V.Function = TReactionFunction::Inhibit;
+                            V.Function = EReactionFunction::Inhibit;
                         else
                             throw std::invalid_argument("reactions.modifiers.function is unknown.");
-                        if (M.contains("threshold") || V.Function <= TReactionFunction::RampBelow)
+                        if (M.contains("threshold") || V.Function <= EReactionFunction::RampBelow)
                             V.Threshold = ReadFloat(M, "threshold", Path);
-                        if (M.contains("scale") || V.Function >= TReactionFunction::RampAbove)
+                        if (M.contains("scale") || V.Function >= EReactionFunction::RampAbove)
                             V.Scale = ReadFloat(M, "scale", Path);
                         R.Modifiers.push_back(V);
                     }
@@ -231,7 +231,7 @@ namespace MDSS::Asset
         }
 
         /** @brief Profile JSON schema를 동적 State domain data로 변환한다. */
-        SurfaceState::TSurfaceResponseProfileData ParseProfile(const TJson& Root, std::string& Name)
+        SurfaceState::FSurfaceResponseProfileData ParseProfile(const FJson& Root, std::string& Name)
         {
             if (!Root.is_object())
             {
@@ -242,7 +242,7 @@ namespace MDSS::Asset
                 throw std::invalid_argument("$.type must be 'SurfaceResponseProfile'.");
             }
 
-            const TJson& Version = RequireMember(Root, "version", "$");
+            const FJson& Version = RequireMember(Root, "version", "$");
             if (!Version.is_number_unsigned() && !Version.is_number_integer())
             {
                 throw std::invalid_argument("$.version must be an integer.");
@@ -259,12 +259,12 @@ namespace MDSS::Asset
                 throw std::invalid_argument("$.name must not be empty.");
             }
 
-            const TJson& States = RequireMember(Root, "states", "$");
+            const FJson& States = RequireMember(Root, "states", "$");
             if (!States.is_object())
             {
                 throw std::invalid_argument("$.states must be an object.");
             }
-            SurfaceState::TSurfaceResponseProfileData Data;
+            SurfaceState::FSurfaceResponseProfileData Data;
             for (auto Iterator = States.begin(); Iterator != States.end(); ++Iterator)
             {
                 if (!Iterator.value().is_object())
@@ -299,7 +299,7 @@ namespace MDSS::Asset
             }
             if (Root.contains("reactions"))
                 throw std::invalid_argument("reactions requires version 5.");
-            const TJson& Transitions = RequireMember(Root, "transitions", "$");
+            const FJson& Transitions = RequireMember(Root, "transitions", "$");
             if (!Transitions.is_array())
             {
                 throw std::invalid_argument("$.transitions must be an array.");
@@ -308,7 +308,7 @@ namespace MDSS::Asset
             Data.Transitions.reserve(Transitions.size());
             for (std::size_t Index = 0; Index < Transitions.size(); ++Index)
             {
-                const TJson&      Transition = Transitions[Index];
+                const FJson&      Transition = Transitions[Index];
                 const std::string JsonPath = "transitions[" + std::to_string(Index) + "]";
                 const std::string SourceName =
                     SurfaceState::NormalizeSurfaceStateName(ReadString(Transition, "source", JsonPath));
@@ -335,7 +335,7 @@ namespace MDSS::Asset
 // ============================================================
 #pragma region 00_std_Implementation
 
-    std::unique_ptr<TSRProfileAsset> TSRProfileLoader::Load(TAssetID ID, const std::filesystem::path& Path)
+    std::unique_ptr<FSRProfileAsset> FSRProfileLoader::Load(FAssetID ID, const std::filesystem::path& Path)
     {
         std::ifstream File(Path);
         if (!File)
@@ -345,10 +345,10 @@ namespace MDSS::Asset
 
         try
         {
-            const TJson                               Root = TJson::parse(File);
+            const FJson                               Root = FJson::parse(File);
             std::string                               Name;
-            SurfaceState::TSurfaceResponseProfileData Data = ParseProfile(Root, Name);
-            return std::make_unique<TSRProfileAsset>(ID, std::move(Name), Path, std::move(Data));
+            SurfaceState::FSurfaceResponseProfileData Data = ParseProfile(Root, Name);
+            return std::make_unique<FSRProfileAsset>(ID, std::move(Name), Path, std::move(Data));
         }
         catch (const std::exception& Exception)
         {

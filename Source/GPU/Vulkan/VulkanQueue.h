@@ -12,7 +12,7 @@
 
 namespace MDSS::GPU
 {
-    struct TQueueFamilyIndices
+    struct FQueueFamilyIndices
     {
         std::optional<std::uint32_t> GraphicsFamily;
         std::optional<std::uint32_t> PresentFamily;
@@ -23,21 +23,21 @@ namespace MDSS::GPU
         }
     };
 
-    class TVulkanQueue
+    class FVulkanQueue
     {
     public:
         // Queue setup and access
-        TVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface);
+        FVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface);
 
         [[nodiscard]] VkQueue                    GetGraphics() const noexcept;
         [[nodiscard]] VkQueue                    GetPresent() const noexcept;
-        [[nodiscard]] const TQueueFamilyIndices& GetFamilyIndices() const noexcept;
+        [[nodiscard]] const FQueueFamilyIndices& GetFamilyIndices() const noexcept;
 
         /** @brief graphics/compute와 surface presentation에 필요한 queue family를 찾는다. */
-        [[nodiscard]] static TQueueFamilyIndices FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
+        [[nodiscard]] static FQueueFamilyIndices FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
 
     private:
-        TQueueFamilyIndices FamilyIndices;
+        FQueueFamilyIndices FamilyIndices;
         VkQueue             GraphicsQueue = VK_NULL_HANDLE;
         VkQueue             PresentQueue = VK_NULL_HANDLE;
     };

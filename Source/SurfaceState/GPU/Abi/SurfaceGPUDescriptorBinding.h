@@ -3,7 +3,7 @@
 
 namespace MDSS::SurfaceState
 {
-    enum class TSurfaceGPUDescriptorBinding : std::uint32_t
+    enum class ESurfaceGPUDescriptorBinding : std::uint32_t
     {
         TexelSurfaceIndices = 0,
         TexelProfileIndices,

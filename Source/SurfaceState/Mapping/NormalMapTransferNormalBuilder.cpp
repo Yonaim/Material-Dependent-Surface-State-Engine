@@ -26,7 +26,7 @@ namespace MDSS::SurfaceState
             return Remainder < 0 ? Remainder + SignedExtent : Remainder;
         }
 
-        bool SampleNormalMapLinearRepeat(const Asset::TextureData& Texture, const glm::vec2& UV, glm::vec3& OutNormal)
+        bool SampleNormalMapLinearRepeat(const Asset::FTextureData& Texture, const glm::vec2& UV, glm::vec3& OutNormal)
         {
             if (Texture.Width == 0 || Texture.Height == 0 ||
                 Texture.Pixels.size() != static_cast<std::size_t>(Texture.Width) * Texture.Height * 4U ||
@@ -73,10 +73,10 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_Transfer_Normal_Build
 
-    bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&                   Texel,
-                                      const std::vector<Asset::TVertex>&             Vertices,
-                                      const std::vector<Asset::TMeshTriangleSource>& Triangles,
-                                      const Asset::TextureData&                      NormalMap,
+    bool BuildNormalMapTransferNormal(const FSurfaceTexelGeometry&                   Texel,
+                                      const std::vector<Asset::FVertex>&             Vertices,
+                                      const std::vector<Asset::FMeshTriangleSource>& Triangles,
+                                      const Asset::FTextureData&                     NormalMap,
                                       glm::vec3&                                     OutTransferNormal,
                                       bool                                           bFlipNormalY)
     {
@@ -85,7 +85,7 @@ namespace MDSS::SurfaceState
             return false;
         }
 
-        const Asset::TMeshTriangleSource& Triangle = Triangles[Texel.Triangle];
+        const Asset::FMeshTriangleSource& Triangle = Triangles[Texel.Triangle];
         const auto&                       VertexIndices = Triangle.RenderVertexIndices;
         if (Triangle.Surface != Texel.Surface || VertexIndices[0] >= Vertices.size() ||
             VertexIndices[1] >= Vertices.size() || VertexIndices[2] >= Vertices.size())
@@ -93,9 +93,9 @@ namespace MDSS::SurfaceState
             return false;
         }
 
-        const Asset::TVertex& V0 = Vertices[VertexIndices[0]];
-        const Asset::TVertex& V1 = Vertices[VertexIndices[1]];
-        const Asset::TVertex& V2 = Vertices[VertexIndices[2]];
+        const Asset::FVertex& V0 = Vertices[VertexIndices[0]];
+        const Asset::FVertex& V1 = Vertices[VertexIndices[1]];
+        const Asset::FVertex& V2 = Vertices[VertexIndices[2]];
         const glm::vec2 UV = Texel.Barycentric.x * V0.UV + Texel.Barycentric.y * V1.UV + Texel.Barycentric.z * V2.UV;
         if (!std::isfinite(UV.x) || !std::isfinite(UV.y))
         {

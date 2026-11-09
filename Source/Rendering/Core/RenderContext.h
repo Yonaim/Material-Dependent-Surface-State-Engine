@@ -14,25 +14,25 @@
 
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS::Rendering
 {
 
-    class TRenderContext
+    class FRenderContext
     {
     public:
         // Frame resources and lifecycle
         static constexpr std::size_t MaxFramesInFlight = 2;
 
-        explicit TRenderContext(const GPU::TVulkanContext& Context);
-        ~TRenderContext();
+        explicit FRenderContext(const GPU::FVulkanContext& Context);
+        ~FRenderContext();
 
-        TRenderContext(const TRenderContext&) = delete;
-        TRenderContext& operator=(const TRenderContext&) = delete;
-        TRenderContext(TRenderContext&&) = delete;
-        TRenderContext& operator=(TRenderContext&&) = delete;
+        FRenderContext(const FRenderContext&) = delete;
+        FRenderContext& operator=(const FRenderContext&) = delete;
+        FRenderContext(FRenderContext&&) = delete;
+        FRenderContext& operator=(FRenderContext&&) = delete;
 
         /** @brief 현재 frame slot의 fence가 신호될 때까지 CPU를 대기시킨다. */
         // Frame synchronization

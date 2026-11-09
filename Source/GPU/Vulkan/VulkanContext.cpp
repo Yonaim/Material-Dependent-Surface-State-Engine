@@ -21,20 +21,20 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Vulkan_Context_Lifecycle
 
-    TVulkanContext::TVulkanContext(const TWindow& TWindow)
-        : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), TWindow)),
+    FVulkanContext::FVulkanContext(const FWindow& FWindow)
+        : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), FWindow)),
           Device(Instance.GetHandle(), Surface), Queues(Device.GetPhysicalHandle(), Device.GetHandle(), Surface),
           Commands(Device.GetHandle(), Queues.GetFamilyIndices().GraphicsFamily.value())
     {
         const auto& Families = Queues.GetFamilyIndices();
-        TLogger::Info("Vulkan",
+        FLogger::Info("Vulkan",
                       "Graphics/compute/present queues acquired (graphics family=" +
                           std::to_string(Families.GraphicsFamily.value()) +
                           ", present family=" + std::to_string(Families.PresentFamily.value()) + ").");
-        TLogger::Info("Vulkan", "Graphics command pool created.");
+        FLogger::Info("Vulkan", "Graphics command pool created.");
     }
 
-    TVulkanContext::~TVulkanContext()
+    FVulkanContext::~FVulkanContext()
     {
         if (Surface != VK_NULL_HANDLE)
         {
@@ -50,37 +50,37 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Vulkan_Context_Accessors
 
-    VkInstance TVulkanContext::GetInstance() const noexcept
+    VkInstance FVulkanContext::GetInstance() const noexcept
     {
         return Instance.GetHandle();
     }
 
-    VkSurfaceKHR TVulkanContext::GetSurface() const noexcept
+    VkSurfaceKHR FVulkanContext::GetSurface() const noexcept
     {
         return Surface;
     }
 
-    VkPhysicalDevice TVulkanContext::GetPhysicalDevice() const noexcept
+    VkPhysicalDevice FVulkanContext::GetPhysicalDevice() const noexcept
     {
         return Device.GetPhysicalHandle();
     }
 
-    VkDevice TVulkanContext::GetDevice() const noexcept
+    VkDevice FVulkanContext::GetDevice() const noexcept
     {
         return Device.GetHandle();
     }
 
-    bool TVulkanContext::SupportsGeometryShader() const noexcept
+    bool FVulkanContext::SupportsGeometryShader() const noexcept
     {
         return Device.SupportsGeometryShader();
     }
 
-    const TVulkanQueue& TVulkanContext::GetQueues() const noexcept
+    const FVulkanQueue& FVulkanContext::GetQueues() const noexcept
     {
         return Queues;
     }
 
-    const TVulkanCommand& TVulkanContext::GetCommands() const noexcept
+    const FVulkanCommand& FVulkanContext::GetCommands() const noexcept
     {
         return Commands;
     }
@@ -92,7 +92,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Instance_Extensions_and_Surface
 
-    std::vector<const char*> TVulkanContext::RequiredInstanceExtensions()
+    std::vector<const char*> FVulkanContext::RequiredInstanceExtensions()
     {
         if (glfwVulkanSupported() != GLFW_TRUE)
         {
@@ -108,20 +108,20 @@ namespace MDSS::GPU
             throw std::runtime_error("GLFW did not provide the required Vulkan instance extensions.");
         }
 
-        TLogger::Debug("Vulkan", "GLFW requested " + std::to_string(ExtensionCount) + " Vulkan instance extensions.");
+        FLogger::Debug("Vulkan", "GLFW requested " + std::to_string(ExtensionCount) + " Vulkan instance extensions.");
         return {Extensions, Extensions + ExtensionCount};
     }
 
-    VkSurfaceKHR TVulkanContext::CreateSurface(VkInstance Instance, const TWindow& TWindow)
+    VkSurfaceKHR FVulkanContext::CreateSurface(VkInstance Instance, const FWindow& FWindow)
     {
         VkSurfaceKHR Surface = VK_NULL_HANDLE;
 
-        if (glfwCreateWindowSurface(Instance, TWindow.GetNativeHandle(), nullptr, &Surface) != VK_SUCCESS)
+        if (glfwCreateWindowSurface(Instance, FWindow.GetNativeHandle(), nullptr, &Surface) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create Vulkan window surface.");
         }
 
-        TLogger::Info("Vulkan", "TWindow surface created.");
+        FLogger::Info("Vulkan", "TWindow surface created.");
         return Surface;
     }
 #pragma endregion

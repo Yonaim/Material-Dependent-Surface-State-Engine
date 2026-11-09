@@ -18,12 +18,12 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Buffer_Lifecycle
 
-    TGPUBuffer::TGPUBuffer(VkPhysicalDevice         PhysicalDevice,
+    FGPUBuffer::FGPUBuffer(VkPhysicalDevice         PhysicalDevice,
                            VkDevice                 Device,
                            VkDeviceSize             Size,
                            VkBufferUsageFlags       Usage,
                            VkMemoryPropertyFlags    MemoryProperties,
-                           TGPUBufferMemoryCategory Category)
+                           EGPUBufferMemoryCategory Category)
         : Device(Device), Size(Size), Usage(Usage), MemoryCategory(Category), MemoryProperties(MemoryProperties)
     {
         if (Size == 0)
@@ -63,7 +63,7 @@ namespace MDSS::GPU
             {
                 throw std::runtime_error("Failed to bind Vulkan buffer memory.");
             }
-            TGPUResourceMemoryStats::BufferAllocated(AllocationSize, MemoryCategory);
+            FGPUResourceMemoryStats::BufferAllocated(AllocationSize, MemoryCategory);
         }
         catch (...)
         {
@@ -81,11 +81,11 @@ namespace MDSS::GPU
             throw;
         }
 
-        TLogger::Verbose(
+        FLogger::Verbose(
             "Vulkan", "TGPUBuffer created (size=" + std::to_string(Size) + ", usage=" + std::to_string(Usage) + ").");
     }
 
-    TGPUBuffer::~TGPUBuffer()
+    FGPUBuffer::~FGPUBuffer()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -95,7 +95,7 @@ namespace MDSS::GPU
 
         if (Memory != VK_NULL_HANDLE)
         {
-            TGPUResourceMemoryStats::BufferFreed(AllocationSize, MemoryCategory);
+            FGPUResourceMemoryStats::BufferFreed(AllocationSize, MemoryCategory);
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
@@ -109,7 +109,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Buffer_Transfers
 
-    void TGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
+    void FGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
         if (Data == nullptr)
         {
@@ -142,7 +142,7 @@ namespace MDSS::GPU
         UploadRevision.fetch_add(1, std::memory_order_release);
     }
 
-    void TGPUBuffer::Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset) const
+    void FGPUBuffer::Download(void* Destination, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
         if (Destination == nullptr)
         {
@@ -177,32 +177,32 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Buffer_Accessors
 
-    VkBuffer TGPUBuffer::GetHandle() const noexcept
+    VkBuffer FGPUBuffer::GetHandle() const noexcept
     {
         return Handle;
     }
 
-    VkDeviceSize TGPUBuffer::GetSize() const noexcept
+    VkDeviceSize FGPUBuffer::GetSize() const noexcept
     {
         return Size;
     }
 
-    VkBufferUsageFlags TGPUBuffer::GetUsage() const noexcept
+    VkBufferUsageFlags FGPUBuffer::GetUsage() const noexcept
     {
         return Usage;
     }
 
-    VkMemoryPropertyFlags TGPUBuffer::GetMemoryProperties() const noexcept
+    VkMemoryPropertyFlags FGPUBuffer::GetMemoryProperties() const noexcept
     {
         return MemoryProperties;
     }
 
-    TGPUBufferMemoryCategory TGPUBuffer::GetMemoryCategory() const noexcept
+    EGPUBufferMemoryCategory FGPUBuffer::GetMemoryCategory() const noexcept
     {
         return MemoryCategory;
     }
 
-    std::uint64_t TGPUBuffer::GetUploadRevision() const noexcept
+    std::uint64_t FGPUBuffer::GetUploadRevision() const noexcept
     {
         return UploadRevision.load(std::memory_order_acquire);
     }
@@ -214,7 +214,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 03_Memory_Type_Selection
 
-    std::uint32_t TGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
+    std::uint32_t FGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                              std::uint32_t         TypeFilter,
                                              VkMemoryPropertyFlags RequiredProperties)
     {

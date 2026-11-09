@@ -41,53 +41,53 @@
 
 namespace MDSS::Asset
 {
-    class TAssetManager;
+    class FAssetManager;
 }
 namespace MDSS::SurfaceState
 {
-    class TSurfaceDataManager;
+    class FSurfaceDataManager;
 }
 namespace MDSS::GPU
 {
-    class TVulkanContext;
+    class FVulkanContext;
 }
 
 namespace MDSS
 {
-    class TWindow;
+    class FWindow;
 }
 
 namespace MDSS
 {
-    class TScene;
-    class TDebugUI;
-    class TStaticMeshInstance;
+    class FScene;
+    class FDebugUI;
+    class FStaticMeshInstance;
 }
 
 namespace MDSS::Rendering
 {
-    class TRenderer
+    class FRenderer
     {
     public:
         // Renderer lifecycle
-        TRenderer(const GPU::TVulkanContext&         Context,
-                  TWindow&                           TWindow,
-                  Asset::TAssetManager&              Assets,
-                  SurfaceState::TSurfaceDataManager& SurfaceData,
-                  const TScene&                      Scene,
-                  SurfaceState::TSurfaceStateSystem& SurfaceStateSystem,
-                  TFrameCoordinator&                 FrameCoordinator);
-        ~TRenderer();
+        FRenderer(const GPU::FVulkanContext&         Context,
+                  FWindow&                           FWindow,
+                  Asset::FAssetManager&              Assets,
+                  SurfaceState::FSurfaceDataManager& SurfaceData,
+                  const FScene&                      Scene,
+                  SurfaceState::FSurfaceStateSystem& SurfaceStateSystem,
+                  FFrameCoordinator&                 FrameCoordinator);
+        ~FRenderer();
 
-        TRenderer(const TRenderer&) = delete;
-        TRenderer& operator=(const TRenderer&) = delete;
-        TRenderer(TRenderer&&) = delete;
-        TRenderer& operator=(TRenderer&&) = delete;
+        FRenderer(const FRenderer&) = delete;
+        FRenderer& operator=(const FRenderer&) = delete;
+        FRenderer(FRenderer&&) = delete;
+        FRenderer& operator=(FRenderer&&) = delete;
 
         // Frame rendering and simulation clock
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
-        void                 RenderFrame(const TScene& SceneData,
-                                         TDebugUI&     DebugInterface,
+        void                 RenderFrame(const FScene& SceneData,
+                                         FDebugUI&     DebugInterface,
                                          float         DeltaTime,
                                          bool          bSuspendSimulationClock = false);
         [[nodiscard]] double GetPendingSimulationSeconds() const noexcept
@@ -109,12 +109,12 @@ namespace MDSS::Rendering
 
         // Scene resources, resolution, and runtime Profile settings
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
-        void ReloadSceneResources(const TScene& Scene, bool bResetStateSettings = true);
+        void ReloadSceneResources(const FScene& Scene, bool bResetStateSettings = true);
         /** @brief Reset simulation and caches while retaining loaded Scene/GPU resources. */
         void                        RestartSimulationState();
         [[nodiscard]] std::uint32_t GetSimulationResolution() const noexcept;
         /** @brief Rebuild Surface mapping and GPU resources, resetting State on success. */
-        void                        SetSimulationResolution(TScene& Scene, std::uint32_t Resolution);
+        void                        SetSimulationResolution(FScene& Scene, std::uint32_t Resolution);
         [[nodiscard]] std::uint32_t GetSurfaceTexelMeshResolution() const noexcept
         {
             return SurfaceTexelMeshResolution;
@@ -125,21 +125,21 @@ namespace MDSS::Rendering
             return OverlayTexelMeshResolution;
         }
         void SetOverlayTexelMeshResolution(std::uint32_t Resolution);
-        void SetDebugProfileParameters(Asset::TSRProfileAssetHandle                 Profile,
-                                       SurfaceState::TStateId                       State,
-                                       const SurfaceState::TSurfaceStateParameters& Parameters,
+        void SetDebugProfileParameters(Asset::FSRProfileAssetHandle                 Profile,
+                                       SurfaceState::FStateId                       State,
+                                       const SurfaceState::FSurfaceStateParameters& Parameters,
                                        bool                                         bKeepRuntimeOverride = true);
 
         // Swapchain and profiling access
-        [[nodiscard]] const GPU::TSwapchain&                          GetSwapchain() const noexcept;
+        [[nodiscard]] const GPU::FSwapchain&                          GetSwapchain() const noexcept;
         [[nodiscard]] VkRenderPass                                    GetRenderPassHandle() const noexcept;
-        [[nodiscard]] const SurfaceState::TSurfaceGPUResourceManager& GetSurfaceGPUResources() const noexcept;
+        [[nodiscard]] const SurfaceState::FSurfaceGPUResourceManager& GetSurfaceGPUResources() const noexcept;
         /** @brief 마지막 완료 프레임에서 측정한 GPU Solver 시간(ms), 미지원 시 -1. */
         [[nodiscard]] float                          GetLastSolverGpuMilliseconds() const noexcept;
         [[nodiscard]] float                          GetLastRenderGpuMilliseconds() const noexcept;
         [[nodiscard]] float                          GetLastSolverPass1GpuMilliseconds() const noexcept;
         [[nodiscard]] float                          GetLastSolverPass2GpuMilliseconds() const noexcept;
-        [[nodiscard]] const TRendererProfilingStats& GetProfilingStats() const noexcept
+        [[nodiscard]] const FRendererProfilingStats& GetProfilingStats() const noexcept
         {
             return ProfilingStats;
         }
@@ -151,19 +151,19 @@ namespace MDSS::Rendering
         // Called only after the application has waited for the device to become idle.
         void                              FinalizeBenchmarkCapture();
         void                              RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex);
-        [[nodiscard]] TOverlayDisplayMode GetOverlayDisplayMode() const noexcept
+        [[nodiscard]] EOverlayDisplayMode GetOverlayDisplayMode() const noexcept
         {
             return OverlayDisplayMode;
         }
-        void SetOverlayDisplayMode(TOverlayDisplayMode Mode) noexcept
+        void SetOverlayDisplayMode(EOverlayDisplayMode Mode) noexcept
         {
             OverlayDisplayMode = Mode;
         }
-        [[nodiscard]] TOverlayShadingDiagnostic GetOverlayShadingDiagnostic() const noexcept
+        [[nodiscard]] EOverlayShadingDiagnostic GetOverlayShadingDiagnostic() const noexcept
         {
             return OverlayShadingDiagnostic;
         }
-        void SetOverlayShadingDiagnostic(TOverlayShadingDiagnostic Mode) noexcept
+        void SetOverlayShadingDiagnostic(EOverlayShadingDiagnostic Mode) noexcept
         {
             OverlayShadingDiagnostic = Mode;
         }
@@ -175,13 +175,13 @@ namespace MDSS::Rendering
         {
             bOverlayOnlyDebug = bEnabled;
             if (!bEnabled)
-                OverlayDisplayMode = TOverlayDisplayMode::Both;
+                OverlayDisplayMode = EOverlayDisplayMode::Both;
         }
-        [[nodiscard]] TOverlayOccupancyTileSize GetOverlayOccupancyTileSize() const noexcept
+        [[nodiscard]] EOverlayOccupancyTileSize GetOverlayOccupancyTileSize() const noexcept
         {
             return OverlayOccupancyTileSize;
         }
-        void               SetOverlayOccupancyTileSize(TOverlayOccupancyTileSize Size);
+        void               SetOverlayOccupancyTileSize(EOverlayOccupancyTileSize Size);
         [[nodiscard]] bool IsOverlayTileCullingEnabled() const noexcept
         {
             return bOverlayTileCullingEnabled;
@@ -294,10 +294,10 @@ namespace MDSS::Rendering
         }
 
         // Render view and debug settings
-        [[nodiscard]] TRenderViewMode GetRenderViewMode() const noexcept;
-        [[nodiscard]] TRenderViewMode GetRenderViewMode(std::size_t ViewportIndex) const noexcept;
-        void                          SetRenderViewMode(TRenderViewMode Mode);
-        void                          SetRenderViewMode(std::size_t ViewportIndex, TRenderViewMode Mode);
+        [[nodiscard]] ERenderViewMode GetRenderViewMode() const noexcept;
+        [[nodiscard]] ERenderViewMode GetRenderViewMode(std::size_t ViewportIndex) const noexcept;
+        void                          SetRenderViewMode(ERenderViewMode Mode);
+        void                          SetRenderViewMode(std::size_t ViewportIndex, ERenderViewMode Mode);
         [[nodiscard]] bool            IsWireframeUniformWhite() const noexcept
         {
             return bWireframeUniformWhite;
@@ -333,30 +333,30 @@ namespace MDSS::Rendering
         void                                              SetStateHeatmapReliefShadingEnabled(bool bEnabled);
         [[nodiscard]] bool                                IsStateHeatmapAllStatesEnabled() const noexcept;
         void                                              SetStateHeatmapAllStatesEnabled(bool bEnabled) noexcept;
-        [[nodiscard]] const TSurfaceDebugDisplaySettings& GetSurfaceDebugDisplaySettings() const noexcept
+        [[nodiscard]] const FSurfaceDebugDisplaySettings& GetSurfaceDebugDisplaySettings() const noexcept
         {
             return SurfaceDebugSettings;
         }
-        void SetSurfaceDebugDisplaySettings(const TSurfaceDebugDisplaySettings& Settings);
-        [[nodiscard]] const TDemoSurfaceEffectSettings& GetDemoSurfaceEffectSettings() const noexcept
+        void SetSurfaceDebugDisplaySettings(const FSurfaceDebugDisplaySettings& Settings);
+        [[nodiscard]] const FDemoSurfaceEffectSettings& GetDemoSurfaceEffectSettings() const noexcept
         {
             return DemoEffects;
         }
-        void               SetDemoSurfaceEffectSettings(const TDemoSurfaceEffectSettings& Settings);
-        [[nodiscard]] bool IsLitTexelMeshBaseRendered(const TScene& Scene, std::size_t Instance) const;
-        void               SetSceneLitHeightDisplayScale(TScene& Scene, float Scale);
-        [[nodiscard]] TDemoSurfaceStateBindings GetDemoSurfaceStateBindings() const;
+        void               SetDemoSurfaceEffectSettings(const FDemoSurfaceEffectSettings& Settings);
+        [[nodiscard]] bool IsLitTexelMeshBaseRendered(const FScene& Scene, std::size_t Instance) const;
+        void               SetSceneLitHeightDisplayScale(FScene& Scene, float Scale);
+        [[nodiscard]] FDemoSurfaceStateBindings GetDemoSurfaceStateBindings() const;
 
         [[nodiscard]] bool
-             InspectTexel(const TScene& Scene, std::size_t Instance, std::uint32_t Triangle, glm::vec2 UV);
+             InspectTexel(const FScene& Scene, std::size_t Instance, std::uint32_t Triangle, glm::vec2 UV);
         void ClearInspectedTexel() noexcept;
-        [[nodiscard]] const std::optional<SurfaceState::TSurfaceTexelSelection>& GetInspectedTexel() const noexcept
+        [[nodiscard]] const std::optional<SurfaceState::FSurfaceTexelSelection>& GetInspectedTexel() const noexcept
         {
             return InspectedTexel;
         }
-        [[nodiscard]] const std::optional<SurfaceState::TSurfaceTexelSnapshot>& GetTexelSnapshot() const noexcept;
-        [[nodiscard]] TSolverTransferWeightView GetSolverTransferWeightView() const noexcept;
-        void                                    SetSolverTransferWeightView(TSolverTransferWeightView View);
+        [[nodiscard]] const std::optional<SurfaceState::FSurfaceTexelSnapshot>& GetTexelSnapshot() const noexcept;
+        [[nodiscard]] ESolverTransferWeightView GetSolverTransferWeightView() const noexcept;
+        void                                    SetSolverTransferWeightView(ESolverTransferWeightView View);
         [[nodiscard]] std::uint32_t             GetTexelGridBlockSize() const noexcept;
         void                                    SetTexelGridBlockSize(std::uint32_t Size);
         [[nodiscard]] float                     GetTexelAreaReference() const noexcept;
@@ -366,8 +366,8 @@ namespace MDSS::Rendering
         void               SetDebugGeometryDriveEnabled(bool bEnabled);
         [[nodiscard]] bool IsDebugNormalWeightEnabled() const noexcept;
         void               SetDebugNormalWeightEnabled(bool bEnabled);
-        [[nodiscard]] bool IsDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term) const noexcept;
-        void               SetDebugSolverTermEnabled(SurfaceState::TSurfaceSolverTerm Term, bool bEnabled);
+        [[nodiscard]] bool IsDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm Term) const noexcept;
+        void               SetDebugSolverTermEnabled(SurfaceState::ESurfaceSolverTerm Term, bool bEnabled);
         [[nodiscard]] bool IsStateDrivenGeometryUpdateEnabled() const noexcept;
         void               SetStateDrivenGeometryUpdateEnabled(bool bEnabled);
 
@@ -381,7 +381,7 @@ namespace MDSS::Rendering
         void                SetAmbientLight(float Intensity);
 
     private:
-        struct TBenchmarkFrameSubmission
+        struct FBenchmarkFrameSubmission
         {
             std::uint64_t        FrameIndex = std::numeric_limits<std::uint64_t>::max();
             std::uint32_t        SimulationSteps = 0;
@@ -396,12 +396,12 @@ namespace MDSS::Rendering
         };
 
         void WriteBenchmarkSample(std::uint32_t FrameSlot);
-        void WriteBenchmarkMetadata(const TScene& SceneData, const TDebugUI& DebugInterface);
+        void WriteBenchmarkMetadata(const FScene& SceneData, const FDebugUI& DebugInterface);
 
-        struct TMaterialRenderResource
+        struct FMaterialRenderResource
         {
-            std::array<std::unique_ptr<GPU::TGPUBuffer>, TRenderContext::MaxFramesInFlight> UniformBuffers;
-            std::array<VkDescriptorSet, TRenderContext::MaxFramesInFlight>                  DescriptorSets{};
+            std::array<std::unique_ptr<GPU::FGPUBuffer>, FRenderContext::MaxFramesInFlight> UniformBuffers;
+            std::array<VkDescriptorSet, FRenderContext::MaxFramesInFlight>                  DescriptorSets{};
         };
 
         // Render resources and command recording
@@ -419,111 +419,111 @@ namespace MDSS::Rendering
         void                CreateTimestampQueryPool(std::size_t SolverInstanceCount);
         void                TrimRenderResolutionCaches();
         void                UploadMaterialUniforms(std::uint32_t   Frame,
-                                                   const TScene&   SceneData,
-                                                   const TDebugUI& DebugInterface,
+                                                   const FScene&   SceneData,
+                                                   const FDebugUI& DebugInterface,
                                                    float           LitHeightDisplayScale);
-        [[nodiscard]] float GetDebugViewParameter(TRenderViewMode Mode) const noexcept;
+        [[nodiscard]] float GetDebugViewParameter(ERenderViewMode Mode) const noexcept;
         [[nodiscard]] bool  CanRenderLitOverlays() const noexcept;
         [[nodiscard]] std::array<bool, 3>
-             GetLitOverlayActivity(const TStaticMeshInstance&                              Instance,
-                                   const SurfaceState::TSurfaceSharedGeometryGPUResources* Shared,
-                                   const TDemoSurfaceStateBindings&                        Bindings) const;
-        void RecreateSwapchain(TDebugUI& DebugInterface);
+             GetLitOverlayActivity(const FStaticMeshInstance&                              Instance,
+                                   const SurfaceState::FSurfaceSharedGeometryGPUResources* Shared,
+                                   const FDemoSurfaceStateBindings&                        Bindings) const;
+        void RecreateSwapchain(FDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
                                  std::uint32_t          ImageIndex,
-                                 const TScene&          SceneData,
-                                 const TDebugUI&        DebugInterface,
+                                 const FScene&          SceneData,
+                                 const FDebugUI&        DebugInterface,
                                  std::span<const float> SimulationSteps);
 
         struct FCommandRecordingState;
         struct FViewportRecordingState;
         [[nodiscard]] FCommandRecordingState  BeginCommandRecording(VkCommandBuffer        CommandBuffer,
-                                                                    const TScene&          SceneData,
-                                                                    const TDebugUI&        DebugInterface,
+                                                                    const FScene&          SceneData,
+                                                                    const FDebugUI&        DebugInterface,
                                                                     std::span<const float> SimulationSteps);
         void                                  RecordSimulationAndInspector(VkCommandBuffer               CommandBuffer,
-                                                                           const TScene&                 SceneData,
+                                                                           const FScene&                 SceneData,
                                                                            const FCommandRecordingState& Frame);
         void                                  PrepareDisplayResources(VkCommandBuffer         CommandBuffer,
-                                                                      const TScene&           SceneData,
-                                                                      const TDebugUI&         DebugInterface,
+                                                                      const FScene&           SceneData,
+                                                                      const FDebugUI&         DebugInterface,
                                                                       FCommandRecordingState& Frame);
         void                                  BeginSceneGraphicsPass(VkCommandBuffer               CommandBuffer,
                                                                      std::uint32_t                 ImageIndex,
                                                                      const FCommandRecordingState& Frame);
         void                                  RecordSceneViewports(VkCommandBuffer               CommandBuffer,
-                                                                   const TScene&                 SceneData,
-                                                                   const TDebugUI&               DebugInterface,
+                                                                   const FScene&                 SceneData,
+                                                                   const FDebugUI&               DebugInterface,
                                                                    const FCommandRecordingState& Frame);
         void                                  RecordUIAndEndCommandBuffer(VkCommandBuffer               CommandBuffer,
                                                                           std::uint32_t                 ImageIndex,
-                                                                          const TDebugUI&               DebugInterface,
+                                                                          const FDebugUI&               DebugInterface,
                                                                           const FCommandRecordingState& Frame);
         [[nodiscard]] FViewportRecordingState ConfigureViewport(VkCommandBuffer               CommandBuffer,
-                                                                const TScene&                 SceneData,
-                                                                const TDebugUI&               DebugInterface,
+                                                                const FScene&                 SceneData,
+                                                                const FDebugUI&               DebugInterface,
                                                                 const FCommandRecordingState& Frame,
                                                                 std::size_t                   ViewportIndex,
                                                                 const glm::vec4&              NormalizedViewport,
                                                                 VkExtent2D                    Extent);
         void                                  RecordBaseMeshes(VkCommandBuffer                                 CommandBuffer,
-                                                               const TScene&                                   SceneData,
-                                                               const SurfaceState::TSurfaceGPUResourceManager& SurfaceGPU,
+                                                               const FScene&                                   SceneData,
+                                                               const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
                                                                const FCommandRecordingState&                   Frame,
                                                                const FViewportRecordingState&                  View);
         void                                  RecordAccumulationOverlays(VkCommandBuffer                                 CommandBuffer,
-                                                                         const TScene&                                   SceneData,
-                                                                         const SurfaceState::TSurfaceGPUResourceManager& SurfaceGPU,
+                                                                         const FScene&                                   SceneData,
+                                                                         const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
                                                                          const FCommandRecordingState&                   Frame,
                                                                          const FViewportRecordingState&                  View);
         void                                  RecordWorldReferenceAndGizmo(VkCommandBuffer                CommandBuffer,
-                                                                           const TScene&                  SceneData,
-                                                                           const TDebugUI&                DebugInterface,
+                                                                           const FScene&                  SceneData,
+                                                                           const FDebugUI&                DebugInterface,
                                                                            const FViewportRecordingState& View);
 
-        const GPU::TVulkanContext&         Context;
-        TWindow&                           TargetWindow;
-        Asset::TAssetManager&              Assets;
-        SurfaceState::TSurfaceDataManager& SurfaceData;
+        const GPU::FVulkanContext&         Context;
+        FWindow&                           TargetWindow;
+        Asset::FAssetManager&              Assets;
+        SurfaceState::FSurfaceDataManager& SurfaceData;
         /** @brief Application이 소유하며 Renderer는 compute 기록과 렌더링 동안만 참조한다. */
-        SurfaceState::TSurfaceStateSystem&                     SurfaceStateSystem;
-        TFrameCoordinator&                                     FrameCoordinator;
-        GPU::TSwapchain                                        SwapchainData;
+        SurfaceState::FSurfaceStateSystem&                     SurfaceStateSystem;
+        FFrameCoordinator&                                     FrameCoordinator;
+        GPU::FSwapchain                                        SwapchainData;
         VkFormat                                               DepthFormat = VK_FORMAT_UNDEFINED;
-        std::vector<std::unique_ptr<GPU::TGPUImage>>           DepthImages;
-        std::vector<std::unique_ptr<GPU::TGPUImageView>>       DepthImageViews;
-        GPU::TRenderPass                                       MainRenderPass;
-        GPU::TGraphicsPass                                     MainGraphicsPass;
+        std::vector<std::unique_ptr<GPU::FGPUImage>>           DepthImages;
+        std::vector<std::unique_ptr<GPU::FGPUImageView>>       DepthImageViews;
+        GPU::FRenderPass                                       MainRenderPass;
+        GPU::FGraphicsPass                                     MainGraphicsPass;
         VkDescriptorSetLayout                                  MaterialDescriptorSetLayout = VK_NULL_HANDLE;
-        GPU::TGraphicsPipeline                                 StaticMeshPipeline;
-        GPU::TGraphicsPipeline                                 WireframePipeline;
-        GPU::TGraphicsPipeline                                 GizmoPipeline;
-        GPU::TGraphicsPipeline                                 WorldReferencePipeline;
-        std::unique_ptr<GPU::TGPUBuffer>                       GizmoVertexBuffer;
+        GPU::FGraphicsPipeline                                 StaticMeshPipeline;
+        GPU::FGraphicsPipeline                                 WireframePipeline;
+        GPU::FGraphicsPipeline                                 GizmoPipeline;
+        GPU::FGraphicsPipeline                                 WorldReferencePipeline;
+        std::unique_ptr<GPU::FGPUBuffer>                       GizmoVertexBuffer;
         std::uint32_t                                          WorldGridVertexCount = 0;
         std::uint32_t                                          WorldAxisVertexCount = 0;
         std::uint32_t                                          TranslateGizmoVertexCount = 0;
         std::uint32_t                                          RotateGizmoVertexCount = 0;
         bool                                                   bWorldGridVisible = true;
         bool                                                   bWorldAxisVisible = true;
-        std::unique_ptr<GPU::TGraphicsPipeline>                SurfaceDebugPipeline;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   TexelGeometryPreview;
-        std::unique_ptr<GPU::TGraphicsPipeline>                TexelGeometryPipeline;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> SurfaceLitPipelines;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> BaseSurfaceLitPipelines;
-        std::unique_ptr<TRenderStateTexture>                   RenderStateTexture;
-        std::unique_ptr<SurfaceState::TTexelGeometryPreview>   MudLayerGeometry;
-        std::unique_ptr<THeightFieldSmoothing>                 HeightFieldSmoothing;
-        std::unique_ptr<TAccumulationOverlaySides>             OverlaySides;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> MudOverlayTopPipelines;
-        std::array<std::unique_ptr<GPU::TGraphicsPipeline>, 3> MudOverlaySidePipelines;
-        GPU::TFramebuffer                                      MainFramebuffers;
-        TRenderContext                                         FrameContext;
+        std::unique_ptr<GPU::FGraphicsPipeline>                SurfaceDebugPipeline;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   TexelGeometryPreview;
+        std::unique_ptr<GPU::FGraphicsPipeline>                TexelGeometryPipeline;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> SurfaceLitPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> BaseSurfaceLitPipelines;
+        std::unique_ptr<FRenderStateTexture>                   RenderStateTexture;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   MudLayerGeometry;
+        std::unique_ptr<FHeightFieldSmoothing>                 HeightFieldSmoothing;
+        std::unique_ptr<FAccumulationOverlaySides>             OverlaySides;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> MudOverlayTopPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> MudOverlaySidePipelines;
+        GPU::FFramebuffer                                      MainFramebuffers;
+        FRenderContext                                         FrameContext;
         VkDescriptorPool                                       MaterialDescriptorPool = VK_NULL_HANDLE;
-        std::vector<TMaterialRenderResource>                   MaterialResources;
+        std::vector<FMaterialRenderResource>                   MaterialResources;
         VkDeviceSize                                           MaterialUniformStride = 0;
         std::size_t                                            MaterialViewportCapacity = 1;
-        std::vector<TRenderViewMode>                           ViewModes{TRenderViewMode::Lit};
+        std::vector<ERenderViewMode>                           ViewModes{ERenderViewMode::Lit};
         bool                                                   bWireframeUniformWhite = true;
         bool                                                   bSupportsWireframeLineWidth = false;
         float                                                  WireframeLineWidth = 2.0F;
@@ -532,10 +532,10 @@ namespace MDSS::Rendering
         std::uint32_t                                          DebugStateChannel = 0;
         bool                                                   bStateHeatmapReliefShadingEnabled = true;
         bool                                                   bStateHeatmapAllStatesEnabled = false;
-        TSurfaceDebugDisplaySettings                           SurfaceDebugSettings;
-        TDemoSurfaceEffectSettings                             DemoEffects;
-        TOverlayDisplayMode                                    OverlayDisplayMode = TOverlayDisplayMode::Both;
-        TOverlayShadingDiagnostic OverlayShadingDiagnostic = TOverlayShadingDiagnostic::Lit;
+        FSurfaceDebugDisplaySettings                           SurfaceDebugSettings;
+        FDemoSurfaceEffectSettings                             DemoEffects;
+        EOverlayDisplayMode                                    OverlayDisplayMode = EOverlayDisplayMode::Both;
+        EOverlayShadingDiagnostic OverlayShadingDiagnostic = EOverlayShadingDiagnostic::Lit;
         bool                      bOverlayOnlyDebug = false;
         bool                      bOverlayTileCullingEnabled = true;
         bool                      bBaseMeshDrawEnabled = true;
@@ -548,27 +548,27 @@ namespace MDSS::Rendering
         bool                      bPrecomputeCoverageSmoothingEnabled = true;
         bool                      bRenderStateTextureSamplingEnabled = true;
         bool                      bSeparableCoverageSmoothingEnabled = true;
-        TOverlayOccupancyTileSize OverlayOccupancyTileSize = TOverlayOccupancyTileSize::Tile16;
+        EOverlayOccupancyTileSize OverlayOccupancyTileSize = EOverlayOccupancyTileSize::Tile16;
         std::uint32_t             SurfaceTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
         std::uint32_t             OverlayTexelMeshResolution = SurfaceState::SurfaceSimulationResolution;
-        std::optional<SurfaceState::TSurfaceTexelSelection> InspectedTexel;
-        std::unique_ptr<SurfaceState::TTexelInspector>      TexelInspector;
-        TSolverTransferWeightView                 SolverTransferWeightView = TSolverTransferWeightView::Combined;
+        std::optional<SurfaceState::FSurfaceTexelSelection> InspectedTexel;
+        std::unique_ptr<SurfaceState::FTexelInspector>      TexelInspector;
+        ESolverTransferWeightView                 SolverTransferWeightView = ESolverTransferWeightView::Combined;
         std::uint32_t                             TexelGridBlockSize = 8;
         float                                     TexelAreaReference = 1.0e-4F;
-        SurfaceState::TSurfaceSolverDebugSettings DebugSolverSettings;
+        SurfaceState::FSurfaceSolverDebugSettings DebugSolverSettings;
         bool                                      bFlipNormalY = true;
         float                                     NormalStrength = 1.0F;
         float                                     AmbientLight = 0.25F;
-        std::map<std::pair<Asset::TSRProfileAssetHandle, SurfaceState::TStateId>, SurfaceState::TSurfaceStateParameters>
+        std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>, SurfaceState::FSurfaceStateParameters>
                                                                                  DebugProfileParameterOverrides;
         std::vector<VkSemaphore>                                                 RenderFinishedSemaphores;
         VkQueryPool                                                              TimestampQueryPool = VK_NULL_HANDLE;
-        std::array<bool, TRenderContext::MaxFramesInFlight>                      bTimestampQueriesSubmitted{};
-        std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             SolverTimestampStepsSubmitted{};
-        std::array<std::uint32_t, TRenderContext::MaxFramesInFlight>             OverlayTimestampLayersSubmitted{};
-        std::array<TOverlayDisplayMode, TRenderContext::MaxFramesInFlight>       OverlayDisplayModesSubmitted{};
-        std::array<TBenchmarkFrameSubmission, TRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
+        std::array<bool, FRenderContext::MaxFramesInFlight>                      bTimestampQueriesSubmitted{};
+        std::array<std::uint32_t, FRenderContext::MaxFramesInFlight>             SolverTimestampStepsSubmitted{};
+        std::array<std::uint32_t, FRenderContext::MaxFramesInFlight>             OverlayTimestampLayersSubmitted{};
+        std::array<EOverlayDisplayMode, FRenderContext::MaxFramesInFlight>       OverlayDisplayModesSubmitted{};
+        std::array<FBenchmarkFrameSubmission, FRenderContext::MaxFramesInFlight> BenchmarkSubmissions{};
         std::ofstream                                                            BenchmarkOutput;
         std::filesystem::path                                                    BenchmarkOutputPath;
         bool                                                                     bBenchmarkMetadataWritten = false;
@@ -577,7 +577,7 @@ namespace MDSS::Rendering
         std::uint64_t                                                            BenchmarkMeasurementFrames = 0;
         std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
         bool                                                                     bBenchmarkCaptureEnabled = false;
-        std::unique_ptr<GPU::TGPUBuffer>                                         BenchmarkScreenshot;
+        std::unique_ptr<GPU::FGPUBuffer>                                         BenchmarkScreenshot;
         VkExtent2D                                                               BenchmarkScreenshotExtent{};
         VkFormat                BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
         float                   BenchmarkGpuElapsed = -1.0F;
@@ -591,6 +591,6 @@ namespace MDSS::Rendering
         float                   LastSolverGpuMilliseconds = -1.0F;
         float                   LastSolverPass1GpuMilliseconds = -1.0F;
         float                   LastSolverPass2GpuMilliseconds = -1.0F;
-        TRendererProfilingStats ProfilingStats;
+        FRendererProfilingStats ProfilingStats;
     };
 } // MDSS 네임스페이스

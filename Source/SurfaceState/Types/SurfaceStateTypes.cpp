@@ -74,7 +74,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 02_Surface_Response_Profile_Validation
 
-    void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data)
+    void ValidateSurfaceResponseProfileData(const FSurfaceResponseProfileData& Data)
     {
         ValidateSurfaceReactions(Data);
         for (const auto& [Name, State] : Data.States)
@@ -103,7 +103,7 @@ namespace MDSS::SurfaceState
 
         for (std::size_t Index = 0; Index < Data.Transitions.size(); ++Index)
         {
-            const TSurfaceStateTransition& Transition = Data.Transitions[Index];
+            const FSurfaceStateTransition& Transition = Data.Transitions[Index];
             const std::string              Prefix = "transitions[" + std::to_string(Index) + "].";
             if (Transition.Source.empty() || NormalizeSurfaceStateName(Transition.Source) != Transition.Source)
             {

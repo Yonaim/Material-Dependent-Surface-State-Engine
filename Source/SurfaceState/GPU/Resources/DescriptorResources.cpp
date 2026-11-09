@@ -18,11 +18,11 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Descriptor_Resources
 
-    TSurfaceStateDescriptorResources::TSurfaceStateDescriptorResources(
+    FSurfaceStateDescriptorResources::FSurfaceStateDescriptorResources(
         VkDevice                                  Device,
-        const TSurfaceSharedGeometryGPUResources& SharedGeometry,
-        const TSurfaceProfileGPUResources&        Profiles,
-        const TSurfaceInstanceGPUResources&       Instance)
+        const FSurfaceSharedGeometryGPUResources& SharedGeometry,
+        const FSurfaceProfileGPUResources&        Profiles,
+        const FSurfaceInstanceGPUResources&       Instance)
         : Device(Device), SharedGeometryResources(&SharedGeometry), ProfileResources(&Profiles)
     {
         if (SharedGeometry.GetTexelCount() != Instance.GetTexelCount() ||
@@ -39,7 +39,7 @@ namespace MDSS::SurfaceState
             Bindings[Binding].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             Bindings[Binding].descriptorCount = 1;
             Bindings[Binding].stageFlags =
-                Binding == static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::TransferWeightDebugAverages)
+                Binding == static_cast<std::uint32_t>(ESurfaceGPUDescriptorBinding::TransferWeightDebugAverages)
                     ? VK_SHADER_STAGE_FRAGMENT_BIT
                     : VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
         }
@@ -84,7 +84,7 @@ namespace MDSS::SurfaceState
             throw std::runtime_error("Failed to allocate Surface solver descriptor sets.");
         }
 
-        const std::array<const GPU::TGPUBuffer*, DescriptorBindingCount> SharedAndProfileBuffers{
+        const std::array<const GPU::FGPUBuffer*, DescriptorBindingCount> SharedAndProfileBuffers{
             &SharedGeometry.GetTexelSurfaceIndexBuffer(),
             &SharedGeometry.GetTexelProfileIndexBuffer(),
             &SharedGeometry.GetPositionBuffer(),
@@ -115,19 +115,19 @@ namespace MDSS::SurfaceState
         for (std::size_t SetIndex = 0; SetIndex < Sets.size(); ++SetIndex)
         {
             const bool             bAB = SetIndex == 0;
-            const GPU::TGPUBuffer* StateCurrent = bAB ? &Instance.GetStateABuffer() : &Instance.GetStateBBuffer();
-            const GPU::TGPUBuffer* StateNext = bAB ? &Instance.GetStateBBuffer() : &Instance.GetStateABuffer();
+            const GPU::FGPUBuffer* StateCurrent = bAB ? &Instance.GetStateABuffer() : &Instance.GetStateBBuffer();
+            const GPU::FGPUBuffer* StateNext = bAB ? &Instance.GetStateBBuffer() : &Instance.GetStateABuffer();
             std::array<VkDescriptorBufferInfo, DescriptorBindingCount> BufferInfos{};
             std::array<VkWriteDescriptorSet, DescriptorBindingCount>   Writes{};
             for (std::uint32_t BindingNumber = 0; BindingNumber < DescriptorBindingCount; ++BindingNumber)
             {
-                const TSurfaceGPUDescriptorBinding Binding = static_cast<TSurfaceGPUDescriptorBinding>(BindingNumber);
-                const GPU::TGPUBuffer*             Buffer = SharedAndProfileBuffers[BindingNumber];
-                if (Binding == TSurfaceGPUDescriptorBinding::CurrentState)
+                const ESurfaceGPUDescriptorBinding Binding = static_cast<ESurfaceGPUDescriptorBinding>(BindingNumber);
+                const GPU::FGPUBuffer*             Buffer = SharedAndProfileBuffers[BindingNumber];
+                if (Binding == ESurfaceGPUDescriptorBinding::CurrentState)
                 {
                     Buffer = StateCurrent;
                 }
-                else if (Binding == TSurfaceGPUDescriptorBinding::NextState)
+                else if (Binding == ESurfaceGPUDescriptorBinding::NextState)
                 {
                     Buffer = StateNext;
                 }
@@ -146,7 +146,7 @@ namespace MDSS::SurfaceState
         }
     }
 
-    TSurfaceStateDescriptorResources::~TSurfaceStateDescriptorResources()
+    FSurfaceStateDescriptorResources::~FSurfaceStateDescriptorResources()
     {
         if (Pool != VK_NULL_HANDLE)
         {
@@ -160,33 +160,33 @@ namespace MDSS::SurfaceState
         }
     }
 
-    VkDescriptorSetLayout TSurfaceStateDescriptorResources::GetLayout() const noexcept
+    VkDescriptorSetLayout FSurfaceStateDescriptorResources::GetLayout() const noexcept
     {
         return Layout;
     }
 
-    VkDescriptorSet TSurfaceStateDescriptorResources::GetABSet() const noexcept
+    VkDescriptorSet FSurfaceStateDescriptorResources::GetABSet() const noexcept
     {
         return Sets[0];
     }
 
-    VkDescriptorSet TSurfaceStateDescriptorResources::GetBASet() const noexcept
+    VkDescriptorSet FSurfaceStateDescriptorResources::GetBASet() const noexcept
     {
         return Sets[1];
     }
 
-    VkBuffer TSurfaceStateDescriptorResources::GetBoundBufferHandle(TSurfaceGPUDescriptorBinding Binding,
+    VkBuffer FSurfaceStateDescriptorResources::GetBoundBufferHandle(ESurfaceGPUDescriptorBinding Binding,
                                                                     bool                         bAB) const
     {
         const std::size_t BindingNumber = static_cast<std::size_t>(Binding);
-        if (BindingNumber >= static_cast<std::size_t>(TSurfaceGPUDescriptorBinding::Count))
+        if (BindingNumber >= static_cast<std::size_t>(ESurfaceGPUDescriptorBinding::Count))
         {
             throw std::out_of_range("Surface descriptor binding is outside the declared layout.");
         }
         return BoundBufferHandles[bAB ? 0U : 1U][BindingNumber];
     }
 
-    std::array<std::uint64_t, 6> TSurfaceStateDescriptorResources::GetGeometryInputRevisions() const noexcept
+    std::array<std::uint64_t, 6> FSurfaceStateDescriptorResources::GetGeometryInputRevisions() const noexcept
     {
         return {SharedGeometryResources->GetTexelSurfaceIndexBuffer().GetUploadRevision(),
                 SharedGeometryResources->GetPositionBuffer().GetUploadRevision(),

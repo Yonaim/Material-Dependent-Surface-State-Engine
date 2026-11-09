@@ -12,25 +12,25 @@
 
 namespace MDSS::GPU
 {
-    class TFramebuffer
+    class FFramebuffer
     {
     public:
         // Framebuffer lifecycle
         /** @brief 각 color image view에 대응하는 depth view를 연결한 framebuffer를 생성한다. */
-        TFramebuffer(VkDevice                        Device,
-                     VkRenderPass                    TRenderPass,
+        FFramebuffer(VkDevice                        Device,
+                     VkRenderPass                    FRenderPass,
                      VkExtent2D                      Extent,
                      const std::vector<VkImageView>& ColorImageViews,
                      const std::vector<VkImageView>& DepthImageViews);
-        ~TFramebuffer();
+        ~FFramebuffer();
 
-        TFramebuffer(const TFramebuffer&) = delete;
-        TFramebuffer& operator=(const TFramebuffer&) = delete;
-        TFramebuffer(TFramebuffer&&) = delete;
-        TFramebuffer& operator=(TFramebuffer&&) = delete;
+        FFramebuffer(const FFramebuffer&) = delete;
+        FFramebuffer& operator=(const FFramebuffer&) = delete;
+        FFramebuffer(FFramebuffer&&) = delete;
+        FFramebuffer& operator=(FFramebuffer&&) = delete;
 
         /** @brief 이전 framebuffer를 제거하고 새 extent와 image view로 다시 생성한다. */
-        void Recreate(VkRenderPass                    TRenderPass,
+        void Recreate(VkRenderPass                    FRenderPass,
                       VkExtent2D                      Extent,
                       const std::vector<VkImageView>& ColorImageViews,
                       const std::vector<VkImageView>& DepthImageViews);
@@ -42,7 +42,7 @@ namespace MDSS::GPU
         [[nodiscard]] std::size_t   GetCount() const noexcept;
 
     private:
-        void Create(VkRenderPass                    TRenderPass,
+        void Create(VkRenderPass                    FRenderPass,
                     VkExtent2D                      Extent,
                     const std::vector<VkImageView>& ColorImageViews,
                     const std::vector<VkImageView>& DepthImageViews);

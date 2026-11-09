@@ -23,14 +23,14 @@ namespace MDSS
 {
     namespace
     {
-        using TJson = nlohmann::json;
+        using FJson = nlohmann::json;
 
-        TJson              ReadAnimationJson(const std::filesystem::path& Path);
-        TDemoAnimationClip ReadClipSettings(const TJson& Root);
-        void               ReadWeatherCue(const TJson& Root, TDemoAnimationClip& Clip);
-        void               ReadTracks(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip);
-        void               ReadContactEvents(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip);
-        glm::vec4          Sample(const TDemoAnimationTrack& Track, float Time);
+        FJson              ReadAnimationJson(const std::filesystem::path& Path);
+        FDemoAnimationClip ReadClipSettings(const FJson& Root);
+        void               ReadWeatherCue(const FJson& Root, FDemoAnimationClip& Clip);
+        void               ReadTracks(const FJson& Root, const FScene& Scene, FDemoAnimationClip& Clip);
+        void               ReadContactEvents(const FJson& Root, const FScene& Scene, FDemoAnimationClip& Clip);
+        glm::vec4          Sample(const FDemoAnimationTrack& Track, float Time);
         glm::vec3          QuaternionToTransformEuler(const glm::vec4& Value);
     }
 
@@ -39,10 +39,10 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Demo_Animation_Loading
 
-    TDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const TScene& Scene)
+    FDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const FScene& Scene)
     {
-        const TJson        Root = ReadAnimationJson(Path);
-        TDemoAnimationClip Clip = ReadClipSettings(Root);
+        const FJson        Root = ReadAnimationJson(Path);
+        FDemoAnimationClip Clip = ReadClipSettings(Root);
         ReadWeatherCue(Root, Clip);
         ReadTracks(Root, Scene, Clip);
         ReadContactEvents(Root, Scene, Clip);
@@ -56,9 +56,9 @@ namespace MDSS
 // ============================================================
 #pragma region 01_Demo_Animation_Application
 
-    void ApplyDemoAnimation(TScene& Scene, const TDemoAnimationClip& Clip, float Time)
+    void ApplyDemoAnimation(FScene& Scene, const FDemoAnimationClip& Clip, float Time)
     {
-        for (const TDemoAnimationTrack& Track : Clip.Tracks)
+        for (const FDemoAnimationTrack& Track : Clip.Tracks)
         {
             const glm::vec4 Value = Sample(Track, Time);
             if (Track.Target == "camera")
@@ -69,11 +69,11 @@ namespace MDSS
                     Scene.GetMainCamera().SetTarget(glm::vec3(Value));
                 continue;
             }
-            for (TStaticMeshInstance& Object : Scene.GetStaticMeshInstances())
+            for (FStaticMeshInstance& Object : Scene.GetStaticMeshInstances())
             {
                 if (Object.GetId() != Track.Target)
                     continue;
-                TTransform& Transform = Object.GetTransform();
+                FTransform& Transform = Object.GetTransform();
                 switch (Track.Property)
                 {
                     case EDemoAnimationProperty::Position:
@@ -103,34 +103,34 @@ namespace MDSS
 
     namespace
     {
-        const TJson&           Required(const TJson& Object, const char* Field, const std::string& Context);
-        std::string            String(const TJson& Object, const char* Field, const std::string& Context);
-        float                  Float(const TJson& Value, const std::string& Context);
+        const FJson&           Required(const FJson& Object, const char* Field, const std::string& Context);
+        std::string            String(const FJson& Object, const char* Field, const std::string& Context);
+        float                  Float(const FJson& Value, const std::string& Context);
         EDemoAnimationProperty Property(const std::string& Target, const std::string& Name);
-        glm::vec4              ReadValue(const TJson& Value, bool bRotation, const std::string& Context);
-        TJson                  ReadAnimationJson(const std::filesystem::path& Path)
+        glm::vec4              ReadValue(const FJson& Value, bool bRotation, const std::string& Context);
+        FJson                  ReadAnimationJson(const std::filesystem::path& Path)
         {
             std::ifstream Input(Path);
             if (!Input)
                 throw std::runtime_error("Unable to open Demo Animation: " + Path.string());
-            TJson Root;
+            FJson Root;
             try
             {
                 Input >> Root;
             }
-            catch (const TJson::exception& Error)
+            catch (const FJson::exception& Error)
             {
                 throw std::runtime_error("Invalid Demo Animation JSON in '" + Path.string() + "': " + Error.what());
             }
             return Root;
         }
 
-        TDemoAnimationClip ReadClipSettings(const TJson& Root)
+        FDemoAnimationClip ReadClipSettings(const FJson& Root)
         {
-            const TJson& Version = Required(Root, "version", "Demo Animation");
+            const FJson& Version = Required(Root, "version", "Demo Animation");
             if (!Version.is_number_integer() || Version.get<int>() != 1)
                 throw std::runtime_error("Demo Animation version must be 1.");
-            TDemoAnimationClip Clip;
+            FDemoAnimationClip Clip;
             Clip.DurationSeconds = Float(Required(Root, "durationSeconds", "Demo Animation"), "durationSeconds");
             if (Clip.DurationSeconds <= 0.0F)
                 throw std::runtime_error("Demo Animation duration must be positive.");
@@ -149,13 +149,13 @@ namespace MDSS
             return Clip;
         }
 
-        void ReadWeatherCue(const TJson& Root, TDemoAnimationClip& Clip)
+        void ReadWeatherCue(const FJson& Root, FDemoAnimationClip& Clip)
         {
             if (const auto Weather = Root.find("weather"); Weather != Root.end())
             {
                 if (!Weather->is_object())
                     throw std::runtime_error("Demo Animation.weather must be an object.");
-                TDemoAnimationClip::TWeatherCue Cue;
+                FDemoAnimationClip::FWeatherCue Cue;
                 Cue.RainStartSeconds =
                     Float(Required(*Weather, "rainStartSeconds", "weather"), "weather.rainStartSeconds");
                 Cue.RainEndSeconds = Float(Required(*Weather, "rainEndSeconds", "weather"), "weather.rainEndSeconds");
@@ -170,18 +170,18 @@ namespace MDSS
             }
         }
 
-        void ReadTracks(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip)
+        void ReadTracks(const FJson& Root, const FScene& Scene, FDemoAnimationClip& Clip)
         {
-            const TJson& Tracks = Required(Root, "tracks", "Demo Animation");
+            const FJson& Tracks = Required(Root, "tracks", "Demo Animation");
             if (!Tracks.is_array() || Tracks.empty())
                 throw std::runtime_error("Demo Animation tracks must be a non-empty array.");
             std::unordered_set<std::string> UsedProperties;
             Clip.Tracks.reserve(Tracks.size());
             for (std::size_t TrackIndex = 0; TrackIndex < Tracks.size(); ++TrackIndex)
             {
-                const TJson&        JsonTrack = Tracks[TrackIndex];
+                const FJson&        JsonTrack = Tracks[TrackIndex];
                 const std::string   Context = "tracks[" + std::to_string(TrackIndex) + "]";
-                TDemoAnimationTrack Track;
+                FDemoAnimationTrack Track;
                 Track.Target = String(JsonTrack, "target", Context);
                 const std::string PropertyName = String(JsonTrack, "property", Context);
                 Track.Property = Property(Track.Target, PropertyName);
@@ -190,7 +190,7 @@ namespace MDSS
                     const auto& Objects = Scene.GetStaticMeshInstances();
                     const bool  bFound = std::any_of(Objects.begin(),
                                                     Objects.end(),
-                                                    [&Track](const TStaticMeshInstance& Object)
+                                                    [&Track](const FStaticMeshInstance& Object)
                                                     { return Object.GetId() == Track.Target; });
                     if (!bFound)
                         throw std::runtime_error(Context + " targets an unknown Scene object ID.");
@@ -209,14 +209,14 @@ namespace MDSS
                     Track.Interpolation = EDemoAnimationInterpolation::Slerp;
                 else
                     throw std::runtime_error(Context + " uses an unsupported interpolation for its property.");
-                const TJson& Keys = Required(JsonTrack, "keys", Context);
+                const FJson& Keys = Required(JsonTrack, "keys", Context);
                 if (!Keys.is_array() || Keys.empty())
                     throw std::runtime_error(Context + ".keys must be non-empty.");
                 Track.Keys.reserve(Keys.size());
                 for (std::size_t KeyIndex = 0; KeyIndex < Keys.size(); ++KeyIndex)
                 {
                     const std::string KeyContext = Context + ".keys[" + std::to_string(KeyIndex) + "]";
-                    const TJson&      Key = Keys[KeyIndex];
+                    const FJson&      Key = Keys[KeyIndex];
                     const float       Time = Float(Required(Key, "time", KeyContext), KeyContext + ".time");
                     if (Time < 0.0F || Time > Clip.DurationSeconds ||
                         (!Track.Keys.empty() && Time <= Track.Keys.back().Time) || (Track.Keys.empty() && Time != 0.0F))
@@ -228,7 +228,7 @@ namespace MDSS
             }
         }
 
-        void ReadContactEvents(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip)
+        void ReadContactEvents(const FJson& Root, const FScene& Scene, FDemoAnimationClip& Clip)
         {
             if (const auto Events = Root.find("contactEvents"); Events != Root.end())
             {
@@ -240,9 +240,9 @@ namespace MDSS
                 float PreviousTime = -1.0F;
                 for (std::size_t Index = 0; Index < Events->size(); ++Index)
                 {
-                    const TJson&                      JsonEvent = (*Events)[Index];
+                    const FJson&                      JsonEvent = (*Events)[Index];
                     const std::string                 Context = "contactEvents[" + std::to_string(Index) + "]";
-                    TDemoAnimationClip::TContactEvent Event;
+                    FDemoAnimationClip::FContactEvent Event;
                     Event.Time = Float(Required(JsonEvent, "time", Context), Context + ".time");
                     if (Event.Time < 0.0F || Event.Time > Clip.DurationSeconds || Event.Time < PreviousTime)
                         throw std::runtime_error(Context + ".time must be sorted and within clip duration.");
@@ -255,7 +255,7 @@ namespace MDSS
                     const auto  Target =
                         std::find_if(Objects.begin(),
                                      Objects.end(),
-                                     [&](const TStaticMeshInstance& Object) { return Object.GetId() == Event.Target; });
+                                     [&](const FStaticMeshInstance& Object) { return Object.GetId() == Event.Target; });
                     if (Target == Objects.end() ||
                         Target->GetSurfaceData() == SurfaceState::InvalidSurfaceRuntimeDataHandle)
                         throw std::runtime_error(Context + ".target must name a Scene object with Surface data.");
@@ -313,22 +313,22 @@ namespace MDSS
 
     namespace
     {
-        const TJson& Required(const TJson& Object, const char* Field, const std::string& Context)
+        const FJson& Required(const FJson& Object, const char* Field, const std::string& Context)
         {
             if (!Object.is_object() || !Object.contains(Field))
                 throw std::runtime_error(Context + " is missing '" + Field + "'.");
             return Object.at(Field);
         }
 
-        std::string String(const TJson& Object, const char* Field, const std::string& Context)
+        std::string String(const FJson& Object, const char* Field, const std::string& Context)
         {
-            const TJson& Value = Required(Object, Field, Context);
+            const FJson& Value = Required(Object, Field, Context);
             if (!Value.is_string() || Value.get_ref<const std::string&>().empty())
                 throw std::runtime_error(Context + "." + Field + " must be a non-empty string.");
             return Value.get<std::string>();
         }
 
-        float Float(const TJson& Value, const std::string& Context)
+        float Float(const FJson& Value, const std::string& Context)
         {
             if (!Value.is_number())
                 throw std::runtime_error(Context + " must be numeric.");
@@ -360,7 +360,7 @@ namespace MDSS
             throw std::runtime_error("Demo animation property '" + Name + "' is invalid for target '" + Target + "'.");
         }
 
-        glm::vec4 ReadValue(const TJson& Value, bool bRotation, const std::string& Context)
+        glm::vec4 ReadValue(const FJson& Value, bool bRotation, const std::string& Context)
         {
             const std::size_t Expected = bRotation ? 4U : 3U;
             if (!Value.is_array() || Value.size() != Expected)
@@ -378,7 +378,7 @@ namespace MDSS
             return Result;
         }
 
-        glm::vec4 Sample(const TDemoAnimationTrack& Track, float Time)
+        glm::vec4 Sample(const FDemoAnimationTrack& Track, float Time)
         {
             if (Time <= Track.Keys.front().Time)
                 return Track.Keys.front().Value;
@@ -387,9 +387,9 @@ namespace MDSS
             const auto               Upper = std::upper_bound(Track.Keys.begin(),
                                                 Track.Keys.end(),
                                                 Time,
-                                                [](float T, const TDemoAnimationKey& Key) { return T < Key.Time; });
-            const TDemoAnimationKey& B = *Upper;
-            const TDemoAnimationKey& A = *(Upper - 1);
+                                                [](float T, const FDemoAnimationKey& Key) { return T < Key.Time; });
+            const FDemoAnimationKey& B = *Upper;
+            const FDemoAnimationKey& A = *(Upper - 1);
             if (Track.Interpolation == EDemoAnimationInterpolation::Step)
                 return A.Value;
             const float Blend = (Time - A.Time) / (B.Time - A.Time);
@@ -406,7 +406,7 @@ namespace MDSS
         glm::vec3 QuaternionToTransformEuler(const glm::vec4& Value)
         {
             const glm::mat3 R = glm::mat3_cast(glm::quat(Value.w, Value.x, Value.y, Value.z));
-            // TTransform composes rotations as Rx * Ry * Rz.
+            // FTransform composes rotations as Rx * Ry * Rz.
             const float Y = std::asin(glm::clamp(R[2][0], -1.0F, 1.0F));
             const float CosY = std::cos(Y);
             const float X = std::abs(CosY) > 1.0e-5F ? std::atan2(-R[2][1], R[2][2])

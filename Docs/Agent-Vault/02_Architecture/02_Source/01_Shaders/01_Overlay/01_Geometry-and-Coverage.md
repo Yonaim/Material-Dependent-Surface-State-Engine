@@ -38,9 +38,9 @@ Top/Side Vertex 및 Indirect Command를 만들고 dirty tile·coverage를 갱신
 
 ## GPU Overlay preparation 확인
 
-- [TTexelGeometryPreview::Record](../../../../../../Source/Rendering/Overlay/Geometry/TexelGeometryPreview.cpp): view mode 또는 combined overlay에 따라 baseline/height geometry 및 tile activity를 준비한다.
-- [TAccumulationOverlaySides::Record](../../../../../../Source/Rendering/Overlay/AccumulationOverlaySides.cpp): coverage 및 boundary 정보로 top/side draw용 자료를 만든다.
-- 호출은 [TRenderer::RecordCommandBuffer](../../../../../../Source/Rendering/Core/RendererCommands.cpp)의 Lit 조건, `CanRenderLitOverlays`, Shared mesh/descriptor availability에 종속된다. `CombinedSurfaceKey = 0xffffU`는 Registry State channel ID가 아니라 derived geometry 식별용 예약 값이다.
+- [FTexelGeometryPreview::Record](../../../../../../Source/Rendering/Overlay/Geometry/TexelGeometryPreview.cpp): view mode 또는 combined overlay에 따라 baseline/height geometry 및 tile activity를 준비한다.
+- [FAccumulationOverlaySides::Record](../../../../../../Source/Rendering/Overlay/AccumulationOverlaySides.cpp): coverage 및 boundary 정보로 top/side draw용 자료를 만든다.
+- 호출은 [FRenderer::RecordCommandBuffer](../../../../../../Source/Rendering/Core/RendererCommands.cpp)의 Lit 조건, `CanRenderLitOverlays`, Shared mesh/descriptor availability에 종속된다. `CombinedSurfaceKey = 0xffffU`는 Registry State channel ID가 아니라 derived geometry 식별용 예약 값이다.
 - Overlay coverage/height smoothing은 **표시 전용 결과**다. Solver의 `DynamicGeometry`와 구별하고 visual artifact만 관찰된 경우 Render branch부터 추적한다.
 
 ## 상위 실행 단계

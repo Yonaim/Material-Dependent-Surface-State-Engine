@@ -12,11 +12,11 @@
 namespace MDSS::GPU
 {
 // ============================================================
-// 00. TGPUSampler Implementation
+// 00. FGPUSampler Implementation
 // ============================================================
 #pragma region 00_TGPUSampler_Implementation
 
-    TGPUSampler::TGPUSampler(VkDevice Device) : Device(Device)
+    FGPUSampler::FGPUSampler(VkDevice Device) : Device(Device)
     {
         VkSamplerCreateInfo Info{};
         Info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -38,10 +38,10 @@ namespace MDSS::GPU
         {
             throw std::runtime_error("Failed to create Vulkan sampler.");
         }
-        TLogger::Verbose("Vulkan", "TGPUSampler created (linear filtering, repeat addressing).");
+        FLogger::Verbose("Vulkan", "TGPUSampler created (linear filtering, repeat addressing).");
     }
 
-    TGPUSampler::~TGPUSampler()
+    FGPUSampler::~FGPUSampler()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -50,7 +50,7 @@ namespace MDSS::GPU
         }
     }
 
-    VkSampler TGPUSampler::GetHandle() const noexcept
+    VkSampler FGPUSampler::GetHandle() const noexcept
     {
         return Handle;
     }

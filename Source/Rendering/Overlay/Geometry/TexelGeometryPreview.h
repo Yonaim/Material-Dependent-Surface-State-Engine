@@ -15,31 +15,31 @@
 
 namespace MDSS::SurfaceState
 {
-    struct alignas(16) TTexelGeometryVertex
+    struct alignas(16) FTexelGeometryVertex
     {
         glm::vec4 HeightAndNormal{0};
     };
-    static_assert(sizeof(TTexelGeometryVertex) == 16);
+    static_assert(sizeof(FTexelGeometryVertex) == 16);
 
     /** @brief Read-only State projection. Output is display geometry, never State-Driven Geometry Update. */
-    class TTexelGeometryPreview final
+    class FTexelGeometryPreview final
     {
     public:
-        struct TTileActivity
+        struct FTileActivity
         {
             std::uint64_t Active = 0;
             std::uint64_t Total = 0;
         };
 
         // Preview resource lifecycle
-        TTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
+        FTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
                               VkDevice              Device,
                               VkDescriptorSetLayout SurfaceLayout,
                               std::size_t           MaxInstances,
                               bool                  bEnableOccupancyScan = false);
-        ~TTexelGeometryPreview();
-        TTexelGeometryPreview(const TTexelGeometryPreview&) = delete;
-        TTexelGeometryPreview& operator=(const TTexelGeometryPreview&) = delete;
+        ~FTexelGeometryPreview();
+        FTexelGeometryPreview(const FTexelGeometryPreview&) = delete;
+        FTexelGeometryPreview& operator=(const FTexelGeometryPreview&) = delete;
 
         // Output access and preview settings
         [[nodiscard]] VkDescriptorSetLayout GetOutputLayout() const noexcept
@@ -47,11 +47,11 @@ namespace MDSS::SurfaceState
             return OutputLayout;
         }
         [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance, std::size_t OutputSlot = 0U) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot = 0U) const;
-        [[nodiscard]] const GPU::TGPUBuffer& GetGeometryCacheBuffer(std::size_t Instance,
+        [[nodiscard]] const GPU::FGPUBuffer& GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot = 0U) const;
+        [[nodiscard]] const GPU::FGPUBuffer& GetGeometryCacheBuffer(std::size_t Instance,
                                                                     std::size_t OutputSlot = 0U) const;
         /** @brief Read active-tile counters after the corresponding frame slot fence has signaled. */
-        [[nodiscard]] TTileActivity CompleteOccupancyFrame(std::size_t FrameIndex);
+        [[nodiscard]] FTileActivity CompleteOccupancyFrame(std::size_t FrameIndex);
         void                        SetOccupancyTileSize(std::uint32_t TileSize);
         void                        SetLowAmountHeightFade(float Saturation);
         void                        InvalidateSparseOutput() noexcept;
@@ -60,7 +60,7 @@ namespace MDSS::SurfaceState
         void
         Record(VkCommandBuffer                         Command,
                std::size_t                             Instance,
-               const TSurfaceStateDescriptorResources& Descriptors,
+               const FSurfaceStateDescriptorResources& Descriptors,
                std::uint32_t                           TexelCount,
                std::uint32_t                           Channel,
                std::uint32_t                           Channels,
@@ -88,13 +88,13 @@ namespace MDSS::SurfaceState
     private:
         // Resource cleanup
         void Destroy() noexcept;
-        struct TOutput
+        struct FOutput
         {
-            std::unique_ptr<GPU::TGPUBuffer> Buffer;
-            std::unique_ptr<GPU::TGPUBuffer> GeometryCache;
-            std::array<std::unique_ptr<GPU::TGPUBuffer>, Rendering::TRenderContext::MaxFramesInFlight>
+            std::unique_ptr<GPU::FGPUBuffer> Buffer;
+            std::unique_ptr<GPU::FGPUBuffer> GeometryCache;
+            std::array<std::unique_ptr<GPU::FGPUBuffer>, Rendering::FRenderContext::MaxFramesInFlight>
                                                                            OccupancyReadbacks;
-            std::array<bool, Rendering::TRenderContext::MaxFramesInFlight> OccupancyPending{};
+            std::array<bool, Rendering::FRenderContext::MaxFramesInFlight> OccupancyPending{};
             std::uint32_t                                                  OccupancyTotalTiles = 0;
             VkDescriptorSet                                                Set = VK_NULL_HANDLE;
             bool                                                           bOccupancyInitialized = false;
@@ -117,6 +117,6 @@ namespace MDSS::SurfaceState
         bool                                                   bEnableOccupancyScan = false;
         std::uint32_t                                          OccupancyTileSize = 16U;
         float                                                  LowAmountHeightFade = 0.05F;
-        std::map<std::pair<std::size_t, std::size_t>, TOutput> Outputs;
+        std::map<std::pair<std::size_t, std::size_t>, FOutput> Outputs;
     };
 }

@@ -1,6 +1,6 @@
 /**
  * @file SceneLoader.cpp
- * @brief TScene JSON 파싱, 경로 해석과 Asset 연결.
+ * @brief FScene JSON 파싱, 경로 해석과 Asset 연결.
  */
 
 #include "Scene/SceneLoader.h"
@@ -23,9 +23,9 @@ namespace MDSS
 {
     namespace
     {
-        using TJson = nlohmann::json;
+        using FJson = nlohmann::json;
 
-        const TJson& RequireMember(const TJson& Object, const char* Name, const std::string& Context)
+        const FJson& RequireMember(const FJson& Object, const char* Name, const std::string& Context)
         {
             if (!Object.is_object())
             {
@@ -39,9 +39,9 @@ namespace MDSS
             return *Found;
         }
 
-        std::string ReadString(const TJson& Object, const char* Name, const std::string& Context)
+        std::string ReadString(const FJson& Object, const char* Name, const std::string& Context)
         {
-            const TJson& Value = RequireMember(Object, Name, Context);
+            const FJson& Value = RequireMember(Object, Name, Context);
             if (!Value.is_string() || Value.get_ref<const std::string&>().empty())
             {
                 throw std::runtime_error(Context + "." + Name + " must be a non-empty string.");
@@ -49,7 +49,7 @@ namespace MDSS
             return Value.get<std::string>();
         }
 
-        std::uint32_t ReadVersion(const TJson& Value)
+        std::uint32_t ReadVersion(const FJson& Value)
         {
             if (!Value.is_number_unsigned() && !Value.is_number_integer())
             {
@@ -63,7 +63,7 @@ namespace MDSS
             return static_cast<std::uint32_t>(Version);
         }
 
-        std::uint32_t ReadSimulationResolution(const TJson& Value)
+        std::uint32_t ReadSimulationResolution(const FJson& Value)
         {
             constexpr const char* Error = "Scene simulationResolution must be the integer 128, 256 or 512.";
             std::uint64_t         Number = 0;
@@ -90,7 +90,7 @@ namespace MDSS
             throw std::runtime_error(Error);
         }
 
-        float ReadFiniteFloat(const TJson& Value, const std::string& Context)
+        float ReadFiniteFloat(const FJson& Value, const std::string& Context)
         {
             if (!Value.is_number())
             {
@@ -105,7 +105,7 @@ namespace MDSS
             return Result;
         }
 
-        glm::vec3 ReadVector3(const TJson& Value, const std::string& Context)
+        glm::vec3 ReadVector3(const FJson& Value, const std::string& Context)
         {
             if (!Value.is_array() || Value.size() != 3)
             {
@@ -116,9 +116,9 @@ namespace MDSS
                     ReadFiniteFloat(Value[2], Context + "[2]")};
         }
 
-        TTransform ReadTransform(const TJson& Object, const std::string& Context)
+        FTransform ReadTransform(const FJson& Object, const std::string& Context)
         {
-            TTransform Transform;
+            FTransform Transform;
             if (Object.is_null())
             {
                 return Transform;
@@ -166,9 +166,9 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Scene_Loading
 
-    TScene TSceneLoader::Load(const std::filesystem::path&       Path,
-                              Asset::TAssetManager&              Assets,
-                              SurfaceState::TSurfaceDataManager& SurfaceData,
+    FScene FSceneLoader::Load(const std::filesystem::path&       Path,
+                              Asset::FAssetManager&              Assets,
+                              SurfaceState::FSurfaceDataManager& SurfaceData,
                               std::optional<std::uint32_t>       ResolutionOverride)
     {
         std::ifstream Input(Path);
@@ -177,12 +177,12 @@ namespace MDSS
             throw std::runtime_error("Unable to open Scene file: " + Path.string());
         }
 
-        TJson Root;
+        FJson Root;
         try
         {
             Input >> Root;
         }
-        catch (const TJson::exception& Exception)
+        catch (const FJson::exception& Exception)
         {
             throw std::runtime_error("Invalid Scene JSON in '" + Path.string() + "': " + Exception.what());
         }
@@ -195,14 +195,14 @@ namespace MDSS
             throw std::runtime_error("Scene type must be 'TScene'.");
         }
         (void)ReadVersion(RequireMember(Root, "version", "Scene"));
-        const TJson& Objects = RequireMember(Root, "objects", "Scene");
+        const FJson& Objects = RequireMember(Root, "objects", "Scene");
         if (!Objects.is_array())
         {
             throw std::runtime_error("Scene 'objects' must be an array.");
         }
 
         const std::filesystem::path SceneDirectory = std::filesystem::absolute(Path).parent_path();
-        TScene                      Scene;
+        FScene                      Scene;
         Scene.SetSourcePath(std::filesystem::absolute(Path).lexically_normal());
         if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
         {
@@ -221,7 +221,7 @@ namespace MDSS
             if (!Camera->is_object())
                 throw std::runtime_error("Scene.camera must be an object.");
             const std::string Context = "Scene.camera";
-            TCamera&          MainCamera = Scene.GetMainCamera();
+            FCamera&          MainCamera = Scene.GetMainCamera();
             MainCamera.SetPosition(ReadVector3(RequireMember(*Camera, "position", Context), Context + ".position"));
             MainCamera.SetTarget(ReadVector3(RequireMember(*Camera, "target", Context), Context + ".target"));
             const float FieldOfView = ReadFiniteFloat(RequireMember(*Camera, "verticalFieldOfViewDegrees", Context),
@@ -233,7 +233,7 @@ namespace MDSS
         std::unordered_set<std::string> ObjectIds;
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
-            const TJson&      Object = Objects[Index];
+            const FJson&      Object = Objects[Index];
             const std::string Context = "Scene objects[" + std::to_string(Index) + "]";
             std::string       ObjectId;
             if (const auto Id = Object.find("id"); Id != Object.end())
@@ -244,9 +244,9 @@ namespace MDSS
             }
             const std::filesystem::path MeshPath =
                 ResolveScenePath(SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
-            const Asset::TMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
+            const Asset::FMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
 
-            SurfaceState::TSurfaceRuntimeDataHandle SurfaceDataHandle = SurfaceState::InvalidSurfaceRuntimeDataHandle;
+            SurfaceState::FSurfaceRuntimeDataHandle SurfaceDataHandle = SurfaceState::InvalidSurfaceRuntimeDataHandle;
             std::filesystem::path                   DistributionPath;
             if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
             {
@@ -260,12 +260,12 @@ namespace MDSS
                     SurfaceData.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
             }
 
-            TTransform Transform;
+            FTransform Transform;
             if (const auto TransformJson = Object.find("transform"); TransformJson != Object.end())
             {
                 Transform = ReadTransform(*TransformJson, Context + ".transform");
             }
-            Scene.AddStaticMeshInstance(TStaticMeshInstance(
+            Scene.AddStaticMeshInstance(FStaticMeshInstance(
                 MeshHandle, SurfaceDataHandle, Transform, MeshPath, DistributionPath, std::move(ObjectId)));
         }
         if (const auto Contacts = Root.find("initialContacts"); Contacts != Root.end())
@@ -274,9 +274,9 @@ namespace MDSS
                 throw std::runtime_error("Scene.initialContacts must be an array.");
             for (std::size_t Index = 0; Index < Contacts->size(); ++Index)
             {
-                const TJson&         Contact = (*Contacts)[Index];
+                const FJson&         Contact = (*Contacts)[Index];
                 const std::string    Context = "Scene.initialContacts[" + std::to_string(Index) + "]";
-                TSceneInitialContact Initial;
+                FSceneInitialContact Initial;
                 Initial.Target = ReadString(Contact, "target", Context);
                 Initial.State = ReadString(Contact, "state", Context);
                 if (!ObjectIds.contains(Initial.Target))
@@ -311,16 +311,16 @@ namespace MDSS
 // ============================================================
 #pragma region 01_Scene_Saving
 
-    void TSceneLoader::Save(const TScene& Scene, const std::filesystem::path& Path)
+    void FSceneLoader::Save(const FScene& Scene, const std::filesystem::path& Path)
     {
         const std::filesystem::path AbsolutePath = std::filesystem::absolute(Path).lexically_normal();
         const std::filesystem::path Directory = AbsolutePath.parent_path();
-        TJson                       Root;
+        FJson                       Root;
         Root["type"] = "TScene";
         Root["version"] = 1;
         Root["simulationResolution"] = Scene.GetSimulationResolution();
         Root["litHeightDisplayScale"] = Scene.GetLitHeightDisplayScale();
-        const TCamera&   Camera = Scene.GetMainCamera();
+        const FCamera&   Camera = Scene.GetMainCamera();
         const glm::vec3& CameraPosition = Camera.GetPosition();
         const glm::vec3& CameraTarget = Camera.GetTarget();
         Root["camera"] = {{"position", {CameraPosition.x, CameraPosition.y, CameraPosition.z}},
@@ -330,7 +330,7 @@ namespace MDSS
             Root["animation"] = Scene.GetDemoAnimationPath().lexically_relative(Directory).generic_string();
         if (!Scene.GetInitialContacts().empty())
         {
-            Root["initialContacts"] = TJson::array();
+            Root["initialContacts"] = FJson::array();
             for (const auto& Contact : Scene.GetInitialContacts())
                 Root["initialContacts"].push_back(
                     {{"target", Contact.Target},
@@ -340,15 +340,15 @@ namespace MDSS
                      {"strength", Contact.Strength},
                      {"falloff", Contact.Falloff}});
         }
-        Root["objects"] = TJson::array();
-        for (const TStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
+        Root["objects"] = FJson::array();
+        for (const FStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {
             if (Instance.GetMeshPath().empty())
             {
                 throw std::runtime_error("Cannot save Scene object without its source Mesh path.");
             }
-            const TTransform& Transform = Instance.GetTransform();
-            TJson             Object;
+            const FTransform& Transform = Instance.GetTransform();
+            FJson             Object;
             if (!Instance.GetId().empty())
                 Object["id"] = Instance.GetId();
             Object["mesh"] = Instance.GetMeshPath().lexically_relative(Directory).generic_string();

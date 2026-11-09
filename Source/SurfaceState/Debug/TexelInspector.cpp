@@ -28,7 +28,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Inspector_Resource_Lifecycle
 
-    TTexelInspector::TTexelInspector(VkPhysicalDevice      PhysicalDevice,
+    FTexelInspector::FTexelInspector(VkPhysicalDevice      PhysicalDevice,
                                      VkDevice              Device,
                                      VkDescriptorSetLayout SurfaceLayout,
                                      std::size_t           FrameCount)
@@ -92,13 +92,13 @@ namespace MDSS::SurfaceState
             Frames.resize(FrameCount);
             for (auto& Frame : Frames)
             {
-                Frame.Buffer = std::make_unique<GPU::TGPUBuffer>(PhysicalDevice,
+                Frame.Buffer = std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
                                                                  Device,
                                                                  SnapshotBytes,
                                                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                                 GPU::TGPUBufferMemoryCategory::Debug);
+                                                                 GPU::EGPUBufferMemoryCategory::Debug);
                 VkDescriptorSetAllocateInfo Allocate{};
                 Allocate.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 Allocate.descriptorPool = Pool;
@@ -125,11 +125,11 @@ namespace MDSS::SurfaceState
         }
     }
 
-    TTexelInspector::~TTexelInspector()
+    FTexelInspector::~FTexelInspector()
     {
         Destroy();
     }
-    void TTexelInspector::Destroy() noexcept
+    void FTexelInspector::Destroy() noexcept
     {
         if (Pipeline)
             vkDestroyPipeline(Device, Pipeline, nullptr);
@@ -148,11 +148,11 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_Inspector_Command_Recording
 
-    void TTexelInspector::Record(VkCommandBuffer                         Command,
+    void FTexelInspector::Record(VkCommandBuffer                         Command,
                                  std::size_t                             FrameIndex,
-                                 const TSurfaceStateDescriptorResources& Descriptors,
-                                 const TSurfaceTexelSelection&           Selection,
-                                 TStateId                                Channel,
+                                 const FSurfaceStateDescriptorResources& Descriptors,
+                                 const FSurfaceTexelSelection&           Selection,
+                                 FStateId                                Channel,
                                  std::uint32_t                           Channels,
                                  float                                   AccumulationDisplayScale,
                                  const glm::mat4&                        ModelMatrix,
@@ -160,19 +160,19 @@ namespace MDSS::SurfaceState
                                  std::uint64_t                           Step)
     {
         auto& Frame = Frames.at(FrameIndex);
-        struct TPush
+        struct FPush
         {
             std::uint32_t            Texel, Channel, Channels;
             float                    AccumulationDisplayScale;
             std::array<glm::vec4, 3> NormalMatrixColumns;
         };
-        static_assert(sizeof(TPush) == 64);
+        static_assert(sizeof(FPush) == 64);
         glm::mat3       NormalMatrix(0.0F);
         const glm::mat3 ModelLinear(ModelMatrix);
         const float     Determinant = glm::determinant(ModelLinear);
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
-        TPush Push{Selection.Texel, Channel, Channels, AccumulationDisplayScale, {}};
+        FPush Push{Selection.Texel, Channel, Channels, AccumulationDisplayScale, {}};
         for (int Column = 0; Column < 3; ++Column)
             Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);
         const std::array<VkDescriptorSet, 2> Sets{bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(),
@@ -198,7 +198,7 @@ namespace MDSS::SurfaceState
                              &Barrier,
                              0,
                              nullptr);
-        Frame.Pending = TSurfaceTexelSnapshot{Selection, Channel, Step, ++Serial, bStateAB, {}};
+        Frame.Pending = FSurfaceTexelSnapshot{Selection, Channel, Step, ++Serial, bStateAB, {}};
         Frame.Generation = Generation;
     }
 #pragma endregion
@@ -208,7 +208,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 02_Inspector_Readback
 
-    void TTexelInspector::CompleteFrame(std::size_t FrameIndex)
+    void FTexelInspector::CompleteFrame(std::size_t FrameIndex)
     {
         auto& Frame = Frames.at(FrameIndex);
         if (Frame.Pending && Frame.Generation == Generation && (!Snapshot || Frame.Pending->Serial > Snapshot->Serial))
@@ -219,7 +219,7 @@ namespace MDSS::SurfaceState
         Frame.Pending.reset();
     }
 
-    void TTexelInspector::Invalidate() noexcept
+    void FTexelInspector::Invalidate() noexcept
     {
         ++Generation;
         Snapshot.reset();

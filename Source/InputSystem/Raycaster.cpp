@@ -69,16 +69,16 @@ namespace MDSS
     } // namespace
 
 // ============================================================
-// 00. TRaycaster Implementation
+// 00. FRaycaster Implementation
 // ============================================================
 #pragma region 00_TRaycaster_Implementation
 
-    TSurfaceRayHit TRaycaster::Cast(const TScene&               Scene,
-                                    const Asset::TAssetManager& Assets,
+    FSurfaceRayHit FRaycaster::Cast(const FScene&               Scene,
+                                    const Asset::FAssetManager& Assets,
                                     glm::vec3                   WorldOrigin,
                                     glm::vec3                   WorldDirection)
     {
-        TSurfaceRayHit Result;
+        FSurfaceRayHit Result;
         const float    DirectionLengthSquared = glm::dot(WorldDirection, WorldDirection);
         if (!std::isfinite(DirectionLengthSquared) || DirectionLengthSquared <= RayEpsilon * RayEpsilon)
         {
@@ -87,23 +87,23 @@ namespace MDSS
         WorldDirection = glm::normalize(WorldDirection);
 
         float                                   BestDistance = std::numeric_limits<float>::infinity();
-        const std::vector<TStaticMeshInstance>& Instances = Scene.GetStaticMeshInstances();
+        const std::vector<FStaticMeshInstance>& Instances = Scene.GetStaticMeshInstances();
         for (std::size_t InstanceIndex = 0; InstanceIndex < Instances.size(); ++InstanceIndex)
         {
-            const TStaticMeshInstance& Instance = Instances[InstanceIndex];
+            const FStaticMeshInstance& Instance = Instances[InstanceIndex];
             if (Instance.GetMesh() == Asset::InvalidAssetHandle)
             {
                 continue;
             }
 
-            const Asset::TMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
-            const std::vector<Asset::TVertex>&             Vertices = Mesh.GetVertices();
+            const Asset::FMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
+            const std::vector<Asset::FVertex>&             Vertices = Mesh.GetVertices();
             const glm::mat4                                Model = Instance.GetTransform().GetMatrix();
-            const std::vector<Asset::TMeshTriangleSource>& Triangles = Mesh.GetTriangles();
+            const std::vector<Asset::FMeshTriangleSource>& Triangles = Mesh.GetTriangles();
 
             for (std::size_t TriangleIndex = 0; TriangleIndex < Triangles.size(); ++TriangleIndex)
             {
-                const Asset::TMeshTriangleSource& Triangle = Triangles[TriangleIndex];
+                const Asset::FMeshTriangleSource& Triangle = Triangles[TriangleIndex];
                 const std::uint32_t               IA = Triangle.RenderVertexIndices[0];
                 const std::uint32_t               IB = Triangle.RenderVertexIndices[1];
                 const std::uint32_t               IC = Triangle.RenderVertexIndices[2];
@@ -125,7 +125,7 @@ namespace MDSS
                 }
 
                 BestDistance = Distance;
-                Result.Hit = true;
+                Result.bHit = true;
                 Result.InstanceIndex = InstanceIndex;
                 Result.TriangleID = static_cast<std::uint32_t>(TriangleIndex);
                 Result.Barycentric = Barycentric;

@@ -18,9 +18,9 @@ namespace MDSS::Asset
 {
     namespace
     {
-        using TJson = nlohmann::json;
+        using FJson = nlohmann::json;
 
-        const TJson& RequireMember(const TJson& Object, const char* Name, const std::string& Context)
+        const FJson& RequireMember(const FJson& Object, const char* Name, const std::string& Context)
         {
             const auto Found = Object.find(Name);
             if (Found == Object.end())
@@ -30,7 +30,7 @@ namespace MDSS::Asset
             return *Found;
         }
 
-        std::uint32_t ReadNonNegativeIndex(const TJson& Value, const std::string& Name)
+        std::uint32_t ReadNonNegativeIndex(const FJson& Value, const std::string& Name)
         {
             if (!Value.is_number_integer())
             {
@@ -56,7 +56,7 @@ namespace MDSS::Asset
             return static_cast<std::uint32_t>(Parsed);
         }
 
-        SurfaceState::TSurfaceProfileIndex ReadProfileIndex(const TJson& Value)
+        SurfaceState::FSurfaceProfileIndex ReadProfileIndex(const FJson& Value)
         {
             if (Value.is_number_unsigned())
             {
@@ -77,7 +77,7 @@ namespace MDSS::Asset
                 throw std::runtime_error(
                     "Surface Profile Map 'profileIndex' must be -1 or a supported non-negative integer.");
             }
-            return static_cast<SurfaceState::TSurfaceProfileIndex>(Parsed);
+            return static_cast<SurfaceState::FSurfaceProfileIndex>(Parsed);
         }
     } // namespace
 
@@ -86,7 +86,7 @@ namespace MDSS::Asset
 // ============================================================
 #pragma region 00_Distribution_Loading
 
-    TSurfaceProfileDistribution TSurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
+    FSurfaceProfileDistribution FSurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
     {
         std::ifstream Input(Path);
         if (!Input)
@@ -94,12 +94,12 @@ namespace MDSS::Asset
             throw std::runtime_error("Unable to open Surface Profile Map: " + Path.string());
         }
 
-        TJson Root;
+        FJson Root;
         try
         {
             Input >> Root;
         }
-        catch (const TJson::exception& Exception)
+        catch (const FJson::exception& Exception)
         {
             throw std::runtime_error("Invalid Surface Profile Map JSON in '" + Path.string() +
                                      "': " + Exception.what());
@@ -108,8 +108,8 @@ namespace MDSS::Asset
         {
             throw std::runtime_error("Surface Profile Map root must be a JSON object.");
         }
-        const TJson& Type = RequireMember(Root, "type", "Surface Profile Map");
-        const TJson& Version = RequireMember(Root, "version", "Surface Profile Map");
+        const FJson& Type = RequireMember(Root, "type", "Surface Profile Map");
+        const FJson& Version = RequireMember(Root, "version", "Surface Profile Map");
         if (!Type.is_string() || Type.get<std::string>() != "SurfaceProfileMap")
         {
             throw std::runtime_error("Surface Profile Map type must be 'SurfaceProfileMap'.");
@@ -119,8 +119,8 @@ namespace MDSS::Asset
             throw std::runtime_error("Surface Profile Map version must be the integer 1.");
         }
 
-        const TJson& Profiles = RequireMember(Root, "profiles", "Surface Profile Map");
-        const TJson& Surfaces = RequireMember(Root, "surfaces", "Surface Profile Map");
+        const FJson& Profiles = RequireMember(Root, "profiles", "Surface Profile Map");
+        const FJson& Surfaces = RequireMember(Root, "surfaces", "Surface Profile Map");
         if (!Profiles.is_array() || Profiles.empty())
         {
             throw std::runtime_error("Surface Profile Map 'profiles' must be a non-empty array.");
@@ -135,7 +135,7 @@ namespace MDSS::Asset
             throw std::runtime_error("Surface Profile Map exceeds the supported index range.");
         }
 
-        TSurfaceProfileDistribution Result;
+        FSurfaceProfileDistribution Result;
         Result.ProfilePaths.reserve(Profiles.size());
         std::unordered_set<std::string> UniquePaths;
         for (std::size_t Index = 0; Index < Profiles.size(); ++Index)
@@ -167,19 +167,19 @@ namespace MDSS::Asset
             Result.ProfilePaths.push_back(std::move(ProfilePath));
         }
 
-        std::vector<SurfaceState::TSurfaceLocalID> SurfaceIDs;
+        std::vector<SurfaceState::FSurfaceLocalID> SurfaceIDs;
         SurfaceIDs.reserve(Surfaces.size());
         for (std::size_t EntryIndex = 0; EntryIndex < Surfaces.size(); ++EntryIndex)
         {
-            const TJson& Entry = Surfaces[EntryIndex];
+            const FJson& Entry = Surfaces[EntryIndex];
             if (!Entry.is_object())
             {
                 throw std::runtime_error("Surface Profile Map surface entry must be an object.");
             }
-            const TJson& SurfaceId = RequireMember(Entry, "surfaceId", "Surface Profile Map surface entry");
-            const TJson& ProfileIndex = RequireMember(Entry, "profileIndex", "Surface Profile Map surface entry");
+            const FJson& SurfaceId = RequireMember(Entry, "surfaceId", "Surface Profile Map surface entry");
+            const FJson& ProfileIndex = RequireMember(Entry, "profileIndex", "Surface Profile Map surface entry");
             const std::uint32_t                      Surface = ReadNonNegativeIndex(SurfaceId, "surfaceId");
-            const SurfaceState::TSurfaceProfileIndex Profile = ReadProfileIndex(ProfileIndex);
+            const SurfaceState::FSurfaceProfileIndex Profile = ReadProfileIndex(ProfileIndex);
             if (Profile != SurfaceState::InvalidSurfaceProfileIndex && Profile >= Result.ProfilePaths.size())
             {
                 throw std::runtime_error("Surface Profile Map profileIndex is outside the profiles array.");
@@ -192,7 +192,7 @@ namespace MDSS::Asset
         }
 
         std::vector<bool> SeenSurfaces(Surfaces.size(), false);
-        for (const SurfaceState::TSurfaceLocalID Surface : SurfaceIDs)
+        for (const SurfaceState::FSurfaceLocalID Surface : SurfaceIDs)
         {
             if (Surface < SeenSurfaces.size())
             {
@@ -207,7 +207,7 @@ namespace MDSS::Asset
             }
         }
         if (std::ranges::any_of(SurfaceIDs,
-                                [SurfaceCount = Surfaces.size()](SurfaceState::TSurfaceLocalID Surface)
+                                [SurfaceCount = Surfaces.size()](SurfaceState::FSurfaceLocalID Surface)
                                 { return Surface >= SurfaceCount; }))
         {
             throw std::runtime_error("Surface Profile Map surface IDs must be dense and start at zero.");
@@ -217,13 +217,13 @@ namespace MDSS::Asset
         for (std::size_t EntryIndex = 0; EntryIndex < Surfaces.size(); ++EntryIndex)
         {
             const std::uint32_t Surface = ReadNonNegativeIndex(Surfaces[EntryIndex]["surfaceId"], "surfaceId");
-            const SurfaceState::TSurfaceProfileIndex Profile = ReadProfileIndex(Surfaces[EntryIndex]["profileIndex"]);
+            const SurfaceState::FSurfaceProfileIndex Profile = ReadProfileIndex(Surfaces[EntryIndex]["profileIndex"]);
             Result.ProfileIndicesBySurface[Surface] = Profile;
         }
         return Result;
     }
 
-    std::vector<SurfaceState::TSurfaceProfileIndex>
+    std::vector<SurfaceState::FSurfaceProfileIndex>
 #pragma endregion
 
 // ============================================================
@@ -231,17 +231,17 @@ namespace MDSS::Asset
 // ============================================================
 #pragma region 01_Texel_Profile_Mapping
 
-    TSurfaceProfileDistribution::BuildTexelProfileMap(const SurfaceState::TSurfaceMappingData& Mapping) const
+    FSurfaceProfileDistribution::BuildTexelProfileMap(const SurfaceState::FSurfaceMappingData& Mapping) const
     {
         if (Mapping.Surfaces.size() != ProfileIndicesBySurface.size())
         {
             throw std::runtime_error("Surface Profile Map surface count does not match the Mesh mapping.");
         }
-        std::vector<SurfaceState::TSurfaceProfileIndex> Result(Mapping.Texels.size(),
+        std::vector<SurfaceState::FSurfaceProfileIndex> Result(Mapping.Texels.size(),
                                                                SurfaceState::InvalidSurfaceProfileIndex);
         for (std::size_t TexelIndex = 0; TexelIndex < Mapping.Texels.size(); ++TexelIndex)
         {
-            const SurfaceState::TSurfaceMappingTexel& Texel = Mapping.Texels[TexelIndex];
+            const SurfaceState::FSurfaceMappingTexel& Texel = Mapping.Texels[TexelIndex];
             if (!Texel.IsValid())
             {
                 continue;

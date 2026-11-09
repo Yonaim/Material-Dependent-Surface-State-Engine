@@ -18,7 +18,7 @@
 
 ## Profile과 Registry
 
-현재 Scene이 참조하는 고유 Profile의 `states` key를 정규화해 `TSurfaceStateRegistry`를 만든다. Registry가 이름을 동적 channel index로 연결하며 별도 전역 State enum은 없다. Profile table은 Scene에서 공유하고 각 texel은 `ProfileIndex`로 응답값을 찾는다. version 5는 `reactions`로 전이·상호작용을 선언한다. version 3/4 Transition은 기존 의미의 조건부 생성 규칙으로 변환해 실행한다. [[02_Architecture/01_Contracts/06_Reactions|Reaction 계약]]을 따른다. 파라미터의 의미·범위는 [[02_Architecture/01_Contracts/01_State-and-Profile|State 계약]]이 기준이다.
+현재 Scene이 참조하는 고유 Profile의 `states` key를 정규화해 `FSurfaceStateRegistry`를 만든다. Registry가 이름을 동적 channel index로 연결하며 별도 전역 State enum은 없다. Profile table은 Scene에서 공유하고 각 texel은 `ProfileIndex`로 응답값을 찾는다. version 5는 `reactions`로 전이·상호작용을 선언한다. version 3/4 Transition은 기존 의미의 조건부 생성 규칙으로 변환해 실행한다. [[02_Architecture/01_Contracts/06_Reactions|Reaction 계약]]을 따른다. 파라미터의 의미·범위는 [[02_Architecture/01_Contracts/01_State-and-Profile|State 계약]]이 기준이다.
 
 Version 4의 전달·보유 키는 `saturationSpreadFactor`, `gravityFlowFactor`, `cavityExitResistanceFactor`, `cavityDecayProtectionFactor`다. Version 3은 이전 키로만 읽고 서로 다른 version의 키를 섞으면 실패한다. Version 1·2는 지원하지 않는다.
 

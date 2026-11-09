@@ -7,7 +7,7 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Render_Options_and_Viewport_Panels
 
-    void TDebugUI::DrawRenderOptionsWindow(TScene& SceneData)
+    void FDebugUI::DrawRenderOptionsWindow(FScene& SceneData)
     {
         if (FrameRenderer == nullptr)
         {
@@ -38,47 +38,47 @@ namespace MDSS
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
                                            ImGuiWindowFlags_NoNavFocus;
         const std::size_t          ActiveViewportIndex = GetActiveViewportIndex();
-        Rendering::TRenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode(ActiveViewportIndex);
+        Rendering::ERenderViewMode CurrentMode = FrameRenderer->GetRenderViewMode(ActiveViewportIndex);
 
-        const auto                 GetViewGeometryDescription = [](Rendering::TRenderViewMode Mode) -> const char*
+        const auto GetViewGeometryDescription = [](Rendering::ERenderViewMode Mode) -> const char*
         {
             switch (Mode)
             {
-                case Rendering::TRenderViewMode::Lit:
+                case Rendering::ERenderViewMode::Lit:
                     return "기본적으로 원본 메시를 렌더링합니다. Mud/WaterFilm/Lava 적층 레이어가 활성화된 물체는 "
                            "베이스 표면도 텍셀 메시로 그립니다.";
-                case Rendering::TRenderViewMode::Unlit:
+                case Rendering::ERenderViewMode::Unlit:
                     return "원본 메시 위치에 조명 없이 재질색을 표시합니다. Meso와 State 적층 변위는 없습니다.";
-                case Rendering::TRenderViewMode::Wireframe:
+                case Rendering::ERenderViewMode::Wireframe:
                     return "원본 메시 삼각형을 표시합니다. Meso와 State 적층 변위는 없습니다.";
-                case Rendering::TRenderViewMode::VertexNormalWS:
+                case Rendering::ERenderViewMode::VertexNormalWS:
                     return "원본 메시 정점 노멀을 표시합니다. 형상 변위는 없습니다.";
-                case Rendering::TRenderViewMode::NormalTextureTS:
+                case Rendering::ERenderViewMode::NormalTextureTS:
                     return "원본 메시의 노멀 텍스처를 표시합니다. 형상 변위는 없습니다.";
-                case Rendering::TRenderViewMode::MappedNormalWS:
+                case Rendering::ERenderViewMode::MappedNormalWS:
                     return "원본 메시의 매핑된 노멀을 표시합니다. 형상 변위는 없습니다.";
-                case Rendering::TRenderViewMode::SurfaceStateHeatmap:
+                case Rendering::ERenderViewMode::SurfaceStateHeatmap:
                     return "원본 메시 위에 State 데이터를 색으로 표시합니다. Relief 음영은 Meso 노멀을 쓸 수 있지만 "
                            "형상 변위는 없습니다.";
-                case Rendering::TRenderViewMode::SurfaceValidity:
-                case Rendering::TRenderViewMode::SurfaceID:
-                case Rendering::TRenderViewMode::NeighborCount:
-                case Rendering::TRenderViewMode::SurfaceSeam:
-                case Rendering::TRenderViewMode::OutgoingFluxScale:
-                case Rendering::TRenderViewMode::SolverTransferWeight:
-                case Rendering::TRenderViewMode::SurfaceTexelGrid:
-                case Rendering::TRenderViewMode::SurfaceTexelArea:
+                case Rendering::ERenderViewMode::SurfaceValidity:
+                case Rendering::ERenderViewMode::SurfaceID:
+                case Rendering::ERenderViewMode::NeighborCount:
+                case Rendering::ERenderViewMode::SurfaceSeam:
+                case Rendering::ERenderViewMode::OutgoingFluxScale:
+                case Rendering::ERenderViewMode::SolverTransferWeight:
+                case Rendering::ERenderViewMode::SurfaceTexelGrid:
+                case Rendering::ERenderViewMode::SurfaceTexelArea:
                     return "원본 메시 위에 진단 데이터를 표시합니다. Meso와 State 적층 변위는 없습니다.";
-                case Rendering::TRenderViewMode::MesoHeight:
-                case Rendering::TRenderViewMode::MesoOffset:
+                case Rendering::ERenderViewMode::MesoHeight:
+                case Rendering::ERenderViewMode::MesoOffset:
                     return "Meso 높이만 형상에 적용합니다. State 적층은 포함하지 않습니다.";
-                case Rendering::TRenderViewMode::MacroGeometry:
+                case Rendering::ERenderViewMode::MacroGeometry:
                     return "원본 메시 형상입니다. Meso와 State 적층 변위는 없습니다.";
-                case Rendering::TRenderViewMode::SurfaceAccumulation:
+                case Rendering::ERenderViewMode::SurfaceAccumulation:
                     return "Meso + 선택 State 전체 높이를 형상에 적용합니다. 색은 선택한 적층 성분을 표시합니다.";
-                case Rendering::TRenderViewMode::SurfaceFinalGeometry:
+                case Rendering::ERenderViewMode::SurfaceFinalGeometry:
                     return "Meso + 선택 State 적층을 적용한 형상입니다. 모든 State를 합친 최종 형상은 아닙니다.";
-                case Rendering::TRenderViewMode::TotalSimulationHeight:
+                case Rendering::ERenderViewMode::TotalSimulationHeight:
                     return "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.";
             }
             return "원본 메시 형상입니다.";
@@ -92,32 +92,32 @@ namespace MDSS
             {
                 CurrentName = RenderViewModeNames[CurrentIndex];
             }
-            else if (CurrentMode >= Rendering::TRenderViewMode::SurfaceStateHeatmap &&
-                     CurrentMode < Rendering::TRenderViewMode::SolverTransferWeight)
+            else if (CurrentMode >= Rendering::ERenderViewMode::SurfaceStateHeatmap &&
+                     CurrentMode < Rendering::ERenderViewMode::SolverTransferWeight)
             {
                 CurrentName = SurfaceDebugViewNames[CurrentIndex -
-                                                    static_cast<int>(Rendering::TRenderViewMode::SurfaceStateHeatmap)];
+                                                    static_cast<int>(Rendering::ERenderViewMode::SurfaceStateHeatmap)];
             }
-            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceAccumulation)
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation)
                 CurrentName = "State Height Heatmap";
-            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceFinalGeometry)
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceFinalGeometry)
                 CurrentName = "Meso + State Geometry";
-            else if (CurrentMode == Rendering::TRenderViewMode::TotalSimulationHeight)
+            else if (CurrentMode == Rendering::ERenderViewMode::TotalSimulationHeight)
                 CurrentName = "Total Simulation Height";
-            else if (CurrentMode == Rendering::TRenderViewMode::MesoHeight ||
-                     CurrentMode == Rendering::TRenderViewMode::MesoOffset)
+            else if (CurrentMode == Rendering::ERenderViewMode::MesoHeight ||
+                     CurrentMode == Rendering::ERenderViewMode::MesoOffset)
             {
                 CurrentName = "Meso Geometry";
             }
-            else if (CurrentMode == Rendering::TRenderViewMode::MacroGeometry)
+            else if (CurrentMode == Rendering::ERenderViewMode::MacroGeometry)
             {
                 CurrentName = "Base Geometry";
             }
-            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceTexelGrid)
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceTexelGrid)
             {
                 CurrentName = "Texel Grid";
             }
-            else if (CurrentMode == Rendering::TRenderViewMode::SurfaceTexelArea)
+            else if (CurrentMode == Rendering::ERenderViewMode::SurfaceTexelArea)
             {
                 CurrentName = "Texel Area Heatmap";
             }
@@ -150,7 +150,7 @@ namespace MDSS
                 DrawSectionHeader("RENDER", 0.0F, 2.0F);
                 const auto SelectDisplayView = [&](int Index, const char* Description = nullptr)
                 {
-                    const auto Mode = static_cast<Rendering::TRenderViewMode>(Index);
+                    const auto Mode = static_cast<Rendering::ERenderViewMode>(Index);
                     const bool bSelected = CurrentMode == Mode;
                     const bool bClicked = ImGui::MenuItem(RenderViewModeNames[Index]);
                     DrawSelectionMark(bSelected);
@@ -177,11 +177,11 @@ namespace MDSS
                 }
                 DrawSectionHeader("DEBUG", 12.0F, 2.0F);
                 const auto SelectDebugView =
-                    [&](const char* Name, Rendering::TRenderViewMode Mode, const char* Description = nullptr)
+                    [&](const char* Name, Rendering::ERenderViewMode Mode, const char* Description = nullptr)
                 {
-                    const bool bMesoGeometry = Mode == Rendering::TRenderViewMode::MesoHeight &&
-                                               (CurrentMode == Rendering::TRenderViewMode::MesoHeight ||
-                                                CurrentMode == Rendering::TRenderViewMode::MesoOffset);
+                    const bool bMesoGeometry = Mode == Rendering::ERenderViewMode::MesoHeight &&
+                                               (CurrentMode == Rendering::ERenderViewMode::MesoHeight ||
+                                                CurrentMode == Rendering::ERenderViewMode::MesoOffset);
                     const bool bSelected = CurrentMode == Mode || bMesoGeometry;
                     const bool bClicked = ImGui::MenuItem(Name);
                     DrawSelectionMark(bSelected);
@@ -200,62 +200,62 @@ namespace MDSS
                 };
                 SelectDebugView(
                     SurfaceDebugViewNames[0],
-                    Rendering::TRenderViewMode::SurfaceStateHeatmap,
+                    Rendering::ERenderViewMode::SurfaceStateHeatmap,
                     "원본 메시 위에 State/용량 비율을 색으로 표시합니다. Meso와 적층 변위는 적용하지 않습니다.");
                 if (ImGui::BeginMenu("Surface"))
                 {
                     SelectDebugView(SurfaceDebugViewNames[1],
-                                    Rendering::TRenderViewMode::SurfaceValidity,
+                                    Rendering::ERenderViewMode::SurfaceValidity,
                                     "원본 메시 위에 텍셀의 유효성과 시뮬레이션 활성 상태를 표시합니다.");
                     SelectDebugView(SurfaceDebugViewNames[2],
-                                    Rendering::TRenderViewMode::SurfaceID,
+                                    Rendering::ERenderViewMode::SurfaceID,
                                     "원본 메시 위에 Surface ID를 색으로 표시합니다.");
                     SelectDebugView(SurfaceDebugViewNames[3],
-                                    Rendering::TRenderViewMode::NeighborCount,
+                                    Rendering::ERenderViewMode::NeighborCount,
                                     "원본 메시 위에 텍셀 이웃 수를 표시합니다.");
                     SelectDebugView(SurfaceDebugViewNames[4],
-                                    Rendering::TRenderViewMode::SurfaceSeam,
+                                    Rendering::ERenderViewMode::SurfaceSeam,
                                     "원본 메시 위에 UV chart 사이의 텍셀 이웃 경계를 표시합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Texel"))
                 {
                     SelectDebugView("Texel Grid",
-                                    Rendering::TRenderViewMode::SurfaceTexelGrid,
+                                    Rendering::ERenderViewMode::SurfaceTexelGrid,
                                     "원본 메시 표면에 시뮬레이션 텍셀 격자를 표시합니다.");
                     SelectDebugView("Texel Area Heatmap",
-                                    Rendering::TRenderViewMode::SurfaceTexelArea,
+                                    Rendering::ERenderViewMode::SurfaceTexelArea,
                                     "원본 메시 표면에 텍셀별 월드 면적을 표시합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Geometry"))
                 {
                     SelectDebugView("Base Geometry",
-                                    Rendering::TRenderViewMode::MacroGeometry,
+                                    Rendering::ERenderViewMode::MacroGeometry,
                                     "원본 메시 형상입니다. Meso 변위와 State 적층은 포함하지 않습니다.");
                     SelectDebugView("Meso Geometry",
-                                    Rendering::TRenderViewMode::MesoHeight,
+                                    Rendering::ERenderViewMode::MesoHeight,
                                     "Meso 높이만 형상에 적용합니다. 표시 방식은 View Settings에서 선택합니다.");
                     SelectDebugView(
                         "State Height Heatmap",
-                        Rendering::TRenderViewMode::SurfaceAccumulation,
+                        Rendering::ERenderViewMode::SurfaceAccumulation,
                         "Meso + 선택 State 전체 높이로 형상을 변위합니다. 색은 선택한 적층 성분을 표시합니다.");
                     SelectDebugView("Meso + State Geometry",
-                                    Rendering::TRenderViewMode::SurfaceFinalGeometry,
+                                    Rendering::ERenderViewMode::SurfaceFinalGeometry,
                                     "Meso + 선택 State 적층을 적용한 형상입니다. 선택 State 미리보기이며 모든 State의 "
                                     "최종 합성이 아닙니다.");
                     SelectDebugView("Total Simulation Height",
-                                    Rendering::TRenderViewMode::TotalSimulationHeight,
+                                    Rendering::ERenderViewMode::TotalSimulationHeight,
                                     "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.");
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Solver"))
                 {
                     SelectDebugView(SurfaceDebugViewNames[5],
-                                    Rendering::TRenderViewMode::OutgoingFluxScale,
+                                    Rendering::ERenderViewMode::OutgoingFluxScale,
                                     "원본 메시 위에 State별 유출 제한값을 표시합니다.");
                     SelectDebugView("Solver Transfer Weights",
-                                    Rendering::TRenderViewMode::SolverTransferWeight,
+                                    Rendering::ERenderViewMode::SolverTransferWeight,
                                     "원본 메시 위에 선택한 Solver 전달 가중치를 표시합니다.");
                     ImGui::EndMenu();
                 }
@@ -273,7 +273,7 @@ namespace MDSS
                     const std::size_t   NewIndex = ViewportPanels.size();
                     const std::uint32_t NewId = NextViewportId++;
                     ViewportPanels.push_back({NewId, glm::vec4(0.0F)});
-                    FrameRenderer->SetRenderViewMode(NewIndex, Rendering::TRenderViewMode::SurfaceStateHeatmap);
+                    FrameRenderer->SetRenderViewMode(NewIndex, Rendering::ERenderViewMode::SurfaceStateHeatmap);
                 }
             }
             else if (ImGui::SmallButton("Remove View"))
@@ -281,7 +281,7 @@ namespace MDSS
                 const std::size_t RemoveIndex =
                     ActiveViewportIndex > 0U ? ActiveViewportIndex : ViewportPanels.size() - 1U;
                 const std::uint32_t RemoveId = ViewportPanels[RemoveIndex].Id;
-                FrameRenderer->SetRenderViewMode(RemoveIndex, Rendering::TRenderViewMode::SurfaceStateHeatmap);
+                FrameRenderer->SetRenderViewMode(RemoveIndex, Rendering::ERenderViewMode::SurfaceStateHeatmap);
                 ViewportPanels.erase(ViewportPanels.begin() + static_cast<std::ptrdiff_t>(RemoveIndex));
                 if (ActiveViewportId == RemoveId)
                     ActiveViewportId = ViewportPanels.front().Id;
@@ -294,12 +294,12 @@ namespace MDSS
             ImGui::SameLine(0.0F, 10.0F);
             ImGui::TextDisabled("|");
 
-            if (CurrentMode == Rendering::TRenderViewMode::SurfaceStateHeatmap ||
-                CurrentMode == Rendering::TRenderViewMode::SurfaceAccumulation ||
-                CurrentMode == Rendering::TRenderViewMode::SurfaceFinalGeometry)
+            if (CurrentMode == Rendering::ERenderViewMode::SurfaceStateHeatmap ||
+                CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation ||
+                CurrentMode == Rendering::ERenderViewMode::SurfaceFinalGeometry)
             {
                 ImGui::SameLine(0.0F, 8.0F);
-                const SurfaceState::TSurfaceStateRegistry* Registry =
+                const SurfaceState::FSurfaceStateRegistry* Registry =
                     AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
                 const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
                 if (StateCount == 0)
@@ -316,7 +316,7 @@ namespace MDSS
                     ImGui::TextUnformatted("State");
                     ImGui::SameLine(0.0F, 6.0F);
                     ImGui::SetNextItemWidth(145.0F);
-                    const bool  bHeatmap = CurrentMode == Rendering::TRenderViewMode::SurfaceStateHeatmap;
+                    const bool  bHeatmap = CurrentMode == Rendering::ERenderViewMode::SurfaceStateHeatmap;
                     const bool  bAllStates = bHeatmap && FrameRenderer->IsStateHeatmapAllStatesEnabled();
                     const char* StateComboId = bHeatmap ? "##ToolbarHeatmapState" : "##ToolbarHeightState";
                     if (ImGui::BeginCombo(StateComboId,
@@ -328,7 +328,7 @@ namespace MDSS
                         }
                         for (std::size_t Index = 0; Index < StateCount; ++Index)
                         {
-                            const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                            const SurfaceState::FStateId State = static_cast<SurfaceState::FStateId>(Index);
                             const bool                   bSelected = !bAllStates && State == DebugState;
                             if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                             {
@@ -345,7 +345,7 @@ namespace MDSS
                         ImGui::EndCombo();
                     }
                 }
-                if (CurrentMode == Rendering::TRenderViewMode::SurfaceAccumulation)
+                if (CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation)
                 {
                     ImGui::SameLine(0.0F, 8.0F);
                     ImGui::AlignTextToFramePadding();
@@ -472,14 +472,14 @@ namespace MDSS
                     auto        Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
                     int         GridMode = static_cast<int>(Settings.HeightGridMode);
                     const char* Modes[] = {"Off", "Overlay", "Grid only"};
-                    bool        Changed = ImGui::Combo("Height grid", &GridMode, Modes, 3);
+                    bool        bChanged = ImGui::Combo("Height grid", &GridMode, Modes, 3);
                     Settings.HeightGridMode = static_cast<std::uint32_t>(GridMode);
                     ImGui::SameLine();
                     int BlockSize = static_cast<int>(Settings.HeightGridBlockSize);
                     ImGui::SetNextItemWidth(130.0F);
-                    Changed |= SliderIntWithDoubleClickInput("Cell texels", &BlockSize, 1, 64);
+                    bChanged |= SliderIntWithDoubleClickInput("Cell texels", &BlockSize, 1, 64);
                     Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
-                    if (Changed)
+                    if (bChanged)
                     {
                         FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
                     }
@@ -487,13 +487,13 @@ namespace MDSS
 
                 switch (CurrentMode)
                 {
-                    case Rendering::TRenderViewMode::Lit:
+                    case Rendering::ERenderViewMode::Lit:
                         BeginViewContext("LIT", "재질색 × 조명(노멀 맵 포함).");
                         break;
-                    case Rendering::TRenderViewMode::Unlit:
+                    case Rendering::ERenderViewMode::Unlit:
                         BeginViewContext("UNLIT", "조명 없이 재질색만 표시.");
                         break;
-                    case Rendering::TRenderViewMode::Wireframe:
+                    case Rendering::ERenderViewMode::Wireframe:
                     {
                         BeginViewContext("WIREFRAME", "삼각형 와이어프레임으로 형상을 표시.");
                         bool bUniformWhite = FrameRenderer->IsWireframeUniformWhite();
@@ -521,17 +521,17 @@ namespace MDSS
                         }
                         break;
                     }
-                    case Rendering::TRenderViewMode::VertexNormalWS:
+                    case Rendering::ERenderViewMode::VertexNormalWS:
                         BeginViewContext("VERTEX NORMAL", "RGB 채널은 월드 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                         break;
-                    case Rendering::TRenderViewMode::NormalTextureTS:
+                    case Rendering::ERenderViewMode::NormalTextureTS:
                         BeginViewContext("NORMAL TEXTURE",
                                          "RGB 채널은 탄젠트 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                         break;
-                    case Rendering::TRenderViewMode::MappedNormalWS:
+                    case Rendering::ERenderViewMode::MappedNormalWS:
                         BeginViewContext("MAPPED NORMAL", "RGB 채널은 월드 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                         break;
-                    case Rendering::TRenderViewMode::SurfaceStateHeatmap:
+                    case Rendering::ERenderViewMode::SurfaceStateHeatmap:
                     {
                         BeginViewContext("STATE HEATMAP",
                                          "프로파일 용량 대비 State 비율을 표시합니다. 100% 초과는 주황색이며, 실제 "
@@ -550,26 +550,26 @@ namespace MDSS
                         DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
                         break;
                     }
-                    case Rendering::TRenderViewMode::SurfaceAccumulation:
-                    case Rendering::TRenderViewMode::SurfaceFinalGeometry:
+                    case Rendering::ERenderViewMode::SurfaceAccumulation:
+                    case Rendering::ERenderViewMode::SurfaceFinalGeometry:
                     {
-                        const bool bFinal = CurrentMode == Rendering::TRenderViewMode::SurfaceFinalGeometry;
+                        const bool bFinal = CurrentMode == Rendering::ERenderViewMode::SurfaceFinalGeometry;
                         BeginViewContext(bFinal ? "MESO + STATE GEOMETRY" : "STATE HEIGHT HEATMAP",
                                          bFinal ? "Meso와 선택 State의 높이를 적용한 형상입니다. 선택 State "
                                                   "미리보기이며 모든 State의 최종 합성이 아닙니다."
                                                 : "형상에는 Meso와 선택 State 전체 높이를 적용합니다. 색은 선택한 적층 "
                                                   "성분을 표시하며, UV chart 경계는 열려 있습니다.");
                         auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
-                        bool Changed = false;
+                        bool bChanged = false;
                         ImGui::NewLine();
                         ImGui::SetNextItemWidth(95.0F);
-                        Changed |= ImGui::DragFloat("Display scale",
-                                                    &Settings.DisplacementScale,
-                                                    0.1F,
-                                                    1e-8F,
-                                                    1e6F,
-                                                    "%.3gx",
-                                                    ImGuiSliderFlags_AlwaysClamp);
+                        bChanged |= ImGui::DragFloat("Display scale",
+                                                     &Settings.DisplacementScale,
+                                                     0.1F,
+                                                     1e-8F,
+                                                     1e6F,
+                                                     "%.3gx",
+                                                     ImGuiSliderFlags_AlwaysClamp);
                         if (bFinal)
                         {
                             ImGui::SameLine();
@@ -593,7 +593,7 @@ namespace MDSS
                                                         : "채워진 cavity만 표시");
                             }
                         }
-                        if (Changed)
+                        if (bChanged)
                             FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
                         ImGui::NewLine();
                         DrawHeightGridControls();
@@ -615,7 +615,7 @@ namespace MDSS
                         }
                         break;
                     }
-                    case Rendering::TRenderViewMode::TotalSimulationHeight:
+                    case Rendering::ERenderViewMode::TotalSimulationHeight:
                     {
                         BeginViewContext("TOTAL SIMULATION HEIGHT",
                                          "Meso와 모든 State의 현재 높이를 적용한 형상입니다. "
@@ -633,37 +633,37 @@ namespace MDSS
                         DrawHeightGridControls();
                         break;
                     }
-                    case Rendering::TRenderViewMode::SurfaceValidity:
+                    case Rendering::ERenderViewMode::SurfaceValidity:
                         BeginViewContext("VALIDITY", "Surface 텍셀 유효 여부와 시뮬레이션 적용 여부.");
                         DrawLegendColor({0.10F, 0.78F, 0.24F, 1.0F}, "유효·시뮬레이션 켜짐");
                         DrawLegendColor({0.18F, 0.48F, 0.82F, 1.0F}, "유효·시뮬레이션 꺼짐");
                         DrawLegendColor({0.86F, 0.12F, 0.08F, 1.0F}, "무효");
                         break;
-                    case Rendering::TRenderViewMode::SurfaceID:
+                    case Rendering::ERenderViewMode::SurfaceID:
                         BeginViewContext("SURFACE ID",
                                          "색으로 Surface를 구분합니다. 색상 자체는 수치 의미가 없습니다.");
                         break;
-                    case Rendering::TRenderViewMode::NeighborCount:
+                    case Rendering::ERenderViewMode::NeighborCount:
                         BeginViewContext("NEIGHBOR COUNT", "유효한 이웃 텍셀 개수.");
                         DrawLegendColor({0.08F, 0.10F, 0.18F, 1.0F}, "0개");
                         DrawLegendColor({0.95F, 0.72F, 0.12F, 1.0F}, "8개");
                         break;
-                    case Rendering::TRenderViewMode::SurfaceSeam:
+                    case Rendering::ERenderViewMode::SurfaceSeam:
                         BeginViewContext("UV SEAM", "다른 UV chart로 이어지는 이웃 관계가 있는 경계.");
                         DrawLegendColor({1.0F, 0.18F, 0.72F, 1.0F}, "Seam 이웃 있음");
                         DrawLegendColor({0.12F, 0.16F, 0.22F, 1.0F}, "없음");
                         break;
-                    case Rendering::TRenderViewMode::OutgoingFluxScale:
+                    case Rendering::ERenderViewMode::OutgoingFluxScale:
                     {
                         BeginViewContext("OUTGOING FLUX SCALE",
                                          "선택 State 채널의 유출 제한값: 0은 제한, 1은 제한 없음.");
-                        const SurfaceState::TSurfaceStateRegistry* Registry =
+                        const SurfaceState::FSurfaceStateRegistry* Registry =
                             AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
                         if (Registry != nullptr && Registry->GetStateCount() > 0)
                         {
                             const std::size_t StateCount = Registry->GetStateCount();
-                            DebugState = std::min<SurfaceState::TStateId>(
-                                DebugState, static_cast<SurfaceState::TStateId>(StateCount - 1));
+                            DebugState = std::min<SurfaceState::FStateId>(
+                                DebugState, static_cast<SurfaceState::FStateId>(StateCount - 1));
                             ImGui::AlignTextToFramePadding();
                             ImGui::TextUnformatted("State");
                             ImGui::SameLine(0.0F, 6.0F);
@@ -672,7 +672,7 @@ namespace MDSS
                             {
                                 for (std::size_t Index = 0; Index < StateCount; ++Index)
                                 {
-                                    const SurfaceState::TStateId State = static_cast<SurfaceState::TStateId>(Index);
+                                    const SurfaceState::FStateId State = static_cast<SurfaceState::FStateId>(Index);
                                     const bool                   bSelected = State == DebugState;
                                     if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                                     {
@@ -693,7 +693,7 @@ namespace MDSS
                         DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "시뮬레이션 꺼짐");
                         break;
                     }
-                    case Rendering::TRenderViewMode::SolverTransferWeight:
+                    case Rendering::ERenderViewMode::SolverTransferWeight:
                     {
                         BeginViewContext("TRANSFER WEIGHT", "선택 가중치 평균: 0은 차단, 1은 완전 전달.");
                         int SelectedWeightView = static_cast<int>(FrameRenderer->GetSolverTransferWeightView());
@@ -704,7 +704,7 @@ namespace MDSS
                                          static_cast<int>(SolverTransferWeightViewNames.size())))
                         {
                             FrameRenderer->SetSolverTransferWeightView(
-                                static_cast<Rendering::TSolverTransferWeightView>(SelectedWeightView));
+                                static_cast<Rendering::ESolverTransferWeightView>(SelectedWeightView));
                         }
                         ImGui::SameLine(0.0F, 10.0F);
                         DrawLegendColor({0.16F, 0.035F, 0.24F, 1.0F}, "0 차단");
@@ -712,7 +712,7 @@ namespace MDSS
                         DrawLegendColor({0.18F, 0.94F, 0.98F, 1.0F}, "1 허용");
                         break;
                     }
-                    case Rendering::TRenderViewMode::SurfaceTexelGrid:
+                    case Rendering::ERenderViewMode::SurfaceTexelGrid:
                     {
                         BeginViewContext("TEXEL GRID", "시뮬레이션 UV 격자. 확대하면 개별 텍셀 경계가 나타납니다.");
                         const std::uint32_t                  BlockSize = FrameRenderer->GetTexelGridBlockSize();
@@ -734,7 +734,7 @@ namespace MDSS
                         DrawLegendColor({0.72F, 0.88F, 0.98F, 1.0F}, "묶음 경계");
                         break;
                     }
-                    case Rendering::TRenderViewMode::SurfaceTexelArea:
+                    case Rendering::ERenderViewMode::SurfaceTexelArea:
                     {
                         BeginViewContext("TEXEL AREA", "텍셀당 월드 면적. 해상도 변경에도 동일 색 기준.");
                         float Reference = FrameRenderer->GetTexelAreaReference();
@@ -757,20 +757,20 @@ namespace MDSS
                         DrawLegendColor({1.0F, 0.18F, 0.72F, 1.0F}, "면적 계산 불가");
                         break;
                     }
-                    case Rendering::TRenderViewMode::MesoHeight:
-                    case Rendering::TRenderViewMode::MesoOffset:
+                    case Rendering::ERenderViewMode::MesoHeight:
+                    case Rendering::ERenderViewMode::MesoOffset:
                     {
                         BeginViewContext("MESO GEOMETRY",
                                          "Meso 높이만 형상에 적용합니다. State 적층은 포함하지 않습니다.");
-                        int Representation = CurrentMode == Rendering::TRenderViewMode::MesoHeight ? 0 : 1;
+                        int Representation = CurrentMode == Rendering::ERenderViewMode::MesoHeight ? 0 : 1;
                         ImGui::SetNextItemWidth(150.0F);
                         if (ImGui::Combo("Representation", &Representation, "Height Color\0Displacement\0"))
                         {
-                            CurrentMode = Representation == 0 ? Rendering::TRenderViewMode::MesoHeight
-                                                              : Rendering::TRenderViewMode::MesoOffset;
+                            CurrentMode = Representation == 0 ? Rendering::ERenderViewMode::MesoHeight
+                                                              : Rendering::ERenderViewMode::MesoOffset;
                             FrameRenderer->SetRenderViewMode(ActiveViewportIndex, CurrentMode);
                         }
-                        if (CurrentMode == Rendering::TRenderViewMode::MesoHeight)
+                        if (CurrentMode == Rendering::ERenderViewMode::MesoHeight)
                         {
                             ImGui::SameLine(0.0F, 10.0F);
                             DrawLegendColor({0.12F, 0.52F, 0.92F, 1.0F}, "음수");
@@ -780,7 +780,7 @@ namespace MDSS
                         DrawHeightGridControls();
                         break;
                     }
-                    case Rendering::TRenderViewMode::MacroGeometry:
+                    case Rendering::ERenderViewMode::MacroGeometry:
                         BeginViewContext("BASE GEOMETRY",
                                          "원본 메시 형상입니다. Meso 변위와 State 적층은 포함하지 않습니다.");
                         break;

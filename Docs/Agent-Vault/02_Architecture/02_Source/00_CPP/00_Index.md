@@ -44,11 +44,11 @@ flowchart LR
 
 | 출발 데이터 | 생성·변환 | 마지막 소비자 |
 |---|---|---|
-| Scene의 mesh/profile/resolution | `TSceneLoader` → `TAssetManager` → `TSurfaceDataManager` → mapping/geometry builder | 공유 GPU geometry와 instance의 profile lookup |
-| 사용자/Scene Contact | `TInputSystem` 또는 Scene event → `TSurfaceStateSystem::SubmitContact` → `ApplyPendingContacts` | `InputDelta`를 읽는 Solver Pass 2 |
-| 프레임 시간 | `TApplication::MainLoop` → `TFrameCoordinator` → `TSimulationClock` | `TSurfaceStateSystem::RecordStep`의 `DeltaTime` |
-| Current State A/B | `TSurfaceStateSolver::RecordSteps` → Next State·높이·동적 geometry | 다음 substep과 `TRenderer::RecordCommandBuffer` |
-| 현재 State의 화면 표시 | `TRenderStateTexture`·`TTexelGeometryPreview`·`TAccumulationOverlaySides` | fragment shader·top/side indirect draw·Inspector |
+| Scene의 mesh/profile/resolution | `FSceneLoader` → `FAssetManager` → `FSurfaceDataManager` → mapping/geometry builder | 공유 GPU geometry와 instance의 profile lookup |
+| 사용자/Scene Contact | `FInputSystem` 또는 Scene event → `FSurfaceStateSystem::SubmitContact` → `ApplyPendingContacts` | `InputDelta`를 읽는 Solver Pass 2 |
+| 프레임 시간 | `FApplication::MainLoop` → `FFrameCoordinator` → `FSimulationClock` | `FSurfaceStateSystem::RecordStep`의 `DeltaTime` |
+| Current State A/B | `FSurfaceStateSolver::RecordSteps` → Next State·높이·동적 geometry | 다음 substep과 `FRenderer::RecordCommandBuffer` |
+| 현재 State의 화면 표시 | `FRenderStateTexture`·`FTexelGeometryPreview`·`FAccumulationOverlaySides` | fragment shader·top/side indirect draw·Inspector |
 
 문제에서 역추적할 때는 버퍼를 실제로 **쓰는** 코드와 그 버퍼를 **읽는** 코드를 함께 연다. 예를 들어 State 값이 예상과 다르면 `SurfaceContactApplication.cpp`의 입력 생성, `SurfaceStepRecording.cpp`의 현재 A/B 선택, Pass 1/2와 `SurfaceStateSolver.cpp`의 barrier, `RendererCommands.cpp`의 표시 descriptor 선택을 순서대로 확인한다. 각 페이지의 표는 파일 검색용이며 아래 설명에서 호출 순서와 상태 변화 지점을 다룬다.
 

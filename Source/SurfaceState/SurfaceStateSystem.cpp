@@ -35,20 +35,27 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Lifecycle
 
-    TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
-                                             const Asset::TAssetManager& Assets,
-                                             const TSurfaceDataManager&  SurfaceData,
-                                             const TScene&               Scene,
-                                             TSurfaceGPUBufferPool*      ReusePool)
+    FSurfaceStateSystem::FSurfaceStateSystem(const GPU::FVulkanContext&  Context,
+                                             const Asset::FAssetManager& Assets,
+                                             const FSurfaceDataManager&  SurfaceData,
+                                             const FScene&               Scene,
+                                             FSurfaceGPUBufferPool*      ReusePool)
         : Context(Context), Assets(Assets), SurfaceData(SurfaceData), Scene(Scene)
     {
-        GPUResources = std::make_unique<TSurfaceGPUResourceManager>(Context, Assets, SurfaceData, Scene, ReusePool,
-            TSurfaceScratchStorageFormat{bRawFluxCacheEnabled, bHalfRawFluxCacheEnabled,
-                                        bHalfDynamicWeightsEnabled, bCompactScratchStorageEnabled});
+        GPUResources =
+            std::make_unique<FSurfaceGPUResourceManager>(Context,
+                                                         Assets,
+                                                         SurfaceData,
+                                                         Scene,
+                                                         ReusePool,
+                                                         FSurfaceScratchStorageFormat{bRawFluxCacheEnabled,
+                                                                                      bHalfRawFluxCacheEnabled,
+                                                                                      bHalfDynamicWeightsEnabled,
+                                                                                      bCompactScratchStorageEnabled});
         PrepareScratchStorage();
-        if (const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
+        if (const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
         {
-            Solver = std::make_unique<TSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
+            Solver = std::make_unique<FSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
         }
         // Dynamic geometry buffers start empty.  The first state-driven solver step performs one
         // force-full bootstrap before Pass 1, then normal steps use Solver -> Height -> Geometry -> Weights.
@@ -58,19 +65,19 @@ namespace MDSS::SurfaceState
         QueueInitialContacts();
     }
 
-    void TSurfaceStateSystem::QueueInitialContacts()
+    void FSurfaceStateSystem::QueueInitialContacts()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
-        for (const TSceneInitialContact& Initial : Scene.GetInitialContacts())
+        for (const FSceneInitialContact& Initial : Scene.GetInitialContacts())
         {
             const auto Target =
                 std::find_if(Instances.begin(),
                              Instances.end(),
-                             [&](const TStaticMeshInstance& Instance) { return Instance.GetId() == Initial.Target; });
+                             [&](const FStaticMeshInstance& Instance) { return Instance.GetId() == Initial.Target; });
             if (Target == Instances.end())
                 throw std::invalid_argument("Initial contact target is not in Scene: " + Initial.Target);
-            TSurfaceContactInput Contact;
-            Contact.TargetInstance = static_cast<TSurfaceInstanceID>(std::distance(Instances.begin(), Target));
+            FSurfaceContactInput Contact;
+            Contact.TargetInstance = static_cast<FSurfaceInstanceID>(std::distance(Instances.begin(), Target));
             Contact.State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Initial.State);
             Contact.WorldPosition = Initial.WorldPosition;
             Contact.Radius = Initial.Radius;
@@ -80,9 +87,9 @@ namespace MDSS::SurfaceState
         }
     }
 
-    TSurfaceStateSystem::~TSurfaceStateSystem() = default;
+    FSurfaceStateSystem::~FSurfaceStateSystem() = default;
 
-    void TSurfaceStateSystem::ReplaceSceneResources(TSurfaceStateSystem&& Replacement)
+    void FSurfaceStateSystem::ReplaceSceneResources(FSurfaceStateSystem&& Replacement)
     {
         if (&Context != &Replacement.Context || &Assets != &Replacement.Assets || &Scene != &Replacement.Scene)
         {
@@ -111,12 +118,12 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 01_State_and_Contact_Management
 
-    void TSurfaceStateSystem::SubmitContact(TSurfaceContactInput Contact)
+    void FSurfaceStateSystem::SubmitContact(FSurfaceContactInput Contact)
     {
         PendingContacts.push_back(std::move(Contact));
     }
 
-    void TSurfaceStateSystem::ResetState()
+    void FSurfaceStateSystem::ResetState()
     {
         if (vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
         {
@@ -131,7 +138,7 @@ namespace MDSS::SurfaceState
         std::fill(PendingInputActivation.begin(), PendingInputActivation.end(), false);
     }
 
-    void TSurfaceStateSystem::RestartState()
+    void FSurfaceStateSystem::RestartState()
     {
         ResetState();
         QueueInitialContacts();
@@ -139,18 +146,18 @@ namespace MDSS::SurfaceState
         bForceFullGeometryOnNextStep = true;
     }
 
-    void TSurfaceStateSystem::SetDebugProfileParameters(Asset::TSRProfileAssetHandle   Profile,
-                                                        TStateId                       State,
-                                                        const TSurfaceStateParameters& Parameters,
+    void FSurfaceStateSystem::SetDebugProfileParameters(Asset::FSRProfileAssetHandle   Profile,
+                                                        FStateId                       State,
+                                                        const FSurfaceStateParameters& Parameters,
                                                         bool                           bKeepRuntimeOverride)
     {
-        const TSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
+        const FSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
         if (State >= Registry.GetStateCount())
         {
             throw std::out_of_range("Debug Profile override State is outside the Registry.");
         }
 
-        TSurfaceResponseProfileData ValidationData;
+        FSurfaceResponseProfileData ValidationData;
         ValidationData.States.emplace(Registry.GetStateName(State), Parameters);
         ValidateSurfaceResponseProfileData(ValidationData);
 
@@ -185,7 +192,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 02_Debug_and_Accessors
 
-    std::size_t TSurfaceStateSystem::GetSolverInstanceCount() const noexcept
+    std::size_t FSurfaceStateSystem::GetSolverInstanceCount() const noexcept
     {
         if (!GPUResources)
             return 0U;
@@ -197,7 +204,7 @@ namespace MDSS::SurfaceState
         return InstanceCount;
     }
 
-    void TSurfaceStateSystem::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept
     {
         if (bHalfDynamicWeightsEnabled == bEnabled)
             return;
@@ -209,7 +216,7 @@ namespace MDSS::SurfaceState
         bStableDeltaTimeDirty = true;
     }
 
-    void TSurfaceStateSystem::SetSparseSolverEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetSparseSolverEnabled(bool bEnabled) noexcept
     {
         if (bSparseSolverEnabled == bEnabled)
             return;
@@ -218,7 +225,7 @@ namespace MDSS::SurfaceState
             bSeedPersistentActivityOnNextStep = true;
     }
 
-    void TSurfaceStateSystem::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetActiveChannelMaskEnabled(bool bEnabled) noexcept
     {
         if (bActiveChannelMaskEnabled == bEnabled)
             return;
@@ -227,7 +234,7 @@ namespace MDSS::SurfaceState
             bSeedPersistentActivityOnNextStep = true;
     }
 
-    void TSurfaceStateSystem::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept
     {
         if (bPerWorkgroupChannelMaskEnabled == bEnabled)
             return;
@@ -236,19 +243,19 @@ namespace MDSS::SurfaceState
             bSeedPersistentActivityOnNextStep = true;
     }
 
-    const TSurfaceSolverDebugSettings& TSurfaceStateSystem::GetDebugSolverSettings() const noexcept
+    const FSurfaceSolverDebugSettings& FSurfaceStateSystem::GetDebugSolverSettings() const noexcept
     {
         return DebugSolverSettings;
     }
 
-    void TSurfaceStateSystem::SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetStateDrivenGeometryUpdateEnabled(bool bEnabled) noexcept
     {
         if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled != bEnabled)
             bTransferWeightSettingsDirty = true;
         DebugSolverSettings.bStateDrivenGeometryUpdateEnabled = bEnabled;
     }
 
-    void TSurfaceStateSystem::SetDebugSolverTermEnabled(TSurfaceSolverTerm Term, bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetDebugSolverTermEnabled(ESurfaceSolverTerm Term, bool bEnabled) noexcept
     {
         if (DebugSolverSettings.IsEnabled(Term) == bEnabled)
         {
@@ -256,24 +263,24 @@ namespace MDSS::SurfaceState
         }
         DebugSolverSettings.SetEnabled(Term, bEnabled);
         bStableDeltaTimeDirty = true;
-        if (Term == TSurfaceSolverTerm::DistanceWeight || Term == TSurfaceSolverTerm::NormalWeight ||
-            Term == TSurfaceSolverTerm::ProfileBoundaryWeight)
+        if (Term == ESurfaceSolverTerm::DistanceWeight || Term == ESurfaceSolverTerm::NormalWeight ||
+            Term == ESurfaceSolverTerm::ProfileBoundaryWeight)
         {
             bTransferWeightSettingsDirty = true;
         }
     }
 
-    void TSurfaceStateSystem::SetDebugGeometryDriveEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetDebugGeometryDriveEnabled(bool bEnabled) noexcept
     {
-        SetDebugSolverTermEnabled(TSurfaceSolverTerm::GeometryDrive, bEnabled);
+        SetDebugSolverTermEnabled(ESurfaceSolverTerm::GeometryDrive, bEnabled);
     }
 
-    void TSurfaceStateSystem::SetDebugNormalWeightEnabled(bool bEnabled) noexcept
+    void FSurfaceStateSystem::SetDebugNormalWeightEnabled(bool bEnabled) noexcept
     {
-        SetDebugSolverTermEnabled(TSurfaceSolverTerm::NormalWeight, bEnabled);
+        SetDebugSolverTermEnabled(ESurfaceSolverTerm::NormalWeight, bEnabled);
     }
 
-    const TSurfaceGPUResourceManager& TSurfaceStateSystem::GetGPUResources() const noexcept
+    const FSurfaceGPUResourceManager& FSurfaceStateSystem::GetGPUResources() const noexcept
     {
         return *GPUResources;
     }

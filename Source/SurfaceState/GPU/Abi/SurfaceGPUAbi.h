@@ -7,7 +7,7 @@
 
 namespace MDSS::SurfaceState
 {
-    struct alignas(16) TSurfaceGPUVec4
+    struct alignas(16) FSurfaceGPUVec4
     {
         float X = 0.0F;
         float Y = 0.0F;
@@ -15,7 +15,7 @@ namespace MDSS::SurfaceState
         float W = 0.0F;
     };
 
-    struct TSurfaceGPUGeometryScalar
+    struct FSurfaceGPUGeometryScalar
     {
         float MesoVirtualHeight = 0.0F;
         float ConcavityWeight = 0.0F;
@@ -23,7 +23,7 @@ namespace MDSS::SurfaceState
         float MesoGaussianCurvature = 0.0F;
     };
 
-    struct alignas(16) TSurfaceGPUSurfaceRange
+    struct alignas(16) FSurfaceGPUSurfaceRange
     {
         std::uint32_t FirstTexel = 0;
         std::uint32_t Width = 0;
@@ -31,19 +31,19 @@ namespace MDSS::SurfaceState
         std::uint32_t TexelCount = 0;
     };
 
-    struct alignas(16) TSurfaceGPUNeighborIndices
+    struct alignas(16) FSurfaceGPUNeighborIndices
     {
         std::array<std::uint32_t, SurfaceNeighborCount> Indices{};
     };
 
-    struct alignas(16) TSurfaceGPUProfileParameters
+    struct alignas(16) FSurfaceGPUProfileParameters
     {
         std::array<float, 4> CapacityInputAndTransfer{};
         std::array<float, 4> DecayAndGeometry{};
         std::array<float, 4> AccumulationThickness{};
     };
 
-    struct alignas(16) TSurfaceSolverPushConstants
+    struct alignas(16) FSurfaceSolverPushConstants
     {
         float                               DeltaTime = 0.0F;
         std::uint32_t                       StateChannelCount = 0;
@@ -55,24 +55,24 @@ namespace MDSS::SurfaceState
         std::array<std::array<float, 4>, 3> NormalMatrixAndUpColumns{};
     };
 
-    static_assert(sizeof(TSurfaceGPUVec4) == 16);
-    static_assert(alignof(TSurfaceGPUVec4) == 16);
-    static_assert(offsetof(TSurfaceGPUVec4, W) == 12);
-    static_assert(sizeof(TSurfaceGPUGeometryScalar) == 16);
-    static_assert(offsetof(TSurfaceGPUGeometryScalar, ConcavityWeight) == 4);
-    static_assert(offsetof(TSurfaceGPUGeometryScalar, MesoGaussianCurvature) == 12);
-    static_assert(sizeof(TSurfaceGPUNeighborIndices) == 32);
-    static_assert(alignof(TSurfaceGPUNeighborIndices) == 16);
-    static_assert(sizeof(TSurfaceGPUSurfaceRange) == 16);
-    static_assert(alignof(TSurfaceGPUSurfaceRange) == 16);
-    static_assert(sizeof(TSurfaceGPUProfileParameters) == 48);
-    static_assert(alignof(TSurfaceGPUProfileParameters) == 16);
-    static_assert(offsetof(TSurfaceGPUProfileParameters, DecayAndGeometry) == 16);
-    static_assert(offsetof(TSurfaceGPUProfileParameters, AccumulationThickness) == 32);
-    static_assert(sizeof(TSurfaceSolverPushConstants) == 128);
-    static_assert(alignof(TSurfaceSolverPushConstants) == 16);
-    static_assert(offsetof(TSurfaceSolverPushConstants, GravityWorld) == 16);
-    static_assert(offsetof(TSurfaceSolverPushConstants, ModelLinearColumns) == 32);
-    static_assert(offsetof(TSurfaceSolverPushConstants, NormalMatrixAndUpColumns) == 80);
+    static_assert(sizeof(FSurfaceGPUVec4) == 16);
+    static_assert(alignof(FSurfaceGPUVec4) == 16);
+    static_assert(offsetof(FSurfaceGPUVec4, W) == 12);
+    static_assert(sizeof(FSurfaceGPUGeometryScalar) == 16);
+    static_assert(offsetof(FSurfaceGPUGeometryScalar, ConcavityWeight) == 4);
+    static_assert(offsetof(FSurfaceGPUGeometryScalar, MesoGaussianCurvature) == 12);
+    static_assert(sizeof(FSurfaceGPUNeighborIndices) == 32);
+    static_assert(alignof(FSurfaceGPUNeighborIndices) == 16);
+    static_assert(sizeof(FSurfaceGPUSurfaceRange) == 16);
+    static_assert(alignof(FSurfaceGPUSurfaceRange) == 16);
+    static_assert(sizeof(FSurfaceGPUProfileParameters) == 48);
+    static_assert(alignof(FSurfaceGPUProfileParameters) == 16);
+    static_assert(offsetof(FSurfaceGPUProfileParameters, DecayAndGeometry) == 16);
+    static_assert(offsetof(FSurfaceGPUProfileParameters, AccumulationThickness) == 32);
+    static_assert(sizeof(FSurfaceSolverPushConstants) == 128);
+    static_assert(alignof(FSurfaceSolverPushConstants) == 16);
+    static_assert(offsetof(FSurfaceSolverPushConstants, GravityWorld) == 16);
+    static_assert(offsetof(FSurfaceSolverPushConstants, ModelLinearColumns) == 32);
+    static_assert(offsetof(FSurfaceSolverPushConstants, NormalMatrixAndUpColumns) == 80);
 
 } // namespace MDSS::SurfaceState

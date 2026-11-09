@@ -7,7 +7,7 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Simulation_Debug_Panels
 
-    void TDebugUI::DrawSimulationDebugWindow(TScene& SceneData)
+    void FDebugUI::DrawSimulationDebugWindow(FScene& SceneData)
     {
         if (AssetManager == nullptr || FrameRenderer == nullptr)
         {
@@ -18,7 +18,7 @@ namespace MDSS
         constexpr float Width = 360.0F;
         const ImVec2    WindowSize{Width, 520.0F};
         const ImVec2    WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
-                                       Viewport->WorkPos.y + 150.0F};
+                                    Viewport->WorkPos.y + 150.0F};
         ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
 
@@ -85,7 +85,7 @@ namespace MDSS
         ImGui::End();
     }
 
-    void TDebugUI::DrawDebugStateSelector()
+    void FDebugUI::DrawDebugStateSelector()
     {
         const auto& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
         if (Registry.GetStateCount() == 0)
@@ -99,7 +99,7 @@ namespace MDSS
         {
             for (std::size_t Index = 0; Index < Registry.GetStateCount(); ++Index)
             {
-                const auto State = static_cast<SurfaceState::TStateId>(Index);
+                const auto State = static_cast<SurfaceState::FStateId>(Index);
                 if (ImGui::Selectable(Registry.GetStateName(State).c_str(), State == DebugState))
                 {
                     DebugState = State;
@@ -110,7 +110,7 @@ namespace MDSS
         }
     }
 
-    void TDebugUI::DrawTexelInspectorTab()
+    void FDebugUI::DrawTexelInspectorTab()
     {
         DrawSectionHeader("Texel Inspector");
         TextDescriptionWrapped(
@@ -194,7 +194,7 @@ namespace MDSS
         ImGui::Text("Final local normal (scale 1): %.4g, %.4g, %.4g", S.Values[5].x, S.Values[5].y, S.Values[5].z);
     }
 
-    void TDebugUI::DrawSimulationCommonControls()
+    void FDebugUI::DrawSimulationCommonControls()
     {
         const float ControlColumnX = ImGui::GetCursorPosX() + LabeledControlColumnWidth;
         const auto  ContinueControlRow = [ControlColumnX](float NextItemWidth)
@@ -258,7 +258,7 @@ namespace MDSS
         SliderFloatWithDoubleClickInput("##Speed", &SimulationTimeScale, 0.05F, 8.0F, "%.2fx");
     }
 
-    void TDebugUI::DrawSimulationSettingsTab(TScene& SceneData)
+    void FDebugUI::DrawSimulationSettingsTab(FScene& SceneData)
     {
         DrawSectionHeader("Resolution & Time", 0.0F, 2.0F);
         const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
@@ -270,10 +270,10 @@ namespace MDSS
         {
             for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
             {
-                const bool        Selected = Preset.Resolution == CurrentResolution;
+                const bool        bSelected = Preset.Resolution == CurrentResolution;
                 const std::string PresetLabel =
                     std::to_string(Preset.Resolution) + " x " + std::to_string(Preset.Resolution);
-                if (ImGui::Selectable(PresetLabel.c_str(), Selected) && !Selected)
+                if (ImGui::Selectable(PresetLabel.c_str(), bSelected) && !bSelected)
                 {
                     bFrameTimeResetRequested = true;
                     try
@@ -285,10 +285,10 @@ namespace MDSS
                     catch (const std::exception& Error)
                     {
                         ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
-                        TLogger::Warning("TDebugUI", ResolutionStatus);
+                        FLogger::Warning("TDebugUI", ResolutionStatus);
                     }
                 }
-                if (Selected)
+                if (bSelected)
                     ImGui::SetItemDefaultFocus();
             }
             EndLabeledCombo();
@@ -317,10 +317,10 @@ namespace MDSS
                 "고정 시간 간격이 켜진 경우 1/60초 간격을 사용하고, 꺼진 경우 경과 시간을 사용합니다.");
     }
 
-    void TDebugUI::DrawSolverTab()
+    void FDebugUI::DrawSolverTab()
     {
         const auto DrawSolverTerm =
-            [this](SurfaceState::TSurfaceSolverTerm Term, const char* Label, const char* Description)
+            [this](SurfaceState::ESurfaceSolverTerm Term, const char* Label, const char* Description)
         {
             bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
             if (ImGui::Checkbox(Label, &bEnabled))
@@ -350,37 +350,37 @@ namespace MDSS
         ImGui::Dummy({0.0F, 6.0F});
 
         DrawSectionHeader("Transport");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::SaturationDrive,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::SaturationDrive,
                        "Saturation spreading",
                        "ON: 포화도 차이에 따른 이웃 전달을 적용합니다.\n"
                        "OFF: 포화도 차이 전달량을 0으로 설정합니다.");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::GeometryDrive,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::GeometryDrive,
                        "Gravity-guided flow",
                        "ON: 높이와 중력 방향에 따른 전달에 출발 포화도를 곱합니다. 포화도는 1을 넘을 수 있습니다.\n"
                        "OFF: 기하 전달량을 0으로 설정합니다.");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::MesoDirectionNormal,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::MesoDirectionNormal,
                        "DirectionDrive: MesoNormal",
                        "ON: 중력을 표면에 투영할 때 복원된 MesoNormal을 사용합니다.\n"
                        "OFF: 중력을 표면에 투영할 때 기본 mesh normal을 사용합니다.");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::DistanceWeight,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::DistanceWeight,
                        "DistanceWeight",
                        "ON: 이웃 간 실제 표면 거리 기반 가중치를 적용합니다.\n"
                        "OFF: 거리 가중치를 1.0으로 설정합니다.");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::NormalWeight,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::NormalWeight,
                        "NormalWeight",
                        "ON: 이웃 표면 법선의 방향 일치도 가중치를 적용합니다.\n"
                        "OFF: 법선 가중치를 1.0으로 설정합니다.");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::ProfileBoundaryWeight,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::ProfileBoundaryWeight,
                        "ProfileBoundaryWeight",
                        "ON: 서로 다른 Profile 사이 전달 가중치를 0.5로 낮춥니다.\n"
                        "OFF: Profile 경계 가중치를 1.0으로 설정합니다.");
 
         DrawSectionHeader("Decay");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::Decay,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::Decay,
                        "Decay",
                        "ON: Profile DecayRate에 따른 State 감소를 적용합니다.\n"
                        "OFF: 감소량을 0으로 설정합니다.");
-        DrawSolverTerm(SurfaceState::TSurfaceSolverTerm::ConcavityRetention,
+        DrawSolverTerm(SurfaceState::ESurfaceSolverTerm::ConcavityRetention,
                        "Cavity decay protection",
                        "ON: 오목도와 Profile 계수로 Decay 보유량을 조절합니다.\n"
                        "OFF: Decay 보유율을 1.0으로 설정합니다.");

@@ -17,7 +17,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 00_Image_Lifecycle_and_Creation
 
-    TGPUImage::TGPUImage(VkPhysicalDevice      PhysicalDevice,
+    FGPUImage::FGPUImage(VkPhysicalDevice      PhysicalDevice,
                          VkDevice              Device,
                          VkExtent2D            Extent,
                          VkFormat              Format,
@@ -30,12 +30,12 @@ namespace MDSS::GPU
         Create(PhysicalDevice, Extent, Format, Tiling, Usage, MemoryProperties, ArrayLayers);
     }
 
-    TGPUImage::~TGPUImage()
+    FGPUImage::~FGPUImage()
     {
         Reset();
     }
 
-    void TGPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
+    void FGPUImage::Recreate(VkPhysicalDevice      PhysicalDevice,
                              VkExtent2D            NewExtent,
                              VkFormat              NewFormat,
                              VkImageTiling         Tiling,
@@ -47,7 +47,7 @@ namespace MDSS::GPU
         Create(PhysicalDevice, NewExtent, NewFormat, Tiling, Usage, MemoryProperties, ArrayLayers);
     }
 
-    void TGPUImage::Reset()
+    void FGPUImage::Reset()
     {
         if (Handle != VK_NULL_HANDLE)
         {
@@ -57,7 +57,7 @@ namespace MDSS::GPU
 
         if (Memory != VK_NULL_HANDLE)
         {
-            TGPUResourceMemoryStats::ImageFreed(AllocationSize);
+            FGPUResourceMemoryStats::ImageFreed(AllocationSize);
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
@@ -67,7 +67,7 @@ namespace MDSS::GPU
         Extent = {};
     }
 
-    void TGPUImage::Create(VkPhysicalDevice      PhysicalDevice,
+    void FGPUImage::Create(VkPhysicalDevice      PhysicalDevice,
                            VkExtent2D            NewExtent,
                            VkFormat              NewFormat,
                            VkImageTiling         Tiling,
@@ -130,9 +130,9 @@ namespace MDSS::GPU
             AllocationSize = 0;
             throw std::runtime_error("Failed to bind Vulkan image memory.");
         }
-        TGPUResourceMemoryStats::ImageAllocated(AllocationSize);
+        FGPUResourceMemoryStats::ImageAllocated(AllocationSize);
 
-        TLogger::Verbose("Vulkan",
+        FLogger::Verbose("Vulkan",
                          "TGPUImage created (" + std::to_string(Extent.width) + "x" + std::to_string(Extent.height) +
                              ", format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
@@ -144,17 +144,17 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 01_Image_Accessors
 
-    VkImage TGPUImage::GetHandle() const noexcept
+    VkImage FGPUImage::GetHandle() const noexcept
     {
         return Handle;
     }
 
-    VkFormat TGPUImage::GetFormat() const noexcept
+    VkFormat FGPUImage::GetFormat() const noexcept
     {
         return Format;
     }
 
-    VkExtent2D TGPUImage::GetExtent() const noexcept
+    VkExtent2D FGPUImage::GetExtent() const noexcept
     {
         return Extent;
     }
@@ -166,7 +166,7 @@ namespace MDSS::GPU
 // ============================================================
 #pragma region 02_Memory_Type_Selection
 
-    std::uint32_t TGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
+    std::uint32_t FGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,
                                             VkMemoryPropertyFlags RequiredProperties)
     {

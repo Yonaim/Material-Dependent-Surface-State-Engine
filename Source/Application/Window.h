@@ -12,7 +12,7 @@ struct GLFWwindow;
 
 namespace MDSS
 {
-    class TWindow
+    class FWindow
     {
     public:
         // Window lifecycle
@@ -20,13 +20,13 @@ namespace MDSS
          * @brief GLFW를 초기화하고 Vulkan용 native window를 생성한다.
          * @throws std::runtime_error GLFW 또는 창 생성에 실패한 경우.
          */
-        TWindow(std::uint32_t Width, std::uint32_t Height, std::string Title);
-        ~TWindow();
+        FWindow(std::uint32_t Width, std::uint32_t Height, std::string Title);
+        ~FWindow();
 
-        TWindow(const TWindow&) = delete;
-        TWindow& operator=(const TWindow&) = delete;
-        TWindow(TWindow&&) = delete;
-        TWindow& operator=(TWindow&&) = delete;
+        FWindow(const FWindow&) = delete;
+        FWindow& operator=(const FWindow&) = delete;
+        FWindow(FWindow&&) = delete;
+        FWindow& operator=(FWindow&&) = delete;
 
         // Window state and event handling
         [[nodiscard]] bool ShouldClose() const;
@@ -41,9 +41,9 @@ namespace MDSS
 
     private:
         // GLFW global lifecycle and framebuffer events
-        /** @brief 여러 TWindow 인스턴스 사이에서 GLFW를 첫 사용 시 한 번 초기화한다. */
+        /** @brief 여러 FWindow 인스턴스 사이에서 GLFW를 첫 사용 시 한 번 초기화한다. */
         static void InitializeGLFW();
-        /** @brief 마지막 TWindow가 사라질 때 GLFW global state를 종료한다. */
+        /** @brief 마지막 FWindow가 사라질 때 GLFW global state를 종료한다. */
         static void TerminateGLFW();
         /** @brief framebuffer 크기 변경을 instance flag에 반영하는 GLFW callback. */
         static void FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height);

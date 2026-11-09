@@ -7,7 +7,7 @@ namespace MDSS
 // ============================================================
 #pragma region 00_Performance_Overlays
 
-    void TDebugUI::ResetProfilingAverages() noexcept
+    void FDebugUI::ResetProfilingAverages() noexcept
     {
         ProfilingWindowElapsed = ProfilingFpsSum = ProfilingFrameTimeSum = 0.0;
         ProfilingFrameSamples = 0;
@@ -22,7 +22,7 @@ namespace MDSS
         bProfilingAverageAvailable = false;
     }
 
-    void TDebugUI::DrawViewportStatsOverlay()
+    void FDebugUI::DrawViewportStatsOverlay()
     {
         if (FrameRenderer == nullptr || !bViewportOverlaysVisible)
         {
@@ -44,7 +44,7 @@ namespace MDSS
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
         const glm::vec4      Rect = GetViewportRectNormalized(GetActiveViewportIndex());
         const ImVec2         ViewportOrigin{MainViewport->Pos.x + Rect.x * DisplaySize.x,
-                                            MainViewport->Pos.y + Rect.y * DisplaySize.y};
+                                    MainViewport->Pos.y + Rect.y * DisplaySize.y};
         const ImVec2         ViewportSize{Rect.z * DisplaySize.x, Rect.w * DisplaySize.y};
         if (ViewportSize.x < 340.0F || ViewportSize.y < 240.0F)
             return;
@@ -53,7 +53,7 @@ namespace MDSS
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                                            ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
-        float                      RenderStateY = ViewportOrigin.y + 10.0F;
+        float RenderStateY = ViewportOrigin.y + 10.0F;
 
         ImGui::SetNextWindowPos({ViewportOrigin.x + 10.0F, ViewportOrigin.y + 10.0F}, ImGuiCond_Always);
         ImGui::SetNextWindowSizeConstraints({OverlayWindowWidth, 0.0F}, {OverlayWindowWidth, 800.0F});
@@ -65,7 +65,7 @@ namespace MDSS
         {
             const ImGuiIO&                            IO = ImGui::GetIO();
             const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
-            const Rendering::TRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
+            const Rendering::FRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
             const bool  bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
             const float StateDrivenGeometryUpdateGpuMilliseconds =
                 Stats.AccumulationGeometryGpuMilliseconds >= 0.0F && Stats.TransferWeightGpuMilliseconds >= 0.0F
@@ -125,7 +125,7 @@ namespace MDSS
                 ProfilingFpsSum += 1.0 / FrameSeconds;
                 ProfilingFrameTimeSum += FrameSeconds * 1000.0;
                 ++ProfilingFrameSamples;
-                TProfilingSample Sample;
+                FProfilingSample Sample;
                 Sample.TimeSeconds = ProfilingElapsedSeconds;
                 Sample.Values.fill(-1.0F);
                 Sample.Values[0] = static_cast<float>(1.0 / FrameSeconds);
@@ -151,7 +151,7 @@ namespace MDSS
                     ProfilingRecentSamples.pop_front();
                 std::array<double, 43>        RecentSums{};
                 std::array<std::uint32_t, 43> RecentCounts{};
-                for (const TProfilingSample& RecentSample : ProfilingRecentSamples)
+                for (const FProfilingSample& RecentSample : ProfilingRecentSamples)
                 {
                     for (std::size_t Index = 0; Index < RecentSample.Values.size(); ++Index)
                     {
@@ -467,7 +467,7 @@ namespace MDSS
         if (ImGui::Begin("Memory Profiling##Overlay", nullptr, Flags) &&
             ImGui::CollapsingHeader("Memory Profiling", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            const GPU::TGPUResourceMemorySnapshot Memory = GPU::TGPUResourceMemoryStats::GetSnapshot();
+            const GPU::FGPUResourceMemorySnapshot Memory = GPU::FGPUResourceMemoryStats::GetSnapshot();
             const auto       PrecisionMemory = EstimatePerformanceMemory(FrameRenderer->GetSurfaceGPUResources());
             constexpr double BytesPerMiB = 1024.0 * 1024.0;
             const ImVec4     TotalColor{1.0F, 0.78F, 0.24F, 1.0F};
@@ -504,36 +504,36 @@ namespace MDSS
             {
                 ImGui::TableSetupColumn("Resource", ImGuiTableColumnFlags_WidthFixed, 200.0F);
                 ImGui::TableSetupColumn("Current", ImGuiTableColumnFlags_WidthFixed, 100.0F);
-                const auto CategoryBytes = [&](GPU::TGPUBufferMemoryCategory Category)
+                const auto CategoryBytes = [&](GPU::EGPUBufferMemoryCategory Category)
                 { return Memory.BufferCategoryCurrentBytes[static_cast<std::size_t>(Category)]; };
-                const std::uint64_t RenderMeshBytes = CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh64) +
-                                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh128) +
-                                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh256) +
-                                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh512);
-                const std::uint64_t SurfaceCoreBytes = CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceState) +
-                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceGeometry) +
-                                                       CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceProfile);
-                const std::uint64_t SurfaceRuntimeBytes = CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceRuntime);
+                const std::uint64_t RenderMeshBytes = CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh64) +
+                                                      CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh128) +
+                                                      CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh256) +
+                                                      CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh512);
+                const std::uint64_t SurfaceCoreBytes = CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceState) +
+                                                       CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceGeometry) +
+                                                       CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceProfile);
+                const std::uint64_t SurfaceRuntimeBytes = CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceRuntime);
                 const std::uint64_t SurfaceSystemBytes = SurfaceCoreBytes + RenderMeshBytes + SurfaceRuntimeBytes;
-                const std::uint64_t SceneEditorBufferBytes = CategoryBytes(GPU::TGPUBufferMemoryCategory::MeshAsset) +
-                                                             CategoryBytes(GPU::TGPUBufferMemoryCategory::Renderer);
+                const std::uint64_t SceneEditorBufferBytes = CategoryBytes(GPU::EGPUBufferMemoryCategory::MeshAsset) +
+                                                             CategoryBytes(GPU::EGPUBufferMemoryCategory::Renderer);
                 DrawMemoryTotalRow("GPU total", Memory.CurrentTotalBytes, TotalColor);
                 if (DrawMemoryTreeRow("MDSS Surface System", SurfaceSystemBytes))
                 {
                     if (DrawMemoryTreeRow("Core data", SurfaceCoreBytes))
                     {
-                        DrawMemoryRow("Surface State", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceState));
+                        DrawMemoryRow("Surface State", CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceState));
                         DrawMemoryRow("Surface Geometry",
-                                      CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceGeometry));
-                        DrawMemoryRow("Profile Tables", CategoryBytes(GPU::TGPUBufferMemoryCategory::SurfaceProfile));
+                                      CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceGeometry));
+                        DrawMemoryRow("Profile Tables", CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceProfile));
                         ImGui::TreePop();
                     }
                     if (DrawMemoryTreeRow("Surface rendering", RenderMeshBytes))
                     {
-                        DrawMemoryRow("512 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh512));
-                        DrawMemoryRow("256 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh256));
-                        DrawMemoryRow("128 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh128));
-                        DrawMemoryRow("64 resolution", CategoryBytes(GPU::TGPUBufferMemoryCategory::RenderMesh64));
+                        DrawMemoryRow("512 resolution", CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh512));
+                        DrawMemoryRow("256 resolution", CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh256));
+                        DrawMemoryRow("128 resolution", CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh128));
+                        DrawMemoryRow("64 resolution", CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh64));
                         ImGui::TreePop();
                     }
                     DrawMemoryRow("Surface runtime buffers", SurfaceRuntimeBytes);
@@ -541,12 +541,12 @@ namespace MDSS
                 }
                 if (DrawMemoryTreeRow("Scene & Editor", SceneEditorBufferBytes))
                 {
-                    DrawMemoryRow("Mesh Assets", CategoryBytes(GPU::TGPUBufferMemoryCategory::MeshAsset));
-                    DrawMemoryRow("Renderer buffers", CategoryBytes(GPU::TGPUBufferMemoryCategory::Renderer));
+                    DrawMemoryRow("Mesh Assets", CategoryBytes(GPU::EGPUBufferMemoryCategory::MeshAsset));
+                    DrawMemoryRow("Renderer buffers", CategoryBytes(GPU::EGPUBufferMemoryCategory::Renderer));
                     ImGui::TreePop();
                 }
-                DrawMemoryRow("Debug", CategoryBytes(GPU::TGPUBufferMemoryCategory::Debug));
-                DrawMemoryRow("Other / Staging", CategoryBytes(GPU::TGPUBufferMemoryCategory::Other));
+                DrawMemoryRow("Debug", CategoryBytes(GPU::EGPUBufferMemoryCategory::Debug));
+                DrawMemoryRow("Other / Staging", CategoryBytes(GPU::EGPUBufferMemoryCategory::Other));
                 DrawMemoryTotalRow("Images", Memory.CurrentImageBytes, GroupColor);
                 ImGui::EndTable();
             }
@@ -580,7 +580,7 @@ namespace MDSS
 
         const auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
         const bool bLitView =
-            FrameRenderer->GetRenderViewMode(GetActiveViewportIndex()) == Rendering::TRenderViewMode::Lit;
+            FrameRenderer->GetRenderViewMode(GetActiveViewportIndex()) == Rendering::ERenderViewMode::Lit;
         const bool bEffectsActive = bLitView && Effects.bEnabled;
         const auto StatusText = [](bool bEnabled, bool bActive)
         {

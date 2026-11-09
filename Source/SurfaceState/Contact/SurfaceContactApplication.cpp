@@ -34,7 +34,7 @@ namespace MDSS::SurfaceState
 // ============================================================
 #pragma region 00_Pending_Contact_Application
 
-    void TSurfaceStateSystem::ApplyPendingContacts()
+    void FSurfaceStateSystem::ApplyPendingContacts()
     {
         if (PendingContacts.empty())
         {
@@ -55,14 +55,14 @@ namespace MDSS::SurfaceState
         std::vector<std::uint32_t>              InputChannelMasks(InstanceCount, 0U);
         std::vector<bool>                       bInstanceHasInput(InstanceCount, false);
 
-        for (const TSurfaceContactInput& Contact : PendingContacts)
+        for (const FSurfaceContactInput& Contact : PendingContacts)
         {
             bool bLoggedDiagnostic = false;
             auto Diagnose = [&bLoggedDiagnostic](const std::string& Message)
             {
                 if (!bLoggedDiagnostic)
                 {
-                    TLogger::Warning("TSurfaceStateSystem", Message);
+                    FLogger::Warning("TSurfaceStateSystem", Message);
                     bLoggedDiagnostic = true;
                 }
             };
@@ -83,32 +83,32 @@ namespace MDSS::SurfaceState
                 continue;
             }
 
-            const TStaticMeshInstance&      Instance = Scene.GetStaticMeshInstances()[InstanceIndex];
-            const TSurfaceRuntimeDataHandle SurfaceDataHandle = Instance.GetSurfaceData();
+            const FStaticMeshInstance&      Instance = Scene.GetStaticMeshInstances()[InstanceIndex];
+            const FSurfaceRuntimeDataHandle SurfaceDataHandle = Instance.GetSurfaceData();
             if (!SurfaceData.HasSurfaceData(SurfaceDataHandle))
             {
                 Diagnose("Rejected contact for an instance without Surface simulation data.");
                 continue;
             }
 
-            const TSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(InstanceIndex);
+            const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(InstanceIndex);
             if (Descriptors == nullptr)
             {
                 Diagnose("Rejected contact because the target instance has no GPU State resources.");
                 continue;
             }
 
-            const TSurfaceRuntimeData&                RuntimeData = SurfaceData.GetSurfaceData(SurfaceDataHandle);
-            const TSharedSurfaceGeometryData&         Geometry = *RuntimeData.GetSharedGeometry();
+            const FSurfaceRuntimeData&                RuntimeData = SurfaceData.GetSurfaceData(SurfaceDataHandle);
+            const FSharedSurfaceGeometryData&         Geometry = *RuntimeData.GetSharedGeometry();
             const std::size_t                         TexelCount = Geometry.GetTexelCount();
             const std::size_t                         ScalarCount = TexelCount * ChannelCount;
             const glm::mat4                           Model = Instance.GetTransform().GetMatrix();
-            const std::vector<TSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
+            const std::vector<FSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
             glm::vec3                                 InfluenceCenter = Contact.WorldPosition;
             if (Contact.bHasSimulationMapping)
             {
-                const Asset::TMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
-                const std::vector<Asset::TMeshTriangleSource>& Triangles = Mesh.GetTriangles();
+                const Asset::FMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
+                const std::vector<Asset::FMeshTriangleSource>& Triangles = Mesh.GetTriangles();
                 if (Contact.TargetTriangle >= Triangles.size() || !std::isfinite(Contact.SimulationUV.x) ||
                     !std::isfinite(Contact.SimulationUV.y) || Contact.SimulationUV.x < 0.0F ||
                     Contact.SimulationUV.x > 1.0F || Contact.SimulationUV.y < 0.0F || Contact.SimulationUV.y > 1.0F)
@@ -117,13 +117,13 @@ namespace MDSS::SurfaceState
                     continue;
                 }
 
-                const TSurfaceLocalID TargetSurface = Triangles[Contact.TargetTriangle].Surface;
+                const FSurfaceLocalID TargetSurface = Triangles[Contact.TargetTriangle].Surface;
                 if (TargetSurface >= Geometry.GetSurfaces().size())
                 {
                     Diagnose("Rejected contact because its hit triangle has no mapped Surface.");
                     continue;
                 }
-                const TSurfaceTexelRange& Range = Geometry.GetSurface(TargetSurface);
+                const FSurfaceTexelRange& Range = Geometry.GetSurface(TargetSurface);
                 const std::uint32_t       CenterX =
                     std::min(static_cast<std::uint32_t>(Contact.SimulationUV.x * Range.Resolution.Width),
                              Range.Resolution.Width - 1U);
@@ -133,7 +133,7 @@ namespace MDSS::SurfaceState
                 const std::uint32_t MaxSearchRadius = std::max(Range.Resolution.Width, Range.Resolution.Height);
                 const std::uint32_t EffectiveSearchRadius = std::min(Contact.TexelSearchRadius, MaxSearchRadius);
                 const std::int32_t  SearchRadius = static_cast<std::int32_t>(EffectiveSearchRadius);
-                std::optional<TLocalTexelIndex> ResolvedCenter;
+                std::optional<FLocalTexelIndex> ResolvedCenter;
                 const auto                      IsHitTriangleTexel = [&](std::uint32_t X, std::uint32_t Y)
                 {
                     const std::size_t Index = static_cast<std::size_t>(Range.FirstTexel) +
@@ -142,10 +142,10 @@ namespace MDSS::SurfaceState
                     {
                         return false;
                     }
-                    const TSurfaceTexelGeometry& Texel = Texels[Index];
+                    const FSurfaceTexelGeometry& Texel = Texels[Index];
                     if (Texel.IsValid() && Texel.Surface == TargetSurface && Texel.Triangle == Contact.TargetTriangle)
                     {
-                        ResolvedCenter = static_cast<TLocalTexelIndex>(Index);
+                        ResolvedCenter = static_cast<FLocalTexelIndex>(Index);
                         return true;
                     }
                     return false;
@@ -175,7 +175,7 @@ namespace MDSS::SurfaceState
                             {
                                 continue;
                             }
-                            const std::optional<TLocalTexelIndex> Previous = ResolvedCenter;
+                            const std::optional<FLocalTexelIndex> Previous = ResolvedCenter;
                             if (IsHitTriangleTexel(static_cast<std::uint32_t>(X), static_cast<std::uint32_t>(Y)))
                             {
                                 BestDistanceSquared = DistanceSquared;
@@ -204,7 +204,7 @@ namespace MDSS::SurfaceState
                             {
                                 continue;
                             }
-                            const TSurfaceTexelGeometry& Texel = Texels[Index];
+                            const FSurfaceTexelGeometry& Texel = Texels[Index];
                             if (!Texel.IsValid() || Texel.Surface != TargetSurface ||
                                 Texel.Triangle != Contact.TargetTriangle)
                             {
@@ -265,13 +265,13 @@ namespace MDSS::SurfaceState
                 InputGroupMasks[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
             }
 
-            const std::vector<Asset::TSRProfileAssetHandle>& ProfileHandles =
+            const std::vector<Asset::FSRProfileAssetHandle>& ProfileHandles =
                 SurfaceData.GetSurfaceProfileTable(SurfaceDataHandle);
             std::vector<float> InputFactors(ProfileHandles.size(), 0.0F);
             std::vector<bool>  bProfileSupportsState(ProfileHandles.size(), false);
             for (std::size_t ProfileIndex = 0; ProfileIndex < ProfileHandles.size(); ++ProfileIndex)
             {
-                const TRegisteredSurfaceResponseProfileData Resolved =
+                const FRegisteredSurfaceResponseProfileData Resolved =
                     SurfaceData.GetSurfaceStateRegistry().ResolveProfile(
                         Assets.GetSRProfile(ProfileHandles[ProfileIndex]).GetData());
                 if (Contact.State < Resolved.States.size() && Resolved.States[Contact.State].has_value())
@@ -300,14 +300,14 @@ namespace MDSS::SurfaceState
             const float       SinAngle = std::sin(Angle);
             for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
             {
-                const TSurfaceTexelGeometry& Texel = Texels[TexelIndex];
+                const FSurfaceTexelGeometry& Texel = Texels[TexelIndex];
                 if (!Texel.IsValid())
                 {
                     continue;
                 }
 
-                const TSurfaceProfileIndex ProfileIndex =
-                    Geometry.GetProfileIndex(static_cast<TLocalTexelIndex>(TexelIndex));
+                const FSurfaceProfileIndex ProfileIndex =
+                    Geometry.GetProfileIndex(static_cast<FLocalTexelIndex>(TexelIndex));
                 const glm::vec3 WorldTexelPosition = glm::vec3(Model * glm::vec4(Texel.Position, 1.0F));
                 const glm::vec3 Offset = WorldTexelPosition - InfluenceCenter;
                 float           NormalizedDistance = glm::length(Offset) / Contact.Radius;
@@ -379,7 +379,7 @@ namespace MDSS::SurfaceState
 
             if (bAppliedToAnyTexel)
             {
-                TLogger::Info("TSurfaceStateSystem",
+                FLogger::Info("TSurfaceStateSystem",
                               "Contact input applied (state=" +
                                   SurfaceData.GetSurfaceStateRegistry().GetStateName(Contact.State) +
                                   ", instance=" + std::to_string(InstanceIndex) +
@@ -397,7 +397,7 @@ namespace MDSS::SurfaceState
         }
 
         const bool bAnyInput =
-            std::any_of(bInstanceHasInput.begin(), bInstanceHasInput.end(), [](bool Value) { return Value; });
+            std::any_of(bInstanceHasInput.begin(), bInstanceHasInput.end(), [](bool bValue) { return bValue; });
         if (bAnyInput && vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to wait for the graphics queue before uploading Surface InputDelta.");
@@ -409,7 +409,7 @@ namespace MDSS::SurfaceState
             {
                 continue;
             }
-            const GPU::TGPUBuffer&    InputDeltaBuffer = GPUResources->GetInstanceInputDeltaBuffer(InstanceIndex);
+            const GPU::FGPUBuffer&    InputDeltaBuffer = GPUResources->GetInstanceInputDeltaBuffer(InstanceIndex);
             const std::vector<float>& InputDelta = InputDeltas[InstanceIndex];
             const VkDeviceSize        ByteSize = static_cast<VkDeviceSize>(InputDelta.size() * sizeof(float));
             if (ByteSize != InputDeltaBuffer.GetSize())
@@ -421,7 +421,7 @@ namespace MDSS::SurfaceState
             // Persistent sparse solver does not rescan all texels. CPU contact distribution already knows
             // exactly which workgroups/channels received InputDelta, so upload that compact activation list.
             const std::size_t                  TexelCount = GPUResources->GetInstanceTexelCount(InstanceIndex);
-            const TSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
+            const FSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
             std::vector<std::uint32_t>         InputGroups;
             std::vector<std::uint32_t>         CompactInputGroupMasks;
             InputGroups.reserve(InputGroupFlags[InstanceIndex].size());
@@ -435,7 +435,7 @@ namespace MDSS::SurfaceState
 
             if (!InputGroups.empty())
             {
-                const GPU::TGPUBuffer& AccumulationBuffer =
+                const GPU::FGPUBuffer& AccumulationBuffer =
                     GPUResources->GetInstanceAccumulationHeightBuffer(InstanceIndex);
                 const std::uint32_t GroupCount = static_cast<std::uint32_t>(InputGroups.size());
                 const std::uint32_t ChannelMask = InputChannelMasks[InstanceIndex];
