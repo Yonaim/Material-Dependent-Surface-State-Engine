@@ -42,6 +42,7 @@ namespace MDSS::Rendering
         {
             return OutputLayout;
         }
+
         [[nodiscard]] VkDescriptorSet
         GetSet(std::size_t Instance, std::uint32_t Channel, std::uint32_t MeshResolution) const;
         [[nodiscard]] std::uint32_t
@@ -56,6 +57,7 @@ namespace MDSS::Rendering
         GetTopIndexOffset(std::size_t Instance, std::uint32_t Channel, std::uint32_t MeshResolution) const;
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
         [[nodiscard]] FTriangleActivity CompleteFrame(std::size_t FrameIndex);
+
         // Overlay command recording
         void
         Record(VkCommandBuffer                                         Command,
@@ -86,6 +88,7 @@ namespace MDSS::Rendering
             Outputs.clear();
             CoveragePages.clear();
             CoveragePageUsed.clear();
+
             if (vkResetDescriptorPool(Device, Pool, 0) != VK_SUCCESS)
                 throw std::runtime_error("Cannot reset render output descriptors.");
         }

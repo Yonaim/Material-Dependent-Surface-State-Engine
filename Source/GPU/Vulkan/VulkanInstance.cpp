@@ -41,6 +41,7 @@ namespace MDSS::GPU
             {
                 FLogger::Debug("Vulkan Validation", Message);
             }
+
             return VK_FALSE;
         }
 
@@ -54,6 +55,7 @@ namespace MDSS::GPU
                                      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
             CreateInfo.pfnUserCallback = DebugCallback;
+
             return CreateInfo;
         }
     } // namespace
@@ -88,9 +90,9 @@ namespace MDSS::GPU
 
 #if MDSS_ENABLE_VALIDATION
         const VkDebugUtilsMessengerCreateInfoEXT MessengerInfo = DebugMessengerCreateInfo();
-        constexpr std::array                     EnabledFeatures = {VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
-                                                                    VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
-        VkValidationFeaturesEXT                  ValidationFeatures{};
+        constexpr std::array    EnabledFeatures = {VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
+                                                   VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
+        VkValidationFeaturesEXT ValidationFeatures{};
         ValidationFeatures.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
         ValidationFeatures.pNext = &MessengerInfo;
         ValidationFeatures.enabledValidationFeatureCount = static_cast<std::uint32_t>(EnabledFeatures.size());
@@ -106,6 +108,7 @@ namespace MDSS::GPU
 #endif
 
         const VkResult Result = vkCreateInstance(&CreateInfo, nullptr, &Instance);
+
         if (Result != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create Vulkan instance (VkResult: " +
@@ -142,6 +145,7 @@ namespace MDSS::GPU
             {
                 DestroyDebugMessenger(Instance, DebugMessenger, nullptr);
             }
+
             DebugMessenger = VK_NULL_HANDLE;
         }
 #endif

@@ -44,6 +44,7 @@ namespace MDSS::SurfaceState
         // accumulation fields to fetch one 16-byte vector instead of touching the whole logical record.
         std::vector<FSurfaceGPUVec4> ParameterPlanes(Upload.Parameters.size() * 3U);
         const std::size_t            RecordCount = Upload.Parameters.size();
+
         for (std::size_t Record = 0; Record < RecordCount; ++Record)
         {
             const auto& P = Upload.Parameters[Record];
@@ -58,6 +59,7 @@ namespace MDSS::SurfaceState
                                                           P.AccumulationThickness[2],
                                                           P.AccumulationThickness[3]};
         }
+
         ParametersBuffer = CreateUploadedBuffer(PhysicalDevice,
                                                 Device,
                                                 ParameterPlanes.data(),
@@ -119,6 +121,7 @@ namespace MDSS::SurfaceState
         }
 
         const std::size_t RecordIndex = GetSurfaceGPUProfileRecordIndex(ProfileIndex, ChannelIndex, ChannelCount);
+
         if (RecordIndex >= SupportedChannels.size() || SupportedChannels[RecordIndex] == 0U)
         {
             throw std::invalid_argument("Cannot override a State that this Profile does not support.");
@@ -137,6 +140,7 @@ namespace MDSS::SurfaceState
         const VkDeviceSize PlaneStride =
             static_cast<VkDeviceSize>(ProfileCount * ChannelCount * sizeof(FSurfaceGPUVec4));
         const VkDeviceSize RecordOffset = static_cast<VkDeviceSize>(RecordIndex * sizeof(FSurfaceGPUVec4));
+
         for (std::size_t Plane = 0; Plane < Packed.size(); ++Plane)
             ParametersBuffer->Upload(
                 &Packed[Plane], sizeof(FSurfaceGPUVec4), static_cast<VkDeviceSize>(Plane) * PlaneStride + RecordOffset);

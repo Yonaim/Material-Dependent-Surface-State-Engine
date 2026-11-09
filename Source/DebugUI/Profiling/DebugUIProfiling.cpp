@@ -27,6 +27,7 @@ namespace MDSS
         }
 
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
+
         if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F)
         {
             return;
@@ -35,8 +36,9 @@ namespace MDSS
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
         const glm::vec4      Rect = GetViewportRectNormalized(GetActiveViewportIndex());
         const ImVec2         ViewportOrigin{MainViewport->Pos.x + Rect.x * DisplaySize.x,
-                                    MainViewport->Pos.y + Rect.y * DisplaySize.y};
+                                            MainViewport->Pos.y + Rect.y * DisplaySize.y};
         const ImVec2         ViewportSize{Rect.z * DisplaySize.x, Rect.w * DisplaySize.y};
+
         if (ViewportSize.x < 340.0F || ViewportSize.y < 240.0F)
             return;
 
@@ -44,7 +46,7 @@ namespace MDSS
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
                                            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                                            ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
-        float RenderStateY = ViewportOrigin.y + 10.0F;
+        float                      RenderStateY = ViewportOrigin.y + 10.0F;
 
         ImGui::SetNextWindowPos({ViewportOrigin.x + 10.0F, ViewportOrigin.y + 10.0F}, ImGuiCond_Always);
         ImGui::SetNextWindowSizeConstraints({OverlayWindowWidth, 0.0F}, {OverlayWindowWidth, 800.0F});
@@ -52,6 +54,7 @@ namespace MDSS
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
+
         if (ImGui::Begin("Profiling##Overlay", nullptr, Flags))
         {
             const ImGuiIO&                            IO = ImGui::GetIO();
@@ -113,6 +116,7 @@ namespace MDSS
             {
                 Profiling.Accumulate(FrameSeconds, MetricValues);
             }
+
             Profiling.PublishWindow();
 
             if (ImGui::CollapsingHeader("Time Profiling", ImGuiTreeNodeFlags_DefaultOpen))
@@ -128,6 +132,7 @@ namespace MDSS
                 const auto SetupMetricTable = [](const char* Id)
                 {
                     constexpr int ColumnCount = 4;
+
                     if (!ImGui::BeginTable(
                             Id, ColumnCount, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
                         return false;
@@ -135,6 +140,7 @@ namespace MDSS
                     ImGui::TableSetupColumn("Avg", ImGuiTableColumnFlags_WidthFixed, 44.0F);
                     ImGui::TableSetupColumn("Max", ImGuiTableColumnFlags_WidthFixed, 44.0F);
                     ImGui::TableSetupColumn("100ms", ImGuiTableColumnFlags_WidthFixed, 50.0F);
+
                     return true;
                 };
                 const auto DrawMetric =
@@ -143,12 +149,14 @@ namespace MDSS
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
                     ImGui::TextDisabled("%s", Label);
+
                     if (Tooltip != nullptr && ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", Tooltip);
                     int        Column = 1;
                     const auto DrawValue = [&](float Value, bool bReady)
                     {
                         ImGui::TableSetColumnIndex(Column++);
+
                         if (Value >= 0.0F)
                             ImGui::TextColored(Color, "%.2f", Value);
                         else
@@ -158,6 +166,7 @@ namespace MDSS
                     DrawValue(Profiling.Maximums[Index + 2], true);
                     DrawValue(Profiling.Recent100msAverages[Index + 2], true);
                 };
+
                 if (SetupMetricTable("ViewportProfilingSummary"))
                 {
                     ImGui::TableNextRow();
@@ -176,6 +185,7 @@ namespace MDSS
                     {
                         const int Column = ImGui::TableGetColumnIndex() + 1;
                         ImGui::TableSetColumnIndex(Column);
+
                         if (Value >= 0.0F)
                             ImGui::TextColored(FPSColor, "%.2f", Value);
                         else
@@ -188,11 +198,13 @@ namespace MDSS
                     DrawMetric(1, "Solver GPU / frame", {0.82F, 0.87F, 0.94F, 1.0F});
                     ImGui::EndTable();
                 }
+
                 ImGui::Separator();
 
                 ImGui::PushStyleColor(ImGuiCol_Header, {0.0F, 0.0F, 0.0F, 0.0F});
                 ImGui::PushStyleColor(ImGuiCol_HeaderHovered, {0.30F, 0.32F, 0.35F, 0.35F});
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, {0.0F, 0.0F, 0.0F, 0.0F});
+
                 if (BeginTextTreeNode("GPU: Simulation"))
                 {
                     if (SetupMetricTable("ViewportProfilingSimulation"))
@@ -204,9 +216,11 @@ namespace MDSS
                         DrawMetric(37, "Transfer weights / frame", {0.82F, 0.87F, 0.94F, 1.0F});
                         ImGui::EndTable();
                     }
+
                     ImGui::Spacing();
                     ImGui::Separator();
                     ImGui::TextDisabled("WORKLOAD & SETTINGS");
+
                     if (ImGui::BeginTable("ViewportProfilingWorkload",
                                           2,
                                           ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
@@ -245,8 +259,10 @@ namespace MDSS
                         AddStateRow("Height Smoothing", "%s", Effects.bHeightFieldSmoothing ? "ON" : "OFF");
                         ImGui::EndTable();
                     }
+
                     ImGui::TreePop();
                 }
+
                 if (BeginTextTreeNode("GPU: Rendering"))
                 {
                     if (Stats.OverlayTotalTopTriangles > 0 &&
@@ -257,6 +273,7 @@ namespace MDSS
                             const double ActiveTilePercent = 100.0 * static_cast<double>(Stats.OverlayActiveTiles) /
                                                              static_cast<double>(Stats.OverlayTotalTiles);
                             ImGui::TextDisabled("Active overlay tiles: %.1f%%", ActiveTilePercent);
+
                             if (ImGui::IsItemHovered())
                                 ImGui::SetTooltip("Overlay occupancy scan에서 하나 이상의 상태값이 있는 것으로 "
                                                   "판정된 UV 타일입니다.");
@@ -264,9 +281,11 @@ namespace MDSS
                                                 static_cast<unsigned long long>(Stats.OverlayActiveTiles),
                                                 static_cast<unsigned long long>(Stats.OverlayTotalTiles));
                         }
+
                         const double ActivePercent = 100.0 * static_cast<double>(Stats.OverlayActiveTopTriangles) /
                                                      static_cast<double>(Stats.OverlayTotalTopTriangles);
                         ImGui::TextDisabled("Active top triangles: %.1f%%", ActivePercent);
+
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip(
                                 "정점 하나 이상이 2%% 커버리지 기준을 넘으면 활성 삼각형으로 계산합니다. "
@@ -275,18 +294,22 @@ namespace MDSS
                                             static_cast<unsigned long long>(Stats.OverlayActiveTopTriangles),
                                             static_cast<unsigned long long>(Stats.OverlayTotalTopTriangles));
                     }
+
                     if (SetupMetricTable("ViewportProfilingRendering"))
                     {
                         DrawMetric(5, "Render prep", {0.82F, 0.87F, 0.94F, 1.0F});
                         DrawMetric(6, bFineRenderTimings ? "Scene draw" : "Render pass", {0.82F, 0.87F, 0.94F, 1.0F});
+
                         if (bFineRenderTimings)
                         {
                             DrawMetric(34, "UI draw", {0.82F, 0.87F, 0.94F, 1.0F});
                             DrawMetric(35, "Render pass end", {0.82F, 0.87F, 0.94F, 1.0F});
                         }
+
                         DrawMetric(7, "Texel inspector", {0.82F, 0.87F, 0.94F, 1.0F});
                         ImGui::EndTable();
                     }
+
                     if (BeginTextTreeNode("Render prep breakdown"))
                     {
                         if (SetupMetricTable("ViewportProfilingRenderPrepBreakdown"))
@@ -319,13 +342,16 @@ namespace MDSS
                                        "Includes activity counter readback and draw barriers.");
                             ImGui::EndTable();
                         }
+
                         ImGui::TreePop();
                     }
+
                     if (!bFineRenderTimings)
                     {
                         TextDescriptionWrapped("MoltenVK on Apple GPUs records in-pass timestamps at the end "
                                                "of the render pass. Per-draw GPU timings are unavailable here.");
                     }
+
                     if (bFineRenderTimings && BeginTextTreeNode("Scene draw breakdown"))
                     {
                         if (SetupMetricTable("ViewportProfilingSceneDrawBreakdown"))
@@ -350,10 +376,13 @@ namespace MDSS
                             DrawMetric(22, "Grid / gizmo", {0.82F, 0.87F, 0.94F, 1.0F});
                             ImGui::EndTable();
                         }
+
                         ImGui::TreePop();
                     }
+
                     ImGui::TreePop();
                 }
+
                 if (BeginTextTreeNode("CPU"))
                 {
                     if (SetupMetricTable("ViewportProfilingCPU"))
@@ -365,12 +394,16 @@ namespace MDSS
                         DrawMetric(12, "Present call", {0.82F, 0.87F, 0.94F, 1.0F});
                         ImGui::EndTable();
                     }
+
                     ImGui::TreePop();
                 }
+
                 ImGui::PopStyleColor(3);
             }
+
             RenderStateY = ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + 6.0F;
         }
+
         const ImVec2 ProfilingPos = ImGui::GetWindowPos();
         const ImVec2 ProfilingSize = ImGui::GetWindowSize();
         const ImVec2 Mouse = ImGui::GetIO().MousePos;
@@ -386,6 +419,7 @@ namespace MDSS
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
+
         if (ImGui::Begin("Memory Profiling##Overlay", nullptr, Flags) &&
             ImGui::CollapsingHeader("Memory Profiling", ImGuiTreeNodeFlags_DefaultOpen))
         {
@@ -419,8 +453,10 @@ namespace MDSS
                 ImGui::PopStyleColor();
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TextColored(GroupColor, "%.2f MiB", static_cast<double>(CurrentBytes) / BytesPerMiB);
+
                 return bOpen;
             };
+
             if (ImGui::BeginTable(
                     "ViewportMemoryProfiling", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings))
             {
@@ -440,6 +476,7 @@ namespace MDSS
                 const std::uint64_t SceneEditorBufferBytes = CategoryBytes(GPU::EGPUBufferMemoryCategory::MeshAsset) +
                                                              CategoryBytes(GPU::EGPUBufferMemoryCategory::Renderer);
                 DrawMemoryTotalRow("GPU total", Memory.CurrentTotalBytes, TotalColor);
+
                 if (DrawMemoryTreeRow("MDSS Surface System", SurfaceSystemBytes))
                 {
                     if (DrawMemoryTreeRow("Core data", SurfaceCoreBytes))
@@ -450,6 +487,7 @@ namespace MDSS
                         DrawMemoryRow("Profile Tables", CategoryBytes(GPU::EGPUBufferMemoryCategory::SurfaceProfile));
                         ImGui::TreePop();
                     }
+
                     if (DrawMemoryTreeRow("Surface rendering", RenderMeshBytes))
                     {
                         DrawMemoryRow("512 resolution", CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh512));
@@ -458,22 +496,27 @@ namespace MDSS
                         DrawMemoryRow("64 resolution", CategoryBytes(GPU::EGPUBufferMemoryCategory::RenderMesh64));
                         ImGui::TreePop();
                     }
+
                     DrawMemoryRow("Surface runtime buffers", SurfaceRuntimeBytes);
                     ImGui::TreePop();
                 }
+
                 if (DrawMemoryTreeRow("Scene & Editor", SceneEditorBufferBytes))
                 {
                     DrawMemoryRow("Mesh Assets", CategoryBytes(GPU::EGPUBufferMemoryCategory::MeshAsset));
                     DrawMemoryRow("Renderer buffers", CategoryBytes(GPU::EGPUBufferMemoryCategory::Renderer));
                     ImGui::TreePop();
                 }
+
                 DrawMemoryRow("Debug", CategoryBytes(GPU::EGPUBufferMemoryCategory::Debug));
                 DrawMemoryRow("Other / Staging", CategoryBytes(GPU::EGPUBufferMemoryCategory::Other));
                 DrawMemoryTotalRow("Images", Memory.CurrentImageBytes, GroupColor);
                 ImGui::EndTable();
             }
+
             ImGui::TextDisabled("Tracked Vulkan allocations · MiB");
             ImGui::TextDisabled("MDSS totals include surface rendering and runtime buffers.");
+
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip(
                     "MDSS Surface System includes core surface data, generated surface render meshes, "
@@ -486,10 +529,12 @@ namespace MDSS
             ImGui::TextDisabled("FP16 compact allocation estimate");
             ImGui::Text("Raw Flux savings: %.2f MiB", PrecisionMemory.RawFluxSavingsBytes / BytesPerMiB);
             ImGui::Text("TransferWeight savings: %.2f MiB", PrecisionMemory.DynamicWeightSavingsBytes / BytesPerMiB);
+
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Estimate from the loaded instances' texel and channel counts. These bytes are not "
                                   "subtracted from Current because the A/B buffers retain their full allocations.");
         }
+
         const ImVec2 MemoryProfilePos = ImGui::GetWindowPos();
         const ImVec2 MemoryProfileSize = ImGui::GetWindowSize();
         const ImVec2 MemoryMouse = ImGui::GetIO().MousePos;
@@ -556,6 +601,7 @@ namespace MDSS
                 ImGui::EndTable();
             }
         }
+
         const ImVec2 StatePos = ImGui::GetWindowPos();
         const ImVec2 StateSize = ImGui::GetWindowSize();
         ViewportState.bMouseOverViewportOverlay |= Mouse.x >= StatePos.x && Mouse.y >= StatePos.y &&

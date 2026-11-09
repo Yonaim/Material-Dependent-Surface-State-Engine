@@ -156,6 +156,7 @@ namespace MDSS::GPU
 
         VkPhysicalDeviceFeatures SupportedFeatures{};
         vkGetPhysicalDeviceFeatures(PhysicalDevice, &SupportedFeatures);
+
         if (SupportedFeatures.fillModeNonSolid != VK_TRUE)
         {
             return false;

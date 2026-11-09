@@ -109,18 +109,22 @@ namespace
                        128);
             WriteScene("Empty", {});
         }
+
         ~FFixtures()
         {
             std::error_code Error;
             std::filesystem::remove_all(Root, Error);
         }
+
         void Write(const std::string& File, const FJson& Data) const
         {
             std::ofstream(Root / File) << Data.dump(2);
         }
+
         void WriteProfile(const std::string& Name, const std::vector<std::string>& States, float InputFactor) const
         {
             FJson Entries = FJson::object();
+
             for (const auto& State : States)
             {
                 Entries[State] = {{"stateCapacity", 1.0},
@@ -133,6 +137,7 @@ namespace
                                   {"cavityFillFactor", 0.0},
                                   {"thicknessPerAmount", 0.01}};
             }
+
             Write(Name + ".SRProfile",
                   {{"type", "SurfaceResponseProfile"},
                    {"version", 4},
@@ -140,6 +145,7 @@ namespace
                    {"states", Entries},
                    {"transitions", FJson::array()}});
         }
+
         void WriteMap(const std::string& Name, const std::vector<std::string>& Profiles, int Index) const
         {
             Write(Name + ".SurfaceProfileMap",
@@ -148,11 +154,13 @@ namespace
                    {"profiles", Profiles},
                    {"surfaces", FJson::array({{{"surfaceId", 0}, {"profileIndex", Index}}})}});
         }
+
         void WriteScene(const std::string&                                      Name,
                         const std::vector<std::pair<std::string, std::string>>& Inputs,
                         std::uint32_t Resolution = SurfaceState::SurfaceSimulationResolution) const
         {
             FJson Objects = FJson::array();
+
             for (const auto& [Mesh, Map] : Inputs)
                 Objects.push_back({{"mesh", Mesh}, {"surfaceProfileMap", Map}});
             Write(Name + ".Scene",
@@ -174,9 +182,10 @@ namespace
         const auto                                 ProfileIndex = static_cast<std::size_t>(Found - Handles.begin());
         SurfaceState::FSurfaceGPUProfileParameters Parameters{};
         const auto                                 Offset = GetSurfaceGPUProfileRecordIndex(
-                                ProfileIndex, State, SurfaceData.GetSurfaceStateRegistry().GetStateCount()) *
-                            sizeof(Parameters);
+                                                                ProfileIndex, State, SurfaceData.GetSurfaceStateRegistry().GetStateCount()) *
+                                                            sizeof(Parameters);
         GPU.GetSceneProfileParametersBuffer().Download(&Parameters, sizeof(Parameters), Offset);
+
         return Parameters.CapacityInputAndTransfer[1];
     }
 
@@ -289,10 +298,11 @@ namespace
             const auto  Handle = RealScene.GetStaticMeshInstances().front().GetSurfaceData();
             const auto& Texels = SurfaceData.GetSurfaceData(Handle).GetSharedGeometry()->GetTexels();
             const auto  Positive = std::count_if(Texels.begin(),
-                                                Texels.end(),
-                                                [](const auto& Texel)
-                                                { return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.01F; });
+                                                 Texels.end(),
+                                                 [](const auto& Texel)
+                                                 { return Texel.IsValid() && Texel.Geometry.ConcavityWeight > 0.01F; });
             Check(Positive > 0, "Mountain and Bunny must contain Macro concavity without normal maps");
+
             if (std::string_view(Name) == "Mountain")
             {
                 Check(RealScene.GetStaticMeshInstances().size() == 4 &&
@@ -301,6 +311,7 @@ namespace
                           RealScene.GetStaticMeshInstances()[3].GetTransform().RotationDegrees.x == 270.0F,
                       "Mountain Scene should have a fixed inverted Mud mountain above the original");
             }
+
             RealScene.PlayDemoAnimation();
             RealScene.AdvanceDemoAnimation(3.0F);
             const auto& Objects = RealScene.GetStaticMeshInstances();
@@ -315,6 +326,7 @@ namespace
                 Check(std::abs(Up.z - Objects[0].GetTransform().Scale.y) < 1.0e-4F,
                       "rotating Mountains must stay upright beneath the fixed inverted Mountain");
             }
+
             RealScene.AdvanceDemoAnimation(3.0F);
             Check(std::abs(Objects[0].GetTransform().RotationDegrees.x - Objects[2].GetTransform().RotationDegrees.x) <
                       1.0e-4F,
@@ -324,6 +336,7 @@ namespace
                           Objects[3].GetTransform().RotationDegrees.x == 270.0F,
                       "the inverted Mud mountain must remain stationary during animation");
         }
+
         constexpr std::array<std::pair<std::string_view, std::string_view>, 4> Effects{
             {{"Heat", "heat"}, {"WaterFilm", "waterfilm"}, {"Mud", "mud"}, {"Lava", "lava"}}};
         for (const std::string_view Shape : {"Cube", "Bunny", "Mountain"})
@@ -333,6 +346,7 @@ namespace
             glm::vec3 ReferenceScale(0.0F);
             glm::vec3 ReferenceAnimatedRotation(0.0F);
             bool      bFirstEffect = true;
+
             for (const auto& [Effect, State] : Effects)
             {
                 const std::string Stem = std::string(Shape) + "_" + std::string(Effect);
@@ -350,6 +364,7 @@ namespace
                 Check(Registry.GetStateCount() == 1 && Registry.GetStateName(0) == State,
                       "isolated Scene must expose exactly its selected Surface State");
                 const auto& Transform = Object.GetTransform();
+
                 if (bFirstEffect)
                 {
                     ReferencePosition = Transform.Position;
@@ -363,6 +378,7 @@ namespace
                               glm::length(Transform.Scale - ReferenceScale) < 1.0e-5F,
                           "all effects of one shape must start with the same transform");
                 }
+
                 const auto& Texels =
                     SurfaceData.GetSurfaceData(Object.GetSurfaceData()).GetSharedGeometry()->GetTexels();
                 const glm::mat4 Model = Transform.GetMatrix();
@@ -378,6 +394,7 @@ namespace
                 Isolated.PlayDemoAnimation();
                 Isolated.AdvanceDemoAnimation(3.0F);
                 const glm::vec3 AnimatedRotation = Object.GetTransform().RotationDegrees;
+
                 if (bFirstEffect)
                 {
                     Check(glm::length(AnimatedRotation - ReferenceRotation) > 1.0F,
@@ -390,6 +407,7 @@ namespace
                           "all effects of one shape must use the same animation phase");
             }
         }
+
         FScene LavaScene = FSceneLoader::Load(
             std::filesystem::path(MDSS_ASSET_DIR) / "Scenes/Mountain_Lava.Scene", Assets, SurfaceData);
         Check(LavaScene.GetStaticMeshInstances().size() == 1 &&
@@ -455,6 +473,7 @@ namespace
             ImGui::GetIO().IniFilename = nullptr;
             Renderer.SetTexelGridBlockSize(16);
             Renderer.SetTexelAreaReference(1.0F / (128.0F * 128.0F));
+
             for (auto Mode : {ERenderViewMode::Lit,
                               ERenderViewMode::SurfaceTexelGrid,
                               ERenderViewMode::SurfaceTexelArea,
@@ -469,6 +488,7 @@ namespace
                 UI.BeginFrame(Scene);
                 Renderer.RenderFrame(Scene, UI, 0.0F);
             }
+
             Window.PollEvents();
             UI.BeginFrame(Scene);
             Renderer.RenderFrame(Scene, UI, 1.0F / 15.0F);
@@ -478,22 +498,26 @@ namespace
             Check(Renderer.InspectTexel(Scene, 0, 0, {0.2F, 0.2F}),
                   "Macro mesh hit must resolve an inspectable texel.");
             const auto SelectedTexel = Renderer.GetInspectedTexel()->Texel;
+
             for (int Frame = 0; Frame < 4; ++Frame)
             {
                 Window.PollEvents();
                 UI.BeginFrame(Scene);
                 Renderer.RenderFrame(Scene, UI, 0.0F);
             }
+
             Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Selection.Texel == SelectedTexel,
                   "Renderer must publish a completed asynchronous GPU snapshot.");
             Renderer.SetSceneLitHeightDisplayScale(Scene, 2.0F);
             Check(!Renderer.GetTexelSnapshot(), "Changing display scale must invalidate prior samples.");
+
             for (int Frame = 0; Frame < 4; ++Frame)
             {
                 Window.PollEvents();
                 UI.BeginFrame(Scene);
                 Renderer.RenderFrame(Scene, UI, 0.0F);
             }
+
             Check(Renderer.GetTexelSnapshot() && Renderer.GetTexelSnapshot()->Values[4].z == 2.0F,
                   "New snapshots must carry the current Lit height display scale.");
             Renderer.SetSimulationResolution(Scene, 256);
@@ -505,6 +529,7 @@ namespace
             Renderer.SetSimulationResolution(Scene, 128);
             vkDeviceWaitIdle(Context.GetDevice());
         }
+
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 1 &&
                   SurfaceData.GetSurfaceStateRegistry().GetStateName(0) == "heat",
               "cached foreign States must be excluded");
@@ -550,6 +575,7 @@ namespace
             Contact.Strength = 10;
             Contact.Falloff = 0;
             SurfaceStateSystem.SubmitContact(Contact);
+
             for (int Frame = 0; Frame < 3; ++Frame)
             {
                 auto Effects = Renderer.GetDemoSurfaceEffectSettings();
@@ -560,6 +586,7 @@ namespace
                 UI.BeginFrame(Scene);
                 Renderer.RenderFrame(Scene, UI, 1.0F / 60.0F);
             }
+
             Renderer.SetDemoSurfaceEffectSettings({});
         }
 
@@ -576,6 +603,7 @@ namespace
         const auto* A = GPU.GetInstanceDescriptors(0);
         const auto* B = GPU.GetInstanceDescriptors(1);
         const auto* C = GPU.GetInstanceDescriptors(2);
+
         for (auto Binding : {SurfaceState::ESurfaceGPUDescriptorBinding::ProfileParameters,
                              SurfaceState::ESurfaceGPUDescriptorBinding::ProfileSupported})
         {
@@ -583,6 +611,7 @@ namespace
                       A->GetBoundBufferHandle(Binding, true) == C->GetBoundBufferHandle(Binding, true),
                   "all Meshes must bind the same Profile GPU buffers");
         }
+
         Check(A->GetBoundBufferHandle(SurfaceState::ESurfaceGPUDescriptorBinding::CurrentState, true) !=
                   B->GetBoundBufferHandle(SurfaceState::ESurfaceGPUDescriptorBinding::CurrentState, true),
               "instance State must stay independent");
@@ -597,6 +626,7 @@ namespace
         {
             SurfaceState::FSurfaceStateSystem System(Context, Assets, SurfaceData, Scene);
             System.ResetState();
+
             for (SurfaceState::FSurfaceInstanceID Target : {0U, 1U, 2U})
             {
                 SurfaceState::FSurfaceContactInput Contact;
@@ -607,9 +637,11 @@ namespace
                 Contact.Falloff = 0.0F;
                 System.SubmitContact(Contact);
             }
+
             const VkCommandBuffer Command = Context.GetCommands().BeginSingleTime();
             System.RecordStep(Command, 1.0F / 60.0F);
             Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
+
             for (std::size_t Index = 0; Index < 3; ++Index)
             {
                 const auto&        Resources = System.GetGPUResources();
@@ -634,6 +666,7 @@ namespace
                 }
             }
         }
+
         Renderer.SetSimulationResolution(Scene, 256);
         Check(std::abs(
                   GetProfileInputFactor(Renderer.GetSurfaceGPUResources(), SurfaceData, Scene, HeatHandle, HeatState) -
@@ -662,6 +695,7 @@ namespace
                 Check(std::abs(System.GetMaximumStableDeltaTime() - 1.0F / 60) < 1e-7F,
                       "disabling Geometry must remove its calibrated step restriction");
             }
+
             Transform.RotationDegrees = PreviousRotation;
         }
 
@@ -671,6 +705,7 @@ namespace
         const std::size_t Count =
             Limits.limits.maxStorageBufferRange / (256U * 256U * SurfaceNeighborCount * sizeof(float)) + 1U;
         std::vector<std::string> OversizedStates;
+
         for (std::size_t Index = 0; Index < Count; ++Index)
             OversizedStates.push_back("new_" + std::to_string(Index));
         Fixtures.WriteProfile("Oversized", OversizedStates, 1.0F);
@@ -688,6 +723,7 @@ namespace
         {
             bFailed = true;
         }
+
         Check(bFailed, "oversized Scene must fail GPU resource construction");
         Check(SurfaceData.GetSurfaceStateRegistry().GetStateCount() == 2 &&
                   SurfaceData.GetSurfaceStateRegistry().GetStateId("heat") == HeatState,
@@ -733,16 +769,20 @@ int main(int Argc, char* Argv[])
     catch (const std::exception& Error)
     {
         std::cout << "SKIP: native window/Vulkan context unavailable: " << Error.what() << '\n';
+
         return 77;
     }
+
     try
     {
         if (Argc == 2 && std::string_view(Argv[1]) == "--cavity-fill-bound")
         {
             MDSS::Tests::TestCavityFillDisplayBound(*Context);
             std::cout << "Cavity fill display bound checks passed.\n";
+
             return 0;
         }
+
         if (Argc == 2 && std::string_view(Argv[1]) == "--lava-scene")
         {
             Asset::FAssetManager              LavaAssets(*Context);
@@ -798,8 +838,10 @@ int main(int Argc, char* Argv[])
                 Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::ELogLevel::Error,
                       "Lava Scene rendering must have no Vulkan validation errors");
             std::cout << "Lava Scene checks passed.\n";
+
             return 0;
         }
+
         if (Argc == 2 && std::string_view(Argv[1]) == "--overlay-side-compaction")
         {
             MDSS::Tests::TestOverlaySideCompaction(*Context);
@@ -859,35 +901,43 @@ int main(int Argc, char* Argv[])
                       "simulation must resume with one normal tick after geometry update preparation");
                 vkDeviceWaitIdle(Context->GetDevice());
             }
+
             Context.reset();
             Window.reset();
+
             for (const auto& Entry : MDSS::FLogger::GetEntries())
                 Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::ELogLevel::Error,
                       "Overlay side compaction must have no Vulkan validation errors");
             std::cout << "Overlay side compaction checks passed.\n";
             return 0;
         }
+
         FFixtures Fixtures;
         TestDemoAnimation(*Context, Fixtures);
         const bool bDemoOnly = Argc == 2 && std::string_view(Argv[1]) == "--demo-animation";
+
         if (!bDemoOnly)
         {
             MDSS::Tests::TestSurfaceDebugRendering(*Context);
             TestSceneResources(*Window, *Context, Fixtures);
         }
+
         Context.reset();
         Window.reset();
+
         for (const auto& Entry : MDSS::FLogger::GetEntries())
         {
             Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::ELogLevel::Error,
                   "Vulkan validation must have no errors");
         }
+
         std::cout << "Scene resource checks passed.\n";
         return 0;
     }
     catch (const std::exception& Error)
     {
         std::cerr << "Scene resource check failed: " << Error.what() << '\n';
+
         return 1;
     }
 }

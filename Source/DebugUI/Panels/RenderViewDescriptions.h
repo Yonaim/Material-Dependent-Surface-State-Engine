@@ -48,6 +48,7 @@ namespace MDSS
                 case Rendering::ERenderViewMode::TotalSimulationHeight:
                     return "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.";
             }
+
             return "원본 메시 형상입니다.";
         }
     }

@@ -11,6 +11,7 @@ namespace MDSS
     {
         ViewportState.HoveredViewportId = 0;
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
+
         if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || ViewportState.ViewportPanels.empty())
             return;
 
@@ -29,6 +30,7 @@ namespace MDSS
                                         ? 1U
                                         : static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(Count))));
         const std::size_t Rows = (Count + Columns - 1U) / Columns;
+
         // Keep viewport input windows behind the profiling and render-state overlays after a canvas click.
         constexpr ImGuiWindowFlags Flags =
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings |
@@ -37,6 +39,7 @@ namespace MDSS
         const auto GetViewportModeName = [](Rendering::ERenderViewMode Mode) -> const char*
         {
             const auto Value = static_cast<std::uint32_t>(Mode);
+
             if (Value < RenderViewModeNames.size())
                 return RenderViewModeNames[Value];
             if (Mode >= Rendering::ERenderViewMode::SurfaceStateHeatmap &&
@@ -66,6 +69,7 @@ namespace MDSS
                     return "Lit";
             }
         };
+
         for (std::size_t Index = 0; Index < Count; ++Index)
         {
             FViewportUIState::FViewportPanel& Panel = ViewportState.ViewportPanels[Index];
@@ -83,6 +87,7 @@ namespace MDSS
             ImGui::SetNextWindowPos({Left, Top}, ImGuiCond_Always);
             ImGui::SetNextWindowSize(PanelSize, ImGuiCond_Always);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.0F, 0.0F});
+
             if (ImGui::Begin(WindowName.c_str(), nullptr, Flags))
             {
                 const float  CanvasTop = Top;
@@ -99,24 +104,26 @@ namespace MDSS
                     if (ImGui::IsItemHovered())
                     {
                         ViewportState.HoveredViewportId = Panel.Id;
+
                         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
                             ImGui::IsMouseClicked(ImGuiMouseButton_Right))
                             ViewportState.ActiveViewportId = Panel.Id;
                     }
                 }
+
                 const ImVec2 PanelMinimum{Left, Top};
                 const ImVec2 PanelMaximum{Right, Bottom};
                 const bool   bActive = Panel.Id == ViewportState.ActiveViewportId;
                 const ImU32  BorderColor = ImGui::GetColorU32(bActive ? ImVec4{0.35F, 0.78F, 1.0F, 0.95F}
-                                                                     : ImVec4{0.55F, 0.60F, 0.67F, 0.55F});
+                                                                      : ImVec4{0.55F, 0.60F, 0.67F, 0.55F});
                 ImDrawList*  DrawList = ImGui::GetWindowDrawList();
                 DrawList->AddRect(PanelMinimum, PanelMaximum, BorderColor, 0.0F, 0, bActive ? 2.0F : 1.0F);
                 const std::string Label = "View " + std::to_string(Index + 1U) + "  ·  " +
                                           GetViewportModeName(FrameRenderer->GetRenderViewMode(Index));
-                const ImVec2 LabelMinimum{Left + 8.0F, Top + 8.0F};
-                const ImVec2 LabelTextSize = ImGui::CalcTextSize(Label.c_str());
-                const ImVec2 LabelMaximum{LabelMinimum.x + LabelTextSize.x + 12.0F,
-                                          LabelMinimum.y + LabelTextSize.y + 8.0F};
+                const ImVec2      LabelMinimum{Left + 8.0F, Top + 8.0F};
+                const ImVec2      LabelTextSize = ImGui::CalcTextSize(Label.c_str());
+                const ImVec2      LabelMaximum{LabelMinimum.x + LabelTextSize.x + 12.0F,
+                                               LabelMinimum.y + LabelTextSize.y + 8.0F};
                 DrawList->AddRectFilled(
                     LabelMinimum, LabelMaximum, ImGui::GetColorU32({0.04F, 0.05F, 0.07F, 0.74F}), 3.0F);
                 DrawList->AddText(
@@ -124,6 +131,7 @@ namespace MDSS
                     ImGui::GetColorU32(bActive ? ImVec4{0.72F, 0.88F, 1.0F, 1.0F} : ImVec4{0.86F, 0.88F, 0.91F, 1.0F}),
                     Label.c_str());
             }
+
             ImGui::End();
             ImGui::PopStyleVar();
         }
@@ -142,9 +150,11 @@ namespace MDSS
             return;
         const auto& Instances = SceneData.GetStaticMeshInstances();
         bool        bBrickCubeTexelMesh = false;
+
         for (std::size_t Index = 0; Index < Instances.size(); ++Index)
         {
             const auto Mesh = Instances[Index].GetMesh();
+
             if (Mesh != Asset::InvalidAssetHandle && AssetManager->GetMesh(Mesh).GetName() == "BrickCube" &&
                 FrameRenderer->IsLitTexelMeshBaseRendered(SceneData, Index))
             {
@@ -152,12 +162,14 @@ namespace MDSS
                 break;
             }
         }
+
         if (!bBrickCubeTexelMesh)
             return;
 
         constexpr const char* Message = "LIT 뷰: BrickCube를 텍셀 메시로 렌더링 중";
         const ImVec2          DisplaySize = ImGui::GetIO().DisplaySize;
         const glm::vec4       Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+
         if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || Rect.z <= 0.0F || Rect.w <= 0.0F ||
             Rect.z * DisplaySize.x < ImGui::CalcTextSize(Message).x + 36.0F)
             return;
@@ -172,11 +184,13 @@ namespace MDSS
         if (ImGui::Begin("BrickCube Texel Mesh##ViewportNotice", nullptr, Flags))
         {
             ImGui::TextUnformatted(Message);
+
             if (ImGui::IsItemHovered())
                 SetDescriptionTooltip("원본 메시와 비교하려면 Base Geometry 뷰를 선택하세요.");
             ViewportState.bMouseOverViewportOverlay |=
                 ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
         }
+
         ImGui::End();
     }
 
@@ -221,6 +235,7 @@ namespace MDSS
                             ImGui::PushID(Label);
                             ImGui::BeginDisabled(!bAvailable);
                             bEffectsChanged |= ImGui::Checkbox(Label, &bEnabled);
+
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip(Description);
                             ImGui::EndDisabled();
@@ -237,6 +252,7 @@ namespace MDSS
                                 return;
                             ImGui::PushID("Details");
                             ImGui::PushID(Label);
+
                             if (ImGui::CollapsingHeader(Label))
                             {
                                 ImGui::Indent();
@@ -244,6 +260,7 @@ namespace MDSS
                                 DrawSettings();
                                 ImGui::Unindent();
                             }
+
                             ImGui::PopID();
                             ImGui::PopID();
                             ImGui::Dummy({0.0F, 3.0F});
@@ -340,10 +357,12 @@ namespace MDSS
                                 "화면 높이를 부드럽게 줄입니다. 시뮬레이션 상태와 이동에는 영향을 주지 않습니다.");
 
                         ImGui::Dummy({0.0F, 6.0F});
+
                         if (ImGui::CollapsingHeader("Shading"))
                         {
                             ImGui::Indent();
                             float AmbientLight = FrameRenderer->GetAmbientLight();
+
                             if (LabeledSliderFloat("Ambient / direct mix", &AmbientLight, 0.0F, 1.0F, "%.2f"))
                                 FrameRenderer->SetAmbientLight(AmbientLight);
                             if (ImGui::IsItemHovered())
@@ -354,10 +373,12 @@ namespace MDSS
                                 LabeledSliderFloat("Dry surface roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
 
                             float NormalStrength = FrameRenderer->GetNormalStrength();
+
                             if (LabeledSliderFloat("Normal Strength", &NormalStrength, 0.0F, 4.0F, "%.2f"))
                                 FrameRenderer->SetNormalStrength(NormalStrength);
 
                             bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
+
                             if (ImGui::Checkbox("Flip Y", &bFlipNormalY))
                                 FrameRenderer->SetFlipNormalY(bFlipNormalY);
                             if (ImGui::IsItemHovered())
@@ -365,10 +386,13 @@ namespace MDSS
                                                       "켜짐으로 전처리됩니다.");
                             ImGui::Unindent();
                         }
+
                         ImGui::PopStyleVar();
+
                         if (bEffectsChanged)
                             FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
                     }
+
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
@@ -380,11 +404,13 @@ namespace MDSS
                     {
                         ImGui::Dummy({0.0F, 12.0F});
                         bool bOverlayOnly = FrameRenderer->IsOverlayOnlyDebugEnabled();
+
                         if (ImGui::Checkbox("Overlay only", &bOverlayOnly))
                         {
                             FrameRenderer->SetOverlayOnlyDebugEnabled(bOverlayOnly);
                             ResetProfilingAverages();
                         }
+
                         if (ImGui::IsItemHovered())
                             SetDescriptionTooltip("Lit 뷰에서 Base Surface를 숨기고 생성된 State Overlay만 표시합니다. "
                                                   "켜면 표시 모드를 선택할 수 있습니다.");
@@ -392,17 +418,20 @@ namespace MDSS
                         {
                             int OverlayDisplayMode = static_cast<int>(FrameRenderer->GetOverlayDisplayMode());
                             ImGui::SetNextItemWidth(180.0F);
+
                             if (ImGui::Combo("Overlay display", &OverlayDisplayMode, "Both\0Top only\0Sides only\0"))
                             {
                                 FrameRenderer->SetOverlayDisplayMode(
                                     static_cast<Rendering::EOverlayDisplayMode>(OverlayDisplayMode));
                                 ResetProfilingAverages();
                             }
+
                             if (ImGui::IsItemHovered())
                                 SetDescriptionTooltip("Overlay 전체, 윗면만, 또는 옆면만 표시합니다.");
 
                             int ShadingDiagnostic = static_cast<int>(FrameRenderer->GetOverlayShadingDiagnostic());
                             ImGui::SetNextItemWidth(180.0F);
+
                             if (ImGui::Combo("Overlay shading diagnostic",
                                              &ShadingDiagnostic,
                                              "Lit\0Fixed normal\0Normal RGB\0Front/back faces\0Mesh normal\0Vertex "
@@ -416,24 +445,30 @@ namespace MDSS
                                     "Lit은 texel 노멀을 픽셀별로 보간합니다. Vertex normal (old)는 이전 정점 보간 "
                                     "결과입니다.");
                         }
+
                         ImGui::EndDisabled();
 
                         ImGui::Dummy({0.0F, 8.0F});
                         bool bBaseMeshDraw = FrameRenderer->IsBaseMeshDrawEnabled();
+
                         if (ImGui::Checkbox("Base Mesh draw", &bBaseMeshDraw))
                         {
                             FrameRenderer->SetBaseMeshDrawEnabled(bBaseMeshDraw);
                             Simulation.bFrameTimeResetRequested = true;
                             ResetProfilingAverages();
                         }
+
                         bool bOverlayTopDraw = FrameRenderer->IsOverlayTopDrawEnabled();
+
                         if (ImGui::Checkbox("Overlay Top draw", &bOverlayTopDraw))
                         {
                             FrameRenderer->SetOverlayTopDrawEnabled(bOverlayTopDraw);
                             Simulation.bFrameTimeResetRequested = true;
                             ResetProfilingAverages();
                         }
+
                         bool bOverlaySidesDraw = FrameRenderer->IsOverlaySidesDrawEnabled();
+
                         if (ImGui::Checkbox("Overlay Sides draw", &bOverlaySidesDraw))
                         {
                             FrameRenderer->SetOverlaySidesDrawEnabled(bOverlaySidesDraw);
@@ -442,12 +477,14 @@ namespace MDSS
                         }
 
                         float LitHeightDisplayScale = SceneData.GetLitHeightDisplayScale();
+
                         if (LabeledSliderFloat("Lit height display scale", &LitHeightDisplayScale, 0.0F, 10.0F, "%.2f"))
                             FrameRenderer->SetSceneLitHeightDisplayScale(SceneData, LitHeightDisplayScale);
                         if (ImGui::IsItemHovered())
                             SetDescriptionTooltip(
                                 "Lit 뷰에 표시하는 적층 높이 배율입니다. 시뮬레이션 데이터는 바꾸지 않습니다.");
                     }
+
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
@@ -462,6 +499,7 @@ namespace MDSS
                         ImGui::Dummy({0.0F, 12.0F});
                         DrawPerformanceTab(true);
                     }
+
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
@@ -469,6 +507,7 @@ namespace MDSS
                 ImGui::EndTabBar();
             }
         }
+
         ImGui::End();
     }
 

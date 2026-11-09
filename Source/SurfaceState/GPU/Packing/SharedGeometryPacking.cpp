@@ -14,6 +14,7 @@ namespace MDSS::SurfaceState
             return {Value.x, Value.y, Value.z, 0.0F};
         }
     }
+
 // ============================================================
 // 00. Shared Geometry Upload
 // ============================================================
@@ -23,10 +24,12 @@ namespace MDSS::SurfaceState
                                                               std::span<const FSurfaceProfileIndex> ProfileIndexRemap)
     {
         const std::size_t TexelCount = Geometry.GetTexelCount();
+
         if (TexelCount == 0)
         {
             throw std::invalid_argument("Cannot pack empty Surface Geometry.");
         }
+
         if (Geometry.GetProfileMap().size() != TexelCount)
         {
             throw std::invalid_argument("Surface Geometry Profile map size does not match its texel count.");
@@ -35,6 +38,7 @@ namespace MDSS::SurfaceState
         FSurfaceGPUSharedGeometryUpload Result;
         Result.TexelSurfaceIndices.reserve(TexelCount);
         Result.TexelProfileIndices = Geometry.GetProfileMap();
+
         if (!ProfileIndexRemap.empty())
         {
             for (FSurfaceProfileIndex& Index : Result.TexelProfileIndices)
@@ -43,13 +47,16 @@ namespace MDSS::SurfaceState
                 {
                     continue;
                 }
+
                 if (Index >= ProfileIndexRemap.size() || ProfileIndexRemap[Index] == InvalidSurfaceProfileIndex)
                 {
                     throw std::invalid_argument("Surface Geometry references an unmapped Scene Profile.");
                 }
+
                 Index = ProfileIndexRemap[Index];
             }
         }
+
         Result.Positions.reserve(TexelCount);
         Result.Normals.reserve(TexelCount);
         Result.MesoNormals.reserve(TexelCount);
@@ -59,6 +66,7 @@ namespace MDSS::SurfaceState
         Result.ReverseNeighborDirectionIndices.assign(TexelCount, UINT32_MAX);
         Result.TexelChartIndices.reserve(TexelCount);
         Result.SurfaceRanges.reserve(Geometry.GetSurfaces().size());
+
         for (const FSurfaceTexelRange& Range : Geometry.GetSurfaces())
         {
             Result.SurfaceRanges.push_back(
@@ -69,12 +77,14 @@ namespace MDSS::SurfaceState
         // the same surface/chart. A filled layer can then cover positive relief
         // as well as negative cavities without another GPU buffer or reduction.
         std::unordered_map<std::uint64_t, float> ChartMesoPeaks;
+
         for (const FSurfaceTexelGeometry& Texel : Geometry.GetTexels())
         {
             if (!Texel.IsValid() || !std::isfinite(Texel.Geometry.MesoVirtualHeight))
                 continue;
             const std::uint64_t Key = (std::uint64_t{Texel.Surface} << 32U) | Texel.Chart;
             auto [It, Inserted] = ChartMesoPeaks.try_emplace(Key, Texel.Geometry.MesoVirtualHeight);
+
             if (!Inserted)
                 It->second = std::max(It->second, Texel.Geometry.MesoVirtualHeight);
         }
@@ -94,23 +104,30 @@ namespace MDSS::SurfaceState
                                              ? Texel.MesoNormal
                                              : (Texel.bHasTransferNormal ? Texel.TransferNormal : Texel.Normal);
             FSurfaceGPUVec4 PackedMesoNormal = ToGPUVec4(MesoNormal);
+
             if (Texel.IsValid())
             {
                 const std::uint64_t Key = (std::uint64_t{Texel.Surface} << 32U) | Texel.Chart;
                 const auto          Peak = ChartMesoPeaks.find(Key);
+
                 if (Peak != ChartMesoPeaks.end())
                     PackedMesoNormal.W = Peak->second;
             }
+
             Result.MesoNormals.push_back(PackedMesoNormal);
             Result.NeighborIndices.push_back({Texel.NeighborIndices});
+
             for (std::size_t DirectionIndex = 0; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
             {
                 const FLocalTexelIndex Neighbor = Texel.NeighborIndices[DirectionIndex];
+
                 if (Neighbor >= TexelCount)
                 {
                     continue;
                 }
+
                 const auto& NeighborTexelIndices = Geometry.GetTexels()[Neighbor].NeighborIndices;
+
                 for (std::uint32_t ReverseDirectionIndex = 0; ReverseDirectionIndex < SurfaceNeighborCount;
                      ++ReverseDirectionIndex)
                 {
@@ -125,6 +142,7 @@ namespace MDSS::SurfaceState
                     }
                 }
             }
+
             Result.TexelChartIndices.push_back(Texel.Chart);
         }
 

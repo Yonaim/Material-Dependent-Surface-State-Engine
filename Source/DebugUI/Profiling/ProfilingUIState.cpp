@@ -52,15 +52,18 @@ namespace MDSS
         }
 
         RecentSamples.push_back(Sample);
+
         while (!RecentSamples.empty() && RecentSamples.front().TimeSeconds < ElapsedSeconds - 0.1)
             RecentSamples.pop_front();
         std::array<double, 43>        RecentSums{};
         std::array<std::uint32_t, 43> RecentCounts{};
+
         for (const FSample& RecentSample : RecentSamples)
         {
             for (std::size_t Index = 0; Index < RecentSample.Values.size(); ++Index)
             {
                 const float Value = RecentSample.Values[Index];
+
                 if (std::isfinite(Value) && Value >= 0.0F)
                 {
                     RecentSums[Index] += Value;
@@ -68,7 +71,9 @@ namespace MDSS
                 }
             }
         }
+
         Recent100msAverages.fill(-1.0F);
+
         for (std::size_t Index = 0; Index < Recent100msAverages.size(); ++Index)
         {
             if (RecentCounts[Index] != 0U)
@@ -82,11 +87,13 @@ namespace MDSS
         {
             Averages[0] = static_cast<float>(FpsSum / FrameSamples);
             Averages[1] = static_cast<float>(FrameTimeSum / FrameSamples);
+
             for (std::size_t Index = 0; Index < MetricSums.size(); ++Index)
             {
                 Averages[Index + 2] =
                     MetricSamples[Index] > 0 ? static_cast<float>(MetricSums[Index] / MetricSamples[Index]) : -1.0F;
             }
+
             Maximums = WindowMaximums;
             bAverageAvailable = true;
             WindowElapsed = 0.0;

@@ -56,17 +56,20 @@ namespace MDSS::GPU
             Add(Bytes, BufferCurrent, BufferPeak);
             UpdatePeak(TotalPeak, TotalCurrent.fetch_add(Bytes, std::memory_order_relaxed) + Bytes);
         }
+
         static void BufferFreed(std::uint64_t Bytes, EGPUBufferMemoryCategory Category) noexcept
         {
             BufferCategoryCurrent[GetCategoryIndex(Category)].fetch_sub(Bytes, std::memory_order_relaxed);
             BufferCurrent.fetch_sub(Bytes, std::memory_order_relaxed);
             TotalCurrent.fetch_sub(Bytes, std::memory_order_relaxed);
         }
+
         static void ImageAllocated(std::uint64_t Bytes) noexcept
         {
             Add(Bytes, ImageCurrent, ImagePeak);
             UpdatePeak(TotalPeak, TotalCurrent.fetch_add(Bytes, std::memory_order_relaxed) + Bytes);
         }
+
         static void ImageFreed(std::uint64_t Bytes) noexcept
         {
             Subtract(Bytes, ImageCurrent, TotalCurrent);
@@ -81,12 +84,14 @@ namespace MDSS::GPU
             Snapshot.PeakImageBytes = ImagePeak.load(std::memory_order_relaxed);
             Snapshot.CurrentTotalBytes = TotalCurrent.load(std::memory_order_relaxed);
             Snapshot.PeakTotalBytes = TotalPeak.load(std::memory_order_relaxed);
+
             for (std::size_t Index = 0; Index < GPUBufferMemoryCategoryCount; ++Index)
             {
                 Snapshot.BufferCategoryCurrentBytes[Index] =
                     BufferCategoryCurrent[Index].load(std::memory_order_relaxed);
                 Snapshot.BufferCategoryPeakBytes[Index] = BufferCategoryPeak[Index].load(std::memory_order_relaxed);
             }
+
             return Snapshot;
         }
 
@@ -101,6 +106,7 @@ namespace MDSS::GPU
         static void UpdatePeak(std::atomic<std::uint64_t>& Peak, std::uint64_t Value) noexcept
         {
             std::uint64_t Previous = Peak.load(std::memory_order_relaxed);
+
             while (Previous < Value &&
                    !Peak.compare_exchange_weak(Previous, Value, std::memory_order_relaxed, std::memory_order_relaxed))
             {

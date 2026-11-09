@@ -36,10 +36,12 @@ namespace MDSS::GPU
         BeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         BeginInfo.renderPass = RenderPass->GetHandle();
         BeginInfo.framebuffer = Framebuffers.Get(FramebufferIndex);
+
         if (BeginInfo.renderPass == VK_NULL_HANDLE || BeginInfo.framebuffer == VK_NULL_HANDLE)
         {
             throw std::logic_error("Graphics pass begin received an uninitialized Vulkan render target.");
         }
+
         BeginInfo.renderArea.offset = {0, 0};
         BeginInfo.renderArea.extent = RenderExtent;
         BeginInfo.clearValueCount = static_cast<std::uint32_t>(ClearValues.size());

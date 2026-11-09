@@ -28,14 +28,17 @@ namespace MDSS::Rendering
         std::vector<std::uint32_t> ReadShader(const std::string& ShaderPath)
         {
             std::ifstream File(ShaderPath, std::ios::binary | std::ios::ate);
+
             if (!File)
                 throw std::runtime_error("Cannot open rendering State texture shader: " + ShaderPath);
             const auto Size = File.tellg();
+
             if (Size <= 0 || Size % 4 != 0)
                 throw std::runtime_error("Invalid rendering State texture shader: " + ShaderPath);
             std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
             File.seekg(0);
             File.read(reinterpret_cast<char*>(Code.data()), Size);
+
             if (!File)
                 throw std::runtime_error("Cannot read rendering State texture shader: " + ShaderPath);
             return Code;
@@ -63,6 +66,7 @@ namespace MDSS::Rendering
                 vkCreateComputePipelines(Device, VK_NULL_HANDLE, 1, &PipelineInfo, nullptr, &Result);
             vkDestroyShaderModule(Device, Module, nullptr);
             RequireVk(PipelineResult);
+
             return Result;
         }
 
@@ -82,6 +86,7 @@ namespace MDSS::Rendering
             Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             Barrier.image = Image;
             Barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, Layers};
+
             return Barrier;
         }
     }
@@ -199,15 +204,18 @@ namespace MDSS::Rendering
                 const auto* Geometry = Resources.GetInstanceSharedGeometry(Index);
                 const auto& Ranges = Geometry->GetSurfaceRanges();
                 FInstance&  Instance = Instances[Index];
+
                 if (Ranges.empty() || Ranges.size() > Limits.limits.maxImageArrayLayers ||
                     Ranges.size() > Limits.limits.maxComputeWorkGroupCount[2])
                     throw std::runtime_error("Surface count exceeds State texture array or dispatch limits.");
                 Instance.SurfaceCount = static_cast<std::uint32_t>(Ranges.size());
+
                 for (const auto& Range : Ranges)
                 {
                     Instance.Extent.width = std::max(Instance.Extent.width, Range.Width);
                     Instance.Extent.height = std::max(Instance.Extent.height, Range.Height);
                 }
+
                 if (Instance.Extent.width > Limits.limits.maxImageDimension2D ||
                     Instance.Extent.height > Limits.limits.maxImageDimension2D ||
                     (Instance.Extent.width + 7U) / 8U > Limits.limits.maxComputeWorkGroupCount[0] ||
@@ -291,6 +299,7 @@ namespace MDSS::Rendering
                      {VK_NULL_HANDLE, Instance.SmoothingTempView->GetHandle(), VK_IMAGE_LAYOUT_GENERAL},
                      {VK_NULL_HANDLE, Instance.SmoothedView->GetHandle(), VK_IMAGE_LAYOUT_GENERAL}}};
                 std::array<VkWriteDescriptorSet, 3> SmoothWrites{};
+
                 for (std::uint32_t Binding = 0; Binding < SmoothWrites.size(); ++Binding)
                 {
                     SmoothWrites[Binding].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -300,6 +309,7 @@ namespace MDSS::Rendering
                     SmoothWrites[Binding].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                     SmoothWrites[Binding].pImageInfo = &SmoothInfos[Binding];
                 }
+
                 vkUpdateDescriptorSets(
                     Device, static_cast<std::uint32_t>(SmoothWrites.size()), SmoothWrites.data(), 0, nullptr);
             }
@@ -379,12 +389,15 @@ namespace MDSS::Rendering
             return;
         const std::array<std::uint32_t, 5> Push{Channels[0], Channels[1], Channels[2], Channels[3], ChannelCount};
         bool                               bMainPipelineReady = false;
+
         for (std::size_t Index = 0; Index < Instances.size(); ++Index)
         {
             FInstance& Instance = Instances[Index];
+
             if (!Instance.Image)
                 continue;
             const auto* SurfaceDescriptors = Resources.GetInstanceDescriptors(Index);
+
             if (!SurfaceDescriptors)
                 continue;
 
@@ -412,6 +425,7 @@ namespace MDSS::Rendering
                                          &Initialize);
                     Instance.bInitialized = true;
                 }
+
                 continue;
             }
 
@@ -445,6 +459,7 @@ namespace MDSS::Rendering
                 vkCmdPushConstants(Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), Push.data());
                 bMainPipelineReady = true;
             }
+
             const std::array<VkDescriptorSet, 2> Sets{StateSet, Instance.Set};
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -524,6 +539,7 @@ namespace MDSS::Rendering
                               (Instance.Extent.height + 7U) / 8U,
                               Instance.SurfaceCount);
             };
+
             if (bSeparableSmoothing)
             {
                 std::uint32_t Mode = 1U;

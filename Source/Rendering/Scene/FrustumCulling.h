@@ -21,6 +21,7 @@ namespace MDSS::Rendering
             for (glm::vec4& Plane : Planes)
             {
                 const float Length = glm::length(glm::vec3(Plane));
+
                 if (std::isfinite(Length) && Length > 0.0F)
                     Plane /= Length;
                 else
@@ -46,6 +47,7 @@ namespace MDSS::Rendering
                                                   const glm::mat4&    Model) noexcept
     {
         const glm::vec3 Center = glm::vec3(Model * glm::vec4(LocalCenter, 1.0F));
+
         // FTransform composes translation, rotation and scale; its columns are orthogonal.
         const float Scale = std::max(
             {glm::length(glm::vec3(Model[0])), glm::length(glm::vec3(Model[1])), glm::length(glm::vec3(Model[2]))});

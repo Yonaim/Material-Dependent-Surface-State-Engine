@@ -7,13 +7,16 @@ namespace MDSS
 // ============================================================
 // 00. Active View Settings
 // ============================================================
-#pragma region 00_Active_View_Settings
+#pragma region "00_Active_View_Settings"
     void FDebugUI::DrawViewSettingsPopup(std::size_t                 ActiveViewportIndex,
                                          Rendering::ERenderViewMode& CurrentMode,
                                          const char*                 CurrentName)
     {
         if (ImGui::BeginPopup("ViewSettingsPopup"))
         {
+            // 00.00. Popup Context and Shared Controls
+            #pragma region "00_00_Popup_Context_and_Shared_Controls"
+
             const char* ViewSettingsTitle = CurrentName;
             ImGui::TextColored({0.46F, 0.68F, 0.92F, 1.0F}, "%s", ViewSettingsTitle);
             ImGui::Separator();
@@ -39,11 +42,17 @@ namespace MDSS
                 ImGui::SetNextItemWidth(130.0F);
                 bChanged |= SliderIntWithDoubleClickInput("Cell texels", &BlockSize, 1, 64);
                 Settings.HeightGridBlockSize = static_cast<std::uint32_t>(BlockSize);
+
                 if (bChanged)
                 {
                     FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
                 }
             };
+
+            #pragma endregion
+
+            // 00.01. Mode Specific Settings
+            #pragma region "00_01_Mode_Specific_Settings"
 
             switch (CurrentMode)
             {
@@ -57,15 +66,18 @@ namespace MDSS
                 {
                     BeginViewContext("WIREFRAME", "삼각형 와이어프레임으로 형상을 표시.");
                     bool bUniformWhite = FrameRenderer->IsWireframeUniformWhite();
+
                     if (ImGui::Checkbox("Uniform white lines", &bUniformWhite))
                     {
                         FrameRenderer->SetWireframeUniformWhite(bUniformWhite);
                     }
+
                     if (FrameRenderer->SupportsWireframeLineWidth())
                     {
                         ImGui::SameLine(0.0F, 16.0F);
                         float Width = FrameRenderer->GetWireframeLineWidth();
                         ImGui::SetNextItemWidth(180.0F);
+
                         if (SliderFloatWithDoubleClickInput("Line width",
                                                             &Width,
                                                             FrameRenderer->GetWireframeLineWidthMin(),
@@ -79,8 +91,10 @@ namespace MDSS
                     {
                         ImGui::TextDisabled("Line width adjustment is unsupported by this GPU.");
                     }
+
                     break;
                 }
+
                 case Rendering::ERenderViewMode::VertexNormalWS:
                     BeginViewContext("VERTEX NORMAL", "RGB 채널은 월드 X/Y/Z 성분(-1~+1)을 0.5 기준으로 인코딩.");
                     break;
@@ -96,10 +110,12 @@ namespace MDSS
                                      "프로파일 용량 대비 State 비율을 표시합니다. 100% 초과는 주황색이며, 실제 "
                                      "양은 Texel Inspector에서 확인할 수 있습니다.");
                     bool bReliefShadingEnabled = FrameRenderer->IsStateHeatmapReliefShadingEnabled();
+
                     if (ImGui::Checkbox("Relief Shading", &bReliefShadingEnabled))
                     {
                         FrameRenderer->SetStateHeatmapReliefShadingEnabled(bReliefShadingEnabled);
                     }
+
                     ImGui::NewLine();
                     DrawLegendColor({0.075F, 0.090F, 0.260F, 1.0F}, "0");
                     DrawLegendColor({0.990F, 0.900F, 0.200F, 1.0F}, "100% 용량");
@@ -109,6 +125,7 @@ namespace MDSS
                     DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
                     break;
                 }
+
                 case Rendering::ERenderViewMode::SurfaceAccumulation:
                 case Rendering::ERenderViewMode::SurfaceFinalGeometry:
                 {
@@ -138,6 +155,7 @@ namespace MDSS
                     {
                         ImGui::SameLine();
                         ImGui::TextDisabled("형상 배율; 색상 기준은 유지");
+
                         if (Settings.AccumulationComponent < 3)
                         {
                             ImGui::SameLine();
@@ -152,10 +170,12 @@ namespace MDSS
                                                     : "채워진 cavity만 표시");
                         }
                     }
+
                     if (bChanged)
                         FrameRenderer->SetSurfaceDebugDisplaySettings(Settings);
                     ImGui::NewLine();
                     DrawHeightGridControls();
+
                     if (!bFinal)
                     {
                         if (Settings.AccumulationComponent == 4)
@@ -166,14 +186,17 @@ namespace MDSS
                         {
                             DrawLegendColor({0.075F, 0.090F, 0.260F, 1}, "0");
                         }
+
                         DrawLegendColor({0.990F, 0.900F, 0.200F, 1},
                                         Settings.AccumulationComponent == 4
                                             ? "채워진 cavity"
                                             : (Settings.AccumulationComponent == 3 ? "100%" : "용량 기준"));
                         DrawLegendColor({1, 0, 1, 1}, "Invalid value / area");
                     }
+
                     break;
                 }
+
                 case Rendering::ERenderViewMode::TotalSimulationHeight:
                 {
                     BeginViewContext("TOTAL SIMULATION HEIGHT",
@@ -181,6 +204,7 @@ namespace MDSS
                                      "높이 캐시는 시뮬레이션 상태나 메시 회전·스케일이 바뀌면 갱신됩니다.");
                     auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
                     ImGui::SetNextItemWidth(95.0F);
+
                     if (ImGui::DragFloat("Display scale",
                                          &Settings.DisplacementScale,
                                          0.1F,
@@ -192,6 +216,7 @@ namespace MDSS
                     DrawHeightGridControls();
                     break;
                 }
+
                 case Rendering::ERenderViewMode::SurfaceValidity:
                     BeginViewContext("VALIDITY", "Surface 텍셀 유효 여부와 시뮬레이션 적용 여부.");
                     DrawLegendColor({0.10F, 0.78F, 0.24F, 1.0F}, "유효·시뮬레이션 켜짐");
@@ -225,6 +250,7 @@ namespace MDSS
                         ImGui::TextUnformatted("State");
                         ImGui::SameLine(0.0F, 6.0F);
                         ImGui::SetNextItemWidth(125.0F);
+
                         if (ImGui::BeginCombo("##OutgoingFluxState",
                                               Registry->GetStateName(Simulation.DebugState).c_str()))
                         {
@@ -232,30 +258,36 @@ namespace MDSS
                             {
                                 const SurfaceState::FStateId State = static_cast<SurfaceState::FStateId>(Index);
                                 const bool                   bSelected = State == Simulation.DebugState;
+
                                 if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                                 {
                                     Simulation.DebugState = State;
                                     FrameRenderer->SetDebugStateChannel(Simulation.DebugState);
                                 }
+
                                 if (bSelected)
                                 {
                                     ImGui::SetItemDefaultFocus();
                                 }
                             }
+
                             ImGui::EndCombo();
                         }
                     }
+
                     DrawLegendColor({0.76F, 0.08F, 0.10F, 1.0F}, "0 제한");
                     DrawLegendColor({1.00F, 0.70F, 0.10F, 1.0F}, "0.5 부분 제한");
                     DrawLegendColor({0.34F, 0.86F, 0.28F, 1.0F}, "1 제한 없음");
                     DrawLegendColor({0.42F, 0.42F, 0.45F, 1.0F}, "시뮬레이션 꺼짐");
                     break;
                 }
+
                 case Rendering::ERenderViewMode::SolverTransferWeight:
                 {
                     BeginViewContext("TRANSFER WEIGHT", "선택 가중치 평균: 0은 차단, 1은 완전 전달.");
                     int SelectedWeightView = static_cast<int>(FrameRenderer->GetSolverTransferWeightView());
                     ImGui::SetNextItemWidth(205.0F);
+
                     if (ImGui::Combo("##TransferWeightComponent",
                                      &SelectedWeightView,
                                      SolverTransferWeightViewNames.data(),
@@ -264,12 +296,14 @@ namespace MDSS
                         FrameRenderer->SetSolverTransferWeightView(
                             static_cast<Rendering::ESolverTransferWeightView>(SelectedWeightView));
                     }
+
                     ImGui::SameLine(0.0F, 10.0F);
                     DrawLegendColor({0.16F, 0.035F, 0.24F, 1.0F}, "0 차단");
                     DrawLegendColor({0.30F, 0.24F, 0.78F, 1.0F}, "0.5 중간");
                     DrawLegendColor({0.18F, 0.94F, 0.98F, 1.0F}, "1 허용");
                     break;
                 }
+
                 case Rendering::ERenderViewMode::SurfaceTexelGrid:
                 {
                     BeginViewContext("TEXEL GRID", "시뮬레이션 UV 격자. 확대하면 개별 텍셀 경계가 나타납니다.");
@@ -277,11 +311,13 @@ namespace MDSS
                     int                                  SelectedBlock = BlockSize == 16U ? 1 : 0;
                     constexpr std::array<const char*, 2> BlockNames = {"8 x 8 texels", "16 x 16 texels"};
                     ImGui::SetNextItemWidth(150.0F);
+
                     if (ImGui::Combo(
                             "##TexelGridBlock", &SelectedBlock, BlockNames.data(), static_cast<int>(BlockNames.size())))
                     {
                         FrameRenderer->SetTexelGridBlockSize(SelectedBlock == 0 ? 8U : 16U);
                     }
+
                     ImGui::SameLine(0.0F, 10.0F);
                     ImGui::Text("Resolution: %u x %u",
                                 FrameRenderer->GetSimulationResolution(),
@@ -290,11 +326,13 @@ namespace MDSS
                     DrawLegendColor({0.72F, 0.88F, 0.98F, 1.0F}, "묶음 경계");
                     break;
                 }
+
                 case Rendering::ERenderViewMode::SurfaceTexelArea:
                 {
                     BeginViewContext("TEXEL AREA", "텍셀당 월드 면적. 해상도 변경에도 동일 색 기준.");
                     float Reference = FrameRenderer->GetTexelAreaReference();
                     ImGui::SetNextItemWidth(150.0F);
+
                     if (ImGui::DragFloat("Reference",
                                          &Reference,
                                          Reference * 0.05F,
@@ -305,6 +343,7 @@ namespace MDSS
                     {
                         FrameRenderer->SetTexelAreaReference(Reference);
                     }
+
                     ImGui::SameLine(0.0F, 10.0F);
                     ImGui::TextDisabled("world units^2 / texel");
                     DrawLegendColor({0.12F, 0.52F, 0.92F, 1.0F}, "1/4x 이하 (촘촘)");
@@ -313,18 +352,21 @@ namespace MDSS
                     DrawLegendColor({1.0F, 0.18F, 0.72F, 1.0F}, "면적 계산 불가");
                     break;
                 }
+
                 case Rendering::ERenderViewMode::MesoHeight:
                 case Rendering::ERenderViewMode::MesoOffset:
                 {
                     BeginViewContext("MESO GEOMETRY", "Meso 높이만 형상에 적용합니다. State 적층은 포함하지 않습니다.");
                     int Representation = CurrentMode == Rendering::ERenderViewMode::MesoHeight ? 0 : 1;
                     ImGui::SetNextItemWidth(150.0F);
+
                     if (ImGui::Combo("Representation", &Representation, "Height Color\0Displacement\0"))
                     {
                         CurrentMode = Representation == 0 ? Rendering::ERenderViewMode::MesoHeight
                                                           : Rendering::ERenderViewMode::MesoOffset;
                         FrameRenderer->SetRenderViewMode(ActiveViewportIndex, CurrentMode);
                     }
+
                     if (CurrentMode == Rendering::ERenderViewMode::MesoHeight)
                     {
                         ImGui::SameLine(0.0F, 10.0F);
@@ -332,14 +374,19 @@ namespace MDSS
                         DrawLegendColor({0.12F, 0.13F, 0.17F, 1.0F}, "0 기준");
                         DrawLegendColor({1.0F, 0.42F, 0.10F, 1.0F}, "양수");
                     }
+
                     DrawHeightGridControls();
                     break;
                 }
+
                 case Rendering::ERenderViewMode::MacroGeometry:
                     BeginViewContext("BASE GEOMETRY",
                                      "원본 메시 형상입니다. Meso 변위와 State 적층은 포함하지 않습니다.");
                     break;
             }
+
+            #pragma endregion
+
             ImGui::EndPopup();
         }
     }

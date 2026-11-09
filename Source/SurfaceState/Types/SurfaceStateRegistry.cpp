@@ -20,9 +20,11 @@ namespace MDSS::SurfaceState
     FSurfaceStateRegistry::FSurfaceStateRegistry(const std::vector<FSurfaceResponseProfileData>& Profiles)
     {
         std::set<std::string> StateNames;
+
         for (const FSurfaceResponseProfileData& Profile : Profiles)
         {
             ValidateSurfaceResponseProfileData(Profile);
+
             for (const auto& Entry : Profile.States)
             {
                 StateNames.insert(Entry.first);
@@ -36,11 +38,14 @@ namespace MDSS::SurfaceState
 
         Names.assign(StateNames.begin(), StateNames.end());
         const auto Lava = std::find(Names.begin(), Names.end(), "lava");
+
         if (Lava != Names.end() && Lava != Names.begin())
         {
             std::rotate(Names.begin(), Lava, Lava + 1);
         }
+
         IDs.reserve(Names.size());
+
         for (std::size_t Index = 0; Index < Names.size(); ++Index)
         {
             IDs.emplace(Names[Index], static_cast<FStateId>(Index));
@@ -55,6 +60,7 @@ namespace MDSS::SurfaceState
                     throw std::invalid_argument("Transition references unknown source State '" + Transition.Source +
                                                 "'.");
                 }
+
                 if (!IDs.contains(Transition.Target))
                 {
                     throw std::invalid_argument("Transition references unknown target State '" + Transition.Target +
@@ -79,10 +85,12 @@ namespace MDSS::SurfaceState
     {
         const std::string CanonicalName = NormalizeSurfaceStateName(Name);
         const auto        Found = IDs.find(CanonicalName);
+
         if (Found == IDs.end())
         {
             throw std::out_of_range("Unknown State name: '" + CanonicalName + "'.");
         }
+
         return Found->second;
     }
 
@@ -92,6 +100,7 @@ namespace MDSS::SurfaceState
         {
             throw std::out_of_range("Invalid TStateId.");
         }
+
         return Names[ID];
     }
 
@@ -102,28 +111,35 @@ namespace MDSS::SurfaceState
 
         FRegisteredSurfaceResponseProfileData Result;
         Result.States.resize(Names.size());
+
         for (const auto& [Name, Parameters] : Profile.States)
         {
             const auto Found = IDs.find(Name);
+
             if (Found == IDs.end())
             {
                 throw std::invalid_argument("Profile contains State not registered in this registry: '" + Name + "'.");
             }
+
             Result.States[Found->second] = Parameters;
         }
 
         Result.Transitions.reserve(Profile.Transitions.size());
+
         for (const FSurfaceStateTransition& Transition : Profile.Transitions)
         {
             const auto Source = IDs.find(Transition.Source);
             const auto Target = IDs.find(Transition.Target);
+
             if (Source == IDs.end() || Target == IDs.end())
             {
                 throw std::invalid_argument("Profile transition references a State absent from this registry.");
             }
+
             Result.Transitions.push_back(
                 {Source->second, Target->second, Transition.Threshold, Transition.TransitionRate});
         }
+
         return Result;
     }
 #pragma endregion

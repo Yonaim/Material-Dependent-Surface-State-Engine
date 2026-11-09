@@ -27,6 +27,7 @@ namespace MDSS::GPU
         {
             throw std::runtime_error("Failed to create Vulkan command pool.");
         }
+
         FLogger::Debug("Vulkan",
                        "Command pool created for graphics queue family " + std::to_string(GraphicsQueueFamily) + ".");
     }

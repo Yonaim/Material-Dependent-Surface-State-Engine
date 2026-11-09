@@ -26,11 +26,13 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
     class FSurfaceGPUBufferPool;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -57,10 +59,12 @@ namespace MDSS::SurfaceState
         {
             return *ReactionsBuffer;
         }
+
         [[nodiscard]] std::uint32_t GetMaxReactionCount() const noexcept
         {
             return MaxReactionCount;
         }
+
         void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
 
         [[nodiscard]] const GPU::FGPUBuffer& GetParametersBuffer() const noexcept;

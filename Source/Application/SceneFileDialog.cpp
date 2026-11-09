@@ -45,6 +45,7 @@ namespace MDSS
 
             std::string Result;
             char        Buffer[512];
+
             while (std::fgets(Buffer, sizeof(Buffer), Pipe) != nullptr)
             {
                 Result += Buffer;
@@ -58,10 +59,12 @@ namespace MDSS
             {
                 Result.pop_back();
             }
+
             if (Result.empty())
             {
                 return std::nullopt;
             }
+
             return std::filesystem::path(Result);
         }
     } // namespace

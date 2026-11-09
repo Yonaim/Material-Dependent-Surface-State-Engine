@@ -2,7 +2,7 @@
 #
 # Naming rules such as PascalCase, bBoolean, and MDSS namespace naming are
 # documented in the Code Style policy and are not enforced by clang-format.
-# See Docs/MDSSP-Agent-Vault/01_Project-Policy/02_Code_Style.md.
+# See Docs/Agent-Vault/00_Engineering-Standards/00_Core/00_Code-Style.md.
 
 BasedOnStyle: LLVM
 Language: Cpp

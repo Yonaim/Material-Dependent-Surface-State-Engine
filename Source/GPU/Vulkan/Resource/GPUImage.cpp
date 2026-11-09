@@ -130,6 +130,7 @@ namespace MDSS::GPU
             AllocationSize = 0;
             throw std::runtime_error("Failed to bind Vulkan image memory.");
         }
+
         FGPUResourceMemoryStats::ImageAllocated(AllocationSize);
 
         FLogger::Verbose("Vulkan",

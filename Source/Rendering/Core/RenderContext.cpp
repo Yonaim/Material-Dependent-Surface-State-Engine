@@ -40,6 +40,7 @@ namespace MDSS::Rendering
                     {
                         vkDestroySemaphore(Device, ImageAvailableSemaphores[Created], nullptr);
                     }
+
                     if (InFlightFences[Created] != VK_NULL_HANDLE)
                     {
                         vkDestroyFence(Device, InFlightFences[Created], nullptr);
@@ -66,6 +67,7 @@ namespace MDSS::Rendering
             {
                 vkDestroySemaphore(Device, ImageAvailableSemaphores[Index], nullptr);
             }
+
             if (InFlightFences[Index] != VK_NULL_HANDLE)
             {
                 vkDestroyFence(Device, InFlightFences[Index], nullptr);

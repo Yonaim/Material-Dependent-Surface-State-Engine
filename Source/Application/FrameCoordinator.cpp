@@ -22,11 +22,13 @@ namespace MDSS
     {
         SurfaceStateSystem.PrepareScratchStorage();
         const bool bResetState = DebugUI.ConsumeSolverResetRequest();
+
         if (bResetState)
         {
             SurfaceStateSystem.ResetState();
             ResetClock();
         }
+
         if (!bSuspendClock)
             Clock.Accumulate(DeltaTime, DebugUI.GetSimulationTimeScale(), bResetState || DebugUI.IsSimulationPaused());
         const double PendingTickBudget = std::max(SurfaceState::MaxRealtimePendingTicks,

@@ -31,9 +31,11 @@ namespace MDSS::Rendering
     inline FDemoSurfaceStateBindings ResolveDemoSurfaceStates(const SurfaceState::FSurfaceStateRegistry& Registry)
     {
         FDemoSurfaceStateBindings Result;
+
         for (SurfaceState::FStateId ID = 0; ID < Registry.GetStateCount(); ++ID)
         {
             const auto& Name = Registry.GetStateName(ID);
+
             if (Name == "ice")
                 Result.Ice = ID;
             else if (Name == "heat")
@@ -51,8 +53,10 @@ namespace MDSS::Rendering
             else if (Name == "scorched")
                 Result.Scorched = ID;
         }
+
         return Result;
     }
+
     struct FDemoSurfaceEffectSettings
     {
         bool bEnabled = true;
@@ -62,6 +66,7 @@ namespace MDSS::Rendering
         bool bWaterFilmDisplacement = true;
         bool bEmphasizeWaterFilm = false;
         bool bLavaDisplacement = true;
+
         // Smoothing is a render-performance experiment now: one global visual toggle per smoothing type.
         // Algorithm selection (sparse/precompute/separable) lives in the Performance tab.
         bool  bHeightFieldSmoothing = true;
@@ -73,6 +78,7 @@ namespace MDSS::Rendering
         float MudNoiseAmount = 0.35F;
         float WaterFilmOpacity = 0.5F;
         float WaterFilmRoughness = 0.16F;
+
         // Render-only fade for accumulation geometry at low normalized State saturation.
         float                  LowAmountHeightFade = 0.05F;
         FDemoStateColorMapping HeatColorMap{0.0F, 1.0F, {0.55F, 0.035F, 0.012F}, {0.95F, 0.075F, 0.025F}};

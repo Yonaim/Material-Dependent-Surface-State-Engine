@@ -46,18 +46,21 @@ namespace MDSS::SurfaceState
         const auto IsAsciiWhitespace = [](unsigned char Character)
         { return Character == ' ' || (Character >= '\t' && Character <= '\r'); };
         std::size_t First = 0;
+
         while (First < Name.size() && IsAsciiWhitespace(static_cast<unsigned char>(Name[First])))
         {
             ++First;
         }
 
         std::size_t Last = Name.size();
+
         while (Last > First && IsAsciiWhitespace(static_cast<unsigned char>(Name[Last - 1])))
         {
             --Last;
         }
 
         std::string Result(Name.substr(First, Last - First));
+
         for (char& Character : Result)
         {
             if (Character >= 'A' && Character <= 'Z')
@@ -65,6 +68,7 @@ namespace MDSS::SurfaceState
                 Character = static_cast<char>(Character - 'A' + 'a');
             }
         }
+
         return Result;
     }
 #pragma endregion
@@ -77,6 +81,7 @@ namespace MDSS::SurfaceState
     void ValidateSurfaceResponseProfileData(const FSurfaceResponseProfileData& Data)
     {
         ValidateSurfaceReactions(Data);
+
         for (const auto& [Name, State] : Data.States)
         {
             if (Name.empty() || NormalizeSurfaceStateName(Name) != Name)
@@ -85,6 +90,7 @@ namespace MDSS::SurfaceState
             }
 
             const std::string Prefix = "states." + Name + ".";
+
             if (!std::isfinite(State.StateCapacity) || State.StateCapacity <= 0.0F)
             {
                 throw std::invalid_argument(Prefix + "stateCapacity must be finite and greater than zero.");
@@ -105,14 +111,17 @@ namespace MDSS::SurfaceState
         {
             const FSurfaceStateTransition& Transition = Data.Transitions[Index];
             const std::string              Prefix = "transitions[" + std::to_string(Index) + "].";
+
             if (Transition.Source.empty() || NormalizeSurfaceStateName(Transition.Source) != Transition.Source)
             {
                 throw std::invalid_argument(Prefix + "source must be non-empty and normalized.");
             }
+
             if (Transition.Target.empty() || NormalizeSurfaceStateName(Transition.Target) != Transition.Target)
             {
                 throw std::invalid_argument(Prefix + "target must be non-empty and normalized.");
             }
+
             if (Transition.Source == Transition.Target)
             {
                 throw std::invalid_argument(Prefix + "source and target must be different states.");

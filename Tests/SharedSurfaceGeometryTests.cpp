@@ -28,7 +28,7 @@
 // ============================================================
 // 00. Fixtures and Test Support
 // ============================================================
-#pragma region 00_Fixtures_and_Test_Support
+#pragma region "00_Fixtures_and_Test_Support"
 
 namespace
 {
@@ -74,7 +74,7 @@ namespace
 // ============================================================
 // 01. TestProfileDistribution
 // ============================================================
-#pragma region 01_TestProfileDistribution
+#pragma region "01_TestProfileDistribution"
 
     void TestProfileDistribution()
     {
@@ -90,6 +90,7 @@ namespace
         const SurfaceState::FSurfaceMappingData               Mapping = BuildQuad();
         const std::vector<SurfaceState::FSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
         Check(ProfileMap.size() == Mapping.Texels.size(), "distribution should output one entry per texel");
+
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
             Check(ProfileMap[Index] ==
@@ -128,7 +129,7 @@ namespace
 // ============================================================
 // 02. TestGeometryBuild
 // ============================================================
-#pragma region 02_TestGeometryBuild
+#pragma region "02_TestGeometryBuild"
 
     void TestGeometryBuild()
     {
@@ -152,9 +153,11 @@ namespace
               "shared geometry should preserve Surface grid resolution");
 
         bool bFoundValid = false;
+
         for (std::size_t Index = 0; Index < Mapping.Texels.size(); ++Index)
         {
             const SurfaceState::FSurfaceTexelGeometry& GeometryTexel = Geometry.GetTexels()[Index];
+
             if (!Mapping.Texels[Index].IsValid())
             {
                 Check(!GeometryTexel.IsValid(), "invalid mapping texels should remain invalid in shared geometry");
@@ -175,22 +178,27 @@ namespace
             Check(Geometry.GetProfileIndex(static_cast<FLocalTexelIndex>(Index)) == 0,
                   "valid texels should retain the Profile assigned to their Surface");
         }
+
         Check(bFoundValid, "fixture should include valid mapping texels");
 
         std::size_t CheckedNeighborDistances = 0;
+
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
             const SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
+
             if (!Texel.IsValid())
             {
                 continue;
             }
+
             for (const FLocalTexelIndex Neighbor : Texel.NeighborIndices)
             {
                 if (Neighbor == InvalidTexelIndex)
                 {
                     continue;
                 }
+
                 const glm::vec3 Delta = Geometry.GetTexels()[Neighbor].Position - Texel.Position;
                 const float     Distance = glm::length(Delta);
                 Check(std::isfinite(Distance) && Distance > 0.0F,
@@ -202,6 +210,7 @@ namespace
                 ++CheckedNeighborDistances;
             }
         }
+
         Check(CheckedNeighborDistances != 0, "fixture should include neighbors for on-demand distance checks");
 
         const auto ValidMappingTexel =
@@ -220,7 +229,7 @@ namespace
 // ============================================================
 // 03. TestTexelMesh
 // ============================================================
-#pragma region 03_TestTexelMesh
+#pragma region "03_TestTexelMesh"
 
     void TestTexelMesh()
     {
@@ -228,6 +237,7 @@ namespace
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
         FSharedSurfaceGeometryData Geometry({{0, {3, 3}}, {1, {2, 2}}});
+
         for (const auto& Range : Geometry.GetSurfaces())
             for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
                 for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
@@ -236,9 +246,11 @@ namespace
                     T.Surface = Range.Surface;
                     T.Triangle = 0;
                     T.Chart = Range.Surface;
+
                     // Second chart has mirrored UV-to-position orientation.
                     T.Position = {Range.Surface == 0 ? float(X) : -float(X), float(Y), 0};
                 }
+
         const auto Mesh = BuildSurfaceTexelMesh(Geometry);
         Check(Mesh.Surfaces.size() == 2 && Mesh.Surfaces[0].IndexCount == 24 && Mesh.Surfaces[1].IndexCount == 6,
               "texel grids should produce two triangles per complete cell with separate Surface ranges");
@@ -254,6 +266,7 @@ namespace
             Check(glm::dot(glm::cross(B.Position - A.Position, C.Position - A.Position), A.Normal) > 0,
                   "mirrored UV charts must retain front-facing geometric winding");
         }
+
         Geometry.GetTexels()[4].Surface = SurfaceState::InvalidSurfaceID;
         const auto Hole = BuildSurfaceTexelMesh(Geometry);
         Check(std::ranges::find(Hole.Indices, 4U) == Hole.Indices.end() && Hole.Surfaces[0].IndexCount == 12,
@@ -274,13 +287,14 @@ namespace
 // ============================================================
 // 04. TestStitchedSourceMesh
 // ============================================================
-#pragma region 04_TestStitchedSourceMesh
+#pragma region "04_TestStitchedSourceMesh"
 
     void TestStitchedSourceMesh()
     {
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
+
         for (const auto* Name : {"Mapping/QuadSeam.obj", "Mapping/QuadNoSeam.obj", "Mapping/DisconnectedQuads.obj"})
         {
             const auto Source = FOBJLoader::Load(Fixture(Name));
@@ -297,6 +311,7 @@ namespace
             const auto                                    Point = [](glm::vec4 P) { return FPoint{P.x, P.y, P.z}; };
             std::map<std::pair<FPoint, FPoint>, unsigned> Edges;
             double                                        Area = 0;
+
             for (std::size_t I = 0; I < Mesh.Indices.size(); I += 3)
             {
                 const auto A = Mesh.Indices[I], B = Mesh.Indices[I + 1], C = Mesh.Indices[I + 2];
@@ -304,15 +319,18 @@ namespace
                                               glm::vec3(Mesh.Vertices[C].Position - Mesh.Vertices[A].Position));
                 Check(Cross.z > 0, "refined source triangles must retain front-facing winding");
                 Area += glm::length(Cross) * 0.5;
+
                 for (unsigned K = 0; K < 3; ++K)
                 {
                     auto X = Point(Mesh.Vertices[Mesh.Indices[I + K]].Position);
                     auto Y = Point(Mesh.Vertices[Mesh.Indices[I + (K + 1) % 3]].Position);
+
                     if (Y < X)
                         std::swap(X, Y);
                     ++Edges[{X, Y}];
                 }
             }
+
             const bool bDisconnected = std::string(Name).find("Disconnected") != std::string::npos;
             const auto Boundary =
                 std::count_if(Edges.begin(), Edges.end(), [](const auto& E) { return E.second == 1; });
@@ -323,9 +341,11 @@ namespace
                   "refinement must cover the entire source surface, including chart border bands");
             // Different chart heights must still produce bit-identical positions at UV seam copies.
             std::map<FPoint, glm::vec3> Displaced;
+
             for (const auto& V : Mesh.Vertices)
             {
                 float Height = 0;
+
                 for (unsigned K = 0; K < 4; ++K)
                     if (V.Weights[K] > 0)
                         Height += V.Weights[K] * float(1 + Geometry.GetTexels()[V.Samples[K]].Chart);
@@ -333,9 +353,11 @@ namespace
                 const auto [It, Added] = Displaced.try_emplace(Point(V.Position), P);
                 Check(Added || It->second == P, "seam copies must remain welded with unequal chart heights");
             }
+
             Check(Mesh.Vertices.size() > Source.Vertices.size(),
                   "interior texels must participate in source refinement");
         }
+
         // Tiny triangles without any simulation centers must retain their full source geometry.
         const auto                 Tiny = FOBJLoader::Load(Fixture("Mapping/SingleTriangle.obj"));
         FSharedSurfaceGeometryData Empty({{0, {1, 1}}});
@@ -351,7 +373,7 @@ namespace
 // ============================================================
 // 05. TestCubeTopDiagonalDisplacement
 // ============================================================
-#pragma region 05_TestCubeTopDiagonalDisplacement
+#pragma region "05_TestCubeTopDiagonalDisplacement"
 
     void TestCubeTopDiagonalDisplacement()
     {
@@ -360,19 +382,23 @@ namespace
         using namespace MDSS::SurfaceState;
         const auto Source = FOBJLoader::Load(Fixture("../../Assets/Meshes/MarbleCube/MarbleCube.obj"));
         std::vector<FSurfaceDefinition> Surfaces;
+
         for (std::uint32_t Surface = 0; Surface < Source.Sections.size(); ++Surface)
             Surfaces.push_back({Surface, {16, 16}});
         const auto Mapping = FSurfaceMappingBuilder::Build(Source.Vertices, Source.Triangles, Surfaces);
         std::vector<FSurfaceProfileIndex> Profiles(Mapping.Texels.size(), InvalidSurfaceProfileIndex);
+
         for (std::size_t T = 0; T < Profiles.size(); ++T)
             if (Mapping.Texels[T].IsValid())
                 Profiles[T] = 0;
         const auto  Geometry = FSurfaceGeometryBuilder::Build(Mapping, Profiles, 1);
         const auto  Mesh = BuildSurfaceTexelMesh(Geometry, Source.Vertices, Source.Triangles);
         std::size_t TopDiagonalVertices = 0;
+
         for (const auto& Vertex : Mesh.Vertices)
         {
             const auto Position = glm::vec3(Vertex.Position);
+
             if (std::abs(Position.z - 0.5F) > 1e-5F || std::abs(Position.x - Position.y) > 1e-5F ||
                 std::abs(Position.x) >= 0.45F || Vertex.Normal.z < 0.99F)
                 continue;
@@ -381,6 +407,7 @@ namespace
             Check(std::abs(Direction.x) < 1e-5F && std::abs(Direction.y) < 1e-5F && Direction.z > 0.99F,
                   "cube top diagonal displacement must use its incident top-face normals");
         }
+
         Check(TopDiagonalVertices > 0, "cube top diagonal must contain refined render vertices");
     }
 
@@ -389,7 +416,7 @@ namespace
 // ============================================================
 // 06. TestRuntimePreprocessing
 // ============================================================
-#pragma region 06_TestRuntimePreprocessing
+#pragma region "06_TestRuntimePreprocessing"
 
     void TestRuntimePreprocessing()
     {
@@ -422,7 +449,7 @@ namespace
 // ============================================================
 // 07. TestMacroConcavityWithoutNormalMap
 // ============================================================
-#pragma region 07_TestMacroConcavityWithoutNormalMap
+#pragma region "07_TestMacroConcavityWithoutNormalMap"
 
     void TestMacroConcavityWithoutNormalMap()
     {
@@ -433,6 +460,7 @@ namespace
         {
             FSharedSurfaceGeometryData Geometry({{0, {5, 5}}});
             auto&                      Texels = Geometry.GetTexels();
+
             for (int Y = 0; Y < 5; ++Y)
                 for (int X = 0; X < 5; ++X)
                 {
@@ -443,11 +471,13 @@ namespace
                     Texel.Position = {DX, DY, CurvatureX * DX * DX + CurvatureY * DY * DY};
                     Texel.Normal = glm::normalize(glm::vec3(-2.0F * CurvatureX * DX, -2.0F * CurvatureY * DY, 1.0F));
                     std::size_t DirectionIndex = 0;
+
                     for (int NY = std::max(0, Y - 1); NY <= std::min(4, Y + 1); ++NY)
                         for (int NX = std::max(0, X - 1); NX <= std::min(4, X + 1); ++NX)
                             if (NX != X || NY != Y)
                                 Texel.NeighborIndices[DirectionIndex++] = NY * 5 + NX;
                 }
+
             (void)BuildMesoGeometry(Geometry);
             return Texels[12].Geometry.ConcavityWeight;
         };
@@ -464,7 +494,7 @@ namespace
 // ============================================================
 // 08. Test Entry Point
 // ============================================================
-#pragma region 08_Test_Entry_Point
+#pragma region "08_Test_Entry_Point"
 
 int main()
 {
@@ -481,6 +511,7 @@ int main()
         std::cerr << FailureCount << " shared geometry test(s) failed.\n";
         return 1;
     }
+
     std::cout << "All shared geometry tests passed.\n";
     return 0;
 }

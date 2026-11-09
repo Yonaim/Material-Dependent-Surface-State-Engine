@@ -26,7 +26,7 @@
 // ============================================================
 // 00. Fixtures and Test Support
 // ============================================================
-#pragma region 00_Fixtures_and_Test_Support
+#pragma region "00_Fixtures_and_Test_Support"
 
 namespace
 {
@@ -52,7 +52,7 @@ namespace
 // ============================================================
 // 01. TestMesoPeakPacking
 // ============================================================
-#pragma region 01_TestMesoPeakPacking
+#pragma region "01_TestMesoPeakPacking"
 
     void TestMesoPeakPacking()
     {
@@ -60,6 +60,7 @@ namespace
         FSharedSurfaceGeometryData         Geometry({{0, {3, 1}}, {1, {1, 1}}});
         const std::array<float, 4>         Heights{-0.2F, 0.3F, 0.1F, 0.5F};
         const std::array<std::uint32_t, 4> Charts{0U, 0U, 1U, 0U};
+
         for (std::size_t Index = 0; Index < Heights.size(); ++Index)
         {
             auto& Texel = Geometry.GetTexels()[Index];
@@ -68,9 +69,11 @@ namespace
             Texel.Chart = Charts[Index];
             Texel.Geometry.MesoVirtualHeight = Heights[Index];
         }
+
         Geometry.SetProfileMap({0, 0, 0, 0});
         const auto                 Packed = PackSharedSurfaceGeometry(Geometry);
         const std::array<float, 4> Expected{0.3F, 0.3F, 0.1F, 0.5F};
+
         for (std::size_t Index = 0; Index < Expected.size(); ++Index)
             Check(std::abs(Packed.MesoNormals[Index].W - Expected[Index]) < 1.0e-6F,
                   "Meso peak must be shared within a chart and isolated across charts and surfaces");
@@ -101,12 +104,15 @@ namespace
             }
 
             std::uint32_t PhysicalDeviceCount = 0;
+
             if (vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, nullptr) != VK_SUCCESS ||
                 PhysicalDeviceCount == 0)
             {
                 throw FVulkanUnavailable("No Vulkan physical device is available for GPU resource tests.");
             }
+
             std::vector<VkPhysicalDevice> PhysicalDevices(PhysicalDeviceCount);
+
             if (vkEnumeratePhysicalDevices(Instance, &PhysicalDeviceCount, PhysicalDevices.data()) != VK_SUCCESS)
             {
                 throw std::runtime_error("Could not enumerate Vulkan physical devices.");
@@ -118,6 +124,7 @@ namespace
                 vkGetPhysicalDeviceQueueFamilyProperties(Candidate, &QueueFamilyCount, nullptr);
                 std::vector<VkQueueFamilyProperties> QueueFamilies(QueueFamilyCount);
                 vkGetPhysicalDeviceQueueFamilyProperties(Candidate, &QueueFamilyCount, QueueFamilies.data());
+
                 for (std::uint32_t Index = 0; Index < QueueFamilyCount; ++Index)
                 {
                     if ((QueueFamilies[Index].queueFlags & VK_QUEUE_COMPUTE_BIT) != 0)
@@ -127,11 +134,13 @@ namespace
                         break;
                     }
                 }
+
                 if (PhysicalDevice != VK_NULL_HANDLE)
                 {
                     break;
                 }
             }
+
             if (PhysicalDevice == VK_NULL_HANDLE)
             {
                 throw FVulkanUnavailable("No compute-capable Vulkan queue is available for GPU resource tests.");
@@ -149,6 +158,7 @@ namespace
             vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, nullptr);
             std::vector<VkExtensionProperties> AvailableExtensions(ExtensionCount);
             vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &ExtensionCount, AvailableExtensions.data());
+
             for (const VkExtensionProperties& Extension : AvailableExtensions)
             {
                 if (std::string(Extension.extensionName) == "VK_KHR_portability_subset")
@@ -164,6 +174,7 @@ namespace
             DeviceInfo.pQueueCreateInfos = &QueueInfo;
             DeviceInfo.enabledExtensionCount = static_cast<std::uint32_t>(DeviceExtensions.size());
             DeviceInfo.ppEnabledExtensionNames = DeviceExtensions.data();
+
             if (vkCreateDevice(PhysicalDevice, &DeviceInfo, nullptr, &Device) != VK_SUCCESS)
             {
                 throw std::runtime_error("Could not create Vulkan device for GPU resource tests.");
@@ -175,6 +186,7 @@ namespace
             CommandPoolInfo.flags =
                 VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             CommandPoolInfo.queueFamilyIndex = QueueFamily;
+
             if (vkCreateCommandPool(Device, &CommandPoolInfo, nullptr, &CommandPool) != VK_SUCCESS)
             {
                 throw std::runtime_error("Could not create Vulkan command pool for GPU resource tests.");
@@ -186,12 +198,15 @@ namespace
             if (Device != VK_NULL_HANDLE)
             {
                 vkDeviceWaitIdle(Device);
+
                 if (CommandPool != VK_NULL_HANDLE)
                 {
                     vkDestroyCommandPool(Device, CommandPool, nullptr);
                 }
+
                 vkDestroyDevice(Device, nullptr);
             }
+
             if (Instance != VK_NULL_HANDLE)
             {
                 vkDestroyInstance(Instance, nullptr);
@@ -205,6 +220,7 @@ namespace
         {
             return PhysicalDevice;
         }
+
         [[nodiscard]] VkDevice GetDevice() const noexcept
         {
             return Device;
@@ -218,6 +234,7 @@ namespace
             AllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
             AllocateInfo.commandBufferCount = 1;
             VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
+
             if (vkAllocateCommandBuffers(Device, &AllocateInfo, &CommandBuffer) != VK_SUCCESS)
             {
                 throw std::runtime_error("Could not allocate Vulkan command buffer for GPU resource tests.");
@@ -226,12 +243,15 @@ namespace
             VkCommandBufferBeginInfo BeginInfo{};
             BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
             if (vkBeginCommandBuffer(CommandBuffer, &BeginInfo) != VK_SUCCESS)
             {
                 vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
                 throw std::runtime_error("Could not begin Vulkan command buffer for GPU resource tests.");
             }
+
             Record(CommandBuffer);
+
             if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
             {
                 vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
@@ -242,12 +262,14 @@ namespace
             SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
             SubmitInfo.commandBufferCount = 1;
             SubmitInfo.pCommandBuffers = &CommandBuffer;
+
             if (vkQueueSubmit(Queue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS ||
                 vkQueueWaitIdle(Queue) != VK_SUCCESS)
             {
                 vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
                 throw std::runtime_error("Could not submit Vulkan command buffer for GPU resource tests.");
             }
+
             vkFreeCommandBuffers(Device, CommandPool, 1, &CommandBuffer);
         }
 
@@ -266,6 +288,7 @@ namespace
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
         FSharedSurfaceGeometryData Geometry({{0, {2, 2}}});
+
         for (std::size_t Index = 0; Index < Geometry.GetTexels().size(); ++Index)
         {
             SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
@@ -274,6 +297,7 @@ namespace
             Texel.Position = {static_cast<float>(Index), 2.0F, 3.0F};
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>((Index + 1U) % Geometry.GetTexelCount());
         }
+
         Geometry.SetProfileMap({0, 0, 0, 0});
         return Geometry;
     }
@@ -282,6 +306,7 @@ namespace
     {
         std::vector<float> Values(ScalarCount, -1.0F);
         Buffer.Download(Values.data(), static_cast<VkDeviceSize>(Values.size() * sizeof(float)));
+
         for (float Value : Values)
         {
             Check(Value == 0.0F, Name + " should start with zero values");
@@ -293,7 +318,7 @@ namespace
 // ============================================================
 // 02. TestCompactScratchStorage
 // ============================================================
-#pragma region 02_TestCompactScratchStorage
+#pragma region "02_TestCompactScratchStorage"
 
     void TestCompactScratchStorage(FVulkanTestDevice& Vulkan)
     {
@@ -325,6 +350,7 @@ namespace
         std::uint32_t                PackedHalf = 0;
         FullHalf.GetTransferWeightBuffer().Download(&PackedHalf, sizeof(PackedHalf));
         Check(PackedHalf == 0x38003800U, "FP16 initialization also packs weights in an uncompressed-capacity buffer");
+
         for (const auto Format :
              std::array<FSurfaceScratchStorageFormat, 5>{FSurfaceScratchStorageFormat{false, false, false, true},
                                                          FSurfaceScratchStorageFormat{true, false, true, true},
@@ -358,17 +384,19 @@ namespace
 // ============================================================
 // 03. TestLazyMeshStorage
 // ============================================================
-#pragma region 03_TestLazyMeshStorage
+#pragma region "03_TestLazyMeshStorage"
 
     void TestLazyMeshStorage(FVulkanTestDevice& Vulkan)
     {
         using namespace MDSS::SurfaceState;
         auto Geometry = BuildGeometry();
+
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
             Geometry.GetTexels()[Index].Position = {float(Index % 2U), float(Index / 2U), 0.0F};
             Geometry.GetTexels()[Index].Normal = {0.0F, 0.0F, 1.0F};
         }
+
         FSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         const auto                         FullHandle = Shared.GetTexelMeshIndexBuffer()->GetHandle();
         const auto                         SmallHandle = Shared.GetTexelMeshVariant(64).VertexBuffer->GetHandle();
@@ -389,7 +417,7 @@ namespace
 // ============================================================
 // 04. TestRetiredBufferReuse
 // ============================================================
-#pragma region 04_TestRetiredBufferReuse
+#pragma region "04_TestRetiredBufferReuse"
 
     void TestRetiredBufferReuse(FVulkanTestDevice& Vulkan)
     {
@@ -402,6 +430,7 @@ namespace
             Previous.GetStateABuffer().Upload(DirtyState.data(), sizeof(DirtyState));
             Previous.RetireBuffers(Pool);
         }
+
         Check(Pool.GetRetainedBytes() > 0, "retired Scene buffers should remain available for reuse");
         FSurfaceInstanceGPUResources Replacement(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), 4, 1, Weights, {}, {}, &Pool);
@@ -417,7 +446,7 @@ namespace
 // ============================================================
 // 05. TestGPUResources
 // ============================================================
-#pragma region 05_TestGPUResources
+#pragma region "05_TestGPUResources"
 
     void TestGPUResources(FVulkanTestDevice& Vulkan)
     {
@@ -467,12 +496,14 @@ namespace
                   SparseLayout.AccumulationCommandWord == SparseLayout.InputGroupMaskWord + SparseLayout.WorkgroupCount,
               "per-WG A/B masks and compact input masks should not overlap other sparse metadata");
         auto MappingGeometry = BuildGeometry();
+
         for (std::size_t Index = 0; Index < MappingGeometry.GetTexels().size(); ++Index)
             MappingGeometry.GetTexels()[Index].Position = {float(Index % 2U), float(Index / 2U), 0.0F};
         FSurfaceSharedGeometryGPUResources MappingShared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), MappingGeometry);
         const auto& RenderMesh = MappingShared.GetTexelMeshVariant(2U);
         Check(RenderMesh.IndexBuffer != nullptr, "nondegenerate test surface should produce overlay triangles");
+
         if (RenderMesh.IndexBuffer)
             for (const std::uint32_t TileSize : {8U, 16U, 32U})
             {
@@ -481,6 +512,7 @@ namespace
                 Check(Words.size() == static_cast<std::size_t>(Mapping.TileCount) + 1U + RenderMesh.VertexCount,
                       "tile-to-vertex map should contain offsets followed by every mesh vertex");
                 std::vector<std::uint32_t> Seen(RenderMesh.VertexCount, 0U);
+
                 for (std::uint32_t Tile = 0; Tile < Mapping.TileCount; ++Tile)
                 {
                     const auto Begin = Words[Tile];
@@ -491,9 +523,11 @@ namespace
                         if (Words[Offset] < Seen.size())
                             ++Seen[Words[Offset]];
                 }
+
                 for (const auto Count : Seen)
                     Check(Count == 1U, "each overlay vertex should belong to exactly one render tile");
             }
+
         Check(SharedGeometry.GetNeighborIndexBuffer().GetSize() ==
                   4U * sizeof(SurfaceState::FSurfaceGPUNeighborIndices),
               "neighbor buffer should use the expected per-texel stride");
@@ -583,7 +617,7 @@ namespace
 // ============================================================
 // 06. TestDirectionalCavityRetention
 // ============================================================
-#pragma region 06_TestDirectionalCavityRetention
+#pragma region "06_TestDirectionalCavityRetention"
 
     void TestDirectionalCavityRetention(FVulkanTestDevice& Vulkan)
     {
@@ -598,6 +632,7 @@ namespace
         const std::vector<SurfaceState::FSurfaceResponseProfileData> Table{Profile};
         const SurfaceState::FSurfaceStateRegistry                    Registry(Table);
         FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+
         for (std::size_t I = 0; I < 2; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -606,13 +641,14 @@ namespace
             Texel.Normal = {0.0F, 0.0F, 1.0F};
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - I);
         }
+
         Geometry.GetTexels()[0].Geometry.ConcavityWeight = 1.0F;
         Geometry.SetProfileMap({0, 0});
         SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
@@ -620,14 +656,15 @@ namespace
         SurfaceState::FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
         SurfaceState::FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         const auto                                     Run = [&](std::array<float, 2> Initial,
-                             const glm::mat4&     Model = glm::mat4(1.0F),
-                             glm::vec3            Gravity = glm::vec3(0.0F))
+                                                                 const glm::mat4&     Model = glm::mat4(1.0F),
+                                                                 glm::vec3            Gravity = glm::vec3(0.0F))
         {
             Instance.GetStateABuffer().Upload(Initial.data(), sizeof(Initial));
             Vulkan.Execute([&](VkCommandBuffer Command)
                            { Solver.RecordStep(Command, Descriptors, true, 2, 1, 0.25F, Model, Gravity); });
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+
             return Result;
         };
         const auto Exit = Run({1.0F, 0.0F});
@@ -659,7 +696,7 @@ namespace
 // ============================================================
 // 07. TestGPUSolver
 // ============================================================
-#pragma region 07_TestGPUSolver
+#pragma region "07_TestGPUSolver"
 
     void TestGPUSolver(FVulkanTestDevice& Vulkan)
     {
@@ -675,6 +712,7 @@ namespace
         const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
 
         FSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
             SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
@@ -684,13 +722,14 @@ namespace
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
+
         Geometry.SetProfileMap({0, 0});
 
         SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
@@ -746,7 +785,7 @@ namespace
 // ============================================================
 // 08. TestPerWorkgroupChannelMask
 // ============================================================
-#pragma region 08_TestPerWorkgroupChannelMask
+#pragma region "08_TestPerWorkgroupChannelMask"
 
     void TestPerWorkgroupChannelMask(FVulkanTestDevice& Vulkan)
     {
@@ -765,6 +804,7 @@ namespace
         const auto                                     Mud = Registry.GetStateId("mud");
         const auto                                     Heat = Registry.GetStateId("heat");
         FSharedSurfaceGeometryData                     Geometry({{0, {Texels, 1}}});
+
         for (std::uint32_t I = 0; I < Texels; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -772,16 +812,17 @@ namespace
             Texel.Position = {float(I), 0.0F, 0.0F};
             Texel.Normal = {0.0F, 0.0F, 1.0F};
         }
+
         Geometry.GetTexels()[63].NeighborIndices[0] = 64;
         Geometry.GetTexels()[64].NeighborIndices[0] = 63;
         Geometry.SetProfileMap(std::vector<FSurfaceProfileIndex>(Texels, 0U));
         FSurfaceSharedGeometryGPUResources Shared(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         FSurfaceProfileGPUResources        Profiles(Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
         FSurfaceInstanceGPUResources       Instance(Vulkan.GetPhysicalDevice(),
-                                              Vulkan.GetDevice(),
-                                              Texels,
-                                              Channels,
-                                              BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
+                                                    Vulkan.GetDevice(),
+                                                    Texels,
+                                                    Channels,
+                                                    BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1.0F)));
         FSurfaceStateDescriptorResources   Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
         FSurfaceStateSolver                Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
         std::vector<float>                 Initial(static_cast<std::size_t>(Texels) * Channels, 0.0F);
@@ -851,7 +892,7 @@ namespace
 // ============================================================
 // 09. TestAreaAndMobility
 // ============================================================
-#pragma region 09_TestAreaAndMobility
+#pragma region "09_TestAreaAndMobility"
 
     void TestAreaAndMobility(FVulkanTestDevice& Vulkan)
     {
@@ -860,6 +901,7 @@ namespace
         using namespace MDSS::SurfaceState;
         SurfaceState::FSurfaceStateParameters Parameters{};
         Parameters.GeometryTransferFactor = 1.0F / BaseGeometryTransferRate;
+
         // Nonzero Saturation factor verifies that its debug flag is independent of Geometry mobility.
         Parameters.SaturationTransferFactor = 1.0F;
         SurfaceState::FSurfaceResponseProfileData Profile;
@@ -867,6 +909,7 @@ namespace
         const std::vector<SurfaceState::FSurfaceResponseProfileData> Table{Profile};
         const SurfaceState::FSurfaceStateRegistry                    Registry(Table);
         FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+
         for (std::size_t I = 0; I < 2; ++I)
         {
             auto& Texel = Geometry.GetTexels()[I];
@@ -876,6 +919,7 @@ namespace
             Texel.Normal = {1, 0, 0};
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1 - I);
         }
+
         Geometry.SetProfileMap({0, 0});
         SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
@@ -903,6 +947,7 @@ namespace
                 });
             std::array<float, 2> Result{};
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+
             return Result;
         };
         const auto A = Run({4, 0}); // Capacity=2, source saturation=2.
@@ -915,6 +960,7 @@ namespace
         Parameters.GeometryTransferFactor = 0;
         Parameters.SaturationTransferFactor = 1;
         Profiles.UpdateParameters(0, 0, Parameters);
+
         // Re-enable SaturationDrive explicitly for unequal area at equal saturation.
         const std::array<float, 2> EqualInitial{2, 4};
         Instance.GetStateABuffer().Upload(EqualInitial.data(), sizeof(EqualInitial));
@@ -961,6 +1007,7 @@ namespace
             Check(std::abs(Scaled[0] + Scaled[1] - Mass) < Mass * 1e-5F,
                   "resolution scaling must conserve total amount");
         }
+
         Instance.UpdateWorldTexelAreas({0, 0});
         const auto Collapsed = Run({3, 7});
         Check(Collapsed == std::array<float, 2>{3, 7},
@@ -972,7 +1019,7 @@ namespace
 // ============================================================
 // 10. TestCalibratedGeometrySpeed
 // ============================================================
-#pragma region 10_TestCalibratedGeometrySpeed
+#pragma region "10_TestCalibratedGeometrySpeed"
 
     void TestCalibratedGeometrySpeed(FVulkanTestDevice& Vulkan)
     {
@@ -987,10 +1034,12 @@ namespace
         const SurfaceState::FSurfaceStateRegistry                    Registry(Table);
         constexpr std::size_t Width = 5, Count = Width * Width, Source = Count / 2;
         constexpr float       Dt = 0.001F;
+
         for (float Resolution : {128.0F, 256.0F, 512.0F})
         {
             const float                H = 1.0F / Resolution;
             FSharedSurfaceGeometryData Geometry({{0, {Width, Width}}});
+
             for (int Y = 0; Y < int(Width); ++Y)
                 for (int X = 0; X < int(Width); ++X)
                 {
@@ -1001,6 +1050,7 @@ namespace
                     Texel.Normal = {1, 0, 0};
                     Texel.AreaVector = {H * H, 0, 0};
                     std::size_t DirectionIndex = 0;
+
                     for (int DY = -1; DY <= 1; ++DY)
                         for (int DX = -1; DX <= 1; ++DX)
                         {
@@ -1012,17 +1062,18 @@ namespace
                             ++DirectionIndex;
                         }
                 }
+
             Geometry.SetProfileMap(std::vector<SurfaceState::FSurfaceProfileIndex>(Count, 0));
             SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
                 Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
             SurfaceState::FSurfaceProfileGPUResources Profiles(
                 Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-            SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+            SurfaceState::FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                                                 Vulkan.GetDevice(),
                                                                 Count,
                                                                 1,
                                                                 BuildSurfaceGPUTransferWeights(Geometry, glm::mat4(1)),
-                                                                    {},
+                                                                {},
                                                                 BuildSurfaceGPUWorldTexelAreas(Geometry, glm::mat4(1)));
             SurfaceState::FSurfaceStateDescriptorResources Descriptors(Vulkan.GetDevice(), Shared, Profiles, Instance);
             SurfaceState::FSurfaceStateSolver              Solver(Vulkan.GetDevice(), Descriptors.GetLayout());
@@ -1035,12 +1086,14 @@ namespace
                 { Solver.RecordStep(Commands, Descriptors, true, Count, 1, Dt, glm::mat4(1), glm::vec3(0, 0, -1)); });
             Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
             double Total = 0, DownwardMoment = 0;
+
             for (std::size_t I = 0; I < Count; ++I)
             {
                 Check(std::isfinite(Result[I]) && Result[I] >= 0, "calibrated flow must remain finite and nonnegative");
                 Total += Result[I];
                 DownwardMoment -= Result[I] * Geometry.GetTexels()[I].Position.z;
             }
+
             const double Speed = DownwardMoment / Mass / Dt;
             Check(std::abs(Speed - 0.101033333) < 1e-5,
                   "factor 0.5 must produce about 0.101 world units/s at 128/256/512 with the calibrated rate");
@@ -1054,7 +1107,7 @@ namespace
 // ============================================================
 // 11. TestGeometryDrivenSolver
 // ============================================================
-#pragma region 11_TestGeometryDrivenSolver
+#pragma region "11_TestGeometryDrivenSolver"
 
     void TestGeometryDrivenSolver(FVulkanTestDevice& Vulkan)
     {
@@ -1072,6 +1125,7 @@ namespace
         const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
 
         FSharedSurfaceGeometryData Geometry({{0, {2, 1}}});
+
         for (std::size_t Index = 0; Index < Geometry.GetTexelCount(); ++Index)
         {
             SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[Index];
@@ -1081,13 +1135,14 @@ namespace
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
+
         Geometry.SetProfileMap({0, 0});
 
         SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
@@ -1129,7 +1184,7 @@ namespace
 // ============================================================
 // 12. TestMesoGeometryDrive
 // ============================================================
-#pragma region 12_TestMesoGeometryDrive
+#pragma region "12_TestMesoGeometryDrive"
 
     void TestMesoGeometryDrive(FVulkanTestDevice& Vulkan)
     {
@@ -1144,6 +1199,7 @@ namespace
         const std::vector<SurfaceState::FSurfaceResponseProfileData> ProfileTable{Profile};
         const SurfaceState::FSurfaceStateRegistry                    Registry(ProfileTable);
         FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+
         for (std::size_t Index = 0; Index < 2; ++Index)
         {
             auto& Texel = Geometry.GetTexels()[Index];
@@ -1156,12 +1212,13 @@ namespace
             Texel.Geometry.MesoVirtualHeight = Index == 0 ? 0.2F : 0.0F;
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
+
         Geometry.SetProfileMap({0, 0});
         SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             1,
@@ -1219,6 +1276,7 @@ namespace
                   SurfaceState::ESurfaceSolverTerm::MesoDirectionNormal),
               "Meso direction normal should be enabled by default");
         const glm::vec3 Gravity(0.0F, 0.0F, -1.0F);
+
         for (const glm::mat4 Model :
              {glm::mat4(1.0F),
               glm::scale(glm::mat4(1.0F), glm::vec3(2.0F, 1.0F, 0.5F)),
@@ -1239,7 +1297,7 @@ namespace
             const glm::vec3 SurfaceGravity = Gravity - Normal * glm::dot(Gravity, Normal);
             const glm::vec3 Edge = glm::mat3(Model) * glm::vec3(-1.0F, 0.0F, -0.2F);
             const float     Expected = 0.25F * std::abs(Edge.z) *
-                                   std::max(glm::dot(glm::normalize(SurfaceGravity), glm::normalize(Edge)), 0.0F);
+                                       std::max(glm::dot(glm::normalize(SurfaceGravity), glm::normalize(Edge)), 0.0F);
             Check(Expected > 0.0F && std::abs(Result[1] - Expected) < 1.0e-5F &&
                       std::abs(Result[0] + Result[1] - 1.0F) < 1.0e-5F,
                   "both passes should use Meso height and inverse-transpose Meso normal under instance scaling");
@@ -1255,6 +1313,7 @@ namespace
             Check(std::abs(Result[1] - Expected) < 1.0e-5F,
                   "re-enabling Meso direction normal should restore geometry flux from the same initial state");
         }
+
         for (const auto& [Model, TestGravity, Flags] :
              {std::tuple{glm::mat4(1.0F), glm::vec3(0.0F), 0U},
               std::tuple{glm::scale(glm::mat4(1.0F), glm::vec3(0.0F)), Gravity, 0U},
@@ -1276,7 +1335,7 @@ namespace
 // ============================================================
 // 13. TestSourceGeometryChannelReuse
 // ============================================================
-#pragma region 13_TestSourceGeometryChannelReuse
+#pragma region "13_TestSourceGeometryChannelReuse"
 
     void TestSourceGeometryChannelReuse(FVulkanTestDevice& Vulkan)
     {
@@ -1297,6 +1356,7 @@ namespace
         const auto                                                   FlowChannel = Registry.GetStateId("b_flow");
         const auto                                                   FastChannel = Registry.GetStateId("c_flow");
         FSharedSurfaceGeometryData                                   Geometry({{0, {2, 1}}});
+
         for (std::size_t Index = 0; Index < 2; ++Index)
         {
             auto& Texel = Geometry.GetTexels()[Index];
@@ -1308,12 +1368,13 @@ namespace
             Texel.Geometry.MesoVirtualHeight = Index == 0 ? 0.2F : 0.0F;
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
+
         Geometry.SetProfileMap({0, 0});
         SurfaceState::FSurfaceSharedGeometryGPUResources Shared(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Table, Registry);
-        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             2,
                                                             3,
@@ -1350,7 +1411,7 @@ namespace
 // ============================================================
 // 14. TestTransferWeightSolver
 // ============================================================
-#pragma region 14_TestTransferWeightSolver
+#pragma region "14_TestTransferWeightSolver"
 
     void TestTransferWeightSolver(FVulkanTestDevice& Vulkan)
     {
@@ -1380,6 +1441,7 @@ namespace
             Texel.Position = Positions[Index];
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
         }
+
         Geometry.GetTexels()[0].NeighborIndices[0] = 1;
         Geometry.GetTexels()[0].NeighborIndices[1] = 2;
         Geometry.GetTexels()[1].NeighborIndices[0] = 0;
@@ -1396,7 +1458,7 @@ namespace
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), Geometry);
         SurfaceState::FSurfaceProfileGPUResources Profiles(
             Vulkan.GetPhysicalDevice(), Vulkan.GetDevice(), ProfileTable, Registry);
-        SurfaceState::FSurfaceInstanceGPUResources     Instance(Vulkan.GetPhysicalDevice(),
+        SurfaceState::FSurfaceInstanceGPUResources Instance(Vulkan.GetPhysicalDevice(),
                                                             Vulkan.GetDevice(),
                                                             3,
                                                             1,
@@ -1416,6 +1478,7 @@ namespace
 
         std::array<float, 3> Result{};
         Instance.GetStateBBuffer().Download(Result.data(), sizeof(Result));
+
         // dRef = ((4 + 1) / 2 + 4) / 2 = 3.25, so the long edge weight is 3.25 / 4.
         // The Profile boundary halves that flux; the unsupported third Profile receives none.
         const float ExpectedTransfer = 0.25F * (3.25F / 4.0F) * 0.5F;
@@ -1429,6 +1492,7 @@ namespace
         const std::vector<SurfaceState::FSurfaceResponseProfileData> NormalProfileTable{NormalProfile};
         const SurfaceState::FSurfaceStateRegistry                    NormalRegistry(NormalProfileTable);
         FSharedSurfaceGeometryData                                   NormalGeometry({{0, {2, 1}}});
+
         for (std::size_t Index = 0; Index < NormalGeometry.GetTexelCount(); ++Index)
         {
             SurfaceState::FSurfaceTexelGeometry& Texel = NormalGeometry.GetTexels()[Index];
@@ -1438,6 +1502,7 @@ namespace
             Texel.Normal = glm::vec3(0.0F, 0.0F, 1.0F);
             Texel.NeighborIndices[0] = static_cast<FLocalTexelIndex>(1U - Index);
         }
+
         NormalGeometry.GetTexels()[0].TransferNormal = {0.0F, 0.0F, 1.0F};
         NormalGeometry.GetTexels()[1].TransferNormal = {std::sqrt(0.75F), 0.0F, 0.5F};
         NormalGeometry.GetTexels()[0].bHasTransferNormal = true;
@@ -1458,10 +1523,12 @@ namespace
               "disabling the debug NormalWeight contribution should restore a neutral value");
 
         FSharedSurfaceGeometryData FallbackGeometry = NormalGeometry;
+
         for (SurfaceState::FSurfaceTexelGeometry& Texel : FallbackGeometry.GetTexels())
         {
             Texel.bHasTransferNormal = false;
         }
+
         FallbackGeometry.GetTexels()[1].Normal = {std::sqrt(0.75F), 0.0F, 0.5F};
         const std::vector<float> GeometricFallbackWeights =
             BuildSurfaceGPUTransferWeights(FallbackGeometry, glm::mat4(1.0F));
@@ -1503,7 +1570,7 @@ namespace
 // ============================================================
 // 15. TestStateDrivenGeometryUpdate
 // ============================================================
-#pragma region 15_TestStateDrivenGeometryUpdate
+#pragma region "15_TestStateDrivenGeometryUpdate"
 
     void TestStateDrivenGeometryUpdate(FVulkanTestDevice& Vulkan)
     {
@@ -1531,6 +1598,7 @@ namespace
         const std::array<glm::vec3, 3> Positions{
             glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(1.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F)};
         const std::array<std::array<FLocalTexelIndex, 2>, 3> Neighbors{{{{1, 2}}, {{0, 2}}, {{0, 1}}}};
+
         for (std::size_t TexelIndex = 0; TexelIndex < Geometry.GetTexelCount(); ++TexelIndex)
         {
             SurfaceState::FSurfaceTexelGeometry& Texel = Geometry.GetTexels()[TexelIndex];
@@ -1541,6 +1609,7 @@ namespace
             Texel.NeighborIndices[0] = Neighbors[TexelIndex][0];
             Texel.NeighborIndices[1] = Neighbors[TexelIndex][1];
         }
+
         Geometry.SetProfileMap({0, 0, 0});
 
         SurfaceState::FSurfaceSharedGeometryGPUResources SharedGeometry(
@@ -1725,7 +1794,7 @@ namespace
 // ============================================================
 // 16. TestSparseGeometryUpdateWeights
 // ============================================================
-#pragma region 16_TestSparseGeometryUpdateWeights
+#pragma region "16_TestSparseGeometryUpdateWeights"
 
     void TestSparseGeometryUpdateWeights(FVulkanTestDevice& Vulkan)
     {
@@ -1740,6 +1809,7 @@ namespace
         const FSurfaceStateRegistry                    Registry(Profiles);
         constexpr std::uint32_t                        Texels = 129;
         FSharedSurfaceGeometryData                     Geometry({{0, {Texels, 1}}});
+
         for (std::uint32_t I = 0; I < Texels; ++I)
         {
             auto& T = Geometry.GetTexels()[I];
@@ -1748,6 +1818,7 @@ namespace
             T.Position = {float(I), 0, 0};
             T.Normal = {0, 0, 1};
         }
+
         Geometry.GetTexels()[0].NeighborIndices[0] = 1;
         Geometry.GetTexels()[1].NeighborIndices[0] = 0;
         Geometry.GetTexels()[127].NeighborIndices[0] = 128;
@@ -1825,6 +1896,7 @@ namespace
         const auto                  K = Registry.GetStateCount(), N = Areas.size();
         FSharedSurfaceGeometryData  G({{0, {static_cast<std::uint32_t>(N), 1}}});
         std::vector<float>          Weights(N * SurfaceNeighborCount, 0);
+
         for (std::size_t I = 0; I < N; ++I)
         {
             auto& T = G.GetTexels()[I];
@@ -1832,36 +1904,41 @@ namespace
             T.Triangle = 0;
             T.Position = {float(I), 0, 0};
             T.Normal = {0, 0, 1};
+
             if (bChain && I + 1 < N)
             {
                 T.NeighborIndices[0] = static_cast<FLocalTexelIndex>(I + 1);
                 Weights[I * 8] = 1;
             }
+
             if (bChain && I > 0)
             {
                 T.NeighborIndices[1] = static_cast<FLocalTexelIndex>(I - 1);
                 Weights[I * 8 + 1] = 1;
             }
         }
+
         G.SetProfileMap(std::vector<FSurfaceProfileIndex>(N, 0));
         FSurfaceSharedGeometryGPUResources Shared(V.GetPhysicalDevice(), V.GetDevice(), G);
         FSurfaceProfileGPUResources        Profiles(V.GetPhysicalDevice(), V.GetDevice(), {P}, Registry);
         std::vector<float>                 WorldAreas = Areas;
+
         for (auto& A : WorldAreas)
             A *= SurfaceStateReferenceArea;
         FSurfaceInstanceGPUResources     Instance(V.GetPhysicalDevice(),
-                                              V.GetDevice(),
-                                              N,
-                                              K,
-                                              Weights,
+                                                  V.GetDevice(),
+                                                  N,
+                                                  K,
+                                                  Weights,
                                                   {},
-                                              WorldAreas,
-                                              nullptr,
+                                                  WorldAreas,
+                                                  nullptr,
                                                   {},
-                                              Profiles.GetMaxReactionCount());
+                                                  Profiles.GetMaxReactionCount());
         FSurfaceStateDescriptorResources Descriptors(V.GetDevice(), Shared, Profiles, Instance);
         FSurfaceStateSolver              Solver(V.GetDevice(), Descriptors.GetLayout());
         Instance.GetStateABuffer().Upload(Initial.data(), Initial.size() * sizeof(float));
+
         if (!Input.empty())
             Instance.GetInputDeltaBuffer().Upload(Input.data(), Input.size() * sizeof(float));
         V.Execute(
@@ -1886,6 +1963,7 @@ namespace
             Heights->resize(N);
             Instance.GetAccumulationHeightBuffer().Download(Heights->data(), N * sizeof(float));
         }
+
         if (Diagnostics)
         {
             const auto&        Scratch = Instance.GetReactionScratchBuffer();
@@ -1893,9 +1971,11 @@ namespace
             Scratch.Download(Data.data(), Scratch.GetSize());
             Diagnostics->resize(N * 4U);
             const auto Stride = Data.size() / N;
+
             for (std::size_t T = 0; T < N; ++T)
                 std::copy_n(Data.begin() + T * Stride + Stride - 4U, 4U, Diagnostics->begin() + T * 4U);
         }
+
         return Out;
     }
 
@@ -1904,7 +1984,7 @@ namespace
 // ============================================================
 // 17. TestLocalReactions
 // ============================================================
-#pragma region 17_TestLocalReactions
+#pragma region "17_TestLocalReactions"
 
     void TestLocalReactions(FVulkanTestDevice& V)
     {
@@ -1930,13 +2010,16 @@ namespace
         const auto               K = R.GetStateCount();
         std::vector<float>       Initial(3 * K, 0);
         const std::vector<float> Areas{1, .25F, 4};
+
         for (unsigned T = 0; T < 3; ++T)
         {
             Initial[T * K + H] = 2 * Areas[T];
             Initial[T * K + I] = 10 * Areas[T];
         }
+
         std::vector<float> Heights;
         const auto         Out = RunReactions(V, P, Initial, Areas, .1F, 1, 0, {}, false, &Heights);
+
         for (unsigned T = 0; T < 3; ++T)
         {
             Check(Out[T * K + W] > 0 && Out[T * K + H] < Initial[T * K + H],
@@ -1947,6 +2030,7 @@ namespace
             Check(std::abs(Heights[T] - Out[T * K + I] / Areas[T] * .01F) < 1e-4F,
                   "height derives from final reacted State");
         }
+
         const auto Half = RunReactions(V, P, Initial, Areas, .05F, 2);
         Check(std::abs(Half[W] - Out[W]) < 2e-4F, "reaction integration converges under timestep subdivision");
         auto Limited = Initial;
@@ -1982,6 +2066,7 @@ namespace
               "competing rules share consumption proportionally");
         std::reverse(Q.Reactions.begin(), Q.Reactions.end());
         const auto Reordered = RunReactions(V, Q, Ten, {1}, 1);
+
         for (std::size_t C = 0; C < K; ++C)
             Check(std::abs(Reordered[C] - Competition[C]) < 2e-4F, "reaction rule order does not change the result");
 
@@ -2017,6 +2102,7 @@ namespace
         Q.Reactions[0].Modifiers = {{"heat", EReactionFunction::Inhibit, 0, 4}};
         const auto Inhibited = RunReactions(V, Q, Ten, {1}, .2F);
         Check(std::abs(Inhibited[W] - .1F) < 1e-5F, "inhibitor multiplies the reaction rate");
+
         for (const auto& [Function, Threshold, Scale, Expected] :
              {std::tuple{EReactionFunction::Above, 4.0F, 1.0F, .2F},
               std::tuple{EReactionFunction::Below, 3.0F, 1.0F, 0.0F},
@@ -2084,6 +2170,7 @@ namespace
             Check(std::abs(Dense[C] - Sparse[C]) < 1e-5F,
                   "sparse reactions include newly generated channels and cross-workgroup incoming");
         Check(Sparse[64 * K + W] > 0, "newly generated water participates in next-step transport");
+
         for (unsigned C = 0; C < 34; ++C)
             Q.States["extra_" + std::to_string(C)] = {};
         const FSurfaceStateRegistry Dynamic({Q});
@@ -2102,7 +2189,7 @@ namespace
 // ============================================================
 // 18. Test Entry Point
 // ============================================================
-#pragma region 18_Test_Entry_Point
+#pragma region "18_Test_Entry_Point"
 
 int main(int argc, char** argv)
 {
@@ -2111,20 +2198,26 @@ int main(int argc, char** argv)
         if (argc > 1 && std::string(argv[1]) == "--meso-peak-only")
         {
             TestMesoPeakPacking();
+
             return FailureCount == 0 ? 0 : 1;
         }
+
         FVulkanTestDevice Vulkan;
+
         if (argc > 1 && std::string(argv[1]) == "--reactions-only")
         {
             TestLocalReactions(Vulkan);
             return FailureCount == 0 ? 0 : 1;
         }
+
         TestCompactScratchStorage(Vulkan);
+
         if (argc > 1 && std::string(argv[1]) == "--storage-and-mesh-only")
         {
             TestLazyMeshStorage(Vulkan);
             return FailureCount == 0 ? 0 : 1;
         }
+
         if (argc == 1 || std::string(argv[1]) != "--compact-storage-only")
             TestRetiredBufferReuse(Vulkan);
         if (argc == 1 || (std::string(argv[1]) != "--reuse-only" && std::string(argv[1]) != "--compact-storage-only"))
@@ -2147,6 +2240,7 @@ int main(int argc, char** argv)
     catch (const FVulkanUnavailable& Exception)
     {
         std::cout << "SKIP: " << Exception.what() << '\n';
+
         return 77;
     }
     catch (const std::exception& Exception)

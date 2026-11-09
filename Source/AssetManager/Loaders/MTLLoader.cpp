@@ -24,10 +24,12 @@ namespace MDSS::Asset
             }
 
             std::filesystem::path Path(TextureName);
+
             if (Path.is_relative())
             {
                 Path = BaseDirectory / Path;
             }
+
             return Path.lexically_normal();
         }
     } // namespace
@@ -50,6 +52,7 @@ namespace MDSS::Asset
         const std::string& NormalTextureName =
             !Material.normal_texname.empty() ? Material.normal_texname : Material.bump_texname;
         Result.NormalTexturePath = ResolveTexturePath(TextureBaseDirectory, NormalTextureName);
+
         if (const auto Style = Material.unknown_parameter.find("mdss_water_style");
             Style != Material.unknown_parameter.end())
         {
@@ -58,15 +61,18 @@ namespace MDSS::Asset
             else if (Style->second != "film")
                 throw std::runtime_error("MTL mdss_water_style must be film or droplets.");
         }
+
         const auto ReadWaterParameter = [&](const char* Name, float& Target, float Minimum, float Maximum)
         {
             const auto Found = Material.unknown_parameter.find(Name);
+
             if (Found == Material.unknown_parameter.end())
                 return;
             try
             {
                 std::size_t Consumed = 0;
                 const float Value = std::stof(Found->second, &Consumed);
+
                 if (Consumed != Found->second.size() || !std::isfinite(Value) || Value < Minimum || Value > Maximum)
                     throw std::out_of_range("value");
                 Target = Value;

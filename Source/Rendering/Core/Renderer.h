@@ -43,10 +43,12 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -72,7 +74,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 00. Renderer lifecycle
 // ============================================================
-#pragma region 00_Renderer_lifecycle
+#pragma region "00_Renderer_lifecycle"
 
         // Renderer lifecycle
         FRenderer(const GPU::FVulkanContext&         Context,
@@ -94,7 +96,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 01. Frame rendering and simulation clock
 // ============================================================
-#pragma region 01_Frame_rendering_and_simulation_clock
+#pragma region "01_Frame_rendering_and_simulation_clock"
 
         // Frame rendering and simulation clock
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
@@ -106,14 +108,17 @@ namespace MDSS::Rendering
         {
             return FrameCoordinator.GetPendingSeconds();
         }
+
         [[nodiscard]] double GetSimulatedSeconds() const noexcept
         {
             return FrameCoordinator.GetSimulatedSeconds();
         }
+
         [[nodiscard]] std::uint32_t GetLastSimulationStepCount() const noexcept
         {
             return FrameCoordinator.GetStepCount();
         }
+
         [[nodiscard]] float GetMaximumSimulationStep() const noexcept
         {
             return FrameCoordinator.GetMaximumStep();
@@ -124,7 +129,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 02. Scene resources, resolution, and runtime Profile settings
 // ============================================================
-#pragma region 02_Scene_resources_resolution_and_runtime_Profile_settings
+#pragma region "02_Scene_resources_resolution_and_runtime_Profile_settings"
 
         // Scene resources, resolution, and runtime Profile settings
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
@@ -138,11 +143,13 @@ namespace MDSS::Rendering
         {
             return SurfaceTexelMeshResolution;
         }
+
         void                        SetSurfaceTexelMeshResolution(std::uint32_t Resolution);
         [[nodiscard]] std::uint32_t GetOverlayTexelMeshResolution() const noexcept
         {
             return OverlayTexelMeshResolution;
         }
+
         void SetOverlayTexelMeshResolution(std::uint32_t Resolution);
         void SetDebugProfileParameters(Asset::FSRProfileAssetHandle                 Profile,
                                        SurfaceState::FStateId                       State,
@@ -154,7 +161,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 03. Swapchain and profiling access
 // ============================================================
-#pragma region 03_Swapchain_and_profiling_access
+#pragma region "03_Swapchain_and_profiling_access"
 
         // Swapchain and profiling access
         [[nodiscard]] const GPU::FSwapchain&                          GetSwapchain() const noexcept;
@@ -175,78 +182,106 @@ namespace MDSS::Rendering
 // ============================================================
 // 04. Benchmark capture and overlay profiling
 // ============================================================
-#pragma region 04_Benchmark_capture_and_overlay_profiling
+#pragma region "04_Benchmark_capture_and_overlay_profiling"
 
-        // Benchmark capture and overlay profiling
+        // 04.00. Benchmark Capture
+        #pragma region "04_00_Benchmark_Capture"
+
         void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
                                        std::uint32_t                WarmupFrames,
                                        std::uint32_t                MeasurementFrames);
         // Called only after the application has waited for the device to become idle.
         void                              FinalizeBenchmarkCapture();
         void                              RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex);
+        #pragma endregion
+
+        // 04.01. Overlay Display Controls
+        #pragma region "04_01_Overlay_Display_Controls"
+
         [[nodiscard]] EOverlayDisplayMode GetOverlayDisplayMode() const noexcept
         {
             return OverlayDisplayMode;
         }
+
         void SetOverlayDisplayMode(EOverlayDisplayMode Mode) noexcept
         {
             OverlayDisplayMode = Mode;
         }
+
         [[nodiscard]] EOverlayShadingDiagnostic GetOverlayShadingDiagnostic() const noexcept
         {
             return OverlayShadingDiagnostic;
         }
+
         void SetOverlayShadingDiagnostic(EOverlayShadingDiagnostic Mode) noexcept
         {
             OverlayShadingDiagnostic = Mode;
         }
+
         [[nodiscard]] bool IsOverlayOnlyDebugEnabled() const noexcept
         {
             return bOverlayOnlyDebug;
         }
+
         void SetOverlayOnlyDebugEnabled(bool bEnabled) noexcept
         {
             bOverlayOnlyDebug = bEnabled;
+
             if (!bEnabled)
                 OverlayDisplayMode = EOverlayDisplayMode::Both;
         }
+
         [[nodiscard]] EOverlayOccupancyTileSize GetOverlayOccupancyTileSize() const noexcept
         {
             return OverlayOccupancyTileSize;
         }
+
         void               SetOverlayOccupancyTileSize(EOverlayOccupancyTileSize Size);
         [[nodiscard]] bool IsOverlayTileCullingEnabled() const noexcept
         {
             return bOverlayTileCullingEnabled;
         }
+
         void SetOverlayTileCullingEnabled(bool bEnabled) noexcept
         {
             bOverlayTileCullingEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsBaseMeshDrawEnabled() const noexcept
         {
             return bBaseMeshDrawEnabled;
         }
+
         void SetBaseMeshDrawEnabled(bool bEnabled) noexcept
         {
             bBaseMeshDrawEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsOverlayTopDrawEnabled() const noexcept
         {
             return bOverlayTopDrawEnabled;
         }
+
         void SetOverlayTopDrawEnabled(bool bEnabled) noexcept
         {
             bOverlayTopDrawEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsOverlaySidesDrawEnabled() const noexcept
         {
             return bOverlaySidesDrawEnabled;
         }
+
         void SetOverlaySidesDrawEnabled(bool bEnabled) noexcept
         {
             bOverlaySidesDrawEnabled = bEnabled;
         }
+
+        #pragma endregion
+
+        // 04.02. Runtime Performance Controls
+        #pragma region "04_02_Runtime_Performance_Controls"
+
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
         void               SetRawFluxCacheEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept;
@@ -269,69 +304,85 @@ namespace MDSS::Rendering
         {
             return bSparseHeightSmoothingEnabled;
         }
+
         void SetSparseHeightSmoothingEnabled(bool bEnabled) noexcept
         {
             bSparseHeightSmoothingEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsSharedHeightSmoothingEnabled() const noexcept
         {
             return bSharedHeightSmoothingEnabled;
         }
+
         void SetSharedHeightSmoothingEnabled(bool bEnabled) noexcept
         {
             bSharedHeightSmoothingEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsSharedOverlayCoverageEnabled() const noexcept
         {
             return bSharedOverlayCoverageEnabled;
         }
+
         void SetSharedOverlayCoverageEnabled(bool bEnabled) noexcept
         {
             bSharedOverlayCoverageEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsSharedStateTextureSmoothingEnabled() const noexcept
         {
             return bSharedStateTextureSmoothingEnabled;
         }
+
         void SetSharedStateTextureSmoothingEnabled(bool bEnabled) noexcept
         {
             bSharedStateTextureSmoothingEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsPrecomputeCoverageSmoothingEnabled() const noexcept
         {
             return bPrecomputeCoverageSmoothingEnabled;
         }
+
         void SetPrecomputeCoverageSmoothingEnabled(bool bEnabled) noexcept
         {
             bPrecomputeCoverageSmoothingEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsRenderStateTextureSamplingEnabled() const noexcept
         {
             return bRenderStateTextureSamplingEnabled;
         }
+
         void SetRenderStateTextureSamplingEnabled(bool bEnabled) noexcept
         {
             bRenderStateTextureSamplingEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsSeparableCoverageSmoothingEnabled() const noexcept
         {
             return bSeparableCoverageSmoothingEnabled;
         }
+
         void SetSeparableCoverageSmoothingEnabled(bool bEnabled) noexcept
         {
             bSeparableCoverageSmoothingEnabled = bEnabled;
         }
+
         [[nodiscard]] bool AreRenderPassSubstageTimingsReliable() const noexcept
         {
             return bRenderPassSubstageTimingsReliable;
         }
+        #pragma endregion
+
 
 #pragma endregion
 
 // ============================================================
 // 05. Render view and debug settings
 // ============================================================
-#pragma region 05_Render_view_and_debug_settings
+#pragma region "05_Render_view_and_debug_settings"
 
         // Render view and debug settings
         [[nodiscard]] ERenderViewMode GetRenderViewMode() const noexcept;
@@ -342,26 +393,32 @@ namespace MDSS::Rendering
         {
             return bWireframeUniformWhite;
         }
+
         void SetWireframeUniformWhite(bool bEnabled) noexcept
         {
             bWireframeUniformWhite = bEnabled;
         }
+
         [[nodiscard]] bool SupportsWireframeLineWidth() const noexcept
         {
             return bSupportsWireframeLineWidth;
         }
+
         [[nodiscard]] float GetWireframeLineWidth() const noexcept
         {
             return WireframeLineWidth;
         }
+
         [[nodiscard]] float GetWireframeLineWidthMin() const noexcept
         {
             return WireframeLineWidthMin;
         }
+
         [[nodiscard]] float GetWireframeLineWidthMax() const noexcept
         {
             return WireframeLineWidthMax;
         }
+
         void                                              SetWireframeLineWidth(float Width) noexcept;
         [[nodiscard]] bool                                IsWorldGridVisible() const noexcept;
         void                                              SetWorldGridVisible(bool bVisible) noexcept;
@@ -377,11 +434,13 @@ namespace MDSS::Rendering
         {
             return SurfaceDebugSettings;
         }
+
         void SetSurfaceDebugDisplaySettings(const FSurfaceDebugDisplaySettings& Settings);
         [[nodiscard]] const FDemoSurfaceEffectSettings& GetDemoSurfaceEffectSettings() const noexcept
         {
             return DemoEffects;
         }
+
         void               SetDemoSurfaceEffectSettings(const FDemoSurfaceEffectSettings& Settings);
         [[nodiscard]] bool IsLitTexelMeshBaseRendered(const FScene& Scene, std::size_t Instance) const;
         void               SetSceneLitHeightDisplayScale(FScene& Scene, float Scale);
@@ -394,6 +453,7 @@ namespace MDSS::Rendering
         {
             return InspectedTexel;
         }
+
         [[nodiscard]] const std::optional<SurfaceState::FSurfaceTexelSnapshot>& GetTexelSnapshot() const noexcept;
         [[nodiscard]] ESolverTransferWeightView GetSolverTransferWeightView() const noexcept;
         void                                    SetSolverTransferWeightView(ESolverTransferWeightView View);
@@ -426,7 +486,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 06. Benchmark Submission and Material Records
 // ============================================================
-#pragma region 06_Benchmark_Submission_and_Material_Records
+#pragma region "06_Benchmark_Submission_and_Material_Records"
 
         struct FBenchmarkFrameSubmission
         {
@@ -457,7 +517,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 07. Render resources and command recording
 // ============================================================
-#pragma region 07_Render_resources_and_command_recording
+#pragma region "07_Render_resources_and_command_recording"
 
         // Render resources and command recording
         static VkFormat              FindDepthFormat(VkPhysicalDevice PhysicalDevice);
@@ -521,27 +581,27 @@ namespace MDSS::Rendering
                                                                 std::size_t                   ViewportIndex,
                                                                 const glm::vec4&              NormalizedViewport,
                                                                 VkExtent2D                    Extent);
-        void                                  RecordBaseMeshes(VkCommandBuffer                                 CommandBuffer,
-                                                               const FScene&                                   SceneData,
-                                                               const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
-                                                               const FCommandRecordingState&                   Frame,
-                                                               const FViewportRecordingState&                  View);
-        void                                  RecordAccumulationOverlays(VkCommandBuffer                                 CommandBuffer,
-                                                                         const FScene&                                   SceneData,
-                                                                         const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
-                                                                         const FCommandRecordingState&                   Frame,
-                                                                         const FViewportRecordingState&                  View);
-        void                                  RecordWorldReferenceAndGizmo(VkCommandBuffer                CommandBuffer,
-                                                                           const FScene&                  SceneData,
-                                                                           const FDebugUI&                DebugInterface,
-                                                                           const FViewportRecordingState& View);
+        void RecordBaseMeshes(VkCommandBuffer                                 CommandBuffer,
+                              const FScene&                                   SceneData,
+                              const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
+                              const FCommandRecordingState&                   Frame,
+                              const FViewportRecordingState&                  View);
+        void RecordAccumulationOverlays(VkCommandBuffer                                 CommandBuffer,
+                                        const FScene&                                   SceneData,
+                                        const SurfaceState::FSurfaceGPUResourceManager& SurfaceGPU,
+                                        const FCommandRecordingState&                   Frame,
+                                        const FViewportRecordingState&                  View);
+        void RecordWorldReferenceAndGizmo(VkCommandBuffer                CommandBuffer,
+                                          const FScene&                  SceneData,
+                                          const FDebugUI&                DebugInterface,
+                                          const FViewportRecordingState& View);
 
 #pragma endregion
 
 // ============================================================
 // 08. Resource Ownership
 // ============================================================
-#pragma region 08_Resource_Ownership
+#pragma region "08_Resource_Ownership"
 
         const GPU::FVulkanContext&         Context;
         FWindow&                           TargetWindow;
@@ -590,7 +650,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 09. View and Display Settings
 // ============================================================
-#pragma region 09_View_and_Display_Settings
+#pragma region "09_View_and_Display_Settings"
 
         std::vector<ERenderViewMode> ViewModes{ERenderViewMode::Lit};
         bool                         bWireframeUniformWhite = true;
@@ -642,7 +702,7 @@ namespace MDSS::Rendering
 // ============================================================
 // 10. Benchmark Capture State
 // ============================================================
-#pragma region 10_Benchmark_Capture_State
+#pragma region "10_Benchmark_Capture_State"
 
         struct FBenchmarkCaptureState
         {

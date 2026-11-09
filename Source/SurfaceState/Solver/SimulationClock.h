@@ -40,6 +40,7 @@ namespace MDSS::SurfaceState
             const double DroppedSeconds = std::max(0.0, PendingSeconds - MaximumSeconds);
             PendingSeconds -= DroppedSeconds;
             FixedTickRemainingSeconds = std::min(FixedTickRemainingSeconds, PendingSeconds);
+
             return DroppedSeconds;
         }
 
@@ -52,6 +53,7 @@ namespace MDSS::SurfaceState
             const double FixedStep = FixedSimulationStepSeconds;
             const double MaximumStep = bAutoSubstepping ? std::min(double(TransportMaximumStep), FixedStep) : FixedStep;
             std::vector<float> Steps;
+
             if (bPaused)
             {
                 if (bSingleStep)
@@ -62,9 +64,11 @@ namespace MDSS::SurfaceState
                 if (!bFixed)
                     FixedTickRemainingSeconds = 0.0;
                 const double StepTolerance = FixedStep * 1.0e-5;
+
                 while (Steps.size() < MaxSimulationStepsPerFrame && PendingSeconds > 0.0)
                 {
                     double BudgetStep;
+
                     if (bFixed)
                     {
                         if (FixedTickRemainingSeconds == 0.0)
@@ -74,6 +78,7 @@ namespace MDSS::SurfaceState
                                 break;
                             FixedTickRemainingSeconds = FixedStep;
                         }
+
                         BudgetStep = bAutoSubstepping ? std::min(FixedTickRemainingSeconds, MaximumStep)
                                                       : FixedTickRemainingSeconds;
                         FixedTickRemainingSeconds = std::max(0.0, FixedTickRemainingSeconds - BudgetStep);
@@ -85,6 +90,7 @@ namespace MDSS::SurfaceState
                     PendingSeconds = std::max(0.0, PendingSeconds - BudgetStep);
                 }
             }
+
             for (float Step : Steps)
                 SimulatedSeconds += Step;
             return Steps;
@@ -97,10 +103,12 @@ namespace MDSS::SurfaceState
             SimulatedSeconds = 0.0;
             FixedTickRemainingSeconds = 0.0;
         }
+
         [[nodiscard]] double GetPendingSeconds() const noexcept
         {
             return PendingSeconds;
         }
+
         [[nodiscard]] double GetSimulatedSeconds() const noexcept
         {
             return SimulatedSeconds;
@@ -109,6 +117,7 @@ namespace MDSS::SurfaceState
     private:
         double PendingSeconds = 0.0;
         double SimulatedSeconds = 0.0;
+
         // This is part of PendingSeconds, not a separate accumulated time budget.
         double FixedTickRemainingSeconds = 0.0;
     };

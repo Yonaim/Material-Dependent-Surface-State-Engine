@@ -47,6 +47,7 @@ namespace MDSS::GPU
         {
             return bCanReadback;
         }
+
         [[nodiscard]] VkExtent2D                      GetExtent() const noexcept;
         [[nodiscard]] const std::vector<VkImage>&     GetImages() const noexcept;
         [[nodiscard]] const std::vector<VkImageView>& GetImageViews() const noexcept;

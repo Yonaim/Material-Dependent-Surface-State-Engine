@@ -25,10 +25,12 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("InvalidSurfaceInstanceID is reserved.");
         }
+
         if (!this->Geometry)
         {
             throw std::invalid_argument("TSurfaceInstanceStateData requires TSharedSurfaceGeometryData.");
         }
+
         States.resize(this->Geometry->GetTexelCount(), FSurfaceStateValues(StateCount, 0.0F));
     }
 #pragma endregion

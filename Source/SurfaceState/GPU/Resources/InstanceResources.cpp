@@ -37,10 +37,12 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("Surface Instance GPU resources require texels and State channels.");
         }
+
         if (TexelCount > std::numeric_limits<std::size_t>::max() / ChannelCount)
         {
             throw std::overflow_error("Surface Instance GPU scalar count overflowed.");
         }
+
         if (TexelCount > std::numeric_limits<std::size_t>::max() / SurfaceNeighborCount ||
             TransferWeights.size() != TexelCount * SurfaceNeighborCount)
         {
@@ -57,6 +59,7 @@ namespace MDSS::SurfaceState
         const std::size_t MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         ReactionCapacity = MaxReactionCount;
         const std::size_t ReactionStride = ChannelCount * 5U + MaxReactionCount + 4U;
+
         if (MaxReactionCount && TexelCount > std::numeric_limits<std::size_t>::max() / ReactionStride)
             throw std::overflow_error("Reaction scratch size overflow.");
         ReactionScratchBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
@@ -94,6 +97,7 @@ namespace MDSS::SurfaceState
                                                                 Pool);
 
         const FSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(TexelCount);
+
         // 3 texel planes + persistent solver A/B sets + CPU-input activation list + accumulation/geometry schedules.
         // The two solver sets ping-pong with State A/B so Pass2 can directly build the next step's active set.
         const std::size_t AccumulationWordCount = SparseLayout.TotalWordCount;
@@ -137,6 +141,7 @@ namespace MDSS::SurfaceState
         if (Storage.bCompact && Storage.bHalfWeights)
         {
             std::vector<std::uint32_t> Packed(TransferWeights.size() / 2U);
+
             for (std::size_t Pair = 0; Pair < Packed.size(); ++Pair)
                 Packed[Pair] = glm::packHalf2x16(glm::vec2(std::clamp(TransferWeights[Pair * 2U], 0.0F, 1.0F),
                                                            std::clamp(TransferWeights[Pair * 2U + 1U], 0.0F, 1.0F)));
@@ -162,11 +167,13 @@ namespace MDSS::SurfaceState
 
         std::vector<FSurfaceGPUVec4>        ZeroDebugAverages;
         const std::vector<FSurfaceGPUVec4>* DebugAverages = &TransferWeightDebugAverages;
+
         if (DebugAverages->empty())
         {
             ZeroDebugAverages.resize(TexelCount);
             DebugAverages = &ZeroDebugAverages;
         }
+
         if (DebugAverages->size() != TexelCount)
         {
             throw std::invalid_argument("TransferWeight debug averages must match the texel count.");
@@ -213,17 +220,20 @@ namespace MDSS::SurfaceState
         const auto WeightWords =
             TexelCount * (bCompact && bHalfWeights ? SurfaceNeighborCount / 2U : SurfaceNeighborCount);
         bool bChanged = false;
+
         if (RawOutgoingBuffer->GetSize() != RawWords * sizeof(std::uint32_t))
         {
             auto Replacement = CreateZeroedScalarBuffer(PhysicalDevice, Device, RawWords, MaxRange);
             RawOutgoingBuffer = std::move(Replacement);
             bChanged = true;
         }
+
         if (TransferWeightBuffer->GetSize() != WeightWords * sizeof(std::uint32_t))
         {
             std::vector<std::uint32_t> Old(TransferWeightBuffer->GetSize() / sizeof(std::uint32_t));
             TransferWeightBuffer->Download(Old.data(), TransferWeightBuffer->GetSize());
             std::vector<float> Weights(TexelCount * SurfaceNeighborCount);
+
             if (bStoredHalfWeights)
             {
                 for (std::size_t Pair = 0; Pair < Weights.size() / 2U; ++Pair)
@@ -240,6 +250,7 @@ namespace MDSS::SurfaceState
             UpdateTransferWeights(Weights, {}, bHalfWeights);
             bChanged = true;
         }
+
         return bChanged;
     }
 
@@ -331,11 +342,14 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("Updated TransferWeight cache has an incompatible size.");
         }
+
         bStoredHalfWeights = bHalfPrecision;
+
         if (bHalfPrecision)
         {
             // FP16 mode uses four uint words per texel; compact storage allocates exactly that range.
             std::vector<std::uint32_t> Packed(TexelCount * (SurfaceNeighborCount / 2U), 0U);
+
             for (std::size_t Texel = 0; Texel < TexelCount; ++Texel)
             {
                 for (std::size_t Pair = 0; Pair < SurfaceNeighborCount / 2U; ++Pair)
@@ -347,6 +361,7 @@ namespace MDSS::SurfaceState
                                   std::clamp(TransferWeights[Texel * SurfaceNeighborCount + D1], 0.0F, 1.0F)));
                 }
             }
+
             TransferWeightBuffer->Upload(Packed.data(),
                                          static_cast<VkDeviceSize>(Packed.size() * sizeof(std::uint32_t)));
         }
@@ -355,12 +370,14 @@ namespace MDSS::SurfaceState
             // Buffer is uint-addressed in GLSL, but IEEE-754 float bytes are intentionally uploaded verbatim.
             TransferWeightBuffer->Upload(TransferWeights.data(), TransferWeights.size() * sizeof(float));
         }
+
         if (!TransferWeightDebugAverages.empty())
         {
             if (TransferWeightDebugAverages.size() != TexelCount)
             {
                 throw std::invalid_argument("Updated TransferWeight debug averages have an incompatible size.");
             }
+
             TransferWeightDebugAverageBuffer->Upload(TransferWeightDebugAverages.data(),
                                                      TransferWeightDebugAverageBuffer->GetSize());
         }
@@ -382,6 +399,7 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("Reset OutgoingFluxScale must match the instance scalar count.");
         }
+
         const std::vector<float> Zeros(ScalarCount, 0.0F);
         const VkDeviceSize       ByteSize = static_cast<VkDeviceSize>(ScalarCount * sizeof(float));
         StateABuffer->Upload(Zeros.data(), ByteSize);

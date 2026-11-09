@@ -28,7 +28,9 @@ namespace MDSS::SurfaceState
         std::uint64_t          Step = 0;
         std::uint64_t          Serial = 0;
         bool                   bStateAB = true;
+
         // State/capacity/saturation/reference amount; factors/meso/reference;
+
         // cavity depth/fill/excess/status; heights; area/scale; final local normal.
         std::array<glm::vec4, 7> Values{};
     };

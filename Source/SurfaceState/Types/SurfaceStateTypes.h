@@ -28,16 +28,20 @@ namespace MDSS::SurfaceState
         // State stores total amount; Capacity is a saturation reference, not an upper storage bound.
         float StateCapacity = 1.0F;
         float InputFactor = 1.0F;
+
         // [0, 1] 무차원 계수. Solver가 각 전달 경로의 기준 속도를 곱한다.
         float SaturationTransferFactor = 0.0F;
         float GeometryTransferFactor = 0.0F;
+
         // Amount per second per fixed reference area; converted to the actual texel area by the Solver.
         float DecayRate = 0.0F;
         float CavityRetentionFactor = 0.0F;
         float AccumulationFactor = 0.0F;
         float CavityFillFactor = 0.0F;
+
         // World-length thickness per reference-area accumulation amount.
         float ThicknessPerAmount = 0.01F;
+
         // Directional suppression of raw flux when transport leaves a more concave texel.
         float CavityTransportRetentionFactor = 0.0F;
     };
@@ -80,6 +84,7 @@ namespace MDSS::SurfaceState
     {
         std::string       State;
         EReactionFunction Function = EReactionFunction::Linear;
+
         // Both quantities refer to the fixed reference area, independently of Capacity.
         float Threshold = 0.0F;
         float Scale = 1.0F;

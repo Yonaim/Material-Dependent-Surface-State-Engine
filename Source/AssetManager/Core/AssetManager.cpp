@@ -45,6 +45,7 @@ namespace MDSS::Asset
     FMeshAssetHandle FAssetManager::LoadOBJ(const std::filesystem::path& Path)
     {
         const std::string MeshPathKey = std::filesystem::absolute(Path).lexically_normal().generic_string();
+
         if (const auto Found = MeshAssetsByPath.find(MeshPathKey); Found != MeshAssetsByPath.end())
         {
             return Found->second;
@@ -75,9 +76,11 @@ namespace MDSS::Asset
 
         std::vector<FMeshSection> Sections;
         Sections.reserve(Loaded.Sections.size());
+
         for (const FOBJMeshSectionData& SourceSection : Loaded.Sections)
         {
             FMaterialAssetHandle Material = DefaultMaterial;
+
             if (SourceSection.MaterialIndex >= 0 &&
                 static_cast<std::size_t>(SourceSection.MaterialIndex) < MaterialRemap.size())
             {
@@ -114,10 +117,12 @@ namespace MDSS::Asset
     FSRProfileAssetHandle FAssetManager::LoadSRProfile(const std::filesystem::path& Path)
     {
         const std::string CacheKey = std::filesystem::absolute(Path).lexically_normal().generic_string();
+
         if (const auto Found = SRProfileCache.find(CacheKey); Found != SRProfileCache.end())
         {
             return Found->second;
         }
+
         if (SRProfiles.size() >= InvalidAssetHandle)
         {
             throw std::overflow_error("TSRProfileAsset handle range is exhausted.");
@@ -129,6 +134,7 @@ namespace MDSS::Asset
                       "SRProfile registered: '" + Profile->GetName() + "' (handle=" + std::to_string(Handle) + ").");
         SRProfiles.push_back(std::move(Profile));
         SRProfileCache.emplace(CacheKey, Handle);
+
         return Handle;
     }
 
@@ -145,6 +151,7 @@ namespace MDSS::Asset
         {
             throw std::out_of_range("Invalid TMeshAssetHandle.");
         }
+
         return *Meshes[Handle];
     }
 
@@ -154,6 +161,7 @@ namespace MDSS::Asset
         {
             throw std::out_of_range("Invalid TMaterialAssetHandle.");
         }
+
         return *Materials[Handle];
     }
 
@@ -163,6 +171,7 @@ namespace MDSS::Asset
         {
             throw std::out_of_range("Invalid TextureAssetHandle.");
         }
+
         return *Textures[Handle];
     }
 
@@ -172,6 +181,7 @@ namespace MDSS::Asset
         {
             throw std::out_of_range("Invalid TSRProfileAssetHandle.");
         }
+
         return *SRProfiles[Handle];
     }
 
@@ -200,6 +210,7 @@ namespace MDSS::Asset
     FTextureAssetHandle FAssetManager::LoadTexture(const std::filesystem::path& Path, bool bSRGB)
     {
         const std::string CacheKey = Path.lexically_normal().string() + (bSRGB ? "#srgb" : "#linear");
+
         if (const auto Found = TextureCache.find(CacheKey); Found != TextureCache.end())
         {
             FLogger::Verbose("TAssetManager", "Texture cache hit: " + Path.string());

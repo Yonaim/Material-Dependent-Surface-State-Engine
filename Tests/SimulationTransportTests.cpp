@@ -45,20 +45,24 @@ namespace
         {
             FSimulationClock Clock;
             std::size_t      Steps = 0;
+
             for (int Frame = 0; Frame < FPS; ++Frame)
             {
                 Clock.Accumulate(1.0 / FPS, 1.0, false);
                 Check(Clock.LimitPendingSeconds(MaxRealtimePendingTicks * FixedSimulationStepSeconds) == 0.0,
                       "normal 15/30/60/120 FPS playback must not skip simulation time");
                 const auto FrameSteps = Clock.Consume(0.001F, true, false, false, false);
+
                 for (float Step : FrameSteps)
                     Check(Step == FixedSimulationStepSeconds,
                           "fixed dt must ignore the transport limit when auto is off");
                 Steps += FrameSteps.size();
             }
+
             Check(Steps == 60 && std::abs(Clock.GetSimulatedSeconds() - 1.0) < 1.0e-6,
                   "15/30/60/120 FPS must advance the same simulation time");
         }
+
         FSimulationClock Clock;
         Clock.Accumulate(1.0, 1.0, false);
         Check(Clock.Consume(FixedSimulationStepSeconds, true, false, false, false).size() == MaxSimulationStepsPerFrame,
@@ -185,6 +189,7 @@ namespace
         const glm::mat4                        Model = glm::scale(glm::mat4(1), glm::vec3(2, 3, 4));
         const double Expected = glm::length(glm::cross(glm::vec3(4, 0, 0), glm::vec3(0, 9, 4)));
         double       PreviousCapacity = 0.0;
+
         for (std::uint32_t Resolution : {128U, 256U, 512U})
         {
             const auto Mapping =
@@ -196,6 +201,7 @@ namespace
             Check(std::abs(TotalArea - Expected) < Expected * 1.0e-5,
                   "tilted UV plane must retain world area at 128/256/512 including nonuniform scale");
             const double TotalCapacity = TotalArea / SurfaceStateReferenceArea;
+
             if (PreviousCapacity != 0.0)
                 Check(std::abs(TotalCapacity - PreviousCapacity) < PreviousCapacity * 1.0e-5,
                       "same surface must have the same integrated Capacity");
@@ -246,6 +252,7 @@ int main()
         TestArea();
         TestFrustumCulling();
         std::cout << "Simulation clock, world-area, and frustum tests passed\n";
+
         return 0;
     }
     catch (const std::exception& Error)

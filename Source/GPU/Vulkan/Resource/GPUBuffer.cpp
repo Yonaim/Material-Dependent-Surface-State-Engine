@@ -63,6 +63,7 @@ namespace MDSS::GPU
             {
                 throw std::runtime_error("Failed to bind Vulkan buffer memory.");
             }
+
             FGPUResourceMemoryStats::BufferAllocated(AllocationSize, MemoryCategory);
         }
         catch (...)
@@ -72,11 +73,13 @@ namespace MDSS::GPU
                 vkFreeMemory(Device, Memory, nullptr);
                 Memory = VK_NULL_HANDLE;
             }
+
             if (Handle != VK_NULL_HANDLE)
             {
                 vkDestroyBuffer(Device, Handle, nullptr);
                 Handle = VK_NULL_HANDLE;
             }
+
             AllocationSize = 0;
             throw;
         }
@@ -99,6 +102,7 @@ namespace MDSS::GPU
             vkFreeMemory(Device, Memory, nullptr);
             Memory = VK_NULL_HANDLE;
         }
+
         AllocationSize = 0;
     }
 
@@ -132,6 +136,7 @@ namespace MDSS::GPU
         }
 
         void* MappedMemory = nullptr;
+
         if (vkMapMemory(Device, Memory, Offset, DataSize, 0, &MappedMemory) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to map Vulkan buffer memory.");
@@ -161,6 +166,7 @@ namespace MDSS::GPU
         }
 
         void* MappedMemory = nullptr;
+
         if (vkMapMemory(Device, Memory, Offset, DataSize, 0, &MappedMemory) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to map Vulkan buffer memory for download.");

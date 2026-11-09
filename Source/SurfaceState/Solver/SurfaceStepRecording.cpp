@@ -41,22 +41,26 @@ namespace MDSS::SurfaceState
                                          bool            bPrepareRenderHeight)
     {
         ApplyPendingContacts();
+
         if (!Solver)
         {
             return;
         }
 
         bool bHasDirtyTransferWeightCache = Execution.bTransferWeightSettingsDirty;
+
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             if (GPUResources->GetInstanceDescriptors(SceneIndex) == nullptr)
             {
                 continue;
             }
+
             bHasDirtyTransferWeightCache = bHasDirtyTransferWeightCache ||
                                            GPUResources->NeedsTransferWeightCacheUpdate(
                                                SceneIndex, Scene.GetStaticMeshInstances()[SceneIndex].GetTransform());
         }
+
         if (bHasDirtyTransferWeightCache && vkQueueWaitIdle(Context.GetQueues().GetGraphics()) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to wait for the graphics queue before updating TransferWeight caches.");
@@ -66,9 +70,11 @@ namespace MDSS::SurfaceState
         std::vector<std::size_t>                ActiveSceneIndices;
         InstanceSteps.reserve(GPUResources->GetSceneInstanceCount());
         ActiveSceneIndices.reserve(GPUResources->GetSceneInstanceCount());
+
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(SceneIndex);
+
             if (Descriptors == nullptr)
             {
                 continue;
@@ -90,36 +96,45 @@ namespace MDSS::SurfaceState
                     Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight),
                     Execution.bHalfDynamicWeightsEnabled);
             }
+
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             std::uint32_t   SolverFlags = 0U;
+
             if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::GeometryDrive))
             {
                 SolverFlags |= 1U << 0U;
             }
+
             if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::SaturationDrive))
             {
                 SolverFlags |= 1U << 1U;
             }
+
             if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::Decay))
             {
                 SolverFlags |= 1U << 2U;
             }
+
             if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ConcavityRetention))
             {
                 SolverFlags |= 1U << 3U;
             }
+
             if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::MesoDirectionNormal))
             {
                 SolverFlags |= 1U << 4U;
             }
+
             if (Execution.bRawFluxCacheEnabled)
             {
                 SolverFlags |= SurfaceSolverRawFluxCacheFlag;
+
                 if (Execution.bCoalescedRawFluxLayoutEnabled)
                     SolverFlags |= SurfaceSolverCoalescedRawFluxLayoutFlag;
                 if (Execution.bHalfRawFluxCacheEnabled)
                     SolverFlags |= SurfaceSolverHalfRawFluxCacheFlag;
             }
+
             if (Execution.bHalfDynamicWeightsEnabled)
                 SolverFlags |= SurfaceSolverHalfDynamicWeightsFlag;
             if (Execution.bSeedPersistentActivityOnNextStep &&
@@ -147,6 +162,7 @@ namespace MDSS::SurfaceState
             if (Execution.DebugSolverSettings.bStateDrivenGeometryUpdateEnabled)
             {
                 SolverFlags |= SurfaceSolverStateDrivenGeometryUpdateFlag;
+
                 if (Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight))
                     SolverFlags |= SurfaceSolverDistanceWeightFlag;
                 if (Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight))
@@ -154,6 +170,7 @@ namespace MDSS::SurfaceState
                 if (Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight))
                     SolverFlags |= SurfaceSolverProfileBoundaryWeightFlag;
             }
+
             FSurfaceSolverInstanceStep Step;
             Step.Descriptors = Descriptors;
             Step.bCurrentStateAB = bCurrentStateAB;
@@ -169,16 +186,21 @@ namespace MDSS::SurfaceState
             InstanceSteps.push_back(Step);
             ActiveSceneIndices.push_back(SceneIndex);
         }
+
         Solver->RecordSteps(CommandBuffer, InstanceSteps, TimestampQueryPool, FirstStepQuery);
+
         for (const std::size_t SceneIndex : ActiveSceneIndices)
         {
             GPUResources->AdvanceCurrentState(SceneIndex);
+
             if (SceneIndex < Execution.PendingInputActivation.size())
                 Execution.PendingInputActivation[SceneIndex] = false;
         }
+
         if (!InstanceSteps.empty())
             Execution.bSeedPersistentActivityOnNextStep = false;
         Execution.bTransferWeightSettingsDirty = false;
+
         // State-driven geometry updates always derive Height after the step. When disabled, several fixed substeps may
         // run; keep the invalidation alive until the final substep actually prepares render height.
         if (Execution.DebugSolverSettings.bStateDrivenGeometryUpdateEnabled || bPrepareRenderHeight)

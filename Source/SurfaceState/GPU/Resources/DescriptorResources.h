@@ -30,11 +30,13 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
     class FSurfaceGPUBufferPool;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -67,6 +69,7 @@ namespace MDSS::SurfaceState
         {
             return ProfileResources->GetMaxReactionCount() != 0;
         }
+
         [[nodiscard]] VkDescriptorSetLayout GetLayout() const noexcept;
         [[nodiscard]] VkDescriptorSet       GetABSet() const noexcept;
         [[nodiscard]] VkDescriptorSet       GetBASet() const noexcept;
@@ -76,6 +79,7 @@ namespace MDSS::SurfaceState
         {
             return ProfileResources->GetParametersBuffer().GetUploadRevision();
         }
+
         [[nodiscard]] const FSurfaceSharedGeometryGPUResources& GetSharedGeometry() const noexcept
         {
             return *SharedGeometryResources;

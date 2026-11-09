@@ -67,6 +67,7 @@ namespace MDSS
         {
             throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
         }
+
         SimulationResolution = Resolution;
     }
 
@@ -81,6 +82,7 @@ namespace MDSS
         {
             throw std::invalid_argument("Lit height display scale must be finite and between 0 and 100.");
         }
+
         LitHeightDisplayScale = Scale;
     }
 
@@ -96,6 +98,7 @@ namespace MDSS
         InitialCamera = MainCamera;
         InitialTransforms.clear();
         InitialTransforms.reserve(StaticMeshInstances.size());
+
         for (const FStaticMeshInstance& Instance : StaticMeshInstances)
             InitialTransforms.push_back(Instance.GetTransform());
     }
@@ -104,6 +107,7 @@ namespace MDSS
     {
         MainCamera = InitialCamera;
         const std::size_t Count = std::min(StaticMeshInstances.size(), InitialTransforms.size());
+
         for (std::size_t Index = 0; Index < Count; ++Index)
             StaticMeshInstances[Index].GetTransform() = InitialTransforms[Index];
         if (DemoAnimation)
@@ -133,22 +137,27 @@ namespace MDSS
     {
         return DemoAnimationPath;
     }
+
     bool FScene::HasDemoAnimation() const noexcept
     {
         return DemoAnimation.has_value();
     }
+
     bool FScene::HasDemoContactEvents() const noexcept
     {
         return DemoAnimation && !DemoAnimation->ContactEvents.empty();
     }
+
     bool FScene::IsDemoAnimationPlaying() const noexcept
     {
         return bDemoAnimationPlaying;
     }
+
     float FScene::GetDemoAnimationTime() const noexcept
     {
         return DemoAnimationTime;
     }
+
     float FScene::GetDemoAnimationDuration() const noexcept
     {
         return DemoAnimation ? DemoAnimation->DurationSeconds : 0.0F;
@@ -195,10 +204,12 @@ namespace MDSS
     std::vector<FDemoAnimationClip::FContactEvent> FScene::AdvanceDemoAnimation(float DeltaTime)
     {
         std::vector<FDemoAnimationClip::FContactEvent> Fired;
+
         if (!DemoAnimation || !bDemoAnimationPlaying || !std::isfinite(DeltaTime) || DeltaTime <= 0.0F)
             return Fired;
         const float PreviousTime = DemoAnimationTime;
         DemoAnimationTime += DeltaTime;
+
         if (DemoAnimation->bLoop)
             DemoAnimationTime = std::fmod(DemoAnimationTime, DemoAnimation->DurationSeconds);
         else if (DemoAnimationTime >= DemoAnimation->DurationSeconds)
@@ -206,13 +217,16 @@ namespace MDSS
             DemoAnimationTime = DemoAnimation->DurationSeconds;
             bDemoAnimationPlaying = false;
         }
+
         ApplyDemoAnimation(*this, *DemoAnimation, DemoAnimationTime);
+
         for (const auto& Event : DemoAnimation->ContactEvents)
         {
             if ((Event.Time > PreviousTime || (PreviousTime == 0.0F && Event.Time == 0.0F)) &&
                 Event.Time <= DemoAnimationTime)
                 Fired.push_back(Event);
         }
+
         return Fired;
     }
 

@@ -44,6 +44,7 @@ namespace MDSS::Asset
                 std::size_t Hash = static_cast<std::size_t>(Key.Position + 1);
                 Hash ^= static_cast<std::size_t>(Key.Normal + 1) * 0x9e3779b9U + (Hash << 6U) + (Hash >> 2U);
                 Hash ^= static_cast<std::size_t>(Key.UV + 1) * 0x85ebca6bU + (Hash << 6U) + (Hash >> 2U);
+
                 return Hash;
             }
         };
@@ -54,6 +55,7 @@ namespace MDSS::Asset
             {
                 throw std::runtime_error("OBJ face contains a missing position index.");
             }
+
             const std::size_t Base = static_cast<std::size_t>(Index) * 3U;
             return {Attrib.vertices.at(Base), Attrib.vertices.at(Base + 1U), Attrib.vertices.at(Base + 2U)};
         }
@@ -64,6 +66,7 @@ namespace MDSS::Asset
             {
                 return {0.0F, 0.0F, 0.0F};
             }
+
             const std::size_t Base = static_cast<std::size_t>(Index) * 3U;
             return {Attrib.normals.at(Base), Attrib.normals.at(Base + 1U), Attrib.normals.at(Base + 2U)};
         }
@@ -74,7 +77,9 @@ namespace MDSS::Asset
             {
                 return {0.0F, 0.0F};
             }
+
             const std::size_t Base = static_cast<std::size_t>(Index) * 2U;
+
             // OBJ's conventional V axis has the opposite image-space direction from Vulkan texture coordinates.
             return {Attrib.texcoords.at(Base), 1.0F - Attrib.texcoords.at(Base + 1U)};
         }
@@ -120,6 +125,7 @@ namespace MDSS::Asset
 
         FOBJLoadResult Result{};
         Result.Materials.reserve(Materials.size());
+
         for (const tinyobj::material_t& Material : Materials)
         {
             Result.Materials.push_back(FMTLLoader::Convert(Material, BaseDirectory));
@@ -135,6 +141,7 @@ namespace MDSS::Asset
             {
                 return Existing->second;
             }
+
             const SurfaceState::FSurfaceLocalID Surface =
                 static_cast<SurfaceState::FSurfaceLocalID>(MaterialSurfaces.size());
             MaterialSurfaces.emplace(MaterialIndex, Surface);
@@ -144,6 +151,7 @@ namespace MDSS::Asset
         auto AppendVertex = [&](const tinyobj::index_t& Index) -> std::uint32_t
         {
             const FVertexKey Key{Index.vertex_index, Index.normal_index, Index.texcoord_index};
+
             if (const auto Existing = UniqueVertices.find(Key); Existing != UniqueVertices.end())
             {
                 return Existing->second;
@@ -164,9 +172,11 @@ namespace MDSS::Asset
         for (const tinyobj::shape_t& Shape : Shapes)
         {
             std::size_t IndexOffset = 0;
+
             for (std::size_t Face = 0; Face < Shape.mesh.num_face_vertices.size(); ++Face)
             {
                 const int VertexCount = Shape.mesh.num_face_vertices[Face];
+
                 if (VertexCount != 3)
                 {
                     throw std::runtime_error("OBJ triangulation did not produce a triangle face.");
@@ -185,6 +195,7 @@ namespace MDSS::Asset
                 std::uint32_t Triangle[3]{};
                 std::int32_t  OriginalPositions[3]{};
                 std::int32_t  OriginalUVs[3]{};
+
                 for (int VertexIndex = 0; VertexIndex < 3; ++VertexIndex)
                 {
                     const tinyobj::index_t& ObjIndex =
@@ -204,9 +215,11 @@ namespace MDSS::Asset
                 const glm::vec3 Edge1 = Result.Vertices[Triangle[1]].Position - Result.Vertices[Triangle[0]].Position;
                 const glm::vec3 Edge2 = Result.Vertices[Triangle[2]].Position - Result.Vertices[Triangle[0]].Position;
                 const glm::vec3 FaceNormal = glm::cross(Edge1, Edge2);
+
                 if (glm::dot(FaceNormal, FaceNormal) > 1.0e-12F)
                 {
                     const glm::vec3 NormalizedFaceNormal = glm::normalize(FaceNormal);
+
                     for (std::uint32_t Index : Triangle)
                     {
                         if (glm::dot(Result.Vertices[Index].Normal, Result.Vertices[Index].Normal) <= 1.0e-12F)
@@ -277,6 +290,7 @@ namespace MDSS::Asset
             const glm::vec2 UV2 = Vertices[I2].UV - Vertices[I0].UV;
 
             const float Determinant = UV1.x * UV2.y - UV1.y * UV2.x;
+
             if (std::abs(Determinant) <= 1.0e-8F)
             {
                 continue;

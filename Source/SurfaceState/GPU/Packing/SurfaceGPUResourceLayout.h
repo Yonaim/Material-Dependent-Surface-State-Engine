@@ -24,10 +24,12 @@ namespace MDSS::SurfaceState
         std::vector<std::uint32_t>   TexelProfileIndices;
         std::vector<FSurfaceGPUVec4> Positions;
         std::vector<FSurfaceGPUVec4> Normals;
+
         // xyz: Meso normal; w: maximum Meso height in the same surface/chart.
         std::vector<FSurfaceGPUVec4>            MesoNormals;
         std::vector<FSurfaceGPUGeometryScalar>  GeometryScalars;
         std::vector<FSurfaceGPUNeighborIndices> NeighborIndices;
+
         // Eight 4-bit reverse direction indices per texel; 0xf means no reciprocal neighbor.
         std::vector<std::uint32_t>           ReverseNeighborDirectionIndices;
         std::vector<FSurfaceGPUSurfaceRange> SurfaceRanges;

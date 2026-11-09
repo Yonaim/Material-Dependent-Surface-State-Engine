@@ -24,6 +24,7 @@ namespace MDSS::SurfaceState
         }
 
         const std::uint64_t TexelCount = static_cast<std::uint64_t>(Width) * Height;
+
         if (TexelCount > std::numeric_limits<FLocalTexelIndex>::max())
         {
             throw std::overflow_error("Surface resolution exceeds the supported local texel index range.");
@@ -58,12 +59,15 @@ namespace MDSS::SurfaceState
             {
                 throw std::invalid_argument("InvalidSurfaceID is reserved and cannot identify a Surface.");
             }
+
             if (Definition.ID != Surfaces.size())
             {
                 throw std::invalid_argument("TSurfaceLocalID values must be dense and ordered from zero.");
             }
+
             const std::size_t SurfaceTexelCount = Definition.Resolution.GetTexelCount();
             FirstTexel += SurfaceTexelCount;
+
             if (FirstTexel > std::numeric_limits<FLocalTexelIndex>::max())
             {
                 throw std::overflow_error("Combined Surface resolution exceeds the local texel index range.");
@@ -112,15 +116,18 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("SurfaceProfileMap must contain one entry per texel.");
         }
+
         for (std::size_t Index = 0; Index < Texels.size(); ++Index)
         {
             const bool bValidTexel = Texels[Index].IsValid();
             const bool bHasProfile = NewProfileMap[Index] != InvalidSurfaceProfileIndex;
+
             if (!bValidTexel && bHasProfile)
             {
                 throw std::invalid_argument("Invalid texels must use InvalidSurfaceProfileIndex.");
             }
         }
+
         ProfileMap = std::move(NewProfileMap);
     }
 
@@ -130,6 +137,7 @@ namespace MDSS::SurfaceState
         {
             throw std::out_of_range("Texel index is not present in SurfaceProfileMap.");
         }
+
         return ProfileMap[Texel];
     }
 

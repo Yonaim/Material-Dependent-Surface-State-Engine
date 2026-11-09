@@ -31,6 +31,7 @@ int main(int Argc, char* Argv[])
     catch (const std::invalid_argument& Exception)
     {
         std::cerr << Exception.what() << '\n' << MDSS::GetApplicationUsage() << '\n';
+
         return 2;
     }
 
@@ -45,6 +46,7 @@ int main(int Argc, char* Argv[])
     catch (const std::exception& Exception)
     {
         MDSS::FLogger::Error("TApplication", std::string("Fatal error: ") + Exception.what());
+
         return 1;
     }
 

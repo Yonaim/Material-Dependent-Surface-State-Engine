@@ -49,6 +49,7 @@ namespace MDSS
         void CaptureInitialState();
         /** @brief 저장된 초기 Transform과 animation key를 적용하고 animation 시간을 되돌린다. */
         void RestoreInitialState();
+
         // Demo animation state
         void SetDemoAnimation(std::filesystem::path Path, FDemoAnimationClip Clip);
         [[nodiscard]] const std::filesystem::path&             GetDemoAnimationPath() const noexcept;

@@ -97,9 +97,11 @@ namespace MDSS::SurfaceState
         glm::mat4                               ModelMatrix{1.0F};
         glm::vec3                               GravityWorld{0.0F, 0.0F, -1.0F};
         std::uint32_t                           SolverFlags = 0U;
+
         // State-driven geometry updates need height after each substep; otherwise height is only needed before
         // rendering.
         bool bPrepareAccumulationHeight = true;
+
         // CPU contact distribution이 sparse input group list를 업로드한 경우 reset/merge pass를 반드시 기록한다.
         bool bHasInputActivation = false;
     };
@@ -138,6 +140,7 @@ namespace MDSS::SurfaceState
         {
             bRuntimeFlagsEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsRuntimeFlagsEnabled() const noexcept
         {
             return bRuntimeFlagsEnabled;
@@ -145,6 +148,7 @@ namespace MDSS::SurfaceState
 
     private:
         bool bRuntimeFlagsEnabled = true;
+
         // Compute pipeline creation
         static VkShaderModule CreateShaderModule(VkDevice Device, const char* Path);
         static VkPipeline     CreateComputePipeline(VkDevice Device, VkPipelineLayout Layout, const char* ShaderPath);

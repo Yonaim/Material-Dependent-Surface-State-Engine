@@ -20,10 +20,12 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -111,44 +113,54 @@ namespace MDSS::SurfaceState
         {
             return Execution.bRawFluxCacheEnabled;
         }
+
         void SetRawFluxCacheEnabled(bool bEnabled) noexcept
         {
             Execution.bRawFluxCacheEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept
         {
             return Execution.bCoalescedRawFluxLayoutEnabled;
         }
+
         void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept
         {
             Execution.bCoalescedRawFluxLayoutEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept
         {
             return Execution.bHalfRawFluxCacheEnabled;
         }
+
         void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
         {
             Execution.bHalfRawFluxCacheEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsHalfDynamicWeightsEnabled() const noexcept
         {
             return Execution.bHalfDynamicWeightsEnabled;
         }
+
         void SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
         void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
         {
             if (GPUResources)
                 GPUResources->TrimRenderMeshVariants(Surface, Overlay);
         }
+
         void SetAdaptiveGeometryEnabled(bool bEnabled) noexcept
         {
             Execution.bAdaptiveGeometryEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsAdaptiveGeometryEnabled() const noexcept
         {
             return Execution.bAdaptiveGeometryEnabled;
         }
+
         void PrepareScratchStorage()
         {
             if (GPUResources && GPUResources->ConfigureScratchStorage(Context,
@@ -161,54 +173,66 @@ namespace MDSS::SurfaceState
                 Execution.bForceFullGeometryOnNextStep = true;
             }
         }
+
         void SetCompactScratchStorageEnabled(bool bEnabled) noexcept
         {
             Execution.bCompactScratchStorageEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsCompactScratchStorageEnabled() const noexcept
         {
             return Execution.bCompactScratchStorageEnabled;
         }
+
         void SetRuntimeSolverFlagsEnabled(bool bEnabled) noexcept
         {
             if (Solver)
                 Solver->SetRuntimeFlagsEnabled(bEnabled);
         }
+
         [[nodiscard]] bool IsRuntimeSolverFlagsEnabled() const noexcept
         {
             return Solver && Solver->IsRuntimeFlagsEnabled();
         }
+
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept
         {
             return Execution.bSparseSolverEnabled;
         }
+
         void               SetSparseSolverEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept
         {
             return Execution.bSparseAccumulationHeightEnabled;
         }
+
         void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept
         {
             Execution.bSparseAccumulationHeightEnabled = bEnabled;
         }
+
         [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept
         {
             return Execution.bActiveChannelMaskEnabled;
         }
+
         void               SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsPerWorkgroupChannelMaskEnabled() const noexcept
         {
             return Execution.bPerWorkgroupChannelMaskEnabled;
         }
+
         void               SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept
         {
             return Execution.bSparseSimulationGeometryEnabled;
         }
+
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept
         {
             Execution.bSparseSimulationGeometryEnabled = bEnabled;
         }
+
         [[nodiscard]] const FSurfaceGPUResourceManager& GetGPUResources() const noexcept;
         [[nodiscard]] FSurfaceGPUBufferPool&            GetReusableBufferPool() noexcept
         {

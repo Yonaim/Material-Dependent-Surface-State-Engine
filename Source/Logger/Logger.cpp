@@ -47,6 +47,7 @@ namespace MDSS
                 return isatty(fileno(stdout)) != 0;
 #endif
             }
+
             if (&Stream == &std::cerr)
             {
 #if defined(_WIN32)
@@ -55,6 +56,7 @@ namespace MDSS
                 return isatty(fileno(stderr)) != 0;
 #endif
             }
+
             return false;
         }
 
@@ -75,6 +77,7 @@ namespace MDSS
                 case ELogLevel::Count:
                     break;
             }
+
             return "\033[0m";
         }
     } // namespace
@@ -120,6 +123,7 @@ namespace MDSS
 
         // Keep terminal output and FDebugUI backed by the exact same formatted entry.
         std::ostream& Stream = (Level == ELogLevel::Warning || Level == ELogLevel::Error) ? std::cerr : std::cout;
+
         if (IsTerminal(Stream))
         {
             Stream << GetAnsiColor(Level) << Formatted << "\033[0m\n";
@@ -128,6 +132,7 @@ namespace MDSS
         {
             Stream << Formatted << '\n';
         }
+
         Stream.flush();
 
         if (Storage.Entries.size() >= MaxRetainedEntries)
@@ -193,6 +198,7 @@ namespace MDSS
             case ELogLevel::Count:
                 break;
         }
+
         return "UNKNOWN";
     }
 #pragma endregion

@@ -11,6 +11,7 @@ namespace MDSS
 {
     class FDebugUI;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceStateSystem;
@@ -26,6 +27,7 @@ namespace MDSS
 
         // Called after the frame fence wait, before swapchain acquisition.
         bool BeginFrame(FDebugUI& DebugUI, float DeltaTime, bool bSuspendClock);
+
         // Consume time only after an image was acquired so skipped frames retain their budget.
         void PrepareSteps(FDebugUI& DebugUI, bool bResetState);
         void RecordSimulation(VkCommandBuffer CommandBuffer,
@@ -39,26 +41,32 @@ namespace MDSS
         {
             return Steps;
         }
+
         [[nodiscard]] std::uint32_t GetStepCount() const noexcept
         {
             return static_cast<std::uint32_t>(Steps.size());
         }
+
         [[nodiscard]] double GetPendingSeconds() const noexcept
         {
             return Clock.GetPendingSeconds();
         }
+
         [[nodiscard]] double GetSimulatedSeconds() const noexcept
         {
             return Clock.GetSimulatedSeconds();
         }
+
         [[nodiscard]] float GetMaximumStep() const noexcept
         {
             return MaximumStep;
         }
+
         [[nodiscard]] float GetDroppedSeconds() const noexcept
         {
             return DroppedSeconds;
         }
+
         [[nodiscard]] std::uint64_t GetStepSerial() const noexcept
         {
             return StepSerial;

@@ -9,6 +9,7 @@ namespace MDSS::SurfaceState
     void ValidateSurfaceReactions(const FSurfaceResponseProfileData& Data)
     {
         std::set<std::string> IDs;
+
         for (const auto& R : Data.Reactions)
         {
             const std::string P = "reactions." + R.ID + ".";
@@ -26,6 +27,7 @@ namespace MDSS::SurfaceState
             auto Terms = [&](const auto& Values)
             {
                 std::set<std::string> Seen;
+
                 for (const auto& T : Values)
                 {
                     State(T.State);
@@ -36,14 +38,17 @@ namespace MDSS::SurfaceState
             Terms(R.Consumes);
             Terms(R.Produces);
             Require(std::isfinite(R.RateCoefficient) && R.RateCoefficient >= 0, "rate.coefficient");
+
             if (R.Mode == EReactionMode::Continuous && R.RateModel == EReactionRateModel::StateProportional)
             {
                 State(R.RateState);
                 bool bFound = false;
+
                 for (const auto& T : R.Consumes)
                     bFound |= T.State == R.RateState;
                 Require(bFound, "rate.state must be consumed");
             }
+
             if (R.RateModel == EReactionRateModel::MassAction)
                 Require(!R.Factors.empty(), "rate.factors");
             for (const auto& F : R.Factors)
@@ -52,6 +57,7 @@ namespace MDSS::SurfaceState
                 Require(std::isfinite(F.Reference) && F.Reference > 0, "factor.reference");
                 Require(std::isfinite(F.Exponent) && F.Exponent > 0, "factor.exponent");
             }
+
             for (const auto& M : R.Modifiers)
             {
                 State(M.State);
@@ -59,10 +65,12 @@ namespace MDSS::SurfaceState
                 Require(std::isfinite(M.Threshold) && M.Threshold >= 0, "modifier.threshold");
                 Require(std::isfinite(M.Scale) && M.Scale > 0, "modifier.scale");
             }
+
             if (R.Mode == EReactionMode::InflowFraction)
             {
                 State(R.InflowState);
                 bool bFound = false;
+
                 for (const auto& T : R.Consumes)
                     bFound |= T.State == R.InflowState;
                 Require(bFound, "inflowState must be consumed");

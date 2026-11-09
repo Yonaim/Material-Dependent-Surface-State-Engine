@@ -55,6 +55,7 @@ namespace MDSS
         {
             return std::nullopt;
         }
+
         if (State == SurfaceState::InvalidStateId || Strength < 0.0F || Radius <= 0.0F || Falloff < 0.0F)
         {
             FLogger::Warning("TInputSystem",
@@ -63,6 +64,7 @@ namespace MDSS
         }
 
         const glm::vec3 Direction = Camera.GetTarget() - Camera.GetPosition();
+
         if (glm::dot(Direction, Direction) <= 1.0e-12F)
         {
             FLogger::Warning("TInputSystem", "Ignored debug contact because the camera has no forward direction.");
@@ -70,11 +72,13 @@ namespace MDSS
         }
 
         const FSurfaceRayHit Hit = FRaycaster::Cast(Scene, Assets, Camera.GetPosition(), Direction);
+
         if (!Hit.bHit)
         {
             FLogger::Warning("TInputSystem", "Debug contact missed all front-facing mesh triangles.");
             return std::nullopt;
         }
+
         if (Hit.InstanceIndex >= Scene.GetStaticMeshInstances().size() ||
             Hit.InstanceIndex >= static_cast<std::size_t>(SurfaceState::InvalidSurfaceInstanceID))
         {
@@ -83,6 +87,7 @@ namespace MDSS
         }
 
         const FStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[Hit.InstanceIndex];
+
         if (!SurfaceData.HasSurfaceData(Instance.GetSurfaceData()))
         {
             FLogger::Warning("TInputSystem", "Raycast hit a Mesh instance without Surface simulation data.");
@@ -101,12 +106,14 @@ namespace MDSS
         Contact.Shape = Shape;
         Contact.SecondaryRadius = SecondaryRadius;
         Contact.RotationDegrees = RotationDegrees;
+
         if (Shape != SurfaceState::ESurfaceContactShape::Circle)
         {
             Contact.bPlanar = true;
             Contact.PlaneNormal = Hit.WorldNormal;
             Contact.PlaneHalfDepth = Radius;
         }
+
         Contact.TexelSearchRadius = TexelSearchRadius;
         Contact.bHasSimulationMapping = true;
         Contact.TargetTriangle = Hit.TriangleID;

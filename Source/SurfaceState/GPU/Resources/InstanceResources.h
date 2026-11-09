@@ -26,6 +26,7 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     struct FSurfaceScratchStorageFormat
@@ -39,6 +40,7 @@ namespace MDSS::SurfaceState
     class FSurfaceDataManager;
     class FSurfaceGPUBufferPool;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -67,6 +69,7 @@ namespace MDSS::SurfaceState
                                      FSurfaceScratchStorageFormat        Storage = {},
                                      std::uint32_t                       MaxReactionCount = 0);
         void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
+
         // Caller must wait for GPU completion and rebuild descriptors when this returns true.
         bool ConfigureScratchStorage(VkPhysicalDevice PhysicalDevice,
                                      VkDevice         Device,
@@ -79,10 +82,12 @@ namespace MDSS::SurfaceState
         {
             return *ReactionScratchBuffer;
         }
+
         [[nodiscard]] std::uint32_t GetReactionCapacity() const noexcept
         {
             return ReactionCapacity;
         }
+
         // State and geometry buffers
         [[nodiscard]] const GPU::FGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const GPU::FGPUBuffer& GetStateBBuffer() const noexcept;
@@ -97,10 +102,10 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::FGPUBuffer& GetAccumulationHeightBuffer() const noexcept;
 
         // Instance data updates and reset
-        void                      UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
-        void                      UpdateTransferWeights(const std::vector<float>&           TransferWeights,
-                                                        const std::vector<FSurfaceGPUVec4>& TransferWeightDebugAverages = {},
-                                                        bool                                bHalfPrecision = false);
+        void UpdateWorldTexelAreas(const std::vector<float>& WorldTexelAreas);
+        void UpdateTransferWeights(const std::vector<float>&           TransferWeights,
+                                   const std::vector<FSurfaceGPUVec4>& TransferWeightDebugAverages = {},
+                                   bool                                bHalfPrecision = false);
         [[nodiscard]] std::size_t GetTexelCount() const noexcept;
         [[nodiscard]] std::size_t GetChannelCount() const noexcept;
         void                      ResetState(const std::vector<float>& OutgoingFluxScale);

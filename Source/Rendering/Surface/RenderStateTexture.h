@@ -35,6 +35,7 @@ namespace MDSS::Rendering
         {
             return Layout;
         }
+
         // Descriptor access and texture command recording
         [[nodiscard]] VkDescriptorSet GetSet(std::size_t Instance, bool bSmoothed = false) const noexcept;
         void                          Record(VkCommandBuffer                                 Command,

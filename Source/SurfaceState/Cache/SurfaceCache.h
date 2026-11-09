@@ -28,6 +28,7 @@ namespace MDSS::SurfaceState
     public:
         // Bump whenever mapping, sampling, integration or derivative rules change.
         static constexpr std::uint32_t PreprocessVersion = 4;
+
         // Version 4 includes local texel area vectors; older caches are rebuilt.
         static constexpr std::uint32_t FormatVersion = 4;
 

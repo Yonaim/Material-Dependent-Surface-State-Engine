@@ -130,6 +130,7 @@ namespace MDSS::Rendering
     {
         std::uint32_t AccumulationComponent = 0;
         float         DisplacementScale = 1.0F;
+
         // 0: shaded surface, 1: grid overlay, 2: grid on a dark surface.
         std::uint32_t HeightGridMode = 0;
         std::uint32_t HeightGridBlockSize = 8;

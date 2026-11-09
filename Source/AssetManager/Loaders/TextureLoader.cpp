@@ -26,6 +26,7 @@ namespace MDSS::Asset
         int Channels = 0;
 
         stbi_uc* Pixels = stbi_load(Path.string().c_str(), &Width, &Height, &Channels, STBI_rgb_alpha);
+
         if (Pixels == nullptr)
         {
             const char* Reason = stbi_failure_reason();

@@ -37,6 +37,7 @@ namespace MDSS::SurfaceState
     float FSurfaceStateSystem::GetMaximumStableDeltaTime()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
+
         if (Execution.StableDeltaTimeModelMatrices.size() != Instances.size())
             Execution.bStableDeltaTimeDirty = true;
         for (std::size_t I = 0; I < Instances.size(); ++I)
@@ -44,17 +45,20 @@ namespace MDSS::SurfaceState
             if (!GPUResources->GetInstanceDescriptors(I) || I >= Execution.StableDeltaTimeModelMatrices.size())
                 continue;
             const glm::mat3 Model(Instances[I].GetTransform().GetMatrix());
+
             for (glm::length_t Column = 0; Column < 3; ++Column)
                 for (glm::length_t Row = 0; Row < 3; ++Row)
                     if (Execution.StableDeltaTimeModelMatrices[I][Column][Row] != Model[Column][Row])
                         Execution.bStableDeltaTimeDirty = true;
         }
+
         if (!Execution.bStableDeltaTimeDirty)
             return Execution.CachedMaximumStableDeltaTime;
 
         double     Limit = 1.0 / 60.0;
         const bool bSatEnabled = Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::SaturationDrive);
         const bool bGeoEnabled = Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::GeometryDrive);
+
         for (std::size_t I = 0; I < Instances.size(); ++I)
         {
             if (!GPUResources->GetInstanceDescriptors(I))
@@ -75,16 +79,20 @@ namespace MDSS::SurfaceState
             for (std::size_t T = 0; T < Texels.size(); ++T)
             {
                 const auto Profile = Geometry.GetProfileIndex(static_cast<FLocalTexelIndex>(T));
+
                 if (!Texels[T].IsValid() || Profile >= Profiles.size())
                     continue;
                 const double AreaScale = GetSurfaceWorldTexelArea(Texels[T], Model) / SurfaceStateReferenceArea;
+
                 if (AreaScale <= 0.0)
                     continue;
                 double          WeightSum = 0.0, HeightWeightSum = 0.0;
                 const glm::vec3 Position = Texels[T].Position + Texels[T].Normal * Texels[T].Geometry.MesoVirtualHeight;
+
                 for (std::size_t D = 0; D < SurfaceNeighborCount; ++D)
                 {
                     const auto N = Texels[T].NeighborIndices[D];
+
                     if (N >= Texels.size())
                         continue;
                     const double W = Weights[T * SurfaceNeighborCount + D];
@@ -94,11 +102,13 @@ namespace MDSS::SurfaceState
                     // DirectionDrive <= 1; use an upper bound including both gravity directions.
                     HeightWeightSum += W * std::abs((Linear * (Target - Position)).z);
                 }
+
                 for (const auto& [Name, Original] : Assets.GetSRProfile(Profiles[Profile]).GetData().States)
                 {
                     const FStateId State = SurfaceData.GetSurfaceStateRegistry().GetStateId(Name);
                     const auto     Override = RuntimeProfileOverrides.find({Profiles[Profile], State});
                     const auto&    P = Override == RuntimeProfileOverrides.end() ? Original : Override->second;
+
                     // SaturationDrive <= source saturation; Geometry uses the same unclamped mobility.
                     const double RateBound =
                         (bSatEnabled ? BaseSaturationTransferRate * P.SaturationTransferFactor * WeightSum : 0.0) +
@@ -108,8 +118,10 @@ namespace MDSS::SurfaceState
                 }
             }
         }
+
         Execution.CachedMaximumStableDeltaTime = static_cast<float>(Limit);
         Execution.StableDeltaTimeModelMatrices.resize(Instances.size());
+
         for (std::size_t I = 0; I < Instances.size(); ++I)
             Execution.StableDeltaTimeModelMatrices[I] = glm::mat3(Instances[I].GetTransform().GetMatrix());
         Execution.bStableDeltaTimeDirty = false;
@@ -134,6 +146,7 @@ namespace MDSS::SurfaceState
                 Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight),
                 Execution.bHalfDynamicWeightsEnabled);
         }
+
         Execution.bTransferWeightSettingsDirty = false;
         Execution.bForceFullGeometryOnNextStep = true;
     }

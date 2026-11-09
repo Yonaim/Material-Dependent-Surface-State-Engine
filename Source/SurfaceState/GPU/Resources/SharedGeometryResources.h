@@ -33,11 +33,13 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
     class FSurfaceGPUBufferPool;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -102,26 +104,32 @@ namespace MDSS::SurfaceState
         {
             return FullTexelMesh.IndexBuffer.get();
         }
+
         [[nodiscard]] const GPU::FGPUBuffer* GetTexelMeshVertexBuffer() const noexcept
         {
             return FullTexelMesh.VertexBuffer.get();
         }
+
         [[nodiscard]] const GPU::FGPUBuffer* GetTexelMeshBoundaryBuffer() const noexcept
         {
             return FullTexelMesh.BoundaryBuffer.get();
         }
+
         [[nodiscard]] std::uint32_t GetTexelMeshVertexCount() const noexcept
         {
             return FullTexelMesh.VertexCount;
         }
+
         [[nodiscard]] std::uint32_t GetTexelMeshBoundaryCount() const noexcept
         {
             return FullTexelMesh.BoundaryCount;
         }
+
         [[nodiscard]] const std::vector<FSurfaceTexelMeshRange>& GetTexelMeshRanges() const noexcept
         {
             return FullTexelMesh.Ranges;
         }
+
         [[nodiscard]] const FSurfaceTexelMeshGPUVariant& GetTexelMeshVariant(std::uint32_t RenderResolution) const
         {
             if (RenderResolution == SimulationResolution)
@@ -129,10 +137,12 @@ namespace MDSS::SurfaceState
             if (!IsSurfaceRenderMeshResolution(RenderResolution))
                 throw std::invalid_argument("Unsupported render mesh resolution.");
             auto Found = TexelMeshVariants.find(RenderResolution);
+
             if (Found == TexelMeshVariants.end())
                 Found = TexelMeshVariants.emplace(RenderResolution, MeshVariantFactory(RenderResolution)).first;
             return Found->second;
         }
+
         // GPU-idle only. The simulation-resolution mesh remains available to topology/debug consumers.
         void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
         {

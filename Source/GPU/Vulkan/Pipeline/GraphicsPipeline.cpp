@@ -21,12 +21,14 @@ namespace MDSS::GPU
         std::vector<std::uint32_t> ReadSpirvFile(const char* Path)
         {
             std::ifstream File(Path, std::ios::ate | std::ios::binary);
+
             if (!File.is_open())
             {
                 throw std::runtime_error(std::string("Failed to open shader file: ") + Path);
             }
 
             const std::streamsize Size = File.tellg();
+
             if (Size <= 0 || (Size % static_cast<std::streamsize>(sizeof(std::uint32_t))) != 0)
             {
                 throw std::runtime_error(std::string("Invalid SPIR-V file size: ") + Path);
@@ -148,10 +150,12 @@ namespace MDSS::GPU
             ColorBlending.pAttachments = &ColorBlendAttachment;
 
             std::vector<VkDynamicState> DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
             if (Config.bDynamicLineWidth)
             {
                 DynamicStates.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
             }
+
             VkPipelineDynamicStateCreateInfo DynamicState{};
             DynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             DynamicState.dynamicStateCount = static_cast<std::uint32_t>(DynamicStates.size());
@@ -201,11 +205,13 @@ namespace MDSS::GPU
             {
                 vkDestroyShaderModule(Device, Module, nullptr);
             }
+
             if (PipelineLayout != VK_NULL_HANDLE)
             {
                 vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
                 PipelineLayout = VK_NULL_HANDLE;
             }
+
             throw;
         }
 
@@ -222,6 +228,7 @@ namespace MDSS::GPU
             vkDestroyPipeline(Device, Pipeline, nullptr);
             Pipeline = VK_NULL_HANDLE;
         }
+
         if (PipelineLayout != VK_NULL_HANDLE)
         {
             vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
@@ -263,10 +270,12 @@ namespace MDSS::GPU
         CreateInfo.pCode = Code.data();
 
         VkShaderModule Module = VK_NULL_HANDLE;
+
         if (vkCreateShaderModule(Device, &CreateInfo, nullptr, &Module) != VK_SUCCESS)
         {
             throw std::runtime_error(std::string("Failed to create shader module: ") + Path);
         }
+
         return Module;
     }
 #pragma endregion

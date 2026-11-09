@@ -19,11 +19,14 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("Cannot pack an empty Surface Profile table.");
         }
+
         const std::size_t ChannelCount = Registry.GetStateCount();
+
         if (ChannelCount == 0)
         {
             throw std::invalid_argument("Cannot pack Surface Profiles without registered State channels.");
         }
+
         if (Profiles.size() > std::numeric_limits<std::size_t>::max() / ChannelCount)
         {
             throw std::overflow_error("Surface Profile table element count overflowed.");
@@ -37,9 +40,11 @@ namespace MDSS::SurfaceState
         for (std::size_t ProfileIndex = 0; ProfileIndex < Profiles.size(); ++ProfileIndex)
         {
             const FRegisteredSurfaceResponseProfileData Resolved = Registry.ResolveProfile(Profiles[ProfileIndex]);
+
             for (std::size_t ChannelIndex = 0; ChannelIndex < ChannelCount; ++ChannelIndex)
             {
                 const std::size_t RecordIndex = ProfileIndex * ChannelCount + ChannelIndex;
+
                 if (!Resolved.States[ChannelIndex].has_value())
                 {
                     continue;
@@ -72,9 +77,11 @@ namespace MDSS::SurfaceState
                 throw std::overflow_error("Reaction table exceeds uint offsets.");
             return static_cast<std::uint32_t>(Words.size());
         };
+
         for (std::size_t P = 0; P < Profiles.size(); ++P)
         {
             auto Rules = Profiles[P].Reactions;
+
             for (const auto& T : Profiles[P].Transitions)
             {
                 if (!Profiles[P].States.contains(T.Source) || !Profiles[P].States.contains(T.Target))
@@ -89,6 +96,7 @@ namespace MDSS::SurfaceState
                                        1.0F});
                 Rules.push_back(R);
             }
+
             std::erase_if(Rules, [](const auto& R) { return !R.bEnabled; });
             const auto Count = static_cast<std::uint32_t>(Rules.size());
             Result.MaxReactionCount = std::max(Result.MaxReactionCount, Count);
@@ -96,6 +104,7 @@ namespace MDSS::SurfaceState
             Words[5U + P * 4U] = Count;
             const auto Start = Offset();
             Words.resize(Words.size() + Count * 16U, 0U);
+
             for (std::uint32_t N = 0; N < Count; ++N)
             {
                 const auto& R = Rules[N];
@@ -111,6 +120,7 @@ namespace MDSS::SurfaceState
                 {
                     Words[B + Field] = Offset();
                     Words[B + Field + 1] = static_cast<std::uint32_t>(Terms.size());
+
                     for (const auto& T : Terms)
                     {
                         Words.push_back(Registry.GetStateId(T.State));
@@ -121,6 +131,7 @@ namespace MDSS::SurfaceState
                 Terms(R.Produces, 10);
                 Words[B + 12] = Offset();
                 Words[B + 13] = static_cast<std::uint32_t>(R.Modifiers.size());
+
                 for (const auto& M : R.Modifiers)
                 {
                     Words.insert(Words.end(),
@@ -129,12 +140,15 @@ namespace MDSS::SurfaceState
                                   Bits(M.Threshold),
                                   Bits(M.Scale)});
                 }
+
                 Words[B + 14] = Offset();
                 Words[B + 15] = static_cast<std::uint32_t>(R.Factors.size());
+
                 for (const auto& F : R.Factors)
                     Words.insert(Words.end(), {Registry.GetStateId(F.State), Bits(F.Reference), Bits(F.Exponent)});
             }
         }
+
         Words[1] = Result.MaxReactionCount;
         return Result;
     }
@@ -145,10 +159,12 @@ namespace MDSS::SurfaceState
         {
             throw std::out_of_range("Surface State channel index is outside the Registry range.");
         }
+
         if (TexelIndex > (std::numeric_limits<std::size_t>::max() - ChannelIndex) / ChannelCount)
         {
             throw std::overflow_error("Surface State scalar index overflowed.");
         }
+
         return TexelIndex * ChannelCount + ChannelIndex;
     }
 
@@ -159,10 +175,12 @@ namespace MDSS::SurfaceState
         {
             throw std::out_of_range("Surface Profile channel index is outside the Registry range.");
         }
+
         if (ProfileIndex > (std::numeric_limits<std::size_t>::max() - ChannelIndex) / ChannelCount)
         {
             throw std::overflow_error("Surface Profile record index overflowed.");
         }
+
         return ProfileIndex * ChannelCount + ChannelIndex;
     }
 
@@ -173,15 +191,19 @@ namespace MDSS::SurfaceState
         {
             throw std::invalid_argument("Surface GPU buffers require non-zero element count and stride.");
         }
+
         if (ElementCount > std::numeric_limits<std::size_t>::max() / ElementStride)
         {
             throw std::overflow_error("Surface GPU buffer byte size overflowed.");
         }
+
         const std::size_t ByteSize = ElementCount * ElementStride;
+
         if (ByteSize > MaxStorageBufferRange)
         {
             throw std::length_error("Surface GPU buffer exceeds maxStorageBufferRange.");
         }
+
         return ByteSize;
     }
 #pragma endregion

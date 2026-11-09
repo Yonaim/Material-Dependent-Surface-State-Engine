@@ -48,11 +48,11 @@ namespace MDSS::Rendering
             constexpr float           AxisHalfWidth = 0.035F;
             const glm::vec4           GridColor(1.0F);
             auto                      AddQuad = [&](glm::vec3            A,
-                               glm::vec3            B,
-                               glm::vec3            C,
-                               glm::vec3            D,
-                               glm::vec4            Color,
-                               std::array<float, 4> EdgeCoordinates)
+                                                    glm::vec3            B,
+                                                    glm::vec3            C,
+                                                    glm::vec3            D,
+                                                    glm::vec4            Color,
+                                                    std::array<float, 4> EdgeCoordinates)
             {
                 Vertices.insert(Vertices.end(),
                                 {{A, Color, EdgeCoordinates[0]},
@@ -102,6 +102,7 @@ namespace MDSS::Rendering
                     WorldAxisColors[2],
                     NoEdgeFade);
             AxisVertexCount = static_cast<std::uint32_t>(Vertices.size()) - GridVertexCount;
+
             return Vertices;
         }
 
@@ -117,6 +118,7 @@ namespace MDSS::Rendering
             const std::array<glm::vec3, 3> V = {glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0)};
             const auto&                    Colors = WorldAxisColors;
             Vertices.reserve(3U * static_cast<std::size_t>(Segments) * 9U);
+
             for (std::size_t Axis = 0; Axis < Axes.size(); ++Axis)
             {
                 const glm::vec4 Color = Colors[Axis];
@@ -127,6 +129,7 @@ namespace MDSS::Rendering
                     Vertices.push_back({World(B), Color});
                     Vertices.push_back({World(C), Color});
                 };
+
                 for (int I = 0; I < Segments; ++I)
                 {
                     const float     A0 = glm::two_pi<float>() * static_cast<float>(I) / Segments;
@@ -142,6 +145,7 @@ namespace MDSS::Rendering
                     PushTriangle(H0, H1, {0.0F, 0.0F, 1.0F});
                 }
             }
+
             return Vertices;
         }
 
@@ -155,9 +159,11 @@ namespace MDSS::Rendering
             const std::array<glm::vec3, 3> V = {glm::vec3(0, 0, 1), glm::vec3(1, 0, 0), glm::vec3(0, 1, 0)};
 
             Vertices.reserve(3U * static_cast<std::size_t>(Segments) * 6U);
+
             for (std::size_t Axis = 0; Axis < U.size(); ++Axis)
             {
                 const glm::vec4 Color = WorldAxisColors[Axis];
+
                 for (int Segment = 0; Segment < Segments; ++Segment)
                 {
                     const float     A0 = glm::two_pi<float>() * static_cast<float>(Segment) / Segments;
@@ -177,6 +183,7 @@ namespace MDSS::Rendering
                                      {Inner1, Color}});
                 }
             }
+
             return Vertices;
         }
 

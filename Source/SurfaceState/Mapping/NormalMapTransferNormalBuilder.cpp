@@ -58,10 +58,12 @@ namespace MDSS::SurfaceState
             const glm::vec3 Bottom = glm::mix(ReadNormal(X0, Y0 + 1), ReadNormal(X0 + 1, Y0 + 1), TX);
             const glm::vec3 Sample = glm::mix(Top, Bottom, TY);
             const float     SampleLengthSquared = glm::dot(Sample, Sample);
+
             if (!std::isfinite(SampleLengthSquared) || SampleLengthSquared <= NormalMapEpsilon)
             {
                 return false;
             }
+
             OutNormal = Sample / std::sqrt(SampleLengthSquared);
             return true;
         }
@@ -87,6 +89,7 @@ namespace MDSS::SurfaceState
 
         const Asset::FMeshTriangleSource& Triangle = Triangles[Texel.Triangle];
         const auto&                       VertexIndices = Triangle.RenderVertexIndices;
+
         if (Triangle.Surface != Texel.Surface || VertexIndices[0] >= Vertices.size() ||
             VertexIndices[1] >= Vertices.size() || VertexIndices[2] >= Vertices.size())
         {
@@ -97,6 +100,7 @@ namespace MDSS::SurfaceState
         const Asset::FVertex& V1 = Vertices[VertexIndices[1]];
         const Asset::FVertex& V2 = Vertices[VertexIndices[2]];
         const glm::vec2 UV = Texel.Barycentric.x * V0.UV + Texel.Barycentric.y * V1.UV + Texel.Barycentric.z * V2.UV;
+
         if (!std::isfinite(UV.x) || !std::isfinite(UV.y))
         {
             return false;
@@ -118,10 +122,12 @@ namespace MDSS::SurfaceState
         Tangent /= std::sqrt(TangentLengthSquared);
         const glm::vec3 Bitangent = glm::normalize(glm::cross(Normal, Tangent)) * (Handedness < 0.0F ? -1.0F : 1.0F);
         glm::vec3       NormalTS{};
+
         if (!SampleNormalMapLinearRepeat(NormalMap, UV, NormalTS))
         {
             return false;
         }
+
         if (bFlipNormalY)
         {
             NormalTS.y = -NormalTS.y;
@@ -129,10 +135,12 @@ namespace MDSS::SurfaceState
 
         const glm::vec3 NormalLocal = Tangent * NormalTS.x + Bitangent * NormalTS.y + Normal * NormalTS.z;
         const float     NormalLengthSquared = glm::dot(NormalLocal, NormalLocal);
+
         if (!std::isfinite(NormalLengthSquared) || NormalLengthSquared <= NormalMapEpsilon)
         {
             return false;
         }
+
         OutTransferNormal = NormalLocal / std::sqrt(NormalLengthSquared);
         return true;
     }

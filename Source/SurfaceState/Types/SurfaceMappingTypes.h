@@ -22,6 +22,7 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t    InvalidTriangleID = std::numeric_limits<std::uint32_t>::max();
     inline constexpr std::size_t      SurfaceNeighborCount = 8;
     inline constexpr std::uint32_t    SurfaceSimulationResolution = 256;
+
     // Fixed physical reference area; independent of the selected simulation resolution.
     inline constexpr float SurfaceStateReferenceArea = 1.0F / (256.0F * 256.0F);
 
@@ -52,6 +53,7 @@ namespace MDSS::SurfaceState
             if (Preset.Resolution == Resolution)
                 return true;
         }
+
         return false;
     }
 
@@ -108,6 +110,7 @@ namespace MDSS::SurfaceState
         std::uint32_t   Chart = std::numeric_limits<std::uint32_t>::max();
         glm::vec3       Barycentric{0.0F};
         glm::vec3       Position{0.0F};
+
         // Oriented mesh-local UV texel footprint; transforms with the linear cofactor matrix.
         glm::vec3 AreaVector{0.0F};
         glm::vec3 Normal{0.0F, 0.0F, 1.0F};

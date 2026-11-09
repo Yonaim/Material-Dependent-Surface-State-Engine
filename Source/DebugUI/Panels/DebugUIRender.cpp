@@ -26,6 +26,7 @@ namespace MDSS
         ImGui::SetNextWindowSize({ViewportNode->Size.x, ToolbarHeight}, ImGuiCond_Always);
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
         const ImVec2         DisplaySize = ImGui::GetIO().DisplaySize;
+
         if (DisplaySize.x > 0.0F && DisplaySize.y > 0.0F)
         {
             ViewportState.ViewportWorkspaceRectNormalized = {
@@ -45,6 +46,7 @@ namespace MDSS
         {
             const int   CurrentIndex = static_cast<int>(CurrentMode);
             const char* CurrentName = "Solver Transfer Weights";
+
             if (CurrentIndex >= 0 && CurrentIndex < static_cast<int>(RenderViewModeNames.size()))
             {
                 CurrentName = RenderViewModeNames[CurrentIndex];
@@ -94,6 +96,7 @@ namespace MDSS
                     {
                         return;
                     }
+
                     const ImVec2 Minimum = ImGui::GetItemRectMin();
                     const ImVec2 Maximum = ImGui::GetItemRectMax();
                     const float  Size = ImGui::GetFontSize() * 0.62F;
@@ -111,20 +114,24 @@ namespace MDSS
                     const bool bSelected = CurrentMode == Mode;
                     const bool bClicked = ImGui::MenuItem(RenderViewModeNames[Index]);
                     DrawSelectionMark(bSelected);
+
                     if (bClicked)
                     {
                         CurrentMode = Mode;
                         FrameRenderer->SetRenderViewMode(ActiveViewportIndex, Mode);
                     }
+
                     if (ImGui::IsItemHovered())
                     {
                         SetDescriptionTooltip(Description != nullptr ? Description : GetViewGeometryDescription(Mode));
                     }
                 };
+
                 for (int Index = 0; Index < 3; ++Index)
                 {
                     SelectDisplayView(Index);
                 }
+
                 if (ImGui::BeginMenu("Normal"))
                 {
                     SelectDisplayView(3, "원본 메시의 정점 노멀을 월드 공간 RGB로 표시합니다.");
@@ -132,6 +139,7 @@ namespace MDSS
                     SelectDisplayView(5, "원본 메시의 매핑된 노멀을 월드 공간 RGB로 표시합니다.");
                     ImGui::EndMenu();
                 }
+
                 DrawSectionHeader("DEBUG", 12.0F, 2.0F);
                 const auto SelectDebugView =
                     [&](const char* Name, Rendering::ERenderViewMode Mode, const char* Description = nullptr)
@@ -142,14 +150,17 @@ namespace MDSS
                     const bool bSelected = CurrentMode == Mode || bMesoGeometry;
                     const bool bClicked = ImGui::MenuItem(Name);
                     DrawSelectionMark(bSelected);
+
                     if (bClicked)
                     {
                         if (!bMesoGeometry)
                         {
                             CurrentMode = Mode;
                         }
+
                         FrameRenderer->SetRenderViewMode(ActiveViewportIndex, CurrentMode);
                     }
+
                     if (ImGui::IsItemHovered())
                     {
                         SetDescriptionTooltip(Description != nullptr ? Description : GetViewGeometryDescription(Mode));
@@ -175,6 +186,7 @@ namespace MDSS
                                     "원본 메시 위에 UV chart 사이의 텍셀 이웃 경계를 표시합니다.");
                     ImGui::EndMenu();
                 }
+
                 if (ImGui::BeginMenu("Texel"))
                 {
                     SelectDebugView("Texel Grid",
@@ -185,6 +197,7 @@ namespace MDSS
                                     "원본 메시 표면에 텍셀별 월드 면적을 표시합니다.");
                     ImGui::EndMenu();
                 }
+
                 if (ImGui::BeginMenu("Geometry"))
                 {
                     SelectDebugView("Base Geometry",
@@ -206,6 +219,7 @@ namespace MDSS
                                     "현재 시뮬레이션 상태의 모든 State 높이를 합쳐 형상에 적용합니다.");
                     ImGui::EndMenu();
                 }
+
                 if (ImGui::BeginMenu("Solver"))
                 {
                     SelectDebugView(SurfaceDebugViewNames[5],
@@ -216,13 +230,16 @@ namespace MDSS
                                     "원본 메시 위에 선택한 Solver 전달 가중치를 표시합니다.");
                     ImGui::EndMenu();
                 }
+
                 ImGui::EndCombo();
             }
+
             ImGui::PopID();
             const bool bViewControlHovered = ImGui::IsItemHovered();
             ImGui::SameLine(0.0F, 6.0F);
             ImGui::TextDisabled("View %zu", ActiveViewportIndex + 1U);
             ImGui::SameLine(0.0F, 6.0F);
+
             if (ViewportState.ViewportPanels.size() == 1U)
             {
                 if (ImGui::SmallButton("+ View"))
@@ -244,6 +261,7 @@ namespace MDSS
                 if (ViewportState.ActiveViewportId == RemoveId)
                     ViewportState.ActiveViewportId = ViewportState.ViewportPanels.front().Id;
             }
+
             if (!bViewComboOpen && bViewControlHovered)
             {
                 SetDescriptionTooltip(GetViewGeometryDescription(CurrentMode));
@@ -260,6 +278,7 @@ namespace MDSS
                 const SurfaceState::FSurfaceStateRegistry* Registry =
                     AssetManager != nullptr ? &SurfaceDataManager->GetSurfaceStateRegistry() : nullptr;
                 const std::size_t StateCount = Registry != nullptr ? Registry->GetStateCount() : 0;
+
                 if (StateCount == 0)
                 {
                     ImGui::TextDisabled("State: none");
@@ -270,6 +289,7 @@ namespace MDSS
                     {
                         Simulation.DebugState = 0;
                     }
+
                     ImGui::AlignTextToFramePadding();
                     ImGui::TextUnformatted("State");
                     ImGui::SameLine(0.0F, 6.0F);
@@ -277,6 +297,7 @@ namespace MDSS
                     const bool  bHeatmap = CurrentMode == Rendering::ERenderViewMode::SurfaceStateHeatmap;
                     const bool  bAllStates = bHeatmap && FrameRenderer->IsStateHeatmapAllStatesEnabled();
                     const char* StateComboId = bHeatmap ? "##ToolbarHeatmapState" : "##ToolbarHeightState";
+
                     if (ImGui::BeginCombo(StateComboId,
                                           bAllStates ? "All states (max)"
                                                      : Registry->GetStateName(Simulation.DebugState).c_str()))
@@ -285,25 +306,31 @@ namespace MDSS
                         {
                             FrameRenderer->SetStateHeatmapAllStatesEnabled(true);
                         }
+
                         for (std::size_t Index = 0; Index < StateCount; ++Index)
                         {
                             const SurfaceState::FStateId State = static_cast<SurfaceState::FStateId>(Index);
                             const bool                   bSelected = !bAllStates && State == Simulation.DebugState;
+
                             if (ImGui::Selectable(Registry->GetStateName(State).c_str(), bSelected))
                             {
                                 Simulation.DebugState = State;
                                 FrameRenderer->SetDebugStateChannel(Simulation.DebugState);
+
                                 if (bHeatmap)
                                     FrameRenderer->SetStateHeatmapAllStatesEnabled(false);
                             }
+
                             if (bSelected)
                             {
                                 ImGui::SetItemDefaultFocus();
                             }
                         }
+
                         ImGui::EndCombo();
                     }
                 }
+
                 if (CurrentMode == Rendering::ERenderViewMode::SurfaceAccumulation)
                 {
                     ImGui::SameLine(0.0F, 8.0F);
@@ -313,6 +340,7 @@ namespace MDSS
                     auto Settings = FrameRenderer->GetSurfaceDebugDisplaySettings();
                     int  Component = static_cast<int>(Settings.AccumulationComponent);
                     ImGui::SetNextItemWidth(185.0F);
+
                     if (ImGui::Combo(
                             "##ToolbarHeightComponent",
                             &Component,
@@ -333,6 +361,7 @@ namespace MDSS
             const ImU32  GearColor = ImGui::GetColorU32(ImGuiCol_Text);
             ImDrawList*  DrawList = ImGui::GetWindowDrawList();
             DrawList->AddCircle(GearCenter, 4.5F, GearColor, 8, 1.4F);
+
             for (int Tooth = 0; Tooth < 8; ++Tooth)
             {
                 const float  Angle = glm::two_pi<float>() * static_cast<float>(Tooth) / 8.0F;
@@ -342,11 +371,14 @@ namespace MDSS
                                   GearColor,
                                   1.4F);
             }
+
             DrawList->AddCircleFilled(GearCenter, 1.7F, ImGui::GetColorU32(ImGuiCol_Button));
+
             if (ImGui::IsItemHovered())
             {
                 SetDescriptionTooltip("뷰 설정");
             }
+
             if (bOpenViewSettings)
             {
                 ImGui::OpenPopup("ViewSettingsPopup");
@@ -362,6 +394,7 @@ namespace MDSS
                                              Style.ItemSpacing.x * 3.0F + 24.0F;
             const float RightControlsStart = ImGui::GetWindowWidth() - Style.WindowPadding.x - RightControlsWidth;
             ImGui::SameLine(0.0F, 6.0F);
+
             if (RightControlsStart > ImGui::GetCursorPosX() + Style.ItemSpacing.x)
             {
                 ImGui::SetCursorPosX(RightControlsStart);
@@ -370,40 +403,51 @@ namespace MDSS
             const bool bDemoPlaybackActive = SceneData.HasDemoAnimation() && SceneData.IsDemoAnimationPlaying();
             ImGui::BeginDisabled(bDemoPlaybackActive);
             bool bGridVisible = FrameRenderer->IsWorldGridVisible();
+
             if (ImGui::Checkbox("Grid", &bGridVisible))
             {
                 FrameRenderer->SetWorldGridVisible(bGridVisible);
             }
+
             ImGui::SameLine();
             bool bAxisVisible = FrameRenderer->IsWorldAxisVisible();
+
             if (ImGui::Checkbox("Axis", &bAxisVisible))
             {
                 FrameRenderer->SetWorldAxisVisible(bAxisVisible);
             }
+
             ImGui::EndDisabled();
             ImGui::SameLine();
             ImGui::Checkbox("Overlays", &bViewportOverlaysVisible);
+
             if (ImGui::IsItemHovered())
             {
                 SetDescriptionTooltip("프로파일링 및 렌더 상태 오버레이를 표시하거나 숨깁니다.");
             }
+
             ImGui::SameLine(0.0F, 10.0F);
             ImGui::TextDisabled("|");
 
             ImGui::SameLine(0.0F, 10.0F);
+
             if (ImGui::Button("-"))
             {
                 DollyCamera(GetViewportCamera(SceneData, GetActiveViewportIndex()), -1.0F);
             }
+
             if (ImGui::IsItemHovered())
             {
                 SetDescriptionTooltip("축소합니다.");
             }
+
             ImGui::SameLine();
+
             if (ImGui::Button("+"))
             {
                 DollyCamera(GetViewportCamera(SceneData, GetActiveViewportIndex()), 1.0F);
             }
+
             if (ImGui::IsItemHovered())
             {
                 SetDescriptionTooltip("확대합니다.");
@@ -413,6 +457,7 @@ namespace MDSS
                 ImGui::SetNextWindowSizeConstraints({360.0F, 0.0F}, {560.0F, 600.0F});
             DrawViewSettingsPopup(ActiveViewportIndex, CurrentMode, CurrentName);
         }
+
         ImGui::End();
     }
 

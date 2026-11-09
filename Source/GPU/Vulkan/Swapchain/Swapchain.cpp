@@ -56,6 +56,7 @@ namespace MDSS::GPU
         const VkExtent2D         SelectedExtent = ChooseExtent(Support.Capabilities, FWindow);
 
         std::uint32_t ImageCount = Support.Capabilities.minImageCount + 1;
+
         if (Support.Capabilities.maxImageCount > 0 && ImageCount > Support.Capabilities.maxImageCount)
         {
             ImageCount = Support.Capabilities.maxImageCount;
@@ -71,6 +72,7 @@ namespace MDSS::GPU
         CreateInfo.imageArrayLayers = 1;
         CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         bCanReadback = (Support.Capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
+
         if (bCanReadback)
             CreateInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
@@ -135,6 +137,7 @@ namespace MDSS::GPU
                 vkDestroyImageView(Device, ImageView, nullptr);
             }
         }
+
         ImageViews.clear();
         Images.clear();
 
@@ -195,6 +198,7 @@ namespace MDSS::GPU
 
         std::uint32_t FormatCount = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface, &FormatCount, nullptr);
+
         if (FormatCount > 0)
         {
             Details.Formats.resize(FormatCount);
@@ -203,6 +207,7 @@ namespace MDSS::GPU
 
         std::uint32_t PresentModeCount = 0;
         vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, &PresentModeCount, nullptr);
+
         if (PresentModeCount > 0)
         {
             Details.PresentModes.resize(PresentModeCount);
@@ -231,6 +236,7 @@ namespace MDSS::GPU
         // IMMEDIATE presents as soon as rendering completes, independently of the display refresh rate.
         // This may produce tearing; fall back to MAILBOX and then FIFO when unsupported.
         const auto Immediate = std::find(PresentModes.begin(), PresentModes.end(), VK_PRESENT_MODE_IMMEDIATE_KHR);
+
         if (Immediate != PresentModes.end())
         {
             return VK_PRESENT_MODE_IMMEDIATE_KHR;
@@ -314,6 +320,7 @@ namespace MDSS::GPU
                 {
                     vkDestroyImageView(Device, ImageViews[CreatedIndex], nullptr);
                 }
+
                 ImageViews.clear();
                 throw std::runtime_error("Failed to create swapchain image view.");
             }

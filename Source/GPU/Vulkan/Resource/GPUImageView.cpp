@@ -79,6 +79,7 @@ namespace MDSS::GPU
         {
             throw std::runtime_error("Failed to create Vulkan image view.");
         }
+
         FLogger::Verbose("Vulkan", "TGPUImageView created (format=" + std::to_string(static_cast<int>(Format)) + ").");
     }
 

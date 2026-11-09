@@ -24,6 +24,7 @@ namespace MDSS::Rendering
         Bindings[2].binding = 2;
         Bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         Bindings[2].descriptorCount = 1;
+
         // Meso Offset은 정점 셰이더도 렌더 모드 값을 읽어 변위 여부를 결정한다.
         Bindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -33,10 +34,12 @@ namespace MDSS::Rendering
         Info.pBindings = Bindings.data();
 
         VkDescriptorSetLayout Layout = VK_NULL_HANDLE;
+
         if (vkCreateDescriptorSetLayout(Device, &Info, nullptr, &Layout) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create static mesh material descriptor set layout.");
         }
+
         return Layout;
     }
 
@@ -50,6 +53,7 @@ namespace MDSS::Rendering
         RenderFinishedSemaphores.resize(SwapchainData.GetImages().size(), VK_NULL_HANDLE);
         VkSemaphoreCreateInfo SemaphoreInfo{};
         SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
         for (VkSemaphore& Semaphore : RenderFinishedSemaphores)
         {
             if (vkCreateSemaphore(Context.GetDevice(), &SemaphoreInfo, nullptr, &Semaphore) != VK_SUCCESS)
@@ -69,6 +73,7 @@ namespace MDSS::Rendering
                 vkDestroySemaphore(Context.GetDevice(), Semaphore, nullptr);
             }
         }
+
         RenderFinishedSemaphores.clear();
     }
 
@@ -79,15 +84,18 @@ namespace MDSS::Rendering
             vkDestroyQueryPool(Context.GetDevice(), TimestampQueryPool, nullptr);
             TimestampQueryPool = VK_NULL_HANDLE;
         }
+
         if (TimestampValidBits == 0U)
         {
             return;
         }
+
         const std::uint64_t SolverQuerySlots = SolverInstanceCount > 0U ? 1U : 0U;
         const std::uint64_t SolverQueryCount = SolverQuerySlots * 8U * SurfaceState::MaxSimulationStepsPerFrame;
         const std::uint64_t OverlayQueryCount =
             static_cast<std::uint64_t>(SolverInstanceCount) * 3U * OverlayTimestampQueriesPerLayer;
         const std::uint64_t QueriesPerFrame = FixedTimestampQueryCount + SolverQueryCount + OverlayQueryCount;
+
         if (QueriesPerFrame > std::numeric_limits<std::uint32_t>::max() / FRenderContext::MaxFramesInFlight)
         {
             FLogger::Warning("TRenderer", "GPU timing query count exceeds the supported range.");
@@ -110,6 +118,7 @@ namespace MDSS::Rendering
             LastSolverPass2GpuMilliseconds = -1.0F;
             FLogger::Warning("TRenderer", "GPU timestamp queries unavailable; profiling timings will be hidden.");
         }
+
         bTimestampQueriesSubmitted.fill(false);
         SolverTimestampStepsSubmitted.fill(0);
         OverlayTimestampLayersSubmitted.fill(0);
@@ -118,6 +127,7 @@ namespace MDSS::Rendering
     void FRenderer::CreateMaterialDescriptorResources()
     {
         const std::size_t MaterialCount = Assets.GetMaterialCount();
+
         if (MaterialCount == 0)
         {
             FLogger::Warning("TRenderer",
@@ -142,6 +152,7 @@ namespace MDSS::Rendering
         PoolInfo.maxSets = static_cast<std::uint32_t>(MaterialCount * FRenderContext::MaxFramesInFlight);
 
         VkDescriptorPool NewPool = VK_NULL_HANDLE;
+
         if (vkCreateDescriptorPool(Context.GetDevice(), &PoolInfo, nullptr, &NewPool) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create material descriptor pool.");
@@ -202,12 +213,14 @@ namespace MDSS::Rendering
                     MaterialBuffer.range = sizeof(FMaterialUniform);
 
                     std::array<VkWriteDescriptorSet, 3> Writes{};
+
                     for (VkWriteDescriptorSet& Write : Writes)
                     {
                         Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                         Write.dstSet = Sets[SetIndex];
                         Write.descriptorCount = 1;
                     }
+
                     Writes[0].dstBinding = 0;
                     Writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                     Writes[0].pImageInfo = &BaseImage;
@@ -233,6 +246,7 @@ namespace MDSS::Rendering
         {
             vkDestroyDescriptorPool(Context.GetDevice(), MaterialDescriptorPool, nullptr);
         }
+
         MaterialDescriptorPool = NewPool;
         MaterialResources = std::move(NewResources);
 
@@ -248,11 +262,13 @@ namespace MDSS::Rendering
         const auto             Bindings = GetDemoSurfaceStateBindings();
         const std::size_t      MaterialCount = std::min(Assets.GetMaterialCount(), MaterialResources.size());
         FDemoStateColorMapping WaterColorMap = DemoEffects.WaterFilmColorMap;
+
         if (DemoEffects.bEmphasizeWaterFilm)
         {
             WaterColorMap.LowSaturationColor = {0.14F, 0.55F, 0.58F};
             WaterColorMap.HighSaturationColor = {0.04F, 0.39F, 0.55F};
         }
+
         for (std::size_t Index = 0; Index < MaterialCount; ++Index)
         {
             if (!MaterialResources[Index].UniformBuffers[Frame])
@@ -271,46 +287,46 @@ namespace MDSS::Rendering
                 static_cast<std::uint32_t>(SurfaceData.GetSurfaceStateRegistry().GetStateCount()),
                 GetDebugViewParameter(GetRenderViewMode(0)),
                 bStateHeatmapReliefShadingEnabled ? 1.0F : 0.0F,
-                            {0.0F, 0.0F, LitHeightDisplayScale, SurfaceDebugSettings.DisplacementScale},
-                            {bStateHeatmapAllStatesEnabled ? 1U : 0U,
+                {0.0F, 0.0F, LitHeightDisplayScale, SurfaceDebugSettings.DisplacementScale},
+                {bStateHeatmapAllStatesEnabled ? 1U : 0U,
                  SurfaceDebugSettings.AccumulationComponent,
                  SurfaceDebugSettings.HeightGridMode,
                  SurfaceDebugSettings.HeightGridBlockSize},
-                            {Bindings.Heat, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
-                            {DemoEffects.DryRoughness, DemoEffects.LavaThreshold, DemoEffects.MudRoughness, LitHeightDisplayScale},
-                            {DemoEffects.HeatStrength,
-                             DemoEffects.MudNoiseAmount,
-                             DemoEffects.WaterFilmOpacity,
-                             DemoEffects.WaterFilmRoughness},
-                            {Bindings.Lava,
+                {Bindings.Heat, Bindings.Mud, Bindings.WaterFilm, DemoEffects.bEnabled ? 1U : 0U},
+                {DemoEffects.DryRoughness, DemoEffects.LavaThreshold, DemoEffects.MudRoughness, LitHeightDisplayScale},
+                {DemoEffects.HeatStrength,
+                 DemoEffects.MudNoiseAmount,
+                 DemoEffects.WaterFilmOpacity,
+                 DemoEffects.WaterFilmRoughness},
+                {Bindings.Lava,
                  bOverlayOnlyDebug ? static_cast<std::uint32_t>(OverlayShadingDiagnostic) : 0U,
-                             (DemoEffects.bCoverageSmoothing ? 1U : 0U) |
-                                 (DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled ? 2U : 0U) |
-                                 (bRenderStateTextureSamplingEnabled ? 4U : 0U),
-                             (DemoEffects.bHeatLayer ? 1U : 0U) | (DemoEffects.bMudDisplacement ? 2U : 0U) |
-                                 (DemoEffects.bWaterFilmDisplacement ? 4U : 0U) | (DemoEffects.bLavaDisplacement ? 8U : 0U) |
-                                 (Bindings.AbsorbedWetness != SurfaceState::InvalidStateId ? 16U : 0U) |
-                                 (DemoEffects.bIceDisplacement ? 32U : 0U)},
-                            {DemoEffects.HeatColorMap.RampStart,
-                             DemoEffects.MudColorMap.RampStart,
-                             WaterColorMap.RampStart,
-                             DemoEffects.LavaColorMap.RampStart},
-                            {DemoEffects.HeatColorMap.RampEnd,
-                             DemoEffects.MudColorMap.RampEnd,
-                             WaterColorMap.RampEnd,
-                             DemoEffects.LavaColorMap.RampEnd},
-                            {glm::vec4(DemoEffects.HeatColorMap.LowSaturationColor, 1.0F),
-                             glm::vec4(DemoEffects.MudColorMap.LowSaturationColor, 1.0F),
-                             glm::vec4(WaterColorMap.LowSaturationColor, 1.0F),
-                             glm::vec4(DemoEffects.LavaColorMap.LowSaturationColor, 1.0F)},
-                            {glm::vec4(DemoEffects.HeatColorMap.HighSaturationColor, 1.0F),
-                             glm::vec4(DemoEffects.MudColorMap.HighSaturationColor, 1.0F),
-                             glm::vec4(WaterColorMap.HighSaturationColor, 1.0F),
-                             glm::vec4(DemoEffects.LavaColorMap.HighSaturationColor, 1.0F)},
+                 (DemoEffects.bCoverageSmoothing ? 1U : 0U) |
+                     (DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled ? 2U : 0U) |
+                     (bRenderStateTextureSamplingEnabled ? 4U : 0U),
+                 (DemoEffects.bHeatLayer ? 1U : 0U) | (DemoEffects.bMudDisplacement ? 2U : 0U) |
+                     (DemoEffects.bWaterFilmDisplacement ? 4U : 0U) | (DemoEffects.bLavaDisplacement ? 8U : 0U) |
+                     (Bindings.AbsorbedWetness != SurfaceState::InvalidStateId ? 16U : 0U) |
+                     (DemoEffects.bIceDisplacement ? 32U : 0U)},
+                {DemoEffects.HeatColorMap.RampStart,
+                 DemoEffects.MudColorMap.RampStart,
+                 WaterColorMap.RampStart,
+                 DemoEffects.LavaColorMap.RampStart},
+                {DemoEffects.HeatColorMap.RampEnd,
+                 DemoEffects.MudColorMap.RampEnd,
+                 WaterColorMap.RampEnd,
+                 DemoEffects.LavaColorMap.RampEnd},
+                {glm::vec4(DemoEffects.HeatColorMap.LowSaturationColor, 1.0F),
+                 glm::vec4(DemoEffects.MudColorMap.LowSaturationColor, 1.0F),
+                 glm::vec4(WaterColorMap.LowSaturationColor, 1.0F),
+                 glm::vec4(DemoEffects.LavaColorMap.LowSaturationColor, 1.0F)},
+                {glm::vec4(DemoEffects.HeatColorMap.HighSaturationColor, 1.0F),
+                 glm::vec4(DemoEffects.MudColorMap.HighSaturationColor, 1.0F),
+                 glm::vec4(WaterColorMap.HighSaturationColor, 1.0F),
+                 glm::vec4(DemoEffects.LavaColorMap.HighSaturationColor, 1.0F)},
                 glm::vec4(0.0F),
                 Material.GetWaterAppearance(),
-                            {Bindings.AbsorbedWetness, DemoEffects.bEmphasizeWaterFilm ? 1U : 0U, Bindings.Ice, 0U},
-                            {Bindings.Burn, Bindings.Scorched, 0U, 0U}};
+                {Bindings.AbsorbedWetness, DemoEffects.bEmphasizeWaterFilm ? 1U : 0U, Bindings.Ice, 0U},
+                {Bindings.Burn, Bindings.Scorched, 0U, 0U}};
             for (std::size_t ViewportIndex = 0; ViewportIndex < DebugInterface.GetViewportCount(); ++ViewportIndex)
             {
                 const ERenderViewMode Mode = GetRenderViewMode(ViewportIndex);
@@ -339,6 +355,7 @@ namespace MDSS::Rendering
             VK_FORMAT_D32_SFLOAT_S8_UINT,
             VK_FORMAT_D24_UNORM_S8_UINT,
         };
+
         return FindSupportedFormat(PhysicalDevice,
                                    Candidates.data(),
                                    static_cast<std::uint32_t>(Candidates.size()),
@@ -364,6 +381,7 @@ namespace MDSS::Rendering
                 return Candidates[Index];
             }
         }
+
         throw std::runtime_error("Failed to find a supported Vulkan format.");
     }
 #pragma endregion

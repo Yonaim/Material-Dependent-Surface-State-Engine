@@ -44,6 +44,7 @@ namespace MDSS
             const float     InverseDeterminant = 1.0F / Determinant;
             const glm::vec3 FromA = Origin - A;
             const float     U = glm::dot(FromA, P) * InverseDeterminant;
+
             if (U < 0.0F || U > 1.0F)
             {
                 return false;
@@ -51,12 +52,14 @@ namespace MDSS
 
             const glm::vec3 Q = glm::cross(FromA, Edge1);
             const float     V = glm::dot(Direction, Q) * InverseDeterminant;
+
             if (V < 0.0F || U + V > 1.0F)
             {
                 return false;
             }
 
             const float T = glm::dot(Edge2, Q) * InverseDeterminant;
+
             if (T <= RayEpsilon)
             {
                 return false;
@@ -80,17 +83,21 @@ namespace MDSS
     {
         FSurfaceRayHit Result;
         const float    DirectionLengthSquared = glm::dot(WorldDirection, WorldDirection);
+
         if (!std::isfinite(DirectionLengthSquared) || DirectionLengthSquared <= RayEpsilon * RayEpsilon)
         {
             return Result;
         }
+
         WorldDirection = glm::normalize(WorldDirection);
 
         float                                   BestDistance = std::numeric_limits<float>::infinity();
         const std::vector<FStaticMeshInstance>& Instances = Scene.GetStaticMeshInstances();
+
         for (std::size_t InstanceIndex = 0; InstanceIndex < Instances.size(); ++InstanceIndex)
         {
             const FStaticMeshInstance& Instance = Instances[InstanceIndex];
+
             if (Instance.GetMesh() == Asset::InvalidAssetHandle)
             {
                 continue;
@@ -107,6 +114,7 @@ namespace MDSS
                 const std::uint32_t               IA = Triangle.RenderVertexIndices[0];
                 const std::uint32_t               IB = Triangle.RenderVertexIndices[1];
                 const std::uint32_t               IC = Triangle.RenderVertexIndices[2];
+
                 if (IA >= Vertices.size() || IB >= Vertices.size() || IC >= Vertices.size())
                 {
                     continue;
@@ -118,6 +126,7 @@ namespace MDSS
 
                 float     Distance = 0.0F;
                 glm::vec3 Barycentric{0.0F};
+
                 if (!IntersectFrontFacingTriangle(WorldOrigin, WorldDirection, A, B, C, Distance, Barycentric) ||
                     Distance >= BestDistance)
                 {

@@ -48,6 +48,7 @@ namespace
         {
             std::filesystem::create_directories(Path);
         }
+
         ~FTemporaryDirectory()
         {
             std::error_code Error;
@@ -59,14 +60,17 @@ namespace
     {
         std::ofstream Output(Path, std::ios::binary);
         Output << Text;
+
         if (!Output)
             throw std::runtime_error("Unable to write test input.");
     }
+
     std::vector<std::uint8_t> Read(const std::filesystem::path& Path)
     {
         std::ifstream Input(Path, std::ios::binary);
         return {std::istreambuf_iterator<char>(Input), std::istreambuf_iterator<char>()};
     }
+
     void WriteBytes(const std::filesystem::path& Path, const std::vector<std::uint8_t>& Bytes)
     {
         std::ofstream Output(Path, std::ios::binary);
@@ -83,17 +87,22 @@ namespace
             if (Mapping.Texels[I].IsValid())
                 Profiles[I] = 0;
         auto Geometry = SurfaceState::FSurfaceGeometryBuilder::Build(Mapping, std::move(Profiles), 1);
+
         // Vary tangent-space slopes in both directions to exercise the integrated height and curvature fields.
         FTextureData NormalMap{2, 2, {120, 125, 255, 255, 140, 118, 255, 255, 112, 142, 255, 255, 136, 138, 255, 255}};
+
         for (auto& T : Geometry.GetTexels())
         {
             T.bHasTransferNormal =
                 BuildNormalMapTransferNormal(T, Mesh.Vertices, Mesh.Triangles, NormalMap, T.TransferNormal, true);
         }
+
         const auto Report = BuildMesoGeometry(Geometry);
         Check(Report.ActiveTexelCount > 0, "test input generates active Meso geometry");
+
         // Keep a valid, render-only texel and normal fallback flags in the round-trip coverage.
         auto Map = Geometry.GetProfileMap();
+
         for (std::size_t I = 0; I < Geometry.GetTexelCount(); ++I)
         {
             if (Geometry.GetTexels()[I].IsValid())
@@ -103,6 +112,7 @@ namespace
                 break;
             }
         }
+
         Geometry.SetProfileMap(std::move(Map));
         return Geometry;
     }
@@ -112,6 +122,7 @@ namespace
         Check(A.GetProfileMap() == B.GetProfileMap(), "Profile indices and invalid sentinels round-trip");
         Check(A.GetTexelCount() == B.GetTexelCount(), "texel count round-trips");
         bool bEqual = A.GetTexelCount() == B.GetTexelCount();
+
         for (std::size_t I = 0; bEqual && I < A.GetTexelCount(); ++I)
         {
             const auto& X = A.GetTexels()[I];
@@ -127,6 +138,7 @@ namespace
                      X.Geometry.MesoGaussianCurvature == Y.Geometry.MesoGaussianCurvature &&
                      X.NeighborIndices == Y.NeighborIndices;
         }
+
         Check(bEqual, "all final texel fields round-trip exactly");
         const auto PackedA = PackSharedSurfaceGeometry(A);
         const auto PackedB = PackSharedSurfaceGeometry(B);
@@ -153,11 +165,13 @@ namespace
         const auto NormalMap = FTextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeNormal.png");
         const auto Albedo = FTextureLoader::LoadRGBA8(AssetDirectory / "BrickCubeAlbedo.png");
         std::vector<SurfaceState::FSurfaceDefinition> Surfaces;
+
         for (const auto& Triangle : Mesh.Triangles)
         {
             while (Surfaces.size() <= Triangle.Surface)
                 Surfaces.push_back({static_cast<SurfaceState::FSurfaceLocalID>(Surfaces.size()), {64, 64}});
         }
+
         const auto Mapping = SurfaceState::FSurfaceMappingBuilder::Build(Mesh.Vertices, Mesh.Triangles, Surfaces);
         std::vector<SurfaceState::FSurfaceProfileIndex> Profiles(Mapping.Texels.size(),
                                                                  SurfaceState::InvalidSurfaceProfileIndex);
@@ -165,6 +179,7 @@ namespace
             if (Mapping.Texels[I].IsValid())
                 Profiles[I] = 0;
         auto Geometry = SurfaceState::FSurfaceGeometryBuilder::Build(Mapping, std::move(Profiles), 1);
+
         for (auto& Texel : Geometry.GetTexels())
         {
             if (!Texel.IsValid())
@@ -172,25 +187,28 @@ namespace
             Texel.bHasTransferNormal = BuildNormalMapTransferNormal(
                 Texel, Mesh.Vertices, Mesh.Triangles, NormalMap, Texel.TransferNormal, true);
         }
+
         const auto Report = BuildMesoGeometry(Geometry);
         Check(Report.ActiveTexelCount > 0, "BrickCube generates Meso heights");
 
         double      BrickHeight = 0.0, MortarHeight = 0.0;
         std::size_t BrickCount = 0, MortarCount = 0;
+
         for (const auto& Texel : Geometry.GetTexels())
         {
             if (!Texel.IsValid() || !Texel.bHasTransferNormal)
                 continue;
             const auto& Triangle = Mesh.Triangles[Texel.Triangle];
             const auto  UV = Texel.Barycentric.x * Mesh.Vertices[Triangle.RenderVertexIndices[0]].UV +
-                            Texel.Barycentric.y * Mesh.Vertices[Triangle.RenderVertexIndices[1]].UV +
-                            Texel.Barycentric.z * Mesh.Vertices[Triangle.RenderVertexIndices[2]].UV;
+                             Texel.Barycentric.y * Mesh.Vertices[Triangle.RenderVertexIndices[1]].UV +
+                             Texel.Barycentric.z * Mesh.Vertices[Triangle.RenderVertexIndices[2]].UV;
             const auto  X = std::min(static_cast<std::uint32_t>(UV.x * Albedo.Width), Albedo.Width - 1U);
             const auto  Y = std::min(static_cast<std::uint32_t>(UV.y * Albedo.Height), Albedo.Height - 1U);
             const auto  Pixel = (static_cast<std::size_t>(Y) * Albedo.Width + X) * 4U;
             const float Red = Albedo.Pixels[Pixel];
             const float Green = Albedo.Pixels[Pixel + 1U];
             const float Blue = Albedo.Pixels[Pixel + 2U];
+
             if (Red > 1.35F * Green && Red > 1.20F * Blue)
             {
                 BrickHeight += Texel.Geometry.MesoVirtualHeight;
@@ -202,7 +220,9 @@ namespace
                 ++MortarCount;
             }
         }
+
         Check(BrickCount > 100 && MortarCount > 100, "BrickCube samples both brick and mortar texels");
+
         if (BrickCount > 0 && MortarCount > 0)
         {
             const double MeanBrick = BrickHeight / BrickCount;
@@ -249,6 +269,7 @@ namespace
         SurfaceState::FSurfaceCache::Save(Cache, Descriptor, Geometry);
         auto Loaded = SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic);
         Check(Loaded.has_value() && Diagnostic.empty(), "saved final geometry loads");
+
         if (Loaded)
             Compare(Geometry, *Loaded);
         const auto GoodBytes = Read(Cache);
@@ -274,6 +295,7 @@ namespace
             Check(!SurfaceState::FSurfaceCache::Load(Cache, Descriptor, Diagnostic),
                   "corrupt/versioned cache requests rebuild");
         }
+
         auto Bad = GoodBytes;
         Bad.resize(20);
         WriteBytes(Cache, Bad);
@@ -289,6 +311,7 @@ namespace
 
         // A valid checksum alone must not admit invalid Runtime geometry.
         std::size_t FirstValid = 0;
+
         while (!Geometry.GetTexels()[FirstValid].IsValid())
             ++FirstValid;
         const std::size_t RecordsStart =
@@ -297,9 +320,11 @@ namespace
         {
             auto       Bytes = GoodBytes;
             const auto Offset = RecordsStart + FirstValid * 140 + FieldOffset;
+
             for (int I = 0; I < 4; ++I)
                 Bytes[Offset + I] = static_cast<std::uint8_t>(Value >> (I * 8));
             std::uint64_t Hash = 14695981039346656037ULL;
+
             for (std::size_t I = 52; I < Bytes.size(); ++I)
                 Hash = (Hash ^ Bytes[I]) * 1099511628211ULL;
             for (int I = 0; I < 8; ++I)
@@ -318,12 +343,14 @@ namespace
               "corrupt file is replaced by rebuilt data");
 
         auto Invalid = Geometry;
+
         for (auto& T : Invalid.GetTexels())
             if (T.IsValid())
             {
                 T.NeighborIndices[0] = UINT32_MAX - 1;
                 break;
             }
+
         bool bRejected = false;
         try
         {
@@ -333,6 +360,7 @@ namespace
         {
             bRejected = true;
         }
+
         Check(bRejected && Read(Cache) == GoodBytes, "invalid save preserves previous complete cache");
         const auto BlockedRoot = Temp.Path / "blocked";
         Write(BlockedRoot, "file, not directory");
@@ -345,6 +373,7 @@ namespace
         {
             bRejected = true;
         }
+
         Check(bRejected && Geometry.GetTexelCount() == 64, "save failure leaves built Runtime geometry usable");
 
         const auto Cache4 = SurfaceState::FSurfaceCache::GetPath(Temp.Path / "Cache", "Cube.obj", Distribution, 4);
@@ -415,6 +444,7 @@ namespace
         SurfaceState::FSurfaceCache::Save(Cache, SeamDescriptor, SeamGeometry);
         Loaded = SurfaceState::FSurfaceCache::Load(Cache, SeamDescriptor, Diagnostic);
         Check(Loaded.has_value(), "atomic overwrite loads new seam geometry");
+
         if (Loaded)
             Compare(SeamGeometry, *Loaded);
         for (const auto& Entry : std::filesystem::recursive_directory_iterator(Temp.Path))
@@ -440,6 +470,7 @@ int main()
         ++Failures;
         std::cerr << "Unexpected failure: " << Error.what() << '\n';
     }
+
     if (Failures == 0)
         std::cout << "Surface cache tests passed.\n";
     return Failures == 0 ? 0 : 1;

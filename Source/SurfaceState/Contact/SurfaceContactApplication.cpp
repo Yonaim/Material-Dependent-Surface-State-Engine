@@ -43,6 +43,7 @@ namespace MDSS::SurfaceState
 
         const std::size_t InstanceCount = Scene.GetStaticMeshInstances().size();
         const std::size_t ChannelCount = SurfaceData.GetSurfaceStateRegistry().GetStateCount();
+
         if (ChannelCount == 0)
         {
             PendingContacts.clear();
@@ -68,6 +69,7 @@ namespace MDSS::SurfaceState
             };
 
             const std::size_t InstanceIndex = Contact.TargetInstance;
+
             if (InstanceIndex >= InstanceCount || Contact.State >= ChannelCount ||
                 !std::isfinite(Contact.WorldPosition.x) || !std::isfinite(Contact.WorldPosition.y) ||
                 !std::isfinite(Contact.WorldPosition.z) || !std::isfinite(Contact.Radius) || Contact.Radius <= 0.0F ||
@@ -85,6 +87,7 @@ namespace MDSS::SurfaceState
 
             const FStaticMeshInstance&      Instance = Scene.GetStaticMeshInstances()[InstanceIndex];
             const FSurfaceRuntimeDataHandle SurfaceDataHandle = Instance.GetSurfaceData();
+
             if (!SurfaceData.HasSurfaceData(SurfaceDataHandle))
             {
                 Diagnose("Rejected contact for an instance without Surface simulation data.");
@@ -92,6 +95,7 @@ namespace MDSS::SurfaceState
             }
 
             const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(InstanceIndex);
+
             if (Descriptors == nullptr)
             {
                 Diagnose("Rejected contact because the target instance has no GPU State resources.");
@@ -105,10 +109,12 @@ namespace MDSS::SurfaceState
             const glm::mat4                           Model = Instance.GetTransform().GetMatrix();
             const std::vector<FSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
             glm::vec3                                 InfluenceCenter = Contact.WorldPosition;
+
             if (Contact.bHasSimulationMapping)
             {
                 const Asset::FMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
                 const std::vector<Asset::FMeshTriangleSource>& Triangles = Mesh.GetTriangles();
+
                 if (Contact.TargetTriangle >= Triangles.size() || !std::isfinite(Contact.SimulationUV.x) ||
                     !std::isfinite(Contact.SimulationUV.y) || Contact.SimulationUV.x < 0.0F ||
                     Contact.SimulationUV.x > 1.0F || Contact.SimulationUV.y < 0.0F || Contact.SimulationUV.y > 1.0F)
@@ -118,11 +124,13 @@ namespace MDSS::SurfaceState
                 }
 
                 const FSurfaceLocalID TargetSurface = Triangles[Contact.TargetTriangle].Surface;
+
                 if (TargetSurface >= Geometry.GetSurfaces().size())
                 {
                     Diagnose("Rejected contact because its hit triangle has no mapped Surface.");
                     continue;
                 }
+
                 const FSurfaceTexelRange& Range = Geometry.GetSurface(TargetSurface);
                 const std::uint32_t       CenterX =
                     std::min(static_cast<std::uint32_t>(Contact.SimulationUV.x * Range.Resolution.Width),
@@ -142,18 +150,22 @@ namespace MDSS::SurfaceState
                     {
                         return false;
                     }
+
                     const FSurfaceTexelGeometry& Texel = Texels[Index];
+
                     if (Texel.IsValid() && Texel.Surface == TargetSurface && Texel.Triangle == Contact.TargetTriangle)
                     {
                         ResolvedCenter = static_cast<FLocalTexelIndex>(Index);
                         return true;
                     }
+
                     return false;
                 };
 
                 if (!IsHitTriangleTexel(CenterX, CenterY))
                 {
                     std::uint32_t BestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
+
                     for (std::int32_t OffsetY = -SearchRadius; OffsetY <= SearchRadius; ++OffsetY)
                     {
                         for (std::int32_t OffsetX = -SearchRadius; OffsetX <= SearchRadius; ++OffsetX)
@@ -162,20 +174,25 @@ namespace MDSS::SurfaceState
                             {
                                 continue;
                             }
+
                             const std::int32_t X = static_cast<std::int32_t>(CenterX) + OffsetX;
                             const std::int32_t Y = static_cast<std::int32_t>(CenterY) + OffsetY;
+
                             if (X < 0 || Y < 0 || X >= static_cast<std::int32_t>(Range.Resolution.Width) ||
                                 Y >= static_cast<std::int32_t>(Range.Resolution.Height))
                             {
                                 continue;
                             }
+
                             const std::uint32_t DistanceSquared =
                                 static_cast<std::uint32_t>(OffsetX * OffsetX + OffsetY * OffsetY);
                             if (DistanceSquared >= BestDistanceSquared)
                             {
                                 continue;
                             }
+
                             const std::optional<FLocalTexelIndex> Previous = ResolvedCenter;
+
                             if (IsHitTriangleTexel(static_cast<std::uint32_t>(X), static_cast<std::uint32_t>(Y)))
                             {
                                 BestDistanceSquared = DistanceSquared;
@@ -187,6 +204,7 @@ namespace MDSS::SurfaceState
                         }
                     }
                 }
+
                 if (!ResolvedCenter.has_value())
                 {
                     std::uint32_t NearestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
@@ -194,6 +212,7 @@ namespace MDSS::SurfaceState
                     std::int32_t  NearestOffsetY = 0;
                     std::uint32_t NearestX = 0;
                     std::uint32_t NearestY = 0;
+
                     for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
                     {
                         for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
@@ -204,7 +223,9 @@ namespace MDSS::SurfaceState
                             {
                                 continue;
                             }
+
                             const FSurfaceTexelGeometry& Texel = Texels[Index];
+
                             if (!Texel.IsValid() || Texel.Surface != TargetSurface ||
                                 Texel.Triangle != Contact.TargetTriangle)
                             {
@@ -254,10 +275,13 @@ namespace MDSS::SurfaceState
                                  std::to_string(NearestY) + "), offset=(" + std::to_string(NearestOffsetX) + ", " +
                                  std::to_string(NearestOffsetY) + ").");
                     }
+
                     continue;
                 }
+
                 InfluenceCenter = glm::vec3(Model * glm::vec4(Texels[*ResolvedCenter].Position, 1.0F));
             }
+
             if (InputDeltas[InstanceIndex].empty())
             {
                 InputDeltas[InstanceIndex].assign(ScalarCount, 0.0F);
@@ -269,6 +293,7 @@ namespace MDSS::SurfaceState
                 SurfaceData.GetSurfaceProfileTable(SurfaceDataHandle);
             std::vector<float> InputFactors(ProfileHandles.size(), 0.0F);
             std::vector<bool>  bProfileSupportsState(ProfileHandles.size(), false);
+
             for (std::size_t ProfileIndex = 0; ProfileIndex < ProfileHandles.size(); ++ProfileIndex)
             {
                 const FRegisteredSurfaceResponseProfileData Resolved =
@@ -279,6 +304,7 @@ namespace MDSS::SurfaceState
                     InputFactors[ProfileIndex] = Resolved.States[Contact.State]->InputFactor;
                     bProfileSupportsState[ProfileIndex] = true;
                     const auto Override = RuntimeProfileOverrides.find({ProfileHandles[ProfileIndex], Contact.State});
+
                     if (Override != RuntimeProfileOverrides.end())
                     {
                         InputFactors[ProfileIndex] = Override->second.InputFactor;
@@ -298,9 +324,11 @@ namespace MDSS::SurfaceState
             const float       Angle = glm::radians(Contact.RotationDegrees);
             const float       CosAngle = std::cos(Angle);
             const float       SinAngle = std::sin(Angle);
+
             for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
             {
                 const FSurfaceTexelGeometry& Texel = Texels[TexelIndex];
+
                 if (!Texel.IsValid())
                 {
                     continue;
@@ -311,6 +339,7 @@ namespace MDSS::SurfaceState
                 const glm::vec3 WorldTexelPosition = glm::vec3(Model * glm::vec4(Texel.Position, 1.0F));
                 const glm::vec3 Offset = WorldTexelPosition - InfluenceCenter;
                 float           NormalizedDistance = glm::length(Offset) / Contact.Radius;
+
                 if (Contact.bPlanar)
                 {
                     if (std::abs(glm::dot(Offset, PlaneNormal)) > Contact.PlaneHalfDepth)
@@ -319,6 +348,7 @@ namespace MDSS::SurfaceState
                     const float V = glm::dot(Offset, Bitangent);
                     const float X = CosAngle * U + SinAngle * V;
                     const float Y = -SinAngle * U + CosAngle * V;
+
                     switch (Contact.Shape)
                     {
                         case ESurfaceContactShape::Circle:
@@ -339,6 +369,7 @@ namespace MDSS::SurfaceState
                             break;
                     }
                 }
+
                 if (!std::isfinite(NormalizedDistance) || NormalizedDistance > 1.0F)
                 {
                     continue;
@@ -363,9 +394,11 @@ namespace MDSS::SurfaceState
                 const float       Sign = Contact.Operation == ESurfaceContactOperation::Remove ? -1.0F : 1.0F;
                 const float Delta = Sign * Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
                 InputDeltas[InstanceIndex][ScalarIndex] += Delta;
+
                 if (Delta != 0.0F)
                 {
                     InputGroupFlags[InstanceIndex][TexelIndex / 64U] = 1U;
+
                     if (StateChannel < 32U)
                     {
                         InputChannelMasks[InstanceIndex] |= (1U << static_cast<std::uint32_t>(StateChannel));
@@ -373,6 +406,7 @@ namespace MDSS::SurfaceState
                             (1U << static_cast<std::uint32_t>(StateChannel));
                     }
                 }
+
                 bAppliedToAnyTexel = true;
                 ++AppliedTexelCount;
             }
@@ -385,14 +419,17 @@ namespace MDSS::SurfaceState
                                   ", instance=" + std::to_string(InstanceIndex) +
                                   ", texels=" + std::to_string(AppliedTexelCount) + ").");
             }
+
             if (bUnsupportedProfile)
             {
                 Diagnose("Some contact texels do not support the requested State; those texels were skipped.");
             }
+
             if (!bAppliedToAnyTexel && !bUnsupportedProfile && !bOverlappedNoSimulationSurface)
             {
                 Diagnose("Contact did not overlap a valid texel; no State input was applied.");
             }
+
             bInstanceHasInput[InstanceIndex] = bInstanceHasInput[InstanceIndex] || bAppliedToAnyTexel;
         }
 
@@ -409,13 +446,16 @@ namespace MDSS::SurfaceState
             {
                 continue;
             }
+
             const GPU::FGPUBuffer&    InputDeltaBuffer = GPUResources->GetInstanceInputDeltaBuffer(InstanceIndex);
             const std::vector<float>& InputDelta = InputDeltas[InstanceIndex];
             const VkDeviceSize        ByteSize = static_cast<VkDeviceSize>(InputDelta.size() * sizeof(float));
+
             if (ByteSize != InputDeltaBuffer.GetSize())
             {
                 throw std::runtime_error("CPU InputDelta size does not match the instance GPU buffer size.");
             }
+
             InputDeltaBuffer.Upload(InputDelta.data(), ByteSize);
 
             // Persistent sparse solver does not rescan all texels. CPU contact distribution already knows
@@ -426,6 +466,7 @@ namespace MDSS::SurfaceState
             std::vector<std::uint32_t>         CompactInputGroupMasks;
             InputGroups.reserve(InputGroupFlags[InstanceIndex].size());
             CompactInputGroupMasks.reserve(InputGroupFlags[InstanceIndex].size());
+
             for (std::size_t Group = 0; Group < InputGroupFlags[InstanceIndex].size(); ++Group)
                 if (InputGroupFlags[InstanceIndex][Group] != 0U)
                 {
@@ -460,6 +501,7 @@ namespace MDSS::SurfaceState
                 Execution.PendingInputActivation[InstanceIndex] = true;
             }
         }
+
         PendingContacts.clear();
     }
 

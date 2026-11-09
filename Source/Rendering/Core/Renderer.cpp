@@ -82,6 +82,7 @@ namespace MDSS::Rendering
         bRenderPassSubstageTimingsReliable =
             DriverProperties.driverID != VK_DRIVER_ID_MOLTENVK || DeviceProperties.vendorID != 0x106BU;
         bSupportsWireframeLineWidth = DeviceFeatures.wideLines == VK_TRUE;
+
         if (bSupportsWireframeLineWidth)
         {
             WireframeLineWidthMin = std::max(1.0F, DeviceProperties.limits.lineWidthRange[0]);
@@ -153,6 +154,7 @@ namespace MDSS::Rendering
                                                       RenderStateTexture->GetLayout(),
                                                       Mode));
             }
+
             MudLayerGeometry =
                 std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                       Context.GetDevice(),
@@ -196,6 +198,7 @@ namespace MDSS::Rendering
                                                Mode));
             }
         }
+
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
         vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &PhysicalDeviceProperties);
@@ -205,10 +208,12 @@ namespace MDSS::Rendering
         std::vector<VkQueueFamilyProperties> QueueFamilies(QueueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(Context.GetPhysicalDevice(), &QueueFamilyCount, QueueFamilies.data());
         const std::uint32_t GraphicsQueueFamily = Context.GetQueues().GetFamilyIndices().GraphicsFamily.value();
+
         if (GraphicsQueueFamily < QueueFamilies.size())
         {
             TimestampValidBits = QueueFamilies[GraphicsQueueFamily].timestampValidBits;
         }
+
         if (TimestampValidBits > 0)
         {
             CreateTimestampQueryPool(SurfaceStateSystem.GetSolverInstanceCount());
@@ -217,6 +222,7 @@ namespace MDSS::Rendering
         {
             FLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
         }
+
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
         SurfaceTexelMeshResolution = Scene.GetSimulationResolution();
         OverlayTexelMeshResolution = Scene.GetSimulationResolution();
@@ -233,25 +239,30 @@ namespace MDSS::Rendering
         {
             vkDeviceWaitIdle(Context.GetDevice());
         }
+
         if (Benchmark.BenchmarkOutput.is_open())
         {
             for (const std::string& Line : Benchmark.BenchmarkJsonLines)
                 Benchmark.BenchmarkOutput << Line << '\n';
             Benchmark.BenchmarkOutput.flush();
         }
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkDestroyQueryPool(Context.GetDevice(), TimestampQueryPool, nullptr);
             TimestampQueryPool = VK_NULL_HANDLE;
         }
+
         DestroyRenderFinishedSemaphores();
 
         SurfaceDebugPipeline.reset();
+
         for (auto& Pipeline : SurfaceLitPipelines)
             Pipeline.reset();
         for (auto& Pipeline : BaseSurfaceLitPipelines)
             Pipeline.reset();
         RenderStateTexture.reset();
+
         for (auto& Pipeline : MudOverlayTopPipelines)
             Pipeline.reset();
         for (auto& Pipeline : MudOverlaySidePipelines)
@@ -262,12 +273,15 @@ namespace MDSS::Rendering
         HeightFieldSmoothing.reset();
         MudLayerGeometry.reset();
         TexelInspector.reset();
+
         if (MaterialDescriptorPool != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorPool(Context.GetDevice(), MaterialDescriptorPool, nullptr);
             MaterialDescriptorPool = VK_NULL_HANDLE;
         }
+
         MaterialResources.clear();
+
         if (MaterialDescriptorSetLayout != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorSetLayout(Context.GetDevice(), MaterialDescriptorSetLayout, nullptr);
@@ -292,16 +306,20 @@ namespace MDSS::Rendering
         { return std::chrono::duration<float, std::milli>(Duration).count(); };
         auto CpuStageStart = FClock::now();
         FrameContext.WaitForCurrentFrame();
+
         if (DebugInterface.GetViewportCount() > MaterialViewportCapacity)
         {
             if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
                 throw std::runtime_error("Failed to wait for GPU before growing viewport uniforms.");
             MaterialViewportCapacity = std::max(DebugInterface.GetViewportCount(), MaterialViewportCapacity * 2U);
+
             if (MaterialUniformStride * (MaterialViewportCapacity - 1U) > std::numeric_limits<std::uint32_t>::max())
                 throw std::runtime_error("Too many viewports for dynamic material uniform offsets.");
             CreateMaterialDescriptorResources();
         }
+
         ProfilingStats.FrameFenceWaitCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
+
         if (TexelInspector)
             TexelInspector->CompleteFrame(FrameIndex);
         if (OverlaySides)
@@ -310,20 +328,24 @@ namespace MDSS::Rendering
             ProfilingStats.OverlayActiveTopTriangles = Activity.Active;
             ProfilingStats.OverlayTotalTopTriangles = Activity.Total;
         }
+
         if (MudLayerGeometry)
         {
             const auto Activity = MudLayerGeometry->CompleteOccupancyFrame(FrameIndex);
             ProfilingStats.OverlayActiveTiles = Activity.Active;
             ProfilingStats.OverlayTotalTiles = Activity.Total;
         }
+
         CollectCompletedFrameTimings(FrameIndex);
 
         const bool bResetSolverState = FrameCoordinator.BeginFrame(DebugInterface, DeltaTime, bSuspendSimulationClock);
+
         if (bResetSolverState)
         {
             if (TexelInspector)
                 TexelInspector->Invalidate();
         }
+
         ProfilingStats.DroppedSimulationSeconds = FrameCoordinator.GetDroppedSeconds();
 
         if (TargetWindow.WasFramebufferResized())
@@ -348,6 +370,7 @@ namespace MDSS::Rendering
             RecreateSwapchain(DebugInterface);
             return;
         }
+
         if (AcquireResult != VK_SUCCESS && AcquireResult != VK_SUBOPTIMAL_KHR)
         {
             throw std::runtime_error("Failed to acquire a Vulkan swapchain image.");
@@ -356,6 +379,7 @@ namespace MDSS::Rendering
         FrameContext.ResetCurrentFence();
 
         const VkCommandBuffer CommandBuffer = FrameContext.GetCurrentCommandBuffer();
+
         if (vkResetCommandBuffer(CommandBuffer, 0) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to reset Vulkan command buffer.");
@@ -365,6 +389,7 @@ namespace MDSS::Rendering
         const auto& SimulationSteps = FrameCoordinator.GetSteps();
         ProfilingStats.SimulationSteps = FrameCoordinator.GetStepCount();
         ProfilingStats.SimulatedThisFrameSeconds = 0.0F;
+
         for (const float StepSeconds : SimulationSteps)
             ProfilingStats.SimulatedThisFrameSeconds += StepSeconds;
         ProfilingStats.PendingSimulationSeconds = static_cast<float>(FrameCoordinator.GetPendingSeconds());
@@ -375,6 +400,7 @@ namespace MDSS::Rendering
         ProfilingStats.SurfaceTexelMeshResolution = SurfaceTexelMeshResolution;
         ProfilingStats.OverlayTexelMeshResolution = OverlayTexelMeshResolution;
         const auto& GPUResources = SurfaceStateSystem.GetGPUResources();
+
         for (std::size_t Instance = 0; Instance < GPUResources.GetSceneInstanceCount(); ++Instance)
         {
             if (GPUResources.GetInstanceDescriptors(Instance) == nullptr)
@@ -382,16 +408,19 @@ namespace MDSS::Rendering
             ProfilingStats.SimulationTexels += GPUResources.GetInstanceTexelCount(Instance);
             ProfilingStats.StateChannels = static_cast<std::uint32_t>(GPUResources.GetInstanceChannelCount(Instance));
         }
+
         if (SimulationSteps.empty())
             LastSolverGpuMilliseconds = LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = 0.0F;
         CpuStageStart = FClock::now();
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, SimulationSteps);
         OverlayDisplayModesSubmitted[FrameIndex] = OverlayDisplayMode;
         ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             bTimestampQueriesSubmitted[FrameIndex] = true;
             SolverTimestampStepsSubmitted[FrameIndex] = FrameCoordinator.GetStepCount();
+
             if (Benchmark.bBenchmarkCaptureEnabled)
             {
                 Benchmark.BenchmarkSubmissions[FrameIndex] = {Benchmark.NextBenchmarkFrameIndex++,
@@ -407,10 +436,12 @@ namespace MDSS::Rendering
         }
 
         const VkSemaphore WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
+
         if (ImageIndex >= RenderFinishedSemaphores.size())
         {
             throw std::runtime_error("Acquired swapchain image has no render-finished semaphore.");
         }
+
         const VkSemaphore          SignalSemaphore = RenderFinishedSemaphores[ImageIndex];
         const VkPipelineStageFlags WaitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -425,11 +456,13 @@ namespace MDSS::Rendering
         SubmitInfo.pSignalSemaphores = &SignalSemaphore;
 
         CpuStageStart = FClock::now();
+
         if (vkQueueSubmit(Context.GetQueues().GetGraphics(), 1, &SubmitInfo, FrameContext.GetInFlightFence()) !=
             VK_SUCCESS)
         {
             throw std::runtime_error("Failed to submit Vulkan draw command buffer.");
         }
+
         ProfilingStats.QueueSubmitCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
 
         const VkSwapchainKHR SwapchainHandle = SwapchainData.GetHandle();
@@ -465,6 +498,7 @@ namespace MDSS::Rendering
                 Benchmark.NextBenchmarkFrameIndex > Benchmark.BenchmarkWarmupFrames)
                 WriteBenchmarkMetadata(SceneData, DebugInterface);
         }
+
         FrameContext.AdvanceFrame();
 
         if (bSwapchainNeedsRecreation)
@@ -486,12 +520,14 @@ namespace MDSS::Rendering
         {
             throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
+
         // Scene loading can append new MTL materials to AssetManager. Rebuild their
         // descriptors before command recording; otherwise new sections are skipped.
         if (MaterialResources.size() != Assets.GetMaterialCount())
         {
             CreateMaterialDescriptorResources();
         }
+
         auto&               ReusePool = SurfaceStateSystem.GetReusableBufferPool();
         const std::uint64_t ReuseCountBefore = ReusePool.GetReuseCount();
         const VkDeviceSize  ReusedBytesBefore = ReusePool.GetReusedBytes();
@@ -526,11 +562,13 @@ namespace MDSS::Rendering
             Replacement->SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
             Replacement->SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
             Replacement->SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
+
             for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
             {
                 Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::ESurfaceSolverTerm>(Index),
                                                        DebugSolverSettings.Enabled[Index]);
             }
+
             if (!bResetStateSettings)
             {
                 for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
@@ -538,6 +576,7 @@ namespace MDSS::Rendering
                     Replacement->SetDebugProfileParameters(Key.first, Key.second, Parameters);
                 }
             }
+
             if (const SurfaceState::FSurfaceStateDescriptorResources* Descriptors =
                     Replacement->GetGPUResources().GetAnyInstanceDescriptors())
             {
@@ -584,6 +623,7 @@ namespace MDSS::Rendering
                                                           ReplacementRenderStateTexture->GetLayout(),
                                                           Mode));
                 }
+
                 ReplacementMudGeometry =
                     std::make_unique<SurfaceState::FTexelGeometryPreview>(Context.GetPhysicalDevice(),
                                                                           Context.GetDevice(),
@@ -636,12 +676,15 @@ namespace MDSS::Rendering
             SurfaceData.ExchangeSurfaceStateRegistry(std::move(PreviousRegistry));
             throw;
         }
+
         SurfaceDebugPipeline.reset();
+
         for (auto& Pipeline : SurfaceLitPipelines)
             Pipeline.reset();
         for (auto& Pipeline : BaseSurfaceLitPipelines)
             Pipeline.reset();
         RenderStateTexture.reset();
+
         for (auto& Pipeline : MudOverlayTopPipelines)
             Pipeline.reset();
         for (auto& Pipeline : MudOverlaySidePipelines)
@@ -673,11 +716,13 @@ namespace MDSS::Rendering
         MudOverlayTopPipelines = std::move(ReplacementMudTopPipelines);
         MudOverlaySidePipelines = std::move(ReplacementMudSidePipelines);
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
+
         if (bResetStateSettings)
         {
             DebugProfileParameterOverrides.clear();
             DebugStateChannel = 0;
         }
+
         CreateTimestampQueryPool(SurfaceStateSystem.GetSolverInstanceCount());
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
@@ -688,6 +733,7 @@ namespace MDSS::Rendering
     void FRenderer::RestartSimulationState()
     {
         FrameCoordinator.RestartState();
+
         if (TexelInspector)
             TexelInspector->Invalidate();
     }
@@ -751,6 +797,7 @@ namespace MDSS::Rendering
         auto&                                                Instances = Scene.GetStaticMeshInstances();
         std::vector<SurfaceState::FSurfaceRuntimeDataHandle> PreviousHandles;
         PreviousHandles.reserve(Instances.size());
+
         for (const auto& Instance : Instances)
             PreviousHandles.push_back(Instance.GetSurfaceData());
         auto ReplacementHandles = PreviousHandles;
@@ -762,20 +809,24 @@ namespace MDSS::Rendering
                     ReplacementHandles[Index] =
                         SurfaceData.LoadSurfaceDataAtResolution(PreviousHandles[Index], Resolution);
             }
+
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
                 Instances[Index].SetSurfaceData(ReplacementHandles[Index]);
             Scene.SetSimulationResolution(Resolution);
+
             // The solver must keep referencing the persistent Scene, rather than a temporary copy.
             ReloadSceneResources(Scene, false);
         }
         catch (...)
         {
             Scene.SetSimulationResolution(PreviousResolution);
+
             for (std::size_t Index = 0; Index < Instances.size(); ++Index)
                 Instances[Index].SetSurfaceData(PreviousHandles[Index]);
             SurfaceData.ReleaseUnusedSurfaceData(PreviousHandles);
             throw;
         }
+
         SurfaceData.ReleaseUnusedSurfaceData(ReplacementHandles);
         FLogger::Info("TRenderer",
                       "Simulation resolution changed to " + std::to_string(Resolution) + " x " +
@@ -785,6 +836,7 @@ namespace MDSS::Rendering
     void FRenderer::RecreateSwapchain(FDebugUI& DebugInterface)
     {
         TargetWindow.WaitForNonZeroFramebuffer();
+
         if (TargetWindow.ShouldClose())
         {
             return;

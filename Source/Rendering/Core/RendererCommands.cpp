@@ -64,6 +64,7 @@ namespace MDSS::Rendering
     {
         VkCommandBufferBeginInfo BeginInfo{};
         BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
         if (vkBeginCommandBuffer(CommandBuffer, &BeginInfo) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to begin Vulkan command buffer.");
@@ -104,10 +105,12 @@ namespace MDSS::Rendering
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 22U);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 4U);
         }
+
         if (TexelInspector && InspectedTexel &&
             DebugStateChannel < SurfaceData.GetSurfaceStateRegistry().GetStateCount())
         {
             const auto& Resources = SurfaceStateSystem.GetGPUResources();
+
             if (const auto* Descriptors = Resources.GetInstanceDescriptors(InspectedTexel->Instance))
                 TexelInspector->Record(
                     CommandBuffer,
@@ -121,6 +124,7 @@ namespace MDSS::Rendering
                     Resources.IsCurrentStateAB(InspectedTexel->Instance),
                     FrameCoordinator.GetStepSerial());
         }
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdWriteTimestamp(
@@ -142,6 +146,7 @@ namespace MDSS::Rendering
         std::vector<ERenderViewMode> ViewModes(DebugInterface.GetViewportCount(), ERenderViewMode::Lit);
         bool                         bAnyTexelGeometry = false;
         bool                         bAnyLitView = false;
+
         for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
         {
             ViewModes[ViewportIndex] = GetRenderViewMode(ViewportIndex);
@@ -177,10 +182,12 @@ namespace MDSS::Rendering
         if (bAnyTexelGeometry || bOverlayRendering)
         {
             const auto& Resources = SurfaceStateSystem.GetGPUResources();
+
             for (std::size_t Instance = 0; Instance < SceneData.GetStaticMeshInstances().size(); ++Instance)
             {
                 const auto* Shared = Resources.GetInstanceSharedGeometry(Instance);
                 const auto* Descriptors = Resources.GetInstanceDescriptors(Instance);
+
                 if (!Shared || !Descriptors || !Shared->GetTexelMeshIndexBuffer())
                     continue;
                 const auto& MeshInstance = SceneData.GetStaticMeshInstances()[Instance];
@@ -193,6 +200,7 @@ namespace MDSS::Rendering
                     for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
                     {
                         const ERenderViewMode Mode = ViewModes[ViewportIndex];
+
                         if (!UsesTexelGeometry(Mode))
                             continue;
                         const bool bAccumulation = Mode == ERenderViewMode::SurfaceAccumulation ||
@@ -219,11 +227,13 @@ namespace MDSS::Rendering
                                                      ViewportIndex + 1U);
                     }
                 }
+
                 if (!bOverlayRendering)
                     continue;
 
                 OverlayActive[Instance] = GetLitOverlayActivity(MeshInstance, Shared, DemoBindings);
                 const auto [bMud, bWater, bLava] = OverlayActive[Instance];
+
                 if (bMud || bWater || bLava)
                     TexelGeometryPreview->Record(CommandBuffer,
                                                  Instance,
@@ -276,6 +286,7 @@ namespace MDSS::Rendering
                         vkCmdWriteTimestamp(
                             CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery + 2U);
                     }
+
                     VkDescriptorSet        GeometrySet = Preview.GetOutputSet(Instance);
                     const GPU::FGPUBuffer* GeometryBuffer = &Preview.GetOutputBuffer(Instance);
                     const auto             SmoothChannel = [&](SurfaceState::FStateId Channel)
@@ -297,6 +308,7 @@ namespace MDSS::Rendering
                         GeometrySet = HeightFieldSmoothing->GetOutputSet(Instance, Channel);
                         GeometryBuffer = &HeightFieldSmoothing->GetOutputBuffer(Instance, Channel);
                     };
+
                     if (DemoEffects.bHeightFieldSmoothing)
                     {
                         if (bMud && DemoBindings.Mud != SurfaceState::InvalidStateId)
@@ -308,7 +320,9 @@ namespace MDSS::Rendering
                         if (bLava && DemoBindings.Lava != SurfaceState::InvalidStateId)
                             SmoothChannel(DemoBindings.Lava);
                     }
+
                     OverlayGeometrySets[Instance] = GeometrySet;
+
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                     {
                         vkCmdWriteTimestamp(
@@ -316,6 +330,7 @@ namespace MDSS::Rendering
                         vkCmdWriteTimestamp(
                             CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery + 4U);
                     }
+
                     OverlaySides->Record(
                         CommandBuffer,
                         Instance,
@@ -344,6 +359,7 @@ namespace MDSS::Rendering
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                         ++OverlayTimestampLayersSubmitted[FrameIndex];
                 };
+
                 if (bMud || bWater || bLava)
                 {
                     // Accumulation height was produced immediately after the latest solver step.
@@ -351,6 +367,7 @@ namespace MDSS::Rendering
                 }
             }
         }
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 13U);
@@ -392,7 +409,9 @@ namespace MDSS::Rendering
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, TimestampQueryPool, QueryBase + 17U);
         }
+
         MainGraphicsPass.Begin(CommandBuffer, MainFramebuffers, ImageIndex, SwapchainData.GetExtent(), ClearValues);
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdWriteTimestamp(
@@ -410,9 +429,11 @@ namespace MDSS::Rendering
                                          const FCommandRecordingState& Frame)
     {
         const VkExtent2D Extent = SwapchainData.GetExtent();
+
         for (std::size_t ViewportIndex = 0; ViewportIndex < DebugInterface.GetViewportCount(); ++ViewportIndex)
         {
             const glm::vec4 NormalizedViewport = DebugInterface.GetViewportRectNormalized(ViewportIndex);
+
             if (NormalizedViewport.z <= 0.0F || NormalizedViewport.w <= 0.0F)
                 continue;
             const FViewportRecordingState View = ConfigureViewport(
@@ -435,11 +456,13 @@ namespace MDSS::Rendering
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 3U);
         DebugInterface.Render(CommandBuffer);
+
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 19U);
 
         MainGraphicsPass.End(CommandBuffer);
+
         if (Benchmark.bBenchmarkCaptureEnabled)
             RecordBenchmarkScreenshot(CommandBuffer, ImageIndex);
         if (TimestampQueryPool != VK_NULL_HANDLE)
@@ -491,6 +514,7 @@ namespace MDSS::Rendering
             // Without wideLines support, Vulkan only permits the default width of 1.0.
             vkCmdSetLineWidth(CommandBuffer, bSupportsWireframeLineWidth ? WireframeLineWidth : 1.0F);
         }
+
         const FCamera&      ViewCamera = DebugInterface.GetViewportCamera(SceneData, ViewportIndex);
         const std::uint32_t MaterialUniformOffset = static_cast<std::uint32_t>(MaterialUniformStride * ViewportIndex);
         const std::uint32_t ViewportX = std::min(
@@ -573,15 +597,18 @@ namespace MDSS::Rendering
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 6U);
         std::size_t SceneIndex = 0;
+
         for (const FStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
         {
             const std::size_t CurrentSceneIndex = SceneIndex++;
+
             if (Instance.GetMesh() == Asset::InvalidAssetHandle)
             {
                 continue;
             }
 
             const Asset::FMeshAsset& Mesh = Assets.GetMesh(Instance.GetMesh());
+
             // Debug texel geometry can extend beyond the source mesh; its bounds are not static.
             if (!bTexelGeometry &&
                 !IsMeshSphereVisible(
@@ -593,8 +620,9 @@ namespace MDSS::Rendering
             {
                 continue;
             }
+
             const auto* Shared = SurfaceGPU.GetInstanceSharedGeometry(CurrentSceneIndex);
-            const bool  bInstanceOverlay = Mode == ERenderViewMode::Lit && bOverlayRendering &&
+            const bool bInstanceOverlay = Mode == ERenderViewMode::Lit && bOverlayRendering &&
                                           (OverlayActive[CurrentSceneIndex][0] || OverlayActive[CurrentSceneIndex][1] ||
                                            OverlayActive[CurrentSceneIndex][2]);
             if (bOverlayOnlyDebug && Mode == ERenderViewMode::Lit && bOverlayRendering)
@@ -606,6 +634,7 @@ namespace MDSS::Rendering
                 if (!Shared || !Shared->GetTexelMeshIndexBuffer())
                     continue;
                 const auto& SurfaceMesh = Shared->GetTexelMeshVariant(SurfaceTexelMeshResolution);
+
                 if (!bTexelGeometry && (!SurfaceMesh.IndexBuffer || !SurfaceMesh.VertexBuffer))
                     continue;
                 const auto& Pipeline = bTexelGeometry ? TexelGeometryPipeline : BaseSurfaceLitPipelines[FragmentMode];
@@ -638,6 +667,7 @@ namespace MDSS::Rendering
                     vkCmdBindDescriptorSets(
                         CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 3, 1, &RenderSet, 0, nullptr);
                 }
+
                 for (const auto& Section : Mesh.GetSections())
                 {
                     if (Section.Material >= MaterialResources.size() ||
@@ -659,8 +689,10 @@ namespace MDSS::Rendering
                                             &MaterialUniformOffset);
                     vkCmdDrawIndexed(CommandBuffer, Range.IndexCount, 1, Range.FirstIndex, 0, 0);
                 }
+
                 continue;
             }
+
             const bool  bInstanceSurfaceLit = bSurfaceLit && SurfaceDescriptors;
             const auto& Pipeline = bInstanceSurfaceLit
                                        ? *SurfaceLitPipelines[FragmentMode]
@@ -708,6 +740,7 @@ namespace MDSS::Rendering
                     vkCmdBindDescriptorSets(
                         CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Layout, 1, 1, &StateSet, 0, nullptr);
                 }
+
                 if (bInstanceSurfaceLit)
                 {
                     const VkDescriptorSet RenderSet =
@@ -763,6 +796,7 @@ namespace MDSS::Rendering
                 const auto&              TopPipeline = MudOverlayTopPipelines[FragmentMode];
                 const auto&              SidePipeline = MudOverlaySidePipelines[FragmentMode];
                 std::vector<std::size_t> Order;
+
                 for (std::size_t I = 0; I < OverlayActive.size(); ++I)
                     if (OverlayActive[I][0] || OverlayActive[I][1] || OverlayActive[I][2])
                         Order.push_back(I);
@@ -773,9 +807,11 @@ namespace MDSS::Rendering
                     const auto&             Mesh = Assets.GetMesh(Instance.GetMesh());
                     const auto*             Shared = SurfaceGPU.GetInstanceSharedGeometry(I);
                     const auto*             Descriptors = SurfaceGPU.GetInstanceDescriptors(I);
+
                     if (!Shared || !Descriptors)
                         continue;
                     const auto& OverlayMesh = Shared->GetTexelMeshVariant(OverlayTexelMeshResolution);
+
                     if (!OverlayMesh.IndexBuffer || !OverlayMesh.VertexBuffer)
                         continue;
                     const VkDescriptorSet StateSet =
@@ -821,6 +857,7 @@ namespace MDSS::Rendering
                                 Section.Surface >= OverlayMesh.Ranges.size())
                                 continue;
                             const auto& Range = OverlayMesh.Ranges[Section.Surface];
+
                             if (Range.IndexCount == 0)
                                 continue;
                             const VkDescriptorSet MaterialSet =
@@ -863,6 +900,7 @@ namespace MDSS::Rendering
                     vkCmdBindDescriptorSets(
                         CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, SideLayout, 4, 1, &RenderSet, 0, nullptr);
                     const VkBuffer SideDrawBuffer = OverlaySides->GetDrawBuffer(I, Channel, OverlayTexelMeshResolution);
+
                     if (bOverlaySidesDrawEnabled && OverlayDisplayMode != EOverlayDisplayMode::TopOnly)
                     {
                         for (const auto& Section : Mesh.GetSections())
@@ -871,6 +909,7 @@ namespace MDSS::Rendering
                                 Section.Surface >= OverlayMesh.Ranges.size())
                                 continue;
                             const auto& Range = OverlayMesh.Ranges[Section.Surface];
+
                             if (Range.IndexCount == 0)
                                 continue;
                             const VkDescriptorSet MaterialSet =
@@ -891,11 +930,13 @@ namespace MDSS::Rendering
                                               0);
                         }
                     }
+
                     if (bOverlaySidesDrawEnabled && OverlayDisplayMode != EOverlayDisplayMode::TopOnly &&
                         OverlaySides->GetBoundaryCount(I, Channel, OverlayTexelMeshResolution) > 0 &&
                         !Mesh.GetSections().empty())
                     {
                         const auto Material = Mesh.GetSections().front().Material;
+
                         if (Material < MaterialResources.size())
                         {
                             const VkDescriptorSet MaterialSet = MaterialResources[Material].DescriptorSets[FrameIndex];
@@ -917,10 +958,12 @@ namespace MDSS::Rendering
                     }
                 }
             };
+
             if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
                 vkCmdWriteTimestamp(
                     CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 8U);
             DrawLayer();
+
             if (TimestampQueryPool != VK_NULL_HANDLE && ViewportIndex == 0)
                 vkCmdWriteTimestamp(
                     CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 9U);
@@ -978,6 +1021,7 @@ namespace MDSS::Rendering
             {
                 vkCmdDraw(CommandBuffer, WorldGridVertexCount, 1, 0, 0);
             }
+
             if (bWorldAxisVisible)
             {
                 vkCmdDraw(CommandBuffer, WorldAxisVertexCount, 1, WorldGridVertexCount, 0);
@@ -991,6 +1035,7 @@ namespace MDSS::Rendering
             {
                 const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*Selected].GetTransform().Position;
                 const float     GizmoScale = glm::length(ViewCamera.GetPosition() - Position) * 0.18F;
+
                 if (GizmoScale > 0.01F)
                 {
                     const glm::mat4 Model =

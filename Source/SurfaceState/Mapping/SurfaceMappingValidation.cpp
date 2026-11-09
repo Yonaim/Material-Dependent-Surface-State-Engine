@@ -27,6 +27,7 @@ namespace MDSS::SurfaceState
                     return true;
                 }
             }
+
             return false;
         }
     } // namespace
@@ -40,16 +41,20 @@ namespace MDSS::SurfaceState
     void ValidateSurfaceMapping(const FSurfaceMappingData& Mapping)
     {
         std::size_t ExpectedFirstTexel = 0;
+
         for (std::size_t SurfaceIndex = 0; SurfaceIndex < Mapping.Surfaces.size(); ++SurfaceIndex)
         {
             const FSurfaceTexelRange& Surface = Mapping.Surfaces[SurfaceIndex];
+
             if (Surface.Surface != SurfaceIndex || Surface.FirstTexel != ExpectedFirstTexel ||
                 Surface.TexelCount != Surface.Resolution.GetTexelCount())
             {
                 throw std::invalid_argument("Surface mapping ranges must be dense, ordered, and contiguous.");
             }
+
             ExpectedFirstTexel += Surface.TexelCount;
         }
+
         if (ExpectedFirstTexel != Mapping.Texels.size())
         {
             throw std::invalid_argument("Surface mapping range size does not match its texel array.");
@@ -67,22 +72,27 @@ namespace MDSS::SurfaceState
                 {
                     continue;
                 }
+
                 if (!Texel.IsValid())
                 {
                     throw std::invalid_argument("Invalid texel " + std::to_string(Index) + " has a neighbor.");
                 }
+
                 if (Neighbor >= Mapping.Texels.size())
                 {
                     throw std::invalid_argument("Texel neighbor index is outside the mapping range.");
                 }
+
                 if (Neighbor == Index)
                 {
                     throw std::invalid_argument("A texel cannot be its own neighbor.");
                 }
+
                 if (!Mapping.Texels[Neighbor].IsValid())
                 {
                     throw std::invalid_argument("A valid texel references an invalid neighbor.");
                 }
+
                 for (std::size_t SeenIndex = 0; SeenIndex < SeenCount; ++SeenIndex)
                 {
                     if (Seen[SeenIndex] == Neighbor)
@@ -90,6 +100,7 @@ namespace MDSS::SurfaceState
                         throw std::invalid_argument("A texel contains a duplicate neighbor.");
                     }
                 }
+
                 Seen[SeenCount++] = Neighbor;
 
                 if (!ContainsNeighbor(Mapping.Texels[Neighbor], static_cast<FLocalTexelIndex>(Index)))

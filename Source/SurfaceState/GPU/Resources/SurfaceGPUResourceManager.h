@@ -31,11 +31,13 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
     class FSurfaceGPUBufferPool;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
@@ -117,6 +119,7 @@ namespace MDSS::SurfaceState
         struct FInstanceResources
         {
             std::unique_ptr<FSurfaceInstanceGPUResources> State;
+
             // 디스크립터가 참조하는 버퍼보다 디스크립터 세트와 레이아웃을 먼저 파괴한다.
             std::unique_ptr<FSurfaceStateDescriptorResources> Descriptors;
             FSurfaceRuntimeDataHandle                         SurfaceDataHandle{};

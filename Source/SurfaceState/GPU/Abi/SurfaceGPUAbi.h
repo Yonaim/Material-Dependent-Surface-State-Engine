@@ -51,6 +51,7 @@ namespace MDSS::SurfaceState
         std::uint32_t                       Flags = 0;
         std::array<float, 4>                GravityWorld{};
         std::array<std::array<float, 4>, 3> ModelLinearColumns{};
+
         // xyz: inverse-transpose columns, w: corresponding component of the gravity up axis.
         std::array<std::array<float, 4>, 3> NormalMatrixAndUpColumns{};
     };

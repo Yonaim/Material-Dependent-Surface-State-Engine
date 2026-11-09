@@ -52,12 +52,14 @@ namespace MDSS
                 }
             }
         }
+
         if (IO.FontDefault == nullptr)
         {
             ImFontConfig DefaultFontConfig{};
             DefaultFontConfig.SizePixels = 14.0F;
             IO.FontDefault = IO.Fonts->AddFontDefault(&DefaultFontConfig);
         }
+
         if (ViewportState.SectionHeaderFont == nullptr)
         {
             ImFontConfig HeaderFontConfig{};
@@ -79,6 +81,7 @@ namespace MDSS
         Style.Colors[ImGuiCol_Text] = {0.91F, 0.93F, 0.97F, 1.0F};
         Style.Colors[ImGuiCol_TextDisabled] = {0.46F, 0.50F, 0.57F, 1.0F};
         Style.Colors[ImGuiCol_CheckMark] = {0.35F, 0.78F, 1.0F, 1.0F};
+
         // 창 배경은 패널과 내부 영역에 두 단계의 더 어두운 회색을 쓴다.
         Style.Colors[ImGuiCol_WindowBg] = {0.075F, 0.082F, 0.10F, 0.99F};
         Style.Colors[ImGuiCol_ChildBg] = {0.058F, 0.065F, 0.082F, 0.94F};
@@ -183,6 +186,7 @@ namespace MDSS
 
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::GetIO().FontGlobalScale = DisplaySize.x >= 1280.0F && DisplaySize.y >= 800.0F ? 1.15F : 1.0F;
+
         if (ImGui::IsKeyPressed(ImGuiKey_F10))
             TogglePresentationMode();
         if (Presentation.bPresentationMode && ImGui::IsKeyPressed(ImGuiKey_Escape))
@@ -190,12 +194,14 @@ namespace MDSS
         if (ImGui::IsKeyPressed(ImGuiKey_F9) && SceneData.HasDemoAnimation())
             ReplayDemo(SceneData);
         UpdateDemoPlaybackGridAxis(SceneData);
+
         if (Presentation.bPresentationMode)
         {
             DrawDemoWeatherOverlay(SceneData);
             ImGui::Render();
             return;
         }
+
         SetupDockspace();
 
         // Render the viewport windows before the other editor windows.  The
@@ -212,6 +218,7 @@ namespace MDSS
         DrawSelectedObjectWindow(SceneData);
         DrawRenderSettingsWindow(SceneData);
         DrawViewportStatsOverlay();
+
         if (ViewportState.bMouseOverViewportOverlay)
             ViewportState.HoveredViewportId = 0;
         DrawSimulationDebugWindow(SceneData);
@@ -225,7 +232,7 @@ namespace MDSS
             const ImVec2    DisplaySize = ImGui::GetIO().DisplaySize;
             const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
             const ImVec2    Center{Viewport->Pos.x + (Rect.x + Rect.z * 0.5F) * DisplaySize.x,
-                                Viewport->Pos.y + (Rect.y + Rect.w * 0.5F) * DisplaySize.y};
+                                   Viewport->Pos.y + (Rect.y + Rect.w * 0.5F) * DisplaySize.y};
             constexpr float CrosshairHalfSize = 9.0F;
             constexpr ImU32 CrosshairColor = IM_COL32(255, 255, 255, 230);
             ImDrawList*     DrawList = ImGui::GetForegroundDrawList();
@@ -246,15 +253,19 @@ namespace MDSS
     {
         ImGui::Dummy({0.0F, TopPadding});
         ImGui::PushStyleColor(ImGuiCol_Text, {0.91F, 0.93F, 0.97F, 1.0F});
+
         if (ViewportState.SectionHeaderFont != nullptr)
         {
             ImGui::PushFont(ViewportState.SectionHeaderFont);
         }
+
         ImGui::TextUnformatted(Title);
+
         if (ViewportState.SectionHeaderFont != nullptr)
         {
             ImGui::PopFont();
         }
+
         ImGui::PopStyleColor();
         ImGui::Separator();
         ImGui::Dummy({0.0F, BottomPadding});
@@ -263,6 +274,7 @@ namespace MDSS
     void FDebugUI::Render(VkCommandBuffer CommandBuffer) const
     {
         ImDrawData* DrawData = ImGui::GetDrawData();
+
         if (DrawData != nullptr && DrawData->CmdListsCount > 0)
         {
             ImGui_ImplVulkan_RenderDrawData(DrawData, CommandBuffer);
@@ -382,15 +394,18 @@ namespace MDSS
     void FDebugUI::DrawDemoWeatherOverlay(const FScene& SceneData)
     {
         const auto* Cue = SceneData.GetDemoWeather();
+
         if (!Cue)
             return;
         const float Time = SceneData.GetDemoAnimationTime();
+
         if (Time >= Cue->CloudEndSeconds)
             return;
 
         const ImVec2    Display = ImGui::GetIO().DisplaySize;
         const ImVec2    Origin = ImGui::GetMainViewport()->Pos;
         const glm::vec4 Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+
         if (Rect.z <= 0.0F || Rect.w <= 0.0F)
             return;
         const ImVec2 Min{Origin.x + Rect.x * Display.x, Origin.y + Rect.y * Display.y};
@@ -401,8 +416,8 @@ namespace MDSS
         const float  Leave = std::clamp((Cue->CloudEndSeconds - Time) / 1.2F, 0.0F, 1.0F);
         const float  CloudAlpha = Cue->Intensity * Enter * Leave;
         const float  RainAlpha = Cue->Intensity * std::clamp((Time - Cue->RainStartSeconds) / 0.45F, 0.0F, 1.0F) *
-                                std::clamp((Cue->RainEndSeconds - Time) / 0.45F, 0.0F, 1.0F);
-        ImDrawList* Draw = ImGui::GetBackgroundDrawList();
+                                 std::clamp((Cue->RainEndSeconds - Time) / 0.45F, 0.0F, 1.0F);
+        ImDrawList*  Draw = ImGui::GetBackgroundDrawList();
         Draw->PushClipRect(Min, Max, true);
         const float Band = std::min(Height * 0.19F, 115.0F);
         Draw->AddRectFilledMultiColor(Min,
@@ -423,6 +438,7 @@ namespace MDSS
                     {X, Y}, {X - 3.0F, Y + 12.0F}, IM_COL32(181, 207, 231, static_cast<int>(RainAlpha * 95.0F)), 1.0F);
             }
         }
+
         Draw->PopClipRect();
     }
 
@@ -469,20 +485,24 @@ namespace MDSS
 
         FTransform& Transform = SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform();
         glm::vec3   Target = Transform.Position;
+
         if (AssetManager != nullptr)
         {
             const Asset::FMeshAsset& Mesh =
                 AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetMesh());
             const auto& Vertices = Mesh.GetVertices();
+
             if (!Vertices.empty())
             {
                 glm::vec3 Minimum(std::numeric_limits<float>::max());
                 glm::vec3 Maximum(std::numeric_limits<float>::lowest());
+
                 for (const Asset::FVertex& Vertex : Vertices)
                 {
                     Minimum = glm::min(Minimum, Vertex.Position);
                     Maximum = glm::max(Maximum, Vertex.Position);
                 }
+
                 const glm::vec3 LocalBoundsCenter = (Minimum + Maximum) * 0.5F;
                 Target = glm::vec3(Transform.GetMatrix() * glm::vec4(LocalBoundsCenter, 1.0F));
             }

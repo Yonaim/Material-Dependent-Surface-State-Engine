@@ -60,11 +60,13 @@ namespace MDSS::SurfaceState
             if (!File)
                 throw std::runtime_error("Cannot open Texel Inspector shader.");
             const auto Size = File.tellg();
+
             if (Size <= 0 || Size % 4 != 0)
                 throw std::runtime_error("Invalid Texel Inspector SPIR-V.");
             std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
             File.seekg(0);
             File.read(reinterpret_cast<char*>(Code.data()), Size);
+
             if (!File)
                 throw std::runtime_error("Cannot read Texel Inspector shader.");
             VkShaderModuleCreateInfo ModuleInfo{};
@@ -90,6 +92,7 @@ namespace MDSS::SurfaceState
             PoolInfo.pPoolSizes = &PoolSize;
             RequireVk(vkCreateDescriptorPool(Device, &PoolInfo, nullptr, &Pool));
             Frames.resize(FrameCount);
+
             for (auto& Frame : Frames)
             {
                 Frame.Buffer = std::make_unique<GPU::FGPUBuffer>(PhysicalDevice,
@@ -129,6 +132,7 @@ namespace MDSS::SurfaceState
     {
         Destroy();
     }
+
     void FTexelInspector::Destroy() noexcept
     {
         if (Pipeline)
@@ -138,6 +142,7 @@ namespace MDSS::SurfaceState
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
         Frames.clear();
+
         if (OutputLayout)
             vkDestroyDescriptorSetLayout(Device, OutputLayout, nullptr);
     }
@@ -170,9 +175,11 @@ namespace MDSS::SurfaceState
         glm::mat3       NormalMatrix(0.0F);
         const glm::mat3 ModelLinear(ModelMatrix);
         const float     Determinant = glm::determinant(ModelLinear);
+
         if (std::isfinite(Determinant) && std::abs(Determinant) > 1e-6F)
             NormalMatrix = glm::transpose(glm::inverse(ModelLinear));
         FPush Push{Selection.Texel, Channel, Channels, AccumulationDisplayScale, {}};
+
         for (int Column = 0; Column < 3; ++Column)
             Push.NormalMatrixColumns[Column] = glm::vec4(NormalMatrix[Column], 0.0F);
         const std::array<VkDescriptorSet, 2> Sets{bStateAB ? Descriptors.GetABSet() : Descriptors.GetBASet(),
@@ -211,11 +218,13 @@ namespace MDSS::SurfaceState
     void FTexelInspector::CompleteFrame(std::size_t FrameIndex)
     {
         auto& Frame = Frames.at(FrameIndex);
+
         if (Frame.Pending && Frame.Generation == Generation && (!Snapshot || Frame.Pending->Serial > Snapshot->Serial))
         {
             Frame.Buffer->Download(Frame.Pending->Values.data(), SnapshotBytes);
             Snapshot = std::move(Frame.Pending);
         }
+
         Frame.Pending.reset();
     }
 

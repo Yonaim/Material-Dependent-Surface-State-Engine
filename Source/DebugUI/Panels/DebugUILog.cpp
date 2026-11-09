@@ -11,6 +11,7 @@ namespace MDSS
         if (ImGui::Begin("Log"))
         {
             const std::uint64_t CurrentRevision = FLogger::GetRevision();
+
             if (CurrentRevision != LogState.LastSeenRevision)
             {
                 LogState.Entries = FLogger::GetEntries();
@@ -28,12 +29,15 @@ namespace MDSS
             ImGui::SetNextItemWidth(260.0F);
             ImGui::InputTextWithHint("##LogSearch", "Search logs...", LogState.Search.data(), LogState.Search.size());
             ImGui::SameLine();
+
             if (ImGui::Button("Copy Visible"))
             {
                 std::string ClipboardText;
+
                 for (const FLogEntry& Entry : LogState.Entries)
                 {
                     const std::size_t Index = static_cast<std::size_t>(Entry.Level);
+
                     if (Index < LogState.LevelFilters.size() && LogState.LevelFilters[Index] &&
                         ContainsCaseInsensitive(Entry.Formatted, LogState.Search.data()))
                     {
@@ -41,15 +45,19 @@ namespace MDSS
                         ClipboardText.push_back('\n');
                     }
                 }
+
                 ImGui::SetClipboardText(ClipboardText.c_str());
             }
 
             ImGui::SameLine();
+
             if (ImGui::Button("All"))
             {
                 LogState.LevelFilters.fill(true);
             }
+
             ImGui::SameLine();
+
             if (ImGui::Button("None"))
             {
                 LogState.LevelFilters.fill(false);
@@ -74,10 +82,12 @@ namespace MDSS
             for (const FLogEntry& Entry : LogState.Entries)
             {
                 const std::size_t Index = static_cast<std::size_t>(Entry.Level);
+
                 if (Index >= LogState.LevelFilters.size() || !LogState.LevelFilters[Index])
                 {
                     continue;
                 }
+
                 if (!ContainsCaseInsensitive(Entry.Formatted, LogState.Search.data()))
                 {
                     continue;
@@ -92,14 +102,17 @@ namespace MDSS
                 {
                     ImGui::SetClipboardText(Entry.Formatted.c_str());
                 }
+
                 if (ImGui::BeginPopupContextItem("LogLineContext"))
                 {
                     if (ImGui::MenuItem("Copy Line"))
                     {
                         ImGui::SetClipboardText(Entry.Formatted.c_str());
                     }
+
                     ImGui::EndPopup();
                 }
+
                 ImGui::PopID();
             }
 
@@ -108,8 +121,10 @@ namespace MDSS
                 ImGui::SetScrollHereY(1.0F);
                 LogState.bScrollToBottom = false;
             }
+
             ImGui::EndChild();
         }
+
         ImGui::End();
     }
 } // namespace MDSS

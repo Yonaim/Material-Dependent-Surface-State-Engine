@@ -197,18 +197,21 @@ namespace
         using namespace MDSS;
         using namespace MDSS::Asset;
         using namespace MDSS::SurfaceState;
+
         for (const auto& [Member, Name] :
              {std::pair{&SurfaceState::FSurfaceStateParameters::SaturationTransferFactor, "saturationSpreadFactor"},
               std::pair{&SurfaceState::FSurfaceStateParameters::GeometryTransferFactor, "gravityFlowFactor"}})
         {
             SurfaceState::FSurfaceResponseProfileData Profile;
             auto&                                     Parameters = Profile.States["wetness"];
+
             for (float Value : {0.0F, 0.5F, 1.0F})
             {
                 Parameters.*Member = Value;
                 CheckDoesNotThrow([&] { ValidateSurfaceResponseProfileData(Profile); },
                                   std::string(Name) + " valid normalized factor");
             }
+
             for (float Value :
                  {-0.1F, 1.1F, std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity()})
             {
@@ -248,6 +251,7 @@ namespace
         Check(Instance.GetID() == 3 && Instance.GetStateCount() == 3, "instance should retain ID and dynamic channels");
         Check(Instance.GetProfileIndex(0) == 5, "texel Profile index should come from shared SurfaceProfileMap");
         Check(Instance.GetStates().size() == 7, "instance should own one state vector per texel");
+
         for (const SurfaceState::FSurfaceStateValues& State : Instance.GetStates())
         {
             Check(State == SurfaceState::FSurfaceStateValues(3, 0.0F),

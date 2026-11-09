@@ -33,6 +33,7 @@ namespace MDSS::SurfaceState
         }
 
         std::array<VkDescriptorSetLayoutBinding, DescriptorBindingCount> Bindings{};
+
         for (std::uint32_t Binding = 0; Binding < DescriptorBindingCount; ++Binding)
         {
             Bindings[Binding].binding = Binding;
@@ -48,6 +49,7 @@ namespace MDSS::SurfaceState
         LayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         LayoutInfo.bindingCount = static_cast<std::uint32_t>(Bindings.size());
         LayoutInfo.pBindings = Bindings.data();
+
         if (vkCreateDescriptorSetLayout(Device, &LayoutInfo, nullptr, &Layout) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create Surface solver descriptor set layout.");
@@ -62,6 +64,7 @@ namespace MDSS::SurfaceState
         PoolInfo.maxSets = static_cast<std::uint32_t>(Sets.size());
         PoolInfo.poolSizeCount = 1;
         PoolInfo.pPoolSizes = &PoolSize;
+
         if (vkCreateDescriptorPool(Device, &PoolInfo, nullptr, &Pool) != VK_SUCCESS)
         {
             vkDestroyDescriptorSetLayout(Device, Layout, nullptr);
@@ -75,6 +78,7 @@ namespace MDSS::SurfaceState
         AllocateInfo.descriptorPool = Pool;
         AllocateInfo.descriptorSetCount = static_cast<std::uint32_t>(Layouts.size());
         AllocateInfo.pSetLayouts = Layouts.data();
+
         if (vkAllocateDescriptorSets(Device, &AllocateInfo, Sets.data()) != VK_SUCCESS)
         {
             vkDestroyDescriptorPool(Device, Pool, nullptr);
@@ -119,10 +123,12 @@ namespace MDSS::SurfaceState
             const GPU::FGPUBuffer* StateNext = bAB ? &Instance.GetStateBBuffer() : &Instance.GetStateABuffer();
             std::array<VkDescriptorBufferInfo, DescriptorBindingCount> BufferInfos{};
             std::array<VkWriteDescriptorSet, DescriptorBindingCount>   Writes{};
+
             for (std::uint32_t BindingNumber = 0; BindingNumber < DescriptorBindingCount; ++BindingNumber)
             {
                 const ESurfaceGPUDescriptorBinding Binding = static_cast<ESurfaceGPUDescriptorBinding>(BindingNumber);
                 const GPU::FGPUBuffer*             Buffer = SharedAndProfileBuffers[BindingNumber];
+
                 if (Binding == ESurfaceGPUDescriptorBinding::CurrentState)
                 {
                     Buffer = StateCurrent;
@@ -131,6 +137,7 @@ namespace MDSS::SurfaceState
                 {
                     Buffer = StateNext;
                 }
+
                 BufferInfos[BindingNumber] = {Buffer->GetHandle(), 0, Buffer->GetSize()};
                 BoundBufferHandles[SetIndex][BindingNumber] = Buffer->GetHandle();
 
@@ -142,6 +149,7 @@ namespace MDSS::SurfaceState
                 Write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                 Write.pBufferInfo = &BufferInfos[BindingNumber];
             }
+
             vkUpdateDescriptorSets(Device, static_cast<std::uint32_t>(Writes.size()), Writes.data(), 0, nullptr);
         }
     }
@@ -153,6 +161,7 @@ namespace MDSS::SurfaceState
             vkDestroyDescriptorPool(Device, Pool, nullptr);
             Pool = VK_NULL_HANDLE;
         }
+
         if (Layout != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorSetLayout(Device, Layout, nullptr);
@@ -179,10 +188,12 @@ namespace MDSS::SurfaceState
                                                                     bool                         bAB) const
     {
         const std::size_t BindingNumber = static_cast<std::size_t>(Binding);
+
         if (BindingNumber >= static_cast<std::size_t>(ESurfaceGPUDescriptorBinding::Count))
         {
             throw std::out_of_range("Surface descriptor binding is outside the declared layout.");
         }
+
         return BoundBufferHandles[bAB ? 0U : 1U][BindingNumber];
     }
 

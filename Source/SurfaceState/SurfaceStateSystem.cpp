@@ -53,10 +53,12 @@ namespace MDSS::SurfaceState
                                          Execution.bHalfDynamicWeightsEnabled,
                                          Execution.bCompactScratchStorageEnabled});
         PrepareScratchStorage();
+
         if (const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetAnyInstanceDescriptors())
         {
             Solver = std::make_unique<FSurfaceStateSolver>(Context.GetDevice(), Descriptors->GetLayout());
         }
+
         // Dynamic geometry buffers start empty.  The first state-driven solver step performs one
         // force-full bootstrap before Pass 1, then normal steps use Solver -> Height -> Geometry -> Weights.
         Execution.bForceFullGeometryOnNextStep = true;
@@ -68,6 +70,7 @@ namespace MDSS::SurfaceState
     void FSurfaceStateSystem::QueueInitialContacts()
     {
         const auto& Instances = Scene.GetStaticMeshInstances();
+
         for (const FSceneInitialContact& Initial : Scene.GetInitialContacts())
         {
             const auto Target =
@@ -97,6 +100,7 @@ namespace MDSS::SurfaceState
         }
 
         Solver = std::move(Replacement.Solver);
+
         if (GPUResources)
             GPUResources->RetireBuffers(BufferPool);
         GPUResources = std::move(Replacement.GPUResources);
@@ -129,8 +133,10 @@ namespace MDSS::SurfaceState
         {
             throw std::runtime_error("Failed to wait for the graphics queue before resetting Surface State.");
         }
+
         PendingContacts.clear();
         GPUResources->ResetStates();
+
         // Resetting State invalidates the derived simulation geometry.  Rebuild it before the next
         // state-driven solver step rather than tracking a separate revision/cache key.
         Execution.bForceFullGeometryOnNextStep = true;
@@ -152,6 +158,7 @@ namespace MDSS::SurfaceState
                                                         bool                           bKeepRuntimeOverride)
     {
         const FSurfaceStateRegistry& Registry = SurfaceData.GetSurfaceStateRegistry();
+
         if (State >= Registry.GetStateCount())
         {
             throw std::out_of_range("Debug Profile override State is outside the Registry.");
@@ -165,16 +172,19 @@ namespace MDSS::SurfaceState
         {
             throw std::runtime_error("Failed to wait for the graphics queue before updating Profile parameters.");
         }
+
         if (!GPUResources->UpdateProfileParameters(Profile, State, Parameters))
         {
             throw std::invalid_argument("Debug Profile override does not belong to the current Scene.");
         }
 
         Execution.bStableDeltaTimeDirty = true;
+
         // Accumulation factors/capacity can change the State -> Height mapping.  A one-shot full
         // rebuild on the next solver step keeps derived data authoritative without a revision cache.
         Execution.bForceFullGeometryOnNextStep = true;
         const auto Key = std::make_pair(Profile, State);
+
         if (bKeepRuntimeOverride)
         {
             RuntimeProfileOverrides[Key] = Parameters;
@@ -197,10 +207,12 @@ namespace MDSS::SurfaceState
         if (!GPUResources)
             return 0U;
         std::size_t InstanceCount = 0U;
+
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             InstanceCount += GPUResources->GetInstanceDescriptors(SceneIndex) != nullptr ? 1U : 0U;
         }
+
         return InstanceCount;
     }
 
@@ -209,6 +221,7 @@ namespace MDSS::SurfaceState
         if (Execution.bHalfDynamicWeightsEnabled == bEnabled)
             return;
         Execution.bHalfDynamicWeightsEnabled = bEnabled;
+
         // Static weights must be re-uploaded in the selected representation; dynamic state-driven geometry then
         // rebuilds from it.
         Execution.bTransferWeightSettingsDirty = true;
@@ -221,6 +234,7 @@ namespace MDSS::SurfaceState
         if (Execution.bSparseSolverEnabled == bEnabled)
             return;
         Execution.bSparseSolverEnabled = bEnabled;
+
         if (bEnabled)
             Execution.bSeedPersistentActivityOnNextStep = true;
     }
@@ -230,6 +244,7 @@ namespace MDSS::SurfaceState
         if (Execution.bActiveChannelMaskEnabled == bEnabled)
             return;
         Execution.bActiveChannelMaskEnabled = bEnabled;
+
         if (bEnabled)
             Execution.bSeedPersistentActivityOnNextStep = true;
     }
@@ -239,6 +254,7 @@ namespace MDSS::SurfaceState
         if (Execution.bPerWorkgroupChannelMaskEnabled == bEnabled)
             return;
         Execution.bPerWorkgroupChannelMaskEnabled = bEnabled;
+
         if (bEnabled)
             Execution.bSeedPersistentActivityOnNextStep = true;
     }
@@ -261,8 +277,10 @@ namespace MDSS::SurfaceState
         {
             return;
         }
+
         Execution.DebugSolverSettings.SetEnabled(Term, bEnabled);
         Execution.bStableDeltaTimeDirty = true;
+
         if (Term == ESurfaceSolverTerm::DistanceWeight || Term == ESurfaceSolverTerm::NormalWeight ||
             Term == ESurfaceSolverTerm::ProfileBoundaryWeight)
         {

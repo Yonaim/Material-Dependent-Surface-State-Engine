@@ -21,6 +21,7 @@ namespace MDSS
         std::string Trim(const std::string& Value)
         {
             const auto Begin = Value.find_first_not_of(" \t\r\n");
+
             if (Begin == std::string::npos)
                 return {};
             return Value.substr(Begin, Value.find_last_not_of(" \t\r\n") - Begin + 1);
@@ -41,6 +42,7 @@ namespace MDSS
     {
         const auto    AbsoluteConfig = std::filesystem::absolute(ConfigPath).lexically_normal();
         std::ifstream File(AbsoluteConfig);
+
         if (!File)
         {
             if (std::filesystem::exists(AbsoluteConfig))
@@ -50,14 +52,17 @@ namespace MDSS
                                              "Scenes/ReactionTransitionComparison.Scene")
                 .lexically_normal();
         }
+
         std::string Section, Line, SceneValue;
         bool        bFound = false;
+
         while (std::getline(File, Line))
         {
             // UTF-8 BOM과 Windows 줄바꿈도 허용한다.
             if (Line.compare(0, 3, "\xEF\xBB\xBF") == 0)
                 Line.erase(0, 3);
             Line = Trim(Line);
+
             if (Line.empty() || Line.front() == ';' || Line.front() == '#')
                 continue;
             if (Line.front() == '[' && Line.back() == ']')
@@ -65,7 +70,9 @@ namespace MDSS
                 Section = Trim(Line.substr(1, Line.size() - 2));
                 continue;
             }
+
             const auto Equals = Line.find('=');
+
             if (Section != "Application" || Equals == std::string::npos ||
                 Trim(Line.substr(0, Equals)) != "StartupScene")
                 continue;
@@ -73,12 +80,15 @@ namespace MDSS
                 throw std::runtime_error("Duplicate [Application] StartupScene in " + AbsoluteConfig.string());
             bFound = true;
             SceneValue = Trim(Line.substr(Equals + 1));
+
             if (SceneValue.size() >= 2 && SceneValue.front() == '"' && SceneValue.back() == '"')
                 SceneValue = SceneValue.substr(1, SceneValue.size() - 2);
         }
+
         if (!bFound || Trim(SceneValue).empty())
             throw std::runtime_error("Missing or empty [Application] StartupScene in " + AbsoluteConfig.string());
         std::filesystem::path ScenePath(SceneValue);
+
         if (ScenePath.is_relative())
             ScenePath = AbsoluteConfig.parent_path() / ScenePath;
         return ScenePath.lexically_normal();

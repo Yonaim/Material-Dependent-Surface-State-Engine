@@ -18,11 +18,12 @@ namespace MDSS
         constexpr float Width = 360.0F;
         const ImVec2    WindowSize{Width, 520.0F};
         const ImVec2    WindowPosition{Viewport->WorkPos.x + Viewport->WorkSize.x - Width - 10.0F,
-                                    Viewport->WorkPos.y + 150.0F};
+                                       Viewport->WorkPos.y + 150.0F};
         ImGui::SetNextWindowPos(WindowPosition, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(WindowSize, ImGuiCond_FirstUseEver);
 
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
         if (ImGui::Begin("Simulation Debug", nullptr, Flags))
         {
             DrawSimulationCommonControls();
@@ -43,9 +44,11 @@ namespace MDSS
                         DrawSimulationSettingsTab(SceneData);
                         DrawPerformanceTab(false);
                     }
+
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
+
                 if (ImGui::BeginTabItem("Solver"))
                 {
                     if (ImGui::BeginChild(
@@ -54,9 +57,11 @@ namespace MDSS
                         ImGui::Dummy({0.0F, 12.0F});
                         DrawSolverTab();
                     }
+
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
+
                 if (ImGui::BeginTabItem("Input"))
                 {
                     if (ImGui::BeginChild(
@@ -65,9 +70,11 @@ namespace MDSS
                         ImGui::Dummy({0.0F, 12.0F});
                         DrawContactInputTab();
                     }
+
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
+
                 if (ImGui::BeginTabItem("Profiles"))
                 {
                     if (ImGui::BeginChild(
@@ -76,36 +83,44 @@ namespace MDSS
                         ImGui::Dummy({0.0F, 12.0F});
                         DrawProfileTuningTab(SceneData);
                     }
+
                     ImGui::EndChild();
                     ImGui::EndTabItem();
                 }
+
                 ImGui::EndTabBar();
             }
         }
+
         ImGui::End();
     }
 
     void FDebugUI::DrawDebugStateSelector()
     {
         const auto& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
+
         if (Registry.GetStateCount() == 0)
         {
             ImGui::TextDisabled("등록된 State 없음");
             return;
         }
+
         Simulation.DebugState = FrameRenderer->GetDebugStateChannel();
         ImGui::SetNextItemWidth(125.0F);
+
         if (ImGui::BeginCombo("##InspectorState", Registry.GetStateName(Simulation.DebugState).c_str()))
         {
             for (std::size_t Index = 0; Index < Registry.GetStateCount(); ++Index)
             {
                 const auto State = static_cast<SurfaceState::FStateId>(Index);
+
                 if (ImGui::Selectable(Registry.GetStateName(State).c_str(), State == Simulation.DebugState))
                 {
                     Simulation.DebugState = State;
                     FrameRenderer->SetDebugStateChannel(State);
                 }
             }
+
             ImGui::EndCombo();
         }
     }
@@ -119,26 +134,31 @@ namespace MDSS
                                "update Solver geometry.");
         DrawDebugStateSelector();
         const auto& Selection = FrameRenderer->GetInspectedTexel();
+
         if (!Selection)
         {
             ImGui::TextDisabled("선택된 texel 없음");
             return;
         }
+
         if (ImGui::Button("Clear selection"))
         {
             FrameRenderer->ClearInspectedTexel();
             return;
         }
+
         ImGui::Text("Instance %zu / Surface %u", Selection->Instance, Selection->Surface);
         ImGui::Text("Texel %u (%u, %u)", Selection->Texel, Selection->XY.x, Selection->XY.y);
         ImGui::Text("Hit triangle %u", Selection->Triangle);
         ImGui::TextWrapped("Profile: %s", Selection->Profile.c_str());
         const auto& Snapshot = FrameRenderer->GetTexelSnapshot();
+
         if (!Snapshot)
         {
             ImGui::TextDisabled("GPU snapshot 대기 중");
             return;
         }
+
         const auto& S = *Snapshot;
         ImGui::Text("Completed sample / Step %llu / Buffer %s",
                     static_cast<unsigned long long>(S.Step),
@@ -191,6 +211,7 @@ namespace MDSS
             Row("Final height", S.Values[3].w);
             ImGui::EndTable();
         }
+
         ImGui::Text("Final local normal (scale 1): %.4g, %.4g, %.4g", S.Values[5].x, S.Values[5].y, S.Values[5].z);
     }
 
@@ -200,6 +221,7 @@ namespace MDSS
         const auto  ContinueControlRow = [ControlColumnX](float NextItemWidth)
         {
             const float RightEdge = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+
             if (ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + NextItemWidth <= RightEdge)
             {
                 ImGui::SameLine();
@@ -213,11 +235,14 @@ namespace MDSS
         { return ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(Label).x; };
 
         BeginLabeledControlRow("Playback");
+
         if (ImGui::RadioButton("Running", !Simulation.bSimulationPaused))
         {
             Simulation.bSimulationPaused = false;
         }
+
         ContinueControlRow(RadioWidth("Paused"));
+
         if (ImGui::RadioButton("Paused", Simulation.bSimulationPaused))
         {
             Simulation.bSimulationPaused = true;
@@ -225,12 +250,15 @@ namespace MDSS
 
         BeginLabeledControlRow("Controls");
         ImGui::BeginDisabled(!Simulation.bSimulationPaused);
+
         if (ImGui::Button("Step"))
         {
             Simulation.bSolverStepRequested = true;
         }
+
         ImGui::EndDisabled();
         ContinueControlRow(ImGui::CalcTextSize("Reset State").x + 2.0F * ImGui::GetStyle().FramePadding.x);
+
         if (ImGui::Button("Reset State"))
         {
             Simulation.bSolverResetRequested = true;
@@ -241,18 +269,22 @@ namespace MDSS
         constexpr std::array<std::pair<const char*, float>, 6> SpeedPresets = {
             {{"0.25x", 0.25F}, {"0.5x", 0.5F}, {"1x", 1.0F}, {"2x", 2.0F}, {"4x", 4.0F}, {"8x", 8.0F}}};
         bool bFirstPreset = true;
+
         for (const auto& [Label, Scale] : SpeedPresets)
         {
             if (!bFirstPreset)
             {
                 ContinueControlRow(RadioWidth(Label));
             }
+
             if (ImGui::RadioButton(Label, std::abs(Simulation.SimulationTimeScale - Scale) < 0.001F))
             {
                 Simulation.SimulationTimeScale = Scale;
             }
+
             bFirstPreset = false;
         }
+
         ContinueControlRow(160.0F);
         ImGui::SetNextItemWidth(-1.0F);
         SliderFloatWithDoubleClickInput("##Speed", &Simulation.SimulationTimeScale, 0.05F, 8.0F, "%.2fx");
@@ -264,6 +296,7 @@ namespace MDSS
         const std::uint32_t CurrentResolution = FrameRenderer->GetSimulationResolution();
         const std::string CurrentLabel = std::to_string(CurrentResolution) + " x " + std::to_string(CurrentResolution);
         const bool        bResolutionOpen = BeginLabeledCombo("Resolution", CurrentLabel.c_str());
+
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("표면당 시뮬레이션 해상도입니다. 바꾸면 현재 State가 초기화됩니다.");
         if (bResolutionOpen)
@@ -288,11 +321,14 @@ namespace MDSS
                         FLogger::Warning("TDebugUI", ProfileEditing.ResolutionStatus);
                     }
                 }
+
                 if (bSelected)
                     ImGui::SetItemDefaultFocus();
             }
+
             EndLabeledCombo();
         }
+
         if (ProfileEditing.ResolutionStatus.starts_with("Resolution change failed:"))
         {
             ImGui::TextWrapped("%s", ProfileEditing.ResolutionStatus.c_str());
@@ -303,6 +339,7 @@ namespace MDSS
             Simulation.bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
+
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("경과 시간을 누적해 1/60초 고정 간격으로 처리합니다. Profile 배율은 이 간격을 바꾸지 "
                                   "않습니다. 자동 세부 단계 분할은 각 간격을 나눠 처리할 수 있습니다.");
@@ -311,6 +348,7 @@ namespace MDSS
             Simulation.bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
+
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip(
                 "수송 한계를 기준으로 시뮬레이션 시간을 더 작은 Solver 단계로 나눕니다. GPU 작업량이 늘어납니다. 끄면 "
@@ -323,12 +361,14 @@ namespace MDSS
             [this](SurfaceState::ESurfaceSolverTerm Term, const char* Label, const char* Description)
         {
             bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
+
             if (ImGui::Checkbox(Label, &bEnabled))
             {
                 Simulation.bFrameTimeResetRequested = true;
                 FrameRenderer->SetDebugSolverTermEnabled(Term, bEnabled);
                 ResetProfilingAverages();
             }
+
             if (ImGui::IsItemHovered())
             {
                 SetDescriptionTooltip(Description);
@@ -337,12 +377,14 @@ namespace MDSS
 
         DrawSectionHeader("State-Driven Geometry", 0.0F, 2.0F);
         bool bStateDrivenGeometryUpdate = FrameRenderer->IsStateDrivenGeometryUpdateEnabled();
+
         if (ImGui::Checkbox("State-Driven Geometry", &bStateDrivenGeometryUpdate))
         {
             Simulation.bFrameTimeResetRequested = true;
             FrameRenderer->SetStateDrivenGeometryUpdateEnabled(bStateDrivenGeometryUpdate);
             ResetProfilingAverages();
         }
+
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip(
                 "켜짐: 적층 높이가 있는 모든 State를 합산해 이후 수송의 위치·법선·거리 계산에 반영합니다. "

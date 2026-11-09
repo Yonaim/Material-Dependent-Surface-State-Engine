@@ -35,6 +35,7 @@ namespace MDSS::SurfaceState
             Buffers.erase(Found);
             ++ReuseCount;
             ReusedBytes += Size;
+
             return Buffer;
         }
 
@@ -47,6 +48,7 @@ namespace MDSS::SurfaceState
                 RetainedBytes -= Buffers.front()->GetSize();
                 Buffers.erase(Buffers.begin());
             }
+
             try
             {
                 RetainedBytes += Buffer->GetSize();
@@ -68,10 +70,12 @@ namespace MDSS::SurfaceState
         {
             return RetainedBytes;
         }
+
         [[nodiscard]] std::uint64_t GetReuseCount() const noexcept
         {
             return ReuseCount;
         }
+
         [[nodiscard]] VkDeviceSize GetReusedBytes() const noexcept
         {
             return ReusedBytes;

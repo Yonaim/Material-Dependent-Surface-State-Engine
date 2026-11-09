@@ -31,6 +31,7 @@ namespace MDSS::Asset
             }
 
             const auto Found = Object.find(Key);
+
             if (Found == Object.end())
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " is required.");
@@ -42,6 +43,7 @@ namespace MDSS::Asset
         std::string ReadString(const FJson& Object, std::string_view Key, std::string_view JsonPath)
         {
             const FJson& Value = RequireMember(Object, Key, JsonPath);
+
             if (!Value.is_string())
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " must be a string.");
@@ -54,6 +56,7 @@ namespace MDSS::Asset
         float ReadFloat(const FJson& Object, std::string_view Key, std::string_view JsonPath)
         {
             const FJson& Value = RequireMember(Object, Key, JsonPath);
+
             if (!Value.is_number())
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " must be a number.");
@@ -61,6 +64,7 @@ namespace MDSS::Asset
 
             const double Number = Value.get<double>();
             const float  Result = static_cast<float>(Number);
+
             if (!std::isfinite(Number) || !std::isfinite(Result))
             {
                 throw std::invalid_argument(std::string(JsonPath) + "." + std::string(Key) + " must be finite.");
@@ -96,12 +100,14 @@ namespace MDSS::Asset
             }
 
             float CavityTransportRetentionFactor = 0.0F;
+
             if (const auto Found = State.find(ExitKey); Found != State.end())
             {
                 if (!Found->is_number())
                 {
                     throw std::invalid_argument(JsonPath + "." + ExitKey + " must be a number.");
                 }
+
                 CavityTransportRetentionFactor = Found->get<float>();
             }
 
@@ -125,9 +131,11 @@ namespace MDSS::Asset
             const std::string Path = "reactions";
             FSurfaceReaction  R;
             R.ID = ReadString(J, "id", Path);
+
             if (J.contains("enabled"))
                 R.bEnabled = J.at("enabled").get<bool>();
             const auto Mode = J.value("mode", std::string("continuous"));
+
             if (Mode == "inflowFraction")
                 R.Mode = EReactionMode::InflowFraction;
             else if (Mode != "continuous")
@@ -136,6 +144,7 @@ namespace MDSS::Asset
             auto Terms = [&](const char* Key, auto& Out)
             {
                 const auto& Object = RequireMember(J, Key, Path);
+
                 if (!Object.is_object())
                     throw std::invalid_argument(Path + "." + Key + " must be an object.");
                 for (auto It = Object.begin(); It != Object.end(); ++It)
@@ -143,6 +152,7 @@ namespace MDSS::Asset
             };
             Terms("consumes", R.Consumes);
             Terms("produces", R.Produces);
+
             if (R.Mode == EReactionMode::InflowFraction)
             {
                 if (J.contains("rate") || J.contains("modifiers"))
@@ -151,6 +161,7 @@ namespace MDSS::Asset
                 R.Fraction = ReadFloat(J, "fraction", Path);
                 R.InflowSources = 0;
                 const auto& Sources = RequireMember(J, "inflowSources", Path);
+
                 if (!Sources.is_array())
                     throw std::invalid_argument("reactions.inflowSources must be an array.");
                 for (const auto& Source : Sources)
@@ -167,6 +178,7 @@ namespace MDSS::Asset
             {
                 const auto& Rate = RequireMember(J, "rate", Path);
                 const auto  Model = ReadString(Rate, "model", "reactions.rate");
+
                 if (Model == "constant")
                     R.RateModel = EReactionRateModel::Constant;
                 else if (Model == "stateProportional")
@@ -178,6 +190,7 @@ namespace MDSS::Asset
                 {
                     R.RateModel = EReactionRateModel::MassAction;
                     const auto& Factors = RequireMember(Rate, "factors", "reactions.rate");
+
                     if (!Factors.is_array())
                         throw std::invalid_argument("reactions.rate.factors must be an array.");
                     for (const auto& F : Factors)
@@ -193,6 +206,7 @@ namespace MDSS::Asset
                 else
                     throw std::invalid_argument("reactions.rate.model is unknown.");
                 R.RateCoefficient = ReadFloat(Rate, "coefficient", "reactions.rate");
+
                 if (J.contains("modifiers"))
                 {
                     if (!J.at("modifiers").is_array())
@@ -205,6 +219,7 @@ namespace MDSS::Asset
                         FReactionModifier V;
                         V.State = Name(ReadString(M, "state", Path));
                         const auto Function = ReadString(M, "function", Path);
+
                         if (Function == "above")
                             V.Function = EReactionFunction::Above;
                         else if (Function == "below")
@@ -227,6 +242,7 @@ namespace MDSS::Asset
                     }
                 }
             }
+
             return R;
         }
 
@@ -237,34 +253,42 @@ namespace MDSS::Asset
             {
                 throw std::invalid_argument("$ must be a JSON object.");
             }
+
             if (ReadString(Root, "type", "$") != "SurfaceResponseProfile")
             {
                 throw std::invalid_argument("$.type must be 'SurfaceResponseProfile'.");
             }
 
             const FJson& Version = RequireMember(Root, "version", "$");
+
             if (!Version.is_number_unsigned() && !Version.is_number_integer())
             {
                 throw std::invalid_argument("$.version must be an integer.");
             }
+
             const std::int64_t SchemaVersion = Version.get<std::int64_t>();
+
             if (SchemaVersion != 3 && SchemaVersion != 4 && SchemaVersion != 5)
             {
                 throw std::invalid_argument("$.version is unsupported; expected version 3 or 4 or 5.");
             }
 
             Name = ReadString(Root, "name", "$");
+
             if (Name.empty())
             {
                 throw std::invalid_argument("$.name must not be empty.");
             }
 
             const FJson& States = RequireMember(Root, "states", "$");
+
             if (!States.is_object())
             {
                 throw std::invalid_argument("$.states must be an object.");
             }
+
             SurfaceState::FSurfaceResponseProfileData Data;
+
             for (auto Iterator = States.begin(); Iterator != States.end(); ++Iterator)
             {
                 if (!Iterator.value().is_object())
@@ -273,15 +297,18 @@ namespace MDSS::Asset
                 }
 
                 const std::string CanonicalName = SurfaceState::NormalizeSurfaceStateName(Iterator.key());
+
                 if (CanonicalName.empty())
                 {
                     throw std::invalid_argument("$.states contains an empty State name after normalization.");
                 }
+
                 if (Data.States.contains(CanonicalName))
                 {
                     throw std::invalid_argument("$.states contains duplicate State name after normalization: '" +
                                                 CanonicalName + "'.");
                 }
+
                 Data.States.emplace(CanonicalName, ReadStateParameters(Iterator.value(), CanonicalName, SchemaVersion));
             }
 
@@ -290,6 +317,7 @@ namespace MDSS::Asset
                 if (Root.contains("transitions"))
                     throw std::invalid_argument("version 5 uses reactions instead of transitions.");
                 const auto& Reactions = RequireMember(Root, "reactions", "$");
+
                 if (!Reactions.is_array())
                     throw std::invalid_argument("$.reactions must be an array.");
                 for (const auto& R : Reactions)
@@ -297,15 +325,18 @@ namespace MDSS::Asset
                 ValidateSurfaceResponseProfileData(Data);
                 return Data;
             }
+
             if (Root.contains("reactions"))
                 throw std::invalid_argument("reactions requires version 5.");
             const FJson& Transitions = RequireMember(Root, "transitions", "$");
+
             if (!Transitions.is_array())
             {
                 throw std::invalid_argument("$.transitions must be an array.");
             }
 
             Data.Transitions.reserve(Transitions.size());
+
             for (std::size_t Index = 0; Index < Transitions.size(); ++Index)
             {
                 const FJson&      Transition = Transitions[Index];
@@ -338,6 +369,7 @@ namespace MDSS::Asset
     std::unique_ptr<FSRProfileAsset> FSRProfileLoader::Load(FAssetID ID, const std::filesystem::path& Path)
     {
         std::ifstream File(Path);
+
         if (!File)
         {
             throw std::runtime_error("Unable to open SRProfile file: " + Path.string());

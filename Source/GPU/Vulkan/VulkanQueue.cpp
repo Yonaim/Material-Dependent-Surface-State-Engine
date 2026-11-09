@@ -66,6 +66,7 @@ namespace MDSS::GPU
         for (std::uint32_t Index = 0; Index < QueueFamilyCount; ++Index)
         {
             constexpr VkQueueFlags RequiredGraphicsComputeFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+
             if ((QueueFamilies[Index].queueFlags & RequiredGraphicsComputeFlags) == RequiredGraphicsComputeFlags)
             {
                 Indices.GraphicsFamily = Index;
@@ -73,6 +74,7 @@ namespace MDSS::GPU
 
             VkBool32 bPresentSupported = VK_FALSE;
             vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, Index, Surface, &bPresentSupported);
+
             if (bPresentSupported == VK_TRUE)
             {
                 Indices.PresentFamily = Index;

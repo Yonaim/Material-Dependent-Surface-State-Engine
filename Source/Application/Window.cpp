@@ -47,19 +47,19 @@ namespace MDSS
         glfwSetFramebufferSizeCallback(Handle, FramebufferSizeCallback);
 
         FLogger::Info("TApplication",
-                      "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
+                        "GLFW window created: " + std::to_string(Width) + "x" + std::to_string(Height) + ".");
     }
 
-    FWindow::~FWindow()
+FWindow::~FWindow()
+{
+    if (Handle != nullptr)
     {
-        if (Handle != nullptr)
-        {
-            glfwDestroyWindow(Handle);
-            Handle = nullptr;
-        }
-
-        TerminateGLFW();
+        glfwDestroyWindow(Handle);
+        Handle = nullptr;
     }
+
+    TerminateGLFW();
+}
 
 #pragma endregion
 
@@ -119,6 +119,7 @@ namespace MDSS
     void FWindow::FramebufferSizeCallback(GLFWwindow* WindowHandle, int Width, int Height)
     {
         auto* WindowInstance = static_cast<FWindow*>(glfwGetWindowUserPointer(WindowHandle));
+
         if (WindowInstance == nullptr)
         {
             return;
@@ -147,6 +148,7 @@ namespace MDSS
             {
                 throw std::runtime_error("Failed to initialize GLFW.");
             }
+
             FLogger::Debug("TApplication", "GLFW initialized.");
         }
 

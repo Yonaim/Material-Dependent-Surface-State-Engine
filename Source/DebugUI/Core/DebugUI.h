@@ -34,14 +34,17 @@ namespace MDSS::Asset
 {
     class FAssetManager;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
 }
+
 namespace MDSS::GPU
 {
     class FVulkanContext;
 }
+
 namespace MDSS::Rendering
 {
     class FRenderer;
@@ -64,7 +67,7 @@ namespace MDSS
         // ============================================================
         // 00. Lifecycle and Public API
         // ============================================================
-#pragma region 00_Lifecycle_and_Public_API
+#pragma region "00_Lifecycle_and_Public_API"
 
         // Debug UI lifecycle
         FDebugUI(const GPU::FVulkanContext&         Context,
@@ -89,6 +92,7 @@ namespace MDSS
             if (Presentation.bPresentationMode != bEnabled)
                 TogglePresentationMode();
         }
+
         void SetBenchmarkMode() noexcept
         {
             Simulation.bFixedSimulationTimestep = true;
@@ -127,10 +131,12 @@ namespace MDSS
         {
             return Simulation.bFixedSimulationTimestep;
         }
+
         [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept
         {
             return Simulation.bAutoSubstepping;
         }
+
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
         /** @brief 설정 준비나 파일 대화상자가 포함된 frame의 경과 시간을 한 번 제외한다. */
@@ -151,7 +157,7 @@ namespace MDSS
         // ============================================================
         // 01. Scene and Viewport Operations
         // ============================================================
-#pragma region 01_Scene_and_Viewport_Operations
+#pragma region "01_Scene_and_Viewport_Operations"
 
         // Scene, selection, and camera controls
         void ProcessCameraInput(FScene& SceneData);
@@ -172,7 +178,7 @@ namespace MDSS
         // ============================================================
         // 02. Rendering and Performance Controls
         // ============================================================
-#pragma region 02_Rendering_and_Performance_Controls
+#pragma region "02_Rendering_and_Performance_Controls"
 
         // Rendering controls and performance overlays
         void DrawRenderOptionsWindow(FScene& SceneData);
@@ -189,7 +195,7 @@ namespace MDSS
         // ============================================================
         // 03. Simulation and Diagnostic Panels
         // ============================================================
-#pragma region 03_Simulation_and_Diagnostic_Panels
+#pragma region "03_Simulation_and_Diagnostic_Panels"
 
         // Simulation and diagnostic panels
         void DrawSimulationDebugWindow(FScene& SceneData);
@@ -208,7 +214,7 @@ namespace MDSS
         // ============================================================
         // 04. Shared Layout Helpers
         // ============================================================
-#pragma region 04_Shared_Layout_Helpers
+#pragma region "04_Shared_Layout_Helpers"
 
         // Shared layout helpers
         void                      SetupDockspace();
@@ -226,7 +232,7 @@ namespace MDSS
         // ============================================================
         // 05. Resource References
         // ============================================================
-#pragma region 05_Resource_References
+#pragma region "05_Resource_References"
 
         VkDevice                           Device = VK_NULL_HANDLE;
         GLFWwindow*                        NativeWindow = nullptr;
@@ -238,7 +244,7 @@ namespace MDSS
         // ============================================================
         // 06. Camera Input and Dock State
         // ============================================================
-#pragma region 06_Camera_Input_and_Dock_State
+#pragma region "06_Camera_Input_and_Dock_State"
 
         bool  bRotatingCamera = false;
         float CameraZoomSpeed = 12.0F;
@@ -250,7 +256,7 @@ namespace MDSS
         // ============================================================
         // 07. Presentation State
         // ============================================================
-#pragma region 07_Presentation_State
+#pragma region "07_Presentation_State"
 
         struct FPresentationUIState
         {
@@ -267,7 +273,7 @@ namespace MDSS
         // ============================================================
         // 08. Simulation and Contact Controls
         // ============================================================
-#pragma region 08_Simulation_and_Contact_Controls
+#pragma region "08_Simulation_and_Contact_Controls"
 
         struct FSimulationUIState
         {
@@ -296,7 +302,7 @@ namespace MDSS
         // ============================================================
         // 09. Profile Editing State
         // ============================================================
-#pragma region 09_Profile_Editing_State
+#pragma region "09_Profile_Editing_State"
 
         struct FProfileEditingUIState
         {
@@ -323,7 +329,7 @@ namespace MDSS
         // ============================================================
         // 10. Selection and Gizmo State
         // ============================================================
-#pragma region 10_Selection_and_Gizmo_State
+#pragma region "10_Selection_and_Gizmo_State"
 
         struct FGizmoUIState
         {
@@ -346,7 +352,7 @@ namespace MDSS
         // ============================================================
         // 11. Scene Dock and Viewport State
         // ============================================================
-#pragma region 11_Scene_Dock_and_Viewport_State
+#pragma region "11_Scene_Dock_and_Viewport_State"
 
         struct FViewportUIState
         {
@@ -373,7 +379,7 @@ namespace MDSS
         // ============================================================
         // 12. Log State
         // ============================================================
-#pragma region 12_Log_State
+#pragma region "12_Log_State"
 
         struct FLogUIState
         {
@@ -390,7 +396,7 @@ namespace MDSS
         // ============================================================
         // 13. Profiling and Overlay State
         // ============================================================
-#pragma region 13_Profiling_and_Overlay_State
+#pragma region "13_Profiling_and_Overlay_State"
 
         FProfilingUIState Profiling;
         bool              bViewportOverlaysVisible = true;

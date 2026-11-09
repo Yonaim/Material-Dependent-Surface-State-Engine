@@ -19,7 +19,7 @@
 // ============================================================
 // 00. Fixtures and Test Support
 // ============================================================
-#pragma region 00_Fixtures_and_Test_Support
+#pragma region "00_Fixtures_and_Test_Support"
 
 namespace
 {
@@ -75,19 +75,23 @@ namespace
             {
                 continue;
             }
+
             for (const MDSS::SurfaceState::FLocalTexelIndex Neighbor : Texel.Neighbors)
             {
                 if (Neighbor == MDSS::SurfaceState::InvalidTexelIndex)
                 {
                     continue;
                 }
+
                 const MDSS::SurfaceState::FSurfaceMappingTexel& Other = Mapping.Texels[Neighbor];
+
                 if (Other.Triangle != Texel.Triangle && (!bRequireDifferentChart || Other.Chart != Texel.Chart))
                 {
                     return true;
                 }
             }
         }
+
         return false;
     }
 
@@ -99,6 +103,7 @@ namespace
             {
                 continue;
             }
+
             for (const MDSS::SurfaceState::FLocalTexelIndex Neighbor : Texel.Neighbors)
             {
                 if (Neighbor != MDSS::SurfaceState::InvalidTexelIndex && Mapping.Texels[Neighbor].Chart != Texel.Chart)
@@ -107,6 +112,7 @@ namespace
                 }
             }
         }
+
         return false;
     }
 
@@ -115,7 +121,7 @@ namespace
 // ============================================================
 // 01. TestOBJTopologyPreservation
 // ============================================================
-#pragma region 01_TestOBJTopologyPreservation
+#pragma region "01_TestOBJTopologyPreservation"
 
     void TestOBJTopologyPreservation()
     {
@@ -136,7 +142,7 @@ namespace
 // ============================================================
 // 02. TestSingleTriangleRasterization
 // ============================================================
-#pragma region 02_TestSingleTriangleRasterization
+#pragma region "02_TestSingleTriangleRasterization"
 
     void TestSingleTriangleRasterization()
     {
@@ -150,6 +156,7 @@ namespace
             {
                 continue;
             }
+
             const float Sum = Texel.Barycentric.x + Texel.Barycentric.y + Texel.Barycentric.z;
             Check(std::abs(Sum - 1.0F) < 1.0e-5F, "valid texel barycentric weights should sum to one");
             Check(Texel.Barycentric.x >= -1.0e-5F && Texel.Barycentric.y >= -1.0e-5F && Texel.Barycentric.z >= -1.0e-5F,
@@ -162,7 +169,7 @@ namespace
 // ============================================================
 // 03. TestRegularChartNeighbors
 // ============================================================
-#pragma region 03_TestRegularChartNeighbors
+#pragma region "03_TestRegularChartNeighbors"
 
     void TestRegularChartNeighbors()
     {
@@ -177,7 +184,7 @@ namespace
 // ============================================================
 // 04. TestSeamNeighbors
 // ============================================================
-#pragma region 04_TestSeamNeighbors
+#pragma region "04_TestSeamNeighbors"
 
     void TestSeamNeighbors()
     {
@@ -192,7 +199,7 @@ namespace
 // ============================================================
 // 05. TestDisconnectedTopology
 // ============================================================
-#pragma region 05_TestDisconnectedTopology
+#pragma region "05_TestDisconnectedTopology"
 
     void TestDisconnectedTopology()
     {
@@ -206,13 +213,14 @@ namespace
 // ============================================================
 // 06. TestDeterministicResult
 // ============================================================
-#pragma region 06_TestDeterministicResult
+#pragma region "06_TestDeterministicResult"
 
     void TestDeterministicResult()
     {
         const MDSS::SurfaceState::FSurfaceMappingData First = BuildFixture("QuadSeam.obj", 24);
         const MDSS::SurfaceState::FSurfaceMappingData Second = BuildFixture("QuadSeam.obj", 24);
         Check(First.Texels.size() == Second.Texels.size(), "repeated mapping should preserve texel count");
+
         for (std::size_t Index = 0; Index < First.Texels.size(); ++Index)
         {
             const MDSS::SurfaceState::FSurfaceMappingTexel& A = First.Texels[Index];
@@ -228,7 +236,7 @@ namespace
 // ============================================================
 // 07. TestMultipleSurfaceRanges
 // ============================================================
-#pragma region 07_TestMultipleSurfaceRanges
+#pragma region "07_TestMultipleSurfaceRanges"
 
     void TestMultipleSurfaceRanges()
     {
@@ -239,6 +247,7 @@ namespace
         Vertices[3].UV = {0.0F, 0.0F};
         Vertices[4].UV = {1.0F, 0.0F};
         Vertices[5].UV = {0.0F, 1.0F};
+
         for (std::size_t Index = 0; Index < Vertices.size(); ++Index)
         {
             Vertices[Index].Position = {static_cast<float>(Index), 0.0F, 0.0F};
@@ -272,7 +281,7 @@ namespace
 // ============================================================
 // 08. TestInvalidFixtures
 // ============================================================
-#pragma region 08_TestInvalidFixtures
+#pragma region "08_TestInvalidFixtures"
 
     void TestInvalidFixtures()
     {
@@ -288,13 +297,14 @@ namespace
 // ============================================================
 // 09. TestInvariantValidation
 // ============================================================
-#pragma region 09_TestInvariantValidation
+#pragma region "09_TestInvariantValidation"
 
     void TestInvariantValidation()
     {
         MDSS::SurfaceState::FSurfaceMappingData Mapping = BuildFixture("QuadNoSeam.obj");
         MDSS::SurfaceState::FLocalTexelIndex    Source = MDSS::SurfaceState::InvalidTexelIndex;
         MDSS::SurfaceState::FLocalTexelIndex    Target = MDSS::SurfaceState::InvalidTexelIndex;
+
         for (std::size_t Index = 0; Index < Mapping.Texels.size() && Source == MDSS::SurfaceState::InvalidTexelIndex;
              ++Index)
         {
@@ -308,7 +318,9 @@ namespace
                 }
             }
         }
+
         Check(Source != MDSS::SurfaceState::InvalidTexelIndex, "fixture should contain a neighbor pair to corrupt");
+
         if (Source == MDSS::SurfaceState::InvalidTexelIndex)
         {
             return;
@@ -322,6 +334,7 @@ namespace
                 break;
             }
         }
+
         CheckThrows([&] { MDSS::SurfaceState::ValidateSurfaceMapping(Mapping); },
                     "bidirectional",
                     "one-way neighbor relationship");
@@ -333,7 +346,7 @@ namespace
 // ============================================================
 // 10. Test Entry Point
 // ============================================================
-#pragma region 10_Test_Entry_Point
+#pragma region "10_Test_Entry_Point"
 
 int main()
 {

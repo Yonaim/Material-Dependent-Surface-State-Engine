@@ -13,11 +13,17 @@ namespace MDSS
         static const auto Settings = []
         {
             const char* Path = std::getenv("MDSS_PERF_SETTINGS");
-            if (!Path || !*Path) return nlohmann::json::object();
+
+            if (!Path || !*Path)
+                return nlohmann::json::object();
             std::ifstream Input(Path);
-            if (!Input) throw std::runtime_error("Cannot read benchmark settings.");
+
+            if (!Input)
+                throw std::runtime_error("Cannot read benchmark settings.");
             auto Result = nlohmann::json::parse(Input);
-            if (!Result.is_object()) throw std::runtime_error("Benchmark settings must be an object.");
+
+            if (!Result.is_object())
+                throw std::runtime_error("Benchmark settings must be an object.");
             return Result;
         }();
         return Settings;

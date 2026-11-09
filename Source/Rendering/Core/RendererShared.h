@@ -75,6 +75,7 @@ namespace MDSS::Rendering
         {
             std::vector<std::unique_ptr<GPU::FGPUImage>> Images;
             Images.reserve(Count);
+
             for (std::size_t Index = 0; Index < Count; ++Index)
                 Images.push_back(std::make_unique<GPU::FGPUImage>(PhysicalDevice,
                                                                   Device,
@@ -91,6 +92,7 @@ namespace MDSS::Rendering
         {
             std::vector<std::unique_ptr<GPU::FGPUImageView>> Views;
             Views.reserve(Images.size());
+
             for (const auto& Image : Images)
                 Views.push_back(std::make_unique<GPU::FGPUImageView>(
                     Device, Image->GetHandle(), Format, VK_IMAGE_ASPECT_DEPTH_BIT));
@@ -101,6 +103,7 @@ namespace MDSS::Rendering
         {
             std::vector<VkImageView> Handles;
             Handles.reserve(Views.size());
+
             for (const auto& View : Views)
                 Handles.push_back(View->GetHandle());
             return Handles;
@@ -203,6 +206,7 @@ namespace MDSS::Rendering
                 case ERenderViewMode::SurfaceTexelArea:
                     return "Texel Area Heatmap";
             }
+
             return "Unknown";
         }
 
@@ -218,6 +222,7 @@ namespace MDSS::Rendering
                 {VK_SHADER_STAGE_FRAGMENT_BIT, Shaders::Path(EShader::Rendering_Scene_StaticMesh_frag), "main"},
             };
             Config.Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
             // Demo meshes can turn fully upside down; both sides must remain visible.
             Config.CullMode = VK_CULL_MODE_NONE;
             Config.FrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -266,6 +271,7 @@ namespace MDSS::Rendering
             Config.ShaderStages[1].ShaderPath = Shaders::Path(EShader::Debug_SurfaceDebug_frag);
             Config.PushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
             Config.DescriptorSetLayouts.push_back(SurfaceLayout);
+
             return Config;
         }
 
@@ -275,6 +281,7 @@ namespace MDSS::Rendering
             Config.CullMode = VK_CULL_MODE_BACK_BIT;
             Config.PolygonMode = VK_POLYGON_MODE_LINE;
             Config.bDynamicLineWidth = true;
+
             return Config;
         }
 
@@ -312,6 +319,7 @@ namespace MDSS::Rendering
             Config.ShaderStages[0].ShaderPath = Shaders::Path(EShader::Rendering_Overlay_Geometry_TexelGeometry_vert);
             SetTexelMeshVertexLayout(Config);
             Config.DescriptorSetLayouts.push_back(OutputLayout);
+
             return Config;
         }
 
@@ -325,6 +333,7 @@ namespace MDSS::Rendering
             auto Config = BuildSurfaceDebugPipelineConfig(MaterialLayout, SurfaceLayout);
             Config.ShaderStages[0].ShaderPath = Shaders::Path(EShader::Rendering_Surface_Lighting_SurfaceLit_vert);
             Config.ShaderStages[1].ShaderPath = Shaders::Path(SurfaceLitVariants.at(Mode));
+
             if (OutputLayout != VK_NULL_HANDLE)
             {
                 Config.ShaderStages[0].ShaderPath =
@@ -333,6 +342,7 @@ namespace MDSS::Rendering
                 SetTexelMeshVertexLayout(Config);
                 Config.DescriptorSetLayouts.push_back(OutputLayout);
             }
+
             if (StateTextureLayout != VK_NULL_HANDLE)
                 Config.DescriptorSetLayouts.push_back(StateTextureLayout);
             return Config;
@@ -347,6 +357,7 @@ namespace MDSS::Rendering
             auto Config =
                 BuildSurfaceLitPipelineConfig(MaterialLayout, SurfaceLayout, OutputLayout, StateTextureLayout, Mode);
             Config.ShaderStages[1].ShaderPath = Shaders::Path(BaseSurfaceLitVariants.at(Mode));
+
             return Config;
         }
 
@@ -371,6 +382,7 @@ namespace MDSS::Rendering
             Config.bDepthWriteEnabled = true;
             Config.bBlendingEnabled = bCombined;
             Config.DescriptorSetLayouts.push_back(SideLayout);
+
             if (bCombined && StateTextureLayout != VK_NULL_HANDLE)
                 Config.DescriptorSetLayouts.push_back(StateTextureLayout);
             if (bSide)
@@ -378,6 +390,7 @@ namespace MDSS::Rendering
                 Config.VertexBindings.clear();
                 Config.VertexAttributes.clear();
             }
+
             return Config;
         }
 
@@ -391,6 +404,7 @@ namespace MDSS::Rendering
                 !SurfaceData.HasSurfaceData(Instance.GetSurfaceData()))
                 return false;
             bool bHasConnectedTriangles = false;
+
             for (const auto& Section : Assets.GetMesh(Instance.GetMesh()).GetSections())
                 if (Section.Surface < Shared->GetTexelMeshRanges().size() &&
                     Shared->GetTexelMeshRanges()[Section.Surface].IndexCount > 0)
@@ -436,6 +450,7 @@ namespace MDSS::Rendering
             Push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
             Push.size = sizeof(FGizmoPushConstants);
             Config.PushConstantRanges.push_back(Push);
+
             return Config;
         }
 
@@ -456,6 +471,7 @@ namespace MDSS::Rendering
             Config.bDepthWriteEnabled = false;
             Config.DepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             Config.bBlendingEnabled = true;
+
             return Config;
         }
 
@@ -472,11 +488,13 @@ namespace MDSS::Rendering
             explicit TScopeExit(TCallback Callback) : Callback(std::move(Callback))
             {
             }
+
             ~TScopeExit()
             {
                 if (bActive)
                     Callback();
             }
+
             void Release() noexcept
             {
                 bActive = false;

@@ -31,21 +31,26 @@ namespace MDSS
             {
                 throw std::runtime_error(Context + " must be an object.");
             }
+
             const auto Found = Object.find(Name);
+
             if (Found == Object.end())
             {
                 throw std::runtime_error(Context + " is missing required field '" + Name + "'.");
             }
+
             return *Found;
         }
 
         std::string ReadString(const FJson& Object, const char* Name, const std::string& Context)
         {
             const FJson& Value = RequireMember(Object, Name, Context);
+
             if (!Value.is_string() || Value.get_ref<const std::string&>().empty())
             {
                 throw std::runtime_error(Context + "." + Name + " must be a non-empty string.");
             }
+
             return Value.get<std::string>();
         }
 
@@ -55,11 +60,14 @@ namespace MDSS
             {
                 throw std::runtime_error("Scene version must be the integer 1.");
             }
+
             const std::int64_t Version = Value.get<std::int64_t>();
+
             if (Version != 1)
             {
                 throw std::runtime_error("Unsupported Scene version; expected version 1.");
             }
+
             return static_cast<std::uint32_t>(Version);
         }
 
@@ -67,6 +75,7 @@ namespace MDSS
         {
             constexpr const char* Error = "Scene simulationResolution must be the integer 128, 256 or 512.";
             std::uint64_t         Number = 0;
+
             if (Value.is_number_unsigned())
             {
                 Number = Value.get<std::uint64_t>();
@@ -74,6 +83,7 @@ namespace MDSS
             else if (Value.is_number_integer())
             {
                 const auto SignedNumber = Value.get<std::int64_t>();
+
                 if (SignedNumber < 0)
                     throw std::runtime_error(Error);
                 Number = static_cast<std::uint64_t>(SignedNumber);
@@ -82,11 +92,13 @@ namespace MDSS
             {
                 throw std::runtime_error(Error);
             }
+
             for (const auto& Preset : SurfaceState::SurfaceSimulationResolutionPresets)
             {
                 if (Number == Preset.Resolution)
                     return Preset.Resolution;
             }
+
             throw std::runtime_error(Error);
         }
 
@@ -96,12 +108,15 @@ namespace MDSS
             {
                 throw std::runtime_error(Context + " must be a number.");
             }
+
             const double Number = Value.get<double>();
             const float  Result = static_cast<float>(Number);
+
             if (!std::isfinite(Number) || !std::isfinite(Result))
             {
                 throw std::runtime_error(Context + " must be finite.");
             }
+
             return Result;
         }
 
@@ -111,6 +126,7 @@ namespace MDSS
             {
                 throw std::runtime_error(Context + " must be a three-element array.");
             }
+
             return {ReadFiniteFloat(Value[0], Context + "[0]"),
                     ReadFiniteFloat(Value[1], Context + "[1]"),
                     ReadFiniteFloat(Value[2], Context + "[2]")};
@@ -119,10 +135,12 @@ namespace MDSS
         FTransform ReadTransform(const FJson& Object, const std::string& Context)
         {
             FTransform Transform;
+
             if (Object.is_null())
             {
                 return Transform;
             }
+
             if (!Object.is_object())
             {
                 throw std::runtime_error(Context + " must be an object.");
@@ -132,14 +150,17 @@ namespace MDSS
             {
                 Transform.Position = ReadVector3(*Position, Context + ".position");
             }
+
             if (const auto Rotation = Object.find("rotationDegrees"); Rotation != Object.end())
             {
                 Transform.RotationDegrees = ReadVector3(*Rotation, Context + ".rotationDegrees");
             }
+
             if (const auto Scale = Object.find("scale"); Scale != Object.end())
             {
                 Transform.Scale = ReadVector3(*Scale, Context + ".scale");
             }
+
             return Transform;
         }
 
@@ -149,14 +170,17 @@ namespace MDSS
                                                const char*                  ExpectedExtension)
         {
             const std::filesystem::path RelativePath(PathText);
+
             if (RelativePath.is_absolute())
             {
                 throw std::runtime_error("Scene " + Field + " path must be relative to the Scene file.");
             }
+
             if (RelativePath.extension() != ExpectedExtension)
             {
                 throw std::runtime_error("Scene " + Field + " path must use the " + ExpectedExtension + " extension.");
             }
+
             return (SceneDirectory / RelativePath).lexically_normal();
         }
     } // namespace
@@ -172,6 +196,7 @@ namespace MDSS
                               std::optional<std::uint32_t>       ResolutionOverride)
     {
         std::ifstream Input(Path);
+
         if (!Input)
         {
             throw std::runtime_error("Unable to open Scene file: " + Path.string());
@@ -186,16 +211,20 @@ namespace MDSS
         {
             throw std::runtime_error("Invalid Scene JSON in '" + Path.string() + "': " + Exception.what());
         }
+
         if (!Root.is_object())
         {
             throw std::runtime_error("Scene root must be a JSON object.");
         }
+
         if (ReadString(Root, "type", "Scene") != "TScene")
         {
             throw std::runtime_error("Scene type must be 'TScene'.");
         }
+
         (void)ReadVersion(RequireMember(Root, "version", "Scene"));
         const FJson& Objects = RequireMember(Root, "objects", "Scene");
+
         if (!Objects.is_array())
         {
             throw std::runtime_error("Scene 'objects' must be an array.");
@@ -204,18 +233,22 @@ namespace MDSS
         const std::filesystem::path SceneDirectory = std::filesystem::absolute(Path).parent_path();
         FScene                      Scene;
         Scene.SetSourcePath(std::filesystem::absolute(Path).lexically_normal());
+
         if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
         {
             Scene.SetSimulationResolution(ReadSimulationResolution(*Resolution));
         }
+
         if (ResolutionOverride)
         {
             Scene.SetSimulationResolution(*ResolutionOverride);
         }
+
         if (const auto DisplayScale = Root.find("litHeightDisplayScale"); DisplayScale != Root.end())
         {
             Scene.SetLitHeightDisplayScale(ReadFiniteFloat(*DisplayScale, "Scene.litHeightDisplayScale"));
         }
+
         if (const auto Camera = Root.find("camera"); Camera != Root.end())
         {
             if (!Camera->is_object())
@@ -230,30 +263,37 @@ namespace MDSS
                 throw std::runtime_error("Scene.camera.verticalFieldOfViewDegrees must be between 0 and 180.");
             MainCamera.SetVerticalFieldOfViewDegrees(FieldOfView);
         }
+
         std::unordered_set<std::string> ObjectIds;
+
         for (std::size_t Index = 0; Index < Objects.size(); ++Index)
         {
             const FJson&      Object = Objects[Index];
             const std::string Context = "Scene objects[" + std::to_string(Index) + "]";
             std::string       ObjectId;
+
             if (const auto Id = Object.find("id"); Id != Object.end())
             {
                 ObjectId = ReadString(Object, "id", Context);
+
                 if (ObjectId == "camera" || !ObjectIds.insert(ObjectId).second)
                     throw std::runtime_error(Context + ".id must be unique and cannot be 'camera'.");
             }
+
             const std::filesystem::path MeshPath =
                 ResolveScenePath(SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
             const Asset::FMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
 
             SurfaceState::FSurfaceRuntimeDataHandle SurfaceDataHandle = SurfaceState::InvalidSurfaceRuntimeDataHandle;
             std::filesystem::path                   DistributionPath;
+
             if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
             {
                 if (!Distribution->is_string() || Distribution->get_ref<const std::string&>().empty())
                 {
                     throw std::runtime_error(Context + ".surfaceProfileMap must be a non-empty path string.");
                 }
+
                 DistributionPath = ResolveScenePath(
                     SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
                 SurfaceDataHandle =
@@ -261,13 +301,16 @@ namespace MDSS
             }
 
             FTransform Transform;
+
             if (const auto TransformJson = Object.find("transform"); TransformJson != Object.end())
             {
                 Transform = ReadTransform(*TransformJson, Context + ".transform");
             }
+
             Scene.AddStaticMeshInstance(FStaticMeshInstance(
                 MeshHandle, SurfaceDataHandle, Transform, MeshPath, DistributionPath, std::move(ObjectId)));
         }
+
         if (const auto Contacts = Root.find("initialContacts"); Contacts != Root.end())
         {
             if (!Contacts->is_array())
@@ -279,6 +322,7 @@ namespace MDSS
                 FSceneInitialContact Initial;
                 Initial.Target = ReadString(Contact, "target", Context);
                 Initial.State = ReadString(Contact, "state", Context);
+
                 if (!ObjectIds.contains(Initial.Target))
                     throw std::runtime_error(Context + ".target must name a Scene object with an id.");
                 if (SurfaceState::NormalizeSurfaceStateName(Initial.State) != Initial.State)
@@ -287,6 +331,7 @@ namespace MDSS
                     ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
                 Initial.Radius = ReadFiniteFloat(RequireMember(Contact, "radius", Context), Context + ".radius");
                 Initial.Strength = ReadFiniteFloat(RequireMember(Contact, "strength", Context), Context + ".strength");
+
                 if (const auto Falloff = Contact.find("falloff"); Falloff != Contact.end())
                     Initial.Falloff = ReadFiniteFloat(*Falloff, Context + ".falloff");
                 if (Initial.Radius <= 0.0F || Initial.Strength < 0.0F || Initial.Falloff < 0.0F)
@@ -294,12 +339,14 @@ namespace MDSS
                 Scene.AddInitialContact(std::move(Initial));
             }
         }
+
         if (const auto Animation = Root.find("animation"); Animation != Root.end())
         {
             const std::filesystem::path AnimationPath =
                 ResolveScenePath(SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
             Scene.SetDemoAnimation(AnimationPath, LoadDemoAnimation(AnimationPath, Scene));
         }
+
         Scene.CaptureInitialState();
         return Scene;
     }
@@ -331,6 +378,7 @@ namespace MDSS
         if (!Scene.GetInitialContacts().empty())
         {
             Root["initialContacts"] = FJson::array();
+
             for (const auto& Contact : Scene.GetInitialContacts())
                 Root["initialContacts"].push_back(
                     {{"target", Contact.Target},
@@ -340,23 +388,29 @@ namespace MDSS
                      {"strength", Contact.Strength},
                      {"falloff", Contact.Falloff}});
         }
+
         Root["objects"] = FJson::array();
+
         for (const FStaticMeshInstance& Instance : Scene.GetStaticMeshInstances())
         {
             if (Instance.GetMeshPath().empty())
             {
                 throw std::runtime_error("Cannot save Scene object without its source Mesh path.");
             }
+
             const FTransform& Transform = Instance.GetTransform();
             FJson             Object;
+
             if (!Instance.GetId().empty())
                 Object["id"] = Instance.GetId();
             Object["mesh"] = Instance.GetMeshPath().lexically_relative(Directory).generic_string();
+
             if (!Instance.GetProfileMapPath().empty())
             {
                 Object["surfaceProfileMap"] =
                     Instance.GetProfileMapPath().lexically_relative(Directory).generic_string();
             }
+
             Object["transform"] = {
                 {"position", {Transform.Position.x, Transform.Position.y, Transform.Position.z}},
                 {"rotationDegrees",
@@ -366,11 +420,14 @@ namespace MDSS
         }
 
         std::ofstream Output(AbsolutePath);
+
         if (!Output)
         {
             throw std::runtime_error("Unable to write Scene file: " + AbsolutePath.string());
         }
+
         Output << std::setw(2) << Root << '\n';
+
         if (!Output)
         {
             throw std::runtime_error("Failed while writing Scene file: " + AbsolutePath.string());

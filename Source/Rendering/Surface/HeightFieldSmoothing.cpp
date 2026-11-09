@@ -45,6 +45,7 @@ namespace MDSS::Rendering
         vkGetPhysicalDeviceProperties(PhysicalDevice, &Properties);
         Limits = Properties.limits;
         const auto StorageBindings = static_cast<std::uint32_t>(SurfaceState::ESurfaceGPUDescriptorBinding::Count) + 2U;
+
         if (Limits.maxPerStageDescriptorStorageBuffers < StorageBindings ||
             Limits.maxDescriptorSetStorageBuffers < StorageBindings || Limits.maxComputeWorkGroupInvocations < 64 ||
             Limits.maxComputeWorkGroupSize[0] < 64)
@@ -69,14 +70,17 @@ namespace MDSS::Rendering
                     Shaders::EShader::Rendering_Surface_Smoothing_HeightFieldSmoothing_comp_h0,
                     Shaders::EShader::Rendering_Surface_Smoothing_HeightFieldSmoothing_comp_h1};
                 std::ifstream File(Shaders::Path(Variants[Variant]), std::ios::binary | std::ios::ate);
+
                 if (!File)
                     throw std::runtime_error("Cannot open height-field smoothing compute shader.");
                 const auto Size = File.tellg();
+
                 if (Size <= 0 || Size % 4 != 0)
                     throw std::runtime_error("Invalid height-field smoothing SPIR-V.");
                 std::vector<std::uint32_t> Code(static_cast<std::size_t>(Size) / 4);
                 File.seekg(0);
                 File.read(reinterpret_cast<char*>(Code.data()), Size);
+
                 if (!File)
                     throw std::runtime_error("Cannot read height-field smoothing compute shader.");
                 VkShaderModuleCreateInfo ModuleInfo{};
@@ -126,6 +130,7 @@ namespace MDSS::Rendering
     FHeightFieldSmoothing::~FHeightFieldSmoothing()
     {
         Outputs.clear();
+
         if (Pool)
             vkDestroyDescriptorPool(Device, Pool, nullptr);
         for (VkPipeline Pipeline : Pipelines)
@@ -204,6 +209,7 @@ namespace MDSS::Rendering
             throw std::invalid_argument("Height-field smoothing sparse tile size must be 8, 16, or 32.");
         const auto Key = std::make_pair(Instance, Channel);
         auto       It = Outputs.find(Key);
+
         if (It == Outputs.end())
         {
             FOutput Output;
@@ -227,6 +233,7 @@ namespace MDSS::Rendering
             Write.descriptorCount = 1;
             Write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             Write.pBufferInfo = &Buffer;
+
             // The smoothed geometry replaces binding 0, while downstream overlay
             // passes still read the input preview's occupancy GeometryCache at binding 1.
             VkCopyDescriptorSet CopyGeometryCache{};
@@ -239,6 +246,7 @@ namespace MDSS::Rendering
             vkUpdateDescriptorSets(Device, 1, &Write, 1, &CopyGeometryCache);
             It = Outputs.emplace(Key, std::move(Output)).first;
         }
+
         if (It->second.Buffer->GetSize() != Bytes)
             throw std::logic_error("Height-field smoothing size changed without rebuilding Scene resources.");
 
@@ -263,6 +271,7 @@ namespace MDSS::Rendering
         const std::array<VkDescriptorSet, 3> Sets{
             bStateAB ? StateDescriptors.GetABSet() : StateDescriptors.GetBASet(), InputSet, It->second.Set};
         const VkDeviceSize CacheWords = GeometryCacheBuffer.GetSize() / sizeof(std::uint32_t);
+
         if (CacheWords < static_cast<VkDeviceSize>(TexelCount) * 6U + 14U ||
             (CacheWords - static_cast<VkDeviceSize>(TexelCount) * 6U - 14U) % 7U != 0U)
             throw std::invalid_argument("Height-field smoothing geometry cache layout is invalid.");
@@ -300,6 +309,7 @@ namespace MDSS::Rendering
                                 0,
                                 nullptr);
         vkCmdPushConstants(Command, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Push), &Push);
+
         if (bUseSparse)
         {
             vkCmdDispatchIndirect(Command, GeometryCacheBuffer.GetHandle(), NormalDispatchIndirectOffset);
@@ -309,10 +319,12 @@ namespace MDSS::Rendering
             const std::uint32_t GroupCount = (TexelCount - 1U) / 64U + 1U;
             const std::uint32_t GroupsX = std::min(GroupCount, Limits.maxComputeWorkGroupCount[0]);
             const std::uint32_t GroupsY = (GroupCount - 1U) / GroupsX + 1U;
+
             if (GroupsY > Limits.maxComputeWorkGroupCount[1])
                 throw std::overflow_error("Height-field smoothing dispatch exceeds Vulkan workgroup limits.");
             vkCmdDispatch(Command, GroupsX, GroupsY, 1);
         }
+
         It->second.bInitialized = true;
         It->second.LastInputBuffer = InputBuffer.GetHandle();
         It->second.LastDisplayScale = AccumulationDisplayScale;

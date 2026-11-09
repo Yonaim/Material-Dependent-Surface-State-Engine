@@ -126,20 +126,24 @@ namespace MDSS::SurfaceState
                                                      Pool);
 
         std::vector<std::uint32_t> BoundaryFlags(TexelCount, 0U);
+
         for (std::uint32_t Surface = 0; Surface < SurfaceRanges.size(); ++Surface)
         {
             const auto& Range = SurfaceRanges[Surface];
+
             for (std::uint32_t Y = 0; Y < Range.Height; ++Y)
                 for (std::uint32_t X = 0; X < Range.Width; ++X)
                 {
                     const std::size_t Center = Range.FirstTexel + std::size_t(Y) * Range.Width + X;
                     const auto        Profile = Upload.TexelProfileIndices[Center];
                     const auto        Chart = Upload.TexelChartIndices[Center];
+
                     if (Upload.TexelSurfaceIndices[Center] != Surface)
                     {
                         BoundaryFlags[Center] = 1U;
                         continue;
                     }
+
                     for (int OffsetY = -1; OffsetY <= 1; ++OffsetY)
                         for (int OffsetX = -1; OffsetX <= 1; ++OffsetX)
                         {
@@ -219,10 +223,12 @@ namespace MDSS::SurfaceState
             Output.VertexBuffer->Upload(Mesh.Vertices.data(), VertexBytes);
 
             // One immutable CSR vertex list per render tile size. Geometry shares these lists;
+
             // coverage and its history remain owned by each Scene instance.
             for (const std::uint32_t TileSize : {8U, 16U, 32U})
             {
                 std::vector<std::uint32_t> SurfaceTileBases(Ranges.size() + 1U, 0U);
+
                 for (std::size_t Surface = 0; Surface < Ranges.size(); ++Surface)
                 {
                     const auto&       Range = Ranges[Surface];
@@ -235,14 +241,17 @@ namespace MDSS::SurfaceState
 
                 const std::uint32_t                     TileCount = SurfaceTileBases.back();
                 std::vector<std::vector<std::uint32_t>> TileVertices(TileCount);
+
                 for (std::uint32_t Vertex = 0; Vertex < Mesh.Vertices.size(); ++Vertex)
                 {
                     const auto& UVSurface = Mesh.Vertices[Vertex].UVSurface;
+
                     if (!std::isfinite(UVSurface.x) || !std::isfinite(UVSurface.y) || !std::isfinite(UVSurface.w) ||
                         UVSurface.w < 0.0F || UVSurface.w >= static_cast<float>(Ranges.size()))
                         throw std::runtime_error("Overlay vertex has an invalid surface or UV.");
                     const auto  Surface = static_cast<std::uint32_t>(UVSurface.w);
                     const auto& Range = Ranges[Surface];
+
                     if (Range.Width == 0U || Range.Height == 0U)
                         throw std::runtime_error("Overlay vertex belongs to an empty surface range.");
                     const auto X =
@@ -257,11 +266,13 @@ namespace MDSS::SurfaceState
                 }
 
                 std::vector<std::uint32_t> Packed(TileCount + 1U, 0U);
+
                 for (std::uint32_t Tile = 0; Tile < TileCount; ++Tile)
                 {
                     Packed[Tile] = static_cast<std::uint32_t>(Packed.size());
                     Packed.insert(Packed.end(), TileVertices[Tile].begin(), TileVertices[Tile].end());
                 }
+
                 Packed[TileCount] = static_cast<std::uint32_t>(Packed.size());
 
                 FSurfaceTexelMeshGPUVariant::FTileVertexList List;
@@ -277,6 +288,7 @@ namespace MDSS::SurfaceState
             PackedBoundaries.insert(PackedBoundaries.end(), Mesh.BoundaryEdges.begin(), Mesh.BoundaryEdges.end());
             PackedBoundaries.insert(PackedBoundaries.end(), Mesh.SideAdjacency.begin(), Mesh.SideAdjacency.end());
             const auto BoundaryBytes = static_cast<VkDeviceSize>(PackedBoundaries.size() * sizeof(glm::uvec4));
+
             if (BoundaryBytes == 0 || BoundaryBytes > MaxRange)
                 throw std::length_error("Overlay boundary and side adjacency exceed maxStorageBufferRange.");
 
@@ -383,6 +395,7 @@ namespace MDSS::SurfaceState
         Pool.Release(std::move(TexelChartIndexBuffer));
         Pool.Release(std::move(RenderSamplingBoundaryFlagBuffer));
         FullTexelMesh.RetireBuffers(Pool);
+
         for (auto& [Resolution, Variant] : TexelMeshVariants)
             Variant.RetireBuffers(Pool);
     }

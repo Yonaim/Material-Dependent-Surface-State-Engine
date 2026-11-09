@@ -49,18 +49,21 @@ namespace MDSS
         {
             std::array<float, 43> Values{};
             Values.fill(-1.0F);
+
             return Values;
         }();
         std::array<float, 43> WindowMaximums = []
         {
             std::array<float, 43> Values{};
             Values.fill(-1.0F);
+
             return Values;
         }();
         std::array<float, 43> Recent100msAverages = []
         {
             std::array<float, 43> Values{};
             Values.fill(-1.0F);
+
             return Values;
         }();
         std::deque<FSample> RecentSamples;

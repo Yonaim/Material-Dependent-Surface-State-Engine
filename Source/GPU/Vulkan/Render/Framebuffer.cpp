@@ -58,6 +58,7 @@ namespace MDSS::GPU
                 vkDestroyFramebuffer(Device, Handle, nullptr);
             }
         }
+
         Handles.clear();
     }
 
@@ -89,6 +90,7 @@ namespace MDSS::GPU
                 {
                     vkDestroyFramebuffer(Device, Handles[Created], nullptr);
                 }
+
                 Handles.clear();
                 throw std::runtime_error("Failed to create Vulkan framebuffer.");
             }

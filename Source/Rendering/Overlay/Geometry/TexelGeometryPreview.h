@@ -46,6 +46,7 @@ namespace MDSS::SurfaceState
         {
             return OutputLayout;
         }
+
         [[nodiscard]] VkDescriptorSet        GetOutputSet(std::size_t Instance, std::size_t OutputSlot = 0U) const;
         [[nodiscard]] const GPU::FGPUBuffer& GetOutputBuffer(std::size_t Instance, std::size_t OutputSlot = 0U) const;
         [[nodiscard]] const GPU::FGPUBuffer& GetGeometryCacheBuffer(std::size_t Instance,
@@ -81,6 +82,7 @@ namespace MDSS::SurfaceState
         void ReleaseOutputs()
         {
             Outputs.clear();
+
             if (vkResetDescriptorPool(Device, Pool, 0) != VK_SUCCESS)
                 throw std::runtime_error("Cannot reset render output descriptors.");
         }

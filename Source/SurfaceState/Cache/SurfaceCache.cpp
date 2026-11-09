@@ -43,6 +43,7 @@ namespace MDSS::SurfaceState
                 for (const std::uint8_t Byte : Data)
                     Value = (Value ^ Byte) * HashPrime;
             }
+
             void Integer(std::uint64_t Number)
             {
                 for (int Shift = 0; Shift < 64; Shift += 8)
@@ -51,15 +52,18 @@ namespace MDSS::SurfaceState
                     Bytes({&Byte, 1});
                 }
             }
+
             void Float(float Number)
             {
                 Integer(std::bit_cast<std::uint32_t>(Number));
             }
+
             void String(const std::string& Text)
             {
                 Integer(Text.size());
                 Bytes({reinterpret_cast<const std::uint8_t*>(Text.data()), Text.size()});
             }
+
             std::uint64_t Value = HashBasis;
         };
 
@@ -71,15 +75,18 @@ namespace MDSS::SurfaceState
         std::uint64_t HashFile(const std::filesystem::path& Path)
         {
             std::ifstream Input(Path, std::ios::binary);
+
             if (!Input)
                 throw std::runtime_error("Unable to fingerprint Surface input: " + Path.string());
             FHash                           Hash;
             std::array<std::uint8_t, 65536> Buffer{};
+
             while (Input)
             {
                 Input.read(reinterpret_cast<char*>(Buffer.data()), Buffer.size());
                 Hash.Bytes({Buffer.data(), static_cast<std::size_t>(Input.gcount())});
             }
+
             if (!Input.eof())
                 throw std::runtime_error("Unable to read Surface input: " + Path.string());
             return Hash.Value;
@@ -90,21 +97,25 @@ namespace MDSS::SurfaceState
             for (int Shift = 0; Shift < 32; Shift += 8)
                 Data.push_back(static_cast<std::uint8_t>(Number >> Shift));
         }
+
         void Write64(std::vector<std::uint8_t>& Data, std::uint64_t Number)
         {
             Write32(Data, static_cast<std::uint32_t>(Number));
             Write32(Data, static_cast<std::uint32_t>(Number >> 32));
         }
+
         void WriteFloat(std::vector<std::uint8_t>& Data, float Number)
         {
             Write32(Data, std::bit_cast<std::uint32_t>(Number));
         }
+
         void WriteVec3(std::vector<std::uint8_t>& Data, const glm::vec3& V)
         {
             WriteFloat(Data, V.x);
             WriteFloat(Data, V.y);
             WriteFloat(Data, V.z);
         }
+
         void WriteString(std::vector<std::uint8_t>& Data, const std::string& Text)
         {
             if (Text.size() > UINT32_MAX)
@@ -119,9 +130,11 @@ namespace MDSS::SurfaceState
             explicit FReader(std::span<const std::uint8_t> Bytes) : Data(Bytes)
             {
             }
+
             std::uint32_t Read32()
             {
                 Require(4);
+
                 // memcpy accepts unaligned records and avoids a per-byte decode loop.
                 std::uint32_t Result;
                 std::memcpy(&Result, Data.data() + Offset, sizeof(Result));
@@ -131,15 +144,18 @@ namespace MDSS::SurfaceState
                         (Result >> 24) | ((Result >> 8) & 0x0000ff00U) | ((Result << 8) & 0x00ff0000U) | (Result << 24);
                 return Result;
             }
+
             std::uint64_t Read64()
             {
                 const std::uint64_t Low = Read32();
                 return Low | (std::uint64_t(Read32()) << 32);
             }
+
             float ReadFloat()
             {
                 return std::bit_cast<float>(Read32());
             }
+
             glm::vec3 ReadVec3()
             {
                 const float X = ReadFloat();
@@ -147,14 +163,17 @@ namespace MDSS::SurfaceState
                 const float Z = ReadFloat();
                 return {X, Y, Z};
             }
+
             std::string ReadString()
             {
                 const std::uint32_t Length = Read32();
                 Require(Length);
                 const std::string Result(reinterpret_cast<const char*>(Data.data() + Offset), Length);
                 Offset += Length;
+
                 return Result;
             }
+
             std::size_t Offset = 0;
 
         private:
@@ -163,6 +182,7 @@ namespace MDSS::SurfaceState
                 if (Count > Data.size() - Offset)
                     throw std::runtime_error("Truncated Surface cache.");
             }
+
             std::span<const std::uint8_t> Data;
         };
 
@@ -173,21 +193,26 @@ namespace MDSS::SurfaceState
                 Descriptor.ProfilePaths.size() >= InvalidSurfaceProfileIndex)
                 throw std::runtime_error("Invalid Surface cache descriptor.");
             std::uint64_t Count = 0;
+
             for (std::size_t Index = 0; Index < Descriptor.Surfaces.size(); ++Index)
             {
                 const FSurfaceDefinition& Surface = Descriptor.Surfaces[Index];
+
                 if (Surface.ID != Index)
                     throw std::runtime_error("Surface cache IDs must be dense and ordered.");
                 Count += Surface.Resolution.GetTexelCount();
+
                 if (Count > UINT32_MAX)
                     throw std::runtime_error("Surface cache texel count exceeds index range.");
             }
+
             return Count;
         }
 
         std::size_t EncodedSize(const FSurfaceCacheDescriptor& Descriptor)
         {
             std::uint64_t Size = HeaderBytes + Descriptor.Surfaces.size() * 12ULL + TexelCount(Descriptor) * TexelBytes;
+
             for (const auto& Path : Descriptor.ProfilePaths)
                 Size += 4 + CanonicalPath(Path).size();
             if (Size > std::numeric_limits<std::size_t>::max() ||
@@ -200,6 +225,7 @@ namespace MDSS::SurfaceState
         {
             return std::isfinite(V.x) && std::isfinite(V.y) && std::isfinite(V.z);
         }
+
         bool Unit(const glm::vec3& V)
         {
             return Finite(V) && std::abs(glm::length(V) - 1.0F) <= 1.0e-3F;
@@ -214,6 +240,7 @@ namespace MDSS::SurfaceState
             for (std::size_t Index = 0; Index < Descriptor.Surfaces.size(); ++Index)
             {
                 const auto& Range = Geometry.GetSurfaces()[Index];
+
                 if (Range.Surface != Descriptor.Surfaces[Index].ID ||
                     Range.Resolution != Descriptor.Surfaces[Index].Resolution)
                     throw std::runtime_error("Surface cache resolution mismatch.");
@@ -221,6 +248,7 @@ namespace MDSS::SurfaceState
                 {
                     const auto& T = Geometry.GetTexels()[I];
                     const auto  Profile = Geometry.GetProfileMap()[I];
+
                     if (!Finite(T.Position) || !Finite(T.AreaVector) || !Finite(T.Barycentric) || !Finite(T.Normal) ||
                         !Finite(T.TransferNormal) || !Finite(T.MesoNormal) ||
                         !std::isfinite(T.Geometry.MesoVirtualHeight) || !std::isfinite(T.Geometry.ConcavityWeight) ||
@@ -244,6 +272,7 @@ namespace MDSS::SurfaceState
                         throw std::runtime_error("Surface cache contains inconsistent invalid texels.");
                     std::array<FLocalTexelIndex, SurfaceNeighborCount> Seen{};
                     std::size_t                                        SeenCount = 0;
+
                     for (const auto Neighbor : T.NeighborIndices)
                     {
                         if (Neighbor != InvalidTexelIndex &&
@@ -253,6 +282,7 @@ namespace MDSS::SurfaceState
                         if (Neighbor != InvalidTexelIndex)
                         {
                             const auto& Reverse = Geometry.GetTexels()[Neighbor].NeighborIndices;
+
                             if (std::find(Seen.begin(), Seen.begin() + SeenCount, Neighbor) !=
                                     Seen.begin() + SeenCount ||
                                 std::find(Reverse.begin(), Reverse.end(), static_cast<FLocalTexelIndex>(I)) ==
@@ -291,6 +321,7 @@ namespace MDSS::SurfaceState
         FHash Hash;
         Hash.Integer(PreprocessVersion);
         Hash.Integer(Vertices.size());
+
         for (const auto& V : Vertices)
         {
             for (int I = 0; I < 3; ++I)
@@ -302,7 +333,9 @@ namespace MDSS::SurfaceState
             for (int I = 0; I < 4; ++I)
                 Hash.Float(V.Tangent[I]);
         }
+
         Hash.Integer(Triangles.size());
+
         for (const auto& T : Triangles)
         {
             for (const auto Index : T.RenderVertexIndices)
@@ -313,30 +346,37 @@ namespace MDSS::SurfaceState
                 Hash.Integer(static_cast<std::uint32_t>(Index));
             Hash.Integer(T.Surface);
         }
+
         Hash.Integer(Result.Surfaces.size());
         std::unordered_map<std::string, std::uint64_t> NormalHashes;
+
         for (std::size_t I = 0; I < Result.Surfaces.size(); ++I)
         {
             const auto& S = Result.Surfaces[I];
             Hash.Integer(S.ID);
             Hash.Integer(S.Resolution.Width);
             Hash.Integer(S.Resolution.Height);
+
             if (NormalMapPaths[I].empty())
                 Hash.String("");
             else
             {
                 const std::string Key = CanonicalPath(NormalMapPaths[I]);
                 auto              It = NormalHashes.find(Key);
+
                 if (It == NormalHashes.end())
                     It = NormalHashes.emplace(Key, HashFile(NormalMapPaths[I])).first;
                 Hash.String(Key);
                 Hash.Integer(It->second);
             }
+
             Hash.Integer(ProfileIndicesBySurface[I]);
         }
+
         Hash.String(CanonicalPath(DistributionPath));
         Hash.Integer(HashFile(DistributionPath));
         Hash.Integer(Result.ProfilePaths.size());
+
         for (const auto& Path : Result.ProfilePaths)
             Hash.String(CanonicalPath(Path));
         Result.Fingerprint = Hash.Value;
@@ -354,6 +394,7 @@ namespace MDSS::SurfaceState
         std::ostringstream Suffix;
         Suffix << std::hex << std::setw(16) << std::setfill('0') << Identity.Value;
         const std::string Stem = MeshPath.stem().string();
+
         return CacheRoot / (Stem + "_" + Suffix.str()) / (Stem + "_" + std::to_string(Resolution) + ".Surface");
     }
 #pragma endregion
@@ -370,23 +411,28 @@ namespace MDSS::SurfaceState
         try
         {
             std::ifstream Input(Path, std::ios::binary | std::ios::ate);
+
             if (!Input)
             {
                 Diagnostic = std::filesystem::exists(Path) ? "unreadable cache" : "missing cache";
                 return std::nullopt;
             }
+
             const std::size_t Size = EncodedSize(Expected);
+
             if (Input.tellg() != static_cast<std::streamoff>(Size))
                 throw std::runtime_error("stale/corrupt cache size");
             std::vector<std::uint8_t> Data(Size);
             Input.seekg(0);
             Input.read(reinterpret_cast<char*>(Data.data()), static_cast<std::streamsize>(Data.size()));
+
             if (!Input)
                 throw std::runtime_error("truncated cache read");
             if (!std::equal(Magic.begin(), Magic.end(), Data.begin()))
                 throw std::runtime_error("unsupported cache magic");
             FReader Reader(Data);
             Reader.Offset = Magic.size();
+
             if (Reader.Read32() != FormatVersion || Reader.Read32() != PreprocessVersion)
                 throw std::runtime_error("stale cache version");
             if (Reader.Read64() != Expected.Fingerprint)
@@ -397,6 +443,7 @@ namespace MDSS::SurfaceState
             const auto StoredHash = Reader.Read64();
             FHash      PayloadHash;
             PayloadHash.Bytes(std::span(Data).subspan(HeaderBytes));
+
             if (StoredHash != PayloadHash.Value)
                 throw std::runtime_error("corrupt cache checksum");
             for (const auto& Surface : Expected.Surfaces)
@@ -405,13 +452,16 @@ namespace MDSS::SurfaceState
                     Reader.Read32() != Surface.Resolution.Height)
                     throw std::runtime_error("stale Surface definitions");
             }
+
             for (const auto& ProfilePath : Expected.ProfilePaths)
             {
                 if (Reader.ReadString() != CanonicalPath(ProfilePath))
                     throw std::runtime_error("stale Profile table order");
             }
+
             FSharedSurfaceGeometryData        Geometry(Expected.Surfaces);
             std::vector<FSurfaceProfileIndex> Profiles(Geometry.GetTexelCount());
+
             for (std::size_t I = 0; I < Geometry.GetTexelCount(); ++I)
             {
                 auto& T = Geometry.GetTexels()[I];
@@ -424,6 +474,7 @@ namespace MDSS::SurfaceState
                 T.TransferNormal = Reader.ReadVec3();
                 T.MesoNormal = Reader.ReadVec3();
                 const auto Flags = Reader.Read32();
+
                 if (Flags > 3)
                     throw std::runtime_error("invalid cache normal flags");
                 T.bHasTransferNormal = (Flags & 1) != 0;
@@ -432,12 +483,15 @@ namespace MDSS::SurfaceState
                 T.Geometry.ConcavityWeight = Reader.ReadFloat();
                 T.Geometry.MesoMeanCurvature = Reader.ReadFloat();
                 T.Geometry.MesoGaussianCurvature = Reader.ReadFloat();
+
                 for (auto& Neighbor : T.NeighborIndices)
                     Neighbor = Reader.Read32();
                 Profiles[I] = Reader.Read32();
                 T.AreaVector = Reader.ReadVec3();
             }
+
             Geometry.SetProfileMap(std::move(Profiles));
+
             if (Reader.Offset != Data.size())
                 throw std::runtime_error("trailing cache payload");
             Validate(Geometry, Expected);
@@ -447,6 +501,7 @@ namespace MDSS::SurfaceState
         catch (const std::exception& Error)
         {
             Diagnostic = Error.what();
+
             return std::nullopt;
         }
     }
@@ -473,12 +528,14 @@ namespace MDSS::SurfaceState
         Write32(Data, Descriptor.TriangleCount);
         Write64(Data, Geometry.GetTexelCount());
         Write64(Data, 0);
+
         for (const auto& S : Descriptor.Surfaces)
         {
             Write32(Data, S.ID);
             Write32(Data, S.Resolution.Width);
             Write32(Data, S.Resolution.Height);
         }
+
         for (const auto& ProfilePath : Descriptor.ProfilePaths)
             WriteString(Data, CanonicalPath(ProfilePath));
         for (std::size_t I = 0; I < Geometry.GetTexelCount(); ++I)
@@ -497,15 +554,18 @@ namespace MDSS::SurfaceState
             WriteFloat(Data, T.Geometry.ConcavityWeight);
             WriteFloat(Data, T.Geometry.MesoMeanCurvature);
             WriteFloat(Data, T.Geometry.MesoGaussianCurvature);
+
             for (const auto Neighbor : T.NeighborIndices)
                 Write32(Data, Neighbor);
             Write32(Data, Geometry.GetProfileMap()[I]);
             WriteVec3(Data, T.AreaVector);
         }
+
         if (Data.size() != EncodedSize(Descriptor))
             throw std::runtime_error("Surface cache encoding size mismatch.");
         FHash PayloadHash;
         PayloadHash.Bytes(std::span(Data).subspan(HeaderBytes));
+
         for (int Byte = 0; Byte < 8; ++Byte)
             Data[HeaderBytes - 8 + Byte] = static_cast<std::uint8_t>(PayloadHash.Value >> (8 * Byte));
         if (!Path.parent_path().empty())
@@ -516,13 +576,16 @@ namespace MDSS::SurfaceState
         try
         {
             std::ofstream Output(Temporary, std::ios::binary | std::ios::trunc);
+
             if (!Output)
                 throw std::runtime_error("Unable to create Surface cache: " + Temporary.string());
             Output.write(reinterpret_cast<const char*>(Data.data()), static_cast<std::streamsize>(Data.size()));
             Output.flush();
+
             if (!Output)
                 throw std::runtime_error("Unable to write Surface cache: " + Temporary.string());
             Output.close();
+
             if (!Output)
                 throw std::runtime_error("Unable to close Surface cache: " + Temporary.string());
             std::filesystem::rename(Temporary, Path);

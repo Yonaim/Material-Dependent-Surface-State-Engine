@@ -115,16 +115,19 @@ namespace MDSS::Tests
         const VkDevice Device = Context.GetDevice();
         const auto     HostMemory = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         FSharedSurfaceGeometryData Geometry({{0, {2, 2}}, {1, {2, 2}}});
+
         for (std::uint32_t Texel = 0; Texel < 8; ++Texel)
         {
             auto& G = Geometry.GetTexels()[Texel];
             G.Surface = Texel / 4;
             G.Triangle = G.Chart = 0;
             G.Position = {float(Texel % 2) + 2.0F * float(Texel / 4), float((Texel / 2) % 2), 0};
+
             for (std::uint32_t Other = 0, DirectionIndex = 0; Other < 4; ++Other)
                 if (Other != Texel % 4)
                     G.NeighborIndices[DirectionIndex++] = 4 * (Texel / 4) + Other;
         }
+
         Geometry.SetProfileMap(std::vector<SurfaceState::FSurfaceProfileIndex>(8, 0));
         SurfaceState::FSurfaceResponseProfileData Profile;
         auto                                      Parameters = SurfaceState::FSurfaceStateParameters{};
@@ -219,6 +222,7 @@ namespace MDSS::Tests
             Copy.size = sizeof(Computed);
             vkCmdCopyBuffer(Command, CopyBarrier.buffer, GeometryReadback.GetHandle(), 1, &Copy);
             std::array<VkBufferMemoryBarrier, 3> HostBarriers{};
+
             for (auto& HostBarrier : HostBarriers)
             {
                 HostBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -227,6 +231,7 @@ namespace MDSS::Tests
                 HostBarrier.srcQueueFamilyIndex = HostBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 HostBarrier.size = VK_WHOLE_SIZE;
             }
+
             HostBarriers[0].buffer = Readback.GetHandle();
             HostBarriers[1].buffer = TopReadback.GetHandle();
             HostBarriers[2].buffer = GeometryReadback.GetHandle();
@@ -251,6 +256,7 @@ namespace MDSS::Tests
                 "An empty overlay must skip all top draws.");
         const auto UncachedFlat = Computed;
         Run({});
+
         for (std::size_t T = 0; T < Computed.size(); ++T)
             Require(glm::length(Computed[T].HeightAndNormal - UncachedFlat[T].HeightAndNormal) < 1e-5F,
                     "Cached meso normals must match the uncached height-field fit.");
@@ -302,16 +308,19 @@ namespace MDSS::Tests
     {
         const VkDevice             Device = Context.GetDevice();
         FSharedSurfaceGeometryData Geometry({{0, {2, 2}}});
+
         for (std::uint32_t Texel = 0; Texel < 4; ++Texel)
         {
             auto& G = Geometry.GetTexels()[Texel];
             G.Surface = G.Triangle = G.Chart = 0;
             G.Position = {float(Texel % 2), float(Texel / 2), 0.0F};
             G.Geometry.MesoVirtualHeight = -0.02F;
+
             for (std::uint32_t Other = 0, DirectionIndex = 0; Other < 4; ++Other)
                 if (Other != Texel)
                     G.NeighborIndices[DirectionIndex++] = Other;
         }
+
         Geometry.SetProfileMap(std::vector<SurfaceState::FSurfaceProfileIndex>(4, 0));
         SurfaceState::FSurfaceStateParameters Parameters;
         Parameters.StateCapacity = 2.0F;
@@ -340,6 +349,7 @@ namespace MDSS::Tests
             Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
             Inspector.CompleteFrame(0);
             Require(Inspector.GetSnapshot().has_value(), "Cavity fill Inspector snapshot must complete.");
+
             return *Inspector.GetSnapshot();
         };
         const auto           Close = [](float A, float B) { return std::abs(A - B) < 1e-6F; };
@@ -376,6 +386,7 @@ namespace MDSS::Tests
         Instance.GetStateABuffer().Upload(State.data(), sizeof(State));
         std::array<SurfaceState::FSurfaceGPUGeometryScalar, 4> Scalars{};
         Scalars[0].MesoVirtualHeight = -0.001F;
+
         for (std::size_t I = 1; I < Scalars.size(); ++I)
             Scalars[I].MesoVirtualHeight = -0.02F;
         Shared.GetGeometryScalarBuffer().Upload(Scalars.data(), sizeof(Scalars));
@@ -383,12 +394,12 @@ namespace MDSS::Tests
         Rendering::FHeightFieldSmoothing Smoothing(
             Context.GetPhysicalDevice(), Device, Descriptors.GetLayout(), Preview.GetOutputLayout(), 1);
         std::array<FTexelGeometryVertex, 4> Smoothed{};
-        GPU::FGPUBuffer                     Readback(Context.GetPhysicalDevice(),
+        GPU::FGPUBuffer Readback(Context.GetPhysicalDevice(),
                                  Device,
                                  sizeof(Smoothed),
                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        auto                                Command = Context.GetCommands().BeginSingleTime();
+        auto            Command = Context.GetCommands().BeginSingleTime();
         Preview.Record(Command, 0, Descriptors, 4, 0, 1, 4.0F, 1.0F, glm::mat4(1.0F), true, true);
         Smoothing.Record(Command,
                          0,
@@ -460,18 +471,18 @@ namespace MDSS::Tests
         constexpr VkFormat   Format = VK_FORMAT_R32G32B32A32_SFLOAT;
         constexpr auto       HostMemory = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         GPU::FGPUImage       Image(Context.GetPhysicalDevice(),
-                             Device,
-                             Extent,
-                             Format,
-                             VK_IMAGE_TILING_OPTIMAL,
-                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                                   Device,
+                                   Extent,
+                                   Format,
+                                   VK_IMAGE_TILING_OPTIMAL,
+                                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         GPU::FGPUImageView   View(Device, Image.GetHandle(), Format, VK_IMAGE_ASPECT_COLOR_BIT);
         GPU::FGPUBuffer      Readback(Context.GetPhysicalDevice(),
-                                 Device,
-                                 Extent.width * Extent.height * sizeof(glm::vec4),
-                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                 HostMemory);
+                                      Device,
+                                      Extent.width * Extent.height * sizeof(glm::vec4),
+                                      VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                      HostMemory);
         GPU::FGPUBuffer      UniformBuffer(
             Context.GetPhysicalDevice(), Device, sizeof(FUniform), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, HostMemory);
         GPU::FGPUBuffer Vertices(
@@ -602,14 +613,15 @@ namespace MDSS::Tests
 
         FUniform DebugControls;
         auto     Render = [&](ERenderViewMode Mode,
-                          std::uint32_t   Resolution,
-                          float           Parameter,
-                          const FPush&    Push = FPush{},
-                          glm::vec2       UVScale = glm::vec2(1.0F),
-                          glm::vec2       UVOffset = glm::vec2(0.0F))
+                              std::uint32_t   Resolution,
+                              float           Parameter,
+                              const FPush&    Push = FPush{},
+                              glm::vec2       UVScale = glm::vec2(1.0F),
+                              glm::vec2       UVOffset = glm::vec2(0.0F))
         {
             const std::array<glm::vec2, 6> Corners = {{{0, 0}, {1, 0}, {1, 1}, {0, 0}, {1, 1}, {0, 1}}};
             std::array<FVertex, 6>         Data{};
+
             for (std::size_t Index = 0; Index < Data.size(); ++Index)
             {
                 Data[Index].Position = glm::vec3(Corners[Index] - 0.5F, 0.0F);
@@ -617,6 +629,7 @@ namespace MDSS::Tests
                 Data[Index].UV = Corners[Index] * UVScale + UVOffset;
                 Data[Index].Tangent = {1, 0, 0, 1};
             }
+
             Vertices.Upload(Data.data(), sizeof(Data));
             FUniform Uniform = DebugControls;
             Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
@@ -667,6 +680,7 @@ namespace MDSS::Tests
             Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
             std::vector<glm::vec4> Pixels(Extent.width * Extent.height);
             Readback.Download(Pixels.data(), Pixels.size() * sizeof(glm::vec4));
+
             return Pixels;
         };
         auto Pixel = [&](const auto& Pixels, std::size_t X = 127, std::size_t Y = 127)
@@ -714,20 +728,24 @@ namespace MDSS::Tests
         Shared.GetTexelSurfaceIndexBuffer().Upload(Valid.data(), sizeof(Valid));
         Shared.GetTexelProfileIndexBuffer().Upload(Valid.data(), sizeof(Valid));
         std::array<SurfaceState::FSurfaceGPUGeometryScalar, 4> Scalars{};
+
         for (auto& Scalar : Scalars)
             Scalar.MesoVirtualHeight = -0.02F;
         Shared.GetGeometryScalarBuffer().Upload(Scalars.data(), sizeof(Scalars));
         std::array<SurfaceState::FSurfaceGPUVec4, 4>            Normals{}, Positions{};
         std::array<SurfaceState::FSurfaceGPUNeighborIndices, 4> Neighbors{};
+
         for (std::uint32_t Index = 0; Index < 4; ++Index)
         {
             Normals[Index] = {0, 0, 1, 0};
             Positions[Index] = {float(Index % 2), float(Index / 2), 0, 0};
             Neighbors[Index].Indices.fill(UINT32_MAX);
+
             for (std::uint32_t Other = 0, DirectionIndex = 0; Other < 4; ++Other)
                 if (Other != Index)
                     Neighbors[Index].Indices[DirectionIndex++] = Other;
         }
+
         Shared.GetNormalBuffer().Upload(Normals.data(), sizeof(Normals));
         Shared.GetMesoNormalBuffer().Upload(Normals.data(), sizeof(Normals));
         Shared.GetPositionBuffer().Upload(Positions.data(), sizeof(Positions));
@@ -785,6 +803,7 @@ namespace MDSS::Tests
             Context.GetCommands().EndSingleTime(Command, Context.GetQueues().GetGraphics());
             Inspector.CompleteFrame(0);
             Require(Inspector.GetSnapshot().has_value(), "Completed GPU snapshot must be available.");
+
             return *Inspector.GetSnapshot();
         };
         const auto Close = [](float A, float B) { return std::abs(A - B) < 1e-6F; };
@@ -805,6 +824,7 @@ namespace MDSS::Tests
         Require(Close(Sample(false, 0, 2.0F).Values[3].z, 0.08F),
                 "Display scale must affect the visible cavity and following heights.");
         Require(Sample(true, 1).Values[2].w == 2, "Unsupported channel must be diagnosed without out-of-bounds reads.");
+
         // A changed selection/reference must discard already-submitted results.
         auto Command = Context.GetCommands().BeginSingleTime();
         Inspector.Record(Command, 1, SurfaceDescriptors, Selection, 0, 1, 1.0F, glm::mat4(1.0F), true, 60);
@@ -817,6 +837,7 @@ namespace MDSS::Tests
         Require(Sample().Values[3].z == 0, "Zero accumulation factor must produce zero height despite positive State.");
         Parameters.AccumulationFactor = 0.15F;
         Profiles.UpdateParameters(0, 0, Parameters);
+
         // Same physical reference-area amount at a quarter of the original texel area.
         Instance.UpdateWorldTexelAreas(std::vector<float>(4, 0.5F * SurfaceStateReferenceArea));
         State.fill(2.5F);
@@ -836,28 +857,32 @@ namespace MDSS::Tests
         Instance.UpdateWorldTexelAreas(std::vector<float>(4, 0));
         Require(Sample().Values[2].w == 4, "Degenerate world area must be diagnosed.");
         Instance.UpdateWorldTexelAreas(std::vector<float>(4, SurfaceStateReferenceArea));
+
         // A central sample must change the actual silhouette even with zero height on every boundary sample.
         FSharedSurfaceGeometryData GridGeometry({{0, {3, 3}}});
+
         for (std::uint32_t T = 0; T < 9; ++T)
         {
             auto& G = GridGeometry.GetTexels()[T];
             G.Surface = G.Triangle = G.Chart = 0;
             G.Position = {float(T % 3) * 0.5F - 0.5F, float(T / 3) * 0.5F - 0.5F, 0};
             std::size_t DirectionIndex = 0;
+
             for (std::uint32_t Other = 0; Other < 9; ++Other)
                 if (Other != T && std::abs(int(Other % 3) - int(T % 3)) <= 1 &&
                     std::abs(int(Other / 3) - int(T / 3)) <= 1)
                     G.NeighborIndices[DirectionIndex++] = Other;
         }
+
         GridGeometry.SetProfileMap(std::vector<SurfaceState::FSurfaceProfileIndex>(9, 0));
         SurfaceState::FSurfaceSharedGeometryGPUResources GridShared(Context.GetPhysicalDevice(), Device, GridGeometry);
         SurfaceState::FSurfaceInstanceGPUResources       GridInstance(Context.GetPhysicalDevice(),
-                                                                Device,
-                                                                9,
-                                                                1,
-                                                                std::vector<float>(9 * SurfaceNeighborCount, 0),
+                                                                      Device,
+                                                                      9,
+                                                                      1,
+                                                                      std::vector<float>(9 * SurfaceNeighborCount, 0),
                                                                       {},
-                                                                std::vector<float>(9, SurfaceStateReferenceArea));
+                                                                      std::vector<float>(9, SurfaceStateReferenceArea));
         SurfaceState::FSurfaceStateDescriptorResources   GridDescriptors(Device, GridShared, Profiles, GridInstance);
         FTexelGeometryPreview Preview(Context.GetPhysicalDevice(), Device, GridDescriptors.GetLayout(), 1);
         auto                  GridConfig = Config;
@@ -873,6 +898,7 @@ namespace MDSS::Tests
         GridConfig.DescriptorSetLayouts = {
             Handles.MaterialLayout, GridDescriptors.GetLayout(), Preview.GetOutputLayout()};
         GPU::FGraphicsPipeline GridPipeline(Device, Handles.Pass, GridConfig);
+
         // Insert an unrelated State before the demo names: rendering must use resolved IDs, not fixed slots.
         SurfaceState::FSurfaceResponseProfileData LitProfile;
         SurfaceState::FSurfaceStateParameters     LitParameters;
@@ -889,12 +915,12 @@ namespace MDSS::Tests
         SurfaceState::FSurfaceProfileGPUResources LitProfiles(
             Context.GetPhysicalDevice(), Device, {LitProfile}, LitRegistry);
         SurfaceState::FSurfaceInstanceGPUResources     LitInstance(Context.GetPhysicalDevice(),
-                                                               Device,
-                                                               9,
-                                                               3,
-                                                               std::vector<float>(9 * SurfaceNeighborCount, 0),
+                                                                   Device,
+                                                                   9,
+                                                                   3,
+                                                                   std::vector<float>(9 * SurfaceNeighborCount, 0),
                                                                    {},
-                                                               std::vector<float>(9, SurfaceStateReferenceArea));
+                                                                   std::vector<float>(9, SurfaceStateReferenceArea));
         SurfaceState::FSurfaceStateDescriptorResources LitDescriptors(Device, GridShared, LitProfiles, LitInstance);
         auto                                           LitConfig = GridConfig;
         LitConfig.ShaderStages[0].ShaderPath =
@@ -922,7 +948,7 @@ namespace MDSS::Tests
         Side.ViewProjection[2][0] = 3;
         Side.ViewProjection[3][2] = 0.2F;
         std::array<FTexelGeometryVertex, 9> Computed{};
-        const auto                          RenderGrid = [&](bool            bAB,
+        const auto RenderGrid = [&](bool            bAB,
                                     bool            bAccumulation,
                                     float           Scale,
                                     ERenderViewMode Mode = ERenderViewMode::SurfaceFinalGeometry,
@@ -933,6 +959,7 @@ namespace MDSS::Tests
         {
             FUniform Uniform = LitUniform ? *LitUniform : FUniform{};
             Uniform.RenderMode = static_cast<std::uint32_t>(Mode);
+
             if (!LitUniform)
                 Uniform.DebugOptions = {4, 0.5F, 1.0F, Scale};
             Uniform.DebugFlags.z = GridMode;
@@ -1015,6 +1042,7 @@ namespace MDSS::Tests
             vkCmdCopyImageToBuffer(
                 Command, Image.GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Readback.GetHandle(), 1, &Copy);
             std::array<VkBufferMemoryBarrier, 2> HostBarriers{};
+
             for (std::size_t I = 0; I < HostBarriers.size(); ++I)
             {
                 auto& Barrier = HostBarriers[I];
@@ -1025,6 +1053,7 @@ namespace MDSS::Tests
                 Barrier.buffer = I == 0 ? VertexReadback.GetHandle() : Readback.GetHandle();
                 Barrier.size = VK_WHOLE_SIZE;
             }
+
             vkCmdPipelineBarrier(Command,
                                  VK_PIPELINE_STAGE_TRANSFER_BIT,
                                  VK_PIPELINE_STAGE_HOST_BIT,
@@ -1039,6 +1068,7 @@ namespace MDSS::Tests
             VertexReadback.Download(Computed.data(), sizeof(Computed));
             std::vector<glm::vec4> Pixels(Extent.width * Extent.height);
             Readback.Download(Pixels.data(), Pixels.size() * sizeof(glm::vec4));
+
             return Pixels;
         };
         const auto Flat = RenderGrid(true, false, 1);
@@ -1063,9 +1093,11 @@ namespace MDSS::Tests
             SeamVertices[K].Position = SeamPositions[K];
             SeamVertices[K].UV = SeamUVs[K];
         }
+
         const std::vector<FMeshTriangleSource> SeamTriangles{{{0, 1, 2}, {0, 1, 2}, {0, 1, 2}, 0},
                                                              {{3, 4, 5}, {0, 2, 3}, {3, 4, 5}, 0}};
         auto                                   SeamGeometry = GridGeometry;
+
         for (std::uint32_t T = 0; T < 9; ++T)
         {
             const float X = float(T % 3) * 0.5F, Y = float(T / 3) * 0.5F;
@@ -1073,6 +1105,7 @@ namespace MDSS::Tests
             G.Triangle = G.Chart = Y <= X ? 0 : 1;
             G.Barycentric = Y <= X ? glm::vec3(1 - X, X - Y, Y) : glm::vec3(1 - Y, X, Y - X);
         }
+
         SurfaceState::FSurfaceSharedGeometryGPUResources SeamShared(
             Context.GetPhysicalDevice(), Device, SeamGeometry, {}, SeamVertices, SeamTriangles);
         const auto SeamFlat =
@@ -1090,6 +1123,7 @@ namespace MDSS::Tests
         const auto  GridOnly = RenderGrid(true, true, 1, ERenderViewMode::SurfaceFinalGeometry, 2);
         const auto  CoarseGrid = RenderGrid(true, true, 1, ERenderViewMode::SurfaceFinalGeometry, 2, 2);
         std::size_t BrightLines = 0, CoarseBrightLines = 0, DarkInterior = 0;
+
         for (std::size_t P = 0; P < Raised.size(); ++P)
         {
             Require(Raised[P].a == GridOnly[P].a && Raised[P].a == GridOverlay[P].a,
@@ -1101,6 +1135,7 @@ namespace MDSS::Tests
                 DarkInterior += GridOnly[P].b < 0.1F;
             }
         }
+
         Require(BrightLines > 50 && DarkInterior > BrightLines && CoarseBrightLines < BrightLines,
                 "Height grid must draw sparse texel cell boundaries and respond to block size.");
         const auto Reduced = RenderGrid(true, true, 0.5F);
@@ -1125,6 +1160,7 @@ namespace MDSS::Tests
         (void)RenderGrid(true, true, 1);
         Require(Computed[4].HeightAndNormal.x == 0, "Reset State must discard the previous computed mound.");
         std::array<SurfaceState::FSurfaceGPUGeometryScalar, 9> MesoRamp{};
+
         for (std::size_t T = 0; T < MesoRamp.size(); ++T)
             MesoRamp[T].MesoVirtualHeight = float(T % 3) * 0.1F;
         GridShared.GetGeometryScalarBuffer().Upload(MesoRamp.data(), sizeof(MesoRamp));
@@ -1146,11 +1182,13 @@ namespace MDSS::Tests
         { return RenderGrid(bAB, bHeight, 1, ERenderViewMode::Lit, 0, 1, &LitUniform); };
         UploadLitState();
         const auto DryLit = RenderLit();
+
         for (std::size_t T = 0; T < 9; ++T)
             LitState[T * 3] = 500;
         UploadLitState();
         const auto UnrelatedLit = RenderLit();
         Require(DryLit == UnrelatedLit, "An unrelated State must not affect Heat or Mud appearance.");
+
         for (std::size_t T = 0; T < 9; ++T)
             LitState[T * 3 + LitBindings.Heat] = 1;
         UploadLitState();
@@ -1161,13 +1199,16 @@ namespace MDSS::Tests
         for (const auto& Pixel : HeatLit)
             Require(std::isfinite(Pixel.r), "Heat color must remain finite.");
         const auto MovedCameraLit = HeatLit;
+
         // Equal saturation at half texel area must keep the same Lit appearance.
         LitInstance.UpdateWorldTexelAreas(std::vector<float>(9, SurfaceStateReferenceArea * 0.5F));
+
         for (auto& V : LitState)
             V *= 0.5F;
         UploadLitState();
         Require(RenderLit() == MovedCameraLit, "Lit saturation must respect texel world area and Profile capacity.");
         LitInstance.UpdateWorldTexelAreas(std::vector<float>(9, SurfaceStateReferenceArea));
+
         for (auto& V : LitState)
             V *= 2;
         UploadLitState();
@@ -1176,6 +1217,7 @@ namespace MDSS::Tests
         Require(RenderLit() == DryLit, "Disabling demo effects must recover the dry base material.");
         LitUniform.DemoStateChannels.w = 1;
         LitState.fill(0);
+
         for (std::size_t T = 0; T < 9; ++T)
             LitState[T * 3 + LitBindings.Mud] = 1;
         UploadLitState();
@@ -1199,6 +1241,7 @@ namespace MDSS::Tests
         std::array<std::uint32_t, 3> Support{1, 1, 0};
         LitProfiles.GetSupportedBuffer().Upload(Support.data(), sizeof(Support));
         LitState.fill(0);
+
         for (std::size_t T = 0; T < 9; ++T)
             LitState[T * 3 + LitBindings.Heat] = 1;
         UploadLitState();
@@ -1218,6 +1261,7 @@ namespace MDSS::Tests
         std::array<float, 27> LitStateAfter{};
         LitInstance.GetStateABuffer().Download(LitStateAfter.data(), sizeof(LitStateAfter));
         Require(LitStateAfter == LitState, "Lit rendering must preserve simulation State.");
+
         // Optional artifacts for inspecting the actual GPU output without changing the application.
         if (const char* Directory = std::getenv("MDSS_SURFACE_RENDER_CAPTURE_DIR"))
         {
@@ -1226,6 +1270,7 @@ namespace MDSS::Tests
             {
                 std::ofstream File(std::filesystem::path(Directory) / Name, std::ios::binary);
                 File << "P6\n" << Extent.width << ' ' << Extent.height << "\n255\n";
+
                 for (const auto& Pixel : Pixels)
                     for (int C = 0; C < 3; ++C)
                     {
@@ -1234,6 +1279,7 @@ namespace MDSS::Tests
                             Linear <= 0.0031308F ? Linear * 12.92F : 1.055F * std::pow(Linear, 1.0F / 2.4F) - 0.055F;
                         File.put(static_cast<char>(std::lround(SRGB * 255)));
                     }
+
                 Require(File.good(), "GPU render artifact could not be saved.");
             };
             Capture("dry.ppm", DryLit);

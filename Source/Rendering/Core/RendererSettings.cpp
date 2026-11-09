@@ -74,11 +74,14 @@ namespace MDSS::Rendering
         {
             throw std::out_of_range("Debug State channel is outside the registered State range.");
         }
+
         if (DebugStateChannel == Channel)
         {
             return;
         }
+
         DebugStateChannel = Channel;
+
         if (TexelInspector)
             TexelInspector->Invalidate();
     }
@@ -101,6 +104,7 @@ namespace MDSS::Rendering
     void FRenderer::SetSurfaceDebugDisplaySettings(const FSurfaceDebugDisplaySettings& Settings)
     {
         const auto Positive = [](float Value) { return std::isfinite(Value) && Value >= 1e-8F && Value <= 1e6F; };
+
         if (!Positive(Settings.DisplacementScale) || Settings.AccumulationComponent > 4 ||
             Settings.HeightGridMode > 2 || Settings.HeightGridBlockSize < 1 || Settings.HeightGridBlockSize > 256)
             throw std::invalid_argument("Invalid Surface debug range, display scale or component.");
@@ -164,6 +168,7 @@ namespace MDSS::Rendering
             return Unit(Mapping.RampStart) && Unit(Mapping.RampEnd) && Mapping.RampStart < Mapping.RampEnd &&
                    Color(Mapping.LowSaturationColor) && Color(Mapping.HighSaturationColor);
         };
+
         if (!Roughness(Settings.DryRoughness) || !Roughness(Settings.MudRoughness) ||
             !Roughness(Settings.WaterFilmRoughness) || !Unit(Settings.HeatStrength) || !Unit(Settings.LavaThreshold) ||
             !Unit(Settings.MudNoiseAmount) || !Unit(Settings.WaterFilmOpacity) ||
@@ -186,6 +191,7 @@ namespace MDSS::Rendering
         }
 
         DemoEffects = Settings;
+
         if (MudLayerGeometry)
             MudLayerGeometry->SetLowAmountHeightFade(DemoEffects.LowAmountHeightFade);
         if (bHeightSmoothingChanged && HeightFieldSmoothing)
@@ -212,12 +218,14 @@ namespace MDSS::Rendering
     {
         const bool bChanged = Scene.GetLitHeightDisplayScale() != Scale;
         Scene.SetLitHeightDisplayScale(Scale);
+
         if (!bChanged)
             return;
         if (TexelInspector)
         {
             TexelInspector->Invalidate();
         }
+
         if (MudLayerGeometry)
             MudLayerGeometry->InvalidateSparseOutput();
     }
@@ -226,18 +234,22 @@ namespace MDSS::Rendering
     {
         ClearInspectedTexel();
         const auto& Instances = Scene.GetStaticMeshInstances();
+
         if (!TexelInspector || InstanceIndex >= Instances.size() || !std::isfinite(UV.x) || !std::isfinite(UV.y) ||
             UV.x < 0 || UV.x > 1 || UV.y < 0 || UV.y > 1)
             return false;
         const auto& Instance = Instances[InstanceIndex];
+
         if (!SurfaceData.HasSurfaceData(Instance.GetSurfaceData()) ||
             !SurfaceStateSystem.GetGPUResources().GetInstanceDescriptors(InstanceIndex))
             return false;
         const auto& Triangles = Assets.GetMesh(Instance.GetMesh()).GetTriangles();
+
         if (Triangle >= Triangles.size())
             return false;
         const auto& Geometry = *SurfaceData.GetSurfaceData(Instance.GetSurfaceData()).GetSharedGeometry();
         const auto  Surface = Triangles[Triangle].Surface;
+
         if (Surface >= Geometry.GetSurfaces().size())
             return false;
         const auto& Range = Geometry.GetSurface(Surface);
@@ -248,6 +260,7 @@ namespace MDSS::Rendering
         const auto  ProfileIndex = Geometry.GetProfileIndex(Texel);
         const auto& Profiles = SurfaceData.GetSurfaceProfileTable(Instance.GetSurfaceData());
         std::string Profile = "Unassigned";
+
         if (ProfileIndex < Profiles.size())
             Profile = Assets.GetSRProfile(Profiles[ProfileIndex]).GetName();
         InspectedTexel =
@@ -258,6 +271,7 @@ namespace MDSS::Rendering
     void FRenderer::ClearInspectedTexel() noexcept
     {
         InspectedTexel.reset();
+
         if (TexelInspector)
             TexelInspector->Invalidate();
     }
@@ -274,6 +288,7 @@ namespace MDSS::Rendering
         {
             return;
         }
+
         bStateHeatmapReliefShadingEnabled = bEnabled;
     }
 
@@ -288,6 +303,7 @@ namespace MDSS::Rendering
         {
             return;
         }
+
         SolverTransferWeightView = View;
     }
 
@@ -302,6 +318,7 @@ namespace MDSS::Rendering
         {
             throw std::invalid_argument("Texel grid block size must be 8 or 16.");
         }
+
         if (TexelGridBlockSize == Size)
             return;
         TexelGridBlockSize = Size;
@@ -318,6 +335,7 @@ namespace MDSS::Rendering
         {
             throw std::invalid_argument("Texel reference area must be finite and in [1e-12, 1e12].");
         }
+
         if (TexelAreaReference == Area)
             return;
         TexelAreaReference = Area;
@@ -368,6 +386,7 @@ namespace MDSS::Rendering
             throw std::runtime_error("Failed to wait for GPU before changing overlay occupancy tile size.");
         OverlayOccupancyTileSize = Size;
         const std::uint32_t Tile = static_cast<std::uint32_t>(Size);
+
         if (MudLayerGeometry)
             MudLayerGeometry->SetOccupancyTileSize(Tile);
     }

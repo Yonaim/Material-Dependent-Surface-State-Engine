@@ -63,12 +63,14 @@ namespace MDSS
             SurfaceStateSystem->SetSparseSolverEnabled(true);
             FLogger::Info("TApplication", "Sparse Solver enabled for comparison scene.");
         }
+
         FrameCoordinator = std::make_unique<FFrameCoordinator>(*SurfaceStateSystem);
         FrameRenderer = std::make_unique<Rendering::FRenderer>(
             Context, MainWindow, Assets, SurfaceData, MainScene, *SurfaceStateSystem, *FrameCoordinator);
         FrameRenderer->SetOverlayOccupancyTileSize(static_cast<Rendering::EOverlayOccupancyTileSize>(RenderTileSize));
         FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
         DebugInterface = std::make_unique<FDebugUI>(Context, MainWindow, *FrameRenderer, Assets, SurfaceData);
+
         if (Benchmark.bEnabled)
         {
             if (!PerformanceSettings().value("replay_demo", false))
@@ -77,6 +79,7 @@ namespace MDSS
             FrameRenderer->SetStateDrivenGeometryUpdateEnabled(true);
             const auto& Settings = PerformanceSettings();
             DebugInterface->SetPresentationMode(Settings.value("presentation_mode", false));
+
             if (Settings.contains("adaptive_geometry"))
                 SurfaceStateSystem->SetAdaptiveGeometryEnabled(Settings.at("adaptive_geometry").get<bool>());
             if (Settings.contains("compact_storage"))
@@ -109,6 +112,7 @@ namespace MDSS
                 FrameRenderer->SetSurfaceTexelMeshResolution(Resolution);
                 FrameRenderer->SetOverlayTexelMeshResolution(Resolution);
             }
+
             if (Settings.value("prewarm_mesh_cache", false))
                 for (std::size_t Index = 0; Index < SurfaceStateSystem->GetGPUResources().GetSceneInstanceCount();
                      ++Index)
@@ -118,6 +122,7 @@ namespace MDSS
             FrameRenderer->ConfigureBenchmarkCapture(
                 Benchmark.OutputPath, Benchmark.WarmupFrames, Benchmark.MeasurementFrames);
         }
+
         InputInterface = std::make_unique<FInputSystem>(MainWindow.GetNativeHandle());
         FLogger::Info("TApplication", "Surface State System, renderer, scene, asset system, and Debug UI are ready.");
     }
@@ -141,6 +146,7 @@ namespace MDSS
         {
             FLogger::Info("TApplication", "Entering main loop for " + std::to_string(FrameLimit) + " frame(s).");
         }
+
         MainLoop(FrameLimit);
         FLogger::Info("TApplication", "Main loop finished.");
     }
@@ -150,6 +156,7 @@ namespace MDSS
         std::size_t         RenderedFrameCount = 0;
         std::vector<double> BenchmarkCpuFrames;
         auto                PreviousFrameTime = std::chrono::steady_clock::now();
+
         while (!MainWindow.ShouldClose() && (FrameLimit == 0 || RenderedFrameCount < FrameLimit))
         {
             const auto FrameCpuStart = std::chrono::steady_clock::now();
@@ -168,6 +175,7 @@ namespace MDSS
                         .count());
             ++RenderedFrameCount;
         }
+
         FinalizeRun(BenchmarkCpuFrames);
     }
 #pragma endregion
@@ -207,6 +215,7 @@ namespace MDSS
     FApplication::FFrameTiming FApplication::UpdateFrameTiming(std::chrono::steady_clock::time_point& PreviousFrameTime)
     {
         const auto CurrentFrameTime = std::chrono::steady_clock::now();
+
         // Settings and file dialogs can block inside BeginFrame. Exclude
         // their elapsed time from the interactive simulation clock.
         const bool  bSuspendSimulationClock = DebugInterface->ConsumeFrameTimeResetRequest();
@@ -225,6 +234,7 @@ namespace MDSS
     void FApplication::AdvanceDemoAndSubmitContacts(float PlaybackDeltaTime)
     {
         const auto Events = MainScene.AdvanceDemoAnimation(PlaybackDeltaTime * DebugInterface->GetAnimationTimeScale());
+
         for (const auto& Event : Events)
         {
             const auto& Instances = MainScene.GetStaticMeshInstances();
@@ -267,6 +277,7 @@ namespace MDSS
     {
         FLogger::Debug("TApplication", "Waiting for the Vulkan device to become idle before shutdown.");
         vkDeviceWaitIdle(Context.GetDevice());
+
         if (Benchmark.bEnabled)
         {
             FrameRenderer->FinalizeBenchmarkCapture();

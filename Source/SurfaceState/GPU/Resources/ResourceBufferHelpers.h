@@ -37,6 +37,7 @@ namespace MDSS::SurfaceState::Detail
             if (auto Buffer = Pool->Acquire(Size, Usage, UploadMemory, Category))
                 return Buffer;
         }
+
         try
         {
             return std::make_unique<GPU::FGPUBuffer>(PhysicalDevice, Device, Size, Usage, UploadMemory, Category);
@@ -47,6 +48,7 @@ namespace MDSS::SurfaceState::Detail
             if (!Pool || Pool->GetRetainedBytes() == 0)
                 throw;
             Pool->Clear();
+
             return std::make_unique<GPU::FGPUBuffer>(PhysicalDevice, Device, Size, Usage, UploadMemory, Category);
         }
     }
@@ -65,6 +67,7 @@ namespace MDSS::SurfaceState::Detail
         auto              Buffer = AcquireOrCreateBuffer(
             PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), StorageUsage, Category, Pool);
         Buffer->Upload(Data, static_cast<VkDeviceSize>(ByteSize));
+
         return Buffer;
     }
 
@@ -82,6 +85,7 @@ namespace MDSS::SurfaceState::Detail
         auto               Buffer =
             AcquireOrCreateBuffer(PhysicalDevice, Device, static_cast<VkDeviceSize>(ByteSize), Usage, Category, Pool);
         Buffer->Upload(Zeros.data(), static_cast<VkDeviceSize>(ByteSize));
+
         return Buffer;
     }
 

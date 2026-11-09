@@ -38,6 +38,7 @@ namespace MDSS::GPU
         {
             throw std::runtime_error("Failed to create Vulkan sampler.");
         }
+
         FLogger::Verbose("Vulkan", "TGPUSampler created (linear filtering, repeat addressing).");
     }
 

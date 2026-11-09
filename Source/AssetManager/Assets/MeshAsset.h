@@ -56,10 +56,12 @@ namespace MDSS::Asset
         {
             return BoundsCenter;
         }
+
         [[nodiscard]] float GetBoundsRadius() const noexcept
         {
             return BoundsRadius;
         }
+
         [[nodiscard]] const std::vector<std::uint32_t>&       GetIndices() const noexcept;
         [[nodiscard]] const std::vector<FMeshSection>&        GetSections() const noexcept;
         [[nodiscard]] const std::vector<FMeshTriangleSource>& GetTriangles() const noexcept;

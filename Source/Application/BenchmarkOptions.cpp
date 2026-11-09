@@ -18,6 +18,7 @@ namespace MDSS
         {
             std::uint32_t Result = 0;
             const auto [End, Error] = std::from_chars(Value.data(), Value.data() + Value.size(), Result);
+
             if (Error != std::errc{} || End != Value.data() + Value.size() || Result == 0)
                 throw std::invalid_argument(std::string(Option) + " requires a positive integer.");
             return Result;
@@ -27,6 +28,7 @@ namespace MDSS
         {
             std::uint32_t Result = 0;
             const auto [End, Error] = std::from_chars(Value.data(), Value.data() + Value.size(), Result);
+
             if (Error != std::errc{} || End != Value.data() + Value.size())
                 throw std::invalid_argument(std::string(Option) + " requires a nonnegative integer.");
             return Result;
@@ -35,6 +37,7 @@ namespace MDSS
         std::uint32_t ParseResolution(std::string_view Value)
         {
             const std::uint32_t Resolution = ParsePositiveInteger(Value, "--benchmark-resolution");
+
             if (Resolution != 128 && Resolution != 256 && Resolution != 512)
                 throw std::invalid_argument("--benchmark-resolution must be 128, 256, or 512.");
             return Resolution;
@@ -80,12 +83,14 @@ namespace MDSS
             else if (Argument == "--scene")
             {
                 Options.ScenePath = std::filesystem::path(std::string(ReadValue()));
+
                 if (Options.ScenePath.empty())
                     throw std::invalid_argument("--scene requires a non-empty path.");
             }
             else if (Argument == "--render-tile-size")
             {
                 Options.RenderTileSize = ParsePositiveInteger(ReadValue(), Argument);
+
                 if (Options.RenderTileSize != 8U && Options.RenderTileSize != 16U && Options.RenderTileSize != 32U)
                     throw std::invalid_argument("--render-tile-size must be 8, 16, or 32.");
             }

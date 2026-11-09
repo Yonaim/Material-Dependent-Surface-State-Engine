@@ -14,9 +14,11 @@ namespace MDSS::Rendering
                                               bool                                         bKeepRuntimeOverride)
     {
         SurfaceStateSystem.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
+
         if (TexelInspector)
             TexelInspector->Invalidate();
         const auto Key = std::make_pair(Profile, State);
+
         if (bKeepRuntimeOverride)
         {
             DebugProfileParameterOverrides[Key] = Parameters;
@@ -36,9 +38,11 @@ namespace MDSS::Rendering
         if (OutputPath.empty() || MeasurementFrames == 0)
             throw std::invalid_argument("Benchmark capture requires an output path and measurement frames.");
         const std::filesystem::path AbsoluteOutput = std::filesystem::absolute(OutputPath).lexically_normal();
+
         if (AbsoluteOutput.has_parent_path())
             std::filesystem::create_directories(AbsoluteOutput.parent_path());
         Benchmark.BenchmarkOutput.open(AbsoluteOutput, std::ios::out | std::ios::trunc);
+
         if (!Benchmark.BenchmarkOutput)
             throw std::runtime_error("Unable to open benchmark output: " + AbsoluteOutput.string());
         Benchmark.BenchmarkWarmupFrames = WarmupFrames;
@@ -55,6 +59,7 @@ namespace MDSS::Rendering
         if (!Benchmark.bBenchmarkCaptureEnabled || FrameSlot >= Benchmark.BenchmarkSubmissions.size())
             return;
         const FBenchmarkFrameSubmission& Submitted = Benchmark.BenchmarkSubmissions[FrameSlot];
+
         if (Submitted.FrameIndex == std::numeric_limits<std::uint64_t>::max() ||
             Submitted.FrameIndex < Benchmark.BenchmarkWarmupFrames ||
             Submitted.FrameIndex >= Benchmark.BenchmarkWarmupFrames + Benchmark.BenchmarkMeasurementFrames)
@@ -114,6 +119,7 @@ namespace MDSS::Rendering
     {
         const VkExtent2D Extent = SwapchainData.GetExtent();
         nlohmann::json   Viewports = nlohmann::json::array();
+
         for (std::size_t Index = 0; Index < DebugInterface.GetViewportCount(); ++Index)
         {
             const auto  Rect = DebugInterface.GetViewportRectNormalized(Index);
@@ -126,6 +132,7 @@ namespace MDSS::Rendering
                                  {"fov_degrees", Camera.GetVerticalFieldOfViewDegrees()},
                                  {"view_mode", static_cast<std::uint32_t>(ViewModes[Index])}});
         }
+
         const nlohmann::json Metadata = {{"schema_version", 1},
                                          {"frame_index", Benchmark.NextBenchmarkFrameIndex - 1},
                                          {"swapchain_extent", {Extent.width, Extent.height}},
@@ -155,6 +162,7 @@ namespace MDSS::Rendering
                                          {"surface_mesh_resolution", SurfaceTexelMeshResolution},
                                          {"overlay_mesh_resolution", OverlayTexelMeshResolution}};
         std::ofstream        Output(Benchmark.BenchmarkOutputPath.string() + ".settings.json");
+
         if (!(Output << Metadata.dump(2) << '\n'))
             throw std::runtime_error("Unable to write benchmark settings.");
         Benchmark.bBenchmarkMetadataWritten = true;
@@ -249,8 +257,8 @@ namespace MDSS::Rendering
         {
             std::vector<std::uint8_t> Pixels(static_cast<std::size_t>(Benchmark.BenchmarkScreenshot->GetSize()));
             Benchmark.BenchmarkScreenshot->Download(Pixels.data(), Benchmark.BenchmarkScreenshot->GetSize());
-            const bool bBGRA = Benchmark.BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_SRGB ||
-                               Benchmark.BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_UNORM;
+            const bool    bBGRA = Benchmark.BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_SRGB ||
+                                  Benchmark.BenchmarkScreenshotFormat == VK_FORMAT_B8G8R8A8_UNORM;
             std::ofstream Image(Benchmark.BenchmarkOutputPath.string() + ".ppm", std::ios::binary);
             Image << "P6\n"
                   << Benchmark.BenchmarkScreenshotExtent.width << ' ' << Benchmark.BenchmarkScreenshotExtent.height
@@ -261,11 +269,14 @@ namespace MDSS::Rendering
                 Image.put(char(Pixels[P + 1]));
                 Image.put(char(Pixels[P + (bBGRA ? 0 : 2)]));
             }
+
             if (!Image)
                 throw std::runtime_error("Cannot save scene capture.");
         }
+
         nlohmann::json Instances = nlohmann::json::array();
         const auto&    Resources = SurfaceStateSystem.GetGPUResources();
+
         for (std::size_t Index = 0; Index < Resources.GetSceneInstanceCount(); ++Index)
         {
             if (Resources.GetInstanceDescriptors(Index) == nullptr)
@@ -285,10 +296,12 @@ namespace MDSS::Rendering
             float               Maximum = 0.0F;
             std::uint64_t       StateHash = 14695981039346656037ULL;
             std::size_t         Scalar = 0;
+
             for (float Value : Values)
             {
                 StateSums[Scalar++ % StateSums.size()] += Value;
                 const auto Bits = std::bit_cast<std::uint32_t>(Value);
+
                 for (unsigned Shift = 0; Shift < 32; Shift += 8)
                     StateHash = (StateHash ^ ((Bits >> Shift) & 0xffU)) * 1099511628211ULL;
                 if (!std::isfinite(Value))
@@ -296,14 +309,17 @@ namespace MDSS::Rendering
                     ++Nonfinite;
                     continue;
                 }
+
                 Negative += Value < 0.0F;
                 Positive += Value > 0.0F;
                 Sum += Value;
                 Maximum = std::max(Maximum, Value);
             }
+
             const auto Layout = SurfaceState::GetSurfaceSparseMetadataLayout(Resources.GetInstanceTexelCount(Index));
             std::array<std::uint32_t, 3> HeightDispatch{}, GeometryDispatch{};
             std::size_t                  ReactionBudgetExhausted = 0, ReactionArithmeticFailures = 0;
+
             if (PerformanceSettings().value("capture_image", false) &&
                 Resources.GetInstanceDescriptors(Index)->HasReactions())
             {
@@ -311,12 +327,14 @@ namespace MDSS::Rendering
                 std::vector<float> Data(static_cast<std::size_t>(Scratch.GetSize() / sizeof(float)));
                 Scratch.Download(Data.data(), Scratch.GetSize());
                 const auto Stride = Data.size() / Resources.GetInstanceTexelCount(Index);
+
                 for (std::size_t T = 0; T < Resources.GetInstanceTexelCount(Index); ++T)
                 {
                     ReactionBudgetExhausted += Data[T * Stride + Stride - 2] != 0;
                     ReactionArithmeticFailures += Data[T * Stride + Stride - 1] != 0;
                 }
             }
+
             const auto& Scheduling = Resources.GetInstanceAccumulationHeightBuffer(Index);
             Scheduling.Download(
                 HeightDispatch.data(), sizeof(HeightDispatch), Layout.AccumulationCommandWord * sizeof(std::uint32_t));
@@ -337,6 +355,7 @@ namespace MDSS::Rendering
                                  {"max", Maximum},
                                  {"state_fnv1a64", std::to_string(StateHash)}});
         }
+
         const auto           Memory = GPU::FGPUResourceMemoryStats::GetSnapshot();
         const nlohmann::json Result = {{"schema_version", 1},
                                        {"experiment", PerformanceSettings()},
@@ -353,6 +372,7 @@ namespace MDSS::Rendering
                                        {"peak_allocated_total_bytes", Memory.PeakTotalBytes},
                                        {"buffer_category_bytes", Memory.BufferCategoryCurrentBytes}};
         std::ofstream        Output(Benchmark.BenchmarkOutputPath.string() + ".validation.json");
+
         if (!(Output << Result.dump(2) << '\n'))
             throw std::runtime_error("Unable to write benchmark validation.");
     }

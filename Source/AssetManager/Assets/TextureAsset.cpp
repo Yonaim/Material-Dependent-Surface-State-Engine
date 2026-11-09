@@ -36,11 +36,11 @@ namespace MDSS::Asset
 
         const VkDeviceSize ByteCount = static_cast<VkDeviceSize>(RGBA8Pixels.size());
         GPU::FGPUBuffer    StagingBuffer(Context.GetPhysicalDevice(),
-                                      Context.GetDevice(),
-                                      ByteCount,
-                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                      GPU::EGPUBufferMemoryCategory::Other);
+                                         Context.GetDevice(),
+                                         ByteCount,
+                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                         GPU::EGPUBufferMemoryCategory::Other);
         StagingBuffer.Upload(RGBA8Pixels.data(), ByteCount);
 
         Image = std::make_unique<GPU::FGPUImage>(Context.GetPhysicalDevice(),

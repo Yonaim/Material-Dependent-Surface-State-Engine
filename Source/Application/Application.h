@@ -21,6 +21,7 @@ namespace MDSS::Rendering
 {
     class FRenderer;
 }
+
 namespace MDSS::SurfaceState
 {
     class FSurfaceStateSystem;

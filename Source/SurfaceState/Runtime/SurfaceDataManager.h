@@ -19,6 +19,7 @@ namespace MDSS
 {
     class FScene;
 }
+
 namespace MDSS::Asset
 {
     class FAssetManager;

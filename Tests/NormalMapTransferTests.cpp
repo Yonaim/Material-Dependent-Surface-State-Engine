@@ -41,10 +41,12 @@ namespace
         MDSS::Asset::FTextureData Result;
         Result.Width = Width;
         Result.Height = Height;
+
         for (const auto& Pixel : Pixels)
         {
             Result.Pixels.insert(Result.Pixels.end(), Pixel.begin(), Pixel.end());
         }
+
         return Result;
     }
 
@@ -54,11 +56,13 @@ namespace
         Vertices[0].UV = {0.25F, 0.5F};
         Vertices[1].UV = {0.75F, 0.5F};
         Vertices[2].UV = {0.25F, 0.75F};
+
         for (MDSS::Asset::FVertex& Vertex : Vertices)
         {
             Vertex.Normal = {0.0F, 0.0F, 1.0F};
             Vertex.Tangent = {1.0F, 0.0F, 0.0F, 1.0F};
         }
+
         return Vertices;
     }
 
@@ -68,6 +72,7 @@ namespace
         MDSS::Asset::FMeshTriangleSource Triangle;
         Triangle.RenderVertexIndices = {FirstVertex, FirstVertex + 1, FirstVertex + 2};
         Triangle.Surface = Surface;
+
         return Triangle;
     }
 
@@ -80,6 +85,7 @@ namespace
         Texel.Triangle = Triangle;
         Texel.Barycentric = Barycentric;
         Texel.Normal = {0.0F, 0.0F, 1.0F};
+
         return Texel;
     }
 
@@ -126,10 +132,12 @@ namespace
         std::vector<FVertex>       Vertices = MakeVertices();
         const std::vector<FVertex> SecondChart = MakeVertices();
         Vertices.insert(Vertices.end(), SecondChart.begin(), SecondChart.end());
+
         for (FVertex& Vertex : Vertices)
         {
             Vertex.UV.x = 0.25F;
         }
+
         Vertices[1].UV.x = 0.75F;
         Vertices[3].UV.x = 0.75F;
         Vertices[4].UV.x = 0.75F;
@@ -185,6 +193,7 @@ namespace
             Vertex.Tangent.w = -1.0F;
             Vertex.UV.x = -0.25F; // repeat addressing wraps this coordinate into the one-pixel texture
         }
+
         glm::vec3 Mirrored{};
         Check(BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, PositiveY, Mirrored, false),
               "mirrored tangent frame and repeated UV should produce a normal");
@@ -209,10 +218,12 @@ namespace
         glm::vec3                              Result{};
 
         std::vector<FVertex> DegenerateTangent = Vertices;
+
         for (FVertex& Vertex : DegenerateTangent)
         {
             Vertex.Tangent = {0.0F, 0.0F, 1.0F, 1.0F};
         }
+
         Check(!BuildNormalMapTransferNormal(MakeTexel(), DegenerateTangent, Triangles, Flat, Result, false),
               "degenerate tangent should request geometric-normal fallback");
 
@@ -220,10 +231,12 @@ namespace
         Check(!BuildNormalMapTransferNormal(MakeTexel(), Vertices, Triangles, InvalidTexture, Result, false),
               "missing or malformed texture data should request geometric-normal fallback");
         std::vector<FVertex> MidUVVertices = Vertices;
+
         for (FVertex& Vertex : MidUVVertices)
         {
             Vertex.UV.x = 0.5F;
         }
+
         const FTextureData ZeroLengthSample = MakeTexture(2, 1, {{{127, 127, 127, 255}}, {{128, 128, 128, 255}}});
         Check(!BuildNormalMapTransferNormal(MakeTexel(), MidUVVertices, Triangles, ZeroLengthSample, Result, false),
               "zero-length filtered normal sample should request geometric-normal fallback");
@@ -253,6 +266,7 @@ int main()
         std::cerr << FailureCount << " Normal Map transfer test(s) failed.\n";
         return 1;
     }
+
     std::cout << "All Normal Map transfer tests passed.\n";
     return 0;
 }

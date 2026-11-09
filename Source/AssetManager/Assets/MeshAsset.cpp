@@ -37,6 +37,7 @@ namespace MDSS::Asset
         {
             throw std::invalid_argument("TMeshAsset requires non-empty vertex and index data.");
         }
+
         if (this->Indices.size() % 3U != 0 || this->Triangles.size() != this->Indices.size() / 3U)
         {
             throw std::invalid_argument("TMeshAsset source triangle count must match its render index data.");
@@ -45,20 +46,25 @@ namespace MDSS::Asset
         glm::vec3 Minimum(std::numeric_limits<float>::max());
         glm::vec3 Maximum(std::numeric_limits<float>::lowest());
         bool      bFiniteBounds = true;
+
         for (const FVertex& Vertex : this->Vertices)
         {
             const glm::vec3 P = Vertex.Position;
+
             if (!std::isfinite(P.x) || !std::isfinite(P.y) || !std::isfinite(P.z))
             {
                 bFiniteBounds = false;
                 break;
             }
+
             Minimum = glm::min(Minimum, P);
             Maximum = glm::max(Maximum, P);
         }
+
         if (bFiniteBounds)
         {
             BoundsCenter = Minimum + (Maximum - Minimum) * 0.5F;
+
             for (const FVertex& Vertex : this->Vertices)
                 BoundsRadius = std::max(BoundsRadius, glm::length(Vertex.Position - BoundsCenter));
         }
