@@ -4,4 +4,11 @@
  */
 #version 450
 #extension GL_GOOGLE_include_directive : require
+
+// ============================================================
+// 00. Vertex Shader Variant
+// ============================================================
+// #region 00_Vertex_Shader_Variant
+
 #include "Rendering/Overlay/Geometry/TexelMeshVertex.glsl"
+// #endregion

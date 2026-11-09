@@ -78,9 +78,17 @@
 - **검증:** Debug 전체 build 성공. CTest 7 통과/7 실패/skip 0이며 테스트별 상태/이유가 기준선과 동일. 파서 35개 old/new 비교 동일, Vulkan call 지점 81개 정적 순서/인자 동일, render-only old/new 5프레임 PPM/settings/validation 동일. simulation Scene은 양쪽 모두 기존 33-buffer GPU 한도로 초기화 실패. overlay 전체 동등성·성능·장시간·UI suspend 조작은 미검증. clang-format 5개 통과 및 CRLF-aware diff check. [실행 증거](../../../Build/Validation/20261109-213530-cpp-top-down/summary.md).
 - **커밋:** 이번 구현 변경은 미커밋, push 없음. 다음 작업은 기존 4번 GLSL 계산 구조 정리.
 
+## 2026-11-09 — Shader 누락 Region 및 CRLF 자동 접기 수정
+- **읽은 문서:** AGENTS·Document Map·Code Style·GLSL·Verification·Shader Source Index·Project Brief. 설치된 Maptz/Fold on Open/Custom Folding 확장 구현과 VS Code Fold All Regions 처리도 로컬 코드로 확인.
+- **코드/설정:** 짧아서 제외했던 shader 19개도 사용자 요청에 따라 comment Region 추가(전체 69개·103개). root/vault 설정에서 CRLF 대응 regex·defaultFoldStartRegex·자동 접기 지정. 사용자 전역 settings와 기존 C++ 리팩터링은 수정하지 않음.
+- **원인:** 이전 시작 regex가 확장 parser에 남은 CR을 소비하지 못함을 실제 설치 parser에서 재현. AllMarkerRegions 값 자체는 유효하며 이미 인식된 영역만 접는 명령임. 초기 언어 provider 등록을 위해 Reload Window가 필요할 수 있음.
+- **문서 동기화:** Project Brief에 모든 shader 적용 정책을 명시하고 README·Shader Source Index·Current Work·Validation 갱신. 계산/리소스/ABI/패스 순서 변경이 없어 Flow/Contract 본문 변경 없음.
+- **검증:** 실제 설치 provider를 mock 값 API와 실행해 69개·103개 typed/default Region 확인. LF/CRLF 회귀 통과, 69개 주석 제외 코드·개행 동일. 150개 glslc/spirv-val 통과 및 기준선 SPIR-V 모두 바이트 동일. CUA native pipe 연결 실패로 UI 화면은 미확인. 전체 C++/CTest/GPU 실행 반복 없음. [증거](../../../Build/Validation/20261109-215915-shader-folding-fix/summary.md). 커밋/push 없음.
+
 ## 2026-11-09 — 누적 변경 분할 커밋
 
 - 사용자 요청에 따라 기존 변경을 의미 단위로 분리한다. 소스 작업 폴더를 유지하고 보존된 단계별 스냅샷으로 인덱스를 구성했다.
 - 검증: 기존 단계별 빌드·테스트·동등성 검증을 근거로 사용한다. 각 중간 커밋을 별도로 빌드한 것으로 간주하지 않는다. 커밋마다 인덱스 공백 검사를 수행한다.
 - 분리 항목:
   - Refactor(CPP): 데모 로딩·프레임·명령 기록의 상위 흐름 분리
+  - Fix(Shaders): 누락 Region과 CRLF 자동 접기 설정 보완

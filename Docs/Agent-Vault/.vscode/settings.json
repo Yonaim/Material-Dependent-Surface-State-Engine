@@ -9,20 +9,27 @@
   "maptz.regionfolder": {
     "[glsl]": {
       "foldStart": "// #region [NAME]",
-      "foldStartRegex": "^\\s*//\\s*#region\\b\\s*(.*)$",
+      "foldStartRegex": "^[ \\t]*//[ \\t]*#region\\b[ \\t]*(.*?)[ \\t\\r]*$",
       "foldEnd": "// #endregion",
-      "foldEndRegex": "^\\s*//\\s*#endregion\\b",
-      "disableFolding": false
+      "foldEndRegex": "^[ \\t]*//[ \\t]*#endregion\\b[ \\t\\r]*$",
+      "disableFolding": false,
+      "defaultFoldStartRegex": "^[ \\t]*//[ \\t]*#region\\b[ \\t]*(.*?)[ \\t\\r]*$"
     },
     "[shellscript]": {
       "foldStart": "#region [NAME]",
-      "foldStartRegex": "^\\s*#region\\b\\s*(.*)$",
+      "foldStartRegex": "^[ \\t]*#region\\b[ \\t]*(.*?)[ \\t\\r]*$",
       "foldEnd": "#endregion",
-      "foldEndRegex": "^\\s*#endregion\\b",
+      "foldEndRegex": "^[ \\t]*#endregion\\b[ \\t\\r]*$",
       "disableFolding": false
-    }
+    },
+    "collapseDefaultRegionsOnOpen": true
   },
   "[glsl]": {
-    "editor.foldingStrategy": "auto"
-  }
+    "editor.foldingStrategy": "auto",
+    "editor.folding": true,
+    "editor.showFoldingControls": "always"
+  },
+  "foldOnOpen.targets": [
+    "AllMarkerRegions"
+  ]
 }

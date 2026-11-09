@@ -1,5 +1,11 @@
 #ifndef MDSS_SURFACE_TYPES_GLSL
 #define MDSS_SURFACE_TYPES_GLSL
+
+// ============================================================
+// 00. Shared GPU Types
+// ============================================================
+// #region 00_Shared_GPU_Types
+
 struct TSurfaceGPUProfileParameters
 {
     // profile의 용량/입력/transfer, 감쇠/형상, 누적 두께 계수 묶음이다.
@@ -17,5 +23,7 @@ struct TSurfaceGPUGeometryScalar
     float MesoMeanCurvature;
     float MesoGaussianCurvature;
 };
+
+// #endregion
 
 #endif

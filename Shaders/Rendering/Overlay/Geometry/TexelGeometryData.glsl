@@ -5,8 +5,16 @@
 #ifndef MDSS_TEXEL_GEOMETRY_DATA
 #define MDSS_TEXEL_GEOMETRY_DATA
 
+// ============================================================
+// 00. Vertex Data
+// ============================================================
+// #region 00_Vertex_Data
+
+
 struct TTexelGeometryVertex
 {
     vec4 HeightAndNormal; // x: scaled total height, yzw: displayed height-field normal
 };
+// #endregion
+
 #endif

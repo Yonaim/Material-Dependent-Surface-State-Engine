@@ -3,6 +3,12 @@
  * @file Lava.glsl
  * @brief 선택적으로 사용하는 Lava 상태를 밝은 용융층 색과 emission으로 표현한다.
  */
+
+// ============================================================
+// 00. Lava Appearance
+// ============================================================
+// #region 00_Lava_Appearance
+
 float LavaVisualAmount(float Coverage)
 {
     // Keep the saturated lava in the orange part of the artist's color ramp.
@@ -28,3 +34,4 @@ void ApplyLava(float Coverage, float Threshold, inout vec3 Albedo, inout float R
     Albedo = LavaColor(Coverage);
     Roughness = 0.34;
 }
+// #endregion

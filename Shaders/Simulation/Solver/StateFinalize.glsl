@@ -1,3 +1,9 @@
+
+// ============================================================
+// 00. State Finalization
+// ============================================================
+// #region 00_State_Finalization
+
 bool accumulationContributionChanged(uint TexelIndex,
                                      uint ChannelIndex,
                                      float OldState,
@@ -24,3 +30,4 @@ bool accumulationContributionChanged(uint TexelIndex,
     // visible state가 조금이라도 바뀌면 schedule한다.
     return NewVisible != OldVisible;
 }
+// #endregion

@@ -2,6 +2,12 @@
  * @file WaterFilm.glsl
  * @brief 얇은 물막에 젖은 바탕색과 매끈한 표면 반응을 적용한다.
  */
+
+// ============================================================
+// 00. WaterFilm Appearance
+// ============================================================
+// #region 00_WaterFilm_Appearance
+
 float VisibleWaterCoverage(float Coverage, vec2 UV)
 {
     if (Material.WaterAppearance.x < 0.5)
@@ -26,3 +32,4 @@ void ApplyWaterFilm(float Coverage, inout vec3 Albedo, inout float Roughness, fl
     Albedo *= mix(1.0, 1.0 - Material.WaterAppearance.z, Blend);
     Roughness = mix(Roughness, FilmRoughness, Blend);
 }
+// #endregion
