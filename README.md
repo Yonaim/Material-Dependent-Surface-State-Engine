@@ -10,10 +10,23 @@ The project focuses on representing surface state changes in UV-space and updati
 - UV-space texel-based surface state simulation
 - Material-dependent surface response
 - Geometry-aware state transport
-- Heat-to-red, Burn, and Mud states
+- Heat, Ice, WaterFilm, Mud, and Lava appearance
+- Data-driven local State conversion, generation, consumption, and interactions
 - Compute shader based state update
 - Raycast-based state injection
 - ImGui-based debug and simulation controls
+
+## Ice reaction demo
+
+Build with `./Scripts/build.ps1 -Configuration Debug`, then run:
+
+```powershell
+& ./Build/bin/Debug/MDSS.exe --scene Assets/Scenes/IceReactionLab.Scene
+```
+
+The Lit scene compares finite heating, sustained heating, and water cooling with `ice`, `waterfilm`, and `heat` States. The 14-second animation starts automatically. F10 opens the presentation view. Profile v5 rules live in `Assets/SurfaceProfiles/IceReactionLab.SRProfile`; thresholds and condition scales are amounts per fixed reference area.
+
+`Scripts/Validation/verify_reactions.ps1` captures the Lit scene at 3 and 14 seconds and checks finite, nonnegative States and Reaction diagnostics. Detailed contracts are in `Docs/MDSSP-Agent-Vault/02_Architecture/02_Contracts/05_Reactions.md`.
 
 ## Project Status
 

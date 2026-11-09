@@ -28,6 +28,8 @@ namespace MDSS::SurfaceState
         DynamicGeometry,
         AccumulationHeights,
         DynamicConcavityWeights,
+        Reactions,
+        ReactionScratch,
         Count
     };
 

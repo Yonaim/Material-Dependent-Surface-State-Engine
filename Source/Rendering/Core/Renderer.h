@@ -150,6 +150,7 @@ namespace MDSS::Rendering
                                        std::uint32_t                MeasurementFrames);
         // Called only after the application has waited for the device to become idle.
         void                              FinalizeBenchmarkCapture();
+        void                              RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex);
         [[nodiscard]] TOverlayDisplayMode GetOverlayDisplayMode() const noexcept
         {
             return OverlayDisplayMode;
@@ -416,6 +417,7 @@ namespace MDSS::Rendering
         void                CreateRenderFinishedSemaphores();
         void                DestroyRenderFinishedSemaphores() noexcept;
         void                CreateTimestampQueryPool(std::size_t SolverInstanceCount);
+        void                TrimRenderResolutionCaches();
         void                UploadMaterialUniforms(std::uint32_t   Frame,
                                                    const TScene&   SceneData,
                                                    const TDebugUI& DebugInterface,
@@ -529,10 +531,15 @@ namespace MDSS::Rendering
         std::uint64_t                                                            BenchmarkMeasurementFrames = 0;
         std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
         bool                                                                     bBenchmarkCaptureEnabled = false;
-        std::uint32_t                                                            TimestampQueriesPerFrame = 21;
-        std::uint32_t                                                            SolverTimestampGroupCount = 0;
-        float                                                                    TimestampPeriodNanoseconds = 0.0F;
-        std::uint32_t                                                            TimestampValidBits = 0;
+        std::unique_ptr<GPU::TGPUBuffer>                                         BenchmarkScreenshot;
+        VkExtent2D                                                               BenchmarkScreenshotExtent{};
+        VkFormat                BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
+        float                   BenchmarkGpuElapsed = -1.0F;
+        float                   BenchmarkSimulationElapsed = -1.0F;
+        std::uint32_t           TimestampQueriesPerFrame = 24;
+        std::uint32_t           SolverTimestampGroupCount = 0;
+        float                   TimestampPeriodNanoseconds = 0.0F;
+        std::uint32_t           TimestampValidBits = 0;
         bool                    bRenderPassSubstageTimingsReliable = true;
         float                   LastRenderGpuMilliseconds = -1.0F;
         float                   LastSolverGpuMilliseconds = -1.0F;

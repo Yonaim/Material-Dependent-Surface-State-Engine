@@ -51,11 +51,68 @@ namespace MDSS::SurfaceState
         float       TransitionRate = 0.0F;
     };
 
+    enum class TReactionMode : std::uint32_t
+    {
+        Continuous,
+        InflowFraction
+    };
+    enum class TReactionRateModel : std::uint32_t
+    {
+        Constant,
+        StateProportional,
+        MassAction
+    };
+    enum class TReactionFunction : std::uint32_t
+    {
+        Above,
+        Below,
+        RampAbove,
+        RampBelow,
+        Linear,
+        Inhibit
+    };
+    struct TReactionTerm
+    {
+        std::string State;
+        float       Coefficient = 1.0F;
+    };
+    struct TReactionModifier
+    {
+        std::string       State;
+        TReactionFunction Function = TReactionFunction::Linear;
+        // Both quantities refer to the fixed reference area, independently of Capacity.
+        float Threshold = 0.0F;
+        float Scale = 1.0F;
+    };
+    struct TReactionFactor
+    {
+        std::string State;
+        float       Reference = 1.0F;
+        float       Exponent = 1.0F;
+    };
+    struct TSurfaceReaction
+    {
+        std::string                    ID;
+        bool                           Enabled = true;
+        TReactionMode                  Mode = TReactionMode::Continuous;
+        std::vector<TReactionTerm>     Consumes;
+        std::vector<TReactionTerm>     Produces;
+        TReactionRateModel             RateModel = TReactionRateModel::Constant;
+        std::string                    RateState;
+        float                          RateCoefficient = 0.0F;
+        std::vector<TReactionModifier> Modifiers;
+        std::vector<TReactionFactor>   Factors;
+        std::string                    InflowState;
+        std::uint32_t                  InflowSources = 3U; // positive event input / neighbor incoming
+        float                          Fraction = 0.0F;
+    };
+
     /** @brief A profile contains only the states and transitions it defines. */
     struct TSurfaceResponseProfileData
     {
         std::unordered_map<std::string, TSurfaceStateParameters> States;
         std::vector<TSurfaceStateTransition>                     Transitions;
+        std::vector<TSurfaceReaction>                            Reactions;
     };
 
     using TSurfaceStateValues = std::vector<float>;
@@ -66,4 +123,5 @@ namespace MDSS::SurfaceState
 
     /** @throws std::invalid_argument if any parameter or transition is invalid. */
     void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data);
+    void ValidateSurfaceReactions(const TSurfaceResponseProfileData& Data);
 } // namespace MDSS::SurfaceState

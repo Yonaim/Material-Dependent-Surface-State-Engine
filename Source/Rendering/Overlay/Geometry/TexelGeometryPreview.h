@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <stdexcept>
 #include <utility>
 
 namespace MDSS::SurfaceState
@@ -56,24 +57,33 @@ namespace MDSS::SurfaceState
         void                        InvalidateSparseOutput() noexcept;
 
         // Compute command recording
-        void Record(VkCommandBuffer                         Command,
-                    std::size_t                             Instance,
-                    const TSurfaceStateDescriptorResources& Descriptors,
-                    std::uint32_t                           TexelCount,
-                    std::uint32_t                           Channel,
-                    std::uint32_t                           Channels,
-                    float                                   AccumulationDisplayScale,
-                    float                                   GeometryDisplayScale,
-                    const glm::mat4&                        ModelMatrix,
-                    bool                                    bStateAB,
-                    bool                                    bAccumulation,
-                    VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
-                    std::uint32_t                           HeightCompleteQuery = 0U,
-                    bool                                    bTotalHeight = false,
-                    std::size_t                             FrameIndex = 0U,
-                    std::array<std::uint32_t, 3>            MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU},
-                    std::uint32_t                           ActiveMaterialMask = 0U,
-                    std::size_t                             OutputSlot = 0U);
+        void
+        Record(VkCommandBuffer                         Command,
+               std::size_t                             Instance,
+               const TSurfaceStateDescriptorResources& Descriptors,
+               std::uint32_t                           TexelCount,
+               std::uint32_t                           Channel,
+               std::uint32_t                           Channels,
+               float                                   AccumulationDisplayScale,
+               float                                   GeometryDisplayScale,
+               const glm::mat4&                        ModelMatrix,
+               bool                                    bStateAB,
+               bool                                    bAccumulation,
+               VkQueryPool                             TimestampQueryPool = VK_NULL_HANDLE,
+               std::uint32_t                           HeightCompleteQuery = 0U,
+               bool                                    bTotalHeight = false,
+               std::size_t                             FrameIndex = 0U,
+               std::array<std::uint32_t, 4> MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU},
+               std::uint32_t                ActiveMaterialMask = 0U,
+               std::size_t                  OutputSlot = 0U);
+
+        // Call only after GPU completion; descriptors and their buffers are released together.
+        void ReleaseOutputs()
+        {
+            Outputs.clear();
+            if (vkResetDescriptorPool(Device, Pool, 0) != VK_SUCCESS)
+                throw std::runtime_error("Cannot reset render output descriptors.");
+        }
 
     private:
         // Resource cleanup

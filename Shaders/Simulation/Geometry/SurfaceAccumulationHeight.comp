@@ -92,7 +92,7 @@ void main()
     storeAccumulationFloat(Solver.LocalTexelCount + Texel, Dirty ? 1.0 : 0.0);
     if (!Dirty) return;
 
-    if (useSparseSimulationGeometry())
+    if (useSparseSimulationGeometry() && !useDenseAdaptiveGeometry())
     {
         // Geometry + transfer-weight dependency를 함께 만족하도록 기존과 동일한 topology 2-hop halo를 compact한다.
         ScheduleGeometryTexelAndTwoHopNeighbors(Texel);

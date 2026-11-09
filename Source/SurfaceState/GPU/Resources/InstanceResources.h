@@ -28,6 +28,14 @@ namespace MDSS::Asset
 }
 namespace MDSS::SurfaceState
 {
+    struct TSurfaceScratchStorageFormat
+    {
+        bool CacheRawFlux = true;
+        bool HalfRawFlux = false;
+        bool HalfWeights = false;
+        bool Compact = false;
+    };
+
     class TSurfaceDataManager;
     class TSurfaceGPUBufferPool;
 }
@@ -55,9 +63,22 @@ namespace MDSS::SurfaceState
                                      const std::vector<float>&           TransferWeights,
                                      const std::vector<TSurfaceGPUVec4>& TransferWeightDebugAverages = {},
                                      const std::vector<float>&           WorldTexelAreas = {},
-                                     TSurfaceGPUBufferPool*              Pool = nullptr);
+                                     TSurfaceGPUBufferPool*              Pool = nullptr,
+                                     TSurfaceScratchStorageFormat        Storage = {},
+                                     std::uint32_t                       MaxReactionCount = 0);
         void RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept;
+        // Caller must wait for GPU completion and rebuild descriptors when this returns true.
+        bool ConfigureScratchStorage(
+            VkPhysicalDevice PhysicalDevice, VkDevice Device, bool Cache, bool HalfRaw, bool HalfWeights, bool Compact);
 
+        [[nodiscard]] const GPU::TGPUBuffer& GetReactionScratchBuffer() const noexcept
+        {
+            return *ReactionScratchBuffer;
+        }
+        [[nodiscard]] std::uint32_t GetReactionCapacity() const noexcept
+        {
+            return ReactionCapacity;
+        }
         // State and geometry buffers
         [[nodiscard]] const GPU::TGPUBuffer& GetStateABuffer() const noexcept;
         [[nodiscard]] const GPU::TGPUBuffer& GetStateBBuffer() const noexcept;
@@ -81,9 +102,12 @@ namespace MDSS::SurfaceState
         void                      ResetState(const std::vector<float>& OutgoingFluxScale);
 
     private:
+        std::unique_ptr<GPU::TGPUBuffer> ReactionScratchBuffer;
+        std::uint32_t                    ReactionCapacity = 0;
         std::size_t                      TexelCount = 0;
         std::size_t                      ChannelCount = 0;
         std::size_t                      ScalarCount = 0;
+        bool                             bStoredHalfWeights = false;
         std::unique_ptr<GPU::TGPUBuffer> StateABuffer;
         std::unique_ptr<GPU::TGPUBuffer> StateBBuffer;
         std::unique_ptr<GPU::TGPUBuffer> OutgoingFluxScaleBuffer;

@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-10-25T08:01:25.520530+09:00",
+  "status": "pass",
+  "successful_runs": 204,
+  "measured_frames": 122400,
+  "paired_conditions": 32,
+  "new_report_links_checked": 43,
+  "syntax_files": 12,
+  "frozen_stages_verified": [
+    "S00",
+    "S01",
+    "S02",
+    "S03",
+    "S04"
+  ],
+  "final_source_archive_sha256": "0e6a8dd375bfbf25c5781975fc8db3cf25ed409c73360dda04f480a09e71493d",
+  "blocked_executable_unchanged": true,
+  "limits": "GPU unit tests and final integrated app remain unverified; no executable launched by this check."
+}

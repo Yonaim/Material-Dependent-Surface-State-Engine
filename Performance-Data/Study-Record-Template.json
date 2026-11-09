@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "study_id": "YYYYMMDD-study-name",
+  "question": "",
+  "status": "planned",
+  "created_at": "YYYY-MM-DDTHH:MM:SS+09:00",
+  "updated_at": "YYYY-MM-DDTHH:MM:SS+09:00",
+  "experiments": [
+    {
+      "id": "PERF-NNN-short-name",
+      "status": "planned",
+      "question": "",
+      "path": "PERF-NNN-short-name/"
+    }
+  ],
+  "report": ""
+}

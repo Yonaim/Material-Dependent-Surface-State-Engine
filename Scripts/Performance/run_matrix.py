@@ -20,7 +20,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MATRIX = ROOT / "Config/Performance/solver-resolution-matrix.json"
-DEFAULT_RESULTS = ROOT / "Docs/MDSSP-Vault/04_Development/Performance-Results"
+DEFAULT_RESULTS = ROOT / "Performance-Data"
 
 
 def run_text(command: list[str], *, cwd: Path, timeout: int = 30) -> str:

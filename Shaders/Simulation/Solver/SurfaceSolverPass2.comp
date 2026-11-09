@@ -10,32 +10,8 @@
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 shared uint GroupNextMask;
 
-bool accumulationContributionChanged(uint TexelIndex,
-                                     uint ChannelIndex,
-                                     float OldState,
-                                     float NewState)
-{
-    if (!useSparseAccumulationHeight() || !prepareAccumulationHeight())
-        return false;
-
-    uint Record = profileRecordIndex(TexelIndex, ChannelIndex);
-    // Sparse-height scheduling only needs capacity and accumulation factor: fetch two SoA planes, not all 3 vec4s.
-    float Factor = profileDecayAndGeometry(Record).z;
-    if (!solverFinite(Factor) || Factor <= 0.0)
-        return false;
-
-    float AreaScale = texelAreaScale(TexelIndex);
-    float Capacity = profileCapacityInputAndTransfer(Record).x * AreaScale;
-    if (!solverFinite(Capacity) || Capacity <= 0.0)
-        return false;
-
-    // Height는 capacity까지의 state만 사용하므로 capacity 위의 overflow-like state 변화는 재계산 사유가 아니다.
-    float OldVisible = min(max(OldState, 0.0), Capacity);
-    float NewVisible = min(max(NewState, 0.0), Capacity);
-    // Height pass 자체가 BuiltHeight 기준 tolerance를 갖고 있으므로 여기서는 누적 손실이 생기지 않게
-    // visible state가 조금이라도 바뀌면 schedule한다.
-    return NewVisible != OldVisible;
-}
+#include "Simulation/Solver/StateFinalize.glsl"
+#include "Simulation/Solver/ReactionBindings.glsl"
 
 void main()
 {
@@ -49,7 +25,7 @@ void main()
     if (TexelIndex < Solver.LocalTexelCount)
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
-        if (!isChannelActive(ChannelIndex, OriginalGroup))
+        if (!useReactions() && !isChannelActive(ChannelIndex, OriginalGroup))
             continue;
 
         uint StateValueIndex = stateIndex(TexelIndex, ChannelIndex);
@@ -62,8 +38,17 @@ void main()
             float NewState = SupportedProfile
                 ? max(Current + InputDelta.Values[StateValueIndex], 0.0)
                 : 0.0;
-            NextState.Values[StateValueIndex] = NewState;
+            if (useReactions())
+            {
+                uint Base = reactionScratchBase(TexelIndex);
+                ReactionScratch.Values[Base + ChannelIndex] = NewState;
+                ReactionScratch.Values[Base + 3u*Solver.StateChannelCount + ChannelIndex] =
+                    max(0.0, InputDelta.Values[StateValueIndex]);
+                ReactionScratch.Values[Base + 4u*Solver.StateChannelCount + ChannelIndex] = 0.0;
+            }
+            else NextState.Values[StateValueIndex] = NewState;
             InputDelta.Values[StateValueIndex] = 0.0;
+            if (useReactions()) continue;
             // Keep one retirement generation when Current was non-zero.
             // The destination ping-pong buffer may still contain an older value; scheduling one more
             // step guarantees that buffer is explicitly overwritten with zero before the group retires.
@@ -160,12 +145,20 @@ void main()
         }
 
         float Current = CurrentState.Values[StateValueIndex];
-        float Outgoing = loadRawOutgoingFloat(StateValueIndex) *
-                         OutgoingFluxScale.Values[StateValueIndex];
+        float Outgoing = Current > 0.0 ? loadRawOutgoingFloat(StateValueIndex) *
+                         OutgoingFluxScale.Values[StateValueIndex] : 0.0;
         float Decay = Current > 0.0 ? decayAmount(TexelIndex, ChannelIndex) : 0.0;
         float EventInput = InputDelta.Values[StateValueIndex];
         InputDelta.Values[StateValueIndex] = 0.0;
         float NewState = max(Current + EventInput + Incoming - Outgoing - Decay, 0.0);
+        if (useReactions())
+        {
+            uint Base = reactionScratchBase(TexelIndex);
+            ReactionScratch.Values[Base + ChannelIndex] = NewState;
+            ReactionScratch.Values[Base + 3u*Solver.StateChannelCount + ChannelIndex] = max(EventInput, 0.0);
+            ReactionScratch.Values[Base + 4u*Solver.StateChannelCount + ChannelIndex] = Incoming;
+            continue;
+        }
         NextState.Values[StateValueIndex] = NewState;
 
         // Persistent active-set handoff: Pass2 directly builds the schedule/mask consumed after the A/B swap.

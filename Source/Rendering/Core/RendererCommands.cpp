@@ -30,12 +30,17 @@ namespace MDSS::Rendering
         if (TimestampQueryPool != VK_NULL_HANDLE)
         {
             vkCmdResetQueryPool(CommandBuffer, TimestampQueryPool, QueryBase, TimestampQueriesPerFrame);
+            vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 21U);
         }
 
         FrameCoordinator.RecordSimulation(
             CommandBuffer, TimestampQueryPool, QueryBase + FixedTimestampQueryCount, SolverTimestampGroupCount * 8U);
         if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 22U);
             vkCmdWriteTimestamp(CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 4U);
+        }
         if (TexelInspector && InspectedTexel &&
             DebugStateChannel < SurfaceData.GetSurfaceStateRegistry().GetStateCount())
         {
@@ -169,23 +174,27 @@ namespace MDSS::Rendering
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                         vkCmdWriteTimestamp(
                             CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, LayerQuery);
-                    Preview.Record(CommandBuffer,
-                                   Instance,
-                                   *Descriptors,
-                                   static_cast<std::uint32_t>(Shared->GetTexelCount()),
-                                   AllStateChannels,
-                                   ChannelCount,
-                                   LitHeightDisplayScale,
-                                   1.0F,
-                                   Model,
-                                   bStateAB,
-                                   true,
-                                   TimestampQueryPool,
-                                   LayerQuery + 12U,
-                                   true,
-                                   FrameIndex,
-                                   {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
-                                   (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U));
+                    Preview.Record(
+                        CommandBuffer,
+                        Instance,
+                        *Descriptors,
+                        static_cast<std::uint32_t>(Shared->GetTexelCount()),
+                        AllStateChannels,
+                        ChannelCount,
+                        LitHeightDisplayScale,
+                        1.0F,
+                        Model,
+                        bStateAB,
+                        true,
+                        TimestampQueryPool,
+                        LayerQuery + 12U,
+                        true,
+                        FrameIndex,
+                        {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava, DemoBindings.Ice},
+                        (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U) |
+                            (bMud && DemoEffects.bIceDisplacement && DemoBindings.Ice != SurfaceState::InvalidStateId
+                                 ? 8U
+                                 : 0U));
                     if (TimestampQueryPool != VK_NULL_HANDLE)
                     {
                         vkCmdWriteTimestamp(
@@ -218,6 +227,8 @@ namespace MDSS::Rendering
                     {
                         if (bMud && DemoBindings.Mud != SurfaceState::InvalidStateId)
                             SmoothChannel(DemoBindings.Mud);
+                        if (bMud && DemoEffects.bIceDisplacement && DemoBindings.Ice != SurfaceState::InvalidStateId)
+                            SmoothChannel(DemoBindings.Ice);
                         if (bWater && DemoBindings.WaterFilm != SurfaceState::InvalidStateId)
                             SmoothChannel(DemoBindings.WaterFilm);
                         if (bLava && DemoBindings.Lava != SurfaceState::InvalidStateId)
@@ -249,8 +260,11 @@ namespace MDSS::Rendering
                         bSmoothCoverage,
                         false,
                         LitHeightDisplayScale,
-                        {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava},
-                        (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U),
+                        {DemoBindings.Mud, DemoBindings.WaterFilm, DemoBindings.Lava, DemoBindings.Ice},
+                        (bMud ? 1U : 0U) | (bWater ? 2U : 0U) | (bLava ? 4U : 0U) |
+                            (bMud && DemoEffects.bIceDisplacement && DemoBindings.Ice != SurfaceState::InvalidStateId
+                                 ? 8U
+                                 : 0U),
                         bSharedOverlayCoverageEnabled,
                         DemoEffects.LavaThreshold);
                     if (TimestampQueryPool != VK_NULL_HANDLE)
@@ -782,9 +796,14 @@ namespace MDSS::Rendering
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 19U);
 
         MainGraphicsPass.End(CommandBuffer);
+        if (bBenchmarkCaptureEnabled)
+            RecordBenchmarkScreenshot(CommandBuffer, ImageIndex);
         if (TimestampQueryPool != VK_NULL_HANDLE)
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 20U);
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+            vkCmdWriteTimestamp(
+                CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 23U);
         if (vkEndCommandBuffer(CommandBuffer) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to record Vulkan command buffer.");

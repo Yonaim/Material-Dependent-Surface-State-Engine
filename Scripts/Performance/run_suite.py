@@ -1,9 +1,13 @@
 """Execute a saved A/B plan serially; preserve each run and final numerical/visual data."""
 from __future__ import annotations
-import argparse,datetime as dt,hashlib,json,os,subprocess,sys,time,zipfile
+import argparse,datetime as dt,hashlib,json,os,subprocess,sys,time,zipfile,shutil
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
+BLOCKED_REGISTRY=ROOT/'Build/OptimizationLab/blocked-executables.json'
+
+class BlockedExecutable(RuntimeError):
+    pass
 
 def save(path,value):
     temporary=path.with_name(path.name+'.tmp')
@@ -61,10 +65,25 @@ def main():
                      '--benchmark-measure-frames',str(run.get('measure',600)),'--benchmark-output',str(path)]
         record={**run,'command':command,'started_at':dt.datetime.now().astimezone().isoformat(),
                 'raw':path.relative_to(result).as_posix(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest()}
+        scene=Path(run['scene'])
+        if not scene.is_absolute(): scene=ROOT/scene
+        if scene.is_file():
+            record['scene_sha256']=hashlib.sha256(scene.read_bytes()).hexdigest()
+            shutil.copy2(scene,raw/(run['id']+'.scene.json'))
         if run.get('historical_env'):
             record['effective_historical_env']={k:env[k] for k in run['historical_env']}
+        if run.get('shader_archive'):
+            archive=Path(run['shader_archive']).resolve()
+            live=ROOT/'Build/bin/Shaders/Release'
+            assert archive.is_dir(), f'Missing SPIR-V archive: {archive}'
+            shutil.copytree(archive,live,dirs_exist_ok=True)
+            record['shader_sha256']={p.relative_to(archive).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                                    for p in sorted(archive.rglob('*.spv'))}
         started=time.perf_counter()
         try:
+            blocked=json.loads(BLOCKED_REGISTRY.read_text(encoding='utf8')) if BLOCKED_REGISTRY.exists() else {}
+            if record['binary_sha256'] in blocked:
+                raise BlockedExecutable('Previously blocked by Windows Application Control; not launched again.')
             with path.with_suffix('.log').open('w',encoding='utf8') as log:
                 completed=subprocess.run(command,cwd=run.get('cwd',ROOT),env=env,stdout=log,stderr=subprocess.STDOUT,
                                          timeout=run.get('timeout',900))
@@ -78,6 +97,11 @@ def main():
             record['status']='complete'
         except Exception as exc:
             record['status']='failed';record['error']=str(exc)
+            if isinstance(exc,BlockedExecutable) or (isinstance(exc,OSError) and getattr(exc,'winerror',None)==4551):
+                record['status']='blocked'
+                blocked=json.loads(BLOCKED_REGISTRY.read_text(encoding='utf8')) if BLOCKED_REGISTRY.exists() else {}
+                blocked[record['binary_sha256']]={'path':str(binary),'error':str(exc),'recorded_at':dt.datetime.now().astimezone().isoformat()}
+                save(BLOCKED_REGISTRY,blocked)
         record['finished_at']=dt.datetime.now().astimezone().isoformat()
         record['process_seconds']=time.perf_counter()-started
         manifest['runs'].append(record);save(manifest_path,manifest)

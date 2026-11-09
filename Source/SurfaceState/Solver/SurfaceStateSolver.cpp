@@ -84,6 +84,8 @@ namespace MDSS::SurfaceState
             Constants.StateChannelCount = static_cast<std::uint32_t>(Step.ChannelCount);
             Constants.LocalTexelCount = static_cast<std::uint32_t>(Step.TexelCount);
             Constants.Flags = Step.SolverFlags;
+            if (Step.Descriptors && Step.Descriptors->HasReactions())
+                Constants.Flags |= SurfaceSolverReactionFlag;
             Constants.GravityWorld = {Step.GravityWorld.x, Step.GravityWorld.y, Step.GravityWorld.z, 0.0F};
 
             constexpr float GeometryEpsilon = 1.0e-6F;
@@ -160,6 +162,10 @@ namespace MDSS::SurfaceState
 
         try
         {
+            ReactionPipeline =
+                CreateComputePipeline(Device,
+                                      PipelineLayout,
+                                      Shaders::Path(Shaders::EShader::Simulation_Solver_SurfaceReaction_comp).c_str());
             AccumulationHeightPipeline = CreateComputePipeline(
                 Device,
                 PipelineLayout,
@@ -172,13 +178,14 @@ namespace MDSS::SurfaceState
                 Device,
                 PipelineLayout,
                 Shaders::Path(Shaders::EShader::Simulation_Geometry_SurfaceDynamicGeometryUpdate_comp).c_str());
-            constexpr std::array<Shaders::EShader, 2> WeightVariants{
+            constexpr std::array<Shaders::EShader, 3> WeightVariants{
                 Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_w0,
-                Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_w1};
+                Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_w1,
+                Shaders::EShader::Simulation_Geometry_SurfaceDynamicWeightsUpdate_comp_runtime};
             for (std::size_t Weight = 0; Weight < DynamicTransferWeightPipelines.size(); ++Weight)
                 DynamicTransferWeightPipelines[Weight] =
                     CreateComputePipeline(Device, PipelineLayout, Shaders::Path(WeightVariants[Weight]).c_str());
-            constexpr std::array<Shaders::EShader, 10> Pass1Variants{
+            constexpr std::array<Shaders::EShader, 11> Pass1Variants{
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r0w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r0w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r1w0,
@@ -188,8 +195,9 @@ namespace MDSS::SurfaceState
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r3w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r3w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r4w0,
-                Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r4w1};
-            constexpr std::array<Shaders::EShader, 10> Pass2Variants{
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_r4w1,
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass1_comp_runtime};
+            constexpr std::array<Shaders::EShader, 11> Pass2Variants{
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r0w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r0w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r1w0,
@@ -199,7 +207,12 @@ namespace MDSS::SurfaceState
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r3w0,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r3w1,
                 Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r4w0,
-                Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r4w1};
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_r4w1,
+                Shaders::EShader::Simulation_Solver_SurfaceSolverPass2_comp_runtime};
+            Pass1Pipelines[10] =
+                CreateComputePipeline(Device, PipelineLayout, Shaders::Path(Pass1Variants[10]).c_str());
+            Pass2Pipelines[10] =
+                CreateComputePipeline(Device, PipelineLayout, Shaders::Path(Pass2Variants[10]).c_str());
             for (std::size_t Raw = 0; Raw < 5; ++Raw)
                 for (std::size_t Weight = 0; Weight < 2; ++Weight)
                 {
@@ -212,6 +225,8 @@ namespace MDSS::SurfaceState
         }
         catch (...)
         {
+            if (ReactionPipeline != VK_NULL_HANDLE)
+                vkDestroyPipeline(Device, ReactionPipeline, nullptr);
             if (AccumulationHeightPipeline != VK_NULL_HANDLE)
                 vkDestroyPipeline(Device, AccumulationHeightPipeline, nullptr);
             if (SparseScheduleResetPipeline != VK_NULL_HANDLE)
@@ -235,6 +250,8 @@ namespace MDSS::SurfaceState
 
     TSurfaceStateSolver::~TSurfaceStateSolver()
     {
+        if (ReactionPipeline != VK_NULL_HANDLE)
+            vkDestroyPipeline(Device, ReactionPipeline, nullptr);
         if (AccumulationHeightPipeline != VK_NULL_HANDLE)
             vkDestroyPipeline(Device, AccumulationHeightPipeline, nullptr);
         if (SparseScheduleResetPipeline != VK_NULL_HANDLE)
@@ -466,7 +483,8 @@ namespace MDSS::SurfaceState
                     continue;
                 vkCmdBindPipeline(CommandBuffer,
                                   VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PrebuildConstants.Flags)]);
+                                  DynamicTransferWeightPipelines
+                                      [bRuntimeFlagsEnabled ? 2U : WeightModeFromFlags(Item.PrebuildConstants.Flags)]);
                 BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 const auto& Descriptors = *Item.Step->Descriptors;
@@ -512,8 +530,9 @@ namespace MDSS::SurfaceState
         PassBarriers.reserve(Prepared.size() * 2U);
         for (const TPreparedStep& Item : Prepared)
         {
-            const std::size_t Variant =
-                RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
+            const std::size_t Variant = bRuntimeFlagsEnabled ? 10U
+                                                             : RawModeFromFlags(Item.Constants.Flags) * 2U +
+                                                                   WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
@@ -540,8 +559,9 @@ namespace MDSS::SurfaceState
         PassBarriers.reserve(Prepared.size() * 5U);
         for (const TPreparedStep& Item : Prepared)
         {
-            const std::size_t Variant =
-                RawModeFromFlags(Item.Constants.Flags) * 2U + WeightModeFromFlags(Item.Constants.Flags);
+            const std::size_t Variant = bRuntimeFlagsEnabled ? 10U
+                                                             : RawModeFromFlags(Item.Constants.Flags) * 2U +
+                                                                   WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipelines[Variant]);
             BindStep(Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
@@ -552,6 +572,25 @@ namespace MDSS::SurfaceState
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
             const auto& Descriptors = *Item.Step->Descriptors;
             const bool  CurrentAB = Item.Step->bCurrentStateAB;
+            if ((Item.Constants.Flags & SurfaceSolverReactionFlag) != 0U)
+            {
+                const std::vector<VkBufferMemoryBarrier> ReactionBarriers{MakeComputeBufferBarrier(
+                    Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::ReactionScratch, CurrentAB),
+                    VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)};
+                RecordBufferBarriers(CommandBuffer,
+                                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                     ReactionBarriers);
+                vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ReactionPipeline);
+                BindStep(Item.CurrentDescriptorSet, Item.Constants);
+                if (bSparseDispatch)
+                    vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.SolverIndirectOffset);
+                else
+                    vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
+                PassBarriers.push_back(MakeComputeBufferBarrier(
+                    Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::ReactionScratch, CurrentAB),
+                    VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT));
+            }
             PassBarriers.push_back(MakeComputeBufferBarrier(
                 Descriptors.GetBoundBufferHandle(TSurfaceGPUDescriptorBinding::NextState, CurrentAB),
                 VK_ACCESS_SHADER_READ_BIT));
@@ -648,7 +687,9 @@ namespace MDSS::SurfaceState
                     continue;
                 vkCmdBindPipeline(CommandBuffer,
                                   VK_PIPELINE_BIND_POINT_COMPUTE,
-                                  DynamicTransferWeightPipelines[WeightModeFromFlags(Item.PostConstants.Flags)]);
+                                  DynamicTransferWeightPipelines[bRuntimeFlagsEnabled
+                                                                     ? 2U
+                                                                     : WeightModeFromFlags(Item.PostConstants.Flags)]);
                 BindStep(Item.NextDescriptorSet, Item.PostConstants);
                 vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.GeometryIndirectOffset);
                 const auto& Descriptors = *Item.Step->Descriptors;

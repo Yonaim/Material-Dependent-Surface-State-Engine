@@ -230,9 +230,14 @@ void main()
                                                      Material.DemoExtraStateChannels.x, Material.StateChannelCount);
     }
 
+    float IceCoverage = (EnabledEffects & 32u) != 0u && Material.ExtraDemoBindings.z < Material.StateChannelCount
+        ? (CoverageSmoothing
+            ? SampleSmoothedStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount)
+            : SampleStateSaturation(FragSurfaceIndex, FragUV, Material.ExtraDemoBindings.z, Material.StateChannelCount)) : 0.0;
+    IceCoverage = clamp(IceCoverage, 0.0, 1.0);
     // A render-texture sample can be empty right on an atlas boundary even
     // though the welded overlay vertex remains occupied.
-    if (!HasVisibleOverlayState(States, EnabledEffects) && FragCoverage <= Cutoff) discard;
+    if (!HasVisibleOverlayState(States, EnabledEffects) && IceCoverage <= Cutoff && FragCoverage <= Cutoff) discard;
     vec3 N = normalize(FragNormal);
     uint ShadingDiagnostic = Material.DemoExtraStateChannels.y;
     float NormalSampleWeight = 1.0;
@@ -270,7 +275,7 @@ void main()
         }
     }
 
-    if (!HasVisibleOverlayState(States, EnabledEffects)) discard;
+    if (!HasVisibleOverlayState(States, EnabledEffects) && IceCoverage <= Cutoff) discard;
     if (!gl_FrontFacing) N = -N;
 
     if (ShadingDiagnostic == 2u)
@@ -329,6 +334,17 @@ void main()
     }
     vec3 PremultipliedColor = MudColor * MudAlpha;
     float SurfaceAlpha = MudAlpha;
+    if (IceCoverage > Cutoff)
+    {
+        float IceAlpha = smoothstep(Cutoff, 0.20, IceCoverage);
+        // Blue scattering tint, frosted grain and broad dielectric highlights.
+        float Grain = 0.7*MudValueNoise(FragWorldPosition*4.0) + 0.3*MudValueNoise(FragWorldPosition*15.0);
+        vec3 IceAlbedo = mix(vec3(0.18,0.48,0.66),vec3(0.70,0.89,0.94),0.45+0.35*Grain);
+        vec3 IceNormal = ApplyMudMicroBump(N, FragWorldPosition, 0.035);
+        vec3 IceColor = ShadeSurface(IceAlbedo, IceNormal, V, 0.24+0.12*Grain, Material.AmbientLight, 0.35, 0.25);
+        PremultipliedColor = IceColor*IceAlpha + PremultipliedColor*(1.0-IceAlpha);
+        SurfaceAlpha = IceAlpha + SurfaceAlpha*(1.0-IceAlpha);
+    }
 
     float WaterCoverage = (EnabledEffects & 4u) != 0u
         ? VisibleWaterCoverage(clamp(States.z, 0.0, 1.0), FragUV) : 0.0;

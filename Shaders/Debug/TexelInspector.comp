@@ -15,7 +15,9 @@ layout(push_constant) uniform TSelection
     vec4 NormalMatrixColumns[3];
 } Selection;
 
-layout(std430, set = 1, binding = 0) writeonly buffer TSnapshot { vec4 Values[6]; } Snapshot;
+layout(std430, set = 1, binding = 0) writeonly buffer TSnapshot { vec4 Values[7]; } Snapshot;
+layout(std430, set = 0, binding = 23) readonly buffer TReactionTable { uint Values[]; } Reactions;
+layout(std430, set = 0, binding = 24) readonly buffer TReactionScratch { float Values[]; } ReactionScratch;
 
 void main()
 {
@@ -35,4 +37,11 @@ void main()
         Normal = DebugFinalNormal(Selection.Texel, Selection.Channel, Selection.Channels,
                                   Selection.AccumulationDisplayScale, NormalMatrix);
     Snapshot.Values[5] = vec4(Normal, 0);
+    Snapshot.Values[6] = vec4(0);
+    if (Reactions.Values[1] > 0u)
+    {
+        uint At = Selection.Texel * (5u*Selection.Channels + Reactions.Values[1] + 4u) + 5u*Selection.Channels + Reactions.Values[1];
+        if (At+3u < uint(ReactionScratch.Values.length()))
+            Snapshot.Values[6] = vec4(ReactionScratch.Values[At],ReactionScratch.Values[At+1u],ReactionScratch.Values[At+2u],ReactionScratch.Values[At+3u]);
+    }
 }

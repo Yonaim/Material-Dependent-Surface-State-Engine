@@ -1,0 +1,2417 @@
+{
+  "version": 1,
+  "durationSeconds": 14,
+  "loop": false,
+  "autoplay": true,
+  "tracks": [
+    {
+      "target": "camera",
+      "property": "position",
+      "interpolation": "linear",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0.8,
+            -6.9,
+            5.9
+          ]
+        },
+        {
+          "time": 14,
+          "value": [
+            -0.8,
+            -6.9,
+            5.9
+          ]
+        }
+      ]
+    }
+  ],
+  "contactEvents": [
+    {
+      "time": 0.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 0.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 0.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 0.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 0.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 0.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 0.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 0.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 1.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 1.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 1.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 1.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 2.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 2.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 2.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 2.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 2.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 3.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 3.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 3.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 3.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 3.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 4.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 4.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 4.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 4.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 4.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 5.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 5.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 5.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 5.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 5.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 6.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 6.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 6.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 6.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 6.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 7.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 7.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 7.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 7.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 7.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 8.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 8.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 8.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 8.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 8.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 9.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 9.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 9.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 9.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 9.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 10.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 10.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 10.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 10.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 10.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 11.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 11.25,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.25,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.25,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 11.5,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.5,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.5,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 11.75,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.75,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 11.75,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    },
+    {
+      "time": 12.0,
+      "target": "b_heated",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 12.0,
+      "target": "c_cooled",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 0.2,
+      "falloff": 0.3
+    },
+    {
+      "time": 12.0,
+      "target": "c_cooled",
+      "state": "waterfilm",
+      "operation": "add",
+      "shape": "circle",
+      "localPosition": [
+        0,
+        0.2,
+        0.5
+      ],
+      "radius": 0.48,
+      "depth": 0.05,
+      "strength": 0.13,
+      "falloff": 0.5
+    }
+  ]
+}

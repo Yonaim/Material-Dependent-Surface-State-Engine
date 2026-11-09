@@ -54,7 +54,7 @@ namespace MDSS::Rendering
             EShader::Rendering_Overlay_Shading_OverlayCombined_frag_m0,
             EShader::Rendering_Overlay_Shading_OverlayCombined_frag_m1,
             EShader::Rendering_Overlay_Shading_OverlayCombined_frag_m2};
-        constexpr std::uint32_t FixedTimestampQueryCount = 21U;
+        constexpr std::uint32_t FixedTimestampQueryCount = 24U;
         constexpr std::uint32_t OverlayTimestampQueriesPerLayer = 13U;
 
         std::vector<std::unique_ptr<GPU::TGPUImage>> CreateDepthImages(
@@ -285,7 +285,7 @@ namespace MDSS::Rendering
             std::array<glm::vec4, 4> EffectHighSaturationColors{};
             glm::vec4                CameraPosition{0, 0, 1, 1};
             glm::vec4                WaterAppearance{0, 1, 0.22F, 100};
-            glm::uvec4               ExtraDemoBindings{SurfaceState::InvalidStateId, 0, 0, 0};
+            glm::uvec4 ExtraDemoBindings{SurfaceState::InvalidStateId, 0, SurfaceState::InvalidStateId, 0};
         };
 
         constexpr std::uint32_t RenderModeWireframeUniformWhite = 20U;

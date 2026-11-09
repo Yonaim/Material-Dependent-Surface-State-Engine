@@ -120,8 +120,10 @@ namespace MDSS::Rendering
                                                          const SurfaceState::TSurfaceSharedGeometryGPUResources* Shared,
                                                          const TDemoSurfaceStateBindings& Bindings) const
     {
-        return {DemoEffects.bMudDisplacement && Bindings.Mud != SurfaceState::InvalidStateId &&
-                    UsesAccumulationGeometry(Instance, Assets, SurfaceData, Shared, "mud"),
+        return {(DemoEffects.bMudDisplacement && Bindings.Mud != SurfaceState::InvalidStateId &&
+                 UsesAccumulationGeometry(Instance, Assets, SurfaceData, Shared, "mud")) ||
+                    (DemoEffects.bIceDisplacement && Bindings.Ice != SurfaceState::InvalidStateId &&
+                     UsesAccumulationGeometry(Instance, Assets, SurfaceData, Shared, "ice")),
                 DemoEffects.bWaterFilmDisplacement && Bindings.WaterFilm != SurfaceState::InvalidStateId &&
                     UsesAccumulationGeometry(Instance, Assets, SurfaceData, Shared, "waterfilm"),
                 DemoEffects.bLavaDisplacement && Bindings.Lava != SurfaceState::InvalidStateId &&

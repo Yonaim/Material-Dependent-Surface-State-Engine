@@ -120,6 +120,18 @@ namespace
                     "states.wetness.cavityTransportRetentionFactor belongs to the other .SRProfile version",
                     "version 4 must reject legacy optional keys instead of silently ignoring them");
 
+        const auto ReactionProfile = TSRProfileLoader::Load(20, GetFixturePath("ReactionV5.SRProfile"));
+        Check(ReactionProfile->GetData().Reactions.size() == 2, "version 5 loads conversion and interaction rules");
+        CheckThrows([&] { (void)TSRProfileLoader::Load(21, GetFixturePath("ReactionV5Sample.SRProfile")); },
+                    "sample is unsupported",
+                    "reference-area condition semantics are mandatory");
+        CheckThrows([&] { (void)TSRProfileLoader::Load(22, GetFixturePath("ReactionV5MissingState.SRProfile")); },
+                    "must be supported",
+                    "reaction references must be supported locally");
+        CheckThrows([&] { (void)TSRProfileLoader::Load(23, GetFixturePath("ReactionV5ZeroScale.SRProfile")); },
+                    "modifier.scale",
+                    "zero modifier scale");
+
         SurfaceState::TSurfaceResponseProfileData InvalidProfile;
         InvalidProfile.States["wetness"].StateCapacity = 0.0F;
         CheckThrows([&] { ValidateSurfaceResponseProfileData(InvalidProfile); }, "stateCapacity", "zero capacity");

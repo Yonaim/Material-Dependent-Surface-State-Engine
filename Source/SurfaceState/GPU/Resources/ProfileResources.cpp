@@ -25,6 +25,15 @@ namespace MDSS::SurfaceState
         const std::size_t              MaxRange = GetMaximumStorageBufferRange(PhysicalDevice);
         const TSurfaceGPUProfileUpload Upload = PackSurfaceProfiles(Profiles, Registry);
         SupportedChannels = Upload.Supported;
+        MaxReactionCount = Upload.MaxReactionCount;
+        ReactionsBuffer = CreateUploadedBuffer(PhysicalDevice,
+                                               Device,
+                                               Upload.Reactions.data(),
+                                               Upload.Reactions.size(),
+                                               sizeof(std::uint32_t),
+                                               MaxRange,
+                                               GPU::TGPUBufferMemoryCategory::SurfaceProfile,
+                                               Pool);
 
         // GPU hot path uses a 3-plane vec4 SoA layout instead of 48-byte AoS records:
         // [Capacity/Input/Transfer records][Decay/Geometry records][Accumulation/Thickness records].
@@ -73,6 +82,7 @@ namespace MDSS::SurfaceState
     {
         Pool.Release(std::move(ParametersBuffer));
         Pool.Release(std::move(SupportedBuffer));
+        Pool.Release(std::move(ReactionsBuffer));
     }
 
     const GPU::TGPUBuffer& TSurfaceProfileGPUResources::GetSupportedBuffer() const noexcept

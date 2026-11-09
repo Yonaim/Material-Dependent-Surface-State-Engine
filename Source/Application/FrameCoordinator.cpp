@@ -15,6 +15,7 @@ namespace MDSS
 
     bool TFrameCoordinator::BeginFrame(TDebugUI& DebugUI, float DeltaTime, bool bSuspendClock)
     {
+        SurfaceStateSystem.PrepareScratchStorage();
         const bool bResetState = DebugUI.ConsumeSolverResetRequest();
         if (bResetState)
         {

@@ -38,6 +38,7 @@ set(MDSS_SHADER_ENTRIES
     Simulation/Geometry/SurfaceDynamicGeometryUpdate.comp
     Simulation/Geometry/SurfaceDynamicWeightsUpdate.comp
     Simulation/Solver/SurfaceSolverPass1.comp
+    Simulation/Solver/SurfaceReaction.comp
     Simulation/Solver/SurfaceSolverPass2.comp
     Simulation/Scheduling/SurfaceSparseScheduleReset.comp
 )
@@ -88,6 +89,10 @@ macro(mdss_add_named_shader_variant ShaderFileName VariantName)
 endmacro()
 
 function(mdss_register_shader_variants)
+    foreach(PassName SurfaceSolverPass1 SurfaceSolverPass2)
+        mdss_add_named_shader_variant("${PassName}.comp" "runtime")
+    endforeach()
+    mdss_add_named_shader_variant("SurfaceDynamicWeightsUpdate.comp" "runtime")
     foreach(RawMode RANGE 0 4)
         foreach(WeightMode RANGE 0 1)
             foreach(PassName SurfaceSolverPass1 SurfaceSolverPass2)

@@ -619,11 +619,12 @@ namespace MDSS
                 DrawState("Lit effects", Effects.bEnabled, bLitView);
                 DrawState("Heat effect", Effects.bHeatLayer, bEffectsActive);
                 DrawState("Mud layer", Effects.bMudDisplacement, bEffectsActive);
+                DrawState("Ice layer", Effects.bIceDisplacement, bEffectsActive);
                 DrawState("WaterFilm layer", Effects.bWaterFilmDisplacement, bEffectsActive);
                 DrawState("Lava layer", Effects.bLavaDisplacement, bEffectsActive);
                 const bool bSmoothingActive =
-                    bEffectsActive &&
-                    (Effects.bMudDisplacement || Effects.bWaterFilmDisplacement || Effects.bLavaDisplacement);
+                    bEffectsActive && (Effects.bMudDisplacement || Effects.bWaterFilmDisplacement ||
+                                       Effects.bLavaDisplacement || Effects.bIceDisplacement);
                 DrawState("Height-field smoothing", Effects.bHeightFieldSmoothing, bSmoothingActive);
                 DrawState("Coverage smoothing", Effects.bCoverageSmoothing, bEffectsActive);
                 ImGui::EndTable();

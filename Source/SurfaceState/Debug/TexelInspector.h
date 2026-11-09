@@ -30,7 +30,7 @@ namespace MDSS::SurfaceState
         bool                   bStateAB = true;
         // State/capacity/saturation/reference amount; factors/meso/reference;
         // cavity depth/fill/excess/status; heights; area/scale; final local normal.
-        std::array<glm::vec4, 6> Values{};
+        std::array<glm::vec4, 7> Values{};
     };
 
     /** @brief One-texel GPU diagnostic with frame-fence-owned readback; never waits for the whole device. */

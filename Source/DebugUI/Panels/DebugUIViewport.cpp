@@ -242,6 +242,11 @@ namespace MDSS
                                          Effects.bMudDisplacement,
                                          Bindings.Mud != SurfaceState::InvalidStateId,
                                          "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.");
+                        DrawEffectToggle(
+                            "Ice",
+                            Effects.bIceDisplacement,
+                            Bindings.Ice != SurfaceState::InvalidStateId,
+                            "Ice 적층을 푸른 산란색과 서리 표면으로 표시합니다. 녹은 물은 같은 표면 위에 합성됩니다.");
                         DrawEffectToggle("Lava",
                                          Effects.bLavaDisplacement,
                                          Bindings.Lava != SurfaceState::InvalidStateId,

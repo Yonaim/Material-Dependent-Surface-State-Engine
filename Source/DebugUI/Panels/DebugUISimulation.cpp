@@ -163,6 +163,10 @@ namespace MDSS
                 ImGui::Text("%.7g", Value);
             };
             Row("Raw State (total)", S.Values[0].x);
+            Row("Reaction substeps", S.Values[6].x);
+            Row("Supply-limited reactions", S.Values[6].y);
+            Row("Reaction budget exhausted", S.Values[6].z);
+            Row("Reaction arithmetic failure", S.Values[6].w);
             Row("Profile Capacity", S.Values[0].y / S.Values[4].y);
             Row("Texel Capacity", S.Values[0].y);
             Row("Saturation", S.Values[0].z);

@@ -132,6 +132,8 @@ namespace MDSS::SurfaceState
                 SolverFlags |= SurfaceSolverPerWorkgroupChannelMaskFlag;
             if (bSparseSimulationGeometryEnabled)
                 SolverFlags |= SurfaceSolverSparseGeometryFlag;
+            if (bAdaptiveGeometryEnabled)
+                SolverFlags |= SurfaceSolverAdaptiveGeometryFlag;
 
             // Height validity is independent of state-driven geometry updates. If updates are OFF the full rebuild
             // is deferred until the final render-height step instead of adding revision/cache bookkeeping.

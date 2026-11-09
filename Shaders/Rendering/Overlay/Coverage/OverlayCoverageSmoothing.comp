@@ -93,6 +93,7 @@ layout(push_constant) uniform TOverlayPush
     uint UseOpaqueBase;
     uint Padding;
     float LavaThreshold;
+    uint Ice;
 } Push;
 
 
@@ -110,6 +111,8 @@ float LoadCoverageSaturation(uint Texel, uint Profile)
     float Sample = 0.0;
     if (Channel == 0xfffeu || Channel == 0xffffu)
     {
+        if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Channels)
+            Sample = max(Sample, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
         if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
             Sample = max(Sample, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
         if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
@@ -275,7 +278,9 @@ void ComputeCoverage(uint Index, bool TileActive)
             float Sample = 0.0;
             if (SharedSurface)
             {
-                if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
+                if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Channels)
+            Sample = max(Sample, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
+        if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
                     Sample = max(Sample, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
                 if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
                     Sample = max(Sample, OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));

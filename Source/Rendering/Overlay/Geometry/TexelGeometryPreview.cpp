@@ -238,7 +238,7 @@ namespace MDSS::SurfaceState
                                        std::uint32_t                           HeightCompleteQuery,
                                        bool                                    bTotalHeight,
                                        std::size_t                             FrameIndex,
-                                       std::array<std::uint32_t, 3>            MaterialChannels,
+                                       std::array<std::uint32_t, 4>            MaterialChannels,
                                        std::uint32_t                           ActiveMaterialMask,
                                        std::size_t                             OutputSlot)
     {
@@ -454,7 +454,8 @@ namespace MDSS::SurfaceState
             OccupancyPush[5] = MaterialChannels[0];
             OccupancyPush[6] = MaterialChannels[1];
             OccupancyPush[7] = MaterialChannels[2];
-            OccupancyPush[8] = ActiveMaterialMask & 0x7U;
+            OccupancyPush[8] = ActiveMaterialMask & 0xfU;
+            OccupancyPush[9] = MaterialChannels[3];
             vkCmdBindPipeline(Command, VK_PIPELINE_BIND_POINT_COMPUTE, OccupancyPipeline);
             vkCmdBindDescriptorSets(Command,
                                     VK_PIPELINE_BIND_POINT_COMPUTE,

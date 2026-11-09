@@ -281,6 +281,7 @@ if(BUILD_TESTING)
         ${MDSS_SURFACE_PACKING_SOURCES}
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
     )
     target_include_directories(MDSS_SimulationTransportTests PRIVATE Source)
     target_link_libraries(MDSS_SimulationTransportTests PRIVATE glm::glm)
@@ -338,6 +339,7 @@ if(BUILD_TESTING)
         ${MDSS_SURFACE_PACKING_SOURCES}
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
     )
     target_include_directories(MDSS_SurfaceCacheTests PRIVATE Source)
     target_include_directories(MDSS_SurfaceCacheTests SYSTEM PRIVATE "${tinyobjloader_SOURCE_DIR}" "${stb_SOURCE_DIR}")
@@ -364,6 +366,7 @@ if(BUILD_TESTING)
         Source/SurfaceState/State/SurfaceInstanceStateData.cpp
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
     )
     target_include_directories(MDSS_SurfaceStateTests PRIVATE Source)
     target_link_libraries(MDSS_SurfaceStateTests PRIVATE glm::glm nlohmann_json::nlohmann_json)
@@ -450,6 +453,7 @@ if(BUILD_TESTING)
         Source/SurfaceState/Solver/SurfaceStateSolver.cpp
         Source/SurfaceState/Types/SurfaceStateRegistry.cpp
         Source/SurfaceState/Types/SurfaceStateTypes.cpp
+        Source/SurfaceState/Types/SurfaceReactions.cpp
         Source/GPU/Vulkan/Resource/GPUBuffer.cpp
     )
     add_dependencies(MDSS_SurfaceGPUResourceTests MDSS_Shaders)
@@ -465,6 +469,8 @@ if(BUILD_TESTING)
         target_compile_options(MDSS_SurfaceGPUResourceTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME MDSS_SurfaceGPUResource COMMAND MDSS_SurfaceGPUResourceTests)
+    add_test(NAME MDSS_LocalReactions COMMAND MDSS_SurfaceGPUResourceTests --reactions-only)
+    set_tests_properties(MDSS_LocalReactions PROPERTIES SKIP_RETURN_CODE 77)
     add_test(NAME MDSS_MesoPeakPacking COMMAND MDSS_SurfaceGPUResourceTests --meso-peak-only)
     set_tests_properties(MDSS_SurfaceGPUResource PROPERTIES SKIP_RETURN_CODE 77)
 endif()

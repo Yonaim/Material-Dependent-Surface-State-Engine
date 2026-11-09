@@ -28,7 +28,7 @@ layout(set = 0, binding = 2) uniform MaterialParameters
     vec4 EffectHighSaturationColors[4];
     vec4 CameraPosition;
     vec4 WaterAppearance; // film/droplets mode, opacity multiplier, darkening, droplet density
-    uvec4 ExtraDemoBindings; // absorbedwetness State ID, WaterFilm visibility mode
+    uvec4 ExtraDemoBindings; // absorbedwetness ID, WaterFilm visibility mode, Ice ID
 } Material;
 
 vec3 MapEffectColor(uint EffectIndex, float Saturation)

@@ -19,6 +19,7 @@ namespace MDSS::Rendering
 
     struct TDemoSurfaceStateBindings
     {
+        SurfaceState::TStateId Ice = SurfaceState::InvalidStateId;
         SurfaceState::TStateId Heat = SurfaceState::InvalidStateId;
         SurfaceState::TStateId Mud = SurfaceState::InvalidStateId;
         SurfaceState::TStateId WaterFilm = SurfaceState::InvalidStateId;
@@ -31,7 +32,9 @@ namespace MDSS::Rendering
         for (SurfaceState::TStateId ID = 0; ID < Registry.GetStateCount(); ++ID)
         {
             const auto& Name = Registry.GetStateName(ID);
-            if (Name == "heat")
+            if (Name == "ice")
+                Result.Ice = ID;
+            else if (Name == "heat")
                 Result.Heat = ID;
             else if (Name == "mud")
                 Result.Mud = ID;
@@ -49,6 +52,7 @@ namespace MDSS::Rendering
         bool bEnabled = true;
         bool bHeatLayer = true;
         bool bMudDisplacement = true;
+        bool bIceDisplacement = true;
         bool bWaterFilmDisplacement = true;
         bool bEmphasizeWaterFilm = false;
         bool bLavaDisplacement = true;

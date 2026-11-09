@@ -11,6 +11,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -56,27 +57,38 @@ namespace MDSS::Rendering
         /** @brief Read the activity counters only after this frame slot's fence has signaled. */
         [[nodiscard]] TTriangleActivity CompleteFrame(std::size_t FrameIndex);
         // Overlay command recording
-        void Record(VkCommandBuffer                                         Command,
-                    std::size_t                                             Instance,
-                    std::uint32_t                                           Channel,
-                    std::uint32_t                                           Channels,
-                    std::uint32_t                                           MeshResolution,
-                    const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
-                    const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
-                    VkDescriptorSet                                         ComputedSet,
-                    const GPU::TGPUBuffer&                                  GeometryCacheBuffer,
-                    bool                                                    bStateAB,
-                    std::size_t                                             FrameIndex = 0,
-                    VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
-                    std::uint32_t                                           FirstSideTimestampQuery = 0,
-                    std::uint32_t                                           OccupancyTileSize = 16U,
-                    bool                                                    bSmoothCoverage = false,
-                    bool                                                    bUseOpaqueBase = false,
-                    float                                                   HeightDisplayScale = 1.0F,
-                    std::array<std::uint32_t, 3> MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU},
-                    std::uint32_t                ActiveMaterialMask = 0x7U,
-                    bool                         bSharedCoverageHalo = false,
-                    float                        LavaThreshold = 0.1F);
+        void
+        Record(VkCommandBuffer                                         Command,
+               std::size_t                                             Instance,
+               std::uint32_t                                           Channel,
+               std::uint32_t                                           Channels,
+               std::uint32_t                                           MeshResolution,
+               const SurfaceState::TSurfaceSharedGeometryGPUResources& Geometry,
+               const SurfaceState::TSurfaceStateDescriptorResources&   StateDescriptors,
+               VkDescriptorSet                                         ComputedSet,
+               const GPU::TGPUBuffer&                                  GeometryCacheBuffer,
+               bool                                                    bStateAB,
+               std::size_t                                             FrameIndex = 0,
+               VkQueryPool                                             TimestampQueryPool = VK_NULL_HANDLE,
+               std::uint32_t                                           FirstSideTimestampQuery = 0,
+               std::uint32_t                                           OccupancyTileSize = 16U,
+               bool                                                    bSmoothCoverage = false,
+               bool                                                    bUseOpaqueBase = false,
+               float                                                   HeightDisplayScale = 1.0F,
+               std::array<std::uint32_t, 4> MaterialChannels = {0xffffffffU, 0xffffffffU, 0xffffffffU, 0xffffffffU},
+               std::uint32_t                ActiveMaterialMask = 0x7U,
+               bool                         bSharedCoverageHalo = false,
+               float                        LavaThreshold = 0.1F);
+
+        // Call only after GPU completion; descriptors and their buffers are released together.
+        void ReleaseOutputs()
+        {
+            Outputs.clear();
+            CoveragePages.clear();
+            CoveragePageUsed.clear();
+            if (vkResetDescriptorPool(Device, Pool, 0) != VK_SUCCESS)
+                throw std::runtime_error("Cannot reset render output descriptors.");
+        }
 
     private:
         struct TOutput
@@ -95,7 +107,7 @@ namespace MDSS::Rendering
             std::uint32_t                                                                   BoundaryCount = 0;
             std::uint32_t                                                                   SurfaceCount = 0;
             std::uint32_t                                                                   LastTileSize = 0;
-            std::array<std::uint32_t, 3>                                                    LastMaterialChannels{};
+            std::array<std::uint32_t, 4>                                                    LastMaterialChannels{};
             std::uint32_t                                                                   LastMaterialMask = 0;
             std::array<std::uint64_t, 6>                                                    LastGeometryRevisions{};
             std::uint64_t                                                                   LastProfileRevision = 0;

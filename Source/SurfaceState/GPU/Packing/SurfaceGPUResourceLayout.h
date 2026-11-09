@@ -38,6 +38,8 @@ namespace MDSS::SurfaceState
     {
         std::vector<TSurfaceGPUProfileParameters> Parameters;
         std::vector<std::uint32_t>                Supported;
+        std::vector<std::uint32_t>                Reactions;
+        std::uint32_t                             MaxReactionCount = 0;
     };
 
     struct TSurfaceSparseMetadataLayout

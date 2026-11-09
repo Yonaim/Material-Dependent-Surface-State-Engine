@@ -110,6 +110,25 @@ namespace MDSS::SurfaceState
             return bHalfDynamicWeightsEnabled;
         }
         void               SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
+        void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
+        {
+            if (GPUResources) GPUResources->TrimRenderMeshVariants(Surface, Overlay);
+        }
+        void SetAdaptiveGeometryEnabled(bool Enabled) noexcept { bAdaptiveGeometryEnabled = Enabled; }
+        [[nodiscard]] bool IsAdaptiveGeometryEnabled() const noexcept { return bAdaptiveGeometryEnabled; }
+        void PrepareScratchStorage()
+        {
+            if (GPUResources && GPUResources->ConfigureScratchStorage(Context, bRawFluxCacheEnabled,
+                bHalfRawFluxCacheEnabled, bHalfDynamicWeightsEnabled, bCompactScratchStorageEnabled))
+            {
+                bTransferWeightSettingsDirty = true;
+                bForceFullGeometryOnNextStep = true;
+            }
+        }
+        void SetCompactScratchStorageEnabled(bool Enabled) noexcept { bCompactScratchStorageEnabled = Enabled; }
+        [[nodiscard]] bool IsCompactScratchStorageEnabled() const noexcept { return bCompactScratchStorageEnabled; }
+        void SetRuntimeSolverFlagsEnabled(bool Enabled) noexcept { if (Solver) Solver->SetRuntimeFlagsEnabled(Enabled); }
+        [[nodiscard]] bool IsRuntimeSolverFlagsEnabled() const noexcept { return Solver && Solver->IsRuntimeFlagsEnabled(); }
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept
         {
             return bSparseSolverEnabled;
@@ -164,11 +183,13 @@ namespace MDSS::SurfaceState
         bool                                        bTransferWeightSettingsDirty = false;
         bool                                        bForceFullGeometryOnNextStep = false;
         bool                                        bStableDeltaTimeDirty = true;
+        bool bAdaptiveGeometryEnabled = false;
+        bool bCompactScratchStorageEnabled = true;
         bool                                        bRawFluxCacheEnabled = true;
         bool                                        bCoalescedRawFluxLayoutEnabled = true;
         bool                                        bHalfRawFluxCacheEnabled = true;
         bool                                        bHalfDynamicWeightsEnabled = false;
-        bool                                        bSparseSolverEnabled = true;
+        bool                                        bSparseSolverEnabled = false;
         bool                                        bSparseAccumulationHeightEnabled = true;
         bool                                        bActiveChannelMaskEnabled = true;
         bool                                        bPerWorkgroupChannelMaskEnabled = true;

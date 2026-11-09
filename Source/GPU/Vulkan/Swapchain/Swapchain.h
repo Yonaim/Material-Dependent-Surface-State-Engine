@@ -41,8 +41,12 @@ namespace MDSS::GPU
         void Recreate(const TVulkanContext& Context, const TWindow& TWindow);
 
         // Swapchain image access
-        [[nodiscard]] VkSwapchainKHR                  GetHandle() const noexcept;
-        [[nodiscard]] VkFormat                        GetImageFormat() const noexcept;
+        [[nodiscard]] VkSwapchainKHR GetHandle() const noexcept;
+        [[nodiscard]] VkFormat       GetImageFormat() const noexcept;
+        [[nodiscard]] bool           CanReadback() const noexcept
+        {
+            return bCanReadback;
+        }
         [[nodiscard]] VkExtent2D                      GetExtent() const noexcept;
         [[nodiscard]] const std::vector<VkImage>&     GetImages() const noexcept;
         [[nodiscard]] const std::vector<VkImageView>& GetImageViews() const noexcept;
@@ -66,6 +70,7 @@ namespace MDSS::GPU
         VkSwapchainKHR           SwapchainData = VK_NULL_HANDLE;
         VkFormat                 ImageFormat = VK_FORMAT_UNDEFINED;
         VkExtent2D               Extent{};
+        bool                     bCanReadback = false;
         std::vector<VkImage>     Images;
         std::vector<VkImageView> ImageViews;
     };

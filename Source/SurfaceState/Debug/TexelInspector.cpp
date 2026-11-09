@@ -14,8 +14,8 @@ namespace MDSS::SurfaceState
 {
     namespace
     {
-        constexpr VkDeviceSize SnapshotBytes = sizeof(std::array<glm::vec4, 6>);
-        static_assert(SnapshotBytes == 96);
+        constexpr VkDeviceSize SnapshotBytes = sizeof(std::array<glm::vec4, 7>);
+        static_assert(SnapshotBytes == 112);
         void RequireVk(VkResult Result)
         {
             if (Result != VK_SUCCESS)

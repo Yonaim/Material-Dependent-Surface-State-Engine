@@ -175,6 +175,33 @@ namespace MDSS
             EndLabeledCombo();
         }
 
+        const auto& ReactionRules = AssetManager->GetSRProfile(DebugParameterProfile).GetData().Reactions;
+        if (!ReactionRules.empty() && ImGui::TreeNode("ReactionRules", "Reaction rules (%zu)", ReactionRules.size()))
+        {
+            ImGui::TextWrapped("Conditions use fixed reference-area amounts. Edit the .SRProfile and reload the scene "
+                               "to change rules.");
+            for (const auto& R : ReactionRules)
+            {
+                ImGui::PushID(R.ID.c_str());
+                if (ImGui::TreeNode("Rule", "%s [%s]", R.ID.c_str(), R.Enabled ? "enabled" : "disabled"))
+                {
+                    for (const auto& T : R.Consumes)
+                        ImGui::Text("Consume %s x %.4g", T.State.c_str(), T.Coefficient);
+                    for (const auto& T : R.Produces)
+                        ImGui::Text("Produce %s x %.4g", T.State.c_str(), T.Coefficient);
+                    if (R.Mode == SurfaceState::TReactionMode::Continuous)
+                        ImGui::Text("Rate coefficient: %.4g", R.RateCoefficient);
+                    else
+                        ImGui::Text("Fresh inflow fraction: %.4g", R.Fraction);
+                    for (const auto& M : R.Modifiers)
+                        ImGui::Text(
+                            "Condition %s / threshold %.4g / scale %.4g", M.State.c_str(), M.Threshold, M.Scale);
+                    ImGui::TreePop();
+                }
+                ImGui::PopID();
+            }
+            ImGui::TreePop();
+        }
         const SurfaceState::TSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
         const std::size_t                          StateCount = Registry.GetStateCount();
         if (StateCount == 0)
