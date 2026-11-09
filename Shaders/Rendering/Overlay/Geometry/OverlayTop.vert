@@ -11,6 +11,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -39,9 +40,12 @@ layout(location = 5) flat out uint FragIsSide;
 layout(location = 6) flat out mat3 FragNormalMatrix;
 
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -76,3 +80,4 @@ void main()
     FragWorldPosition = WorldPosition.xyz;
     gl_Position = Push.ViewProjection * WorldPosition;
 }
+// #endregion

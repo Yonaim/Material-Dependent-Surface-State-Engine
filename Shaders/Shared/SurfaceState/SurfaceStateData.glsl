@@ -36,6 +36,7 @@ struct TSurfaceGPUNeighborIndices
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(std430, set = SURFACE_DEBUG_SET, binding = 0)
 
@@ -163,4 +164,5 @@ readonly buffer TSurfaceAccumulationHeights
 } AccumulationHeights;
 
 
+// #endregion
 #endif

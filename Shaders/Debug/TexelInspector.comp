@@ -10,6 +10,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 1) in;
 
@@ -23,9 +24,12 @@ layout(std430, set = 1, binding = 0) writeonly buffer TSnapshot { vec4 Values[7]
 layout(std430, set = 0, binding = 23) readonly buffer TReactionTable { uint Values[]; } Reactions;
 layout(std430, set = 0, binding = 24) readonly buffer TReactionScratch { float Values[]; } ReactionScratch;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -53,3 +57,4 @@ void main()
             Snapshot.Values[6] = vec4(ReactionScratch.Values[At],ReactionScratch.Values[At+1u],ReactionScratch.Values[At+2u],ReactionScratch.Values[At+3u]);
     }
 }
+// #endregion

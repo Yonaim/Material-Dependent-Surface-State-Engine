@@ -1,6 +1,7 @@
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
+// #region 00_Shared_Shader_Helpers
 
 uint sparseWorkgroupCount()
 {
@@ -126,3 +127,4 @@ void scheduleAccumulationGroup(uint Group)
         if (Slot < Groups) AccumulationHeights.Values[accumulationScheduleListBase() + Slot] = Group;
     }
 }
+// #endregion

@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec4 InColor;
@@ -21,9 +22,12 @@ layout(push_constant) uniform TGizmoPushConstants
 
 layout(location = 0) out vec4 FragColor;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -37,3 +41,4 @@ void main()
     }
     gl_Position = Push.ViewProjectionModel * vec4(InPosition, 1.0);
 }
+// #endregion

@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec4 InColor;
@@ -23,9 +24,12 @@ layout(push_constant) uniform TWorldReferencePushConstants
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out float EdgeCoordinate;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -33,3 +37,4 @@ void main()
     EdgeCoordinate = InEdgeCoordinate;
     gl_Position = Push.ViewProjectionModel * vec4(InPosition, 1.0);
 }
+// #endregion

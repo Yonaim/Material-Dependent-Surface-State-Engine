@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
@@ -34,9 +35,12 @@ layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
     TTopDrawCommand Values[];
 } TopDrawCommands;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -46,3 +50,4 @@ void main()
     if (Index < uint(TopDrawCommands.Values.length()))
         TopDrawCommands.Values[Index].IndexCount = 0u;
 }
+// #endregion

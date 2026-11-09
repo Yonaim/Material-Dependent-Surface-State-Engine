@@ -19,6 +19,7 @@ struct TSideSegment
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(set = 3, binding = 3, std430) readonly buffer TSegments { TSideSegment Values[]; } Segments;
 
@@ -33,9 +34,12 @@ layout(location = 5) flat out uint FragIsSide;
 layout(location = 6) flat out mat3 FragNormalMatrix;
 
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -78,3 +82,4 @@ void main()
     FragCoverage = 1.0;
     gl_Position = Push.ViewProjection * vec4(FragWorldPosition, 1.0);
 }
+// #endregion

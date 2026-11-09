@@ -1,6 +1,7 @@
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
+// #region 00_Shared_Shader_Helpers
 
 vec3 SolverUp;
 vec3 SourcePosition;
@@ -93,3 +94,4 @@ float geometryDriveToPosition(vec3 TargetPosition)
                                     NeighborDirection / NeighborLength), 0.0, 1.0);
     return HeightDrive * DirectionDrive;
 }
+// #endregion

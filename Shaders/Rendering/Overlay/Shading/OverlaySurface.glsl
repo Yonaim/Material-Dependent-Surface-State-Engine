@@ -19,6 +19,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(set = 2, binding = 0, std430) readonly buffer TComputedVertices
 {
@@ -189,9 +190,12 @@ bool HasVisibleOverlayState(vec4 States, uint EnabledEffects)
 
 #include "Rendering/Overlay/Shading/OverlayAppearance.glsl"
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -398,4 +402,5 @@ void main()
     OutColor = vec4(Color, 1.0);
 #endif
 }
+// #endregion
 #endif

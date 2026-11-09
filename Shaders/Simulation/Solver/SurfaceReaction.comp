@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 shared uint GroupNextMask;
@@ -66,9 +67,12 @@ float reactionRequest(uint R, uint Base, uint ReadPlane, float Area, bool Inflow
     return Request;
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -181,3 +185,4 @@ void main()
         if (usePerWorkgroupChannelMask()) atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase()+Group],GroupNextMask);
     }
 }
+// #endregion

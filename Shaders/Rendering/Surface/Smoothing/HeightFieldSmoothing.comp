@@ -11,6 +11,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
@@ -134,9 +135,12 @@ float DisplayedCavityFill(uint Texel, uint Profile)
     return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -288,3 +292,4 @@ void main()
     if (dot(WeightedNormal, WeightedNormal) > 1e-12)
         OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(WeightedNormal);
 }
+// #endregion

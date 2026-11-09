@@ -8,6 +8,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
@@ -45,4 +46,5 @@ vec3 MapEffectColor(uint EffectIndex, float Saturation)
     return mix(Material.EffectLowSaturationColors[EffectIndex].rgb,
                 Material.EffectHighSaturationColors[EffectIndex].rgb, T);
 }
+// #endregion
 #endif

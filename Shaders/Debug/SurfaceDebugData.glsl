@@ -12,6 +12,7 @@
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
+// #region 00_Shared_Shader_Helpers
 
 struct TDebugAccumulation
 {
@@ -131,4 +132,5 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float Accumulatio
 {
     return DebugFinalNormal(Texel, Channel, Channels, AccumulationDisplayScale, NormalMatrix, 1.0);
 }
+// #endregion
 #endif

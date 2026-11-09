@@ -10,6 +10,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
@@ -109,9 +110,12 @@ uint ResolveTexel()
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -147,3 +151,4 @@ void main()
     GeometryCache.Values[T] = D.Status == 0u || D.Status == 4u
         ? 0x7fc00000u : floatBitsToUint(D.MesoHeight + D.Height);
 }
+// #endregion

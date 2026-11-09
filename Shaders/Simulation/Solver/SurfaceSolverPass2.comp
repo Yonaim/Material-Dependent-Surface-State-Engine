@@ -10,6 +10,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 shared uint GroupNextMask;
@@ -17,9 +18,12 @@ shared uint GroupNextMask;
 #include "Simulation/Solver/StateFinalize.glsl"
 #include "Simulation/Solver/ReactionBindings.glsl"
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -191,3 +195,4 @@ void main()
             atomicOr(AccumulationHeights.Values[solverNextWorkgroupMaskBase() + OriginalGroup], GroupNextMask);
     }
 }
+// #endregion

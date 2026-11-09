@@ -10,6 +10,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
@@ -104,9 +105,12 @@ vec3 BaselineNormal(uint Texel)
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -123,3 +127,4 @@ void main()
     GeometryCache.Values[Offset + 1u] = floatBitsToUint(Normal.y);
     GeometryCache.Values[Offset + 2u] = floatBitsToUint(Normal.z);
 }
+// #endregion

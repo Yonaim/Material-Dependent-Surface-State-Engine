@@ -7,14 +7,18 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec4 FragColor;
 layout(location = 1) in float EdgeCoordinate;
 layout(location = 0) out vec4 OutColor;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -30,3 +34,4 @@ void main()
     float Alpha = 1.0 - smoothstep(1.0 - EdgeWidth, 1.0 + EdgeWidth, EdgeDistance);
     OutColor = vec4(FragColor.rgb, FragColor.a * Alpha);
 }
+// #endregion

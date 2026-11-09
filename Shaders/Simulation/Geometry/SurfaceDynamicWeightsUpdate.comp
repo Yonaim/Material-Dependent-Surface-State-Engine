@@ -11,6 +11,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
@@ -149,9 +150,12 @@ float buildTransferWeight(uint Source,
     return Weight;
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -221,3 +225,4 @@ void main()
         }
     }
 }
+// #endregion

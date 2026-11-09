@@ -11,14 +11,18 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
 const float DynamicGeometryEpsilon = 1.0e-6;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -65,3 +69,4 @@ void main()
     DynamicGeometry.Values[PositionIndex] = vec4(Position, MeanDistance);
     DynamicGeometry.Values[PositionIndex + 1u] = vec4(normalize(Normal), accumulationFloat(Texel));
 }
+// #endregion

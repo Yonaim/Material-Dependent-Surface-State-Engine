@@ -1,6 +1,7 @@
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
+// #region 00_Shared_Shader_Helpers
 
 float GridLines(vec2 Coordinate, vec2 PixelFootprint, float LineWidth)
 {
@@ -90,3 +91,4 @@ vec3 ApplyReliefLighting(vec3 HeatmapColor, vec3 MesoNormal)
     float Brightness = 0.58 + 0.42 * Diffuse;
     return HeatmapColor * Brightness;
 }
+// #endregion

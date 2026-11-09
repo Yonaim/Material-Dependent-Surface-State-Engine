@@ -8,6 +8,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -98,9 +99,12 @@ const uint RENDER_MODE_TOTAL_SIMULATION_HEIGHT = 21u;
 
 #include "Debug/Views/SurfaceDebugColors.glsl"
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -413,3 +417,4 @@ void main()
     if (Value > 1.0) Color = vec3(1,0.25,0.05);
     OutColor = vec4(ApplyReliefLighting(Color, FragMesoNormalWS), 1.0);
 }
+// #endregion

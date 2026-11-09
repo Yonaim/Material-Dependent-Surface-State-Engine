@@ -15,6 +15,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -29,9 +30,12 @@ layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
 
 layout(location = 0) out vec4 OutColor;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -197,3 +201,4 @@ void main()
     }
 #endif
 }
+// #endregion

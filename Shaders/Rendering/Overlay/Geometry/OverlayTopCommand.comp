@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
@@ -37,9 +38,12 @@ layout(set = 0, binding = 1, std430) buffer TTopDrawCommands
     TTopDrawCommand Values[];
 } TopDrawCommands;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -49,3 +53,4 @@ void main()
     bool AnyActive = SideDrawCommands.Values[uint(SideDrawCommands.Values.length()) - 1u].VertexCount != 0u;
     TopDrawCommands.Values[Surface].InstanceCount = AnyActive ? 1u : 0u;
 }
+// #endregion

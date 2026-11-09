@@ -11,6 +11,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
@@ -54,9 +55,12 @@ vec4 ReadSource(ivec3 P)
     return SmoothingMode() == 2u ? imageLoad(TempStates, P) : imageLoad(RawStates, P);
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -166,3 +170,4 @@ void main()
         imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
 #endif
 }
+// #endregion

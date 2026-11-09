@@ -6,6 +6,7 @@
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
+// #region 00_Shared_Shader_Helpers
 
 float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH,
                            float PerceptualRoughness, float F0)
@@ -91,3 +92,4 @@ vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughnes
 {
     return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, WaterFilmCoverage, -1.0);
 }
+// #endregion

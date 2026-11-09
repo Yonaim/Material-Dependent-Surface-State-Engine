@@ -1,3 +1,7 @@
+// ============================================================
+// 00. Raw Flux Cache
+// ============================================================
+// #region 00_Raw_Flux_Cache
 uint rawEdgeFluxBase()
 {
     return Solver.LocalTexelCount * Solver.StateChannelCount;
@@ -57,3 +61,4 @@ bool solverFinite(vec3 Value)
     return true;
 #endif
 }
+// #endregion

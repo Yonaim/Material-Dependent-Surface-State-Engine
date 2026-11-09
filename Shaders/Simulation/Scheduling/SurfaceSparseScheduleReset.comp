@@ -16,6 +16,7 @@ const uint PerWorkgroupChannelMaskFlag = 1u << 23u;
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationData
 {
@@ -78,9 +79,12 @@ void ScheduleCurrentSolverGroup(uint Group)
     }
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -151,3 +155,4 @@ void main()
         AccumulationData.Values[InputMaskIndex()] = 0u;
     }
 }
+// #endregion

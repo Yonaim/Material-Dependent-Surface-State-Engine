@@ -1,6 +1,7 @@
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
+// #region 00_Shared_Shader_Helpers
 
 float MudNoiseHash(vec3 P)
 {
@@ -74,3 +75,4 @@ vec4 ShadeWaterFilmLayer(vec3 N, vec3 V, float Coverage)
                  max(OpticalAlpha, 1e-5);
     return vec4(min(Color, vec3(1.0)), Alpha);
 }
+// #endregion

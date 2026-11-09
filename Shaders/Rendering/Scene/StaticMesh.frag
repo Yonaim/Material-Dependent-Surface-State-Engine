@@ -10,6 +10,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -41,9 +42,12 @@ vec3 VisualizeNormal(vec3 Normal)
     return Normal * 0.5 + 0.5;
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -104,3 +108,4 @@ void main()
     OutColor = vec4(ShadeSurface(albedo.rgb, mappedNormalWS, Material.CameraPosition.xyz - FragWorldPosition,
                                Material.DemoOptions.x, Material.AmbientLight), albedo.a);
 }
+// #endregion

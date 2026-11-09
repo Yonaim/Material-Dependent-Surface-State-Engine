@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -24,9 +25,12 @@ layout(location = 2) out float FragTangentSign;
 layout(location = 3) out vec2 FragUV;
 layout(location = 4) out vec3 FragWorldPosition;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -40,3 +44,4 @@ void main()
     FragWorldPosition = vec3(Push.Model * vec4(InPosition, 1.0));
     gl_Position = Push.ViewProjection * Push.Model * vec4(InPosition, 1.0);
 }
+// #endregion

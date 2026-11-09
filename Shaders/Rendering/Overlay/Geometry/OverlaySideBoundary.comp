@@ -11,6 +11,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 64) in;
 
@@ -278,9 +279,12 @@ void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface,
     Segments.Values[Segment].NormalB = vec4(NormalB, 0.0);
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -427,3 +431,4 @@ void main()
                  SmoothSideNormal(Normal, AActive ? Neighbors.x : Neighbors.z),
                  SmoothSideNormal(Normal, BActive ? Neighbors.y : Neighbors.z));
 }
+// #endregion

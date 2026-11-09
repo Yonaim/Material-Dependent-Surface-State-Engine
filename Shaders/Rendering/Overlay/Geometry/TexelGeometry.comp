@@ -11,6 +11,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
@@ -310,9 +311,12 @@ vec3 CachedFinalNormal(uint Texel)
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -359,3 +363,4 @@ void main()
     if (isnan(H) || isinf(H)) H = 0.0;
     Output.Values[T].HeightAndNormal = vec4(H, normalize(FinalNormal));
 }
+// #endregion

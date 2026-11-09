@@ -12,6 +12,7 @@ const uint SurfaceNeighborCount = 8u;
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(std430, set = 0, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
 {
@@ -232,3 +233,4 @@ bool useHalfDynamicWeights() { return (Solver.Flags & SurfaceSolverHalfDynamicWe
 bool currentStateIsAB() { return (Solver.Flags & SurfaceSolverCurrentStateABFlag) != 0u; }
 bool seedPersistentActivity() { return (Solver.Flags & SurfaceSolverSeedPersistentActivityFlag) != 0u; }
 bool usePerWorkgroupChannelMask() { return (Solver.Flags & SurfaceSolverPerWorkgroupChannelMaskFlag) != 0u; }
+// #endregion

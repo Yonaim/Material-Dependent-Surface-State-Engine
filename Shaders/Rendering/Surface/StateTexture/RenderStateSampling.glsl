@@ -15,6 +15,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(set = RENDER_STATE_TEXTURE_SET, binding = 1) uniform sampler2DArray RenderStateTexture;
 layout(std430, set = RENDER_STATE_TEXTURE_SET, binding = 2) readonly buffer TRenderSamplingBoundaryFlags
@@ -72,3 +73,4 @@ vec4 SampleRenderStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channel
     }
     return WeightSum > 1e-6 ? Sum / WeightSum : vec4(0.0);
 }
+// #endregion

@@ -9,6 +9,7 @@ const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // Stat
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
+// #region 00_Shared_Shader_Helpers
 
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
 {
@@ -202,3 +203,4 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.
 // Pass 2는 유입 source의 형상을 준비해 방향별 flux를 다시 계산한다.
 mat3 SolverModelLinear;
+// #endregion

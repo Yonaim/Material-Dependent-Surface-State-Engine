@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTexelChartIndices { uint Values[]; } TexelChartIndices;
 
@@ -252,3 +253,4 @@ vec4 SampleStateSaturations(uint Surface, vec2 UV, uvec4 StateChannels, uint Cha
     }
     return WeightSum > 1e-6 ? Values / WeightSum : vec4(0.0);
 }
+// #endregion

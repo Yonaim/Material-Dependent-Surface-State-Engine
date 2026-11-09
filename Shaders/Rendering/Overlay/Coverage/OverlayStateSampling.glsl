@@ -15,6 +15,7 @@ struct TOverlayGPUProfileParameters
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(std430, set = 0, binding = 1) readonly buffer TOverlayTexelProfileIndices
 {
@@ -72,4 +73,5 @@ float OverlayStateSaturation(uint Texel, uint Channel, uint Channels, uint Profi
     return clamp(Amount / Capacity, 0.0, 1.0);
 }
 
+// #endregion
 #endif

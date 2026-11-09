@@ -7,6 +7,7 @@
 // ============================================================
 // 00. Resource Interface
 // ============================================================
+// #region 00_Resource_Interface
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba16f, set = 1, binding = 0) uniform writeonly image2DArray RenderStates;
@@ -16,9 +17,12 @@ layout(push_constant) uniform TConversionPush
     uint ChannelCount;
 } Push;
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
+// #region 01_Main_Process
 
 void main()
 {
@@ -43,3 +47,4 @@ void main()
     }
     imageStore(RenderStates, ivec3(ivec2(XY), int(Surface)), Values);
 }
+// #endregion
