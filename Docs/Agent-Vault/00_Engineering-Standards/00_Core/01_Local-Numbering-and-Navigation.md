@@ -76,6 +76,51 @@ void UpdateSimulation() {
 - 섹션은 함수 분리·응집도·의존성 설계를 대신하지 않는다. 먼저 코드를 명확히 추상화한다.
 - 구체적인 코드 주석 규칙은 [`Source Comments`](../02_Documentation/01_Source-Comments.md)를 따른다.
 
+### 중첩 Region: 큰 섹션 내부의 하위 구획
+
+**중첩은 허용하지만, 최상위 구획의 중요도를 유지한다.** 하나의 섹션에 서로 구분되는 하위 책임이 여러 개 있고, 접었을 때 탐색량이 실제로 줄어드는 경우에만 사용한다.
+
+- **최상위:** 기존 **3줄 섹션 주석 + Region**을 유지한다.
+- **하위:** **들여쓰기된 한 줄 섹션 주석 + Region**을 사용한다. 중첩 단계마다 3줄 구분선을 반복하지 않는다.
+- **번호:** 하위 구획은 해당 상위 섹션의 번호에 지역 번호 `00, 01, 02...`를 이어 `00.00`, `00.01`로 표시한다. Region의 식별자는 `00_00_Camera_Controls`처럼 점을 밑줄로 바꾼다.
+- **깊이:** 일반적으로 **최상위 1단계 + 하위 1단계(총 2단계)**까지만 사용한다. 세 번째 단계가 필요하면 함수·타입·파일 분리를 먼저 검토한다.
+- **들여쓰기:** 하위 주석과 마커는 둘러싼 코드의 논리적 들여쓰기를 따른다. 전처리기를 지원하지 않는 환경에서는 동일한 구조의 일반 주석만 유지한다.
+
+```cpp
+// ============================================================
+// 00. Scene & Viewport
+// ============================================================
+#pragma region 00_Scene_And_Viewport
+
+    // 00.00. Camera Controls
+    #pragma region 00_00_Camera_Controls
+
+    void ProcessCameraInput(TScene& Scene);
+    void DrawCameraWindow(TScene& Scene);
+    void ApplyCameraViewPreset(TScene& Scene);
+
+    #pragma endregion
+
+    // 00.01. Gizmo Controls
+    #pragma region 00_01_Gizmo_Controls
+
+    void ProcessSelectionAndGizmo(TScene& Scene);
+    void DrawSelectedObjectWindow(TScene& Scene);
+
+    #pragma endregion
+
+#pragma endregion
+```
+
+위 예시는 **클래스 내부 선언 그룹의 일부를 보여주는 개념 예시**다. 실제 C++ 클래스에서는 `public:` / `private:` 접근 범위와 선언 순서를 유지해야 한다.
+
+**함수 내부에서도 문법상 중첩할 수 있지만, 긴 함수를 Region으로만 숨기지 않는다.** 먼저 의미 있는 하위 함수 추출이 가능한지 확인하고, 공유 지역 변수의 생명주기·제어 흐름·성능 제약 등으로 추출하는 편이 오히려 불리할 때만 제한적으로 사용한다. `if`/`switch`/루프를 통과하는 블록을 임의로 나누거나 제어 흐름을 가리는 구획은 만들지 않는다.
+
+다른 언어에서도 동일한 원칙을 적용하되, `#pragma region` 대신 각각의 **언어별 `// #region` 또는 `#region`**을 사용한다. 중첩 접기 지원은 IDE·언어 확장에 따라 다를 수 있으므로 실제로 확인한다.
+
+**중첩 적용 판단:** (1) 상위 구획 안에 적어도 두 개의 의미 있는 하위 책임이 있고, (2) 각각 독립적으로 접고 펼칠 가치가 있으며, (3) 함수·타입 분리보다 탐색 보조가 적절할 때만 사용한다. 파일 길이 또는 줄 수만으로 자동 생성하지 않는다.
+
+
 ## 03. 언어 공통 Region 표기법 — `#region` / `#endregion`
 
 여러 언어에서 섹션 제목의 가독성과 IDE의 코드 접기 기능을 함께 유지한다. **마커 이름은 `#region` / `#endregion`으로 통일**하되, 언어마다 유효한 주석 또는 전처리 문법으로 감싼다. C/C++에서만 `#pragma region`을 사용한다.
@@ -130,6 +175,17 @@ Shell 스크립트에서는 **shebang이 필요한 경우 첫 줄**에 `#!/usr/b
 - GLSL에는 C/C++용 `#pragma region`을 넣지 않는다. `// #region`은 컴파일러에 영향을 주지 않는 일반 주석이다.
 - 개별 편집기의 접기 동작은 확장과 언어 모드에 따라 다를 수 있다. [VS Code 설정](../../.vscode/settings.json)과 [README](../../README.md)를 참고한다.
 
+### VS Code Custom Folding — LF / CRLF 호환
+
+GLSL(`glsl`)·Shell(`shellscript`)의 `#region` 주석을 인식하는 정규식은 **LF와 CRLF 모두를 처리**해야 한다. Custom Folding이 줄바꿈을 `\n` 단위로 나눠 검사하는 환경에서는 CRLF 파일의 각 줄 끝에 `\r`이 남을 수 있기 때문이다.
+
+- 정규식에서 들여쓰기는 `[ \t]*`, 줄 끝은 `\r?$`로 표현한다. `[^\r\n]*`는 Region 이름에 개행 문자를 포함하지 않게 한다.
+- `foldStartRegex`, `foldEndRegex`뿐 아니라 `defaultFoldStartRegex`에도 동일한 개행 대응을 적용한다. `collapseDefaultRegionsOnOpen`은 `maptz.regionfolder` **객체 안에** 설정한다. `maptz.regionfolder.collapseDefaultRegionsOnOpen`이라는 독립된 설정 키를 만들지 않는다.
+- 실제 사용 값은 [`.vscode/settings.json`](../../.vscode/settings.json)을 단일 출처로 삼는다. 이 문서에 정규식을 복제하지 않는다.
+- **볼트가 하위 디렉터리라면:** VS Code가 프로젝트 루트를 열었을 때 하위 볼트의 `.vscode/settings.json`이 자동으로 적용되지 않는다. 프로젝트 루트 설정에 **기존 설정을 보존하면서 병합**하거나 사용자 설정을 사용한다.
+- 변경 후 GLSL 파일을 닫았다 다시 열거나 창을 다시 로드하여 수동 접기(`Region folding: Collapse all #regions`)를 먼저 확인한다. 이후 자동 접기를 확인한다. 설치된 확장 버전·언어 모드·설정 충돌 때문에 실제 동작이 달라질 수 있다.
+- 회귀 검증은 동일한 마커를 가진 **LF 파일과 CRLF 파일** 모두에서 시작/종료 마커 인식 및 중첩 구간 접기를 확인한다. 설정 검사만으로 에디터에서 실제 접힘을 보장한다고 기록하지 않는다.
+
 ## 04. 읽기 순서와 파일 정렬은 별개
 
 번호는 사람이 편리하게 찾기 위한 힌트다. 항목 순서는 `00`, `01`, `02`처럼 1씩 증가시킨다. 중간 항목 삽입 시 필요한 범위에서 재번호화하고 참조 링크를 확인한다. 작업에 따른 **실제 읽기 순서**는 [`01_Document-Map.md`](../../01_Document-Map.md)에 기술하며, 파일 시스템 구조와 반드시 같을 필요는 없다.
@@ -139,3 +195,7 @@ Shell 스크립트에서는 **shebang이 필요한 경우 첫 줄**에 `#!/usr/b
 섹션은 **위치를 찾고 접는 도구**다. 큰 클래스를 다룰 때는 먼저 공개 API → 기능별 메서드 → 상태를 탐색 가능하게 정리한다. 그다음 응집된 상태·동작을 추출할 필요가 있는지 별도 검토한다. 자세한 2단계 절차와 C++ `TDebugUI` 예시는 [`Section & Responsibility Refactoring`](03_Section-and-Responsibility-Refactoring.md)을 따른다.
 
 특히 C++ 멤버 필드의 재배치는 초기화 순서·레이아웃에 영향을 줄 수 있으므로 **1단계가 곧 안전한 선언 재배치를 뜻하지 않는다.**
+
+## MDSS 프로젝트의 MSVC Region 호환성
+
+2026-11-10 실제 재빌드에서 숫자로 시작하는 `08_...`·`09_...` C++ Region 라벨이 C2041로 거부됐다. 해당 파일과 새 하위 구획의 라벨은 `#pragma region "09_Profile_Editing_State"`처럼 따옴표로 감싼다. 번호/책임과 코드의 선언 순서는 유지한다. GLSL 주석 마커에는 이 C++ 예외를 적용하지 않는다. 상세 범위는 [v5.8 이관 기록](../../04_Development/13_Vault-5.8-Readability-Coverage.md)을 따른다.

@@ -9,18 +9,17 @@
   "maptz.regionfolder": {
     "[glsl]": {
       "foldStart": "// #region [NAME]",
-      "foldStartRegex": "^[ \\t]*//[ \\t]*#region\\b[ \\t]*(.*?)[ \\t\\r]*$",
       "foldEnd": "// #endregion",
-      "foldEndRegex": "^[ \\t]*//[ \\t]*#endregion\\b[ \\t\\r]*$",
-      "disableFolding": false,
-      "defaultFoldStartRegex": "^[ \\t]*//[ \\t]*#region\\b[ \\t]*(.*?)[ \\t\\r]*$"
+      "foldStartRegex": "^[ \\t]*//[ \\t]*#region\\b[^\\r\\n]*\\r?$",
+      "foldEndRegex": "^[ \\t]*//[ \\t]*#endregion\\b[ \\t]*\\r?$",
+      "defaultFoldStartRegex": "^[ \\t]*//[ \\t]*#region\\b[^\\r\\n]*\\r?$"
     },
     "[shellscript]": {
       "foldStart": "#region [NAME]",
-      "foldStartRegex": "^[ \\t]*#region\\b[ \\t]*(.*?)[ \\t\\r]*$",
       "foldEnd": "#endregion",
-      "foldEndRegex": "^[ \\t]*#endregion\\b[ \\t\\r]*$",
-      "disableFolding": false
+      "foldStartRegex": "^[ \\t]*#region\\b[^\\r\\n]*\\r?$",
+      "foldEndRegex": "^[ \\t]*#endregion\\b[ \\t]*\\r?$",
+      "defaultFoldStartRegex": "^[ \\t]*#region\\b[^\\r\\n]*\\r?$"
     },
     "collapseDefaultRegionsOnOpen": true
   },

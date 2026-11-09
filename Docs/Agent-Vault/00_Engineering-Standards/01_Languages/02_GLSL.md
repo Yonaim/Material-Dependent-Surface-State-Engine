@@ -168,3 +168,52 @@ void update_cell(uint index) {
 ## 큰 셰이더의 단계적 책임 분리
 
 [공통 2단계 리팩터링 지침](../00_Core/03_Section-and-Responsibility-Refactoring.md)을 따른다. 1단계에서 Resources / Main Process / Helpers의 구획을 만들되 `#version`·`#extension`·`layout` 선언과 GPU 실행 제약을 보존한다. 2단계에서는 보조 함수, 공유 셰이더 코드, 패스 책임의 추출을 검토한다. **리소스 바인딩·Push Constant·Buffer Layout, Workgroup Barrier 및 CPU–GPU 계약을 단순한 코드 이동으로 바꿔서는 안 된다.**
+
+## 08. 큰 셰이더의 가독성: 의도적 빈 줄과 단계별 Region
+
+- 구조체 필드, 입력 검증, 리소스 조회, 수치 계산, 상태 기록을 **의미 있는 그룹**으로 정렬한다. 수십 개의 명령을 빈 줄 없이 이어 쓰지 않는다.
+- 긴 `if`와 `return`을 한 줄에 몰아 쓰지 않는다. 읽기 쉬운 조건 줄바꿈과 명시적인 중괄호를 기본으로 한다.
+- 큰 함수에서 독립적인 작업 그룹을 선택적으로 접을 가치가 있을 때 `// #region`과 `// #endregion`을 사용한다. **각 검증문마다 Region을 만들지 않는다.**
+- GLSL 함수 내부에서는 `// 00.00. Input Validation`처럼 **들여쓰기된 한 줄 하위 섹션 주석**을 사용한다. 번호는 외부 섹션 번호와 연결한다. 최상위 3줄 주석은 함수 내부에서 반복하지 않는다.
+- 함수 추출이 더 적합하면 Region을 늘리기보다 함수를 분리한다. `barrier()` 참여 조건, 메모리 가시성, 입력·출력 계약과 실행 순서를 바꾸지 않는다.
+
+### 예시 — 입력 검증과 계산을 구분
+
+아래는 **서식 예시**이며 실제 Shader 인터페이스·자원 선언은 생략했다.
+
+```glsl
+// ============================================================
+// 01. Per-Invocation Processing
+// ============================================================
+// #region 01_Per_Invocation_Processing
+
+void process_cell(uint index) {
+    // 01.00. Input Validation
+    // #region 01_00_Input_Validation
+
+    if (index >= uint(input_data.values.length())) {
+        return;
+    }
+
+    // #endregion
+
+    // 01.01. Read & Compute
+    // #region 01_01_Read_And_Compute
+
+    float current_value = input_data.values[index];
+    float next_value = max(current_value - 0.01, 0.0);
+
+    // #endregion
+
+    // 01.02. Commit Result
+    // #region 01_02_Commit_Result
+
+    output_data.values[index] = next_value;
+
+    // #endregion
+}
+
+// #endregion
+```
+
+이 예시는 기능 단위 구획의 형태를 보여 주기 위해 **의도적으로 Region을 많이 표시**했다. 실제로 이 정도로 짧은 함수라면 빈 줄만으로 충분하며, **Region 없이 작성하는 편을 우선 추천한다.** 반대로 긴 셰이더에서 각 그룹이 상당한 세부 구현을 가질 때 Region 도입을 검토한다.
