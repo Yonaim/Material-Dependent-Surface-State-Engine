@@ -12,8 +12,8 @@ namespace MDSS
         ImGuiViewport*               Viewport = ImGui::GetMainViewport();
         constexpr ImGuiDockNodeFlags DockFlags = ImGuiDockNodeFlags_PassthruCentralNode;
         constexpr ImGuiID            StableDockspaceID = 0x4D445356U;
-        DockspaceID = ImGui::DockSpaceOverViewport(StableDockspaceID, Viewport, DockFlags);
-        ImGuiDockNode* DockspaceNode = ImGui::DockBuilderGetNode(DockspaceID);
+        ViewportState.DockspaceID = ImGui::DockSpaceOverViewport(StableDockspaceID, Viewport, DockFlags);
+        ImGuiDockNode* DockspaceNode = ImGui::DockBuilderGetNode(ViewportState.DockspaceID);
 
         if (bDockLayoutInitialized)
         {
@@ -29,13 +29,13 @@ namespace MDSS
             return;
         }
 
-        ImGui::DockBuilderRemoveNode(DockspaceID);
-        ImGui::DockBuilderAddNode(DockspaceID, ImGuiDockNodeFlags_DockSpace | DockFlags);
-        ImGui::DockBuilderSetNodeSize(DockspaceID, Viewport->WorkSize);
+        ImGui::DockBuilderRemoveNode(ViewportState.DockspaceID);
+        ImGui::DockBuilderAddNode(ViewportState.DockspaceID, ImGuiDockNodeFlags_DockSpace | DockFlags);
+        ImGui::DockBuilderSetNodeSize(ViewportState.DockspaceID, Viewport->WorkSize);
 
         ImGuiID LogID = 0;
         ImGuiID WorkspaceID = 0;
-        ImGui::DockBuilderSplitNode(DockspaceID, ImGuiDir_Down, 0.36F, &LogID, &WorkspaceID);
+        ImGui::DockBuilderSplitNode(ViewportState.DockspaceID, ImGuiDir_Down, 0.36F, &LogID, &WorkspaceID);
 
         ImGuiID LeftID = 0;
         ImGuiID MainID = 0;
@@ -61,30 +61,30 @@ namespace MDSS
         ImGui::DockBuilderDockWindow("Render Debug###Render Settings", RenderSettingsID);
         ImGui::DockBuilderDockWindow("Simulation Debug", RightID);
         ImGui::DockBuilderDockWindow("Log", LogID);
-        ImGui::DockBuilderFinish(DockspaceID);
+        ImGui::DockBuilderFinish(ViewportState.DockspaceID);
         bDockLayoutInitialized = true;
     }
 
     void FDebugUI::ResetSurfaceStateSettings()
     {
         const bool bHasStates = SurfaceDataManager->GetSurfaceStateRegistry().GetStateCount() != 0;
-        InjectState = bHasStates ? 0 : SurfaceState::InvalidStateId;
-        DebugState = InjectState;
-        DebugParameterState = InjectState;
-        DebugParameterProfile = Asset::InvalidAssetHandle;
-        ParameterDraftKey = {Asset::InvalidAssetHandle, SurfaceState::InvalidStateId};
-        ParameterDraft = {};
-        bParameterDraftAvailable = false;
-        bParameterDraftDirty = false;
-        ParameterDrafts.clear();
-        DirtyParameterDrafts.clear();
-        RuntimeProfileOverrides.clear();
-        ParameterStatus.clear();
-        bSolverStepRequested = false;
-        bSolverResetRequested = false;
+        Simulation.InjectState = bHasStates ? 0 : SurfaceState::InvalidStateId;
+        Simulation.DebugState = Simulation.InjectState;
+        ProfileEditing.State = Simulation.InjectState;
+        ProfileEditing.Profile = Asset::InvalidAssetHandle;
+        ProfileEditing.DraftKey = {Asset::InvalidAssetHandle, SurfaceState::InvalidStateId};
+        ProfileEditing.Draft = {};
+        ProfileEditing.bAvailable = false;
+        ProfileEditing.bDirty = false;
+        ProfileEditing.Drafts.clear();
+        ProfileEditing.DirtyDrafts.clear();
+        ProfileEditing.RuntimeOverrides.clear();
+        ProfileEditing.Status.clear();
+        Simulation.bSolverStepRequested = false;
+        Simulation.bSolverResetRequested = false;
         if (bHasStates)
         {
-            FrameRenderer->SetDebugStateChannel(DebugState);
+            FrameRenderer->SetDebugStateChannel(Simulation.DebugState);
         }
     }
 
@@ -105,22 +105,22 @@ namespace MDSS
         }
         ResetSurfaceStateSettings();
         ResetProfilingAverages();
-        SelectedObject.reset();
-        ActiveGizmoAxis = -1;
+        Gizmo.SelectedObject.reset();
+        Gizmo.ActiveAxis = -1;
     }
 
     void FDebugUI::RestartScene(FScene& SceneData)
     {
         const std::filesystem::path Path = SceneData.GetSourcePath();
         const FCamera               CurrentCamera = SceneData.GetMainCamera();
-        bFrameTimeResetRequested = true;
+        Simulation.bFrameTimeResetRequested = true;
         SceneData.RestoreInitialState();
         SceneData.GetMainCamera() = CurrentCamera;
         FrameRenderer->RestartSimulationState();
         ResetProfilingAverages();
-        SelectedObject.reset();
-        ActiveGizmoAxis = -1;
-        SceneStatus = Path.empty() ? "Restarted: Scene" : "Restarted: " + Path.filename().string();
+        Gizmo.SelectedObject.reset();
+        Gizmo.ActiveAxis = -1;
+        ViewportState.SceneStatus = Path.empty() ? "Restarted: Scene" : "Restarted: " + Path.filename().string();
     }
 
     void FDebugUI::DrawSceneWindow(FScene& SceneData)
@@ -140,25 +140,25 @@ namespace MDSS
         if (ImGui::Button("Load Scene"))
         {
             // 취소하거나 로딩에 실패해도 대화상자 대기 시간은 시뮬레이션에서 제외한다.
-            bFrameTimeResetRequested = true;
+            Simulation.bFrameTimeResetRequested = true;
             if (const auto Path = FSceneFileDialog::OpenScene())
             {
                 try
                 {
                     ReplaceSceneFromPath(SceneData, *Path);
-                    SceneStatus = "Loaded: " + Path->filename().string();
+                    ViewportState.SceneStatus = "Loaded: " + Path->filename().string();
                 }
                 catch (const std::exception& Error)
                 {
-                    SceneStatus = std::string("Load failed: ") + Error.what();
-                    FLogger::Error("TDebugUI", SceneStatus);
+                    ViewportState.SceneStatus = std::string("Load failed: ") + Error.what();
+                    FLogger::Error("TDebugUI", ViewportState.SceneStatus);
                 }
             }
         }
         ImGui::SameLine();
         if (ImGui::Button("Save Scene"))
         {
-            bFrameTimeResetRequested = true;
+            Simulation.bFrameTimeResetRequested = true;
             if (const auto Path = FSceneFileDialog::SaveScene())
             {
                 try
@@ -171,11 +171,11 @@ namespace MDSS
                     FSceneLoader::Save(SceneData, SavePath);
                     SceneData.SetSourcePath(std::filesystem::absolute(SavePath).lexically_normal());
                     SceneData.CaptureInitialState();
-                    SceneStatus = "Saved: " + SavePath.filename().string();
+                    ViewportState.SceneStatus = "Saved: " + SavePath.filename().string();
                 }
                 catch (const std::exception& Error)
                 {
-                    SceneStatus = std::string("Save failed: ") + Error.what();
+                    ViewportState.SceneStatus = std::string("Save failed: ") + Error.what();
                 }
             }
         }
@@ -188,8 +188,8 @@ namespace MDSS
             }
             catch (const std::exception& Error)
             {
-                SceneStatus = std::string("Restart failed: ") + Error.what();
-                FLogger::Error("TDebugUI", SceneStatus);
+                ViewportState.SceneStatus = std::string("Restart failed: ") + Error.what();
+                FLogger::Error("TDebugUI", ViewportState.SceneStatus);
             }
         }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -202,17 +202,17 @@ namespace MDSS
         {
             if (ImGui::Button(Label))
             {
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 const std::filesystem::path DemoScenePath = SceneDirectory / FileName;
                 try
                 {
                     ReplaceSceneFromPath(SceneData, DemoScenePath);
-                    SceneStatus = "Loaded: " + DemoScenePath.filename().string();
+                    ViewportState.SceneStatus = "Loaded: " + DemoScenePath.filename().string();
                 }
                 catch (const std::exception& Error)
                 {
-                    SceneStatus = std::string("Load failed: ") + Error.what();
-                    FLogger::Error("TDebugUI", SceneStatus);
+                    ViewportState.SceneStatus = std::string("Load failed: ") + Error.what();
+                    FLogger::Error("TDebugUI", ViewportState.SceneStatus);
                 }
             }
         };
@@ -244,9 +244,9 @@ namespace MDSS
         DrawDemoSceneButton("9 Cubes", "BrickCube_9.Scene");
         ImGui::SameLine();
         DrawDemoSceneButton("Cube 512", "BrickCube_512.Scene");
-        if (!SceneStatus.empty())
+        if (!ViewportState.SceneStatus.empty())
         {
-            ImGui::TextWrapped("%s", SceneStatus.c_str());
+            ImGui::TextWrapped("%s", ViewportState.SceneStatus.c_str());
         }
         ImGui::End();
     }
@@ -260,52 +260,52 @@ namespace MDSS
 
     void FDebugUI::ReplayDemo(FScene& SceneData)
     {
-        bFrameTimeResetRequested = true;
+        Simulation.bFrameTimeResetRequested = true;
         SceneData.RestoreInitialState();
         FrameRenderer->RestartSimulationState();
-        bSimulationPaused = false;
-        AnimationTimeScale = 1.0F;
-        SimulationTimeScale = 1.0F;
+        Simulation.bSimulationPaused = false;
+        Simulation.AnimationTimeScale = 1.0F;
+        Simulation.SimulationTimeScale = 1.0F;
         SceneData.PlayDemoAnimation();
     }
 
     void FDebugUI::TogglePresentationMode()
     {
-        bPresentationMode = !bPresentationMode;
-        if (bPresentationMode)
+        Presentation.bPresentationMode = !Presentation.bPresentationMode;
+        if (Presentation.bPresentationMode)
         {
-            bPresentationGridWasVisible = FrameRenderer->IsWorldGridVisible();
-            bPresentationAxisWasVisible = FrameRenderer->IsWorldAxisVisible();
+            Presentation.bPresentationGridWasVisible = FrameRenderer->IsWorldGridVisible();
+            Presentation.bPresentationAxisWasVisible = FrameRenderer->IsWorldAxisVisible();
             FrameRenderer->SetWorldGridVisible(false);
             FrameRenderer->SetWorldAxisVisible(false);
             FrameRenderer->SetRenderViewMode(0, Rendering::ERenderViewMode::Lit);
         }
         else
         {
-            FrameRenderer->SetWorldGridVisible(bPresentationGridWasVisible);
-            FrameRenderer->SetWorldAxisVisible(bPresentationAxisWasVisible);
+            FrameRenderer->SetWorldGridVisible(Presentation.bPresentationGridWasVisible);
+            FrameRenderer->SetWorldAxisVisible(Presentation.bPresentationAxisWasVisible);
         }
     }
 
     void FDebugUI::UpdateDemoPlaybackGridAxis(FScene& SceneData)
     {
         const bool bShouldHide = SceneData.HasDemoAnimation() && SceneData.IsDemoAnimationPlaying();
-        if (bShouldHide && !bDemoPlaybackGridAxisHidden)
+        if (bShouldHide && !Presentation.bDemoPlaybackGridAxisHidden)
         {
-            bDemoPlaybackGridWasVisible = FrameRenderer->IsWorldGridVisible();
-            bDemoPlaybackAxisWasVisible = FrameRenderer->IsWorldAxisVisible();
+            Presentation.bDemoPlaybackGridWasVisible = FrameRenderer->IsWorldGridVisible();
+            Presentation.bDemoPlaybackAxisWasVisible = FrameRenderer->IsWorldAxisVisible();
             FrameRenderer->SetWorldGridVisible(false);
             FrameRenderer->SetWorldAxisVisible(false);
-            bDemoPlaybackGridAxisHidden = true;
+            Presentation.bDemoPlaybackGridAxisHidden = true;
         }
-        else if (!bShouldHide && bDemoPlaybackGridAxisHidden)
+        else if (!bShouldHide && Presentation.bDemoPlaybackGridAxisHidden)
         {
-            if (!bPresentationMode)
+            if (!Presentation.bPresentationMode)
             {
-                FrameRenderer->SetWorldGridVisible(bDemoPlaybackGridWasVisible);
-                FrameRenderer->SetWorldAxisVisible(bDemoPlaybackAxisWasVisible);
+                FrameRenderer->SetWorldGridVisible(Presentation.bDemoPlaybackGridWasVisible);
+                FrameRenderer->SetWorldAxisVisible(Presentation.bDemoPlaybackAxisWasVisible);
             }
-            bDemoPlaybackGridAxisHidden = false;
+            Presentation.bDemoPlaybackGridAxisHidden = false;
         }
     }
 
@@ -362,7 +362,7 @@ namespace MDSS
             }
             ImGui::SameLine();
             ImGui::Text("%.1f / %.1f s", SceneData.GetDemoAnimationTime(), SceneData.GetDemoAnimationDuration());
-            if (ImGui::Button(bPresentationMode ? "Exit capture (F10)" : "Capture view (F10)"))
+            if (ImGui::Button(Presentation.bPresentationMode ? "Exit capture (F10)" : "Capture view (F10)"))
                 TogglePresentationMode();
 
             BeginLabeledControlRow("Speed");
@@ -375,15 +375,15 @@ namespace MDSS
                 {
                     ContinueControlRow(RadioWidth(Label));
                 }
-                if (ImGui::RadioButton(Label, std::abs(AnimationTimeScale - Scale) < 0.001F))
+                if (ImGui::RadioButton(Label, std::abs(Simulation.AnimationTimeScale - Scale) < 0.001F))
                 {
-                    AnimationTimeScale = Scale;
+                    Simulation.AnimationTimeScale = Scale;
                 }
                 bFirstPreset = false;
             }
             ContinueControlRow(160.0F);
             ImGui::SetNextItemWidth(-1.0F);
-            SliderFloatWithDoubleClickInput("##AnimationSpeed", &AnimationTimeScale, 0.05F, 4.0F, "%.2fx");
+            SliderFloatWithDoubleClickInput("##AnimationSpeed", &Simulation.AnimationTimeScale, 0.05F, 4.0F, "%.2fx");
         }
         ImGui::End();
     }
@@ -399,19 +399,19 @@ namespace MDSS
     {
         if (bInjectMode)
         {
-            ActiveGizmoAxis = -1;
-            HoveredGizmoAxis = -1;
+            Gizmo.ActiveAxis = -1;
+            Gizmo.HoveredAxis = -1;
             return;
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_Space) && !ShouldSuppressDebugHotkey())
         {
-            bRotationGizmoMode = !bRotationGizmoMode;
-            ActiveGizmoAxis = -1;
-            HoveredGizmoAxis = -1;
+            Gizmo.bRotationMode = !Gizmo.bRotationMode;
+            Gizmo.ActiveAxis = -1;
+            Gizmo.HoveredAxis = -1;
         }
 
-        if (SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size() &&
+        if (Gizmo.SelectedObject && *Gizmo.SelectedObject < SceneData.GetStaticMeshInstances().size() &&
             !ShouldSuppressDebugHotkey())
         {
             constexpr std::array<ImGuiKey, 9> NumpadKeys = {
@@ -520,43 +520,44 @@ namespace MDSS
             return bFound;
         };
 
-        if (ActiveGizmoAxis >= 0)
+        if (Gizmo.ActiveAxis >= 0)
         {
-            HoveredGizmoAxis = ActiveGizmoAxis;
+            Gizmo.HoveredAxis = Gizmo.ActiveAxis;
             if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
             {
-                ActiveGizmoAxis = -1;
+                Gizmo.ActiveAxis = -1;
             }
-            else if (SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
+            else if (Gizmo.SelectedObject && *Gizmo.SelectedObject < SceneData.GetStaticMeshInstances().size())
             {
-                if (bRotationGizmoMode)
+                if (Gizmo.bRotationMode)
                 {
-                    const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse;
-                    if (glm::length(MouseDelta) >= 3.0F && GizmoDragWorldScale > 0.0F)
+                    const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - Gizmo.DragStartMouse;
+                    if (glm::length(MouseDelta) >= 3.0F && Gizmo.DragWorldScale > 0.0F)
                     {
-                        FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
-                        float       CurrentAngle = 0.0F, Distance = 0.0F;
+                        FTransform& Transform =
+                            SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform();
+                        float CurrentAngle = 0.0F, Distance = 0.0F;
                         if (GetRotationRingAngle(Transform.Position,
-                                                 ActiveGizmoAxis,
-                                                 GizmoDragWorldScale,
+                                                 Gizmo.ActiveAxis,
+                                                 Gizmo.DragWorldScale,
                                                  Mouse,
                                                  CurrentAngle,
                                                  Distance))
                         {
-                            GizmoDragAccumulatedAngle +=
-                                std::remainder(CurrentAngle - GizmoDragLastAngle, glm::two_pi<float>());
-                            GizmoDragLastAngle = CurrentAngle;
+                            Gizmo.DragAccumulatedAngle +=
+                                std::remainder(CurrentAngle - Gizmo.DragLastAngle, glm::two_pi<float>());
+                            Gizmo.DragLastAngle = CurrentAngle;
                             glm::mat4 StartRotation(1.0F);
                             StartRotation = glm::rotate(
-                                StartRotation, glm::radians(GizmoDragStartRotation.x), glm::vec3(1.0F, 0.0F, 0.0F));
+                                StartRotation, glm::radians(Gizmo.DragStartRotation.x), glm::vec3(1.0F, 0.0F, 0.0F));
                             StartRotation = glm::rotate(
-                                StartRotation, glm::radians(GizmoDragStartRotation.y), glm::vec3(0.0F, 1.0F, 0.0F));
+                                StartRotation, glm::radians(Gizmo.DragStartRotation.y), glm::vec3(0.0F, 1.0F, 0.0F));
                             StartRotation = glm::rotate(
-                                StartRotation, glm::radians(GizmoDragStartRotation.z), glm::vec3(0.0F, 0.0F, 1.0F));
-                            const glm::vec3 Axis = ActiveGizmoAxis == 0   ? glm::vec3(1, 0, 0)
-                                                   : ActiveGizmoAxis == 1 ? glm::vec3(0, 1, 0)
-                                                                          : glm::vec3(0, 0, 1);
-                            const glm::quat WorldRotation = glm::angleAxis(GizmoDragAccumulatedAngle, Axis) *
+                                StartRotation, glm::radians(Gizmo.DragStartRotation.z), glm::vec3(0.0F, 0.0F, 1.0F));
+                            const glm::vec3 Axis = Gizmo.ActiveAxis == 0   ? glm::vec3(1, 0, 0)
+                                                   : Gizmo.ActiveAxis == 1 ? glm::vec3(0, 1, 0)
+                                                                           : glm::vec3(0, 0, 1);
+                            const glm::quat WorldRotation = glm::angleAxis(Gizmo.DragAccumulatedAngle, Axis) *
                                                             glm::quat_cast(glm::mat3(StartRotation));
                             const glm::mat3 Rotated = glm::mat3_cast(WorldRotation);
                             const float     SinY = std::clamp(Rotated[2][0], -1.0F, 1.0F);
@@ -576,34 +577,35 @@ namespace MDSS
                         }
                     }
                 }
-                else if (glm::length(glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse) >= 3.0F &&
-                         GizmoDragPixelLength > 1.0F && GizmoDragWorldScale > 0.0F)
+                else if (glm::length(glm::vec2(Mouse.x, Mouse.y) - Gizmo.DragStartMouse) >= 3.0F &&
+                         Gizmo.DragPixelLength > 1.0F && Gizmo.DragWorldScale > 0.0F)
                 {
-                    const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - GizmoDragStartMouse;
+                    const glm::vec2 MouseDelta = glm::vec2(Mouse.x, Mouse.y) - Gizmo.DragStartMouse;
                     const float     WorldDelta =
-                        glm::dot(MouseDelta, GizmoDragScreenAxis) * (GizmoDragWorldScale / GizmoDragPixelLength);
-                    const glm::vec3 AxisVector = ActiveGizmoAxis == 0   ? glm::vec3(1, 0, 0)
-                                                 : ActiveGizmoAxis == 1 ? glm::vec3(0, 1, 0)
-                                                                        : glm::vec3(0, 0, 1);
-                    SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position =
-                        GizmoDragStartPosition + AxisVector * WorldDelta;
+                        glm::dot(MouseDelta, Gizmo.DragScreenAxis) * (Gizmo.DragWorldScale / Gizmo.DragPixelLength);
+                    const glm::vec3 AxisVector = Gizmo.ActiveAxis == 0   ? glm::vec3(1, 0, 0)
+                                                 : Gizmo.ActiveAxis == 1 ? glm::vec3(0, 1, 0)
+                                                                         : glm::vec3(0, 0, 1);
+                    SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform().Position =
+                        Gizmo.DragStartPosition + AxisVector * WorldDelta;
                 }
             }
             return;
         }
 
-        HoveredGizmoAxis = -1;
-        if (bMouseInViewport && !bMouseOverViewportOverlay && SelectedObject &&
-            *SelectedObject < SceneData.GetStaticMeshInstances().size())
+        Gizmo.HoveredAxis = -1;
+        if (bMouseInViewport && !ViewportState.bMouseOverViewportOverlay && Gizmo.SelectedObject &&
+            *Gizmo.SelectedObject < SceneData.GetStaticMeshInstances().size())
         {
-            const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position;
-            float           BestDistance = 13.0F;
-            float           WorldScale = glm::length(Origin - Position) * 0.18F;
+            const glm::vec3 Position =
+                SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform().Position;
+            float BestDistance = 13.0F;
+            float WorldScale = glm::length(Origin - Position) * 0.18F;
             for (int Axis = 0; Axis < 3; ++Axis)
             {
                 float Distance = 0.0F, Angle = 0.0F;
                 bool  bProjected = false;
-                if (bRotationGizmoMode)
+                if (Gizmo.bRotationMode)
                 {
                     bProjected =
                         WorldScale > 0.01F && GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
@@ -623,18 +625,19 @@ namespace MDSS
                     if (Distance < BestDistance)
                     {
                         BestDistance = Distance;
-                        HoveredGizmoAxis = Axis;
+                        Gizmo.HoveredAxis = Axis;
                     }
                 }
             }
         }
 
         const ImGuiWindow* HoveredWindow = GImGui->HoveredWindow;
-        const std::string ActiveViewportWindowName = "Viewport " + std::to_string(ActiveViewportId) + "##ViewportPanel";
-        const bool        bMouseOverActiveViewportWindow =
+        const std::string  ActiveViewportWindowName =
+            "Viewport " + std::to_string(ViewportState.ActiveViewportId) + "##ViewportPanel";
+        const bool bMouseOverActiveViewportWindow =
             HoveredWindow != nullptr && std::string_view(HoveredWindow->Name) == ActiveViewportWindowName;
-        if (bMouseOverViewportOverlay || !ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
-            HoveredViewportId != ActiveViewportId || !bMouseOverActiveViewportWindow ||
+        if (ViewportState.bMouseOverViewportOverlay || !ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
+            ViewportState.HoveredViewportId != ViewportState.ActiveViewportId || !bMouseOverActiveViewportWindow ||
             (bInjectMode && !ImGui::GetIO().KeyShift))
         {
             return;
@@ -644,18 +647,20 @@ namespace MDSS
             return;
         }
 
-        if (!ImGui::GetIO().KeyShift && SelectedObject && *SelectedObject < SceneData.GetStaticMeshInstances().size())
+        if (!ImGui::GetIO().KeyShift && Gizmo.SelectedObject &&
+            *Gizmo.SelectedObject < SceneData.GetStaticMeshInstances().size())
         {
-            const glm::vec3 Position = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform().Position;
-            float           BestDistance = 13.0F;
-            int             BestAxis = -1;
-            float           BestAngle = 0.0F;
-            const float     WorldScale = glm::length(Origin - Position) * 0.18F;
+            const glm::vec3 Position =
+                SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform().Position;
+            float       BestDistance = 13.0F;
+            int         BestAxis = -1;
+            float       BestAngle = 0.0F;
+            const float WorldScale = glm::length(Origin - Position) * 0.18F;
             for (int Axis = 0; Axis < 3; ++Axis)
             {
                 float Distance = 0.0F, Angle = 0.0F;
                 bool  bProjected = false;
-                if (bRotationGizmoMode)
+                if (Gizmo.bRotationMode)
                 {
                     bProjected =
                         WorldScale > 0.01F && GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
@@ -682,16 +687,16 @@ namespace MDSS
             }
             if (BestAxis >= 0)
             {
-                ActiveGizmoAxis = BestAxis;
-                GizmoDragStartMouse = {Mouse.x, Mouse.y};
-                FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
-                GizmoDragStartPosition = Transform.Position;
-                GizmoDragWorldScale = WorldScale;
-                if (bRotationGizmoMode)
+                Gizmo.ActiveAxis = BestAxis;
+                Gizmo.DragStartMouse = {Mouse.x, Mouse.y};
+                FTransform& Transform = SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform();
+                Gizmo.DragStartPosition = Transform.Position;
+                Gizmo.DragWorldScale = WorldScale;
+                if (Gizmo.bRotationMode)
                 {
-                    GizmoDragLastAngle = BestAngle;
-                    GizmoDragAccumulatedAngle = 0.0F;
-                    GizmoDragStartRotation = Transform.RotationDegrees;
+                    Gizmo.DragLastAngle = BestAngle;
+                    Gizmo.DragAccumulatedAngle = 0.0F;
+                    Gizmo.DragStartRotation = Transform.RotationDegrees;
                 }
                 else
                 {
@@ -700,10 +705,10 @@ namespace MDSS
                     if (GetAxisScreenSegment(Transform.Position, BestAxis, A, B, AxisWorldScale))
                     {
                         const glm::vec2 ScreenAxis{B.x - A.x, B.y - A.y};
-                        GizmoDragPixelLength = glm::length(ScreenAxis);
-                        GizmoDragScreenAxis =
-                            GizmoDragPixelLength > 0.0F ? ScreenAxis / GizmoDragPixelLength : glm::vec2(0.0F);
-                        GizmoDragWorldScale = AxisWorldScale;
+                        Gizmo.DragPixelLength = glm::length(ScreenAxis);
+                        Gizmo.DragScreenAxis =
+                            Gizmo.DragPixelLength > 0.0F ? ScreenAxis / Gizmo.DragPixelLength : glm::vec2(0.0F);
+                        Gizmo.DragWorldScale = AxisWorldScale;
                     }
                 }
                 return;
@@ -716,7 +721,7 @@ namespace MDSS
         glm::vec4       FarPoint = InvVP * glm::vec4(NDC, 1.0F, 1.0F);
         if (std::abs(FarPoint.w) <= 1.0e-6F)
         {
-            SelectedObject.reset();
+            Gizmo.SelectedObject.reset();
             return;
         }
         FarPoint /= FarPoint.w;
@@ -731,11 +736,11 @@ namespace MDSS
         }
         if (Hit.bHit)
         {
-            SelectedObject = Hit.InstanceIndex;
+            Gizmo.SelectedObject = Hit.InstanceIndex;
         }
         else
         {
-            SelectedObject.reset();
+            Gizmo.SelectedObject.reset();
         }
     }
 
@@ -748,7 +753,7 @@ namespace MDSS
 
     void FDebugUI::DrawSelectedObjectWindow(FScene& SceneData)
     {
-        if (!SelectedObject || *SelectedObject >= SceneData.GetStaticMeshInstances().size())
+        if (!Gizmo.SelectedObject || *Gizmo.SelectedObject >= SceneData.GetStaticMeshInstances().size())
         {
             return;
         }
@@ -758,23 +763,23 @@ namespace MDSS
         ImGui::SetNextWindowSize({330.0F, 420.0F}, ImGuiCond_FirstUseEver);
         constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_None;
         ImGui::Begin("Selected Object##SceneTools", nullptr, Flags);
-        FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
-        ImGui::Text("Object %zu", *SelectedObject);
+        FTransform& Transform = SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform();
+        ImGui::Text("Object %zu", *Gizmo.SelectedObject);
         DrawSectionHeader("Transform");
-        if (ImGui::RadioButton("Translate", !bRotationGizmoMode))
+        if (ImGui::RadioButton("Translate", !Gizmo.bRotationMode))
         {
-            bRotationGizmoMode = false;
+            Gizmo.bRotationMode = false;
         }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Rotate", bRotationGizmoMode))
+        if (ImGui::RadioButton("Rotate", Gizmo.bRotationMode))
         {
-            bRotationGizmoMode = true;
+            Gizmo.bRotationMode = true;
         }
         LabeledDragFloat3("Position", &Transform.Position.x, 0.02F);
         LabeledDragFloat3("Rotation", &Transform.RotationDegrees.x, 0.25F);
         LabeledDragFloat3("Scale", &Transform.Scale.x, 0.02F);
-        ImGui::TextDisabled(bRotationGizmoMode ? "Drag a colored ring to rotate around that axis."
-                                               : "Drag a colored axis arrow to move along that axis.");
+        ImGui::TextDisabled(Gizmo.bRotationMode ? "Drag a colored ring to rotate around that axis."
+                                                : "Drag a colored axis arrow to move along that axis.");
         DrawSectionHeader("Camera View Presets");
         ImGui::TextDisabled("Numpad 1-9 or buttons; rows = pitch, columns = yaw. Focuses the selected mesh.");
         for (std::size_t Index = 0; Index < CameraViewPresetPitchYawDegrees.size(); ++Index)
@@ -816,14 +821,16 @@ namespace MDSS
 
         const bool         bRightMouseDown = ImGui::IsMouseDown(ImGuiMouseButton_Right);
         const ImGuiWindow* HoveredWindow = GImGui->HoveredWindow;
-        const std::string ActiveViewportWindowName = "Viewport " + std::to_string(ActiveViewportId) + "##ViewportPanel";
-        const bool        bMouseOverActiveViewportWindow =
+        const std::string  ActiveViewportWindowName =
+            "Viewport " + std::to_string(ViewportState.ActiveViewportId) + "##ViewportPanel";
+        const bool bMouseOverActiveViewportWindow =
             HoveredWindow != nullptr && std::string_view(HoveredWindow->Name) == ActiveViewportWindowName;
 
-        if (!bRotatingCamera && bRightMouseDown && HoveredViewportId != 0 && bMouseOverActiveViewportWindow)
+        if (!bRotatingCamera && bRightMouseDown && ViewportState.HoveredViewportId != 0 &&
+            bMouseOverActiveViewportWindow)
         {
             bRotatingCamera = true;
-            ActiveViewportId = HoveredViewportId;
+            ViewportState.ActiveViewportId = ViewportState.HoveredViewportId;
             glfwSetInputMode(NativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
         else if (bRotatingCamera && !bRightMouseDown)
@@ -843,7 +850,8 @@ namespace MDSS
             CameraData.SetRotationDegrees(RotationDegrees);
         }
 
-        if (HoveredViewportId == ActiveViewportId && bMouseOverActiveViewportWindow && IO.MouseWheel != 0.0F)
+        if (ViewportState.HoveredViewportId == ViewportState.ActiveViewportId && bMouseOverActiveViewportWindow &&
+            IO.MouseWheel != 0.0F)
         {
             const glm::vec3 ViewDirection = CameraData.GetTarget() - CameraData.GetPosition();
             if (glm::dot(ViewDirection, ViewDirection) > 1.0e-12F)
@@ -856,7 +864,7 @@ namespace MDSS
         {
             return;
         }
-        if (ActiveGizmoAxis >= 0)
+        if (Gizmo.ActiveAxis >= 0)
         {
             return;
         }
@@ -944,7 +952,7 @@ namespace MDSS
         {
             FCamera& CameraData = GetViewportCamera(SceneData, GetActiveViewportIndex());
 
-            ImGui::TextDisabled("Viewport %u", ActiveViewportId);
+            ImGui::TextDisabled("Viewport %u", ViewportState.ActiveViewportId);
 
             if (ImGui::Button("Reset Camera View"))
             {

@@ -22,8 +22,8 @@ namespace MDSS
         ImGuiIO& IO = ImGui::GetIO();
         IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
         std::filesystem::create_directories(GetEngineConfigDirectory());
-        EditorLayoutPath = (GetEngineConfigDirectory() / "EditorLayout.ini").string();
-        IO.IniFilename = EditorLayoutPath.c_str();
+        ViewportState.EditorLayoutPath = (GetEngineConfigDirectory() / "EditorLayout.ini").string();
+        IO.IniFilename = ViewportState.EditorLayoutPath.c_str();
 
 #if defined(_WIN32)
         constexpr const char* FontCandidates[] = {
@@ -46,7 +46,7 @@ namespace MDSS
                         IO.Fonts->AddFontFromFileTTF(FontPath, 14.0F, nullptr, IO.Fonts->GetGlyphRangesKorean()))
                 {
                     IO.FontDefault = Font;
-                    SectionHeaderFont =
+                    ViewportState.SectionHeaderFont =
                         IO.Fonts->AddFontFromFileTTF(FontPath, 17.0F, nullptr, IO.Fonts->GetGlyphRangesKorean());
                     break;
                 }
@@ -58,11 +58,11 @@ namespace MDSS
             DefaultFontConfig.SizePixels = 14.0F;
             IO.FontDefault = IO.Fonts->AddFontDefault(&DefaultFontConfig);
         }
-        if (SectionHeaderFont == nullptr)
+        if (ViewportState.SectionHeaderFont == nullptr)
         {
             ImFontConfig HeaderFontConfig{};
             HeaderFontConfig.SizePixels = 17.0F;
-            SectionHeaderFont = IO.Fonts->AddFontDefault(&HeaderFontConfig);
+            ViewportState.SectionHeaderFont = IO.Fonts->AddFontDefault(&HeaderFontConfig);
         }
 
         ImGui::StyleColorsDark();
@@ -146,8 +146,8 @@ namespace MDSS
         FLogger::Info("TDebugUI", "Dear ImGui initialized with GLFW/Vulkan backends.");
         FLogger::Debug("TDebugUI",
                        "Camera/render controls, injection controls, normal debug views, and log filtering are active.");
-        CachedLogEntries = FLogger::GetEntries();
-        LastSeenLogRevision = FLogger::GetRevision();
+        LogState.Entries = FLogger::GetEntries();
+        LogState.LastSeenRevision = FLogger::GetRevision();
     }
 
     FDebugUI::~FDebugUI()
@@ -179,18 +179,18 @@ namespace MDSS
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        bMouseOverViewportOverlay = false;
+        ViewportState.bMouseOverViewportOverlay = false;
 
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
         ImGui::GetIO().FontGlobalScale = DisplaySize.x >= 1280.0F && DisplaySize.y >= 800.0F ? 1.15F : 1.0F;
         if (ImGui::IsKeyPressed(ImGuiKey_F10))
             TogglePresentationMode();
-        if (bPresentationMode && ImGui::IsKeyPressed(ImGuiKey_Escape))
+        if (Presentation.bPresentationMode && ImGui::IsKeyPressed(ImGuiKey_Escape))
             TogglePresentationMode();
         if (ImGui::IsKeyPressed(ImGuiKey_F9) && SceneData.HasDemoAnimation())
             ReplayDemo(SceneData);
         UpdateDemoPlaybackGridAxis(SceneData);
-        if (bPresentationMode)
+        if (Presentation.bPresentationMode)
         {
             DrawDemoWeatherOverlay(SceneData);
             ImGui::Render();
@@ -212,8 +212,8 @@ namespace MDSS
         DrawSelectedObjectWindow(SceneData);
         DrawRenderSettingsWindow(SceneData);
         DrawViewportStatsOverlay();
-        if (bMouseOverViewportOverlay)
-            HoveredViewportId = 0;
+        if (ViewportState.bMouseOverViewportOverlay)
+            ViewportState.HoveredViewportId = 0;
         DrawSimulationDebugWindow(SceneData);
         DrawLogWindow();
         ProcessCameraInput(SceneData);
@@ -246,12 +246,12 @@ namespace MDSS
     {
         ImGui::Dummy({0.0F, TopPadding});
         ImGui::PushStyleColor(ImGuiCol_Text, {0.91F, 0.93F, 0.97F, 1.0F});
-        if (SectionHeaderFont != nullptr)
+        if (ViewportState.SectionHeaderFont != nullptr)
         {
-            ImGui::PushFont(SectionHeaderFont);
+            ImGui::PushFont(ViewportState.SectionHeaderFont);
         }
         ImGui::TextUnformatted(Title);
-        if (SectionHeaderFont != nullptr)
+        if (ViewportState.SectionHeaderFont != nullptr)
         {
             ImGui::PopFont();
         }
@@ -289,87 +289,87 @@ namespace MDSS
 
     bool FDebugUI::IsInjectModeEnabled() const noexcept
     {
-        return bInjectMode && !bPresentationMode;
+        return bInjectMode && !Presentation.bPresentationMode;
     }
 
     SurfaceState::FStateId FDebugUI::GetInjectState() const noexcept
     {
-        return InjectState;
+        return Simulation.InjectState;
     }
 
     float FDebugUI::GetInjectStrength() const noexcept
     {
-        return InjectStrength;
+        return Simulation.InjectStrength;
     }
 
     float FDebugUI::GetInjectRadius() const noexcept
     {
-        return InjectRadius;
+        return Simulation.InjectRadius;
     }
 
     float FDebugUI::GetInjectFalloff() const noexcept
     {
-        return InjectFalloff;
+        return Simulation.InjectFalloff;
     }
 
     SurfaceState::ESurfaceContactOperation FDebugUI::GetInjectOperation() const noexcept
     {
-        return InjectOperation;
+        return Simulation.InjectOperation;
     }
 
     SurfaceState::ESurfaceContactShape FDebugUI::GetInjectShape() const noexcept
     {
-        return InjectShape;
+        return Simulation.InjectShape;
     }
 
     float FDebugUI::GetInjectSecondaryRadius() const noexcept
     {
-        return InjectSecondaryRadius;
+        return Simulation.InjectSecondaryRadius;
     }
 
     float FDebugUI::GetInjectRotationDegrees() const noexcept
     {
-        return InjectRotationDegrees;
+        return Simulation.InjectRotationDegrees;
     }
 
     std::uint32_t FDebugUI::GetInjectTexelSearchRadius() const noexcept
     {
-        return static_cast<std::uint32_t>(InjectTexelSearchRadius);
+        return static_cast<std::uint32_t>(Simulation.InjectTexelSearchRadius);
     }
 
     float FDebugUI::GetAnimationTimeScale() const noexcept
     {
-        return AnimationTimeScale;
+        return Simulation.AnimationTimeScale;
     }
 
     float FDebugUI::GetSimulationTimeScale() const noexcept
     {
-        return SimulationTimeScale;
+        return Simulation.SimulationTimeScale;
     }
 
     bool FDebugUI::IsSimulationPaused() const noexcept
     {
-        return bSimulationPaused;
+        return Simulation.bSimulationPaused;
     }
 
     bool FDebugUI::ConsumeSolverStepRequest() noexcept
     {
-        const bool bRequested = bSolverStepRequested;
-        bSolverStepRequested = false;
+        const bool bRequested = Simulation.bSolverStepRequested;
+        Simulation.bSolverStepRequested = false;
         return bRequested;
     }
 
     bool FDebugUI::ConsumeSolverResetRequest() noexcept
     {
-        const bool bRequested = bSolverResetRequested;
-        bSolverResetRequested = false;
+        const bool bRequested = Simulation.bSolverResetRequested;
+        Simulation.bSolverResetRequested = false;
         return bRequested;
     }
 
     bool FDebugUI::ConsumeFrameTimeResetRequest() noexcept
     {
-        const bool bRequested = bFrameTimeResetRequested;
-        bFrameTimeResetRequested = false;
+        const bool bRequested = Simulation.bFrameTimeResetRequested;
+        Simulation.bFrameTimeResetRequested = false;
         return bRequested;
     }
 
@@ -428,14 +428,15 @@ namespace MDSS
 
     std::size_t FDebugUI::GetViewportCount() const noexcept
     {
-        return bPresentationMode ? 1U : ViewportPanels.size();
+        return Presentation.bPresentationMode ? 1U : ViewportState.ViewportPanels.size();
     }
 
     glm::vec4 FDebugUI::GetViewportRectNormalized(std::size_t Index) const noexcept
     {
-        if (bPresentationMode)
+        if (Presentation.bPresentationMode)
             return Index == 0 ? glm::vec4(0.0F, 0.0F, 1.0F, 1.0F) : glm::vec4(0.0F);
-        return Index < ViewportPanels.size() ? ViewportPanels[Index].RectNormalized : glm::vec4(0.0F);
+        return Index < ViewportState.ViewportPanels.size() ? ViewportState.ViewportPanels[Index].RectNormalized
+                                                           : glm::vec4(0.0F);
     }
 
     const FCamera& FDebugUI::GetViewportCamera(const FScene& SceneData, std::size_t Index) const noexcept
@@ -452,26 +453,26 @@ namespace MDSS
 
     std::size_t FDebugUI::GetActiveViewportIndex() const noexcept
     {
-        for (std::size_t Index = 0; Index < ViewportPanels.size(); ++Index)
-            if (ViewportPanels[Index].Id == ActiveViewportId)
+        for (std::size_t Index = 0; Index < ViewportState.ViewportPanels.size(); ++Index)
+            if (ViewportState.ViewportPanels[Index].Id == ViewportState.ActiveViewportId)
                 return Index;
         return 0;
     }
 
     void FDebugUI::ApplyCameraViewPreset(FScene& SceneData, std::size_t Index)
     {
-        if (!SelectedObject || *SelectedObject >= SceneData.GetStaticMeshInstances().size() ||
+        if (!Gizmo.SelectedObject || *Gizmo.SelectedObject >= SceneData.GetStaticMeshInstances().size() ||
             Index >= CameraViewPresetPitchYawDegrees.size())
         {
             return;
         }
 
-        FTransform& Transform = SceneData.GetStaticMeshInstances()[*SelectedObject].GetTransform();
+        FTransform& Transform = SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform();
         glm::vec3   Target = Transform.Position;
         if (AssetManager != nullptr)
         {
             const Asset::FMeshAsset& Mesh =
-                AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*SelectedObject].GetMesh());
+                AssetManager->GetMesh(SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetMesh());
             const auto& Vertices = Mesh.GetVertices();
             if (!Vertices.empty())
             {
@@ -505,30 +506,30 @@ namespace MDSS
 
     std::optional<std::size_t> FDebugUI::GetSelectedObject() const noexcept
     {
-        return bPresentationMode ? std::nullopt : SelectedObject;
+        return Presentation.bPresentationMode ? std::nullopt : Gizmo.SelectedObject;
     }
 
     int FDebugUI::GetHoveredGizmoAxis() const noexcept
     {
-        return HoveredGizmoAxis;
+        return Gizmo.HoveredAxis;
     }
 
     bool FDebugUI::IsRotationGizmoMode() const noexcept
     {
-        return bRotationGizmoMode;
+        return Gizmo.bRotationMode;
     }
 
     SurfaceState::FStateId FDebugUI::GetDebugState() const noexcept
     {
-        return DebugState;
+        return Simulation.DebugState;
     }
 
     bool FDebugUI::ShouldSuppressDebugHotkey() const noexcept
     {
         const ImGuiIO& IO = ImGui::GetIO();
-        return bMouseOverViewportOverlay || IO.WantTextInput ||
-               (HoveredViewportId == 0 && (IO.WantCaptureKeyboard || ImGui::IsAnyItemActive() ||
-                                           ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)));
+        return ViewportState.bMouseOverViewportOverlay || IO.WantTextInput ||
+               (ViewportState.HoveredViewportId == 0 && (IO.WantCaptureKeyboard || ImGui::IsAnyItemActive() ||
+                                                         ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)));
     }
 
 #pragma endregion

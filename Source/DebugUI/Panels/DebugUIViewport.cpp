@@ -9,22 +9,23 @@ namespace MDSS
 
     void FDebugUI::DrawViewportPanels(FScene&)
     {
-        HoveredViewportId = 0;
+        ViewportState.HoveredViewportId = 0;
         const ImVec2 DisplaySize = ImGui::GetIO().DisplaySize;
-        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || ViewportPanels.empty())
+        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F || ViewportState.ViewportPanels.empty())
             return;
 
         const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-        const ImVec2         WorkspacePos{MainViewport->Pos.x + ViewportWorkspaceRectNormalized.x * DisplaySize.x,
-                                  MainViewport->Pos.y + ViewportWorkspaceRectNormalized.y * DisplaySize.y};
-        const ImVec2         WorkspaceSize{ViewportWorkspaceRectNormalized.z * DisplaySize.x,
-                                   ViewportWorkspaceRectNormalized.w * DisplaySize.y};
+        const ImVec2 WorkspacePos{MainViewport->Pos.x + ViewportState.ViewportWorkspaceRectNormalized.x * DisplaySize.x,
+                                  MainViewport->Pos.y +
+                                      ViewportState.ViewportWorkspaceRectNormalized.y * DisplaySize.y};
+        const ImVec2 WorkspaceSize{ViewportState.ViewportWorkspaceRectNormalized.z * DisplaySize.x,
+                                   ViewportState.ViewportWorkspaceRectNormalized.w * DisplaySize.y};
         if (WorkspaceSize.x < 1.0F || WorkspaceSize.y < 1.0F)
             return;
 
-        const std::size_t Count = ViewportPanels.size();
-        const std::size_t Columns = ViewportLayout == 1 ? Count
-                                    : ViewportLayout == 2
+        const std::size_t Count = ViewportState.ViewportPanels.size();
+        const std::size_t Columns = ViewportState.ViewportLayout == 1 ? Count
+                                    : ViewportState.ViewportLayout == 2
                                         ? 1U
                                         : static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(Count))));
         const std::size_t Rows = (Count + Columns - 1U) / Columns;
@@ -67,10 +68,10 @@ namespace MDSS
         };
         for (std::size_t Index = 0; Index < Count; ++Index)
         {
-            FViewportPanel&   Panel = ViewportPanels[Index];
-            const std::size_t Column = Index % Columns;
-            const std::size_t Row = Index / Columns;
-            const float       Left =
+            FViewportUIState::FViewportPanel& Panel = ViewportState.ViewportPanels[Index];
+            const std::size_t                 Column = Index % Columns;
+            const std::size_t                 Row = Index / Columns;
+            const float                       Left =
                 WorkspacePos.x + WorkspaceSize.x * static_cast<float>(Column) / static_cast<float>(Columns);
             const float Right =
                 WorkspacePos.x + WorkspaceSize.x * static_cast<float>(Column + 1U) / static_cast<float>(Columns);
@@ -97,15 +98,15 @@ namespace MDSS
                         "##Canvas", CanvasSize, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
                     if (ImGui::IsItemHovered())
                     {
-                        HoveredViewportId = Panel.Id;
+                        ViewportState.HoveredViewportId = Panel.Id;
                         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
                             ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-                            ActiveViewportId = Panel.Id;
+                            ViewportState.ActiveViewportId = Panel.Id;
                     }
                 }
                 const ImVec2 PanelMinimum{Left, Top};
                 const ImVec2 PanelMaximum{Right, Bottom};
-                const bool   bActive = Panel.Id == ActiveViewportId;
+                const bool   bActive = Panel.Id == ViewportState.ActiveViewportId;
                 const ImU32  BorderColor = ImGui::GetColorU32(bActive ? ImVec4{0.35F, 0.78F, 1.0F, 0.95F}
                                                                      : ImVec4{0.55F, 0.60F, 0.67F, 0.55F});
                 ImDrawList*  DrawList = ImGui::GetWindowDrawList();
@@ -173,7 +174,8 @@ namespace MDSS
             ImGui::TextUnformatted(Message);
             if (ImGui::IsItemHovered())
                 SetDescriptionTooltip("원본 메시와 비교하려면 Base Geometry 뷰를 선택하세요.");
-            bMouseOverViewportOverlay |= ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+            ViewportState.bMouseOverViewportOverlay |=
+                ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
         }
         ImGui::End();
     }
@@ -421,21 +423,21 @@ namespace MDSS
                         if (ImGui::Checkbox("Base Mesh draw", &bBaseMeshDraw))
                         {
                             FrameRenderer->SetBaseMeshDrawEnabled(bBaseMeshDraw);
-                            bFrameTimeResetRequested = true;
+                            Simulation.bFrameTimeResetRequested = true;
                             ResetProfilingAverages();
                         }
                         bool bOverlayTopDraw = FrameRenderer->IsOverlayTopDrawEnabled();
                         if (ImGui::Checkbox("Overlay Top draw", &bOverlayTopDraw))
                         {
                             FrameRenderer->SetOverlayTopDrawEnabled(bOverlayTopDraw);
-                            bFrameTimeResetRequested = true;
+                            Simulation.bFrameTimeResetRequested = true;
                             ResetProfilingAverages();
                         }
                         bool bOverlaySidesDraw = FrameRenderer->IsOverlaySidesDrawEnabled();
                         if (ImGui::Checkbox("Overlay Sides draw", &bOverlaySidesDraw))
                         {
                             FrameRenderer->SetOverlaySidesDrawEnabled(bOverlaySidesDraw);
-                            bFrameTimeResetRequested = true;
+                            Simulation.bFrameTimeResetRequested = true;
                             ResetProfilingAverages();
                         }
 

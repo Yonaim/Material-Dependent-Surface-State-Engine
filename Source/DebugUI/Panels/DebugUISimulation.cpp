@@ -93,16 +93,16 @@ namespace MDSS
             ImGui::TextDisabled("등록된 State 없음");
             return;
         }
-        DebugState = FrameRenderer->GetDebugStateChannel();
+        Simulation.DebugState = FrameRenderer->GetDebugStateChannel();
         ImGui::SetNextItemWidth(125.0F);
-        if (ImGui::BeginCombo("##InspectorState", Registry.GetStateName(DebugState).c_str()))
+        if (ImGui::BeginCombo("##InspectorState", Registry.GetStateName(Simulation.DebugState).c_str()))
         {
             for (std::size_t Index = 0; Index < Registry.GetStateCount(); ++Index)
             {
                 const auto State = static_cast<SurfaceState::FStateId>(Index);
-                if (ImGui::Selectable(Registry.GetStateName(State).c_str(), State == DebugState))
+                if (ImGui::Selectable(Registry.GetStateName(State).c_str(), State == Simulation.DebugState))
                 {
-                    DebugState = State;
+                    Simulation.DebugState = State;
                     FrameRenderer->SetDebugStateChannel(State);
                 }
             }
@@ -213,28 +213,28 @@ namespace MDSS
         { return ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(Label).x; };
 
         BeginLabeledControlRow("Playback");
-        if (ImGui::RadioButton("Running", !bSimulationPaused))
+        if (ImGui::RadioButton("Running", !Simulation.bSimulationPaused))
         {
-            bSimulationPaused = false;
+            Simulation.bSimulationPaused = false;
         }
         ContinueControlRow(RadioWidth("Paused"));
-        if (ImGui::RadioButton("Paused", bSimulationPaused))
+        if (ImGui::RadioButton("Paused", Simulation.bSimulationPaused))
         {
-            bSimulationPaused = true;
+            Simulation.bSimulationPaused = true;
         }
 
         BeginLabeledControlRow("Controls");
-        ImGui::BeginDisabled(!bSimulationPaused);
+        ImGui::BeginDisabled(!Simulation.bSimulationPaused);
         if (ImGui::Button("Step"))
         {
-            bSolverStepRequested = true;
+            Simulation.bSolverStepRequested = true;
         }
         ImGui::EndDisabled();
         ContinueControlRow(ImGui::CalcTextSize("Reset State").x + 2.0F * ImGui::GetStyle().FramePadding.x);
         if (ImGui::Button("Reset State"))
         {
-            bSolverResetRequested = true;
-            bFrameTimeResetRequested = true;
+            Simulation.bSolverResetRequested = true;
+            Simulation.bFrameTimeResetRequested = true;
         }
 
         BeginLabeledControlRow("Speed");
@@ -247,15 +247,15 @@ namespace MDSS
             {
                 ContinueControlRow(RadioWidth(Label));
             }
-            if (ImGui::RadioButton(Label, std::abs(SimulationTimeScale - Scale) < 0.001F))
+            if (ImGui::RadioButton(Label, std::abs(Simulation.SimulationTimeScale - Scale) < 0.001F))
             {
-                SimulationTimeScale = Scale;
+                Simulation.SimulationTimeScale = Scale;
             }
             bFirstPreset = false;
         }
         ContinueControlRow(160.0F);
         ImGui::SetNextItemWidth(-1.0F);
-        SliderFloatWithDoubleClickInput("##Speed", &SimulationTimeScale, 0.05F, 8.0F, "%.2fx");
+        SliderFloatWithDoubleClickInput("##Speed", &Simulation.SimulationTimeScale, 0.05F, 8.0F, "%.2fx");
     }
 
     void FDebugUI::DrawSimulationSettingsTab(FScene& SceneData)
@@ -275,17 +275,17 @@ namespace MDSS
                     std::to_string(Preset.Resolution) + " x " + std::to_string(Preset.Resolution);
                 if (ImGui::Selectable(PresetLabel.c_str(), bSelected) && !bSelected)
                 {
-                    bFrameTimeResetRequested = true;
+                    Simulation.bFrameTimeResetRequested = true;
                     try
                     {
                         FrameRenderer->SetSimulationResolution(SceneData, Preset.Resolution);
-                        ResolutionStatus.clear();
+                        ProfileEditing.ResolutionStatus.clear();
                         ResetProfilingAverages();
                     }
                     catch (const std::exception& Error)
                     {
-                        ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
-                        FLogger::Warning("TDebugUI", ResolutionStatus);
+                        ProfileEditing.ResolutionStatus = std::string("Resolution change failed: ") + Error.what();
+                        FLogger::Warning("TDebugUI", ProfileEditing.ResolutionStatus);
                     }
                 }
                 if (bSelected)
@@ -293,22 +293,22 @@ namespace MDSS
             }
             EndLabeledCombo();
         }
-        if (ResolutionStatus.starts_with("Resolution change failed:"))
+        if (ProfileEditing.ResolutionStatus.starts_with("Resolution change failed:"))
         {
-            ImGui::TextWrapped("%s", ResolutionStatus.c_str());
+            ImGui::TextWrapped("%s", ProfileEditing.ResolutionStatus.c_str());
         }
 
-        if (ImGui::Checkbox("Fixed timestep", &bFixedSimulationTimestep))
+        if (ImGui::Checkbox("Fixed timestep", &Simulation.bFixedSimulationTimestep))
         {
-            bFrameTimeResetRequested = true;
+            Simulation.bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("경과 시간을 누적해 1/60초 고정 간격으로 처리합니다. Profile 배율은 이 간격을 바꾸지 "
                                   "않습니다. 자동 세부 단계 분할은 각 간격을 나눠 처리할 수 있습니다.");
-        if (ImGui::Checkbox("Auto substepping", &bAutoSubstepping))
+        if (ImGui::Checkbox("Auto substepping", &Simulation.bAutoSubstepping))
         {
-            bFrameTimeResetRequested = true;
+            Simulation.bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
         if (ImGui::IsItemHovered())
@@ -325,7 +325,7 @@ namespace MDSS
             bool bEnabled = FrameRenderer->IsDebugSolverTermEnabled(Term);
             if (ImGui::Checkbox(Label, &bEnabled))
             {
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 FrameRenderer->SetDebugSolverTermEnabled(Term, bEnabled);
                 ResetProfilingAverages();
             }
@@ -339,7 +339,7 @@ namespace MDSS
         bool bStateDrivenGeometryUpdate = FrameRenderer->IsStateDrivenGeometryUpdateEnabled();
         if (ImGui::Checkbox("State-Driven Geometry", &bStateDrivenGeometryUpdate))
         {
-            bFrameTimeResetRequested = true;
+            Simulation.bFrameTimeResetRequested = true;
             FrameRenderer->SetStateDrivenGeometryUpdateEnabled(bStateDrivenGeometryUpdate);
             ResetProfilingAverages();
         }

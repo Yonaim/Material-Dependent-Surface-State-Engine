@@ -12,6 +12,7 @@
 #pragma region 00_Shared_UI_Dependencies
 
 #include "Application/Window.h"
+#include "DebugUI/Panels/RenderViewDescriptions.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "DebugUI/Core/DebugUI.h"
 #include "GPU/Vulkan/Resource/GPUResourceMemoryStats.h"

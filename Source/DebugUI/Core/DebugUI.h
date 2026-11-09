@@ -45,6 +45,7 @@ namespace MDSS::GPU
 namespace MDSS::Rendering
 {
     class FRenderer;
+    enum class ERenderViewMode : std::uint32_t;
 }
 
 namespace MDSS
@@ -85,17 +86,17 @@ namespace MDSS
         /** @brief 자동 benchmark에서 solver 조건을 fixed 1/60 s step으로 고정한다. */
         void SetPresentationMode(bool bEnabled)
         {
-            if (bPresentationMode != bEnabled)
+            if (Presentation.bPresentationMode != bEnabled)
                 TogglePresentationMode();
         }
         void SetBenchmarkMode() noexcept
         {
-            bFixedSimulationTimestep = true;
-            bAutoSubstepping = false;
-            bSimulationPaused = false;
-            bSolverStepRequested = false;
-            bSolverResetRequested = false;
-            SimulationTimeScale = 1.0F;
+            Simulation.bFixedSimulationTimestep = true;
+            Simulation.bAutoSubstepping = false;
+            Simulation.bSimulationPaused = false;
+            Simulation.bSolverStepRequested = false;
+            Simulation.bSolverResetRequested = false;
+            Simulation.SimulationTimeScale = 1.0F;
         }
 
         /** @brief 저장된 .Scene을 다시 읽어 애니메이션, 상태, 초기 접촉 입력을 처음부터 시작한다. */
@@ -124,11 +125,11 @@ namespace MDSS
         [[nodiscard]] bool                                   IsSimulationPaused() const noexcept;
         [[nodiscard]] bool                                   IsFixedSimulationTimestep() const noexcept
         {
-            return bFixedSimulationTimestep;
+            return Simulation.bFixedSimulationTimestep;
         }
         [[nodiscard]] bool IsAutoSubsteppingEnabled() const noexcept
         {
-            return bAutoSubstepping;
+            return Simulation.bAutoSubstepping;
         }
         [[nodiscard]] bool ConsumeSolverStepRequest() noexcept;
         [[nodiscard]] bool ConsumeSolverResetRequest() noexcept;
@@ -175,6 +176,9 @@ namespace MDSS
 
         // Rendering controls and performance overlays
         void DrawRenderOptionsWindow(FScene& SceneData);
+        void DrawViewSettingsPopup(std::size_t                 ActiveViewportIndex,
+                                   Rendering::ERenderViewMode& CurrentMode,
+                                   const char*                 CurrentName);
         void DrawRenderSettingsWindow(FScene& SceneData);
         void DrawViewportStatsOverlay();
         void ResetProfilingAverages() noexcept;
@@ -248,12 +252,16 @@ namespace MDSS
         // ============================================================
 #pragma region 07_Presentation_State
 
-        bool bPresentationMode = false;
-        bool bPresentationGridWasVisible = false;
-        bool bPresentationAxisWasVisible = false;
-        bool bDemoPlaybackGridAxisHidden = false;
-        bool bDemoPlaybackGridWasVisible = false;
-        bool bDemoPlaybackAxisWasVisible = false;
+        struct FPresentationUIState
+        {
+            bool bPresentationMode = false;
+            bool bPresentationGridWasVisible = false;
+            bool bPresentationAxisWasVisible = false;
+            bool bDemoPlaybackGridAxisHidden = false;
+            bool bDemoPlaybackGridWasVisible = false;
+            bool bDemoPlaybackAxisWasVisible = false;
+        };
+        FPresentationUIState Presentation;
 #pragma endregion
 
         // ============================================================
@@ -261,24 +269,28 @@ namespace MDSS
         // ============================================================
 #pragma region 08_Simulation_and_Contact_Controls
 
-        SurfaceState::FStateId                 InjectState = 0;
-        SurfaceState::FStateId                 DebugState = 0;
-        float                                  InjectStrength = 1.0F;
-        float                                  InjectRadius = 0.25F;
-        float                                  InjectFalloff = 1.0F;
-        SurfaceState::ESurfaceContactOperation InjectOperation = SurfaceState::ESurfaceContactOperation::Add;
-        SurfaceState::ESurfaceContactShape     InjectShape = SurfaceState::ESurfaceContactShape::Circle;
-        float                                  InjectSecondaryRadius = 0.25F;
-        float                                  InjectRotationDegrees = 0.0F;
-        int                                    InjectTexelSearchRadius = 2;
-        float                                  AnimationTimeScale = 1.0F;
-        float                                  SimulationTimeScale = 1.0F;
-        bool                                   bFixedSimulationTimestep = SurfaceState::bDefaultFixedSimulationTimestep;
-        bool                                   bAutoSubstepping = SurfaceState::bDefaultAutoSubstepping;
-        bool                                   bSimulationPaused = false;
-        bool                                   bSolverStepRequested = false;
-        bool                                   bSolverResetRequested = false;
-        bool                                   bFrameTimeResetRequested = false;
+        struct FSimulationUIState
+        {
+            SurfaceState::FStateId                 InjectState = 0;
+            SurfaceState::FStateId                 DebugState = 0;
+            float                                  InjectStrength = 1.0F;
+            float                                  InjectRadius = 0.25F;
+            float                                  InjectFalloff = 1.0F;
+            SurfaceState::ESurfaceContactOperation InjectOperation = SurfaceState::ESurfaceContactOperation::Add;
+            SurfaceState::ESurfaceContactShape     InjectShape = SurfaceState::ESurfaceContactShape::Circle;
+            float                                  InjectSecondaryRadius = 0.25F;
+            float                                  InjectRotationDegrees = 0.0F;
+            int                                    InjectTexelSearchRadius = 2;
+            float                                  AnimationTimeScale = 1.0F;
+            float                                  SimulationTimeScale = 1.0F;
+            bool bFixedSimulationTimestep = SurfaceState::bDefaultFixedSimulationTimestep;
+            bool bAutoSubstepping = SurfaceState::bDefaultAutoSubstepping;
+            bool bSimulationPaused = false;
+            bool bSolverStepRequested = false;
+            bool bSolverResetRequested = false;
+            bool bFrameTimeResetRequested = false;
+        };
+        FSimulationUIState Simulation;
 #pragma endregion
 
         // ============================================================
@@ -286,20 +298,26 @@ namespace MDSS
         // ============================================================
 #pragma region 09_Profile_Editing_State
 
-        Asset::FSRProfileAssetHandle DebugParameterProfile = Asset::InvalidAssetHandle;
-        SurfaceState::FStateId       DebugParameterState = 0;
-        std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> ParameterDraftKey{Asset::InvalidAssetHandle,
-                                                                                          SurfaceState::InvalidStateId};
-        SurfaceState::FSurfaceStateParameters                           ParameterDraft{};
-        std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>, SurfaceState::FSurfaceStateParameters>
-            RuntimeProfileOverrides;
-        std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>, SurfaceState::FSurfaceStateParameters>
-                                                                                  ParameterDrafts;
-        std::set<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>> DirtyParameterDrafts;
-        bool                                                                      bParameterDraftAvailable = false;
-        bool                                                                      bParameterDraftDirty = false;
-        std::string                                                               ParameterStatus;
-        std::string                                                               ResolutionStatus;
+        struct FProfileEditingUIState
+        {
+            Asset::FSRProfileAssetHandle                                    Profile = Asset::InvalidAssetHandle;
+            SurfaceState::FStateId                                          State = 0;
+            std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> DraftKey{Asset::InvalidAssetHandle,
+                                                                                     SurfaceState::InvalidStateId};
+            SurfaceState::FSurfaceStateParameters                           Draft{};
+            std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>,
+                     SurfaceState::FSurfaceStateParameters>
+                RuntimeOverrides;
+            std::map<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>,
+                     SurfaceState::FSurfaceStateParameters>
+                                                                                      Drafts;
+            std::set<std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId>> DirtyDrafts;
+            bool                                                                      bAvailable = false;
+            bool                                                                      bDirty = false;
+            std::string                                                               Status;
+            std::string                                                               ResolutionStatus;
+        };
+        FProfileEditingUIState ProfileEditing;
 #pragma endregion
 
         // ============================================================
@@ -307,18 +325,22 @@ namespace MDSS
         // ============================================================
 #pragma region 10_Selection_and_Gizmo_State
 
-        std::optional<std::size_t> SelectedObject;
-        int                        ActiveGizmoAxis = -1;
-        int                        HoveredGizmoAxis = -1;
-        bool                       bRotationGizmoMode = false;
-        glm::vec2                  GizmoDragStartMouse{0.0F};
-        glm::vec2                  GizmoDragScreenAxis{0.0F};
-        glm::vec3                  GizmoDragStartPosition{0.0F};
-        glm::vec3                  GizmoDragStartRotation{0.0F};
-        float                      GizmoDragLastAngle = 0.0F;
-        float                      GizmoDragAccumulatedAngle = 0.0F;
-        float                      GizmoDragWorldScale = 0.0F;
-        float                      GizmoDragPixelLength = 0.0F;
+        struct FGizmoUIState
+        {
+            std::optional<std::size_t> SelectedObject;
+            int                        ActiveAxis = -1;
+            int                        HoveredAxis = -1;
+            bool                       bRotationMode = false;
+            glm::vec2                  DragStartMouse{0.0F};
+            glm::vec2                  DragScreenAxis{0.0F};
+            glm::vec3                  DragStartPosition{0.0F};
+            glm::vec3                  DragStartRotation{0.0F};
+            float                      DragLastAngle = 0.0F;
+            float                      DragAccumulatedAngle = 0.0F;
+            float                      DragWorldScale = 0.0F;
+            float                      DragPixelLength = 0.0F;
+        };
+        FGizmoUIState Gizmo;
 #pragma endregion
 
         // ============================================================
@@ -326,23 +348,26 @@ namespace MDSS
         // ============================================================
 #pragma region 11_Scene_Dock_and_Viewport_State
 
-        std::string   SceneStatus;
-        std::string   EditorLayoutPath;
-        std::uint32_t DockspaceID = 0;
-        ImFont*       SectionHeaderFont = nullptr;
-        struct FViewportPanel
+        struct FViewportUIState
         {
-            std::uint32_t Id = 0;
-            glm::vec4     RectNormalized{0.0F};
+            std::string   SceneStatus;
+            std::string   EditorLayoutPath;
+            std::uint32_t DockspaceID = 0;
+            ImFont*       SectionHeaderFont = nullptr;
+            struct FViewportPanel
+            {
+                std::uint32_t Id = 0;
+                glm::vec4     RectNormalized{0.0F};
+            };
+            std::vector<FViewportPanel> ViewportPanels{FViewportPanel{1U, glm::vec4(0.0F)}};
+            std::uint32_t               NextViewportId = 2;
+            std::uint32_t               ActiveViewportId = 1;
+            std::uint32_t               HoveredViewportId = 0;
+            bool                        bMouseOverViewportOverlay = false;
+            glm::vec4                   ViewportWorkspaceRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
+            int                         ViewportLayout = 2; // 0: grid, 1: horizontal, 2: vertical
         };
-        std::vector<FViewportPanel> ViewportPanels{FViewportPanel{1U, glm::vec4(0.0F)}};
-        std::uint32_t               NextViewportId = 2;
-        std::uint32_t               ActiveViewportId = 1;
-        std::uint32_t               HoveredViewportId = 0;
-        bool                        bMouseOverViewportOverlay = false;
-        glm::vec4                   ViewportWorkspaceRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
-        int                         ViewportLayout = 2; // 0: grid, 1: horizontal, 2: vertical
-
+        FViewportUIState ViewportState;
 #pragma endregion
 
         // ============================================================
@@ -350,12 +375,16 @@ namespace MDSS
         // ============================================================
 #pragma region 12_Log_State
 
-        std::array<bool, static_cast<std::size_t>(ELogLevel::Count)> LogLevelFilters{true, true, true, true, true};
-        std::array<char, 128>                                        LogSearch{};
-        std::vector<FLogEntry>                                       CachedLogEntries;
-        std::uint64_t                                                LastSeenLogRevision = 0;
-        bool                                                         bScrollLogToBottom = true;
-        float                                                        LogWindowHeight = 540.0F;
+        struct FLogUIState
+        {
+            std::array<bool, static_cast<std::size_t>(ELogLevel::Count)> LevelFilters{true, true, true, true, true};
+            std::array<char, 128>                                        Search{};
+            std::vector<FLogEntry>                                       Entries;
+            std::uint64_t                                                LastSeenRevision = 0;
+            bool                                                         bScrollToBottom = true;
+            float                                                        WindowHeight = 540.0F;
+        };
+        FLogUIState LogState;
 #pragma endregion
 
         // ============================================================

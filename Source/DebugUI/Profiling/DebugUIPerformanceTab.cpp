@@ -18,10 +18,10 @@ namespace MDSS
         {
             ImGui::Dummy({0.0F, TopGap});
             ImGui::PushStyleColor(ImGuiCol_Text, {0.78F, 0.86F, 0.96F, 1.0F});
-            if (SectionHeaderFont != nullptr)
-                ImGui::PushFont(SectionHeaderFont);
+            if (ViewportState.SectionHeaderFont != nullptr)
+                ImGui::PushFont(ViewportState.SectionHeaderFont);
             ImGui::TextUnformatted(Label);
-            if (SectionHeaderFont != nullptr)
+            if (ViewportState.SectionHeaderFont != nullptr)
                 ImGui::PopFont();
             ImGui::PopStyleColor();
             ImGui::Dummy({0.0F, 5.0F});
@@ -48,7 +48,7 @@ namespace MDSS
                         if (ImGui::Selectable(Preset.Label, bSelected) && !bSelected)
                         {
                             SetResolution(Preset.Resolution);
-                            bFrameTimeResetRequested = true;
+                            Simulation.bFrameTimeResetRequested = true;
                             ResetProfilingAverages();
                         }
                         if (bSelected)
@@ -70,7 +70,7 @@ namespace MDSS
             if (ImGui::Checkbox("Overlay tile culling", &bOverlayTileCullingEnabled))
             {
                 FrameRenderer->SetOverlayTileCullingEnabled(bOverlayTileCullingEnabled);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -100,7 +100,7 @@ namespace MDSS
                     if (ImGui::Selectable(Label, bSelected) && !bSelected)
                     {
                         FrameRenderer->SetOverlayOccupancyTileSize(Size);
-                        bFrameTimeResetRequested = true;
+                        Simulation.bFrameTimeResetRequested = true;
                         ResetProfilingAverages();
                     }
                     if (bSelected)
@@ -126,7 +126,7 @@ namespace MDSS
             if (ImGui::Checkbox("Raw Flux Cache", &bRawFluxCache))
             {
                 FrameRenderer->SetRawFluxCacheEnabled(bRawFluxCache);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -142,7 +142,7 @@ namespace MDSS
             if (ImGui::Checkbox("Coalesced Raw Flux Layout", &bCoalescedRawFluxLayout))
             {
                 FrameRenderer->SetCoalescedRawFluxLayoutEnabled(bCoalescedRawFluxLayout);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -153,7 +153,7 @@ namespace MDSS
             if (ImGui::Checkbox("FP16 Raw Flux", &bHalfRawFlux))
             {
                 FrameRenderer->SetHalfRawFluxCacheEnabled(bHalfRawFlux);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -169,7 +169,7 @@ namespace MDSS
             if (ImGui::Checkbox("FP16 Weights", &bHalfDynamicWeights))
             {
                 FrameRenderer->SetHalfDynamicWeightsEnabled(bHalfDynamicWeights);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -186,7 +186,7 @@ namespace MDSS
             if (ImGui::Checkbox("Sparse Solver Workgroup Scheduling", &bSparseSolver))
             {
                 FrameRenderer->SetSparseSolverEnabled(bSparseSolver);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -198,7 +198,7 @@ namespace MDSS
             if (ImGui::Checkbox("Active Channel Mask", &bActiveChannelMask))
             {
                 FrameRenderer->SetActiveChannelMaskEnabled(bActiveChannelMask);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -211,7 +211,7 @@ namespace MDSS
             if (ImGui::Checkbox("Per-WG Active Channel Mask", &bPerWorkgroupChannelMask))
             {
                 FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -224,7 +224,7 @@ namespace MDSS
             if (ImGui::Checkbox("Sparse Accumulation Height", &bSparseAccumulationHeight))
             {
                 FrameRenderer->SetSparseAccumulationHeightEnabled(bSparseAccumulationHeight);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -235,7 +235,7 @@ namespace MDSS
             if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))
             {
                 FrameRenderer->SetSparseSimulationGeometryEnabled(bSparseSimulation);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -252,7 +252,7 @@ namespace MDSS
             if (ImGui::Checkbox("Sparse Height Smoothing", &bSparseHeight))
             {
                 FrameRenderer->SetSparseHeightSmoothingEnabled(bSparseHeight);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -262,7 +262,7 @@ namespace MDSS
             if (ImGui::Checkbox("Shared Height Smoothing Halo", &bSharedHeight))
             {
                 FrameRenderer->SetSharedHeightSmoothingEnabled(bSharedHeight);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -276,7 +276,7 @@ namespace MDSS
             if (ImGui::Checkbox("Shared Overlay Coverage Halo", &bSharedOverlay))
             {
                 FrameRenderer->SetSharedOverlayCoverageEnabled(bSharedOverlay);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -290,7 +290,7 @@ namespace MDSS
             if (ImGui::Checkbox("Precompute Coverage Smoothing", &bPrecompute))
             {
                 FrameRenderer->SetPrecomputeCoverageSmoothingEnabled(bPrecompute);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -302,7 +302,7 @@ namespace MDSS
             if (ImGui::Checkbox("Separable Coverage Smoothing", &bSeparable))
             {
                 FrameRenderer->SetSeparableCoverageSmoothingEnabled(bSeparable);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered())
@@ -313,7 +313,7 @@ namespace MDSS
             if (ImGui::Checkbox("Shared Render State Halo", &bSharedState))
             {
                 FrameRenderer->SetSharedStateTextureSmoothingEnabled(bSharedState);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -330,7 +330,7 @@ namespace MDSS
             if (ImGui::Checkbox("Render State Texture Sampling", &bRenderStateTexture))
             {
                 FrameRenderer->SetRenderStateTextureSamplingEnabled(bRenderStateTexture);
-                bFrameTimeResetRequested = true;
+                Simulation.bFrameTimeResetRequested = true;
                 ResetProfilingAverages();
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -345,7 +345,7 @@ namespace MDSS
         if (bEffectsChanged)
         {
             FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
-            bFrameTimeResetRequested = true;
+            Simulation.bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
     }

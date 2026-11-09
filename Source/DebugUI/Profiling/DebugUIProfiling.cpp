@@ -19,7 +19,8 @@ namespace MDSS
             return;
         }
 
-        ImGuiDockNode* ViewportNode = DockspaceID != 0 ? ImGui::DockBuilderGetCentralNode(DockspaceID) : nullptr;
+        ImGuiDockNode* ViewportNode =
+            ViewportState.DockspaceID != 0 ? ImGui::DockBuilderGetCentralNode(ViewportState.DockspaceID) : nullptr;
         if (ViewportNode == nullptr)
         {
             return;
@@ -237,9 +238,9 @@ namespace MDSS
                         AddStateRow("State-Driven Geometry",
                                     "%s",
                                     FrameRenderer->IsStateDrivenGeometryUpdateEnabled() ? "ON" : "OFF");
-                        AddStateRow("Fixed timestep", "%s", bFixedSimulationTimestep ? "ON" : "OFF");
-                        AddStateRow("Auto substepping", "%s", bAutoSubstepping ? "ON" : "OFF");
-                        AddStateRow("Time scale", "%.2fx", SimulationTimeScale);
+                        AddStateRow("Fixed timestep", "%s", Simulation.bFixedSimulationTimestep ? "ON" : "OFF");
+                        AddStateRow("Auto substepping", "%s", Simulation.bAutoSubstepping ? "ON" : "OFF");
+                        AddStateRow("Time scale", "%.2fx", Simulation.SimulationTimeScale);
                         const auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
                         AddStateRow("Height Smoothing", "%s", Effects.bHeightFieldSmoothing ? "ON" : "OFF");
                         ImGui::EndTable();
@@ -373,9 +374,9 @@ namespace MDSS
         const ImVec2 ProfilingPos = ImGui::GetWindowPos();
         const ImVec2 ProfilingSize = ImGui::GetWindowSize();
         const ImVec2 Mouse = ImGui::GetIO().MousePos;
-        bMouseOverViewportOverlay |= Mouse.x >= ProfilingPos.x && Mouse.y >= ProfilingPos.y &&
-                                     Mouse.x < ProfilingPos.x + ProfilingSize.x &&
-                                     Mouse.y < ProfilingPos.y + ProfilingSize.y;
+        ViewportState.bMouseOverViewportOverlay |= Mouse.x >= ProfilingPos.x && Mouse.y >= ProfilingPos.y &&
+                                                   Mouse.x < ProfilingPos.x + ProfilingSize.x &&
+                                                   Mouse.y < ProfilingPos.y + ProfilingSize.y;
         ImGui::End();
         ImGui::PopStyleVar(3);
 
@@ -492,9 +493,10 @@ namespace MDSS
         const ImVec2 MemoryProfilePos = ImGui::GetWindowPos();
         const ImVec2 MemoryProfileSize = ImGui::GetWindowSize();
         const ImVec2 MemoryMouse = ImGui::GetIO().MousePos;
-        bMouseOverViewportOverlay |= MemoryMouse.x >= MemoryProfilePos.x && MemoryMouse.y >= MemoryProfilePos.y &&
-                                     MemoryMouse.x < MemoryProfilePos.x + MemoryProfileSize.x &&
-                                     MemoryMouse.y < MemoryProfilePos.y + MemoryProfileSize.y;
+        ViewportState.bMouseOverViewportOverlay |= MemoryMouse.x >= MemoryProfilePos.x &&
+                                                   MemoryMouse.y >= MemoryProfilePos.y &&
+                                                   MemoryMouse.x < MemoryProfilePos.x + MemoryProfileSize.x &&
+                                                   MemoryMouse.y < MemoryProfilePos.y + MemoryProfileSize.y;
         RenderStateY = MemoryProfilePos.y + MemoryProfileSize.y + 6.0F;
         ImGui::End();
         ImGui::PopStyleVar(3);
@@ -556,8 +558,9 @@ namespace MDSS
         }
         const ImVec2 StatePos = ImGui::GetWindowPos();
         const ImVec2 StateSize = ImGui::GetWindowSize();
-        bMouseOverViewportOverlay |= Mouse.x >= StatePos.x && Mouse.y >= StatePos.y &&
-                                     Mouse.x < StatePos.x + StateSize.x && Mouse.y < StatePos.y + StateSize.y;
+        ViewportState.bMouseOverViewportOverlay |= Mouse.x >= StatePos.x && Mouse.y >= StatePos.y &&
+                                                   Mouse.x < StatePos.x + StateSize.x &&
+                                                   Mouse.y < StatePos.y + StateSize.y;
         ImGui::End();
         ImGui::PopStyleVar(3);
     }

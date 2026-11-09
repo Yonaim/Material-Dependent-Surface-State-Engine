@@ -5,37 +5,37 @@ namespace MDSS
     void FDebugUI::DrawLogWindow()
     {
         ImGuiViewport* Viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowSize({std::max(Viewport->WorkSize.x * 0.70F, 720.0F), LogWindowHeight},
+        ImGui::SetNextWindowSize({std::max(Viewport->WorkSize.x * 0.70F, 720.0F), LogState.WindowHeight},
                                  ImGuiCond_FirstUseEver);
 
         if (ImGui::Begin("Log"))
         {
             const std::uint64_t CurrentRevision = FLogger::GetRevision();
-            if (CurrentRevision != LastSeenLogRevision)
+            if (CurrentRevision != LogState.LastSeenRevision)
             {
-                CachedLogEntries = FLogger::GetEntries();
-                bScrollLogToBottom = true;
-                LastSeenLogRevision = CurrentRevision;
+                LogState.Entries = FLogger::GetEntries();
+                LogState.bScrollToBottom = true;
+                LogState.LastSeenRevision = CurrentRevision;
             }
 
             if (ImGui::Button("Clear"))
             {
                 FLogger::Clear();
-                bScrollLogToBottom = true;
+                LogState.bScrollToBottom = true;
             }
 
             ImGui::SameLine();
             ImGui::SetNextItemWidth(260.0F);
-            ImGui::InputTextWithHint("##LogSearch", "Search logs...", LogSearch.data(), LogSearch.size());
+            ImGui::InputTextWithHint("##LogSearch", "Search logs...", LogState.Search.data(), LogState.Search.size());
             ImGui::SameLine();
             if (ImGui::Button("Copy Visible"))
             {
                 std::string ClipboardText;
-                for (const FLogEntry& Entry : CachedLogEntries)
+                for (const FLogEntry& Entry : LogState.Entries)
                 {
                     const std::size_t Index = static_cast<std::size_t>(Entry.Level);
-                    if (Index < LogLevelFilters.size() && LogLevelFilters[Index] &&
-                        ContainsCaseInsensitive(Entry.Formatted, LogSearch.data()))
+                    if (Index < LogState.LevelFilters.size() && LogState.LevelFilters[Index] &&
+                        ContainsCaseInsensitive(Entry.Formatted, LogState.Search.data()))
                     {
                         ClipboardText += Entry.Formatted;
                         ClipboardText.push_back('\n');
@@ -47,12 +47,12 @@ namespace MDSS
             ImGui::SameLine();
             if (ImGui::Button("All"))
             {
-                LogLevelFilters.fill(true);
+                LogState.LevelFilters.fill(true);
             }
             ImGui::SameLine();
             if (ImGui::Button("None"))
             {
-                LogLevelFilters.fill(false);
+                LogState.LevelFilters.fill(false);
             }
 
             ImGui::SameLine();
@@ -63,7 +63,7 @@ namespace MDSS
                 ImGui::SameLine();
                 const std::size_t Index = static_cast<std::size_t>(Level);
                 ImGui::PushStyleColor(ImGuiCol_Text, GetLogColor(Level));
-                ImGui::Checkbox(FLogger::GetLevelName(Level), &LogLevelFilters[Index]);
+                ImGui::Checkbox(FLogger::GetLevelName(Level), &LogState.LevelFilters[Index]);
                 ImGui::PopStyleColor();
             }
 
@@ -71,14 +71,14 @@ namespace MDSS
 
             ImGui::BeginChild(
                 "LogMessages", ImVec2(0.0F, 0.0F), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
-            for (const FLogEntry& Entry : CachedLogEntries)
+            for (const FLogEntry& Entry : LogState.Entries)
             {
                 const std::size_t Index = static_cast<std::size_t>(Entry.Level);
-                if (Index >= LogLevelFilters.size() || !LogLevelFilters[Index])
+                if (Index >= LogState.LevelFilters.size() || !LogState.LevelFilters[Index])
                 {
                     continue;
                 }
-                if (!ContainsCaseInsensitive(Entry.Formatted, LogSearch.data()))
+                if (!ContainsCaseInsensitive(Entry.Formatted, LogState.Search.data()))
                 {
                     continue;
                 }
@@ -103,10 +103,10 @@ namespace MDSS
                 ImGui::PopID();
             }
 
-            if (bScrollLogToBottom)
+            if (LogState.bScrollToBottom)
             {
                 ImGui::SetScrollHereY(1.0F);
-                bScrollLogToBottom = false;
+                LogState.bScrollToBottom = false;
             }
             ImGui::EndChild();
         }

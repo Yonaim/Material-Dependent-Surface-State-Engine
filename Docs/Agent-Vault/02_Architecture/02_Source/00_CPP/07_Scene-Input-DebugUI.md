@@ -90,4 +90,10 @@ UI 표시값은 실행 조건을 확인하는 출발점이다. 성능 측정에�
 - [ProfilingUIState.h](../../../../../Source/DebugUI/Profiling/ProfilingUIState.h) / [ProfilingUIState.cpp](../../../../../Source/DebugUI/Profiling/ProfilingUIState.cpp): `FProfilingUIState`가 13개 필드와 최근 sample deque를 값으로 소유하고 Reset/Accumulate/PublishWindow를 처리한다. 소유자는 `FDebugUI::Profiling`이며 추가 포인터·독립 수명은 없다.
 - `DebugUIProfiling.cpp`는 renderer metric 수집 → frame 시간/표시 mode guard → `Profiling.Accumulate` → `Profiling.PublishWindow` → ImGui 출력을 조율한다. `ResetProfilingAverages`는 기존 모든 호출 지점에서 `Profiling.Reset`으로 위임한다.
 - 기본 생성의 평균 0과 reset 후 평균 -1이라는 기존 sentinel 차이, 1초 누적 창·최근 100ms 만료·최댓값 갱신, 유효하지 않은 metric 무시는 유지한다. private UI 레이아웃 변경을 GPU/직렬화 ABI 변경으로 취급하지 않으며 소비자는 함께 빌드한다.
-- Viewport·Gizmo·Simulation·Profile 편집 상태와 Renderer 등은 별도 검토 후보다. 이 적용을 전체 FDebugUI/저장소의 책임 분리 완료로 보지 않는다.
+- 전체 적용에서 Presentation/Simulation/ProfileEditing/Gizmo/ViewportState/LogState도 각각 값 소유 상태로 추출했다. 바인딩 포인터와 작은 camera/dock 제어는 조율자의 직접 상태로 유지했다. 공개 getter/설정·리셋·ImGui 순서를 유지한다.
+
+## Render toolbar와 설정의 모듈 경계
+
+- `DebugUIRender.cpp`: toolbar 위치·뷰 선택·viewport/State 선택 및 상위 popup 호출.
+- [DebugUIViewSettings.cpp](../../../../../Source/DebugUI/Panels/DebugUIViewSettings.cpp): `DrawViewSettingsPopup`이 현재 mode의 popup·legend를 담당한다. BeginPopup/EndPopup과 외부 toolbar Begin/End 호출 순서를 유지한다.
+- [RenderViewDescriptions.h](../../../../../Source/DebugUI/Panels/RenderViewDescriptions.h): 순수 형상 설명 선택. 기존 문자열·mode switch를 보존하며 공유 widget/state 수명과 분리한다.
