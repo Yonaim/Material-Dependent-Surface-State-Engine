@@ -31,12 +31,7 @@ def load(path):
 # ============================================================
 #region 02_Main_Process
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=RESULTS / FOLDERS[0] / 'study-audit.json')
-    args = parser.parse_args()
-    errors, phases, all_periods = [], [], []
-    binary_digests = {}
+def audit_study_phases(all_periods, binary_digests, errors, phases):
     for folder in FOLDERS:
         base = RESULTS / folder
         if not (base / 'manifest.json').exists():
@@ -146,6 +141,14 @@ def main():
         phases.append({'phase': folder, 'status': manifest['status'], 'planned': len(planned), 'captured': len(seen),
                        'measured_frames': frames, 'unique_cases': len(repeat_states), 'unsupported_checks': sorted(unsupported),
                        'binary_hashes': {path: sorted(values) for path, values in binaries.items()}})
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, default=RESULTS / FOLDERS[0] / 'study-audit.json')
+    args = parser.parse_args()
+    errors, phases, all_periods = [], [], []
+    binary_digests = {}
+    audit_study_phases(all_periods, binary_digests, errors, phases)
     periods = sorted((datetime.datetime.fromisoformat(a), datetime.datetime.fromisoformat(b), phase, run) for a, b, phase, run in all_periods)
     for previous, current in zip(periods, periods[1:]):
         if current[0] < previous[1]:

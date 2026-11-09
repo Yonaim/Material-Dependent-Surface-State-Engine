@@ -145,26 +145,7 @@ def quality(base,a,b):
 # ============================================================
 #region 02_Main_Process
 
-def main():
-    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--result',type=Path,required=True);args=ap.parse_args()
-    base=args.result.resolve();m=load(base/'manifest.json');groups={};bad=[]
-    for run in m['runs']:
-        if run['status']!='complete':bad.append(run);continue
-        try:
-            item=collect(base,run)
-            groups.setdefault((run['group'],run['scene_name'],run['resolution'],run['variant']),[]).append(item)
-        except Exception as e:bad.append({'id':run['id'],'analysis_error':repr(e)})
-    image_noise={}
-    for key,items in groups.items():
-        reference=image_pixels(base,items[0])
-        if reference is None:continue
-        differences=[]
-        for other in items[1:]:
-            pixels=image_pixels(base,other)
-            if pixels is not None and pixels.shape==reference.shape:
-                differences.append(float(np.mean(np.abs(reference.astype(np.float32)-pixels.astype(np.float32)))))
-        image_noise[key]=max(differences,default=0.0)
-    rows=[]
+def collect_comparison_groups(base, groups, image_noise, rows):
     for group,name,base_arm,candidate,metric in COMPARISONS:
         cases=sorted({(scene,resolution) for g,scene,resolution,variant in groups if g==group})
         for scene,resolution in cases:
@@ -201,7 +182,8 @@ def main():
                 row['historical_base_valid']=False
                 row['method_note']='Counterfactual per-instance duplication; the pre-sharing implementation already shared profiles within one runtime. Use the distinct-runtime scene for historical-policy attribution.'
             rows.append(row)
-    workloads=[]
+
+def collect_group_measurements(base, groups, workloads):
     for (group,scene,resolution,variant),items in sorted(groups.items()):
         if group!='G3' or variant!='reference' or len(items)!=3:continue
         channels=items[0]['state_channels']
@@ -217,6 +199,30 @@ def main():
                           'nonzero_state_channels':int(np.count_nonzero(active_channels)),'registered_channels':channels,
                           **{key:st.median(item['activity'][key] for item in items) for key in ['overlay_tile_fraction','overlay_top_fraction'] if all(key in item['activity'] for item in items)},
                           'solver_active_workgroup_fraction':None})
+
+def main():
+    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--result',type=Path,required=True);args=ap.parse_args()
+    base=args.result.resolve();m=load(base/'manifest.json');groups={};bad=[]
+    for run in m['runs']:
+        if run['status']!='complete':bad.append(run);continue
+        try:
+            item=collect(base,run)
+            groups.setdefault((run['group'],run['scene_name'],run['resolution'],run['variant']),[]).append(item)
+        except Exception as e:bad.append({'id':run['id'],'analysis_error':repr(e)})
+    image_noise={}
+    for key,items in groups.items():
+        reference=image_pixels(base,items[0])
+        if reference is None:continue
+        differences=[]
+        for other in items[1:]:
+            pixels=image_pixels(base,other)
+            if pixels is not None and pixels.shape==reference.shape:
+                differences.append(float(np.mean(np.abs(reference.astype(np.float32)-pixels.astype(np.float32)))))
+        image_noise[key]=max(differences,default=0.0)
+    rows=[]
+    collect_comparison_groups(base, groups, image_noise, rows)
+    workloads=[]
+    collect_group_measurements(base, groups, workloads)
     audit={'status':m['status'],'planned_runs':len(m['plan']['runs']),'captured_runs':len(m['runs']),
            'complete_runs':sum(r['status']=='complete' for r in m['runs']),'failed_runs':bad,
            'nonfinite_state':sum(i['nonfinite'] for v in groups.values() for x in v for i in x['validation']['instances']),

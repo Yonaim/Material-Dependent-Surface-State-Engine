@@ -134,3 +134,4 @@
   - Refactor(DebugUI): UI 상태 묶음과 뷰 설정 패널 책임 분리
   - Refactor(Rendering): 벤치마크 상태·타이밍·기준 기하 책임 분리
   - Refactor(Simulation): 솔버 실행 상태와 step 준비 흐름 분리
+  - Refactor(Tools): 분석 보고서와 빌드 스크립트의 책임 분리

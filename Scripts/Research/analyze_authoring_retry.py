@@ -24,6 +24,46 @@ ALLOWED_PRODUCTION_CHANGES=set()
 # ============================================================
 #region 01_Processing_Helpers
 
+def compare_authoring_conditions(arrays, comparisons, errors, images):
+    for a,b in [('base','threshold'),('wetness','absorbedwetness'),
+            ('absorbedwetness','absorbedwetness-repeat'),('absorbedwetness','reuse20')]:
+        mapped={};bit_equal=True
+        for index,channels in arrays[a].items():
+            for name,data in channels.items():
+                dest='absorbedwetness' if a=='wetness' and name=='wetness' else name
+                other=arrays[b][index][dest]
+                equal=np.array_equal(data.view(np.uint32),other.view(np.uint32))
+                delta=np.abs(data.astype(np.float64)-other.astype(np.float64))
+                entry=mapped.setdefault(name,dict(l1=0.0,max_absolute=0.0,bit_equal=True))
+                entry['l1']+=float(delta.sum());entry['max_absolute']=max(entry['max_absolute'],float(delta.max(initial=0)))
+                entry['bit_equal'] &= equal; bit_equal &= equal
+        diff=np.abs(images[a].astype(np.int16)-images[b].astype(np.int16))
+        comparisons.append(dict(a=a,b=b,named_states=mapped,all_named_states_bit_equal=bool(bit_equal),
+            pixels_equal=bool(np.array_equal(images[a],images[b])),
+            changed_pixels=int(np.any(diff>0,axis=2).sum()),
+            mean_absolute_rgb_8bit=float(diff.mean()),max_absolute_rgb_8bit=int(diff.max()),
+            caution='Whole-frame pixel difference is descriptive, not a quality metric or a matched-state-time causal proof'))
+        if a=='absorbedwetness' and b=='absorbedwetness-repeat' and not bit_equal:
+            errors.append('Fresh-process State repeatability failed')
+
+def check_authored_paths(errors, old, path_checks, plan):
+    for run in plan['runs']:
+        scene=pathlib.Path(run['scene']); s=read(scene)
+        previous=read(pathlib.Path(next(x for x in old['runs'] if x['id']==run['id'])['scene']))
+        ok=(scene.parent/s['animation']).resolve()==pathlib.Path(previous['animation']).resolve()
+        ok &= not pathlib.Path(s['animation']).is_absolute()
+        for obj,was in zip(s['objects'],previous['objects']):
+            ok &= not pathlib.Path(obj['mesh']).is_absolute() and (scene.parent/obj['mesh']).resolve()==pathlib.Path(was['mesh']).resolve()
+        canonical=copy.deepcopy(s)
+        canonical['animation']=str((scene.parent/s['animation']).resolve())
+        for obj in canonical['objects']:obj['mesh']=str((scene.parent/obj['mesh']).resolve())
+        same_scene=canonical==previous
+        previous_folder=pathlib.Path(next(x for x in old['runs'] if x['id']==run['id'])['scene']).parent
+        same_profiles=all(digest(scene.parent/f)==digest(previous_folder/f) for f in ['Editable.SRProfile','Editable.SurfaceProfileMap','settings.json'])
+        ok &= same_scene and same_profiles
+        path_checks.append(dict(id=run['id'],same_resolved_assets=bool(ok),same_scene_except_paths=same_scene,same_profile_map_settings=same_profiles))
+        if not ok:errors.append(run['id']+': rebased asset mismatch')
+
 def main():
     plan=read(EXP/'plan.json'); manifest=read(EXP/'manifest.json')
     if manifest['status']!='completed':
@@ -75,26 +115,7 @@ def main():
     if any(run['camera']!=records[0]['camera'] for run in records):
         errors.append('Captured camera/viewport mismatch')
     comparisons=[]
-    for a,b in [('base','threshold'),('wetness','absorbedwetness'),
-            ('absorbedwetness','absorbedwetness-repeat'),('absorbedwetness','reuse20')]:
-        mapped={};bit_equal=True
-        for index,channels in arrays[a].items():
-            for name,data in channels.items():
-                dest='absorbedwetness' if a=='wetness' and name=='wetness' else name
-                other=arrays[b][index][dest]
-                equal=np.array_equal(data.view(np.uint32),other.view(np.uint32))
-                delta=np.abs(data.astype(np.float64)-other.astype(np.float64))
-                entry=mapped.setdefault(name,dict(l1=0.0,max_absolute=0.0,bit_equal=True))
-                entry['l1']+=float(delta.sum());entry['max_absolute']=max(entry['max_absolute'],float(delta.max(initial=0)))
-                entry['bit_equal'] &= equal; bit_equal &= equal
-        diff=np.abs(images[a].astype(np.int16)-images[b].astype(np.int16))
-        comparisons.append(dict(a=a,b=b,named_states=mapped,all_named_states_bit_equal=bool(bit_equal),
-            pixels_equal=bool(np.array_equal(images[a],images[b])),
-            changed_pixels=int(np.any(diff>0,axis=2).sum()),
-            mean_absolute_rgb_8bit=float(diff.mean()),max_absolute_rgb_8bit=int(diff.max()),
-            caution='Whole-frame pixel difference is descriptive, not a quality metric or a matched-state-time causal proof'))
-        if a=='absorbedwetness' and b=='absorbedwetness-repeat' and not bit_equal:
-            errors.append('Fresh-process State repeatability failed')
+    compare_authoring_conditions(arrays, comparisons, errors, images)
 
     archives=[]
     archive_sources=[('geometry',read(TEST_RECORD or OUT/'geometry.json'),TEST_ARCHIVE or OUT/'raw/geometry/inputs'),
@@ -111,22 +132,7 @@ def main():
     # Verify that rebased paths resolve to exactly the earlier intended mesh/animation assets.
     old=read(STUDY/'render-validation/plan.json')
     path_checks=[]
-    for run in plan['runs']:
-        scene=pathlib.Path(run['scene']); s=read(scene)
-        previous=read(pathlib.Path(next(x for x in old['runs'] if x['id']==run['id'])['scene']))
-        ok=(scene.parent/s['animation']).resolve()==pathlib.Path(previous['animation']).resolve()
-        ok &= not pathlib.Path(s['animation']).is_absolute()
-        for obj,was in zip(s['objects'],previous['objects']):
-            ok &= not pathlib.Path(obj['mesh']).is_absolute() and (scene.parent/obj['mesh']).resolve()==pathlib.Path(was['mesh']).resolve()
-        canonical=copy.deepcopy(s)
-        canonical['animation']=str((scene.parent/s['animation']).resolve())
-        for obj in canonical['objects']:obj['mesh']=str((scene.parent/obj['mesh']).resolve())
-        same_scene=canonical==previous
-        previous_folder=pathlib.Path(next(x for x in old['runs'] if x['id']==run['id'])['scene']).parent
-        same_profiles=all(digest(scene.parent/f)==digest(previous_folder/f) for f in ['Editable.SRProfile','Editable.SurfaceProfileMap','settings.json'])
-        ok &= same_scene and same_profiles
-        path_checks.append(dict(id=run['id'],same_resolved_assets=bool(ok),same_scene_except_paths=same_scene,same_profile_map_settings=same_profiles))
-        if not ok:errors.append(run['id']+': rebased asset mismatch')
+    check_authored_paths(errors, old, path_checks, plan)
     old_manifest=read(STUDY/'render-validation/manifest.json')
     changed_production=[p for p,h in old_manifest['source_hashes'].items()
         if (p.startswith('Source') or p.startswith('Shaders') or p.startswith('Build\\bin\\Shaders'))

@@ -55,6 +55,34 @@ def fmt(value: float | None) -> str:
 # ============================================================
 #region 02_Main_Process
 
+def append_solver_summary_rows(grouped, lines, manifest_path):
+    for (scene_id, resolution), runs in sorted(grouped.items()):
+        solver_medians: list[float] = []
+        solver_p95s: list[float] = []
+        pass1_medians: list[float] = []
+        pass2_medians: list[float] = []
+        run_sample_counts: list[int] = []
+        for run in runs:
+            samples = read_samples(manifest_path, run)
+            run_sample_counts.append(len(samples))
+            for field, destination in (("solver_gpu_ms", solver_medians), ("pass1_gpu_ms", pass1_medians),
+                                       ("pass2_gpu_ms", pass2_medians)):
+                values = [sample[field] for sample in samples if isinstance(sample.get(field), (int, float))]
+                if field == "solver_gpu_ms" and values:
+                    solver_medians.append(statistics.median(values))
+                    solver_p95s.append(percentile([float(value) for value in values], 0.95))
+                elif values:
+                    destination.append(statistics.median(values))
+
+        median_text = "—" if not solver_medians else f"{statistics.median(solver_medians):.3f} ({min(solver_medians):.3f}–{max(solver_medians):.3f})"
+        p95_text = "—" if not solver_p95s else f"{statistics.median(solver_p95s):.3f} ({min(solver_p95s):.3f}–{max(solver_p95s):.3f})"
+        lines.append("| {} | {} | {} | {} | {} | {} | {} |".format(
+            scene_id, resolution, len(runs), median_text, p95_text,
+            fmt(statistics.median(pass1_medians) if pass1_medians else None),
+            fmt(statistics.median(pass2_medians) if pass2_medians else None)))
+        if any(count != run.get("measurement_frames") for count, run in zip(run_sample_counts, runs)):
+            raise ValueError(f"Raw sample count mismatch for {scene_id} at {resolution}.")
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
@@ -86,32 +114,7 @@ def main() -> int:
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
 
-    for (scene_id, resolution), runs in sorted(grouped.items()):
-        solver_medians: list[float] = []
-        solver_p95s: list[float] = []
-        pass1_medians: list[float] = []
-        pass2_medians: list[float] = []
-        run_sample_counts: list[int] = []
-        for run in runs:
-            samples = read_samples(manifest_path, run)
-            run_sample_counts.append(len(samples))
-            for field, destination in (("solver_gpu_ms", solver_medians), ("pass1_gpu_ms", pass1_medians),
-                                       ("pass2_gpu_ms", pass2_medians)):
-                values = [sample[field] for sample in samples if isinstance(sample.get(field), (int, float))]
-                if field == "solver_gpu_ms" and values:
-                    solver_medians.append(statistics.median(values))
-                    solver_p95s.append(percentile([float(value) for value in values], 0.95))
-                elif values:
-                    destination.append(statistics.median(values))
-
-        median_text = "—" if not solver_medians else f"{statistics.median(solver_medians):.3f} ({min(solver_medians):.3f}–{max(solver_medians):.3f})"
-        p95_text = "—" if not solver_p95s else f"{statistics.median(solver_p95s):.3f} ({min(solver_p95s):.3f}–{max(solver_p95s):.3f})"
-        lines.append("| {} | {} | {} | {} | {} | {} | {} |".format(
-            scene_id, resolution, len(runs), median_text, p95_text,
-            fmt(statistics.median(pass1_medians) if pass1_medians else None),
-            fmt(statistics.median(pass2_medians) if pass2_medians else None)))
-        if any(count != run.get("measurement_frames") for count, run in zip(run_sample_counts, runs)):
-            raise ValueError(f"Raw sample count mismatch for {scene_id} at {resolution}.")
+    append_solver_summary_rows(grouped, lines, manifest_path)
 
     metrics = [
         ("render_gpu_ms", "Render GPU (includes UI)"),

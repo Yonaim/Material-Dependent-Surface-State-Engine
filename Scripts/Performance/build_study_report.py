@@ -124,6 +124,46 @@ def overview(comparisons,complete):
 # ============================================================
 #region 02_Main_Process
 
+def append_comparison_sections(comparisons, lines):
+    for group,title in GROUPS.items():
+     rows=[r for r in comparisons if r['group']==group and r.get('historical_base_valid') is not False]
+     lines+=['### '+title,'']
+     labels=[]
+     for row in rows:
+      name=row['comparison'];qid,label=QUESTIONS[name]
+      if (qid,label) not in labels:labels.append((qid,label))
+     definitions=[]
+     for qid,label in labels:
+      configurations=list(dict.fromkeys((r['base_variant'],r['candidate_variant'],r['metric']) for r in rows if QUESTIONS[r['comparison']]==(qid,label)))
+      for a,b,metric in configurations:definitions.append([f'PERF-{qid}',label,VARIANTS.get(a,a),VARIANTS.get(b,b),METRICS.get(metric,metric)])
+     lines+=table(['실험 ID','질문','기준 경로','비교 경로','측정 지표'],definitions) if labels else ['미측정.','']
+     out=[]
+     for r in rows:
+      q=r['quality'];name=r['comparison'];qid,_=QUESTIONS[name]
+      if q.get('status')!='complete':verdict='정확성 확인 실패'
+      elif not r['repeat_state_reproducible']:verdict='반복 상태 불일치'
+      elif r['speed_verdict']=='overlapping_repeat_ranges':verdict='시간/할당량 범위 겹침'
+      elif r['speed_verdict']=='increase_observed':verdict='이 조건에서 증가'
+      else:verdict='감소 관찰'
+      if q.get('state_exact') is False:verdict+=' · 상태 차이'
+      elif q.get('image_exact') is False and group!='G1':verdict+=' · 화면 차이'
+      unit='B' if r['metric']=='profile_bytes' else 'ms'
+      tag=f' ({name})' if name.startswith(('mesh','tile')) else ''
+      out.append([f'PERF-{qid}{tag}',f"{r['scene']} / {r['resolution']}",unit,num(r['base_median'],0 if unit=='B' else 3),num(r['candidate_median'],0 if unit=='B' else 3),num(r['reduction_percent'],2),
+                  num(q.get('state_l1_relative')*100 if q.get('state_l1_relative') is not None else None,5),num(q.get('image_mae_u8') if group!='G1' else None),verdict])
+     lines+=table(['ID / 조건','씬 / simulation','단위','기준 중앙값','비교 경로 중앙값','감소 %','상태 L1 %','화면 MAE','판단'],out) if out else []
+     if group=='G1':lines+=['Profile 공유의 역사적 base는 runtime별 표다. 같은 runtime의 여러 instance는 예전에도 공유했다. 따라서 일반 Mountain의 per-instance 복제 arm은 역사적 효과 산정에서 제외하고, 서로 다른 runtime 3개가 같은 Profile을 쓰는 통제 씬을 사용했다. 표의 B는 **Profile 표만의 할당량**이며 전체 GPU 메모리 감소율이 아니다.','']
+     if group=='G1':lines+=['로딩 실험은 준비 프레임 없이 frame 0에서 설정을 저장해, 초기 화면 영역 1280×672가 기록됐다. 일반 프레임 성능 실험의 안정된 영역 469×571과 구분한다. 카메라 위치·시선·FOV는 같고, 같은 로딩 비교쌍의 시작 규칙·영역도 일치한다. 저장 영역과 마지막 화면의 실제 viewport가 다를 수 있어 로딩 실험의 화면 MAE는 화질 판단에서 제외했다. Scene 로드/자원 재생성 CPU 시간과 메모리 비교에 이 화면 지표를 사용하지 않았다.','']
+     if group=='G2':lines+=['PERF-032는 빈 source 계산 생략, Profile/포화도/source 형상 재사용, normal matrix의 CPU 준비를 묶은 대조다. 과거 파일 전체를 되돌린 것이 아니라 현재 ABI에서 지정 연산을 반복하도록 복원했다. 사용하지 않는 scratch 값까지 동일하다는 주장은 하지 않는다.','',
+       '**PERF-029 회전 불변 CPU 캐시 보조 실험은 Windows 앱 제어의 실행 차단으로 미측정이다.** 속도 수치를 추정하거나 다른 실험으로 대체하지 않았다.','']
+     if group=='G3':lines+=['Wide는 입력 반경을 넓힌 별도 씬이고 Mixed는 여러 상태 채널에 다른 위치의 입력을 넣은 조건이다. Overlay 활성 타일 비율을 Solver의 실제 active workgroup 비율로 해석하지 않는다. 전체 부분 계산 OFF는 여러 설정을 함께 바꾼 묶음 효과이며 개별 감소율과 합산할 수 없다.','']
+     if group=='G4':lines+=['물체별 순차 경로는 현재 Solver를 한 instance씩 호출한다. 물리 수식·자원을 유지하고 실행 순서/동기화를 비교한다. 공통 simulation elapsed를 사용한다. 보조 timestamp 기록 수는 두 경로 모두 8개지만, 순차 arm은 시작/끝에 각각 4개를 배치하므로 세부 pass 합계를 지원하지 않는다. 기록 위치에 따른 영향이나 계측이 전혀 없는 실행의 효과까지 분리한 실험은 아니다. 인스턴스 수 통제 씬은 같은 물체를 복제한 1/3/6개 구성이다.','']
+     if group=='G5':lines+=['FP16은 결과 차이가 생길 수 있는 정밀도 실험이다. 현재 버퍼는 큰 저장 용량을 유지하므로 FP16을 켠 것만으로 할당량이 절반이 되지는 않는다. 상태가 진화하는 실험이므로 시간 차이를 전부 전송 대역폭 효과로만 해석하지 않는다.','']
+     if group=='G6':lines+=['Texture 비교는 precompute OFF 양쪽에서 수행한다. precompute ON은 Texture를 사용하는 경로다. PERF-033의 SSBO 조건은 두 arm 모두 precompute OFF·Texture OFF를 유지한다. 필터 경계 정규화나 수치 연산 순서의 차이가 화면에 나타나면 속도와 별개로 기록한다.','']
+     if group=='G7':lines+=['메시 해상도 변경은 simulation 해상도를 바꾸지 않는 품질 trade-off다. 화면 밖 씬은 카메라만 달리한 통제 조건이다. 현재 타일 컬링 옵션은 높이 smoothing·coverage의 부분 갱신을 제어하며 top 삼각형 압축 자체를 끄지 않는다. PERF-035는 별도 실행 파일에서 같은 side 계산을 유지하고, 압축 목록 생성+간접 draw와 원본 전체 인덱스의 직접 draw를 비교한다. 두 arm의 자원 할당은 유지했다. Occupancy scan 단독 시간은 계측하지 않아 전체 Overlay 준비 시간의 원인으로 단정하지 않는다.','']
+     if group=='G8':lines+=['GPU 검증 제거와 컴파일 시점 옵션 고정은 서로 다른 질문이다. 알고리즘 옵션 ON/OFF의 효과와 컴파일 시점 고정의 효과를 섞지 않는다. Pipeline 내부 메모리/생성 비용은 추적하지 않았다.','']
+    return lines
+
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('--allow-incomplete',action='store_true');args=ap.parse_args()
  manifests={key:load(RESULTS/folder/'manifest.json') for key,folder in FOLDERS.items() if (RESULTS/folder/'manifest.json').exists()}
@@ -192,43 +232,7 @@ def main():
          'State 양수 texel 비율은 마지막 662 step 후에 채널 하나라도 양수인 texel 수 / 할당 texel 수다. 유효하지 않은 atlas 공간도 분모에 포함된다. Overlay 비율은 측정 600프레임의 실행별 중앙값을 구한 뒤 세 반복의 중앙값이다. 이 수치들은 Solver의 실제 활성 workgroup 비율이 아니며, 전환 임계값을 바로 결정하는 근거로 사용하지 않는다.','']
  lines+=table(['씬 / simulation','할당 texel','State 양수 texel %','0 아닌 채널 / 등록 채널','Overlay 활성 tile %','활성 top 삼각형 %'],[
   [f"{w['scene']} / {w['resolution']}",f"{w['allocated_texels']:,}",num(w['positive_state_texel_fraction']*100,2),f"{w['nonzero_state_channels']} / {w['registered_channels']}",num(w.get('overlay_tile_fraction',0)*100,2),num(w.get('overlay_top_fraction',0)*100,2)] for w in workloads])
- for group,title in GROUPS.items():
-  rows=[r for r in comparisons if r['group']==group and r.get('historical_base_valid') is not False]
-  lines+=['### '+title,'']
-  labels=[]
-  for row in rows:
-   name=row['comparison'];qid,label=QUESTIONS[name]
-   if (qid,label) not in labels:labels.append((qid,label))
-  definitions=[]
-  for qid,label in labels:
-   configurations=list(dict.fromkeys((r['base_variant'],r['candidate_variant'],r['metric']) for r in rows if QUESTIONS[r['comparison']]==(qid,label)))
-   for a,b,metric in configurations:definitions.append([f'PERF-{qid}',label,VARIANTS.get(a,a),VARIANTS.get(b,b),METRICS.get(metric,metric)])
-  lines+=table(['실험 ID','질문','기준 경로','비교 경로','측정 지표'],definitions) if labels else ['미측정.','']
-  out=[]
-  for r in rows:
-   q=r['quality'];name=r['comparison'];qid,_=QUESTIONS[name]
-   if q.get('status')!='complete':verdict='정확성 확인 실패'
-   elif not r['repeat_state_reproducible']:verdict='반복 상태 불일치'
-   elif r['speed_verdict']=='overlapping_repeat_ranges':verdict='시간/할당량 범위 겹침'
-   elif r['speed_verdict']=='increase_observed':verdict='이 조건에서 증가'
-   else:verdict='감소 관찰'
-   if q.get('state_exact') is False:verdict+=' · 상태 차이'
-   elif q.get('image_exact') is False and group!='G1':verdict+=' · 화면 차이'
-   unit='B' if r['metric']=='profile_bytes' else 'ms'
-   tag=f' ({name})' if name.startswith(('mesh','tile')) else ''
-   out.append([f'PERF-{qid}{tag}',f"{r['scene']} / {r['resolution']}",unit,num(r['base_median'],0 if unit=='B' else 3),num(r['candidate_median'],0 if unit=='B' else 3),num(r['reduction_percent'],2),
-               num(q.get('state_l1_relative')*100 if q.get('state_l1_relative') is not None else None,5),num(q.get('image_mae_u8') if group!='G1' else None),verdict])
-  lines+=table(['ID / 조건','씬 / simulation','단위','기준 중앙값','비교 경로 중앙값','감소 %','상태 L1 %','화면 MAE','판단'],out) if out else []
-  if group=='G1':lines+=['Profile 공유의 역사적 base는 runtime별 표다. 같은 runtime의 여러 instance는 예전에도 공유했다. 따라서 일반 Mountain의 per-instance 복제 arm은 역사적 효과 산정에서 제외하고, 서로 다른 runtime 3개가 같은 Profile을 쓰는 통제 씬을 사용했다. 표의 B는 **Profile 표만의 할당량**이며 전체 GPU 메모리 감소율이 아니다.','']
-  if group=='G1':lines+=['로딩 실험은 준비 프레임 없이 frame 0에서 설정을 저장해, 초기 화면 영역 1280×672가 기록됐다. 일반 프레임 성능 실험의 안정된 영역 469×571과 구분한다. 카메라 위치·시선·FOV는 같고, 같은 로딩 비교쌍의 시작 규칙·영역도 일치한다. 저장 영역과 마지막 화면의 실제 viewport가 다를 수 있어 로딩 실험의 화면 MAE는 화질 판단에서 제외했다. Scene 로드/자원 재생성 CPU 시간과 메모리 비교에 이 화면 지표를 사용하지 않았다.','']
-  if group=='G2':lines+=['PERF-032는 빈 source 계산 생략, Profile/포화도/source 형상 재사용, normal matrix의 CPU 준비를 묶은 대조다. 과거 파일 전체를 되돌린 것이 아니라 현재 ABI에서 지정 연산을 반복하도록 복원했다. 사용하지 않는 scratch 값까지 동일하다는 주장은 하지 않는다.','',
-    '**PERF-029 회전 불변 CPU 캐시 보조 실험은 Windows 앱 제어의 실행 차단으로 미측정이다.** 속도 수치를 추정하거나 다른 실험으로 대체하지 않았다.','']
-  if group=='G3':lines+=['Wide는 입력 반경을 넓힌 별도 씬이고 Mixed는 여러 상태 채널에 다른 위치의 입력을 넣은 조건이다. Overlay 활성 타일 비율을 Solver의 실제 active workgroup 비율로 해석하지 않는다. 전체 부분 계산 OFF는 여러 설정을 함께 바꾼 묶음 효과이며 개별 감소율과 합산할 수 없다.','']
-  if group=='G4':lines+=['물체별 순차 경로는 현재 Solver를 한 instance씩 호출한다. 물리 수식·자원을 유지하고 실행 순서/동기화를 비교한다. 공통 simulation elapsed를 사용한다. 보조 timestamp 기록 수는 두 경로 모두 8개지만, 순차 arm은 시작/끝에 각각 4개를 배치하므로 세부 pass 합계를 지원하지 않는다. 기록 위치에 따른 영향이나 계측이 전혀 없는 실행의 효과까지 분리한 실험은 아니다. 인스턴스 수 통제 씬은 같은 물체를 복제한 1/3/6개 구성이다.','']
-  if group=='G5':lines+=['FP16은 결과 차이가 생길 수 있는 정밀도 실험이다. 현재 버퍼는 큰 저장 용량을 유지하므로 FP16을 켠 것만으로 할당량이 절반이 되지는 않는다. 상태가 진화하는 실험이므로 시간 차이를 전부 전송 대역폭 효과로만 해석하지 않는다.','']
-  if group=='G6':lines+=['Texture 비교는 precompute OFF 양쪽에서 수행한다. precompute ON은 Texture를 사용하는 경로다. PERF-033의 SSBO 조건은 두 arm 모두 precompute OFF·Texture OFF를 유지한다. 필터 경계 정규화나 수치 연산 순서의 차이가 화면에 나타나면 속도와 별개로 기록한다.','']
-  if group=='G7':lines+=['메시 해상도 변경은 simulation 해상도를 바꾸지 않는 품질 trade-off다. 화면 밖 씬은 카메라만 달리한 통제 조건이다. 현재 타일 컬링 옵션은 높이 smoothing·coverage의 부분 갱신을 제어하며 top 삼각형 압축 자체를 끄지 않는다. PERF-035는 별도 실행 파일에서 같은 side 계산을 유지하고, 압축 목록 생성+간접 draw와 원본 전체 인덱스의 직접 draw를 비교한다. 두 arm의 자원 할당은 유지했다. Occupancy scan 단독 시간은 계측하지 않아 전체 Overlay 준비 시간의 원인으로 단정하지 않는다.','']
-  if group=='G8':lines+=['GPU 검증 제거와 컴파일 시점 옵션 고정은 서로 다른 질문이다. 알고리즘 옵션 ON/OFF의 효과와 컴파일 시점 고정의 효과를 섞지 않는다. Pipeline 내부 메모리/생성 비용은 추적하지 않았다.','']
+ lines = append_comparison_sections(comparisons, lines)
  lines+=['### 정밀도 옵션의 실제 할당량','',
          '아래는 마지막 GPU 작업 완료 후 capture buffer를 해제한 시점의 앱 추적 할당량이다. State는 FP32이며 FP16 옵션은 이동량/가중치 저장 경로를 바꾼다. swapchain·드라이버 내부·pipeline 메모리는 포함하지 않는다.','']
  memory=[]

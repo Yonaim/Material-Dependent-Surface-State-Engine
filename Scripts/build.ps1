@@ -6,6 +6,11 @@ param(
     [string[]]$CMakeArgs = @()
 )
 
+# ============================================================
+# 00. Environment and Prerequisites
+# ============================================================
+#region 00_Environment_and_Prerequisites
+
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $BuildDir = Join-Path $ProjectRoot "Build"
@@ -14,6 +19,13 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     Write-Error "cmake is required but was not found in PATH."
     exit 1
 }
+
+#endregion
+
+# ============================================================
+# 01. Relocated Cache Preservation
+# ============================================================
+#region 01_Relocated_Cache_Preservation
 
 # Match the Bash helper's behavior when a project directory has moved and the
 # existing CMake cache still points at its old location.
@@ -42,6 +54,13 @@ if (Test-Path -LiteralPath $BuildDir -PathType Container) {
     }
 }
 
+#endregion
+
+# ============================================================
+# 02. Configure and Build
+# ============================================================
+#region 02_Configure_and_Build
+
 # Let CMake choose the platform's default generator, matching Scripts/build.sh.
 # Additional arguments can override cache entries, for example:
 # -CMakeArgs @('-DMDSS_ENABLE_VALIDATION=OFF').
@@ -52,3 +71,5 @@ if ($LASTEXITCODE -ne 0) {
 
 & cmake --build $BuildDir --config $Configuration --parallel
 exit $LASTEXITCODE
+
+#endregion
