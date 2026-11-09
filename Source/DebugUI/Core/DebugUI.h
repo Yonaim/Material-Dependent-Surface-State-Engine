@@ -60,6 +60,11 @@ namespace MDSS
     class FDebugUI
     {
     public:
+        // ============================================================
+        // 00. Lifecycle and Public API
+        // ============================================================
+#pragma region 00_Lifecycle_and_Public_API
+
         // Debug UI lifecycle
         FDebugUI(const GPU::FVulkanContext&         Context,
                  const FWindow&                     Window,
@@ -139,7 +144,14 @@ namespace MDSS
         [[nodiscard]] SurfaceState::FStateId     GetDebugState() const noexcept;
         [[nodiscard]] bool                       ShouldSuppressDebugHotkey() const noexcept;
 
+#pragma endregion
+
     private:
+        // ============================================================
+        // 01. Scene and Viewport Operations
+        // ============================================================
+#pragma region 01_Scene_and_Viewport_Operations
+
         // Scene, selection, and camera controls
         void ProcessCameraInput(FScene& SceneData);
         void ProcessSelectionAndGizmo(FScene& SceneData);
@@ -154,12 +166,26 @@ namespace MDSS
         void DrawDemoWeatherOverlay(const FScene& SceneData);
         void DrawBrickCubeTexelMeshNotice(const FScene& SceneData);
 
+#pragma endregion
+
+        // ============================================================
+        // 02. Rendering and Performance Controls
+        // ============================================================
+#pragma region 02_Rendering_and_Performance_Controls
+
         // Rendering controls and performance overlays
         void DrawRenderOptionsWindow(FScene& SceneData);
         void DrawRenderSettingsWindow(FScene& SceneData);
         void DrawViewportStatsOverlay();
         void ResetProfilingAverages() noexcept;
         void ResetSurfaceStateSettings();
+
+#pragma endregion
+
+        // ============================================================
+        // 03. Simulation and Diagnostic Panels
+        // ============================================================
+#pragma region 03_Simulation_and_Diagnostic_Panels
 
         // Simulation and diagnostic panels
         void DrawSimulationDebugWindow(FScene& SceneData);
@@ -173,6 +199,13 @@ namespace MDSS
         void DrawPerformanceTab(bool bRendering);
         void DrawLogWindow();
 
+#pragma endregion
+
+        // ============================================================
+        // 04. Shared Layout Helpers
+        // ============================================================
+#pragma region 04_Shared_Layout_Helpers
+
         // Shared layout helpers
         void                      SetupDockspace();
         void                      ApplyCameraViewPreset(FScene& SceneData, std::size_t Index);
@@ -184,22 +217,50 @@ namespace MDSS
                                                     float       TopPadding = SectionHeaderTopPadding,
                                                     float       BottomPadding = 4.0F) const;
 
-        VkDevice                               Device = VK_NULL_HANDLE;
-        GLFWwindow*                            NativeWindow = nullptr;
-        Rendering::FRenderer*                  FrameRenderer = nullptr;
-        Asset::FAssetManager*                  AssetManager = nullptr;
-        SurfaceState::FSurfaceDataManager*     SurfaceDataManager = nullptr;
-        bool                                   bRotatingCamera = false;
-        float                                  CameraZoomSpeed = 12.0F;
-        float                                  CameraMoveSpeed = 2.5F;
-        bool                                   bDockLayoutInitialized = false;
-        bool                                   bInjectMode = false;
-        bool                                   bPresentationMode = false;
-        bool                                   bPresentationGridWasVisible = false;
-        bool                                   bPresentationAxisWasVisible = false;
-        bool                                   bDemoPlaybackGridAxisHidden = false;
-        bool                                   bDemoPlaybackGridWasVisible = false;
-        bool                                   bDemoPlaybackAxisWasVisible = false;
+#pragma endregion
+
+        // ============================================================
+        // 05. Resource References
+        // ============================================================
+#pragma region 05_Resource_References
+
+        VkDevice                           Device = VK_NULL_HANDLE;
+        GLFWwindow*                        NativeWindow = nullptr;
+        Rendering::FRenderer*              FrameRenderer = nullptr;
+        Asset::FAssetManager*              AssetManager = nullptr;
+        SurfaceState::FSurfaceDataManager* SurfaceDataManager = nullptr;
+#pragma endregion
+
+        // ============================================================
+        // 06. Camera Input and Dock State
+        // ============================================================
+#pragma region 06_Camera_Input_and_Dock_State
+
+        bool  bRotatingCamera = false;
+        float CameraZoomSpeed = 12.0F;
+        float CameraMoveSpeed = 2.5F;
+        bool  bDockLayoutInitialized = false;
+        bool  bInjectMode = false;
+#pragma endregion
+
+        // ============================================================
+        // 07. Presentation State
+        // ============================================================
+#pragma region 07_Presentation_State
+
+        bool bPresentationMode = false;
+        bool bPresentationGridWasVisible = false;
+        bool bPresentationAxisWasVisible = false;
+        bool bDemoPlaybackGridAxisHidden = false;
+        bool bDemoPlaybackGridWasVisible = false;
+        bool bDemoPlaybackAxisWasVisible = false;
+#pragma endregion
+
+        // ============================================================
+        // 08. Simulation and Contact Controls
+        // ============================================================
+#pragma region 08_Simulation_and_Contact_Controls
+
         SurfaceState::FStateId                 InjectState = 0;
         SurfaceState::FStateId                 DebugState = 0;
         float                                  InjectStrength = 1.0F;
@@ -218,8 +279,15 @@ namespace MDSS
         bool                                   bSolverStepRequested = false;
         bool                                   bSolverResetRequested = false;
         bool                                   bFrameTimeResetRequested = false;
-        Asset::FSRProfileAssetHandle           DebugParameterProfile = Asset::InvalidAssetHandle;
-        SurfaceState::FStateId                 DebugParameterState = 0;
+#pragma endregion
+
+        // ============================================================
+        // 09. Profile Editing State
+        // ============================================================
+#pragma region 09_Profile_Editing_State
+
+        Asset::FSRProfileAssetHandle DebugParameterProfile = Asset::InvalidAssetHandle;
+        SurfaceState::FStateId       DebugParameterState = 0;
         std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> ParameterDraftKey{Asset::InvalidAssetHandle,
                                                                                           SurfaceState::InvalidStateId};
         SurfaceState::FSurfaceStateParameters                           ParameterDraft{};
@@ -232,22 +300,36 @@ namespace MDSS
         bool                                                                      bParameterDraftDirty = false;
         std::string                                                               ParameterStatus;
         std::string                                                               ResolutionStatus;
-        std::optional<std::size_t>                                                SelectedObject;
-        int                                                                       ActiveGizmoAxis = -1;
-        int                                                                       HoveredGizmoAxis = -1;
-        bool                                                                      bRotationGizmoMode = false;
-        glm::vec2                                                                 GizmoDragStartMouse{0.0F};
-        glm::vec2                                                                 GizmoDragScreenAxis{0.0F};
-        glm::vec3                                                                 GizmoDragStartPosition{0.0F};
-        glm::vec3                                                                 GizmoDragStartRotation{0.0F};
-        float                                                                     GizmoDragLastAngle = 0.0F;
-        float                                                                     GizmoDragAccumulatedAngle = 0.0F;
-        float                                                                     GizmoDragWorldScale = 0.0F;
-        float                                                                     GizmoDragPixelLength = 0.0F;
-        std::string                                                               SceneStatus;
-        std::string                                                               EditorLayoutPath;
-        std::uint32_t                                                             DockspaceID = 0;
-        ImFont*                                                                   SectionHeaderFont = nullptr;
+#pragma endregion
+
+        // ============================================================
+        // 10. Selection and Gizmo State
+        // ============================================================
+#pragma region 10_Selection_and_Gizmo_State
+
+        std::optional<std::size_t> SelectedObject;
+        int                        ActiveGizmoAxis = -1;
+        int                        HoveredGizmoAxis = -1;
+        bool                       bRotationGizmoMode = false;
+        glm::vec2                  GizmoDragStartMouse{0.0F};
+        glm::vec2                  GizmoDragScreenAxis{0.0F};
+        glm::vec3                  GizmoDragStartPosition{0.0F};
+        glm::vec3                  GizmoDragStartRotation{0.0F};
+        float                      GizmoDragLastAngle = 0.0F;
+        float                      GizmoDragAccumulatedAngle = 0.0F;
+        float                      GizmoDragWorldScale = 0.0F;
+        float                      GizmoDragPixelLength = 0.0F;
+#pragma endregion
+
+        // ============================================================
+        // 11. Scene Dock and Viewport State
+        // ============================================================
+#pragma region 11_Scene_Dock_and_Viewport_State
+
+        std::string   SceneStatus;
+        std::string   EditorLayoutPath;
+        std::uint32_t DockspaceID = 0;
+        ImFont*       SectionHeaderFont = nullptr;
         struct FViewportPanel
         {
             std::uint32_t Id = 0;
@@ -261,12 +343,26 @@ namespace MDSS
         glm::vec4                   ViewportWorkspaceRectNormalized{0.0F, 0.0F, 1.0F, 1.0F};
         int                         ViewportLayout = 2; // 0: grid, 1: horizontal, 2: vertical
 
+#pragma endregion
+
+        // ============================================================
+        // 12. Log State
+        // ============================================================
+#pragma region 12_Log_State
+
         std::array<bool, static_cast<std::size_t>(ELogLevel::Count)> LogLevelFilters{true, true, true, true, true};
         std::array<char, 128>                                        LogSearch{};
         std::vector<FLogEntry>                                       CachedLogEntries;
         std::uint64_t                                                LastSeenLogRevision = 0;
         bool                                                         bScrollLogToBottom = true;
         float                                                        LogWindowHeight = 540.0F;
+#pragma endregion
+
+        // ============================================================
+        // 13. Profiling and Overlay State
+        // ============================================================
+#pragma region 13_Profiling_and_Overlay_State
+
         struct FProfilingSample
         {
             double                TimeSeconds = 0.0;
@@ -301,5 +397,6 @@ namespace MDSS
         std::deque<FProfilingSample> ProfilingRecentSamples;
         bool                         bProfilingAverageAvailable = false;
         bool                         bViewportOverlaysVisible = true;
+#pragma endregion
     };
 } // namespace MDSS

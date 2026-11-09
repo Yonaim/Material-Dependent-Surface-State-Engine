@@ -99,6 +99,12 @@
 - **검증:** 최종 Debug build 성공. CTest 7 통과/7 실패·skip 0, 상태/실패 원인 문구 동일. AST 100 TU 오류 0·scalar bool 553개/타입 규칙 적합. 계획 외 코드 토큰 변경 없음·문자열/개행 유지. shader 150개 통과·SPIR-V 바이트 동일, render-only 전후 화면/settings/validation 동일·ERROR 0. Source/Tests format dry-run 181개 통과. Research syntax 진단은 전후 동일한 기존 8개이며 별도 연구 실행/전체 overlay·성능·다른 플랫폼은 미검증. [증거](../../../Build/Validation/20261109-222214-unreal-naming/summary.md).
 - **커밋:** 미커밋·push 없음. 다음 단계는 기존 6번 문서·스타일 정리.
 
+## 2026-11-09 — Universal 5.5 규칙 반영 및 FDebugUI 1단계 구획
+- **문서 먼저 반영:** 로컬 Universal `93dbbed`의 공통 2단계 지침, Code Style·언어 6개·검증·워크플로·구현 템플릿·AGENTS를 반영. Document Map은 공통 행만 추가하고 프로젝트 라우팅/규칙/설정 보존. 현재 우선순위와 후속 후보를 `11_Section-and-Responsibility-Plan.md`에 기록.
+- **1단계 코드:** DebugUI.h에 Public API/기능별 메서드/관련 상태의 14개 섹션과 Region 추가. 멤버 선언·초기화·접근 지정자·코드 토큰 순서 유지.
+- **검증:** 주석/Region 제외 토큰 동일, CRLF 및 Region 균형/지역 번호 확인. MDSS Debug target build 성공. 별도 stage1 헤더/검증 파일 보존. 이 구획만으로 책임 분리가 완료됐다고 보지 않음.
+- **다음 별도 작업:** private profiling 상태와 Reset/Accumulate/Publish 동작 추출·검증. 커밋/push 없음.
+
 ## 2026-11-09 — 누적 변경 분할 커밋
 
 - 사용자 요청에 따라 기존 변경을 의미 단위로 분리한다. 소스 작업 폴더를 유지하고 보존된 단계별 스냅샷으로 인덱스를 구성했다.
@@ -109,3 +115,4 @@
   - Refactor(Shaders): 디버그·오버레이·솔버 진입점과 helper 정리
   - Refactor(Naming): C++ 타입과 bool에 Unreal-Inspired 접두어 적용
   - Docs(Standards): Universal 5.5의 2단계 리팩터링 규칙 반영
+  - Style(DebugUI): 클래스 선언을 책임별 14개 섹션으로 구획
