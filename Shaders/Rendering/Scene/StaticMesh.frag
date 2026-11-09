@@ -37,10 +37,7 @@ const uint RENDER_MODE_MAPPED_NORMAL_WS = 5u;
 
 const uint RENDER_MODE_WIREFRAME_UNIFORM_WHITE = 20u;
 
-vec3 VisualizeNormal(vec3 Normal)
-{
-    return Normal * 0.5 + 0.5;
-}
+vec3 VisualizeNormal(vec3 Normal);
 
 // #endregion
 
@@ -108,4 +105,16 @@ void main()
     OutColor = vec4(ShadeSurface(albedo.rgb, mappedNormalWS, Material.CameraPosition.xyz - FragWorldPosition,
                                Material.DemoOptions.x, Material.AmbientLight), albedo.a);
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+vec3 VisualizeNormal(vec3 Normal)
+{
+    return Normal * 0.5 + 0.5;
+}
+
 // #endregion

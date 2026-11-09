@@ -37,23 +37,11 @@ shared uint TileProfile[96];
 shared uint TileChart[96];
 #endif
 
-uint SmoothingMode() { return uint(MDSS_SMOOTH_MODE); }
+uint SmoothingMode();
 
-bool SameRegion(uint Center, uint Other, uint Surface)
-{
-    return Other < uint(TexelSurfaceIndices.Values.length()) &&
-           Other < uint(TexelProfileIndices.Values.length()) &&
-           Other < uint(TexelChartIndices.Values.length()) &&
-           TexelSurfaceIndices.Values[Other] == Surface &&
-           TexelSurfaceIndices.Values[Center] == Surface &&
-           TexelProfileIndices.Values[Other] == TexelProfileIndices.Values[Center] &&
-           TexelChartIndices.Values[Other] == TexelChartIndices.Values[Center];
-}
+bool SameRegion(uint Center, uint Other, uint Surface);
 
-vec4 ReadSource(ivec3 P)
-{
-    return SmoothingMode() == 2u ? imageLoad(TempStates, P) : imageLoad(RawStates, P);
-}
+vec4 ReadSource(ivec3 P);
 
 // #endregion
 
@@ -170,4 +158,29 @@ void main()
         imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
 #endif
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+uint SmoothingMode() { return uint(MDSS_SMOOTH_MODE); }
+
+bool SameRegion(uint Center, uint Other, uint Surface)
+{
+    return Other < uint(TexelSurfaceIndices.Values.length()) &&
+           Other < uint(TexelProfileIndices.Values.length()) &&
+           Other < uint(TexelChartIndices.Values.length()) &&
+           TexelSurfaceIndices.Values[Other] == Surface &&
+           TexelSurfaceIndices.Values[Center] == Surface &&
+           TexelProfileIndices.Values[Other] == TexelProfileIndices.Values[Center] &&
+           TexelChartIndices.Values[Other] == TexelChartIndices.Values[Center];
+}
+
+vec4 ReadSource(ivec3 P)
+{
+    return SmoothingMode() == 2u ? imageLoad(TempStates, P) : imageLoad(RawStates, P);
+}
+
 // #endregion

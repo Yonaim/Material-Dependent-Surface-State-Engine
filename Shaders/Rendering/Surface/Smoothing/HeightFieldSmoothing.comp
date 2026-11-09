@@ -50,90 +50,15 @@ shared float HaloSaturation[100];
 shared float HaloCavityFill[100];
 #endif
 
-uint CapacityTileCount()
-{
-    return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
-}
+uint CapacityTileCount();
 
-uint NormalListBase()
-{
-    // GeometryCache sparse layout matches TexelGeometry/OverlayOccupancyScan.
-    return Push.TexelCount * 6u + CapacityTileCount() * 5u + 8u;
-}
+uint NormalListBase();
 
-bool ResolveCandidateTile(uint Candidate)
-{
-    uint Base = 0u;
-    for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
-    {
-        uvec4 Range = SurfaceRanges.Values[Surface];
-        uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
-        uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
-        uint Count = TilesX * TilesY;
-        if (Candidate < Base + Count)
-        {
-            uint Local = Candidate - Base;
-            SparseTileValid = 1u;
-            SparseRangeFirst = Range.x;
-            SparseRangeWidth = Range.y;
-            SparseRangeHeight = Range.z;
-            SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
-            SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
-            return true;
-        }
-        Base += Count;
-    }
-    SparseTileValid = 0u;
-    return false;
-}
+bool ResolveCandidateTile(uint Candidate);
 
-uint ResolveTexel()
-{
-    if (Push.UseSparse == 0u)
-        return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+uint ResolveTexel();
 
-    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
-    uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
-    uint ActiveSlot = gl_WorkGroupID.x / GroupsPerTile;
-    uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
-    uint Candidate = GeometryCache.Values[NormalListBase() + ActiveSlot];
-
-    if (gl_LocalInvocationIndex == 0u)
-    {
-        SparseTileValid = 0u;
-        ResolveCandidateTile(Candidate);
-    }
-    barrier();
-    if (SparseTileValid == 0u) return Push.TexelCount;
-
-    uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    if (Local >= TilePixels) return Push.TexelCount;
-#if MDSS_HEIGHT_HALO
-    uint MicrotilesX = Push.TileSize / 8u;
-    uint LocalX = (Subgroup % MicrotilesX) * 8u + gl_LocalInvocationID.x % 8u;
-    uint LocalY = (Subgroup / MicrotilesX) * 8u + gl_LocalInvocationID.x / 8u;
-#else
-    uint LocalX = Local % Push.TileSize;
-    uint LocalY = Local / Push.TileSize;
-#endif
-    uint X = SparseTileX * Push.TileSize + LocalX;
-    uint Y = SparseTileY * Push.TileSize + LocalY;
-    if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
-    return SparseRangeFirst + Y * SparseRangeWidth + X;
-}
-
-float DisplayedCavityFill(uint Texel, uint Profile)
-{
-    if (Push.Channels == 0u || Push.Channel >= Push.Channels) return 0.0;
-#if MDSS_GPU_VALIDATION
-    if (Profile >= SurfaceProfileRecordCount() / Push.Channels) return 0.0;
-#endif
-    TSurfaceGPUProfileParameters Parameters = LoadSurfaceProfileParameters(Profile * Push.Channels + Push.Channel);
-    float ReferenceAmount = StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) *
-                            Parameters.CapacityInputAndTransfer.x;
-    float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
-    return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
-}
+float DisplayedCavityFill(uint Texel, uint Profile);
 
 // #endregion
 
@@ -292,4 +217,96 @@ void main()
     if (dot(WeightedNormal, WeightedNormal) > 1e-12)
         OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(WeightedNormal);
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+uint CapacityTileCount()
+{
+    return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
+}
+
+uint NormalListBase()
+{
+    // GeometryCache sparse layout matches TexelGeometry/OverlayOccupancyScan.
+    return Push.TexelCount * 6u + CapacityTileCount() * 5u + 8u;
+}
+
+bool ResolveCandidateTile(uint Candidate)
+{
+    uint Base = 0u;
+    for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
+    {
+        uvec4 Range = SurfaceRanges.Values[Surface];
+        uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
+        uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
+        uint Count = TilesX * TilesY;
+        if (Candidate < Base + Count)
+        {
+            uint Local = Candidate - Base;
+            SparseTileValid = 1u;
+            SparseRangeFirst = Range.x;
+            SparseRangeWidth = Range.y;
+            SparseRangeHeight = Range.z;
+            SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
+            SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+            return true;
+        }
+        Base += Count;
+    }
+    SparseTileValid = 0u;
+    return false;
+}
+
+uint ResolveTexel()
+{
+    if (Push.UseSparse == 0u)
+        return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+
+    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+    uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
+    uint ActiveSlot = gl_WorkGroupID.x / GroupsPerTile;
+    uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
+    uint Candidate = GeometryCache.Values[NormalListBase() + ActiveSlot];
+
+    if (gl_LocalInvocationIndex == 0u)
+    {
+        SparseTileValid = 0u;
+        ResolveCandidateTile(Candidate);
+    }
+    barrier();
+    if (SparseTileValid == 0u) return Push.TexelCount;
+
+    uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    if (Local >= TilePixels) return Push.TexelCount;
+#if MDSS_HEIGHT_HALO
+    uint MicrotilesX = Push.TileSize / 8u;
+    uint LocalX = (Subgroup % MicrotilesX) * 8u + gl_LocalInvocationID.x % 8u;
+    uint LocalY = (Subgroup / MicrotilesX) * 8u + gl_LocalInvocationID.x / 8u;
+#else
+    uint LocalX = Local % Push.TileSize;
+    uint LocalY = Local / Push.TileSize;
+#endif
+    uint X = SparseTileX * Push.TileSize + LocalX;
+    uint Y = SparseTileY * Push.TileSize + LocalY;
+    if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
+    return SparseRangeFirst + Y * SparseRangeWidth + X;
+}
+
+float DisplayedCavityFill(uint Texel, uint Profile)
+{
+    if (Push.Channels == 0u || Push.Channel >= Push.Channels) return 0.0;
+#if MDSS_GPU_VALIDATION
+    if (Profile >= SurfaceProfileRecordCount() / Push.Channels) return 0.0;
+#endif
+    TSurfaceGPUProfileParameters Parameters = LoadSurfaceProfileParameters(Profile * Push.Channels + Push.Channel);
+    float ReferenceAmount = StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) *
+                            Parameters.CapacityInputAndTransfer.x;
+    float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
+    return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
+}
+
 // #endregion

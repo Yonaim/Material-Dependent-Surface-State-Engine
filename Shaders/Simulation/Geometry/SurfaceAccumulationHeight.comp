@@ -19,35 +19,9 @@ const float DirtyHeightRelativeEpsilon = 1.0e-3;
 const uint StateDrivenGeometryUpdateFlag = 1u << 6u;
 const uint ForceFullGeometryFlag = 1u << 10u;
 
-void ScheduleGeometryGroup(uint Group)
-{
-    uint Groups = sparseWorkgroupCount();
-    if (Group >= Groups) return;
-    if (atomicCompSwap(AccumulationHeights.Values[geometryScheduleFlagBase() + Group], 0u, 1u) == 0u)
-    {
-        uint Slot = atomicAdd(AccumulationHeights.Values[geometryScheduleCommandBase()], 1u);
-        if (Slot < Groups)
-            AccumulationHeights.Values[geometryScheduleListBase() + Slot] = Group;
-    }
-}
+void ScheduleGeometryGroup(uint Group);
 
-void ScheduleGeometryTexelAndTwoHopNeighbors(uint Texel)
-{
-    if (Texel >= Solver.LocalTexelCount) return;
-    ScheduleGeometryGroup(Texel / 64u);
-    for (uint D = 0u; D < SurfaceNeighborCount; ++D)
-    {
-        uint N1 = neighborIndex(Texel, D);
-        if (N1 == InvalidTexelIndex || N1 >= Solver.LocalTexelCount) continue;
-        ScheduleGeometryGroup(N1 / 64u);
-        for (uint D2 = 0u; D2 < SurfaceNeighborCount; ++D2)
-        {
-            uint N2 = neighborIndex(N1, D2);
-            if (N2 != InvalidTexelIndex && N2 < Solver.LocalTexelCount)
-                ScheduleGeometryGroup(N2 / 64u);
-        }
-    }
-}
+void ScheduleGeometryTexelAndTwoHopNeighbors(uint Texel);
 
 // #endregion
 
@@ -115,4 +89,41 @@ void main()
         atomicMax(AccumulationHeights.Values[geometryScheduleCommandBase()], sparseWorkgroupCount());
     }
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+void ScheduleGeometryGroup(uint Group)
+{
+    uint Groups = sparseWorkgroupCount();
+    if (Group >= Groups) return;
+    if (atomicCompSwap(AccumulationHeights.Values[geometryScheduleFlagBase() + Group], 0u, 1u) == 0u)
+    {
+        uint Slot = atomicAdd(AccumulationHeights.Values[geometryScheduleCommandBase()], 1u);
+        if (Slot < Groups)
+            AccumulationHeights.Values[geometryScheduleListBase() + Slot] = Group;
+    }
+}
+
+void ScheduleGeometryTexelAndTwoHopNeighbors(uint Texel)
+{
+    if (Texel >= Solver.LocalTexelCount) return;
+    ScheduleGeometryGroup(Texel / 64u);
+    for (uint D = 0u; D < SurfaceNeighborCount; ++D)
+    {
+        uint N1 = neighborIndex(Texel, D);
+        if (N1 == InvalidTexelIndex || N1 >= Solver.LocalTexelCount) continue;
+        ScheduleGeometryGroup(N1 / 64u);
+        for (uint D2 = 0u; D2 < SurfaceNeighborCount; ++D2)
+        {
+            uint N2 = neighborIndex(N1, D2);
+            if (N2 != InvalidTexelIndex && N2 < Solver.LocalTexelCount)
+                ScheduleGeometryGroup(N2 / 64u);
+        }
+    }
+}
+
 // #endregion

@@ -39,45 +39,30 @@ layout(local_size_x = 64) in;
 shared uint InputCount;
 shared uint InputMask;
 
-uint WorkgroupCount() { return (Solver.LocalTexelCount + 63u) / 64u; }
-uint SolverBlockWords() { return WorkgroupCount() * 3u + 4u; }
-uint SolverACommandBase() { return 3u * Solver.LocalTexelCount; }
-uint SolverBCommandBase() { return SolverACommandBase() + SolverBlockWords(); }
-uint SolverCommandBase(bool AB) { return AB ? SolverACommandBase() : SolverBCommandBase(); }
-uint SolverFlagBase(bool AB) { return SolverCommandBase(AB) + 3u; }
-uint SolverListBase(bool AB) { return SolverFlagBase(AB) + WorkgroupCount(); }
-uint SolverMaskIndex(bool AB) { return SolverListBase(AB) + WorkgroupCount(); }
-uint SolverWorkgroupMaskBase(bool AB) { return SolverMaskIndex(AB) + 1u; }
-bool CurrentAB() { return (Solver.Flags & CurrentStateABFlag) != 0u; }
+uint WorkgroupCount();
+uint SolverBlockWords();
+uint SolverACommandBase();
+uint SolverBCommandBase();
+uint SolverCommandBase(bool AB);
+uint SolverFlagBase(bool AB);
+uint SolverListBase(bool AB);
+uint SolverMaskIndex(bool AB);
+uint SolverWorkgroupMaskBase(bool AB);
+bool CurrentAB();
 
-uint InputCountIndex() { return SolverBCommandBase() + SolverBlockWords(); }
-uint InputMaskIndex() { return InputCountIndex() + 1u; }
-uint InputListBase() { return InputMaskIndex() + 1u; }
-uint InputGroupMaskBase() { return InputListBase() + WorkgroupCount(); }
-uint AccumulationCommandBase() { return InputGroupMaskBase() + WorkgroupCount(); }
-uint AccumulationFlagBase() { return AccumulationCommandBase() + 3u; }
-uint AccumulationListBase() { return AccumulationFlagBase() + WorkgroupCount(); }
-uint GeometryCommandBase() { return AccumulationListBase() + WorkgroupCount(); }
-uint GeometryFlagBase() { return GeometryCommandBase() + 3u; }
+uint InputCountIndex();
+uint InputMaskIndex();
+uint InputListBase();
+uint InputGroupMaskBase();
+uint AccumulationCommandBase();
+uint AccumulationFlagBase();
+uint AccumulationListBase();
+uint GeometryCommandBase();
+uint GeometryFlagBase();
 
-void ResetCommand(uint Base)
-{
-    AccumulationData.Values[Base] = 0u;
-    AccumulationData.Values[Base + 1u] = 1u;
-    AccumulationData.Values[Base + 2u] = 1u;
-}
+void ResetCommand(uint Base);
 
-void ScheduleCurrentSolverGroup(uint Group)
-{
-    if ((Solver.Flags & SparseSolverFlag) == 0u || Group >= WorkgroupCount()) return;
-    bool AB = CurrentAB();
-    if (atomicCompSwap(AccumulationData.Values[SolverFlagBase(AB) + Group], 0u, 1u) == 0u)
-    {
-        uint Slot = atomicAdd(AccumulationData.Values[SolverCommandBase(AB)], 1u);
-        if (Slot < WorkgroupCount())
-            AccumulationData.Values[SolverListBase(AB) + Slot] = Group;
-    }
-}
+void ScheduleCurrentSolverGroup(uint Group);
 
 // #endregion
 
@@ -155,4 +140,68 @@ void main()
         AccumulationData.Values[InputMaskIndex()] = 0u;
     }
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
+uint WorkgroupCount() { return (Solver.LocalTexelCount + 63u) / 64u; }
+
+uint SolverBlockWords() { return WorkgroupCount() * 3u + 4u; }
+
+uint SolverACommandBase() { return 3u * Solver.LocalTexelCount; }
+
+uint SolverBCommandBase() { return SolverACommandBase() + SolverBlockWords(); }
+
+uint SolverCommandBase(bool AB) { return AB ? SolverACommandBase() : SolverBCommandBase(); }
+
+uint SolverFlagBase(bool AB) { return SolverCommandBase(AB) + 3u; }
+
+uint SolverListBase(bool AB) { return SolverFlagBase(AB) + WorkgroupCount(); }
+
+uint SolverMaskIndex(bool AB) { return SolverListBase(AB) + WorkgroupCount(); }
+
+uint SolverWorkgroupMaskBase(bool AB) { return SolverMaskIndex(AB) + 1u; }
+
+bool CurrentAB() { return (Solver.Flags & CurrentStateABFlag) != 0u; }
+
+uint InputCountIndex() { return SolverBCommandBase() + SolverBlockWords(); }
+
+uint InputMaskIndex() { return InputCountIndex() + 1u; }
+
+uint InputListBase() { return InputMaskIndex() + 1u; }
+
+uint InputGroupMaskBase() { return InputListBase() + WorkgroupCount(); }
+
+uint AccumulationCommandBase() { return InputGroupMaskBase() + WorkgroupCount(); }
+
+uint AccumulationFlagBase() { return AccumulationCommandBase() + 3u; }
+
+uint AccumulationListBase() { return AccumulationFlagBase() + WorkgroupCount(); }
+
+uint GeometryCommandBase() { return AccumulationListBase() + WorkgroupCount(); }
+
+uint GeometryFlagBase() { return GeometryCommandBase() + 3u; }
+
+void ResetCommand(uint Base)
+{
+    AccumulationData.Values[Base] = 0u;
+    AccumulationData.Values[Base + 1u] = 1u;
+    AccumulationData.Values[Base + 2u] = 1u;
+}
+
+void ScheduleCurrentSolverGroup(uint Group)
+{
+    if ((Solver.Flags & SparseSolverFlag) == 0u || Group >= WorkgroupCount()) return;
+    bool AB = CurrentAB();
+    if (atomicCompSwap(AccumulationData.Values[SolverFlagBase(AB) + Group], 0u, 1u) == 0u)
+    {
+        uint Slot = atomicAdd(AccumulationData.Values[SolverCommandBase(AB)], 1u);
+        if (Slot < WorkgroupCount())
+            AccumulationData.Values[SolverListBase(AB) + Slot] = Group;
+    }
+}
+
 // #endregion

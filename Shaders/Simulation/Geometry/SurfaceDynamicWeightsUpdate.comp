@@ -19,6 +19,105 @@ const float DynamicGeometryEpsilon = 1.0e-6;
 mat3 ModelLinear;
 mat3 NormalMatrix;
 
+vec3 localPosition(uint Texel);
+
+vec3 localNormal(uint Texel);
+
+vec3 worldPosition(uint Texel);
+
+vec3 worldNormal(uint Texel);
+
+float buildDynamicConcavityWeight(uint Texel, float StaticWeight);
+
+float buildTransferWeight(uint Source,
+                          uint DirectionIndex,
+                          vec3 SourceWorld,
+                          vec3 SourceNormal,
+                          float SourceMeanDistance,
+                          bool SourceNormalValid);
+
+// #endregion
+
+// ============================================================
+// 01. Main Process
+// ============================================================
+// #region 01_Main_Process
+
+void main()
+{
+    uint OriginalGroup = geometryOriginalGroup();
+    uint Source = OriginalGroup * 64u + gl_LocalInvocationID.x;
+    if (Source >= Solver.LocalTexelCount) return;
+
+    ModelLinear = mat3(Solver.ModelLinearColumns[0].xyz,
+                       Solver.ModelLinearColumns[1].xyz,
+                       Solver.ModelLinearColumns[2].xyz);
+    NormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
+                        Solver.NormalMatrixAndUpColumns[1].xyz,
+                        Solver.NormalMatrixAndUpColumns[2].xyz);
+
+    if (!isValidTexel(Source))
+    {
+        DynamicConcavityWeights.Values[Source] = 0.0;
+        if (useHalfDynamicWeights())
+        {
+            uint Base = Source * (SurfaceNeighborCount / 2u);
+            for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
+                TransferWeights.Values[Base + Pair] = 0u;
+        }
+        else
+        {
+            uint Base = Source * SurfaceNeighborCount;
+            for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+                TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(0.0);
+        }
+        return;
+    }
+
+    DynamicConcavityWeights.Values[Source] = buildDynamicConcavityWeight(
+        Source, GeometryScalars.Values[Source].ConcavityWeight);
+
+    vec3 SourceWorld = worldPosition(Source);
+    vec3 SourceNormal = worldNormal(Source);
+    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u
+        ? DynamicGeometry.Values[Source * 2u].w : 1.0;
+    bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5;
+#if MDSS_GPU_VALIDATION
+    SourceNormalValid = SourceNormalValid && !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
+#endif
+
+    if (useHalfDynamicWeights())
+    {
+        uint Base = Source * (SurfaceNeighborCount / 2u);
+        for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
+        {
+            uint D0 = Pair * 2u;
+            uint D1 = D0 + 1u;
+            vec2 Weights = clamp(vec2(
+                buildTransferWeight(Source, D0, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid),
+                buildTransferWeight(Source, D1, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid)),
+                vec2(0.0), vec2(1.0));
+            TransferWeights.Values[Base + Pair] = packHalf2x16(Weights);
+        }
+    }
+    else
+    {
+        uint Base = Source * SurfaceNeighborCount;
+        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+        {
+            float Weight = buildTransferWeight(
+                Source, DirectionIndex, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid);
+            TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(Weight);
+        }
+    }
+}
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+
 vec3 localPosition(uint Texel)
 {
     return DynamicGeometry.Values[Texel * 2u].xyz;
@@ -150,79 +249,4 @@ float buildTransferWeight(uint Source,
     return Weight;
 }
 
-// #endregion
-
-// ============================================================
-// 01. Main Process
-// ============================================================
-// #region 01_Main_Process
-
-void main()
-{
-    uint OriginalGroup = geometryOriginalGroup();
-    uint Source = OriginalGroup * 64u + gl_LocalInvocationID.x;
-    if (Source >= Solver.LocalTexelCount) return;
-
-    ModelLinear = mat3(Solver.ModelLinearColumns[0].xyz,
-                       Solver.ModelLinearColumns[1].xyz,
-                       Solver.ModelLinearColumns[2].xyz);
-    NormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
-                        Solver.NormalMatrixAndUpColumns[1].xyz,
-                        Solver.NormalMatrixAndUpColumns[2].xyz);
-
-    if (!isValidTexel(Source))
-    {
-        DynamicConcavityWeights.Values[Source] = 0.0;
-        if (useHalfDynamicWeights())
-        {
-            uint Base = Source * (SurfaceNeighborCount / 2u);
-            for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
-                TransferWeights.Values[Base + Pair] = 0u;
-        }
-        else
-        {
-            uint Base = Source * SurfaceNeighborCount;
-            for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-                TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(0.0);
-        }
-        return;
-    }
-
-    DynamicConcavityWeights.Values[Source] = buildDynamicConcavityWeight(
-        Source, GeometryScalars.Values[Source].ConcavityWeight);
-
-    vec3 SourceWorld = worldPosition(Source);
-    vec3 SourceNormal = worldNormal(Source);
-    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u
-        ? DynamicGeometry.Values[Source * 2u].w : 1.0;
-    bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5;
-#if MDSS_GPU_VALIDATION
-    SourceNormalValid = SourceNormalValid && !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
-#endif
-
-    if (useHalfDynamicWeights())
-    {
-        uint Base = Source * (SurfaceNeighborCount / 2u);
-        for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
-        {
-            uint D0 = Pair * 2u;
-            uint D1 = D0 + 1u;
-            vec2 Weights = clamp(vec2(
-                buildTransferWeight(Source, D0, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid),
-                buildTransferWeight(Source, D1, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid)),
-                vec2(0.0), vec2(1.0));
-            TransferWeights.Values[Base + Pair] = packHalf2x16(Weights);
-        }
-    }
-    else
-    {
-        uint Base = Source * SurfaceNeighborCount;
-        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-        {
-            float Weight = buildTransferWeight(
-                Source, DirectionIndex, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid);
-            TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(Weight);
-        }
-    }
-}
 // #endregion
