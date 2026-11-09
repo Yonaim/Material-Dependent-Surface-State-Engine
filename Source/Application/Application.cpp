@@ -30,7 +30,10 @@
 
 namespace MDSS
 {
-#pragma region Lifecycle
+// ============================================================
+// 00. Lifecycle
+// ============================================================
+#pragma region 00_Lifecycle
 
     TApplication::TApplication(TBenchmarkOptions     BenchmarkOptions,
                                std::uint32_t         RenderTileSize,
@@ -123,7 +126,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Main_Loop
+// ============================================================
+// 01. Main Loop
+// ============================================================
+#pragma region 01_Main_Loop
 
     void TApplication::Run(std::size_t FrameLimit)
     {

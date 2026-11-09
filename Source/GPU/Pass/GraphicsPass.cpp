@@ -10,7 +10,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region TGraphicsPass_Implementation
+// ============================================================
+// 00. TGraphicsPass Implementation
+// ============================================================
+#pragma region 00_TGraphicsPass_Implementation
 
     TGraphicsPass::TGraphicsPass(const TRenderPass& RenderPass) noexcept : RenderPass(&RenderPass)
     {

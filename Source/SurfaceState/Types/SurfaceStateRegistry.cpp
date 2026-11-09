@@ -12,7 +12,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region State_Registry_Construction
+// ============================================================
+// 00. State Registry Construction
+// ============================================================
+#pragma region 00_State_Registry_Construction
 
     TSurfaceStateRegistry::TSurfaceStateRegistry(const std::vector<TSurfaceResponseProfileData>& Profiles)
     {
@@ -62,7 +65,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region State_Lookup_and_Profile_Resolution
+// ============================================================
+// 01. State Lookup and Profile Resolution
+// ============================================================
+#pragma region 01_State_Lookup_and_Profile_Resolution
 
     std::size_t TSurfaceStateRegistry::GetStateCount() const noexcept
     {

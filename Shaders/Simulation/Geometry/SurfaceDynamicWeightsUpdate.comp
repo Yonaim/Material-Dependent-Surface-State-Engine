@@ -8,6 +8,10 @@
 #define SURFACE_CONCAVITY_WEIGHT_WRITE
 #include "Simulation/Solver/SurfaceSolverCommon.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 const float DynamicGeometryEpsilon = 1.0e-6;
@@ -144,6 +148,10 @@ float buildTransferWeight(uint Source,
     if (Valid) Weight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
     return Weight;
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

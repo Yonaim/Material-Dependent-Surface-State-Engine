@@ -4,6 +4,10 @@
  */
 #version 450
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec4 InColor;
 layout(location = 2) in float InEdgeCoordinate;
@@ -18,6 +22,10 @@ layout(push_constant) uniform TWorldReferencePushConstants
 
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out float EdgeCoordinate;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

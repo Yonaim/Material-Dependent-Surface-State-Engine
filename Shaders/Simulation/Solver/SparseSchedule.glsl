@@ -1,3 +1,7 @@
+// ============================================================
+// 00. Shared Shader Helpers
+// ============================================================
+
 uint sparseWorkgroupCount()
 {
     return (Solver.LocalTexelCount + 63u) / 64u;

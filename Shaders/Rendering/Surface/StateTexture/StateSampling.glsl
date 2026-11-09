@@ -4,6 +4,10 @@
  */
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTexelChartIndices { uint Values[]; } TexelChartIndices;
 
 uint FindSurfaceSamplingAnchor(uint Surface, vec2 UV, uvec4 Range)

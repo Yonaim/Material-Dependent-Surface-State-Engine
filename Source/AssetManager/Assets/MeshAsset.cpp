@@ -17,7 +17,10 @@
 
 namespace MDSS::Asset
 {
-#pragma region TMeshAsset_Implementation
+// ============================================================
+// 00. TMeshAsset Implementation
+// ============================================================
+#pragma region 00_TMeshAsset_Implementation
 
     TMeshAsset::TMeshAsset(TAssetID                         ID,
                            std::string                      Name,

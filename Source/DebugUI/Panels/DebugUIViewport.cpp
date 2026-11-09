@@ -2,6 +2,11 @@
 
 namespace MDSS
 {
+    // ============================================================
+    // 00. Viewport Panels
+    // ============================================================
+    #pragma region 00_Viewport_Panels
+
     void TDebugUI::DrawViewportPanels(TScene&)
     {
         HoveredViewportId = 0;
@@ -123,6 +128,13 @@ namespace MDSS
         }
     }
 
+    #pragma endregion
+
+    // ============================================================
+    // 01. Mesh Notices
+    // ============================================================
+    #pragma region 01_Mesh_Notices
+
     void TDebugUI::DrawBrickCubeTexelMeshNotice(const TScene& SceneData)
     {
         if (FrameRenderer == nullptr || AssetManager == nullptr)
@@ -165,6 +177,13 @@ namespace MDSS
         }
         ImGui::End();
     }
+
+    #pragma endregion
+
+    // ============================================================
+    // 02. Render Settings
+    // ============================================================
+    #pragma region 02_Render_Settings
 
     void TDebugUI::DrawRenderSettingsWindow(TScene& SceneData)
     {
@@ -450,5 +469,6 @@ namespace MDSS
         ImGui::End();
     }
 
-#pragma endregion
+    #pragma endregion
+
 } // namespace MDSS

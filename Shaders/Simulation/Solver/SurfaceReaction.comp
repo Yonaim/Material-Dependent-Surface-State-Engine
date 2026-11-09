@@ -3,6 +3,11 @@
 #include "Simulation/Solver/SurfaceSolverCommon.glsl"
 #include "Simulation/Solver/ReactionBindings.glsl"
 #include "Simulation/Solver/StateFinalize.glsl"
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 shared uint GroupNextMask;
 
@@ -60,6 +65,10 @@ float reactionRequest(uint R, uint Base, uint ReadPlane, float Area, bool Inflow
     }
     return Request;
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

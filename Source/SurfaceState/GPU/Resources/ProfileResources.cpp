@@ -13,7 +13,10 @@
 namespace MDSS::SurfaceState
 {
     using namespace Detail;
-#pragma region Profile_Resources
+// ============================================================
+// 00. Profile Resources
+// ============================================================
+#pragma region 00_Profile_Resources
 
     TSurfaceProfileGPUResources::TSurfaceProfileGPUResources(VkPhysicalDevice PhysicalDevice,
                                                              VkDevice         Device,

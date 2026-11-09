@@ -8,9 +8,17 @@
 
 #include "Simulation/Solver/SurfaceSolverCommon.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 const float DynamicGeometryEpsilon = 1.0e-6;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

@@ -17,7 +17,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Texel_Mesh_Construction_Helpers
+// ============================================================
+// 00. Texel Mesh Construction Helpers
+// ============================================================
+#pragma region 00_Texel_Mesh_Construction_Helpers
 
     static void BuildBoundaryEdges(TSurfaceTexelMesh& Mesh, const std::vector<std::uint32_t>& TopologyIDs)
     {
@@ -309,7 +312,10 @@ namespace MDSS::SurfaceState
 
 #pragma endregion
 
-#pragma region Surface_Texel_Mesh_Build
+// ============================================================
+// 01. Surface Texel Mesh Build
+// ============================================================
+#pragma region 01_Surface_Texel_Mesh_Build
 
     TSurfaceTexelMesh BuildSurfaceTexelMesh(const TSharedSurfaceGeometryData&           Geometry,
                                             std::span<const Asset::TVertex>             Vertices,

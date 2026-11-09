@@ -29,7 +29,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region GPU_Recording
+// ============================================================
+// 00. GPU Recording
+// ============================================================
+#pragma region 00_GPU_Recording
 
     void TSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
                                          float           DeltaTime,

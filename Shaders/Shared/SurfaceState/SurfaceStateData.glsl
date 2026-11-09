@@ -32,6 +32,11 @@ struct TSurfaceGPUNeighborIndices
 // set은 descriptor set 번호, binding은 그 안의 버퍼 슬롯 번호다.
 // SURFACE_DEBUG_SET은 include 전에 재정의할 수 있다. 아래 binding 번호는
 // CPU에서 만드는 descriptor layout과 같아야 하며, 중간 번호가 비어 있어도 의도된 배치다.
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(std430, set = SURFACE_DEBUG_SET, binding = 0)
 
 readonly buffer TSurfaceTexelSurfaceIndices

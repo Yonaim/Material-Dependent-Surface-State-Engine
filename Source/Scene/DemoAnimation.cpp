@@ -128,7 +128,10 @@ namespace MDSS
         }
     } // namespace
 
-#pragma region Demo_Animation_Loading
+// ============================================================
+// 00. Demo Animation Loading
+// ============================================================
+#pragma region 00_Demo_Animation_Loading
 
     TDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const TScene& Scene)
     {
@@ -307,7 +310,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Demo_Animation_Application
+// ============================================================
+// 01. Demo Animation Application
+// ============================================================
+#pragma region 01_Demo_Animation_Application
 
     void ApplyDemoAnimation(TScene& Scene, const TDemoAnimationClip& Clip, float Time)
     {

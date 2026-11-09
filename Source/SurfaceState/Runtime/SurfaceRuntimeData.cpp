@@ -11,7 +11,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Runtime_Surface_Data
+// ============================================================
+// 00. Runtime Surface Data
+// ============================================================
+#pragma region 00_Runtime_Surface_Data
 
     TSurfaceRuntimeData::TSurfaceRuntimeData(TSharedSurfaceGeometryData Geometry)
         : Geometry(std::make_shared<const TSharedSurfaceGeometryData>(std::move(Geometry)))

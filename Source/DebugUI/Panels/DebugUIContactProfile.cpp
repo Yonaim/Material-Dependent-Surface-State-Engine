@@ -2,6 +2,11 @@
 
 namespace MDSS
 {
+    // ============================================================
+    // 00. Contact Input
+    // ============================================================
+    #pragma region 00_Contact_Input
+
     void TDebugUI::DrawContactInputTab()
     {
         ImGui::Checkbox("Inject mode", &bInjectMode);
@@ -122,6 +127,13 @@ namespace MDSS
                                   "대체 검색을 사용하지 않습니다.");
         }
     }
+
+    #pragma endregion
+
+    // ============================================================
+    // 01. Profile Tuning
+    // ============================================================
+    #pragma region 01_Profile_Tuning
 
     void TDebugUI::DrawProfileTuningTab(TScene& SceneData)
     {
@@ -399,5 +411,7 @@ namespace MDSS
             ImGui::TextWrapped("%s", ParameterStatus.c_str());
         }
     }
+
+    #pragma endregion
 
 } // namespace MDSS

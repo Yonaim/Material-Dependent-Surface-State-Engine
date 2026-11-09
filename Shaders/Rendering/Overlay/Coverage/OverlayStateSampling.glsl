@@ -12,6 +12,10 @@ struct TOverlayGPUProfileParameters
     vec4 AccumulationThickness;
 };
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(std430, set = 0, binding = 1) readonly buffer TOverlayTexelProfileIndices
 {
     uint Values[];

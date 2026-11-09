@@ -2,7 +2,10 @@
 
 namespace MDSS
 {
-#pragma region Performance_Overlays
+// ============================================================
+// 00. Performance Overlays
+// ============================================================
+#pragma region 00_Performance_Overlays
 
     void TDebugUI::ResetProfilingAverages() noexcept
     {

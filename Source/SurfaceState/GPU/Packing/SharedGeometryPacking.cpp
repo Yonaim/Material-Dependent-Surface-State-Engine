@@ -14,7 +14,10 @@ namespace MDSS::SurfaceState
             return {Value.x, Value.y, Value.z, 0.0F};
         }
     }
-#pragma region Shared_Geometry_Upload
+// ============================================================
+// 00. Shared Geometry Upload
+// ============================================================
+#pragma region 00_Shared_Geometry_Upload
 
     TSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const TSharedSurfaceGeometryData&     Geometry,
                                                               std::span<const TSurfaceProfileIndex> ProfileIndexRemap)

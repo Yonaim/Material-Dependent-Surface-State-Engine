@@ -3,6 +3,11 @@
  * @brief Clears dynamic indirect draw counts before boundary compaction.
  */
 #version 450
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 struct TDrawCommand
@@ -28,6 +33,10 @@ layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
 {
     TTopDrawCommand Values[];
 } TopDrawCommands;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

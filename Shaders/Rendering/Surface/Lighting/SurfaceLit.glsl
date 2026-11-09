@@ -12,6 +12,10 @@
 #include "Rendering/Surface/Lighting/Effects/BurnScorched.glsl"
 #include "Rendering/Surface/Lighting/Lighting.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
 layout(location = 2) in float FragTangentSign;
@@ -24,6 +28,10 @@ layout(set = 0, binding = 0) uniform sampler2D BaseColorTexture;
 layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
 
 layout(location = 0) out vec4 OutColor;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

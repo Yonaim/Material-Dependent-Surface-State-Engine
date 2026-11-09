@@ -330,7 +330,10 @@ namespace MDSS::Asset
         }
     } // namespace
 
-#pragma region std_Implementation
+// ============================================================
+// 00. std Implementation
+// ============================================================
+#pragma region 00_std_Implementation
 
     std::unique_ptr<TSRProfileAsset> TSRProfileLoader::Load(TAssetID ID, const std::filesystem::path& Path)
     {

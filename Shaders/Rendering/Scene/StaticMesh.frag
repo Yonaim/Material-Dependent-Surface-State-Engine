@@ -7,6 +7,10 @@
 #include "Rendering/Surface/Lighting/MaterialParameters.glsl"
 #include "Rendering/Surface/Lighting/Lighting.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
 layout(location = 2) in float FragTangentSign;
@@ -36,6 +40,10 @@ vec3 VisualizeNormal(vec3 Normal)
 {
     return Normal * 0.5 + 0.5;
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

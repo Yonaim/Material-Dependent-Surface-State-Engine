@@ -13,7 +13,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region Framebuffer_Lifecycle
+// ============================================================
+// 00. Framebuffer Lifecycle
+// ============================================================
+#pragma region 00_Framebuffer_Lifecycle
 
     TFramebuffer::TFramebuffer(VkDevice                        Device,
                                VkRenderPass                    TRenderPass,
@@ -32,7 +35,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Framebuffer_Creation
+// ============================================================
+// 01. Framebuffer Creation
+// ============================================================
+#pragma region 01_Framebuffer_Creation
 
     void TFramebuffer::Recreate(VkRenderPass                    TRenderPass,
                                 VkExtent2D                      Extent,
@@ -95,7 +101,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Framebuffer_Accessors
+// ============================================================
+// 02. Framebuffer Accessors
+// ============================================================
+#pragma region 02_Framebuffer_Accessors
 
     VkFramebuffer TFramebuffer::Get(std::size_t Index) const
     {

@@ -24,7 +24,10 @@ namespace MDSS::SurfaceState
         }
     }
 
-#pragma region Preview_Resource_Lifecycle
+// ============================================================
+// 00. Preview Resource Lifecycle
+// ============================================================
+#pragma region 00_Preview_Resource_Lifecycle
 
     TTexelGeometryPreview::TTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
@@ -148,7 +151,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Preview_Accessors_and_Settings
+// ============================================================
+// 01. Preview Accessors and Settings
+// ============================================================
+#pragma region 01_Preview_Accessors_and_Settings
 
     VkDescriptorSet TTexelGeometryPreview::GetOutputSet(std::size_t Instance, std::size_t OutputSlot) const
     {
@@ -221,7 +227,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Preview_Command_Recording
+// ============================================================
+// 02. Preview Command Recording
+// ============================================================
+#pragma region 02_Preview_Command_Recording
 
     void TTexelGeometryPreview::Record(VkCommandBuffer                         Command,
                                        std::size_t                             Instance,

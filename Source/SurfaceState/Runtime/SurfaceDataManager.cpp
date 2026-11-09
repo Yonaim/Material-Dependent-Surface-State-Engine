@@ -30,7 +30,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Runtime_Surface_Key_Helper
+// ============================================================
+// 00. Runtime Surface Key Helper
+// ============================================================
+#pragma region 00_Runtime_Surface_Key_Helper
 
     namespace
     {
@@ -46,7 +49,10 @@ namespace MDSS::SurfaceState
     } // namespace
 #pragma endregion
 
-#pragma region Surface_Data_Loading
+// ============================================================
+// 01. Surface Data Loading
+// ============================================================
+#pragma region 01_Surface_Data_Loading
 
     TSurfaceDataManager::TSurfaceDataManager(Asset::TAssetManager& Assets) : Assets(Assets)
     {
@@ -265,7 +271,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Registry_and_Surface_Data_Accessors
+// ============================================================
+// 02. Registry and Surface Data Accessors
+// ============================================================
+#pragma region 02_Registry_and_Surface_Data_Accessors
 
     std::uint32_t TSurfaceDataManager::GetSimulationResolution() const noexcept
     {

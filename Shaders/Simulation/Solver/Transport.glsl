@@ -1,3 +1,7 @@
+// ============================================================
+// 00. Shared Shader Helpers
+// ============================================================
+
 float rawFlux(uint SourceTexel, uint TargetTexel, uint ChannelIndex, float CachedTransferWeight,
               TSurfaceGPUProfileParameters SourceParameters, float SourceSaturation,
               float TargetSaturation, float TargetConcavity, vec3 TargetPosition)

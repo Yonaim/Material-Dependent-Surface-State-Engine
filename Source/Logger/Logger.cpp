@@ -79,7 +79,10 @@ namespace MDSS
         }
     } // namespace
 
-#pragma region Log_Writing
+// ============================================================
+// 00. Log Writing
+// ============================================================
+#pragma region 00_Log_Writing
 
     void TLogger::Verbose(std::string_view Module, std::string_view Message)
     {
@@ -139,7 +142,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Log_Entry_Access
+// ============================================================
+// 01. Log Entry Access
+// ============================================================
+#pragma region 01_Log_Entry_Access
 
     std::vector<TLogEntry> TLogger::GetEntries()
     {
@@ -165,7 +171,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Log_Level_Names
+// ============================================================
+// 02. Log Level Names
+// ============================================================
+#pragma region 02_Log_Level_Names
 
     const char* TLogger::GetLevelName(TLogLevel Level) noexcept
     {

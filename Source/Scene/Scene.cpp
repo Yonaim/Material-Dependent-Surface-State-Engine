@@ -14,7 +14,10 @@
 
 namespace MDSS
 {
-#pragma region Scene_Lifecycle_and_Camera_Access
+// ============================================================
+// 00. Scene Lifecycle and Camera Access
+// ============================================================
+#pragma region 00_Scene_Lifecycle_and_Camera_Access
 
     TScene::TScene() : MainCamera({2.0F, -3.3F, 2.0F}, {0.0F, 0.0F, 0.0F}, 50.0F), InitialCamera(MainCamera)
     {
@@ -38,7 +41,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Scene_Configuration
+// ============================================================
+// 01. Scene Configuration
+// ============================================================
+#pragma region 01_Scene_Configuration
 
     void TScene::SetSourcePath(std::filesystem::path Path)
     {
@@ -80,7 +86,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Initial_State_and_Contacts
+// ============================================================
+// 02. Initial State and Contacts
+// ============================================================
+#pragma region 02_Initial_State_and_Contacts
 
     void TScene::CaptureInitialState()
     {
@@ -107,7 +116,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Demo_Animation_State
+// ============================================================
+// 03. Demo Animation State
+// ============================================================
+#pragma region 03_Demo_Animation_State
 
     void TScene::SetDemoAnimation(std::filesystem::path Path, TDemoAnimationClip Clip)
     {
@@ -206,7 +218,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Mesh_Instance_Management
+// ============================================================
+// 04. Mesh Instance Management
+// ============================================================
+#pragma region 04_Mesh_Instance_Management
 
     void TScene::AddStaticMeshInstance(TStaticMeshInstance Instance)
     {

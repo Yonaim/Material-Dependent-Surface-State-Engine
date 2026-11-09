@@ -11,7 +11,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region Command_Pool_Lifecycle
+// ============================================================
+// 00. Command Pool Lifecycle
+// ============================================================
+#pragma region 00_Command_Pool_Lifecycle
 
     TVulkanCommand::TVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily) : Device(Device)
     {
@@ -39,7 +42,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Command_Buffer_Access
+// ============================================================
+// 01. Command Buffer Access
+// ============================================================
+#pragma region 01_Command_Buffer_Access
 
     VkCommandPool TVulkanCommand::GetPool() const noexcept
     {
@@ -67,7 +73,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Single_Time_Commands
+// ============================================================
+// 02. Single Time Commands
+// ============================================================
+#pragma region 02_Single_Time_Commands
 
     VkCommandBuffer TVulkanCommand::BeginSingleTime() const
     {

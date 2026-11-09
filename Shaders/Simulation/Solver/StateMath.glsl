@@ -6,6 +6,10 @@ const float BaseSaturationTransferRate = MDSS_BASE_SATURATION_TRANSFER_RATE; // 
 
 const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // State / (world-length * second)
 
+// ============================================================
+// 00. Shared Shader Helpers
+// ============================================================
+
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
 {
     return TexelIndex * Solver.StateChannelCount + ChannelIndex;

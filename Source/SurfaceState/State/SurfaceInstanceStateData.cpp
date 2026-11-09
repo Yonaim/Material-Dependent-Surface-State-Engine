@@ -11,7 +11,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Instance_State_Construction
+// ============================================================
+// 00. Instance State Construction
+// ============================================================
+#pragma region 00_Instance_State_Construction
 
     TSurfaceInstanceStateData::TSurfaceInstanceStateData(TSurfaceInstanceID                                ID,
                                                          std::shared_ptr<const TSharedSurfaceGeometryData> Geometry,
@@ -30,7 +33,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Instance_State_Accessors
+// ============================================================
+// 01. Instance State Accessors
+// ============================================================
+#pragma region 01_Instance_State_Accessors
 
     TSurfaceInstanceID TSurfaceInstanceStateData::GetID() const noexcept
     {

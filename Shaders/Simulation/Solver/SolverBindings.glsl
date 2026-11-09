@@ -8,6 +8,11 @@ const uint SurfaceNeighborCount = 8u;
 #include "Shared/SurfaceState/SurfaceTypes.glsl"
 
 // set 0의 binding은 CPU solver와 공유하는 데이터 계약이다. state 배열은 texel-major/channel-minor 순서다.
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(std430, set = 0, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
 {
     uint Values[];

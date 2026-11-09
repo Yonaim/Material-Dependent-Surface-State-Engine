@@ -10,7 +10,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Normal_Map_Sampling_Helpers
+// ============================================================
+// 00. Normal Map Sampling Helpers
+// ============================================================
+#pragma region 00_Normal_Map_Sampling_Helpers
 
     namespace
     {
@@ -65,7 +68,10 @@ namespace MDSS::SurfaceState
     } // namespace
 #pragma endregion
 
-#pragma region Transfer_Normal_Build
+// ============================================================
+// 01. Transfer Normal Build
+// ============================================================
+#pragma region 01_Transfer_Normal_Build
 
     bool BuildNormalMapTransferNormal(const TSurfaceTexelGeometry&                   Texel,
                                       const std::vector<Asset::TVertex>&             Vertices,

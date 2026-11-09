@@ -12,7 +12,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region Image_Lifecycle_and_Creation
+// ============================================================
+// 00. Image Lifecycle and Creation
+// ============================================================
+#pragma region 00_Image_Lifecycle_and_Creation
 
     TGPUImage::TGPUImage(VkPhysicalDevice      PhysicalDevice,
                          VkDevice              Device,
@@ -136,7 +139,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Image_Accessors
+// ============================================================
+// 01. Image Accessors
+// ============================================================
+#pragma region 01_Image_Accessors
 
     VkImage TGPUImage::GetHandle() const noexcept
     {
@@ -155,7 +161,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Memory_Type_Selection
+// ============================================================
+// 02. Memory Type Selection
+// ============================================================
+#pragma region 02_Memory_Type_Selection
 
     std::uint32_t TGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,

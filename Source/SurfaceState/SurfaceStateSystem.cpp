@@ -30,7 +30,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Lifecycle
+// ============================================================
+// 00. Lifecycle
+// ============================================================
+#pragma region 00_Lifecycle
 
     TSurfaceStateSystem::TSurfaceStateSystem(const GPU::TVulkanContext&  Context,
                                              const Asset::TAssetManager& Assets,
@@ -103,7 +106,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region State_and_Contact_Management
+// ============================================================
+// 01. State and Contact Management
+// ============================================================
+#pragma region 01_State_and_Contact_Management
 
     void TSurfaceStateSystem::SubmitContact(TSurfaceContactInput Contact)
     {
@@ -174,7 +180,10 @@ namespace MDSS::SurfaceState
 
 #pragma endregion
 
-#pragma region Debug_and_Accessors
+// ============================================================
+// 02. Debug and Accessors
+// ============================================================
+#pragma region 02_Debug_and_Accessors
 
     std::size_t TSurfaceStateSystem::GetSolverInstanceCount() const noexcept
     {

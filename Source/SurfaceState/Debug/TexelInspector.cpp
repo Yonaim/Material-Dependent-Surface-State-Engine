@@ -23,7 +23,10 @@ namespace MDSS::SurfaceState
         }
     }
 
-#pragma region Inspector_Resource_Lifecycle
+// ============================================================
+// 00. Inspector Resource Lifecycle
+// ============================================================
+#pragma region 00_Inspector_Resource_Lifecycle
 
     TTexelInspector::TTexelInspector(VkPhysicalDevice      PhysicalDevice,
                                      VkDevice              Device,
@@ -140,7 +143,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Inspector_Command_Recording
+// ============================================================
+// 01. Inspector Command Recording
+// ============================================================
+#pragma region 01_Inspector_Command_Recording
 
     void TTexelInspector::Record(VkCommandBuffer                         Command,
                                  std::size_t                             FrameIndex,
@@ -197,7 +203,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Inspector_Readback
+// ============================================================
+// 02. Inspector Readback
+// ============================================================
+#pragma region 02_Inspector_Readback
 
     void TTexelInspector::CompleteFrame(std::size_t FrameIndex)
     {

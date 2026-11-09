@@ -12,6 +12,10 @@
 #endif
 #endif
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(set = RENDER_STATE_TEXTURE_SET, binding = 1) uniform sampler2DArray RenderStateTexture;
 layout(std430, set = RENDER_STATE_TEXTURE_SET, binding = 2) readonly buffer TRenderSamplingBoundaryFlags
 {

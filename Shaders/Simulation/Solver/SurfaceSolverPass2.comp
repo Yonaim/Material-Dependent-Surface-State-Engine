@@ -7,11 +7,19 @@
 
 #include "Simulation/Solver/SurfaceSolverCommon.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 shared uint GroupNextMask;
 
 #include "Simulation/Solver/StateFinalize.glsl"
 #include "Simulation/Solver/ReactionBindings.glsl"
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

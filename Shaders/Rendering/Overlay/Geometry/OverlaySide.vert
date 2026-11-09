@@ -16,6 +16,10 @@ struct TSideSegment
     vec4 NormalB;
 };
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(set = 3, binding = 3, std430) readonly buffer TSegments { TSideSegment Values[]; } Segments;
 
 layout(push_constant) uniform TPush { mat4 Model; mat4 ViewProjection; } Push;
@@ -28,6 +32,10 @@ layout(location = 4) out float FragCoverage;
 layout(location = 5) flat out uint FragIsSide;
 layout(location = 6) flat out mat3 FragNormalMatrix;
 
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

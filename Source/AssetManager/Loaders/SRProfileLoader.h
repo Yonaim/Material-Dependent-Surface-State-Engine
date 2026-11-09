@@ -18,7 +18,7 @@ namespace MDSS::Asset
     {
     public:
         /**
-         * @brief version 4 `.SRProfile` JSON과 기존 version 3 파일을 읽고 검증한다.
+         * @brief version 3/4/5 `.SRProfile` JSON을 읽고 검증한다.
          * @param ID TAssetManager가 부여한 고유 에셋 ID.
          * @param Path 읽을 Profile 파일 경로.
          * @throws std::runtime_error 파일을 읽거나 파싱·검증하지 못한 경우.

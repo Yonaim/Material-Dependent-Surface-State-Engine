@@ -36,7 +36,10 @@ namespace MDSS::Rendering
         }
     }
 
-#pragma region Overlay_Resource_Lifecycle
+// ============================================================
+// 00. Overlay Resource Lifecycle
+// ============================================================
+#pragma region 00_Overlay_Resource_Lifecycle
 
     TAccumulationOverlaySides::TAccumulationOverlaySides(VkPhysicalDevice      PhysicalDevice,
                                                          VkDevice              Device,
@@ -192,7 +195,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Overlay_Outputs_and_Readback
+// ============================================================
+// 01. Overlay Outputs and Readback
+// ============================================================
+#pragma region 01_Overlay_Outputs_and_Readback
 
     VkDescriptorSet
     TAccumulationOverlaySides::GetSet(std::size_t Instance, std::uint32_t Channel, std::uint32_t MeshResolution) const
@@ -254,7 +260,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Overlay_Command_Recording
+// ============================================================
+// 02. Overlay Command Recording
+// ============================================================
+#pragma region 02_Overlay_Command_Recording
 
     void TAccumulationOverlaySides::Record(VkCommandBuffer                                         Command,
                                            std::size_t                                             Instance,

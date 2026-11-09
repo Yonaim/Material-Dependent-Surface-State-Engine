@@ -27,7 +27,10 @@ namespace MDSS
         }
     }
 
-#pragma region std_Implementation
+// ============================================================
+// 00. std Implementation
+// ============================================================
+#pragma region 00_std_Implementation
 
     std::filesystem::path GetEngineConfigDirectory()
     {

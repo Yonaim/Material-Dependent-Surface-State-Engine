@@ -2,7 +2,10 @@
 
 namespace MDSS::Rendering
 {
-#pragma region Render_and_Debug_Settings
+// ============================================================
+// 00. Render and Debug Settings
+// ============================================================
+#pragma region 00_Render_and_Debug_Settings
 
     TRenderViewMode TRenderer::GetRenderViewMode() const noexcept
     {

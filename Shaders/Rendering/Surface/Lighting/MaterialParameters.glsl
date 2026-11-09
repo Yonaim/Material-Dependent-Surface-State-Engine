@@ -5,6 +5,10 @@
 #ifndef MDSS_MATERIAL_PARAMETERS
 #define MDSS_MATERIAL_PARAMETERS
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(set = 0, binding = 2) uniform MaterialParameters
 {
     vec4 BaseColor;

@@ -86,7 +86,10 @@ namespace MDSS::Rendering
         }
     }
 
-#pragma region Render_State_Texture_Lifecycle
+// ============================================================
+// 00. Render State Texture Lifecycle
+// ============================================================
+#pragma region 00_Render_State_Texture_Lifecycle
 
     TRenderStateTexture::TRenderStateTexture(VkPhysicalDevice                                PhysicalDevice,
                                              VkDevice                                        Device,
@@ -344,7 +347,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Descriptor_Access
+// ============================================================
+// 01. Descriptor Access
+// ============================================================
+#pragma region 01_Descriptor_Access
 
     VkDescriptorSet TRenderStateTexture::GetSet(std::size_t Instance, bool bSmoothed) const noexcept
     {
@@ -355,7 +361,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Texture_Command_Recording
+// ============================================================
+// 02. Texture Command Recording
+// ============================================================
+#pragma region 02_Texture_Command_Recording
 
     void TRenderStateTexture::Record(VkCommandBuffer                                 Command,
                                      const SurfaceState::TSurfaceGPUResourceManager& Resources,

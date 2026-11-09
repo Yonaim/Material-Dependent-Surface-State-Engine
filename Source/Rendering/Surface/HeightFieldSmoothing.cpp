@@ -26,7 +26,10 @@ namespace MDSS::Rendering
         }
     }
 
-#pragma region Smoothing_Resource_Lifecycle
+// ============================================================
+// 00. Smoothing Resource Lifecycle
+// ============================================================
+#pragma region 00_Smoothing_Resource_Lifecycle
 
     THeightFieldSmoothing::THeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
@@ -134,7 +137,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Smoothing_Output_Access
+// ============================================================
+// 01. Smoothing Output Access
+// ============================================================
+#pragma region 01_Smoothing_Output_Access
 
     VkDescriptorSet THeightFieldSmoothing::GetOutputSet(std::size_t Instance, std::uint32_t Channel) const
     {
@@ -170,7 +176,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Smoothing_Command_Recording
+// ============================================================
+// 02. Smoothing Command Recording
+// ============================================================
+#pragma region 02_Smoothing_Command_Recording
 
     void THeightFieldSmoothing::Record(VkCommandBuffer                                       Command,
                                        std::size_t                                           Instance,

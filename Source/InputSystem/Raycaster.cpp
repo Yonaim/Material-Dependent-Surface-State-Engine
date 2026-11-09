@@ -68,7 +68,10 @@ namespace MDSS
         }
     } // namespace
 
-#pragma region TRaycaster_Implementation
+// ============================================================
+// 00. TRaycaster Implementation
+// ============================================================
+#pragma region 00_TRaycaster_Implementation
 
     TSurfaceRayHit TRaycaster::Cast(const TScene&               Scene,
                                     const Asset::TAssetManager& Assets,

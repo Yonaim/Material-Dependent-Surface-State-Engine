@@ -7,6 +7,10 @@
 #define SURFACE_DEBUG_SET 0
 #include "Debug/SurfaceDebugData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 layout(set = 1, binding = 1, std430) buffer TGeometryCache { uint Values[]; } GeometryCache;
@@ -104,6 +108,10 @@ uint ResolveTexel()
     if (X >= SparseRangeWidth || Y >= SparseRangeHeight) return Push.TexelCount;
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

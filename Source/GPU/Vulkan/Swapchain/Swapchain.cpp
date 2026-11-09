@@ -20,7 +20,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region Swapchain_Lifecycle
+// ============================================================
+// 00. Swapchain Lifecycle
+// ============================================================
+#pragma region 00_Swapchain_Lifecycle
 
     TSwapchain::TSwapchain(const TVulkanContext& Context, const TWindow& TWindow) : Device(Context.GetDevice())
     {
@@ -147,7 +150,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Swapchain_Accessors
+// ============================================================
+// 01. Swapchain Accessors
+// ============================================================
+#pragma region 01_Swapchain_Accessors
 
     VkSwapchainKHR TSwapchain::GetHandle() const noexcept
     {
@@ -176,7 +182,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Surface_Format_and_Present_Selection
+// ============================================================
+// 02. Surface Format and Present Selection
+// ============================================================
+#pragma region 02_Surface_Format_and_Present_Selection
 
     TSwapchainSupportDetails TSwapchain::QuerySupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
@@ -273,7 +282,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Swapchain_Image_Views
+// ============================================================
+// 03. Swapchain Image Views
+// ============================================================
+#pragma region 03_Swapchain_Image_Views
 
     void TSwapchain::CreateImageViews()
     {

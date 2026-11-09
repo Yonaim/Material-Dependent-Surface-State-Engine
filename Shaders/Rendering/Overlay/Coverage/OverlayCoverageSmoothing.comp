@@ -6,6 +6,10 @@
 #extension GL_GOOGLE_include_directive : require
 #include "Rendering/Overlay/Coverage/OverlayStateSampling.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 #if MDSS_COVERAGE_HALO
@@ -297,6 +301,10 @@ void ComputeCoverage(uint Index, bool TileActive)
     }
     Coverage.Values[Index] = floatBitsToUint(WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : 0.0);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

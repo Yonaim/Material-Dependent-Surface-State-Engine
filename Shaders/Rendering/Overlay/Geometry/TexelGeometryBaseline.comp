@@ -7,6 +7,10 @@
 #define SURFACE_DEBUG_SET 0
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 layout(set = 1, binding = 1, std430) writeonly buffer TGeometryCache
@@ -99,6 +103,10 @@ vec3 BaselineNormal(uint Texel)
     // U 또는 V 방향으로 높아지는 표면의 법선은 해당 방향의 반대로 기울어진다.
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

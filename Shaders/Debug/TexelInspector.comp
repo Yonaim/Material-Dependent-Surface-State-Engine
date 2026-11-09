@@ -7,6 +7,10 @@
 #define SURFACE_DEBUG_SET 0
 #include "Debug/SurfaceDebugData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 1) in;
 
 layout(push_constant) uniform TSelection
@@ -18,6 +22,10 @@ layout(push_constant) uniform TSelection
 layout(std430, set = 1, binding = 0) writeonly buffer TSnapshot { vec4 Values[7]; } Snapshot;
 layout(std430, set = 0, binding = 23) readonly buffer TReactionTable { uint Values[]; } Reactions;
 layout(std430, set = 0, binding = 24) readonly buffer TReactionScratch { float Values[]; } ReactionScratch;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

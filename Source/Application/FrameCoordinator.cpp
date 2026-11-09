@@ -8,6 +8,11 @@
 
 namespace MDSS
 {
+    // ============================================================
+    // 00. Frame Preparation
+    // ============================================================
+    #pragma region 00_Frame_Preparation
+
     TFrameCoordinator::TFrameCoordinator(SurfaceState::TSurfaceStateSystem& InSurfaceStateSystem) noexcept
         : SurfaceStateSystem(InSurfaceStateSystem)
     {
@@ -48,6 +53,13 @@ namespace MDSS
             MaximumStep = Steps.front();
     }
 
+    #pragma endregion
+
+    // ============================================================
+    // 01. Simulation Recording
+    // ============================================================
+    #pragma region 01_Simulation_Recording
+
     void TFrameCoordinator::RecordSimulation(VkCommandBuffer CommandBuffer,
                                              VkQueryPool     QueryPool,
                                              std::uint32_t   FirstStepQuery,
@@ -61,6 +73,13 @@ namespace MDSS
                                           Step + 1U == Steps.size());
         StepSerial += Steps.size();
     }
+
+    #pragma endregion
+
+    // ============================================================
+    // 02. Clock and State Lifecycle
+    // ============================================================
+    #pragma region 02_Clock_and_State_Lifecycle
 
     void TFrameCoordinator::ResetClock() noexcept
     {
@@ -76,4 +95,6 @@ namespace MDSS
         SurfaceStateSystem.RestartState();
         ResetClock();
     }
+    #pragma endregion
+
 }

@@ -9,7 +9,10 @@
 
 namespace MDSS::Asset
 {
-#pragma region TSRProfileAsset_Implementation
+// ============================================================
+// 00. TSRProfileAsset Implementation
+// ============================================================
+#pragma region 00_TSRProfileAsset_Implementation
 
     TSRProfileAsset::TSRProfileAsset(TAssetID                                  ID,
                                      std::string                               Name,

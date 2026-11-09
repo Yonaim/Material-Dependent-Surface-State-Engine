@@ -22,7 +22,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Mapping_and_Seam_Helpers
+// ============================================================
+// 00. Mapping and Seam Helpers
+// ============================================================
+#pragma region 00_Mapping_and_Seam_Helpers
 
     namespace
     {
@@ -354,7 +357,10 @@ namespace MDSS::SurfaceState
 
 #pragma endregion
 
-#pragma region Surface_Mapping_Build
+// ============================================================
+// 01. Surface Mapping Build
+// ============================================================
+#pragma region 01_Surface_Mapping_Build
 
     TSurfaceMappingData TSurfaceMappingBuilder::Build(const std::vector<Asset::TVertex>&             Vertices,
                                                       const std::vector<Asset::TMeshTriangleSource>& Triangles,

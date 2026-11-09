@@ -22,7 +22,10 @@ namespace MDSS::GPU
         constexpr const char* PortabilitySubsetExtension = "VK_KHR_portability_subset";
     }
 
-#pragma region Logical_Device_Lifecycle
+// ============================================================
+// 00. Logical Device Lifecycle
+// ============================================================
+#pragma region 00_Logical_Device_Lifecycle
 
     TVulkanDevice::TVulkanDevice(VkInstance Instance, VkSurfaceKHR Surface)
     {
@@ -120,7 +123,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Physical_Device_Selection
+// ============================================================
+// 01. Physical Device Selection
+// ============================================================
+#pragma region 01_Physical_Device_Selection
 
     VkPhysicalDevice TVulkanDevice::GetPhysicalHandle() const noexcept
     {

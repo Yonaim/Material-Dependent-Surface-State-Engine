@@ -3,7 +3,10 @@
 
 namespace MDSS::Rendering
 {
-#pragma region Runtime_Settings_and_Benchmark_Capture
+// ============================================================
+// 00. Runtime Settings and Benchmark Capture
+// ============================================================
+#pragma region 00_Runtime_Settings_and_Benchmark_Capture
 
     void TRenderer::SetDebugProfileParameters(Asset::TSRProfileAssetHandle                 Profile,
                                               SurfaceState::TStateId                       State,

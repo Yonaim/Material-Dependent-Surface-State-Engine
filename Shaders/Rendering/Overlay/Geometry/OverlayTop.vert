@@ -8,6 +8,10 @@
 #include "Rendering/Surface/Lighting/MaterialParameters.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec4 InUVSurface;
@@ -34,6 +38,10 @@ layout(location = 4) out float FragCoverage;
 layout(location = 5) flat out uint FragIsSide;
 layout(location = 6) flat out mat3 FragNormalMatrix;
 
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

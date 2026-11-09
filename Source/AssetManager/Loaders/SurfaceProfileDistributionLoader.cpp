@@ -81,7 +81,10 @@ namespace MDSS::Asset
         }
     } // namespace
 
-#pragma region Distribution_Loading
+// ============================================================
+// 00. Distribution Loading
+// ============================================================
+#pragma region 00_Distribution_Loading
 
     TSurfaceProfileDistribution TSurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
     {
@@ -223,7 +226,10 @@ namespace MDSS::Asset
     std::vector<SurfaceState::TSurfaceProfileIndex>
 #pragma endregion
 
-#pragma region Texel_Profile_Mapping
+// ============================================================
+// 01. Texel Profile Mapping
+// ============================================================
+#pragma region 01_Texel_Profile_Mapping
 
     TSurfaceProfileDistribution::BuildTexelProfileMap(const SurfaceState::TSurfaceMappingData& Mapping) const
     {

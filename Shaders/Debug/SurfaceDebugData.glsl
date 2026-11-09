@@ -9,6 +9,10 @@
 #endif
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
 
+// ============================================================
+// 00. Shared Shader Helpers
+// ============================================================
+
 struct TDebugAccumulation
 {
     float State; float Capacity; float Saturation; float ReferenceAmount;

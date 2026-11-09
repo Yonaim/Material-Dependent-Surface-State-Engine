@@ -3,6 +3,10 @@
  * @file Lighting.glsl
  * @brief GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다. 표준식 참고: https://google.github.io/filament/main/filament.html.
  */
+// ============================================================
+// 00. Shared Shader Helpers
+// ============================================================
+
 float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH,
                            float PerceptualRoughness, float F0)
 {

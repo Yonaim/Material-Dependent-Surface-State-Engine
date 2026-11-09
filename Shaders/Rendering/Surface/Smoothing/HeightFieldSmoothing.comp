@@ -8,6 +8,10 @@
 #include "Rendering/Surface/StateTexture/StateSampling.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 layout(set = 1, binding = 0, std430) readonly buffer TInput { TTexelGeometryVertex Values[]; } InputGeometry;
@@ -129,6 +133,10 @@ float DisplayedCavityFill(uint Texel, uint Profile)
     float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
     return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

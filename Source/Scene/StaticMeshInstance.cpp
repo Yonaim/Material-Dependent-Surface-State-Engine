@@ -9,7 +9,10 @@
 
 namespace MDSS
 {
-#pragma region TStaticMeshInstance_Implementation
+// ============================================================
+// 00. TStaticMeshInstance Implementation
+// ============================================================
+#pragma region 00_TStaticMeshInstance_Implementation
 
     TStaticMeshInstance::TStaticMeshInstance(Asset::TMeshAssetHandle Mesh, TTransform InstanceTransform)
         : TStaticMeshInstance(Mesh, SurfaceState::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))

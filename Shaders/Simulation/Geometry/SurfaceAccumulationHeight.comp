@@ -7,6 +7,10 @@
 #define SURFACE_ACCUMULATION_HEIGHT_WRITE
 #include "Simulation/Solver/SurfaceSolverCommon.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 const float DirtyHeightAbsoluteEpsilon = 1.0e-5;
@@ -43,6 +47,10 @@ void ScheduleGeometryTexelAndTwoHopNeighbors(uint Texel)
         }
     }
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

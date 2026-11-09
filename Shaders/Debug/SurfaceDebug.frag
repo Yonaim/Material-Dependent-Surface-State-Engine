@@ -5,6 +5,10 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
 layout(location = 2) in float FragTangentSign;
@@ -93,6 +97,10 @@ const uint RENDER_MODE_FINAL_GEOMETRY = 19u;
 const uint RENDER_MODE_TOTAL_SIMULATION_HEIGHT = 21u;
 
 #include "Debug/Views/SurfaceDebugColors.glsl"
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

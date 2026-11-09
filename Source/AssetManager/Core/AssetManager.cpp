@@ -20,7 +20,10 @@
 namespace MDSS::Asset
 {
 
-#pragma region Asset_Manager_Lifecycle
+// ============================================================
+// 00. Asset Manager Lifecycle
+// ============================================================
+#pragma region 00_Asset_Manager_Lifecycle
 
     TAssetManager::TAssetManager(const GPU::TVulkanContext& Context) : Context(Context)
     {
@@ -34,7 +37,10 @@ namespace MDSS::Asset
 
 #pragma endregion
 
-#pragma region Asset_Loading
+// ============================================================
+// 01. Asset Loading
+// ============================================================
+#pragma region 01_Asset_Loading
 
     TMeshAssetHandle TAssetManager::LoadOBJ(const std::filesystem::path& Path)
     {
@@ -128,7 +134,10 @@ namespace MDSS::Asset
 
 #pragma endregion
 
-#pragma region Asset_Access
+// ============================================================
+// 02. Asset Access
+// ============================================================
+#pragma region 02_Asset_Access
 
     const TMeshAsset& TAssetManager::GetMesh(TMeshAssetHandle Handle) const
     {
@@ -183,7 +192,10 @@ namespace MDSS::Asset
 
 #pragma endregion
 
-#pragma region Generated_Assets
+// ============================================================
+// 03. Generated Assets
+// ============================================================
+#pragma region 03_Generated_Assets
 
     TextureAssetHandle TAssetManager::LoadTexture(const std::filesystem::path& Path, bool bSRGB)
     {

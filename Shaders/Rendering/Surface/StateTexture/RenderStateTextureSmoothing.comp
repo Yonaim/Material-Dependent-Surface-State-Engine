@@ -7,6 +7,11 @@
 
 #define SURFACE_DEBUG_SET 0
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
+
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
     uint Values[];
@@ -48,6 +53,10 @@ vec4 ReadSource(ivec3 P)
 {
     return SmoothingMode() == 2u ? imageLoad(TempStates, P) : imageLoad(RawStates, P);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

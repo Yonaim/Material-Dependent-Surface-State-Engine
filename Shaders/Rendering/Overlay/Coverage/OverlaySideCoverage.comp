@@ -7,6 +7,10 @@
 #include "Rendering/Overlay/Coverage/OverlayStateSampling.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 struct TOverlayVertex
@@ -200,6 +204,10 @@ void ComputeCoverage(uint Index, bool TileActive)
     }
     Coverage.Values[Index] = floatBitsToUint(Value);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

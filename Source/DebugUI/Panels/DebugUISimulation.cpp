@@ -2,7 +2,10 @@
 
 namespace MDSS
 {
-#pragma region Simulation_Debug_Panels
+// ============================================================
+// 00. Simulation Debug Panels
+// ============================================================
+#pragma region 00_Simulation_Debug_Panels
 
     void TDebugUI::DrawSimulationDebugWindow(TScene& SceneData)
     {

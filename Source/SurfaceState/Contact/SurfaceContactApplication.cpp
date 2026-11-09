@@ -29,7 +29,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Pending_Contact_Application
+// ============================================================
+// 00. Pending Contact Application
+// ============================================================
+#pragma region 00_Pending_Contact_Application
 
     void TSurfaceStateSystem::ApplyPendingContacts()
     {

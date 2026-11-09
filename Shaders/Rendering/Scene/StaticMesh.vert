@@ -4,6 +4,10 @@
  */
 #version 450
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
 layout(location = 2) in vec2 InUV;
@@ -19,6 +23,10 @@ layout(location = 1) out vec3 FragTangent;
 layout(location = 2) out float FragTangentSign;
 layout(location = 3) out vec2 FragUV;
 layout(location = 4) out vec3 FragWorldPosition;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

@@ -23,7 +23,10 @@ namespace MDSS
         std::uint32_t WindowCount = 0;
     } // namespace
 
-#pragma region Window_Lifecycle
+// ============================================================
+// 00. Window Lifecycle
+// ============================================================
+#pragma region 00_Window_Lifecycle
 
     TWindow::TWindow(std::uint32_t Width, std::uint32_t Height, std::string Title)
     {
@@ -60,7 +63,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Window_State_and_Events
+// ============================================================
+// 01. Window State and Events
+// ============================================================
+#pragma region 01_Window_State_and_Events
 
     bool TWindow::ShouldClose() const
     {
@@ -126,7 +132,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region GLFW_Lifecycle
+// ============================================================
+// 02. GLFW Lifecycle
+// ============================================================
+#pragma region 02_GLFW_Lifecycle
 
     void TWindow::InitializeGLFW()
     {

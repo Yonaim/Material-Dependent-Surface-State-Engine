@@ -11,7 +11,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region TGPUSampler_Implementation
+// ============================================================
+// 00. TGPUSampler Implementation
+// ============================================================
+#pragma region 00_TGPUSampler_Implementation
 
     TGPUSampler::TGPUSampler(VkDevice Device) : Device(Device)
     {

@@ -11,7 +11,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Mapping_Validation_Helpers
+// ============================================================
+// 00. Mapping Validation Helpers
+// ============================================================
+#pragma region 00_Mapping_Validation_Helpers
 
     namespace
     {
@@ -29,7 +32,10 @@ namespace MDSS::SurfaceState
     } // namespace
 #pragma endregion
 
-#pragma region Surface_Mapping_Validation
+// ============================================================
+// 01. Surface Mapping Validation
+// ============================================================
+#pragma region 01_Surface_Mapping_Validation
 
     void ValidateSurfaceMapping(const TSurfaceMappingData& Mapping)
     {

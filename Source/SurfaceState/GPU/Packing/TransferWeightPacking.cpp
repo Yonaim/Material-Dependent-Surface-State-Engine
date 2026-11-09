@@ -15,7 +15,10 @@ namespace
 }
 namespace MDSS::SurfaceState
 {
-#pragma region Transform_Dependent_Geometry_Data
+// ============================================================
+// 00. Transform Dependent Geometry Data
+// ============================================================
+#pragma region 00_Transform_Dependent_Geometry_Data
 
     float GetSurfaceWorldTexelArea(const TSurfaceTexelGeometry& Texel, const glm::mat4& ModelMatrix) noexcept
     {

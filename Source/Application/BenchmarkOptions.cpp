@@ -41,7 +41,10 @@ namespace MDSS
         }
     } // namespace
 
-#pragma region std_Implementation
+// ============================================================
+// 00. std Implementation
+// ============================================================
+#pragma region 00_std_Implementation
 
     std::size_t TBenchmarkOptions::GetTotalFrameLimit() const noexcept
     {

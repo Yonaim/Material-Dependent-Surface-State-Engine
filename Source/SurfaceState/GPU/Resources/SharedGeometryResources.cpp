@@ -14,7 +14,10 @@ namespace MDSS::SurfaceState
 {
     using namespace Detail;
 
-#pragma region Shared_Geometry_Resources
+// ============================================================
+// 00. Shared Geometry Resources
+// ============================================================
+#pragma region 00_Shared_Geometry_Resources
 
     void TSurfaceTexelMeshGPUVariant::RetireBuffers(TSurfaceGPUBufferPool& Pool) noexcept
     {

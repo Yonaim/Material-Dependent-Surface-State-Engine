@@ -7,7 +7,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Profile_and_Buffer_Layouts
+// ============================================================
+// 00. Profile and Buffer Layouts
+// ============================================================
+#pragma region 00_Profile_and_Buffer_Layouts
 
     TSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<TSurfaceResponseProfileData>& Profiles,
                                                  const TSurfaceStateRegistry&                    Registry)

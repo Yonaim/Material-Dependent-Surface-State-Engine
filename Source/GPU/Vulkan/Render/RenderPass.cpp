@@ -11,7 +11,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region Render_Pass_Lifecycle
+// ============================================================
+// 00. Render Pass Lifecycle
+// ============================================================
+#pragma region 00_Render_Pass_Lifecycle
 
     TRenderPass::TRenderPass(VkDevice Device, VkFormat ColorFormat, VkFormat DepthFormat) : Device(Device)
     {
@@ -89,7 +92,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Render_Pass_Access
+// ============================================================
+// 01. Render Pass Access
+// ============================================================
+#pragma region 01_Render_Pass_Access
 
     VkRenderPass TRenderPass::GetHandle() const noexcept
     {

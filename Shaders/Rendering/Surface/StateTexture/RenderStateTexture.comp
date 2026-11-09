@@ -4,6 +4,10 @@
 #define SURFACE_DEBUG_SET 0
 #include "Rendering/Surface/StateTexture/StateSampling.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba16f, set = 1, binding = 0) uniform writeonly image2DArray RenderStates;
 layout(push_constant) uniform TConversionPush
@@ -11,6 +15,10 @@ layout(push_constant) uniform TConversionPush
     uvec4 DemoChannels;
     uint ChannelCount;
 } Push;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

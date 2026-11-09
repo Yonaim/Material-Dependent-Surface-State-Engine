@@ -19,7 +19,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Solver_Command_Helpers
+// ============================================================
+// 00. Solver Command Helpers
+// ============================================================
+#pragma region 00_Solver_Command_Helpers
 
     namespace
     {
@@ -134,7 +137,10 @@ namespace MDSS::SurfaceState
     } // namespace
 #pragma endregion
 
-#pragma region Solver_Lifecycle
+// ============================================================
+// 01. Solver Lifecycle
+// ============================================================
+#pragma region 01_Solver_Lifecycle
 
     TSurfaceStateSolver::TSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout)
         : Device(Device)
@@ -274,7 +280,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Solver_Command_Recording
+// ============================================================
+// 02. Solver Command Recording
+// ============================================================
+#pragma region 02_Solver_Command_Recording
 
     void TSurfaceStateSolver::RecordStep(VkCommandBuffer                         CommandBuffer,
                                          const TSurfaceStateDescriptorResources& Descriptors,
@@ -731,7 +740,10 @@ namespace MDSS::SurfaceState
 
 #pragma endregion
 
-#pragma region Compute_Pipeline_Creation
+// ============================================================
+// 03. Compute Pipeline Creation
+// ============================================================
+#pragma region 03_Compute_Pipeline_Creation
 
     VkShaderModule TSurfaceStateSolver::CreateShaderModule(VkDevice Device, const char* Path)
     {

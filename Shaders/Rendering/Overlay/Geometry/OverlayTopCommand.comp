@@ -4,6 +4,10 @@
  */
 #version 450
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 struct TSideDrawCommand
@@ -32,6 +36,10 @@ layout(set = 0, binding = 1, std430) buffer TTopDrawCommands
 {
     TTopDrawCommand Values[];
 } TopDrawCommands;
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

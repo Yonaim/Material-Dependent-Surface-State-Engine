@@ -13,7 +13,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region Buffer_Lifecycle
+// ============================================================
+// 00. Buffer Lifecycle
+// ============================================================
+#pragma region 00_Buffer_Lifecycle
 
     TGPUBuffer::TGPUBuffer(VkPhysicalDevice         PhysicalDevice,
                            VkDevice                 Device,
@@ -101,7 +104,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Buffer_Transfers
+// ============================================================
+// 01. Buffer Transfers
+// ============================================================
+#pragma region 01_Buffer_Transfers
 
     void TGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
@@ -166,7 +172,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Buffer_Accessors
+// ============================================================
+// 02. Buffer Accessors
+// ============================================================
+#pragma region 02_Buffer_Accessors
 
     VkBuffer TGPUBuffer::GetHandle() const noexcept
     {
@@ -200,7 +209,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Memory_Type_Selection
+// ============================================================
+// 03. Memory Type Selection
+// ============================================================
+#pragma region 03_Memory_Type_Selection
 
     std::uint32_t TGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                              std::uint32_t         TypeFilter,

@@ -13,7 +13,10 @@
 
 namespace MDSS::Rendering
 {
-#pragma region Render_Context_Lifecycle
+// ============================================================
+// 00. Render Context Lifecycle
+// ============================================================
+#pragma region 00_Render_Context_Lifecycle
 
     TRenderContext::TRenderContext(const GPU::TVulkanContext& Context)
         : Device(Context.GetDevice()), CommandPool(Context.GetCommands().GetPool()),
@@ -79,7 +82,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Frame_Synchronization
+// ============================================================
+// 01. Frame Synchronization
+// ============================================================
+#pragma region 01_Frame_Synchronization
 
     void TRenderContext::WaitForCurrentFrame() const
     {
@@ -106,7 +112,10 @@ namespace MDSS::Rendering
 
 #pragma endregion
 
-#pragma region Frame_Resource_Access
+// ============================================================
+// 02. Frame Resource Access
+// ============================================================
+#pragma region 02_Frame_Resource_Access
 
     std::uint32_t TRenderContext::GetCurrentFrameIndex() const noexcept
     {

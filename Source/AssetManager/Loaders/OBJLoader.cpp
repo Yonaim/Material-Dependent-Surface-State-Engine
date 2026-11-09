@@ -80,7 +80,10 @@ namespace MDSS::Asset
         }
     } // namespace
 
-#pragma region OBJ_Loading
+// ============================================================
+// 00. OBJ Loading
+// ============================================================
+#pragma region 00_OBJ_Loading
 
     TOBJLoadResult TOBJLoader::Load(const std::filesystem::path& Path)
     {
@@ -252,7 +255,10 @@ namespace MDSS::Asset
 
 #pragma endregion
 
-#pragma region Tangent_Generation
+// ============================================================
+// 01. Tangent Generation
+// ============================================================
+#pragma region 01_Tangent_Generation
 
     void TOBJLoader::GenerateTangents(std::vector<TVertex>& Vertices, const std::vector<std::uint32_t>& Indices)
     {

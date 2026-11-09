@@ -14,7 +14,10 @@
 
 namespace MDSS::Asset
 {
-#pragma region Texture_Asset_Lifecycle
+// ============================================================
+// 00. Texture Asset Lifecycle
+// ============================================================
+#pragma region 00_Texture_Asset_Lifecycle
 
     TextureAsset::TextureAsset(TAssetID                         ID,
                                std::string                      Name,
@@ -66,7 +69,10 @@ namespace MDSS::Asset
 
 #pragma endregion
 
-#pragma region Texture_Resource_Access
+// ============================================================
+// 01. Texture Resource Access
+// ============================================================
+#pragma region 01_Texture_Resource_Access
 
     std::uint32_t TextureAsset::GetWidth() const noexcept
     {
@@ -95,7 +101,10 @@ namespace MDSS::Asset
 
 #pragma endregion
 
-#pragma region Texture_Layout_and_Upload
+// ============================================================
+// 02. Texture Layout and Upload
+// ============================================================
+#pragma region 02_Texture_Layout_and_Upload
 
     void TextureAsset::TransitionImageLayout(const GPU::TVulkanContext& Context,
                                              VkImage                    Image,

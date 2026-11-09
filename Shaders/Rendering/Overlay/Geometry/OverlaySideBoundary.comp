@@ -8,6 +8,10 @@
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 shared uint ActiveTrianglesInGroup;
@@ -273,6 +277,10 @@ void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface,
     Segments.Values[Segment].NormalA = vec4(NormalA, 0.0);
     Segments.Values[Segment].NormalB = vec4(NormalB, 0.0);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

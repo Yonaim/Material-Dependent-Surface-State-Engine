@@ -21,7 +21,10 @@
 
 namespace MDSS
 {
-#pragma region TInputSystem_Implementation
+// ============================================================
+// 00. TInputSystem Implementation
+// ============================================================
+#pragma region 00_TInputSystem_Implementation
 
     TInputSystem::TInputSystem(GLFWwindow* Window) noexcept : Window(Window)
     {

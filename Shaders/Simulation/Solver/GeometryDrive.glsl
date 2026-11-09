@@ -1,3 +1,7 @@
+// ============================================================
+// 00. Shared Shader Helpers
+// ============================================================
+
 vec3 SolverUp;
 vec3 SourcePosition;
 vec3 SourceGravityDirection;

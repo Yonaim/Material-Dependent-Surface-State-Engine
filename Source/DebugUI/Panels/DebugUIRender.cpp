@@ -2,7 +2,10 @@
 
 namespace MDSS
 {
-#pragma region Render_Options_and_Viewport_Panels
+// ============================================================
+// 00. Render Options and Viewport Panels
+// ============================================================
+#pragma region 00_Render_Options_and_Viewport_Panels
 
     void TDebugUI::DrawRenderOptionsWindow(TScene& SceneData)
     {
@@ -787,5 +790,7 @@ namespace MDSS
         }
         ImGui::End();
     }
+
+#pragma endregion
 
 } // namespace MDSS

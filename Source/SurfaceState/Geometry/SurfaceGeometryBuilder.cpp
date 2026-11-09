@@ -21,7 +21,10 @@ namespace MDSS::SurfaceState
         }
     } // namespace
 
-#pragma region Surface_Geometry_Build
+// ============================================================
+// 00. Surface Geometry Build
+// ============================================================
+#pragma region 00_Surface_Geometry_Build
 
     TSharedSurfaceGeometryData TSurfaceGeometryBuilder::Build(const TSurfaceMappingData&        Mapping,
                                                               std::vector<TSurfaceProfileIndex> ProfileMap,

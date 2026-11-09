@@ -8,6 +8,10 @@
 #include "Debug/SurfaceDebugData.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
     uint Values[];
@@ -305,6 +309,10 @@ vec3 CachedFinalNormal(uint Texel)
                          XX * MesoYH - XY * MesoXH) / Det;
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

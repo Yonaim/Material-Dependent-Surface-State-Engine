@@ -15,7 +15,10 @@ namespace MDSS::SurfaceState
 {
     using namespace Detail;
 
-#pragma region Instance_State_Resources
+// ============================================================
+// 00. Instance State Resources
+// ============================================================
+#pragma region 00_Instance_State_Resources
 
     TSurfaceInstanceGPUResources::TSurfaceInstanceGPUResources(
         VkPhysicalDevice                    PhysicalDevice,

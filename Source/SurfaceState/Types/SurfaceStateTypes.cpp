@@ -11,7 +11,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Profile_Value_Validation_Helpers
+// ============================================================
+// 00. Profile Value Validation Helpers
+// ============================================================
+#pragma region 00_Profile_Value_Validation_Helpers
 
     namespace
     {
@@ -33,7 +36,10 @@ namespace MDSS::SurfaceState
     } // namespace
 #pragma endregion
 
-#pragma region State_Name_Normalization
+// ============================================================
+// 01. State Name Normalization
+// ============================================================
+#pragma region 01_State_Name_Normalization
 
     std::string NormalizeSurfaceStateName(std::string_view Name)
     {
@@ -63,7 +69,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Surface_Response_Profile_Validation
+// ============================================================
+// 02. Surface Response Profile Validation
+// ============================================================
+#pragma region 02_Surface_Response_Profile_Validation
 
     void ValidateSurfaceResponseProfileData(const TSurfaceResponseProfileData& Data)
     {

@@ -32,7 +32,10 @@ namespace MDSS::Asset
         }
     } // namespace
 
-#pragma region TMTLLoader_Implementation
+// ============================================================
+// 00. TMTLLoader Implementation
+// ============================================================
+#pragma region 00_TMTLLoader_Implementation
 
     TMaterialSourceData TMTLLoader::Convert(const tinyobj::material_t&   Material,
                                             const std::filesystem::path& TextureBaseDirectory)

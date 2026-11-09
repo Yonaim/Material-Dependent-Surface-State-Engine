@@ -2,7 +2,10 @@
 
 namespace MDSS
 {
-#pragma region Debug_UI_Lifecycle
+// ============================================================
+// 00. Debug UI Lifecycle
+// ============================================================
+#pragma region 00_Debug_UI_Lifecycle
 
     TDebugUI::TDebugUI(const GPU::TVulkanContext&         Context,
                        const TWindow&                     TWindow,
@@ -166,7 +169,10 @@ namespace MDSS
     }
 
 #pragma endregion
-#pragma region Frame_Presentation
+// ============================================================
+// 01. Frame Presentation
+// ============================================================
+#pragma region 01_Frame_Presentation
 
     void TDebugUI::BeginFrame(TScene& SceneData)
     {
@@ -276,7 +282,10 @@ namespace MDSS
     }
 
 #pragma endregion
-#pragma region UI_State_Accessors
+// ============================================================
+// 02. UI State Accessors
+// ============================================================
+#pragma region 02_UI_State_Accessors
 
     bool TDebugUI::IsInjectModeEnabled() const noexcept
     {
@@ -365,7 +374,10 @@ namespace MDSS
     }
 
 #pragma endregion
-#pragma region Viewport_and_Selection_Accessors
+// ============================================================
+// 03. Viewport and Selection Accessors
+// ============================================================
+#pragma region 03_Viewport_and_Selection_Accessors
 
     void TDebugUI::DrawDemoWeatherOverlay(const TScene& SceneData)
     {

@@ -14,7 +14,10 @@
 
 namespace MDSS
 {
-#pragma region Camera_Matrices
+// ============================================================
+// 00. Camera Matrices
+// ============================================================
+#pragma region 00_Camera_Matrices
 
     TCamera::TCamera(
         glm::vec3 Position, glm::vec3 Target, float VerticalFieldOfViewDegrees, float NearPlane, float FarPlane)
@@ -59,7 +62,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Camera_Controls
+// ============================================================
+// 01. Camera Controls
+// ============================================================
+#pragma region 01_Camera_Controls
 
     void TCamera::SetPosition(glm::vec3 NewPosition) noexcept
     {
@@ -93,7 +99,10 @@ namespace MDSS
 
 #pragma endregion
 
-#pragma region Camera_State_Access
+// ============================================================
+// 02. Camera State Access
+// ============================================================
+#pragma region 02_Camera_State_Access
 
     const glm::vec3& TCamera::GetPosition() const noexcept
     {

@@ -11,6 +11,10 @@
 #extension GL_GOOGLE_include_directive : require
 #include "Rendering/Overlay/Coverage/OverlayStateSampling.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(local_size_x = 64) in;
 
 layout(set = 0, binding = 21, std430) readonly buffer TAccumulationHeights { float Values[]; } AccumulationHeights;
@@ -209,6 +213,10 @@ void ScheduleCoverageCandidate(uint Candidate)
     atomicOr(GeometryCache.Values[CoverageDispatchBase() + 1u], 1u);
     atomicOr(GeometryCache.Values[CoverageDispatchBase() + 2u], 1u);
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

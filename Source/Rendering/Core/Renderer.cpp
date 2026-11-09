@@ -2,7 +2,10 @@
 
 namespace MDSS::Rendering
 {
-#pragma region Renderer_Lifecycle
+// ============================================================
+// 00. Renderer Lifecycle
+// ============================================================
+#pragma region 00_Renderer_Lifecycle
 
     TRenderer::TRenderer(const GPU::TVulkanContext&         Context,
                          TWindow&                           TWindow,
@@ -273,7 +276,10 @@ namespace MDSS::Rendering
     }
 
 #pragma endregion
-#pragma region Frame_Rendering
+// ============================================================
+// 01. Frame Rendering
+// ============================================================
+#pragma region 01_Frame_Rendering
 
     void TRenderer::RenderFrame(const TScene& SceneData,
                                 TDebugUI&     DebugInterface,
@@ -596,7 +602,10 @@ namespace MDSS::Rendering
     }
 
 #pragma endregion
-#pragma region Scene_Resource_Replacement
+// ============================================================
+// 02. Scene Resource Replacement
+// ============================================================
+#pragma region 02_Scene_Resource_Replacement
 
     void TRenderer::ReloadSceneResources(const TScene& Scene, bool bResetStateSettings)
     {
@@ -811,7 +820,10 @@ namespace MDSS::Rendering
     }
 
 #pragma endregion
-#pragma region Resolution_and_Swapchain
+// ============================================================
+// 03. Resolution and Swapchain
+// ============================================================
+#pragma region 03_Resolution_and_Swapchain
 
     std::uint32_t TRenderer::GetSimulationResolution() const noexcept
     {
@@ -953,7 +965,10 @@ namespace MDSS::Rendering
     }
 
 #pragma endregion
-#pragma region Renderer_Accessors
+// ============================================================
+// 04. Renderer Accessors
+// ============================================================
+#pragma region 04_Renderer_Accessors
 
     const GPU::TSwapchain& TRenderer::GetSwapchain() const noexcept
     {

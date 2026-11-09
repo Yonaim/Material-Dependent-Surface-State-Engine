@@ -16,6 +16,10 @@
 #include "Rendering/Surface/StateTexture/RenderStateSampling.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(set = 2, binding = 0, std430) readonly buffer TComputedVertices
 {
     TTexelGeometryVertex Values[];
@@ -184,6 +188,10 @@ bool HasVisibleOverlayState(vec4 States, uint EnabledEffects)
 #endif
 
 #include "Rendering/Overlay/Shading/OverlayAppearance.glsl"
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

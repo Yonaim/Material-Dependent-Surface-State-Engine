@@ -14,7 +14,10 @@
 
 namespace MDSS::Asset
 {
-#pragma region TextureLoader_Implementation
+// ============================================================
+// 00. TextureLoader Implementation
+// ============================================================
+#pragma region 00_TextureLoader_Implementation
 
     TextureData TextureLoader::LoadRGBA8(const std::filesystem::path& Path)
     {

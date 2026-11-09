@@ -11,7 +11,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Resolution_and_Texel_Validation
+// ============================================================
+// 00. Resolution and Texel Validation
+// ============================================================
+#pragma region 00_Resolution_and_Texel_Validation
 
     std::size_t TSurfaceResolution::GetTexelCount() const
     {
@@ -35,7 +38,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Shared_Geometry_Data
+// ============================================================
+// 01. Shared Geometry Data
+// ============================================================
+#pragma region 01_Shared_Geometry_Data
 
     TSharedSurfaceGeometryData::TSharedSurfaceGeometryData(std::vector<TSurfaceDefinition> SurfaceDefinitions)
     {

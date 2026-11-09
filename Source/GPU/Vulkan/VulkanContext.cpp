@@ -16,7 +16,10 @@
 
 namespace MDSS::GPU
 {
-#pragma region Vulkan_Context_Lifecycle
+// ============================================================
+// 00. Vulkan Context Lifecycle
+// ============================================================
+#pragma region 00_Vulkan_Context_Lifecycle
 
     TVulkanContext::TVulkanContext(const TWindow& TWindow)
         : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), TWindow)),
@@ -42,7 +45,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Vulkan_Context_Accessors
+// ============================================================
+// 01. Vulkan Context Accessors
+// ============================================================
+#pragma region 01_Vulkan_Context_Accessors
 
     VkInstance TVulkanContext::GetInstance() const noexcept
     {
@@ -81,7 +87,10 @@ namespace MDSS::GPU
 
 #pragma endregion
 
-#pragma region Instance_Extensions_and_Surface
+// ============================================================
+// 02. Instance Extensions and Surface
+// ============================================================
+#pragma region 02_Instance_Extensions_and_Surface
 
     std::vector<const char*> TVulkanContext::RequiredInstanceExtensions()
     {

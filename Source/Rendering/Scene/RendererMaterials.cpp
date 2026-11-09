@@ -2,7 +2,10 @@
 
 namespace MDSS::Rendering
 {
-#pragma region Material_and_GPU_Resource_Setup
+// ============================================================
+// 00. Material and GPU Resource Setup
+// ============================================================
+#pragma region 00_Material_and_GPU_Resource_Setup
 
     VkDescriptorSetLayout TRenderer::CreateMaterialDescriptorSetLayout(VkDevice Device)
     {
@@ -324,7 +327,10 @@ namespace MDSS::Rendering
     }
 
 #pragma endregion
-#pragma region Format_Selection
+// ============================================================
+// 01. Format Selection
+// ============================================================
+#pragma region 01_Format_Selection
 
     VkFormat TRenderer::FindDepthFormat(VkPhysicalDevice PhysicalDevice)
     {

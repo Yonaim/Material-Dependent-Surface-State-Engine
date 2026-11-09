@@ -13,6 +13,10 @@ const uint PrepareAccumulationHeightFlag = 1u << 18u;
 const uint CurrentStateABFlag = 1u << 21u;
 const uint PerWorkgroupChannelMaskFlag = 1u << 23u;
 
+// ============================================================
+// 00. Resource Interface
+// ============================================================
+
 layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationData
 {
     uint Values[];
@@ -73,6 +77,10 @@ void ScheduleCurrentSolverGroup(uint Group)
             AccumulationData.Values[SolverListBase(AB) + Slot] = Group;
     }
 }
+
+// ============================================================
+// 01. Main Process
+// ============================================================
 
 void main()
 {

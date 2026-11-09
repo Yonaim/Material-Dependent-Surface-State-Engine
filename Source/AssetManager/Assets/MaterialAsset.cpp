@@ -9,7 +9,10 @@
 
 namespace MDSS::Asset
 {
-#pragma region TMaterialAsset_Implementation
+// ============================================================
+// 00. TMaterialAsset Implementation
+// ============================================================
+#pragma region 00_TMaterialAsset_Implementation
 
     TMaterialAsset::TMaterialAsset(TAssetID              ID,
                                    std::string           Name,

@@ -33,7 +33,10 @@ namespace MDSS::SurfaceState
             static_cast<std::uint32_t>(TSurfaceGPUDescriptorBinding::Count);
     } // namespace
 
-#pragma region Resource_Lifecycle
+// ============================================================
+// 00. Resource Lifecycle
+// ============================================================
+#pragma region 00_Resource_Lifecycle
 
     TSurfaceGPUResourceManager::TSurfaceGPUResourceManager(const GPU::TVulkanContext&   Context,
                                                            const Asset::TAssetManager&  Assets,
@@ -181,7 +184,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region Resource_Accessors_and_Profile_Updates
+// ============================================================
+// 01. Resource Accessors and Profile Updates
+// ============================================================
+#pragma region 01_Resource_Accessors_and_Profile_Updates
 
     bool TSurfaceGPUResourceManager::ConfigureScratchStorage(
         const GPU::TVulkanContext& Context, bool Cache, bool HalfRaw, bool HalfWeights, bool Compact)
@@ -325,7 +331,10 @@ namespace MDSS::SurfaceState
     }
 #pragma endregion
 
-#pragma region State_Reset_and_Transfer_Weight_Cache
+// ============================================================
+// 02. State Reset and Transfer Weight Cache
+// ============================================================
+#pragma region 02_State_Reset_and_Transfer_Weight_Cache
 
     std::size_t TSurfaceGPUResourceManager::GetInstanceTexelCount(std::size_t SceneIndex) const
     {

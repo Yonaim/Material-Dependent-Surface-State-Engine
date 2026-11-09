@@ -13,7 +13,10 @@
 namespace MDSS::SurfaceState
 {
     using namespace Detail;
-#pragma region Descriptor_Resources
+// ============================================================
+// 00. Descriptor Resources
+// ============================================================
+#pragma region 00_Descriptor_Resources
 
     TSurfaceStateDescriptorResources::TSurfaceStateDescriptorResources(
         VkDevice                                  Device,

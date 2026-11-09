@@ -1,3 +1,7 @@
+// ============================================================
+// 00. Shared Shader Helpers
+// ============================================================
+
 float GridLines(vec2 Coordinate, vec2 PixelFootprint, float LineWidth)
 {
     vec2 Fraction = fract(Coordinate);

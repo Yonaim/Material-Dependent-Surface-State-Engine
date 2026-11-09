@@ -2,7 +2,10 @@
 
 namespace MDSS
 {
-#pragma region Scene_and_Camera_Controls
+// ============================================================
+// 00. Scene and Camera Controls
+// ============================================================
+#pragma region 00_Scene_and_Camera_Controls
 
     void TDebugUI::SetupDockspace()
     {

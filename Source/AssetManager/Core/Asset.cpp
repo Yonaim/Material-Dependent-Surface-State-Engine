@@ -9,7 +9,10 @@
 
 namespace MDSS::Asset
 {
-#pragma region TAsset_Implementation
+// ============================================================
+// 00. TAsset Implementation
+// ============================================================
+#pragma region 00_TAsset_Implementation
 
     TAsset::TAsset(TAssetID ID, std::string Name, std::filesystem::path SourcePath)
         : ID(ID), Name(std::move(Name)), SourcePath(std::move(SourcePath))

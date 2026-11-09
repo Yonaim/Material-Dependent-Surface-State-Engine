@@ -16,7 +16,10 @@
 
 namespace MDSS::SurfaceState
 {
-#pragma region Differential_Geometry_Helpers
+// ============================================================
+// 00. Differential Geometry Helpers
+// ============================================================
+#pragma region 00_Differential_Geometry_Helpers
 
     namespace
     {
@@ -260,7 +263,10 @@ namespace MDSS::SurfaceState
     } // 내부 네임스페이스
 #pragma endregion
 
-#pragma region Meso_Geometry_Build
+// ============================================================
+// 01. Meso Geometry Build
+// ============================================================
+#pragma region 01_Meso_Geometry_Build
 
     TMesoGeometryBuildReport BuildMesoGeometry(TSharedSurfaceGeometryData& Geometry)
     {
