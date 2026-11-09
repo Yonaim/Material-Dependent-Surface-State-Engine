@@ -25,6 +25,7 @@
 | `.py`, Python, 패키지, 타입 힌트 | [`Python`](00_Engineering-Standards/01_Languages/03_Python.md), 관련 Source | Source / Flows / 검증 결과 |
 | `.sh`, `.bash`, bash, POSIX sh, 자동화·배포 | [`Shell`](00_Engineering-Standards/01_Languages/04_Shell.md), 관련 Flow | Source / Flow / 검증 결과 |
 | `.js`, `.jsx`, `.ts`, `.tsx`, JavaScript, TypeScript | [`JavaScript/TypeScript`](00_Engineering-Standards/01_Languages/05_JavaScript-TypeScript.md), 관련 Source | Source / Contracts / 검증 결과 |
+| 큰 클래스, 멤버 변수 과다, God Object, 섹션 재배치, 상태 구조체 추출, 책임 분리 | [`Section & Responsibility Refactoring`](00_Engineering-Standards/00_Core/03_Section-and-Responsibility-Refactoring.md), [`Code Style`](00_Engineering-Standards/00_Core/00_Code-Style.md), 활성 언어 규칙, 관련 Source / Contracts | 섹션·소스 구조 / API·상태 계약 / 테스트 / Work Log / 필요 시 ADR |
 | `#region`, `#endregion`, `#pragma region`, 셰이더 접기, VS Code Custom Folding | [`Local Numbering`](00_Engineering-Standards/00_Core/01_Local-Numbering-and-Navigation.md), [`Source Comments`](00_Engineering-Standards/02_Documentation/01_Source-Comments.md), 활성 언어 문서 | 코드 섹션 마커 / 에디터 설정 / Work Log |
 | API, 인터페이스, ABI, 스키마, 소유권, 불변식 | [`Contract Register`](02_Architecture/01_Contracts/00_Contract-Register.md), 관련 Source, C/C++ 공개 API면 [`Doxygen`](00_Engineering-Standards/02_Documentation/00_Doxygen.md) | Contract / Source / 테스트 / Doxygen |
 | 시작·종료·라이프사이클·프레임·파이프라인 | [`Main Flow`](02_Architecture/00_Flows/00_Main-Flow.md), 관련 Source | Flows / Source |

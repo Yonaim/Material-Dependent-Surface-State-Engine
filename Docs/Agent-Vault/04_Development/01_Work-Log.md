@@ -108,3 +108,4 @@
   - Fix(Shaders): 누락 Region과 CRLF 자동 접기 설정 보완
   - Refactor(Shaders): 디버그·오버레이·솔버 진입점과 helper 정리
   - Refactor(Naming): C++ 타입과 bool에 Unreal-Inspired 접두어 적용
+  - Docs(Standards): Universal 5.5의 2단계 리팩터링 규칙 반영

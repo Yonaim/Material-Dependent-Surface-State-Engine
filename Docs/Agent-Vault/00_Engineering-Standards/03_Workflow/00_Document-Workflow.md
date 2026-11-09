@@ -27,6 +27,7 @@
 | 용어/데이터 의미 변경 | [`Glossary`](../../01_Project-Context/01_Glossary.md), 관련 Contract |
 | 실행 단계·순서 변경 | [`Main Flow`](../../02_Architecture/00_Flows/00_Main-Flow.md) 및 하위 Flow |
 | GPU 셰이더·리소스 인터페이스 변경 | 해당 GLSL `layout` 선언·필수 주석, CPU Descriptor/Push Constant/Barrier 구현, [`Contract Register`](../../02_Architecture/01_Contracts/00_Contract-Register.md), 관련 Flow·테스트 |
+| 큰 클래스의 섹션 정리·상태/모듈 추출 | [`Section & Responsibility Refactoring`](../00_Core/03_Section-and-Responsibility-Refactoring.md)에 따라 두 단계를 구분. Source Map / 관련 Contracts / Flows / 테스트 / 필요하면 ADR |
 | 공개 API·ABI·불변조건 변경 | [`Contract Register`](../../02_Architecture/01_Contracts/00_Contract-Register.md), Doxygen, 테스트 |
 | 모듈 책임·경로·진입점 변경 | [`Source Map`](../../02_Architecture/02_Source/00_Source-Map.md), Document Map |
 | 검증/성능 측정 | [`Validation & Tests`](../../05_Experiments/01_Validation-and-Tests.md), [`Performance`](../../05_Experiments/02_Performance-Measurements.md) |

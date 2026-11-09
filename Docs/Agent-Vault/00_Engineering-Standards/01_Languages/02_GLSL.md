@@ -164,3 +164,7 @@ void update_cell(uint index) {
 - Host–GPU 계약 변경 시 **셰이더 선언/주석 + CPU 측 코드 + Architecture/Contracts + 관련 테스트/Work Log**를 함께 검토한다.
 - 관련 규칙: [Source Comments](../02_Documentation/01_Source-Comments.md), [Document Workflow](../03_Workflow/00_Document-Workflow.md), [Verification and Review](../03_Workflow/01_Verification-and-Review.md).
 - 실행하지 않은 컴파일·실행·성능 테스트의 성공을 기록하지 않는다.
+
+## 큰 셰이더의 단계적 책임 분리
+
+[공통 2단계 리팩터링 지침](../00_Core/03_Section-and-Responsibility-Refactoring.md)을 따른다. 1단계에서 Resources / Main Process / Helpers의 구획을 만들되 `#version`·`#extension`·`layout` 선언과 GPU 실행 제약을 보존한다. 2단계에서는 보조 함수, 공유 셰이더 코드, 패스 책임의 추출을 검토한다. **리소스 바인딩·Push Constant·Buffer Layout, Workgroup Barrier 및 CPU–GPU 계약을 단순한 코드 이동으로 바꿔서는 안 된다.**

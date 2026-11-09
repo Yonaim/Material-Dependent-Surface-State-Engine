@@ -43,3 +43,7 @@ export async function main(): Promise<void> {
 - 실제 프로젝트의 타입 검사, 린트, 단위 테스트, 빌드 명령을 구분하여 실행한다.
 - 공개 계약이나 데이터 형식을 바꾸면 관련 Contracts/Source/Tests와 Work Log를 갱신한다.
 - 주석과 JSDoc은 [Source Comments](../02_Documentation/01_Source-Comments.md)를 따른다.
+
+## 큰 클래스/모듈의 단계적 책임 분리
+
+[공통 2단계 리팩터링 지침](../00_Core/03_Section-and-Responsibility-Refactoring.md)을 따른다. 1단계는 섹션과 주석 기반 접기로 경계를 나타내고, 2단계는 관련 상태·동작을 함수, 객체, 타입, 클래스 또는 모듈로 추출한다. 공개 export/import, 클로저 캡처, 비동기 오류 및 실행 시점 변화를 확인한다.

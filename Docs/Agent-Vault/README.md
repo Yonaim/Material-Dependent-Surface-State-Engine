@@ -117,3 +117,7 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 - **프로젝트 사본에만 보관:** 실제 코드 경로, 프로젝트 고유 지식, 실험 수치, 검증 결과, ADR, Work Log.
 - 프로젝트에서 검증한 개선이 일반적으로 유용하면 **선별하여** 공통 템플릿에도 반영한다. 프로젝트 고유 사실을 자동 병합하지 않는다.
 - 문서가 아직 미작성인 상태에서 관련 작업을 진행해야 한다면, 읽지 않은 내용을 추측하지 말고 필요 문서를 실제 근거로 채운다.
+
+## Universal 규칙 동기화 — 5.5
+
+2026-11-09 사용자 지정 5.5 갱신을 로컬 Universal-Agent-Vault의 `93dbbed`(큰 클래스·파일 2단계 규칙)에서 반영했다. [공통 지침](00_Engineering-Standards/00_Core/03_Section-and-Responsibility-Refactoring.md)은 1단계 섹션 정리와 2단계 책임 추출을 독립된 작업·검증으로 다룬다. 예시의 T 접두어는 범용 예시이며 이 프로젝트의 실제 C++ 코드는 Project Brief의 Unreal-Inspired(F/E/b)를 따른다. 기존 프로젝트 라우팅·계약·실험 기록과 shader folding 설정을 보존한다.
