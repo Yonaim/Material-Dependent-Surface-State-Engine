@@ -48,3 +48,8 @@
 ## Local Reaction 경로
 
 `FSurfaceStateSolver`는 Scene 공유 Profile GPU table의 최대 활성 규칙 수가 0보다 크면 Reaction flag(bit 25)를 설정한다. 이 flag는 해당 texel의 Profile 규칙 수가 아닌 Scene 전체 조건이다. Pass 2가 binding 24에 기본 snapshot과 유입을 기록한 뒤 write/read barrier를 거쳐 `SurfaceReaction.comp`를 실행한다. 이 pass의 최종 Next State와 activity/Height schedule을 기존 post Geometry 경로가 소비한다. binding 23/24의 데이터 및 시간 적분 계약은 [[02_Architecture/01_Contracts/06_Reactions|Local Reactions]]를 따른다.
+
+## 5.5 책임 경계 보완
+
+- `FSurfaceStateSystem::FSolverExecutionState` / `Execution`: solver debug 설정, dirty/강제 갱신·sparse/cache 옵션, input activation·안정 시간 캐시를 값으로 소유한다. 기존 초기화·reset·resource replacement·A/B 기록 조건을 그대로 사용한다. GPU ABI record가 아니다.
+- `SurfaceStateSolver.cpp::PrepareSolverSteps`: step 입력 검증·descriptor/push constant·sparse offset·prebuild/post flags 구성을 준비한다. `RecordSteps`는 command-buffer/빈 입력 guard 후 준비하고 기존 GPU dispatch/barrier/timestamp 순서를 기록한다. 준비 벡터는 원래 reserve/생성 경로를 유지하며 참조 대상 Step의 수명은 기록 호출 안에 한정된다.

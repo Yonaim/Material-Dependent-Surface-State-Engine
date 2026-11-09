@@ -455,9 +455,9 @@ namespace MDSS::SurfaceState
                     CompactInputGroupMasks.data(),
                     static_cast<VkDeviceSize>(CompactInputGroupMasks.size() * sizeof(std::uint32_t)),
                     static_cast<VkDeviceSize>(SparseLayout.InputGroupMaskWord * sizeof(std::uint32_t)));
-                if (InstanceIndex >= PendingInputActivation.size())
-                    PendingInputActivation.resize(InstanceCount, false);
-                PendingInputActivation[InstanceIndex] = true;
+                if (InstanceIndex >= Execution.PendingInputActivation.size())
+                    Execution.PendingInputActivation.resize(InstanceCount, false);
+                Execution.PendingInputActivation[InstanceIndex] = true;
             }
         }
         PendingContacts.clear();

@@ -109,31 +109,31 @@ namespace MDSS::SurfaceState
         void               SetDebugNormalWeightEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept
         {
-            return bRawFluxCacheEnabled;
+            return Execution.bRawFluxCacheEnabled;
         }
         void SetRawFluxCacheEnabled(bool bEnabled) noexcept
         {
-            bRawFluxCacheEnabled = bEnabled;
+            Execution.bRawFluxCacheEnabled = bEnabled;
         }
         [[nodiscard]] bool IsCoalescedRawFluxLayoutEnabled() const noexcept
         {
-            return bCoalescedRawFluxLayoutEnabled;
+            return Execution.bCoalescedRawFluxLayoutEnabled;
         }
         void SetCoalescedRawFluxLayoutEnabled(bool bEnabled) noexcept
         {
-            bCoalescedRawFluxLayoutEnabled = bEnabled;
+            Execution.bCoalescedRawFluxLayoutEnabled = bEnabled;
         }
         [[nodiscard]] bool IsHalfRawFluxCacheEnabled() const noexcept
         {
-            return bHalfRawFluxCacheEnabled;
+            return Execution.bHalfRawFluxCacheEnabled;
         }
         void SetHalfRawFluxCacheEnabled(bool bEnabled) noexcept
         {
-            bHalfRawFluxCacheEnabled = bEnabled;
+            Execution.bHalfRawFluxCacheEnabled = bEnabled;
         }
         [[nodiscard]] bool IsHalfDynamicWeightsEnabled() const noexcept
         {
-            return bHalfDynamicWeightsEnabled;
+            return Execution.bHalfDynamicWeightsEnabled;
         }
         void SetHalfDynamicWeightsEnabled(bool bEnabled) noexcept;
         void TrimRenderMeshVariants(std::uint32_t Surface, std::uint32_t Overlay)
@@ -143,31 +143,31 @@ namespace MDSS::SurfaceState
         }
         void SetAdaptiveGeometryEnabled(bool bEnabled) noexcept
         {
-            bAdaptiveGeometryEnabled = bEnabled;
+            Execution.bAdaptiveGeometryEnabled = bEnabled;
         }
         [[nodiscard]] bool IsAdaptiveGeometryEnabled() const noexcept
         {
-            return bAdaptiveGeometryEnabled;
+            return Execution.bAdaptiveGeometryEnabled;
         }
         void PrepareScratchStorage()
         {
             if (GPUResources && GPUResources->ConfigureScratchStorage(Context,
-                                                                      bRawFluxCacheEnabled,
-                                                                      bHalfRawFluxCacheEnabled,
-                                                                      bHalfDynamicWeightsEnabled,
-                                                                      bCompactScratchStorageEnabled))
+                                                                      Execution.bRawFluxCacheEnabled,
+                                                                      Execution.bHalfRawFluxCacheEnabled,
+                                                                      Execution.bHalfDynamicWeightsEnabled,
+                                                                      Execution.bCompactScratchStorageEnabled))
             {
-                bTransferWeightSettingsDirty = true;
-                bForceFullGeometryOnNextStep = true;
+                Execution.bTransferWeightSettingsDirty = true;
+                Execution.bForceFullGeometryOnNextStep = true;
             }
         }
         void SetCompactScratchStorageEnabled(bool bEnabled) noexcept
         {
-            bCompactScratchStorageEnabled = bEnabled;
+            Execution.bCompactScratchStorageEnabled = bEnabled;
         }
         [[nodiscard]] bool IsCompactScratchStorageEnabled() const noexcept
         {
-            return bCompactScratchStorageEnabled;
+            return Execution.bCompactScratchStorageEnabled;
         }
         void SetRuntimeSolverFlagsEnabled(bool bEnabled) noexcept
         {
@@ -180,34 +180,34 @@ namespace MDSS::SurfaceState
         }
         [[nodiscard]] bool IsSparseSolverEnabled() const noexcept
         {
-            return bSparseSolverEnabled;
+            return Execution.bSparseSolverEnabled;
         }
         void               SetSparseSolverEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseAccumulationHeightEnabled() const noexcept
         {
-            return bSparseAccumulationHeightEnabled;
+            return Execution.bSparseAccumulationHeightEnabled;
         }
         void SetSparseAccumulationHeightEnabled(bool bEnabled) noexcept
         {
-            bSparseAccumulationHeightEnabled = bEnabled;
+            Execution.bSparseAccumulationHeightEnabled = bEnabled;
         }
         [[nodiscard]] bool IsActiveChannelMaskEnabled() const noexcept
         {
-            return bActiveChannelMaskEnabled;
+            return Execution.bActiveChannelMaskEnabled;
         }
         void               SetActiveChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsPerWorkgroupChannelMaskEnabled() const noexcept
         {
-            return bPerWorkgroupChannelMaskEnabled;
+            return Execution.bPerWorkgroupChannelMaskEnabled;
         }
         void               SetPerWorkgroupChannelMaskEnabled(bool bEnabled) noexcept;
         [[nodiscard]] bool IsSparseSimulationGeometryEnabled() const noexcept
         {
-            return bSparseSimulationGeometryEnabled;
+            return Execution.bSparseSimulationGeometryEnabled;
         }
         void SetSparseSimulationGeometryEnabled(bool bEnabled) noexcept
         {
-            bSparseSimulationGeometryEnabled = bEnabled;
+            Execution.bSparseSimulationGeometryEnabled = bEnabled;
         }
         [[nodiscard]] const FSurfaceGPUResourceManager& GetGPUResources() const noexcept;
         [[nodiscard]] FSurfaceGPUBufferPool&            GetReusableBufferPool() noexcept
@@ -242,32 +242,30 @@ namespace MDSS::SurfaceState
         std::unique_ptr<FSurfaceGPUResourceManager> GPUResources;
         std::unique_ptr<FSurfaceStateSolver>        Solver;
         std::vector<FSurfaceContactInput>           PendingContacts;
-        FSurfaceSolverDebugSettings                 DebugSolverSettings;
-#pragma endregion
+        struct FSolverExecutionState
+        {
+            FSurfaceSolverDebugSettings DebugSolverSettings;
 
-// ============================================================
-// 06. Solver Settings and Activity State
-// ============================================================
-#pragma region 06_Solver_Settings_and_Activity_State
-
-        bool                   bTransferWeightSettingsDirty = false;
-        bool                   bForceFullGeometryOnNextStep = false;
-        bool                   bStableDeltaTimeDirty = true;
-        bool                   bAdaptiveGeometryEnabled = false;
-        bool                   bCompactScratchStorageEnabled = true;
-        bool                   bRawFluxCacheEnabled = true;
-        bool                   bCoalescedRawFluxLayoutEnabled = true;
-        bool                   bHalfRawFluxCacheEnabled = true;
-        bool                   bHalfDynamicWeightsEnabled = false;
-        bool                   bSparseSolverEnabled = false;
-        bool                   bSparseAccumulationHeightEnabled = true;
-        bool                   bActiveChannelMaskEnabled = true;
-        bool                   bPerWorkgroupChannelMaskEnabled = true;
-        bool                   bSparseSimulationGeometryEnabled = true;
-        bool                   bSeedPersistentActivityOnNextStep = true;
-        std::vector<bool>      PendingInputActivation;
-        float                  CachedMaximumStableDeltaTime = 1.0F / 60.0F;
-        std::vector<glm::mat3> StableDeltaTimeModelMatrices;
+            bool                   bTransferWeightSettingsDirty = false;
+            bool                   bForceFullGeometryOnNextStep = false;
+            bool                   bStableDeltaTimeDirty = true;
+            bool                   bAdaptiveGeometryEnabled = false;
+            bool                   bCompactScratchStorageEnabled = true;
+            bool                   bRawFluxCacheEnabled = true;
+            bool                   bCoalescedRawFluxLayoutEnabled = true;
+            bool                   bHalfRawFluxCacheEnabled = true;
+            bool                   bHalfDynamicWeightsEnabled = false;
+            bool                   bSparseSolverEnabled = false;
+            bool                   bSparseAccumulationHeightEnabled = true;
+            bool                   bActiveChannelMaskEnabled = true;
+            bool                   bPerWorkgroupChannelMaskEnabled = true;
+            bool                   bSparseSimulationGeometryEnabled = true;
+            bool                   bSeedPersistentActivityOnNextStep = true;
+            std::vector<bool>      PendingInputActivation;
+            float                  CachedMaximumStableDeltaTime = 1.0F / 60.0F;
+            std::vector<glm::mat3> StableDeltaTimeModelMatrices;
+        };
+        FSolverExecutionState                                                                Execution;
         std::map<std::pair<Asset::FSRProfileAssetHandle, FStateId>, FSurfaceStateParameters> RuntimeProfileOverrides;
 
 #pragma endregion

@@ -21,3 +21,7 @@
 2026-11-09 Unreal-Inspired 전환으로 CPU 일반 타입은 `F`, enum은 `E`를 사용한다. GLSL 타입명은 해당 셰이더 프로필의 기존 이름을 유지한다. 예를 들어 CPU `FSurfaceGPUProfileParameters` ↔ GLSL `FSurfaceGPUProfileParameters`는 byte layout으로 대응하며 이름이 같아야 하는 계약이 아니다. 바인딩 번호·필드 순서·alignment/stride·push constant 범위는 변경하지 않았다. C++ public 타입명이 바뀌므로 소비자는 새 헤더로 다시 빌드한다.
 
 Scene 직렬화의 `"type": "TScene"`, 기존 JSON 키·로그/예외 문자열·파일 경로는 호환성을 위해 유지한다. C++ 클래스는 `FScene`이다. `std::array<bool, ...>` 같은 컨테이너는 scalar bool 변수가 아니므로 `LogLevelFilters`, `Enabled` 같은 기존 컬렉션 이름을 유지한다.
+
+## 5.5 private 책임 추출의 경계
+
+FDebugUI의 역할별 UI 상태, FRenderer의 benchmark capture 상태, FSurfaceStateSystem의 Execution은 CPU private 소유 구조다. 이들 묶음은 public 설정/조회 API·Scene/settings 직렬화·GPU ABI record와 구별한다. C++ 객체의 private 크기/패딩은 달라질 수 있으므로 소비자를 함께 재빌드한다. GPU record의 선언 순서/offset/stride, descriptor/push constant 및 pass/barrier/derivative 계약은 유지했다. 실제 검증 범위는 Validation과 파일별 대조표를 따른다.

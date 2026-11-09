@@ -134,6 +134,100 @@ namespace MDSS::SurfaceState
                                  0,
                                  nullptr);
         }
+        struct FPreparedStep
+        {
+            const FSurfaceSolverInstanceStep* Step = nullptr;
+            VkDescriptorSet                   CurrentDescriptorSet = VK_NULL_HANDLE;
+            VkDescriptorSet                   NextDescriptorSet = VK_NULL_HANDLE;
+            FSurfaceSolverPushConstants       Constants{};
+            FSurfaceSolverPushConstants       PostConstants{};
+            FSurfaceSolverPushConstants       PrebuildConstants{};
+            std::uint32_t                     WorkgroupCount = 0U;
+            VkBuffer                          HeightBuffer = VK_NULL_HANDLE;
+            VkDeviceSize                      SolverIndirectOffset = 0U;
+            VkDeviceSize                      AccumulationIndirectOffset = 0U;
+            VkDeviceSize                      GeometryIndirectOffset = 0U;
+            bool                              bUpdateGeometry = false;
+            bool                              bPrepareAccumulationHeight = true;
+            bool                              bNeedsPreSolverGeometryBuild = false;
+            bool                              bNeedsSparseReset = false;
+        };
+
+        std::vector<FPreparedStep> PrepareSolverSteps(std::span<const FSurfaceSolverInstanceStep> InstanceSteps)
+        {
+            std::vector<FPreparedStep> Prepared;
+            Prepared.reserve(InstanceSteps.size());
+            for (const FSurfaceSolverInstanceStep& Step : InstanceSteps)
+            {
+                if (Step.Descriptors == nullptr || Step.TexelCount == 0 || Step.ChannelCount == 0 ||
+                    Step.TexelCount > std::numeric_limits<std::uint32_t>::max() ||
+                    Step.ChannelCount > std::numeric_limits<std::uint32_t>::max() || !std::isfinite(Step.DeltaTime) ||
+                    Step.DeltaTime < 0.0F)
+                    throw std::invalid_argument("Surface State solver step received invalid dimensions or DeltaTime.");
+                if (Step.TexelCount > static_cast<std::size_t>(65535U) * 64U)
+                    throw std::length_error(
+                        "Surface State solver dispatch exceeds Vulkan's minimum X workgroup limit.");
+
+                FPreparedStep Item;
+                Item.Step = &Step;
+                Item.CurrentDescriptorSet =
+                    Step.bCurrentStateAB ? Step.Descriptors->GetABSet() : Step.Descriptors->GetBASet();
+                Item.NextDescriptorSet =
+                    Step.bCurrentStateAB ? Step.Descriptors->GetBASet() : Step.Descriptors->GetABSet();
+                Item.WorkgroupCount = static_cast<std::uint32_t>((Step.TexelCount + 63U) / 64U);
+                Item.HeightBuffer = Step.Descriptors->GetBoundBufferHandle(
+                    ESurfaceGPUDescriptorBinding::AccumulationHeights, Step.bCurrentStateAB);
+
+                const FSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(Step.TexelCount);
+                const std::size_t                  SolverCommandWord =
+                    Step.bCurrentStateAB ? SparseLayout.SolverACommandWord : SparseLayout.SolverBCommandWord;
+                Item.SolverIndirectOffset = static_cast<VkDeviceSize>(SolverCommandWord * sizeof(std::uint32_t));
+                Item.AccumulationIndirectOffset =
+                    static_cast<VkDeviceSize>(SparseLayout.AccumulationCommandWord * sizeof(std::uint32_t));
+                Item.GeometryIndirectOffset =
+                    static_cast<VkDeviceSize>(SparseLayout.GeometryCommandWord * sizeof(std::uint32_t));
+
+                Item.bUpdateGeometry = (Step.SolverFlags & SurfaceSolverStateDrivenGeometryUpdateFlag) != 0U;
+                Item.bPrepareAccumulationHeight = Step.bPrepareAccumulationHeight || Item.bUpdateGeometry;
+                Item.bNeedsPreSolverGeometryBuild =
+                    Item.bUpdateGeometry && (Step.SolverFlags & SurfaceSolverForceFullGeometryFlag) != 0U;
+
+                Item.Constants = MakePushConstants(Step);
+                if (Step.bCurrentStateAB)
+                    Item.Constants.Flags |= SurfaceSolverCurrentStateABFlag;
+                else
+                    Item.Constants.Flags &= ~SurfaceSolverCurrentStateABFlag;
+                if (Item.bPrepareAccumulationHeight)
+                    Item.Constants.Flags |= SurfaceSolverPrepareAccumulationHeightFlag;
+                else
+                    Item.Constants.Flags &= ~SurfaceSolverPrepareAccumulationHeightFlag;
+
+                Item.PostConstants = Item.Constants;
+                // A force-full prebuild makes CurrentState geometry valid before Pass1. The newly-produced state can
+                // then use normal sparse dirty propagation. If no prebuild happened (state-driven updates OFF), keep
+                // ForceFull so the final render-height pass refreshes every texel without cache/revision bookkeeping.
+                if (Item.bNeedsPreSolverGeometryBuild)
+                    Item.PostConstants.Flags &= ~SurfaceSolverForceFullGeometryFlag;
+
+                Item.PrebuildConstants = Item.Constants;
+                Item.PrebuildConstants.Flags &=
+                    ~(SurfaceSolverSparseGeometryFlag | SurfaceSolverSparseAccumulationHeightFlag |
+                      SurfaceSolverSparseSolverFlag);
+
+                const bool bSparseSolver = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U;
+                const bool bActiveChannelMask =
+                    (Item.Constants.Flags &
+                     (SurfaceSolverActiveChannelMaskFlag | SurfaceSolverPerWorkgroupChannelMaskFlag)) != 0U;
+                const bool bSparseHeight = (Item.Constants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U;
+                // One fused reset pass clears only the destination persistent set, Height/Geometry schedules,
+                // and merges any CPU-known input groups into the current persistent set. No full-state scan remains.
+                Item.bNeedsSparseReset = bSparseSolver || bActiveChannelMask || Item.bUpdateGeometry ||
+                                         (Item.bPrepareAccumulationHeight && bSparseHeight) || Step.bHasInputActivation;
+                Prepared.push_back(Item);
+            }
+
+            return Prepared;
+        }
     } // namespace
 #pragma endregion
 
@@ -322,92 +416,7 @@ namespace MDSS::SurfaceState
         if (InstanceSteps.empty())
             return;
 
-        struct FPreparedStep
-        {
-            const FSurfaceSolverInstanceStep* Step = nullptr;
-            VkDescriptorSet                   CurrentDescriptorSet = VK_NULL_HANDLE;
-            VkDescriptorSet                   NextDescriptorSet = VK_NULL_HANDLE;
-            FSurfaceSolverPushConstants       Constants{};
-            FSurfaceSolverPushConstants       PostConstants{};
-            FSurfaceSolverPushConstants       PrebuildConstants{};
-            std::uint32_t                     WorkgroupCount = 0U;
-            VkBuffer                          HeightBuffer = VK_NULL_HANDLE;
-            VkDeviceSize                      SolverIndirectOffset = 0U;
-            VkDeviceSize                      AccumulationIndirectOffset = 0U;
-            VkDeviceSize                      GeometryIndirectOffset = 0U;
-            bool                              bUpdateGeometry = false;
-            bool                              bPrepareAccumulationHeight = true;
-            bool                              bNeedsPreSolverGeometryBuild = false;
-            bool                              bNeedsSparseReset = false;
-        };
-
-        std::vector<FPreparedStep> Prepared;
-        Prepared.reserve(InstanceSteps.size());
-        for (const FSurfaceSolverInstanceStep& Step : InstanceSteps)
-        {
-            if (Step.Descriptors == nullptr || Step.TexelCount == 0 || Step.ChannelCount == 0 ||
-                Step.TexelCount > std::numeric_limits<std::uint32_t>::max() ||
-                Step.ChannelCount > std::numeric_limits<std::uint32_t>::max() || !std::isfinite(Step.DeltaTime) ||
-                Step.DeltaTime < 0.0F)
-                throw std::invalid_argument("Surface State solver step received invalid dimensions or DeltaTime.");
-            if (Step.TexelCount > static_cast<std::size_t>(65535U) * 64U)
-                throw std::length_error("Surface State solver dispatch exceeds Vulkan's minimum X workgroup limit.");
-
-            FPreparedStep Item;
-            Item.Step = &Step;
-            Item.CurrentDescriptorSet =
-                Step.bCurrentStateAB ? Step.Descriptors->GetABSet() : Step.Descriptors->GetBASet();
-            Item.NextDescriptorSet = Step.bCurrentStateAB ? Step.Descriptors->GetBASet() : Step.Descriptors->GetABSet();
-            Item.WorkgroupCount = static_cast<std::uint32_t>((Step.TexelCount + 63U) / 64U);
-            Item.HeightBuffer = Step.Descriptors->GetBoundBufferHandle(
-                ESurfaceGPUDescriptorBinding::AccumulationHeights, Step.bCurrentStateAB);
-
-            const FSurfaceSparseMetadataLayout SparseLayout = GetSurfaceSparseMetadataLayout(Step.TexelCount);
-            const std::size_t                  SolverCommandWord =
-                Step.bCurrentStateAB ? SparseLayout.SolverACommandWord : SparseLayout.SolverBCommandWord;
-            Item.SolverIndirectOffset = static_cast<VkDeviceSize>(SolverCommandWord * sizeof(std::uint32_t));
-            Item.AccumulationIndirectOffset =
-                static_cast<VkDeviceSize>(SparseLayout.AccumulationCommandWord * sizeof(std::uint32_t));
-            Item.GeometryIndirectOffset =
-                static_cast<VkDeviceSize>(SparseLayout.GeometryCommandWord * sizeof(std::uint32_t));
-
-            Item.bUpdateGeometry = (Step.SolverFlags & SurfaceSolverStateDrivenGeometryUpdateFlag) != 0U;
-            Item.bPrepareAccumulationHeight = Step.bPrepareAccumulationHeight || Item.bUpdateGeometry;
-            Item.bNeedsPreSolverGeometryBuild =
-                Item.bUpdateGeometry && (Step.SolverFlags & SurfaceSolverForceFullGeometryFlag) != 0U;
-
-            Item.Constants = MakePushConstants(Step);
-            if (Step.bCurrentStateAB)
-                Item.Constants.Flags |= SurfaceSolverCurrentStateABFlag;
-            else
-                Item.Constants.Flags &= ~SurfaceSolverCurrentStateABFlag;
-            if (Item.bPrepareAccumulationHeight)
-                Item.Constants.Flags |= SurfaceSolverPrepareAccumulationHeightFlag;
-            else
-                Item.Constants.Flags &= ~SurfaceSolverPrepareAccumulationHeightFlag;
-
-            Item.PostConstants = Item.Constants;
-            // A force-full prebuild makes CurrentState geometry valid before Pass1. The newly-produced state can
-            // then use normal sparse dirty propagation. If no prebuild happened (state-driven updates OFF), keep
-            // ForceFull so the final render-height pass refreshes every texel without cache/revision bookkeeping.
-            if (Item.bNeedsPreSolverGeometryBuild)
-                Item.PostConstants.Flags &= ~SurfaceSolverForceFullGeometryFlag;
-
-            Item.PrebuildConstants = Item.Constants;
-            Item.PrebuildConstants.Flags &=
-                ~(SurfaceSolverSparseGeometryFlag | SurfaceSolverSparseAccumulationHeightFlag |
-                  SurfaceSolverSparseSolverFlag);
-
-            const bool bSparseSolver = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U;
-            const bool bActiveChannelMask = (Item.Constants.Flags & (SurfaceSolverActiveChannelMaskFlag |
-                                                                     SurfaceSolverPerWorkgroupChannelMaskFlag)) != 0U;
-            const bool bSparseHeight = (Item.Constants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U;
-            // One fused reset pass clears only the destination persistent set, Height/Geometry schedules,
-            // and merges any CPU-known input groups into the current persistent set. No full-state scan remains.
-            Item.bNeedsSparseReset = bSparseSolver || bActiveChannelMask || Item.bUpdateGeometry ||
-                                     (Item.bPrepareAccumulationHeight && bSparseHeight) || Step.bHasInputActivation;
-            Prepared.push_back(Item);
-        }
+        std::vector<FPreparedStep> Prepared = PrepareSolverSteps(InstanceSteps);
 
         VkMemoryBarrier ReadCompletion{};
         ReadCompletion.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;

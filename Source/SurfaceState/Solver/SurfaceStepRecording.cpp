@@ -46,7 +46,7 @@ namespace MDSS::SurfaceState
             return;
         }
 
-        bool bHasDirtyTransferWeightCache = bTransferWeightSettingsDirty;
+        bool bHasDirtyTransferWeightCache = Execution.bTransferWeightSettingsDirty;
         for (std::size_t SceneIndex = 0; SceneIndex < GPUResources->GetSceneInstanceCount(); ++SceneIndex)
         {
             if (GPUResources->GetInstanceDescriptors(SceneIndex) == nullptr)
@@ -78,79 +78,80 @@ namespace MDSS::SurfaceState
             const FStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[SceneIndex];
             const glm::mat4            ModelMatrix = Instance.GetTransform().GetMatrix();
             const bool                 bRebuildStaticWeights =
-                bTransferWeightSettingsDirty ||
+                Execution.bTransferWeightSettingsDirty ||
                 GPUResources->NeedsTransferWeightCacheUpdate(SceneIndex, Instance.GetTransform());
             if (bRebuildStaticWeights)
             {
                 GPUResources->UpdateTransferWeightCache(
                     SceneIndex,
                     Instance.GetTransform(),
-                    DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight),
-                    DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight),
-                    DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight),
-                    bHalfDynamicWeightsEnabled);
+                    Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight),
+                    Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight),
+                    Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight),
+                    Execution.bHalfDynamicWeightsEnabled);
             }
             const glm::vec3 GravityWorld(0.0F, 0.0F, -1.0F);
             std::uint32_t   SolverFlags = 0U;
-            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::GeometryDrive))
+            if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::GeometryDrive))
             {
                 SolverFlags |= 1U << 0U;
             }
-            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::SaturationDrive))
+            if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::SaturationDrive))
             {
                 SolverFlags |= 1U << 1U;
             }
-            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::Decay))
+            if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::Decay))
             {
                 SolverFlags |= 1U << 2U;
             }
-            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ConcavityRetention))
+            if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ConcavityRetention))
             {
                 SolverFlags |= 1U << 3U;
             }
-            if (!DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::MesoDirectionNormal))
+            if (!Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::MesoDirectionNormal))
             {
                 SolverFlags |= 1U << 4U;
             }
-            if (bRawFluxCacheEnabled)
+            if (Execution.bRawFluxCacheEnabled)
             {
                 SolverFlags |= SurfaceSolverRawFluxCacheFlag;
-                if (bCoalescedRawFluxLayoutEnabled)
+                if (Execution.bCoalescedRawFluxLayoutEnabled)
                     SolverFlags |= SurfaceSolverCoalescedRawFluxLayoutFlag;
-                if (bHalfRawFluxCacheEnabled)
+                if (Execution.bHalfRawFluxCacheEnabled)
                     SolverFlags |= SurfaceSolverHalfRawFluxCacheFlag;
             }
-            if (bHalfDynamicWeightsEnabled)
+            if (Execution.bHalfDynamicWeightsEnabled)
                 SolverFlags |= SurfaceSolverHalfDynamicWeightsFlag;
-            if (bSeedPersistentActivityOnNextStep &&
-                (bSparseSolverEnabled || bActiveChannelMaskEnabled || bPerWorkgroupChannelMaskEnabled))
+            if (Execution.bSeedPersistentActivityOnNextStep &&
+                (Execution.bSparseSolverEnabled || Execution.bActiveChannelMaskEnabled ||
+                 Execution.bPerWorkgroupChannelMaskEnabled))
                 SolverFlags |= SurfaceSolverSeedPersistentActivityFlag;
-            if (bSparseSolverEnabled)
+            if (Execution.bSparseSolverEnabled)
                 SolverFlags |= SurfaceSolverSparseSolverFlag;
-            if (bSparseAccumulationHeightEnabled)
+            if (Execution.bSparseAccumulationHeightEnabled)
                 SolverFlags |= SurfaceSolverSparseAccumulationHeightFlag;
-            if (bActiveChannelMaskEnabled)
+            if (Execution.bActiveChannelMaskEnabled)
                 SolverFlags |= SurfaceSolverActiveChannelMaskFlag;
-            if (bPerWorkgroupChannelMaskEnabled)
+            if (Execution.bPerWorkgroupChannelMaskEnabled)
                 SolverFlags |= SurfaceSolverPerWorkgroupChannelMaskFlag;
-            if (bSparseSimulationGeometryEnabled)
+            if (Execution.bSparseSimulationGeometryEnabled)
                 SolverFlags |= SurfaceSolverSparseGeometryFlag;
-            if (bAdaptiveGeometryEnabled)
+            if (Execution.bAdaptiveGeometryEnabled)
                 SolverFlags |= SurfaceSolverAdaptiveGeometryFlag;
 
             // Height validity is independent of state-driven geometry updates. If updates are OFF the full rebuild
             // is deferred until the final render-height step instead of adding revision/cache bookkeeping.
-            if (bRebuildStaticWeights || bForceFullGeometryOnNextStep)
+            if (bRebuildStaticWeights || Execution.bForceFullGeometryOnNextStep)
                 SolverFlags |= SurfaceSolverForceFullGeometryFlag;
 
-            if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled)
+            if (Execution.DebugSolverSettings.bStateDrivenGeometryUpdateEnabled)
             {
                 SolverFlags |= SurfaceSolverStateDrivenGeometryUpdateFlag;
-                if (DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight))
+                if (Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::DistanceWeight))
                     SolverFlags |= SurfaceSolverDistanceWeightFlag;
-                if (DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight))
+                if (Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::NormalWeight))
                     SolverFlags |= SurfaceSolverNormalWeightFlag;
-                if (DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight))
+                if (Execution.DebugSolverSettings.IsEnabled(ESurfaceSolverTerm::ProfileBoundaryWeight))
                     SolverFlags |= SurfaceSolverProfileBoundaryWeightFlag;
             }
             FSurfaceSolverInstanceStep Step;
@@ -163,7 +164,8 @@ namespace MDSS::SurfaceState
             Step.GravityWorld = GravityWorld;
             Step.SolverFlags = SolverFlags;
             Step.bPrepareAccumulationHeight = bPrepareRenderHeight;
-            Step.bHasInputActivation = SceneIndex < PendingInputActivation.size() && PendingInputActivation[SceneIndex];
+            Step.bHasInputActivation =
+                SceneIndex < Execution.PendingInputActivation.size() && Execution.PendingInputActivation[SceneIndex];
             InstanceSteps.push_back(Step);
             ActiveSceneIndices.push_back(SceneIndex);
         }
@@ -171,16 +173,16 @@ namespace MDSS::SurfaceState
         for (const std::size_t SceneIndex : ActiveSceneIndices)
         {
             GPUResources->AdvanceCurrentState(SceneIndex);
-            if (SceneIndex < PendingInputActivation.size())
-                PendingInputActivation[SceneIndex] = false;
+            if (SceneIndex < Execution.PendingInputActivation.size())
+                Execution.PendingInputActivation[SceneIndex] = false;
         }
         if (!InstanceSteps.empty())
-            bSeedPersistentActivityOnNextStep = false;
-        bTransferWeightSettingsDirty = false;
+            Execution.bSeedPersistentActivityOnNextStep = false;
+        Execution.bTransferWeightSettingsDirty = false;
         // State-driven geometry updates always derive Height after the step. When disabled, several fixed substeps may
         // run; keep the invalidation alive until the final substep actually prepares render height.
-        if (DebugSolverSettings.bStateDrivenGeometryUpdateEnabled || bPrepareRenderHeight)
-            bForceFullGeometryOnNextStep = false;
+        if (Execution.DebugSolverSettings.bStateDrivenGeometryUpdateEnabled || bPrepareRenderHeight)
+            Execution.bForceFullGeometryOnNextStep = false;
     }
 
 #pragma endregion
