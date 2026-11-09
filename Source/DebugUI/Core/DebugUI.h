@@ -6,6 +6,7 @@
 #pragma once
 
 #include "AssetManager/Core/Asset.h"
+#include "DebugUI/Profiling/ProfilingUIState.h"
 #include "Logger/Logger.h"
 #include "Scene/Camera.h"
 #include "SurfaceState/Solver/SimulationClock.h"
@@ -17,7 +18,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <deque>
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <map>
@@ -363,40 +363,8 @@ namespace MDSS
         // ============================================================
 #pragma region 13_Profiling_and_Overlay_State
 
-        struct FProfilingSample
-        {
-            double                TimeSeconds = 0.0;
-            std::array<float, 43> Values{};
-        };
-        double                        ProfilingWindowElapsed = 0.0;
-        double                        ProfilingElapsedSeconds = 0.0;
-        double                        ProfilingFpsSum = 0.0;
-        double                        ProfilingFrameTimeSum = 0.0;
-        std::uint32_t                 ProfilingFrameSamples = 0;
-        std::array<double, 40>        ProfilingMetricSums{};
-        std::array<std::uint32_t, 40> ProfilingMetricSamples{};
-        std::array<float, 43>         ProfilingAverages{};
-        std::array<float, 43>         ProfilingMaximums = []
-        {
-            std::array<float, 43> Values{};
-            Values.fill(-1.0F);
-            return Values;
-        }();
-        std::array<float, 43> ProfilingWindowMaximums = []
-        {
-            std::array<float, 43> Values{};
-            Values.fill(-1.0F);
-            return Values;
-        }();
-        std::array<float, 43> ProfilingRecent100msAverages = []
-        {
-            std::array<float, 43> Values{};
-            Values.fill(-1.0F);
-            return Values;
-        }();
-        std::deque<FProfilingSample> ProfilingRecentSamples;
-        bool                         bProfilingAverageAvailable = false;
-        bool                         bViewportOverlaysVisible = true;
+        FProfilingUIState Profiling;
+        bool              bViewportOverlaysVisible = true;
 #pragma endregion
     };
 } // namespace MDSS

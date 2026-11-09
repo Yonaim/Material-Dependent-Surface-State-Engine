@@ -6,6 +6,15 @@
 
 
 
+## 2026-11-09 — Universal 5.5 첫 적용: FDebugUI 2단계 구조화
+
+- 공통 규칙 13개·AGENTS/공통 라우팅을 로컬 Universal `93dbbed`와 대조해 먼저 반영. 프로젝트 라우팅·Unreal-Inspired·설정·과거 실험 보존. 공통 문서의 로컬 Markdown 링크 누락 0.
+- **1단계:** DebugUI.h에 14개 구획/Region. 주석/Region 제외 토큰·멤버/접근 순서 동일, CRLF 유지, MDSS Debug target build 성공. stage1 헤더/검증 기록 별도 보존.
+- **2단계:** FProfilingUIState에 13개 상태 필드와 Reset/Accumulate/PublishWindow 추출. 이전 함수 본문과 이름/멤버 참조 정규화 후 토큰 동일. Publish loop bound는 크기가 모두 40인 MetricValues/MetricSums 배열의 size로 대응. UI 본문에서 helper를 원래 본문으로 확장하면 기존 토큰과 동일, reset 호출자 6개 파일 바이트 동일.
+- 독립 artifact probe: 기존 본문을 reference로 사용하고 초기 sentinel/리셋/1초 게시/최근 100ms 만료/NaN·Inf·음수 metric·유효하지 않은 frame/표시 mode 불일치를 포함한 2,000프레임·4,023회 상태 비교에서 비트 동일. 이 probe는 GPU·UI 전체 동등성 증명이 아님.
+- 최종 전체 Debug build 성공. CTest **7 통과/7 실패/skip 0**, 직전 네이밍 기준선과 상태 및 추출한 실패 원인 문구 동일. render-only old/new 각 5 frame, PPM/settings/validation 동일·ERROR 0.
+- 변경 C++ 4개 clang-format 20.1.8 dry-run 통과, Region 균형/지역 번호·CRLF-aware whitespace 확인. 셰이더 변경 없음으로 shader 재컴파일은 반복하지 않음. 실제 folding UI·모든 UI 조작/scene 재시작 경로·성능/장시간/다른 플랫폼·GPU 한도를 넘는 overlay는 미검증. [단계별 명령·스냅샷·비교](../../../Build/Validation/20261109-224136-vault55-debugui/summary.md).
+
 ## 2026-11-09 — Unreal-Inspired 네이밍 전환 검증
 
 - C++ 186개 파일(Source/Tests 181 + Research 5)의 일반 타입·비템플릿 별칭 `F`, enum `E`, scalar bool `b`로 전환. 타입명 매핑 208개 및 지역 별칭 3곳, bool 선언 108개와 참조 갱신. 실제 템플릿 `TScopeExit`·템플릿 매개변수·외부 API 타입 유지. 파일명·직렬화/로그/예외 문자열·GLSL 타입명 유지.

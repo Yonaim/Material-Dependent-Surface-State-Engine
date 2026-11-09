@@ -105,6 +105,13 @@
 - **검증:** 주석/Region 제외 토큰 동일, CRLF 및 Region 균형/지역 번호 확인. MDSS Debug target build 성공. 별도 stage1 헤더/검증 파일 보존. 이 구획만으로 책임 분리가 완료됐다고 보지 않음.
 - **다음 별도 작업:** private profiling 상태와 Reset/Accumulate/Publish 동작 추출·검증. 커밋/push 없음.
 
+## 2026-11-09 — FDebugUI 2단계 Profiling 책임 추출
+- **읽은 문서:** 반영된 5.5 공통 지침·Code Style·C++·Verification·Document Workflow, Debug UI Source와 현재 초기화/리셋/metric 소비자, 기존 검증/CPU–GPU 경계 기록.
+- **별도 코드 변경:** 1단계 보존 후 ProfilingUIState.h/.cpp의 FProfilingUIState에 값 소유 필드 13개·sample record·Reset/Accumulate/PublishWindow 추출. FDebugUI는 기존 API/metric 수집/시간·mode guard/ImGui 출력·reset 호출을 유지한다. 새 할당/간접 소유권·settings schema·GPU ABI 변경 없음. private layout 변화로 소비자를 함께 빌드.
+- **검증:** 원래 transition 본문 정규화 및 UI inline expansion 토큰 대조 일치. reset 호출자 6개 파일 동일. 기존 코드 reference와 2,000프레임·4,023회 상태 비트 일치. 전체 build 성공, CTest 7 통과/7 실패·skip 0와 원인 문구 동일, render-only 전후 화면/settings/validation 동일·ERROR 0. format/Region/whitespace 통과. 실제 모든 UI/장시간·성능·다른 장치 및 기존 GPU 한도 경로 미검증.
+- **동기화:** Debug UI Source·5.5 계획·Current Work·Validation 갱신. API/직렬화/GPU·pass 흐름 의미가 같아 Contracts/Flows 본문 추가 수정 불필요. [증거](../../../Build/Validation/20261109-224136-vault55-debugui/summary.md).
+- **상태:** FDebugUI 첫 적용만 완료. 나머지 상태/대형 파일은 후보별 검토 후 별도 두 단계로 수행. 기존 미커밋 작업 보존·이번 커밋/push 없음.
+
 ## 2026-11-09 — 누적 변경 분할 커밋
 
 - 사용자 요청에 따라 기존 변경을 의미 단위로 분리한다. 소스 작업 폴더를 유지하고 보존된 단계별 스냅샷으로 인덱스를 구성했다.
@@ -116,3 +123,4 @@
   - Refactor(Naming): C++ 타입과 bool에 Unreal-Inspired 접두어 적용
   - Docs(Standards): Universal 5.5의 2단계 리팩터링 규칙 반영
   - Style(DebugUI): 클래스 선언을 책임별 14개 섹션으로 구획
+  - Refactor(DebugUI): 프로파일링 누적 상태와 계산 책임 추출

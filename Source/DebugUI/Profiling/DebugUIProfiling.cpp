@@ -9,17 +9,7 @@ namespace MDSS
 
     void FDebugUI::ResetProfilingAverages() noexcept
     {
-        ProfilingWindowElapsed = ProfilingFpsSum = ProfilingFrameTimeSum = 0.0;
-        ProfilingFrameSamples = 0;
-        ProfilingMetricSums.fill(0.0);
-        ProfilingMetricSamples.fill(0);
-        ProfilingAverages.fill(-1.0F);
-        ProfilingMaximums.fill(-1.0F);
-        ProfilingWindowMaximums.fill(-1.0F);
-        ProfilingRecent100msAverages.fill(-1.0F);
-        ProfilingRecentSamples.clear();
-        ProfilingElapsedSeconds = 0.0;
-        bProfilingAverageAvailable = false;
+        Profiling.Reset();
     }
 
     void FDebugUI::DrawViewportStatsOverlay()
@@ -120,86 +110,17 @@ namespace MDSS
             if (std::isfinite(FrameSeconds) && FrameSeconds > 0.0 &&
                 Stats.OverlayDisplayMode == FrameRenderer->GetOverlayDisplayMode())
             {
-                ProfilingElapsedSeconds += FrameSeconds;
-                ProfilingWindowElapsed += FrameSeconds;
-                ProfilingFpsSum += 1.0 / FrameSeconds;
-                ProfilingFrameTimeSum += FrameSeconds * 1000.0;
-                ++ProfilingFrameSamples;
-                FProfilingSample Sample;
-                Sample.TimeSeconds = ProfilingElapsedSeconds;
-                Sample.Values.fill(-1.0F);
-                Sample.Values[0] = static_cast<float>(1.0 / FrameSeconds);
-                Sample.Values[1] = static_cast<float>(FrameSeconds * 1000.0);
-                ProfilingWindowMaximums[0] = std::max(ProfilingWindowMaximums[0], Sample.Values[0]);
-                ProfilingWindowMaximums[1] = std::max(ProfilingWindowMaximums[1], Sample.Values[1]);
-
-                for (std::size_t Index = 0; Index < MetricValues.size(); ++Index)
-                {
-                    if (std::isfinite(MetricValues[Index]) && MetricValues[Index] >= 0.0F)
-                    {
-                        ProfilingMetricSums[Index] += MetricValues[Index];
-                        ++ProfilingMetricSamples[Index];
-                        ProfilingWindowMaximums[Index + 2U] =
-                            std::max(ProfilingWindowMaximums[Index + 2U], MetricValues[Index]);
-                        Sample.Values[Index + 2U] = MetricValues[Index];
-                    }
-                }
-
-                ProfilingRecentSamples.push_back(Sample);
-                while (!ProfilingRecentSamples.empty() &&
-                       ProfilingRecentSamples.front().TimeSeconds < ProfilingElapsedSeconds - 0.1)
-                    ProfilingRecentSamples.pop_front();
-                std::array<double, 43>        RecentSums{};
-                std::array<std::uint32_t, 43> RecentCounts{};
-                for (const FProfilingSample& RecentSample : ProfilingRecentSamples)
-                {
-                    for (std::size_t Index = 0; Index < RecentSample.Values.size(); ++Index)
-                    {
-                        const float Value = RecentSample.Values[Index];
-                        if (std::isfinite(Value) && Value >= 0.0F)
-                        {
-                            RecentSums[Index] += Value;
-                            ++RecentCounts[Index];
-                        }
-                    }
-                }
-                ProfilingRecent100msAverages.fill(-1.0F);
-                for (std::size_t Index = 0; Index < ProfilingRecent100msAverages.size(); ++Index)
-                {
-                    if (RecentCounts[Index] != 0U)
-                        ProfilingRecent100msAverages[Index] =
-                            static_cast<float>(RecentSums[Index] / RecentCounts[Index]);
-                }
+                Profiling.Accumulate(FrameSeconds, MetricValues);
             }
-            if (ProfilingWindowElapsed >= 1.0 && ProfilingFrameSamples > 0)
-            {
-                ProfilingAverages[0] = static_cast<float>(ProfilingFpsSum / ProfilingFrameSamples);
-                ProfilingAverages[1] = static_cast<float>(ProfilingFrameTimeSum / ProfilingFrameSamples);
-                for (std::size_t Index = 0; Index < MetricValues.size(); ++Index)
-                {
-                    ProfilingAverages[Index + 2] =
-                        ProfilingMetricSamples[Index] > 0
-                            ? static_cast<float>(ProfilingMetricSums[Index] / ProfilingMetricSamples[Index])
-                            : -1.0F;
-                }
-                ProfilingMaximums = ProfilingWindowMaximums;
-                bProfilingAverageAvailable = true;
-                ProfilingWindowElapsed = 0.0;
-                ProfilingFpsSum = 0.0;
-                ProfilingFrameTimeSum = 0.0;
-                ProfilingFrameSamples = 0;
-                ProfilingMetricSums.fill(0.0);
-                ProfilingMetricSamples.fill(0U);
-                ProfilingWindowMaximums.fill(-1.0F);
-            }
+            Profiling.PublishWindow();
 
             if (ImGui::CollapsingHeader("Time Profiling", ImGuiTreeNodeFlags_DefaultOpen))
             {
-                const float  FPS = ProfilingAverages[0];
+                const float  FPS = Profiling.Averages[0];
                 const ImVec4 FPSColor = FPS >= 55.0F   ? ImVec4(0.57F, 0.92F, 0.68F, 1.0F)
                                         : FPS >= 30.0F ? ImVec4(1.0F, 0.84F, 0.47F, 1.0F)
                                                        : ImVec4(1.0F, 0.57F, 0.57F, 1.0F);
-                if (bProfilingAverageAvailable)
+                if (Profiling.bAverageAvailable)
                     ImGui::TextColored(FPSColor, "FPS: %.1f", FPS);
                 else
                     ImGui::TextDisabled("FPS: collecting 1s average");
@@ -232,9 +153,9 @@ namespace MDSS
                         else
                             ImGui::TextDisabled(bReady ? "—" : "…");
                     };
-                    DrawValue(ProfilingAverages[Index + 2], bProfilingAverageAvailable);
-                    DrawValue(ProfilingMaximums[Index + 2], true);
-                    DrawValue(ProfilingRecent100msAverages[Index + 2], true);
+                    DrawValue(Profiling.Averages[Index + 2], Profiling.bAverageAvailable);
+                    DrawValue(Profiling.Maximums[Index + 2], true);
+                    DrawValue(Profiling.Recent100msAverages[Index + 2], true);
                 };
                 if (SetupMetricTable("ViewportProfilingSummary"))
                 {
@@ -259,9 +180,9 @@ namespace MDSS
                         else
                             ImGui::TextDisabled(bReady ? "—" : "…");
                     };
-                    DrawFrameValue(ProfilingAverages[1], bProfilingAverageAvailable);
-                    DrawFrameValue(ProfilingMaximums[1], true);
-                    DrawFrameValue(ProfilingRecent100msAverages[1], true);
+                    DrawFrameValue(Profiling.Averages[1], Profiling.bAverageAvailable);
+                    DrawFrameValue(Profiling.Maximums[1], true);
+                    DrawFrameValue(Profiling.Recent100msAverages[1], true);
                     DrawMetric(0, "Render GPU", {0.82F, 0.87F, 0.94F, 1.0F});
                     DrawMetric(1, "Solver GPU / frame", {0.82F, 0.87F, 0.94F, 1.0F});
                     ImGui::EndTable();

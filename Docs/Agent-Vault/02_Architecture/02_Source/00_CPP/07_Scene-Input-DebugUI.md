@@ -83,3 +83,11 @@ UI 표시값은 실행 조건을 확인하는 출발점이다. 성능 측정에�
 ## DemoAnimation 로더의 탐색 순서 — 2026-11-09
 
 `DemoAnimation.cpp`의 공개 `LoadDemoAnimation`에서 `ReadAnimationJson → ReadClipSettings → ReadWeatherCue → ReadTracks → ReadContactEvents` 순서를 찾는다. 그 아래 `ApplyDemoAnimation`, 파싱 단계, 저수준 값 검증/보간 구현을 배치한다. 버전·duration·옵션·weather·track/property/key 순서·contact의 검증 순서와 오류 메시지를 유지한다. 35개 정상/오류 입력의 old/new 비교는 [Validation](../../../05_Experiments/01_Validation-and-Tests.md)에 기록한다.
+
+## Debug UI의 2단계 구조화
+
+- `DebugUI.h`: 공개 API → 기능별 내부 메서드 → 기존 선언 순서대로 묶은 상태의 14개 섹션. 1단계에서는 선언/접근/초기화 순서와 로직을 보존했다.
+- [ProfilingUIState.h](../../../../../Source/DebugUI/Profiling/ProfilingUIState.h) / [ProfilingUIState.cpp](../../../../../Source/DebugUI/Profiling/ProfilingUIState.cpp): `FProfilingUIState`가 13개 필드와 최근 sample deque를 값으로 소유하고 Reset/Accumulate/PublishWindow를 처리한다. 소유자는 `FDebugUI::Profiling`이며 추가 포인터·독립 수명은 없다.
+- `DebugUIProfiling.cpp`는 renderer metric 수집 → frame 시간/표시 mode guard → `Profiling.Accumulate` → `Profiling.PublishWindow` → ImGui 출력을 조율한다. `ResetProfilingAverages`는 기존 모든 호출 지점에서 `Profiling.Reset`으로 위임한다.
+- 기본 생성의 평균 0과 reset 후 평균 -1이라는 기존 sentinel 차이, 1초 누적 창·최근 100ms 만료·최댓값 갱신, 유효하지 않은 metric 무시는 유지한다. private UI 레이아웃 변경을 GPU/직렬화 ABI 변경으로 취급하지 않으며 소비자는 함께 빌드한다.
+- Viewport·Gizmo·Simulation·Profile 편집 상태와 Renderer 등은 별도 검토 후보다. 이 적용을 전체 FDebugUI/저장소의 책임 분리 완료로 보지 않는다.
