@@ -3,6 +3,9 @@
 // ============================================================
 // #region 00_Shared_Shader_Helpers
 
+// 00.00. Persistent Solver Schedule Layout
+// #region 00_00_Persistent_Solver_Schedule_Layout
+
 uint sparseWorkgroupCount()
 {
     return (Solver.LocalTexelCount + 63u) / 64u;
@@ -106,6 +109,11 @@ uint solverNextWorkgroupMaskBase()
     return solverWorkgroupMaskBase(!currentStateIsAB());
 }
 
+// #endregion
+
+// 00.01. Input Accumulation and Geometry Layout
+// #region 00_01_Input_Accumulation_and_Geometry_Layout
+
 uint inputScheduleCountIndex()
 {
     return solverBScheduleCommandBase() + solverScheduleBlockWords();
@@ -155,6 +163,11 @@ uint geometryScheduleListBase()
 {
     return geometryScheduleFlagBase() + sparseWorkgroupCount();
 }
+
+// #endregion
+
+// 00.02. Resolve Active Workgroups and Channels
+// #region 00_02_Resolve_Active_Workgroups_and_Channels
 
 uint solverOriginalGroup()
 {
@@ -226,6 +239,11 @@ bool isChannelActive(uint ChannelIndex, uint OriginalGroup)
     return (GroupMask & (1u << ChannelIndex)) != 0u;
 }
 
+// #endregion
+
+// 00.03. Publish Next Solver Activity
+// #region 00_03_Publish_Next_Solver_Activity
+
 void scheduleNextSolverGroup(uint Group)
 {
     if (!useSparseSolver())
@@ -287,6 +305,11 @@ void scheduleNextSolverTexel(uint TexelIndex, uint ChannelMask)
     }
 }
 
+// #endregion
+
+// 00.04. Publish Accumulation Workgroups
+// #region 00_04_Publish_Accumulation_Workgroups
+
 void scheduleAccumulationGroup(uint Group)
 {
     if (!useSparseAccumulationHeight() || !prepareAccumulationHeight())
@@ -311,5 +334,7 @@ void scheduleAccumulationGroup(uint Group)
         }
     }
 }
+
+// #endregion
 
 // #endregion

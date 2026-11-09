@@ -53,6 +53,9 @@ layout(location = 6) flat out mat3 FragNormalMatrix;
 
 void main()
 {
+    // 01.00. Resolve Segment and Reject Invalid Geometry
+    // #region 01_00_Resolve_Segment_and_Reject_Invalid_Geometry
+
     FragIsSide = 1u;
     FragNormalMatrix = mat3(1.0);
 
@@ -71,6 +74,11 @@ void main()
         FragCoverage = 0.0;
         return;
     }
+
+    // #endregion
+
+    // 01.01. Construct World Frame and Emit Side Vertex
+    // #region 01_01_Construct_World_Frame_and_Emit_Side_Vertex
 
     vec3 BaseA = vec3(Push.Model * vec4(S.BaseA.xyz, 1.0));
     vec3 TopA = vec3(Push.Model * vec4(S.TopA.xyz, 1.0));
@@ -108,6 +116,8 @@ void main()
     FragSurfaceIndex = uint(S.Inside.w);
     FragCoverage = 1.0;
     gl_Position = Push.ViewProjection * vec4(FragWorldPosition, 1.0);
+
+    // #endregion
 }
 
 // #endregion

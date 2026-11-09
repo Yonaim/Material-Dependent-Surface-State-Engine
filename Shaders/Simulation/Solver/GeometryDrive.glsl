@@ -3,6 +3,9 @@
 // ============================================================
 // #region 00_Shared_Shader_Helpers
 
+// 00.00. Prepare Shared Source Geometry Context
+// #region 00_00_Prepare_Shared_Source_Geometry_Context
+
 vec3 SolverUp;
 vec3 SourcePosition;
 vec3 SourceGravityDirection;
@@ -60,6 +63,11 @@ void prepareSourceGeometry(uint SourceTexel)
     SourceGeometryValid = true;
 }
 
+// #endregion
+
+// 00.01. Evaluate Neighbor Geometry Drive
+// #region 00_01_Evaluate_Neighbor_Geometry_Drive
+
 float geometryDrive(uint TargetTexel)
 {
     if (!SourceGeometryValid)
@@ -103,5 +111,7 @@ float geometryDriveToPosition(vec3 TargetPosition)
     float DirectionDrive = clamp(dot(SourceGravityDirection, NeighborDirection / NeighborLength), 0.0, 1.0);
     return HeightDrive * DirectionDrive;
 }
+
+// #endregion
 
 // #endregion

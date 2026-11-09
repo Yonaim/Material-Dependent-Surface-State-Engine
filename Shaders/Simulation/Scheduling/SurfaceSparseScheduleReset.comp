@@ -90,6 +90,9 @@ void main()
     bool NeedGeometry = (Solver.Flags & StateDrivenGeometryUpdateFlag) != 0u;
     bool NeedSparseGeometry = NeedGeometry && (Solver.Flags & SparseGeometryFlag) != 0u;
 
+    // 01.00. Reset Destination Schedules and Snapshot Inputs
+    // #region 01_00_Reset_Destination_Schedules_and_Snapshot_Inputs
+
     // Only metadata that will be consumed this step is cleared. The current persistent set must remain
     // valid for Pass1/Pass2, while the destination A/B set is prepared for Pass2's next-step handoff.
     for (uint Group = Lane; Group < Groups; Group += 64u)
@@ -144,7 +147,12 @@ void main()
         InputMask = AccumulationData.Values[InputMaskIndex()];
     }
 
+    // #endregion
+
     barrier();
+
+    // 01.01. Merge CPU Contact Activity
+    // #region 01_01_Merge_CPU_Contact_Activity
 
     // CPU contact distribution already knows the touched groups; merge only those instead of scanning every texel.
     for (uint Index = Lane; Index < InputCount; Index += 64u)
@@ -164,6 +172,8 @@ void main()
         atomicOr(AccumulationData.Values[SolverMaskIndex(Current)], InputMask);
     }
 
+    // #endregion
+
     barrier();
 
     if (Lane == 0u)
@@ -179,6 +189,9 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+
+// 02.00. Solver Schedule Address Layout
+// #region 02_00_Solver_Schedule_Address_Layout
 
 uint WorkgroupCount()
 {
@@ -230,6 +243,11 @@ bool CurrentAB()
     return (Solver.Flags & CurrentStateABFlag) != 0u;
 }
 
+// #endregion
+
+// 02.01. CPU Input Activation Layout
+// #region 02_01_CPU_Input_Activation_Layout
+
 uint InputCountIndex()
 {
     return SolverBCommandBase() + SolverBlockWords();
@@ -249,6 +267,11 @@ uint InputGroupMaskBase()
 {
     return InputListBase() + WorkgroupCount();
 }
+
+// #endregion
+
+// 02.02. Accumulation and Geometry Schedule Layout
+// #region 02_02_Accumulation_and_Geometry_Schedule_Layout
 
 uint AccumulationCommandBase()
 {
@@ -274,6 +297,11 @@ uint GeometryFlagBase()
 {
     return GeometryCommandBase() + 3u;
 }
+
+// #endregion
+
+// 02.03. Reset Commands and Append Current Workgroups
+// #region 02_03_Reset_Commands_and_Append_Current_Workgroups
 
 void ResetCommand(uint Base)
 {
@@ -301,5 +329,7 @@ void ScheduleCurrentSolverGroup(uint Group)
         }
     }
 }
+
+// #endregion
 
 // #endregion

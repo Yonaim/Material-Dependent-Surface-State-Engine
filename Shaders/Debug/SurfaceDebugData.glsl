@@ -14,6 +14,9 @@
 // ============================================================
 // #region 00_Shared_Shader_Helpers
 
+// 00.00. Accumulation Diagnostic Record
+// #region 00_00_Accumulation_Diagnostic_Record
+
 struct TDebugAccumulation
 {
     float State;
@@ -38,6 +41,11 @@ struct TDebugAccumulation
     float WorldToLocalHeight;
     uint Status; // 0 invalid, 1 unassigned, 2 unsupported, 3 valid, 4 nonfinite/invalid area
 };
+
+// #endregion
+
+// 00.01. Evaluate Accumulation and Display Height
+// #region 00_01_Evaluate_Accumulation_and_Display_Height
 
 TDebugAccumulation
 DebugAccumulation(uint Texel, uint Channel, uint Channels, float AccumulationDisplayScale, mat3 NormalMatrix)
@@ -159,6 +167,11 @@ DebugAccumulation(uint Texel, uint Channel, uint Channels, float AccumulationDis
     return D;
 }
 
+// #endregion
+
+// 00.02. Reconstruct Final Surface Normal
+// #region 00_02_Reconstruct_Final_Surface_Normal
+
 // macro tangent plane에서 least-squares로 높이 기울기를 구한다. seam 이웃 간 위치 차는 mesh-local 기준이다.
 vec3 DebugFinalNormal(
     uint Texel, uint Channel, uint Channels, float AccumulationDisplayScale, mat3 NormalMatrix, float HeightScale)
@@ -227,6 +240,8 @@ vec3 DebugFinalNormal(uint Texel, uint Channel, uint Channels, float Accumulatio
 {
     return DebugFinalNormal(Texel, Channel, Channels, AccumulationDisplayScale, NormalMatrix, 1.0);
 }
+
+// #endregion
 
 // #endregion
 #endif

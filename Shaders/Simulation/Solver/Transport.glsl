@@ -3,6 +3,9 @@
 // ============================================================
 // #region 00_Shared_Shader_Helpers
 
+// 00.00. Evaluate Prepared Transport and Cavity Retention
+// #region 00_00_Evaluate_Prepared_Transport_and_Cavity_Retention
+
 float rawFlux(uint SourceTexel,
               uint TargetTexel,
               uint ChannelIndex,
@@ -37,6 +40,11 @@ float rawFlux(uint SourceTexel,
             GeometryDrive * GeometryTransferRate * max(SourceSaturation, 0.0)) *
            CachedTransferWeight * Retention * Solver.DeltaTime;
 }
+
+// #endregion
+
+// 00.01. Prepare Required Neighbor Transport Inputs
+// #region 00_01_Prepare_Required_Neighbor_Transport_Inputs
 
 float rawFlux(uint SourceTexel,
               uint TargetTexel,
@@ -84,5 +92,7 @@ float rawFlux(uint SourceTexel,
                    TargetConcavity,
                    TargetPosition);
 }
+
+// #endregion
 
 // #endregion

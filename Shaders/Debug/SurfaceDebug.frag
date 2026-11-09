@@ -10,6 +10,9 @@
 // ============================================================
 // #region 00_Resource_Interface
 
+// 00.00. Fragment Inputs and Material Controls
+// #region 00_00_Fragment_Inputs_and_Material_Controls
+
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
 layout(location = 2) in float FragTangentSign;
@@ -47,6 +50,11 @@ layout(push_constant) uniform TStaticMeshPushConstants
 }
 
 Push;
+
+// #endregion
+
+// 00.01. Diagnostic Buffers and View Mode Contract
+// #region 00_01_Diagnostic_Buffers_and_View_Mode_Contract
 
 layout(std430, set = 1, binding = 10) readonly buffer TSurfaceOutgoingFluxScale
 {
@@ -123,6 +131,8 @@ void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled);
 
 // #endregion
 
+// #endregion
+
 // ============================================================
 // 01. Main Process
 // ============================================================
@@ -148,6 +158,9 @@ void main()
         return;
     }
 
+    // 01.00. Dispatch UV Grid and Area Views
+    // #region 01_00_Dispatch_UV_Grid_and_Area_Views
+
     // texel grid와 면적 모드는 simulation data 없이 UV와 화면 미분값으로 바로 진단한다.
     if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
     {
@@ -160,6 +173,11 @@ void main()
         RenderTexelArea(Range, WorldAreaPerUV);
         return;
     }
+
+    // #endregion
+
+    // 01.01. Resolve Geometry and Simulation Eligibility
+    // #region 01_01_Resolve_Geometry_and_Simulation_Eligibility
 
     uvec2 TexelXY = min(uvec2(floor(clamp(FragUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
     uint TexelIndex = Range.x + TexelXY.y * Range.y + TexelXY.x;
@@ -188,6 +206,11 @@ void main()
         OutColor = vec4(0.10, 0.10, 0.13, 1.0);
         return;
     }
+
+    // #endregion
+
+    // 01.02. Dispatch Solver Data Views
+    // #region 01_02_Dispatch_Solver_Data_Views
 
     // 이후 모드는 texel에 대응하는 solver 데이터를 확인한 뒤 각 buffer를 읽는다.
     if (Material.RenderMode == RENDER_MODE_OUTGOING_FLUX_SCALE)
@@ -233,6 +256,8 @@ void main()
     }
 
     RenderStateHeatmap(TexelIndex, bSimulationEnabled);
+
+    // #endregion
 }
 
 // #endregion
@@ -241,6 +266,9 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+
+// 02.00. Screen Footprint and Basic View Helpers
+// #region 02_00_Screen_Footprint_and_Basic_View_Helpers
 
 void ComputeDebugDerivatives(out vec2 UVFootprint, out float WorldAreaPerUV)
 {
@@ -298,6 +326,11 @@ void RenderHeightGeometry(uvec4 Range, vec2 UVFootprint)
                     Material.BaseColor.a);
     return;
 }
+
+// #endregion
+
+// 02.01. Flux and Surface Geometry Views
+// #region 02_01_Flux_and_Surface_Geometry_Views
 
 void RenderOutgoingFluxScale(uint TexelIndex, bool bSimulationEnabled)
 {
@@ -366,6 +399,11 @@ void RenderSurfaceID()
     return;
 }
 
+// #endregion
+
+// 02.02. Topology and Transfer Views
+// #region 02_02_Topology_and_Transfer_Views
+
 void RenderNeighbors(uint TexelIndex)
 {
     if (TexelIndex >= uint(NeighborIndices.Values.length()) || TexelIndex >= uint(TexelChartIndices.Values.length()))
@@ -421,6 +459,11 @@ void RenderTransferWeight(uint TexelIndex)
     return;
 }
 
+// #endregion
+
+// 02.03. Accumulation Height Views
+// #region 02_03_Accumulation_Height_Views
+
 void RenderAccumulation(uvec4 Range, vec2 UVFootprint, uint TexelIndex)
 {
     // 누적 높이를 cavity fill, cavity 초과분, 표면 위 적층 높이로 나눠 표시한다.
@@ -467,6 +510,11 @@ mat3 AccumulationNormalMatrix()
 {
     return transpose(inverse(mat3(Push.Model)));
 }
+
+// #endregion
+
+// 02.04. State Heatmap Evaluation
+// #region 02_04_State_Heatmap_Evaluation
 
 void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled)
 {
@@ -580,5 +628,7 @@ void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled)
 
     OutColor = vec4(ApplyReliefLighting(Color, FragMesoNormalWS), 1.0);
 }
+
+// #endregion
 
 // #endregion

@@ -3,6 +3,9 @@
 // ============================================================
 // #region 00_Shared_Shader_Helpers
 
+// 00.00. Procedural Mud Noise and Micro Bump
+// #region 00_00_Procedural_Mud_Noise_and_Micro_Bump
+
 float MudNoiseHash(vec3 P)
 {
     P = fract(P * 0.1031);
@@ -48,6 +51,11 @@ vec3 ApplyMudMicroBump(vec3 N, vec3 P, float Amount)
     return normalize(abs(Det) * N - (0.025 * Amount) * Gradient);
 }
 
+// #endregion
+
+// 00.01. Water Film Reflection and Transparency
+// #region 00_01_Water_Film_Reflection_and_Transparency
+
 vec4 ShadeWaterFilmLayer(vec3 N, vec3 V, float Coverage)
 {
     // 화면의 바탕색은 이미 그려져 있다. 정면에서는 대부분 비치고,
@@ -81,5 +89,7 @@ vec4 ShadeWaterFilmLayer(vec3 N, vec3 V, float Coverage)
 
     return vec4(min(Color, vec3(1.0)), Alpha);
 }
+
+// #endregion
 
 // #endregion

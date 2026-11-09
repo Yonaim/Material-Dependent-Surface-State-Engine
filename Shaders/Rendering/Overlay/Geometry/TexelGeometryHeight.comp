@@ -107,6 +107,9 @@ void main()
 // ============================================================
 // #region 02_Detailed_Implementation
 
+// 02.00. Locate Sparse Height Tiles
+// #region 02_00_Locate_Sparse_Height_Tiles
+
 uint CapacityTileCount()
 {
     return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
@@ -151,6 +154,11 @@ bool ResolveCandidateTile(uint Candidate)
     SparseTileValid = 0u;
     return false;
 }
+
+// #endregion
+
+// 02.01. Synchronize and Resolve Height Invocations
+// #region 02_01_Synchronize_and_Resolve_Height_Invocations
 
 uint ResolveTexel()
 {
@@ -198,5 +206,7 @@ uint ResolveTexel()
 
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
+
+// #endregion
 
 // #endregion

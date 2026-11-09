@@ -34,6 +34,9 @@ void main()
         return;
     }
 
+    // 01.00. Evaluate and Sanitize Displaced Geometry
+    // #region 01_00_Evaluate_and_Sanitize_Displaced_Geometry
+
     // Height pass가 dependency halo를 workgroup 단위로 이미 compact했다. 여기서는 dispatched texel을
     // 그대로 갱신해 stale per-texel dirty flag를 다시 검사하는 비용과 sparse-height 세대 문제를 없앤다.
     uint PositionIndex = Texel * 2u;
@@ -50,6 +53,11 @@ void main()
     {
         Normal = MesoNormals.Values[Texel].xyz;
     }
+
+    // #endregion
+
+    // 01.01. Measure World Space Neighbor Distance
+    // #region 01_01_Measure_World_Space_Neighbor_Distance
 
     float MeanDistance = 0.0;
 
@@ -90,6 +98,8 @@ void main()
             MeanDistance /= float(Count);
         }
     }
+
+    // #endregion
 
     DynamicGeometry.Values[PositionIndex] = vec4(Position, MeanDistance);
     DynamicGeometry.Values[PositionIndex + 1u] = vec4(normalize(Normal), accumulationFloat(Texel));

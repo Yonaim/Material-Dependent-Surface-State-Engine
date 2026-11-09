@@ -14,6 +14,9 @@ const uint SurfaceNeighborCount = 8u;
 // ============================================================
 // #region 00_Resource_Interface
 
+// 00.00. Static Texel Topology and Geometry
+// #region 00_00_Static_Texel_Topology_and_Geometry
+
 layout(std430, set = 0, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
 {
     uint Values[];
@@ -55,6 +58,11 @@ layout(std430, set = 0, binding = 5) readonly buffer TSurfaceNeighborIndices
 }
 
 NeighborIndices;
+
+// #endregion
+
+// 00.01. Profile Tables and SoA Access
+// #region 00_01_Profile_Tables_and_SoA_Access
 
 layout(std430, set = 0, binding = 6) readonly buffer TSurfaceProfileParameters
 {
@@ -100,6 +108,11 @@ layout(std430, set = 0, binding = 7) readonly buffer TSurfaceProfileSupported
 }
 
 ProfileSupported;
+
+// #endregion
+
+// 00.02. Current Next State and Flux Storage
+// #region 00_02_Current_Next_State_and_Flux_Storage
 
 layout(std430, set = 0, binding = 8) readonly buffer TSurfaceCurrentState
 {
@@ -156,6 +169,11 @@ void storeRawOutgoingFloat(uint Index, float Value)
 {
     RawOutgoingBuffer.Values[Index] = floatBitsToUint(Value);
 }
+
+// #endregion
+
+// 00.03. Dynamic Geometry and Accumulation Storage
+// #region 00_03_Dynamic_Geometry_and_Accumulation_Storage
 
 layout(std430, set = 0, binding = 17) readonly buffer TSurfaceMesoNormals
 {
@@ -223,6 +241,11 @@ float texelAreaScale(uint TexelIndex)
 {
     return WorldTexelAreas.Values[TexelIndex] / StateReferenceArea;
 }
+
+// #endregion
+
+// 00.04. Step Parameters and Execution Mode Flags
+// #region 00_04_Step_Parameters_and_Execution_Mode_Flags
 
 layout(push_constant) uniform TSurfaceSolverPushConstants
 {
@@ -333,5 +356,7 @@ bool usePerWorkgroupChannelMask()
 {
     return (Solver.Flags & SurfaceSolverPerWorkgroupChannelMaskFlag) != 0u;
 }
+
+// #endregion
 
 // #endregion

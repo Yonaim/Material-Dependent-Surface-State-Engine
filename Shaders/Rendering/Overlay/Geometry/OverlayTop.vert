@@ -58,6 +58,9 @@ layout(location = 6) flat out mat3 FragNormalMatrix;
 
 void main()
 {
+    // 01.00. Interpolate Displacement and Surface Normal
+    // #region 01_00_Interpolate_Displacement_and_Surface_Normal
+
     // 각 mesh 정점이 참조하는 최대 네 texel의 형상을 bilinear weight로 보간한다.
     float Height = 0.0;
     vec3 DisplacedNormal = vec3(0.0);
@@ -91,6 +94,11 @@ void main()
         Normal = InNormal;
     }
 
+    // #endregion
+
+    // 01.01. Publish World Space Top Vertex
+    // #region 01_01_Publish_World_Space_Top_Vertex
+
     mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
     FragIsSide = 0u;
     FragNormalMatrix = NormalMatrix;
@@ -103,6 +111,8 @@ void main()
     vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
     FragWorldPosition = WorldPosition.xyz;
     gl_Position = Push.ViewProjection * WorldPosition;
+
+    // #endregion
 }
 
 // #endregion

@@ -132,6 +132,9 @@ void main()
 // ============================================================
 // #region 02_Detailed_Implementation
 
+// 02.00. Read Dynamic Local and World Geometry
+// #region 02_00_Read_Dynamic_Local_and_World_Geometry
+
 vec3 localPosition(uint Texel)
 {
     return DynamicGeometry.Values[Texel * 2u].xyz;
@@ -151,6 +154,11 @@ vec3 worldNormal(uint Texel)
 {
     return normalize(NormalMatrix * localNormal(Texel));
 }
+
+// #endregion
+
+// 02.01. Evaluate Dynamic Concavity Weight
+// #region 02_01_Evaluate_Dynamic_Concavity_Weight
 
 float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
 {
@@ -245,6 +253,11 @@ float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
 #endif
 }
 
+// #endregion
+
+// 02.02. Evaluate Directional Transfer Weight
+// #region 02_02_Evaluate_Directional_Transfer_Weight
+
 float buildTransferWeight(uint Source,
                           uint DirectionIndex,
                           vec3 SourceWorld,
@@ -312,5 +325,7 @@ float buildTransferWeight(uint Source,
 
     return Weight;
 }
+
+// #endregion
 
 // #endregion

@@ -94,6 +94,9 @@ void main()
         return;
     }
 
+    // 01.00. Preserve Inactive Tile Baseline
+    // #region 01_00_Preserve_Inactive_Tile_Baseline
+
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
     uint TileFlag = 1u;
 
@@ -123,6 +126,11 @@ void main()
             return;
         }
     }
+
+    // #endregion
+
+    // 01.01. Evaluate and Publish Active Height and Normal
+    // #region 01_01_Evaluate_and_Publish_Active_Height_and_Normal
 
     vec3 N = Normals.Values[T].xyz;
     float H = GeometryScalars.Values[T].MesoVirtualHeight;
@@ -166,6 +174,8 @@ void main()
     }
 
     Output.Values[T].HeightAndNormal = vec4(H, normalize(FinalNormal));
+
+    // #endregion
 }
 
 // #endregion
@@ -174,6 +184,9 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+
+// 02.00. Resolve and Synchronize Sparse Texels
+// #region 02_00_Resolve_and_Synchronize_Sparse_Texels
 
 uint CapacityTileCount()
 {
@@ -266,6 +279,11 @@ uint ResolveTexel()
 
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
+
+// #endregion
+
+// 02.01. Evaluate Accumulation and Cached Display Height
+// #region 02_01_Evaluate_Accumulation_and_Cached_Display_Height
 
 float DisplayAccumulationHeight(uint Texel, float DisplayScale)
 {
@@ -370,6 +388,11 @@ float DisplayHeight(uint Texel)
 
     return uintBitsToFloat(GeometryCache.Values[Texel]);
 }
+
+// #endregion
+
+// 02.02. Reconstruct Seam Aware Surface Normals
+// #region 02_02_Reconstruct_Seam_Aware_Surface_Normals
 
 float SeamNormalBlend(uint Texel)
 {
@@ -549,5 +572,7 @@ vec3 CachedFinalNormal(uint Texel)
 
     return normalize(N - U * Gradient.x - V * Gradient.y);
 }
+
+// #endregion
 
 // #endregion

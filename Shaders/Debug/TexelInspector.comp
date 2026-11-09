@@ -53,6 +53,9 @@ ReactionScratch;
 
 void main()
 {
+    // 01.00. Capture Accumulation and Normal Diagnostics
+    // #region 01_00_Capture_Accumulation_and_Normal_Diagnostics
+
     // snapshot은 고정된 여섯 vec4 슬롯에 계산 중간값을 묶어 기록한다.
     mat3 NormalMatrix = mat3(Selection.NormalMatrixColumns[0].xyz,
                              Selection.NormalMatrixColumns[1].xyz,
@@ -73,6 +76,11 @@ void main()
     }
 
     Snapshot.Values[5] = vec4(Normal, 0);
+
+    // #endregion
+    // 01.01. Capture Reaction Integration Diagnostics
+    // #region 01_01_Capture_Reaction_Integration_Diagnostics
+
     Snapshot.Values[6] = vec4(0);
 
     if (Reactions.Values[1] > 0u)
@@ -87,6 +95,8 @@ void main()
                                       ReactionScratch.Values[At + 3u]);
         }
     }
+
+    // #endregion
 }
 
 // #endregion

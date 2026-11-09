@@ -17,6 +17,9 @@ struct TOverlayGPUProfileParameters
 // ============================================================
 // #region 00_Resource_Interface
 
+// 00.00. Profile Bindings and Capacity Access
+// #region 00_00_Profile_Bindings_and_Capacity_Access
+
 layout(std430, set = 0, binding = 1) readonly buffer TOverlayTexelProfileIndices
 {
     uint Values[];
@@ -40,6 +43,11 @@ vec4 OverlayProfileCapacityInputAndTransfer(uint Record)
 {
     return OverlayProfileParameters.Values[Record];
 }
+
+// #endregion
+
+// 00.01. State Mapping and Saturation Sampling
+// #region 00_01_State_Mapping_and_Saturation_Sampling
 
 layout(std430, set = 0, binding = 8) readonly buffer TOverlayCurrentState
 {
@@ -94,6 +102,8 @@ float OverlayStateSaturation(uint Texel, uint Channel, uint Channels, uint Profi
 
     return clamp(Amount / Capacity, 0.0, 1.0);
 }
+
+// #endregion
 
 // #endregion
 #endif

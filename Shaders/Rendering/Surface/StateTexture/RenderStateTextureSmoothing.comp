@@ -66,6 +66,9 @@ void main()
     uvec4 Range = SurfaceRanges.Values[Surface];
     uvec2 XY = gl_GlobalInvocationID.xy;
 #if MDSS_SMOOTH_HALO && MDSS_SMOOTH_MODE != 0
+    // 01.00. Stage Shared State Halo
+    // #region 01_00_Stage_Shared_State_Halo
+
     const bool Horizontal = MDSS_SMOOTH_MODE == 1;
     const uint TileWidth = Horizontal ? 12u : 8u;
     const uint TileHeight = Horizontal ? 8u : 12u;
@@ -84,12 +87,17 @@ void main()
         TileState[Slot] = Valid ? ReadSource(ivec3(P, int(Surface))) : vec4(0.0);
     }
 
+    // #endregion
+
     barrier();
 
     if (XY.x >= Range.y || XY.y >= Range.z)
     {
         return;
     }
+
+    // 01.01. Filter and Publish Shared Halo Samples
+    // #region 01_01_Filter_and_Publish_Shared_Halo_Samples
 
     uint CenterSlot =
         (gl_LocalInvocationID.y + (Horizontal ? 0u : 2u)) * TileWidth + gl_LocalInvocationID.x + (Horizontal ? 2u : 0u);
@@ -135,6 +143,8 @@ void main()
     {
         imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
     }
+
+    // #endregion
 #else
     if (XY.x >= Range.y || XY.y >= Range.z)
     {
@@ -157,6 +167,9 @@ void main()
 
         return;
     }
+
+    // 01.02. Filter Direct Five By Five Kernel
+    // #region 01_02_Filter_Direct_Five_By_Five_Kernel
 
     vec4 Sum = vec4(0.0);
     float WeightSum = 0.0;
@@ -200,6 +213,11 @@ void main()
         return;
     }
 
+    // #endregion
+
+    // 01.03. Filter and Publish Separable Axis
+    // #region 01_03_Filter_and_Publish_Separable_Axis
+
     bool Horizontal = SmoothingMode() == 1u;
 
     for (int Offset = -2; Offset <= 2; ++Offset)
@@ -234,6 +252,8 @@ void main()
     {
         imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
     }
+
+    // #endregion
 #endif
 }
 

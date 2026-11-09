@@ -36,6 +36,9 @@ struct TSurfaceGPUNeighborIndices
 // ============================================================
 // #region 00_Resource_Interface
 
+// 00.00. Texel Mapping and Static Geometry
+// #region 00_00_Texel_Mapping_and_Static_Geometry
+
 layout(std430, set = SURFACE_DEBUG_SET, binding = 0)
 
     readonly buffer TSurfaceTexelSurfaceIndices
@@ -90,6 +93,11 @@ layout(std430, set = SURFACE_DEBUG_SET, binding = 5)
 
 NeighborIndices;
 
+// #endregion
+
+// 00.01. Profile Tables and SoA Access
+// #region 00_01_Profile_Tables_and_SoA_Access
+
 layout(std430, set = SURFACE_DEBUG_SET, binding = 6)
 
     readonly buffer TSurfaceProfileParameters
@@ -142,6 +150,11 @@ layout(std430, set = SURFACE_DEBUG_SET, binding = 7)
 
 ProfileSupported;
 
+// #endregion
+
+// 00.02. Current State and Display Geometry Inputs
+// #region 00_02_Current_State_and_Display_Geometry_Inputs
+
 layout(std430, set = SURFACE_DEBUG_SET, binding = 8)
 
     readonly buffer TSurfaceCurrentState
@@ -187,6 +200,8 @@ layout(std430, set = SURFACE_DEBUG_SET, binding = 21)
 }
 
 AccumulationHeights;
+
+// #endregion
 
 // #endregion
 #endif

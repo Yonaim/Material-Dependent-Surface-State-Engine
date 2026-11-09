@@ -2,6 +2,9 @@
 // 00. Raw Flux Cache
 // ============================================================
 // #region 00_Raw_Flux_Cache
+// 00.00. Address and Read Packed Flux Cache
+// #region 00_00_Address_and_Read_Packed_Flux_Cache
+
 uint rawEdgeFluxBase()
 {
     return Solver.LocalTexelCount * Solver.StateChannelCount;
@@ -49,6 +52,11 @@ float loadCachedRawEdgeFlux(uint TexelIndex, uint ChannelIndex, uint DirectionIn
     return (DirectionIndex & 1u) == 0u ? Pair.x : Pair.y;
 }
 
+// #endregion
+
+// 00.01. Validate Solver Numeric Values
+// #region 00_01_Validate_Solver_Numeric_Values
+
 bool solverFinite(float Value)
 {
 #if MDSS_GPU_VALIDATION
@@ -66,5 +74,7 @@ bool solverFinite(vec3 Value)
     return true;
 #endif
 }
+
+// #endregion
 
 // #endregion

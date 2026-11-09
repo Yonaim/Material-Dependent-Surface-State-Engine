@@ -49,6 +49,9 @@ layout(location = 6) out vec3 FragWorldPosition;
 
 void main()
 {
+    // 01.00. Interpolate Texel Height and Normal
+    // #region 01_00_Interpolate_Texel_Height_and_Normal
+
     float Height = 0.0;
     vec3 NormalOffset = vec3(0);
     float Weight = 0.0;
@@ -76,6 +79,11 @@ void main()
         Normal = InNormal;
     }
 
+    // #endregion
+
+    // 01.01. Transform and Publish Surface Vertex
+    // #region 01_01_Transform_and_Publish_Surface_Vertex
+
     mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
     FragNormal = normalize(NormalMatrix * InNormal);
     FragMesoNormalWS = normalize(NormalMatrix * Normal);
@@ -90,6 +98,8 @@ void main()
 
     FragWorldPosition = WorldPosition.xyz;
     gl_Position = Push.ViewProjection * WorldPosition;
+
+    // #endregion
 }
 
 // #endregion

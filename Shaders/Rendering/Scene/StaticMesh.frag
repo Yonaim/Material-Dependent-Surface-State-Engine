@@ -48,6 +48,9 @@ vec3 VisualizeNormal(vec3 Normal);
 
 void main()
 {
+    // 01.00. Reconstruct Material Normal and Albedo
+    // #region 01_00_Reconstruct_Material_Normal_and_Albedo
+
     // tangent-space normal map을 world-space normal로 변환한 뒤 선택된 진단 모드로 출력한다.
     vec3 normalWS = normalize(FragNormal);
     vec3 tangentWS = normalize(FragTangent - normalWS * dot(normalWS, FragTangent));
@@ -72,6 +75,11 @@ void main()
     }
 
     vec4 albedo = texture(BaseColorTexture, FragUV) * Material.BaseColor;
+
+    // #endregion
+
+    // 01.01. Dispatch Diagnostic Modes and Surface Lighting
+    // #region 01_01_Dispatch_Diagnostic_Modes_and_Surface_Lighting
 
     // 진단 모드는 색상과 각 좌표계 normal을 시각화해 입력 문제를 구분해 볼 수 있다.
     if (Material.RenderMode == RENDER_MODE_BASE_COLOR)
@@ -117,6 +125,8 @@ void main()
                                  Material.DemoOptions.x,
                                  Material.AmbientLight),
                     albedo.a);
+
+    // #endregion
 }
 
 // #endregion

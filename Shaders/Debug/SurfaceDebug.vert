@@ -87,6 +87,9 @@ void main()
 // ============================================================
 // #region 02_Detailed_Implementation
 
+// 02.00. Evaluate Meso and Final Normals
+// #region 02_00_Evaluate_Meso_and_Final_Normals
+
 void WriteMesoNormal(mat3 NormalMatrix)
 {
     // 상태 히트맵에 입체감을 더할 Meso Normal을 조회해 월드 공간으로 변환한다.
@@ -109,6 +112,11 @@ void WriteMesoNormal(mat3 NormalMatrix)
         }
     }
 }
+
+// #endregion
+
+// 02.01. Apply Preview Position Displacement
+// #region 02_01_Apply_Preview_Position_Displacement
 
 void ApplyMesoOffset(inout vec3 LocalPosition)
 {
@@ -137,5 +145,7 @@ void ApplyMesoOffset(inout vec3 LocalPosition)
         }
     }
 }
+
+// #endregion
 
 // #endregion

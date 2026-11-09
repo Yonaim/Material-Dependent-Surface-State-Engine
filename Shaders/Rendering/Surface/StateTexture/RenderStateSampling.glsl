@@ -27,6 +27,9 @@ RenderSamplingBoundaryFlags;
 
 vec4 SampleRenderStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channels)
 {
+    // 00.00. Resolve Sampling Anchor and Interior Fast Path
+    // #region 00_00_Resolve_Sampling_Anchor_and_Interior_Fast_Path
+
     if (Channels == 0u)
     {
         return vec4(0.0);
@@ -63,6 +66,11 @@ vec4 SampleRenderStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channel
     {
         return textureLod(RenderStateTexture, vec3(SurfacePixel / Extent, float(Surface)), 0.0);
     }
+
+    // #endregion
+
+    // 00.01. Filter Chart and Profile Boundary Samples
+    // #region 00_01_Filter_Chart_and_Profile_Boundary_Samples
 
     // The descriptor may point to the smoothed texture. Read that same texture
     // at chart borders instead of switching back to unsmoothed State SSBO data.
@@ -102,6 +110,8 @@ vec4 SampleRenderStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channel
     }
 
     return WeightSum > 1e-6 ? Sum / WeightSum : vec4(0.0);
+
+    // #endregion
 }
 
 // #endregion

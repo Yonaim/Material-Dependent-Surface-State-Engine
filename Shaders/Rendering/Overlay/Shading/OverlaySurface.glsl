@@ -155,6 +155,9 @@ void main()
 
 #ifdef OVERLAY_COMBINED
 
+// 02.00. Evaluate Combined Material States
+// #region 02_00_Evaluate_Combined_Material_States
+
 void ShadeCombinedOverlay(float Cutoff)
 {
     uint EnabledEffects = Material.DemoExtraStateChannels.w;
@@ -266,6 +269,11 @@ vec4 SampleCombinedOverlayStates(uint EnabledEffects,
     return States;
 }
 
+// #endregion
+
+// 02.01. Resolve Combined Overlay Normal
+// #region 02_01_Resolve_Combined_Overlay_Normal
+
 vec3 ResolveCombinedOverlayNormal(inout vec4 States,
                                   uint ShadingDiagnostic,
                                   bool UseRenderTexture,
@@ -313,6 +321,11 @@ vec3 ResolveCombinedOverlayNormal(inout vec4 States,
 
     return N;
 }
+
+// #endregion
+
+// 02.02. Composite Accumulated Material Layers
+// #region 02_02_Composite_Accumulated_Material_Layers
 
 void CompositeOverlayLayers(vec4 States,
                             uint EnabledEffects,
@@ -403,6 +416,11 @@ void CompositeOverlayLayers(vec4 States,
     OutColor = vec4(min(PremultipliedColor / SurfaceAlpha, vec3(1.0)), ShadingDiagnostic == 6u ? 1.0 : SurfaceAlpha);
 }
 
+// #endregion
+
+// 02.03. Filter Pixel Space Overlay Normals
+// #region 02_03_Filter_Pixel_Space_Overlay_Normals
+
 vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback)
 {
     if (Surface >= uint(SurfaceRanges.Values.length()))
@@ -467,6 +485,11 @@ vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback)
                ? vec4(normalize(FragNormalMatrix * normalize(Sum)), clamp(WeightSum, 0.0, 1.0))
                : vec4(Fallback, 0.0);
 }
+
+// #endregion
+
+// 02.04. Sample Seam Partner States and Visibility
+// #region 02_04_Sample_Seam_Partner_States_and_Visibility
 
 bool SampleSeamPartnerStates(uint Surface,
                              vec2 UV,
@@ -582,6 +605,8 @@ bool HasVisibleOverlayState(vec4 States, uint EnabledEffects)
     return ((EnabledEffects & 2u) != 0u && States.y > 0.02) || ((EnabledEffects & 4u) != 0u && States.z > 0.02) ||
            ((EnabledEffects & 8u) != 0u && States.w > Material.DemoOptions.y);
 }
+
+// #endregion
 
 #endif
 // #endregion

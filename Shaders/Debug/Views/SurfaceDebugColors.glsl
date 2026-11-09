@@ -3,6 +3,9 @@
 // ============================================================
 // #region 00_Shared_Shader_Helpers
 
+// 00.00. Grid and Area Visualization
+// #region 00_00_Grid_and_Area_Visualization
+
 float GridLines(vec2 Coordinate, vec2 PixelFootprint, float LineWidth)
 {
     vec2 Fraction = fract(Coordinate);
@@ -53,6 +56,11 @@ vec3 TexelAreaColor(float Area)
     vec3 Large = vec3(0.92, 0.18, 0.12);
     return T < 0.5 ? mix(Small, ReferenceColor, T * 2.0) : mix(ReferenceColor, Large, (T - 0.5) * 2.0);
 }
+
+// #endregion
+
+// 00.01. State Palettes and Relief Lighting
+// #region 00_01_State_Palettes_and_Relief_Lighting
 
 vec3 HeatColor(float Value)
 {
@@ -108,5 +116,7 @@ vec3 ApplyReliefLighting(vec3 HeatmapColor, vec3 MesoNormal)
     float Brightness = 0.58 + 0.42 * Diffuse;
     return HeatmapColor * Brightness;
 }
+
+// #endregion
 
 // #endregion

@@ -93,6 +93,9 @@ vec3 BaselineNormal(uint Texel)
         return Fallback;
     }
 
+    // 02.00. Accumulate Neighbor Normal Equations
+    // #region 02_00_Accumulate_Neighbor_Normal_Equations
+
     // texel의 접평면 위에 서로 수직인 두 축 U, V를 만든다.
     vec3 N = normalize(Normals.Values[Texel].xyz);
     vec3 U = normalize(cross(abs(N.z) < 0.9 ? vec3(0, 0, 1) : vec3(0, 1, 0), N));
@@ -145,6 +148,11 @@ vec3 BaselineNormal(uint Texel)
         YH += Y * DH * Weight;
     }
 
+    // #endregion
+
+    // 02.01. Solve Tangent Plane Normal
+    // #region 02_01_Solve_Tangent_Plane_Normal
+
     // 2x2 연립방정식을 푼다. 이웃 배치가 퇴화하면 안정적인 기울기를 구할 수 없다.
     float Det = XX * YY - XY * XY;
 
@@ -157,6 +165,8 @@ vec3 BaselineNormal(uint Texel)
 
     // U 또는 V 방향으로 높아지는 표면의 법선은 해당 방향의 반대로 기울어진다.
     return normalize(N - U * Gradient.x - V * Gradient.y);
+
+    // #endregion
 }
 
 // #endregion

@@ -11,6 +11,9 @@ const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // Stat
 // ============================================================
 // #region 00_Shared_Shader_Helpers
 
+// 00.00. Texel Topology and Transfer Weight Access
+// #region 00_00_Texel_Topology_and_Transfer_Weight_Access
+
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
 {
     return TexelIndex * Solver.StateChannelCount + ChannelIndex;
@@ -49,6 +52,11 @@ float transferWeight(uint SourceTexel, uint DirectionIndex)
     vec2 Pair = unpackHalf2x16(Packed);
     return (DirectionIndex & 1u) == 0u ? Pair.x : Pair.y;
 }
+
+// #endregion
+
+// 00.01. Evaluate Accumulated Geometry Height
+// #region 00_01_Evaluate_Accumulated_Geometry_Height
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex);
 
@@ -131,6 +139,11 @@ float accumulationHeight(uint TexelIndex)
     return !solverFinite(Height) ? 0.0 : max(Height, 0.0);
 }
 
+// #endregion
+
+// 00.02. Evaluate Effective Position Normal and Concavity
+// #region 00_02_Evaluate_Effective_Position_Normal_and_Concavity
+
 vec3 effectiveLocalPosition(uint TexelIndex)
 {
     // 기본 Meso offset에 accumulation height를 선택적으로 더한 local-space 위치다.
@@ -207,6 +220,11 @@ float concavityWeight(uint TexelIndex)
                                              : GeometryScalars.Values[TexelIndex].ConcavityWeight;
 }
 
+// #endregion
+
+// 00.03. Evaluate Profile Capacity Saturation and Decay
+// #region 00_03_Evaluate_Profile_Capacity_Saturation_and_Decay
+
 bool supportsChannel(uint TexelIndex, uint ChannelIndex)
 {
     // 유효 texel이고 양의 면적이며, 해당 texel의 profile이 channel을 지원해야 한다.
@@ -258,6 +276,8 @@ float decayAmount(uint TexelIndex, uint ChannelIndex)
     float Current = CurrentState.Values[stateIndex(TexelIndex, ChannelIndex)];
     return decayAmountPrepared(TexelIndex, Current, Parameters, texelAreaScale(TexelIndex));
 }
+
+// #endregion
 
 // Pass 1에서는 source마다 한 번 준비해 모든 이웃과 channel 계산에 재사용한다.
 // Pass 2는 유입 source의 형상을 준비해 방향별 flux를 다시 계산한다.

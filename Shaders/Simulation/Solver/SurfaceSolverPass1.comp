@@ -35,6 +35,9 @@ float EvaluateRawOutgoing(uint TexelIndex,
 
 void main()
 {
+    // 01.00. Resolve Source Texel and Shared Profile Inputs
+    // #region 01_00_Resolve_Source_Texel_and_Shared_Profile_Inputs
+
     // Sparse Solver ON이면 compact list의 workgroup id를 원래 surface workgroup id로 복원한다.
     uint OriginalGroup = solverOriginalGroup();
     uint TexelIndex = OriginalGroup * 64u + gl_LocalInvocationID.x;
@@ -52,6 +55,11 @@ void main()
     bool SourceTexelValid = SourceSurfaceIndex != InvalidSurfaceId && SourceProfileIndex != InvalidSurfaceId;
     float SourceAreaScale = SourceTexelValid ? texelAreaScale(TexelIndex) : 0.0;
     uint SourceProfileRecordBase = SourceTexelValid ? SourceProfileIndex * Solver.StateChannelCount : 0u;
+
+    // #endregion
+
+    // 01.01. Evaluate and Publish Channel Outgoing Flux
+    // #region 01_01_Evaluate_and_Publish_Channel_Outgoing_Flux
 
     for (uint ChannelIndex = 0u; ChannelIndex < Solver.StateChannelCount; ++ChannelIndex)
     {
@@ -113,6 +121,8 @@ void main()
         storeRawOutgoingFloat(StateValueIndex, RawOutgoing);
         OutgoingFluxScale.Values[StateValueIndex] = RawOutgoing > 0.0 ? min(1.0, AvailableState / RawOutgoing) : 1.0;
     }
+
+    // #endregion
 }
 
 // #endregion
@@ -121,6 +131,9 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+
+// 02.00. Accumulate Source Outgoing Flux
+// #region 02_00_Accumulate_Source_Outgoing_Flux
 
 float EvaluateRawOutgoing(uint TexelIndex,
                           uint ChannelIndex,
@@ -166,6 +179,11 @@ float EvaluateRawOutgoing(uint TexelIndex,
     return RawOutgoing;
 }
 
+// #endregion
+
+// 02.01. Evaluate Directional Neighbor Flux
+// #region 02_01_Evaluate_Directional_Neighbor_Flux
+
 float evaluateDirectionRawFlux(uint TexelIndex,
                                uint ChannelIndex,
                                uint DirectionIndex,
@@ -186,5 +204,7 @@ float evaluateDirectionRawFlux(uint TexelIndex,
                    Parameters,
                    SourceSaturation);
 }
+
+// #endregion
 
 // #endregion

@@ -16,6 +16,9 @@ layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTe
 
 TexelChartIndices;
 
+// 00.00. Resolve Valid Surface Sampling Anchor
+// #region 00_00_Resolve_Valid_Surface_Sampling_Anchor
+
 uint FindSurfaceSamplingAnchor(uint Surface, vec2 UV, uvec4 Range)
 {
     vec2 Pixel = clamp(UV, 0.0, 1.0) * vec2(Range.yz) - 0.5;
@@ -60,6 +63,11 @@ uint FindSurfaceSamplingAnchor(uint Surface, vec2 UV, uvec4 Range)
 
     return Best;
 }
+
+// #endregion
+
+// 00.01. Read and Interpolate Scalar State
+// #region 00_01_Read_and_Interpolate_Scalar_State
 
 float StateSaturationForProfile(uint Texel, uint Channel, uint Channels, uint Profile)
 {
@@ -214,6 +222,11 @@ float SampleStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
     return WeightSum > 1e-6 ? Value / WeightSum : 0.0;
 }
 
+// #endregion
+
+// 00.02. Smooth Scalar State Within Surface Boundaries
+// #region 00_02_Smooth_Scalar_State_Within_Surface_Boundaries
+
 float SampleSmoothedStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
 {
     // 렌더링 전용 5x5 Gaussian 평균이다. 시뮬레이션 State에는 쓰지 않는다.
@@ -313,6 +326,11 @@ float SampleSmoothedStateSaturation(uint Surface, vec2 UV, uint Channel, uint Ch
 
     return WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : 0.0;
 }
+
+// #endregion
+
+// 00.03. Read and Interpolate Multiple State Channels
+// #region 00_03_Read_and_Interpolate_Multiple_State_Channels
 
 vec4 StateSaturationsForProfile(uint Texel, uint Channels, uint Profile, uvec4 StateChannels)
 {
@@ -420,5 +438,7 @@ vec4 SampleStateSaturations(uint Surface, vec2 UV, uvec4 StateChannels, uint Cha
 
     return WeightSum > 1e-6 ? Values / WeightSum : vec4(0.0);
 }
+
+// #endregion
 
 // #endregion

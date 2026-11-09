@@ -15,6 +15,9 @@
 // CPU: AccumulationOverlaySides.cpp의 descriptor/push constant와 direct·indirect dispatch에 대응한다.
 layout(local_size_x = 64) in;
 
+// 00.00. Mesh Topology and Draw Record Types
+// #region 00_00_Mesh_Topology_and_Draw_Record_Types
+
 struct TOverlayVertex
 {
     vec4 Position;
@@ -56,6 +59,11 @@ layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices
 
 MeshIndices;
 
+// #endregion
+
+// 00.01. Coverage and Indirect Draw Outputs
+// #region 00_01_Coverage_and_Indirect_Draw_Outputs
+
 layout(set = 2, binding = 4, std430) buffer TCoverageValues
 {
     uint Values[];
@@ -77,6 +85,11 @@ layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
 
 TopDrawCommands;
 
+// #endregion
+
+// 00.02. Computed Geometry Inputs
+// #region 00_02_Computed_Geometry_Inputs
+
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
 {
     uint Values[];
@@ -95,6 +108,8 @@ layout(set = 0, binding = 4, std430) readonly buffer TOverlayGeometryScalars
 }
 
 OverlayGeometryScalars;
+
+// #endregion
 
 layout(push_constant) uniform TOverlayPush
 {

@@ -223,6 +223,9 @@ void main()
 // ============================================================
 // #region 02_Detailed_Implementation
 
+// 02.00. Resolve Coverage Cutoff and Compact Top Triangles
+// #region 02_00_Resolve_Coverage_Cutoff_and_Compact_Top_Triangles
+
 float CoverageCutoff()
 {
     // Shared geometry must include every visible material. Mud/water use the
@@ -294,6 +297,11 @@ void CompactTopTriangle(uint Slot,
         }
     }
 }
+
+// #endregion
+
+// 02.01. Emit Coverage Boundary Segments
+// #region 02_01_Emit_Coverage_Boundary_Segments
 
 void EmitBoundarySegment(
     uint Slot, uint TriangleCount, float Cutoff, uvec3 Indices, vec3 VertexCoverage, bool ValidTriangle)
@@ -415,6 +423,11 @@ void EmitBoundarySegment(
                  SmoothSideNormal(Normal, BActive ? Neighbors.y : Neighbors.z));
 }
 
+// #endregion
+
+// 02.02. Interpolate Geometry and Write Segment Records
+// #region 02_02_Interpolate_Geometry_and_Write_Segment_Records
+
 TPoint ReadGeometryPoint(uint Index)
 {
     // mesh 정점의 최대 네 texel 샘플을 보간해 밑면(Meso)과 윗면(누적 높이)을 만든다.
@@ -517,6 +530,11 @@ void WriteSegment(uint Group, TPoint A, TPoint B, vec3 Inside, float Surface, ve
     Segments.Values[Segment].NormalA = vec4(NormalA, 0.0);
     Segments.Values[Segment].NormalB = vec4(NormalB, 0.0);
 }
+
+// #endregion
+
+// 02.03. Reconstruct and Smooth Neighboring Sides
+// #region 02_03_Reconstruct_and_Smooth_Neighboring_Sides
 
 vec3 SmoothSideNormal(vec3 Current, uint NeighborSlot)
 {
@@ -651,5 +669,7 @@ bool ReadSide(uint Slot, out TPoint A, out TPoint B, out vec3 Inside)
     Inside = ReadGeometryPoint(Edge.z).Base;
     return true;
 }
+
+// #endregion
 
 // #endregion

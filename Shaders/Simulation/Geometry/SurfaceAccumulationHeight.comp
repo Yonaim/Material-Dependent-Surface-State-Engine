@@ -40,6 +40,9 @@ void main()
         return;
     }
 
+    // 01.00. Publish Height and Handle Geometry Update Modes
+    // #region 01_00_Publish_Height_and_Handle_Geometry_Update_Modes
+
     bool StateDrivenGeometry = (Solver.Flags & StateDrivenGeometryUpdateFlag) != 0u;
     bool ForceFull = (Solver.Flags & ForceFullGeometryFlag) != 0u;
     bool Dirty = false;
@@ -67,6 +70,11 @@ void main()
         storeAccumulationFloat(Solver.LocalTexelCount + Texel, 1.0);
         return;
     }
+
+    // #endregion
+
+    // 01.01. Detect Dirty Geometry and Schedule Dependencies
+    // #region 01_01_Detect_Dirty_Geometry_and_Schedule_Dependencies
 
     float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
     vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
@@ -96,6 +104,8 @@ void main()
         // Legacy full geometry 경로도 별도 dirty-scan pass 없이 height shader가 indirect count를 직접 설정한다.
         atomicMax(AccumulationHeights.Values[geometryScheduleCommandBase()], sparseWorkgroupCount());
     }
+
+    // #endregion
 }
 
 // #endregion

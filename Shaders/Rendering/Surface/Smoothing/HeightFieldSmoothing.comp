@@ -91,6 +91,9 @@ void main()
 #if MDSS_HEIGHT_HALO
     if (Push.UseSparse != 0u && SparseTileValid != 0u)
     {
+        // 01.00. Stage Shared Height Halo
+        // #region 01_00_Stage_Shared_Height_Halo
+
         uint GroupsPerTile = Push.TileSize * Push.TileSize / 64u;
         uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
         uint MicrotilesX = Push.TileSize / 8u;
@@ -136,6 +139,8 @@ void main()
             HaloSaturation[Slot] = Supported ? StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) : 0.0;
             HaloCavityFill[Slot] = Supported ? DisplayedCavityFill(N, Profile) : 0.0;
         }
+
+        // #endregion
 
         barrier();
     }
@@ -186,6 +191,9 @@ void main()
     {
         return;
     }
+
+    // 01.01. Accumulate Same Region Neighborhood
+    // #region 01_01_Accumulate_Same_Region_Neighborhood
 
     ivec2 Center = ivec2(int(Local % Range.y), int(Local / Range.y));
     uint Chart = TexelChartIndices.Values[T];
@@ -281,10 +289,15 @@ void main()
         }
     }
 
+    // #endregion
+
     if (WeightSum <= 0.0)
     {
         return;
     }
+
+    // 01.02. Recompose and Publish Smoothed Geometry
+    // #region 01_02_Recompose_and_Publish_Smoothed_Geometry
 
     float CenterMeso = GeometryScalars.Values[T].MesoVirtualHeight;
 #if MDSS_GPU_VALIDATION
@@ -302,6 +315,8 @@ void main()
     {
         OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(WeightedNormal);
     }
+
+    // #endregion
 }
 
 // #endregion
@@ -310,6 +325,9 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+
+// 02.00. Resolve and Synchronize Sparse Tiles
+// #region 02_00_Resolve_and_Synchronize_Sparse_Tiles
 
 uint CapacityTileCount()
 {
@@ -404,6 +422,11 @@ uint ResolveTexel()
     return SparseRangeFirst + Y * SparseRangeWidth + X;
 }
 
+// #endregion
+
+// 02.01. Evaluate Profile Cavity Fill
+// #region 02_01_Evaluate_Profile_Cavity_Fill
+
 float DisplayedCavityFill(uint Texel, uint Profile)
 {
     if (Push.Channels == 0u || Push.Channel >= Push.Channels)
@@ -423,5 +446,7 @@ float DisplayedCavityFill(uint Texel, uint Profile)
 
     return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
 }
+
+// #endregion
 
 // #endregion

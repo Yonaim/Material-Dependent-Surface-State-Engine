@@ -177,6 +177,9 @@ void main()
 // ============================================================
 // #region 02_Detailed_Implementation
 
+// 02.00. Resolve Coverage Tiles and Synchronize Shared Halo
+// #region 02_00_Resolve_Coverage_Tiles_and_Synchronize_Shared_Halo
+
 uint CoverageListBase()
 {
     uint Capacity = (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
@@ -280,6 +283,11 @@ void StageCoverageTile(uint Candidate)
 }
 
 #endif
+
+// #endregion
+
+// 02.01. Filter and Publish Vertex Coverage
+// #region 02_01_Filter_and_Publish_Vertex_Coverage
 
 void ComputeCoverage(uint Index, bool TileActive)
 {
@@ -454,5 +462,7 @@ void ComputeCoverage(uint Index, bool TileActive)
 
     Coverage.Values[Index] = floatBitsToUint(WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : 0.0);
 }
+
+// #endregion
 
 // #endregion
