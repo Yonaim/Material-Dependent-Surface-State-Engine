@@ -78,3 +78,8 @@ UI 표시값은 실행 조건을 확인하는 출발점이다. 성능 측정에�
 - [Raycaster.cpp](../../../../../Source/InputSystem/Raycaster.cpp) → [TInputSystem::PollDebugContact](../../../../../Source/InputSystem/InputSystem.cpp): hit 정보를 Contact로 변환한 뒤 `TApplication::MainLoop`의 `SubmitContact` 경로에서 소비한다.
 - [Simulation UI](../../../../../Source/DebugUI/Panels/DebugUISimulation.cpp)와 [Render UI](../../../../../Source/DebugUI/Panels/DebugUIRender.cpp)는 다른 제어면이다. Solver rate·sparse/geometry 옵션 변경과 표시 smoothing·coverage 옵션 변경을 구분해 기록한다.
 - [TTexelInspector](../../../../../Source/SurfaceState/Debug/TexelInspector.cpp)의 GPU readback과 [Inspector shader](../../../../../Shaders/Debug/TexelInspector.comp)는 별도의 검증 통로다. Debug View가 같다고 GPU 상태와 렌더 합성 결과가 동일하다는 뜻은 아니다.
+
+
+## DemoAnimation 로더의 탐색 순서 — 2026-11-09
+
+`DemoAnimation.cpp`의 공개 `LoadDemoAnimation`에서 `ReadAnimationJson → ReadClipSettings → ReadWeatherCue → ReadTracks → ReadContactEvents` 순서를 찾는다. 그 아래 `ApplyDemoAnimation`, 파싱 단계, 저수준 값 검증/보간 구현을 배치한다. 버전·duration·옵션·weather·track/property/key 순서·contact의 검증 순서와 오류 메시지를 유지한다. 35개 정상/오류 입력의 old/new 비교는 [Validation](../../../05_Experiments/01_Validation-and-Tests.md)에 기록한다.

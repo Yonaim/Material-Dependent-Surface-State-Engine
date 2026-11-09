@@ -25,6 +25,294 @@ namespace MDSS
     {
         using TJson = nlohmann::json;
 
+        TJson              ReadAnimationJson(const std::filesystem::path& Path);
+        TDemoAnimationClip ReadClipSettings(const TJson& Root);
+        void               ReadWeatherCue(const TJson& Root, TDemoAnimationClip& Clip);
+        void               ReadTracks(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip);
+        void               ReadContactEvents(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip);
+        glm::vec4          Sample(const TDemoAnimationTrack& Track, float Time);
+        glm::vec3          QuaternionToTransformEuler(const glm::vec4& Value);
+    }
+
+// ============================================================
+// 00. Demo Animation Loading
+// ============================================================
+#pragma region 00_Demo_Animation_Loading
+
+    TDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const TScene& Scene)
+    {
+        const TJson        Root = ReadAnimationJson(Path);
+        TDemoAnimationClip Clip = ReadClipSettings(Root);
+        ReadWeatherCue(Root, Clip);
+        ReadTracks(Root, Scene, Clip);
+        ReadContactEvents(Root, Scene, Clip);
+        return Clip;
+    }
+
+#pragma endregion
+
+// ============================================================
+// 01. Demo Animation Application
+// ============================================================
+#pragma region 01_Demo_Animation_Application
+
+    void ApplyDemoAnimation(TScene& Scene, const TDemoAnimationClip& Clip, float Time)
+    {
+        for (const TDemoAnimationTrack& Track : Clip.Tracks)
+        {
+            const glm::vec4 Value = Sample(Track, Time);
+            if (Track.Target == "camera")
+            {
+                if (Track.Property == EDemoAnimationProperty::CameraPosition)
+                    Scene.GetMainCamera().SetPosition(glm::vec3(Value));
+                else
+                    Scene.GetMainCamera().SetTarget(glm::vec3(Value));
+                continue;
+            }
+            for (TStaticMeshInstance& Object : Scene.GetStaticMeshInstances())
+            {
+                if (Object.GetId() != Track.Target)
+                    continue;
+                TTransform& Transform = Object.GetTransform();
+                switch (Track.Property)
+                {
+                    case EDemoAnimationProperty::Position:
+                        Transform.Position = glm::vec3(Value);
+                        break;
+                    case EDemoAnimationProperty::Rotation:
+                        Transform.RotationDegrees = QuaternionToTransformEuler(Value);
+                        break;
+                    case EDemoAnimationProperty::Scale:
+                        Transform.Scale = glm::vec3(Value);
+                        break;
+                    case EDemoAnimationProperty::CameraPosition:
+                    case EDemoAnimationProperty::CameraTarget:
+                        break;
+                }
+                break;
+            }
+        }
+    }
+
+#pragma endregion
+
+// ============================================================
+// 02. Clip Parsing
+// ============================================================
+#pragma region 02_Clip_Parsing
+
+    namespace
+    {
+        const TJson&           Required(const TJson& Object, const char* Field, const std::string& Context);
+        std::string            String(const TJson& Object, const char* Field, const std::string& Context);
+        float                  Float(const TJson& Value, const std::string& Context);
+        EDemoAnimationProperty Property(const std::string& Target, const std::string& Name);
+        glm::vec4              ReadValue(const TJson& Value, bool bRotation, const std::string& Context);
+        TJson                  ReadAnimationJson(const std::filesystem::path& Path)
+        {
+            std::ifstream Input(Path);
+            if (!Input)
+                throw std::runtime_error("Unable to open Demo Animation: " + Path.string());
+            TJson Root;
+            try
+            {
+                Input >> Root;
+            }
+            catch (const TJson::exception& Error)
+            {
+                throw std::runtime_error("Invalid Demo Animation JSON in '" + Path.string() + "': " + Error.what());
+            }
+            return Root;
+        }
+
+        TDemoAnimationClip ReadClipSettings(const TJson& Root)
+        {
+            const TJson& Version = Required(Root, "version", "Demo Animation");
+            if (!Version.is_number_integer() || Version.get<int>() != 1)
+                throw std::runtime_error("Demo Animation version must be 1.");
+            TDemoAnimationClip Clip;
+            Clip.DurationSeconds = Float(Required(Root, "durationSeconds", "Demo Animation"), "durationSeconds");
+            if (Clip.DurationSeconds <= 0.0F)
+                throw std::runtime_error("Demo Animation duration must be positive.");
+            if (const auto Loop = Root.find("loop"); Loop != Root.end())
+            {
+                if (!Loop->is_boolean())
+                    throw std::runtime_error("Demo Animation loop must be a boolean.");
+                Clip.bLoop = Loop->get<bool>();
+            }
+            if (const auto Autoplay = Root.find("autoplay"); Autoplay != Root.end())
+            {
+                if (!Autoplay->is_boolean())
+                    throw std::runtime_error("Demo Animation.autoplay must be a boolean.");
+                Clip.bAutoplay = Autoplay->get<bool>();
+            }
+            return Clip;
+        }
+
+        void ReadWeatherCue(const TJson& Root, TDemoAnimationClip& Clip)
+        {
+            if (const auto Weather = Root.find("weather"); Weather != Root.end())
+            {
+                if (!Weather->is_object())
+                    throw std::runtime_error("Demo Animation.weather must be an object.");
+                TDemoAnimationClip::TWeatherCue Cue;
+                Cue.RainStartSeconds =
+                    Float(Required(*Weather, "rainStartSeconds", "weather"), "weather.rainStartSeconds");
+                Cue.RainEndSeconds = Float(Required(*Weather, "rainEndSeconds", "weather"), "weather.rainEndSeconds");
+                Cue.CloudEndSeconds =
+                    Float(Required(*Weather, "cloudEndSeconds", "weather"), "weather.cloudEndSeconds");
+                Cue.Intensity = Float(Required(*Weather, "intensity", "weather"), "weather.intensity");
+                if (Cue.RainStartSeconds < 0.0F || Cue.RainEndSeconds <= Cue.RainStartSeconds ||
+                    Cue.CloudEndSeconds < Cue.RainEndSeconds || Cue.CloudEndSeconds > Clip.DurationSeconds ||
+                    Cue.Intensity < 0.0F || Cue.Intensity > 1.0F)
+                    throw std::runtime_error("Demo Animation.weather times or intensity are out of range.");
+                Clip.Weather = Cue;
+            }
+        }
+
+        void ReadTracks(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip)
+        {
+            const TJson& Tracks = Required(Root, "tracks", "Demo Animation");
+            if (!Tracks.is_array() || Tracks.empty())
+                throw std::runtime_error("Demo Animation tracks must be a non-empty array.");
+            std::unordered_set<std::string> UsedProperties;
+            Clip.Tracks.reserve(Tracks.size());
+            for (std::size_t TrackIndex = 0; TrackIndex < Tracks.size(); ++TrackIndex)
+            {
+                const TJson&        JsonTrack = Tracks[TrackIndex];
+                const std::string   Context = "tracks[" + std::to_string(TrackIndex) + "]";
+                TDemoAnimationTrack Track;
+                Track.Target = String(JsonTrack, "target", Context);
+                const std::string PropertyName = String(JsonTrack, "property", Context);
+                Track.Property = Property(Track.Target, PropertyName);
+                if (Track.Target != "camera")
+                {
+                    const auto& Objects = Scene.GetStaticMeshInstances();
+                    const bool  bFound = std::any_of(Objects.begin(),
+                                                    Objects.end(),
+                                                    [&Track](const TStaticMeshInstance& Object)
+                                                    { return Object.GetId() == Track.Target; });
+                    if (!bFound)
+                        throw std::runtime_error(Context + " targets an unknown Scene object ID.");
+                }
+                if (!UsedProperties.insert(Track.Target + "\n" + PropertyName).second)
+                    throw std::runtime_error(Context + " duplicates an earlier target/property track.");
+                const bool        bRotation = Track.Property == EDemoAnimationProperty::Rotation;
+                const std::string Interpolation = JsonTrack.contains("interpolation")
+                                                      ? String(JsonTrack, "interpolation", Context)
+                                                      : (bRotation ? "slerp" : "linear");
+                if (Interpolation == "step")
+                    Track.Interpolation = EDemoAnimationInterpolation::Step;
+                else if (Interpolation == "linear" && !bRotation)
+                    Track.Interpolation = EDemoAnimationInterpolation::Linear;
+                else if (Interpolation == "slerp" && bRotation)
+                    Track.Interpolation = EDemoAnimationInterpolation::Slerp;
+                else
+                    throw std::runtime_error(Context + " uses an unsupported interpolation for its property.");
+                const TJson& Keys = Required(JsonTrack, "keys", Context);
+                if (!Keys.is_array() || Keys.empty())
+                    throw std::runtime_error(Context + ".keys must be non-empty.");
+                Track.Keys.reserve(Keys.size());
+                for (std::size_t KeyIndex = 0; KeyIndex < Keys.size(); ++KeyIndex)
+                {
+                    const std::string KeyContext = Context + ".keys[" + std::to_string(KeyIndex) + "]";
+                    const TJson&      Key = Keys[KeyIndex];
+                    const float       Time = Float(Required(Key, "time", KeyContext), KeyContext + ".time");
+                    if (Time < 0.0F || Time > Clip.DurationSeconds ||
+                        (!Track.Keys.empty() && Time <= Track.Keys.back().Time) || (Track.Keys.empty() && Time != 0.0F))
+                        throw std::runtime_error(KeyContext + ".time must start at 0 and increase within duration.");
+                    Track.Keys.push_back(
+                        {Time, ReadValue(Required(Key, "value", KeyContext), bRotation, KeyContext + ".value")});
+                }
+                Clip.Tracks.push_back(std::move(Track));
+            }
+        }
+
+        void ReadContactEvents(const TJson& Root, const TScene& Scene, TDemoAnimationClip& Clip)
+        {
+            if (const auto Events = Root.find("contactEvents"); Events != Root.end())
+            {
+                if (!Events->is_array())
+                    throw std::runtime_error("Demo Animation.contactEvents must be an array.");
+                if (Clip.bLoop && !Events->empty())
+                    throw std::runtime_error(
+                        "Demo Animation with contact events cannot loop; replay resets Surface State.");
+                float PreviousTime = -1.0F;
+                for (std::size_t Index = 0; Index < Events->size(); ++Index)
+                {
+                    const TJson&                      JsonEvent = (*Events)[Index];
+                    const std::string                 Context = "contactEvents[" + std::to_string(Index) + "]";
+                    TDemoAnimationClip::TContactEvent Event;
+                    Event.Time = Float(Required(JsonEvent, "time", Context), Context + ".time");
+                    if (Event.Time < 0.0F || Event.Time > Clip.DurationSeconds || Event.Time < PreviousTime)
+                        throw std::runtime_error(Context + ".time must be sorted and within clip duration.");
+                    PreviousTime = Event.Time;
+                    Event.Target = String(JsonEvent, "target", Context);
+                    Event.State = String(JsonEvent, "state", Context);
+                    if (SurfaceState::NormalizeSurfaceStateName(Event.State) != Event.State)
+                        throw std::runtime_error(Context + ".state must be a normalized State name.");
+                    const auto& Objects = Scene.GetStaticMeshInstances();
+                    const auto  Target =
+                        std::find_if(Objects.begin(),
+                                     Objects.end(),
+                                     [&](const TStaticMeshInstance& Object) { return Object.GetId() == Event.Target; });
+                    if (Target == Objects.end() ||
+                        Target->GetSurfaceData() == SurfaceState::InvalidSurfaceRuntimeDataHandle)
+                        throw std::runtime_error(Context + ".target must name a Scene object with Surface data.");
+                    Event.LocalPosition = glm::vec3(
+                        ReadValue(Required(JsonEvent, "localPosition", Context), false, Context + ".localPosition"));
+                    if (const auto Normal = JsonEvent.find("localNormal"); Normal != JsonEvent.end())
+                        Event.LocalNormal = glm::vec3(ReadValue(*Normal, false, Context + ".localNormal"));
+                    if (glm::dot(Event.LocalNormal, Event.LocalNormal) <= 1.0e-12F)
+                        throw std::runtime_error(Context + ".localNormal must be nonzero.");
+                    const std::string Operation = String(JsonEvent, "operation", Context);
+                    if (Operation == "add")
+                        Event.Operation = SurfaceState::ESurfaceContactOperation::Add;
+                    else if (Operation == "remove")
+                        Event.Operation = SurfaceState::ESurfaceContactOperation::Remove;
+                    else
+                        throw std::runtime_error(Context + ".operation must be add or remove.");
+                    const std::string Shape = String(JsonEvent, "shape", Context);
+                    if (Shape == "circle")
+                        Event.Shape = SurfaceState::ESurfaceContactShape::Circle;
+                    else if (Shape == "ellipse")
+                        Event.Shape = SurfaceState::ESurfaceContactShape::Ellipse;
+                    else if (Shape == "rectangle")
+                        Event.Shape = SurfaceState::ESurfaceContactShape::Rectangle;
+                    else if (Shape == "capsule")
+                        Event.Shape = SurfaceState::ESurfaceContactShape::Capsule;
+                    else
+                        throw std::runtime_error(Context + ".shape is unsupported.");
+                    Event.Radius = Float(Required(JsonEvent, "radius", Context), Context + ".radius");
+                    Event.Strength = Float(Required(JsonEvent, "strength", Context), Context + ".strength");
+                    if (const auto Other = JsonEvent.find("secondaryRadius"); Other != JsonEvent.end())
+                        Event.SecondaryRadius = Float(*Other, Context + ".secondaryRadius");
+                    if (const auto Rotation = JsonEvent.find("rotationDegrees"); Rotation != JsonEvent.end())
+                        Event.RotationDegrees = Float(*Rotation, Context + ".rotationDegrees");
+                    if (const auto Depth = JsonEvent.find("depth"); Depth != JsonEvent.end())
+                        Event.Depth = Float(*Depth, Context + ".depth");
+                    if (const auto Falloff = JsonEvent.find("falloff"); Falloff != JsonEvent.end())
+                        Event.Falloff = Float(*Falloff, Context + ".falloff");
+                    if (Event.Radius <= 0.0F || Event.Strength < 0.0F || Event.Falloff < 0.0F || Event.Depth <= 0.0F ||
+                        (Event.Shape != SurfaceState::ESurfaceContactShape::Circle && Event.SecondaryRadius <= 0.0F))
+                        throw std::runtime_error(Context +
+                                                 " has invalid radius, secondary radius, depth, strength, or falloff.");
+                    Clip.ContactEvents.push_back(std::move(Event));
+                }
+            }
+        }
+
+    }
+
+#pragma endregion
+
+// ============================================================
+// 03. Value Parsing and Track Evaluation
+// ============================================================
+#pragma region 03_Value_Parsing_and_Track_Evaluation
+
+    namespace
+    {
         const TJson& Required(const TJson& Object, const char* Field, const std::string& Context)
         {
             if (!Object.is_object() || !Object.contains(Field))
@@ -96,7 +384,7 @@ namespace MDSS
                 return Track.Keys.front().Value;
             if (Time >= Track.Keys.back().Time)
                 return Track.Keys.back().Value;
-            const auto Upper = std::upper_bound(Track.Keys.begin(),
+            const auto               Upper = std::upper_bound(Track.Keys.begin(),
                                                 Track.Keys.end(),
                                                 Time,
                                                 [](float T, const TDemoAnimationKey& Key) { return T < Key.Time; });
@@ -126,231 +414,7 @@ namespace MDSS
             const float Z = std::abs(CosY) > 1.0e-5F ? std::atan2(-R[1][0], R[0][0]) : 0.0F;
             return glm::degrees(glm::vec3(X, Y, Z));
         }
-    } // namespace
-
-// ============================================================
-// 00. Demo Animation Loading
-// ============================================================
-#pragma region 00_Demo_Animation_Loading
-
-    TDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const TScene& Scene)
-    {
-        std::ifstream Input(Path);
-        if (!Input)
-            throw std::runtime_error("Unable to open Demo Animation: " + Path.string());
-        TJson Root;
-        try
-        {
-            Input >> Root;
-        }
-        catch (const TJson::exception& Error)
-        {
-            throw std::runtime_error("Invalid Demo Animation JSON in '" + Path.string() + "': " + Error.what());
-        }
-        const TJson& Version = Required(Root, "version", "Demo Animation");
-        if (!Version.is_number_integer() || Version.get<int>() != 1)
-            throw std::runtime_error("Demo Animation version must be 1.");
-        TDemoAnimationClip Clip;
-        Clip.DurationSeconds = Float(Required(Root, "durationSeconds", "Demo Animation"), "durationSeconds");
-        if (Clip.DurationSeconds <= 0.0F)
-            throw std::runtime_error("Demo Animation duration must be positive.");
-        if (const auto Loop = Root.find("loop"); Loop != Root.end())
-        {
-            if (!Loop->is_boolean())
-                throw std::runtime_error("Demo Animation loop must be a boolean.");
-            Clip.bLoop = Loop->get<bool>();
-        }
-        if (const auto Autoplay = Root.find("autoplay"); Autoplay != Root.end())
-        {
-            if (!Autoplay->is_boolean())
-                throw std::runtime_error("Demo Animation.autoplay must be a boolean.");
-            Clip.bAutoplay = Autoplay->get<bool>();
-        }
-        if (const auto Weather = Root.find("weather"); Weather != Root.end())
-        {
-            if (!Weather->is_object())
-                throw std::runtime_error("Demo Animation.weather must be an object.");
-            TDemoAnimationClip::TWeatherCue Cue;
-            Cue.RainStartSeconds = Float(Required(*Weather, "rainStartSeconds", "weather"), "weather.rainStartSeconds");
-            Cue.RainEndSeconds = Float(Required(*Weather, "rainEndSeconds", "weather"), "weather.rainEndSeconds");
-            Cue.CloudEndSeconds = Float(Required(*Weather, "cloudEndSeconds", "weather"), "weather.cloudEndSeconds");
-            Cue.Intensity = Float(Required(*Weather, "intensity", "weather"), "weather.intensity");
-            if (Cue.RainStartSeconds < 0.0F || Cue.RainEndSeconds <= Cue.RainStartSeconds ||
-                Cue.CloudEndSeconds < Cue.RainEndSeconds || Cue.CloudEndSeconds > Clip.DurationSeconds ||
-                Cue.Intensity < 0.0F || Cue.Intensity > 1.0F)
-                throw std::runtime_error("Demo Animation.weather times or intensity are out of range.");
-            Clip.Weather = Cue;
-        }
-        const TJson& Tracks = Required(Root, "tracks", "Demo Animation");
-        if (!Tracks.is_array() || Tracks.empty())
-            throw std::runtime_error("Demo Animation tracks must be a non-empty array.");
-        std::unordered_set<std::string> UsedProperties;
-        Clip.Tracks.reserve(Tracks.size());
-        for (std::size_t TrackIndex = 0; TrackIndex < Tracks.size(); ++TrackIndex)
-        {
-            const TJson&        JsonTrack = Tracks[TrackIndex];
-            const std::string   Context = "tracks[" + std::to_string(TrackIndex) + "]";
-            TDemoAnimationTrack Track;
-            Track.Target = String(JsonTrack, "target", Context);
-            const std::string PropertyName = String(JsonTrack, "property", Context);
-            Track.Property = Property(Track.Target, PropertyName);
-            if (Track.Target != "camera")
-            {
-                const auto& Objects = Scene.GetStaticMeshInstances();
-                const bool  bFound =
-                    std::any_of(Objects.begin(),
-                                Objects.end(),
-                                [&Track](const TStaticMeshInstance& Object) { return Object.GetId() == Track.Target; });
-                if (!bFound)
-                    throw std::runtime_error(Context + " targets an unknown Scene object ID.");
-            }
-            if (!UsedProperties.insert(Track.Target + "\n" + PropertyName).second)
-                throw std::runtime_error(Context + " duplicates an earlier target/property track.");
-            const bool        bRotation = Track.Property == EDemoAnimationProperty::Rotation;
-            const std::string Interpolation = JsonTrack.contains("interpolation")
-                                                  ? String(JsonTrack, "interpolation", Context)
-                                                  : (bRotation ? "slerp" : "linear");
-            if (Interpolation == "step")
-                Track.Interpolation = EDemoAnimationInterpolation::Step;
-            else if (Interpolation == "linear" && !bRotation)
-                Track.Interpolation = EDemoAnimationInterpolation::Linear;
-            else if (Interpolation == "slerp" && bRotation)
-                Track.Interpolation = EDemoAnimationInterpolation::Slerp;
-            else
-                throw std::runtime_error(Context + " uses an unsupported interpolation for its property.");
-            const TJson& Keys = Required(JsonTrack, "keys", Context);
-            if (!Keys.is_array() || Keys.empty())
-                throw std::runtime_error(Context + ".keys must be non-empty.");
-            Track.Keys.reserve(Keys.size());
-            for (std::size_t KeyIndex = 0; KeyIndex < Keys.size(); ++KeyIndex)
-            {
-                const std::string KeyContext = Context + ".keys[" + std::to_string(KeyIndex) + "]";
-                const TJson&      Key = Keys[KeyIndex];
-                const float       Time = Float(Required(Key, "time", KeyContext), KeyContext + ".time");
-                if (Time < 0.0F || Time > Clip.DurationSeconds ||
-                    (!Track.Keys.empty() && Time <= Track.Keys.back().Time) || (Track.Keys.empty() && Time != 0.0F))
-                    throw std::runtime_error(KeyContext + ".time must start at 0 and increase within duration.");
-                Track.Keys.push_back(
-                    {Time, ReadValue(Required(Key, "value", KeyContext), bRotation, KeyContext + ".value")});
-            }
-            Clip.Tracks.push_back(std::move(Track));
-        }
-        if (const auto Events = Root.find("contactEvents"); Events != Root.end())
-        {
-            if (!Events->is_array())
-                throw std::runtime_error("Demo Animation.contactEvents must be an array.");
-            if (Clip.bLoop && !Events->empty())
-                throw std::runtime_error(
-                    "Demo Animation with contact events cannot loop; replay resets Surface State.");
-            float PreviousTime = -1.0F;
-            for (std::size_t Index = 0; Index < Events->size(); ++Index)
-            {
-                const TJson&                      JsonEvent = (*Events)[Index];
-                const std::string                 Context = "contactEvents[" + std::to_string(Index) + "]";
-                TDemoAnimationClip::TContactEvent Event;
-                Event.Time = Float(Required(JsonEvent, "time", Context), Context + ".time");
-                if (Event.Time < 0.0F || Event.Time > Clip.DurationSeconds || Event.Time < PreviousTime)
-                    throw std::runtime_error(Context + ".time must be sorted and within clip duration.");
-                PreviousTime = Event.Time;
-                Event.Target = String(JsonEvent, "target", Context);
-                Event.State = String(JsonEvent, "state", Context);
-                if (SurfaceState::NormalizeSurfaceStateName(Event.State) != Event.State)
-                    throw std::runtime_error(Context + ".state must be a normalized State name.");
-                const auto& Objects = Scene.GetStaticMeshInstances();
-                const auto  Target =
-                    std::find_if(Objects.begin(),
-                                 Objects.end(),
-                                 [&](const TStaticMeshInstance& Object) { return Object.GetId() == Event.Target; });
-                if (Target == Objects.end() ||
-                    Target->GetSurfaceData() == SurfaceState::InvalidSurfaceRuntimeDataHandle)
-                    throw std::runtime_error(Context + ".target must name a Scene object with Surface data.");
-                Event.LocalPosition = glm::vec3(
-                    ReadValue(Required(JsonEvent, "localPosition", Context), false, Context + ".localPosition"));
-                if (const auto Normal = JsonEvent.find("localNormal"); Normal != JsonEvent.end())
-                    Event.LocalNormal = glm::vec3(ReadValue(*Normal, false, Context + ".localNormal"));
-                if (glm::dot(Event.LocalNormal, Event.LocalNormal) <= 1.0e-12F)
-                    throw std::runtime_error(Context + ".localNormal must be nonzero.");
-                const std::string Operation = String(JsonEvent, "operation", Context);
-                if (Operation == "add")
-                    Event.Operation = SurfaceState::ESurfaceContactOperation::Add;
-                else if (Operation == "remove")
-                    Event.Operation = SurfaceState::ESurfaceContactOperation::Remove;
-                else
-                    throw std::runtime_error(Context + ".operation must be add or remove.");
-                const std::string Shape = String(JsonEvent, "shape", Context);
-                if (Shape == "circle")
-                    Event.Shape = SurfaceState::ESurfaceContactShape::Circle;
-                else if (Shape == "ellipse")
-                    Event.Shape = SurfaceState::ESurfaceContactShape::Ellipse;
-                else if (Shape == "rectangle")
-                    Event.Shape = SurfaceState::ESurfaceContactShape::Rectangle;
-                else if (Shape == "capsule")
-                    Event.Shape = SurfaceState::ESurfaceContactShape::Capsule;
-                else
-                    throw std::runtime_error(Context + ".shape is unsupported.");
-                Event.Radius = Float(Required(JsonEvent, "radius", Context), Context + ".radius");
-                Event.Strength = Float(Required(JsonEvent, "strength", Context), Context + ".strength");
-                if (const auto Other = JsonEvent.find("secondaryRadius"); Other != JsonEvent.end())
-                    Event.SecondaryRadius = Float(*Other, Context + ".secondaryRadius");
-                if (const auto Rotation = JsonEvent.find("rotationDegrees"); Rotation != JsonEvent.end())
-                    Event.RotationDegrees = Float(*Rotation, Context + ".rotationDegrees");
-                if (const auto Depth = JsonEvent.find("depth"); Depth != JsonEvent.end())
-                    Event.Depth = Float(*Depth, Context + ".depth");
-                if (const auto Falloff = JsonEvent.find("falloff"); Falloff != JsonEvent.end())
-                    Event.Falloff = Float(*Falloff, Context + ".falloff");
-                if (Event.Radius <= 0.0F || Event.Strength < 0.0F || Event.Falloff < 0.0F || Event.Depth <= 0.0F ||
-                    (Event.Shape != SurfaceState::ESurfaceContactShape::Circle && Event.SecondaryRadius <= 0.0F))
-                    throw std::runtime_error(Context +
-                                             " has invalid radius, secondary radius, depth, strength, or falloff.");
-                Clip.ContactEvents.push_back(std::move(Event));
-            }
-        }
-        return Clip;
     }
 
-#pragma endregion
-
-// ============================================================
-// 01. Demo Animation Application
-// ============================================================
-#pragma region 01_Demo_Animation_Application
-
-    void ApplyDemoAnimation(TScene& Scene, const TDemoAnimationClip& Clip, float Time)
-    {
-        for (const TDemoAnimationTrack& Track : Clip.Tracks)
-        {
-            const glm::vec4 Value = Sample(Track, Time);
-            if (Track.Target == "camera")
-            {
-                if (Track.Property == EDemoAnimationProperty::CameraPosition)
-                    Scene.GetMainCamera().SetPosition(glm::vec3(Value));
-                else
-                    Scene.GetMainCamera().SetTarget(glm::vec3(Value));
-                continue;
-            }
-            for (TStaticMeshInstance& Object : Scene.GetStaticMeshInstances())
-            {
-                if (Object.GetId() != Track.Target)
-                    continue;
-                TTransform& Transform = Object.GetTransform();
-                switch (Track.Property)
-                {
-                    case EDemoAnimationProperty::Position:
-                        Transform.Position = glm::vec3(Value);
-                        break;
-                    case EDemoAnimationProperty::Rotation:
-                        Transform.RotationDegrees = QuaternionToTransformEuler(Value);
-                        break;
-                    case EDemoAnimationProperty::Scale:
-                        Transform.Scale = glm::vec3(Value);
-                        break;
-                    case EDemoAnimationProperty::CameraPosition:
-                    case EDemoAnimationProperty::CameraTarget:
-                        break;
-                }
-                break;
-            }
-        }
-    }
 #pragma endregion
 } // namespace MDSS

@@ -45,3 +45,10 @@
 5. Scene reload/reset 시 `RestartState`, `ResetClock`, 렌더링 자원 교체를 구분해 읽는다. `BeginFrame`의 리셋은 해당 프레임의 `Steps`를 비운다.
 
 **대조 결과:** `TSimulationClock::Accumulate/Consume`는 클래스 내부 인라인 정의이므로 `.cpp`의 qualified symbol로 검색되지 않는다. 함수가 없다는 뜻은 아니다.
+
+
+## MainLoop 책임 분리 — 2026-11-09
+
+`MainLoop`는 event/UI → `SubmitInteractiveContact` → `UpdateFrameTiming` → `AdvanceDemoAndSubmitContacts` → RenderFrame → 필요 시 `WaitForSettingsAndResetClock` → CPU 측정 순서를 직접 보여준다. `FinalizeRun`은 기존 device-idle 대기와 benchmark 마무리를 담당한다. `FFrameTiming`은 한 프레임의 suspend 여부와 재생 시간만 전달하는 private 값이며 자원을 소유하지 않는다.
+
+시간 sampling 위치·고정 benchmark step·UI 대기 제외·animation contact 변환·GPU 대기 순서 및 기존 실패 정책을 유지했다. 파일 쓰기 오류 보완과 종료 대기 반환값 처리는 별도 후속 작업이다. 검증 근거는 [Validation](../../../05_Experiments/01_Validation-and-Tests.md)의 C++ 상위 흐름 정리 기록을 따른다.

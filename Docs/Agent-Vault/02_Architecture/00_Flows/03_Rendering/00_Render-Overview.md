@@ -54,3 +54,6 @@ flowchart LR
 `RendererCommands.cpp`는 `FrameCoordinator.RecordSimulation` 다음 Inspector→ViewMode 검사→Lit state-texture(선택)→texel preview/overlay compute(선택)→graphics pass를 순서대로 기록한다. Lit view가 없거나 demo effect가 꺼져 있을 때 전체 display compute를 항상 실행한다고 설명하지 않는다. overlay는 `CanRenderLitOverlays()` 및 instance의 공유 texel mesh/index/descriptor 유무도 검사한다.
 
 Ice는 별도 다섯 번째 재질로 서리 noise·푸른 산란색·유전체 반사를 사용한다. 기존 RGBA texture는 그대로 두고 `ExtraDemoBindings.z`의 Ice ID로 State buffer를 sample한다. Mud/WaterFilm/Lava/Ice의 네 적층 채널이 occupancy·coverage·smoothing에 참여하며, 최종 공통 윗면에서 물을 합성한다. 자세한 예제는 [[02_Architecture/01_Contracts/06_Reactions|Local Reactions]]를 따른다.
+
+
+상위 C++ 기록 함수의 책임 분리(2026-11-09)는 [Rendering Source](../../02_Source/00_CPP/06_Rendering.md)의 Command recording 경계를 따른다. 위 pass 순서와 GPU 계약은 유지하며 별도 리팩터링 함수 경계로 탐색한다.

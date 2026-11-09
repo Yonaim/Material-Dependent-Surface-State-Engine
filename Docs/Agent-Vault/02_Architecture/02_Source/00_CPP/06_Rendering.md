@@ -64,3 +64,12 @@ Lit overlay가 활성인 경우 renderer는 Mud/WaterFilm/Lava channel을 하나
 - Overlay는 Lit view와 `CanRenderLitOverlays()`가 모두 유효해야 한다. instance마다 Shared Geometry/Descriptors/Texel mesh index buffer가 없으면 skip한다. `Mud`, `WaterFilm`, `Lava` channel이 활성일 때 `CombinedSurfaceKey = 0xffffU`로 통합 top surface를 준비한다.
 - 화면용 `HeightFieldSmoothing`, coverage smoothing, Render State Texture smoothing은 현재 State buffer를 다시 기록하는 Solver 작업이 아니다. Solver의 geometry feedback과 동일한 개념으로 합치지 않는다.
 - query timestamp는 `RendererCommands.cpp`와 [RendererBenchmark.cpp](../../../../../Source/Rendering/Profiling/RendererBenchmark.cpp)에 걸친다. `FrameCoordinator.GetStepSerial`은 Inspector와 연결되므로 readback 결과를 마지막 완료 프레임과 혼동하지 않는다.
+
+
+## Command recording의 책임 경계 — 2026-11-09
+
+`RecordCommandBuffer`는 `BeginCommandRecording → RecordSimulationAndInspector → PrepareDisplayResources → BeginSceneGraphicsPass → RecordSceneViewports → RecordUIAndEndCommandBuffer` 순서다. `RecordSceneViewports` 안에서는 viewport 설정 → base mesh → accumulation overlay → world reference/gizmo를 호출한다. 각 단계의 기존 조건·query offset·descriptor 선택·barrier/command 인자는 그대로 유지한다.
+
+private `FCommandRecordingState`는 호출 내 frame/query/display/overlay 값을 함께 전달한다. 기존 vector 저장소를 move해 draw 단계까지 유지하며 Renderer의 장기 멤버 자원을 대체하지 않는다. `FViewportRecordingState`는 view mode·행렬/frustum·material offset과 기록 동안 유효한 camera 참조를 전달한다. 타입은 CPU–GPU ABI 자료형이 아니다.
+
+Vulkan 호출 지점 81개 정적 대조와 render-only 5프레임 old/new 캡처 비교를 수행했다. simulation/overlay 앱 경로는 양쪽 버전 모두 기존 GPU storage buffer 한도로 초기화되지 않았으므로 해당 런타임 동등성을 통과로 기록하지 않는다. [검증 기록](../../../05_Experiments/01_Validation-and-Tests.md)을 따른다.

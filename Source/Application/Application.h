@@ -12,8 +12,10 @@
 #include "Scene/Scene.h"
 #include "SurfaceState/Runtime/SurfaceDataManager.h"
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 namespace MDSS::Rendering
 {
@@ -46,6 +48,18 @@ namespace MDSS
     private:
         /** @brief window 종료까지 event polling, UI 갱신, frame rendering을 반복한다. */
         void MainLoop(std::size_t FrameLimit);
+
+        struct FFrameTiming
+        {
+            bool  bSuspendSimulationClock;
+            float PlaybackDeltaTime;
+        };
+
+        void                       SubmitInteractiveContact();
+        [[nodiscard]] FFrameTiming UpdateFrameTiming(std::chrono::steady_clock::time_point& PreviousFrameTime);
+        void                       AdvanceDemoAndSubmitContacts(float PlaybackDeltaTime);
+        void WaitForSettingsAndResetClock(std::chrono::steady_clock::time_point& PreviousFrameTime);
+        void FinalizeRun(const std::vector<double>& BenchmarkCpuFrames);
 
         // Declaration order is intentional: resources are destroyed in reverse order.
         TWindow                                            MainWindow;

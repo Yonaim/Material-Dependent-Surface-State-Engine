@@ -435,6 +435,52 @@ namespace MDSS::Rendering
                                  const TDebugUI&        DebugInterface,
                                  std::span<const float> SimulationSteps);
 
+        struct FCommandRecordingState;
+        struct FViewportRecordingState;
+        [[nodiscard]] FCommandRecordingState  BeginCommandRecording(VkCommandBuffer        CommandBuffer,
+                                                                    const TScene&          SceneData,
+                                                                    const TDebugUI&        DebugInterface,
+                                                                    std::span<const float> SimulationSteps);
+        void                                  RecordSimulationAndInspector(VkCommandBuffer               CommandBuffer,
+                                                                           const TScene&                 SceneData,
+                                                                           const FCommandRecordingState& Frame);
+        void                                  PrepareDisplayResources(VkCommandBuffer         CommandBuffer,
+                                                                      const TScene&           SceneData,
+                                                                      const TDebugUI&         DebugInterface,
+                                                                      FCommandRecordingState& Frame);
+        void                                  BeginSceneGraphicsPass(VkCommandBuffer               CommandBuffer,
+                                                                     std::uint32_t                 ImageIndex,
+                                                                     const FCommandRecordingState& Frame);
+        void                                  RecordSceneViewports(VkCommandBuffer               CommandBuffer,
+                                                                   const TScene&                 SceneData,
+                                                                   const TDebugUI&               DebugInterface,
+                                                                   const FCommandRecordingState& Frame);
+        void                                  RecordUIAndEndCommandBuffer(VkCommandBuffer               CommandBuffer,
+                                                                          std::uint32_t                 ImageIndex,
+                                                                          const TDebugUI&               DebugInterface,
+                                                                          const FCommandRecordingState& Frame);
+        [[nodiscard]] FViewportRecordingState ConfigureViewport(VkCommandBuffer               CommandBuffer,
+                                                                const TScene&                 SceneData,
+                                                                const TDebugUI&               DebugInterface,
+                                                                const FCommandRecordingState& Frame,
+                                                                std::size_t                   ViewportIndex,
+                                                                const glm::vec4&              NormalizedViewport,
+                                                                VkExtent2D                    Extent);
+        void                                  RecordBaseMeshes(VkCommandBuffer                                 CommandBuffer,
+                                                               const TScene&                                   SceneData,
+                                                               const SurfaceState::TSurfaceGPUResourceManager& SurfaceGPU,
+                                                               const FCommandRecordingState&                   Frame,
+                                                               const FViewportRecordingState&                  View);
+        void                                  RecordAccumulationOverlays(VkCommandBuffer                                 CommandBuffer,
+                                                                         const TScene&                                   SceneData,
+                                                                         const SurfaceState::TSurfaceGPUResourceManager& SurfaceGPU,
+                                                                         const FCommandRecordingState&                   Frame,
+                                                                         const FViewportRecordingState&                  View);
+        void                                  RecordWorldReferenceAndGizmo(VkCommandBuffer                CommandBuffer,
+                                                                           const TScene&                  SceneData,
+                                                                           const TDebugUI&                DebugInterface,
+                                                                           const FViewportRecordingState& View);
+
         const GPU::TVulkanContext&         Context;
         TWindow&                           TargetWindow;
         Asset::TAssetManager&              Assets;
