@@ -23,7 +23,7 @@
 
 ## `MainLoop`에서 한 프레임 추적하기
 
-[`FApplication::MainLoop`](../../../../../Source/Application/Application.cpp)는 window event를 poll하고 `FDebugUI::BeginFrame`을 호출한다. `FInputSystem::PollDebugContact`가 반환한 contact와 Scene animation event를 `FSurfaceStateSystem::SubmitContact`로 넘긴다. 그 다음 `FRenderer::RenderFrame`에서 simulation과 rendering command가 기록된다. benchmark mode에서는 고정 simulation step을 전달하고 CPU frame duration을 모은다. UI 설정·파일 대화상자가 오래 걸린 프레임은 `ConsumeFrameTimeResetRequest`로 simulation clock을 중단하고 GPU 완료 뒤 시간 기준을 다시 잡는다.
+[`FApplication::MainLoop`](../../../../../Source/Application/Application.cpp)는 반복 조건과 종료를 관리하고, 프레임별 실제 처리 단계는 `ExecuteFrame`에 위임한다. `ExecuteFrame`은 window event를 poll하고 `FDebugUI::BeginFrame`을 호출한다. `FInputSystem::PollDebugContact`가 반환한 contact와 Scene animation event를 `FSurfaceStateSystem::SubmitContact`로 넘긴다. 그 다음 `FRenderer::RenderFrame`에서 simulation과 rendering command가 기록된다. benchmark mode에서는 고정 simulation step을 전달하고 CPU frame duration을 모은다. UI 설정·파일 대화상자가 오래 걸린 프레임은 `ConsumeFrameTimeResetRequest`로 simulation clock을 중단하고 GPU 완료 뒤 시간 기준을 다시 잡는다.
 
 [`FFrameCoordinator::BeginFrame`](../../../../../Source/Application/FrameCoordinator.cpp)은 `PrepareScratchStorage` → reset 요청 처리 → clock 누적·pending 제한 순서다. reset이면 `FSurfaceStateSystem::ResetState`와 `ResetClock`을 호출한다. `PrepareSteps`는 auto substepping에서 `GetMaximumStableDeltaTime`을 사용하고 `FSimulationClock::Consume`이 반환한 step 목록을 보관한다. `RecordSimulation`은 목록을 순회하며 마지막 step에만 `bPrepareRenderHeight=true`를 넘긴다. 끝나면 `StepSerial`을 step 수만큼 증가시킨다.
 
@@ -49,10 +49,14 @@
 
 ## MainLoop 책임 분리 — 2026-11-09
 
-`MainLoop`는 event/UI → `SubmitInteractiveContact` → `UpdateFrameTiming` → `AdvanceDemoAndSubmitContacts` → RenderFrame → 필요 시 `WaitForSettingsAndResetClock` → CPU 측정 순서를 직접 보여준다. `FinalizeRun`은 기존 device-idle 대기와 benchmark 마무리를 담당한다. `FFrameTiming`은 한 프레임의 suspend 여부와 재생 시간만 전달하는 private 값이며 자원을 소유하지 않는다.
+`MainLoop`는 실행 반복 조건과 종료 처리를 보여준다. 한 프레임의 event/UI → `SubmitInteractiveContact` → `UpdateFrameTiming` → `AdvanceDemoAndSubmitContacts` → RenderFrame → 필요 시 `WaitForSettingsAndResetClock` → CPU 측정 순서는 `ExecuteFrame`에서 읽는다. `FinalizeRun`은 기존 device-idle 대기와 benchmark 마무리를 담당한다. `FFrameTiming`은 한 프레임의 suspend 여부와 재생 시간만 전달하는 private 값이며 자원을 소유하지 않는다.
 
 시간 sampling 위치·고정 benchmark step·UI 대기 제외·animation contact 변환·GPU 대기 순서 및 기존 실패 정책을 유지했다. 파일 쓰기 오류 보완과 종료 대기 반환값 처리는 별도 후속 작업이다. 검증 근거는 [Validation](../../../05_Experiments/01_Validation-and-Tests.md)의 C++ 상위 흐름 정리 기록을 따른다.
 
 ## 애플리케이션 최상위 실행
 
-`FApplication::MainLoop`는 이벤트 폴링, UI 입력 처리, Contact 제출, 프레임 시간 갱신, Scene 애니메이션 및 렌더 프레임 실행을 조율한다. 프레임 내부 GPU 명령 순서는 `FRenderer::RecordCommandBuffer`에서 읽고 [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]]에서 관련 하위 함수로 내려간다.
+`FApplication::MainLoop`는 반복 조건과 종료를 담당한다. `ExecuteFrame`이 이벤트 폴링, UI 입력 처리, Contact 제출, 프레임 시간 갱신, Scene 애니메이션 및 렌더 프레임 실행을 조율한다. 프레임 내부 GPU 명령 순서는 `FRenderer::RecordCommandBuffer`에서 읽고 [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]]에서 관련 하위 함수로 내려간다.
+
+## 생성과 설정의 추상화 경계
+
+`FApplication` 생성자에서는 `ResolveStartupScenePath` → `LoadStartupScene` → `InitializeSurfaceStateSystem` → `InitializeFrameServices` → `ConfigureBenchmarkIfEnabled` → `InitializeInput` 순서를 먼저 읽는다. 실제 경로 해석, Scene 파일 읽기, GPU 준비 및 Benchmark JSON 키별 Setter 호출은 하위 함수에 둔다. `ConfigureBenchmarkIfEnabled` 아래에서는 `ConfigureBenchmarkPlayback`, `ApplyBenchmarkPerformanceSettings`, `PrewarmBenchmarkMeshCache` 순서로 내려간다. 이 순서는 객체 소유·관찰 가능한 설정 적용 순서와 연결되므로 임의로 바꾸지 않는다.

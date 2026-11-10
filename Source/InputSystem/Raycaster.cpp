@@ -4,12 +4,10 @@
  */
 
 #include "InputSystem/Raycaster.h"
-
 #include "AssetManager/Assets/MeshAsset.h"
 #include "AssetManager/Core/AssetManager.h"
 #include "Scene/Scene.h"
 #include "Scene/StaticMeshInstance.h"
-
 #include <cmath>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -27,8 +25,8 @@ namespace MDSS
                                           glm::vec3  A,
                                           glm::vec3  B,
                                           glm::vec3  C,
-                                          float&     Distance,
-                                          glm::vec3& Barycentric)
+                                          float     &Distance,
+                                          glm::vec3 &Barycentric)
         {
             const glm::vec3 Edge1 = B - A;
             const glm::vec3 Edge2 = C - A;
@@ -75,10 +73,10 @@ namespace MDSS
 // 00. FRaycaster Implementation
 // ============================================================
 #pragma region 00_TRaycaster_Implementation
-// Scene의 정적 mesh instance를 대상으로 CPU ray query를 수행한다.
+    // Scene의 정적 mesh instance를 대상으로 CPU ray query를 수행한다.
 
-    FSurfaceRayHit FRaycaster::Cast(const FScene&               Scene,
-                                    const Asset::FAssetManager& Assets,
+    FSurfaceRayHit FRaycaster::Cast(const FScene               &Scene,
+                                    const Asset::FAssetManager &Assets,
                                     glm::vec3                   WorldOrigin,
                                     glm::vec3                   WorldDirection)
     {
@@ -93,25 +91,25 @@ namespace MDSS
         WorldDirection = glm::normalize(WorldDirection);
 
         float                                   BestDistance = std::numeric_limits<float>::infinity();
-        const std::vector<FStaticMeshInstance>& Instances = Scene.GetStaticMeshInstances();
+        const std::vector<FStaticMeshInstance> &Instances = Scene.GetStaticMeshInstances();
 
         for (std::size_t InstanceIndex = 0; InstanceIndex < Instances.size(); ++InstanceIndex)
         {
-            const FStaticMeshInstance& Instance = Instances[InstanceIndex];
+            const FStaticMeshInstance &Instance = Instances[InstanceIndex];
 
             if (Instance.GetMesh() == Asset::InvalidAssetHandle)
             {
                 continue;
             }
 
-            const Asset::FMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
-            const std::vector<Asset::FVertex>&             Vertices = Mesh.GetVertices();
+            const Asset::FMeshAsset                       &Mesh = Assets.GetMesh(Instance.GetMesh());
+            const std::vector<Asset::FVertex>             &Vertices = Mesh.GetVertices();
             const glm::mat4                                Model = Instance.GetTransform().GetMatrix();
-            const std::vector<Asset::FMeshTriangleSource>& Triangles = Mesh.GetTriangles();
+            const std::vector<Asset::FMeshTriangleSource> &Triangles = Mesh.GetTriangles();
 
             for (std::size_t TriangleIndex = 0; TriangleIndex < Triangles.size(); ++TriangleIndex)
             {
-                const Asset::FMeshTriangleSource& Triangle = Triangles[TriangleIndex];
+                const Asset::FMeshTriangleSource &Triangle = Triangles[TriangleIndex];
                 const std::uint32_t               IA = Triangle.RenderVertexIndices[0];
                 const std::uint32_t               IB = Triangle.RenderVertexIndices[1];
                 const std::uint32_t               IC = Triangle.RenderVertexIndices[2];

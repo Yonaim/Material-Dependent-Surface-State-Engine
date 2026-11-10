@@ -4,7 +4,6 @@
  */
 
 #include "InputSystem/InputSystem.h"
-
 #include "AssetManager/Core/AssetManager.h"
 #include "InputSystem/Raycaster.h"
 #include "Logger/Logger.h"
@@ -15,7 +14,6 @@
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
 #include <glm/geometric.hpp>
 #include <limits>
 
@@ -25,17 +23,18 @@ namespace MDSS
 // 00. FInputSystem Implementation
 // ============================================================
 #pragma region 00_TInputSystem_Implementation
-// 장치 입력과 디버그 입력을 Surface 접촉 이벤트로 변환한다.
+    // 장치 입력과 디버그 입력을 Surface 접촉 이벤트로 변환한다.
 
-    FInputSystem::FInputSystem(GLFWwindow* Window) noexcept : Window(Window)
+    FInputSystem::FInputSystem(GLFWwindow *Window) noexcept
+        : Window(Window)
     {
     }
 
     std::optional<SurfaceState::FSurfaceContactInput>
-    FInputSystem::PollDebugContact(const FScene&                            Scene,
-                                   const Asset::FAssetManager&              Assets,
-                                   const SurfaceState::FSurfaceDataManager& SurfaceData,
-                                   const FCamera&                           Camera,
+    FInputSystem::PollDebugContact(const FScene                            &Scene,
+                                   const Asset::FAssetManager              &Assets,
+                                   const SurfaceState::FSurfaceDataManager &SurfaceData,
+                                   const FCamera                           &Camera,
                                    bool                                     bInjectMode,
                                    SurfaceState::FStateId                   State,
                                    float                                    Strength,
@@ -87,7 +86,7 @@ namespace MDSS
             return std::nullopt;
         }
 
-        const FStaticMeshInstance& Instance = Scene.GetStaticMeshInstances()[Hit.InstanceIndex];
+        const FStaticMeshInstance &Instance = Scene.GetStaticMeshInstances()[Hit.InstanceIndex];
 
         if (!SurfaceData.HasSurfaceData(Instance.GetSurfaceData()))
         {

@@ -65,30 +65,58 @@ namespace MDSS::Rendering
                            GetDepthImageViewHandles(DepthImageViews)),
           FrameContext(Context)
     {
-        TScopeExit ConstructionCleanup(
-            [this]
-            {
-                // The FRenderer destructor is not called when construction fails. Release raw Vulkan
-                // handles owned by this object; RAII members clean themselves during stack unwinding.
-                if (TimestampQueryPool != VK_NULL_HANDLE)
-                {
-                    vkDestroyQueryPool(this->Context.GetDevice(), TimestampQueryPool, nullptr);
-                    TimestampQueryPool = VK_NULL_HANDLE;
-                }
-                DestroyRenderFinishedSemaphores();
-                if (MaterialDescriptorPool != VK_NULL_HANDLE)
-                {
-                    vkDestroyDescriptorPool(this->Context.GetDevice(), MaterialDescriptorPool, nullptr);
-                    MaterialDescriptorPool = VK_NULL_HANDLE;
-                }
-                MaterialResources.clear();
-                if (MaterialDescriptorSetLayout != VK_NULL_HANDLE)
-                {
-                    vkDestroyDescriptorSetLayout(this->Context.GetDevice(), MaterialDescriptorSetLayout, nullptr);
-                    MaterialDescriptorSetLayout = VK_NULL_HANDLE;
-                }
-            });
+        TScopeExit ConstructionCleanup([this] { ReleaseRawResourcesAfterFailedConstruction(); });
 
+        ConfigureDeviceCapabilities();
+        InitializeReferenceGizmo();
+        CreateMaterialDescriptorResources();
+        InitializeSurfaceDisplayResources(Scene);
+        InitializeFrameTimingResources();
+        ConfigureSurfaceResolution(Scene);
+
+        FLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
+        FLogger::Debug("TRenderer",
+                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
+                           ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
+        ConstructionCleanup.Release();
+    }
+
+
+    // 00.00. Construction Failure Safety
+    #pragma region 00_00_Construction_Failure_Safety
+    // 생성 중 예외가 발생하면 RAII 객체 외의 Vulkan 핸들을 안전하게 정리한다.
+
+    void FRenderer::ReleaseRawResourcesAfterFailedConstruction()
+    {
+        // The FRenderer destructor is not called when construction fails. Release raw Vulkan
+        // handles owned by this object; RAII members clean themselves during stack unwinding.
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkDestroyQueryPool(this->Context.GetDevice(), TimestampQueryPool, nullptr);
+            TimestampQueryPool = VK_NULL_HANDLE;
+        }
+        DestroyRenderFinishedSemaphores();
+        if (MaterialDescriptorPool != VK_NULL_HANDLE)
+        {
+            vkDestroyDescriptorPool(this->Context.GetDevice(), MaterialDescriptorPool, nullptr);
+            MaterialDescriptorPool = VK_NULL_HANDLE;
+        }
+        MaterialResources.clear();
+        if (MaterialDescriptorSetLayout != VK_NULL_HANDLE)
+        {
+            vkDestroyDescriptorSetLayout(this->Context.GetDevice(), MaterialDescriptorSetLayout, nullptr);
+            MaterialDescriptorSetLayout = VK_NULL_HANDLE;
+        }
+    }
+
+    #pragma endregion
+
+    // 00.01. Device and Gizmo Setup
+    #pragma region 00_01_Device_and_Gizmo_Setup
+    // GPU 능력을 조사하고 Gizmo/축 가이드 정점 자원을 준비한다.
+
+    void FRenderer::ConfigureDeviceCapabilities()
+    {
         VkPhysicalDeviceFeatures DeviceFeatures{};
         vkGetPhysicalDeviceFeatures(Context.GetPhysicalDevice(), &DeviceFeatures);
         VkPhysicalDeviceDriverProperties DriverProperties{};
@@ -113,7 +141,10 @@ namespace MDSS::Rendering
             WireframeLineWidthMax = std::max(WireframeLineWidthMin, DeviceProperties.limits.lineWidthRange[1]);
             WireframeLineWidth = std::clamp(2.0F, WireframeLineWidthMin, WireframeLineWidthMax);
         }
+    }
 
+    void FRenderer::InitializeReferenceGizmo()
+    {
         std::vector<FGizmoVertex> GizmoVertices =
             BuildWorldReferenceVertices(WorldGridVertexCount, WorldAxisVertexCount);
         const std::vector<FGizmoVertex> TranslateGizmoVertices = BuildTranslateGizmoVertices();
@@ -131,9 +162,16 @@ namespace MDSS::Rendering
             GPU::EGPUBufferMemoryCategory::Renderer);
         GizmoVertexBuffer->Upload(GizmoVertices.data(),
                                   static_cast<VkDeviceSize>(GizmoVertices.size() * sizeof(FGizmoVertex)));
+    }
 
-        CreateMaterialDescriptorResources();
+    #pragma endregion
 
+    // 00.02. Surface and Frame Resources
+    #pragma region 00_02_Surface_and_Frame_Resources
+    // Scene별 표현 Pipeline과 in-flight GPU 타이밍·프레임 자원을 구성한다.
+
+    void FRenderer::InitializeSurfaceDisplayResources(const FScene& Scene)
+    {
         if (const SurfaceState::FSurfaceStateDescriptorResources* Descriptors =
                 SurfaceStateSystem.GetGPUResources().GetAnyInstanceDescriptors())
         {
@@ -222,7 +260,10 @@ namespace MDSS::Rendering
                                                Mode));
             }
         }
+    }
 
+    void FRenderer::InitializeFrameTimingResources()
+    {
         CreateRenderFinishedSemaphores();
         VkPhysicalDeviceProperties PhysicalDeviceProperties{};
         vkGetPhysicalDeviceProperties(Context.GetPhysicalDevice(), &PhysicalDeviceProperties);
@@ -246,16 +287,16 @@ namespace MDSS::Rendering
         {
             FLogger::Info("TRenderer", "Graphics queue does not support timestamp queries.");
         }
+    }
 
+    void FRenderer::ConfigureSurfaceResolution(const FScene& Scene)
+    {
         SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
         SurfaceTexelMeshResolution = Scene.GetSimulationResolution();
         OverlayTexelMeshResolution = Scene.GetSimulationResolution();
-        FLogger::Info("TRenderer", "Static mesh pipeline ready with MTL base-color and tangent-space normal mapping.");
-        FLogger::Debug("TRenderer",
-                       "Depth format=" + std::to_string(static_cast<int>(DepthFormat)) +
-                           ", material descriptor count=" + std::to_string(MaterialResources.size()) + ".");
-        ConstructionCleanup.Release();
     }
+
+    #pragma endregion
 
     FRenderer::~FRenderer()
     {
@@ -412,7 +453,6 @@ namespace MDSS::Rendering
         }
 
         CollectCompletedFrameTimings(FrameIndex);
-
     }
 
     bool FRenderer::AcquireFrameImage(FDebugUI& DebugInterface, std::uint32_t& ImageIndex, VkResult& AcquireResult)
@@ -604,7 +644,6 @@ namespace MDSS::Rendering
             if (Benchmark.AuthoringScreenshot)
                 WriteAuthoringCheckpoint(SceneData);
         }
-
     }
 
 #pragma endregion
@@ -823,7 +862,6 @@ namespace MDSS::Rendering
         {
             CreateMaterialDescriptorResources();
         }
-
     }
 
     void FRenderer::ConfigureReplacementSolver(SurfaceState::FSurfaceStateSystem& Replacement,
@@ -857,7 +895,6 @@ namespace MDSS::Rendering
                     Replacement.SetDebugProfileParameters(Key.first, Key.second, Parameters);
                 }
             }
-
     }
 
     void FRenderer::ReleaseSceneRenderObjects()

@@ -95,3 +95,11 @@ Vulkan 호출 지점 81개 정적 대조와 render-only 5프레임 old/new 캡�
 | `FRenderer::ReloadSceneResources` | 이전 작업 동기화 → 새 Scene 자원 준비 → 리소스 교체 → 실행 설정 갱신 |
 
 `ReloadSceneResources` 아래의 `BuildSceneReplacement`, `BuildSceneRenderPipelines`, `CommitSceneReplacement`는 **준비 단계와 소유권 이전의 경계**를 드러낸다. `FSceneReplacementResources`는 교체 준비 중의 GPU 자원을 임시 보유한다. 예외·Rollback 경로와 Descriptor 수명은 실제 구현에서 확인해야 한다. GPU 패스·Barrier 순서는 [[02_Architecture/00_Flows/03_Rendering/00_Render-Overview|Rendering Flow]]를 따른다.
+
+## Renderer 진입 코드와 세부 자원 생성
+
+`FRenderer` 생성자는 `ConfigureDeviceCapabilities` → `InitializeReferenceGizmo` → `CreateMaterialDescriptorResources` → `InitializeSurfaceDisplayResources` → `InitializeFrameTimingResources` → `ConfigureSurfaceResolution`의 흐름이다. 이보다 먼저 실행되는 멤버 초기화 목록은 C++ 선언 순서에 종속된다. 생성 실패 정리는 `ReleaseRawResourcesAfterFailedConstruction`에 모았고, 원시 Vulkan 핸들 정리와 RAII 멤버 정리는 구분한다. 실제 프레임 렌더링의 명령·동기화 순서는 `RenderFrame` → `RecordCommandBuffer`와 해당 단계 함수에서 확인한다.
+
+## Render State Texture 생성 경계
+
+`FRenderStateTexture` 생성자는 `ValidateRenderStateTextureSupport` → `CreateDescriptorAndPipelineResources` → `CreateInstanceRenderTextures`로 읽는다. GPU 지원 가능 형식을 먼저 검사하고, 공통 Descriptor·Compute Pipeline을 구성한 다음 Surface instance별 image array와 descriptor를 채운다. 생성 도중 발생한 예외는 기존과 동일하게 `Destroy()`로 이미 생성한 Vulkan 핸들을 정리한 뒤 전파한다.

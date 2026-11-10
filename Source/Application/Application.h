@@ -56,6 +56,21 @@ namespace MDSS
             float PlaybackDeltaTime;
         };
 
+        // Initialisation follows the ownership order of the member fields below.
+        [[nodiscard]] std::filesystem::path ResolveStartupScenePath(const std::filesystem::path& ScenePath) const;
+        void LoadStartupScene(const std::filesystem::path& StartupScenePath);
+        void InitializeSurfaceStateSystem(const std::filesystem::path& StartupScenePath);
+        void InitializeFrameServices(std::uint32_t RenderTileSize, bool bPerWorkgroupChannelMask);
+        void InitializeInput();
+
+        void ConfigureBenchmarkIfEnabled();
+        void ConfigureBenchmarkPlayback();
+        void ApplyBenchmarkPerformanceSettings();
+        void PrewarmBenchmarkMeshCache();
+
+        void ExecuteFrame(std::chrono::steady_clock::time_point& PreviousFrameTime,
+                          std::vector<double>& BenchmarkCpuFrames);
+
         void                       SubmitInteractiveContact();
         [[nodiscard]] FFrameTiming UpdateFrameTiming(std::chrono::steady_clock::time_point& PreviousFrameTime);
         void                       AdvanceDemoAndSubmitContacts(float PlaybackDeltaTime);

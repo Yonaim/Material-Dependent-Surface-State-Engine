@@ -551,6 +551,14 @@ namespace MDSS::Rendering
                                                          VkFormatFeatureFlags Features);
         static VkDescriptorSetLayout CreateMaterialDescriptorSetLayout(VkDevice Device);
 
+        // Constructor phases: preserve dependency order and exception cleanup.
+        void ReleaseRawResourcesAfterFailedConstruction();
+        void ConfigureDeviceCapabilities();
+        void InitializeReferenceGizmo();
+        void InitializeSurfaceDisplayResources(const FScene& Scene);
+        void InitializeFrameTimingResources();
+        void ConfigureSurfaceResolution(const FScene& Scene);
+
         void                CreateMaterialDescriptorResources();
         void                CreateRenderFinishedSemaphores();
         void                DestroyRenderFinishedSemaphores() noexcept;

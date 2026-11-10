@@ -65,6 +65,19 @@ namespace MDSS::Rendering
             bool                                bSmoothingInitialized = false;
         };
 
+        [[nodiscard]] static VkPhysicalDeviceProperties ValidateRenderStateTextureSupport(
+            VkPhysicalDevice PhysicalDevice,
+            VkDevice Device,
+            VkDescriptorSetLayout SurfaceLayout,
+            const SurfaceState::FSurfaceGPUResourceManager& Resources);
+        void CreateDescriptorAndPipelineResources(
+            VkDescriptorSetLayout SurfaceLayout,
+            const SurfaceState::FSurfaceGPUResourceManager& Resources);
+        void CreateInstanceRenderTextures(
+            VkPhysicalDevice PhysicalDevice,
+            const SurfaceState::FSurfaceGPUResourceManager& Resources,
+            const VkPhysicalDeviceProperties& Limits);
+
         void Destroy() noexcept;
 
         VkDevice                  Device = VK_NULL_HANDLE;

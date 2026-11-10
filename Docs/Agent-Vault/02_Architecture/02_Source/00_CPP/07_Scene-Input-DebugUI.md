@@ -103,3 +103,10 @@ UI 표시값은 실행 조건을 확인하는 출발점이다. 성능 측정에�
 - `FDebugUI::DrawRenderSettingsWindow`는 화면 설정 탭을 조율한다. Visual/Display의 세부 값은 `DrawVisualRenderSettings`, `DrawDisplayRenderSettings` 및 하위 효과 설정 함수에서 다룬다.
 - `FDebugUI::DrawProfileTuningTab`는 Profile 선택, State별 편집 데이터, 파라미터 UI 및 적용/복원 동작을 조율한다. `DrawProfileParameterControls`와 `DrawProfileOverrideActions`가 하위 책임을 수행한다.
 - 편집 중의 Dirty Draft와 원본 `.SRProfile` Asset은 별개다. ImGui Begin/End, 편집값 반영 및 GPU 옵션 갱신의 실제 순서는 `DebugUIViewport.cpp`, `DebugUIContactProfile.cpp`와 관련 계약을 확인한다.
+
+## Scene 입력과 UI 진입 함수 읽기
+
+- `FSceneLoader::Load`는 Scene 문서 읽기 → 스키마 검증 → 기본 Scene 설정 → 객체/Surface 로드 → 초기 Contact → 애니메이션 순서다. JSON 필드·경로 검증은 세부 helper에서 읽는다.
+- `FDebugUI` 생성자는 ImGui Context → Font → Style → GLFW/Vulkan backend를 준비한다. 실패 시 backend/context 정리 정책을 유지한다.
+- `FDebugUI::BeginFrame`은 `BeginImGuiFrame` → `DrawEditorPanels` → `DrawInjectionCrosshair`로 표현한다. 임의의 패널 순서 변경은 hit-test 및 UI 입력 동작에 영향을 줄 수 있다.
+- 뷰 선택 툴바는 `DrawToolbarViewSelector`에서 `ResolveViewModeName` → `DrawViewModeCombo` → `DrawViewportCollectionControls`를 읽고, 실제 mode enum·Renderer 설정은 하위 함수에서 확인한다.

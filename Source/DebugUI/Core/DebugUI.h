@@ -166,6 +166,19 @@ namespace MDSS
 #pragma region "01_Scene_and_Viewport_Operations"
 // Scene·viewport 입력과 선택 편집을 같은 화면 상태에 연결한다.
 
+        // Lifecycle internals: initialization order is part of backend ownership contract.
+        void InitializeImGuiContext();
+        void ConfigureImGuiFonts();
+        void ConfigureImGuiStyle();
+        void InitializeImGuiBackends(const GPU::FVulkanContext& Context,
+                                     const FWindow& Window,
+                                     Rendering::FRenderer& Renderer);
+
+        // Only the active frame's top-level flow belongs in BeginFrame().
+        void BeginImGuiFrame(FScene& SceneData);
+        void DrawEditorPanels(FScene& SceneData);
+        void DrawInjectionCrosshair();
+
         // Scene, selection, and camera controls
         void ProcessCameraInput(FScene& SceneData);
         void ProcessSelectionAndGizmo(FScene& SceneData);
@@ -197,6 +210,11 @@ namespace MDSS
         void DrawRenderOptionsWindow(FScene& SceneData);
         [[nodiscard]] const char* DrawToolbarViewSelector(std::size_t ActiveViewportIndex,
                                                           Rendering::ERenderViewMode& CurrentMode);
+        [[nodiscard]] const char* ResolveViewModeName(Rendering::ERenderViewMode CurrentMode) const;
+        [[nodiscard]] bool DrawViewModeCombo(std::size_t ActiveViewportIndex,
+                                             Rendering::ERenderViewMode& CurrentMode,
+                                             const char* CurrentName);
+        void DrawViewportCollectionControls(std::size_t ActiveViewportIndex);
         void DrawToolbarStateSelector(Rendering::ERenderViewMode CurrentMode);
         [[nodiscard]] bool DrawToolbarViewSettingsButton();
         void DrawToolbarVisibilityAndZoom(FScene& SceneData);

@@ -183,6 +183,193 @@ namespace MDSS
 
             return (SceneDirectory / RelativePath).lexically_normal();
         }
+
+        // Scene document parsing and schema checks are kept below the top-level load flow.
+        FJson ReadSceneDocument(const std::filesystem::path& Path)
+        {
+            std::ifstream Input(Path);
+
+            if (!Input)
+            {
+                throw std::runtime_error("Unable to open Scene file: " + Path.string());
+            }
+
+            FJson Root;
+            try
+            {
+                Input >> Root;
+            }
+            catch (const FJson::exception& Exception)
+            {
+                throw std::runtime_error("Invalid Scene JSON in '" + Path.string() + "': " + Exception.what());
+            }
+
+            return Root;
+        }
+
+        const FJson& ValidateSceneDocument(const FJson& Root)
+        {
+            if (!Root.is_object())
+            {
+                throw std::runtime_error("Scene root must be a JSON object.");
+            }
+
+            if (ReadString(Root, "type", "Scene") != "TScene")
+            {
+                throw std::runtime_error("Scene type must be 'TScene'.");
+            }
+
+            (void)ReadVersion(RequireMember(Root, "version", "Scene"));
+            const FJson& Objects = RequireMember(Root, "objects", "Scene");
+
+            if (!Objects.is_array())
+            {
+                throw std::runtime_error("Scene 'objects' must be an array.");
+            }
+
+            return Objects;
+        }
+
+        void ApplySceneSettings(FScene& Scene,
+                                const FJson& Root,
+                                std::optional<std::uint32_t> ResolutionOverride)
+        {
+            if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
+            {
+                Scene.SetSimulationResolution(ReadSimulationResolution(*Resolution));
+            }
+
+            if (ResolutionOverride)
+            {
+                Scene.SetSimulationResolution(*ResolutionOverride);
+            }
+
+            if (const auto DisplayScale = Root.find("litHeightDisplayScale"); DisplayScale != Root.end())
+            {
+                Scene.SetLitHeightDisplayScale(ReadFiniteFloat(*DisplayScale, "Scene.litHeightDisplayScale"));
+            }
+
+            if (const auto Camera = Root.find("camera"); Camera != Root.end())
+            {
+                if (!Camera->is_object())
+                    throw std::runtime_error("Scene.camera must be an object.");
+                const std::string Context = "Scene.camera";
+                FCamera&          MainCamera = Scene.GetMainCamera();
+                MainCamera.SetPosition(ReadVector3(RequireMember(*Camera, "position", Context), Context + ".position"));
+                MainCamera.SetTarget(ReadVector3(RequireMember(*Camera, "target", Context), Context + ".target"));
+                const float FieldOfView = ReadFiniteFloat(RequireMember(*Camera, "verticalFieldOfViewDegrees", Context),
+                                                          Context + ".verticalFieldOfViewDegrees");
+                if (FieldOfView <= 0.0F || FieldOfView >= 180.0F)
+                    throw std::runtime_error("Scene.camera.verticalFieldOfViewDegrees must be between 0 and 180.");
+                MainCamera.SetVerticalFieldOfViewDegrees(FieldOfView);
+            }
+
+        }
+
+        std::unordered_set<std::string> LoadSceneObjects(
+            FScene& Scene,
+            const FJson& Objects,
+            const std::filesystem::path& SceneDirectory,
+            Asset::FAssetManager& Assets,
+            SurfaceState::FSurfaceDataManager& SurfaceData)
+        {
+            std::unordered_set<std::string> ObjectIds;
+
+            for (std::size_t Index = 0; Index < Objects.size(); ++Index)
+            {
+                const FJson&      Object = Objects[Index];
+                const std::string Context = "Scene objects[" + std::to_string(Index) + "]";
+                std::string       ObjectId;
+
+                if (const auto Id = Object.find("id"); Id != Object.end())
+                {
+                    ObjectId = ReadString(Object, "id", Context);
+
+                    if (ObjectId == "camera" || !ObjectIds.insert(ObjectId).second)
+                        throw std::runtime_error(Context + ".id must be unique and cannot be 'camera'.");
+                }
+
+                const std::filesystem::path MeshPath =
+                    ResolveScenePath(SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
+                const Asset::FMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
+
+                SurfaceState::FSurfaceRuntimeDataHandle SurfaceDataHandle = SurfaceState::InvalidSurfaceRuntimeDataHandle;
+                std::filesystem::path                   DistributionPath;
+
+                if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
+                {
+                    if (!Distribution->is_string() || Distribution->get_ref<const std::string&>().empty())
+                    {
+                        throw std::runtime_error(Context + ".surfaceProfileMap must be a non-empty path string.");
+                    }
+
+                    DistributionPath = ResolveScenePath(
+                        SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
+                    SurfaceDataHandle =
+                        SurfaceData.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
+                }
+
+                FTransform Transform;
+
+                if (const auto TransformJson = Object.find("transform"); TransformJson != Object.end())
+                {
+                    Transform = ReadTransform(*TransformJson, Context + ".transform");
+                }
+
+                Scene.AddStaticMeshInstance(FStaticMeshInstance(
+                    MeshHandle, SurfaceDataHandle, Transform, MeshPath, DistributionPath, std::move(ObjectId)));
+            }
+
+            return ObjectIds;
+        }
+
+        void LoadInitialSceneContacts(FScene& Scene,
+                                      const FJson& Root,
+                                      const std::unordered_set<std::string>& ObjectIds)
+        {
+            if (const auto Contacts = Root.find("initialContacts"); Contacts != Root.end())
+            {
+                if (!Contacts->is_array())
+                    throw std::runtime_error("Scene.initialContacts must be an array.");
+                for (std::size_t Index = 0; Index < Contacts->size(); ++Index)
+                {
+                    const FJson&         Contact = (*Contacts)[Index];
+                    const std::string    Context = "Scene.initialContacts[" + std::to_string(Index) + "]";
+                    FSceneInitialContact Initial;
+                    Initial.Target = ReadString(Contact, "target", Context);
+                    Initial.State = ReadString(Contact, "state", Context);
+
+                    if (!ObjectIds.contains(Initial.Target))
+                        throw std::runtime_error(Context + ".target must name a Scene object with an id.");
+                    if (SurfaceState::NormalizeSurfaceStateName(Initial.State) != Initial.State)
+                        throw std::runtime_error(Context + ".state must be a normalized State name.");
+                    Initial.WorldPosition =
+                        ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
+                    Initial.Radius = ReadFiniteFloat(RequireMember(Contact, "radius", Context), Context + ".radius");
+                    Initial.Strength = ReadFiniteFloat(RequireMember(Contact, "strength", Context), Context + ".strength");
+
+                    if (const auto Falloff = Contact.find("falloff"); Falloff != Contact.end())
+                        Initial.Falloff = ReadFiniteFloat(*Falloff, Context + ".falloff");
+                    if (Initial.Radius <= 0.0F || Initial.Strength < 0.0F || Initial.Falloff < 0.0F)
+                        throw std::runtime_error(Context + " requires positive radius and nonnegative strength/falloff.");
+                    Scene.AddInitialContact(std::move(Initial));
+                }
+            }
+
+        }
+
+        void LoadSceneAnimation(FScene& Scene,
+                                const FJson& Root,
+                                const std::filesystem::path& SceneDirectory)
+        {
+            if (const auto Animation = Root.find("animation"); Animation != Root.end())
+            {
+                const std::filesystem::path AnimationPath =
+                    ResolveScenePath(SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
+                Scene.SetDemoAnimation(AnimationPath, LoadDemoAnimation(AnimationPath, Scene));
+            }
+
+        }
     } // namespace
 
 // ============================================================
@@ -196,157 +383,17 @@ namespace MDSS
                               SurfaceState::FSurfaceDataManager& SurfaceData,
                               std::optional<std::uint32_t>       ResolutionOverride)
     {
-        std::ifstream Input(Path);
-
-        if (!Input)
-        {
-            throw std::runtime_error("Unable to open Scene file: " + Path.string());
-        }
-
-        FJson Root;
-        try
-        {
-            Input >> Root;
-        }
-        catch (const FJson::exception& Exception)
-        {
-            throw std::runtime_error("Invalid Scene JSON in '" + Path.string() + "': " + Exception.what());
-        }
-
-        if (!Root.is_object())
-        {
-            throw std::runtime_error("Scene root must be a JSON object.");
-        }
-
-        if (ReadString(Root, "type", "Scene") != "TScene")
-        {
-            throw std::runtime_error("Scene type must be 'TScene'.");
-        }
-
-        (void)ReadVersion(RequireMember(Root, "version", "Scene"));
-        const FJson& Objects = RequireMember(Root, "objects", "Scene");
-
-        if (!Objects.is_array())
-        {
-            throw std::runtime_error("Scene 'objects' must be an array.");
-        }
-
+        const FJson Root = ReadSceneDocument(Path);
+        const FJson& Objects = ValidateSceneDocument(Root);
         const std::filesystem::path SceneDirectory = std::filesystem::absolute(Path).parent_path();
-        FScene                      Scene;
+
+        FScene Scene;
         Scene.SetSourcePath(std::filesystem::absolute(Path).lexically_normal());
+        ApplySceneSettings(Scene, Root, ResolutionOverride);
 
-        if (const auto Resolution = Root.find("simulationResolution"); Resolution != Root.end())
-        {
-            Scene.SetSimulationResolution(ReadSimulationResolution(*Resolution));
-        }
-
-        if (ResolutionOverride)
-        {
-            Scene.SetSimulationResolution(*ResolutionOverride);
-        }
-
-        if (const auto DisplayScale = Root.find("litHeightDisplayScale"); DisplayScale != Root.end())
-        {
-            Scene.SetLitHeightDisplayScale(ReadFiniteFloat(*DisplayScale, "Scene.litHeightDisplayScale"));
-        }
-
-        if (const auto Camera = Root.find("camera"); Camera != Root.end())
-        {
-            if (!Camera->is_object())
-                throw std::runtime_error("Scene.camera must be an object.");
-            const std::string Context = "Scene.camera";
-            FCamera&          MainCamera = Scene.GetMainCamera();
-            MainCamera.SetPosition(ReadVector3(RequireMember(*Camera, "position", Context), Context + ".position"));
-            MainCamera.SetTarget(ReadVector3(RequireMember(*Camera, "target", Context), Context + ".target"));
-            const float FieldOfView = ReadFiniteFloat(RequireMember(*Camera, "verticalFieldOfViewDegrees", Context),
-                                                      Context + ".verticalFieldOfViewDegrees");
-            if (FieldOfView <= 0.0F || FieldOfView >= 180.0F)
-                throw std::runtime_error("Scene.camera.verticalFieldOfViewDegrees must be between 0 and 180.");
-            MainCamera.SetVerticalFieldOfViewDegrees(FieldOfView);
-        }
-
-        std::unordered_set<std::string> ObjectIds;
-
-        for (std::size_t Index = 0; Index < Objects.size(); ++Index)
-        {
-            const FJson&      Object = Objects[Index];
-            const std::string Context = "Scene objects[" + std::to_string(Index) + "]";
-            std::string       ObjectId;
-
-            if (const auto Id = Object.find("id"); Id != Object.end())
-            {
-                ObjectId = ReadString(Object, "id", Context);
-
-                if (ObjectId == "camera" || !ObjectIds.insert(ObjectId).second)
-                    throw std::runtime_error(Context + ".id must be unique and cannot be 'camera'.");
-            }
-
-            const std::filesystem::path MeshPath =
-                ResolveScenePath(SceneDirectory, ReadString(Object, "mesh", Context), "mesh", ".obj");
-            const Asset::FMeshAssetHandle MeshHandle = Assets.LoadOBJ(MeshPath);
-
-            SurfaceState::FSurfaceRuntimeDataHandle SurfaceDataHandle = SurfaceState::InvalidSurfaceRuntimeDataHandle;
-            std::filesystem::path                   DistributionPath;
-
-            if (const auto Distribution = Object.find("surfaceProfileMap"); Distribution != Object.end())
-            {
-                if (!Distribution->is_string() || Distribution->get_ref<const std::string&>().empty())
-                {
-                    throw std::runtime_error(Context + ".surfaceProfileMap must be a non-empty path string.");
-                }
-
-                DistributionPath = ResolveScenePath(
-                    SceneDirectory, Distribution->get<std::string>(), "surfaceProfileMap", ".SurfaceProfileMap");
-                SurfaceDataHandle =
-                    SurfaceData.LoadSurfaceData(MeshHandle, DistributionPath, Scene.GetSimulationResolution());
-            }
-
-            FTransform Transform;
-
-            if (const auto TransformJson = Object.find("transform"); TransformJson != Object.end())
-            {
-                Transform = ReadTransform(*TransformJson, Context + ".transform");
-            }
-
-            Scene.AddStaticMeshInstance(FStaticMeshInstance(
-                MeshHandle, SurfaceDataHandle, Transform, MeshPath, DistributionPath, std::move(ObjectId)));
-        }
-
-        if (const auto Contacts = Root.find("initialContacts"); Contacts != Root.end())
-        {
-            if (!Contacts->is_array())
-                throw std::runtime_error("Scene.initialContacts must be an array.");
-            for (std::size_t Index = 0; Index < Contacts->size(); ++Index)
-            {
-                const FJson&         Contact = (*Contacts)[Index];
-                const std::string    Context = "Scene.initialContacts[" + std::to_string(Index) + "]";
-                FSceneInitialContact Initial;
-                Initial.Target = ReadString(Contact, "target", Context);
-                Initial.State = ReadString(Contact, "state", Context);
-
-                if (!ObjectIds.contains(Initial.Target))
-                    throw std::runtime_error(Context + ".target must name a Scene object with an id.");
-                if (SurfaceState::NormalizeSurfaceStateName(Initial.State) != Initial.State)
-                    throw std::runtime_error(Context + ".state must be a normalized State name.");
-                Initial.WorldPosition =
-                    ReadVector3(RequireMember(Contact, "worldPosition", Context), Context + ".worldPosition");
-                Initial.Radius = ReadFiniteFloat(RequireMember(Contact, "radius", Context), Context + ".radius");
-                Initial.Strength = ReadFiniteFloat(RequireMember(Contact, "strength", Context), Context + ".strength");
-
-                if (const auto Falloff = Contact.find("falloff"); Falloff != Contact.end())
-                    Initial.Falloff = ReadFiniteFloat(*Falloff, Context + ".falloff");
-                if (Initial.Radius <= 0.0F || Initial.Strength < 0.0F || Initial.Falloff < 0.0F)
-                    throw std::runtime_error(Context + " requires positive radius and nonnegative strength/falloff.");
-                Scene.AddInitialContact(std::move(Initial));
-            }
-        }
-
-        if (const auto Animation = Root.find("animation"); Animation != Root.end())
-        {
-            const std::filesystem::path AnimationPath =
-                ResolveScenePath(SceneDirectory, ReadString(Root, "animation", "Scene"), "animation", ".DemoAnim");
-            Scene.SetDemoAnimation(AnimationPath, LoadDemoAnimation(AnimationPath, Scene));
-        }
+        const auto ObjectIds = LoadSceneObjects(Scene, Objects, SceneDirectory, Assets, SurfaceData);
+        LoadInitialSceneContacts(Scene, Root, ObjectIds);
+        LoadSceneAnimation(Scene, Root, SceneDirectory);
 
         Scene.CaptureInitialState();
         return Scene;

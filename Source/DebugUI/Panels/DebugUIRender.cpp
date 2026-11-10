@@ -77,6 +77,34 @@ namespace MDSS
     const char* FDebugUI::DrawToolbarViewSelector(std::size_t ActiveViewportIndex,
                                                   Rendering::ERenderViewMode& CurrentMode)
     {
+        const char* CurrentName = ResolveViewModeName(CurrentMode);
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("View");
+        ImGui::SameLine(0.0F, 8.0F);
+        ImGui::SetNextItemWidth(185.0F);
+        const bool bViewComboOpen = DrawViewModeCombo(ActiveViewportIndex, CurrentMode, CurrentName);
+        const bool bViewControlHovered = ImGui::IsItemHovered();
+
+        ImGui::SameLine(0.0F, 6.0F);
+        ImGui::TextDisabled("View %zu", ActiveViewportIndex + 1U);
+        ImGui::SameLine(0.0F, 6.0F);
+        DrawViewportCollectionControls(ActiveViewportIndex);
+
+        if (!bViewComboOpen && bViewControlHovered)
+        {
+            SetDescriptionTooltip(GetViewGeometryDescription(CurrentMode));
+        }
+
+        return CurrentName;
+    }
+
+    // 01.00. View Mode Selection
+    #pragma region 01_00_View_Mode_Selection
+    // 선택된 표시 모드의 이름과 메뉴 항목을 구성하고 Renderer에 선택을 전달한다.
+
+    const char* FDebugUI::ResolveViewModeName(Rendering::ERenderViewMode CurrentMode) const
+    {
         const int CurrentIndex = static_cast<int>(CurrentMode);
         const char* CurrentName = "Solver Transfer Weights";
 
@@ -114,10 +142,13 @@ namespace MDSS
             CurrentName = "Texel Area Heatmap";
         }
 
-        ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted("View");
-        ImGui::SameLine(0.0F, 8.0F);
-        ImGui::SetNextItemWidth(185.0F);
+        return CurrentName;
+    }
+
+    bool FDebugUI::DrawViewModeCombo(std::size_t ActiveViewportIndex,
+                                    Rendering::ERenderViewMode& CurrentMode,
+                                    const char* CurrentName)
+    {
         ImGui::PushID("ViewportViewCombo");
         const bool bViewComboOpen = ImGui::BeginCombo("##View", CurrentName, ImGuiComboFlags_HeightLarge);
 
@@ -268,11 +299,17 @@ namespace MDSS
         }
 
         ImGui::PopID();
-        const bool bViewControlHovered = ImGui::IsItemHovered();
-        ImGui::SameLine(0.0F, 6.0F);
-        ImGui::TextDisabled("View %zu", ActiveViewportIndex + 1U);
-        ImGui::SameLine(0.0F, 6.0F);
+        return bViewComboOpen;
+    }
 
+    #pragma endregion
+
+    // 01.01. Viewport Collection
+    #pragma region 01_01_Viewport_Collection
+    // 현재 뷰포트 구성을 기준으로 화면 추가·삭제를 처리한다.
+
+    void FDebugUI::DrawViewportCollectionControls(std::size_t ActiveViewportIndex)
+    {
         if (ViewportState.ViewportPanels.size() == 1U)
         {
             if (ImGui::SmallButton("+ View"))
@@ -295,12 +332,9 @@ namespace MDSS
                 ViewportState.ActiveViewportId = ViewportState.ViewportPanels.front().Id;
         }
 
-        if (!bViewComboOpen && bViewControlHovered)
-        {
-            SetDescriptionTooltip(GetViewGeometryDescription(CurrentMode));
-        }
-        return CurrentName;
     }
+
+    #pragma endregion
 
     void FDebugUI::DrawToolbarStateSelector(Rendering::ERenderViewMode CurrentMode)
     {
