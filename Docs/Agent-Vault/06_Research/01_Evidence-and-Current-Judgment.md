@@ -10,6 +10,6 @@
 | PERF-043 | 표준 LS가 합성 높이 오차를 줄임 | 시험한 brick 장면의 수송 영향은 작아 일반적 이득 미입증 |
 | 입력 감사·수식 | 실제 Heat Add 48개에서 두 사건 ±ε로 명목상 시간 합산 입력 보존 가능; 제한 모델 반례·상한 유도 | 최종 State 보호, 실제 최적화, 새 coarse 해법 미검증 |
 
-첫 제작 후보는 목표 시점 전에 종료되어 **최종 목표 미평가**다. 사람의 제작 생산성 결과도 없다. Günther 등의 범용 aging·재질 규칙·재료량→형상→이동은 중요한 선례다. [[04_Development/06_Prior-Model-Differentiation|선행모델 대조]]와 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|문헌 장부]]를 참조한다.
+첫 제작 후보는 목표 시점 전에 종료되어 **최종 목표 미평가**다. 사람의 제작 생산성 결과도 없다. Günther 등의 범용 aging·재질 규칙·재료량→형상→이동은 중요한 선례다. [[06_Prior-Model-Differentiation|선행모델 대조]]와 [[01_Related-Work#source-reference-07-related-work|문헌 장부]]를 참조한다.
 
-**현재 분류는 ③ 시스템 통합.** 현 구현만의 확정 Contribution은 없고, 제안된 새 방법의 필요성도 아직 확인되지 않았다. [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-02-evidence-and-current-judgment|상세 원본]]에 실험 제한을 보존했다.
+**현재 분류는 ③ 시스템 통합.** 현 구현만의 확정 Contribution은 없고, 제안된 새 방법의 필요성도 아직 확인되지 않았다. [[01_Judgment-and-History#source-02-evidence-and-current-judgment|상세 원본]]에 실험 제한을 보존했다.

@@ -10,12 +10,12 @@
 
 ## 이 문서의 원본 절
 
-- [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-04-inverse-authoring|10_Authoring/04_Inverse-Authoring.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-05-protected-editing|10_Authoring/05_Protected-Editing.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|10_Authoring/19_Protected-Editing-Feasibility-and-Response-Coordinates.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|10_Authoring/21_Constructive-Controls-and-Reaction-Contracts.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|10_Authoring/22_Protected-Editability-and-Geometry-Mediation.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|10_Authoring/23_Contact-Control-Space-Audit.md]]
+- [[01_Goal-and-Protected-Editing#source-authoring-04-inverse-authoring|10_Authoring/04_Inverse-Authoring.md]]
+- [[01_Goal-and-Protected-Editing#source-authoring-05-protected-editing|10_Authoring/05_Protected-Editing.md]]
+- [[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|10_Authoring/19_Protected-Editing-Feasibility-and-Response-Coordinates.md]]
+- [[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|10_Authoring/21_Constructive-Controls-and-Reaction-Contracts.md]]
+- [[01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|10_Authoring/22_Protected-Editability-and-Geometry-Mediation.md]]
+- [[01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|10_Authoring/23_Contact-Control-Space-Audit.md]]
 
 원본 25개 파일의 수정 전 사본과 SHA-256 목록은 `Original-25-Notes.zip`에 있다. 아래 절은 원문의 수식과 당시 판단을 보존하며, 링크와 제목 수준만 새 위치에 맞췄다.
 
@@ -27,9 +27,9 @@
 
 ### 방향 1 — 목표 진행과 후속 반응을 만족하는 역설계
 
-마지막 갱신: 2026-10-27. [[04_Development/08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
+마지막 갱신: 2026-10-27. [[08_Research-Directions-123|최초 통합 검토]]이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
 
-공통 근거는 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 문헌 출처는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], 이후 연구는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다.
+공통 근거는 [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], [[01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], [[01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]
 
 
 #### 1. 문제를 더 좁히기
@@ -59,7 +59,7 @@
 
 [H] 비슷한 외관/진행 목표를 만족하는 두 허용 rollout이 후속 입력에서 서로 다른 결과를 낼 수 있고, 이 차이가 제작상 중요할 수 있다. **현재 U-input의 실제 rollout 쌍을 확보한 것은 아니다.**
 
-[C,D] 후속 분석에서는 Ice=4a/8a가 같은 표시 포화도·capped 형상을 만들지만 후속 융해 request는 다른 조건부 State 쌍을 유도했다. 이는 저장량→관측의 비단사성이다. 초기 Ice 고정인 U-input의 두 해로 간주하지 않는다. 초기 Ice seed strength를 허용하는 별도 U-seed 진단과 실제 외관 확인은 미실행이다. 식·가정·조작 범위의 제한은 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#3. 방향 1: 같은 포화 외관·형상, 다른 후속 반응|후속 분석 §3]]을 따른다.
+[C,D] 후속 분석에서는 Ice=4a/8a가 같은 표시 포화도·capped 형상을 만들지만 후속 융해 request는 다른 조건부 State 쌍을 유도했다. 이는 저장량→관측의 비단사성이다. 초기 Ice 고정인 U-input의 두 해로 간주하지 않는다. 초기 Ice seed strength를 허용하는 별도 U-seed 진단과 실제 외관 확인은 미실행이다. 식·가정·조작 범위의 제한은 [[01_Judgment-and-History#3. 방향 1: 같은 포화 외관·형상, 다른 후속 반응|후속 분석 §3]]
 
 [D] 선형화한 관측 Jacobian \(J_y\)에 대해 \(J_y\delta a\simeq0\)이나 후속 반응의 \(J_\Psi\delta a\)는 큰 방향이 있다면, 관측만의 적합도는 그 방향을 충분히 제어하지 못한다. 이는 표준적인 관측/식별성의 국소 설명이며, 비선형 전체 공간의 비식별성 증명이 아니다.
 
@@ -85,7 +85,7 @@
 
 **중단 기준:** 모호성이 중요하지 않음 / 단순 다중 목적 최적화가 충분함 / 추가 이점이 큰 모델 변경이나 목표 편향에 의존함. 이 경우 독립 논문 Contribution 주장은 중단하고 2의 평가 과제로만 사용한다.
 
-후속 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#7. 방향 1: 후속 probe가 줄 수 있는 것과 줄 수 없는 것|심화 추론 §7]]에서 복제한 한 texel의 두 초기 probe로 i,h를 구별하는 조건과, 유한 probe의 보장 한계를 유도했다. 내부 State는 이미 알려져 있으므로 이를 미지의 물리 State 복원으로 포장하지 않는다. 참조 State 거리 제약도 강한 Baseline에 포함한다.
+후속 [[02_Coarse-Models-and-Limits#7. 방향 1: 후속 probe가 줄 수 있는 것과 줄 수 없는 것|심화 추론 §7]]보장 한계를 유도했다. 내부 State는 이미 알려져 있으므로 이를 미지의 물리 State 복원으로 포장하지 않는다. 참조 State 거리 제약도 강한 Baseline에 포함한다.
 
 ---
 
@@ -95,14 +95,14 @@
 
 ### 방향 2 — 다른 현상을 보존하는 수정
 
-마지막 갱신: 2026-10-27. [[04_Development/08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
+마지막 갱신: 2026-10-27. [[08_Research-Directions-123|최초 통합 검토]]이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
 
-공통 근거는 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 문헌 출처는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], 이후 연구는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다.
+공통 근거는 [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], [[01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], [[01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]
 
 
 #### 1. 핵심 Research Question
 
-최신 심화는 [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19: 보호 편집의 가능 범위·반응 진행 좌표]]를 따른다. 전체 Heat 진행의 고정이 Ice 편집을 막는 조건과, 최종 Ice 보호를 누적 반응 조건으로 표현하는 범위를 추가했다. 아래 최초 과제는 이 조건을 적용해 해석하며 실제 입력 witness·새 해법의 우위는 여전히 미검증이다.
+최신 심화는 [[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19: 보호 편집의 가능 범위·반응 진행 좌표]]조건으로 표현하는 범위를 추가했다. 아래 최초 과제는 이 조건을 적용해 해석하며 실제 입력 witness·새 해법의 우위는 여전히 미검증이다.
 
 > 허용된 입력/소수 계수만 바꿔 지정한 잔류 흔적을 수정하면서, 보호한 영역의 융해 진행과 후속 반응의 변화를 제한할 수 있는가? 필요한 보상 조작의 범위를 어떻게 선택하는가?
 
@@ -136,7 +136,7 @@
 4. 선형화 예측이 빗나가면 trust region을 줄이고 active regime를 갱신한다. 조작 범위가 부족하면 사전에 허용한 이웃/이전 시간 basis로 확장한다.
 5. 더 넓혀도 찾지 못하면 미달/국소 탐색 실패와 완화 선택지를 보고한다. 전역 불가능 인증으로 표현하지 않는다.
 
-[D,H] 후속 분석에서 `ice_melting`은 Heat/면적=0.20 근방의 작은 변화에는 request 민감도가 0이지만, 허용된 +0.10 입력으로 threshold=0.25를 넘으면 양의 request를 만들 수 있음을 유도했다. 따라서 진전이 없을 때 단순히 trust region을 줄이는 것으로 충분하지 않을 수 있다. 선언된 event margin을 보고 유한 trial을 검토하는 초안을 추가하되, 다중 크기 finite difference·multi-start·derivative-free와 비교한다. 이것은 전체 보호 제약의 feasible witness나 새 알고리즘 검증이 아니다. [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#4. 방향 2: 0 민감도와 유한 편집의 실행 가능성은 다르다|후속 분석 §4]]를 따른다.
+[D,H] 후속 분석에서 `ice_melting`은 Heat/면적=0.20 근방의 작은 변화에는 request 민감도가 0이지만, 허용된 +0.10 입력으로 threshold=0.25를 넘으면 양의 request를 만들 수 있음을 유도했다. 따라서 진전이 없을 때 단순히 trust region을 줄이는 것으로 충분하지 않을 수 있다. 선언된 event margin을 보고 유한 trial을 검토하는 초안을 추가하되, 다중 크기 finite difference·multi-start·derivative-free와 비교한다. 이것은 전체 보호 제약의 feasible witness나 새 알고리즘 검증이 아니다. [[01_Judgment-and-History#4. 방향 2: 0 민감도와 유한 편집의 실행 가능성은 다르다|후속 분석 §4]]
 
 **여기서 1–5는 기존 기법의 합성 초안이다.** 새 알고리즘으로 확정하지 않는다. full Jacobian으로 같은 계산을 하는 전역 SQP가 충분히 좋으면 특화 방법을 만들 이유가 없다. finite-difference 민감도 구축 비용·다중 forward·캐시 구축을 모두 비용에 포함한다.
 
@@ -170,7 +170,7 @@
 
 **중단 기준:** 작은 표준 SQP가 모든 중요 과제를 충분히 처리 / Geometry 경로의 중요성이 관측되지 않음 / 보호가 사실상 모든 편집을 막음 / 동일 품질에서 사전 계산 포함 이득 없음. ‘다중 State라 복잡하다’는 이유만으로 계속하지 않는다.
 
-후속 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#6. 방향 2: 최적화 실패 전에 불가능을 판정할 수 있는 범위|심화 추론 §6]]은 닫힌 I+W+A 수지에서 보호 오차의 하한, 선언 stoichiometry/graph로 만든 도달 가능성 superset의 제한적 infeasibility 판정을 추가했다. 기존 Petri-net/수지 기반 방법의 적용이며, 같은 사전 검사를 제공한 표준 optimizer와 비교해야 한다. 외부 물 입력을 허용하는 U-input에 닫힌 보존 예를 그대로 적용하지 않는다.
+후속 [[02_Coarse-Models-and-Limits#6. 방향 2: 최적화 실패 전에 불가능을 판정할 수 있는 범위|심화 추론 §6]] 도달 가능성 superset의 제한적 infeasibility 판정을 추가했다. 기존 Petri-net/수지 기반 방법의 적용이며, 같은 사전 검사를 제공한 표준 optimizer와 비교해야 한다. 외부 물 입력을 허용하는 U-input에 닫힌 보존 예를 그대로 적용하지 않는다.
 
 ---
 
@@ -182,7 +182,7 @@
 
 
 
-작성: **2026-10-28 / Asia/Seoul**. [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|18]]의 A를 심화한다. 제목의 보호는 지정 관측의 허용오차를 뜻하며 전체 시뮬레이션 불변을 뜻하지 않는다.
+작성: **2026-10-28 / Asia/Seoul**. [[01_Judgment-and-History#source-18-research-landscape-and-selection|18]]
 
 
 
@@ -494,7 +494,7 @@ A는 **보호 대상을 반응 진행에 맞게 정하고, 실제 입력의 자�
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]은 반응 진행 z에서 필요한 양수 Heat 입력을 복원한다. 입력 여유가 있는 제한 연속 모델에서 동일 endpoint·동일 총 입력과 다른 중간 진행의 국소 해가 존재함을 유도했다. 실제 event/contact 입력과 공간 Geometry 결합의 성공은 아직 확인하지 않았다. Heat decay는 실제 코드에 맞춰 비례 감쇠가 아닌 상수 양 감소로 대응했다.
+[[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]일 endpoint·동일 총 입력과 다른 중간 진행의 국소 해가 존재함을 유도했다. 실제 event/contact 입력과 공간 Geometry 결합의 성공은 아직 확인하지 않았다. Heat decay는 실제 코드에 맞춰 비례 감쇠가 아닌 상수 양 감소로 대응했다.
 
 ---
 
@@ -504,7 +504,7 @@ A는 **보호 대상을 반응 진행에 맞게 정하고, 실제 입력의 자�
 
 ### 보호 편집의 양수 입력 구성과 유입 반응의 경쟁 계약
 
-작성: **2026-10-28 / Asia/Seoul**. [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]와 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]의 후속.
+작성: **2026-10-28 / Asia/Seoul**. [[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]과 [[01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]
 
 **코드·문헌·기호 분석만 수행했다. 앱·GPU·빌드·수치 실험·학습 및 제품 코드 변경은 없다.** 아래 양수 입력의 존재는 제한된 연속 국소 모델의 결과이며 production contact/GPU의 성공 사례가 아니다.
 
@@ -683,7 +683,7 @@ $$
 
 기각 기준도 유지한다. A가 analytic seed+표준 constrained optimizer로 충분하면 특화 최적화 기여를 낮춘다. B가 표준 배분·거리/시간 kinetics·기존 공간 이산화로 충분하면 중요한 모델 개선은 될 수 있어도 새로운 수치 알고리즘 주장으로 확대하지 않는다.
 
-**후속 조작 범위 보정:** 이 문서의 `u[z]≥0`는 두 실행의 입력이 각각 양수라는 뜻이다. 기존 입력에 대한 차이 `δu`까지 양수라는 뜻은 아니다. 동일 총 입력의 비자명한 구성은 기존 Heat 공급의 시간 재배치를 사용할 수 있어야 한다. 유한 contact basis·한쪽 방향 조작·보호 조건의 국소 차원과 시간별 Geometry 재생 대조는 [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]를 따른다.
+**후속 조작 범위 보정:** 이 문서의 `u[z]≥0`는 두 실행의 입력이 각각 양수라는 뜻이다. 기존 입력에 대한 차이 `δu`까지 양수라는 뜻은 아니다. 동일 총 입력의 비자명한 구성은 기존 Heat 공급의 시간 재배치를 사용할 수 있어야 한다. 유한 contact basis·한쪽 방향 조작·보호 조건의 국소 차원과 시간별 Geometry 재생 대조는 [[01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]
 
 ---
 
@@ -693,7 +693,7 @@ $$
 
 ### 보호 편집의 실제 자유도와 공유 형상의 기여 판정
 
-작성: **2026-10-28 / Asia/Seoul**. [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]], [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]의 후속.
+작성: **2026-10-28 / Asia/Seoul**. [[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]와 [[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]
 
 **코드 읽기·기호 추론·문헌 대조만 수행했다. 앱·GPU·빌드·수치 실험·학습 및 제품 코드 변경은 없다.** 본문은 제한 모델의 정리, 현재 구현 계약, 미구현 연구 가설을 분리한다.
 
@@ -737,7 +737,7 @@ $$
 
 #### 4. 무엇을 보호할지에 따라 이미 불가능한 요구가 있다
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|12 §5.2]]가 유도한 현 IceReactionLab의 cap 아래·cavity 0·반응만 있는 한 texel에서, world 요청 높이는
+[[02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|12 §5.2]]에서, world 요청 높이는
 
 $$
 g(i,w)=0.035i+0.0063w,\quad i+w=M,\quad
@@ -781,7 +781,7 @@ $$
 
 **현재 판정:** A는 가장 목적에 맞는 연구 후보지만, 새 방법과 SIGGRAPH 수준의 기여는 미입증이다. B의 inflowFraction 의미는 편집기의 forward model에 반드시 반영해야 하는 계약이다. E의 계산 축소는 독립된 제한 탐색으로 둔다. 다음 비실행 분석은 가능한 접촉 basis의 실제 범위와 목표·보호 관측의 독립성을 문서/코드에서 감사하는 것이다.
 
-**후속 감사:** [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]]에서 실제 DemoAnim의 `b_heated` Heat Add 48개를 확인했다. 같은 stamp의 서로 다른 두 사건 strength를 `±ε`로 바꾸면, 일정한 transform/Profile 조건에서 각 texel의 시간 합산 요청 InputDelta를 보존하는 유한 입력 방향이 존재한다. 이는 실제 최종 State/보호 목표의 일치나 새 최적화 방법의 성공을 뜻하지 않는다.
+**후속 감사:** [[01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]] 서로 다른 두 사건 strength를 `±ε`로 바꾸면, 일정한 transform/Profile 조건에서 각 texel의 시간 합산 요청 InputDelta를 보존하는 유한 입력 방향이 존재한다. 이는 실제 최종 State/보호 목표의 일치나 새 최적화 방법의 성공을 뜻하지 않는다.
 
 ---
 
@@ -791,7 +791,7 @@ $$
 
 ### 실제 Contact 입력 공간 감사와 예산 중립 편집의 최소 구성
 
-작성: **2026-10-28 / Asia/Seoul**. [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]의 ‘실제 조작 가능 범위’ 질문을 코드와 현 자산에서 감사했다.
+작성: **2026-10-28 / Asia/Seoul**. [[01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]
 
 **코드·자산의 정적 읽기와 대수 분석만 수행했다. 앱·GPU·빌드·수치 실험·학습 및 제품 코드 변경은 없다.** 아래의 48개 사건은 파일에 선언된 입력 좌표이며, 서로 독립적인 최종 결과를 만든다고 검증한 것은 아니다.
 

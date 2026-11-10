@@ -204,7 +204,7 @@ PERF-042의 M은 U와 같은 production flux shader 및 공통 Reaction/Geometry
 | P6 | `7165b5d986c65923b99bfce409d19e4827947243c964ee49b951437c734f88b6` |
 | P7 | `1d5c9057cc7d6912a114e60b9d994082ec700eb9ebeb24bed1248b4afd23737c` |
 
-관련: [[04_Development/04_System-Contribution-Protocol|H1–H4 명세]], [[04_Development/05_Modular-Baseline-Spec|Baseline v1]], [[05_Experiments/02_Performance-Measurements|PERF-041/042]].
+관련: [[04_System-Contribution-Protocol|H1–H4 명세]], [[05_Modular-Baseline-Spec|Baseline v1]], [[05_Experiments/02_Performance-Measurements|PERF-041/042]].
 
 ## 11. 후속 실험 연결 — 2026-10-27
 
@@ -214,7 +214,7 @@ PERF-042의 M은 U와 같은 production flux shader 및 공통 Reaction/Geometry
 
 ## 12. 제작 연구의 실행 가능성 후속 점검 — 2026-10-27
 
-[[04_Development/07_Authoring-Study-Protocol|제작 과제 명세]]를 준비하고 실제 Profile loader/registry/기본 외관 binding 5건을 검사했다. `wetness`의 수치 등록과 `absorbedwetness`에 연결된 기본 외관은 구분된다. 현 M은 U와 같은 Profile workflow를 쓰는 headless 조정자여서 backend 선택만으로 인간 제작 시간의 차이를 식별할 수 없다. 현재 공정한 비교 연구는 No-Go이며 단일 시스템 pilot 과제 3개만 준비했다.
+[[07_Authoring-Study-Protocol|제작 과제 명세]]를 준비하고 실제 Profile loader/registry/기본 외관 binding 5건을 검사했다. `wetness`의 수치 등록과 `absorbedwetness`에 연결된 기본 외관은 구분된다. 현 M은 U와 같은 Profile workflow를 쓰는 headless 조정자여서 backend 선택만으로 인간 제작 시간의 차이를 식별할 수 없다. 현재 공정한 비교 연구는 No-Go이며 단일 시스템 pilot 과제 3개만 준비했다.
 
 앱 화면 확인은 첫 조건이 Windows Application Control 오류 4551로 실행 전에 차단돼 완료하지 못했다. 인간 session·화면·제작 시간 결과는 없다. 이 readiness 결과를 시스템 기여의 새 증거로 해석하거나 현재 판정을 상향하지 않는다. 소스 근거·과제·차단 기록과 재개 조건은 위 문서를 따른다.
 

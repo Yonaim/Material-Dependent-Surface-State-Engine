@@ -16,7 +16,7 @@
 
 세 방향 모두 아직 신규 해법을 발견한 것은 아니다. 1+2의 목적 적합성과 3의 문제 명확성을 구분한다. 세 개를 한 논문에 모두 넣는 계획은 권하지 않는다. 3이 1+2의 역설계 가속에 유용할 수는 있지만 그 연결을 초기 필수 범위로 만들지 않는다.
 
-현재 구현의 판정은 [[04_Development/06_Prior-Model-Differentiation|기존 연구의 시스템 통합에 가깝다]]를 유지한다. 중단된 AUTH-GOAL-01은 10초까지만 관측했고 완료 여부 미평가다. 그 과제를 제작 난제의 실증 반례로 사용하지 않는다.
+현재 구현의 판정은 [[06_Prior-Model-Differentiation|기존 연구의 시스템 통합에 가깝다]]를 유지한다. 중단된 AUTH-GOAL-01은 10초까지만 관측했고 완료 여부 미평가다. 그 과제를 제작 난제의 실증 반례로 사용하지 않는다.
 
 ## 2. 근거 수준과 접근 범위
 
@@ -254,7 +254,7 @@ q_{n+1}=\mathcal R_\theta(\mathcal T_\theta(q_n,G_n,u_n),\;\text{positiveInput}_
 | R10 | Milzow 등 2010, [Accounting for subgrid scale topographic variations in flood propagation modeling using MODFLOW](https://doi.org/10.1029/2009WR008088) | 출판사 검색 색인의 초록·§1/4 관련 원문. 직접 DOI 열기는 실패 | subgrid 지형의 수위 의존 통과/저장 함수와 fine 사전 계산은 기존 |
 | R11 | [Use of upscaled elevation and surface roughness data in two-dimensional surface water models](https://www.sciencedirect.com/science/article/abs/pii/S0309170811000303) | 출판사 초록/소개·highlights 수준 | cell와 face 평균화·통로 정보의 활용도 비교 대상. 전체 세부 수치법 검토는 남음 |
 
-새 세부 해법을 선택하기 전 R7/R9/R10/R11의 미확인 원문 절과 실제 사용할 기존 closure/optimizer의 정확한 조건을 추가 확인해야 한다. 검색 요약만으로 이들의 미지원 기능을 단정하지 않는다. 기존 Günther/Chen/Lo 등과의 비교는 [[04_Development/06_Prior-Model-Differentiation|이전 분석]]을 함께 적용한다.
+새 세부 해법을 선택하기 전 R7/R9/R10/R11의 미확인 원문 절과 실제 사용할 기존 closure/optimizer의 정확한 조건을 추가 확인해야 한다. 검색 요약만으로 이들의 미지원 기능을 단정하지 않는다. 기존 Günther/Chen/Lo 등과의 비교는 [[06_Prior-Model-Differentiation|이전 분석]]을 함께 적용한다.
 
 ## 8. 실행을 재개할 때의 최소 의사결정 순서 — 현재는 미실행
 

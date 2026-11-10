@@ -10,14 +10,14 @@
 
 ## 이 문서의 원본 절
 
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-00-overview|00_Overview.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-02-evidence-and-current-judgment|02_Evidence-and-Current-Judgment.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-03-contribution-candidates|03_Contribution-Candidates.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-08-research-agenda|08_Research-Agenda.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|18_Research-Landscape-and-Selection.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-00-overview-historical-notes|90_Reference/00_Overview-Historical-Notes.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-01-discussion-history|90_Reference/01_Discussion-History.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|90_Reference/09_Analytical-Findings.md]]
+- [[01_Judgment-and-History#source-00-overview|00_Overview.md]]
+- [[01_Judgment-and-History#source-02-evidence-and-current-judgment|02_Evidence-and-Current-Judgment.md]]
+- [[01_Judgment-and-History#source-03-contribution-candidates|03_Contribution-Candidates.md]]
+- [[01_Judgment-and-History#source-08-research-agenda|08_Research-Agenda.md]]
+- [[01_Judgment-and-History#source-18-research-landscape-and-selection|18_Research-Landscape-and-Selection.md]]
+- [[01_Judgment-and-History#source-reference-00-overview-historical-notes|90_Reference/00_Overview-Historical-Notes.md]]
+- [[01_Judgment-and-History#source-reference-01-discussion-history|90_Reference/01_Discussion-History.md]]
+- [[01_Judgment-and-History#source-reference-09-analytical-findings|90_Reference/09_Analytical-Findings.md]]
 
 원본 25개 파일의 수정 전 사본과 SHA-256 목록은 `Original-25-Notes.zip`에 있다. 아래 절은 원문의 수식과 당시 판단을 보존하며, 링크와 제목 수준만 새 위치에 맞췄다.
 
@@ -45,7 +45,7 @@ MDSSP는 다중 Surface State·Reaction·State-Driven Geometry Coupling을 구�
 | **필독 2** | [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-02-evidence-and-current-judgment|확보한 증거와 현 판정]] | 실제 구현·실험·미검증을 구분 | §1–5 |
 | **필독 3** | [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-03-contribution-candidates|Contribution 후보 장부]] | 현재 후보와 강한 심사 반론 | 맨 앞 **현재 후보 표**. 자세한 반론은 §1–4, 후속 판단은 §10–14 |
 
-다음 실험/판정 순서가 필요하면 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-08-research-agenda|연구 과제]]를 본다. 여러 방향을 다시 비교할 때만 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|방향 확장 비교]]를 읽는다. 출처를 확인할 때는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|문헌 장부]]에서 해당 주제의 ID와 실제 열람 범위를 확인한다.
+다음 실험/판정 순서가 필요하면 [[01_Judgment-and-History#source-08-research-agenda|연구 과제]]를 본다. 여러 방향을 다시 비교할 때만 [[01_Judgment-and-History#source-18-research-landscape-and-selection|방향 확장 비교]]를 읽는다. 출처를 확인할 때는 [[01_Related-Work#source-reference-07-related-work|문헌 장부]]에서 해당 주제의 ID와 실제 열람 범위를 확인한다.
 
 #### 현재 연구 우선순위
 
@@ -75,7 +75,7 @@ MDSSP는 다중 Surface State·Reaction·State-Driven Geometry Coupling을 구�
 - **[C]** 코드를 직접 확인한 현재 구현, **[E]** 실행된 실험, **[P]** 문헌에서 확인한 범위, **[D]** 조건부 수식 유도, **[H]** 제안 또는 미검증 가설로 구분한다.
 - 2026-10-27 이전 완료된 실험의 정본은 [[05_Experiments/02_Performance-Measurements|Performance Measurements]]와 [[05_Experiments/01_Validation-and-Tests|Validation]]이다. 연구 폴더에는 해석과 링크만 둔다.
 - 이전 문서의 ‘1순위’는 **그 시점의 판단**이다. 현재 우선순위는 이 문서와 후보 장부의 최신 절을 따른다.
-- 제품의 현행 계산 계약은 [[02_Architecture/03_System-Map|Architecture]], 진행 중인 일은 [[04_Development/00_Current-Work|Current Work]]를 따른다. 긴 이전 개요는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-00-overview-historical-notes|보존본]]에 있다.
+- 제품의 현행 계산 계약은 [[03_System-Map|Architecture]], 진행 중인 일은 [[00_Current-Work|Current Work]]를 따른다. 긴 이전 개요는 [[01_Judgment-and-History#source-reference-00-overview-historical-notes|보존본]]에 있다.
 
 ---
 
@@ -117,7 +117,7 @@ PERF-043 최초 33회의 production SPIR-V 사전 보관 누락은 남아 있다
 - scratch 저장 형식 변경 시 descriptor layout/set을 삭제한 문제를 buffer 재연결로 수정했다. 12회 형식 전환 회귀·기존 GPU 검사·실제 앱 6조건/2,172 Step 검증을 통과했다. 수정 전후 18개 State 배열 일치. 일반적인 GPU 자원 수명 수정이다.
 - 제작 계측을 켠 기존 6초 대조는 최종 State 3개 배열이 이전 정상 실행과 비트 일치했다. 전체 저장소 테스트 또는 물리 정확도 검사로 확대하지 않는다.
 
-정본: [[05_Experiments/01_Validation-and-Tests|Validation and Tests]], [[04_Development/07_Authoring-Study-Protocol|제작 명세 §7–10]]. 이전 OS 차단·잘못된 경로·불완전 캡처·Vulkan 오류는 별도 보존돼 있다.
+정본: [[05_Experiments/01_Validation-and-Tests|Validation and Tests]], [[07_Authoring-Study-Protocol|제작 명세 §7–10]]. 이전 OS 차단·잘못된 경로·불완전 캡처·Vulkan 오류는 별도 보존돼 있다.
 
 #### 4. 첫 제작 후보의 중단 상태
 
@@ -129,7 +129,7 @@ AUTH-GOAL-01 첫 Profile 후보는 spread .30, gravity .05, Waterfilm decay .10,
 
 현재 지지되는 설명은 **고정 UV graph의 다중 비음수 State 수송·국소 반응·공유 형상 갱신을 공통 계약으로 제공하는 현상학적 시스템**이다. 구현이 작동한다는 증거와 기존 범용 모델보다 중요한 제약을 해결했다는 증거는 다르다.
 
-아직 없는 증거는 선행모델 대비 중요한 표현/제어 이점, 새 알고리즘의 필요·효과, 사람의 제작 생산성, 새 Mesh 일반화, 미측정 비용 우위다. 현재 분류는 **③ 시스템 통합**이며, [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-03-contribution-candidates|후속 후보]]를 검증한 뒤에만 판정을 재검토한다.
+아직 없는 증거는 선행모델 대비 중요한 표현/제어 이점, 새 알고리즘의 필요·효과, 사람의 제작 생산성, 새 Mesh 일반화, 미측정 비용 우위다. 현재 분류는 **③ 시스템 통합**이며, [[01_Judgment-and-History#source-03-contribution-candidates|후속 후보]]를 검증한 뒤에만 판정을 재검토한다.
 
 ---
 
@@ -141,7 +141,7 @@ AUTH-GOAL-01 첫 Profile 후보는 spread .30, gravity .05, Waterfilm decay .10,
 
 
 
-현재 안내 갱신: **2026-11-03**. 아래 유력도는 채택 확률이 아니라 **현재 근거와 연구 추진 가치의 질적 판단**이다. 현재 강한 Contribution으로 확정된 후보는 없다. §1–9는 탐색 과정의 판단을 보존한다. 현재 판단은 다음 표와 §10–14, 빠른 읽기는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-00-overview|연구 안내]]를 따른다.
+현재 안내 갱신: **2026-11-03**. 아래 유력도는 채택 확률이 아니라 **현재 근거와 연구 추진 가치의 질적 판단**이다. 현재 강한 Contribution으로 확정된 후보는 없다. §1–9는 탐색 과정의 판단을 보존한다. 현재 판단은 다음 표와 §10–14, 빠른 읽기는 [[01_Judgment-and-History#source-00-overview|연구 안내]]를 따른다.
 
 
 
@@ -159,7 +159,7 @@ AUTH-GOAL-01 첫 Profile 후보는 spread .30, gravity .05, Waterfilm decay .10,
 
 
 
-**읽는 방법:** 지금 결론만 필요하면 위 표와 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-02-evidence-and-current-judgment|증거·현 판정]]을 읽는다. 수식·반례를 검토할 때만 해당 절의 링크로 내려간다. [C] 코드, [E] 실행 증거, [D] 조건부 유도, [H] 제안을 혼동하지 않는다.
+**읽는 방법:** 지금 결론만 필요하면 위 표와 [[01_Judgment-and-History#source-02-evidence-and-current-judgment|증거·현 판정]]을 읽는다. 수식·반례를 검토할 때만 해당 절의 링크로 내려간다. [C] 코드, [E] 실행 증거, [D] 조건부 유도, [H] 제안을 혼동하지 않는다.
 
 
 
@@ -223,7 +223,7 @@ GPU 사용, 여러 State 채널, 2-pass gather, outgoing limiter, Normal Map 적
 
 
 
-세부 정식화와 제안은 [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-04-inverse-authoring|방향1]], [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-05-protected-editing|방향2]], [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-06-coarse-reactive-transport|방향3]]을 따른다.
+세부 정식화와 제안은 [[01_Goal-and-Protected-Editing#source-authoring-04-inverse-authoring|방향1]], [[01_Goal-and-Protected-Editing#source-authoring-05-protected-editing|방향2]], [[02_Coarse-Models-and-Limits#source-analysis-06-coarse-reactive-transport|방향3]]을 따른다.
 
 
 
@@ -231,7 +231,7 @@ GPU 사용, 여러 State 채널, 2-pass gather, outgoing limiter, Normal Map 적
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|후속 분석]]에서 방향1의 capped 관측 모호성, 방향2의 threshold 아래 0 민감도, 방향3의 동일 이차 모멘트/상이한 융해 request와 capped 높이 평균화 반례를 유도했다. 문제의 구체성은 높아졌지만 실제 허용 rollout·보호 과제·새 closure의 성공을 확인하지 않았으므로 위 유력도는 상향하지 않는다.
+[[01_Judgment-and-History#source-reference-09-analytical-findings|후속 분석]]에서 방향1의 capped 관측 모호성, 방향2의 threshold 아래 0 민감도, 방향3의 동일 이차 모멘트/상이한 융해 request와 capped 높이 평균화 반례를 유도했다. 문제의 구체성은 높아졌지만 실제 허용 rollout·보호 과제·새 closure의 성공을 확인하지 않았으므로 위 유력도는 상향하지 않는다.
 
 
 
@@ -239,7 +239,7 @@ GPU 사용, 여러 State 채널, 2-pass gather, outgoing limiter, Normal Map 적
 
 
 
-후속 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|심화 추론]]은 방향3에서 **같은 전체 State histogram·같은 고정 graph·외부 순유량 0이어도 내부 이동량과 inflowFraction 전환량이 다른 네 texel 반례**를 제시했다. 알고리즘 탐색의 우선순위는 방향3이 가장 구체적이다. 다만 hop 기반 규칙의 격자 의존성을 보존할 필요, edge 정보의 독립 갱신, 표준 graph/microgrid/fine Sparse 대비 비용을 입증해야 한다. 신규성이 확보됐다는 평가로 상향하지 않는다.
+후속 [[02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|심화 추론]]은 방향3에서 **같은 전체 State histogram·같은 고정 graph·외부 순유량 0이어도 내부 이동량과 inflowFraction 전환량이 다른 네 texel 반례**를 제시했다. 알고리즘 탐색의 우선순위는 방향3이 가장 구체적이다. 다만 hop 기반 규칙의 격자 의존성을 보존할 필요, edge 정보의 독립 갱신, 표준 graph/microgrid/fine Sparse 대비 비용을 입증해야 한다. 신규성이 확보됐다는 평가로 상향하지 않는다.
 
 
 
@@ -251,7 +251,7 @@ GPU 사용, 여러 State 채널, 2-pass gather, outgoing limiter, Normal Map 적
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|정확한 최소 모델]]에서 닫힌 두 texel의 내부 이동/유입 전환은 총량 m과 잔여 반응 잠재량 p로 독립 갱신할 수 있고, 내부 모드를 생략할 때의 미래 총 잔류 오차를 p로 제한할 수 있음을 유도했다. **일반 block의 외부 port·잔류 위치·동적 Geometry에서는 아직 닫히지 않는다.** 두 셀의 변수 변환 자체가 차원/속도 개선은 아니며, 이미 구현된 기능도 아니다.
+[[02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|정확한 최소 모델]]에서 닫힌 두 texel의 내부 이동/유입 전환은 총량 m과 잔여 반응 잠재량 p로 독립 갱신할 수 있고, 내부 모드를 생략할 때의 미래 총 잔류 오차를 p로 제한할 수 있음을 유도했다. **일반 block의 외부 port·잔류 위치·동적 Geometry에서는 아직 닫히지 않는다.** 두 셀의 변수 변환 자체가 차원/속도 개선은 아니며, 이미 구현된 기능도 아니다.
 
 
 
@@ -263,11 +263,11 @@ GPU 사용, 여러 State 채널, 2-pass gather, outgoing limiter, Normal Map 적
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|방법별 판정]]에서 A(내부 반응 잠재량·port 기반 block)를 알고리즘 탐색 1순위, B(보호 목적에 맞춘 편집/축소)를 목적 적합성 1순위로 유지한다. C(제한적 보호 인증)는 보조 후보, 방향1은 B의 목표/평가다. R25–R33의 memory·목적별 ROM·hybrid verification·reward abstraction·positive reduction·maximum principle 선례 때문에 단순 조합의 신규성은 여전히 낮다.
+[[02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|방법별 판정]]에서 A(내부 반응 잠재량·port 기반 block)를 알고리즘 탐색 1순위, B(보호 목적에 맞춘 편집/축소)를 목적 적합성 1순위로 유지한다. C(제한적 보호 인증)는 보조 후보, 방향1은 B의 목표/평가다. R25–R33의 memory·목적별 ROM·hybrid verification·reward abstraction·positive reduction·maximum principle 선례 때문에 단순 조합의 신규성은 여전히 낮다.
 
 
 
-2026-10-28 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-14-residual-budget-critical-review|추가 고찰]]에서 A를 더 좁혔다. 열린 경계/중력에도 조건부 potential 상한을 만들 수 있지만, cycle을 무기한 허용하면 전체 물량 bound로 퇴화한다. 유한 시간·outgoing 비율·gross inflow budget은 이 한계를 완화하나, 잔류 오차만으로 물 수송/Geometry의 생략을 정당화할 수 없다. 첫 방법은 fine 메모리를 유지하는 제한적 연산 생략으로 검토하고, 수송/경계 관측을 함께 보호해야 한다. R34–R35의 표준 Bellman 원리와 겹치므로 후보의 신규성 평가는 상향하지 않는다.
+2026-10-28 [[03_Error-Control-and-Sparse#source-analysis-14-residual-budget-critical-review|추가 고찰]]에서 A를 더 좁혔다. 열린 경계/중력에도 조건부 potential 상한을 만들 수 있지만, cycle을 무기한 허용하면 전체 물량 bound로 퇴화한다. 유한 시간·outgoing 비율·gross inflow budget은 이 한계를 완화하나, 잔류 오차만으로 물 수송/Geometry의 생략을 정당화할 수 없다. 첫 방법은 fine 메모리를 유지하는 제한적 연산 생략으로 검토하고, 수송/경계 관측을 함께 보호해야 한다. R34–R35의 표준 Bellman 원리와 겹치므로 후보의 신규성 평가는 상향하지 않는다.
 
 
 
@@ -275,7 +275,7 @@ GPU 사용, 여러 State 채널, 2-pass gather, outgoing limiter, Normal Map 적
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-15-joint-state-error-and-geometry-bounds|15]]에서 단일 Incoming 전환 모델의 **물+잔류 공간 L1 오차**를 실제 flux 차이로 제한했다. raw edge 일부 삭제는 limiter 재분배를 고려해도 한 Step 2V 상한을 갖는다. 한편 고정 계수에서도 반응이 실행 간 오차를 증폭하는 두 texel 반례가 있으므로, 총량 보존을 근거로 장기 오차 비증폭을 가정할 수 없다.
+[[03_Error-Control-and-Sparse#source-analysis-15-joint-state-error-and-geometry-bounds|15]]에서 단일 Incoming 전환 모델의 **물+잔류 공간 L1 오차**를 실제 flux 차이로 제한했다. raw edge 일부 삭제는 limiter 재분배를 고려해도 한 Step 2V 상한을 갖는다. 한편 고정 계수에서도 반응이 실행 간 오차를 증폭하는 두 texel 반례가 있으므로, 총량 보존을 근거로 장기 오차 비증폭을 가정할 수 없다.
 
 
 
@@ -287,7 +287,7 @@ GPU 사용, 여러 State 채널, 2-pass gather, outgoing limiter, Normal Map 적
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-16-low-cost-certificates-and-sleep-horizons|16]]에서는 민감도 recurrence 대신 공통 하한·수지를 써서 두 실행의 공동 오차를 제한했다. 닫힌 saturation-only 영역의 장기 2B 상한, 중력/limiter를 포함하는 outgoing 비율 α 상한, α 구간별 초기 물량을 사용하는 O(K) 기간 판정을 구성했다. 따라서 방향3은 **저비용 충분조건의 구체적 구성**까지 진전했다. 다만 실제 기간/비용·열린 경계·다중 반응의 유용성은 미입증이다.
+[[03_Error-Control-and-Sparse#source-analysis-16-low-cost-certificates-and-sleep-horizons|16]]에서는 민감도 recurrence 대신 공통 하한·수지를 써서 두 실행의 공동 오차를 제한했다. 닫힌 saturation-only 영역의 장기 2B 상한, 중력/limiter를 포함하는 outgoing 비율 α 상한, α 구간별 초기 물량을 사용하는 O(K) 기간 판정을 구성했다. 따라서 방향3은 **저비용 충분조건의 구체적 구성**까지 진전했다. 다만 실제 기간/비용·열린 경계·다중 반응의 유용성은 미입증이다.
 
 
 
@@ -299,7 +299,7 @@ cap 위 State 변화의 높이 재계산 생략은 이미 `StateFinalize.glsl`�
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]은 공통 유입 cohort·port-time outgoing을 포함한 오차와 block 합성을 유도했다. 그러나 **단순 α-bin block 합성은 동일 조건의 전체 영역 bound보다 느슨**하며, 정확하게 유지되는 이동까지 예산에 넣는다. 이 하위안을 주력 구현 후보에서 보류한다. 방향3 전체의 불가능 판정은 아니다.
+[[03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]은 공통 유입 cohort·port-time outgoing을 포함한 오차와 block 합성을 유도했다. 그러나 **단순 α-bin block 합성은 동일 조건의 전체 영역 bound보다 느슨**하며, 정확하게 유지되는 이동까지 예산에 넣는다. 이 하위안을 주력 구현 후보에서 보류한다. 방향3 전체의 불가능 판정은 아니다.
 
 
 
@@ -311,7 +311,7 @@ cap 위 State 변화의 높이 재계산 생략은 이미 `StateFinalize.glsl`�
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|18]]에서 기존 1·2·3과 새 분기를 일곱 방향으로 비교했다. 세부 후보가 모두 독립된 Contribution이라는 뜻은 아니다.
+[[01_Judgment-and-History#source-18-research-landscape-and-selection|18]]에서 기존 1·2·3과 새 분기를 일곱 방향으로 비교했다. 세부 후보가 모두 독립된 Contribution이라는 뜻은 아니다.
 
 
 
@@ -343,11 +343,11 @@ cap 위 State 변화의 높이 재계산 생략은 이미 `StateFinalize.glsl`�
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]에서 A의 제약 종속성과 반응 진행 좌표를 유도했다. Heat 전 과정 보호는 제한 모델에서 Ice 진행을 고정하므로 잘못된 편집 과제를 제거할 수 있다. 공급 비율/substep을 포함한 이산 Z는 최종 Ice 보호를 표현하지만, 그 자체는 정보 압축/새 optimizer가 아니다. **A는 목적 적합성 주력 후보를 유지하되 실제 입력 witness·표준법 대비 필요성은 미입증**이다.
+[[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]에서 A의 제약 종속성과 반응 진행 좌표를 유도했다. Heat 전 과정 보호는 제한 모델에서 Ice 진행을 고정하므로 잘못된 편집 과제를 제거할 수 있다. 공급 비율/substep을 포함한 이산 Z는 최종 Ice 보호를 표현하지만, 그 자체는 정보 압축/새 optimizer가 아니다. **A는 목적 적합성 주력 후보를 유지하되 실제 입력 witness·표준법 대비 필요성은 미입증**이다.
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]에서 B의 순수송/교환량 차이, 거리 보정 이후 stencil 방향성, 경쟁 전환의 분할 반례를 유도했다. **B의 문제 정의는 더 구체적**이다. 그러나 표준 병렬 kinetics·gradient absorption PDE·operator splitting을 강한 대조로 추가했으므로 해법 신규성은 올리지 않는다. 네 이웃의 분석을 현 여덟 방향 GPU 오류의 실측으로 취급하지 않는다.
+[[01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]에서 B의 순수송/교환량 차이, 거리 보정 이후 stencil 방향성, 경쟁 전환의 분할 반례를 유도했다. **B의 문제 정의는 더 구체적**이다. 그러나 표준 병렬 kinetics·gradient absorption PDE·operator splitting을 강한 대조로 추가했으므로 해법 신규성은 올리지 않는다. 네 이웃의 분석을 현 여덟 방향 GPU 오류의 실측으로 취급하지 않는다.
 
 
 
@@ -359,7 +359,7 @@ cap 위 State 변화의 높이 재계산 생략은 이미 `StateFinalize.glsl`�
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]에서는 A의 제한 연속 모델에 양수 입력을 직접 구성했다. 입력 여유가 있으면 동일 초기·최종 Ice/Water/Heat와 동일 총 Heat 입력에서도 중간 진행을 바꿀 수 있다. **과제의 조건부 가능성 근거가 강화됐으나, 현 contact/GPU의 성공·새 optimizer의 기여는 아니다.** A를 주력 탐색으로 유지하되 표준 제어/최적화에도 이 구성과 초기값을 허용한다.
+[[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]에서는 A의 제한 연속 모델에 양수 입력을 직접 구성했다. 입력 여유가 있으면 동일 초기·최종 Ice/Water/Heat와 동일 총 Heat 입력에서도 중간 진행을 바꿀 수 있다. **과제의 조건부 가능성 근거가 강화됐으나, 현 contact/GPU의 성공·새 optimizer의 기여는 아니다.** A를 주력 탐색으로 유지하되 표준 제어/최적화에도 이 구성과 초기값을 허용한다.
 
 
 
@@ -371,7 +371,7 @@ B는 현 inflowFraction이 신규 유입 기반 요청을 전체 보유량에서
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]는 21의 양수 입력 witness가 기존 입력의 시간 재배치를 허용한다는 점을 명시했다. 추가만 가능한 조작과 동일 총 입력을 동시에 요구하면 비자명한 입력 편집은 불가능하다. 유한 contact basis에서는 보호 제약의 rank와 입력 bound가 실제 자유도를 결정한다. cap 아래 Ice↔Water 높이의 보호 한계는 이미 12에서 유도했으므로 신규 기여로 중복 계산하지 않는다.
+[[01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]는 21의 양수 입력 witness가 기존 입력의 시간 재배치를 허용한다는 점을 명시했다. 추가만 가능한 조작과 동일 총 입력을 동시에 요구하면 비자명한 입력 편집은 불가능하다. 유한 contact basis에서는 보호 제약의 rank와 입력 bound가 실제 자유도를 결정한다. cap 아래 Ice↔Water 높이의 보호 한계는 이미 12에서 유도했으므로 신규 기여로 중복 계산하지 않는다.
 
 
 
@@ -383,7 +383,7 @@ A의 강한 실험적 질문은 **공유 Geometry가 보호 편집의 가능 범
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]]에서 `b_heated`의 서로 다른 48개 시점에 같은 spatial stamp의 Heat Add가 존재함을 확인했다. 두 strength를 `+ε/−ε`로 조정하면 현재 asset 형식 안에서 texel별 시간 합산 **요청 입력**을 보존할 수 있다. 무한차원 연속 입력 해와 실제 contact basis 사이의 한 공백을 좁혔다. 그러나 최종 State·Geometry·보호 지표를 유지하는 구체적인 접촉 입력은 아직 없다. A의 **문제 실행 가능성 근거만 부분 강화**, 알고리즘 신규성·실험적 성공 등급은 그대로다.
+[[01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]]에서 `b_heated`의 서로 다른 48개 시점에 같은 spatial stamp의 Heat Add가 존재함을 확인했다. 두 strength를 `+ε/−ε`로 조정하면 현재 asset 형식 안에서 texel별 시간 합산 **요청 입력**을 보존할 수 있다. 무한차원 연속 입력 해와 실제 contact basis 사이의 한 공백을 좁혔다. 그러나 최종 State·Geometry·보호 지표를 유지하는 구체적인 접촉 입력은 아직 없다. A의 **문제 실행 가능성 근거만 부분 강화**, 알고리즘 신규성·실험적 성공 등급은 그대로다.
 
 ---
 
@@ -395,7 +395,7 @@ A의 강한 실험적 질문은 **공유 Geometry가 보호 편집의 가능 범
 
 
 
-마지막 갱신: 2026-10-28. [[04_Development/08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
+마지막 갱신: 2026-10-28. [[08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
 
 
 
@@ -403,7 +403,7 @@ A의 강한 실험적 질문은 **공유 Geometry가 보호 편집의 가능 범
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|18]]에서 일곱 방향을 비교했다. 다음 비실행 판별은 **보호 편집의 작은 과제**와 **재질 규칙의 사건·거리·시간 의미 및 해상도 일관성**을 우선한다. 계산 축소는 제한된 별도 탐색으로 남기며, 단순 α-bin block 합성은 보류한다.
+[[01_Judgment-and-History#source-18-research-landscape-and-selection|18]]에서 일곱 방향을 비교했다. 다음 비실행 판별은 **보호 편집의 작은 과제**와 **재질 규칙의 사건·거리·시간 의미 및 해상도 일관성**을 우선한다. 계산 축소는 제한된 별도 탐색으로 남기며, 단순 α-bin block 합성은 보류한다.
 
 
 
@@ -419,11 +419,11 @@ A의 강한 실험적 질문은 **공유 Geometry가 보호 편집의 가능 범
 
 
 
-**A/B 심화 이후의 구체화:** [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]의 A0–A3와 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]의 B0–B4를 후속 명세로 사용한다. A는 보호 요구가 편집 자체를 막는 조건과 실제 입력의 자유도를 먼저 구분한다. B는 거리·방향·경쟁의 표준 해법을 먼저 검토하고 Geometry 결합에서 남는 공백을 찾는다. 둘 다 미실행 명세이며, 성능/제작 효과/신규 알고리즘 성공 기록이 아니다.
+**A/B 심화 이후의 구체화:** [[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]의 A0–A3와 [[01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]의 B0–B4를 후속 명세로 사용한다. A는 보호 요구가 편집 자체를 막는 조건과 실제 입력의 자유도를 먼저 구분한다. B는 거리·방향·경쟁의 표준 해법을 먼저 검토하고 Geometry 결합에서 남는 공백을 찾는다. 둘 다 미실행 명세이며, 성능/제작 효과/신규 알고리즘 성공 기록이 아니다.
 
 
 
-공통 근거는 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 문헌 출처는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], 이후 연구는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다.
+공통 근거는 [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 문헌 출처는 [[01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], 이후 연구는 [[01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다.
 
 
 
@@ -457,7 +457,7 @@ A/B와 D는 독립적인 문제 탐색이지만 실행 자동화나 동시 GPU �
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]에서 ANA-1/2/3의 가정·강한 대조·기각 조건을 정리했다. 이 식별자는 실험 실행 번호가 아니다.
+[[01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]에서 ANA-1/2/3의 가정·강한 대조·기각 조건을 정리했다. 이 식별자는 실험 실행 번호가 아니다.
 
 
 
@@ -477,7 +477,7 @@ A/B와 D는 독립적인 문제 탐색이지만 실행 자동화나 동시 GPU �
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|심화 추론 §9]]의 H3-E/H3-C/H2-P를 따른다. 방향3은 histogram만으로 빠지는 **내부 이동에 따른 유입 전환**을 추가로 다룬다. 먼저 고정 fine 규칙을 보존할 제작 필요와, 표준 microgrid/graph/fine Sparse로 충분하지 않은 이유가 있어야 한다. 방향2는 보존량/수지로 불가능한 요구를 제외한 뒤, 유한 event를 넘는 보호 편집을 표준 optimizer와 비교한다. 세 방향 모두 실행 증거는 추가되지 않았다.
+[[02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|심화 추론 §9]]의 H3-E/H3-C/H2-P를 따른다. 방향3은 histogram만으로 빠지는 **내부 이동에 따른 유입 전환**을 추가로 다룬다. 먼저 고정 fine 규칙을 보존할 제작 필요와, 표준 microgrid/graph/fine Sparse로 충분하지 않은 이유가 있어야 한다. 방향2는 보존량/수지로 불가능한 요구를 제외한 뒤, 유한 event를 넘는 보호 편집을 표준 optimizer와 비교한다. 세 방향 모두 실행 증거는 추가되지 않았다.
 
 
 
@@ -485,11 +485,11 @@ A/B와 D는 독립적인 문제 탐색이지만 실행 자동화나 동시 GPU �
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|최소 모델]]의 두 texel exact closure를 **실험 재개 이후의 첫 sanity reference**로 쓸 수 있다. 아직 실행/구현하지 않는다. 범용화를 위해서는 외부 입력을 받을 signed 내부 상태, port별 장부, 잔류의 위치와 Geometry 재구성, 폐기한 정보의 복원 비용이 필요하다. 잃어버린 fine 정보를 refinement만으로 복구할 수 있다고 가정하지 않는다.
+[[02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|최소 모델]]의 두 texel exact closure를 **실험 재개 이후의 첫 sanity reference**로 쓸 수 있다. 아직 실행/구현하지 않는다. 범용화를 위해서는 외부 입력을 받을 signed 내부 상태, port별 장부, 잔류의 위치와 Geometry 재구성, 폐기한 정보의 복원 비용이 필요하다. 잃어버린 fine 정보를 refinement만으로 복구할 수 있다고 가정하지 않는다.
 
 
 
-‘모든 미래를 보존하는 작은 모델’은 path observability 예제에서 반박된다. 대신 관측·입력 범위·시간·허용오차를 먼저 고정한다. 후보 A/B/C의 알고리즘 공백·강한 Baseline·기각 조건은 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|방법 명세]] §6–8을 따른다. 현재 실행 허가는 없고, 새 PERF 결과도 없다.
+‘모든 미래를 보존하는 작은 모델’은 path observability 예제에서 반박된다. 대신 관측·입력 범위·시간·허용오차를 먼저 고정한다. 후보 A/B/C의 알고리즘 공백·강한 Baseline·기각 조건은 [[02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|방법 명세]] §6–8을 따른다. 현재 실행 허가는 없고, 새 PERF 결과도 없다.
 
 
 
@@ -497,7 +497,7 @@ A/B와 D는 독립적인 문제 탐색이지만 실행 자동화나 동시 GPU �
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-15-joint-state-error-and-geometry-bounds|15]]에서 한 Step의 물·잔류 공동 오차와 고정 계수 전파 상한을 유도하고, 정적 LS 계수로 Normal 민감도를 사전 계산하는 가능성을 확인했다. 다음은 cavity/Decay OFF·단일 Incoming 전환·제한된 거리/중력 margin 조건에서 **State 범위→높이/Normal 범위→계수 차이→오차 장부**를 끝까지 연결하는 일이다.
+[[03_Error-Control-and-Sparse#source-analysis-15-joint-state-error-and-geometry-bounds|15]]에서 한 Step의 물·잔류 공동 오차와 고정 계수 전파 상한을 유도하고, 정적 LS 계수로 Normal 민감도를 사전 계산하는 가능성을 확인했다. 다음은 cavity/Decay OFF·단일 Incoming 전환·제한된 거리/중력 margin 조건에서 **State 범위→높이/Normal 범위→계수 차이→오차 장부**를 끝까지 연결하는 일이다.
 
 
 
@@ -505,7 +505,7 @@ A/B와 D는 독립적인 문제 탐색이지만 실행 자동화나 동시 GPU �
 
 
 
-16에서 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-16-low-cost-certificates-and-sleep-horizons|공통 하한·α-bin 기간 판정]]이라는 대안을 구성했다. 제한 모델에서는 Geometry의 미분 상수 Γ 대신 전체 형상/이동량 범위로 충분조건을 만들 수 있다. 다음 비실행 질문은 **그 범위가 너무 넓어지는 조건을 얼마나 줄일 수 있는가**이다. 특히 열린 경계의 gross 유출입, 높은 해상도에서 α=1로 퇴화하는 조건, 기존 cap 생략과 중복하지 않는 실제 절감 대상을 구분한다. 유용한 기간이 0–1 Step뿐이거나 범위 유지에 fine 갱신만큼의 계산이 들면 추진하지 않는다. 기존 self-triggered/적응형 방법에도 같은 사전 정보와 요약을 허용해야 한다.
+16에서 [[03_Error-Control-and-Sparse#source-analysis-16-low-cost-certificates-and-sleep-horizons|공통 하한·α-bin 기간 판정]]이라는 대안을 구성했다. 제한 모델에서는 Geometry의 미분 상수 Γ 대신 전체 형상/이동량 범위로 충분조건을 만들 수 있다. 다음 비실행 질문은 **그 범위가 너무 넓어지는 조건을 얼마나 줄일 수 있는가**이다. 특히 열린 경계의 gross 유출입, 높은 해상도에서 α=1로 퇴화하는 조건, 기존 cap 생략과 중복하지 않는 실제 절감 대상을 구분한다. 유용한 기간이 0–1 Step뿐이거나 범위 유지에 fine 갱신만큼의 계산이 들면 추진하지 않는다. 기존 self-triggered/적응형 방법에도 같은 사전 정보와 요약을 허용해야 한다.
 
 
 
@@ -513,7 +513,7 @@ A/B와 D는 독립적인 문제 탐색이지만 실행 자동화나 동시 GPU �
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]의 단순 α-bin block 합성은 같은 조건의 전체 영역 bound보다 느슨해 주력 구현안에서 보류한다. 다음 이론 과제는 **근사 때문에 달라진 경계 응답만 제한하면서, 내부 fine 갱신을 피하는 충분조건**이다.
+[[03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]의 단순 α-bin block 합성은 같은 조건의 전체 영역 bound보다 느슨해 주력 구현안에서 보류한다. 다음 이론 과제는 **근사 때문에 달라진 경계 응답만 제한하면서, 내부 fine 갱신을 피하는 충분조건**이다.
 
 
 
@@ -525,7 +525,7 @@ A/B와 D는 독립적인 문제 탐색이지만 실행 자동화나 동시 GPU �
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]에서 A의 양수 입력·동일 endpoint·조건부 동일 총 입력의 해를 구성했다. 다음 비실행 질문은 **그 연속 입력을 현재 contact 위치·event 시점·양으로 표현할 수 있는가**, 그리고 공간 수송/Geometry를 복원하면 보호 조건이 무엇을 더 요구하는가다. analytic seed+표준 constrained optimizer를 강한 대조로 삼는다. 국소 모델에서 만든 해를 production 성공으로 집계하지 않는다.
+[[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]에서 A의 양수 입력·동일 endpoint·조건부 동일 총 입력의 해를 구성했다. 다음 비실행 질문은 **그 연속 입력을 현재 contact 위치·event 시점·양으로 표현할 수 있는가**, 그리고 공간 수송/Geometry를 복원하면 보호 조건이 무엇을 더 요구하는가다. analytic seed+표준 constrained optimizer를 강한 대조로 삼는다. 국소 모델에서 만든 해를 production 성공으로 집계하지 않는다.
 
 
 
@@ -537,7 +537,7 @@ B에서는 현재의 ‘유입에 비례한 요청’과 제안된 ‘신규분�
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]에 따라 실제 contact 조작이 추가만 허용하는지 기존 사건의 양·시간·위치를 재배치할 수 있는지, 독립 입력 수와 보호 조건 수를 먼저 고정한다. 같은 총 입력·항상 빠른 융해·형상 경로 완전 보호 같은 조건이 국소 모델에서 충돌할 수 있으므로, 최적화 실패 사례로 만들기 전에 배제한다.
+[[01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]에 따라 실제 contact 조작이 추가만 허용하는지 기존 사건의 양·시간·위치를 재배치할 수 있는지, 독립 입력 수와 보호 조건 수를 먼저 고정한다. 같은 총 입력·항상 빠른 융해·형상 경로 완전 보호 같은 조건이 국소 모델에서 충돌할 수 있으므로, 최적화 실패 사례로 만들기 전에 배제한다.
 
 
 
@@ -549,7 +549,7 @@ B에서는 현재의 ‘유입에 비례한 요청’과 제안된 ‘신규분�
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]]의 `b_heated` Heat Add 48개를 기준 입력으로 삼을 수 있다. 우선 두 사건의 strength를 `±ε`로 바꾸어 명목상 texel별 총 요청 입력을 보존하는 **입력 공간 대조**를 정의한다. 이것이 최종 Ice/Heat/Water 또는 후속 수송을 보존한다는 가설은 세우지 않는다. 다음은 event strength의 제한된 집합만 조정해 중간 목표와 최종/이웃 보호 지표를 동시에 만족하는지 판정하는 과제다. 다른 instance의 사건을 보상 변수로 섞어 쉬운 성공을 만들지 않는다. 필요하면 이후에 위치·시간 조정까지 허용하되 변경된 조작 범위를 명시한다. 현재 실험 실행은 중지 상태다.
+[[01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]]의 `b_heated` Heat Add 48개를 기준 입력으로 삼을 수 있다. 우선 두 사건의 strength를 `±ε`로 바꾸어 명목상 texel별 총 요청 입력을 보존하는 **입력 공간 대조**를 정의한다. 이것이 최종 Ice/Heat/Water 또는 후속 수송을 보존한다는 가설은 세우지 않는다. 다음은 event strength의 제한된 집합만 조정해 중간 목표와 최종/이웃 보호 지표를 동시에 만족하는지 판정하는 과제다. 다른 instance의 사건을 보상 변수로 섞어 쉬운 성공을 만들지 않는다. 필요하면 이후에 위치·시간 조정까지 허용하되 변경된 조작 범위를 명시한다. 현재 실험 실행은 중지 상태다.
 
 ---
 
@@ -561,7 +561,7 @@ B에서는 현재의 ‘유입에 비례한 요청’과 제안된 ‘신규분�
 
 작성: **2026-10-28 / Asia/Seoul**. 사용자 요청: ‘이번엔 여러 방향으로 연구 방향을 생각하고 정리해봐’.
 
-**현재 구현의 신규 Contribution은 여전히 미입증이다.** 이 문서는 연구 목적을 넓혀 비교한 제안이며, 실험 결과가 아니다. 앱·GPU·빌드·벤치마크·학습·수치 실험을 실행하지 않았고 제품 코드도 변경하지 않았다. 기존 실행 증거는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-02-evidence-and-current-judgment|02]], 계산 계약은 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|10]]을 따른다.
+**현재 구현의 신규 Contribution은 여전히 미입증이다.** 이 문서는 연구 목적을 넓혀 비교한 제안이며, 실험 결과가 아니다. 앱·GPU·빌드·벤치마크·학습·수치 실험을 실행하지 않았고 제품 코드도 변경하지 않았다. 기존 실행 증거는 [[01_Judgment-and-History#source-02-evidence-and-current-judgment|02]], 계산 계약은 [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|10]]을 따른다.
 
 #### 1. 이번에 바꾸는 관점
 
@@ -589,7 +589,7 @@ B에서는 현재의 ‘유입에 비례한 요청’과 제안된 ‘신규분�
 | F. 결합 현상의 원인과 수정 가능성 진단 | 왜 의도한 변화가 안 생겼고, 무엇을 바꿔야 하는가? | 보호 편집의 진단 기능을 별도 검토 | 분석·제작 도구 | 수지 불가능 조건, limiter·Geometry 의존성 | **A의 보조로 우선**. 로그 시각화·일반 counterfactual 최적화 수준 위험 |
 | G. 불확실한 Meso 형상에서도 일관된 연출 | Normal Map 복원의 불확실성이 결과를 얼마나 바꾸며 어떤 규칙을 신뢰할 수 있는가? | 기존 meso 후보의 목표를 복원 정확도에서 동작 강건성으로 변경 | 강건 모델·불확실성 분석 | 복원/수송 코드, PERF-043은 필요성에 약한 근거 | **보류**. 실제 영향이 작거나 표준 복원으로 충분할 가능성 |
 
-현재 가장 먼저 검토할 두 문제는 **A의 제작 목적**과 **B의 모델 의미**다. E는 수학적으로 가장 많이 분석했지만 그 이유만으로 1순위를 유지하지 않는다. 특히 단순 α-bin block 합성은 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]에서 보류했다.
+현재 가장 먼저 검토할 두 문제는 **A의 제작 목적**과 **B의 모델 의미**다. E는 수학적으로 가장 많이 분석했지만 그 이유만으로 1순위를 유지하지 않는다. 특히 단순 α-bin block 합성은 [[03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]에서 보류했다.
 
 #### 3. A — 다른 현상의 진행을 보호하는 편집
 
@@ -748,18 +748,18 @@ $$
 
 #### 11. 근거와 최종 판정
 
-- **코드 확인:** `reactionRequest`, `rawFlux`, Pass2 Incoming 합, `accumulationHeight`. 위 링크와 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|10]] 참조.
+- **코드 확인:** `reactionRequest`, `rawFlux`, Pass2 Incoming 합, `accumulationHeight`. 위 링크와 [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|10]] 참조.
 - **기존 실행:** PERF-041/042/043. 새 실행 없음. 기존 모듈식 대조의 부정 결과를 다른 과제의 부정 결과로 확대하지 않음.
 - **새 유도:** 단일 경로의 분할 의존성, 거리 지수 보정의 제한된 합성 성질, aggregate Incoming의 거리 정보 손실. 새 수학 정리/범용 수렴 보장이라고 주장하지 않음.
-- **문헌:** 기존 R1–R44와 이번 R45–R52. 접근 수준은 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|07]]의 해당 행에 기록. 초록만 본 논문에 대해 미지원 기능을 단정하지 않음.
+- **문헌:** 기존 R1–R44와 이번 R45–R52. 접근 수준은 [[01_Related-Work#source-reference-07-related-work|07]]의 해당 행에 기록. 초록만 본 논문에 대해 미지원 기능을 단정하지 않음.
 
 **현재는 ‘현재 구현만으로 새 기여 확보’가 아니라, ‘기존 시스템을 토대로 서로 다른 연구 문제를 선택할 수 있으나 새 방법의 필요성과 이점을 판별해야 하는 단계’다.** A는 목적 적합성, B는 모델의 약속을 점검하는 명확성, E는 분석의 구체성이 장점이다. 셋 중 어떤 방향도 아직 SIGGRAPH 수준의 기여가 입증된 것은 아니다.
 
 #### 12. 유망 후보 심화 이후
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]는 A의 보호 관측을 좁혔다. 제한된 융해식에서 전체 Heat 진행을 고정하면 Ice 진행도 고정된다. 최종 Ice만 보호할 때는 연속 exposure 또는 실제 공급 비율/substep을 포함한 이산 반응 진행 좌표로 조건을 나타낼 수 있다. 중간 진행의 자유도가 남을 수 있지만 실제 U-input의 feasible witness는 없다. 같은 보호 조건을 받는 표준 constrained optimizer가 강한 대조다.
+[[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]는 A의 보호 관측을 좁혔다. 제한된 융해식에서 전체 Heat 진행을 고정하면 Ice 진행도 고정된다. 최종 Ice만 보호할 때는 연속 exposure 또는 실제 공급 비율/substep을 포함한 이산 반응 진행 좌표로 조건을 나타낼 수 있다. 중간 진행의 자유도가 남을 수 있지만 실제 U-input의 feasible witness는 없다. 같은 보호 조건을 받는 표준 constrained optimizer가 강한 대조다.
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]은 B에서 같은 순수송/다른 incoming 반응, 거리 보정 후에도 남는 네 이웃 모델의 방향 의존성, 두 경쟁 전환의 분할 비일관성을 유도했다. 동시에 표준 병렬 kinetics와 gradient absorption/Hamilton–Jacobi 모델이 대안임을 확인했다. **B의 문제 구체성은 강화됐으나 표준 방법 이상의 해결책 필요성은 아직 미입증**이다. 앱·GPU·수치 실험을 하지 않았으며 A/B의 우선 판별 권고는 유지한다.
+[[01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]은 B에서 같은 순수송/다른 incoming 반응, 거리 보정 후에도 남는 네 이웃 모델의 방향 의존성, 두 경쟁 전환의 분할 비일관성을 유도했다. 동시에 표준 병렬 kinetics와 gradient absorption/Hamilton–Jacobi 모델이 대안임을 확인했다. **B의 문제 구체성은 강화됐으나 표준 방법 이상의 해결책 필요성은 아직 미입증**이다. 앱·GPU·수치 실험을 하지 않았으며 A/B의 우선 판별 권고는 유지한다.
 
 ---
 
@@ -769,7 +769,7 @@ $$
 
 ### 이전 연구 개요 보존본
 
-2026-10-28까지 누적된 긴 개요를 기록용으로 보존했다. 최신 판단과 읽는 순서는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-00-overview|현재 연구 안내]]를 따른다.
+2026-10-28까지 누적된 긴 개요를 기록용으로 보존했다. 최신 판단과 읽는 순서는 [[01_Judgment-and-History#source-00-overview|현재 연구 안내]]를 따른다.
 
 ### MDSSP Research
 
@@ -782,7 +782,7 @@ $$
 - 현 MDSSP의 학술적 판정은 **기존 연구의 시스템 통합에 가깝고, 새로운 Contribution은 아직 미입증**이다.
 - 연구 목표는 물리적으로 정확한 부피 모델보다 **제어 가능한 현상학적·예술적 점유 모델**에 가깝다. 물리 Solver로 바꾸는 것을 논문 통과 조건으로 가정하지 않는다.
 - 새 연구는 **1 목표 진행·후속 반응 역설계 + 2 다른 현상을 보존하는 편집**을 한 축으로, **3 혼합·경로 정보를 유지하는 coarse 표현**을 별도 축으로 검토한다.
-- [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|18의 확장 비교]]는 일곱 연구 방향을 구분한다. 이후 19–22의 분석을 반영한 우선순위는 **보호 편집(A)**의 실제 입력 가능성, **재질 규칙(B)**의 의미 계약, 계산 축소(E)의 별도 제한 탐색이다. 기존 방향1·2·3의 분석을 폐기하는 것이 아니라 연구 목적별 우선순위를 넓혀 재평가한 것이다.
+- [[01_Judgment-and-History#source-18-research-landscape-and-selection|18의 확장 비교]]는 일곱 연구 방향을 구분한다. 이후 19–22의 분석을 반영한 우선순위는 **보호 편집(A)**의 실제 입력 가능성, **재질 규칙(B)**의 의미 계약, 계산 축소(E)의 별도 제한 탐색이다. 기존 방향1·2·3의 분석을 폐기하는 것이 아니라 연구 목적별 우선순위를 넓혀 재평가한 것이다.
 - 사용자가 **4 축적 순서/층 표현 방향은 제외**했다. 이를 후속 필수 기능으로 다시 넣지 않는다.
 - **로컬 앱·GPU·빌드·벤치마크·학습 실행은 중지 상태**다. 이후의 ‘연구 진행’은 명시적 재개 지시 전까지 문헌·기존 코드/자료 읽기·수식 분석·문서 작성으로 수행한다.
 
@@ -826,15 +826,15 @@ $$
 
 #### 기록 원칙
 
-19·20에서는 A의 반응 진행 보호와 B의 순수송/교환·방향·경쟁 반응 의미를 구체화했다. [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]은 제한 연속 모델에서 같은 최종 상태·총 입력을 유지하며 진행을 바꾸는 입력의 존재를 구성하고, 현 inflowFraction의 전체 보유량 제한을 확인했다. [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]는 양수 입력과 추가만 허용하는 편집을 구분하고, 유한 contact basis의 국소 자유도 및 시간별 Geometry 재생 대조를 제안했다. 최신 [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]]은 현 `b_heated`의 48개 Heat 사건에서 예산 중립의 **명목상 입력 방향**을 코드·자산으로 확인했다. **최종 결과 보호·새 해법의 신규성 평가는 여전히 미입증**이다. 현재 Research는 24개 문서이며 실험·제품 코드 변경은 없다.
+19·20에서는 A의 반응 진행 보호와 B의 순수송/교환·방향·경쟁 반응 의미를 구체화했다. [[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]은 제한 연속 모델에서 같은 최종 상태·총 입력을 유지하며 진행을 바꾸는 입력의 존재를 구성하고, 현 inflowFraction의 전체 보유량 제한을 확인했다. [[01_Goal-and-Protected-Editing#source-authoring-22-protected-editability-and-geometry-mediation|22]]는 양수 입력과 추가만 허용하는 편집을 구분하고, 유한 contact basis의 국소 자유도 및 시간별 Geometry 재생 대조를 제안했다. 최신 [[01_Goal-and-Protected-Editing#source-authoring-23-contact-control-space-audit|23]]은 현 `b_heated`의 48개 Heat 사건에서 예산 중립의 **명목상 입력 방향**을 코드·자산으로 확인했다. **최종 결과 보호·새 해법의 신규성 평가는 여전히 미입증**이다. 현재 Research는 24개 문서이며 실험·제품 코드 변경은 없다.
 
 이것은 **대화 전체의 축어록이 아니라, 현재 대화와 연결된 저장소 증거를 재구성한 주제별 기록**이다. 전달된 다른 에이전트의 답변은 인용된 의견으로 취급하며, 실제 코드/문헌/실험으로 확인한 내용과 분리한다. 보이지 않는 과거 발언·정확한 발언 시각을 만들어내지 않는다.
 
 판정 표시는 **[U] 사용자 요청/선택, [C] 코드 확인, [E] 실행 증거, [P] 문헌 확인, [D] 수식/구조 분석, [H] 제안/미검증 가설**로 구분한다. ‘좋아 보임’은 신규성의 증거가 아니며, 선행연구에 없는 것으로 확인하지 못한 기능을 불가능하다고 쓰지 않는다.
 
-연구 정리는 이 폴더에서 갱신한다. 구현 계약은 [[02_Architecture/03_System-Map|Architecture]], 실제 검증은 [[05_Experiments/01_Validation-and-Tests|Validation]], 성능 실험은 [[05_Experiments/02_Performance-Measurements|Performance]]가 정본이다. raw를 이 폴더로 복사하거나 실험마다 별도 결과 설명 문서를 만들지 않는다.
+연구 정리는 이 폴더에서 갱신한다. 구현 계약은 [[03_System-Map|Architecture]], 실제 검증은 [[05_Experiments/01_Validation-and-Tests|Validation]], 성능 실험은 [[05_Experiments/02_Performance-Measurements|Performance]]가 정본이다. raw를 이 폴더로 복사하거나 실험마다 별도 결과 설명 문서를 만들지 않는다.
 
-`03_Development/03–07`은 이전 시점의 명세·분석과 결과 연결을 보존한다. 특히 [[04_Development/08_Research-Directions-123|1·2·3 방향의 최초 통합 검토]]는 역사적 snapshot이며, 이 폴더의 분리 문서가 후속 연구의 정본이다.
+`03_Development/03–07`은 이전 시점의 명세·분석과 결과 연결을 보존한다. 특히 [[08_Research-Directions-123|1·2·3 방향의 최초 통합 검토]]는 역사적 snapshot이며, 이 폴더의 분리 문서가 후속 연구의 정본이다.
 
 ---
 
@@ -854,7 +854,7 @@ $$
 
 원한 결과는 후보 최대 5개, 유망 후보 1–3개의 심층 분석, 강한 Reject 사유, 최종 ① 현 구현의 유의미한 기여 / ② 새 해결책 필요 / ③ 시스템 통합 판정이었다. 현재 기록의 판정은 ③이며, 후속 질문이 ②로 발전할 가능성을 별도로 검토한다.
 
-지정 논문: Günther 2012, Chen 2005, Lo 2007, Vantzos 2018, Azencot 2015, Su 2023, Jain 2024. 후속 직접 대조는 [[04_Development/06_Prior-Model-Differentiation|기존 모델 분석]]을 따른다.
+지정 논문: Günther 2012, Chen 2005, Lo 2007, Vantzos 2018, Azencot 2015, Su 2023, Jain 2024. 후속 직접 대조는 [[06_Prior-Model-Differentiation|기존 모델 분석]]을 따른다.
 
 #### 2. 연구 목적과 명칭의 정리
 
@@ -880,7 +880,7 @@ $$
 
 Ice–Waterfilm–Heat가 대표 사례로 선택됐다. Reaction OFF/ON × Coupling OFF/ON과 초기 축적 직후 형상 고정 조건 E 등을 비교했다. Ice와 Waterfilm 모두 형상에 기여하므로 ‘녹으면 높이가 감소하고 물길이 열린다’를 정답으로 고정하지 않았다. 실제 수송 변화의 방향을 관측한다.
 
-PERF-041/042의 결과로 제한된 Coupling 기전은 확인했지만, 모듈식 대안 대비 확장 부담 우위는 지지되지 않았다. 상세한 완료/미실시 범위는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-02-evidence-and-current-judgment|증거 문서]]를 따른다.
+PERF-041/042의 결과로 제한된 Coupling 기전은 확인했지만, 모듈식 대안 대비 확장 부담 우위는 지지되지 않았다. 상세한 완료/미실시 범위는 [[01_Judgment-and-History#source-02-evidence-and-current-judgment|증거 문서]]를 따른다.
 
 #### 5. Meso·제작 과제와 실행 준비의 경과
 
@@ -906,7 +906,7 @@ AUTH-GOAL-01은 입력을 4초에 종료하고 16초까지 부분 융해·영역
 
 [U] **4번은 제외하고 1·2·3번을 진지하게 연구**하도록 선택했다. 코드·문헌·수식 검토 후, 1을 2의 목표/평가 체계로 결합하고 3을 별도 알고리즘 탐색 축으로 두도록 권고했다. 평균량이 같은 혼합/분리의 다른 초기 냉각률은 코드 식에서 유도했지만, 알려진 closure 문제이고 새 해법은 아니다.
 
-[U] 마지막으로 이 대화를 새 Research 폴더의 여러 Markdown 문서로 기록한 뒤 연구를 이어가도록 요청했다. 이 폴더가 그 기록이며 이후의 분석은 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|연구 노트]]에 연결한다.
+[U] 마지막으로 이 대화를 새 Research 폴더의 여러 Markdown 문서로 기록한 뒤 연구를 이어가도록 요청했다. 이 폴더가 그 기록이며 이후의 분석은 [[01_Judgment-and-History#source-reference-09-analytical-findings|연구 노트]]에 연결한다.
 
 #### 8. 계속 유지하는 사용자 요구
 
@@ -922,7 +922,7 @@ AUTH-GOAL-01은 입력을 4초에 종료하고 16초까지 부분 융해·영역
 
 작성: **2026-10-27 / Asia/Seoul**. 제목의 후속 분석은 `05_Research` 정리 후 수행한 코드·문헌·수식 연구를 뜻한다. **새 앱/GPU/빌드/학습/수치 실험은 실행하지 않았다.** 아래 수치는 현 코드 식에 대입한 유리수·산술 결과이며 PERF 실측이 아니다. 코드 버전은 HEAD `880af1ebcffe601f0bac27413cad94055ce92812`와 기존 미커밋 작업 트리다. 이번 작업에서 제품 코드는 바꾸지 않았다.
 
-증거 표시는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-00-overview|Research 기록 원칙]]을 따른다. [D] 반례는 문제를 구체화하지만, 관측성·비매끄러운 최적화·moment closure의 일반 성질을 새 Contribution으로 주장하지 않는다.
+증거 표시는 [[01_Judgment-and-History#source-00-overview|Research 기록 원칙]]을 따른다. [D] 반례는 문제를 구체화하지만, 관측성·비매끄러운 최적화·moment closure의 일반 성질을 새 Contribution으로 주장하지 않는다.
 
 #### 1. 이번 분석으로 달라진 판단
 
@@ -985,7 +985,7 @@ r_i=0.5I_i(h_i-0.25)_+.
 
 ##### 3.3 중요한 허용 조작 범위의 제한
 
-이 쌍은 **State→관측의 비단사성**을 보인다. [[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-04-inverse-authoring|U-input]]은 초기 Ice를 고정하고 Heat/Waterfilm 입력만 조정하므로, 위 초기 Ice 쌍을 그 과제의 두 해라고 부를 수 없다.
+이 쌍은 **State→관측의 비단사성**을 보인다. [[01_Goal-and-Protected-Editing#source-authoring-04-inverse-authoring|U-input]]은 초기 Ice를 고정하고 Heat/Waterfilm 입력만 조정하므로, 위 초기 Ice 쌍을 그 과제의 두 해라고 부를 수 없다.
 
 별도 **U-seed 진단**으로 초기 Ice contact strength만 4와 8로 바꾸는 구성은 기존 입력 식과 양립한다. 균일 Profile에서 support 전체를 덮는 Falloff=0 contact가 그 후보이며 실제 파일/장면은 아직 만들지 않았다. 이것은 고정 초기 상태 과제에서의 허용 범위를 사후 바꾸는 대조가 아니다. U-seed와 기존 U-input 결과를 별도로 보고한다.
 
@@ -1071,7 +1071,7 @@ Ice가 상수이므로 Ice–Heat 공분산은 모두 0이고, 나머지 채널�
 
 [P] Marchisio & Fox의 QBMM 장 요약도 모멘트에서 node/weight를 복원하는 방식과 다변량 확장을 명시한다. 본문 전체를 읽지는 않았다. [R13, [출판사 요약](https://doi.org/10.1017/CBO9781139016599.004)]
 
-확인 범위와 접근 실패는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|R12–R13 장부]]를 따른다. DQMOM이 MDSSP의 State-dependent transport/capped geometry에 그대로 가장 좋은 방법이라는 결론도 내리지 않는다. 남은 비교 질문은 **반응·점유·경로를 함께 다룰 때 표준 closure의 어떤 가정이 실제로 부족하며, 그 부족분을 작은 독립 갱신 상태로 해결할 수 있는가**다.
+확인 범위와 접근 실패는 [[01_Related-Work#source-reference-07-related-work|R12–R13 장부]]를 따른다. DQMOM이 MDSSP의 State-dependent transport/capped geometry에 그대로 가장 좋은 방법이라는 결론도 내리지 않는다. 남은 비교 질문은 **반응·점유·경로를 함께 다룰 때 표준 closure의 어떤 가정이 실제로 부족하며, 그 부족분을 작은 독립 갱신 상태로 해결할 수 있는가**다.
 
 #### 8. 최소 판별 과제 — 실행 재개 전 명세
 
@@ -1085,6 +1085,6 @@ ANA는 분석 질문 식별자이며 실행 번호/PERF 결과가 아니다. 다
 
 **아직 미해결:** U-input의 실제 허용 해 쌍, 보호 편집의 nontrivial feasible witness, 표준 optimizer의 실패, coarse closure의 장시간 독립 갱신·양수성·수지·경계 통과와 비용, 외관/제작상 중요성. 현재 결론을 Contribution 확보로 상향하지 않는다.
 
-이후 사용자의 심화 추론 요청에 따라 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|입증 조건 문서]]에서 내부 이동량/inflowFraction의 공간 반례, hinge/cap 분석, 대표 상태의 존재와 갱신 한계, 보호 하한·도달 불가능 조건을 추가했다. 이 노트의 초기 반례와 새로운 내용을 구별해 보존한다.
+이후 사용자의 심화 추론 요청에 따라 [[02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|입증 조건 문서]]에서 내부 이동량/inflowFraction의 공간 반례, hinge/cap 분석, 대표 상태의 존재와 갱신 한계, 보호 하한·도달 불가능 조건을 추가했다. 이 노트의 초기 반례와 새로운 내용을 구별해 보존한다.
 
 ---

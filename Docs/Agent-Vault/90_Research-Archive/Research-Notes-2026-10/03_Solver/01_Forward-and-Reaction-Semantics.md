@@ -10,8 +10,8 @@
 
 ## 이 문서의 원본 절
 
-- [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|20_Solver-Semantics/10_Forward-Model-and-Controls.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20_Solver-Semantics/20_Transport-Reaction-Semantics-and-Refinement.md]]
+- [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|20_Solver-Semantics/10_Forward-Model-and-Controls.md]]
+- [[01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20_Solver-Semantics/20_Transport-Reaction-Semantics-and-Refinement.md]]
 
 원본 25개 파일의 수정 전 사본과 SHA-256 목록은 `Original-25-Notes.zip`에 있다. 아래 절은 원문의 수식과 당시 판단을 보존하며, 링크와 제목 수준만 새 위치에 맞췄다.
 
@@ -23,9 +23,9 @@
 
 ### 공통 forward 모델과 코드 근거
 
-마지막 갱신: 2026-10-27. [[04_Development/08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
+마지막 갱신: 2026-10-27. [[08_Research-Directions-123|최초 통합 검토]]이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
 
-문헌 출처는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], 이 계산 구조에서 이어진 연구는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다.
+문헌 출처는 [[01_Related-Work#source-reference-07-related-work|문헌 확인 수준]]과 [[01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]
 
 
 표면 graph를 고정하고 State 총량을 q, Profile/재질 계수를 θ, 사건 입력을 u, 파생 형상을 G라 한다. Dense·고정 시간 간격 경로를 연구 기준으로 삼으면 개념적으로 다음과 같다.
@@ -61,7 +61,7 @@ q_{n+1}=\mathcal R_\theta(\mathcal T_\theta(q_n,G_n,u_n),\;\text{positiveInput}_
 
 
 
-작성: **2026-10-28 / Asia/Seoul**. [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|18]]의 B를 심화한다.
+작성: **2026-10-28 / Asia/Seoul**. [[01_Judgment-and-History#source-18-research-landscape-and-selection|18]]
 
 
 
@@ -415,6 +415,6 @@ B는 이제 **hop 수 보정 하나**보다 넓은 구조적 문제를 갖는다
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]은 여러 inflowFraction rule이 신규 유입보다 많이 소비할 수 있음을 현 loader/validator/packing/shader 경로에서 유도했다. 전체 보유량 제한은 지키므로 이를 곧바로 버그로 부르지 않는다. 신규 유입의 trigger 의미와 eligible-pool 의미, 기존 rule 불변을 요구하는 조합성의 불가능성, net flux를 유지하는 표준 상쇄가 다루는 범위를 구분했다. 새 모델은 구현하지 않았다.
+[[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]을 validator/packing/shader 경로에서 유도했다. 전체 보유량 제한은 지키므로 이를 곧바로 버그로 부르지 않는다. 신규 유입의 trigger 의미와 eligible-pool 의미, 기존 rule 불변을 요구하는 조합성의 불가능성, net flux를 유지하는 표준 상쇄가 다루는 범위를 구분했다. 새 모델은 구현하지 않았다.
 
 ---

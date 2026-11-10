@@ -2,7 +2,7 @@
 
 이 문서는 Solver의 **검증 질문·실행 결과·미실시 범위**와 Surface System의 회귀 테스트를 함께 둔다. 테스트 통과, State 일치, 물리적 타당성, 성능 이득은 서로 다른 주장이다.
 
-현재 계산 계약은 [[02_Architecture/03_System-Map|Architecture]]에서 확인한다. 성능 비교는 [[05_Experiments/02_Performance-Measurements|측정 규칙과 실험 기록]]을 따른다.
+현재 계산 계약은 [[03_System-Map|Architecture]]에서 확인한다. 성능 비교는 [[05_Experiments/02_Performance-Measurements|측정 규칙과 실험 기록]]을 따른다.
 
 
 
@@ -578,8 +578,8 @@ ctest --test-dir Build --output-on-failure
 
 ### 관련
 
-- [[02_Architecture/01_Contracts/02_Assets-and-Profiles|Assets와 Profiles]]
-- [[02_Architecture/02_Source/00_CPP/07_Scene-Input-DebugUI#Debug UI와 profiling|UI Interface]]
+- [[02_Assets-and-Profiles|Assets와 Profiles]]
+- [[07_Scene-Input-DebugUI#Debug UI와 profiling|UI Interface]]
 - Decision 0020 — Scene 참조형 데모 애니메이션
 - 로드맵(별도 문서 미작성)
 

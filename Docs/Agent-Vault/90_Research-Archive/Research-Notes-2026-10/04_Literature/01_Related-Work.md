@@ -9,7 +9,7 @@
 
 ## 이 문서의 원본 절
 
-- [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|90_Reference/07_Related-Work.md]]
+- [[01_Related-Work#source-reference-07-related-work|90_Reference/07_Related-Work.md]]
 
 원본 25개 파일의 수정 전 사본과 SHA-256 목록은 `Original-25-Notes.zip`에 있다. 아래 절은 원문의 수식과 당시 판단을 보존하며, 링크와 제목 수준만 새 위치에 맞췄다.
 
@@ -23,11 +23,11 @@
 
 
 
-마지막 갱신: 2026-10-28. [[04_Development/08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
+마지막 갱신: 2026-10-28. [[08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
 
 
 
-공통 근거는 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 이후 연구는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다. 아래 접근 수준은 각각 구분하며 원문 전체를 읽었다는 뜻이 아니다.
+공통 근거는 [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 이후 연구는 [[01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다. 아래 접근 수준은 각각 구분하며 원문 전체를 읽었다는 뜻이 아니다.
 
 
 
@@ -61,7 +61,7 @@
 
 
 
-새 세부 해법을 선택하기 전 R7/R9/R10/R11의 미확인 원문 절과 실제 사용할 기존 closure/optimizer의 정확한 조건을 추가 확인해야 한다. 검색 요약만으로 이들의 미지원 기능을 단정하지 않는다. 기존 Günther/Chen/Lo 등과의 비교는 [[04_Development/06_Prior-Model-Differentiation|이전 분석]]을 함께 적용한다.
+새 세부 해법을 선택하기 전 R7/R9/R10/R11의 미확인 원문 절과 실제 사용할 기존 closure/optimizer의 정확한 조건을 추가 확인해야 한다. 검색 요약만으로 이들의 미지원 기능을 단정하지 않는다. 기존 Günther/Chen/Lo 등과의 비교는 [[06_Prior-Model-Differentiation|이전 분석]]을 함께 적용한다.
 
 
 
@@ -87,7 +87,7 @@
 
 
 
-아래 자료는 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|심화 추론]]의 기존 수학/방법과 겹치는 부분을 확인하기 위한 것이다. 열람 범위 밖의 세부 성능·보장·미지원 기능은 단정하지 않는다.
+아래 자료는 [[02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|심화 추론]]의 기존 수학/방법과 겹치는 부분을 확인하기 위한 것이다. 열람 범위 밖의 세부 성능·보장·미지원 기능은 단정하지 않는다.
 
 
 
@@ -123,7 +123,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|12의 유도]]와 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|13의 방법 초안]]에서 이미 알려진 부분을 분리하기 위해 확인했다. 검색의 자동 Published/Crawled 날짜 대신 문서 서지를 따른다.
+[[02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|12의 유도]]와 [[02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|13의 방법 초안]]에서 이미 알려진 부분을 분리하기 위해 확인했다. 검색의 자동 Published/Crawled 날짜 대신 문서 서지를 따른다.
 
 
 
@@ -169,7 +169,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-14-residual-budget-critical-review|14의 시간별 potential]]은 위 기존 원리와 구조적으로 겹친다. 본문에서 새로 필요한 부분은 실제 coupled GPU 모델의 허용 edge/flux/입력 budget을 좁고 싸게 유지하는 방법이며 아직 미확보다. 논문의 regret/학습 성능을 MDSSP의 계산 속도 근거로 사용하지 않는다.
+[[03_Error-Control-and-Sparse#source-analysis-14-residual-budget-critical-review|14의 시간별 potential]]은 위 기존 원리와 구조적으로 겹친다. 본문에서 새로 필요한 부분은 실제 coupled GPU 모델의 허용 edge/flux/입력 budget을 좁고 싸게 유지하는 방법이며 아직 미확보다. 논문의 regret/학습 성능을 MDSSP의 계산 속도 근거로 사용하지 않는다.
 
 
 
@@ -189,7 +189,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-15-joint-state-error-and-geometry-bounds|15의 2V 상한·Lipschitz recurrence·정적 LS 민감도]]는 표준 수지/안정성/미분 도구를 현 코드에 적용한 분석이다. 아직 ‘기존 적응법에 Geometry bound를 붙이면 충분한가’를 반박하지 못했다. 위 논문들의 속도 수치를 MDSSP 성능 근거로 사용하지 않는다.
+[[03_Error-Control-and-Sparse#source-analysis-15-joint-state-error-and-geometry-bounds|15의 2V 상한·Lipschitz recurrence·정적 LS 민감도]]는 표준 수지/안정성/미분 도구를 현 코드에 적용한 분석이다. 아직 ‘기존 적응법에 Geometry bound를 붙이면 충분한가’를 반박하지 못했다. 위 논문들의 속도 수치를 MDSSP 성능 근거로 사용하지 않는다.
 
 
 
@@ -209,7 +209,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-16-low-cost-certificates-and-sleep-horizons|16]]의 남은 차별화 후보는 유입 장부·형상 cap·동적 수송을 포함하는 실제 모델에서 충분히 좁은 공통 범위를 낮은 비용으로 유지하는 구체적 방법이다. simplex 지름·질량 bin·만료 예약의 조합만으로 신규성을 확정하지 않는다.
+[[03_Error-Control-and-Sparse#source-analysis-16-low-cost-certificates-and-sleep-horizons|16]]의 남은 차별화 후보는 유입 장부·형상 cap·동적 수송을 포함하는 실제 모델에서 충분히 좁은 공통 범위를 낮은 비용으로 유지하는 구체적 방법이다. simplex 지름·질량 bin·만료 예약의 조합만으로 신규성을 확정하지 않는다.
 
 
 
@@ -229,7 +229,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]에서는 표준 수지/비음수 하한으로 열린 block의 조건부 상한을 직접 유도했다. 단순 합성은 기존 전체 영역 상한보다 느슨하다는 자체 반론을 함께 기록했다. 다음 후보인 limiter/geometry 의존성 기반 경계 계약도 위 기존법 대비 구체적인 필요성과 비용 이점을 입증해야 한다.
+[[03_Error-Control-and-Sparse#source-analysis-17-open-boundary-contracts-and-composition|17]]에서는 표준 수지/비음수 하한으로 열린 block의 조건부 상한을 직접 유도했다. 단순 합성은 기존 전체 영역 상한보다 느슨하다는 자체 반론을 함께 기록했다. 다음 후보인 limiter/geometry 의존성 기반 경계 계약도 위 기존법 대비 구체적인 필요성과 비용 이점을 입증해야 한다.
 
 
 
@@ -237,7 +237,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-18-research-landscape-and-selection|18]]에서 편집·규칙 의미·재사용·상태 식별·LOD·진단·Meso 강건성을 비교했다. 아래는 방향별 직접 또는 인접 선례이며, 완결된 신규성 조사가 아니다.
+[[01_Judgment-and-History#source-18-research-landscape-and-selection|18]]에서 편집·규칙 의미·재사용·상태 식별·LOD·진단·Meso 강건성을 비교했다. 아래는 방향별 직접 또는 인접 선례이며, 완결된 신규성 조사가 아니다.
 
 
 
@@ -271,7 +271,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]와 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]의 조건부 유도에서 표준 원리와 새 연구 공백을 구분하기 위해 확인했다.
+[[01_Goal-and-Protected-Editing#source-authoring-19-protected-editing-feasibility-and-response-coordinates|19]]와 [[01_Forward-and-Reaction-Semantics#source-solver-20-transport-reaction-semantics-and-refinement|20]]의 조건부 유도에서 표준 원리와 새 연구 공백을 구분하기 위해 확인했다.
 
 
 
@@ -301,7 +301,7 @@
 
 
 
-[[90_Research-Archive/Research-Notes-2026-10/02_Authoring/01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]의 분석에서 기존 원리와 남은 연구 질문을 구분하기 위해 확인했다.
+[[01_Goal-and-Protected-Editing#source-authoring-21-constructive-controls-and-reaction-contracts|21]]의 분석에서 기존 원리와 남은 연구 질문을 구분하기 위해 확인했다.
 
 
 

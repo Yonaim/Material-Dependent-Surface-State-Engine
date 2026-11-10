@@ -10,10 +10,10 @@ coarse 평균의 정보 손실, 내부 유입 반응, 닫힌 최소 모델, 방�
 
 ## 이 문서의 원본 절
 
-- [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-06-coarse-reactive-transport|30_Deep-Analysis/06_Coarse-Reactive-Transport.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|30_Deep-Analysis/11_Contribution-Proof-Obligations.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|30_Deep-Analysis/12_Exact-Submodels-and-Limits.md]]
-- [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|30_Deep-Analysis/13_Method-Blueprints-and-Decision.md]]
+- [[02_Coarse-Models-and-Limits#source-analysis-06-coarse-reactive-transport|30_Deep-Analysis/06_Coarse-Reactive-Transport.md]]
+- [[02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|30_Deep-Analysis/11_Contribution-Proof-Obligations.md]]
+- [[02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|30_Deep-Analysis/12_Exact-Submodels-and-Limits.md]]
+- [[02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|30_Deep-Analysis/13_Method-Blueprints-and-Decision.md]]
 
 원본 25개 파일의 수정 전 사본과 SHA-256 목록은 `Original-25-Notes.zip`에 있다. 아래 절은 원문의 수식과 당시 판단을 보존하며, 링크와 제목 수준만 새 위치에 맞췄다.
 
@@ -25,9 +25,9 @@ coarse 평균의 정보 손실, 내부 유입 반응, 닫힌 최소 모델, 방�
 
 ### 방향 3 — 혼합·경로 정보를 유지하는 coarse 표현
 
-마지막 갱신: 2026-10-27. [[04_Development/08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
+마지막 갱신: 2026-10-27. [[08_Research-Directions-123|최초 통합 검토]]에서 분리한 후속 연구 정본이다. 이 파일의 내용은 제안·수식 분석이며 새 구현/실험 결과가 아니다. 로컬 앱·GPU·빌드 실행 중지를 유지한다.
 
-공통 근거는 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 문헌 출처는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], 이후 연구는 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다.
+공통 근거는 [[01_Forward-and-Reaction-Semantics#source-solver-10-forward-model-and-controls|forward 모델]], 문헌 출처는 [[01_Related-Work#source-reference-07-related-work|문헌 확인 수준]], 이후 연구는 [[01_Judgment-and-History#source-reference-09-analytical-findings|분석 노트]]를 따른다.
 
 
 #### 1. 현재 코드에서 직접 유도되는 최소 반례
@@ -51,7 +51,7 @@ coarse 평균의 정보 손실, 내부 유입 반응, 닫힌 최소 모델, 방�
 
 이것은 1·2보다 문제 존재의 근거가 구체적이다. 그러나 평균의 곱과 곱의 평균 차이, covariance closure 자체는 오래된 문제다. [R9]는 segregated initial conditions의 coarse diffusion–reaction에서 단순 rate 보정 이상이 필요함을 다룬다. **이 반례를 발견한 것만으로 신규성은 없다.**
 
-[D] 후속 분석은 두 가지를 더 분리했다. (1) Heat 평균·분산과 모든 State 이차 모멘트가 같은 여섯 셀의 두 분포에서도 현재 ramp 융해의 초기 평균 request는 1/16과 1/24로 다르다. (2) Capacity clamp 때문에 평균 저장량에서 만든 높이와 fine 높이의 평균도 다르다. 각각 threshold 분포와 capped occupancy 정보의 필요성을 보이는 조건부 반례이며, 새 정리나 GPU 결과가 아니다. [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#5. 방향 3A: 모든 이차 State 모멘트도 ramp 반응에는 부족한 반례|후속 분석 §5–6]]에 식과 제한을 기록했다.
+[D] 후속 분석은 두 가지를 더 분리했다. (1) Heat 평균·분산과 모든 State 이차 모멘트가 같은 여섯 셀의 두 분포에서도 현재 ramp 융해의 초기 평균 request는 1/16과 1/24로 다르다. (2) Capacity clamp 때문에 평균 저장량에서 만든 높이와 fine 높이의 평균도 다르다. 각각 threshold 분포와 capped occupancy 정보의 필요성을 보이는 조건부 반례이며, 새 정리나 GPU 결과가 아니다. [[01_Judgment-and-History#5. 방향 3A: 모든 이차 State 모멘트도 ramp 반응에는 부족한 반례|후속 분석 §5–6]]에 식과 제한을 기록했다.
 
 #### 2. ‘해상도 독립’ 대신 분명한 목표
 
@@ -98,7 +98,7 @@ coarse 평균의 정보 손실, 내부 유입 반응, 닫힌 최소 모델, 방�
 
 #### 6. 추가 추론: histogram과 경계 순유량만으로도 부족하다
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#2. 가장 직접적인 새 단서: 순유량이 사라져도 유입 반응은 남는다|심화 추론 §2]]에서 네 texel chain의 (1,1,0,0)/(1,0,1,0)을 비교했다. 같은 histogram·고정 graph·닫힌 coarse 영역이지만 내부 이동량은 λ/3λ, 단일 inflowFraction의 잔류 생성량은 fλ/3fλ다. 현재 연산식의 제한 조건에서 유도한 discrete 한 Step 반례이며 실제 Scene/GPU 재현은 미실행이다.
+[[02_Coarse-Models-and-Limits#2. 가장 직접적인 새 단서: 순유량이 사라져도 유입 반응은 남는다|심화 추론 §2]]에서 네 texel chain의 (1,1,0,0)/(1,0,1,0)을 비교했다. 같은 histogram·고정 graph·닫힌 coarse 영역이지만 내부 이동량은 λ/3λ, 단일 inflowFraction의 잔류 생성량은 fλ/3fλ다. 현재 연산식의 제한 조건에서 유도한 discrete 한 Step 반례이며 실제 Scene/GPU 재현은 미실행이다.
 
 따라서 소수 대표 State만으로 충분하다고 가정하지 않는다. edge 공동 정보·내부 총 이동 장부와 그 독립 갱신이 후보이며, 단순한 graph/microgrid 또는 의미상 적절한 규칙 변경으로 충분하면 새 coarse 기여를 추진하지 않는다. hinge feature·양수 cubature의 존재, 보존성 조건, 실제 새 갱신법이 없는 부분도 심화 추론에 구분했다.
 
@@ -112,7 +112,7 @@ coarse 평균의 정보 손실, 내부 유입 반응, 닫힌 최소 모델, 방�
 
 작성: **2026-10-27 / Asia/Seoul**. 사용자 요청: “새 Contribution이 입증을 위해 가능한 모든 추론을 해봐”. 현재 선택한 방향 1·2·3에서 주요 논리 경로를 확장했다. 모든 가능한 아이디어를 소진했다거나 신규성을 증명했다는 뜻은 아니다.
 
-범위: 코드 읽기·수학적 유도·온라인 1차 문헌 확인·문서 작성. **앱/GPU/빌드/수치 실험/학습은 미실행**, 제품 코드 변경 없음. HEAD `880af1ebcffe601f0bac27413cad94055ce92812`와 기존 작업 트리를 기준으로 한다. 아래 [D]의 증명은 명시한 이상적 산술·연산 조건에 대한 것이며 GPU 측정/기계 검증이 아니다. 기존 [U/C/E/P/D/H] 구분은 [[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-00-overview|Overview]]를 따른다.
+범위: 코드 읽기·수학적 유도·온라인 1차 문헌 확인·문서 작성. **앱/GPU/빌드/수치 실험/학습은 미실행**, 제품 코드 변경 없음. HEAD `880af1ebcffe601f0bac27413cad94055ce92812`와 기존 작업 트리를 기준으로 한다. 아래 [D]의 증명은 명시한 이상적 산술·연산 조건에 대한 것이며 GPU 측정/기계 검증이 아니다. 기존 [U/C/E/P/D/H] 구분은 [[01_Judgment-and-History#source-00-overview|Overview]]를 따른다.
 
 #### 1. 결론부터: 입증 가능한 범위가 세 층이다
 
@@ -166,7 +166,7 @@ coarse 평균의 정보 손실, 내부 유입 반응, 닫힌 최소 모델, 방�
 
 #### 3. 임계값 반응과 capped geometry의 공통 구조
 
-[[90_Research-Archive/Research-Notes-2026-10/01_Assessment/01_Judgment-and-History#source-reference-09-analytical-findings|이전 반례]]의 평균/분산 부족을 더 일반적으로 설명한다. 한 block의 면적 가중 평균을 E, Ice/면적을 i, Heat/면적을 h라 두자.
+[[01_Judgment-and-History#source-reference-09-analytical-findings|이전 반례]]의 평균/분산 부족을 더 일반적으로 설명한다. 한 block의 면적 가중 평균을 E, Ice/면적을 i, Heat/면적을 h라 두자.
 
 \[
 M(t)=E[i(h-t)_+],\qquad
@@ -362,7 +362,7 @@ e_N\le L^Ne_0+\sum_{j=0}^{N-1}L^{N-1-j}\eta_j.
 | future-aware 역설계로 모든 후속 거동을 보장한다 | 지정된 probe/시간/조작 범위에서만 검증할 계획이며 아직 미실행 |
 | SIGGRAPH Contribution이 입증됐다 | 코드 기반 반례와 구체적인 후보·입증 조건을 확보했지만 새 해법/우위는 미입증 |
 
-문헌 원문 접근 수준·실패는 [[90_Research-Archive/Research-Notes-2026-10/04_Literature/01_Related-Work#source-reference-07-related-work|R14–R24]]에 기록했다. 이 문서는 새로운 실험 결과가 아니므로 PERF 기록을 생성하지 않는다.
+문헌 원문 접근 수준·실패는 [[01_Related-Work#source-reference-07-related-work|R14–R24]]에 기록했다. 이 문서는 새로운 실험 결과가 아니므로 PERF 기록을 생성하지 않는다.
 
 ---
 
@@ -374,7 +374,7 @@ e_N\le L^Ne_0+\sum_{j=0}^{N-1}L^{N-1-j}\eta_j.
 
 작성: **2026-10-27 / Asia/Seoul**. 사용자 요청: “직접적인 실험없이 할 수 있는거 전부 해봐. 추론, 새로운 아이디어, 돌파할 지점 뭐든”.
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|직전 분석]]을 이어 코드 읽기·기호 유도·문헌 대조만 수행했다. **앱·GPU·빌드·수치 시뮬레이션·학습·새 benchmark는 실행하지 않았다.** 아래 숫자는 식에 대입한 예이며 측정치가 아니다. 제품 코드 수정 없음. HEAD `880af1ebcffe601f0bac27413cad94055ce92812`와 기존 작업 트리를 읽었다. [C/D/P/H]는 코드/조건부 유도/문헌/가설이다. 전체 탐색 공간을 소진했다는 뜻은 아니다.
+[[02_Coarse-Models-and-Limits#source-analysis-11-contribution-proof-obligations|직전 분석]]을 이어 코드 읽기·기호 유도·문헌 대조만 수행했다. **앱·GPU·빌드·수치 시뮬레이션·학습·새 benchmark는 실행하지 않았다.** 아래 숫자는 식에 대입한 예이며 측정치가 아니다. 제품 코드 수정 없음. HEAD `880af1ebcffe601f0bac27413cad94055ce92812`와 기존 작업 트리를 읽었다. [C/D/P/H]는 코드/조건부 유도/문헌/가설이다. 전체 탐색 공간을 소진했다는 뜻은 아니다.
 
 #### 1. 이전 분석에서 실제로 전진한 부분
 
@@ -385,7 +385,7 @@ e_N\le L^Ne_0+\sum_{j=0}^{N-1}L^{N-1-j}\eta_j.
 - [D] 현 Ice 규칙에서 융해를 바꾸면서 한 substep 끝의 Heat와 capped 높이를 보존하는 **반응 단계의 대수적 witness**를 만들었다. 실제 U-input rollout의 witness는 아니다.
 - [P] 기억을 가진 축소 모델, 목적별 축소, 적응형 오차 제어, 보상/누적량 보존은 기존 분야다. 아래 유도를 새 수학의 발견으로 주장하지 않는다.
 
-실제 알고리즘 초안·중단 조건은 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|후속 방법 명세]]를 따른다.
+실제 알고리즘 초안·중단 조건은 [[02_Coarse-Models-and-Limits#source-analysis-13-method-blueprints-and-decision|후속 방법 명세]]를 따른다.
 
 #### 2. 두 texel에서 정확히 닫히는 ‘남은 잔류 생성량’
 
@@ -652,7 +652,7 @@ w(h)=\frac{2(h-H^*)}{\delta h}-0.45i\frac{h-\tau}{h}
 
 ### 실행 없는 연구 — 방법 초안, 돌파 지점, 중단 조건
 
-작성: **2026-10-27 / Asia/Seoul**. [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|최소 모델·한계 유도]]의 후속 방법 명세다. **아래 방법은 제안이며 제품에 구현하거나 실험하지 않았다.** 로컬 실행 중지 유지. 사용자가 제외한 축적 순서/층 표현은 다시 제안하지 않는다.
+작성: **2026-10-27 / Asia/Seoul**. [[02_Coarse-Models-and-Limits#source-analysis-12-exact-submodels-and-limits|최소 모델·한계 유도]]의 후속 방법 명세다. **아래 방법은 제안이며 제품에 구현하거나 실험하지 않았다.** 로컬 실행 중지 유지. 사용자가 제외한 축적 순서/층 표현은 다시 제안하지 않는다.
 
 #### 1. 이번에 바꾸는 질문
 
@@ -667,7 +667,7 @@ w(h)=\frac{2(h-H^*)}{\delta h}-0.45i\frac{h-\tau}{h}
 
 ##### 핵심 설계
 
-[[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#2. 두 texel에서 정확히 닫히는 ‘남은 잔류 생성량’|정확한 두 texel 유도]]를 출발점으로 한다. 모든 histogram을 저장하는 대신 다음을 저장한다.
+[[02_Coarse-Models-and-Limits#2. 두 texel에서 정확히 닫히는 ‘남은 잔류 생성량’|정확한 두 texel 유도]]를 출발점으로 한다. 모든 histogram을 저장하는 대신 다음을 저장한다.
 
 - 보존할 State 총량.
 - 외부와 접촉하는 port 상태/양방향 flux.
@@ -677,7 +677,7 @@ w(h)=\frac{2(h-H^*)}{\delta h}-0.45i\frac{h-\tau}{h}
 
 두 texel에서는 p가 독립 갱신되며, 닫힌 미래에서 총 잔류 오차를 제한할 수 있다. 일반 block에서는 이런 비음수 잔여량/상한을 구성할 수 있는지가 핵심 미해결 부분이다. ‘edge마다 p를 넣고 더한다’는 방식은 shared inventory 이중 계상 때문에 정당화되지 않는다.
 
-추가로 [[90_Research-Archive/Research-Notes-2026-10/03_Solver/02_Coarse-Models-and-Limits#2.5 일반 graph: Geometry가 변해도 남는 제한적 상한|닫힌 graph bound]]는 saturation-only 수송·유입 전환·충분한 dt 아래 동적 Geometry가 계수를 바꿔도 미래 잔류량을 B=M−s_min·ΣCapacity로 제한한다. 이는 **약한 근거로 시작하는 새 압축기보다, 먼저 인증 가능한 near-equilibrium 구간의 내부 계산을 생략하는 방법**이라는 대안을 준다. 다만 열린 경계/다른 반응에서 인증이 깨지고 최소 saturation=0이면 매우 느슨하다. 알려진 maximum principle의 응용이며 새 Sparse 기여를 확보한 것은 아니다.
+추가로 [[02_Coarse-Models-and-Limits#2.5 일반 graph: Geometry가 변해도 남는 제한적 상한|닫힌 graph bound]]는 saturation-only 수송·유입 전환·충분한 dt 아래 동적 Geometry가 계수를 바꿔도 미래 잔류량을 B=M−s_min·ΣCapacity로 제한한다. 이는 **약한 근거로 시작하는 새 압축기보다, 먼저 인증 가능한 near-equilibrium 구간의 내부 계산을 생략하는 방법**이라는 대안을 준다. 다만 열린 경계/다른 반응에서 인증이 깨지고 최소 saturation=0이면 매우 느슨하다. 알려진 maximum principle의 응용이며 새 Sparse 기여를 확보한 것은 아니다.
 
 ##### 가장 좁은 알고리즘 초안 [H]
 

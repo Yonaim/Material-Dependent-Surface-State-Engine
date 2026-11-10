@@ -7,7 +7,7 @@
 - 상태: **1차 기전 실험 분석 완료 · 후속 Baseline 명세 v1 작성** (2026-10-27). 앞 절의 미구현/미실행 표기는 원래 계획 시점이며 실행 이력은 §12와 PERF-041을 따른다.
 - 승인된 작업 범위: 사용자의 “이제 실험하고 결과 분석해줘” 지시에 따라 필요한 실험 제어·계측 및 실험 실행·분석을 진행한다. 이전 분석 전용 제한은 이 범위에서 해제되었다.
 - 기록 유형: 현행 구현을 읽은 사전 연구 설계. 구현 성능 비교 결과나 확정된 Contribution으로 해석하지 않는다.
-- 후속 성능 측정은 [[05_Experiments/02_Performance-Measurements|성능 문서]]와 [[00_Engineering-Standards/04_Docs_Templates/02_Docs_Template-Experiment|실험 양식]]에 기록한다. 실행마다 별도 설명 문서를 만들지 않는다.
+- 후속 성능 측정은 [[05_Experiments/02_Performance-Measurements|성능 문서]]와 [[02_Docs_Template-Experiment|실험 양식]]에 기록한다. 실행마다 별도 설명 문서를 만들지 않는다.
 
 ## 1. 연구 질문과 주장 범위
 
@@ -256,7 +256,7 @@ Dense/Sparse D/E의 최종·중간 State/Geometry/Flux 동등성을 먼저 확�
 
 ## 13. 후속 Baseline 구체화 — 2026-10-27
 
-[[04_Development/05_Modular-Baseline-Spec|모듈식 Baseline 명세 v1]]과 `Scripts/Research/Plans/modular-baseline-v1.json`에서 §5–8의 후속 비교를 구체화했다. 공통 서비스·수송 helper·generic module factory·batching/fusion을 허용한다. 초기 모듈 구현의 불필요한 dispatch/복사나 작성자의 숙련도 차이를 모델 우위로 해석하지 않는다.
+[[05_Modular-Baseline-Spec|모듈식 Baseline 명세 v1]]과 `Scripts/Research/Plans/modular-baseline-v1.json`에서 §5–8의 후속 비교를 구체화했다. 공통 서비스·수송 helper·generic module factory·batching/fusion을 허용한다. 초기 모듈 구현의 불필요한 dispatch/복사나 작성자의 숙련도 차이를 모델 우위로 해석하지 않는다.
 
 T0–T3의 동일 결과 gate, 확장 부담의 분류·출발점, 주 비용 조건·반복 순서, H3 기각 규칙을 고정했다. 기존 결과를 본 뒤 작성한 명세이며 T0/T1을 새로운 미사용 평가로 부르지 않는다. 이번 작업은 명세 작성이고 Baseline 구현·실험 결과는 아직 없다.
 
@@ -264,7 +264,7 @@ T0–T3의 동일 결과 gate, 확장 부담의 분류·출발점, 주 비용 �
 
 §13은 명세 동결 당시의 기록으로 보존한다. 이후 실제 Baseline 구현·실행은 [[05_Experiments/02_Performance-Measurements|PERF-042]]에 기록했다. 26회·평가 13,260 Step, 감사 오류·쌍별 gate 실패 0. 본 진단의 7 U/M 쌍이 일치했고 양쪽 모두 선언 확장으로 과제를 처리했다. 사전 명세의 구조적 중단 규칙에 따라 256 진단 4회·정식 비용 40회는 미실행이다. v1 과제에서 조정 구조에 의한 확장 부담 우위는 지지되지 않았다.
 
-[[04_Development/06_Prior-Model-Differentiation|H4 원문·코드 대조]]에서 §10의 질문을 다음과 같이 판정했다. 이번 후속 작업은 문헌·모델 분석이며 새 성능 실험이 아니다.
+[[06_Prior-Model-Differentiation|H4 원문·코드 대조]]에서 §10의 질문을 다음과 같이 판정했다. 이번 후속 작업은 문헌·모델 분석이며 새 성능 실험이 아니다.
 
 | §10의 질문 | 현재 판정 |
 |---|---|
