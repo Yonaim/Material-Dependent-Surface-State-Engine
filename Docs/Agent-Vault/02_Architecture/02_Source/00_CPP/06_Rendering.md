@@ -76,7 +76,22 @@ Vulkan 호출 지점 81개 정적 대조와 render-only 5프레임 old/new 캡�
 
 ## 5.5 책임 경계 보완
 
+`FBenchmarkCaptureState`는 opt-in `AuthoringScreenshot`·checkpoint serial 목록·마지막 캡처 serial도 소유한다. `ConfigureBenchmarkCapture`의 Scene 참조는 Application 소유 객체를 빌려 초기 입력 observer에 전달한다. `RecordBenchmarkScreenshot`은 지정 step 이미지를 기록하고 `RenderFrame`은 다음 frame 전에 `WriteAuthoringCheckpoint`를 호출해 State/geometry와 함께 저장한다. 기존 일반 benchmark 최종 캡처 경로도 유지한다. 조건과 출력 시점은 Simulation Step Overview의 연구용 캡처 설명을 따른다.
+
+`WriteAuthoringCheckpoint`는 GPU 완료 대기 → 출력 중복 검사 → instance 저장 → 필요 시 이미지 저장·캡처 상태 갱신 → metadata 저장을 조율한다. 같은 translation unit의 익명 namespace 안에 버퍼 출력·instance 저장·Reaction 진단·이미지 변환·metadata 출력 함수를 분리했다. API·소유 상태·buffer 읽기 순서·GPU 대기 위치와 JSON/파일 형식은 유지한다. 파일의 최상위는 실행 흐름과 저장 세부 구현, 하위는 관련 책임으로 구획하며 Region 총 깊이는 2다.
+
 - `Renderer.h::FBenchmarkCaptureState`: stream/output 경로·in-flight submission·capture buffer·frame counters를 값 소유한다. 원래 초기값/생성/마무리/flush·파괴 순서를 보존하고 timestamp pool/프레임 자원은 Renderer에 유지한다.
 - [RendererTiming.cpp](../../../../../Source/Rendering/Profiling/RendererTiming.cpp): `CollectCompletedFrameTimings`는 frame fence 이후의 query 회수·통계 갱신·benchmark sample 기록을 담당한다. RenderFrame의 호출 지점과 query index/수식·실패 정책은 동일하다.
 - [WorldReferenceGeometry.h](../../../../../Source/Rendering/Scene/WorldReferenceGeometry.h): 내부 grid/축/gizmo record·정점 생성을 material/attachment helper에서 분리했다. 정점 필드/순서·pipeline layout을 유지하며 같은 translation unit의 내부 helper로 사용한다.
 - 나머지 swapchain/attachment/descriptor·overlay 자원은 공유 frame/device 수명과 생성/종료 경계가 있어 기존 pass별 소유 클래스와 command helper를 유지한다.
+
+## 상위 진입 함수에서 내려가기
+
+| 상위 함수 | 책임과 주요 하위 단계 |
+|---|---|
+| `FRenderer::RenderFrame` | 이전 프레임 정리 → 현재 프레임 준비·이미지 획득 → 명령 기록 → 제출·표시 |
+| `FRenderer::RecordCommandBuffer` | 시뮬레이션 → 표시 자원 준비 → 그래픽 패스 → Scene Viewport → UI |
+| `FRenderer::PrepareDisplayResources` | Instance별 상태 텍스처·Overlay·Geometry 표시 자원 준비 |
+| `FRenderer::ReloadSceneResources` | 이전 작업 동기화 → 새 Scene 자원 준비 → 리소스 교체 → 실행 설정 갱신 |
+
+`ReloadSceneResources` 아래의 `BuildSceneReplacement`, `BuildSceneRenderPipelines`, `CommitSceneReplacement`는 **준비 단계와 소유권 이전의 경계**를 드러낸다. `FSceneReplacementResources`는 교체 준비 중의 GPU 자원을 임시 보유한다. 예외·Rollback 경로와 Descriptor 수명은 실제 구현에서 확인해야 한다. GPU 패스·Barrier 순서는 [[02_Architecture/00_Flows/03_Rendering/00_Render-Overview|Rendering Flow]]를 따른다.

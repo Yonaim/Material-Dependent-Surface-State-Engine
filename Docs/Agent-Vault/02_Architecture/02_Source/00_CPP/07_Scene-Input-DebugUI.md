@@ -97,3 +97,9 @@ UI 표시값은 실행 조건을 확인하는 출발점이다. 성능 측정에�
 - `DebugUIRender.cpp`: toolbar 위치·뷰 선택·viewport/State 선택 및 상위 popup 호출.
 - [DebugUIViewSettings.cpp](../../../../../Source/DebugUI/Panels/DebugUIViewSettings.cpp): `DrawViewSettingsPopup`이 현재 mode의 popup·legend를 담당한다. BeginPopup/EndPopup과 외부 toolbar Begin/End 호출 순서를 유지한다.
 - [RenderViewDescriptions.h](../../../../../Source/DebugUI/Panels/RenderViewDescriptions.h): 순수 형상 설명 선택. 기존 문자열·mode switch를 보존하며 공유 widget/state 수명과 분리한다.
+
+## UI의 상위 책임과 하위 구현
+
+- `FDebugUI::DrawRenderSettingsWindow`는 화면 설정 탭을 조율한다. Visual/Display의 세부 값은 `DrawVisualRenderSettings`, `DrawDisplayRenderSettings` 및 하위 효과 설정 함수에서 다룬다.
+- `FDebugUI::DrawProfileTuningTab`는 Profile 선택, State별 편집 데이터, 파라미터 UI 및 적용/복원 동작을 조율한다. `DrawProfileParameterControls`와 `DrawProfileOverrideActions`가 하위 책임을 수행한다.
+- 편집 중의 Dirty Draft와 원본 `.SRProfile` Asset은 별개다. ImGui Begin/End, 편집값 반영 및 GPU 옵션 갱신의 실제 순서는 `DebugUIViewport.cpp`, `DebugUIContactProfile.cpp`와 관련 계약을 확인한다.

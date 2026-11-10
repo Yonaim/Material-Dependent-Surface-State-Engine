@@ -2,7 +2,7 @@
 
 이 디렉터리는 **공통 템플릿의 사본**이다. 공통 템플릿을 따로 보관하고, 새 프로젝트마다 복사해 각각 독립적으로 수정한다. 자동 초기화 스크립트는 필수로 두지 않는다.
 
-## 0. 설치
+## 설치
 
 - [ ] 이 템플릿을 `<repository>/docs/Agent-Vault/` 등 프로젝트별 한 위치에 복사한다. 문서의 상대 경로를 유지한다.
 - [ ] `.vscode/settings.json`은 볼트 자체를 VS Code 루트로 열 때 적용된다. **저장소 루트를 여는 경우** 필요한 설정을 저장소 루트의 `.vscode/settings.json`에도 병합한다. 기존 설정을 덮어쓰지 않는다.
@@ -62,25 +62,19 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 - GLSL·Shell에서 Region 접기를 쓰려면 **Custom Folding**(`maptz.regionfolder`)을 설치한다.
 - 마커는 C/C++ `#pragma region`, GLSL·JavaScript·TypeScript `// #region`, Python·Shell `#region`을 사용한다. 번호가 있는 3줄 섹션 주석도 함께 유지한다.
 - 자세한 표기와 예시는 [섹션·Region 표준](00_Engineering-Standards/00_Core/01_Local-Numbering-and-Navigation.md)을 참고한다. 접히지 않으면 VS Code의 언어 모드와 확장 설정을 확인한다.
-- MDSS 저장소는 루트 `.vscode/settings.json`과 볼트 `.vscode/settings.json`에 `[glsl]`·`[shellscript]`의 Custom Folding 정규식 및 shader 확장자→`glsl` 연결을 설정한다. 현재 작업 환경에는 `maptz.regionfolder`와 `slevesque.shader`가 설치되어 있다. 다른 환경에서는 확장 설치·활성화를 별도로 확인한다.
-- 이번 동기화의 기준 원본은 저장소 루트 `Universal-Agent-Vault/`다. 범용 규칙만 병합하고 MDSS의 Context·Architecture·프로필·실험 기록은 유지한다. JS/TS는 규칙을 제공하되 실제 프로젝트 소스가 도입될 때만 활성화한다.
+- MDSS 저장소는 루트 `.vscode/settings.json`과 볼트 `.vscode/settings.json`에 `[glsl]`·`[shellscript]`의 Custom Folding 정규식 및 shader 확장자→`glsl` 연결을 설정한다. 사용 환경에서 확장 설치·활성화를 별도로 확인한다.
+- 활성 언어별 규칙은 실제 프로젝트 소스에 맞춰 사용하며, 프로젝트 Context·Architecture·Contracts가 공통 스타일 규칙보다 우선한다.
 
 
 ### MDSS Shader 자동 접기 확인
 
-- 프로젝트 설정에서 모든 shader(작은 include/placeholder 포함)에 comment Region을 적용한다. 중첩 Region 전수 검토 후 추적 중인 69개 파일·248개 영역이다. 하위 Region은 126개이며 최대 2단계다. [파일별 생성/유지 판단](04_Development/14_Shader-Nested-Region-Coverage.md)을 따른다.
+- GLSL은 `// #region` / `// #endregion`으로 기능별 영역을 표시한다. 중첩은 독립된 하위 책임이 있을 때만 사용하며 기본 최대 2단계다.
 - `foldOnOpen.targets: ["AllMarkerRegions"]`는 인식된 Region을 접는 명령 설정이다. GLSL의 마커 인식은 Custom Folding 설정/공급자가 담당한다.
 - root/vault 설정의 `maptz.regionfolder.[glsl]`은 **CRLF를 허용하는 정규식**과 `defaultFoldStartRegex`를 사용한다. Maptz의 `collapseDefaultRegionsOnOpen`도 활성화했다. 이전 `(.*)$` 형식은 확장의 split("\n")에서 남은 CR을 처리하지 못했다.
 - GLSL 설정을 새로 추가한 실행 중 창은 **Developer: Reload Window** 후 shader를 다시 연다. 필요하면 **Fold All Regions**를 실행한다. 파일의 언어 모드는 GLSL이어야 한다.
-- [원인 재현·검증 기록](../../Build/Validation/20261109-215915-shader-folding-fix/summary.md). 실제 확장 파서에서 인식과 default Region 지정은 검증했지만, UI 연결 실패로 접힌 화면 자체는 미관찰이다.
+- 자동 접기는 실제 편집기에서 확인한다. 설정 확인만으로 접기 성공을 단정하지 않는다.
 
-### Universal v5.8 적용 범위
-
-- 기준은 루트 `Universal-Agent-Vault/`의 v5.8 작업 트리다. 프로젝트 Context·Architecture·과거 검증 기록을 덮어쓰지 않고 공통 규칙 차이를 병합했다.
-- 공백·조건 서식과 선택적 2단계 Region, LF/CRLF 접기를 반영했다. [소스별 적용 결과](04_Development/13_Vault-5.8-Readability-Coverage.md)와 [변경·검증 기록](04_Development/01_Work-Log.md)을 참조한다.
-- 루트 `.vscode`는 기존 Git ignore 대상이다. 새로운 checkout에서는 볼트 `.vscode/settings.json`을 프로젝트 루트 설정에 병합해야 하며, 하위 볼트 설정이 자동 적용되는 것으로 간주하지 않는다.
-
-## 1. 프로젝트 정의 — 네 문서 필수
+## 프로젝트 정의 — 네 문서 필수
 
 - [ ] [`Project Brief`](01_Project-Context/00_Project-Brief.md): 실제 목표, 범위, 저장소, 엔트리 포인트, 빌드·테스트 방법을 기입한다.
 - [ ] [`Glossary`](01_Project-Context/01_Glossary.md): 핵심 용어·약어를 정의한다. 모르는 개념은 `미정`으로 둔다.
@@ -88,7 +82,7 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 - [ ] [`Constraints`](01_Project-Context/03_Constraints.md): 플랫폼, 호환성, 표준, 라이브러리, 성능, 배포 제한 등을 기록한다.
 - [ ] [`Home`](00_Home.md)의 프로젝트 정보를 실제 자료와 대조하여 채운다.
 
-## 2. 활성 개발 프로필
+## 활성 개발 프로필
 
 - [ ] [`C++`](00_Engineering-Standards/01_Languages/01_CPP.md), [`C`](00_Engineering-Standards/01_Languages/00_C.md), [`GLSL`](00_Engineering-Standards/01_Languages/02_GLSL.md), [`Python`](00_Engineering-Standards/01_Languages/03_Python.md), [`Shell`](00_Engineering-Standards/01_Languages/04_Shell.md), [`JavaScript/TypeScript`](00_Engineering-Standards/01_Languages/05_JavaScript-TypeScript.md) 중 실제 사용하는 언어 프로필만 선택한다. C++이 주력인 경우에도 다른 언어 규칙을 무조건 읽지 않는다.
 - [ ] C++ 표준(예: 98/17/20/23), 컴파일러, 빌드 시스템, 서식 규칙, 명명 프로필(Unreal / Unreal-Inspired / Existing)을 실제 프로젝트에 맞게 정한다.
@@ -99,9 +93,9 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 - [ ] [`Verification and Review`](00_Engineering-Standards/03_Workflow/01_Verification-and-Review.md)에 따라 검증 범위와 리뷰 기준을 정한다.
 - [ ] [`Commit Style`](00_Engineering-Standards/03_Workflow/02_Commit-Style.md)을 프로젝트에 맞게 채택하거나 덮어쓴다.
 
-## 3. 구조와 문서 탐색
+## 구조와 문서 탐색
 
-- [ ] [`Main Flow`](02_Architecture/00_Flows/00_Main-Flow.md)에 실제 또는 **제안된** 최상위 실행 흐름을 상태와 함께 기입한다.
+- [ ] [`System Map`](02_Architecture/03_System-Map.md)과 [`Main Flow`](02_Architecture/00_Flows/00_Main-Flow.md)에 실제 또는 **제안된** 최상위 실행 흐름을 상태와 함께 기입한다.
 - [ ] [`Contract Register`](02_Architecture/01_Contracts/00_Contract-Register.md)에 실제 계약과 그 출처를 연결한다. 셰이더가 있다면 Binding·Push Constant·Buffer Layout·패스 간 동기화의 Host–GPU 관계도 등록한다.
 - [ ] [`Source Map`](02_Architecture/02_Source/00_Source-Map.md)에 **중요 모듈만** 등록한다. 모든 파일에 문서 하나씩 생성하지 않는다.
 - [ ] [`Document Map`](01_Document-Map.md)의 프로젝트 전용 키워드/파일 경로/문서 연결을 채운다. 링크가 존재하는지 확인한다.
@@ -109,7 +103,7 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 - [ ] Home은 탐색 허브만 담당하고 프로젝트 설정은 Project Brief에서만 관리한다.
 - [ ] 서로 다른 문서에서 같은 정의를 중복 유지하지 않는지 확인한다. 불필요한 `00_Overview.md`는 만들지 않는다.
 
-## 4. 첫 변경으로 작업 흐름 검증
+## 첫 변경으로 작업 흐름 검증
 
 - [ ] 작업 시작 시 `AGENTS.md` + `01_Document-Map.md` + 관련 문서를 읽는다.
 - [ ] 코드를 수정하고 실제 실행한 검증만 기록한다.
@@ -123,7 +117,3 @@ Before every code task, read `docs/Agent-Vault/AGENTS.md` and
 - **프로젝트 사본에만 보관:** 실제 코드 경로, 프로젝트 고유 지식, 실험 수치, 검증 결과, ADR, Work Log.
 - 프로젝트에서 검증한 개선이 일반적으로 유용하면 **선별하여** 공통 템플릿에도 반영한다. 프로젝트 고유 사실을 자동 병합하지 않는다.
 - 문서가 아직 미작성인 상태에서 관련 작업을 진행해야 한다면, 읽지 않은 내용을 추측하지 말고 필요 문서를 실제 근거로 채운다.
-
-## Universal 규칙 동기화 — 5.5
-
-2026-11-09 사용자 지정 5.5 갱신을 로컬 Universal-Agent-Vault의 `93dbbed`(큰 클래스·파일 2단계 규칙)에서 반영했다. [공통 지침](00_Engineering-Standards/00_Core/03_Section-and-Responsibility-Refactoring.md)은 1단계 섹션 정리와 2단계 책임 추출을 독립된 작업·검증으로 다룬다. 예시의 T 접두어는 범용 예시이며 이 프로젝트의 실제 C++ 코드는 Project Brief의 Unreal-Inspired(F/E/b)를 따른다. 기존 프로젝트 라우팅·계약·실험 기록과 shader folding 설정을 보존한다.

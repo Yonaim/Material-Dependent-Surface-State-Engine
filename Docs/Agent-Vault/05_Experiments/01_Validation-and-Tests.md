@@ -627,3 +627,25 @@ ctest --test-dir Build --output-on-failure
 - Debug/Release entry·variant 150개 전후 glslc/spirv-val 통과. 모든 SPIR-V 바이트 동일.
 - 설치된 Maptz 1.0.22 parser: 69개 × LF/CRLF = 138회 통과, 각 줄바꿈에서 248개 영역/default 지정 일치. root/vault 설정 일치. 편집기 실제 folding UI는 미검증.
 - 계산·C++ 변경이 없어 전체 C++ build/CTest·별도 GPU 렌더/성능은 반복하지 않았다. [파일별 검토](../04_Development/14_Shader-Nested-Region-Coverage.md), [원자료](../../../Build/Validation/20261110-shader-regions/summary.md).
+
+## 2026-11-10 — 31a38c4 WIP 복구 검증
+
+- 전체 Debug build·연구 executable 2개 및 shader 150개 compile/spirv-val 성공.
+- CTest **9 통과/6 기존 실패/skip 0**. 새 ScratchDescriptorLifetime은 12회 저장 형식 전환·layout/set 및 State 유지·실제 compute/render·Vulkan 오류 없음 검사 통과. SharedSurfaceGeometry도 수정된 simulation sample 대응으로 통과했다. 남은 실패는 SceneResources·DemoAnimation·CavityFillDisplayBound·LavaScene·OverlaySideCompaction·SurfaceMapping이다.
+- 128 해상도·60 Hz headless 4조건(각 15 step): ledger ON/OFF·frozen·dirty 실행 성공. 장부 ON/OFF State 비트 동일, 실제 extent 누적 및 frozen 위반·음수/비유한·Reaction 진단 0 확인. AuthoringProbe 2개 profile/binding 사례 통과.
+- 일반 비교 씬 123 step 결과의 State 배열 3개가 이식 전 복원 실행 결과와 비트 동일. checkpoint 0의 입력/State 및 15·60의 이미지/State/geometry·serial metadata 생성 확인, 명시적 geometry_feedback=false 반영. 두 앱 실행의 ERROR·Reaction 진단 0.
+- Bash 구문 검사·별도 LF fixture의 옵션 분리/빌드→앱 실행 통과, CRLF 대응 diff check 통과. 장시간·다른 장치/OS·독립 시각 품질·성능 및 과거 WIP 바이너리 전체 동등성은 미검증. [상세 범위](../04_Development/15_WIP-Recovery.md), [원자료](../../../Build/Validation/20261110-wip-port/runtime-summary.json).
+
+### WIP 이식 코드 Standards 후속 검증
+
+- checkpoint 책임 추출·서식/명명/API 문서와 Bash helper 분리 후 전체 Debug build 성공. 관련 CTest 3개 모두 통과. 전체 suite는 반복하지 않았다.
+- 0/15/60 step의 State·metadata 6개 파일 및 최종 State 배열 3개가 보완 전과 바이트 동일. 이미지 차이는 timing 숫자 영역(step 15: 282 pixel, step 60: 257 pixel)에 한정되며 밖의 모든 pixel 동일. 직접 이미지 비교 수행.
+- invalid serial·missing target·duplicate checkpoint를 실제 앱으로 실행해 기존 오류 메시지·비정상 종료·기존 파일 보존 확인. Bash 구문과 LF fixture의 옵션/공백 포함 인자 전달, Region·CRLF 대응 diff check 통과. [원자료](../../../Build/Validation/20261110-wip-standards/summary.json). 성능·다른 장치/OS·headless 연구 재실행은 범위에 포함하지 않았다.
+
+## 2026-11-10 — v5.9 파일·Region 설명 및 구 볼트 폐기
+
+- 구현 323개와 CMake 구성 4개 검토. C++ 201·GLSL 69 비주석 토큰 동일, Python 44는 module docstring·승인된 문서 라우팅 외 AST 동일, Bash 5와 PowerShell 4는 구문·비주석 실행 토큰 동일.
+- 최종 configure/전체 Debug build 성공. shader 150개 compile/spirv-val 통과, v5.9 이전 WIP의 동일 구성 SPIR-V 150개와 바이트 동일.
+- 기존 Region 656개 경계·번호·짝·최대 2단계 유지. 설명 654개 추가·기존 1개 유지, 실행 구현 없는 SurfaceInput 예약 구획 1개 생략. 설명 위치·들여쓰기 검사 통과. 실제 Maptz parser 74문서 × LF/CRLF = 148회, 각 252영역 통과.
+- 활성 구 볼트 디렉터리 없음, Python의 구 경로 잔존 0·새 대상 문서 존재 확인. 데모/실험 자산 원본 139개와 이전 미커밋 기능 보존. CRLF 대응 diff check 통과.
+- 전체 CTest·GPU 렌더·성능·전체 연구 파이프라인·IDE 실제 접힘 UI는 반복하지 않았다. Python의 문서 문자열/help 설명은 의도적으로 바뀐다. [전수 적용표](../04_Development/16_Vault-5.9-Comment-Coverage.md), [원자료](../../../Build/Validation/20261110-vault59/summary.json).

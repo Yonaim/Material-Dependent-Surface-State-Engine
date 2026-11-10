@@ -52,3 +52,7 @@
 `MainLoop`는 event/UI → `SubmitInteractiveContact` → `UpdateFrameTiming` → `AdvanceDemoAndSubmitContacts` → RenderFrame → 필요 시 `WaitForSettingsAndResetClock` → CPU 측정 순서를 직접 보여준다. `FinalizeRun`은 기존 device-idle 대기와 benchmark 마무리를 담당한다. `FFrameTiming`은 한 프레임의 suspend 여부와 재생 시간만 전달하는 private 값이며 자원을 소유하지 않는다.
 
 시간 sampling 위치·고정 benchmark step·UI 대기 제외·animation contact 변환·GPU 대기 순서 및 기존 실패 정책을 유지했다. 파일 쓰기 오류 보완과 종료 대기 반환값 처리는 별도 후속 작업이다. 검증 근거는 [Validation](../../../05_Experiments/01_Validation-and-Tests.md)의 C++ 상위 흐름 정리 기록을 따른다.
+
+## 애플리케이션 최상위 실행
+
+`FApplication::MainLoop`는 이벤트 폴링, UI 입력 처리, Contact 제출, 프레임 시간 갱신, Scene 애니메이션 및 렌더 프레임 실행을 조율한다. 프레임 내부 GPU 명령 순서는 `FRenderer::RecordCommandBuffer`에서 읽고 [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]]에서 관련 하위 함수로 내려간다.

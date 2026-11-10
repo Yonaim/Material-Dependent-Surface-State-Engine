@@ -1,5 +1,7 @@
 # Surface Build와 GPU Setup
 
+`FSurfaceDataManager::LoadSurfaceData`는 Runtime key를 조회하고 필요할 때 Profile/Geometry를 준비한다. `LoadOrBuildSurfaceGeometry`는 `.Surface` Cache 조회 후 Mapping·Geometry·Normal Transfer·Meso 구성을 수행하며, `BuildSurfaceGeometryInputs`가 입력 Surface/Normal Map의 일관성을 검사한다. 상세 함수 위치는 [[02_Architecture/02_Source/00_CPP/00_SurfaceState/01_Runtime-and-Registry|Surface Runtime]]을 참고한다.
+
 이 단계는 **초기화 및 재사용** 경로다. 프레임마다 실행하는 Solver 연산과 구별한다. Static geometry는 같은 Runtime Surface 사이에서 재사용하지만 instance 상태·world area·weights·scratch는 독립적이다.
 
 **연결 문서**

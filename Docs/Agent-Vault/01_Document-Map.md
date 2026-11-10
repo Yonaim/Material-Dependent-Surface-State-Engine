@@ -1,5 +1,7 @@
 # Document Routing Map
 
+> **처음 보는 개발자:** [[02_Architecture/03_System-Map|System Map]] → [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]] → 필요한 Flow·Contract·Source 문서만 선택한다.
+
 > **모든 코드 작업 전 반드시 읽는 경량 탐색 인덱스.** 문서 본문을 여기에 복제하지 않는다. 전체 읽기 순서와 실제 파일 정렬 순서는 서로 독립적이다.
 
 ## 선택 절차
@@ -28,6 +30,7 @@
 | `.js`, `.jsx`, `.ts`, `.tsx`, JavaScript, TypeScript | [`JavaScript/TypeScript`](00_Engineering-Standards/01_Languages/05_JavaScript-TypeScript.md), 관련 Source | Source / Contracts / 검증 결과 |
 | 큰 클래스, 멤버 변수 과다, God Object, 섹션 재배치, 상태 구조체 추출, 책임 분리 | [`Section & Responsibility Refactoring`](00_Engineering-Standards/00_Core/03_Section-and-Responsibility-Refactoring.md), [`Code Style`](00_Engineering-Standards/00_Core/00_Code-Style.md), 활성 언어 규칙, 관련 Source / Contracts | 섹션·소스 구조 / API·상태 계약 / 테스트 / Work Log / 필요 시 ADR |
 | `#region`, `#endregion`, `#pragma region`, 중첩 Region, 셰이더 접기, VS Code Custom Folding | [`Local Numbering`](00_Engineering-Standards/00_Core/01_Local-Numbering-and-Navigation.md), [`Source Comments`](00_Engineering-Standards/02_Documentation/01_Source-Comments.md), 활성 언어 문서 | 코드 섹션 마커 / 에디터 설정 / Work Log |
+| 파일 헤더 주석, `@file`, `@brief`, Region 설명 | [`Source Comments`](00_Engineering-Standards/02_Documentation/01_Source-Comments.md), [`Doxygen`](00_Engineering-Standards/02_Documentation/00_Doxygen.md), [`Local Numbering`](00_Engineering-Standards/00_Core/01_Local-Numbering-and-Navigation.md) | 소스 헤더 / Region 주석 / Work Log |
 | API, 인터페이스, ABI, 스키마, 소유권, 불변식 | [`Contract Register`](02_Architecture/01_Contracts/00_Contract-Register.md), 관련 Source, C/C++ 공개 API면 [`Doxygen`](00_Engineering-Standards/02_Documentation/00_Doxygen.md) | Contract / Source / 테스트 / Doxygen |
 | 시작·종료·라이프사이클·프레임·파이프라인 | [`Main Flow`](02_Architecture/00_Flows/00_Main-Flow.md), 관련 Source | Flows / Source |
 | 새 기능, 범위 변경, 기대 동작 | [`Requirements`](01_Project-Context/02_Requirements.md), [`Constraints`](01_Project-Context/03_Constraints.md), 관련 Flow | Requirements / Contracts / Tests |

@@ -178,3 +178,36 @@
 - **커밋:** `f07410e` CMake 프리셋·사용 안내, `97ce059` v5.8 공통 규칙·접기 설정, `b96bbe1` C++ 서식·Region·MSVC 라벨, `3d1901e` Python 서식, `d34fc77` 셰이더 v5.8 가독성 정리, `50cd941` 셰이더 중첩 Region 전수 적용. 적용표·프로젝트 현황·검증 결과와 이 기록은 마지막 문서 커밋으로 묶는다.
 - **검증:** 각 커밋의 인덱스에 CRLF 대응 공백 검사 수행. 코드·설정 커밋 전후 작업 파일의 SHA-256 동일 확인. CMake 프리셋 3개 인식 재확인. 앞선 최종 Debug build 성공·shader 150개 검증 및 SPIR-V 동일·CTest 7 통과/7 기존 실패 결과를 사용하며, 각 중간 커밋을 별도로 빌드한 것으로 간주하지 않는다.
 - **문서 검토:** 변경 내용과 두 적용표·Validation·Current Work·Source Index의 일치 여부 확인. 실행 의미·GPU 인터페이스 추가 변경이 없어 Contracts/Flows 수정 불필요. 원자료는 `Build/Validation/20261110-split-commits/`에 보존하며 push는 수행하지 않는다.
+
+## 2026-11-10 — af8085be 누락 자산·실험 기록 복원
+
+- **읽은 문서:** AGENTS·Document Map·Verification·Constraints, Reaction 계약·비교 씬 안내·기존 Work Log 및 성능 기록 인덱스.
+- **변경:** 사용자 요청으로 `af8085be762bdf3a17d487ee6fe4a1d563f219a0`에는 있고 현재 없는 파일 159개를 원본 바이트 그대로 복원: Assets 13개, 이전 볼트 Docs 20개, Performance-Data 126개. 기존 파일을 덮어쓰지 않았으며 Reaction 소스·GPU ABI·계산 규칙은 변경하지 않았다. 판 Mesh 두 개의 `.gitignore` 예외 복구.
+- **문서 동기화:** Current Work·성능 자료 인덱스 갱신. 구 볼트에 역사 보관본 안내 추가, 현재 Agent-Vault의 운영 규칙 유지. Contracts/Flows는 기존 Scene 참조가 다시 충족되어 정의 변경 불필요. 과거의 누락 기록은 당시 상태로 보존한다.
+- **검증:** 복원 159개 파일 모두 원본과 SHA-256/바이트 일치. 현재 Debug 실행 파일로 비교 씬 120 warmup + 1 measurement 및 drain 실행, 종료 코드 0·총 123 Solver step. 3개 instance 모두 negative/nonfinite·Reaction budget/arithmetic 진단 0, 로그 ERROR/Validation Error 없음. CRLF 대응 diff check 통과. 원자료: `Build/Validation/20261110-af8085-restore/`.
+- **한계:** 자산·보관 기록 복원이므로 전체 build/CTest·성능 재측정·구 버전과 런타임 동등성 비교는 반복하지 않았다. 소스 커밋에서 추적하지 않았던 raw 자료는 이번 복원에 포함되지 않는다. commit/push 없음.
+
+## 2026-11-10 — 31a38c4 WIP 누락 기능·수명 수정 이식
+
+- **읽은 문서:** AGENTS·Map·Code Style·C++/GLSL·Source Comments·Verification, Reaction·GPU Layout·CPU–GPU 계약, Simulation Flow·GPU/Rendering Source와 WIP 첫 부모 대비 코드.
+- **코드:** 기존 F/E 명명·private 상태 추출·중첩 Region을 보존하며 descriptor 재연결, opt-in Reaction ledger와 추가 scratch, frozen/full geometry 제어, 초기 입력 observer·동일 step 이미지/State/geometry 캡처, geometry_feedback 설정 반영. 연구 CMake 타깃·shader 의존성 및 생성 소스 타입명 복구. descriptor 수명 회귀·compact vertex 기준 기하 테스트 수정, Bash 빌드/앱 인자 분리·실행 복원. 기존 자산 복원 작업은 유지.
+- **문서:** Reaction·GPU Layout 계약, Simulation Flow, GPU/Rendering Source, README·Current Work·Validation 및 [이식 범위·검증 보고서](15_WIP-Recovery.md) 동기화. 기존 descriptor binding·push constant 크기·제품 Reaction 수식은 유지하고 연구용 추가 allocation/flags·readback 수명만 명시했다.
+- **검증:** 최종 전체 Debug build 및 연구 executable 2개 성공, shader 150개 compile/spirv-val 통과. CTest 15개 중 9 통과/6 기존 실패: 새 descriptor 수명 검사와 수정한 SharedSurfaceGeometry 통과. headless 4조건 각 15 step 성공·ledger ON/OFF State 비트 동일·extent 누적 확인. AuthoringProbe 2사례 통과. 일반 비교 씬 123 step의 State 3개가 이식 전과 비트 동일, 0/15/60 checkpoint 및 geometry_feedback=false 반영 확인. Bash 구문·LF fixture 인자 전달, CRLF 대응 diff check 통과. [원자료](../../../Build/Validation/20261110-wip-port/runtime-summary.json).
+- **한계:** 기존 6개 실패 수정·장시간/다른 GPU·OS·독립 시각 품질·성능 재측정·과거 WIP 바이너리와 전체 동등성 검증은 미수행. commit/push 없음.
+
+## 2026-11-10 — WIP 이식 코드의 Engineering Standards 보완
+
+- **읽은 문서:** AGENTS·Map·Code Style·단계적 책임 분리·Local Numbering·C++/Shell·Source Comments·Doxygen, 기존 GPU/Reaction 계약·Simulation Flow·Rendering Source 및 이식 검증 기록.
+- **코드:** checkpoint의 버퍼/instance 저장·진단 집계·이미지·metadata 출력을 익명 namespace 내부 함수로 추출, 상위 함수는 GPU 대기·중복/대상 검사·저장·완료 갱신 순서 유지. 책임별 2단계 Region·bBGRA·의미적 공백·명시적 분기 블록 보완. 새 API의 한국어 호출 조건/참조 수명/오류 문서와 중복 주석 정리. Bash 인자 해석·실행 helper 분리. 공개 API·멤버 순서·GPU ABI·출력 schema 유지.
+- **문서 동기화:** Rendering Source·Current Work·WIP 보고서·Validation 갱신. Contracts/Flows 검토 결과 실행/데이터 의미는 같아 추가 정의 변경 불필요.
+- **검증:** 전체 Debug build 성공. 관련 CTest 3개(ScratchDescriptorLifetime·SharedSurfaceGeometry·LocalReactions) 통과. step 0/15/60 State·metadata 및 최종 State 3개가 보완 전과 바이트 동일. 캡처 이미지 차이는 실시간 timing 숫자 영역에 한정, 나머지 픽셀 동일. 잘못된 serial·누락 target·기존 checkpoint 보호 오류 경로 3개와 Bash 구문/LF fixture 인자 전달 통과. Region·CRLF 대응 diff check 확인. [원자료](../../../Build/Validation/20261110-wip-standards/summary.json).
+- **미실행:** 전체 CTest·headless 연구 4조건·별도 성능·다른 장치 검증은 영향 범위를 벗어나 반복하지 않았다. 최초 이식의 전체 CTest 9 통과/6 실패와 구분한다. commit/push 없음.
+
+## 2026-11-10 — 구 볼트 재폐기 및 Universal v5.9 주석 전수 반영
+
+- **읽은 문서:** 현재/최신 AGENTS·Document Map, v5.9 CHANGELOG·Code Style·Local Numbering·책임 분리·Source Comments·Doxygen·활성 언어·Verification, Project Brief·Source Map과 기존 GPU/Reaction 계약·검증·이관 기록.
+- **정정:** 앞선 복원에서 폐기된 MDSSP-Agent-Vault 문서까지 누락 파일로 취급한 판단을 바로잡았다. 원본 일치를 확인한 구 문서 20개·보관 안내 1개를 Docs에서 제거하고 Git 제외 검증 경로에만 보관한다. 운영 볼트는 Docs/Agent-Vault 하나다. 데모 에셋 13개·실험 자료 126개 복원은 유지한다. 연구/보고 Python 11개와 Raw Archive 안내의 활성 경로를 실제 재번호화된 현재 문서로 이관했다.
+- **코드:** 구현 323개·Region 656개 전수 대조. 246개 파일에서 역할·설명을 보완, 머리말 171개 갱신. Region 설명은 시작 바로 아래에 654개 추가·기존 1개 유지·실행 없는 예약 구획 1개는 근거를 두고 생략. CMake 구성 4개에도 역할 머리말 추가. C++ @file 불일치 5개 수정. 기존 EOL·Region 경계·함수/선언 순서·ABI·알고리즘과 이전 WIP 기능은 유지한다.
+- **문서:** 공통 Standards 12개·AGENTS·Map·CHANGELOG·README와 Context·Source Map·Current Work·Validation 및 [v5.9 적용표](16_Vault-5.9-Comment-Coverage.md) 동기화. 프로젝트 네이밍/MSVC 예외 유지. Contracts/Flows 검토 결과 실행·데이터 정의 추가 변경 불필요. 과거 판정·manifest는 역사 원본으로 보존한다.
+- **검증:** 최종 configure/전체 Debug build 성공. C++ 201·GLSL 69 비주석 토큰 동일. Python 44 AST는 모듈 docstring·승인된 문서 경로 외 동일, Bash 5 구문/토큰·PowerShell 4 parser/비주석 토큰 통과. shader 150개 compile/spirv-val·이전 WIP SPIR-V와 바이트 동일. 실제 Maptz LF/CRLF 148회 통과(각 252영역). Region 짝/깊이 2·설명 인접성/들여쓰기·문서 대상 존재·CRLF 대응 diff check 확인. [원자료](../../../Build/Validation/20261110-vault59/summary.json).
+- **미실행:** 주석·문서 라우팅 변경이므로 전체 CTest·렌더·성능·전체 연구 파이프라인은 반복하지 않았다. Python __doc__/help는 한국어 역할 설명을 반영한다. IDE 실제 접힘 UI·다른 GPU/OS는 미검증. commit/push 없음.

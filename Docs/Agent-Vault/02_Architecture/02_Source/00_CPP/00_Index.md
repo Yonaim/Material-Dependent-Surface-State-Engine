@@ -36,7 +36,7 @@ flowchart LR
 2. 클래스 헤더에서 소유 객체와 public API를 확인한다.
 3. 대응하는 `.cpp`에서 알고리즘·GPU 명령·리소스 교체 지점을 확인한다.
 4. 셰이더와 연결할 때는 [[02_Architecture/02_Source/01_Shaders/00_Index|Shader Source Index]]를 먼저 보고, 현재 저장소의 `CMake/ShaderManifest.cmake`도 확인한다.
-5. 테스트 경로로 `Tests/`가 언급되지만 이번 소스 ZIP에는 해당 디렉터리가 없어 test 파일과 실행 결과는 대조하지 못했다.
+5. 테스트 코드·실행 결과는 `Tests/` 및 [[05_Experiments/01_Validation-and-Tests|Validation]]을 확인한다.
 
 이 지도는 파일을 옮기거나 핵심 함수를 바꿀 때 갱신한다. 새 파일은 담당 하위 시스템 표에 추가한다.
 
@@ -59,7 +59,7 @@ flowchart LR
 - [[02_Architecture/02_Source/00_CPP/01_GPU/00_Index|GPU: Vulkan / ABI / Resource Lifetime]]
 - [[02_Architecture/02_Source/00_Source-Map|Source 최상위 CPU↔Shader 연결표]]
 
-## 파일 커버리지 및 Cache
+## Cache와 구현 위치
 
-- `SurfaceCache.h/.cpp`는 기존 03_Source에서 유일하게 빠져 있던 C++ 소스 파일 2개이며, [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|CPU Cache]] 문서에 등록했다.
-- `Source/` 180개 파일과 `Shaders/` 65개 파일명을 전체 Source 문서군에서 찾을 수 있도록 보완했다. 문서의 파일 경로가 유효하다는 것과 코드가 실제 컴파일·실행에 성공한다는 것은 다른 검증 수준이다.
+- `SurfaceCache.h/.cpp`의 관리 책임은 [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|CPU Cache]]에 기록한다.
+- 파일명과 세부 함수는 변경될 수 있으므로 실제 `Source/` 디렉터리를 정본으로 삼는다.

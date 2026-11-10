@@ -30,6 +30,8 @@ flowchart LR
 
 ## Descriptor와 Solver 갱신
 
+Scratch 저장 형식 변경은 GPU idle 이후 instance buffer를 재구성하고 `RebindInstanceBuffers`로 기존 AB/BA descriptor set의 handle/range를 갱신한다. 기존 pipeline이 참조하는 descriptor layout·pool·set은 교체하지 않으며 Current State와 값은 보존한다. texel/channel 수와 Reaction capacity 호환성을 재검증한다. 연구용 Reaction ledger의 선택적 추가 allocation은 Local Reactions 계약을 따른다.
+
 ```mermaid
 flowchart LR
   Geometry[Shared Geometry] --> Descriptors[AB / BA descriptor sets]

@@ -34,12 +34,3 @@
 ## 소스 탐색과 Region folding
 
 GLSL의 번호가 있는 기존 섹션에는 `// #region 00_Resource_Interface` / `// #endregion` 형식의 주석 마커를 사용한다. 형식의 정본은 [Local Numbering](../../../00_Engineering-Standards/00_Core/01_Local-Numbering-and-Navigation.md)과 [GLSL 규칙](../../../00_Engineering-Standards/01_Languages/02_GLSL.md)이다. 저장소 루트 또는 볼트의 VS Code 설정에서 glsl 언어 모드와 Custom Folding 공급자를 사용한다. 사용자 지정 MDSS 정책에 따라 작은 include wrapper/helper/placeholder에도 마커를 적용한다. 현재 69개 파일·248개 영역(하위 126개, 최대 깊이 2)이며, GLSL 언어 프로필의 일반적인 작은 파일 예외보다 Project Brief의 설정을 우선한다. CRLF 대응 정규식과 기본 접기 지정은 볼트 README를 따른다. 접기 마커 변경만으로 계산·바인딩·pass/barrier 순서가 바뀌지 않는다.
-
-## 5.5 전체 적용 대조
-
-나머지 StaticMesh/HeightFieldSmoothing/RenderStateTextureSmoothing/SparseScheduleReset/AccumulationHeight/DynamicWeights entry도 helper prototype → main → Detailed Implementation으로 배치했다. 기존 shared include와 단일 pass의 함수/자원 경계는 유지한다. 모든 69개를 검토했으며 layout/CPU 대응·수식·compile-time variant·derivative/barrier 참여는 변경하지 않았다.
-
-
-## 중첩 Region 전수 검토 (2026-11-10)
-
-35개 파일에 하위 구획 115개를 추가하고 기존 4개 파일의 중첩을 유지했다. 나머지 30개의 유지 사유와 실제 책임별 구획은 [전수 검토표](../../../04_Development/14_Shader-Nested-Region-Coverage.md)에 기록한다. 함수·파일 경로·CPU–GPU 연결과 실행 순서는 그대로이며, 이번 변경은 탐색용 주석 추가다.

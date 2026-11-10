@@ -7,11 +7,16 @@
 1. **매 코드 작업 시작 시** 이 `AGENTS.md`와 [`01_Document-Map.md`](01_Document-Map.md)를 읽는다. 이미 동일 작업에서 읽었다면 같은 내용을 불필요하게 반복 로드하지 않아도 된다.
 2. **코드 수정 전에** 작업 유형·키워드·예정 소스 경로를 기준으로 관련 문서를 선택하고, [`00_Engineering-Standards/00_Core/00_Code-Style.md`](00_Engineering-Standards/00_Core/00_Code-Style.md), 활성 언어 규칙(셰이더 작업이면 GLSL 포함) 및 주석 규칙(관련 시), 관련 Context/Flows/Contracts/Source 및 필요 테스트 문서의 해당 부분을 읽는다. **전체 볼트를 일괄 읽지 않는다.**
 3. 현재 소스·설정·테스트와 문서를 대조한다. 불일치가 있으면 **실제 구현에 관한 관찰**과 **지켜야 할 요구사항·계약**을 구분하고, 근거 없이 어느 한쪽을 정답으로 가정하지 않는다.
-4. 의도 중심 추상화와 위에서 아래로 읽히는 실행 흐름을 유지하면서 작업한다. 기능 변경과 리팩터링을 구분하고 기존 동작·제약을 존중한다. **큰 파일/클래스의 구조화 작업**에는 [`Section & Responsibility Refactoring`](00_Engineering-Standards/00_Core/03_Section-and-Responsibility-Refactoring.md)의 1단계(섹션)와 2단계(책임 분리)를 구분한다.
-5. 작업 영향에 맞는 검증 범위를 [`Verification and Review`](00_Engineering-Standards/03_Workflow/01_Verification-and-Review.md)에서 확인하고, 가능한 범위에서 검증한다. **실행하지 않은 빌드·테스트·벤치마크의 성공을 주장하지 않는다.** 미실행이면 이유를 적는다.
-6. 작업 종료 전에 영향받는 문서(요구사항, 용어, 계약, 흐름, 소스 맵, 테스트, ADR 포함)를 **검토하고 필요한 부분만 갱신**한다. 문서를 바꿀 필요가 없어도 영향 검토는 생략할 수 없다.
-7. **모든 코드 변경 작업마다** [`04_Development/01_Work-Log.md`](04_Development/01_Work-Log.md)에 작업 단위로 짧은 기록을 남긴다. 문서 수정 없음이면 그 근거를 기록한다.
-8. 종료 보고에는 `읽은 문서 / 코드 변경 / 문서 동기화 / 검증 결과·미실행 범위`를 간단히 정리한다.
+4. **프로젝트 소유 소스/헤더 파일에는 최상단 한국어 역할 주석을 필수로 둔다.** C/C++는 `@file`·`@brief`를 사용한다. Region을 사용한다면 시작 마커 바로 아래의 간결한 설명 한 줄을 기본으로 하며, 제목 반복은 피한다. [Source Comments](00_Engineering-Standards/02_Documentation/01_Source-Comments.md)의 언어별 예외를 확인한다.
+5. 의도 중심 추상화와 위에서 아래로 읽히는 실행 흐름을 유지하면서 작업한다. 기능 변경과 리팩터링을 구분하고 기존 동작·제약을 존중한다. **큰 파일/클래스의 구조화 작업**에는 [`Section & Responsibility Refactoring`](00_Engineering-Standards/00_Core/03_Section-and-Responsibility-Refactoring.md)의 1단계(섹션)와 2단계(책임 분리)를 구분한다.
+6. 작업 영향에 맞는 검증 범위를 [`Verification and Review`](00_Engineering-Standards/03_Workflow/01_Verification-and-Review.md)에서 확인하고, 가능한 범위에서 검증한다. **실행하지 않은 빌드·테스트·벤치마크의 성공을 주장하지 않는다.** 미실행이면 이유를 적는다.
+7. 작업 종료 전에 영향받는 문서(요구사항, 용어, 계약, 흐름, 소스 맵, 테스트, ADR 포함)를 **검토하고 필요한 부분만 갱신**한다. 문서를 바꿀 필요가 없어도 영향 검토는 생략할 수 없다.
+8. **모든 코드 변경 작업마다** [`04_Development/01_Work-Log.md`](04_Development/01_Work-Log.md)에 작업 단위로 짧은 기록을 남긴다. 문서 수정 없음이면 그 근거를 기록한다.
+9. 종료 보고에는 `읽은 문서 / 코드 변경 / 문서 동기화 / 검증 결과·미실행 범위`를 간단히 정리한다.
+
+## 처음 읽는 개발자
+
+[[02_Architecture/03_System-Map|System Map]]에서 모듈의 책임을 확인한 뒤 [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]]에서 상위 함수만 읽는다. 구체적인 구현이 필요할 때만 하위 함수와 관련 Flow·Contract·Source를 확인한다.
 
 ## 정보의 책임
 

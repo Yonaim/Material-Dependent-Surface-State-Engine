@@ -8,6 +8,8 @@ Shared Geometry·Profile Table·Instance State를 각각 누가 소유하며 언
 
 ## Surface descriptor와 resource lifecycle
 
+`ConfigureScratchStorage`는 device idle 이후 기존 descriptor layout·AB/BA set을 보존하고 `FSurfaceStateDescriptorResources::RebindInstanceBuffers`로 교체된 버퍼만 다시 연결한다. `MDSS_ScratchDescriptorLifetime`은 반복 storage/cache 전환, State·handle 유지 및 실제 compute/render 경로를 검증한다. 연구용 WorldTexelArea/DynamicGeometry readback getter와 선택적 Reaction ledger allocation은 현재 GPU Layout·Reaction 계약을 따른다.
+
 | 파일 | 선언·핵심 코드 | 역할 |
 |---|---|---|
 | [SurfaceGPUResources.h](../../../../../../Source/SurfaceState/GPU/Resources/SurfaceGPUResources.h) | Surface GPU handle·resource 공통 형식 | Runtime surface와 GPU resource 사이의 ID/handle 표현 |

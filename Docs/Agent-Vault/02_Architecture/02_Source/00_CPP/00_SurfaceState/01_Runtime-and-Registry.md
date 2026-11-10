@@ -38,3 +38,17 @@ Scene의 State 이름·Profile을 runtime channel과 재사용 가능한 정적 
 - `BuildSurfaceStateRegistry(const FScene&)`는 Scene이 참조하는 profile들의 State를 Registry에 반영하는 경로다. 이후 `GetSceneSurfaceProfiles`와 Profile GPU table 구성으로 연결된다.
 - `FSurfaceStateSystem::SubmitContact`는 pending queue에만 추가하며 GPU State를 즉시 변경하지 않는다. 리셋 처리 `ResetState`와 초기 이벤트 재등록 `QueueInitialContacts`를 구별한다. [SurfaceStateSystem.cpp](../../../../../../Source/SurfaceState/SurfaceStateSystem.cpp).
 - runtime handle의 해상도 변종·정리는 `LoadSurfaceDataAtResolution` / `ReleaseUnusedSurfaceData`에서 찾는다. Scene 객체가 교체되면 기존 GPU descriptor가 그대로 유효하다고 가정하지 않는다.
+
+## Surface Data 준비 흐름
+
+`FSurfaceDataManager::LoadSurfaceData`는 다음 순서로 Runtime Surface를 준비한다.
+
+```text
+입력 검증 → Runtime key 조회
+  ├─ 재사용 가능: 기존 handle 반환
+  └─ 생성 필요: Profile 및 Geometry 입력 구성
+                 → LoadOrBuildSurfaceGeometry
+                 → Runtime Data / handle 등록
+```
+
+`LoadOrBuildSurfaceGeometry`의 `.Surface` 캐시가 사용 가능하면 정적 형상을 복원한다. 캐시가 없거나 무효라면 Mapping·Geometry·Normal Transfer·Meso 정보를 구축한다. Runtime handle 재사용과 파일 캐시 재사용은 별개의 판단이다. 입력 검사·캐시 형식은 [[02_Architecture/02_Source/00_CPP/00_SurfaceState/04_Cache-and-Lifecycle|Cache and Lifecycle]]에서 확인한다.

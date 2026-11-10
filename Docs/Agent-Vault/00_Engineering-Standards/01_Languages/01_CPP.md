@@ -79,7 +79,7 @@ Epic Games의 [공식 C++ 코딩 표준](https://dev.epicgames.com/documentation
 
 - 인라인 주석은 [`Source Comments`](../02_Documentation/01_Source-Comments.md)를, 공개 API 명세는 [`Doxygen`](../02_Documentation/00_Doxygen.md)을 따른다. C++ API의 Doxygen 설명 문장은 한국어를 사용한다.
 - 의미 없는 설명 주석을 만들지 않고, 계약·단위·오류·소유권·스레드 경계·비자명한 이유를 문서화한다.
-- `@file` / `@brief`는 프로젝트가 채택한 경우 사용하며, 범용 코드에 무조건 강제하지 않는다.
+- **프로젝트가 직접 관리하는 C++ 소스·헤더(`.cpp`, `.hpp`, `.h` 등)의 맨 앞에 한국어 `@file` / `@brief` 주석을 필수로 작성한다.** 개별 함수의 Doxygen은 비자명한 계약이 있는 경우에만 작성한다.
 - 코드 및 API 변경 후 관련 Contract와 주석을 동기화한다. 실행하지 않은 빌드·테스트를 성공했다고 기록하지 않는다.
 
 ## 05. 큰 클래스/상태 구조화

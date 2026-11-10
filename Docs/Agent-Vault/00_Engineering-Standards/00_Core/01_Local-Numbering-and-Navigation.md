@@ -45,6 +45,7 @@ repo/
 // 00. Main Process
 // ============================================================
 #pragma region 00_Main_Process
+// 입력·시뮬레이션·렌더링의 프레임 처리 순서를 조율한다.
 
 void UpdateFrame() {
     ProcessInput();
@@ -59,6 +60,7 @@ void UpdateFrame() {
 // 01. Simulation Coordination
 // ============================================================
 #pragma region 01_Simulation_Coordination
+// 계산 대상 영역을 수집한 뒤 시뮬레이션을 디스패치한다.
 
 void UpdateSimulation() {
     CollectActiveRegions();
@@ -69,6 +71,8 @@ void UpdateSimulation() {
 ```
 
 - 섹션 번호는 **각 파일에서** `00, 01, 02, ...`으로 시작한다. 주석의 제목과 region 이름은 동일한 의미를 표현한다.
+- **설명 주석은 `#pragma region` 바로 아래에 한 줄**로 작성한다. 제목을 반복하지 않고 책임·처리 흐름·부작용 등 추가 정보를 전달한다. 필요 없는 설명을 억지로 쓰지는 않는다.
+- 접으면 Region 설명도 함께 숨겨지므로, 접힌 상태에서 파악할 핵심 분류는 **3줄 섹션 제목과 Region 이름**으로 전달한다.
 - 주석은 편집기의 접기 기능이 없어도 시각적인 구분을 제공하고, `#pragma region`은 **지원하는 IDE**에서 접기 기능을 추가한다.
 - **`#pragma region`은 ISO C/C++ 표준 지시문이 아니다.** 사용 전 프로젝트의 컴파일러/IDE 지원 여부를 확인한다. 미지원 컴파일러에서는 경고가 발생하거나, 경고를 오류로 처리하면 빌드가 실패할 수 있다.
 - **지원하지 않는 빌드 환경**에서는 `#pragma region`/`#pragma endregion`을 생략하고 동일한 섹션 주석만 사용한다.
@@ -82,6 +86,7 @@ void UpdateSimulation() {
 
 - **최상위:** 기존 **3줄 섹션 주석 + Region**을 유지한다.
 - **하위:** **들여쓰기된 한 줄 섹션 주석 + Region**을 사용한다. 중첩 단계마다 3줄 구분선을 반복하지 않는다.
+- **두 레벨 모두:** 한 줄 책임 설명은 Region 시작 마커 바로 아래에 배치하고 마커의 들여쓰기 수준과 맞춘다.
 - **번호:** 하위 구획은 해당 상위 섹션의 번호에 지역 번호 `00, 01, 02...`를 이어 `00.00`, `00.01`로 표시한다. Region의 식별자는 `00_00_Camera_Controls`처럼 점을 밑줄로 바꾼다.
 - **깊이:** 일반적으로 **최상위 1단계 + 하위 1단계(총 2단계)**까지만 사용한다. 세 번째 단계가 필요하면 함수·타입·파일 분리를 먼저 검토한다.
 - **들여쓰기:** 하위 주석과 마커는 둘러싼 코드의 논리적 들여쓰기를 따른다. 전처리기를 지원하지 않는 환경에서는 동일한 구조의 일반 주석만 유지한다.
@@ -91,9 +96,11 @@ void UpdateSimulation() {
 // 00. Scene & Viewport
 // ============================================================
 #pragma region 00_Scene_And_Viewport
+// 장면 조작과 화면 표시를 위한 입력·도구 기능을 묶는다.
 
     // 00.00. Camera Controls
     #pragma region 00_00_Camera_Controls
+    // 카메라 이동과 뷰 프리셋 선택을 처리한다.
 
     void ProcessCameraInput(TScene& Scene);
     void DrawCameraWindow(TScene& Scene);
@@ -103,6 +110,7 @@ void UpdateSimulation() {
 
     // 00.01. Gizmo Controls
     #pragma region 00_01_Gizmo_Controls
+    // 객체 선택과 Gizmo 조작을 처리한다.
 
     void ProcessSelectionAndGizmo(TScene& Scene);
     void DrawSelectedObjectWindow(TScene& Scene);
@@ -142,6 +150,7 @@ void UpdateSimulation() {
 // 00. Main Process
 // ============================================================
 // #region 00_Main_Process
+// 한 번의 셰이더 호출에서 수행할 작업을 구성한다.
 
 void main() {
     // ...
@@ -159,6 +168,7 @@ JavaScript/TypeScript에서는 `#version 450` 없이 동일한 `//` 형식의 �
 # 00. Main Process
 # ============================================================
 #region 00_Main_Process
+# 설정을 불러온 뒤 처리 작업을 순서대로 실행한다.
 
 def main():
     load_config()
@@ -196,6 +206,6 @@ GLSL(`glsl`)·Shell(`shellscript`)의 `#region` 주석을 인식하는 정규식
 
 특히 C++ 멤버 필드의 재배치는 초기화 순서·레이아웃에 영향을 줄 수 있으므로 **1단계가 곧 안전한 선언 재배치를 뜻하지 않는다.**
 
-## MDSS 프로젝트의 MSVC Region 호환성
+## MSVC Region 라벨 호환성
 
-2026-11-10 실제 재빌드에서 숫자로 시작하는 `08_...`·`09_...` C++ Region 라벨이 C2041로 거부됐다. 해당 파일과 새 하위 구획의 라벨은 `#pragma region "09_Profile_Editing_State"`처럼 따옴표로 감싼다. 번호/책임과 코드의 선언 순서는 유지한다. GLSL 주석 마커에는 이 C++ 예외를 적용하지 않는다. 상세 범위는 [v5.8 이관 기록](../../04_Development/13_Vault-5.8-Readability-Coverage.md)을 따른다.
+MSVC에서는 숫자로 시작하는 Region 라벨을 해석하는 과정에서 C2041 오류가 발생할 수 있다. 숫자로 시작하는 C++ 라벨은 `#pragma region "09_Profile_Editing_State"`처럼 큰따옴표로 감싼다. GLSL의 comment Region(`// #region`)에는 이 예외를 적용하지 않는다.

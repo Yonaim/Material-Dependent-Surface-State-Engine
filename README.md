@@ -30,7 +30,9 @@ preset. This preset requires CMake 4.2 or newer.
 
 The Lit scene compares finite heating, sustained heating, and water cooling with `ice`, `waterfilm`, and `heat` States. The 14-second animation starts automatically. F10 opens the presentation view. Profile v5 rules live in `Assets/SurfaceProfiles/IceReactionLab.SRProfile`; thresholds and condition scales are amounts per fixed reference area.
 
-`Scripts/Validation/verify_reactions.ps1` captures the Lit scene at 3 and 14 seconds and checks finite, nonnegative States and Reaction diagnostics. Detailed contracts are in `Docs/MDSSP-Agent-Vault/02_Architecture/02_Contracts/05_Reactions.md`.
+`Scripts/Validation/verify_reactions.ps1` captures the Lit scene at 3 and 14 seconds and checks finite, nonnegative States and Reaction diagnostics. Detailed contracts are in `Docs/Agent-Vault/02_Architecture/01_Contracts/06_Reactions.md`.
+
+On POSIX systems, `./Scripts/build.sh -DCMAKE_BUILD_TYPE=Release -- --scene Assets/Scenes/IceReactionLab.Scene` builds and launches the app. Arguments before `--` configure CMake; arguments after it go to the app. `./Scripts/run.sh` launches an existing build.
 
 ## Project Status
 

@@ -1,5 +1,13 @@
 # Universal Agent Vault — Template Changelog
 
+## v5.9
+
+- 프로젝트 소유 소스/헤더 파일의 **최상단 역할 주석을 필수화**. C/C++는 한국어 Doxygen `@file`·`@brief`, GLSL·Python·Shell·JS/TS는 각 언어에 맞는 파일 머리말을 사용하며 언어별 첫 줄 제약을 보존.
+- 최상위·중첩 Region은 **시작 마커 바로 아래의 간결한 한 줄 책임 설명**을 기본으로 사용. 역할이 제목만으로 자명하여 중복만 생기는 경우에는 생략 허용.
+- Code Style, Source Comments, Doxygen, 언어별 프로필, Local Numbering, Refactoring, Agent Workflow, 문서 라우팅, 검증 체크리스트 및 README를 동기화.
+- 기존 Obsidian/Blue Topaz 및 VS Code 설정, LF·CRLF 접기 정규식은 그대로 유지.
+
+
 ## v5.8
 
 - VS Code Custom Folding의 GLSL·Shell Region 정규식을 **LF·CRLF 양쪽 줄바꿈**에 대응하도록 변경 (`foldStartRegex` / `foldEndRegex` / `defaultFoldStartRegex`).

@@ -19,6 +19,7 @@
 ## 01. 기본 서식과 선언 순서
 
 - C/C++처럼 명확한 들여쓰기, 일관된 중괄호·공백, 응집된 헬퍼 함수를 사용한다. 기본 예시는 **4칸 들여쓰기**, 함수·변수 `snake_case`, 타입 `PascalCase`, 상수 `UPPER_SNAKE_CASE`이며 기존 프로젝트 관례가 우선한다.
+- 프로젝트 소유 셰이더 파일의 최상단에는 **해당 Shader Stage의 주요 책임을 요약하는 한국어 주석**을 필수로 작성한다. `#version` 앞에 주석을 두더라도, `#version`이 첫 GLSL 전처리 지시문이라는 조건을 유지한다.
 - 버전 및 확장 지시문을 파일 앞쪽에 유지한다. **`#version`은 GLSL의 전처리 규칙에 따라 다른 전처리 명령·토큰보다 먼저** 둔다. 섹션 주석은 `#version` 다음에 놓는 것을 기본으로 한다.
 - `layout(location=...)`, `layout(set=..., binding=...)`, `layout(local_size_*=...)`, `layout(std430)` 등은 해당 리소스 또는 실행 단계의 선언 가까이에 둔다.
 - 권장 논리적 순서: **버전/확장 → 인터페이스·리소스 선언 → 헬퍼 선언(prototype) → `main()` → 세부 구현**. GLSL의 선언 순서 제약으로 컴파일이 안 된다면 프로토타입 추가 또는 헬퍼 정의 위치 조정을 사용한다.
@@ -29,12 +30,14 @@
 GLSL에서는 세 줄 섹션 주석 바로 아래에 **`// #region` / `// #endregion`**을 함께 사용한다. 이 마커는 GLSL 주석이므로 셰이더 컴파일러에 특별한 pragma 지원을 요구하지 않는다. VS Code에서 실제로 접기 영역으로 인식하려면 언어 확장 또는 [Custom Folding 설정](../../.vscode/settings.json)이 필요할 수 있다.
 
 ```glsl
+// SurfaceUpdate.comp — 셰이더 입력을 검사하고 다음 상태를 계산한다.
 #version 450
 
 // ============================================================
 // 00. Configuration & Resources
 // ============================================================
 // #region 00_Configuration_And_Resources
+// 리소스와 실행 크기, CPU 측 인터페이스 계약을 선언한다.
 
 // ...
 
@@ -44,6 +47,7 @@ GLSL에서는 세 줄 섹션 주석 바로 아래에 **`// #region` / `// #endre
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Invocation의 유효 범위를 확인하고 셀 계산으로 제어를 넘긴다.
 
 // ...
 
@@ -53,6 +57,7 @@ GLSL에서는 세 줄 섹션 주석 바로 아래에 **`// #region` / `// #endre
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// 개별 셀의 상태를 읽고 다음 값을 계산한다.
 
 // ...
 
@@ -60,6 +65,7 @@ GLSL에서는 세 줄 섹션 주석 바로 아래에 **`// #region` / `// #endre
 ```
 
 - 섹션 번호는 파일마다 `00, 01, 02...`로 다시 시작하며, 책임 단위로만 나눈다.
+- Region 설명은 마커 **다음 줄에 한 줄**로 작성하되, 제목을 단순 반복하지 않는다.
 - `#version`은 해당 GLSL 버전 규칙에 따라 유효한 위치에 두며, `#extension` 등 선행 선언의 제약을 확인한다.
 - **`#pragma region`을 GLSL 기본 형식으로 사용하지 않는다.** 주석 마커는 접기 확장이 없어도 일반 소스 주석으로 남는다.
 - GPU 단계나 컴파일 조건으로 인해 섹션 배치에 제약이 있으면 **유효한 셰이더 코드**를 우선한다.
@@ -69,12 +75,14 @@ GLSL에서는 세 줄 섹션 주석 바로 아래에 **`// #region` / `// #endre
 아래 예시는 **구조를 보여 주는 최소 예제**다. 실제 Set/Binding 값, Workgroup Size, 버퍼 구조 및 Push Constant는 프로젝트에서 검증한 CPU 측 계약과 일치시켜야 한다.
 
 ```glsl
+// SurfaceUpdate.comp — 셰이더 입력을 검사하고 다음 상태를 계산한다.
 #version 450
 
 // ============================================================
 // 00. Configuration & Resources
 // ============================================================
 // #region 00_Configuration_And_Resources
+// 리소스와 실행 크기, CPU 측 인터페이스 계약을 선언한다.
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
@@ -103,6 +111,7 @@ void update_cell(uint index);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Invocation의 유효 범위를 확인하고 셀 계산으로 제어를 넘긴다.
 
 void main() {
     uvec2 cell = gl_GlobalInvocationID.xy;
@@ -120,6 +129,7 @@ void main() {
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// 개별 셀의 상태를 읽고 다음 값을 계산한다.
 
 void update_cell(uint index) {
     float current_value = input_data.values[index];
@@ -186,10 +196,12 @@ void update_cell(uint index) {
 // 01. Per-Invocation Processing
 // ============================================================
 // #region 01_Per_Invocation_Processing
+// 하나의 Invocation이 담당할 입력 검사·계산·쓰기 과정을 묶는다.
 
 void process_cell(uint index) {
     // 01.00. Input Validation
     // #region 01_00_Input_Validation
+    // 유효하지 않은 인덱스 접근을 방지한다.
 
     if (index >= uint(input_data.values.length())) {
         return;
@@ -199,6 +211,7 @@ void process_cell(uint index) {
 
     // 01.01. Read & Compute
     // #region 01_01_Read_And_Compute
+    // 현재 상태를 읽고 다음 값을 계산한다.
 
     float current_value = input_data.values[index];
     float next_value = max(current_value - 0.01, 0.0);
@@ -207,6 +220,7 @@ void process_cell(uint index) {
 
     // 01.02. Commit Result
     // #region 01_02_Commit_Result
+    // 계산 결과를 출력 버퍼에 기록한다.
 
     output_data.values[index] = next_value;
 

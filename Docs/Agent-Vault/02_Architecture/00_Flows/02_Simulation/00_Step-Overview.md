@@ -73,6 +73,10 @@ flowchart TD
 
 ## Step 종료, 다음 소비자
 
+연구용 opt-in flag bit 26은 동적 geometry 갱신을 멈추고 flux의 target 위치도 저장된 DynamicGeometry에서 읽는다. bit 27은 높이 dirty tolerance를 생략하고 매 step 전체 파생 geometry 재계산을 요청한다. 둘은 연구 도구가 명시적으로 선택하며 제품 기본값에는 포함하지 않는다. bit 28의 반응량 장부는 Local Reactions 계약을 따른다.
+
+`SetInitialInputReadbackObserver`는 CPU contact rasterization 뒤 첫 Solver dispatch 전에 한 번 호출하는 읽기용 observer다. benchmark의 `authoring_checkpoint_steps`는 양수·오름차순·중복 없는 Solver serial 목록이며 `capture_image=true`와 Scene 참조가 필요하다. 지정 step의 같은 command buffer에서 캡처한 이미지와 GPU idle 후 State/geometry를 함께 저장한다. 초기 snapshot은 rasterized InputDelta와 Current State를 포함하고 초기 렌더 이미지는 포함하지 않는다. `authoring_instance_id` 기본값은 `b_heated`다. benchmark `geometry_feedback`은 기본 true이며 명시적 false도 반영한다.
+
 `RecordSteps` 이후 `FSurfaceGPUResourceManager::AdvanceCurrentState`가 A/B 방향을 뒤집고 입력 활성화 플래그를 정리한다. geometry OFF에서는 Solver용 동적 geometry 갱신을 생략하지만 마지막 substep에서 표시용 높이를 만들 수 있다. sparse dispatch는 metadata의 indirect command를 소비하고, full 경로는 texel 수에 따른 workgroup을 dispatch한다. 둘의 수식 의미와 buffer ABI는 [[02_Architecture/01_Contracts/04_Solver|Solver]]와 [[02_Architecture/01_Contracts/05_GPU-Layout|GPU Layout]]이 기준이다.
 
 

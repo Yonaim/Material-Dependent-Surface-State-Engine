@@ -47,6 +47,7 @@ public:
     // 00. Lifecycle & Public API
     // ============================================================
 #pragma region 00_Lifecycle_And_Public_API
+// 해당 처리 단계의 책임을 분리해 탐색한다.
 
     void BeginFrame(TScene& SceneData);
     void Render(VkCommandBuffer CommandBuffer) const;
@@ -60,6 +61,7 @@ private:
     // 01. Scene & Viewport Operations
     // ============================================================
 #pragma region 01_Scene_And_Viewport_Operations
+// 해당 처리 단계의 책임을 분리해 탐색한다.
 
     void ProcessCameraInput(TScene& SceneData);
     void ProcessSelectionAndGizmo(TScene& SceneData);
@@ -71,6 +73,7 @@ private:
     // 02. Simulation & Diagnostics UI
     // ============================================================
 #pragma region 02_Simulation_And_Diagnostics_UI
+// 해당 처리 단계의 책임을 분리해 탐색한다.
 
     void DrawSimulationDebugWindow(TScene& SceneData);
     void DrawSolverTab();
@@ -83,6 +86,7 @@ private:
     // 03. Runtime & Profiling State
     // ============================================================
 #pragma region 03_Runtime_And_Profiling_State
+// 해당 처리 단계의 책임을 분리해 탐색한다.
 
     bool bSimulationPaused = false;
     double ProfilingElapsedSeconds = 0.0;
@@ -124,6 +128,7 @@ private:
     // 00. Diagnostic State
     // ============================================================
 #pragma region 00_Diagnostic_State
+// 해당 처리 단계의 책임을 분리해 탐색한다.
 
     TProfilingUIState Profiling;
 

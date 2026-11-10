@@ -7,7 +7,7 @@
 - [[01_Project-Context/02_Requirements|Requirements]] · [[01_Project-Context/03_Constraints|Constraints]]
 
 ## 실행 구조와 코드 위치
-- [[02_Architecture/00_Flows/00_Main-Flow|Main Flow]] · [[02_Architecture/03_System-Map|System Map]]
+- [[02_Architecture/03_System-Map|System Map]] · [[02_Architecture/04_Code-Reading-Guide|Code Reading Guide]] · [[02_Architecture/00_Flows/00_Main-Flow|Main Flow]]
 - [[02_Architecture/01_Contracts/00_Contract-Register|Contract Register]] · [[02_Architecture/02_Source/00_Source-Map|Source Map]]
 - [[02_Architecture/02_Source/00_CPP/00_Index|C++ Source]] · [[02_Architecture/02_Source/01_Shaders/00_Index|Shaders]]
 

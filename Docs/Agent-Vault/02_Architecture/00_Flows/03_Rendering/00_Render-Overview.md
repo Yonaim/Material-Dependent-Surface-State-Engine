@@ -1,5 +1,7 @@
 # Rendering Flow Overview
 
+**상위 코드 경로:** `FRenderer::RenderFrame`(프레임 조율) → `FRenderer::RecordCommandBuffer`(Simulation·Display·Graphics·UI 기록) → `PrepareDisplayResources`(표시 데이터) → `RecordInstanceDisplayResources`(Instance별 준비). 각 단계가 수행하는 실제 GPU Pass와 Buffer 전환은 아래 내용을 따른다.
+
 > 렌더링은 Solver 결과를 관찰하는 경로다. 표시용 smoothing·색상·높이 배율은 다음 Solver step의 State나 Geometry에 피드백하지 않는다.
 
 **연결 문서**

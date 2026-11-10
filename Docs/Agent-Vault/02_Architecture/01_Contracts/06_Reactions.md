@@ -77,6 +77,8 @@ binding 23은 Scene 공유 uint-word Reaction table이다. Profile별 Rule 범�
 
 `N × (5K + M + 4)` float: 두 State snapshot, 소비 비율, positive input, incoming의 다섯 K-plane, M개의 요청/실제 extent, 네 진단값이다. K는 Scene 채널 수, M은 Profile당 최대 활성 규칙 수다. Reaction 없는 Scene에서는 dummy scratch 하나만 할당한다.
 
+연구 도구가 `bResearchReactionLedger=true`로 instance를 생성하고 Solver flag bit 28을 명시적으로 켜면 기존 scratch 뒤에 `N × M` float 장부를 추가한다. 전체 크기는 `N × (5K + 2M + 4)` float이며 binding·기존 plane offset은 유지한다. texel별 Rule extent를 매 dispatch 시작에 0으로 초기화하고, 유입 전환 및 continuous 구간 중 실제 적용한 유한 구간의 소비 제한 후 extent만 누적한다. 제품 기본 경로는 이 옵션을 켜지 않는다. 호출자는 장부 allocation과 flag를 함께 선택해야 한다.
+
 Texel Inspector는 내부 구간 수·공급량 제한 횟수·시간 예산 초과·산술 오류를 표시한다. Profile 패널은 Rule의 소비·생성·조건을 조회한다. Rule 수정은 `.SRProfile` 편집 후 Scene 재로드로 적용한다. GPU query의 기존 Pass 2 timestamp 구간에는 Reaction 실행이 포함된다.
 
 ## Lit 예제

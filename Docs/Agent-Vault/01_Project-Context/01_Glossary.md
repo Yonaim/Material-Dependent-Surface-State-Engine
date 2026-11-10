@@ -1,12 +1,8 @@
 # 용어집
 
-> **한 줄 요약:** MDSS Engine에서 사용하는 주요 용어의 현재 의미다.
+> **한 줄 요약:** 본문에서는 코드·설계 개념에 대응하는 영문 이름을 그대로 사용한다. 예를 들어 `GeometryDrive`를 ‘형상 구동’, `TransferWeight`를 ‘전달 가중치’로 바꾸지 않으며, 한국어 설명은 각 용어의 의미를 풀어 쓰는 데 사용한다.
 
-MDSS Engine에서 사용하는 주요 용어의 현재 의미다.
-
-본문에서는 코드·설계 개념에 대응하는 영문 이름을 그대로 사용한다. 예를 들어 `GeometryDrive`를 ‘형상 구동’, `TransferWeight`를 ‘전달 가중치’로 바꾸지 않으며, 한국어 설명은 각 용어의 의미를 풀어 쓰는 데 사용한다.
-
-State / Capacity / Saturation은 Decision 0004의 새 계약을 따른다. Shader의 상한 clamp 제거와 선택 GPU 회귀 fixture는 통과했으며, 5주차 통합 검증과 timestep 비교는 대기 중이다.
+State / Capacity / Saturation은 관련 Contract와 ADR의 정의를 따른다.
 
 | 용어 | 뜻 | 관련 문서 |
 |---|---|---|
@@ -42,6 +38,3 @@ State / Capacity / Saturation은 Decision 0004의 새 계약을 따른다. Shade
 | **State Transition** | State의 소비와 다른 State의 생성을 묶은 Reaction의 하위 유형. version 5 `reactions`로 구현한다. 기존 version 3/4 `transitions`는 source를 소비하지 않는 조건부 생성 호환 규칙이다. | [[02_Architecture/01_Contracts/06_Reactions\|Local Reactions]] |
 
 `Overflow`는 과거의 초과 상태량 모델에 속하는 용어이며 현재 상태 저장 모델에서는 사용하지 않는다.
-
-
-> 이관 출처: 기존 MDSSP 볼트 `01_Project-Policy/01_Glossary.md`. 원본에서 유지한 용어 정의이며 소스와 의미가 다른 부분은 해당 Contract와 대조한다.
