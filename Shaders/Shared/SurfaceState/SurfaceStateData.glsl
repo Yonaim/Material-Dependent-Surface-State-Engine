@@ -32,175 +32,175 @@ struct TSurfaceGPUNeighborIndices
 // #region 00_Resource_Interface
 // CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
-// 00.00. Texel Mapping and Static Geometry
-// #region 00_00_Texel_Mapping_and_Static_Geometry
-// binding 0·1·2·3·4·5의 선언을 CPU descriptor와 대응시킨다.
+    // 00.00. Texel Mapping and Static Geometry
+    // #region 00_00_Texel_Mapping_and_Static_Geometry
+    // binding 0·1·2·3·4·5의 선언을 CPU descriptor와 대응시킨다.
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 0)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 0)
 
-    readonly buffer TSurfaceTexelSurfaceIndices
-{
-    uint Values[];
-}
+        readonly buffer TSurfaceTexelSurfaceIndices
+    {
+        uint Values[];
+    }
 
-TexelSurfaceIndices;
+    TexelSurfaceIndices;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 1)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 1)
 
-    readonly buffer TSurfaceTexelProfileIndices
-{
-    uint Values[];
-}
+        readonly buffer TSurfaceTexelProfileIndices
+    {
+        uint Values[];
+    }
 
-TexelProfileIndices;
+    TexelProfileIndices;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 2)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 2)
 
-    readonly buffer TSurfacePositions
-{
-    vec4 Values[];
-}
+        readonly buffer TSurfacePositions
+    {
+        vec4 Values[];
+    }
 
-Positions;
+    Positions;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 3)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 3)
 
-    readonly buffer TSurfaceNormals
-{
-    vec4 Values[];
-}
+        readonly buffer TSurfaceNormals
+    {
+        vec4 Values[];
+    }
 
-Normals;
+    Normals;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 4)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 4)
 
-    readonly buffer TSurfaceGeometryScalars
-{
-    TSurfaceGPUGeometryScalar Values[];
-}
+        readonly buffer TSurfaceGeometryScalars
+    {
+        TSurfaceGPUGeometryScalar Values[];
+    }
 
-GeometryScalars;
+    GeometryScalars;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 5)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 5)
 
-    readonly buffer TSurfaceNeighborIndices
-{
-    TSurfaceGPUNeighborIndices Values[];
-}
+        readonly buffer TSurfaceNeighborIndices
+    {
+        TSurfaceGPUNeighborIndices Values[];
+    }
 
-NeighborIndices;
+    NeighborIndices;
 
-// #endregion
+    // #endregion
 
-// 00.01. Profile Tables and SoA Access
-// #region 00_01_Profile_Tables_and_SoA_Access
-// ProfileParameters 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
+    // 00.01. Profile Tables and SoA Access
+    // #region 00_01_Profile_Tables_and_SoA_Access
+    // ProfileParameters 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 6)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 6)
 
-    readonly buffer TSurfaceProfileParameters
-{
-    // 3-plane vec4 SoA: capacity/input/transfer, decay/geometry, accumulation/thickness.
-    vec4 Values[];
-}
+        readonly buffer TSurfaceProfileParameters
+    {
+        // 3-plane vec4 SoA: capacity/input/transfer, decay/geometry, accumulation/thickness.
+        vec4 Values[];
+    }
 
-ProfileParameters;
+    ProfileParameters;
 
-// CPU가 [모든 Record의 첫 vec4][모든 Record의 둘째 vec4][모든 Record의 셋째 vec4]
-// 순서로 한 버퍼에 저장하므로, Record 하나를 읽을 때 plane별 시작 위치를 계산한다.
-uint SurfaceProfileRecordCount()
-{
-    return uint(ProfileParameters.Values.length()) / 3u;
-}
+    // CPU가 [모든 Record의 첫 vec4][모든 Record의 둘째 vec4][모든 Record의 셋째 vec4]
+    // 순서로 한 버퍼에 저장하므로, Record 하나를 읽을 때 plane별 시작 위치를 계산한다.
+    uint SurfaceProfileRecordCount()
+    {
+        return uint(ProfileParameters.Values.length()) / 3u;
+    }
 
-vec4 SurfaceProfileCapacityInputAndTransfer(uint Record)
-{
-    return ProfileParameters.Values[Record];
-}
+    vec4 SurfaceProfileCapacityInputAndTransfer(uint Record)
+    {
+        return ProfileParameters.Values[Record];
+    }
 
-vec4 SurfaceProfileDecayAndGeometry(uint Record)
-{
-    return ProfileParameters.Values[SurfaceProfileRecordCount() + Record];
-}
+    vec4 SurfaceProfileDecayAndGeometry(uint Record)
+    {
+        return ProfileParameters.Values[SurfaceProfileRecordCount() + Record];
+    }
 
-vec4 SurfaceProfileAccumulationThickness(uint Record)
-{
-    return ProfileParameters.Values[SurfaceProfileRecordCount() * 2u + Record];
-}
+    vec4 SurfaceProfileAccumulationThickness(uint Record)
+    {
+        return ProfileParameters.Values[SurfaceProfileRecordCount() * 2u + Record];
+    }
 
-TSurfaceGPUProfileParameters LoadSurfaceProfileParameters(uint Record)
-{
-    // 세 vec4 plane에서 같은 Record 번호를 각각 읽어 한 구조체로 묶는다.
-    TSurfaceGPUProfileParameters P;
-    P.CapacityInputAndTransfer = SurfaceProfileCapacityInputAndTransfer(Record);
-    P.DecayAndGeometry = SurfaceProfileDecayAndGeometry(Record);
-    P.AccumulationThickness = SurfaceProfileAccumulationThickness(Record);
+    TSurfaceGPUProfileParameters LoadSurfaceProfileParameters(uint Record)
+    {
+        // 세 vec4 plane에서 같은 Record 번호를 각각 읽어 한 구조체로 묶는다.
+        TSurfaceGPUProfileParameters P;
+        P.CapacityInputAndTransfer = SurfaceProfileCapacityInputAndTransfer(Record);
+        P.DecayAndGeometry = SurfaceProfileDecayAndGeometry(Record);
+        P.AccumulationThickness = SurfaceProfileAccumulationThickness(Record);
 
-    return P;
-}
+        return P;
+    }
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 7)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 7)
 
-    readonly buffer TSurfaceProfileSupported
-{
-    uint Values[];
-}
+        readonly buffer TSurfaceProfileSupported
+    {
+        uint Values[];
+    }
 
-ProfileSupported;
+    ProfileSupported;
 
-// #endregion
+    // #endregion
 
-// 00.02. Current State and Display Geometry Inputs
-// #region 00_02_Current_State_and_Display_Geometry_Inputs
-// binding 8·12·17·19·21의 선언을 CPU descriptor와 대응시킨다.
+    // 00.02. Current State and Display Geometry Inputs
+    // #region 00_02_Current_State_and_Display_Geometry_Inputs
+    // binding 8·12·17·19·21의 선언을 CPU descriptor와 대응시킨다.
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 8)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 8)
 
-    readonly buffer TSurfaceCurrentState
-{
-    float Values[];
-}
+        readonly buffer TSurfaceCurrentState
+    {
+        float Values[];
+    }
 
-CurrentState;
+    CurrentState;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 12)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 12)
 
-    readonly buffer TSurfaceRanges
-{
-    uvec4 Values[];
-}
+        readonly buffer TSurfaceRanges
+    {
+        uvec4 Values[];
+    }
 
-SurfaceRanges;
+    SurfaceRanges;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 17)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 17)
 
-    readonly buffer TSurfaceMesoNormals
-{
-    // xyz: Meso normal; w: maximum Meso height in this surface/chart.
-    vec4 Values[];
-}
+        readonly buffer TSurfaceMesoNormals
+    {
+        // xyz: Meso normal; w: maximum Meso height in this surface/chart.
+        vec4 Values[];
+    }
 
-MesoNormals;
+    MesoNormals;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 19)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 19)
 
-    readonly buffer TSurfaceWorldTexelAreas
-{
-    float Values[];
-}
+        readonly buffer TSurfaceWorldTexelAreas
+    {
+        float Values[];
+    }
 
-WorldTexelAreas;
+    WorldTexelAreas;
 
-layout(std430, set = SURFACE_DEBUG_SET, binding = 21)
+    layout(std430, set = SURFACE_DEBUG_SET, binding = 21)
 
-    readonly buffer TSurfaceAccumulationHeights
-{
-    float Values[];
-}
+        readonly buffer TSurfaceAccumulationHeights
+    {
+        float Values[];
+    }
 
-AccumulationHeights;
+    AccumulationHeights;
 
-// #endregion
+    // #endregion
 
 // #endregion
 #endif

@@ -13,104 +13,104 @@
 // CPU: AccumulationOverlaySides.cpp의 descriptor/push constant와 direct·indirect dispatch에 대응한다.
 layout(local_size_x = 64) in;
 
-// 00.00. Mesh Topology and Draw Record Types
-// #region 00_00_Mesh_Topology_and_Draw_Record_Types
-// binding 0·1의 선언을 CPU descriptor와 대응시킨다.
+    // 00.00. Mesh Topology and Draw Record Types
+    // #region 00_00_Mesh_Topology_and_Draw_Record_Types
+    // binding 0·1의 선언을 CPU descriptor와 대응시킨다.
 
-struct TOverlayVertex
-{
-    vec4 Position;
-    vec4 Normal;
-    vec4 UVSurface;
-    vec4 DisplacementNormal;
-    uvec4 Samples;
-    vec4 Weights;
-};
+    struct TOverlayVertex
+    {
+        vec4 Position;
+        vec4 Normal;
+        vec4 UVSurface;
+        vec4 DisplacementNormal;
+        uvec4 Samples;
+        vec4 Weights;
+    };
 
-struct TDrawCommand
-{
-    uint VertexCount;
-    uint InstanceCount;
-    uint FirstVertex;
-    uint FirstInstance;
-};
+    struct TDrawCommand
+    {
+        uint VertexCount;
+        uint InstanceCount;
+        uint FirstVertex;
+        uint FirstInstance;
+    };
 
-struct TTopDrawCommand
-{
-    uint IndexCount;
-    uint InstanceCount;
-    uint FirstIndex;
-    int VertexOffset;
-    uint FirstInstance;
-};
+    struct TTopDrawCommand
+    {
+        uint IndexCount;
+        uint InstanceCount;
+        uint FirstIndex;
+        int VertexOffset;
+        uint FirstInstance;
+    };
 
-layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
-{
-    TOverlayVertex Values[];
-}
+    layout(set = 2, binding = 0, std430) readonly buffer TMeshVertices
+    {
+        TOverlayVertex Values[];
+    }
 
-MeshVertices;
+    MeshVertices;
 
-layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices
-{
-    uint Values[];
-}
+    layout(set = 2, binding = 1, std430) readonly buffer TMeshIndices
+    {
+        uint Values[];
+    }
 
-MeshIndices;
+    MeshIndices;
 
-// #endregion
+    // #endregion
 
-// 00.01. Coverage and Indirect Draw Outputs
-// #region 00_01_Coverage_and_Indirect_Draw_Outputs
-// binding 4·5·6의 선언을 CPU descriptor와 대응시킨다.
+    // 00.01. Coverage and Indirect Draw Outputs
+    // #region 00_01_Coverage_and_Indirect_Draw_Outputs
+    // binding 4·5·6의 선언을 CPU descriptor와 대응시킨다.
 
-layout(set = 2, binding = 4, std430) buffer TCoverageValues
-{
-    uint Values[];
-}
+    layout(set = 2, binding = 4, std430) buffer TCoverageValues
+    {
+        uint Values[];
+    }
 
-Coverage;
+    Coverage;
 
-layout(set = 2, binding = 5, std430) buffer TDrawCommands
-{
-    TDrawCommand Values[];
-}
+    layout(set = 2, binding = 5, std430) buffer TDrawCommands
+    {
+        TDrawCommand Values[];
+    }
 
-DrawCommands;
+    DrawCommands;
 
-layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
-{
-    TTopDrawCommand Values[];
-}
+    layout(set = 2, binding = 6, std430) buffer TTopDrawCommands
+    {
+        TTopDrawCommand Values[];
+    }
 
-TopDrawCommands;
+    TopDrawCommands;
 
-// #endregion
+    // #endregion
 
-// 00.02. Computed Geometry Inputs
-// #region 00_02_Computed_Geometry_Inputs
-// binding 1·0·4의 선언을 CPU descriptor와 대응시킨다.
+    // 00.02. Computed Geometry Inputs
+    // #region 00_02_Computed_Geometry_Inputs
+    // binding 1·0·4의 선언을 CPU descriptor와 대응시킨다.
 
-layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
-{
-    uint Values[];
-}
+    layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
+    {
+        uint Values[];
+    }
 
-GeometryCache;
-layout(set = 1, binding = 0, std430) readonly buffer TComputedVertices
-{
-    TTexelGeometryVertex Values[];
-}
+    GeometryCache;
+    layout(set = 1, binding = 0, std430) readonly buffer TComputedVertices
+    {
+        TTexelGeometryVertex Values[];
+    }
 
-Computed;
-layout(set = 0, binding = 4, std430) readonly buffer TOverlayGeometryScalars
-{
-    vec4 Values[];
-}
+    Computed;
+    layout(set = 0, binding = 4, std430) readonly buffer TOverlayGeometryScalars
+    {
+        vec4 Values[];
+    }
 
-OverlayGeometryScalars;
+    OverlayGeometryScalars;
 
-// #endregion
+    // #endregion
 
 layout(push_constant) uniform TOverlayPush
 {

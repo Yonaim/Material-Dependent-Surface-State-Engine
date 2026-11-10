@@ -211,3 +211,11 @@
 - **문서:** 공통 Standards 12개·AGENTS·Map·CHANGELOG·README와 Context·Source Map·Current Work·Validation 및 [v5.9 적용표](16_Vault-5.9-Comment-Coverage.md) 동기화. 프로젝트 네이밍/MSVC 예외 유지. Contracts/Flows 검토 결과 실행·데이터 정의 추가 변경 불필요. 과거 판정·manifest는 역사 원본으로 보존한다.
 - **검증:** 최종 configure/전체 Debug build 성공. C++ 201·GLSL 69 비주석 토큰 동일. Python 44 AST는 모듈 docstring·승인된 문서 경로 외 동일, Bash 5 구문/토큰·PowerShell 4 parser/비주석 토큰 통과. shader 150개 compile/spirv-val·이전 WIP SPIR-V와 바이트 동일. 실제 Maptz LF/CRLF 148회 통과(각 252영역). Region 짝/깊이 2·설명 인접성/들여쓰기·문서 대상 존재·CRLF 대응 diff check 확인. [원자료](../../../Build/Validation/20261110-vault59/summary.json).
 - **미실행:** 주석·문서 라우팅 변경이므로 전체 CTest·렌더·성능·전체 연구 파이프라인은 반복하지 않았다. Python __doc__/help는 한국어 역할 설명을 반영한다. IDE 실제 접힘 UI·다른 GPU/OS는 미검증. commit/push 없음.
+
+## 2026-11-10 — 진입 함수·중첩 Region 구조 점검
+
+- **입력:** 현재 Source와 Shader, Project Docs의 기존 탐색 규칙.
+- **소스:** Application·SceneLoader·Renderer·DebugUI의 초기화/프레임/뷰 선택 경로에서 세부 작업을 의미 단위 함수로 추출했다. Render/Debug/Geometry shader의 주요 `main()`은 짧은 호출 흐름으로 재배치하되 공유 메모리 동기화는 원위치를 유지했다.
+- **서식:** Shader 전체의 중첩 Region 들여쓰기와 종료 마커를 검사·수정하고, 작업 성격이 달라지는 곳에 빈 줄과 목적 주석을 배치했다.
+- **문서:** Code Reading Guide 및 Source별 탐색 경로를 실제 함수명에 맞춰 수정했다. Project Brief와 Architecture 정본에 작업 차수/버전 명칭을 추가하지 않았다.
+- **검사:** ZIP 경로 보존, Region 짝과 중첩 깊이·들여쓰기, 괄호, GLSL 전처리 조건, 문서 링크를 정적 점검했다. 외부 의존성과 완전한 빌드 파일이 없어 컴파일·shader SPIR-V·실행 동등성 검사는 수행하지 못했다.

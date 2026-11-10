@@ -42,6 +42,9 @@ layout(std430, set = 0, binding = 24) readonly buffer TReactionScratch
 
 ReactionScratch;
 
+void CaptureAccumulationDiagnostics();
+void CaptureReactionDiagnostics();
+
 // #endregion
 
 // ============================================================
@@ -52,52 +55,71 @@ ReactionScratch;
 
 void main()
 {
-    // 01.00. Capture Accumulation and Normal Diagnostics
-    // #region 01_00_Capture_Accumulation_and_Normal_Diagnostics
-    // 최종 높이와 형상 재구성 값을 같은 texel 선택에 맞춰 Inspector에 기록한다.
-
-    // snapshot은 고정된 여섯 vec4 슬롯에 계산 중간값을 묶어 기록한다.
-    mat3 NormalMatrix = mat3(Selection.NormalMatrixColumns[0].xyz,
-                             Selection.NormalMatrixColumns[1].xyz,
-                             Selection.NormalMatrixColumns[2].xyz);
-    TDebugAccumulation D = DebugAccumulation(
-        Selection.Texel, Selection.Channel, Selection.Channels, Selection.AccumulationDisplayScale, NormalMatrix);
-    Snapshot.Values[0] = vec4(D.State, D.Capacity, D.Saturation, D.ReferenceAmount);
-    Snapshot.Values[1] = vec4(D.Factor, D.CavityFactor, D.MesoHeight, D.ThicknessPerAmount);
-    Snapshot.Values[2] = vec4(D.CavityDepth, D.Fill, D.Excess, float(D.Status));
-    Snapshot.Values[3] = vec4(D.CavityHeight, D.FollowingHeight, D.Height, D.MesoHeight + D.Height);
-    Snapshot.Values[4] = vec4(D.Area, D.AreaScale, Selection.AccumulationDisplayScale, D.WorldToLocalHeight);
-    vec3 Normal = vec3(0, 0, 1);
-
-    if (D.Status == 3u && Selection.Texel < uint(MesoNormals.Values.length()))
-    {
-        Normal = DebugFinalNormal(
-            Selection.Texel, Selection.Channel, Selection.Channels, Selection.AccumulationDisplayScale, NormalMatrix);
-    }
-
-    Snapshot.Values[5] = vec4(Normal, 0);
-
-    // #endregion
-    // 01.01. Capture Reaction Integration Diagnostics
-    // #region 01_01_Capture_Reaction_Integration_Diagnostics
-    // texel scratch의 적분 횟수·공급 제한·예산·산술 오류를 Inspector에 복사한다.
-
-    Snapshot.Values[6] = vec4(0);
-
-    if (Reactions.Values[1] > 0u)
-    {
-        uint At = Selection.Texel * (5u * Selection.Channels + Reactions.Values[1] + 4u) + 5u * Selection.Channels +
-                  Reactions.Values[1];
-        if (At + 3u < uint(ReactionScratch.Values.length()))
-        {
-            Snapshot.Values[6] = vec4(ReactionScratch.Values[At],
-                                      ReactionScratch.Values[At + 1u],
-                                      ReactionScratch.Values[At + 2u],
-                                      ReactionScratch.Values[At + 3u]);
-        }
-    }
-
-    // #endregion
+    CaptureAccumulationDiagnostics();
+    CaptureReactionDiagnostics();
 }
+// #endregion
+
+// ============================================================
+// 02. Snapshot Capture Details
+// ============================================================
+// #region 02_Snapshot_Capture_Details
+// 누적 형상과 반응 통계를 독립된 snapshot 슬롯에 기록한다.
+
+    // 02.00. Accumulation and Normal
+    // #region 02_00_Accumulation_and_Normal
+    // 선택 texel의 누적 높이·구성 요소·노멀을 여섯 snapshot 슬롯에 기록한다.
+
+    void CaptureAccumulationDiagnostics()
+    {
+        // snapshot은 고정된 여섯 vec4 슬롯에 계산 중간값을 묶어 기록한다.
+        mat3 NormalMatrix = mat3(Selection.NormalMatrixColumns[0].xyz,
+                                 Selection.NormalMatrixColumns[1].xyz,
+                                 Selection.NormalMatrixColumns[2].xyz);
+        TDebugAccumulation D = DebugAccumulation(
+            Selection.Texel, Selection.Channel, Selection.Channels, Selection.AccumulationDisplayScale, NormalMatrix);
+        Snapshot.Values[0] = vec4(D.State, D.Capacity, D.Saturation, D.ReferenceAmount);
+        Snapshot.Values[1] = vec4(D.Factor, D.CavityFactor, D.MesoHeight, D.ThicknessPerAmount);
+        Snapshot.Values[2] = vec4(D.CavityDepth, D.Fill, D.Excess, float(D.Status));
+        Snapshot.Values[3] = vec4(D.CavityHeight, D.FollowingHeight, D.Height, D.MesoHeight + D.Height);
+        Snapshot.Values[4] = vec4(D.Area, D.AreaScale, Selection.AccumulationDisplayScale, D.WorldToLocalHeight);
+        vec3 Normal = vec3(0, 0, 1);
+
+        if (D.Status == 3u && Selection.Texel < uint(MesoNormals.Values.length()))
+        {
+            Normal = DebugFinalNormal(
+                Selection.Texel, Selection.Channel, Selection.Channels, Selection.AccumulationDisplayScale, NormalMatrix);
+        }
+
+        Snapshot.Values[5] = vec4(Normal, 0);
+
+    }
+
+    // #endregion
+
+    // 02.01. Reaction Integration
+    // #region 02_01_Reaction_Integration
+    // 선택 채널의 reaction 적분 요약을 일곱 번째 snapshot 슬롯에 기록한다.
+
+    void CaptureReactionDiagnostics()
+    {
+        Snapshot.Values[6] = vec4(0);
+
+        if (Reactions.Values[1] > 0u)
+        {
+            uint At = Selection.Texel * (5u * Selection.Channels + Reactions.Values[1] + 4u) + 5u * Selection.Channels +
+                      Reactions.Values[1];
+            if (At + 3u < uint(ReactionScratch.Values.length()))
+            {
+                Snapshot.Values[6] = vec4(ReactionScratch.Values[At],
+                                          ReactionScratch.Values[At + 1u],
+                                          ReactionScratch.Values[At + 2u],
+                                          ReactionScratch.Values[At + 3u]);
+            }
+        }
+
+    }
+
+    // #endregion
 
 // #endregion

@@ -207,150 +207,150 @@ void MergeCPUContactActivity(uint Lane, uint Groups, bool Current, bool NeedWork
 
 }
 
-// 02.00. Solver Schedule Address Layout
-// #region 02_00_Solver_Schedule_Address_Layout
-// workgroup 목록·마스크·indirect 명령의 uint-word 주소를 계산한다.
+    // 02.00. Solver Schedule Address Layout
+    // #region 02_00_Solver_Schedule_Address_Layout
+    // workgroup 목록·마스크·indirect 명령의 uint-word 주소를 계산한다.
 
-uint WorkgroupCount()
-{
-    return (Solver.LocalTexelCount + 63u) / 64u;
-}
-
-uint SolverBlockWords()
-{
-    return WorkgroupCount() * 3u + 4u;
-}
-
-uint SolverACommandBase()
-{
-    return 3u * Solver.LocalTexelCount;
-}
-
-uint SolverBCommandBase()
-{
-    return SolverACommandBase() + SolverBlockWords();
-}
-
-uint SolverCommandBase(bool AB)
-{
-    return AB ? SolverACommandBase() : SolverBCommandBase();
-}
-
-uint SolverFlagBase(bool AB)
-{
-    return SolverCommandBase(AB) + 3u;
-}
-
-uint SolverListBase(bool AB)
-{
-    return SolverFlagBase(AB) + WorkgroupCount();
-}
-
-uint SolverMaskIndex(bool AB)
-{
-    return SolverListBase(AB) + WorkgroupCount();
-}
-
-uint SolverWorkgroupMaskBase(bool AB)
-{
-    return SolverMaskIndex(AB) + 1u;
-}
-
-bool CurrentAB()
-{
-    return (Solver.Flags & CurrentStateABFlag) != 0u;
-}
-
-// #endregion
-
-// 02.01. CPU Input Activation Layout
-// #region 02_01_CPU_Input_Activation_Layout
-// CPU가 올린 접촉 활성 정보의 주소를 Solver가 읽을 위치로 환산한다.
-
-uint InputCountIndex()
-{
-    return SolverBCommandBase() + SolverBlockWords();
-}
-
-uint InputMaskIndex()
-{
-    return InputCountIndex() + 1u;
-}
-
-uint InputListBase()
-{
-    return InputMaskIndex() + 1u;
-}
-
-uint InputGroupMaskBase()
-{
-    return InputListBase() + WorkgroupCount();
-}
-
-// #endregion
-
-// 02.02. Accumulation and Geometry Schedule Layout
-// #region 02_02_Accumulation_and_Geometry_Schedule_Layout
-// 높이·형상 갱신 목록과 간접 dispatch 자료가 같은 allocation을 공유한다.
-
-uint AccumulationCommandBase()
-{
-    return InputGroupMaskBase() + WorkgroupCount();
-}
-
-uint AccumulationFlagBase()
-{
-    return AccumulationCommandBase() + 3u;
-}
-
-uint AccumulationListBase()
-{
-    return AccumulationFlagBase() + WorkgroupCount();
-}
-
-uint GeometryCommandBase()
-{
-    return AccumulationListBase() + WorkgroupCount();
-}
-
-uint GeometryFlagBase()
-{
-    return GeometryCommandBase() + 3u;
-}
-
-// #endregion
-
-// 02.03. Reset Commands and Append Current Workgroups
-// #region 02_03_Reset_Commands_and_Append_Current_Workgroups
-// 계산 결과를 AccumulationData 버퍼에 기록해 후속 GPU 단계에 전달한다.
-
-void ResetCommand(uint Base)
-{
-    AccumulationData.Values[Base] = 0u;
-    AccumulationData.Values[Base + 1u] = 1u;
-    AccumulationData.Values[Base + 2u] = 1u;
-}
-
-void ScheduleCurrentSolverGroup(uint Group)
-{
-    if ((Solver.Flags & SparseSolverFlag) == 0u || Group >= WorkgroupCount())
+    uint WorkgroupCount()
     {
-        return;
+        return (Solver.LocalTexelCount + 63u) / 64u;
     }
 
-    bool AB = CurrentAB();
-
-    if (atomicCompSwap(AccumulationData.Values[SolverFlagBase(AB) + Group], 0u, 1u) == 0u)
+    uint SolverBlockWords()
     {
-        uint Slot = atomicAdd(AccumulationData.Values[SolverCommandBase(AB)], 1u);
+        return WorkgroupCount() * 3u + 4u;
+    }
 
-        if (Slot < WorkgroupCount())
+    uint SolverACommandBase()
+    {
+        return 3u * Solver.LocalTexelCount;
+    }
+
+    uint SolverBCommandBase()
+    {
+        return SolverACommandBase() + SolverBlockWords();
+    }
+
+    uint SolverCommandBase(bool AB)
+    {
+        return AB ? SolverACommandBase() : SolverBCommandBase();
+    }
+
+    uint SolverFlagBase(bool AB)
+    {
+        return SolverCommandBase(AB) + 3u;
+    }
+
+    uint SolverListBase(bool AB)
+    {
+        return SolverFlagBase(AB) + WorkgroupCount();
+    }
+
+    uint SolverMaskIndex(bool AB)
+    {
+        return SolverListBase(AB) + WorkgroupCount();
+    }
+
+    uint SolverWorkgroupMaskBase(bool AB)
+    {
+        return SolverMaskIndex(AB) + 1u;
+    }
+
+    bool CurrentAB()
+    {
+        return (Solver.Flags & CurrentStateABFlag) != 0u;
+    }
+
+    // #endregion
+
+    // 02.01. CPU Input Activation Layout
+    // #region 02_01_CPU_Input_Activation_Layout
+    // CPU가 올린 접촉 활성 정보의 주소를 Solver가 읽을 위치로 환산한다.
+
+    uint InputCountIndex()
+    {
+        return SolverBCommandBase() + SolverBlockWords();
+    }
+
+    uint InputMaskIndex()
+    {
+        return InputCountIndex() + 1u;
+    }
+
+    uint InputListBase()
+    {
+        return InputMaskIndex() + 1u;
+    }
+
+    uint InputGroupMaskBase()
+    {
+        return InputListBase() + WorkgroupCount();
+    }
+
+    // #endregion
+
+    // 02.02. Accumulation and Geometry Schedule Layout
+    // #region 02_02_Accumulation_and_Geometry_Schedule_Layout
+    // 높이·형상 갱신 목록과 간접 dispatch 자료가 같은 allocation을 공유한다.
+
+    uint AccumulationCommandBase()
+    {
+        return InputGroupMaskBase() + WorkgroupCount();
+    }
+
+    uint AccumulationFlagBase()
+    {
+        return AccumulationCommandBase() + 3u;
+    }
+
+    uint AccumulationListBase()
+    {
+        return AccumulationFlagBase() + WorkgroupCount();
+    }
+
+    uint GeometryCommandBase()
+    {
+        return AccumulationListBase() + WorkgroupCount();
+    }
+
+    uint GeometryFlagBase()
+    {
+        return GeometryCommandBase() + 3u;
+    }
+
+    // #endregion
+
+    // 02.03. Reset Commands and Append Current Workgroups
+    // #region 02_03_Reset_Commands_and_Append_Current_Workgroups
+    // 계산 결과를 AccumulationData 버퍼에 기록해 후속 GPU 단계에 전달한다.
+
+    void ResetCommand(uint Base)
+    {
+        AccumulationData.Values[Base] = 0u;
+        AccumulationData.Values[Base + 1u] = 1u;
+        AccumulationData.Values[Base + 2u] = 1u;
+    }
+
+    void ScheduleCurrentSolverGroup(uint Group)
+    {
+        if ((Solver.Flags & SparseSolverFlag) == 0u || Group >= WorkgroupCount())
         {
-            AccumulationData.Values[SolverListBase(AB) + Slot] = Group;
+            return;
+        }
+
+        bool AB = CurrentAB();
+
+        if (atomicCompSwap(AccumulationData.Values[SolverFlagBase(AB) + Group], 0u, 1u) == 0u)
+        {
+            uint Slot = atomicAdd(AccumulationData.Values[SolverCommandBase(AB)], 1u);
+
+            if (Slot < WorkgroupCount())
+            {
+                AccumulationData.Values[SolverListBase(AB) + Slot] = Group;
+            }
         }
     }
-}
 
-// #endregion
+    // #endregion
 
 // #endregion

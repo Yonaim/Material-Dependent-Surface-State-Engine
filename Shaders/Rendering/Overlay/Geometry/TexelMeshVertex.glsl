@@ -38,6 +38,9 @@ layout(location = 4) flat out uint FragSurfaceIndex;
 layout(location = 5) out vec3 FragMesoNormalWS;
 layout(location = 6) out vec3 FragWorldPosition;
 
+vec3 SampleDeformedMeshNormal(out float Height);
+void PublishTexelMeshVertex(float Height, vec3 Normal);
+
 // #endregion
 
 // ============================================================
@@ -48,59 +51,79 @@ layout(location = 6) out vec3 FragWorldPosition;
 
 void main()
 {
-    // 01.00. Interpolate Texel Height and Normal
-    // #region 01_00_Interpolate_Texel_Height_and_Normal
-    // Computed·Normals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
-
     float Height = 0.0;
-    vec3 NormalOffset = vec3(0);
-    float Weight = 0.0;
+    vec3 Normal = SampleDeformedMeshNormal(Height);
+    PublishTexelMeshVertex(Height, Normal);
+}
+// #endregion
 
-    for (uint K = 0u; K < 4u; ++K)
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// 원본 smooth/hard normal을 유지하면서 추가 displacement만 반영한다.
+
+    // 02.00. Sample Deformed Geometry
+    // #region 02_00_Sample_Deformed_Geometry
+    // 인접 texel의 높이와 normal offset을 보간한다.
+
+    vec3 SampleDeformedMeshNormal(out float Height)
     {
-        uint T = InSamples[K];
+        Height = 0.0;
+        vec3 NormalOffset = vec3(0);
+        float Weight = 0.0;
 
-        if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length()))
+        for (uint K = 0u; K < 4u; ++K)
         {
-            continue;
+            uint T = InSamples[K];
+
+            if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length()))
+            {
+                continue;
+            }
+
+            Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
+
+            // 원본 정점의 smooth/hard normal을 유지하면서 샘플된 Meso/높이 변화량만 더한다.
+            NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
+            Weight += InWeights[K];
         }
 
-        Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
+        vec3 Normal = InNormal + NormalOffset;
 
-        // 원본 정점의 smooth/hard normal을 유지하면서 샘플된 Meso/높이 변화량만 더한다.
-        NormalOffset += InWeights[K] * (Computed.Values[T].HeightAndNormal.yzw - Normals.Values[T].xyz);
-        Weight += InWeights[K];
+        if (Weight == 0.0 || dot(Normal, Normal) < 1e-12)
+        {
+            Normal = InNormal;
+        }
+
+        return Normal;
     }
 
-    vec3 Normal = InNormal + NormalOffset;
+    // #endregion
 
-    if (Weight == 0.0 || dot(Normal, Normal) < 1e-12)
+    // 02.01. Publish World Vertex
+    // #region 02_01_Publish_World_Vertex
+    // 최종 world position과 표면 lighting 입력을 vertex output으로 기록한다.
+
+    void PublishTexelMeshVertex(float Height, vec3 Normal)
     {
-        Normal = InNormal;
+        mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
+        FragNormal = normalize(NormalMatrix * InNormal);
+        FragMesoNormalWS = normalize(NormalMatrix * Normal);
+        FragTangent = normalize(cross(abs(FragNormal.z) < 0.9 ? vec3(0, 0, 1) : vec3(0, 1, 0), FragNormal));
+        FragTangentSign = 1.0;
+
+        FragUV = InUVSurface.xy;
+        FragSurfaceIndex = uint(InUVSurface.w);
+
+        vec3 Position = InPosition + InDisplacementNormal * Height;
+        vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
+
+        FragWorldPosition = WorldPosition.xyz;
+        gl_Position = Push.ViewProjection * WorldPosition;
+
     }
 
     // #endregion
-
-    // 01.01. Transform and Publish Surface Vertex
-    // #region 01_01_Transform_and_Publish_Surface_Vertex
-    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
-
-    mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
-    FragNormal = normalize(NormalMatrix * InNormal);
-    FragMesoNormalWS = normalize(NormalMatrix * Normal);
-    FragTangent = normalize(cross(abs(FragNormal.z) < 0.9 ? vec3(0, 0, 1) : vec3(0, 1, 0), FragNormal));
-    FragTangentSign = 1.0;
-
-    FragUV = InUVSurface.xy;
-    FragSurfaceIndex = uint(InUVSurface.w);
-
-    vec3 Position = InPosition + InDisplacementNormal * Height;
-    vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
-
-    FragWorldPosition = WorldPosition.xyz;
-    gl_Position = Push.ViewProjection * WorldPosition;
-
-    // #endregion
-}
 
 // #endregion

@@ -48,3 +48,12 @@
 [FRenderer::RecordCommandBuffer](../../../../../Source/Rendering/Core/RendererCommands.cpp)는 Lit viewport가 있고 demo effects가 켜져 있을 때만 `RenderStateTexture->Record`를 호출한다. Texture 경로 사용 여부는 `bRenderStateTextureSamplingEnabled || bPrecomputeCoverage`이며 `bPrecomputeCoverage`는 coverage smoothing 및 precompute 옵션이 모두 켜져야 한다. 이 분기는 shader 구조가 아니라 C++ record 경계에서 결정된다.
 
 [FRenderStateTexture::Record](../../../../../Source/Rendering/Surface/RenderStateTexture.cpp)는 State buffer를 표시용 이미지로 변환한다. [FHeightFieldSmoothing::Record](../../../../../Source/Rendering/Surface/HeightFieldSmoothing.cpp)는 geometry 표시용 smoothing이고 Solver의 State·DynamicGeometry buffer를 교체하지 않는다.
+
+## Shader 진입점의 읽기 순서
+
+- `StaticMesh.frag`의 `main()`은 `ReconstructMaterialNormal` → `EvaluateStaticMeshColor` 순서로 노멀 복원과 조명을 구분한다.
+- `HeightFieldSmoothing.comp`의 `main()`은 공유 Halo 구성과 필수 `barrier()`를 먼저 수행한 뒤 `SmoothResolvedTexel`에 texel별 유효성·보간·결과 기록을 위임한다. **공유 메모리 barrier는 함수 추출 과정에서 순서를 바꾸면 안 된다.**
+- `TexelMeshVertex.glsl`은 `SampleDeformedMeshNormal`에서 높이·노멀을 보간하고 `PublishTexelMeshVertex`가 world/clip-space 출력을 기록한다.
+- `OverlayTop.vert`·`OverlaySide.vert`의 `main()`은 segment/vertex 데이터를 판단한 뒤 vertex 출력을 작성한다.
+
+Region 중첩은 기능별 탐색을 위한 것이며 `#region` 번호 자체가 추상화 레벨을 뜻하지 않는다.

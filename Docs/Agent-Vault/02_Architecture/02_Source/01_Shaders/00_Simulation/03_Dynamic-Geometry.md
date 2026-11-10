@@ -23,3 +23,11 @@ Accumulation Height → Dynamic Geometry → Dynamic TransferWeight. Current inv
 실제 dispatch는 [FSurfaceStateSolver::RecordSteps](../../../../../../Source/SurfaceState/Solver/SurfaceStateSolver.cpp)에서 준비한다. profile/transform/reset에 의해 `ForceFullGeometry`가 요청되고 state-driven geometry가 ON이면 **현재 Current State**를 기준으로 세 Compute shader를 full dispatch하고 barrier를 둔다. Pass 1/2와 선택적 Reaction Pass 이후에는 **최종 Next State** 기준 Accumulation Height를 만들고 `bUpdateGeometry`가 참이면 새 DynamicGeometry/Weights를 `vkCmdDispatchIndirect`한다. Geometry 업데이트가 OFF여도 마지막 substep에서 렌더용 height만 계산할 수 있다.
 
 `SurfaceAccumulationHeight.comp`의 sparse dirty scheduling은 Scene에 활성 Reaction 규칙이 없으면 Pass 2, 하나라도 있으면 Reaction Pass의 `accumulationContributionChanged`와 연결된다. 따라서 State 변경이 전부 geometry recalculation을 의미하지 않는다. 읽기·쓰기 descriptor의 AB/BA 전환은 `DescriptorResources.cpp`가 결정한다.
+
+## 진입점에서 세부 구현으로 내려가기
+
+- `SurfaceAccumulationHeight.comp`: `PublishAccumulationHeight` → 유효한 texel에 한해 `ScheduleGeometryUpdateIfDirty`.
+- `SurfaceDynamicGeometryUpdate.comp`: `ReadAndSanitizeDynamicGeometry` → `MeasureWorldNeighborDistance`.
+- `SurfaceDynamicWeightsUpdate.comp`: 원본 인덱스 유효성 검사 → `InitializeGeometryFrames` → 유효/무효 texel별 `WriteDynamicGeometryWeights` 또는 `ClearInvalidGeometryWeights`.
+
+위 함수명은 구현 세부를 찾는 탐색 키이며, 공유 State·Profile·GPU descriptor 계약을 대신하지 않는다.

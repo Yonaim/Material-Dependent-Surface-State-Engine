@@ -27,6 +27,10 @@ vec3 worldNormal(uint Texel);
 
 float buildDynamicConcavityWeight(uint Texel, float StaticWeight);
 
+void InitializeGeometryFrames();
+void ClearInvalidGeometryWeights(uint Source);
+void WriteDynamicGeometryWeights(uint Source);
+
 float buildTransferWeight(uint Source,
                           uint DirectionIndex,
                           vec3 SourceWorld,
@@ -44,86 +48,23 @@ float buildTransferWeight(uint Source,
 
 void main()
 {
-    uint OriginalGroup = geometryOriginalGroup();
-    uint Source = OriginalGroup * 64u + gl_LocalInvocationID.x;
+    uint Source = geometryOriginalGroup() * 64u + gl_LocalInvocationID.x;
 
     if (Source >= Solver.LocalTexelCount)
     {
         return;
     }
 
-    ModelLinear =
-        mat3(Solver.ModelLinearColumns[0].xyz, Solver.ModelLinearColumns[1].xyz, Solver.ModelLinearColumns[2].xyz);
-    NormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
-                        Solver.NormalMatrixAndUpColumns[1].xyz,
-                        Solver.NormalMatrixAndUpColumns[2].xyz);
+    InitializeGeometryFrames();
 
     if (!isValidTexel(Source))
     {
-        DynamicConcavityWeights.Values[Source] = 0.0;
-
-        if (useHalfDynamicWeights())
-        {
-            uint Base = Source * (SurfaceNeighborCount / 2u);
-
-            for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
-            {
-                TransferWeights.Values[Base + Pair] = 0u;
-            }
-        }
-        else
-        {
-            uint Base = Source * SurfaceNeighborCount;
-
-            for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-            {
-                TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(0.0);
-            }
-        }
-
+        ClearInvalidGeometryWeights(Source);
         return;
     }
 
-    DynamicConcavityWeights.Values[Source] =
-        buildDynamicConcavityWeight(Source, GeometryScalars.Values[Source].ConcavityWeight);
-
-    vec3 SourceWorld = worldPosition(Source);
-    vec3 SourceNormal = worldNormal(Source);
-    float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u ? DynamicGeometry.Values[Source * 2u].w : 1.0;
-    bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5;
-#if MDSS_GPU_VALIDATION
-    SourceNormalValid = SourceNormalValid && !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
-#endif
-
-    if (useHalfDynamicWeights())
-    {
-        uint Base = Source * (SurfaceNeighborCount / 2u);
-
-        for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
-        {
-            uint D0 = Pair * 2u;
-            uint D1 = D0 + 1u;
-            vec2 Weights = clamp(
-                vec2(buildTransferWeight(Source, D0, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid),
-                     buildTransferWeight(Source, D1, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid)),
-                vec2(0.0),
-                vec2(1.0));
-            TransferWeights.Values[Base + Pair] = packHalf2x16(Weights);
-        }
-    }
-    else
-    {
-        uint Base = Source * SurfaceNeighborCount;
-
-        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-        {
-            float Weight = buildTransferWeight(
-                Source, DirectionIndex, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid);
-            TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(Weight);
-        }
-    }
+    WriteDynamicGeometryWeights(Source);
 }
-
 // #endregion
 
 // ============================================================
@@ -132,203 +73,299 @@ void main()
 // #region 02_Detailed_Implementation
 // 현재 누적 형상으로 texel별 concavity와 edge별 transfer weight를 갱신한다.
 
-// 02.00. Read Dynamic Local and World Geometry
-// #region 02_00_Read_Dynamic_Local_and_World_Geometry
-// DynamicGeometry 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
+    // 02.00. Read Dynamic Local and World Geometry
+    // #region 02_00_Read_Dynamic_Local_and_World_Geometry
+    // DynamicGeometry 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
-vec3 localPosition(uint Texel)
-{
-    return DynamicGeometry.Values[Texel * 2u].xyz;
-}
-
-vec3 localNormal(uint Texel)
-{
-    return DynamicGeometry.Values[Texel * 2u + 1u].xyz;
-}
-
-vec3 worldPosition(uint Texel)
-{
-    return ModelLinear * localPosition(Texel);
-}
-
-vec3 worldNormal(uint Texel)
-{
-    return normalize(NormalMatrix * localNormal(Texel));
-}
-
-// #endregion
-
-// 02.01. Evaluate Dynamic Concavity Weight
-// #region 02_01_Evaluate_Dynamic_Concavity_Weight
-// 갱신한 동적 형상에서 수송에 사용할 오목함 가중치를 계산한다.
-
-float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
-{
-    vec3 CenterPosition = localPosition(Texel);
-
-    // DynamicGeometryUpdate는 두 번째 vec4에 정규화된 local normal을 저장한다.
-    vec3 N = localNormal(Texel);
-#if MDSS_GPU_VALIDATION
-    if (any(isnan(N)) || any(isinf(N)))
+    vec3 localPosition(uint Texel)
     {
-        return StaticWeight;
-    }
-#endif
-    vec3 Axis = abs(N.z) < 0.85 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
-    vec3 T = normalize(cross(Axis, N));
-    vec3 B = cross(N, T);
-    float XX = 0.0, XY = 0.0, YY = 0.0;
-    float UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
-    float SpacingSum = 0.0;
-    uint SampleCount = 0u;
-
-    for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
-    {
-        uint Other = neighborIndex(Texel, DirectionIndex);
-
-        if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other))
-        {
-            continue;
-        }
-
-        vec3 OtherPosition = localPosition(Other);
-        vec3 OtherNormal = localNormal(Other);
-#if MDSS_GPU_VALIDATION
-        if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05)
-        {
-            continue;
-        }
-#else
-        if (dot(N, OtherNormal) <= 0.05)
-        {
-            continue;
-        }
-#endif
-        vec3 Delta = OtherPosition - CenterPosition;
-        float X = dot(Delta, T), Y = dot(Delta, B);
-        float DistanceSquared = X * X + Y * Y;
-#if MDSS_GPU_VALIDATION
-        if (DistanceSquared <= 1.0e-12 || isnan(DistanceSquared) || isinf(DistanceSquared))
-        {
-            continue;
-        }
-#else
-        if (DistanceSquared <= 1.0e-12)
-        {
-            continue;
-        }
-#endif
-        float Weight = 1.0 / DistanceSquared;
-        vec3 NormalDelta = OtherNormal - N;
-        float DU = -dot(NormalDelta, T), DV = -dot(NormalDelta, B);
-        XX += Weight * X * X;
-        XY += Weight * X * Y;
-        YY += Weight * Y * Y;
-        UX += Weight * X * DU;
-        UY += Weight * Y * DU;
-        VX += Weight * X * DV;
-        VY += Weight * Y * DV;
-        SpacingSum += sqrt(DistanceSquared);
-        ++SampleCount;
+        return DynamicGeometry.Values[Texel * 2u].xyz;
     }
 
-    float Determinant = XX * YY - XY * XY;
-
-    if (SampleCount < 3u || Determinant <= 1.0e-6 * max(XX * YY, 1.0e-12))
+    vec3 localNormal(uint Texel)
     {
-        return StaticWeight;
+        return DynamicGeometry.Values[Texel * 2u + 1u].xyz;
     }
 
-    float Sxx = (YY * UX - XY * UY) / Determinant;
-    float Sxy = 0.5 * ((XX * UY - XY * UX) + (YY * VX - XY * VY)) / Determinant;
-    float Syy = (XX * VY - XY * VX) / Determinant;
-    float H = 0.5 * (Sxx + Syy), K = Sxx * Syy - Sxy * Sxy;
-    float Root = sqrt(max(H * H - K, 0.0));
-    float A = H + Root, C = H - Root;
-    float Positive = max(A, 0.0) + max(C, 0.0);
-    float Negative = max(-A, 0.0) + max(-C, 0.0);
-    float Score = 8.0 * (SpacingSum / float(SampleCount)) * max(Positive - 2.0 * Negative, 0.0);
-#if MDSS_GPU_VALIDATION
-    return isnan(Score) || isinf(Score) ? StaticWeight : clamp(Score, 0.0, 1.0);
-#else
-    return clamp(Score, 0.0, 1.0);
-#endif
-}
-
-// #endregion
-
-// 02.02. Evaluate Directional Transfer Weight
-// #region 02_02_Evaluate_Directional_Transfer_Weight
-// DynamicGeometry·TexelProfileIndices 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
-
-float buildTransferWeight(uint Source,
-                          uint DirectionIndex,
-                          vec3 SourceWorld,
-                          vec3 SourceNormal,
-                          float SourceMeanDistance,
-                          bool SourceNormalValid)
-{
-    uint Target = neighborIndex(Source, DirectionIndex);
-    float Weight = 0.0;
-
-    if (Target == InvalidTexelIndex || Target >= Solver.LocalTexelCount || !isValidTexel(Target))
+    vec3 worldPosition(uint Texel)
     {
-        return 0.0;
+        return ModelLinear * localPosition(Texel);
     }
 
-    vec3 TargetWorld = worldPosition(Target);
-    vec3 TargetNormal = worldNormal(Target);
-    bool TargetNormalValid = dot(TargetNormal, TargetNormal) > 0.5;
-#if MDSS_GPU_VALIDATION
-    TargetNormalValid = TargetNormalValid && !any(isnan(TargetNormal)) && !any(isinf(TargetNormal));
-#endif
-    float DistanceWeight = 1.0;
-    bool Valid = true;
-
-    if ((Solver.Flags & (1u << 7u)) != 0u)
+    vec3 worldNormal(uint Texel)
     {
-        float TargetMeanDistance = DynamicGeometry.Values[Target * 2u].w;
-        float EdgeDistance = length(TargetWorld - SourceWorld);
-        float ReferenceDistance = 0.5 * (SourceMeanDistance + TargetMeanDistance);
-        Valid = SourceMeanDistance > DynamicGeometryEpsilon && TargetMeanDistance > DynamicGeometryEpsilon &&
-                EdgeDistance > DynamicGeometryEpsilon && ReferenceDistance > DynamicGeometryEpsilon;
-#if MDSS_GPU_VALIDATION
-        Valid = Valid && !isnan(EdgeDistance) && !isinf(EdgeDistance) && !isnan(ReferenceDistance) &&
-                !isinf(ReferenceDistance);
-#endif
+        return normalize(NormalMatrix * localNormal(Texel));
+    }
+
+    // #endregion
+
+    // 02.01. Evaluate Dynamic Concavity Weight
+    // #region 02_01_Evaluate_Dynamic_Concavity_Weight
+    // 갱신한 동적 형상에서 수송에 사용할 오목함 가중치를 계산한다.
+
+    float buildDynamicConcavityWeight(uint Texel, float StaticWeight)
+    {
+        vec3 CenterPosition = localPosition(Texel);
+
+        // DynamicGeometryUpdate는 두 번째 vec4에 정규화된 local normal을 저장한다.
+        vec3 N = localNormal(Texel);
+    #if MDSS_GPU_VALIDATION
+        if (any(isnan(N)) || any(isinf(N)))
+        {
+            return StaticWeight;
+        }
+    #endif
+        vec3 Axis = abs(N.z) < 0.85 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+        vec3 T = normalize(cross(Axis, N));
+        vec3 B = cross(N, T);
+        float XX = 0.0, XY = 0.0, YY = 0.0;
+        float UX = 0.0, UY = 0.0, VX = 0.0, VY = 0.0;
+        float SpacingSum = 0.0;
+        uint SampleCount = 0u;
+
+        for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+        {
+            uint Other = neighborIndex(Texel, DirectionIndex);
+
+            if (Other == InvalidTexelIndex || Other >= Solver.LocalTexelCount || !isValidTexel(Other))
+            {
+                continue;
+            }
+
+            vec3 OtherPosition = localPosition(Other);
+            vec3 OtherNormal = localNormal(Other);
+    #if MDSS_GPU_VALIDATION
+            if (any(isnan(OtherNormal)) || any(isinf(OtherNormal)) || dot(N, OtherNormal) <= 0.05)
+            {
+                continue;
+            }
+    #else
+            if (dot(N, OtherNormal) <= 0.05)
+            {
+                continue;
+            }
+    #endif
+            vec3 Delta = OtherPosition - CenterPosition;
+            float X = dot(Delta, T), Y = dot(Delta, B);
+            float DistanceSquared = X * X + Y * Y;
+    #if MDSS_GPU_VALIDATION
+            if (DistanceSquared <= 1.0e-12 || isnan(DistanceSquared) || isinf(DistanceSquared))
+            {
+                continue;
+            }
+    #else
+            if (DistanceSquared <= 1.0e-12)
+            {
+                continue;
+            }
+    #endif
+            float Weight = 1.0 / DistanceSquared;
+            vec3 NormalDelta = OtherNormal - N;
+            float DU = -dot(NormalDelta, T), DV = -dot(NormalDelta, B);
+            XX += Weight * X * X;
+            XY += Weight * X * Y;
+            YY += Weight * Y * Y;
+            UX += Weight * X * DU;
+            UY += Weight * Y * DU;
+            VX += Weight * X * DV;
+            VY += Weight * Y * DV;
+            SpacingSum += sqrt(DistanceSquared);
+            ++SampleCount;
+        }
+
+        float Determinant = XX * YY - XY * XY;
+
+        if (SampleCount < 3u || Determinant <= 1.0e-6 * max(XX * YY, 1.0e-12))
+        {
+            return StaticWeight;
+        }
+
+        float Sxx = (YY * UX - XY * UY) / Determinant;
+        float Sxy = 0.5 * ((XX * UY - XY * UX) + (YY * VX - XY * VY)) / Determinant;
+        float Syy = (XX * VY - XY * VX) / Determinant;
+        float H = 0.5 * (Sxx + Syy), K = Sxx * Syy - Sxy * Sxy;
+        float Root = sqrt(max(H * H - K, 0.0));
+        float A = H + Root, C = H - Root;
+        float Positive = max(A, 0.0) + max(C, 0.0);
+        float Negative = max(-A, 0.0) + max(-C, 0.0);
+        float Score = 8.0 * (SpacingSum / float(SampleCount)) * max(Positive - 2.0 * Negative, 0.0);
+    #if MDSS_GPU_VALIDATION
+        return isnan(Score) || isinf(Score) ? StaticWeight : clamp(Score, 0.0, 1.0);
+    #else
+        return clamp(Score, 0.0, 1.0);
+    #endif
+    }
+
+    // #endregion
+
+    // 02.02. Evaluate Directional Transfer Weight
+    // #region 02_02_Evaluate_Directional_Transfer_Weight
+    // DynamicGeometry·TexelProfileIndices 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
+
+    float buildTransferWeight(uint Source,
+                              uint DirectionIndex,
+                              vec3 SourceWorld,
+                              vec3 SourceNormal,
+                              float SourceMeanDistance,
+                              bool SourceNormalValid)
+    {
+        uint Target = neighborIndex(Source, DirectionIndex);
+        float Weight = 0.0;
+
+        if (Target == InvalidTexelIndex || Target >= Solver.LocalTexelCount || !isValidTexel(Target))
+        {
+            return 0.0;
+        }
+
+        vec3 TargetWorld = worldPosition(Target);
+        vec3 TargetNormal = worldNormal(Target);
+        bool TargetNormalValid = dot(TargetNormal, TargetNormal) > 0.5;
+    #if MDSS_GPU_VALIDATION
+        TargetNormalValid = TargetNormalValid && !any(isnan(TargetNormal)) && !any(isinf(TargetNormal));
+    #endif
+        float DistanceWeight = 1.0;
+        bool Valid = true;
+
+        if ((Solver.Flags & (1u << 7u)) != 0u)
+        {
+            float TargetMeanDistance = DynamicGeometry.Values[Target * 2u].w;
+            float EdgeDistance = length(TargetWorld - SourceWorld);
+            float ReferenceDistance = 0.5 * (SourceMeanDistance + TargetMeanDistance);
+            Valid = SourceMeanDistance > DynamicGeometryEpsilon && TargetMeanDistance > DynamicGeometryEpsilon &&
+                    EdgeDistance > DynamicGeometryEpsilon && ReferenceDistance > DynamicGeometryEpsilon;
+    #if MDSS_GPU_VALIDATION
+            Valid = Valid && !isnan(EdgeDistance) && !isinf(EdgeDistance) && !isnan(ReferenceDistance) &&
+                    !isinf(ReferenceDistance);
+    #endif
+            if (Valid)
+            {
+                DistanceWeight = clamp(ReferenceDistance / EdgeDistance, 0.0, 1.0);
+            }
+        }
+
+        float NormalWeight = 1.0;
+
+        if ((Solver.Flags & (1u << 8u)) != 0u)
+        {
+            Valid = Valid && SourceNormalValid && TargetNormalValid;
+
+            if (Valid)
+            {
+                NormalWeight = clamp(dot(SourceNormal, TargetNormal), 0.0, 1.0);
+            }
+        }
+
+        float ProfileBoundaryWeight = 1.0;
+
+        if ((Solver.Flags & (1u << 9u)) != 0u && TexelProfileIndices.Values[Source] != TexelProfileIndices.Values[Target])
+        {
+            ProfileBoundaryWeight = 0.5;
+        }
+
         if (Valid)
         {
-            DistanceWeight = clamp(ReferenceDistance / EdgeDistance, 0.0, 1.0);
+            Weight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
         }
+
+        return Weight;
     }
 
-    float NormalWeight = 1.0;
+    // #endregion
 
-    if ((Solver.Flags & (1u << 8u)) != 0u)
+
+    // 02.03. Prepare Geometry Frames
+    // #region 02_03_Prepare_Geometry_Frames
+    // Model/Normal 변환 행렬을 shader invocation의 동적 geometry 평가에 준비한다.
+
+    void InitializeGeometryFrames()
     {
-        Valid = Valid && SourceNormalValid && TargetNormalValid;
+        ModelLinear =
+            mat3(Solver.ModelLinearColumns[0].xyz, Solver.ModelLinearColumns[1].xyz, Solver.ModelLinearColumns[2].xyz);
+        NormalMatrix = mat3(Solver.NormalMatrixAndUpColumns[0].xyz,
+                            Solver.NormalMatrixAndUpColumns[1].xyz,
+                            Solver.NormalMatrixAndUpColumns[2].xyz);
+    }
 
-        if (Valid)
+    // #endregion
+
+    // 02.04. Clear Invalid Texel Weights
+    // #region 02_04_Clear_Invalid_Texel_Weights
+    // 무효 texel에 해당하는 concavity·directional weight 버퍼를 모두 0으로 초기화한다.
+
+    void ClearInvalidGeometryWeights(uint Source)
+    {
+            DynamicConcavityWeights.Values[Source] = 0.0;
+
+            if (useHalfDynamicWeights())
+            {
+                uint Base = Source * (SurfaceNeighborCount / 2u);
+
+                for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
+                {
+                    TransferWeights.Values[Base + Pair] = 0u;
+                }
+            }
+            else
+            {
+                uint Base = Source * SurfaceNeighborCount;
+
+                for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+                {
+                    TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(0.0);
+                }
+            }
+
+            return;
+    }
+
+    // #endregion
+
+    // 02.05. Publish Dynamic Weights
+    // #region 02_05_Publish_Dynamic_Weights
+    // 최종 concavity와 각 이웃 방향의 전송 가중치를 packed/dense 형식에 맞춰 기록한다.
+
+    void WriteDynamicGeometryWeights(uint Source)
+    {
+        DynamicConcavityWeights.Values[Source] =
+            buildDynamicConcavityWeight(Source, GeometryScalars.Values[Source].ConcavityWeight);
+
+        vec3 SourceWorld = worldPosition(Source);
+        vec3 SourceNormal = worldNormal(Source);
+        float SourceMeanDistance = (Solver.Flags & (1u << 7u)) != 0u ? DynamicGeometry.Values[Source * 2u].w : 1.0;
+        bool SourceNormalValid = dot(SourceNormal, SourceNormal) > 0.5;
+    #if MDSS_GPU_VALIDATION
+        SourceNormalValid = SourceNormalValid && !any(isnan(SourceNormal)) && !any(isinf(SourceNormal));
+    #endif
+
+        if (useHalfDynamicWeights())
         {
-            NormalWeight = clamp(dot(SourceNormal, TargetNormal), 0.0, 1.0);
+            uint Base = Source * (SurfaceNeighborCount / 2u);
+
+            for (uint Pair = 0u; Pair < SurfaceNeighborCount / 2u; ++Pair)
+            {
+                uint D0 = Pair * 2u;
+                uint D1 = D0 + 1u;
+                vec2 Weights = clamp(
+                    vec2(buildTransferWeight(Source, D0, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid),
+                         buildTransferWeight(Source, D1, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid)),
+                    vec2(0.0),
+                    vec2(1.0));
+                TransferWeights.Values[Base + Pair] = packHalf2x16(Weights);
+            }
+        }
+        else
+        {
+            uint Base = Source * SurfaceNeighborCount;
+
+            for (uint DirectionIndex = 0u; DirectionIndex < SurfaceNeighborCount; ++DirectionIndex)
+            {
+                float Weight = buildTransferWeight(
+                    Source, DirectionIndex, SourceWorld, SourceNormal, SourceMeanDistance, SourceNormalValid);
+                TransferWeights.Values[Base + DirectionIndex] = floatBitsToUint(Weight);
+            }
         }
     }
 
-    float ProfileBoundaryWeight = 1.0;
-
-    if ((Solver.Flags & (1u << 9u)) != 0u && TexelProfileIndices.Values[Source] != TexelProfileIndices.Values[Target])
-    {
-        ProfileBoundaryWeight = 0.5;
-    }
-
-    if (Valid)
-    {
-        Weight = DistanceWeight * NormalWeight * ProfileBoundaryWeight;
-    }
-
-    return Weight;
-}
-
-// #endregion
+    // #endregion
 
 // #endregion

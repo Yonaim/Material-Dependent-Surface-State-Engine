@@ -177,294 +177,294 @@ void main()
 // #region 02_Detailed_Implementation
 // overlay 정점 coverage를 주변 simulation texel에서 샘플해 부드럽게 만든다.
 
-// 02.00. Resolve Coverage Tiles and Synchronize Shared Halo
-// #region 02_00_Resolve_Coverage_Tiles_and_Synchronize_Shared_Halo
-// workgroup의 barrier 참여 조건과 공유 데이터 읽기·쓰기 순서를 함께 유지한다.
+    // 02.00. Resolve Coverage Tiles and Synchronize Shared Halo
+    // #region 02_00_Resolve_Coverage_Tiles_and_Synchronize_Shared_Halo
+    // workgroup의 barrier 참여 조건과 공유 데이터 읽기·쓰기 순서를 함께 유지한다.
 
-uint CoverageListBase()
-{
-    uint Capacity = (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
-    return Push.TexelCount * 6u + Capacity * 6u + 12u;
-}
-
-#if MDSS_COVERAGE_HALO
-float LoadCoverageSaturation(uint Texel, uint Profile)
-{
-    uint Channels = Push.Channels;
-    uint Channel = Push.Channel;
-    float Sample = 0.0;
-
-    if (Channel == 0xfffeu || Channel == 0xffffu)
+    uint CoverageListBase()
     {
-        if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Channels)
-        {
-            Sample = max(Sample, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
-        }
-
-        if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
-        {
-            Sample = max(Sample, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
-        }
-
-        if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
-        {
-            Sample = max(Sample, OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));
-        }
-
-        if (Channel == 0xffffu && (Push.ActiveMaterialMask & 2u) != 0u && Push.WaterFilm < Channels)
-        {
-            Sample = max(Sample, OverlayStateSaturation(Texel, Push.WaterFilm, Channels, Profile));
-        }
-    }
-    else if (Channel < Channels)
-    {
-        Sample = OverlayStateSaturation(Texel, Channel, Channels, Profile);
+        uint Capacity = (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
+        return Push.TexelCount * 6u + Capacity * 6u + 12u;
     }
 
-    return Sample;
-}
-
-void StageCoverageTile(uint Candidate)
-{
-    if (gl_LocalInvocationIndex == 0u)
+    #if MDSS_COVERAGE_HALO
+    float LoadCoverageSaturation(uint Texel, uint Profile)
     {
-        HaloTileValid = 0u;
-        uint Base = 0u;
+        uint Channels = Push.Channels;
+        uint Channel = Push.Channel;
+        float Sample = 0.0;
 
-        for (uint Surface = 0u; Surface < uint(OverlaySurfaceRanges.Values.length()); ++Surface)
+        if (Channel == 0xfffeu || Channel == 0xffffu)
         {
-            uvec4 Range = OverlaySurfaceRanges.Values[Surface];
-            uint TilesX = (Range.y + Push.TileSize - 1u) / Push.TileSize;
-            uint TilesY = (Range.z + Push.TileSize - 1u) / Push.TileSize;
-
-            if (Candidate < Base + TilesX * TilesY)
+            if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Channels)
             {
-                uint Local = Candidate - Base;
-                HaloSurface = Surface;
-                HaloRangeFirst = Range.x;
-                HaloRangeWidth = Range.y;
-                HaloRangeHeight = Range.z;
-                HaloTileX = Local % TilesX;
-                HaloTileY = Local / TilesX;
-                HaloTileValid = 1u;
-                break;
+                Sample = max(Sample, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
             }
 
-            Base += TilesX * TilesY;
+            if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
+            {
+                Sample = max(Sample, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
+            }
+
+            if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
+            {
+                Sample = max(Sample, OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));
+            }
+
+            if (Channel == 0xffffu && (Push.ActiveMaterialMask & 2u) != 0u && Push.WaterFilm < Channels)
+            {
+                Sample = max(Sample, OverlayStateSaturation(Texel, Push.WaterFilm, Channels, Profile));
+            }
         }
-    }
-
-    barrier();
-
-    if (HaloTileValid == 0u)
-    {
-        return;
-    }
-
-    uint Stride = Push.TileSize + 4u;
-
-    for (uint Slot = gl_LocalInvocationIndex; Slot < Stride * Stride; Slot += 64u)
-    {
-        int X = int(HaloTileX * Push.TileSize + Slot % Stride) - 2;
-        int Y = int(HaloTileY * Push.TileSize + Slot / Stride) - 2;
-        bool Valid = X >= 0 && Y >= 0 && X < int(HaloRangeWidth) && Y < int(HaloRangeHeight);
-        uint Texel = Valid ? HaloRangeFirst + uint(Y) * HaloRangeWidth + uint(X) : Push.TexelCount;
-        Valid = Texel < Push.TexelCount && Texel < uint(OverlayTexelProfileIndices.Values.length()) &&
-                Texel < uint(OverlayTexelChartIndices.Values.length()) &&
-                Texel < uint(OverlayWorldTexelAreas.Values.length()) &&
-                (Push.Channels == 0u || Texel < uint(OverlayCurrentState.Values.length()) / Push.Channels);
-        uint Profile = Valid ? OverlayTexelProfileIndices.Values[Texel] : 0xffffffffu;
-        Valid = Valid && Push.Channels > 0u && Profile < OverlayProfileRecordCount() / Push.Channels;
-        HaloProfile[Slot] = Valid ? Profile : 0xffffffffu;
-        HaloChart[Slot] = Valid ? OverlayTexelChartIndices.Values[Texel] : 0xffffffffu;
-        HaloSaturation[Slot] = Valid ? LoadCoverageSaturation(Texel, Profile) : 0.0;
-    }
-
-    barrier();
-}
-
-#endif
-
-// #endregion
-
-// 02.01. Filter and Publish Vertex Coverage
-// #region 02_01_Filter_and_Publish_Vertex_Coverage
-// 계산 결과를 Coverage 버퍼에 기록해 후속 GPU 단계에 전달한다.
-
-void ComputeCoverage(uint Index, bool TileActive)
-{
-    if (Index >= uint(MeshVertices.Values.length()) || Index >= uint(Coverage.Values.length()))
-    {
-        return;
-    }
-
-    if (!TileActive)
-    {
-        Coverage.Values[Index] = floatBitsToUint(0.0);
-        return;
-    }
-
-    TOverlayVertex Vertex = MeshVertices.Values[Index];
-    uint Surface = uint(max(Vertex.UVSurface.w, 0.0));
-    uint Channels = Push.Channels;
-    uint Channel = Push.Channel;
-    uint TexelCount = Push.TexelCount;
-    bool SharedSurface = Channel == 0xfffeu || Channel == 0xffffu;
-
-    if (Channels == 0u || (!SharedSurface && Channel >= Channels))
-    {
-        Coverage.Values[Index] = floatBitsToUint(0.0);
-        return;
-    }
-#if MDSS_GPU_VALIDATION
-    if (Surface >= uint(OverlaySurfaceRanges.Values.length()))
-    {
-        Coverage.Values[Index] = floatBitsToUint(0.0);
-        return;
-    }
-#endif
-
-    uvec4 Range = OverlaySurfaceRanges.Values[Surface];
-
-    if (Range.y == 0u || Range.z == 0u)
-    {
-        Coverage.Values[Index] = floatBitsToUint(0.0);
-        return;
-    }
-
-    vec2 UV = clamp(Vertex.UVSurface.xy, 0.0, 1.0);
-    uvec2 CenterXY = min(uvec2(UV * vec2(Range.yz)), Range.yz - 1u);
-    uint Center = Range.x + CenterXY.y * Range.y + CenterXY.x;
-
-    if (Center >= TexelCount)
-    {
-        Coverage.Values[Index] = floatBitsToUint(0.0);
-        return;
-    }
-#if MDSS_GPU_VALIDATION
-    if (Center >= uint(OverlayTexelProfileIndices.Values.length()) ||
-        Center >= uint(OverlayTexelChartIndices.Values.length()))
-    {
-        Coverage.Values[Index] = floatBitsToUint(0.0);
-        return;
-    }
-#endif
-    uint Profile = OverlayTexelProfileIndices.Values[Center];
-    uint Chart = OverlayTexelChartIndices.Values[Center];
-#if MDSS_GPU_VALIDATION
-    if (Profile >= OverlayProfileRecordCount() / Channels)
-    {
-        Coverage.Values[Index] = floatBitsToUint(0.0);
-        return;
-    }
-#endif
-
-    float Sum = 0.0;
-    float WeightSum = 0.0;
-    const int Kernel[5] = int[5](1, 4, 6, 4, 1);
-#if MDSS_COVERAGE_HALO
-    bool SharedTile = (Push.Padding & 1u) == 0u && HaloTileValid != 0u && Surface == HaloSurface;
-#endif
-    for (int OffsetY = -2; OffsetY <= 2; ++OffsetY)
-    {
-        int Y = int(CenterXY.y) + OffsetY;
-
-        if (Y < 0 || Y >= int(Range.z))
+        else if (Channel < Channels)
         {
-            continue;
+            Sample = OverlayStateSaturation(Texel, Channel, Channels, Profile);
         }
 
-        for (int OffsetX = -2; OffsetX <= 2; ++OffsetX)
-        {
-            int X = int(CenterXY.x) + OffsetX;
+        return Sample;
+    }
 
-            if (X < 0 || X >= int(Range.y))
+    void StageCoverageTile(uint Candidate)
+    {
+        if (gl_LocalInvocationIndex == 0u)
+        {
+            HaloTileValid = 0u;
+            uint Base = 0u;
+
+            for (uint Surface = 0u; Surface < uint(OverlaySurfaceRanges.Values.length()); ++Surface)
+            {
+                uvec4 Range = OverlaySurfaceRanges.Values[Surface];
+                uint TilesX = (Range.y + Push.TileSize - 1u) / Push.TileSize;
+                uint TilesY = (Range.z + Push.TileSize - 1u) / Push.TileSize;
+
+                if (Candidate < Base + TilesX * TilesY)
+                {
+                    uint Local = Candidate - Base;
+                    HaloSurface = Surface;
+                    HaloRangeFirst = Range.x;
+                    HaloRangeWidth = Range.y;
+                    HaloRangeHeight = Range.z;
+                    HaloTileX = Local % TilesX;
+                    HaloTileY = Local / TilesX;
+                    HaloTileValid = 1u;
+                    break;
+                }
+
+                Base += TilesX * TilesY;
+            }
+        }
+
+        barrier();
+
+        if (HaloTileValid == 0u)
+        {
+            return;
+        }
+
+        uint Stride = Push.TileSize + 4u;
+
+        for (uint Slot = gl_LocalInvocationIndex; Slot < Stride * Stride; Slot += 64u)
+        {
+            int X = int(HaloTileX * Push.TileSize + Slot % Stride) - 2;
+            int Y = int(HaloTileY * Push.TileSize + Slot / Stride) - 2;
+            bool Valid = X >= 0 && Y >= 0 && X < int(HaloRangeWidth) && Y < int(HaloRangeHeight);
+            uint Texel = Valid ? HaloRangeFirst + uint(Y) * HaloRangeWidth + uint(X) : Push.TexelCount;
+            Valid = Texel < Push.TexelCount && Texel < uint(OverlayTexelProfileIndices.Values.length()) &&
+                    Texel < uint(OverlayTexelChartIndices.Values.length()) &&
+                    Texel < uint(OverlayWorldTexelAreas.Values.length()) &&
+                    (Push.Channels == 0u || Texel < uint(OverlayCurrentState.Values.length()) / Push.Channels);
+            uint Profile = Valid ? OverlayTexelProfileIndices.Values[Texel] : 0xffffffffu;
+            Valid = Valid && Push.Channels > 0u && Profile < OverlayProfileRecordCount() / Push.Channels;
+            HaloProfile[Slot] = Valid ? Profile : 0xffffffffu;
+            HaloChart[Slot] = Valid ? OverlayTexelChartIndices.Values[Texel] : 0xffffffffu;
+            HaloSaturation[Slot] = Valid ? LoadCoverageSaturation(Texel, Profile) : 0.0;
+        }
+
+        barrier();
+    }
+
+    #endif
+
+    // #endregion
+
+    // 02.01. Filter and Publish Vertex Coverage
+    // #region 02_01_Filter_and_Publish_Vertex_Coverage
+    // 계산 결과를 Coverage 버퍼에 기록해 후속 GPU 단계에 전달한다.
+
+    void ComputeCoverage(uint Index, bool TileActive)
+    {
+        if (Index >= uint(MeshVertices.Values.length()) || Index >= uint(Coverage.Values.length()))
+        {
+            return;
+        }
+
+        if (!TileActive)
+        {
+            Coverage.Values[Index] = floatBitsToUint(0.0);
+            return;
+        }
+
+        TOverlayVertex Vertex = MeshVertices.Values[Index];
+        uint Surface = uint(max(Vertex.UVSurface.w, 0.0));
+        uint Channels = Push.Channels;
+        uint Channel = Push.Channel;
+        uint TexelCount = Push.TexelCount;
+        bool SharedSurface = Channel == 0xfffeu || Channel == 0xffffu;
+
+        if (Channels == 0u || (!SharedSurface && Channel >= Channels))
+        {
+            Coverage.Values[Index] = floatBitsToUint(0.0);
+            return;
+        }
+    #if MDSS_GPU_VALIDATION
+        if (Surface >= uint(OverlaySurfaceRanges.Values.length()))
+        {
+            Coverage.Values[Index] = floatBitsToUint(0.0);
+            return;
+        }
+    #endif
+
+        uvec4 Range = OverlaySurfaceRanges.Values[Surface];
+
+        if (Range.y == 0u || Range.z == 0u)
+        {
+            Coverage.Values[Index] = floatBitsToUint(0.0);
+            return;
+        }
+
+        vec2 UV = clamp(Vertex.UVSurface.xy, 0.0, 1.0);
+        uvec2 CenterXY = min(uvec2(UV * vec2(Range.yz)), Range.yz - 1u);
+        uint Center = Range.x + CenterXY.y * Range.y + CenterXY.x;
+
+        if (Center >= TexelCount)
+        {
+            Coverage.Values[Index] = floatBitsToUint(0.0);
+            return;
+        }
+    #if MDSS_GPU_VALIDATION
+        if (Center >= uint(OverlayTexelProfileIndices.Values.length()) ||
+            Center >= uint(OverlayTexelChartIndices.Values.length()))
+        {
+            Coverage.Values[Index] = floatBitsToUint(0.0);
+            return;
+        }
+    #endif
+        uint Profile = OverlayTexelProfileIndices.Values[Center];
+        uint Chart = OverlayTexelChartIndices.Values[Center];
+    #if MDSS_GPU_VALIDATION
+        if (Profile >= OverlayProfileRecordCount() / Channels)
+        {
+            Coverage.Values[Index] = floatBitsToUint(0.0);
+            return;
+        }
+    #endif
+
+        float Sum = 0.0;
+        float WeightSum = 0.0;
+        const int Kernel[5] = int[5](1, 4, 6, 4, 1);
+    #if MDSS_COVERAGE_HALO
+        bool SharedTile = (Push.Padding & 1u) == 0u && HaloTileValid != 0u && Surface == HaloSurface;
+    #endif
+        for (int OffsetY = -2; OffsetY <= 2; ++OffsetY)
+        {
+            int Y = int(CenterXY.y) + OffsetY;
+
+            if (Y < 0 || Y >= int(Range.z))
             {
                 continue;
             }
-#if MDSS_COVERAGE_HALO
-            if (SharedTile)
+
+            for (int OffsetX = -2; OffsetX <= 2; ++OffsetX)
             {
-                int LocalX = X - int(HaloTileX * Push.TileSize) + 2;
-                int LocalY = Y - int(HaloTileY * Push.TileSize) + 2;
-                int Stride = int(Push.TileSize) + 4;
+                int X = int(CenterXY.x) + OffsetX;
 
-                if (LocalX >= 0 && LocalY >= 0 && LocalX < Stride && LocalY < Stride)
+                if (X < 0 || X >= int(Range.y))
                 {
-                    uint Slot = uint(LocalY * Stride + LocalX);
-
-                    if (HaloProfile[Slot] != Profile || HaloChart[Slot] != Chart)
-                    {
-                        continue;
-                    }
-
-                    float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
-                    Sum += Weight * HaloSaturation[Slot];
-                    WeightSum += Weight;
                     continue;
                 }
-            }
-#endif
-            uint Texel = Range.x + uint(Y) * Range.y + uint(X);
-
-            if (Texel >= TexelCount)
-            {
-                continue;
-            }
-#if MDSS_GPU_VALIDATION
-            if (Texel >= uint(OverlayTexelProfileIndices.Values.length()))
-            {
-                continue;
-            }
-
-            if (Texel >= uint(OverlayTexelChartIndices.Values.length()))
-            {
-                continue;
-            }
-#endif
-            if (OverlayTexelProfileIndices.Values[Texel] != Profile || OverlayTexelChartIndices.Values[Texel] != Chart)
-            {
-                continue;
-            }
-
-            float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
-            float Sample = 0.0;
-
-            if (SharedSurface)
-            {
-                if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Channels)
+    #if MDSS_COVERAGE_HALO
+                if (SharedTile)
                 {
-                    Sample = max(Sample, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
+                    int LocalX = X - int(HaloTileX * Push.TileSize) + 2;
+                    int LocalY = Y - int(HaloTileY * Push.TileSize) + 2;
+                    int Stride = int(Push.TileSize) + 4;
+
+                    if (LocalX >= 0 && LocalY >= 0 && LocalX < Stride && LocalY < Stride)
+                    {
+                        uint Slot = uint(LocalY * Stride + LocalX);
+
+                        if (HaloProfile[Slot] != Profile || HaloChart[Slot] != Chart)
+                        {
+                            continue;
+                        }
+
+                        float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
+                        Sum += Weight * HaloSaturation[Slot];
+                        WeightSum += Weight;
+                        continue;
+                    }
+                }
+    #endif
+                uint Texel = Range.x + uint(Y) * Range.y + uint(X);
+
+                if (Texel >= TexelCount)
+                {
+                    continue;
+                }
+    #if MDSS_GPU_VALIDATION
+                if (Texel >= uint(OverlayTexelProfileIndices.Values.length()))
+                {
+                    continue;
                 }
 
-                if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
+                if (Texel >= uint(OverlayTexelChartIndices.Values.length()))
                 {
-                    Sample = max(Sample, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
+                    continue;
+                }
+    #endif
+                if (OverlayTexelProfileIndices.Values[Texel] != Profile || OverlayTexelChartIndices.Values[Texel] != Chart)
+                {
+                    continue;
                 }
 
-                if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
+                float Weight = float(Kernel[OffsetX + 2] * Kernel[OffsetY + 2]);
+                float Sample = 0.0;
+
+                if (SharedSurface)
                 {
-                    Sample = max(Sample, OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));
+                    if ((Push.ActiveMaterialMask & 8u) != 0u && Push.Ice < Channels)
+                    {
+                        Sample = max(Sample, OverlayStateSaturation(Texel, Push.Ice, Channels, Profile));
+                    }
+
+                    if ((Push.ActiveMaterialMask & 1u) != 0u && Push.Mud < Channels)
+                    {
+                        Sample = max(Sample, OverlayStateSaturation(Texel, Push.Mud, Channels, Profile));
+                    }
+
+                    if ((Push.ActiveMaterialMask & 4u) != 0u && Push.Lava < Channels)
+                    {
+                        Sample = max(Sample, OverlayStateSaturation(Texel, Push.Lava, Channels, Profile));
+                    }
+
+                    if (Channel == 0xffffu && (Push.ActiveMaterialMask & 2u) != 0u && Push.WaterFilm < Channels)
+                    {
+                        Sample = max(Sample, OverlayStateSaturation(Texel, Push.WaterFilm, Channels, Profile));
+                    }
+                }
+                else
+                {
+                    Sample = OverlayStateSaturation(Texel, Channel, Channels, Profile);
                 }
 
-                if (Channel == 0xffffu && (Push.ActiveMaterialMask & 2u) != 0u && Push.WaterFilm < Channels)
-                {
-                    Sample = max(Sample, OverlayStateSaturation(Texel, Push.WaterFilm, Channels, Profile));
-                }
+                Sum += Weight * Sample;
+                WeightSum += Weight;
             }
-            else
-            {
-                Sample = OverlayStateSaturation(Texel, Channel, Channels, Profile);
-            }
-
-            Sum += Weight * Sample;
-            WeightSum += Weight;
         }
+
+        Coverage.Values[Index] = floatBitsToUint(WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : 0.0);
     }
 
-    Coverage.Values[Index] = floatBitsToUint(WeightSum > 0.0 ? clamp(Sum / WeightSum, 0.0, 1.0) : 0.0);
-}
-
-// #endregion
+    // #endregion
 
 // #endregion

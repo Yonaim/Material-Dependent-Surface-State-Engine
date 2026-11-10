@@ -5,120 +5,120 @@
 // #region 00_Shared_Shader_Helpers
 // GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다. 표준식 참고: https://google.github.io/filament/main/filament.html.
 
-// 00.00. Specular Distribution and Visibility
-// #region 00_00_Specular_Distribution_and_Visibility
-// roughness와 시선·광원 방향을 사용해 정반사 분포와 가시성을 평가한다.
+    // 00.00. Specular Distribution and Visibility
+    // #region 00_00_Specular_Distribution_and_Visibility
+    // roughness와 시선·광원 방향을 사용해 정반사 분포와 가시성을 평가한다.
 
-float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH, float PerceptualRoughness, float F0)
-{
-    // 공통 방향 항은 ShadeSurface에서 계산하고, roughness별 분포와 visibility만 계산한다.
-
-    float Alpha = max(PerceptualRoughness * PerceptualRoughness, 0.0025);
-    float A2 = Alpha * Alpha;
-    float Denom = NoH * NoH * (A2 - 1.0) + 1.0;
-    float D = A2 / max(3.14159265 * Denom * Denom, 1e-8);
-
-    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - A2) + A2);
-    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - A2) + A2);
-    float Visibility = 0.5 / max(GGXV + GGXL, 1e-6);
-
-    float F = F0 + (1.0 - F0) * pow(1.0 - VoH, 5.0);
-
-    return 3.14159265 * D * Visibility * F * NoL;
-}
-
-// #endregion
-
-// 00.01. Water Film Environment
-// #region 00_01_Water_Film_Environment
-// 수막 반사에 사용할 환경 응답을 표면 방향과 시선에서 계산한다.
-
-vec3 EvaluateWaterFilmEnvironment(vec3 ReflectionDirection, float PerceptualRoughness)
-{
-    // A small analytic studio environment gives the film something to reflect
-    // without requiring an environment-map descriptor. The renderer uses Z-up.
-    float Height = clamp(ReflectionDirection.z * 0.5 + 0.5, 0.0, 1.0);
-    vec3 Environment = mix(vec3(0.035, 0.042, 0.050), vec3(0.34, 0.40, 0.48), smoothstep(0.08, 0.92, Height));
-
-    float PanelExponent = mix(8.0, 32.0, 1.0 - clamp(PerceptualRoughness, 0.0, 1.0));
-    float KeyPanel = pow(max(dot(ReflectionDirection, normalize(vec3(-0.39, 0.79, 0.55))), 0.0), PanelExponent);
-    float FillPanel = pow(max(dot(ReflectionDirection, normalize(vec3(0.55, 0.05, 0.72))), 0.0), PanelExponent * 0.72);
-    Environment += vec3(0.92, 0.96, 1.0) * (KeyPanel * 0.72 + FillPanel * 0.28);
-    return Environment;
-}
-
-// #endregion
-
-// 00.02. Surface Lighting Composition
-// #region 00_02_Surface_Lighting_Composition
-// 기본 재질의 확산·반사와 표면 효과를 최종 조명 응답으로 결합한다.
-
-vec3 ShadeSurface(vec3 Albedo,
-                  vec3 N,
-                  vec3 ViewVector,
-                  float PerceptualRoughness,
-                  float Ambient,
-                  float WaterFilmCoverage,
-                  float DirectSpecularLimit)
-{
-    // 고정 key light와 ambient 항에 WaterFilm clear coat 및 반사를 더한다.
-    vec3 V = ViewVector * inversesqrt(max(dot(ViewVector, ViewVector), 1e-12));
-    vec3 L = normalize(vec3(0.35, 0.55, 1.0));
-    vec3 Sum = V + L;
-    vec3 H = Sum * inversesqrt(max(dot(Sum, Sum), 1e-12));
-    float NoV = max(dot(N, V), 1e-4), NoL = max(dot(N, L), 0.0);
-    float NoH = max(dot(N, H), 0.0), VoH = max(dot(V, H), 0.0);
-
-    float Alpha = max(PerceptualRoughness * PerceptualRoughness, 0.0025);
-    float A2 = Alpha * Alpha;
-    float Denom = NoH * NoH * (A2 - 1.0) + 1.0;
-    float D = A2 / max(3.14159265 * Denom * Denom, 1e-8);
-
-    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - A2) + A2);
-    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - A2) + A2);
-    float Visibility = 0.5 / max(GGXV + GGXL, 1e-6);
-
-    float F = 0.04 + 0.96 * pow(1.0 - VoH, 5.0);
-    float DirectSpecular = 3.14159265 * D * Visibility * F * NoL;
-
-    // The demo renders directly to an LDR target. A nonnegative limit compresses
-    // only the bright peak; negative values keep the original BRDF response.
-    if (DirectSpecularLimit >= 0.0)
+    float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH, float PerceptualRoughness, float F0)
     {
-        DirectSpecular = DirectSpecularLimit * DirectSpecular / max(DirectSpecularLimit + DirectSpecular, 1e-8);
+        // 공통 방향 항은 ShadeSurface에서 계산하고, roughness별 분포와 visibility만 계산한다.
+
+        float Alpha = max(PerceptualRoughness * PerceptualRoughness, 0.0025);
+        float A2 = Alpha * Alpha;
+        float Denom = NoH * NoH * (A2 - 1.0) + 1.0;
+        float D = A2 / max(3.14159265 * Denom * Denom, 1e-8);
+
+        float GGXV = NoL * sqrt(NoV * NoV * (1.0 - A2) + A2);
+        float GGXL = NoV * sqrt(NoL * NoL * (1.0 - A2) + A2);
+        float Visibility = 0.5 / max(GGXV + GGXL, 1e-6);
+
+        float F = F0 + (1.0 - F0) * pow(1.0 - VoH, 5.0);
+
+        return 3.14159265 * D * Visibility * F * NoL;
     }
 
-    vec3 Direct = (1.0 - F) * Albedo * NoL + vec3(DirectSpecular);
+    // #endregion
 
-    float Film = clamp(WaterFilmCoverage, 0.0, 1.0);
-    float StateHighlight = 0.0;
+    // 00.01. Water Film Environment
+    // #region 00_01_Water_Film_Environment
+    // 수막 반사에 사용할 환경 응답을 표면 방향과 시선에서 계산한다.
 
-    if (Film > 0.0)
+    vec3 EvaluateWaterFilmEnvironment(vec3 ReflectionDirection, float PerceptualRoughness)
     {
-        StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, PerceptualRoughness, 0.02) * Film;
+        // A small analytic studio environment gives the film something to reflect
+        // without requiring an environment-map descriptor. The renderer uses Z-up.
+        float Height = clamp(ReflectionDirection.z * 0.5 + 0.5, 0.0, 1.0);
+        vec3 Environment = mix(vec3(0.035, 0.042, 0.050), vec3(0.34, 0.40, 0.48), smoothstep(0.08, 0.92, Height));
+
+        float PanelExponent = mix(8.0, 32.0, 1.0 - clamp(PerceptualRoughness, 0.0, 1.0));
+        float KeyPanel = pow(max(dot(ReflectionDirection, normalize(vec3(-0.39, 0.79, 0.55))), 0.0), PanelExponent);
+        float FillPanel = pow(max(dot(ReflectionDirection, normalize(vec3(0.55, 0.05, 0.72))), 0.0), PanelExponent * 0.72);
+        Environment += vec3(0.92, 0.96, 1.0) * (KeyPanel * 0.72 + FillPanel * 0.28);
+        return Environment;
     }
 
-    float NoVFilm = max(dot(N, V), 0.0);
-    float FilmFresnel = 0.02 + 0.98 * pow(1.0 - NoVFilm, 5.0);
-    vec3 ReflectionDirection = reflect(-V, N);
-    vec3 FilmEnvironment = EvaluateWaterFilmEnvironment(ReflectionDirection, PerceptualRoughness);
-    vec3 FilmReflection = FilmEnvironment * (Film * FilmFresnel);
+    // #endregion
 
-    // 기존 ambient 조절과 고정된 흰 key light를 사용한다. environment map과 tone mapper는 없다.
-    return Albedo * Ambient + Direct * (1.0 - Ambient) + vec3(StateHighlight) + FilmReflection;
-}
+    // 00.02. Surface Lighting Composition
+    // #region 00_02_Surface_Lighting_Composition
+    // 기본 재질의 확산·반사와 표면 효과를 최종 조명 응답으로 결합한다.
 
-vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient)
-{
-    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0, -1.0);
-}
+    vec3 ShadeSurface(vec3 Albedo,
+                      vec3 N,
+                      vec3 ViewVector,
+                      float PerceptualRoughness,
+                      float Ambient,
+                      float WaterFilmCoverage,
+                      float DirectSpecularLimit)
+    {
+        // 고정 key light와 ambient 항에 WaterFilm clear coat 및 반사를 더한다.
+        vec3 V = ViewVector * inversesqrt(max(dot(ViewVector, ViewVector), 1e-12));
+        vec3 L = normalize(vec3(0.35, 0.55, 1.0));
+        vec3 Sum = V + L;
+        vec3 H = Sum * inversesqrt(max(dot(Sum, Sum), 1e-12));
+        float NoV = max(dot(N, V), 1e-4), NoL = max(dot(N, L), 0.0);
+        float NoH = max(dot(N, H), 0.0), VoH = max(dot(V, H), 0.0);
 
-vec3 ShadeSurface(
-    vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient, float WaterFilmCoverage)
-{
-    return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, WaterFilmCoverage, -1.0);
-}
+        float Alpha = max(PerceptualRoughness * PerceptualRoughness, 0.0025);
+        float A2 = Alpha * Alpha;
+        float Denom = NoH * NoH * (A2 - 1.0) + 1.0;
+        float D = A2 / max(3.14159265 * Denom * Denom, 1e-8);
 
-// #endregion
+        float GGXV = NoL * sqrt(NoV * NoV * (1.0 - A2) + A2);
+        float GGXL = NoV * sqrt(NoL * NoL * (1.0 - A2) + A2);
+        float Visibility = 0.5 / max(GGXV + GGXL, 1e-6);
+
+        float F = 0.04 + 0.96 * pow(1.0 - VoH, 5.0);
+        float DirectSpecular = 3.14159265 * D * Visibility * F * NoL;
+
+        // The demo renders directly to an LDR target. A nonnegative limit compresses
+        // only the bright peak; negative values keep the original BRDF response.
+        if (DirectSpecularLimit >= 0.0)
+        {
+            DirectSpecular = DirectSpecularLimit * DirectSpecular / max(DirectSpecularLimit + DirectSpecular, 1e-8);
+        }
+
+        vec3 Direct = (1.0 - F) * Albedo * NoL + vec3(DirectSpecular);
+
+        float Film = clamp(WaterFilmCoverage, 0.0, 1.0);
+        float StateHighlight = 0.0;
+
+        if (Film > 0.0)
+        {
+            StateHighlight += EvaluateSpecularLobe(NoV, NoL, NoH, VoH, PerceptualRoughness, 0.02) * Film;
+        }
+
+        float NoVFilm = max(dot(N, V), 0.0);
+        float FilmFresnel = 0.02 + 0.98 * pow(1.0 - NoVFilm, 5.0);
+        vec3 ReflectionDirection = reflect(-V, N);
+        vec3 FilmEnvironment = EvaluateWaterFilmEnvironment(ReflectionDirection, PerceptualRoughness);
+        vec3 FilmReflection = FilmEnvironment * (Film * FilmFresnel);
+
+        // 기존 ambient 조절과 고정된 흰 key light를 사용한다. environment map과 tone mapper는 없다.
+        return Albedo * Ambient + Direct * (1.0 - Ambient) + vec3(StateHighlight) + FilmReflection;
+    }
+
+    vec3 ShadeSurface(vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient)
+    {
+        return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, 0.0, -1.0);
+    }
+
+    vec3 ShadeSurface(
+        vec3 Albedo, vec3 N, vec3 ViewVector, float PerceptualRoughness, float Ambient, float WaterFilmCoverage)
+    {
+        return ShadeSurface(Albedo, N, ViewVector, PerceptualRoughness, Ambient, WaterFilmCoverage, -1.0);
+    }
+
+    // #endregion
 
 // #endregion

@@ -3,9 +3,9 @@
 마지막 compute→draw 읽기 경계부터 base mesh, 공통 overlay, debug UI와 검사 지점까지의 순서다.
 
 **연결 문서**
-- [[02_Architecture/00_Flows/03_Rendering/00_Render-Overview|Render Overview]]
-- [[02_Architecture/02_Source/00_CPP/06_Rendering|C++ Rendering]]
-- [[02_Architecture/02_Source/01_Shaders/01_Overlay/02_Overlay-Shading|Overlay Shading]]
+- [[00_Render-Overview|Render Overview]]
+- [[06_Rendering|C++ Rendering]]
+- [[02_Overlay-Shading|Overlay Shading]]
 
 ## 실행 조건과 산출물
 

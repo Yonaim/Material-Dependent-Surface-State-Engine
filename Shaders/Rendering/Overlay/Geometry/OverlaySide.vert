@@ -42,6 +42,9 @@ layout(location = 4) out float FragCoverage;
 layout(location = 5) flat out uint FragIsSide;
 layout(location = 6) flat out mat3 FragNormalMatrix;
 
+bool ResolveSideSegment(out TSideSegment S, out uint Corner);
+void EmitSideVertex(TSideSegment S, uint Corner);
+
 // #endregion
 
 // ============================================================
@@ -52,73 +55,99 @@ layout(location = 6) flat out mat3 FragNormalMatrix;
 
 void main()
 {
-    // 01.00. Resolve Segment and Reject Invalid Geometry
-    // #region 01_00_Resolve_Segment_and_Reject_Invalid_Geometry
-    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
+    TSideSegment Segment;
+    uint Corner;
 
-    FragIsSide = 1u;
-    FragNormalMatrix = mat3(1.0);
-
-    // 각 정점은 segment 내 corner 번호로 결정되며, 무효 segment는 clip space 밖으로 보낸다.
-    uint SegmentIndex = uint(gl_VertexIndex) / 6u;
-    uint Corner = uint(gl_VertexIndex) % 6u;
-    TSideSegment S = Segments.Values[SegmentIndex];
-
-    if (S.Inside.w < 0.0)
+    if (!ResolveSideSegment(Segment, Corner))
     {
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-        FragNormal = vec3(0.0, 0.0, 1.0);
-        FragUV = vec2(0.0);
-        FragSurfaceIndex = 0u;
-        FragWorldPosition = vec3(0.0);
-        FragCoverage = 0.0;
         return;
     }
 
-    // #endregion
-
-    // 01.01. Construct World Frame and Emit Side Vertex
-    // #region 01_01_Construct_World_Frame_and_Emit_Side_Vertex
-    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
-
-    vec3 BaseA = vec3(Push.Model * vec4(S.BaseA.xyz, 1.0));
-    vec3 TopA = vec3(Push.Model * vec4(S.TopA.xyz, 1.0));
-    vec3 BaseB = vec3(Push.Model * vec4(S.BaseB.xyz, 1.0));
-    vec3 TopB = vec3(Push.Model * vec4(S.TopB.xyz, 1.0));
-    vec3 Inside = vec3(Push.Model * vec4(S.Inside.xyz, 1.0));
-    const uint Indices[6] = uint[6](0u, 2u, 3u, 0u, 3u, 1u);
-    uint Vertex = Indices[Corner];
-    vec3 Edge = BaseB - BaseA;
-    vec3 Up = 0.5 * (TopA + TopB - BaseA - BaseB);
-    vec3 LocalNormal = Vertex < 2u ? S.NormalA.xyz : S.NormalB.xyz;
-    mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
-    vec3 N = NormalMatrix * LocalNormal;
-
-    if (dot(N, N) < 1e-16)
-    {
-        N = cross(Edge, Up);
-    }
-
-    if (dot(N, N) < 1e-16)
-    {
-        N = vec3(0.0, 0.0, 1.0);
-    }
-
-    N = normalize(N);
-
-    if (dot(N, 0.5 * (BaseA + BaseB) - Inside) < 0.0)
-    {
-        N = -N;
-    }
-
-    FragWorldPosition = Vertex == 0u ? BaseA : Vertex == 1u ? TopA : Vertex == 2u ? BaseB : TopB;
-    FragUV = Vertex < 2u ? vec2(S.BaseA.w, S.TopA.w) : vec2(S.BaseB.w, S.TopB.w);
-    FragNormal = N;
-    FragSurfaceIndex = uint(S.Inside.w);
-    FragCoverage = 1.0;
-    gl_Position = Push.ViewProjection * vec4(FragWorldPosition, 1.0);
-
-    // #endregion
+    EmitSideVertex(Segment, Corner);
 }
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// 무효 segment는 clip 외부로 보내고 유효 vertex의 조명 기저와 위치를 생성한다.
+
+    // 02.00. Segment Selection
+    // #region 02_00_Segment_Selection
+    // segment 인덱스·corner를 읽고 비어 있는 segment의 반환 값을 초기화한다.
+
+    bool ResolveSideSegment(out TSideSegment S, out uint Corner)
+    {
+        FragIsSide = 1u;
+        FragNormalMatrix = mat3(1.0);
+
+        // 각 정점은 segment 내 corner 번호로 결정되며, 무효 segment는 clip space 밖으로 보낸다.
+        uint SegmentIndex = uint(gl_VertexIndex) / 6u;
+        Corner = uint(gl_VertexIndex) % 6u;
+        S = Segments.Values[SegmentIndex];
+
+        if (S.Inside.w < 0.0)
+        {
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            FragNormal = vec3(0.0, 0.0, 1.0);
+            FragUV = vec2(0.0);
+            FragSurfaceIndex = 0u;
+            FragWorldPosition = vec3(0.0);
+            FragCoverage = 0.0;
+            return false;
+        }
+
+        return true;
+    }
+
+    // #endregion
+
+    // 02.01. Vertex Emission
+    // #region 02_01_Vertex_Emission
+    // 모델 공간 옆면을 world/clip-space 정점과 조명 입력으로 변환한다.
+
+    void EmitSideVertex(TSideSegment S, uint Corner)
+    {
+        vec3 BaseA = vec3(Push.Model * vec4(S.BaseA.xyz, 1.0));
+        vec3 TopA = vec3(Push.Model * vec4(S.TopA.xyz, 1.0));
+        vec3 BaseB = vec3(Push.Model * vec4(S.BaseB.xyz, 1.0));
+        vec3 TopB = vec3(Push.Model * vec4(S.TopB.xyz, 1.0));
+        vec3 Inside = vec3(Push.Model * vec4(S.Inside.xyz, 1.0));
+        const uint Indices[6] = uint[6](0u, 2u, 3u, 0u, 3u, 1u);
+        uint Vertex = Indices[Corner];
+        vec3 Edge = BaseB - BaseA;
+        vec3 Up = 0.5 * (TopA + TopB - BaseA - BaseB);
+        vec3 LocalNormal = Vertex < 2u ? S.NormalA.xyz : S.NormalB.xyz;
+        mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
+        vec3 N = NormalMatrix * LocalNormal;
+
+        if (dot(N, N) < 1e-16)
+        {
+            N = cross(Edge, Up);
+        }
+
+        if (dot(N, N) < 1e-16)
+        {
+            N = vec3(0.0, 0.0, 1.0);
+        }
+
+        N = normalize(N);
+
+        if (dot(N, 0.5 * (BaseA + BaseB) - Inside) < 0.0)
+        {
+            N = -N;
+        }
+
+        FragWorldPosition = Vertex == 0u ? BaseA : Vertex == 1u ? TopA : Vertex == 2u ? BaseB : TopB;
+        FragUV = Vertex < 2u ? vec2(S.BaseA.w, S.TopA.w) : vec2(S.BaseB.w, S.TopB.w);
+        FragNormal = N;
+        FragSurfaceIndex = uint(S.Inside.w);
+        FragCoverage = 1.0;
+        gl_Position = Push.ViewProjection * vec4(FragWorldPosition, 1.0);
+
+    }
+
+    // #endregion
 
 // #endregion

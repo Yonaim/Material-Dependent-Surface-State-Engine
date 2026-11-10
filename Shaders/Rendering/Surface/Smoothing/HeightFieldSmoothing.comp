@@ -88,6 +88,7 @@ void StageSharedHeightHalo();
 #endif
 THeightNeighborhood AccumulateSameRegionNeighborhood(uint Texel, uvec4 Range, uint Surface, uint Local);
 void PublishSmoothedHeight(uint Texel, THeightNeighborhood Neighborhood);
+void SmoothResolvedTexel(uint Texel);
 
 // #endregion
 
@@ -109,63 +110,8 @@ void main()
         barrier();
     }
 #endif
-    if (T >= Push.TexelCount)
-    {
-        return;
-    }
-#if MDSS_GPU_VALIDATION
-    if (T >= uint(InputGeometry.Values.length()))
-    {
-        return;
-    }
-#endif
-    TTexelGeometryVertex Original = InputGeometry.Values[T];
-    OutputGeometry.Values[T] = Original;
-#if MDSS_GPU_VALIDATION
-    if (T >= uint(TexelSurfaceIndices.Values.length()) || T >= uint(TexelProfileIndices.Values.length()) ||
-        T >= uint(TexelChartIndices.Values.length()) || T >= uint(GeometryScalars.Values.length()) ||
-        T >= uint(Positions.Values.length()) || T >= uint(Normals.Values.length()))
-    {
-        return;
-    }
-#endif
-
-    uint Surface = TexelSurfaceIndices.Values[T];
-#if MDSS_GPU_VALIDATION
-    if (Surface >= uint(SurfaceRanges.Values.length()))
-    {
-        return;
-    }
-#endif
-    if (StateSaturation(T, Push.Channel, Push.Channels, Surface) <= CoverageCutoff)
-    {
-        return;
-    }
-
-    uvec4 Range = SurfaceRanges.Values[Surface];
-
-    if (Range.y == 0u || Range.z == 0u || T < Range.x)
-    {
-        return;
-    }
-
-    uint Local = T - Range.x;
-
-    if (Local >= Range.y * Range.z)
-    {
-        return;
-    }
-
-    THeightNeighborhood Neighborhood = AccumulateSameRegionNeighborhood(T, Range, Surface, Local);
-
-    if (Neighborhood.WeightSum <= 0.0)
-    {
-        return;
-    }
-
-    PublishSmoothedHeight(T, Neighborhood);
+    SmoothResolvedTexel(T);
 }
-
 // #endregion
 
 // ============================================================
@@ -173,6 +119,67 @@ void main()
 // ============================================================
 // #region 02_Smoothing_Steps
 // smoothing의 공유 halo, 이웃 누적과 결과 반영을 각각 독립된 단계로 구현한다.
+
+// 호출 스레드별 유효성을 검사하고 chart/profile 경계를 유지한 smoothing 결과를 기록한다.
+void SmoothResolvedTexel(uint Texel)
+{
+    if (Texel >= Push.TexelCount)
+    {
+        return;
+    }
+#if MDSS_GPU_VALIDATION
+    if (Texel >= uint(InputGeometry.Values.length()))
+    {
+        return;
+    }
+#endif
+    TTexelGeometryVertex Original = InputGeometry.Values[Texel];
+    OutputGeometry.Values[Texel] = Original;
+#if MDSS_GPU_VALIDATION
+    if (Texel >= uint(TexelSurfaceIndices.Values.length()) || Texel >= uint(TexelProfileIndices.Values.length()) ||
+        Texel >= uint(TexelChartIndices.Values.length()) || Texel >= uint(GeometryScalars.Values.length()) ||
+        Texel >= uint(Positions.Values.length()) || Texel >= uint(Normals.Values.length()))
+    {
+        return;
+    }
+#endif
+
+    uint Surface = TexelSurfaceIndices.Values[Texel];
+#if MDSS_GPU_VALIDATION
+    if (Surface >= uint(SurfaceRanges.Values.length()))
+    {
+        return;
+    }
+#endif
+    if (StateSaturation(Texel, Push.Channel, Push.Channels, Surface) <= CoverageCutoff)
+    {
+        return;
+    }
+
+    uvec4 Range = SurfaceRanges.Values[Surface];
+
+    if (Range.y == 0u || Range.z == 0u || Texel < Range.x)
+    {
+        return;
+    }
+
+    uint Local = Texel - Range.x;
+
+    if (Local >= Range.y * Range.z)
+    {
+        return;
+    }
+
+    THeightNeighborhood Neighborhood = AccumulateSameRegionNeighborhood(Texel, Range, Surface, Local);
+
+    if (Neighborhood.WeightSum <= 0.0)
+    {
+        return;
+    }
+
+    PublishSmoothedHeight(Texel, Neighborhood);
+}
+
 
 #if MDSS_HEIGHT_HALO
 void StageSharedHeightHalo()
@@ -352,129 +359,129 @@ void PublishSmoothedHeight(uint T, THeightNeighborhood Neighborhood)
 // #region 03_Detailed_Implementation
 // chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
 
-// 03.00. Resolve and Synchronize Sparse Tiles
-// #region 03_00_Resolve_and_Synchronize_Sparse_Tiles
-// workgroup의 barrier 참여 조건과 공유 데이터 읽기·쓰기 순서를 함께 유지한다.
+    // 03.00. Resolve and Synchronize Sparse Tiles
+    // #region 03_00_Resolve_and_Synchronize_Sparse_Tiles
+    // workgroup의 barrier 참여 조건과 공유 데이터 읽기·쓰기 순서를 함께 유지한다.
 
-uint CapacityTileCount()
-{
-    return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
-}
-
-uint NormalListBase()
-{
-    // GeometryCache sparse layout matches TexelGeometry/OverlayOccupancyScan.
-    return Push.TexelCount * 6u + CapacityTileCount() * 5u + 8u;
-}
-
-bool ResolveCandidateTile(uint Candidate)
-{
-    uint Base = 0u;
-
-    for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
+    uint CapacityTileCount()
     {
-        uvec4 Range = SurfaceRanges.Values[Surface];
-        uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
-        uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
-        uint Count = TilesX * TilesY;
+        return (uint(GeometryCache.Values.length()) - Push.TexelCount * 6u - 14u) / 7u;
+    }
 
-        if (Candidate < Base + Count)
+    uint NormalListBase()
+    {
+        // GeometryCache sparse layout matches TexelGeometry/OverlayOccupancyScan.
+        return Push.TexelCount * 6u + CapacityTileCount() * 5u + 8u;
+    }
+
+    bool ResolveCandidateTile(uint Candidate)
+    {
+        uint Base = 0u;
+
+        for (uint Surface = 0u; Surface < uint(SurfaceRanges.Values.length()); ++Surface)
         {
-            uint Local = Candidate - Base;
-            SparseTileValid = 1u;
-            SparseRangeFirst = Range.x;
-            SparseRangeWidth = Range.y;
-            SparseRangeHeight = Range.z;
-            SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
-            SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+            uvec4 Range = SurfaceRanges.Values[Surface];
+            uint TilesX = Push.TileSize == 0u ? 0u : (Range.y + Push.TileSize - 1u) / Push.TileSize;
+            uint TilesY = Push.TileSize == 0u ? 0u : (Range.z + Push.TileSize - 1u) / Push.TileSize;
+            uint Count = TilesX * TilesY;
 
-            return true;
+            if (Candidate < Base + Count)
+            {
+                uint Local = Candidate - Base;
+                SparseTileValid = 1u;
+                SparseRangeFirst = Range.x;
+                SparseRangeWidth = Range.y;
+                SparseRangeHeight = Range.z;
+                SparseTileX = TilesX == 0u ? 0u : Local % TilesX;
+                SparseTileY = TilesX == 0u ? 0u : Local / TilesX;
+
+                return true;
+            }
+
+            Base += Count;
         }
 
-        Base += Count;
-    }
-
-    SparseTileValid = 0u;
-    return false;
-}
-
-uint ResolveTexel()
-{
-    if (Push.UseSparse == 0u)
-    {
-        return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
-    }
-
-    uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
-    uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
-    uint ActiveSlot = gl_WorkGroupID.x / GroupsPerTile;
-    uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
-    uint Candidate = GeometryCache.Values[NormalListBase() + ActiveSlot];
-
-    if (gl_LocalInvocationIndex == 0u)
-    {
         SparseTileValid = 0u;
-        ResolveCandidateTile(Candidate);
+        return false;
     }
 
-    barrier();
-
-    if (SparseTileValid == 0u)
+    uint ResolveTexel()
     {
-        return Push.TexelCount;
+        if (Push.UseSparse == 0u)
+        {
+            return (gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x) * 64u + gl_LocalInvocationID.x;
+        }
+
+        uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
+        uint GroupsPerTile = (TilePixels + gl_WorkGroupSize.x - 1u) / gl_WorkGroupSize.x;
+        uint ActiveSlot = gl_WorkGroupID.x / GroupsPerTile;
+        uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
+        uint Candidate = GeometryCache.Values[NormalListBase() + ActiveSlot];
+
+        if (gl_LocalInvocationIndex == 0u)
+        {
+            SparseTileValid = 0u;
+            ResolveCandidateTile(Candidate);
+        }
+
+        barrier();
+
+        if (SparseTileValid == 0u)
+        {
+            return Push.TexelCount;
+        }
+
+        uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+
+        if (Local >= TilePixels)
+        {
+            return Push.TexelCount;
+        }
+    #if MDSS_HEIGHT_HALO
+        uint MicrotilesX = Push.TileSize / 8u;
+        uint LocalX = (Subgroup % MicrotilesX) * 8u + gl_LocalInvocationID.x % 8u;
+        uint LocalY = (Subgroup / MicrotilesX) * 8u + gl_LocalInvocationID.x / 8u;
+    #else
+        uint LocalX = Local % Push.TileSize;
+        uint LocalY = Local / Push.TileSize;
+    #endif
+        uint X = SparseTileX * Push.TileSize + LocalX;
+        uint Y = SparseTileY * Push.TileSize + LocalY;
+
+        if (X >= SparseRangeWidth || Y >= SparseRangeHeight)
+        {
+            return Push.TexelCount;
+        }
+
+        return SparseRangeFirst + Y * SparseRangeWidth + X;
     }
 
-    uint Local = Subgroup * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    // #endregion
 
-    if (Local >= TilePixels)
+    // 03.01. Evaluate Profile Cavity Fill
+    // #region 03_01_Evaluate_Profile_Cavity_Fill
+    // Profile의 cavity 관련 계수를 해당 texel의 표시 높이 계산에 사용한다.
+
+    float DisplayedCavityFill(uint Texel, uint Profile)
     {
-        return Push.TexelCount;
+        if (Push.Channels == 0u || Push.Channel >= Push.Channels)
+        {
+            return 0.0;
+        }
+    #if MDSS_GPU_VALIDATION
+        if (Profile >= SurfaceProfileRecordCount() / Push.Channels)
+        {
+            return 0.0;
+        }
+    #endif
+        TSurfaceGPUProfileParameters Parameters = LoadSurfaceProfileParameters(Profile * Push.Channels + Push.Channel);
+        float ReferenceAmount =
+            StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) * Parameters.CapacityInputAndTransfer.x;
+        float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
+
+        return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
     }
-#if MDSS_HEIGHT_HALO
-    uint MicrotilesX = Push.TileSize / 8u;
-    uint LocalX = (Subgroup % MicrotilesX) * 8u + gl_LocalInvocationID.x % 8u;
-    uint LocalY = (Subgroup / MicrotilesX) * 8u + gl_LocalInvocationID.x / 8u;
-#else
-    uint LocalX = Local % Push.TileSize;
-    uint LocalY = Local / Push.TileSize;
-#endif
-    uint X = SparseTileX * Push.TileSize + LocalX;
-    uint Y = SparseTileY * Push.TileSize + LocalY;
 
-    if (X >= SparseRangeWidth || Y >= SparseRangeHeight)
-    {
-        return Push.TexelCount;
-    }
-
-    return SparseRangeFirst + Y * SparseRangeWidth + X;
-}
-
-// #endregion
-
-// 03.01. Evaluate Profile Cavity Fill
-// #region 03_01_Evaluate_Profile_Cavity_Fill
-// Profile의 cavity 관련 계수를 해당 texel의 표시 높이 계산에 사용한다.
-
-float DisplayedCavityFill(uint Texel, uint Profile)
-{
-    if (Push.Channels == 0u || Push.Channel >= Push.Channels)
-    {
-        return 0.0;
-    }
-#if MDSS_GPU_VALIDATION
-    if (Profile >= SurfaceProfileRecordCount() / Push.Channels)
-    {
-        return 0.0;
-    }
-#endif
-    TSurfaceGPUProfileParameters Parameters = LoadSurfaceProfileParameters(Profile * Push.Channels + Push.Channel);
-    float ReferenceAmount =
-        StateSaturationForProfile(Texel, Push.Channel, Push.Channels, Profile) * Parameters.CapacityInputAndTransfer.x;
-    float CavityAmount = ReferenceAmount * Parameters.DecayAndGeometry.z * Parameters.DecayAndGeometry.w;
-
-    return clamp(min(CavityAmount, 1.0) * Push.AccumulationDisplayScale, 0.0, 1.0);
-}
-
-// #endregion
+    // #endregion
 
 // #endregion

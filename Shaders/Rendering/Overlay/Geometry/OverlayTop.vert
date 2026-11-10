@@ -47,6 +47,9 @@ layout(location = 4) out float FragCoverage;
 layout(location = 5) flat out uint FragIsSide;
 layout(location = 6) flat out mat3 FragNormalMatrix;
 
+vec3 InterpolateOverlaySurface(out float Height);
+void EmitOverlayTopVertex(float Height, vec3 Normal);
+
 // #endregion
 
 // ============================================================
@@ -57,63 +60,82 @@ layout(location = 6) flat out mat3 FragNormalMatrix;
 
 void main()
 {
-    // 01.00. Interpolate Displacement and Surface Normal
-    // #region 01_00_Interpolate_Displacement_and_Surface_Normal
-    // Computed 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
-
-    // 각 mesh 정점이 참조하는 최대 네 texel의 형상을 bilinear weight로 보간한다.
     float Height = 0.0;
-    vec3 DisplacedNormal = vec3(0.0);
-    float Weight = 0.0;
+    vec3 Normal = InterpolateOverlaySurface(Height);
+    EmitOverlayTopVertex(Height, Normal);
+}
+// #endregion
 
-    for (uint K = 0u; K < 4u; ++K)
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// Texel 가중 보간과 world-space 정점 출력을 분리한다.
+
+    // 02.00. Surface Interpolation
+    // #region 02_00_Surface_Interpolation
+    // 주변 texel 높이·법선을 보간하고 데모 옵션을 적용한다.
+
+    vec3 InterpolateOverlaySurface(out float Height)
     {
-        uint T = InSamples[K];
+        // 각 mesh 정점이 참조하는 최대 네 texel의 형상을 bilinear weight로 보간한다.
+        Height = 0.0;
+        vec3 DisplacedNormal = vec3(0.0);
+        float Weight = 0.0;
 
-        if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length()))
+        for (uint K = 0u; K < 4u; ++K)
         {
-            continue;
+            uint T = InSamples[K];
+
+            if (InWeights[K] <= 0.0 || T >= uint(Computed.Values.length()))
+            {
+                continue;
+            }
+
+            Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
+            DisplacedNormal += InWeights[K] * Computed.Values[T].HeightAndNormal.yzw;
+            Weight += InWeights[K];
         }
 
-        Height += InWeights[K] * Computed.Values[T].HeightAndNormal.x;
-        DisplacedNormal += InWeights[K] * Computed.Values[T].HeightAndNormal.yzw;
-        Weight += InWeights[K];
-    }
+        vec3 Normal = InNormal;
 
-    vec3 Normal = InNormal;
+        // Use the height-field normal directly. The prior additive correction preserved
+        // the source shading normal and could retain its triangle facets on the overlay.
+        if (Weight > 0.0 && dot(DisplacedNormal, DisplacedNormal) > 1e-12)
+        {
+            Normal = normalize(DisplacedNormal);
+        }
 
-    // Use the height-field normal directly. The prior additive correction preserved
-    // the source shading normal and could retain its triangle facets on the overlay.
-    if (Weight > 0.0 && dot(DisplacedNormal, DisplacedNormal) > 1e-12)
-    {
-        Normal = normalize(DisplacedNormal);
-    }
+        if (Material.DemoExtraStateChannels.y == 4u)
+        {
+            Normal = InNormal;
+        }
 
-    if (Material.DemoExtraStateChannels.y == 4u)
-    {
-        Normal = InNormal;
+        return Normal;
     }
 
     // #endregion
 
-    // 01.01. Publish World Space Top Vertex
-    // #region 01_01_Publish_World_Space_Top_Vertex
-    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
+    // 02.01. Top Vertex Output
+    // #region 02_01_Top_Vertex_Output
+    // 조명 입력과 clip-space 위치를 기록한다.
 
-    mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
-    FragIsSide = 0u;
-    FragNormalMatrix = NormalMatrix;
-    FragNormal = normalize(NormalMatrix * Normal);
-    FragUV = InUVSurface.xy;
-    FragSurfaceIndex = uint(InUVSurface.w);
-    uint Vertex = uint(gl_VertexIndex);
-    FragCoverage = Vertex < uint(Coverage.Values.length()) ? Coverage.Values[Vertex] : 0.0;
-    vec3 Position = InPosition + InDisplacementNormal * Height;
-    vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
-    FragWorldPosition = WorldPosition.xyz;
-    gl_Position = Push.ViewProjection * WorldPosition;
+    void EmitOverlayTopVertex(float Height, vec3 Normal)
+    {
+        mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
+        FragIsSide = 0u;
+        FragNormalMatrix = NormalMatrix;
+        FragNormal = normalize(NormalMatrix * Normal);
+        FragUV = InUVSurface.xy;
+        FragSurfaceIndex = uint(InUVSurface.w);
+        uint Vertex = uint(gl_VertexIndex);
+        FragCoverage = Vertex < uint(Coverage.Values.length()) ? Coverage.Values[Vertex] : 0.0;
+        vec3 Position = InPosition + InDisplacementNormal * Height;
+        vec4 WorldPosition = Push.Model * vec4(Position, 1.0);
+        FragWorldPosition = WorldPosition.xyz;
+        gl_Position = Push.ViewProjection * WorldPosition;
+    }
 
     // #endregion
-}
 
 // #endregion

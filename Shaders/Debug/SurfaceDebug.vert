@@ -87,44 +87,14 @@ void main()
 // #region 02_Detailed_Implementation
 // Macro mesh 기반 Surface Debug 데이터를 준비한다. 높이 형상은 TexelGeometry.vert를 사용한다.
 
-// 02.00. Evaluate Meso and Final Normals
-// #region 02_00_Evaluate_Meso_and_Final_Normals
-// SurfaceRanges·MesoNormals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
+    // 02.00. Evaluate Meso and Final Normals
+    // #region 02_00_Evaluate_Meso_and_Final_Normals
+    // SurfaceRanges·MesoNormals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
-void WriteMesoNormal(mat3 NormalMatrix)
-{
-    // 상태 히트맵에 입체감을 더할 Meso Normal을 조회해 월드 공간으로 변환한다.
-    FragMesoNormalWS = FragNormal;
-    uint Surface = uint(gl_InstanceIndex);
-
-    if (Surface < uint(SurfaceRanges.Values.length()))
+    void WriteMesoNormal(mat3 NormalMatrix)
     {
-        uvec4 Range = SurfaceRanges.Values[Surface];
-
-        if (Range.y > 0u && Range.z > 0u)
-        {
-            uvec2 XY = min(uvec2(floor(clamp(InUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
-            uint TexelIndex = Range.x + XY.y * Range.y + XY.x;
-
-            if (TexelIndex < uint(MesoNormals.Values.length()))
-            {
-                FragMesoNormalWS = normalize(NormalMatrix * MesoNormals.Values[TexelIndex].xyz);
-            }
-        }
-    }
-}
-
-// #endregion
-
-// 02.01. Apply Preview Position Displacement
-// #region 02_01_Apply_Preview_Position_Displacement
-// 계산 결과를 TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
-
-void ApplyMesoOffset(inout vec3 LocalPosition)
-{
-    if (Material.RenderMode == 14u)
-    {
-        // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.
+        // 상태 히트맵에 입체감을 더할 Meso Normal을 조회해 월드 공간으로 변환한다.
+        FragMesoNormalWS = FragNormal;
         uint Surface = uint(gl_InstanceIndex);
 
         if (Surface < uint(SurfaceRanges.Values.length()))
@@ -136,18 +106,48 @@ void ApplyMesoOffset(inout vec3 LocalPosition)
                 uvec2 XY = min(uvec2(floor(clamp(InUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
                 uint TexelIndex = Range.x + XY.y * Range.y + XY.x;
 
-                if (TexelIndex < uint(GeometryScalars.Values.length()) &&
-                    TexelIndex < uint(TexelSurfaceIndices.Values.length()) &&
-                    TexelSurfaceIndices.Values[TexelIndex] == Surface)
+                if (TexelIndex < uint(MesoNormals.Values.length()))
                 {
-                    float Height = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
-                    LocalPosition += InNormal * Height;
+                    FragMesoNormalWS = normalize(NormalMatrix * MesoNormals.Values[TexelIndex].xyz);
                 }
             }
         }
     }
-}
 
-// #endregion
+    // #endregion
+
+    // 02.01. Apply Preview Position Displacement
+    // #region 02_01_Apply_Preview_Position_Displacement
+    // 계산 결과를 TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
+
+    void ApplyMesoOffset(inout vec3 LocalPosition)
+    {
+        if (Material.RenderMode == 14u)
+        {
+            // 정점 UV에 해당하는 simulation texel의 Meso Virtual Height만큼 정점을 이동한다.
+            uint Surface = uint(gl_InstanceIndex);
+
+            if (Surface < uint(SurfaceRanges.Values.length()))
+            {
+                uvec4 Range = SurfaceRanges.Values[Surface];
+
+                if (Range.y > 0u && Range.z > 0u)
+                {
+                    uvec2 XY = min(uvec2(floor(clamp(InUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
+                    uint TexelIndex = Range.x + XY.y * Range.y + XY.x;
+
+                    if (TexelIndex < uint(GeometryScalars.Values.length()) &&
+                        TexelIndex < uint(TexelSurfaceIndices.Values.length()) &&
+                        TexelSurfaceIndices.Values[TexelIndex] == Surface)
+                    {
+                        float Height = GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
+                        LocalPosition += InNormal * Height;
+                    }
+                }
+            }
+        }
+    }
+
+    // #endregion
 
 // #endregion

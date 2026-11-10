@@ -36,3 +36,9 @@
 - `SurfaceDebug.vert`: 원본 위치·basis 출력을 유지하고 `WriteMesoNormal` → `ApplyMesoOffset`으로 조회/변위를 구분한다. 면적 진단용 world position은 변위 전 위치다.
 - `SurfaceDebug.frag`: `ComputeDebugDerivatives`를 모든 fragment별 guard보다 먼저 호출한다. surface/geometry guard와 mode 우선순위는 `main`에 남기고 `Render*` helper가 각 진단 출력·fallback을 담당한다.
 - 인터페이스/prototype → main → Detailed Implementation 순서이며 layout과 CPU 바인딩은 유지한다.
+
+## Debug 진입점의 단계 분리
+
+- `SurfaceDebug.frag`는 fragment derivative를 early return 전에 계산하고, `ResolveDebugSurfaceRange` → `RenderUVViewsIfSelected` → `RenderMappedSurfaceView`로 나누어 view mode에 따른 실제 작업은 하위 함수에서 확인한다.
+- `TexelInspector.comp`는 `CaptureAccumulationDiagnostics`와 `CaptureReactionDiagnostics`로 별도 스냅샷 슬롯을 채운다. 슬롯 배치와 CPU readback 계약을 변경하지 않는다.
+- Region 내부의 설명은 시작 마커 바로 아래 한 줄로 유지하고, 하위 Region의 마커와 본문은 부모보다 들여쓴다.
