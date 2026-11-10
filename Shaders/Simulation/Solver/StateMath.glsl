@@ -1,3 +1,4 @@
+// StateMath.glsl — texel/channel State 주소와 적층 높이·동적 위치 계산을 공통화한다.
 // Profile은 [0, 1] 무차원 계수를 저장하며 실제 속도는 여기서 계산한다.
 // CPU transport step bound와 동일한 보정값을 사용한다 (ADR 0033).
 #include "SurfaceState/Types/SurfaceSolverRates.h"
@@ -10,9 +11,11 @@ const float BaseGeometryTransferRate = MDSS_BASE_GEOMETRY_TRANSFER_RATE; // Stat
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// texel/channel State 주소와 적층 높이·동적 위치 계산을 공통화한다.
 
 // 00.00. Texel Topology and Transfer Weight Access
 // #region 00_00_Texel_Topology_and_Transfer_Weight_Access
+// TexelProfileIndices·TexelSurfaceIndices·NeighborIndices 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 uint stateIndex(uint TexelIndex, uint ChannelIndex)
 {
@@ -57,6 +60,7 @@ float transferWeight(uint SourceTexel, uint DirectionIndex)
 
 // 00.01. Evaluate Accumulated Geometry Height
 // #region 00_01_Evaluate_Accumulated_Geometry_Height
+// CurrentState·GeometryScalars·MesoNormals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex);
 
@@ -143,10 +147,16 @@ float accumulationHeight(uint TexelIndex)
 
 // 00.02. Evaluate Effective Position Normal and Concavity
 // #region 00_02_Evaluate_Effective_Position_Normal_and_Concavity
+// DynamicGeometry·Positions·Normals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 vec3 effectiveLocalPosition(uint TexelIndex)
 {
     // 기본 Meso offset에 accumulation height를 선택적으로 더한 local-space 위치다.
+
+    if ((Solver.Flags & (1u << 26u)) != 0u)
+    {
+        return DynamicGeometry.Values[TexelIndex * 2u].xyz;
+    }
     vec3 Position = Positions.Values[TexelIndex].xyz +
                     Normals.Values[TexelIndex].xyz * GeometryScalars.Values[TexelIndex].MesoVirtualHeight;
     if ((Solver.Flags & (1u << 6u)) != 0u)
@@ -224,6 +234,7 @@ float concavityWeight(uint TexelIndex)
 
 // 00.03. Evaluate Profile Capacity Saturation and Decay
 // #region 00_03_Evaluate_Profile_Capacity_Saturation_and_Decay
+// WorldTexelAreas·ProfileSupported·CurrentState 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 bool supportsChannel(uint TexelIndex, uint ChannelIndex)
 {

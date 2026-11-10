@@ -1,39 +1,32 @@
+/**
+ * @file DebugUIPerformanceTab.cpp
+ * @brief 성능 옵션과 측정 결과를 performance 탭에 표시한다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
 {
     void FDebugUI::DrawPerformanceTab(bool bRendering)
     {
-        const auto       PrecisionMemory = EstimatePerformanceMemory(FrameRenderer->GetSurfaceGPUResources());
-        constexpr double BytesPerMiB = 1024.0 * 1024.0;
-        const auto       DrawReservedEstimate = [&](double Bytes)
-        {
-            ImGui::SameLine(0.0F, 8.0F);
-            ImGui::TextDisabled("(reserved: %s)", FormatMemoryBytes(Bytes).c_str());
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("이 영역은 공유 GPU 버퍼에 미리 할당되어 Current 총량에 이미 포함됩니다. 옵션을 "
-                                      "꺼도 버퍼를 해제하지 않습니다.");
-        };
-        const auto DrawSparseSubheading = [&](const char* Label, float TopGap)
-        {
-            ImGui::Dummy({0.0F, TopGap});
-            ImGui::PushStyleColor(ImGuiCol_Text, {0.78F, 0.86F, 0.96F, 1.0F});
-
-            if (ViewportState.SectionHeaderFont != nullptr)
-                ImGui::PushFont(ViewportState.SectionHeaderFont);
-            ImGui::TextUnformatted(Label);
-
-            if (ViewportState.SectionHeaderFont != nullptr)
-                ImGui::PopFont();
-            ImGui::PopStyleColor();
-            ImGui::Dummy({0.0F, 5.0F});
-        };
-        auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-        bool bEffectsChanged = false;
-
         if (bRendering)
         {
+            DrawRenderingPerformanceSettings();
+        }
+        else
+        {
+            DrawSimulationPerformanceSettings();
+        }
+    }
+
+    void FDebugUI::DrawRenderingPerformanceSettings()
+    {
+        DrawRenderingMeshAndTileSettings();
+        DrawRenderingSmoothingSettings();
+    }
+
+    void FDebugUI::DrawRenderingMeshAndTileSettings()
+    {
             const auto DrawTexelMeshResolutionControl =
                 [&](const char* Label, std::uint32_t ActiveResolution, auto&& SetResolution)
             {
@@ -126,6 +119,13 @@ namespace MDSS
 
             ImGui::EndDisabled();
             ImGui::Dummy({0.0F, 6.0F});
+    }
+
+    void FDebugUI::DrawRenderingSmoothingSettings()
+    {
+        auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
+        bool bEffectsChanged = false;
+
             bEffectsChanged |= ImGui::Checkbox("Height smoothing", &Effects.bHeightFieldSmoothing);
 
             if (ImGui::IsItemHovered())
@@ -135,156 +135,8 @@ namespace MDSS
             if (ImGui::IsItemHovered())
                 SetDescriptionTooltip("State coverage의 시각적 경계를 5x5 Gaussian으로 부드럽게 합니다. Simulation "
                                       "State는 바꾸지 않습니다.");
-        }
+        
 
-        bool bRawFluxCache = FrameRenderer->IsRawFluxCacheEnabled();
-
-        if (!bRendering)
-        {
-            DrawSectionHeader("Cache & Precision");
-
-            if (ImGui::Checkbox("Raw Flux Cache", &bRawFluxCache))
-            {
-                FrameRenderer->SetRawFluxCacheEnabled(bRawFluxCache);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("Pass 1의 8방향 raw flux를 저장해 Pass 2 재계산을 줄입니다. 캐시 영역은 공유 "
-                                      "버퍼에 미리 예약되어 있습니다.");
-            DrawReservedEstimate(PrecisionMemory.RawFluxCacheBytes);
-        }
-
-        if (!bRendering)
-        {
-            bool bCoalescedRawFluxLayout = FrameRenderer->IsCoalescedRawFluxLayoutEnabled();
-            ImGui::BeginDisabled(!bRawFluxCache);
-
-            if (ImGui::Checkbox("Coalesced Raw Flux Layout", &bCoalescedRawFluxLayout))
-            {
-                FrameRenderer->SetCoalescedRawFluxLayoutEnabled(bCoalescedRawFluxLayout);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip(
-                    "flux 저장 순서를 바꿔 Pass 1의 연속 write를 비교합니다. 메모리 크기는 바뀌지 않습니다.");
-
-            bool bHalfRawFlux = FrameRenderer->IsHalfRawFluxCacheEnabled();
-
-            if (ImGui::Checkbox("FP16 Raw Flux", &bHalfRawFlux))
-            {
-                FrameRenderer->SetHalfRawFluxCacheEnabled(bHalfRawFlux);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("8방향 flux를 FP16으로 pack해 읽기·쓰기 대역폭을 줄입니다. 기본 ON이며 현재 "
-                                      "버퍼 할당량은 유지됩니다.");
-            ImGui::EndDisabled();
-            ImGui::SameLine(0.0F, 8.0F);
-            ImGui::TextDisabled("(예상 절감: %.2f MiB)", PrecisionMemory.RawFluxSavingsBytes / BytesPerMiB);
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("컴팩트 재할당 시 예상 절감량입니다. 현재 GPU 버퍼 할당량은 줄지 않습니다.");
-
-            bool bHalfDynamicWeights = FrameRenderer->IsHalfDynamicWeightsEnabled();
-
-            if (ImGui::Checkbox("FP16 Weights", &bHalfDynamicWeights))
-            {
-                FrameRenderer->SetHalfDynamicWeightsEnabled(bHalfDynamicWeights);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("8방향 TransferWeight를 FP16으로 pack해 Solver 읽기 대역폭을 비교합니다.");
-            ImGui::SameLine(0.0F, 8.0F);
-            ImGui::TextDisabled("(예상 절감: %.2f MiB)", PrecisionMemory.DynamicWeightSavingsBytes / BytesPerMiB);
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("컴팩트 재할당 시 예상 절감량입니다. 현재 GPU 버퍼 할당량은 줄지 않습니다.");
-
-            DrawSectionHeader("Sparse Execution");
-
-            DrawSparseSubheading("Active", 8.0F);
-            bool bSparseSolver = FrameRenderer->IsSparseSolverEnabled();
-
-            if (ImGui::Checkbox("Sparse Solver Workgroup Scheduling", &bSparseSolver))
-            {
-                FrameRenderer->SetSparseSolverEnabled(bSparseSolver);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip(
-                    "다음 Solver 계산이 필요한 active workgroup만 목록으로 만들어 간접 dispatch합니다.");
-            DrawReservedEstimate(PrecisionMemory.SparseSolverWorkgroupBytes);
-
-            bool bActiveChannelMask = FrameRenderer->IsActiveChannelMaskEnabled();
-
-            if (ImGui::Checkbox("Active Channel Mask", &bActiveChannelMask))
-            {
-                FrameRenderer->SetActiveChannelMaskEnabled(bActiveChannelMask);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip(
-                    "다음 Solver 단계에서 활성 상태 channel만 처리합니다. 개별 채널의 active 여부를 표시합니다.");
-            DrawReservedEstimate(PrecisionMemory.ActiveChannelMaskBytes);
-
-            bool bPerWorkgroupChannelMask = FrameRenderer->IsPerWorkgroupChannelMaskEnabled();
-            ImGui::BeginDisabled(!bActiveChannelMask);
-
-            if (ImGui::Checkbox("Per-WG Active Channel Mask", &bPerWorkgroupChannelMask))
-            {
-                FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("각 64-texel workgroup 안에서 처리할 active channel을 더 좁혀 선택합니다.");
-            ImGui::EndDisabled();
-            DrawReservedEstimate(PrecisionMemory.PerWorkgroupChannelMaskBytes);
-
-            DrawSparseSubheading("Dirty", 10.0F);
-            bool bSparseAccumulationHeight = FrameRenderer->IsSparseAccumulationHeightEnabled();
-
-            if (ImGui::Checkbox("Sparse Accumulation Height", &bSparseAccumulationHeight))
-            {
-                FrameRenderer->SetSparseAccumulationHeightEnabled(bSparseAccumulationHeight);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip("누적 높이가 달라진 dirty texel group만 Height buffer에서 다시 계산합니다.");
-            DrawReservedEstimate(PrecisionMemory.SparseAccumulationHeightBytes);
-
-            bool bSparseSimulation = FrameRenderer->IsSparseSimulationGeometryEnabled();
-
-            if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))
-            {
-                FrameRenderer->SetSparseSimulationGeometryEnabled(bSparseSimulation);
-                Simulation.bFrameTimeResetRequested = true;
-                ResetProfilingAverages();
-            }
-
-            if (ImGui::IsItemHovered())
-                SetDescriptionTooltip(
-                    "현재 적층 높이와 built geometry가 달라진 dirty group 및 2-hop topology 이웃만 다시 계산합니다.");
-            DrawReservedEstimate(PrecisionMemory.SparseSimulationGeometryBytes);
-        }
-
-        if (bRendering)
-        {
             DrawSectionHeader("Advanced");
             bool bSparseHeight = FrameRenderer->IsSparseHeightSmoothingEnabled();
             ImGui::BeginDisabled(!Effects.bHeightFieldSmoothing);
@@ -393,14 +245,211 @@ namespace MDSS
                           "Texture/SSBO A/B 비교를 할 수 없습니다. 비교하려면 Precompute를 끄세요."
                         : "fragment의 RenderStateTexture 샘플링과 Simulation SSBO bilinear sampling을 비교합니다.");
             ImGui::EndDisabled();
-        }
-
-        if (bEffectsChanged)
+        
+if (bEffectsChanged)
         {
             FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
             Simulation.bFrameTimeResetRequested = true;
             ResetProfilingAverages();
         }
+        }
+
+
+
+    void FDebugUI::DrawSimulationPerformanceSettings()
+    {
+        DrawSimulationCacheSettings();
+        DrawSimulationSparseSettings();
     }
+
+    void FDebugUI::DrawSimulationCacheSettings()
+    {
+        const auto       PrecisionMemory = EstimatePerformanceMemory(FrameRenderer->GetSurfaceGPUResources());
+        constexpr double BytesPerMiB = 1024.0 * 1024.0;
+        const auto       DrawReservedEstimate = [&](double Bytes)
+        {
+            ImGui::SameLine(0.0F, 8.0F);
+            ImGui::TextDisabled("(reserved: %s)", FormatMemoryBytes(Bytes).c_str());
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("이 영역은 공유 GPU 버퍼에 미리 할당되어 Current 총량에 이미 포함됩니다. 옵션을 "
+                                      "꺼도 버퍼를 해제하지 않습니다.");
+        };
+bool bRawFluxCache = FrameRenderer->IsRawFluxCacheEnabled();
+
+        
+            DrawSectionHeader("Cache & Precision");
+
+            if (ImGui::Checkbox("Raw Flux Cache", &bRawFluxCache))
+            {
+                FrameRenderer->SetRawFluxCacheEnabled(bRawFluxCache);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("Pass 1의 8방향 raw flux를 저장해 Pass 2 재계산을 줄입니다. 캐시 영역은 공유 "
+                                      "버퍼에 미리 예약되어 있습니다.");
+            DrawReservedEstimate(PrecisionMemory.RawFluxCacheBytes);
+        
+
+            bool bCoalescedRawFluxLayout = FrameRenderer->IsCoalescedRawFluxLayoutEnabled();
+            ImGui::BeginDisabled(!bRawFluxCache);
+
+            if (ImGui::Checkbox("Coalesced Raw Flux Layout", &bCoalescedRawFluxLayout))
+            {
+                FrameRenderer->SetCoalescedRawFluxLayoutEnabled(bCoalescedRawFluxLayout);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(
+                    "flux 저장 순서를 바꿔 Pass 1의 연속 write를 비교합니다. 메모리 크기는 바뀌지 않습니다.");
+
+            bool bHalfRawFlux = FrameRenderer->IsHalfRawFluxCacheEnabled();
+
+            if (ImGui::Checkbox("FP16 Raw Flux", &bHalfRawFlux))
+            {
+                FrameRenderer->SetHalfRawFluxCacheEnabled(bHalfRawFlux);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("8방향 flux를 FP16으로 pack해 읽기·쓰기 대역폭을 줄입니다. 기본 ON이며 현재 "
+                                      "버퍼 할당량은 유지됩니다.");
+            ImGui::EndDisabled();
+            ImGui::SameLine(0.0F, 8.0F);
+            ImGui::TextDisabled("(예상 절감: %.2f MiB)", PrecisionMemory.RawFluxSavingsBytes / BytesPerMiB);
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("컴팩트 재할당 시 예상 절감량입니다. 현재 GPU 버퍼 할당량은 줄지 않습니다.");
+
+            bool bHalfDynamicWeights = FrameRenderer->IsHalfDynamicWeightsEnabled();
+
+            if (ImGui::Checkbox("FP16 Weights", &bHalfDynamicWeights))
+            {
+                FrameRenderer->SetHalfDynamicWeightsEnabled(bHalfDynamicWeights);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("8방향 TransferWeight를 FP16으로 pack해 Solver 읽기 대역폭을 비교합니다.");
+            ImGui::SameLine(0.0F, 8.0F);
+            ImGui::TextDisabled("(예상 절감: %.2f MiB)", PrecisionMemory.DynamicWeightSavingsBytes / BytesPerMiB);
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("컴팩트 재할당 시 예상 절감량입니다. 현재 GPU 버퍼 할당량은 줄지 않습니다.");
+
+    }
+
+    void FDebugUI::DrawSimulationSparseSettings()
+    {
+        const auto       PrecisionMemory = EstimatePerformanceMemory(FrameRenderer->GetSurfaceGPUResources());
+        constexpr double BytesPerMiB = 1024.0 * 1024.0;
+        const auto       DrawReservedEstimate = [&](double Bytes)
+        {
+            ImGui::SameLine(0.0F, 8.0F);
+            ImGui::TextDisabled("(reserved: %s)", FormatMemoryBytes(Bytes).c_str());
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("이 영역은 공유 GPU 버퍼에 미리 할당되어 Current 총량에 이미 포함됩니다. 옵션을 "
+                                      "꺼도 버퍼를 해제하지 않습니다.");
+        };
+        const auto DrawSparseSubheading = [&](const char* Label, float TopGap)
+        {
+            ImGui::Dummy({0.0F, TopGap});
+            ImGui::PushStyleColor(ImGuiCol_Text, {0.78F, 0.86F, 0.96F, 1.0F});
+
+            if (ViewportState.SectionHeaderFont != nullptr)
+                ImGui::PushFont(ViewportState.SectionHeaderFont);
+            ImGui::TextUnformatted(Label);
+
+            if (ViewportState.SectionHeaderFont != nullptr)
+                ImGui::PopFont();
+            ImGui::PopStyleColor();
+            ImGui::Dummy({0.0F, 5.0F});
+        };
+            DrawSectionHeader("Sparse Execution");
+
+            DrawSparseSubheading("Active", 8.0F);
+            bool bSparseSolver = FrameRenderer->IsSparseSolverEnabled();
+
+            if (ImGui::Checkbox("Sparse Solver Workgroup Scheduling", &bSparseSolver))
+            {
+                FrameRenderer->SetSparseSolverEnabled(bSparseSolver);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(
+                    "다음 Solver 계산이 필요한 active workgroup만 목록으로 만들어 간접 dispatch합니다.");
+            DrawReservedEstimate(PrecisionMemory.SparseSolverWorkgroupBytes);
+
+            bool bActiveChannelMask = FrameRenderer->IsActiveChannelMaskEnabled();
+
+            if (ImGui::Checkbox("Active Channel Mask", &bActiveChannelMask))
+            {
+                FrameRenderer->SetActiveChannelMaskEnabled(bActiveChannelMask);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(
+                    "다음 Solver 단계에서 활성 상태 channel만 처리합니다. 개별 채널의 active 여부를 표시합니다.");
+            DrawReservedEstimate(PrecisionMemory.ActiveChannelMaskBytes);
+
+            bool bPerWorkgroupChannelMask = FrameRenderer->IsPerWorkgroupChannelMaskEnabled();
+            ImGui::BeginDisabled(!bActiveChannelMask);
+
+            if (ImGui::Checkbox("Per-WG Active Channel Mask", &bPerWorkgroupChannelMask))
+            {
+                FrameRenderer->SetPerWorkgroupChannelMaskEnabled(bPerWorkgroupChannelMask);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("각 64-texel workgroup 안에서 처리할 active channel을 더 좁혀 선택합니다.");
+            ImGui::EndDisabled();
+            DrawReservedEstimate(PrecisionMemory.PerWorkgroupChannelMaskBytes);
+
+            DrawSparseSubheading("Dirty", 10.0F);
+            bool bSparseAccumulationHeight = FrameRenderer->IsSparseAccumulationHeightEnabled();
+
+            if (ImGui::Checkbox("Sparse Accumulation Height", &bSparseAccumulationHeight))
+            {
+                FrameRenderer->SetSparseAccumulationHeightEnabled(bSparseAccumulationHeight);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("누적 높이가 달라진 dirty texel group만 Height buffer에서 다시 계산합니다.");
+            DrawReservedEstimate(PrecisionMemory.SparseAccumulationHeightBytes);
+
+            bool bSparseSimulation = FrameRenderer->IsSparseSimulationGeometryEnabled();
+
+            if (ImGui::Checkbox("Sparse Simulation Geometry", &bSparseSimulation))
+            {
+                FrameRenderer->SetSparseSimulationGeometryEnabled(bSparseSimulation);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(
+                    "현재 적층 높이와 built geometry가 달라진 dirty group 및 2-hop topology 이웃만 다시 계산합니다.");
+            DrawReservedEstimate(PrecisionMemory.SparseSimulationGeometryBytes);
+        
+        }
+
+
+
+
 
 } // namespace MDSS

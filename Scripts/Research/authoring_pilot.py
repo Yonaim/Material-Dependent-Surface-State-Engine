@@ -1,9 +1,13 @@
-"""Archive and execute opt-in, synchronized authoring checkpoints. No human data."""
+"""저작 pilot의 조건을 준비하고 probe·실행·분석 단계를 조율한다.
+
+Archive and execute opt-in, synchronized authoring checkpoints. No human data.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse
 import copy
@@ -26,6 +30,7 @@ OLD = STUDY / 'layout-lifetime-fix/render/raw/absorbedwetness'
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 저작 pilot의 조건을 준비하고 probe·실행·분석 단계를 조율한다.
 
 
 def prepare(kind):
@@ -179,7 +184,7 @@ def run(kind):
             ROOT / 'Scripts/Research/prepare_authoring_goal.py',
             OUT / (kind + '-plan.json'),
             STUDY / 'goal-v1/plan.json',
-            ROOT / 'Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md',
+            ROOT / 'Docs/Agent-Vault/04_Development/07_Authoring-Study-Protocol.md',
             ROOT / 'Assets/Animations/IceReactionLab.DemoAnim',
             *pathlib.Path(plan['input_folder']).iterdir(),
         ],
@@ -249,6 +254,7 @@ def run(kind):
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 저작 pilot의 조건을 준비하고 probe·실행·분석 단계를 조율한다.
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()

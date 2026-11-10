@@ -1,4 +1,6 @@
-"""Download the CC0 Poly Haven meshes used by the three showcase scenes.
+"""showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
+
+Download the CC0 Poly Haven meshes used by the three showcase scenes.
 
 Run with: uv run --python 3.13 --with trimesh --with scipy --with pillow python Scripts/import_showcase_assets.py
 The generated OBJ files keep the source UVs and normals, share position indices
@@ -9,6 +11,7 @@ across UV seams, and use the engine's `norm` MTL key.
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 
@@ -38,6 +41,7 @@ ASSETS = {
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
 
 
 def fetch(url: str, destination: Path, md5: str | None = None) -> None:
@@ -251,6 +255,7 @@ def bake_display_albedo(
 # 02. Main Process
 # ============================================================
 # region 02_Main_Process
+# showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
 
 
 def main() -> None:
@@ -296,6 +301,7 @@ def main() -> None:
 # 03. Script Execution
 # ============================================================
 # region 03_Script_Execution
+# showcase 외부 입력을 프로젝트의 Mesh·Material·Texture 자산으로 정리한다.
 
 if __name__ == "__main__":
     main()

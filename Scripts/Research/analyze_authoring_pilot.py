@@ -1,9 +1,13 @@
-"""Score the frozen task's numeric predicates; visual/human quality is separate."""
+"""저작 pilot의 Profile 입력·실행 결과·지원 범위를 분석한다.
+
+Score the frozen task's numeric predicates; visual/human quality is separate.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse
 import pathlib
@@ -24,6 +28,7 @@ OLD = STUDY / 'layout-lifetime-fix/render/raw/absorbedwetness'
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 저작 pilot의 Profile 입력·실행 결과·지원 범위를 분석한다.
 
 
 def load(kind):
@@ -266,6 +271,7 @@ def analyze(kind):
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 저작 pilot의 Profile 입력·실행 결과·지원 범위를 분석한다.
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()

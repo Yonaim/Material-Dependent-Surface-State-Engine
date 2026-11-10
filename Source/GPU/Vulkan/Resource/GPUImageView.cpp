@@ -15,6 +15,7 @@ namespace MDSS::GPU
 // 00. Image View Lifecycle
 // ============================================================
 #pragma region 00_Image_View_Lifecycle
+// 해당 image의 view 수명을 관리하고 종료 시 Vulkan view를 해제한다.
 
     FGPUImageView::FGPUImageView(VkDevice           Device,
                                  VkImage            Image,
@@ -57,6 +58,7 @@ namespace MDSS::GPU
 // 01. Image View Creation
 // ============================================================
 #pragma region 01_Image_View_Creation
+// image의 format·aspect·subresource 범위를 view로 연결한다.
 
     void FGPUImageView::Create(VkImage            Image,
                                VkFormat           Format,
@@ -89,6 +91,7 @@ namespace MDSS::GPU
 // 02. Image View Access
 // ============================================================
 #pragma region 02_Image_View_Access
+// descriptor와 framebuffer가 사용할 image view를 제공한다.
 
     VkImageView FGPUImageView::GetHandle() const noexcept
     {

@@ -1,4 +1,7 @@
-"""Display original checkpoints and numeric masks; no independent quality scoring."""
+"""저작 pilot의 비교 자료에서 분포와 결과 그림을 생성한다.
+
+Display original checkpoints and numeric masks; no independent quality scoring.
+"""
 
 import sys
 from analyze_authoring_pilot import load, OUT, np

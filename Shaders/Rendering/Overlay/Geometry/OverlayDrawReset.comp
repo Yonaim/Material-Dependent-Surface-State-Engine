@@ -1,13 +1,11 @@
-/**
- * @file OverlayDrawReset.comp
- * @brief Clears dynamic indirect draw counts before boundary compaction.
- */
+// OverlayDrawReset.comp — overlay 경계 압축 전에 동적 indirect draw 개수를 초기화한다.
 #version 450
 
 // ============================================================
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 64) in;
 
@@ -45,6 +43,7 @@ TopDrawCommands;
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// overlay 경계 압축 전에 동적 indirect draw 개수를 초기화한다.
 
 void main()
 {

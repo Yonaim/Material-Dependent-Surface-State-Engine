@@ -1,3 +1,8 @@
+/**
+ * @file DebugUI.cpp
+ * @brief 디버그 UI의 초기화·프레임·종료와 공통 입력·표시 상태를 관리한다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
@@ -6,6 +11,7 @@ namespace MDSS
 // 00. Debug UI Lifecycle
 // ============================================================
 #pragma region 00_Debug_UI_Lifecycle
+// ImGui와 플랫폼·GPU backend의 초기화·종료 순서를 관리한다.
 
     FDebugUI::FDebugUI(const GPU::FVulkanContext&         Context,
                        const FWindow&                     Window,
@@ -176,6 +182,7 @@ namespace MDSS
 // 01. Frame Presentation
 // ============================================================
 #pragma region 01_Frame_Presentation
+// 이번 frame의 UI 입력과 패널을 구성해 렌더링할 draw 자료를 만든다.
 
     void FDebugUI::BeginFrame(FScene& SceneData)
     {
@@ -298,6 +305,7 @@ namespace MDSS
 // 02. UI State Accessors
 // ============================================================
 #pragma region 02_UI_State_Accessors
+// 현재 UI 표시 상태와 진단 선택을 관련 소비자에게 제공한다.
 
     bool FDebugUI::IsInjectModeEnabled() const noexcept
     {
@@ -390,6 +398,7 @@ namespace MDSS
 // 03. Viewport and Selection Accessors
 // ============================================================
 #pragma region 03_Viewport_and_Selection_Accessors
+// 활성 viewport와 선택 대상 정보를 카메라·진단 처리에서 공유한다.
 
     void FDebugUI::DrawDemoWeatherOverlay(const FScene& SceneData)
     {

@@ -1,7 +1,4 @@
-/**
- * @file OverlayStateSampling.glsl
- * @brief Overlay-only profile saturation reads with a small descriptor footprint.
- */
+// OverlayStateSampling.glsl — overlay Profile의 State saturation을 경계·coverage 조건에 맞춰 샘플링한다.
 #ifndef MDSS_OVERLAY_STATE_SAMPLING
 #define MDSS_OVERLAY_STATE_SAMPLING
 
@@ -16,9 +13,11 @@ struct TOverlayGPUProfileParameters
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 // 00.00. Profile Bindings and Capacity Access
 // #region 00_00_Profile_Bindings_and_Capacity_Access
+// OverlayProfileParameters 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 layout(std430, set = 0, binding = 1) readonly buffer TOverlayTexelProfileIndices
 {
@@ -48,6 +47,7 @@ vec4 OverlayProfileCapacityInputAndTransfer(uint Record)
 
 // 00.01. State Mapping and Saturation Sampling
 // #region 00_01_State_Mapping_and_Saturation_Sampling
+// OverlayWorldTexelAreas·OverlayCurrentState·OverlayTexelProfileIndices 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 layout(std430, set = 0, binding = 8) readonly buffer TOverlayCurrentState
 {

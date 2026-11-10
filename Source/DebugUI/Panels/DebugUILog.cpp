@@ -1,3 +1,8 @@
+/**
+ * @file DebugUILog.cpp
+ * @brief Logger 기록의 필터·검색·복사와 로그 패널 표시를 처리한다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS

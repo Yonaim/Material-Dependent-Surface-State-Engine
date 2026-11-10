@@ -25,6 +25,7 @@ namespace MDSS::SurfaceState
 // 00. Surface Geometry Build
 // ============================================================
 #pragma region 00_Surface_Geometry_Build
+// mapping 결과와 Profile index에서 runtime 공유 형상을 만든다.
 
     FSharedSurfaceGeometryData FSurfaceGeometryBuilder::Build(const FSurfaceMappingData&        Mapping,
                                                               std::vector<FSurfaceProfileIndex> ProfileMap,

@@ -1,9 +1,13 @@
-"""Audit fresh rendered references and compare named states; no human productivity inference."""
+"""저작 재검증의 입력 대응과 실행 결과를 조건별로 분석한다.
+
+Audit fresh rendered references and compare named states; no human productivity inference.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import copy, pathlib, sys
 from authoring_study import ROOT, STUDY, read, write, digest, stamp
@@ -25,6 +29,7 @@ ALLOWED_PRODUCTION_CHANGES = set()
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 저작 재검증의 입력 대응과 실행 결과를 조건별로 분석한다.
 
 
 def compare_authoring_conditions(arrays, comparisons, errors, images):
@@ -353,6 +358,7 @@ def main():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 저작 재검증의 입력 대응과 실행 결과를 조건별로 분석한다.
 
 if __name__ == '__main__':
     main()

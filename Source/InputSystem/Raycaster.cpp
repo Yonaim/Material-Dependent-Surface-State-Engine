@@ -75,6 +75,7 @@ namespace MDSS
 // 00. FRaycaster Implementation
 // ============================================================
 #pragma region 00_TRaycaster_Implementation
+// Scene의 정적 mesh instance를 대상으로 CPU ray query를 수행한다.
 
     FSurfaceRayHit FRaycaster::Cast(const FScene&               Scene,
                                     const Asset::FAssetManager& Assets,

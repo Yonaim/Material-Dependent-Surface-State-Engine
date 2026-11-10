@@ -27,6 +27,7 @@ namespace MDSS::SurfaceState
 // 00. Inspector Resource Lifecycle
 // ============================================================
 #pragma region 00_Inspector_Resource_Lifecycle
+// 선택 texel의 GPU 진단과 readback 자원을 관리한다.
 
     FTexelInspector::FTexelInspector(VkPhysicalDevice      PhysicalDevice,
                                      VkDevice              Device,
@@ -152,6 +153,7 @@ namespace MDSS::SurfaceState
 // 01. Inspector Command Recording
 // ============================================================
 #pragma region 01_Inspector_Command_Recording
+// 선택 texel의 State·형상·반응 진단을 읽을 compute 명령을 기록한다.
 
     void FTexelInspector::Record(VkCommandBuffer                         Command,
                                  std::size_t                             FrameIndex,
@@ -214,6 +216,7 @@ namespace MDSS::SurfaceState
 // 02. Inspector Readback
 // ============================================================
 #pragma region 02_Inspector_Readback
+// GPU 완료 후 캡처한 texel 진단을 CPU snapshot으로 읽는다.
 
     void FTexelInspector::CompleteFrame(std::size_t FrameIndex)
     {

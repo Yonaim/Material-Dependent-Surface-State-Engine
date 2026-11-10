@@ -32,6 +32,7 @@ namespace MDSS
 // 00. std Implementation
 // ============================================================
 #pragma region 00_std_Implementation
+// 실행 위치와 무관하게 설정 경로를 찾고 시작 Scene을 선택한다.
 
     std::filesystem::path GetEngineConfigDirectory()
     {

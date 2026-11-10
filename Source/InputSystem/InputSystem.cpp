@@ -25,6 +25,7 @@ namespace MDSS
 // 00. FInputSystem Implementation
 // ============================================================
 #pragma region 00_TInputSystem_Implementation
+// 장치 입력과 디버그 입력을 Surface 접촉 이벤트로 변환한다.
 
     FInputSystem::FInputSystem(GLFWwindow* Window) noexcept : Window(Window)
     {

@@ -14,6 +14,7 @@ namespace MDSS::GPU
 // 00. FGraphicsPass Implementation
 // ============================================================
 #pragma region 00_TGraphicsPass_Implementation
+// Vulkan render pass 실행 구간의 공통 기록 helper 구현.
 
     FGraphicsPass::FGraphicsPass(const FRenderPass& RenderPass) noexcept : RenderPass(&RenderPass)
     {

@@ -96,6 +96,7 @@ namespace MDSS::Asset
 // 00. Distribution Loading
 // ============================================================
 #pragma region 00_Distribution_Loading
+// Surface별 Profile 분포 파일의 형식과 참조 대상을 검증해 읽는다.
 
     FSurfaceProfileDistribution FSurfaceProfileDistributionLoader::Load(const std::filesystem::path& Path)
     {
@@ -269,6 +270,7 @@ namespace MDSS::Asset
 // 01. Texel Profile Mapping
 // ============================================================
 #pragma region 01_Texel_Profile_Mapping
+// 분포 입력을 각 유효 texel이 사용할 Profile index로 변환한다.
 
     FSurfaceProfileDistribution::BuildTexelProfileMap(const SurfaceState::FSurfaceMappingData& Mapping) const
     {

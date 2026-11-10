@@ -20,6 +20,7 @@
 // 00. Application Entry Point
 // ============================================================
 #pragma region 00_Application_Entry_Point
+// 명령행 실행 옵션을 준비한 뒤 Application 수명으로 제어를 넘긴다.
 
 int main(int Argc, char* Argv[])
 {

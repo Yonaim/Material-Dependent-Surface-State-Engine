@@ -1,3 +1,8 @@
+/**
+ * @file ResourceBufferHelpers.h
+ * @brief Surface 자원 생성에 필요한 GPU 버퍼 할당·업로드·재사용을 공통화한다.
+ */
+
 #pragma once
 #include "SurfaceState/GPU/Abi/SurfaceGPUDescriptorBinding.h"
 #include "SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h"

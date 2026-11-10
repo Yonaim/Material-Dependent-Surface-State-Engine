@@ -11,7 +11,10 @@
 #include "SurfaceState/State/SurfaceInput.h"
 
 #include <glm/mat3x3.hpp>
+#include <functional>
 #include <map>
+#include <optional>
+#include <glm/mat4x4.hpp>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -24,6 +27,8 @@ namespace MDSS::Asset
 namespace MDSS::SurfaceState
 {
     class FSurfaceDataManager;
+    class FSharedSurfaceGeometryData;
+    struct FSurfaceTexelGeometry;
 }
 
 namespace MDSS::GPU
@@ -34,6 +39,7 @@ namespace MDSS::GPU
 namespace MDSS
 {
     class FScene;
+    class FStaticMeshInstance;
 }
 
 namespace MDSS::SurfaceState
@@ -46,6 +52,7 @@ namespace MDSS::SurfaceState
 // 00. Lifecycle
 // ============================================================
 #pragma region 00_Lifecycle
+// 객체 초기화와 종료에서 소유 자원·참조의 유효 기간을 맞춘다.
 
         // Lifecycle
         FSurfaceStateSystem(const GPU::FVulkanContext&  Context,
@@ -69,11 +76,23 @@ namespace MDSS::SurfaceState
 // 01. State and contact management
 // ============================================================
 #pragma region 01_State_and_contact_management
+// State 초기화·접촉 예약과 일회성 초기 입력 관찰자를 제어한다.
 
         // State and contact management
         void SubmitContact(FSurfaceContactInput Contact);
         void ResetState();
         void RestartState();
+
+        /**
+         * @brief 다음 RecordStep의 CPU contact 적용 후 Solver dispatch 전에 실행할 일회성 관찰자를 설정한다.
+         * @param Observer 호출 스레드에서 동기 실행되는 읽기용 callback. 비어 있으면 예약을 취소한다.
+         * @note callback이 참조하는 객체는 호출 시점까지 유효해야 한다. 실행 전에 예약을 해제한다.
+         */
+        void SetInitialInputReadbackObserver(std::function<void()> Observer)
+        {
+            InitialInputReadbackObserver = std::move(Observer);
+        }
+
         void SetDebugProfileParameters(Asset::FSRProfileAssetHandle   Profile,
                                        FStateId                       State,
                                        const FSurfaceStateParameters& Parameters,
@@ -85,6 +104,7 @@ namespace MDSS::SurfaceState
 // 02. Simulation and GPU recording
 // ============================================================
 #pragma region 02_Simulation_and_GPU_recording
+// 프레임이 요청한 시간 진행과 Solver 명령 기록을 연결한다.
 
         // Simulation and GPU recording
         [[nodiscard]] float GetMaximumStableDeltaTime();
@@ -101,6 +121,7 @@ namespace MDSS::SurfaceState
 // 03. Debug controls and resource access
 // ============================================================
 #pragma region 03_Debug_controls_and_resource_access
+// debug 실행 옵션과 관련 GPU 자원을 조회·제어한다.
 
         // Debug controls and resource access
         [[nodiscard]] std::size_t                        GetSolverInstanceCount() const noexcept;
@@ -246,10 +267,30 @@ namespace MDSS::SurfaceState
 // 04. Pending contact application
 // ============================================================
 #pragma region 04_Pending_contact_application
+// 다음 Solver에 전달할 접촉 입력을 모아 rasterization 경계를 관리한다.
 
         // Pending contact application
         void QueueInitialContacts();
         void ApplyPendingContacts();
+
+        struct FContactInputBatch
+        {
+            std::size_t InstanceCount = 0;
+            std::size_t ChannelCount = 0;
+            std::vector<std::vector<float>> InputDeltas;
+            std::vector<std::vector<std::uint8_t>> InputGroupFlags;
+            std::vector<std::vector<std::uint32_t>> InputGroupMasks;
+            std::vector<std::uint32_t> InputChannelMasks;
+            std::vector<bool> bInstanceHasInput;
+        };
+
+        void RasterizePendingContact(const FSurfaceContactInput& Contact, FContactInputBatch& Batch);
+        void RasterizeValidatedContact(const FSurfaceContactInput& Contact, FContactInputBatch& Batch);
+        [[nodiscard]] std::optional<glm::vec3> ResolveMappedContactInfluenceCenter(
+            const FSurfaceContactInput& Contact, const FStaticMeshInstance& Instance,
+            const FSharedSurfaceGeometryData& Geometry, const glm::mat4& Model,
+            const std::vector<FSurfaceTexelGeometry>& Texels) const;
+        void UploadRasterizedContacts(const FContactInputBatch& Batch);
 
 #pragma endregion
 
@@ -257,7 +298,9 @@ namespace MDSS::SurfaceState
 // 05. Resource Ownership and Runtime State
 // ============================================================
 #pragma region 05_Resource_Ownership_and_Runtime_State
+// GPU 소유 객체와 실행 cache를 분리해 시스템 수명에 연결한다.
 
+        std::function<void()>                       InitialInputReadbackObserver;
         const GPU::FVulkanContext&                  Context;
         const Asset::FAssetManager&                 Assets;
         const FSurfaceDataManager&                  SurfaceData;

@@ -1,3 +1,4 @@
+// RenderStateTexture.comp — Surface State를 렌더 샘플링용 다중 채널 texture로 변환한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
@@ -8,6 +9,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba16f, set = 1, binding = 0) uniform writeonly image2DArray RenderStates;
@@ -25,6 +27,7 @@ Push;
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Surface State를 렌더 샘플링용 다중 채널 texture로 변환한다.
 
 void main()
 {

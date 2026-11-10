@@ -31,6 +31,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region 00_Fixtures_and_Test_Support
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace MDSS::Tests
 {
@@ -109,6 +110,7 @@ namespace MDSS::Tests
 // 01. TestOverlaySideCompaction
 // ============================================================
 #pragma region 01_TestOverlaySideCompaction
+// 기대 조건: An empty overlay must skip all top draws.
 
     void TestOverlaySideCompaction(const GPU::FVulkanContext& Context)
     {
@@ -303,6 +305,7 @@ namespace MDSS::Tests
 // 02. TestCavityFillDisplayBound
 // ============================================================
 #pragma region 02_TestCavityFillDisplayBound
+// 기대 조건: Cavity fill Inspector snapshot must complete.
 
     void TestCavityFillDisplayBound(const GPU::FVulkanContext& Context)
     {
@@ -463,6 +466,7 @@ namespace MDSS::Tests
 // 03. TestSurfaceDebugRendering
 // ============================================================
 #pragma region 03_TestSurfaceDebugRendering
+// 기대 조건: Unit square at reference resolution must be green.
 
     void TestSurfaceDebugRendering(const GPU::FVulkanContext& Context)
     {

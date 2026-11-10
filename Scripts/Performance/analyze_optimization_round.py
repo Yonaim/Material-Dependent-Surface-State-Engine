@@ -1,4 +1,7 @@
-"""Validate and tabulate the 2026-10-25 paired optimization measurements."""
+"""최적화 후보별 반복 측정에서 정확성·시간·메모리 차이를 분석한다.
+
+Validate and tabulate the 2026-10-25 paired optimization measurements.
+"""
 
 from __future__ import annotations
 import argparse, datetime as dt, json, statistics as st, sys

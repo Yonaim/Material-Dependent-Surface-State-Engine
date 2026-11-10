@@ -16,6 +16,7 @@ namespace MDSS::GPU
 // 00. Image Lifecycle and Creation
 // ============================================================
 #pragma region 00_Image_Lifecycle_and_Creation
+// 이미지의 extent·format·usage에 맞춰 image와 memory를 생성·해제한다.
 
     FGPUImage::FGPUImage(VkPhysicalDevice      PhysicalDevice,
                          VkDevice              Device,
@@ -144,6 +145,7 @@ namespace MDSS::GPU
 // 01. Image Accessors
 // ============================================================
 #pragma region 01_Image_Accessors
+// image handle과 format·extent를 관련 렌더 자원에 제공한다.
 
     VkImage FGPUImage::GetHandle() const noexcept
     {
@@ -166,6 +168,7 @@ namespace MDSS::GPU
 // 02. Memory Type Selection
 // ============================================================
 #pragma region 02_Memory_Type_Selection
+// 요구 memory property와 장치의 type mask를 만족하는 메모리 종류를 선택한다.
 
     std::uint32_t FGPUImage::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                             std::uint32_t         TypeFilter,

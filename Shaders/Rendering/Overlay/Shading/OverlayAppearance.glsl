@@ -1,10 +1,13 @@
+// OverlayAppearance.glsl — 적층 재질의 noise·미세 normal·수막 반사 외형을 계산한다.
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// 적층 재질의 noise·미세 normal·수막 반사 외형을 계산한다.
 
 // 00.00. Procedural Mud Noise and Micro Bump
 // #region 00_00_Procedural_Mud_Noise_and_Micro_Bump
+// Mud 표면의 위치 기반 noise를 색상·미세 normal 변화에 반영한다.
 
 float MudNoiseHash(vec3 P)
 {
@@ -55,6 +58,7 @@ vec3 ApplyMudMicroBump(vec3 N, vec3 P, float Amount)
 
 // 00.01. Water Film Reflection and Transparency
 // #region 00_01_Water_Film_Reflection_and_Transparency
+// 수막의 반사와 투명도를 아래 재질과 합성할 값으로 계산한다.
 
 vec4 ShadeWaterFilmLayer(vec3 N, vec3 V, float Coverage)
 {

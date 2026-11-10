@@ -1,9 +1,13 @@
-"""Render isolated reference fixtures; this is not a timed human authoring study."""
+"""저작 조건별 앱 실행과 이미지·State 캡처 검증을 조율한다.
+
+Render isolated reference fixtures; this is not a timed human authoring study.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import copy, os, pathlib, shutil, subprocess, sys
 from authoring_study import ROOT, STUDY, PACK, read, write, stamp, digest
@@ -18,6 +22,7 @@ OUT = STUDY / 'render-validation'
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 저작 조건별 앱 실행과 이미지·State 캡처 검증을 조율한다.
 
 
 def prepare():
@@ -233,6 +238,7 @@ def run():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 저작 조건별 앱 실행과 이미지·State 캡처 검증을 조율한다.
 
 if __name__ == '__main__':
     if len(sys.argv) != 2 or sys.argv[1] not in ['prepare', 'run']:

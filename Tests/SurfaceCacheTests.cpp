@@ -23,6 +23,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region 00_Fixtures_and_Test_Support
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace
 {
@@ -156,6 +157,7 @@ namespace
 // 01. TestBrickCubeMesoHeightSign
 // ============================================================
 #pragma region 01_TestBrickCubeMesoHeightSign
+// BrickCube의 Meso 높이 부호가 표면 방향·표시 조건과 맞는지 검증한다.
 
     void TestBrickCubeMesoHeightSign()
     {
@@ -238,6 +240,7 @@ namespace
 // 02. Tests
 // ============================================================
 #pragma region 02_Tests
+// 준비한 입력으로 회귀 시나리오를 실행하고 기대 상태와 오류를 검사한다.
 
     void Tests()
     {
@@ -458,6 +461,7 @@ namespace
 // 03. Test Entry Point
 // ============================================================
 #pragma region 03_Test_Entry_Point
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main()
 {

@@ -38,6 +38,7 @@ namespace MDSS
 // 00. Demo Animation Loading
 // ============================================================
 #pragma region 00_Demo_Animation_Loading
+// Scene에 연결된 데모 clip을 읽고 track·event 입력을 검증한다.
 
     FDemoAnimationClip LoadDemoAnimation(const std::filesystem::path& Path, const FScene& Scene)
     {
@@ -56,6 +57,7 @@ namespace MDSS
 // 01. Demo Animation Application
 // ============================================================
 #pragma region 01_Demo_Animation_Application
+// 현재 재생 시간의 변환·카메라·접촉 사건을 Scene에 적용한다.
 
     void ApplyDemoAnimation(FScene& Scene, const FDemoAnimationClip& Clip, float Time)
     {
@@ -105,6 +107,7 @@ namespace MDSS
 // 02. Clip Parsing
 // ============================================================
 #pragma region 02_Clip_Parsing
+// clip의 track·시간·target 선언을 내부 재생 자료로 변환한다.
 
     namespace
     {
@@ -336,6 +339,7 @@ namespace MDSS
 // 03. Value Parsing and Track Evaluation
 // ============================================================
 #pragma region 03_Value_Parsing_and_Track_Evaluation
+// keyframe 값을 검사하고 현재 시간의 보간 결과를 계산한다.
 
     namespace
     {

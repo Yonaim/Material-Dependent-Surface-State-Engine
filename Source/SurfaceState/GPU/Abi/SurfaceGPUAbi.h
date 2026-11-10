@@ -1,3 +1,8 @@
+/**
+ * @file SurfaceGPUAbi.h
+ * @brief CPU와 shader가 공유하는 표면 상태 record의 크기·정렬을 정의한다.
+ */
+
 #pragma once
 #include "SurfaceState/Types/SurfaceMappingTypes.h"
 

@@ -1,9 +1,13 @@
-"""Analyse the frozen meso study, preserving nulls and numerical/representation limitations."""
+"""Meso 재구성·민감도·수송 실험 결과를 비교하고 오차를 집계한다.
+
+Analyse the frozen meso study, preserving nulls and numerical/representation limitations.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import json, pathlib, sys, hashlib, re, datetime as dt
 from meso_study import ROOT, EXP, RAW, read, write, digest, arr, stamp
@@ -28,6 +32,7 @@ missing = [c['id'] for c in expected if c['id'] not in runs]
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# Meso 재구성·민감도·수송 실험 결과를 비교하고 오차를 집계한다.
 
 
 def folder(k):
@@ -96,6 +101,7 @@ def compare(a, b, label, restriction=False):
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# Meso 재구성·민감도·수송 실험 결과를 비교하고 오차를 집계한다.
 
 for k, r in runs.items():
     f = folder(k)

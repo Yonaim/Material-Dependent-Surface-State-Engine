@@ -1,6 +1,6 @@
 /**
- * @file SurfaceStateSystem.cpp
- * @brief SurfaceStateSystem의 구현을 제공한다.
+ * @file SurfaceContactApplication.cpp
+ * @brief 예약된 접촉을 texel별 InputDelta로 rasterization하고 입력 활성 범위를 표시한다.
  */
 
 #include "AssetManager/Assets/MeshAsset.h"
@@ -33,6 +33,7 @@ namespace MDSS::SurfaceState
 // 00. Pending Contact Application
 // ============================================================
 #pragma region 00_Pending_Contact_Application
+// 대기 중인 접촉을 InputDelta에 반영해 다음 Solver 실행에서 한 번 소비하게 한다.
 
     void FSurfaceStateSystem::ApplyPendingContacts()
     {
@@ -41,397 +42,505 @@ namespace MDSS::SurfaceState
             return;
         }
 
-        const std::size_t InstanceCount = Scene.GetStaticMeshInstances().size();
-        const std::size_t ChannelCount = SurfaceData.GetSurfaceStateRegistry().GetStateCount();
+        FContactInputBatch Batch;
+        Batch.InstanceCount = Scene.GetStaticMeshInstances().size();
+        Batch.ChannelCount = SurfaceData.GetSurfaceStateRegistry().GetStateCount();
 
-        if (ChannelCount == 0)
+        if (Batch.ChannelCount == 0)
         {
             PendingContacts.clear();
             return;
         }
 
-        std::vector<std::vector<float>>         InputDeltas(InstanceCount);
-        std::vector<std::vector<std::uint8_t>>  InputGroupFlags(InstanceCount);
-        std::vector<std::vector<std::uint32_t>> InputGroupMasks(InstanceCount);
-        std::vector<std::uint32_t>              InputChannelMasks(InstanceCount, 0U);
-        std::vector<bool>                       bInstanceHasInput(InstanceCount, false);
+        Batch.InputDeltas.resize(Batch.InstanceCount);
+        Batch.InputGroupFlags.resize(Batch.InstanceCount);
+        Batch.InputGroupMasks.resize(Batch.InstanceCount);
+        Batch.InputChannelMasks.assign(Batch.InstanceCount, 0U);
+        Batch.bInstanceHasInput.assign(Batch.InstanceCount, false);
 
         for (const FSurfaceContactInput& Contact : PendingContacts)
         {
-            bool bLoggedDiagnostic = false;
-            auto Diagnose = [&bLoggedDiagnostic](const std::string& Message)
+            RasterizePendingContact(Contact, Batch);
+        }
+
+        UploadRasterizedContacts(Batch);
+        PendingContacts.clear();
+    }
+
+#pragma endregion
+
+// ============================================================
+// 01. Contact Rasterization
+// ============================================================
+#pragma region 01_Contact_Rasterization
+// 단일 접촉을 검증하고 대응되는 texel·State의 입력 delta를 누적한다.
+
+    static bool HasValidContactFields(const FSurfaceContactInput& Contact,
+                                      std::size_t InstanceCount,
+                                      std::size_t ChannelCount)
+    {
+        return !(Contact.TargetInstance >= InstanceCount || Contact.State >= ChannelCount ||
+            !std::isfinite(Contact.WorldPosition.x) || !std::isfinite(Contact.WorldPosition.y) ||
+            !std::isfinite(Contact.WorldPosition.z) || !std::isfinite(Contact.Radius) || Contact.Radius <= 0.0F ||
+            !std::isfinite(Contact.Strength) || Contact.Strength < 0.0F || !std::isfinite(Contact.Falloff) ||
+            Contact.Falloff < 0.0F || !std::isfinite(Contact.SecondaryRadius) ||
+            !std::isfinite(Contact.RotationDegrees) || !std::isfinite(Contact.PlaneHalfDepth) ||
+            (Contact.Shape != ESurfaceContactShape::Circle && Contact.SecondaryRadius <= 0.0F) ||
+            (Contact.bPlanar && (Contact.PlaneHalfDepth <= 0.0F || !std::isfinite(Contact.PlaneNormal.x) ||
+                                 !std::isfinite(Contact.PlaneNormal.y) || !std::isfinite(Contact.PlaneNormal.z) ||
+                                 glm::dot(Contact.PlaneNormal, Contact.PlaneNormal) <= 1.0e-12F)));
+    }
+
+    void FSurfaceStateSystem::RasterizePendingContact(const FSurfaceContactInput& Contact, FContactInputBatch& Batch)
+    {
+        if (!HasValidContactFields(Contact, Batch.InstanceCount, Batch.ChannelCount))
+        {
+            FLogger::Warning("TSurfaceStateSystem",
+                             "Rejected contact with an invalid instance, State, radius, strength, or falloff.");
+            return;
+        }
+
+        RasterizeValidatedContact(Contact, Batch);
+    }
+
+    // 접촉 형상에 따른 정규화 거리를 계산하며 평면 두께 밖의 texel은 제외한다.
+    static std::optional<float> EvaluateContactNormalizedDistance(
+        const FSurfaceContactInput& Contact, const glm::vec3& Offset,
+        const glm::vec3& PlaneNormal, const glm::vec3& Tangent, const glm::vec3& Bitangent,
+        float CosAngle, float SinAngle)
+    {
+            float NormalizedDistance = glm::length(Offset) / Contact.Radius;
+
+            if (Contact.bPlanar)
             {
-                if (!bLoggedDiagnostic)
+                if (std::abs(glm::dot(Offset, PlaneNormal)) > Contact.PlaneHalfDepth)
+                    return std::nullopt;
+                const float U = glm::dot(Offset, Tangent);
+                const float V = glm::dot(Offset, Bitangent);
+                const float X = CosAngle * U + SinAngle * V;
+                const float Y = -SinAngle * U + CosAngle * V;
+
+                switch (Contact.Shape)
                 {
-                    FLogger::Warning("TSurfaceStateSystem", Message);
-                    bLoggedDiagnostic = true;
+                    case ESurfaceContactShape::Circle:
+                        NormalizedDistance = glm::length(glm::vec2(X, Y)) / Contact.Radius;
+                        break;
+                    case ESurfaceContactShape::Ellipse:
+                        NormalizedDistance =
+                            glm::length(glm::vec2(X / Contact.Radius, Y / Contact.SecondaryRadius));
+                        break;
+                    case ESurfaceContactShape::Rectangle:
+                        NormalizedDistance =
+                            std::max(std::abs(X) / Contact.Radius, std::abs(Y) / Contact.SecondaryRadius);
+                        break;
+                    case ESurfaceContactShape::Capsule:
+                        NormalizedDistance =
+                            glm::length(glm::vec2(std::max(std::abs(X) - Contact.SecondaryRadius, 0.0F), Y)) /
+                            Contact.Radius;
+                        break;
                 }
+            }
+
+            return NormalizedDistance;
+    }
+
+    std::optional<glm::vec3> FSurfaceStateSystem::ResolveMappedContactInfluenceCenter(
+        const FSurfaceContactInput& Contact,
+        const FStaticMeshInstance& Instance,
+        const FSharedSurfaceGeometryData& Geometry,
+        const glm::mat4& Model,
+        const std::vector<FSurfaceTexelGeometry>& Texels) const
+    {
+        bool bLoggedDiagnostic = false;
+        const auto Diagnose = [&bLoggedDiagnostic](const std::string& Message)
+        {
+            if (!bLoggedDiagnostic)
+            {
+                FLogger::Warning("TSurfaceStateSystem", Message);
+                bLoggedDiagnostic = true;
+            }
+        };
+
+            const Asset::FMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
+            const std::vector<Asset::FMeshTriangleSource>& Triangles = Mesh.GetTriangles();
+
+            if (Contact.TargetTriangle >= Triangles.size() || !std::isfinite(Contact.SimulationUV.x) ||
+                !std::isfinite(Contact.SimulationUV.y) || Contact.SimulationUV.x < 0.0F ||
+                Contact.SimulationUV.x > 1.0F || Contact.SimulationUV.y < 0.0F || Contact.SimulationUV.y > 1.0F)
+            {
+                Diagnose("Rejected contact because its hit triangle or Simulation UV is invalid.");
+                return std::nullopt;
+            }
+
+            const FSurfaceLocalID TargetSurface = Triangles[Contact.TargetTriangle].Surface;
+
+            if (TargetSurface >= Geometry.GetSurfaces().size())
+            {
+                Diagnose("Rejected contact because its hit triangle has no mapped Surface.");
+                return std::nullopt;
+            }
+
+            const FSurfaceTexelRange& Range = Geometry.GetSurface(TargetSurface);
+            const std::uint32_t       CenterX =
+                std::min(static_cast<std::uint32_t>(Contact.SimulationUV.x * Range.Resolution.Width),
+                         Range.Resolution.Width - 1U);
+            const std::uint32_t CenterY =
+                std::min(static_cast<std::uint32_t>(Contact.SimulationUV.y * Range.Resolution.Height),
+                         Range.Resolution.Height - 1U);
+            const std::uint32_t MaxSearchRadius = std::max(Range.Resolution.Width, Range.Resolution.Height);
+            const std::uint32_t EffectiveSearchRadius = std::min(Contact.TexelSearchRadius, MaxSearchRadius);
+            const std::int32_t  SearchRadius = static_cast<std::int32_t>(EffectiveSearchRadius);
+            std::optional<FLocalTexelIndex> ResolvedCenter;
+            const auto                      IsHitTriangleTexel = [&](std::uint32_t X, std::uint32_t Y)
+            {
+                const std::size_t Index = static_cast<std::size_t>(Range.FirstTexel) +
+                                          static_cast<std::size_t>(Y) * Range.Resolution.Width + X;
+                if (Index >= Texels.size())
+                {
+                    return false;
+                }
+
+                const FSurfaceTexelGeometry& Texel = Texels[Index];
+
+                if (Texel.IsValid() && Texel.Surface == TargetSurface && Texel.Triangle == Contact.TargetTriangle)
+                {
+                    ResolvedCenter = static_cast<FLocalTexelIndex>(Index);
+                    return true;
+                }
+
+                return false;
             };
 
-            const std::size_t InstanceIndex = Contact.TargetInstance;
-
-            if (InstanceIndex >= InstanceCount || Contact.State >= ChannelCount ||
-                !std::isfinite(Contact.WorldPosition.x) || !std::isfinite(Contact.WorldPosition.y) ||
-                !std::isfinite(Contact.WorldPosition.z) || !std::isfinite(Contact.Radius) || Contact.Radius <= 0.0F ||
-                !std::isfinite(Contact.Strength) || Contact.Strength < 0.0F || !std::isfinite(Contact.Falloff) ||
-                Contact.Falloff < 0.0F || !std::isfinite(Contact.SecondaryRadius) ||
-                !std::isfinite(Contact.RotationDegrees) || !std::isfinite(Contact.PlaneHalfDepth) ||
-                (Contact.Shape != ESurfaceContactShape::Circle && Contact.SecondaryRadius <= 0.0F) ||
-                (Contact.bPlanar && (Contact.PlaneHalfDepth <= 0.0F || !std::isfinite(Contact.PlaneNormal.x) ||
-                                     !std::isfinite(Contact.PlaneNormal.y) || !std::isfinite(Contact.PlaneNormal.z) ||
-                                     glm::dot(Contact.PlaneNormal, Contact.PlaneNormal) <= 1.0e-12F)))
+            if (!IsHitTriangleTexel(CenterX, CenterY))
             {
-                Diagnose("Rejected contact with an invalid instance, State, radius, strength, or falloff.");
-                continue;
-            }
+                std::uint32_t BestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
 
-            const FStaticMeshInstance&      Instance = Scene.GetStaticMeshInstances()[InstanceIndex];
-            const FSurfaceRuntimeDataHandle SurfaceDataHandle = Instance.GetSurfaceData();
-
-            if (!SurfaceData.HasSurfaceData(SurfaceDataHandle))
-            {
-                Diagnose("Rejected contact for an instance without Surface simulation data.");
-                continue;
-            }
-
-            const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(InstanceIndex);
-
-            if (Descriptors == nullptr)
-            {
-                Diagnose("Rejected contact because the target instance has no GPU State resources.");
-                continue;
-            }
-
-            const FSurfaceRuntimeData&                RuntimeData = SurfaceData.GetSurfaceData(SurfaceDataHandle);
-            const FSharedSurfaceGeometryData&         Geometry = *RuntimeData.GetSharedGeometry();
-            const std::size_t                         TexelCount = Geometry.GetTexelCount();
-            const std::size_t                         ScalarCount = TexelCount * ChannelCount;
-            const glm::mat4                           Model = Instance.GetTransform().GetMatrix();
-            const std::vector<FSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
-            glm::vec3                                 InfluenceCenter = Contact.WorldPosition;
-
-            if (Contact.bHasSimulationMapping)
-            {
-                const Asset::FMeshAsset&                       Mesh = Assets.GetMesh(Instance.GetMesh());
-                const std::vector<Asset::FMeshTriangleSource>& Triangles = Mesh.GetTriangles();
-
-                if (Contact.TargetTriangle >= Triangles.size() || !std::isfinite(Contact.SimulationUV.x) ||
-                    !std::isfinite(Contact.SimulationUV.y) || Contact.SimulationUV.x < 0.0F ||
-                    Contact.SimulationUV.x > 1.0F || Contact.SimulationUV.y < 0.0F || Contact.SimulationUV.y > 1.0F)
+                for (std::int32_t OffsetY = -SearchRadius; OffsetY <= SearchRadius; ++OffsetY)
                 {
-                    Diagnose("Rejected contact because its hit triangle or Simulation UV is invalid.");
-                    continue;
-                }
-
-                const FSurfaceLocalID TargetSurface = Triangles[Contact.TargetTriangle].Surface;
-
-                if (TargetSurface >= Geometry.GetSurfaces().size())
-                {
-                    Diagnose("Rejected contact because its hit triangle has no mapped Surface.");
-                    continue;
-                }
-
-                const FSurfaceTexelRange& Range = Geometry.GetSurface(TargetSurface);
-                const std::uint32_t       CenterX =
-                    std::min(static_cast<std::uint32_t>(Contact.SimulationUV.x * Range.Resolution.Width),
-                             Range.Resolution.Width - 1U);
-                const std::uint32_t CenterY =
-                    std::min(static_cast<std::uint32_t>(Contact.SimulationUV.y * Range.Resolution.Height),
-                             Range.Resolution.Height - 1U);
-                const std::uint32_t MaxSearchRadius = std::max(Range.Resolution.Width, Range.Resolution.Height);
-                const std::uint32_t EffectiveSearchRadius = std::min(Contact.TexelSearchRadius, MaxSearchRadius);
-                const std::int32_t  SearchRadius = static_cast<std::int32_t>(EffectiveSearchRadius);
-                std::optional<FLocalTexelIndex> ResolvedCenter;
-                const auto                      IsHitTriangleTexel = [&](std::uint32_t X, std::uint32_t Y)
-                {
-                    const std::size_t Index = static_cast<std::size_t>(Range.FirstTexel) +
-                                              static_cast<std::size_t>(Y) * Range.Resolution.Width + X;
-                    if (Index >= Texels.size())
+                    for (std::int32_t OffsetX = -SearchRadius; OffsetX <= SearchRadius; ++OffsetX)
                     {
-                        return false;
-                    }
-
-                    const FSurfaceTexelGeometry& Texel = Texels[Index];
-
-                    if (Texel.IsValid() && Texel.Surface == TargetSurface && Texel.Triangle == Contact.TargetTriangle)
-                    {
-                        ResolvedCenter = static_cast<FLocalTexelIndex>(Index);
-                        return true;
-                    }
-
-                    return false;
-                };
-
-                if (!IsHitTriangleTexel(CenterX, CenterY))
-                {
-                    std::uint32_t BestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
-
-                    for (std::int32_t OffsetY = -SearchRadius; OffsetY <= SearchRadius; ++OffsetY)
-                    {
-                        for (std::int32_t OffsetX = -SearchRadius; OffsetX <= SearchRadius; ++OffsetX)
+                        if (OffsetX == 0 && OffsetY == 0)
                         {
-                            if (OffsetX == 0 && OffsetY == 0)
-                            {
-                                continue;
-                            }
+                            continue;
+                        }
 
-                            const std::int32_t X = static_cast<std::int32_t>(CenterX) + OffsetX;
-                            const std::int32_t Y = static_cast<std::int32_t>(CenterY) + OffsetY;
+                        const std::int32_t X = static_cast<std::int32_t>(CenterX) + OffsetX;
+                        const std::int32_t Y = static_cast<std::int32_t>(CenterY) + OffsetY;
 
-                            if (X < 0 || Y < 0 || X >= static_cast<std::int32_t>(Range.Resolution.Width) ||
-                                Y >= static_cast<std::int32_t>(Range.Resolution.Height))
-                            {
-                                continue;
-                            }
+                        if (X < 0 || Y < 0 || X >= static_cast<std::int32_t>(Range.Resolution.Width) ||
+                            Y >= static_cast<std::int32_t>(Range.Resolution.Height))
+                        {
+                            continue;
+                        }
 
-                            const std::uint32_t DistanceSquared =
-                                static_cast<std::uint32_t>(OffsetX * OffsetX + OffsetY * OffsetY);
-                            if (DistanceSquared >= BestDistanceSquared)
-                            {
-                                continue;
-                            }
+                        const std::uint32_t DistanceSquared =
+                            static_cast<std::uint32_t>(OffsetX * OffsetX + OffsetY * OffsetY);
+                        if (DistanceSquared >= BestDistanceSquared)
+                        {
+                            continue;
+                        }
 
-                            const std::optional<FLocalTexelIndex> Previous = ResolvedCenter;
+                        const std::optional<FLocalTexelIndex> Previous = ResolvedCenter;
 
-                            if (IsHitTriangleTexel(static_cast<std::uint32_t>(X), static_cast<std::uint32_t>(Y)))
-                            {
-                                BestDistanceSquared = DistanceSquared;
-                            }
-                            else
-                            {
-                                ResolvedCenter = Previous;
-                            }
+                        if (IsHitTriangleTexel(static_cast<std::uint32_t>(X), static_cast<std::uint32_t>(Y)))
+                        {
+                            BestDistanceSquared = DistanceSquared;
+                        }
+                        else
+                        {
+                            ResolvedCenter = Previous;
+                        }
+                    }
+                }
+            }
+
+            if (!ResolvedCenter.has_value())
+            {
+                std::uint32_t NearestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
+                std::int32_t  NearestOffsetX = 0;
+                std::int32_t  NearestOffsetY = 0;
+                std::uint32_t NearestX = 0;
+                std::uint32_t NearestY = 0;
+
+                for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
+                {
+                    for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
+                    {
+                        const std::size_t Index = static_cast<std::size_t>(Range.FirstTexel) +
+                                                  static_cast<std::size_t>(Y) * Range.Resolution.Width + X;
+                        if (Index >= Texels.size())
+                        {
+                            continue;
+                        }
+
+                        const FSurfaceTexelGeometry& Texel = Texels[Index];
+
+                        if (!Texel.IsValid() || Texel.Surface != TargetSurface ||
+                            Texel.Triangle != Contact.TargetTriangle)
+                        {
+                            continue;
+                        }
+
+                        const std::int32_t OffsetX =
+                            static_cast<std::int32_t>(X) - static_cast<std::int32_t>(CenterX);
+                        const std::int32_t OffsetY =
+                            static_cast<std::int32_t>(Y) - static_cast<std::int32_t>(CenterY);
+                        const std::uint32_t DistanceSquared =
+                            static_cast<std::uint32_t>(OffsetX * OffsetX + OffsetY * OffsetY);
+                        if (DistanceSquared < NearestDistanceSquared)
+                        {
+                            NearestDistanceSquared = DistanceSquared;
+                            NearestOffsetX = OffsetX;
+                            NearestOffsetY = OffsetY;
+                            NearestX = X;
+                            NearestY = Y;
                         }
                     }
                 }
 
-                if (!ResolvedCenter.has_value())
+                if (NearestDistanceSquared == std::numeric_limits<std::uint32_t>::max())
                 {
-                    std::uint32_t NearestDistanceSquared = std::numeric_limits<std::uint32_t>::max();
-                    std::int32_t  NearestOffsetX = 0;
-                    std::int32_t  NearestOffsetY = 0;
-                    std::uint32_t NearestX = 0;
-                    std::uint32_t NearestY = 0;
-
-                    for (std::uint32_t Y = 0; Y < Range.Resolution.Height; ++Y)
-                    {
-                        for (std::uint32_t X = 0; X < Range.Resolution.Width; ++X)
-                        {
-                            const std::size_t Index = static_cast<std::size_t>(Range.FirstTexel) +
-                                                      static_cast<std::size_t>(Y) * Range.Resolution.Width + X;
-                            if (Index >= Texels.size())
-                            {
-                                continue;
-                            }
-
-                            const FSurfaceTexelGeometry& Texel = Texels[Index];
-
-                            if (!Texel.IsValid() || Texel.Surface != TargetSurface ||
-                                Texel.Triangle != Contact.TargetTriangle)
-                            {
-                                continue;
-                            }
-
-                            const std::int32_t OffsetX =
-                                static_cast<std::int32_t>(X) - static_cast<std::int32_t>(CenterX);
-                            const std::int32_t OffsetY =
-                                static_cast<std::int32_t>(Y) - static_cast<std::int32_t>(CenterY);
-                            const std::uint32_t DistanceSquared =
-                                static_cast<std::uint32_t>(OffsetX * OffsetX + OffsetY * OffsetY);
-                            if (DistanceSquared < NearestDistanceSquared)
-                            {
-                                NearestDistanceSquared = DistanceSquared;
-                                NearestOffsetX = OffsetX;
-                                NearestOffsetY = OffsetY;
-                                NearestX = X;
-                                NearestY = Y;
-                            }
-                        }
-                    }
-
-                    if (NearestDistanceSquared == std::numeric_limits<std::uint32_t>::max())
-                    {
-                        Diagnose("Rejected contact: the hit triangle has no valid simulation texels at this "
-                                 "resolution; no texel center was rasterized inside it. Surface=" +
-                                 std::to_string(TargetSurface) +
-                                 ", triangle=" + std::to_string(Contact.TargetTriangle) + ", UV=(" +
-                                 std::to_string(Contact.SimulationUV.x) + ", " +
-                                 std::to_string(Contact.SimulationUV.y) +
-                                 "), grid=" + std::to_string(Range.Resolution.Width) + "x" +
-                                 std::to_string(Range.Resolution.Height) + ".");
-                    }
-                    else
-                    {
-                        Diagnose("Rejected contact: the nearest valid texel for the hit triangle is outside the "
-                                 "fallback search window (±" +
-                                 std::to_string(EffectiveSearchRadius) +
-                                 " texels per axis). Surface=" + std::to_string(TargetSurface) +
-                                 ", triangle=" + std::to_string(Contact.TargetTriangle) + ", UV=(" +
-                                 std::to_string(Contact.SimulationUV.x) + ", " +
-                                 std::to_string(Contact.SimulationUV.y) +
-                                 "), grid=" + std::to_string(Range.Resolution.Width) + "x" +
-                                 std::to_string(Range.Resolution.Height) + ", center=(" + std::to_string(CenterX) +
-                                 ", " + std::to_string(CenterY) + "), nearest=(" + std::to_string(NearestX) + ", " +
-                                 std::to_string(NearestY) + "), offset=(" + std::to_string(NearestOffsetX) + ", " +
-                                 std::to_string(NearestOffsetY) + ").");
-                    }
-
-                    continue;
+                    Diagnose("Rejected contact: the hit triangle has no valid simulation texels at this "
+                             "resolution; no texel center was rasterized inside it. Surface=" +
+                             std::to_string(TargetSurface) +
+                             ", triangle=" + std::to_string(Contact.TargetTriangle) + ", UV=(" +
+                             std::to_string(Contact.SimulationUV.x) + ", " +
+                             std::to_string(Contact.SimulationUV.y) +
+                             "), grid=" + std::to_string(Range.Resolution.Width) + "x" +
+                             std::to_string(Range.Resolution.Height) + ".");
+                }
+                else
+                {
+                    Diagnose("Rejected contact: the nearest valid texel for the hit triangle is outside the "
+                             "fallback search window (±" +
+                             std::to_string(EffectiveSearchRadius) +
+                             " texels per axis). Surface=" + std::to_string(TargetSurface) +
+                             ", triangle=" + std::to_string(Contact.TargetTriangle) + ", UV=(" +
+                             std::to_string(Contact.SimulationUV.x) + ", " +
+                             std::to_string(Contact.SimulationUV.y) +
+                             "), grid=" + std::to_string(Range.Resolution.Width) + "x" +
+                             std::to_string(Range.Resolution.Height) + ", center=(" + std::to_string(CenterX) +
+                             ", " + std::to_string(CenterY) + "), nearest=(" + std::to_string(NearestX) + ", " +
+                             std::to_string(NearestY) + "), offset=(" + std::to_string(NearestOffsetX) + ", " +
+                             std::to_string(NearestOffsetY) + ").");
                 }
 
-                InfluenceCenter = glm::vec3(Model * glm::vec4(Texels[*ResolvedCenter].Position, 1.0F));
+                return std::nullopt;
             }
 
-            if (InputDeltas[InstanceIndex].empty())
+            return glm::vec3(Model * glm::vec4(Texels[*ResolvedCenter].Position, 1.0F));
+            }
+
+    void FSurfaceStateSystem::RasterizeValidatedContact(const FSurfaceContactInput& Contact,
+                                                        FContactInputBatch& Batch)
+    {
+
+        const std::size_t InstanceCount = Batch.InstanceCount;
+        const std::size_t ChannelCount = Batch.ChannelCount;
+        auto& InputDeltas = Batch.InputDeltas;
+        auto& InputGroupFlags = Batch.InputGroupFlags;
+        auto& InputGroupMasks = Batch.InputGroupMasks;
+        auto& InputChannelMasks = Batch.InputChannelMasks;
+        auto& bInstanceHasInput = Batch.bInstanceHasInput;
+
+        bool bLoggedDiagnostic = false;
+        auto Diagnose = [&bLoggedDiagnostic](const std::string& Message)
+        {
+            if (!bLoggedDiagnostic)
             {
-                InputDeltas[InstanceIndex].assign(ScalarCount, 0.0F);
-                InputGroupFlags[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
-                InputGroupMasks[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
+                FLogger::Warning("TSurfaceStateSystem", Message);
+                bLoggedDiagnostic = true;
             }
+        };
 
-            const std::vector<Asset::FSRProfileAssetHandle>& ProfileHandles =
-                SurfaceData.GetSurfaceProfileTable(SurfaceDataHandle);
-            std::vector<float> InputFactors(ProfileHandles.size(), 0.0F);
-            std::vector<bool>  bProfileSupportsState(ProfileHandles.size(), false);
+        const std::size_t InstanceIndex = Contact.TargetInstance;
 
-            for (std::size_t ProfileIndex = 0; ProfileIndex < ProfileHandles.size(); ++ProfileIndex)
-            {
-                const FRegisteredSurfaceResponseProfileData Resolved =
-                    SurfaceData.GetSurfaceStateRegistry().ResolveProfile(
-                        Assets.GetSRProfile(ProfileHandles[ProfileIndex]).GetData());
-                if (Contact.State < Resolved.States.size() && Resolved.States[Contact.State].has_value())
-                {
-                    InputFactors[ProfileIndex] = Resolved.States[Contact.State]->InputFactor;
-                    bProfileSupportsState[ProfileIndex] = true;
-                    const auto Override = RuntimeProfileOverrides.find({ProfileHandles[ProfileIndex], Contact.State});
 
-                    if (Override != RuntimeProfileOverrides.end())
-                    {
-                        InputFactors[ProfileIndex] = Override->second.InputFactor;
-                    }
-                }
-            }
 
-            bool              bAppliedToAnyTexel = false;
-            bool              bUnsupportedProfile = false;
-            bool              bOverlappedNoSimulationSurface = false;
-            std::size_t       AppliedTexelCount = 0;
-            const std::size_t StateChannel = Contact.State;
-            const glm::vec3   PlaneNormal = Contact.bPlanar ? glm::normalize(Contact.PlaneNormal) : glm::vec3(0, 0, 1);
-            const glm::vec3   Reference = std::abs(PlaneNormal.x) < 0.9F ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-            const glm::vec3   Tangent = glm::normalize(Reference - PlaneNormal * glm::dot(Reference, PlaneNormal));
-            const glm::vec3   Bitangent = glm::cross(PlaneNormal, Tangent);
-            const float       Angle = glm::radians(Contact.RotationDegrees);
-            const float       CosAngle = std::cos(Angle);
-            const float       SinAngle = std::sin(Angle);
+        const FStaticMeshInstance&      Instance = Scene.GetStaticMeshInstances()[InstanceIndex];
+        const FSurfaceRuntimeDataHandle SurfaceDataHandle = Instance.GetSurfaceData();
 
-            for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
-            {
-                const FSurfaceTexelGeometry& Texel = Texels[TexelIndex];
-
-                if (!Texel.IsValid())
-                {
-                    continue;
-                }
-
-                const FSurfaceProfileIndex ProfileIndex =
-                    Geometry.GetProfileIndex(static_cast<FLocalTexelIndex>(TexelIndex));
-                const glm::vec3 WorldTexelPosition = glm::vec3(Model * glm::vec4(Texel.Position, 1.0F));
-                const glm::vec3 Offset = WorldTexelPosition - InfluenceCenter;
-                float           NormalizedDistance = glm::length(Offset) / Contact.Radius;
-
-                if (Contact.bPlanar)
-                {
-                    if (std::abs(glm::dot(Offset, PlaneNormal)) > Contact.PlaneHalfDepth)
-                        continue;
-                    const float U = glm::dot(Offset, Tangent);
-                    const float V = glm::dot(Offset, Bitangent);
-                    const float X = CosAngle * U + SinAngle * V;
-                    const float Y = -SinAngle * U + CosAngle * V;
-
-                    switch (Contact.Shape)
-                    {
-                        case ESurfaceContactShape::Circle:
-                            NormalizedDistance = glm::length(glm::vec2(X, Y)) / Contact.Radius;
-                            break;
-                        case ESurfaceContactShape::Ellipse:
-                            NormalizedDistance =
-                                glm::length(glm::vec2(X / Contact.Radius, Y / Contact.SecondaryRadius));
-                            break;
-                        case ESurfaceContactShape::Rectangle:
-                            NormalizedDistance =
-                                std::max(std::abs(X) / Contact.Radius, std::abs(Y) / Contact.SecondaryRadius);
-                            break;
-                        case ESurfaceContactShape::Capsule:
-                            NormalizedDistance =
-                                glm::length(glm::vec2(std::max(std::abs(X) - Contact.SecondaryRadius, 0.0F), Y)) /
-                                Contact.Radius;
-                            break;
-                    }
-                }
-
-                if (!std::isfinite(NormalizedDistance) || NormalizedDistance > 1.0F)
-                {
-                    continue;
-                }
-
-                if (ProfileIndex == InvalidSurfaceProfileIndex)
-                {
-                    bOverlappedNoSimulationSurface = true;
-                    continue;
-                }
-
-                if (ProfileIndex >= InputFactors.size() || !bProfileSupportsState[ProfileIndex])
-                {
-                    bUnsupportedProfile = true;
-                    continue;
-                }
-
-                const float LinearFalloff = 1.0F - NormalizedDistance;
-                const float ContactWeight = Contact.Falloff == 0.0F ? 1.0F : std::pow(LinearFalloff, Contact.Falloff);
-                const std::size_t ScalarIndex = GetSurfaceGPUStateValueIndex(TexelIndex, StateChannel, ChannelCount);
-                const float       AreaScale = GetSurfaceWorldTexelArea(Texel, Model) / SurfaceStateReferenceArea;
-                const float       Sign = Contact.Operation == ESurfaceContactOperation::Remove ? -1.0F : 1.0F;
-                const float Delta = Sign * Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
-                InputDeltas[InstanceIndex][ScalarIndex] += Delta;
-
-                if (Delta != 0.0F)
-                {
-                    InputGroupFlags[InstanceIndex][TexelIndex / 64U] = 1U;
-
-                    if (StateChannel < 32U)
-                    {
-                        InputChannelMasks[InstanceIndex] |= (1U << static_cast<std::uint32_t>(StateChannel));
-                        InputGroupMasks[InstanceIndex][TexelIndex / 64U] |=
-                            (1U << static_cast<std::uint32_t>(StateChannel));
-                    }
-                }
-
-                bAppliedToAnyTexel = true;
-                ++AppliedTexelCount;
-            }
-
-            if (bAppliedToAnyTexel)
-            {
-                FLogger::Info("TSurfaceStateSystem",
-                              "Contact input applied (state=" +
-                                  SurfaceData.GetSurfaceStateRegistry().GetStateName(Contact.State) +
-                                  ", instance=" + std::to_string(InstanceIndex) +
-                                  ", texels=" + std::to_string(AppliedTexelCount) + ").");
-            }
-
-            if (bUnsupportedProfile)
-            {
-                Diagnose("Some contact texels do not support the requested State; those texels were skipped.");
-            }
-
-            if (!bAppliedToAnyTexel && !bUnsupportedProfile && !bOverlappedNoSimulationSurface)
-            {
-                Diagnose("Contact did not overlap a valid texel; no State input was applied.");
-            }
-
-            bInstanceHasInput[InstanceIndex] = bInstanceHasInput[InstanceIndex] || bAppliedToAnyTexel;
+        if (!SurfaceData.HasSurfaceData(SurfaceDataHandle))
+        {
+            Diagnose("Rejected contact for an instance without Surface simulation data.");
+            return;
         }
+
+        const FSurfaceStateDescriptorResources* Descriptors = GPUResources->GetInstanceDescriptors(InstanceIndex);
+
+        if (Descriptors == nullptr)
+        {
+            Diagnose("Rejected contact because the target instance has no GPU State resources.");
+            return;
+        }
+
+        const FSurfaceRuntimeData&                RuntimeData = SurfaceData.GetSurfaceData(SurfaceDataHandle);
+        const FSharedSurfaceGeometryData&         Geometry = *RuntimeData.GetSharedGeometry();
+        const std::size_t                         TexelCount = Geometry.GetTexelCount();
+        const std::size_t                         ScalarCount = TexelCount * ChannelCount;
+        const glm::mat4                           Model = Instance.GetTransform().GetMatrix();
+        const std::vector<FSurfaceTexelGeometry>& Texels = Geometry.GetTexels();
+        glm::vec3                                 InfluenceCenter = Contact.WorldPosition;
+
+        if (Contact.bHasSimulationMapping)
+        {
+            const std::optional<glm::vec3> MappedCenter =
+                ResolveMappedContactInfluenceCenter(Contact, Instance, Geometry, Model, Texels);
+
+            if (!MappedCenter.has_value())
+            {
+                return;
+            }
+
+            InfluenceCenter = *MappedCenter;
+        }
+
+        if (InputDeltas[InstanceIndex].empty())
+        {
+            InputDeltas[InstanceIndex].assign(ScalarCount, 0.0F);
+            InputGroupFlags[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
+            InputGroupMasks[InstanceIndex].assign((TexelCount + 63U) / 64U, 0U);
+        }
+
+        const std::vector<Asset::FSRProfileAssetHandle>& ProfileHandles =
+            SurfaceData.GetSurfaceProfileTable(SurfaceDataHandle);
+        std::vector<float> InputFactors(ProfileHandles.size(), 0.0F);
+        std::vector<bool>  bProfileSupportsState(ProfileHandles.size(), false);
+
+        for (std::size_t ProfileIndex = 0; ProfileIndex < ProfileHandles.size(); ++ProfileIndex)
+        {
+            const FRegisteredSurfaceResponseProfileData Resolved =
+                SurfaceData.GetSurfaceStateRegistry().ResolveProfile(
+                    Assets.GetSRProfile(ProfileHandles[ProfileIndex]).GetData());
+            if (Contact.State < Resolved.States.size() && Resolved.States[Contact.State].has_value())
+            {
+                InputFactors[ProfileIndex] = Resolved.States[Contact.State]->InputFactor;
+                bProfileSupportsState[ProfileIndex] = true;
+                const auto Override = RuntimeProfileOverrides.find({ProfileHandles[ProfileIndex], Contact.State});
+
+                if (Override != RuntimeProfileOverrides.end())
+                {
+                    InputFactors[ProfileIndex] = Override->second.InputFactor;
+                }
+            }
+        }
+
+        bool              bAppliedToAnyTexel = false;
+        bool              bUnsupportedProfile = false;
+        bool              bOverlappedNoSimulationSurface = false;
+        std::size_t       AppliedTexelCount = 0;
+        const std::size_t StateChannel = Contact.State;
+        const glm::vec3   PlaneNormal = Contact.bPlanar ? glm::normalize(Contact.PlaneNormal) : glm::vec3(0, 0, 1);
+        const glm::vec3   Reference = std::abs(PlaneNormal.x) < 0.9F ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+        const glm::vec3   Tangent = glm::normalize(Reference - PlaneNormal * glm::dot(Reference, PlaneNormal));
+        const glm::vec3   Bitangent = glm::cross(PlaneNormal, Tangent);
+        const float       Angle = glm::radians(Contact.RotationDegrees);
+        const float       CosAngle = std::cos(Angle);
+        const float       SinAngle = std::sin(Angle);
+
+        for (std::size_t TexelIndex = 0; TexelIndex < Texels.size(); ++TexelIndex)
+        {
+            const FSurfaceTexelGeometry& Texel = Texels[TexelIndex];
+
+            if (!Texel.IsValid())
+            {
+                continue;
+            }
+
+            const FSurfaceProfileIndex ProfileIndex =
+                Geometry.GetProfileIndex(static_cast<FLocalTexelIndex>(TexelIndex));
+            const glm::vec3 WorldTexelPosition = glm::vec3(Model * glm::vec4(Texel.Position, 1.0F));
+            const glm::vec3 Offset = WorldTexelPosition - InfluenceCenter;
+            const std::optional<float> Distance = EvaluateContactNormalizedDistance(
+                Contact, Offset, PlaneNormal, Tangent, Bitangent, CosAngle, SinAngle);
+
+            if (!Distance.has_value())
+            {
+                continue;
+            }
+
+            const float NormalizedDistance = *Distance;
+
+            if (!std::isfinite(NormalizedDistance) || NormalizedDistance > 1.0F)
+            {
+                continue;
+            }
+
+            if (ProfileIndex == InvalidSurfaceProfileIndex)
+            {
+                bOverlappedNoSimulationSurface = true;
+                continue;
+            }
+
+            if (ProfileIndex >= InputFactors.size() || !bProfileSupportsState[ProfileIndex])
+            {
+                bUnsupportedProfile = true;
+                continue;
+            }
+
+            const float LinearFalloff = 1.0F - NormalizedDistance;
+            const float ContactWeight = Contact.Falloff == 0.0F ? 1.0F : std::pow(LinearFalloff, Contact.Falloff);
+            const std::size_t ScalarIndex = GetSurfaceGPUStateValueIndex(TexelIndex, StateChannel, ChannelCount);
+            const float       AreaScale = GetSurfaceWorldTexelArea(Texel, Model) / SurfaceStateReferenceArea;
+            const float       Sign = Contact.Operation == ESurfaceContactOperation::Remove ? -1.0F : 1.0F;
+            const float Delta = Sign * Contact.Strength * ContactWeight * InputFactors[ProfileIndex] * AreaScale;
+            InputDeltas[InstanceIndex][ScalarIndex] += Delta;
+
+            if (Delta != 0.0F)
+            {
+                InputGroupFlags[InstanceIndex][TexelIndex / 64U] = 1U;
+
+                if (StateChannel < 32U)
+                {
+                    InputChannelMasks[InstanceIndex] |= (1U << static_cast<std::uint32_t>(StateChannel));
+                    InputGroupMasks[InstanceIndex][TexelIndex / 64U] |=
+                        (1U << static_cast<std::uint32_t>(StateChannel));
+                }
+            }
+
+            bAppliedToAnyTexel = true;
+            ++AppliedTexelCount;
+        }
+
+        if (bAppliedToAnyTexel)
+        {
+            FLogger::Info("TSurfaceStateSystem",
+                          "Contact input applied (state=" +
+                              SurfaceData.GetSurfaceStateRegistry().GetStateName(Contact.State) +
+                              ", instance=" + std::to_string(InstanceIndex) +
+                              ", texels=" + std::to_string(AppliedTexelCount) + ").");
+        }
+
+        if (bUnsupportedProfile)
+        {
+            Diagnose("Some contact texels do not support the requested State; those texels were skipped.");
+        }
+
+        if (!bAppliedToAnyTexel && !bUnsupportedProfile && !bOverlappedNoSimulationSurface)
+        {
+            Diagnose("Contact did not overlap a valid texel; no State input was applied.");
+        }
+
+        bInstanceHasInput[InstanceIndex] = bInstanceHasInput[InstanceIndex] || bAppliedToAnyTexel;
+        }
+
+
+#pragma endregion
+
+// ============================================================
+// 02. GPU Input Upload
+// ============================================================
+#pragma region 02_GPU_Input_Upload
+// 래스터화한 InputDelta와 sparse 활성 그룹을 GPU에 동기 업로드한다.
+
+    void FSurfaceStateSystem::UploadRasterizedContacts(const FContactInputBatch& Batch)
+    {
+        const std::size_t InstanceCount = Batch.InstanceCount;
+        const auto& InputDeltas = Batch.InputDeltas;
+        const auto& InputGroupFlags = Batch.InputGroupFlags;
+        const auto& InputGroupMasks = Batch.InputGroupMasks;
+        const auto& InputChannelMasks = Batch.InputChannelMasks;
+        const auto& bInstanceHasInput = Batch.bInstanceHasInput;
 
         const bool bAnyInput =
             std::any_of(bInstanceHasInput.begin(), bInstanceHasInput.end(), [](bool bValue) { return bValue; });
@@ -502,7 +611,6 @@ namespace MDSS::SurfaceState
             }
         }
 
-        PendingContacts.clear();
     }
 
 #pragma endregion

@@ -1,12 +1,9 @@
-/**
- * @file WaterFilm.glsl
- * @brief 얇은 물막에 젖은 바탕색과 매끈한 표면 반응을 적용한다.
- */
-
+// WaterFilm.glsl — 얇은 물막에 젖은 바탕색과 매끈한 표면 반응을 적용한다.
 // ============================================================
 // 00. WaterFilm Appearance
 // ============================================================
 // #region 00_WaterFilm_Appearance
+// WaterFilm의 반사·색상 변화를 기본 표면 위에 합성한다.
 
 float VisibleWaterCoverage(float Coverage, vec2 UV)
 {

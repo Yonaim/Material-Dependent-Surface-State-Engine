@@ -1,4 +1,7 @@
-"""Run common capture gates and compare repaired runs with preserved earlier observations."""
+"""descriptor 수명 수정 전후의 State와 검증 로그를 비교한다.
+
+Run common capture gates and compare repaired runs with preserved earlier observations.
+"""
 
 import pathlib, sys
 from authoring_study import ROOT, STUDY, read, write, stamp

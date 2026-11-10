@@ -1,9 +1,13 @@
-"""Apply frozen v1 equality gates. No novelty/productivity claim is inferred from implementation counts."""
+"""단일·모듈 구현의 결과와 자원 비용을 같은 조건으로 비교한다.
+
+Apply frozen v1 equality gates. No novelty/productivity claim is inferred from implementation counts.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import json
 import pathlib
@@ -30,6 +34,7 @@ for name in ["cost-reference-plan.json", "order-control-plan.json", "timing-cont
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 단일·모듈 구현의 결과와 자원 비용을 같은 조건으로 비교한다.
 
 
 def base(key):
@@ -246,6 +251,7 @@ def pair(a, b, seconds=None):
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 단일·모듈 구현의 결과와 자원 비용을 같은 조건으로 비교한다.
 
 comparisons = []
 for c in requests.values():

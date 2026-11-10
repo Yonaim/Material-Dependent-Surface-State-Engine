@@ -1,7 +1,4 @@
-/**
- * @file TexelGeometryBaseline.comp
- * @brief State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
- */
+// TexelGeometryBaseline.comp — State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -11,6 +8,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 64) in;
 
@@ -46,6 +44,7 @@ vec3 BaselineNormal(uint Texel);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
 
 void main()
 {
@@ -72,6 +71,7 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// State가 없는 기준 Meso 형상의 normal을 계산해 진단 cache에 저장한다.
 
 vec3 BaselineNormal(uint Texel)
 {
@@ -95,6 +95,7 @@ vec3 BaselineNormal(uint Texel)
 
     // 02.00. Accumulate Neighbor Normal Equations
     // #region 02_00_Accumulate_Neighbor_Normal_Equations
+    // 계산 결과를 TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
     // texel의 접평면 위에 서로 수직인 두 축 U, V를 만든다.
     vec3 N = normalize(Normals.Values[Texel].xyz);
@@ -152,6 +153,7 @@ vec3 BaselineNormal(uint Texel)
 
     // 02.01. Solve Tangent Plane Normal
     // #region 02_01_Solve_Tangent_Plane_Normal
+    // 누적한 normal 방정식을 풀어 접평면 기울기를 표면 normal로 복원한다.
 
     // 2x2 연립방정식을 푼다. 이웃 배치가 퇴화하면 안정적인 기울기를 구할 수 없다.
     float Det = XX * YY - XY * XY;

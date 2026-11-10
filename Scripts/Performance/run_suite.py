@@ -1,9 +1,13 @@
-"""Execute a saved A/B plan serially; preserve each run and final numerical/visual data."""
+"""benchmark suite의 설정과 반복 실행을 구성해 결과 manifest를 남긴다.
+
+Execute a saved A/B plan serially; preserve each run and final numerical/visual data.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 import argparse, datetime as dt, hashlib, json, os, subprocess, sys, time, zipfile, shutil
@@ -18,6 +22,7 @@ BLOCKED_REGISTRY = ROOT / 'Build/OptimizationLab/blocked-executables.json'
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# benchmark suite의 설정과 반복 실행을 구성해 결과 manifest를 남긴다.
 
 
 class BlockedExecutable(RuntimeError):
@@ -36,6 +41,7 @@ def save(path, value):
 # 02. Main Process
 # ============================================================
 # region 02_Main_Process
+# benchmark suite의 설정과 반복 실행을 구성해 결과 manifest를 남긴다.
 
 
 def main():
@@ -224,6 +230,7 @@ def main():
 # 03. Script Execution
 # ============================================================
 # region 03_Script_Execution
+# benchmark suite의 설정과 반복 실행을 구성해 결과 manifest를 남긴다.
 
 if __name__ == '__main__':
     raise SystemExit(main())

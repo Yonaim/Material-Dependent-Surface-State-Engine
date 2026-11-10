@@ -1,9 +1,13 @@
-"""Prepare a falsifiable single-system authoring task; do not run or score it."""
+"""저작 후속 검증의 입력·목표·실행 조건을 준비한다.
+
+Prepare a falsifiable single-system authoring task; do not run or score it.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import copy
 import os
@@ -25,6 +29,7 @@ SOURCE_MAP = ROOT / 'Assets/SurfaceProfileMaps/IceReactionLab.SurfaceProfileMap'
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 저작 후속 검증의 입력·목표·실행 조건을 준비한다.
 
 
 def relative(path, directory):
@@ -98,7 +103,7 @@ def prepare():
         source_version='Commit plus dirty working tree; source hashes below identify preparation inputs only',
         prior_knowledge='PERF-041/042/043 and six approximately-six-second reference renders are known. '
         'This goal is informed by that knowledge, not independently or blindly selected.',
-        report='Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md#9',
+        report='Docs/Agent-Vault/04_Development/07_Authoring-Study-Protocol.md#9',
         primary_object='b_heated',
         contextual_objects=['a_finite', 'c_cooled'],
         duration_seconds=16,
@@ -224,6 +229,7 @@ def prepare():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 저작 후속 검증의 입력·목표·실행 조건을 준비한다.
 
 if __name__ == '__main__':
     prepare()

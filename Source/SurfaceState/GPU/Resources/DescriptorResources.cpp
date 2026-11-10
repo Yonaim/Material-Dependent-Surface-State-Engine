@@ -1,3 +1,8 @@
+/**
+ * @file DescriptorResources.cpp
+ * @brief Surface의 AB/BA descriptor 수명과 instance buffer 재연결을 관리한다.
+ */
+
 #include "SurfaceState/GPU/Resources/DescriptorResources.h"
 
 #include "SurfaceState/GPU/Resources/ResourceBufferHelpers.h"
@@ -17,6 +22,7 @@ namespace MDSS::SurfaceState
 // 00. Descriptor Resources
 // ============================================================
 #pragma region 00_Descriptor_Resources
+// 기존 AB/BA layout·set을 유지하며 호환되는 instance 버퍼를 연결한다.
 
     FSurfaceStateDescriptorResources::FSurfaceStateDescriptorResources(
         VkDevice                                  Device,
@@ -86,6 +92,20 @@ namespace MDSS::SurfaceState
             vkDestroyDescriptorSetLayout(Device, Layout, nullptr);
             Layout = VK_NULL_HANDLE;
             throw std::runtime_error("Failed to allocate Surface solver descriptor sets.");
+        }
+
+        RebindInstanceBuffers(Instance);
+    }
+
+    void FSurfaceStateDescriptorResources::RebindInstanceBuffers(const FSurfaceInstanceGPUResources& Instance)
+    {
+        const auto& SharedGeometry = *SharedGeometryResources;
+        const auto& Profiles = *ProfileResources;
+        if (SharedGeometry.GetTexelCount() != Instance.GetTexelCount() ||
+            Profiles.GetChannelCount() != Instance.GetChannelCount() ||
+            Profiles.GetMaxReactionCount() > Instance.GetReactionCapacity())
+        {
+            throw std::invalid_argument("Surface descriptor resources have incompatible texel or channel counts.");
         }
 
         const std::array<const GPU::FGPUBuffer*, DescriptorBindingCount> SharedAndProfileBuffers{

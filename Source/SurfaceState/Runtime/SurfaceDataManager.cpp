@@ -34,6 +34,7 @@ namespace MDSS::SurfaceState
 // 00. Runtime Surface Key Helper
 // ============================================================
 #pragma region 00_Runtime_Surface_Key_Helper
+// Mesh·Profile 분포·설정으로 공유 전처리 자료의 식별 key를 만든다.
 
     namespace
     {
@@ -53,147 +54,118 @@ namespace MDSS::SurfaceState
 // 01. Surface Data Loading
 // ============================================================
 #pragma region 01_Surface_Data_Loading
+// 필요한 mapping·Meso·Profile 전처리 결과를 로드하거나 생성한다.
 
-    FSurfaceDataManager::FSurfaceDataManager(Asset::FAssetManager& Assets) : Assets(Assets)
+    namespace
     {
-    }
-
-    FSurfaceRuntimeDataHandle
-    FSurfaceDataManager::LoadSurfaceData(Asset::FMeshAssetHandle      MeshHandle,
-                                         const std::filesystem::path& RequestedDistributionPath,
-                                         std::uint32_t                Resolution)
-    {
-        if (Resolution == 0)
-            Resolution = SimulationResolution;
-        if (!SurfaceState::IsSurfaceSimulationResolution(Resolution))
+        std::uint32_t ResolveSurfaceResolution(std::uint32_t Resolution, std::uint32_t DefaultResolution)
         {
-            throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
-        }
-
-        if (MeshHandle == Asset::InvalidAssetHandle)
-        {
-            throw std::out_of_range("Invalid TMeshAssetHandle for Surface preprocessing.");
-        }
-
-        if (RequestedDistributionPath.empty())
-        {
-            throw std::invalid_argument("A Scene-selected Surface Profile Map path is required.");
-        }
-
-        const Asset::FMeshAsset&    Mesh = Assets.GetMesh(MeshHandle);
-        const std::filesystem::path DistributionPath = RequestedDistributionPath;
-        const std::string RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath, Resolution);
-
-        if (const auto Found = RuntimeSurfaceAssetsByInputs.find(RuntimeKey);
-            Found != RuntimeSurfaceAssetsByInputs.end())
-        {
-            return Found->second;
-        }
-
-        const Asset::FSurfaceProfileDistribution Distribution =
-            Asset::FSurfaceProfileDistributionLoader::Load(DistributionPath);
-
-        std::vector<Asset::FSRProfileAssetHandle> ProfileTable;
-        ProfileTable.reserve(Distribution.ProfilePaths.size());
-
-        for (const std::filesystem::path& ProfilePath : Distribution.ProfilePaths)
-        {
-            ProfileTable.push_back(Assets.LoadSRProfile(ProfilePath));
-        }
-
-        SurfaceState::FSurfaceLocalID SurfaceCount = 0;
-
-        for (const Asset::FMeshSection& Section : Mesh.GetSections())
-        {
-            if (Section.Surface == SurfaceState::InvalidSurfaceID)
+            const auto Selected = Resolution == 0 ? DefaultResolution : Resolution;
+            if (!SurfaceState::IsSurfaceSimulationResolution(Selected))
             {
-                throw std::runtime_error("Mesh section has an invalid Surface ID.");
+                throw std::invalid_argument("Simulation resolution must be 128, 256 or 512.");
             }
+            return Selected;
+        }
 
-            if (Section.Surface == std::numeric_limits<SurfaceState::FSurfaceLocalID>::max() - 1U)
+        void ValidateSurfaceRequest(Asset::FMeshAssetHandle MeshHandle,
+                                    const std::filesystem::path& DistributionPath)
+        {
+            if (MeshHandle == Asset::InvalidAssetHandle)
             {
-                throw std::overflow_error("Mesh Surface count exceeds the supported range.");
+                throw std::out_of_range("Invalid TMeshAssetHandle for Surface preprocessing.");
             }
-
-            SurfaceCount = std::max(SurfaceCount, static_cast<SurfaceState::FSurfaceLocalID>(Section.Surface + 1U));
-        }
-
-        if (SurfaceCount == 0)
-        {
-            throw std::runtime_error("Mesh contains no Surface sections to preprocess.");
-        }
-
-        std::vector<SurfaceState::FSurfaceDefinition> SurfaceDefinitions;
-        SurfaceDefinitions.reserve(SurfaceCount);
-
-        for (SurfaceState::FSurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
-        {
-            SurfaceDefinitions.push_back({Surface, {Resolution, Resolution}});
-        }
-
-        std::vector<std::filesystem::path> NormalMapPaths(SurfaceCount);
-        std::vector<bool>                  HasMaterial(SurfaceCount, false);
-
-        for (const Asset::FMeshSection& Section : Mesh.GetSections())
-        {
-            const Asset::FMaterialAsset& Material = Assets.GetMaterial(Section.Material);
-            const std::filesystem::path  NormalPath = Assets.GetTexture(Material.GetNormalTexture()).GetSourcePath();
-
-            if (HasMaterial[Section.Surface] && NormalMapPaths[Section.Surface] != NormalPath)
+            if (DistributionPath.empty())
             {
-                throw std::runtime_error("One Mesh Surface resolves to multiple Normal Maps.");
+                throw std::invalid_argument("A Scene-selected Surface Profile Map path is required.");
             }
-
-            NormalMapPaths[Section.Surface] = NormalPath;
-            HasMaterial[Section.Surface] = true;
         }
 
-        if (std::ranges::find(HasMaterial, false) != HasMaterial.end())
+        std::vector<Asset::FSRProfileAssetHandle>
+        LoadSurfaceProfileTable(Asset::FAssetManager& Assets, const std::vector<std::filesystem::path>& Paths)
         {
-            throw std::runtime_error("Mesh Surface IDs must be dense and have a material section.");
-        }
-
-        const auto                                  CacheStart = std::chrono::steady_clock::now();
-        const SurfaceState::FSurfaceCacheDescriptor CacheDescriptor =
-            SurfaceState::FSurfaceCache::Describe(Mesh.GetVertices(),
-                                                  Mesh.GetTriangles(),
-                                                  SurfaceDefinitions,
-                                                  NormalMapPaths,
-                                                  DistributionPath,
-                                                  Distribution.ProfilePaths,
-                                                  Distribution.ProfileIndicesBySurface);
-        const std::filesystem::path CachePath = SurfaceState::FSurfaceCache::GetPath(
-            MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
-        std::string CacheDiagnostic;
-        auto        CachedGeometry = SurfaceState::FSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
-
-        if (CachedGeometry)
-        {
-            const double LoadMilliseconds =
-                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
-            FLogger::Info("TSurfaceDataManager",
-                          "Loaded .Surface cache: " + CachePath.string() + " (" + std::to_string(LoadMilliseconds) +
-                              " ms, including input fingerprint).");
-        }
-        else
-        {
-            FLogger::Info("TSurfaceDataManager",
-                          "Rebuilding .Surface cache (" + CacheDiagnostic + "): " + CachePath.string());
-            const SurfaceState::FSurfaceMappingData Mapping = SurfaceState::FSurfaceMappingBuilder::Build(
-                Mesh.GetVertices(), Mesh.GetTriangles(), SurfaceDefinitions);
-            for (const std::string& MappingWarning : Mapping.Warnings)
+            std::vector<Asset::FSRProfileAssetHandle> Table;
+            Table.reserve(Paths.size());
+            for (const auto& Path : Paths)
             {
-                if (MappingWarning.starts_with("UV seam texel links were dropped:"))
+                Table.push_back(Assets.LoadSRProfile(Path));
+            }
+            return Table;
+        }
+
+        struct FSurfaceGeometryInputs
+        {
+            std::vector<SurfaceState::FSurfaceDefinition> Definitions;
+            std::vector<std::filesystem::path> NormalMapPaths;
+        };
+
+        FSurfaceGeometryInputs BuildSurfaceGeometryInputs(Asset::FAssetManager& Assets,
+                                                          const Asset::FMeshAsset& Mesh,
+                                                          std::uint32_t Resolution)
+        {
+            SurfaceState::FSurfaceLocalID SurfaceCount = 0;
+
+            for (const Asset::FMeshSection& Section : Mesh.GetSections())
+            {
+                if (Section.Surface == SurfaceState::InvalidSurfaceID)
                 {
-                    FLogger::Warning("TSurfaceDataManager", MappingWarning);
+                    throw std::runtime_error("Mesh section has an invalid Surface ID.");
                 }
+
+                if (Section.Surface == std::numeric_limits<SurfaceState::FSurfaceLocalID>::max() - 1U)
+                {
+                    throw std::overflow_error("Mesh Surface count exceeds the supported range.");
+                }
+
+                SurfaceCount = std::max(SurfaceCount, static_cast<SurfaceState::FSurfaceLocalID>(Section.Surface + 1U));
             }
 
-            std::vector<SurfaceState::FSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
-            CachedGeometry.emplace(SurfaceState::FSurfaceGeometryBuilder::Build(
-                Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileTable.size())));
-            SurfaceState::FSharedSurfaceGeometryData& Geometry = *CachedGeometry;
+            if (SurfaceCount == 0)
+            {
+                throw std::runtime_error("Mesh contains no Surface sections to preprocess.");
+            }
 
+            FSurfaceGeometryInputs Inputs;
+            Inputs.Definitions.reserve(SurfaceCount);
+
+            for (SurfaceState::FSurfaceLocalID Surface = 0; Surface < SurfaceCount; ++Surface)
+            {
+                Inputs.Definitions.push_back({Surface, {Resolution, Resolution}});
+            }
+
+            Inputs.NormalMapPaths.resize(SurfaceCount);
+            std::vector<bool>                  HasMaterial(SurfaceCount, false);
+
+            for (const Asset::FMeshSection& Section : Mesh.GetSections())
+            {
+                const Asset::FMaterialAsset& Material = Assets.GetMaterial(Section.Material);
+                const std::filesystem::path  NormalPath = Assets.GetTexture(Material.GetNormalTexture()).GetSourcePath();
+
+                if (HasMaterial[Section.Surface] && Inputs.NormalMapPaths[Section.Surface] != NormalPath)
+                {
+                    throw std::runtime_error("One Mesh Surface resolves to multiple Normal Maps.");
+                }
+
+                Inputs.NormalMapPaths[Section.Surface] = NormalPath;
+                HasMaterial[Section.Surface] = true;
+            }
+
+            if (std::ranges::find(HasMaterial, false) != HasMaterial.end())
+            {
+                throw std::runtime_error("Mesh Surface IDs must be dense and have a material section.");
+            }
+
+            return Inputs;
+        }
+    } // namespace
+
+    namespace
+    {
+        void PrecomputeTransferNormals(SurfaceState::FSharedSurfaceGeometryData& Geometry,
+                                        const Asset::FMeshAsset& Mesh,
+                                        const std::vector<std::filesystem::path>& NormalMapPaths)
+        {
+            // 텍셀의 UV 접선 공간 노멀을 공유 Surface Geometry에 미리 기록한다.
             std::unordered_map<std::string, Asset::FTextureData> NormalMapPixels;
 
             for (const std::filesystem::path& NormalMapPath : NormalMapPaths)
@@ -239,30 +211,118 @@ namespace MDSS::SurfaceState
             FLogger::Info("TSurfaceDataManager",
                           "Precomputed Normal Map transfer normals for " + std::to_string(MappedNormalCount) + "/" +
                               std::to_string(Geometry.GetTexelCount()) + " Simulation texels.");
-            // 노멀 맵의 텍셀 노멀을 준비한 뒤 공유 형상의 높이와 파생 형상을 전처리한다.
-            const SurfaceState::FMesoGeometryBuildReport MesoReport = SurfaceState::BuildMesoGeometry(Geometry);
-            FLogger::Info("TSurfaceDataManager",
-                          "Integrated Normal Map meso geometry for " + std::to_string(MesoReport.ActiveTexelCount) +
-                              " texels across " + std::to_string(MesoReport.ComponentCount) + " connected charts (" +
-                              std::to_string(MesoReport.IterationCount) + " PCG iterations, relative edge residual " +
-                              std::to_string(MesoReport.RelativeEdgeResidual) + ").");
-            try
-            {
-                SurfaceState::FSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
-                const double BuildMilliseconds =
-                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
-                FLogger::Info("TSurfaceDataManager",
-                              "Saved .Surface cache: " + CachePath.string() + " (" + std::to_string(BuildMilliseconds) +
-                                  " ms, including preprocessing and save).");
-            }
-            catch (const std::exception& Error)
-            {
-                FLogger::Warning("TSurfaceDataManager",
-                                 "Unable to save .Surface cache; using Runtime data: " + std::string(Error.what()));
-            }
         }
 
-        FSurfaceRuntimeData Built(std::move(*CachedGeometry));
+        SurfaceState::FSharedSurfaceGeometryData LoadOrBuildSurfaceGeometry(
+            const Asset::FMeshAsset& Mesh,
+            const Asset::FSurfaceProfileDistribution& Distribution,
+            const FSurfaceGeometryInputs& Inputs,
+            const std::filesystem::path& DistributionPath,
+            std::size_t ProfileCount,
+            std::uint32_t Resolution)
+        {
+            // 캐시 Fingerprint로 입력을 검증하고, miss일 때 geometry를 전처리·저장한다.
+            const auto                                  CacheStart = std::chrono::steady_clock::now();
+            const SurfaceState::FSurfaceCacheDescriptor CacheDescriptor =
+                SurfaceState::FSurfaceCache::Describe(Mesh.GetVertices(),
+                                                      Mesh.GetTriangles(),
+                                                      Inputs.Definitions,
+                                                      Inputs.NormalMapPaths,
+                                                      DistributionPath,
+                                                      Distribution.ProfilePaths,
+                                                      Distribution.ProfileIndicesBySurface);
+            const std::filesystem::path CachePath = SurfaceState::FSurfaceCache::GetPath(
+                MDSS_SURFACE_CACHE_DIR, Mesh.GetSourcePath(), DistributionPath, Resolution);
+            std::string CacheDiagnostic;
+            auto        CachedGeometry = SurfaceState::FSurfaceCache::Load(CachePath, CacheDescriptor, CacheDiagnostic);
+
+            if (CachedGeometry)
+            {
+                const double LoadMilliseconds =
+                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
+                FLogger::Info("TSurfaceDataManager",
+                              "Loaded .Surface cache: " + CachePath.string() + " (" + std::to_string(LoadMilliseconds) +
+                                  " ms, including input fingerprint).");
+            }
+            else
+            {
+                FLogger::Info("TSurfaceDataManager",
+                              "Rebuilding .Surface cache (" + CacheDiagnostic + "): " + CachePath.string());
+                const SurfaceState::FSurfaceMappingData Mapping = SurfaceState::FSurfaceMappingBuilder::Build(
+                    Mesh.GetVertices(), Mesh.GetTriangles(), Inputs.Definitions);
+                for (const std::string& MappingWarning : Mapping.Warnings)
+                {
+                    if (MappingWarning.starts_with("UV seam texel links were dropped:"))
+                    {
+                        FLogger::Warning("TSurfaceDataManager", MappingWarning);
+                    }
+                }
+
+                std::vector<SurfaceState::FSurfaceProfileIndex> ProfileMap = Distribution.BuildTexelProfileMap(Mapping);
+                CachedGeometry.emplace(SurfaceState::FSurfaceGeometryBuilder::Build(
+                    Mapping, std::move(ProfileMap), static_cast<std::uint32_t>(ProfileCount)));
+                SurfaceState::FSharedSurfaceGeometryData& Geometry = *CachedGeometry;
+
+                PrecomputeTransferNormals(Geometry, Mesh, Inputs.NormalMapPaths);
+
+                // 노멀 맵의 텍셀 노멀을 준비한 뒤 공유 형상의 높이와 파생 형상을 전처리한다.
+                const SurfaceState::FMesoGeometryBuildReport MesoReport = SurfaceState::BuildMesoGeometry(Geometry);
+                FLogger::Info("TSurfaceDataManager",
+                              "Integrated Normal Map meso geometry for " + std::to_string(MesoReport.ActiveTexelCount) +
+                                  " texels across " + std::to_string(MesoReport.ComponentCount) + " connected charts (" +
+                                  std::to_string(MesoReport.IterationCount) + " PCG iterations, relative edge residual " +
+                                  std::to_string(MesoReport.RelativeEdgeResidual) + ").");
+                try
+                {
+                    SurfaceState::FSurfaceCache::Save(CachePath, CacheDescriptor, Geometry);
+                    const double BuildMilliseconds =
+                        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - CacheStart).count();
+                    FLogger::Info("TSurfaceDataManager",
+                                  "Saved .Surface cache: " + CachePath.string() + " (" + std::to_string(BuildMilliseconds) +
+                                      " ms, including preprocessing and save).");
+                }
+                catch (const std::exception& Error)
+                {
+                    FLogger::Warning("TSurfaceDataManager",
+                                     "Unable to save .Surface cache; using Runtime data: " + std::string(Error.what()));
+                }
+            }
+
+
+            return std::move(*CachedGeometry);
+        }
+    } // namespace
+
+    FSurfaceDataManager::FSurfaceDataManager(Asset::FAssetManager& Assets) : Assets(Assets)
+    {
+    }
+
+    FSurfaceRuntimeDataHandle
+    FSurfaceDataManager::LoadSurfaceData(Asset::FMeshAssetHandle      MeshHandle,
+                                         const std::filesystem::path& RequestedDistributionPath,
+                                         std::uint32_t                Resolution)
+    {
+        Resolution = ResolveSurfaceResolution(Resolution, SimulationResolution);
+        ValidateSurfaceRequest(MeshHandle, RequestedDistributionPath);
+
+        const Asset::FMeshAsset& Mesh = Assets.GetMesh(MeshHandle);
+        const std::filesystem::path DistributionPath = RequestedDistributionPath;
+        const std::string RuntimeKey = MakeRuntimeSurfaceKey(Mesh.GetSourcePath(), DistributionPath, Resolution);
+
+        if (const auto Found = RuntimeSurfaceAssetsByInputs.find(RuntimeKey);
+            Found != RuntimeSurfaceAssetsByInputs.end())
+        {
+            return Found->second;
+        }
+
+        const Asset::FSurfaceProfileDistribution Distribution =
+            Asset::FSurfaceProfileDistributionLoader::Load(DistributionPath);
+        auto ProfileTable = LoadSurfaceProfileTable(Assets, Distribution.ProfilePaths);
+        const auto Inputs = BuildSurfaceGeometryInputs(Assets, Mesh, Resolution);
+
+        auto Geometry = LoadOrBuildSurfaceGeometry(
+            Mesh, Distribution, Inputs, DistributionPath, ProfileTable.size(), Resolution);
+        FSurfaceRuntimeData Built(std::move(Geometry));
 
         if (RuntimeSurfaceAssets.size() >= InvalidSurfaceRuntimeDataHandle)
         {
@@ -301,6 +361,7 @@ namespace MDSS::SurfaceState
 // 02. Registry and Surface Data Accessors
 // ============================================================
 #pragma region 02_Registry_and_Surface_Data_Accessors
+// Scene의 State Registry와 runtime Surface 자료를 관련 소비자에 제공한다.
 
     std::uint32_t FSurfaceDataManager::GetSimulationResolution() const noexcept
     {

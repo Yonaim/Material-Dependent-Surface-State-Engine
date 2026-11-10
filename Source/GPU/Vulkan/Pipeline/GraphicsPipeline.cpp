@@ -51,6 +51,7 @@ namespace MDSS::GPU
 // 00. Pipeline Lifecycle
 // ============================================================
 #pragma region 00_Pipeline_Lifecycle
+// shader와 layout에서 pipeline을 만들고 소유 pipeline을 해제한다.
 
     FGraphicsPipeline::FGraphicsPipeline(VkDevice                       Device,
                                          VkRenderPass                   FRenderPass,
@@ -242,6 +243,7 @@ namespace MDSS::GPU
 // 01. Pipeline Accessors
 // ============================================================
 #pragma region 01_Pipeline_Accessors
+// 기록 단계에서 사용할 pipeline·layout 식별자를 제공한다.
 
     VkPipeline FGraphicsPipeline::GetHandle() const noexcept
     {
@@ -259,6 +261,7 @@ namespace MDSS::GPU
 // 02. Shader Module Creation
 // ============================================================
 #pragma region 02_Shader_Module_Creation
+// SPIR-V 파일을 읽어 Vulkan shader module을 생성한다.
 
     VkShaderModule FGraphicsPipeline::CreateShaderModule(VkDevice Device, const char* Path)
     {

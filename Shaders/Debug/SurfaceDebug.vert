@@ -1,7 +1,4 @@
-/**
- * @file SurfaceDebug.vert
- * @brief Macro mesh 기반 Surface Debug 데이터를 준비한다. 높이 형상은 TexelGeometry.vert를 사용한다.
- */
+// SurfaceDebug.vert — Macro mesh 기반 Surface Debug 데이터를 준비한다. 높이 형상은 TexelGeometry.vert를 사용한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
@@ -9,6 +6,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -60,6 +58,7 @@ void ApplyMesoOffset(inout vec3 LocalPosition);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Macro mesh 기반 Surface Debug 데이터를 준비한다. 높이 형상은 TexelGeometry.vert를 사용한다.
 
 void main()
 {
@@ -86,9 +85,11 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// Macro mesh 기반 Surface Debug 데이터를 준비한다. 높이 형상은 TexelGeometry.vert를 사용한다.
 
 // 02.00. Evaluate Meso and Final Normals
 // #region 02_00_Evaluate_Meso_and_Final_Normals
+// SurfaceRanges·MesoNormals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 void WriteMesoNormal(mat3 NormalMatrix)
 {
@@ -117,6 +118,7 @@ void WriteMesoNormal(mat3 NormalMatrix)
 
 // 02.01. Apply Preview Position Displacement
 // #region 02_01_Apply_Preview_Position_Displacement
+// 계산 결과를 TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 void ApplyMesoOffset(inout vec3 LocalPosition)
 {

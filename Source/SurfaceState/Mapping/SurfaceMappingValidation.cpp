@@ -15,6 +15,7 @@ namespace MDSS::SurfaceState
 // 00. Mapping Validation Helpers
 // ============================================================
 #pragma region 00_Mapping_Validation_Helpers
+// mapping의 sentinel·범위·연결 규칙을 검사할 공통 판단을 제공한다.
 
     namespace
     {
@@ -37,6 +38,7 @@ namespace MDSS::SurfaceState
 // 01. Surface Mapping Validation
 // ============================================================
 #pragma region 01_Surface_Mapping_Validation
+// 생성한 texel·이웃·seam의 불변식을 검사해 진단을 반환한다.
 
     void ValidateSurfaceMapping(const FSurfaceMappingData& Mapping)
     {

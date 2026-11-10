@@ -1,3 +1,8 @@
+/**
+ * @file SharedGeometryPacking.cpp
+ * @brief 공유 texel 형상과 이웃 연결을 shader 입력용 GPU record로 변환한다.
+ */
+
 #include "SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h"
 
 #include <algorithm>
@@ -19,6 +24,7 @@ namespace MDSS::SurfaceState
 // 00. Shared Geometry Upload
 // ============================================================
 #pragma region 00_Shared_Geometry_Upload
+// 공유 texel·이웃·정적 형상 record를 GPU buffer에 올린다.
 
     FSurfaceGPUSharedGeometryUpload PackSharedSurfaceGeometry(const FSharedSurfaceGeometryData&     Geometry,
                                                               std::span<const FSurfaceProfileIndex> ProfileIndexRemap)

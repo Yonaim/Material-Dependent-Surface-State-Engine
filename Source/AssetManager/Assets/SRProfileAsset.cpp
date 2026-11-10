@@ -13,6 +13,7 @@ namespace MDSS::Asset
 // 00. FSRProfileAsset Implementation
 // ============================================================
 #pragma region 00_TSRProfileAsset_Implementation
+// 검증된 Surface Response Profile 데이터의 에셋 표현.
 
     FSRProfileAsset::FSRProfileAsset(FAssetID                                  ID,
                                      std::string                               Name,

@@ -20,6 +20,7 @@ namespace MDSS::SurfaceState
 // 00. Differential Geometry Helpers
 // ============================================================
 #pragma region 00_Differential_Geometry_Helpers
+// 이웃 표본에서 기울기·곡률·오목함 계산에 필요한 국소 자료를 만든다.
 
     namespace
     {
@@ -293,6 +294,7 @@ namespace MDSS::SurfaceState
 // 01. Meso Geometry Build
 // ============================================================
 #pragma region 01_Meso_Geometry_Build
+// Normal Map 높이 입력을 실제 texel Meso 형상과 미분 값으로 전처리한다.
 
     FMesoGeometryBuildReport BuildMesoGeometry(FSharedSurfaceGeometryData& Geometry)
     {

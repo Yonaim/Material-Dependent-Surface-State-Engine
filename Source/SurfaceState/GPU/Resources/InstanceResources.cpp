@@ -1,3 +1,8 @@
+/**
+ * @file InstanceResources.cpp
+ * @brief instance별 State·Solver scratch·동적 형상 GPU 버퍼를 관리한다.
+ */
+
 #include "SurfaceState/GPU/Resources/InstanceResources.h"
 
 #include "SurfaceState/GPU/Resources/ResourceBufferHelpers.h"
@@ -19,6 +24,7 @@ namespace MDSS::SurfaceState
 // 00. Instance State Resources
 // ============================================================
 #pragma region 00_Instance_State_Resources
+// State A/B와 scratch의 크기를 검증하고 선택한 저장 형식으로 할당한다.
 
     FSurfaceInstanceGPUResources::FSurfaceInstanceGPUResources(
         VkPhysicalDevice                    PhysicalDevice,
@@ -30,7 +36,8 @@ namespace MDSS::SurfaceState
         const std::vector<float>&           WorldTexelAreas,
         FSurfaceGPUBufferPool*              Pool,
         FSurfaceScratchStorageFormat        Storage,
-        std::uint32_t                       MaxReactionCount)
+        std::uint32_t                       MaxReactionCount,
+        bool                                bResearchReactionLedger)
         : TexelCount(TexelCount), ChannelCount(ChannelCount)
     {
         if (TexelCount == 0 || ChannelCount == 0)
@@ -60,11 +67,12 @@ namespace MDSS::SurfaceState
         ReactionCapacity = MaxReactionCount;
         const std::size_t ReactionStride = ChannelCount * 5U + MaxReactionCount + 4U;
 
-        if (MaxReactionCount && TexelCount > std::numeric_limits<std::size_t>::max() / ReactionStride)
+        const std::size_t AllocationStride = ReactionStride + (bResearchReactionLedger ? MaxReactionCount : 0U);
+        if (MaxReactionCount && TexelCount > std::numeric_limits<std::size_t>::max() / AllocationStride)
             throw std::overflow_error("Reaction scratch size overflow.");
         ReactionScratchBuffer = CreateZeroedScalarBuffer(PhysicalDevice,
                                                          Device,
-                                                         MaxReactionCount ? TexelCount * ReactionStride : 1U,
+                                                         MaxReactionCount ? TexelCount * AllocationStride : 1U,
                                                          MaxRange,
                                                          StorageUsage,
                                                          GPU::EGPUBufferMemoryCategory::SurfaceState,

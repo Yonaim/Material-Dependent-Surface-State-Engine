@@ -1,3 +1,4 @@
+# 연구용 모듈 shader variant의 생성 명령과 의존성을 구성한다.
 # Reuse the exact channel-local numerical provider body; change only the selected channel range.
 # Generated files are research-only and are not product shader catalog entries.
 set(MDSS_MODULAR_OUTPUT "${CMAKE_BINARY_DIR}/research/$<CONFIG>")

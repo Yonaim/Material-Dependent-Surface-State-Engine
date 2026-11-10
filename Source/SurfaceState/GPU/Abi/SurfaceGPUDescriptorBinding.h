@@ -1,3 +1,8 @@
+/**
+ * @file SurfaceGPUDescriptorBinding.h
+ * @brief Solver·geometry·render가 공유하는 storage buffer binding 번호를 정의한다.
+ */
+
 #pragma once
 #include <cstdint>
 

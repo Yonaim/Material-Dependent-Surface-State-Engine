@@ -15,6 +15,7 @@ namespace MDSS::SurfaceState
 // 00. Resolution and Texel Validation
 // ============================================================
 #pragma region 00_Resolution_and_Texel_Validation
+// 해상도와 texel 범위를 확인해 형상 자료의 유효성을 검증한다.
 
     std::size_t FSurfaceResolution::GetTexelCount() const
     {
@@ -43,6 +44,7 @@ namespace MDSS::SurfaceState
 // 01. Shared Geometry Data
 // ============================================================
 #pragma region 01_Shared_Geometry_Data
+// 여러 instance가 공유할 texel·topology·형상 자료를 보관한다.
 
     FSharedSurfaceGeometryData::FSharedSurfaceGeometryData(std::vector<FSurfaceDefinition> SurfaceDefinitions)
     {

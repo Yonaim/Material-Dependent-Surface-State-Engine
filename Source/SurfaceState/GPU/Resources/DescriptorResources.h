@@ -60,6 +60,14 @@ namespace MDSS::SurfaceState
                                          const FSurfaceInstanceGPUResources&       Instance);
         ~FSurfaceStateDescriptorResources();
 
+        /**
+         * @brief 기존 layout·AB/BA set을 유지하며 instance buffer의 handle과 range를 갱신한다.
+         * @pre 호출자는 이 set을 사용하는 GPU 작업의 완료를 기다려야 한다.
+         * @param Instance 공유 Geometry·Profile과 texel/channel 수 및 Reaction 용량이 호환되는 자원.
+         * @throws std::invalid_argument instance 자원의 크기나 Reaction 용량이 호환되지 않을 때.
+         */
+        void RebindInstanceBuffers(const FSurfaceInstanceGPUResources& Instance);
+
         FSurfaceStateDescriptorResources(const FSurfaceStateDescriptorResources&) = delete;
         FSurfaceStateDescriptorResources& operator=(const FSurfaceStateDescriptorResources&) = delete;
         FSurfaceStateDescriptorResources(FSurfaceStateDescriptorResources&&) = delete;

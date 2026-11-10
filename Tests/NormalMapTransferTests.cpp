@@ -16,6 +16,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region 00_Fixtures_and_Test_Support
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace
 {
@@ -95,6 +96,7 @@ namespace
 // 01. TestFlatAndTiltedNormals
 // ============================================================
 #pragma region 01_TestFlatAndTiltedNormals
+// 기대 조건: flat normal map should produce a transfer normal
 
     void TestFlatAndTiltedNormals()
     {
@@ -123,6 +125,7 @@ namespace
 // 02. TestBarycentricUVAndSeamCharts
 // ============================================================
 #pragma region 02_TestBarycentricUVAndSeamCharts
+// 기대 조건: first UV chart should sample successfully
 
     void TestBarycentricUVAndSeamCharts()
     {
@@ -169,6 +172,7 @@ namespace
 // 03. TestTangentHandednessAndRepeat
 // ============================================================
 #pragma region 03_TestTangentHandednessAndRepeat
+// 기대 조건: positive-handed tangent frame should produce a normal
 
     void TestTangentHandednessAndRepeat()
     {
@@ -206,6 +210,7 @@ namespace
 // 04. TestInvalidInputsUseFallbackSignal
 // ============================================================
 #pragma region 04_TestInvalidInputsUseFallbackSignal
+// 기대 조건: degenerate tangent should request geometric-normal fallback
 
     void TestInvalidInputsUseFallbackSignal()
     {
@@ -253,6 +258,7 @@ namespace
 // 05. Test Entry Point
 // ============================================================
 #pragma region 05_Test_Entry_Point
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main()
 {

@@ -95,6 +95,7 @@ namespace MDSS::Rendering
 // 00. Render State Texture Lifecycle
 // ============================================================
 #pragma region 00_Render_State_Texture_Lifecycle
+// 렌더 샘플링용 State texture와 갱신 자원을 관리한다.
 
     FRenderStateTexture::FRenderStateTexture(VkPhysicalDevice                                PhysicalDevice,
                                              VkDevice                                        Device,
@@ -361,6 +362,7 @@ namespace MDSS::Rendering
 // 01. Descriptor Access
 // ============================================================
 #pragma region 01_Descriptor_Access
+// 현재 자원 구성이 사용하는 descriptor set·layout을 제공한다.
 
     VkDescriptorSet FRenderStateTexture::GetSet(std::size_t Instance, bool bSmoothed) const noexcept
     {
@@ -375,6 +377,7 @@ namespace MDSS::Rendering
 // 02. Texture Command Recording
 // ============================================================
 #pragma region 02_Texture_Command_Recording
+// State buffer를 표시 texture로 변환하고 후속 읽기 barrier를 기록한다.
 
     void FRenderStateTexture::Record(VkCommandBuffer                                 Command,
                                      const SurfaceState::FSurfaceGPUResourceManager& Resources,

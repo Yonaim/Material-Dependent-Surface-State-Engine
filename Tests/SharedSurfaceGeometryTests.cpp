@@ -29,6 +29,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region "00_Fixtures_and_Test_Support"
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace
 {
@@ -75,6 +76,7 @@ namespace
 // 01. TestProfileDistribution
 // ============================================================
 #pragma region "01_TestProfileDistribution"
+// 기대 조건: distribution should retain its ordered Profile path table
 
     void TestProfileDistribution()
     {
@@ -130,6 +132,7 @@ namespace
 // 02. TestGeometryBuild
 // ============================================================
 #pragma region "02_TestGeometryBuild"
+// 기대 조건: shared geometry should preserve mapping texel count
 
     void TestGeometryBuild()
     {
@@ -230,6 +233,7 @@ namespace
 // 03. TestTexelMesh
 // ============================================================
 #pragma region "03_TestTexelMesh"
+// 기대 조건: texel grids should produce two triangles per complete cell with separate Surface ranges
 
     void TestTexelMesh()
     {
@@ -254,13 +258,13 @@ namespace
         const auto Mesh = BuildSurfaceTexelMesh(Geometry);
         Check(Mesh.Surfaces.size() == 2 && Mesh.Surfaces[0].IndexCount == 24 && Mesh.Surfaces[1].IndexCount == 6,
               "texel grids should produce two triangles per complete cell with separate Surface ranges");
-        Check(std::ranges::find(Mesh.Indices, 4U) != Mesh.Indices.end(),
+        Check(std::ranges::any_of(Mesh.Indices, [&](std::uint32_t I) { return Mesh.Vertices[I].Samples.x == 4U; }),
               "interior texels must participate even when the source mesh only has corner vertices");
         for (std::size_t I = 0; I < Mesh.Indices.size(); I += 3)
         {
-            const auto& A = Geometry.GetTexels()[Mesh.Indices[I]];
-            const auto& B = Geometry.GetTexels()[Mesh.Indices[I + 1]];
-            const auto& C = Geometry.GetTexels()[Mesh.Indices[I + 2]];
+            const auto& A = Geometry.GetTexels()[Mesh.Vertices[Mesh.Indices[I]].Samples.x];
+            const auto& B = Geometry.GetTexels()[Mesh.Vertices[Mesh.Indices[I + 1]].Samples.x];
+            const auto& C = Geometry.GetTexels()[Mesh.Vertices[Mesh.Indices[I + 2]].Samples.x];
             Check(A.Surface == B.Surface && A.Surface == C.Surface && A.Chart == B.Chart && A.Chart == C.Chart,
                   "triangles must not connect different Surfaces or charts");
             Check(glm::dot(glm::cross(B.Position - A.Position, C.Position - A.Position), A.Normal) > 0,
@@ -269,8 +273,17 @@ namespace
 
         Geometry.GetTexels()[4].Surface = SurfaceState::InvalidSurfaceID;
         const auto Hole = BuildSurfaceTexelMesh(Geometry);
-        Check(std::ranges::find(Hole.Indices, 4U) == Hole.Indices.end() && Hole.Surfaces[0].IndexCount == 12,
-              "invalid texels must be omitted while retaining valid three-corner cell triangles");
+        Check(std::ranges::all_of(Hole.Indices,
+                                  [&](std::uint32_t I)
+                                  {
+                                      if (I >= Hole.Vertices.size())
+                                          return false;
+                                      const auto T = Hole.Vertices[I].Samples.x;
+                                      return T < Geometry.GetTexels().size() && Geometry.GetTexels()[T].IsValid();
+                                  }),
+              "render triangles must only reference vertices that sample valid texels");
+        Check(Hole.Surfaces[0].IndexCount == 12,
+              "removing the center texel must retain four valid three-corner cell triangles");
         Geometry.GetTexels()[10].Chart = 42;
         Check(BuildSurfaceTexelMesh(Geometry).Surfaces[1].IndexCount == 3,
               "chart boundaries must not be bridged by the regular UV grid");
@@ -288,6 +301,7 @@ namespace
 // 04. TestStitchedSourceMesh
 // ============================================================
 #pragma region "04_TestStitchedSourceMesh"
+// 기대 조건: refined source triangles must retain front-facing winding
 
     void TestStitchedSourceMesh()
     {
@@ -374,6 +388,7 @@ namespace
 // 05. TestCubeTopDiagonalDisplacement
 // ============================================================
 #pragma region "05_TestCubeTopDiagonalDisplacement"
+// 기대 조건: cube top diagonal displacement must use its incident top-face normals
 
     void TestCubeTopDiagonalDisplacement()
     {
@@ -417,6 +432,7 @@ namespace
 // 06. TestRuntimePreprocessing
 // ============================================================
 #pragma region "06_TestRuntimePreprocessing"
+// 기대 조건: Runtime preprocessing should produce one geometry texel per mapping texel
 
     void TestRuntimePreprocessing()
     {
@@ -450,6 +466,7 @@ namespace
 // 07. TestMacroConcavityWithoutNormalMap
 // ============================================================
 #pragma region "07_TestMacroConcavityWithoutNormalMap"
+// 기대 조건: flat Macro surface should have no concavity
 
     void TestMacroConcavityWithoutNormalMap()
     {
@@ -495,6 +512,7 @@ namespace
 // 08. Test Entry Point
 // ============================================================
 #pragma region "08_Test_Entry_Point"
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main()
 {

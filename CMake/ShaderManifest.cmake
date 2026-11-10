@@ -1,3 +1,4 @@
+# 제품 셰이더 entry와 variant를 등록해 SPIR-V 생성 규칙에 연결한다.
 # The only hand-maintained list of shader entry points and compiled variants.
 # Paths are relative to Shaders/. Include-only .glsl files are dependencies,
 # never independent SPIR-V outputs.

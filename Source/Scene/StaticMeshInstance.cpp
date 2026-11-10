@@ -13,6 +13,7 @@ namespace MDSS
 // 00. FStaticMeshInstance Implementation
 // ============================================================
 #pragma region 00_TStaticMeshInstance_Implementation
+// 정적 메시 에셋 참조와 인스턴스 transform.
 
     FStaticMeshInstance::FStaticMeshInstance(Asset::FMeshAssetHandle Mesh, FTransform InstanceTransform)
         : FStaticMeshInstance(Mesh, SurfaceState::InvalidSurfaceRuntimeDataHandle, std::move(InstanceTransform))

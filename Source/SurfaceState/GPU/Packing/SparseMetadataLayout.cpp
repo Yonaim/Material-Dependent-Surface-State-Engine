@@ -1,3 +1,8 @@
+/**
+ * @file SparseMetadataLayout.cpp
+ * @brief sparse 실행의 workgroup 목록·마스크·간접 명령 주소를 계산한다.
+ */
+
 #include "SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h"
 
 #include <stdexcept>

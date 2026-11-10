@@ -1,9 +1,13 @@
-"""Prepare immutable conditions, invoke the production GPU harness, and retain every attempt."""
+"""반응·형상 결합 조건을 headless 도구로 실행하고 manifest를 남긴다.
+
+Prepare immutable conditions, invoke the production GPU harness, and retain every attempt.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse
 import collections
@@ -28,6 +32,7 @@ EXE = ROOT / "Build/Release/MDSS_CouplingStudy.exe"
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 반응·형상 결합 조건을 headless 도구로 실행하고 manifest를 남긴다.
 
 
 def stamp():
@@ -144,7 +149,7 @@ def prepare():
             question="State-driven geometry causal ablation",
             status="planned",
             experiments=["PERF-041-coupling"],
-            report="Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md",
+            report="Docs/Agent-Vault/05_Experiments/02_Performance-Measurements.md",
         ),
     )
     return plan
@@ -276,6 +281,7 @@ def run(stage, selected, sparse=False, repeat=False):
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 반응·형상 결합 조건을 headless 도구로 실행하고 manifest를 남긴다.
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

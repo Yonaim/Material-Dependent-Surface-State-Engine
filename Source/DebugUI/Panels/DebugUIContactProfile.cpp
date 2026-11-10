@@ -1,3 +1,8 @@
+/**
+ * @file DebugUIContactProfile.cpp
+ * @brief 접촉 입력과 Surface Profile의 상태·반응 설정을 조회하고 편집한다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
@@ -6,6 +11,7 @@ namespace MDSS
 // 00. Contact Input
 // ============================================================
 #pragma region 00_Contact_Input
+// 선택한 State와 영역·강도로 표면 접촉 입력을 생성한다.
 
     void FDebugUI::DrawContactInputTab()
     {
@@ -155,9 +161,34 @@ namespace MDSS
 // 01. Profile Tuning
 // ============================================================
 #pragma region 01_Profile_Tuning
+// 선택한 Profile의 파라미터를 편집하고 runtime 갱신 경계로 전달한다.
 
     void FDebugUI::DrawProfileTuningTab(FScene& SceneData)
     {
+        // 현재 Scene에서 편집 가능한 Profile을 고른 뒤 State별 draft를 준비하고 적용한다.
+        const auto SceneProfiles = CollectSceneProfiles(SceneData);
+
+        if (SceneProfiles.empty())
+        {
+            ImGui::TextDisabled("The current scene has no Surface Profiles.");
+            return;
+        }
+
+        DrawProfileSelector(SceneProfiles);
+        DrawProfileReactionRules();
+
+        if (!DrawProfileStateSelector() || !PrepareProfileDraft())
+        {
+            return;
+        }
+
+        DrawProfileParameterControls();
+        DrawProfileOverrideActions();
+    }
+
+    std::vector<Asset::FSRProfileAssetHandle> FDebugUI::CollectSceneProfiles(const FScene& SceneData) const
+    {
+        // 현재 씬의 유효한 Surface data에서 중복 없는 Profile 목록을 수집한다.
         std::vector<Asset::FSRProfileAssetHandle> SceneProfiles;
 
         for (const FStaticMeshInstance& Instance : SceneData.GetStaticMeshInstances())
@@ -178,12 +209,12 @@ namespace MDSS
             }
         }
 
-        if (SceneProfiles.empty())
-        {
-            ImGui::TextDisabled("The current scene has no Surface Profiles.");
-            return;
-        }
+        return SceneProfiles;
+    }
 
+    void FDebugUI::DrawProfileSelector(const std::vector<Asset::FSRProfileAssetHandle>& SceneProfiles)
+    {
+        // Profile 변경 시 Draft 키를 무효화해 다른 Profile 값과 섞이지 않게 한다.
         if (std::find(SceneProfiles.begin(), SceneProfiles.end(), ProfileEditing.Profile) == SceneProfiles.end())
         {
             ProfileEditing.Profile = SceneProfiles.front();
@@ -216,6 +247,11 @@ namespace MDSS
             EndLabeledCombo();
         }
 
+    }
+
+    void FDebugUI::DrawProfileReactionRules()
+    {
+        // Profile Asset의 Reaction 규칙을 읽기 전용으로 표시한다.
         const auto& ReactionRules = AssetManager->GetSRProfile(ProfileEditing.Profile).GetData().Reactions;
 
         if (!ReactionRules.empty() && ImGui::TreeNode("ReactionRules", "Reaction rules (%zu)", ReactionRules.size()))
@@ -248,13 +284,18 @@ namespace MDSS
             ImGui::TreePop();
         }
 
+    }
+
+    bool FDebugUI::DrawProfileStateSelector()
+    {
+        // 현재 등록된 State 채널에서 편집 대상을 선택한다.
         const SurfaceState::FSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
         const std::size_t                          StateCount = Registry.GetStateCount();
 
         if (StateCount == 0)
         {
             ImGui::TextDisabled("No State channels are registered.");
-            return;
+            return false;
         }
 
         if (ProfileEditing.State >= StateCount)
@@ -289,6 +330,13 @@ namespace MDSS
             EndLabeledCombo();
         }
 
+        return true;
+    }
+
+    bool FDebugUI::PrepareProfileDraft()
+    {
+        // 선택한 Profile·State의 기존 draft 또는 해석된 런타임 값을 복원한다.
+        const SurfaceState::FSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
         const std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> Key{ProfileEditing.Profile,
                                                                                   ProfileEditing.State};
         if (ProfileEditing.DraftKey != Key)
@@ -334,13 +382,41 @@ namespace MDSS
         if (!bProfileSupportsState || !ProfileEditing.bAvailable)
         {
             ImGui::TextDisabled("This Profile does not define the selected State.");
-            return;
+            return false;
         }
 
+        return true;
+    }
+
+    void FDebugUI::DrawProfileParameterControls()
+    {
+        // 서로 관련된 런타임 파라미터를 단계별로 편집하고 Dirty 상태를 기록한다.
+        const std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> Key{ProfileEditing.Profile,
+                                                                                  ProfileEditing.State};
         ImGui::Separator();
         ImGui::TextDisabled("Runtime only. Apply updates the current scene; source files stay unchanged.");
         ImGui::TextDisabled("Runtime parameters; accumulation factors also drive the debug preview.");
         bool bChanged = false;
+        DrawProfileCapacityControls(bChanged);
+
+        DrawProfileTransportControls(bChanged);
+
+        DrawProfileDecayControls(bChanged);
+
+        DrawProfileAccumulationControls(bChanged);
+
+        if (bChanged)
+        {
+            ProfileEditing.bDirty = true;
+            ProfileEditing.DirtyDrafts.insert(Key);
+            ProfileEditing.Drafts[Key] = ProfileEditing.Draft;
+        }
+
+    }
+
+    void FDebugUI::DrawProfileCapacityControls(bool& bChanged)
+    {
+        // State의 capacity 및 입력 배율을 편집한다.
         bChanged |= LabeledDragFloat("Capacity", &ProfileEditing.Draft.StateCapacity, 0.01F, 0.001F, 1000.0F, "%.3f");
 
         if (ImGui::IsItemHovered())
@@ -350,6 +426,11 @@ namespace MDSS
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip(
                 "접촉 입력으로 이 State가 추가되는 양의 배율입니다. 값이 클수록 같은 입력에서 더 많이 쌓입니다.");
+    }
+
+    void FDebugUI::DrawProfileTransportControls(bool& bChanged)
+    {
+        // 포화도 이동·중력·오목면 통과 저항을 편집한다.
         DrawSectionHeader("Transport: flow", 6.0F, 2.0F);
         bChanged |=
             LabeledSliderFloat("Saturation spread", &ProfileEditing.Draft.SaturationTransferFactor, 0.0F, 1.0F, "%.3f");
@@ -365,6 +446,11 @@ namespace MDSS
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("더 오목하지 않은 이웃 방향으로 이동할 때 수송을 줄입니다. 홈이 차오를수록 "
                                   "저항은 감소하고, 완전히 차면 적용되지 않습니다.");
+    }
+
+    void FDebugUI::DrawProfileDecayControls(bool& bChanged)
+    {
+        // State 감소율과 오목면 감소 방지 계수를 편집한다.
         DrawSectionHeader("Decay", 6.0F, 2.0F);
         bChanged |= LabeledDragFloat("Decay /s", &ProfileEditing.Draft.DecayRate, 0.01F, 0.0F, 100.0F, "%.3f");
 
@@ -375,6 +461,11 @@ namespace MDSS
         if (ImGui::IsItemHovered())
             SetDescriptionTooltip("오목한 텍셀에서 State의 감소를 줄입니다. 홈이 차오를수록 보호 효과가 "
                                   "감소하며 수송 속도에는 직접 영향을 주지 않습니다.");
+    }
+
+    void FDebugUI::DrawProfileAccumulationControls(bool& bChanged)
+    {
+        // 누적·채움·두께 변환 계수를 편집한다.
         DrawSectionHeader("Accumulation", 6.0F, 2.0F);
         bChanged |=
             LabeledDragFloat("Accumulation", &ProfileEditing.Draft.AccumulationFactor, 0.01F, 0.0F, 1000.0F, "%.3f");
@@ -392,13 +483,16 @@ namespace MDSS
             SetDescriptionTooltip(
                 "기준 면적당 누적량을 표면 위 적층 두께(월드 길이)로 환산합니다. 0이면 표면 위 적층과 cavity 초과분의 "
                 "두께는 0이지만, 기존 cavity를 채우는 높이에는 영향을 주지 않습니다.");
-        if (bChanged)
-        {
-            ProfileEditing.bDirty = true;
-            ProfileEditing.DirtyDrafts.insert(Key);
-            ProfileEditing.Drafts[Key] = ProfileEditing.Draft;
-        }
+    }
 
+    void FDebugUI::DrawProfileOverrideActions()
+    {
+        // Apply는 런타임 override를 갱신하며 Restore는 원래 Profile 값으로 복구한다.
+        const SurfaceState::FSurfaceStateRegistry& Registry = SurfaceDataManager->GetSurfaceStateRegistry();
+        const std::pair<Asset::FSRProfileAssetHandle, SurfaceState::FStateId> Key{ProfileEditing.Profile,
+                                                                                  ProfileEditing.State};
+        const SurfaceState::FRegisteredSurfaceResponseProfileData Resolved =
+            Registry.ResolveProfile(AssetManager->GetSRProfile(ProfileEditing.Profile).GetData());
         if (ProfileEditing.bDirty)
         {
             ImGui::TextColored({1.0F, 0.78F, 0.24F, 1.0F}, "Changes not applied");

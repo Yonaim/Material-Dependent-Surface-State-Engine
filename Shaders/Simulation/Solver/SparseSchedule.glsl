@@ -1,10 +1,13 @@
+// SparseSchedule.glsl — Solver·geometry workgroup 목록과 채널 마스크를 갱신한다.
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// Solver·geometry workgroup 목록과 채널 마스크를 갱신한다.
 
 // 00.00. Persistent Solver Schedule Layout
 // #region 00_00_Persistent_Solver_Schedule_Layout
+// A/B 세대를 유지하는 활성 목록과 channel mask의 주소를 계산한다.
 
 uint sparseWorkgroupCount()
 {
@@ -113,6 +116,7 @@ uint solverNextWorkgroupMaskBase()
 
 // 00.01. Input Accumulation and Geometry Layout
 // #region 00_01_Input_Accumulation_and_Geometry_Layout
+// 입력 활성·적층 높이·geometry dispatch 자료의 주소 범위를 구분한다.
 
 uint inputScheduleCountIndex()
 {
@@ -168,6 +172,7 @@ uint geometryScheduleListBase()
 
 // 00.02. Resolve Active Workgroups and Channels
 // #region 00_02_Resolve_Active_Workgroups_and_Channels
+// AccumulationHeights 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 uint solverOriginalGroup()
 {
@@ -243,6 +248,7 @@ bool isChannelActive(uint ChannelIndex, uint OriginalGroup)
 
 // 00.03. Publish Next Solver Activity
 // #region 00_03_Publish_Next_Solver_Activity
+// 계산 결과를 AccumulationHeights 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 void scheduleNextSolverGroup(uint Group)
 {
@@ -309,6 +315,7 @@ void scheduleNextSolverTexel(uint TexelIndex, uint ChannelMask)
 
 // 00.04. Publish Accumulation Workgroups
 // #region 00_04_Publish_Accumulation_Workgroups
+// 계산 결과를 AccumulationHeights 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 void scheduleAccumulationGroup(uint Group)
 {

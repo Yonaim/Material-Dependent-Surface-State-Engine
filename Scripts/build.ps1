@@ -1,3 +1,4 @@
+# 의존성과 빌드 캐시를 확인하고 프로젝트의 CMake 빌드를 실행한다.
 param(
     [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$Configuration = "Debug",
@@ -10,6 +11,7 @@ param(
 # 00. Environment and Prerequisites
 # ============================================================
 #region 00_Environment_and_Prerequisites
+# 도구·SDK·실행 입력을 검사해 빠진 전제조건에서 즉시 중단한다.
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
@@ -26,6 +28,7 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
 # 01. Relocated Cache Preservation
 # ============================================================
 #region 01_Relocated_Cache_Preservation
+# 다른 프로젝트 경로의 CMake cache가 발견되면 기존 Build를 보관한다.
 
 # Match the Bash helper's behavior when a project directory has moved and the
 # existing CMake cache still points at its old location.
@@ -60,6 +63,7 @@ if (Test-Path -LiteralPath $BuildDir -PathType Container) {
 # 02. Configure and Build
 # ============================================================
 #region 02_Configure_and_Build
+# 선택한 구성 옵션으로 CMake 설정과 빌드를 순서대로 실행한다.
 
 # Let CMake choose the platform's default generator, matching Scripts/build.sh.
 # Additional arguments can override cache entries, for example:

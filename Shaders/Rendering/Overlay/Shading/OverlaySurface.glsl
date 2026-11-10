@@ -1,7 +1,4 @@
-/**
- * @file OverlaySurface.glsl
- * @brief Heat, Lava, WaterFilm, Mud overlay fragment shader들이 공유하는 coverage 기반 조명 경로다.
- */
+// OverlaySurface.glsl — Heat, Lava, WaterFilm, Mud overlay fragment shader들이 공유하는 coverage 기반 조명 경로다.
 #ifndef MDSS_OVERLAY_SURFACE
 #define MDSS_OVERLAY_SURFACE
 
@@ -20,6 +17,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(set = 2, binding = 0, std430) readonly buffer TComputedVertices
 {
@@ -85,6 +83,7 @@ void CompositeOverlayLayers(vec4 States,
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Heat, Lava, WaterFilm, Mud overlay fragment shader들이 공유하는 coverage 기반 조명 경로다.
 
 void main()
 {
@@ -152,11 +151,13 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// Heat, Lava, WaterFilm, Mud overlay fragment shader들이 공유하는 coverage 기반 조명 경로다.
 
 #ifdef OVERLAY_COMBINED
 
 // 02.00. Evaluate Combined Material States
 // #region 02_00_Evaluate_Combined_Material_States
+// Mud·WaterFilm·Lava·Ice의 State 조합을 공통 적층 외형에 반영한다.
 
 void ShadeCombinedOverlay(float Cutoff)
 {
@@ -273,6 +274,7 @@ vec4 SampleCombinedOverlayStates(uint EnabledEffects,
 
 // 02.01. Resolve Combined Overlay Normal
 // #region 02_01_Resolve_Combined_Overlay_Normal
+// 적층 형상과 재질 normal을 조명에 사용할 하나의 방향으로 맞춘다.
 
 vec3 ResolveCombinedOverlayNormal(inout vec4 States,
                                   uint ShadingDiagnostic,
@@ -326,6 +328,7 @@ vec3 ResolveCombinedOverlayNormal(inout vec4 States,
 
 // 02.02. Composite Accumulated Material Layers
 // #region 02_02_Composite_Accumulated_Material_Layers
+// 재질별 coverage와 투명도를 사용해 보이는 적층 결과를 합성한다.
 
 void CompositeOverlayLayers(vec4 States,
                             uint EnabledEffects,
@@ -420,6 +423,7 @@ void CompositeOverlayLayers(vec4 States,
 
 // 02.03. Filter Pixel Space Overlay Normals
 // #region 02_03_Filter_Pixel_Space_Overlay_Normals
+// SurfaceRanges·TexelSurfaceIndices·TexelProfileIndices 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback)
 {
@@ -490,6 +494,7 @@ vec4 SamplePixelOverlayNormal(uint Surface, vec2 UV, vec3 Fallback)
 
 // 02.04. Sample Seam Partner States and Visibility
 // #region 02_04_Sample_Seam_Partner_States_and_Visibility
+// 계산 결과를 RenderSamplingBoundaryFlags·TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 bool SampleSeamPartnerStates(uint Surface,
                              vec2 UV,

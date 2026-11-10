@@ -1,8 +1,10 @@
+// StateFinalize.glsl — 최종 State 변화에서 다음 실행·적층 높이 갱신 대상과 진단을 계산한다.
 
 // ============================================================
 // 00. State Finalization
 // ============================================================
 // #region 00_State_Finalization
+// State 변화가 다음 Solver와 적층 높이 갱신 대상에 미치는 영향을 계산한다.
 
 bool accumulationContributionChanged(uint TexelIndex, uint ChannelIndex, float OldState, float NewState)
 {

@@ -1,13 +1,9 @@
-/**
-
- * @file Lava.glsl
- * @brief 선택적으로 사용하는 Lava 상태를 밝은 용융층 색과 emission으로 표현한다.
- */
-
+// Lava.glsl — 선택적으로 사용하는 Lava 상태를 밝은 용융층 색과 emission으로 표현한다.
 // ============================================================
 // 00. Lava Appearance
 // ============================================================
 // #region 00_Lava_Appearance
+// Lava State가 주는 고온 발광과 표면 재질 변화를 계산한다.
 
 float LavaVisualAmount(float Coverage)
 {

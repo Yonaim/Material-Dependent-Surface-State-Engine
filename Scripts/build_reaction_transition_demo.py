@@ -1,9 +1,13 @@
-"""Build a side-by-side consuming Transition and multi-input Reaction demo."""
+"""소비형 Transition과 다중 입력 Reaction을 비교하는 세 판의 자산을 생성한다.
+
+Build a side-by-side consuming Transition and multi-input Reaction demo.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 
@@ -25,6 +29,7 @@ PLATE_MESHES = ROOT / "Assets/Meshes/MarbleCube"
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 소비형 Transition과 다중 입력 Reaction을 비교하는 세 판의 자산을 생성한다.
 
 
 def save(path: Path, value: dict) -> None:
@@ -316,6 +321,7 @@ def build_scene() -> None:
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 소비형 Transition과 다중 입력 Reaction을 비교하는 세 판의 자산을 생성한다.
 
 if __name__ == "__main__":
     build_profiles()

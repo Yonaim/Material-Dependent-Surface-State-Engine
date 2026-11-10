@@ -1,3 +1,4 @@
+# 기존 빌드의 실행 파일을 찾아 명령행 인수를 전달한다.
 param(
     [ValidateSet("Debug", "Release", "RelWithDebInfo", "MinSizeRel")]
     [string]$Configuration = "Debug",

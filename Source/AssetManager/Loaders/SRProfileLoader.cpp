@@ -365,6 +365,7 @@ namespace MDSS::Asset
 // 00. std Implementation
 // ============================================================
 #pragma region 00_std_Implementation
+// SRProfile JSON 파싱과 데이터 검증.
 
     std::unique_ptr<FSRProfileAsset> FSRProfileLoader::Load(FAssetID ID, const std::filesystem::path& Path)
     {

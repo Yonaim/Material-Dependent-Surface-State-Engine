@@ -1,3 +1,8 @@
+/**
+ * @file FrustumCulling.h
+ * @brief 뷰 절두체를 구성하고 bounding volume의 가시성을 판정한다.
+ */
+
 #pragma once
 
 #include <algorithm>

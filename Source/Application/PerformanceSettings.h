@@ -1,3 +1,8 @@
+/**
+ * @file PerformanceSettings.h
+ * @brief 연구·benchmark 설정 JSON을 환경 변수로 지정한 파일에서 읽는다.
+ */
+
 #pragma once
 
 #include <cstdlib>

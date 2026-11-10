@@ -17,6 +17,7 @@ namespace MDSS::GPU
 // 00. Queue Lifecycle and Access
 // ============================================================
 #pragma region 00_Queue_Lifecycle_and_Access
+// 선택한 family의 queue를 보관해 command 제출에 제공한다.
 
     FVulkanQueue::FVulkanQueue(VkPhysicalDevice PhysicalDevice, VkDevice Device, VkSurfaceKHR Surface)
         : FamilyIndices(FindFamilies(PhysicalDevice, Surface))
@@ -52,6 +53,7 @@ namespace MDSS::GPU
 // 01. Queue Family Selection
 // ============================================================
 #pragma region 01_Queue_Family_Selection
+// graphics·present 등 필요한 작업을 지원하는 queue family를 찾는다.
 
     FQueueFamilyIndices FVulkanQueue::FindFamilies(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {

@@ -95,6 +95,8 @@ Performance-Data/**/raw/
 !/Assets/Meshes/*.obj
 
 !/Assets/Meshes/MarbleCube/MarbleCube.obj
+!/Assets/Meshes/MarbleCube/ReactionTransitionPlateTop.obj
+!/Assets/Meshes/MarbleCube/ReactionTransitionPlateSides.obj
 
 # Local upstream Agent Vault checkout (independent repository)
 /Universal-Agent-Vault/

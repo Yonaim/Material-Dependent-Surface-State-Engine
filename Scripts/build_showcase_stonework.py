@@ -1,9 +1,13 @@
-"""Build simple UV-mapped stonework for the fountain and basalt showcase scenes."""
+"""석재 showcase의 Scene·재질·표면 상태 자산을 생성한다.
+
+Build simple UV-mapped stonework for the fountain and basalt showcase scenes.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ MESHES = ROOT / "Assets" / "Meshes"
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 석재 showcase의 Scene·재질·표면 상태 자산을 생성한다.
 
 
 class ObjWriter:
@@ -190,6 +195,7 @@ def build_bust_debris():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 석재 showcase의 Scene·재질·표면 상태 자산을 생성한다.
 
 if __name__ == "__main__":
     build_fountain()

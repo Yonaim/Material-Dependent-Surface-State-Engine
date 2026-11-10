@@ -1,9 +1,13 @@
-"""Regenerate A/B timing and final-state/image comparison tables from run_suite outputs."""
+"""실험 suite의 실행 결과를 조건별로 묶어 비교 지표를 계산한다.
+
+Regenerate A/B timing and final-state/image comparison tables from run_suite outputs.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 import argparse, json, math, statistics as st, sys
@@ -68,6 +72,7 @@ COMPARISONS = [
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 실험 suite의 실행 결과를 조건별로 묶어 비교 지표를 계산한다.
 
 
 def load(path):
@@ -212,6 +217,7 @@ def quality(base, a, b):
 # 02. Main Process
 # ============================================================
 # region 02_Main_Process
+# 실험 suite의 실행 결과를 조건별로 묶어 비교 지표를 계산한다.
 
 
 def collect_comparison_groups(base, groups, image_noise, rows):
@@ -442,6 +448,7 @@ def main():
 # 03. Script Execution
 # ============================================================
 # region 03_Script_Execution
+# 실험 suite의 실행 결과를 조건별로 묶어 비교 지표를 계산한다.
 
 if __name__ == '__main__':
     main()

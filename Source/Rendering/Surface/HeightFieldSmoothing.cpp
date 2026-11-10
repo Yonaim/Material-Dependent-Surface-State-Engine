@@ -30,6 +30,7 @@ namespace MDSS::Rendering
 // 00. Smoothing Resource Lifecycle
 // ============================================================
 #pragma region 00_Smoothing_Resource_Lifecycle
+// 높이 필터에 필요한 image·buffer·pipeline을 관리한다.
 
     FHeightFieldSmoothing::FHeightFieldSmoothing(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
@@ -146,6 +147,7 @@ namespace MDSS::Rendering
 // 01. Smoothing Output Access
 // ============================================================
 #pragma region 01_Smoothing_Output_Access
+// 필터링한 표시용 높이·normal 출력을 소비자에게 제공한다.
 
     VkDescriptorSet FHeightFieldSmoothing::GetOutputSet(std::size_t Instance, std::uint32_t Channel) const
     {
@@ -185,6 +187,7 @@ namespace MDSS::Rendering
 // 02. Smoothing Command Recording
 // ============================================================
 #pragma region 02_Smoothing_Command_Recording
+// Solver State를 변경하지 않고 표시용 높이 필터 명령을 기록한다.
 
     void FHeightFieldSmoothing::Record(VkCommandBuffer                                       Command,
                                        std::size_t                                           Instance,

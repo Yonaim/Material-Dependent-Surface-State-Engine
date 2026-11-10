@@ -1,3 +1,8 @@
+/**
+ * @file DebugUIViewport.cpp
+ * @brief viewport 입력·카메라·선택 및 Surface 진단 표시를 처리한다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
@@ -6,6 +11,7 @@ namespace MDSS
 // 00. Viewport Panels
 // ============================================================
 #pragma region 00_Viewport_Panels
+// viewport별 입력·표시 범위를 처리하고 관련 진단 패널을 구성한다.
 
     void FDebugUI::DrawViewportPanels(FScene&)
     {
@@ -143,6 +149,7 @@ namespace MDSS
 // 01. Mesh Notices
 // ============================================================
 #pragma region 01_Mesh_Notices
+// 현재 메시·Surface 구성의 제한과 진단 안내를 표시한다.
 
     void FDebugUI::DrawBrickCubeTexelMeshNotice(const FScene& SceneData)
     {
@@ -200,6 +207,7 @@ namespace MDSS
 // 02. Render Settings
 // ============================================================
 #pragma region 02_Render_Settings
+// 선택한 외형·overlay 실행 옵션을 Renderer 설정과 연결한다.
 
     void FDebugUI::DrawRenderSettingsWindow(FScene& SceneData)
     {
@@ -214,278 +222,13 @@ namespace MDSS
             {
                 if (ImGui::BeginTabItem("Visual"))
                 {
-                    if (ImGui::BeginChild(
-                            "VisualSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        ImGui::Dummy({0.0F, 12.0F});
-                        auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
-                        bool bEffectsChanged = false;
-                        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{8.0F, 7.0F});
-                        const auto Bindings =
-                            Rendering::ResolveDemoSurfaceStates(SurfaceDataManager->GetSurfaceStateRegistry());
-                        const auto DrawRamp = [&](Rendering::FDemoStateColorMapping& Mapping)
-                        {
-                            bEffectsChanged |=
-                                LabeledRangeSliderFloat("Color ramp", &Mapping.RampStart, &Mapping.RampEnd);
-                        };
-                        const auto DrawEffectToggle =
-                            [&](const char* Label, bool& bEnabled, bool bAvailable, const char* Description)
-                        {
-                            ImGui::PushID("Toggle");
-                            ImGui::PushID(Label);
-                            ImGui::BeginDisabled(!bAvailable);
-                            bEffectsChanged |= ImGui::Checkbox(Label, &bEnabled);
-
-                            if (ImGui::IsItemHovered())
-                                SetDescriptionTooltip(Description);
-                            ImGui::EndDisabled();
-                            ImGui::PopID();
-                            ImGui::PopID();
-                        };
-                        const auto DrawEffectSettings = [&](const char* Label,
-                                                            bool&       bEnabled,
-                                                            bool        bAvailable,
-                                                            const char* Description,
-                                                            auto&&      DrawSettings)
-                        {
-                            if (!bEnabled || !bAvailable)
-                                return;
-                            ImGui::PushID("Details");
-                            ImGui::PushID(Label);
-
-                            if (ImGui::CollapsingHeader(Label))
-                            {
-                                ImGui::Indent();
-                                TextDescriptionWrapped(Description);
-                                DrawSettings();
-                                ImGui::Unindent();
-                            }
-
-                            ImGui::PopID();
-                            ImGui::PopID();
-                            ImGui::Dummy({0.0F, 3.0F});
-                        };
-
-                        // Keep all effect toggles together above their optional detail panels.
-                        DrawEffectToggle("Heat",
-                                         Effects.bHeatLayer,
-                                         Bindings.Heat != SurfaceState::InvalidStateId,
-                                         "Heat 포화도에 따라 표면 기본색을 색상 램프와 섞습니다. 현재 Heat 프로필은 "
-                                         "높이를 쌓지 않습니다.");
-                        DrawEffectToggle("WaterFilm",
-                                         Effects.bWaterFilmDisplacement,
-                                         Bindings.WaterFilm != SurfaceState::InvalidStateId,
-                                         "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.");
-                        DrawEffectToggle("Mud",
-                                         Effects.bMudDisplacement,
-                                         Bindings.Mud != SurfaceState::InvalidStateId,
-                                         "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.");
-                        DrawEffectToggle(
-                            "Ice",
-                            Effects.bIceDisplacement,
-                            Bindings.Ice != SurfaceState::InvalidStateId,
-                            "Ice 적층을 푸른 산란색과 서리 표면으로 표시합니다. 녹은 물은 같은 표면 위에 합성됩니다.");
-                        DrawEffectToggle("Lava",
-                                         Effects.bLavaDisplacement,
-                                         Bindings.Lava != SurfaceState::InvalidStateId,
-                                         "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.");
-
-                        ImGui::Dummy({0.0F, 5.0F});
-                        DrawEffectSettings("Heat",
-                                           Effects.bHeatLayer,
-                                           Bindings.Heat != SurfaceState::InvalidStateId,
-                                           "Heat 포화도에 따라 표면 기본색을 색상 램프와 섞습니다. 현재 Heat 프로필은 "
-                                           "높이를 쌓지 않습니다.",
-                                           [&]()
-                                           {
-                                               bEffectsChanged |= LabeledSliderFloat(
-                                                   "Strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
-                                               DrawRamp(Effects.HeatColorMap);
-                                           });
-                        DrawEffectSettings(
-                            "WaterFilm",
-                            Effects.bWaterFilmDisplacement,
-                            Bindings.WaterFilm != SurfaceState::InvalidStateId,
-                            "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
-                            [&]()
-                            {
-                                bEffectsChanged |=
-                                    ImGui::Checkbox("Teal visibility mode", &Effects.bEmphasizeWaterFilm);
-                                if (ImGui::IsItemHovered())
-                                    SetDescriptionTooltip("WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 "
-                                                          "높이는 바꾸지 않습니다.");
-                                bEffectsChanged |=
-                                    LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
-                                DrawRamp(Effects.WaterFilmColorMap);
-                            });
-                        DrawEffectSettings(
-                            "Mud",
-                            Effects.bMudDisplacement,
-                            Bindings.Mud != SurfaceState::InvalidStateId,
-                            "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.",
-                            [&]()
-                            {
-                                bEffectsChanged |=
-                                    LabeledSliderFloat("Roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
-                                bEffectsChanged |=
-                                    LabeledSliderFloat("Noise amount", &Effects.MudNoiseAmount, 0.0F, 1.0F, "%.2f");
-                                if (ImGui::IsItemHovered())
-                                    SetDescriptionTooltip("머드 표면의 절차적 미세요철 강도를 조절합니다. 0이면 "
-                                                          "매끈하고 1이면 요철이 가장 강합니다.");
-                                DrawRamp(Effects.MudColorMap);
-                            });
-                        DrawEffectSettings("Lava",
-                                           Effects.bLavaDisplacement,
-                                           Bindings.Lava != SurfaceState::InvalidStateId,
-                                           "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.",
-                                           [&]()
-                                           {
-                                               bEffectsChanged |= LabeledSliderFloat(
-                                                   "Lava threshold", &Effects.LavaThreshold, 0.0F, 1.0F, "%.2f");
-                                               if (ImGui::IsItemHovered())
-                                                   SetDescriptionTooltip(
-                                                       "포화도가 이 값 이하이면 Lava 색과 발광을 적용하지 않습니다.");
-                                               DrawRamp(Effects.LavaColorMap);
-                                           });
-
-                        ImGui::Dummy({0.0F, 4.0F});
-                        bEffectsChanged |= LabeledSliderFloat(
-                            "Height fade threshold", &Effects.LowAmountHeightFade, 0.0F, 0.5F, "%.2f");
-                        if (ImGui::IsItemHovered())
-                            SetDescriptionTooltip(
-                                "0이면 기존 높이를 그대로 표시합니다. 기준값을 높이면 그보다 농도가 낮은 쌓임 효과의 "
-                                "화면 높이를 부드럽게 줄입니다. 시뮬레이션 상태와 이동에는 영향을 주지 않습니다.");
-
-                        ImGui::Dummy({0.0F, 6.0F});
-
-                        if (ImGui::CollapsingHeader("Shading"))
-                        {
-                            ImGui::Indent();
-                            float AmbientLight = FrameRenderer->GetAmbientLight();
-
-                            if (LabeledSliderFloat("Ambient / direct mix", &AmbientLight, 0.0F, 1.0F, "%.2f"))
-                                FrameRenderer->SetAmbientLight(AmbientLight);
-                            if (ImGui::IsItemHovered())
-                                SetDescriptionTooltip("0은 직접광 중심, 1은 표면색 기반 주변광 중심으로 섞습니다. 광원 "
-                                                      "방향과 색은 현재 고정입니다.");
-
-                            bEffectsChanged |=
-                                LabeledSliderFloat("Dry surface roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
-
-                            float NormalStrength = FrameRenderer->GetNormalStrength();
-
-                            if (LabeledSliderFloat("Normal Strength", &NormalStrength, 0.0F, 4.0F, "%.2f"))
-                                FrameRenderer->SetNormalStrength(NormalStrength);
-
-                            bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
-
-                            if (ImGui::Checkbox("Flip Y", &bFlipNormalY))
-                                FrameRenderer->SetFlipNormalY(bFlipNormalY);
-                            if (ImGui::IsItemHovered())
-                                SetDescriptionTooltip("화면의 Normal Map 조명만 바꿉니다. Meso 형상은 기본 Flip Y "
-                                                      "켜짐으로 전처리됩니다.");
-                            ImGui::Unindent();
-                        }
-
-                        ImGui::PopStyleVar();
-
-                        if (bEffectsChanged)
-                            FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
-                    }
-
-                    ImGui::EndChild();
+                    DrawVisualRenderSettings();
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Display"))
                 {
-                    if (ImGui::BeginChild(
-                            "DebugSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
-                    {
-                        ImGui::Dummy({0.0F, 12.0F});
-                        bool bOverlayOnly = FrameRenderer->IsOverlayOnlyDebugEnabled();
-
-                        if (ImGui::Checkbox("Overlay only", &bOverlayOnly))
-                        {
-                            FrameRenderer->SetOverlayOnlyDebugEnabled(bOverlayOnly);
-                            ResetProfilingAverages();
-                        }
-
-                        if (ImGui::IsItemHovered())
-                            SetDescriptionTooltip("Lit 뷰에서 Base Surface를 숨기고 생성된 State Overlay만 표시합니다. "
-                                                  "켜면 표시 모드를 선택할 수 있습니다.");
-                        ImGui::BeginDisabled(!bOverlayOnly);
-                        {
-                            int OverlayDisplayMode = static_cast<int>(FrameRenderer->GetOverlayDisplayMode());
-                            ImGui::SetNextItemWidth(180.0F);
-
-                            if (ImGui::Combo("Overlay display", &OverlayDisplayMode, "Both\0Top only\0Sides only\0"))
-                            {
-                                FrameRenderer->SetOverlayDisplayMode(
-                                    static_cast<Rendering::EOverlayDisplayMode>(OverlayDisplayMode));
-                                ResetProfilingAverages();
-                            }
-
-                            if (ImGui::IsItemHovered())
-                                SetDescriptionTooltip("Overlay 전체, 윗면만, 또는 옆면만 표시합니다.");
-
-                            int ShadingDiagnostic = static_cast<int>(FrameRenderer->GetOverlayShadingDiagnostic());
-                            ImGui::SetNextItemWidth(180.0F);
-
-                            if (ImGui::Combo("Overlay shading diagnostic",
-                                             &ShadingDiagnostic,
-                                             "Lit\0Fixed normal\0Normal RGB\0Front/back faces\0Mesh normal\0Vertex "
-                                             "normal (old)\0Lit opaque\0State layers\0Mud diffuse\0Mud specular x4\0"))
-                                FrameRenderer->SetOverlayShadingDiagnostic(
-                                    static_cast<Rendering::EOverlayShadingDiagnostic>(ShadingDiagnostic));
-                            if (ImGui::IsItemHovered())
-                                SetDescriptionTooltip(
-                                    "Fixed normal은 조명 노멀을 일정하게 유지합니다. Normal RGB는 보간 노멀을, "
-                                    "Front/back faces는 삼각형 앞뒷면을, Mesh normal은 원본 메쉬 노멀을, "
-                                    "Lit은 texel 노멀을 픽셀별로 보간합니다. Vertex normal (old)는 이전 정점 보간 "
-                                    "결과입니다.");
-                        }
-
-                        ImGui::EndDisabled();
-
-                        ImGui::Dummy({0.0F, 8.0F});
-                        bool bBaseMeshDraw = FrameRenderer->IsBaseMeshDrawEnabled();
-
-                        if (ImGui::Checkbox("Base Mesh draw", &bBaseMeshDraw))
-                        {
-                            FrameRenderer->SetBaseMeshDrawEnabled(bBaseMeshDraw);
-                            Simulation.bFrameTimeResetRequested = true;
-                            ResetProfilingAverages();
-                        }
-
-                        bool bOverlayTopDraw = FrameRenderer->IsOverlayTopDrawEnabled();
-
-                        if (ImGui::Checkbox("Overlay Top draw", &bOverlayTopDraw))
-                        {
-                            FrameRenderer->SetOverlayTopDrawEnabled(bOverlayTopDraw);
-                            Simulation.bFrameTimeResetRequested = true;
-                            ResetProfilingAverages();
-                        }
-
-                        bool bOverlaySidesDraw = FrameRenderer->IsOverlaySidesDrawEnabled();
-
-                        if (ImGui::Checkbox("Overlay Sides draw", &bOverlaySidesDraw))
-                        {
-                            FrameRenderer->SetOverlaySidesDrawEnabled(bOverlaySidesDraw);
-                            Simulation.bFrameTimeResetRequested = true;
-                            ResetProfilingAverages();
-                        }
-
-                        float LitHeightDisplayScale = SceneData.GetLitHeightDisplayScale();
-
-                        if (LabeledSliderFloat("Lit height display scale", &LitHeightDisplayScale, 0.0F, 10.0F, "%.2f"))
-                            FrameRenderer->SetSceneLitHeightDisplayScale(SceneData, LitHeightDisplayScale);
-                        if (ImGui::IsItemHovered())
-                            SetDescriptionTooltip(
-                                "Lit 뷰에 표시하는 적층 높이 배율입니다. 시뮬레이션 데이터는 바꾸지 않습니다.");
-                    }
-
-                    ImGui::EndChild();
+                    DrawDisplayRenderSettings(SceneData);
                     ImGui::EndTabItem();
                 }
 
@@ -510,6 +253,308 @@ namespace MDSS
 
         ImGui::End();
     }
+
+    void FDebugUI::DrawVisualRenderSettings()
+    {
+        // Visual 탭의 재질 효과와 공통 쉐이딩 옵션을 한 곳에서 편집한다.
+        if (ImGui::BeginChild(
+                "VisualSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+        {
+            ImGui::Dummy({0.0F, 12.0F});
+            auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
+            bool bEffectsChanged = false;
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{8.0F, 7.0F});
+            const auto Bindings =
+                Rendering::ResolveDemoSurfaceStates(SurfaceDataManager->GetSurfaceStateRegistry());
+            DrawVisualEffectToggles(Effects, Bindings, bEffectsChanged);
+            DrawVisualEffectDetails(Effects, Bindings, bEffectsChanged);
+            DrawVisualHeightFade(Effects, bEffectsChanged);
+            DrawVisualShadingControls(Effects, bEffectsChanged);
+            ImGui::PopStyleVar();
+
+            if (bEffectsChanged)
+                FrameRenderer->SetDemoSurfaceEffectSettings(Effects);
+        }
+
+        ImGui::EndChild();
+    }
+
+    void FDebugUI::DrawVisualEffectToggles(Rendering::FDemoSurfaceEffectSettings& Effects, const Rendering::FDemoSurfaceStateBindings& Bindings, bool& bChanged)
+    {
+        // 사용 가능한 State별 표시 효과를 한 묶음에서 켜고 끈다.
+        const auto DrawEffectToggle =
+            [&](const char* Label, bool& bEnabled, bool bAvailable, const char* Description)
+        {
+            ImGui::PushID("Toggle");
+            ImGui::PushID(Label);
+            ImGui::BeginDisabled(!bAvailable);
+            bChanged |= ImGui::Checkbox(Label, &bEnabled);
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(Description);
+            ImGui::EndDisabled();
+            ImGui::PopID();
+            ImGui::PopID();
+        };
+        // Keep all effect toggles together above their optional detail panels.
+        DrawEffectToggle("Heat",
+                         Effects.bHeatLayer,
+                         Bindings.Heat != SurfaceState::InvalidStateId,
+                         "Heat 포화도에 따라 표면 기본색을 색상 램프와 섞습니다. 현재 Heat 프로필은 "
+                         "높이를 쌓지 않습니다.");
+        DrawEffectToggle("WaterFilm",
+                         Effects.bWaterFilmDisplacement,
+                         Bindings.WaterFilm != SurfaceState::InvalidStateId,
+                         "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.");
+        DrawEffectToggle("Mud",
+                         Effects.bMudDisplacement,
+                         Bindings.Mud != SurfaceState::InvalidStateId,
+                         "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.");
+        DrawEffectToggle(
+            "Ice",
+            Effects.bIceDisplacement,
+            Bindings.Ice != SurfaceState::InvalidStateId,
+            "Ice 적층을 푸른 산란색과 서리 표면으로 표시합니다. 녹은 물은 같은 표면 위에 합성됩니다.");
+        DrawEffectToggle("Lava",
+                         Effects.bLavaDisplacement,
+                         Bindings.Lava != SurfaceState::InvalidStateId,
+                         "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.");
+
+    }
+
+    void FDebugUI::DrawVisualEffectDetails(Rendering::FDemoSurfaceEffectSettings& Effects, const Rendering::FDemoSurfaceStateBindings& Bindings, bool& bChanged)
+    {
+        // 활성화된 표시 효과의 재질별 색상과 쉐이딩 계수를 편집한다.
+        const auto DrawRamp = [&](Rendering::FDemoStateColorMapping& Mapping)
+        {
+            bChanged |=
+                LabeledRangeSliderFloat("Color ramp", &Mapping.RampStart, &Mapping.RampEnd);
+        };
+        const auto DrawEffectSettings = [&](const char* Label,
+                                            bool&       bEnabled,
+                                            bool        bAvailable,
+                                            const char* Description,
+                                            auto&&      DrawSettings)
+        {
+            if (!bEnabled || !bAvailable)
+                return;
+            ImGui::PushID("Details");
+            ImGui::PushID(Label);
+
+            if (ImGui::CollapsingHeader(Label))
+            {
+                ImGui::Indent();
+                TextDescriptionWrapped(Description);
+                DrawSettings();
+                ImGui::Unindent();
+            }
+
+            ImGui::PopID();
+            ImGui::PopID();
+            ImGui::Dummy({0.0F, 3.0F});
+        };
+
+        ImGui::Dummy({0.0F, 5.0F});
+        DrawEffectSettings("Heat",
+                           Effects.bHeatLayer,
+                           Bindings.Heat != SurfaceState::InvalidStateId,
+                           "Heat 포화도에 따라 표면 기본색을 색상 램프와 섞습니다. 현재 Heat 프로필은 "
+                           "높이를 쌓지 않습니다.",
+                           [&]()
+                           {
+                               bChanged |= LabeledSliderFloat(
+                                   "Strength", &Effects.HeatStrength, 0.0F, 1.0F, "%.2f");
+                               DrawRamp(Effects.HeatColorMap);
+                           });
+        DrawEffectSettings(
+            "WaterFilm",
+            Effects.bWaterFilmDisplacement,
+            Bindings.WaterFilm != SurfaceState::InvalidStateId,
+            "공통 accumulation 윗면에서 아래 표면이 비치는 얇은 막으로 합성합니다.",
+            [&]()
+            {
+                bChanged |=
+                    ImGui::Checkbox("Teal visibility mode", &Effects.bEmphasizeWaterFilm);
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("WaterFilm의 색과 불투명도만 강조합니다. 시뮬레이션 상태와 "
+                                          "높이는 바꾸지 않습니다.");
+                bChanged |=
+                    LabeledSliderFloat("Opacity", &Effects.WaterFilmOpacity, 0.0F, 1.0F, "%.2f");
+                DrawRamp(Effects.WaterFilmColorMap);
+            });
+        DrawEffectSettings(
+            "Mud",
+            Effects.bMudDisplacement,
+            Bindings.Mud != SurfaceState::InvalidStateId,
+            "공통 불투명 적층 윗면과 경계 옆면을 갈색 진흙 재질로 그립니다.",
+            [&]()
+            {
+                bChanged |=
+                    LabeledSliderFloat("Roughness", &Effects.MudRoughness, 0.05F, 1.0F, "%.2f");
+                bChanged |=
+                    LabeledSliderFloat("Noise amount", &Effects.MudNoiseAmount, 0.0F, 1.0F, "%.2f");
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("머드 표면의 절차적 미세요철 강도를 조절합니다. 0이면 "
+                                          "매끈하고 1이면 요철이 가장 강합니다.");
+                DrawRamp(Effects.MudColorMap);
+            });
+        DrawEffectSettings("Lava",
+                           Effects.bLavaDisplacement,
+                           Bindings.Lava != SurfaceState::InvalidStateId,
+                           "공통 불투명 적층 윗면과 경계 옆면에 라바색과 자체 발광을 적용합니다.",
+                           [&]()
+                           {
+                               bChanged |= LabeledSliderFloat(
+                                   "Lava threshold", &Effects.LavaThreshold, 0.0F, 1.0F, "%.2f");
+                               if (ImGui::IsItemHovered())
+                                   SetDescriptionTooltip(
+                                       "포화도가 이 값 이하이면 Lava 색과 발광을 적용하지 않습니다.");
+                               DrawRamp(Effects.LavaColorMap);
+                           });
+
+    }
+
+    void FDebugUI::DrawVisualHeightFade(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged)
+    {
+        // 적층량이 낮을 때 시각적 높이를 줄이는 계수를 편집한다.
+        ImGui::Dummy({0.0F, 4.0F});
+        bChanged |= LabeledSliderFloat(
+            "Height fade threshold", &Effects.LowAmountHeightFade, 0.0F, 0.5F, "%.2f");
+        if (ImGui::IsItemHovered())
+            SetDescriptionTooltip(
+                "0이면 기존 높이를 그대로 표시합니다. 기준값을 높이면 그보다 농도가 낮은 쌓임 효과의 "
+                "화면 높이를 부드럽게 줄입니다. 시뮬레이션 상태와 이동에는 영향을 주지 않습니다.");
+
+    }
+
+    void FDebugUI::DrawVisualShadingControls(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged)
+    {
+        // 조명 혼합·기본 거칠기·Normal Map 강도를 편집한다.
+        ImGui::Dummy({0.0F, 6.0F});
+
+        if (ImGui::CollapsingHeader("Shading"))
+        {
+            ImGui::Indent();
+            float AmbientLight = FrameRenderer->GetAmbientLight();
+
+            if (LabeledSliderFloat("Ambient / direct mix", &AmbientLight, 0.0F, 1.0F, "%.2f"))
+                FrameRenderer->SetAmbientLight(AmbientLight);
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("0은 직접광 중심, 1은 표면색 기반 주변광 중심으로 섞습니다. 광원 "
+                                      "방향과 색은 현재 고정입니다.");
+
+            bChanged |=
+                LabeledSliderFloat("Dry surface roughness", &Effects.DryRoughness, 0.05F, 1.0F, "%.2f");
+
+            float NormalStrength = FrameRenderer->GetNormalStrength();
+
+            if (LabeledSliderFloat("Normal Strength", &NormalStrength, 0.0F, 4.0F, "%.2f"))
+                FrameRenderer->SetNormalStrength(NormalStrength);
+
+            bool bFlipNormalY = FrameRenderer->GetFlipNormalY();
+
+            if (ImGui::Checkbox("Flip Y", &bFlipNormalY))
+                FrameRenderer->SetFlipNormalY(bFlipNormalY);
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("화면의 Normal Map 조명만 바꿉니다. Meso 형상은 기본 Flip Y "
+                                      "켜짐으로 전처리됩니다.");
+            ImGui::Unindent();
+        }
+
+    }
+
+    void FDebugUI::DrawDisplayRenderSettings(FScene& SceneData)
+    {
+        // Display 탭의 overlay 표기·진단 및 렌더 경로를 제어한다.
+        if (ImGui::BeginChild(
+                "DebugSettingsContent", {0.0F, 0.0F}, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+        {
+            ImGui::Dummy({0.0F, 12.0F});
+            bool bOverlayOnly = FrameRenderer->IsOverlayOnlyDebugEnabled();
+
+            if (ImGui::Checkbox("Overlay only", &bOverlayOnly))
+            {
+                FrameRenderer->SetOverlayOnlyDebugEnabled(bOverlayOnly);
+                ResetProfilingAverages();
+            }
+
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip("Lit 뷰에서 Base Surface를 숨기고 생성된 State Overlay만 표시합니다. "
+                                      "켜면 표시 모드를 선택할 수 있습니다.");
+            ImGui::BeginDisabled(!bOverlayOnly);
+            {
+                int OverlayDisplayMode = static_cast<int>(FrameRenderer->GetOverlayDisplayMode());
+                ImGui::SetNextItemWidth(180.0F);
+
+                if (ImGui::Combo("Overlay display", &OverlayDisplayMode, "Both\0Top only\0Sides only\0"))
+                {
+                    FrameRenderer->SetOverlayDisplayMode(
+                        static_cast<Rendering::EOverlayDisplayMode>(OverlayDisplayMode));
+                    ResetProfilingAverages();
+                }
+
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip("Overlay 전체, 윗면만, 또는 옆면만 표시합니다.");
+
+                int ShadingDiagnostic = static_cast<int>(FrameRenderer->GetOverlayShadingDiagnostic());
+                ImGui::SetNextItemWidth(180.0F);
+
+                if (ImGui::Combo("Overlay shading diagnostic",
+                                 &ShadingDiagnostic,
+                                 "Lit\0Fixed normal\0Normal RGB\0Front/back faces\0Mesh normal\0Vertex "
+                                 "normal (old)\0Lit opaque\0State layers\0Mud diffuse\0Mud specular x4\0"))
+                    FrameRenderer->SetOverlayShadingDiagnostic(
+                        static_cast<Rendering::EOverlayShadingDiagnostic>(ShadingDiagnostic));
+                if (ImGui::IsItemHovered())
+                    SetDescriptionTooltip(
+                        "Fixed normal은 조명 노멀을 일정하게 유지합니다. Normal RGB는 보간 노멀을, "
+                        "Front/back faces는 삼각형 앞뒷면을, Mesh normal은 원본 메쉬 노멀을, "
+                        "Lit은 texel 노멀을 픽셀별로 보간합니다. Vertex normal (old)는 이전 정점 보간 "
+                        "결과입니다.");
+            }
+
+            ImGui::EndDisabled();
+
+            ImGui::Dummy({0.0F, 8.0F});
+            bool bBaseMeshDraw = FrameRenderer->IsBaseMeshDrawEnabled();
+
+            if (ImGui::Checkbox("Base Mesh draw", &bBaseMeshDraw))
+            {
+                FrameRenderer->SetBaseMeshDrawEnabled(bBaseMeshDraw);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            bool bOverlayTopDraw = FrameRenderer->IsOverlayTopDrawEnabled();
+
+            if (ImGui::Checkbox("Overlay Top draw", &bOverlayTopDraw))
+            {
+                FrameRenderer->SetOverlayTopDrawEnabled(bOverlayTopDraw);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            bool bOverlaySidesDraw = FrameRenderer->IsOverlaySidesDrawEnabled();
+
+            if (ImGui::Checkbox("Overlay Sides draw", &bOverlaySidesDraw))
+            {
+                FrameRenderer->SetOverlaySidesDrawEnabled(bOverlaySidesDraw);
+                Simulation.bFrameTimeResetRequested = true;
+                ResetProfilingAverages();
+            }
+
+            float LitHeightDisplayScale = SceneData.GetLitHeightDisplayScale();
+
+            if (LabeledSliderFloat("Lit height display scale", &LitHeightDisplayScale, 0.0F, 10.0F, "%.2f"))
+                FrameRenderer->SetSceneLitHeightDisplayScale(SceneData, LitHeightDisplayScale);
+            if (ImGui::IsItemHovered())
+                SetDescriptionTooltip(
+                    "Lit 뷰에 표시하는 적층 높이 배율입니다. 시뮬레이션 데이터는 바꾸지 않습니다.");
+        }
+
+        ImGui::EndChild();
+    }
+
 
 #pragma endregion
 

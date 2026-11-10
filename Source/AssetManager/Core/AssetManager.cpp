@@ -24,6 +24,7 @@ namespace MDSS::Asset
 // 00. Asset Manager Lifecycle
 // ============================================================
 #pragma region 00_Asset_Manager_Lifecycle
+// 등록된 자산의 소유권을 유지하고 device 자원보다 늦게 남지 않게 해제한다.
 
     FAssetManager::FAssetManager(const GPU::FVulkanContext& Context) : Context(Context)
     {
@@ -41,6 +42,7 @@ namespace MDSS::Asset
 // 01. Asset Loading
 // ============================================================
 #pragma region 01_Asset_Loading
+// 입력 경로와 자산 종류에 맞는 로더를 선택해 등록된 handle로 연결한다.
 
     FMeshAssetHandle FAssetManager::LoadOBJ(const std::filesystem::path& Path)
     {
@@ -144,6 +146,7 @@ namespace MDSS::Asset
 // 02. Asset Access
 // ============================================================
 #pragma region 02_Asset_Access
+// 자산 handle을 확인한 뒤 해당 자산과 경로 정보를 조회한다.
 
     const FMeshAsset& FAssetManager::GetMesh(FMeshAssetHandle Handle) const
     {
@@ -206,6 +209,7 @@ namespace MDSS::Asset
 // 03. Generated Assets
 // ============================================================
 #pragma region 03_Generated_Assets
+// 실행 중 만든 자산도 기존 handle·소유권 규칙으로 등록한다.
 
     FTextureAssetHandle FAssetManager::LoadTexture(const std::filesystem::path& Path, bool bSRGB)
     {

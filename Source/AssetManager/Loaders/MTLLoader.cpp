@@ -38,6 +38,7 @@ namespace MDSS::Asset
 // 00. FMTLLoader Implementation
 // ============================================================
 #pragma region 00_TMTLLoader_Implementation
+// OBJ 재질 데이터를 엔진 Material 데이터로 변환.
 
     FMaterialSourceData FMTLLoader::Convert(const tinyobj::material_t&   Material,
                                             const std::filesystem::path& TextureBaseDirectory)

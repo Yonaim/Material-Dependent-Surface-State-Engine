@@ -26,6 +26,7 @@ namespace MDSS::GPU
 // 00. Logical Device Lifecycle
 // ============================================================
 #pragma region 00_Logical_Device_Lifecycle
+// 선택한 장치와 queue 구성으로 logical device를 만들고 해제한다.
 
     FVulkanDevice::FVulkanDevice(VkInstance Instance, VkSurfaceKHR Surface)
     {
@@ -127,6 +128,7 @@ namespace MDSS::GPU
 // 01. Physical Device Selection
 // ============================================================
 #pragma region 01_Physical_Device_Selection
+// 필요 queue·기능·extension을 지원하는 실제 GPU를 선택한다.
 
     VkPhysicalDevice FVulkanDevice::GetPhysicalHandle() const noexcept
     {

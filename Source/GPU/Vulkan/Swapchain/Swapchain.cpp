@@ -24,6 +24,7 @@ namespace MDSS::GPU
 // 00. Swapchain Lifecycle
 // ============================================================
 #pragma region 00_Swapchain_Lifecycle
+// surface 조건에 맞는 swapchain을 만들고 재생성·종료 자원을 관리한다.
 
     FSwapchain::FSwapchain(const FVulkanContext& Context, const FWindow& FWindow) : Device(Context.GetDevice())
     {
@@ -157,6 +158,7 @@ namespace MDSS::GPU
 // 01. Swapchain Accessors
 // ============================================================
 #pragma region 01_Swapchain_Accessors
+// acquire·present와 렌더 attachment가 사용할 swapchain 정보를 제공한다.
 
     VkSwapchainKHR FSwapchain::GetHandle() const noexcept
     {
@@ -189,6 +191,7 @@ namespace MDSS::GPU
 // 02. Surface Format and Present Selection
 // ============================================================
 #pragma region 02_Surface_Format_and_Present_Selection
+// 장치가 지원하는 format·present mode·extent에서 실행 구성을 선택한다.
 
     FSwapchainSupportDetails FSwapchain::QuerySupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
     {
@@ -292,6 +295,7 @@ namespace MDSS::GPU
 // 03. Swapchain Image Views
 // ============================================================
 #pragma region 03_Swapchain_Image_Views
+// 획득한 swapchain 이미지마다 렌더 attachment용 view를 만든다.
 
     void FSwapchain::CreateImageViews()
     {

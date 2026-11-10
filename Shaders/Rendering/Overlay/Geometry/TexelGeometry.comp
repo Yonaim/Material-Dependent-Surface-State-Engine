@@ -1,7 +1,4 @@
-/**
- * @file TexelGeometry.comp
- * @brief 표시용 높이와 normal을 계산한다. Overlay sparse mode에서는 DirtyNormalTileList만 처리한다.
- */
+// TexelGeometry.comp — 표시용 높이와 normal을 계산한다. Overlay sparse mode에서는 DirtyNormalTileList만 처리한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -12,6 +9,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
@@ -77,6 +75,9 @@ float DisplayHeight(uint Texel);
 float SeamNormalBlend(uint Texel);
 
 vec3 CachedFinalNormal(uint Texel);
+bool PublishInactiveTileBaseline(uint Texel);
+void PublishActiveTexelGeometry(uint Texel);
+
 
 // #endregion
 
@@ -84,6 +85,7 @@ vec3 CachedFinalNormal(uint Texel);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// 표시용 높이와 normal을 계산한다. Overlay sparse mode에서는 DirtyNormalTileList만 처리한다.
 
 void main()
 {
@@ -94,9 +96,28 @@ void main()
         return;
     }
 
-    // 01.00. Preserve Inactive Tile Baseline
-    // #region 01_00_Preserve_Inactive_Tile_Baseline
+    if (PublishInactiveTileBaseline(T))
+    {
+        return;
+    }
 
+    PublishActiveTexelGeometry(T);
+}
+
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// 표시용 높이와 normal을 계산한다. Overlay sparse mode에서는 DirtyNormalTileList만 처리한다.
+
+// 02.00. Publish Baseline and Active Geometry
+// #region 02_00_Publish_Baseline_and_Active_Geometry
+// 비활성 타일 기본 형상과 활성 타일의 높이·노멀 계산을 분리한다.
+
+bool PublishInactiveTileBaseline(uint T)
+{
     uint TilePixels = max(Push.TileSize * Push.TileSize, 1u);
     uint TileFlag = 1u;
 
@@ -123,15 +144,15 @@ void main()
             }
 
             Output.Values[T].HeightAndNormal = vec4(BaseHeight * Push.GeometryDisplayScale, normalize(BaseNormal));
-            return;
+            return true;
         }
     }
 
-    // #endregion
+    return false;
+}
 
-    // 01.01. Evaluate and Publish Active Height and Normal
-    // #region 01_01_Evaluate_and_Publish_Active_Height_and_Normal
-
+void PublishActiveTexelGeometry(uint T)
+{
     vec3 N = Normals.Values[T].xyz;
     float H = GeometryScalars.Values[T].MesoVirtualHeight;
 
@@ -174,19 +195,13 @@ void main()
     }
 
     Output.Values[T].HeightAndNormal = vec4(H, normalize(FinalNormal));
-
-    // #endregion
 }
 
 // #endregion
 
-// ============================================================
-// 02. Detailed Implementation
-// ============================================================
-// #region 02_Detailed_Implementation
-
-// 02.00. Resolve and Synchronize Sparse Texels
-// #region 02_00_Resolve_and_Synchronize_Sparse_Texels
+// 02.01. Resolve and Synchronize Sparse Texels
+// #region 02_01_Resolve_and_Synchronize_Sparse_Texels
+// workgroup의 barrier 참여 조건과 공유 데이터 읽기·쓰기 순서를 함께 유지한다.
 
 uint CapacityTileCount()
 {
@@ -284,6 +299,7 @@ uint ResolveTexel()
 
 // 02.01. Evaluate Accumulation and Cached Display Height
 // #region 02_01_Evaluate_Accumulation_and_Cached_Display_Height
+// 계산 결과를 TexelProfileIndices·ProfileSupported 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 float DisplayAccumulationHeight(uint Texel, float DisplayScale)
 {
@@ -393,6 +409,7 @@ float DisplayHeight(uint Texel)
 
 // 02.02. Reconstruct Seam Aware Surface Normals
 // #region 02_02_Reconstruct_Seam_Aware_Surface_Normals
+// TexelSurfaceIndices·TexelChartIndices·SurfaceRanges 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 float SeamNormalBlend(uint Texel)
 {

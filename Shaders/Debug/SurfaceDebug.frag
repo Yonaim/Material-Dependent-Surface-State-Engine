@@ -1,7 +1,4 @@
-/**
- * @file SurfaceDebug.frag
- * @brief Surface 상태, mapping, Meso 및 선택 State 적층 미리보기를 출력한다.
- */
+// SurfaceDebug.frag — Surface 상태, mapping, Meso 및 선택 State 적층 미리보기를 출력한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
@@ -9,9 +6,11 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 // 00.00. Fragment Inputs and Material Controls
 // #region 00_00_Fragment_Inputs_and_Material_Controls
+// binding 2·1의 선언을 CPU descriptor와 대응시킨다.
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -55,6 +54,7 @@ Push;
 
 // 00.01. Diagnostic Buffers and View Mode Contract
 // #region 00_01_Diagnostic_Buffers_and_View_Mode_Contract
+// binding 10·13·16의 선언을 CPU descriptor와 대응시킨다.
 
 layout(std430, set = 1, binding = 10) readonly buffer TSurfaceOutgoingFluxScale
 {
@@ -128,6 +128,7 @@ void RenderNeighbors(uint TexelIndex);
 void RenderTransferWeight(uint TexelIndex);
 void RenderAccumulation(uvec4 Range, vec2 UVFootprint, uint TexelIndex);
 void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled);
+void RenderSelectedSolverView(uvec4 Range, vec2 UVFootprint, uint TexelIndex, bool bSimulationEnabled);
 
 // #endregion
 
@@ -137,6 +138,7 @@ void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Surface 상태, mapping, Meso 및 선택 State 적층 미리보기를 출력한다.
 
 void main()
 {
@@ -160,6 +162,7 @@ void main()
 
     // 01.00. Dispatch UV Grid and Area Views
     // #region 01_00_Dispatch_UV_Grid_and_Area_Views
+    // 화면의 UV·grid·면적 진단 mode를 구분해 해당 fragment 색상을 선택한다.
 
     // texel grid와 면적 모드는 simulation data 없이 UV와 화면 미분값으로 바로 진단한다.
     if (Material.RenderMode == RENDER_MODE_SURFACE_TEXEL_GRID)
@@ -178,6 +181,7 @@ void main()
 
     // 01.01. Resolve Geometry and Simulation Eligibility
     // #region 01_01_Resolve_Geometry_and_Simulation_Eligibility
+    // 계산 결과를 TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
     uvec2 TexelXY = min(uvec2(floor(clamp(FragUV, 0.0, 1.0) * vec2(Range.yz))), Range.yz - 1u);
     uint TexelIndex = Range.x + TexelXY.y * Range.y + TexelXY.x;
@@ -209,8 +213,20 @@ void main()
 
     // #endregion
 
-    // 01.02. Dispatch Solver Data Views
-    // #region 01_02_Dispatch_Solver_Data_Views
+    RenderSelectedSolverView(Range, UVFootprint, TexelIndex, bSimulationEnabled);
+}
+
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// Surface 상태, mapping, Meso 및 선택 State 적층 미리보기를 출력한다.
+
+void RenderSelectedSolverView(uvec4 Range, vec2 UVFootprint, uint TexelIndex, bool bSimulationEnabled)
+{
+    // 선택한 Solver 항과 channel의 진단 값을 해당 색상 표현으로 연결한다.
 
     // 이후 모드는 texel에 대응하는 solver 데이터를 확인한 뒤 각 buffer를 읽는다.
     if (Material.RenderMode == RENDER_MODE_OUTGOING_FLUX_SCALE)
@@ -257,18 +273,11 @@ void main()
 
     RenderStateHeatmap(TexelIndex, bSimulationEnabled);
 
-    // #endregion
 }
-
-// #endregion
-
-// ============================================================
-// 02. Detailed Implementation
-// ============================================================
-// #region 02_Detailed_Implementation
 
 // 02.00. Screen Footprint and Basic View Helpers
 // #region 02_00_Screen_Footprint_and_Basic_View_Helpers
+// 화면 미분과 texel 크기를 이용해 grid·기본 진단의 표시 폭을 계산한다.
 
 void ComputeDebugDerivatives(out vec2 UVFootprint, out float WorldAreaPerUV)
 {
@@ -331,6 +340,7 @@ void RenderHeightGeometry(uvec4 Range, vec2 UVFootprint)
 
 // 02.01. Flux and Surface Geometry Views
 // #region 02_01_Flux_and_Surface_Geometry_Views
+// 계산 결과를 ProfileSupported 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 void RenderOutgoingFluxScale(uint TexelIndex, bool bSimulationEnabled)
 {
@@ -403,6 +413,7 @@ void RenderSurfaceID()
 
 // 02.02. Topology and Transfer Views
 // #region 02_02_Topology_and_Transfer_Views
+// NeighborIndices·TexelChartIndices·TransferWeightDebugAverages 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 void RenderNeighbors(uint TexelIndex)
 {
@@ -463,6 +474,7 @@ void RenderTransferWeight(uint TexelIndex)
 
 // 02.03. Accumulation Height Views
 // #region 02_03_Accumulation_Height_Views
+// 표시 높이와 Solver 높이의 차이를 같은 texel 기준으로 시각화한다.
 
 void RenderAccumulation(uvec4 Range, vec2 UVFootprint, uint TexelIndex)
 {
@@ -515,6 +527,7 @@ mat3 AccumulationNormalMatrix()
 
 // 02.04. State Heatmap Evaluation
 // #region 02_04_State_Heatmap_Evaluation
+// 계산 결과를 ProfileSupported 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 void RenderStateHeatmap(uint TexelIndex, bool bSimulationEnabled)
 {

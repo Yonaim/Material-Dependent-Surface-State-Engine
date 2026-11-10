@@ -1,6 +1,6 @@
 /**
- * @file SurfaceStateSystem.cpp
- * @brief SurfaceStateSystem의 구현을 제공한다.
+ * @file SurfaceStepRecording.cpp
+ * @brief 접촉·instance별 설정을 준비해 Solver 명령과 State A/B 진행을 기록한다.
  */
 
 #include "AssetManager/Assets/MeshAsset.h"
@@ -33,6 +33,7 @@ namespace MDSS::SurfaceState
 // 00. GPU Recording
 // ============================================================
 #pragma region 00_GPU_Recording
+// CPU 입력을 적용한 뒤 현재 instance의 Solver step을 GPU 명령으로 기록한다.
 
     void FSurfaceStateSystem::RecordStep(VkCommandBuffer CommandBuffer,
                                          float           DeltaTime,
@@ -42,6 +43,12 @@ namespace MDSS::SurfaceState
     {
         ApplyPendingContacts();
 
+        if (InitialInputReadbackObserver)
+        {
+            auto Observer = std::move(InitialInputReadbackObserver);
+            InitialInputReadbackObserver = {};
+            Observer();
+        }
         if (!Solver)
         {
             return;

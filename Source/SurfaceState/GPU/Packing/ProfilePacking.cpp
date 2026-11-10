@@ -1,3 +1,8 @@
+/**
+ * @file ProfilePacking.cpp
+ * @brief State·Reaction Profile을 GPU 테이블과 가변 길이 Rule 목록으로 패킹한다.
+ */
+
 #include "SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h"
 
 #include <algorithm>
@@ -11,6 +16,7 @@ namespace MDSS::SurfaceState
 // 00. Profile and Buffer Layouts
 // ============================================================
 #pragma region 00_Profile_and_Buffer_Layouts
+// Profile·Reaction을 shader 주소 규칙으로 패킹하고 길이·범위를 검사한다.
 
     FSurfaceGPUProfileUpload PackSurfaceProfiles(const std::vector<FSurfaceResponseProfileData>& Profiles,
                                                  const FSurfaceStateRegistry&                    Registry)

@@ -1,7 +1,4 @@
-/**
- * @file RenderStateSampling.glsl
- * @brief Interior texel은 필터링한 렌더 State texture에서, chart/profile 경계는 기존 규칙으로 읽는다.
- */
+// RenderStateSampling.glsl — Interior texel은 필터링한 렌더 State texture에서, chart/profile 경계는 기존 규칙으로 읽는다.
 #include "Rendering/Surface/StateTexture/StateSampling.glsl"
 
 #ifndef RENDER_STATE_TEXTURE_SET
@@ -16,6 +13,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(set = RENDER_STATE_TEXTURE_SET, binding = 1) uniform sampler2DArray RenderStateTexture;
 layout(std430, set = RENDER_STATE_TEXTURE_SET, binding = 2) readonly buffer TRenderSamplingBoundaryFlags
@@ -29,6 +27,7 @@ vec4 SampleRenderStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channel
 {
     // 00.00. Resolve Sampling Anchor and Interior Fast Path
     // #region 00_00_Resolve_Sampling_Anchor_and_Interior_Fast_Path
+    // 계산 결과를 RenderSamplingBoundaryFlags 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
     if (Channels == 0u)
     {
@@ -71,6 +70,7 @@ vec4 SampleRenderStates(uint Surface, vec2 UV, uvec4 StateChannels, uint Channel
 
     // 00.01. Filter Chart and Profile Boundary Samples
     // #region 00_01_Filter_Chart_and_Profile_Boundary_Samples
+    // TexelProfileIndices·TexelChartIndices·TexelSurfaceIndices 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
     // The descriptor may point to the smoothed texture. Read that same texture
     // at chart borders instead of switching back to unsmoothed State SSBO data.

@@ -1,9 +1,13 @@
-"""Frozen meso reconstruction/transport sensitivity study; no product algorithm changes."""
+"""Meso 연구 조건을 준비해 headless 실행과 결과 보관을 조율한다.
+
+Frozen meso reconstruction/transport sensitivity study; no product algorithm changes.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse, datetime as dt, hashlib, json, pathlib, shutil, subprocess, sys, time
 
@@ -24,6 +28,7 @@ EXE = ROOT / 'Build/Release/MDSS_CouplingStudy.exe'
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# Meso 연구 조건을 준비해 headless 실행과 결과 보관을 조율한다.
 
 
 def stamp():
@@ -193,7 +198,7 @@ def prepare():
             status='planned',
             question=plan['question'],
             experiments=[dict(id=EXP.name, status='planned', path=EXP.name + '/')],
-            report='Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md',
+            report='Docs/Agent-Vault/05_Experiments/02_Performance-Measurements.md',
         ),
     )
     return plan
@@ -448,6 +453,7 @@ def reconstruct():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# Meso 연구 조건을 준비해 headless 실행과 결과 보관을 조율한다.
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()

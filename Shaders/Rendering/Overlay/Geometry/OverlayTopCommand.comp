@@ -1,13 +1,11 @@
-/**
- * @file OverlayTopCommand.comp
- * @brief 옆면 생성 결과가 있을 때에만 상단 overlay draw command를 활성화한다.
- */
+// OverlayTopCommand.comp — 옆면 생성 결과가 있을 때에만 상단 overlay draw command를 활성화한다.
 #version 450
 
 // ============================================================
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 64) in;
 
@@ -48,6 +46,7 @@ TopDrawCommands;
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// 옆면 생성 결과가 있을 때에만 상단 overlay draw command를 활성화한다.
 
 void main()
 {

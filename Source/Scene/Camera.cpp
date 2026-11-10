@@ -18,6 +18,7 @@ namespace MDSS
 // 00. Camera Matrices
 // ============================================================
 #pragma region 00_Camera_Matrices
+// 카메라 위치·방향·투영 조건에서 view와 projection을 계산한다.
 
     FCamera::FCamera(
         glm::vec3 Position, glm::vec3 Target, float VerticalFieldOfViewDegrees, float NearPlane, float FarPlane)
@@ -66,6 +67,7 @@ namespace MDSS
 // 01. Camera Controls
 // ============================================================
 #pragma region 01_Camera_Controls
+// 사용자 입력을 카메라 위치·방향 변화에 적용한다.
 
     void FCamera::SetPosition(glm::vec3 NewPosition) noexcept
     {
@@ -103,6 +105,7 @@ namespace MDSS
 // 02. Camera State Access
 // ============================================================
 #pragma region 02_Camera_State_Access
+// Scene과 UI가 공유할 카메라 설정을 조회·변경한다.
 
     const glm::vec3& FCamera::GetPosition() const noexcept
     {

@@ -1,4 +1,7 @@
-"""Preserve incomplete captures and retry only conditions failing pre-existing output/count gates."""
+"""누락된 저작 캡처를 지정 조건으로 다시 실행해 보관한다.
+
+Preserve incomplete captures and retry only conditions failing pre-existing output/count gates.
+"""
 
 import copy, os, pathlib, shutil
 from authoring_study import ROOT, STUDY, read, write, stamp

@@ -1,3 +1,8 @@
+/**
+ * @file RendererCommands.cpp
+ * @brief simulation·display compute와 viewport별 draw 명령 기록을 조율한다.
+ */
+
 #include "Rendering/Core/RendererShared.h"
 
 namespace MDSS::Rendering
@@ -35,6 +40,7 @@ namespace MDSS::Rendering
 // 00. Command Buffer Recording
 // ============================================================
 #pragma region 00_Command_Buffer_Recording
+// simulation·표시 compute·장면·UI를 제출할 command 순서로 기록한다.
 
     void FRenderer::RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
                                         std::uint32_t          ImageIndex,
@@ -56,6 +62,7 @@ namespace MDSS::Rendering
 // 01. Frame Preparation
 // ============================================================
 #pragma region 01_Frame_Preparation
+// 이 frame이 사용할 입력·시간·완료 자원을 준비한 뒤 기록 단계로 넘긴다.
 
     FRenderer::FCommandRecordingState FRenderer::BeginCommandRecording(VkCommandBuffer        CommandBuffer,
                                                                        const FScene&          SceneData,
@@ -138,23 +145,11 @@ namespace MDSS::Rendering
                                             const FDebugUI&         DebugInterface,
                                             FCommandRecordingState& Frame)
     {
-        const auto& FrameIndex = Frame.FrameIndex;
-        const auto& LitHeightDisplayScale = Frame.LitHeightDisplayScale;
-        const auto& QueryBase = Frame.QueryBase;
-        const auto& OverlayQueryBase = Frame.OverlayQueryBase;
+        // 뷰 모드와 텍스처 준비 → 인스턴스별 overlay geometry → 파이프라인 입력 상태를 구성한다.
+        bool bAnyTexelGeometry = false;
+        bool bAnyLitView = false;
+        auto ViewModes = CollectDisplayViewModes(DebugInterface, bAnyTexelGeometry, bAnyLitView);
 
-        std::vector<ERenderViewMode> ViewModes(DebugInterface.GetViewportCount(), ERenderViewMode::Lit);
-        bool                         bAnyTexelGeometry = false;
-        bool                         bAnyLitView = false;
-
-        for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
-        {
-            ViewModes[ViewportIndex] = GetRenderViewMode(ViewportIndex);
-            bAnyTexelGeometry |= UsesTexelGeometry(ViewModes[ViewportIndex]);
-            bAnyLitView |= ViewModes[ViewportIndex] == ERenderViewMode::Lit;
-        }
-
-        bAnyTexelGeometry &= TexelGeometryPreview && TexelGeometryPipeline;
         const auto          DemoBindings = GetDemoSurfaceStateBindings();
         const bool          bPrecomputeCoverage = DemoEffects.bCoverageSmoothing && bPrecomputeCoverageSmoothingEnabled;
         const bool          bUseRenderStateTexture = bRenderStateTextureSamplingEnabled || bPrecomputeCoverage;
@@ -171,6 +166,44 @@ namespace MDSS::Rendering
                 bSeparableCoverageSmoothingEnabled,
                 bSharedStateTextureSmoothingEnabled);
 
+
+        Frame.ViewModes = std::move(ViewModes);
+        Frame.bPrecomputeCoverage = bPrecomputeCoverage;
+        Frame.FragmentMode = FragmentMode;
+
+        RecordInstanceDisplayResources(CommandBuffer, SceneData, Frame, DemoBindings, bAnyTexelGeometry, bAnyLitView);
+    }
+
+    std::vector<ERenderViewMode> FRenderer::CollectDisplayViewModes(const FDebugUI& DebugInterface,
+                                                                    bool& bAnyTexelGeometry,
+                                                                    bool& bAnyLitView) const
+    {
+        std::vector<ERenderViewMode> ViewModes(DebugInterface.GetViewportCount(), ERenderViewMode::Lit);
+
+        for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
+        {
+            ViewModes[ViewportIndex] = GetRenderViewMode(ViewportIndex);
+            bAnyTexelGeometry |= UsesTexelGeometry(ViewModes[ViewportIndex]);
+            bAnyLitView |= ViewModes[ViewportIndex] == ERenderViewMode::Lit;
+        }
+
+        bAnyTexelGeometry &= TexelGeometryPreview && TexelGeometryPipeline;
+
+        return ViewModes;
+    }
+
+    void FRenderer::RecordInstanceDisplayResources(VkCommandBuffer CommandBuffer,
+                                                    const FScene& SceneData,
+                                                    FCommandRecordingState& Frame,
+                                                    const FDemoSurfaceStateBindings& DemoBindings,
+                                                    bool bAnyTexelGeometry,
+                                                    bool bAnyLitView)
+    {
+        // GPU 디스패치·바인딩·타임스탬프 순서를 유지하면서 인스턴스별 display geometry를 기록한다.
+        const auto& FrameIndex = Frame.FrameIndex;
+        const auto& LitHeightDisplayScale = Frame.LitHeightDisplayScale;
+        const auto& QueryBase = Frame.QueryBase;
+        const auto& OverlayQueryBase = Frame.OverlayQueryBase;
         const bool                       bOverlayRendering = bAnyLitView && CanRenderLitOverlays();
         std::vector<std::array<bool, 3>> OverlayActive(SceneData.GetStaticMeshInstances().size(),
                                                        {false, false, false});
@@ -197,35 +230,14 @@ namespace MDSS::Rendering
 
                 if (bAnyTexelGeometry)
                 {
-                    for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
-                    {
-                        const ERenderViewMode Mode = ViewModes[ViewportIndex];
-
-                        if (!UsesTexelGeometry(Mode))
-                            continue;
-                        const bool bAccumulation = Mode == ERenderViewMode::SurfaceAccumulation ||
-                                                   Mode == ERenderViewMode::SurfaceFinalGeometry ||
-                                                   Mode == ERenderViewMode::TotalSimulationHeight;
-                        const bool bTotalHeight = Mode == ERenderViewMode::TotalSimulationHeight;
-                        TexelGeometryPreview->Record(CommandBuffer,
-                                                     Instance,
-                                                     *Descriptors,
-                                                     static_cast<std::uint32_t>(Shared->GetTexelCount()),
-                                                     DebugStateChannel,
-                                                     ChannelCount,
-                                                     LitHeightDisplayScale,
-                                                     bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F,
-                                                     Model,
-                                                     bStateAB,
-                                                     bAccumulation,
-                                                     VK_NULL_HANDLE,
-                                                     0U,
-                                                     bTotalHeight,
-                                                     0U,
-                                                     {0xffffffffU, 0xffffffffU, 0xffffffffU},
-                                                     0U,
-                                                     ViewportIndex + 1U);
-                    }
+                    RecordTexelGeometryViews(CommandBuffer,
+                                             Instance,
+                                             Frame,
+                                             *Shared,
+                                             *Descriptors,
+                                             ChannelCount,
+                                             Model,
+                                             bStateAB);
                 }
 
                 if (!bOverlayRendering)
@@ -375,12 +387,53 @@ namespace MDSS::Rendering
             vkCmdWriteTimestamp(
                 CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, TimestampQueryPool, QueryBase + 1U);
 
-        Frame.ViewModes = std::move(ViewModes);
-        Frame.bPrecomputeCoverage = bPrecomputeCoverage;
         Frame.bOverlayRendering = bOverlayRendering;
-        Frame.FragmentMode = FragmentMode;
         Frame.OverlayActive = std::move(OverlayActive);
         Frame.OverlayGeometrySets = std::move(OverlayGeometrySets);
+    }
+
+    void FRenderer::RecordTexelGeometryViews(
+        VkCommandBuffer CommandBuffer,
+        std::size_t Instance,
+        const FCommandRecordingState& Frame,
+        const SurfaceState::FSurfaceSharedGeometryGPUResources& Shared,
+        const SurfaceState::FSurfaceStateDescriptorResources& Descriptors,
+        std::uint32_t ChannelCount,
+        const glm::mat4& Model,
+        bool bStateAB)
+    {
+        // Preview가 필요한 viewport마다 동일 입력 snapshot으로 Geometry compute를 기록한다.
+        const auto& ViewModes = Frame.ViewModes;
+        const auto& LitHeightDisplayScale = Frame.LitHeightDisplayScale;
+        for (std::size_t ViewportIndex = 0; ViewportIndex < ViewModes.size(); ++ViewportIndex)
+        {
+            const ERenderViewMode Mode = ViewModes[ViewportIndex];
+
+            if (!UsesTexelGeometry(Mode))
+                continue;
+            const bool bAccumulation = Mode == ERenderViewMode::SurfaceAccumulation ||
+                                       Mode == ERenderViewMode::SurfaceFinalGeometry ||
+                                       Mode == ERenderViewMode::TotalSimulationHeight;
+            const bool bTotalHeight = Mode == ERenderViewMode::TotalSimulationHeight;
+            TexelGeometryPreview->Record(CommandBuffer,
+                                         Instance,
+                                         Descriptors,
+                                         static_cast<std::uint32_t>(Shared.GetTexelCount()),
+                                         DebugStateChannel,
+                                         ChannelCount,
+                                         LitHeightDisplayScale,
+                                         bAccumulation ? SurfaceDebugSettings.DisplacementScale : 1.0F,
+                                         Model,
+                                         bStateAB,
+                                         bAccumulation,
+                                         VK_NULL_HANDLE,
+                                         0U,
+                                         bTotalHeight,
+                                         0U,
+                                         {0xffffffffU, 0xffffffffU, 0xffffffffU},
+                                         0U,
+                                         ViewportIndex + 1U);
+        }
     }
 
 #pragma endregion
@@ -389,6 +442,7 @@ namespace MDSS::Rendering
 // 02. Graphics Pass and Viewports
 // ============================================================
 #pragma region 02_Graphics_Pass_and_Viewports
+// render pass의 시작·viewport draw·종료를 같은 attachment에 기록한다.
 
     void FRenderer::BeginSceneGraphicsPass(VkCommandBuffer               CommandBuffer,
                                            std::uint32_t                 ImageIndex,
@@ -483,6 +537,7 @@ namespace MDSS::Rendering
 // 03. Viewport Configuration
 // ============================================================
 #pragma region 03_Viewport_Configuration
+// 각 viewport의 mode·행렬·가시성 문맥을 draw 단계에 전달한다.
 
     FRenderer::FViewportRecordingState FRenderer::ConfigureViewport(VkCommandBuffer               CommandBuffer,
                                                                     const FScene&                 SceneData,
@@ -568,6 +623,7 @@ namespace MDSS::Rendering
 // 04. Base Mesh Drawing
 // ============================================================
 #pragma region 04_Base_Mesh_Drawing
+// 기본 메시의 material·pipeline·descriptor를 선택해 draw한다.
 
     void FRenderer::RecordBaseMeshes(VkCommandBuffer                                 CommandBuffer,
                                      const FScene&                                   SceneData,
@@ -769,6 +825,7 @@ namespace MDSS::Rendering
 // 05. Accumulation Overlay Drawing
 // ============================================================
 #pragma region 05_Accumulation_Overlay_Drawing
+// 표시 mode에 맞는 적층 상면·측면 geometry를 draw한다.
 
     void FRenderer::RecordAccumulationOverlays(VkCommandBuffer                                 CommandBuffer,
                                                const FScene&                                   SceneData,
@@ -993,6 +1050,7 @@ namespace MDSS::Rendering
 // 06. World Reference and Gizmo Drawing
 // ============================================================
 #pragma region 06_World_Reference_and_Gizmo_Drawing
+// Scene 기준선과 선택 gizmo를 현재 viewport에 기록한다.
 
     void FRenderer::RecordWorldReferenceAndGizmo(VkCommandBuffer                CommandBuffer,
                                                  const FScene&                  SceneData,

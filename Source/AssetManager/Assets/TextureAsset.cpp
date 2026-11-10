@@ -18,6 +18,7 @@ namespace MDSS::Asset
 // 00. Texture Asset Lifecycle
 // ============================================================
 #pragma region 00_Texture_Asset_Lifecycle
+// 이미지·뷰·sampler 수명을 Texture asset의 수명에 연결한다.
 
     FTextureAsset::FTextureAsset(FAssetID                         ID,
                                  std::string                      Name,
@@ -73,6 +74,7 @@ namespace MDSS::Asset
 // 01. Texture Resource Access
 // ============================================================
 #pragma region 01_Texture_Resource_Access
+// 업로드된 texture의 GPU 자원과 메타데이터를 소비자에게 제공한다.
 
     std::uint32_t FTextureAsset::GetWidth() const noexcept
     {
@@ -105,6 +107,7 @@ namespace MDSS::Asset
 // 02. Texture Layout and Upload
 // ============================================================
 #pragma region 02_Texture_Layout_and_Upload
+// 이미지 layout을 전환하고 CPU 픽셀을 GPU texture로 전송한다.
 
     void FTextureAsset::TransitionImageLayout(const GPU::FVulkanContext& Context,
                                               VkImage                    Image,

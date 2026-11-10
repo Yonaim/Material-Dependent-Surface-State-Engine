@@ -1,4 +1,7 @@
-"""Write the retry interpretation from actual archived data, preserving earlier failures."""
+"""저작 재검증 결과를 원래 판정과 구분해 문서에 반영한다.
+
+Write the retry interpretation from actual archived data, preserving earlier failures.
+"""
 
 import pathlib, re, shutil
 from authoring_study import ROOT, STUDY, read, write, digest, stamp
@@ -111,7 +114,7 @@ def main():
         text += f"| {pair['a']} / {pair['b']} | {pair['all_named_states_bit_equal']} | {pair['changed_pixels']} | {pair['mean_absolute_rgb_8bit']:.8f} |\n"
     text += '\n`wetness`와 `absorbedwetness` 비교는 두 잔류 채널을 이름 대응시켰다. 화면 pixel 차이는 외관/배치 차이의 서술적 지표이며 품질·사용성 점수가 아니다. 최종 State와 이미지의 시점도 다르다.\n\n'
     text += f'''- **실제 실행:** Geometry 테스트 통과 1건, 화면·State 관측 {len(analysis['runs'])}조건. 최종 저장 State의 음수/NaN/Inf와 exporter의 최종 Reaction budget/arithmetic flag는 0. GPU 로그 gate 실패 {sum(r['runtime_error_count']>0 for r in analysis['runs'])}조건, 그 외 원자료·설정·배열 합·자산 재경로·보관 hash 감사 오류 {len(non_runtime_errors)}. 중간 모든 Step의 Reaction flag/물질 장부를 수집한 검증은 아니다.\n- **해석:** 이름 대응한 최종 wetness/absorbedwetness 배열 및 새 프로세스 반복의 State는 비트 일치했다. 화면의 젖은 외관 차이는 작고 반복 화면도 완전히 같지는 않았다. 잠정 관측이며 GPU 검증 오류가 해결되기 전 기능 정확성·사용성의 확정 증거로 쓰지 않는다. 독립 평가자·목표 외관 gate·인간 제작 시간도 없다.\n- **계속 미측정:** 사람의 작업 완료/시간/실패율, 같은 품질에 도달하는 제작 부담의 상대적 우위, 새 Mesh 일반화, 전체 시간 수지, 상호작용 UI 조정/저장 과정, 정식 GPU 성능. 주어진 reference 파일의 새 프로세스 재실행을 사람의 저장 작업 검증으로 대체하지 않는다. 현재 U/M 인간 비교 No-Go 판단과 시스템 기여 미확보 판정은 유지한다.\n- 수정된 [과제 팩 v2 색인]({prefix}task-pack-v2.json), [잠정 수치·화면 분석과 오류]({prefix}render-v2/analysis.json), [현재 상태](../../../Performance-Data/20261027-authoring-readiness/readiness-current.json). 원래 차단 상태 JSON은 당시 관측으로 보존한다.\n\n![GPU validation 오류가 있는 6조건의 잠정 관측]({prefix}render-v2/figures/reference-sheet.png)\n'''
-    report = ROOT / 'Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md'
+    report = ROOT / 'Docs/Agent-Vault/04_Development/07_Authoring-Study-Protocol.md'
     old = report.read_text(encoding='utf-8')
     old = re.sub(
         r'^> .*$',

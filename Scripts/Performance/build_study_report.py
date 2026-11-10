@@ -1,16 +1,20 @@
-"""Build the central Korean report from the completed archived study artifacts."""
+"""실험 집계 자료에서 비교 표와 보고서에 사용할 통계를 생성한다.
+
+Build the central Korean report from the completed archived study artifacts.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from pathlib import Path
 import json, datetime, argparse
 
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / 'Performance-Data'
-DOC = ROOT / 'Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md'
+DOC = ROOT / 'Docs/Agent-Vault/05_Experiments/02_Performance-Measurements.md'
 FOLDERS = {
     'main': '20261022-optimization-suite-main',
     'short': '20261022-single-transport-validation',
@@ -121,6 +125,7 @@ METRICS = {
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 실험 집계 자료에서 비교 표와 보고서에 사용할 통계를 생성한다.
 
 
 def load(path):
@@ -240,6 +245,7 @@ def overview(comparisons, complete):
 # 02. Main Process
 # ============================================================
 # region 02_Main_Process
+# 실험 집계 자료에서 비교 표와 보고서에 사용할 통계를 생성한다.
 
 
 def append_comparison_sections(comparisons, lines):
@@ -951,6 +957,7 @@ def main():
 # 03. Script Execution
 # ============================================================
 # region 03_Script_Execution
+# 실험 집계 자료에서 비교 표와 보고서에 사용할 통계를 생성한다.
 
 if __name__ == '__main__':
     main()

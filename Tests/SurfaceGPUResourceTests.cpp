@@ -27,6 +27,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region "00_Fixtures_and_Test_Support"
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace
 {
@@ -53,6 +54,7 @@ namespace
 // 01. TestMesoPeakPacking
 // ============================================================
 #pragma region "01_TestMesoPeakPacking"
+// 기대 조건: Meso peak must be shared within a chart and isolated across charts and surfaces
 
     void TestMesoPeakPacking()
     {
@@ -319,6 +321,7 @@ namespace
 // 02. TestCompactScratchStorage
 // ============================================================
 #pragma region "02_TestCompactScratchStorage"
+// 기대 조건: storage switches preserve State and its buffer
 
     void TestCompactScratchStorage(FVulkanTestDevice& Vulkan)
     {
@@ -385,6 +388,7 @@ namespace
 // 03. TestLazyMeshStorage
 // ============================================================
 #pragma region "03_TestLazyMeshStorage"
+// 요청한 렌더 메시 variant에 필요한 자원만 준비되는지 검증한다.
 
     void TestLazyMeshStorage(FVulkanTestDevice& Vulkan)
     {
@@ -418,6 +422,7 @@ namespace
 // 04. TestRetiredBufferReuse
 // ============================================================
 #pragma region "04_TestRetiredBufferReuse"
+// 기대 조건: retired Scene buffers should remain available for reuse
 
     void TestRetiredBufferReuse(FVulkanTestDevice& Vulkan)
     {
@@ -447,6 +452,7 @@ namespace
 // 05. TestGPUResources
 // ============================================================
 #pragma region "05_TestGPUResources"
+// 기대 조건: shared Geometry should retain four texels
 
     void TestGPUResources(FVulkanTestDevice& Vulkan)
     {
@@ -618,6 +624,7 @@ namespace
 // 06. TestDirectionalCavityRetention
 // ============================================================
 #pragma region "06_TestDirectionalCavityRetention"
+// 기대 조건: cavity exit should be blocked at full directional retention
 
     void TestDirectionalCavityRetention(FVulkanTestDevice& Vulkan)
     {
@@ -697,6 +704,7 @@ namespace
 // 07. TestGPUSolver
 // ============================================================
 #pragma region "07_TestGPUSolver"
+// 기대 조건: first solver step should apply the one-shot input to texel zero
 
     void TestGPUSolver(FVulkanTestDevice& Vulkan)
     {
@@ -786,6 +794,7 @@ namespace
 // 08. TestPerWorkgroupChannelMask
 // ============================================================
 #pragma region "08_TestPerWorkgroupChannelMask"
+// 기대 조건: per-WG mask should extend Mud one hop across the WG boundary without extending unrelated Heat
 
     void TestPerWorkgroupChannelMask(FVulkanTestDevice& Vulkan)
     {
@@ -893,6 +902,7 @@ namespace
 // 09. TestAreaAndMobility
 // ============================================================
 #pragma region "09_TestAreaAndMobility"
+// 기대 조건: Geometry must use area-adjusted Capacity and remain proportional above saturation one, with
 
     void TestAreaAndMobility(FVulkanTestDevice& Vulkan)
     {
@@ -1020,6 +1030,7 @@ namespace
 // 10. TestCalibratedGeometrySpeed
 // ============================================================
 #pragma region "10_TestCalibratedGeometrySpeed"
+// 기대 조건: calibrated flow must remain finite and nonnegative
 
     void TestCalibratedGeometrySpeed(FVulkanTestDevice& Vulkan)
     {
@@ -1108,6 +1119,7 @@ namespace
 // 11. TestGeometryDrivenSolver
 // ============================================================
 #pragma region "11_TestGeometryDrivenSolver"
+// 기대 조건: geometry flux should follow world gravity after applying the instance rotation
 
     void TestGeometryDrivenSolver(FVulkanTestDevice& Vulkan)
     {
@@ -1185,6 +1197,7 @@ namespace
 // 12. TestMesoGeometryDrive
 // ============================================================
 #pragma region "12_TestMesoGeometryDrive"
+// 기대 조건: empty source skipping should preserve event input and defer its transport to the next step
 
     void TestMesoGeometryDrive(FVulkanTestDevice& Vulkan)
     {
@@ -1336,6 +1349,7 @@ namespace
 // 13. TestSourceGeometryChannelReuse
 // ============================================================
 #pragma region "13_TestSourceGeometryChannelReuse"
+// 기대 조건: a geometry-disabled channel before active channels must retain its independent state
 
     void TestSourceGeometryChannelReuse(FVulkanTestDevice& Vulkan)
     {
@@ -1412,6 +1426,7 @@ namespace
 // 14. TestTransferWeightSolver
 // ============================================================
 #pragma region "14_TestTransferWeightSolver"
+// 기대 조건: directed cache entries should preserve the symmetric edge weight in both directions
 
     void TestTransferWeightSolver(FVulkanTestDevice& Vulkan)
     {
@@ -1571,6 +1586,7 @@ namespace
 // 15. TestStateDrivenGeometryUpdate
 // ============================================================
 #pragma region "15_TestStateDrivenGeometryUpdate"
+// 기대 조건: geometry update fixture should resolve two independent accumulation states
 
     void TestStateDrivenGeometryUpdate(FVulkanTestDevice& Vulkan)
     {
@@ -1795,6 +1811,7 @@ namespace
 // 16. TestSparseGeometryUpdateWeights
 // ============================================================
 #pragma region "16_TestSparseGeometryUpdateWeights"
+// 희소 형상 갱신 뒤 전송 가중치가 갱신된 형상과 맞는지 검사한다.
 
     void TestSparseGeometryUpdateWeights(FVulkanTestDevice& Vulkan)
     {
@@ -1985,6 +2002,7 @@ namespace
 // 17. TestLocalReactions
 // ============================================================
 #pragma region "17_TestLocalReactions"
+// 반응의 소비·생성·경쟁·유입 전환과 진단 경계를 실제 GPU Solver로 검증한다.
 
     void TestLocalReactions(FVulkanTestDevice& V)
     {
@@ -2190,6 +2208,7 @@ namespace
 // 18. Test Entry Point
 // ============================================================
 #pragma region "18_Test_Entry_Point"
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main(int argc, char** argv)
 {

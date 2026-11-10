@@ -18,6 +18,7 @@ namespace MDSS::Asset
 // 00. FTextureLoader Implementation
 // ============================================================
 #pragma region 00_TextureLoader_Implementation
+// 이미지 파일을 RGBA8 텍스처 데이터로 디코딩.
 
     FTextureData FTextureLoader::LoadRGBA8(const std::filesystem::path& Path)
     {

@@ -1,4 +1,6 @@
-"""Build the three midterm demo meshes and CC0 texture assets.
+"""발표용 Scene·Animation·Profile 자산을 생성한다.
+
+Build the three midterm demo meshes and CC0 texture assets.
 
 Run with Python 3. The dustpan glTF and ground textures come from Poly Haven.
 """
@@ -7,6 +9,7 @@ Run with Python 3. The dustpan glTF and ground textures come from Poly Haven.
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import json
 import math
@@ -26,6 +29,7 @@ USER_AGENT = {"User-Agent": "MDSS-Engine midterm demo asset builder"}
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 발표용 Scene·Animation·Profile 자산을 생성한다.
 
 
 def download(url, path):
@@ -491,6 +495,7 @@ def build_scenes():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 발표용 Scene·Animation·Profile 자산을 생성한다.
 
 if __name__ == "__main__":
     build_ground()

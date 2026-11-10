@@ -1,7 +1,4 @@
-/**
- * @file TexelInspector.comp
- * @brief 선택한 texel과 channel의 누적량, 높이 분해, normal을 CPU 진단용 snapshot으로 복사한다.
- */
+// TexelInspector.comp — 선택한 texel과 channel의 누적량, 높이 분해, normal을 CPU 진단용 snapshot으로 복사한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -11,6 +8,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 1) in;
 
@@ -50,11 +48,13 @@ ReactionScratch;
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// 선택한 texel과 channel의 누적량, 높이 분해, normal을 CPU 진단용 snapshot으로 복사한다.
 
 void main()
 {
     // 01.00. Capture Accumulation and Normal Diagnostics
     // #region 01_00_Capture_Accumulation_and_Normal_Diagnostics
+    // 최종 높이와 형상 재구성 값을 같은 texel 선택에 맞춰 Inspector에 기록한다.
 
     // snapshot은 고정된 여섯 vec4 슬롯에 계산 중간값을 묶어 기록한다.
     mat3 NormalMatrix = mat3(Selection.NormalMatrixColumns[0].xyz,
@@ -80,6 +80,7 @@ void main()
     // #endregion
     // 01.01. Capture Reaction Integration Diagnostics
     // #region 01_01_Capture_Reaction_Integration_Diagnostics
+    // texel scratch의 적분 횟수·공급 제한·예산·산술 오류를 Inspector에 복사한다.
 
     Snapshot.Values[6] = vec4(0);
 

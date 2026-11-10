@@ -21,9 +21,12 @@
 // 00. Types and Resource Interface
 // ============================================================
 #pragma region 00_Types_and_Resource_Interface
+// 계산 단계에서 공유하는 record와 자원 참조의 형식을 먼저 정의한다.
 
 namespace MDSS::SurfaceState
 {
+    struct FPreparedStep;
+
     inline constexpr std::uint32_t SurfaceSolverStateDrivenGeometryUpdateFlag = 1U << 6U;
     inline constexpr std::uint32_t SurfaceSolverDistanceWeightFlag = 1U << 7U;
     inline constexpr std::uint32_t SurfaceSolverNormalWeightFlag = 1U << 8U;
@@ -56,6 +59,10 @@ namespace MDSS::SurfaceState
     inline constexpr std::uint32_t SurfaceSolverAdaptiveGeometryFlag = 1U << 24U;
 
     inline constexpr std::uint32_t SurfaceSolverReactionFlag = 1U << 25U;
+    // Opt-in research controls; product defaults never set these flags.
+    inline constexpr std::uint32_t SurfaceSolverFreezeGeometryFlag = 1U << 26U;
+    inline constexpr std::uint32_t SurfaceSolverEveryStepGeometryFlag = 1U << 27U;
+    inline constexpr std::uint32_t SurfaceSolverReactionLedgerFlag = 1U << 28U;
 
     enum class ESurfaceSolverTerm : std::uint8_t
     {
@@ -147,6 +154,16 @@ namespace MDSS::SurfaceState
         }
 
     private:
+        // GPU command orchestration. Order and stage barriers are part of the solver contract.
+        void RecordPreSolverGeometryBuild(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared) const;
+        void RecordSparseScheduleBootstrap(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
+        void RecordSolverFluxPass(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
+        void RecordSolverStatePass(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
+        void RecordPostSolverDerivedGeometry(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const;
         bool bRuntimeFlagsEnabled = true;
 
         // Compute pipeline creation

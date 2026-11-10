@@ -22,6 +22,7 @@ namespace MDSS
         // 00. State Transitions
         // ============================================================
 #pragma region 00_State_Transitions
+// 집계 창의 초기화·누적·publish에서 관련 값의 일관성을 유지한다.
 
         /** @brief 기존 UI reset 정책대로 평균과 최대값을 미측정(-1)으로 되돌린다. */
         void Reset() noexcept;
@@ -36,6 +37,7 @@ namespace MDSS
         // 01. Owned Samples and Aggregates
         // ============================================================
 #pragma region 01_Owned_Samples_and_Aggregates
+// 창별 표본과 평균·최댓값을 UI 상태가 값으로 소유한다.
 
         double                        WindowElapsed = 0.0;
         double                        ElapsedSeconds = 0.0;

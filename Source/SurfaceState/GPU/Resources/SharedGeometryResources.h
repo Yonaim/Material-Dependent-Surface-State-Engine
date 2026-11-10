@@ -28,6 +28,7 @@
 // 00. Types and Resource Interface
 // ============================================================
 #pragma region 00_Types_and_Resource_Interface
+// 계산 단계에서 공유하는 record와 자원 참조의 형식을 먼저 정의한다.
 
 namespace MDSS::Asset
 {

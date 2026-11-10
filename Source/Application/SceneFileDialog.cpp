@@ -73,6 +73,7 @@ namespace MDSS
 // 00. std Implementation
 // ============================================================
 #pragma region 00_std_Implementation
+// 운영체제 파일 선택 창을 열어 Scene 경로를 반환한다.
 
     std::optional<std::filesystem::path> FSceneFileDialog::OpenScene()
     {

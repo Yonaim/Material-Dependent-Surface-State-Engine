@@ -1,7 +1,4 @@
-/**
- * @file OverlayTop.vert
- * @brief overlay 상단 mesh에 texel 높이, normal, coverage를 보간해 표면 위에 배치한다.
- */
+// OverlayTop.vert — overlay 상단 mesh에 texel 높이, normal, coverage를 보간해 표면 위에 배치한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #include "Rendering/Surface/StateTexture/StateSampling.glsl"
@@ -12,6 +9,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -55,11 +53,13 @@ layout(location = 6) flat out mat3 FragNormalMatrix;
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// overlay 상단 mesh에 texel 높이, normal, coverage를 보간해 표면 위에 배치한다.
 
 void main()
 {
     // 01.00. Interpolate Displacement and Surface Normal
     // #region 01_00_Interpolate_Displacement_and_Surface_Normal
+    // Computed 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
     // 각 mesh 정점이 참조하는 최대 네 texel의 형상을 bilinear weight로 보간한다.
     float Height = 0.0;
@@ -98,6 +98,7 @@ void main()
 
     // 01.01. Publish World Space Top Vertex
     // #region 01_01_Publish_World_Space_Top_Vertex
+    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
 
     mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
     FragIsSide = 0u;

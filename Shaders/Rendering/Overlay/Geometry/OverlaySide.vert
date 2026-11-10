@@ -1,7 +1,4 @@
-/**
- * @file OverlaySide.vert
- * @brief compute pass가 만든 옆면 segment를 6개 정점으로 펼쳐 world-space 조명 입력을 만든다.
- */
+// OverlaySide.vert — compute pass가 만든 옆면 segment를 6개 정점으로 펼쳐 world-space 조명 입력을 만든다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
@@ -20,6 +17,7 @@ struct TSideSegment
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(set = 3, binding = 3, std430) readonly buffer TSegments
 {
@@ -50,11 +48,13 @@ layout(location = 6) flat out mat3 FragNormalMatrix;
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// compute pass가 만든 옆면 segment를 6개 정점으로 펼쳐 world-space 조명 입력을 만든다.
 
 void main()
 {
     // 01.00. Resolve Segment and Reject Invalid Geometry
     // #region 01_00_Resolve_Segment_and_Reject_Invalid_Geometry
+    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
 
     FragIsSide = 1u;
     FragNormalMatrix = mat3(1.0);
@@ -79,6 +79,7 @@ void main()
 
     // 01.01. Construct World Frame and Emit Side Vertex
     // #region 01_01_Construct_World_Frame_and_Emit_Side_Vertex
+    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
 
     vec3 BaseA = vec3(Push.Model * vec4(S.BaseA.xyz, 1.0));
     vec3 TopA = vec3(Push.Model * vec4(S.TopA.xyz, 1.0));

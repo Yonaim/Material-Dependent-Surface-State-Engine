@@ -1,9 +1,13 @@
-"""Audit recorded capability evidence and preserve blocked/unexecuted outcomes."""
+"""저작 검토 결과와 제한 사항을 문서·실험 기록에 반영한다.
+
+Audit recorded capability evidence and preserve blocked/unexecuted outcomes.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from authoring_study import ROOT, STUDY, PACK, read, write, digest, stamp
 import pathlib, shutil
@@ -117,7 +121,7 @@ write(
                 path='render-validation/',
             ),
         ],
-        report='../../Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md',
+        report='../../Docs/Agent-Vault/04_Development/07_Authoring-Study-Protocol.md',
     ),
 )
 
@@ -137,7 +141,7 @@ write(
 
 asset 경로는 이 checkout의 절대 경로입니다. 다른 위치에서는 생성기로 다시 준비해야 합니다. U/M backend만 바꾼 인간 시간 비교는 같은 선언 workflow와 M의 UI 부재 때문에 현재 시행하지 않습니다.
 
-상세 명세: Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md
+상세 명세: Docs/Agent-Vault/04_Development/07_Authoring-Study-Protocol.md
 ''',
     encoding='utf-8',
 )
@@ -146,7 +150,7 @@ asset 경로는 이 checkout의 절대 경로입니다. 다른 위치에서는 �
 followup_files = [
     ROOT / 'Scripts/Research/authoring_render_validation.py',
     pathlib.Path(__file__).resolve(),
-    ROOT / 'Docs/MDSSP-Agent-Vault/03_Development/06_Authoring-Study-Protocol.md',
+    ROOT / 'Docs/Agent-Vault/04_Development/07_Authoring-Study-Protocol.md',
     PACK / 'README.md',
     STUDY / 'readiness-followup.json',
     STUDY / 'study.json',

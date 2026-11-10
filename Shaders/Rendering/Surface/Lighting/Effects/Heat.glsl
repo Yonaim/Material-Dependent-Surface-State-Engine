@@ -1,12 +1,9 @@
-/**
- * @file Heat.glsl
- * @brief Heat saturation gradually shifts a surface toward its configured red tint.
- */
-
+// Heat.glsl — Heat saturation에 따라 표면 색상과 발광을 계산한다.
 // ============================================================
 // 00. Heat Appearance
 // ============================================================
 // #region 00_Heat_Appearance
+// 정규화된 Heat 입력으로 설정된 고온 색상과 발광을 보간한다.
 
 void ApplyHeat(float Heat, inout vec3 Albedo, float Strength)
 {

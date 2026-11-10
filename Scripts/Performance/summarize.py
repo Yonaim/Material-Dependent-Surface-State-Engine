@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Regenerate a Markdown performance report from a benchmark manifest and raw JSONL files."""
+"""프레임 측정 기록에서 실행별 시간 분포와 요약 지표를 계산한다.
+
+Regenerate a Markdown performance report from a benchmark manifest and raw JSONL files.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 
@@ -21,6 +25,7 @@ from typing import Any
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 프레임 측정 기록에서 실행별 시간 분포와 요약 지표를 계산한다.
 
 
 def percentile(values: list[float], fraction: float) -> float:
@@ -54,6 +59,7 @@ def fmt(value: float | None) -> str:
 # 02. Main Process
 # ============================================================
 # region 02_Main_Process
+# 프레임 측정 기록에서 실행별 시간 분포와 요약 지표를 계산한다.
 
 
 def append_solver_summary_rows(grouped, lines, manifest_path):
@@ -258,6 +264,7 @@ def main() -> int:
 # 03. Script Execution
 # ============================================================
 # region 03_Script_Execution
+# 프레임 측정 기록에서 실행별 시간 분포와 요약 지표를 계산한다.
 
 if __name__ == "__main__":
     raise SystemExit(main())

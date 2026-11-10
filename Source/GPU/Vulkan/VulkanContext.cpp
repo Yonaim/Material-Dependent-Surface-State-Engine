@@ -20,6 +20,7 @@ namespace MDSS::GPU
 // 00. Vulkan Context Lifecycle
 // ============================================================
 #pragma region 00_Vulkan_Context_Lifecycle
+// instance·surface·device·queue의 의존 순서에 맞춰 Vulkan 실행 환경을 관리한다.
 
     FVulkanContext::FVulkanContext(const FWindow& FWindow)
         : Instance("MDSS Engine", RequiredInstanceExtensions()), Surface(CreateSurface(Instance.GetHandle(), FWindow)),
@@ -49,6 +50,7 @@ namespace MDSS::GPU
 // 01. Vulkan Context Accessors
 // ============================================================
 #pragma region 01_Vulkan_Context_Accessors
+// 하위 자원 생성에 필요한 Vulkan 실행 객체를 빌려 제공한다.
 
     VkInstance FVulkanContext::GetInstance() const noexcept
     {
@@ -91,6 +93,7 @@ namespace MDSS::GPU
 // 02. Instance Extensions and Surface
 // ============================================================
 #pragma region 02_Instance_Extensions_and_Surface
+// 창과 실행 환경에 필요한 instance extension과 surface를 준비한다.
 
     std::vector<const char*> FVulkanContext::RequiredInstanceExtensions()
     {

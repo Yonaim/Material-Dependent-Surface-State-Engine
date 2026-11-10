@@ -1,4 +1,7 @@
-"""Standalone scientific figures from completed paired trajectories."""
+"""모듈 기준선 집계에서 비교 그래프와 그림 파일을 만든다.
+
+Standalone scientific figures from completed paired trajectories.
+"""
 
 import json
 import pathlib

@@ -1,3 +1,8 @@
+/**
+ * @file SurfaceGPUBufferPool.h
+ * @brief 교체된 Surface GPU 버퍼를 크기·사용 조건에 따라 보관하고 재사용한다.
+ */
+
 #pragma once
 
 #include "GPU/Vulkan/Resource/GPUBuffer.h"

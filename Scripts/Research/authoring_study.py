@@ -1,9 +1,13 @@
-"""Prepare isolated authoring tasks and verify capability boundaries; never fabricate human data."""
+"""저작 가능성 검토의 Profile 사례를 probe로 실행하고 결과를 기록한다.
+
+Prepare isolated authoring tasks and verify capability boundaries; never fabricate human data.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse, copy, datetime as dt, hashlib, json, os, pathlib, shutil, subprocess, sys
 
@@ -17,6 +21,7 @@ EXE = ROOT / 'Build/Release/MDSS_AuthoringProbe.exe'
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 저작 가능성 검토의 Profile 사례를 probe로 실행하고 결과를 기록한다.
 
 
 def stamp():
@@ -289,6 +294,7 @@ def probe():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 저작 가능성 검토의 Profile 사례를 probe로 실행하고 결과를 기록한다.
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()

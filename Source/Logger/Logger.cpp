@@ -86,6 +86,7 @@ namespace MDSS
 // 00. Log Writing
 // ============================================================
 #pragma region 00_Log_Writing
+// level·module·메시지를 기록하고 관련 출력 경로로 전달한다.
 
     void FLogger::Verbose(std::string_view Module, std::string_view Message)
     {
@@ -151,6 +152,7 @@ namespace MDSS
 // 01. Log Entry Access
 // ============================================================
 #pragma region 01_Log_Entry_Access
+// 현재 저장된 로그와 필터에 필요한 항목을 조회한다.
 
     std::vector<FLogEntry> FLogger::GetEntries()
     {
@@ -180,6 +182,7 @@ namespace MDSS
 // 02. Log Level Names
 // ============================================================
 #pragma region 02_Log_Level_Names
+// 로그 level을 UI와 텍스트 출력에서 사용할 이름으로 바꾼다.
 
     const char* FLogger::GetLevelName(ELogLevel Level) noexcept
     {

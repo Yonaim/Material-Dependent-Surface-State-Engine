@@ -1,3 +1,4 @@
+// SolverBindings.glsl — Solver가 읽고 쓰는 State·Geometry·Profile의 buffer와 push constant를 선언한다.
 const uint InvalidSurfaceId = 0xffffffffu;
 
 const uint InvalidTexelIndex = 0xffffffffu;
@@ -13,9 +14,11 @@ const uint SurfaceNeighborCount = 8u;
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 // 00.00. Static Texel Topology and Geometry
 // #region 00_00_Static_Texel_Topology_and_Geometry
+// binding 0·1·2·3·4·5의 선언을 CPU descriptor와 대응시킨다.
 
 layout(std430, set = 0, binding = 0) readonly buffer TSurfaceTexelSurfaceIndices
 {
@@ -63,6 +66,7 @@ NeighborIndices;
 
 // 00.01. Profile Tables and SoA Access
 // #region 00_01_Profile_Tables_and_SoA_Access
+// ProfileParameters 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 layout(std430, set = 0, binding = 6) readonly buffer TSurfaceProfileParameters
 {
@@ -113,6 +117,7 @@ ProfileSupported;
 
 // 00.02. Current Next State and Flux Storage
 // #region 00_02_Current_Next_State_and_Flux_Storage
+// 계산 결과를 RawOutgoingBuffer 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 layout(std430, set = 0, binding = 8) readonly buffer TSurfaceCurrentState
 {
@@ -174,6 +179,7 @@ void storeRawOutgoingFloat(uint Index, float Value)
 
 // 00.03. Dynamic Geometry and Accumulation Storage
 // #region 00_03_Dynamic_Geometry_and_Accumulation_Storage
+// 계산 결과를 AccumulationHeights 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 layout(std430, set = 0, binding = 17) readonly buffer TSurfaceMesoNormals
 {
@@ -246,6 +252,7 @@ float texelAreaScale(uint TexelIndex)
 
 // 00.04. Step Parameters and Execution Mode Flags
 // #region 00_04_Step_Parameters_and_Execution_Mode_Flags
+// 시간 간격·channel 수·변환과 옵션 bit를 CPU push constant에 맞춰 읽는다.
 
 layout(push_constant) uniform TSurfaceSolverPushConstants
 {

@@ -1,7 +1,4 @@
-/**
- * @file TexelMeshVertex.glsl
- * @brief 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
- */
+// TexelMeshVertex.glsl — 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
 #include "Rendering/Overlay/Geometry/TexelGeometryData.glsl"
 
@@ -9,6 +6,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(location = 0) in vec3 InPosition;
 layout(location = 1) in vec3 InNormal;
@@ -46,11 +44,13 @@ layout(location = 6) out vec3 FragWorldPosition;
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// 원본 mesh topology는 유지하고, 샘플한 표시 높이만 동적으로 적용한다.
 
 void main()
 {
     // 01.00. Interpolate Texel Height and Normal
     // #region 01_00_Interpolate_Texel_Height_and_Normal
+    // Computed·Normals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
     float Height = 0.0;
     vec3 NormalOffset = vec3(0);
@@ -83,6 +83,7 @@ void main()
 
     // 01.01. Transform and Publish Surface Vertex
     // #region 01_01_Transform_and_Publish_Surface_Vertex
+    // 계산한 정점 위치를 clip 공간으로 변환해 rasterization 입력으로 출력한다.
 
     mat3 NormalMatrix = transpose(inverse(mat3(Push.Model)));
     FragNormal = normalize(NormalMatrix * InNormal);

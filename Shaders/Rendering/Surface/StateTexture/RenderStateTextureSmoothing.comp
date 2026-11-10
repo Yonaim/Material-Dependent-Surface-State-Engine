@@ -1,7 +1,4 @@
-/**
- * @file RenderStateTextureSmoothing.comp
- * @brief RenderStateTexture를 chart/profile 경계 안에서 5-tap/5x5 Gaussian으로 smoothing한다.
- */
+// RenderStateTextureSmoothing.comp — RenderStateTexture를 chart/profile 경계 안에서 5-tap/5x5 Gaussian으로 smoothing한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
@@ -12,6 +9,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(std430, set = 0, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
@@ -47,12 +45,20 @@ bool SameRegion(uint Center, uint Other, uint Surface);
 
 vec4 ReadSource(ivec3 P);
 
+#if MDSS_SMOOTH_HALO && MDSS_SMOOTH_MODE != 0
+void StageSharedStateHalo(uint Surface, uvec4 Range);
+void FilterSharedStateHalo(uint Surface, uvec2 XY);
+#else
+void FilterStateWithoutHalo(uint Surface, uvec4 Range, uvec2 XY, uint Center);
+#endif
+
 // #endregion
 
 // ============================================================
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// RenderStateTexture를 chart/profile 경계 안에서 5-tap/5x5 Gaussian으로 smoothing한다.
 
 void main()
 {
@@ -66,9 +72,54 @@ void main()
     uvec4 Range = SurfaceRanges.Values[Surface];
     uvec2 XY = gl_GlobalInvocationID.xy;
 #if MDSS_SMOOTH_HALO && MDSS_SMOOTH_MODE != 0
-    // 01.00. Stage Shared State Halo
-    // #region 01_00_Stage_Shared_State_Halo
+    StageSharedStateHalo(Surface, Range);
 
+    barrier();
+
+    if (XY.x >= Range.y || XY.y >= Range.z)
+    {
+        return;
+    }
+
+    FilterSharedStateHalo(Surface, XY);
+#else
+    if (XY.x >= Range.y || XY.y >= Range.z)
+    {
+        return;
+    }
+
+    uint Center = Range.x + XY.y * Range.y + XY.x;
+
+    if (Center >= uint(TexelSurfaceIndices.Values.length()) || Center >= uint(TexelProfileIndices.Values.length()) ||
+        Center >= uint(TexelChartIndices.Values.length()) || TexelSurfaceIndices.Values[Center] != Surface)
+    {
+        if (SmoothingMode() == 1u)
+        {
+            imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
+        }
+        else
+        {
+            imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
+        }
+
+        return;
+    }
+
+    FilterStateWithoutHalo(Surface, Range, XY, Center);
+#endif
+}
+
+// #endregion
+
+// ============================================================
+// 02. Smoothing Operations
+// ============================================================
+// #region 02_Smoothing_Operations
+// halo 적재, 공유 타일 필터 및 직접 필터를 분리하여 실행 조건을 명시한다.
+
+#if MDSS_SMOOTH_HALO && MDSS_SMOOTH_MODE != 0
+void StageSharedStateHalo(uint Surface, uvec4 Range)
+{
     const bool Horizontal = MDSS_SMOOTH_MODE == 1;
     const uint TileWidth = Horizontal ? 12u : 8u;
     const uint TileHeight = Horizontal ? 8u : 12u;
@@ -86,18 +137,12 @@ void main()
         TileChart[Slot] = Valid ? TexelChartIndices.Values[Texel] : 0xffffffffu;
         TileState[Slot] = Valid ? ReadSource(ivec3(P, int(Surface))) : vec4(0.0);
     }
+}
 
-    // #endregion
-
-    barrier();
-
-    if (XY.x >= Range.y || XY.y >= Range.z)
-    {
-        return;
-    }
-
-    // 01.01. Filter and Publish Shared Halo Samples
-    // #region 01_01_Filter_and_Publish_Shared_Halo_Samples
+void FilterSharedStateHalo(uint Surface, uvec2 XY)
+{
+    const bool Horizontal = MDSS_SMOOTH_MODE == 1;
+    const uint TileWidth = Horizontal ? 12u : 8u;
 
     uint CenterSlot =
         (gl_LocalInvocationID.y + (Horizontal ? 0u : 2u)) * TileWidth + gl_LocalInvocationID.x + (Horizontal ? 2u : 0u);
@@ -143,34 +188,10 @@ void main()
     {
         imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
     }
-
-    // #endregion
+}
 #else
-    if (XY.x >= Range.y || XY.y >= Range.z)
-    {
-        return;
-    }
-
-    uint Center = Range.x + XY.y * Range.y + XY.x;
-
-    if (Center >= uint(TexelSurfaceIndices.Values.length()) || Center >= uint(TexelProfileIndices.Values.length()) ||
-        Center >= uint(TexelChartIndices.Values.length()) || TexelSurfaceIndices.Values[Center] != Surface)
-    {
-        if (SmoothingMode() == 1u)
-        {
-            imageStore(TempStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
-        }
-        else
-        {
-            imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), vec4(0.0));
-        }
-
-        return;
-    }
-
-    // 01.02. Filter Direct Five By Five Kernel
-    // #region 01_02_Filter_Direct_Five_By_Five_Kernel
-
+void FilterStateWithoutHalo(uint Surface, uvec4 Range, uvec2 XY, uint Center)
+{
     vec4 Sum = vec4(0.0);
     float WeightSum = 0.0;
 
@@ -213,11 +234,6 @@ void main()
         return;
     }
 
-    // #endregion
-
-    // 01.03. Filter and Publish Separable Axis
-    // #region 01_03_Filter_and_Publish_Separable_Axis
-
     bool Horizontal = SmoothingMode() == 1u;
 
     for (int Offset = -2; Offset <= 2; ++Offset)
@@ -252,17 +268,16 @@ void main()
     {
         imageStore(SmoothedStates, ivec3(ivec2(XY), int(Surface)), Result);
     }
-
-    // #endregion
-#endif
 }
+#endif
 
 // #endregion
 
 // ============================================================
-// 02. Detailed Implementation
+// 03. Detailed Implementation
 // ============================================================
-// #region 02_Detailed_Implementation
+// #region 03_Detailed_Implementation
+// RenderStateTexture를 chart/profile 경계 안에서 5-tap/5x5 Gaussian으로 smoothing한다.
 
 uint SmoothingMode()
 {

@@ -1,4 +1,7 @@
-"""Record the staged execution subset before inspecting timestep/resolution/held-out results."""
+"""결합 연구의 관측 범위와 주장 한계를 현재 연구 기록에 반영한다.
+
+Record the staged execution subset before inspecting timestep/resolution/held-out results.
+"""
 
 from run_coupling_study import EXPERIMENT, write, stamp
 

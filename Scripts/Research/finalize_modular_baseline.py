@@ -1,4 +1,7 @@
-"""Publish measured tables into the existing experiment section after all required gates and a decision."""
+"""모듈 기준선 실험의 비교 결과와 제한을 문서에 반영한다.
+
+Publish measured tables into the existing experiment section after all required gates and a decision.
+"""
 
 import json
 from run_modular_baseline import EXP, ROOT, write, stamp
@@ -90,7 +93,7 @@ T0의 M-separate 14초 대조, ledger OFF, 등록 역순, 실제 모듈별 dispa
 H1의 State-Driven Geometry Coupling 기전 증거는 유지된다. H3 중 모듈 조정 방식에 의한 확장 부담 우위는 이 범위에서 지지되지 않으며, H4 모델의 신규성은 여전히 별도 질문이다. 실제 선행 프레임워크의 계산 모델과 비교해 어떤 제한을 해결하는지 정의하기 전에는 이번 결과를 SIGGRAPH 시스템 기여의 증거로 쓰지 않는다.
 
 '''
-report = ROOT / "Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md"
+report = ROOT / "Docs/Agent-Vault/05_Experiments/02_Performance-Measurements.md"
 content = report.read_text(encoding="utf-8")
 start = content.index("### 현재 결과와 판단", content.index("## PERF-042"))
 end = content.index("### 중단 기준과 해석의 경계", start)

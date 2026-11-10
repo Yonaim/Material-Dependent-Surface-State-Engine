@@ -1,7 +1,4 @@
-/**
- * @file OverlayCoverageSmoothing.comp
- * @brief overlay 정점 coverage를 주변 simulation texel에서 샘플해 부드럽게 만든다.
- */
+// OverlayCoverageSmoothing.comp — overlay 정점 coverage를 주변 simulation texel에서 샘플해 부드럽게 만든다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #include "Rendering/Overlay/Coverage/OverlayStateSampling.glsl"
@@ -10,6 +7,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 // CPU: AccumulationOverlaySides.cpp의 descriptor/push constant와 direct·indirect dispatch에 대응한다.
 layout(local_size_x = 64) in;
@@ -132,6 +130,7 @@ void ComputeCoverage(uint Index, bool TileActive);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// overlay 정점 coverage를 주변 simulation texel에서 샘플해 부드럽게 만든다.
 
 void main()
 {
@@ -176,9 +175,11 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// overlay 정점 coverage를 주변 simulation texel에서 샘플해 부드럽게 만든다.
 
 // 02.00. Resolve Coverage Tiles and Synchronize Shared Halo
 // #region 02_00_Resolve_Coverage_Tiles_and_Synchronize_Shared_Halo
+// workgroup의 barrier 참여 조건과 공유 데이터 읽기·쓰기 순서를 함께 유지한다.
 
 uint CoverageListBase()
 {
@@ -288,6 +289,7 @@ void StageCoverageTile(uint Candidate)
 
 // 02.01. Filter and Publish Vertex Coverage
 // #region 02_01_Filter_and_Publish_Vertex_Coverage
+// 계산 결과를 Coverage 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 void ComputeCoverage(uint Index, bool TileActive)
 {

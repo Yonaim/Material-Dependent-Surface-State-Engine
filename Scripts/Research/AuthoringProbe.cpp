@@ -1,3 +1,8 @@
+/**
+ * @file AuthoringProbe.cpp
+ * @brief Profile 로더·State Registry·기본 외형 바인딩을 렌더링 없이 검사한다.
+ */
+
 // Read-only capability probe for authoring fixtures. It does not render or measure human effort.
 #include "AssetManager/Loaders/SRProfileLoader.h"
 #include "AssetManager/Assets/SRProfileAsset.h"

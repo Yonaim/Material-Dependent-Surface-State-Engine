@@ -17,6 +17,7 @@ namespace MDSS::GPU
 // 00. Buffer Lifecycle
 // ============================================================
 #pragma region 00_Buffer_Lifecycle
+// 요청 크기·usage에 맞는 buffer와 backing memory의 수명을 관리한다.
 
     FGPUBuffer::FGPUBuffer(VkPhysicalDevice         PhysicalDevice,
                            VkDevice                 Device,
@@ -112,6 +113,7 @@ namespace MDSS::GPU
 // 01. Buffer Transfers
 // ============================================================
 #pragma region 01_Buffer_Transfers
+// CPU와 GPU 사이의 upload·download·copy에서 범위와 메모리 조건을 맞춘다.
 
     void FGPUBuffer::Upload(const void* Data, VkDeviceSize DataSize, VkDeviceSize Offset) const
     {
@@ -182,6 +184,7 @@ namespace MDSS::GPU
 // 02. Buffer Accessors
 // ============================================================
 #pragma region 02_Buffer_Accessors
+// buffer handle·크기·할당 정보를 전송·descriptor 소비자에게 제공한다.
 
     VkBuffer FGPUBuffer::GetHandle() const noexcept
     {
@@ -219,6 +222,7 @@ namespace MDSS::GPU
 // 03. Memory Type Selection
 // ============================================================
 #pragma region 03_Memory_Type_Selection
+// 요구 memory property와 장치의 type mask를 만족하는 메모리 종류를 선택한다.
 
     std::uint32_t FGPUBuffer::FindMemoryType(VkPhysicalDevice      PhysicalDevice,
                                              std::uint32_t         TypeFilter,

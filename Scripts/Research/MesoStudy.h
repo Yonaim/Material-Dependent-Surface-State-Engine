@@ -1,3 +1,8 @@
+/**
+ * @file MesoStudy.h
+ * @brief 연구 입력의 Meso 형상을 실제 전처리 경로에 연결하고 형상 진단을 저장한다.
+ */
+
 // Research input/diagnostic adapter. Production solvers and geometry equations are unchanged.
 #pragma once
 #include "AssetManager/Loaders/TextureLoader.h"

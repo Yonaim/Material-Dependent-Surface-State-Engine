@@ -25,6 +25,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region 00_Fixtures_and_Test_Support
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace
 {
@@ -77,6 +78,7 @@ namespace
 // 01. TestProfileAndRegistry
 // ============================================================
 #pragma region 01_TestProfileAndRegistry
+// 기대 조건: State names should trim and lowercase
 
     void TestProfileAndRegistry()
     {
@@ -191,6 +193,7 @@ namespace
 // 02. TestTransferFactorValidation
 // ============================================================
 #pragma region 02_TestTransferFactorValidation
+// 기대 조건:  must be finite and in [0, 1]
 
     void TestTransferFactorValidation()
     {
@@ -229,6 +232,7 @@ namespace
 // 03. TestGeometryAndInstanceData
 // ============================================================
 #pragma region 03_TestGeometryAndInstanceData
+// 기대 조건: geometry texel count should sum Surface grids
 
     void TestGeometryAndInstanceData()
     {
@@ -282,6 +286,7 @@ namespace
 // 04. TestContactInputType
 // ============================================================
 #pragma region 04_TestContactInputType
+// 기대 조건: input should reference instance and registry State ID
 
     void TestContactInputType()
     {
@@ -300,6 +305,7 @@ namespace
 // 05. TestRuntimePreprocessing
 // ============================================================
 #pragma region 05_TestRuntimePreprocessing
+// 기대 조건: valid texel should retain its Profile index
 
     void TestRuntimePreprocessing()
     {
@@ -351,6 +357,7 @@ namespace
 // 06. Test Entry Point
 // ============================================================
 #pragma region 06_Test_Entry_Point
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main()
 {

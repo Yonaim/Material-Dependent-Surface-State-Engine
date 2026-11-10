@@ -1,7 +1,4 @@
-/**
- * @file SurfaceDebugData.glsl
- * @brief 높이 미리보기, heatmap, Texel Inspector가 공유하는 GPU 계산이다. 진단용 형상 계산이며 solver가 사용하는 누적 형상과는 별도로 평가한다.
- */
+// SurfaceDebugData.glsl — 높이 미리보기, heatmap, Texel Inspector가 공유하는 GPU 계산이다. 진단용 형상 계산이며 solver가 사용하는 누적 형상과는 별도로 평가한다.
 #ifndef MDSS_SURFACE_DEBUG_DATA
 #define MDSS_SURFACE_DEBUG_DATA
 #ifndef SURFACE_DEBUG_SET
@@ -13,9 +10,11 @@
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// 높이 미리보기, heatmap, Texel Inspector가 공유하는 GPU 계산이다. 진단용 형상 계산이며 solver가 사용하는 누적 형상과는 별도로 평가한다.
 
 // 00.00. Accumulation Diagnostic Record
 // #region 00_00_Accumulation_Diagnostic_Record
+// Inspector와 진단 뷰가 공유할 높이·normal 재구성 값을 묶는다.
 
 struct TDebugAccumulation
 {
@@ -46,6 +45,7 @@ struct TDebugAccumulation
 
 // 00.01. Evaluate Accumulation and Display Height
 // #region 00_01_Evaluate_Accumulation_and_Display_Height
+// 계산 결과를 TexelSurfaceIndices·TexelProfileIndices·ProfileSupported 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 TDebugAccumulation
 DebugAccumulation(uint Texel, uint Channel, uint Channels, float AccumulationDisplayScale, mat3 NormalMatrix)
@@ -171,6 +171,7 @@ DebugAccumulation(uint Texel, uint Channel, uint Channels, float AccumulationDis
 
 // 00.02. Reconstruct Final Surface Normal
 // #region 00_02_Reconstruct_Final_Surface_Normal
+// MesoNormals·Positions·Normals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 // macro tangent plane에서 least-squares로 높이 기울기를 구한다. seam 이웃 간 위치 차는 mesh-local 기준이다.
 vec3 DebugFinalNormal(

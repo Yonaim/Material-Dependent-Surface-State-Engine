@@ -1,4 +1,7 @@
-"""Retry unchanged binaries after the user's explicit report of a policy change."""
+"""저작 재검증 조건을 준비하고 실행·분석·기록을 조율한다.
+
+Retry unchanged binaries after the user's explicit report of a policy change.
+"""
 
 import copy, os, pathlib, shutil, subprocess, sys
 from authoring_study import ROOT, STUDY, read, write, digest, stamp

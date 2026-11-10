@@ -29,6 +29,7 @@
 
 struct GLFWwindow;
 struct ImFont;
+struct ImVec2;
 
 namespace MDSS::Asset
 {
@@ -48,6 +49,9 @@ namespace MDSS::GPU
 namespace MDSS::Rendering
 {
     class FRenderer;
+    struct FDemoSurfaceEffectSettings;
+    struct FDemoSurfaceStateBindings;
+    struct FRendererProfilingStats;
     enum class ERenderViewMode : std::uint32_t;
 }
 
@@ -60,6 +64,7 @@ namespace MDSS
 {
 
     class FScene;
+    struct FGizmoViewportProjection;
 
     class FDebugUI
     {
@@ -68,6 +73,7 @@ namespace MDSS
         // 00. Lifecycle and Public API
         // ============================================================
 #pragma region "00_Lifecycle_and_Public_API"
+// 외부 호출자가 UI 초기화·프레임·종료 경계를 통해 기능을 사용한다.
 
         // Debug UI lifecycle
         FDebugUI(const GPU::FVulkanContext&         Context,
@@ -158,10 +164,16 @@ namespace MDSS
         // 01. Scene and Viewport Operations
         // ============================================================
 #pragma region "01_Scene_and_Viewport_Operations"
+// Scene·viewport 입력과 선택 편집을 같은 화면 상태에 연결한다.
 
         // Scene, selection, and camera controls
         void ProcessCameraInput(FScene& SceneData);
         void ProcessSelectionAndGizmo(FScene& SceneData);
+        void HandleGizmoKeyboardShortcuts(FScene& SceneData);
+        void ProcessGizmoPointerInteraction(FScene& SceneData);
+        void UpdateActiveGizmoDrag(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
+        void UpdateHoveredGizmoAxis(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
+        void HandleGizmoViewportClick(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse);
         void DrawSceneWindow(FScene& SceneData);
         void ReplaceSceneFromPath(FScene& SceneData, const std::filesystem::path& Path);
         void DrawAnimationWindow(FScene& SceneData);
@@ -179,14 +191,46 @@ namespace MDSS
         // 02. Rendering and Performance Controls
         // ============================================================
 #pragma region "02_Rendering_and_Performance_Controls"
+// 렌더 표시와 실행 비용 옵션을 해당 Renderer 설정에 전달한다.
 
         // Rendering controls and performance overlays
         void DrawRenderOptionsWindow(FScene& SceneData);
+        [[nodiscard]] const char* DrawToolbarViewSelector(std::size_t ActiveViewportIndex,
+                                                          Rendering::ERenderViewMode& CurrentMode);
+        void DrawToolbarStateSelector(Rendering::ERenderViewMode CurrentMode);
+        [[nodiscard]] bool DrawToolbarViewSettingsButton();
+        void DrawToolbarVisibilityAndZoom(FScene& SceneData);
         void DrawViewSettingsPopup(std::size_t                 ActiveViewportIndex,
                                    Rendering::ERenderViewMode& CurrentMode,
                                    const char*                 CurrentName);
         void DrawRenderSettingsWindow(FScene& SceneData);
+        void DrawVisualRenderSettings();
+        void DrawVisualEffectToggles(Rendering::FDemoSurfaceEffectSettings& Effects,
+                                     const Rendering::FDemoSurfaceStateBindings& Bindings,
+                                     bool& bChanged);
+        void DrawVisualEffectDetails(Rendering::FDemoSurfaceEffectSettings& Effects,
+                                     const Rendering::FDemoSurfaceStateBindings& Bindings,
+                                     bool& bChanged);
+        void DrawVisualHeightFade(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged);
+        void DrawVisualShadingControls(Rendering::FDemoSurfaceEffectSettings& Effects, bool& bChanged);
+        void DrawDisplayRenderSettings(FScene& SceneData);
+        void DrawActiveViewModeSettings(std::size_t ActiveViewportIndex, Rendering::ERenderViewMode& CurrentMode);
+        void DrawViewModeContext(Rendering::ERenderViewMode CurrentMode, const char* Title, const char* Description);
+        void DrawHeightGridControls();
+        void DrawWireframeViewSettings(Rendering::ERenderViewMode& CurrentMode);
+        void DrawStateHeatmapViewSettings(Rendering::ERenderViewMode& CurrentMode);
+        void DrawStateGeometryViewSettings(Rendering::ERenderViewMode& CurrentMode);
+        void DrawOutgoingFluxViewSettings(Rendering::ERenderViewMode& CurrentMode);
+        void DrawTransferWeightViewSettings(Rendering::ERenderViewMode& CurrentMode);
+        void DrawTexelGridViewSettings(Rendering::ERenderViewMode& CurrentMode);
+        void DrawTexelAreaViewSettings(Rendering::ERenderViewMode& CurrentMode);
+        void DrawMesoGeometryViewSettings(std::size_t ActiveViewportIndex, Rendering::ERenderViewMode& CurrentMode);
+
         void DrawViewportStatsOverlay();
+        [[nodiscard]] float DrawTimeProfilingOverlay(const ImVec2& ViewportOrigin);
+        void DrawTimeProfilingContents(const Rendering::FRendererProfilingStats& Stats, bool bFineRenderTimings);
+        [[nodiscard]] float DrawMemoryProfilingOverlay(const ImVec2& ViewportOrigin, float RenderStateY);
+        void DrawRenderStateProfilingOverlay(const ImVec2& ViewportOrigin, float RenderStateY);
         void ResetProfilingAverages() noexcept;
         void ResetSurfaceStateSettings();
 
@@ -196,6 +240,7 @@ namespace MDSS
         // 03. Simulation and Diagnostic Panels
         // ============================================================
 #pragma region "03_Simulation_and_Diagnostic_Panels"
+// Solver 설정과 State 진단의 패널 구성 경계를 선언한다.
 
         // Simulation and diagnostic panels
         void DrawSimulationDebugWindow(FScene& SceneData);
@@ -205,8 +250,25 @@ namespace MDSS
         void DrawDebugStateSelector();
         void DrawContactInputTab();
         void DrawProfileTuningTab(FScene& SceneData);
+        [[nodiscard]] std::vector<Asset::FSRProfileAssetHandle> CollectSceneProfiles(const FScene& SceneData) const;
+        void DrawProfileSelector(const std::vector<Asset::FSRProfileAssetHandle>& SceneProfiles);
+        void DrawProfileReactionRules();
+        [[nodiscard]] bool DrawProfileStateSelector();
+        [[nodiscard]] bool PrepareProfileDraft();
+        void DrawProfileParameterControls();
+        void DrawProfileCapacityControls(bool& bChanged);
+        void DrawProfileTransportControls(bool& bChanged);
+        void DrawProfileDecayControls(bool& bChanged);
+        void DrawProfileAccumulationControls(bool& bChanged);
+        void DrawProfileOverrideActions();
         void DrawSimulationSettingsTab(FScene& SceneData);
         void DrawPerformanceTab(bool bRendering);
+        void DrawRenderingPerformanceSettings();
+        void DrawSimulationPerformanceSettings();
+        void DrawRenderingMeshAndTileSettings();
+        void DrawRenderingSmoothingSettings();
+        void DrawSimulationCacheSettings();
+        void DrawSimulationSparseSettings();
         void DrawLogWindow();
 
 #pragma endregion
@@ -215,6 +277,7 @@ namespace MDSS
         // 04. Shared Layout Helpers
         // ============================================================
 #pragma region "04_Shared_Layout_Helpers"
+// 여러 패널에서 사용하는 크기·배치·공통 widget 처리를 모은다.
 
         // Shared layout helpers
         void                      SetupDockspace();
@@ -233,6 +296,7 @@ namespace MDSS
         // 05. Resource References
         // ============================================================
 #pragma region "05_Resource_References"
+// Application이 소유하는 장치·Scene·Renderer를 빌려 사용한다.
 
         VkDevice                           Device = VK_NULL_HANDLE;
         GLFWwindow*                        NativeWindow = nullptr;
@@ -245,6 +309,7 @@ namespace MDSS
         // 06. Camera Input and Dock State
         // ============================================================
 #pragma region "06_Camera_Input_and_Dock_State"
+// dock 배치와 카메라 입력 처리에 필요한 UI 상태를 보관한다.
 
         bool  bRotatingCamera = false;
         float CameraZoomSpeed = 12.0F;
@@ -257,6 +322,7 @@ namespace MDSS
         // 07. Presentation State
         // ============================================================
 #pragma region "07_Presentation_State"
+// 발표·benchmark 표시 선택을 UI 프레임 사이에 유지한다.
 
         struct FPresentationUIState
         {
@@ -274,6 +340,7 @@ namespace MDSS
         // 08. Simulation and Contact Controls
         // ============================================================
 #pragma region "08_Simulation_and_Contact_Controls"
+// 시간·Solver·접촉 입력 편집 값을 관련 실행 경로에 전달한다.
 
         struct FSimulationUIState
         {
@@ -303,6 +370,7 @@ namespace MDSS
         // 09. Profile Editing State
         // ============================================================
 #pragma region "09_Profile_Editing_State"
+// Profile 편집 중 선택한 자산·State와 임시 입력 값을 유지한다.
 
         struct FProfileEditingUIState
         {
@@ -330,6 +398,7 @@ namespace MDSS
         // 10. Selection and Gizmo State
         // ============================================================
 #pragma region "10_Selection_and_Gizmo_State"
+// 선택 객체와 gizmo 조작 중인 변환 상태를 같은 수명으로 보관한다.
 
         struct FGizmoUIState
         {
@@ -353,6 +422,7 @@ namespace MDSS
         // 11. Scene Dock and Viewport State
         // ============================================================
 #pragma region "11_Scene_Dock_and_Viewport_State"
+// Scene 창과 viewport별 카메라·표시 상태를 관리한다.
 
         struct FViewportUIState
         {
@@ -380,6 +450,7 @@ namespace MDSS
         // 12. Log State
         // ============================================================
 #pragma region "12_Log_State"
+// 로그 필터·검색·표시 위치를 프레임 사이에 유지한다.
 
         struct FLogUIState
         {
@@ -397,6 +468,7 @@ namespace MDSS
         // 13. Profiling and Overlay State
         // ============================================================
 #pragma region "13_Profiling_and_Overlay_State"
+// 측정 집계와 overlay 표시 설정을 UI 소비자에게 연결한다.
 
         FProfilingUIState Profiling;
         bool              bViewportOverlaysVisible = true;

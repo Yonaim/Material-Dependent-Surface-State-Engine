@@ -1,4 +1,7 @@
-"""Update one experiment section in the existing report from preserved run files."""
+"""최적화 실험 집계를 현재 성능 보고서에 반영한다.
+
+Update one experiment section in the existing report from preserved run files.
+"""
 
 from __future__ import annotations
 import argparse, datetime as dt, json, os
@@ -6,7 +9,7 @@ from pathlib import Path
 from optimization_round import ROOT, RESULT, LAB
 from analyze_optimization_round import analyze
 
-REPORT = ROOT / 'Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md'
+REPORT = ROOT / 'Docs/Agent-Vault/05_Experiments/02_Performance-Measurements.md'
 DESCRIPTIONS = {
     'PERF028': (
         'PERF-028 후속',

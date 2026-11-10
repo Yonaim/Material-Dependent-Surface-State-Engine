@@ -65,6 +65,7 @@ namespace MDSS::GPU
 // 00. Vulkan Instance Lifecycle
 // ============================================================
 #pragma region 00_Vulkan_Instance_Lifecycle
+// 요청 extension·validation 설정으로 Vulkan instance를 생성·해제한다.
 
     FVulkanInstance::FVulkanInstance(std::string ApplicationName, const std::vector<const char*>& RequiredExtensions)
     {
@@ -163,6 +164,7 @@ namespace MDSS::GPU
 // 01. Vulkan Instance Access
 // ============================================================
 #pragma region 01_Vulkan_Instance_Access
+// 장치 선택과 surface 생성이 참조할 instance 식별자를 제공한다.
 
     VkInstance FVulkanInstance::GetHandle() const noexcept
     {
@@ -175,6 +177,7 @@ namespace MDSS::GPU
 // 02. Extension and Layer Validation
 // ============================================================
 #pragma region 02_Extension_and_Layer_Validation
+// 요청한 extension·layer가 실행 환경에 있는지 검사한다.
 
     std::vector<const char*> FVulkanInstance::BuildExtensionList(const std::vector<const char*>& RequiredExtensions)
     {

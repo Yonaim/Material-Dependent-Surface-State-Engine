@@ -40,6 +40,7 @@ namespace MDSS::Rendering
 // 00. Overlay Resource Lifecycle
 // ============================================================
 #pragma region 00_Overlay_Resource_Lifecycle
+// 적층 표시의 buffer·descriptor·pipeline 수명을 함께 관리한다.
 
     FAccumulationOverlaySides::FAccumulationOverlaySides(VkPhysicalDevice      PhysicalDevice,
                                                          VkDevice              Device,
@@ -206,6 +207,7 @@ namespace MDSS::Rendering
 // 01. Overlay Outputs and Readback
 // ============================================================
 #pragma region 01_Overlay_Outputs_and_Readback
+// overlay 결과와 진단 readback을 표시·검증 소비자에게 제공한다.
 
     VkDescriptorSet
     FAccumulationOverlaySides::GetSet(std::size_t Instance, std::uint32_t Channel, std::uint32_t MeshResolution) const
@@ -275,6 +277,7 @@ namespace MDSS::Rendering
 // 02. Overlay Command Recording
 // ============================================================
 #pragma region 02_Overlay_Command_Recording
+// coverage·geometry 결과가 draw에 앞서 준비되도록 compute 명령을 기록한다.
 
     void FAccumulationOverlaySides::Record(VkCommandBuffer                                         Command,
                                            std::size_t                                             Instance,

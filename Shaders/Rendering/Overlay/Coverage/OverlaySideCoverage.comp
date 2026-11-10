@@ -1,7 +1,4 @@
-/**
- * @file OverlaySideCoverage.comp
- * @brief overlay mesh 정점마다 활성 tile을 확인하고 해당 위치의 State coverage를 저장한다.
- */
+// OverlaySideCoverage.comp — overlay mesh 정점마다 활성 tile을 확인하고 해당 위치의 State coverage를 저장한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #include "Rendering/Overlay/Coverage/OverlayStateSampling.glsl"
@@ -11,12 +8,14 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 // CPU: AccumulationOverlaySides.cpp의 descriptor/push constant와 direct·indirect dispatch에 대응한다.
 layout(local_size_x = 64) in;
 
 // 00.00. Mesh Topology and Draw Record Types
 // #region 00_00_Mesh_Topology_and_Draw_Record_Types
+// binding 0·1의 선언을 CPU descriptor와 대응시킨다.
 
 struct TOverlayVertex
 {
@@ -63,6 +62,7 @@ MeshIndices;
 
 // 00.01. Coverage and Indirect Draw Outputs
 // #region 00_01_Coverage_and_Indirect_Draw_Outputs
+// binding 4·5·6의 선언을 CPU descriptor와 대응시킨다.
 
 layout(set = 2, binding = 4, std430) buffer TCoverageValues
 {
@@ -89,6 +89,7 @@ TopDrawCommands;
 
 // 00.02. Computed Geometry Inputs
 // #region 00_02_Computed_Geometry_Inputs
+// binding 1·0·4의 선언을 CPU descriptor와 대응시킨다.
 
 layout(set = 1, binding = 1, std430) readonly buffer TGeometryCache
 {
@@ -141,6 +142,7 @@ void ComputeCoverage(uint Index, bool TileActive);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// overlay mesh 정점마다 활성 tile을 확인하고 해당 위치의 State coverage를 저장한다.
 
 void main()
 {
@@ -180,6 +182,7 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// overlay mesh 정점마다 활성 tile을 확인하고 해당 위치의 State coverage를 저장한다.
 
 void ComputeCoverage(uint Index, bool TileActive)
 {

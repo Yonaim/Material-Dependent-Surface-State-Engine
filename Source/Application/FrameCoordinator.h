@@ -1,3 +1,8 @@
+/**
+ * @file FrameCoordinator.h
+ * @brief 고정 시간 step과 프레임별 Solver 기록·완료 시점을 조율한다.
+ */
+
 #pragma once
 
 #include "SurfaceState/Solver/SimulationClock.h"

@@ -1,3 +1,8 @@
+/**
+ * @file ProfileResources.cpp
+ * @brief Scene의 공유 Profile·Reaction 테이블을 GPU에 올리고 갱신한다.
+ */
+
 #include "SurfaceState/GPU/Resources/ProfileResources.h"
 
 #include "SurfaceState/GPU/Resources/ResourceBufferHelpers.h"
@@ -17,6 +22,7 @@ namespace MDSS::SurfaceState
 // 00. Profile Resources
 // ============================================================
 #pragma region 00_Profile_Resources
+// Scene 공유 테이블의 채널·Rule 범위를 GPU buffer에 올린다.
 
     FSurfaceProfileGPUResources::FSurfaceProfileGPUResources(VkPhysicalDevice PhysicalDevice,
                                                              VkDevice         Device,

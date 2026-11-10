@@ -1,6 +1,6 @@
 /**
- * @file SurfaceStateSystem.cpp
- * @brief SurfaceStateSystem의 구현을 제공한다.
+ * @file SurfaceTimestep.cpp
+ * @brief 변환·Profile·전송 옵션 변화에 따라 안정 시간 간격과 가중치 cache를 갱신한다.
  */
 
 #include "AssetManager/Assets/MeshAsset.h"
@@ -33,6 +33,7 @@ namespace MDSS::SurfaceState
 // 00. Timestep and Transfer Caches
 // ============================================================
 #pragma region 00_Timestep_and_Transfer_Caches
+// 변환·Profile·옵션 변화에 따라 안정 시간 간격과 가중치 cache를 갱신한다.
 
     float FSurfaceStateSystem::GetMaximumStableDeltaTime()
     {

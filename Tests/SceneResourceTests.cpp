@@ -34,6 +34,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region 00_Fixtures_and_Test_Support
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace MDSS::Tests
 {
@@ -47,6 +48,7 @@ namespace MDSS::Tests
 // 01. TestSurfaceDebugRendering
 // ============================================================
 #pragma region 01_TestSurfaceDebugRendering
+// 실제 렌더 pass에서 Surface 진단 mode의 출력 조건을 검증한다.
 
     void TestSurfaceDebugRendering(const GPU::FVulkanContext& Context);
 #pragma endregion
@@ -55,6 +57,7 @@ namespace MDSS::Tests
 // 02. TestOverlaySideCompaction
 // ============================================================
 #pragma region 02_TestOverlaySideCompaction
+// coverage 경계에서 측면 geometry와 indirect draw 압축 결과를 검증한다.
 
     void TestOverlaySideCompaction(const GPU::FVulkanContext& Context);
 #pragma endregion
@@ -63,6 +66,7 @@ namespace MDSS::Tests
 // 03. TestCavityFillDisplayBound
 // ============================================================
 #pragma region 03_TestCavityFillDisplayBound
+// 기대 조건: requested Profile must belong to the Scene
 
     void TestCavityFillDisplayBound(const GPU::FVulkanContext& Context);
 }
@@ -189,12 +193,71 @@ namespace
         return Parameters.CapacityInputAndTransfer[1];
     }
 
+    void TestScratchDescriptorLifetime(FWindow& Window, const GPU::FVulkanContext& Context, const FFixtures& Fixtures)
+    {
+        Asset::FAssetManager Assets(Context);
+        FSurfaceDataManager  SurfaceData(Assets);
+        FScene               Scene = FSceneLoader::Load(Fixtures.Root / "Heat.Scene", Assets, SurfaceData);
+        SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
+        FSurfaceStateSystem States(Context, Assets, SurfaceData, Scene);
+        FFrameCoordinator   Coordinator(States);
+        FRenderer           Renderer(Context, Window, Assets, SurfaceData, Scene, States, Coordinator);
+        FDebugUI            UI(Context, Window, Renderer, Assets, SurfaceData);
+        ImGui::GetIO().IniFilename = nullptr;
+        UI.SetBenchmarkMode();
+        const auto&        GPU = States.GetGPUResources();
+        const auto*        Initial = GPU.GetInstanceDescriptors(0);
+        const auto         Layout = Initial->GetLayout();
+        const auto         AB = Initial->GetABSet(), BA = Initial->GetBASet();
+        const auto         StateBuffer = GPU.GetInstanceCurrentStateBuffer(0).GetHandle();
+        std::vector<float> Seed(GPU.GetInstanceCurrentStateBuffer(0).GetSize() / sizeof(float), 3.0F);
+        GPU.GetInstanceCurrentStateBuffer(0).Upload(Seed.data(), Seed.size() * sizeof(float));
+        const std::array<FSurfaceScratchStorageFormat, 6> Formats{
+            FSurfaceScratchStorageFormat{true, false, false, true},
+            FSurfaceScratchStorageFormat{false, false, false, true},
+            FSurfaceScratchStorageFormat{true, true, true, true},
+            FSurfaceScratchStorageFormat{true, false, true, false},
+            FSurfaceScratchStorageFormat{true, false, false, true},
+            FSurfaceScratchStorageFormat{true, true, false, true}};
+        for (int Cycle = 0; Cycle < 2; ++Cycle)
+            for (const auto Format : Formats)
+            {
+                vkDeviceWaitIdle(Context.GetDevice());
+                const auto&        Before = GPU.GetInstanceCurrentStateBuffer(0);
+                std::vector<float> Values(Before.GetSize() / sizeof(float));
+                Before.Download(Values.data(), Before.GetSize());
+                States.SetRawFluxCacheEnabled(Format.bCacheRawFlux);
+                States.SetHalfRawFluxCacheEnabled(Format.bHalfRawFlux);
+                States.SetHalfDynamicWeightsEnabled(Format.bHalfWeights);
+                States.SetCompactScratchStorageEnabled(Format.bCompact);
+                States.PrepareScratchStorage();
+                const auto* Current = GPU.GetInstanceDescriptors(0);
+                Check(Current->GetLayout() == Layout && Current->GetABSet() == AB && Current->GetBASet() == BA,
+                      "scratch switches must preserve layouts and sets used by existing solver/render pipelines");
+                std::vector<float> After(Values.size());
+                GPU.GetInstanceCurrentStateBuffer(0).Download(After.data(), Before.GetSize());
+                Check(After == Values && GPU.GetInstanceCurrentStateBuffer(0).GetHandle() == Before.GetHandle(),
+                      "rebinding scratch buffers must preserve State values and their current buffer");
+                for (int Frame = 0; Frame < 2; ++Frame)
+                {
+                    Window.PollEvents();
+                    UI.BeginFrame(Scene);
+                    Renderer.RenderFrame(Scene, UI, 1.0F / 60.0F);
+                }
+                vkDeviceWaitIdle(Context.GetDevice());
+            }
+        Check(GPU.GetInstanceDescriptors(0)->GetBoundBufferHandle(ESurfaceGPUDescriptorBinding::CurrentState, true) ==
+                  StateBuffer,
+              "AB descriptors must retain the original State A buffer after repeated scratch switches");
+    }
+
 #pragma endregion
 
 // ============================================================
 // 04. TestDemoAnimation
 // ============================================================
 #pragma region 04_TestDemoAnimation
+// 기대 조건: Scene animation should load paused independently of simulation
 
     void TestDemoAnimation(const GPU::FVulkanContext& Context, const FFixtures& Fixtures)
     {
@@ -451,6 +514,7 @@ namespace
 // 05. TestSceneResources
 // ============================================================
 #pragma region 05_TestSceneResources
+// 기대 조건: Heat Scene demo bindings must resolve optional names.
 
     void TestSceneResources(FWindow& Window, const GPU::FVulkanContext& Context, const FFixtures& Fixtures)
     {
@@ -755,6 +819,7 @@ namespace
 // 06. Test Entry Point
 // ============================================================
 #pragma region 06_Test_Entry_Point
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main(int Argc, char* Argv[])
 {
@@ -775,6 +840,20 @@ int main(int Argc, char* Argv[])
 
     try
     {
+        if (Argc == 2 && std::string_view(Argv[1]) == "--scratch-layout-only")
+        {
+            {
+                FFixtures Fixtures;
+                TestScratchDescriptorLifetime(*Window, *Context, Fixtures);
+            }
+            Context.reset();
+            Window.reset();
+            for (const auto& Entry : MDSS::FLogger::GetEntries())
+                Check(Entry.Module != "Vulkan Validation" || Entry.Level != MDSS::ELogLevel::Error,
+                      "scratch layout switches must have no Vulkan validation errors");
+            std::cout << "Scratch descriptor lifetime checks passed.\n";
+            return 0;
+        }
         if (Argc == 2 && std::string_view(Argv[1]) == "--cavity-fill-bound")
         {
             MDSS::Tests::TestCavityFillDisplayBound(*Context);

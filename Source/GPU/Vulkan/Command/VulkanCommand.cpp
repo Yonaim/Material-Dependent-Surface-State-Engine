@@ -15,6 +15,7 @@ namespace MDSS::GPU
 // 00. Command Pool Lifecycle
 // ============================================================
 #pragma region 00_Command_Pool_Lifecycle
+// queue family에 맞는 command pool과 buffer의 생성·해제를 관리한다.
 
     FVulkanCommand::FVulkanCommand(VkDevice Device, std::uint32_t GraphicsQueueFamily) : Device(Device)
     {
@@ -47,6 +48,7 @@ namespace MDSS::GPU
 // 01. Command Buffer Access
 // ============================================================
 #pragma region 01_Command_Buffer_Access
+// 기록할 frame이나 단기 작업에 맞는 command buffer를 제공한다.
 
     VkCommandPool FVulkanCommand::GetPool() const noexcept
     {
@@ -78,6 +80,7 @@ namespace MDSS::GPU
 // 02. Single Time Commands
 // ============================================================
 #pragma region 02_Single_Time_Commands
+// 짧은 전송 작업을 기록·제출하고 완료 후 임시 command를 해제한다.
 
     VkCommandBuffer FVulkanCommand::BeginSingleTime() const
     {

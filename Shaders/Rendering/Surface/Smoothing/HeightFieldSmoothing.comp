@@ -1,7 +1,4 @@
-/**
- * @file HeightFieldSmoothing.comp
- * @brief chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
- */
+// HeightFieldSmoothing.comp — chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_DEBUG_SET 0
@@ -12,6 +9,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 64) in;
 
@@ -77,12 +75,27 @@ uint ResolveTexel();
 
 float DisplayedCavityFill(uint Texel, uint Profile);
 
+struct THeightNeighborhood
+{
+    float WeightedCavityFill;
+    float WeightedFollowingHeight;
+    vec3 WeightedNormal;
+    float WeightSum;
+};
+
+#if MDSS_HEIGHT_HALO
+void StageSharedHeightHalo();
+#endif
+THeightNeighborhood AccumulateSameRegionNeighborhood(uint Texel, uvec4 Range, uint Surface, uint Local);
+void PublishSmoothedHeight(uint Texel, THeightNeighborhood Neighborhood);
+
 // #endregion
 
 // ============================================================
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
 
 void main()
 {
@@ -91,56 +104,7 @@ void main()
 #if MDSS_HEIGHT_HALO
     if (Push.UseSparse != 0u && SparseTileValid != 0u)
     {
-        // 01.00. Stage Shared Height Halo
-        // #region 01_00_Stage_Shared_Height_Halo
-
-        uint GroupsPerTile = Push.TileSize * Push.TileSize / 64u;
-        uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
-        uint MicrotilesX = Push.TileSize / 8u;
-        uint MicroX = (Subgroup % MicrotilesX) * 8u;
-        uint MicroY = (Subgroup / MicrotilesX) * 8u;
-
-        for (uint Slot = gl_LocalInvocationID.x; Slot < 100u; Slot += 64u)
-        {
-            uint X = SparseTileX * Push.TileSize + MicroX + Slot % 10u;
-            uint Y = SparseTileY * Push.TileSize + MicroY + Slot / 10u;
-
-            // The 10x10 shared block covers output [-1,+8] on each axis.
-            int LocalX = int(X) - 1;
-            int LocalY = int(Y) - 1;
-            bool InRange =
-                LocalX >= 0 && LocalY >= 0 && LocalX < int(SparseRangeWidth) && LocalY < int(SparseRangeHeight);
-            uint N = InRange ? SparseRangeFirst + uint(LocalY) * SparseRangeWidth + uint(LocalX) : Push.TexelCount;
-            bool Valid = N < Push.TexelCount && N < uint(InputGeometry.Values.length()) &&
-                         N < uint(GeometryScalars.Values.length()) && N < uint(TexelSurfaceIndices.Values.length()) &&
-                         N < uint(TexelProfileIndices.Values.length()) && N < uint(TexelChartIndices.Values.length());
-            HaloValid[Slot] = Valid ? 1u : 0u;
-
-            if (!Valid)
-            {
-                continue;
-            }
-
-            uint Profile = TexelProfileIndices.Values[N];
-            HaloSurface[Slot] = TexelSurfaceIndices.Values[N];
-            HaloProfile[Slot] = Profile;
-            HaloChart[Slot] = TexelChartIndices.Values[N];
-            HaloHeightNormal[Slot] = InputGeometry.Values[N].HeightAndNormal;
-            float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
-#if MDSS_GPU_VALIDATION
-            if (isnan(Meso) || isinf(Meso))
-            {
-                Meso = 0.0;
-            }
-#endif
-            HaloMeso[Slot] = Meso;
-            bool Supported = Push.Channels > 0u && Push.Channel < Push.Channels &&
-                             Profile < SurfaceProfileRecordCount() / Push.Channels;
-            HaloSaturation[Slot] = Supported ? StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) : 0.0;
-            HaloCavityFill[Slot] = Supported ? DisplayedCavityFill(N, Profile) : 0.0;
-        }
-
-        // #endregion
+        StageSharedHeightHalo();
 
         barrier();
     }
@@ -192,9 +156,77 @@ void main()
         return;
     }
 
-    // 01.01. Accumulate Same Region Neighborhood
-    // #region 01_01_Accumulate_Same_Region_Neighborhood
+    THeightNeighborhood Neighborhood = AccumulateSameRegionNeighborhood(T, Range, Surface, Local);
 
+    if (Neighborhood.WeightSum <= 0.0)
+    {
+        return;
+    }
+
+    PublishSmoothedHeight(T, Neighborhood);
+}
+
+// #endregion
+
+// ============================================================
+// 02. Smoothing Steps
+// ============================================================
+// #region 02_Smoothing_Steps
+// smoothing의 공유 halo, 이웃 누적과 결과 반영을 각각 독립된 단계로 구현한다.
+
+#if MDSS_HEIGHT_HALO
+void StageSharedHeightHalo()
+{
+    uint GroupsPerTile = Push.TileSize * Push.TileSize / 64u;
+    uint Subgroup = gl_WorkGroupID.x % GroupsPerTile;
+    uint MicrotilesX = Push.TileSize / 8u;
+    uint MicroX = (Subgroup % MicrotilesX) * 8u;
+    uint MicroY = (Subgroup / MicrotilesX) * 8u;
+
+    for (uint Slot = gl_LocalInvocationID.x; Slot < 100u; Slot += 64u)
+    {
+        uint X = SparseTileX * Push.TileSize + MicroX + Slot % 10u;
+        uint Y = SparseTileY * Push.TileSize + MicroY + Slot / 10u;
+
+        // The 10x10 shared block covers output [-1,+8] on each axis.
+        int LocalX = int(X) - 1;
+        int LocalY = int(Y) - 1;
+        bool InRange =
+            LocalX >= 0 && LocalY >= 0 && LocalX < int(SparseRangeWidth) && LocalY < int(SparseRangeHeight);
+        uint N = InRange ? SparseRangeFirst + uint(LocalY) * SparseRangeWidth + uint(LocalX) : Push.TexelCount;
+        bool Valid = N < Push.TexelCount && N < uint(InputGeometry.Values.length()) &&
+                     N < uint(GeometryScalars.Values.length()) && N < uint(TexelSurfaceIndices.Values.length()) &&
+                     N < uint(TexelProfileIndices.Values.length()) && N < uint(TexelChartIndices.Values.length());
+        HaloValid[Slot] = Valid ? 1u : 0u;
+
+        if (!Valid)
+        {
+            continue;
+        }
+
+        uint Profile = TexelProfileIndices.Values[N];
+        HaloSurface[Slot] = TexelSurfaceIndices.Values[N];
+        HaloProfile[Slot] = Profile;
+        HaloChart[Slot] = TexelChartIndices.Values[N];
+        HaloHeightNormal[Slot] = InputGeometry.Values[N].HeightAndNormal;
+        float Meso = GeometryScalars.Values[N].MesoVirtualHeight;
+#if MDSS_GPU_VALIDATION
+        if (isnan(Meso) || isinf(Meso))
+        {
+            Meso = 0.0;
+        }
+#endif
+        HaloMeso[Slot] = Meso;
+        bool Supported = Push.Channels > 0u && Push.Channel < Push.Channels &&
+                         Profile < SurfaceProfileRecordCount() / Push.Channels;
+        HaloSaturation[Slot] = Supported ? StateSaturationForProfile(N, Push.Channel, Push.Channels, Profile) : 0.0;
+        HaloCavityFill[Slot] = Supported ? DisplayedCavityFill(N, Profile) : 0.0;
+    }
+}
+#endif
+
+THeightNeighborhood AccumulateSameRegionNeighborhood(uint T, uvec4 Range, uint Surface, uint Local)
+{
     ivec2 Center = ivec2(int(Local % Range.y), int(Local / Range.y));
     uint Chart = TexelChartIndices.Values[T];
     uint Profile = TexelProfileIndices.Values[T];
@@ -289,16 +321,11 @@ void main()
         }
     }
 
-    // #endregion
+    return THeightNeighborhood(WeightedCavityFill, WeightedFollowingHeight, WeightedNormal, WeightSum);
+}
 
-    if (WeightSum <= 0.0)
-    {
-        return;
-    }
-
-    // 01.02. Recompose and Publish Smoothed Geometry
-    // #region 01_02_Recompose_and_Publish_Smoothed_Geometry
-
+void PublishSmoothedHeight(uint T, THeightNeighborhood Neighborhood)
+{
     float CenterMeso = GeometryScalars.Values[T].MesoVirtualHeight;
 #if MDSS_GPU_VALIDATION
     if (isnan(CenterMeso) || isinf(CenterMeso))
@@ -308,26 +335,26 @@ void main()
 #endif
     float CenterCavityDepth = max(MesoNormals.Values[T].w - CenterMeso, 0.0);
     float Height =
-        CenterMeso + min(WeightedCavityFill / WeightSum, 1.0) * CenterCavityDepth + WeightedFollowingHeight / WeightSum;
+        CenterMeso + min(Neighborhood.WeightedCavityFill / Neighborhood.WeightSum, 1.0) * CenterCavityDepth + Neighborhood.WeightedFollowingHeight / Neighborhood.WeightSum;
     OutputGeometry.Values[T].HeightAndNormal.x = Height;
 
-    if (dot(WeightedNormal, WeightedNormal) > 1e-12)
+    if (dot(Neighborhood.WeightedNormal, Neighborhood.WeightedNormal) > 1e-12)
     {
-        OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(WeightedNormal);
+        OutputGeometry.Values[T].HeightAndNormal.yzw = normalize(Neighborhood.WeightedNormal);
     }
-
-    // #endregion
 }
 
 // #endregion
 
 // ============================================================
-// 02. Detailed Implementation
+// 03. Detailed Implementation
 // ============================================================
-// #region 02_Detailed_Implementation
+// #region 03_Detailed_Implementation
+// chart와 profile 경계를 넘지 않도록 표시용 높이, cavity fill, normal을 완화한다.
 
-// 02.00. Resolve and Synchronize Sparse Tiles
-// #region 02_00_Resolve_and_Synchronize_Sparse_Tiles
+// 03.00. Resolve and Synchronize Sparse Tiles
+// #region 03_00_Resolve_and_Synchronize_Sparse_Tiles
+// workgroup의 barrier 참여 조건과 공유 데이터 읽기·쓰기 순서를 함께 유지한다.
 
 uint CapacityTileCount()
 {
@@ -424,8 +451,9 @@ uint ResolveTexel()
 
 // #endregion
 
-// 02.01. Evaluate Profile Cavity Fill
-// #region 02_01_Evaluate_Profile_Cavity_Fill
+// 03.01. Evaluate Profile Cavity Fill
+// #region 03_01_Evaluate_Profile_Cavity_Fill
+// Profile의 cavity 관련 계수를 해당 texel의 표시 높이 계산에 사용한다.
 
 float DisplayedCavityFill(uint Texel, uint Profile)
 {

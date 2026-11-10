@@ -1,4 +1,7 @@
-"""Preserve the current study implementation and build artifacts without touching past attempts."""
+"""결합 연구의 재현에 필요한 입력과 소스 해시를 보관한다.
+
+Preserve the current study implementation and build artifacts without touching past attempts.
+"""
 
 import json
 import hashlib

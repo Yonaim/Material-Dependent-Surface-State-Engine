@@ -15,6 +15,7 @@ namespace MDSS::SurfaceState
 // 00. Instance State Construction
 // ============================================================
 #pragma region 00_Instance_State_Construction
+// 공유 Surface와 channel 수에 맞는 instance별 초기 State를 준비한다.
 
     FSurfaceInstanceStateData::FSurfaceInstanceStateData(FSurfaceInstanceID                                ID,
                                                          std::shared_ptr<const FSharedSurfaceGeometryData> Geometry,
@@ -39,6 +40,7 @@ namespace MDSS::SurfaceState
 // 01. Instance State Accessors
 // ============================================================
 #pragma region 01_Instance_State_Accessors
+// 해당 instance의 State 자료와 Surface 연결을 조회한다.
 
     FSurfaceInstanceID FSurfaceInstanceStateData::GetID() const noexcept
     {

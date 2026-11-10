@@ -1,9 +1,13 @@
-"""Audit archived experiment outputs independently of the timing comparison tables."""
+"""성능 study의 manifest와 보관 자료가 명시된 실행 조건에 맞는지 검사한다.
+
+Audit archived experiment outputs independently of the timing comparison tables.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from pathlib import Path
 import argparse, collections, datetime, hashlib, json, math
@@ -24,6 +28,7 @@ FOLDERS = [
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 성능 study의 manifest와 보관 자료가 명시된 실행 조건에 맞는지 검사한다.
 
 
 def load(path):
@@ -36,6 +41,7 @@ def load(path):
 # 02. Main Process
 # ============================================================
 # region 02_Main_Process
+# 성능 study의 manifest와 보관 자료가 명시된 실행 조건에 맞는지 검사한다.
 
 
 def audit_study_phases(all_periods, binary_digests, errors, phases):
@@ -328,6 +334,7 @@ def main():
 # 03. Script Execution
 # ============================================================
 # region 03_Script_Execution
+# 성능 study의 manifest와 보관 자료가 명시된 실행 조건에 맞는지 검사한다.
 
 if __name__ == '__main__':
     raise SystemExit(main())

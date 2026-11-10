@@ -1,4 +1,7 @@
-"""Create traceable contact sheets of captured frames for the study's visual review."""
+"""렌더 캡처와 비교 지표를 모아 시각 품질 검토 자료를 만든다.
+
+Create traceable contact sheets of captured frames for the study's visual review.
+"""
 
 from pathlib import Path
 import datetime, json, sys

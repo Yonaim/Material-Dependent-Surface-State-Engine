@@ -34,6 +34,7 @@ namespace MDSS
 // 00. Lifecycle
 // ============================================================
 #pragma region 00_Lifecycle
+// 객체 초기화와 종료에서 소유 자원·참조의 유효 기간을 맞춘다.
 
     FApplication::FApplication(FBenchmarkOptions     BenchmarkOptions,
                                std::uint32_t         RenderTileSize,
@@ -76,7 +77,7 @@ namespace MDSS
             if (!PerformanceSettings().value("replay_demo", false))
                 MainScene.PauseDemoAnimation();
             DebugInterface->SetBenchmarkMode();
-            FrameRenderer->SetStateDrivenGeometryUpdateEnabled(true);
+            FrameRenderer->SetStateDrivenGeometryUpdateEnabled(PerformanceSettings().value("geometry_feedback", true));
             const auto& Settings = PerformanceSettings();
             DebugInterface->SetPresentationMode(Settings.value("presentation_mode", false));
 
@@ -120,7 +121,7 @@ namespace MDSS
                         for (const auto& Preset : SurfaceState::SurfaceRenderMeshResolutionPresets)
                             (void)Geometry->GetTexelMeshVariant(Preset.Resolution);
             FrameRenderer->ConfigureBenchmarkCapture(
-                Benchmark.OutputPath, Benchmark.WarmupFrames, Benchmark.MeasurementFrames);
+                Benchmark.OutputPath, Benchmark.WarmupFrames, Benchmark.MeasurementFrames, &MainScene);
         }
 
         InputInterface = std::make_unique<FInputSystem>(MainWindow.GetNativeHandle());
@@ -135,6 +136,7 @@ namespace MDSS
 // 01. Main Loop
 // ============================================================
 #pragma region 01_Main_Loop
+// 종료 요청까지 입력·시간·Scene 갱신과 렌더 제출을 반복한다.
 
     void FApplication::Run(std::size_t FrameLimit)
     {
@@ -184,6 +186,7 @@ namespace MDSS
 // 02. Frame Input and Timing
 // ============================================================
 #pragma region 02_Frame_Input_and_Timing
+// 프레임 입력과 시간 값을 준비해 다음 Scene·Solver 갱신에 전달한다.
 
     void FApplication::SubmitInteractiveContact()
     {

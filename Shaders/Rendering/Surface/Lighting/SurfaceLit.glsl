@@ -1,7 +1,4 @@
-/**
- * @file SurfaceLit.glsl
- * @brief Static mesh와 texel mesh가 공유하는 PBR 조명 및 demo State 효과 경로다.
- */
+// SurfaceLit.glsl — Static mesh와 texel mesh가 공유하는 PBR 조명 및 demo State 효과 경로다.
 #include "Rendering/Surface/Lighting/MaterialParameters.glsl"
 #include "Rendering/Surface/StateTexture/RenderStateSampling.glsl"
 #include "Rendering/Surface/Lighting/Effects/Mud.glsl"
@@ -16,6 +13,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -30,18 +28,47 @@ layout(set = 0, binding = 1) uniform sampler2D NormalTexture;
 
 layout(location = 0) out vec4 OutColor;
 
+struct TSurfaceLitResult
+{
+    vec4 Color;
+    float Roughness;
+    float Heat;
+    float WaterFilm;
+    float Lava;
+    float BurnGlow;
+};
+
+vec3 ReconstructSurfaceNormal();
+TSurfaceLitResult EvaluateSurfaceMaterial();
+vec4 ComposeSurfaceLighting(vec3 SurfaceNormal, TSurfaceLitResult Surface);
+
 // #endregion
 
 // ============================================================
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Static mesh와 texel mesh가 공유하는 PBR 조명 및 demo State 효과 경로다.
 
 void main()
 {
-    // 01.00. Reconstruct Surface Normal
-    // #region 01_00_Reconstruct_Surface_Normal
+    vec3 SurfaceNormal = ReconstructSurfaceNormal();
 
+    TSurfaceLitResult Surface = EvaluateSurfaceMaterial();
+
+    OutColor = ComposeSurfaceLighting(SurfaceNormal, Surface);
+}
+
+// #endregion
+
+// ============================================================
+// 02. Detailed Surface Shading
+// ============================================================
+// #region 02_Detailed_Surface_Shading
+// 노멀 복원·재질 반응·최종 조명 합성의 구현을 각각 처리한다.
+
+vec3 ReconstructSurfaceNormal()
+{
     vec3 N = normalize(FragNormal);
 
 #ifdef TEXEL_LIT
@@ -99,12 +126,11 @@ void main()
     {
         N = -N;
     }
+    return N;
+}
 
-    // #endregion
-
-    // 01.01. Sample States and Apply Material Effects
-    // #region 01_01_Sample_States_and_Apply_Material_Effects
-
+TSurfaceLitResult EvaluateSurfaceMaterial()
+{
     vec4 Color = texture(BaseColorTexture, FragUV) * Material.BaseColor;
     float Roughness = Material.DemoOptions.x;
     float Heat = 0.0;
@@ -236,27 +262,26 @@ void main()
         WaterFilm *= 1.0 - smoothstep(0.20, 0.60, WaterFilm);
 #endif
     }
+    return TSurfaceLitResult(Color, Roughness, Heat, WaterFilm, Lava, BurnGlow);
+}
 
-    // #endregion
-
-    // 01.02. Compose Lighting and Emission
-    // #region 01_02_Compose_Lighting_and_Emission
-
-    OutColor = vec4(
+vec4 ComposeSurfaceLighting(vec3 SurfaceNormal, TSurfaceLitResult Surface)
+{
+    vec4 ShadedColor = vec4(
         ShadeSurface(
-            Color.rgb, N, Material.CameraPosition.xyz - FragWorldPosition, Roughness, Material.AmbientLight, WaterFilm),
-        Color.a);
-    OutColor.rgb = min(OutColor.rgb + vec3(0.32, 0.085, 0.006) * BurnGlow, vec3(1.0));
+            Surface.Color.rgb, SurfaceNormal, Material.CameraPosition.xyz - FragWorldPosition, Surface.Roughness, Material.AmbientLight, Surface.WaterFilm),
+        Surface.Color.a);
+    ShadedColor.rgb = min(ShadedColor.rgb + vec3(0.32, 0.085, 0.006) * Surface.BurnGlow, vec3(1.0));
 
 #ifndef BASE_SURFACE_LIT
     if (Material.DemoStateChannels.w != 0u && (Material.DemoExtraStateChannels.w & 8u) != 0u)
     {
-        vec3 Emission = LavaEmission(Lava, Material.DemoOptions.y);
-        OutColor.rgb = min(OutColor.rgb + Emission, vec3(1.0));
+        vec3 Emission = LavaEmission(Surface.Lava, Material.DemoOptions.y);
+        ShadedColor.rgb = min(ShadedColor.rgb + Emission, vec3(1.0));
     }
 #endif
-
-    // #endregion
+    return ShadedColor;
 }
 
 // #endregion
+

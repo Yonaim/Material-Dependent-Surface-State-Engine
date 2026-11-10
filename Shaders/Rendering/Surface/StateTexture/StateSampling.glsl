@@ -1,13 +1,11 @@
-/**
- * @file StateSampling.glsl
- * @brief texel 면적과 profile 지원 여부를 반영해 State를 읽는 공통 함수다. 할당되지 않았거나 지원되지 않는 State는 0으로 처리한다.
- */
+// StateSampling.glsl — texel 면적과 profile 지원 여부를 반영해 State를 읽는 공통 함수다. 할당되지 않았거나 지원되지 않는 State는 0으로 처리한다.
 #include "Shared/SurfaceState/SurfaceStateData.glsl"
 
 // ============================================================
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(std430, set = SURFACE_DEBUG_SET, binding = 13) readonly buffer TSurfaceTexelChartIndices
 {
@@ -18,6 +16,7 @@ TexelChartIndices;
 
 // 00.00. Resolve Valid Surface Sampling Anchor
 // #region 00_00_Resolve_Valid_Surface_Sampling_Anchor
+// 계산 결과를 TexelSurfaceIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 uint FindSurfaceSamplingAnchor(uint Surface, vec2 UV, uvec4 Range)
 {
@@ -68,6 +67,7 @@ uint FindSurfaceSamplingAnchor(uint Surface, vec2 UV, uvec4 Range)
 
 // 00.01. Read and Interpolate Scalar State
 // #region 00_01_Read_and_Interpolate_Scalar_State
+// 계산 결과를 ProfileSupported·TexelSurfaceIndices·TexelChartIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 float StateSaturationForProfile(uint Texel, uint Channel, uint Channels, uint Profile)
 {
@@ -226,6 +226,7 @@ float SampleStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
 
 // 00.02. Smooth Scalar State Within Surface Boundaries
 // #region 00_02_Smooth_Scalar_State_Within_Surface_Boundaries
+// 계산 결과를 ProfileSupported 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 float SampleSmoothedStateSaturation(uint Surface, vec2 UV, uint Channel, uint Channels)
 {
@@ -331,6 +332,7 @@ float SampleSmoothedStateSaturation(uint Surface, vec2 UV, uint Channel, uint Ch
 
 // 00.03. Read and Interpolate Multiple State Channels
 // #region 00_03_Read_and_Interpolate_Multiple_State_Channels
+// 계산 결과를 ProfileSupported·TexelSurfaceIndices·TexelChartIndices 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 vec4 StateSaturationsForProfile(uint Texel, uint Channels, uint Profile, uvec4 StateChannels)
 {

@@ -34,6 +34,7 @@ namespace MDSS::SurfaceState
 // 00. Lifecycle
 // ============================================================
 #pragma region 00_Lifecycle
+// 객체 초기화와 종료에서 소유 자원·참조의 유효 기간을 맞춘다.
 
     FSurfaceStateSystem::FSurfaceStateSystem(const GPU::FVulkanContext&  Context,
                                              const Asset::FAssetManager& Assets,
@@ -121,6 +122,7 @@ namespace MDSS::SurfaceState
 // 01. State and Contact Management
 // ============================================================
 #pragma region 01_State_and_Contact_Management
+// 접촉 입력을 대기열에 넣고 State 리셋·재시작 경계를 관리한다.
 
     void FSurfaceStateSystem::SubmitContact(FSurfaceContactInput Contact)
     {
@@ -201,6 +203,7 @@ namespace MDSS::SurfaceState
 // 02. Debug and Accessors
 // ============================================================
 #pragma region 02_Debug_and_Accessors
+// 진단 설정과 현재 State·자원 조회를 외부 소비자에 제공한다.
 
     std::size_t FSurfaceStateSystem::GetSolverInstanceCount() const noexcept
     {

@@ -19,10 +19,30 @@
 
 namespace MDSS::SurfaceState
 {
+        struct FPreparedStep
+        {
+            const FSurfaceSolverInstanceStep* Step = nullptr;
+            VkDescriptorSet                   CurrentDescriptorSet = VK_NULL_HANDLE;
+            VkDescriptorSet                   NextDescriptorSet = VK_NULL_HANDLE;
+            FSurfaceSolverPushConstants       Constants{};
+            FSurfaceSolverPushConstants       PostConstants{};
+            FSurfaceSolverPushConstants       PrebuildConstants{};
+            std::uint32_t                     WorkgroupCount = 0U;
+            VkBuffer                          HeightBuffer = VK_NULL_HANDLE;
+            VkDeviceSize                      SolverIndirectOffset = 0U;
+            VkDeviceSize                      AccumulationIndirectOffset = 0U;
+            VkDeviceSize                      GeometryIndirectOffset = 0U;
+            bool                              bUpdateGeometry = false;
+            bool                              bPrepareAccumulationHeight = true;
+            bool                              bNeedsPreSolverGeometryBuild = false;
+            bool                              bNeedsSparseReset = false;
+        };
+
 // ============================================================
 // 00. Solver Command Helpers
 // ============================================================
 #pragma region 00_Solver_Command_Helpers
+// dispatch·barrier·sparse 주소 준비에서 반복되는 기록 동작을 공통화한다.
 
     namespace
     {
@@ -146,24 +166,7 @@ namespace MDSS::SurfaceState
                                  nullptr);
         }
 
-        struct FPreparedStep
-        {
-            const FSurfaceSolverInstanceStep* Step = nullptr;
-            VkDescriptorSet                   CurrentDescriptorSet = VK_NULL_HANDLE;
-            VkDescriptorSet                   NextDescriptorSet = VK_NULL_HANDLE;
-            FSurfaceSolverPushConstants       Constants{};
-            FSurfaceSolverPushConstants       PostConstants{};
-            FSurfaceSolverPushConstants       PrebuildConstants{};
-            std::uint32_t                     WorkgroupCount = 0U;
-            VkBuffer                          HeightBuffer = VK_NULL_HANDLE;
-            VkDeviceSize                      SolverIndirectOffset = 0U;
-            VkDeviceSize                      AccumulationIndirectOffset = 0U;
-            VkDeviceSize                      GeometryIndirectOffset = 0U;
-            bool                              bUpdateGeometry = false;
-            bool                              bPrepareAccumulationHeight = true;
-            bool                              bNeedsPreSolverGeometryBuild = false;
-            bool                              bNeedsSparseReset = false;
-        };
+
 
         std::vector<FPreparedStep> PrepareSolverSteps(std::span<const FSurfaceSolverInstanceStep> InstanceSteps)
         {
@@ -200,7 +203,8 @@ namespace MDSS::SurfaceState
                 Item.GeometryIndirectOffset =
                     static_cast<VkDeviceSize>(SparseLayout.GeometryCommandWord * sizeof(std::uint32_t));
 
-                Item.bUpdateGeometry = (Step.SolverFlags & SurfaceSolverStateDrivenGeometryUpdateFlag) != 0U;
+                Item.bUpdateGeometry = (Step.SolverFlags & SurfaceSolverStateDrivenGeometryUpdateFlag) != 0U &&
+                                       (Step.SolverFlags & SurfaceSolverFreezeGeometryFlag) == 0U;
                 Item.bPrepareAccumulationHeight = Step.bPrepareAccumulationHeight || Item.bUpdateGeometry;
                 Item.bNeedsPreSolverGeometryBuild =
                     Item.bUpdateGeometry && (Step.SolverFlags & SurfaceSolverForceFullGeometryFlag) != 0U;
@@ -251,6 +255,7 @@ namespace MDSS::SurfaceState
 // 01. Solver Lifecycle
 // ============================================================
 #pragma region 01_Solver_Lifecycle
+// 필요한 compute pass·pipeline을 만들고 Solver 자원의 수명을 관리한다.
 
     FSurfaceStateSolver::FSurfaceStateSolver(VkDevice Device, VkDescriptorSetLayout DescriptorSetLayout)
         : Device(Device)
@@ -395,6 +400,7 @@ namespace MDSS::SurfaceState
 // 02. Solver Command Recording
 // ============================================================
 #pragma region 02_Solver_Command_Recording
+// Pass 1·Pass 2·Reaction·Geometry를 입력 State와 barrier 순서에 맞춰 기록한다.
 
     void FSurfaceStateSolver::RecordStep(VkCommandBuffer                         CommandBuffer,
                                          const FSurfaceStateDescriptorResources& Descriptors,
@@ -423,18 +429,8 @@ namespace MDSS::SurfaceState
             CommandBuffer, std::span<const FSurfaceSolverInstanceStep>(&Step, 1U), TimestampQueryPool, FirstPassQuery);
     }
 
-    void FSurfaceStateSolver::RecordSteps(VkCommandBuffer                             CommandBuffer,
-                                          std::span<const FSurfaceSolverInstanceStep> InstanceSteps,
-                                          VkQueryPool                                 TimestampQueryPool,
-                                          std::uint32_t                               FirstStepQuery) const
+    static void RecordSolverReadCompletionBarrier(VkCommandBuffer CommandBuffer)
     {
-        if (CommandBuffer == VK_NULL_HANDLE)
-            throw std::invalid_argument("Surface State solver requires a command buffer.");
-        if (InstanceSteps.empty())
-            return;
-
-        std::vector<FPreparedStep> Prepared = PrepareSolverSteps(InstanceSteps);
-
         VkMemoryBarrier ReadCompletion{};
         ReadCompletion.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
         ReadCompletion.srcAccessMask =
@@ -452,29 +448,88 @@ namespace MDSS::SurfaceState
                              0,
                              nullptr);
 
-        const auto BindStep = [&](VkDescriptorSet DescriptorSet, const FSurfaceSolverPushConstants& Constants)
-        {
-            vkCmdBindDescriptorSets(
-                CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &DescriptorSet, 0, nullptr);
-            vkCmdPushConstants(
-                CommandBuffer, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Constants), &Constants);
-        };
-        const auto WriteTimestamp = [&](std::uint32_t Offset)
-        {
-            if (TimestampQueryPool != VK_NULL_HANDLE)
-                vkCmdWriteTimestamp(
-                    CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, TimestampQueryPool, FirstStepQuery + Offset);
-        };
-        const auto AppendGeometryBarriers = [&](std::vector<VkBufferMemoryBarrier>& Barriers, const FPreparedStep& Item)
-        {
-            const auto& Descriptors = *Item.Step->Descriptors;
-            const bool  bCurrentAB = Item.Step->bCurrentStateAB;
-            Barriers.push_back(MakeComputeBufferBarrier(
-                Descriptors.GetBoundBufferHandle(ESurfaceGPUDescriptorBinding::DynamicGeometry, bCurrentAB),
-                VK_ACCESS_SHADER_READ_BIT));
-            Barriers.push_back(MakeComputeBufferBarrier(Item.HeightBuffer, VK_ACCESS_SHADER_READ_BIT));
-        };
+    }
 
+    static void RecordDerivedBuffersReadyBarrier(VkCommandBuffer CommandBuffer)
+    {
+
+            VkMemoryBarrier DerivedReady{};
+            DerivedReady.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+            DerivedReady.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            DerivedReady.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+            vkCmdPipelineBarrier(CommandBuffer,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+                                 0,
+                                 1,
+                                 &DerivedReady,
+                                 0,
+                                 nullptr,
+                                 0,
+                                 nullptr);
+            }
+
+    static void BindRecordedSolverStep(VkCommandBuffer CommandBuffer,
+                                       VkPipelineLayout PipelineLayout,
+                                       VkDescriptorSet DescriptorSet,
+                                       const FSurfaceSolverPushConstants& Constants)
+    {
+        vkCmdBindDescriptorSets(
+            CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, PipelineLayout, 0, 1, &DescriptorSet, 0, nullptr);
+        vkCmdPushConstants(
+            CommandBuffer, PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Constants), &Constants);
+    }
+
+    static void WriteRecordedSolverTimestamp(VkCommandBuffer CommandBuffer,
+                                             VkQueryPool TimestampQueryPool,
+                                             std::uint32_t FirstStepQuery,
+                                             std::uint32_t Offset)
+    {
+        if (TimestampQueryPool != VK_NULL_HANDLE)
+        {
+            vkCmdWriteTimestamp(CommandBuffer,
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                TimestampQueryPool,
+                                FirstStepQuery + Offset);
+        }
+    }
+
+    static void AppendRecordedGeometryReadBarriers(std::vector<VkBufferMemoryBarrier>& Barriers,
+                                                    const FPreparedStep& Item)
+    {
+        const auto& Descriptors = *Item.Step->Descriptors;
+        const bool bCurrentAB = Item.Step->bCurrentStateAB;
+        Barriers.push_back(MakeComputeBufferBarrier(
+            Descriptors.GetBoundBufferHandle(ESurfaceGPUDescriptorBinding::DynamicGeometry, bCurrentAB),
+            VK_ACCESS_SHADER_READ_BIT));
+        Barriers.push_back(MakeComputeBufferBarrier(Item.HeightBuffer, VK_ACCESS_SHADER_READ_BIT));
+    }
+
+    void FSurfaceStateSolver::RecordSteps(VkCommandBuffer                             CommandBuffer,
+                                          std::span<const FSurfaceSolverInstanceStep> InstanceSteps,
+                                          VkQueryPool                                 TimestampQueryPool,
+                                          std::uint32_t                               FirstStepQuery) const
+    {
+        if (CommandBuffer == VK_NULL_HANDLE)
+            throw std::invalid_argument("Surface State solver requires a command buffer.");
+        if (InstanceSteps.empty())
+            return;
+
+        std::vector<FPreparedStep> Prepared = PrepareSolverSteps(InstanceSteps);
+
+        RecordSolverReadCompletionBarrier(CommandBuffer);
+
+
+        RecordPreSolverGeometryBuild(CommandBuffer, Prepared);
+        RecordSparseScheduleBootstrap(CommandBuffer, Prepared, TimestampQueryPool, FirstStepQuery);
+        RecordSolverFluxPass(CommandBuffer, Prepared, TimestampQueryPool, FirstStepQuery);
+        RecordSolverStatePass(CommandBuffer, Prepared, TimestampQueryPool, FirstStepQuery);
+        RecordPostSolverDerivedGeometry(CommandBuffer, Prepared, TimestampQueryPool, FirstStepQuery);
+    }
+
+    void FSurfaceStateSolver::RecordPreSolverGeometryBuild(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared) const
+    {
         // Lifecycle bootstrap only: build CurrentState-derived data once before the solver when a reset,
         // profile edit or transform change invalidated it. This path deliberately bypasses sparse lists.
         const bool bAnyPreSolverBuild =
@@ -492,7 +547,7 @@ namespace MDSS::SurfaceState
             {
                 if (!Item.bNeedsPreSolverGeometryBuild)
                     continue;
-                BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 Barriers.push_back(MakeComputeBufferBarrier(Item.HeightBuffer, VK_ACCESS_SHADER_READ_BIT));
             }
@@ -507,9 +562,9 @@ namespace MDSS::SurfaceState
             {
                 if (!Item.bNeedsPreSolverGeometryBuild)
                     continue;
-                BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
-                AppendGeometryBarriers(Barriers, Item);
+                AppendRecordedGeometryReadBarriers(Barriers, Item);
             }
 
             RecordBufferBarriers(
@@ -525,7 +580,7 @@ namespace MDSS::SurfaceState
                                   VK_PIPELINE_BIND_POINT_COMPUTE,
                                   DynamicTransferWeightPipelines
                                       [bRuntimeFlagsEnabled ? 2U : WeightModeFromFlags(Item.PrebuildConstants.Flags)]);
-                BindStep(Item.CurrentDescriptorSet, Item.PrebuildConstants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.CurrentDescriptorSet, Item.PrebuildConstants);
                 vkCmdDispatch(CommandBuffer, Item.WorkgroupCount, 1, 1);
                 const auto& Descriptors = *Item.Step->Descriptors;
                 const bool  bCurrentAB = Item.Step->bCurrentStateAB;
@@ -541,8 +596,13 @@ namespace MDSS::SurfaceState
                 CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, Barriers);
         }
 
+    }
+
+    void FSurfaceStateSolver::RecordSparseScheduleBootstrap(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const
+    {
         // Pass1 timing includes the fused sparse reset/input-merge setup so A/B numbers include real overhead.
-        WriteTimestamp(4U);
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 4U);
 
         const bool bAnySparseReset = std::any_of(
             Prepared.begin(), Prepared.end(), [](const FPreparedStep& Item) { return Item.bNeedsSparseReset; });
@@ -556,7 +616,7 @@ namespace MDSS::SurfaceState
             {
                 if (!Item.bNeedsSparseReset)
                     continue;
-                BindStep(Item.CurrentDescriptorSet, Item.Constants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.CurrentDescriptorSet, Item.Constants);
                 vkCmdDispatch(CommandBuffer, 1, 1, 1);
                 ResetBarriers.push_back(MakeComputeBufferBarrier(
                     Item.HeightBuffer,
@@ -569,6 +629,11 @@ namespace MDSS::SurfaceState
                                  ResetBarriers);
         }
 
+    }
+
+    void FSurfaceStateSolver::RecordSolverFluxPass(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const
+    {
         std::vector<VkBufferMemoryBarrier> PassBarriers;
         PassBarriers.reserve(Prepared.size() * 2U);
 
@@ -578,7 +643,7 @@ namespace MDSS::SurfaceState
                                                              : RawModeFromFlags(Item.Constants.Flags) * 2U +
                                                                    WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass1Pipelines[Variant]);
-            BindStep(Item.CurrentDescriptorSet, Item.Constants);
+            BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
                                          (Item.Constants.Flags & SurfaceSolverSeedPersistentActivityFlag) == 0U;
             if (bSparseDispatch)
@@ -595,11 +660,17 @@ namespace MDSS::SurfaceState
                 VK_ACCESS_SHADER_READ_BIT));
         }
 
-        WriteTimestamp(5U);
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 5U);
         RecordBufferBarriers(
             CommandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, PassBarriers);
 
-        WriteTimestamp(6U);
+    }
+
+    void FSurfaceStateSolver::RecordSolverStatePass(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const
+    {
+        std::vector<VkBufferMemoryBarrier> PassBarriers;
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 6U);
         PassBarriers.clear();
         PassBarriers.reserve(Prepared.size() * 5U);
 
@@ -609,7 +680,7 @@ namespace MDSS::SurfaceState
                                                              : RawModeFromFlags(Item.Constants.Flags) * 2U +
                                                                    WeightModeFromFlags(Item.Constants.Flags);
             vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, Pass2Pipelines[Variant]);
-            BindStep(Item.CurrentDescriptorSet, Item.Constants);
+            BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.CurrentDescriptorSet, Item.Constants);
             const bool bSparseDispatch = (Item.Constants.Flags & SurfaceSolverSparseSolverFlag) != 0U &&
                                          (Item.Constants.Flags & SurfaceSolverSeedPersistentActivityFlag) == 0U;
             if (bSparseDispatch)
@@ -629,7 +700,7 @@ namespace MDSS::SurfaceState
                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                      ReactionBarriers);
                 vkCmdBindPipeline(CommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, ReactionPipeline);
-                BindStep(Item.CurrentDescriptorSet, Item.Constants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.CurrentDescriptorSet, Item.Constants);
 
                 if (bSparseDispatch)
                     vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.SolverIndirectOffset);
@@ -666,15 +737,20 @@ namespace MDSS::SurfaceState
             }
         }
 
-        WriteTimestamp(7U);
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 7U);
         RecordBufferBarriers(CommandBuffer,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT |
                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
                              PassBarriers);
 
+    }
+
+    void FSurfaceStateSolver::RecordPostSolverDerivedGeometry(VkCommandBuffer CommandBuffer, std::span<const FPreparedStep> Prepared,
+                                   VkQueryPool TimestampQueryPool, std::uint32_t FirstStepQuery) const
+    {
         // Derive the just-produced state. Renderer and the next fixed substep consume these authoritative buffers.
-        WriteTimestamp(0U);
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 0U);
         std::vector<VkBufferMemoryBarrier> DerivedBarriers;
         DerivedBarriers.reserve(Prepared.size() * 2U);
         const bool bAnyPostHeight =
@@ -689,7 +765,7 @@ namespace MDSS::SurfaceState
             {
                 if (!Item.bPrepareAccumulationHeight)
                     continue;
-                BindStep(Item.NextDescriptorSet, Item.PostConstants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.NextDescriptorSet, Item.PostConstants);
                 const bool bForceFull = (Item.PostConstants.Flags & SurfaceSolverForceFullGeometryFlag) != 0U;
                 const bool bSparseHeight = (Item.PostConstants.Flags & SurfaceSolverSparseAccumulationHeightFlag) != 0U;
 
@@ -719,9 +795,9 @@ namespace MDSS::SurfaceState
             {
                 if (!Item.bUpdateGeometry)
                     continue;
-                BindStep(Item.NextDescriptorSet, Item.PostConstants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.NextDescriptorSet, Item.PostConstants);
                 vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.GeometryIndirectOffset);
-                AppendGeometryBarriers(DerivedBarriers, Item);
+                AppendRecordedGeometryReadBarriers(DerivedBarriers, Item);
             }
 
             RecordBufferBarriers(CommandBuffer,
@@ -731,9 +807,9 @@ namespace MDSS::SurfaceState
                                  DerivedBarriers);
         }
 
-        WriteTimestamp(1U);
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 1U);
 
-        WriteTimestamp(2U);
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 2U);
 
         if (bAnyGeometryUpdate)
         {
@@ -748,7 +824,7 @@ namespace MDSS::SurfaceState
                                   DynamicTransferWeightPipelines[bRuntimeFlagsEnabled
                                                                      ? 2U
                                                                      : WeightModeFromFlags(Item.PostConstants.Flags)]);
-                BindStep(Item.NextDescriptorSet, Item.PostConstants);
+                BindRecordedSolverStep(CommandBuffer, PipelineLayout, Item.NextDescriptorSet, Item.PostConstants);
                 vkCmdDispatchIndirect(CommandBuffer, Item.HeightBuffer, Item.GeometryIndirectOffset);
                 const auto& Descriptors = *Item.Step->Descriptors;
                 const bool  bNextAB = !Item.Step->bCurrentStateAB;
@@ -767,27 +843,15 @@ namespace MDSS::SurfaceState
                                  DerivedBarriers);
         }
 
-        WriteTimestamp(3U);
+        WriteRecordedSolverTimestamp(CommandBuffer, TimestampQueryPool, FirstStepQuery, 3U);
 
         if (bAnyPostHeight || bAnyGeometryUpdate)
         {
-            VkMemoryBarrier DerivedReady{};
-            DerivedReady.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-            DerivedReady.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-            DerivedReady.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-            vkCmdPipelineBarrier(CommandBuffer,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
-                                 0,
-                                 1,
-                                 &DerivedReady,
-                                 0,
-                                 nullptr,
-                                 0,
-                                 nullptr);
+            RecordDerivedBuffersReadyBarrier(CommandBuffer);
         }
-    }
+        }
+
+
 
 #pragma endregion
 
@@ -795,6 +859,7 @@ namespace MDSS::SurfaceState
 // 03. Compute Pipeline Creation
 // ============================================================
 #pragma region 03_Compute_Pipeline_Creation
+// 실행 옵션별 shader variant를 공통 descriptor·push constant에 연결한다.
 
     VkShaderModule FSurfaceStateSolver::CreateShaderModule(VkDevice Device, const char* Path)
     {

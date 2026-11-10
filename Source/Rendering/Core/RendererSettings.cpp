@@ -1,3 +1,8 @@
+/**
+ * @file RendererSettings.cpp
+ * @brief 렌더·진단 옵션을 적용하고 필요한 표시 자원과 cache를 갱신한다.
+ */
+
 #include "Rendering/Core/RendererShared.h"
 
 namespace MDSS::Rendering
@@ -6,6 +11,7 @@ namespace MDSS::Rendering
 // 00. Render and Debug Settings
 // ============================================================
 #pragma region 00_Render_and_Debug_Settings
+// 변경된 표시 옵션을 해당 pipeline·cache·Surface 설정에 반영한다.
 
     ERenderViewMode FRenderer::GetRenderViewMode() const noexcept
     {
@@ -157,6 +163,7 @@ namespace MDSS::Rendering
 // 01. Surface Effect Configuration
 // ============================================================
 #pragma region 01_Surface_Effect_Configuration
+// State별 외형 설정을 GPU material 입력에 연결한다.
 
     void FRenderer::SetDemoSurfaceEffectSettings(const FDemoSurfaceEffectSettings& Settings)
     {

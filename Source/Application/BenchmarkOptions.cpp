@@ -1,6 +1,6 @@
 /**
  * @file BenchmarkOptions.cpp
- * @brief Validates benchmark and frame-limit command-line arguments.
+ * @brief benchmark 명령행 인수를 해석하고 실행 옵션의 유효성을 검사한다.
  */
 #include "Application/BenchmarkOptions.h"
 
@@ -48,6 +48,7 @@ namespace MDSS
 // 00. std Implementation
 // ============================================================
 #pragma region 00_std_Implementation
+// benchmark 명령행 인수를 해석하고 실행 옵션의 유효성을 검사한다.
 
     std::size_t FBenchmarkOptions::GetTotalFrameLimit() const noexcept
     {

@@ -58,6 +58,11 @@ namespace MDSS::SurfaceState
     {
     public:
         // Instance state buffer creation
+        /**
+         * @brief instance의 State·Solver 임시 버퍼를 할당한다.
+         * @param bResearchReactionLedger 연구용 Rule extent 장부 N×M float를 추가 할당할지 여부.
+         * @note Solver의 Reaction ledger flag는 이 추가 공간을 할당한 instance에서만 사용한다.
+         */
         FSurfaceInstanceGPUResources(VkPhysicalDevice                    PhysicalDevice,
                                      VkDevice                            Device,
                                      std::size_t                         TexelCount,
@@ -67,10 +72,11 @@ namespace MDSS::SurfaceState
                                      const std::vector<float>&           WorldTexelAreas = {},
                                      FSurfaceGPUBufferPool*              Pool = nullptr,
                                      FSurfaceScratchStorageFormat        Storage = {},
-                                     std::uint32_t                       MaxReactionCount = 0);
+                                     std::uint32_t                       MaxReactionCount = 0,
+                                     bool                                bResearchReactionLedger = false);
         void RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept;
 
-        // Caller must wait for GPU completion and rebuild descriptors when this returns true.
+        // Caller must wait for GPU completion and rebind descriptors when this returns true.
         bool ConfigureScratchStorage(VkPhysicalDevice PhysicalDevice,
                                      VkDevice         Device,
                                      bool             bCache,

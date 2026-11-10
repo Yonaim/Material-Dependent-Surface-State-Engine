@@ -17,6 +17,7 @@ namespace MDSS::Rendering
 // 00. World Reference and Gizmo Geometry
 // ============================================================
 #pragma region 00_World_Reference_and_Gizmo_Geometry
+// 기준 grid·축·gizmo의 정점과 draw 범위를 생성한다.
 
         struct FGizmoVertex
         {

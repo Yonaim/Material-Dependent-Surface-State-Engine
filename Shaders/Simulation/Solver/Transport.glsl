@@ -1,10 +1,13 @@
+// Transport.glsl — 이웃 방향의 State 수송량과 source의 총 outgoing 제한을 계산한다.
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// 이웃 방향의 State 수송량과 source의 총 outgoing 제한을 계산한다.
 
 // 00.00. Evaluate Prepared Transport and Cavity Retention
 // #region 00_00_Evaluate_Prepared_Transport_and_Cavity_Retention
+// 준비한 geometry·Profile 값으로 이동량과 cavity 잔류 효과를 계산한다.
 
 float rawFlux(uint SourceTexel,
               uint TargetTexel,
@@ -45,6 +48,7 @@ float rawFlux(uint SourceTexel,
 
 // 00.01. Prepare Required Neighbor Transport Inputs
 // #region 00_01_Prepare_Required_Neighbor_Transport_Inputs
+// 현재 방향의 수송 계산에 필요한 이웃·형상·State 입력을 준비한다.
 
 float rawFlux(uint SourceTexel,
               uint TargetTexel,

@@ -27,6 +27,7 @@ namespace MDSS
 // 00. Window Lifecycle
 // ============================================================
 #pragma region 00_Window_Lifecycle
+// GLFW 창과 입력 callback을 생성하고 종료 시 소유 창을 해제한다.
 
     FWindow::FWindow(std::uint32_t Width, std::uint32_t Height, std::string Title)
     {
@@ -67,6 +68,7 @@ FWindow::~FWindow()
 // 01. Window State and Events
 // ============================================================
 #pragma region 01_Window_State_and_Events
+// 창 크기·종료 요청·이벤트 처리를 현재 프레임에 노출한다.
 
     bool FWindow::ShouldClose() const
     {
@@ -137,6 +139,7 @@ FWindow::~FWindow()
 // 02. GLFW Lifecycle
 // ============================================================
 #pragma region 02_GLFW_Lifecycle
+// 창 사용에 필요한 GLFW 초기화와 종료 순서를 관리한다.
 
     void FWindow::InitializeGLFW()
     {

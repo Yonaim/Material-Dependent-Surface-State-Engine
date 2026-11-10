@@ -18,6 +18,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region 00_Fixtures_and_Test_Support
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace
 {
@@ -33,6 +34,7 @@ namespace
 // 01. TestClock
 // ============================================================
 #pragma region 01_TestClock
+// 기대 조건: default policy must be fixed ticks with auto substepping disabled
 
     void TestClock()
     {
@@ -174,6 +176,7 @@ namespace
 // 02. TestArea
 // ============================================================
 #pragma region 02_TestArea
+// 기대 조건: tilted UV plane must retain world area at 128/256/512 including nonuniform scale
 
     void TestArea()
     {
@@ -218,6 +221,7 @@ namespace
 // 03. TestFrustumCulling
 // ============================================================
 #pragma region 03_TestFrustumCulling
+// 기대 조건: center sphere must be visible
 
     void TestFrustumCulling()
     {
@@ -243,6 +247,7 @@ namespace
 // 04. Test Entry Point
 // ============================================================
 #pragma region 04_Test_Entry_Point
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main()
 {

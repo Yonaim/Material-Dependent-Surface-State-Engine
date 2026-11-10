@@ -1,3 +1,8 @@
+/**
+ * @file ModularBaseline.h
+ * @brief 모듈 선택에 따른 compute 자원과 기록 경로를 연구 기준선에 연결한다.
+ */
+
 #pragma once
 // Research coordinator. It does not call FSurfaceStateSolver::RecordStep(s).
 // Numeric provider bodies, descriptor ABI, reaction and geometry services are deliberately shared.
@@ -13,6 +18,7 @@
 // 00. Module Contracts
 // ============================================================
 #pragma region 00_Module_Contracts
+// 공유 State와 진단을 전달하는 모듈 간 record 형식을 정의한다.
 
 namespace MDSS::Research
 {
@@ -32,6 +38,7 @@ namespace MDSS::Research
 // 01. Module Selection
 // ============================================================
 #pragma region 01_Module_Selection
+// 실험 설정에 맞는 계산 구현을 골라 같은 State 입력으로 연결한다.
 
     inline std::vector<FPhenomenonModule> MakeLocalFluxModules(const FSurfaceStateRegistry&       Registry,
                                                                const FSurfaceResponseProfileData& Profile,
@@ -56,6 +63,7 @@ namespace MDSS::Research
 // 02. Compute Provider Ownership and Recording
 // ============================================================
 #pragma region 02_Compute_Provider_Ownership_and_Recording
+// compute 자원 수명을 유지하며 모듈 실행 순서대로 명령을 기록한다.
 
     class FModularCoordinator
     {

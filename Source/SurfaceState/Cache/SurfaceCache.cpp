@@ -25,6 +25,7 @@ namespace MDSS::SurfaceState
 // 00. Cache Encoding and Validation Helpers
 // ============================================================
 #pragma region 00_Cache_Encoding_and_Validation_Helpers
+// cache 입력의 형식·길이·식별 정보를 검사해 잘못된 재사용을 막는다.
 
     namespace
     {
@@ -303,6 +304,7 @@ namespace MDSS::SurfaceState
 // 01. Cache Identity
 // ============================================================
 #pragma region 01_Cache_Identity
+// 전처리 입력과 설정으로 cache 재사용 여부를 판별할 식별 정보를 만든다.
 
     FSurfaceCacheDescriptor FSurfaceCache::Describe(std::span<const Asset::FVertex>             Vertices,
                                                     std::span<const Asset::FMeshTriangleSource> Triangles,
@@ -403,6 +405,7 @@ namespace MDSS::SurfaceState
 // 02. Cache Load
 // ============================================================
 #pragma region 02_Cache_Load
+// 저장된 전처리 결과가 현재 입력·형식과 맞는지 검사한 뒤 복원한다.
 
     std::optional<FSharedSurfaceGeometryData> FSurfaceCache::Load(const std::filesystem::path&   Path,
                                                                   const FSurfaceCacheDescriptor& Expected,
@@ -511,6 +514,7 @@ namespace MDSS::SurfaceState
 // 03. Cache Save
 // ============================================================
 #pragma region 03_Cache_Save
+// 전처리 결과와 재검증 정보를 cache 파일에 기록한다.
 
     void FSurfaceCache::Save(const std::filesystem::path&      Path,
                              const FSurfaceCacheDescriptor&    Descriptor,

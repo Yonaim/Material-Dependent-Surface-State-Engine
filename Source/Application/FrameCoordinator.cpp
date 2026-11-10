@@ -1,3 +1,8 @@
+/**
+ * @file FrameCoordinator.cpp
+ * @brief 고정 시간 step과 프레임별 Solver 기록·완료 시점을 조율한다.
+ */
+
 #include "Application/FrameCoordinator.h"
 
 #include "DebugUI/Core/DebugUI.h"
@@ -12,6 +17,7 @@ namespace MDSS
 // 00. Frame Preparation
 // ============================================================
 #pragma region 00_Frame_Preparation
+// 이 frame이 사용할 입력·시간·완료 자원을 준비한 뒤 기록 단계로 넘긴다.
 
     FFrameCoordinator::FFrameCoordinator(SurfaceState::FSurfaceStateSystem& InSurfaceStateSystem) noexcept
         : SurfaceStateSystem(InSurfaceStateSystem)
@@ -61,6 +67,7 @@ namespace MDSS
 // 01. Simulation Recording
 // ============================================================
 #pragma region 01_Simulation_Recording
+// 정해진 step 수와 시간 간격으로 Surface Solver 명령을 기록한다.
 
     void FFrameCoordinator::RecordSimulation(VkCommandBuffer CommandBuffer,
                                              VkQueryPool     QueryPool,
@@ -82,6 +89,7 @@ namespace MDSS
 // 02. Clock and State Lifecycle
 // ============================================================
 #pragma region 02_Clock_and_State_Lifecycle
+// 재시작·리셋 시 Solver의 시간 누적과 실행 serial을 함께 맞춘다.
 
     void FFrameCoordinator::ResetClock() noexcept
     {

@@ -38,6 +38,7 @@ namespace MDSS::SurfaceState
 // 00. Resource Lifecycle
 // ============================================================
 #pragma region 00_Resource_Lifecycle
+// GPU 사용 완료와 소유 객체의 생성·해제 순서를 맞춰 자원을 관리한다.
 
     FSurfaceGPUResourceManager::FSurfaceGPUResourceManager(const GPU::FVulkanContext&   Context,
                                                            const Asset::FAssetManager&  Assets,
@@ -202,6 +203,7 @@ namespace MDSS::SurfaceState
 // 01. Resource Accessors and Profile Updates
 // ============================================================
 #pragma region 01_Resource_Accessors_and_Profile_Updates
+// instance 자원을 제공하고 변경된 Profile GPU 테이블을 갱신한다.
 
     bool FSurfaceGPUResourceManager::ConfigureScratchStorage(
         const GPU::FVulkanContext& Context, bool bCache, bool bHalfRaw, bool bHalfWeights, bool bCompact)
@@ -221,12 +223,8 @@ namespace MDSS::SurfaceState
             if (Instance->State->ConfigureScratchStorage(
                     Context.GetPhysicalDevice(), Context.GetDevice(), bCache, bHalfRaw, bHalfWeights, bCompact))
             {
-                auto Replacement = std::make_unique<FSurfaceStateDescriptorResources>(
-                    Context.GetDevice(),
-                    *SharedSurfaceData.at(Instance->SurfaceDataHandle).Geometry,
-                    *SceneProfiles,
-                    *Instance->State);
-                Instance->Descriptors = std::move(Replacement);
+                // Existing solver/render pipelines retain these layouts and sets across storage changes.
+                Instance->Descriptors->RebindInstanceBuffers(*Instance->State);
                 bChanged = true;
             }
         }
@@ -331,6 +329,16 @@ namespace MDSS::SurfaceState
         return Instance.bCurrentStateAB ? Instance.State->GetStateABuffer() : Instance.State->GetStateBBuffer();
     }
 
+    const GPU::FGPUBuffer& FSurfaceGPUResourceManager::GetInstanceWorldTexelAreaBuffer(std::size_t Index) const
+    {
+        return InstanceResources.at(Index)->State->GetWorldTexelAreaBuffer();
+    }
+
+    const GPU::FGPUBuffer& FSurfaceGPUResourceManager::GetInstanceDynamicGeometryBuffer(std::size_t Index) const
+    {
+        return InstanceResources.at(Index)->State->GetDynamicGeometryBuffer();
+    }
+
     const GPU::FGPUBuffer& FSurfaceGPUResourceManager::GetSceneProfileParametersBuffer() const
     {
         if (SceneProfiles == nullptr)
@@ -362,6 +370,7 @@ namespace MDSS::SurfaceState
 // 02. State Reset and Transfer Weight Cache
 // ============================================================
 #pragma region 02_State_Reset_and_Transfer_Weight_Cache
+// State 초기화와 변환·Profile 변경에 따른 가중치 cache를 맞춘다.
 
     std::size_t FSurfaceGPUResourceManager::GetInstanceTexelCount(std::size_t SceneIndex) const
     {

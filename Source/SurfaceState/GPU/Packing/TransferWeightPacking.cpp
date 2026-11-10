@@ -1,3 +1,8 @@
+/**
+ * @file TransferWeightPacking.cpp
+ * @brief instance 변환에 따른 texel 면적·이웃 전송 가중치를 GPU 입력으로 만든다.
+ */
+
 #include "SurfaceState/GPU/Packing/SurfaceGPUResourceLayout.h"
 
 #include <algorithm>
@@ -20,6 +25,7 @@ namespace MDSS::SurfaceState
 // 00. Transform Dependent Geometry Data
 // ============================================================
 #pragma region 00_Transform_Dependent_Geometry_Data
+// instance 변환에 따른 면적과 전송 가중치를 준비한다.
 
     float GetSurfaceWorldTexelArea(const FSurfaceTexelGeometry& Texel, const glm::mat4& ModelMatrix) noexcept
     {

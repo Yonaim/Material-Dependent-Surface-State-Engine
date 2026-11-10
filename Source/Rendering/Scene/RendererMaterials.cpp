@@ -1,3 +1,8 @@
+/**
+ * @file RendererMaterials.cpp
+ * @brief Mesh 재질과 Surface 효과를 GPU material 자원·pipeline에 연결한다.
+ */
+
 #include "Rendering/Core/RendererShared.h"
 
 namespace MDSS::Rendering
@@ -6,6 +11,7 @@ namespace MDSS::Rendering
 // 00. Material and GPU Resource Setup
 // ============================================================
 #pragma region 00_Material_and_GPU_Resource_Setup
+// Scene 재질과 표시 mode가 사용할 GPU 자원을 준비한다.
 
     VkDescriptorSetLayout FRenderer::CreateMaterialDescriptorSetLayout(VkDevice Device)
     {
@@ -347,6 +353,7 @@ namespace MDSS::Rendering
 // 01. Format Selection
 // ============================================================
 #pragma region 01_Format_Selection
+// 장치가 지원하는 후보에서 렌더 attachment format을 선택한다.
 
     VkFormat FRenderer::FindDepthFormat(VkPhysicalDevice PhysicalDevice)
     {

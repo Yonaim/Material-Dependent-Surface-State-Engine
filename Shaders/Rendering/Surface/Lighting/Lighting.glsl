@@ -1,15 +1,13 @@
-/**
-
- * @file Lighting.glsl
- * @brief GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다. 표준식 참고: https://google.github.io/filament/main/filament.html.
- */
+// Lighting.glsl — GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다. 표준식 참고: https://google.github.io/filament/main/filament.html.
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// GGX 분포, correlated Smith visibility, Schlick Fresnel을 조합한 specular 모델이다. 표준식 참고: https://google.github.io/filament/main/filament.html.
 
 // 00.00. Specular Distribution and Visibility
 // #region 00_00_Specular_Distribution_and_Visibility
+// roughness와 시선·광원 방향을 사용해 정반사 분포와 가시성을 평가한다.
 
 float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH, float PerceptualRoughness, float F0)
 {
@@ -33,6 +31,7 @@ float EvaluateSpecularLobe(float NoV, float NoL, float NoH, float VoH, float Per
 
 // 00.01. Water Film Environment
 // #region 00_01_Water_Film_Environment
+// 수막 반사에 사용할 환경 응답을 표면 방향과 시선에서 계산한다.
 
 vec3 EvaluateWaterFilmEnvironment(vec3 ReflectionDirection, float PerceptualRoughness)
 {
@@ -52,6 +51,7 @@ vec3 EvaluateWaterFilmEnvironment(vec3 ReflectionDirection, float PerceptualRoug
 
 // 00.02. Surface Lighting Composition
 // #region 00_02_Surface_Lighting_Composition
+// 기본 재질의 확산·반사와 표면 효과를 최종 조명 응답으로 결합한다.
 
 vec3 ShadeSurface(vec3 Albedo,
                   vec3 N,

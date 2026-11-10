@@ -1,6 +1,6 @@
 /**
  * @file BenchmarkOptions.h
- * @brief Command-line settings for a repeatable fixed-step benchmark run.
+ * @brief benchmark 명령행 인수를 해석하고 실행 옵션의 유효성을 검사한다.
  */
 #pragma once
 

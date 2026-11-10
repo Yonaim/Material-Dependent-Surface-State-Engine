@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Build MDSS, run the configured scene/resolution matrix, and preserve raw captures."""
+"""benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
+
+Build MDSS, run the configured scene/resolution matrix, and preserve raw captures.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ DEFAULT_RESULTS = ROOT / "Performance-Data"
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
 
 
 def run_text(command: list[str], *, cwd: Path, timeout: int = 30) -> str:
@@ -158,6 +163,7 @@ def preserve_inputs(raw_dir: Path, binary: Path) -> dict[str, Any]:
 # 02. Main Process
 # ============================================================
 # region 02_Main_Process
+# benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
 
 
 def main() -> int:
@@ -377,6 +383,7 @@ def main() -> int:
 # 03. Script Execution
 # ============================================================
 # region 03_Script_Execution
+# benchmark 조건 행렬을 실행하고 각 실행의 출력 경로와 상태를 기록한다.
 
 if __name__ == "__main__":
     raise SystemExit(main())

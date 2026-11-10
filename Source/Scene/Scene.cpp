@@ -18,6 +18,7 @@ namespace MDSS
 // 00. Scene Lifecycle and Camera Access
 // ============================================================
 #pragma region 00_Scene_Lifecycle_and_Camera_Access
+// Scene의 초기 설정과 카메라 조회 경계를 관리한다.
 
     FScene::FScene() : MainCamera({2.0F, -3.3F, 2.0F}, {0.0F, 0.0F, 0.0F}, 50.0F), InitialCamera(MainCamera)
     {
@@ -45,6 +46,7 @@ namespace MDSS
 // 01. Scene Configuration
 // ============================================================
 #pragma region 01_Scene_Configuration
+// 로드한 Scene 설정을 실행·표시 경로가 사용할 값으로 유지한다.
 
     void FScene::SetSourcePath(std::filesystem::path Path)
     {
@@ -92,6 +94,7 @@ namespace MDSS
 // 02. Initial State and Contacts
 // ============================================================
 #pragma region 02_Initial_State_and_Contacts
+// 초기 State와 접촉 입력을 Solver 준비 단계에 전달한다.
 
     void FScene::CaptureInitialState()
     {
@@ -124,6 +127,7 @@ namespace MDSS
 // 03. Demo Animation State
 // ============================================================
 #pragma region 03_Demo_Animation_State
+// clip 재생·정지·재시작의 시간과 적용 상태를 관리한다.
 
     void FScene::SetDemoAnimation(std::filesystem::path Path, FDemoAnimationClip Clip)
     {
@@ -236,6 +240,7 @@ namespace MDSS
 // 04. Mesh Instance Management
 // ============================================================
 #pragma region 04_Mesh_Instance_Management
+// Scene instance의 추가·조회와 변환 상태를 관리한다.
 
     void FScene::AddStaticMeshInstance(FStaticMeshInstance Instance)
     {

@@ -1,3 +1,8 @@
+/**
+ * @file DebugUIProfiling.cpp
+ * @brief GPU·CPU 시간과 자원 메모리의 프로파일링 UI를 표시한다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
@@ -6,6 +11,7 @@ namespace MDSS
 // 00. Performance Overlays
 // ============================================================
 #pragma region 00_Performance_Overlays
+// 수집한 시간·메모리 지표를 현재 화면의 overlay에 표시한다.
 
     void FDebugUI::ResetProfilingAverages() noexcept
     {
@@ -42,31 +48,29 @@ namespace MDSS
         if (ViewportSize.x < 340.0F || ViewportSize.y < 240.0F)
             return;
 
-        constexpr float            OverlayWindowWidth = 320.0F;
-        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
-                                           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                                           ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
-        float                      RenderStateY = ViewportOrigin.y + 10.0F;
+        float NextOverlayY = DrawTimeProfilingOverlay(ViewportOrigin);
+        NextOverlayY = DrawMemoryProfilingOverlay(ViewportOrigin, NextOverlayY);
+        DrawRenderStateProfilingOverlay(ViewportOrigin, NextOverlayY);
+    }
 
-        ImGui::SetNextWindowPos({ViewportOrigin.x + 10.0F, ViewportOrigin.y + 10.0F}, ImGuiCond_Always);
-        ImGui::SetNextWindowSizeConstraints({OverlayWindowWidth, 0.0F}, {OverlayWindowWidth, 800.0F});
-        ImGui::SetNextWindowBgAlpha(0.84F);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
+#pragma endregion
 
-        if (ImGui::Begin("Profiling##Overlay", nullptr, Flags))
-        {
-            const ImGuiIO&                            IO = ImGui::GetIO();
-            const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
-            const Rendering::FRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
-            const bool  bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
+// ============================================================
+// 01. Profiling Overlay Details
+// ============================================================
+#pragma region 01_Profiling_Overlay_Details
+// 시간·GPU 메모리·효과 활성 상태를 서로 독립된 화면으로 표시한다.
+
+    static std::array<float, 40> CollectTimeProfilingMetrics(const Rendering::FRendererProfilingStats& Stats,
+                                                               bool bFineRenderTimings)
+    {
             const float StateDrivenGeometryUpdateGpuMilliseconds =
                 Stats.AccumulationGeometryGpuMilliseconds >= 0.0F && Stats.TransferWeightGpuMilliseconds >= 0.0F
                     ? Stats.AccumulationGeometryGpuMilliseconds + Stats.TransferWeightGpuMilliseconds
                     : -1.0F;
 
-            const std::array<float, 40> MetricValues = {
+
+        return {
                 Stats.RenderPreparationGpuMilliseconds + Stats.SceneDrawGpuMilliseconds +
                     (bFineRenderTimings ? Stats.UIDrawGpuMilliseconds + Stats.RenderPassEndGpuMilliseconds : 0.0F),
                 Stats.SolverGpuMilliseconds,
@@ -109,6 +113,30 @@ namespace MDSS
                 Stats.OverlayHeightGpuMilliseconds,
                 Stats.OverlayNormalVertexGpuMilliseconds,
             };
+    }
+
+    float FDebugUI::DrawTimeProfilingOverlay(const ImVec2& ViewportOrigin)
+    {
+        constexpr float OverlayWindowWidth = 320.0F;
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+                                           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                                           ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
+        float RenderStateY = ViewportOrigin.y + 10.0F;
+
+        ImGui::SetNextWindowPos({ViewportOrigin.x + 10.0F, ViewportOrigin.y + 10.0F}, ImGuiCond_Always);
+        ImGui::SetNextWindowSizeConstraints({OverlayWindowWidth, 0.0F}, {OverlayWindowWidth, 800.0F});
+        ImGui::SetNextWindowBgAlpha(0.84F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.0F, 7.0F});
+
+        if (ImGui::Begin("Profiling##Overlay", nullptr, Flags))
+        {
+            const ImGuiIO&                            IO = ImGui::GetIO();
+            const double                              FrameSeconds = static_cast<double>(IO.DeltaTime);
+            const Rendering::FRendererProfilingStats& Stats = FrameRenderer->GetProfilingStats();
+            const bool  bFineRenderTimings = FrameRenderer->AreRenderPassSubstageTimingsReliable();
+            const std::array<float, 40> MetricValues = CollectTimeProfilingMetrics(Stats, bFineRenderTimings);
 
             // GPU timestamps arrive after the frame fence. Do not mix samples from the previous draw mode.
             if (std::isfinite(FrameSeconds) && FrameSeconds > 0.0 &&
@@ -119,6 +147,26 @@ namespace MDSS
 
             Profiling.PublishWindow();
 
+            DrawTimeProfilingContents(Stats, bFineRenderTimings);
+
+            RenderStateY = ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + 6.0F;
+        }
+
+        const ImVec2 ProfilingPos = ImGui::GetWindowPos();
+        const ImVec2 ProfilingSize = ImGui::GetWindowSize();
+        const ImVec2 Mouse = ImGui::GetIO().MousePos;
+        ViewportState.bMouseOverViewportOverlay |= Mouse.x >= ProfilingPos.x && Mouse.y >= ProfilingPos.y &&
+                                                   Mouse.x < ProfilingPos.x + ProfilingSize.x &&
+                                                   Mouse.y < ProfilingPos.y + ProfilingSize.y;
+        ImGui::End();
+        ImGui::PopStyleVar(3);
+
+        return RenderStateY;
+    }
+
+    void FDebugUI::DrawTimeProfilingContents(
+        const Rendering::FRendererProfilingStats& Stats, bool bFineRenderTimings)
+    {
             if (ImGui::CollapsingHeader("Time Profiling", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 const float  FPS = Profiling.Averages[0];
@@ -400,18 +448,16 @@ namespace MDSS
 
                 ImGui::PopStyleColor(3);
             }
+    }
 
-            RenderStateY = ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + 6.0F;
-        }
 
-        const ImVec2 ProfilingPos = ImGui::GetWindowPos();
-        const ImVec2 ProfilingSize = ImGui::GetWindowSize();
-        const ImVec2 Mouse = ImGui::GetIO().MousePos;
-        ViewportState.bMouseOverViewportOverlay |= Mouse.x >= ProfilingPos.x && Mouse.y >= ProfilingPos.y &&
-                                                   Mouse.x < ProfilingPos.x + ProfilingSize.x &&
-                                                   Mouse.y < ProfilingPos.y + ProfilingSize.y;
-        ImGui::End();
-        ImGui::PopStyleVar(3);
+
+    float FDebugUI::DrawMemoryProfilingOverlay(const ImVec2& ViewportOrigin, float RenderStateY)
+    {
+        constexpr float OverlayWindowWidth = 320.0F;
+        constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking |
+                                           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                                           ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNavFocus;
 
         ImGui::SetNextWindowPos({ViewportOrigin.x + 10.0F, RenderStateY}, ImGuiCond_Always);
         ImGui::SetNextWindowSizeConstraints({OverlayWindowWidth, 0.0F}, {OverlayWindowWidth, 800.0F});
@@ -545,6 +591,14 @@ namespace MDSS
         RenderStateY = MemoryProfilePos.y + MemoryProfileSize.y + 6.0F;
         ImGui::End();
         ImGui::PopStyleVar(3);
+
+        return RenderStateY;
+    }
+
+    void FDebugUI::DrawRenderStateProfilingOverlay(const ImVec2& ViewportOrigin, float RenderStateY)
+    {
+        constexpr float OverlayWindowWidth = 320.0F;
+        const ImVec2 Mouse = ImGui::GetIO().MousePos;
 
         const auto Effects = FrameRenderer->GetDemoSurfaceEffectSettings();
         const bool bLitView =

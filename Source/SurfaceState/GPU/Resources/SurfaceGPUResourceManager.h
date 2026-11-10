@@ -85,6 +85,10 @@ namespace MDSS::SurfaceState
         [[nodiscard]] const GPU::FGPUBuffer& GetInstanceInputDeltaBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::FGPUBuffer& GetInstanceAccumulationHeightBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::FGPUBuffer& GetInstanceCurrentStateBuffer(std::size_t SceneIndex) const;
+        /** @brief instance의 월드 texel 면적 버퍼를 빌린다. 자원 재구성 전까지만 참조가 유효하다. */
+        [[nodiscard]] const GPU::FGPUBuffer& GetInstanceWorldTexelAreaBuffer(std::size_t SceneIndex) const;
+        /** @brief instance의 동적 Geometry 버퍼를 빌린다. GPU 완료 후 readback해야 한다. */
+        [[nodiscard]] const GPU::FGPUBuffer& GetInstanceDynamicGeometryBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::FGPUBuffer& GetInstanceReactionScratchBuffer(std::size_t SceneIndex) const;
         [[nodiscard]] const GPU::FGPUBuffer& GetSceneProfileParametersBuffer() const;
         [[nodiscard]] bool                   UpdateProfileParameters(Asset::FSRProfileAssetHandle   ProfileHandle,

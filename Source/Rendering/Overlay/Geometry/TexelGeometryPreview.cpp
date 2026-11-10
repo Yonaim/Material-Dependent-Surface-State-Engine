@@ -28,6 +28,7 @@ namespace MDSS::SurfaceState
 // 00. Preview Resource Lifecycle
 // ============================================================
 #pragma region 00_Preview_Resource_Lifecycle
+// texel geometry 미리보기의 GPU 자원과 variant를 관리한다.
 
     FTexelGeometryPreview::FTexelGeometryPreview(VkPhysicalDevice      PhysicalDevice,
                                                  VkDevice              Device,
@@ -163,6 +164,7 @@ namespace MDSS::SurfaceState
 // 01. Preview Accessors and Settings
 // ============================================================
 #pragma region 01_Preview_Accessors_and_Settings
+// 미리보기 설정과 준비된 출력 자원을 조회·변경한다.
 
     VkDescriptorSet FTexelGeometryPreview::GetOutputSet(std::size_t Instance, std::size_t OutputSlot) const
     {
@@ -246,6 +248,7 @@ namespace MDSS::SurfaceState
 // 02. Preview Command Recording
 // ============================================================
 #pragma region 02_Preview_Command_Recording
+// 미리보기 geometry를 갱신할 pass와 barrier를 기록한다.
 
     void FTexelGeometryPreview::Record(VkCommandBuffer                         Command,
                                        std::size_t                             Instance,

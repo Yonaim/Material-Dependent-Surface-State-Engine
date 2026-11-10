@@ -1,3 +1,8 @@
+/**
+ * @file ProfilingUIState.cpp
+ * @brief 시간 창별 프로파일링 값을 누적하고 표시용 평균·최댓값을 갱신한다.
+ */
+
 #include "DebugUI/Profiling/ProfilingUIState.h"
 
 #include <algorithm>
@@ -9,6 +14,7 @@ namespace MDSS
 // 00. Profiling State Transitions
 // ============================================================
 #pragma region 00_Profiling_State_Transitions
+// 표시 창의 누적·publish·reset 시점을 같은 집계 상태에 적용한다.
 
     void FProfilingUIState::Reset() noexcept
     {

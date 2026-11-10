@@ -21,6 +21,7 @@ namespace MDSS::Asset
 // 00. FMeshAsset Implementation
 // ============================================================
 #pragma region 00_TMeshAsset_Implementation
+// 정점·인덱스 데이터와 GPU 메시 버퍼의 소유권.
 
     FMeshAsset::FMeshAsset(FAssetID                         ID,
                            std::string                      Name,

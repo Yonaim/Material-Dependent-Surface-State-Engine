@@ -14,6 +14,7 @@ namespace MDSS::SurfaceState
 // 00. Normal Map Sampling Helpers
 // ============================================================
 #pragma region 00_Normal_Map_Sampling_Helpers
+// UV와 tangent 기저에서 Normal Map 입력을 유효한 표면 방향으로 읽는다.
 
     namespace
     {
@@ -74,6 +75,7 @@ namespace MDSS::SurfaceState
 // 01. Transfer Normal Build
 // ============================================================
 #pragma region 01_Transfer_Normal_Build
+// 수송 계산이 사용할 normal을 mapping과 Normal Map에서 전처리한다.
 
     bool BuildNormalMapTransferNormal(const FSurfaceTexelGeometry&                   Texel,
                                       const std::vector<Asset::FVertex>&             Vertices,

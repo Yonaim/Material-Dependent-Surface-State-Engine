@@ -1,10 +1,13 @@
+// GeometryDrive.glsl — 공유 source 형상과 이웃 위치에서 수송 방향의 geometry drive를 계산한다.
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// 공유 source 형상과 이웃 위치에서 수송 방향의 geometry drive를 계산한다.
 
 // 00.00. Prepare Shared Source Geometry Context
 // #region 00_00_Prepare_Shared_Source_Geometry_Context
+// DynamicGeometry·Normals·MesoNormals 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 vec3 SolverUp;
 vec3 SourcePosition;
@@ -67,6 +70,7 @@ void prepareSourceGeometry(uint SourceTexel)
 
 // 00.01. Evaluate Neighbor Geometry Drive
 // #region 00_01_Evaluate_Neighbor_Geometry_Drive
+// source와 이웃의 형상 차이에서 수송을 구동할 방향 항을 계산한다.
 
 float geometryDrive(uint TargetTexel)
 {

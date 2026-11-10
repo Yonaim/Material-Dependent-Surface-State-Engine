@@ -1,10 +1,13 @@
+// SurfaceDebugColors.glsl — Surface 진단 값의 색상과 heatmap·relief 조명 표현을 계산한다.
 // ============================================================
 // 00. Shared Shader Helpers
 // ============================================================
 // #region 00_Shared_Shader_Helpers
+// Surface 진단 값의 색상과 heatmap·relief 조명 표현을 계산한다.
 
 // 00.00. Grid and Area Visualization
 // #region 00_00_Grid_and_Area_Visualization
+// UV grid 경계와 texel 면적 차이를 화면 해상도에 맞춰 색상으로 나타낸다.
 
 float GridLines(vec2 Coordinate, vec2 PixelFootprint, float LineWidth)
 {
@@ -61,6 +64,7 @@ vec3 TexelAreaColor(float Area)
 
 // 00.01. State Palettes and Relief Lighting
 // #region 00_01_State_Palettes_and_Relief_Lighting
+// State별 팔레트와 선택적인 relief 명암을 결합한다.
 
 vec3 HeatColor(float Value)
 {

@@ -1,9 +1,11 @@
+// FluxCache.glsl — 선택한 packing·배치의 방향별 raw flux cache를 읽고 기록한다.
 // ============================================================
 // 00. Raw Flux Cache
 // ============================================================
 // #region 00_Raw_Flux_Cache
 // 00.00. Address and Read Packed Flux Cache
 // #region 00_00_Address_and_Read_Packed_Flux_Cache
+// RawOutgoingBuffer 버퍼의 값을 읽어 이 구획의 수치 계산에 사용한다.
 
 uint rawEdgeFluxBase()
 {
@@ -56,6 +58,7 @@ float loadCachedRawEdgeFlux(uint TexelIndex, uint ChannelIndex, uint DirectionIn
 
 // 00.01. Validate Solver Numeric Values
 // #region 00_01_Validate_Solver_Numeric_Values
+// GPU validation 구성에 따라 비유한 수치 검사를 공통화한다.
 
 bool solverFinite(float Value)
 {

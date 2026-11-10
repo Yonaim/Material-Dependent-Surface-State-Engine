@@ -89,6 +89,7 @@ namespace MDSS::Asset
 // 00. OBJ Loading
 // ============================================================
 #pragma region 00_OBJ_Loading
+// OBJ의 위치·UV·재질·면 연결을 렌더와 Surface 전처리 입력으로 만든다.
 
     FOBJLoadResult FOBJLoader::Load(const std::filesystem::path& Path)
     {
@@ -272,6 +273,7 @@ namespace MDSS::Asset
 // 01. Tangent Generation
 // ============================================================
 #pragma region 01_Tangent_Generation
+// UV와 triangle 기저에서 Normal Map 변환에 쓸 tangent를 계산한다.
 
     void FOBJLoader::GenerateTangents(std::vector<FVertex>& Vertices, const std::vector<std::uint32_t>& Indices)
     {

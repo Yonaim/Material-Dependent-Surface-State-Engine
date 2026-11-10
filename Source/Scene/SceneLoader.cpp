@@ -189,6 +189,7 @@ namespace MDSS
 // 00. Scene Loading
 // ============================================================
 #pragma region 00_Scene_Loading
+// Scene 파일의 자산 참조·객체·설정을 실행 자료로 구성한다.
 
     FScene FSceneLoader::Load(const std::filesystem::path&       Path,
                               Asset::FAssetManager&              Assets,
@@ -357,6 +358,7 @@ namespace MDSS
 // 01. Scene Saving
 // ============================================================
 #pragma region 01_Scene_Saving
+// 현재 Scene의 자산 참조와 설정을 파일 형식으로 기록한다.
 
     void FSceneLoader::Save(const FScene& Scene, const std::filesystem::path& Path)
     {

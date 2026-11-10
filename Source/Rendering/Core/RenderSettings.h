@@ -1,3 +1,8 @@
+/**
+ * @file RenderSettings.h
+ * @brief 렌더·진단 mode와 overlay 샘플링·표시 설정 타입을 정의한다.
+ */
+
 #pragma once
 #include <cstdint>
 

@@ -75,6 +75,7 @@ namespace MDSS::Rendering
 // 00. Renderer lifecycle
 // ============================================================
 #pragma region "00_Renderer_lifecycle"
+// 외부 소유 자원을 빌리고 Renderer 소유 자원의 생성·해제를 선언한다.
 
         // Renderer lifecycle
         FRenderer(const GPU::FVulkanContext&         Context,
@@ -97,6 +98,7 @@ namespace MDSS::Rendering
 // 01. Frame rendering and simulation clock
 // ============================================================
 #pragma region "01_Frame_rendering_and_simulation_clock"
+// 프레임 렌더링과 Solver 시간 진행을 Application의 호출 경계에 연결한다.
 
         // Frame rendering and simulation clock
         /** @brief 이미지 획득, 명령 기록·제출, 화면 표시 순서로 한 프레임을 렌더링한다. */
@@ -130,6 +132,7 @@ namespace MDSS::Rendering
 // 02. Scene resources, resolution, and runtime Profile settings
 // ============================================================
 #pragma region "02_Scene_resources_resolution_and_runtime_Profile_settings"
+// Scene·해상도·Profile 변경을 해당 자원 갱신 경계로 전달한다.
 
         // Scene resources, resolution, and runtime Profile settings
         /** @brief Rebuild the Scene Registry/resources; Scene changes also discard State-ID-based settings. */
@@ -162,6 +165,7 @@ namespace MDSS::Rendering
 // 03. Swapchain and profiling access
 // ============================================================
 #pragma region "03_Swapchain_and_profiling_access"
+// UI가 조회하는 swapchain과 완료 frame의 측정 결과를 제공한다.
 
         // Swapchain and profiling access
         [[nodiscard]] const GPU::FSwapchain&                          GetSwapchain() const noexcept;
@@ -183,13 +187,26 @@ namespace MDSS::Rendering
 // 04. Benchmark capture and overlay profiling
 // ============================================================
 #pragma region "04_Benchmark_capture_and_overlay_profiling"
+// 결과 출력과 overlay 실행·표시 설정을 외부 제어에 연결한다.
 
         // 04.00. Benchmark Capture
         #pragma region "04_00_Benchmark_Capture"
+        // 프레임 측정과 선택적 checkpoint 출력을 설정하고 종료 후 결과를 확정한다.
 
+        /**
+         * @brief benchmark 출력과 선택적 authoring checkpoint 캡처를 설정한다.
+         * @param OutputPath 프레임 기록 및 추가 캡처 파일의 기준 경로.
+         * @param WarmupFrames 측정 전에 제외할 프레임 수.
+         * @param MeasurementFrames 기록할 측정 프레임 수. 0보다 커야 한다.
+         * @param AuthoringScene 초기 입력 관찰자가 참조할 Scene. checkpoint 사용 시 필수다.
+         * @pre AuthoringScene은 초기 입력 관찰자가 실행될 때까지 유효해야 한다.
+         * @throws std::invalid_argument 출력 경로·프레임 수·checkpoint 설정이 유효하지 않을 때.
+         * @throws std::runtime_error timestamp query를 지원하지 않거나 출력 파일을 열 수 없을 때.
+         */
         void ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
                                        std::uint32_t                WarmupFrames,
-                                       std::uint32_t                MeasurementFrames);
+                                       std::uint32_t                MeasurementFrames,
+                                       const FScene*                AuthoringScene = nullptr);
         // Called only after the application has waited for the device to become idle.
         void                              FinalizeBenchmarkCapture();
         void                              RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex);
@@ -197,6 +214,7 @@ namespace MDSS::Rendering
 
         // 04.01. Overlay Display Controls
         #pragma region "04_01_Overlay_Display_Controls"
+        // 계산 결과를 바꾸지 않는 overlay 표시·진단 선택을 관리한다.
 
         [[nodiscard]] EOverlayDisplayMode GetOverlayDisplayMode() const noexcept
         {
@@ -281,6 +299,7 @@ namespace MDSS::Rendering
 
         // 04.02. Runtime Performance Controls
         #pragma region "04_02_Runtime_Performance_Controls"
+        // 실행 경로·저장 형식 옵션을 관련 Solver·표시 자원에 전달한다.
 
         [[nodiscard]] bool IsRawFluxCacheEnabled() const noexcept;
         void               SetRawFluxCacheEnabled(bool bEnabled) noexcept;
@@ -383,6 +402,7 @@ namespace MDSS::Rendering
 // 05. Render view and debug settings
 // ============================================================
 #pragma region "05_Render_view_and_debug_settings"
+// view별 진단·재질 표시 설정을 기록 단계에서 읽을 상태로 유지한다.
 
         // Render view and debug settings
         [[nodiscard]] ERenderViewMode GetRenderViewMode() const noexcept;
@@ -487,6 +507,7 @@ namespace MDSS::Rendering
 // 06. Benchmark Submission and Material Records
 // ============================================================
 #pragma region "06_Benchmark_Submission_and_Material_Records"
+// in-flight 측정 record와 material 자원이 유지할 필드 형식을 정의한다.
 
         struct FBenchmarkFrameSubmission
         {
@@ -504,6 +525,7 @@ namespace MDSS::Rendering
 
         void CollectCompletedFrameTimings(std::uint32_t FrameIndex);
         void WriteBenchmarkSample(std::uint32_t FrameSlot);
+        void WriteAuthoringCheckpoint(const FScene& SceneData, bool bInitialInput = false);
         void WriteBenchmarkMetadata(const FScene& SceneData, const FDebugUI& DebugInterface);
 
         struct FMaterialRenderResource
@@ -518,6 +540,7 @@ namespace MDSS::Rendering
 // 07. Render resources and command recording
 // ============================================================
 #pragma region "07_Render_resources_and_command_recording"
+// frame·viewport 문맥을 전달해 pass별 명령 기록을 조율한다.
 
         // Render resources and command recording
         static VkFormat              FindDepthFormat(VkPhysicalDevice PhysicalDevice);
@@ -533,6 +556,14 @@ namespace MDSS::Rendering
         void                DestroyRenderFinishedSemaphores() noexcept;
         void                CreateTimestampQueryPool(std::size_t SolverInstanceCount);
         void                TrimRenderResolutionCaches();
+        struct FSceneReplacementResources;
+        void BuildSceneReplacement(const FScene& Scene, bool bResetStateSettings, FSceneReplacementResources& Resources);
+        void BuildSceneRenderPipelines(const FScene& Scene, FSceneReplacementResources& Resources);
+        void CommitSceneReplacement(FSceneReplacementResources& Resources);
+        void WaitForSceneReloadAndUpdateMaterials();
+        void ConfigureReplacementSolver(SurfaceState::FSurfaceStateSystem& Replacement, bool bResetStateSettings);
+        void ReleaseSceneRenderObjects();
+        void ResetSceneGpuProfiling();
         void                UploadMaterialUniforms(std::uint32_t   Frame,
                                                    const FScene&   SceneData,
                                                    const FDebugUI& DebugInterface,
@@ -543,6 +574,24 @@ namespace MDSS::Rendering
              GetLitOverlayActivity(const FStaticMeshInstance&                              Instance,
                                    const SurfaceState::FSurfaceSharedGeometryGPUResources* Shared,
                                    const FDemoSurfaceStateBindings&                        Bindings) const;
+        // Frame execution stages: the public RenderFrame reads as the frame timeline.
+        void CompletePreviousFrame(std::uint32_t FrameIndex, const FDebugUI& DebugInterface);
+        [[nodiscard]] bool AcquireFrameImage(FDebugUI& DebugInterface,
+                                             std::uint32_t& ImageIndex,
+                                             VkResult& AcquireResult);
+        [[nodiscard]] VkCommandBuffer RecordFrameCommands(std::uint32_t FrameIndex,
+                                                          std::uint32_t ImageIndex,
+                                                          const FScene& SceneData,
+                                                          FDebugUI& DebugInterface,
+                                                          bool bResetSolverState);
+        [[nodiscard]] VkSemaphore SubmitFrameCommands(VkCommandBuffer CommandBuffer, std::uint32_t ImageIndex);
+        [[nodiscard]] bool PresentFrameImage(std::uint32_t ImageIndex,
+                                             VkResult AcquireResult,
+                                             VkSemaphore SignalSemaphore);
+        void FinalizeFrameBenchmark(std::uint32_t FrameIndex,
+                                    const FScene& SceneData,
+                                    const FDebugUI& DebugInterface);
+
         void RecreateSwapchain(FDebugUI& DebugInterface);
         void RecordCommandBuffer(VkCommandBuffer        CommandBuffer,
                                  std::uint32_t          ImageIndex,
@@ -563,6 +612,23 @@ namespace MDSS::Rendering
                                                                       const FScene&           SceneData,
                                                                       const FDebugUI&         DebugInterface,
                                                                       FCommandRecordingState& Frame);
+        [[nodiscard]] std::vector<ERenderViewMode> CollectDisplayViewModes(const FDebugUI& DebugInterface,
+                                                                           bool& bAnyTexelGeometry,
+                                                                           bool& bAnyLitView) const;
+        void RecordInstanceDisplayResources(VkCommandBuffer CommandBuffer,
+                                            const FScene& SceneData,
+                                            FCommandRecordingState& Frame,
+                                            const FDemoSurfaceStateBindings& DemoBindings,
+                                            bool bAnyTexelGeometry,
+                                            bool bAnyLitView);
+        void RecordTexelGeometryViews(VkCommandBuffer CommandBuffer,
+                                      std::size_t Instance,
+                                      const FCommandRecordingState& Frame,
+                                      const SurfaceState::FSurfaceSharedGeometryGPUResources& Shared,
+                                      const SurfaceState::FSurfaceStateDescriptorResources& Descriptors,
+                                      std::uint32_t ChannelCount,
+                                      const glm::mat4& Model,
+                                      bool bStateAB);
         void                                  BeginSceneGraphicsPass(VkCommandBuffer               CommandBuffer,
                                                                      std::uint32_t                 ImageIndex,
                                                                      const FCommandRecordingState& Frame);
@@ -602,6 +668,7 @@ namespace MDSS::Rendering
 // 08. Resource Ownership
 // ============================================================
 #pragma region "08_Resource_Ownership"
+// Vulkan 자원과 표시 객체를 Renderer의 소유 수명에 연결한다.
 
         const GPU::FVulkanContext&         Context;
         FWindow&                           TargetWindow;
@@ -651,6 +718,7 @@ namespace MDSS::Rendering
 // 09. View and Display Settings
 // ============================================================
 #pragma region "09_View_and_Display_Settings"
+// view·외형·overlay 제어 값을 프레임 사이에 유지한다.
 
         std::vector<ERenderViewMode> ViewModes{ERenderViewMode::Lit};
         bool                         bWireframeUniformWhite = true;
@@ -703,6 +771,7 @@ namespace MDSS::Rendering
 // 10. Benchmark Capture State
 // ============================================================
 #pragma region "10_Benchmark_Capture_State"
+// stream·경로·buffer·frame serial을 캡처 작업이 값으로 소유한다.
 
         struct FBenchmarkCaptureState
         {
@@ -716,6 +785,9 @@ namespace MDSS::Rendering
             std::uint64_t                                                            NextBenchmarkFrameIndex = 0;
             bool                                                                     bBenchmarkCaptureEnabled = false;
             std::unique_ptr<GPU::FGPUBuffer>                                         BenchmarkScreenshot;
+            std::unique_ptr<GPU::FGPUBuffer>                                         AuthoringScreenshot;
+            std::vector<std::uint64_t>                                               AuthoringCheckpointSteps;
+            std::uint64_t AuthoringLastCapturedStep = std::numeric_limits<std::uint64_t>::max();
             VkExtent2D                                                               BenchmarkScreenshotExtent{};
             VkFormat BenchmarkScreenshotFormat = VK_FORMAT_UNDEFINED;
 

@@ -1,7 +1,4 @@
-/**
- * @file SurfaceSparseScheduleReset.comp
- * @brief 다음 persistent Solver set과 Height/Geometry sparse schedule을 초기화하고 CPU input activation을 현재 set에 병합한다.
- */
+// SurfaceSparseScheduleReset.comp — 다음 persistent Solver set과 Height/Geometry sparse schedule을 초기화하고 CPU input activation을 현재 set에 병합한다.
 #version 450
 
 const uint StateDrivenGeometryUpdateFlag = 1u << 6u;
@@ -17,6 +14,7 @@ const uint PerWorkgroupChannelMaskFlag = 1u << 23u;
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(std430, set = 0, binding = 21) buffer TSurfaceAccumulationData
 {
@@ -74,6 +72,12 @@ void ScheduleCurrentSolverGroup(uint Group);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// 다음 persistent Solver set과 Height/Geometry sparse schedule을 초기화하고 CPU input activation을 현재 set에 병합한다.
+
+void ResetDestinationSchedules(uint Lane, uint Groups, bool Current, bool Next,
+                               bool NeedSparseSolver, bool NeedActiveMask, bool NeedWorkgroupMask,
+                               bool NeedSparseAccumulation, bool NeedGeometry, bool NeedSparseGeometry);
+void MergeCPUContactActivity(uint Lane, uint Groups, bool Current, bool NeedWorkgroupMask);
 
 void main()
 {
@@ -90,8 +94,36 @@ void main()
     bool NeedGeometry = (Solver.Flags & StateDrivenGeometryUpdateFlag) != 0u;
     bool NeedSparseGeometry = NeedGeometry && (Solver.Flags & SparseGeometryFlag) != 0u;
 
-    // 01.00. Reset Destination Schedules and Snapshot Inputs
-    // #region 01_00_Reset_Destination_Schedules_and_Snapshot_Inputs
+    ResetDestinationSchedules(Lane, Groups, Current, Next, NeedSparseSolver,
+                              NeedActiveMask, NeedWorkgroupMask, NeedSparseAccumulation,
+                              NeedGeometry, NeedSparseGeometry);
+
+    barrier();
+
+    MergeCPUContactActivity(Lane, Groups, Current, NeedWorkgroupMask);
+
+    barrier();
+
+    if (Lane == 0u)
+    {
+        AccumulationData.Values[InputCountIndex()] = 0u;
+        AccumulationData.Values[InputMaskIndex()] = 0u;
+    }
+}
+
+// #endregion
+
+// ============================================================
+// 02. Detailed Implementation
+// ============================================================
+// #region 02_Detailed_Implementation
+// 다음 persistent Solver set과 Height/Geometry sparse schedule을 초기화하고 CPU input activation을 현재 set에 병합한다.
+
+void ResetDestinationSchedules(uint Lane, uint Groups, bool Current, bool Next,
+                               bool NeedSparseSolver, bool NeedActiveMask, bool NeedWorkgroupMask,
+                               bool NeedSparseAccumulation, bool NeedGeometry, bool NeedSparseGeometry)
+{
+    // 다음 세대 목록을 비우고 CPU 입력 활성 범위를 현재 실행에 합칠 준비를 한다.
 
     // Only metadata that will be consumed this step is cleared. The current persistent set must remain
     // valid for Pass1/Pass2, while the destination A/B set is prepared for Pass2's next-step handoff.
@@ -147,12 +179,12 @@ void main()
         InputMask = AccumulationData.Values[InputMaskIndex()];
     }
 
-    // #endregion
 
-    barrier();
+}
 
-    // 01.01. Merge CPU Contact Activity
-    // #region 01_01_Merge_CPU_Contact_Activity
+void MergeCPUContactActivity(uint Lane, uint Groups, bool Current, bool NeedWorkgroupMask)
+{
+    // 접촉 입력이 있는 workgroup을 활성 목록에 합쳐 빈 State에서도 입력을 처리한다.
 
     // CPU contact distribution already knows the touched groups; merge only those instead of scanning every texel.
     for (uint Index = Lane; Index < InputCount; Index += 64u)
@@ -172,26 +204,12 @@ void main()
         atomicOr(AccumulationData.Values[SolverMaskIndex(Current)], InputMask);
     }
 
-    // #endregion
 
-    barrier();
-
-    if (Lane == 0u)
-    {
-        AccumulationData.Values[InputCountIndex()] = 0u;
-        AccumulationData.Values[InputMaskIndex()] = 0u;
-    }
 }
-
-// #endregion
-
-// ============================================================
-// 02. Detailed Implementation
-// ============================================================
-// #region 02_Detailed_Implementation
 
 // 02.00. Solver Schedule Address Layout
 // #region 02_00_Solver_Schedule_Address_Layout
+// workgroup 목록·마스크·indirect 명령의 uint-word 주소를 계산한다.
 
 uint WorkgroupCount()
 {
@@ -247,6 +265,7 @@ bool CurrentAB()
 
 // 02.01. CPU Input Activation Layout
 // #region 02_01_CPU_Input_Activation_Layout
+// CPU가 올린 접촉 활성 정보의 주소를 Solver가 읽을 위치로 환산한다.
 
 uint InputCountIndex()
 {
@@ -272,6 +291,7 @@ uint InputGroupMaskBase()
 
 // 02.02. Accumulation and Geometry Schedule Layout
 // #region 02_02_Accumulation_and_Geometry_Schedule_Layout
+// 높이·형상 갱신 목록과 간접 dispatch 자료가 같은 allocation을 공유한다.
 
 uint AccumulationCommandBase()
 {
@@ -302,6 +322,7 @@ uint GeometryFlagBase()
 
 // 02.03. Reset Commands and Append Current Workgroups
 // #region 02_03_Reset_Commands_and_Append_Current_Workgroups
+// 계산 결과를 AccumulationData 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
 void ResetCommand(uint Base)
 {

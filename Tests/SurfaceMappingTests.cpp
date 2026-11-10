@@ -20,6 +20,7 @@
 // 00. Fixtures and Test Support
 // ============================================================
 #pragma region "00_Fixtures_and_Test_Support"
+// 회귀 실행에 사용할 입력 자산과 공통 검사·GPU 준비 코드를 제공한다.
 
 namespace
 {
@@ -122,6 +123,7 @@ namespace
 // 01. TestOBJTopologyPreservation
 // ============================================================
 #pragma region "01_TestOBJTopologyPreservation"
+// 기대 조건: seam fixture should retain two source triangles
 
     void TestOBJTopologyPreservation()
     {
@@ -143,6 +145,7 @@ namespace
 // 02. TestSingleTriangleRasterization
 // ============================================================
 #pragma region "02_TestSingleTriangleRasterization"
+// 기대 조건: single triangle should cover texel centers
 
     void TestSingleTriangleRasterization()
     {
@@ -170,6 +173,7 @@ namespace
 // 03. TestRegularChartNeighbors
 // ============================================================
 #pragma region "03_TestRegularChartNeighbors"
+// 기대 조건: triangles sharing a UV edge should connect through regular texel neighbors
 
     void TestRegularChartNeighbors()
     {
@@ -185,6 +189,7 @@ namespace
 // 04. TestSeamNeighbors
 // ============================================================
 #pragma region "04_TestSeamNeighbors"
+// 기대 조건: UV seam triangles should receive bidirectional cross-chart neighbors
 
     void TestSeamNeighbors()
     {
@@ -200,6 +205,7 @@ namespace
 // 05. TestDisconnectedTopology
 // ============================================================
 #pragma region "05_TestDisconnectedTopology"
+// 기대 조건: spatially close but topologically disconnected charts must not become neighbors
 
     void TestDisconnectedTopology()
     {
@@ -214,6 +220,7 @@ namespace
 // 06. TestDeterministicResult
 // ============================================================
 #pragma region "06_TestDeterministicResult"
+// 기대 조건: repeated mapping should preserve texel count
 
     void TestDeterministicResult()
     {
@@ -237,6 +244,7 @@ namespace
 // 07. TestMultipleSurfaceRanges
 // ============================================================
 #pragma region "07_TestMultipleSurfaceRanges"
+// 기대 조건: mapping should retain both Surface ranges
 
     void TestMultipleSurfaceRanges()
     {
@@ -282,6 +290,7 @@ namespace
 // 08. TestInvalidFixtures
 // ============================================================
 #pragma region "08_TestInvalidFixtures"
+// 누락·퇴화·비정상 topology 입력의 처리와 mapping 진단을 검사한다.
 
     void TestInvalidFixtures()
     {
@@ -298,6 +307,7 @@ namespace
 // 09. TestInvariantValidation
 // ============================================================
 #pragma region "09_TestInvariantValidation"
+// 기대 조건: fixture should contain a neighbor pair to corrupt
 
     void TestInvariantValidation()
     {
@@ -347,6 +357,7 @@ namespace
 // 10. Test Entry Point
 // ============================================================
 #pragma region "10_Test_Entry_Point"
+// 선택한 회귀 사례를 실행하고 실패를 프로세스 종료 코드로 전달한다.
 
 int main()
 {

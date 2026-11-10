@@ -15,6 +15,7 @@ namespace MDSS::SurfaceState
 // 00. Runtime Surface Data
 // ============================================================
 #pragma region 00_Runtime_Surface_Data
+// 공유 Geometry와 해당 Surface의 Profile·자산 참조를 유지한다.
 
     FSurfaceRuntimeData::FSurfaceRuntimeData(FSharedSurfaceGeometryData Geometry)
         : Geometry(std::make_shared<const FSharedSurfaceGeometryData>(std::move(Geometry)))

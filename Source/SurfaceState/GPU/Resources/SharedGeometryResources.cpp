@@ -1,3 +1,8 @@
+/**
+ * @file SharedGeometryResources.cpp
+ * @brief 공유 static Geometry·topology·렌더 메시 variant의 GPU 자원을 관리한다.
+ */
+
 #include "SurfaceState/GPU/Resources/SharedGeometryResources.h"
 
 #include "SurfaceState/GPU/Resources/ResourceBufferHelpers.h"
@@ -18,6 +23,7 @@ namespace MDSS::SurfaceState
 // 00. Shared Geometry Resources
 // ============================================================
 #pragma region 00_Shared_Geometry_Resources
+// static texel/topology와 렌더 variant를 같은 Surface 수명에 연결한다.
 
     void FSurfaceTexelMeshGPUVariant::RetireBuffers(FSurfaceGPUBufferPool& Pool) noexcept
     {

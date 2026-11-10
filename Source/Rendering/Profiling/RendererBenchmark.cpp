@@ -1,3 +1,8 @@
+/**
+ * @file RendererBenchmark.cpp
+ * @brief 프레임 계측과 benchmark·동일 step checkpoint의 State·이미지 출력을 처리한다.
+ */
+
 #include "Application/PerformanceSettings.h"
 #include "Rendering/Core/RendererShared.h"
 
@@ -7,6 +12,45 @@ namespace MDSS::Rendering
 // 00. Runtime Settings and Benchmark Capture
 // ============================================================
 #pragma region 00_Runtime_Settings_and_Benchmark_Capture
+// runtime Profile 제어와 완료 프레임의 측정·캡처 출력을 연결한다.
+
+    // 00.00. Checkpoint Storage Interface
+    #pragma region "00_00_Checkpoint_Storage_Interface"
+    // GPU readback과 파일 출력을 조율 코드에서 분리하는 내부 함수 경계를 선언한다.
+
+    namespace
+    {
+        void SaveAuthoringBuffer(const std::string& Prefix, const GPU::FGPUBuffer& Buffer, const std::string& Name);
+        void SaveAuthoringInstanceBuffers(const SurfaceState::FSurfaceGPUResourceManager& Resources,
+                                          std::size_t                                     InstanceIndex,
+                                          const std::string&                              Prefix,
+                                          bool                                            bInitialInput);
+        std::pair<std::size_t, std::size_t> ReadAuthoringReactionDiagnostics(
+            const SurfaceState::FSurfaceGPUResourceManager& Resources, std::size_t InstanceIndex, bool bInitialInput);
+        nlohmann::json SaveAuthoringInstances(const SurfaceState::FSurfaceGPUResourceManager& Resources,
+                                              const FScene&                                   SceneData,
+                                              const std::string&                              Prefix,
+                                              const std::string&                              Target,
+                                              bool                                            bInitialInput);
+        void           SaveAuthoringImage(const std::unique_ptr<GPU::FGPUBuffer>& Screenshot,
+                                          VkFormat                                Format,
+                                          VkExtent2D                              Extent,
+                                          const std::string&                      Prefix);
+        void           SaveAuthoringMetadata(const std::string&       Prefix,
+                                             std::uint64_t            Step,
+                                             const FScene&            SceneData,
+                                             const FFrameCoordinator& FrameCoordinator,
+                                             std::uint64_t            SubmittedFrames,
+                                             bool                     bInitialInput,
+                                             const nlohmann::json&    Channels,
+                                             const nlohmann::json&    Instances);
+    }
+
+    #pragma endregion
+
+    // 00.01. Capture Configuration
+    #pragma region "00_01_Capture_Configuration"
+    // 출력과 frame 범위를 준비하고 유효한 checkpoint에만 초기 입력 관찰자를 연결한다.
 
     void FRenderer::SetDebugProfileParameters(Asset::FSRProfileAssetHandle                 Profile,
                                               SurfaceState::FStateId                       State,
@@ -16,7 +60,9 @@ namespace MDSS::Rendering
         SurfaceStateSystem.SetDebugProfileParameters(Profile, State, Parameters, bKeepRuntimeOverride);
 
         if (TexelInspector)
+        {
             TexelInspector->Invalidate();
+        }
         const auto Key = std::make_pair(Profile, State);
 
         if (bKeepRuntimeOverride)
@@ -31,20 +77,30 @@ namespace MDSS::Rendering
 
     void FRenderer::ConfigureBenchmarkCapture(const std::filesystem::path& OutputPath,
                                               std::uint32_t                WarmupFrames,
-                                              std::uint32_t                MeasurementFrames)
+                                              std::uint32_t                MeasurementFrames,
+                                              const FScene*                AuthoringScene)
     {
         if (TimestampQueryPool == VK_NULL_HANDLE)
+        {
             throw std::runtime_error("Benchmark capture requires Vulkan timestamp query support.");
+        }
         if (OutputPath.empty() || MeasurementFrames == 0)
+        {
             throw std::invalid_argument("Benchmark capture requires an output path and measurement frames.");
+        }
+
         const std::filesystem::path AbsoluteOutput = std::filesystem::absolute(OutputPath).lexically_normal();
-
         if (AbsoluteOutput.has_parent_path())
+        {
             std::filesystem::create_directories(AbsoluteOutput.parent_path());
-        Benchmark.BenchmarkOutput.open(AbsoluteOutput, std::ios::out | std::ios::trunc);
+        }
 
+        Benchmark.BenchmarkOutput.open(AbsoluteOutput, std::ios::out | std::ios::trunc);
         if (!Benchmark.BenchmarkOutput)
+        {
             throw std::runtime_error("Unable to open benchmark output: " + AbsoluteOutput.string());
+        }
+
         Benchmark.BenchmarkWarmupFrames = WarmupFrames;
         Benchmark.BenchmarkOutputPath = AbsoluteOutput;
         Benchmark.bBenchmarkMetadataWritten = false;
@@ -52,18 +108,54 @@ namespace MDSS::Rendering
         Benchmark.NextBenchmarkFrameIndex = 0;
         Benchmark.BenchmarkJsonLines.clear();
         Benchmark.bBenchmarkCaptureEnabled = true;
+
+        if (PerformanceSettings().contains("authoring_checkpoint_steps"))
+        {
+            Benchmark.AuthoringCheckpointSteps =
+                PerformanceSettings().at("authoring_checkpoint_steps").get<std::vector<std::uint64_t>>();
+            if (Benchmark.AuthoringCheckpointSteps.empty() ||
+                !std::is_sorted(Benchmark.AuthoringCheckpointSteps.begin(), Benchmark.AuthoringCheckpointSteps.end()) ||
+                std::adjacent_find(Benchmark.AuthoringCheckpointSteps.begin(),
+                                   Benchmark.AuthoringCheckpointSteps.end()) !=
+                    Benchmark.AuthoringCheckpointSteps.end() ||
+                Benchmark.AuthoringCheckpointSteps.front() == 0)
+            {
+                throw std::invalid_argument(
+                    "Authoring checkpoints require strictly increasing positive solver serials.");
+            }
+            if (!PerformanceSettings().value("capture_image", false))
+            {
+                throw std::invalid_argument("Authoring checkpoints require capture_image.");
+            }
+            if (!AuthoringScene)
+            {
+                throw std::invalid_argument("Authoring initial readback requires a Scene.");
+            }
+            SurfaceStateSystem.SetInitialInputReadbackObserver([this, AuthoringScene]
+                                                               { WriteAuthoringCheckpoint(*AuthoringScene, true); });
+        }
     }
+
+    #pragma endregion
+
+    // 00.02. Frame Samples and Metadata
+    #pragma region "00_02_Frame_Samples_and_Metadata"
+    // 완료된 frame의 계측 값과 실행 설정을 결과 파일로 기록한다.
 
     void FRenderer::WriteBenchmarkSample(std::uint32_t FrameSlot)
     {
         if (!Benchmark.bBenchmarkCaptureEnabled || FrameSlot >= Benchmark.BenchmarkSubmissions.size())
+        {
             return;
+        }
         const FBenchmarkFrameSubmission& Submitted = Benchmark.BenchmarkSubmissions[FrameSlot];
 
         if (Submitted.FrameIndex == std::numeric_limits<std::uint64_t>::max() ||
             Submitted.FrameIndex < Benchmark.BenchmarkWarmupFrames ||
             Submitted.FrameIndex >= Benchmark.BenchmarkWarmupFrames + Benchmark.BenchmarkMeasurementFrames)
+        {
             return;
+        }
 
         const auto OptionalTiming = [](float Value) -> nlohmann::json
         { return Value >= 0.0F && std::isfinite(Value) ? nlohmann::json(Value) : nlohmann::json(nullptr); };
@@ -107,7 +199,9 @@ namespace MDSS::Rendering
              {"queue_submit_cpu_ms", Submitted.CpuMilliseconds[3]},
              {"present_cpu_ms", Submitted.CpuMilliseconds[4]}}};
         for (const auto& [Name, Value] : DetailedTimings)
+        {
             Sample[Name] = OptionalTiming(Value);
+        }
         Sample["overlay_active_tiles"] = ProfilingStats.OverlayActiveTiles;
         Sample["overlay_total_tiles"] = ProfilingStats.OverlayTotalTiles;
         Sample["overlay_active_top_triangles"] = ProfilingStats.OverlayActiveTopTriangles;
@@ -164,21 +258,39 @@ namespace MDSS::Rendering
         std::ofstream        Output(Benchmark.BenchmarkOutputPath.string() + ".settings.json");
 
         if (!(Output << Metadata.dump(2) << '\n'))
+        {
             throw std::runtime_error("Unable to write benchmark settings.");
+        }
         Benchmark.bBenchmarkMetadataWritten = true;
     }
 
+    #pragma endregion
+
+    // 00.03. Screenshot Command Recording
+    #pragma region "00_03_Screenshot_Command_Recording"
+    // 지정 frame·step의 swapchain 이미지를 host readback 버퍼로 복사한다.
+
     void FRenderer::RecordBenchmarkScreenshot(VkCommandBuffer Command, std::uint32_t ImageIndex)
     {
-        if (!PerformanceSettings().value("capture_image", false) || Benchmark.BenchmarkScreenshot ||
-            Benchmark.NextBenchmarkFrameIndex !=
-                Benchmark.BenchmarkWarmupFrames + Benchmark.BenchmarkMeasurementFrames - 1U)
+        const auto Step = FrameCoordinator.GetStepSerial();
+        const bool bAuthoring = Benchmark.AuthoringLastCapturedStep != Step &&
+                                std::binary_search(Benchmark.AuthoringCheckpointSteps.begin(),
+                                                   Benchmark.AuthoringCheckpointSteps.end(),
+                                                   Step);
+        auto&      Capture = bAuthoring ? Benchmark.AuthoringScreenshot : Benchmark.BenchmarkScreenshot;
+        if (!PerformanceSettings().value("capture_image", false) || Capture ||
+            (!bAuthoring && Benchmark.NextBenchmarkFrameIndex !=
+                                Benchmark.BenchmarkWarmupFrames + Benchmark.BenchmarkMeasurementFrames - 1U))
+        {
             return;
+        }
         if (!SwapchainData.CanReadback())
+        {
             throw std::runtime_error("This swapchain cannot capture images.");
+        }
         Benchmark.BenchmarkScreenshotExtent = SwapchainData.GetExtent();
         Benchmark.BenchmarkScreenshotFormat = SwapchainData.GetImageFormat();
-        Benchmark.BenchmarkScreenshot = std::make_unique<GPU::FGPUBuffer>(
+        Capture = std::make_unique<GPU::FGPUBuffer>(
             Context.GetPhysicalDevice(),
             Context.GetDevice(),
             VkDeviceSize(Benchmark.BenchmarkScreenshotExtent.width) * Benchmark.BenchmarkScreenshotExtent.height * 4U,
@@ -210,18 +322,14 @@ namespace MDSS::Rendering
         VkBufferImageCopy Copy{};
         Copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
         Copy.imageExtent = {Benchmark.BenchmarkScreenshotExtent.width, Benchmark.BenchmarkScreenshotExtent.height, 1};
-        vkCmdCopyImageToBuffer(Command,
-                               Barrier.image,
-                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                               Benchmark.BenchmarkScreenshot->GetHandle(),
-                               1,
-                               &Copy);
+        vkCmdCopyImageToBuffer(
+            Command, Barrier.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, Capture->GetHandle(), 1, &Copy);
         VkBufferMemoryBarrier Readback{};
         Readback.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         Readback.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         Readback.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
         Readback.srcQueueFamilyIndex = Readback.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        Readback.buffer = Benchmark.BenchmarkScreenshot->GetHandle();
+        Readback.buffer = Capture->GetHandle();
         Readback.size = VK_WHOLE_SIZE;
         vkCmdPipelineBarrier(Command,
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -249,10 +357,74 @@ namespace MDSS::Rendering
                              &Barrier);
     }
 
+    #pragma endregion
+
+    // 00.04. Authoring Checkpoint Execution
+    #pragma region "00_04_Authoring_Checkpoint_Execution"
+    // GPU 완료를 기다린 뒤 중복·대상을 검사하고 State·이미지·metadata를 저장한다.
+
+    void FRenderer::WriteAuthoringCheckpoint(const FScene& SceneData, bool bInitialInput)
+    {
+        // Readback must finish before another frame can replace the captured State.
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Authoring checkpoint GPU wait failed.");
+        }
+
+        const auto        Step = FrameCoordinator.GetStepSerial();
+        const std::string Prefix = Benchmark.BenchmarkOutputPath.string() + ".step-" + std::to_string(Step);
+        if (std::filesystem::exists(Prefix + ".json"))
+        {
+            throw std::runtime_error("Refusing to overwrite an authoring checkpoint.");
+        }
+
+        nlohmann::json Channels = nlohmann::json::array();
+        const auto&    Registry = SurfaceData.GetSurfaceStateRegistry();
+        for (std::uint32_t C = 0; C < Registry.GetStateCount(); ++C)
+        {
+            Channels.push_back(Registry.GetStateName(C));
+        }
+
+        const auto&       Resources = SurfaceStateSystem.GetGPUResources();
+        const std::string Target = PerformanceSettings().value("authoring_instance_id", std::string("b_heated"));
+        const auto        Instances = SaveAuthoringInstances(Resources, SceneData, Prefix, Target, bInitialInput);
+        if (Instances.empty())
+        {
+            throw std::runtime_error("Authoring target instance not found.");
+        }
+
+        if (!bInitialInput)
+        {
+            SaveAuthoringImage(Benchmark.AuthoringScreenshot,
+                               Benchmark.BenchmarkScreenshotFormat,
+                               Benchmark.BenchmarkScreenshotExtent,
+                               Prefix);
+            Benchmark.AuthoringScreenshot.reset();
+            Benchmark.AuthoringLastCapturedStep = Step;
+        }
+
+        SaveAuthoringMetadata(Prefix,
+                              Step,
+                              SceneData,
+                              FrameCoordinator,
+                              Benchmark.NextBenchmarkFrameIndex,
+                              bInitialInput,
+                              Channels,
+                              Instances);
+    }
+
+    #pragma endregion
+
+    // 00.05. Capture Finalization
+    #pragma region "00_05_Capture_Finalization"
+    // 종료 시 남은 프레임 기록과 최종 State·진단을 출력한다.
+
     void FRenderer::FinalizeBenchmarkCapture()
     {
         if (!Benchmark.bBenchmarkCaptureEnabled)
+        {
             return;
+        }
         if (Benchmark.BenchmarkScreenshot)
         {
             std::vector<std::uint8_t> Pixels(static_cast<std::size_t>(Benchmark.BenchmarkScreenshot->GetSize()));
@@ -271,7 +443,9 @@ namespace MDSS::Rendering
             }
 
             if (!Image)
+            {
                 throw std::runtime_error("Cannot save scene capture.");
+            }
         }
 
         nlohmann::json Instances = nlohmann::json::array();
@@ -280,7 +454,9 @@ namespace MDSS::Rendering
         for (std::size_t Index = 0; Index < Resources.GetSceneInstanceCount(); ++Index)
         {
             if (Resources.GetInstanceDescriptors(Index) == nullptr)
+            {
                 continue;
+            }
             const auto&        Buffer = Resources.GetInstanceCurrentStateBuffer(Index);
             std::vector<float> Values(Buffer.GetSize() / sizeof(float));
             Buffer.Download(Values.data(), Buffer.GetSize());
@@ -289,7 +465,9 @@ namespace MDSS::Rendering
             StateOutput.write(reinterpret_cast<const char*>(Values.data()),
                               static_cast<std::streamsize>(Buffer.GetSize()));
             if (!StateOutput)
+            {
                 throw std::runtime_error("Cannot write benchmark State array.");
+            }
             std::uint64_t       Nonfinite = 0, Negative = 0, Positive = 0;
             double              Sum = 0.0;
             std::vector<double> StateSums(Resources.GetInstanceChannelCount(Index), 0.0);
@@ -303,7 +481,9 @@ namespace MDSS::Rendering
                 const auto Bits = std::bit_cast<std::uint32_t>(Value);
 
                 for (unsigned Shift = 0; Shift < 32; Shift += 8)
+                {
                     StateHash = (StateHash ^ ((Bits >> Shift) & 0xffU)) * 1099511628211ULL;
+                }
                 if (!std::isfinite(Value))
                 {
                     ++Nonfinite;
@@ -374,7 +554,184 @@ namespace MDSS::Rendering
         std::ofstream        Output(Benchmark.BenchmarkOutputPath.string() + ".validation.json");
 
         if (!(Output << Result.dump(2) << '\n'))
+        {
             throw std::runtime_error("Unable to write benchmark validation.");
+        }
+    }
+
+    #pragma endregion
+
+#pragma endregion
+// ============================================================
+// 01. Checkpoint Storage Implementation
+// ============================================================
+#pragma region "01_Checkpoint_Storage_Implementation"
+// 상위 조율의 저장 순서를 유지하면서 readback·변환·파일 쓰기를 수행한다.
+
+    namespace
+    {
+        // 01.00. Instance Buffers and Reaction Diagnostics
+        #pragma region "01_00_Instance_Buffers_and_Reaction_Diagnostics"
+        // 대상 instance의 State·초기 입력 또는 형상을 저장하고 반응 오류 flag를 집계한다.
+
+        void SaveAuthoringBuffer(const std::string& Prefix, const GPU::FGPUBuffer& Buffer, const std::string& Name)
+        {
+            std::vector<std::uint8_t> Bytes(static_cast<std::size_t>(Buffer.GetSize()));
+            Buffer.Download(Bytes.data(), Buffer.GetSize());
+
+            std::ofstream Out(Prefix + "." + Name + ".bin", std::ios::binary);
+            Out.write(reinterpret_cast<const char*>(Bytes.data()), static_cast<std::streamsize>(Bytes.size()));
+            if (!Out)
+            {
+                throw std::runtime_error("Cannot write authoring buffer.");
+            }
+        }
+
+        void SaveAuthoringInstanceBuffers(const SurfaceState::FSurfaceGPUResourceManager& Resources,
+                                          std::size_t                                     InstanceIndex,
+                                          const std::string&                              Prefix,
+                                          bool                                            bInitialInput)
+        {
+            const auto*       Shared = Resources.GetInstanceSharedGeometry(InstanceIndex);
+            const std::string Key = "instance-" + std::to_string(InstanceIndex) + "-";
+            SaveAuthoringBuffer(Prefix, Resources.GetInstanceCurrentStateBuffer(InstanceIndex), Key + "state");
+            if (bInitialInput)
+            {
+                SaveAuthoringBuffer(
+                    Prefix, Resources.GetInstanceInputDeltaBuffer(InstanceIndex), Key + "initial-input");
+                SaveAuthoringBuffer(Prefix, Resources.GetInstanceWorldTexelAreaBuffer(InstanceIndex), Key + "area");
+                SaveAuthoringBuffer(Prefix, Shared->GetPositionBuffer(), Key + "position");
+                SaveAuthoringBuffer(Prefix, Shared->GetNormalBuffer(), Key + "normal");
+                SaveAuthoringBuffer(Prefix, Shared->GetTexelSurfaceIndexBuffer(), Key + "surface");
+                SaveAuthoringBuffer(Prefix, Shared->GetTexelProfileIndexBuffer(), Key + "profile");
+                SaveAuthoringBuffer(Prefix, Resources.GetSceneProfileParametersBuffer(), "profile-parameters");
+            }
+            else
+            {
+                SaveAuthoringBuffer(
+                    Prefix, Resources.GetInstanceDynamicGeometryBuffer(InstanceIndex), Key + "dynamic-geometry");
+                SaveAuthoringBuffer(
+                    Prefix, Resources.GetInstanceAccumulationHeightBuffer(InstanceIndex), Key + "height-and-schedule");
+            }
+        }
+
+        std::pair<std::size_t, std::size_t> ReadAuthoringReactionDiagnostics(
+            const SurfaceState::FSurfaceGPUResourceManager& Resources, std::size_t InstanceIndex, bool bInitialInput)
+        {
+            std::size_t BudgetFailures = 0, ArithmeticFailures = 0;
+
+            if (!bInitialInput && Resources.GetInstanceDescriptors(InstanceIndex)->HasReactions())
+            {
+                const auto&        Scratch = Resources.GetInstanceReactionScratchBuffer(InstanceIndex);
+                std::vector<float> Values(static_cast<std::size_t>(Scratch.GetSize() / sizeof(float)));
+                Scratch.Download(Values.data(), Scratch.GetSize());
+
+                const auto Stride = Values.size() / Resources.GetInstanceTexelCount(InstanceIndex);
+                for (std::size_t T = 0; T < Resources.GetInstanceTexelCount(InstanceIndex); ++T)
+                {
+                    BudgetFailures += Values[T * Stride + Stride - 2] != 0;
+                    ArithmeticFailures += Values[T * Stride + Stride - 1] != 0;
+                }
+            }
+
+            return {BudgetFailures, ArithmeticFailures};
+        }
+
+        nlohmann::json SaveAuthoringInstances(const SurfaceState::FSurfaceGPUResourceManager& Resources,
+                                              const FScene&                                   SceneData,
+                                              const std::string&                              Prefix,
+                                              const std::string&                              Target,
+                                              bool                                            bInitialInput)
+        {
+            nlohmann::json Instances = nlohmann::json::array();
+
+            for (std::size_t I = 0; I < Resources.GetSceneInstanceCount(); ++I)
+            {
+                if (!Resources.GetInstanceDescriptors(I) || SceneData.GetStaticMeshInstances()[I].GetId() != Target)
+                {
+                    continue;
+                }
+
+                SaveAuthoringInstanceBuffers(Resources, I, Prefix, bInitialInput);
+
+                const auto [BudgetFailures, ArithmeticFailures] =
+                    ReadAuthoringReactionDiagnostics(Resources, I, bInitialInput);
+                Instances.push_back({{"instance", I},
+                                     {"id", Target},
+                                     {"texels", Resources.GetInstanceTexelCount(I)},
+                                     {"reaction_budget_flags_at_checkpoint", BudgetFailures},
+                                     {"reaction_arithmetic_flags_at_checkpoint", ArithmeticFailures}});
+            }
+
+            return Instances;
+        }
+
+        #pragma endregion
+
+        // 01.01. Image and Metadata Output
+        #pragma region "01_01_Image_and_Metadata_Output"
+        // readback 픽셀을 PPM으로 바꾸고 같은 step의 시간·채널·진단 JSON을 기록한다.
+
+        void SaveAuthoringImage(const std::unique_ptr<GPU::FGPUBuffer>& Screenshot,
+                                VkFormat                                Format,
+                                VkExtent2D                              Extent,
+                                const std::string&                      Prefix)
+        {
+            if (!Screenshot)
+            {
+                throw std::runtime_error("Authoring checkpoint image missing.");
+            }
+            std::vector<std::uint8_t> Pixels(static_cast<std::size_t>(Screenshot->GetSize()));
+            Screenshot->Download(Pixels.data(), Screenshot->GetSize());
+
+            const bool bBGRA = Format == VK_FORMAT_B8G8R8A8_SRGB || Format == VK_FORMAT_B8G8R8A8_UNORM;
+
+            std::ofstream Image(Prefix + ".ppm", std::ios::binary);
+            Image << "P6\n" << Extent.width << ' ' << Extent.height << "\n255\n";
+            for (std::size_t P = 0; P < Pixels.size(); P += 4)
+            {
+                Image.put(char(Pixels[P + (bBGRA ? 2 : 0)]));
+                Image.put(char(Pixels[P + 1]));
+                Image.put(char(Pixels[P + (bBGRA ? 0 : 2)]));
+            }
+            if (!Image)
+            {
+                throw std::runtime_error("Cannot write authoring image.");
+            }
+        }
+
+        void SaveAuthoringMetadata(const std::string&       Prefix,
+                                   std::uint64_t            Step,
+                                   const FScene&            SceneData,
+                                   const FFrameCoordinator& FrameCoordinator,
+                                   std::uint64_t            SubmittedFrames,
+                                   bool                     bInitialInput,
+                                   const nlohmann::json&    Channels,
+                                   const nlohmann::json&    Instances)
+        {
+            std::ofstream Metadata(Prefix + ".json");
+            Metadata << nlohmann::json(
+                            {{"simulation_step_serial", Step},
+                             {"demo_time_seconds", SceneData.GetDemoAnimationTime()},
+                             {"simulated_seconds", FrameCoordinator.GetSimulatedSeconds()},
+                             {"submitted_frames", SubmittedFrames},
+                             {"initial_input_only", bInitialInput},
+                             {"scope",
+                              bInitialInput ? "Initial CurrentState plus rasterized InputDelta before first "
+                                              "solver; no initial rendered frame"
+                                            : "State and simulation geometry after the same submitted command "
+                                              "buffer as this image; GPU idle before next frame"},
+                             {"channels", Channels},
+                             {"instances", Instances}})
+                            .dump(2)
+                     << '\n';
+            if (!Metadata)
+            {
+                throw std::runtime_error("Cannot write authoring metadata.");
+            }
+        }
+
+        #pragma endregion
     }
 
 #pragma endregion

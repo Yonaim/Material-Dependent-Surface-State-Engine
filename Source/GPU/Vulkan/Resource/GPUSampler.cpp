@@ -15,6 +15,7 @@ namespace MDSS::GPU
 // 00. FGPUSampler Implementation
 // ============================================================
 #pragma region 00_TGPUSampler_Implementation
+// 텍스처 샘플링과 주소 지정 설정을 담는 Vulkan sampler.
 
     FGPUSampler::FGPUSampler(VkDevice Device) : Device(Device)
     {

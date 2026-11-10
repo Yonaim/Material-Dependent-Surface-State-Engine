@@ -16,6 +16,7 @@ namespace MDSS::SurfaceState
 // 00. State Registry Construction
 // ============================================================
 #pragma region 00_State_Registry_Construction
+// Profile의 State 이름을 정규화해 Scene 공통 channel로 등록한다.
 
     FSurfaceStateRegistry::FSurfaceStateRegistry(const std::vector<FSurfaceResponseProfileData>& Profiles)
     {
@@ -75,6 +76,7 @@ namespace MDSS::SurfaceState
 // 01. State Lookup and Profile Resolution
 // ============================================================
 #pragma region 01_State_Lookup_and_Profile_Resolution
+// State 이름·ID를 조회하고 Profile을 Registry channel 순서로 대응시킨다.
 
     std::size_t FSurfaceStateRegistry::GetStateCount() const noexcept
     {

@@ -1,9 +1,13 @@
-"""Compute reproducible paired effects and numerical sensitivities, without promoting them to novelty."""
+"""반응·형상 결합 실험의 State·반응량 장부·오차를 집계한다.
+
+Compute reproducible paired effects and numerical sensitivities, without promoting them to novelty.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import json
 import pathlib
@@ -27,6 +31,7 @@ runs = {r["id"]: r for r in manifest["runs"] if r["status"] == "completed"}
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 반응·형상 결합 실험의 State·반응량 장부·오차를 집계한다.
 
 
 def folder(key):
@@ -85,6 +90,7 @@ def compare(a, b):
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 반응·형상 결합 실험의 State·반응량 장부·오차를 집계한다.
 
 comparisons = []
 for case in ["plate", "bunny", "mud"]:

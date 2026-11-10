@@ -1,9 +1,13 @@
-"""Immutable v1 requests, independent Vulkan runs, explicit failures, and reproducibility archives."""
+"""단일·모듈 기준선 조건을 실행하고 입력·출력 manifest를 남긴다.
+
+Immutable v1 requests, independent Vulkan runs, explicit failures, and reproducibility archives.
+"""
 
 # ============================================================
 # 00. Imports and Module Configuration
 # ============================================================
 # region 00_Imports_and_Module_Configuration
+# 실행에 필요한 모듈과 입력·결과 경로를 한곳에서 구성한다.
 
 import argparse
 import json
@@ -25,6 +29,7 @@ RAW = EXP / "raw"
 # 01. Processing Helpers
 # ============================================================
 # region 01_Processing_Helpers
+# 단일·모듈 기준선 조건을 실행하고 입력·출력 manifest를 남긴다.
 
 
 def prepare():
@@ -304,6 +309,7 @@ def structural_stop():
 # 02. Script Execution
 # ============================================================
 # region 02_Script_Execution
+# 단일·모듈 기준선 조건을 실행하고 입력·출력 manifest를 남긴다.
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

@@ -13,6 +13,7 @@
 #include <queue>
 #include <stdexcept>
 #include <tuple>
+#include <utility>
 #include <unordered_map>
 
 namespace MDSS::SurfaceState
@@ -21,6 +22,7 @@ namespace MDSS::SurfaceState
 // 00. Texel Mesh Construction Helpers
 // ============================================================
 #pragma region 00_Texel_Mesh_Construction_Helpers
+// 유효 texel·원본 topology를 렌더 정점과 triangle로 연결한다.
 
     static void BuildBoundaryEdges(FSurfaceTexelMesh& Mesh, const std::vector<std::uint32_t>& TopologyIDs)
     {
@@ -346,6 +348,15 @@ namespace MDSS::SurfaceState
 // 01. Surface Texel Mesh Build
 // ============================================================
 #pragma region 01_Surface_Texel_Mesh_Build
+// 표시 해상도에 맞는 정점·index와 Surface별 draw 범위를 만든다.
+
+    static FSurfaceTexelMesh BuildGridBasedTexelMesh(const FSharedSurfaceGeometryData& Geometry,
+                                                      std::uint32_t RenderResolution);
+    static FSurfaceTexelMesh BuildTopologyBasedTexelMesh(
+        const FSharedSurfaceGeometryData& Geometry,
+        std::span<const Asset::FVertex> Vertices,
+        std::span<const Asset::FMeshTriangleSource> Triangles,
+        std::uint32_t RenderResolution);
 
     FSurfaceTexelMesh BuildSurfaceTexelMesh(const FSharedSurfaceGeometryData&           Geometry,
                                             std::span<const Asset::FVertex>             Vertices,
@@ -354,6 +365,16 @@ namespace MDSS::SurfaceState
     {
         if (Vertices.empty() && Triangles.empty())
         {
+            return BuildGridBasedTexelMesh(Geometry, RenderResolution);
+        }
+
+        return BuildTopologyBasedTexelMesh(Geometry, Vertices, Triangles, RenderResolution);
+    }
+
+    static FSurfaceTexelMesh BuildGridBasedTexelMesh(const FSharedSurfaceGeometryData& Geometry,
+                                                      std::uint32_t RenderResolution)
+    {
+
             auto Mesh = BuildGridMesh(Geometry, RenderResolution);
 
             if (RenderResolution > 0 && !Geometry.GetSurfaces().empty())
@@ -373,39 +394,17 @@ namespace MDSS::SurfaceState
 
             BuildSideAdjacency(Mesh);
             return Mesh;
-        }
+    }
 
-        if (Vertices.empty() || Triangles.empty())
-            throw std::invalid_argument("Texel mesh requires both source vertices and triangles.");
-        const auto& Texels = Geometry.GetTexels();
-        const auto  IsSelectedRenderTexel = [&](std::uint32_t TexelIndex)
-        {
-            if (RenderResolution == 0)
-                return true;
-            const auto& Surface = Geometry.GetSurface(Texels[TexelIndex].Surface);
+    struct FTopologyMeshBuildContext
+    {
+        // 입력 참조는 BuildTopologyBasedTexelMesh 호출 동안만 유효하다.
+        const FSharedSurfaceGeometryData& Geometry;
+        std::span<const Asset::FVertex> Vertices;
+        std::span<const Asset::FMeshTriangleSource> Triangles;
+        std::uint32_t RenderResolution;
+        const std::vector<FSurfaceTexelGeometry>& Texels;
 
-            if (RenderResolution >= Surface.Resolution.Width)
-                return true;
-            const std::uint32_t Step = std::max(1U, Surface.Resolution.Width / RenderResolution);
-            const std::uint32_t X = (TexelIndex - Surface.FirstTexel) % Surface.Resolution.Width;
-            const std::uint32_t Y = (TexelIndex - Surface.FirstTexel) / Surface.Resolution.Width;
-            const std::uint32_t CenterOffset = Step / 2U;
-
-            return X % Step == CenterOffset && Y % Step == CenterOffset;
-        };
-        std::vector<std::vector<std::uint32_t>> TriangleTexels(Triangles.size());
-
-        for (std::uint32_t T = 0; T < Texels.size(); ++T)
-            if (Texels[T].IsValid())
-            {
-                if (Texels[T].Triangle >= Triangles.size() ||
-                    Texels[T].Surface != Triangles[Texels[T].Triangle].Surface)
-                    throw std::invalid_argument("Texel does not match source triangle topology.");
-                TriangleTexels[Texels[T].Triangle].push_back(T);
-            }
-
-        // Original position identity, never UV proximity, defines the weld. Distinct components
-        // and genuine source holes remain distinct even when their UVs or positions coincide.
         struct FWeld
         {
             glm::vec3                  Normal{0};
@@ -414,88 +413,6 @@ namespace MDSS::SurfaceState
             std::array<float, 4>       Distances{INFINITY, INFINITY, INFINITY, INFINITY};
             std::vector<std::uint32_t> Adjacent;
         };
-        std::unordered_map<std::int32_t, std::uint32_t> WeldIndices;
-        std::vector<FWeld>                              Welds;
-        std::vector<std::array<std::uint32_t, 3>>       TriangleWelds(Triangles.size());
-
-        for (std::size_t I = 0; I < Triangles.size(); ++I)
-        {
-            const auto& Triangle = Triangles[I];
-            (void)Geometry.GetSurface(Triangle.Surface);
-
-            for (std::size_t C = 0; C < 3; ++C)
-            {
-                if (Triangle.RenderVertexIndices[C] >= Vertices.size() || Triangle.OriginalPositionIndices[C] < 0)
-                    throw std::invalid_argument("Invalid source vertex in texel mesh topology.");
-                const auto [It, Added] = WeldIndices.try_emplace(Triangle.OriginalPositionIndices[C], Welds.size());
-
-                if (Added)
-                    Welds.emplace_back();
-                const auto W = It->second;
-                TriangleWelds[I][C] = W;
-                auto&       Weld = Welds[W];
-                const auto& V = Vertices[Triangle.RenderVertexIndices[C]];
-                Weld.Normal += V.Normal;
-                Weld.Position = V.Position;
-
-                for (const auto T : TriangleTexels[I])
-                {
-                    if (Weld.Samples.x == T || Weld.Samples.y == T || Weld.Samples.z == T || Weld.Samples.w == T)
-                        continue;
-                    const auto  Delta = Texels[T].Position - V.Position;
-                    const float D = glm::dot(Delta, Delta);
-
-                    for (std::size_t Slot = 0; Slot < 4; ++Slot)
-                        if (D < Weld.Distances[Slot])
-                        {
-                            for (std::size_t K = 3; K > Slot; --K)
-                            {
-                                Weld.Distances[K] = Weld.Distances[K - 1];
-                                Weld.Samples[K] = Weld.Samples[K - 1];
-                            }
-
-                            Weld.Distances[Slot] = D;
-                            Weld.Samples[Slot] = T;
-                            break;
-                        }
-                }
-            }
-
-            for (std::size_t C = 0; C < 3; ++C)
-            {
-                const auto A = TriangleWelds[I][C], B = TriangleWelds[I][(C + 1) % 3];
-                Welds[A].Adjacent.push_back(B);
-                Welds[B].Adjacent.push_back(A);
-            }
-        }
-
-        // Fine scan triangles may have no texel centers. Borrow a stencil through source
-        // topology, without a global nearest-neighbor search that could cross disconnected parts.
-        std::queue<std::uint32_t> Pending;
-
-        for (std::uint32_t W = 0; W < Welds.size(); ++W)
-            if (Welds[W].Samples.x != InvalidTexelIndex)
-                Pending.push(W);
-        while (!Pending.empty())
-        {
-            const auto W = Pending.front();
-            Pending.pop();
-
-            for (const auto Other : Welds[W].Adjacent)
-                if (Welds[Other].Samples.x == InvalidTexelIndex)
-                {
-                    Welds[Other].Samples = Welds[W].Samples;
-                    Welds[Other].Distances = Welds[W].Distances;
-                    Pending.push(Other);
-                }
-        }
-
-        for (auto& Weld : Welds)
-        {
-            const float Length = glm::length(Weld.Normal);
-            Weld.Normal = Length > 1e-8F ? Weld.Normal / Length : glm::vec3(0, 0, 1);
-        }
-
         struct FEdgePoint
         {
             float      Parameter;
@@ -509,250 +426,435 @@ namespace MDSS::SurfaceState
             glm::vec3 First{0};
             glm::vec3 Second{0};
         };
-        std::map<FEdgeKey, std::vector<std::pair<float, std::uint32_t>>> EdgeSamples;
-        std::map<FEdgeKey, std::vector<FEdgePoint>>                      EdgePoints;
-        std::map<FEdgeKey, std::vector<std::uint32_t>>                   EdgeTopologyIDs;
-        std::map<FEdgeKey, FEdgeNormals>                                 EdgeNormals;
 
-        // An edge's interior displacement direction belongs to its incident faces. Using
-        // the endpoint weld normals here pulls a flat face's internal diagonal toward the
-        // normals of unrelated cube sides, which stretches its displaced top sideways.
-        for (std::size_t I = 0; I < Triangles.size(); ++I)
-            for (std::size_t C = 0; C < 3; ++C)
-            {
-                auto A = C, B = (C + 1U) % 3U;
+        std::vector<std::vector<std::uint32_t>> TriangleTexels;
+        std::vector<FWeld> Welds;
+        std::vector<std::array<std::uint32_t, 3>> TriangleWelds;
+        std::map<FEdgeKey, std::vector<FEdgePoint>> EdgePoints;
+        std::map<FEdgeKey, std::vector<std::uint32_t>> EdgeTopologyIDs;
+        std::uint32_t NextTopologyID = 0;
+        FSurfaceTexelMesh Result;
+        std::vector<std::uint32_t> TopologyIDs;
+        std::vector<std::array<std::uint32_t, 3>> TriangleRenderIndices;
+        std::vector<std::vector<std::uint32_t>> SurfaceIndices;
 
-                if (TriangleWelds[I][A] > TriangleWelds[I][B])
-                    std::swap(A, B);
-                auto& Normals = EdgeNormals[{TriangleWelds[I][A], TriangleWelds[I][B]}];
-                Normals.First += Vertices[Triangles[I].RenderVertexIndices[A]].Normal;
-                Normals.Second += Vertices[Triangles[I].RenderVertexIndices[B]].Normal;
-            }
-
-        // Union exact edge samples from both charts before refinement. Both incident source
-        // triangles receive identical subdivisions, so edge samples cannot form T-junctions.
-        for (std::size_t I = 0; I < Triangles.size(); ++I)
-            for (const auto T : TriangleTexels[I])
-            {
-                if (!IsSelectedRenderTexel(T))
-                    continue;
-                const auto& Bary = Texels[T].Barycentric;
-                const auto  Opposite = Bary.x < Bary.y ? (Bary.x < Bary.z ? 0U : 2U) : (Bary.y < Bary.z ? 1U : 2U);
-
-                if (Bary[Opposite] > 1e-6F)
-                    continue;
-                auto A = (Opposite + 1U) % 3U, B = (Opposite + 2U) % 3U;
-
-                if (TriangleWelds[I][A] > TriangleWelds[I][B])
-                    std::swap(A, B);
-                const float Sum = Bary[A] + Bary[B];
-                const float Parameter = Sum > 0 ? Bary[B] / Sum : 0;
-
-                if (Parameter <= 1e-6F || Parameter >= 1.0F - 1e-6F)
-                    continue;
-                EdgeSamples[{TriangleWelds[I][A], TriangleWelds[I][B]}].push_back({Parameter, T});
-            }
-
-        std::uint32_t NextTopologyID = static_cast<std::uint32_t>(Welds.size());
-
-        for (auto& [Key, Samples] : EdgeSamples)
+        FTopologyMeshBuildContext(const FSharedSurfaceGeometryData& InGeometry,
+                                 std::span<const Asset::FVertex> InVertices,
+                                 std::span<const Asset::FMeshTriangleSource> InTriangles,
+                                 std::uint32_t InRenderResolution)
+            : Geometry(InGeometry),
+              Vertices(InVertices),
+              Triangles(InTriangles),
+              RenderResolution(InRenderResolution),
+              Texels(InGeometry.GetTexels()),
+              TriangleTexels(InTriangles.size()),
+              TriangleWelds(InTriangles.size()),
+              TriangleRenderIndices(InTriangles.size()),
+              SurfaceIndices(InGeometry.GetSurfaces().size())
         {
-            std::sort(Samples.begin(), Samples.end());
-            auto& Points = EdgePoints[Key];
-
-            for (std::size_t K = 0; K < Samples.size();)
-            {
-                FEdgePoint Point;
-                Point.Parameter = Samples[K].first;
-                std::size_t End = K + 1;
-
-                while (End < Samples.size() && Samples[End].first - Point.Parameter <= 1e-6F)
-                    ++End;
-                for (std::size_t J = K; J < End && J < K + 4; ++J)
-                {
-                    Point.Samples[J - K] = Samples[J].second;
-                    Point.Weights[J - K] = 1.0F / float(std::min<std::size_t>(End - K, 4));
-                }
-
-                Point.Position =
-                    glm::vec4(glm::mix(Welds[Key.first].Position, Welds[Key.second].Position, Point.Parameter), 1);
-                const auto& [NormalA, NormalB] = EdgeNormals.at(Key);
-                auto N = glm::mix(NormalA, NormalB, Point.Parameter);
-                Point.Direction = glm::vec4(glm::dot(N, N) > 1e-12F ? glm::normalize(N) : Welds[Key.first].Normal, 0);
-                Points.push_back(Point);
-                EdgeTopologyIDs[Key].push_back(NextTopologyID++);
-                K = End;
-            }
         }
 
-        FSurfaceTexelMesh          Result;
-        std::vector<std::uint32_t> TopologyIDs;
-
-        // Render vertices stay split at UV/material/normal seams; their displacement is welded.
-        Result.Vertices.reserve(Vertices.size() + Texels.size());
-        std::unordered_map<std::uint64_t, std::uint32_t> RenderIndices;
-        std::vector<std::array<std::uint32_t, 3>>        TriangleRenderIndices(Triangles.size());
-
-        for (std::size_t I = 0; I < Triangles.size(); ++I)
-            for (std::size_t C = 0; C < 3; ++C)
-            {
-                const auto R = Triangles[I].RenderVertexIndices[C];
-                const auto Key = (std::uint64_t(Triangles[I].Surface) << 32U) | R;
-                const auto [It, Added] = RenderIndices.try_emplace(Key, Result.Vertices.size());
-                TriangleRenderIndices[I][C] = It->second;
-
-                if (!Added)
-                    continue;
-                Result.Vertices.emplace_back();
-                TopologyIDs.push_back(TriangleWelds[I][C]);
-                const auto& Source = Vertices[R];
-                const auto& Weld = Welds[TriangleWelds[I][C]];
-                auto&       V = Result.Vertices.back();
-                V.Position = glm::vec4(Source.Position, 1);
-                V.Normal = glm::vec4(Source.Normal, 0);
-                V.DisplacementNormal = glm::vec4(Weld.Normal, 0);
-                V.UVSurface = {Source.UV.x, Source.UV.y, 0, float(Triangles[I].Surface)};
-                V.Samples = Weld.Samples;
-
-                for (std::size_t K = 0; K < 4; ++K)
-                    if (V.Samples[K] != InvalidTexelIndex)
-                        V.Weights[K] = 1.0F / std::max(Weld.Distances[K], 1e-12F);
-                const float Sum = V.Weights.x + V.Weights.y + V.Weights.z + V.Weights.w;
-
-                if (Sum > 0)
-                    V.Weights /= Sum;
-            }
-
-        std::vector<std::vector<std::uint32_t>> SurfaceIndices(Geometry.GetSurfaces().size());
-
-        for (std::size_t I = 0; I < Triangles.size(); ++I)
+        FSurfaceTexelMesh Build()
         {
-            const auto&                Source = Triangles[I];
-            std::vector<std::uint32_t> Points(TriangleRenderIndices[I].begin(), TriangleRenderIndices[I].end());
+            CollectTriangleTexels();
+            BuildWeldTopology();
+            PropagateWeldSamples();
+            BuildEdgeSamples();
+            CreateSourceRenderVertices();
+            TriangulateSourceSurfaces();
+            AssembleSurfaceIndexRanges();
+            FinalizeMesh();
 
-            // Barycentric coordinates avoid UV scale, atlas rotation and mirrored winding issues.
-            std::vector<double> Coordinates{0, 0, 1, 0, 0, 1};
+            return std::move(Result);
+        }
 
-            for (std::size_t Corner = 0; Corner < 3; ++Corner)
-            {
-                auto A = Corner, B = (Corner + 1) % 3;
+        bool IsSelectedRenderTexel(std::uint32_t TexelIndex) const
+        {
+            if (RenderResolution == 0)
+                return true;
+            const auto& Surface = Geometry.GetSurface(Texels[TexelIndex].Surface);
 
-                if (TriangleWelds[I][A] > TriangleWelds[I][B])
-                    std::swap(A, B);
-                const auto Found = EdgePoints.find({TriangleWelds[I][A], TriangleWelds[I][B]});
+            if (RenderResolution >= Surface.Resolution.Width)
+                return true;
+            const std::uint32_t Step = std::max(1U, Surface.Resolution.Width / RenderResolution);
+            const std::uint32_t X = (TexelIndex - Surface.FirstTexel) % Surface.Resolution.Width;
+            const std::uint32_t Y = (TexelIndex - Surface.FirstTexel) / Surface.Resolution.Width;
+            const std::uint32_t CenterOffset = Step / 2U;
 
-                if (Found == EdgePoints.end())
-                    continue;
-                for (std::size_t PointIndex = 0; PointIndex < Found->second.size(); ++PointIndex)
+            return X % Step == CenterOffset && Y % Step == CenterOffset;
+        }
+
+        void CollectTriangleTexels()
+        {
+            for (std::uint32_t T = 0; T < Texels.size(); ++T)
+                if (Texels[T].IsValid())
                 {
-                    const auto&             Point = Found->second[PointIndex];
-                    FSurfaceTexelMeshVertex V;
-                    V.Position = Point.Position;
-                    V.DisplacementNormal = Point.Direction;
-                    V.Normal = glm::vec4(glm::normalize(glm::mix(Vertices[Source.RenderVertexIndices[A]].Normal,
-                                                                 Vertices[Source.RenderVertexIndices[B]].Normal,
-                                                                 Point.Parameter)),
-                                         0);
-                    const auto UV = glm::mix(Vertices[Source.RenderVertexIndices[A]].UV,
-                                             Vertices[Source.RenderVertexIndices[B]].UV,
-                                             Point.Parameter);
-                    V.UVSurface = {UV.x, UV.y, 0, float(Source.Surface)};
-                    V.Samples = Point.Samples;
-                    V.Weights = Point.Weights;
-                    Points.push_back(static_cast<std::uint32_t>(Result.Vertices.size()));
-                    Result.Vertices.push_back(V);
-                    TopologyIDs.push_back(EdgeTopologyIDs.at({TriangleWelds[I][A], TriangleWelds[I][B]})[PointIndex]);
-                    glm::dvec3 Bary{0};
-                    Bary[A] = 1.0 - double(Point.Parameter);
-                    Bary[B] = double(Point.Parameter);
-                    Coordinates.push_back(Bary.y);
-                    Coordinates.push_back(Bary.z);
+                    if (Texels[T].Triangle >= Triangles.size() ||
+                        Texels[T].Surface != Triangles[Texels[T].Triangle].Surface)
+                        throw std::invalid_argument("Texel does not match source triangle topology.");
+                    TriangleTexels[Texels[T].Triangle].push_back(T);
                 }
-            }
 
-            for (const auto T : TriangleTexels[I])
+        }
+
+        void BuildWeldTopology()
+        {
+            std::unordered_map<std::int32_t, std::uint32_t> WeldIndices;
+            for (std::size_t I = 0; I < Triangles.size(); ++I)
             {
-                const auto& Texel = Texels[T];
-
-                // Boundary samples are represented by the common source edge vertices above.
-                if (std::min({Texel.Barycentric.x, Texel.Barycentric.y, Texel.Barycentric.z}) <= 1e-6F)
-                    continue;
-                if (!IsSelectedRenderTexel(T))
-                    continue;
-                if (Result.Vertices.size() >= std::numeric_limits<std::uint32_t>::max())
-                    throw std::overflow_error("Texel render vertex count exceeds index range.");
-                Points.push_back(static_cast<std::uint32_t>(Result.Vertices.size()));
-                FSurfaceTexelMeshVertex V;
-                V.Position = glm::vec4(Texel.Position, 1);
-                V.Normal = V.DisplacementNormal = glm::vec4(Texel.Normal, 0);
-                glm::vec2 UV{0};
+                const auto& Triangle = Triangles[I];
+                (void)Geometry.GetSurface(Triangle.Surface);
 
                 for (std::size_t C = 0; C < 3; ++C)
-                    UV += Texel.Barycentric[C] * Vertices[Source.RenderVertexIndices[C]].UV;
-                V.UVSurface = {UV.x, UV.y, 0, float(Source.Surface)};
-                V.Samples.x = T;
-                V.Weights.x = 1;
-                Result.Vertices.push_back(V);
-                TopologyIDs.push_back(NextTopologyID++);
-                Coordinates.push_back(Texel.Barycentric.y);
-                Coordinates.push_back(Texel.Barycentric.z);
+                {
+                    if (Triangle.RenderVertexIndices[C] >= Vertices.size() || Triangle.OriginalPositionIndices[C] < 0)
+                        throw std::invalid_argument("Invalid source vertex in texel mesh topology.");
+                    const auto [It, Added] = WeldIndices.try_emplace(Triangle.OriginalPositionIndices[C], Welds.size());
+
+                    if (Added)
+                        Welds.emplace_back();
+                    const auto W = It->second;
+                    TriangleWelds[I][C] = W;
+                    auto&       Weld = Welds[W];
+                    const auto& V = Vertices[Triangle.RenderVertexIndices[C]];
+                    Weld.Normal += V.Normal;
+                    Weld.Position = V.Position;
+
+                    for (const auto T : TriangleTexels[I])
+                    {
+                        if (Weld.Samples.x == T || Weld.Samples.y == T || Weld.Samples.z == T || Weld.Samples.w == T)
+                            continue;
+                        const auto  Delta = Texels[T].Position - V.Position;
+                        const float D = glm::dot(Delta, Delta);
+
+                        for (std::size_t Slot = 0; Slot < 4; ++Slot)
+                            if (D < Weld.Distances[Slot])
+                            {
+                                for (std::size_t K = 3; K > Slot; --K)
+                                {
+                                    Weld.Distances[K] = Weld.Distances[K - 1];
+                                    Weld.Samples[K] = Weld.Samples[K - 1];
+                                }
+
+                                Weld.Distances[Slot] = D;
+                                Weld.Samples[Slot] = T;
+                                break;
+                            }
+                    }
+                }
+
+                for (std::size_t C = 0; C < 3; ++C)
+                {
+                    const auto A = TriangleWelds[I][C], B = TriangleWelds[I][(C + 1) % 3];
+                    Welds[A].Adjacent.push_back(B);
+                    Welds[B].Adjacent.push_back(A);
+                }
             }
 
-            auto&      Indices = SurfaceIndices[Source.Surface];
-            const auto Emit = [&](std::uint32_t A, std::uint32_t B, std::uint32_t C)
-            {
-                const glm::vec3 N = glm::cross(Vertices[Source.RenderVertexIndices[1]].Position -
-                                                   Vertices[Source.RenderVertexIndices[0]].Position,
-                                               Vertices[Source.RenderVertexIndices[2]].Position -
-                                                   Vertices[Source.RenderVertexIndices[0]].Position);
-                const auto Cross = glm::cross(glm::vec3(Result.Vertices[B].Position - Result.Vertices[A].Position),
-                                              glm::vec3(Result.Vertices[C].Position - Result.Vertices[A].Position));
-                if (glm::dot(N, Cross) < 0)
-                    std::swap(B, C);
-                Indices.insert(Indices.end(), {A, B, C});
-            };
-
-            if (Points.size() == 3)
-                Emit(Points[0], Points[1], Points[2]);
-            else
-            {
-                const delaunator::Delaunator Refined(Coordinates);
-
-                for (std::size_t K = 0; K < Refined.triangles.size(); K += 3)
-                    Emit(Points[Refined.triangles[K]],
-                         Points[Refined.triangles[K + 1]],
-                         Points[Refined.triangles[K + 2]]);
-            }
         }
 
-        for (const auto& Indices : SurfaceIndices)
+        void PropagateWeldSamples()
         {
-            if (Result.Indices.size() + Indices.size() > std::numeric_limits<std::uint32_t>::max())
-                throw std::overflow_error("Texel mesh exceeds index-count range.");
-            Result.Surfaces.push_back(
-                {static_cast<std::uint32_t>(Result.Indices.size()), static_cast<std::uint32_t>(Indices.size())});
-            Result.Indices.insert(Result.Indices.end(), Indices.begin(), Indices.end());
-        }
+            // Fine scan triangles may have no texel centers. Borrow a stencil through source
+            // topology, without a global nearest-neighbor search that could cross disconnected parts.
+            std::queue<std::uint32_t> Pending;
 
-        BuildBoundaryEdges(Result, TopologyIDs);
-
-        if (RenderResolution > 0 && !Geometry.GetSurfaces().empty())
-        {
-            std::uint32_t SourceResolution = Geometry.GetSurfaces().front().Resolution.Width;
-            std::uint32_t Levels = 0;
-
-            while (SourceResolution > 0 && SourceResolution <= RenderResolution / 2U)
+            for (std::uint32_t W = 0; W < Welds.size(); ++W)
+                if (Welds[W].Samples.x != InvalidTexelIndex)
+                    Pending.push(W);
+            while (!Pending.empty())
             {
-                SourceResolution *= 2U;
-                ++Levels;
+                const auto W = Pending.front();
+                Pending.pop();
+
+                for (const auto Other : Welds[W].Adjacent)
+                    if (Welds[Other].Samples.x == InvalidTexelIndex)
+                    {
+                        Welds[Other].Samples = Welds[W].Samples;
+                        Welds[Other].Distances = Welds[W].Distances;
+                        Pending.push(Other);
+                    }
             }
 
-            if (Levels > 0)
-                Result = SubdivideMesh(Result, Levels);
+            for (auto& Weld : Welds)
+            {
+                const float Length = glm::length(Weld.Normal);
+                Weld.Normal = Length > 1e-8F ? Weld.Normal / Length : glm::vec3(0, 0, 1);
+            }
+
         }
 
-        BuildSideAdjacency(Result);
-        return Result;
+        void BuildEdgeSamples()
+        {
+            std::map<FEdgeKey, std::vector<std::pair<float, std::uint32_t>>> EdgeSamples;
+            std::map<FEdgeKey, FEdgeNormals> EdgeNormals;
+            // An edge's interior displacement direction belongs to its incident faces. Using
+            // the endpoint weld normals here pulls a flat face's internal diagonal toward the
+            // normals of unrelated cube sides, which stretches its displaced top sideways.
+            for (std::size_t I = 0; I < Triangles.size(); ++I)
+                for (std::size_t C = 0; C < 3; ++C)
+                {
+                    auto A = C, B = (C + 1U) % 3U;
+
+                    if (TriangleWelds[I][A] > TriangleWelds[I][B])
+                        std::swap(A, B);
+                    auto& Normals = EdgeNormals[{TriangleWelds[I][A], TriangleWelds[I][B]}];
+                    Normals.First += Vertices[Triangles[I].RenderVertexIndices[A]].Normal;
+                    Normals.Second += Vertices[Triangles[I].RenderVertexIndices[B]].Normal;
+                }
+
+            // Union exact edge samples from both charts before refinement. Both incident source
+            // triangles receive identical subdivisions, so edge samples cannot form T-junctions.
+            for (std::size_t I = 0; I < Triangles.size(); ++I)
+                for (const auto T : TriangleTexels[I])
+                {
+                    if (!IsSelectedRenderTexel(T))
+                        continue;
+                    const auto& Bary = Texels[T].Barycentric;
+                    const auto  Opposite = Bary.x < Bary.y ? (Bary.x < Bary.z ? 0U : 2U) : (Bary.y < Bary.z ? 1U : 2U);
+
+                    if (Bary[Opposite] > 1e-6F)
+                        continue;
+                    auto A = (Opposite + 1U) % 3U, B = (Opposite + 2U) % 3U;
+
+                    if (TriangleWelds[I][A] > TriangleWelds[I][B])
+                        std::swap(A, B);
+                    const float Sum = Bary[A] + Bary[B];
+                    const float Parameter = Sum > 0 ? Bary[B] / Sum : 0;
+
+                    if (Parameter <= 1e-6F || Parameter >= 1.0F - 1e-6F)
+                        continue;
+                    EdgeSamples[{TriangleWelds[I][A], TriangleWelds[I][B]}].push_back({Parameter, T});
+                }
+
+            NextTopologyID = static_cast<std::uint32_t>(Welds.size());
+
+            for (auto& [Key, Samples] : EdgeSamples)
+            {
+                std::sort(Samples.begin(), Samples.end());
+                auto& Points = EdgePoints[Key];
+
+                for (std::size_t K = 0; K < Samples.size();)
+                {
+                    FEdgePoint Point;
+                    Point.Parameter = Samples[K].first;
+                    std::size_t End = K + 1;
+
+                    while (End < Samples.size() && Samples[End].first - Point.Parameter <= 1e-6F)
+                        ++End;
+                    for (std::size_t J = K; J < End && J < K + 4; ++J)
+                    {
+                        Point.Samples[J - K] = Samples[J].second;
+                        Point.Weights[J - K] = 1.0F / float(std::min<std::size_t>(End - K, 4));
+                    }
+
+                    Point.Position =
+                        glm::vec4(glm::mix(Welds[Key.first].Position, Welds[Key.second].Position, Point.Parameter), 1);
+                    const auto& [NormalA, NormalB] = EdgeNormals.at(Key);
+                    auto N = glm::mix(NormalA, NormalB, Point.Parameter);
+                    Point.Direction = glm::vec4(glm::dot(N, N) > 1e-12F ? glm::normalize(N) : Welds[Key.first].Normal, 0);
+                    Points.push_back(Point);
+                    EdgeTopologyIDs[Key].push_back(NextTopologyID++);
+                    K = End;
+                }
+            }
+
+        }
+
+        void CreateSourceRenderVertices()
+        {
+
+            // Render vertices stay split at UV/material/normal seams; their displacement is welded.
+            Result.Vertices.reserve(Vertices.size() + Texels.size());
+            std::unordered_map<std::uint64_t, std::uint32_t> RenderIndices;
+
+            for (std::size_t I = 0; I < Triangles.size(); ++I)
+                for (std::size_t C = 0; C < 3; ++C)
+                {
+                    const auto R = Triangles[I].RenderVertexIndices[C];
+                    const auto Key = (std::uint64_t(Triangles[I].Surface) << 32U) | R;
+                    const auto [It, Added] = RenderIndices.try_emplace(Key, Result.Vertices.size());
+                    TriangleRenderIndices[I][C] = It->second;
+
+                    if (!Added)
+                        continue;
+                    Result.Vertices.emplace_back();
+                    TopologyIDs.push_back(TriangleWelds[I][C]);
+                    const auto& Source = Vertices[R];
+                    const auto& Weld = Welds[TriangleWelds[I][C]];
+                    auto&       V = Result.Vertices.back();
+                    V.Position = glm::vec4(Source.Position, 1);
+                    V.Normal = glm::vec4(Source.Normal, 0);
+                    V.DisplacementNormal = glm::vec4(Weld.Normal, 0);
+                    V.UVSurface = {Source.UV.x, Source.UV.y, 0, float(Triangles[I].Surface)};
+                    V.Samples = Weld.Samples;
+
+                    for (std::size_t K = 0; K < 4; ++K)
+                        if (V.Samples[K] != InvalidTexelIndex)
+                            V.Weights[K] = 1.0F / std::max(Weld.Distances[K], 1e-12F);
+                    const float Sum = V.Weights.x + V.Weights.y + V.Weights.z + V.Weights.w;
+
+                    if (Sum > 0)
+                        V.Weights /= Sum;
+                }
+
+        }
+
+        void TriangulateSourceSurfaces()
+        {
+
+            for (std::size_t I = 0; I < Triangles.size(); ++I)
+            {
+                const auto&                Source = Triangles[I];
+                std::vector<std::uint32_t> Points(TriangleRenderIndices[I].begin(), TriangleRenderIndices[I].end());
+
+                // Barycentric coordinates avoid UV scale, atlas rotation and mirrored winding issues.
+                std::vector<double> Coordinates{0, 0, 1, 0, 0, 1};
+
+                for (std::size_t Corner = 0; Corner < 3; ++Corner)
+                {
+                    auto A = Corner, B = (Corner + 1) % 3;
+
+                    if (TriangleWelds[I][A] > TriangleWelds[I][B])
+                        std::swap(A, B);
+                    const auto Found = EdgePoints.find({TriangleWelds[I][A], TriangleWelds[I][B]});
+
+                    if (Found == EdgePoints.end())
+                        continue;
+                    for (std::size_t PointIndex = 0; PointIndex < Found->second.size(); ++PointIndex)
+                    {
+                        const auto&             Point = Found->second[PointIndex];
+                        FSurfaceTexelMeshVertex V;
+                        V.Position = Point.Position;
+                        V.DisplacementNormal = Point.Direction;
+                        V.Normal = glm::vec4(glm::normalize(glm::mix(Vertices[Source.RenderVertexIndices[A]].Normal,
+                                                                     Vertices[Source.RenderVertexIndices[B]].Normal,
+                                                                     Point.Parameter)),
+                                             0);
+                        const auto UV = glm::mix(Vertices[Source.RenderVertexIndices[A]].UV,
+                                                 Vertices[Source.RenderVertexIndices[B]].UV,
+                                                 Point.Parameter);
+                        V.UVSurface = {UV.x, UV.y, 0, float(Source.Surface)};
+                        V.Samples = Point.Samples;
+                        V.Weights = Point.Weights;
+                        Points.push_back(static_cast<std::uint32_t>(Result.Vertices.size()));
+                        Result.Vertices.push_back(V);
+                        TopologyIDs.push_back(EdgeTopologyIDs.at({TriangleWelds[I][A], TriangleWelds[I][B]})[PointIndex]);
+                        glm::dvec3 Bary{0};
+                        Bary[A] = 1.0 - double(Point.Parameter);
+                        Bary[B] = double(Point.Parameter);
+                        Coordinates.push_back(Bary.y);
+                        Coordinates.push_back(Bary.z);
+                    }
+                }
+
+                for (const auto T : TriangleTexels[I])
+                {
+                    const auto& Texel = Texels[T];
+
+                    // Boundary samples are represented by the common source edge vertices above.
+                    if (std::min({Texel.Barycentric.x, Texel.Barycentric.y, Texel.Barycentric.z}) <= 1e-6F)
+                        continue;
+                    if (!IsSelectedRenderTexel(T))
+                        continue;
+                    if (Result.Vertices.size() >= std::numeric_limits<std::uint32_t>::max())
+                        throw std::overflow_error("Texel render vertex count exceeds index range.");
+                    Points.push_back(static_cast<std::uint32_t>(Result.Vertices.size()));
+                    FSurfaceTexelMeshVertex V;
+                    V.Position = glm::vec4(Texel.Position, 1);
+                    V.Normal = V.DisplacementNormal = glm::vec4(Texel.Normal, 0);
+                    glm::vec2 UV{0};
+
+                    for (std::size_t C = 0; C < 3; ++C)
+                        UV += Texel.Barycentric[C] * Vertices[Source.RenderVertexIndices[C]].UV;
+                    V.UVSurface = {UV.x, UV.y, 0, float(Source.Surface)};
+                    V.Samples.x = T;
+                    V.Weights.x = 1;
+                    Result.Vertices.push_back(V);
+                    TopologyIDs.push_back(NextTopologyID++);
+                    Coordinates.push_back(Texel.Barycentric.y);
+                    Coordinates.push_back(Texel.Barycentric.z);
+                }
+
+                auto&      Indices = SurfaceIndices[Source.Surface];
+                const auto Emit = [&](std::uint32_t A, std::uint32_t B, std::uint32_t C)
+                {
+                    const glm::vec3 N = glm::cross(Vertices[Source.RenderVertexIndices[1]].Position -
+                                                       Vertices[Source.RenderVertexIndices[0]].Position,
+                                                   Vertices[Source.RenderVertexIndices[2]].Position -
+                                                       Vertices[Source.RenderVertexIndices[0]].Position);
+                    const auto Cross = glm::cross(glm::vec3(Result.Vertices[B].Position - Result.Vertices[A].Position),
+                                                  glm::vec3(Result.Vertices[C].Position - Result.Vertices[A].Position));
+                    if (glm::dot(N, Cross) < 0)
+                        std::swap(B, C);
+                    Indices.insert(Indices.end(), {A, B, C});
+                };
+
+                if (Points.size() == 3)
+                    Emit(Points[0], Points[1], Points[2]);
+                else
+                {
+                    const delaunator::Delaunator Refined(Coordinates);
+
+                    for (std::size_t K = 0; K < Refined.triangles.size(); K += 3)
+                        Emit(Points[Refined.triangles[K]],
+                             Points[Refined.triangles[K + 1]],
+                             Points[Refined.triangles[K + 2]]);
+                }
+            }
+
+        }
+
+        void AssembleSurfaceIndexRanges()
+        {
+            for (const auto& Indices : SurfaceIndices)
+            {
+                if (Result.Indices.size() + Indices.size() > std::numeric_limits<std::uint32_t>::max())
+                    throw std::overflow_error("Texel mesh exceeds index-count range.");
+                Result.Surfaces.push_back(
+                    {static_cast<std::uint32_t>(Result.Indices.size()), static_cast<std::uint32_t>(Indices.size())});
+                Result.Indices.insert(Result.Indices.end(), Indices.begin(), Indices.end());
+            }
+
+        }
+
+        void FinalizeMesh()
+        {
+            BuildBoundaryEdges(Result, TopologyIDs);
+
+            if (RenderResolution > 0 && !Geometry.GetSurfaces().empty())
+            {
+                std::uint32_t SourceResolution = Geometry.GetSurfaces().front().Resolution.Width;
+                std::uint32_t Levels = 0;
+
+                while (SourceResolution > 0 && SourceResolution <= RenderResolution / 2U)
+                {
+                    SourceResolution *= 2U;
+                    ++Levels;
+                }
+
+                if (Levels > 0)
+                    Result = SubdivideMesh(Result, Levels);
+            }
+
+            BuildSideAdjacency(Result);
+
+    
+            }
+    };
+
+    static FSurfaceTexelMesh BuildTopologyBasedTexelMesh(const FSharedSurfaceGeometryData& Geometry,
+                                                          std::span<const Asset::FVertex> Vertices,
+                                                          std::span<const Asset::FMeshTriangleSource> Triangles,
+                                                          std::uint32_t RenderResolution)
+    {
+        if (Vertices.empty() || Triangles.empty())
+            throw std::invalid_argument("Texel mesh requires both source vertices and triangles.");
+
+        FTopologyMeshBuildContext Context(Geometry, Vertices, Triangles, RenderResolution);
+        return Context.Build();
     }
+
+
 #pragma endregion
 }

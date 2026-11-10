@@ -1,7 +1,4 @@
-/**
- * @file SurfaceAccumulationHeight.comp
- * @brief 현재 descriptor의 State에서 누적 높이를 계산하고 geometry sparse schedule을 직접 생성한다.
- */
+// SurfaceAccumulationHeight.comp — 현재 descriptor의 State에서 누적 높이를 계산하고 geometry sparse schedule을 직접 생성한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #define SURFACE_ACCUMULATION_HEIGHT_WRITE
@@ -11,6 +8,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(local_size_x = 64) in;
 
@@ -29,6 +27,7 @@ void ScheduleGeometryTexelAndTwoHopNeighbors(uint Texel);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// 현재 descriptor의 State에서 누적 높이를 계산하고 geometry sparse schedule을 직접 생성한다.
 
 void main()
 {
@@ -42,6 +41,7 @@ void main()
 
     // 01.00. Publish Height and Handle Geometry Update Modes
     // #region 01_00_Publish_Height_and_Handle_Geometry_Update_Modes
+    // 계산한 높이를 게시하고 geometry 갱신 mode에 따라 후속 실행을 선택한다.
 
     bool StateDrivenGeometry = (Solver.Flags & StateDrivenGeometryUpdateFlag) != 0u;
     bool ForceFull = (Solver.Flags & ForceFullGeometryFlag) != 0u;
@@ -75,7 +75,14 @@ void main()
 
     // 01.01. Detect Dirty Geometry and Schedule Dependencies
     // #region 01_01_Detect_Dirty_Geometry_and_Schedule_Dependencies
+    // 계산 결과를 AccumulationHeights 버퍼에 기록해 후속 GPU 단계에 전달한다.
 
+    if ((Solver.Flags & (1u << 27u)) != 0u)
+    {
+        storeAccumulationFloat(Solver.LocalTexelCount + Texel, 1.0);
+        atomicMax(AccumulationHeights.Values[geometryScheduleCommandBase()], sparseWorkgroupCount());
+        return;
+    }
     float BuiltHeight = DynamicGeometry.Values[Texel * 2u + 1u].w;
     vec3 BuiltNormal = DynamicGeometry.Values[Texel * 2u + 1u].xyz;
     float HeightTolerance =
@@ -114,6 +121,7 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// 현재 descriptor의 State에서 누적 높이를 계산하고 geometry sparse schedule을 직접 생성한다.
 
 void ScheduleGeometryGroup(uint Group)
 {

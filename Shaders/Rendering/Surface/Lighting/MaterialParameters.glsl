@@ -1,7 +1,4 @@
-/**
- * @file MaterialParameters.glsl
- * @brief 렌더링 pass들이 공유하는 material 및 demo 효과 파라미터 layout이다.
- */
+// MaterialParameters.glsl — 렌더링 pass들이 공유하는 material 및 demo 효과 파라미터 layout이다.
 #ifndef MDSS_MATERIAL_PARAMETERS
 #define MDSS_MATERIAL_PARAMETERS
 
@@ -9,6 +6,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(set = 0, binding = 2) uniform MaterialParameters
 {

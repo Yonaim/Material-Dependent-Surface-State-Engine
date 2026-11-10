@@ -1,7 +1,4 @@
-/**
- * @file StaticMesh.frag
- * @brief Static Mesh의 기본 색상, Normal Map 조명과 렌더링 진단 모드를 처리한다.
- */
+// StaticMesh.frag — Static Mesh의 기본 색상, Normal Map 조명과 렌더링 진단 모드를 처리한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #include "Rendering/Surface/Lighting/MaterialParameters.glsl"
@@ -11,6 +8,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 layout(location = 0) in vec3 FragNormal;
 layout(location = 1) in vec3 FragTangent;
@@ -45,11 +43,13 @@ vec3 VisualizeNormal(vec3 Normal);
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// Static Mesh의 기본 색상, Normal Map 조명과 렌더링 진단 모드를 처리한다.
 
 void main()
 {
     // 01.00. Reconstruct Material Normal and Albedo
     // #region 01_00_Reconstruct_Material_Normal_and_Albedo
+    // texture와 표면 기저에서 조명용 normal·기본 색상을 구성한다.
 
     // tangent-space normal map을 world-space normal로 변환한 뒤 선택된 진단 모드로 출력한다.
     vec3 normalWS = normalize(FragNormal);
@@ -80,6 +80,7 @@ void main()
 
     // 01.01. Dispatch Diagnostic Modes and Surface Lighting
     // #region 01_01_Dispatch_Diagnostic_Modes_and_Surface_Lighting
+    // 진단 mode는 해당 값을 출력하고 Lit 경로는 공통 표면 조명으로 연결한다.
 
     // 진단 모드는 색상과 각 좌표계 normal을 시각화해 입력 문제를 구분해 볼 수 있다.
     if (Material.RenderMode == RENDER_MODE_BASE_COLOR)
@@ -135,6 +136,7 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// Static Mesh의 기본 색상, Normal Map 조명과 렌더링 진단 모드를 처리한다.
 
 vec3 VisualizeNormal(vec3 Normal)
 {

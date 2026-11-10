@@ -1,3 +1,8 @@
+/**
+ * @file SurfaceReactions.cpp
+ * @brief Profile의 반응 참여 State·속도·조건·유입 전환 규칙을 검증한다.
+ */
+
 #include "SurfaceState/Types/SurfaceStateTypes.h"
 
 #include <cmath>

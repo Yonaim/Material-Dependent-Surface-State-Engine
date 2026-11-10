@@ -1,4 +1,6 @@
-"""Preserve build stages and execute paired, serial optimization measurements.
+"""최적화 실험 조건을 구성하고 실행·분석·감사 단계를 조율한다.
+
+Preserve build stages and execute paired, serial optimization measurements.
 
 Every run uses the stage's saved executable and SPIR-V, not whichever shaders were built last.
 """

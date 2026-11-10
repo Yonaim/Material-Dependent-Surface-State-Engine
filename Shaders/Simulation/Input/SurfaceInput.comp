@@ -1,8 +1,4 @@
-/**
- * @file SurfaceInput.comp
- * @brief Surface Input compute shader의 자리표시자다. 현재 구현은 비어 있다.
- */
-
+// SurfaceInput.comp — Surface Input compute shader의 자리표시자다. 현재 구현은 비어 있다.
 // ============================================================
 // 00. Input Placeholder
 // ============================================================

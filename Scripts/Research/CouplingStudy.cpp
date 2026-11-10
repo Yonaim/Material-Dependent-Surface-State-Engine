@@ -1,8 +1,14 @@
+/**
+ * @file CouplingStudy.cpp
+ * @brief 실제 GPU Solver를 고정 step으로 실행해 반응·형상 결합과 장부를 비교한다.
+ */
+
 // Headless, explicitly invoked research harness. No renderer, wall-clock stepping or demo drain frames.
 // ============================================================
 // 00. Research Dependencies
 // ============================================================
 #pragma region 00_Research_Dependencies
+// 렌더링 없는 연구 실행에서 실제 제품 Solver·Geometry 구현을 사용한다.
 
 #include "ResearchVulkanDevice.h"
 #include "ModularBaseline.h"
@@ -34,6 +40,7 @@ namespace fs = std::filesystem;
 // 01. GPU State Readback Helpers
 // ============================================================
 #pragma region 01_GPU_State_Readback_Helpers
+// GPU 완료 후 State·형상 값을 CPU 자료로 내려 비교·집계한다.
 
 std::vector<float> Read(const MDSS::GPU::FGPUBuffer& B)
 {
@@ -78,6 +85,7 @@ double Gaussian(float U, float V, float CU, float CV, float RU, float RV)
 // 02. Experiment Orchestration
 // ============================================================
 #pragma region 02_Experiment_Orchestration
+// 조건별 초기 상태를 준비하고 고정 시간 step과 진단 저장을 진행한다.
 
 int main(int argc, char** argv)
 try

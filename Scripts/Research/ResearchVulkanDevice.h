@@ -1,3 +1,8 @@
+/**
+ * @file ResearchVulkanDevice.h
+ * @brief 화면 없는 연구 실행에 필요한 Vulkan device·queue·command 수명을 관리한다.
+ */
+
 #pragma once
 #include <vulkan/vulkan.h>
 #include <functional>
@@ -8,6 +13,7 @@
 // 00. Vulkan Fixture Lifecycle
 // ============================================================
 #pragma region 00_Vulkan_Fixture_Lifecycle
+// 연구에 필요한 device·queue·command 자원을 만들고 역순으로 해제한다.
 
 class FVulkanUnavailable : public std::runtime_error
 {

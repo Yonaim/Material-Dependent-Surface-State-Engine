@@ -1,12 +1,9 @@
-/**
- * @file BurnScorched.glsl
- * @brief Temporary burn glow and persistent scorched surface tint.
- */
-
+// BurnScorched.glsl — 일시적인 연소 발광과 남는 그을음 tint를 계산한다.
 // ============================================================
 // 00. BurnScorched Appearance
 // ============================================================
 // #region 00_BurnScorched_Appearance
+// Burn의 일시적 발광과 Scorched의 남는 흔적을 별도 State로 처리한다.
 
 void ApplyScorched(float Scorched, inout vec3 Albedo, inout float Roughness)
 {

@@ -1,11 +1,35 @@
+/**
+ * @file Renderer.cpp
+ * @brief 프레임의 Solver·Surface 표시·장면·UI 명령을 기록하고 제출한다.
+ */
+
 #include "Rendering/Core/RendererShared.h"
 
 namespace MDSS::Rendering
 {
+    // 교체 리소스를 준비 완료 전까지 독립 소유해 예외 시 기존 Renderer 자원을 유지한다.
+    struct FRenderer::FSceneReplacementResources
+    {
+        std::unique_ptr<SurfaceState::FSurfaceStateSystem>     Replacement;
+        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementDebugPipeline;
+        std::unique_ptr<SurfaceState::FTexelInspector>         ReplacementInspector;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementGeometryPreview;
+        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementGeometryPipeline;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementLitPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
+        std::unique_ptr<FRenderStateTexture>                   ReplacementRenderStateTexture;
+        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementMudGeometry;
+        std::unique_ptr<FHeightFieldSmoothing>                 ReplacementHeightFieldSmoothing;
+        std::unique_ptr<FAccumulationOverlaySides>             ReplacementOverlaySides;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudTopPipelines;
+        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudSidePipelines;
+    };
+
 // ============================================================
 // 00. Renderer Lifecycle
 // ============================================================
 #pragma region 00_Renderer_Lifecycle
+// Scene·device·표시 자원을 연결해 Renderer의 시작과 종료를 관리한다.
 
     FRenderer::FRenderer(const GPU::FVulkanContext&         Context,
                          FWindow&                           FWindow,
@@ -294,6 +318,7 @@ namespace MDSS::Rendering
 // 01. Frame Rendering
 // ============================================================
 #pragma region 01_Frame_Rendering
+// 완료 자원을 회수한 뒤 이번 frame의 compute·draw 명령을 제출한다.
 
     void FRenderer::RenderFrame(const FScene& SceneData,
                                 FDebugUI&     DebugInterface,
@@ -301,6 +326,56 @@ namespace MDSS::Rendering
                                 bool          bSuspendSimulationClock)
     {
         const std::uint32_t FrameIndex = FrameContext.GetCurrentFrameIndex();
+        CompletePreviousFrame(FrameIndex, DebugInterface);
+
+        const bool bResetSolverState = FrameCoordinator.BeginFrame(DebugInterface, DeltaTime, bSuspendSimulationClock);
+
+        if (bResetSolverState && TexelInspector)
+        {
+            TexelInspector->Invalidate();
+        }
+
+        ProfilingStats.DroppedSimulationSeconds = FrameCoordinator.GetDroppedSeconds();
+
+        if (TargetWindow.WasFramebufferResized())
+        {
+            RecreateSwapchain(DebugInterface);
+            return;
+        }
+
+        std::uint32_t ImageIndex = 0;
+        VkResult AcquireResult = VK_SUCCESS;
+
+        if (!AcquireFrameImage(DebugInterface, ImageIndex, AcquireResult))
+        {
+            return;
+        }
+
+        const VkCommandBuffer CommandBuffer = RecordFrameCommands(
+            FrameIndex, ImageIndex, SceneData, DebugInterface, bResetSolverState);
+        const VkSemaphore SignalSemaphore = SubmitFrameCommands(CommandBuffer, ImageIndex);
+        const bool bRecreateSwapchain = PresentFrameImage(ImageIndex, AcquireResult, SignalSemaphore);
+
+        FinalizeFrameBenchmark(FrameIndex, SceneData, DebugInterface);
+        FrameContext.AdvanceFrame();
+
+        if (bRecreateSwapchain)
+        {
+            FLogger::Debug("TRenderer", "Presentation requires swapchain recreation.");
+            RecreateSwapchain(DebugInterface);
+        }
+    }
+
+#pragma endregion
+
+// ============================================================
+// 01.01. Frame Execution Details
+// ============================================================
+#pragma region 01_01_Frame_Execution_Details
+// 프레임 자원 회수부터 Vulkan 명령 기록·제출·표시까지의 세부 단계를 구현한다.
+
+    void FRenderer::CompletePreviousFrame(std::uint32_t FrameIndex, const FDebugUI& DebugInterface)
+    {
         using FClock = std::chrono::steady_clock;
         const auto ToMilliseconds = [](FClock::duration Duration)
         { return std::chrono::duration<float, std::milli>(Duration).count(); };
@@ -338,25 +413,16 @@ namespace MDSS::Rendering
 
         CollectCompletedFrameTimings(FrameIndex);
 
-        const bool bResetSolverState = FrameCoordinator.BeginFrame(DebugInterface, DeltaTime, bSuspendSimulationClock);
+    }
 
-        if (bResetSolverState)
-        {
-            if (TexelInspector)
-                TexelInspector->Invalidate();
-        }
+    bool FRenderer::AcquireFrameImage(FDebugUI& DebugInterface, std::uint32_t& ImageIndex, VkResult& AcquireResult)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
 
-        ProfilingStats.DroppedSimulationSeconds = FrameCoordinator.GetDroppedSeconds();
-
-        if (TargetWindow.WasFramebufferResized())
-        {
-            RecreateSwapchain(DebugInterface);
-            return;
-        }
-
-        std::uint32_t ImageIndex = 0;
-        CpuStageStart = FClock::now();
-        const VkResult AcquireResult = vkAcquireNextImageKHR(Context.GetDevice(),
+        auto CpuStageStart = FClock::now();
+        AcquireResult = vkAcquireNextImageKHR(Context.GetDevice(),
                                                              SwapchainData.GetHandle(),
                                                              std::numeric_limits<std::uint64_t>::max(),
                                                              FrameContext.GetImageAvailableSemaphore(),
@@ -368,13 +434,26 @@ namespace MDSS::Rendering
         {
             FLogger::Debug("TRenderer", "TSwapchain became out of date while acquiring; recreating it.");
             RecreateSwapchain(DebugInterface);
-            return;
+            return false;
         }
 
         if (AcquireResult != VK_SUCCESS && AcquireResult != VK_SUBOPTIMAL_KHR)
         {
             throw std::runtime_error("Failed to acquire a Vulkan swapchain image.");
         }
+
+        return true;
+    }
+
+    VkCommandBuffer FRenderer::RecordFrameCommands(std::uint32_t FrameIndex,
+                                                   std::uint32_t ImageIndex,
+                                                   const FScene& SceneData,
+                                                   FDebugUI& DebugInterface,
+                                                   bool bResetSolverState)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
 
         FrameContext.ResetCurrentFence();
 
@@ -411,7 +490,7 @@ namespace MDSS::Rendering
 
         if (SimulationSteps.empty())
             LastSolverGpuMilliseconds = LastSolverPass1GpuMilliseconds = LastSolverPass2GpuMilliseconds = 0.0F;
-        CpuStageStart = FClock::now();
+        auto CpuStageStart = FClock::now();
         RecordCommandBuffer(CommandBuffer, ImageIndex, SceneData, DebugInterface, SimulationSteps);
         OverlayDisplayModesSubmitted[FrameIndex] = OverlayDisplayMode;
         ProfilingStats.CommandRecordCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
@@ -435,6 +514,15 @@ namespace MDSS::Rendering
             }
         }
 
+        return CommandBuffer;
+    }
+
+    VkSemaphore FRenderer::SubmitFrameCommands(VkCommandBuffer CommandBuffer, std::uint32_t ImageIndex)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
+
         const VkSemaphore WaitSemaphore = FrameContext.GetImageAvailableSemaphore();
 
         if (ImageIndex >= RenderFinishedSemaphores.size())
@@ -455,7 +543,7 @@ namespace MDSS::Rendering
         SubmitInfo.signalSemaphoreCount = 1;
         SubmitInfo.pSignalSemaphores = &SignalSemaphore;
 
-        CpuStageStart = FClock::now();
+        const auto CpuStageStart = FClock::now();
 
         if (vkQueueSubmit(Context.GetQueues().GetGraphics(), 1, &SubmitInfo, FrameContext.GetInFlightFence()) !=
             VK_SUCCESS)
@@ -464,6 +552,15 @@ namespace MDSS::Rendering
         }
 
         ProfilingStats.QueueSubmitCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
+
+        return SignalSemaphore;
+    }
+
+    bool FRenderer::PresentFrameImage(std::uint32_t ImageIndex, VkResult AcquireResult, VkSemaphore SignalSemaphore)
+    {
+        using FClock = std::chrono::steady_clock;
+        const auto ToMilliseconds = [](FClock::duration Duration)
+        { return std::chrono::duration<float, std::milli>(Duration).count(); };
 
         const VkSwapchainKHR SwapchainHandle = SwapchainData.GetHandle();
         VkPresentInfoKHR     PresentInfo{};
@@ -474,7 +571,7 @@ namespace MDSS::Rendering
         PresentInfo.pSwapchains = &SwapchainHandle;
         PresentInfo.pImageIndices = &ImageIndex;
 
-        CpuStageStart = FClock::now();
+        const auto CpuStageStart = FClock::now();
         const VkResult PresentResult = vkQueuePresentKHR(Context.GetQueues().GetPresent(), &PresentInfo);
         ProfilingStats.PresentCpuMilliseconds = ToMilliseconds(FClock::now() - CpuStageStart);
         const bool bSwapchainNeedsRecreation =
@@ -487,6 +584,13 @@ namespace MDSS::Rendering
             throw std::runtime_error("Failed to present Vulkan swapchain image.");
         }
 
+        return bSwapchainNeedsRecreation;
+    }
+
+    void FRenderer::FinalizeFrameBenchmark(std::uint32_t FrameIndex,
+                                           const FScene& SceneData,
+                                           const FDebugUI& DebugInterface)
+    {
         if (Benchmark.bBenchmarkCaptureEnabled)
         {
             Benchmark.BenchmarkSubmissions[FrameIndex].CpuMilliseconds = {ProfilingStats.FrameFenceWaitCpuMilliseconds,
@@ -497,86 +601,90 @@ namespace MDSS::Rendering
             if (!Benchmark.bBenchmarkMetadataWritten &&
                 Benchmark.NextBenchmarkFrameIndex > Benchmark.BenchmarkWarmupFrames)
                 WriteBenchmarkMetadata(SceneData, DebugInterface);
+            if (Benchmark.AuthoringScreenshot)
+                WriteAuthoringCheckpoint(SceneData);
         }
 
-        FrameContext.AdvanceFrame();
-
-        if (bSwapchainNeedsRecreation)
-        {
-            FLogger::Debug("TRenderer", "Presentation requires swapchain recreation.");
-            RecreateSwapchain(DebugInterface);
-        }
     }
 
 #pragma endregion
+
 // ============================================================
 // 02. Scene Resource Replacement
 // ============================================================
 #pragma region 02_Scene_Resource_Replacement
+// 이전 GPU 사용이 끝난 뒤 새 Scene에 대응하는 표시 자원을 구성한다.
 
     void FRenderer::ReloadSceneResources(const FScene& Scene, bool bResetStateSettings)
     {
-        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
-        }
-
-        // Scene loading can append new MTL materials to AssetManager. Rebuild their
-        // descriptors before command recording; otherwise new sections are skipped.
-        if (MaterialResources.size() != Assets.GetMaterialCount())
-        {
-            CreateMaterialDescriptorResources();
-        }
+        // GPU 정지 → 새 리소스 준비 → Registry 복구 가능 구간 → 리소스 교체 순서로 수행한다.
+        WaitForSceneReloadAndUpdateMaterials();
 
         auto&               ReusePool = SurfaceStateSystem.GetReusableBufferPool();
         const std::uint64_t ReuseCountBefore = ReusePool.GetReuseCount();
         const VkDeviceSize  ReusedBytesBefore = ReusePool.GetReusedBytes();
         auto PreviousRegistry = SurfaceData.ExchangeSurfaceStateRegistry(SurfaceData.BuildSurfaceStateRegistry(Scene));
-        std::unique_ptr<SurfaceState::FSurfaceStateSystem>     Replacement;
-        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementDebugPipeline;
-        std::unique_ptr<SurfaceState::FTexelInspector>         ReplacementInspector;
-        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementGeometryPreview;
-        std::unique_ptr<GPU::FGraphicsPipeline>                ReplacementGeometryPipeline;
-        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementLitPipelines;
-        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementBaseLitPipelines;
-        std::unique_ptr<FRenderStateTexture>                   ReplacementRenderStateTexture;
-        std::unique_ptr<SurfaceState::FTexelGeometryPreview>   ReplacementMudGeometry;
-        std::unique_ptr<FHeightFieldSmoothing>                 ReplacementHeightFieldSmoothing;
-        std::unique_ptr<FAccumulationOverlaySides>             ReplacementOverlaySides;
-        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudTopPipelines;
-        std::array<std::unique_ptr<GPU::FGraphicsPipeline>, 3> ReplacementMudSidePipelines;
+        FSceneReplacementResources Resources;
         try
         {
-            Replacement =
+            BuildSceneReplacement(Scene, bResetStateSettings, Resources);
+        }
+        catch (...)
+        {
+            SurfaceData.ExchangeSurfaceStateRegistry(std::move(PreviousRegistry));
+            throw;
+        }
+
+        ReleaseSceneRenderObjects();
+        SurfaceStateSystem.ReplaceSceneResources(std::move(*Resources.Replacement));
+        FLogger::Info("TRenderer",
+                      "Surface GPU buffer reuse: " + std::to_string(ReusePool.GetReuseCount() - ReuseCountBefore) +
+                          " buffer(s), " +
+                          std::to_string((ReusePool.GetReusedBytes() - ReusedBytesBefore) / (1024U * 1024U)) +
+                          " MiB; retained " + std::to_string(ReusePool.GetRetainedBytes() / (1024U * 1024U)) + " MiB.");
+        FrameCoordinator.ResetClock();
+        CommitSceneReplacement(Resources);
+        SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
+
+        if (bResetStateSettings)
+        {
+            DebugProfileParameterOverrides.clear();
+            DebugStateChannel = 0;
+        }
+
+        ResetSceneGpuProfiling();
+    }
+
+    void FRenderer::BuildSceneReplacement(const FScene& Scene,
+                                          bool bResetStateSettings,
+                                          FSceneReplacementResources& Resources)
+    {
+        // 기존 설정을 복제한 Solver와 종속 renderer 자원을 먼저 생성한다.
+        auto& ReusePool = SurfaceStateSystem.GetReusableBufferPool();
+        auto& Replacement = Resources.Replacement;
+        Replacement =
                 std::make_unique<SurfaceState::FSurfaceStateSystem>(Context, Assets, SurfaceData, Scene, &ReusePool);
-            Replacement->SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
-            Replacement->SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
-            Replacement->SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
-            Replacement->SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
-            Replacement->SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
-            Replacement->SetCompactScratchStorageEnabled(SurfaceStateSystem.IsCompactScratchStorageEnabled());
-            Replacement->SetRuntimeSolverFlagsEnabled(SurfaceStateSystem.IsRuntimeSolverFlagsEnabled());
-            Replacement->SetAdaptiveGeometryEnabled(SurfaceStateSystem.IsAdaptiveGeometryEnabled());
-            Replacement->SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
-            Replacement->SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
-            Replacement->SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
-            Replacement->SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
-            Replacement->SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
+        ConfigureReplacementSolver(*Replacement, bResetStateSettings);
+        BuildSceneRenderPipelines(Scene, Resources);
+    }
 
-            for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
-            {
-                Replacement->SetDebugSolverTermEnabled(static_cast<SurfaceState::ESurfaceSolverTerm>(Index),
-                                                       DebugSolverSettings.Enabled[Index]);
-            }
-
-            if (!bResetStateSettings)
-            {
-                for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
-                {
-                    Replacement->SetDebugProfileParameters(Key.first, Key.second, Parameters);
-                }
-            }
-
+    void FRenderer::BuildSceneRenderPipelines(const FScene& Scene,
+                                              FSceneReplacementResources& Resources)
+    {
+        // Surface State descriptors에 의존하는 debug·lighting·overlay pipelines를 생성한다.
+        auto& Replacement = Resources.Replacement;
+        auto& ReplacementDebugPipeline = Resources.ReplacementDebugPipeline;
+        auto& ReplacementInspector = Resources.ReplacementInspector;
+        auto& ReplacementGeometryPreview = Resources.ReplacementGeometryPreview;
+        auto& ReplacementGeometryPipeline = Resources.ReplacementGeometryPipeline;
+        auto& ReplacementLitPipelines = Resources.ReplacementLitPipelines;
+        auto& ReplacementBaseLitPipelines = Resources.ReplacementBaseLitPipelines;
+        auto& ReplacementRenderStateTexture = Resources.ReplacementRenderStateTexture;
+        auto& ReplacementMudGeometry = Resources.ReplacementMudGeometry;
+        auto& ReplacementHeightFieldSmoothing = Resources.ReplacementHeightFieldSmoothing;
+        auto& ReplacementOverlaySides = Resources.ReplacementOverlaySides;
+        auto& ReplacementMudTopPipelines = Resources.ReplacementMudTopPipelines;
+        auto& ReplacementMudSidePipelines = Resources.ReplacementMudSidePipelines;
             if (const SurfaceState::FSurfaceStateDescriptorResources* Descriptors =
                     Replacement->GetGPUResources().GetAnyInstanceDescriptors())
             {
@@ -670,13 +778,91 @@ namespace MDSS::Rendering
                                                    Mode));
                 }
             }
-        }
-        catch (...)
+    }
+
+    void FRenderer::CommitSceneReplacement(FSceneReplacementResources& Resources)
+    {
+        // 준비가 끝난 GPU 객체 소유권을 Renderer로 이전한다.
+        auto& ReplacementDebugPipeline = Resources.ReplacementDebugPipeline;
+        auto& ReplacementInspector = Resources.ReplacementInspector;
+        auto& ReplacementGeometryPreview = Resources.ReplacementGeometryPreview;
+        auto& ReplacementGeometryPipeline = Resources.ReplacementGeometryPipeline;
+        auto& ReplacementLitPipelines = Resources.ReplacementLitPipelines;
+        auto& ReplacementBaseLitPipelines = Resources.ReplacementBaseLitPipelines;
+        auto& ReplacementRenderStateTexture = Resources.ReplacementRenderStateTexture;
+        auto& ReplacementMudGeometry = Resources.ReplacementMudGeometry;
+        auto& ReplacementHeightFieldSmoothing = Resources.ReplacementHeightFieldSmoothing;
+        auto& ReplacementOverlaySides = Resources.ReplacementOverlaySides;
+        auto& ReplacementMudTopPipelines = Resources.ReplacementMudTopPipelines;
+        auto& ReplacementMudSidePipelines = Resources.ReplacementMudSidePipelines;
+        SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
+        TexelInspector = std::move(ReplacementInspector);
+        TexelGeometryPreview = std::move(ReplacementGeometryPreview);
+        TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
+        SurfaceLitPipelines = std::move(ReplacementLitPipelines);
+        BaseSurfaceLitPipelines = std::move(ReplacementBaseLitPipelines);
+        RenderStateTexture = std::move(ReplacementRenderStateTexture);
+        MudLayerGeometry = std::move(ReplacementMudGeometry);
+        HeightFieldSmoothing = std::move(ReplacementHeightFieldSmoothing);
+        OverlaySides = std::move(ReplacementOverlaySides);
+        MudOverlayTopPipelines = std::move(ReplacementMudTopPipelines);
+        MudOverlaySidePipelines = std::move(ReplacementMudSidePipelines);
+    }
+
+    void FRenderer::WaitForSceneReloadAndUpdateMaterials()
+    {
+        // 기존 GPU 명령이 끝난 뒤 새 MTL material을 포함하도록 descriptor 리소스를 갱신한다.
+        if (vkDeviceWaitIdle(Context.GetDevice()) != VK_SUCCESS)
         {
-            SurfaceData.ExchangeSurfaceStateRegistry(std::move(PreviousRegistry));
-            throw;
+            throw std::runtime_error("Failed to wait for GPU before reloading Scene resources.");
         }
 
+        // Scene loading can append new MTL materials to AssetManager. Rebuild their
+        // descriptors before command recording; otherwise new sections are skipped.
+        if (MaterialResources.size() != Assets.GetMaterialCount())
+        {
+            CreateMaterialDescriptorResources();
+        }
+
+    }
+
+    void FRenderer::ConfigureReplacementSolver(SurfaceState::FSurfaceStateSystem& Replacement,
+                                               bool bResetStateSettings)
+    {
+        // 이전 Solver 옵션과 필요한 런타임 override만 새 Solver로 이관한다.
+            Replacement.SetStateDrivenGeometryUpdateEnabled(DebugSolverSettings.bStateDrivenGeometryUpdateEnabled);
+            Replacement.SetRawFluxCacheEnabled(SurfaceStateSystem.IsRawFluxCacheEnabled());
+            Replacement.SetCoalescedRawFluxLayoutEnabled(SurfaceStateSystem.IsCoalescedRawFluxLayoutEnabled());
+            Replacement.SetHalfRawFluxCacheEnabled(SurfaceStateSystem.IsHalfRawFluxCacheEnabled());
+            Replacement.SetHalfDynamicWeightsEnabled(SurfaceStateSystem.IsHalfDynamicWeightsEnabled());
+            Replacement.SetCompactScratchStorageEnabled(SurfaceStateSystem.IsCompactScratchStorageEnabled());
+            Replacement.SetRuntimeSolverFlagsEnabled(SurfaceStateSystem.IsRuntimeSolverFlagsEnabled());
+            Replacement.SetAdaptiveGeometryEnabled(SurfaceStateSystem.IsAdaptiveGeometryEnabled());
+            Replacement.SetSparseSolverEnabled(SurfaceStateSystem.IsSparseSolverEnabled());
+            Replacement.SetSparseAccumulationHeightEnabled(SurfaceStateSystem.IsSparseAccumulationHeightEnabled());
+            Replacement.SetActiveChannelMaskEnabled(SurfaceStateSystem.IsActiveChannelMaskEnabled());
+            Replacement.SetPerWorkgroupChannelMaskEnabled(SurfaceStateSystem.IsPerWorkgroupChannelMaskEnabled());
+            Replacement.SetSparseSimulationGeometryEnabled(SurfaceStateSystem.IsSparseSimulationGeometryEnabled());
+
+            for (std::size_t Index = 0; Index < DebugSolverSettings.Enabled.size(); ++Index)
+            {
+                Replacement.SetDebugSolverTermEnabled(static_cast<SurfaceState::ESurfaceSolverTerm>(Index),
+                                                       DebugSolverSettings.Enabled[Index]);
+            }
+
+            if (!bResetStateSettings)
+            {
+                for (const auto& [Key, Parameters] : DebugProfileParameterOverrides)
+                {
+                    Replacement.SetDebugProfileParameters(Key.first, Key.second, Parameters);
+                }
+            }
+
+    }
+
+    void FRenderer::ReleaseSceneRenderObjects()
+    {
+        // 이전 파이프라인과 연결 자원을 참조 순서에 맞게 해제한다.
         SurfaceDebugPipeline.reset();
 
         for (auto& Pipeline : SurfaceLitPipelines)
@@ -696,33 +882,11 @@ namespace MDSS::Rendering
         MudLayerGeometry.reset();
         TexelInspector.reset();
         InspectedTexel.reset();
-        SurfaceStateSystem.ReplaceSceneResources(std::move(*Replacement));
-        FLogger::Info("TRenderer",
-                      "Surface GPU buffer reuse: " + std::to_string(ReusePool.GetReuseCount() - ReuseCountBefore) +
-                          " buffer(s), " +
-                          std::to_string((ReusePool.GetReusedBytes() - ReusedBytesBefore) / (1024U * 1024U)) +
-                          " MiB; retained " + std::to_string(ReusePool.GetRetainedBytes() / (1024U * 1024U)) + " MiB.");
-        FrameCoordinator.ResetClock();
-        SurfaceDebugPipeline = std::move(ReplacementDebugPipeline);
-        TexelInspector = std::move(ReplacementInspector);
-        TexelGeometryPreview = std::move(ReplacementGeometryPreview);
-        TexelGeometryPipeline = std::move(ReplacementGeometryPipeline);
-        SurfaceLitPipelines = std::move(ReplacementLitPipelines);
-        BaseSurfaceLitPipelines = std::move(ReplacementBaseLitPipelines);
-        RenderStateTexture = std::move(ReplacementRenderStateTexture);
-        MudLayerGeometry = std::move(ReplacementMudGeometry);
-        HeightFieldSmoothing = std::move(ReplacementHeightFieldSmoothing);
-        OverlaySides = std::move(ReplacementOverlaySides);
-        MudOverlayTopPipelines = std::move(ReplacementMudTopPipelines);
-        MudOverlaySidePipelines = std::move(ReplacementMudSidePipelines);
-        SurfaceData.SetSimulationResolution(Scene.GetSimulationResolution());
+    }
 
-        if (bResetStateSettings)
-        {
-            DebugProfileParameterOverrides.clear();
-            DebugStateChannel = 0;
-        }
-
+    void FRenderer::ResetSceneGpuProfiling()
+    {
+        // Scene 교체 뒤 타임스탬프 쿼리와 누적 계측값을 새로 시작한다.
         CreateTimestampQueryPool(SurfaceStateSystem.GetSolverInstanceCount());
         LastRenderGpuMilliseconds = -1.0F;
         LastSolverGpuMilliseconds = -1.0F;
@@ -743,6 +907,7 @@ namespace MDSS::Rendering
 // 03. Resolution and Swapchain
 // ============================================================
 #pragma region 03_Resolution_and_Swapchain
+// 해상도·창 크기 변경 시 관련 attachment와 렌더 자원을 재구성한다.
 
     std::uint32_t FRenderer::GetSimulationResolution() const noexcept
     {
@@ -898,6 +1063,7 @@ namespace MDSS::Rendering
 // 04. Renderer Accessors
 // ============================================================
 #pragma region 04_Renderer_Accessors
+// 현재 Scene·표시·진단 소비자가 사용할 Renderer 상태를 제공한다.
 
     const GPU::FSwapchain& FRenderer::GetSwapchain() const noexcept
     {

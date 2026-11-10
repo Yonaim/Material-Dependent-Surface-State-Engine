@@ -1,4 +1,7 @@
-"""Describe historical snapshots; do not attribute their differences to isolated optimizations."""
+"""개발 이력별 benchmark 기록을 비교해 성능 변화와 실행 조건을 집계한다.
+
+Describe historical snapshots; do not attribute their differences to isolated optimizations.
+"""
 
 from pathlib import Path
 import json, argparse, statistics as st

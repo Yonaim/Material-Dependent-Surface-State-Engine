@@ -1,4 +1,7 @@
-"""Audit provenance, steps, state validity and explicit skipped conditions without inventing measurements."""
+"""모듈 기준선 실험의 입력·실행 파일·비교 자료를 감사한다.
+
+Audit provenance, steps, state validity and explicit skipped conditions without inventing measurements.
+"""
 
 import collections
 import json

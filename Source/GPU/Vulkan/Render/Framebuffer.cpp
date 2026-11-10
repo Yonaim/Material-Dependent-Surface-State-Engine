@@ -17,6 +17,7 @@ namespace MDSS::GPU
 // 00. Framebuffer Lifecycle
 // ============================================================
 #pragma region 00_Framebuffer_Lifecycle
+// attachment 수명에 맞춰 framebuffer의 생성·해제를 관리한다.
 
     FFramebuffer::FFramebuffer(VkDevice                        Device,
                                VkRenderPass                    FRenderPass,
@@ -39,6 +40,7 @@ namespace MDSS::GPU
 // 01. Framebuffer Creation
 // ============================================================
 #pragma region 01_Framebuffer_Creation
+// 현재 image view와 extent를 render pass의 attachment로 연결한다.
 
     void FFramebuffer::Recreate(VkRenderPass                    FRenderPass,
                                 VkExtent2D                      Extent,
@@ -107,6 +109,7 @@ namespace MDSS::GPU
 // 02. Framebuffer Accessors
 // ============================================================
 #pragma region 02_Framebuffer_Accessors
+// frame index에 대응하는 framebuffer 식별자를 제공한다.
 
     VkFramebuffer FFramebuffer::Get(std::size_t Index) const
     {

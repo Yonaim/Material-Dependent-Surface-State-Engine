@@ -9,6 +9,7 @@ namespace MDSS::Rendering
 // 00. Completed Frame Timing Readback
 // ============================================================
 #pragma region 00_Completed_Frame_Timing_Readback
+// 완료된 frame fence 이후 query 값을 회수해 표시·benchmark 통계를 갱신한다.
 
     void FRenderer::CollectCompletedFrameTimings(std::uint32_t FrameIndex)
     {

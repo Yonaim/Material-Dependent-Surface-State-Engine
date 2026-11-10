@@ -1,4 +1,7 @@
-"""Fill the shared experiment log from machine-written observations, without performance claims."""
+"""Meso 실험의 비교 결과와 근거 경로를 문서에 반영한다.
+
+Fill the shared experiment log from machine-written observations, without performance claims.
+"""
 
 from meso_study import ROOT, EXP, STUDY, read, write, stamp
 
@@ -113,7 +116,7 @@ result += f'''
 그림: [복원 높이 비교]({prefix}figures/reconstruction.png), [후속 물막 분포]({prefix}figures/transport.png), [관측 민감도]({prefix}figures/sensitivities.png). 도표는 원자료에서 자동 생성했으며 실제 렌더러 화면이 아니다.
 
 '''
-path = ROOT / 'Docs/MDSSP-Agent-Vault/04_Experiments/02_Performance-Measurements.md'
+path = ROOT / 'Docs/Agent-Vault/05_Experiments/02_Performance-Measurements.md'
 text = path.read_text(encoding='utf-8')
 a = text.index('## PERF-043')
 b = text.index('## PERF-042', a)

@@ -1,8 +1,9 @@
-#pragma once
 /**
- * @file Renderer.cpp
- * @brief 스왑체인 기반 장면 렌더링과 재생성 흐름.
+ * @file RendererShared.h
+ * @brief 렌더 translation unit이 공유하는 GPU 인터페이스·표시 자원·scope 정리를 정의한다.
  */
+
+#pragma once
 
 #include "Application/Window.h"
 #include "AssetManager/Assets/MaterialAsset.h"
@@ -44,6 +45,7 @@ namespace MDSS::Rendering
 // 00. Shader Variants and Frame Constants
 // ============================================================
 #pragma region 00_Shader_Variants_and_Frame_Constants
+// 표시 mode에 맞는 shader 선택과 frame 상수를 준비한다.
 
         using Shaders::EShader;
         const std::array<EShader, 3> SurfaceLitVariants{EShader::Rendering_Surface_Lighting_SurfaceLit_frag_m0,
@@ -69,6 +71,7 @@ namespace MDSS::Rendering
 // 01. Attachment Construction
 // ============================================================
 #pragma region 01_Attachment_Construction
+// swapchain 크기·format에 대응하는 depth·framebuffer를 구성한다.
 
         std::vector<std::unique_ptr<GPU::FGPUImage>> CreateDepthImages(
             VkPhysicalDevice PhysicalDevice, VkDevice Device, VkExtent2D Extent, VkFormat Format, std::size_t Count)
@@ -115,6 +118,7 @@ namespace MDSS::Rendering
 // 02. Mesh and World Geometry
 // ============================================================
 #pragma region 02_Mesh_and_World_Geometry
+// Mesh와 기준선·gizmo의 정점 자료를 GPU 입력으로 만든다.
 
         struct FStaticMeshPushConstants
         {
@@ -128,6 +132,7 @@ namespace MDSS::Rendering
 // 03. Material GPU Interface
 // ============================================================
 #pragma region 03_Material_GPU_Interface
+// CPU material record를 descriptor·uniform layout과 대응시킨다.
 
         struct alignas(16) FMaterialUniform
         {
@@ -291,6 +296,7 @@ namespace MDSS::Rendering
 // 04. Geometry Mode Selection
 // ============================================================
 #pragma region 04_Geometry_Mode_Selection
+// 선택한 표시 mode에 맞는 Surface geometry 경로를 고른다.
 
         bool UsesTexelGeometry(ERenderViewMode Mode)
         {
@@ -481,6 +487,7 @@ namespace MDSS::Rendering
 // 05. Scope Cleanup
 // ============================================================
 #pragma region 05_Scope_Cleanup
+// 기록 중 예외·조기 종료에서도 필요한 정리 동작을 실행한다.
 
         template <typename TCallback> class TScopeExit final
         {

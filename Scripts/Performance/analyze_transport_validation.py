@@ -1,4 +1,7 @@
-"""Compare state arrays after one actual transport step, excluding initial injection and drain steps."""
+"""단일 수송 step 결과와 기준 State를 비교해 수치 오차를 집계한다.
+
+Compare state arrays after one actual transport step, excluding initial injection and drain steps.
+"""
 
 from pathlib import Path
 import argparse, json

@@ -1,3 +1,4 @@
+// SurfaceReaction.comp — texel별 반응 요청을 공급량으로 제한하고 적분 결과·다음 실행 대상을 기록한다.
 #version 450
 #extension GL_GOOGLE_include_directive : require
 #include "Simulation/Solver/SurfaceSolverCommon.glsl"
@@ -8,6 +9,7 @@
 // 00. Resource Interface
 // ============================================================
 // #region 00_Resource_Interface
+// CPU가 전달하는 리소스 선언과 shader의 접근 경계를 모아 ABI 대응을 확인한다.
 
 // CPU: SurfaceStateSolver.cpp가 64-texel group을 dispatch하며 sparse 목록은 solverOriginalGroup()으로 복원한다.
 layout(local_size_x = 64) in;
@@ -17,7 +19,7 @@ float rf(uint At);
 float termCoefficient(uint R, uint Field, uint Channel);
 float reactionRequest(uint R, uint Base, uint ReadPlane, float Area, bool Inflow);
 
-uint IntegrateReactionRules(uint K, uint Base, uint RuleStart, uint Count, float Area);
+uint IntegrateReactionRules(uint Texel, uint K, uint Base, uint RuleStart, uint Count, float Area);
 void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool NeedsNext);
 
 // #endregion
@@ -26,6 +28,7 @@ void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool Ne
 // 01. Main Process
 // ============================================================
 // #region 01_Main_Process
+// texel별 반응 요청을 공급량으로 제한하고 적분 결과·다음 실행 대상을 기록한다.
 
 void main()
 {
@@ -75,9 +78,11 @@ void main()
 // 02. Detailed Implementation
 // ============================================================
 // #region 02_Detailed_Implementation
+// texel별 반응 요청을 공급량으로 제한하고 적분 결과·다음 실행 대상을 기록한다.
 
 // 02.00. React and Publish Texel
 // #region 02_00_React_and_Publish_Texel
+// 유효 texel의 적분 결과를 NextState에 쓰고 다음 채널·높이 갱신을 예약한다.
 
 void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool NeedsNext)
 {
@@ -95,7 +100,7 @@ void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool Ne
             Count = ReactionTable.Values[5u + Profile * 4u];
         }
 
-        uint ReadPlane = IntegrateReactionRules(K, Base, RuleStart, Count, Area);
+        uint ReadPlane = IntegrateReactionRules(Texel, K, Base, RuleStart, Count, Area);
 
         for (uint C = 0u; C < K; ++C)
         {
@@ -125,10 +130,25 @@ void ReactAndPublishTexel(uint Texel, uint Group, inout uint Mask, inout bool Ne
 
 // 02.01. Integrate Reaction Rules
 // #region 02_01_Integrate_Reaction_Rules
+// 공통 snapshot의 요청을 공급량으로 제한하며 유입 전환 뒤 continuous를 적분한다.
 
-uint IntegrateReactionRules(uint K, uint Base, uint RuleStart, uint Count, float Area)
+uint IntegrateReactionRules(uint Texel, uint K, uint Base, uint RuleStart, uint Count, float Area)
 {
     uint ReadPlane = 0u;
+
+    // Opt-in ledger follows the ordinary scratch planes and records only applied extents.
+    bool CaptureLedger = (Solver.Flags & (1u << 28u)) != 0u;
+    uint LedgerBase =
+        Solver.LocalTexelCount * (5u * K + ReactionTable.Values[1] + 4u) + Texel * ReactionTable.Values[1];
+
+    if (CaptureLedger)
+    {
+        for (uint R = 0u; R < ReactionTable.Values[1]; ++R)
+        {
+            ReactionScratch.Values[LedgerBase + R] = 0.0;
+        }
+    }
+
     vec4 Diagnostics = vec4(0.0); // substeps, supply-limited extents, budget exhausted, arithmetic failure
     bool HasContinuous = false;
 
@@ -262,6 +282,13 @@ uint IntegrateReactionRules(uint K, uint Base, uint RuleStart, uint Count, float
 
         if (FiniteStep)
         {
+            if (CaptureLedger)
+            {
+                for (uint R = 0u; R < Count; ++R)
+                {
+                    ReactionScratch.Values[LedgerBase + R] += ReactionScratch.Values[Base + 5u * K + R];
+                }
+            }
             ReadPlane = WritePlane;
         }
 
@@ -285,6 +312,7 @@ uint IntegrateReactionRules(uint K, uint Base, uint RuleStart, uint Count, float
 
 // 02.02. Evaluate Reaction Terms
 // #region 02_02_Evaluate_Reaction_Terms
+// Rule의 속도 모델과 조건을 같은 기준 면적·State snapshot으로 평가한다.
 
 float reactionRequest(uint R, uint Base, uint ReadPlane, float Area, bool Inflow)
 {

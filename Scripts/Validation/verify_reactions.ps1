@@ -1,3 +1,4 @@
+# Ice Reaction 데모를 실행해 State·반응 진단과 시점별 캡처를 검사한다.
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug',
     [string]$OutputDirectory = 'Build/ReactionValidation'

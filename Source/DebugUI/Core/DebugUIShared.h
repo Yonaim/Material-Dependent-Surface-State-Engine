@@ -1,8 +1,9 @@
-#pragma once
 /**
- * @file DebugUI.cpp
- * @brief ImGui 기반 카메라·렌더 설정과 로그 진단 UI.
+ * @file DebugUIShared.h
+ * @brief Debug UI translation unit이 공유하는 의존성과 widget·표시 helper를 제공한다.
  */
+
+#pragma once
 
 #include "Application/EngineConfig.h"
 #include "Application/SceneFileDialog.h"
@@ -10,6 +11,7 @@
 // 00. Shared UI Dependencies
 // ============================================================
 #pragma region 00_Shared_UI_Dependencies
+// UI translation unit들이 공유하는 자원·widget 형식을 포함한다.
 
 #include "Application/Window.h"
 #include "DebugUI/Panels/RenderViewDescriptions.h"
@@ -62,6 +64,7 @@
 // 01. UI Widgets and Display Helpers
 // ============================================================
 #pragma region 01_UI_Widgets_and_Display_Helpers
+// 표시 형식과 반복 widget 동작을 여러 패널에서 재사용한다.
 
 namespace MDSS
 {

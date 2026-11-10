@@ -1,3 +1,8 @@
+/**
+ * @file DebugUISimulation.cpp
+ * @brief Solver 시간·step·저장 형식·sparse 실행 옵션 패널을 그린다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
@@ -6,6 +11,7 @@ namespace MDSS
 // 00. Simulation Debug Panels
 // ============================================================
 #pragma region 00_Simulation_Debug_Panels
+// Solver 시간·storage·sparse 옵션과 진단 값을 한 화면에 연결한다.
 
     void FDebugUI::DrawSimulationDebugWindow(FScene& SceneData)
     {

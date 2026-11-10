@@ -1,3 +1,8 @@
+/**
+ * @file DebugUIEditor.cpp
+ * @brief Scene 선택·객체 편집·gizmo 및 데모 재생 조작을 그린다.
+ */
+
 #include "DebugUI/Core/DebugUIShared.h"
 
 namespace MDSS
@@ -6,6 +11,7 @@ namespace MDSS
 // 00. Scene and Camera Controls
 // ============================================================
 #pragma region 00_Scene_and_Camera_Controls
+// Scene 선택·카메라 설정을 사용자 입력에 따라 적용한다.
 
     void FDebugUI::SetupDockspace()
     {
@@ -273,6 +279,7 @@ namespace MDSS
 // 01. Animation and Presentation
 // ============================================================
 #pragma region 01_Animation_and_Presentation
+// 데모 재생·재시작과 발표 화면 상태를 Scene 실행에 전달한다.
 
     void FDebugUI::ReplayDemo(FScene& SceneData)
     {
@@ -426,6 +433,7 @@ namespace MDSS
 // 02. Selection and Gizmo Interaction
 // ============================================================
 #pragma region 02_Selection_and_Gizmo_Interaction
+// 선택 대상에 gizmo 입력을 적용하고 변환 변경을 이어간다.
 
     void FDebugUI::ProcessSelectionAndGizmo(FScene& SceneData)
     {
@@ -436,6 +444,13 @@ namespace MDSS
             return;
         }
 
+
+        HandleGizmoKeyboardShortcuts(SceneData);
+        ProcessGizmoPointerInteraction(SceneData);
+    }
+
+    void FDebugUI::HandleGizmoKeyboardShortcuts(FScene& SceneData)
+    {
         if (ImGui::IsKeyPressed(ImGuiKey_Space) && !ShouldSuppressDebugHotkey())
         {
             Gizmo.bRotationMode = !Gizmo.bRotationMode;
@@ -468,35 +483,17 @@ namespace MDSS
             }
         }
 
-        ImGuiIO&     IO = ImGui::GetIO();
-        const ImVec2 DisplaySize = IO.DisplaySize;
+    }
 
-        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F)
-        {
-            return;
-        }
+    // Gizmo 좌표 투영은 현재 활성 viewport의 스냅샷을 공유한다.
+    struct FGizmoViewportProjection
+    {
+        ImVec2 ViewportOrigin{};
+        ImVec2 ViewportSize{};
+        glm::mat4 VP{1.0F};
+        glm::vec3 Origin{0.0F};
 
-        const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-        const glm::vec4      Rect = GetViewportRectNormalized(GetActiveViewportIndex());
-        const ImVec2         ViewportOrigin{MainViewport->Pos.x + Rect.x * DisplaySize.x,
-                                            MainViewport->Pos.y + Rect.y * DisplaySize.y};
-        const ImVec2         ViewportSize{Rect.z * DisplaySize.x, Rect.w * DisplaySize.y};
-
-        if (ViewportSize.x <= 0.0F || ViewportSize.y <= 0.0F)
-        {
-            return;
-        }
-
-        const float     Aspect = ViewportSize.x / ViewportSize.y;
-        const FCamera&  Camera = GetActiveViewportCamera(SceneData);
-        const glm::mat4 VP = Camera.GetViewProjectionMatrix(Aspect);
-        const glm::vec3 Origin = Camera.GetPosition();
-        const ImVec2    Mouse = IO.MousePos;
-        const bool      bMouseInViewport = Mouse.x >= ViewportOrigin.x && Mouse.y >= ViewportOrigin.y &&
-                                           Mouse.x < ViewportOrigin.x + ViewportSize.x &&
-                                           Mouse.y < ViewportOrigin.y + ViewportSize.y;
-
-        auto GetAxisScreenSegment = [&](glm::vec3 Position, int Axis, ImVec2& A, ImVec2& B, float& WorldScale)
+        bool GetAxisScreenSegment(glm::vec3 Position, int Axis, ImVec2& A, ImVec2& B, float& WorldScale) const
         {
             const glm::vec3 AxisVector = Axis == 0   ? glm::vec3(1, 0, 0)
                                          : Axis == 1 ? glm::vec3(0, 1, 0)
@@ -514,10 +511,9 @@ namespace MDSS
             B.x += ViewportOrigin.x;
             B.y += ViewportOrigin.y;
             return true;
-        };
+                }
 
-        auto GetRotationRingScreenPoint =
-            [&](glm::vec3 Position, int Axis, float Angle, float WorldScale, ImVec2& Screen)
+        bool GetRotationRingScreenPoint(glm::vec3 Position, int Axis, float Angle, float WorldScale, ImVec2& Screen) const
         {
             const glm::vec3 U = Axis == 0 ? glm::vec3(0, 1, 0) : Axis == 1 ? glm::vec3(0, 0, 1) : glm::vec3(1, 0, 0);
             const glm::vec3 V = Axis == 0 ? glm::vec3(0, 0, 1) : Axis == 1 ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
@@ -531,10 +527,9 @@ namespace MDSS
             Screen.x += ViewportOrigin.x;
             Screen.y += ViewportOrigin.y;
             return true;
-        };
+                }
 
-        auto GetRotationRingAngle =
-            [&](glm::vec3 Position, int Axis, float WorldScale, ImVec2 MousePosition, float& Angle, float& Distance)
+        bool GetRotationRingAngle(glm::vec3 Position, int Axis, float WorldScale, ImVec2 MousePosition, float& Angle, float& Distance) const
         {
             constexpr int Segments = 96;
             Distance = std::numeric_limits<float>::max();
@@ -564,10 +559,55 @@ namespace MDSS
             }
 
             return bFound;
-        };
+                }
+
+    };
+
+    void FDebugUI::ProcessGizmoPointerInteraction(FScene& SceneData)
+    {
+        ImGuiIO&     IO = ImGui::GetIO();
+        const ImVec2 DisplaySize = IO.DisplaySize;
+
+        if (DisplaySize.x <= 0.0F || DisplaySize.y <= 0.0F)
+        {
+            return;
+        }
+
+        const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
+        const glm::vec4      Rect = GetViewportRectNormalized(GetActiveViewportIndex());
+        const ImVec2         ViewportOrigin{MainViewport->Pos.x + Rect.x * DisplaySize.x,
+                                            MainViewport->Pos.y + Rect.y * DisplaySize.y};
+        const ImVec2         ViewportSize{Rect.z * DisplaySize.x, Rect.w * DisplaySize.y};
+
+        if (ViewportSize.x <= 0.0F || ViewportSize.y <= 0.0F)
+        {
+            return;
+        }
+
+        const float     Aspect = ViewportSize.x / ViewportSize.y;
+        const FCamera&  Camera = GetActiveViewportCamera(SceneData);
+        const glm::mat4 VP = Camera.GetViewProjectionMatrix(Aspect);
+        const glm::vec3 Origin = Camera.GetPosition();
+        const ImVec2    Mouse = IO.MousePos;
+        const FGizmoViewportProjection Projection{ViewportOrigin, ViewportSize, VP, Origin};
 
         if (Gizmo.ActiveAxis >= 0)
         {
+            UpdateActiveGizmoDrag(SceneData, Projection, Mouse);
+            return;
+        }
+
+        UpdateHoveredGizmoAxis(SceneData, Projection, Mouse);
+        HandleGizmoViewportClick(SceneData, Projection, Mouse);
+    }
+
+    void FDebugUI::UpdateActiveGizmoDrag(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse)
+    {
+        const glm::vec3& Origin = Projection.Origin;
+        const glm::mat4& VP = Projection.VP;
+        const ImVec2& ViewportOrigin = Projection.ViewportOrigin;
+        const ImVec2& ViewportSize = Projection.ViewportSize;
+
             Gizmo.HoveredAxis = Gizmo.ActiveAxis;
 
             if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
@@ -586,7 +626,7 @@ namespace MDSS
                             SceneData.GetStaticMeshInstances()[*Gizmo.SelectedObject].GetTransform();
                         float CurrentAngle = 0.0F, Distance = 0.0F;
 
-                        if (GetRotationRingAngle(Transform.Position,
+                        if (Projection.GetRotationRingAngle(Transform.Position,
                                                  Gizmo.ActiveAxis,
                                                  Gizmo.DragWorldScale,
                                                  Mouse,
@@ -643,8 +683,17 @@ namespace MDSS
             }
 
             return;
-        }
+            }
 
+    void FDebugUI::UpdateHoveredGizmoAxis(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse)
+    {
+        const glm::vec3& Origin = Projection.Origin;
+        const glm::mat4& VP = Projection.VP;
+        const ImVec2& ViewportOrigin = Projection.ViewportOrigin;
+        const ImVec2& ViewportSize = Projection.ViewportSize;
+        const bool bMouseInViewport = Mouse.x >= ViewportOrigin.x && Mouse.y >= ViewportOrigin.y &&
+                                      Mouse.x < ViewportOrigin.x + ViewportSize.x &&
+                                      Mouse.y < ViewportOrigin.y + ViewportSize.y;
         Gizmo.HoveredAxis = -1;
 
         if (bMouseInViewport && !ViewportState.bMouseOverViewportOverlay && Gizmo.SelectedObject &&
@@ -663,13 +712,13 @@ namespace MDSS
                 if (Gizmo.bRotationMode)
                 {
                     bProjected =
-                        WorldScale > 0.01F && GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
+                        WorldScale > 0.01F && Projection.GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
                 }
                 else
                 {
                     ImVec2 A{}, B{};
                     float  AxisWorldScale = 0.0F, Along = 0.0F;
-                    bProjected = GetAxisScreenSegment(Position, Axis, A, B, AxisWorldScale);
+                    bProjected = Projection.GetAxisScreenSegment(Position, Axis, A, B, AxisWorldScale);
 
                     if (bProjected)
                     {
@@ -688,6 +737,17 @@ namespace MDSS
             }
         }
 
+    }
+
+    void FDebugUI::HandleGizmoViewportClick(FScene& SceneData, const FGizmoViewportProjection& Projection, const ImVec2& Mouse)
+    {
+        const glm::vec3& Origin = Projection.Origin;
+        const glm::mat4& VP = Projection.VP;
+        const ImVec2& ViewportOrigin = Projection.ViewportOrigin;
+        const ImVec2& ViewportSize = Projection.ViewportSize;
+        const bool bMouseInViewport = Mouse.x >= ViewportOrigin.x && Mouse.y >= ViewportOrigin.y &&
+                                      Mouse.x < ViewportOrigin.x + ViewportSize.x &&
+                                      Mouse.y < ViewportOrigin.y + ViewportSize.y;
         const ImGuiWindow* HoveredWindow = GImGui->HoveredWindow;
         const std::string  ActiveViewportWindowName =
             "Viewport " + std::to_string(ViewportState.ActiveViewportId) + "##ViewportPanel";
@@ -723,13 +783,13 @@ namespace MDSS
                 if (Gizmo.bRotationMode)
                 {
                     bProjected =
-                        WorldScale > 0.01F && GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
+                        WorldScale > 0.01F && Projection.GetRotationRingAngle(Position, Axis, WorldScale, Mouse, Angle, Distance);
                 }
                 else
                 {
                     ImVec2 A{}, B{};
                     float  AxisWorldScale = 0.0F, Along = 0.0F;
-                    bProjected = GetAxisScreenSegment(Position, Axis, A, B, AxisWorldScale);
+                    bProjected = Projection.GetAxisScreenSegment(Position, Axis, A, B, AxisWorldScale);
 
                     if (bProjected)
                     {
@@ -767,7 +827,7 @@ namespace MDSS
                     ImVec2 A{}, B{};
                     float  AxisWorldScale = 0.0F;
 
-                    if (GetAxisScreenSegment(Transform.Position, BestAxis, A, B, AxisWorldScale))
+                    if (Projection.GetAxisScreenSegment(Transform.Position, BestAxis, A, B, AxisWorldScale))
                     {
                         const glm::vec2 ScreenAxis{B.x - A.x, B.y - A.y};
                         Gizmo.DragPixelLength = glm::length(ScreenAxis);
@@ -812,7 +872,11 @@ namespace MDSS
         {
             Gizmo.SelectedObject.reset();
         }
-    }
+            }
+
+
+
+
 
 #pragma endregion
 
@@ -820,6 +884,7 @@ namespace MDSS
 // 03. Object and Camera Editing
 // ============================================================
 #pragma region 03_Object_and_Camera_Editing
+// 객체·카메라 편집 값을 현재 Scene에 반영한다.
 
     void FDebugUI::DrawSelectedObjectWindow(FScene& SceneData)
     {

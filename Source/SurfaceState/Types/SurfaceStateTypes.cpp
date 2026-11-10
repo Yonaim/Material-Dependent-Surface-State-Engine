@@ -15,6 +15,7 @@ namespace MDSS::SurfaceState
 // 00. Profile Value Validation Helpers
 // ============================================================
 #pragma region 00_Profile_Value_Validation_Helpers
+// 계수의 유한성·범위·필수 값을 공통 검사한다.
 
     namespace
     {
@@ -40,6 +41,7 @@ namespace MDSS::SurfaceState
 // 01. State Name Normalization
 // ============================================================
 #pragma region 01_State_Name_Normalization
+// 입력 State 이름의 공백·대소문자를 Registry 비교 형식으로 통일한다.
 
     std::string NormalizeSurfaceStateName(std::string_view Name)
     {
@@ -77,6 +79,7 @@ namespace MDSS::SurfaceState
 // 02. Surface Response Profile Validation
 // ============================================================
 #pragma region 02_Surface_Response_Profile_Validation
+// State 파라미터와 반응 참조가 Profile 계약을 만족하는지 검증한다.
 
     void ValidateSurfaceResponseProfileData(const FSurfaceResponseProfileData& Data)
     {

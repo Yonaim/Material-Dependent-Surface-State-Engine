@@ -1,4 +1,7 @@
-"""Audit completed trajectories and preserve failure/incomplete statuses explicitly."""
+"""결합 실험의 조건·실행 수·보관 자료·검증 결과를 대조한다.
+
+Audit completed trajectories and preserve failure/incomplete statuses explicitly.
+"""
 
 import collections
 import json

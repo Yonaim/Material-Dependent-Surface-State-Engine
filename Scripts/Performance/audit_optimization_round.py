@@ -1,4 +1,7 @@
-"""Audit reproducibility of completed, frozen optimization comparisons."""
+"""최적화 실험의 입력 해시·실행 횟수·결과 누락을 감사한다.
+
+Audit reproducibility of completed, frozen optimization comparisons.
+"""
 
 from __future__ import annotations
 import hashlib, json

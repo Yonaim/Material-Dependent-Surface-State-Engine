@@ -17,6 +17,7 @@ namespace MDSS::Rendering
 // 00. Render Context Lifecycle
 // ============================================================
 #pragma region 00_Render_Context_Lifecycle
+// 여러 in-flight frame의 동기화·명령 자원을 생성하고 해제한다.
 
     FRenderContext::FRenderContext(const GPU::FVulkanContext& Context)
         : Device(Context.GetDevice()), CommandPool(Context.GetCommands().GetPool()),
@@ -88,6 +89,7 @@ namespace MDSS::Rendering
 // 01. Frame Synchronization
 // ============================================================
 #pragma region 01_Frame_Synchronization
+// frame 자원 재사용 전에 완료 fence와 semaphore 순서를 맞춘다.
 
     void FRenderContext::WaitForCurrentFrame() const
     {
@@ -118,6 +120,7 @@ namespace MDSS::Rendering
 // 02. Frame Resource Access
 // ============================================================
 #pragma region 02_Frame_Resource_Access
+// 현재 in-flight slot에 대응하는 command·동기화 자원을 제공한다.
 
     std::uint32_t FRenderContext::GetCurrentFrameIndex() const noexcept
     {

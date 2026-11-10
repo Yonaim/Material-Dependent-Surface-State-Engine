@@ -1,4 +1,7 @@
-"""Archive baseline/fix and validate descriptor rebinding without changing numeric settings."""
+"""scratch 저장 형식 전환 회귀와 관련 GPU 검증 실행을 조율한다.
+
+Archive baseline/fix and validate descriptor rebinding without changing numeric settings.
+"""
 
 import copy, os, pathlib, shutil, subprocess, sys
 from authoring_study import ROOT, STUDY, read, write, digest, stamp
