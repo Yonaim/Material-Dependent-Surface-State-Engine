@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "durationSeconds": 12,
+  "loop": false,
+  "autoplay": true,
+  "tracks": [
+    {
+      "target": "camera",
+      "property": "position",
+      "interpolation": "linear",
+      "keys": [
+        {
+          "time": 0,
+          "value": [
+            0.8,
+            -6.9,
+            5.9
+          ]
+        },
+        {
+          "time": 12,
+          "value": [
+            0.8,
+            -6.9,
+            5.9
+          ]
+        }
+      ]
+    }
+  ],
+  "contactEvents": [
+    {
+      "time": 1.0,
+      "target": "control",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 1.4,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.0,
+      "target": "transition",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 1.4,
+      "falloff": 0.3
+    },
+    {
+      "time": 1.0,
+      "target": "reaction",
+      "state": "heat",
+      "operation": "add",
+      "shape": "ellipse",
+      "localPosition": [
+        0,
+        0.12,
+        0.5
+      ],
+      "radius": 0.65,
+      "secondaryRadius": 0.75,
+      "depth": 0.05,
+      "strength": 1.4,
+      "falloff": 0.3
+    }
+  ]
+}
